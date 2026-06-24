@@ -1,5 +1,7 @@
 const packageSelect = document.querySelector("#package-select");
+const carePackageSelect = document.querySelector("#care-package-select");
 const packageLinks = document.querySelectorAll("[data-package]");
+const carePackageLinks = document.querySelectorAll("[data-care-package]");
 const formButton = document.querySelector(".lead-form button");
 const form = document.querySelector(".lead-form");
 const checkoutOptions = document.querySelectorAll("[data-checkout-package]");
@@ -66,6 +68,14 @@ packageLinks.forEach((link) => {
   });
 });
 
+carePackageLinks.forEach((link) => {
+  link.addEventListener("click", () => {
+    if (carePackageSelect) {
+      carePackageSelect.value = link.dataset.carePackage;
+    }
+  });
+});
+
 checkoutOptions.forEach((option) => {
   option.addEventListener("click", () => {
     selectPackage(option.dataset.checkoutPackage);
@@ -118,13 +128,14 @@ formButton?.addEventListener("click", () => {
   const formData = new FormData(form);
   const name = formData.get("name") || "nieuwe klant";
   const selectedPackage = formData.get("package") || "Business Launch";
+  const selectedCarePackage = formData.get("carePackage") || "Nog geen keuze";
 
   formButton.textContent = `Aanvraag klaar voor ${selectedPackage}`;
   formButton.setAttribute("aria-live", "polite");
 
   const subject = encodeURIComponent(`Aanvraag ${selectedPackage} - ${name}`);
   const body = encodeURIComponent(
-    `Naam: ${formData.get("name") || ""}\nE-mail: ${formData.get("email") || ""}\nPakket: ${selectedPackage}\n\nBericht:\n${formData.get("message") || ""}`
+    `Naam: ${formData.get("name") || ""}\nE-mail: ${formData.get("email") || ""}\nWebsitepakket: ${selectedPackage}\nHosting & onderhoud: ${selectedCarePackage}\n\nBericht:\n${formData.get("message") || ""}`
   );
 
   window.location.href = `mailto:maxlebelle@gmail.com?subject=${subject}&body=${body}`;

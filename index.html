@@ -413,13 +413,62 @@
             <a class="button secondary" href="#aanvraag" data-package="Premium Growth">Kies Growth</a>
           </article>
         </div>
-        <div class="maintenance-card">
-          <div>
-            <p>Doorlopend</p>
-            <h3>Onderhoud & hosting</h3>
-            <span>Vanaf €49 per maand ex. btw voor updates, back-ups, veiligheid en kleine aanpassingen.</span>
-          </div>
-          <a class="button secondary" href="#aanvraag" data-package="Onderhoud & hosting">Vraag onderhoud aan</a>
+        <div class="hosting-heading">
+          <p class="section-kicker">Doorlopend</p>
+          <h3>Hosting & onderhoud pakketten</h3>
+          <span>Kies een maandpakket voor snelheid, veiligheid, updates en doorontwikkeling.</span>
+        </div>
+        <div class="maintenance-grid">
+          <article class="maintenance-plan">
+            <p>Voor 90% van je klanten</p>
+            <h3>Care Basic</h3>
+            <strong>€19,95/mnd</strong>
+            <span>ex. btw</span>
+            <ul>
+              <li>Hosting</li>
+              <li>SSL certificaat</li>
+              <li>Domeinnaam koppelen</li>
+              <li>Maandelijkse back-up</li>
+              <li>Technische monitoring</li>
+              <li>Website online houden</li>
+              <li>Controleren of alles werkt</li>
+              <li>Back-up terugzetten als er iets fout gaat</li>
+            </ul>
+            <a class="button secondary" href="#aanvraag" data-care-package="Care Basic - €19,95/mnd">Kies Care Basic</a>
+          </article>
+          <article class="maintenance-plan featured-care">
+            <p>Meest gekozen</p>
+            <h3>Care Plus</h3>
+            <strong>€49/mnd</strong>
+            <span>ex. btw</span>
+            <ul>
+              <li>Alles uit Care Basic</li>
+              <li>15 minuten kleine wijzigingen per maand</li>
+              <li>Foto vervangen</li>
+              <li>Tekst aanpassen</li>
+              <li>Telefoonnummer wijzigen</li>
+              <li>Contactformulier aanpassen</li>
+              <li>Kleine verzoekjes afhandelen</li>
+              <li>Klant hoeft niemand anders te zoeken</li>
+            </ul>
+            <a class="button primary" href="#aanvraag" data-care-package="Care Plus - €49/mnd">Kies Care Plus</a>
+          </article>
+          <article class="maintenance-plan">
+            <p>Groei</p>
+            <h3>Care Growth</h3>
+            <strong>€99/mnd</strong>
+            <span>ex. btw</span>
+            <ul>
+              <li>Alles uit Care Plus</li>
+              <li>Google Bedrijfsprofiel controle</li>
+              <li>Maandelijkse website-check</li>
+              <li>Conversieadvies</li>
+              <li>Prioriteit bij support</li>
+              <li>Kijken of er verbeteringen mogelijk zijn</li>
+              <li>Meedenken over meer aanvragen</li>
+            </ul>
+            <a class="button secondary" href="#aanvraag" data-care-package="Care Growth - €99/mnd">Kies Care Growth</a>
+          </article>
         </div>
       </section>
 
@@ -534,7 +583,16 @@
               <option>Business Website</option>
               <option>Starter Site</option>
               <option>Premium Growth</option>
-              <option>Onderhoud & hosting</option>
+              <option>Ik wil advies</option>
+            </select>
+          </label>
+          <label>
+            Hosting & onderhoud
+            <select name="carePackage" id="care-package-select">
+              <option>Nog geen keuze</option>
+              <option>Care Basic - €19,95/mnd</option>
+              <option>Care Plus - €49/mnd</option>
+              <option>Care Growth - €99/mnd</option>
               <option>Ik wil advies</option>
             </select>
           </label>
