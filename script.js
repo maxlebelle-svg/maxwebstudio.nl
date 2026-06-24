@@ -6,6 +6,11 @@ const checkoutOptions = document.querySelectorAll("[data-checkout-package]");
 const checkoutTitle = document.querySelector("#checkout-title");
 const checkoutDeposit = document.querySelector("#checkout-deposit");
 const checkoutLink = document.querySelector("#checkout-link");
+const caseSlider = document.querySelector("[data-case-slider]");
+const caseSlides = document.querySelectorAll(".case-slide");
+const caseDots = document.querySelectorAll("[data-case-dot]");
+const casePrev = document.querySelector("[data-case-prev]");
+const caseNext = document.querySelector("[data-case-next]");
 
 const checkoutPackages = {
   "Starter Site": {
@@ -65,6 +70,48 @@ checkoutOptions.forEach((option) => {
   option.addEventListener("click", () => {
     selectPackage(option.dataset.checkoutPackage);
   });
+});
+
+let activeCase = 0;
+let touchStartX = 0;
+
+function showCase(index) {
+  if (!caseSlides.length) {
+    return;
+  }
+
+  activeCase = (index + caseSlides.length) % caseSlides.length;
+
+  caseSlides.forEach((slide, slideIndex) => {
+    slide.classList.toggle("active", slideIndex === activeCase);
+  });
+
+  caseDots.forEach((dot, dotIndex) => {
+    dot.classList.toggle("active", dotIndex === activeCase);
+  });
+}
+
+casePrev?.addEventListener("click", () => showCase(activeCase - 1));
+caseNext?.addEventListener("click", () => showCase(activeCase + 1));
+
+caseDots.forEach((dot) => {
+  dot.addEventListener("click", () => {
+    showCase(Number(dot.dataset.caseDot));
+  });
+});
+
+caseSlider?.addEventListener("touchstart", (event) => {
+  touchStartX = event.changedTouches[0].clientX;
+});
+
+caseSlider?.addEventListener("touchend", (event) => {
+  const distance = event.changedTouches[0].clientX - touchStartX;
+
+  if (Math.abs(distance) < 40) {
+    return;
+  }
+
+  showCase(distance < 0 ? activeCase + 1 : activeCase - 1);
 });
 
 formButton?.addEventListener("click", () => {
