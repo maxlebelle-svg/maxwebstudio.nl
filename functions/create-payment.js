@@ -1,4 +1,10 @@
-const { PRODUCTS, getAmounts, getBaseUrl, getMollieApiKey } = require("./mollie-products");
+const {
+  WEBSITE_PACKAGES,
+  CARE_PACKAGES,
+  getAmounts,
+  getBaseUrl,
+  getMollieApiKey,
+} = require("./mollie-products");
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -30,15 +36,12 @@ exports.handler = async (event) => {
     });
   }
 
-  const product = PRODUCTS[payload.productKey];
+  const websitePackage = WEBSITE_PACKAGES[payload.websitePackage];
+  const carePackage = CARE_PACKAGES[payload.carePackage];
 
-  if (!product) {
-    return jsonResponse(400, {
-      success: false,
-      error: "Ongeldig pakket gekozen.",
-    });
-  }
-
+  const depositAmounts = getAmounts(websitePackage.depositExVatCents);
+  const remainingAmounts = getAmounts(websitePackage.remainingExVatCents);
+  const careAmounts = getAmounts(carePackage.priceExVatCents);
   const apiKey = getMollieApiKey();
 
   if (!apiKey) {
@@ -49,20 +52,24 @@ exports.handler = async (event) => {
   }
 
   const baseUrl = getBaseUrl();
-  const amounts = getAmounts(product.amountExVatCents);
   const createdAt = new Date().toISOString();
 
   const metadata = {
-    productKey: payload.productKey,
-    productName: product.productName,
+    websitePackage: payload.websitePackage,
+    websitePackageName: websitePackage.websitePackageName,
+    depositAmountExVat: depositAmounts.amountExVat,
+    depositAmountInclVat: depositAmounts.amountInclVat,
+    remainingAmountExVat: remainingAmounts.amountExVat,
+    remainingAmountInclVat: remainingAmounts.amountInclVat,
+    carePackage: payload.carePackage,
+    carePackageName: carePackage.carePackageName,
+    carePriceExVat: careAmounts.amountExVat,
+    carePriceInclVat: careAmounts.amountInclVat,
     customerName: cleanText(payload.customerName),
     customerEmail: cleanText(payload.customerEmail).toLowerCase(),
     customerPhone: cleanText(payload.customerPhone),
     companyName: cleanText(payload.companyName || ""),
     notes: cleanText(payload.notes || ""),
-    amountExVat: amounts.amountExVat,
-    vatAmount: amounts.vatAmount,
-    amountInclVat: amounts.amountInclVat,
     createdAt,
   };
 
@@ -76,9 +83,9 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         amount: {
           currency: "EUR",
-          value: amounts.amountInclVat,
+          value: depositAmounts.amountInclVat,
         },
-        description: product.description,
+        description: `Max Webstudio - Aanbetaling ${websitePackage.websitePackageName}`,
         redirectUrl: `${baseUrl}/bedankt.html`,
         webhookUrl: `${baseUrl}/.netlify/functions/mollie-webhook`,
         metadata,
@@ -133,8 +140,12 @@ function validatePayload(payload) {
     return "Vul het formulier volledig in.";
   }
 
-  if (!payload.productKey || !PRODUCTS[payload.productKey]) {
-    return "Kies een geldig pakket.";
+  if (!payload.websitePackage || !WEBSITE_PACKAGES[payload.websitePackage]) {
+    return "Kies een geldig websitepakket.";
+  }
+
+  if (!payload.carePackage || !CARE_PACKAGES[payload.carePackage]) {
+    return "Kies een geldig onderhoudspakket.";
   }
 
   if (!cleanText(payload.customerName)) {

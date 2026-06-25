@@ -55,10 +55,12 @@ exports.handler = async (event) => {
     console.log("Mollie payment status", {
       paymentId: payment.id,
       status: safeStatus,
-      productKey: payment.metadata?.productKey,
-      productName: payment.metadata?.productName,
+      websitePackage: payment.metadata?.websitePackage,
+      websitePackageName: payment.metadata?.websitePackageName,
+      carePackage: payment.metadata?.carePackage,
+      carePackageName: payment.metadata?.carePackageName,
       customerEmail: payment.metadata?.customerEmail,
-      amountInclVat: payment.metadata?.amountInclVat,
+      depositAmountInclVat: payment.metadata?.depositAmountInclVat,
     });
 
     if (status === "paid") {

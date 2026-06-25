@@ -1,50 +1,38 @@
 const VAT_RATE = 21;
 
-const PRODUCTS = {
-  starter_site_full: {
-    productName: "Starter Site volledig betalen",
-    description: "Max Webstudio - Starter Site volledig betalen",
-    amountExVatCents: 49500,
+const WEBSITE_PACKAGES = {
+  starter_site: {
+    websitePackageName: "Starter Site",
+    priceExVatCents: 49500,
+    depositExVatCents: 15000,
+    remainingExVatCents: 34500,
   },
-  business_website_full: {
-    productName: "Business Website volledig betalen",
-    description: "Max Webstudio - Business Website volledig betalen",
-    amountExVatCents: 99500,
+  business_website: {
+    websitePackageName: "Business Website",
+    priceExVatCents: 99500,
+    depositExVatCents: 30000,
+    remainingExVatCents: 69500,
   },
-  premium_growth_full: {
-    productName: "Premium Growth volledig betalen",
-    description: "Max Webstudio - Premium Growth volledig betalen",
-    amountExVatCents: 175000,
+  premium_growth: {
+    websitePackageName: "Premium Growth",
+    priceExVatCents: 175000,
+    depositExVatCents: 50000,
+    remainingExVatCents: 125000,
   },
-  starter_site_deposit: {
-    productName: "Starter Site aanbetaling",
-    description: "Max Webstudio - Starter Site aanbetaling",
-    amountExVatCents: 15000,
-  },
-  business_website_deposit: {
-    productName: "Business Website aanbetaling",
-    description: "Max Webstudio - Business Website aanbetaling",
-    amountExVatCents: 30000,
-  },
-  premium_growth_deposit: {
-    productName: "Premium Growth aanbetaling",
-    description: "Max Webstudio - Premium Growth aanbetaling",
-    amountExVatCents: 50000,
-  },
+};
+
+const CARE_PACKAGES = {
   care_basic: {
-    productName: "Care Basic",
-    description: "Max Webstudio - Care Basic",
-    amountExVatCents: 1995,
+    carePackageName: "Care Basic",
+    priceExVatCents: 1995,
   },
   care_plus: {
-    productName: "Care Plus",
-    description: "Max Webstudio - Care Plus",
-    amountExVatCents: 4900,
+    carePackageName: "Care Plus",
+    priceExVatCents: 4900,
   },
   care_growth: {
-    productName: "Care Growth",
-    description: "Max Webstudio - Care Growth",
-    amountExVatCents: 9900,
+    carePackageName: "Care Growth",
+    priceExVatCents: 9900,
   },
 };
 
@@ -73,7 +61,8 @@ function getBaseUrl() {
 }
 
 module.exports = {
-  PRODUCTS,
+  WEBSITE_PACKAGES,
+  CARE_PACKAGES,
   getAmounts,
   getBaseUrl,
   getMollieApiKey,

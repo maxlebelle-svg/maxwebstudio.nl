@@ -23,15 +23,15 @@ let calendlyLoadPromise;
 const checkoutPackages = {
   "Starter Site": {
     deposit: "€150",
-    paymentUrl: "betalen.html?product=starter_site_deposit",
+    paymentUrl: "betalen.html?website=starter_site",
   },
   "Business Website": {
     deposit: "€300",
-    paymentUrl: "betalen.html?product=business_website_deposit",
+    paymentUrl: "betalen.html?website=business_website",
   },
   "Premium Growth": {
     deposit: "€500",
-    paymentUrl: "betalen.html?product=premium_growth_deposit",
+    paymentUrl: "betalen.html?website=premium_growth",
   },
 };
 
