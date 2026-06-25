@@ -22,6 +22,10 @@ const WEBSITE_PACKAGES = {
 };
 
 const CARE_PACKAGES = {
+  no_care: {
+    carePackageName: "Geen onderhoud",
+    priceExVatCents: 0,
+  },
   care_basic: {
     carePackageName: "Care Basic",
     priceExVatCents: 1995,

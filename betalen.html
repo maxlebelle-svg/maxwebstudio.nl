@@ -70,11 +70,18 @@
             <section class="config-panel">
               <div class="payment-form-heading">
                 <p class="section-kicker">Stap 2</p>
-                <h2>Kies hosting & onderhoud</h2>
-                <p>Onderhoud start na oplevering. Je ontvangt hiervoor apart bevestiging.</p>
+                <h2>Onderhoud & hosting — optioneel</h2>
+                <p>Je website blijft veilig, snel en up-to-date. Je kunt dit ook later activeren.</p>
               </div>
 
               <div class="choice-grid care-choice-grid" role="radiogroup" aria-label="Kies onderhoudspakket">
+                <label class="choice-card compact-choice">
+                  <input type="radio" name="carePackage" value="no_care" />
+                  <span class="choice-eyebrow">Later kiezen</span>
+                  <strong>Geen onderhoud</strong>
+                  <em>€0 p/m</em>
+                  <small>Je kiest nu alleen je websitepakket en aanbetaling.</small>
+                </label>
                 <label class="choice-card">
                   <input type="radio" name="carePackage" value="care_basic" />
                   <span class="choice-eyebrow">Basis</span>
@@ -146,18 +153,45 @@
                 <dd id="summary-website">Business Website</dd>
               </div>
               <div>
+                <dt>Inbegrepen</dt>
+                <dd><ul class="summary-included" id="summary-included"></ul></dd>
+              </div>
+              <div>
                 <dt>Restbedrag na oplevering</dt>
                 <dd><span id="remaining-ex">€695,00 ex. btw</span><small id="remaining-incl">€840,95 incl. btw</small></dd>
               </div>
               <div>
                 <dt>Onderhoud per maand</dt>
-                <dd><span id="care-ex">€49,00 ex. btw</span><small id="care-incl">€59,29 incl. btw</small></dd>
+                <dd><span id="summary-care">Nog niet gekozen</span><small id="care-ex">€0,00 ex. btw</small><small id="care-incl">€0,00 incl. btw</small></dd>
               </div>
             </dl>
             <p class="summary-note">Onderhoud start na oplevering. Je ontvangt hiervoor apart bevestiging.</p>
             <p class="summary-note">Restbedrag wordt later via aparte betaallink of factuur voldaan.</p>
             <button class="button primary payment-submit" type="submit">Betaal aanbetaling via Mollie</button>
+            <div class="payment-trust" aria-label="Betaalmethoden en zekerheid">
+              <span>Veilig betalen via Mollie</span>
+              <span>iDEAL</span>
+              <span>Apple Pay</span>
+              <span>Visa</span>
+              <span>Mastercard</span>
+              <span>Bancontact</span>
+              <span>Klarna</span>
+              <span>SSL beveiligd</span>
+              <span>Geen betaalgegevens opgeslagen op onze website</span>
+            </div>
+            <p class="payment-trust-note">Je betaling wordt veilig verwerkt door Mollie. Je betaalgegevens worden nooit opgeslagen door Max Webstudio.</p>
             <p class="payment-message" id="payment-message" role="status" aria-live="polite"></p>
+            <div class="why-checkout">
+              <h3>Waarom klanten voor Max Webstudio kiezen</h3>
+              <ul>
+                <li>Binnen 14 dagen online</li>
+                <li>Persoonlijk contact</li>
+                <li>Geen verborgen kosten</li>
+                <li>Heldere planning</li>
+                <li>Professionele factuur</li>
+                <li>Veilig betalen via Mollie</li>
+              </ul>
+            </div>
           </aside>
         </form>
       </section>
@@ -171,6 +205,7 @@
           depositIncl: "€181,50 incl. btw",
           remainingEx: "€345,00 ex. btw",
           remainingIncl: "€417,45 incl. btw",
+          included: ["One-page website", "Contactformulier", "Basis SEO", "Mobiel geoptimaliseerd"],
         },
         business_website: {
           name: "Business Website",
@@ -178,6 +213,7 @@
           depositIncl: "€363,00 incl. btw",
           remainingEx: "€695,00 ex. btw",
           remainingIncl: "€840,95 incl. btw",
+          included: ["Tot 5 professionele pagina's", "Portfolio of dienstenpagina's", "Aanvraagflow", "SEO en conversiecopy"],
         },
         premium_growth: {
           name: "Premium Growth",
@@ -185,10 +221,16 @@
           depositIncl: "€605,00 incl. btw",
           remainingEx: "€1.250,00 ex. btw",
           remainingIncl: "€1.512,50 incl. btw",
+          included: ["Uitgebreide website", "Strategie en funnels", "Analytics dashboard", "Onderhoudsplan klaarzetten"],
         },
       };
 
       const carePackages = {
+        no_care: {
+          name: "Nog niet gekozen",
+          ex: "€0,00 ex. btw",
+          incl: "€0,00 incl. btw",
+        },
         care_basic: {
           name: "Care Basic",
           ex: "€19,95 ex. btw",
@@ -210,10 +252,12 @@
       const message = document.querySelector("#payment-message");
       const submitButton = document.querySelector(".payment-submit");
       const summaryWebsite = document.querySelector("#summary-website");
+      const summaryIncluded = document.querySelector("#summary-included");
       const depositIncl = document.querySelector("#deposit-incl");
       const depositEx = document.querySelector("#deposit-ex");
       const remainingEx = document.querySelector("#remaining-ex");
       const remainingIncl = document.querySelector("#remaining-incl");
+      const summaryCare = document.querySelector("#summary-care");
       const careEx = document.querySelector("#care-ex");
       const careIncl = document.querySelector("#care-incl");
       const websiteInputs = document.querySelectorAll('input[name="websitePackage"]');
@@ -256,13 +300,15 @@
         const websiteKey = new FormData(form).get("websitePackage");
         const careKey = new FormData(form).get("carePackage");
         const website = websitePackages[websiteKey] || websitePackages.business_website;
-        const care = carePackages[careKey] || carePackages.care_plus;
+        const care = carePackages[careKey] || carePackages.no_care;
 
         summaryWebsite.textContent = website.name;
+        summaryIncluded.innerHTML = website.included.map((item) => `<li>${item}</li>`).join("");
         depositIncl.textContent = website.depositIncl;
         depositEx.textContent = website.depositEx;
         remainingEx.textContent = website.remainingEx;
         remainingIncl.textContent = website.remainingIncl;
+        summaryCare.textContent = care.name;
         careEx.textContent = care.ex;
         careIncl.textContent = care.incl;
         updateSelectedCards();
@@ -273,10 +319,10 @@
         : legacyWebsiteMap[legacyProduct] || "business_website";
       const initialCare = carePackages[requestedCare]
         ? requestedCare
-        : legacyCareMap[legacyProduct] || "care_plus";
+        : legacyCareMap[legacyProduct] || "no_care";
 
       selectRadio("websitePackage", initialWebsite, "business_website");
-      selectRadio("carePackage", initialCare, "care_plus");
+      selectRadio("carePackage", initialCare, "no_care");
       updateSummary();
 
       if (requestedWebsite || requestedCare || legacyProduct) {
