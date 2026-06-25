@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Betaal veilig via Mollie | Max Webstudio</title>
+    <meta name="description" content="Betaal je Max Webstudio pakket, aanbetaling of hosting veilig via Mollie." />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="Max Webstudio home">
+        <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true"><rect x="6" y="6" width="68" height="68" rx="18"></rect><path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path><path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path></svg>
+        <span>Max Webstudio</span>
+      </a>
+      <nav class="main-nav" aria-label="Hoofdnavigatie">
+        <a href="index.html#prijzen">Pakketten</a>
+        <a href="werkwijze.html">Werkwijze</a>
+        <a href="index.html#aanvraag">Contact</a>
+      </nav>
+      <a class="header-cta" href="index.html#aanvraag">Hulp nodig?</a>
+    </header>
+
+    <main>
+      <section class="page-hero payment-hero">
+        <p class="eyebrow">Veilig betalen</p>
+        <h1>Betaal veilig via Mollie</h1>
+        <p>Kies je pakket of aanbetaling en rond veilig af via iDEAL, Apple Pay of creditcard.</p>
+      </section>
+
+      <section class="content-page payment-page" id="betaalformulier">
+        <div class="payment-layout">
+          <form class="payment-form" id="payment-form">
+            <div class="payment-form-heading">
+              <p class="section-kicker">Checkout</p>
+              <h2>Start je betaling</h2>
+              <p>Alle bedragen worden veilig op de server gecontroleerd en inclusief 21% btw afgerekend via Mollie.</p>
+            </div>
+
+            <label>
+              Pakket of betaling
+              <select name="productKey" id="payment-product" required>
+                <option value="starter_site_full">Starter Site volledig betalen — €495 ex. btw</option>
+                <option value="starter_site_deposit">Starter Site aanbetaling — €150 ex. btw</option>
+                <option value="business_website_full">Business Website volledig betalen — €995 ex. btw</option>
+                <option value="business_website_deposit">Business Website aanbetaling — €300 ex. btw</option>
+                <option value="premium_growth_full">Premium Growth volledig betalen — €1.750 ex. btw</option>
+                <option value="premium_growth_deposit">Premium Growth aanbetaling — €500 ex. btw</option>
+                <option value="care_basic">Care Basic — €19,95 p/m ex. btw</option>
+                <option value="care_plus">Care Plus — €49 p/m ex. btw</option>
+                <option value="care_growth">Care Growth — €99 p/m ex. btw</option>
+              </select>
+            </label>
+
+            <div class="payment-amount-card" aria-live="polite">
+              <span>Te betalen via Mollie</span>
+              <strong id="payment-total">€363,00 incl. 21% btw</strong>
+              <small id="payment-exvat">€300,00 ex. btw</small>
+            </div>
+
+            <div class="payment-fields">
+              <label>
+                Naam
+                <input type="text" name="customerName" autocomplete="name" placeholder="Jouw naam" required />
+              </label>
+              <label>
+                E-mailadres
+                <input type="email" name="customerEmail" autocomplete="email" placeholder="naam@bedrijf.nl" required />
+              </label>
+              <label>
+                Telefoonnummer
+                <input type="tel" name="customerPhone" autocomplete="tel" placeholder="06-16217771" required />
+              </label>
+              <label>
+                Bedrijfsnaam <span>optioneel</span>
+                <input type="text" name="companyName" autocomplete="organization" placeholder="Bedrijfsnaam" />
+              </label>
+            </div>
+
+            <label>
+              Opmerkingen <span>optioneel</span>
+              <textarea name="notes" rows="4" placeholder="Bijvoorbeeld: voorkeur voor startdatum, pakket of korte vraag."></textarea>
+            </label>
+
+            <button class="button primary payment-submit" type="submit">Betaal veilig via Mollie</button>
+            <p class="payment-message" id="payment-message" role="status" aria-live="polite"></p>
+          </form>
+
+          <aside class="payment-assurance">
+            <p class="section-kicker">Zekerheid</p>
+            <h2>Rustig geregeld, professioneel verwerkt.</h2>
+            <ul>
+              <li>Bedrag wordt server-side bepaald</li>
+              <li>Veilig betalen via Mollie</li>
+              <li>Geen API keys in de website</li>
+              <li>Automatische statuscontrole via webhook</li>
+            </ul>
+            <div class="contact-card light">
+              <strong>Twijfel je welk pakket past?</strong>
+              <p>Liever eerst kort schakelen? Stuur gerust een WhatsApp-bericht.</p>
+              <div class="contact-actions">
+                <a class="button secondary contact-button" href="https://wa.me/31616217771" target="_blank" rel="noopener">WhatsApp Max</a>
+                <a class="button secondary contact-button" href="tel:+31616217771">Bel direct</a>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const products = {
+        starter_site_full: { exVat: "€495,00", inclVat: "€598,95 incl. 21% btw" },
+        starter_site_deposit: { exVat: "€150,00", inclVat: "€181,50 incl. 21% btw" },
+        business_website_full: { exVat: "€995,00", inclVat: "€1.203,95 incl. 21% btw" },
+        business_website_deposit: { exVat: "€300,00", inclVat: "€363,00 incl. 21% btw" },
+        premium_growth_full: { exVat: "€1.750,00", inclVat: "€2.117,50 incl. 21% btw" },
+        premium_growth_deposit: { exVat: "€500,00", inclVat: "€605,00 incl. 21% btw" },
+        care_basic: { exVat: "€19,95", inclVat: "€24,14 incl. 21% btw" },
+        care_plus: { exVat: "€49,00", inclVat: "€59,29 incl. 21% btw" },
+        care_growth: { exVat: "€99,00", inclVat: "€119,79 incl. 21% btw" },
+      };
+
+      const form = document.querySelector("#payment-form");
+      const productSelect = document.querySelector("#payment-product");
+      const total = document.querySelector("#payment-total");
+      const exVat = document.querySelector("#payment-exvat");
+      const message = document.querySelector("#payment-message");
+      const submitButton = document.querySelector(".payment-submit");
+
+      function updateAmount() {
+        const product = products[productSelect.value] || products.business_website_deposit;
+        total.textContent = product.inclVat;
+        exVat.textContent = `${product.exVat} ex. btw`;
+      }
+
+      const requestedProduct = new URLSearchParams(window.location.search).get("product");
+
+      if (requestedProduct && products[requestedProduct]) {
+        productSelect.value = requestedProduct;
+        requestAnimationFrame(() => {
+          form.scrollIntoView({ behavior: "smooth", block: "start" });
+          productSelect.focus({ preventScroll: true });
+        });
+      } else {
+        productSelect.value = "business_website_deposit";
+      }
+
+      updateAmount();
+      productSelect.addEventListener("change", updateAmount);
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        message.textContent = "";
+        submitButton.disabled = true;
+        submitButton.textContent = "Betaling wordt gestart...";
+
+        const formData = new FormData(form);
+        const payload = {
+          productKey: formData.get("productKey"),
+          customerName: formData.get("customerName"),
+          customerEmail: formData.get("customerEmail"),
+          customerPhone: formData.get("customerPhone"),
+          companyName: formData.get("companyName"),
+          notes: formData.get("notes"),
+        };
+
+        try {
+          const response = await fetch("/.netlify/functions/create-payment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok || !data.success || !data.checkoutUrl) {
+            throw new Error(data.error || "Betaling kon niet gestart worden.");
+          }
+
+          window.location.href = data.checkoutUrl;
+        } catch (error) {
+          message.textContent = error.message || "Er ging iets mis. Probeer het opnieuw.";
+          submitButton.disabled = false;
+          submitButton.textContent = "Betaal veilig via Mollie";
+        }
+      });
+    </script>
+  </body>
+</html>

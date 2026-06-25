@@ -1751,6 +1751,16 @@ h3 {
   color: rgba(255, 255, 255, 0.78);
 }
 
+.contact-card.light {
+  border-color: var(--line);
+  background: var(--white);
+  box-shadow: 0 16px 46px rgba(6, 18, 31, 0.06);
+}
+
+.contact-card.light p {
+  color: var(--muted);
+}
+
 .lead-form {
   display: grid;
   gap: 16px;
@@ -1810,6 +1820,168 @@ h3 {
   margin: 0;
   font-size: 13px;
   text-align: center;
+}
+
+.payment-hero {
+  background:
+    radial-gradient(circle at 82% 16%, rgba(25, 194, 255, 0.18), transparent 30%),
+    linear-gradient(180deg, var(--white), var(--paper));
+}
+
+.payment-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.42fr);
+  gap: clamp(24px, 4vw, 54px);
+  align-items: start;
+}
+
+.payment-form,
+.payment-assurance {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+  box-shadow: 0 16px 46px rgba(6, 18, 31, 0.06);
+}
+
+.payment-form {
+  display: grid;
+  gap: 18px;
+  padding: clamp(24px, 4vw, 42px);
+}
+
+.payment-form-heading p:not(.section-kicker),
+.payment-assurance p,
+.payment-message {
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.payment-form label {
+  display: grid;
+  gap: 8px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.payment-form label span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.payment-form input,
+.payment-form select,
+.payment-form textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px 15px;
+  color: var(--ink);
+  font: inherit;
+  background: #fbfcfe;
+}
+
+.payment-form input:focus,
+.payment-form select:focus,
+.payment-form textarea:focus {
+  border-color: rgba(21, 94, 239, 0.42);
+  outline: 3px solid rgba(25, 194, 255, 0.18);
+}
+
+.payment-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.payment-amount-card {
+  display: grid;
+  gap: 6px;
+  padding: 20px;
+  border: 1px solid rgba(21, 94, 239, 0.16);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(25, 194, 255, 0.14), transparent 30%),
+    var(--paper);
+}
+
+.payment-amount-card span {
+  color: var(--blue);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.payment-amount-card strong {
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1;
+}
+
+.payment-amount-card small {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.payment-submit:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.payment-message:not(:empty) {
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 92, 92, 0.28);
+  border-radius: 8px;
+  color: #b42318;
+  background: rgba(255, 92, 92, 0.08);
+  font-weight: 800;
+}
+
+.payment-assurance {
+  position: sticky;
+  top: 108px;
+  display: grid;
+  gap: 18px;
+  padding: 28px;
+}
+
+.payment-assurance ul {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.payment-assurance li {
+  position: relative;
+  padding-left: 24px;
+  color: var(--muted);
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.payment-assurance li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--green);
+  font-weight: 900;
+}
+
+.status-hero {
+  min-height: calc(100vh - 78px);
+  display: grid;
+  align-content: center;
+}
+
+.status-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
 }
 
 .final-cta {
@@ -2072,7 +2244,8 @@ h3 {
   .hero,
   .contact,
   .checkout-panel,
-  .premium-call {
+  .premium-call,
+  .payment-layout {
     grid-template-columns: 1fr;
   }
 
@@ -2113,6 +2286,10 @@ h3 {
   .side-card {
     position: static;
   }
+
+  .payment-assurance {
+    position: static;
+  }
 }
 
 @media (max-width: 640px) {
@@ -2147,6 +2324,25 @@ h3 {
   .credibility,
   .faq-grid {
     grid-template-columns: 1fr;
+  }
+
+  .payment-fields,
+  .status-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-form,
+  .payment-assurance {
+    padding: 22px;
+  }
+
+  .status-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .status-actions .button {
+    width: 100%;
   }
 
   .hero-actions {

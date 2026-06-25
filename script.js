@@ -23,15 +23,15 @@ let calendlyLoadPromise;
 const checkoutPackages = {
   "Starter Site": {
     deposit: "€150",
-    paymentUrl: "",
+    paymentUrl: "betalen.html?product=starter_site_deposit",
   },
   "Business Website": {
     deposit: "€300",
-    paymentUrl: "",
+    paymentUrl: "betalen.html?product=business_website_deposit",
   },
   "Premium Growth": {
     deposit: "€500",
-    paymentUrl: "",
+    paymentUrl: "betalen.html?product=premium_growth_deposit",
   },
 };
 
@@ -53,19 +53,11 @@ function selectPackage(packageName) {
   checkoutTitle.textContent = packageName;
   checkoutDeposit.textContent = checkoutPackage.deposit;
 
-  if (checkoutPackage.paymentUrl) {
-    checkoutLink.href = checkoutPackage.paymentUrl;
-    checkoutLink.textContent = `Betaal ${checkoutPackage.deposit} via Mollie`;
-    checkoutLink.classList.remove("disabled-payment");
-    checkoutLink.target = "_blank";
-    checkoutLink.rel = "noopener";
-  } else {
-    checkoutLink.href = "#aanvraag";
-    checkoutLink.textContent = "Betaallink volgt";
-    checkoutLink.classList.add("disabled-payment");
-    checkoutLink.removeAttribute("target");
-    checkoutLink.removeAttribute("rel");
-  }
+  checkoutLink.href = checkoutPackage.paymentUrl;
+  checkoutLink.textContent = `Betaal ${checkoutPackage.deposit} via Mollie`;
+  checkoutLink.classList.remove("disabled-payment");
+  checkoutLink.removeAttribute("target");
+  checkoutLink.removeAttribute("rel");
 }
 
 packageLinks.forEach((link) => {
