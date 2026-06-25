@@ -14,6 +14,11 @@ const caseSlides = document.querySelectorAll(".case-slide");
 const caseDots = document.querySelectorAll("[data-case-dot]");
 const casePrev = document.querySelector("[data-case-prev]");
 const caseNext = document.querySelector("[data-case-next]");
+const calendlyTriggers = document.querySelectorAll("[data-calendly-open]");
+const revealItems = document.querySelectorAll(".reveal-on-scroll");
+
+const calendlyUrl = "https://calendly.com/maxwebstudio/gratis-kennismakingsgesprek";
+let calendlyLoadPromise;
 
 const checkoutPackages = {
   "Starter Site": {
@@ -124,6 +129,71 @@ caseSlider?.addEventListener("touchend", (event) => {
 
   showCase(distance < 0 ? activeCase + 1 : activeCase - 1);
 });
+
+function loadCalendlyWidget() {
+  if (window.Calendly) {
+    return Promise.resolve();
+  }
+
+  if (calendlyLoadPromise) {
+    return calendlyLoadPromise;
+  }
+
+  calendlyLoadPromise = new Promise((resolve, reject) => {
+    if (!document.querySelector("[data-calendly-css]")) {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "https://assets.calendly.com/assets/external/widget.css";
+      link.dataset.calendlyCss = "true";
+      document.head.appendChild(link);
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://assets.calendly.com/assets/external/widget.js";
+    script.async = true;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.body.appendChild(script);
+  });
+
+  return calendlyLoadPromise;
+}
+
+async function openCalendlyPopup() {
+  try {
+    await loadCalendlyWidget();
+    window.Calendly.initPopupWidget({ url: calendlyUrl });
+  } catch (error) {
+    window.open(calendlyUrl, "_blank", "noopener");
+  }
+}
+
+calendlyTriggers.forEach((trigger) => {
+  trigger.addEventListener("click", (event) => {
+    event.preventDefault();
+    openCalendlyPopup();
+  });
+});
+
+if ("IntersectionObserver" in window) {
+  const revealObserver = new IntersectionObserver(
+    (entries, observer) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) {
+          return;
+        }
+
+        entry.target.classList.add("is-visible");
+        observer.unobserve(entry.target);
+      });
+    },
+    { threshold: 0.18 }
+  );
+
+  revealItems.forEach((item) => revealObserver.observe(item));
+} else {
+  revealItems.forEach((item) => item.classList.add("is-visible"));
+}
 
 formButton?.addEventListener("click", () => {
   if (termsAccepted && !termsAccepted.checked) {
