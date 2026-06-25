@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Checkout configureren | Max Webstudio</title>
+    <meta name="description" content="Configureer je Max Webstudio websitepakket, onderhoudspakket en betaal veilig de aanbetaling via Mollie." />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="Max Webstudio home">
+        <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true"><rect x="6" y="6" width="68" height="68" rx="18"></rect><path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path><path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path></svg>
+        <span>Max Webstudio</span>
+      </a>
+      <nav class="main-nav" aria-label="Hoofdnavigatie">
+        <a href="index.html#prijzen">Pakketten</a>
+        <a href="werkwijze.html">Werkwijze</a>
+        <a href="index.html#aanvraag">Contact</a>
+      </nav>
+      <a class="header-cta" href="index.html#aanvraag">Hulp nodig?</a>
+    </header>
+
+    <main>
+      <section class="page-hero payment-hero">
+        <p class="eyebrow">Veilig betalen</p>
+        <h1>Configureer je website en betaal veilig via Mollie.</h1>
+        <p>Kies je websitepakket, selecteer onderhoud voor na oplevering en betaal vandaag alleen de aanbetaling.</p>
+      </section>
+
+      <section class="content-page payment-page" id="betaalformulier">
+        <form class="payment-configurator" id="payment-form">
+          <div class="payment-config-main">
+            <section class="config-panel">
+              <div class="payment-form-heading">
+                <p class="section-kicker">Stap 1</p>
+                <h2>Kies je websitepakket</h2>
+                <p>De aanbetaling start het project. Het restbedrag betaal je later via aparte betaallink of factuur.</p>
+              </div>
+
+              <div class="choice-grid website-choice-grid" role="radiogroup" aria-label="Kies websitepakket">
+                <label class="choice-card">
+                  <input type="radio" name="websitePackage" value="starter_site" />
+                  <span class="choice-eyebrow">Starter</span>
+                  <strong>Starter Site</strong>
+                  <em>€495 ex. btw</em>
+                  <small>Aanbetaling €150 ex. btw · restbedrag €345 ex. btw</small>
+                </label>
+                <label class="choice-card featured-choice">
+                  <input type="radio" name="websitePackage" value="business_website" />
+                  <span class="choice-eyebrow">Meest gekozen</span>
+                  <strong>Business Website</strong>
+                  <em>€995 ex. btw</em>
+                  <small>Aanbetaling €300 ex. btw · restbedrag €695 ex. btw</small>
+                </label>
+                <label class="choice-card">
+                  <input type="radio" name="websitePackage" value="premium_growth" />
+                  <span class="choice-eyebrow">Groei</span>
+                  <strong>Premium Growth</strong>
+                  <em>€1.750 ex. btw</em>
+                  <small>Aanbetaling €500 ex. btw · restbedrag €1.250 ex. btw</small>
+                </label>
+              </div>
+            </section>
+
+            <section class="config-panel">
+              <div class="payment-form-heading">
+                <p class="section-kicker">Stap 2</p>
+                <h2>Onderhoud & hosting — optioneel</h2>
+                <p>Je website blijft veilig, snel en up-to-date. Je kunt dit ook later activeren.</p>
+              </div>
+
+              <div class="choice-grid care-choice-grid" role="radiogroup" aria-label="Kies onderhoudspakket">
+                <label class="choice-card compact-choice">
+                  <input type="radio" name="carePackage" value="no_care" />
+                  <span class="choice-eyebrow">Later kiezen</span>
+                  <strong>Geen onderhoud</strong>
+                  <em>€0 p/m</em>
+                  <small>Je kiest nu alleen je websitepakket en aanbetaling.</small>
+                </label>
+                <label class="choice-card">
+                  <input type="radio" name="carePackage" value="care_basic" />
+                  <span class="choice-eyebrow">Basis</span>
+                  <strong>Care Basic</strong>
+                  <em>€19,95 p/m ex. btw</em>
+                  <small>Hosting, SSL, back-up en technische monitoring.</small>
+                </label>
+                <label class="choice-card featured-choice">
+                  <input type="radio" name="carePackage" value="care_plus" />
+                  <span class="choice-eyebrow">Populair</span>
+                  <strong>Care Plus</strong>
+                  <em>€49 p/m ex. btw</em>
+                  <small>Alles uit Basic + 15 minuten kleine wijzigingen per maand.</small>
+                </label>
+                <label class="choice-card">
+                  <input type="radio" name="carePackage" value="care_growth" />
+                  <span class="choice-eyebrow">Groei</span>
+                  <strong>Care Growth</strong>
+                  <em>€99 p/m ex. btw</em>
+                  <small>Alles uit Plus + maandelijkse check en conversieadvies.</small>
+                </label>
+              </div>
+            </section>
+
+            <section class="config-panel">
+              <div class="payment-form-heading">
+                <p class="section-kicker">Stap 3</p>
+                <h2>Jouw gegevens</h2>
+                <p>Deze gegevens worden meegestuurd naar Mollie als metadata, zodat Max Webstudio je betaling goed kan opvolgen.</p>
+              </div>
+
+              <div class="payment-fields">
+                <label>
+                  Naam
+                  <input type="text" name="customerName" autocomplete="name" placeholder="Jouw naam" required />
+                </label>
+                <label>
+                  E-mailadres
+                  <input type="email" name="customerEmail" autocomplete="email" placeholder="naam@bedrijf.nl" required />
+                </label>
+                <label>
+                  Telefoonnummer
+                  <input type="tel" name="customerPhone" autocomplete="tel" placeholder="06-16217771" required />
+                </label>
+                <label>
+                  Bedrijfsnaam <span>optioneel</span>
+                  <input type="text" name="companyName" autocomplete="organization" placeholder="Bedrijfsnaam" />
+                </label>
+              </div>
+
+              <label>
+                Opmerkingen <span>optioneel</span>
+                <textarea name="notes" rows="4" placeholder="Bijvoorbeeld: gewenste startdatum, extra wensen of korte vraag."></textarea>
+              </label>
+            </section>
+          </div>
+
+          <aside class="checkout-summary-card" aria-label="Samenvatting">
+            <p class="section-kicker">Samenvatting</p>
+            <h2>Vandaag te betalen</h2>
+            <div class="summary-total">
+              <span>Aanbetaling vandaag</span>
+              <strong id="deposit-incl">€363,00 incl. btw</strong>
+              <small id="deposit-ex">€300,00 ex. btw</small>
+            </div>
+            <dl class="summary-lines">
+              <div>
+                <dt>Websitepakket</dt>
+                <dd id="summary-website">Business Website</dd>
+              </div>
+              <div>
+                <dt>Inbegrepen</dt>
+                <dd><ul class="summary-included" id="summary-included"></ul></dd>
+              </div>
+              <div>
+                <dt>Restbedrag na oplevering</dt>
+                <dd><span id="remaining-ex">€695,00 ex. btw</span><small id="remaining-incl">€840,95 incl. btw</small></dd>
+              </div>
+              <div>
+                <dt>Onderhoud per maand</dt>
+                <dd><span id="summary-care">Nog niet gekozen</span><small id="care-ex">€0,00 ex. btw</small><small id="care-incl">€0,00 incl. btw</small></dd>
+              </div>
+            </dl>
+            <p class="summary-note">Onderhoud start na oplevering. Je ontvangt hiervoor apart bevestiging.</p>
+            <p class="summary-note">Restbedrag wordt later via aparte betaallink of factuur voldaan.</p>
+            <button class="button primary payment-submit" type="submit">Betaal aanbetaling via Mollie</button>
+            <div class="payment-trust" aria-label="Betaalmethoden en zekerheid">
+              <span>Veilig betalen via Mollie</span>
+              <span>iDEAL</span>
+              <span>Apple Pay</span>
+              <span>Visa</span>
+              <span>Mastercard</span>
+              <span>Bancontact</span>
+              <span>Klarna</span>
+              <span>SSL beveiligd</span>
+              <span>Geen betaalgegevens opgeslagen op onze website</span>
+            </div>
+            <p class="payment-trust-note">Je betaling wordt veilig verwerkt door Mollie. Je betaalgegevens worden nooit opgeslagen door Max Webstudio.</p>
+            <p class="payment-message" id="payment-message" role="status" aria-live="polite"></p>
+            <div class="why-checkout">
+              <h3>Waarom klanten voor Max Webstudio kiezen</h3>
+              <ul>
+                <li>Binnen 14 dagen online</li>
+                <li>Persoonlijk contact</li>
+                <li>Geen verborgen kosten</li>
+                <li>Heldere planning</li>
+                <li>Professionele factuur</li>
+                <li>Veilig betalen via Mollie</li>
+              </ul>
+            </div>
+          </aside>
+        </form>
+      </section>
+    </main>
+
+    <script>
+      const websitePackages = {
+        starter_site: {
+          name: "Starter Site",
+          depositEx: "€150,00 ex. btw",
+          depositIncl: "€181,50 incl. btw",
+          remainingEx: "€345,00 ex. btw",
+          remainingIncl: "€417,45 incl. btw",
+          included: ["One-page website", "Contactformulier", "Basis SEO", "Mobiel geoptimaliseerd"],
+        },
+        business_website: {
+          name: "Business Website",
+          depositEx: "€300,00 ex. btw",
+          depositIncl: "€363,00 incl. btw",
+          remainingEx: "€695,00 ex. btw",
+          remainingIncl: "€840,95 incl. btw",
+          included: ["Tot 5 professionele pagina's", "Portfolio of dienstenpagina's", "Aanvraagflow", "SEO en conversiecopy"],
+        },
+        premium_growth: {
+          name: "Premium Growth",
+          depositEx: "€500,00 ex. btw",
+          depositIncl: "€605,00 incl. btw",
+          remainingEx: "€1.250,00 ex. btw",
+          remainingIncl: "€1.512,50 incl. btw",
+          included: ["Uitgebreide website", "Strategie en funnels", "Analytics dashboard", "Onderhoudsplan klaarzetten"],
+        },
+      };
+
+      const carePackages = {
+        no_care: {
+          name: "Nog niet gekozen",
+          ex: "€0,00 ex. btw",
+          incl: "€0,00 incl. btw",
+        },
+        care_basic: {
+          name: "Care Basic",
+          ex: "€19,95 ex. btw",
+          incl: "€24,14 incl. btw",
+        },
+        care_plus: {
+          name: "Care Plus",
+          ex: "€49,00 ex. btw",
+          incl: "€59,29 incl. btw",
+        },
+        care_growth: {
+          name: "Care Growth",
+          ex: "€99,00 ex. btw",
+          incl: "€119,79 incl. btw",
+        },
+      };
+
+      const form = document.querySelector("#payment-form");
+      const message = document.querySelector("#payment-message");
+      const submitButton = document.querySelector(".payment-submit");
+      const summaryWebsite = document.querySelector("#summary-website");
+      const summaryIncluded = document.querySelector("#summary-included");
+      const depositIncl = document.querySelector("#deposit-incl");
+      const depositEx = document.querySelector("#deposit-ex");
+      const remainingEx = document.querySelector("#remaining-ex");
+      const remainingIncl = document.querySelector("#remaining-incl");
+      const summaryCare = document.querySelector("#summary-care");
+      const careEx = document.querySelector("#care-ex");
+      const careIncl = document.querySelector("#care-incl");
+      const websiteInputs = document.querySelectorAll('input[name="websitePackage"]');
+      const careInputs = document.querySelectorAll('input[name="carePackage"]');
+      const params = new URLSearchParams(window.location.search);
+      const requestedWebsite = params.get("website");
+      const legacyProduct = params.get("product");
+      const requestedCare = params.get("care");
+
+      const legacyWebsiteMap = {
+        starter_site_deposit: "starter_site",
+        business_website_deposit: "business_website",
+        premium_growth_deposit: "premium_growth",
+        starter_site_full: "starter_site",
+        business_website_full: "business_website",
+        premium_growth_full: "premium_growth",
+      };
+
+      const legacyCareMap = {
+        care_basic: "care_basic",
+        care_plus: "care_plus",
+        care_growth: "care_growth",
+      };
+
+      function selectRadio(name, value, fallback) {
+        const safeValue = value || fallback;
+        const input = document.querySelector(`input[name="${name}"][value="${safeValue}"]`);
+        const fallbackInput = document.querySelector(`input[name="${name}"][value="${fallback}"]`);
+        (input || fallbackInput).checked = true;
+      }
+
+      function updateSelectedCards() {
+        document.querySelectorAll(".choice-card").forEach((card) => {
+          const input = card.querySelector("input");
+          card.classList.toggle("is-selected", input.checked);
+        });
+      }
+
+      function updateSummary() {
+        const websiteKey = new FormData(form).get("websitePackage");
+        const careKey = new FormData(form).get("carePackage");
+        const website = websitePackages[websiteKey] || websitePackages.business_website;
+        const care = carePackages[careKey] || carePackages.no_care;
+
+        summaryWebsite.textContent = website.name;
+        summaryIncluded.innerHTML = website.included.map((item) => `<li>${item}</li>`).join("");
+        depositIncl.textContent = website.depositIncl;
+        depositEx.textContent = website.depositEx;
+        remainingEx.textContent = website.remainingEx;
+        remainingIncl.textContent = website.remainingIncl;
+        summaryCare.textContent = care.name;
+        careEx.textContent = care.ex;
+        careIncl.textContent = care.incl;
+        updateSelectedCards();
+      }
+
+      const initialWebsite = websitePackages[requestedWebsite]
+        ? requestedWebsite
+        : legacyWebsiteMap[legacyProduct] || "business_website";
+      const initialCare = carePackages[requestedCare]
+        ? requestedCare
+        : legacyCareMap[legacyProduct] || "no_care";
+
+      selectRadio("websitePackage", initialWebsite, "business_website");
+      selectRadio("carePackage", initialCare, "no_care");
+      updateSummary();
+
+      if (requestedWebsite || requestedCare || legacyProduct) {
+        requestAnimationFrame(() => {
+          form.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      }
+
+      websiteInputs.forEach((input) => input.addEventListener("change", updateSummary));
+      careInputs.forEach((input) => input.addEventListener("change", updateSummary));
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        message.textContent = "";
+        submitButton.disabled = true;
+        submitButton.textContent = "Betaling wordt gestart...";
+
+        const formData = new FormData(form);
+        const payload = {
+          websitePackage: formData.get("websitePackage"),
+          carePackage: formData.get("carePackage"),
+          customerName: formData.get("customerName"),
+          customerEmail: formData.get("customerEmail"),
+          customerPhone: formData.get("customerPhone"),
+          companyName: formData.get("companyName"),
+          notes: formData.get("notes"),
+        };
+
+        try {
+          const response = await fetch("/.netlify/functions/create-payment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          const contentType = response.headers.get("content-type") || "";
+
+          if (!contentType.includes("application/json")) {
+            throw new Error("De betaalfunctie is nog niet actief op Netlify. Controleer of de map netlify/functions en netlify.toml naar GitHub zijn geüpload en opnieuw gedeployd.");
+          }
+
+          const data = await response.json();
+
+          if (!response.ok || !data.success || !data.checkoutUrl) {
+            throw new Error(data.error || "Betaling kon niet gestart worden.");
+          }
+
+          window.location.href = data.checkoutUrl;
+        } catch (error) {
+          message.textContent = error.message || "Er ging iets mis. Probeer het opnieuw.";
+          submitButton.disabled = false;
+          submitButton.textContent = "Betaal aanbetaling via Mollie";
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" role="img" aria-labelledby="title">
+  <title id="title">Max Webstudio logo mark</title>
+  <rect x="6" y="6" width="68" height="68" rx="18" fill="#06121f"/>
+  <path d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z" fill="#ffffff"/>
+  <path d="M58 25h9v9" fill="none" stroke="#19c2ff" stroke-width="4" stroke-linecap="round"/>
+</svg>

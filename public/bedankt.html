@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Welkom bij Max Webstudio | Project intake</title>
+    <meta name="description" content="Start je project intake na je betaling bij Max Webstudio." />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="index.html"><svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true"><rect x="6" y="6" width="68" height="68" rx="18"></rect><path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path><path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path></svg><span>Max Webstudio</span></a>
+      <nav class="main-nav"><a href="index.html#prijzen">Pakketten</a><a href="werkwijze.html">Werkwijze</a><a href="index.html#aanvraag">Contact</a></nav>
+      <a class="header-cta" href="onboarding.html" id="header-intake-link">Project intake</a>
+    </header>
+    <main>
+      <section class="page-hero onboarding-start">
+        <p class="eyebrow">Projectstart</p>
+        <h1>Welkom bij Max Webstudio 🎉</h1>
+        <p>Je betaling is gestart of ontvangen. Vul hieronder alvast je projectinformatie in, zodat wij direct goed kunnen starten.</p>
+        <div class="status-actions">
+          <a class="button primary" href="onboarding.html" id="intake-link">Start project intake</a>
+          <a class="button secondary" href="https://wa.me/31616217771" target="_blank" rel="noopener">WhatsApp Max</a>
+        </div>
+      </section>
+
+      <section class="section onboarding-steps-section" aria-label="Projectstappen">
+        <div class="onboarding-steps">
+          <article><span>1</span><strong>Betaling gestart</strong><p>We controleren de betaalstatus automatisch.</p></article>
+          <article><span>2</span><strong>Projectgegevens invullen</strong><p>Je vult rustig de intake in.</p></article>
+          <article><span>3</span><strong>Logo/foto’s verzamelen</strong><p>We bekijken wat al beschikbaar is.</p></article>
+          <article><span>4</span><strong>Intakegesprek plannen</strong><p>We stemmen doelen en planning af.</p></article>
+          <article><span>5</span><strong>Website bouwen</strong><p>Daarna starten we met ontwerp en realisatie.</p></article>
+        </div>
+      </section>
+    </main>
+    <script>
+      const query = window.location.search;
+      const intakeUrl = query ? `onboarding.html${query}` : "onboarding.html";
+      document.querySelector("#intake-link").href = intakeUrl;
+      document.querySelector("#header-intake-link").href = intakeUrl;
+    </script>
+  </body>
+</html>
