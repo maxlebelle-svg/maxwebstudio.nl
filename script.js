@@ -145,5 +145,5 @@ formButton?.addEventListener("click", () => {
     `Naam: ${formData.get("name") || ""}\nE-mail: ${formData.get("email") || ""}\nWebsitepakket: ${selectedPackage}\nHosting & onderhoud: ${selectedCarePackage}\nAkkoord voorwaarden: ja\n\nBericht:\n${formData.get("message") || ""}`
   );
 
-  window.location.href = `mailto:maxlebelle@gmail.com?subject=${subject}&body=${body}`;
+  window.location.href = `mailto:info@maxwebstudio.nl?subject=${subject}&body=${body}`;
 });
