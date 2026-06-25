@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Project intake | Max Webstudio</title>
+    <meta name="description" content="Vul je project intake in voor Max Webstudio." />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="index.html"><svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true"><rect x="6" y="6" width="68" height="68" rx="18"></rect><path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path><path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path></svg><span>Max Webstudio</span></a>
+      <nav class="main-nav"><a href="index.html#prijzen">Pakketten</a><a href="werkwijze.html">Werkwijze</a><a href="index.html#aanvraag">Contact</a></nav>
+      <a class="header-cta" href="https://wa.me/31616217771" target="_blank" rel="noopener">Hulp nodig?</a>
+    </header>
+
+    <main>
+      <section class="page-hero intake-hero">
+        <p class="eyebrow">Project intake</p>
+        <h1>Vertel ons wat we voor je mogen bouwen.</h1>
+        <p>Deze intake helpt ons om sneller, scherper en professioneler te starten. Je voortgang wordt automatisch lokaal opgeslagen.</p>
+      </section>
+
+      <section class="content-page intake-page">
+        <form class="intake-shell" id="intake-form" novalidate>
+          <aside class="intake-sidebar" aria-label="Voortgang">
+            <p class="section-kicker">Voortgang</p>
+            <div class="intake-progress"><span id="intake-progress-bar"></span></div>
+            <ol class="intake-step-list" id="intake-step-list">
+              <li class="active">Bedrijfsgegevens</li>
+              <li>Doel</li>
+              <li>Pagina’s</li>
+              <li>Stijl</li>
+              <li>Content</li>
+              <li>Planning</li>
+              <li>Samenvatting</li>
+            </ol>
+          </aside>
+
+          <div class="intake-card">
+            <section class="intake-step active" data-step="0">
+              <p class="section-kicker">Stap 1 van 7</p>
+              <h2>Bedrijfsgegevens</h2>
+              <p>Begin met de praktische contactgegevens. Dan kunnen we je project goed koppelen.</p>
+              <div class="intake-grid">
+                <label>Bedrijfsnaam<input name="companyName" type="text" required /></label>
+                <label>Contactpersoon<input name="contactName" type="text" required /></label>
+                <label>E-mailadres<input name="email" type="email" required /></label>
+                <label>Telefoonnummer<input name="phone" type="tel" required /></label>
+                <label>Huidige website <span>optioneel</span><input name="website" type="url" placeholder="https://" /></label>
+                <label>Branche<input name="industry" type="text" required /></label>
+                <label>Vestigingsplaats<input name="city" type="text" required /></label>
+              </div>
+            </section>
+
+            <section class="intake-step" data-step="1">
+              <p class="section-kicker">Stap 2 van 7</p>
+              <h2>Doel van de website</h2>
+              <p>Wat moet de website vooral opleveren? Meerdere keuzes mag.</p>
+              <div class="option-grid">
+                <label><input type="checkbox" name="goals" value="Meer aanvragen" />Meer aanvragen</label>
+                <label><input type="checkbox" name="goals" value="Meer vertrouwen" />Meer vertrouwen</label>
+                <label><input type="checkbox" name="goals" value="Professionelere uitstraling" />Professionelere uitstraling</label>
+                <label><input type="checkbox" name="goals" value="Online betalingen" />Online betalingen</label>
+                <label><input type="checkbox" name="goals" value="Beter gevonden worden in Google" />Beter gevonden worden in Google</label>
+                <label><input type="checkbox" name="goals" value="Anders" />Anders</label>
+              </div>
+              <label>Korte toelichting<textarea name="goalExplanation" rows="4"></textarea></label>
+            </section>
+
+            <section class="intake-step" data-step="2">
+              <p class="section-kicker">Stap 3 van 7</p>
+              <h2>Pagina’s</h2>
+              <p>Kies welke pagina’s je waarschijnlijk nodig hebt. Dit mag later nog veranderen.</p>
+              <div class="option-grid">
+                <label><input type="checkbox" name="pages" value="Home" />Home</label>
+                <label><input type="checkbox" name="pages" value="Over ons" />Over ons</label>
+                <label><input type="checkbox" name="pages" value="Diensten" />Diensten</label>
+                <label><input type="checkbox" name="pages" value="Projecten/portfolio" />Projecten/portfolio</label>
+                <label><input type="checkbox" name="pages" value="Reviews" />Reviews</label>
+                <label><input type="checkbox" name="pages" value="Contact" />Contact</label>
+                <label><input type="checkbox" name="pages" value="Blog/nieuws" />Blog/nieuws</label>
+                <label><input type="checkbox" name="pages" value="Veelgestelde vragen" />Veelgestelde vragen</label>
+                <label><input type="checkbox" name="pages" value="Anders" />Anders</label>
+              </div>
+            </section>
+
+            <section class="intake-step" data-step="3">
+              <p class="section-kicker">Stap 4 van 7</p>
+              <h2>Stijl & uitstraling</h2>
+              <p>Hiermee bepalen we de eerste visuele richting.</p>
+              <div class="option-grid">
+                <label><input type="checkbox" name="stylePreferences" value="Premium" />Premium</label>
+                <label><input type="checkbox" name="stylePreferences" value="Zakelijk" />Zakelijk</label>
+                <label><input type="checkbox" name="stylePreferences" value="Modern" />Modern</label>
+                <label><input type="checkbox" name="stylePreferences" value="Minimalistisch" />Minimalistisch</label>
+                <label><input type="checkbox" name="stylePreferences" value="Luxe" />Luxe</label>
+                <label><input type="checkbox" name="stylePreferences" value="Creatief" />Creatief</label>
+              </div>
+              <div class="intake-grid">
+                <label>Kleurenvoorkeur<input name="colorPreference" type="text" /></label>
+                <label>Websites die je mooi vindt<textarea name="inspirationWebsites" rows="3"></textarea></label>
+                <label>Websites die je niet mooi vindt<textarea name="dislikedWebsites" rows="3"></textarea></label>
+                <label>Opmerkingen stijl<textarea name="styleNotes" rows="3"></textarea></label>
+              </div>
+            </section>
+
+            <section class="intake-step" data-step="4">
+              <p class="section-kicker">Stap 5 van 7</p>
+              <h2>Content</h2>
+              <p>Geen stress als nog niet alles klaar is. We willen vooral weten waar we rekening mee houden.</p>
+              <div class="intake-grid">
+                <label>Heeft klant al een logo?<select name="logoStatus"><option>Ja</option><option>Nee</option><option>Moet nog gemaakt worden</option></select></label>
+                <label>Heeft klant foto’s?<select name="photoStatus"><option>Ja</option><option>Nee</option><option>Deels</option></select></label>
+                <label>Heeft klant teksten?<select name="textStatus"><option>Ja</option><option>Nee</option><option>Deels</option></select></label>
+                <label>Extra toelichting<textarea name="contentNotes" rows="4"></textarea></label>
+              </div>
+            </section>
+
+            <section class="intake-step" data-step="5">
+              <p class="section-kicker">Stap 6 van 7</p>
+              <h2>Praktische planning</h2>
+              <p>Wanneer wil je starten en wanneer moet de site idealiter live?</p>
+              <div class="intake-grid">
+                <label>Gewenste startdatum<input name="desiredStartDate" type="date" /></label>
+                <label>Gewenste livegang<input name="desiredLaunchDate" type="date" /></label>
+                <label>Urgentie<select name="urgency"><option>Normaal</option><option>Snel</option><option>Zo snel mogelijk</option></select></label>
+                <label>Beste contactmoment<input name="bestContactMoment" type="text" placeholder="Bijv. werkdagen na 15:00" /></label>
+                <label>Extra opmerkingen<textarea name="notes" rows="4"></textarea></label>
+              </div>
+            </section>
+
+            <section class="intake-step" data-step="6">
+              <p class="section-kicker">Stap 7 van 7</p>
+              <h2>Samenvatting</h2>
+              <p>Controleer je antwoorden. Daarna sturen we de intake naar Max Webstudio en ontvang je zelf een bevestiging.</p>
+              <div class="intake-summary" id="intake-summary"></div>
+              <label class="confirm-row"><input type="checkbox" name="confirmed" required />Ik bevestig dat Max Webstudio deze gegevens mag gebruiken om mijn project op te starten.</label>
+            </section>
+
+            <div class="intake-actions">
+              <button class="button secondary" type="button" id="prev-step">Terug</button>
+              <button class="button primary" type="button" id="next-step">Volgende</button>
+              <button class="button primary" type="submit" id="submit-intake">Project intake versturen</button>
+            </div>
+            <p class="payment-message" id="intake-message" role="status" aria-live="polite"></p>
+          </div>
+        </form>
+
+        <div class="intake-success" id="intake-success" hidden>
+          <p class="section-kicker">Ontvangen</p>
+          <h2>Project intake ontvangen 🎉</h2>
+          <p>Wij nemen zo snel mogelijk contact met je op.</p>
+          <div class="contact-actions">
+            <a class="button primary" href="index.html">Naar homepage</a>
+            <a class="button secondary" href="https://wa.me/31616217771" target="_blank" rel="noopener">WhatsApp Max</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const storageKey = "maxwebstudio:onboarding";
+      const form = document.querySelector("#intake-form");
+      const steps = [...document.querySelectorAll(".intake-step")];
+      const stepList = [...document.querySelectorAll("#intake-step-list li")];
+      const progressBar = document.querySelector("#intake-progress-bar");
+      const previousButton = document.querySelector("#prev-step");
+      const nextButton = document.querySelector("#next-step");
+      const submitButton = document.querySelector("#submit-intake");
+      const message = document.querySelector("#intake-message");
+      const summary = document.querySelector("#intake-summary");
+      const success = document.querySelector("#intake-success");
+      const params = new URLSearchParams(window.location.search);
+      let activeStep = 0;
+
+      const metadata = {
+        paymentId: params.get("paymentId") || "",
+        website: params.get("website") || "",
+        care: params.get("care") || "",
+      };
+
+      function getFormData() {
+        const data = Object.fromEntries(new FormData(form).entries());
+        data.goals = new FormData(form).getAll("goals");
+        data.pages = new FormData(form).getAll("pages");
+        data.stylePreferences = new FormData(form).getAll("stylePreferences");
+        data.metadata = metadata;
+        data.confirmed = Boolean(form.elements.confirmed?.checked);
+        return data;
+      }
+
+      function fillFromData(data) {
+        Object.entries(data || {}).forEach(([key, value]) => {
+          if (Array.isArray(value)) {
+            value.forEach((item) => {
+              const input = [...form.querySelectorAll(`[name="${key}"]`)].find((field) => field.value === item);
+              if (input) input.checked = true;
+            });
+            return;
+          }
+          const input = form.elements[key];
+          if (!input || typeof value === "object") return;
+          if (input.type === "checkbox") input.checked = Boolean(value);
+          else input.value = value;
+        });
+      }
+
+      function saveDraft() {
+        localStorage.setItem(storageKey, JSON.stringify(getFormData()));
+      }
+
+      function renderSummary() {
+        const data = getFormData();
+        const rows = [
+          ["Bedrijfsnaam", data.companyName],
+          ["Contactpersoon", data.contactName],
+          ["E-mail", data.email],
+          ["Telefoon", data.phone],
+          ["Websitepakket", metadata.website || "Niet meegegeven"],
+          ["Onderhoud", metadata.care || "Niet meegegeven"],
+          ["Doelen", data.goals?.join(", ")],
+          ["Pagina’s", data.pages?.join(", ")],
+          ["Stijl", data.stylePreferences?.join(", ")],
+          ["Logo", data.logoStatus],
+          ["Foto’s", data.photoStatus],
+          ["Teksten", data.textStatus],
+          ["Urgentie", data.urgency],
+        ];
+        summary.innerHTML = rows.map(([label, value]) => `<div><dt>${label}</dt><dd>${value || "Niet ingevuld"}</dd></div>`).join("");
+      }
+
+      function showStep(index) {
+        activeStep = Math.max(0, Math.min(index, steps.length - 1));
+        steps.forEach((step, stepIndex) => step.classList.toggle("active", stepIndex === activeStep));
+        stepList.forEach((step, stepIndex) => step.classList.toggle("active", stepIndex === activeStep));
+        progressBar.style.width = `${((activeStep + 1) / steps.length) * 100}%`;
+        previousButton.hidden = activeStep === 0;
+        nextButton.hidden = activeStep === steps.length - 1;
+        submitButton.hidden = activeStep !== steps.length - 1;
+        if (activeStep === steps.length - 1) renderSummary();
+      }
+
+      function validateCurrentStep() {
+        const fields = [...steps[activeStep].querySelectorAll("input, select, textarea")];
+        return fields.every((field) => field.reportValidity());
+      }
+
+      let draft = {};
+      try {
+        draft = JSON.parse(localStorage.getItem(storageKey) || "{}");
+      } catch (error) {
+        draft = {};
+      }
+      fillFromData(draft);
+      if (params.get("email")) form.elements.email.value = params.get("email");
+      if (params.get("name")) form.elements.contactName.value = params.get("name");
+      form.addEventListener("input", saveDraft);
+      form.addEventListener("change", saveDraft);
+      previousButton.addEventListener("click", () => showStep(activeStep - 1));
+      nextButton.addEventListener("click", () => {
+        if (validateCurrentStep()) showStep(activeStep + 1);
+      });
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (!validateCurrentStep()) return;
+        message.textContent = "";
+        submitButton.disabled = true;
+        submitButton.textContent = "Intake wordt verstuurd...";
+
+        try {
+          const response = await fetch("/.netlify/functions/submit-onboarding", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(getFormData()),
+          });
+          const result = await response.json();
+          if (!response.ok || !result.success) throw new Error(result.error || "Intake kon niet verstuurd worden.");
+          localStorage.removeItem(storageKey);
+          form.hidden = true;
+          success.hidden = false;
+          if (result.warning) console.warn(result.warning);
+        } catch (error) {
+          message.textContent = error.message || "Er ging iets mis. Probeer het opnieuw.";
+          submitButton.disabled = false;
+          submitButton.textContent = "Project intake versturen";
+        }
+      });
+
+      showStep(0);
+    </script>
+  </body>
+</html>

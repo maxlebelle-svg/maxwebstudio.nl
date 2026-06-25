@@ -32,3 +32,25 @@ Statische website voor Max Webstudio met een Fase 1 Mollie Checkout-betaalflow v
 - API keys staan alleen in Netlify environment variables.
 - Frontend-code bevat geen Mollie API keys.
 - Webhook verwerkt Mollie statussen via `netlify/functions/mollie-webhook.js`.
+
+## Fase 2 onboarding en e-mail
+
+Na betaling gaat de klant via `bedankt.html` door naar `onboarding.html`.
+
+Benodigde environment variables voor automatische e-mail:
+
+- `EMAIL_PROVIDER=resend`
+- `RESEND_API_KEY`
+- `FROM_EMAIL=info@maxwebstudio.nl`
+- `ADMIN_EMAIL=info@maxwebstudio.nl`
+- `ADMIN_TOKEN`
+
+Als `RESEND_API_KEY` nog ontbreekt, wordt de intake wel verwerkt en gelogd. De function geeft dan `success: true` terug met een waarschuwing: `Email skipped: RESEND_API_KEY missing`.
+
+Admin intakes uitlezen:
+
+`GET /.netlify/functions/admin-intakes`
+
+Header:
+
+`Authorization: Bearer ADMIN_TOKEN`
