@@ -19,6 +19,11 @@ html {
   scroll-behavior: smooth;
 }
 
+[hidden],
+.button[hidden] {
+  display: none !important;
+}
+
 body {
   margin: 0;
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -2218,6 +2223,38 @@ h3 {
   padding: 12px !important;
   font-size: 13px !important;
   background: #ffffff !important;
+}
+
+.upload-box {
+  display: grid;
+  gap: 10px;
+  padding: 20px;
+  border: 1px dashed rgba(21, 94, 239, 0.42);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(21, 94, 239, 0.06), #ffffff);
+}
+
+.upload-box strong {
+  font-weight: 900;
+}
+
+.upload-box strong span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.upload-box p,
+.upload-box small {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.upload-box input[type="file"] {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  background: #ffffff;
 }
 
 .upsell-box {

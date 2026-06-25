@@ -26,7 +26,7 @@ exports.handler = async (event) => {
 
   const intake = buildIntake(clean);
 
-  await saveIntake(intake);
+  await saveIntake(withoutUploads(intake));
 
   const emailResults = await sendIntakeEmails(intake);
   const warning = emailResults.find((result) => result.warning)?.warning || "";
@@ -43,6 +43,8 @@ function buildIntake(clean) {
     name: cleanText(item.name),
     priceExVat: Number(item.priceExVat || 0),
   }));
+  const uploadAttachments = prepareAttachments(clean.uploadAttachments);
+  const { uploadAttachments: _removedUploads, ...allWizardAnswers } = clean;
 
   return {
     id: crypto.randomUUID(),
@@ -84,6 +86,7 @@ function buildIntake(clean) {
     toneOfVoice: clean.toneOfVoice || "",
     photoChoice: clean.photoChoice || "",
     photographyService: Boolean(clean.photographyService),
+    photoFiles: uploadAttachments.map((attachment) => attachment.filename),
     photoWishes: clean.photoWishes || "",
     photoLocation: clean.photoLocation || "",
     mediaInspiration: clean.mediaInspiration || "",
@@ -99,7 +102,8 @@ function buildIntake(clean) {
       wantsIntakeCall: clean.planning?.wantsIntakeCall || clean.wantsIntakeCall || "",
     },
     notes: clean.notes || "",
-    allWizardAnswers: clean,
+    allWizardAnswers,
+    uploadAttachments,
     status: "new_intake",
   };
 }
@@ -114,6 +118,7 @@ async function sendIntakeEmails(intake) {
     subject: `Nieuwe project intake - ${intake.companyName}`,
     html: adminHtml,
     text: plainTextSummary(intake),
+    attachments: intake.uploadAttachments,
   });
 
   const customerResult = await sendEmail({
@@ -158,6 +163,7 @@ function buildAdminEmail(intake) {
     ["Copywriting service", intake.copywritingService ? "Ja" : "Nee"],
     ["Diensten/doelgroep/USP", [intake.mainServices, intake.targetAudience, intake.uniqueSellingPoints, intake.toneOfVoice].filter(Boolean).join("\n")],
     ["Foto's", intake.photoChoice],
+    ["Geüploade foto's", intake.photoFiles.join(", ")],
     ["Fotografie service", intake.photographyService ? "Ja" : "Nee"],
     ["Fotowensen", [intake.photoWishes, intake.photoLocation, intake.mediaInspiration].filter(Boolean).join("\n")],
     ["Extra functies", intake.extraFeatures.join(", ")],
@@ -178,6 +184,7 @@ function buildCustomerEmail(intake) {
     ["Pagina's", intake.pages.join(", ")],
     ["Teksten", intake.textChoice],
     ["Foto's", intake.photoChoice],
+    ["Geüploade foto's", intake.photoFiles.join(", ")],
     ["Extra functies", intake.extraFeatures.join(", ")],
     ["Extra opties", formatUpsells(intake.upsells)],
     ["Geschatte extra waarde", `€${intake.estimatedExtraValueExVat} excl. btw`],
@@ -245,6 +252,24 @@ function formatPlanning(planning) {
     `Contactmoment: ${planning.bestContactMoment || "Niet ingevuld"}`,
     `Intakegesprek: ${planning.wantsIntakeCall || "Niet ingevuld"}`,
   ].join("\n");
+}
+
+function prepareAttachments(value) {
+  const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+  return toArray(value)
+    .slice(0, 5)
+    .filter((item) => item && allowedTypes.has(item.contentType) && Number(item.size || 0) <= 2.5 * 1024 * 1024)
+    .map((item) => ({
+      filename: cleanText(item.filename).slice(0, 180) || "foto-upload",
+      content: cleanText(item.content),
+      content_type: item.contentType,
+    }))
+    .filter((item) => item.content);
+}
+
+function withoutUploads(intake) {
+  const { uploadAttachments: _removedUploads, ...safeIntake } = intake;
+  return safeIntake;
 }
 
 function validate(payload) {

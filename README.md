@@ -75,4 +75,5 @@ Belangrijk:
 - Extra opties worden opgeslagen als extra wensen/offerte-uitbreiding.
 - De wizard gebruikt `localStorage` voor autosave.
 - `submit-onboarding.js` stuurt de volledige samenvatting naar Max Webstudio en naar de klant zodra e-mail actief is.
+- Klanten kunnen optioneel foto's uploaden in de wizard. Foto's worden client-side verkleind en als bijlage meegestuurd naar de adminmail.
 - Later uitbreidbaar met klantportaal en aparte betalingen voor extra opties.
