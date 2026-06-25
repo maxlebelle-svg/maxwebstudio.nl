@@ -24,36 +24,7 @@ exports.handler = async (event) => {
     return jsonResponse(400, { success: false, error: validationError });
   }
 
-  const intake = {
-    id: crypto.randomUUID(),
-    createdAt: new Date().toISOString(),
-    companyName: clean.companyName,
-    contactName: clean.contactName,
-    email: clean.email.toLowerCase(),
-    phone: clean.phone,
-    website: clean.website || "",
-    industry: clean.industry,
-    city: clean.city,
-    goals: toArray(clean.goals),
-    goalExplanation: clean.goalExplanation || "",
-    pages: toArray(clean.pages),
-    stylePreferences: toArray(clean.stylePreferences),
-    colorPreference: clean.colorPreference || "",
-    inspirationWebsites: clean.inspirationWebsites || "",
-    dislikedWebsites: clean.dislikedWebsites || "",
-    styleNotes: clean.styleNotes || "",
-    logoStatus: clean.logoStatus || "",
-    photoStatus: clean.photoStatus || "",
-    textStatus: clean.textStatus || "",
-    contentNotes: clean.contentNotes || "",
-    desiredStartDate: clean.desiredStartDate || "",
-    desiredLaunchDate: clean.desiredLaunchDate || "",
-    urgency: clean.urgency || "",
-    bestContactMoment: clean.bestContactMoment || "",
-    notes: clean.notes || "",
-    metadata: clean.metadata || {},
-    status: "new_intake",
-  };
+  const intake = buildIntake(clean);
 
   await saveIntake(intake);
 
@@ -67,37 +38,75 @@ exports.handler = async (event) => {
   });
 };
 
+function buildIntake(clean) {
+  const upsells = toArray(clean.upsells).map((item) => ({
+    name: cleanText(item.name),
+    priceExVat: Number(item.priceExVat || 0),
+  }));
+
+  return {
+    id: crypto.randomUUID(),
+    createdAt: new Date().toISOString(),
+    companyName: clean.companyName,
+    contactName: clean.contactName,
+    email: clean.businessEmail.toLowerCase(),
+    businessEmail: clean.businessEmail.toLowerCase(),
+    phone: clean.phone,
+    industry: clean.industry,
+    businessDescription: clean.businessDescription,
+    website: clean.website || "",
+    socialLinks: clean.socialLinks || "",
+    city: clean.city,
+    metadata: clean.metadata || {},
+    logoChoice: clean.logoChoice || "",
+    logoService: Boolean(clean.logoService),
+    logoDescription: clean.logoDescription || "",
+    logoCompanyName: clean.logoCompanyName || "",
+    logoSlogan: clean.logoSlogan || "",
+    logoColors: clean.logoColors || "",
+    logoStyle: clean.logoStyle || "",
+    logoInspiration: clean.logoInspiration || "",
+    logoFiles: toArray(clean.logoFiles),
+    brandStyle: toArray(clean.brandStyle),
+    favoriteColors: clean.favoriteColors || "",
+    blockedColors: clean.blockedColors || "",
+    inspirationWebsites: clean.inspirationWebsites || "",
+    dislikedWebsites: clean.dislikedWebsites || "",
+    styleNotes: clean.styleNotes || "",
+    pages: toArray(clean.pages),
+    extraPagesCount: Number(clean.extraPagesCount || 0),
+    extraPagesDescription: clean.extraPagesDescription || "",
+    textChoice: clean.textChoice || "",
+    copywritingService: Boolean(clean.copywritingService),
+    mainServices: clean.mainServices || "",
+    targetAudience: clean.targetAudience || "",
+    uniqueSellingPoints: clean.uniqueSellingPoints || "",
+    toneOfVoice: clean.toneOfVoice || "",
+    photoChoice: clean.photoChoice || "",
+    photographyService: Boolean(clean.photographyService),
+    photoWishes: clean.photoWishes || "",
+    photoLocation: clean.photoLocation || "",
+    mediaInspiration: clean.mediaInspiration || "",
+    extraFeatures: toArray(clean.extraFeatures),
+    extraFeatureUpsells: toArray(clean.extraFeatureUpsells),
+    upsells,
+    estimatedExtraValueExVat: Number(clean.estimatedExtraValueExVat || upsells.reduce((total, item) => total + item.priceExVat, 0)),
+    planning: {
+      desiredStartDate: clean.planning?.desiredStartDate || clean.desiredStartDate || "",
+      desiredLaunchDate: clean.planning?.desiredLaunchDate || clean.desiredLaunchDate || "",
+      urgency: clean.planning?.urgency || clean.urgency || "",
+      bestContactMoment: clean.planning?.bestContactMoment || clean.bestContactMoment || "",
+      wantsIntakeCall: clean.planning?.wantsIntakeCall || clean.wantsIntakeCall || "",
+    },
+    notes: clean.notes || "",
+    allWizardAnswers: clean,
+    status: "new_intake",
+  };
+}
+
 async function sendIntakeEmails(intake) {
   const adminEmail = process.env.ADMIN_EMAIL || "info@maxwebstudio.nl";
-  const adminHtml = buildEmailHtml(`Nieuwe project intake - ${intake.companyName}`, [
-    ["Contactpersoon", intake.contactName],
-    ["Bedrijfsnaam", intake.companyName],
-    ["E-mail", intake.email],
-    ["Telefoon", intake.phone],
-    ["Websitepakket", intake.metadata.website || "Niet meegegeven"],
-    ["Onderhoudskeuze", intake.metadata.care || "Niet meegegeven"],
-    ["Branche", intake.industry],
-    ["Vestigingsplaats", intake.city],
-    ["Huidige website", intake.website],
-    ["Doelen", intake.goals.join(", ")],
-    ["Toelichting doel", intake.goalExplanation],
-    ["Pagina’s", intake.pages.join(", ")],
-    ["Stijl", intake.stylePreferences.join(", ")],
-    ["Kleurenvoorkeur", intake.colorPreference],
-    ["Inspiratie websites", intake.inspirationWebsites],
-    ["Niet mooi", intake.dislikedWebsites],
-    ["Logo", intake.logoStatus],
-    ["Foto’s", intake.photoStatus],
-    ["Teksten", intake.textStatus],
-    ["Content toelichting", intake.contentNotes],
-    ["Gewenste startdatum", intake.desiredStartDate],
-    ["Gewenste livegang", intake.desiredLaunchDate],
-    ["Urgentie", intake.urgency],
-    ["Beste contactmoment", intake.bestContactMoment],
-    ["Extra opmerkingen", intake.notes],
-    ["Datum/tijd inzending", intake.createdAt],
-  ]);
-
+  const adminHtml = buildAdminEmail(intake);
   const customerHtml = buildCustomerEmail(intake);
 
   const adminResult = await sendEmail({
@@ -111,10 +120,51 @@ async function sendIntakeEmails(intake) {
     to: intake.email,
     subject: "Project intake ontvangen - Max Webstudio",
     html: customerHtml,
-    text: `Beste ${intake.contactName},\n\nBedankt voor je project intake. Max Webstudio heeft je gegevens ontvangen en neemt zo snel mogelijk contact met je op.\n\n${plainTextSummary(intake)}\n\nVragen? Mail naar info@maxwebstudio.nl.\n\nMet vriendelijke groet,\nMax Webstudio`,
+    text: `Beste ${intake.contactName},\n\nBedankt voor je project intake. Max Webstudio heeft je gegevens ontvangen en neemt zo snel mogelijk contact met je op.\n\nExtra opties worden nog niet automatisch afgerekend. We stemmen dit netjes met je af.\n\n${plainTextSummary(intake)}\n\nVragen? Mail naar info@maxwebstudio.nl.\n\nMet vriendelijke groet,\nMax Webstudio`,
   });
 
   return [adminResult, customerResult];
+}
+
+function buildAdminEmail(intake) {
+  return buildEmailHtml(`Nieuwe project intake - ${intake.companyName}`, [
+    ["Snelle samenvatting", adminSummary(intake)],
+    ["Geschatte extra waarde", `€${intake.estimatedExtraValueExVat} excl. btw`],
+    ["Gekozen upsells", formatUpsells(intake.upsells)],
+    ["Contactpersoon", intake.contactName],
+    ["Bedrijfsnaam", intake.companyName],
+    ["E-mail", intake.email],
+    ["Telefoon", intake.phone],
+    ["Websitepakket", intake.metadata.website || "Niet meegegeven"],
+    ["Onderhoudskeuze", intake.metadata.care || "Niet meegegeven"],
+    ["Branche", intake.industry],
+    ["Vestigingsplaats", intake.city],
+    ["Bedrijfsomschrijving", intake.businessDescription],
+    ["Huidige website", intake.website],
+    ["Social links", intake.socialLinks],
+    ["Logo keuze", intake.logoChoice],
+    ["Logo service", intake.logoService ? "Ja, nieuw logo ontwerpen" : "Nee"],
+    ["Logo omschrijving", intake.logoDescription],
+    ["Logo details", [intake.logoCompanyName, intake.logoSlogan, intake.logoColors, intake.logoStyle, intake.logoInspiration].filter(Boolean).join("\n")],
+    ["Logo bestandnamen", intake.logoFiles.join(", ")],
+    ["Huisstijl", intake.brandStyle.join(", ")],
+    ["Kleuren", `Favoriet: ${intake.favoriteColors || "-"}\nNiet gebruiken: ${intake.blockedColors || "-"}`],
+    ["Inspiratie websites", intake.inspirationWebsites],
+    ["Niet mooi", intake.dislikedWebsites],
+    ["Stijl opmerkingen", intake.styleNotes],
+    ["Pagina's", intake.pages.join(", ")],
+    ["Extra pagina's", `${intake.extraPagesCount} - ${intake.extraPagesDescription || ""}`],
+    ["Teksten", intake.textChoice],
+    ["Copywriting service", intake.copywritingService ? "Ja" : "Nee"],
+    ["Diensten/doelgroep/USP", [intake.mainServices, intake.targetAudience, intake.uniqueSellingPoints, intake.toneOfVoice].filter(Boolean).join("\n")],
+    ["Foto's", intake.photoChoice],
+    ["Fotografie service", intake.photographyService ? "Ja" : "Nee"],
+    ["Fotowensen", [intake.photoWishes, intake.photoLocation, intake.mediaInspiration].filter(Boolean).join("\n")],
+    ["Extra functies", intake.extraFeatures.join(", ")],
+    ["Planning", formatPlanning(intake.planning)],
+    ["Extra opmerkingen", intake.notes],
+    ["Datum/tijd inzending", intake.createdAt],
+  ]);
 }
 
 function buildCustomerEmail(intake) {
@@ -123,10 +173,16 @@ function buildCustomerEmail(intake) {
     ["Bedrijfsnaam", intake.companyName],
     ["Websitepakket", intake.metadata.website || "Niet meegegeven"],
     ["Onderhoudskeuze", intake.metadata.care || "Niet meegegeven"],
-    ["Doelen", intake.goals.join(", ")],
-    ["Pagina’s", intake.pages.join(", ")],
-    ["Stijl", intake.stylePreferences.join(", ")],
-    ["Planning", `${intake.desiredStartDate || "Geen startdatum"} / ${intake.desiredLaunchDate || "Geen livegang"}`],
+    ["Logo keuze", intake.logoChoice],
+    ["Huisstijl", intake.brandStyle.join(", ")],
+    ["Pagina's", intake.pages.join(", ")],
+    ["Teksten", intake.textChoice],
+    ["Foto's", intake.photoChoice],
+    ["Extra functies", intake.extraFeatures.join(", ")],
+    ["Extra opties", formatUpsells(intake.upsells)],
+    ["Geschatte extra waarde", `€${intake.estimatedExtraValueExVat} excl. btw`],
+    ["Belangrijk", "Extra opties worden nog niet automatisch afgerekend. Max Webstudio neemt deze mee in de definitieve projectafstemming."],
+    ["Planning", formatPlanning(intake.planning)],
     ["Contact", "Vragen? Mail naar info@maxwebstudio.nl."],
     ["Afsluiting", "Met vriendelijke groet,\nMax Webstudio"],
   ]);
@@ -134,17 +190,28 @@ function buildCustomerEmail(intake) {
 
 function buildEmailHtml(title, rows) {
   const bodyRows = rows
-    .map(([label, value]) => `<tr><th style="vertical-align:top;text-align:left;width:210px;padding:10px 12px;border-top:1px solid #dce4ed;color:#5b6573;">${escapeHtml(label)}</th><td style="padding:10px 12px;border-top:1px solid #dce4ed;white-space:pre-line;">${escapeHtml(value || "Niet ingevuld")}</td></tr>`)
+    .map(([label, value]) => `<tr><th style="vertical-align:top;text-align:left;width:220px;padding:10px 12px;border-top:1px solid #dce4ed;color:#5b6573;">${escapeHtml(label)}</th><td style="padding:10px 12px;border-top:1px solid #dce4ed;white-space:pre-line;">${escapeHtml(value || "Niet ingevuld")}</td></tr>`)
     .join("");
 
   return `<!doctype html><html><body style="margin:0;background:#f6f8fb;font-family:Inter,Arial,sans-serif;color:#06121f;">
-    <div style="max-width:720px;margin:0 auto;padding:32px 18px;">
+    <div style="max-width:760px;margin:0 auto;padding:32px 18px;">
       <div style="background:#ffffff;border:1px solid #dce4ed;border-radius:12px;padding:28px;">
+        <p style="margin:0 0 10px;color:#155eef;font-weight:800;text-transform:uppercase;letter-spacing:.08em;">Max Webstudio</p>
         <h1 style="margin:0 0 18px;font-size:28px;line-height:1.1;">${escapeHtml(title)}</h1>
         <table style="width:100%;border-collapse:collapse;">${bodyRows}</table>
       </div>
     </div>
   </body></html>`;
+}
+
+function adminSummary(intake) {
+  return [
+    `${intake.companyName} uit ${intake.city}`,
+    `Pakket: ${intake.metadata.website || "Niet meegegeven"}`,
+    `Onderhoud: ${intake.metadata.care || "Niet meegegeven"}`,
+    `Upsells: ${intake.upsells.length ? intake.upsells.length : "geen"}`,
+    `Extra waarde: €${intake.estimatedExtraValueExVat} excl. btw`,
+  ].join("\n");
 }
 
 function plainTextSummary(intake) {
@@ -155,20 +222,42 @@ function plainTextSummary(intake) {
     `Telefoon: ${intake.phone}`,
     `Websitepakket: ${intake.metadata.website || "Niet meegegeven"}`,
     `Onderhoudskeuze: ${intake.metadata.care || "Niet meegegeven"}`,
-    `Doelen: ${intake.goals.join(", ")}`,
+    `Logo keuze: ${intake.logoChoice}`,
+    `Huisstijl: ${intake.brandStyle.join(", ")}`,
     `Pagina's: ${intake.pages.join(", ")}`,
-    `Stijl: ${intake.stylePreferences.join(", ")}`,
+    `Extra functies: ${intake.extraFeatures.join(", ")}`,
+    `Upsells: ${formatUpsells(intake.upsells)}`,
+    `Geschatte extra waarde: €${intake.estimatedExtraValueExVat} excl. btw`,
     `Ingezonden: ${intake.createdAt}`,
+  ].join("\n");
+}
+
+function formatUpsells(upsells) {
+  if (!upsells.length) return "Geen extra opties gekozen";
+  return upsells.map((upsell) => `${upsell.name} (€${upsell.priceExVat} excl. btw)`).join("\n");
+}
+
+function formatPlanning(planning) {
+  return [
+    `Startdatum: ${planning.desiredStartDate || "Niet ingevuld"}`,
+    `Livegang: ${planning.desiredLaunchDate || "Niet ingevuld"}`,
+    `Urgentie: ${planning.urgency || "Niet ingevuld"}`,
+    `Contactmoment: ${planning.bestContactMoment || "Niet ingevuld"}`,
+    `Intakegesprek: ${planning.wantsIntakeCall || "Niet ingevuld"}`,
   ].join("\n");
 }
 
 function validate(payload) {
   if (!payload.companyName) return "Vul de bedrijfsnaam in.";
   if (!payload.contactName) return "Vul de contactpersoon in.";
-  if (!emailPattern.test(payload.email || "")) return "Vul een geldig e-mailadres in.";
+  if (!emailPattern.test(payload.businessEmail || payload.email || "")) return "Vul een geldig zakelijk e-mailadres in.";
   if (!payload.phone) return "Vul het telefoonnummer in.";
   if (!payload.industry) return "Vul de branche in.";
   if (!payload.city) return "Vul de vestigingsplaats in.";
+  if (!payload.businessDescription) return "Vul een korte bedrijfsomschrijving in.";
+  if (!payload.logoChoice) return "Kies een logo-optie.";
+  if (!payload.textChoice) return "Kies een tekstoptie.";
+  if (!payload.photoChoice) return "Kies een foto-optie.";
   if (!payload.confirmed) return "Bevestig dat Max Webstudio deze gegevens mag gebruiken.";
   return "";
 }
@@ -178,7 +267,11 @@ function sanitizeObject(value) {
   if (value && typeof value === "object") {
     return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, sanitizeObject(item)]));
   }
-  return typeof value === "string" ? value.trim().slice(0, 3000) : value;
+  return typeof value === "string" ? value.trim().slice(0, 5000) : value;
+}
+
+function cleanText(value) {
+  return String(value || "").trim();
 }
 
 function toArray(value) {

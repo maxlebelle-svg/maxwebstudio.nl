@@ -2052,6 +2052,7 @@ h3 {
 }
 
 .intake-progress {
+  margin-top: 14px;
   height: 9px;
   overflow: hidden;
   border-radius: 999px;
@@ -2123,6 +2124,123 @@ h3 {
 .intake-card label span {
   color: var(--muted);
   font-size: 12px;
+}
+
+.time-estimate {
+  display: inline-block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.wide-field {
+  grid-column: 1 / -1;
+}
+
+.wizard-benefits,
+.choice-cards,
+.price-indications {
+  display: grid;
+  gap: 14px;
+}
+
+.wizard-benefits {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.wizard-benefits article,
+.upsell-box,
+.price-indications article {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #ffffff, #f8fbff);
+  box-shadow: 0 14px 36px rgba(6, 18, 31, 0.06);
+}
+
+.wizard-benefits article {
+  display: grid;
+  gap: 8px;
+  padding: 20px;
+}
+
+.wizard-benefits strong,
+.choice-cards strong,
+.upsell-box strong,
+.price-indications strong {
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.wizard-benefits span,
+.choice-cards span,
+.price-indications span {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.choice-cards {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.choice-cards label {
+  position: relative;
+  display: grid !important;
+  align-content: start;
+  gap: 10px !important;
+  min-height: 190px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfe;
+  cursor: pointer;
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.choice-cards label:has(input:checked) {
+  border-color: rgba(21, 94, 239, 0.45);
+  background: linear-gradient(180deg, rgba(21, 94, 239, 0.08), #ffffff);
+  box-shadow: 0 18px 42px rgba(21, 94, 239, 0.13);
+}
+
+.choice-cards label:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 42px rgba(6, 18, 31, 0.09);
+}
+
+.choice-cards input[type="radio"] {
+  width: 20px;
+  height: 20px;
+}
+
+.file-placeholder {
+  margin-top: auto;
+  padding: 12px !important;
+  font-size: 13px !important;
+  background: #ffffff !important;
+}
+
+.upsell-box {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+}
+
+.price-indications {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.price-indications article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+}
+
+.price-indications input {
+  width: 18px;
+  height: 18px;
 }
 
 .intake-card input:not([type="checkbox"]),
@@ -2817,7 +2935,10 @@ h3 {
 
   .website-choice-grid,
   .care-choice-grid,
-  .onboarding-steps {
+  .onboarding-steps,
+  .wizard-benefits,
+  .choice-cards,
+  .price-indications {
     grid-template-columns: 1fr;
   }
 
@@ -2904,7 +3025,8 @@ h3 {
   .status-actions,
   .intake-grid,
   .option-grid,
-  .intake-summary div {
+  .intake-summary div,
+  .price-indications article {
     grid-template-columns: 1fr;
   }
 
@@ -2919,6 +3041,16 @@ h3 {
 
   .choice-card {
     min-height: auto;
+  }
+
+  .choice-cards label {
+    min-height: auto;
+  }
+
+  .wizard-benefits article,
+  .upsell-box,
+  .price-indications article {
+    padding: 16px;
   }
 
   .status-actions {

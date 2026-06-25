@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Project intake | Max Webstudio</title>
-    <meta name="description" content="Vul je project intake in voor Max Webstudio." />
+    <title>Premium project wizard | Max Webstudio</title>
+    <meta name="description" content="Vul de premium project wizard in voor Max Webstudio." />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -20,22 +20,27 @@
 
     <main>
       <section class="page-hero intake-hero">
-        <p class="eyebrow">Project intake</p>
-        <h1>Vertel ons wat we voor je mogen bouwen.</h1>
-        <p>Deze intake helpt ons om sneller, scherper en professioneler te starten. Je voortgang wordt automatisch lokaal opgeslagen.</p>
+        <p class="eyebrow">Premium project wizard</p>
+        <h1>Alles verzamelen om jouw website professioneel te bouwen.</h1>
+        <p>In ongeveer 10 minuten verzamelen we de informatie die nodig is voor een scherp ontwerp, minder heen en weer mailen en een sneller eindresultaat.</p>
       </section>
 
       <section class="content-page intake-page">
         <form class="intake-shell" id="intake-form" novalidate>
           <aside class="intake-sidebar" aria-label="Voortgang">
             <p class="section-kicker">Voortgang</p>
+            <strong id="step-label">Stap 1 van 10</strong>
+            <span class="time-estimate" id="time-estimate">Nog ongeveer 10 minuten</span>
             <div class="intake-progress"><span id="intake-progress-bar"></span></div>
             <ol class="intake-step-list" id="intake-step-list">
-              <li class="active">Bedrijfsgegevens</li>
-              <li>Doel</li>
-              <li>Pagina’s</li>
-              <li>Stijl</li>
-              <li>Content</li>
+              <li class="active">Welkom</li>
+              <li>Bedrijfsinfo</li>
+              <li>Logo</li>
+              <li>Huisstijl</li>
+              <li>Pagina's</li>
+              <li>Teksten</li>
+              <li>Foto's</li>
+              <li>Functies</li>
               <li>Planning</li>
               <li>Samenvatting</li>
             </ol>
@@ -43,39 +48,79 @@
 
           <div class="intake-card">
             <section class="intake-step active" data-step="0">
-              <p class="section-kicker">Stap 1 van 7</p>
-              <h2>Bedrijfsgegevens</h2>
-              <p>Begin met de praktische contactgegevens. Dan kunnen we je project goed koppelen.</p>
-              <div class="intake-grid">
-                <label>Bedrijfsnaam<input name="companyName" type="text" required /></label>
-                <label>Contactpersoon<input name="contactName" type="text" required /></label>
-                <label>E-mailadres<input name="email" type="email" required /></label>
-                <label>Telefoonnummer<input name="phone" type="tel" required /></label>
-                <label>Huidige website <span>optioneel</span><input name="website" type="url" placeholder="https://" /></label>
-                <label>Branche<input name="industry" type="text" required /></label>
-                <label>Vestigingsplaats<input name="city" type="text" required /></label>
+              <p class="section-kicker">Stap 1 van 10</p>
+              <h2>Bedankt voor je aanbetaling!</h2>
+              <p>In ongeveer 10 minuten verzamelen we alles om jouw website professioneel te bouwen.</p>
+              <div class="wizard-benefits">
+                <article><strong>Snellere oplevering</strong><span>We weten direct wat nodig is.</span></article>
+                <article><strong>Minder heen en weer mailen</strong><span>Alles staat overzichtelijk bij elkaar.</span></article>
+                <article><strong>Beter eindresultaat</strong><span>Ontwerp, inhoud en doel sluiten beter aan.</span></article>
               </div>
             </section>
 
             <section class="intake-step" data-step="1">
-              <p class="section-kicker">Stap 2 van 7</p>
-              <h2>Doel van de website</h2>
-              <p>Wat moet de website vooral opleveren? Meerdere keuzes mag.</p>
-              <div class="option-grid">
-                <label><input type="checkbox" name="goals" value="Meer aanvragen" />Meer aanvragen</label>
-                <label><input type="checkbox" name="goals" value="Meer vertrouwen" />Meer vertrouwen</label>
-                <label><input type="checkbox" name="goals" value="Professionelere uitstraling" />Professionelere uitstraling</label>
-                <label><input type="checkbox" name="goals" value="Online betalingen" />Online betalingen</label>
-                <label><input type="checkbox" name="goals" value="Beter gevonden worden in Google" />Beter gevonden worden in Google</label>
-                <label><input type="checkbox" name="goals" value="Anders" />Anders</label>
+              <p class="section-kicker">Stap 2 van 10</p>
+              <h2>Bedrijfsinformatie</h2>
+              <p>Deze gegevens gebruiken we om het project goed te koppelen en je website inhoudelijk scherp neer te zetten.</p>
+              <div class="intake-grid">
+                <label>Bedrijfsnaam<input name="companyName" type="text" required /></label>
+                <label>Contactpersoon<input name="contactName" type="text" required /></label>
+                <label>Branche<input name="industry" type="text" required /></label>
+                <label>Zakelijk e-mailadres<input name="businessEmail" type="email" required /></label>
+                <label>Telefoonnummer<input name="phone" type="tel" required /></label>
+                <label>Vestigingsplaats<input name="city" type="text" required /></label>
+                <label>Huidige website <span>optioneel</span><input name="website" type="url" placeholder="https://" /></label>
+                <label>Instagram/Facebook/LinkedIn <span>optioneel</span><input name="socialLinks" type="text" placeholder="Plak links of gebruikersnamen" /></label>
+                <label class="wide-field">Korte bedrijfsomschrijving<textarea name="businessDescription" rows="4" required></textarea></label>
               </div>
-              <label>Korte toelichting<textarea name="goalExplanation" rows="4"></textarea></label>
             </section>
 
             <section class="intake-step" data-step="2">
-              <p class="section-kicker">Stap 3 van 7</p>
-              <h2>Pagina’s</h2>
-              <p>Kies welke pagina’s je waarschijnlijk nodig hebt. Dit mag later nog veranderen.</p>
+              <p class="section-kicker">Stap 3 van 10</p>
+              <h2>Logo</h2>
+              <p>Kies wat het beste past. Extra opties worden nog niet afgerekend, maar als offerte-uitbreiding opgeslagen.</p>
+              <div class="choice-cards">
+                <label><input type="radio" name="logoChoice" value="existing_logo" required /><strong>Ik heb al een logo</strong><span>Upload voorbereid voor PNG, JPG, SVG, PDF, AI of EPS. Bestanden worden in deze fase nog niet meegestuurd; we vragen ze later apart op.</span><input class="file-placeholder" name="logoFiles" type="file" accept=".png,.jpg,.jpeg,.svg,.pdf,.ai,.eps" multiple aria-label="Logo bestanden voorbereiden" /></label>
+                <label><input type="radio" name="logoChoice" value="new_logo" /><strong>Nieuw logo laten ontwerpen</strong><span>Meerprijs €295 excl. btw. Inclusief 3 unieke concepten, vectorbestand, social media versie en geschikt voor drukwerk.</span></label>
+                <label><input type="radio" name="logoChoice" value="proposal" /><strong>Laat Max Webstudio iets voorstellen</strong><span>We nemen je voorkeuren mee en maken een passende visuele richting.</span></label>
+              </div>
+              <div class="intake-grid">
+                <label>Omschrijf wat je mooi vindt<textarea name="logoDescription" rows="3"></textarea></label>
+                <label>Bedrijfsnaam op logo<input name="logoCompanyName" type="text" /></label>
+                <label>Slogan <span>optioneel</span><input name="logoSlogan" type="text" /></label>
+                <label>Favoriete kleuren<input name="logoColors" type="text" /></label>
+                <label>Stijl logo<select name="logoStyle"><option value="">Kies stijl</option><option>Modern</option><option>Luxe</option><option>Stoer</option><option>Minimalistisch</option><option>Zakelijk</option><option>Creatief</option></select></label>
+                <label>Voorbeelden/inspiratie links<textarea name="logoInspiration" rows="3"></textarea></label>
+              </div>
+            </section>
+
+            <section class="intake-step" data-step="3">
+              <p class="section-kicker">Stap 4 van 10</p>
+              <h2>Huisstijl</h2>
+              <p>Hiermee bepalen we de eerste visuele richting van de website.</p>
+              <div class="option-grid">
+                <label><input type="checkbox" name="brandStyle" value="Premium" />Premium</label>
+                <label><input type="checkbox" name="brandStyle" value="Zakelijk" />Zakelijk</label>
+                <label><input type="checkbox" name="brandStyle" value="Modern" />Modern</label>
+                <label><input type="checkbox" name="brandStyle" value="Minimalistisch" />Minimalistisch</label>
+                <label><input type="checkbox" name="brandStyle" value="Luxe" />Luxe</label>
+                <label><input type="checkbox" name="brandStyle" value="Creatief" />Creatief</label>
+                <label><input type="checkbox" name="brandStyle" value="Donker" />Donker</label>
+                <label><input type="checkbox" name="brandStyle" value="Licht" />Licht</label>
+              </div>
+              <div class="intake-grid">
+                <label>Favoriete kleuren<input name="favoriteColors" type="text" /></label>
+                <label>Kleuren die je niet wilt<input name="blockedColors" type="text" /></label>
+                <label>Websites die je mooi vindt<textarea name="inspirationWebsites" rows="3"></textarea></label>
+                <label>Websites die je niet mooi vindt<textarea name="dislikedWebsites" rows="3"></textarea></label>
+                <label class="wide-field">Extra stijl opmerkingen<textarea name="styleNotes" rows="3"></textarea></label>
+              </div>
+            </section>
+
+            <section class="intake-step" data-step="4">
+              <p class="section-kicker">Stap 5 van 10</p>
+              <h2>Pagina's</h2>
+              <p>Kies welke pagina's je waarschijnlijk nodig hebt. Extra pagina's kunnen later worden meegenomen in de offerte.</p>
               <div class="option-grid">
                 <label><input type="checkbox" name="pages" value="Home" />Home</label>
                 <label><input type="checkbox" name="pages" value="Over ons" />Over ons</label>
@@ -85,59 +130,96 @@
                 <label><input type="checkbox" name="pages" value="Contact" />Contact</label>
                 <label><input type="checkbox" name="pages" value="Blog/nieuws" />Blog/nieuws</label>
                 <label><input type="checkbox" name="pages" value="Veelgestelde vragen" />Veelgestelde vragen</label>
+                <label><input type="checkbox" name="pages" value="Vacatures" />Vacatures</label>
+                <label><input type="checkbox" name="pages" value="Offerte aanvragen" />Offerte aanvragen</label>
                 <label><input type="checkbox" name="pages" value="Anders" />Anders</label>
               </div>
-            </section>
-
-            <section class="intake-step" data-step="3">
-              <p class="section-kicker">Stap 4 van 7</p>
-              <h2>Stijl & uitstraling</h2>
-              <p>Hiermee bepalen we de eerste visuele richting.</p>
-              <div class="option-grid">
-                <label><input type="checkbox" name="stylePreferences" value="Premium" />Premium</label>
-                <label><input type="checkbox" name="stylePreferences" value="Zakelijk" />Zakelijk</label>
-                <label><input type="checkbox" name="stylePreferences" value="Modern" />Modern</label>
-                <label><input type="checkbox" name="stylePreferences" value="Minimalistisch" />Minimalistisch</label>
-                <label><input type="checkbox" name="stylePreferences" value="Luxe" />Luxe</label>
-                <label><input type="checkbox" name="stylePreferences" value="Creatief" />Creatief</label>
-              </div>
-              <div class="intake-grid">
-                <label>Kleurenvoorkeur<input name="colorPreference" type="text" /></label>
-                <label>Websites die je mooi vindt<textarea name="inspirationWebsites" rows="3"></textarea></label>
-                <label>Websites die je niet mooi vindt<textarea name="dislikedWebsites" rows="3"></textarea></label>
-                <label>Opmerkingen stijl<textarea name="styleNotes" rows="3"></textarea></label>
-              </div>
-            </section>
-
-            <section class="intake-step" data-step="4">
-              <p class="section-kicker">Stap 5 van 7</p>
-              <h2>Content</h2>
-              <p>Geen stress als nog niet alles klaar is. We willen vooral weten waar we rekening mee houden.</p>
-              <div class="intake-grid">
-                <label>Heeft klant al een logo?<select name="logoStatus"><option>Ja</option><option>Nee</option><option>Moet nog gemaakt worden</option></select></label>
-                <label>Heeft klant foto’s?<select name="photoStatus"><option>Ja</option><option>Nee</option><option>Deels</option></select></label>
-                <label>Heeft klant teksten?<select name="textStatus"><option>Ja</option><option>Nee</option><option>Deels</option></select></label>
-                <label>Extra toelichting<textarea name="contentNotes" rows="4"></textarea></label>
+              <div class="upsell-box">
+                <strong>Extra pagina: €95 excl. btw per pagina</strong>
+                <div class="intake-grid">
+                  <label>Aantal extra pagina's<input name="extraPagesCount" type="number" min="0" step="1" value="0" /></label>
+                  <label>Welke extra pagina's?<textarea name="extraPagesDescription" rows="3"></textarea></label>
+                </div>
               </div>
             </section>
 
             <section class="intake-step" data-step="5">
-              <p class="section-kicker">Stap 6 van 7</p>
-              <h2>Praktische planning</h2>
-              <p>Wanneer wil je starten en wanneer moet de site idealiter live?</p>
+              <p class="section-kicker">Stap 6 van 10</p>
+              <h2>Teksten</h2>
+              <p>Goede teksten bepalen of bezoekers alleen kijken, of ook contact opnemen.</p>
+              <div class="choice-cards">
+                <label><input type="radio" name="textChoice" value="client_texts" required /><strong>Ik lever zelf teksten aan</strong><span>Je stuurt de teksten later naar Max Webstudio.</span></label>
+                <label><input type="radio" name="textChoice" value="partial_texts" /><strong>Ik heb deels teksten</strong><span>We gebruiken wat er is en vullen waar nodig aan.</span></label>
+                <label><input type="radio" name="textChoice" value="max_copy" /><strong>Laat Max Webstudio SEO-teksten schrijven</strong><span>Meerprijs €195 excl. btw. Conversiegerichte teksten passend bij jouw doelgroep.</span></label>
+              </div>
               <div class="intake-grid">
-                <label>Gewenste startdatum<input name="desiredStartDate" type="date" /></label>
-                <label>Gewenste livegang<input name="desiredLaunchDate" type="date" /></label>
-                <label>Urgentie<select name="urgency"><option>Normaal</option><option>Snel</option><option>Zo snel mogelijk</option></select></label>
-                <label>Beste contactmoment<input name="bestContactMoment" type="text" placeholder="Bijv. werkdagen na 15:00" /></label>
-                <label>Extra opmerkingen<textarea name="notes" rows="4"></textarea></label>
+                <label>Belangrijkste diensten<textarea name="mainServices" rows="3"></textarea></label>
+                <label>Doelgroep<textarea name="targetAudience" rows="3"></textarea></label>
+                <label>Wat maakt jouw bedrijf uniek?<textarea name="uniqueSellingPoints" rows="3"></textarea></label>
+                <label>Tone of voice<select name="toneOfVoice"><option>Zakelijk</option><option>Persoonlijk</option><option>Premium</option><option>Direct</option><option>Vriendelijk</option></select></label>
               </div>
             </section>
 
             <section class="intake-step" data-step="6">
-              <p class="section-kicker">Stap 7 van 7</p>
+              <p class="section-kicker">Stap 7 van 10</p>
+              <h2>Foto's & media</h2>
+              <p>Beeldmateriaal maakt de website direct geloofwaardiger.</p>
+              <div class="choice-cards">
+                <label><input type="radio" name="photoChoice" value="client_photos" required /><strong>Ik lever zelf foto's aan</strong><span>We gebruiken je eigen materiaal.</span></label>
+                <label><input type="radio" name="photoChoice" value="stock_photos" /><strong>Gebruik professionele stockfoto's</strong><span>Passend bij branche en uitstraling.</span></label>
+                <label><input type="radio" name="photoChoice" value="photography" /><strong>Ik wil fotografie laten regelen</strong><span>Vanaf €295 excl. btw. We stemmen dit apart af.</span></label>
+              </div>
+              <div class="intake-grid">
+                <label>Fotowensen<textarea name="photoWishes" rows="3"></textarea></label>
+                <label>Locatie<input name="photoLocation" type="text" /></label>
+                <label class="wide-field">Beschikbare media/inspiratie<textarea name="mediaInspiration" rows="3"></textarea></label>
+              </div>
+            </section>
+
+            <section class="intake-step" data-step="7">
+              <p class="section-kicker">Stap 8 van 10</p>
+              <h2>Extra functies</h2>
+              <p>Kies wat interessant is. Dit wordt niet automatisch afgerekend, maar meegenomen als extra wens.</p>
+              <div class="option-grid">
+                <label><input type="checkbox" name="extraFeatures" value="WhatsApp knop" />WhatsApp knop</label>
+                <label><input type="checkbox" name="extraFeatures" value="Google Maps" />Google Maps</label>
+                <label><input type="checkbox" name="extraFeatures" value="Afspraakplanner" />Afspraakplanner</label>
+                <label><input type="checkbox" name="extraFeatures" value="Blogmodule" />Blogmodule</label>
+                <label><input type="checkbox" name="extraFeatures" value="Nieuwsbriefkoppeling" />Nieuwsbriefkoppeling</label>
+                <label><input type="checkbox" name="extraFeatures" value="Meertalige website" />Meertalige website</label>
+                <label><input type="checkbox" name="extraFeatures" value="Webshop" />Webshop</label>
+                <label><input type="checkbox" name="extraFeatures" value="Klantportaal" />Klantportaal</label>
+                <label><input type="checkbox" name="extraFeatures" value="Mollie betalingen" />Mollie betalingen</label>
+                <label><input type="checkbox" name="extraFeatures" value="Reviews sectie" />Reviews sectie</label>
+                <label><input type="checkbox" name="extraFeatures" value="Cookiebanner" />Cookiebanner</label>
+                <label><input type="checkbox" name="extraFeatures" value="Google Analytics/Search Console" />Google Analytics/Search Console</label>
+              </div>
+              <div class="price-indications">
+                <article><strong>Google Bedrijfsprofiel optimaliseren</strong><span>€149 excl. btw</span><input type="checkbox" name="extraFeatureUpsells" value="Google Bedrijfsprofiel optimaliseren" /></article>
+                <article><strong>Google Analytics + Search Console</strong><span>€95 excl. btw</span><input type="checkbox" name="extraFeatureUpsells" value="Google Analytics + Search Console" /></article>
+                <article><strong>Cookiebanner + AVG-configuratie</strong><span>€95 excl. btw</span><input type="checkbox" name="extraFeatureUpsells" value="Cookiebanner + AVG-configuratie" /></article>
+                <article><strong>Webshop of klantportaal</strong><span>Offerte op maat</span></article>
+              </div>
+            </section>
+
+            <section class="intake-step" data-step="8">
+              <p class="section-kicker">Stap 9 van 10</p>
+              <h2>Planning</h2>
+              <p>Zo weten we hoe snel we moeten schakelen.</p>
+              <div class="intake-grid">
+                <label>Gewenste startdatum<input name="desiredStartDate" type="date" /></label>
+                <label>Gewenste livegang<input name="desiredLaunchDate" type="date" /></label>
+                <label>Urgentie<select name="urgency"><option>Normaal</option><option>Binnen 1 maand</option><option>Binnen 2 weken</option><option>Zo snel mogelijk</option></select></label>
+                <label>Beste contactmoment<input name="bestContactMoment" type="text" placeholder="Bijv. werkdagen na 15:00" /></label>
+                <label>Wil je een intakegesprek plannen?<select name="wantsIntakeCall"><option>Ja</option><option>Nee</option><option>Later</option></select></label>
+                <label>Extra opmerkingen<textarea name="notes" rows="4"></textarea></label>
+              </div>
+            </section>
+
+            <section class="intake-step" data-step="9">
+              <p class="section-kicker">Stap 10 van 10</p>
               <h2>Samenvatting</h2>
-              <p>Controleer je antwoorden. Daarna sturen we de intake naar Max Webstudio en ontvang je zelf een bevestiging.</p>
+              <p>Controleer je antwoorden. Extra opties worden nog niet automatisch afgerekend. Max Webstudio neemt deze mee in de definitieve projectafstemming.</p>
               <div class="intake-summary" id="intake-summary"></div>
               <label class="confirm-row"><input type="checkbox" name="confirmed" required />Ik bevestig dat Max Webstudio deze gegevens mag gebruiken om mijn project op te starten.</label>
             </section>
@@ -145,7 +227,7 @@
             <div class="intake-actions">
               <button class="button secondary" type="button" id="prev-step">Terug</button>
               <button class="button primary" type="button" id="next-step">Volgende</button>
-              <button class="button primary" type="submit" id="submit-intake">Project intake versturen</button>
+              <button class="button primary" type="submit" id="submit-intake">Project intake definitief versturen</button>
             </div>
             <p class="payment-message" id="intake-message" role="status" aria-live="polite"></p>
           </div>
@@ -154,7 +236,7 @@
         <div class="intake-success" id="intake-success" hidden>
           <p class="section-kicker">Ontvangen</p>
           <h2>Project intake ontvangen 🎉</h2>
-          <p>Wij nemen zo snel mogelijk contact met je op.</p>
+          <p>We hebben alles ontvangen en nemen zo snel mogelijk contact met je op.</p>
           <div class="contact-actions">
             <a class="button primary" href="index.html">Naar homepage</a>
             <a class="button secondary" href="https://wa.me/31616217771" target="_blank" rel="noopener">WhatsApp Max</a>
@@ -169,6 +251,8 @@
       const steps = [...document.querySelectorAll(".intake-step")];
       const stepList = [...document.querySelectorAll("#intake-step-list li")];
       const progressBar = document.querySelector("#intake-progress-bar");
+      const stepLabel = document.querySelector("#step-label");
+      const timeEstimate = document.querySelector("#time-estimate");
       const previousButton = document.querySelector("#prev-step");
       const nextButton = document.querySelector("#next-step");
       const submitButton = document.querySelector("#submit-intake");
@@ -184,14 +268,52 @@
         care: params.get("care") || "",
       };
 
+      const prices = {
+        logoService: 295,
+        copywritingService: 195,
+        photographyService: 295,
+        extraPage: 95,
+        "Google Bedrijfsprofiel optimaliseren": 149,
+        "Google Analytics + Search Console": 95,
+        "Cookiebanner + AVG-configuratie": 95,
+      };
+
       function getFormData() {
-        const data = Object.fromEntries(new FormData(form).entries());
-        data.goals = new FormData(form).getAll("goals");
-        data.pages = new FormData(form).getAll("pages");
-        data.stylePreferences = new FormData(form).getAll("stylePreferences");
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        data.businessEmail = data.businessEmail || data.email || "";
+        data.email = data.businessEmail;
+        data.brandStyle = formData.getAll("brandStyle");
+        data.pages = formData.getAll("pages");
+        data.extraFeatures = formData.getAll("extraFeatures");
+        data.extraFeatureUpsells = formData.getAll("extraFeatureUpsells");
+        data.logoFiles = [...form.querySelector('[name="logoFiles"]').files].map((file) => file.name);
+        data.extraPagesCount = Number(data.extraPagesCount || 0);
+        data.logoService = data.logoChoice === "new_logo";
+        data.copywritingService = data.textChoice === "max_copy";
+        data.photographyService = data.photoChoice === "photography";
+        data.upsells = getUpsells(data);
+        data.estimatedExtraValueExVat = data.upsells.reduce((total, upsell) => total + upsell.priceExVat, 0);
+        data.planning = {
+          desiredStartDate: data.desiredStartDate || "",
+          desiredLaunchDate: data.desiredLaunchDate || "",
+          urgency: data.urgency || "",
+          bestContactMoment: data.bestContactMoment || "",
+          wantsIntakeCall: data.wantsIntakeCall || "",
+        };
         data.metadata = metadata;
         data.confirmed = Boolean(form.elements.confirmed?.checked);
         return data;
+      }
+
+      function getUpsells(data) {
+        const upsells = [];
+        if (data.logoService) upsells.push({ name: "Nieuw logo ontwerp", priceExVat: prices.logoService });
+        if (data.copywritingService) upsells.push({ name: "SEO-teksten laten schrijven", priceExVat: prices.copywritingService });
+        if (data.photographyService) upsells.push({ name: "Fotografie laten regelen", priceExVat: prices.photographyService });
+        if (data.extraPagesCount > 0) upsells.push({ name: `${data.extraPagesCount} extra pagina(s)`, priceExVat: data.extraPagesCount * prices.extraPage });
+        data.extraFeatureUpsells.forEach((item) => upsells.push({ name: item, priceExVat: prices[item] || 0 }));
+        return upsells;
       }
 
       function fillFromData(data) {
@@ -204,9 +326,12 @@
             return;
           }
           const input = form.elements[key];
-          if (!input || typeof value === "object") return;
+          if (!input || typeof value === "object" || input.type === "file") return;
           if (input.type === "checkbox") input.checked = Boolean(value);
-          else input.value = value;
+          else if (input.type === "radio") {
+            const radio = form.querySelector(`[name="${key}"][value="${CSS.escape(String(value))}"]`);
+            if (radio) radio.checked = true;
+          } else input.value = value;
         });
       }
 
@@ -217,19 +342,21 @@
       function renderSummary() {
         const data = getFormData();
         const rows = [
+          ["Websitepakket", metadata.website || "Niet meegegeven"],
+          ["Onderhoudskeuze", metadata.care || "Niet meegegeven"],
           ["Bedrijfsnaam", data.companyName],
           ["Contactpersoon", data.contactName],
           ["E-mail", data.email],
           ["Telefoon", data.phone],
-          ["Websitepakket", metadata.website || "Niet meegegeven"],
-          ["Onderhoud", metadata.care || "Niet meegegeven"],
-          ["Doelen", data.goals?.join(", ")],
-          ["Pagina’s", data.pages?.join(", ")],
-          ["Stijl", data.stylePreferences?.join(", ")],
-          ["Logo", data.logoStatus],
-          ["Foto’s", data.photoStatus],
-          ["Teksten", data.textStatus],
-          ["Urgentie", data.urgency],
+          ["Logo keuze", data.logoChoice],
+          ["Huisstijl", data.brandStyle.join(", ")],
+          ["Pagina's", data.pages.join(", ")],
+          ["Teksten", data.textChoice],
+          ["Foto's", data.photoChoice],
+          ["Extra functies", data.extraFeatures.join(", ")],
+          ["Planning", `${data.desiredStartDate || "Geen startdatum"} / ${data.desiredLaunchDate || "Geen livegang"} / ${data.urgency || "Normaal"}`],
+          ["Extra opties", data.upsells.length ? data.upsells.map((upsell) => `${upsell.name} (€${upsell.priceExVat} excl. btw)`).join(", ") : "Geen extra opties gekozen"],
+          ["Geschatte extra waarde", `€${data.estimatedExtraValueExVat} excl. btw`],
         ];
         summary.innerHTML = rows.map(([label, value]) => `<div><dt>${label}</dt><dd>${value || "Niet ingevuld"}</dd></div>`).join("");
       }
@@ -239,10 +366,14 @@
         steps.forEach((step, stepIndex) => step.classList.toggle("active", stepIndex === activeStep));
         stepList.forEach((step, stepIndex) => step.classList.toggle("active", stepIndex === activeStep));
         progressBar.style.width = `${((activeStep + 1) / steps.length) * 100}%`;
+        stepLabel.textContent = `Stap ${activeStep + 1} van ${steps.length}`;
+        const minutesLeft = Math.max(1, steps.length - activeStep);
+        timeEstimate.textContent = activeStep === steps.length - 1 ? "Laatste controle" : `Nog ongeveer ${minutesLeft} minuten`;
         previousButton.hidden = activeStep === 0;
         nextButton.hidden = activeStep === steps.length - 1;
         submitButton.hidden = activeStep !== steps.length - 1;
         if (activeStep === steps.length - 1) renderSummary();
+        window.scrollTo({ top: 0, behavior: "smooth" });
       }
 
       function validateCurrentStep() {
@@ -257,13 +388,20 @@
         draft = {};
       }
       fillFromData(draft);
-      if (params.get("email")) form.elements.email.value = params.get("email");
+      if (params.get("email")) {
+        form.elements.businessEmail.value = params.get("email");
+        form.elements.email && (form.elements.email.value = params.get("email"));
+      }
       if (params.get("name")) form.elements.contactName.value = params.get("name");
+
       form.addEventListener("input", saveDraft);
       form.addEventListener("change", saveDraft);
       previousButton.addEventListener("click", () => showStep(activeStep - 1));
       nextButton.addEventListener("click", () => {
-        if (validateCurrentStep()) showStep(activeStep + 1);
+        if (validateCurrentStep()) {
+          saveDraft();
+          showStep(activeStep + 1);
+        }
       });
 
       form.addEventListener("submit", async (event) => {
@@ -288,7 +426,7 @@
         } catch (error) {
           message.textContent = error.message || "Er ging iets mis. Probeer het opnieuw.";
           submitButton.disabled = false;
-          submitButton.textContent = "Project intake versturen";
+          submitButton.textContent = "Project intake definitief versturen";
         }
       });
 

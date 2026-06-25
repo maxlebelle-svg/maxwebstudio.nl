@@ -54,3 +54,25 @@ Admin intakes uitlezen:
 Header:
 
 `Authorization: Bearer ADMIN_TOKEN`
+
+## Fase 4 premium project wizard
+
+`onboarding.html` bevat nu een premium 10-staps project wizard voor:
+
+- bedrijfsinformatie
+- logo-keuze en logo-upsell
+- huisstijl en inspiratie
+- pagina's en extra pagina's
+- teksten en copywriting-upsell
+- foto's/media en fotografie-upsell
+- extra functies zoals WhatsApp, Google Maps, afspraakplanner, Mollie en analytics
+- planning en intakegesprek
+- samenvatting met geschatte extra waarde excl. btw
+
+Belangrijk:
+
+- Extra opties worden niet automatisch afgerekend.
+- Extra opties worden opgeslagen als extra wensen/offerte-uitbreiding.
+- De wizard gebruikt `localStorage` voor autosave.
+- `submit-onboarding.js` stuurt de volledige samenvatting naar Max Webstudio en naar de klant zodra e-mail actief is.
+- Later uitbreidbaar met klantportaal en aparte betalingen voor extra opties.
