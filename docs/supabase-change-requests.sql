@@ -1,5 +1,5 @@
 -- Supabase schema for Max Web Studio change requests.
--- Run this in the Supabase SQL editor for the project connected to Netlify.
+-- Run this in the Supabase SQL Editor for the project connected to Netlify.
 
 create extension if not exists pgcrypto;
 
