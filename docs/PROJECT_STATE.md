@@ -60,7 +60,7 @@ Belangrijk:
 - `create-payment.js`: maakt Mollie-betaling aan.
 - `mollie-webhook.js`: ontvangt Mollie statusupdates.
 - `submit-onboarding.js`: verwerkt projectintake.
-- `submit-change-request.js`: verwerkt wijzigingsverzoeken en verstuurt e-mail via Resend.
+- `submit-change-request.js`: verwerkt wijzigingsverzoeken, slaat ze op in Supabase en verstuurt e-mail via Resend.
 - `email.js`: verstuurt e-mail via Resend.
 - `intake-storage.js`: slaat intakes tijdelijk op in `/tmp`.
 - `admin-intakes.js`: leest intakes uit met admin token.
@@ -100,5 +100,6 @@ Belangrijk:
 - Admin Dashboard v1 is toegevoegd als statische backoffice-preview op `/public/admin-dashboard.html`.
 - De admin-preview gebruikt alleen placeholder-data, bevat `noindex, nofollow` en is niet gelinkt in de hoofdwebsite.
 - Er is nog geen login, backend, database of echte koppeling met Mollie, Resend, Netlify Forms/Functions of analytics.
-- Wijzigingsverzoeken via `/public/wijziging-doorgeven.html` worden nu via `/.netlify/functions/submit-change-request` naar Max Web Studio gemaild.
+- Wijzigingsverzoeken via `/public/wijziging-doorgeven.html` worden nu via `/.netlify/functions/submit-change-request` opgeslagen in Supabase en naar Max Web Studio gemaild.
 - Uploads voor wijzigingsverzoeken worden in deze stap nog niet als bestanden meegestuurd; alleen gekozen bestandsnamen gaan mee in de e-mail.
+- Supabase schema-instructies staan in `/docs/supabase-change-requests.sql`.

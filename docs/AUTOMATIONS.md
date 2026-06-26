@@ -46,9 +46,12 @@ Daarna:
 
 - verplichte velden worden server-side gevalideerd
 - een honeypot veld kan spam stil afvangen
+- het wijzigingsverzoek wordt opgeslagen in Supabase tabel `change_requests`
 - Max Web Studio ontvangt een e-mail via Resend
 - de klant ontvangt een bevestigingsmail wanneer Resend goed geconfigureerd is
 - bestandsnamen worden meegestuurd, maar bestanden zelf nog niet
+
+Als e-mail een warning geeft, blijft het wijzigingsverzoek opgeslagen. Als Supabase-opslag faalt, stopt de flow met een nette foutmelding en worden er geen e-mails verstuurd.
 
 Echte uploadopslag moet later apart worden gekoppeld via Netlify Forms, Netlify Blobs, Supabase Storage of externe storage.
 

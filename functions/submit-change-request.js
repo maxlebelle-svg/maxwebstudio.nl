@@ -46,12 +46,22 @@ exports.handler = async (event) => {
   }
 
   const changeRequest = buildChangeRequest(clean);
+  const storageResult = await saveChangeRequest(changeRequest);
+
+  if (!storageResult.success) {
+    return jsonResponse(500, {
+      success: false,
+      error: "Het wijzigingsverzoek kon niet worden opgeslagen. Probeer het later opnieuw of neem contact op.",
+    });
+  }
+
   const adminResult = await sendAdminEmail(changeRequest);
   const customerResult = await sendCustomerEmail(changeRequest);
   const warning = [adminResult, customerResult].find((result) => result.warning)?.warning || "";
 
   return jsonResponse(200, {
     success: true,
+    requestId: storageResult.id || undefined,
     warning: warning || undefined,
   });
 };
@@ -98,6 +108,69 @@ function classifyChangeRequest(category, priority) {
   }
 
   return "Handmatig beoordelen";
+}
+
+async function saveChangeRequest(changeRequest) {
+  const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.error("Change request storage missing Supabase configuration");
+    return { success: false };
+  }
+
+  try {
+    const response = await fetch(`${supabaseUrl}/rest/v1/change_requests`, {
+      method: "POST",
+      headers: {
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify(toSupabaseRecord(changeRequest)),
+    });
+
+    const data = await response.json().catch(() => []);
+
+    if (!response.ok) {
+      console.error("Change request storage failed", {
+        status: response.status,
+        message: data.message || data.error || "Unknown Supabase error",
+      });
+      return { success: false };
+    }
+
+    return { success: true, id: Array.isArray(data) ? data[0]?.id : data?.id };
+  } catch (error) {
+    console.error("Change request storage error", { message: error.message });
+    return { success: false };
+  }
+}
+
+function toSupabaseRecord(changeRequest) {
+  return {
+    created_at: changeRequest.submittedAt,
+    first_name: changeRequest.firstName,
+    last_name: changeRequest.lastName,
+    company_name: changeRequest.companyName,
+    email: changeRequest.email,
+    phone: changeRequest.phone,
+    website: changeRequest.website,
+    care_plan: changeRequest.carePlan,
+    change_category: changeRequest.changeCategory,
+    priority: changeRequest.priority,
+    title: changeRequest.changeTitle,
+    description: changeRequest.changeDescription,
+    file_names: changeRequest.fileNames,
+    internal_classification: changeRequest.classification,
+    metadata: {
+      form: "change-request",
+      formVersion: "1",
+      uploadMode: "filenames_only",
+      filesAttached: false,
+    },
+  };
 }
 
 async function sendAdminEmail(changeRequest) {
