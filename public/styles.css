@@ -2034,6 +2034,285 @@ h3 {
   stroke-linejoin: round;
 }
 
+.admin-body {
+  background:
+    radial-gradient(circle at 90% 0%, rgba(25, 194, 255, 0.14), transparent 30%),
+    var(--ink);
+}
+
+.admin-shell {
+  display: grid;
+  gap: clamp(22px, 3vw, 34px);
+  width: min(100%, 1440px);
+  margin: 0 auto;
+  padding: clamp(20px, 4vw, 48px);
+}
+
+.admin-hero,
+.admin-section,
+.admin-card {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.18);
+}
+
+.admin-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding: clamp(26px, 5vw, 52px);
+  color: var(--white);
+  background:
+    radial-gradient(circle at 86% 20%, rgba(25, 194, 255, 0.2), transparent 30%),
+    rgba(255, 255, 255, 0.07);
+}
+
+.admin-hero .section-kicker,
+.admin-section .section-kicker {
+  color: var(--cyan);
+}
+
+.admin-hero h1 {
+  max-width: 880px;
+  margin-bottom: 16px;
+  font-size: clamp(42px, 6vw, 78px);
+}
+
+.admin-hero p:not(.section-kicker) {
+  max-width: 760px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 18px;
+  line-height: 1.65;
+}
+
+.admin-preview-badge,
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.admin-preview-badge {
+  border: 1px solid rgba(25, 194, 255, 0.42);
+  color: var(--ink);
+  background: var(--cyan);
+}
+
+.admin-grid,
+.ai-suggestion-grid,
+.automation-grid,
+.admin-two-column {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.admin-two-column {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-card {
+  color: var(--white);
+}
+
+.metric-card,
+.detail-card,
+.health-card {
+  display: grid;
+  gap: 8px;
+  padding: 22px;
+}
+
+.metric-card span,
+.detail-card span,
+.health-card span {
+  color: rgba(255, 255, 255, 0.64);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.metric-card strong {
+  font-size: clamp(34px, 4vw, 54px);
+  line-height: 1;
+}
+
+.metric-card small {
+  color: var(--green);
+  font-weight: 900;
+}
+
+.detail-card strong,
+.health-card strong {
+  font-size: 24px;
+  line-height: 1.15;
+}
+
+.admin-section {
+  display: grid;
+  gap: 18px;
+  padding: clamp(20px, 3vw, 30px);
+  color: var(--white);
+}
+
+.admin-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.admin-section-heading h2 {
+  margin-bottom: 0;
+  font-size: clamp(28px, 3vw, 42px);
+}
+
+.admin-table {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-table-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 1.3fr) minmax(150px, 1.2fr) minmax(120px, 0.9fr) minmax(110px, 0.8fr) minmax(120px, 0.9fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.74);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.admin-table-head {
+  color: rgba(255, 255, 255, 0.54);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.admin-table-row strong {
+  color: var(--white);
+}
+
+.admin-table-row .button {
+  min-height: 38px;
+  padding: 0 14px;
+}
+
+.status-badge {
+  border: 1px solid transparent;
+}
+
+.status-active {
+  color: #073018;
+  background: var(--green);
+}
+
+.status-prepared {
+  color: var(--white);
+  background: rgba(21, 94, 239, 0.72);
+}
+
+.status-warning {
+  color: #5b3300;
+  background: #ffbd5a;
+}
+
+.status-attention {
+  color: var(--white);
+  background: #d92d20;
+}
+
+.status-planned {
+  color: var(--ink);
+  background: #dce4ed;
+}
+
+.request-list {
+  display: grid;
+  gap: 12px;
+}
+
+.request-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 18px;
+}
+
+.request-card div,
+.ai-suggestion-card {
+  display: grid;
+  gap: 7px;
+}
+
+.request-card span,
+.ai-suggestion-card p {
+  color: rgba(255, 255, 255, 0.66);
+  line-height: 1.55;
+}
+
+.ai-suggestion-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.ai-suggestion-card {
+  align-content: start;
+  padding: 20px;
+}
+
+.ai-suggestion-card h3 {
+  margin: 0;
+  font-size: 19px;
+}
+
+.ai-suggestion-card p {
+  margin: 0;
+}
+
+.ai-suggestion-card div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.ai-suggestion-card .button {
+  min-height: 38px;
+  padding: 0 13px;
+  font-size: 13px;
+}
+
+.compact-admin-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.automation-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.automation-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 18px;
+}
+
 .payment-hero {
   background:
     radial-gradient(circle at 82% 16%, rgba(25, 194, 255, 0.18), transparent 30%),
@@ -3172,6 +3451,11 @@ h3 {
   .checkout-panel,
   .premium-call,
   .change-request-layout,
+  .admin-grid,
+  .admin-two-column,
+  .ai-suggestion-grid,
+  .automation-grid,
+  .compact-admin-grid,
   .payment-layout,
   .payment-configurator,
   .intake-shell {
@@ -3230,6 +3514,19 @@ h3 {
   .change-request-aside,
   .intake-sidebar {
     position: static;
+  }
+
+  .admin-table-head {
+    display: none;
+  }
+
+  .admin-table-row,
+  .request-card {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-table-row .button {
+    width: 100%;
   }
 }
 
@@ -3298,6 +3595,17 @@ h3 {
   .upsell-box,
   .price-indications article {
     padding: 16px;
+  }
+
+  .admin-shell {
+    padding: 16px;
+  }
+
+  .admin-hero,
+  .admin-section-heading,
+  .automation-card {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .status-actions {

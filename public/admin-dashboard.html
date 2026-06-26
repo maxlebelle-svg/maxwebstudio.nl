@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Admin Dashboard Preview | Max Webstudio</title>
+    <meta name="description" content="Interne preview van het Max Web Studio Backoffice dashboard." />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="admin-body">
+    <main class="admin-shell">
+      <section class="admin-hero">
+        <div>
+          <p class="section-kicker">Interne preview</p>
+          <h1>Max Web Studio Backoffice</h1>
+          <p>Beheer klanten, websites, betalingen en wijzigingsverzoeken vanuit één centrale omgeving.</p>
+        </div>
+        <span class="admin-preview-badge">Admin preview</span>
+      </section>
+
+      <section class="admin-grid admin-metrics" aria-label="Dashboard overzicht">
+        <article class="admin-card metric-card"><span>Actieve klanten</span><strong>12</strong><small>+3 deze maand</small></article>
+        <article class="admin-card metric-card"><span>Websites live</span><strong>18</strong><small>Netlify actief</small></article>
+        <article class="admin-card metric-card"><span>Open wijzigingsverzoeken</span><strong>5</strong><small>2 wachten op akkoord</small></article>
+        <article class="admin-card metric-card"><span>Maandelijkse omzet</span><strong>€ 522</strong><small>Onderhoud & hosting</small></article>
+      </section>
+
+      <section class="admin-section">
+        <div class="admin-section-heading">
+          <div>
+            <p class="section-kicker">Klanten</p>
+            <h2>Actieve klantomgevingen</h2>
+          </div>
+          <span class="status-badge status-prepared">Placeholder-data</span>
+        </div>
+        <div class="admin-table" role="table" aria-label="Klanten">
+          <div class="admin-table-row admin-table-head" role="row">
+            <span>Klant</span><span>Website</span><span>Pakket</span><span>Status</span><span>Laatste update</span><span>Actie</span>
+          </div>
+          <div class="admin-table-row" role="row">
+            <strong>DC Timmerwerken</strong><span>dc-timmerwerken.nl</span><span>Care Plus</span><span><mark class="status-badge status-active">Live</mark></span><span>Vandaag</span><button class="button secondary" type="button">Bekijk</button>
+          </div>
+          <div class="admin-table-row" role="row">
+            <strong>Eco Products NL</strong><span>ecoproducts.nl</span><span>Business Website</span><span><mark class="status-badge status-warning">Review</mark></span><span>Gisteren</span><button class="button secondary" type="button">Bekijk</button>
+          </div>
+          <div class="admin-table-row" role="row">
+            <strong>Wiese Timmerwerken</strong><span>wiesetimmerwerken.nl</span><span>Care Basic</span><span><mark class="status-badge status-active">Live</mark></span><span>2 dagen geleden</span><button class="button secondary" type="button">Bekijk</button>
+          </div>
+          <div class="admin-table-row" role="row">
+            <strong>Quantum Bouw</strong><span>quantumbouw.nl</span><span>Premium Growth</span><span><mark class="status-badge status-attention">Actie nodig</mark></span><span>Deze week</span><button class="button secondary" type="button">Bekijk</button>
+          </div>
+          <div class="admin-table-row" role="row">
+            <strong>Max Web Studio Demo</strong><span>demo.maxwebstudio.nl</span><span>Demo omgeving</span><span><mark class="status-badge status-prepared">Preview</mark></span><span>Vandaag</span><button class="button secondary" type="button">Bekijk</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-section">
+        <div class="admin-section-heading">
+          <div>
+            <p class="section-kicker">Wijzigingsverzoeken</p>
+            <h2>Open aanvragen</h2>
+          </div>
+        </div>
+        <div class="request-list">
+          <article class="admin-card request-card"><div><strong>DC Timmerwerken</strong><span>Openingstijden aanpassen</span></div><mark class="status-badge status-active">Binnen onderhoud</mark><mark class="status-badge status-warning">Wacht op akkoord</mark></article>
+          <article class="admin-card request-card"><div><strong>Eco Products NL</strong><span>Nieuwe dienstpagina</span></div><mark class="status-badge status-attention">Offerte nodig</mark><mark class="status-badge status-warning">Te beoordelen</mark></article>
+          <article class="admin-card request-card"><div><strong>Wiese Timmerwerken</strong><span>Foto's vervangen</span></div><mark class="status-badge status-active">Binnen onderhoud</mark><mark class="status-badge status-prepared">In behandeling</mark></article>
+          <article class="admin-card request-card"><div><strong>Quantum Bouw</strong><span>SEO teksten uitbreiden</span></div><mark class="status-badge status-prepared">Betaalde uitbreiding</mark><mark class="status-badge status-warning">Concept maken</mark></article>
+        </div>
+      </section>
+
+      <section class="admin-section">
+        <div class="admin-section-heading">
+          <div>
+            <p class="section-kicker">AI voorstellen</p>
+            <h2>Voorbereide optimalisaties</h2>
+          </div>
+        </div>
+        <div class="ai-suggestion-grid">
+          <article class="admin-card ai-suggestion-card"><span class="status-badge status-active">Risico laag</span><h3>Tekstwijziging homepage voorbereid</h3><p>Korte intro aangescherpt voor meer vertrouwen en duidelijkere propositie.</p><div><button class="button secondary" type="button">Preview</button><button class="button primary" type="button">Goedkeuren</button></div></article>
+          <article class="admin-card ai-suggestion-card"><span class="status-badge status-active">Risico laag</span><h3>Nieuwe FAQ voor onderhoudspakket voorgesteld</h3><p>Extra uitleg over Care Plus om terugkerende klantvragen te verminderen.</p><div><button class="button secondary" type="button">Preview</button><button class="button primary" type="button">Goedkeuren</button></div></article>
+          <article class="admin-card ai-suggestion-card"><span class="status-badge status-warning">Risico gemiddeld</span><h3>Afbeelding vervangen op projectenpagina</h3><p>Voorstel om een sterker projectbeeld te gebruiken bij de case-sectie.</p><div><button class="button secondary" type="button">Preview</button><button class="button primary" type="button">Goedkeuren</button></div></article>
+          <article class="admin-card ai-suggestion-card"><span class="status-badge status-active">Risico laag</span><h3>SEO meta description verbetering</h3><p>Compactere meta description voor betere klikverwachting in zoekresultaten.</p><div><button class="button secondary" type="button">Preview</button><button class="button primary" type="button">Goedkeuren</button></div></article>
+        </div>
+      </section>
+
+      <div class="admin-two-column">
+        <section class="admin-section">
+          <div class="admin-section-heading"><div><p class="section-kicker">Betalingen</p><h2>Mollie overzicht</h2></div></div>
+          <div class="admin-grid compact-admin-grid">
+            <article class="admin-card detail-card"><span>Mollie status</span><strong>Voorbereid</strong></article>
+            <article class="admin-card detail-card"><span>Laatste betaling</span><strong>€750 websitepakket</strong></article>
+            <article class="admin-card detail-card"><span>Openstaand</span><strong>€29 onderhoud</strong></article>
+            <article class="admin-card detail-card"><span>Abonnementen</span><strong>8 actief</strong></article>
+          </div>
+        </section>
+
+        <section class="admin-section">
+          <div class="admin-section-heading"><div><p class="section-kicker">Website gezondheid</p><h2>Kwaliteitssignalen</h2></div></div>
+          <div class="admin-grid compact-admin-grid">
+            <article class="admin-card health-card"><span>SEO-score</span><strong>82/100</strong></article>
+            <article class="admin-card health-card"><span>Snelheid</span><strong>91/100</strong></article>
+            <article class="admin-card health-card"><span>Mobiel</span><strong>Goed</strong></article>
+            <article class="admin-card health-card"><span>Veiligheid</span><strong>Basis op orde</strong></article>
+          </div>
+        </section>
+      </div>
+
+      <section class="admin-section">
+        <div class="admin-section-heading">
+          <div>
+            <p class="section-kicker">Automatiseringen</p>
+            <h2>Toekomstige koppelingen</h2>
+          </div>
+        </div>
+        <div class="automation-grid">
+          <article class="admin-card automation-card"><strong>Resend e-mailflow</strong><span class="status-badge status-prepared">Voorbereid</span></article>
+          <article class="admin-card automation-card"><strong>Mollie betaalstatus</strong><span class="status-badge status-prepared">Voorbereid</span></article>
+          <article class="admin-card automation-card"><strong>Netlify deploy status</strong><span class="status-badge status-planned">Gepland</span></article>
+          <article class="admin-card automation-card"><strong>AI wijzigingsanalyse</strong><span class="status-badge status-planned">Gepland</span></article>
+          <article class="admin-card automation-card"><strong>Klantnotificaties</strong><span class="status-badge status-planned">Gepland</span></article>
+          <article class="admin-card automation-card"><strong>Domeinmonitoring</strong><span class="status-badge status-active">Actief</span></article>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

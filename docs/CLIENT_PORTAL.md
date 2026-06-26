@@ -1,6 +1,14 @@
 # Client Portal
 
-Dit document beschrijft de richting voor een toekomstig klantportaal. Er is momenteel nog geen klantportaal gebouwd.
+Dit document beschrijft de richting voor een toekomstig klantportaal. Er is momenteel nog geen volledig klantportaal gebouwd.
+
+## Huidige Bouwstenen
+
+- `/public/wijziging-doorgeven.html`: statische pagina waarmee bestaande klanten wijzigingsverzoeken kunnen doorgeven.
+- `/public/bedankt-wijziging.html`: statische bedankpagina na een wijzigingsverzoek.
+- `/public/admin-dashboard.html`: Admin Dashboard v1 als statische backoffice-preview met placeholder-data.
+
+Admin Dashboard v1 bevat nog geen login, backend, echte klantdata of externe koppelingen. De pagina is bedoeld als visuele en structurele basis voor latere integraties met Mollie, Resend, Netlify Forms/Functions, klantendatabase, domeinen, hosting, AI wijzigingsvoorstellen en analytics.
 
 ## Doel
 
@@ -87,4 +95,3 @@ Huidige aanknopingspunten:
 - onderhoudspakketten
 
 Deze moeten eerst betrouwbaarder gekoppeld worden voordat een klantportaal logisch is.
-

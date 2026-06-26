@@ -42,6 +42,9 @@ Belangrijk:
 - `/public/bedankt.html`
 - `/public/onboarding.html`
 - `/public/betaling-geannuleerd.html`
+- `/public/wijziging-doorgeven.html`
+- `/public/bedankt-wijziging.html`
+- `/public/admin-dashboard.html`
 - `/public/waarom-max-webstudio.html`
 - `/public/werkwijze.html`
 - `/public/over-max-webstudio.html`
@@ -91,3 +94,8 @@ Belangrijk:
 - Mobiele navigatie verdwijnt onder 980px zonder alternatief menu.
 - Grote afbeeldingen kunnen performance drukken.
 
+## Nieuwe Bouwstenen
+
+- Admin Dashboard v1 is toegevoegd als statische backoffice-preview op `/public/admin-dashboard.html`.
+- De admin-preview gebruikt alleen placeholder-data, bevat `noindex, nofollow` en is niet gelinkt in de hoofdwebsite.
+- Er is nog geen login, backend, database of echte koppeling met Mollie, Resend, Netlify Forms/Functions of analytics.

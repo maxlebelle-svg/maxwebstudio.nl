@@ -70,6 +70,12 @@ Geen CSS-refactor uitvoeren zonder akkoord.
 
 Doel: Max Web Studio schaalbaar maken als softwarebedrijf.
 
+Status:
+
+- Admin Dashboard v1 is toegevoegd als statische preview op `/public/admin-dashboard.html`.
+- Deze preview gebruikt alleen placeholder-data en heeft nog geen login, backend of echte koppelingen.
+- De pagina is niet prominent gelinkt op de publieke website en bevat `noindex, nofollow`.
+
 Mogelijke onderdelen:
 
 - Klantportaal
@@ -82,4 +88,3 @@ Mogelijke onderdelen:
 - Automatische reminders
 
 Deze fase vereist aparte technische keuzes en security review.
-
