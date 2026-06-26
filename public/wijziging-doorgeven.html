@@ -175,19 +175,61 @@
       const changeRequestForm = document.querySelector("#change-request-form");
       const changeRequestMessage = document.querySelector("#change-request-message");
       const submitButton = changeRequestForm.querySelector('button[type="submit"]');
+      const maxFiles = 5;
+      const maxFileSize = 10 * 1024 * 1024;
+      const allowedFileTypes = new Set([
+        "image/jpeg",
+        "image/png",
+        "application/pdf",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ]);
+
+      function formatFileSize(bytes) {
+        if (!bytes) return "0 KB";
+        if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+        return `${Math.ceil(bytes / 1024)} KB`;
+      }
+
+      function validateSelectedFiles(files) {
+        if (files.length > maxFiles) {
+          return `Upload maximaal ${maxFiles} bestanden.`;
+        }
+
+        const invalidFile = files.find((file) => !allowedFileTypes.has(file.type));
+        if (invalidFile) {
+          return `Bestandstype niet toegestaan: ${invalidFile.name}. Gebruik JPG, PNG, PDF of DOCX.`;
+        }
+
+        const oversizedFile = files.find((file) => file.size > maxFileSize);
+        if (oversizedFile) {
+          return `Bestand is te groot: ${oversizedFile.name}. Maximaal 10 MB per bestand.`;
+        }
+
+        return "";
+      }
 
       fileInput.addEventListener("change", () => {
         const files = [...fileInput.files];
+
+        changeRequestMessage.textContent = "";
 
         if (!files.length) {
           selectedFiles.textContent = "Nog geen bestanden gekozen.";
           return;
         }
 
+        const fileError = validateSelectedFiles(files);
+
+        if (fileError) {
+          selectedFiles.textContent = fileError;
+          changeRequestMessage.textContent = fileError;
+          return;
+        }
+
         selectedFiles.replaceChildren(
           ...files.map((file) => {
             const item = document.createElement("span");
-            item.textContent = file.name;
+            item.textContent = `${file.name} (${formatFileSize(file.size)})`;
             return item;
           })
         );
@@ -205,28 +247,19 @@
         changeRequestMessage.textContent = "";
 
         const formData = new FormData(changeRequestForm);
-        const payload = {
-          firstName: formData.get("firstName"),
-          lastName: formData.get("lastName"),
-          companyName: formData.get("companyName"),
-          email: formData.get("email"),
-          phone: formData.get("phone"),
-          website: formData.get("website"),
-          carePlan: formData.get("carePlan"),
-          changeCategory: formData.get("changeCategory"),
-          priority: formData.get("priority"),
-          changeTitle: formData.get("changeTitle"),
-          changeDescription: formData.get("changeDescription"),
-          confirmed: Boolean(formData.get("confirmed")),
-          websiteUrl: formData.get("websiteUrl"),
-          fileNames: [...fileInput.files].map((file) => file.name),
-        };
+        const fileError = validateSelectedFiles([...fileInput.files]);
+
+        if (fileError) {
+          changeRequestMessage.textContent = fileError;
+          submitButton.disabled = false;
+          submitButton.textContent = "Wijziging versturen";
+          return;
+        }
 
         try {
           const response = await fetch("/.netlify/functions/submit-change-request", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
+            body: formData,
           });
           const result = await response.json();
 

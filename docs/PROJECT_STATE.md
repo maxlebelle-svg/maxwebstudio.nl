@@ -105,7 +105,9 @@ Belangrijk:
 - Wijzigingsverzoeken kunnen op dezelfde pagina worden bekeken in een detailmodal.
 - `/functions/update-change-request-status.js` wijzigt de status van een wijzigingsverzoek via een server-side Supabase PATCH.
 - Toegestane statussen zijn `nieuw`, `in_behandeling`, `wacht_op_klant` en `afgerond`.
+- `/functions/get-change-request-file.js` maakt tijdelijke signed URLs voor bestanden die bij een wijzigingsverzoek horen.
 - Er is nog geen login, audit trail, echte klantentabel, Mollie-dashboardkoppeling of analytics.
-- Wijzigingsverzoeken via `/public/wijziging-doorgeven.html` worden nu via `/.netlify/functions/submit-change-request` opgeslagen in Supabase en naar Max Web Studio gemaild.
-- Uploads voor wijzigingsverzoeken worden in deze stap nog niet als bestanden meegestuurd; alleen gekozen bestandsnamen gaan mee in de e-mail.
+- Wijzigingsverzoeken via `/public/wijziging-doorgeven.html` worden via `/.netlify/functions/submit-change-request` opgeslagen in Supabase en naar Max Web Studio gemaild.
+- Bestanden bij wijzigingsverzoeken worden server-side opgeslagen in Supabase Storage bucket `change-request-files`.
+- Toegestane uploadtypes zijn JPG, PNG, PDF en DOCX, met maximaal 5 bestanden en maximaal 10 MB per bestand.
 - Supabase schema-instructies staan in `/docs/supabase-change-requests.sql`.

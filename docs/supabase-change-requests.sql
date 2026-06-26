@@ -37,3 +37,26 @@ alter table public.change_requests enable row level security;
 
 -- No public policies are added here.
 -- Netlify Functions should insert using SUPABASE_SERVICE_ROLE_KEY only.
+
+-- Storage bucket for uploaded change request files.
+-- This bucket may stay private. Files are uploaded and opened only through Netlify Functions.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'change-request-files',
+  'change-request-files',
+  false,
+  10485760,
+  array[
+    'image/jpeg',
+    'image/png',
+    'application/pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ]
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+-- No public storage policies are needed.
+-- Server-side access uses SUPABASE_SERVICE_ROLE_KEY from Netlify Functions.

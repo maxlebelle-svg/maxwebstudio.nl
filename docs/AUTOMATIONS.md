@@ -47,13 +47,14 @@ Daarna:
 - verplichte velden worden server-side gevalideerd
 - een honeypot veld kan spam stil afvangen
 - het wijzigingsverzoek wordt opgeslagen in Supabase tabel `change_requests`
+- bestanden worden opgeslagen in Supabase Storage bucket `change-request-files`
 - Max Web Studio ontvangt een e-mail via Resend
 - de klant ontvangt een bevestigingsmail wanneer Resend goed geconfigureerd is
-- bestandsnamen worden meegestuurd, maar bestanden zelf nog niet
+- bestandsmetadata wordt gekoppeld aan het wijzigingsverzoek in `file_names`
 
 Als e-mail een warning geeft, blijft het wijzigingsverzoek opgeslagen. Als Supabase-opslag faalt, stopt de flow met een nette foutmelding en worden er geen e-mails verstuurd.
 
-Echte uploadopslag moet later apart worden gekoppeld via Netlify Forms, Netlify Blobs, Supabase Storage of externe storage.
+Uploads zijn beperkt tot JPG, PNG, PDF en DOCX. Er mogen maximaal 5 bestanden worden meegestuurd en maximaal 10 MB per bestand.
 
 ### Admin Dashboard Wijzigingsverzoeken
 
@@ -83,6 +84,18 @@ Deze function:
 - geeft een nette JSON-response terug
 
 Er is nog geen login, audit trail, notificatie na statuswijziging of automatische taakverwerking gekoppeld.
+
+Bestanden openen loopt via:
+
+- `/.netlify/functions/get-change-request-file`
+
+Deze function:
+
+- accepteert alleen `GET`
+- verwacht een `changeRequestId` plus `fileIndex` of `storagePath`
+- controleert dat het bestand bij het bestaande wijzigingsverzoek hoort
+- maakt een tijdelijke Supabase Storage signed URL
+- lekt geen Supabase service role key naar de frontend
 
 ### Calendly
 

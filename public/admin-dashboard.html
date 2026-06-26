@@ -367,6 +367,49 @@
           detailList.append(item);
         }
 
+        function addFileDetail(request) {
+          const item = document.createElement("div");
+          item.className = "admin-file-detail";
+          const term = document.createElement("span");
+          term.textContent = "Bestanden";
+          const files = Array.isArray(request.fileNames) ? request.fileNames : [];
+
+          item.append(term);
+
+          if (!files.length) {
+            const empty = document.createElement("strong");
+            empty.textContent = "Geen bestanden meegestuurd";
+            item.append(empty);
+            detailList.append(item);
+            return;
+          }
+
+          const fileList = document.createElement("div");
+          fileList.className = "admin-file-list";
+
+          files.forEach((file, index) => {
+            const row = document.createElement("span");
+            const name = document.createElement("strong");
+            name.textContent = file.originalName || file;
+            row.append(name);
+
+            if (file.storagePath) {
+              const action = document.createElement("a");
+              action.className = "button secondary";
+              action.href = `/.netlify/functions/get-change-request-file?changeRequestId=${encodeURIComponent(request.id)}&fileIndex=${index}`;
+              action.target = "_blank";
+              action.rel = "noopener";
+              action.textContent = "Open bestand";
+              row.append(action);
+            }
+
+            fileList.append(row);
+          });
+
+          item.append(fileList);
+          detailList.append(item);
+        }
+
         function renderModal(request) {
           modalTitle.textContent = request.title || "Aanvraag bekijken";
           detailList.replaceChildren();
@@ -380,7 +423,7 @@
           addDetail("Prioriteit", request.priority);
           addDetail("Titel", request.title);
           addDetail("Omschrijving", request.description);
-          addDetail("Bestandsnamen", request.fileNames && request.fileNames.length ? request.fileNames.join(", ") : "Geen bestanden gekozen");
+          addFileDetail(request);
           addDetail("Interne classificatie", request.internalClassification);
           addDetail("Status", statusLabel(request.status));
           addDetail("Datum/tijd", formatDate(request.createdAt));

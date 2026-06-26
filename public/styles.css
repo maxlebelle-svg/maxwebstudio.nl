@@ -2383,7 +2383,7 @@ h3 {
   gap: 10px;
 }
 
-.admin-modal-grid div,
+.admin-modal-grid > div,
 .admin-status-editor {
   display: grid;
   gap: 7px;
@@ -2405,6 +2405,28 @@ h3 {
   color: var(--white);
   line-height: 1.55;
   overflow-wrap: anywhere;
+}
+
+.admin-file-detail {
+  grid-column: 1 / -1;
+}
+
+.admin-file-list {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-file-list > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.admin-file-list .button {
+  min-height: 38px;
+  padding: 0 14px;
 }
 
 .admin-status-editor div {

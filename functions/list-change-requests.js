@@ -183,12 +183,38 @@ function normalizeChangeRequest(row) {
     priority: cleanText(row.priority),
     title: cleanText(row.title),
     description: cleanText(row.description),
-    fileNames: Array.isArray(row.file_names) ? row.file_names.map(cleanText).filter(Boolean) : [],
+    fileNames: normalizeFiles(row.file_names),
     internalClassification: cleanText(row.internal_classification),
     status: cleanText(row.status || "nieuw"),
     source: cleanText(row.source || "website"),
     metadata: row.metadata && typeof row.metadata === "object" ? row.metadata : {},
   };
+}
+
+function normalizeFiles(value) {
+  return Array.isArray(value)
+    ? value
+        .map((file) => {
+          if (file && typeof file === "object") {
+            return {
+              originalName: cleanText(file.originalName),
+              storagePath: cleanText(file.storagePath),
+              mimeType: cleanText(file.mimeType),
+              size: Number(file.size) || 0,
+              bucket: cleanText(file.bucket),
+            };
+          }
+
+          return {
+            originalName: cleanText(file),
+            storagePath: "",
+            mimeType: "",
+            size: 0,
+            bucket: "",
+          };
+        })
+        .filter((file) => file.originalName || file.storagePath)
+    : [];
 }
 
 function cleanText(value) {

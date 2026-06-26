@@ -1,6 +1,17 @@
 const { sendEmail } = require("./email");
+const { randomUUID } = require("crypto");
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const storageBucket = "change-request-files";
+const maxFiles = 5;
+const maxFileSize = 10 * 1024 * 1024;
+const allowedFileTypes = {
+  ".jpg": ["image/jpeg"],
+  ".jpeg": ["image/jpeg"],
+  ".png": ["image/png"],
+  ".pdf": ["application/pdf"],
+  ".docx": ["application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+};
 
 const categoryLabels = {
   "tekst-aanpassen": "Tekst aanpassen",
@@ -25,15 +36,16 @@ exports.handler = async (event) => {
     return jsonResponse(405, { success: false, error: "Alleen POST-verzoeken zijn toegestaan." });
   }
 
-  let payload;
+  let parsedRequest;
 
   try {
-    payload = JSON.parse(event.body || "{}");
+    parsedRequest = parseRequest(event);
   } catch (error) {
-    return jsonResponse(400, { success: false, error: "Ongeldige JSON body." });
+    return jsonResponse(400, { success: false, error: error.message || "Ongeldige aanvraag." });
   }
 
-  const clean = sanitizeObject(payload);
+  const clean = sanitizeObject(parsedRequest.fields);
+  const files = parsedRequest.files;
 
   if (clean.websiteUrl) {
     return jsonResponse(200, { success: true, skipped: true });
@@ -45,7 +57,23 @@ exports.handler = async (event) => {
     return jsonResponse(400, { success: false, error: validationError });
   }
 
+  const fileValidationError = validateFiles(files);
+
+  if (fileValidationError) {
+    return jsonResponse(400, { success: false, error: fileValidationError });
+  }
+
   const changeRequest = buildChangeRequest(clean);
+  const uploadResult = await uploadChangeRequestFiles(changeRequest.id, files);
+
+  if (!uploadResult.success) {
+    return jsonResponse(500, {
+      success: false,
+      error: uploadResult.error || "Bestanden konden niet worden opgeslagen. Probeer het later opnieuw.",
+    });
+  }
+
+  changeRequest.fileNames = uploadResult.files;
   const storageResult = await saveChangeRequest(changeRequest);
 
   if (!storageResult.success) {
@@ -71,11 +99,12 @@ function buildChangeRequest(clean) {
   const priority = clean.priority === "hoog" ? "Hoog" : "Normaal";
   const carePlan = carePlanLabels[clean.carePlan] || clean.carePlan;
   const fileNames = toArray(clean.fileNames)
-    .map((name) => cleanText(name).slice(0, 180))
+    .map((name) => ({ originalName: cleanText(name).slice(0, 180) }))
     .filter(Boolean)
-    .slice(0, 12);
+    .slice(0, maxFiles);
 
   return {
+    id: randomUUID(),
     submittedAt: new Date().toISOString(),
     firstName: clean.firstName,
     lastName: clean.lastName,
@@ -150,6 +179,7 @@ async function saveChangeRequest(changeRequest) {
 
 function toSupabaseRecord(changeRequest) {
   return {
+    id: changeRequest.id,
     created_at: changeRequest.submittedAt,
     first_name: changeRequest.firstName,
     last_name: changeRequest.lastName,
@@ -166,9 +196,10 @@ function toSupabaseRecord(changeRequest) {
     internal_classification: changeRequest.classification,
     metadata: {
       form: "change-request",
-      formVersion: "1",
-      uploadMode: "filenames_only",
-      filesAttached: false,
+      formVersion: "2",
+      uploadMode: "supabase_storage",
+      storageBucket,
+      filesAttached: changeRequest.fileNames.length > 0,
     },
   };
 }
@@ -189,7 +220,7 @@ async function sendAdminEmail(changeRequest) {
       ["Prioriteit", changeRequest.priority],
       ["Titel", changeRequest.changeTitle],
       ["Omschrijving", changeRequest.changeDescription],
-      ["Bestandsnamen", changeRequest.fileNames.length ? changeRequest.fileNames.join("\n") : "Geen bestanden gekozen"],
+      ["Bestanden", formatFileList(changeRequest.fileNames)],
       ["Datum/tijd", changeRequest.submittedAt],
     ]),
     text: plainTextSummary(changeRequest),
@@ -207,11 +238,10 @@ async function sendCustomerEmail(changeRequest) {
       ["Categorie", changeRequest.changeCategory],
       ["Prioriteit", changeRequest.priority],
       ["Titel", changeRequest.changeTitle],
-      ["Bestandsnamen", changeRequest.fileNames.length ? changeRequest.fileNames.join("\n") : "Geen bestanden gekozen"],
-      ["Belangrijk", "Bestanden worden in deze eerste versie nog niet meegestuurd. De gekozen bestandsnamen zijn wel vastgelegd in je aanvraag."],
+      ["Bestanden", formatFileList(changeRequest.fileNames)],
       ["Contact", "Vragen? Mail naar info@maxwebstudio.nl."],
     ]),
-    text: `Beste ${changeRequest.firstName},\n\nWe hebben je wijzigingsverzoek ontvangen.\n\n${plainTextSummary(changeRequest)}\n\nBestanden worden in deze eerste versie nog niet meegestuurd. De gekozen bestandsnamen zijn wel vastgelegd in je aanvraag.\n\nMet vriendelijke groet,\nMax Webstudio`,
+    text: `Beste ${changeRequest.firstName},\n\nWe hebben je wijzigingsverzoek ontvangen.\n\n${plainTextSummary(changeRequest)}\n\nMet vriendelijke groet,\nMax Webstudio`,
   });
 }
 
@@ -228,7 +258,7 @@ function plainTextSummary(changeRequest) {
     `Prioriteit: ${changeRequest.priority}`,
     `Titel: ${changeRequest.changeTitle}`,
     `Omschrijving: ${changeRequest.changeDescription}`,
-    `Bestandsnamen: ${changeRequest.fileNames.length ? changeRequest.fileNames.join(", ") : "Geen bestanden gekozen"}`,
+    `Bestanden: ${formatFileList(changeRequest.fileNames)}`,
     `Datum/tijd: ${changeRequest.submittedAt}`,
   ].join("\n");
 }
@@ -265,6 +295,217 @@ function validate(payload) {
   return "";
 }
 
+function parseRequest(event) {
+  const contentType = event.headers["content-type"] || event.headers["Content-Type"] || "";
+
+  if (contentType.includes("multipart/form-data")) {
+    return parseMultipartRequest(event, contentType);
+  }
+
+  if (contentType.includes("application/json") || !contentType) {
+    return { fields: JSON.parse(event.body || "{}"), files: [] };
+  }
+
+  throw new Error("Niet ondersteund formulierformaat.");
+}
+
+function parseMultipartRequest(event, contentType) {
+  const boundaryMatch = contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
+
+  if (!boundaryMatch) {
+    throw new Error("Multipart boundary ontbreekt.");
+  }
+
+  const boundary = boundaryMatch[1] || boundaryMatch[2];
+  const bodyBuffer = Buffer.from(event.body || "", event.isBase64Encoded ? "base64" : "utf8");
+  const delimiter = Buffer.from(`--${boundary}`);
+  const fields = {};
+  const files = [];
+  let position = bodyBuffer.indexOf(delimiter);
+
+  while (position !== -1) {
+    let partStart = position + delimiter.length;
+
+    if (bodyBuffer.slice(partStart, partStart + 2).toString() === "--") break;
+    if (bodyBuffer.slice(partStart, partStart + 2).toString() === "\r\n") partStart += 2;
+
+    const nextBoundary = bodyBuffer.indexOf(delimiter, partStart);
+    if (nextBoundary === -1) break;
+
+    let part = bodyBuffer.slice(partStart, nextBoundary);
+    if (part.slice(-2).toString() === "\r\n") part = part.slice(0, -2);
+
+    const headerEnd = part.indexOf(Buffer.from("\r\n\r\n"));
+    if (headerEnd !== -1) {
+      const headers = parsePartHeaders(part.slice(0, headerEnd).toString("utf8"));
+      const content = part.slice(headerEnd + 4);
+      const disposition = headers["content-disposition"] || "";
+      const name = getDispositionValue(disposition, "name");
+      const filename = getDispositionValue(disposition, "filename");
+
+      if (name && filename) {
+        files.push({
+          fieldName: name,
+          originalName: filename,
+          mimeType: headers["content-type"] || "application/octet-stream",
+          size: content.length,
+          buffer: content,
+        });
+      } else if (name) {
+        fields[name] = content.toString("utf8").trim();
+      }
+    }
+
+    position = nextBoundary;
+  }
+
+  fields.confirmed = Boolean(fields.confirmed);
+
+  return { fields, files };
+}
+
+function parsePartHeaders(headerText) {
+  return Object.fromEntries(
+    headerText
+      .split("\r\n")
+      .map((line) => {
+        const separator = line.indexOf(":");
+        return separator === -1
+          ? []
+          : [line.slice(0, separator).trim().toLowerCase(), line.slice(separator + 1).trim()];
+      })
+      .filter((entry) => entry.length === 2)
+  );
+}
+
+function getDispositionValue(disposition, key) {
+  const match = disposition.match(new RegExp(`${key}="([^"]*)"`, "i"));
+  return match ? match[1] : "";
+}
+
+function validateFiles(files) {
+  if (files.length > maxFiles) {
+    return `Upload maximaal ${maxFiles} bestanden.`;
+  }
+
+  for (const file of files) {
+    const extension = fileExtension(file.originalName);
+    const allowedMimeTypes = allowedFileTypes[extension];
+
+    if (!allowedMimeTypes || !allowedMimeTypes.includes(file.mimeType)) {
+      return `Bestandstype niet toegestaan: ${file.originalName}. Gebruik JPG, PNG, PDF of DOCX.`;
+    }
+
+    if (file.size > maxFileSize) {
+      return `Bestand is te groot: ${file.originalName}. Maximaal 10 MB per bestand.`;
+    }
+
+    if (!file.size) {
+      return `Bestand is leeg: ${file.originalName}.`;
+    }
+  }
+
+  return "";
+}
+
+async function uploadChangeRequestFiles(changeRequestId, files) {
+  if (!files.length) return { success: true, files: [] };
+
+  const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.error("Change request file upload missing Supabase configuration");
+    return { success: false, error: "Uploadopslag is nog niet goed geconfigureerd." };
+  }
+
+  const bucketResult = await ensureStorageBucket(supabaseUrl, serviceRoleKey);
+
+  if (!bucketResult.success) {
+    console.error("Change request file bucket check failed", {
+      status: bucketResult.status,
+      message: bucketResult.message,
+    });
+    return { success: false, error: "Uploadopslag kon niet worden voorbereid." };
+  }
+
+  const uploadedFiles = [];
+
+  for (const [index, file] of files.entries()) {
+    const safeName = safeFilename(file.originalName);
+    const storagePath = `${changeRequestId}/${Date.now()}-${index + 1}-${safeName}`;
+    const response = await fetch(`${supabaseUrl}/storage/v1/object/${storageBucket}/${encodeStoragePath(storagePath)}`, {
+      method: "POST",
+      headers: {
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`,
+        "Content-Type": file.mimeType,
+        "Cache-Control": "3600",
+        "x-upsert": "false",
+      },
+      body: file.buffer,
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      console.error("Change request file upload failed", {
+        status: response.status,
+        message: data.message || data.error || "Unknown Supabase Storage error",
+      });
+      return { success: false, error: `Bestand kon niet worden opgeslagen: ${file.originalName}.` };
+    }
+
+    uploadedFiles.push({
+      originalName: file.originalName,
+      storagePath,
+      mimeType: file.mimeType,
+      size: file.size,
+      bucket: storageBucket,
+    });
+  }
+
+  return { success: true, files: uploadedFiles };
+}
+
+async function ensureStorageBucket(supabaseUrl, serviceRoleKey) {
+  const bucketResponse = await fetch(`${supabaseUrl}/storage/v1/bucket/${storageBucket}`, {
+    method: "GET",
+    headers: {
+      apikey: serviceRoleKey,
+      Authorization: `Bearer ${serviceRoleKey}`,
+      Accept: "application/json",
+    },
+  });
+
+  if (bucketResponse.ok) return { success: true };
+  if (bucketResponse.status !== 404) {
+    const data = await bucketResponse.json().catch(() => ({}));
+    return { success: false, status: bucketResponse.status, message: data.message || data.error || "Bucket check failed" };
+  }
+
+  const createResponse = await fetch(`${supabaseUrl}/storage/v1/bucket`, {
+    method: "POST",
+    headers: {
+      apikey: serviceRoleKey,
+      Authorization: `Bearer ${serviceRoleKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      id: storageBucket,
+      name: storageBucket,
+      public: false,
+      file_size_limit: maxFileSize,
+      allowed_mime_types: Object.values(allowedFileTypes).flat(),
+    }),
+  });
+
+  if (createResponse.ok) return { success: true };
+
+  const data = await createResponse.json().catch(() => ({}));
+  return { success: false, status: createResponse.status, message: data.message || data.error || "Bucket create failed" };
+}
+
 function sanitizeObject(value) {
   if (Array.isArray(value)) return value.map(sanitizeObject).slice(0, 20);
   if (value && typeof value === "object") {
@@ -294,6 +535,12 @@ function sanitizeObject(value) {
   return typeof value === "string" ? value.trim().slice(0, 5000) : value;
 }
 
+function formatFileList(files) {
+  return files.length
+    ? files.map((file) => file.originalName || file).join("\n")
+    : "Geen bestanden meegestuurd";
+}
+
 function cleanText(value) {
   return String(value || "").trim();
 }
@@ -309,6 +556,28 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function fileExtension(filename) {
+  const dotIndex = String(filename || "").lastIndexOf(".");
+  return dotIndex === -1 ? "" : String(filename).slice(dotIndex).toLowerCase();
+}
+
+function safeFilename(filename) {
+  const extension = fileExtension(filename);
+  const basename = String(filename || "bestand")
+    .slice(0, extension ? -extension.length : undefined)
+    .normalize("NFKD")
+    .replace(/[^\w.-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 80) || "bestand";
+
+  return `${basename}${extension}`;
+}
+
+function encodeStoragePath(path) {
+  return path.split("/").map(encodeURIComponent).join("/");
 }
 
 function jsonResponse(statusCode, body) {

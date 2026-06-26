@@ -68,12 +68,23 @@ Aanbevelingen:
 
 Onboarding comprimeert foto-uploads client-side en stuurt ze als bijlage.
 
+Wijzigingsverzoeken gebruiken Supabase Storage:
+
+- bucket: `change-request-files`
+- bucket mag private blijven
+- uploads lopen alleen via `/.netlify/functions/submit-change-request`
+- bestanden openen loopt via `/.netlify/functions/get-change-request-file`
+- de downloadfunctie controleert eerst of het bestand aan het wijzigingsverzoek gekoppeld is
+- downloads gebruiken tijdelijke signed URLs
+- toegestane types: JPG, PNG, PDF en DOCX
+- limieten: maximaal 5 bestanden, maximaal 10 MB per bestand
+
 Aanbevelingen:
 
 - limieten blijven handhaven
 - allowed MIME types blijven beperken
 - geen uitvoerbare bestanden accepteren
-- bij groei overstappen op veilige uploadopslag
+- admin-dashboard afschermen voordat bestandsdownloads operationeel worden gebruikt
 
 ## Security Headers
 
@@ -98,4 +109,3 @@ De site verwerkt mogelijk:
 - betaalmetadata
 
 Privacyverklaring moet meegroeien met analytics, CRM, portal en opslagkeuzes.
-
