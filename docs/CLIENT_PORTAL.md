@@ -9,6 +9,7 @@ Dit document beschrijft de richting voor een toekomstig klantportaal. Er is mome
 - `/public/admin-dashboard.html`: Admin Dashboard v1 als backoffice-preview. De sectie Wijzigingsverzoeken leest echte aanvragen uit Supabase via `/.netlify/functions/list-change-requests` en kan statussen bijwerken via `/.netlify/functions/update-change-request-status`.
 - `/public/login.html`: Supabase Auth loginpagina voor klanten.
 - `/public/client-dashboard.html`: afgeschermd klantdashboard met echte profieldata, websitegegevens en maximaal 5 recente wijzigingsverzoeken van de ingelogde klant.
+- `/public/index.html`: publieke homepage met subtiele Klantportaal-links naar `/login.html` in header, footer en onderhoudssectie.
 
 Admin Dashboard v1 bevat nog geen volledige login, audit trail of brede admin-acties. Wijzigingsverzoeken zijn gekoppeld aan Supabase, kunnen in een detailmodal worden bekeken en kunnen handmatig van status worden gewijzigd. De overige dashboardsecties blijven placeholder-bouwstenen voor latere integraties met Mollie, Resend, Netlify Forms/Functions, klantendatabase, domeinen, hosting, AI wijzigingsvoorstellen en analytics.
 

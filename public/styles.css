@@ -1431,6 +1431,31 @@ h3 {
   margin-top: auto;
 }
 
+.maintenance-client-cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 10px;
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  background: var(--white);
+  font-weight: 800;
+  box-shadow: 0 12px 34px rgba(6, 18, 31, 0.05);
+}
+
+.maintenance-client-cta a {
+  color: var(--blue);
+  font-weight: 900;
+}
+
+.maintenance-client-cta a:hover {
+  color: var(--ink);
+}
+
 .price-card {
   display: flex;
   flex-direction: column;
