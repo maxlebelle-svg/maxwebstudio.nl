@@ -5,18 +5,32 @@ create table if not exists public.profiles (
   id uuid primary key default gen_random_uuid(),
   auth_user_id uuid not null unique references auth.users(id) on delete cascade,
   name text not null,
+  email text,
+  phone text,
   company text,
   website text,
   package text,
+  status text not null default 'actief',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.profiles
+  add column if not exists email text,
+  add column if not exists phone text,
+  add column if not exists status text not null default 'actief';
 
 alter table public.change_requests
   add column if not exists auth_user_id uuid references auth.users(id) on delete set null;
 
 create index if not exists profiles_auth_user_id_idx
   on public.profiles (auth_user_id);
+
+create index if not exists profiles_email_idx
+  on public.profiles (lower(email));
+
+create index if not exists profiles_status_idx
+  on public.profiles (status);
 
 create index if not exists change_requests_auth_user_id_created_at_idx
   on public.change_requests (auth_user_id, created_at desc);

@@ -75,12 +75,14 @@ Het klantenportaal gebruikt:
 - RLS op `profiles` en `change_requests`
 - `auth.uid()` als grens tussen klantaccounts
 - admin-profielbeheer via `ADMIN_TOKEN` en een server-side Netlify Function
+- Admin CRM-bewerkingen voor klantprofielen lopen via `/.netlify/functions/admin-client-profiles`
 
 Risico:
 
 - Zonder correcte RLS kan een anon key te veel data lezen.
 - Bestaande wijzigingsverzoeken zonder `auth_user_id` zijn niet zichtbaar voor klanten.
 - Het admin-dashboard heeft nog geen volledige admin-login, rollenmodel of audit trail.
+- `ADMIN_TOKEN` is een tussenlaag en moet strikt geheim blijven.
 
 Aanbevelingen:
 
@@ -88,6 +90,7 @@ Aanbevelingen:
 - Profielen en bestaande wijzigingsverzoeken zorgvuldig koppelen aan de juiste `auth_user_id`.
 - Geen service role key in browsercode plaatsen.
 - Vervang het tijdelijke admin-tokenmodel later door echte admin-authenticatie met rollen en logging.
+- Voer de CRM-kolommen uit `/docs/supabase-client-portal.sql` uit zodat e-mail, telefoon en klantstatus duurzaam in `profiles` worden opgeslagen.
 
 ### Uploads
 

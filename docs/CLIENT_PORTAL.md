@@ -11,9 +11,9 @@ Dit document beschrijft de richting voor een toekomstig klantportaal. Er is mome
 - `/public/client-dashboard.html`: afgeschermd klantdashboard met echte profieldata, websitegegevens en maximaal 5 recente wijzigingsverzoeken van de ingelogde klant.
 - `/public/index.html`: publieke homepage met subtiele Klantportaal-links naar `/login.html` in header, footer en onderhoudssectie.
 
-Admin Dashboard v1 bevat nog geen volledige login, audit trail of brede admin-acties. Wijzigingsverzoeken zijn gekoppeld aan Supabase, kunnen in een detailmodal worden bekeken en kunnen handmatig van status worden gewijzigd. De overige dashboardsecties blijven placeholder-bouwstenen voor latere integraties met Mollie, Resend, Netlify Forms/Functions, klantendatabase, domeinen, hosting, AI wijzigingsvoorstellen en analytics.
+Admin CRM Fase 5.1 gebruikt `/public/admin-dashboard.html` als centrale backoffice. De pagina bevat sidebarmodules voor dashboard, klanten, websites, wijzigingsverzoeken, bestanden, onderhoud, facturen placeholder, AI placeholder en instellingen placeholder. Wijzigingsverzoeken zijn gekoppeld aan Supabase, kunnen in een detailmodal worden bekeken en kunnen handmatig van status worden gewijzigd.
 
-Het admin-dashboard bevat nu wel een eerste profielbeheerfunctie voor klanten. Via `/.netlify/functions/admin-client-profiles` kan Max Web Studio een klant selecteren, bedrijfsnaam, website en onderhoudspakket beheren, en het profiel koppelen aan een Supabase Auth-user. Deze beheeractie gebruikt `ADMIN_TOKEN` in de browser en `SUPABASE_SERVICE_ROLE_KEY` uitsluitend server-side. Nieuwe profielen worden opgeslagen in `public.profiles`; `created_at` fungeert als klant-sinds datum.
+Via `/.netlify/functions/admin-client-profiles` kan Max Web Studio klanten zoeken, aanmaken en bijwerken. De CRM-basis beheert naam, e-mail, telefoon, bedrijf, website, onderhoudspakket, status en klant-sinds datum. Deze beheeractie gebruikt `ADMIN_TOKEN` in de browser en `SUPABASE_SERVICE_ROLE_KEY` uitsluitend server-side. Nieuwe profielen worden opgeslagen in `public.profiles`; `created_at` fungeert als klant-sinds datum. Nieuwe klanten kunnen direct gekoppeld worden wanneer het e-mailadres al bestaat als Supabase Auth-user.
 
 Wijzigingsverzoeken worden via `/.netlify/functions/submit-change-request` verwerkt, opgeslagen in Supabase en per e-mail naar Max Web Studio gestuurd. De function valideert verplichte velden, ondersteunt een honeypot en maakt een eerste interne classificatie: waarschijnlijk binnen onderhoud, waarschijnlijk offerte nodig of handmatig beoordelen.
 
@@ -31,6 +31,16 @@ Portaaldata:
 
 - `profiles`: klantprofiel gekoppeld aan `auth.users`
 - `change_requests.auth_user_id`: koppeling tussen klant en wijzigingsverzoeken
+
+CRM-profielvelden:
+
+- `name`
+- `email`
+- `phone`
+- `company`
+- `website`
+- `package`
+- `status`
 
 RLS zorgt dat klanten alleen hun eigen profiel en eigen wijzigingsverzoeken kunnen lezen. De SQL staat in `/docs/supabase-client-portal.sql`.
 

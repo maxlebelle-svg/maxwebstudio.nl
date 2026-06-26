@@ -2081,6 +2081,60 @@ h3 {
   padding: clamp(20px, 4vw, 48px);
 }
 
+.admin-crm-shell {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 18px;
+  width: min(100%, 1540px);
+  margin: 0 auto;
+  padding: clamp(16px, 3vw, 34px);
+}
+
+.admin-crm-main {
+  display: grid;
+  gap: clamp(22px, 3vw, 34px);
+  min-width: 0;
+}
+
+.admin-sidebar {
+  position: sticky;
+  top: 18px;
+  display: grid;
+  gap: 18px;
+  align-self: start;
+  max-height: calc(100vh - 36px);
+  overflow: auto;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.18);
+}
+
+.admin-sidebar .brand {
+  color: var(--white);
+}
+
+.admin-sidebar-nav {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-sidebar-nav a {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.72);
+  font-weight: 800;
+}
+
+.admin-sidebar-nav a:hover {
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .admin-hero,
 .admin-section,
 .admin-card {
@@ -2100,6 +2154,13 @@ h3 {
   background:
     radial-gradient(circle at 86% 20%, rgba(25, 194, 255, 0.2), transparent 30%),
     rgba(255, 255, 255, 0.07);
+}
+
+.admin-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
 .admin-hero .section-kicker,
@@ -2245,6 +2306,18 @@ h3 {
   padding: 0 14px;
 }
 
+.crm-customer-row {
+  grid-template-columns: minmax(130px, 1fr) minmax(140px, 1.1fr) minmax(150px, 1.2fr) minmax(100px, 0.7fr) minmax(105px, 0.8fr) minmax(130px, 0.9fr) auto;
+}
+
+.website-row {
+  grid-template-columns: minmax(160px, 1.2fr) minmax(180px, 1.4fr) minmax(110px, 0.8fr) minmax(90px, 0.7fr) auto;
+}
+
+.file-row {
+  grid-template-columns: minmax(160px, 1.2fr) minmax(180px, 1.2fr) minmax(180px, 1.3fr) auto;
+}
+
 .request-table .request-table-row {
   grid-template-columns: minmax(150px, 1.1fr) minmax(170px, 1.3fr) minmax(130px, 1fr) minmax(100px, 0.7fr) minmax(120px, 0.8fr) minmax(140px, 0.9fr) auto;
 }
@@ -2298,6 +2371,18 @@ h3 {
 }
 
 .admin-filters select {
+  min-height: 44px;
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  padding: 0 12px;
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.08);
+  font: inherit;
+  text-transform: none;
+}
+
+.admin-filters input {
   min-height: 44px;
   width: 100%;
   border: 1px solid rgba(255, 255, 255, 0.16);
@@ -2406,8 +2491,30 @@ h3 {
   flex: 1;
 }
 
+.admin-crm-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(340px, 0.65fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.crm-detail-panel {
+  position: sticky;
+  top: 18px;
+}
+
 .client-profile-table .client-profile-row {
   grid-template-columns: minmax(150px, 1.2fr) minmax(160px, 1.1fr) minmax(110px, 0.75fr) minmax(170px, 1.2fr) minmax(140px, 0.9fr) auto;
+}
+
+.admin-card small {
+  color: rgba(255, 255, 255, 0.62);
+  line-height: 1.45;
+}
+
+.admin-card .is-disabled,
+.admin-profile-actions .is-disabled {
+  opacity: 0.55;
 }
 
 .request-list {
@@ -3978,6 +4085,8 @@ h3 {
   .checkout-panel,
   .premium-call,
   .change-request-layout,
+  .admin-crm-shell,
+  .admin-crm-grid,
   .admin-grid,
   .admin-two-column,
   .admin-profile-manager,
@@ -4054,6 +4163,9 @@ h3 {
   .admin-profile-form-heading,
   .admin-profile-actions,
   .admin-table-row,
+  .crm-customer-row,
+  .website-row,
+  .file-row,
   .request-table .request-table-row,
   .client-profile-table .client-profile-row,
   .portal-request-table .portal-request-row,
@@ -4072,6 +4184,12 @@ h3 {
   .admin-modal-grid,
   .admin-status-editor div {
     grid-template-columns: 1fr;
+  }
+
+  .admin-sidebar,
+  .crm-detail-panel {
+    position: static;
+    max-height: none;
   }
 
   .portal-auth-shell,

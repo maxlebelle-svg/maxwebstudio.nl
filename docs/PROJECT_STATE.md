@@ -69,6 +69,7 @@ Belangrijk:
 - `mollie-products.js`: centrale server-side prijsdefinities.
 - `client-auth-config.js`: geeft publieke Supabase Auth-config terug voor het klantenportaal.
 - `client-change-request-file.js`: maakt klantveilige tijdelijke signed URLs voor eigen wijzigingsverzoekbestanden.
+- `admin-client-profiles.js`: beheert CRM-klantprofielen server-side met `ADMIN_TOKEN` en Supabase service role.
 
 ## Sterke Punten
 
@@ -129,3 +130,6 @@ Belangrijk:
 - `/functions/client-change-request-file.js` gebruikt de Supabase Auth JWT van de ingelogde klant, controleert server-side dat het wijzigingsverzoek bij `auth.uid()` hoort en maakt daarna pas een tijdelijke signed URL voor Supabase Storage.
 - `/public/client-dashboard.html` telt open wijzigingsverzoeken op basis van maximaal 100 eigen aanvragen, toont maximaal 5 recente aanvragen en toont in de modal bestanden plus de klantvriendelijke statusflow.
 - De publieke homepage bevat een subtiele Klantportaal-link naar `/login.html` in de header, footer en onderhoudssectie.
+- Admin CRM Fase 5.1 vervangt de admin-preview door een CRM-basis met sidebarmodules, KPI's, klantenoverzicht, klantdetailpaneel, nieuwe-klantmodal, websites, bestanden, onderhoud en placeholders voor facturen, AI en instellingen.
+- Het CRM gebruikt `/.netlify/functions/admin-client-profiles` met `ADMIN_TOKEN`; service role blijft uitsluitend server-side.
+- `profiles` is voorbereid op CRM-velden `email`, `phone` en `status` via `/docs/supabase-client-portal.sql`. De function valt terug op de oudere kolommen als deze SQL nog niet is uitgevoerd.
