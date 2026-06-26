@@ -99,7 +99,9 @@ Wijzigingsverzoeken gebruiken Supabase Storage:
 - bucket mag private blijven
 - uploads lopen alleen via `/.netlify/functions/submit-change-request`
 - bestanden openen loopt via `/.netlify/functions/get-change-request-file`
+- klantdownloads lopen via `/.netlify/functions/client-change-request-file`
 - de downloadfunctie controleert eerst of het bestand aan het wijzigingsverzoek gekoppeld is
+- de klantdownloadfunctie controleert eerst de Supabase Auth JWT en `change_requests.auth_user_id`
 - downloads gebruiken tijdelijke signed URLs
 - toegestane types: JPG, PNG, PDF en DOCX
 - limieten: maximaal 5 bestanden, maximaal 10 MB per bestand

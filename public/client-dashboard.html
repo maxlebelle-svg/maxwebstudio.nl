@@ -96,7 +96,8 @@
         wacht_op_klant: "Wacht op klant",
         afgerond: "Afgerond",
       };
-      const state = { client: null, profile: null, requests: [] };
+      const statusFlow = ["nieuw", "in_behandeling", "wacht_op_klant", "afgerond"];
+      const state = { client: null, session: null, profile: null, requests: [] };
 
       const clientName = document.querySelector("#client-name");
       const logoutButton = document.querySelector("#client-logout");
@@ -114,6 +115,9 @@
         const normalized = normalize(value);
         if (normalized === "in behandeling") return "in_behandeling";
         if (normalized === "wacht op klant") return "wacht_op_klant";
+        if (normalized === "wacht op akkoord") return "wacht_op_klant";
+        if (normalized === "gereed") return "afgerond";
+        if (normalized === "done" || normalized === "completed") return "afgerond";
         return normalized.replace(/\s+/g, "_") || "nieuw";
       }
 
@@ -252,6 +256,130 @@
         detailList.append(item);
       }
 
+      function addFileDetail(request) {
+        const item = document.createElement("div");
+        item.className = "admin-file-detail";
+        const term = document.createElement("span");
+        term.textContent = "Meegestuurde bestanden";
+        item.append(term);
+
+        const files = normalizeFiles(request.file_names);
+
+        if (!files.length) {
+          const empty = document.createElement("strong");
+          empty.textContent = "Geen bestanden meegestuurd";
+          item.append(empty);
+          detailList.append(item);
+          return;
+        }
+
+        const fileList = document.createElement("div");
+        fileList.className = "admin-file-list portal-file-list";
+
+        files.forEach((file, index) => {
+          const row = document.createElement("span");
+          const name = document.createElement("strong");
+          name.textContent = file.originalName || `Bestand ${index + 1}`;
+          row.append(name);
+
+          if (file.storagePath) {
+            const action = document.createElement("button");
+            action.className = "button secondary";
+            action.type = "button";
+            action.textContent = "Open bestand";
+            action.addEventListener("click", () => openClientFile(request.id, index, action));
+            row.append(action);
+          }
+
+          fileList.append(row);
+        });
+
+        item.append(fileList);
+        detailList.append(item);
+      }
+
+      function addTimelineDetail(request) {
+        const item = document.createElement("div");
+        item.className = "portal-timeline-detail";
+        const term = document.createElement("span");
+        term.textContent = "Status-tijdlijn";
+        const timeline = document.createElement("ol");
+        timeline.className = "portal-status-timeline";
+        const normalizedStatus = statusKey(request.status);
+        const currentStatus = statusFlow.includes(normalizedStatus) ? normalizedStatus : "nieuw";
+        const currentIndex = Math.max(0, statusFlow.indexOf(currentStatus));
+
+        statusFlow.forEach((step, index) => {
+          const entry = document.createElement("li");
+          const isComplete = currentStatus === "afgerond" || index < currentIndex;
+          const isActive = step === currentStatus;
+          entry.className = [
+            isComplete ? "is-complete" : "",
+            isActive ? "is-active" : "",
+          ].filter(Boolean).join(" ");
+          entry.append(createCell(statusLabels[step], "strong"));
+          timeline.append(entry);
+        });
+
+        item.append(term, timeline);
+        detailList.append(item);
+      }
+
+      function normalizeFiles(files) {
+        return Array.isArray(files)
+          ? files
+              .map((file) => {
+                if (file && typeof file === "object") {
+                  return {
+                    originalName: file.originalName || file.name || file.storagePath || "",
+                    storagePath: file.storagePath || "",
+                    mimeType: file.mimeType || "",
+                    size: Number(file.size) || 0,
+                  };
+                }
+
+                return { originalName: String(file || ""), storagePath: "", mimeType: "", size: 0 };
+              })
+              .filter((file) => file.originalName || file.storagePath)
+          : [];
+      }
+
+      async function openClientFile(changeRequestId, fileIndex, button) {
+        const { data: sessionData } = await state.client.auth.getSession();
+        state.session = sessionData.session;
+
+        if (!state.session?.access_token) {
+          setMessage("Log opnieuw in om dit bestand te openen.", "error");
+          return;
+        }
+
+        const originalText = button.textContent;
+        button.disabled = true;
+        button.textContent = "Openen...";
+        setMessage("", "");
+
+        try {
+          const response = await fetch(`/.netlify/functions/client-change-request-file?changeRequestId=${encodeURIComponent(changeRequestId)}&fileIndex=${encodeURIComponent(fileIndex)}&format=json`, {
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${state.session.access_token}`,
+            },
+          });
+          const data = await response.json().catch(() => ({}));
+
+          if (!response.ok || !data.success || !data.signedUrl) {
+            throw new Error(data.error || "Bestand kon niet worden geopend.");
+          }
+
+          window.open(data.signedUrl, "_blank", "noopener");
+        } catch (error) {
+          setMessage(error.message || "Bestand kon niet worden geopend.", "error");
+        } finally {
+          button.disabled = false;
+          button.textContent = originalText;
+        }
+      }
+
       function openRequestModal(id) {
         const request = state.requests.find((item) => item.id === id);
         if (!request) return;
@@ -263,20 +391,10 @@
         addDetail("Categorie", request.change_category);
         addDetail("Prioriteit", request.priority);
         addDetail("Omschrijving", request.description);
-        addDetail("Bestandsnamen", formatFileNames(request.file_names));
+        addFileDetail(request);
+        addTimelineDetail(request);
         modal.hidden = false;
         document.body.classList.add("admin-modal-open");
-      }
-
-      function formatFileNames(files) {
-        if (!Array.isArray(files) || !files.length) return "Geen bestanden meegestuurd";
-        return files
-          .map((file) => {
-            if (file && typeof file === "object") return file.originalName || file.name || file.storagePath || "";
-            return String(file || "");
-          })
-          .filter(Boolean)
-          .join(", ") || "Geen bestanden meegestuurd";
       }
 
       function closeModal() {
@@ -296,6 +414,7 @@
           }
 
           const user = session.user;
+          state.session = session;
           const { data: profile, error: profileError } = await state.client
             .from("profiles")
             .select("id,name,company,website,package,created_at")
@@ -309,7 +428,7 @@
             .select("id,title,status,created_at,change_category,priority,description,file_names")
             .eq("auth_user_id", user.id)
             .order("created_at", { ascending: false })
-            .limit(5);
+            .limit(100);
 
           if (requestError) throw requestError;
 

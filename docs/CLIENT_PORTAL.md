@@ -41,9 +41,18 @@ Het klantdashboard toont:
 - onderhoudspakket
 - klant sinds
 - eigen wijzigingsverzoeken met titel, status, categorie en datum
-- detailmodal met titel, omschrijving, status, categorie, prioriteit, datum en bestandsnamen
+- detailmodal met titel, omschrijving, status, categorie, prioriteit, datum, bestandsdownloads en status-tijdlijn
 
 Het klantdashboard toont geen interne classificatie en bevat geen statusbeheer.
+
+Bestanden in het klantdashboard worden niet rechtstreeks uit Supabase Storage gelinkt. De frontend vraagt met de Supabase Auth access token een tijdelijke link op via `/.netlify/functions/client-change-request-file`. Deze function valideert de klant-JWT, controleert dat het wijzigingsverzoek bij dezelfde `auth_user_id` hoort en maakt daarna pas een signed URL.
+
+De klantvriendelijke status-tijdlijn gebruikt de bestaande `change_requests.status` waarde:
+
+- Nieuw
+- In behandeling
+- Wachten op klant
+- Afgerond
 
 Wanneer een profiel via het admin-dashboard wordt opgeslagen, worden bestaande wijzigingsverzoeken met hetzelfde e-mailadres gekoppeld aan `change_requests.auth_user_id` als ze nog niet gekoppeld waren. Daardoor ziet de klant na login direct de bijbehorende wijzigingsverzoeken via RLS.
 

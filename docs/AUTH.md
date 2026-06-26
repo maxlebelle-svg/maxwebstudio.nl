@@ -66,9 +66,12 @@ Admin- en automationflows blijven via server-side service role lopen.
 `/public/client-dashboard.html` leest na login:
 
 - profieldata uit `profiles`
-- maximaal 5 recente wijzigingsverzoeken uit `change_requests`
+- wijzigingsverzoeken uit `change_requests`
+- maximaal 5 recente wijzigingsverzoeken in de tabel
 
 De frontend gebruikt alleen de Supabase anon key en vertrouwt op RLS. Klanten kunnen geen status wijzigen en zien geen interne classificatie.
+
+Bestanden bij eigen wijzigingsverzoeken worden geopend via `/.netlify/functions/client-change-request-file`. De frontend stuurt de Supabase Auth access token mee als bearer token. De function controleert de JWT via Supabase Auth, controleert server-side of `change_requests.auth_user_id` overeenkomt met de ingelogde gebruiker en maakt daarna pas een tijdelijke Supabase Storage signed URL.
 
 ## Admin Profielbeheer
 
