@@ -97,9 +97,12 @@ Belangrijk:
 
 ## Nieuwe Bouwstenen
 
-- Admin Dashboard v1 is toegevoegd als statische backoffice-preview op `/public/admin-dashboard.html`.
-- De admin-preview gebruikt alleen placeholder-data, bevat `noindex, nofollow` en is niet gelinkt in de hoofdwebsite.
-- Er is nog geen login, backend, database of echte koppeling met Mollie, Resend, Netlify Forms/Functions of analytics.
+- Admin Dashboard v1 is toegevoegd als backoffice-preview op `/public/admin-dashboard.html`.
+- De admin-preview bevat `noindex, nofollow` en is niet gelinkt in de hoofdwebsite.
+- De sectie Wijzigingsverzoeken haalt echte data op uit Supabase via `/.netlify/functions/list-change-requests`.
+- `/functions/list-change-requests.js` leest maximaal 100 records uit `public.change_requests`, gesorteerd op `created_at desc`.
+- Het dashboard toont wijzigingsverzoeken read-only met filters voor status, prioriteit en categorie.
+- Er is nog geen login, statusbeheer, adminmutatie, echte klantentabel, Mollie-dashboardkoppeling of analytics.
 - Wijzigingsverzoeken via `/public/wijziging-doorgeven.html` worden nu via `/.netlify/functions/submit-change-request` opgeslagen in Supabase en naar Max Web Studio gemaild.
 - Uploads voor wijzigingsverzoeken worden in deze stap nog niet als bestanden meegestuurd; alleen gekozen bestandsnamen gaan mee in de e-mail.
 - Supabase schema-instructies staan in `/docs/supabase-change-requests.sql`.

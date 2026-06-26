@@ -24,9 +24,9 @@
       </section>
 
       <section class="admin-grid admin-metrics" aria-label="Dashboard overzicht">
-        <article class="admin-card metric-card"><span>Actieve klanten</span><strong>12</strong><small>+3 deze maand</small></article>
+        <article class="admin-card metric-card"><span>Actieve klanten</span><strong id="metric-active-customers">-</strong><small id="metric-active-customers-label">Gebaseerd op aanvragen</small></article>
         <article class="admin-card metric-card"><span>Websites live</span><strong>18</strong><small>Netlify actief</small></article>
-        <article class="admin-card metric-card"><span>Open wijzigingsverzoeken</span><strong>5</strong><small>2 wachten op akkoord</small></article>
+        <article class="admin-card metric-card"><span>Open wijzigingsverzoeken</span><strong id="metric-open-requests">-</strong><small id="metric-open-requests-label">Wordt geladen</small></article>
         <article class="admin-card metric-card"><span>Maandelijkse omzet</span><strong>€ 522</strong><small>Onderhoud & hosting</small></article>
       </section>
 
@@ -67,11 +67,18 @@
             <h2>Open aanvragen</h2>
           </div>
         </div>
-        <div class="request-list">
-          <article class="admin-card request-card"><div><strong>DC Timmerwerken</strong><span>Openingstijden aanpassen</span></div><mark class="status-badge status-active">Binnen onderhoud</mark><mark class="status-badge status-warning">Wacht op akkoord</mark></article>
-          <article class="admin-card request-card"><div><strong>Eco Products NL</strong><span>Nieuwe dienstpagina</span></div><mark class="status-badge status-attention">Offerte nodig</mark><mark class="status-badge status-warning">Te beoordelen</mark></article>
-          <article class="admin-card request-card"><div><strong>Wiese Timmerwerken</strong><span>Foto's vervangen</span></div><mark class="status-badge status-active">Binnen onderhoud</mark><mark class="status-badge status-prepared">In behandeling</mark></article>
-          <article class="admin-card request-card"><div><strong>Quantum Bouw</strong><span>SEO teksten uitbreiden</span></div><mark class="status-badge status-prepared">Betaalde uitbreiding</mark><mark class="status-badge status-warning">Concept maken</mark></article>
+        <div class="admin-filters" aria-label="Wijzigingsverzoeken filteren">
+          <label for="filter-status">Status<select id="filter-status"><option value="">Alle statussen</option><option value="nieuw">Nieuw</option><option value="in behandeling">In behandeling</option><option value="wacht op akkoord">Wacht op akkoord</option><option value="offerte nodig">Offerte nodig</option><option value="gereed">Gereed</option><option value="afgerond">Afgerond</option></select></label>
+          <label for="filter-priority">Prioriteit<select id="filter-priority"><option value="">Alle prioriteiten</option><option value="normaal">Normaal</option><option value="hoog">Hoog</option></select></label>
+          <label for="filter-category">Categorie<select id="filter-category"><option value="">Alle categorieen</option><option value="tekst aanpassen">Tekst aanpassen</option><option value="foto vervangen">Foto vervangen</option><option value="nieuwe pagina">Nieuwe pagina</option><option value="nieuwe dienst">Nieuwe dienst</option><option value="blog toevoegen">Blog toevoegen</option><option value="contactgegevens wijzigen">Contactgegevens wijzigen</option><option value="seo">SEO</option><option value="snelheidsverbetering">Snelheidsverbetering</option><option value="overig">Overig</option></select></label>
+        </div>
+        <div class="request-list" id="change-request-list" aria-live="polite">
+          <article class="admin-card request-card request-state-card">
+            <div>
+              <strong>Wijzigingsverzoeken laden...</strong>
+              <span>De nieuwste aanvragen worden opgehaald.</span>
+            </div>
+          </article>
         </div>
       </section>
 
@@ -129,5 +136,184 @@
         </div>
       </section>
     </main>
+    <script>
+      (() => {
+        const endpoint = "/.netlify/functions/list-change-requests";
+        const completedStatuses = new Set(["gereed", "afgerond", "completed", "done"]);
+        const state = { requests: [] };
+
+        const list = document.getElementById("change-request-list");
+        const statusFilter = document.getElementById("filter-status");
+        const priorityFilter = document.getElementById("filter-priority");
+        const categoryFilter = document.getElementById("filter-category");
+        const activeCustomersMetric = document.getElementById("metric-active-customers");
+        const activeCustomersLabel = document.getElementById("metric-active-customers-label");
+        const openRequestsMetric = document.getElementById("metric-open-requests");
+        const openRequestsLabel = document.getElementById("metric-open-requests-label");
+
+        function normalize(value) {
+          return String(value || "").trim().toLowerCase().replace(/[_-]+/g, " ");
+        }
+
+        function isOpenRequest(request) {
+          return !completedStatuses.has(normalize(request.status));
+        }
+
+        function updateMetrics(requests) {
+          const openRequests = requests.filter(isOpenRequest).length;
+          const uniqueCustomers = new Set(
+            requests
+              .map((request) => normalize(request.companyName) || normalize(request.email))
+              .filter(Boolean)
+          );
+
+          activeCustomersMetric.textContent = String(uniqueCustomers.size);
+          activeCustomersLabel.textContent = uniqueCustomers.size === 1 ? "Unieke klant uit aanvragen" : "Unieke klanten uit aanvragen";
+          openRequestsMetric.textContent = String(openRequests);
+          openRequestsLabel.textContent = openRequests === 1 ? "Nog niet afgerond" : "Nog niet afgeronde aanvragen";
+        }
+
+        function matchesFilters(request) {
+          const selectedStatus = normalize(statusFilter.value);
+          const selectedPriority = normalize(priorityFilter.value);
+          const selectedCategory = normalize(categoryFilter.value);
+
+          return (!selectedStatus || normalize(request.status) === selectedStatus)
+            && (!selectedPriority || normalize(request.priority) === selectedPriority)
+            && (!selectedCategory || normalize(request.changeCategory) === selectedCategory);
+        }
+
+        function createBadge(text, type) {
+          const badge = document.createElement("mark");
+          badge.className = `status-badge ${type}`;
+          badge.textContent = text || "Onbekend";
+          return badge;
+        }
+
+        function classificationClass(value) {
+          const classification = normalize(value);
+          if (classification.includes("onderhoud")) return "status-active";
+          if (classification.includes("offerte")) return "status-attention";
+          return "status-warning";
+        }
+
+        function statusClass(value) {
+          const status = normalize(value);
+          if (completedStatuses.has(status)) return "status-active";
+          if (status.includes("behandeling")) return "status-prepared";
+          if (status.includes("akkoord") || status.includes("offerte")) return "status-warning";
+          return "status-planned";
+        }
+
+        function priorityClass(value) {
+          return normalize(value) === "hoog" ? "status-attention" : "status-prepared";
+        }
+
+        function formatDate(value) {
+          if (!value) return "Datum onbekend";
+          const date = new Date(value);
+          if (Number.isNaN(date.getTime())) return "Datum onbekend";
+          return new Intl.DateTimeFormat("nl-NL", {
+            dateStyle: "medium",
+            timeStyle: "short",
+          }).format(date);
+        }
+
+        function createRequestCard(request) {
+          const card = document.createElement("article");
+          card.className = "admin-card request-card";
+
+          const content = document.createElement("div");
+          const company = document.createElement("strong");
+          company.textContent = request.companyName || request.customerName || request.email || "Onbekende klant";
+          const title = document.createElement("span");
+          title.textContent = request.title || "Geen titel ingevuld";
+          const meta = document.createElement("span");
+          meta.className = "request-meta";
+          meta.textContent = [request.changeCategory, request.priority, formatDate(request.createdAt)].filter(Boolean).join(" | ");
+          const description = document.createElement("p");
+          description.className = "request-description";
+          description.textContent = request.description || "Geen omschrijving ingevuld.";
+          const files = document.createElement("span");
+          files.className = "request-files";
+          files.textContent = request.fileNames && request.fileNames.length
+            ? `Bestanden: ${request.fileNames.join(", ")}`
+            : "Geen bestanden gekozen";
+
+          content.append(company, title, meta, description, files);
+          card.append(
+            content,
+            createBadge(request.internalClassification || "Handmatig beoordelen", classificationClass(request.internalClassification)),
+            createBadge(request.status || "Nieuw", statusClass(request.status)),
+            createBadge(request.priority || "Normaal", priorityClass(request.priority))
+          );
+
+          return card;
+        }
+
+        function renderState(title, text, badgeText, badgeClass) {
+          list.replaceChildren();
+          const card = document.createElement("article");
+          card.className = "admin-card request-card request-state-card";
+          const content = document.createElement("div");
+          const heading = document.createElement("strong");
+          heading.textContent = title;
+          const body = document.createElement("span");
+          body.textContent = text;
+          content.append(heading, body);
+          card.append(content);
+          if (badgeText) card.append(createBadge(badgeText, badgeClass || "status-planned"));
+          list.append(card);
+        }
+
+        function renderRequests() {
+          const filteredRequests = state.requests.filter(matchesFilters);
+          list.replaceChildren();
+
+          if (!state.requests.length) {
+            renderState("Nog geen wijzigingsverzoeken", "Zodra klanten het formulier gebruiken, verschijnen de aanvragen hier.", "Leeg", "status-planned");
+            return;
+          }
+
+          if (!filteredRequests.length) {
+            renderState("Geen resultaten voor deze filters", "Pas de filters aan om meer aanvragen te tonen.", "Geen match", "status-warning");
+            return;
+          }
+
+          filteredRequests.forEach((request) => {
+            list.append(createRequestCard(request));
+          });
+        }
+
+        async function loadChangeRequests() {
+          renderState("Wijzigingsverzoeken laden...", "De nieuwste aanvragen worden opgehaald.", "Laden", "status-prepared");
+
+          try {
+            const response = await fetch(endpoint, { headers: { Accept: "application/json" } });
+            const data = await response.json().catch(() => ({}));
+
+            if (!response.ok || !data.success) {
+              throw new Error(data.error || "Ophalen mislukt.");
+            }
+
+            state.requests = Array.isArray(data.changeRequests) ? data.changeRequests : [];
+            updateMetrics(state.requests);
+            renderRequests();
+          } catch (error) {
+            activeCustomersMetric.textContent = "-";
+            activeCustomersLabel.textContent = "Niet beschikbaar";
+            openRequestsMetric.textContent = "-";
+            openRequestsLabel.textContent = "Niet beschikbaar";
+            renderState("Aanvragen konden niet worden geladen", "Controleer de Supabase configuratie of probeer het later opnieuw.", "Fout", "status-attention");
+          }
+        }
+
+        [statusFilter, priorityFilter, categoryFilter].forEach((filter) => {
+          filter.addEventListener("change", renderRequests);
+        });
+
+        loadChangeRequests();
+      })();
+    </script>
   </body>
 </html>

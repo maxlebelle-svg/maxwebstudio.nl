@@ -55,6 +55,22 @@ Als e-mail een warning geeft, blijft het wijzigingsverzoek opgeslagen. Als Supab
 
 Echte uploadopslag moet later apart worden gekoppeld via Netlify Forms, Netlify Blobs, Supabase Storage of externe storage.
 
+### Admin Dashboard Wijzigingsverzoeken
+
+Het admin dashboard haalt wijzigingsverzoeken read-only op via:
+
+- `/.netlify/functions/list-change-requests`
+
+Daarna:
+
+- de function leest maximaal 100 records uit Supabase tabel `change_requests`
+- resultaten worden gesorteerd op `created_at desc`
+- de frontend toont loading, empty en error states
+- de dashboardkaarten voor actieve klanten en open wijzigingsverzoeken worden berekend op basis van de opgehaalde data
+- filters voor status, prioriteit en categorie werken alleen in de frontend
+
+Er is nog geen login, statuswijziging of automatische taakverwerking gekoppeld.
+
 ### Calendly
 
 Calendly wordt lazy geladen op klik.
