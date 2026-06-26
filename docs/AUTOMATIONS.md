@@ -1,0 +1,76 @@
+# Automations
+
+Dit document beschrijft bestaande en mogelijke automatisering.
+
+## Huidige Automatisering
+
+### Mollie Checkout
+
+De betaalpagina stuurt een aanvraag naar:
+
+- `/.netlify/functions/create-payment`
+
+De backend maakt een Mollie betaling aan en stuurt de bezoeker naar Mollie checkout.
+
+### Mollie Webhook
+
+Mollie stuurt statusupdates naar:
+
+- `/.netlify/functions/mollie-webhook`
+
+Huidige status:
+
+- webhook leest betaalstatus uit
+- webhook logt status
+- webhook slaat nog geen duurzame orderstatus op
+
+### Onboarding Intake
+
+De onboarding-wizard stuurt data naar:
+
+- `/.netlify/functions/submit-onboarding`
+
+Daarna:
+
+- intake wordt tijdelijk opgeslagen
+- adminmail wordt verstuurd via Resend
+- klantbevestiging wordt verstuurd via Resend
+
+### Calendly
+
+Calendly wordt lazy geladen op klik.
+
+Doel:
+
+- gratis kennismakingsgesprek plannen
+
+## Mogelijke Toekomstige Automatisering
+
+- betaling aanmaken
+- orderstatus opslaan
+- intake koppelen aan payment ID
+- klantmap of projectrecord maken
+- automatische bevestigingsmail
+- automatische reminder bij incomplete intake
+- offerte genereren op basis van upsells
+- taak aanmaken voor Max
+- factuur- of betaallink voor restbedrag
+- onderhoudsabonnement activeren
+- klantportaal-account aanmaken
+
+## Regels Voor Automatisering
+
+- Geen automatisering toevoegen zonder akkoord.
+- Geen klantdata naar nieuwe externe tools sturen zonder akkoord.
+- Geen betaal- of abonnementsautomatisering activeren zonder testplan.
+- Automatisering moet uitlegbaar, herstelbaar en controleerbaar zijn.
+
+## Prioriteit
+
+Eerste logische automatisering:
+
+1. payment record duurzaam opslaan
+2. intake koppelen aan payment record
+3. admin overzicht verbeteren
+4. follow-up e-mails automatiseren
+
