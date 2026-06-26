@@ -47,19 +47,12 @@ exports.handler = async (event) => {
 
   const changeRequest = buildChangeRequest(clean);
   const adminResult = await sendAdminEmail(changeRequest);
-
-  if (!adminResult.sent) {
-    return jsonResponse(500, {
-      success: false,
-      error: "Het wijzigingsverzoek kon niet worden verstuurd. Probeer het later opnieuw of neem contact op.",
-    });
-  }
-
   const customerResult = await sendCustomerEmail(changeRequest);
+  const warning = [adminResult, customerResult].find((result) => result.warning)?.warning || "";
 
   return jsonResponse(200, {
     success: true,
-    warning: customerResult.warning || undefined,
+    warning: warning || undefined,
   });
 };
 
