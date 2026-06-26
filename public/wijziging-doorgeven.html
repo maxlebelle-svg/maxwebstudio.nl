@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Website wijzigen? | Max Webstudio</title>
+    <meta name="description" content="Geef eenvoudig een wijziging aan je website door aan Max Webstudio." />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="Max Webstudio home">
+        <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true"><rect x="6" y="6" width="68" height="68" rx="18"></rect><path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path><path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path></svg>
+        <span>Max Webstudio</span>
+      </a>
+      <nav class="main-nav" aria-label="Hoofdnavigatie">
+        <a href="index.html#prijzen">Pakketten</a>
+        <a href="werkwijze.html">Werkwijze</a>
+        <a href="veelgestelde-vragen.html">FAQ</a>
+        <a href="index.html#aanvraag">Contact</a>
+      </nav>
+      <a class="header-cta" href="index.html#aanvraag">Hulp nodig?</a>
+    </header>
+
+    <main>
+      <section class="page-hero change-hero">
+        <p class="eyebrow">Klantenportaal</p>
+        <h1>Website wijzigen?</h1>
+        <p>Geef eenvoudig je wijzigingen door. Wij verwerken je aanvraag zo snel mogelijk en houden je op de hoogte van de voortgang.</p>
+      </section>
+
+      <section class="content-page change-request-page">
+        <div class="change-request-layout">
+          <form
+            class="lead-form change-request-form"
+            id="change-request-form"
+            name="change-request"
+            method="POST"
+            action="bedankt-wijziging.html"
+            enctype="multipart/form-data"
+            data-integration-targets="netlify-forms resend admin-dashboard client-portal"
+          >
+            <input type="hidden" name="formType" value="change_request" />
+
+            <div class="form-section">
+              <p class="section-kicker">Contactgegevens</p>
+              <div class="form-grid">
+                <label for="first-name">Voornaam<input id="first-name" name="firstName" type="text" autocomplete="given-name" required /></label>
+                <label for="last-name">Achternaam<input id="last-name" name="lastName" type="text" autocomplete="family-name" required /></label>
+                <label for="company-name">Bedrijfsnaam<input id="company-name" name="companyName" type="text" autocomplete="organization" required /></label>
+                <label for="email">E-mailadres<input id="email" name="email" type="email" autocomplete="email" required /></label>
+                <label for="phone">Telefoonnummer<input id="phone" name="phone" type="tel" autocomplete="tel" required /></label>
+                <label for="website">Website<input id="website" name="website" type="url" placeholder="https://www.jouwwebsite.nl" required /></label>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <p class="section-kicker">Wijziging</p>
+              <div class="form-grid">
+                <label for="care-plan">
+                  Onderhoudspakket
+                  <select id="care-plan" name="carePlan" required>
+                    <option value="">Kies je pakket</option>
+                    <option value="basis">Basis</option>
+                    <option value="plus">Plus</option>
+                    <option value="premium">Premium</option>
+                  </select>
+                </label>
+                <label for="change-category">
+                  Categorie wijziging
+                  <select id="change-category" name="changeCategory" required>
+                    <option value="">Kies een categorie</option>
+                    <option value="tekst-aanpassen">Tekst aanpassen</option>
+                    <option value="foto-vervangen">Foto vervangen</option>
+                    <option value="nieuwe-pagina">Nieuwe pagina</option>
+                    <option value="nieuwe-dienst">Nieuwe dienst</option>
+                    <option value="blog-toevoegen">Blog toevoegen</option>
+                    <option value="contactgegevens-wijzigen">Contactgegevens wijzigen</option>
+                    <option value="seo">SEO</option>
+                    <option value="snelheidsverbetering">Snelheidsverbetering</option>
+                    <option value="overig">Overig</option>
+                  </select>
+                </label>
+              </div>
+
+              <fieldset class="priority-field">
+                <legend>Prioriteit</legend>
+                <label><input type="radio" name="priority" value="normaal" checked />Normaal</label>
+                <label><input type="radio" name="priority" value="hoog" />Hoog</label>
+              </fieldset>
+
+              <label for="change-title">Titel van wijziging<input id="change-title" name="changeTitle" type="text" placeholder="Bijvoorbeeld: nieuwe tekst op homepage" required /></label>
+              <label for="change-description">
+                Omschrijving
+                <textarea id="change-description" name="changeDescription" rows="8" placeholder="Beschrijf zo duidelijk mogelijk wat er aangepast moet worden. Voeg links, oude tekst, nieuwe tekst of extra uitleg toe waar nodig." required></textarea>
+              </label>
+            </div>
+
+            <div class="form-section">
+              <p class="section-kicker">Bestanden</p>
+              <label class="upload-zone" for="change-files">
+                <strong>Bestanden uploaden</strong>
+                <span>Sleep later eenvoudig documenten of afbeeldingen mee in de flow. Ondersteund: JPG, PNG, PDF en DOCX.</span>
+                <input id="change-files" name="changeFiles" type="file" accept=".jpg,.jpeg,.png,.pdf,.docx,image/jpeg,image/png,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple />
+              </label>
+              <div class="selected-files" id="selected-files" aria-live="polite">Nog geen bestanden gekozen.</div>
+            </div>
+
+            <label class="checkbox-row">
+              <input type="checkbox" name="confirmed" required />
+              <span>Ik bevestig dat bovenstaande informatie correct is.</span>
+            </label>
+
+            <button class="button primary" type="submit">Wijziging versturen</button>
+            <p class="form-note">Je aanvraag kan later gekoppeld worden aan Netlify Forms, Resend, het admin dashboard en het klantenportaal.</p>
+          </form>
+
+          <aside class="change-request-aside">
+            <p class="section-kicker">Zo werkt het</p>
+            <h2>Helder doorgeven, sneller verwerken.</h2>
+            <ul>
+              <li>Beschrijf je wijziging zo concreet mogelijk.</li>
+              <li>Voeg beeld, tekst of documenten toe als dat helpt.</li>
+              <li>Wij beoordelen de aanvraag en koppelen de planning terug.</li>
+            </ul>
+            <div class="contact-card light">
+              <p>Twijfel je of iets binnen je onderhoudspakket valt?</p>
+              <a class="button secondary" href="https://wa.me/31616217771" target="_blank" rel="noopener">WhatsApp Max</a>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <a class="brand" href="index.html">
+        <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true">
+          <rect x="6" y="6" width="68" height="68" rx="18"></rect>
+          <path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path>
+          <path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path>
+        </svg>
+        <span>Max Webstudio</span>
+      </a>
+      <p>Websites, hosting, onderhoud, SEO en checkout voor ondernemers.</p>
+      <div class="footer-contact">
+        <a href="https://wa.me/31616217771" target="_blank" rel="noopener">WhatsApp Max</a>
+        <a href="tel:+31616217771">Bel direct</a>
+        <span>06-16217771</span>
+      </div>
+      <nav class="footer-links" aria-label="Footer navigatie">
+        <a href="over-max-webstudio.html">Over</a>
+        <a href="werkwijze.html">Werkwijze</a>
+        <a href="veelgestelde-vragen.html">FAQ</a>
+        <a href="hosting-onderhoud-voorwaarden.html">Hostingvoorwaarden</a>
+        <a href="algemene-voorwaarden.html">Voorwaarden</a>
+        <a href="privacyverklaring.html">Privacy</a>
+        <a href="cookiebeleid.html">Cookies</a>
+        <a href="disclaimer.html">Disclaimer</a>
+      </nav>
+      <a href="mailto:info@maxwebstudio.nl">info@maxwebstudio.nl</a>
+    </footer>
+
+    <script>
+      const fileInput = document.querySelector("#change-files");
+      const selectedFiles = document.querySelector("#selected-files");
+      const changeRequestForm = document.querySelector("#change-request-form");
+
+      fileInput.addEventListener("change", () => {
+        const files = [...fileInput.files];
+
+        if (!files.length) {
+          selectedFiles.textContent = "Nog geen bestanden gekozen.";
+          return;
+        }
+
+        selectedFiles.replaceChildren(
+          ...files.map((file) => {
+            const item = document.createElement("span");
+            item.textContent = file.name;
+            return item;
+          })
+        );
+      });
+
+      changeRequestForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        if (!changeRequestForm.reportValidity()) {
+          return;
+        }
+
+        window.location.href = changeRequestForm.action;
+      });
+    </script>
+  </body>
+</html>
