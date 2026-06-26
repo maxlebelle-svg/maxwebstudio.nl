@@ -214,9 +214,12 @@
         try {
           return JSON.parse(responseText);
         } catch (error) {
+          const fallbackText = responseText.trim().slice(0, 220);
           return {
             success: false,
-            error: "De server gaf geen geldige reactie terug. Probeer het opnieuw of neem contact op.",
+            error: fallbackText
+              ? `De server gaf geen geldige JSON-reactie terug: ${fallbackText}`
+              : "De server gaf geen geldige reactie terug. Probeer het opnieuw of neem contact op.",
           };
         }
       }

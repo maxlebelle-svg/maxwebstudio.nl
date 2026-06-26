@@ -33,35 +33,58 @@ const carePlanLabels = {
 
 exports.handler = async (event) => {
   try {
+    logStep("request ontvangen", {
+      method: event.httpMethod,
+      contentType: getContentType(event),
+      isBase64Encoded: Boolean(event.isBase64Encoded),
+      bodyLength: event.body ? event.body.length : 0,
+    });
+
     return await handleSubmitChangeRequest(event);
   } catch (error) {
     console.error("Change request submit unhandled error", {
+      step: "unhandled_error",
       message: error.message,
       stack: error.stack,
     });
 
-    return jsonResponse(500, {
-      success: false,
-      error: "Het wijzigingsverzoek kon niet worden verwerkt. Probeer het later opnieuw of neem contact op.",
-    });
+    return jsonError(
+      500,
+      "Het wijzigingsverzoek kon niet worden verwerkt. Probeer het later opnieuw of neem contact op.",
+      "unhandled_error"
+    );
   }
 };
 
 async function handleSubmitChangeRequest(event) {
   if (event.httpMethod !== "POST") {
-    return jsonResponse(405, { success: false, error: "Alleen POST-verzoeken zijn toegestaan." });
+    return jsonError(405, "Alleen POST-verzoeken zijn toegestaan.", "method_not_allowed");
   }
 
   let parsedRequest;
 
   try {
+    logStep("body parser gestart", {
+      contentType: getContentType(event),
+      isBase64Encoded: Boolean(event.isBase64Encoded),
+    });
     parsedRequest = parseRequest(event);
   } catch (error) {
-    return jsonResponse(400, { success: false, error: error.message || "Ongeldige aanvraag." });
+    console.error("Change request body parse failed", {
+      step: "body_parse_failed",
+      message: error.message,
+    });
+    return jsonError(400, error.message || "Ongeldige aanvraag.", "body_parse_failed");
   }
 
   const clean = sanitizeObject(parsedRequest.fields);
   const files = parsedRequest.files;
+
+  logStep("body parser afgerond", {
+    fieldCount: Object.keys(clean).length,
+    fileCount: files.length,
+    files: fileLogSummary(files),
+  });
 
   if (clean.websiteUrl) {
     return jsonResponse(200, { success: true, skipped: true });
@@ -70,35 +93,41 @@ async function handleSubmitChangeRequest(event) {
   const validationError = validate(clean);
 
   if (validationError) {
-    return jsonResponse(400, { success: false, error: validationError });
+    return jsonError(400, validationError, "validation_failed");
   }
 
   const fileValidationError = validateFiles(files);
 
   if (fileValidationError) {
-    return jsonResponse(400, { success: false, error: fileValidationError });
+    return jsonError(400, fileValidationError, "file_validation_failed");
   }
 
   const changeRequest = buildChangeRequest(clean);
   const uploadResult = await uploadChangeRequestFiles(changeRequest.id, files);
 
   if (!uploadResult.success) {
-    return jsonResponse(500, {
-      success: false,
-      error: uploadResult.error || "Bestanden konden niet worden opgeslagen. Probeer het later opnieuw.",
-    });
+    return jsonError(
+      500,
+      uploadResult.error || "Bestanden konden niet worden opgeslagen. Probeer het later opnieuw.",
+      uploadResult.debug || "file_upload_failed"
+    );
   }
 
   changeRequest.fileNames = uploadResult.files;
   const storageResult = await saveChangeRequest(changeRequest);
 
   if (!storageResult.success) {
-    return jsonResponse(500, {
-      success: false,
-      error: "Het wijzigingsverzoek kon niet worden opgeslagen. Probeer het later opnieuw of neem contact op.",
-    });
+    return jsonError(
+      500,
+      "Het wijzigingsverzoek kon niet worden opgeslagen. Probeer het later opnieuw of neem contact op.",
+      storageResult.debug || "database_insert_failed"
+    );
   }
 
+  logStep("e-mail stap", {
+    adminEmailConfigured: Boolean(process.env.ADMIN_EMAIL),
+    resendConfigured: Boolean(process.env.RESEND_API_KEY),
+  });
   const adminResult = await sendAdminEmail(changeRequest);
   const customerResult = await sendCustomerEmail(changeRequest);
   const warning = [adminResult, customerResult].find((result) => result.warning)?.warning || "";
@@ -159,9 +188,19 @@ async function saveChangeRequest(changeRequest) {
   const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+  logStep("database insert stap", {
+    hasSupabaseUrl: Boolean(supabaseUrl),
+    hasServiceRoleKey: Boolean(serviceRoleKey),
+    fileCount: changeRequest.fileNames.length,
+  });
+
   if (!supabaseUrl || !serviceRoleKey) {
-    console.error("Change request storage missing Supabase configuration");
-    return { success: false };
+    console.error("Change request storage missing Supabase configuration", {
+      step: "database_config_missing",
+      hasSupabaseUrl: Boolean(supabaseUrl),
+      hasServiceRoleKey: Boolean(serviceRoleKey),
+    });
+    return { success: false, debug: "database_config_missing" };
   }
 
   try {
@@ -180,16 +219,26 @@ async function saveChangeRequest(changeRequest) {
 
     if (!response.ok) {
       console.error("Change request storage failed", {
+        step: "database_insert_failed",
         status: response.status,
         message: data.message || data.error || "Unknown Supabase error",
       });
-      return { success: false };
+      return { success: false, debug: `database_insert_failed_${response.status}` };
     }
+
+    logStep("database insert afgerond", {
+      status: response.status,
+      id: Array.isArray(data) ? data[0]?.id : data?.id,
+    });
 
     return { success: true, id: Array.isArray(data) ? data[0]?.id : data?.id };
   } catch (error) {
-    console.error("Change request storage error", { message: error.message });
-    return { success: false };
+    console.error("Change request storage error", {
+      step: "database_insert_exception",
+      message: error.message,
+      stack: error.stack,
+    });
+    return { success: false, debug: "database_insert_exception" };
   }
 }
 
@@ -312,7 +361,7 @@ function validate(payload) {
 }
 
 function parseRequest(event) {
-  const contentType = event.headers["content-type"] || event.headers["Content-Type"] || "";
+  const contentType = getContentType(event);
 
   if (contentType.includes("multipart/form-data")) {
     return parseMultipartRequest(event, contentType);
@@ -334,6 +383,11 @@ function parseMultipartRequest(event, contentType) {
 
   const boundary = boundaryMatch[1] || boundaryMatch[2];
   const bodyBuffer = Buffer.from(event.body || "", event.isBase64Encoded ? "base64" : "utf8");
+  logStep("multipart parser gestart", {
+    boundaryLength: boundary.length,
+    isBase64Encoded: Boolean(event.isBase64Encoded),
+    bodyBytes: bodyBuffer.length,
+  });
   const delimiter = Buffer.from(`--${boundary}`);
   const fields = {};
   const files = [];
@@ -376,6 +430,12 @@ function parseMultipartRequest(event, contentType) {
   }
 
   fields.confirmed = Boolean(fields.confirmed);
+
+  logStep("multipart parser afgerond", {
+    fieldCount: Object.keys(fields).length,
+    fileCount: files.length,
+    files: fileLogSummary(files),
+  });
 
   return { fields, files };
 }
@@ -430,19 +490,50 @@ async function uploadChangeRequestFiles(changeRequestId, files) {
   const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+  logStep("Supabase configuratie", {
+    hasSupabaseUrl: Boolean(supabaseUrl),
+    hasServiceRoleKey: Boolean(serviceRoleKey),
+    fileCount: files.length,
+    files: fileLogSummary(files),
+  });
+
   if (!supabaseUrl || !serviceRoleKey) {
-    console.error("Change request file upload missing Supabase configuration");
-    return { success: false, error: "Uploadopslag is nog niet goed geconfigureerd." };
+    console.error("Change request file upload missing Supabase configuration", {
+      step: "storage_config_missing",
+      hasSupabaseUrl: Boolean(supabaseUrl),
+      hasServiceRoleKey: Boolean(serviceRoleKey),
+    });
+    return { success: false, error: "Uploadopslag is nog niet goed geconfigureerd.", debug: "storage_config_missing" };
   }
 
-  const bucketResult = await ensureStorageBucket(supabaseUrl, serviceRoleKey);
+  let bucketResult;
+
+  try {
+    bucketResult = await ensureStorageBucket(supabaseUrl, serviceRoleKey);
+  } catch (error) {
+    console.error("Change request file bucket check exception", {
+      step: "storage_bucket_exception",
+      message: error.message,
+      stack: error.stack,
+    });
+    return {
+      success: false,
+      error: "Supabase Storage bucket change-request-files ontbreekt of is niet bereikbaar.",
+      debug: "storage_bucket_exception",
+    };
+  }
 
   if (!bucketResult.success) {
     console.error("Change request file bucket check failed", {
+      step: "storage_bucket_unavailable",
       status: bucketResult.status,
       message: bucketResult.message,
     });
-    return { success: false, error: "Uploadopslag kon niet worden voorbereid." };
+    return {
+      success: false,
+      error: "Supabase Storage bucket change-request-files ontbreekt of is niet bereikbaar.",
+      debug: bucketResult.debug || "storage_bucket_unavailable",
+    };
   }
 
   const uploadedFiles = [];
@@ -450,26 +541,53 @@ async function uploadChangeRequestFiles(changeRequestId, files) {
   for (const [index, file] of files.entries()) {
     const safeName = safeFilename(file.originalName);
     const storagePath = `${changeRequestId}/${Date.now()}-${index + 1}-${safeName}`;
-    const response = await fetch(`${supabaseUrl}/storage/v1/object/${storageBucket}/${encodeStoragePath(storagePath)}`, {
-      method: "POST",
-      headers: {
-        apikey: serviceRoleKey,
-        Authorization: `Bearer ${serviceRoleKey}`,
-        "Content-Type": file.mimeType,
-        "Cache-Control": "3600",
-        "x-upsert": "false",
-      },
-      body: file.buffer,
+    logStep("upload stap", {
+      index: index + 1,
+      originalName: file.originalName,
+      mimeType: file.mimeType,
+      size: file.size,
+      storagePath,
     });
+    let response;
+
+    try {
+      response = await fetch(`${supabaseUrl}/storage/v1/object/${storageBucket}/${encodeStoragePath(storagePath)}`, {
+        method: "POST",
+        headers: {
+          apikey: serviceRoleKey,
+          Authorization: `Bearer ${serviceRoleKey}`,
+          "Content-Type": file.mimeType,
+          "Cache-Control": "3600",
+          "x-upsert": "false",
+        },
+        body: file.buffer,
+      });
+    } catch (error) {
+      console.error("Change request file upload exception", {
+        step: "storage_upload_exception",
+        message: error.message,
+        stack: error.stack,
+      });
+      return {
+        success: false,
+        error: `Bestand kon niet worden opgeslagen: ${file.originalName}.`,
+        debug: "storage_upload_exception",
+      };
+    }
 
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
       console.error("Change request file upload failed", {
+        step: "storage_upload_failed",
         status: response.status,
         message: data.message || data.error || "Unknown Supabase Storage error",
       });
-      return { success: false, error: `Bestand kon niet worden opgeslagen: ${file.originalName}.` };
+      return {
+        success: false,
+        error: `Bestand kon niet worden opgeslagen: ${file.originalName}.`,
+        debug: `storage_upload_failed_${response.status}`,
+      };
     }
 
     uploadedFiles.push({
@@ -485,6 +603,11 @@ async function uploadChangeRequestFiles(changeRequestId, files) {
 }
 
 async function ensureStorageBucket(supabaseUrl, serviceRoleKey) {
+  logStep("bucket create/check stap", {
+    bucket: storageBucket,
+    action: "check",
+  });
+
   const bucketResponse = await fetch(`${supabaseUrl}/storage/v1/bucket/${storageBucket}`, {
     method: "GET",
     headers: {
@@ -494,11 +617,30 @@ async function ensureStorageBucket(supabaseUrl, serviceRoleKey) {
     },
   });
 
-  if (bucketResponse.ok) return { success: true };
+  if (bucketResponse.ok) {
+    logStep("bucket create/check stap", {
+      bucket: storageBucket,
+      action: "check_ok",
+      status: bucketResponse.status,
+    });
+    return { success: true };
+  }
+
   if (bucketResponse.status !== 404) {
     const data = await bucketResponse.json().catch(() => ({}));
-    return { success: false, status: bucketResponse.status, message: data.message || data.error || "Bucket check failed" };
+    return {
+      success: false,
+      status: bucketResponse.status,
+      message: data.message || data.error || "Bucket check failed",
+      debug: `storage_bucket_check_failed_${bucketResponse.status}`,
+    };
   }
+
+  logStep("bucket create/check stap", {
+    bucket: storageBucket,
+    action: "create",
+    status: bucketResponse.status,
+  });
 
   const createResponse = await fetch(`${supabaseUrl}/storage/v1/bucket`, {
     method: "POST",
@@ -516,10 +658,22 @@ async function ensureStorageBucket(supabaseUrl, serviceRoleKey) {
     }),
   });
 
-  if (createResponse.ok) return { success: true };
+  if (createResponse.ok) {
+    logStep("bucket create/check stap", {
+      bucket: storageBucket,
+      action: "create_ok",
+      status: createResponse.status,
+    });
+    return { success: true };
+  }
 
   const data = await createResponse.json().catch(() => ({}));
-  return { success: false, status: createResponse.status, message: data.message || data.error || "Bucket create failed" };
+  return {
+    success: false,
+    status: createResponse.status,
+    message: data.message || data.error || "Bucket create failed",
+    debug: `storage_bucket_create_failed_${createResponse.status}`,
+  };
 }
 
 function sanitizeObject(value) {
@@ -594,6 +748,31 @@ function safeFilename(filename) {
 
 function encodeStoragePath(path) {
   return path.split("/").map(encodeURIComponent).join("/");
+}
+
+function getContentType(event) {
+  return event.headers?.["content-type"] || event.headers?.["Content-Type"] || "";
+}
+
+function logStep(step, data = {}) {
+  console.error("Change request submit step", { step, ...data });
+}
+
+function fileLogSummary(files) {
+  return files.map((file) => ({
+    fieldName: file.fieldName,
+    originalName: file.originalName,
+    mimeType: file.mimeType,
+    size: file.size,
+  }));
+}
+
+function jsonError(statusCode, error, debug) {
+  return jsonResponse(statusCode, {
+    success: false,
+    error,
+    debug,
+  });
 }
 
 function jsonResponse(statusCode, body) {
