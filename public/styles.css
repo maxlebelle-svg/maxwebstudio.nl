@@ -2448,7 +2448,8 @@ h3 {
 
 .admin-token-card input,
 .admin-profile-form input,
-.admin-profile-form select {
+.admin-profile-form select,
+.admin-profile-form textarea {
   min-height: 46px;
   width: 100%;
   border: 1px solid rgba(255, 255, 255, 0.16);
@@ -2460,8 +2461,16 @@ h3 {
   text-transform: none;
 }
 
+.admin-profile-form textarea {
+  min-height: 112px;
+  padding: 12px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
 .admin-profile-form input:disabled,
-.admin-profile-form select:disabled {
+.admin-profile-form select:disabled,
+.admin-profile-form textarea:disabled {
   opacity: 0.7;
 }
 
@@ -2483,8 +2492,13 @@ h3 {
   gap: 12px;
 }
 
+.admin-profile-wide {
+  grid-column: 1 / -1;
+}
+
 .admin-profile-actions {
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .admin-profile-actions .admin-form-message {
@@ -2501,6 +2515,45 @@ h3 {
 .crm-detail-panel {
   position: sticky;
   top: 18px;
+}
+
+.crm-auth-panel {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.crm-auth-panel > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.crm-auth-panel span {
+  color: rgba(255, 255, 255, 0.64);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.crm-auth-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.button.danger {
+  border-color: rgba(217, 45, 32, 0.36);
+  color: #ffb4ad;
+  background: rgba(217, 45, 32, 0.14);
+}
+
+.button.danger:hover {
+  background: rgba(217, 45, 32, 0.22);
 }
 
 .client-profile-table .client-profile-row {

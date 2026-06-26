@@ -67,6 +67,21 @@ De klantvriendelijke status-tijdlijn gebruikt de bestaande `change_requests.stat
 
 Wanneer een profiel via het admin-dashboard wordt opgeslagen, worden bestaande wijzigingsverzoeken met hetzelfde e-mailadres gekoppeld aan `change_requests.auth_user_id` als ze nog niet gekoppeld waren. Daardoor ziet de klant na login direct de bijbehorende wijzigingsverzoeken via RLS.
 
+## Admin CRM Beheer
+
+Het admin-dashboard is de centrale plek voor klantbeheer. Max Web Studio kan daar:
+
+- klanten aanmaken en bewerken
+- klantstatus beheren: `actief`, `onboarding`, `pauze`, `gearchiveerd`
+- telefoon, e-mail, bedrijf, website, onderhoudspakket en klant-sinds beheren
+- klanten archiveren met bevestiging
+- Supabase Auth-status controleren
+- een bestaande Supabase Auth-user koppelen op e-mailadres
+- een wachtwoord-reset versturen
+- een uitnodiging versturen via Supabase Auth
+
+Admin-only notities worden opgeslagen in `public.admin_customer_notes`. Deze staan niet in de klantleesbare `profiles`-data en mogen niet in het klantdashboard worden getoond.
+
 ## Doel
 
 Een klantportaal moet Max Web Studio schaalbaar maken door klanten, betalingen, intake, projectstatus en onderhoud op een centrale plek te beheren.

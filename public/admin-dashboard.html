@@ -79,7 +79,7 @@
 
           <div class="admin-filters crm-filters" aria-label="Klanten filteren">
             <label for="customer-search">Zoeken<input id="customer-search" type="search" placeholder="Naam, bedrijf, e-mail of website" /></label>
-            <label for="customer-status-filter">Status<select id="customer-status-filter"><option value="">Alle statussen</option><option value="actief">Actief</option><option value="lead">Lead</option><option value="gepauzeerd">Gepauzeerd</option><option value="gestopt">Gestopt</option></select></label>
+            <label for="customer-status-filter">Status<select id="customer-status-filter"><option value="">Alle statussen</option><option value="actief">Actief</option><option value="onboarding">Onboarding</option><option value="pauze">Pauze</option><option value="gearchiveerd">Gearchiveerd</option></select></label>
             <label for="customer-package-filter">Pakket<select id="customer-package-filter"><option value="">Alle pakketten</option><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option></select></label>
           </div>
 
@@ -112,14 +112,28 @@
                 <label for="detail-company">Bedrijf<input id="detail-company" type="text" disabled /></label>
                 <label for="detail-website">Website<input id="detail-website" type="url" disabled /></label>
                 <label for="detail-package">Onderhoudspakket<select id="detail-package" disabled><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option></select></label>
-                <label for="detail-status">Status<select id="detail-status" disabled><option value="actief">Actief</option><option value="lead">Lead</option><option value="gepauzeerd">Gepauzeerd</option><option value="gestopt">Gestopt</option></select></label>
-                <label>Klant sinds<input id="detail-created-at" type="text" disabled /></label>
+                <label for="detail-status">Status<select id="detail-status" disabled><option value="actief">Actief</option><option value="onboarding">Onboarding</option><option value="pauze">Pauze</option><option value="gearchiveerd">Gearchiveerd</option></select></label>
+                <label for="detail-customer-since">Klant sinds<input id="detail-customer-since" type="date" disabled /></label>
+                <label class="admin-profile-wide" for="detail-notes">Notities admin-only<textarea id="detail-notes" disabled placeholder="Interne notities, niet zichtbaar in het klantenportaal"></textarea></label>
+              </div>
+
+              <div class="crm-auth-panel">
+                <div>
+                  <span>Auth-status</span>
+                  <mark class="status-badge status-planned" id="detail-auth-status">Geen login</mark>
+                </div>
+                <div class="crm-auth-actions">
+                  <button class="button secondary" id="detail-link-login" type="button" disabled>Login koppelen</button>
+                  <button class="button secondary" id="detail-reset-password" type="button" disabled>Wachtwoord reset versturen</button>
+                  <button class="button secondary" id="detail-send-invite" type="button" disabled>Uitnodiging versturen</button>
+                </div>
               </div>
 
               <div class="admin-profile-actions">
                 <button class="button primary" id="detail-save" type="submit" disabled>Opslaan</button>
                 <a class="button secondary is-disabled" id="detail-open-website" href="#" target="_blank" rel="noopener" aria-disabled="true">Website openen</a>
                 <a class="button secondary" href="/login.html" target="_blank" rel="noopener">Klantportaal openen</a>
+                <button class="button secondary danger" id="detail-archive" type="button" disabled>Archiveren</button>
               </div>
               <p class="admin-form-message" id="customer-detail-message" role="status"></p>
             </form>
@@ -197,10 +211,13 @@
             <label for="new-company">Bedrijf<input id="new-company" type="text" required /></label>
             <label for="new-website">Website<input id="new-website" type="url" placeholder="https://voorbeeld.nl" /></label>
             <label for="new-package">Onderhoudspakket<select id="new-package"><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option></select></label>
-            <label for="new-status">Status<select id="new-status"><option value="actief">Actief</option><option value="lead">Lead</option><option value="gepauzeerd">Gepauzeerd</option><option value="gestopt">Gestopt</option></select></label>
+            <label for="new-status">Status<select id="new-status"><option value="actief">Actief</option><option value="onboarding">Onboarding</option><option value="pauze">Pauze</option><option value="gearchiveerd">Gearchiveerd</option></select></label>
+            <label for="new-customer-since">Klant sinds<input id="new-customer-since" type="date" /></label>
+            <label class="admin-profile-wide" for="new-notes">Notities admin-only<textarea id="new-notes" placeholder="Interne notities, niet zichtbaar in het klantenportaal"></textarea></label>
           </div>
           <div class="admin-profile-actions">
             <button class="button primary" id="new-customer-save" type="submit">Klant opslaan</button>
+            <button class="button secondary" id="new-send-invite" type="button">Uitnodiging versturen</button>
             <p class="admin-form-message" id="new-customer-message" role="status"></p>
           </div>
         </form>
@@ -249,9 +266,9 @@
         };
         const customerStatusLabels = {
           actief: "Actief",
-          lead: "Lead",
-          gepauzeerd: "Gepauzeerd",
-          gestopt: "Gestopt",
+          onboarding: "Onboarding",
+          pauze: "Pauze",
+          gearchiveerd: "Gearchiveerd",
         };
         const state = {
           adminToken: sessionStorage.getItem(adminTokenStorageKey) || "",
@@ -288,16 +305,23 @@
           website: document.getElementById("detail-website"),
           package: document.getElementById("detail-package"),
           status: document.getElementById("detail-status"),
-          createdAt: document.getElementById("detail-created-at"),
+          customerSince: document.getElementById("detail-customer-since"),
+          notes: document.getElementById("detail-notes"),
         };
         const detailSave = document.getElementById("detail-save");
         const detailState = document.getElementById("customer-detail-state");
         const detailSubtitle = document.getElementById("customer-detail-subtitle");
         const detailMessage = document.getElementById("customer-detail-message");
         const detailOpenWebsite = document.getElementById("detail-open-website");
+        const detailAuthStatus = document.getElementById("detail-auth-status");
+        const detailLinkLogin = document.getElementById("detail-link-login");
+        const detailResetPassword = document.getElementById("detail-reset-password");
+        const detailSendInvite = document.getElementById("detail-send-invite");
+        const detailArchive = document.getElementById("detail-archive");
         const newCustomerModal = document.getElementById("new-customer-modal");
         const newCustomerForm = document.getElementById("new-customer-form");
         const newCustomerSave = document.getElementById("new-customer-save");
+        const newSendInvite = document.getElementById("new-send-invite");
         const newCustomerMessage = document.getElementById("new-customer-message");
         const requestList = document.getElementById("change-request-list");
         const requestStatusFilter = document.getElementById("filter-status");
@@ -348,8 +372,9 @@
         function customerStatusClass(value) {
           const status = normalize(value);
           if (status === "actief") return "status-active";
-          if (status === "lead") return "status-prepared";
-          if (status === "gepauzeerd") return "status-warning";
+          if (status === "onboarding") return "status-prepared";
+          if (status === "pauze") return "status-warning";
+          if (status === "gearchiveerd") return "status-attention";
           return "status-planned";
         }
 
@@ -370,6 +395,13 @@
           const date = new Date(value);
           if (Number.isNaN(date.getTime())) return "-";
           return new Intl.DateTimeFormat("nl-NL", { dateStyle: "medium", timeStyle: "short" }).format(date);
+        }
+
+        function toDateInput(value) {
+          if (!value) return "";
+          const date = new Date(value);
+          if (Number.isNaN(date.getTime())) return "";
+          return date.toISOString().slice(0, 10);
         }
 
         function setAdminAccessMessage(text, type = "") {
@@ -404,7 +436,7 @@
         function updateMetrics() {
           const openRequests = state.requests.filter(isOpenRequest).length;
           const liveWebsites = state.customers.filter((customer) => customer.website).length;
-          const activeCare = state.customers.filter((customer) => customer.package && customer.status !== "gestopt").length;
+          const activeCare = state.customers.filter((customer) => customer.package && customer.status !== "gearchiveerd").length;
 
           totalCustomersMetric.textContent = String(state.customers.length);
           totalCustomersLabel.textContent = state.customers.length === 1 ? "Klantprofiel" : "Klantprofielen";
@@ -441,7 +473,7 @@
 
           const head = document.createElement("div");
           head.className = "admin-table-row admin-table-head crm-customer-row";
-          ["Naam", "Bedrijf", "Website", "Pakket", "Status", "Aangemaakt op", "Actie"].forEach((label) => head.append(createCell(label)));
+          ["Naam", "Bedrijf", "Website", "Pakket", "Status", "Klant sinds", "Actie"].forEach((label) => head.append(createCell(label)));
           customerList.append(head);
 
           customers.forEach((customer) => {
@@ -459,7 +491,7 @@
               createCell(customer.website || "Nog niet ingesteld"),
               createCell(customer.package || "-"),
               createBadge(customerStatusLabels[customer.status] || customer.status, customerStatusClass(customer.status)),
-              createCell(formatDate(customer.createdAt)),
+              createCell(formatDate(customer.customerSince || customer.createdAt)),
               action
             );
             customerList.append(row);
@@ -478,15 +510,23 @@
           detailFields.website.value = customer.website || "";
           detailFields.package.value = customer.package || "Basis";
           detailFields.status.value = customer.status || "actief";
-          detailFields.createdAt.value = formatDate(customer.createdAt);
+          detailFields.customerSince.value = toDateInput(customer.customerSince || customer.createdAt);
+          detailFields.notes.value = customer.notes || "";
 
           Object.values(detailFields).forEach((field) => {
-            if (field !== detailFields.createdAt) field.disabled = false;
+            field.disabled = false;
           });
           detailSave.disabled = false;
+          detailArchive.disabled = customer.status === "gearchiveerd";
           detailState.textContent = "Geselecteerd";
           detailState.className = `status-badge ${customerStatusClass(customer.status)}`;
           detailSubtitle.textContent = customer.company || customer.name || "Klantprofiel";
+          const hasLogin = customer.authStatus === "login actief";
+          detailAuthStatus.textContent = hasLogin ? "Login actief" : "Geen login";
+          detailAuthStatus.className = `status-badge ${hasLogin ? "status-active" : "status-planned"}`;
+          detailLinkLogin.disabled = hasLogin || !detailFields.email.value;
+          detailResetPassword.disabled = !hasLogin || !detailFields.email.value;
+          detailSendInvite.disabled = !detailFields.email.value;
           setDetailMessage("", "");
           detailOpenWebsite.href = customer.website || "#";
           detailOpenWebsite.classList.toggle("is-disabled", !customer.website);
@@ -512,6 +552,8 @@
               website: detailFields.website.value,
               package: detailFields.package.value,
               status: detailFields.status.value,
+              customerSince: detailFields.customerSince.value,
+              notes: detailFields.notes.value,
             });
             await loadCRMData(false);
             state.selectedCustomerId = data.profile?.id || customer.id;
@@ -540,6 +582,8 @@
               website: document.getElementById("new-website").value,
               package: document.getElementById("new-package").value,
               status: document.getElementById("new-status").value,
+              customerSince: document.getElementById("new-customer-since").value,
+              notes: document.getElementById("new-notes").value,
             });
             await loadCRMData(false);
             newCustomerForm.reset();
@@ -567,6 +611,119 @@
           const data = await response.json().catch(() => ({}));
           if (!response.ok || !data.success) throw new Error(data.error || "Klant kon niet worden opgeslagen.");
           return data;
+        }
+
+        async function runCustomerAction(action, payload = {}) {
+          const data = await postCustomer({ action, ...payload });
+          await loadCRMData(false);
+          if (state.selectedCustomerId) selectCustomer(state.selectedCustomerId);
+          return data;
+        }
+
+        function currentDetailPayload(extra = {}) {
+          const customer = selectedCustomer();
+          return {
+            authUserId: customer?.authUserId || "",
+            name: detailFields.name.value,
+            email: detailFields.email.value,
+            phone: detailFields.phone.value,
+            company: detailFields.company.value,
+            website: detailFields.website.value,
+            package: detailFields.package.value,
+            status: detailFields.status.value,
+            customerSince: detailFields.customerSince.value,
+            notes: detailFields.notes.value,
+            ...extra,
+          };
+        }
+
+        async function linkLogin() {
+          const customer = selectedCustomer();
+          if (!customer) return;
+          detailLinkLogin.disabled = true;
+          detailLinkLogin.textContent = "Koppelen...";
+          setDetailMessage("", "");
+          try {
+            const data = await runCustomerAction("link_login", currentDetailPayload());
+            state.selectedCustomerId = data.profile?.id || customer.id;
+            selectCustomer(state.selectedCustomerId);
+            setDetailMessage("Login gekoppeld aan dit klantprofiel.", "success");
+          } catch (error) {
+            setDetailMessage(error.message || "Login kon niet worden gekoppeld.", "error");
+          } finally {
+            detailLinkLogin.textContent = "Login koppelen";
+            const refreshed = selectedCustomer();
+            detailLinkLogin.disabled = refreshed?.authStatus === "login actief" || !detailFields.email.value;
+          }
+        }
+
+        async function sendPasswordReset() {
+          detailResetPassword.disabled = true;
+          detailResetPassword.textContent = "Versturen...";
+          setDetailMessage("", "");
+          try {
+            await runCustomerAction("send_password_reset", { email: detailFields.email.value });
+            setDetailMessage("Wachtwoord reset verstuurd via Supabase Auth.", "success");
+          } catch (error) {
+            setDetailMessage(error.message || "Wachtwoord reset kon niet worden verstuurd.", "error");
+          } finally {
+            detailResetPassword.textContent = "Wachtwoord reset versturen";
+            detailResetPassword.disabled = selectedCustomer()?.authStatus !== "login actief" || !detailFields.email.value;
+          }
+        }
+
+        async function sendInviteFromDetail() {
+          detailSendInvite.disabled = true;
+          detailSendInvite.textContent = "Versturen...";
+          setDetailMessage("", "");
+          try {
+            await runCustomerAction("send_invite", { email: detailFields.email.value });
+            setDetailMessage("Uitnodiging verstuurd via Supabase Auth.", "success");
+          } catch (error) {
+            setDetailMessage(error.message || "Uitnodiging kon niet worden verstuurd.", "error");
+          } finally {
+            detailSendInvite.textContent = "Uitnodiging versturen";
+            detailSendInvite.disabled = !detailFields.email.value;
+          }
+        }
+
+        async function archiveCustomer() {
+          const customer = selectedCustomer();
+          if (!customer) return;
+          const confirmed = window.confirm("Weet je zeker dat je deze klant wilt archiveren?");
+          if (!confirmed) return;
+          detailArchive.disabled = true;
+          detailArchive.textContent = "Archiveren...";
+          setDetailMessage("", "");
+          try {
+            const data = await postCustomer(currentDetailPayload({ status: "gearchiveerd" }));
+            await loadCRMData(false);
+            state.selectedCustomerId = data.profile?.id || customer.id;
+            selectCustomer(state.selectedCustomerId);
+            setDetailMessage("Klant gearchiveerd.", "success");
+          } catch (error) {
+            setDetailMessage(error.message || "Klant kon niet worden gearchiveerd.", "error");
+          } finally {
+            detailArchive.textContent = "Archiveren";
+            detailArchive.disabled = selectedCustomer()?.status === "gearchiveerd";
+          }
+        }
+
+        async function sendInviteFromNewCustomer() {
+          const email = document.getElementById("new-email").value;
+          newSendInvite.disabled = true;
+          newSendInvite.textContent = "Versturen...";
+          setNewCustomerMessage("", "");
+          try {
+            await postCustomer({ action: "send_invite", email });
+            setNewCustomerMessage("Uitnodiging verstuurd. Sla de klant op zodra de Auth gebruiker beschikbaar is.", "success");
+            await loadCRMData(false);
+          } catch (error) {
+            setNewCustomerMessage(error.message || "Uitnodiging kon niet worden verstuurd.", "error");
+          } finally {
+            newSendInvite.disabled = false;
+            newSendInvite.textContent = "Uitnodiging versturen";
+          }
         }
 
         function renderWebsites() {
@@ -606,7 +763,7 @@
         function renderCareOverview() {
           careOverview.replaceChildren();
           ["Basis", "Plus", "Premium"].forEach((carePackage) => {
-            const count = state.customers.filter((customer) => customer.package === carePackage && customer.status !== "gestopt").length;
+            const count = state.customers.filter((customer) => customer.package === carePackage && customer.status !== "gearchiveerd").length;
             const card = document.createElement("article");
             card.className = "admin-card detail-card";
             card.append(createCell(carePackage, "span"), createCell(String(count), "strong"));
@@ -774,6 +931,15 @@
           if (targetModal === requestModal) state.selectedRequestId = "";
         }
 
+        function openNewCustomerModal() {
+          newCustomerModal.hidden = false;
+          document.body.classList.add("admin-modal-open");
+          if (!document.getElementById("new-customer-since").value) {
+            document.getElementById("new-customer-since").value = new Date().toISOString().slice(0, 10);
+          }
+          setNewCustomerMessage("", "");
+        }
+
         async function saveRequestStatus() {
           const request = state.requests.find((item) => item.id === state.selectedRequestId);
           if (!request) return;
@@ -858,17 +1024,16 @@
           }
         }
 
-        document.getElementById("open-new-customer").addEventListener("click", () => {
-          newCustomerModal.hidden = false;
-          document.body.classList.add("admin-modal-open");
-        });
-        document.getElementById("open-new-customer-secondary").addEventListener("click", () => {
-          newCustomerModal.hidden = false;
-          document.body.classList.add("admin-modal-open");
-        });
+        document.getElementById("open-new-customer").addEventListener("click", openNewCustomerModal);
+        document.getElementById("open-new-customer-secondary").addEventListener("click", openNewCustomerModal);
         adminLoadButton.addEventListener("click", () => loadCRMData(true));
         detailForm.addEventListener("submit", saveCustomer);
+        detailLinkLogin.addEventListener("click", linkLogin);
+        detailResetPassword.addEventListener("click", sendPasswordReset);
+        detailSendInvite.addEventListener("click", sendInviteFromDetail);
+        detailArchive.addEventListener("click", archiveCustomer);
         newCustomerForm.addEventListener("submit", createCustomer);
+        newSendInvite.addEventListener("click", sendInviteFromNewCustomer);
         [customerSearch, customerStatusFilter, customerPackageFilter].forEach((filter) => filter.addEventListener("input", renderCustomers));
         [requestStatusFilter, requestPriorityFilter, requestCategoryFilter].forEach((filter) => filter.addEventListener("change", renderRequests));
         requestStatusSave.addEventListener("click", saveRequestStatus);

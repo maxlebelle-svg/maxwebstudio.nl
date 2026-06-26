@@ -1,9 +1,10 @@
 const BASE_PROFILE_FIELDS = ["id", "auth_user_id", "name", "company", "website", "package", "created_at", "updated_at"];
-const CRM_PROFILE_FIELDS = [...BASE_PROFILE_FIELDS, "email", "phone", "status"];
+const CRM_PROFILE_FIELDS = [...BASE_PROFILE_FIELDS, "email", "phone", "status", "customer_since", "archived_at"];
 const REQUEST_FIELDS = ["first_name", "last_name", "company_name", "email", "phone", "website", "care_plan", "status", "auth_user_id", "created_at"].join(",");
 const allowedPackages = new Set(["Basis", "Plus", "Premium"]);
-const allowedStatuses = new Set(["actief", "lead", "gepauzeerd", "gestopt"]);
+const allowedStatuses = new Set(["actief", "onboarding", "pauze", "gearchiveerd"]);
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 exports.handler = async (event) => {
   if (!["GET", "POST"].includes(event.httpMethod)) {
@@ -38,24 +39,45 @@ exports.handler = async (event) => {
 
       const normalizedAuthUsers = authUsers.map(normalizeAuthUser).filter((user) => user.id);
       const normalizedProfiles = profiles.map(normalizeProfile);
+      const notes = await fetchCustomerNotes(supabaseUrl, serviceRoleKey);
 
       return jsonResponse(200, {
         success: true,
         profiles: normalizedProfiles,
-        customers: buildCustomers(normalizedProfiles, normalizedAuthUsers, changeRequests),
+        customers: buildCustomers(normalizedProfiles, normalizedAuthUsers, changeRequests, notes),
         authUsers: normalizedAuthUsers,
         clientCandidates: buildClientCandidates(profiles, changeRequests),
       });
     }
 
     const payload = parsePayload(event.body);
+    const action = cleanText(payload.action || "save");
     const authUsers = await fetchAuthUsers(supabaseUrl, serviceRoleKey);
-    const validation = validateProfilePayload(payload, authUsers.map(normalizeAuthUser).filter((user) => user.id));
+
+    if (action === "check_auth_user") {
+      return jsonResponse(200, {
+        success: true,
+        authUser: findAuthUserByEmail(payload.email, authUsers.map(normalizeAuthUser).filter((user) => user.id)),
+      });
+    }
+
+    if (action === "send_invite") {
+      const result = await sendInvite(supabaseUrl, serviceRoleKey, payload.email);
+      return jsonResponse(200, result);
+    }
+
+    if (action === "send_password_reset") {
+      const result = await sendPasswordReset(supabaseUrl, serviceRoleKey, payload.email);
+      return jsonResponse(200, result);
+    }
+
+    const validation = validateProfilePayload(payload, authUsers.map(normalizeAuthUser).filter((user) => user.id), action);
     if (!validation.success) {
       return jsonResponse(400, { success: false, error: validation.error });
     }
 
     const savedProfile = await upsertProfile(supabaseUrl, serviceRoleKey, validation.profile);
+    await upsertCustomerNotes(supabaseUrl, serviceRoleKey, normalizeProfile(savedProfile).id, validation.profile.notes);
     const linkedRequests = await linkExistingRequests(supabaseUrl, serviceRoleKey, validation.profile);
 
     return jsonResponse(200, {
@@ -97,7 +119,7 @@ function parsePayload(body) {
   }
 }
 
-function validateProfilePayload(payload, authUsers) {
+function validateProfilePayload(payload, authUsers, action) {
   let authUserId = cleanText(payload.authUserId);
   const name = cleanText(payload.name);
   const company = cleanText(payload.company);
@@ -106,10 +128,20 @@ function validateProfilePayload(payload, authUsers) {
   const email = cleanText(payload.email || payload.requestEmail).toLowerCase();
   const phone = cleanText(payload.phone);
   const status = cleanText(payload.status || "actief").toLowerCase();
+  const customerSince = cleanText(payload.customerSince);
+  const notes = cleanText(payload.notes).slice(0, 4000);
   const matchedUser = email ? authUsers.find((user) => user.email.toLowerCase() === email) : null;
 
   if (!authUserId && matchedUser?.id) {
     authUserId = matchedUser.id;
+  }
+
+  if (action === "link_login" && matchedUser?.id) {
+    authUserId = matchedUser.id;
+  }
+
+  if (!emailPattern.test(email)) {
+    return { success: false, error: "Vul een geldig e-mailadres in." };
   }
 
   if (!uuidPattern.test(authUserId)) {
@@ -143,6 +175,9 @@ function validateProfilePayload(payload, authUsers) {
       email,
       phone,
       status,
+      customerSince,
+      archivedAt: status === "gearchiveerd" ? new Date().toISOString() : null,
+      notes,
       requestEmail: email,
     },
   };
@@ -203,6 +238,8 @@ async function upsertProfile(supabaseUrl, serviceRoleKey, profile) {
     email: profile.email,
     phone: profile.phone,
     status: profile.status,
+    customer_since: profile.customerSince || new Date().toISOString(),
+    archived_at: profile.archivedAt,
     updated_at: new Date().toISOString(),
   };
 
@@ -220,8 +257,50 @@ async function upsertProfile(supabaseUrl, serviceRoleKey, profile) {
       updated_at: record.updated_at,
     };
     const savedProfile = await upsertProfileRecord(supabaseUrl, serviceRoleKey, fallbackRecord);
-    savedProfile.warning = "Extra CRM-velden zijn niet opgeslagen omdat de profiles tabel nog geen email, phone en status kolommen heeft.";
+    savedProfile.warning = "Extra CRM-velden zijn niet opgeslagen omdat de profiles tabel nog niet alle CRM-kolommen heeft.";
     return savedProfile;
+  }
+}
+
+async function fetchCustomerNotes(supabaseUrl, serviceRoleKey) {
+  try {
+    const data = await supabaseFetch(`${supabaseUrl}/rest/v1/admin_customer_notes?select=profile_id,notes`, {
+      method: "GET",
+      headers: restHeaders(serviceRoleKey),
+    });
+    const notes = new Map();
+    (Array.isArray(data) ? data : []).forEach((row) => {
+      notes.set(cleanText(row.profile_id), cleanText(row.notes));
+    });
+    return notes;
+  } catch (error) {
+    if (!isSchemaColumnError(error) && error.status !== 404) throw error;
+    console.error("Admin customer notes table missing, continuing without notes", { message: error.message });
+    return new Map();
+  }
+}
+
+async function upsertCustomerNotes(supabaseUrl, serviceRoleKey, profileId, notes) {
+  if (!profileId) return;
+
+  try {
+    await supabaseFetch(`${supabaseUrl}/rest/v1/admin_customer_notes?on_conflict=profile_id`, {
+      method: "POST",
+      headers: {
+        ...restHeaders(serviceRoleKey),
+        "Content-Type": "application/json",
+        "Content-Profile": "public",
+        Prefer: "resolution=merge-duplicates,return=minimal",
+      },
+      body: JSON.stringify({
+        profile_id: profileId,
+        notes: cleanText(notes),
+        updated_at: new Date().toISOString(),
+      }),
+    });
+  } catch (error) {
+    if (!isSchemaColumnError(error) && error.status !== 404) throw error;
+    console.error("Admin customer notes could not be saved because notes table is missing", { message: error.message });
   }
 }
 
@@ -352,7 +431,7 @@ function buildClientCandidates(profiles, changeRequests) {
   return Array.from(candidates.values()).sort((a, b) => a.label.localeCompare(b.label, "nl"));
 }
 
-function buildCustomers(profiles, authUsers, changeRequests) {
+function buildCustomers(profiles, authUsers, changeRequests, notes) {
   const authUserMap = new Map(authUsers.map((user) => [user.id, user]));
   const requestMap = new Map();
 
@@ -377,6 +456,8 @@ function buildCustomers(profiles, authUsers, changeRequests) {
       phone,
       status: allowedStatuses.has(status) ? status : "actief",
       authEmail: cleanText(authUser?.email),
+      authStatus: authUser?.id ? "login actief" : "geen login",
+      notes: notes.get(profile.id) || "",
       portalUrl: "/client-dashboard.html",
     };
   });
@@ -393,6 +474,8 @@ function normalizeProfile(row) {
     email: cleanText(row.email),
     phone: cleanText(row.phone),
     status: cleanText(row.status || "actief").toLowerCase(),
+    customerSince: cleanText(row.customer_since || row.created_at),
+    archivedAt: cleanText(row.archived_at),
     createdAt: cleanText(row.created_at),
     updatedAt: cleanText(row.updated_at),
   };
@@ -403,6 +486,53 @@ function normalizeAuthUser(user) {
     id: cleanText(user.id),
     email: cleanText(user.email),
     createdAt: cleanText(user.created_at || user.createdAt),
+    confirmedAt: cleanText(user.confirmed_at || user.email_confirmed_at),
+    lastSignInAt: cleanText(user.last_sign_in_at),
+  };
+}
+
+function findAuthUserByEmail(email, authUsers) {
+  const cleanEmail = cleanText(email).toLowerCase();
+  if (!emailPattern.test(cleanEmail)) return null;
+  return authUsers.find((user) => user.email.toLowerCase() === cleanEmail) || null;
+}
+
+async function sendInvite(supabaseUrl, serviceRoleKey, email) {
+  const cleanEmail = cleanText(email).toLowerCase();
+  if (!emailPattern.test(cleanEmail)) {
+    return { success: false, error: "Vul een geldig e-mailadres in." };
+  }
+
+  const data = await supabaseFetch(`${supabaseUrl}/auth/v1/invite`, {
+    method: "POST",
+    headers: authAdminHeaders(serviceRoleKey),
+    body: JSON.stringify({ email: cleanEmail }),
+  });
+
+  return { success: true, authUser: normalizeAuthUser(data || {}) };
+}
+
+async function sendPasswordReset(supabaseUrl, serviceRoleKey, email) {
+  const cleanEmail = cleanText(email).toLowerCase();
+  if (!emailPattern.test(cleanEmail)) {
+    return { success: false, error: "Vul een geldig e-mailadres in." };
+  }
+
+  await supabaseFetch(`${supabaseUrl}/auth/v1/recover`, {
+    method: "POST",
+    headers: authAdminHeaders(serviceRoleKey),
+    body: JSON.stringify({ email: cleanEmail }),
+  });
+
+  return { success: true };
+}
+
+function authAdminHeaders(serviceRoleKey) {
+  return {
+    apikey: serviceRoleKey,
+    Authorization: `Bearer ${serviceRoleKey}`,
+    "Content-Type": "application/json",
+    Accept: "application/json",
   };
 }
 

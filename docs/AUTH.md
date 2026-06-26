@@ -88,12 +88,18 @@ De adminfunctie kan:
 - Supabase Auth-users ophalen
 - bestaande klantkandidaten uit `change_requests` tonen
 - `profiles` aanmaken of bijwerken
-- naam, e-mail, telefoon, bedrijfsnaam, website, onderhoudspakket en status beheren
+- naam, e-mail, telefoon, bedrijfsnaam, website, onderhoudspakket, klant-sinds en status beheren
+- klantstatussen beheren: `actief`, `onboarding`, `pauze`, `gearchiveerd`
 - bestaande wijzigingsverzoeken op exact e-mailadres aan `auth_user_id` koppelen
+- controleren of een Auth-user op e-mailadres bestaat
+- een bestaande Auth-user koppelen via de knop `Login koppelen`
+- een Supabase Auth-uitnodiging versturen
+- een Supabase Auth-wachtwoord reset versturen
+- admin-only notities opslaan in `public.admin_customer_notes`
 
 Na opslaan leest het klantenportaal de nieuwe profielgegevens direct via de bestaande Supabase Auth-sessie en RLS.
 
-Nieuwe CRM-klanten worden gekoppeld aan een Supabase Auth-user wanneer het ingevoerde e-mailadres al bestaat in Supabase Auth. Als er nog geen Auth-user bestaat, moet die eerst in Supabase worden aangemaakt voordat er een portaalprofiel kan worden opgeslagen.
+Nieuwe CRM-klanten worden gekoppeld aan een Supabase Auth-user wanneer het ingevoerde e-mailadres al bestaat in Supabase Auth. Als er nog geen Auth-user bestaat, kan de admin eerst een uitnodiging versturen vanuit het CRM en daarna het profiel opslaan zodra Supabase de gebruiker beschikbaar maakt.
 
 ## Beperkingen
 
