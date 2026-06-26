@@ -27,6 +27,11 @@ exports.handler = async (event) => {
   const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+  console.log("Change request list configuration", {
+    hasSupabaseUrl: Boolean(supabaseUrl),
+    hasServiceRoleKey: Boolean(serviceRoleKey),
+  });
+
   if (!supabaseUrl || !serviceRoleKey) {
     console.error("Change request list missing Supabase configuration");
     return jsonResponse(500, {
@@ -44,11 +49,17 @@ exports.handler = async (event) => {
           apikey: serviceRoleKey,
           Authorization: `Bearer ${serviceRoleKey}`,
           Accept: "application/json",
+          "Accept-Profile": "public",
         },
       }
     );
 
     const data = await response.json().catch(() => []);
+
+    console.log("Change request list Supabase response", {
+      status: response.status,
+      recordCount: Array.isArray(data) ? data.length : 0,
+    });
 
     if (!response.ok) {
       console.error("Change request list failed", {
@@ -62,9 +73,29 @@ exports.handler = async (event) => {
       });
     }
 
+    const records = Array.isArray(data) ? data : [];
+
+    if (!records.length) {
+      const seedResult = await createDemoChangeRequest(supabaseUrl, serviceRoleKey);
+
+      if (seedResult.success) {
+        console.log("Change request demo record created", { recordCount: 1 });
+        return jsonResponse(200, {
+          success: true,
+          demoCreated: true,
+          changeRequests: [normalizeChangeRequest(seedResult.record)],
+        });
+      }
+
+      console.error("Change request demo record failed", {
+        status: seedResult.status,
+        message: seedResult.message,
+      });
+    }
+
     return jsonResponse(200, {
       success: true,
-      changeRequests: Array.isArray(data) ? data.map(normalizeChangeRequest) : [],
+      changeRequests: records.map(normalizeChangeRequest),
     });
   } catch (error) {
     console.error("Change request list error", { message: error.message });
@@ -74,6 +105,64 @@ exports.handler = async (event) => {
     });
   }
 };
+
+async function createDemoChangeRequest(supabaseUrl, serviceRoleKey) {
+  const submittedAt = new Date().toISOString();
+
+  try {
+    const response = await fetch(`${supabaseUrl}/rest/v1/change_requests`, {
+      method: "POST",
+      headers: {
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`,
+        "Content-Type": "application/json",
+        "Content-Profile": "public",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify({
+        created_at: submittedAt,
+        first_name: "Demo",
+        last_name: "Klant",
+        company_name: "Max Web Studio Demo",
+        email: "info@maxwebstudio.nl",
+        phone: "0612345678",
+        website: "https://maxwebstudio.nl",
+        care_plan: "Plus",
+        change_category: "Tekst aanpassen",
+        priority: "Normaal",
+        title: "Demo wijzigingsverzoek",
+        description: "Dit demo-record is automatisch aangemaakt omdat de tabel nog leeg was. Gebruik dit om het admin-dashboard te testen.",
+        file_names: [],
+        internal_classification: "Waarschijnlijk binnen onderhoud",
+        status: "nieuw",
+        source: "website",
+        metadata: {
+          demo: true,
+          createdBy: "list-change-requests",
+          createdReason: "empty_table_dashboard_test",
+        },
+      }),
+    });
+
+    const data = await response.json().catch(() => []);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        status: response.status,
+        message: data.message || data.error || "Unknown Supabase error",
+      };
+    }
+
+    const record = Array.isArray(data) ? data[0] : data;
+
+    return record
+      ? { success: true, record }
+      : { success: false, status: response.status, message: "Supabase returned no inserted record" };
+  } catch (error) {
+    return { success: false, status: 0, message: error.message };
+  }
+}
 
 function normalizeChangeRequest(row) {
   const firstName = cleanText(row.first_name);
