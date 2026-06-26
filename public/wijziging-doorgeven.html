@@ -45,6 +45,10 @@
             data-integration-targets="netlify-forms resend admin-dashboard client-portal"
           >
             <input type="hidden" name="formType" value="change_request" />
+            <label class="honeypot-field" aria-hidden="true" tabindex="-1">
+              Website URL
+              <input name="websiteUrl" type="text" autocomplete="off" tabindex="-1" />
+            </label>
 
             <div class="form-section">
               <p class="section-kicker">Contactgegevens</p>
@@ -116,6 +120,7 @@
             </label>
 
             <button class="button primary" type="submit">Wijziging versturen</button>
+            <p class="payment-message" id="change-request-message" role="status" aria-live="polite"></p>
             <p class="form-note">Je aanvraag kan later gekoppeld worden aan Netlify Forms, Resend, het admin dashboard en het klantenportaal.</p>
           </form>
 
@@ -168,6 +173,8 @@
       const fileInput = document.querySelector("#change-files");
       const selectedFiles = document.querySelector("#selected-files");
       const changeRequestForm = document.querySelector("#change-request-form");
+      const changeRequestMessage = document.querySelector("#change-request-message");
+      const submitButton = changeRequestForm.querySelector('button[type="submit"]');
 
       fileInput.addEventListener("change", () => {
         const files = [...fileInput.files];
@@ -186,14 +193,53 @@
         );
       });
 
-      changeRequestForm.addEventListener("submit", (event) => {
+      changeRequestForm.addEventListener("submit", async (event) => {
         event.preventDefault();
 
         if (!changeRequestForm.reportValidity()) {
           return;
         }
 
-        window.location.href = changeRequestForm.action;
+        submitButton.disabled = true;
+        submitButton.textContent = "Versturen...";
+        changeRequestMessage.textContent = "";
+
+        const formData = new FormData(changeRequestForm);
+        const payload = {
+          firstName: formData.get("firstName"),
+          lastName: formData.get("lastName"),
+          companyName: formData.get("companyName"),
+          email: formData.get("email"),
+          phone: formData.get("phone"),
+          website: formData.get("website"),
+          carePlan: formData.get("carePlan"),
+          changeCategory: formData.get("changeCategory"),
+          priority: formData.get("priority"),
+          changeTitle: formData.get("changeTitle"),
+          changeDescription: formData.get("changeDescription"),
+          confirmed: Boolean(formData.get("confirmed")),
+          websiteUrl: formData.get("websiteUrl"),
+          fileNames: [...fileInput.files].map((file) => file.name),
+        };
+
+        try {
+          const response = await fetch("/.netlify/functions/submit-change-request", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const result = await response.json();
+
+          if (!response.ok || !result.success) {
+            throw new Error(result.error || "Je wijzigingsverzoek kon niet worden verstuurd.");
+          }
+
+          window.location.href = changeRequestForm.action;
+        } catch (error) {
+          changeRequestMessage.textContent = error.message || "Er ging iets mis. Probeer het opnieuw.";
+          submitButton.disabled = false;
+          submitButton.textContent = "Wijziging versturen";
+        }
       });
     </script>
   </body>

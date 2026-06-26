@@ -1827,6 +1827,14 @@ h3 {
   text-align: center;
 }
 
+.honeypot-field {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
 .change-hero {
   background:
     radial-gradient(circle at 82% 16%, rgba(25, 194, 255, 0.18), transparent 30%),

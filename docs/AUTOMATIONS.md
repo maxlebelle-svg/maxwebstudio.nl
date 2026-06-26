@@ -36,6 +36,22 @@ Daarna:
 - adminmail wordt verstuurd via Resend
 - klantbevestiging wordt verstuurd via Resend
 
+### Wijzigingsverzoeken
+
+De pagina `/public/wijziging-doorgeven.html` stuurt wijzigingsverzoeken naar:
+
+- `/.netlify/functions/submit-change-request`
+
+Daarna:
+
+- verplichte velden worden server-side gevalideerd
+- een honeypot veld kan spam stil afvangen
+- Max Web Studio ontvangt een e-mail via Resend
+- de klant ontvangt een bevestigingsmail wanneer Resend goed geconfigureerd is
+- bestandsnamen worden meegestuurd, maar bestanden zelf nog niet
+
+Echte uploadopslag moet later apart worden gekoppeld via Netlify Forms, Netlify Blobs, Supabase Storage of externe storage.
+
 ### Calendly
 
 Calendly wordt lazy geladen op klik.
@@ -57,6 +73,8 @@ Doel:
 - factuur- of betaallink voor restbedrag
 - onderhoudsabonnement activeren
 - klantportaal-account aanmaken
+- wijzigingsverzoeken opslaan in admin dashboard of klantendatabase
+- uploadopslag koppelen aan wijzigingsverzoeken
 
 ## Regels Voor Automatisering
 
@@ -73,4 +91,3 @@ Eerste logische automatisering:
 2. intake koppelen aan payment record
 3. admin overzicht verbeteren
 4. follow-up e-mails automatiseren
-
