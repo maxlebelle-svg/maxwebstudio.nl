@@ -11,6 +11,12 @@ exports.handler = async (event) => {
   const storagePath = String(params.storagePath || "").trim();
   const fileIndex = Number.parseInt(params.fileIndex || "", 10);
 
+  console.error("Change request file access received", {
+    changeRequestId,
+    fileIndex: Number.isInteger(fileIndex) ? fileIndex : null,
+    storagePath,
+  });
+
   if (!uuidPattern.test(changeRequestId)) {
     return jsonResponse(400, { success: false, error: "Ongeldig wijzigingsverzoek ID." });
   }
@@ -38,15 +44,26 @@ exports.handler = async (event) => {
     }
 
     const files = normalizeFiles(requestRecord.record.file_names);
-    const file = storagePath
-      ? files.find((item) => item.storagePath === storagePath)
+    const requestedStoragePath = normalizeStoragePath(storagePath);
+    const file = requestedStoragePath
+      ? files.find((item) => normalizeStoragePath(item.storagePath) === requestedStoragePath)
       : files[fileIndex];
 
     if (!file || !file.storagePath) {
       return jsonResponse(404, { success: false, error: "Bestand niet gevonden bij dit wijzigingsverzoek." });
     }
 
-    const signedUrlResult = await createSignedUrl(supabaseUrl, serviceRoleKey, file.storagePath);
+    const normalizedStoragePath = normalizeStoragePath(file.storagePath);
+
+    console.error("Change request file metadata found", {
+      originalName: file.originalName,
+      mimeType: file.mimeType,
+      size: file.size,
+      storedStoragePath: file.storagePath,
+      normalizedStoragePath,
+    });
+
+    const signedUrlResult = await createSignedUrl(supabaseUrl, serviceRoleKey, normalizedStoragePath);
 
     if (!signedUrlResult.success) {
       return jsonResponse(500, { success: false, error: "Bestand kon niet worden geopend." });
@@ -107,7 +124,17 @@ async function fetchChangeRequest(supabaseUrl, serviceRoleKey, changeRequestId) 
 }
 
 async function createSignedUrl(supabaseUrl, serviceRoleKey, storagePath) {
-  const response = await fetch(`${supabaseUrl}/storage/v1/object/sign/${storageBucket}/${encodeStoragePath(storagePath)}`, {
+  const encodedPath = encodeStoragePath(storagePath);
+  const signUrl = `${supabaseUrl}/storage/v1/object/sign/${storageBucket}/${encodedPath}`;
+
+  console.error("Change request file signed URL request", {
+    bucket: storageBucket,
+    storagePath,
+    encodedPath,
+    signUrl,
+  });
+
+  const response = await fetch(signUrl, {
     method: "POST",
     headers: {
       apikey: serviceRoleKey,
@@ -121,14 +148,22 @@ async function createSignedUrl(supabaseUrl, serviceRoleKey, storagePath) {
   if (!response.ok || !data.signedURL) {
     console.error("Change request signed URL failed", {
       status: response.status,
+      storagePath,
       message: data.message || data.error || "Unknown Supabase Storage error",
     });
     return { success: false };
   }
 
+  const signedUrl = toAbsoluteSignedUrl(supabaseUrl, data.signedURL);
+
+  console.error("Change request signed URL created", {
+    storagePath,
+    signedUrlShape: data.signedURL.startsWith("http") ? "absolute" : "relative",
+  });
+
   return {
     success: true,
-    signedUrl: data.signedURL.startsWith("http") ? data.signedURL : `${supabaseUrl}${data.signedURL}`,
+    signedUrl,
   };
 }
 
@@ -155,8 +190,23 @@ function cleanText(value) {
   return String(value || "").trim();
 }
 
+function normalizeStoragePath(path) {
+  const cleanPath = cleanText(path).replace(/^\/+/, "");
+  return cleanPath.startsWith(`${storageBucket}/`)
+    ? cleanPath.slice(storageBucket.length + 1)
+    : cleanPath;
+}
+
 function encodeStoragePath(path) {
   return path.split("/").map(encodeURIComponent).join("/");
+}
+
+function toAbsoluteSignedUrl(supabaseUrl, signedUrl) {
+  if (signedUrl.startsWith("http")) return signedUrl;
+  if (signedUrl.startsWith("/storage/v1/")) return `${supabaseUrl}${signedUrl}`;
+  if (signedUrl.startsWith("/object/")) return `${supabaseUrl}/storage/v1${signedUrl}`;
+  if (signedUrl.startsWith("object/")) return `${supabaseUrl}/storage/v1/${signedUrl}`;
+  return `${supabaseUrl}/storage/v1/${signedUrl.replace(/^\/+/, "")}`;
 }
 
 function jsonResponse(statusCode, body) {
