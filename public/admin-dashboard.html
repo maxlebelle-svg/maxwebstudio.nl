@@ -68,12 +68,15 @@
           </div>
         </div>
         <div class="admin-filters" aria-label="Wijzigingsverzoeken filteren">
-          <label for="filter-status">Status<select id="filter-status"><option value="">Alle statussen</option><option value="nieuw">Nieuw</option><option value="in behandeling">In behandeling</option><option value="wacht op akkoord">Wacht op akkoord</option><option value="offerte nodig">Offerte nodig</option><option value="gereed">Gereed</option><option value="afgerond">Afgerond</option></select></label>
+          <label for="filter-status">Status<select id="filter-status"><option value="">Alle statussen</option><option value="nieuw">Nieuw</option><option value="in_behandeling">In behandeling</option><option value="wacht_op_klant">Wacht op klant</option><option value="afgerond">Afgerond</option></select></label>
           <label for="filter-priority">Prioriteit<select id="filter-priority"><option value="">Alle prioriteiten</option><option value="normaal">Normaal</option><option value="hoog">Hoog</option></select></label>
           <label for="filter-category">Categorie<select id="filter-category"><option value="">Alle categorieen</option><option value="tekst aanpassen">Tekst aanpassen</option><option value="foto vervangen">Foto vervangen</option><option value="nieuwe pagina">Nieuwe pagina</option><option value="nieuwe dienst">Nieuwe dienst</option><option value="blog toevoegen">Blog toevoegen</option><option value="contactgegevens wijzigen">Contactgegevens wijzigen</option><option value="seo">SEO</option><option value="snelheidsverbetering">Snelheidsverbetering</option><option value="overig">Overig</option></select></label>
         </div>
-        <div class="request-list" id="change-request-list" aria-live="polite">
-          <article class="admin-card request-card request-state-card">
+        <div class="admin-table request-table" id="change-request-list" role="table" aria-label="Wijzigingsverzoeken" aria-live="polite">
+          <div class="admin-table-row admin-table-head request-table-row" role="row">
+            <span>Klant</span><span>Titel</span><span>Categorie</span><span>Prioriteit</span><span>Status</span><span>Datum</span><span>Actie</span>
+          </div>
+          <article class="admin-card request-card request-state-card" role="row">
             <div>
               <strong>Wijzigingsverzoeken laden...</strong>
               <span>De nieuwste aanvragen worden opgehaald.</span>
@@ -136,11 +139,48 @@
         </div>
       </section>
     </main>
+
+    <div class="admin-modal" id="change-request-modal" role="dialog" aria-modal="true" aria-labelledby="change-request-modal-title" hidden>
+      <div class="admin-modal-backdrop" data-modal-close></div>
+      <section class="admin-card admin-modal-panel">
+        <div class="admin-modal-header">
+          <div>
+            <p class="section-kicker">Wijzigingsverzoek</p>
+            <h2 id="change-request-modal-title">Aanvraag bekijken</h2>
+          </div>
+          <button class="button secondary admin-modal-close" type="button" data-modal-close>Sluiten</button>
+        </div>
+
+        <div class="admin-modal-grid" id="change-request-detail-list"></div>
+
+        <div class="admin-status-editor">
+          <label for="change-request-status">Status wijzigen</label>
+          <div>
+            <select id="change-request-status">
+              <option value="nieuw">Nieuw</option>
+              <option value="in_behandeling">In behandeling</option>
+              <option value="wacht_op_klant">Wacht op klant</option>
+              <option value="afgerond">Afgerond</option>
+            </select>
+            <button class="button primary" id="change-request-status-save" type="button">Status opslaan</button>
+          </div>
+          <p class="admin-form-message" id="change-request-status-message" role="status"></p>
+        </div>
+      </section>
+    </div>
+
     <script>
       (() => {
-        const endpoint = "/.netlify/functions/list-change-requests";
-        const completedStatuses = new Set(["gereed", "afgerond", "completed", "done"]);
-        const state = { requests: [] };
+        const listEndpoint = "/.netlify/functions/list-change-requests";
+        const updateEndpoint = "/.netlify/functions/update-change-request-status";
+        const completedStatuses = new Set(["afgerond"]);
+        const statusLabels = {
+          nieuw: "Nieuw",
+          in_behandeling: "In behandeling",
+          wacht_op_klant: "Wacht op klant",
+          afgerond: "Afgerond",
+        };
+        const state = { requests: [], selectedRequestId: "" };
 
         const list = document.getElementById("change-request-list");
         const statusFilter = document.getElementById("filter-status");
@@ -150,13 +190,33 @@
         const activeCustomersLabel = document.getElementById("metric-active-customers-label");
         const openRequestsMetric = document.getElementById("metric-open-requests");
         const openRequestsLabel = document.getElementById("metric-open-requests-label");
+        const modal = document.getElementById("change-request-modal");
+        const modalTitle = document.getElementById("change-request-modal-title");
+        const detailList = document.getElementById("change-request-detail-list");
+        const statusSelect = document.getElementById("change-request-status");
+        const statusSave = document.getElementById("change-request-status-save");
+        const statusMessage = document.getElementById("change-request-status-message");
 
         function normalize(value) {
           return String(value || "").trim().toLowerCase().replace(/[_-]+/g, " ");
         }
 
+        function statusKey(value) {
+          const normalized = normalize(value);
+          if (normalized === "in behandeling") return "in_behandeling";
+          if (normalized === "wacht op klant") return "wacht_op_klant";
+          if (normalized === "wacht op akkoord") return "wacht_op_klant";
+          if (normalized === "gereed") return "afgerond";
+          if (normalized === "done" || normalized === "completed") return "afgerond";
+          return normalized.replace(/\s+/g, "_") || "nieuw";
+        }
+
+        function statusLabel(value) {
+          return statusLabels[statusKey(value)] || value || "Nieuw";
+        }
+
         function isOpenRequest(request) {
-          return !completedStatuses.has(normalize(request.status));
+          return !completedStatuses.has(statusKey(request.status));
         }
 
         function updateMetrics(requests) {
@@ -174,11 +234,11 @@
         }
 
         function matchesFilters(request) {
-          const selectedStatus = normalize(statusFilter.value);
+          const selectedStatus = statusFilter.value;
           const selectedPriority = normalize(priorityFilter.value);
           const selectedCategory = normalize(categoryFilter.value);
 
-          return (!selectedStatus || normalize(request.status) === selectedStatus)
+          return (!selectedStatus || statusKey(request.status) === selectedStatus)
             && (!selectedPriority || normalize(request.priority) === selectedPriority)
             && (!selectedCategory || normalize(request.changeCategory) === selectedCategory);
         }
@@ -198,10 +258,10 @@
         }
 
         function statusClass(value) {
-          const status = normalize(value);
+          const status = statusKey(value);
           if (completedStatuses.has(status)) return "status-active";
-          if (status.includes("behandeling")) return "status-prepared";
-          if (status.includes("akkoord") || status.includes("offerte")) return "status-warning";
+          if (status === "in_behandeling") return "status-prepared";
+          if (status === "wacht_op_klant") return "status-warning";
           return "status-planned";
         }
 
@@ -219,36 +279,47 @@
           }).format(date);
         }
 
-        function createRequestCard(request) {
-          const card = document.createElement("article");
-          card.className = "admin-card request-card";
+        function createCell(text, element = "span") {
+          const cell = document.createElement(element);
+          cell.textContent = text || "-";
+          return cell;
+        }
 
-          const content = document.createElement("div");
-          const company = document.createElement("strong");
-          company.textContent = request.companyName || request.customerName || request.email || "Onbekende klant";
-          const title = document.createElement("span");
-          title.textContent = request.title || "Geen titel ingevuld";
-          const meta = document.createElement("span");
-          meta.className = "request-meta";
-          meta.textContent = [request.changeCategory, request.priority, formatDate(request.createdAt)].filter(Boolean).join(" | ");
-          const description = document.createElement("p");
-          description.className = "request-description";
-          description.textContent = request.description || "Geen omschrijving ingevuld.";
-          const files = document.createElement("span");
-          files.className = "request-files";
-          files.textContent = request.fileNames && request.fileNames.length
-            ? `Bestanden: ${request.fileNames.join(", ")}`
-            : "Geen bestanden gekozen";
+        function createRequestRow(request) {
+          const row = document.createElement("div");
+          row.className = "admin-table-row request-table-row";
+          row.setAttribute("role", "row");
 
-          content.append(company, title, meta, description, files);
-          card.append(
-            content,
-            createBadge(request.internalClassification || "Handmatig beoordelen", classificationClass(request.internalClassification)),
-            createBadge(request.status || "Nieuw", statusClass(request.status)),
-            createBadge(request.priority || "Normaal", priorityClass(request.priority))
-          );
+          const customer = document.createElement("strong");
+          customer.textContent = request.companyName || request.customerName || request.email || "Onbekende klant";
 
-          return card;
+          const title = createCell(request.title || "Geen titel ingevuld");
+          const category = createCell(request.changeCategory || "-");
+          const priority = createBadge(request.priority || "Normaal", priorityClass(request.priority));
+          const status = createBadge(statusLabel(request.status), statusClass(request.status));
+          const date = createCell(formatDate(request.createdAt));
+          const action = document.createElement("button");
+          action.className = "button secondary";
+          action.type = "button";
+          action.textContent = "Bekijk";
+          action.addEventListener("click", () => openModal(request.id));
+
+          row.append(customer, title, category, priority, status, date, action);
+          return row;
+        }
+
+        function createTableHead() {
+          const head = document.createElement("div");
+          head.className = "admin-table-row admin-table-head request-table-row";
+          head.setAttribute("role", "row");
+          ["Klant", "Titel", "Categorie", "Prioriteit", "Status", "Datum", "Actie"].forEach((label) => {
+            head.append(createCell(label));
+          });
+          return head;
+        }
+
+        function selectedRequest() {
+          return state.requests.find((request) => request.id === state.selectedRequestId);
         }
 
         function renderState(title, text, badgeText, badgeClass) {
@@ -280,16 +351,107 @@
             return;
           }
 
+          list.append(createTableHead());
           filteredRequests.forEach((request) => {
-            list.append(createRequestCard(request));
+            list.append(createRequestRow(request));
           });
+        }
+
+        function addDetail(label, value) {
+          const item = document.createElement("div");
+          const term = document.createElement("span");
+          const description = document.createElement("strong");
+          term.textContent = label;
+          description.textContent = value || "-";
+          item.append(term, description);
+          detailList.append(item);
+        }
+
+        function renderModal(request) {
+          modalTitle.textContent = request.title || "Aanvraag bekijken";
+          detailList.replaceChildren();
+          addDetail("Naam klant", request.customerName);
+          addDetail("Bedrijfsnaam", request.companyName);
+          addDetail("E-mail", request.email);
+          addDetail("Telefoon", request.phone);
+          addDetail("Website", request.website);
+          addDetail("Onderhoudspakket", request.carePlan);
+          addDetail("Categorie", request.changeCategory);
+          addDetail("Prioriteit", request.priority);
+          addDetail("Titel", request.title);
+          addDetail("Omschrijving", request.description);
+          addDetail("Bestandsnamen", request.fileNames && request.fileNames.length ? request.fileNames.join(", ") : "Geen bestanden gekozen");
+          addDetail("Interne classificatie", request.internalClassification);
+          addDetail("Status", statusLabel(request.status));
+          addDetail("Datum/tijd", formatDate(request.createdAt));
+          statusSelect.value = statusLabels[statusKey(request.status)] ? statusKey(request.status) : "nieuw";
+          statusMessage.textContent = "";
+          statusMessage.className = "admin-form-message";
+        }
+
+        function openModal(id) {
+          state.selectedRequestId = id;
+          const request = selectedRequest();
+          if (!request) return;
+          renderModal(request);
+          modal.hidden = false;
+          document.body.classList.add("admin-modal-open");
+          statusSelect.focus();
+        }
+
+        function closeModal() {
+          modal.hidden = true;
+          document.body.classList.remove("admin-modal-open");
+          state.selectedRequestId = "";
+        }
+
+        function setStatusMessage(text, type) {
+          statusMessage.textContent = text;
+          statusMessage.className = `admin-form-message ${type || ""}`.trim();
+        }
+
+        async function saveStatus() {
+          const request = selectedRequest();
+          if (!request) return;
+
+          const nextStatus = statusSelect.value;
+          statusSave.disabled = true;
+          statusSave.textContent = "Opslaan...";
+          setStatusMessage("", "");
+
+          try {
+            const response = await fetch(updateEndpoint, {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+              },
+              body: JSON.stringify({ id: request.id, status: nextStatus }),
+            });
+            const data = await response.json().catch(() => ({}));
+
+            if (!response.ok || !data.success) {
+              throw new Error(data.error || "Status update mislukt.");
+            }
+
+            request.status = data.changeRequest?.status || nextStatus;
+            updateMetrics(state.requests);
+            renderRequests();
+            renderModal(request);
+            setStatusMessage("Status bijgewerkt.", "success");
+          } catch (error) {
+            setStatusMessage("Status kon niet worden bijgewerkt. Probeer het opnieuw.", "error");
+          } finally {
+            statusSave.disabled = false;
+            statusSave.textContent = "Status opslaan";
+          }
         }
 
         async function loadChangeRequests() {
           renderState("Wijzigingsverzoeken laden...", "De nieuwste aanvragen worden opgehaald.", "Laden", "status-prepared");
 
           try {
-            const response = await fetch(endpoint, { headers: { Accept: "application/json" } });
+            const response = await fetch(listEndpoint, { headers: { Accept: "application/json" } });
             const data = await response.json().catch(() => ({}));
 
             if (!response.ok || !data.success) {
@@ -310,6 +472,14 @@
 
         [statusFilter, priorityFilter, categoryFilter].forEach((filter) => {
           filter.addEventListener("change", renderRequests);
+        });
+
+        document.querySelectorAll("[data-modal-close]").forEach((button) => {
+          button.addEventListener("click", closeModal);
+        });
+        statusSave.addEventListener("click", saveStatus);
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape" && !modal.hidden) closeModal();
         });
 
         loadChangeRequests();

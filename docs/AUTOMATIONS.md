@@ -57,7 +57,7 @@ Echte uploadopslag moet later apart worden gekoppeld via Netlify Forms, Netlify 
 
 ### Admin Dashboard Wijzigingsverzoeken
 
-Het admin dashboard haalt wijzigingsverzoeken read-only op via:
+Het admin dashboard haalt wijzigingsverzoeken op via:
 
 - `/.netlify/functions/list-change-requests`
 
@@ -68,8 +68,21 @@ Daarna:
 - de frontend toont loading, empty en error states
 - de dashboardkaarten voor actieve klanten en open wijzigingsverzoeken worden berekend op basis van de opgehaalde data
 - filters voor status, prioriteit en categorie werken alleen in de frontend
+- elk wijzigingsverzoek kan op dezelfde pagina worden bekeken in een detailmodal
 
-Er is nog geen login, statuswijziging of automatische taakverwerking gekoppeld.
+Statusupdates lopen via:
+
+- `/.netlify/functions/update-change-request-status`
+
+Deze function:
+
+- accepteert alleen `PATCH`
+- verwacht `id` en `status`
+- staat alleen `nieuw`, `in_behandeling`, `wacht_op_klant` en `afgerond` toe
+- gebruikt server-side Supabase environment variables
+- geeft een nette JSON-response terug
+
+Er is nog geen login, audit trail, notificatie na statuswijziging of automatische taakverwerking gekoppeld.
 
 ### Calendly
 

@@ -101,8 +101,11 @@ Belangrijk:
 - De admin-preview bevat `noindex, nofollow` en is niet gelinkt in de hoofdwebsite.
 - De sectie Wijzigingsverzoeken haalt echte data op uit Supabase via `/.netlify/functions/list-change-requests`.
 - `/functions/list-change-requests.js` leest maximaal 100 records uit `public.change_requests`, gesorteerd op `created_at desc`.
-- Het dashboard toont wijzigingsverzoeken read-only met filters voor status, prioriteit en categorie.
-- Er is nog geen login, statusbeheer, adminmutatie, echte klantentabel, Mollie-dashboardkoppeling of analytics.
+- Het dashboard toont wijzigingsverzoeken in een beheertabel met filters voor status, prioriteit en categorie.
+- Wijzigingsverzoeken kunnen op dezelfde pagina worden bekeken in een detailmodal.
+- `/functions/update-change-request-status.js` wijzigt de status van een wijzigingsverzoek via een server-side Supabase PATCH.
+- Toegestane statussen zijn `nieuw`, `in_behandeling`, `wacht_op_klant` en `afgerond`.
+- Er is nog geen login, audit trail, echte klantentabel, Mollie-dashboardkoppeling of analytics.
 - Wijzigingsverzoeken via `/public/wijziging-doorgeven.html` worden nu via `/.netlify/functions/submit-change-request` opgeslagen in Supabase en naar Max Web Studio gemaild.
 - Uploads voor wijzigingsverzoeken worden in deze stap nog niet als bestanden meegestuurd; alleen gekozen bestandsnamen gaan mee in de e-mail.
 - Supabase schema-instructies staan in `/docs/supabase-change-requests.sql`.

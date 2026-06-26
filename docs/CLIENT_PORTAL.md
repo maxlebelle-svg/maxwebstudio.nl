@@ -6,9 +6,9 @@ Dit document beschrijft de richting voor een toekomstig klantportaal. Er is mome
 
 - `/public/wijziging-doorgeven.html`: pagina waarmee bestaande klanten wijzigingsverzoeken kunnen doorgeven.
 - `/public/bedankt-wijziging.html`: statische bedankpagina na een wijzigingsverzoek.
-- `/public/admin-dashboard.html`: Admin Dashboard v1 als backoffice-preview. De sectie Wijzigingsverzoeken leest echte aanvragen uit Supabase via `/.netlify/functions/list-change-requests`.
+- `/public/admin-dashboard.html`: Admin Dashboard v1 als backoffice-preview. De sectie Wijzigingsverzoeken leest echte aanvragen uit Supabase via `/.netlify/functions/list-change-requests` en kan statussen bijwerken via `/.netlify/functions/update-change-request-status`.
 
-Admin Dashboard v1 bevat nog geen login, statusbeheer, klantmutaties of admin-acties. Alleen wijzigingsverzoeken zijn read-only gekoppeld aan Supabase. De overige dashboardsecties blijven placeholder-bouwstenen voor latere integraties met Mollie, Resend, Netlify Forms/Functions, klantendatabase, domeinen, hosting, AI wijzigingsvoorstellen en analytics.
+Admin Dashboard v1 bevat nog geen login, audit trail, klantmutaties of brede admin-acties. Wijzigingsverzoeken zijn gekoppeld aan Supabase, kunnen in een detailmodal worden bekeken en kunnen handmatig van status worden gewijzigd. De overige dashboardsecties blijven placeholder-bouwstenen voor latere integraties met Mollie, Resend, Netlify Forms/Functions, klantendatabase, domeinen, hosting, AI wijzigingsvoorstellen en analytics.
 
 Wijzigingsverzoeken worden nu via `/.netlify/functions/submit-change-request` verwerkt, opgeslagen in Supabase en per e-mail naar Max Web Studio gestuurd. De function valideert verplichte velden, ondersteunt een honeypot en maakt een eerste interne classificatie: waarschijnlijk binnen onderhoud, waarschijnlijk offerte nodig of handmatig beoordelen.
 
@@ -16,7 +16,7 @@ Bestandsuploads zijn voorbereid in de frontend, maar echte uploadopslag is nog n
 
 De Supabase tabel heet `change_requests`. Het SQL-schema staat in `/docs/supabase-change-requests.sql`. Deze tabel is de eerste duurzame databron voor het toekomstige admin dashboard en klantportaal.
 
-De read-only dashboardfunctie gebruikt server-side environment variables `SUPABASE_URL` en `SUPABASE_SERVICE_ROLE_KEY`. De service role key mag nooit in frontendcode worden geplaatst.
+De dashboardfunctions gebruiken server-side environment variables `SUPABASE_URL` en `SUPABASE_SERVICE_ROLE_KEY`. De service role key mag nooit in frontendcode worden geplaatst.
 
 ## Doel
 
