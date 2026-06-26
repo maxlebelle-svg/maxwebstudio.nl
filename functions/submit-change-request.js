@@ -103,6 +103,7 @@ async function handleSubmitChangeRequest(event) {
   }
 
   const changeRequest = buildChangeRequest(clean);
+  changeRequest.authUserId = await resolveAuthUserId(event);
   const uploadResult = await uploadChangeRequestFiles(changeRequest.id, files);
 
   if (!uploadResult.success) {
@@ -243,7 +244,7 @@ async function saveChangeRequest(changeRequest) {
 }
 
 function toSupabaseRecord(changeRequest) {
-  return {
+  const record = {
     id: changeRequest.id,
     created_at: changeRequest.submittedAt,
     first_name: changeRequest.firstName,
@@ -267,6 +268,49 @@ function toSupabaseRecord(changeRequest) {
       filesAttached: changeRequest.fileNames.length > 0,
     },
   };
+
+  if (changeRequest.authUserId) {
+    record.auth_user_id = changeRequest.authUserId;
+  }
+
+  return record;
+}
+
+async function resolveAuthUserId(event) {
+  const authHeader = event.headers?.authorization || event.headers?.Authorization || "";
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+
+  if (!token) return null;
+
+  const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) return null;
+
+  try {
+    const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      method: "GET",
+      headers: {
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    });
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok || !data.id) {
+      console.error("Change request auth user lookup failed", {
+        status: response.status,
+        message: data.message || data.error || "Unknown Supabase Auth error",
+      });
+      return null;
+    }
+
+    return data.id;
+  } catch (error) {
+    console.error("Change request auth user lookup error", { message: error.message });
+    return null;
+  }
 }
 
 async function sendAdminEmail(changeRequest) {

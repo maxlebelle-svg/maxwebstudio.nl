@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
   <body>
     <header class="site-header">
@@ -224,6 +225,25 @@
         }
       }
 
+      async function getPortalAuthHeader() {
+        if (!window.supabase) return {};
+
+        try {
+          const response = await fetch("/.netlify/functions/client-auth-config", { headers: { Accept: "application/json" } });
+          const config = await response.json().catch(() => ({}));
+
+          if (!response.ok || !config.success) return {};
+
+          const client = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+          const { data } = await client.auth.getSession();
+          const token = data.session?.access_token;
+
+          return token ? { Authorization: `Bearer ${token}` } : {};
+        } catch (error) {
+          return {};
+        }
+      }
+
       fileInput.addEventListener("change", () => {
         const files = [...fileInput.files];
 
@@ -273,8 +293,10 @@
         }
 
         try {
+          const authHeader = await getPortalAuthHeader();
           const response = await fetch("/.netlify/functions/submit-change-request", {
             method: "POST",
+            headers: authHeader,
             body: formData,
           });
           const responseText = await response.text();

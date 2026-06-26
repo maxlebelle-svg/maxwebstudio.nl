@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Klantenportaal | Max Webstudio</title>
+    <meta name="description" content="Bekijk je website, onderhoud en wijzigingsverzoeken in het Max Webstudio klantenportaal." />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  </head>
+  <body class="portal-body">
+    <main class="portal-shell">
+      <header class="portal-header">
+        <div>
+          <p class="section-kicker">Klantenportaal</p>
+          <h1>Welkom terug, <span id="client-name">...</span></h1>
+          <p>Beheer je website, onderhoud en wijzigingsverzoeken vanuit één overzicht.</p>
+        </div>
+        <button class="button secondary" id="client-logout" type="button">Uitloggen</button>
+      </header>
+
+      <section class="admin-grid admin-metrics" aria-label="Klantoverzicht">
+        <article class="admin-card metric-card"><span>Website</span><strong id="metric-website">Live</strong><small><span class="portal-dot"></span>Live</small></article>
+        <article class="admin-card metric-card"><span>Onderhoudspakket</span><strong id="metric-package">-</strong><small>Actief pakket</small></article>
+        <article class="admin-card metric-card"><span>Open wijzigingsverzoeken</span><strong id="metric-open-requests">-</strong><small>Nog niet afgerond</small></article>
+        <article class="admin-card metric-card"><span>Laatste update</span><strong id="metric-last-update">-</strong><small>Meest recente wijziging</small></article>
+      </section>
+
+      <section class="admin-section">
+        <div class="admin-section-heading">
+          <div>
+            <p class="section-kicker">Mijn website</p>
+            <h2>Websitegegevens</h2>
+          </div>
+        </div>
+        <div class="portal-website-grid">
+          <article class="admin-card detail-card"><span>Website URL</span><strong id="profile-website">-</strong></article>
+          <article class="admin-card detail-card"><span>Hostingstatus</span><strong>Actief</strong></article>
+          <article class="admin-card detail-card"><span>SSL</span><strong>Actief</strong></article>
+          <article class="admin-card detail-card"><span>Onderhoudspakket</span><strong id="profile-package">-</strong></article>
+        </div>
+        <div class="portal-actions">
+          <a class="button primary" id="view-website-link" href="#" target="_blank" rel="noopener">Bekijk website</a>
+          <a class="button secondary" href="/wijziging-doorgeven.html">Nieuwe wijziging</a>
+        </div>
+      </section>
+
+      <section class="admin-section">
+        <div class="admin-section-heading">
+          <div>
+            <p class="section-kicker">Wijzigingsverzoeken</p>
+            <h2>Laatste wijzigingsverzoeken</h2>
+          </div>
+        </div>
+        <div class="admin-table request-table portal-request-table" id="client-request-list" role="table" aria-label="Laatste wijzigingsverzoeken" aria-live="polite">
+          <div class="admin-table-row admin-table-head portal-request-row" role="row">
+            <span>Titel</span><span>Status</span><span>Datum</span><span>Bekijk</span>
+          </div>
+          <article class="admin-card request-card request-state-card" role="row">
+            <div>
+              <strong>Dashboard laden...</strong>
+              <span>Je gegevens worden opgehaald.</span>
+            </div>
+          </article>
+        </div>
+        <p class="portal-message" id="client-dashboard-message" role="status" aria-live="polite"></p>
+      </section>
+    </main>
+
+    <div class="admin-modal" id="client-request-modal" role="dialog" aria-modal="true" aria-labelledby="client-request-modal-title" hidden>
+      <div class="admin-modal-backdrop" data-modal-close></div>
+      <section class="admin-card admin-modal-panel">
+        <div class="admin-modal-header">
+          <div>
+            <p class="section-kicker">Wijzigingsverzoek</p>
+            <h2 id="client-request-modal-title">Verzoek bekijken</h2>
+          </div>
+          <button class="button secondary" type="button" data-modal-close>Sluiten</button>
+        </div>
+        <div class="admin-modal-grid" id="client-request-detail-list"></div>
+      </section>
+    </div>
+
+    <script>
+      const completedStatuses = new Set(["afgerond"]);
+      const statusLabels = {
+        nieuw: "Nieuw",
+        in_behandeling: "In behandeling",
+        wacht_op_klant: "Wacht op klant",
+        afgerond: "Afgerond",
+      };
+      const state = { client: null, profile: null, requests: [] };
+
+      const clientName = document.querySelector("#client-name");
+      const logoutButton = document.querySelector("#client-logout");
+      const dashboardMessage = document.querySelector("#client-dashboard-message");
+      const requestList = document.querySelector("#client-request-list");
+      const modal = document.querySelector("#client-request-modal");
+      const modalTitle = document.querySelector("#client-request-modal-title");
+      const detailList = document.querySelector("#client-request-detail-list");
+
+      function normalize(value) {
+        return String(value || "").trim().toLowerCase().replace(/[_-]+/g, " ");
+      }
+
+      function statusKey(value) {
+        const normalized = normalize(value);
+        if (normalized === "in behandeling") return "in_behandeling";
+        if (normalized === "wacht op klant") return "wacht_op_klant";
+        return normalized.replace(/\s+/g, "_") || "nieuw";
+      }
+
+      function statusLabel(value) {
+        return statusLabels[statusKey(value)] || value || "Nieuw";
+      }
+
+      function statusClass(value) {
+        const status = statusKey(value);
+        if (status === "afgerond") return "status-active";
+        if (status === "in_behandeling") return "status-prepared";
+        if (status === "wacht_op_klant") return "status-warning";
+        return "status-planned";
+      }
+
+      function formatDate(value) {
+        if (!value) return "-";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return "-";
+        return new Intl.DateTimeFormat("nl-NL", { dateStyle: "medium" }).format(date);
+      }
+
+      function createCell(text, element = "span") {
+        const cell = document.createElement(element);
+        cell.textContent = text || "-";
+        return cell;
+      }
+
+      function createBadge(text, type) {
+        const badge = document.createElement("mark");
+        badge.className = `status-badge ${type}`;
+        badge.textContent = text;
+        return badge;
+      }
+
+      async function loadSupabase() {
+        const response = await fetch("/.netlify/functions/client-auth-config", { headers: { Accept: "application/json" } });
+        const config = await response.json().catch(() => ({}));
+
+        if (!response.ok || !config.success) {
+          throw new Error(config.error || "Supabase Auth is nog niet geconfigureerd.");
+        }
+
+        return window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+      }
+
+      function setMessage(text, type = "") {
+        dashboardMessage.textContent = text;
+        dashboardMessage.className = `portal-message ${type}`.trim();
+      }
+
+      function renderProfile(user, profile) {
+        const displayName = profile?.name || user.user_metadata?.name || user.email;
+        const website = profile?.website || "";
+        const packageName = profile?.package || "-";
+
+        clientName.textContent = displayName;
+        document.querySelector("#metric-package").textContent = packageName;
+        document.querySelector("#profile-package").textContent = packageName;
+        document.querySelector("#profile-website").textContent = website || "Nog niet ingesteld";
+        document.querySelector("#view-website-link").href = website || "index.html";
+        document.querySelector("#view-website-link").toggleAttribute("aria-disabled", !website);
+      }
+
+      function renderMetrics(requests) {
+        const openRequests = requests.filter((request) => !completedStatuses.has(statusKey(request.status))).length;
+        const lastUpdate = requests[0]?.created_at ? formatDate(requests[0].created_at) : "-";
+        document.querySelector("#metric-open-requests").textContent = String(openRequests);
+        document.querySelector("#metric-last-update").textContent = lastUpdate;
+      }
+
+      function renderState(title, text, badgeText, badgeClass = "status-planned") {
+        requestList.replaceChildren();
+        const card = document.createElement("article");
+        card.className = "admin-card request-card request-state-card";
+        const content = document.createElement("div");
+        content.append(createCell(title, "strong"), createCell(text));
+        card.append(content, createBadge(badgeText, badgeClass));
+        requestList.append(card);
+      }
+
+      function renderRequests(requests) {
+        requestList.replaceChildren();
+
+        if (!requests.length) {
+          renderState("Geen wijzigingsverzoeken", "Nieuwe aanvragen verschijnen hier zodra ze aan je account gekoppeld zijn.", "Leeg");
+          return;
+        }
+
+        const head = document.createElement("div");
+        head.className = "admin-table-row admin-table-head portal-request-row";
+        ["Titel", "Status", "Datum", "Bekijk"].forEach((label) => head.append(createCell(label)));
+        requestList.append(head);
+
+        requests.slice(0, 5).forEach((request) => {
+          const row = document.createElement("div");
+          row.className = "admin-table-row portal-request-row";
+          const action = document.createElement("button");
+          action.className = "button secondary";
+          action.type = "button";
+          action.textContent = "Bekijk";
+          action.addEventListener("click", () => openRequestModal(request.id));
+          row.append(
+            createCell(request.title || "Geen titel", "strong"),
+            createBadge(statusLabel(request.status), statusClass(request.status)),
+            createCell(formatDate(request.created_at)),
+            action
+          );
+          requestList.append(row);
+        });
+      }
+
+      function addDetail(label, value) {
+        const item = document.createElement("div");
+        const term = document.createElement("span");
+        const description = document.createElement("strong");
+        term.textContent = label;
+        description.textContent = value || "-";
+        item.append(term, description);
+        detailList.append(item);
+      }
+
+      function openRequestModal(id) {
+        const request = state.requests.find((item) => item.id === id);
+        if (!request) return;
+        modalTitle.textContent = request.title || "Verzoek bekijken";
+        detailList.replaceChildren();
+        addDetail("Titel", request.title);
+        addDetail("Status", statusLabel(request.status));
+        addDetail("Datum", formatDate(request.created_at));
+        addDetail("Categorie", request.change_category);
+        addDetail("Prioriteit", request.priority);
+        addDetail("Omschrijving", request.description);
+        modal.hidden = false;
+        document.body.classList.add("admin-modal-open");
+      }
+
+      function closeModal() {
+        modal.hidden = true;
+        document.body.classList.remove("admin-modal-open");
+      }
+
+      async function initDashboard() {
+        try {
+          state.client = await loadSupabase();
+          const { data: sessionData } = await state.client.auth.getSession();
+          const session = sessionData.session;
+
+          if (!session) {
+            window.location.href = "/login.html";
+            return;
+          }
+
+          const user = session.user;
+          const { data: profile, error: profileError } = await state.client
+            .from("profiles")
+            .select("id,name,company,website,package")
+            .eq("auth_user_id", user.id)
+            .maybeSingle();
+
+          if (profileError) throw profileError;
+
+          const { data: requests, error: requestError } = await state.client
+            .from("change_requests")
+            .select("id,title,status,created_at,change_category,priority,description")
+            .eq("auth_user_id", user.id)
+            .order("created_at", { ascending: false })
+            .limit(100);
+
+          if (requestError) throw requestError;
+
+          state.profile = profile;
+          state.requests = Array.isArray(requests) ? requests : [];
+          renderProfile(user, profile);
+          renderMetrics(state.requests);
+          renderRequests(state.requests);
+        } catch (error) {
+          setMessage(error.message || "Het dashboard kon niet worden geladen.", "error");
+          renderState("Dashboard niet beschikbaar", "Controleer je login of probeer het later opnieuw.", "Fout", "status-attention");
+        }
+      }
+
+      logoutButton.addEventListener("click", async () => {
+        if (state.client) await state.client.auth.signOut();
+        window.location.href = "/login.html";
+      });
+
+      document.querySelectorAll("[data-modal-close]").forEach((button) => button.addEventListener("click", closeModal));
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !modal.hidden) closeModal();
+      });
+
+      initDashboard();
+    </script>
+  </body>
+</html>

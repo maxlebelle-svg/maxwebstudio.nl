@@ -24,6 +24,8 @@ Aanwezig:
 - Resend API key via environment variable.
 - Admin intakes beschermd met bearer token.
 - Server-side prijscontrole voor Mollie.
+- Klantenportaal gebruikt Supabase Auth met anon key en RLS.
+- Service role key blijft server-side in Netlify Functions.
 
 ## Bekende Risico's
 
@@ -63,6 +65,26 @@ Aanbevelingen:
 - rate limiting of spambeperking overwegen
 - server-side validatie blijven gebruiken
 - veilige DOM-opbouw gebruiken voor formulierdata
+
+### Klantenportaal Auth
+
+Het klantenportaal gebruikt:
+
+- Supabase Auth voor login
+- `SUPABASE_ANON_KEY` in de browser
+- RLS op `profiles` en `change_requests`
+- `auth.uid()` als grens tussen klantaccounts
+
+Risico:
+
+- Zonder correcte RLS kan een anon key te veel data lezen.
+- Bestaande wijzigingsverzoeken zonder `auth_user_id` zijn niet zichtbaar voor klanten.
+
+Aanbevelingen:
+
+- RLS SQL uit `/docs/supabase-client-portal.sql` uitvoeren voordat het portaal live wordt gebruikt.
+- Profielen en bestaande wijzigingsverzoeken zorgvuldig koppelen aan de juiste `auth_user_id`.
+- Geen service role key in browsercode plaatsen.
 
 ### Uploads
 

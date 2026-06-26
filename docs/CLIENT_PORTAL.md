@@ -7,16 +7,29 @@ Dit document beschrijft de richting voor een toekomstig klantportaal. Er is mome
 - `/public/wijziging-doorgeven.html`: pagina waarmee bestaande klanten wijzigingsverzoeken kunnen doorgeven.
 - `/public/bedankt-wijziging.html`: statische bedankpagina na een wijzigingsverzoek.
 - `/public/admin-dashboard.html`: Admin Dashboard v1 als backoffice-preview. De sectie Wijzigingsverzoeken leest echte aanvragen uit Supabase via `/.netlify/functions/list-change-requests` en kan statussen bijwerken via `/.netlify/functions/update-change-request-status`.
+- `/public/login.html`: Supabase Auth loginpagina voor klanten.
+- `/public/client-dashboard.html`: afgeschermd klantdashboard met websitegegevens en eigen wijzigingsverzoeken.
 
 Admin Dashboard v1 bevat nog geen login, audit trail, klantmutaties of brede admin-acties. Wijzigingsverzoeken zijn gekoppeld aan Supabase, kunnen in een detailmodal worden bekeken en kunnen handmatig van status worden gewijzigd. De overige dashboardsecties blijven placeholder-bouwstenen voor latere integraties met Mollie, Resend, Netlify Forms/Functions, klantendatabase, domeinen, hosting, AI wijzigingsvoorstellen en analytics.
 
 Wijzigingsverzoeken worden via `/.netlify/functions/submit-change-request` verwerkt, opgeslagen in Supabase en per e-mail naar Max Web Studio gestuurd. De function valideert verplichte velden, ondersteunt een honeypot en maakt een eerste interne classificatie: waarschijnlijk binnen onderhoud, waarschijnlijk offerte nodig of handmatig beoordelen.
+
+Als een klant is ingelogd via Supabase Auth, stuurt `/public/wijziging-doorgeven.html` de access token mee naar de submit-function. De function koppelt het verzoek dan aan `change_requests.auth_user_id`, zodat het zichtbaar wordt in `/public/client-dashboard.html`.
 
 Bestandsuploads voor wijzigingsverzoeken worden server-side opgeslagen in Supabase Storage bucket `change-request-files`. De frontend stuurt bestanden via multipart form-data naar de Netlify Function; de service role key blijft server-side. De toegestane types zijn JPG, PNG, PDF en DOCX, met maximaal 5 bestanden en maximaal 10 MB per bestand.
 
 De Supabase tabel heet `change_requests`. Het SQL-schema staat in `/docs/supabase-change-requests.sql`. Deze tabel is de eerste duurzame databron voor het toekomstige admin dashboard en klantportaal.
 
 De dashboardfunctions gebruiken server-side environment variables `SUPABASE_URL` en `SUPABASE_SERVICE_ROLE_KEY`. Bestanden worden in het admin-dashboard geopend via `/.netlify/functions/get-change-request-file`, die eerst controleert of het bestand bij het wijzigingsverzoek hoort en daarna een tijdelijke signed URL maakt. De service role key mag nooit in frontendcode worden geplaatst.
+
+Het klantenportaal gebruikt Supabase Auth met `SUPABASE_ANON_KEY` in de browser. Deze key is publiek bedoeld en moet altijd samen met RLS worden gebruikt. De publieke config wordt opgehaald via `/.netlify/functions/client-auth-config`.
+
+Portaaldata:
+
+- `profiles`: klantprofiel gekoppeld aan `auth.users`
+- `change_requests.auth_user_id`: koppeling tussen klant en wijzigingsverzoeken
+
+RLS zorgt dat klanten alleen hun eigen profiel en eigen wijzigingsverzoeken kunnen lezen. De SQL staat in `/docs/supabase-client-portal.sql`.
 
 ## Doel
 
@@ -59,6 +72,8 @@ Voor Max:
 - klant kan eigen project bekijken
 - intake en bestanden beheren
 - basisnotificaties
+
+Status: eerste versie actief met login en dashboard. Intake, bestanden beheren vanuit klantzijde en notificaties volgen later.
 
 ### Fase 3 - Automatisering
 

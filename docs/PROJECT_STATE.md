@@ -45,6 +45,8 @@ Belangrijk:
 - `/public/wijziging-doorgeven.html`
 - `/public/bedankt-wijziging.html`
 - `/public/admin-dashboard.html`
+- `/public/login.html`
+- `/public/client-dashboard.html`
 - `/public/waarom-max-webstudio.html`
 - `/public/werkwijze.html`
 - `/public/over-max-webstudio.html`
@@ -65,6 +67,7 @@ Belangrijk:
 - `intake-storage.js`: slaat intakes tijdelijk op in `/tmp`.
 - `admin-intakes.js`: leest intakes uit met admin token.
 - `mollie-products.js`: centrale server-side prijsdefinities.
+- `client-auth-config.js`: geeft publieke Supabase Auth-config terug voor het klantenportaal.
 
 ## Sterke Punten
 
@@ -111,3 +114,7 @@ Belangrijk:
 - Bestanden bij wijzigingsverzoeken worden server-side opgeslagen in Supabase Storage bucket `change-request-files`.
 - Toegestane uploadtypes zijn JPG, PNG, PDF en DOCX, met maximaal 5 bestanden en maximaal 10 MB per bestand.
 - Supabase schema-instructies staan in `/docs/supabase-change-requests.sql`.
+- Klantenportaal Fase 4.1 is toegevoegd met Supabase Auth via `/public/login.html` en `/public/client-dashboard.html`.
+- Client-side Auth gebruikt alleen `SUPABASE_ANON_KEY`; service role blijft server-side.
+- Portaal-SQL met `profiles`, `change_requests.auth_user_id` en RLS staat in `/docs/supabase-client-portal.sql`.
+- Auth-documentatie staat in `/docs/AUTH.md`.
