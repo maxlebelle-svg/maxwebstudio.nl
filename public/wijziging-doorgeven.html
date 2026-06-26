@@ -208,6 +208,19 @@
         return "";
       }
 
+      function parseSubmitResponse(responseText) {
+        if (!responseText) return {};
+
+        try {
+          return JSON.parse(responseText);
+        } catch (error) {
+          return {
+            success: false,
+            error: "De server gaf geen geldige reactie terug. Probeer het opnieuw of neem contact op.",
+          };
+        }
+      }
+
       fileInput.addEventListener("change", () => {
         const files = [...fileInput.files];
 
@@ -261,7 +274,8 @@
             method: "POST",
             body: formData,
           });
-          const result = await response.json();
+          const responseText = await response.text();
+          const result = parseSubmitResponse(responseText);
 
           if (!response.ok || !result.success) {
             throw new Error(result.error || "Je wijzigingsverzoek kon niet worden verstuurd.");

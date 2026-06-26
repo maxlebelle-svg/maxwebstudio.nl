@@ -32,6 +32,22 @@ const carePlanLabels = {
 };
 
 exports.handler = async (event) => {
+  try {
+    return await handleSubmitChangeRequest(event);
+  } catch (error) {
+    console.error("Change request submit unhandled error", {
+      message: error.message,
+      stack: error.stack,
+    });
+
+    return jsonResponse(500, {
+      success: false,
+      error: "Het wijzigingsverzoek kon niet worden verwerkt. Probeer het later opnieuw of neem contact op.",
+    });
+  }
+};
+
+async function handleSubmitChangeRequest(event) {
   if (event.httpMethod !== "POST") {
     return jsonResponse(405, { success: false, error: "Alleen POST-verzoeken zijn toegestaan." });
   }
@@ -92,7 +108,7 @@ exports.handler = async (event) => {
     requestId: storageResult.id || undefined,
     warning: warning || undefined,
   });
-};
+}
 
 function buildChangeRequest(clean) {
   const category = categoryLabels[clean.changeCategory] || clean.changeCategory;
