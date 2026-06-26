@@ -25,7 +25,7 @@
       </header>
 
       <section class="admin-grid admin-metrics" aria-label="Klantoverzicht">
-        <article class="admin-card metric-card"><span>Website</span><strong id="metric-website">Live</strong><small><span class="portal-dot"></span>Live</small></article>
+        <article class="admin-card metric-card"><span>Website</span><strong id="metric-website">-</strong><small id="metric-website-label">Wordt geladen</small></article>
         <article class="admin-card metric-card"><span>Onderhoudspakket</span><strong id="metric-package">-</strong><small>Actief pakket</small></article>
         <article class="admin-card metric-card"><span>Open wijzigingsverzoeken</span><strong id="metric-open-requests">-</strong><small>Nog niet afgerond</small></article>
         <article class="admin-card metric-card"><span>Laatste update</span><strong id="metric-last-update">-</strong><small>Meest recente wijziging</small></article>
@@ -39,10 +39,12 @@
           </div>
         </div>
         <div class="portal-website-grid">
+          <article class="admin-card detail-card"><span>Bedrijf</span><strong id="profile-company">-</strong></article>
           <article class="admin-card detail-card"><span>Website URL</span><strong id="profile-website">-</strong></article>
           <article class="admin-card detail-card"><span>Hostingstatus</span><strong>Actief</strong></article>
           <article class="admin-card detail-card"><span>SSL</span><strong>Actief</strong></article>
           <article class="admin-card detail-card"><span>Onderhoudspakket</span><strong id="profile-package">-</strong></article>
+          <article class="admin-card detail-card"><span>Klant sinds</span><strong id="profile-created-at">-</strong></article>
         </div>
         <div class="portal-actions">
           <a class="button primary" id="view-website-link" href="#" target="_blank" rel="noopener">Bekijk website</a>
@@ -59,7 +61,7 @@
         </div>
         <div class="admin-table request-table portal-request-table" id="client-request-list" role="table" aria-label="Laatste wijzigingsverzoeken" aria-live="polite">
           <div class="admin-table-row admin-table-head portal-request-row" role="row">
-            <span>Titel</span><span>Status</span><span>Datum</span><span>Bekijk</span>
+            <span>Titel</span><span>Status</span><span>Categorie</span><span>Datum</span><span>Bekijk</span>
           </div>
           <article class="admin-card request-card request-state-card" role="row">
             <div>
@@ -165,15 +167,30 @@
 
       function renderProfile(user, profile) {
         const displayName = profile?.name || user.user_metadata?.name || user.email;
+        const company = profile?.company || "Nog niet ingesteld";
         const website = profile?.website || "";
         const packageName = profile?.package || "-";
+        const websiteLabel = website ? "Live" : "Nog geen website ingesteld";
 
         clientName.textContent = displayName;
+        document.querySelector("#metric-website").textContent = website ? "Live" : "Niet ingesteld";
+        document.querySelector("#metric-website-label").replaceChildren();
+        if (website) {
+          const dot = document.createElement("span");
+          dot.className = "portal-dot";
+          document.querySelector("#metric-website-label").append(dot, document.createTextNode("Live"));
+        } else {
+          document.querySelector("#metric-website-label").textContent = websiteLabel;
+        }
         document.querySelector("#metric-package").textContent = packageName;
+        document.querySelector("#profile-company").textContent = company;
         document.querySelector("#profile-package").textContent = packageName;
         document.querySelector("#profile-website").textContent = website || "Nog niet ingesteld";
-        document.querySelector("#view-website-link").href = website || "index.html";
-        document.querySelector("#view-website-link").toggleAttribute("aria-disabled", !website);
+        document.querySelector("#profile-created-at").textContent = formatDate(profile?.created_at);
+        const websiteLink = document.querySelector("#view-website-link");
+        websiteLink.href = website || "#";
+        websiteLink.classList.toggle("is-disabled", !website);
+        websiteLink.toggleAttribute("aria-disabled", !website);
       }
 
       function renderMetrics(requests) {
@@ -203,7 +220,7 @@
 
         const head = document.createElement("div");
         head.className = "admin-table-row admin-table-head portal-request-row";
-        ["Titel", "Status", "Datum", "Bekijk"].forEach((label) => head.append(createCell(label)));
+        ["Titel", "Status", "Categorie", "Datum", "Bekijk"].forEach((label) => head.append(createCell(label)));
         requestList.append(head);
 
         requests.slice(0, 5).forEach((request) => {
@@ -217,6 +234,7 @@
           row.append(
             createCell(request.title || "Geen titel", "strong"),
             createBadge(statusLabel(request.status), statusClass(request.status)),
+            createCell(request.change_category || "-"),
             createCell(formatDate(request.created_at)),
             action
           );
@@ -245,8 +263,20 @@
         addDetail("Categorie", request.change_category);
         addDetail("Prioriteit", request.priority);
         addDetail("Omschrijving", request.description);
+        addDetail("Bestandsnamen", formatFileNames(request.file_names));
         modal.hidden = false;
         document.body.classList.add("admin-modal-open");
+      }
+
+      function formatFileNames(files) {
+        if (!Array.isArray(files) || !files.length) return "Geen bestanden meegestuurd";
+        return files
+          .map((file) => {
+            if (file && typeof file === "object") return file.originalName || file.name || file.storagePath || "";
+            return String(file || "");
+          })
+          .filter(Boolean)
+          .join(", ") || "Geen bestanden meegestuurd";
       }
 
       function closeModal() {
@@ -268,7 +298,7 @@
           const user = session.user;
           const { data: profile, error: profileError } = await state.client
             .from("profiles")
-            .select("id,name,company,website,package")
+            .select("id,name,company,website,package,created_at")
             .eq("auth_user_id", user.id)
             .maybeSingle();
 
@@ -276,10 +306,10 @@
 
           const { data: requests, error: requestError } = await state.client
             .from("change_requests")
-            .select("id,title,status,created_at,change_category,priority,description")
+            .select("id,title,status,created_at,change_category,priority,description,file_names")
             .eq("auth_user_id", user.id)
             .order("created_at", { ascending: false })
-            .limit(100);
+            .limit(5);
 
           if (requestError) throw requestError;
 
@@ -297,6 +327,10 @@
       logoutButton.addEventListener("click", async () => {
         if (state.client) await state.client.auth.signOut();
         window.location.href = "/login.html";
+      });
+
+      document.querySelector("#view-website-link").addEventListener("click", (event) => {
+        if (event.currentTarget.getAttribute("aria-disabled") === "true") event.preventDefault();
       });
 
       document.querySelectorAll("[data-modal-close]").forEach((button) => button.addEventListener("click", closeModal));

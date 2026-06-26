@@ -2584,7 +2584,7 @@ h3 {
 
 .portal-website-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -2594,8 +2594,13 @@ h3 {
   gap: 12px;
 }
 
+.portal-actions .is-disabled {
+  opacity: 0.55;
+  pointer-events: auto;
+}
+
 .portal-request-table .portal-request-row {
-  grid-template-columns: minmax(180px, 1.4fr) minmax(120px, 0.8fr) minmax(120px, 0.8fr) auto;
+  grid-template-columns: minmax(180px, 1.4fr) minmax(120px, 0.8fr) minmax(130px, 0.9fr) minmax(120px, 0.8fr) auto;
 }
 
 .portal-message {

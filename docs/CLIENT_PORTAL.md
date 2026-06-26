@@ -8,7 +8,7 @@ Dit document beschrijft de richting voor een toekomstig klantportaal. Er is mome
 - `/public/bedankt-wijziging.html`: statische bedankpagina na een wijzigingsverzoek.
 - `/public/admin-dashboard.html`: Admin Dashboard v1 als backoffice-preview. De sectie Wijzigingsverzoeken leest echte aanvragen uit Supabase via `/.netlify/functions/list-change-requests` en kan statussen bijwerken via `/.netlify/functions/update-change-request-status`.
 - `/public/login.html`: Supabase Auth loginpagina voor klanten.
-- `/public/client-dashboard.html`: afgeschermd klantdashboard met websitegegevens en eigen wijzigingsverzoeken.
+- `/public/client-dashboard.html`: afgeschermd klantdashboard met echte profieldata, websitegegevens en maximaal 5 recente wijzigingsverzoeken van de ingelogde klant.
 
 Admin Dashboard v1 bevat nog geen login, audit trail, klantmutaties of brede admin-acties. Wijzigingsverzoeken zijn gekoppeld aan Supabase, kunnen in een detailmodal worden bekeken en kunnen handmatig van status worden gewijzigd. De overige dashboardsecties blijven placeholder-bouwstenen voor latere integraties met Mollie, Resend, Netlify Forms/Functions, klantendatabase, domeinen, hosting, AI wijzigingsvoorstellen en analytics.
 
@@ -30,6 +30,18 @@ Portaaldata:
 - `change_requests.auth_user_id`: koppeling tussen klant en wijzigingsverzoeken
 
 RLS zorgt dat klanten alleen hun eigen profiel en eigen wijzigingsverzoeken kunnen lezen. De SQL staat in `/docs/supabase-client-portal.sql`.
+
+Het klantdashboard toont:
+
+- naam
+- bedrijf
+- website
+- onderhoudspakket
+- klant sinds
+- eigen wijzigingsverzoeken met titel, status, categorie en datum
+- detailmodal met titel, omschrijving, status, categorie, prioriteit, datum en bestandsnamen
+
+Het klantdashboard toont geen interne classificatie en bevat geen statusbeheer.
 
 ## Doel
 

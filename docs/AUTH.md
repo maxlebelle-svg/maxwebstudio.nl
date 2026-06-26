@@ -61,6 +61,15 @@ Klanten mogen alleen hun eigen gegevens lezen:
 
 Admin- en automationflows blijven via server-side service role lopen.
 
+## Dashboard Data
+
+`/public/client-dashboard.html` leest na login:
+
+- profieldata uit `profiles`
+- maximaal 5 recente wijzigingsverzoeken uit `change_requests`
+
+De frontend gebruikt alleen de Supabase anon key en vertrouwt op RLS. Klanten kunnen geen status wijzigen en zien geen interne classificatie.
+
 ## Beperkingen
 
 - Er is nog geen self-service registratie.

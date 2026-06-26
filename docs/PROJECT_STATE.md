@@ -118,3 +118,5 @@ Belangrijk:
 - Client-side Auth gebruikt alleen `SUPABASE_ANON_KEY`; service role blijft server-side.
 - Portaal-SQL met `profiles`, `change_requests.auth_user_id` en RLS staat in `/docs/supabase-client-portal.sql`.
 - Auth-documentatie staat in `/docs/AUTH.md`.
+- Klantenportaal Fase 4.2 toont echte profieldata uit `profiles` en maximaal 5 recente wijzigingsverzoeken van de ingelogde klant.
+- Het klantdashboard toont geen interne classificatie en staat geen statuswijzigingen toe.
