@@ -2288,6 +2288,103 @@ h3 {
   color: var(--ink);
 }
 
+.admin-profile-manager {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.52fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.admin-token-card,
+.admin-profile-form {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.admin-token-card div,
+.admin-profile-form-heading div {
+  display: grid;
+  gap: 7px;
+}
+
+.admin-token-card strong,
+.admin-profile-form-heading strong {
+  color: var(--white);
+  font-size: 18px;
+}
+
+.admin-token-card span,
+.admin-profile-form-heading span {
+  color: rgba(255, 255, 255, 0.66);
+  line-height: 1.55;
+}
+
+.admin-token-card label,
+.admin-profile-form label {
+  display: grid;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.64);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.admin-profile-inline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.admin-token-card input,
+.admin-profile-form input,
+.admin-profile-form select {
+  min-height: 46px;
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  padding: 0 12px;
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.08);
+  font: inherit;
+  text-transform: none;
+}
+
+.admin-profile-form input:disabled,
+.admin-profile-form select:disabled {
+  opacity: 0.7;
+}
+
+.admin-profile-form option {
+  color: var(--ink);
+}
+
+.admin-profile-form-heading,
+.admin-profile-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.admin-profile-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-profile-actions {
+  align-items: center;
+}
+
+.admin-profile-actions .admin-form-message {
+  flex: 1;
+}
+
+.client-profile-table .client-profile-row {
+  grid-template-columns: minmax(150px, 1.2fr) minmax(160px, 1.1fr) minmax(110px, 0.75fr) minmax(170px, 1.2fr) minmax(140px, 0.9fr) auto;
+}
+
 .request-list {
   display: grid;
   gap: 12px;
@@ -3805,6 +3902,7 @@ h3 {
   .change-request-layout,
   .admin-grid,
   .admin-two-column,
+  .admin-profile-manager,
   .ai-suggestion-grid,
   .automation-grid,
   .compact-admin-grid,
@@ -3873,8 +3971,13 @@ h3 {
   }
 
   .admin-filters,
+  .admin-profile-fields,
+  .admin-profile-inline,
+  .admin-profile-form-heading,
+  .admin-profile-actions,
   .admin-table-row,
   .request-table .request-table-row,
+  .client-profile-table .client-profile-row,
   .portal-request-table .portal-request-row,
   .request-card {
     grid-template-columns: 1fr;
@@ -3976,6 +4079,8 @@ h3 {
 
   .admin-hero,
   .admin-section-heading,
+  .admin-profile-form-heading,
+  .admin-profile-actions,
   .automation-card {
     align-items: flex-start;
     flex-direction: column;

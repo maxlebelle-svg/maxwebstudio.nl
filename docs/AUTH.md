@@ -70,9 +70,29 @@ Admin- en automationflows blijven via server-side service role lopen.
 
 De frontend gebruikt alleen de Supabase anon key en vertrouwt op RLS. Klanten kunnen geen status wijzigen en zien geen interne classificatie.
 
+## Admin Profielbeheer
+
+`/public/admin-dashboard.html` bevat een interne beheerfunctie voor klantprofielen.
+
+De beheerfunctie gebruikt:
+
+- `/.netlify/functions/admin-client-profiles`
+- `ADMIN_TOKEN` als bearer token vanuit het dashboard
+- `SUPABASE_SERVICE_ROLE_KEY` alleen server-side in de Netlify Function
+
+De adminfunctie kan:
+
+- Supabase Auth-users ophalen
+- bestaande klantkandidaten uit `change_requests` tonen
+- `profiles` aanmaken of bijwerken
+- bedrijfsnaam, website en onderhoudspakket beheren
+- bestaande wijzigingsverzoeken op exact e-mailadres aan `auth_user_id` koppelen
+
+Na opslaan leest het klantenportaal de nieuwe profielgegevens direct via de bestaande Supabase Auth-sessie en RLS.
+
 ## Beperkingen
 
 - Er is nog geen self-service registratie.
-- Profielen moeten voorlopig door Max Web Studio of via adminproces worden aangemaakt.
-- Bestaande wijzigingsverzoeken moeten handmatig of via migratie aan `auth_user_id` gekoppeld worden.
+- Profielen moeten voorlopig door Max Web Studio via het admin-dashboard worden aangemaakt of bijgewerkt.
+- Bestaande wijzigingsverzoeken zonder overeenkomend e-mailadres moeten nog handmatig of via migratie aan `auth_user_id` gekoppeld worden.
 - Er is nog geen audit trail voor klantacties.

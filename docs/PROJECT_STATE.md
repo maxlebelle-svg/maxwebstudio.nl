@@ -120,3 +120,7 @@ Belangrijk:
 - Auth-documentatie staat in `/docs/AUTH.md`.
 - Klantenportaal Fase 4.2 toont echte profieldata uit `profiles` en maximaal 5 recente wijzigingsverzoeken van de ingelogde klant.
 - Het klantdashboard toont geen interne classificatie en staat geen statuswijzigingen toe.
+- Het admin-dashboard kan klantprofielen beheren via `/.netlify/functions/admin-client-profiles`.
+- `/functions/admin-client-profiles.js` gebruikt `ADMIN_TOKEN`, `SUPABASE_URL` en `SUPABASE_SERVICE_ROLE_KEY` server-side om `profiles` te laden, Auth-users op te halen en profielen op te slaan.
+- Bij het opslaan van een profiel kan de function bestaande wijzigingsverzoeken op exact e-mailadres koppelen aan `change_requests.auth_user_id`, zodat het klantenportaal deze direct toont.
+- De service role key wordt niet naar frontendcode gestuurd; de browser gebruikt alleen een admin bearer token richting de Netlify Function.

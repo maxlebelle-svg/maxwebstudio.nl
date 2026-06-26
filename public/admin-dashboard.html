@@ -36,27 +36,82 @@
             <p class="section-kicker">Klanten</p>
             <h2>Actieve klantomgevingen</h2>
           </div>
-          <span class="status-badge status-prepared">Placeholder-data</span>
+          <span class="status-badge status-prepared">Supabase profiles</span>
         </div>
-        <div class="admin-table" role="table" aria-label="Klanten">
-          <div class="admin-table-row admin-table-head" role="row">
-            <span>Klant</span><span>Website</span><span>Pakket</span><span>Status</span><span>Laatste update</span><span>Actie</span>
+
+        <div class="admin-profile-manager">
+          <article class="admin-card admin-token-card">
+            <div>
+              <strong>Admin toegang</strong>
+              <span>Gebruik het interne admin-token om klantprofielen te laden en te beheren.</span>
+            </div>
+            <label for="admin-profile-token">Admin token</label>
+            <div class="admin-profile-inline">
+              <input id="admin-profile-token" type="password" autocomplete="off" placeholder="ADMIN_TOKEN" />
+              <button class="button secondary" id="admin-profile-load" type="button">Laden</button>
+            </div>
+            <p class="admin-form-message" id="admin-profile-access-message" role="status"></p>
+          </article>
+
+          <form class="admin-card admin-profile-form" id="admin-profile-form">
+            <div class="admin-profile-form-heading">
+              <div>
+                <strong>Klantprofiel beheren</strong>
+                <span>Koppel een klant aan een Supabase Auth gebruiker. Het klantenportaal leest deze gegevens direct uit `profiles`.</span>
+              </div>
+              <mark class="status-badge status-planned" id="admin-profile-state">Niet geladen</mark>
+            </div>
+
+            <label for="admin-client-select">Klant selecteren
+              <select id="admin-client-select" disabled>
+                <option value="">Laad klantdata om te starten</option>
+              </select>
+            </label>
+
+            <div class="admin-profile-fields">
+              <label for="admin-profile-name">Naam klant
+                <input id="admin-profile-name" type="text" autocomplete="name" disabled />
+              </label>
+              <label for="admin-profile-company">Bedrijfsnaam
+                <input id="admin-profile-company" type="text" autocomplete="organization" disabled />
+              </label>
+              <label for="admin-profile-website">Website
+                <input id="admin-profile-website" type="url" autocomplete="url" placeholder="https://voorbeeld.nl" disabled />
+              </label>
+              <label for="admin-profile-package">Onderhoudspakket
+                <select id="admin-profile-package" disabled>
+                  <option value="Basis">Basis</option>
+                  <option value="Plus">Plus</option>
+                  <option value="Premium">Premium</option>
+                </select>
+              </label>
+              <label for="admin-profile-auth-user">Supabase Auth gebruiker
+                <select id="admin-profile-auth-user" disabled>
+                  <option value="">Nog geen Auth-users geladen</option>
+                </select>
+              </label>
+              <label>Klant sinds
+                <input id="admin-profile-created-at" type="text" value="Wordt automatisch opgeslagen" disabled />
+              </label>
+            </div>
+
+            <div class="admin-profile-actions">
+              <button class="button primary" id="admin-profile-save" type="submit" disabled>Profiel opslaan</button>
+              <p class="admin-form-message" id="admin-profile-save-message" role="status"></p>
+            </div>
+          </form>
+        </div>
+
+        <div class="admin-table client-profile-table" id="client-profile-list" role="table" aria-label="Klantprofielen" aria-live="polite">
+          <div class="admin-table-row admin-table-head client-profile-row" role="row">
+            <span>Klant</span><span>Website</span><span>Pakket</span><span>Auth-user</span><span>Klant sinds</span><span>Status</span>
           </div>
-          <div class="admin-table-row" role="row">
-            <strong>DC Timmerwerken</strong><span>dc-timmerwerken.nl</span><span>Care Plus</span><span><mark class="status-badge status-active">Live</mark></span><span>Vandaag</span><button class="button secondary" type="button">Bekijk</button>
-          </div>
-          <div class="admin-table-row" role="row">
-            <strong>Eco Products NL</strong><span>ecoproducts.nl</span><span>Business Website</span><span><mark class="status-badge status-warning">Review</mark></span><span>Gisteren</span><button class="button secondary" type="button">Bekijk</button>
-          </div>
-          <div class="admin-table-row" role="row">
-            <strong>Wiese Timmerwerken</strong><span>wiesetimmerwerken.nl</span><span>Care Basic</span><span><mark class="status-badge status-active">Live</mark></span><span>2 dagen geleden</span><button class="button secondary" type="button">Bekijk</button>
-          </div>
-          <div class="admin-table-row" role="row">
-            <strong>Quantum Bouw</strong><span>quantumbouw.nl</span><span>Premium Growth</span><span><mark class="status-badge status-attention">Actie nodig</mark></span><span>Deze week</span><button class="button secondary" type="button">Bekijk</button>
-          </div>
-          <div class="admin-table-row" role="row">
-            <strong>Max Web Studio Demo</strong><span>demo.maxwebstudio.nl</span><span>Demo omgeving</span><span><mark class="status-badge status-prepared">Preview</mark></span><span>Vandaag</span><button class="button secondary" type="button">Bekijk</button>
-          </div>
+          <article class="admin-card request-card request-state-card">
+            <div>
+              <strong>Klantprofielen niet geladen</strong>
+              <span>Vul het admin-token in om profielen uit Supabase te beheren.</span>
+            </div>
+          </article>
         </div>
       </section>
 
@@ -173,6 +228,8 @@
       (() => {
         const listEndpoint = "/.netlify/functions/list-change-requests";
         const updateEndpoint = "/.netlify/functions/update-change-request-status";
+        const profilesEndpoint = "/.netlify/functions/admin-client-profiles";
+        const adminTokenStorageKey = "mws_admin_token";
         const completedStatuses = new Set(["afgerond"]);
         const statusLabels = {
           nieuw: "Nieuw",
@@ -180,7 +237,16 @@
           wacht_op_klant: "Wacht op klant",
           afgerond: "Afgerond",
         };
-        const state = { requests: [], selectedRequestId: "" };
+        const state = {
+          requests: [],
+          selectedRequestId: "",
+          adminToken: sessionStorage.getItem(adminTokenStorageKey) || "",
+          profiles: [],
+          authUsers: [],
+          clientCandidates: [],
+          selectedCandidateKey: "",
+          selectedCandidateEmail: "",
+        };
 
         const list = document.getElementById("change-request-list");
         const statusFilter = document.getElementById("filter-status");
@@ -196,6 +262,25 @@
         const statusSelect = document.getElementById("change-request-status");
         const statusSave = document.getElementById("change-request-status-save");
         const statusMessage = document.getElementById("change-request-status-message");
+        const adminTokenInput = document.getElementById("admin-profile-token");
+        const adminLoadButton = document.getElementById("admin-profile-load");
+        const adminAccessMessage = document.getElementById("admin-profile-access-message");
+        const adminProfileForm = document.getElementById("admin-profile-form");
+        const adminProfileState = document.getElementById("admin-profile-state");
+        const adminClientSelect = document.getElementById("admin-client-select");
+        const adminProfileName = document.getElementById("admin-profile-name");
+        const adminProfileCompany = document.getElementById("admin-profile-company");
+        const adminProfileWebsite = document.getElementById("admin-profile-website");
+        const adminProfilePackage = document.getElementById("admin-profile-package");
+        const adminProfileAuthUser = document.getElementById("admin-profile-auth-user");
+        const adminProfileCreatedAt = document.getElementById("admin-profile-created-at");
+        const adminProfileSave = document.getElementById("admin-profile-save");
+        const adminProfileSaveMessage = document.getElementById("admin-profile-save-message");
+        const clientProfileList = document.getElementById("client-profile-list");
+
+        if (state.adminToken) {
+          adminTokenInput.value = state.adminToken;
+        }
 
         function normalize(value) {
           return String(value || "").trim().toLowerCase().replace(/[_-]+/g, " ");
@@ -283,6 +368,244 @@
           const cell = document.createElement(element);
           cell.textContent = text || "-";
           return cell;
+        }
+
+        function setAdminProfileState(text, type) {
+          adminProfileState.textContent = text;
+          adminProfileState.className = `status-badge ${type || "status-planned"}`;
+        }
+
+        function setAdminAccessMessage(text, type) {
+          adminAccessMessage.textContent = text;
+          adminAccessMessage.className = `admin-form-message ${type || ""}`.trim();
+        }
+
+        function setAdminSaveMessage(text, type) {
+          adminProfileSaveMessage.textContent = text;
+          adminProfileSaveMessage.className = `admin-form-message ${type || ""}`.trim();
+        }
+
+        function setProfileFormEnabled(enabled) {
+          [adminClientSelect, adminProfileName, adminProfileCompany, adminProfileWebsite, adminProfilePackage, adminProfileAuthUser, adminProfileSave].forEach((field) => {
+            field.disabled = !enabled;
+          });
+        }
+
+        function createProfileTableHead() {
+          const head = document.createElement("div");
+          head.className = "admin-table-row admin-table-head client-profile-row";
+          head.setAttribute("role", "row");
+          ["Klant", "Website", "Pakket", "Auth-user", "Klant sinds", "Status"].forEach((label) => {
+            head.append(createCell(label));
+          });
+          return head;
+        }
+
+        function renderClientProfileState(title, text, badgeText, badgeClass) {
+          clientProfileList.replaceChildren();
+          const card = document.createElement("article");
+          card.className = "admin-card request-card request-state-card";
+          const content = document.createElement("div");
+          const heading = document.createElement("strong");
+          heading.textContent = title;
+          const body = document.createElement("span");
+          body.textContent = text;
+          content.append(heading, body);
+          card.append(content);
+          if (badgeText) card.append(createBadge(badgeText, badgeClass || "status-planned"));
+          clientProfileList.append(card);
+        }
+
+        function profileAuthLabel(authUserId) {
+          const user = state.authUsers.find((item) => item.id === authUserId);
+          return user?.email || authUserId || "-";
+        }
+
+        function renderClientProfiles() {
+          clientProfileList.replaceChildren();
+
+          if (!state.profiles.length) {
+            renderClientProfileState("Nog geen klantprofielen", "Kies een klant en Auth-user om het eerste profiel aan te maken.", "Leeg", "status-planned");
+            return;
+          }
+
+          clientProfileList.append(createProfileTableHead());
+          state.profiles.forEach((profile) => {
+            const row = document.createElement("div");
+            row.className = "admin-table-row client-profile-row";
+            row.setAttribute("role", "row");
+
+            const customer = document.createElement("strong");
+            customer.textContent = profile.company || profile.name || "Onbekende klant";
+
+            const website = createCell(profile.website || "Nog niet ingesteld");
+            const carePackage = createCell(profile.package || "-");
+            const authUser = createCell(profileAuthLabel(profile.authUserId));
+            const createdAt = createCell(formatDate(profile.createdAt));
+            const status = createBadge("Gekoppeld", "status-active");
+
+            row.append(customer, website, carePackage, authUser, createdAt, status);
+            clientProfileList.append(row);
+          });
+        }
+
+        function normalizePackage(value) {
+          const normalized = normalize(value);
+          if (normalized.includes("premium")) return "Premium";
+          if (normalized.includes("plus")) return "Plus";
+          return "Basis";
+        }
+
+        function hydrateClientSelect() {
+          adminClientSelect.replaceChildren();
+
+          if (!state.clientCandidates.length) {
+            const option = document.createElement("option");
+            option.value = "";
+            option.textContent = "Geen klanten gevonden";
+            adminClientSelect.append(option);
+            return;
+          }
+
+          const empty = document.createElement("option");
+          empty.value = "";
+          empty.textContent = "Kies een klant";
+          adminClientSelect.append(empty);
+
+          state.clientCandidates.forEach((candidate) => {
+            const option = document.createElement("option");
+            option.value = candidate.key;
+            option.textContent = candidate.label;
+            adminClientSelect.append(option);
+          });
+        }
+
+        function hydrateAuthUsers() {
+          adminProfileAuthUser.replaceChildren();
+
+          if (!state.authUsers.length) {
+            const option = document.createElement("option");
+            option.value = "";
+            option.textContent = "Geen Auth-users gevonden";
+            adminProfileAuthUser.append(option);
+            return;
+          }
+
+          const empty = document.createElement("option");
+          empty.value = "";
+          empty.textContent = "Kies een Auth-user";
+          adminProfileAuthUser.append(empty);
+
+          state.authUsers.forEach((user) => {
+            const option = document.createElement("option");
+            option.value = user.id;
+            option.textContent = user.email || user.id;
+            adminProfileAuthUser.append(option);
+          });
+        }
+
+        function fillProfileForm(candidate) {
+          state.selectedCandidateKey = candidate?.key || "";
+          state.selectedCandidateEmail = candidate?.email || "";
+          adminProfileName.value = candidate?.name || "";
+          adminProfileCompany.value = candidate?.company || "";
+          adminProfileWebsite.value = candidate?.website || "";
+          adminProfilePackage.value = normalizePackage(candidate?.package);
+          adminProfileAuthUser.value = candidate?.authUserId || "";
+          adminProfileCreatedAt.value = candidate?.createdAt ? formatDate(candidate.createdAt) : "Wordt automatisch opgeslagen";
+          setAdminSaveMessage("", "");
+        }
+
+        async function loadClientProfiles() {
+          const token = adminTokenInput.value.trim();
+          if (!token) {
+            setAdminAccessMessage("Vul het admin-token in.", "error");
+            return;
+          }
+
+          state.adminToken = token;
+          sessionStorage.setItem(adminTokenStorageKey, token);
+          adminLoadButton.disabled = true;
+          adminLoadButton.textContent = "Laden...";
+          setAdminProfileState("Laden", "status-prepared");
+          setAdminAccessMessage("", "");
+          renderClientProfileState("Klantprofielen laden...", "Supabase profiles en Auth-users worden opgehaald.", "Laden", "status-prepared");
+
+          try {
+            const response = await fetch(profilesEndpoint, {
+              headers: {
+                Accept: "application/json",
+                Authorization: `Bearer ${state.adminToken}`,
+              },
+            });
+            const data = await response.json().catch(() => ({}));
+
+            if (!response.ok || !data.success) {
+              throw new Error(data.error || "Klantprofielen konden niet worden geladen.");
+            }
+
+            state.profiles = Array.isArray(data.profiles) ? data.profiles : [];
+            state.authUsers = Array.isArray(data.authUsers) ? data.authUsers : [];
+            state.clientCandidates = Array.isArray(data.clientCandidates) ? data.clientCandidates : [];
+
+            hydrateClientSelect();
+            hydrateAuthUsers();
+            setProfileFormEnabled(true);
+            fillProfileForm(null);
+            renderClientProfiles();
+            setAdminProfileState("Beheer actief", "status-active");
+            setAdminAccessMessage("Klantprofielen geladen.", "success");
+          } catch (error) {
+            setProfileFormEnabled(false);
+            setAdminProfileState("Niet beschikbaar", "status-attention");
+            setAdminAccessMessage("Klantprofielen konden niet worden geladen. Controleer het admin-token en de Supabase configuratie.", "error");
+            renderClientProfileState("Klantprofielen konden niet worden geladen", "Controleer het admin-token, ADMIN_TOKEN en Supabase environment variables.", "Fout", "status-attention");
+          } finally {
+            adminLoadButton.disabled = false;
+            adminLoadButton.textContent = "Laden";
+          }
+        }
+
+        async function saveClientProfile(event) {
+          event.preventDefault();
+
+          const payload = {
+            authUserId: adminProfileAuthUser.value,
+            name: adminProfileName.value,
+            company: adminProfileCompany.value,
+            website: adminProfileWebsite.value,
+            package: adminProfilePackage.value,
+            requestEmail: state.selectedCandidateEmail,
+          };
+
+          adminProfileSave.disabled = true;
+          adminProfileSave.textContent = "Opslaan...";
+          setAdminSaveMessage("", "");
+
+          try {
+            const response = await fetch(profilesEndpoint, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                Authorization: `Bearer ${state.adminToken}`,
+              },
+              body: JSON.stringify(payload),
+            });
+            const data = await response.json().catch(() => ({}));
+
+            if (!response.ok || !data.success) {
+              throw new Error(data.error || "Profiel kon niet worden opgeslagen.");
+            }
+
+            await loadClientProfiles();
+            setAdminSaveMessage(`Profiel opgeslagen.${data.linkedRequests ? ` ${data.linkedRequests} bestaande aanvraag/aanvragen gekoppeld.` : ""}`, "success");
+          } catch (error) {
+            setAdminSaveMessage(error.message || "Profiel kon niet worden opgeslagen.", "error");
+          } finally {
+            adminProfileSave.disabled = false;
+            adminProfileSave.textContent = "Profiel opslaan";
+          }
         }
 
         function createRequestRow(request) {
@@ -516,6 +839,13 @@
         [statusFilter, priorityFilter, categoryFilter].forEach((filter) => {
           filter.addEventListener("change", renderRequests);
         });
+
+        adminLoadButton.addEventListener("click", loadClientProfiles);
+        adminClientSelect.addEventListener("change", () => {
+          const candidate = state.clientCandidates.find((item) => item.key === adminClientSelect.value);
+          fillProfileForm(candidate || null);
+        });
+        adminProfileForm.addEventListener("submit", saveClientProfile);
 
         document.querySelectorAll("[data-modal-close]").forEach((button) => {
           button.addEventListener("click", closeModal);

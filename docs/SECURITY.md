@@ -74,17 +74,20 @@ Het klantenportaal gebruikt:
 - `SUPABASE_ANON_KEY` in de browser
 - RLS op `profiles` en `change_requests`
 - `auth.uid()` als grens tussen klantaccounts
+- admin-profielbeheer via `ADMIN_TOKEN` en een server-side Netlify Function
 
 Risico:
 
 - Zonder correcte RLS kan een anon key te veel data lezen.
 - Bestaande wijzigingsverzoeken zonder `auth_user_id` zijn niet zichtbaar voor klanten.
+- Het admin-dashboard heeft nog geen volledige admin-login, rollenmodel of audit trail.
 
 Aanbevelingen:
 
 - RLS SQL uit `/docs/supabase-client-portal.sql` uitvoeren voordat het portaal live wordt gebruikt.
 - Profielen en bestaande wijzigingsverzoeken zorgvuldig koppelen aan de juiste `auth_user_id`.
 - Geen service role key in browsercode plaatsen.
+- Vervang het tijdelijke admin-tokenmodel later door echte admin-authenticatie met rollen en logging.
 
 ### Uploads
 

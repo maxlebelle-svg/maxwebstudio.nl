@@ -10,7 +10,9 @@ Dit document beschrijft de richting voor een toekomstig klantportaal. Er is mome
 - `/public/login.html`: Supabase Auth loginpagina voor klanten.
 - `/public/client-dashboard.html`: afgeschermd klantdashboard met echte profieldata, websitegegevens en maximaal 5 recente wijzigingsverzoeken van de ingelogde klant.
 
-Admin Dashboard v1 bevat nog geen login, audit trail, klantmutaties of brede admin-acties. Wijzigingsverzoeken zijn gekoppeld aan Supabase, kunnen in een detailmodal worden bekeken en kunnen handmatig van status worden gewijzigd. De overige dashboardsecties blijven placeholder-bouwstenen voor latere integraties met Mollie, Resend, Netlify Forms/Functions, klantendatabase, domeinen, hosting, AI wijzigingsvoorstellen en analytics.
+Admin Dashboard v1 bevat nog geen volledige login, audit trail of brede admin-acties. Wijzigingsverzoeken zijn gekoppeld aan Supabase, kunnen in een detailmodal worden bekeken en kunnen handmatig van status worden gewijzigd. De overige dashboardsecties blijven placeholder-bouwstenen voor latere integraties met Mollie, Resend, Netlify Forms/Functions, klantendatabase, domeinen, hosting, AI wijzigingsvoorstellen en analytics.
+
+Het admin-dashboard bevat nu wel een eerste profielbeheerfunctie voor klanten. Via `/.netlify/functions/admin-client-profiles` kan Max Web Studio een klant selecteren, bedrijfsnaam, website en onderhoudspakket beheren, en het profiel koppelen aan een Supabase Auth-user. Deze beheeractie gebruikt `ADMIN_TOKEN` in de browser en `SUPABASE_SERVICE_ROLE_KEY` uitsluitend server-side. Nieuwe profielen worden opgeslagen in `public.profiles`; `created_at` fungeert als klant-sinds datum.
 
 Wijzigingsverzoeken worden via `/.netlify/functions/submit-change-request` verwerkt, opgeslagen in Supabase en per e-mail naar Max Web Studio gestuurd. De function valideert verplichte velden, ondersteunt een honeypot en maakt een eerste interne classificatie: waarschijnlijk binnen onderhoud, waarschijnlijk offerte nodig of handmatig beoordelen.
 
@@ -42,6 +44,8 @@ Het klantdashboard toont:
 - detailmodal met titel, omschrijving, status, categorie, prioriteit, datum en bestandsnamen
 
 Het klantdashboard toont geen interne classificatie en bevat geen statusbeheer.
+
+Wanneer een profiel via het admin-dashboard wordt opgeslagen, worden bestaande wijzigingsverzoeken met hetzelfde e-mailadres gekoppeld aan `change_requests.auth_user_id` als ze nog niet gekoppeld waren. Daardoor ziet de klant na login direct de bijbehorende wijzigingsverzoeken via RLS.
 
 ## Doel
 
