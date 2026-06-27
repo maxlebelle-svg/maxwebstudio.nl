@@ -48,6 +48,11 @@
       </section>
 
       <section class="admin-section">
+        <div class="admin-section-heading"><div><p class="section-kicker">Onderhoud</p><h2>Onderhoudsabonnementen</h2></div></div>
+        <div class="portal-card-grid" id="portal-subscriptions" aria-live="polite"></div>
+      </section>
+
+      <section class="admin-section">
         <div class="admin-section-heading"><div><p class="section-kicker">Projecten</p><h2>Projectstatus</h2></div></div>
         <div class="portal-card-grid" id="portal-projects" aria-live="polite"></div>
       </section>
@@ -72,6 +77,7 @@
         const customerProfile = document.getElementById("customer-profile");
         const quoteList = document.getElementById("portal-quotes");
         const invoiceList = document.getElementById("portal-invoices");
+        const subscriptionList = document.getElementById("portal-subscriptions");
         const projectList = document.getElementById("portal-projects");
         const websiteList = document.getElementById("portal-websites");
         const fileList = document.getElementById("portal-files");
@@ -247,6 +253,7 @@
         const projects = readStorage("maxwebstudioProjects").filter(belongsToCustomer);
         const files = readStorage("maxwebstudioFiles").filter(belongsToCustomer);
         const invoices = readStorage("maxwebstudioInvoices").filter(belongsToCustomer);
+        const subscriptions = readStorage("maxwebstudioSubscriptions").filter(belongsToCustomer);
         const quotes = readStorage("maxwebstudioQuotes").filter(belongsToCustomer);
         const customer = customers.find((item) => String(item.id) === String(customerId));
 
@@ -254,7 +261,7 @@
           portalTitle.textContent = "Klant niet gevonden";
           portalSubtitle.textContent = "Open het klantportaal opnieuw vanuit het admin-dashboard.";
           customerProfile.append(createEmpty("Geen klantdata", "Deze klant staat niet in de lokale CRM-opslag van deze browser."));
-          [quoteList, invoiceList, projectList, websiteList, fileList].forEach((target) => target.append(createEmpty("Geen data", "Geen klant geselecteerd.")));
+          [quoteList, invoiceList, subscriptionList, projectList, websiteList, fileList].forEach((target) => target.append(createEmpty("Geen data", "Geen klant geselecteerd.")));
           return;
         }
 
@@ -308,6 +315,17 @@
           );
           return row;
         }, "Geen facturen", "Er zijn nog geen facturen gekoppeld aan dit klantprofiel.");
+
+        if (!subscriptions.length) subscriptionList.append(createEmpty("Geen onderhoudsabonnementen", "Er is nog geen onderhoudsplan gekoppeld aan dit klantprofiel."));
+        subscriptions.forEach((subscription) => {
+          subscriptionList.append(createInfoCard(subscription.plan || subscription.packageName || "Onderhoudsplan", [
+            ["Status", createBadge(subscription.status)],
+            ["Prijs/frequentie", `${money(subscription.totalInclVat || subscription.monthlyAmount || 0)} incl. btw - ${subscription.billingCycle === "quarterly" ? "per kwartaal" : subscription.billingCycle === "yearly" ? "jaarlijks" : "maandelijks"}`],
+            ["Volgende factuurdatum", formatDate(subscription.nextInvoiceDate)],
+            ["Website", subscription.websiteName || subscription.websiteDomain || "-"],
+            ["Betaalstatus", subscription.paymentStatus === "demo" ? "Demo voorbereid" : subscription.paymentStatus],
+          ]));
+        });
 
         if (!projects.length) projectList.append(createEmpty("Geen projecten", "Er staan nog geen projecten klaar voor dit klantprofiel."));
         projects.forEach((project) => {
