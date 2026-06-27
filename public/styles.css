@@ -1382,12 +1382,13 @@ h3 {
 
 .demo-preview {
   position: relative;
-  min-height: 430px;
-  padding: 30px;
+  min-height: 450px;
+  padding: 32px;
   overflow: hidden;
   background:
-    radial-gradient(circle at 78% 18%, rgba(25, 194, 255, 0.2), transparent 30%),
-    linear-gradient(145deg, #edf4ff, #ffffff);
+    radial-gradient(circle at 78% 18%, rgba(25, 194, 255, 0.18), transparent 30%),
+    radial-gradient(circle at 18% 78%, rgba(21, 94, 239, 0.11), transparent 28%),
+    linear-gradient(145deg, #edf4ff, #ffffff 72%);
 }
 
 .demo-preview::before {
@@ -1410,14 +1411,16 @@ h3 {
 .demo-preview-install {
   background:
     radial-gradient(circle at 82% 16%, rgba(21, 94, 239, 0.16), transparent 28%),
+    radial-gradient(circle at 18% 82%, rgba(148, 163, 184, 0.2), transparent 28%),
     linear-gradient(145deg, #f8fbff, #edf4ff);
 }
 
 .demo-preview-restaurant,
 .demo-preview-salon {
   background:
-    radial-gradient(circle at 82% 18%, rgba(25, 194, 255, 0.17), transparent 28%),
-    linear-gradient(145deg, #ffffff, #edf4ff);
+    radial-gradient(circle at 82% 18%, rgba(245, 158, 11, 0.18), transparent 28%),
+    radial-gradient(circle at 16% 78%, rgba(21, 94, 239, 0.1), transparent 26%),
+    linear-gradient(145deg, #fffaf2, #edf4ff);
 }
 
 .demo-preview-coach,
@@ -1427,18 +1430,19 @@ h3 {
 .demo-preview-ecommerce {
   background:
     radial-gradient(circle at 82% 18%, rgba(43, 217, 130, 0.1), transparent 28%),
+    radial-gradient(circle at 16% 82%, rgba(21, 94, 239, 0.11), transparent 28%),
     linear-gradient(145deg, #f8fbff, #ffffff);
 }
 
 .demo-browser {
   position: relative;
   z-index: 1;
-  width: min(86%, 520px);
+  width: min(88%, 560px);
   overflow: hidden;
   border: 1px solid rgba(214, 226, 240, 0.92);
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 24px 66px rgba(6, 18, 31, 0.16);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 28px 80px rgba(6, 18, 31, 0.18);
   transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -1467,26 +1471,27 @@ h3 {
 }
 
 .demo-browser-body {
-  min-height: 294px;
-  padding: 18px;
+  min-height: 306px;
+  padding: 0;
 }
 
 .mini-site {
   display: grid;
-  gap: 14px;
-  min-height: 258px;
-  padding: 14px;
-  border-radius: 18px;
-  background:
-    radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.5), transparent 24%),
-    #f8fbff;
+  gap: 0;
+  min-height: 306px;
+  overflow: hidden;
+  border-radius: 0 0 22px 22px;
+  background: #ffffff;
 }
 
 .mini-nav {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 30px;
+  min-height: 46px;
+  padding: 0 20px;
+  border-bottom: 1px solid rgba(214, 226, 240, 0.72);
+  background: rgba(255, 255, 255, 0.88);
 }
 
 .mini-nav strong {
@@ -1502,24 +1507,57 @@ h3 {
 }
 
 .mini-hero {
+  position: relative;
   display: grid;
-  align-content: end;
-  min-height: 132px;
-  padding: 18px;
-  border-radius: 18px;
+  align-content: center;
+  min-height: 176px;
+  padding: 24px;
+  overflow: hidden;
   color: var(--white);
   background:
     radial-gradient(circle at 78% 18%, rgba(255, 255, 255, 0.28), transparent 28%),
     linear-gradient(135deg, var(--ink), var(--blue));
 }
 
+.mini-hero::before,
+.mini-hero::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+.mini-hero::before {
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(90deg, rgba(6, 18, 31, 0.84) 0 48%, rgba(6, 18, 31, 0.34) 72%, rgba(6, 18, 31, 0.12));
+}
+
+.mini-hero::after {
+  top: 20px;
+  right: 18px;
+  bottom: 20px;
+  width: 42%;
+  z-index: 0;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.04)),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.18), transparent 42%),
+    rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 18px 48px rgba(0, 0, 0, 0.16);
+}
+
 .mini-hero strong {
+  position: relative;
+  z-index: 1;
   max-width: 290px;
-  font-size: 26px;
-  line-height: 1;
+  font-size: 27px;
+  line-height: 0.98;
 }
 
 .mini-hero p {
+  position: relative;
+  z-index: 1;
   max-width: 290px;
   margin: 10px 0 0;
   color: rgba(255, 255, 255, 0.74);
@@ -1529,6 +1567,8 @@ h3 {
 }
 
 .mini-hero em {
+  position: relative;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1556,6 +1596,8 @@ h3 {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
+  padding: 14px;
+  background: #ffffff;
 }
 
 .mini-stats span,
@@ -1569,7 +1611,7 @@ h3 {
 .mini-products span {
   display: grid;
   align-content: end;
-  min-height: 66px;
+  min-height: 58px;
   padding: 10px;
   border: 1px solid rgba(214, 226, 240, 0.86);
   border-radius: 14px;
@@ -1581,15 +1623,38 @@ h3 {
 
 .mini-site-build .mini-hero {
   background:
-    linear-gradient(135deg, rgba(6, 18, 31, 0.92), rgba(21, 94, 239, 0.82)),
-    linear-gradient(90deg, rgba(255,255,255,0.14) 0 32%, transparent 32%);
+    linear-gradient(135deg, rgba(6, 18, 31, 0.92), rgba(21, 94, 239, 0.78)),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.14) 0 32%, transparent 32%);
+}
+
+.mini-site-build .mini-hero::after {
+  background:
+    linear-gradient(180deg, rgba(148, 163, 184, 0.16) 0 44%, transparent 44%),
+    linear-gradient(135deg, transparent 0 33%, rgba(255, 255, 255, 0.42) 33% 40%, transparent 40%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.64) 0 16%, transparent 16% 28%, rgba(255, 255, 255, 0.5) 28% 44%, transparent 44%),
+    linear-gradient(145deg, #d7dee8, #64748b 46%, #1e293b);
 }
 
 .mini-site-restaurant .mini-hero,
 .mini-site-salon .mini-hero {
   background:
-    radial-gradient(circle at 75% 20%, rgba(255,255,255,0.24), transparent 28%),
-    linear-gradient(135deg, var(--blue), var(--cyan));
+    radial-gradient(circle at 75% 20%, rgba(255, 255, 255, 0.22), transparent 28%),
+    linear-gradient(135deg, #3b1d0f, #b45309);
+}
+
+.mini-site-restaurant .mini-hero::after {
+  background:
+    radial-gradient(circle at 45% 42%, rgba(255, 237, 213, 0.96) 0 14%, transparent 15%),
+    radial-gradient(circle at 68% 58%, rgba(251, 191, 36, 0.84) 0 10%, transparent 11%),
+    linear-gradient(180deg, rgba(120, 53, 15, 0.2), rgba(67, 20, 7, 0.46)),
+    linear-gradient(135deg, #fef3c7, #92400e);
+}
+
+.mini-site-salon .mini-hero::after {
+  background:
+    radial-gradient(circle at 68% 24%, rgba(255, 255, 255, 0.7) 0 8%, transparent 9%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.7) 0 16%, transparent 16% 28%, rgba(255, 255, 255, 0.46) 28% 38%, transparent 38%),
+    linear-gradient(135deg, #f8d7e8, #7c2d55);
 }
 
 .mini-site-coach .mini-hero,
@@ -1602,6 +1667,55 @@ h3 {
     linear-gradient(135deg, var(--ink), var(--blue));
 }
 
+.mini-site-coach .mini-hero::after {
+  background:
+    radial-gradient(circle at 70% 22%, rgba(255, 255, 255, 0.72) 0 8%, transparent 9%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.68) 0 22%, transparent 22% 34%, rgba(255, 255, 255, 0.44) 34% 48%, transparent 48%),
+    linear-gradient(145deg, #dbeafe, #1e3a8a);
+}
+
+.mini-site-realestate .mini-hero::after {
+  background:
+    linear-gradient(135deg, transparent 0 32%, rgba(255, 255, 255, 0.74) 32% 39%, transparent 39%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.72) 0 18%, transparent 18% 30%, rgba(255, 255, 255, 0.52) 30% 44%, transparent 44%),
+    linear-gradient(145deg, #e2e8f0, #475569 50%, #0f172a);
+}
+
+.mini-site-install .mini-hero::after {
+  background:
+    radial-gradient(circle at 68% 28%, rgba(125, 211, 252, 0.72) 0 9%, transparent 10%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.64) 0 18%, transparent 18% 34%, rgba(255, 255, 255, 0.38) 34% 48%, transparent 48%),
+    linear-gradient(145deg, #bfdbfe, #0f766e 54%, #0f172a);
+}
+
+.mini-site-dentist .mini-hero::after {
+  background:
+    radial-gradient(circle at 72% 24%, rgba(255, 255, 255, 0.9) 0 10%, transparent 11%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.7) 0 18%, transparent 18% 32%, rgba(255, 255, 255, 0.46) 32% 44%, transparent 44%),
+    linear-gradient(145deg, #ecfeff, #38bdf8 52%, #1e3a8a);
+}
+
+.mini-site-auto .mini-hero {
+  background:
+    radial-gradient(circle at 78% 18%, rgba(255, 255, 255, 0.14), transparent 30%),
+    linear-gradient(135deg, #020617, #1e293b);
+}
+
+.mini-site-auto .mini-hero::after {
+  background:
+    radial-gradient(circle at 22% 70%, rgba(255, 255, 255, 0.9) 0 6%, transparent 7%),
+    radial-gradient(circle at 78% 70%, rgba(255, 255, 255, 0.9) 0 6%, transparent 7%),
+    linear-gradient(10deg, transparent 0 50%, rgba(255, 255, 255, 0.62) 50% 64%, transparent 64%),
+    linear-gradient(145deg, #334155, #020617);
+}
+
+.mini-site-ecommerce .mini-hero::after {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.82) 0 28%, transparent 28% 36%, rgba(255, 255, 255, 0.62) 36% 64%, transparent 64%),
+    radial-gradient(circle at 70% 30%, rgba(251, 191, 36, 0.82) 0 10%, transparent 11%),
+    linear-gradient(145deg, #fdf2f8, #1d4ed8);
+}
+
 .demo-site-hero,
 .demo-menu-card,
 .demo-profile-block,
@@ -1610,25 +1724,50 @@ h3 {
 .demo-care-block,
 .demo-style-block,
 .demo-auto-block {
+  position: relative;
   display: grid;
   align-content: end;
-  min-height: 132px;
+  min-height: 174px;
   margin-bottom: 18px;
-  padding: 20px;
-  border-radius: 18px;
+  overflow: hidden;
+  padding: 24px;
+  border-radius: 22px;
   color: var(--white);
   background:
     radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.28), transparent 28%),
     linear-gradient(135deg, var(--ink), var(--blue));
 }
 
+.demo-site-hero::before,
+.demo-menu-card::before,
+.demo-profile-block::before,
+.demo-property-card::before,
+.demo-service-block::before,
+.demo-care-block::before,
+.demo-style-block::before,
+.demo-auto-block::before {
+  content: "";
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  bottom: 18px;
+  width: 42%;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 18px;
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.18);
+}
+
 .demo-site-hero strong {
+  position: relative;
+  z-index: 1;
   max-width: 250px;
   font-size: 30px;
   line-height: 1;
 }
 
 .demo-site-hero i {
+  position: relative;
+  z-index: 1;
   width: 142px;
   height: 12px;
   margin-top: 18px;
@@ -1644,8 +1783,72 @@ h3 {
 .demo-style-block,
 .demo-auto-block {
   background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.18) 0 30%, transparent 30% 100%),
-    linear-gradient(135deg, var(--blue), var(--cyan));
+    linear-gradient(135deg, var(--ink), var(--blue));
+}
+
+.demo-site-hero::before {
+  background:
+    linear-gradient(135deg, transparent 0 33%, rgba(255, 255, 255, 0.52) 33% 40%, transparent 40%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.64) 0 18%, transparent 18% 30%, rgba(255, 255, 255, 0.42) 30% 48%, transparent 48%),
+    linear-gradient(145deg, #e2e8f0, #334155);
+}
+
+.demo-menu-card {
+  background: linear-gradient(135deg, #3b1d0f, #b45309);
+}
+
+.demo-menu-card::before {
+  background:
+    radial-gradient(circle at 46% 44%, rgba(255, 237, 213, 0.96) 0 16%, transparent 17%),
+    radial-gradient(circle at 70% 58%, rgba(251, 191, 36, 0.84) 0 10%, transparent 11%),
+    linear-gradient(145deg, #fef3c7, #92400e);
+}
+
+.demo-profile-block::before {
+  background:
+    radial-gradient(circle at 70% 24%, rgba(255, 255, 255, 0.72) 0 8%, transparent 9%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.68) 0 22%, transparent 22% 34%, rgba(255, 255, 255, 0.44) 34% 48%, transparent 48%),
+    linear-gradient(145deg, #dbeafe, #1e3a8a);
+}
+
+.demo-property-card::before {
+  background:
+    linear-gradient(135deg, transparent 0 32%, rgba(255, 255, 255, 0.74) 32% 39%, transparent 39%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.72) 0 18%, transparent 18% 30%, rgba(255, 255, 255, 0.52) 30% 44%, transparent 44%),
+    linear-gradient(145deg, #e2e8f0, #475569 50%, #0f172a);
+}
+
+.demo-service-block::before {
+  background:
+    radial-gradient(circle at 68% 28%, rgba(125, 211, 252, 0.72) 0 9%, transparent 10%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.64) 0 18%, transparent 18% 34%, rgba(255, 255, 255, 0.38) 34% 48%, transparent 48%),
+    linear-gradient(145deg, #bfdbfe, #0f766e 54%, #0f172a);
+}
+
+.demo-care-block::before {
+  background:
+    radial-gradient(circle at 72% 24%, rgba(255, 255, 255, 0.9) 0 10%, transparent 11%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.7) 0 18%, transparent 18% 32%, rgba(255, 255, 255, 0.46) 32% 44%, transparent 44%),
+    linear-gradient(145deg, #ecfeff, #38bdf8 52%, #1e3a8a);
+}
+
+.demo-style-block::before {
+  background:
+    radial-gradient(circle at 68% 24%, rgba(255, 255, 255, 0.7) 0 8%, transparent 9%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.7) 0 16%, transparent 16% 28%, rgba(255, 255, 255, 0.46) 28% 38%, transparent 38%),
+    linear-gradient(135deg, #f8d7e8, #7c2d55);
+}
+
+.demo-auto-block {
+  background: linear-gradient(135deg, #020617, #1e293b);
+}
+
+.demo-auto-block::before {
+  background:
+    radial-gradient(circle at 22% 70%, rgba(255, 255, 255, 0.9) 0 6%, transparent 7%),
+    radial-gradient(circle at 78% 70%, rgba(255, 255, 255, 0.9) 0 6%, transparent 7%),
+    linear-gradient(10deg, transparent 0 50%, rgba(255, 255, 255, 0.62) 50% 64%, transparent 64%),
+    linear-gradient(145deg, #334155, #020617);
 }
 
 .demo-site-grid {
@@ -1674,7 +1877,8 @@ h3 {
   padding: 16px 12px;
   border: 8px solid rgba(15, 23, 42, 0.94);
   border-radius: 28px;
-  background: #ffffff;
+  background:
+    linear-gradient(180deg, #ffffff 0 18%, #eef6ff 18% 100%);
   box-shadow: 0 22px 58px rgba(6, 18, 31, 0.18);
 }
 
@@ -1694,7 +1898,7 @@ h3 {
 .demo-phone i {
   height: 24px;
   border-radius: 999px;
-  background: rgba(21, 94, 239, 0.11);
+  background: rgba(21, 94, 239, 0.1);
 }
 
 .demo-phone i:last-child {
