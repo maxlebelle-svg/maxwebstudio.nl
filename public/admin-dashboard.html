@@ -148,6 +148,7 @@
                 <label for="detail-website">Website<input id="detail-website" type="url" disabled /></label>
                 <label for="detail-package">Onderhoudspakket<select id="detail-package" disabled><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option></select></label>
                 <label for="detail-status">Status<select id="detail-status" disabled><option value="actief">Actief</option><option value="onboarding">Onboarding</option><option value="pauze">Pauze</option><option value="gearchiveerd">Gearchiveerd</option></select></label>
+                <label for="detail-portal-status">Portal-status<select id="detail-portal-status" disabled><option value="geen_login">Geen login</option><option value="uitgenodigd">Uitgenodigd</option><option value="actief">Actief</option><option value="geblokkeerd">Geblokkeerd</option></select></label>
                 <label for="detail-customer-since">Klant sinds<input id="detail-customer-since" type="date" disabled /></label>
                 <label class="admin-profile-wide" for="detail-notes">Notities admin-only<textarea id="detail-notes" disabled placeholder="Interne notities, niet zichtbaar in het klantenportaal"></textarea></label>
               </div>
@@ -304,6 +305,7 @@
             <label for="new-website">Website<input id="new-website" type="url" placeholder="https://voorbeeld.nl" /></label>
             <label for="new-package">Onderhoudspakket<select id="new-package"><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option></select></label>
             <label for="new-status">Status<select id="new-status"><option value="actief">Actief</option><option value="onboarding">Onboarding</option><option value="pauze">Pauze</option><option value="gearchiveerd">Gearchiveerd</option></select></label>
+            <label for="new-portal-status">Portal-status<select id="new-portal-status"><option value="geen_login">Geen login</option><option value="uitgenodigd">Uitgenodigd</option><option value="actief">Actief</option><option value="geblokkeerd">Geblokkeerd</option></select></label>
             <label for="new-customer-since">Klant sinds<input id="new-customer-since" type="date" /></label>
             <label class="admin-profile-wide" for="new-notes">Notities admin-only<textarea id="new-notes" placeholder="Interne notities, niet zichtbaar in het klantenportaal"></textarea></label>
           </div>
@@ -413,6 +415,7 @@
         const listEndpoint = "/.netlify/functions/list-change-requests";
         const updateEndpoint = "/.netlify/functions/update-change-request-status";
         const adminTokenStorageKey = "mws_admin_token";
+        const crmCustomersStorageKey = "maxwebstudioCrmCustomers";
         const completedStatuses = new Set(["afgerond"]);
         const statusLabels = {
           nieuw: "Nieuw",
@@ -539,6 +542,7 @@
           website: document.getElementById("detail-website"),
           package: document.getElementById("detail-package"),
           status: document.getElementById("detail-status"),
+          portalStatus: document.getElementById("detail-portal-status"),
           customerSince: document.getElementById("detail-customer-since"),
           notes: document.getElementById("detail-notes"),
         };
@@ -638,6 +642,77 @@
           const date = new Date(value);
           if (Number.isNaN(date.getTime())) return "-";
           return new Intl.DateTimeFormat("nl-NL", { dateStyle: "medium", timeStyle: "short" }).format(date);
+        }
+
+        function createCrmId() {
+          if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+          return `crm-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        }
+
+        function readStoredCustomers() {
+          try {
+            const stored = JSON.parse(localStorage.getItem(crmCustomersStorageKey) || "[]");
+            return Array.isArray(stored) ? stored.map(normalizeStoredCustomer) : [];
+          } catch (error) {
+            console.error("CRM customers could not be read", error);
+            return [];
+          }
+        }
+
+        function writeStoredCustomers(customers) {
+          localStorage.setItem(crmCustomersStorageKey, JSON.stringify(customers.map(normalizeStoredCustomer)));
+        }
+
+        function normalizeStoredCustomer(customer = {}) {
+          const createdAt = customer.createdAt || new Date().toISOString();
+          const portalStatus = customer.portalStatus || (customer.authStatus === "login actief" ? "actief" : "geen_login");
+          return {
+            id: customer.id || createCrmId(),
+            authUserId: customer.authUserId || "",
+            name: String(customer.name || "").trim(),
+            company: String(customer.company || "").trim(),
+            email: String(customer.email || customer.authEmail || "").trim().toLowerCase(),
+            authEmail: String(customer.authEmail || customer.email || "").trim().toLowerCase(),
+            phone: String(customer.phone || "").trim(),
+            website: String(customer.website || "").trim(),
+            package: customer.package || "Basis",
+            status: customer.status || "actief",
+            customerSince: customer.customerSince || customer.createdAt || createdAt,
+            createdAt,
+            updatedAt: customer.updatedAt || createdAt,
+            notes: String(customer.notes || "").trim(),
+            portalStatus,
+            authStatus: portalStatus === "actief" ? "login actief" : "geen login",
+          };
+        }
+
+        function validateCustomerPayload(payload) {
+          if (!String(payload.name || "").trim()) return "Vul een naam in.";
+          if (!String(payload.company || "").trim()) return "Vul een bedrijfsnaam in.";
+          const email = String(payload.email || "").trim();
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Vul een geldig e-mailadres in.";
+          return "";
+        }
+
+        function saveCustomerLocally(payload) {
+          const customers = readStoredCustomers();
+          const existingIndex = customers.findIndex((customer) => customer.id === payload.id);
+          const existing = existingIndex >= 0 ? customers[existingIndex] : {};
+          const now = new Date().toISOString();
+          const customer = normalizeStoredCustomer({
+            ...existing,
+            ...payload,
+            id: payload.id || existing.id || createCrmId(),
+            createdAt: existing.createdAt || now,
+            updatedAt: now,
+            customerSince: payload.customerSince || existing.customerSince || now,
+          });
+          const validationError = validateCustomerPayload(customer);
+          if (validationError) throw new Error(validationError);
+          if (existingIndex >= 0) customers[existingIndex] = customer;
+          else customers.unshift(customer);
+          writeStoredCustomers(customers);
+          return customer;
         }
 
         function toDateInput(value) {
@@ -856,7 +931,7 @@
           customerList.replaceChildren();
 
           if (!state.customers.length) {
-            renderState(customerList, "Nog geen klanten geladen", "Laad CRM-data met het admin-token.", "CRM", "status-planned");
+            renderState(customerList, "Nog geen klanten", "Maak je eerste klant aan om het CRM te vullen.", "Leeg", "status-planned");
             return;
           }
 
@@ -904,6 +979,7 @@
           detailFields.website.value = customer.website || "";
           detailFields.package.value = customer.package || "Basis";
           detailFields.status.value = customer.status || "actief";
+          detailFields.portalStatus.value = customer.portalStatus || "geen_login";
           detailFields.customerSince.value = toDateInput(customer.customerSince || customer.createdAt);
           detailFields.notes.value = customer.notes || "";
 
@@ -915,10 +991,11 @@
           detailState.textContent = "Geselecteerd";
           detailState.className = `status-badge ${customerStatusClass(customer.status)}`;
           detailSubtitle.textContent = customer.company || customer.name || "Klantprofiel";
-          const hasLogin = customer.authStatus === "login actief";
-          detailAuthStatus.textContent = hasLogin ? "Login actief" : "Geen login";
+          const hasLogin = customer.portalStatus === "actief" || customer.authStatus === "login actief";
+          const authLabel = customer.portalStatus === "uitgenodigd" ? "Uitgenodigd" : hasLogin ? "Login actief" : customer.portalStatus === "geblokkeerd" ? "Geblokkeerd" : "Geen login";
+          detailAuthStatus.textContent = authLabel;
           detailAuthStatus.className = `status-badge ${hasLogin ? "status-active" : "status-planned"}`;
-          detailLinkLogin.disabled = hasLogin || !detailFields.email.value;
+          detailLinkLogin.disabled = hasLogin || !detailFields.email.value || customer.portalStatus === "geblokkeerd";
           detailResetPassword.disabled = !hasLogin || !detailFields.email.value;
           detailSendInvite.disabled = !detailFields.email.value;
           setDetailMessage("", "");
@@ -939,6 +1016,7 @@
           try {
             const data = await postCustomer({
               authUserId: customer.authUserId,
+              id: customer.id,
               name: detailFields.name.value,
               email: detailFields.email.value,
               phone: detailFields.phone.value,
@@ -946,6 +1024,7 @@
               website: detailFields.website.value,
               package: detailFields.package.value,
               status: detailFields.status.value,
+              portalStatus: detailFields.portalStatus.value,
               customerSince: detailFields.customerSince.value,
               notes: detailFields.notes.value,
             });
@@ -953,6 +1032,7 @@
             state.selectedCustomerId = data.profile?.id || customer.id;
             selectCustomer(state.selectedCustomerId);
             setDetailMessage(data.warning || "Klantprofiel opgeslagen.", data.warning ? "error" : "success");
+            setAdminAccessMessage("Klantprofiel opgeslagen in lokale CRM-opslag.", "success");
           } catch (error) {
             setDetailMessage(error.message || "Klantprofiel kon niet worden opgeslagen.", "error");
           } finally {
@@ -976,6 +1056,7 @@
               website: document.getElementById("new-website").value,
               package: document.getElementById("new-package").value,
               status: document.getElementById("new-status").value,
+              portalStatus: document.getElementById("new-portal-status").value,
               customerSince: document.getElementById("new-customer-since").value,
               notes: document.getElementById("new-notes").value,
             });
@@ -984,6 +1065,7 @@
             closeModal(newCustomerModal);
             state.selectedCustomerId = data.profile?.id || "";
             if (state.selectedCustomerId) selectCustomer(state.selectedCustomerId);
+            setAdminAccessMessage("Nieuwe klant aangemaakt in lokale CRM-opslag.", "success");
           } catch (error) {
             setNewCustomerMessage(error.message || "Klant kon niet worden opgeslagen.", "error");
           } finally {
@@ -993,18 +1075,34 @@
         }
 
         async function postCustomer(payload) {
-          const response = await fetch(crmEndpoint, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-              Authorization: `Bearer ${state.adminToken}`,
-            },
-            body: JSON.stringify(payload),
-          });
-          const data = await response.json().catch(() => ({}));
-          if (!response.ok || !data.success) throw new Error(data.error || "Klant kon niet worden opgeslagen.");
-          return data;
+          const action = payload.action || "save_customer";
+
+          if (action === "send_invite") {
+            const customer = payload.id ? state.customers.find((item) => item.id === payload.id) : state.customers.find((item) => item.email === String(payload.email || "").toLowerCase());
+            if (!payload.email && !customer?.email) throw new Error("Vul eerst een geldig e-mailadres in.");
+            if (customer) {
+              const profile = saveCustomerLocally({ ...customer, portalStatus: "uitgenodigd" });
+              return { success: true, profile, warning: "Demo-uitnodiging opgeslagen. Echte Auth-mail volgt in Fase 8.4." };
+            }
+            return { success: true, warning: "Demo-uitnodiging voorbereid. Sla de klant op om de status te bewaren." };
+          }
+
+          if (action === "send_password_reset") {
+            if (!payload.email) throw new Error("Vul eerst een geldig e-mailadres in.");
+            return { success: true, warning: "Demo-reset geregistreerd. Echte Auth-mail volgt in Fase 8.4." };
+          }
+
+          if (action === "link_login") {
+            const profile = saveCustomerLocally({ ...payload, portalStatus: "actief", authStatus: "login actief" });
+            return { success: true, profile, warning: "Demo-login gekoppeld. Echte Supabase Auth-koppeling volgt in Fase 8.4." };
+          }
+
+          if (action !== "save_customer") {
+            throw new Error("Deze CRM-module wordt in een latere fase gekoppeld.");
+          }
+
+          const profile = saveCustomerLocally(payload);
+          return { success: true, profile };
         }
 
         async function runCustomerAction(action, payload = {}) {
@@ -1017,6 +1115,7 @@
         function currentDetailPayload(extra = {}) {
           const customer = selectedCustomer();
           return {
+            id: customer?.id || "",
             authUserId: customer?.authUserId || "",
             name: detailFields.name.value,
             email: detailFields.email.value,
@@ -1025,6 +1124,7 @@
             website: detailFields.website.value,
             package: detailFields.package.value,
             status: detailFields.status.value,
+            portalStatus: detailFields.portalStatus.value,
             customerSince: detailFields.customerSince.value,
             notes: detailFields.notes.value,
             ...extra,
@@ -1071,8 +1171,8 @@
           detailSendInvite.textContent = "Versturen...";
           setDetailMessage("", "");
           try {
-            await runCustomerAction("send_invite", { email: detailFields.email.value });
-            setDetailMessage("Uitnodiging verstuurd via Supabase Auth.", "success");
+            const data = await runCustomerAction("send_invite", currentDetailPayload());
+            setDetailMessage(data.warning || "Uitnodiging geregistreerd.", data.warning ? "success" : "success");
           } catch (error) {
             setDetailMessage(error.message || "Uitnodiging kon niet worden verstuurd.", "error");
           } finally {
@@ -2340,6 +2440,7 @@
         }
 
         function openNewCustomerModal() {
+          newCustomerForm.reset();
           newCustomerModal.hidden = false;
           document.body.classList.add("admin-modal-open");
           if (!document.getElementById("new-customer-since").value) {
@@ -2381,39 +2482,32 @@
 
         async function loadCRMData(showLoading = true) {
           const token = adminTokenInput.value.trim();
-          if (!token) {
-            setAdminAccessMessage("Vul het admin-token in.", "error");
-            return;
-          }
 
           state.adminToken = token;
-          sessionStorage.setItem(adminTokenStorageKey, token);
+          if (token) sessionStorage.setItem(adminTokenStorageKey, token);
           adminLoadButton.disabled = true;
           adminLoadButton.textContent = "Laden...";
-          if (showLoading) setAdminAccessMessage("CRM-data laden...", "");
+          if (showLoading) setAdminAccessMessage("CRM-klanten laden...", "");
 
           try {
-            const response = await fetch(crmEndpoint, {
-              headers: { Accept: "application/json", Authorization: `Bearer ${state.adminToken}` },
-            });
-            const data = await response.json().catch(() => ({}));
-            if (!response.ok || !data.success) throw new Error(data.error || "CRM-data kon niet worden geladen.");
-            state.customers = Array.isArray(data.customers) ? data.customers : [];
-            state.profiles = Array.isArray(data.profiles) ? data.profiles : [];
-            state.authUsers = Array.isArray(data.authUsers) ? data.authUsers : [];
-            state.websites = Array.isArray(data.websites) ? data.websites : [];
+            state.customers = readStoredCustomers();
+            state.profiles = state.customers;
+            state.authUsers = [];
             renderCustomers();
             renderWebsites();
             renderCareOverview();
             updateMetrics();
-            await loadDashboardMetrics(false);
-            await loadWebsiteHealth(false);
-            await loadBilling(false);
-            setAdminAccessMessage("CRM-data geladen.", "success");
+            if (state.selectedCustomerId && selectedCustomer()) selectCustomer(state.selectedCustomerId);
+            populateWebsiteProfileOptions();
+            if (state.adminToken) {
+              await loadDashboardMetrics(false);
+              await loadWebsiteHealth(false);
+              await loadBilling(false);
+            }
+            setAdminAccessMessage("CRM-klanten geladen uit lokale opslag.", "success");
           } catch (error) {
-            setAdminAccessMessage(error.message || "CRM-data kon niet worden geladen.", "error");
-            renderState(customerList, "CRM-data kon niet worden geladen", "Controleer ADMIN_TOKEN en Supabase configuratie.", "Fout", "status-attention");
-            renderWebsiteHealth();
+            setAdminAccessMessage(error.message || "CRM-klanten konden niet worden geladen.", "error");
+            renderState(customerList, "CRM-klanten konden niet worden geladen", "Controleer lokale opslag of probeer opnieuw.", "Fout", "status-attention");
           } finally {
             adminLoadButton.disabled = false;
             adminLoadButton.textContent = "Laden";
@@ -2472,7 +2566,7 @@
         });
 
         loadChangeRequests();
-        if (state.adminToken) loadCRMData(false);
+        loadCRMData(false);
       })();
     </script>
   </body>
