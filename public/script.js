@@ -4,6 +4,7 @@ const packageLinks = document.querySelectorAll("[data-package]");
 const carePackageLinks = document.querySelectorAll("[data-care-package]");
 const formButton = document.querySelector(".lead-form button");
 const form = document.querySelector(".lead-form");
+const formStatus = document.querySelector("#lead-form-status");
 const termsAccepted = document.querySelector("#terms-accepted");
 const checkoutOptions = document.querySelectorAll("[data-checkout-package]");
 const checkoutTitle = document.querySelector("#checkout-title");
@@ -395,24 +396,60 @@ if ("IntersectionObserver" in window) {
   revealItems.forEach((item) => item.classList.add("is-visible"));
 }
 
+function setLeadFormStatus(message, type = "") {
+  if (!formStatus) {
+    return;
+  }
+
+  formStatus.textContent = message;
+  formStatus.classList.toggle("success", type === "success");
+  formStatus.classList.toggle("error", type === "error");
+}
+
+function markLeadField(field, hasError) {
+  field?.classList.toggle("form-error", hasError);
+}
+
 formButton?.addEventListener("click", () => {
-  if (termsAccepted && !termsAccepted.checked) {
-    formButton.textContent = "Akkoord met voorwaarden is nodig";
-    formButton.setAttribute("aria-live", "polite");
+  if (!form) {
     return;
   }
 
   const formData = new FormData(form);
-  const name = formData.get("name") || "nieuwe klant";
+  const nameField = form.querySelector('[name="name"]');
+  const emailField = form.querySelector('[name="email"]');
+  const messageField = form.querySelector('[name="message"]');
+  const name = String(formData.get("name") || "").trim();
+  const email = String(formData.get("email") || "").trim();
+  const message = String(formData.get("message") || "").trim();
+  const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  markLeadField(nameField, !name);
+  markLeadField(emailField, !emailIsValid);
+  markLeadField(messageField, !message);
+
+  if (!name || !emailIsValid || !message) {
+    setLeadFormStatus("Vul je naam, een geldig e-mailadres en je wensen in.", "error");
+    formButton.setAttribute("aria-live", "polite");
+    return;
+  }
+
+  if (termsAccepted && !termsAccepted.checked) {
+    setLeadFormStatus("Akkoord met de voorwaarden is nodig om je aanvraag te versturen.", "error");
+    formButton.setAttribute("aria-live", "polite");
+    return;
+  }
+
   const selectedPackage = formData.get("package") || "Business Launch";
   const selectedCarePackage = formData.get("carePackage") || "Nog geen keuze";
 
-  formButton.textContent = `Aanvraag klaar voor ${selectedPackage}`;
+  formButton.textContent = "Aanvraag staat klaar";
   formButton.setAttribute("aria-live", "polite");
+  setLeadFormStatus("Je e-mailprogramma opent nu met je aanvraag. Binnen 24 uur reactie.", "success");
 
   const subject = encodeURIComponent(`Aanvraag ${selectedPackage} - ${name}`);
   const body = encodeURIComponent(
-    `Naam: ${formData.get("name") || ""}\nE-mail: ${formData.get("email") || ""}\nWebsitepakket: ${selectedPackage}\nHosting & onderhoud: ${selectedCarePackage}\nAkkoord voorwaarden: ja\n\nBericht:\n${formData.get("message") || ""}`
+    `Naam: ${name}\nBedrijfsnaam: ${formData.get("company") || ""}\nE-mail: ${email}\nTelefoonnummer: ${formData.get("phone") || ""}\nWebsitepakket / interesse: ${selectedPackage}\nHosting & onderhoud: ${selectedCarePackage}\nAkkoord voorwaarden: ja\n\nBericht:\n${message}`
   );
 
   window.location.href = `mailto:info@maxwebstudio.nl?subject=${subject}&body=${body}`;

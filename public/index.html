@@ -967,37 +967,62 @@
       <section class="section contact" id="aanvraag">
         <div class="contact-copy">
           <p class="section-kicker">Aanvraag</p>
-          <h2>Klaar om Max Webstudio jouw site te laten bouwen?</h2>
+          <h2>Plan jouw gratis websitegesprek</h2>
           <p>
-            Vertel kort wat je nodig hebt. Deze knop kan straks gekoppeld worden aan
-            Mollie checkout, een formulier of een klantenportaal.
+            Vertel kort wat je nodig hebt. Ik denk persoonlijk met je mee en laat zien
+            wat er mogelijk is voor een professionele website die vertrouwen wekt en
+            aanvragen oplevert.
           </p>
-          <div class="contact-card">
+          <div class="lead-trust-grid" aria-label="Zekerheden bij je aanvraag">
+            <span>Reactie meestal dezelfde dag</span>
+            <span>Gratis en vrijblijvend</span>
+            <span>Geen lange trajecten</span>
+            <span>Persoonlijk contact met Max</span>
+          </div>
+          <div class="contact-card lead-contact-card">
             <p class="calendly-proof">⭐⭐⭐⭐⭐ Meer dan 20 ondernemers geholpen met een professionele online uitstraling.</p>
             <div class="contact-actions">
               <button class="button primary calendly-trigger" type="button" data-calendly-open>Plan gratis gesprek</button>
               <a class="button secondary contact-button" href="https://wa.me/31616217771" target="_blank" rel="noopener">WhatsApp Max</a>
-              <a class="button secondary contact-button" href="tel:+31616217771">Bel direct</a>
+            </div>
+            <div class="lead-contact-options" aria-label="Direct contact">
+              <a href="https://wa.me/31616217771" target="_blank" rel="noopener"><span>WhatsApp</span><strong>Stuur direct een bericht</strong></a>
+              <a href="tel:+31616217771"><span>Bellen</span><strong>Bel direct met Max</strong></a>
+              <a href="mailto:info@maxwebstudio.nl"><span>E-mail</span><strong>info@maxwebstudio.nl</strong></a>
             </div>
             <p class="contact-note">Liever eerst kort schakelen? Stuur gerust een WhatsApp-bericht.</p>
           </div>
         </div>
-        <form class="lead-form">
+        <form class="lead-form" novalidate>
+          <div class="lead-form-heading">
+            <p class="section-kicker">Gratis advies</p>
+            <h3>Vertel kort over je plannen.</h3>
+            <span>Binnen 24 uur reactie. Geen verplichtingen.</span>
+          </div>
           <label>
             Naam
-            <input type="text" name="name" placeholder="Jouw naam" />
+            <input type="text" name="name" placeholder="Jouw naam" autocomplete="name" required />
           </label>
           <label>
-            E-mail
-            <input type="email" name="email" placeholder="naam@bedrijf.nl" />
+            Bedrijfsnaam
+            <input type="text" name="company" placeholder="Naam van je bedrijf" autocomplete="organization" />
           </label>
           <label>
-            Pakket
+            E-mailadres
+            <input type="email" name="email" placeholder="naam@bedrijf.nl" autocomplete="email" required />
+          </label>
+          <label>
+            Telefoonnummer
+            <input type="tel" name="phone" placeholder="06 12 34 56 78" autocomplete="tel" />
+          </label>
+          <label>
+            Gewenst pakket / interesse
             <select name="package" id="package-select">
               <option>Business Website</option>
               <option>Starter Site</option>
               <option>Premium Growth</option>
-              <option>Ik wil advies</option>
+              <option>Hosting & onderhoud</option>
+              <option>Maatwerk / ik weet het nog niet</option>
             </select>
           </label>
           <label>
@@ -1011,15 +1036,15 @@
             </select>
           </label>
           <label>
-            Wat wil je laten bouwen?
-            <textarea name="message" rows="4" placeholder="Bijvoorbeeld: een website met portfolio, pakketten en betaalflow."></textarea>
+            Bericht / wensen
+            <textarea name="message" rows="5" placeholder="Bijvoorbeeld: een website met portfolio, pakketten en een duidelijke aanvraagflow." required></textarea>
           </label>
           <label class="checkbox-row">
             <input type="checkbox" name="termsAccepted" id="terms-accepted" />
             <span>Ik ga akkoord met de <a href="algemene-voorwaarden.html">algemene voorwaarden</a> en heb de <a href="privacyverklaring.html">privacyverklaring</a> gelezen.</span>
           </label>
-          <button class="button primary" type="button">Aanvraag voorbereiden</button>
-          <p class="form-note">Mollie checkout wordt in de volgende stap gekoppeld.</p>
+          <button class="button primary" type="button">Verstuur aanvraag</button>
+          <p class="form-note" id="lead-form-status" aria-live="polite">Binnen 24 uur reactie. Geen verplichtingen.</p>
         </form>
       </section>
 
