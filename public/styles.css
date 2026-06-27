@@ -2590,14 +2590,32 @@ h3 {
 
 .admin-crm-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(340px, 0.65fr);
-  gap: 16px;
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr) clamp(340px, 32vw, 460px);
+  gap: clamp(16px, 2vw, 24px);
+  align-items: stretch;
+}
+
+.admin-crm-grid > * {
+  min-width: 0;
 }
 
 .crm-detail-panel {
   position: sticky;
   top: 18px;
+  align-self: start;
+  width: 100%;
+  z-index: 1;
+}
+
+.client-profile-table {
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: visible;
+  scrollbar-width: thin;
+}
+
+.client-profile-table .crm-customer-row {
+  min-width: 820px;
 }
 
 .crm-auth-panel {
@@ -4308,6 +4326,14 @@ h3 {
   .portal-request-table .portal-request-row,
   .request-card {
     grid-template-columns: 1fr;
+  }
+
+  .client-profile-table {
+    overflow-x: visible;
+  }
+
+  .client-profile-table .crm-customer-row {
+    min-width: 0;
   }
 
   .admin-table-row .button {
