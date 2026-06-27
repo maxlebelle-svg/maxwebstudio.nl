@@ -1543,8 +1543,8 @@ h3 {
   inset: 0;
   z-index: 0;
   background:
-    linear-gradient(180deg, rgba(6, 18, 31, 0.08), rgba(6, 18, 31, 0.26)),
-    linear-gradient(90deg, rgba(6, 18, 31, 0.84) 0 48%, rgba(6, 18, 31, 0.34) 72%, rgba(6, 18, 31, 0.12));
+    linear-gradient(180deg, rgba(6, 18, 31, 0.03), rgba(6, 18, 31, 0.14)),
+    linear-gradient(90deg, rgba(6, 18, 31, 0.28) 0 34%, rgba(6, 18, 31, 0.1) 58%, rgba(6, 18, 31, 0.02));
 }
 
 .mini-hero::after {
@@ -1570,6 +1570,7 @@ h3 {
   font-size: 34px;
   line-height: 0.98;
   letter-spacing: -0.02em;
+  text-shadow: 0 3px 22px rgba(0, 0, 0, 0.34);
 }
 
 .mini-hero p {
@@ -1581,6 +1582,7 @@ h3 {
   font-size: 11px;
   font-weight: 800;
   line-height: 1.5;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.3);
 }
 
 .mini-hero em {
@@ -1614,7 +1616,8 @@ h3 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   padding: 14px;
-  background: #ffffff;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 251, 255, 0.96));
 }
 
 .mini-stats span,
@@ -1633,14 +1636,17 @@ h3 {
   border: 1px solid rgba(214, 226, 240, 0.86);
   border-radius: 14px;
   color: #334155;
-  background: rgba(255, 255, 255, 0.78);
+  background:
+    radial-gradient(circle at 82% 18%, rgba(21, 94, 239, 0.1), transparent 34%),
+    rgba(255, 255, 255, 0.92);
+  box-shadow: 0 12px 26px rgba(6, 18, 31, 0.06);
   font-size: 10px;
   font-weight: 900;
 }
 
 .mini-site-build .mini-hero {
   background:
-    linear-gradient(90deg, rgba(6, 18, 31, 0.88) 0 48%, rgba(15, 23, 42, 0.4) 76%, rgba(15, 23, 42, 0.08)),
+    linear-gradient(90deg, rgba(6, 18, 31, 0.56) 0 38%, rgba(15, 23, 42, 0.18) 66%, rgba(15, 23, 42, 0.02)),
     url("assets/demo-images/demo-hero-bouw.jpg");
 }
 
@@ -1655,13 +1661,13 @@ h3 {
 .mini-site-restaurant .mini-hero,
 .mini-site-salon .mini-hero {
   background:
-    linear-gradient(90deg, rgba(59, 29, 15, 0.88) 0 48%, rgba(92, 46, 18, 0.42) 76%, rgba(92, 46, 18, 0.08)),
+    linear-gradient(90deg, rgba(59, 29, 15, 0.54) 0 38%, rgba(92, 46, 18, 0.18) 66%, rgba(92, 46, 18, 0.02)),
     url("assets/demo-images/demo-hero-horeca.jpg");
 }
 
 .mini-site-salon .mini-hero {
   background:
-    linear-gradient(90deg, rgba(54, 20, 42, 0.86) 0 48%, rgba(124, 45, 85, 0.38) 76%, rgba(124, 45, 85, 0.08)),
+    linear-gradient(90deg, rgba(54, 20, 42, 0.52) 0 38%, rgba(124, 45, 85, 0.16) 66%, rgba(124, 45, 85, 0.02)),
     url("assets/demo-images/demo-hero-kapsalon.jpg");
 }
 
@@ -1686,7 +1692,7 @@ h3 {
 .mini-site-auto .mini-hero,
 .mini-site-ecommerce .mini-hero {
   background:
-    linear-gradient(90deg, rgba(6, 18, 31, 0.84) 0 48%, rgba(6, 18, 31, 0.36) 76%, rgba(6, 18, 31, 0.08)),
+    linear-gradient(90deg, rgba(6, 18, 31, 0.52) 0 38%, rgba(6, 18, 31, 0.16) 66%, rgba(6, 18, 31, 0.02)),
     url("assets/demo-images/demo-hero-coaching.jpg");
 }
 
@@ -1706,13 +1712,13 @@ h3 {
 
 .mini-site-realestate .mini-hero {
   background:
-    linear-gradient(90deg, rgba(6, 18, 31, 0.86) 0 48%, rgba(6, 18, 31, 0.38) 76%, rgba(6, 18, 31, 0.08)),
+    linear-gradient(90deg, rgba(6, 18, 31, 0.54) 0 38%, rgba(6, 18, 31, 0.16) 66%, rgba(6, 18, 31, 0.02)),
     url("assets/demo-images/demo-hero-vastgoed.jpg");
 }
 
 .mini-site-install .mini-hero {
   background:
-    linear-gradient(90deg, rgba(6, 18, 31, 0.84) 0 48%, rgba(15, 118, 110, 0.38) 76%, rgba(15, 118, 110, 0.08)),
+    linear-gradient(90deg, rgba(6, 18, 31, 0.5) 0 38%, rgba(15, 118, 110, 0.16) 66%, rgba(15, 118, 110, 0.02)),
     url("assets/demo-images/demo-hero-installatie.jpg");
 }
 
@@ -1725,7 +1731,7 @@ h3 {
 
 .mini-site-dentist .mini-hero {
   background:
-    linear-gradient(90deg, rgba(12, 74, 110, 0.78) 0 48%, rgba(12, 74, 110, 0.3) 76%, rgba(12, 74, 110, 0.06)),
+    linear-gradient(90deg, rgba(12, 74, 110, 0.46) 0 38%, rgba(12, 74, 110, 0.12) 66%, rgba(12, 74, 110, 0.02)),
     url("assets/demo-images/demo-hero-zorg.jpg");
 }
 
@@ -1738,7 +1744,7 @@ h3 {
 
 .mini-site-auto .mini-hero {
   background:
-    linear-gradient(90deg, rgba(2, 6, 23, 0.92) 0 48%, rgba(2, 6, 23, 0.4) 76%, rgba(2, 6, 23, 0.08)),
+    linear-gradient(90deg, rgba(2, 6, 23, 0.58) 0 38%, rgba(2, 6, 23, 0.18) 66%, rgba(2, 6, 23, 0.02)),
     url("assets/demo-images/demo-hero-automotive.jpg");
 }
 
@@ -1759,7 +1765,7 @@ h3 {
 
 .mini-site-ecommerce .mini-hero {
   background:
-    linear-gradient(90deg, rgba(15, 23, 42, 0.8) 0 48%, rgba(29, 78, 216, 0.32) 76%, rgba(29, 78, 216, 0.06)),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.48) 0 38%, rgba(29, 78, 216, 0.14) 66%, rgba(29, 78, 216, 0.02)),
     url("assets/demo-images/demo-hero-ecommerce.jpg");
 }
 
@@ -1888,7 +1894,7 @@ h3 {
 
 .demo-site-hero {
   background:
-    linear-gradient(90deg, rgba(6, 18, 31, 0.86) 0 46%, rgba(6, 18, 31, 0.34) 78%, rgba(6, 18, 31, 0.08)),
+    linear-gradient(90deg, rgba(6, 18, 31, 0.54) 0 38%, rgba(6, 18, 31, 0.16) 66%, rgba(6, 18, 31, 0.02)),
     url("assets/demo-images/demo-hero-bouw.jpg") center / cover;
 }
 
@@ -1905,7 +1911,7 @@ h3 {
 
 .demo-menu-card {
   background:
-    linear-gradient(90deg, rgba(59, 29, 15, 0.86) 0 45%, rgba(59, 29, 15, 0.38) 76%, rgba(59, 29, 15, 0.08)),
+    linear-gradient(90deg, rgba(59, 29, 15, 0.54) 0 38%, rgba(59, 29, 15, 0.16) 66%, rgba(59, 29, 15, 0.02)),
     url("assets/demo-images/demo-hero-horeca.jpg") center / cover;
 }
 
@@ -1925,7 +1931,7 @@ h3 {
 
 .demo-profile-block {
   background:
-    linear-gradient(90deg, rgba(6, 18, 31, 0.84) 0 46%, rgba(6, 18, 31, 0.34) 78%, rgba(6, 18, 31, 0.08)),
+    linear-gradient(90deg, rgba(6, 18, 31, 0.48) 0 38%, rgba(6, 18, 31, 0.14) 66%, rgba(6, 18, 31, 0.02)),
     url("assets/demo-images/demo-hero-coaching.jpg") center / cover;
 }
 
@@ -1938,7 +1944,7 @@ h3 {
 
 .demo-property-card {
   background:
-    linear-gradient(90deg, rgba(6, 18, 31, 0.82) 0 45%, rgba(6, 18, 31, 0.34) 78%, rgba(6, 18, 31, 0.08)),
+    linear-gradient(90deg, rgba(6, 18, 31, 0.52) 0 38%, rgba(6, 18, 31, 0.14) 66%, rgba(6, 18, 31, 0.02)),
     url("assets/demo-images/demo-hero-vastgoed.jpg") center / cover;
 }
 
@@ -1951,7 +1957,7 @@ h3 {
 
 .demo-service-block {
   background:
-    linear-gradient(90deg, rgba(6, 18, 31, 0.8) 0 45%, rgba(15, 118, 110, 0.34) 78%, rgba(15, 118, 110, 0.08)),
+    linear-gradient(90deg, rgba(6, 18, 31, 0.5) 0 38%, rgba(15, 118, 110, 0.14) 66%, rgba(15, 118, 110, 0.02)),
     url("assets/demo-images/demo-hero-installatie.jpg") center / cover;
 }
 
@@ -1964,7 +1970,7 @@ h3 {
 
 .demo-care-block {
   background:
-    linear-gradient(90deg, rgba(12, 74, 110, 0.74) 0 44%, rgba(12, 74, 110, 0.28) 76%, rgba(12, 74, 110, 0.06)),
+    linear-gradient(90deg, rgba(12, 74, 110, 0.42) 0 38%, rgba(12, 74, 110, 0.1) 66%, rgba(12, 74, 110, 0.02)),
     url("assets/demo-images/demo-hero-zorg.jpg") center / cover;
 }
 
@@ -1977,13 +1983,13 @@ h3 {
 
 .demo-style-block {
   background:
-    linear-gradient(90deg, rgba(54, 20, 42, 0.84) 0 45%, rgba(54, 20, 42, 0.34) 76%, rgba(54, 20, 42, 0.08)),
+    linear-gradient(90deg, rgba(54, 20, 42, 0.5) 0 38%, rgba(54, 20, 42, 0.14) 66%, rgba(54, 20, 42, 0.02)),
     url("assets/demo-images/demo-hero-kapsalon.jpg") center / cover;
 }
 
 .demo-auto-block {
   background:
-    linear-gradient(90deg, rgba(2, 6, 23, 0.9) 0 45%, rgba(2, 6, 23, 0.38) 78%, rgba(2, 6, 23, 0.08)),
+    linear-gradient(90deg, rgba(2, 6, 23, 0.56) 0 38%, rgba(2, 6, 23, 0.16) 66%, rgba(2, 6, 23, 0.02)),
     url("assets/demo-images/demo-hero-automotive.jpg") center / cover;
 }
 
