@@ -2321,6 +2321,21 @@ h3 {
   padding-bottom: clamp(56px, 8vw, 96px);
 }
 
+.demo-case-hero {
+  grid-template-columns: 1fr;
+  gap: clamp(34px, 5vw, 62px);
+  padding-top: clamp(54px, 8vw, 96px);
+}
+
+.demo-case-intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 28px;
+  align-items: end;
+  width: min(1180px, 100%);
+  margin: 0 auto;
+}
+
 .demo-page-copy {
   max-width: 760px;
 }
@@ -2346,6 +2361,11 @@ h3 {
   margin-top: 30px;
 }
 
+.demo-case-intro .demo-page-actions {
+  justify-content: flex-end;
+  margin-top: 0;
+}
+
 .demo-page-preview {
   position: relative;
   min-height: 520px;
@@ -2358,6 +2378,19 @@ h3 {
   box-shadow: 0 34px 90px rgba(6, 18, 31, 0.14);
 }
 
+.demo-case-preview {
+  width: min(1180px, 100%);
+  min-height: clamp(600px, 68vw, 820px);
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 34px;
+  background:
+    radial-gradient(circle at 84% 12%, rgba(25, 194, 255, 0.18), transparent 30%),
+    radial-gradient(circle at 14% 82%, rgba(21, 94, 239, 0.12), transparent 28%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(237, 244, 255, 0.88));
+  box-shadow: 0 42px 120px rgba(6, 18, 31, 0.16);
+}
+
 .demo-page-preview .demo-browser {
   position: absolute;
   top: 48px;
@@ -2365,9 +2398,113 @@ h3 {
   width: min(82%, 560px);
 }
 
+.demo-page-preview .demo-case-browser {
+  top: clamp(28px, 5vw, 56px);
+  left: clamp(18px, 4vw, 54px);
+  width: min(86%, 950px);
+  border-radius: 28px;
+  box-shadow: 0 34px 96px rgba(6, 18, 31, 0.2);
+}
+
+.demo-case-browser .demo-browser-top {
+  min-height: 50px;
+}
+
+.demo-case-browser .demo-browser-body {
+  min-height: clamp(470px, 52vw, 660px);
+  background: #ffffff;
+}
+
+.demo-case-browser .mini-site {
+  min-height: clamp(380px, 42vw, 520px);
+}
+
+.demo-case-browser .mini-hero {
+  min-height: clamp(300px, 34vw, 420px);
+  padding: clamp(76px, 8vw, 112px) clamp(28px, 5vw, 56px) clamp(34px, 5vw, 62px);
+}
+
+.demo-case-browser .mini-hero strong {
+  max-width: 560px;
+  font-size: clamp(38px, 5vw, 64px);
+}
+
+.demo-case-browser .mini-hero p {
+  max-width: 470px;
+  margin-top: 14px;
+  font-size: clamp(13px, 1.3vw, 17px);
+}
+
+.demo-case-browser .mini-hero em {
+  min-height: 38px;
+  margin-top: 22px;
+  padding: 0 18px;
+  font-size: 12px;
+}
+
+.demo-case-browser .mini-stats,
+.demo-case-browser .mini-menu-row,
+.demo-case-browser .mini-proof-row,
+.demo-case-browser .mini-listings,
+.demo-case-browser .mini-service-row,
+.demo-case-browser .mini-care-row,
+.demo-case-browser .mini-style-row,
+.demo-case-browser .mini-auto-row,
+.demo-case-browser .mini-products {
+  gap: 14px;
+  padding: 20px;
+}
+
+.demo-case-browser .mini-stats span,
+.demo-case-browser .mini-menu-row span,
+.demo-case-browser .mini-proof-row span,
+.demo-case-browser .mini-listings span,
+.demo-case-browser .mini-service-row span,
+.demo-case-browser .mini-care-row span,
+.demo-case-browser .mini-style-row span,
+.demo-case-browser .mini-auto-row span,
+.demo-case-browser .mini-products span {
+  min-height: 92px;
+  padding: 16px;
+  border-radius: 18px;
+  font-size: 12px;
+}
+
+.demo-case-fold {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr 1fr;
+  gap: 16px;
+  padding: 20px;
+  background: #ffffff;
+}
+
+.demo-case-fold span {
+  min-height: 72px;
+  border: 1px solid rgba(214, 226, 240, 0.9);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(21, 94, 239, 0.08), transparent 54%),
+    #f8fbff;
+}
+
 .demo-page-preview .demo-phone {
   right: 30px;
   bottom: 34px;
+}
+
+.demo-page-preview .demo-case-phone {
+  right: clamp(18px, 4vw, 54px);
+  bottom: clamp(22px, 4vw, 52px);
+  width: clamp(118px, 16vw, 178px);
+  min-height: clamp(236px, 32vw, 356px);
+  padding: 18px 14px;
+  border-width: 9px;
+  box-shadow: 0 30px 78px rgba(6, 18, 31, 0.24);
+}
+
+.demo-case-phone strong {
+  font-size: clamp(18px, 2vw, 27px);
+  text-shadow: 0 2px 12px rgba(255, 255, 255, 0.42);
 }
 
 .demo-page-section {
@@ -6948,6 +7085,42 @@ h3 {
     min-height: 560px;
   }
 
+  .demo-case-intro {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .demo-case-intro .demo-page-actions {
+    justify-content: flex-start;
+  }
+
+  .demo-case-preview {
+    min-height: 720px;
+  }
+
+  .demo-page-preview .demo-case-browser {
+    top: 34px;
+    left: 24px;
+    width: calc(100% - 48px);
+  }
+
+  .demo-case-browser .demo-browser-body {
+    min-height: 560px;
+  }
+
+  .demo-case-browser .mini-site {
+    min-height: 440px;
+  }
+
+  .demo-case-browser .mini-hero {
+    min-height: 330px;
+  }
+
+  .demo-page-preview .demo-case-phone {
+    right: 28px;
+    bottom: 28px;
+  }
+
   .demo-section-grid {
     grid-template-columns: 1fr;
   }
@@ -7442,6 +7615,74 @@ h3 {
   .demo-page-preview .demo-phone {
     right: 16px;
     bottom: 18px;
+  }
+
+  .demo-case-preview {
+    min-height: 690px;
+  }
+
+  .demo-page-preview .demo-case-browser {
+    top: 24px;
+    left: 14px;
+    width: calc(100% - 28px);
+  }
+
+  .demo-case-browser .demo-browser-body {
+    min-height: 500px;
+  }
+
+  .demo-case-browser .mini-site {
+    min-height: 380px;
+  }
+
+  .demo-case-browser .mini-hero {
+    min-height: 270px;
+    padding: 72px 18px 22px;
+  }
+
+  .demo-case-browser .mini-hero strong {
+    font-size: clamp(28px, 9vw, 42px);
+  }
+
+  .demo-case-browser .mini-hero p {
+    font-size: 12px;
+  }
+
+  .demo-case-browser .mini-stats,
+  .demo-case-browser .mini-menu-row,
+  .demo-case-browser .mini-proof-row,
+  .demo-case-browser .mini-listings,
+  .demo-case-browser .mini-service-row,
+  .demo-case-browser .mini-care-row,
+  .demo-case-browser .mini-style-row,
+  .demo-case-browser .mini-auto-row,
+  .demo-case-browser .mini-products {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .demo-case-browser .mini-stats span,
+  .demo-case-browser .mini-menu-row span,
+  .demo-case-browser .mini-proof-row span,
+  .demo-case-browser .mini-listings span,
+  .demo-case-browser .mini-service-row span,
+  .demo-case-browser .mini-care-row span,
+  .demo-case-browser .mini-style-row span,
+  .demo-case-browser .mini-auto-row span,
+  .demo-case-browser .mini-products span {
+    min-height: 44px;
+  }
+
+  .demo-case-fold {
+    display: none;
+  }
+
+  .demo-page-preview .demo-case-phone {
+    right: 18px;
+    bottom: 20px;
+    width: 118px;
+    min-height: 232px;
   }
 
   .demo-page-cta {
