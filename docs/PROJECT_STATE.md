@@ -183,3 +183,9 @@ Belangrijk:
 - Opzeggen loopt server-side via Mollie en werkt daarna de lokale subscriptionstatus bij.
 - Pauzeren en hervatten zijn in deze fase lokale CRM-acties met een expliciete melding in `admin_action_last_error`, zodat beheer ziet dat Mollie geen directe pauzeer-/hervatactie is uitgevoerd.
 - Het klantdashboard toont abonnementen klantvriendelijk als actief, gepauzeerd, opgezegd of wacht op machtiging.
+- Fase 6.4 voegt opvolging van mislukte incasso's toe met retryvelden in `public.customer_subscriptions`.
+- De SQL voor retryvelden staat in `/docs/supabase-subscription-retries.sql`.
+- `mollie-webhook.js` zet bij mislukte, verlopen, geannuleerde of chargeback subscription payments retrystatussen, risiconiveaus en laatste-foutmetadata.
+- `/.netlify/functions/admin-subscription-retry` beheert retry-acties zoals markeren als opgelost, retry-mail versturen, adminnotitie opslaan en synchroniseren.
+- Het admin-dashboard toont mislukte betalingen, retry status, risiconiveau, volgende actie, laatste retry-mail en adminnotities in de Onderhoud-module.
+- Het klantdashboard toont bij betaalproblemen alleen een klantvriendelijke melding en eventueel de bestaande mandate checkout-knop.

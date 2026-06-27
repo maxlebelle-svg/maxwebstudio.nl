@@ -46,6 +46,7 @@
           <article class="admin-card detail-card"><span>Opgezegd op</span><strong id="billing-canceled-date">-</strong></article>
         </div>
         <div class="portal-actions" id="billing-actions"></div>
+        <p class="portal-message" id="subscription-retry-alert" hidden></p>
         <div class="admin-table portal-invoice-table" id="client-invoice-list" role="table" aria-label="Laatste facturen" aria-live="polite">
           <div class="admin-table-row admin-table-head portal-invoice-row" role="row">
             <span>Factuur</span><span>Titel</span><span>Bedrag</span><span>Status</span><span>Betaalstatus</span><span>Vervaldatum</span><span>Acties</span>
@@ -206,6 +207,8 @@
         const localStatus = normalize(subscription.status);
         const mollieStatus = normalize(subscription.mollie_subscription_status);
         const mandateStatus = normalize(subscription.mandate_status);
+        const retryStatus = normalize(subscription.retry_status);
+        if (["payment_failed", "retry_needed", "action_required"].includes(retryStatus)) return "Betaalprobleem";
         if (subscription.mandate_checkout_url && mandateStatus !== "valid") return "Wacht op machtiging";
         if (["canceled", "cancelled"].includes(localStatus) || ["canceled", "cancelled"].includes(mollieStatus)) return "Opgezegd";
         if (["paused", "suspended"].includes(localStatus) || ["paused", "suspended"].includes(mollieStatus)) return "Gepauzeerd";
@@ -325,7 +328,17 @@
         document.querySelector("#billing-next-date").textContent = formatDate(subscription?.next_payment_at || subscription?.next_invoice_date);
         document.querySelector("#billing-canceled-date").textContent = formatDate(subscription?.canceled_at || subscription?.cancellation_requested_at);
         const billingActions = document.querySelector("#billing-actions");
+        const retryAlert = document.querySelector("#subscription-retry-alert");
         billingActions.replaceChildren();
+        retryAlert.hidden = true;
+        retryAlert.textContent = "";
+        retryAlert.className = "portal-message";
+        const retryStatus = normalize(subscription?.retry_status);
+        if (["payment_failed", "retry_needed", "action_required"].includes(retryStatus)) {
+          retryAlert.hidden = false;
+          retryAlert.className = "portal-message error";
+          retryAlert.textContent = "Er is een probleem met je automatische betaling. Controleer je betaalmethode of rond je machtiging opnieuw af.";
+        }
         if (subscription?.mandate_checkout_url && mandateStatus !== "valid") {
           const mandate = document.createElement("a");
           mandate.className = "button primary";
@@ -669,7 +682,7 @@
 
           let { data: subscriptionRows, error: subscriptionError } = await state.client
             .from("customer_subscriptions")
-            .select("id,package_name,billing_cycle,monthly_amount,status,start_date,next_invoice_date,mollie_subscription_status,last_payment_at,next_payment_at,canceled_at,paused_at,resumed_at,cancellation_requested_at,mandate_status,mandate_checkout_url,mandate_payment_status,subscription_synced_at,updated_at")
+            .select("id,package_name,billing_cycle,monthly_amount,status,start_date,next_invoice_date,mollie_subscription_status,last_payment_at,next_payment_at,canceled_at,paused_at,resumed_at,cancellation_requested_at,mandate_status,mandate_checkout_url,mandate_payment_status,retry_status,retry_next_action_at,retry_last_email_sent_at,subscription_risk_level,subscription_synced_at,updated_at")
             .eq("customer_auth_user_id", user.id)
             .order("updated_at", { ascending: false })
             .limit(20);

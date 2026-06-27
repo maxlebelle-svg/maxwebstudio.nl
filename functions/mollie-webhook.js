@@ -11,6 +11,7 @@ const knownStatuses = new Set([
   "refunded",
   "charged_back",
 ]);
+const retryPaymentStatuses = new Set(["failed", "expired", "canceled", "charged_back"]);
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
@@ -177,6 +178,10 @@ async function updateSubscriptionPaymentIfPresent(payment, mollieApiKey) {
 
   if (paymentStatus === "paid") {
     basePatch.last_payment_at = cleanText(payment.paidAt) || now;
+    basePatch.retry_status = "resolved";
+    basePatch.subscription_risk_level = "normal";
+    basePatch.retry_next_action_at = null;
+    basePatch.subscription_last_error = null;
   }
 
   let mandate = null;
@@ -226,19 +231,32 @@ async function updateSubscriptionPaymentIfPresent(payment, mollieApiKey) {
       return null;
     });
     if (mollieSubscription) {
-      await patchCustomerSubscription(supabaseUrl, serviceRoleKey, subscription.id, {
+      const patch = {
         ...basePatch,
         ...subscriptionPatchFromMollie(mollieSubscription, mandate, {
           webhook_last_event: basePatch.webhook_last_event,
           webhook_last_received_at: now,
           last_payment_at: paymentStatus === "paid" ? cleanText(payment.paidAt) || now : cleanText(subscription.last_payment_at) || null,
         }),
-      });
+      };
+      if (retryPaymentStatuses.has(paymentStatus)) {
+        Object.assign(patch, retryPatchFromPayment(subscription, payment, paymentStatus, now));
+      }
+      const updatedSubscription = await patchCustomerSubscription(supabaseUrl, serviceRoleKey, subscription.id, patch);
+      if (retryPaymentStatuses.has(paymentStatus)) {
+        await sendSubscriptionRetryEmailIfNeeded(supabaseUrl, serviceRoleKey, updatedSubscription || { ...subscription, ...patch });
+      }
       return;
     }
   }
 
-  await patchCustomerSubscription(supabaseUrl, serviceRoleKey, subscription.id, basePatch);
+  if (retryPaymentStatuses.has(paymentStatus)) {
+    Object.assign(basePatch, retryPatchFromPayment(subscription, payment, paymentStatus, now));
+  }
+  const updatedSubscription = await patchCustomerSubscription(supabaseUrl, serviceRoleKey, subscription.id, basePatch);
+  if (retryPaymentStatuses.has(paymentStatus)) {
+    await sendSubscriptionRetryEmailIfNeeded(supabaseUrl, serviceRoleKey, updatedSubscription || { ...subscription, ...basePatch });
+  }
 }
 
 async function fetchCustomerSubscriptionById(supabaseUrl, serviceRoleKey, id) {
@@ -257,7 +275,40 @@ async function fetchCustomerSubscriptionByMollieSubscriptionId(supabaseUrl, serv
 }
 
 async function fetchSingleCustomerSubscription(supabaseUrl, serviceRoleKey, filter) {
-  const fields = [
+  const fullFields = [
+    "id",
+    "profile_id",
+    "customer_auth_user_id",
+    "package_name",
+    "billing_cycle",
+    "monthly_amount",
+    "status",
+    "start_date",
+    "next_invoice_date",
+    "mollie_customer_id",
+    "mollie_subscription_id",
+    "mollie_subscription_status",
+    "mollie_mandate_id",
+    "last_payment_at",
+    "next_payment_at",
+    "canceled_at",
+    "paused_at",
+    "mandate_status",
+    "mandate_reference",
+    "mandate_checkout_url",
+    "mandate_payment_id",
+    "mandate_payment_status",
+    "retry_status",
+    "retry_next_action_at",
+    "retry_last_email_sent_at",
+    "retry_last_admin_note",
+    "subscription_risk_level",
+    "subscription_last_error",
+    "last_failed_payment_at",
+    "last_failed_payment_id",
+    "failed_payment_count",
+  ].join(",");
+  const baseFields = [
     "id",
     "profile_id",
     "customer_auth_user_id",
@@ -281,6 +332,12 @@ async function fetchSingleCustomerSubscription(supabaseUrl, serviceRoleKey, filt
     "mandate_payment_id",
     "mandate_payment_status",
   ].join(",");
+  const result = await fetchSingleCustomerSubscriptionWithFields(supabaseUrl, serviceRoleKey, filter, fullFields);
+  if (result !== false) return result;
+  return fetchSingleCustomerSubscriptionWithFields(supabaseUrl, serviceRoleKey, filter, baseFields);
+}
+
+async function fetchSingleCustomerSubscriptionWithFields(supabaseUrl, serviceRoleKey, filter, fields) {
   const response = await fetch(`${supabaseUrl}/rest/v1/customer_subscriptions?select=${fields}&${filter}&limit=1`, {
     method: "GET",
     headers: restHeaders(serviceRoleKey),
@@ -293,6 +350,7 @@ async function fetchSingleCustomerSubscription(supabaseUrl, serviceRoleKey, filt
       status: response.status,
       message: data.message || data.error || "Unknown Supabase error",
     });
+    if (isSchemaColumnError(data)) return false;
     return null;
   }
 
@@ -414,6 +472,35 @@ function subscriptionPatchFromMollie(mollieSubscription, mandate, extra = {}) {
   return patch;
 }
 
+function retryPatchFromPayment(subscription, payment, paymentStatus, now) {
+  const previousCount = Number(subscription.failed_payment_count || 0);
+  const failedPaymentCount = previousCount + 1;
+  const retryStatus = failedPaymentCount >= 3 || paymentStatus === "charged_back"
+    ? "action_required"
+    : failedPaymentCount === 1 ? "payment_failed" : "retry_needed";
+  return {
+    last_failed_payment_at: cleanText(payment.failedAt || payment.canceledAt || payment.expiredAt) || now,
+    last_failed_payment_id: cleanText(payment.id),
+    failed_payment_count: failedPaymentCount,
+    retry_status: retryStatus,
+    retry_next_action_at: retryNextActionDate(failedPaymentCount),
+    subscription_risk_level: riskLevelForCount(failedPaymentCount),
+    subscription_last_error: `Mollie betaling ${paymentStatus}.`,
+  };
+}
+
+function retryNextActionDate(failedPaymentCount) {
+  const date = new Date();
+  date.setDate(date.getDate() + (failedPaymentCount >= 3 ? 1 : 3));
+  return date.toISOString();
+}
+
+function riskLevelForCount(count) {
+  if (count >= 3) return "high";
+  if (count >= 1) return "attention";
+  return "normal";
+}
+
 async function fetchInvoiceByPaymentId(supabaseUrl, serviceRoleKey, paymentId) {
   const invoice = await fetchInvoiceByPaymentIdWithFields(
     supabaseUrl,
@@ -493,6 +580,53 @@ async function sendPaidConfirmationEmail(supabaseUrl, serviceRoleKey, invoice) {
   }
 }
 
+async function sendSubscriptionRetryEmailIfNeeded(supabaseUrl, serviceRoleKey, subscription) {
+  try {
+    if (!subscription || subscription.retry_last_email_sent_at) return;
+    const profile = await fetchInvoiceProfile(supabaseUrl, serviceRoleKey, subscription.profile_id);
+    const customerEmail = cleanEmail(profile?.email);
+
+    if (!customerEmail) {
+      console.warn("Mollie webhook subscription retry email skipped: missing customer email", { subscriptionId: subscription.id });
+      await patchCustomerSubscription(supabaseUrl, serviceRoleKey, subscription.id, {
+        subscription_last_error: "Geen klant e-mailadres gevonden.",
+      });
+      return;
+    }
+
+    const message = buildSubscriptionRetryEmail(subscription, profile);
+    const result = await sendEmail({
+      to: customerEmail,
+      bcc: cleanEmail(process.env.ADMIN_EMAIL) || undefined,
+      subject: message.subject,
+      text: message.text,
+      html: message.html,
+    });
+
+    if (!result.sent) {
+      console.warn("Mollie webhook subscription retry email skipped", {
+        subscriptionId: subscription.id,
+        warning: result.warning || "Unknown email warning",
+      });
+      await patchCustomerSubscription(supabaseUrl, serviceRoleKey, subscription.id, {
+        subscription_last_error: result.warning || "Retry-mail kon niet worden verzonden.",
+      });
+      return;
+    }
+
+    await patchCustomerSubscription(supabaseUrl, serviceRoleKey, subscription.id, {
+      retry_last_email_sent_at: new Date().toISOString(),
+      subscription_last_error: null,
+    });
+    console.log("Mollie webhook subscription retry email sent", { subscriptionId: subscription.id });
+  } catch (error) {
+    console.error("Mollie webhook subscription retry email failed", {
+      subscriptionId: subscription?.id,
+      message: error.message,
+    });
+  }
+}
+
 async function fetchInvoiceProfile(supabaseUrl, serviceRoleKey, profileId) {
   if (!profileId) return null;
   const response = await fetch(`${supabaseUrl}/rest/v1/profiles?select=id,name,company,email&id=eq.${encodeURIComponent(profileId)}&limit=1`, {
@@ -534,6 +668,31 @@ function buildPaidConfirmationEmail(invoice, profile) {
     subject: `Betaling ontvangen voor factuur ${invoiceNumber}`,
     text,
     html: renderEmailHtml("Betaling ontvangen", text, portalUrl),
+  };
+}
+
+function buildSubscriptionRetryEmail(subscription, profile) {
+  const customerName = cleanText(profile?.name) || cleanText(profile?.company) || "beste klant";
+  const packageName = cleanText(subscription.package_name) || "onderhoudsabonnement";
+  const portalUrl = absoluteUrl("/client-dashboard.html");
+  const mandateUrl = cleanText(subscription.mandate_checkout_url);
+  const text = [
+    `Hallo ${customerName},`,
+    "",
+    `We konden je maandelijkse betaling voor ${packageName} niet verwerken.`,
+    "Dat kan gebeuren. Controleer alsjeblieft je betaalmethode of rond je machtiging opnieuw af.",
+    mandateUrl ? `Je kunt de machtiging hier afronden: ${mandateUrl}` : `Je kunt je abonnement bekijken in je klantportaal: ${portalUrl}`,
+    "",
+    "Als de betaling inmiddels is gelukt, hoef je niets te doen.",
+    "",
+    "Met vriendelijke groet,",
+    "Max Web Studio",
+  ].filter(Boolean).join("\n");
+
+  return {
+    subject: "We konden je maandelijkse betaling niet verwerken",
+    text,
+    html: renderEmailHtml("Actie nodig voor je onderhoudsabonnement", text, mandateUrl || portalUrl),
   };
 }
 

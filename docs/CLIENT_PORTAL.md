@@ -314,3 +314,15 @@ Statussen worden klantvriendelijk vertaald:
 - open mandate checkout -> Wacht op machtiging
 
 Klanten kunnen in deze fase geen abonnement pauzeren, hervatten of opzeggen. Alle beheeracties lopen via het Admin CRM en server-side Netlify Functions.
+
+## Fase 6.4 - Betaalprobleemmelding
+
+Als een abonnement een open retryprobleem heeft, toont het klantportaal een korte klantvriendelijke melding:
+
+- er is een probleem met de automatische betaling
+- controleer de betaalmethode of rond de machtiging opnieuw af
+- technische Mollie foutcodes worden niet getoond
+
+Als `mandate_checkout_url` beschikbaar is en de mandate nog niet geldig is, blijft de knop `Voltooi machtiging` zichtbaar.
+
+Klanten kunnen retry-statussen niet aanpassen en kunnen geen retry-mails triggeren.

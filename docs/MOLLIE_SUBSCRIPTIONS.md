@@ -255,9 +255,75 @@ De aanvullende SQL staat in:
 
 ## Bekende Beperkingen
 
-Automatische retries en mislukte-incasso workflows zijn nog niet gebouwd.
+Automatische retry payments buiten Mollie om zijn nog niet gebouwd.
 
 Pauzeren en hervatten zijn in Fase 6.3 lokale CRM-acties met expliciete waarschuwing. Opzeggen en synchroniseren werken server-side met Mollie.
+
+## Fase 6.4 - Mislukte Incasso's En Retries
+
+Fase 6.4 maakt mislukte subscription payments opvolgbaar in het CRM.
+
+Nieuwe database-uitbreiding:
+
+- `/docs/supabase-subscription-retries.sql`
+
+Nieuwe adminfunctie:
+
+- `/.netlify/functions/admin-subscription-retry`
+
+De webhook verwerkt subscription payment statussen:
+
+- `failed`
+- `expired`
+- `canceled`
+- `charged_back`
+
+Bij een mislukte of geweigerde incasso vult de webhook:
+
+- `last_failed_payment_at`
+- `last_failed_payment_id`
+- `failed_payment_count`
+- `retry_status`
+- `retry_next_action_at`
+- `subscription_risk_level`
+- `subscription_last_error`
+- `webhook_last_event`
+- `webhook_last_received_at`
+
+Retry statussen:
+
+- `payment_failed`: eerste mislukte incasso.
+- `retry_needed`: vervolgactie of herhaalde poging nodig.
+- `action_required`: hoge prioriteit, meestal na meerdere failures of chargeback.
+- `resolved`: handmatig of via succesvolle betaling opgelost.
+
+Risiconiveaus:
+
+- `normal`: geen open retryprobleem.
+- `attention`: minimaal een mislukte incasso.
+- `high`: meerdere mislukte incasso's of chargeback.
+
+Wanneer een latere betaling `paid` wordt, zet de webhook `retry_status` op `resolved`, `subscription_risk_level` op `normal`, wist `subscription_last_error` en werkt `last_payment_at` bij. `failed_payment_count` blijft behouden als historische teller.
+
+Retry e-mails:
+
+- De webhook probeert bij een eerste open retryprobleem automatisch een klantmail te sturen.
+- Dubbele automatische mails worden voorkomen via `retry_last_email_sent_at`.
+- Als e-mailconfiguratie ontbreekt of Resend faalt, blijft de webhookstatus-update doorgaan en wordt de fout alleen opgeslagen/logged.
+- Admin kan handmatig opnieuw mailen via `send_retry_email`.
+
+Adminacties:
+
+- `mark_resolved`: zet retry op opgelost en risico terug naar normaal.
+- `send_retry_email`: verstuurt een klantvriendelijke betaalprobleem-mail.
+- `add_admin_note`: bewaart een interne retry-notitie.
+- `sync`: haalt de laatste Mollie subscriptionstatus op en werkt lokale status bij.
+
+Klantportaal:
+
+- Klanten zien alleen een vriendelijke melding dat er een probleem is met de automatische betaling.
+- Klanten zien geen technische Mollie foutcodes.
+- Als `mandate_checkout_url` bestaat, blijft de knop `Voltooi machtiging` beschikbaar.
 
 ## Security
 

@@ -372,6 +372,7 @@
         const molliePaymentEndpoint = "/.netlify/functions/admin-mollie-payment";
         const mollieSubscriptionEndpoint = "/.netlify/functions/admin-mollie-subscription";
         const mollieSubscriptionActionEndpoint = "/.netlify/functions/admin-mollie-subscription-action";
+        const subscriptionRetryEndpoint = "/.netlify/functions/admin-subscription-retry";
         const invoiceEmailEndpoint = "/.netlify/functions/admin-invoice-email";
         const listEndpoint = "/.netlify/functions/list-change-requests";
         const updateEndpoint = "/.netlify/functions/update-change-request-status";
@@ -1335,9 +1336,9 @@
 
         function billingStatusClass(value) {
           const status = normalize(value);
-          if (["active", "paid"].includes(status)) return "status-active";
+          if (["active", "paid", "normal", "resolved"].includes(status)) return "status-active";
           if (["sent", "draft"].includes(status)) return "status-prepared";
-          if (["paused", "suspended", "expired", "overdue", "pending", "open"].includes(status)) return "status-warning";
+          if (["paused", "suspended", "expired", "overdue", "pending", "open", "attention", "payment_failed", "retry_needed"].includes(status)) return "status-warning";
           return "status-attention";
         }
 
@@ -1358,6 +1359,13 @@
             suspended: "Gepauzeerd",
             valid: "Geldig",
             invalid: "Ongeldig",
+            payment_failed: "Betaling mislukt",
+            retry_needed: "Retry nodig",
+            action_required: "Actie nodig",
+            resolved: "Opgelost",
+            normal: "Normaal",
+            attention: "Aandacht",
+            high: "Hoog risico",
           }[normalize(value)] || value || "-";
         }
 
@@ -1379,11 +1387,24 @@
             ["Hervat", formatDate(subscription.resumedAt)],
             ["Opgezegd", formatDate(subscription.canceledAt || subscription.cancellationRequestedAt)],
             ["Opzegreden", subscription.cancellationReason],
+            ["Mislukte betalingen", subscription.failedPaymentCount ? String(subscription.failedPaymentCount) : "0"],
+            ["Laatste mislukking", formatDate(subscription.lastFailedPaymentAt)],
+            ["Retry status", billingStatusLabel(subscription.retryStatus)],
+            ["Risico", billingStatusLabel(subscription.subscriptionRiskLevel)],
+            ["Volgende actie", formatDate(subscription.retryNextActionAt)],
+            ["Laatste retry-mail", formatDate(subscription.retryLastEmailSentAt)],
+            ["Retry-notitie", subscription.retryLastAdminNote],
           ].forEach(([label, value]) => {
             const item = document.createElement("small");
             item.textContent = `${label}: ${value || "-"}`;
             wrapper.append(item);
           });
+          if (subscription.subscriptionLastError) {
+            const retryError = document.createElement("small");
+            retryError.className = "status-attention";
+            retryError.textContent = `Retry fout: ${subscription.subscriptionLastError}`;
+            wrapper.append(retryError);
+          }
           if (subscription.adminActionLastError) {
             const error = document.createElement("small");
             error.className = "status-attention";
@@ -1525,12 +1546,39 @@
               sync.addEventListener("click", () => runMollieSubscriptionAction(subscription.id, "sync", sync));
               actions.append(sync);
             }
+            const retryMail = document.createElement("button");
+            retryMail.className = "button secondary";
+            retryMail.type = "button";
+            retryMail.textContent = "Retry-mail versturen";
+            retryMail.addEventListener("click", () => runSubscriptionRetryAction(subscription.id, "send_retry_email", retryMail));
+            const retryResolved = document.createElement("button");
+            retryResolved.className = "button secondary";
+            retryResolved.type = "button";
+            retryResolved.textContent = "Markeer opgelost";
+            retryResolved.addEventListener("click", () => runSubscriptionRetryAction(subscription.id, "mark_resolved", retryResolved));
+            const retryNote = document.createElement("button");
+            retryNote.className = "button secondary";
+            retryNote.type = "button";
+            retryNote.textContent = "Voeg notitie toe";
+            retryNote.addEventListener("click", () => addSubscriptionRetryNote(subscription.id, retryNote));
+            const retrySync = document.createElement("button");
+            retrySync.className = "button secondary";
+            retrySync.type = "button";
+            retrySync.textContent = "Synchroniseer retry-status";
+            retrySync.addEventListener("click", () => runSubscriptionRetryAction(subscription.id, "sync", retrySync));
+            actions.append(retryMail, retryResolved, retryNote, retrySync);
+            const statusGroup = document.createElement("span");
+            statusGroup.className = "website-actions";
+            statusGroup.append(createBadge(billingStatusLabel(subscription.status), billingStatusClass(subscription.status)));
+            if (subscription.retryStatus || subscription.subscriptionRiskLevel) {
+              statusGroup.append(createBadge(billingStatusLabel(subscription.retryStatus || subscription.subscriptionRiskLevel), billingStatusClass(subscription.retryStatus || subscription.subscriptionRiskLevel)));
+            }
             row.append(
               createCell(subscription.customerCompany || subscription.customerName || "Geen klant", "strong"),
               createCell(subscription.packageName),
               createCell(money(subscription.monthlyAmount)),
               createCell(subscription.billingCycle),
-              createBadge(billingStatusLabel(subscription.status), billingStatusClass(subscription.status)),
+              statusGroup,
               createCell(formatDate(subscription.startDate)),
               createCell(formatDate(subscription.nextInvoiceDate)),
               createSubscriptionMollieSummary(subscription),
@@ -1822,6 +1870,40 @@
             setAdminAccessMessage(data.warning || data.message || "Mollie abonnementsactie uitgevoerd.", data.warning ? "" : "success");
           } catch (error) {
             setAdminAccessMessage(error.message || "Mollie abonnementsactie kon niet worden uitgevoerd.", "error");
+          } finally {
+            button.disabled = false;
+            button.textContent = originalText;
+          }
+        }
+
+        async function addSubscriptionRetryNote(id, button) {
+          const note = window.prompt("Interne retry-notitie:", "") || "";
+          if (!note.trim()) return;
+          await runSubscriptionRetryAction(id, "add_admin_note", button, { note });
+        }
+
+        async function runSubscriptionRetryAction(id, action, button, extraPayload = {}) {
+          const originalText = button.textContent;
+          button.disabled = true;
+          button.textContent = action === "sync" ? "Synchroniseren..." : "Verwerken...";
+          setAdminAccessMessage("", "");
+
+          try {
+            const response = await fetch(subscriptionRetryEndpoint, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                Authorization: `Bearer ${state.adminToken}`,
+              },
+              body: JSON.stringify({ action, subscription_id: id, ...extraPayload }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data.success) throw new Error(data.error || "Retry-actie kon niet worden uitgevoerd.");
+            await loadBilling(false);
+            setAdminAccessMessage(data.message || "Retry-actie uitgevoerd.", "success");
+          } catch (error) {
+            setAdminAccessMessage(error.message || "Retry-actie kon niet worden uitgevoerd.", "error");
           } finally {
             button.disabled = false;
             button.textContent = originalText;

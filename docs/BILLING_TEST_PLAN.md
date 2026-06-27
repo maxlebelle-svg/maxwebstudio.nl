@@ -22,6 +22,10 @@ Voer deze bestanden uit in Supabase SQL Editor:
 1. `/docs/supabase-billing.sql`
 2. `/docs/supabase-invoice-storage.sql`
 3. `/docs/supabase-mollie-payments.sql`
+4. `/docs/supabase-mollie-subscriptions.sql`
+5. `/docs/supabase-mollie-subscriptions-sync.sql`
+6. `/docs/supabase-mollie-subscription-actions.sql`
+7. `/docs/supabase-subscription-retries.sql`
 
 Controleer daarna dat `public.customer_invoices` minimaal deze velden heeft:
 
@@ -254,6 +258,47 @@ Pauzeren en hervatten zijn in deze fase lokale CRM-acties:
 3. Klik op `Hervatten`.
 4. Verwacht lokale status `active`, `resumed_at` gevuld en opnieuw een duidelijke melding.
 5. Gebruik `Synchroniseer abonnement` om de actuele Mollie-status naast de lokale CRM-status te controleren.
+
+## Subscription Retries Testen
+
+Voor Fase 6.4:
+
+1. Voer `/docs/supabase-subscription-retries.sql` uit.
+2. Zorg dat `RESEND_API_KEY`, `FROM_EMAIL`, `ADMIN_EMAIL` en `SITE_URL` zijn ingesteld als je e-mail wilt testen.
+3. Gebruik Mollie testmodus en laat een subscription payment falen, verlopen of annuleren.
+4. Controleer Netlify logs van `/.netlify/functions/mollie-webhook`.
+5. Verwacht op het abonnement:
+   - `last_failed_payment_at` gevuld
+   - `last_failed_payment_id` gevuld
+   - `failed_payment_count` verhoogd
+   - `retry_status` = `payment_failed`, `retry_needed` of `action_required`
+   - `subscription_risk_level` = `attention` of `high`
+   - `retry_next_action_at` gevuld
+6. Controleer in het admin-dashboard de Onderhoud-module:
+   - mislukte betalingen zichtbaar
+   - retry status zichtbaar
+   - risiconiveau zichtbaar
+   - volgende actie zichtbaar
+   - knoppen `Retry-mail versturen`, `Markeer opgelost`, `Voeg notitie toe`, `Synchroniseer retry-status`
+7. Klik `Retry-mail versturen`.
+8. Verwacht dat `retry_last_email_sent_at` wordt gevuld.
+9. Klik `Markeer opgelost`.
+10. Verwacht `retry_status = resolved` en `subscription_risk_level = normal`.
+
+Wanneer een latere Mollie betaling `paid` wordt:
+
+- `retry_status` wordt `resolved`
+- `subscription_risk_level` wordt `normal`
+- `subscription_last_error` wordt leeg
+- `last_payment_at` wordt bijgewerkt
+- `failed_payment_count` blijft bewaard als historische teller
+
+Klantportaal:
+
+1. Log in als gekoppelde klant.
+2. Controleer dat bij een open retryprobleem een klantvriendelijke melding zichtbaar is.
+3. Controleer dat technische Mollie foutcodes niet zichtbaar zijn.
+4. Als `mandate_checkout_url` beschikbaar is, controleer dat `Voltooi machtiging` zichtbaar blijft.
 
 ### Factuurmail kan niet worden verzonden
 

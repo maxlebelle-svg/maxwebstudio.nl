@@ -31,11 +31,56 @@ const SUBSCRIPTION_FIELDS = [
   "cancellation_reason",
   "cancellation_requested_at",
   "resumed_at",
+  "last_failed_payment_at",
+  "last_failed_payment_id",
+  "failed_payment_count",
+  "retry_status",
+  "retry_next_action_at",
+  "retry_last_email_sent_at",
+  "retry_last_admin_note",
+  "subscription_risk_level",
+  "subscription_last_error",
   "notes",
   "created_at",
   "updated_at",
 ].join(",");
 const BASE_SUBSCRIPTION_FIELDS = [
+  "id",
+  "profile_id",
+  "customer_auth_user_id",
+  "package_name",
+  "billing_cycle",
+  "monthly_amount",
+  "status",
+  "start_date",
+  "next_invoice_date",
+  "mollie_customer_id",
+  "mollie_subscription_id",
+  "mollie_subscription_status",
+  "mollie_mandate_id",
+  "last_payment_at",
+  "next_payment_at",
+  "canceled_at",
+  "paused_at",
+  "mandate_status",
+  "mandate_reference",
+  "mandate_checkout_url",
+  "mandate_payment_id",
+  "mandate_payment_status",
+  "subscription_synced_at",
+  "webhook_last_event",
+  "webhook_last_received_at",
+  "admin_action_last_type",
+  "admin_action_last_at",
+  "admin_action_last_error",
+  "cancellation_reason",
+  "cancellation_requested_at",
+  "resumed_at",
+  "notes",
+  "created_at",
+  "updated_at",
+].join(",");
+const PRE_ACTION_SUBSCRIPTION_FIELDS = [
   "id",
   "profile_id",
   "customer_auth_user_id",
@@ -258,10 +303,18 @@ async function fetchSubscriptions(supabaseUrl, serviceRoleKey) {
       });
     } catch (fallbackError) {
       if (!isSchemaColumnError(fallbackError)) throw fallbackError;
-      return supabaseFetch(`${supabaseUrl}/rest/v1/customer_subscriptions?select=${LEGACY_SUBSCRIPTION_FIELDS}&order=updated_at.desc.nullslast&limit=300`, {
-        method: "GET",
-        headers: restHeaders(serviceRoleKey),
-      });
+      try {
+        return await supabaseFetch(`${supabaseUrl}/rest/v1/customer_subscriptions?select=${PRE_ACTION_SUBSCRIPTION_FIELDS}&order=updated_at.desc.nullslast&limit=300`, {
+          method: "GET",
+          headers: restHeaders(serviceRoleKey),
+        });
+      } catch (legacyFallbackError) {
+        if (!isSchemaColumnError(legacyFallbackError)) throw legacyFallbackError;
+        return supabaseFetch(`${supabaseUrl}/rest/v1/customer_subscriptions?select=${LEGACY_SUBSCRIPTION_FIELDS}&order=updated_at.desc.nullslast&limit=300`, {
+          method: "GET",
+          headers: restHeaders(serviceRoleKey),
+        });
+      }
     }
   }
 }
@@ -446,6 +499,15 @@ function normalizeSubscription(row) {
     cancellationReason: cleanText(row.cancellation_reason),
     cancellationRequestedAt: cleanText(row.cancellation_requested_at),
     resumedAt: cleanText(row.resumed_at),
+    lastFailedPaymentAt: cleanText(row.last_failed_payment_at),
+    lastFailedPaymentId: cleanText(row.last_failed_payment_id),
+    failedPaymentCount: normalizeNullableNumber(row.failed_payment_count) || 0,
+    retryStatus: cleanText(row.retry_status),
+    retryNextActionAt: cleanText(row.retry_next_action_at),
+    retryLastEmailSentAt: cleanText(row.retry_last_email_sent_at),
+    retryLastAdminNote: cleanText(row.retry_last_admin_note),
+    subscriptionRiskLevel: cleanText(row.subscription_risk_level || "normal"),
+    subscriptionLastError: cleanText(row.subscription_last_error),
     notes: cleanText(row.notes),
     createdAt: cleanText(row.created_at),
     updatedAt: cleanText(row.updated_at),

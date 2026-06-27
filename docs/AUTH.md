@@ -148,6 +148,14 @@ Abonnementen pauzeren, hervatten, opzeggen en synchroniseren zijn adminacties. D
 
 Er zijn geen klant-selfservice acties voor abonnementbeheer in deze fase.
 
+## Fase 6.4 - Retrydata
+
+Retrydata voor mislukte incasso's staat op `public.customer_subscriptions` en wordt door klanten alleen gelezen via RLS.
+
+Admin retry-acties lopen via `/.netlify/functions/admin-subscription-retry` met `ADMIN_TOKEN` en service role server-side.
+
+Klanten kunnen geen retry-status wijzigen, geen retry-mail triggeren en geen technische Mollie foutdata muteren.
+
 ## Beperkingen
 
 - Er is nog geen self-service registratie.

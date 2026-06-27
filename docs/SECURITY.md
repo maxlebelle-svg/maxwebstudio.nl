@@ -117,6 +117,7 @@ Aanbevelingen:
 - Voer `/docs/supabase-invoice-emails.sql` uit voordat factuur-e-mailnotificaties operationeel worden gebruikt.
 - Voer `/docs/supabase-mollie-subscriptions.sql` uit voordat Mollie onderhoudsabonnementen operationeel worden gebruikt.
 - Voer `/docs/supabase-mollie-subscriptions-sync.sql` uit voordat mandate en webhook-synchronisatie operationeel worden gebruikt.
+- Voer `/docs/supabase-subscription-retries.sql` uit voordat retry-opvolging voor mislukte incasso's operationeel wordt gebruikt.
 
 Server-side environment variables voor factuurbetalingen:
 
@@ -203,6 +204,16 @@ Mollie subscription beheer in Fase 6.3:
 - opzeggen wordt server-side bij Mollie uitgevoerd
 - lokale pauzeer- en hervatacties schrijven een expliciete melding naar `admin_action_last_error`
 - webhook-sync werkt alleen bekende Mollie-statussen door naar de lokale status, zodat onduidelijke events geen handmatige status ongemerkt overschrijven
+
+Mollie subscription retries in Fase 6.4:
+
+- retry-mutaties lopen via `/.netlify/functions/admin-subscription-retry`
+- `ADMIN_TOKEN` is verplicht voor adminacties
+- `SUPABASE_SERVICE_ROLE_KEY`, `MOLLIE_API_KEY` en `RESEND_API_KEY` blijven server-side
+- webhookstatusupdates mogen niet falen door e-mailproblemen
+- retry-mails bevatten geen publieke PDF-links of secrets
+- klanten zien alleen klantvriendelijke betaalprobleemmeldingen via RLS
+- klanten kunnen geen retry-mails triggeren en geen retry-status wijzigen
 
 Aanbevelingen:
 
