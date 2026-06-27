@@ -1382,8 +1382,8 @@ h3 {
 
 .demo-preview {
   position: relative;
-  min-height: 450px;
-  padding: 32px;
+  min-height: 500px;
+  padding: 30px;
   overflow: hidden;
   background:
     radial-gradient(circle at 78% 18%, rgba(25, 194, 255, 0.18), transparent 30%),
@@ -1440,7 +1440,7 @@ h3 {
 .demo-browser {
   position: relative;
   z-index: 1;
-  width: min(88%, 560px);
+  width: min(91%, 640px);
   overflow: hidden;
   border: 1px solid rgba(214, 226, 240, 0.92);
   border-radius: 24px;
@@ -1474,27 +1474,35 @@ h3 {
 }
 
 .demo-browser-body {
-  min-height: 306px;
+  min-height: 370px;
   padding: 0;
 }
 
 .mini-site {
+  position: relative;
   display: grid;
   gap: 0;
-  min-height: 306px;
+  min-height: 370px;
   overflow: hidden;
   border-radius: 0 0 22px 22px;
   background: #ffffff;
 }
 
 .mini-nav {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: 10px;
   min-height: 46px;
   padding: 0 20px;
-  border-bottom: 1px solid rgba(214, 226, 240, 0.72);
-  background: rgba(255, 255, 255, 0.88);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.84);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
 }
 
 .mini-nav strong {
@@ -1513,8 +1521,8 @@ h3 {
   position: relative;
   display: grid;
   align-content: center;
-  min-height: 176px;
-  padding: 24px;
+  min-height: 258px;
+  padding: 78px 28px 30px;
   overflow: hidden;
   color: var(--white);
   background:
@@ -1534,7 +1542,9 @@ h3 {
 .mini-hero::before {
   inset: 0;
   z-index: 0;
-  background: linear-gradient(90deg, rgba(6, 18, 31, 0.84) 0 48%, rgba(6, 18, 31, 0.34) 72%, rgba(6, 18, 31, 0.12));
+  background:
+    linear-gradient(180deg, rgba(6, 18, 31, 0.08), rgba(6, 18, 31, 0.26)),
+    linear-gradient(90deg, rgba(6, 18, 31, 0.84) 0 48%, rgba(6, 18, 31, 0.34) 72%, rgba(6, 18, 31, 0.12));
 }
 
 .mini-hero::after {
@@ -1556,15 +1566,16 @@ h3 {
 .mini-hero strong {
   position: relative;
   z-index: 1;
-  max-width: 290px;
-  font-size: 27px;
+  max-width: 360px;
+  font-size: 34px;
   line-height: 0.98;
+  letter-spacing: -0.02em;
 }
 
 .mini-hero p {
   position: relative;
   z-index: 1;
-  max-width: 290px;
+  max-width: 340px;
   margin: 10px 0 0;
   color: rgba(255, 255, 255, 0.74);
   font-size: 11px;
@@ -1581,7 +1592,7 @@ h3 {
   width: max-content;
   min-height: 28px;
   margin-top: 14px;
-  padding: 0 12px;
+  padding: 0 14px;
   border-radius: 999px;
   color: var(--ink);
   background: var(--white);
@@ -1617,7 +1628,7 @@ h3 {
 .mini-products span {
   display: grid;
   align-content: end;
-  min-height: 58px;
+  min-height: 64px;
   padding: 10px;
   border: 1px solid rgba(214, 226, 240, 0.86);
   border-radius: 14px;
@@ -1629,7 +1640,7 @@ h3 {
 
 .mini-site-build .mini-hero {
   background:
-    linear-gradient(90deg, rgba(6, 18, 31, 0.86) 0 46%, rgba(6, 18, 31, 0.36) 78%, rgba(6, 18, 31, 0.08)),
+    linear-gradient(90deg, rgba(6, 18, 31, 0.88) 0 48%, rgba(15, 23, 42, 0.4) 76%, rgba(15, 23, 42, 0.08)),
     url("assets/demo-images/demo-hero-bouw.jpg");
 }
 
@@ -1644,13 +1655,13 @@ h3 {
 .mini-site-restaurant .mini-hero,
 .mini-site-salon .mini-hero {
   background:
-    linear-gradient(90deg, rgba(59, 29, 15, 0.86) 0 45%, rgba(59, 29, 15, 0.38) 76%, rgba(59, 29, 15, 0.08)),
+    linear-gradient(90deg, rgba(59, 29, 15, 0.88) 0 48%, rgba(92, 46, 18, 0.42) 76%, rgba(92, 46, 18, 0.08)),
     url("assets/demo-images/demo-hero-horeca.jpg");
 }
 
 .mini-site-salon .mini-hero {
   background:
-    linear-gradient(90deg, rgba(54, 20, 42, 0.84) 0 45%, rgba(54, 20, 42, 0.34) 76%, rgba(54, 20, 42, 0.08)),
+    linear-gradient(90deg, rgba(54, 20, 42, 0.86) 0 48%, rgba(124, 45, 85, 0.38) 76%, rgba(124, 45, 85, 0.08)),
     url("assets/demo-images/demo-hero-kapsalon.jpg");
 }
 
@@ -1675,7 +1686,7 @@ h3 {
 .mini-site-auto .mini-hero,
 .mini-site-ecommerce .mini-hero {
   background:
-    linear-gradient(90deg, rgba(6, 18, 31, 0.84) 0 46%, rgba(6, 18, 31, 0.36) 78%, rgba(6, 18, 31, 0.08)),
+    linear-gradient(90deg, rgba(6, 18, 31, 0.84) 0 48%, rgba(6, 18, 31, 0.36) 76%, rgba(6, 18, 31, 0.08)),
     url("assets/demo-images/demo-hero-coaching.jpg");
 }
 
@@ -1695,13 +1706,13 @@ h3 {
 
 .mini-site-realestate .mini-hero {
   background:
-    linear-gradient(90deg, rgba(6, 18, 31, 0.82) 0 45%, rgba(6, 18, 31, 0.34) 78%, rgba(6, 18, 31, 0.08)),
+    linear-gradient(90deg, rgba(6, 18, 31, 0.86) 0 48%, rgba(6, 18, 31, 0.38) 76%, rgba(6, 18, 31, 0.08)),
     url("assets/demo-images/demo-hero-vastgoed.jpg");
 }
 
 .mini-site-install .mini-hero {
   background:
-    linear-gradient(90deg, rgba(6, 18, 31, 0.8) 0 45%, rgba(15, 118, 110, 0.34) 78%, rgba(15, 118, 110, 0.08)),
+    linear-gradient(90deg, rgba(6, 18, 31, 0.84) 0 48%, rgba(15, 118, 110, 0.38) 76%, rgba(15, 118, 110, 0.08)),
     url("assets/demo-images/demo-hero-installatie.jpg");
 }
 
@@ -1714,7 +1725,7 @@ h3 {
 
 .mini-site-dentist .mini-hero {
   background:
-    linear-gradient(90deg, rgba(12, 74, 110, 0.74) 0 44%, rgba(12, 74, 110, 0.28) 76%, rgba(12, 74, 110, 0.06)),
+    linear-gradient(90deg, rgba(12, 74, 110, 0.78) 0 48%, rgba(12, 74, 110, 0.3) 76%, rgba(12, 74, 110, 0.06)),
     url("assets/demo-images/demo-hero-zorg.jpg");
 }
 
@@ -1727,7 +1738,7 @@ h3 {
 
 .mini-site-auto .mini-hero {
   background:
-    linear-gradient(90deg, rgba(2, 6, 23, 0.9) 0 45%, rgba(2, 6, 23, 0.38) 78%, rgba(2, 6, 23, 0.08)),
+    linear-gradient(90deg, rgba(2, 6, 23, 0.92) 0 48%, rgba(2, 6, 23, 0.4) 76%, rgba(2, 6, 23, 0.08)),
     url("assets/demo-images/demo-hero-automotive.jpg");
 }
 
@@ -1748,7 +1759,7 @@ h3 {
 
 .mini-site-ecommerce .mini-hero {
   background:
-    linear-gradient(90deg, rgba(15, 23, 42, 0.76) 0 44%, rgba(29, 78, 216, 0.28) 76%, rgba(29, 78, 216, 0.06)),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.8) 0 48%, rgba(29, 78, 216, 0.32) 76%, rgba(29, 78, 216, 0.06)),
     url("assets/demo-images/demo-hero-ecommerce.jpg");
 }
 
@@ -1762,11 +1773,11 @@ h3 {
 .demo-auto-block {
   position: relative;
   display: grid;
-  align-content: end;
-  min-height: 174px;
+  align-content: center;
+  min-height: 230px;
   margin-bottom: 18px;
   overflow: hidden;
-  padding: 24px;
+  padding: 72px 24px 28px;
   border-radius: 22px;
   color: var(--white);
   background:
@@ -1796,9 +1807,10 @@ h3 {
 .demo-site-hero strong {
   position: relative;
   z-index: 1;
-  max-width: 250px;
+  max-width: 280px;
   font-size: 30px;
   line-height: 1;
+  letter-spacing: -0.02em;
 }
 
 .demo-site-hero i {
@@ -1809,6 +1821,51 @@ h3 {
   margin-top: 18px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.56);
+}
+
+.demo-menu-card::after,
+.demo-profile-block::after,
+.demo-property-card::after,
+.demo-service-block::after,
+.demo-care-block::after,
+.demo-style-block::after,
+.demo-auto-block::after {
+  position: relative;
+  z-index: 1;
+  max-width: 280px;
+  color: var(--white);
+  font-size: 30px;
+  font-weight: 950;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.demo-menu-card::after {
+  content: "Reserveer jouw tafel.";
+}
+
+.demo-profile-block::after {
+  content: "Meer rust. Meer richting.";
+}
+
+.demo-property-card::after {
+  content: "Vind jouw volgende thuis.";
+}
+
+.demo-service-block::after {
+  content: "Snel geholpen bij installatie.";
+}
+
+.demo-care-block::after {
+  content: "Een gezonde glimlach begint hier.";
+}
+
+.demo-style-block::after {
+  content: "Boek jouw nieuwe look.";
+}
+
+.demo-auto-block::after {
+  content: "Bekijk direct ons aanbod.";
 }
 
 .demo-menu-card,
@@ -2123,16 +2180,17 @@ h3 {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 44px;
+  min-height: 48px;
   margin-top: 24px;
-  padding: 0 16px;
-  border: 1px solid rgba(21, 94, 239, 0.18);
+  padding: 0 18px;
+  border: 1px solid rgba(21, 94, 239, 0.32);
   border-radius: 999px;
-  color: var(--blue);
-  background: rgba(237, 244, 255, 0.82);
+  color: var(--white);
+  background: linear-gradient(135deg, var(--blue), #0b4fd7);
+  box-shadow: 0 18px 42px rgba(21, 94, 239, 0.18);
   font-size: 14px;
   font-weight: 900;
-  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, filter 180ms ease;
 }
 
 .demo-card-link svg {
@@ -2148,8 +2206,9 @@ h3 {
 
 .demo-card-link:hover {
   transform: translateY(-2px);
-  border-color: rgba(21, 94, 239, 0.3);
-  box-shadow: 0 18px 40px rgba(21, 94, 239, 0.12);
+  border-color: rgba(21, 94, 239, 0.42);
+  box-shadow: 0 22px 48px rgba(21, 94, 239, 0.24);
+  filter: saturate(1.05);
 }
 
 .demo-card-link:hover svg {
@@ -7263,16 +7322,16 @@ h3 {
 
   .demo-browser-body {
     min-height: 220px;
-    padding: 18px;
+    padding: 0;
   }
 
   .mini-site {
-    min-height: 226px;
+    min-height: 250px;
   }
 
   .mini-hero {
-    min-height: 116px;
-    padding: 15px;
+    min-height: 162px;
+    padding: 62px 16px 18px;
   }
 
   .mini-hero strong {
