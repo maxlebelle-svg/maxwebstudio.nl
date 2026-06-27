@@ -170,7 +170,8 @@
               <div class="admin-profile-actions">
                 <button class="button primary" id="detail-save" type="submit" disabled>Opslaan</button>
                 <a class="button secondary is-disabled" id="detail-open-website" href="#" target="_blank" rel="noopener" aria-disabled="true">Website openen</a>
-                <a class="button secondary" href="/login.html" target="_blank" rel="noopener">Klantportaal openen</a>
+                <a class="button secondary is-disabled" id="detail-open-portal" href="#" target="_blank" rel="noopener" aria-disabled="true">Open klantportaal</a>
+                <button class="button secondary" id="detail-copy-portal" type="button" disabled>Kopieer klantportaal-link</button>
                 <button class="button secondary" id="detail-start-project" type="button" disabled>Project starten</button>
                 <button class="button secondary" id="detail-add-file" type="button" disabled>Bestand toevoegen</button>
                 <button class="button secondary" id="detail-view-files" type="button" disabled>Bestanden bekijken</button>
@@ -247,6 +248,7 @@
                 <a class="button secondary is-disabled" id="website-open-netlify" href="#" target="_blank" rel="noopener" aria-disabled="true">Open Netlify</a>
                 <button class="button secondary" id="website-copy-domain" type="button" disabled>Kopieer domein</button>
                 <button class="button secondary" id="website-copy-github" type="button" disabled>Kopieer GitHub URL</button>
+                <a class="button secondary is-disabled" id="website-open-portal" href="#" target="_blank" rel="noopener" aria-disabled="true">Open klantportaal</a>
                 <button class="button secondary" id="website-start-project" type="button" disabled>Project koppelen/starten</button>
                 <button class="button secondary" id="website-create-quote" type="button" disabled>Offerte aanmaken</button>
                 <button class="button secondary" id="website-view-quotes" type="button" disabled>Offertes bekijken</button>
@@ -316,6 +318,7 @@
                 <button class="button primary" id="project-save" type="submit" disabled>Project opslaan</button>
                 <button class="button secondary" id="project-add-file" type="button" disabled>Bestand toevoegen</button>
                 <button class="button secondary" id="project-view-files" type="button" disabled>Bestanden bekijken</button>
+                <a class="button secondary is-disabled" id="project-open-portal" href="#" target="_blank" rel="noopener" aria-disabled="true">Open klantportaal</a>
                 <button class="button secondary" id="project-create-quote" type="button" disabled>Offerte aanmaken</button>
                 <button class="button secondary" id="project-view-quotes" type="button" disabled>Offertes bekijken</button>
                 <button class="button secondary" id="project-create-invoice" type="button" disabled>Factuur aanmaken</button>
@@ -907,6 +910,7 @@
           staging: document.getElementById("website-open-staging"),
           github: document.getElementById("website-open-github"),
           netlify: document.getElementById("website-open-netlify"),
+          portal: document.getElementById("website-open-portal"),
           copyDomain: document.getElementById("website-copy-domain"),
           copyGithub: document.getElementById("website-copy-github"),
           startProject: document.getElementById("website-start-project"),
@@ -931,6 +935,7 @@
         const projectSave = document.getElementById("project-save");
         const projectAddFile = document.getElementById("project-add-file");
         const projectViewFiles = document.getElementById("project-view-files");
+        const projectOpenPortal = document.getElementById("project-open-portal");
         const projectCreateQuote = document.getElementById("project-create-quote");
         const projectViewQuotes = document.getElementById("project-view-quotes");
         const projectCreateInvoice = document.getElementById("project-create-invoice");
@@ -1118,6 +1123,8 @@
         const detailSubtitle = document.getElementById("customer-detail-subtitle");
         const detailMessage = document.getElementById("customer-detail-message");
         const detailOpenWebsite = document.getElementById("detail-open-website");
+        const detailOpenPortal = document.getElementById("detail-open-portal");
+        const detailCopyPortal = document.getElementById("detail-copy-portal");
         const detailStartProject = document.getElementById("detail-start-project");
         const detailAddFile = document.getElementById("detail-add-file");
         const detailViewFiles = document.getElementById("detail-view-files");
@@ -1844,6 +1851,10 @@
           return `/betalen.html?invoiceId=${encodeURIComponent(id)}`;
         }
 
+        function customerPortalUrl(id) {
+          return `/klantportaal.html?customerId=${encodeURIComponent(id || "")}`;
+        }
+
         function normalizeInvoice(invoice = {}) {
           const now = new Date().toISOString();
           const createdAt = invoice.createdAt || now;
@@ -2326,6 +2337,10 @@
           detailOpenWebsite.href = customer.website || "#";
           detailOpenWebsite.classList.toggle("is-disabled", !customer.website);
           detailOpenWebsite.toggleAttribute("aria-disabled", !customer.website);
+          detailOpenPortal.href = customerPortalUrl(customer.id);
+          detailOpenPortal.classList.remove("is-disabled");
+          detailOpenPortal.toggleAttribute("aria-disabled", false);
+          detailCopyPortal.disabled = false;
           detailStartProject.disabled = false;
           detailAddFile.disabled = false;
           detailViewFiles.disabled = false;
@@ -2616,6 +2631,7 @@
           setActionLink(websiteQuickActions.staging, website?.stagingUrl || "");
           setActionLink(websiteQuickActions.github, website?.githubRepoUrl || "");
           setActionLink(websiteQuickActions.netlify, website ? netlifyUrl(website) : "");
+          setActionLink(websiteQuickActions.portal, website?.profileId ? customerPortalUrl(website.profileId) : "");
           websiteQuickActions.copyDomain.disabled = !website?.domain;
           websiteQuickActions.copyGithub.disabled = !website?.githubRepoUrl;
           websiteQuickActions.startProject.disabled = !website;
@@ -3124,6 +3140,9 @@
           projectDelete.disabled = !enabled || !state.selectedProjectId;
           projectAddFile.disabled = !enabled || !state.selectedProjectId;
           projectViewFiles.disabled = !enabled || !state.selectedProjectId;
+          projectOpenPortal.classList.toggle("is-disabled", !enabled || !state.selectedProjectId || !projectFields.customer.value);
+          projectOpenPortal.toggleAttribute("aria-disabled", !enabled || !state.selectedProjectId || !projectFields.customer.value);
+          projectOpenPortal.href = enabled && state.selectedProjectId && projectFields.customer.value ? customerPortalUrl(projectFields.customer.value) : "#";
           projectCreateQuote.disabled = !enabled || !state.selectedProjectId;
           projectViewQuotes.disabled = !enabled || !state.selectedProjectId;
           projectCreateInvoice.disabled = !enabled || !state.selectedProjectId;
@@ -3313,6 +3332,9 @@
           populateProjectOptions(project.customerId || "");
           projectFields.customer.value = project.customerId || "";
           projectFields.website.value = project.websiteId || "";
+          projectOpenPortal.href = project.customerId ? customerPortalUrl(project.customerId) : "#";
+          projectOpenPortal.classList.toggle("is-disabled", !project.customerId);
+          projectOpenPortal.toggleAttribute("aria-disabled", !project.customerId);
           projectFields.name.value = project.name || "";
           projectFields.type.value = project.type || "Nieuwe website";
           projectFields.status.value = project.status || "nieuw";
@@ -5499,7 +5521,7 @@
         invoiceClearPdf.addEventListener("click", clearInvoicePdfPath);
         websiteArchive.addEventListener("click", archiveWebsite);
         [websiteSearch, websiteStatusFilter, websiteHostingFilter, websiteCareFilter].forEach((filter) => filter.addEventListener("input", renderWebsites));
-        [websiteQuickActions.live, websiteQuickActions.staging, websiteQuickActions.github, websiteQuickActions.netlify].forEach((link) => {
+        [websiteQuickActions.live, websiteQuickActions.staging, websiteQuickActions.github, websiteQuickActions.netlify, websiteQuickActions.portal, detailOpenPortal, projectOpenPortal].forEach((link) => {
           link.addEventListener("click", (event) => {
             if (event.currentTarget.getAttribute("aria-disabled") === "true") event.preventDefault();
           });
@@ -5521,6 +5543,10 @@
         detailResetPassword.addEventListener("click", sendPasswordReset);
         detailSendInvite.addEventListener("click", sendInviteFromDetail);
         detailArchive.addEventListener("click", archiveCustomer);
+        detailCopyPortal.addEventListener("click", () => {
+          const customer = selectedCustomer();
+          if (customer) copyText(customerPortalUrl(customer.id), "Klantportaal-link gekopieerd.", setDetailMessage);
+        });
         detailStartProject.addEventListener("click", startProjectFromCustomer);
         detailAddFile.addEventListener("click", startFileFromCustomer);
         detailViewFiles.addEventListener("click", viewFilesForCustomer);

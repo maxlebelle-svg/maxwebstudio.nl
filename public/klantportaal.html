@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Klantportaal demo | Max Webstudio</title>
+    <meta name="description" content="Demo-klantportaal voor Max Webstudio klanten met offertes, facturen, projecten, websites en bestanden." />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="portal-body">
+    <main class="portal-shell customer-portal-demo">
+      <header class="portal-header">
+        <div>
+          <p class="section-kicker">Max Webstudio klantportaal</p>
+          <h1 id="portal-title">Klantportaal laden...</h1>
+          <p id="portal-subtitle">Een overzicht van je websites, projecten, offertes, facturen en bestanden.</p>
+        </div>
+        <a class="button secondary" href="index.html">Terug naar website</a>
+      </header>
+
+      <section class="portal-message" role="note">
+        <strong>Demo klantportaal</strong>
+        <span>Deze pagina gebruikt lokale data uit deze browser en heeft nog geen echte login of beveiliging. Er worden geen interne admin-notities getoond.</span>
+      </section>
+
+      <section class="admin-grid customer-portal-kpis" aria-label="Klantoverzicht">
+        <article class="admin-card metric-card"><span>Open offertes</span><strong id="metric-quotes">0</strong><small>Concept of verzonden</small></article>
+        <article class="admin-card metric-card"><span>Open facturen</span><strong id="metric-invoices">0</strong><small id="metric-invoice-total">€ 0,00 openstaand</small></article>
+        <article class="admin-card metric-card"><span>Lopende projecten</span><strong id="metric-projects">0</strong><small>Niet afgerond</small></article>
+        <article class="admin-card metric-card"><span>Actieve websites</span><strong id="metric-websites">0</strong><small>Online of actief</small></article>
+      </section>
+
+      <section class="admin-card customer-portal-profile" id="customer-profile" aria-live="polite"></section>
+
+      <section class="admin-section">
+        <div class="admin-section-heading"><div><p class="section-kicker">Offertes</p><h2>Jouw offertes</h2></div></div>
+        <div class="portal-table" id="portal-quotes" aria-live="polite"></div>
+      </section>
+
+      <section class="admin-section">
+        <div class="admin-section-heading"><div><p class="section-kicker">Facturen</p><h2>Jouw facturen</h2></div></div>
+        <div class="portal-table" id="portal-invoices" aria-live="polite"></div>
+      </section>
+
+      <section class="admin-section">
+        <div class="admin-section-heading"><div><p class="section-kicker">Projecten</p><h2>Projectstatus</h2></div></div>
+        <div class="portal-card-grid" id="portal-projects" aria-live="polite"></div>
+      </section>
+
+      <section class="admin-section">
+        <div class="admin-section-heading"><div><p class="section-kicker">Websites</p><h2>Jouw websites</h2></div></div>
+        <div class="portal-card-grid" id="portal-websites" aria-live="polite"></div>
+      </section>
+
+      <section class="admin-section">
+        <div class="admin-section-heading"><div><p class="section-kicker">Bestanden</p><h2>Bestanden & links</h2></div></div>
+        <div class="portal-card-grid" id="portal-files" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <script>
+      (() => {
+        const params = new URLSearchParams(window.location.search);
+        const customerId = params.get("customerId") || "";
+        const portalTitle = document.getElementById("portal-title");
+        const portalSubtitle = document.getElementById("portal-subtitle");
+        const customerProfile = document.getElementById("customer-profile");
+        const quoteList = document.getElementById("portal-quotes");
+        const invoiceList = document.getElementById("portal-invoices");
+        const projectList = document.getElementById("portal-projects");
+        const websiteList = document.getElementById("portal-websites");
+        const fileList = document.getElementById("portal-files");
+        const metrics = {
+          quotes: document.getElementById("metric-quotes"),
+          invoices: document.getElementById("metric-invoices"),
+          invoiceTotal: document.getElementById("metric-invoice-total"),
+          projects: document.getElementById("metric-projects"),
+          websites: document.getElementById("metric-websites"),
+        };
+
+        const money = (value) => new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(Number(value || 0));
+        const formatDate = (value) => {
+          if (!value) return "-";
+          const date = new Date(value);
+          return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("nl-NL");
+        };
+        const normalize = (value) => String(value || "").trim().toLowerCase().replace(/[_-]+/g, " ");
+        const externalUrl = (value) => {
+          const url = String(value || "").trim();
+          if (!url) return "";
+          if (/^https?:\/\//i.test(url) || url.startsWith("/")) return url;
+          return `https://${url}`;
+        };
+
+        function readStorage(...keys) {
+          for (const key of keys) {
+            try {
+              const value = JSON.parse(localStorage.getItem(key) || "[]");
+              if (Array.isArray(value) && value.length) return value;
+            } catch (error) {
+              // Try the next known key.
+            }
+          }
+          return [];
+        }
+
+        function belongsToCustomer(item) {
+          return [item.customerId, item.profileId, item.authUserId].filter(Boolean).map(String).includes(String(customerId));
+        }
+
+        function statusClass(value) {
+          const status = normalize(value);
+          if (["actief", "active", "online", "live", "betaald", "paid", "geaccepteerd", "goedgekeurd"].includes(status)) return "status-active";
+          if (["concept", "verzonden", "nieuw", "onboarding", "in ontwerp", "in ontwikkeling", "feedback", "testen"].includes(status)) return "status-prepared";
+          if (["verlopen", "wacht op klant", "wachten op klant", "paused", "pauze", "onderhoud"].includes(status)) return "status-warning";
+          return "status-attention";
+        }
+
+        function labelForStatus(value) {
+          const labels = {
+            concept: "Concept",
+            verzonden: "Verzonden",
+            geaccepteerd: "Geaccepteerd",
+            afgewezen: "Afgewezen",
+            verlopen: "Verlopen",
+            geannuleerd: "Geannuleerd",
+            betaald: "Betaald",
+            nieuw: "Nieuw",
+            onboarding: "Onboarding",
+            in_ontwerp: "In ontwerp",
+            in_ontwikkeling: "In ontwikkeling",
+            feedback: "Feedback",
+            testen: "Testen",
+            live: "Live",
+            onderhoud: "Onderhoud",
+            gepauzeerd: "Gepauzeerd",
+            online: "Online",
+            development: "In ontwikkeling",
+            maintenance: "Onderhoud",
+            waiting_client: "Wachten op klant",
+            offline: "Offline",
+            actief: "Actief",
+            in_review: "In review",
+            goedgekeurd: "Goedgekeurd",
+            gearchiveerd: "Gearchiveerd",
+          };
+          return labels[value] || value || "-";
+        }
+
+        function createBadge(value) {
+          const badge = document.createElement("span");
+          badge.className = `status-badge ${statusClass(value)}`;
+          badge.textContent = labelForStatus(value);
+          return badge;
+        }
+
+        function createEmpty(title, text) {
+          const card = document.createElement("article");
+          card.className = "admin-card request-card request-state-card";
+          const wrap = document.createElement("div");
+          const strong = document.createElement("strong");
+          const span = document.createElement("span");
+          strong.textContent = title;
+          span.textContent = text;
+          wrap.append(strong, span);
+          card.append(wrap);
+          return card;
+        }
+
+        function createActionLink(label, href) {
+          const link = document.createElement("a");
+          link.className = `button secondary${href ? "" : " is-disabled"}`;
+          link.href = href || "#";
+          link.target = "_blank";
+          link.rel = "noopener";
+          link.textContent = label;
+          if (!href) link.setAttribute("aria-disabled", "true");
+          link.addEventListener("click", (event) => {
+            if (!href) event.preventDefault();
+          });
+          return link;
+        }
+
+        function copyValue(value) {
+          if (!value) return;
+          if (navigator.clipboard?.writeText) {
+            navigator.clipboard.writeText(value);
+            return;
+          }
+          const field = document.createElement("textarea");
+          field.value = value;
+          document.body.append(field);
+          field.select();
+          document.execCommand("copy");
+          field.remove();
+        }
+
+        function renderTable(target, rows, headers, rowBuilder, emptyTitle, emptyText) {
+          target.replaceChildren();
+          if (!rows.length) {
+            target.append(createEmpty(emptyTitle, emptyText));
+            return;
+          }
+          const head = document.createElement("div");
+          head.className = "admin-table-row admin-table-head portal-customer-row";
+          headers.forEach((label) => {
+            const cell = document.createElement("span");
+            cell.textContent = label;
+            head.append(cell);
+          });
+          target.append(head);
+          rows.forEach((row) => target.append(rowBuilder(row)));
+        }
+
+        function createInfoCard(title, pairs, actions = []) {
+          const card = document.createElement("article");
+          card.className = "admin-card customer-portal-card";
+          const heading = document.createElement("strong");
+          heading.textContent = title;
+          const dl = document.createElement("dl");
+          dl.className = "summary-lines";
+          pairs.forEach(([label, value]) => {
+            const item = document.createElement("div");
+            const dt = document.createElement("dt");
+            const dd = document.createElement("dd");
+            dt.textContent = label;
+            if (value instanceof Node) dd.append(value);
+            else dd.textContent = value || "-";
+            item.append(dt, dd);
+            dl.append(item);
+          });
+          const actionWrap = document.createElement("div");
+          actionWrap.className = "portal-actions";
+          actions.forEach((action) => actionWrap.append(action));
+          card.append(heading, dl);
+          if (actions.length) card.append(actionWrap);
+          return card;
+        }
+
+        const customers = readStorage("maxwebstudioCustomers", "maxwebstudioCrmCustomers");
+        const websites = readStorage("maxwebstudioWebsites", "maxwebstudioManagedSites").filter(belongsToCustomer);
+        const projects = readStorage("maxwebstudioProjects").filter(belongsToCustomer);
+        const files = readStorage("maxwebstudioFiles").filter(belongsToCustomer);
+        const invoices = readStorage("maxwebstudioInvoices").filter(belongsToCustomer);
+        const quotes = readStorage("maxwebstudioQuotes").filter(belongsToCustomer);
+        const customer = customers.find((item) => String(item.id) === String(customerId));
+
+        if (!customer) {
+          portalTitle.textContent = "Klant niet gevonden";
+          portalSubtitle.textContent = "Open het klantportaal opnieuw vanuit het admin-dashboard.";
+          customerProfile.append(createEmpty("Geen klantdata", "Deze klant staat niet in de lokale CRM-opslag van deze browser."));
+          [quoteList, invoiceList, projectList, websiteList, fileList].forEach((target) => target.append(createEmpty("Geen data", "Geen klant geselecteerd.")));
+          return;
+        }
+
+        const openQuotes = quotes.filter((quote) => ["concept", "verzonden"].includes(quote.status));
+        const openInvoices = invoices.filter((invoice) => ["concept", "verzonden", "verlopen"].includes(invoice.status));
+        const runningProjects = projects.filter((project) => !["live", "onderhoud", "gepauzeerd"].includes(project.status));
+        const activeWebsites = websites.filter((website) => ["online", "active", "live"].includes(website.status));
+        const openInvoiceTotal = openInvoices.reduce((sum, invoice) => sum + Number(invoice.total || invoice.amount || 0), 0);
+
+        portalTitle.textContent = `Welkom ${customer.name || customer.company || "terug"}`;
+        portalSubtitle.textContent = customer.company || customer.email || "Jouw Max Webstudio overzicht";
+        metrics.quotes.textContent = String(openQuotes.length);
+        metrics.invoices.textContent = String(openInvoices.length);
+        metrics.invoiceTotal.textContent = `${money(openInvoiceTotal)} openstaand`;
+        metrics.projects.textContent = String(runningProjects.length);
+        metrics.websites.textContent = String(activeWebsites.length);
+
+        customerProfile.append(createInfoCard("Klantgegevens", [
+          ["Naam", customer.name],
+          ["Bedrijf", customer.company],
+          ["E-mail", customer.email],
+          ["Telefoon", customer.phone],
+          ["Onderhoudspakket", customer.package],
+          ["Klant sinds", formatDate(customer.customerSince || customer.createdAt)],
+        ]));
+
+        renderTable(quoteList, quotes, ["Offerte", "Status", "Datum", "Geldig tot", "Totaal", "Actie"], (quote) => {
+          const row = document.createElement("div");
+          row.className = "admin-table-row portal-customer-row";
+          row.append(
+            Object.assign(document.createElement("span"), { textContent: quote.quoteNumber || "-" }),
+            createBadge(quote.status),
+            Object.assign(document.createElement("span"), { textContent: formatDate(quote.quoteDate) }),
+            Object.assign(document.createElement("span"), { textContent: formatDate(quote.validUntil) }),
+            Object.assign(document.createElement("span"), { textContent: money(quote.total || quote.amount) }),
+            createActionLink("Bekijk offerte", quote.id ? `/offerte.html?quoteId=${encodeURIComponent(quote.id)}` : "")
+          );
+          return row;
+        }, "Geen offertes", "Er zijn nog geen offertes gekoppeld aan dit klantprofiel.");
+
+        renderTable(invoiceList, invoices, ["Factuur", "Status", "Datum", "Vervaldatum", "Totaal", "Actie"], (invoice) => {
+          const row = document.createElement("div");
+          row.className = "admin-table-row portal-customer-row";
+          row.append(
+            Object.assign(document.createElement("span"), { textContent: invoice.invoiceNumber || "-" }),
+            createBadge(invoice.status),
+            Object.assign(document.createElement("span"), { textContent: formatDate(invoice.invoiceDate) }),
+            Object.assign(document.createElement("span"), { textContent: formatDate(invoice.dueDate) }),
+            Object.assign(document.createElement("span"), { textContent: money(invoice.total || invoice.amount) }),
+            createActionLink("Bekijk/betaal factuur", invoice.id ? `/betalen.html?invoiceId=${encodeURIComponent(invoice.id)}` : "")
+          );
+          return row;
+        }, "Geen facturen", "Er zijn nog geen facturen gekoppeld aan dit klantprofiel.");
+
+        if (!projects.length) projectList.append(createEmpty("Geen projecten", "Er staan nog geen projecten klaar voor dit klantprofiel."));
+        projects.forEach((project) => {
+          projectList.append(createInfoCard(project.name || "Project", [
+            ["Status", createBadge(project.status)],
+            ["Fase", project.phase],
+            ["Startdatum", formatDate(project.startDate)],
+            ["Verwachte oplevering", formatDate(project.deadline)],
+            ["Voortgang", `${project.progress || 0}%`],
+          ]));
+        });
+
+        if (!websites.length) websiteList.append(createEmpty("Geen websites", "Er is nog geen website gekoppeld aan dit klantprofiel."));
+        websites.forEach((website) => {
+          websiteList.append(createInfoCard(website.name || website.domain || "Website", [
+            ["Domein", website.domain],
+            ["Status", createBadge(website.status)],
+            ["Hostingpakket", website.hostingPackage],
+            ["Onderhoudsplan", website.carePackage],
+            ["SSL", website.sslStatus],
+          ], [createActionLink("Website openen", externalUrl(website.liveUrl || website.domain))]));
+        });
+
+        if (!files.length) fileList.append(createEmpty("Geen bestanden", "Er zijn nog geen klantveilige bestanden of links geregistreerd."));
+        files.forEach((file) => {
+          const location = file.location || file.url || "";
+          const openable = /^https?:\/\//i.test(location) || location.startsWith("/");
+          const copy = document.createElement("button");
+          copy.className = "button secondary";
+          copy.type = "button";
+          copy.textContent = "Kopieer link";
+          copy.disabled = !location;
+          copy.addEventListener("click", () => copyValue(location));
+          fileList.append(createInfoCard(file.name || "Bestand", [
+            ["Type", file.type],
+            ["Categorie", file.category],
+            ["Status", createBadge(file.status)],
+            ["Locatie", location || "-"],
+          ], [createActionLink("Openen", openable ? location : ""), copy]));
+        });
+      })();
+    </script>
+  </body>
+</html>

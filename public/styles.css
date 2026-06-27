@@ -6139,6 +6139,51 @@ h3 {
   grid-template-columns: minmax(110px, 0.8fr) minmax(140px, 1.1fr) minmax(90px, 0.65fr) minmax(100px, 0.75fr) minmax(110px, 0.8fr) minmax(115px, 0.8fr) minmax(170px, 1fr);
 }
 
+.customer-portal-demo {
+  gap: 24px;
+}
+
+.customer-portal-kpis {
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+}
+
+.customer-portal-profile {
+  display: grid;
+}
+
+.portal-table {
+  display: grid;
+  gap: 10px;
+}
+
+.portal-customer-row {
+  grid-template-columns: minmax(130px, 1fr) minmax(100px, 0.7fr) minmax(95px, 0.7fr) minmax(95px, 0.7fr) minmax(105px, 0.75fr) minmax(150px, 0.9fr);
+}
+
+.portal-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.customer-portal-card {
+  display: grid;
+  gap: 16px;
+}
+
+.customer-portal-card > strong {
+  color: var(--white);
+  font-size: 18px;
+}
+
+.customer-portal-card .summary-lines {
+  margin: 0;
+}
+
+.customer-portal-card .portal-actions {
+  justify-content: flex-start;
+}
+
 .portal-file-list .button {
   white-space: nowrap;
 }
@@ -7911,6 +7956,7 @@ h3 {
   .client-profile-table .client-profile-row,
   .portal-request-table .portal-request-row,
   .portal-invoice-table .portal-invoice-row,
+  .portal-customer-row,
   .request-card {
     grid-template-columns: 1fr;
   }
@@ -7965,6 +8011,7 @@ h3 {
   }
 
   .portal-auth-shell,
+  .customer-portal-kpis,
   .portal-website-grid,
   .health-summary-grid,
   .website-health-metrics,
