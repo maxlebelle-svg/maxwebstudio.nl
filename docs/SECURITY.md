@@ -215,6 +215,15 @@ Mollie subscription retries in Fase 6.4:
 - klanten zien alleen klantvriendelijke betaalprobleemmeldingen via RLS
 - klanten kunnen geen retry-mails triggeren en geen retry-status wijzigen
 
+Business Intelligence dashboard in Fase 6.5:
+
+- metrics lopen via `/.netlify/functions/admin-dashboard-metrics`
+- `ADMIN_TOKEN` is verplicht
+- `SUPABASE_SERVICE_ROLE_KEY` blijft server-side
+- de browser ontvangt alleen samengevatte KPI's, grafiekpunten en beperkte actiepunten
+- er worden geen secrets, service role keys of ruwe betaalproviderresponses naar de frontend gestuurd
+- het dashboard is nog geen vervanging voor echte admin-auth met rollen en audit trail
+
 Aanbevelingen:
 
 - limieten blijven handhaven

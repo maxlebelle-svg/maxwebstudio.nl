@@ -300,6 +300,36 @@ Klantportaal:
 3. Controleer dat technische Mollie foutcodes niet zichtbaar zijn.
 4. Als `mandate_checkout_url` beschikbaar is, controleer dat `Voltooi machtiging` zichtbaar blijft.
 
+## Business Dashboard Testen
+
+Voor Fase 6.5:
+
+1. Open `/admin-dashboard.html`.
+2. Vul `ADMIN_TOKEN` in en klik `Laden`.
+3. Controleer dat `/.netlify/functions/admin-dashboard-metrics` een JSON response geeft.
+4. Controleer bovenaan het dashboard:
+   - Monthly Recurring Revenue
+   - Annual Recurring Revenue
+   - Actieve klanten
+   - Websites
+   - Actieve abonnementen
+   - Hoog risico
+   - Open facturen
+   - Betaalde facturen
+5. Wissel de periodefilter tussen vandaag, deze maand, dit kwartaal, dit jaar en alles.
+6. Controleer dat de grafieken opnieuw renderen.
+7. Maak of simuleer:
+   - een verlopen factuur
+   - een retryprobleem
+   - een wachtende mandate
+   - een hoog-risico subscription
+8. Controleer dat deze zichtbaar worden in `Actie vereist`.
+9. Klik `Open klant` en controleer dat het klantdetailpaneel opent wanneer een profiel gekoppeld is.
+
+Veelvoorkomende fout:
+
+- `Dashboardmetrics konden niet worden geladen`: controleer `ADMIN_TOKEN`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` en of de relevante Supabase-tabellen bestaan.
+
 ### Factuurmail kan niet worden verzonden
 
 Controleer:

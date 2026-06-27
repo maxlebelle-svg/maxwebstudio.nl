@@ -189,3 +189,8 @@ Belangrijk:
 - `/.netlify/functions/admin-subscription-retry` beheert retry-acties zoals markeren als opgelost, retry-mail versturen, adminnotitie opslaan en synchroniseren.
 - Het admin-dashboard toont mislukte betalingen, retry status, risiconiveau, volgende actie, laatste retry-mail en adminnotities in de Onderhoud-module.
 - Het klantdashboard toont bij betaalproblemen alleen een klantvriendelijke melding en eventueel de bestaande mandate checkout-knop.
+- Fase 6.5 voegt een Business Intelligence dashboard toe aan de bovenkant van het Admin CRM.
+- `/.netlify/functions/admin-dashboard-metrics` berekent KPI's server-side met `ADMIN_TOKEN` en Supabase service role.
+- Het dashboard toont MRR, ARR, actieve klanten, websites, actieve abonnementen, hoog risico, factuur-KPI's, mandate-wachtrij, retrydruk en open wijzigingsverzoeken.
+- Eenvoudige SVG-grafieken tonen omzet per maand, abonnementengroei, factuurstatusverdeling en abonnementstatusverdeling zonder externe chart library.
+- Documentatie voor KPI-definities staat in `/docs/BUSINESS_DASHBOARD.md`.

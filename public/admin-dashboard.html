@@ -68,6 +68,41 @@
           <article class="admin-card metric-card"><span>SSL actief</span><strong id="metric-ssl-active">-</strong><small>SSL-status active</small></article>
         </section>
 
+        <section class="admin-section bi-dashboard-section" aria-label="Business intelligence dashboard">
+          <div class="admin-section-heading">
+            <div>
+              <p class="section-kicker">Business Intelligence</p>
+              <h2>Managementdashboard</h2>
+            </div>
+            <label class="bi-period-filter" for="bi-period-filter">Periode<select id="bi-period-filter"><option value="today">Vandaag</option><option value="month" selected>Deze maand</option><option value="quarter">Dit kwartaal</option><option value="year">Dit jaar</option><option value="all">Alles</option></select></label>
+          </div>
+          <div class="admin-grid bi-kpi-grid" id="bi-primary-kpis" aria-live="polite">
+            <article class="admin-card metric-card"><span>💶 Monthly Recurring Revenue</span><strong id="kpi-mrr">-</strong><small>MRR</small></article>
+            <article class="admin-card metric-card"><span>💰 Annual Recurring Revenue</span><strong id="kpi-arr">-</strong><small>ARR</small></article>
+            <article class="admin-card metric-card"><span>👥 Actieve klanten</span><strong id="kpi-active-customers">-</strong><small>Klantstatus actief</small></article>
+            <article class="admin-card metric-card"><span>🌐 Websites</span><strong id="kpi-websites">-</strong><small>Met website</small></article>
+            <article class="admin-card metric-card"><span>📦 Actieve abonnementen</span><strong id="kpi-active-subscriptions">-</strong><small>Subscription actief</small></article>
+            <article class="admin-card metric-card"><span>⚠ Hoog risico</span><strong id="kpi-high-risk">-</strong><small>Risk high</small></article>
+            <article class="admin-card metric-card"><span>📄 Open facturen</span><strong id="kpi-open-invoices">-</strong><small>Openstaand</small></article>
+            <article class="admin-card metric-card"><span>✅ Betaalde facturen</span><strong id="kpi-paid-invoices">-</strong><small>Betaald</small></article>
+          </div>
+          <div class="admin-grid bi-kpi-grid bi-secondary-kpis" aria-live="polite">
+            <article class="admin-card detail-card"><span>Machtigingen wachten</span><strong id="kpi-waiting-mandates">-</strong></article>
+            <article class="admin-card detail-card"><span>Retry nodig</span><strong id="kpi-retry-needed">-</strong></article>
+            <article class="admin-card detail-card"><span>Open wijzigingsverzoeken</span><strong id="kpi-open-requests">-</strong></article>
+            <article class="admin-card detail-card"><span>Opzeggingen</span><strong id="kpi-cancellations">-</strong></article>
+            <article class="admin-card detail-card"><span>Pauzeringen</span><strong id="kpi-pauses">-</strong></article>
+            <article class="admin-card detail-card"><span>Betaalproblemen</span><strong id="kpi-payment-issues">-</strong></article>
+          </div>
+          <div class="bi-dashboard-grid">
+            <article class="admin-card bi-chart-card"><div><span>Omzet per maand</span><strong id="chart-revenue-total">-</strong></div><div class="bi-chart" id="chart-revenue"></div></article>
+            <article class="admin-card bi-chart-card"><div><span>Abonnementen groei</span><strong id="chart-subscription-total">-</strong></div><div class="bi-chart" id="chart-subscriptions"></div></article>
+            <article class="admin-card bi-chart-card"><div><span>Factuurstatus verdeling</span><strong id="chart-invoice-total">-</strong></div><div class="bi-chart" id="chart-invoices"></div></article>
+            <article class="admin-card bi-chart-card"><div><span>Abonnementstatus verdeling</span><strong id="chart-subscription-status-total">-</strong></div><div class="bi-chart" id="chart-subscription-status"></div></article>
+          </div>
+          <div class="admin-table bi-action-table" id="bi-action-list" role="table" aria-label="Actie vereist" aria-live="polite"></div>
+        </section>
+
         <section class="admin-section" id="klanten">
           <div class="admin-section-heading">
             <div>
@@ -369,6 +404,7 @@
         const crmEndpoint = "/.netlify/functions/admin-client-profiles";
         const healthEndpoint = "/.netlify/functions/admin-website-health";
         const billingEndpoint = "/.netlify/functions/admin-billing";
+        const dashboardMetricsEndpoint = "/.netlify/functions/admin-dashboard-metrics";
         const molliePaymentEndpoint = "/.netlify/functions/admin-mollie-payment";
         const mollieSubscriptionEndpoint = "/.netlify/functions/admin-mollie-subscription";
         const mollieSubscriptionActionEndpoint = "/.netlify/functions/admin-mollie-subscription-action";
@@ -411,6 +447,7 @@
           selectedSubscriptionId: "",
           selectedInvoiceId: "",
           selectedRequestId: "",
+          dashboardMetrics: null,
         };
 
         const adminTokenInput = document.getElementById("admin-token");
@@ -421,6 +458,34 @@
         const liveWebsitesMetric = document.getElementById("metric-live-websites");
         const hostingActiveMetric = document.getElementById("metric-hosting-active");
         const sslActiveMetric = document.getElementById("metric-ssl-active");
+        const biPeriodFilter = document.getElementById("bi-period-filter");
+        const biActionList = document.getElementById("bi-action-list");
+        const biKpis = {
+          mrr: document.getElementById("kpi-mrr"),
+          arr: document.getElementById("kpi-arr"),
+          activeCustomers: document.getElementById("kpi-active-customers"),
+          websites: document.getElementById("kpi-websites"),
+          activeSubscriptions: document.getElementById("kpi-active-subscriptions"),
+          highRisk: document.getElementById("kpi-high-risk"),
+          openInvoices: document.getElementById("kpi-open-invoices"),
+          paidInvoices: document.getElementById("kpi-paid-invoices"),
+          waitingMandates: document.getElementById("kpi-waiting-mandates"),
+          retryNeeded: document.getElementById("kpi-retry-needed"),
+          openRequests: document.getElementById("kpi-open-requests"),
+          cancellations: document.getElementById("kpi-cancellations"),
+          pauses: document.getElementById("kpi-pauses"),
+          paymentIssues: document.getElementById("kpi-payment-issues"),
+        };
+        const biCharts = {
+          revenue: document.getElementById("chart-revenue"),
+          subscriptions: document.getElementById("chart-subscriptions"),
+          invoices: document.getElementById("chart-invoices"),
+          subscriptionStatus: document.getElementById("chart-subscription-status"),
+          revenueTotal: document.getElementById("chart-revenue-total"),
+          subscriptionTotal: document.getElementById("chart-subscription-total"),
+          invoiceTotal: document.getElementById("chart-invoice-total"),
+          subscriptionStatusTotal: document.getElementById("chart-subscription-status-total"),
+        };
         const customerList = document.getElementById("customer-list");
         const websiteList = document.getElementById("website-list");
         const websiteDetailForm = document.getElementById("website-detail-form");
@@ -651,6 +716,128 @@
           liveWebsitesMetric.textContent = String(liveWebsites);
           hostingActiveMetric.textContent = String(hostingActive);
           sslActiveMetric.textContent = String(sslActive);
+        }
+
+        async function loadDashboardMetrics(showLoading = false) {
+          if (!state.adminToken) return;
+          if (showLoading) renderState(biActionList, "Dashboardmetrics laden...", "KPI's worden opgehaald.", "Laden", "status-prepared");
+          try {
+            const period = biPeriodFilter.value || "month";
+            const response = await fetch(`${dashboardMetricsEndpoint}?period=${encodeURIComponent(period)}`, {
+              headers: { Accept: "application/json", Authorization: `Bearer ${state.adminToken}` },
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data.success) throw new Error(data.error || "Dashboardmetrics konden niet worden geladen.");
+            state.dashboardMetrics = data.metrics || null;
+            renderBusinessDashboard();
+          } catch (error) {
+            renderState(biActionList, "Dashboardmetrics niet beschikbaar", error.message || "Controleer Supabase configuratie.", "Fout", "status-attention");
+          }
+        }
+
+        function renderBusinessDashboard() {
+          const metrics = state.dashboardMetrics;
+          if (!metrics) return;
+          biKpis.mrr.textContent = money(metrics.finance?.mrr);
+          biKpis.arr.textContent = money(metrics.finance?.arr);
+          biKpis.activeCustomers.textContent = String(metrics.customers?.active ?? 0);
+          biKpis.websites.textContent = `${metrics.customers?.withWebsite ?? 0}/${metrics.customers?.total ?? 0}`;
+          biKpis.activeSubscriptions.textContent = String(metrics.subscriptions?.active ?? 0);
+          biKpis.highRisk.textContent = String(metrics.subscriptions?.highRisk ?? 0);
+          biKpis.openInvoices.textContent = String(metrics.finance?.openInvoices ?? 0);
+          biKpis.paidInvoices.textContent = String(metrics.finance?.paidInvoices ?? 0);
+          biKpis.waitingMandates.textContent = String(metrics.subscriptions?.waitingMandate ?? 0);
+          biKpis.retryNeeded.textContent = String(metrics.operations?.retryActionsNeeded ?? 0);
+          biKpis.openRequests.textContent = String(metrics.operations?.openChangeRequests ?? 0);
+          biKpis.cancellations.textContent = String(metrics.subscriptions?.canceled ?? 0);
+          biKpis.pauses.textContent = String(metrics.subscriptions?.paused ?? 0);
+          biKpis.paymentIssues.textContent = String((metrics.subscriptions?.highRisk ?? 0) + (metrics.subscriptions?.attention ?? 0));
+
+          renderBarChart(biCharts.revenue, metrics.charts?.revenueByMonth || [], { moneyValues: true });
+          renderBarChart(biCharts.subscriptions, metrics.charts?.subscriptionGrowth || []);
+          renderBarChart(biCharts.invoices, metrics.charts?.invoiceStatusDistribution || []);
+          renderBarChart(biCharts.subscriptionStatus, metrics.charts?.subscriptionStatusDistribution || []);
+          biCharts.revenueTotal.textContent = money((metrics.charts?.revenueByMonth || []).reduce((sum, item) => sum + Number(item.value || 0), 0));
+          biCharts.subscriptionTotal.textContent = String((metrics.charts?.subscriptionGrowth || []).at(-1)?.value || 0);
+          biCharts.invoiceTotal.textContent = String((metrics.charts?.invoiceStatusDistribution || []).reduce((sum, item) => sum + Number(item.value || 0), 0));
+          biCharts.subscriptionStatusTotal.textContent = String((metrics.charts?.subscriptionStatusDistribution || []).reduce((sum, item) => sum + Number(item.value || 0), 0));
+          renderActionItems(metrics.actionItems || []);
+        }
+
+        function renderBarChart(target, items, options = {}) {
+          target.replaceChildren();
+          if (!items.length) {
+            target.append(createCell("Geen data beschikbaar."));
+            return;
+          }
+          const max = Math.max(...items.map((item) => Number(item.value || 0)), 1);
+          const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+          svg.setAttribute("viewBox", "0 0 360 150");
+          svg.setAttribute("role", "img");
+          svg.setAttribute("aria-label", "Dashboardgrafiek");
+          const gap = 8;
+          const width = Math.max(12, (320 - gap * (items.length - 1)) / items.length);
+          items.forEach((item, index) => {
+            const value = Number(item.value || 0);
+            const height = Math.max(4, Math.round((value / max) * 92));
+            const x = 20 + index * (width + gap);
+            const y = 110 - height;
+            const bar = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            bar.setAttribute("x", String(x));
+            bar.setAttribute("y", String(y));
+            bar.setAttribute("width", String(width));
+            bar.setAttribute("height", String(height));
+            bar.setAttribute("rx", "5");
+            bar.classList.add("bi-chart-bar");
+            const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
+            title.textContent = `${item.label}: ${options.moneyValues ? money(value) : value}`;
+            bar.append(title);
+            const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            label.setAttribute("x", String(x + width / 2));
+            label.setAttribute("y", "134");
+            label.setAttribute("text-anchor", "middle");
+            label.classList.add("bi-chart-label");
+            label.textContent = String(item.label || "").slice(0, 8);
+            svg.append(bar, label);
+          });
+          target.append(svg);
+        }
+
+        function renderActionItems(items) {
+          biActionList.replaceChildren();
+          const head = document.createElement("div");
+          head.className = "admin-table-row admin-table-head bi-action-row";
+          ["Signaal", "Klant", "Titel", "Datum", "Prioriteit", "Actie"].forEach((label) => head.append(createCell(label)));
+          biActionList.append(head);
+
+          if (!items.length) {
+            renderState(biActionList, "Geen acties vereist", "Er zijn op dit moment geen kritieke signalen.", "Gezond", "status-active");
+            return;
+          }
+
+          items.forEach((item) => {
+            const row = document.createElement("div");
+            row.className = "admin-table-row bi-action-row";
+            const action = document.createElement("button");
+            action.className = "button secondary";
+            action.type = "button";
+            action.textContent = "Open klant";
+            action.disabled = !item.profileId;
+            action.addEventListener("click", () => {
+              if (!item.profileId) return;
+              selectCustomer(item.profileId);
+              document.getElementById("klanten").scrollIntoView({ behavior: "smooth", block: "start" });
+            });
+            row.append(
+              createCell(item.label),
+              createCell(item.customer),
+              createCell(item.title, "strong"),
+              createCell(formatDate(item.date)),
+              createBadge(item.severity === "high" ? "Hoog" : item.severity === "attention" ? "Aandacht" : "Normaal", item.severity === "high" ? "status-attention" : item.severity === "attention" ? "status-warning" : "status-prepared"),
+              action
+            );
+            biActionList.append(row);
+          });
         }
 
         function customerMatchesFilters(customer) {
@@ -1673,6 +1860,7 @@
             state.invoices = Array.isArray(data.invoices) ? data.invoices : [];
             renderSubscriptions();
             renderInvoices();
+            await loadDashboardMetrics(false);
           } catch (error) {
             renderState(subscriptionList, "Abonnementen niet beschikbaar", "Controleer Supabase billing-tabellen.", "Fout", "status-attention");
             renderState(invoiceList, "Facturen niet beschikbaar", error.message || "Controleer Supabase billing-tabellen.", "Fout", "status-attention");
@@ -2218,6 +2406,7 @@
             renderWebsites();
             renderCareOverview();
             updateMetrics();
+            await loadDashboardMetrics(false);
             await loadWebsiteHealth(false);
             await loadBilling(false);
             setAdminAccessMessage("CRM-data geladen.", "success");
@@ -2253,6 +2442,7 @@
         document.getElementById("new-invoice").addEventListener("click", () => openInvoiceModal());
         websiteHealthRefresh.addEventListener("click", () => loadWebsiteHealth(true));
         adminLoadButton.addEventListener("click", () => loadCRMData(true));
+        biPeriodFilter.addEventListener("change", () => loadDashboardMetrics(true));
         detailForm.addEventListener("submit", saveCustomer);
         websiteDetailForm.addEventListener("submit", saveWebsite);
         subscriptionForm.addEventListener("submit", saveSubscription);

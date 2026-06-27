@@ -2248,6 +2248,98 @@ h3 {
   font-weight: 900;
 }
 
+.bi-dashboard-section {
+  gap: 18px;
+}
+
+.bi-period-filter {
+  display: grid;
+  gap: 7px;
+  min-width: 180px;
+  color: rgba(255, 255, 255, 0.64);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.bi-period-filter select {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--white);
+  padding: 11px 12px;
+  font: inherit;
+}
+
+.bi-kpi-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.bi-secondary-kpis {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.bi-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.bi-chart-card {
+  display: grid;
+  gap: 14px;
+}
+
+.bi-chart-card > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.bi-chart-card span {
+  color: rgba(255, 255, 255, 0.64);
+  font-weight: 900;
+}
+
+.bi-chart-card strong {
+  color: var(--white);
+  font-size: 1.2rem;
+}
+
+.bi-chart {
+  min-height: 170px;
+  display: grid;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+  padding: 10px;
+}
+
+.bi-chart svg {
+  width: 100%;
+  height: 170px;
+}
+
+.bi-chart-bar {
+  fill: #4ba3ff;
+  opacity: 0.9;
+}
+
+.bi-chart-bar:hover {
+  fill: #7cc7ff;
+}
+
+.bi-chart-label {
+  fill: rgba(255, 255, 255, 0.64);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.bi-action-row {
+  grid-template-columns: minmax(130px, 0.9fr) minmax(150px, 1fr) minmax(180px, 1.3fr) minmax(120px, 0.9fr) minmax(110px, 0.8fr) auto;
+}
+
 .detail-card strong,
 .health-card strong {
   font-size: 24px;
@@ -4278,6 +4370,7 @@ h3 {
   .admin-crm-shell,
   .admin-crm-grid,
   .website-operations-grid,
+  .bi-dashboard-grid,
   .admin-grid,
   .admin-two-column,
   .admin-profile-manager,
