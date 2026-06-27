@@ -5121,7 +5121,24 @@ h3 {
   align-items: start;
 }
 
+.file-management-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(380px, 0.82fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.file-filters {
+  grid-template-columns: minmax(220px, 1.25fr) repeat(4, minmax(130px, 0.9fr));
+  margin-bottom: 16px;
+}
+
 .project-detail-panel {
+  position: sticky;
+  top: 18px;
+}
+
+.file-detail-panel {
   position: sticky;
   top: 18px;
 }
@@ -5193,6 +5210,17 @@ h3 {
     minmax(130px, 0.9fr)
     minmax(105px, 0.75fr)
     minmax(90px, 0.65fr);
+}
+
+.file-row {
+  grid-template-columns:
+    minmax(150px, 1.25fr)
+    minmax(90px, 0.7fr)
+    minmax(130px, 1fr)
+    minmax(130px, 1fr)
+    minmax(100px, 0.75fr)
+    minmax(120px, 0.85fr)
+    minmax(170px, 1fr);
 }
 
 .mini-progress {
@@ -5271,7 +5299,8 @@ h3 {
 }
 
 .project-detail-summary,
-.project-work-grid {
+.project-work-grid,
+.file-detail-summary {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
@@ -5351,6 +5380,11 @@ h3 {
 .project-task-item strong,
 .project-timeline-item strong {
   color: var(--white);
+}
+
+.file-quick-actions {
+  justify-content: flex-start;
+  padding-top: 4px;
 }
 
 .billing-row {
@@ -5439,10 +5473,6 @@ h3 {
   font-size: 11px;
   font-weight: 900;
   text-transform: uppercase;
-}
-
-.file-row {
-  grid-template-columns: minmax(160px, 1.2fr) minmax(180px, 1.2fr) minmax(180px, 1.3fr) auto;
 }
 
 .request-table .request-table-row {
@@ -7529,6 +7559,7 @@ h3 {
   .admin-crm-grid,
   .website-operations-grid,
   .project-management-grid,
+  .file-management-grid,
   .bi-dashboard-grid,
   .admin-grid,
   .admin-two-column,
@@ -7801,6 +7832,7 @@ h3 {
   .crm-customer-row,
   .website-row,
   .project-row,
+  .file-row,
   .billing-row,
   .invoice-row,
   .file-row,
@@ -7823,6 +7855,7 @@ h3 {
   .project-stats-grid,
   .website-stats-grid,
   .project-detail-summary,
+  .file-detail-summary,
   .project-work-grid,
   .project-task-form,
   .project-task-item {
@@ -7830,6 +7863,10 @@ h3 {
   }
 
   .project-detail-panel {
+    position: static;
+  }
+
+  .file-detail-panel {
     position: static;
   }
 

@@ -171,6 +171,8 @@
                 <a class="button secondary is-disabled" id="detail-open-website" href="#" target="_blank" rel="noopener" aria-disabled="true">Website openen</a>
                 <a class="button secondary" href="/login.html" target="_blank" rel="noopener">Klantportaal openen</a>
                 <button class="button secondary" id="detail-start-project" type="button" disabled>Project starten</button>
+                <button class="button secondary" id="detail-add-file" type="button" disabled>Bestand toevoegen</button>
+                <button class="button secondary" id="detail-view-files" type="button" disabled>Bestanden bekijken</button>
                 <button class="button secondary danger" id="detail-archive" type="button" disabled>Archiveren</button>
               </div>
               <p class="admin-form-message" id="customer-detail-message" role="status"></p>
@@ -303,6 +305,8 @@
               <div class="project-detail-summary" id="project-detail-summary" aria-live="polite"></div>
               <div class="admin-profile-actions">
                 <button class="button primary" id="project-save" type="submit" disabled>Project opslaan</button>
+                <button class="button secondary" id="project-add-file" type="button" disabled>Bestand toevoegen</button>
+                <button class="button secondary" id="project-view-files" type="button" disabled>Bestanden bekijken</button>
                 <button class="button secondary danger" id="project-delete" type="button" disabled>Verwijderen</button>
                 <p class="admin-form-message" id="project-detail-message" role="status"></p>
               </div>
@@ -355,8 +359,54 @@
         </section>
 
         <section class="admin-section" id="bestanden">
-          <div class="admin-section-heading"><div><p class="section-kicker">Bestanden</p><h2>Recente klantbestanden</h2></div></div>
-          <div class="admin-table file-table" id="file-list" role="table" aria-label="Bestanden" aria-live="polite"></div>
+          <div class="admin-section-heading">
+            <div>
+              <p class="section-kicker">Bestanden</p>
+              <h2>Bestandsregistratie</h2>
+            </div>
+            <button class="button primary" id="new-file" type="button">Bestand toevoegen</button>
+          </div>
+          <div class="admin-filters file-filters" aria-label="Bestanden filteren">
+            <label for="file-search">Zoeken<input id="file-search" type="search" placeholder="Bestandsnaam, klant, project of categorie" /></label>
+            <label for="file-category-filter">Categorie<select id="file-category-filter"><option value="">Alle categorieen</option><option value="Logo">Logo</option><option value="Foto's">Foto's</option><option value="Teksten">Teksten</option><option value="Document">Document</option><option value="Factuur">Factuur</option><option value="Contract">Contract</option><option value="Huisstijl">Huisstijl</option><option value="Overig">Overig</option></select></label>
+            <label for="file-status-filter">Status<select id="file-status-filter"><option value="">Alle statussen</option><option value="actief">Actief</option><option value="in_review">In review</option><option value="goedgekeurd">Goedgekeurd</option><option value="gearchiveerd">Gearchiveerd</option></select></label>
+            <label for="file-customer-filter">Klant<select id="file-customer-filter"><option value="">Alle klanten</option></select></label>
+            <label for="file-project-filter">Project<select id="file-project-filter"><option value="">Alle projecten</option></select></label>
+          </div>
+          <div class="file-management-grid">
+            <div class="admin-table file-table" id="file-list" role="table" aria-label="Bestanden" aria-live="polite"></div>
+            <form class="admin-card admin-profile-form file-detail-panel" id="file-detail-form">
+              <div class="admin-profile-form-heading">
+                <div>
+                  <strong>Bestanddetail</strong>
+                  <span id="file-detail-subtitle">Registreer bestandslinks, locaties en metadata. Echte upload volgt later.</span>
+                </div>
+                <mark class="status-badge status-planned" id="file-detail-state">Niet geselecteerd</mark>
+              </div>
+              <div class="admin-profile-fields">
+                <label class="admin-profile-wide" for="file-customer">Klant<select id="file-customer" disabled></select></label>
+                <label class="admin-profile-wide" for="file-website">Website<select id="file-website" disabled></select></label>
+                <label class="admin-profile-wide" for="file-project">Project<select id="file-project" disabled></select></label>
+                <label for="file-name">Bestandsnaam<input id="file-name" type="text" disabled /></label>
+                <label for="file-type">Bestandstype<input id="file-type" type="text" placeholder="PDF, JPG, PNG, DOCX" disabled /></label>
+                <label for="file-category">Categorie<select id="file-category" disabled><option value="Logo">Logo</option><option value="Foto's">Foto's</option><option value="Teksten">Teksten</option><option value="Document">Document</option><option value="Factuur">Factuur</option><option value="Contract">Contract</option><option value="Huisstijl">Huisstijl</option><option value="Overig">Overig</option></select></label>
+                <label for="file-status">Status<select id="file-status" disabled><option value="actief">Actief</option><option value="in_review">In review</option><option value="goedgekeurd">Goedgekeurd</option><option value="gearchiveerd">Gearchiveerd</option></select></label>
+                <label class="admin-profile-wide" for="file-location">Bestandslink of locatie<input id="file-location" type="text" placeholder="https://..., Drive-pad of Supabase path" disabled /></label>
+                <label class="admin-profile-wide" for="file-notes">Notities<textarea id="file-notes" disabled placeholder="Interne context, gebruiksrechten of versie-informatie"></textarea></label>
+              </div>
+              <div class="file-detail-summary" id="file-detail-summary" aria-live="polite"></div>
+              <div class="admin-profile-actions">
+                <button class="button primary" id="file-save" type="submit" disabled>Bestand opslaan</button>
+                <button class="button secondary" id="file-archive" type="button" disabled>Archiveer</button>
+                <button class="button secondary danger" id="file-delete" type="button" disabled>Verwijder</button>
+                <p class="admin-form-message" id="file-detail-message" role="status"></p>
+              </div>
+              <div class="admin-profile-actions file-quick-actions" aria-label="Bestand acties">
+                <a class="button secondary is-disabled" id="file-open" href="#" target="_blank" rel="noopener" aria-disabled="true">Open bestand/link</a>
+                <button class="button secondary" id="file-copy-link" type="button" disabled>Kopieer link</button>
+              </div>
+            </form>
+          </div>
         </section>
 
         <section class="admin-section" id="onderhoud">
@@ -526,6 +576,7 @@
         const crmCustomersStorageKey = "maxwebstudioCrmCustomers";
         const managedSitesStorageKey = "maxwebstudioManagedSites";
         const projectsStorageKey = "maxwebstudioProjects";
+        const filesStorageKey = "maxwebstudioFiles";
         const completedStatuses = new Set(["afgerond"]);
         const statusLabels = {
           nieuw: "Nieuw",
@@ -556,6 +607,12 @@
           live: "Live",
           onderhoud: "Onderhoud",
           gepauzeerd: "Gepauzeerd",
+        };
+        const fileStatusLabels = {
+          actief: "Actief",
+          in_review: "In review",
+          goedgekeurd: "Goedgekeurd",
+          gearchiveerd: "Gearchiveerd",
         };
         const defaultProjectChecklist = [
           "Logo ontvangen",
@@ -588,6 +645,7 @@
           authUsers: [],
           websites: [],
           projects: [],
+          files: [],
           healthWebsites: [],
           subscriptions: [],
           invoices: [],
@@ -595,6 +653,7 @@
           selectedCustomerId: "",
           selectedWebsiteId: "",
           selectedProjectId: "",
+          selectedFileId: "",
           selectedSubscriptionId: "",
           selectedInvoiceId: "",
           selectedRequestId: "",
@@ -698,6 +757,8 @@
           notes: document.getElementById("project-notes"),
         };
         const projectSave = document.getElementById("project-save");
+        const projectAddFile = document.getElementById("project-add-file");
+        const projectViewFiles = document.getElementById("project-view-files");
         const projectDelete = document.getElementById("project-delete");
         const projectDetailState = document.getElementById("project-detail-state");
         const projectDetailSubtitle = document.getElementById("project-detail-subtitle");
@@ -726,6 +787,34 @@
         const websiteHealthRefresh = document.getElementById("website-health-refresh");
         const websiteHealthMessage = document.getElementById("website-health-message");
         const fileList = document.getElementById("file-list");
+        const fileDetailForm = document.getElementById("file-detail-form");
+        const fileFields = {
+          customer: document.getElementById("file-customer"),
+          website: document.getElementById("file-website"),
+          project: document.getElementById("file-project"),
+          name: document.getElementById("file-name"),
+          type: document.getElementById("file-type"),
+          category: document.getElementById("file-category"),
+          status: document.getElementById("file-status"),
+          location: document.getElementById("file-location"),
+          notes: document.getElementById("file-notes"),
+        };
+        const fileSearch = document.getElementById("file-search");
+        const fileCategoryFilter = document.getElementById("file-category-filter");
+        const fileStatusFilter = document.getElementById("file-status-filter");
+        const fileCustomerFilter = document.getElementById("file-customer-filter");
+        const fileProjectFilter = document.getElementById("file-project-filter");
+        const fileSave = document.getElementById("file-save");
+        const fileArchive = document.getElementById("file-archive");
+        const fileDelete = document.getElementById("file-delete");
+        const fileDetailState = document.getElementById("file-detail-state");
+        const fileDetailSubtitle = document.getElementById("file-detail-subtitle");
+        const fileDetailMessage = document.getElementById("file-detail-message");
+        const fileDetailSummary = document.getElementById("file-detail-summary");
+        const fileQuickActions = {
+          open: document.getElementById("file-open"),
+          copy: document.getElementById("file-copy-link"),
+        };
         const careOverview = document.getElementById("care-overview");
         const subscriptionList = document.getElementById("subscription-list");
         const invoiceList = document.getElementById("invoice-list");
@@ -760,6 +849,8 @@
         const detailMessage = document.getElementById("customer-detail-message");
         const detailOpenWebsite = document.getElementById("detail-open-website");
         const detailStartProject = document.getElementById("detail-start-project");
+        const detailAddFile = document.getElementById("detail-add-file");
+        const detailViewFiles = document.getElementById("detail-view-files");
         const detailAuthStatus = document.getElementById("detail-auth-status");
         const detailLinkLogin = document.getElementById("detail-link-login");
         const detailResetPassword = document.getElementById("detail-reset-password");
@@ -840,6 +931,14 @@
           if (status === "nieuw" || status === "onboarding" || status === "in_ontwerp" || status === "in_ontwikkeling" || status === "testen") return "status-prepared";
           if (status === "feedback") return "status-warning";
           if (status === "gepauzeerd") return "status-attention";
+          return "status-planned";
+        }
+
+        function fileStatusClass(value) {
+          const status = statusKey(value);
+          if (status === "actief" || status === "goedgekeurd") return "status-active";
+          if (status === "in_review") return "status-warning";
+          if (status === "gearchiveerd") return "status-attention";
           return "status-planned";
         }
 
@@ -1198,6 +1297,102 @@
           return projects;
         }
 
+        function projectById(id) {
+          return state.projects.find((project) => project.id === id) || null;
+        }
+
+        function normalizeStoredFile(file = {}) {
+          const now = new Date().toISOString();
+          const createdAt = file.createdAt || file.addedAt || now;
+          const customerId = file.customerId || file.profileId || "";
+          const websiteId = file.websiteId || "";
+          const projectId = file.projectId || "";
+          const customer = customerById(customerId);
+          const website = websiteById(websiteId);
+          const project = projectById(projectId);
+          return {
+            id: file.id || createCrmId(),
+            customerId,
+            profileId: customerId,
+            websiteId,
+            projectId,
+            customerName: customer?.name || file.customerName || "",
+            customerCompany: customer?.company || file.customerCompany || "",
+            customerEmail: customer?.email || file.customerEmail || "",
+            customerPhone: customer?.phone || file.customerPhone || "",
+            websiteName: website?.name || file.websiteName || "",
+            websiteDomain: website?.domain || file.websiteDomain || "",
+            projectName: project?.name || file.projectName || "",
+            name: String(file.name || "").trim(),
+            type: String(file.type || "").trim(),
+            category: file.category || "Overig",
+            location: String(file.location || file.url || "").trim(),
+            url: String(file.location || file.url || "").trim(),
+            status: statusKey(file.status || "actief"),
+            notes: String(file.notes || "").trim(),
+            createdAt,
+            addedAt: createdAt,
+            updatedAt: file.updatedAt || createdAt,
+            metadata: file.metadata && typeof file.metadata === "object" ? file.metadata : {},
+          };
+        }
+
+        function readStoredFiles() {
+          try {
+            const stored = JSON.parse(localStorage.getItem(filesStorageKey) || "[]");
+            return Array.isArray(stored) ? stored.map(normalizeStoredFile) : [];
+          } catch (error) {
+            console.error("Files could not be read", error);
+            return [];
+          }
+        }
+
+        function writeStoredFiles(files) {
+          localStorage.setItem(filesStorageKey, JSON.stringify(files.map(normalizeStoredFile)));
+        }
+
+        function validateFilePayload(payload) {
+          if (!payload.customerId) return "Kies eerst een klant.";
+          if (!String(payload.name || "").trim()) return "Vul een bestandsnaam in.";
+          if (!String(payload.location || "").trim()) return "Vul een bestandslink of locatie in.";
+          return "";
+        }
+
+        function saveFileLocally(payload) {
+          const files = readStoredFiles();
+          const existingIndex = files.findIndex((file) => file.id === payload.id);
+          const existing = existingIndex >= 0 ? files[existingIndex] : {};
+          const now = new Date().toISOString();
+          const file = normalizeStoredFile({
+            ...existing,
+            ...payload,
+            id: payload.id || existing.id || createCrmId(),
+            createdAt: existing.createdAt || now,
+            updatedAt: now,
+          });
+          const validationError = validateFilePayload(file);
+          if (validationError) throw new Error(validationError);
+          if (existingIndex >= 0) files[existingIndex] = file;
+          else files.unshift(file);
+          writeStoredFiles(files);
+          return file;
+        }
+
+        function archiveFileLocally(id) {
+          const files = readStoredFiles();
+          const index = files.findIndex((file) => file.id === id);
+          if (index < 0) throw new Error("Bestand niet gevonden.");
+          files[index] = normalizeStoredFile({ ...files[index], status: "gearchiveerd", updatedAt: new Date().toISOString() });
+          writeStoredFiles(files);
+          return files[index];
+        }
+
+        function deleteFileLocally(id) {
+          const files = readStoredFiles().filter((file) => file.id !== id);
+          writeStoredFiles(files);
+          return files;
+        }
+
         function toDateInput(value) {
           if (!value) return "";
           const date = new Date(value);
@@ -1478,7 +1673,8 @@
           detailArchive.disabled = customer.status === "gearchiveerd";
           detailState.textContent = "Geselecteerd";
           detailState.className = `status-badge ${customerStatusClass(customer.status)}`;
-          detailSubtitle.textContent = customer.company || customer.name || "Klantprofiel";
+          const customerFileCount = state.files.filter((file) => file.customerId === customer.id).length;
+          detailSubtitle.textContent = `${customer.company || customer.name || "Klantprofiel"} - ${customerFileCount} bestand${customerFileCount === 1 ? "" : "en"}`;
           const hasLogin = customer.portalStatus === "actief" || customer.authStatus === "login actief";
           const authLabel = customer.portalStatus === "uitgenodigd" ? "Uitgenodigd" : hasLogin ? "Login actief" : customer.portalStatus === "geblokkeerd" ? "Geblokkeerd" : "Geen login";
           detailAuthStatus.textContent = authLabel;
@@ -1491,6 +1687,8 @@
           detailOpenWebsite.classList.toggle("is-disabled", !customer.website);
           detailOpenWebsite.toggleAttribute("aria-disabled", !customer.website);
           detailStartProject.disabled = false;
+          detailAddFile.disabled = false;
+          detailViewFiles.disabled = false;
         }
 
         async function saveCustomer(event) {
@@ -2111,10 +2309,10 @@
           });
         }
 
-        function copyText(value, successMessage) {
+        function copyText(value, successMessage, messageHandler = setWebsiteMessage) {
           if (!value) return;
           if (navigator.clipboard?.writeText) {
-            navigator.clipboard.writeText(value).then(() => setWebsiteMessage(successMessage, "success")).catch(() => setWebsiteMessage("Kopieren is niet gelukt.", "error"));
+            navigator.clipboard.writeText(value).then(() => messageHandler(successMessage, "success")).catch(() => messageHandler("Kopieren is niet gelukt.", "error"));
             return;
           }
           const field = document.createElement("textarea");
@@ -2123,7 +2321,7 @@
           field.select();
           document.execCommand("copy");
           field.remove();
-          setWebsiteMessage(successMessage, "success");
+          messageHandler(successMessage, "success");
         }
 
         function renderWebsites() {
@@ -2268,6 +2466,8 @@
           });
           projectSave.disabled = !enabled;
           projectDelete.disabled = !enabled || !state.selectedProjectId;
+          projectAddFile.disabled = !enabled || !state.selectedProjectId;
+          projectViewFiles.disabled = !enabled || !state.selectedProjectId;
           projectTaskTitle.disabled = !enabled || !state.selectedProjectId;
           projectTaskPriority.disabled = !enabled || !state.selectedProjectId;
           projectTaskDeadline.disabled = !enabled || !state.selectedProjectId;
@@ -2368,6 +2568,7 @@
         function renderProjectDetail(project) {
           projectDetailSummary.replaceChildren();
           if (!project) return;
+          const projectFileCount = state.files.filter((file) => file.projectId === project.id).length;
           addProjectSummaryCard("Klantgegevens", [
             ["Klant-ID", project.customerId || "-"],
             ["Naam", project.customerName || "-"],
@@ -2385,6 +2586,7 @@
             ["Startdatum", project.startDate || "-"],
             ["Deadline", project.deadline || "-"],
             ["Laatste update", formatDate(project.lastUpdateAt)],
+            ["Gekoppelde bestanden", String(projectFileCount)],
           ]);
         }
 
@@ -2465,6 +2667,8 @@
           renderProjectTimeline(project);
           setProjectMessage("", "");
           enableProjectFields(true);
+          projectAddFile.disabled = false;
+          projectViewFiles.disabled = false;
         }
 
         function projectPayload(extra = {}) {
@@ -3268,42 +3472,332 @@
           return Array.isArray(files) ? files.filter(Boolean) : [];
         }
 
-        function renderFiles() {
-          const rows = [];
-          state.requests.forEach((request) => {
-            normalizeFiles(request.fileNames).forEach((file, index) => {
-              rows.push({ request, file, index });
-            });
-          });
+        function selectedFile() {
+          return state.files.find((file) => file.id === state.selectedFileId);
+        }
 
+        function populateFileOptions(selectedCustomerOverride = "") {
+          const selectedCustomerId = selectedCustomerOverride || fileFields.customer.value;
+          const selects = [fileFields.customer, fileCustomerFilter];
+          selects.forEach((select) => {
+            const currentValue = select.value;
+            select.replaceChildren();
+            const empty = document.createElement("option");
+            empty.value = "";
+            empty.textContent = select === fileCustomerFilter ? "Alle klanten" : "Kies klant";
+            select.append(empty);
+            state.customers.forEach((customer) => {
+              const option = document.createElement("option");
+              option.value = customer.id;
+              option.textContent = `${customer.company || customer.name || "Klant"}${customer.email ? ` - ${customer.email}` : ""}`;
+              select.append(option);
+            });
+            select.value = currentValue;
+          });
+          if (selectedCustomerOverride) fileFields.customer.value = selectedCustomerOverride;
+
+          fileFields.website.replaceChildren();
+          const emptyWebsite = document.createElement("option");
+          emptyWebsite.value = "";
+          emptyWebsite.textContent = "Geen website gekoppeld";
+          fileFields.website.append(emptyWebsite);
+          state.websites
+            .filter((website) => !selectedCustomerId || website.profileId === selectedCustomerId)
+            .forEach((website) => {
+              const option = document.createElement("option");
+              option.value = website.id;
+              option.textContent = `${website.name || website.domain || "Website"}${website.domain ? ` - ${website.domain}` : ""}`;
+              fileFields.website.append(option);
+            });
+
+          [fileFields.project, fileProjectFilter].forEach((select) => {
+            const currentValue = select.value;
+            select.replaceChildren();
+            const empty = document.createElement("option");
+            empty.value = "";
+            empty.textContent = select === fileProjectFilter ? "Alle projecten" : "Geen project gekoppeld";
+            select.append(empty);
+            state.projects
+              .filter((project) => !selectedCustomerId || project.customerId === selectedCustomerId)
+              .forEach((project) => {
+                const option = document.createElement("option");
+                option.value = project.id;
+                option.textContent = project.name || "Project";
+                select.append(option);
+              });
+            select.value = currentValue;
+          });
+        }
+
+        function setFileMessage(text, type = "") {
+          fileDetailMessage.textContent = text;
+          fileDetailMessage.className = `admin-form-message ${type}`.trim();
+        }
+
+        function enableFileFields(enabled) {
+          Object.values(fileFields).forEach((field) => {
+            field.disabled = !enabled;
+          });
+          fileSave.disabled = !enabled;
+          fileArchive.disabled = !enabled || !state.selectedFileId || selectedFile()?.status === "gearchiveerd";
+          fileDelete.disabled = !enabled || !state.selectedFileId;
+          fileQuickActions.copy.disabled = !enabled || !fileFields.location.value;
+        }
+
+        function setFileLink(file) {
+          const value = file?.location || "";
+          const isUrl = /^https?:\/\//i.test(value);
+          fileQuickActions.open.href = isUrl ? value : "#";
+          fileQuickActions.open.classList.toggle("is-disabled", !isUrl);
+          fileQuickActions.open.toggleAttribute("aria-disabled", !isUrl);
+          fileQuickActions.copy.disabled = !value;
+        }
+
+        function addFileSummaryCard(title, items) {
+          const card = document.createElement("article");
+          card.className = "admin-card website-summary-card";
+          card.append(createCell(title, "strong"));
+          items.forEach(([label, value]) => {
+            const row = document.createElement("span");
+            row.append(createCell(label), createCell(value));
+            card.append(row);
+          });
+          fileDetailSummary.append(card);
+        }
+
+        function renderFileSummary(file) {
+          fileDetailSummary.replaceChildren();
+          if (!file) {
+            addFileSummaryCard("Bestandsregistratie", [["Status", "Nog niet opgeslagen"], ["Upload", "Later via server-side opslag"]]);
+            return;
+          }
+          addFileSummaryCard("Metadata", [
+            ["Bestand-ID", file.id || "-"],
+            ["Bestandsnaam", file.name || "-"],
+            ["Type", file.type || "-"],
+            ["Categorie", file.category || "-"],
+            ["Status", fileStatusLabels[file.status] || file.status || "-"],
+            ["Toegevoegd", formatDate(file.createdAt)],
+            ["Laatste wijziging", formatDate(file.updatedAt)],
+          ]);
+          addFileSummaryCard("Koppelingen", [
+            ["Klant", file.customerCompany || file.customerName || "-"],
+            ["Website", file.websiteName || file.websiteDomain || "-"],
+            ["Project", file.projectName || "-"],
+          ]);
+        }
+
+        function resetFileForm(seed = {}) {
+          state.selectedFileId = "";
+          fileDetailForm.reset();
+          populateFileOptions(seed.customerId || "");
+          fileFields.customer.value = seed.customerId || "";
+          populateFileOptions(seed.customerId || "");
+          fileFields.customer.value = seed.customerId || "";
+          fileFields.website.value = seed.websiteId || "";
+          fileFields.project.value = seed.projectId || "";
+          fileFields.category.value = seed.category || "Overig";
+          fileFields.status.value = seed.status || "actief";
+          fileDetailState.textContent = "Nieuw";
+          fileDetailState.className = "status-badge status-prepared";
+          fileDetailSubtitle.textContent = "Nieuwe bestandsregistratie voorbereiden.";
+          renderFileSummary(null);
+          setFileLink(null);
+          setFileMessage("", "");
+          enableFileFields(true);
+        }
+
+        function selectFile(id) {
+          state.selectedFileId = id;
+          const file = selectedFile();
+          if (!file) return;
+          populateFileOptions(file.customerId || "");
+          fileFields.customer.value = file.customerId || "";
+          populateFileOptions(file.customerId || "");
+          fileFields.customer.value = file.customerId || "";
+          fileFields.website.value = file.websiteId || "";
+          fileFields.project.value = file.projectId || "";
+          fileFields.name.value = file.name || "";
+          fileFields.type.value = file.type || "";
+          fileFields.category.value = file.category || "Overig";
+          fileFields.status.value = file.status || "actief";
+          fileFields.location.value = file.location || "";
+          fileFields.notes.value = file.notes || "";
+          fileDetailState.textContent = fileStatusLabels[file.status] || file.status || "Bestand";
+          fileDetailState.className = `status-badge ${fileStatusClass(file.status)}`;
+          fileDetailSubtitle.textContent = `${file.customerCompany || file.customerName || "Klant"} - ${file.name || "Bestand"}`;
+          renderFileSummary(file);
+          setFileLink(file);
+          setFileMessage("", "");
+          enableFileFields(true);
+        }
+
+        function filePayload(extra = {}) {
+          return {
+            id: state.selectedFileId,
+            customerId: fileFields.customer.value,
+            websiteId: fileFields.website.value,
+            projectId: fileFields.project.value,
+            name: fileFields.name.value,
+            type: fileFields.type.value,
+            category: fileFields.category.value,
+            status: fileFields.status.value,
+            location: fileFields.location.value,
+            notes: fileFields.notes.value,
+            ...extra,
+          };
+        }
+
+        function filteredFiles() {
+          const query = normalize(fileSearch.value);
+          const category = fileCategoryFilter.value;
+          const status = fileStatusFilter.value;
+          const customerId = fileCustomerFilter.value;
+          const projectId = fileProjectFilter.value;
+          return state.files.filter((file) => {
+            const searchable = normalize([file.name, file.customerName, file.customerCompany, file.projectName, file.category].join(" "));
+            return (!query || searchable.includes(query))
+              && (!category || file.category === category)
+              && (!status || file.status === status)
+              && (!customerId || file.customerId === customerId)
+              && (!projectId || file.projectId === projectId);
+          });
+        }
+
+        function renderFiles() {
+          const files = filteredFiles();
           fileList.replaceChildren();
-          if (!rows.length) {
-            renderState(fileList, "Geen bestanden", "Bestanden uit wijzigingsverzoeken verschijnen hier.", "Leeg");
+          populateFileOptions();
+          if (!state.files.length) {
+            renderState(fileList, "Nog geen bestanden", "Registreer bestandslinks of locaties voor klanten, websites en projecten.", "Leeg");
+            return;
+          }
+          if (!files.length) {
+            renderState(fileList, "Geen bestanden gevonden", "Pas je zoekopdracht of filters aan.", "Geen match");
             return;
           }
 
           const head = document.createElement("div");
           head.className = "admin-table-row admin-table-head file-row";
-          ["Klant", "Bestand", "Aanvraag", "Actie"].forEach((label) => head.append(createCell(label)));
+          ["Bestand", "Categorie", "Klant", "Project", "Status", "Toegevoegd", "Acties"].forEach((label) => head.append(createCell(label)));
           fileList.append(head);
 
-          rows.slice(0, 20).forEach(({ request, file, index }) => {
+          files.forEach((file) => {
             const row = document.createElement("div");
             row.className = "admin-table-row file-row";
-            const action = document.createElement("a");
-            action.className = "button secondary";
-            action.href = `/.netlify/functions/get-change-request-file?changeRequestId=${encodeURIComponent(request.id)}&fileIndex=${index}`;
-            action.target = "_blank";
-            action.rel = "noopener";
-            action.textContent = "Open bestand";
+            const actions = document.createElement("span");
+            actions.className = "website-actions";
+            const open = document.createElement("a");
+            open.className = "button secondary";
+            open.href = /^https?:\/\//i.test(file.location) ? file.location : "#";
+            open.target = "_blank";
+            open.rel = "noopener";
+            open.textContent = "Open";
+            open.classList.toggle("is-disabled", !/^https?:\/\//i.test(file.location));
+            open.toggleAttribute("aria-disabled", !/^https?:\/\//i.test(file.location));
+            open.addEventListener("click", (event) => {
+              if (event.currentTarget.getAttribute("aria-disabled") === "true") event.preventDefault();
+            });
+            const edit = document.createElement("button");
+            edit.className = "button secondary";
+            edit.type = "button";
+            edit.textContent = "Bewerken";
+            edit.addEventListener("click", () => selectFile(file.id));
+            const archive = document.createElement("button");
+            archive.className = "button secondary";
+            archive.type = "button";
+            archive.textContent = "Archiveer";
+            archive.disabled = file.status === "gearchiveerd";
+            archive.addEventListener("click", () => archiveFile(file.id));
+            actions.append(open, edit, archive);
             row.append(
-              createCell(request.companyName || request.customerName || request.email, "strong"),
-              createCell(file.originalName || file.storagePath || "Bestand"),
-              createCell(request.title || "-"),
-              action
+              createCell(file.name || "-", "strong"),
+              createBadge(file.category || "Overig", "status-planned"),
+              createCell(file.customerCompany || file.customerName || "-"),
+              createCell(file.projectName || "-"),
+              createBadge(fileStatusLabels[file.status] || file.status, fileStatusClass(file.status)),
+              createCell(formatDate(file.createdAt)),
+              actions
             );
             fileList.append(row);
           });
+        }
+
+        async function saveFile(event) {
+          event.preventDefault();
+          fileSave.disabled = true;
+          fileSave.textContent = "Opslaan...";
+          setFileMessage("", "");
+          try {
+            const file = saveFileLocally(filePayload());
+            await loadCRMData(false);
+            state.selectedFileId = file.id;
+            selectFile(file.id);
+            setFileMessage("Bestand opgeslagen.", "success");
+          } catch (error) {
+            setFileMessage(error.message || "Bestand kon niet worden opgeslagen.", "error");
+          } finally {
+            fileSave.disabled = false;
+            fileSave.textContent = "Bestand opslaan";
+          }
+        }
+
+        async function archiveFile(id = state.selectedFileId) {
+          if (!id) return;
+          try {
+            const file = archiveFileLocally(id);
+            await loadCRMData(false);
+            state.selectedFileId = file.id;
+            selectFile(file.id);
+            setFileMessage("Bestand gearchiveerd.", "success");
+          } catch (error) {
+            setFileMessage(error.message || "Bestand kon niet worden gearchiveerd.", "error");
+          }
+        }
+
+        async function deleteFile() {
+          const file = selectedFile();
+          if (!file) return;
+          const confirmed = window.confirm("Weet je zeker dat je dit bestand wilt verwijderen?");
+          if (!confirmed) return;
+          deleteFileLocally(file.id);
+          await loadCRMData(false);
+          resetFileForm();
+          setFileMessage("Bestand verwijderd.", "success");
+        }
+
+        function startFileFromCustomer() {
+          const customer = selectedCustomer();
+          if (!customer) return;
+          const firstWebsite = state.websites.find((website) => website.profileId === customer.id);
+          const firstProject = state.projects.find((project) => project.customerId === customer.id);
+          resetFileForm({ customerId: customer.id, websiteId: firstWebsite?.id || "", projectId: firstProject?.id || "" });
+          document.getElementById("bestanden").scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+
+        function startFileFromProject() {
+          const project = selectedProject();
+          if (!project) return;
+          resetFileForm({ customerId: project.customerId, websiteId: project.websiteId, projectId: project.id });
+          document.getElementById("bestanden").scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+
+        function viewFilesForCustomer() {
+          const customer = selectedCustomer();
+          if (!customer) return;
+          fileCustomerFilter.value = customer.id;
+          fileProjectFilter.value = "";
+          renderFiles();
+          document.getElementById("bestanden").scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+
+        function viewFilesForProject() {
+          const project = selectedProject();
+          if (!project) return;
+          fileCustomerFilter.value = "";
+          fileProjectFilter.value = project.id;
+          renderFiles();
+          document.getElementById("bestanden").scrollIntoView({ behavior: "smooth", block: "start" });
         }
 
         function requestMatchesFilters(request) {
@@ -3482,16 +3976,20 @@
             state.authUsers = [];
             state.websites = readStoredWebsites();
             state.projects = readStoredProjects();
+            state.files = readStoredFiles();
             renderCustomers();
             renderWebsites();
             renderProjects();
+            renderFiles();
             renderCareOverview();
             updateMetrics();
             if (state.selectedCustomerId && selectedCustomer()) selectCustomer(state.selectedCustomerId);
             if (state.selectedWebsiteId && selectedWebsite()) selectWebsite(state.selectedWebsiteId);
             if (state.selectedProjectId && selectedProject()) selectProject(state.selectedProjectId);
+            if (state.selectedFileId && selectedFile()) selectFile(state.selectedFileId);
             populateWebsiteProfileOptions();
             populateProjectOptions();
+            populateFileOptions();
             if (state.adminToken) {
               await loadDashboardMetrics(false);
               await loadWebsiteHealth(false);
@@ -3515,7 +4013,6 @@
             if (!response.ok || !data.success) throw new Error(data.error || "Ophalen mislukt.");
             state.requests = Array.isArray(data.changeRequests) ? data.changeRequests : [];
             renderRequests();
-            renderFiles();
             updateMetrics();
           } catch (error) {
             renderState(requestList, "Aanvragen konden niet worden geladen", "Controleer de Supabase configuratie of probeer het later opnieuw.", "Fout", "status-attention");
@@ -3526,6 +4023,7 @@
         document.getElementById("open-new-customer-secondary").addEventListener("click", openNewCustomerModal);
         document.getElementById("new-managed-website").addEventListener("click", resetWebsiteForm);
         document.getElementById("new-project").addEventListener("click", () => resetProjectForm());
+        document.getElementById("new-file").addEventListener("click", () => resetFileForm());
         document.getElementById("new-subscription").addEventListener("click", () => openSubscriptionModal());
         document.getElementById("new-invoice").addEventListener("click", () => openInvoiceModal());
         websiteHealthRefresh.addEventListener("click", () => loadWebsiteHealth(true));
@@ -3535,6 +4033,7 @@
         websiteDetailForm.addEventListener("submit", saveWebsite);
         subscriptionForm.addEventListener("submit", saveSubscription);
         invoiceForm.addEventListener("submit", saveInvoice);
+        fileDetailForm.addEventListener("submit", saveFile);
         invoiceClearPdf.addEventListener("click", clearInvoicePdfPath);
         websiteArchive.addEventListener("click", archiveWebsite);
         [websiteSearch, websiteStatusFilter, websiteHostingFilter, websiteCareFilter].forEach((filter) => filter.addEventListener("input", renderWebsites));
@@ -3557,17 +4056,36 @@
         detailSendInvite.addEventListener("click", sendInviteFromDetail);
         detailArchive.addEventListener("click", archiveCustomer);
         detailStartProject.addEventListener("click", startProjectFromCustomer);
+        detailAddFile.addEventListener("click", startFileFromCustomer);
+        detailViewFiles.addEventListener("click", viewFilesForCustomer);
         projectDetailForm.addEventListener("submit", saveProject);
         projectDelete.addEventListener("click", deleteProject);
+        projectAddFile.addEventListener("click", startFileFromProject);
+        projectViewFiles.addEventListener("click", viewFilesForProject);
         projectTaskAdd.addEventListener("click", addProjectTask);
         projectFields.customer.addEventListener("change", () => {
           const selectedCustomerId = projectFields.customer.value;
           populateProjectOptions(selectedCustomerId);
           projectFields.customer.value = selectedCustomerId;
         });
+        fileArchive.addEventListener("click", () => archiveFile());
+        fileDelete.addEventListener("click", deleteFile);
+        fileQuickActions.open.addEventListener("click", (event) => {
+          if (event.currentTarget.getAttribute("aria-disabled") === "true") event.preventDefault();
+        });
+        fileQuickActions.copy.addEventListener("click", () => {
+          const file = selectedFile();
+          if (file) copyText(file.location, "Bestandslink gekopieerd.", setFileMessage);
+        });
+        fileFields.customer.addEventListener("change", () => {
+          const selectedCustomerId = fileFields.customer.value;
+          populateFileOptions(selectedCustomerId);
+          fileFields.customer.value = selectedCustomerId;
+        });
         newCustomerForm.addEventListener("submit", createCustomer);
         newSendInvite.addEventListener("click", sendInviteFromNewCustomer);
         [customerSearch, customerStatusFilter, customerPackageFilter].forEach((filter) => filter.addEventListener("input", renderCustomers));
+        [fileSearch, fileCategoryFilter, fileStatusFilter, fileCustomerFilter, fileProjectFilter].forEach((filter) => filter.addEventListener("input", renderFiles));
         [requestStatusFilter, requestPriorityFilter, requestCategoryFilter].forEach((filter) => filter.addEventListener("change", renderRequests));
         requestStatusSave.addEventListener("click", saveRequestStatus);
         detailOpenWebsite.addEventListener("click", (event) => {
