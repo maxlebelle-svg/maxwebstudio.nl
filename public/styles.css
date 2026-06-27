@@ -1121,6 +1121,7 @@ h3 {
   display: flex;
   align-items: center;
   gap: 18px;
+  max-width: 100%;
   min-width: 330px;
   padding: 22px;
   border: 1px solid rgba(255, 255, 255, 0.16);
@@ -6657,6 +6658,18 @@ h3 {
     padding-bottom: 82px;
   }
 
+  .logo-showcase {
+    flex-direction: column;
+  }
+
+  .logo-preview {
+    align-items: flex-start;
+  }
+
+  .logo-preview > div {
+    min-width: 0;
+  }
+
   .portfolio-showroom-heading h2 {
     font-size: clamp(36px, 11vw, 52px);
   }
@@ -6668,8 +6681,9 @@ h3 {
   .portfolio-filters {
     flex-wrap: nowrap;
     justify-content: flex-start;
-    margin-right: -16px;
-    margin-left: -16px;
+    max-width: 100%;
+    margin-right: 0;
+    margin-left: 0;
     padding: 0 16px 4px;
     overflow-x: auto;
     scrollbar-width: none;
@@ -6684,16 +6698,28 @@ h3 {
   }
 
   .demo-grid {
+    grid-column: 1 / -1;
+    order: 1;
     gap: 16px;
-    margin-right: -16px;
-    margin-left: -16px;
+    width: 100%;
     padding-right: 16px;
     padding-left: 16px;
     scroll-padding-left: 16px;
   }
 
   .demo-card {
-    flex-basis: calc(100vw - 32px);
+    flex-basis: calc(100% - 32px);
+  }
+
+  .demo-carousel-shell {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .demo-carousel-control {
+    display: inline-grid;
+    order: 2;
+    width: 100%;
+    height: 44px;
   }
 
   .demo-preview {
@@ -6756,6 +6782,11 @@ h3 {
 
   .demo-card-copy {
     padding: 24px;
+  }
+
+  .logo-preview {
+    min-width: 0;
+    width: 100%;
   }
 
   .portfolio-cta {
