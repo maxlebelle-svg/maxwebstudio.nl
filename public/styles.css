@@ -785,6 +785,230 @@ h3 {
   }
 }
 
+.why-section {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(82px, 10vw, 138px) clamp(20px, 6vw, 82px);
+  background:
+    radial-gradient(circle at 78% 12%, rgba(25, 194, 255, 0.14), transparent 30%),
+    radial-gradient(circle at 14% 82%, rgba(21, 94, 239, 0.1), transparent 32%),
+    linear-gradient(180deg, #f8fbff, var(--white));
+  isolation: isolate;
+}
+
+.why-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(21, 94, 239, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(21, 94, 239, 0.055) 1px, transparent 1px);
+  background-size: 42px 42px;
+  -webkit-mask-image: radial-gradient(circle at 50% 22%, rgba(0, 0, 0, 0.64), transparent 68%);
+  mask-image: radial-gradient(circle at 50% 22%, rgba(0, 0, 0, 0.64), transparent 68%);
+}
+
+.why-header,
+.why-card-grid,
+.why-trustbar,
+.why-cta {
+  position: relative;
+  z-index: 1;
+}
+
+.why-header {
+  max-width: 920px;
+  margin: 0 auto clamp(34px, 5vw, 58px);
+  text-align: center;
+}
+
+.why-header .section-kicker {
+  color: var(--blue);
+}
+
+.why-header h2 {
+  max-width: 760px;
+  margin: 0 auto 20px;
+  font-size: clamp(38px, 5vw, 68px);
+  line-height: 0.98;
+}
+
+.why-header p {
+  max-width: 720px;
+  margin: 0 auto;
+  color: var(--muted);
+  font-size: 19px;
+  line-height: 1.72;
+}
+
+.why-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.why-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 270px;
+  padding: 28px;
+  border: 1px solid rgba(214, 226, 240, 0.92);
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(247, 251, 255, 0.86)),
+    var(--white);
+  box-shadow: 0 18px 52px rgba(6, 18, 31, 0.07);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.why-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: radial-gradient(circle at 18% 14%, rgba(25, 194, 255, 0.14), transparent 34%);
+  transition: opacity 180ms ease;
+}
+
+.why-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(21, 94, 239, 0.22);
+  box-shadow: 0 28px 72px rgba(6, 18, 31, 0.12);
+}
+
+.why-card:hover::before {
+  opacity: 1;
+}
+
+.why-card:hover .why-icon {
+  transform: scale(1.06);
+  color: var(--blue);
+}
+
+.why-icon,
+.why-card h3,
+.why-card p {
+  position: relative;
+  z-index: 1;
+}
+
+.why-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  margin-bottom: 24px;
+  border: 1px solid rgba(21, 94, 239, 0.12);
+  border-radius: 16px;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 35% 24%, rgba(255, 255, 255, 0.98), transparent 46%),
+    linear-gradient(145deg, rgba(237, 244, 255, 0.96), rgba(255, 255, 255, 0.72));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 14px 32px rgba(21, 94, 239, 0.08);
+  transition: transform 180ms ease, color 180ms ease;
+}
+
+.why-icon svg {
+  width: 27px;
+  height: 27px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.why-card h3 {
+  margin-bottom: 12px;
+  font-size: 22px;
+  line-height: 1.15;
+}
+
+.why-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.7;
+}
+
+.why-trustbar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  max-width: 1180px;
+  margin: clamp(30px, 5vw, 54px) auto 0;
+  overflow: hidden;
+  border: 1px solid rgba(214, 226, 240, 0.92);
+  border-radius: 22px;
+  background: rgba(214, 226, 240, 0.86);
+  box-shadow: 0 20px 58px rgba(6, 18, 31, 0.08);
+  animation: whyFadeUp 0.7s ease both;
+}
+
+.why-trustbar div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 76px;
+  padding: 18px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.82);
+  font-size: 14px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.why-trustbar span {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  border-radius: 12px;
+  background: #edf4ff;
+}
+
+.why-cta {
+  display: grid;
+  justify-items: center;
+  gap: 22px;
+  max-width: 820px;
+  margin: clamp(42px, 7vw, 76px) auto 0;
+  text-align: center;
+  animation: whyFadeUp 0.72s 0.08s ease both;
+}
+
+.why-cta h2 {
+  margin: 0;
+  font-size: clamp(34px, 4.8vw, 62px);
+  line-height: 1;
+}
+
+.why-cta-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+}
+
+@keyframes whyFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .logo-showcase,
 .section,
 .site-footer,
@@ -4679,6 +4903,7 @@ h3 {
 
   .project-grid,
   .pricing-grid,
+  .why-card-grid,
   .maintenance-grid,
   .audience-grid,
   .testimonial-grid,
@@ -4686,6 +4911,25 @@ h3 {
   .steps,
   .credibility,
   .faq-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .why-section {
+    padding-top: 78px;
+    padding-bottom: 86px;
+  }
+
+  .why-header {
+    text-align: left;
+  }
+
+  .why-header h2,
+  .why-header p {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .why-trustbar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -4792,6 +5036,7 @@ h3 {
   }
 
   .hero,
+  .why-section,
   .logo-showcase,
   .section,
   .site-footer {
@@ -4824,6 +5069,7 @@ h3 {
 
   .project-grid,
   .pricing-grid,
+  .why-card-grid,
   .maintenance-grid,
   .audience-grid,
   .testimonial-grid,
@@ -4832,6 +5078,42 @@ h3 {
   .credibility,
   .faq-grid {
     grid-template-columns: 1fr;
+  }
+
+  .why-header h2 {
+    font-size: clamp(34px, 10vw, 48px);
+  }
+
+  .why-header p {
+    font-size: 17px;
+  }
+
+  .why-card {
+    min-height: auto;
+    padding: 24px;
+  }
+
+  .why-trustbar {
+    grid-template-columns: 1fr;
+  }
+
+  .why-trustbar div {
+    justify-content: flex-start;
+    min-height: 66px;
+    text-align: left;
+  }
+
+  .why-cta h2 {
+    font-size: clamp(32px, 10vw, 46px);
+  }
+
+  .why-cta-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .why-cta-actions .button {
+    width: 100%;
   }
 
   .payment-fields,
