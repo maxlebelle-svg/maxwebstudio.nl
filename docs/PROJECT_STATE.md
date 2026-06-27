@@ -160,3 +160,6 @@ Belangrijk:
 - `mollie-webhook.js` werkt facturen bij wanneer een Mollie payment id overeenkomt met `customer_invoices.mollie_payment_id`.
 - Het klantdashboard toont een knop `Betaal factuur` wanneer `mollie_checkout_url` bestaat en de factuur nog niet betaald, geannuleerd, verlopen of mislukt is.
 - Er zijn nog geen Mollie subscriptions, automatische incasso, PDF-generatie of e-mailherinneringen.
+- Fase 5.8 stabiliseert de end-to-end billingflow en normaliseert factuurstatussen naar `draft`, `sent`, `paid`, `expired`, `canceled` en `failed`.
+- Actieve Mollie checkoutlinks worden hergebruikt in plaats van stil opnieuw aangemaakt.
+- Het testplan voor de volledige billingflow staat in `/docs/BILLING_TEST_PLAN.md`.

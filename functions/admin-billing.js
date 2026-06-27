@@ -54,7 +54,7 @@ const LEGACY_INVOICE_FIELDS = [
 
 const allowedSubscriptionStatuses = new Set(["active", "paused", "cancelled"]);
 const allowedBillingCycles = new Set(["monthly", "quarterly", "yearly"]);
-const allowedInvoiceStatuses = new Set(["draft", "sent", "paid", "overdue", "cancelled", "failed"]);
+const allowedInvoiceStatuses = new Set(["draft", "sent", "paid", "expired", "canceled", "failed"]);
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 exports.handler = async (event) => {
@@ -122,7 +122,7 @@ exports.handler = async (event) => {
 
     if (action === "set_invoice_status") {
       const id = validateUuid(payload.id, "Kies een geldige factuur.");
-      const status = cleanText(payload.status).toLowerCase();
+      const status = normalizeInvoiceStatus(payload.status);
       if (!allowedInvoiceStatuses.has(status)) return jsonResponse(400, { success: false, error: "Kies een geldige factuurstatus." });
       const savedInvoice = await patchRecord(supabaseUrl, serviceRoleKey, "customer_invoices", id, {
         status,
@@ -233,7 +233,7 @@ function validateSubscriptionPayload(payload, profiles) {
 function validateInvoicePayload(payload, profiles) {
   const id = cleanText(payload.id);
   const profile = profileById(payload.profileId, profiles);
-  const status = cleanText(payload.status || "draft").toLowerCase();
+  const status = normalizeInvoiceStatus(payload.status || "draft");
 
   if (id && !uuidPattern.test(id)) throwValidation("Kies een geldige factuur.");
   if (!profile) throwValidation("Koppel de factuur aan een geldige klant.");
@@ -363,7 +363,7 @@ function normalizeInvoice(row) {
     invoiceNumber: cleanText(row.invoice_number),
     title: cleanText(row.title),
     amount: normalizeNullableNumber(row.amount),
-    status: cleanText(row.status || "draft"),
+    status: normalizeInvoiceStatus(row.status || "draft"),
     dueDate: cleanText(row.due_date),
     paidAt: cleanText(row.paid_at),
     pdfFilePath: cleanText(row.pdf_file_path),
@@ -400,6 +400,13 @@ function normalizeInvoicePdfPath(value) {
   if (!path) return null;
   if (/^https?:\/\//i.test(path)) throwValidation("Gebruik alleen het private storage-pad, geen publieke URL.");
   return path.startsWith("invoice-pdfs/") ? path.slice("invoice-pdfs/".length) : path;
+}
+
+function normalizeInvoiceStatus(value) {
+  const status = cleanText(value).toLowerCase();
+  if (status === "overdue") return "expired";
+  if (status === "cancelled") return "canceled";
+  return status || "draft";
 }
 
 function throwValidation(message) {

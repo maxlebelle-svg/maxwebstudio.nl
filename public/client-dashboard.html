@@ -46,7 +46,7 @@
         </div>
         <div class="admin-table portal-invoice-table" id="client-invoice-list" role="table" aria-label="Laatste facturen" aria-live="polite">
           <div class="admin-table-row admin-table-head portal-invoice-row" role="row">
-            <span>Factuur</span><span>Titel</span><span>Bedrag</span><span>Status</span><span>Vervaldatum</span><span>Download</span>
+            <span>Factuur</span><span>Titel</span><span>Bedrag</span><span>Status</span><span>Betaalstatus</span><span>Vervaldatum</span><span>Acties</span>
           </div>
           <article class="admin-card request-card request-state-card" role="row">
             <div>
@@ -167,12 +167,13 @@
           active: "Actief",
           paused: "Gepauzeerd",
           cancelled: "Geannuleerd",
+          canceled: "Geannuleerd",
           draft: "Concept",
           sent: "Verzonden",
           paid: "Betaald",
           overdue: "Verlopen",
+          expired: "Verlopen",
           failed: "Mislukt",
-          canceled: "Geannuleerd",
           open: "Open",
           pending: "In behandeling",
         }[normalize(value)] || value || "-";
@@ -182,7 +183,7 @@
         const status = normalize(value);
         if (["active", "paid"].includes(status)) return "status-active";
         if (["sent", "draft"].includes(status)) return "status-prepared";
-        if (["paused", "overdue"].includes(status)) return "status-warning";
+        if (["paused", "overdue", "expired", "open", "pending"].includes(status)) return "status-warning";
         return "status-attention";
       }
 

@@ -163,6 +163,14 @@ Fase 5.7 voegt Mollie betaalverzoeken voor losse facturen toe:
 - het klantportaal toont een knop `Betaal factuur` wanneer de factuur een actieve checkout URL heeft
 - klanten kunnen geen Mollie payment aanmaken
 
+Fase 5.8 stabiliseert de billingflow:
+
+- factuurstatussen zijn genormaliseerd naar `draft`, `sent`, `paid`, `expired`, `canceled` en `failed`
+- Mollie-statussen blijven `open`, `pending`, `paid`, `failed`, `expired` en `canceled`
+- bestaande actieve checkoutlinks worden hergebruikt
+- het klantportaal verbergt `Betaal factuur` zodra de factuur betaald, verlopen, geannuleerd of mislukt is
+- het end-to-end testplan staat in `/docs/BILLING_TEST_PLAN.md`
+
 Nog niet gebouwd in deze fase:
 
 - Mollie subscriptions

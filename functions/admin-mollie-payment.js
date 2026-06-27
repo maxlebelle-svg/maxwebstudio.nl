@@ -6,8 +6,11 @@ const INVOICE_FIELDS = [
   "status",
   "mollie_payment_id",
   "mollie_checkout_url",
+  "mollie_payment_status",
+  "mollie_payment_expires_at",
   "customer_auth_user_id",
 ].join(",");
+const terminalMollieStatuses = new Set(["paid", "failed", "expired", "canceled"]);
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 exports.handler = async (event) => {
@@ -34,6 +37,17 @@ exports.handler = async (event) => {
     const amount = Number(invoice.amount);
     if (!Number.isFinite(amount) || amount <= 0) {
       return jsonResponse(400, { success: false, error: "Factuurbedrag moet groter zijn dan 0." });
+    }
+
+    if (hasReusableCheckout(invoice)) {
+      return jsonResponse(200, {
+        success: true,
+        reused: true,
+        warning: "Er bestaat al een actieve betaallink voor deze factuur.",
+        checkoutUrl: cleanText(invoice.mollie_checkout_url),
+        paymentId: cleanText(invoice.mollie_payment_id),
+        invoice: normalizeInvoice(invoice),
+      });
     }
 
     const payment = await createMolliePayment(config, invoice, amount);
@@ -85,13 +99,14 @@ function verifyAdmin(event) {
 
 function readConfig() {
   const mollieApiKey = process.env.MOLLIE_API_KEY;
-  const siteUrl = (process.env.SITE_URL || process.env.BASE_URL || "https://maxwebstudio.nl").replace(/\/$/, "");
+  const siteUrl = (process.env.SITE_URL || "").replace(/\/$/, "");
   const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!mollieApiKey || !supabaseUrl || !serviceRoleKey) {
+  if (!mollieApiKey || !siteUrl || !supabaseUrl || !serviceRoleKey) {
     console.error("Admin Mollie payment missing configuration", {
       hasMollieApiKey: Boolean(mollieApiKey),
+      hasSiteUrl: Boolean(siteUrl),
       hasSupabaseUrl: Boolean(supabaseUrl),
       hasServiceRoleKey: Boolean(serviceRoleKey),
     });
@@ -213,6 +228,19 @@ function normalizeInvoice(row) {
     mollieCheckoutUrl: cleanText(row.mollie_checkout_url),
     molliePaymentStatus: cleanText(row.mollie_payment_status),
   };
+}
+
+function hasReusableCheckout(invoice) {
+  const checkoutUrl = cleanText(invoice.mollie_checkout_url);
+  const paymentId = cleanText(invoice.mollie_payment_id);
+  const paymentStatus = cleanText(invoice.mollie_payment_status || invoice.status).toLowerCase();
+  if (!checkoutUrl || !paymentId) return false;
+  const expiresAt = cleanText(invoice.mollie_payment_expires_at);
+  if (expiresAt) {
+    const expiryDate = new Date(expiresAt);
+    if (!Number.isNaN(expiryDate.getTime()) && expiryDate.getTime() <= Date.now()) return false;
+  }
+  return !terminalMollieStatuses.has(paymentStatus);
 }
 
 function restHeaders(serviceRoleKey) {

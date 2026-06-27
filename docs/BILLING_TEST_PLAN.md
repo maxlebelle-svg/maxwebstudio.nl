@@ -1,0 +1,195 @@
+# Billing Test Plan
+
+Gebruik dit testplan voordat Mollie Subscriptions of automatische incasso worden gebouwd.
+
+## Benodigde Environment Variables
+
+Netlify Functions gebruiken deze variabelen server-side:
+
+- `ADMIN_TOKEN`
+- `MOLLIE_API_KEY`
+- `SITE_URL`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_ANON_KEY`
+
+Plaats deze waarden nooit in frontendcode.
+
+## SQL Vooraf
+
+Voer deze bestanden uit in Supabase SQL Editor:
+
+1. `/docs/supabase-billing.sql`
+2. `/docs/supabase-invoice-storage.sql`
+3. `/docs/supabase-mollie-payments.sql`
+
+Controleer daarna dat `public.customer_invoices` minimaal deze velden heeft:
+
+- `profile_id`
+- `customer_auth_user_id`
+- `amount`
+- `status`
+- `mollie_payment_id`
+- `mollie_checkout_url`
+- `mollie_payment_status`
+- `paid_at`
+
+## Mollie Testmodus
+
+Gebruik in Netlify voor deze fase een Mollie test API key in:
+
+- `MOLLIE_API_KEY`
+
+Voorbeeldvorm:
+
+- `test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`
+
+Zet `SITE_URL` op de publieke Netlify URL of productie-URL die Mollie kan bereiken. Lokale URLs werken niet voor webhooks.
+
+## Testfactuur Aanmaken
+
+1. Open `/admin-dashboard.html`.
+2. Vul `ADMIN_TOKEN` in en laad CRM-data.
+3. Maak of selecteer een klant.
+4. Controleer dat het klantprofiel een gekoppelde Supabase Auth-user heeft.
+5. Ga naar `Facturen`.
+6. Maak een factuur aan met:
+   - klant/profiel
+   - factuurnummer
+   - titel
+   - bedrag groter dan `0`
+   - status `draft`
+7. Sla de factuur op.
+
+Facturen zonder `profile_id` mogen niet worden opgeslagen. Facturen zonder `customer_auth_user_id` zijn niet zichtbaar in het klantportaal.
+
+## Betaallink Testen
+
+1. Klik bij de factuur op `Betaalverzoek maken`.
+2. Verwacht:
+   - factuurstatus wordt `sent`
+   - Mollie payment id wordt zichtbaar
+   - Mollie betaalstatus wordt zichtbaar
+   - betaallink wordt opgeslagen
+   - actie `Open betaallink` verschijnt
+3. Klik opnieuw op `Betaalverzoek maken` terwijl de bestaande link nog actief is.
+4. Verwacht:
+   - bestaande actieve checkoutlink wordt hergebruikt
+   - er wordt geen nieuw Mollie payment aangemaakt
+   - admin ziet een waarschuwing dat er al een actieve betaallink is
+
+## Klantportaal Testen
+
+1. Log in op `/login.html` als de gekoppelde klant.
+2. Open `/client-dashboard.html`.
+3. Controleer dat de factuur zichtbaar is.
+4. Controleer dat `Betaal factuur` zichtbaar is zolang de factuur niet `paid`, `expired`, `canceled` of `failed` is.
+5. Klik `Betaal factuur`.
+6. Rond de betaling af in Mollie test checkout.
+
+## Webhook Controleren
+
+Mollie stuurt statusupdates naar:
+
+- `/.netlify/functions/mollie-webhook`
+
+Controleer in Netlify logs:
+
+- Mollie payment id
+- Mollie status
+- invoice id
+- bijgewerkte factuurstatus
+
+De webhook zoekt de factuur via:
+
+- `customer_invoices.mollie_payment_id`
+
+Als er geen factuur is gevonden, hoort er een waarschuwing in de logs te staan zonder secrets.
+
+## Verwachte Statusovergangen
+
+Factuurstatussen:
+
+- `draft`
+- `sent`
+- `paid`
+- `expired`
+- `canceled`
+- `failed`
+
+Mollie-statussen:
+
+- `open`
+- `pending`
+- `paid`
+- `failed`
+- `expired`
+- `canceled`
+
+Mapping:
+
+- Mollie `paid` -> factuur `paid`, `paid_at` gevuld
+- Mollie `canceled` -> factuur `canceled`
+- Mollie `expired` -> factuur `expired`
+- Mollie `failed` -> factuur `failed`
+- Mollie `open` of `pending` -> factuur `sent`
+
+## Veelvoorkomende Foutmeldingen
+
+### Mollie- of Supabase-configuratie ontbreekt
+
+Controleer:
+
+- `MOLLIE_API_KEY`
+- `SITE_URL`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+### Factuurbedrag moet groter zijn dan 0
+
+Oplossing:
+
+- Vul een bedrag hoger dan `0` in op de factuur.
+
+### Factuur niet gevonden
+
+Controleer:
+
+- bestaat de factuur nog in `public.customer_invoices`
+- klopt het factuur ID in de adminactie
+- is de SQL-migratie uitgevoerd
+
+### Mollie gaf geen geldige betaallink terug
+
+Controleer:
+
+- Mollie API key is geldig
+- Mollie-account staat in testmodus met een test key
+- bedrag staat als geldig EUR-bedrag met twee decimalen
+
+### Klant ziet factuur niet
+
+Controleer:
+
+- `customer_auth_user_id` is gevuld op de factuur
+- klant is ingelogd met dezelfde Supabase Auth-user
+- RLS uit `/docs/supabase-billing.sql` is uitgevoerd
+
+### Webhook werkt status niet bij
+
+Controleer:
+
+- `SITE_URL` is publiek bereikbaar
+- webhook URL in Mollie payment eindigt op `/.netlify/functions/mollie-webhook`
+- `mollie_payment_id` staat op de factuur
+- Netlify function logs tonen geen Supabase-configuratiefout
+
+## Beperkingen
+
+Nog niet in deze flow:
+
+- Mollie Subscriptions
+- automatische incasso
+- PDF-generatie
+- e-mailherinneringen
+- volledige admin-auth met rollen en audit trail

@@ -96,7 +96,10 @@ async function updateInvoicePaymentIfPresent(payment) {
   }
 
   const invoice = await fetchInvoiceByPaymentId(supabaseUrl, serviceRoleKey, payment.id);
-  if (!invoice) return;
+  if (!invoice) {
+    console.warn("Mollie webhook invoice not found for payment id", { paymentId: payment.id });
+    return;
+  }
 
   const mappedStatus = mapMollieStatusToInvoiceStatus(payment.status);
   const patch = {
@@ -160,8 +163,8 @@ async function patchInvoice(supabaseUrl, serviceRoleKey, invoiceId, patch) {
 
 function mapMollieStatusToInvoiceStatus(status) {
   if (status === "paid") return "paid";
-  if (status === "canceled") return "cancelled";
-  if (status === "expired") return "overdue";
+  if (status === "canceled") return "canceled";
+  if (status === "expired") return "expired";
   if (status === "failed") return "failed";
   return "sent";
 }

@@ -128,6 +128,8 @@ Admin maakt losse Mollie betaalverzoeken voor facturen via `/.netlify/functions/
 
 `/.netlify/functions/mollie-webhook` ontvangt Mollie statusupdates, haalt de payment status server-side op met `MOLLIE_API_KEY` en werkt alleen een factuur bij wanneer `customer_invoices.mollie_payment_id` overeenkomt.
 
+De stabiele factuurstatussen zijn `draft`, `sent`, `paid`, `expired`, `canceled` en `failed`. De adminfunctie hergebruikt een bestaande actieve checkoutlink wanneer `mollie_checkout_url` en `mollie_payment_id` al aanwezig zijn en de Mollie-status nog niet terminal is.
+
 Nieuwe CRM-klanten worden gekoppeld aan een Supabase Auth-user wanneer het ingevoerde e-mailadres al bestaat in Supabase Auth. Als er nog geen Auth-user bestaat, kan de admin eerst een uitnodiging versturen vanuit het CRM en daarna het profiel opslaan zodra Supabase de gebruiker beschikbaar maakt.
 
 ## Beperkingen

@@ -30,7 +30,7 @@
           <a href="#wijzigingsverzoeken">Wijzigingsverzoeken</a>
           <a href="#bestanden">Bestanden</a>
           <a href="#onderhoud">Onderhoud</a>
-          <a href="#facturen">Facturen placeholder</a>
+          <a href="#facturen">Facturen</a>
           <a href="#ai">AI placeholder</a>
           <a href="#instellingen">Instellingen placeholder</a>
         </nav>
@@ -349,7 +349,7 @@
             <label for="invoice-number">Factuurnummer<input id="invoice-number" type="text" /></label>
             <label for="invoice-title">Titel<input id="invoice-title" type="text" required /></label>
             <label for="invoice-amount">Bedrag<input id="invoice-amount" type="number" min="0" step="0.01" /></label>
-            <label for="invoice-status">Status<select id="invoice-status"><option value="draft">Concept</option><option value="sent">Verzonden</option><option value="paid">Betaald</option><option value="overdue">Verlopen</option><option value="cancelled">Geannuleerd</option></select></label>
+            <label for="invoice-status">Status<select id="invoice-status"><option value="draft">Concept</option><option value="sent">Verzonden</option><option value="paid">Betaald</option><option value="expired">Verlopen</option><option value="canceled">Geannuleerd</option><option value="failed">Mislukt</option></select></label>
             <label for="invoice-due">Vervaldatum<input id="invoice-due" type="date" /></label>
             <label for="invoice-paid-at">Betaaldatum<input id="invoice-paid-at" type="datetime-local" /></label>
             <label for="invoice-pdf">PDF pad<input id="invoice-pdf" type="text" placeholder="2026/klant/factuur-2026-001.pdf" /><small>Upload de PDF handmatig naar de private Supabase bucket invoice-pdfs en vul hier alleen het objectpad in.</small></label>
@@ -1334,7 +1334,7 @@
           const status = normalize(value);
           if (["active", "paid"].includes(status)) return "status-active";
           if (["sent", "draft"].includes(status)) return "status-prepared";
-          if (["paused", "overdue"].includes(status)) return "status-warning";
+          if (["paused", "expired", "overdue", "pending", "open"].includes(status)) return "status-warning";
           return "status-attention";
         }
 
@@ -1343,12 +1343,13 @@
             active: "Actief",
             paused: "Gepauzeerd",
             cancelled: "Geannuleerd",
+            canceled: "Geannuleerd",
             draft: "Concept",
             sent: "Verzonden",
             paid: "Betaald",
             overdue: "Verlopen",
+            expired: "Verlopen",
             failed: "Mislukt",
-            canceled: "Geannuleerd",
             open: "Open",
             pending: "In behandeling",
           }[normalize(value)] || value || "-";
@@ -1430,7 +1431,7 @@
             edit.addEventListener("click", () => openInvoiceModal(invoice.id));
             const status = document.createElement("select");
             status.value = invoice.status || "draft";
-            ["draft", "sent", "paid", "overdue", "cancelled", "failed"].forEach((value) => {
+            ["draft", "sent", "paid", "expired", "canceled", "failed"].forEach((value) => {
               const option = document.createElement("option");
               option.value = value;
               option.textContent = billingStatusLabel(value);
@@ -1440,7 +1441,9 @@
             const payment = document.createElement("button");
             payment.className = "button secondary";
             payment.type = "button";
-            payment.textContent = invoice.molliePaymentId ? "Betaalverzoek vernieuwen" : "Betaalverzoek maken";
+            payment.textContent = invoice.mollieCheckoutUrl && !["paid", "expired", "canceled", "failed"].includes(normalize(invoice.molliePaymentStatus || invoice.status))
+              ? "Betaalverzoek bekijken"
+              : "Betaalverzoek maken";
             payment.addEventListener("click", () => createMolliePayment(invoice.id, payment));
             actions.append(edit, status, payment);
             if (invoice.mollieCheckoutUrl) {
@@ -1643,9 +1646,9 @@
           setAdminAccessMessage("", "");
 
           try {
-            await postMolliePayment({ invoice_id: id });
+            const data = await postMolliePayment({ invoice_id: id });
             await loadBilling(false);
-            setAdminAccessMessage("Betaalverzoek aangemaakt. De betaallink staat bij de factuur.", "success");
+            setAdminAccessMessage(data.warning || "Betaalverzoek aangemaakt. De betaallink staat bij de factuur.", data.warning ? "" : "success");
           } catch (error) {
             setAdminAccessMessage(error.message || "Betaalverzoek kon niet worden aangemaakt.", "error");
           } finally {

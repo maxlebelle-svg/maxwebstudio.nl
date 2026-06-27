@@ -43,18 +43,18 @@ Aanbeveling:
 
 - vervangen door duurzame opslag na technische keuze.
 
-### Webhook Alleen Logging
+### Webhook En Duurzame Status
 
-`mollie-webhook.js` logt betaalstatus, maar slaat status niet duurzaam op.
+`mollie-webhook.js` logt algemene websitebetalingen en slaat factuurstatussen duurzaam op wanneer `customer_invoices.mollie_payment_id` overeenkomt.
 
 Risico:
 
-- geen betrouwbaar orderoverzicht
-- onboarding niet stevig gekoppeld aan betaalstatus
+- algemene website-aanbetalingen zijn nog niet gekoppeld aan een duurzaam orderoverzicht
+- onboarding is nog niet stevig gekoppeld aan betaalstatus
 
 Aanbeveling:
 
-- payment records duurzaam opslaan.
+- algemene websitebetalingen later ook duurzaam opslaan.
 
 ### Formulieren
 
@@ -96,6 +96,7 @@ Risico:
 - Abonnementen of facturen zonder `customer_auth_user_id` zijn niet zichtbaar voor klanten.
 - Factuur-PDF paden mogen geen publieke URL's zijn; `admin-billing.js` accepteert alleen private objectpaden.
 - `mollie_checkout_url` is zichtbaar voor de gekoppelde klant via RLS; deze URL mag alleen worden opgeslagen nadat de payment server-side is aangemaakt.
+- Actieve checkoutlinks worden hergebruikt om onbedoelde dubbele betaalverzoeken te voorkomen.
 - Het admin-dashboard heeft nog geen volledige admin-login, rollenmodel of audit trail.
 - `ADMIN_TOKEN` is een tussenlaag en moet strikt geheim blijven.
 
@@ -122,6 +123,8 @@ Server-side environment variables voor factuurbetalingen:
 - `ADMIN_TOKEN`
 
 Deze waarden mogen nooit in frontendcode worden geplaatst.
+
+De volledige end-to-end testflow staat in `/docs/BILLING_TEST_PLAN.md`.
 
 ### Website Health Monitoring
 
