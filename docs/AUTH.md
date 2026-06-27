@@ -100,10 +100,13 @@ De adminfunctie kan:
 - een Supabase Auth-wachtwoord reset versturen
 - admin-only notities opslaan in `public.admin_customer_notes`
 - websiteomgevingen beheren in `public.customer_websites`
+- website healthdata beheren via `/.netlify/functions/admin-website-health`
 
 Na opslaan leest het klantenportaal de nieuwe profielgegevens direct via de bestaande Supabase Auth-sessie en RLS.
 
 Websiteomgevingen die via het admin-dashboard aan een profiel worden gekoppeld, krijgen ook `customer_auth_user_id`. Daardoor kan de klant de eigen websitegegevens direct lezen via RLS zonder service role key in de browser.
+
+Healthdata blijft onderdeel van `customer_websites`. Admin-mutaties lopen via `ADMIN_TOKEN` en service role server-side. Klanten lezen alleen hun eigen website- en healthstatus via RLS en krijgen geen admincontrols.
 
 Nieuwe CRM-klanten worden gekoppeld aan een Supabase Auth-user wanneer het ingevoerde e-mailadres al bestaat in Supabase Auth. Als er nog geen Auth-user bestaat, kan de admin eerst een uitnodiging versturen vanuit het CRM en daarna het profiel opslaan zodra Supabase de gebruiker beschikbaar maakt.
 

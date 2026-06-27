@@ -41,8 +41,10 @@
         <div class="portal-website-grid">
           <article class="admin-card detail-card"><span>Bedrijf</span><strong id="profile-company">-</strong></article>
           <article class="admin-card detail-card"><span>Website URL</span><strong id="profile-website">-</strong></article>
+          <article class="admin-card detail-card"><span>Website online</span><strong id="profile-uptime-status">-</strong></article>
           <article class="admin-card detail-card"><span>Hostingstatus</span><strong id="profile-hosting-status">-</strong></article>
           <article class="admin-card detail-card"><span>SSL</span><strong id="profile-ssl-status">-</strong></article>
+          <article class="admin-card detail-card"><span>Laatste controle</span><strong id="profile-last-check">-</strong></article>
           <article class="admin-card detail-card"><span>Onderhoudspakket</span><strong id="profile-package">-</strong></article>
           <article class="admin-card detail-card"><span>Klant sinds</span><strong id="profile-created-at">-</strong></article>
         </div>
@@ -191,8 +193,10 @@
         document.querySelector("#profile-company").textContent = company;
         document.querySelector("#profile-package").textContent = packageName;
         document.querySelector("#profile-website").textContent = website || "Nog niet ingesteld";
+        document.querySelector("#profile-uptime-status").textContent = primaryWebsite?.uptime_status === "online" ? "Online" : primaryWebsite?.uptime_status || "Nog niet gecontroleerd";
         document.querySelector("#profile-hosting-status").textContent = primaryWebsite?.hosting_status || "Nog niet ingesteld";
-        document.querySelector("#profile-ssl-status").textContent = primaryWebsite?.ssl_status || "Nog niet ingesteld";
+        document.querySelector("#profile-ssl-status").textContent = primaryWebsite?.ssl_status === "active" ? "Actief" : primaryWebsite?.ssl_status || "Nog niet ingesteld";
+        document.querySelector("#profile-last-check").textContent = formatDate(primaryWebsite?.last_uptime_check);
         document.querySelector("#profile-created-at").textContent = formatDate(profile?.created_at);
         const websiteLink = document.querySelector("#view-website-link");
         websiteLink.href = website || "#";
@@ -435,9 +439,9 @@
 
           if (requestError) throw requestError;
 
-          const { data: websites, error: websiteError } = await state.client
+          let { data: websites, error: websiteError } = await state.client
             .from("customer_websites")
-            .select("id,name,domain,live_url,staging_url,status,ssl_status,hosting_status,last_deploy_at,last_checked_at,updated_at")
+            .select("id,name,domain,live_url,staging_url,status,ssl_status,hosting_status,last_deploy_at,last_checked_at,uptime_status,last_uptime_check,updated_at")
             .eq("customer_auth_user_id", user.id)
             .neq("status", "gearchiveerd")
             .order("updated_at", { ascending: false })
@@ -445,7 +449,20 @@
 
           if (websiteError) {
             const websiteErrorText = `${websiteError.code || ""} ${websiteError.message || ""}`.toLowerCase();
-            if (!websiteErrorText.includes("customer_websites") && !websiteErrorText.includes("42p01")) {
+            if (websiteErrorText.includes("column") || websiteErrorText.includes("schema cache")) {
+              const fallback = await state.client
+                .from("customer_websites")
+                .select("id,name,domain,live_url,staging_url,status,ssl_status,hosting_status,last_deploy_at,last_checked_at,updated_at")
+                .eq("customer_auth_user_id", user.id)
+                .neq("status", "gearchiveerd")
+                .order("updated_at", { ascending: false })
+                .limit(20);
+              websites = fallback.data;
+              websiteError = fallback.error;
+            }
+
+            const fallbackErrorText = `${websiteError?.code || ""} ${websiteError?.message || ""}`.toLowerCase();
+            if (websiteError && !fallbackErrorText.includes("customer_websites") && !fallbackErrorText.includes("42p01")) {
               throw websiteError;
             }
           }

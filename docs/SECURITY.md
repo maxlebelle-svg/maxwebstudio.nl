@@ -80,6 +80,7 @@ Het klantenportaal gebruikt:
 - CRM-acties zoals uitnodigen, wachtwoord-reset, login koppelen en archiveren vereisen `ADMIN_TOKEN` en gebruiken de service role alleen server-side.
 - Admin-only notities staan in `public.admin_customer_notes` met RLS ingeschakeld en zonder klantbeleid. Deze notities mogen niet in het klantdashboard worden getoond.
 - Website Operations data staat in `public.customer_websites`; klanten mogen alleen records lezen waar `customer_auth_user_id = auth.uid()`.
+- Website Health mutaties lopen via `/.netlify/functions/admin-website-health`, vereisen `ADMIN_TOKEN` en gebruiken de service role alleen server-side.
 
 Risico:
 
@@ -98,6 +99,22 @@ Aanbevelingen:
 - Voer de CRM-kolommen uit `/docs/supabase-client-portal.sql` uit zodat e-mail, telefoon en klantstatus duurzaam in `profiles` worden opgeslagen.
 - Voer ook de admin-notities tabel uit `/docs/supabase-client-portal.sql` uit voordat interne klantnotities operationeel worden gebruikt.
 - Voer ook de `customer_websites` tabel en RLS-policy uit `/docs/supabase-client-portal.sql` uit voordat het Website Operations Center live wordt gebruikt.
+- Voer `/docs/supabase-website-health.sql` uit voordat health monitoring operationeel wordt gebruikt.
+
+### Website Health Monitoring
+
+De huidige health-checks zijn mock/placeholder checks en gebruiken geen externe API's.
+
+Risico:
+
+- Scores zijn nog geen echte PageSpeed-, DNS-, SSL- of uptime-metingen.
+- Healthdata is alleen betrouwbaar als de SQL-migratie is uitgevoerd en adminchecks bewust worden gestart.
+
+Aanbevelingen:
+
+- Later echte checks server-side toevoegen met rate limiting.
+- Externe API keys alleen als Netlify environment variables opslaan.
+- Geen health-mutaties vanuit het klantdashboard toestaan.
 
 ### Uploads
 

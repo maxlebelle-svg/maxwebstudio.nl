@@ -70,6 +70,7 @@ Belangrijk:
 - `client-auth-config.js`: geeft publieke Supabase Auth-config terug voor het klantenportaal.
 - `client-change-request-file.js`: maakt klantveilige tijdelijke signed URLs voor eigen wijzigingsverzoekbestanden.
 - `admin-client-profiles.js`: beheert CRM-klantprofielen server-side met `ADMIN_TOKEN` en Supabase service role.
+- `admin-website-health.js`: beheert website healthdata server-side met `ADMIN_TOKEN` en mock-checks als basis voor latere monitoring.
 
 ## Sterke Punten
 
@@ -140,3 +141,7 @@ Belangrijk:
 - Websitegegevens worden beheerd in `public.customer_websites` met klantkoppeling, domein, live/staging URL, GitHub repo, branch, Netlify project, hostingstatus, SSL-status en deploy/check metadata.
 - Het klantenportaal leest `customer_websites` via Supabase RLS en valt terug op `profiles.website` als er nog geen website-record bestaat.
 - Er is nog geen echte Netlify API-, GitHub API- of deploy-triggerkoppeling; dit zijn in deze fase beheerlinks en operationele metadata.
+- Admin CRM Fase 5.4 voegt Website Health Monitoring toe met `/.netlify/functions/admin-website-health`.
+- Healthdata staat op `public.customer_websites` via de losse migratie `/docs/supabase-website-health.sql`.
+- De health-function gebruikt nu mock-checks voor uptime, DNS, SSL en scores; er zijn nog geen externe API-koppelingen.
+- Het klantdashboard toont alleen klantvriendelijke statussen zoals website online, SSL actief en laatste controle.

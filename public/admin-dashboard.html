@@ -182,6 +182,17 @@
               </div>
             </form>
           </div>
+          <div class="admin-health-panel">
+            <div class="admin-section-heading">
+              <div>
+                <p class="section-kicker">Health</p>
+                <h3>Website Health Monitoring</h3>
+              </div>
+              <button class="button secondary" id="website-health-refresh" type="button">Health vernieuwen</button>
+            </div>
+            <div class="admin-grid health-summary-grid" id="website-health-list" aria-live="polite"></div>
+            <p class="admin-form-message" id="website-health-message" role="status"></p>
+          </div>
         </section>
 
         <section class="admin-section" id="wijzigingsverzoeken">
@@ -293,6 +304,7 @@
     <script>
       (() => {
         const crmEndpoint = "/.netlify/functions/admin-client-profiles";
+        const healthEndpoint = "/.netlify/functions/admin-website-health";
         const listEndpoint = "/.netlify/functions/list-change-requests";
         const updateEndpoint = "/.netlify/functions/update-change-request-status";
         const adminTokenStorageKey = "mws_admin_token";
@@ -321,6 +333,7 @@
           profiles: [],
           authUsers: [],
           websites: [],
+          healthWebsites: [],
           requests: [],
           selectedCustomerId: "",
           selectedWebsiteId: "",
@@ -360,6 +373,9 @@
         const websiteDetailState = document.getElementById("website-detail-state");
         const websiteDetailSubtitle = document.getElementById("website-detail-subtitle");
         const websiteDetailMessage = document.getElementById("website-detail-message");
+        const websiteHealthList = document.getElementById("website-health-list");
+        const websiteHealthRefresh = document.getElementById("website-health-refresh");
+        const websiteHealthMessage = document.getElementById("website-health-message");
         const fileList = document.getElementById("file-list");
         const careOverview = document.getElementById("care-overview");
         const customerSearch = document.getElementById("customer-search");
@@ -509,6 +525,11 @@
           websiteDetailMessage.className = `admin-form-message ${type}`.trim();
         }
 
+        function setHealthMessage(text, type = "") {
+          websiteHealthMessage.textContent = text;
+          websiteHealthMessage.className = `admin-form-message ${type}`.trim();
+        }
+
         function renderState(target, title, text, badgeText = "Leeg", badgeClass = "status-planned") {
           target.replaceChildren();
           const card = document.createElement("article");
@@ -525,6 +546,10 @@
 
         function selectedWebsite() {
           return state.websites.find((website) => website.id === state.selectedWebsiteId);
+        }
+
+        function healthWebsiteById(id) {
+          return state.healthWebsites.find((website) => website.id === id);
         }
 
         function updateMetrics() {
@@ -949,6 +974,179 @@
           }
         }
 
+        function scoreLabel(value) {
+          return value === null || value === undefined || value === "" ? "-" : String(value);
+        }
+
+        function scoreClass(value) {
+          const score = Number(value);
+          if (!Number.isFinite(score)) return "status-planned";
+          if (score >= 85) return "status-active";
+          if (score >= 65) return "status-warning";
+          return "status-attention";
+        }
+
+        function healthStatusClass(value) {
+          const status = normalize(value);
+          if (status === "online" || status === "active" || status === "valid") return "status-active";
+          if (status === "warning" || status === "pending" || status === "unknown") return "status-warning";
+          if (status === "offline" || status === "inactive" || status === "invalid") return "status-attention";
+          return "status-planned";
+        }
+
+        function renderWebsiteHealth() {
+          websiteHealthList.replaceChildren();
+
+          if (!state.healthWebsites.length) {
+            const card = document.createElement("article");
+            card.className = "admin-card request-card request-state-card";
+            const content = document.createElement("div");
+            content.append(createCell("Geen healthdata", "strong"), createCell("Voer de SQL uit en vernieuw health om websitechecks te tonen."));
+            card.append(content, createBadge("Leeg", "status-planned"));
+            websiteHealthList.append(card);
+            return;
+          }
+
+          state.healthWebsites.forEach((health) => {
+            const linkedWebsite = state.websites.find((website) => website.id === health.id) || {};
+            const card = document.createElement("article");
+            card.className = "admin-card health-card website-health-card";
+            const header = document.createElement("div");
+            header.className = "website-health-header";
+            const title = document.createElement("div");
+            title.append(createCell(health.name || linkedWebsite.name || "Website", "strong"), createCell(linkedWebsite.customerCompany || linkedWebsite.customerName || health.domain || "Website"));
+            header.append(title, createBadge(health.uptimeStatus || "unknown", healthStatusClass(health.uptimeStatus)));
+
+            const metrics = document.createElement("div");
+            metrics.className = "website-health-metrics";
+            [
+              ["SSL", health.sslStatus, healthStatusClass(health.sslStatus)],
+              ["SSL verloopt", formatDate(health.sslExpiresAt), "status-planned"],
+              ["Domein", health.domain || linkedWebsite.domain || "-", "status-planned"],
+              ["DNS", health.dnsStatus, healthStatusClass(health.dnsStatus)],
+              ["Performance", scoreLabel(health.performanceScore), scoreClass(health.performanceScore)],
+              ["SEO", scoreLabel(health.seoScore), scoreClass(health.seoScore)],
+              ["Mobile", scoreLabel(health.mobileScore), scoreClass(health.mobileScore)],
+              ["Desktop", scoreLabel(health.desktopScore), scoreClass(health.desktopScore)],
+              ["Hosting", health.hostingStatus, websiteStatusClass(health.hostingStatus)],
+              ["Deploy", formatDate(health.lastDeployAt), "status-planned"],
+              ["Laatste check", formatDate(health.lastUptimeCheck), "status-planned"],
+              ["Monitoring", health.monitorEnabled ? "Aan" : "Uit", health.monitorEnabled ? "status-active" : "status-planned"],
+            ].forEach(([label, value, badgeClass]) => {
+              const item = document.createElement("span");
+              item.append(createCell(label), createBadge(value || "-", badgeClass));
+              metrics.append(item);
+            });
+
+            const actions = document.createElement("div");
+            actions.className = "website-actions";
+            const runCheck = document.createElement("button");
+            runCheck.className = "button secondary";
+            runCheck.type = "button";
+            runCheck.textContent = "Controle uitvoeren";
+            runCheck.addEventListener("click", () => runWebsiteHealthCheck(health.id, runCheck));
+            const refresh = document.createElement("button");
+            refresh.className = "button secondary";
+            refresh.type = "button";
+            refresh.textContent = "Health vernieuwen";
+            refresh.addEventListener("click", () => loadWebsiteHealth(true));
+            const toggle = document.createElement("button");
+            toggle.className = "button secondary";
+            toggle.type = "button";
+            toggle.textContent = health.monitorEnabled ? "Monitoring uit" : "Monitoring aan";
+            toggle.addEventListener("click", () => toggleWebsiteMonitoring(health.id, !health.monitorEnabled, toggle));
+            actions.append(runCheck, refresh, toggle);
+
+            card.append(header, metrics, actions);
+            websiteHealthList.append(card);
+          });
+        }
+
+        async function loadWebsiteHealth(showLoading = false) {
+          if (!state.adminToken) {
+            renderWebsiteHealth();
+            return;
+          }
+
+          if (showLoading) {
+            setHealthMessage("Healthdata laden...", "");
+            websiteHealthRefresh.disabled = true;
+            websiteHealthRefresh.textContent = "Laden...";
+          }
+
+          try {
+            const response = await fetch(healthEndpoint, {
+              headers: { Accept: "application/json", Authorization: `Bearer ${state.adminToken}` },
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data.success) throw new Error(data.error || "Healthdata kon niet worden geladen.");
+            state.healthWebsites = Array.isArray(data.websites) ? data.websites : [];
+            renderWebsiteHealth();
+            if (showLoading) setHealthMessage("Healthdata vernieuwd.", "success");
+          } catch (error) {
+            state.healthWebsites = [];
+            renderWebsiteHealth();
+            setHealthMessage(error.message || "Healthdata kon niet worden geladen.", "error");
+          } finally {
+            websiteHealthRefresh.disabled = false;
+            websiteHealthRefresh.textContent = "Health vernieuwen";
+          }
+        }
+
+        async function postWebsiteHealth(payload) {
+          const response = await fetch(healthEndpoint, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+              Authorization: `Bearer ${state.adminToken}`,
+            },
+            body: JSON.stringify(payload),
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || !data.success) throw new Error(data.error || "Healthactie kon niet worden uitgevoerd.");
+          return data;
+        }
+
+        async function runWebsiteHealthCheck(id, button) {
+          const originalText = button.textContent;
+          button.disabled = true;
+          button.textContent = "Controleren...";
+          setHealthMessage("", "");
+
+          try {
+            const data = await postWebsiteHealth({ action: "run_check", id });
+            state.healthWebsites = state.healthWebsites.map((website) => website.id === id ? data.website : website);
+            if (!state.healthWebsites.some((website) => website.id === id)) state.healthWebsites.push(data.website);
+            renderWebsiteHealth();
+            setHealthMessage(data.message || "Controle uitgevoerd.", "success");
+          } catch (error) {
+            setHealthMessage(error.message || "Controle kon niet worden uitgevoerd.", "error");
+          } finally {
+            button.disabled = false;
+            button.textContent = originalText;
+          }
+        }
+
+        async function toggleWebsiteMonitoring(id, monitorEnabled, button) {
+          const originalText = button.textContent;
+          button.disabled = true;
+          button.textContent = "Opslaan...";
+          setHealthMessage("", "");
+
+          try {
+            const data = await postWebsiteHealth({ action: "toggle_monitor", id, monitorEnabled });
+            state.healthWebsites = state.healthWebsites.map((website) => website.id === id ? data.website : website);
+            renderWebsiteHealth();
+            setHealthMessage("Monitoring bijgewerkt.", "success");
+          } catch (error) {
+            setHealthMessage(error.message || "Monitoring kon niet worden bijgewerkt.", "error");
+          } finally {
+            button.disabled = false;
+            button.textContent = originalText;
+          }
+        }
+
         function renderWebsites() {
           const websites = state.websites;
           websiteList.replaceChildren();
@@ -1269,10 +1467,12 @@
             renderWebsites();
             renderCareOverview();
             updateMetrics();
+            await loadWebsiteHealth(false);
             setAdminAccessMessage("CRM-data geladen.", "success");
           } catch (error) {
             setAdminAccessMessage(error.message || "CRM-data kon niet worden geladen.", "error");
             renderState(customerList, "CRM-data kon niet worden geladen", "Controleer ADMIN_TOKEN en Supabase configuratie.", "Fout", "status-attention");
+            renderWebsiteHealth();
           } finally {
             adminLoadButton.disabled = false;
             adminLoadButton.textContent = "Laden";
@@ -1297,6 +1497,7 @@
         document.getElementById("open-new-customer").addEventListener("click", openNewCustomerModal);
         document.getElementById("open-new-customer-secondary").addEventListener("click", openNewCustomerModal);
         document.getElementById("new-website").addEventListener("click", resetWebsiteForm);
+        websiteHealthRefresh.addEventListener("click", () => loadWebsiteHealth(true));
         adminLoadButton.addEventListener("click", () => loadCRMData(true));
         detailForm.addEventListener("submit", saveCustomer);
         websiteDetailForm.addEventListener("submit", saveWebsite);

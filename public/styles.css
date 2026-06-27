@@ -2343,6 +2343,60 @@ h3 {
   gap: 8px;
 }
 
+.admin-health-panel {
+  display: grid;
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.admin-health-panel h3 {
+  margin: 0;
+  font-size: clamp(24px, 2vw, 32px);
+}
+
+.health-summary-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.website-health-card {
+  gap: 16px;
+}
+
+.website-health-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.website-health-header div {
+  display: grid;
+  gap: 6px;
+}
+
+.website-health-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.website-health-metrics > span {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.website-health-metrics > span > span:first-child {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
 .file-row {
   grid-template-columns: minmax(160px, 1.2fr) minmax(180px, 1.2fr) minmax(180px, 1.3fr) auto;
 }
@@ -4278,6 +4332,8 @@ h3 {
 
   .portal-auth-shell,
   .portal-website-grid,
+  .health-summary-grid,
+  .website-health-metrics,
   .portal-status-timeline {
     grid-template-columns: 1fr;
   }

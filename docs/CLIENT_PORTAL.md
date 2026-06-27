@@ -102,6 +102,23 @@ Admin CRM Fase 5.3 maakt de module Websites operationeel. Max Web Studio kan per
 
 Klanten lezen alleen eigen websiteomgevingen via RLS op `customer_websites.customer_auth_user_id = auth.uid()`. Het klantdashboard bevat geen adminacties en toont geen service role data.
 
+## Website Health Monitoring
+
+Admin CRM Fase 5.4 voegt een professioneel health-overzicht toe binnen de module Websites. De beheerder ziet per website:
+
+- online/offline/unknown
+- SSL-status en vervaldatum
+- DNS-status
+- performance-, SEO-, mobile- en desktopscore
+- hostingstatus
+- laatste deploy
+- laatste uptime-check
+- monitoring aan/uit
+
+De Netlify Function `/.netlify/functions/admin-website-health` vereist `ADMIN_TOKEN` en gebruikt `SUPABASE_SERVICE_ROLE_KEY` alleen server-side. De huidige controles zijn mock/placeholder checks als basis voor latere Netlify, GitHub, PageSpeed, SSL, DNS en uptime-integraties.
+
+Het klantdashboard toont alleen klantvriendelijke healthinformatie: website online, SSL actief en laatste controle. Klanten krijgen geen health-controls of adminacties.
+
 ## Doel
 
 Een klantportaal moet Max Web Studio schaalbaar maken door klanten, betalingen, intake, projectstatus en onderhoud op een centrale plek te beheren.
