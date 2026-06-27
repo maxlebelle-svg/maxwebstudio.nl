@@ -428,7 +428,24 @@ function storeLeadRequest(lead) {
   localStorage.setItem(leadStorageKey, JSON.stringify(currentLeads.slice(0, 50)));
 }
 
-function handleLeadFormSubmit() {
+async function sendLeadRequest(lead) {
+  const response = await fetch("/.netlify/functions/send-lead", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(lead),
+  });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok || !data.success) {
+    throw new Error(data.error || "E-mail verzenden lukte niet.");
+  }
+
+  return data;
+}
+
+async function handleLeadFormSubmit() {
   if (!form) {
     return;
   }
@@ -478,15 +495,27 @@ function handleLeadFormSubmit() {
 
   try {
     storeLeadRequest(leadRequest);
+    if (formButton) {
+      formButton.textContent = "Aanvraag verzenden...";
+      formButton.disabled = true;
+      formButton.setAttribute("aria-live", "polite");
+    }
+    setLeadFormStatus("Aanvraag verzenden...", "");
+
+    await sendLeadRequest(leadRequest);
     form.reset();
     if (formButton) {
       formButton.textContent = "Aanvraag verzonden";
-      formButton.setAttribute("aria-live", "polite");
+      formButton.disabled = false;
     }
-    setLeadFormStatus("Bedankt! Je aanvraag is succesvol verzonden.", "success");
+    setLeadFormStatus("Bedankt! Je aanvraag is succesvol verzonden. Ik neem meestal dezelfde dag contact met je op.", "success");
   } catch (error) {
-    console.error("Lead request could not be stored locally", error);
-    setLeadFormStatus("Er ging iets mis bij het verwerken van je aanvraag. Probeer het opnieuw of stuur direct een WhatsApp-bericht.", "error");
+    console.error("Lead request email failed", error);
+    if (formButton) {
+      formButton.textContent = "Verstuur aanvraag";
+      formButton.disabled = false;
+    }
+    setLeadFormStatus("Je aanvraag is lokaal opgeslagen, maar e-mail verzenden lukte niet. Neem eventueel contact op via WhatsApp.", "error");
   }
 }
 

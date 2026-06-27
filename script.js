@@ -205,7 +205,24 @@ function storeLeadRequest(lead) {
   localStorage.setItem(leadStorageKey, JSON.stringify(currentLeads.slice(0, 50)));
 }
 
-function handleLeadFormSubmit() {
+async function sendLeadRequest(lead) {
+  const response = await fetch("/.netlify/functions/send-lead", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(lead),
+  });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok || !data.success) {
+    throw new Error(data.error || "E-mail verzenden lukte niet.");
+  }
+
+  return data;
+}
+
+async function handleLeadFormSubmit() {
   if (termsAccepted && !termsAccepted.checked) {
     formButton.textContent = "Akkoord met voorwaarden is nodig";
     formButton.setAttribute("aria-live", "polite");
@@ -232,12 +249,18 @@ function handleLeadFormSubmit() {
 
   try {
     storeLeadRequest(leadRequest);
+    formButton.textContent = "Aanvraag verzenden...";
+    formButton.disabled = true;
+    formButton.setAttribute("aria-live", "polite");
+
+    await sendLeadRequest(leadRequest);
     form.reset();
     formButton.textContent = "Aanvraag verzonden";
-    formButton.setAttribute("aria-live", "polite");
+    formButton.disabled = false;
   } catch (error) {
-    console.error("Lead request could not be stored locally", error);
+    console.error("Lead request email failed", error);
     formButton.textContent = "Probeer opnieuw of stuur WhatsApp";
+    formButton.disabled = false;
     formButton.setAttribute("aria-live", "polite");
   }
 }

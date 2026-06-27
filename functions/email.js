@@ -1,6 +1,6 @@
-async function sendEmail({ to, subject, html, text, attachments = [], bcc, replyTo }) {
+async function sendEmail({ to, subject, html, text, attachments = [], bcc, replyTo, from: fromOverride }) {
   const provider = process.env.EMAIL_PROVIDER || "resend";
-  const from = process.env.FROM_EMAIL || "info@maxwebstudio.nl";
+  const from = fromOverride || process.env.FROM_EMAIL || "info@maxwebstudio.nl";
 
   if (provider !== "resend") {
     console.log(`Email skipped: unsupported EMAIL_PROVIDER ${provider}`);
