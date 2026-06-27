@@ -171,12 +171,20 @@ Fase 5.8 stabiliseert de billingflow:
 - het klantportaal verbergt `Betaal factuur` zodra de factuur betaald, verlopen, geannuleerd of mislukt is
 - het end-to-end testplan staat in `/docs/BILLING_TEST_PLAN.md`
 
+Fase 5.9 voegt factuur-e-mailnotificaties toe:
+
+- admin verstuurt factuurmail, betalingsherinnering, betaalbevestiging en verlopenmelding via `/.netlify/functions/admin-invoice-email`
+- e-mailtracking staat op `customer_invoices` via `/docs/supabase-invoice-emails.sql`
+- de Mollie webhook probeert automatisch een betaalbevestiging te sturen wanneer een factuur `paid` wordt
+- e-mails gebruiken Resend via `RESEND_API_KEY`, `FROM_EMAIL`, `ADMIN_EMAIL` en `SITE_URL`
+- factuur-PDF's worden niet publiek gelinkt in e-mails; e-mails verwijzen naar het klantportaal
+- het klantportaal toont een korte melding dat betaalbevestigingen per e-mail worden verzonden
+
 Nog niet gebouwd in deze fase:
 
 - Mollie subscriptions
 - automatische incasso
 - PDF-generatie
-- e-mailherinneringen
 - server-side PDF-upload vanuit het admin-dashboard
 
 ## Doel

@@ -370,6 +370,7 @@
         const healthEndpoint = "/.netlify/functions/admin-website-health";
         const billingEndpoint = "/.netlify/functions/admin-billing";
         const molliePaymentEndpoint = "/.netlify/functions/admin-mollie-payment";
+        const invoiceEmailEndpoint = "/.netlify/functions/admin-invoice-email";
         const listEndpoint = "/.netlify/functions/list-change-requests";
         const updateEndpoint = "/.netlify/functions/update-change-request-status";
         const adminTokenStorageKey = "mws_admin_token";
@@ -1355,6 +1356,53 @@
           }[normalize(value)] || value || "-";
         }
 
+        function invoiceEmailTypeLabel(value) {
+          return {
+            invoice_sent: "Factuurmail",
+            payment_reminder: "Herinnering",
+            paid_confirmation: "Betaalbevestiging",
+            expired_notice: "Verlopenmelding",
+          }[normalize(value)] || value || "E-mail";
+        }
+
+        function createInvoiceEmailSummary(invoice) {
+          const wrapper = document.createElement("span");
+          wrapper.className = "invoice-email-summary";
+          const items = [
+            ["Factuur", invoice.emailSentAt],
+            ["Herinnering", invoice.paymentReminderSentAt],
+            ["Betaald", invoice.paidEmailSentAt],
+            ["Verlopen", invoice.expiredEmailSentAt],
+          ];
+          items.forEach(([label, value]) => {
+            const item = document.createElement("small");
+            item.textContent = `${label}: ${value ? formatDate(value) : "-"}`;
+            wrapper.append(item);
+          });
+          if (invoice.emailLastError) {
+            const error = document.createElement("small");
+            error.className = "status-attention";
+            error.textContent = `Fout: ${invoice.emailLastError}`;
+            wrapper.append(error);
+          }
+          return wrapper;
+        }
+
+        function invoiceEmailActions(invoice) {
+          const status = normalize(invoice.status);
+          const actions = [{ type: "invoice_sent", label: "Verstuur factuurmail" }];
+          if (!["paid", "canceled", "expired", "failed"].includes(status)) {
+            actions.push({ type: "payment_reminder", label: "Verstuur herinnering" });
+          }
+          if (status === "paid") {
+            actions.push({ type: "paid_confirmation", label: "Verstuur betaalbevestiging" });
+          }
+          if (status === "expired") {
+            actions.push({ type: "expired_notice", label: "Verstuur verlopenmelding" });
+          }
+          return actions;
+        }
+
         function populateBillingProfileOptions(select) {
           select.replaceChildren();
           const empty = document.createElement("option");
@@ -1417,7 +1465,7 @@
           }
           const head = document.createElement("div");
           head.className = "admin-table-row admin-table-head invoice-row";
-          ["Klant", "Factuurnummer", "Titel", "Bedrag", "Status", "Betaalstatus", "Vervaldatum", "Mollie ID", "Betaallink", "PDF", "Acties"].forEach((label) => head.append(createCell(label)));
+          ["Klant", "Factuurnummer", "Titel", "Bedrag", "Status", "Betaalstatus", "Vervaldatum", "Mollie ID", "Betaallink", "PDF", "E-mail", "Acties"].forEach((label) => head.append(createCell(label)));
           invoiceList.append(head);
           state.invoices.forEach((invoice) => {
             const row = document.createElement("div");
@@ -1455,6 +1503,14 @@
               checkout.textContent = "Open betaallink";
               actions.append(checkout);
             }
+            invoiceEmailActions(invoice).forEach((emailAction) => {
+              const emailButton = document.createElement("button");
+              emailButton.className = "button secondary";
+              emailButton.type = "button";
+              emailButton.textContent = emailAction.label;
+              emailButton.addEventListener("click", () => sendInvoiceEmail(invoice.id, emailAction.type, emailButton));
+              actions.append(emailButton);
+            });
             row.append(
               createCell(invoice.customerCompany || invoice.customerName || "Geen klant", "strong"),
               createCell(invoice.invoiceNumber),
@@ -1466,6 +1522,7 @@
               createCell(invoice.molliePaymentId || "-"),
               createCell(invoice.mollieCheckoutUrl ? "Beschikbaar" : "Geen betaallink"),
               createCell(invoice.pdfFilePath || "Geen PDF"),
+              createInvoiceEmailSummary(invoice),
               actions
             );
             invoiceList.append(row);
@@ -1670,6 +1727,34 @@
           const data = await response.json().catch(() => ({}));
           if (!response.ok || !data.success) throw new Error(data.error || "Betaalverzoek kon niet worden aangemaakt.");
           return data;
+        }
+
+        async function sendInvoiceEmail(id, emailType, button) {
+          const originalText = button.textContent;
+          button.disabled = true;
+          button.textContent = "Versturen...";
+          setAdminAccessMessage("", "");
+
+          try {
+            const response = await fetch(invoiceEmailEndpoint, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                Authorization: `Bearer ${state.adminToken}`,
+              },
+              body: JSON.stringify({ invoice_id: id, email_type: emailType }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data.success) throw new Error(data.error || `${invoiceEmailTypeLabel(emailType)} kon niet worden verzonden.`);
+            await loadBilling(false);
+            setAdminAccessMessage(data.message || `${invoiceEmailTypeLabel(emailType)} verzonden.`, "success");
+          } catch (error) {
+            setAdminAccessMessage(error.message || `${invoiceEmailTypeLabel(emailType)} kon niet worden verzonden.`, "error");
+          } finally {
+            button.disabled = false;
+            button.textContent = originalText;
+          }
         }
 
         function clearInvoicePdfPath() {

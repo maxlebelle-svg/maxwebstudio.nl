@@ -99,12 +99,58 @@ Controleer in Netlify logs:
 - Mollie status
 - invoice id
 - bijgewerkte factuurstatus
+- eventuele automatische betaalbevestiging
 
 De webhook zoekt de factuur via:
 
 - `customer_invoices.mollie_payment_id`
 
 Als er geen factuur is gevonden, hoort er een waarschuwing in de logs te staan zonder secrets.
+
+## Factuurmails Testen
+
+Benodigde extra env vars:
+
+- `RESEND_API_KEY`
+- `FROM_EMAIL`
+- `ADMIN_EMAIL`
+- `SITE_URL`
+
+Voorbereiding:
+
+1. Voer `/docs/supabase-invoice-emails.sql` uit in Supabase.
+2. Controleer dat de klant in `profiles.email` een geldig e-mailadres heeft.
+3. Controleer dat Resend het ingestelde `FROM_EMAIL` domein mag verzenden.
+
+Handmatige mailtest:
+
+1. Open `/admin-dashboard.html`.
+2. Laad admin met `ADMIN_TOKEN`.
+3. Ga naar Facturen.
+4. Klik op `Verstuur factuurmail`.
+5. Verwacht:
+   - klant ontvangt een Nederlandstalige factuurmail
+   - `email_sent_at` wordt gevuld
+   - admin toont de verzenddatum in de e-mailkolom
+
+Herinnering testen:
+
+1. Gebruik een factuur die nog niet `paid`, `expired`, `canceled` of `failed` is.
+2. Klik op `Verstuur herinnering`.
+3. Verwacht dat `payment_reminder_sent_at` wordt gevuld.
+
+Betaalbevestiging testen:
+
+1. Zet een factuur op `paid` of rond Mollie testbetaling af.
+2. Klik eventueel handmatig op `Verstuur betaalbevestiging`.
+3. Verwacht dat `paid_email_sent_at` wordt gevuld.
+4. Bij Mollie webhook `paid` probeert de webhook dit automatisch te doen als `paid_email_sent_at` nog leeg is.
+
+Verlopenmelding testen:
+
+1. Zet een factuur op `expired`.
+2. Klik op `Verstuur verlopenmelding`.
+3. Verwacht dat `expired_email_sent_at` wordt gevuld.
 
 ## Verwachte Statusovergangen
 
@@ -184,6 +230,16 @@ Controleer:
 - `mollie_payment_id` staat op de factuur
 - Netlify function logs tonen geen Supabase-configuratiefout
 
+### Factuurmail kan niet worden verzonden
+
+Controleer:
+
+- `RESEND_API_KEY` is gezet in Netlify
+- `FROM_EMAIL` is toegestaan in Resend
+- `profiles.email` is gevuld en geldig
+- `/docs/supabase-invoice-emails.sql` is uitgevoerd
+- `email_last_error` op de factuur bevat de laatste provider- of validatiefout
+
 ## Beperkingen
 
 Nog niet in deze flow:
@@ -191,5 +247,4 @@ Nog niet in deze flow:
 - Mollie Subscriptions
 - automatische incasso
 - PDF-generatie
-- e-mailherinneringen
 - volledige admin-auth met rollen en audit trail

@@ -1,4 +1,5 @@
 const { getMollieApiKey } = require("./mollie-products");
+const { sendEmail } = require("./email");
 
 const knownStatuses = new Set([
   "paid",
@@ -116,11 +117,32 @@ async function updateInvoicePaymentIfPresent(payment) {
     mollieStatus: payment.status,
     invoiceStatus: mappedStatus,
   });
+
+  if (payment.status === "paid" && !invoice.paid_email_sent_at) {
+    await sendPaidConfirmationEmail(supabaseUrl, serviceRoleKey, invoice);
+  }
 }
 
 async function fetchInvoiceByPaymentId(supabaseUrl, serviceRoleKey, paymentId) {
+  const invoice = await fetchInvoiceByPaymentIdWithFields(
+    supabaseUrl,
+    serviceRoleKey,
+    paymentId,
+    "id,profile_id,invoice_number,title,amount,status,paid_at,pdf_file_path,paid_email_sent_at,email_last_error"
+  );
+  if (invoice !== false) return invoice;
+
+  return fetchInvoiceByPaymentIdWithFields(
+    supabaseUrl,
+    serviceRoleKey,
+    paymentId,
+    "id,profile_id,invoice_number,title,amount,status,paid_at,pdf_file_path"
+  );
+}
+
+async function fetchInvoiceByPaymentIdWithFields(supabaseUrl, serviceRoleKey, paymentId, fields) {
   const response = await fetch(
-    `${supabaseUrl}/rest/v1/customer_invoices?select=id,status,paid_at&mollie_payment_id=eq.${encodeURIComponent(paymentId)}&limit=1`,
+    `${supabaseUrl}/rest/v1/customer_invoices?select=${fields}&mollie_payment_id=eq.${encodeURIComponent(paymentId)}&limit=1`,
     {
       method: "GET",
       headers: restHeaders(serviceRoleKey),
@@ -134,10 +156,112 @@ async function fetchInvoiceByPaymentId(supabaseUrl, serviceRoleKey, paymentId) {
       status: response.status,
       message: data.message || data.error || "Unknown Supabase error",
     });
+    if (isSchemaColumnError(data)) return false;
     return null;
   }
 
   return Array.isArray(data) ? data[0] : data;
+}
+
+async function sendPaidConfirmationEmail(supabaseUrl, serviceRoleKey, invoice) {
+  try {
+    const profile = await fetchInvoiceProfile(supabaseUrl, serviceRoleKey, invoice.profile_id);
+    const customerEmail = cleanEmail(profile?.email);
+
+    if (!customerEmail) {
+      console.warn("Mollie webhook paid email skipped: missing customer email", { invoiceId: invoice.id });
+      await patchInvoice(supabaseUrl, serviceRoleKey, invoice.id, { email_last_error: "Geen klant e-mailadres gevonden." });
+      return;
+    }
+
+    const message = buildPaidConfirmationEmail(invoice, profile);
+    const result = await sendEmail({
+      to: customerEmail,
+      bcc: cleanEmail(process.env.ADMIN_EMAIL) || undefined,
+      subject: message.subject,
+      text: message.text,
+      html: message.html,
+    });
+
+    if (!result.sent) {
+      console.warn("Mollie webhook paid email skipped", { invoiceId: invoice.id, warning: result.warning || "Unknown email warning" });
+      await patchInvoice(supabaseUrl, serviceRoleKey, invoice.id, { email_last_error: result.warning || "Betaalbevestiging kon niet worden verzonden." });
+      return;
+    }
+
+    await patchInvoice(supabaseUrl, serviceRoleKey, invoice.id, {
+      paid_email_sent_at: new Date().toISOString(),
+      email_last_error: null,
+    });
+    console.log("Mollie webhook paid email sent", { invoiceId: invoice.id });
+  } catch (error) {
+    console.error("Mollie webhook paid email failed", {
+      invoiceId: invoice.id,
+      message: error.message,
+    });
+  }
+}
+
+async function fetchInvoiceProfile(supabaseUrl, serviceRoleKey, profileId) {
+  if (!profileId) return null;
+  const response = await fetch(`${supabaseUrl}/rest/v1/profiles?select=id,name,company,email&id=eq.${encodeURIComponent(profileId)}&limit=1`, {
+    method: "GET",
+    headers: restHeaders(serviceRoleKey),
+  });
+  const data = await response.json().catch(() => []);
+
+  if (!response.ok) {
+    console.error("Mollie webhook profile lookup failed", {
+      profileId,
+      status: response.status,
+      message: data.message || data.error || "Unknown Supabase error",
+    });
+    return null;
+  }
+
+  return Array.isArray(data) ? data[0] : data;
+}
+
+function buildPaidConfirmationEmail(invoice, profile) {
+  const customerName = cleanText(profile?.name) || cleanText(profile?.company) || "beste klant";
+  const invoiceNumber = cleanText(invoice.invoice_number) || "je factuur";
+  const title = cleanText(invoice.title) || "Factuur";
+  const portalUrl = absoluteUrl("/client-dashboard.html");
+  const text = [
+    `Hallo ${customerName},`,
+    "",
+    `Bedankt, we hebben de betaling voor factuur ${invoiceNumber} ontvangen.`,
+    `Factuur: ${title}.`,
+    `Bedrag: ${formatMoney(invoice.amount)}.`,
+    cleanText(invoice.pdf_file_path) ? `De factuur-PDF blijft veilig beschikbaar in je klantportaal: ${portalUrl}` : "",
+    "",
+    "Met vriendelijke groet,",
+    "Max Web Studio",
+  ].filter(Boolean).join("\n");
+
+  return {
+    subject: `Betaling ontvangen voor factuur ${invoiceNumber}`,
+    text,
+    html: renderEmailHtml("Betaling ontvangen", text, portalUrl),
+  };
+}
+
+function renderEmailHtml(heading, text, portalUrl) {
+  const paragraphs = text.split("\n").map((line) => line.trim()).filter(Boolean);
+  return `
+    <div style="margin:0;padding:0;background:#07111f;color:#eaf1ff;font-family:Arial,sans-serif;">
+      <div style="max-width:640px;margin:0 auto;padding:32px 20px;">
+        <div style="border:1px solid rgba(255,255,255,0.12);border-radius:18px;background:#0b1728;padding:28px;">
+          <p style="margin:0 0 10px;color:#7db7ff;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;">Max Web Studio</p>
+          <h1 style="margin:0 0 20px;color:#ffffff;font-size:28px;line-height:1.2;">${escapeHtml(heading)}</h1>
+          ${paragraphs.map((line) => `<p style="margin:0 0 14px;color:#d7e3f7;font-size:15px;line-height:1.7;">${linkify(escapeHtml(line))}</p>`).join("")}
+          <p style="margin:24px 0 0;">
+            <a href="${escapeAttribute(portalUrl)}" style="display:inline-block;background:#2f8cff;color:#ffffff;text-decoration:none;border-radius:10px;padding:12px 18px;font-weight:700;">Open klantportaal</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 async function patchInvoice(supabaseUrl, serviceRoleKey, invoiceId, patch) {
@@ -193,6 +317,48 @@ function restHeaders(serviceRoleKey) {
     Accept: "application/json",
     "Accept-Profile": "public",
   };
+}
+
+function isSchemaColumnError(data) {
+  const message = `${data?.code || ""} ${data?.message || ""} ${data?.details || ""} ${data?.hint || ""}`.toLowerCase();
+  return message.includes("42703") || message.includes("pgrst204") || message.includes("column") || message.includes("schema cache");
+}
+
+function absoluteUrl(path) {
+  const siteUrl = cleanText(process.env.SITE_URL || "https://maxwebstudio.nl").replace(/\/$/, "");
+  return `${siteUrl}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+function formatMoney(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "-";
+  return new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(number);
+}
+
+function cleanEmail(value) {
+  const email = cleanText(value).toLowerCase();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : "";
+}
+
+function cleanText(value) {
+  return String(value || "").trim();
+}
+
+function linkify(value) {
+  return value.replace(/https?:\/\/[^\s<]+/g, (url) => `<a href="${escapeAttribute(url)}" style="color:#7db7ff;">${url}</a>`);
+}
+
+function escapeHtml(value) {
+  return cleanText(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function escapeAttribute(value) {
+  return escapeHtml(value).replace(/`/g, "&#96;");
 }
 
 function textResponse(statusCode, body) {

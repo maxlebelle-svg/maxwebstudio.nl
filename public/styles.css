@@ -2342,7 +2342,15 @@ h3 {
 }
 
 .invoice-row {
-  grid-template-columns: minmax(120px, 1fr) minmax(105px, 0.8fr) minmax(125px, 1fr) minmax(80px, 0.6fr) minmax(95px, 0.7fr) minmax(105px, 0.8fr) minmax(105px, 0.75fr) minmax(115px, 0.85fr) minmax(105px, 0.75fr) minmax(115px, 0.85fr) minmax(170px, 1fr);
+  grid-template-columns: minmax(120px, 1fr) minmax(105px, 0.8fr) minmax(125px, 1fr) minmax(80px, 0.6fr) minmax(95px, 0.7fr) minmax(105px, 0.8fr) minmax(105px, 0.75fr) minmax(115px, 0.85fr) minmax(105px, 0.75fr) minmax(115px, 0.85fr) minmax(145px, 0.95fr) minmax(170px, 1fr);
+}
+
+.invoice-email-summary {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .admin-table-row select {

@@ -113,6 +113,7 @@ Aanbevelingen:
 - Voer `/docs/supabase-billing.sql` uit voordat facturatie en abonnementen operationeel worden gebruikt.
 - Voer `/docs/supabase-invoice-storage.sql` uit voordat factuur-PDF downloads operationeel worden gebruikt.
 - Voer `/docs/supabase-mollie-payments.sql` uit voordat Mollie betaalverzoeken voor facturen operationeel worden gebruikt.
+- Voer `/docs/supabase-invoice-emails.sql` uit voordat factuur-e-mailnotificaties operationeel worden gebruikt.
 
 Server-side environment variables voor factuurbetalingen:
 
@@ -123,6 +124,18 @@ Server-side environment variables voor factuurbetalingen:
 - `ADMIN_TOKEN`
 
 Deze waarden mogen nooit in frontendcode worden geplaatst.
+
+Server-side environment variables voor factuur-e-mails:
+
+- `RESEND_API_KEY`
+- `FROM_EMAIL`
+- `ADMIN_EMAIL`
+- `SITE_URL`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `ADMIN_TOKEN`
+
+Factuur-e-mails worden alleen via Netlify Functions verstuurd. De adminfunctie vereist `ADMIN_TOKEN`; klanten kunnen geen e-mails triggeren. Factuur-PDF's worden niet als publieke links in e-mails gezet, maar blijven achter het klantportaal en signed URL-flow.
 
 De volledige end-to-end testflow staat in `/docs/BILLING_TEST_PLAN.md`.
 

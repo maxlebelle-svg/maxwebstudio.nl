@@ -163,3 +163,8 @@ Belangrijk:
 - Fase 5.8 stabiliseert de end-to-end billingflow en normaliseert factuurstatussen naar `draft`, `sent`, `paid`, `expired`, `canceled` en `failed`.
 - Actieve Mollie checkoutlinks worden hergebruikt in plaats van stil opnieuw aangemaakt.
 - Het testplan voor de volledige billingflow staat in `/docs/BILLING_TEST_PLAN.md`.
+- Fase 5.9 voegt factuur-e-mailnotificaties toe via `/.netlify/functions/admin-invoice-email`.
+- De database-uitbreiding voor e-mailtracking staat in `/docs/supabase-invoice-emails.sql`.
+- Admins kunnen vanuit de facturenmodule handmatig een factuurmail, betalingsherinnering, betaalbevestiging of verlopenmelding versturen.
+- `mollie-webhook.js` probeert bij een succesvolle betaling automatisch een betaalbevestiging te sturen, zonder de factuurstatus-update te blokkeren wanneer e-mailconfiguratie ontbreekt.
+- Factuurmails gebruiken Resend via `RESEND_API_KEY` en verwijzen voor PDF's naar het klantportaal in plaats van publieke PDF-links.

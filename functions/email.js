@@ -1,4 +1,4 @@
-async function sendEmail({ to, subject, html, text, attachments = [] }) {
+async function sendEmail({ to, subject, html, text, attachments = [], bcc, replyTo }) {
   const provider = process.env.EMAIL_PROVIDER || "resend";
   const from = process.env.FROM_EMAIL || "info@maxwebstudio.nl";
 
@@ -22,6 +22,8 @@ async function sendEmail({ to, subject, html, text, attachments = [] }) {
       body: JSON.stringify({
         from,
         to,
+        bcc,
+        reply_to: replyTo,
         subject,
         html,
         text,
