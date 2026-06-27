@@ -168,3 +168,8 @@ Belangrijk:
 - Admins kunnen vanuit de facturenmodule handmatig een factuurmail, betalingsherinnering, betaalbevestiging of verlopenmelding versturen.
 - `mollie-webhook.js` probeert bij een succesvolle betaling automatisch een betaalbevestiging te sturen, zonder de factuurstatus-update te blokkeren wanneer e-mailconfiguratie ontbreekt.
 - Factuurmails gebruiken Resend via `RESEND_API_KEY` en verwijzen voor PDF's naar het klantportaal in plaats van publieke PDF-links.
+- Fase 6.1 voegt de basis toe voor Mollie Customers en onderhoudsabonnementen via `/.netlify/functions/admin-mollie-subscription`.
+- De database-uitbreiding voor subscription metadata staat in `/docs/supabase-mollie-subscriptions.sql`.
+- De Admin CRM-module Onderhoud kan een Mollie Customer en Subscription activeren en toont customer id, subscription id, Mollie-status, laatste betaling en volgende betaling.
+- Het klantdashboard toont subscriptionstatus en volgende incasso wanneer deze data beschikbaar is.
+- Webhook synchronisatie, pauzeren, hervatten, opzeggen en retries zijn bewust nog niet gebouwd.

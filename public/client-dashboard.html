@@ -42,7 +42,7 @@
           <article class="admin-card detail-card"><span>Huidig onderhoudspakket</span><strong id="billing-package">-</strong></article>
           <article class="admin-card detail-card"><span>Maandbedrag</span><strong id="billing-amount">-</strong></article>
           <article class="admin-card detail-card"><span>Status abonnement</span><strong id="billing-status">-</strong></article>
-          <article class="admin-card detail-card"><span>Volgende factuurdatum</span><strong id="billing-next-date">-</strong></article>
+          <article class="admin-card detail-card"><span>Volgende incasso</span><strong id="billing-next-date">-</strong></article>
         </div>
         <div class="admin-table portal-invoice-table" id="client-invoice-list" role="table" aria-label="Laatste facturen" aria-live="polite">
           <div class="admin-table-row admin-table-head portal-invoice-row" role="row">
@@ -177,6 +177,7 @@
           failed: "Mislukt",
           open: "Open",
           pending: "In behandeling",
+          suspended: "Gepauzeerd",
         }[normalize(value)] || value || "-";
       }
 
@@ -184,7 +185,7 @@
         const status = normalize(value);
         if (["active", "paid"].includes(status)) return "status-active";
         if (["sent", "draft"].includes(status)) return "status-prepared";
-        if (["paused", "overdue", "expired", "open", "pending"].includes(status)) return "status-warning";
+        if (["paused", "suspended", "overdue", "expired", "open", "pending"].includes(status)) return "status-warning";
         return "status-attention";
       }
 
@@ -303,8 +304,8 @@
         const subscription = state.subscriptions.find((item) => normalize(item.status) === "active") || state.subscriptions[0] || null;
         document.querySelector("#billing-package").textContent = subscription?.package_name || state.profile?.package || "-";
         document.querySelector("#billing-amount").textContent = money(subscription?.monthly_amount);
-        document.querySelector("#billing-status").textContent = billingStatusLabel(subscription?.status);
-        document.querySelector("#billing-next-date").textContent = formatDate(subscription?.next_invoice_date);
+        document.querySelector("#billing-status").textContent = billingStatusLabel(subscription?.mollie_subscription_status || subscription?.status);
+        document.querySelector("#billing-next-date").textContent = formatDate(subscription?.next_payment_at || subscription?.next_invoice_date);
 
         invoiceList.replaceChildren();
         if (!state.invoices.length) {
@@ -639,10 +640,24 @@
 
           let { data: subscriptionRows, error: subscriptionError } = await state.client
             .from("customer_subscriptions")
-            .select("id,package_name,billing_cycle,monthly_amount,status,start_date,next_invoice_date,updated_at")
+            .select("id,package_name,billing_cycle,monthly_amount,status,start_date,next_invoice_date,mollie_subscription_status,last_payment_at,next_payment_at,updated_at")
             .eq("customer_auth_user_id", user.id)
             .order("updated_at", { ascending: false })
             .limit(20);
+
+          if (subscriptionError) {
+            const subscriptionSchemaErrorText = `${subscriptionError.code || ""} ${subscriptionError.message || ""}`.toLowerCase();
+            if (subscriptionSchemaErrorText.includes("column") || subscriptionSchemaErrorText.includes("schema cache")) {
+              const fallback = await state.client
+                .from("customer_subscriptions")
+                .select("id,package_name,billing_cycle,monthly_amount,status,start_date,next_invoice_date,updated_at")
+                .eq("customer_auth_user_id", user.id)
+                .order("updated_at", { ascending: false })
+                .limit(20);
+              subscriptionRows = fallback.data;
+              subscriptionError = fallback.error;
+            }
+          }
 
           const subscriptionErrorText = `${subscriptionError?.code || ""} ${subscriptionError?.message || ""}`.toLowerCase();
           if (subscriptionError && !subscriptionErrorText.includes("customer_subscriptions") && !subscriptionErrorText.includes("42p01")) {

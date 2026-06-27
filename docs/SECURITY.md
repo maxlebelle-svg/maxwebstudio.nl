@@ -86,6 +86,7 @@ Het klantenportaal gebruikt:
 - Factuur-PDF's staan in private Supabase Storage bucket `invoice-pdfs`.
 - Klantdownloads lopen via `/.netlify/functions/invoice-download`, vereisen een Supabase Auth JWT en gebruiken korte signed URLs.
 - Mollie betaalverzoeken voor facturen lopen via `/.netlify/functions/admin-mollie-payment`, vereisen `ADMIN_TOKEN` en gebruiken `MOLLIE_API_KEY` alleen server-side.
+- Mollie onderhoudsabonnementen lopen via `/.netlify/functions/admin-mollie-subscription`, vereisen `ADMIN_TOKEN` en gebruiken `MOLLIE_API_KEY` alleen server-side.
 - Mollie webhookstatussen worden server-side opgehaald en gekoppeld via `customer_invoices.mollie_payment_id`.
 
 Risico:
@@ -114,6 +115,7 @@ Aanbevelingen:
 - Voer `/docs/supabase-invoice-storage.sql` uit voordat factuur-PDF downloads operationeel worden gebruikt.
 - Voer `/docs/supabase-mollie-payments.sql` uit voordat Mollie betaalverzoeken voor facturen operationeel worden gebruikt.
 - Voer `/docs/supabase-invoice-emails.sql` uit voordat factuur-e-mailnotificaties operationeel worden gebruikt.
+- Voer `/docs/supabase-mollie-subscriptions.sql` uit voordat Mollie onderhoudsabonnementen operationeel worden gebruikt.
 
 Server-side environment variables voor factuurbetalingen:
 
@@ -124,6 +126,15 @@ Server-side environment variables voor factuurbetalingen:
 - `ADMIN_TOKEN`
 
 Deze waarden mogen nooit in frontendcode worden geplaatst.
+
+Server-side environment variables voor Mollie subscriptions:
+
+- `MOLLIE_API_KEY`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `ADMIN_TOKEN`
+
+Klanten mogen geen subscriptionmutaties uitvoeren. Subscription-acties blijven admin-only totdat er echte admin-authenticatie met rollen en audit trail is.
 
 Server-side environment variables voor factuur-e-mails:
 

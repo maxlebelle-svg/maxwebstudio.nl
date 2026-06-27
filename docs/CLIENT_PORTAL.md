@@ -180,10 +180,20 @@ Fase 5.9 voegt factuur-e-mailnotificaties toe:
 - factuur-PDF's worden niet publiek gelinkt in e-mails; e-mails verwijzen naar het klantportaal
 - het klantportaal toont een korte melding dat betaalbevestigingen per e-mail worden verzonden
 
+Fase 6.1 voegt Mollie Customers en onderhoudsabonnementen als basis toe:
+
+- admin activeert een Mollie subscription via `/.netlify/functions/admin-mollie-subscription`
+- de function maakt indien nodig eerst een Mollie Customer aan
+- subscription metadata staat op `customer_subscriptions`
+- SQL staat in `/docs/supabase-mollie-subscriptions.sql`
+- architectuur en testmodus staan in `/docs/MOLLIE_SUBSCRIPTIONS.md`
+- het klantportaal toont status, bedrag en volgende incasso, maar bevat geen beheeracties
+
 Nog niet gebouwd in deze fase:
 
-- Mollie subscriptions
-- automatische incasso
+- webhook synchronisatie voor subscription payments
+- automatische retries
+- pauzeren, hervatten en opzeggen
 - PDF-generatie
 - server-side PDF-upload vanuit het admin-dashboard
 

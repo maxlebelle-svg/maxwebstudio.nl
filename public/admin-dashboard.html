@@ -370,6 +370,7 @@
         const healthEndpoint = "/.netlify/functions/admin-website-health";
         const billingEndpoint = "/.netlify/functions/admin-billing";
         const molliePaymentEndpoint = "/.netlify/functions/admin-mollie-payment";
+        const mollieSubscriptionEndpoint = "/.netlify/functions/admin-mollie-subscription";
         const invoiceEmailEndpoint = "/.netlify/functions/admin-invoice-email";
         const listEndpoint = "/.netlify/functions/list-change-requests";
         const updateEndpoint = "/.netlify/functions/update-change-request-status";
@@ -1335,7 +1336,7 @@
           const status = normalize(value);
           if (["active", "paid"].includes(status)) return "status-active";
           if (["sent", "draft"].includes(status)) return "status-prepared";
-          if (["paused", "expired", "overdue", "pending", "open"].includes(status)) return "status-warning";
+          if (["paused", "suspended", "expired", "overdue", "pending", "open"].includes(status)) return "status-warning";
           return "status-attention";
         }
 
@@ -1353,7 +1354,25 @@
             failed: "Mislukt",
             open: "Open",
             pending: "In behandeling",
+            suspended: "Gepauzeerd",
           }[normalize(value)] || value || "-";
+        }
+
+        function createSubscriptionMollieSummary(subscription) {
+          const wrapper = document.createElement("span");
+          wrapper.className = "invoice-email-summary";
+          [
+            ["Customer", subscription.mollieCustomerId],
+            ["Subscription", subscription.mollieSubscriptionId],
+            ["Status", billingStatusLabel(subscription.mollieSubscriptionStatus)],
+            ["Laatste betaling", formatDate(subscription.lastPaymentAt)],
+            ["Volgende betaling", formatDate(subscription.nextPaymentAt)],
+          ].forEach(([label, value]) => {
+            const item = document.createElement("small");
+            item.textContent = `${label}: ${value || "-"}`;
+            wrapper.append(item);
+          });
+          return wrapper;
         }
 
         function invoiceEmailTypeLabel(value) {
@@ -1425,7 +1444,7 @@
           }
           const head = document.createElement("div");
           head.className = "admin-table-row admin-table-head billing-row";
-          ["Klant", "Pakket", "Bedrag", "Cyclus", "Status", "Startdatum", "Volgende factuur", "Acties"].forEach((label) => head.append(createCell(label)));
+          ["Klant", "Pakket", "Bedrag", "Cyclus", "Status", "Startdatum", "Volgende factuur", "Mollie", "Acties"].forEach((label) => head.append(createCell(label)));
           subscriptionList.append(head);
           state.subscriptions.forEach((subscription) => {
             const row = document.createElement("div");
@@ -1443,6 +1462,14 @@
             toggle.textContent = subscription.status === "active" ? "Pauzeren" : "Activeren";
             toggle.addEventListener("click", () => setSubscriptionStatus(subscription.id, subscription.status === "active" ? "paused" : "active", toggle));
             actions.append(edit, toggle);
+            if (!subscription.mollieSubscriptionId) {
+              const mollie = document.createElement("button");
+              mollie.className = "button secondary";
+              mollie.type = "button";
+              mollie.textContent = "Activeer abonnement";
+              mollie.addEventListener("click", () => activateMollieSubscription(subscription.id, mollie));
+              actions.append(mollie);
+            }
             row.append(
               createCell(subscription.customerCompany || subscription.customerName || "Geen klant", "strong"),
               createCell(subscription.packageName),
@@ -1451,6 +1478,7 @@
               createBadge(billingStatusLabel(subscription.status), billingStatusClass(subscription.status)),
               createCell(formatDate(subscription.startDate)),
               createCell(formatDate(subscription.nextInvoiceDate)),
+              createSubscriptionMollieSummary(subscription),
               actions
             );
             subscriptionList.append(row);
@@ -1678,6 +1706,34 @@
             await loadBilling(false);
           } catch (error) {
             window.alert(error.message || "Abonnementsstatus kon niet worden bijgewerkt.");
+            button.disabled = false;
+            button.textContent = originalText;
+          }
+        }
+
+        async function activateMollieSubscription(id, button) {
+          const originalText = button.textContent;
+          button.disabled = true;
+          button.textContent = "Activeren...";
+          setAdminAccessMessage("", "");
+
+          try {
+            const response = await fetch(mollieSubscriptionEndpoint, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                Authorization: `Bearer ${state.adminToken}`,
+              },
+              body: JSON.stringify({ subscription_id: id }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data.success) throw new Error(data.error || "Mollie abonnement kon niet worden geactiveerd.");
+            await loadBilling(false);
+            setAdminAccessMessage(data.warning || "Mollie abonnement geactiveerd.", data.warning ? "" : "success");
+          } catch (error) {
+            setAdminAccessMessage(error.message || "Mollie abonnement kon niet worden geactiveerd.", "error");
+          } finally {
             button.disabled = false;
             button.textContent = originalText;
           }
