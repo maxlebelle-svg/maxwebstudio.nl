@@ -18,6 +18,7 @@ const calendlyTriggers = document.querySelectorAll("[data-calendly-open]");
 const revealItems = document.querySelectorAll(".reveal-on-scroll");
 
 const calendlyUrl = "https://calendly.com/maxwebstudio/gratis-kennismakingsgesprek";
+const leadStorageKey = "maxwebstudioLeadRequests";
 let calendlyLoadPromise;
 
 const checkoutPackages = {
@@ -187,7 +188,24 @@ if ("IntersectionObserver" in window) {
   revealItems.forEach((item) => item.classList.add("is-visible"));
 }
 
-formButton?.addEventListener("click", () => {
+function storeLeadRequest(lead) {
+  let currentLeads = [];
+
+  try {
+    currentLeads = JSON.parse(localStorage.getItem(leadStorageKey) || "[]");
+  } catch (error) {
+    currentLeads = [];
+  }
+
+  if (!Array.isArray(currentLeads)) {
+    currentLeads = [];
+  }
+
+  currentLeads.unshift(lead);
+  localStorage.setItem(leadStorageKey, JSON.stringify(currentLeads.slice(0, 50)));
+}
+
+function handleLeadFormSubmit() {
   if (termsAccepted && !termsAccepted.checked) {
     formButton.textContent = "Akkoord met voorwaarden is nodig";
     formButton.setAttribute("aria-live", "polite");
@@ -199,13 +217,36 @@ formButton?.addEventListener("click", () => {
   const selectedPackage = formData.get("package") || "Business Launch";
   const selectedCarePackage = formData.get("carePackage") || "Nog geen keuze";
 
-  formButton.textContent = `Aanvraag klaar voor ${selectedPackage}`;
-  formButton.setAttribute("aria-live", "polite");
+  const leadRequest = {
+    id: `lead-${Date.now()}`,
+    createdAt: new Date().toISOString(),
+    source: "homepage-contact-form",
+    status: "nieuw",
+    name: String(name).trim(),
+    email: String(formData.get("email") || "").trim(),
+    packageInterest: String(selectedPackage),
+    carePackage: String(selectedCarePackage),
+    termsAccepted: true,
+    message: String(formData.get("message") || "").trim(),
+  };
 
-  const subject = encodeURIComponent(`Aanvraag ${selectedPackage} - ${name}`);
-  const body = encodeURIComponent(
-    `Naam: ${formData.get("name") || ""}\nE-mail: ${formData.get("email") || ""}\nWebsitepakket: ${selectedPackage}\nHosting & onderhoud: ${selectedCarePackage}\nAkkoord voorwaarden: ja\n\nBericht:\n${formData.get("message") || ""}`
-  );
+  try {
+    storeLeadRequest(leadRequest);
+    form.reset();
+    formButton.textContent = "Aanvraag verzonden";
+    formButton.setAttribute("aria-live", "polite");
+  } catch (error) {
+    console.error("Lead request could not be stored locally", error);
+    formButton.textContent = "Probeer opnieuw of stuur WhatsApp";
+    formButton.setAttribute("aria-live", "polite");
+  }
+}
 
-  window.location.href = `mailto:info@maxwebstudio.nl?subject=${subject}&body=${body}`;
+form?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  handleLeadFormSubmit();
+});
+
+formButton?.addEventListener("click", () => {
+  handleLeadFormSubmit();
 });

@@ -88,7 +88,7 @@ Belangrijk:
 - Root en `/public` bevatten dubbele bestanden.
 - CSS is groot en niet opgesplitst.
 - Veel inline JavaScript in HTML-pagina's.
-- Homepageformulier gebruikt `mailto:` in plaats van backend-submit.
+- Homepageformulier gebruikt interne demo-opslag in plaats van een externe mailclient.
 - Geen sitemap of robots.txt.
 - Geen canonical tags en beperkte structured data.
 - Webhook logt betaalstatus maar slaat geen duurzame status op.

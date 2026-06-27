@@ -113,7 +113,7 @@ Contactpatronen:
 - homepage lead form
 - sticky contact bar
 
-Het homepage lead form gebruikt momenteel `mailto:` en is kandidaat voor backend-integratie.
+Het homepage lead form gebruikt interne demo-opslag en is kandidaat voor backend-integratie.
 
 ## Footer
 
@@ -124,4 +124,3 @@ Bestaat uit:
 - `.footer-links`
 
 Footer staat handmatig in de homepage. Subpagina's hebben meestal geen volledige footer.
-

@@ -77,8 +77,7 @@ Na iedere opdracht rapporteert Codex:
 
 - De site is een statische Netlify-site met serverless functies.
 - De live frontend staat in `/public`.
-- De homepage heeft sterke conversie-elementen, maar het contactformulier gebruikt momenteel een mailto-flow.
+- De homepage heeft sterke conversie-elementen en verwerkt het contactformulier intern via lokale demo-opslag.
 - Mollie-aanbetalingen lopen via Netlify Functions.
 - De onboarding-wizard verstuurt intakes via Netlify Functions en Resend.
 - Intake-opslag gebruikt momenteel tijdelijke `/tmp` opslag en is niet duurzaam.
-

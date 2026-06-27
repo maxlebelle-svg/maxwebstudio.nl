@@ -478,11 +478,12 @@ function handleLeadFormSubmit() {
 
   try {
     storeLeadRequest(leadRequest);
+    form.reset();
     if (formButton) {
       formButton.textContent = "Aanvraag verzonden";
       formButton.setAttribute("aria-live", "polite");
     }
-    setLeadFormStatus("Bedankt! Je aanvraag is ontvangen. Ik neem meestal dezelfde dag contact met je op.", "success");
+    setLeadFormStatus("Bedankt! Je aanvraag is succesvol verzonden.", "success");
   } catch (error) {
     console.error("Lead request could not be stored locally", error);
     setLeadFormStatus("Er ging iets mis bij het verwerken van je aanvraag. Probeer het opnieuw of stuur direct een WhatsApp-bericht.", "error");
