@@ -24,17 +24,22 @@
           <span>Max CRM</span>
         </a>
         <nav class="admin-sidebar-nav">
-          <a href="#dashboard">Dashboard</a>
-          <a href="#klanten">Klanten</a>
-          <a href="#websites">Websites</a>
-          <a href="#projecten">Projecten</a>
-          <a href="#wijzigingsverzoeken">Wijzigingsverzoeken</a>
-          <a href="#bestanden">Bestanden</a>
-          <a href="#onderhoud">Onderhoud</a>
+          <span class="admin-nav-group">Dashboard</span>
+          <a href="#dashboard">Overzicht</a>
+          <span class="admin-nav-group">Sales</span>
+          <a href="#wijzigingsverzoeken">Leads</a>
+          <a href="#klanten">CRM-klanten</a>
           <a href="#offertes">Offertes</a>
           <a href="#facturen">Facturen</a>
-          <a href="#ai">AI placeholder</a>
+          <a href="#onderhoud">Onderhoud</a>
+          <span class="admin-nav-group">Delivery</span>
+          <a href="#websites">Websites</a>
+          <a href="#projecten">Projecten</a>
+          <a href="#bestanden">Bestanden</a>
+          <span class="admin-nav-group">Platform</span>
+          <a href="#klantportaal">Klantportaal</a>
           <a href="#instellingen">Instellingen</a>
+          <a href="#integraties">Integraties</a>
         </nav>
         <article class="admin-card admin-token-card">
           <div>
@@ -64,10 +69,14 @@
         </section>
 
         <section class="admin-grid admin-metrics" aria-label="CRM overzicht">
-          <article class="admin-card metric-card"><span>Totaal klanten</span><strong id="metric-total-customers">-</strong><small id="metric-total-customers-label">Profiles</small></article>
-          <article class="admin-card metric-card"><span>Websites live</span><strong id="metric-live-websites">-</strong><small>Status live</small></article>
-          <article class="admin-card metric-card"><span>Hosting actief</span><strong id="metric-hosting-active">-</strong><small>Hostingstatus active</small></article>
-          <article class="admin-card metric-card"><span>SSL actief</span><strong id="metric-ssl-active">-</strong><small>SSL-status active</small></article>
+          <article class="admin-card metric-card"><span>Leads</span><strong id="metric-total-leads">0</strong><small>Open aanvragen</small></article>
+          <article class="admin-card metric-card"><span>Klanten</span><strong id="metric-total-customers">-</strong><small id="metric-total-customers-label">Klantprofielen</small></article>
+          <article class="admin-card metric-card"><span>Lopende projecten</span><strong id="metric-active-projects">0</strong><small>Niet afgerond</small></article>
+          <article class="admin-card metric-card"><span>Actieve websites</span><strong id="metric-live-websites">-</strong><small>Online/live</small></article>
+          <article class="admin-card metric-card"><span>Open offertes</span><strong id="metric-open-quotes">0</strong><small>Concept of verzonden</small></article>
+          <article class="admin-card metric-card"><span>Open facturen</span><strong id="metric-open-invoices-local">0</strong><small>Concept, verzonden of verlopen</small></article>
+          <article class="admin-card metric-card"><span>Betaald bedrag</span><strong id="metric-paid-amount">€ 0</strong><small>Facturen betaald</small></article>
+          <article class="admin-card metric-card"><span>Demo-modus</span><strong id="metric-demo-status">Actief</strong><small>Lokale opslag actief</small></article>
         </section>
 
         <section class="admin-section bi-dashboard-section" aria-label="Business intelligence dashboard">
@@ -494,7 +503,7 @@
               <p class="section-kicker">Instellingen</p>
               <h2>Integraties & professionele instellingen</h2>
             </div>
-            <span class="status-badge status-prepared">Demo/local</span>
+            <span class="status-badge status-prepared">Demo-modus</span>
           </div>
           <div class="settings-alert">
             <strong>Voorbereidingsmodus</strong>
@@ -574,13 +583,13 @@
               </div>
             </article>
 
-            <article class="admin-card settings-card settings-card-wide">
+            <article class="admin-card settings-card settings-card-wide" id="integraties">
               <div class="settings-card-heading"><div><span>Integraties</span><strong>Koppelingenoverzicht</strong></div><mark class="status-badge status-planned">API later</mark></div>
               <div class="integration-grid" id="settings-integrations"></div>
             </article>
 
-            <article class="admin-card settings-card">
-              <div class="settings-card-heading"><div><span>Klantportaal instellingen</span><strong>Zichtbaarheid demoportaal</strong></div><mark class="status-badge status-prepared">Local</mark></div>
+            <article class="admin-card settings-card" id="klantportaal">
+              <div class="settings-card-heading"><div><span>Klantportaal instellingen</span><strong>Zichtbaarheid demoportaal</strong></div><mark class="status-badge status-prepared">Lokale opslag</mark></div>
               <div class="settings-checkbox-grid">
                 <label><input name="portalActive" type="checkbox" /> Klantportaal actief</label>
                 <label><input name="portalDemoWarning" type="checkbox" /> Demo-auth waarschuwing tonen</label>
@@ -994,13 +1003,18 @@
         };
 
         const adminTokenInput = document.getElementById("admin-token");
+        const adminNavLinks = [...document.querySelectorAll(".admin-sidebar-nav a")];
         const adminLoadButton = document.getElementById("admin-load");
         const adminAccessMessage = document.getElementById("admin-access-message");
         const totalCustomersMetric = document.getElementById("metric-total-customers");
         const totalCustomersLabel = document.getElementById("metric-total-customers-label");
+        const totalLeadsMetric = document.getElementById("metric-total-leads");
         const liveWebsitesMetric = document.getElementById("metric-live-websites");
-        const hostingActiveMetric = document.getElementById("metric-hosting-active");
-        const sslActiveMetric = document.getElementById("metric-ssl-active");
+        const activeProjectsMetric = document.getElementById("metric-active-projects");
+        const openQuotesMetric = document.getElementById("metric-open-quotes");
+        const openInvoicesLocalMetric = document.getElementById("metric-open-invoices-local");
+        const paidAmountMetric = document.getElementById("metric-paid-amount");
+        const demoStatusMetric = document.getElementById("metric-demo-status");
         const biPeriodFilter = document.getElementById("bi-period-filter");
         const biActionList = document.getElementById("bi-action-list");
         const biKpis = {
@@ -1525,6 +1539,12 @@
           event.preventDefault();
           writeStoredSettings(collectSettingsForm());
           setSettingsMessage("Instellingen opgeslagen in lokale dashboardopslag.", "success");
+        }
+
+        function syncActiveNav(id = window.location.hash.replace("#", "") || "dashboard") {
+          adminNavLinks.forEach((link) => {
+            link.classList.toggle("is-active", link.getAttribute("href") === `#${id}`);
+          });
         }
 
         function readStoredCustomers() {
@@ -2361,13 +2381,21 @@
           target.className = `admin-form-message ${type}`.trim();
         }
 
-        function renderState(target, title, text, badgeText = "Leeg", badgeClass = "status-planned") {
+        function renderState(target, title, text, badgeText = "Leeg", badgeClass = "status-planned", action = null) {
           target.replaceChildren();
           const card = document.createElement("article");
           card.className = "admin-card request-card request-state-card";
           const content = document.createElement("div");
           content.append(createCell(title, "strong"), createCell(text));
           card.append(content, createBadge(badgeText, badgeClass));
+          if (action?.label && typeof action.onClick === "function") {
+            const button = document.createElement("button");
+            button.className = `button ${action.primary ? "primary" : "secondary"}`;
+            button.type = "button";
+            button.textContent = action.label;
+            button.addEventListener("click", action.onClick);
+            card.append(button);
+          }
           target.append(card);
         }
 
@@ -2384,15 +2412,24 @@
         }
 
         function updateMetrics() {
-          const liveWebsites = state.websites.filter((website) => website.status === "online").length;
-          const hostingActive = state.websites.filter((website) => website.hostingStatus === "active").length;
-          const sslActive = state.websites.filter((website) => website.sslStatus === "active").length;
+          const liveWebsites = state.websites.filter((website) => ["online", "live", "active"].includes(normalize(website.status))).length;
+          const activeProjects = state.projects.filter((project) => !["live", "onderhoud", "gepauzeerd"].includes(statusKey(project.status))).length;
+          const openQuotes = state.quotes.filter((quote) => ["concept", "verzonden"].includes(normalizeQuoteStatus(quote.status))).length;
+          const openInvoices = state.invoices.filter((invoice) => ["concept", "verzonden", "verlopen"].includes(normalizeInvoiceStatus(invoice.status))).length;
+          const paidAmount = state.invoices
+            .filter((invoice) => normalizeInvoiceStatus(invoice.status) === "betaald")
+            .reduce((sum, invoice) => sum + Number(invoice.total || invoice.amount || 0), 0);
+          const openLeadCount = state.requests.filter(isOpenRequest).length;
 
+          totalLeadsMetric.textContent = String(openLeadCount);
           totalCustomersMetric.textContent = String(state.customers.length);
           totalCustomersLabel.textContent = state.customers.length === 1 ? "Klantprofiel" : "Klantprofielen";
+          activeProjectsMetric.textContent = String(activeProjects);
           liveWebsitesMetric.textContent = String(liveWebsites);
-          hostingActiveMetric.textContent = String(hostingActive);
-          sslActiveMetric.textContent = String(sslActive);
+          openQuotesMetric.textContent = String(openQuotes);
+          openInvoicesLocalMetric.textContent = String(openInvoices);
+          paidAmountMetric.textContent = money(paidAmount);
+          demoStatusMetric.textContent = "Actief";
           websiteStats.total.textContent = String(state.websites.length);
           websiteStats.online.textContent = String(liveWebsites);
           websiteStats.development.textContent = String(state.websites.filter((website) => website.status === "development").length);
@@ -2538,7 +2575,7 @@
           customerList.replaceChildren();
 
           if (!state.customers.length) {
-            renderState(customerList, "Nog geen klanten", "Maak je eerste klant aan om het CRM te vullen.", "Leeg", "status-planned");
+            renderState(customerList, "Nog geen klanten", "Maak je eerste klant aan om het CRM te vullen.", "Leeg", "status-planned", { label: "Nieuwe klant", primary: true, onClick: openNewCustomerModal });
             return;
           }
 
@@ -3282,7 +3319,7 @@
           populateWebsiteProfileOptions();
 
           if (!state.websites.length) {
-            renderState(websiteList, "Nog geen websites", "Maak de eerste website aan en koppel deze aan een klant.", "Leeg");
+            renderState(websiteList, "Nog geen websites", "Maak de eerste website aan en koppel deze aan een klant.", "Leeg", "status-planned", { label: "Website aanmaken", primary: true, onClick: resetWebsiteForm });
             return;
           }
 
@@ -3449,7 +3486,7 @@
           populateProjectOptions();
           renderProjectStats();
           if (!state.projects.length) {
-            renderState(projectList, "Nog geen projecten", "Start een project vanuit een klant, website of met de knop Nieuw project.", "Leeg");
+            renderState(projectList, "Nog geen projecten", "Start een project vanuit een klant, website of met de knop Nieuw project.", "Leeg", "status-planned", { label: "Project aanmaken", primary: true, onClick: () => resetProjectForm() });
             return;
           }
           const head = document.createElement("div");
@@ -4460,7 +4497,7 @@
           populateQuoteOptions();
           renderQuoteStats();
           if (!state.quotes.length) {
-            renderState(quoteList, "Geen offertes", "Maak de eerste offerte aan.", "Leeg");
+            renderState(quoteList, "Geen offertes", "Maak de eerste offerte voor een klant.", "Leeg", "status-planned", { label: "Offerte aanmaken", primary: true, onClick: () => openQuoteModal() });
             return;
           }
           const quotes = filteredQuotes();
@@ -4540,7 +4577,7 @@
           populateInvoiceOptions();
           renderInvoiceStats();
           if (!state.invoices.length) {
-            renderState(invoiceList, "Geen facturen", "Maak de eerste factuur aan.", "Leeg");
+            renderState(invoiceList, "Geen facturen", "Maak de eerste factuur voor een klant.", "Leeg", "status-planned", { label: "Factuur aanmaken", primary: true, onClick: () => openInvoiceModal() });
             return;
           }
           const invoices = filteredInvoices();
@@ -5258,7 +5295,7 @@
           fileList.replaceChildren();
           populateFileOptions();
           if (!state.files.length) {
-            renderState(fileList, "Nog geen bestanden", "Registreer bestandslinks of locaties voor klanten, websites en projecten.", "Leeg");
+            renderState(fileList, "Nog geen bestanden", "Registreer bestandslinks of locaties voor klanten, websites en projecten.", "Leeg", "status-planned", { label: "Bestand toevoegen", primary: true, onClick: () => resetFileForm() });
             return;
           }
           if (!files.length) {
@@ -5914,6 +5951,20 @@
         document.querySelectorAll("[data-settings-demo]").forEach((button) => {
           button.addEventListener("click", () => setSettingsMessage(button.dataset.settingsDemo, "success"));
         });
+        adminNavLinks.forEach((link) => {
+          link.addEventListener("click", () => syncActiveNav(link.getAttribute("href").slice(1)));
+        });
+        window.addEventListener("hashchange", () => syncActiveNav());
+        if ("IntersectionObserver" in window) {
+          const observedSections = adminNavLinks
+            .map((link) => document.getElementById(link.getAttribute("href").slice(1)))
+            .filter(Boolean);
+          const navObserver = new IntersectionObserver((entries) => {
+            const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+            if (visible?.target?.id) syncActiveNav(visible.target.id);
+          }, { rootMargin: "-20% 0px -65% 0px", threshold: [0.12, 0.3, 0.6] });
+          observedSections.forEach((section) => navObserver.observe(section));
+        }
         requestStatusSave.addEventListener("click", saveRequestStatus);
         detailOpenWebsite.addEventListener("click", (event) => {
           if (event.currentTarget.getAttribute("aria-disabled") === "true") event.preventDefault();
@@ -5931,6 +5982,7 @@
         fillSettingsForm(readStoredSettings());
         renderIntegrations();
         renderSystemStatus();
+        syncActiveNav();
         loadChangeRequests();
         loadCRMData(false);
       })();
