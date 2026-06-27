@@ -1409,7 +1409,7 @@ h3 {
 
 .demo-preview-build,
 .demo-preview-install {
-  --demo-position: center;
+  --demo-position: center 58%;
   background:
     radial-gradient(circle at 82% 16%, rgba(21, 94, 239, 0.16), transparent 28%),
     radial-gradient(circle at 18% 82%, rgba(148, 163, 184, 0.2), transparent 28%),
@@ -1418,7 +1418,7 @@ h3 {
 
 .demo-preview-restaurant,
 .demo-preview-salon {
-  --demo-position: center;
+  --demo-position: center 58%;
   background:
     radial-gradient(circle at 82% 18%, rgba(245, 158, 11, 0.18), transparent 28%),
     radial-gradient(circle at 16% 78%, rgba(21, 94, 239, 0.1), transparent 26%),
@@ -1435,6 +1435,42 @@ h3 {
     radial-gradient(circle at 82% 18%, rgba(43, 217, 130, 0.1), transparent 28%),
     radial-gradient(circle at 16% 82%, rgba(21, 94, 239, 0.11), transparent 28%),
     linear-gradient(145deg, #f8fbff, #ffffff);
+}
+
+.demo-preview-build {
+  --demo-position: center 64%;
+}
+
+.demo-preview-restaurant {
+  --demo-position: center 58%;
+}
+
+.demo-preview-coach {
+  --demo-position: center 44%;
+}
+
+.demo-preview-realestate {
+  --demo-position: center 58%;
+}
+
+.demo-preview-install {
+  --demo-position: center 52%;
+}
+
+.demo-preview-dentist {
+  --demo-position: center 54%;
+}
+
+.demo-preview-salon {
+  --demo-position: center 58%;
+}
+
+.demo-preview-auto {
+  --demo-position: center 62%;
+}
+
+.demo-preview-ecommerce {
+  --demo-position: center 54%;
 }
 
 .demo-browser {
@@ -2342,17 +2378,34 @@ h3 {
 
 .demo-case-hero {
   grid-template-columns: 1fr;
-  gap: clamp(34px, 5vw, 62px);
-  padding-top: clamp(54px, 8vw, 96px);
+  gap: clamp(24px, 4vw, 44px);
+  padding-top: clamp(36px, 6vw, 72px);
 }
 
 .demo-case-intro {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 28px;
+  grid-template-columns: minmax(0, 0.9fr) auto;
+  gap: 24px;
   align-items: end;
   width: min(1180px, 100%);
   margin: 0 auto;
+}
+
+.demo-case-intro .demo-page-copy {
+  max-width: 720px;
+}
+
+.demo-case-intro .demo-page-copy h1 {
+  max-width: 720px;
+  margin-bottom: 14px;
+  font-size: clamp(34px, 4.4vw, 60px);
+  line-height: 1;
+}
+
+.demo-case-intro .demo-page-copy p {
+  max-width: 640px;
+  font-size: clamp(16px, 1.45vw, 18px);
+  line-height: 1.62;
 }
 
 .demo-page-copy {
@@ -2399,7 +2452,7 @@ h3 {
 
 .demo-case-preview {
   width: min(1180px, 100%);
-  min-height: clamp(600px, 68vw, 820px);
+  min-height: clamp(640px, 70vw, 840px);
   margin: 0 auto;
   overflow: hidden;
   border-radius: 34px;
@@ -2418,9 +2471,9 @@ h3 {
 }
 
 .demo-page-preview .demo-case-browser {
-  top: clamp(28px, 5vw, 56px);
+  top: clamp(22px, 4vw, 46px);
   left: clamp(18px, 4vw, 54px);
-  width: min(86%, 950px);
+  width: min(88%, 980px);
   border-radius: 28px;
   box-shadow: 0 34px 96px rgba(6, 18, 31, 0.2);
 }
@@ -2498,12 +2551,18 @@ h3 {
 }
 
 .demo-case-fold span {
+  display: grid;
+  align-content: end;
   min-height: 72px;
+  padding: 14px;
   border: 1px solid rgba(214, 226, 240, 0.9);
   border-radius: 18px;
+  color: #334155;
   background:
     linear-gradient(135deg, rgba(21, 94, 239, 0.08), transparent 54%),
     #f8fbff;
+  font-size: 12px;
+  font-weight: 900;
 }
 
 .demo-page-preview .demo-phone {
@@ -7637,7 +7696,7 @@ h3 {
   }
 
   .demo-case-preview {
-    min-height: 690px;
+    min-height: 640px;
   }
 
   .demo-page-preview .demo-case-browser {
@@ -7647,15 +7706,15 @@ h3 {
   }
 
   .demo-case-browser .demo-browser-body {
-    min-height: 500px;
+    min-height: 456px;
   }
 
   .demo-case-browser .mini-site {
-    min-height: 380px;
+    min-height: 358px;
   }
 
   .demo-case-browser .mini-hero {
-    min-height: 270px;
+    min-height: 244px;
     padding: 72px 18px 22px;
   }
 
@@ -7676,7 +7735,7 @@ h3 {
   .demo-case-browser .mini-style-row,
   .demo-case-browser .mini-auto-row,
   .demo-case-browser .mini-products {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
     padding: 14px;
   }
@@ -7690,7 +7749,9 @@ h3 {
   .demo-case-browser .mini-style-row span,
   .demo-case-browser .mini-auto-row span,
   .demo-case-browser .mini-products span {
-    min-height: 44px;
+    min-height: 42px;
+    padding: 10px;
+    font-size: 10px;
   }
 
   .demo-case-fold {
