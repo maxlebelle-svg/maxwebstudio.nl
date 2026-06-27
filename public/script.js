@@ -18,6 +18,10 @@ const calendlyTriggers = document.querySelectorAll("[data-calendly-open]");
 const revealItems = document.querySelectorAll(".reveal-on-scroll");
 const demoFilterButtons = document.querySelectorAll("[data-demo-filter]");
 const demoCards = document.querySelectorAll("[data-demo-card]");
+const demoCarousel = document.querySelector("[data-demo-grid]");
+const demoPrev = document.querySelector("[data-demo-prev]");
+const demoNext = document.querySelector("[data-demo-next]");
+const demoDots = document.querySelector("[data-demo-dots]");
 
 const calendlyUrl = "https://calendly.com/maxwebstudio/gratis-kennismakingsgesprek";
 let calendlyLoadPromise;
@@ -124,20 +128,118 @@ caseSlider?.addEventListener("touchend", (event) => {
   showCase(distance < 0 ? activeCase + 1 : activeCase - 1);
 });
 
+const demoFilterTargets = {
+  all: "bouw",
+  bouw: "bouw",
+  horeca: "horeca",
+  coaching: "coaching",
+  dienstverlening: "dienstverlening",
+  zorg: "zorg",
+  automotive: "automotive",
+  vastgoed: "vastgoed",
+  ecommerce: "ecommerce",
+};
+
+let activeDemoIndex = 0;
+
+function setActiveDemo(index) {
+  if (!demoCards.length) {
+    return;
+  }
+
+  activeDemoIndex = Math.max(0, Math.min(index, demoCards.length - 1));
+
+  demoCards.forEach((card, cardIndex) => {
+    card.classList.toggle("active", cardIndex === activeDemoIndex);
+  });
+
+  demoDots?.querySelectorAll("button").forEach((dot, dotIndex) => {
+    dot.classList.toggle("active", dotIndex === activeDemoIndex);
+  });
+
+  const activeCard = demoCards[activeDemoIndex];
+  const activeKey = activeCard?.dataset.demoKey;
+
+  demoFilterButtons.forEach((button) => {
+    const targetKey = demoFilterTargets[button.dataset.demoFilter || "all"];
+    button.classList.toggle("active", targetKey === activeKey || (button.dataset.demoFilter === "all" && activeDemoIndex === 0));
+  });
+}
+
+function scrollToDemo(index) {
+  const targetCard = demoCards[index];
+
+  if (!targetCard) {
+    return;
+  }
+
+  targetCard.scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" });
+  setActiveDemo(index);
+}
+
+function getNearestDemoIndex() {
+  if (!demoCarousel || !demoCards.length) {
+    return 0;
+  }
+
+  const carouselLeft = demoCarousel.getBoundingClientRect().left;
+  let nearestIndex = 0;
+  let nearestDistance = Infinity;
+
+  demoCards.forEach((card, index) => {
+    const distance = Math.abs(card.getBoundingClientRect().left - carouselLeft);
+
+    if (distance < nearestDistance) {
+      nearestIndex = index;
+      nearestDistance = distance;
+    }
+  });
+
+  return nearestIndex;
+}
+
 demoFilterButtons.forEach((button) => {
   button.addEventListener("click", () => {
-    const activeFilter = button.dataset.demoFilter || "all";
+    const targetKey = demoFilterTargets[button.dataset.demoFilter || "all"] || "bouw";
+    const targetIndex = [...demoCards].findIndex((card) => card.dataset.demoKey === targetKey);
 
-    demoFilterButtons.forEach((filterButton) => {
-      filterButton.classList.toggle("active", filterButton === button);
-    });
-
-    demoCards.forEach((card) => {
-      const categories = (card.dataset.demoCategory || "").split(" ");
-      card.classList.toggle("is-hidden", activeFilter !== "all" && !categories.includes(activeFilter));
-    });
+    scrollToDemo(targetIndex >= 0 ? targetIndex : 0);
   });
 });
+
+demoCards.forEach((card, index) => {
+  const dot = document.createElement("button");
+  dot.type = "button";
+  dot.setAttribute("aria-label", `Ga naar demo ${index + 1}`);
+  dot.addEventListener("click", () => scrollToDemo(index));
+  demoDots?.appendChild(dot);
+});
+
+demoPrev?.addEventListener("click", () => {
+  scrollToDemo(activeDemoIndex <= 0 ? demoCards.length - 1 : activeDemoIndex - 1);
+});
+
+demoNext?.addEventListener("click", () => {
+  scrollToDemo(activeDemoIndex >= demoCards.length - 1 ? 0 : activeDemoIndex + 1);
+});
+
+demoCarousel?.addEventListener("scroll", () => {
+  window.requestAnimationFrame(() => setActiveDemo(getNearestDemoIndex()));
+});
+
+demoCarousel?.addEventListener("keydown", (event) => {
+  if (event.key === "ArrowLeft") {
+    event.preventDefault();
+    scrollToDemo(activeDemoIndex <= 0 ? demoCards.length - 1 : activeDemoIndex - 1);
+  }
+
+  if (event.key === "ArrowRight") {
+    event.preventDefault();
+    scrollToDemo(activeDemoIndex >= demoCards.length - 1 ? 0 : activeDemoIndex + 1);
+  }
+});
+
+setActiveDemo(0);
 
 function loadCalendlyWidget() {
   if (window.Calendly) {

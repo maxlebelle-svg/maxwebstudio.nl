@@ -305,15 +305,21 @@
           <button type="button" data-demo-filter="zorg">Zorg</button>
           <button type="button" data-demo-filter="automotive">Automotive</button>
           <button type="button" data-demo-filter="vastgoed">Vastgoed</button>
+          <button type="button" data-demo-filter="ecommerce">E-commerce</button>
         </div>
-        <div class="demo-grid" data-demo-grid>
-          <article class="demo-card reveal-on-scroll" data-demo-card data-demo-category="bouw">
+        <div class="demo-carousel-shell">
+          <button class="demo-carousel-control demo-carousel-prev" type="button" data-demo-prev aria-label="Vorige demo">←</button>
+          <div class="demo-grid" data-demo-grid tabindex="0" aria-label="Live demo websites carousel">
+          <article class="demo-card reveal-on-scroll active" data-demo-card data-demo-key="bouw" data-demo-category="bouw">
             <div class="demo-preview demo-preview-build">
               <div class="demo-browser">
                 <div class="demo-browser-top"><span></span><span></span><span></span><p>bouwbedrijf-demo.nl</p></div>
                 <div class="demo-browser-body">
-                  <div class="demo-site-hero"><strong>Vakwerk dat vertrouwen bouwt.</strong><i></i></div>
-                  <div class="demo-site-grid"><i></i><i></i><i></i></div>
+                  <div class="mini-site mini-site-build">
+                    <div class="mini-nav"><strong>Q Bouw</strong><span>Projecten</span><span>Offerte</span></div>
+                    <div class="mini-hero"><strong>Vakwerk dat vertrouwen bouwt.</strong><p>Renovatie, aanbouw en timmerwerk met heldere planning.</p><em>Offerte aanvragen</em></div>
+                    <div class="mini-stats"><span>15+ jaar</span><span>Regio actief</span><span>Garantie</span></div>
+                  </div>
                 </div>
               </div>
               <div class="demo-phone"><span></span><strong>Offerte aanvragen</strong><i></i><i></i></div>
@@ -332,11 +338,17 @@
               <a class="demo-card-link" href="portfolio/bouw.html">Bekijk live demo <svg viewBox="0 0 18 18" aria-hidden="true"><path d="M6 3l6 6-6 6"></path></svg></a>
             </div>
           </article>
-          <article class="demo-card reveal-on-scroll" data-demo-card data-demo-category="horeca">
+          <article class="demo-card reveal-on-scroll" data-demo-card data-demo-key="horeca" data-demo-category="horeca">
             <div class="demo-preview demo-preview-restaurant">
               <div class="demo-browser">
                 <div class="demo-browser-top"><span></span><span></span><span></span><p>restaurant-demo.nl</p></div>
-                <div class="demo-browser-body"><div class="demo-menu-card"></div><div class="demo-site-grid"><i></i><i></i><i></i></div></div>
+                <div class="demo-browser-body">
+                  <div class="mini-site mini-site-restaurant">
+                    <div class="mini-nav"><strong>Casa Demo</strong><span>Menu</span><span>Reserveer</span></div>
+                    <div class="mini-hero"><strong>Reserveer jouw tafel.</strong><p>Verse gerechten, warme sfeer en makkelijk online reserveren.</p><em>Reserveer nu</em></div>
+                    <div class="mini-menu-row"><span>Chef menu</span><span>Lunch</span><span>Wijnkaart</span></div>
+                  </div>
+                </div>
               </div>
               <div class="demo-phone"><span></span><strong>Reserveer tafel</strong><i></i><i></i></div>
             </div>
@@ -354,11 +366,17 @@
               <a class="demo-card-link" href="portfolio/restaurant.html">Bekijk live demo <svg viewBox="0 0 18 18" aria-hidden="true"><path d="M6 3l6 6-6 6"></path></svg></a>
             </div>
           </article>
-          <article class="demo-card reveal-on-scroll" data-demo-card data-demo-category="coaching dienstverlening">
+          <article class="demo-card reveal-on-scroll" data-demo-card data-demo-key="coaching" data-demo-category="coaching dienstverlening">
             <div class="demo-preview demo-preview-coach">
               <div class="demo-browser">
                 <div class="demo-browser-top"><span></span><span></span><span></span><p>coach-demo.nl</p></div>
-                <div class="demo-browser-body"><div class="demo-profile-block"></div><div class="demo-site-grid"><i></i><i></i><i></i></div></div>
+                <div class="demo-browser-body">
+                  <div class="mini-site mini-site-coach">
+                    <div class="mini-nav"><strong>Richting</strong><span>Trajecten</span><span>Intake</span></div>
+                    <div class="mini-hero"><strong>Meer rust. Meer richting.</strong><p>Coaching voor ondernemers die scherpte en focus zoeken.</p><em>Plan intake</em></div>
+                    <div class="mini-proof-row"><span>1-op-1</span><span>Strategie</span><span>Focus</span></div>
+                  </div>
+                </div>
               </div>
               <div class="demo-phone"><span></span><strong>Plan intake</strong><i></i><i></i></div>
             </div>
@@ -376,11 +394,17 @@
               <a class="demo-card-link" href="portfolio/coach.html">Bekijk live demo <svg viewBox="0 0 18 18" aria-hidden="true"><path d="M6 3l6 6-6 6"></path></svg></a>
             </div>
           </article>
-          <article class="demo-card reveal-on-scroll" data-demo-card data-demo-category="vastgoed dienstverlening">
+          <article class="demo-card reveal-on-scroll" data-demo-card data-demo-key="vastgoed" data-demo-category="vastgoed dienstverlening">
             <div class="demo-preview demo-preview-realestate">
               <div class="demo-browser">
                 <div class="demo-browser-top"><span></span><span></span><span></span><p>makelaar-demo.nl</p></div>
-                <div class="demo-browser-body"><div class="demo-property-card"></div><div class="demo-site-grid"><i></i><i></i><i></i></div></div>
+                <div class="demo-browser-body">
+                  <div class="mini-site mini-site-realestate">
+                    <div class="mini-nav"><strong>Thuis Demo</strong><span>Aanbod</span><span>Taxatie</span></div>
+                    <div class="mini-hero"><strong>Vind jouw volgende thuis.</strong><p>Premium woningpresentatie met bezichtiging als logische stap.</p><em>Plan bezichtiging</em></div>
+                    <div class="mini-listings"><span>Vrijstaand</span><span>Nieuw aanbod</span><span>Verkocht</span></div>
+                  </div>
+                </div>
               </div>
               <div class="demo-phone"><span></span><strong>Plan bezichtiging</strong><i></i><i></i></div>
             </div>
@@ -398,11 +422,17 @@
               <a class="demo-card-link" href="portfolio/makelaar.html">Bekijk live demo <svg viewBox="0 0 18 18" aria-hidden="true"><path d="M6 3l6 6-6 6"></path></svg></a>
             </div>
           </article>
-          <article class="demo-card reveal-on-scroll" data-demo-card data-demo-category="dienstverlening">
+          <article class="demo-card reveal-on-scroll" data-demo-card data-demo-key="dienstverlening" data-demo-category="dienstverlening">
             <div class="demo-preview demo-preview-install">
               <div class="demo-browser">
                 <div class="demo-browser-top"><span></span><span></span><span></span><p>installatie-demo.nl</p></div>
-                <div class="demo-browser-body"><div class="demo-service-block"></div><div class="demo-site-grid"><i></i><i></i><i></i></div></div>
+                <div class="demo-browser-body">
+                  <div class="mini-site mini-site-install">
+                    <div class="mini-nav"><strong>InstallPro</strong><span>Diensten</span><span>Spoed</span></div>
+                    <div class="mini-hero"><strong>Snel geholpen bij installatie en service.</strong><p>Heldere diensten, regio's en spoedcontact bovenaan.</p><em>Offerte aanvragen</em></div>
+                    <div class="mini-service-row"><span>Spoed</span><span>Onderhoud</span><span>Installatie</span></div>
+                  </div>
+                </div>
               </div>
               <div class="demo-phone"><span></span><strong>Spoedservice</strong><i></i><i></i></div>
             </div>
@@ -420,11 +450,17 @@
               <a class="demo-card-link" href="portfolio/installatiebedrijf.html">Bekijk live demo <svg viewBox="0 0 18 18" aria-hidden="true"><path d="M6 3l6 6-6 6"></path></svg></a>
             </div>
           </article>
-          <article class="demo-card reveal-on-scroll" data-demo-card data-demo-category="zorg">
+          <article class="demo-card reveal-on-scroll" data-demo-card data-demo-key="zorg" data-demo-category="zorg">
             <div class="demo-preview demo-preview-dentist">
               <div class="demo-browser">
                 <div class="demo-browser-top"><span></span><span></span><span></span><p>tandarts-demo.nl</p></div>
-                <div class="demo-browser-body"><div class="demo-care-block"></div><div class="demo-site-grid"><i></i><i></i><i></i></div></div>
+                <div class="demo-browser-body">
+                  <div class="mini-site mini-site-dentist">
+                    <div class="mini-nav"><strong>Dent Demo</strong><span>Zorg</span><span>Afspraak</span></div>
+                    <div class="mini-hero"><strong>Een gezonde glimlach begint hier.</strong><p>Rustige zorgwebsite met behandelingen en afspraakflow.</p><em>Afspraak maken</em></div>
+                    <div class="mini-care-row"><span>Controle</span><span>Preventie</span><span>Esthetiek</span></div>
+                  </div>
+                </div>
               </div>
               <div class="demo-phone"><span></span><strong>Afspraak maken</strong><i></i><i></i></div>
             </div>
@@ -442,11 +478,17 @@
               <a class="demo-card-link" href="portfolio/tandarts.html">Bekijk live demo <svg viewBox="0 0 18 18" aria-hidden="true"><path d="M6 3l6 6-6 6"></path></svg></a>
             </div>
           </article>
-          <article class="demo-card reveal-on-scroll" data-demo-card data-demo-category="dienstverlening">
+          <article class="demo-card reveal-on-scroll" data-demo-card data-demo-key="kapsalon" data-demo-category="dienstverlening">
             <div class="demo-preview demo-preview-salon">
               <div class="demo-browser">
                 <div class="demo-browser-top"><span></span><span></span><span></span><p>kapsalon-demo.nl</p></div>
-                <div class="demo-browser-body"><div class="demo-style-block"></div><div class="demo-site-grid"><i></i><i></i><i></i></div></div>
+                <div class="demo-browser-body">
+                  <div class="mini-site mini-site-salon">
+                    <div class="mini-nav"><strong>Studio Hair</strong><span>Prijzen</span><span>Boeken</span></div>
+                    <div class="mini-hero"><strong>Boek jouw nieuwe look.</strong><p>Stijlvolle presentatie voor behandelingen, prijzen en afspraken.</p><em>Boek afspraak</em></div>
+                    <div class="mini-style-row"><span>Knippen</span><span>Kleur</span><span>Styling</span></div>
+                  </div>
+                </div>
               </div>
               <div class="demo-phone"><span></span><strong>Boek afspraak</strong><i></i><i></i></div>
             </div>
@@ -464,11 +506,17 @@
               <a class="demo-card-link" href="portfolio/kapsalon.html">Bekijk live demo <svg viewBox="0 0 18 18" aria-hidden="true"><path d="M6 3l6 6-6 6"></path></svg></a>
             </div>
           </article>
-          <article class="demo-card reveal-on-scroll" data-demo-card data-demo-category="automotive">
+          <article class="demo-card reveal-on-scroll" data-demo-card data-demo-key="automotive" data-demo-category="automotive">
             <div class="demo-preview demo-preview-auto">
               <div class="demo-browser">
                 <div class="demo-browser-top"><span></span><span></span><span></span><p>autobedrijf-demo.nl</p></div>
-                <div class="demo-browser-body"><div class="demo-auto-block"></div><div class="demo-site-grid"><i></i><i></i><i></i></div></div>
+                <div class="demo-browser-body">
+                  <div class="mini-site mini-site-auto">
+                    <div class="mini-nav"><strong>Auto Demo</strong><span>Aanbod</span><span>Service</span></div>
+                    <div class="mini-hero"><strong>Bekijk direct ons aanbod.</strong><p>Showroomwebsite voor auto's, service en snelle aanvragen.</p><em>Bekijk aanbod</em></div>
+                    <div class="mini-auto-row"><span>Occasions</span><span>APK</span><span>Inruil</span></div>
+                  </div>
+                </div>
               </div>
               <div class="demo-phone"><span></span><strong>Bekijk aanbod</strong><i></i><i></i></div>
             </div>
@@ -486,7 +534,38 @@
               <a class="demo-card-link" href="portfolio/autobedrijf.html">Bekijk live demo <svg viewBox="0 0 18 18" aria-hidden="true"><path d="M6 3l6 6-6 6"></path></svg></a>
             </div>
           </article>
+          <article class="demo-card reveal-on-scroll" data-demo-card data-demo-key="ecommerce" data-demo-category="ecommerce">
+            <div class="demo-preview demo-preview-ecommerce">
+              <div class="demo-browser">
+                <div class="demo-browser-top"><span></span><span></span><span></span><p>ecommerce-demo.nl</p></div>
+                <div class="demo-browser-body">
+                  <div class="mini-site mini-site-ecommerce">
+                    <div class="mini-nav"><strong>Shop Demo</strong><span>Collecties</span><span>Cart</span></div>
+                    <div class="mini-hero"><strong>Shop jouw favorieten online.</strong><p>Moderne webshop voor producten, collecties en bestellingen.</p><em>Bekijk collectie</em></div>
+                    <div class="mini-products"><span>Product</span><span>Product</span><span>Checkout</span></div>
+                  </div>
+                </div>
+              </div>
+              <div class="demo-phone"><span></span><strong>In winkelwagen</strong><i></i><i></i></div>
+            </div>
+            <div class="demo-card-copy">
+              <span class="demo-industry-icon" aria-hidden="true">🛒</span>
+              <p>Webshop / e-commerce</p>
+              <h3>E-commerce Demo</h3>
+              <span>Een moderne webshop voor producten, collecties en directe online bestellingen.</span>
+              <ul>
+                <li>Producten overzichtelijk presenteren</li>
+                <li>Mobiel geoptimaliseerd</li>
+                <li>Conversiegericht gebouwd</li>
+                <li>Klaar voor online aanvragen of verkoop</li>
+              </ul>
+              <a class="demo-card-link" href="portfolio/ecommerce.html">Bekijk live demo <svg viewBox="0 0 18 18" aria-hidden="true"><path d="M6 3l6 6-6 6"></path></svg></a>
+            </div>
+          </article>
+          </div>
+          <button class="demo-carousel-control demo-carousel-next" type="button" data-demo-next aria-label="Volgende demo">→</button>
         </div>
+        <div class="demo-carousel-dots" data-demo-dots aria-label="Demo carousel navigatie"></div>
         <div class="portfolio-cta reveal-on-scroll">
           <h2>Klaar om jouw eigen website te laten bouwen?</h2>
           <p>Binnen enkele dagen kan jouw bedrijf online staan met een professionele website die vertrouwen uitstraalt en nieuwe klanten aantrekt.</p>
