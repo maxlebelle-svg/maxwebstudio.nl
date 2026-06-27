@@ -34,7 +34,7 @@
           <a href="#offertes">Offertes</a>
           <a href="#facturen">Facturen</a>
           <a href="#ai">AI placeholder</a>
-          <a href="#instellingen">Instellingen placeholder</a>
+          <a href="#instellingen">Instellingen</a>
         </nav>
         <article class="admin-card admin-token-card">
           <div>
@@ -488,13 +488,121 @@
           </section>
         </div>
 
-        <section class="admin-section" id="instellingen">
-          <div class="admin-section-heading"><div><p class="section-kicker">Instellingen</p><h2>Instellingen placeholder</h2></div></div>
-          <div class="automation-grid">
-            <article class="admin-card automation-card"><strong>Admin auth</strong><span class="status-badge status-prepared">ADMIN_TOKEN</span></article>
-            <article class="admin-card automation-card"><strong>Supabase</strong><span class="status-badge status-active">Server-side</span></article>
-            <article class="admin-card automation-card"><strong>Audit trail</strong><span class="status-badge status-planned">Gepland</span></article>
+        <section class="admin-section settings-section" id="instellingen">
+          <div class="admin-section-heading">
+            <div>
+              <p class="section-kicker">Instellingen</p>
+              <h2>Integraties & professionele instellingen</h2>
+            </div>
+            <span class="status-badge status-prepared">Demo/local</span>
           </div>
+          <div class="settings-alert">
+            <strong>Voorbereidingsmodus</strong>
+            <span>Deze instellingen worden lokaal opgeslagen in deze browser. Externe koppelingen zijn professioneel voorbereid, maar nog niet actief gekoppeld aan API's.</span>
+          </div>
+
+          <form class="settings-grid" id="settings-form">
+            <article class="admin-card settings-card">
+              <div class="settings-card-heading"><div><span>Bedrijfsgegevens</span><strong>Max Webstudio profiel</strong></div><mark class="status-badge status-active">Actief</mark></div>
+              <div class="admin-profile-fields">
+                <label for="setting-company-name">Bedrijfsnaam<input id="setting-company-name" name="companyName" type="text" /></label>
+                <label for="setting-trade-name">Handelsnaam<input id="setting-trade-name" name="tradeName" type="text" /></label>
+                <label for="setting-email">E-mailadres<input id="setting-email" name="email" type="email" /></label>
+                <label for="setting-phone">Telefoonnummer<input id="setting-phone" name="phone" type="tel" /></label>
+                <label for="setting-website">Website<input id="setting-website" name="website" type="url" /></label>
+                <label for="setting-street">Straat + huisnummer<input id="setting-street" name="street" type="text" /></label>
+                <label for="setting-postal-code">Postcode<input id="setting-postal-code" name="postalCode" type="text" /></label>
+                <label for="setting-city">Plaats<input id="setting-city" name="city" type="text" /></label>
+                <label for="setting-country">Land<input id="setting-country" name="country" type="text" /></label>
+                <label for="setting-kvk">KvK-nummer<input id="setting-kvk" name="kvkNumber" type="text" /></label>
+                <label for="setting-vat">BTW-nummer<input id="setting-vat" name="vatNumber" type="text" /></label>
+                <label for="setting-iban">IBAN<input id="setting-iban" name="iban" type="text" /></label>
+                <label for="setting-bic">BIC optioneel<input id="setting-bic" name="bic" type="text" /></label>
+                <label for="setting-logo">Logo-url/pad optioneel<input id="setting-logo" name="logoUrl" type="text" /></label>
+              </div>
+            </article>
+
+            <article class="admin-card settings-card">
+              <div class="settings-card-heading"><div><span>Factuurinstellingen</span><strong>Nummering & standaardteksten</strong></div><mark class="status-badge status-prepared">Voorbereid</mark></div>
+              <div class="admin-profile-fields">
+                <label for="setting-invoice-prefix">Factuurnummer prefix<input id="setting-invoice-prefix" name="invoicePrefix" type="text" /></label>
+                <label for="setting-quote-prefix">Offertenummer prefix<input id="setting-quote-prefix" name="quotePrefix" type="text" /></label>
+                <label for="setting-invoice-start">Startnummer facturen<input id="setting-invoice-start" name="invoiceStartNumber" type="number" min="1" /></label>
+                <label for="setting-quote-start">Startnummer offertes<input id="setting-quote-start" name="quoteStartNumber" type="number" min="1" /></label>
+                <label for="setting-vat-rate">Standaard BTW %<input id="setting-vat-rate" name="defaultVatRate" type="number" min="0" step="0.1" /></label>
+                <label for="setting-payment-term">Betaaltermijn dagen<input id="setting-payment-term" name="paymentTermDays" type="number" min="1" /></label>
+                <label for="setting-quote-validity">Offertegeldigheid dagen<input id="setting-quote-validity" name="quoteValidityDays" type="number" min="1" /></label>
+                <label class="admin-profile-wide" for="setting-payment-instruction">Standaard betaalinstructie<textarea id="setting-payment-instruction" name="paymentInstruction"></textarea></label>
+                <label class="admin-profile-wide" for="setting-invoice-footer">Factuurfootertekst<textarea id="setting-invoice-footer" name="invoiceFooter"></textarea></label>
+                <label class="admin-profile-wide" for="setting-quote-footer">Offertefootertekst<textarea id="setting-quote-footer" name="quoteFooter"></textarea></label>
+              </div>
+            </article>
+
+            <article class="admin-card settings-card">
+              <div class="settings-card-heading"><div><span>Betaalinstellingen</span><strong>Mollie voorbereiding</strong></div><mark class="status-badge status-prepared">Demo voorbereid</mark></div>
+              <div class="settings-status-list">
+                <div><span>Mollie status</span><mark class="status-badge status-prepared">Demo voorbereid</mark></div>
+                <div><span>Betalingen</span><mark class="status-badge status-warning">Nog geen echte betalingen actief</mark></div>
+              </div>
+              <div class="admin-profile-fields">
+                <label for="setting-payment-base-path">Betaallink basispad<input id="setting-payment-base-path" name="paymentBasePath" type="text" /></label>
+                <label class="settings-toggle"><input id="setting-payment-test-mode" name="paymentTestMode" type="checkbox" /> Testmodus/demo-modus aan</label>
+              </div>
+              <div class="settings-checkbox-grid">
+                <label><input name="paymentMethods" type="checkbox" value="iDEAL" /> iDEAL</label>
+                <label><input name="paymentMethods" type="checkbox" value="Bancontact" /> Bancontact</label>
+                <label><input name="paymentMethods" type="checkbox" value="Creditcard" /> Creditcard</label>
+                <label><input name="paymentMethods" type="checkbox" value="SEPA" /> SEPA</label>
+                <label><input name="paymentMethods" type="checkbox" value="PayPal" /> PayPal</label>
+              </div>
+            </article>
+
+            <article class="admin-card settings-card">
+              <div class="settings-card-heading"><div><span>E-mailinstellingen</span><strong>Resend & templates</strong></div><mark class="status-badge status-prepared">Demo voorbereid</mark></div>
+              <div class="admin-profile-fields">
+                <label for="setting-sender-name">Afzendernaam<input id="setting-sender-name" name="senderName" type="text" /></label>
+                <label for="setting-sender-email">Afzender e-mailadres<input id="setting-sender-email" name="senderEmail" type="email" /></label>
+                <label for="setting-reply-email">Reply-to e-mailadres<input id="setting-reply-email" name="replyToEmail" type="email" /></label>
+              </div>
+              <div class="settings-status-list">
+                <div><span>Resend status</span><mark class="status-badge status-prepared">Voorbereid/demo</mark></div>
+                <div><span>E-mail templates</span><mark class="status-badge status-prepared">Beschikbaar voor demo</mark></div>
+              </div>
+              <div class="settings-actions">
+                <button class="button secondary" data-settings-demo="Testmail demo: in een echte koppeling wordt hier een testmail via Resend verzonden." type="button">Testmail demo</button>
+                <button class="button secondary" data-settings-demo="Template demo: factuur-, offerte- en bevestigingsmails zijn voorbereid als toekomstige template-laag." type="button">Template bekijken</button>
+              </div>
+            </article>
+
+            <article class="admin-card settings-card settings-card-wide">
+              <div class="settings-card-heading"><div><span>Integraties</span><strong>Koppelingenoverzicht</strong></div><mark class="status-badge status-planned">API later</mark></div>
+              <div class="integration-grid" id="settings-integrations"></div>
+            </article>
+
+            <article class="admin-card settings-card">
+              <div class="settings-card-heading"><div><span>Klantportaal instellingen</span><strong>Zichtbaarheid demoportaal</strong></div><mark class="status-badge status-prepared">Local</mark></div>
+              <div class="settings-checkbox-grid">
+                <label><input name="portalActive" type="checkbox" /> Klantportaal actief</label>
+                <label><input name="portalDemoWarning" type="checkbox" /> Demo-auth waarschuwing tonen</label>
+                <label><input name="portalShowQuotes" type="checkbox" /> Toon offertes</label>
+                <label><input name="portalShowInvoices" type="checkbox" /> Toon facturen</label>
+                <label><input name="portalShowProjects" type="checkbox" /> Toon projecten</label>
+                <label><input name="portalShowWebsites" type="checkbox" /> Toon websites</label>
+                <label><input name="portalShowFiles" type="checkbox" /> Toon bestanden</label>
+              </div>
+              <label class="settings-wide-label" for="setting-portal-welcome">Primaire klantportaaltekst<textarea id="setting-portal-welcome" name="portalWelcomeText"></textarea></label>
+            </article>
+
+            <article class="admin-card settings-card">
+              <div class="settings-card-heading"><div><span>Systeemstatus</span><strong>Dashboardstatus</strong></div><mark class="status-badge status-prepared">Overzicht</mark></div>
+              <div class="settings-status-list" id="settings-system-status"></div>
+            </article>
+
+            <div class="settings-submit-row">
+              <button class="button primary" id="settings-save" type="submit">Instellingen opslaan</button>
+              <p class="admin-form-message" id="settings-message" role="status"></p>
+            </div>
+          </form>
         </section>
       </div>
     </main>
@@ -712,6 +820,7 @@
         const filesStorageKey = "maxwebstudioFiles";
         const invoicesStorageKey = "maxwebstudioInvoices";
         const quotesStorageKey = "maxwebstudioQuotes";
+        const settingsStorageKey = "maxwebstudioSettings";
         const completedStatuses = new Set(["afgerond"]);
         const statusLabels = {
           nieuw: "Nieuw",
@@ -782,6 +891,59 @@
           verlopen: "Verlopen",
           geannuleerd: "Geannuleerd",
         };
+        const defaultSettings = {
+          companyName: "Max Webstudio",
+          tradeName: "Max Webstudio",
+          email: "info@maxwebstudio.nl",
+          phone: "",
+          website: "https://maxwebstudio.nl",
+          street: "",
+          postalCode: "",
+          city: "",
+          country: "Nederland",
+          kvkNumber: "",
+          vatNumber: "",
+          iban: "",
+          bic: "",
+          logoUrl: "",
+          invoicePrefix: "INV",
+          quotePrefix: "OFF",
+          invoiceStartNumber: 1,
+          quoteStartNumber: 1,
+          defaultVatRate: 21,
+          paymentTermDays: 14,
+          quoteValidityDays: 14,
+          paymentInstruction: "Betaal binnen de afgesproken termijn onder vermelding van het factuurnummer.",
+          invoiceFooter: "Bedankt voor je vertrouwen in Max Webstudio.",
+          quoteFooter: "Deze offerte is vrijblijvend en geldig volgens de genoemde termijn.",
+          paymentBasePath: "/betalen.html?invoiceId=",
+          paymentTestMode: true,
+          paymentMethods: ["iDEAL", "Bancontact", "Creditcard", "SEPA", "PayPal"],
+          senderName: "Max Webstudio",
+          senderEmail: "info@maxwebstudio.nl",
+          replyToEmail: "info@maxwebstudio.nl",
+          portalActive: true,
+          portalDemoWarning: true,
+          portalShowQuotes: true,
+          portalShowInvoices: true,
+          portalShowProjects: true,
+          portalShowWebsites: true,
+          portalShowFiles: true,
+          portalWelcomeText: "Welkom in je Max Webstudio klantomgeving. Hier vind je jouw offertes, facturen, projecten, websites en bestanden.",
+        };
+        const integrationDefinitions = [
+          { name: "Mollie", category: "Betalingen", status: "Demo voorbereid", action: "Bekijk status", description: "Betaalverzoeken zijn voorbereid en kunnen later via de Mollie API actief worden gekoppeld." },
+          { name: "e-Boekhouden.nl", category: "Boekhouding", status: "Niet gekoppeld", action: "Voorbereiden", description: "Facturen en klanten kunnen later automatisch naar e-Boekhouden.nl worden doorgestuurd." },
+          { name: "Moneybird", category: "Boekhouding", status: "Niet gekoppeld", action: "Voorbereiden", description: "Voorbereid voor toekomstige synchronisatie van facturen, betalingen en klantgegevens." },
+          { name: "Exact Online", category: "Boekhouding", status: "Actief later", action: "Koppelen later", description: "Enterprise boekhoudkoppeling voor een latere fase met API-autorisatie." },
+          { name: "SnelStart", category: "Boekhouding", status: "Niet gekoppeld", action: "Voorbereiden", description: "Koppeling is als dashboardconcept voorbereid voor latere activering." },
+          { name: "Visma", category: "Boekhouding", status: "Niet gekoppeld", action: "Voorbereiden", description: "Voorbereid als mogelijke boekhoudintegratie voor groeiende klantenadministratie." },
+          { name: "Calendly", category: "Planning", status: "Actief later", action: "Koppelen later", description: "Kan later worden gebruikt voor automatische intake- en adviesgesprekken." },
+          { name: "Google Calendar", category: "Planning", status: "Actief later", action: "Koppelen later", description: "Voorbereid voor agenda-afspraken, reminders en planningsoverzicht." },
+          { name: "Netlify", category: "Domein/hosting", status: "Demo voorbereid", action: "Bekijk status", description: "Websites bevatten Netlify-projectvelden; echte API-status volgt later." },
+          { name: "STRATO", category: "Domein/hosting", status: "Niet gekoppeld", action: "Voorbereiden", description: "Domein- en hostinginformatie kan later worden gekoppeld of geregistreerd." },
+          { name: "Cloudflare", category: "Domein/hosting", status: "Actief later", action: "Koppelen later", description: "Voorbereid voor DNS-, SSL- en performancebeheer via API." },
+        ];
         const quotePresets = invoicePresets;
         const defaultProjectChecklist = [
           "Logo ontvangen",
@@ -1152,6 +1314,10 @@
         const requestStatusSelect = document.getElementById("change-request-status");
         const requestStatusSave = document.getElementById("change-request-status-save");
         const requestStatusMessage = document.getElementById("change-request-status-message");
+        const settingsForm = document.getElementById("settings-form");
+        const settingsMessage = document.getElementById("settings-message");
+        const settingsIntegrations = document.getElementById("settings-integrations");
+        const settingsSystemStatus = document.getElementById("settings-system-status");
 
         if (state.adminToken) adminTokenInput.value = state.adminToken;
 
@@ -1245,6 +1411,120 @@
         function createCrmId() {
           if (window.crypto?.randomUUID) return window.crypto.randomUUID();
           return `crm-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        }
+
+        function readStoredSettings() {
+          try {
+            const stored = JSON.parse(localStorage.getItem(settingsStorageKey) || "{}");
+            return { ...defaultSettings, ...(stored && typeof stored === "object" ? stored : {}) };
+          } catch (error) {
+            console.error("Settings could not be read", error);
+            return { ...defaultSettings };
+          }
+        }
+
+        function writeStoredSettings(settings) {
+          localStorage.setItem(settingsStorageKey, JSON.stringify({ ...settings, updatedAt: new Date().toISOString() }));
+        }
+
+        function settingsStatusClass(value) {
+          const status = normalize(value);
+          if (status === "actief" || status === "crm opslag actief") return "status-active";
+          if (status.includes("demo") || status.includes("voorbereid")) return "status-prepared";
+          if (status.includes("later") || status.includes("niet gekoppeld")) return "status-planned";
+          if (status.includes("geen echte") || status.includes("nog niet")) return "status-warning";
+          return "status-planned";
+        }
+
+        function setSettingsMessage(text, type = "success") {
+          settingsMessage.textContent = text;
+          settingsMessage.dataset.type = type;
+        }
+
+        function setCheckboxGroup(name, values) {
+          settingsForm.querySelectorAll(`input[name="${name}"]`).forEach((input) => {
+            input.checked = values.includes(input.value);
+          });
+        }
+
+        function getCheckboxGroup(name) {
+          return [...settingsForm.querySelectorAll(`input[name="${name}"]:checked`)].map((input) => input.value);
+        }
+
+        function fillSettingsForm(settings) {
+          Object.entries(settings).forEach(([key, value]) => {
+            const field = settingsForm.elements[key];
+            if (!field || key === "paymentMethods") return;
+            if (field.type === "checkbox") field.checked = Boolean(value);
+            else field.value = value ?? "";
+          });
+          setCheckboxGroup("paymentMethods", Array.isArray(settings.paymentMethods) ? settings.paymentMethods : defaultSettings.paymentMethods);
+        }
+
+        function collectSettingsForm() {
+          const settings = { ...readStoredSettings() };
+          [...settingsForm.elements].forEach((field) => {
+            if (!field.name || field.name === "paymentMethods") return;
+            if (field.type === "checkbox") settings[field.name] = field.checked;
+            else if (field.type === "number") settings[field.name] = Number(field.value || 0);
+            else settings[field.name] = field.value.trim();
+          });
+          settings.paymentMethods = getCheckboxGroup("paymentMethods");
+          return settings;
+        }
+
+        function renderIntegrations() {
+          settingsIntegrations.replaceChildren();
+          integrationDefinitions.forEach((integration) => {
+            const card = document.createElement("article");
+            card.className = "integration-card";
+            const header = document.createElement("div");
+            const text = document.createElement("div");
+            const name = document.createElement("strong");
+            const category = document.createElement("span");
+            const badge = createBadge(integration.status, settingsStatusClass(integration.status));
+            const description = document.createElement("p");
+            const button = document.createElement("button");
+            header.className = "integration-card-header";
+            name.textContent = integration.name;
+            category.textContent = integration.category;
+            text.append(name, category);
+            header.append(text, badge);
+            description.textContent = integration.description;
+            button.className = "button secondary";
+            button.type = "button";
+            button.textContent = integration.action;
+            button.addEventListener("click", () => setSettingsMessage(`${integration.name}: deze koppeling is voorbereid in het dashboard en kan later via API worden geactiveerd.`, "success"));
+            card.append(header, description, button);
+            settingsIntegrations.append(card);
+          });
+        }
+
+        function renderSystemStatus() {
+          const statuses = [
+            ["CRM opslag", "localStorage actief", "status-active"],
+            ["Offertes", "Actief", "status-active"],
+            ["Facturen", "Actief", "status-active"],
+            ["Klantportaal", "Demo actief", "status-prepared"],
+            ["Betalingen", "Demo", "status-prepared"],
+            ["Boekhouding", "Voorbereid", "status-planned"],
+            ["E-mail", "Voorbereid", "status-prepared"],
+            ["Database", "Nog niet gekoppeld", "status-warning"],
+          ];
+          settingsSystemStatus.replaceChildren();
+          statuses.forEach(([label, status, type]) => {
+            const row = document.createElement("div");
+            const span = document.createElement("span");
+            span.textContent = label;
+            row.append(span, createBadge(status, type));
+            settingsSystemStatus.append(row);
+          });
+        }
+
+        function saveSettings(event) {
+          event.preventDefault();
+          writeStoredSettings(collectSettingsForm());
+          setSettingsMessage("Instellingen opgeslagen in lokale dashboardopslag.", "success");
         }
 
         function readStoredCustomers() {
@@ -5630,6 +5910,10 @@
         [quoteSearch, quoteStatusFilter, quoteTypeFilter, quoteCustomerFilter, quoteProjectFilter, quoteWebsiteFilter].forEach((filter) => filter.addEventListener("input", renderQuotes));
         [invoiceSearch, invoiceStatusFilter, invoiceTypeFilter, invoiceCustomerFilter, invoiceProjectFilter, invoiceWebsiteFilter].forEach((filter) => filter.addEventListener("input", renderInvoices));
         [requestStatusFilter, requestPriorityFilter, requestCategoryFilter].forEach((filter) => filter.addEventListener("change", renderRequests));
+        settingsForm.addEventListener("submit", saveSettings);
+        document.querySelectorAll("[data-settings-demo]").forEach((button) => {
+          button.addEventListener("click", () => setSettingsMessage(button.dataset.settingsDemo, "success"));
+        });
         requestStatusSave.addEventListener("click", saveRequestStatus);
         detailOpenWebsite.addEventListener("click", (event) => {
           if (event.currentTarget.getAttribute("aria-disabled") === "true") event.preventDefault();
@@ -5644,6 +5928,9 @@
           });
         });
 
+        fillSettingsForm(readStoredSettings());
+        renderIntegrations();
+        renderSystemStatus();
         loadChangeRequests();
         loadCRMData(false);
       })();

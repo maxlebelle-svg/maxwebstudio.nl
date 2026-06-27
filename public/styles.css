@@ -6160,6 +6160,132 @@ h3 {
   grid-template-columns: minmax(130px, 1fr) minmax(100px, 0.7fr) minmax(95px, 0.7fr) minmax(95px, 0.7fr) minmax(105px, 0.75fr) minmax(150px, 0.9fr);
 }
 
+.settings-section {
+  overflow: hidden;
+}
+
+.settings-alert,
+.settings-submit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border: 1px solid rgba(25, 194, 255, 0.2);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.74);
+  background: rgba(25, 194, 255, 0.08);
+}
+
+.settings-alert strong {
+  color: var(--white);
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.settings-card {
+  display: grid;
+  align-content: start;
+  gap: 18px;
+  padding: 22px;
+}
+
+.settings-card-wide,
+.settings-submit-row {
+  grid-column: 1 / -1;
+}
+
+.settings-card-heading,
+.integration-card-header,
+.settings-status-list div {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.settings-card-heading div,
+.integration-card-header div {
+  display: grid;
+  gap: 5px;
+}
+
+.settings-card-heading span,
+.integration-card-header span,
+.settings-status-list span {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.settings-card-heading strong,
+.integration-card-header strong {
+  color: var(--white);
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.settings-checkbox-grid,
+.integration-grid,
+.settings-status-list {
+  display: grid;
+  gap: 12px;
+}
+
+.settings-checkbox-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.settings-checkbox-grid label,
+.settings-toggle,
+.settings-wide-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.settings-wide-label {
+  align-items: stretch;
+  flex-direction: column;
+}
+
+.settings-wide-label textarea {
+  min-height: 110px;
+}
+
+.integration-grid {
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+
+.integration-card {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.integration-card p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .portal-card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -7944,6 +8070,10 @@ h3 {
   .admin-profile-inline,
   .admin-profile-form-heading,
   .admin-profile-actions,
+  .settings-grid,
+  .settings-checkbox-grid,
+  .settings-alert,
+  .settings-submit-row,
   .admin-table-row,
   .crm-customer-row,
   .website-row,
@@ -8012,6 +8142,7 @@ h3 {
 
   .portal-auth-shell,
   .customer-portal-kpis,
+  .integration-grid,
   .portal-website-grid,
   .health-summary-grid,
   .website-health-metrics,
