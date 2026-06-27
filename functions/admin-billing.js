@@ -221,7 +221,7 @@ function validateInvoicePayload(payload, profiles) {
     status,
     due_date: cleanText(payload.dueDate) || null,
     paid_at: status === "paid" ? cleanText(payload.paidAt) || new Date().toISOString() : cleanText(payload.paidAt) || null,
-    pdf_file_path: cleanText(payload.pdfFilePath) || null,
+    pdf_file_path: normalizeInvoicePdfPath(payload.pdfFilePath),
     mollie_payment_id: cleanText(payload.molliePaymentId) || null,
     notes: cleanText(payload.notes),
     updated_at: new Date().toISOString(),
@@ -361,6 +361,13 @@ function nullableAmount(value) {
 
 function normalizeNullableNumber(value) {
   return value === null || value === undefined || value === "" ? null : Number(value);
+}
+
+function normalizeInvoicePdfPath(value) {
+  const path = cleanText(value).replace(/^\/+/, "");
+  if (!path) return null;
+  if (/^https?:\/\//i.test(path)) throwValidation("Gebruik alleen het private storage-pad, geen publieke URL.");
+  return path.startsWith("invoice-pdfs/") ? path.slice("invoice-pdfs/".length) : path;
 }
 
 function throwValidation(message) {

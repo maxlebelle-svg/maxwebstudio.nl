@@ -308,12 +308,11 @@
           row.className = "admin-table-row portal-invoice-row";
           const action = document.createElement("span");
           if (invoice.pdf_file_path) {
-            const download = document.createElement("a");
+            const download = document.createElement("button");
             download.className = "button secondary";
-            download.href = invoice.pdf_file_path;
-            download.target = "_blank";
-            download.rel = "noopener";
+            download.type = "button";
             download.textContent = "Download";
+            download.addEventListener("click", () => openInvoicePdf(invoice.id, download));
             action.append(download);
           } else {
             action.textContent = "-";
@@ -490,6 +489,42 @@
           window.open(data.signedUrl, "_blank", "noopener");
         } catch (error) {
           setMessage(error.message || "Bestand kon niet worden geopend.", "error");
+        } finally {
+          button.disabled = false;
+          button.textContent = originalText;
+        }
+      }
+
+      async function openInvoicePdf(invoiceId, button) {
+        const { data: sessionData } = await state.client.auth.getSession();
+        state.session = sessionData.session;
+
+        if (!state.session?.access_token) {
+          setMessage("Log opnieuw in om deze factuur te downloaden.", "error");
+          return;
+        }
+
+        const originalText = button.textContent;
+        button.disabled = true;
+        button.textContent = "Openen...";
+        setMessage("", "");
+
+        try {
+          const response = await fetch(`/.netlify/functions/invoice-download?invoice_id=${encodeURIComponent(invoiceId)}`, {
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${state.session.access_token}`,
+            },
+          });
+          const data = await response.json().catch(() => ({}));
+
+          if (!response.ok || !data.success || !data.signedUrl) {
+            throw new Error(data.error || "Factuur kon niet worden geopend.");
+          }
+
+          window.open(data.signedUrl, "_blank", "noopener");
+        } catch (error) {
+          setMessage(error.message || "Factuur kon niet worden geopend.", "error");
         } finally {
           button.disabled = false;
           button.textContent = originalText;

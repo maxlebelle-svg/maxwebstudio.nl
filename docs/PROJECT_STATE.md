@@ -151,3 +151,7 @@ Belangrijk:
 - De Admin CRM-modules Onderhoud en Facturen tonen echte Supabase-data en kunnen abonnementen/facturen aanmaken, bewerken en statussen aanpassen via `/.netlify/functions/admin-billing`.
 - Het klantdashboard leest eigen abonnementen en facturen via Supabase RLS en toont alleen klantvriendelijke velden.
 - Er is nog geen echte Mollie API-koppeling, automatische incasso, PDF-generatie of e-mailherinnering.
+- Fase 5.6 voegt veilige factuur-PDF downloads toe via private Supabase Storage bucket `invoice-pdfs`.
+- De storage SQL en instructies staan in `/docs/supabase-invoice-storage.sql`.
+- `/functions/invoice-download.js` controleert de Supabase Auth JWT, verifieert dat de factuur bij de ingelogde klant hoort en geeft daarna pas een tijdelijke signed URL terug.
+- Admins beheren voorlopig alleen `customer_invoices.pdf_file_path`; echte PDF-upload gebeurt handmatig in Supabase Storage of later via een server-side uploadfunctie.

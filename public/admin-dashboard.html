@@ -352,11 +352,12 @@
             <label for="invoice-status">Status<select id="invoice-status"><option value="draft">Concept</option><option value="sent">Verzonden</option><option value="paid">Betaald</option><option value="overdue">Verlopen</option><option value="cancelled">Geannuleerd</option></select></label>
             <label for="invoice-due">Vervaldatum<input id="invoice-due" type="date" /></label>
             <label for="invoice-paid-at">Betaaldatum<input id="invoice-paid-at" type="datetime-local" /></label>
-            <label for="invoice-pdf">PDF pad<input id="invoice-pdf" type="text" placeholder="invoices/factuur.pdf" /></label>
+            <label for="invoice-pdf">PDF pad<input id="invoice-pdf" type="text" placeholder="2026/klant/factuur-2026-001.pdf" /><small>Upload de PDF handmatig naar de private Supabase bucket invoice-pdfs en vul hier alleen het objectpad in.</small></label>
             <label class="admin-profile-wide" for="invoice-notes">Notities<textarea id="invoice-notes"></textarea></label>
           </div>
           <div class="admin-profile-actions">
             <button class="button primary" id="invoice-save" type="submit">Factuur opslaan</button>
+            <button class="button secondary" id="invoice-clear-pdf" type="button">PDF-pad verwijderen</button>
             <p class="admin-form-message" id="invoice-message" role="status"></p>
           </div>
         </form>
@@ -455,6 +456,7 @@
         const invoiceMessage = document.getElementById("invoice-message");
         const subscriptionSave = document.getElementById("subscription-save");
         const invoiceSave = document.getElementById("invoice-save");
+        const invoiceClearPdf = document.getElementById("invoice-clear-pdf");
         const customerSearch = document.getElementById("customer-search");
         const customerStatusFilter = document.getElementById("customer-status-filter");
         const customerPackageFilter = document.getElementById("customer-package-filter");
@@ -1409,7 +1411,7 @@
           }
           const head = document.createElement("div");
           head.className = "admin-table-row admin-table-head invoice-row";
-          ["Klant", "Factuurnummer", "Titel", "Bedrag", "Status", "Vervaldatum", "Betaaldatum", "Acties"].forEach((label) => head.append(createCell(label)));
+          ["Klant", "Factuurnummer", "Titel", "Bedrag", "Status", "Vervaldatum", "Betaaldatum", "PDF", "Acties"].forEach((label) => head.append(createCell(label)));
           invoiceList.append(head);
           state.invoices.forEach((invoice) => {
             const row = document.createElement("div");
@@ -1439,6 +1441,7 @@
               createBadge(billingStatusLabel(invoice.status), billingStatusClass(invoice.status)),
               createCell(formatDate(invoice.dueDate)),
               createCell(formatDate(invoice.paidAt)),
+              createCell(invoice.pdfFilePath || "Geen PDF"),
               actions
             );
             invoiceList.append(row);
@@ -1610,6 +1613,11 @@
           } finally {
             select.disabled = false;
           }
+        }
+
+        function clearInvoicePdfPath() {
+          document.getElementById("invoice-pdf").value = "";
+          setBillingMessage(invoiceMessage, "PDF-pad verwijderd. Klik op Factuur opslaan om dit definitief op te slaan.", "success");
         }
 
         function normalizeFiles(files) {
@@ -1880,6 +1888,7 @@
         websiteDetailForm.addEventListener("submit", saveWebsite);
         subscriptionForm.addEventListener("submit", saveSubscription);
         invoiceForm.addEventListener("submit", saveInvoice);
+        invoiceClearPdf.addEventListener("click", clearInvoicePdfPath);
         websiteArchive.addEventListener("click", archiveWebsite);
         detailLinkLogin.addEventListener("click", linkLogin);
         detailResetPassword.addEventListener("click", sendPasswordReset);

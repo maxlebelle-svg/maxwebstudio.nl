@@ -138,9 +138,20 @@ Klantportaal:
 - toont maximaal 5 laatste facturen
 - toont factuurstatus
 - toont alleen een downloadknop wanneer `pdf_file_path` gevuld is
+- downloadt facturen via `/.netlify/functions/invoice-download`
 - gebruikt alleen de bestaande Supabase Auth-sessie en anon key
 
 De benodigde SQL staat in `/docs/supabase-billing.sql`. Klanten mogen via RLS alleen eigen abonnementen en facturen lezen op basis van `customer_auth_user_id = auth.uid()`.
+
+Fase 5.6 voegt private factuur-PDF opslag toe:
+
+- bucket: `invoice-pdfs`
+- bucket is private
+- SQL en storage-instructies staan in `/docs/supabase-invoice-storage.sql`
+- admin uploadt PDF's voorlopig handmatig naar Supabase Storage
+- admin vult in de factuur alleen het objectpad in, bijvoorbeeld `2026/klant/factuur-2026-001.pdf`
+- klanten krijgen geen directe buckettoegang en kunnen niet vrij door facturen bladeren
+- de downloadknop vraagt server-side een signed URL op via `/.netlify/functions/invoice-download`
 
 Nog niet gebouwd in deze fase:
 
@@ -148,7 +159,7 @@ Nog niet gebouwd in deze fase:
 - automatische incasso
 - PDF-generatie
 - e-mailherinneringen
-- factuurdownload via private storage signed URLs
+- server-side PDF-upload vanuit het admin-dashboard
 
 ## Doel
 

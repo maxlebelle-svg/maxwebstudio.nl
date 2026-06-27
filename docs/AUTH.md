@@ -53,6 +53,7 @@ SQL staat in:
 
 - `/docs/supabase-client-portal.sql`
 - `/docs/supabase-billing.sql`
+- `/docs/supabase-invoice-storage.sql`
 
 Wanneer een ingelogde klant een wijziging indient via `/public/wijziging-doorgeven.html`, stuurt de frontend de Supabase access token mee. `submit-change-request.js` valideert die token server-side en vult `auth_user_id` op het nieuwe wijzigingsverzoek.
 
@@ -82,6 +83,8 @@ Admin- en automationflows blijven via server-side service role lopen.
 De frontend gebruikt alleen de Supabase anon key en vertrouwt op RLS. Klanten kunnen geen status wijzigen en zien geen interne classificatie.
 
 Bestanden bij eigen wijzigingsverzoeken worden geopend via `/.netlify/functions/client-change-request-file`. De frontend stuurt de Supabase Auth access token mee als bearer token. De function controleert de JWT via Supabase Auth, controleert server-side of `change_requests.auth_user_id` overeenkomt met de ingelogde gebruiker en maakt daarna pas een tijdelijke Supabase Storage signed URL.
+
+Factuur-PDF's worden geopend via `/.netlify/functions/invoice-download`. De frontend stuurt de Supabase Auth access token mee als bearer token. De function controleert de JWT via Supabase Auth, controleert server-side of `customer_invoices.customer_auth_user_id` overeenkomt met de ingelogde gebruiker en maakt daarna pas een tijdelijke signed URL voor de private bucket `invoice-pdfs`.
 
 ## Admin Profielbeheer
 
@@ -117,6 +120,8 @@ Websiteomgevingen die via het admin-dashboard aan een profiel worden gekoppeld, 
 Healthdata blijft onderdeel van `customer_websites`. Admin-mutaties lopen via `ADMIN_TOKEN` en service role server-side. Klanten lezen alleen hun eigen website- en healthstatus via RLS en krijgen geen admincontrols.
 
 Abonnementen en facturen staan in `public.customer_subscriptions` en `public.customer_invoices`. Admin-mutaties lopen via `ADMIN_TOKEN` en service role server-side. Klanten lezen alleen eigen billingdata via RLS en krijgen geen adminacties.
+
+Admin beheert factuur-PDF paden via `/.netlify/functions/admin-billing`. Het veld `pdf_file_path` hoort alleen een private Supabase Storage objectpad te bevatten, geen publieke URL. Uploads naar de bucket gebeuren voorlopig handmatig of later via een aparte server-side uploadfunctie.
 
 Nieuwe CRM-klanten worden gekoppeld aan een Supabase Auth-user wanneer het ingevoerde e-mailadres al bestaat in Supabase Auth. Als er nog geen Auth-user bestaat, kan de admin eerst een uitnodiging versturen vanuit het CRM en daarna het profiel opslaan zodra Supabase de gebruiker beschikbaar maakt.
 

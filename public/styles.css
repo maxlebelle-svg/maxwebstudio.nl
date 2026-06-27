@@ -2342,7 +2342,7 @@ h3 {
 }
 
 .invoice-row {
-  grid-template-columns: minmax(140px, 1fr) minmax(120px, 0.85fr) minmax(150px, 1.1fr) minmax(90px, 0.65fr) minmax(110px, 0.75fr) minmax(120px, 0.8fr) minmax(120px, 0.8fr) minmax(170px, 1fr);
+  grid-template-columns: minmax(130px, 1fr) minmax(110px, 0.8fr) minmax(140px, 1fr) minmax(85px, 0.6fr) minmax(105px, 0.7fr) minmax(115px, 0.75fr) minmax(115px, 0.75fr) minmax(130px, 0.9fr) minmax(170px, 1fr);
 }
 
 .admin-table-row select {

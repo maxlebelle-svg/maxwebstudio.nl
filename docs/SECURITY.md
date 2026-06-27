@@ -83,6 +83,8 @@ Het klantenportaal gebruikt:
 - Website Health mutaties lopen via `/.netlify/functions/admin-website-health`, vereisen `ADMIN_TOKEN` en gebruiken de service role alleen server-side.
 - Billingdata staat in `public.customer_subscriptions` en `public.customer_invoices`; klanten mogen alleen eigen records lezen waar `customer_auth_user_id = auth.uid()`.
 - Billing-mutaties lopen via `/.netlify/functions/admin-billing`, vereisen `ADMIN_TOKEN` en gebruiken de service role alleen server-side.
+- Factuur-PDF's staan in private Supabase Storage bucket `invoice-pdfs`.
+- Klantdownloads lopen via `/.netlify/functions/invoice-download`, vereisen een Supabase Auth JWT en gebruiken korte signed URLs.
 
 Risico:
 
@@ -90,6 +92,7 @@ Risico:
 - Bestaande wijzigingsverzoeken zonder `auth_user_id` zijn niet zichtbaar voor klanten.
 - Websiteomgevingen zonder `customer_auth_user_id` zijn niet zichtbaar voor klanten.
 - Abonnementen of facturen zonder `customer_auth_user_id` zijn niet zichtbaar voor klanten.
+- Factuur-PDF paden mogen geen publieke URL's zijn; `admin-billing.js` accepteert alleen private objectpaden.
 - Het admin-dashboard heeft nog geen volledige admin-login, rollenmodel of audit trail.
 - `ADMIN_TOKEN` is een tussenlaag en moet strikt geheim blijven.
 
@@ -104,6 +107,7 @@ Aanbevelingen:
 - Voer ook de `customer_websites` tabel en RLS-policy uit `/docs/supabase-client-portal.sql` uit voordat het Website Operations Center live wordt gebruikt.
 - Voer `/docs/supabase-website-health.sql` uit voordat health monitoring operationeel wordt gebruikt.
 - Voer `/docs/supabase-billing.sql` uit voordat facturatie en abonnementen operationeel worden gebruikt.
+- Voer `/docs/supabase-invoice-storage.sql` uit voordat factuur-PDF downloads operationeel worden gebruikt.
 
 ### Website Health Monitoring
 
@@ -136,6 +140,16 @@ Wijzigingsverzoeken gebruiken Supabase Storage:
 - downloads gebruiken tijdelijke signed URLs
 - toegestane types: JPG, PNG, PDF en DOCX
 - limieten: maximaal 5 bestanden, maximaal 10 MB per bestand
+
+Factuur-PDF's gebruiken Supabase Storage:
+
+- bucket: `invoice-pdfs`
+- bucket blijft private
+- PDF-pad staat in `customer_invoices.pdf_file_path`
+- downloads lopen alleen via `/.netlify/functions/invoice-download`
+- de downloadfunctie controleert eerst de Supabase Auth JWT en `customer_invoices.customer_auth_user_id`
+- admin uploadt PDF's voorlopig handmatig naar Supabase Storage of later via server-side upload
+- geen publieke Supabase URL opslaan in `pdf_file_path`
 
 Aanbevelingen:
 
