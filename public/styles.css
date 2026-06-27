@@ -5396,7 +5396,7 @@ h3 {
 }
 
 .invoice-stats-grid {
-  grid-template-columns: repeat(5, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
 }
 
 .invoice-filters {

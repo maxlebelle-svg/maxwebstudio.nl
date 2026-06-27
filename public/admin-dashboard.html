@@ -31,6 +31,7 @@
           <a href="#wijzigingsverzoeken">Wijzigingsverzoeken</a>
           <a href="#bestanden">Bestanden</a>
           <a href="#onderhoud">Onderhoud</a>
+          <a href="#offertes">Offertes</a>
           <a href="#facturen">Facturen</a>
           <a href="#ai">AI placeholder</a>
           <a href="#instellingen">Instellingen placeholder</a>
@@ -173,6 +174,8 @@
                 <button class="button secondary" id="detail-start-project" type="button" disabled>Project starten</button>
                 <button class="button secondary" id="detail-add-file" type="button" disabled>Bestand toevoegen</button>
                 <button class="button secondary" id="detail-view-files" type="button" disabled>Bestanden bekijken</button>
+                <button class="button secondary" id="detail-create-quote" type="button" disabled>Offerte aanmaken</button>
+                <button class="button secondary" id="detail-view-quotes" type="button" disabled>Offertes bekijken</button>
                 <button class="button secondary" id="detail-create-invoice" type="button" disabled>Factuur aanmaken</button>
                 <button class="button secondary" id="detail-view-invoices" type="button" disabled>Facturen bekijken</button>
                 <button class="button secondary danger" id="detail-archive" type="button" disabled>Archiveren</button>
@@ -245,6 +248,8 @@
                 <button class="button secondary" id="website-copy-domain" type="button" disabled>Kopieer domein</button>
                 <button class="button secondary" id="website-copy-github" type="button" disabled>Kopieer GitHub URL</button>
                 <button class="button secondary" id="website-start-project" type="button" disabled>Project koppelen/starten</button>
+                <button class="button secondary" id="website-create-quote" type="button" disabled>Offerte aanmaken</button>
+                <button class="button secondary" id="website-view-quotes" type="button" disabled>Offertes bekijken</button>
                 <button class="button secondary" id="website-create-invoice" type="button" disabled>Factuur aanmaken</button>
                 <button class="button secondary" id="website-view-invoices" type="button" disabled>Facturen bekijken</button>
               </div>
@@ -311,6 +316,8 @@
                 <button class="button primary" id="project-save" type="submit" disabled>Project opslaan</button>
                 <button class="button secondary" id="project-add-file" type="button" disabled>Bestand toevoegen</button>
                 <button class="button secondary" id="project-view-files" type="button" disabled>Bestanden bekijken</button>
+                <button class="button secondary" id="project-create-quote" type="button" disabled>Offerte aanmaken</button>
+                <button class="button secondary" id="project-view-quotes" type="button" disabled>Offertes bekijken</button>
                 <button class="button secondary" id="project-create-invoice" type="button" disabled>Factuur aanmaken</button>
                 <button class="button secondary" id="project-view-invoices" type="button" disabled>Facturen bekijken</button>
                 <button class="button secondary danger" id="project-delete" type="button" disabled>Verwijderen</button>
@@ -425,6 +432,30 @@
         </section>
 
         <div class="admin-two-column">
+          <section class="admin-section" id="offertes">
+            <div class="admin-section-heading">
+              <div><p class="section-kicker">Offertes</p><h2>Offertebeheer</h2></div>
+              <button class="button primary" id="new-quote" type="button">Nieuwe offerte</button>
+            </div>
+            <div class="admin-grid invoice-stats-grid" aria-label="Offerte statistieken">
+              <article class="admin-card detail-card"><span>Totaal geoffreerd</span><strong id="quote-stat-total">€ 0,00</strong></article>
+              <article class="admin-card detail-card"><span>Openstaand</span><strong id="quote-stat-open">€ 0,00</strong></article>
+              <article class="admin-card detail-card"><span>Geaccepteerd</span><strong id="quote-stat-accepted">€ 0,00</strong></article>
+              <article class="admin-card detail-card"><span>Afgewezen/verlopen</span><strong id="quote-stat-rejected">0</strong></article>
+              <article class="admin-card detail-card"><span>Conversie</span><strong id="quote-stat-conversion">0%</strong></article>
+              <article class="admin-card detail-card"><span>Aantal offertes</span><strong id="quote-stat-count">0</strong></article>
+            </div>
+            <div class="admin-filters invoice-filters" aria-label="Offertes filteren">
+              <label for="quote-search">Zoeken<input id="quote-search" type="search" placeholder="Offertenummer, klant, project, website of type" /></label>
+              <label for="quote-status-filter">Status<select id="quote-status-filter"><option value="">Alle statussen</option><option value="concept">Concept</option><option value="verzonden">Verzonden</option><option value="geaccepteerd">Geaccepteerd</option><option value="afgewezen">Afgewezen</option><option value="verlopen">Verlopen</option><option value="geannuleerd">Geannuleerd</option></select></label>
+              <label for="quote-type-filter">Type<select id="quote-type-filter"><option value="">Alle types</option><option value="Website">Website</option><option value="Website + onderhoud">Website + onderhoud</option><option value="Maatwerk">Maatwerk</option><option value="Extra pagina's">Extra pagina's</option><option value="SEO">SEO</option><option value="Hosting & onderhoud">Hosting & onderhoud</option><option value="Overig">Overig</option></select></label>
+              <label for="quote-customer-filter">Klant<select id="quote-customer-filter"><option value="">Alle klanten</option></select></label>
+              <label for="quote-project-filter">Project<select id="quote-project-filter"><option value="">Alle projecten</option></select></label>
+              <label for="quote-website-filter">Website<select id="quote-website-filter"><option value="">Alle websites</option></select></label>
+            </div>
+            <div class="admin-table billing-table" id="quote-list" role="table" aria-label="Offertes" aria-live="polite"></div>
+          </section>
+
           <section class="admin-section" id="facturen">
             <div class="admin-section-heading">
               <div><p class="section-kicker">Facturen</p><h2>Facturatie</h2></div>
@@ -603,6 +634,57 @@
       </section>
     </div>
 
+    <div class="admin-modal" id="quote-modal" role="dialog" aria-modal="true" aria-labelledby="quote-modal-title" hidden>
+      <div class="admin-modal-backdrop" data-modal-close></div>
+      <section class="admin-card admin-modal-panel">
+        <div class="admin-modal-header">
+          <div><p class="section-kicker">Offertes</p><h2 id="quote-modal-title">Offerte beheren</h2></div>
+          <button class="button secondary" type="button" data-modal-close>Sluiten</button>
+        </div>
+        <form class="admin-profile-form" id="quote-form">
+          <input id="quote-id" type="hidden" />
+          <div class="admin-profile-fields">
+            <label class="admin-profile-wide" for="quote-profile">Klant<select id="quote-profile" required></select></label>
+            <label class="admin-profile-wide" for="quote-website">Website<select id="quote-website"></select></label>
+            <label class="admin-profile-wide" for="quote-project">Project<select id="quote-project"></select></label>
+            <label for="quote-number">Offertenummer<input id="quote-number" type="text" /></label>
+            <label for="quote-type">Offertetype<select id="quote-type"><option value="Website">Website</option><option value="Website + onderhoud">Website + onderhoud</option><option value="Maatwerk">Maatwerk</option><option value="Extra pagina's">Extra pagina's</option><option value="SEO">SEO</option><option value="Hosting & onderhoud">Hosting & onderhoud</option><option value="Overig">Overig</option></select></label>
+            <label for="quote-title">Titel<input id="quote-title" type="text" required /></label>
+            <label for="quote-status">Status<select id="quote-status"><option value="concept">Concept</option><option value="verzonden">Verzonden</option><option value="geaccepteerd">Geaccepteerd</option><option value="afgewezen">Afgewezen</option><option value="verlopen">Verlopen</option><option value="geannuleerd">Geannuleerd</option></select></label>
+            <label for="quote-date">Offertedatum<input id="quote-date" type="date" /></label>
+            <label for="quote-valid-until">Geldig tot<input id="quote-valid-until" type="date" /></label>
+            <label class="admin-profile-wide" for="quote-link">Demo-offertelink<input id="quote-link" type="text" placeholder="/offerte.html?quoteId=..." /></label>
+            <label class="admin-profile-wide" for="quote-proposal">Voorsteltekst / klantnotitie<textarea id="quote-proposal" placeholder="Korte toelichting die zichtbaar mag zijn voor de klant."></textarea></label>
+            <label class="admin-profile-wide" for="quote-notes">Interne notities<textarea id="quote-notes" placeholder="Alleen intern voor Max Webstudio."></textarea></label>
+          </div>
+          <div class="invoice-line-editor">
+            <div class="project-work-heading">
+              <strong>Offertregels</strong>
+              <select id="quote-preset"><option value="">Preset toevoegen</option></select>
+            </div>
+            <div class="invoice-line-list" id="quote-line-list"></div>
+            <button class="button secondary" id="quote-add-line" type="button">Regel toevoegen</button>
+          </div>
+          <div class="invoice-totals-card">
+            <span>Subtotaal ex. btw<strong id="quote-subtotal">€ 0,00</strong></span>
+            <span>BTW<strong id="quote-vat">€ 0,00</strong></span>
+            <span>Totaal incl. btw<strong id="quote-total">€ 0,00</strong></span>
+          </div>
+          <div class="admin-profile-actions">
+            <button class="button primary" id="quote-save" type="submit">Offerte opslaan</button>
+            <button class="button secondary" id="quote-mark-sent" type="button">Zet op verzonden</button>
+            <button class="button secondary" id="quote-mark-accepted" type="button">Markeer geaccepteerd</button>
+            <button class="button secondary" id="quote-mark-rejected" type="button">Markeer afgewezen</button>
+            <a class="button secondary is-disabled" id="quote-open-link" href="#" target="_blank" rel="noopener" aria-disabled="true">Open demo-offerte</a>
+            <button class="button secondary" id="quote-copy-link" type="button">Kopieer demo-offertelink</button>
+            <button class="button secondary" id="quote-convert-invoice" type="button">Maak factuur van offerte</button>
+            <button class="button secondary danger" id="quote-cancel" type="button">Archiveer/annuleer</button>
+            <p class="admin-form-message" id="quote-message" role="status"></p>
+          </div>
+        </form>
+      </section>
+    </div>
+
     <script>
       (() => {
         const crmEndpoint = "/.netlify/functions/admin-client-profiles";
@@ -622,6 +704,7 @@
         const projectsStorageKey = "maxwebstudioProjects";
         const filesStorageKey = "maxwebstudioFiles";
         const invoicesStorageKey = "maxwebstudioInvoices";
+        const quotesStorageKey = "maxwebstudioQuotes";
         const completedStatuses = new Set(["afgerond"]);
         const statusLabels = {
           nieuw: "Nieuw",
@@ -684,6 +767,15 @@
           { group: "Extra's", label: "Maatwerk", description: "Maatwerk", price: 0 },
           { group: "Extra's", label: "SEO basis optimalisatie", description: "SEO basis optimalisatie", price: 0 },
         ];
+        const quoteStatusLabels = {
+          concept: "Concept",
+          verzonden: "Verzonden",
+          geaccepteerd: "Geaccepteerd",
+          afgewezen: "Afgewezen",
+          verlopen: "Verlopen",
+          geannuleerd: "Geannuleerd",
+        };
+        const quotePresets = invoicePresets;
         const defaultProjectChecklist = [
           "Logo ontvangen",
           "Huisstijl/kleurwensen ontvangen",
@@ -719,6 +811,7 @@
           healthWebsites: [],
           subscriptions: [],
           invoices: [],
+          quotes: [],
           requests: [],
           selectedCustomerId: "",
           selectedWebsiteId: "",
@@ -726,6 +819,7 @@
           selectedFileId: "",
           selectedSubscriptionId: "",
           selectedInvoiceId: "",
+          selectedQuoteId: "",
           selectedRequestId: "",
           dashboardMetrics: null,
         };
@@ -812,6 +906,8 @@
           copyDomain: document.getElementById("website-copy-domain"),
           copyGithub: document.getElementById("website-copy-github"),
           startProject: document.getElementById("website-start-project"),
+          createQuote: document.getElementById("website-create-quote"),
+          viewQuotes: document.getElementById("website-view-quotes"),
           createInvoice: document.getElementById("website-create-invoice"),
           viewInvoices: document.getElementById("website-view-invoices"),
         };
@@ -831,6 +927,8 @@
         const projectSave = document.getElementById("project-save");
         const projectAddFile = document.getElementById("project-add-file");
         const projectViewFiles = document.getElementById("project-view-files");
+        const projectCreateQuote = document.getElementById("project-create-quote");
+        const projectViewQuotes = document.getElementById("project-view-quotes");
         const projectCreateInvoice = document.getElementById("project-create-invoice");
         const projectViewInvoices = document.getElementById("project-view-invoices");
         const projectDelete = document.getElementById("project-delete");
@@ -891,15 +989,63 @@
         };
         const careOverview = document.getElementById("care-overview");
         const subscriptionList = document.getElementById("subscription-list");
+        const quoteList = document.getElementById("quote-list");
         const invoiceList = document.getElementById("invoice-list");
         const subscriptionModal = document.getElementById("subscription-modal");
+        const quoteModal = document.getElementById("quote-modal");
         const invoiceModal = document.getElementById("invoice-modal");
         const subscriptionForm = document.getElementById("subscription-form");
+        const quoteForm = document.getElementById("quote-form");
         const invoiceForm = document.getElementById("invoice-form");
         const subscriptionMessage = document.getElementById("subscription-message");
+        const quoteMessage = document.getElementById("quote-message");
         const invoiceMessage = document.getElementById("invoice-message");
         const subscriptionSave = document.getElementById("subscription-save");
+        const quoteSave = document.getElementById("quote-save");
         const invoiceSave = document.getElementById("invoice-save");
+        const quoteFields = {
+          id: document.getElementById("quote-id"),
+          profile: document.getElementById("quote-profile"),
+          website: document.getElementById("quote-website"),
+          project: document.getElementById("quote-project"),
+          number: document.getElementById("quote-number"),
+          type: document.getElementById("quote-type"),
+          title: document.getElementById("quote-title"),
+          status: document.getElementById("quote-status"),
+          quoteDate: document.getElementById("quote-date"),
+          validUntil: document.getElementById("quote-valid-until"),
+          link: document.getElementById("quote-link"),
+          proposal: document.getElementById("quote-proposal"),
+          notes: document.getElementById("quote-notes"),
+        };
+        const quoteLineList = document.getElementById("quote-line-list");
+        const quotePreset = document.getElementById("quote-preset");
+        const quoteAddLine = document.getElementById("quote-add-line");
+        const quoteSubtotal = document.getElementById("quote-subtotal");
+        const quoteVat = document.getElementById("quote-vat");
+        const quoteTotal = document.getElementById("quote-total");
+        const quoteMarkSent = document.getElementById("quote-mark-sent");
+        const quoteMarkAccepted = document.getElementById("quote-mark-accepted");
+        const quoteMarkRejected = document.getElementById("quote-mark-rejected");
+        const quoteOpenLink = document.getElementById("quote-open-link");
+        const quoteCopyLink = document.getElementById("quote-copy-link");
+        const quoteConvertInvoice = document.getElementById("quote-convert-invoice");
+        const quoteCancel = document.getElementById("quote-cancel");
+        const quoteSearch = document.getElementById("quote-search");
+        const quoteStatusFilter = document.getElementById("quote-status-filter");
+        const quoteTypeFilter = document.getElementById("quote-type-filter");
+        const quoteCustomerFilter = document.getElementById("quote-customer-filter");
+        const quoteProjectFilter = document.getElementById("quote-project-filter");
+        const quoteWebsiteFilter = document.getElementById("quote-website-filter");
+        const quoteStats = {
+          total: document.getElementById("quote-stat-total"),
+          open: document.getElementById("quote-stat-open"),
+          accepted: document.getElementById("quote-stat-accepted"),
+          rejected: document.getElementById("quote-stat-rejected"),
+          conversion: document.getElementById("quote-stat-conversion"),
+          count: document.getElementById("quote-stat-count"),
+        };
+        let currentQuoteLines = [];
         const invoiceClearPdf = document.getElementById("invoice-clear-pdf");
         const invoiceFields = {
           id: document.getElementById("invoice-id"),
@@ -967,6 +1113,8 @@
         const detailStartProject = document.getElementById("detail-start-project");
         const detailAddFile = document.getElementById("detail-add-file");
         const detailViewFiles = document.getElementById("detail-view-files");
+        const detailCreateQuote = document.getElementById("detail-create-quote");
+        const detailViewQuotes = document.getElementById("detail-view-quotes");
         const detailCreateInvoice = document.getElementById("detail-create-invoice");
         const detailViewInvoices = document.getElementById("detail-view-invoices");
         const detailAuthStatus = document.getElementById("detail-auth-status");
@@ -1511,6 +1659,133 @@
           return files;
         }
 
+        function normalizeQuoteStatus(value) {
+          const status = normalize(value);
+          if (status === "draft") return "concept";
+          if (status === "sent") return "verzonden";
+          if (status === "accepted") return "geaccepteerd";
+          if (status === "rejected") return "afgewezen";
+          if (status === "expired") return "verlopen";
+          if (status === "canceled" || status === "cancelled") return "geannuleerd";
+          return status || "concept";
+        }
+
+        function nextQuoteNumber() {
+          const year = new Date().getFullYear();
+          let rawQuotes = [];
+          try {
+            rawQuotes = JSON.parse(localStorage.getItem(quotesStorageKey) || "[]");
+          } catch (error) {
+            rawQuotes = [];
+          }
+          const count = Array.isArray(rawQuotes) ? rawQuotes.filter((quote) => String(quote.quoteNumber || "").includes(String(year))).length + 1 : 1;
+          return `OFF-${year}-${String(count).padStart(3, "0")}`;
+        }
+
+        function quoteLinkUrl(id) {
+          return `/offerte.html?quoteId=${encodeURIComponent(id)}`;
+        }
+
+        function normalizeQuote(quote = {}) {
+          const now = new Date().toISOString();
+          const createdAt = quote.createdAt || now;
+          const profileId = quote.profileId || quote.customerId || "";
+          const websiteId = quote.websiteId || "";
+          const projectId = quote.projectId || "";
+          const customer = customerById(profileId);
+          const website = websiteById(websiteId);
+          const project = projectById(projectId);
+          const lines = Array.isArray(quote.lines) && quote.lines.length
+            ? quote.lines.map(normalizeInvoiceLine).filter((line) => line.description)
+            : [normalizeInvoiceLine({ description: quote.title || "Offertregel", quantity: 1, unitPrice: quote.amount || 0, vatRate: 21 })];
+          const totals = calculateInvoiceTotals(lines);
+          const id = quote.id || createCrmId();
+          return {
+            id,
+            quoteNumber: quote.quoteNumber || nextQuoteNumber(),
+            profileId,
+            customerId: profileId,
+            websiteId,
+            projectId,
+            customerName: customer?.name || quote.customerName || "",
+            customerCompany: customer?.company || quote.customerCompany || "",
+            customerEmail: customer?.email || quote.customerEmail || "",
+            customerPhone: customer?.phone || quote.customerPhone || "",
+            websiteName: website?.name || quote.websiteName || "",
+            websiteDomain: website?.domain || quote.websiteDomain || "",
+            projectName: project?.name || quote.projectName || "",
+            type: quote.type || quote.quoteType || "Website",
+            title: String(quote.title || quote.type || "Offerte").trim(),
+            status: normalizeQuoteStatus(quote.status),
+            quoteDate: quote.quoteDate || quote.createdAt?.slice?.(0, 10) || now.slice(0, 10),
+            validUntil: quote.validUntil || "",
+            lines,
+            subtotal: totals.subtotal,
+            vat: totals.vat,
+            total: totals.total,
+            amount: totals.total,
+            proposal: String(quote.proposal || quote.customerNote || "").trim(),
+            notes: String(quote.notes || "").trim(),
+            quoteLink: quote.quoteLink || quote.demoQuoteLink || quoteLinkUrl(id),
+            demoQuoteLink: quote.quoteLink || quote.demoQuoteLink || quoteLinkUrl(id),
+            convertedToInvoiceId: quote.convertedToInvoiceId || "",
+            convertedAt: quote.convertedAt || "",
+            createdAt,
+            updatedAt: quote.updatedAt || createdAt,
+          };
+        }
+
+        function readStoredQuotes() {
+          try {
+            const stored = JSON.parse(localStorage.getItem(quotesStorageKey) || "[]");
+            return Array.isArray(stored) ? stored.map(normalizeQuote) : [];
+          } catch (error) {
+            console.error("Quotes could not be read", error);
+            return [];
+          }
+        }
+
+        function writeStoredQuotes(quotes) {
+          localStorage.setItem(quotesStorageKey, JSON.stringify(quotes.map(normalizeQuote)));
+        }
+
+        function validateQuotePayload(payload) {
+          if (!payload.profileId) return "Kies eerst een klant.";
+          if (!String(payload.quoteNumber || "").trim()) return "Vul een offertenummer in.";
+          if (!payload.lines?.length) return "Voeg minimaal een offertregel toe.";
+          if (payload.lines.some((line) => !String(line.description || "").trim())) return "Elke offertregel heeft een omschrijving nodig.";
+          return "";
+        }
+
+        function saveQuoteLocally(payload) {
+          const quotes = readStoredQuotes();
+          const existingIndex = quotes.findIndex((quote) => quote.id === payload.id);
+          const existing = existingIndex >= 0 ? quotes[existingIndex] : {};
+          const now = new Date().toISOString();
+          const quote = normalizeQuote({
+            ...existing,
+            ...payload,
+            id: payload.id || existing.id || createCrmId(),
+            createdAt: existing.createdAt || now,
+            updatedAt: now,
+          });
+          const validationError = validateQuotePayload(quote);
+          if (validationError) throw new Error(validationError);
+          if (existingIndex >= 0) quotes[existingIndex] = quote;
+          else quotes.unshift(quote);
+          writeStoredQuotes(quotes);
+          return quote;
+        }
+
+        function updateQuoteStatusLocally(id, status) {
+          const quotes = readStoredQuotes();
+          const index = quotes.findIndex((quote) => quote.id === id);
+          if (index < 0) throw new Error("Offerte niet gevonden.");
+          quotes[index] = normalizeQuote({ ...quotes[index], status, updatedAt: new Date().toISOString() });
+          writeStoredQuotes(quotes);
+          return quotes[index];
+        }
+
         function normalizeInvoiceStatus(value) {
           const status = normalize(value);
           if (status === "draft") return "concept";
@@ -1955,10 +2230,14 @@
           detailState.textContent = "Geselecteerd";
           detailState.className = `status-badge ${customerStatusClass(customer.status)}`;
           const customerFileCount = state.files.filter((file) => file.customerId === customer.id).length;
+          const customerQuotes = state.quotes.filter((quote) => quote.profileId === customer.id);
+          const openQuotes = customerQuotes.filter((quote) => ["concept", "verzonden"].includes(quote.status)).length;
+          const acceptedQuotes = customerQuotes.filter((quote) => quote.status === "geaccepteerd").length;
+          const rejectedQuotes = customerQuotes.filter((quote) => quote.status === "afgewezen").length;
           const customerInvoices = state.invoices.filter((invoice) => invoice.profileId === customer.id);
           const openInvoices = customerInvoices.filter((invoice) => !["betaald", "geannuleerd"].includes(invoice.status)).length;
           const paidInvoices = customerInvoices.filter((invoice) => invoice.status === "betaald").length;
-          detailSubtitle.textContent = `${customer.company || customer.name || "Klantprofiel"} - ${customerFileCount} bestand${customerFileCount === 1 ? "" : "en"} - ${customerInvoices.length} factuur${customerInvoices.length === 1 ? "" : "en"} (${openInvoices} open, ${paidInvoices} betaald)`;
+          detailSubtitle.textContent = `${customer.company || customer.name || "Klantprofiel"} - ${customerFileCount} bestand${customerFileCount === 1 ? "" : "en"} - ${customerQuotes.length} offerte${customerQuotes.length === 1 ? "" : "s"} (${openQuotes} open, ${acceptedQuotes} geaccepteerd, ${rejectedQuotes} afgewezen) - ${customerInvoices.length} factuur${customerInvoices.length === 1 ? "" : "en"} (${openInvoices} open, ${paidInvoices} betaald)`;
           const hasLogin = customer.portalStatus === "actief" || customer.authStatus === "login actief";
           const authLabel = customer.portalStatus === "uitgenodigd" ? "Uitgenodigd" : hasLogin ? "Login actief" : customer.portalStatus === "geblokkeerd" ? "Geblokkeerd" : "Geen login";
           detailAuthStatus.textContent = authLabel;
@@ -1973,6 +2252,8 @@
           detailStartProject.disabled = false;
           detailAddFile.disabled = false;
           detailViewFiles.disabled = false;
+          detailCreateQuote.disabled = false;
+          detailViewQuotes.disabled = false;
           detailCreateInvoice.disabled = false;
           detailViewInvoices.disabled = false;
         }
@@ -2217,6 +2498,10 @@
           websiteQuickActions.copyDomain.disabled = !enabled || !websiteFields.domain.value;
           websiteQuickActions.copyGithub.disabled = !enabled || !websiteFields.githubRepoUrl.value;
           websiteQuickActions.startProject.disabled = !enabled || !state.selectedWebsiteId;
+          websiteQuickActions.createQuote.disabled = !enabled || !state.selectedWebsiteId;
+          websiteQuickActions.viewQuotes.disabled = !enabled || !state.selectedWebsiteId;
+          websiteQuickActions.createInvoice.disabled = !enabled || !state.selectedWebsiteId;
+          websiteQuickActions.viewInvoices.disabled = !enabled || !state.selectedWebsiteId;
         }
 
         function resetWebsiteForm() {
@@ -2257,6 +2542,8 @@
           websiteQuickActions.copyDomain.disabled = !website?.domain;
           websiteQuickActions.copyGithub.disabled = !website?.githubRepoUrl;
           websiteQuickActions.startProject.disabled = !website;
+          websiteQuickActions.createQuote.disabled = !website;
+          websiteQuickActions.viewQuotes.disabled = !website;
           websiteQuickActions.createInvoice.disabled = !website;
           websiteQuickActions.viewInvoices.disabled = !website;
         }
@@ -2280,6 +2567,7 @@
             return;
           }
           const websiteInvoices = state.invoices.filter((invoice) => invoice.websiteId === website.id);
+          const websiteQuotes = state.quotes.filter((quote) => quote.websiteId === website.id);
           addWebsiteSummaryCard("Algemeen", [
             ["Website-ID", website.id || "-"],
             ["Domein", website.domain || "-"],
@@ -2301,6 +2589,7 @@
             ["Onderhoudspakket", website.carePackage || "-"],
             ["Laatste update", formatDate(website.lastUpdateAt)],
             ["Open taken", String(website.openTasks || 0)],
+            ["Offertes", String(websiteQuotes.length)],
             ["Facturen", String(websiteInvoices.length)],
           ]);
           addWebsiteSummaryCard("Klant", [
@@ -2758,6 +3047,8 @@
           projectDelete.disabled = !enabled || !state.selectedProjectId;
           projectAddFile.disabled = !enabled || !state.selectedProjectId;
           projectViewFiles.disabled = !enabled || !state.selectedProjectId;
+          projectCreateQuote.disabled = !enabled || !state.selectedProjectId;
+          projectViewQuotes.disabled = !enabled || !state.selectedProjectId;
           projectCreateInvoice.disabled = !enabled || !state.selectedProjectId;
           projectViewInvoices.disabled = !enabled || !state.selectedProjectId;
           projectTaskTitle.disabled = !enabled || !state.selectedProjectId;
@@ -2861,6 +3152,7 @@
           projectDetailSummary.replaceChildren();
           if (!project) return;
           const projectFileCount = state.files.filter((file) => file.projectId === project.id).length;
+          const projectQuoteCount = state.quotes.filter((quote) => quote.projectId === project.id).length;
           const projectInvoiceCount = state.invoices.filter((invoice) => invoice.projectId === project.id).length;
           addProjectSummaryCard("Klantgegevens", [
             ["Klant-ID", project.customerId || "-"],
@@ -2880,6 +3172,7 @@
             ["Deadline", project.deadline || "-"],
             ["Laatste update", formatDate(project.lastUpdateAt)],
             ["Gekoppelde bestanden", String(projectFileCount)],
+            ["Gekoppelde offertes", String(projectQuoteCount)],
             ["Gekoppelde facturen", String(projectInvoiceCount)],
           ]);
         }
@@ -2963,6 +3256,8 @@
           enableProjectFields(true);
           projectAddFile.disabled = false;
           projectViewFiles.disabled = false;
+          projectCreateQuote.disabled = false;
+          projectViewQuotes.disabled = false;
         }
 
         function projectPayload(extra = {}) {
@@ -3108,7 +3403,7 @@
 
         function billingStatusClass(value) {
           const status = normalize(value);
-          if (["active", "paid", "betaald", "goedgekeurd", "normal", "resolved"].includes(status)) return "status-active";
+          if (["active", "paid", "betaald", "geaccepteerd", "goedgekeurd", "normal", "resolved"].includes(status)) return "status-active";
           if (["sent", "verzonden", "draft", "concept"].includes(status)) return "status-prepared";
           if (["paused", "suspended", "expired", "verlopen", "overdue", "pending", "open", "attention", "payment_failed", "retry_needed"].includes(status)) return "status-warning";
           return "status-attention";
@@ -3245,6 +3540,205 @@
             option.textContent = `${customer.company || customer.name || "Klant"}${customer.email ? ` - ${customer.email}` : ""}`;
             select.append(option);
           });
+        }
+
+        function populateQuoteOptions(selectedCustomerId = "") {
+          const selectedProfileValue = quoteFields.profile.value;
+          const selectedWebsiteValue = quoteFields.website.value;
+          const selectedProjectValue = quoteFields.project.value;
+          const customerFilterValue = quoteCustomerFilter.value;
+          const websiteFilterValue = quoteWebsiteFilter.value;
+          const projectFilterValue = quoteProjectFilter.value;
+          populateBillingProfileOptions(quoteFields.profile);
+          quoteFields.profile.value = selectedProfileValue;
+
+          quoteCustomerFilter.replaceChildren();
+          const emptyCustomer = document.createElement("option");
+          emptyCustomer.value = "";
+          emptyCustomer.textContent = "Alle klanten";
+          quoteCustomerFilter.append(emptyCustomer);
+          state.customers.forEach((customer) => {
+            const option = document.createElement("option");
+            option.value = customer.id;
+            option.textContent = customer.company || customer.name || "Klant";
+            quoteCustomerFilter.append(option);
+          });
+          quoteCustomerFilter.value = customerFilterValue;
+
+          quoteFields.website.replaceChildren();
+          quoteWebsiteFilter.replaceChildren();
+          [
+            [quoteFields.website, "Geen website gekoppeld"],
+            [quoteWebsiteFilter, "Alle websites"],
+          ].forEach(([select, label]) => {
+            const empty = document.createElement("option");
+            empty.value = "";
+            empty.textContent = label;
+            select.append(empty);
+          });
+          state.websites.filter((website) => !selectedCustomerId || website.profileId === selectedCustomerId).forEach((website) => {
+            [quoteFields.website, quoteWebsiteFilter].forEach((select) => {
+              const option = document.createElement("option");
+              option.value = website.id;
+              option.textContent = website.name || website.domain || "Website";
+              select.append(option);
+            });
+          });
+          quoteFields.website.value = selectedWebsiteValue;
+          quoteWebsiteFilter.value = websiteFilterValue;
+
+          quoteFields.project.replaceChildren();
+          quoteProjectFilter.replaceChildren();
+          [
+            [quoteFields.project, "Geen project gekoppeld"],
+            [quoteProjectFilter, "Alle projecten"],
+          ].forEach(([select, label]) => {
+            const empty = document.createElement("option");
+            empty.value = "";
+            empty.textContent = label;
+            select.append(empty);
+          });
+          state.projects.filter((project) => !selectedCustomerId || project.customerId === selectedCustomerId).forEach((project) => {
+            [quoteFields.project, quoteProjectFilter].forEach((select) => {
+              const option = document.createElement("option");
+              option.value = project.id;
+              option.textContent = project.name || "Project";
+              select.append(option);
+            });
+          });
+          quoteFields.project.value = selectedProjectValue;
+          quoteProjectFilter.value = projectFilterValue;
+        }
+
+        function populateQuotePresets() {
+          quotePreset.replaceChildren();
+          const empty = document.createElement("option");
+          empty.value = "";
+          empty.textContent = "Preset toevoegen";
+          quotePreset.append(empty);
+          quotePresets.forEach((preset, index) => {
+            const option = document.createElement("option");
+            option.value = String(index);
+            option.textContent = `${preset.group} - ${preset.label}`;
+            quotePreset.append(option);
+          });
+        }
+
+        function renderQuoteLines() {
+          quoteLineList.replaceChildren();
+          if (!currentQuoteLines.length) currentQuoteLines = [normalizeInvoiceLine({ description: "", quantity: 1, unitPrice: 0, vatRate: 21 })];
+          const header = document.createElement("div");
+          header.className = "invoice-line-row invoice-line-head";
+          ["Omschrijving", "Aantal", "Prijs ex. btw", "BTW %", ""].forEach((label) => header.append(createCell(label)));
+          quoteLineList.append(header);
+          currentQuoteLines.forEach((line, index) => {
+            const row = document.createElement("div");
+            row.className = "invoice-line-row";
+            const description = document.createElement("input");
+            description.type = "text";
+            description.placeholder = "Omschrijving";
+            description.value = line.description || "";
+            description.addEventListener("input", () => {
+              currentQuoteLines[index].description = description.value;
+            });
+            const quantity = document.createElement("input");
+            quantity.type = "number";
+            quantity.min = "0";
+            quantity.step = "1";
+            quantity.value = line.quantity || 1;
+            quantity.addEventListener("input", () => {
+              currentQuoteLines[index].quantity = Number(quantity.value || 0);
+              updateQuoteTotals();
+            });
+            const price = document.createElement("input");
+            price.type = "number";
+            price.min = "0";
+            price.step = "0.01";
+            price.value = line.unitPrice ?? 0;
+            price.addEventListener("input", () => {
+              currentQuoteLines[index].unitPrice = Number(price.value || 0);
+              updateQuoteTotals();
+            });
+            const vat = document.createElement("input");
+            vat.type = "number";
+            vat.min = "0";
+            vat.step = "1";
+            vat.value = line.vatRate ?? 21;
+            vat.addEventListener("input", () => {
+              currentQuoteLines[index].vatRate = Number(vat.value || 0);
+              updateQuoteTotals();
+            });
+            const remove = document.createElement("button");
+            remove.className = "button secondary danger";
+            remove.type = "button";
+            remove.textContent = "Verwijder";
+            remove.addEventListener("click", () => {
+              currentQuoteLines.splice(index, 1);
+              renderQuoteLines();
+              updateQuoteTotals();
+            });
+            row.append(description, quantity, price, vat, remove);
+            quoteLineList.append(row);
+          });
+          updateQuoteTotals();
+        }
+
+        function updateQuoteTotals() {
+          const totals = calculateInvoiceTotals(currentQuoteLines);
+          quoteSubtotal.textContent = money(totals.subtotal);
+          quoteVat.textContent = money(totals.vat);
+          quoteTotal.textContent = money(totals.total);
+        }
+
+        function addQuoteLine(line = {}) {
+          currentQuoteLines.push(normalizeInvoiceLine({ quantity: 1, vatRate: 21, ...line }));
+          renderQuoteLines();
+        }
+
+        function addQuotePreset() {
+          const preset = quotePresets[Number(quotePreset.value)];
+          if (!preset) return;
+          addQuoteLine({ description: preset.description, quantity: 1, unitPrice: preset.price, vatRate: 21 });
+          if (!quoteFields.title.value) quoteFields.title.value = preset.label;
+          quotePreset.value = "";
+        }
+
+        function filteredQuotes() {
+          const query = normalize(quoteSearch.value);
+          return state.quotes.filter((quote) => {
+            const searchable = normalize([quote.quoteNumber, quote.customerName, quote.customerCompany, quote.projectName, quote.websiteName, quote.websiteDomain, quote.type].join(" "));
+            return (!query || searchable.includes(query))
+              && (!quoteStatusFilter.value || quote.status === quoteStatusFilter.value)
+              && (!quoteTypeFilter.value || quote.type === quoteTypeFilter.value)
+              && (!quoteCustomerFilter.value || quote.profileId === quoteCustomerFilter.value)
+              && (!quoteProjectFilter.value || quote.projectId === quoteProjectFilter.value)
+              && (!quoteWebsiteFilter.value || quote.websiteId === quoteWebsiteFilter.value);
+          });
+        }
+
+        function renderQuoteStats() {
+          const quotes = filteredQuotes();
+          const total = quotes.reduce((sum, quote) => sum + Number(quote.total || 0), 0);
+          const acceptedQuotes = quotes.filter((quote) => quote.status === "geaccepteerd");
+          const accepted = acceptedQuotes.reduce((sum, quote) => sum + Number(quote.total || 0), 0);
+          const open = quotes.filter((quote) => ["concept", "verzonden"].includes(quote.status)).reduce((sum, quote) => sum + Number(quote.total || 0), 0);
+          const rejectedCount = quotes.filter((quote) => ["afgewezen", "verlopen"].includes(quote.status)).length;
+          const decided = quotes.filter((quote) => ["geaccepteerd", "afgewezen"].includes(quote.status)).length;
+          const conversion = decided ? Math.round((acceptedQuotes.length / decided) * 100) : 0;
+          quoteStats.total.textContent = money(total);
+          quoteStats.open.textContent = money(open);
+          quoteStats.accepted.textContent = money(accepted);
+          quoteStats.rejected.textContent = String(rejectedCount);
+          quoteStats.conversion.textContent = `${conversion}%`;
+          quoteStats.count.textContent = String(quotes.length);
+        }
+
+        function updateQuoteLinkActions(quote) {
+          const link = quoteFields.link.value || quote?.quoteLink || "";
+          quoteOpenLink.href = link || "#";
+          quoteOpenLink.classList.toggle("is-disabled", !link);
+          quoteOpenLink.toggleAttribute("aria-disabled", !link);
+          quoteCopyLink.disabled = !link;
         }
 
         function populateInvoiceOptions(selectedCustomerId = "") {
@@ -3554,6 +4048,86 @@
           });
         }
 
+        function renderQuotes() {
+          quoteList.replaceChildren();
+          populateQuoteOptions();
+          renderQuoteStats();
+          if (!state.quotes.length) {
+            renderState(quoteList, "Geen offertes", "Maak de eerste offerte aan.", "Leeg");
+            return;
+          }
+          const quotes = filteredQuotes();
+          if (!quotes.length) {
+            renderState(quoteList, "Geen offertes gevonden", "Pas je zoekopdracht of filters aan.", "Geen match");
+            return;
+          }
+          const head = document.createElement("div");
+          head.className = "admin-table-row admin-table-head invoice-row";
+          ["Offertenummer", "Klant", "Type", "Status", "Datum", "Geldig tot", "Totaal", "Acties"].forEach((label) => head.append(createCell(label)));
+          quoteList.append(head);
+          quotes.forEach((quote) => {
+            const row = document.createElement("div");
+            row.className = "admin-table-row invoice-row";
+            const actions = document.createElement("span");
+            actions.className = "website-actions";
+            const edit = document.createElement("button");
+            edit.className = "button secondary";
+            edit.type = "button";
+            edit.textContent = "Bekijken";
+            edit.addEventListener("click", () => openQuoteModal(quote.id));
+            const markSent = document.createElement("button");
+            markSent.className = "button secondary";
+            markSent.type = "button";
+            markSent.textContent = "Zet op verzonden";
+            markSent.disabled = quote.status === "verzonden" || quote.status === "geaccepteerd";
+            markSent.addEventListener("click", () => setQuoteStatus(quote.id, "verzonden", markSent));
+            const markAccepted = document.createElement("button");
+            markAccepted.className = "button secondary";
+            markAccepted.type = "button";
+            markAccepted.textContent = "Geaccepteerd";
+            markAccepted.disabled = quote.status === "geaccepteerd";
+            markAccepted.addEventListener("click", () => setQuoteStatus(quote.id, "geaccepteerd", markAccepted));
+            const markRejected = document.createElement("button");
+            markRejected.className = "button secondary";
+            markRejected.type = "button";
+            markRejected.textContent = "Afgewezen";
+            markRejected.disabled = quote.status === "afgewezen";
+            markRejected.addEventListener("click", () => setQuoteStatus(quote.id, "afgewezen", markRejected));
+            actions.append(edit, markSent, markAccepted, markRejected);
+            if (quote.quoteLink) {
+              const open = document.createElement("a");
+              open.className = "button secondary";
+              open.href = quote.quoteLink;
+              open.target = "_blank";
+              open.rel = "noopener";
+              open.textContent = "Open demo-offerte";
+              actions.append(open);
+            }
+            const copy = document.createElement("button");
+            copy.className = "button secondary";
+            copy.type = "button";
+            copy.textContent = "Kopieer link";
+            copy.addEventListener("click", () => copyText(quote.quoteLink, "Demo-offertelink gekopieerd."));
+            const cancel = document.createElement("button");
+            cancel.className = "button secondary danger";
+            cancel.type = "button";
+            cancel.textContent = "Annuleer";
+            cancel.addEventListener("click", () => cancelQuote(quote.id));
+            actions.append(copy, cancel);
+            row.append(
+              createCell(quote.quoteNumber),
+              createCell(quote.customerCompany || quote.customerName || "Geen klant", "strong"),
+              createCell(quote.type || "-"),
+              createBadge(quoteStatusLabels[quote.status] || quote.status, billingStatusClass(quote.status)),
+              createCell(quote.quoteDate || "-"),
+              createCell(formatDate(quote.validUntil)),
+              createCell(money(quote.total)),
+              actions
+            );
+            quoteList.append(row);
+          });
+        }
+
         function renderInvoices() {
           invoiceList.replaceChildren();
           populateInvoiceOptions();
@@ -3672,6 +4246,10 @@
           return state.invoices.find((invoice) => invoice.id === id) || null;
         }
 
+        function quoteById(id) {
+          return state.quotes.find((quote) => quote.id === id) || null;
+        }
+
         function openSubscriptionModal(id = "") {
           const subscription = subscriptionById(id);
           state.selectedSubscriptionId = subscription?.id || "";
@@ -3717,6 +4295,34 @@
           updatePaymentLinkActions(invoice || null);
           setBillingMessage(invoiceMessage, "", "");
           invoiceModal.hidden = false;
+          document.body.classList.add("admin-modal-open");
+        }
+
+        function openQuoteModal(id = "") {
+          const quote = quoteById(id);
+          state.selectedQuoteId = quote?.id || "";
+          quoteForm.reset();
+          populateQuotePresets();
+          quoteFields.id.value = quote?.id || "";
+          quoteFields.profile.value = quote?.profileId || state.selectedCustomerId || "";
+          populateQuoteOptions(quoteFields.profile.value);
+          quoteFields.profile.value = quote?.profileId || state.selectedCustomerId || "";
+          quoteFields.website.value = quote?.websiteId || "";
+          quoteFields.project.value = quote?.projectId || "";
+          quoteFields.number.value = quote?.quoteNumber || nextQuoteNumber();
+          quoteFields.type.value = quote?.type || "Website";
+          quoteFields.title.value = quote?.title || "Nieuwe offerte";
+          quoteFields.status.value = quote?.status || "concept";
+          quoteFields.quoteDate.value = quote?.quoteDate || new Date().toISOString().slice(0, 10);
+          quoteFields.validUntil.value = toDateInput(quote?.validUntil) || "";
+          quoteFields.link.value = quote?.quoteLink || (quote?.id ? quoteLinkUrl(quote.id) : "");
+          quoteFields.proposal.value = quote?.proposal || "";
+          quoteFields.notes.value = quote?.notes || "";
+          currentQuoteLines = quote?.lines?.length ? quote.lines.map(normalizeInvoiceLine) : [normalizeInvoiceLine({ description: "", quantity: 1, unitPrice: 0, vatRate: 21 })];
+          renderQuoteLines();
+          updateQuoteLinkActions(quote || null);
+          setBillingMessage(quoteMessage, "", "");
+          quoteModal.hidden = false;
           document.body.classList.add("admin-modal-open");
         }
 
@@ -3782,6 +4388,40 @@
           } finally {
             invoiceSave.disabled = false;
             invoiceSave.textContent = "Factuur opslaan";
+          }
+        }
+
+        async function saveQuote(event) {
+          event.preventDefault();
+          quoteSave.disabled = true;
+          quoteSave.textContent = "Opslaan...";
+          setBillingMessage(quoteMessage, "", "");
+          try {
+            const quote = saveQuoteLocally({
+              id: quoteFields.id.value,
+              profileId: quoteFields.profile.value,
+              websiteId: quoteFields.website.value,
+              projectId: quoteFields.project.value,
+              quoteNumber: quoteFields.number.value,
+              type: quoteFields.type.value,
+              title: quoteFields.title.value,
+              status: quoteFields.status.value,
+              quoteDate: quoteFields.quoteDate.value,
+              validUntil: quoteFields.validUntil.value,
+              quoteLink: quoteFields.link.value,
+              proposal: quoteFields.proposal.value,
+              notes: quoteFields.notes.value,
+              lines: currentQuoteLines,
+            });
+            await loadCRMData(false);
+            state.selectedQuoteId = quote.id;
+            openQuoteModal(quote.id);
+            setBillingMessage(quoteMessage, "Offerte opgeslagen.", "success");
+          } catch (error) {
+            setBillingMessage(quoteMessage, error.message || "Offerte kon niet worden opgeslagen.", "error");
+          } finally {
+            quoteSave.disabled = false;
+            quoteSave.textContent = "Offerte opslaan";
           }
         }
 
@@ -3908,6 +4548,19 @@
           }
         }
 
+        async function setQuoteStatus(id, status, button) {
+          if (button) button.disabled = true;
+          try {
+            const quote = updateQuoteStatusLocally(id, status);
+            await loadCRMData(false);
+            if (state.selectedQuoteId === id) openQuoteModal(quote.id);
+          } catch (error) {
+            window.alert(error.message || "Offertestatus kon niet worden bijgewerkt.");
+          } finally {
+            if (button) button.disabled = false;
+          }
+        }
+
         async function createMolliePayment(id, button) {
           const originalText = button.textContent;
           button.disabled = true;
@@ -3936,6 +4589,15 @@
           const invoice = updateInvoiceStatusLocally(id, "geannuleerd");
           await loadCRMData(false);
           if (state.selectedInvoiceId === id) openInvoiceModal(invoice.id);
+        }
+
+        async function cancelQuote(id = state.selectedQuoteId) {
+          if (!id) return;
+          const confirmed = window.confirm("Weet je zeker dat je deze offerte wilt annuleren?");
+          if (!confirmed) return;
+          const quote = updateQuoteStatusLocally(id, "geannuleerd");
+          await loadCRMData(false);
+          if (state.selectedQuoteId === id) openQuoteModal(quote.id);
         }
 
         async function postMolliePayment(payload) {
@@ -4318,6 +4980,70 @@
           document.getElementById("bestanden").scrollIntoView({ behavior: "smooth", block: "start" });
         }
 
+        function createQuoteFromCustomer() {
+          const customer = selectedCustomer();
+          if (!customer) return;
+          openQuoteModal();
+          quoteFields.profile.value = customer.id;
+          populateQuoteOptions(customer.id);
+          quoteFields.profile.value = customer.id;
+        }
+
+        function createQuoteFromWebsite() {
+          const website = selectedWebsite();
+          if (!website) return;
+          openQuoteModal();
+          quoteFields.profile.value = website.profileId || "";
+          populateQuoteOptions(website.profileId || "");
+          quoteFields.profile.value = website.profileId || "";
+          quoteFields.website.value = website.id;
+        }
+
+        function createQuoteFromProject() {
+          const project = selectedProject();
+          if (!project) return;
+          openQuoteModal();
+          quoteFields.profile.value = project.customerId || "";
+          populateQuoteOptions(project.customerId || "");
+          quoteFields.profile.value = project.customerId || "";
+          quoteFields.website.value = project.websiteId || "";
+          quoteFields.project.value = project.id;
+        }
+
+        function viewQuotesForCustomer() {
+          const customer = selectedCustomer();
+          if (!customer) return;
+          quoteCustomerFilter.value = customer.id;
+          quoteProjectFilter.value = "";
+          quoteWebsiteFilter.value = "";
+          renderQuotes();
+          document.getElementById("offertes").scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+
+        function viewQuotesForWebsite() {
+          const website = selectedWebsite();
+          if (!website) return;
+          quoteCustomerFilter.value = "";
+          quoteProjectFilter.value = "";
+          quoteWebsiteFilter.value = website.id;
+          renderQuotes();
+          document.getElementById("offertes").scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+
+        function viewQuotesForProject() {
+          const project = selectedProject();
+          if (!project) return;
+          quoteCustomerFilter.value = "";
+          quoteProjectFilter.value = project.id;
+          quoteWebsiteFilter.value = "";
+          renderQuotes();
+          document.getElementById("offertes").scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+
+        function showQuoteConversionPlaceholder() {
+          setBillingMessage(quoteMessage, "Offerte naar factuur wordt gebouwd in Fase 8.8.", "success");
+        }
+
         function createInvoiceFromCustomer() {
           const customer = selectedCustomer();
           if (!customer) return;
@@ -4496,6 +5222,7 @@
           if (targetModal === requestModal) state.selectedRequestId = "";
           if (targetModal === subscriptionModal) state.selectedSubscriptionId = "";
           if (targetModal === invoiceModal) state.selectedInvoiceId = "";
+          if (targetModal === quoteModal) state.selectedQuoteId = "";
         }
 
         function openNewCustomerModal() {
@@ -4555,11 +5282,13 @@
             state.websites = readStoredWebsites();
             state.projects = readStoredProjects();
             state.files = readStoredFiles();
+            state.quotes = readStoredQuotes();
             state.invoices = readStoredInvoices();
             renderCustomers();
             renderWebsites();
             renderProjects();
             renderFiles();
+            renderQuotes();
             renderInvoices();
             renderCareOverview();
             updateMetrics();
@@ -4567,9 +5296,11 @@
             if (state.selectedWebsiteId && selectedWebsite()) selectWebsite(state.selectedWebsiteId);
             if (state.selectedProjectId && selectedProject()) selectProject(state.selectedProjectId);
             if (state.selectedFileId && selectedFile()) selectFile(state.selectedFileId);
+            if (state.selectedQuoteId && quoteById(state.selectedQuoteId)) openQuoteModal(state.selectedQuoteId);
             populateWebsiteProfileOptions();
             populateProjectOptions();
             populateFileOptions();
+            populateQuoteOptions();
             if (state.adminToken) {
               await loadDashboardMetrics(false);
               await loadWebsiteHealth(false);
@@ -4605,6 +5336,7 @@
         document.getElementById("new-project").addEventListener("click", () => resetProjectForm());
         document.getElementById("new-file").addEventListener("click", () => resetFileForm());
         document.getElementById("new-subscription").addEventListener("click", () => openSubscriptionModal());
+        document.getElementById("new-quote").addEventListener("click", () => openQuoteModal());
         document.getElementById("new-invoice").addEventListener("click", () => openInvoiceModal());
         websiteHealthRefresh.addEventListener("click", () => loadWebsiteHealth(true));
         adminLoadButton.addEventListener("click", () => loadCRMData(true));
@@ -4612,6 +5344,7 @@
         detailForm.addEventListener("submit", saveCustomer);
         websiteDetailForm.addEventListener("submit", saveWebsite);
         subscriptionForm.addEventListener("submit", saveSubscription);
+        quoteForm.addEventListener("submit", saveQuote);
         invoiceForm.addEventListener("submit", saveInvoice);
         fileDetailForm.addEventListener("submit", saveFile);
         invoiceClearPdf.addEventListener("click", clearInvoicePdfPath);
@@ -4631,6 +5364,8 @@
           if (website) copyText(website.githubRepoUrl, "GitHub URL gekopieerd.");
         });
         websiteQuickActions.startProject.addEventListener("click", startProjectFromWebsite);
+        websiteQuickActions.createQuote.addEventListener("click", createQuoteFromWebsite);
+        websiteQuickActions.viewQuotes.addEventListener("click", viewQuotesForWebsite);
         websiteQuickActions.createInvoice.addEventListener("click", createInvoiceFromWebsite);
         websiteQuickActions.viewInvoices.addEventListener("click", viewInvoicesForWebsite);
         detailLinkLogin.addEventListener("click", linkLogin);
@@ -4640,12 +5375,16 @@
         detailStartProject.addEventListener("click", startProjectFromCustomer);
         detailAddFile.addEventListener("click", startFileFromCustomer);
         detailViewFiles.addEventListener("click", viewFilesForCustomer);
+        detailCreateQuote.addEventListener("click", createQuoteFromCustomer);
+        detailViewQuotes.addEventListener("click", viewQuotesForCustomer);
         detailCreateInvoice.addEventListener("click", createInvoiceFromCustomer);
         detailViewInvoices.addEventListener("click", viewInvoicesForCustomer);
         projectDetailForm.addEventListener("submit", saveProject);
         projectDelete.addEventListener("click", deleteProject);
         projectAddFile.addEventListener("click", startFileFromProject);
         projectViewFiles.addEventListener("click", viewFilesForProject);
+        projectCreateQuote.addEventListener("click", createQuoteFromProject);
+        projectViewQuotes.addEventListener("click", viewQuotesForProject);
         projectCreateInvoice.addEventListener("click", createInvoiceFromProject);
         projectViewInvoices.addEventListener("click", viewInvoicesForProject);
         projectTaskAdd.addEventListener("click", addProjectTask);
@@ -4663,6 +5402,26 @@
           const file = selectedFile();
           if (file) copyText(file.location, "Bestandslink gekopieerd.", setFileMessage);
         });
+        quoteAddLine.addEventListener("click", () => addQuoteLine({ description: "", quantity: 1, unitPrice: 0, vatRate: 21 }));
+        quotePreset.addEventListener("change", addQuotePreset);
+        quoteFields.profile.addEventListener("change", () => {
+          const selectedCustomerId = quoteFields.profile.value;
+          populateQuoteOptions(selectedCustomerId);
+          quoteFields.profile.value = selectedCustomerId;
+        });
+        quoteFields.link.addEventListener("input", () => updateQuoteLinkActions(quoteById(state.selectedQuoteId)));
+        quoteMarkSent.addEventListener("click", () => state.selectedQuoteId && setQuoteStatus(state.selectedQuoteId, "verzonden", quoteMarkSent));
+        quoteMarkAccepted.addEventListener("click", () => state.selectedQuoteId && setQuoteStatus(state.selectedQuoteId, "geaccepteerd", quoteMarkAccepted));
+        quoteMarkRejected.addEventListener("click", () => state.selectedQuoteId && setQuoteStatus(state.selectedQuoteId, "afgewezen", quoteMarkRejected));
+        quoteOpenLink.addEventListener("click", (event) => {
+          if (event.currentTarget.getAttribute("aria-disabled") === "true") event.preventDefault();
+        });
+        quoteCopyLink.addEventListener("click", () => {
+          const link = quoteFields.link.value;
+          if (link) copyText(link, "Demo-offertelink gekopieerd.", (text, type) => setBillingMessage(quoteMessage, text, type));
+        });
+        quoteConvertInvoice.addEventListener("click", showQuoteConversionPlaceholder);
+        quoteCancel.addEventListener("click", () => state.selectedQuoteId && cancelQuote(state.selectedQuoteId));
         invoiceAddLine.addEventListener("click", () => addInvoiceLine({ description: "", quantity: 1, unitPrice: 0, vatRate: 21 }));
         invoicePreset.addEventListener("change", addInvoicePreset);
         invoiceFields.profile.addEventListener("change", () => {
@@ -4691,6 +5450,7 @@
         newSendInvite.addEventListener("click", sendInviteFromNewCustomer);
         [customerSearch, customerStatusFilter, customerPackageFilter].forEach((filter) => filter.addEventListener("input", renderCustomers));
         [fileSearch, fileCategoryFilter, fileStatusFilter, fileCustomerFilter, fileProjectFilter].forEach((filter) => filter.addEventListener("input", renderFiles));
+        [quoteSearch, quoteStatusFilter, quoteTypeFilter, quoteCustomerFilter, quoteProjectFilter, quoteWebsiteFilter].forEach((filter) => filter.addEventListener("input", renderQuotes));
         [invoiceSearch, invoiceStatusFilter, invoiceTypeFilter, invoiceCustomerFilter, invoiceProjectFilter, invoiceWebsiteFilter].forEach((filter) => filter.addEventListener("input", renderInvoices));
         [requestStatusFilter, requestPriorityFilter, requestCategoryFilter].forEach((filter) => filter.addEventListener("change", renderRequests));
         requestStatusSave.addEventListener("click", saveRequestStatus);
@@ -4702,7 +5462,7 @@
         });
         document.addEventListener("keydown", (event) => {
           if (event.key !== "Escape") return;
-          [newCustomerModal, requestModal, subscriptionModal, invoiceModal].forEach((targetModal) => {
+          [newCustomerModal, requestModal, subscriptionModal, quoteModal, invoiceModal].forEach((targetModal) => {
             if (!targetModal.hidden) closeModal(targetModal);
           });
         });

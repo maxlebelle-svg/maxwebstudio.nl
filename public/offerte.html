@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Demo-offerte | Max Webstudio</title>
+    <meta name="description" content="Bekijk een lokale demo-offerte van Max Webstudio." />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="Max Webstudio home">
+        <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true"><rect x="6" y="6" width="68" height="68" rx="18"></rect><path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path><path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path></svg>
+        <span>Max Webstudio</span>
+      </a>
+      <nav class="main-nav" aria-label="Hoofdnavigatie">
+        <a href="index.html#projecten">Demo's</a>
+        <a href="index.html#prijzen">Pakketten</a>
+        <a href="index.html#aanvraag">Contact</a>
+      </nav>
+      <a class="header-cta" href="index.html#aanvraag">Vraag gratis preview aan</a>
+    </header>
+
+    <main>
+      <section class="page-hero payment-hero">
+        <p class="eyebrow">Demo-offerte</p>
+        <h1 id="quote-page-title">Offerte laden...</h1>
+        <p id="quote-page-subtitle">Deze offerte wordt lokaal uit de CRM-demo-opslag geladen.</p>
+      </section>
+
+      <section class="content-page payment-page" id="quote-page">
+        <article class="checkout-summary-card quote-public-card" id="quote-card" aria-live="polite">
+          <p class="section-kicker">Offerte</p>
+          <h2>Offertegegevens</h2>
+          <p>Offerte niet gevonden. Open de offerte opnieuw vanuit het admin-dashboard.</p>
+        </article>
+      </section>
+    </main>
+
+    <script>
+      (() => {
+        const storageKey = "maxwebstudioQuotes";
+        const params = new URLSearchParams(window.location.search);
+        const quoteId = params.get("quoteId") || "";
+        const title = document.getElementById("quote-page-title");
+        const subtitle = document.getElementById("quote-page-subtitle");
+        const card = document.getElementById("quote-card");
+        const money = (value) => new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(Number(value || 0));
+        const formatDate = (value) => {
+          if (!value) return "-";
+          const date = new Date(value);
+          return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("nl-NL");
+        };
+
+        function readQuotes() {
+          try {
+            const stored = JSON.parse(localStorage.getItem(storageKey) || "[]");
+            return Array.isArray(stored) ? stored : [];
+          } catch (error) {
+            return [];
+          }
+        }
+
+        function writeQuotes(quotes) {
+          localStorage.setItem(storageKey, JSON.stringify(quotes));
+        }
+
+        function createRow(label, value) {
+          const row = document.createElement("div");
+          const dt = document.createElement("dt");
+          const dd = document.createElement("dd");
+          dt.textContent = label;
+          dd.textContent = value || "-";
+          row.append(dt, dd);
+          return row;
+        }
+
+        function renderQuote() {
+          const quotes = readQuotes();
+          const quote = quotes.find((item) => item.id === quoteId);
+          card.replaceChildren();
+          if (!quote) {
+            title.textContent = "Offerte niet gevonden";
+            subtitle.textContent = "Deze demo-offerte staat niet in de lokale browseropslag.";
+            card.append(Object.assign(document.createElement("p"), { className: "section-kicker", textContent: "Niet gevonden" }), Object.assign(document.createElement("h2"), { textContent: "Open de offerte opnieuw vanuit het CRM." }));
+            return;
+          }
+
+          title.textContent = quote.title || "Offerte Max Webstudio";
+          subtitle.textContent = `${quote.customerCompany || quote.customerName || "Klant"} - ${quote.quoteNumber || "Offerte"}`;
+
+          const kicker = document.createElement("p");
+          kicker.className = "section-kicker";
+          kicker.textContent = quote.status || "concept";
+          const heading = document.createElement("h2");
+          heading.textContent = quote.quoteNumber || "Offerte";
+          const proposal = document.createElement("p");
+          proposal.textContent = quote.proposal || "Bedankt voor je aanvraag. Hieronder staat de demo-offerte zoals lokaal opgeslagen in het CRM.";
+
+          const meta = document.createElement("dl");
+          meta.className = "summary-lines";
+          meta.append(
+            createRow("Klant", quote.customerCompany || quote.customerName || "-"),
+            createRow("Offertedatum", formatDate(quote.quoteDate)),
+            createRow("Geldig tot", formatDate(quote.validUntil)),
+            createRow("Status", quote.status || "concept")
+          );
+
+          const lines = document.createElement("div");
+          lines.className = "summary-lines";
+          (quote.lines || []).forEach((line) => {
+            const item = document.createElement("div");
+            item.append(createRow(`${line.quantity || 1}x ${line.description || "Offertregel"}`, money(Number(line.quantity || 0) * Number(line.unitPrice || 0))));
+            lines.append(item);
+          });
+
+          const total = document.createElement("div");
+          total.className = "summary-total";
+          total.innerHTML = `<span>Totaal incl. btw</span><strong>${money(quote.total)}</strong><small>Subtotaal ${money(quote.subtotal)} · BTW ${money(quote.vat)}</small>`;
+
+          const accept = document.createElement("button");
+          accept.className = "button primary";
+          accept.type = "button";
+          accept.textContent = quote.status === "geaccepteerd" ? "Offerte geaccepteerd" : "Offerte accepteren";
+          accept.disabled = quote.status === "geaccepteerd";
+          accept.addEventListener("click", () => {
+            const next = readQuotes().map((item) => item.id === quote.id ? { ...item, status: "geaccepteerd", updatedAt: new Date().toISOString() } : item);
+            writeQuotes(next);
+            renderQuote();
+          });
+
+          const note = document.createElement("p");
+          note.className = "admin-form-message success";
+          note.textContent = "Demo/local: accepteren werkt alleen in deze browseropslag en is nog geen digitale ondertekening.";
+
+          card.append(kicker, heading, proposal, meta, lines, total, accept, note);
+        }
+
+        renderQuote();
+      })();
+    </script>
+  </body>
+</html>
