@@ -16,6 +16,8 @@ const casePrev = document.querySelector("[data-case-prev]");
 const caseNext = document.querySelector("[data-case-next]");
 const calendlyTriggers = document.querySelectorAll("[data-calendly-open]");
 const revealItems = document.querySelectorAll(".reveal-on-scroll");
+const demoFilterButtons = document.querySelectorAll("[data-demo-filter]");
+const demoCards = document.querySelectorAll("[data-demo-card]");
 
 const calendlyUrl = "https://calendly.com/maxwebstudio/gratis-kennismakingsgesprek";
 let calendlyLoadPromise;
@@ -120,6 +122,21 @@ caseSlider?.addEventListener("touchend", (event) => {
   }
 
   showCase(distance < 0 ? activeCase + 1 : activeCase - 1);
+});
+
+demoFilterButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const activeFilter = button.dataset.demoFilter || "all";
+
+    demoFilterButtons.forEach((filterButton) => {
+      filterButton.classList.toggle("active", filterButton === button);
+    });
+
+    demoCards.forEach((card) => {
+      const categories = (card.dataset.demoCategory || "").split(" ");
+      card.classList.toggle("is-hidden", activeFilter !== "all" && !categories.includes(activeFilter));
+    });
+  });
 });
 
 function loadCalendlyWidget() {
