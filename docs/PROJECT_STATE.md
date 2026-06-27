@@ -71,6 +71,7 @@ Belangrijk:
 - `client-change-request-file.js`: maakt klantveilige tijdelijke signed URLs voor eigen wijzigingsverzoekbestanden.
 - `admin-client-profiles.js`: beheert CRM-klantprofielen server-side met `ADMIN_TOKEN` en Supabase service role.
 - `admin-website-health.js`: beheert website healthdata server-side met `ADMIN_TOKEN` en mock-checks als basis voor latere monitoring.
+- `admin-billing.js`: beheert abonnementen en facturen server-side met `ADMIN_TOKEN` en Supabase service role.
 
 ## Sterke Punten
 
@@ -145,3 +146,8 @@ Belangrijk:
 - Healthdata staat op `public.customer_websites` via de losse migratie `/docs/supabase-website-health.sql`.
 - De health-function gebruikt nu mock-checks voor uptime, DNS, SSL en scores; er zijn nog geen externe API-koppelingen.
 - Het klantdashboard toont alleen klantvriendelijke statussen zoals website online, SSL actief en laatste controle.
+- Admin CRM Fase 5.5 voegt Facturatie & Abonnementen Basis toe met `public.customer_subscriptions` en `public.customer_invoices`.
+- De SQL voor deze billing-tabellen en RLS staat in `/docs/supabase-billing.sql`.
+- De Admin CRM-modules Onderhoud en Facturen tonen echte Supabase-data en kunnen abonnementen/facturen aanmaken, bewerken en statussen aanpassen via `/.netlify/functions/admin-billing`.
+- Het klantdashboard leest eigen abonnementen en facturen via Supabase RLS en toont alleen klantvriendelijke velden.
+- Er is nog geen echte Mollie API-koppeling, automatische incasso, PDF-generatie of e-mailherinnering.

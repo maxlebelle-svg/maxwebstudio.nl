@@ -45,11 +45,14 @@ Het portaal gebruikt:
 
 - `public.profiles`
 - `public.customer_websites`
+- `public.customer_subscriptions`
+- `public.customer_invoices`
 - `public.change_requests.auth_user_id`
 
 SQL staat in:
 
 - `/docs/supabase-client-portal.sql`
+- `/docs/supabase-billing.sql`
 
 Wanneer een ingelogde klant een wijziging indient via `/public/wijziging-doorgeven.html`, stuurt de frontend de Supabase access token mee. `submit-change-request.js` valideert die token server-side en vult `auth_user_id` op het nieuwe wijzigingsverzoek.
 
@@ -59,6 +62,8 @@ Klanten mogen alleen hun eigen gegevens lezen:
 
 - `profiles.auth_user_id = auth.uid()`
 - `customer_websites.customer_auth_user_id = auth.uid()`
+- `customer_subscriptions.customer_auth_user_id = auth.uid()`
+- `customer_invoices.customer_auth_user_id = auth.uid()`
 - `change_requests.auth_user_id = auth.uid()`
 
 Admin- en automationflows blijven via server-side service role lopen.
@@ -71,6 +76,8 @@ Admin- en automationflows blijven via server-side service role lopen.
 - wijzigingsverzoeken uit `change_requests`
 - maximaal 5 recente wijzigingsverzoeken in de tabel
 - eigen websiteomgevingen uit `customer_websites`
+- eigen abonnementen uit `customer_subscriptions`
+- eigen facturen uit `customer_invoices`
 
 De frontend gebruikt alleen de Supabase anon key en vertrouwt op RLS. Klanten kunnen geen status wijzigen en zien geen interne classificatie.
 
@@ -101,12 +108,15 @@ De adminfunctie kan:
 - admin-only notities opslaan in `public.admin_customer_notes`
 - websiteomgevingen beheren in `public.customer_websites`
 - website healthdata beheren via `/.netlify/functions/admin-website-health`
+- abonnementen en facturen beheren via `/.netlify/functions/admin-billing`
 
 Na opslaan leest het klantenportaal de nieuwe profielgegevens direct via de bestaande Supabase Auth-sessie en RLS.
 
 Websiteomgevingen die via het admin-dashboard aan een profiel worden gekoppeld, krijgen ook `customer_auth_user_id`. Daardoor kan de klant de eigen websitegegevens direct lezen via RLS zonder service role key in de browser.
 
 Healthdata blijft onderdeel van `customer_websites`. Admin-mutaties lopen via `ADMIN_TOKEN` en service role server-side. Klanten lezen alleen hun eigen website- en healthstatus via RLS en krijgen geen admincontrols.
+
+Abonnementen en facturen staan in `public.customer_subscriptions` en `public.customer_invoices`. Admin-mutaties lopen via `ADMIN_TOKEN` en service role server-side. Klanten lezen alleen eigen billingdata via RLS en krijgen geen adminacties.
 
 Nieuwe CRM-klanten worden gekoppeld aan een Supabase Auth-user wanneer het ingevoerde e-mailadres al bestaat in Supabase Auth. Als er nog geen Auth-user bestaat, kan de admin eerst een uitnodiging versturen vanuit het CRM en daarna het profiel opslaan zodra Supabase de gebruiker beschikbaar maakt.
 

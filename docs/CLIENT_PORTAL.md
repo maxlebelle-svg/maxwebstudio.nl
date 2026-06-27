@@ -119,6 +119,37 @@ De Netlify Function `/.netlify/functions/admin-website-health` vereist `ADMIN_TO
 
 Het klantdashboard toont alleen klantvriendelijke healthinformatie: website online, SSL actief en laatste controle. Klanten krijgen geen health-controls of adminacties.
 
+## Facturatie & Abonnementen
+
+Fase 5.5 voegt een basis toe voor onderhoudsabonnementen en facturen.
+
+Admin CRM:
+
+- module Onderhoud toont abonnementen uit `public.customer_subscriptions`
+- module Facturen toont facturen uit `public.customer_invoices`
+- adminacties lopen via `/.netlify/functions/admin-billing`
+- `ADMIN_TOKEN` is verplicht
+- `SUPABASE_SERVICE_ROLE_KEY` blijft alleen server-side
+
+Klantportaal:
+
+- toont huidig onderhoudspakket
+- toont maandbedrag, abonnementsstatus en volgende factuurdatum
+- toont maximaal 5 laatste facturen
+- toont factuurstatus
+- toont alleen een downloadknop wanneer `pdf_file_path` gevuld is
+- gebruikt alleen de bestaande Supabase Auth-sessie en anon key
+
+De benodigde SQL staat in `/docs/supabase-billing.sql`. Klanten mogen via RLS alleen eigen abonnementen en facturen lezen op basis van `customer_auth_user_id = auth.uid()`.
+
+Nog niet gebouwd in deze fase:
+
+- echte Mollie-koppeling
+- automatische incasso
+- PDF-generatie
+- e-mailherinneringen
+- factuurdownload via private storage signed URLs
+
 ## Doel
 
 Een klantportaal moet Max Web Studio schaalbaar maken door klanten, betalingen, intake, projectstatus en onderhoud op een centrale plek te beheren.

@@ -81,12 +81,15 @@ Het klantenportaal gebruikt:
 - Admin-only notities staan in `public.admin_customer_notes` met RLS ingeschakeld en zonder klantbeleid. Deze notities mogen niet in het klantdashboard worden getoond.
 - Website Operations data staat in `public.customer_websites`; klanten mogen alleen records lezen waar `customer_auth_user_id = auth.uid()`.
 - Website Health mutaties lopen via `/.netlify/functions/admin-website-health`, vereisen `ADMIN_TOKEN` en gebruiken de service role alleen server-side.
+- Billingdata staat in `public.customer_subscriptions` en `public.customer_invoices`; klanten mogen alleen eigen records lezen waar `customer_auth_user_id = auth.uid()`.
+- Billing-mutaties lopen via `/.netlify/functions/admin-billing`, vereisen `ADMIN_TOKEN` en gebruiken de service role alleen server-side.
 
 Risico:
 
 - Zonder correcte RLS kan een anon key te veel data lezen.
 - Bestaande wijzigingsverzoeken zonder `auth_user_id` zijn niet zichtbaar voor klanten.
 - Websiteomgevingen zonder `customer_auth_user_id` zijn niet zichtbaar voor klanten.
+- Abonnementen of facturen zonder `customer_auth_user_id` zijn niet zichtbaar voor klanten.
 - Het admin-dashboard heeft nog geen volledige admin-login, rollenmodel of audit trail.
 - `ADMIN_TOKEN` is een tussenlaag en moet strikt geheim blijven.
 
@@ -100,6 +103,7 @@ Aanbevelingen:
 - Voer ook de admin-notities tabel uit `/docs/supabase-client-portal.sql` uit voordat interne klantnotities operationeel worden gebruikt.
 - Voer ook de `customer_websites` tabel en RLS-policy uit `/docs/supabase-client-portal.sql` uit voordat het Website Operations Center live wordt gebruikt.
 - Voer `/docs/supabase-website-health.sql` uit voordat health monitoring operationeel wordt gebruikt.
+- Voer `/docs/supabase-billing.sql` uit voordat facturatie en abonnementen operationeel worden gebruikt.
 
 ### Website Health Monitoring
 

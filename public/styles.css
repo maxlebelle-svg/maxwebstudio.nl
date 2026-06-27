@@ -2337,6 +2337,26 @@ h3 {
     minmax(150px, 1fr);
 }
 
+.billing-row {
+  grid-template-columns: minmax(140px, 1.1fr) minmax(110px, 0.8fr) minmax(100px, 0.7fr) minmax(95px, 0.7fr) minmax(110px, 0.8fr) minmax(120px, 0.8fr) minmax(120px, 0.9fr) minmax(150px, 1fr);
+}
+
+.invoice-row {
+  grid-template-columns: minmax(140px, 1fr) minmax(120px, 0.85fr) minmax(150px, 1.1fr) minmax(90px, 0.65fr) minmax(110px, 0.75fr) minmax(120px, 0.8fr) minmax(120px, 0.8fr) minmax(170px, 1fr);
+}
+
+.admin-table-row select {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.07);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .website-actions {
   display: flex;
   flex-wrap: wrap;
@@ -2984,6 +3004,14 @@ h3 {
 
 .portal-request-table .portal-request-row {
   grid-template-columns: minmax(180px, 1.4fr) minmax(120px, 0.8fr) minmax(130px, 0.9fr) minmax(120px, 0.8fr) auto;
+}
+
+.portal-invoice-table {
+  margin-top: 16px;
+}
+
+.portal-invoice-table .portal-invoice-row {
+  grid-template-columns: minmax(110px, 0.8fr) minmax(150px, 1.2fr) minmax(90px, 0.65fr) minmax(110px, 0.75fr) minmax(120px, 0.8fr) auto;
 }
 
 .portal-file-list .button {
@@ -4320,10 +4348,13 @@ h3 {
   .admin-table-row,
   .crm-customer-row,
   .website-row,
+  .billing-row,
+  .invoice-row,
   .file-row,
   .request-table .request-table-row,
   .client-profile-table .client-profile-row,
   .portal-request-table .portal-request-row,
+  .portal-invoice-table .portal-invoice-row,
   .request-card {
     grid-template-columns: 1fr;
   }

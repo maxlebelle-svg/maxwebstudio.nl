@@ -216,14 +216,21 @@
         </section>
 
         <section class="admin-section" id="onderhoud">
-          <div class="admin-section-heading"><div><p class="section-kicker">Onderhoud</p><h2>Onderhoudspakketten</h2></div></div>
+          <div class="admin-section-heading">
+            <div><p class="section-kicker">Onderhoud</p><h2>Abonnementen</h2></div>
+            <button class="button primary" id="new-subscription" type="button">Nieuw abonnement</button>
+          </div>
           <div class="admin-grid compact-admin-grid" id="care-overview"></div>
+          <div class="admin-table billing-table" id="subscription-list" role="table" aria-label="Abonnementen" aria-live="polite"></div>
         </section>
 
         <div class="admin-two-column">
           <section class="admin-section" id="facturen">
-            <div class="admin-section-heading"><div><p class="section-kicker">Facturen</p><h2>Facturen placeholder</h2></div></div>
-            <article class="admin-card detail-card"><span>Status</span><strong>Gepland</strong><small>Geen Mollie- of facturenlogica in deze fase.</small></article>
+            <div class="admin-section-heading">
+              <div><p class="section-kicker">Facturen</p><h2>Facturatie</h2></div>
+              <button class="button primary" id="new-invoice" type="button">Nieuwe factuur</button>
+            </div>
+            <div class="admin-table billing-table" id="invoice-list" role="table" aria-label="Facturen" aria-live="polite"></div>
           </section>
 
           <section class="admin-section" id="ai">
@@ -301,10 +308,66 @@
       </section>
     </div>
 
+    <div class="admin-modal" id="subscription-modal" role="dialog" aria-modal="true" aria-labelledby="subscription-modal-title" hidden>
+      <div class="admin-modal-backdrop" data-modal-close></div>
+      <section class="admin-card admin-modal-panel">
+        <div class="admin-modal-header">
+          <div><p class="section-kicker">Onderhoud</p><h2 id="subscription-modal-title">Abonnement beheren</h2></div>
+          <button class="button secondary" type="button" data-modal-close>Sluiten</button>
+        </div>
+        <form class="admin-profile-form" id="subscription-form">
+          <input id="subscription-id" type="hidden" />
+          <div class="admin-profile-fields">
+            <label class="admin-profile-wide" for="subscription-profile">Klant<select id="subscription-profile" required></select></label>
+            <label for="subscription-package">Pakket<input id="subscription-package" type="text" placeholder="Plus" required /></label>
+            <label for="subscription-amount">Bedrag per maand<input id="subscription-amount" type="number" min="0" step="0.01" /></label>
+            <label for="subscription-cycle">Cyclus<select id="subscription-cycle"><option value="monthly">Maandelijks</option><option value="quarterly">Per kwartaal</option><option value="yearly">Jaarlijks</option></select></label>
+            <label for="subscription-status">Status<select id="subscription-status"><option value="active">Actief</option><option value="paused">Gepauzeerd</option><option value="cancelled">Geannuleerd</option></select></label>
+            <label for="subscription-start">Startdatum<input id="subscription-start" type="date" /></label>
+            <label for="subscription-next">Volgende factuurdatum<input id="subscription-next" type="date" /></label>
+            <label class="admin-profile-wide" for="subscription-notes">Notities<textarea id="subscription-notes"></textarea></label>
+          </div>
+          <div class="admin-profile-actions">
+            <button class="button primary" id="subscription-save" type="submit">Abonnement opslaan</button>
+            <p class="admin-form-message" id="subscription-message" role="status"></p>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <div class="admin-modal" id="invoice-modal" role="dialog" aria-modal="true" aria-labelledby="invoice-modal-title" hidden>
+      <div class="admin-modal-backdrop" data-modal-close></div>
+      <section class="admin-card admin-modal-panel">
+        <div class="admin-modal-header">
+          <div><p class="section-kicker">Facturen</p><h2 id="invoice-modal-title">Factuur beheren</h2></div>
+          <button class="button secondary" type="button" data-modal-close>Sluiten</button>
+        </div>
+        <form class="admin-profile-form" id="invoice-form">
+          <input id="invoice-id" type="hidden" />
+          <div class="admin-profile-fields">
+            <label class="admin-profile-wide" for="invoice-profile">Klant<select id="invoice-profile" required></select></label>
+            <label for="invoice-number">Factuurnummer<input id="invoice-number" type="text" /></label>
+            <label for="invoice-title">Titel<input id="invoice-title" type="text" required /></label>
+            <label for="invoice-amount">Bedrag<input id="invoice-amount" type="number" min="0" step="0.01" /></label>
+            <label for="invoice-status">Status<select id="invoice-status"><option value="draft">Concept</option><option value="sent">Verzonden</option><option value="paid">Betaald</option><option value="overdue">Verlopen</option><option value="cancelled">Geannuleerd</option></select></label>
+            <label for="invoice-due">Vervaldatum<input id="invoice-due" type="date" /></label>
+            <label for="invoice-paid-at">Betaaldatum<input id="invoice-paid-at" type="datetime-local" /></label>
+            <label for="invoice-pdf">PDF pad<input id="invoice-pdf" type="text" placeholder="invoices/factuur.pdf" /></label>
+            <label class="admin-profile-wide" for="invoice-notes">Notities<textarea id="invoice-notes"></textarea></label>
+          </div>
+          <div class="admin-profile-actions">
+            <button class="button primary" id="invoice-save" type="submit">Factuur opslaan</button>
+            <p class="admin-form-message" id="invoice-message" role="status"></p>
+          </div>
+        </form>
+      </section>
+    </div>
+
     <script>
       (() => {
         const crmEndpoint = "/.netlify/functions/admin-client-profiles";
         const healthEndpoint = "/.netlify/functions/admin-website-health";
+        const billingEndpoint = "/.netlify/functions/admin-billing";
         const listEndpoint = "/.netlify/functions/list-change-requests";
         const updateEndpoint = "/.netlify/functions/update-change-request-status";
         const adminTokenStorageKey = "mws_admin_token";
@@ -334,9 +397,13 @@
           authUsers: [],
           websites: [],
           healthWebsites: [],
+          subscriptions: [],
+          invoices: [],
           requests: [],
           selectedCustomerId: "",
           selectedWebsiteId: "",
+          selectedSubscriptionId: "",
+          selectedInvoiceId: "",
           selectedRequestId: "",
         };
 
@@ -378,6 +445,16 @@
         const websiteHealthMessage = document.getElementById("website-health-message");
         const fileList = document.getElementById("file-list");
         const careOverview = document.getElementById("care-overview");
+        const subscriptionList = document.getElementById("subscription-list");
+        const invoiceList = document.getElementById("invoice-list");
+        const subscriptionModal = document.getElementById("subscription-modal");
+        const invoiceModal = document.getElementById("invoice-modal");
+        const subscriptionForm = document.getElementById("subscription-form");
+        const invoiceForm = document.getElementById("invoice-form");
+        const subscriptionMessage = document.getElementById("subscription-message");
+        const invoiceMessage = document.getElementById("invoice-message");
+        const subscriptionSave = document.getElementById("subscription-save");
+        const invoiceSave = document.getElementById("invoice-save");
         const customerSearch = document.getElementById("customer-search");
         const customerStatusFilter = document.getElementById("customer-status-filter");
         const customerPackageFilter = document.getElementById("customer-package-filter");
@@ -528,6 +605,11 @@
         function setHealthMessage(text, type = "") {
           websiteHealthMessage.textContent = text;
           websiteHealthMessage.className = `admin-form-message ${type}`.trim();
+        }
+
+        function setBillingMessage(target, text, type = "") {
+          target.textContent = text;
+          target.className = `admin-form-message ${type}`.trim();
         }
 
         function renderState(target, title, text, badgeText = "Leeg", badgeClass = "status-planned") {
@@ -1240,6 +1322,296 @@
           });
         }
 
+        function money(value) {
+          const amount = Number(value || 0);
+          return new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(amount);
+        }
+
+        function billingStatusClass(value) {
+          const status = normalize(value);
+          if (["active", "paid"].includes(status)) return "status-active";
+          if (["sent", "draft"].includes(status)) return "status-prepared";
+          if (["paused", "overdue"].includes(status)) return "status-warning";
+          return "status-attention";
+        }
+
+        function billingStatusLabel(value) {
+          return {
+            active: "Actief",
+            paused: "Gepauzeerd",
+            cancelled: "Geannuleerd",
+            draft: "Concept",
+            sent: "Verzonden",
+            paid: "Betaald",
+            overdue: "Verlopen",
+          }[normalize(value)] || value || "-";
+        }
+
+        function populateBillingProfileOptions(select) {
+          select.replaceChildren();
+          const empty = document.createElement("option");
+          empty.value = "";
+          empty.textContent = "Kies klant";
+          select.append(empty);
+          state.customers.forEach((customer) => {
+            const option = document.createElement("option");
+            option.value = customer.id;
+            option.textContent = `${customer.company || customer.name || "Klant"}${customer.email ? ` - ${customer.email}` : ""}`;
+            select.append(option);
+          });
+        }
+
+        function renderSubscriptions() {
+          subscriptionList.replaceChildren();
+          if (!state.subscriptions.length) {
+            renderState(subscriptionList, "Geen abonnementen", "Maak het eerste onderhoudsabonnement aan.", "Leeg");
+            return;
+          }
+          const head = document.createElement("div");
+          head.className = "admin-table-row admin-table-head billing-row";
+          ["Klant", "Pakket", "Bedrag", "Cyclus", "Status", "Startdatum", "Volgende factuur", "Acties"].forEach((label) => head.append(createCell(label)));
+          subscriptionList.append(head);
+          state.subscriptions.forEach((subscription) => {
+            const row = document.createElement("div");
+            row.className = "admin-table-row billing-row";
+            const actions = document.createElement("span");
+            actions.className = "website-actions";
+            const edit = document.createElement("button");
+            edit.className = "button secondary";
+            edit.type = "button";
+            edit.textContent = "Bewerken";
+            edit.addEventListener("click", () => openSubscriptionModal(subscription.id));
+            const toggle = document.createElement("button");
+            toggle.className = "button secondary";
+            toggle.type = "button";
+            toggle.textContent = subscription.status === "active" ? "Pauzeren" : "Activeren";
+            toggle.addEventListener("click", () => setSubscriptionStatus(subscription.id, subscription.status === "active" ? "paused" : "active", toggle));
+            actions.append(edit, toggle);
+            row.append(
+              createCell(subscription.customerCompany || subscription.customerName || "Geen klant", "strong"),
+              createCell(subscription.packageName),
+              createCell(money(subscription.monthlyAmount)),
+              createCell(subscription.billingCycle),
+              createBadge(billingStatusLabel(subscription.status), billingStatusClass(subscription.status)),
+              createCell(formatDate(subscription.startDate)),
+              createCell(formatDate(subscription.nextInvoiceDate)),
+              actions
+            );
+            subscriptionList.append(row);
+          });
+        }
+
+        function renderInvoices() {
+          invoiceList.replaceChildren();
+          if (!state.invoices.length) {
+            renderState(invoiceList, "Geen facturen", "Maak de eerste factuur aan.", "Leeg");
+            return;
+          }
+          const head = document.createElement("div");
+          head.className = "admin-table-row admin-table-head invoice-row";
+          ["Klant", "Factuurnummer", "Titel", "Bedrag", "Status", "Vervaldatum", "Betaaldatum", "Acties"].forEach((label) => head.append(createCell(label)));
+          invoiceList.append(head);
+          state.invoices.forEach((invoice) => {
+            const row = document.createElement("div");
+            row.className = "admin-table-row invoice-row";
+            const actions = document.createElement("span");
+            actions.className = "website-actions";
+            const edit = document.createElement("button");
+            edit.className = "button secondary";
+            edit.type = "button";
+            edit.textContent = "Bewerken";
+            edit.addEventListener("click", () => openInvoiceModal(invoice.id));
+            const status = document.createElement("select");
+            status.value = invoice.status || "draft";
+            ["draft", "sent", "paid", "overdue", "cancelled"].forEach((value) => {
+              const option = document.createElement("option");
+              option.value = value;
+              option.textContent = billingStatusLabel(value);
+              status.append(option);
+            });
+            status.addEventListener("change", () => setInvoiceStatus(invoice.id, status.value, status));
+            actions.append(edit, status);
+            row.append(
+              createCell(invoice.customerCompany || invoice.customerName || "Geen klant", "strong"),
+              createCell(invoice.invoiceNumber),
+              createCell(invoice.title),
+              createCell(money(invoice.amount)),
+              createBadge(billingStatusLabel(invoice.status), billingStatusClass(invoice.status)),
+              createCell(formatDate(invoice.dueDate)),
+              createCell(formatDate(invoice.paidAt)),
+              actions
+            );
+            invoiceList.append(row);
+          });
+        }
+
+        async function loadBilling(showLoading = false) {
+          if (!state.adminToken) return;
+          if (showLoading) renderState(invoiceList, "Billing laden...", "Facturen en abonnementen worden opgehaald.", "Laden", "status-prepared");
+          try {
+            const response = await fetch(billingEndpoint, {
+              headers: { Accept: "application/json", Authorization: `Bearer ${state.adminToken}` },
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data.success) throw new Error(data.error || "Billing kon niet worden geladen.");
+            state.subscriptions = Array.isArray(data.subscriptions) ? data.subscriptions : [];
+            state.invoices = Array.isArray(data.invoices) ? data.invoices : [];
+            renderSubscriptions();
+            renderInvoices();
+          } catch (error) {
+            renderState(subscriptionList, "Abonnementen niet beschikbaar", "Controleer Supabase billing-tabellen.", "Fout", "status-attention");
+            renderState(invoiceList, "Facturen niet beschikbaar", error.message || "Controleer Supabase billing-tabellen.", "Fout", "status-attention");
+          }
+        }
+
+        async function postBilling(payload) {
+          const response = await fetch(billingEndpoint, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+              Authorization: `Bearer ${state.adminToken}`,
+            },
+            body: JSON.stringify(payload),
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || !data.success) throw new Error(data.error || "Billingactie kon niet worden uitgevoerd.");
+          return data;
+        }
+
+        function subscriptionById(id) {
+          return state.subscriptions.find((subscription) => subscription.id === id) || null;
+        }
+
+        function invoiceById(id) {
+          return state.invoices.find((invoice) => invoice.id === id) || null;
+        }
+
+        function openSubscriptionModal(id = "") {
+          const subscription = subscriptionById(id);
+          state.selectedSubscriptionId = subscription?.id || "";
+          subscriptionForm.reset();
+          populateBillingProfileOptions(document.getElementById("subscription-profile"));
+          document.getElementById("subscription-id").value = subscription?.id || "";
+          document.getElementById("subscription-profile").value = subscription?.profileId || state.selectedCustomerId || "";
+          document.getElementById("subscription-package").value = subscription?.packageName || selectedCustomer()?.package || "Plus";
+          document.getElementById("subscription-amount").value = subscription?.monthlyAmount ?? "";
+          document.getElementById("subscription-cycle").value = subscription?.billingCycle || "monthly";
+          document.getElementById("subscription-status").value = subscription?.status || "active";
+          document.getElementById("subscription-start").value = toDateInput(subscription?.startDate) || new Date().toISOString().slice(0, 10);
+          document.getElementById("subscription-next").value = toDateInput(subscription?.nextInvoiceDate);
+          document.getElementById("subscription-notes").value = subscription?.notes || "";
+          setBillingMessage(subscriptionMessage, "", "");
+          subscriptionModal.hidden = false;
+          document.body.classList.add("admin-modal-open");
+        }
+
+        function openInvoiceModal(id = "") {
+          const invoice = invoiceById(id);
+          state.selectedInvoiceId = invoice?.id || "";
+          invoiceForm.reset();
+          populateBillingProfileOptions(document.getElementById("invoice-profile"));
+          document.getElementById("invoice-id").value = invoice?.id || "";
+          document.getElementById("invoice-profile").value = invoice?.profileId || state.selectedCustomerId || "";
+          document.getElementById("invoice-number").value = invoice?.invoiceNumber || "";
+          document.getElementById("invoice-title").value = invoice?.title || "Onderhoud website";
+          document.getElementById("invoice-amount").value = invoice?.amount ?? "";
+          document.getElementById("invoice-status").value = invoice?.status || "draft";
+          document.getElementById("invoice-due").value = toDateInput(invoice?.dueDate);
+          document.getElementById("invoice-paid-at").value = toDateTimeInput(invoice?.paidAt);
+          document.getElementById("invoice-pdf").value = invoice?.pdfFilePath || "";
+          document.getElementById("invoice-notes").value = invoice?.notes || "";
+          setBillingMessage(invoiceMessage, "", "");
+          invoiceModal.hidden = false;
+          document.body.classList.add("admin-modal-open");
+        }
+
+        async function saveSubscription(event) {
+          event.preventDefault();
+          subscriptionSave.disabled = true;
+          subscriptionSave.textContent = "Opslaan...";
+          setBillingMessage(subscriptionMessage, "", "");
+
+          try {
+            await postBilling({
+              action: "save_subscription",
+              id: document.getElementById("subscription-id").value,
+              profileId: document.getElementById("subscription-profile").value,
+              packageName: document.getElementById("subscription-package").value,
+              monthlyAmount: document.getElementById("subscription-amount").value,
+              billingCycle: document.getElementById("subscription-cycle").value,
+              status: document.getElementById("subscription-status").value,
+              startDate: document.getElementById("subscription-start").value,
+              nextInvoiceDate: document.getElementById("subscription-next").value,
+              notes: document.getElementById("subscription-notes").value,
+            });
+            await loadBilling(false);
+            closeModal(subscriptionModal);
+          } catch (error) {
+            setBillingMessage(subscriptionMessage, error.message || "Abonnement kon niet worden opgeslagen.", "error");
+          } finally {
+            subscriptionSave.disabled = false;
+            subscriptionSave.textContent = "Abonnement opslaan";
+          }
+        }
+
+        async function saveInvoice(event) {
+          event.preventDefault();
+          invoiceSave.disabled = true;
+          invoiceSave.textContent = "Opslaan...";
+          setBillingMessage(invoiceMessage, "", "");
+
+          try {
+            await postBilling({
+              action: "save_invoice",
+              id: document.getElementById("invoice-id").value,
+              profileId: document.getElementById("invoice-profile").value,
+              invoiceNumber: document.getElementById("invoice-number").value,
+              title: document.getElementById("invoice-title").value,
+              amount: document.getElementById("invoice-amount").value,
+              status: document.getElementById("invoice-status").value,
+              dueDate: document.getElementById("invoice-due").value,
+              paidAt: document.getElementById("invoice-paid-at").value,
+              pdfFilePath: document.getElementById("invoice-pdf").value,
+              notes: document.getElementById("invoice-notes").value,
+            });
+            await loadBilling(false);
+            closeModal(invoiceModal);
+          } catch (error) {
+            setBillingMessage(invoiceMessage, error.message || "Factuur kon niet worden opgeslagen.", "error");
+          } finally {
+            invoiceSave.disabled = false;
+            invoiceSave.textContent = "Factuur opslaan";
+          }
+        }
+
+        async function setSubscriptionStatus(id, status, button) {
+          const originalText = button.textContent;
+          button.disabled = true;
+          button.textContent = "Opslaan...";
+          try {
+            await postBilling({ action: "set_subscription_status", id, status });
+            await loadBilling(false);
+          } catch (error) {
+            window.alert(error.message || "Abonnementsstatus kon niet worden bijgewerkt.");
+            button.disabled = false;
+            button.textContent = originalText;
+          }
+        }
+
+        async function setInvoiceStatus(id, status, select) {
+          select.disabled = true;
+          try {
+            await postBilling({ action: "set_invoice_status", id, status });
+            await loadBilling(false);
+          } catch (error) {
+            window.alert(error.message || "Factuurstatus kon niet worden bijgewerkt.");
+            await loadBilling(false);
+          } finally {
+            select.disabled = false;
+          }
+        }
+
         function normalizeFiles(files) {
           return Array.isArray(files) ? files.filter(Boolean) : [];
         }
@@ -1398,6 +1770,8 @@
           targetModal.hidden = true;
           document.body.classList.remove("admin-modal-open");
           if (targetModal === requestModal) state.selectedRequestId = "";
+          if (targetModal === subscriptionModal) state.selectedSubscriptionId = "";
+          if (targetModal === invoiceModal) state.selectedInvoiceId = "";
         }
 
         function openNewCustomerModal() {
@@ -1468,6 +1842,7 @@
             renderCareOverview();
             updateMetrics();
             await loadWebsiteHealth(false);
+            await loadBilling(false);
             setAdminAccessMessage("CRM-data geladen.", "success");
           } catch (error) {
             setAdminAccessMessage(error.message || "CRM-data kon niet worden geladen.", "error");
@@ -1497,10 +1872,14 @@
         document.getElementById("open-new-customer").addEventListener("click", openNewCustomerModal);
         document.getElementById("open-new-customer-secondary").addEventListener("click", openNewCustomerModal);
         document.getElementById("new-website").addEventListener("click", resetWebsiteForm);
+        document.getElementById("new-subscription").addEventListener("click", () => openSubscriptionModal());
+        document.getElementById("new-invoice").addEventListener("click", () => openInvoiceModal());
         websiteHealthRefresh.addEventListener("click", () => loadWebsiteHealth(true));
         adminLoadButton.addEventListener("click", () => loadCRMData(true));
         detailForm.addEventListener("submit", saveCustomer);
         websiteDetailForm.addEventListener("submit", saveWebsite);
+        subscriptionForm.addEventListener("submit", saveSubscription);
+        invoiceForm.addEventListener("submit", saveInvoice);
         websiteArchive.addEventListener("click", archiveWebsite);
         detailLinkLogin.addEventListener("click", linkLogin);
         detailResetPassword.addEventListener("click", sendPasswordReset);
@@ -1519,7 +1898,7 @@
         });
         document.addEventListener("keydown", (event) => {
           if (event.key !== "Escape") return;
-          [newCustomerModal, requestModal].forEach((targetModal) => {
+          [newCustomerModal, requestModal, subscriptionModal, invoiceModal].forEach((targetModal) => {
             if (!targetModal.hidden) closeModal(targetModal);
           });
         });

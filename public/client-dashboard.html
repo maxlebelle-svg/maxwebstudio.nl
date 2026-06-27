@@ -34,6 +34,32 @@
       <section class="admin-section">
         <div class="admin-section-heading">
           <div>
+            <p class="section-kicker">Facturatie</p>
+            <h2>Onderhoud & facturen</h2>
+          </div>
+        </div>
+        <div class="portal-website-grid">
+          <article class="admin-card detail-card"><span>Huidig onderhoudspakket</span><strong id="billing-package">-</strong></article>
+          <article class="admin-card detail-card"><span>Maandbedrag</span><strong id="billing-amount">-</strong></article>
+          <article class="admin-card detail-card"><span>Status abonnement</span><strong id="billing-status">-</strong></article>
+          <article class="admin-card detail-card"><span>Volgende factuurdatum</span><strong id="billing-next-date">-</strong></article>
+        </div>
+        <div class="admin-table portal-invoice-table" id="client-invoice-list" role="table" aria-label="Laatste facturen" aria-live="polite">
+          <div class="admin-table-row admin-table-head portal-invoice-row" role="row">
+            <span>Factuur</span><span>Titel</span><span>Bedrag</span><span>Status</span><span>Vervaldatum</span><span>Download</span>
+          </div>
+          <article class="admin-card request-card request-state-card" role="row">
+            <div>
+              <strong>Facturen laden...</strong>
+              <span>Je factuurgegevens worden opgehaald.</span>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="admin-section">
+        <div class="admin-section-heading">
+          <div>
             <p class="section-kicker">Mijn website</p>
             <h2>Websitegegevens</h2>
           </div>
@@ -99,12 +125,13 @@
         afgerond: "Afgerond",
       };
       const statusFlow = ["nieuw", "in_behandeling", "wacht_op_klant", "afgerond"];
-      const state = { client: null, session: null, profile: null, websites: [], requests: [] };
+      const state = { client: null, session: null, profile: null, websites: [], requests: [], subscriptions: [], invoices: [] };
 
       const clientName = document.querySelector("#client-name");
       const logoutButton = document.querySelector("#client-logout");
       const dashboardMessage = document.querySelector("#client-dashboard-message");
       const requestList = document.querySelector("#client-request-list");
+      const invoiceList = document.querySelector("#client-invoice-list");
       const modal = document.querySelector("#client-request-modal");
       const modalTitle = document.querySelector("#client-request-modal-title");
       const detailList = document.querySelector("#client-request-detail-list");
@@ -135,11 +162,38 @@
         return "status-planned";
       }
 
+      function billingStatusLabel(value) {
+        return {
+          active: "Actief",
+          paused: "Gepauzeerd",
+          cancelled: "Geannuleerd",
+          draft: "Concept",
+          sent: "Verzonden",
+          paid: "Betaald",
+          overdue: "Verlopen",
+        }[normalize(value)] || value || "-";
+      }
+
+      function billingStatusClass(value) {
+        const status = normalize(value);
+        if (["active", "paid"].includes(status)) return "status-active";
+        if (["sent", "draft"].includes(status)) return "status-prepared";
+        if (["paused", "overdue"].includes(status)) return "status-warning";
+        return "status-attention";
+      }
+
       function formatDate(value) {
         if (!value) return "-";
         const date = new Date(value);
         if (Number.isNaN(date.getTime())) return "-";
         return new Intl.DateTimeFormat("nl-NL", { dateStyle: "medium" }).format(date);
+      }
+
+      function money(value) {
+        if (value === null || value === undefined || value === "") return "-";
+        const amount = Number(value);
+        if (!Number.isFinite(amount)) return "-";
+        return new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(amount);
       }
 
       function createCell(text, element = "span") {
@@ -219,6 +273,61 @@
         content.append(createCell(title, "strong"), createCell(text));
         card.append(content, createBadge(badgeText, badgeClass));
         requestList.append(card);
+      }
+
+      function renderTableState(target, title, text, badgeText, badgeClass = "status-planned") {
+        target.replaceChildren();
+        const card = document.createElement("article");
+        card.className = "admin-card request-card request-state-card";
+        const content = document.createElement("div");
+        content.append(createCell(title, "strong"), createCell(text));
+        card.append(content, createBadge(badgeText, badgeClass));
+        target.append(card);
+      }
+
+      function renderBilling() {
+        const subscription = state.subscriptions.find((item) => normalize(item.status) === "active") || state.subscriptions[0] || null;
+        document.querySelector("#billing-package").textContent = subscription?.package_name || state.profile?.package || "-";
+        document.querySelector("#billing-amount").textContent = money(subscription?.monthly_amount);
+        document.querySelector("#billing-status").textContent = billingStatusLabel(subscription?.status);
+        document.querySelector("#billing-next-date").textContent = formatDate(subscription?.next_invoice_date);
+
+        invoiceList.replaceChildren();
+        if (!state.invoices.length) {
+          renderTableState(invoiceList, "Nog geen facturen", "Zodra er facturen beschikbaar zijn, verschijnen ze hier.", "Leeg");
+          return;
+        }
+
+        const head = document.createElement("div");
+        head.className = "admin-table-row admin-table-head portal-invoice-row";
+        ["Factuur", "Titel", "Bedrag", "Status", "Vervaldatum", "Download"].forEach((label) => head.append(createCell(label)));
+        invoiceList.append(head);
+
+        state.invoices.slice(0, 5).forEach((invoice) => {
+          const row = document.createElement("div");
+          row.className = "admin-table-row portal-invoice-row";
+          const action = document.createElement("span");
+          if (invoice.pdf_file_path) {
+            const download = document.createElement("a");
+            download.className = "button secondary";
+            download.href = invoice.pdf_file_path;
+            download.target = "_blank";
+            download.rel = "noopener";
+            download.textContent = "Download";
+            action.append(download);
+          } else {
+            action.textContent = "-";
+          }
+          row.append(
+            createCell(invoice.invoice_number || "-"),
+            createCell(invoice.title || "Factuur", "strong"),
+            createCell(money(invoice.amount)),
+            createBadge(billingStatusLabel(invoice.status), billingStatusClass(invoice.status)),
+            createCell(formatDate(invoice.due_date)),
+            action
+          );
+          invoiceList.append(row);
+        });
       }
 
       function renderRequests(requests) {
@@ -467,10 +576,37 @@
             }
           }
 
+          let { data: subscriptionRows, error: subscriptionError } = await state.client
+            .from("customer_subscriptions")
+            .select("id,package_name,billing_cycle,monthly_amount,status,start_date,next_invoice_date,updated_at")
+            .eq("customer_auth_user_id", user.id)
+            .order("updated_at", { ascending: false })
+            .limit(20);
+
+          const subscriptionErrorText = `${subscriptionError?.code || ""} ${subscriptionError?.message || ""}`.toLowerCase();
+          if (subscriptionError && !subscriptionErrorText.includes("customer_subscriptions") && !subscriptionErrorText.includes("42p01")) {
+            throw subscriptionError;
+          }
+
+          let { data: invoiceRows, error: invoiceError } = await state.client
+            .from("customer_invoices")
+            .select("id,invoice_number,title,amount,status,due_date,paid_at,pdf_file_path,created_at")
+            .eq("customer_auth_user_id", user.id)
+            .order("created_at", { ascending: false })
+            .limit(20);
+
+          const invoiceErrorText = `${invoiceError?.code || ""} ${invoiceError?.message || ""}`.toLowerCase();
+          if (invoiceError && !invoiceErrorText.includes("customer_invoices") && !invoiceErrorText.includes("42p01")) {
+            throw invoiceError;
+          }
+
           state.profile = profile;
           state.websites = !websiteError && Array.isArray(websites) ? websites : [];
           state.requests = Array.isArray(requests) ? requests : [];
+          state.subscriptions = !subscriptionError && Array.isArray(subscriptionRows) ? subscriptionRows : [];
+          state.invoices = !invoiceError && Array.isArray(invoiceRows) ? invoiceRows : [];
           renderProfile(user, profile, state.websites);
+          renderBilling();
           renderMetrics(state.requests);
           renderRequests(state.requests);
         } catch (error) {
