@@ -1409,6 +1409,7 @@ h3 {
 
 .demo-preview-build,
 .demo-preview-install {
+  --demo-position: center;
   background:
     radial-gradient(circle at 82% 16%, rgba(21, 94, 239, 0.16), transparent 28%),
     radial-gradient(circle at 18% 82%, rgba(148, 163, 184, 0.2), transparent 28%),
@@ -1417,6 +1418,7 @@ h3 {
 
 .demo-preview-restaurant,
 .demo-preview-salon {
+  --demo-position: center;
   background:
     radial-gradient(circle at 82% 18%, rgba(245, 158, 11, 0.18), transparent 28%),
     radial-gradient(circle at 16% 78%, rgba(21, 94, 239, 0.1), transparent 26%),
@@ -1428,6 +1430,7 @@ h3 {
 .demo-preview-dentist,
 .demo-preview-auto,
 .demo-preview-ecommerce {
+  --demo-position: center;
   background:
     radial-gradient(circle at 82% 18%, rgba(43, 217, 130, 0.1), transparent 28%),
     radial-gradient(circle at 16% 82%, rgba(21, 94, 239, 0.11), transparent 28%),
@@ -1517,6 +1520,8 @@ h3 {
   background:
     radial-gradient(circle at 78% 18%, rgba(255, 255, 255, 0.28), transparent 28%),
     linear-gradient(135deg, var(--ink), var(--blue));
+  background-position: var(--demo-position, center);
+  background-size: cover;
 }
 
 .mini-hero::before,
@@ -1533,6 +1538,7 @@ h3 {
 }
 
 .mini-hero::after {
+  display: none;
   top: 20px;
   right: 18px;
   bottom: 20px;
@@ -1623,8 +1629,8 @@ h3 {
 
 .mini-site-build .mini-hero {
   background:
-    linear-gradient(135deg, rgba(6, 18, 31, 0.92), rgba(21, 94, 239, 0.78)),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.14) 0 32%, transparent 32%);
+    linear-gradient(90deg, rgba(6, 18, 31, 0.86) 0 46%, rgba(6, 18, 31, 0.36) 78%, rgba(6, 18, 31, 0.08)),
+    url("assets/demo-images/demo-hero-bouw.jpg");
 }
 
 .mini-site-build .mini-hero::after {
@@ -1638,8 +1644,14 @@ h3 {
 .mini-site-restaurant .mini-hero,
 .mini-site-salon .mini-hero {
   background:
-    radial-gradient(circle at 75% 20%, rgba(255, 255, 255, 0.22), transparent 28%),
-    linear-gradient(135deg, #3b1d0f, #b45309);
+    linear-gradient(90deg, rgba(59, 29, 15, 0.86) 0 45%, rgba(59, 29, 15, 0.38) 76%, rgba(59, 29, 15, 0.08)),
+    url("assets/demo-images/demo-hero-horeca.jpg");
+}
+
+.mini-site-salon .mini-hero {
+  background:
+    linear-gradient(90deg, rgba(54, 20, 42, 0.84) 0 45%, rgba(54, 20, 42, 0.34) 76%, rgba(54, 20, 42, 0.08)),
+    url("assets/demo-images/demo-hero-kapsalon.jpg");
 }
 
 .mini-site-restaurant .mini-hero::after {
@@ -1663,8 +1675,8 @@ h3 {
 .mini-site-auto .mini-hero,
 .mini-site-ecommerce .mini-hero {
   background:
-    radial-gradient(circle at 78% 18%, rgba(43, 217, 130, 0.18), transparent 30%),
-    linear-gradient(135deg, var(--ink), var(--blue));
+    linear-gradient(90deg, rgba(6, 18, 31, 0.84) 0 46%, rgba(6, 18, 31, 0.36) 78%, rgba(6, 18, 31, 0.08)),
+    url("assets/demo-images/demo-hero-coaching.jpg");
 }
 
 .mini-site-coach .mini-hero::after {
@@ -1681,11 +1693,29 @@ h3 {
     linear-gradient(145deg, #e2e8f0, #475569 50%, #0f172a);
 }
 
+.mini-site-realestate .mini-hero {
+  background:
+    linear-gradient(90deg, rgba(6, 18, 31, 0.82) 0 45%, rgba(6, 18, 31, 0.34) 78%, rgba(6, 18, 31, 0.08)),
+    url("assets/demo-images/demo-hero-vastgoed.jpg");
+}
+
+.mini-site-install .mini-hero {
+  background:
+    linear-gradient(90deg, rgba(6, 18, 31, 0.8) 0 45%, rgba(15, 118, 110, 0.34) 78%, rgba(15, 118, 110, 0.08)),
+    url("assets/demo-images/demo-hero-installatie.jpg");
+}
+
 .mini-site-install .mini-hero::after {
   background:
     radial-gradient(circle at 68% 28%, rgba(125, 211, 252, 0.72) 0 9%, transparent 10%),
     linear-gradient(135deg, rgba(255, 255, 255, 0.64) 0 18%, transparent 18% 34%, rgba(255, 255, 255, 0.38) 34% 48%, transparent 48%),
     linear-gradient(145deg, #bfdbfe, #0f766e 54%, #0f172a);
+}
+
+.mini-site-dentist .mini-hero {
+  background:
+    linear-gradient(90deg, rgba(12, 74, 110, 0.74) 0 44%, rgba(12, 74, 110, 0.28) 76%, rgba(12, 74, 110, 0.06)),
+    url("assets/demo-images/demo-hero-zorg.jpg");
 }
 
 .mini-site-dentist .mini-hero::after {
@@ -1697,8 +1727,8 @@ h3 {
 
 .mini-site-auto .mini-hero {
   background:
-    radial-gradient(circle at 78% 18%, rgba(255, 255, 255, 0.14), transparent 30%),
-    linear-gradient(135deg, #020617, #1e293b);
+    linear-gradient(90deg, rgba(2, 6, 23, 0.9) 0 45%, rgba(2, 6, 23, 0.38) 78%, rgba(2, 6, 23, 0.08)),
+    url("assets/demo-images/demo-hero-automotive.jpg");
 }
 
 .mini-site-auto .mini-hero::after {
@@ -1714,6 +1744,12 @@ h3 {
     linear-gradient(90deg, rgba(255, 255, 255, 0.82) 0 28%, transparent 28% 36%, rgba(255, 255, 255, 0.62) 36% 64%, transparent 64%),
     radial-gradient(circle at 70% 30%, rgba(251, 191, 36, 0.82) 0 10%, transparent 11%),
     linear-gradient(145deg, #fdf2f8, #1d4ed8);
+}
+
+.mini-site-ecommerce .mini-hero {
+  background:
+    linear-gradient(90deg, rgba(15, 23, 42, 0.76) 0 44%, rgba(29, 78, 216, 0.28) 76%, rgba(29, 78, 216, 0.06)),
+    url("assets/demo-images/demo-hero-ecommerce.jpg");
 }
 
 .demo-site-hero,
@@ -1793,8 +1829,27 @@ h3 {
     linear-gradient(145deg, #e2e8f0, #334155);
 }
 
+.demo-site-hero {
+  background:
+    linear-gradient(90deg, rgba(6, 18, 31, 0.86) 0 46%, rgba(6, 18, 31, 0.34) 78%, rgba(6, 18, 31, 0.08)),
+    url("assets/demo-images/demo-hero-bouw.jpg") center / cover;
+}
+
+.demo-site-hero::before,
+.demo-menu-card::before,
+.demo-profile-block::before,
+.demo-property-card::before,
+.demo-service-block::before,
+.demo-care-block::before,
+.demo-style-block::before,
+.demo-auto-block::before {
+  display: none;
+}
+
 .demo-menu-card {
-  background: linear-gradient(135deg, #3b1d0f, #b45309);
+  background:
+    linear-gradient(90deg, rgba(59, 29, 15, 0.86) 0 45%, rgba(59, 29, 15, 0.38) 76%, rgba(59, 29, 15, 0.08)),
+    url("assets/demo-images/demo-hero-horeca.jpg") center / cover;
 }
 
 .demo-menu-card::before {
@@ -1811,11 +1866,23 @@ h3 {
     linear-gradient(145deg, #dbeafe, #1e3a8a);
 }
 
+.demo-profile-block {
+  background:
+    linear-gradient(90deg, rgba(6, 18, 31, 0.84) 0 46%, rgba(6, 18, 31, 0.34) 78%, rgba(6, 18, 31, 0.08)),
+    url("assets/demo-images/demo-hero-coaching.jpg") center / cover;
+}
+
 .demo-property-card::before {
   background:
     linear-gradient(135deg, transparent 0 32%, rgba(255, 255, 255, 0.74) 32% 39%, transparent 39%),
     linear-gradient(90deg, rgba(255, 255, 255, 0.72) 0 18%, transparent 18% 30%, rgba(255, 255, 255, 0.52) 30% 44%, transparent 44%),
     linear-gradient(145deg, #e2e8f0, #475569 50%, #0f172a);
+}
+
+.demo-property-card {
+  background:
+    linear-gradient(90deg, rgba(6, 18, 31, 0.82) 0 45%, rgba(6, 18, 31, 0.34) 78%, rgba(6, 18, 31, 0.08)),
+    url("assets/demo-images/demo-hero-vastgoed.jpg") center / cover;
 }
 
 .demo-service-block::before {
@@ -1825,11 +1892,23 @@ h3 {
     linear-gradient(145deg, #bfdbfe, #0f766e 54%, #0f172a);
 }
 
+.demo-service-block {
+  background:
+    linear-gradient(90deg, rgba(6, 18, 31, 0.8) 0 45%, rgba(15, 118, 110, 0.34) 78%, rgba(15, 118, 110, 0.08)),
+    url("assets/demo-images/demo-hero-installatie.jpg") center / cover;
+}
+
 .demo-care-block::before {
   background:
     radial-gradient(circle at 72% 24%, rgba(255, 255, 255, 0.9) 0 10%, transparent 11%),
     linear-gradient(90deg, rgba(255, 255, 255, 0.7) 0 18%, transparent 18% 32%, rgba(255, 255, 255, 0.46) 32% 44%, transparent 44%),
     linear-gradient(145deg, #ecfeff, #38bdf8 52%, #1e3a8a);
+}
+
+.demo-care-block {
+  background:
+    linear-gradient(90deg, rgba(12, 74, 110, 0.74) 0 44%, rgba(12, 74, 110, 0.28) 76%, rgba(12, 74, 110, 0.06)),
+    url("assets/demo-images/demo-hero-zorg.jpg") center / cover;
 }
 
 .demo-style-block::before {
@@ -1839,8 +1918,16 @@ h3 {
     linear-gradient(135deg, #f8d7e8, #7c2d55);
 }
 
+.demo-style-block {
+  background:
+    linear-gradient(90deg, rgba(54, 20, 42, 0.84) 0 45%, rgba(54, 20, 42, 0.34) 76%, rgba(54, 20, 42, 0.08)),
+    url("assets/demo-images/demo-hero-kapsalon.jpg") center / cover;
+}
+
 .demo-auto-block {
-  background: linear-gradient(135deg, #020617, #1e293b);
+  background:
+    linear-gradient(90deg, rgba(2, 6, 23, 0.9) 0 45%, rgba(2, 6, 23, 0.38) 78%, rgba(2, 6, 23, 0.08)),
+    url("assets/demo-images/demo-hero-automotive.jpg") center / cover;
 }
 
 .demo-auto-block::before {
@@ -1904,6 +1991,60 @@ h3 {
 .demo-phone i:last-child {
   width: 72%;
   background: var(--blue);
+}
+
+.demo-preview-build .demo-phone {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0 20%, rgba(255, 255, 255, 0.5) 20%),
+    url("assets/demo-images/demo-hero-bouw.jpg") center / cover;
+}
+
+.demo-preview-restaurant .demo-phone {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0 20%, rgba(59, 29, 15, 0.2) 20%),
+    url("assets/demo-images/demo-hero-horeca.jpg") center / cover;
+}
+
+.demo-preview-coach .demo-phone {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0 20%, rgba(6, 18, 31, 0.16) 20%),
+    url("assets/demo-images/demo-hero-coaching.jpg") center / cover;
+}
+
+.demo-preview-realestate .demo-phone {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0 20%, rgba(6, 18, 31, 0.16) 20%),
+    url("assets/demo-images/demo-hero-vastgoed.jpg") center / cover;
+}
+
+.demo-preview-install .demo-phone {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0 20%, rgba(15, 118, 110, 0.18) 20%),
+    url("assets/demo-images/demo-hero-installatie.jpg") center / cover;
+}
+
+.demo-preview-dentist .demo-phone {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0 20%, rgba(12, 74, 110, 0.14) 20%),
+    url("assets/demo-images/demo-hero-zorg.jpg") center / cover;
+}
+
+.demo-preview-salon .demo-phone {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0 20%, rgba(124, 45, 85, 0.16) 20%),
+    url("assets/demo-images/demo-hero-kapsalon.jpg") center / cover;
+}
+
+.demo-preview-auto .demo-phone {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0 20%, rgba(2, 6, 23, 0.2) 20%),
+    url("assets/demo-images/demo-hero-automotive.jpg") center / cover;
+}
+
+.demo-preview-ecommerce .demo-phone {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0 20%, rgba(29, 78, 216, 0.14) 20%),
+    url("assets/demo-images/demo-hero-ecommerce.jpg") center / cover;
 }
 
 .demo-card-copy {
