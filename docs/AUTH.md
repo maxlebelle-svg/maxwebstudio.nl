@@ -56,6 +56,7 @@ SQL staat in:
 - `/docs/supabase-invoice-storage.sql`
 - `/docs/supabase-mollie-payments.sql`
 - `/docs/supabase-mollie-subscriptions.sql`
+- `/docs/supabase-mollie-subscriptions-sync.sql`
 
 Wanneer een ingelogde klant een wijziging indient via `/public/wijziging-doorgeven.html`, stuurt de frontend de Supabase access token mee. `submit-change-request.js` valideert die token server-side en vult `auth_user_id` op het nieuwe wijzigingsverzoek.
 
@@ -134,6 +135,8 @@ De stabiele factuurstatussen zijn `draft`, `sent`, `paid`, `expired`, `canceled`
 Factuur-e-mails lopen via `/.netlify/functions/admin-invoice-email` en vereisen `ADMIN_TOKEN`. De function gebruikt `SUPABASE_SERVICE_ROLE_KEY` en `RESEND_API_KEY` alleen server-side. Klanten kunnen geen e-mails triggeren. De Mollie webhook mag na een `paid` status server-side een betaalbevestiging sturen, maar mag de betaalstatus-update niet laten falen als e-mailconfiguratie ontbreekt.
 
 Mollie onderhoudsabonnementen worden geactiveerd via `/.netlify/functions/admin-mollie-subscription`. Deze function vereist `ADMIN_TOKEN` en gebruikt `MOLLIE_API_KEY` plus `SUPABASE_SERVICE_ROLE_KEY` alleen server-side. Klanten kunnen geen Mollie Customer of Subscription aanmaken, pauzeren, hervatten of opzeggen. Het klantportaal leest alleen eigen subscriptiondata via RLS.
+
+Als een klant nog geen geldige mandate heeft, maakt de adminfunction server-side een Mollie betaling met `sequenceType: first`. De klant mag alleen de opgeslagen `mandate_checkout_url` openen via het klantportaal. `/.netlify/functions/mollie-webhook` verwerkt de eerste betaling server-side, maakt daarna de subscription aan en synchroniseert subscriptiondata. Klanten krijgen geen mutatierechten.
 
 Nieuwe CRM-klanten worden gekoppeld aan een Supabase Auth-user wanneer het ingevoerde e-mailadres al bestaat in Supabase Auth. Als er nog geen Auth-user bestaat, kan de admin eerst een uitnodiging versturen vanuit het CRM en daarna het profiel opslaan zodra Supabase de gebruiker beschikbaar maakt.
 

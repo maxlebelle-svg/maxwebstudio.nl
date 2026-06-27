@@ -1355,6 +1355,8 @@
             open: "Open",
             pending: "In behandeling",
             suspended: "Gepauzeerd",
+            valid: "Geldig",
+            invalid: "Ongeldig",
           }[normalize(value)] || value || "-";
         }
 
@@ -1365,8 +1367,11 @@
             ["Customer", subscription.mollieCustomerId],
             ["Subscription", subscription.mollieSubscriptionId],
             ["Status", billingStatusLabel(subscription.mollieSubscriptionStatus)],
+            ["Mandate", billingStatusLabel(subscription.mandateStatus)],
             ["Laatste betaling", formatDate(subscription.lastPaymentAt)],
             ["Volgende betaling", formatDate(subscription.nextPaymentAt)],
+            ["Sync", formatDate(subscription.subscriptionSyncedAt)],
+            ["Webhook", subscription.webhookLastEvent],
           ].forEach(([label, value]) => {
             const item = document.createElement("small");
             item.textContent = `${label}: ${value || "-"}`;
@@ -1444,7 +1449,7 @@
           }
           const head = document.createElement("div");
           head.className = "admin-table-row admin-table-head billing-row";
-          ["Klant", "Pakket", "Bedrag", "Cyclus", "Status", "Startdatum", "Volgende factuur", "Mollie", "Acties"].forEach((label) => head.append(createCell(label)));
+          ["Klant", "Pakket", "Bedrag", "Cyclus", "Status", "Startdatum", "Volgende incasso", "Mollie", "Acties"].forEach((label) => head.append(createCell(label)));
           subscriptionList.append(head);
           state.subscriptions.forEach((subscription) => {
             const row = document.createElement("div");
@@ -1469,6 +1474,23 @@
               mollie.textContent = "Activeer abonnement";
               mollie.addEventListener("click", () => activateMollieSubscription(subscription.id, mollie));
               actions.append(mollie);
+            }
+            if (subscription.mandateCheckoutUrl) {
+              const mandate = document.createElement("a");
+              mandate.className = "button secondary";
+              mandate.href = subscription.mandateCheckoutUrl;
+              mandate.target = "_blank";
+              mandate.rel = "noopener";
+              mandate.textContent = "Open mandate betaallink";
+              actions.append(mandate);
+            }
+            if (subscription.mollieCustomerId) {
+              const sync = document.createElement("button");
+              sync.className = "button secondary";
+              sync.type = "button";
+              sync.textContent = "Synchroniseer abonnement";
+              sync.addEventListener("click", () => syncMollieSubscription(subscription.id, sync));
+              actions.append(sync);
             }
             row.append(
               createCell(subscription.customerCompany || subscription.customerName || "Geen klant", "strong"),
@@ -1733,6 +1755,34 @@
             setAdminAccessMessage(data.warning || "Mollie abonnement geactiveerd.", data.warning ? "" : "success");
           } catch (error) {
             setAdminAccessMessage(error.message || "Mollie abonnement kon niet worden geactiveerd.", "error");
+          } finally {
+            button.disabled = false;
+            button.textContent = originalText;
+          }
+        }
+
+        async function syncMollieSubscription(id, button) {
+          const originalText = button.textContent;
+          button.disabled = true;
+          button.textContent = "Synchroniseren...";
+          setAdminAccessMessage("", "");
+
+          try {
+            const response = await fetch(mollieSubscriptionEndpoint, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                Authorization: `Bearer ${state.adminToken}`,
+              },
+              body: JSON.stringify({ action: "sync_subscription", subscription_id: id }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data.success) throw new Error(data.error || "Mollie abonnement kon niet worden gesynchroniseerd.");
+            await loadBilling(false);
+            setAdminAccessMessage(data.message || "Mollie abonnement gesynchroniseerd.", "success");
+          } catch (error) {
+            setAdminAccessMessage(error.message || "Mollie abonnement kon niet worden gesynchroniseerd.", "error");
           } finally {
             button.disabled = false;
             button.textContent = originalText;

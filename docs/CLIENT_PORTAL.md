@@ -189,9 +189,17 @@ Fase 6.1 voegt Mollie Customers en onderhoudsabonnementen als basis toe:
 - architectuur en testmodus staan in `/docs/MOLLIE_SUBSCRIPTIONS.md`
 - het klantportaal toont status, bedrag en volgende incasso, maar bevat geen beheeracties
 
+Fase 6.2 maakt de subscriptionflow werkend met mandates:
+
+- wanneer nog geen geldige mandate bestaat, maakt admin een eerste Mollie betaling met `sequenceType: first`
+- de mandate checkout URL wordt opgeslagen op `customer_subscriptions.mandate_checkout_url`
+- het klantportaal toont `Voltooi machtiging` zolang de mandate nog niet geldig is
+- na succesvolle eerste betaling maakt de webhook automatisch de Mollie subscription aan
+- de webhook synchroniseert subscriptionstatus, mandate status, laatste betaling, volgende incasso en laatste webhook-event
+- extra SQL staat in `/docs/supabase-mollie-subscriptions-sync.sql`
+
 Nog niet gebouwd in deze fase:
 
-- webhook synchronisatie voor subscription payments
 - automatische retries
 - pauzeren, hervatten en opzeggen
 - PDF-generatie

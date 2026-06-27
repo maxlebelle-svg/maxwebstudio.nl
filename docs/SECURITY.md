@@ -87,7 +87,7 @@ Het klantenportaal gebruikt:
 - Klantdownloads lopen via `/.netlify/functions/invoice-download`, vereisen een Supabase Auth JWT en gebruiken korte signed URLs.
 - Mollie betaalverzoeken voor facturen lopen via `/.netlify/functions/admin-mollie-payment`, vereisen `ADMIN_TOKEN` en gebruiken `MOLLIE_API_KEY` alleen server-side.
 - Mollie onderhoudsabonnementen lopen via `/.netlify/functions/admin-mollie-subscription`, vereisen `ADMIN_TOKEN` en gebruiken `MOLLIE_API_KEY` alleen server-side.
-- Mollie webhookstatussen worden server-side opgehaald en gekoppeld via `customer_invoices.mollie_payment_id`.
+- Mollie webhookstatussen worden server-side opgehaald en gekoppeld via `customer_invoices.mollie_payment_id`, `customer_subscriptions.mandate_payment_id` of `customer_subscriptions.mollie_subscription_id`.
 
 Risico:
 
@@ -116,6 +116,7 @@ Aanbevelingen:
 - Voer `/docs/supabase-mollie-payments.sql` uit voordat Mollie betaalverzoeken voor facturen operationeel worden gebruikt.
 - Voer `/docs/supabase-invoice-emails.sql` uit voordat factuur-e-mailnotificaties operationeel worden gebruikt.
 - Voer `/docs/supabase-mollie-subscriptions.sql` uit voordat Mollie onderhoudsabonnementen operationeel worden gebruikt.
+- Voer `/docs/supabase-mollie-subscriptions-sync.sql` uit voordat mandate en webhook-synchronisatie operationeel worden gebruikt.
 
 Server-side environment variables voor factuurbetalingen:
 
@@ -130,11 +131,12 @@ Deze waarden mogen nooit in frontendcode worden geplaatst.
 Server-side environment variables voor Mollie subscriptions:
 
 - `MOLLIE_API_KEY`
+- `SITE_URL`
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `ADMIN_TOKEN`
 
-Klanten mogen geen subscriptionmutaties uitvoeren. Subscription-acties blijven admin-only totdat er echte admin-authenticatie met rollen en audit trail is.
+Klanten mogen geen subscriptionmutaties uitvoeren. Subscription-acties blijven admin-only totdat er echte admin-authenticatie met rollen en audit trail is. De klant mag alleen een door de server aangemaakte Mollie mandate checkout URL openen. Webhooks blijven server-side en loggen geen secrets.
 
 Server-side environment variables voor factuur-e-mails:
 

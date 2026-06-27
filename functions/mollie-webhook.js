@@ -71,7 +71,11 @@ exports.handler = async (event) => {
       });
     }
 
-    await updateInvoicePaymentIfPresent(payment);
+    if (isSubscriptionPayment(payment)) {
+      await updateSubscriptionPaymentIfPresent(payment, apiKey);
+    } else {
+      await updateInvoicePaymentIfPresent(payment);
+    }
 
     return textResponse(200, "Webhook processed");
   } catch (error) {
@@ -83,6 +87,14 @@ exports.handler = async (event) => {
     return textResponse(200, "Webhook received");
   }
 };
+
+function isSubscriptionPayment(payment) {
+  return Boolean(
+    cleanText(payment.subscriptionId)
+    || cleanText(payment.metadata?.subscriptionId)
+    || cleanText(payment.metadata?.source) === "admin_crm_subscription_mandate"
+  );
+}
 
 async function updateInvoicePaymentIfPresent(payment) {
   const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
@@ -121,6 +133,273 @@ async function updateInvoicePaymentIfPresent(payment) {
   if (payment.status === "paid" && !invoice.paid_email_sent_at) {
     await sendPaidConfirmationEmail(supabaseUrl, serviceRoleKey, invoice);
   }
+}
+
+async function updateSubscriptionPaymentIfPresent(payment, mollieApiKey) {
+  const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.warn("Mollie webhook subscription update skipped: missing Supabase configuration", {
+      hasSupabaseUrl: Boolean(supabaseUrl),
+      hasServiceRoleKey: Boolean(serviceRoleKey),
+    });
+    return;
+  }
+
+  const metadata = payment.metadata || {};
+  const metadataSubscriptionId = cleanText(metadata.subscriptionId);
+  const mollieSubscriptionId = cleanText(payment.subscriptionId);
+  const customerId = cleanText(payment.customerId);
+  let subscription = null;
+
+  if (metadataSubscriptionId) {
+    subscription = await fetchCustomerSubscriptionById(supabaseUrl, serviceRoleKey, metadataSubscriptionId);
+  }
+  if (!subscription && payment.id) {
+    subscription = await fetchCustomerSubscriptionByMandatePaymentId(supabaseUrl, serviceRoleKey, payment.id);
+  }
+  if (!subscription && mollieSubscriptionId) {
+    subscription = await fetchCustomerSubscriptionByMollieSubscriptionId(supabaseUrl, serviceRoleKey, mollieSubscriptionId);
+  }
+
+  if (!subscription) return;
+
+  const now = new Date().toISOString();
+  const isMandatePayment = cleanText(metadata.source) === "admin_crm_subscription_mandate" || cleanText(subscription.mandate_payment_id) === cleanText(payment.id);
+  const paymentStatus = cleanText(payment.status || "unknown");
+  const basePatch = {
+    mandate_payment_status: isMandatePayment ? paymentStatus : cleanText(subscription.mandate_payment_status) || null,
+    webhook_last_event: isMandatePayment ? `mandate_payment_${paymentStatus}` : `subscription_payment_${paymentStatus}`,
+    webhook_last_received_at: now,
+    updated_at: now,
+  };
+
+  if (paymentStatus === "paid") {
+    basePatch.last_payment_at = cleanText(payment.paidAt) || now;
+  }
+
+  let mandate = null;
+  const mollieCustomerId = customerId || cleanText(subscription.mollie_customer_id);
+  if (mollieCustomerId) {
+    mandate = await findValidMandate(mollieApiKey, mollieCustomerId).catch((error) => {
+      console.error("Mollie webhook mandate lookup skipped", { message: error.message });
+      return null;
+    });
+  }
+
+  if (mandate) {
+    basePatch.mollie_customer_id = mollieCustomerId;
+    basePatch.mollie_mandate_id = cleanText(mandate.id);
+    basePatch.mandate_status = cleanText(mandate.status);
+    basePatch.mandate_reference = cleanText(mandate.method || mandate.reference);
+  }
+
+  if (isMandatePayment && paymentStatus === "paid" && mandate && !cleanText(subscription.mollie_subscription_id)) {
+    const updatedWithMandate = await patchCustomerSubscription(supabaseUrl, serviceRoleKey, subscription.id, {
+      ...basePatch,
+      mandate_checkout_url: null,
+    });
+    const createdSubscription = await createMollieSubscription(mollieApiKey, mollieCustomerId, {
+      ...subscription,
+      ...updatedWithMandate,
+      mollie_mandate_id: cleanText(mandate.id),
+    });
+    await patchCustomerSubscription(supabaseUrl, serviceRoleKey, subscription.id, subscriptionPatchFromMollie(createdSubscription, mandate, {
+      mollie_customer_id: mollieCustomerId,
+      webhook_last_event: "subscription_created_after_mandate",
+      webhook_last_received_at: now,
+      mandate_checkout_url: null,
+      mandate_payment_status: paymentStatus,
+      last_payment_at: cleanText(payment.paidAt) || now,
+    }));
+    console.log("Mollie subscription created after mandate payment", {
+      subscriptionId: subscription.id,
+      mollieSubscriptionId: createdSubscription.id,
+    });
+    return;
+  }
+
+  if (cleanText(subscription.mollie_subscription_id) && mollieCustomerId) {
+    const mollieSubscription = await fetchMollieSubscription(mollieApiKey, mollieCustomerId, cleanText(subscription.mollie_subscription_id)).catch((error) => {
+      console.error("Mollie webhook subscription fetch skipped", { message: error.message });
+      return null;
+    });
+    if (mollieSubscription) {
+      await patchCustomerSubscription(supabaseUrl, serviceRoleKey, subscription.id, {
+        ...basePatch,
+        ...subscriptionPatchFromMollie(mollieSubscription, mandate, {
+          webhook_last_event: basePatch.webhook_last_event,
+          webhook_last_received_at: now,
+          last_payment_at: paymentStatus === "paid" ? cleanText(payment.paidAt) || now : cleanText(subscription.last_payment_at) || null,
+        }),
+      });
+      return;
+    }
+  }
+
+  await patchCustomerSubscription(supabaseUrl, serviceRoleKey, subscription.id, basePatch);
+}
+
+async function fetchCustomerSubscriptionById(supabaseUrl, serviceRoleKey, id) {
+  if (!id) return null;
+  return fetchSingleCustomerSubscription(supabaseUrl, serviceRoleKey, `id=eq.${encodeURIComponent(id)}`);
+}
+
+async function fetchCustomerSubscriptionByMandatePaymentId(supabaseUrl, serviceRoleKey, paymentId) {
+  if (!paymentId) return null;
+  return fetchSingleCustomerSubscription(supabaseUrl, serviceRoleKey, `mandate_payment_id=eq.${encodeURIComponent(paymentId)}`);
+}
+
+async function fetchCustomerSubscriptionByMollieSubscriptionId(supabaseUrl, serviceRoleKey, mollieSubscriptionId) {
+  if (!mollieSubscriptionId) return null;
+  return fetchSingleCustomerSubscription(supabaseUrl, serviceRoleKey, `mollie_subscription_id=eq.${encodeURIComponent(mollieSubscriptionId)}`);
+}
+
+async function fetchSingleCustomerSubscription(supabaseUrl, serviceRoleKey, filter) {
+  const fields = [
+    "id",
+    "profile_id",
+    "customer_auth_user_id",
+    "package_name",
+    "billing_cycle",
+    "monthly_amount",
+    "status",
+    "start_date",
+    "next_invoice_date",
+    "mollie_customer_id",
+    "mollie_subscription_id",
+    "mollie_subscription_status",
+    "mollie_mandate_id",
+    "last_payment_at",
+    "next_payment_at",
+    "mandate_status",
+    "mandate_reference",
+    "mandate_checkout_url",
+    "mandate_payment_id",
+    "mandate_payment_status",
+  ].join(",");
+  const response = await fetch(`${supabaseUrl}/rest/v1/customer_subscriptions?select=${fields}&${filter}&limit=1`, {
+    method: "GET",
+    headers: restHeaders(serviceRoleKey),
+  });
+  const data = await response.json().catch(() => []);
+
+  if (!response.ok) {
+    console.error("Mollie webhook subscription lookup failed", {
+      filter,
+      status: response.status,
+      message: data.message || data.error || "Unknown Supabase error",
+    });
+    return null;
+  }
+
+  return Array.isArray(data) ? data[0] : data;
+}
+
+async function patchCustomerSubscription(supabaseUrl, serviceRoleKey, subscriptionId, patch) {
+  const response = await fetch(`${supabaseUrl}/rest/v1/customer_subscriptions?id=eq.${encodeURIComponent(subscriptionId)}`, {
+    method: "PATCH",
+    headers: {
+      ...restHeaders(serviceRoleKey),
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify(patch),
+  });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    console.error("Mollie webhook subscription update failed", {
+      subscriptionId,
+      status: response.status,
+      message: data.message || data.error || "Unknown Supabase error",
+    });
+    return null;
+  }
+
+  return Array.isArray(data) ? data[0] : data;
+}
+
+async function findValidMandate(mollieApiKey, mollieCustomerId) {
+  const response = await fetch(`https://api.mollie.com/v2/customers/${encodeURIComponent(mollieCustomerId)}/mandates`, {
+    method: "GET",
+    headers: mollieHeaders(mollieApiKey),
+  });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const error = new Error(data.detail || data.title || "Mollie mandates konden niet worden opgehaald.");
+    error.statusCode = response.status >= 400 && response.status < 500 ? 400 : 502;
+    throw error;
+  }
+
+  const mandates = Array.isArray(data._embedded?.mandates) ? data._embedded.mandates : [];
+  return mandates.find((mandate) => cleanText(mandate.status).toLowerCase() === "valid") || null;
+}
+
+async function createMollieSubscription(mollieApiKey, mollieCustomerId, subscription) {
+  const response = await fetch(`https://api.mollie.com/v2/customers/${encodeURIComponent(mollieCustomerId)}/subscriptions`, {
+    method: "POST",
+    headers: mollieHeaders(mollieApiKey),
+    body: JSON.stringify({
+      amount: {
+        currency: "EUR",
+        value: subscriptionAmountForCycle(subscription).toFixed(2),
+      },
+      interval: billingInterval(subscription.billing_cycle),
+      description: subscriptionDescription(subscription),
+      mandateId: cleanText(subscription.mollie_mandate_id) || undefined,
+      metadata: {
+        source: "max_web_studio_admin_crm",
+        subscriptionId: cleanText(subscription.id),
+        profileId: cleanText(subscription.profile_id),
+        packageName: cleanText(subscription.package_name),
+      },
+    }),
+  });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const error = new Error(data.detail || data.title || "Mollie subscription kon niet worden aangemaakt.");
+    error.statusCode = response.status >= 400 && response.status < 500 ? 400 : 502;
+    throw error;
+  }
+
+  return data;
+}
+
+async function fetchMollieSubscription(mollieApiKey, mollieCustomerId, mollieSubscriptionId) {
+  const response = await fetch(`https://api.mollie.com/v2/customers/${encodeURIComponent(mollieCustomerId)}/subscriptions/${encodeURIComponent(mollieSubscriptionId)}`, {
+    method: "GET",
+    headers: mollieHeaders(mollieApiKey),
+  });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const error = new Error(data.detail || data.title || "Mollie subscription kon niet worden opgehaald.");
+    error.statusCode = response.status >= 400 && response.status < 500 ? 400 : 502;
+    throw error;
+  }
+
+  return data;
+}
+
+function subscriptionPatchFromMollie(mollieSubscription, mandate, extra = {}) {
+  const status = cleanText(mollieSubscription.status || "pending");
+  return {
+    ...extra,
+    mollie_subscription_id: cleanText(mollieSubscription.id || extra.mollie_subscription_id) || null,
+    mollie_subscription_status: status,
+    mollie_mandate_id: cleanText(mollieSubscription.mandateId || mandate?.id) || null,
+    mandate_status: cleanText(mandate?.status || (mollieSubscription.mandateId ? "valid" : "")) || null,
+    mandate_reference: cleanText(mandate?.method || mandate?.reference) || null,
+    next_payment_at: cleanText(mollieSubscription.nextPaymentDate) || null,
+    canceled_at: status === "canceled" ? new Date().toISOString() : null,
+    paused_at: status === "suspended" ? new Date().toISOString() : null,
+    subscription_synced_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
 }
 
 async function fetchInvoiceByPaymentId(supabaseUrl, serviceRoleKey, paymentId) {
@@ -319,6 +598,14 @@ function restHeaders(serviceRoleKey) {
   };
 }
 
+function mollieHeaders(mollieApiKey) {
+  return {
+    Authorization: `Bearer ${mollieApiKey}`,
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+}
+
 function isSchemaColumnError(data) {
   const message = `${data?.code || ""} ${data?.message || ""} ${data?.details || ""} ${data?.hint || ""}`.toLowerCase();
   return message.includes("42703") || message.includes("pgrst204") || message.includes("column") || message.includes("schema cache");
@@ -333,6 +620,27 @@ function formatMoney(value) {
   const number = Number(value);
   if (!Number.isFinite(number)) return "-";
   return new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(number);
+}
+
+function subscriptionAmountForCycle(subscription) {
+  const amount = Number(subscription.monthly_amount);
+  if (!Number.isFinite(amount) || amount <= 0) return 0;
+  const cycle = cleanText(subscription.billing_cycle || "monthly").toLowerCase();
+  if (cycle === "quarterly") return amount * 3;
+  if (cycle === "yearly") return amount * 12;
+  return amount;
+}
+
+function billingInterval(value) {
+  const cycle = cleanText(value || "monthly").toLowerCase();
+  if (cycle === "quarterly") return "3 months";
+  if (cycle === "yearly") return "12 months";
+  return "1 month";
+}
+
+function subscriptionDescription(subscription) {
+  const packageName = cleanText(subscription.package_name) || "Onderhoud";
+  return `Max Web Studio ${packageName} onderhoud`.slice(0, 255);
 }
 
 function cleanEmail(value) {

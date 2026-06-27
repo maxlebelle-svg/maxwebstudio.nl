@@ -17,6 +17,36 @@ const SUBSCRIPTION_FIELDS = [
   "next_payment_at",
   "canceled_at",
   "paused_at",
+  "mandate_status",
+  "mandate_reference",
+  "mandate_checkout_url",
+  "mandate_payment_id",
+  "mandate_payment_status",
+  "subscription_synced_at",
+  "webhook_last_event",
+  "webhook_last_received_at",
+  "notes",
+  "created_at",
+  "updated_at",
+].join(",");
+const BASE_SUBSCRIPTION_FIELDS = [
+  "id",
+  "profile_id",
+  "customer_auth_user_id",
+  "package_name",
+  "billing_cycle",
+  "monthly_amount",
+  "status",
+  "start_date",
+  "next_invoice_date",
+  "mollie_customer_id",
+  "mollie_subscription_id",
+  "mollie_subscription_status",
+  "mollie_mandate_id",
+  "last_payment_at",
+  "next_payment_at",
+  "canceled_at",
+  "paused_at",
   "notes",
   "created_at",
   "updated_at",
@@ -215,10 +245,18 @@ async function fetchSubscriptions(supabaseUrl, serviceRoleKey) {
     });
   } catch (error) {
     if (!isSchemaColumnError(error)) throw error;
-    return supabaseFetch(`${supabaseUrl}/rest/v1/customer_subscriptions?select=${LEGACY_SUBSCRIPTION_FIELDS}&order=updated_at.desc.nullslast&limit=300`, {
-      method: "GET",
-      headers: restHeaders(serviceRoleKey),
-    });
+    try {
+      return await supabaseFetch(`${supabaseUrl}/rest/v1/customer_subscriptions?select=${BASE_SUBSCRIPTION_FIELDS}&order=updated_at.desc.nullslast&limit=300`, {
+        method: "GET",
+        headers: restHeaders(serviceRoleKey),
+      });
+    } catch (fallbackError) {
+      if (!isSchemaColumnError(fallbackError)) throw fallbackError;
+      return supabaseFetch(`${supabaseUrl}/rest/v1/customer_subscriptions?select=${LEGACY_SUBSCRIPTION_FIELDS}&order=updated_at.desc.nullslast&limit=300`, {
+        method: "GET",
+        headers: restHeaders(serviceRoleKey),
+      });
+    }
   }
 }
 
@@ -258,8 +296,6 @@ function validateSubscriptionPayload(payload, profiles) {
     status,
     start_date: cleanText(payload.startDate) || null,
     next_invoice_date: cleanText(payload.nextInvoiceDate) || null,
-    mollie_customer_id: cleanText(payload.mollieCustomerId) || null,
-    mollie_subscription_id: cleanText(payload.mollieSubscriptionId) || null,
     notes: cleanText(payload.notes),
     updated_at: new Date().toISOString(),
   };
@@ -390,6 +426,14 @@ function normalizeSubscription(row) {
     nextPaymentAt: cleanText(row.next_payment_at),
     canceledAt: cleanText(row.canceled_at),
     pausedAt: cleanText(row.paused_at),
+    mandateStatus: cleanText(row.mandate_status),
+    mandateReference: cleanText(row.mandate_reference),
+    mandateCheckoutUrl: cleanText(row.mandate_checkout_url),
+    mandatePaymentId: cleanText(row.mandate_payment_id),
+    mandatePaymentStatus: cleanText(row.mandate_payment_status),
+    subscriptionSyncedAt: cleanText(row.subscription_synced_at),
+    webhookLastEvent: cleanText(row.webhook_last_event),
+    webhookLastReceivedAt: cleanText(row.webhook_last_received_at),
     notes: cleanText(row.notes),
     createdAt: cleanText(row.created_at),
     updatedAt: cleanText(row.updated_at),

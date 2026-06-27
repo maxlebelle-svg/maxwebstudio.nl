@@ -173,3 +173,7 @@ Belangrijk:
 - De Admin CRM-module Onderhoud kan een Mollie Customer en Subscription activeren en toont customer id, subscription id, Mollie-status, laatste betaling en volgende betaling.
 - Het klantdashboard toont subscriptionstatus en volgende incasso wanneer deze data beschikbaar is.
 - Webhook synchronisatie, pauzeren, hervatten, opzeggen en retries zijn bewust nog niet gebouwd.
+- Fase 6.2 voegt mandate-onboarding en subscription webhook-synchronisatie toe.
+- Als een Mollie Customer nog geen geldige mandate heeft, maakt `admin-mollie-subscription.js` eerst een `sequenceType: first` betaling aan en slaat de mandate checkout URL op.
+- `mollie-webhook.js` herkent mandatebetalingen, maakt na succesvolle eerste betaling automatisch de subscription aan en synchroniseert subscriptionstatus, mandate status, laatste betaling en volgende incasso.
+- De SQL voor syncvelden staat in `/docs/supabase-mollie-subscriptions-sync.sql`.

@@ -44,6 +44,7 @@
           <article class="admin-card detail-card"><span>Status abonnement</span><strong id="billing-status">-</strong></article>
           <article class="admin-card detail-card"><span>Volgende incasso</span><strong id="billing-next-date">-</strong></article>
         </div>
+        <div class="portal-actions" id="billing-actions"></div>
         <div class="admin-table portal-invoice-table" id="client-invoice-list" role="table" aria-label="Laatste facturen" aria-live="polite">
           <div class="admin-table-row admin-table-head portal-invoice-row" role="row">
             <span>Factuur</span><span>Titel</span><span>Bedrag</span><span>Status</span><span>Betaalstatus</span><span>Vervaldatum</span><span>Acties</span>
@@ -178,6 +179,8 @@
           open: "Open",
           pending: "In behandeling",
           suspended: "Gepauzeerd",
+          valid: "Geldig",
+          invalid: "Ongeldig",
         }[normalize(value)] || value || "-";
       }
 
@@ -304,8 +307,24 @@
         const subscription = state.subscriptions.find((item) => normalize(item.status) === "active") || state.subscriptions[0] || null;
         document.querySelector("#billing-package").textContent = subscription?.package_name || state.profile?.package || "-";
         document.querySelector("#billing-amount").textContent = money(subscription?.monthly_amount);
-        document.querySelector("#billing-status").textContent = billingStatusLabel(subscription?.mollie_subscription_status || subscription?.status);
+        const mandateStatus = normalize(subscription?.mandate_status);
+        const subscriptionStatus = normalize(subscription?.mollie_subscription_status || subscription?.status);
+        const displayStatus = subscription?.mandate_checkout_url && mandateStatus !== "valid"
+          ? "Machtiging vereist"
+          : billingStatusLabel(subscriptionStatus);
+        document.querySelector("#billing-status").textContent = displayStatus;
         document.querySelector("#billing-next-date").textContent = formatDate(subscription?.next_payment_at || subscription?.next_invoice_date);
+        const billingActions = document.querySelector("#billing-actions");
+        billingActions.replaceChildren();
+        if (subscription?.mandate_checkout_url && mandateStatus !== "valid") {
+          const mandate = document.createElement("a");
+          mandate.className = "button primary";
+          mandate.href = subscription.mandate_checkout_url;
+          mandate.target = "_blank";
+          mandate.rel = "noopener";
+          mandate.textContent = "Voltooi machtiging";
+          billingActions.append(mandate);
+        }
 
         invoiceList.replaceChildren();
         if (!state.invoices.length) {
@@ -640,7 +659,7 @@
 
           let { data: subscriptionRows, error: subscriptionError } = await state.client
             .from("customer_subscriptions")
-            .select("id,package_name,billing_cycle,monthly_amount,status,start_date,next_invoice_date,mollie_subscription_status,last_payment_at,next_payment_at,updated_at")
+            .select("id,package_name,billing_cycle,monthly_amount,status,start_date,next_invoice_date,mollie_subscription_status,last_payment_at,next_payment_at,mandate_status,mandate_checkout_url,mandate_payment_status,subscription_synced_at,updated_at")
             .eq("customer_auth_user_id", user.id)
             .order("updated_at", { ascending: false })
             .limit(20);
@@ -650,12 +669,25 @@
             if (subscriptionSchemaErrorText.includes("column") || subscriptionSchemaErrorText.includes("schema cache")) {
               const fallback = await state.client
                 .from("customer_subscriptions")
-                .select("id,package_name,billing_cycle,monthly_amount,status,start_date,next_invoice_date,updated_at")
+                .select("id,package_name,billing_cycle,monthly_amount,status,start_date,next_invoice_date,mollie_subscription_status,last_payment_at,next_payment_at,updated_at")
                 .eq("customer_auth_user_id", user.id)
                 .order("updated_at", { ascending: false })
                 .limit(20);
               subscriptionRows = fallback.data;
               subscriptionError = fallback.error;
+              if (subscriptionError) {
+                const fallbackErrorText = `${subscriptionError.code || ""} ${subscriptionError.message || ""}`.toLowerCase();
+                if (fallbackErrorText.includes("column") || fallbackErrorText.includes("schema cache")) {
+                  const legacyFallback = await state.client
+                    .from("customer_subscriptions")
+                    .select("id,package_name,billing_cycle,monthly_amount,status,start_date,next_invoice_date,updated_at")
+                    .eq("customer_auth_user_id", user.id)
+                    .order("updated_at", { ascending: false })
+                    .limit(20);
+                  subscriptionRows = legacyFallback.data;
+                  subscriptionError = legacyFallback.error;
+                }
+              }
             }
           }
 
