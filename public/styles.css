@@ -5099,6 +5099,16 @@ h3 {
   align-items: start;
 }
 
+.website-stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 14px;
+}
+
+.website-filters {
+  grid-template-columns: minmax(220px, 1.35fr) repeat(3, minmax(150px, 1fr));
+  margin-bottom: 16px;
+}
+
 .website-detail-panel {
   position: sticky;
   top: 18px;
@@ -5109,14 +5119,51 @@ h3 {
     minmax(130px, 1fr)
     minmax(130px, 1fr)
     minmax(110px, 0.9fr)
-    minmax(160px, 1.2fr)
     minmax(90px, 0.65fr)
     minmax(90px, 0.65fr)
-    minmax(80px, 0.6fr)
-    minmax(150px, 1.1fr)
-    minmax(120px, 0.9fr)
+    minmax(110px, 0.75fr)
+    minmax(80px, 0.58fr)
+    minmax(120px, 0.8fr)
     minmax(120px, 0.8fr)
     minmax(150px, 1fr);
+}
+
+.website-detail-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.website-summary-card {
+  gap: 10px;
+  padding: 14px;
+}
+
+.website-summary-card strong {
+  color: var(--white);
+}
+
+.website-summary-card span {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.website-summary-card span span:last-child {
+  max-width: 58%;
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 800;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.website-quick-actions {
+  justify-content: flex-start;
+  padding-top: 4px;
 }
 
 .billing-row {

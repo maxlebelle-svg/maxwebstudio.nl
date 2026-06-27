@@ -184,6 +184,18 @@
             </div>
             <button class="button primary" id="new-website" type="button">Nieuwe website</button>
           </div>
+          <div class="admin-grid website-stats-grid" aria-label="Website statistieken">
+            <article class="admin-card detail-card"><span>Totaal websites</span><strong id="website-stat-total">0</strong></article>
+            <article class="admin-card detail-card"><span>Online</span><strong id="website-stat-online">0</strong></article>
+            <article class="admin-card detail-card"><span>In ontwikkeling</span><strong id="website-stat-development">0</strong></article>
+            <article class="admin-card detail-card"><span>Onderhoud</span><strong id="website-stat-maintenance">0</strong></article>
+          </div>
+          <div class="admin-filters website-filters" aria-label="Websites filteren">
+            <label for="website-search">Zoeken<input id="website-search" type="search" placeholder="Domein, bedrijf, klant of website" /></label>
+            <label for="website-status-filter">Status<select id="website-status-filter"><option value="">Alle statussen</option><option value="online">Online</option><option value="development">In ontwikkeling</option><option value="maintenance">Onderhoud</option><option value="waiting_client">Wachten op klant</option><option value="offline">Offline</option></select></label>
+            <label for="website-hosting-filter">Hostingpakket<select id="website-hosting-filter"><option value="">Alle hostingpakketten</option><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option><option value="Maatwerk">Maatwerk</option></select></label>
+            <label for="website-care-filter">Onderhoudspakket<select id="website-care-filter"><option value="">Alle onderhoudspakketten</option><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option><option value="Geen">Geen</option></select></label>
+          </div>
           <div class="website-operations-grid">
             <div class="admin-table website-table" id="website-list" role="table" aria-label="Websites" aria-live="polite"></div>
             <form class="admin-card admin-profile-form website-detail-panel" id="website-detail-form">
@@ -204,17 +216,28 @@
                 <label for="website-branch">Branch<input id="website-branch" type="text" disabled /></label>
                 <label for="website-netlify-project">Netlify projectnaam<input id="website-netlify-project" type="text" disabled /></label>
                 <label for="website-netlify-site-id">Netlify site ID<input id="website-netlify-site-id" type="text" disabled /></label>
-                <label for="website-status">Status<select id="website-status" disabled><option value="live">Live</option><option value="staging">Staging</option><option value="onderhoud">Onderhoud</option><option value="gearchiveerd">Gearchiveerd</option></select></label>
-                <label for="website-ssl-status">SSL status<select id="website-ssl-status" disabled><option value="active">Active</option><option value="pending">Pending</option><option value="inactive">Inactive</option><option value="unknown">Unknown</option></select></label>
-                <label for="website-hosting-status">Hostingstatus<select id="website-hosting-status" disabled><option value="active">Active</option><option value="paused">Paused</option><option value="inactive">Inactive</option><option value="unknown">Unknown</option></select></label>
+                <label for="website-status">Status<select id="website-status" disabled><option value="online">Online</option><option value="development">In ontwikkeling</option><option value="maintenance">Onderhoud</option><option value="waiting_client">Wachten op klant</option><option value="offline">Offline</option></select></label>
+                <label for="website-hosting-package">Hostingpakket<select id="website-hosting-package" disabled><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option><option value="Maatwerk">Maatwerk</option></select></label>
+                <label for="website-care-package">Onderhoudspakket<select id="website-care-package" disabled><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option><option value="Geen">Geen</option></select></label>
+                <label for="website-ssl-status">SSL status<select id="website-ssl-status" disabled><option value="active">Actief</option><option value="pending">In behandeling</option><option value="inactive">Niet actief</option><option value="unknown">Onbekend</option></select></label>
                 <label for="website-last-deploy">Laatste deploy<input id="website-last-deploy" type="datetime-local" disabled /></label>
-                <label for="website-last-checked">Laatste check<input id="website-last-checked" type="datetime-local" disabled /></label>
+                <label for="website-last-update">Laatste update<input id="website-last-update" type="datetime-local" disabled /></label>
+                <label for="website-open-tasks">Open taken<input id="website-open-tasks" type="number" min="0" step="1" disabled /></label>
                 <label class="admin-profile-wide" for="website-notes">Notities<textarea id="website-notes" disabled></textarea></label>
               </div>
+              <div class="website-detail-summary" id="website-detail-summary" aria-live="polite"></div>
               <div class="admin-profile-actions">
                 <button class="button primary" id="website-save" type="submit" disabled>Website opslaan</button>
-                <button class="button secondary danger" id="website-archive" type="button" disabled>Archiveren</button>
+                <button class="button secondary danger" id="website-archive" type="button" disabled>Verwijderen</button>
                 <p class="admin-form-message" id="website-detail-message" role="status"></p>
+              </div>
+              <div class="admin-profile-actions website-quick-actions" aria-label="Website acties">
+                <a class="button secondary is-disabled" id="website-open-live" href="#" target="_blank" rel="noopener" aria-disabled="true">Open website</a>
+                <a class="button secondary is-disabled" id="website-open-staging" href="#" target="_blank" rel="noopener" aria-disabled="true">Open staging</a>
+                <a class="button secondary is-disabled" id="website-open-github" href="#" target="_blank" rel="noopener" aria-disabled="true">Open GitHub</a>
+                <a class="button secondary is-disabled" id="website-open-netlify" href="#" target="_blank" rel="noopener" aria-disabled="true">Open Netlify</a>
+                <button class="button secondary" id="website-copy-domain" type="button" disabled>Kopieer domein</button>
+                <button class="button secondary" id="website-copy-github" type="button" disabled>Kopieer GitHub URL</button>
               </div>
             </form>
           </div>
@@ -416,6 +439,7 @@
         const updateEndpoint = "/.netlify/functions/update-change-request-status";
         const adminTokenStorageKey = "mws_admin_token";
         const crmCustomersStorageKey = "maxwebstudioCrmCustomers";
+        const managedSitesStorageKey = "maxwebstudioManagedSites";
         const completedStatuses = new Set(["afgerond"]);
         const statusLabels = {
           nieuw: "Nieuw",
@@ -430,10 +454,11 @@
           gearchiveerd: "Gearchiveerd",
         };
         const websiteStatusLabels = {
-          live: "Live",
-          staging: "Staging",
-          onderhoud: "Onderhoud",
-          gearchiveerd: "Gearchiveerd",
+          online: "Online",
+          development: "In ontwikkeling",
+          maintenance: "Onderhoud",
+          waiting_client: "Wachten op klant",
+          offline: "Offline",
         };
         const state = {
           adminToken: sessionStorage.getItem(adminTokenStorageKey) || "",
@@ -503,10 +528,12 @@
           netlifyProjectName: document.getElementById("website-netlify-project"),
           netlifySiteId: document.getElementById("website-netlify-site-id"),
           status: document.getElementById("website-status"),
+          hostingPackage: document.getElementById("website-hosting-package"),
+          carePackage: document.getElementById("website-care-package"),
           sslStatus: document.getElementById("website-ssl-status"),
-          hostingStatus: document.getElementById("website-hosting-status"),
           lastDeployAt: document.getElementById("website-last-deploy"),
-          lastCheckedAt: document.getElementById("website-last-checked"),
+          lastUpdateAt: document.getElementById("website-last-update"),
+          openTasks: document.getElementById("website-open-tasks"),
           notes: document.getElementById("website-notes"),
         };
         const websiteSave = document.getElementById("website-save");
@@ -514,6 +541,25 @@
         const websiteDetailState = document.getElementById("website-detail-state");
         const websiteDetailSubtitle = document.getElementById("website-detail-subtitle");
         const websiteDetailMessage = document.getElementById("website-detail-message");
+        const websiteDetailSummary = document.getElementById("website-detail-summary");
+        const websiteSearch = document.getElementById("website-search");
+        const websiteStatusFilter = document.getElementById("website-status-filter");
+        const websiteHostingFilter = document.getElementById("website-hosting-filter");
+        const websiteCareFilter = document.getElementById("website-care-filter");
+        const websiteStats = {
+          total: document.getElementById("website-stat-total"),
+          online: document.getElementById("website-stat-online"),
+          development: document.getElementById("website-stat-development"),
+          maintenance: document.getElementById("website-stat-maintenance"),
+        };
+        const websiteQuickActions = {
+          live: document.getElementById("website-open-live"),
+          staging: document.getElementById("website-open-staging"),
+          github: document.getElementById("website-open-github"),
+          netlify: document.getElementById("website-open-netlify"),
+          copyDomain: document.getElementById("website-copy-domain"),
+          copyGithub: document.getElementById("website-copy-github"),
+        };
         const websiteHealthList = document.getElementById("website-health-list");
         const websiteHealthRefresh = document.getElementById("website-health-refresh");
         const websiteHealthMessage = document.getElementById("website-health-message");
@@ -618,10 +664,10 @@
 
         function websiteStatusClass(value) {
           const status = normalize(value);
-          if (status === "live" || status === "active") return "status-active";
-          if (status === "staging" || status === "pending") return "status-prepared";
-          if (status === "onderhoud" || status === "paused") return "status-warning";
-          if (status === "gearchiveerd" || status === "inactive") return "status-attention";
+          if (status === "online" || status === "live" || status === "active") return "status-active";
+          if (status === "development" || status === "staging" || status === "pending") return "status-prepared";
+          if (status === "maintenance" || status === "onderhoud" || status === "paused" || status === "waiting client" || status === "wachten op klant") return "status-warning";
+          if (status === "offline" || status === "gearchiveerd" || status === "inactive") return "status-attention";
           return "status-planned";
         }
 
@@ -715,6 +761,115 @@
           return customer;
         }
 
+        function customerById(id) {
+          return state.customers.find((customer) => customer.id === id) || null;
+        }
+
+        function normalizeWebsiteStatus(value) {
+          const status = normalize(value);
+          if (status === "live") return "online";
+          if (status === "staging") return "development";
+          if (status === "onderhoud") return "maintenance";
+          if (status === "wacht op klant" || status === "waiting client") return "waiting_client";
+          if (status === "gearchiveerd" || status === "inactive") return "offline";
+          return value || "online";
+        }
+
+        function normalizeManagedSite(site = {}) {
+          const now = new Date().toISOString();
+          const createdAt = site.createdAt || now;
+          const profileId = site.profileId || site.customerId || "";
+          const customer = customerById(profileId);
+          const domain = String(site.domain || "").trim().replace(/^https?:\/\//, "").replace(/\/$/, "");
+          const liveUrl = String(site.liveUrl || (domain ? `https://${domain}` : "")).trim();
+          const status = normalizeWebsiteStatus(site.status);
+          const hostingPackage = site.hostingPackage || site.hostingStatus || "Plus";
+          const carePackage = site.carePackage || site.maintenancePackage || site.package || customer?.package || "Plus";
+          return {
+            id: site.id || createCrmId(),
+            profileId,
+            customerId: profileId,
+            customerAuthUserId: site.customerAuthUserId || customer?.authUserId || "",
+            customerName: customer?.name || site.customerName || "",
+            customerCompany: customer?.company || site.customerCompany || "",
+            customerEmail: customer?.email || site.customerEmail || "",
+            customerPhone: customer?.phone || site.customerPhone || "",
+            name: String(site.name || domain || "Nieuwe website").trim(),
+            domain,
+            liveUrl,
+            stagingUrl: String(site.stagingUrl || "").trim(),
+            githubRepoUrl: String(site.githubRepoUrl || "").trim(),
+            githubBranch: String(site.githubBranch || "main").trim(),
+            netlifyProjectName: String(site.netlifyProjectName || "").trim(),
+            netlifySiteId: String(site.netlifySiteId || "").trim(),
+            status,
+            hostingPackage,
+            hostingStatus: status === "offline" ? "inactive" : "active",
+            carePackage,
+            maintenancePackage: carePackage,
+            sslStatus: site.sslStatus || "unknown",
+            lastDeployAt: site.lastDeployAt || "",
+            lastUpdateAt: site.lastUpdateAt || site.lastCheckedAt || "",
+            lastCheckedAt: site.lastCheckedAt || site.lastUpdateAt || "",
+            openTasks: Number.isFinite(Number(site.openTasks)) ? Math.max(0, Number(site.openTasks)) : 0,
+            notes: String(site.notes || "").trim(),
+            metadata: site.metadata && typeof site.metadata === "object" ? site.metadata : {},
+            createdAt,
+            updatedAt: site.updatedAt || createdAt,
+          };
+        }
+
+        function readStoredWebsites() {
+          try {
+            const stored = JSON.parse(localStorage.getItem(managedSitesStorageKey) || "[]");
+            return Array.isArray(stored) ? stored.map(normalizeManagedSite) : [];
+          } catch (error) {
+            console.error("Managed websites could not be read", error);
+            return [];
+          }
+        }
+
+        function writeStoredWebsites(websites) {
+          localStorage.setItem(managedSitesStorageKey, JSON.stringify(websites.map(normalizeManagedSite)));
+        }
+
+        function validateWebsitePayload(payload) {
+          if (!payload.profileId) return "Kies eerst een klant.";
+          if (!String(payload.name || "").trim()) return "Vul een websitetitel in.";
+          if (!String(payload.domain || "").trim()) return "Vul een domeinnaam in.";
+          if (payload.liveUrl && !/^https?:\/\//i.test(payload.liveUrl)) return "Live URL moet beginnen met http:// of https://.";
+          if (payload.stagingUrl && !/^https?:\/\//i.test(payload.stagingUrl)) return "Staging URL moet beginnen met http:// of https://.";
+          if (payload.githubRepoUrl && !/^https?:\/\//i.test(payload.githubRepoUrl)) return "GitHub URL moet beginnen met http:// of https://.";
+          return "";
+        }
+
+        function saveWebsiteLocally(payload) {
+          const websites = readStoredWebsites();
+          const existingIndex = websites.findIndex((website) => website.id === payload.id);
+          const existing = existingIndex >= 0 ? websites[existingIndex] : {};
+          const now = new Date().toISOString();
+          const website = normalizeManagedSite({
+            ...existing,
+            ...payload,
+            id: payload.id || existing.id || createCrmId(),
+            createdAt: existing.createdAt || now,
+            updatedAt: now,
+          });
+          const validationError = validateWebsitePayload(website);
+          if (validationError) throw new Error(validationError);
+          if (existingIndex >= 0) websites[existingIndex] = website;
+          else websites.unshift(website);
+          writeStoredWebsites(websites);
+          return website;
+        }
+
+        function deleteWebsiteLocally(id) {
+          const websites = readStoredWebsites();
+          const nextWebsites = websites.filter((website) => website.id !== id);
+          writeStoredWebsites(nextWebsites);
+          return nextWebsites;
+        }
+
         function toDateInput(value) {
           if (!value) return "";
           const date = new Date(value);
@@ -782,7 +937,7 @@
         }
 
         function updateMetrics() {
-          const liveWebsites = state.websites.filter((website) => website.status === "live").length;
+          const liveWebsites = state.websites.filter((website) => website.status === "online").length;
           const hostingActive = state.websites.filter((website) => website.hostingStatus === "active").length;
           const sslActive = state.websites.filter((website) => website.sslStatus === "active").length;
 
@@ -791,6 +946,10 @@
           liveWebsitesMetric.textContent = String(liveWebsites);
           hostingActiveMetric.textContent = String(hostingActive);
           sslActiveMetric.textContent = String(sslActive);
+          websiteStats.total.textContent = String(state.websites.length);
+          websiteStats.online.textContent = String(liveWebsites);
+          websiteStats.development.textContent = String(state.websites.filter((website) => website.status === "development").length);
+          websiteStats.maintenance.textContent = String(state.websites.filter((website) => website.status === "maintenance").length);
         }
 
         async function loadDashboardMetrics(showLoading = false) {
@@ -1240,7 +1399,9 @@
             field.disabled = !enabled;
           });
           websiteSave.disabled = !enabled;
-          websiteArchive.disabled = !enabled || !state.selectedWebsiteId || selectedWebsite()?.status === "gearchiveerd";
+          websiteArchive.disabled = !enabled || !state.selectedWebsiteId;
+          websiteQuickActions.copyDomain.disabled = !enabled || !websiteFields.domain.value;
+          websiteQuickActions.copyGithub.disabled = !enabled || !websiteFields.githubRepoUrl.value;
         }
 
         function resetWebsiteForm() {
@@ -1248,14 +1409,87 @@
           websiteDetailForm.reset();
           populateWebsiteProfileOptions();
           websiteFields.githubBranch.value = "main";
-          websiteFields.status.value = "live";
+          websiteFields.status.value = "online";
+          websiteFields.hostingPackage.value = "Plus";
+          websiteFields.carePackage.value = "Plus";
           websiteFields.sslStatus.value = "unknown";
-          websiteFields.hostingStatus.value = "active";
+          websiteFields.openTasks.value = "0";
           websiteDetailState.textContent = "Nieuw";
           websiteDetailState.className = "status-badge status-prepared";
           websiteDetailSubtitle.textContent = "Nieuwe website koppelen aan een klant.";
+          renderWebsiteDetailSummary(null);
+          updateWebsiteQuickActions(null);
           setWebsiteMessage("", "");
           enableWebsiteFields(true);
+        }
+
+        function setActionLink(link, url) {
+          link.href = url || "#";
+          link.classList.toggle("is-disabled", !url);
+          link.toggleAttribute("aria-disabled", !url);
+        }
+
+        function netlifyUrl(website) {
+          const netlifySlug = website?.netlifyProjectName || website?.netlifySiteId || "";
+          return netlifySlug ? `https://app.netlify.com/sites/${encodeURIComponent(netlifySlug)}/overview` : "";
+        }
+
+        function updateWebsiteQuickActions(website) {
+          setActionLink(websiteQuickActions.live, website?.liveUrl || "");
+          setActionLink(websiteQuickActions.staging, website?.stagingUrl || "");
+          setActionLink(websiteQuickActions.github, website?.githubRepoUrl || "");
+          setActionLink(websiteQuickActions.netlify, website ? netlifyUrl(website) : "");
+          websiteQuickActions.copyDomain.disabled = !website?.domain;
+          websiteQuickActions.copyGithub.disabled = !website?.githubRepoUrl;
+        }
+
+        function addWebsiteSummaryCard(title, items) {
+          const card = document.createElement("article");
+          card.className = "admin-card website-summary-card";
+          card.append(createCell(title, "strong"));
+          items.forEach(([label, value]) => {
+            const row = document.createElement("span");
+            row.append(createCell(label), createCell(value));
+            card.append(row);
+          });
+          websiteDetailSummary.append(card);
+        }
+
+        function renderWebsiteDetailSummary(website) {
+          websiteDetailSummary.replaceChildren();
+          if (!website) {
+            addWebsiteSummaryCard("Algemeen", [["Status", "Nog niet opgeslagen"], ["Domein", "-"], ["Live", "-"], ["Staging", "-"]]);
+            return;
+          }
+          addWebsiteSummaryCard("Algemeen", [
+            ["Website-ID", website.id || "-"],
+            ["Domein", website.domain || "-"],
+            ["Status", websiteStatusLabels[website.status] || website.status || "-"],
+            ["Live", website.liveUrl || "-"],
+            ["Staging", website.stagingUrl || "-"],
+            ["Aangemaakt op", formatDate(website.createdAt)],
+            ["Laatste wijziging", formatDate(website.updatedAt)],
+          ]);
+          addWebsiteSummaryCard("Techniek", [
+            ["GitHub", website.githubRepoUrl || "-"],
+            ["Branch", website.githubBranch || "main"],
+            ["Netlify", website.netlifyProjectName || website.netlifySiteId || "-"],
+            ["SSL", website.sslStatus || "unknown"],
+            ["Laatste deploy", formatDate(website.lastDeployAt)],
+          ]);
+          addWebsiteSummaryCard("Onderhoud", [
+            ["Hostingpakket", website.hostingPackage || "-"],
+            ["Onderhoudspakket", website.carePackage || "-"],
+            ["Laatste update", formatDate(website.lastUpdateAt)],
+            ["Open taken", String(website.openTasks || 0)],
+          ]);
+          addWebsiteSummaryCard("Klant", [
+            ["Klant-ID", website.profileId || "-"],
+            ["Naam", website.customerName || "-"],
+            ["Bedrijf", website.customerCompany || "-"],
+            ["Telefoon", website.customerPhone || "-"],
+            ["E-mail", website.customerEmail || "-"],
+          ]);
         }
 
         function selectWebsite(id) {
@@ -1272,15 +1506,19 @@
           websiteFields.githubBranch.value = website.githubBranch || "main";
           websiteFields.netlifyProjectName.value = website.netlifyProjectName || "";
           websiteFields.netlifySiteId.value = website.netlifySiteId || "";
-          websiteFields.status.value = website.status || "live";
+          websiteFields.status.value = website.status || "online";
+          websiteFields.hostingPackage.value = website.hostingPackage || "Plus";
+          websiteFields.carePackage.value = website.carePackage || "Plus";
           websiteFields.sslStatus.value = website.sslStatus || "unknown";
-          websiteFields.hostingStatus.value = website.hostingStatus || "active";
           websiteFields.lastDeployAt.value = toDateTimeInput(website.lastDeployAt);
-          websiteFields.lastCheckedAt.value = toDateTimeInput(website.lastCheckedAt);
+          websiteFields.lastUpdateAt.value = toDateTimeInput(website.lastUpdateAt);
+          websiteFields.openTasks.value = String(website.openTasks || 0);
           websiteFields.notes.value = website.notes || "";
           websiteDetailState.textContent = websiteStatusLabels[website.status] || website.status || "Website";
           websiteDetailState.className = `status-badge ${websiteStatusClass(website.status)}`;
           websiteDetailSubtitle.textContent = `${website.customerCompany || website.customerName || "Klant"} - ${website.name || "Website"}`;
+          renderWebsiteDetailSummary(website);
+          updateWebsiteQuickActions(website);
           setWebsiteMessage("", "");
           enableWebsiteFields(true);
         }
@@ -1298,10 +1536,12 @@
             netlifyProjectName: websiteFields.netlifyProjectName.value,
             netlifySiteId: websiteFields.netlifySiteId.value,
             status: websiteFields.status.value,
+            hostingPackage: websiteFields.hostingPackage.value,
+            carePackage: websiteFields.carePackage.value,
             sslStatus: websiteFields.sslStatus.value,
-            hostingStatus: websiteFields.hostingStatus.value,
             lastDeployAt: websiteFields.lastDeployAt.value,
-            lastCheckedAt: websiteFields.lastCheckedAt.value,
+            lastUpdateAt: websiteFields.lastUpdateAt.value,
+            openTasks: websiteFields.openTasks.value,
             notes: websiteFields.notes.value,
             ...extra,
           };
@@ -1314,11 +1554,12 @@
           setWebsiteMessage("", "");
 
           try {
-            const data = await postCustomer({ action: "save_website", ...websitePayload() });
+            const website = saveWebsiteLocally(websitePayload());
             await loadCRMData(false);
-            state.selectedWebsiteId = data.website?.id || state.selectedWebsiteId;
+            state.selectedWebsiteId = website.id;
             if (state.selectedWebsiteId) selectWebsite(state.selectedWebsiteId);
             setWebsiteMessage("Website opgeslagen.", "success");
+            setAdminAccessMessage("Website opgeslagen in lokale website-opslag.", "success");
           } catch (error) {
             setWebsiteMessage(error.message || "Website kon niet worden opgeslagen.", "error");
           } finally {
@@ -1330,23 +1571,23 @@
         async function archiveWebsite() {
           const website = selectedWebsite();
           if (!website) return;
-          const confirmed = window.confirm("Weet je zeker dat je deze website wilt archiveren?");
+          const confirmed = window.confirm("Weet je zeker dat je deze website wilt verwijderen?");
           if (!confirmed) return;
           websiteArchive.disabled = true;
-          websiteArchive.textContent = "Archiveren...";
+          websiteArchive.textContent = "Verwijderen...";
           setWebsiteMessage("", "");
 
           try {
-            const data = await postCustomer({ action: "archive_website", id: website.id });
+            deleteWebsiteLocally(website.id);
             await loadCRMData(false);
-            state.selectedWebsiteId = data.website?.id || website.id;
-            selectWebsite(state.selectedWebsiteId);
-            setWebsiteMessage("Website gearchiveerd.", "success");
+            resetWebsiteForm();
+            setWebsiteMessage("Website verwijderd.", "success");
+            setAdminAccessMessage("Website verwijderd uit lokale website-opslag.", "success");
           } catch (error) {
-            setWebsiteMessage(error.message || "Website kon niet worden gearchiveerd.", "error");
+            setWebsiteMessage(error.message || "Website kon niet worden verwijderd.", "error");
           } finally {
-            websiteArchive.textContent = "Archiveren";
-            websiteArchive.disabled = selectedWebsite()?.status === "gearchiveerd";
+            websiteArchive.textContent = "Verwijderen";
+            websiteArchive.disabled = !selectedWebsite();
           }
         }
 
@@ -1523,19 +1764,54 @@
           }
         }
 
+        function filteredWebsites() {
+          const query = normalize(websiteSearch.value);
+          const status = websiteStatusFilter.value;
+          const hosting = websiteHostingFilter.value;
+          const care = websiteCareFilter.value;
+          return state.websites.filter((website) => {
+            const searchable = normalize([website.domain, website.customerCompany, website.customerName, website.name, website.liveUrl].join(" "));
+            const matchesQuery = !query || searchable.includes(query);
+            const matchesStatus = !status || website.status === status;
+            const matchesHosting = !hosting || website.hostingPackage === hosting;
+            const matchesCare = !care || website.carePackage === care;
+            return matchesQuery && matchesStatus && matchesHosting && matchesCare;
+          });
+        }
+
+        function copyText(value, successMessage) {
+          if (!value) return;
+          if (navigator.clipboard?.writeText) {
+            navigator.clipboard.writeText(value).then(() => setWebsiteMessage(successMessage, "success")).catch(() => setWebsiteMessage("Kopieren is niet gelukt.", "error"));
+            return;
+          }
+          const field = document.createElement("textarea");
+          field.value = value;
+          document.body.append(field);
+          field.select();
+          document.execCommand("copy");
+          field.remove();
+          setWebsiteMessage(successMessage, "success");
+        }
+
         function renderWebsites() {
-          const websites = state.websites;
+          const websites = filteredWebsites();
           websiteList.replaceChildren();
           populateWebsiteProfileOptions();
 
+          if (!state.websites.length) {
+            renderState(websiteList, "Nog geen websites", "Maak de eerste website aan en koppel deze aan een klant.", "Leeg");
+            return;
+          }
+
           if (!websites.length) {
-            renderState(websiteList, "Geen websites gevonden", "Maak de eerste websitekoppeling aan in het detailpaneel.", "Leeg");
+            renderState(websiteList, "Geen websites gevonden", "Pas je zoekopdracht of filters aan.", "Geen match");
             return;
           }
 
           const head = document.createElement("div");
           head.className = "admin-table-row admin-table-head website-row";
-          ["Klant", "Titel", "Domein", "Live URL", "Status", "Hosting", "SSL", "GitHub", "Netlify", "Deploy", "Acties"].forEach((label) => head.append(createCell(label)));
+          ["Klant", "Website", "Domein", "Status", "Hosting", "Onderhoud", "SSL", "Deploy", "Update", "Acties"].forEach((label) => head.append(createCell(label)));
           websiteList.append(head);
 
           websites.forEach((website) => {
@@ -1577,28 +1853,28 @@
             openNetlify.addEventListener("click", (event) => {
               if (!netlifySlug) event.preventDefault();
             });
+            const copyDomain = document.createElement("button");
+            copyDomain.className = "button secondary";
+            copyDomain.type = "button";
+            copyDomain.textContent = "Kopieer domein";
+            copyDomain.disabled = !website.domain;
+            copyDomain.addEventListener("click", () => copyText(website.domain, "Domeinnaam gekopieerd."));
             const edit = document.createElement("button");
             edit.className = "button secondary";
             edit.type = "button";
             edit.textContent = "Bewerken";
             edit.addEventListener("click", () => selectWebsite(website.id));
-            const linkCustomer = document.createElement("button");
-            linkCustomer.className = "button secondary";
-            linkCustomer.type = "button";
-            linkCustomer.textContent = "Koppelen";
-            linkCustomer.addEventListener("click", () => selectWebsite(website.id));
-            actions.append(openWebsite, openGithub, openNetlify, edit, linkCustomer);
+            actions.append(openWebsite, openGithub, openNetlify, copyDomain, edit);
             row.append(
               createCell(website.customerCompany || website.customerName || "Geen klant", "strong"),
               createCell(website.name || "-"),
               createCell(website.domain || "-"),
-              createCell(website.liveUrl || "-"),
               createBadge(websiteStatusLabels[website.status] || website.status, websiteStatusClass(website.status)),
-              createBadge(website.hostingStatus || "unknown", websiteStatusClass(website.hostingStatus)),
+              createBadge(website.hostingPackage || "-", "status-prepared"),
+              createBadge(website.carePackage || "-", "status-planned"),
               createBadge(website.sslStatus || "unknown", websiteStatusClass(website.sslStatus)),
-              createCell(website.githubRepoUrl || "-"),
-              createCell(website.netlifyProjectName || website.netlifySiteId || "-"),
               createCell(formatDate(website.lastDeployAt)),
+              createCell(formatDate(website.lastUpdateAt)),
               actions
             );
             websiteList.append(row);
@@ -2493,11 +2769,13 @@
             state.customers = readStoredCustomers();
             state.profiles = state.customers;
             state.authUsers = [];
+            state.websites = readStoredWebsites();
             renderCustomers();
             renderWebsites();
             renderCareOverview();
             updateMetrics();
             if (state.selectedCustomerId && selectedCustomer()) selectCustomer(state.selectedCustomerId);
+            if (state.selectedWebsiteId && selectedWebsite()) selectWebsite(state.selectedWebsiteId);
             populateWebsiteProfileOptions();
             if (state.adminToken) {
               await loadDashboardMetrics(false);
@@ -2543,6 +2821,20 @@
         invoiceForm.addEventListener("submit", saveInvoice);
         invoiceClearPdf.addEventListener("click", clearInvoicePdfPath);
         websiteArchive.addEventListener("click", archiveWebsite);
+        [websiteSearch, websiteStatusFilter, websiteHostingFilter, websiteCareFilter].forEach((filter) => filter.addEventListener("input", renderWebsites));
+        [websiteQuickActions.live, websiteQuickActions.staging, websiteQuickActions.github, websiteQuickActions.netlify].forEach((link) => {
+          link.addEventListener("click", (event) => {
+            if (event.currentTarget.getAttribute("aria-disabled") === "true") event.preventDefault();
+          });
+        });
+        websiteQuickActions.copyDomain.addEventListener("click", () => {
+          const website = selectedWebsite();
+          if (website) copyText(website.domain, "Domeinnaam gekopieerd.");
+        });
+        websiteQuickActions.copyGithub.addEventListener("click", () => {
+          const website = selectedWebsite();
+          if (website) copyText(website.githubRepoUrl, "GitHub URL gekopieerd.");
+        });
         detailLinkLogin.addEventListener("click", linkLogin);
         detailResetPassword.addEventListener("click", sendPasswordReset);
         detailSendInvite.addEventListener("click", sendInviteFromDetail);
