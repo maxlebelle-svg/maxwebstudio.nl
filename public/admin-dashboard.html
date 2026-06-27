@@ -173,6 +173,8 @@
                 <button class="button secondary" id="detail-start-project" type="button" disabled>Project starten</button>
                 <button class="button secondary" id="detail-add-file" type="button" disabled>Bestand toevoegen</button>
                 <button class="button secondary" id="detail-view-files" type="button" disabled>Bestanden bekijken</button>
+                <button class="button secondary" id="detail-create-invoice" type="button" disabled>Factuur aanmaken</button>
+                <button class="button secondary" id="detail-view-invoices" type="button" disabled>Facturen bekijken</button>
                 <button class="button secondary danger" id="detail-archive" type="button" disabled>Archiveren</button>
               </div>
               <p class="admin-form-message" id="customer-detail-message" role="status"></p>
@@ -243,6 +245,8 @@
                 <button class="button secondary" id="website-copy-domain" type="button" disabled>Kopieer domein</button>
                 <button class="button secondary" id="website-copy-github" type="button" disabled>Kopieer GitHub URL</button>
                 <button class="button secondary" id="website-start-project" type="button" disabled>Project koppelen/starten</button>
+                <button class="button secondary" id="website-create-invoice" type="button" disabled>Factuur aanmaken</button>
+                <button class="button secondary" id="website-view-invoices" type="button" disabled>Facturen bekijken</button>
               </div>
             </form>
           </div>
@@ -307,6 +311,8 @@
                 <button class="button primary" id="project-save" type="submit" disabled>Project opslaan</button>
                 <button class="button secondary" id="project-add-file" type="button" disabled>Bestand toevoegen</button>
                 <button class="button secondary" id="project-view-files" type="button" disabled>Bestanden bekijken</button>
+                <button class="button secondary" id="project-create-invoice" type="button" disabled>Factuur aanmaken</button>
+                <button class="button secondary" id="project-view-invoices" type="button" disabled>Facturen bekijken</button>
                 <button class="button secondary danger" id="project-delete" type="button" disabled>Verwijderen</button>
                 <p class="admin-form-message" id="project-detail-message" role="status"></p>
               </div>
@@ -423,6 +429,21 @@
             <div class="admin-section-heading">
               <div><p class="section-kicker">Facturen</p><h2>Facturatie</h2></div>
               <button class="button primary" id="new-invoice" type="button">Nieuwe factuur</button>
+            </div>
+            <div class="admin-grid invoice-stats-grid" aria-label="Factuur statistieken">
+              <article class="admin-card detail-card"><span>Totaal gefactureerd</span><strong id="invoice-stat-total">€ 0,00</strong></article>
+              <article class="admin-card detail-card"><span>Openstaand</span><strong id="invoice-stat-open">€ 0,00</strong></article>
+              <article class="admin-card detail-card"><span>Betaald</span><strong id="invoice-stat-paid">€ 0,00</strong></article>
+              <article class="admin-card detail-card"><span>Verlopen</span><strong id="invoice-stat-expired">0</strong></article>
+              <article class="admin-card detail-card"><span>Aantal facturen</span><strong id="invoice-stat-count">0</strong></article>
+            </div>
+            <div class="admin-filters invoice-filters" aria-label="Facturen filteren">
+              <label for="invoice-search">Zoeken<input id="invoice-search" type="search" placeholder="Factuurnummer, klant, project, website of type" /></label>
+              <label for="invoice-status-filter">Status<select id="invoice-status-filter"><option value="">Alle statussen</option><option value="concept">Concept</option><option value="verzonden">Verzonden</option><option value="betaald">Betaald</option><option value="verlopen">Verlopen</option><option value="geannuleerd">Geannuleerd</option></select></label>
+              <label for="invoice-type-filter">Type<select id="invoice-type-filter"><option value="">Alle types</option><option value="Website">Website</option><option value="Aanbetaling">Aanbetaling</option><option value="Restbetaling">Restbetaling</option><option value="Hosting & onderhoud">Hosting & onderhoud</option><option value="Maatwerk">Maatwerk</option><option value="Extra pagina's">Extra pagina's</option><option value="SEO">SEO</option><option value="Overig">Overig</option></select></label>
+              <label for="invoice-customer-filter">Klant<select id="invoice-customer-filter"><option value="">Alle klanten</option></select></label>
+              <label for="invoice-project-filter">Project<select id="invoice-project-filter"><option value="">Alle projecten</option></select></label>
+              <label for="invoice-website-filter">Website<select id="invoice-website-filter"><option value="">Alle websites</option></select></label>
             </div>
             <div class="admin-table billing-table" id="invoice-list" role="table" aria-label="Facturen" aria-live="polite"></div>
           </section>
@@ -541,18 +562,41 @@
           <input id="invoice-id" type="hidden" />
           <div class="admin-profile-fields">
             <label class="admin-profile-wide" for="invoice-profile">Klant<select id="invoice-profile" required></select></label>
+            <label class="admin-profile-wide" for="invoice-website">Website<select id="invoice-website"></select></label>
+            <label class="admin-profile-wide" for="invoice-project">Project<select id="invoice-project"></select></label>
             <label for="invoice-number">Factuurnummer<input id="invoice-number" type="text" /></label>
+            <label for="invoice-type">Factuurtype<select id="invoice-type"><option value="Website">Website</option><option value="Aanbetaling">Aanbetaling</option><option value="Restbetaling">Restbetaling</option><option value="Hosting & onderhoud">Hosting & onderhoud</option><option value="Maatwerk">Maatwerk</option><option value="Extra pagina's">Extra pagina's</option><option value="SEO">SEO</option><option value="Overig">Overig</option></select></label>
             <label for="invoice-title">Titel<input id="invoice-title" type="text" required /></label>
-            <label for="invoice-amount">Bedrag<input id="invoice-amount" type="number" min="0" step="0.01" /></label>
-            <label for="invoice-status">Status<select id="invoice-status"><option value="draft">Concept</option><option value="sent">Verzonden</option><option value="paid">Betaald</option><option value="expired">Verlopen</option><option value="canceled">Geannuleerd</option><option value="failed">Mislukt</option></select></label>
+            <label for="invoice-status">Status<select id="invoice-status"><option value="concept">Concept</option><option value="verzonden">Verzonden</option><option value="betaald">Betaald</option><option value="verlopen">Verlopen</option><option value="geannuleerd">Geannuleerd</option></select></label>
+            <label for="invoice-date">Factuurdatum<input id="invoice-date" type="date" /></label>
             <label for="invoice-due">Vervaldatum<input id="invoice-due" type="date" /></label>
             <label for="invoice-paid-at">Betaaldatum<input id="invoice-paid-at" type="datetime-local" /></label>
-            <label for="invoice-pdf">PDF pad<input id="invoice-pdf" type="text" placeholder="2026/klant/factuur-2026-001.pdf" /><small>Upload de PDF handmatig naar de private Supabase bucket invoice-pdfs en vul hier alleen het objectpad in.</small></label>
+            <label class="admin-profile-wide" for="invoice-payment-link">Demo-betaallink<input id="invoice-payment-link" type="text" placeholder="/betalen.html?invoiceId=..." /></label>
+            <label class="admin-profile-wide" for="invoice-pdf">PDF pad<input id="invoice-pdf" type="text" placeholder="2026/klant/factuur-2026-001.pdf" /><small>Upload de PDF handmatig naar de private Supabase bucket invoice-pdfs en vul hier alleen het objectpad in.</small></label>
             <label class="admin-profile-wide" for="invoice-notes">Notities<textarea id="invoice-notes"></textarea></label>
+          </div>
+          <div class="invoice-line-editor">
+            <div class="project-work-heading">
+              <strong>Factuurregels</strong>
+              <select id="invoice-preset"><option value="">Preset toevoegen</option></select>
+            </div>
+            <div class="invoice-line-list" id="invoice-line-list"></div>
+            <button class="button secondary" id="invoice-add-line" type="button">Regel toevoegen</button>
+          </div>
+          <div class="invoice-totals-card">
+            <span>Subtotaal ex. btw<strong id="invoice-subtotal">€ 0,00</strong></span>
+            <span>BTW<strong id="invoice-vat">€ 0,00</strong></span>
+            <span>Totaal incl. btw<strong id="invoice-total">€ 0,00</strong></span>
           </div>
           <div class="admin-profile-actions">
             <button class="button primary" id="invoice-save" type="submit">Factuur opslaan</button>
+            <button class="button secondary" id="invoice-mark-sent" type="button">Zet op verzonden</button>
+            <button class="button secondary" id="invoice-mark-paid" type="button">Markeer betaald</button>
+            <button class="button secondary" id="invoice-demo-payment" type="button">Verstuur betaalverzoek demo</button>
+            <a class="button secondary is-disabled" id="invoice-open-payment" href="#" target="_blank" rel="noopener" aria-disabled="true">Open betaalpagina</a>
+            <button class="button secondary" id="invoice-copy-payment" type="button">Kopieer betaalverzoek</button>
             <button class="button secondary" id="invoice-clear-pdf" type="button">PDF-pad verwijderen</button>
+            <button class="button secondary danger" id="invoice-cancel" type="button">Archiveer/annuleer</button>
             <p class="admin-form-message" id="invoice-message" role="status"></p>
           </div>
         </form>
@@ -577,6 +621,7 @@
         const managedSitesStorageKey = "maxwebstudioManagedSites";
         const projectsStorageKey = "maxwebstudioProjects";
         const filesStorageKey = "maxwebstudioFiles";
+        const invoicesStorageKey = "maxwebstudioInvoices";
         const completedStatuses = new Set(["afgerond"]);
         const statusLabels = {
           nieuw: "Nieuw",
@@ -614,6 +659,31 @@
           goedgekeurd: "Goedgekeurd",
           gearchiveerd: "Gearchiveerd",
         };
+        const invoiceStatusLabels = {
+          concept: "Concept",
+          verzonden: "Verzonden",
+          betaald: "Betaald",
+          verlopen: "Verlopen",
+          geannuleerd: "Geannuleerd",
+        };
+        const invoicePresets = [
+          { group: "Website totaal", label: "Starter Site", description: "Starter Site", price: 495 },
+          { group: "Website totaal", label: "Business Website", description: "Business Website", price: 995 },
+          { group: "Website totaal", label: "Premium Growth", description: "Premium Growth", price: 1750 },
+          { group: "Aanbetaling", label: "Aanbetaling Starter Site", description: "Aanbetaling Starter Site", price: 150 },
+          { group: "Aanbetaling", label: "Aanbetaling Business Website", description: "Aanbetaling Business Website", price: 300 },
+          { group: "Aanbetaling", label: "Aanbetaling Premium Growth", description: "Aanbetaling Premium Growth", price: 500 },
+          { group: "Restbetaling", label: "Restbetaling Starter Site", description: "Restbetaling Starter Site", price: 345 },
+          { group: "Restbetaling", label: "Restbetaling Business Website", description: "Restbetaling Business Website", price: 695 },
+          { group: "Restbetaling", label: "Restbetaling Premium Growth", description: "Restbetaling Premium Growth", price: 1250 },
+          { group: "Onderhoud & hosting", label: "Geen onderhoud", description: "Geen onderhoud", price: 0 },
+          { group: "Onderhoud & hosting", label: "Care Basic", description: "Care Basic - Hosting, SSL, back-up en technische monitoring", price: 19.95 },
+          { group: "Onderhoud & hosting", label: "Care Plus", description: "Care Plus - Basic + 15 minuten kleine wijzigingen per maand", price: 49 },
+          { group: "Onderhoud & hosting", label: "Care Growth", description: "Care Growth - Plus + maandelijkse check en conversieadvies", price: 99 },
+          { group: "Extra's", label: "Extra pagina", description: "Extra pagina", price: 150 },
+          { group: "Extra's", label: "Maatwerk", description: "Maatwerk", price: 0 },
+          { group: "Extra's", label: "SEO basis optimalisatie", description: "SEO basis optimalisatie", price: 0 },
+        ];
         const defaultProjectChecklist = [
           "Logo ontvangen",
           "Huisstijl/kleurwensen ontvangen",
@@ -742,6 +812,8 @@
           copyDomain: document.getElementById("website-copy-domain"),
           copyGithub: document.getElementById("website-copy-github"),
           startProject: document.getElementById("website-start-project"),
+          createInvoice: document.getElementById("website-create-invoice"),
+          viewInvoices: document.getElementById("website-view-invoices"),
         };
         const projectList = document.getElementById("project-list");
         const projectDetailForm = document.getElementById("project-detail-form");
@@ -759,6 +831,8 @@
         const projectSave = document.getElementById("project-save");
         const projectAddFile = document.getElementById("project-add-file");
         const projectViewFiles = document.getElementById("project-view-files");
+        const projectCreateInvoice = document.getElementById("project-create-invoice");
+        const projectViewInvoices = document.getElementById("project-view-invoices");
         const projectDelete = document.getElementById("project-delete");
         const projectDetailState = document.getElementById("project-detail-state");
         const projectDetailSubtitle = document.getElementById("project-detail-subtitle");
@@ -827,6 +901,48 @@
         const subscriptionSave = document.getElementById("subscription-save");
         const invoiceSave = document.getElementById("invoice-save");
         const invoiceClearPdf = document.getElementById("invoice-clear-pdf");
+        const invoiceFields = {
+          id: document.getElementById("invoice-id"),
+          profile: document.getElementById("invoice-profile"),
+          website: document.getElementById("invoice-website"),
+          project: document.getElementById("invoice-project"),
+          number: document.getElementById("invoice-number"),
+          type: document.getElementById("invoice-type"),
+          title: document.getElementById("invoice-title"),
+          status: document.getElementById("invoice-status"),
+          invoiceDate: document.getElementById("invoice-date"),
+          dueDate: document.getElementById("invoice-due"),
+          paidAt: document.getElementById("invoice-paid-at"),
+          paymentLink: document.getElementById("invoice-payment-link"),
+          pdf: document.getElementById("invoice-pdf"),
+          notes: document.getElementById("invoice-notes"),
+        };
+        const invoiceLineList = document.getElementById("invoice-line-list");
+        const invoicePreset = document.getElementById("invoice-preset");
+        const invoiceAddLine = document.getElementById("invoice-add-line");
+        const invoiceSubtotal = document.getElementById("invoice-subtotal");
+        const invoiceVat = document.getElementById("invoice-vat");
+        const invoiceTotal = document.getElementById("invoice-total");
+        const invoiceMarkSent = document.getElementById("invoice-mark-sent");
+        const invoiceMarkPaid = document.getElementById("invoice-mark-paid");
+        const invoiceDemoPayment = document.getElementById("invoice-demo-payment");
+        const invoiceOpenPayment = document.getElementById("invoice-open-payment");
+        const invoiceCopyPayment = document.getElementById("invoice-copy-payment");
+        const invoiceCancel = document.getElementById("invoice-cancel");
+        const invoiceSearch = document.getElementById("invoice-search");
+        const invoiceStatusFilter = document.getElementById("invoice-status-filter");
+        const invoiceTypeFilter = document.getElementById("invoice-type-filter");
+        const invoiceCustomerFilter = document.getElementById("invoice-customer-filter");
+        const invoiceProjectFilter = document.getElementById("invoice-project-filter");
+        const invoiceWebsiteFilter = document.getElementById("invoice-website-filter");
+        const invoiceStats = {
+          total: document.getElementById("invoice-stat-total"),
+          open: document.getElementById("invoice-stat-open"),
+          paid: document.getElementById("invoice-stat-paid"),
+          expired: document.getElementById("invoice-stat-expired"),
+          count: document.getElementById("invoice-stat-count"),
+        };
+        let currentInvoiceLines = [];
         const customerSearch = document.getElementById("customer-search");
         const customerStatusFilter = document.getElementById("customer-status-filter");
         const customerPackageFilter = document.getElementById("customer-package-filter");
@@ -851,6 +967,8 @@
         const detailStartProject = document.getElementById("detail-start-project");
         const detailAddFile = document.getElementById("detail-add-file");
         const detailViewFiles = document.getElementById("detail-view-files");
+        const detailCreateInvoice = document.getElementById("detail-create-invoice");
+        const detailViewInvoices = document.getElementById("detail-view-invoices");
         const detailAuthStatus = document.getElementById("detail-auth-status");
         const detailLinkLogin = document.getElementById("detail-link-login");
         const detailResetPassword = document.getElementById("detail-reset-password");
@@ -1393,6 +1511,169 @@
           return files;
         }
 
+        function normalizeInvoiceStatus(value) {
+          const status = normalize(value);
+          if (status === "draft") return "concept";
+          if (status === "sent") return "verzonden";
+          if (status === "paid") return "betaald";
+          if (status === "expired" || status === "overdue") return "verlopen";
+          if (status === "canceled" || status === "cancelled") return "geannuleerd";
+          return status || "concept";
+        }
+
+        function calculateInvoiceTotals(lines = []) {
+          return lines.reduce((totals, line) => {
+            const quantity = Number(line.quantity || 0);
+            const unitPrice = Number(line.unitPrice || 0);
+            const vatRate = Number(line.vatRate ?? 21);
+            const subtotal = quantity * unitPrice;
+            const vat = subtotal * (vatRate / 100);
+            totals.subtotal += subtotal;
+            totals.vat += vat;
+            totals.total += subtotal + vat;
+            return totals;
+          }, { subtotal: 0, vat: 0, total: 0 });
+        }
+
+        function normalizeInvoiceLine(line = {}) {
+          return {
+            id: line.id || createCrmId(),
+            description: String(line.description || "").trim(),
+            quantity: Number(line.quantity || 1),
+            unitPrice: Number(line.unitPrice || line.price || 0),
+            vatRate: Number(line.vatRate ?? 21),
+          };
+        }
+
+        function nextInvoiceNumber() {
+          const year = new Date().getFullYear();
+          let rawInvoices = [];
+          try {
+            rawInvoices = JSON.parse(localStorage.getItem(invoicesStorageKey) || "[]");
+          } catch (error) {
+            rawInvoices = [];
+          }
+          const count = Array.isArray(rawInvoices) ? rawInvoices.filter((invoice) => String(invoice.invoiceNumber || "").includes(String(year))).length + 1 : 1;
+          return `MWS-${year}-${String(count).padStart(3, "0")}`;
+        }
+
+        function invoicePaymentUrl(id) {
+          return `/betalen.html?invoiceId=${encodeURIComponent(id)}`;
+        }
+
+        function normalizeInvoice(invoice = {}) {
+          const now = new Date().toISOString();
+          const createdAt = invoice.createdAt || now;
+          const profileId = invoice.profileId || invoice.customerId || "";
+          const websiteId = invoice.websiteId || "";
+          const projectId = invoice.projectId || "";
+          const customer = customerById(profileId);
+          const website = websiteById(websiteId);
+          const project = projectById(projectId);
+          const lines = Array.isArray(invoice.lines) && invoice.lines.length
+            ? invoice.lines.map(normalizeInvoiceLine).filter((line) => line.description)
+            : [normalizeInvoiceLine({ description: invoice.title || "Factuurregel", quantity: 1, unitPrice: invoice.amount || 0, vatRate: 21 })];
+          const totals = calculateInvoiceTotals(lines);
+          const id = invoice.id || createCrmId();
+          return {
+            id,
+            invoiceNumber: invoice.invoiceNumber || nextInvoiceNumber(),
+            profileId,
+            customerId: profileId,
+            websiteId,
+            projectId,
+            customerName: customer?.name || invoice.customerName || "",
+            customerCompany: customer?.company || invoice.customerCompany || "",
+            customerEmail: customer?.email || invoice.customerEmail || "",
+            customerPhone: customer?.phone || invoice.customerPhone || "",
+            websiteName: website?.name || invoice.websiteName || "",
+            websiteDomain: website?.domain || invoice.websiteDomain || "",
+            projectName: project?.name || invoice.projectName || "",
+            type: invoice.type || invoice.invoiceType || "Website",
+            title: String(invoice.title || invoice.type || "Factuur").trim(),
+            status: normalizeInvoiceStatus(invoice.status),
+            invoiceDate: invoice.invoiceDate || invoice.createdAt?.slice?.(0, 10) || now.slice(0, 10),
+            dueDate: invoice.dueDate || invoice.due_date || "",
+            paidAt: invoice.paidAt || "",
+            lines,
+            subtotal: totals.subtotal,
+            vat: totals.vat,
+            total: totals.total,
+            amount: totals.total,
+            paymentLink: invoice.paymentLink || invoice.mollieCheckoutUrl || invoice.mollie_checkout_url || invoicePaymentUrl(id),
+            mollieCheckoutUrl: invoice.paymentLink || invoice.mollieCheckoutUrl || invoicePaymentUrl(id),
+            paymentStatus: normalizeInvoiceStatus(invoice.paymentStatus || invoice.molliePaymentStatus || invoice.status),
+            pdfFilePath: invoice.pdfFilePath || "",
+            notes: String(invoice.notes || "").trim(),
+            createdAt,
+            updatedAt: invoice.updatedAt || createdAt,
+          };
+        }
+
+        function readStoredInvoices() {
+          try {
+            const stored = JSON.parse(localStorage.getItem(invoicesStorageKey) || "[]");
+            return Array.isArray(stored) ? stored.map(normalizeInvoice) : [];
+          } catch (error) {
+            console.error("Invoices could not be read", error);
+            return [];
+          }
+        }
+
+        function writeStoredInvoices(invoices) {
+          localStorage.setItem(invoicesStorageKey, JSON.stringify(invoices.map(normalizeInvoice)));
+        }
+
+        function validateInvoicePayload(payload) {
+          if (!payload.profileId) return "Kies eerst een klant.";
+          if (!String(payload.invoiceNumber || "").trim()) return "Vul een factuurnummer in.";
+          if (!payload.lines?.length) return "Voeg minimaal een factuurregel toe.";
+          if (payload.lines.some((line) => !String(line.description || "").trim())) return "Elke factuurregel heeft een omschrijving nodig.";
+          return "";
+        }
+
+        function saveInvoiceLocally(payload) {
+          const invoices = readStoredInvoices();
+          const existingIndex = invoices.findIndex((invoice) => invoice.id === payload.id);
+          const existing = existingIndex >= 0 ? invoices[existingIndex] : {};
+          const now = new Date().toISOString();
+          const invoice = normalizeInvoice({
+            ...existing,
+            ...payload,
+            id: payload.id || existing.id || createCrmId(),
+            createdAt: existing.createdAt || now,
+            updatedAt: now,
+          });
+          const validationError = validateInvoicePayload(invoice);
+          if (validationError) throw new Error(validationError);
+          if (existingIndex >= 0) invoices[existingIndex] = invoice;
+          else invoices.unshift(invoice);
+          writeStoredInvoices(invoices);
+          return invoice;
+        }
+
+        function updateInvoiceStatusLocally(id, status) {
+          const invoices = readStoredInvoices();
+          const index = invoices.findIndex((invoice) => invoice.id === id);
+          if (index < 0) throw new Error("Factuur niet gevonden.");
+          const nextStatus = normalizeInvoiceStatus(status);
+          invoices[index] = normalizeInvoice({
+            ...invoices[index],
+            status: nextStatus,
+            paymentStatus: nextStatus,
+            paidAt: nextStatus === "betaald" ? new Date().toISOString() : invoices[index].paidAt,
+            updatedAt: new Date().toISOString(),
+          });
+          writeStoredInvoices(invoices);
+          return invoices[index];
+        }
+
+        function deleteInvoiceLocally(id) {
+          const invoices = readStoredInvoices().filter((invoice) => invoice.id !== id);
+          writeStoredInvoices(invoices);
+          return invoices;
+        }
+
         function toDateInput(value) {
           if (!value) return "";
           const date = new Date(value);
@@ -1674,7 +1955,10 @@
           detailState.textContent = "Geselecteerd";
           detailState.className = `status-badge ${customerStatusClass(customer.status)}`;
           const customerFileCount = state.files.filter((file) => file.customerId === customer.id).length;
-          detailSubtitle.textContent = `${customer.company || customer.name || "Klantprofiel"} - ${customerFileCount} bestand${customerFileCount === 1 ? "" : "en"}`;
+          const customerInvoices = state.invoices.filter((invoice) => invoice.profileId === customer.id);
+          const openInvoices = customerInvoices.filter((invoice) => !["betaald", "geannuleerd"].includes(invoice.status)).length;
+          const paidInvoices = customerInvoices.filter((invoice) => invoice.status === "betaald").length;
+          detailSubtitle.textContent = `${customer.company || customer.name || "Klantprofiel"} - ${customerFileCount} bestand${customerFileCount === 1 ? "" : "en"} - ${customerInvoices.length} factuur${customerInvoices.length === 1 ? "" : "en"} (${openInvoices} open, ${paidInvoices} betaald)`;
           const hasLogin = customer.portalStatus === "actief" || customer.authStatus === "login actief";
           const authLabel = customer.portalStatus === "uitgenodigd" ? "Uitgenodigd" : hasLogin ? "Login actief" : customer.portalStatus === "geblokkeerd" ? "Geblokkeerd" : "Geen login";
           detailAuthStatus.textContent = authLabel;
@@ -1689,6 +1973,8 @@
           detailStartProject.disabled = false;
           detailAddFile.disabled = false;
           detailViewFiles.disabled = false;
+          detailCreateInvoice.disabled = false;
+          detailViewInvoices.disabled = false;
         }
 
         async function saveCustomer(event) {
@@ -1971,6 +2257,8 @@
           websiteQuickActions.copyDomain.disabled = !website?.domain;
           websiteQuickActions.copyGithub.disabled = !website?.githubRepoUrl;
           websiteQuickActions.startProject.disabled = !website;
+          websiteQuickActions.createInvoice.disabled = !website;
+          websiteQuickActions.viewInvoices.disabled = !website;
         }
 
         function addWebsiteSummaryCard(title, items) {
@@ -1991,6 +2279,7 @@
             addWebsiteSummaryCard("Algemeen", [["Status", "Nog niet opgeslagen"], ["Domein", "-"], ["Live", "-"], ["Staging", "-"]]);
             return;
           }
+          const websiteInvoices = state.invoices.filter((invoice) => invoice.websiteId === website.id);
           addWebsiteSummaryCard("Algemeen", [
             ["Website-ID", website.id || "-"],
             ["Domein", website.domain || "-"],
@@ -2012,6 +2301,7 @@
             ["Onderhoudspakket", website.carePackage || "-"],
             ["Laatste update", formatDate(website.lastUpdateAt)],
             ["Open taken", String(website.openTasks || 0)],
+            ["Facturen", String(websiteInvoices.length)],
           ]);
           addWebsiteSummaryCard("Klant", [
             ["Klant-ID", website.profileId || "-"],
@@ -2468,6 +2758,8 @@
           projectDelete.disabled = !enabled || !state.selectedProjectId;
           projectAddFile.disabled = !enabled || !state.selectedProjectId;
           projectViewFiles.disabled = !enabled || !state.selectedProjectId;
+          projectCreateInvoice.disabled = !enabled || !state.selectedProjectId;
+          projectViewInvoices.disabled = !enabled || !state.selectedProjectId;
           projectTaskTitle.disabled = !enabled || !state.selectedProjectId;
           projectTaskPriority.disabled = !enabled || !state.selectedProjectId;
           projectTaskDeadline.disabled = !enabled || !state.selectedProjectId;
@@ -2569,6 +2861,7 @@
           projectDetailSummary.replaceChildren();
           if (!project) return;
           const projectFileCount = state.files.filter((file) => file.projectId === project.id).length;
+          const projectInvoiceCount = state.invoices.filter((invoice) => invoice.projectId === project.id).length;
           addProjectSummaryCard("Klantgegevens", [
             ["Klant-ID", project.customerId || "-"],
             ["Naam", project.customerName || "-"],
@@ -2587,6 +2880,7 @@
             ["Deadline", project.deadline || "-"],
             ["Laatste update", formatDate(project.lastUpdateAt)],
             ["Gekoppelde bestanden", String(projectFileCount)],
+            ["Gekoppelde facturen", String(projectInvoiceCount)],
           ]);
         }
 
@@ -2814,9 +3108,9 @@
 
         function billingStatusClass(value) {
           const status = normalize(value);
-          if (["active", "paid", "normal", "resolved"].includes(status)) return "status-active";
-          if (["sent", "draft"].includes(status)) return "status-prepared";
-          if (["paused", "suspended", "expired", "overdue", "pending", "open", "attention", "payment_failed", "retry_needed"].includes(status)) return "status-warning";
+          if (["active", "paid", "betaald", "goedgekeurd", "normal", "resolved"].includes(status)) return "status-active";
+          if (["sent", "verzonden", "draft", "concept"].includes(status)) return "status-prepared";
+          if (["paused", "suspended", "expired", "verlopen", "overdue", "pending", "open", "attention", "payment_failed", "retry_needed"].includes(status)) return "status-warning";
           return "status-attention";
         }
 
@@ -2953,6 +3247,200 @@
           });
         }
 
+        function populateInvoiceOptions(selectedCustomerId = "") {
+          const selectedProfileValue = invoiceFields.profile.value;
+          const selectedWebsiteValue = invoiceFields.website.value;
+          const selectedProjectValue = invoiceFields.project.value;
+          const customerFilterValue = invoiceCustomerFilter.value;
+          const websiteFilterValue = invoiceWebsiteFilter.value;
+          const projectFilterValue = invoiceProjectFilter.value;
+          populateBillingProfileOptions(invoiceFields.profile);
+          invoiceFields.profile.value = selectedProfileValue;
+
+          invoiceCustomerFilter.replaceChildren();
+          const emptyCustomer = document.createElement("option");
+          emptyCustomer.value = "";
+          emptyCustomer.textContent = "Alle klanten";
+          invoiceCustomerFilter.append(emptyCustomer);
+          state.customers.forEach((customer) => {
+            const option = document.createElement("option");
+            option.value = customer.id;
+            option.textContent = customer.company || customer.name || "Klant";
+            invoiceCustomerFilter.append(option);
+          });
+          invoiceCustomerFilter.value = customerFilterValue;
+
+          invoiceFields.website.replaceChildren();
+          invoiceWebsiteFilter.replaceChildren();
+          [
+            [invoiceFields.website, "Geen website gekoppeld"],
+            [invoiceWebsiteFilter, "Alle websites"],
+          ].forEach(([select, label]) => {
+            const empty = document.createElement("option");
+            empty.value = "";
+            empty.textContent = label;
+            select.append(empty);
+          });
+          state.websites.filter((website) => !selectedCustomerId || website.profileId === selectedCustomerId).forEach((website) => {
+            [invoiceFields.website, invoiceWebsiteFilter].forEach((select) => {
+              const option = document.createElement("option");
+              option.value = website.id;
+              option.textContent = website.name || website.domain || "Website";
+              select.append(option);
+            });
+          });
+          invoiceFields.website.value = selectedWebsiteValue;
+          invoiceWebsiteFilter.value = websiteFilterValue;
+
+          invoiceFields.project.replaceChildren();
+          invoiceProjectFilter.replaceChildren();
+          [
+            [invoiceFields.project, "Geen project gekoppeld"],
+            [invoiceProjectFilter, "Alle projecten"],
+          ].forEach(([select, label]) => {
+            const empty = document.createElement("option");
+            empty.value = "";
+            empty.textContent = label;
+            select.append(empty);
+          });
+          state.projects.filter((project) => !selectedCustomerId || project.customerId === selectedCustomerId).forEach((project) => {
+            [invoiceFields.project, invoiceProjectFilter].forEach((select) => {
+              const option = document.createElement("option");
+              option.value = project.id;
+              option.textContent = project.name || "Project";
+              select.append(option);
+            });
+          });
+          invoiceFields.project.value = selectedProjectValue;
+          invoiceProjectFilter.value = projectFilterValue;
+        }
+
+        function populateInvoicePresets() {
+          invoicePreset.replaceChildren();
+          const empty = document.createElement("option");
+          empty.value = "";
+          empty.textContent = "Preset toevoegen";
+          invoicePreset.append(empty);
+          invoicePresets.forEach((preset, index) => {
+            const option = document.createElement("option");
+            option.value = String(index);
+            option.textContent = `${preset.group} - ${preset.label}`;
+            invoicePreset.append(option);
+          });
+        }
+
+        function renderInvoiceLines() {
+          invoiceLineList.replaceChildren();
+          if (!currentInvoiceLines.length) currentInvoiceLines = [normalizeInvoiceLine({ description: "", quantity: 1, unitPrice: 0, vatRate: 21 })];
+          const header = document.createElement("div");
+          header.className = "invoice-line-row invoice-line-head";
+          ["Omschrijving", "Aantal", "Prijs ex. btw", "BTW %", ""].forEach((label) => header.append(createCell(label)));
+          invoiceLineList.append(header);
+          currentInvoiceLines.forEach((line, index) => {
+            const row = document.createElement("div");
+            row.className = "invoice-line-row";
+            const description = document.createElement("input");
+            description.type = "text";
+            description.placeholder = "Omschrijving";
+            description.value = line.description || "";
+            description.addEventListener("input", () => {
+              currentInvoiceLines[index].description = description.value;
+            });
+            const quantity = document.createElement("input");
+            quantity.type = "number";
+            quantity.min = "0";
+            quantity.step = "1";
+            quantity.value = line.quantity || 1;
+            quantity.addEventListener("input", () => {
+              currentInvoiceLines[index].quantity = Number(quantity.value || 0);
+              updateInvoiceTotals();
+            });
+            const price = document.createElement("input");
+            price.type = "number";
+            price.min = "0";
+            price.step = "0.01";
+            price.value = line.unitPrice ?? 0;
+            price.addEventListener("input", () => {
+              currentInvoiceLines[index].unitPrice = Number(price.value || 0);
+              updateInvoiceTotals();
+            });
+            const vat = document.createElement("input");
+            vat.type = "number";
+            vat.min = "0";
+            vat.step = "1";
+            vat.value = line.vatRate ?? 21;
+            vat.addEventListener("input", () => {
+              currentInvoiceLines[index].vatRate = Number(vat.value || 0);
+              updateInvoiceTotals();
+            });
+            const remove = document.createElement("button");
+            remove.className = "button secondary danger";
+            remove.type = "button";
+            remove.textContent = "Verwijder";
+            remove.addEventListener("click", () => {
+              currentInvoiceLines.splice(index, 1);
+              renderInvoiceLines();
+              updateInvoiceTotals();
+            });
+            row.append(description, quantity, price, vat, remove);
+            invoiceLineList.append(row);
+          });
+          updateInvoiceTotals();
+        }
+
+        function updateInvoiceTotals() {
+          const totals = calculateInvoiceTotals(currentInvoiceLines);
+          invoiceSubtotal.textContent = money(totals.subtotal);
+          invoiceVat.textContent = money(totals.vat);
+          invoiceTotal.textContent = money(totals.total);
+        }
+
+        function addInvoiceLine(line = {}) {
+          currentInvoiceLines.push(normalizeInvoiceLine({ quantity: 1, vatRate: 21, ...line }));
+          renderInvoiceLines();
+        }
+
+        function addInvoicePreset() {
+          const preset = invoicePresets[Number(invoicePreset.value)];
+          if (!preset) return;
+          addInvoiceLine({ description: preset.description, quantity: 1, unitPrice: preset.price, vatRate: 21 });
+          if (!invoiceFields.title.value) invoiceFields.title.value = preset.label;
+          invoicePreset.value = "";
+        }
+
+        function filteredInvoices() {
+          const query = normalize(invoiceSearch.value);
+          return state.invoices.filter((invoice) => {
+            const searchable = normalize([invoice.invoiceNumber, invoice.customerName, invoice.customerCompany, invoice.projectName, invoice.websiteName, invoice.websiteDomain, invoice.type].join(" "));
+            return (!query || searchable.includes(query))
+              && (!invoiceStatusFilter.value || invoice.status === invoiceStatusFilter.value)
+              && (!invoiceTypeFilter.value || invoice.type === invoiceTypeFilter.value)
+              && (!invoiceCustomerFilter.value || invoice.profileId === invoiceCustomerFilter.value)
+              && (!invoiceProjectFilter.value || invoice.projectId === invoiceProjectFilter.value)
+              && (!invoiceWebsiteFilter.value || invoice.websiteId === invoiceWebsiteFilter.value);
+          });
+        }
+
+        function renderInvoiceStats() {
+          const invoices = filteredInvoices();
+          const total = invoices.reduce((sum, invoice) => sum + Number(invoice.total || 0), 0);
+          const paid = invoices.filter((invoice) => invoice.status === "betaald").reduce((sum, invoice) => sum + Number(invoice.total || 0), 0);
+          const open = invoices.filter((invoice) => !["betaald", "geannuleerd"].includes(invoice.status)).reduce((sum, invoice) => sum + Number(invoice.total || 0), 0);
+          invoiceStats.total.textContent = money(total);
+          invoiceStats.open.textContent = money(open);
+          invoiceStats.paid.textContent = money(paid);
+          invoiceStats.expired.textContent = String(invoices.filter((invoice) => invoice.status === "verlopen").length);
+          invoiceStats.count.textContent = String(invoices.length);
+        }
+
+        function updatePaymentLinkActions(invoice) {
+          const link = invoiceFields.paymentLink.value || invoice?.paymentLink || "";
+          invoiceOpenPayment.href = link || "#";
+          invoiceOpenPayment.classList.toggle("is-disabled", !link);
+          invoiceOpenPayment.toggleAttribute("aria-disabled", !link);
+          invoiceCopyPayment.disabled = !link;
+        }
+
         function renderSubscriptions() {
           subscriptionList.replaceChildren();
           if (!state.subscriptions.length) {
@@ -3068,15 +3556,22 @@
 
         function renderInvoices() {
           invoiceList.replaceChildren();
+          populateInvoiceOptions();
+          renderInvoiceStats();
           if (!state.invoices.length) {
             renderState(invoiceList, "Geen facturen", "Maak de eerste factuur aan.", "Leeg");
             return;
           }
+          const invoices = filteredInvoices();
+          if (!invoices.length) {
+            renderState(invoiceList, "Geen facturen gevonden", "Pas je zoekopdracht of filters aan.", "Geen match");
+            return;
+          }
           const head = document.createElement("div");
           head.className = "admin-table-row admin-table-head invoice-row";
-          ["Klant", "Factuurnummer", "Titel", "Bedrag", "Status", "Betaalstatus", "Vervaldatum", "Mollie ID", "Betaallink", "PDF", "E-mail", "Acties"].forEach((label) => head.append(createCell(label)));
+          ["Factuurnummer", "Klant", "Type", "Status", "Datum", "Vervaldatum", "Totaal", "Acties"].forEach((label) => head.append(createCell(label)));
           invoiceList.append(head);
-          state.invoices.forEach((invoice) => {
+          invoices.forEach((invoice) => {
             const row = document.createElement("div");
             row.className = "admin-table-row invoice-row";
             const actions = document.createElement("span");
@@ -3084,54 +3579,49 @@
             const edit = document.createElement("button");
             edit.className = "button secondary";
             edit.type = "button";
-            edit.textContent = "Bewerken";
+            edit.textContent = "Bekijken";
             edit.addEventListener("click", () => openInvoiceModal(invoice.id));
-            const status = document.createElement("select");
-            status.value = invoice.status || "draft";
-            ["draft", "sent", "paid", "expired", "canceled", "failed"].forEach((value) => {
-              const option = document.createElement("option");
-              option.value = value;
-              option.textContent = billingStatusLabel(value);
-              status.append(option);
-            });
-            status.addEventListener("change", () => setInvoiceStatus(invoice.id, status.value, status));
+            const markPaid = document.createElement("button");
+            markPaid.className = "button secondary";
+            markPaid.type = "button";
+            markPaid.textContent = "Markeer betaald";
+            markPaid.disabled = invoice.status === "betaald";
+            markPaid.addEventListener("click", () => setInvoiceStatus(invoice.id, "betaald", markPaid));
+            const markSent = document.createElement("button");
+            markSent.className = "button secondary";
+            markSent.type = "button";
+            markSent.textContent = "Zet op verzonden";
+            markSent.disabled = invoice.status === "verzonden" || invoice.status === "betaald";
+            markSent.addEventListener("click", () => setInvoiceStatus(invoice.id, "verzonden", markSent));
             const payment = document.createElement("button");
             payment.className = "button secondary";
             payment.type = "button";
-            payment.textContent = invoice.mollieCheckoutUrl && !["paid", "expired", "canceled", "failed"].includes(normalize(invoice.molliePaymentStatus || invoice.status))
-              ? "Betaalverzoek bekijken"
-              : "Betaalverzoek maken";
+            payment.textContent = "Verstuur betaalverzoek demo";
             payment.addEventListener("click", () => createMolliePayment(invoice.id, payment));
-            actions.append(edit, status, payment);
-            if (invoice.mollieCheckoutUrl) {
+            const cancel = document.createElement("button");
+            cancel.className = "button secondary danger";
+            cancel.type = "button";
+            cancel.textContent = "Annuleer";
+            cancel.addEventListener("click", () => cancelInvoice(invoice.id));
+            actions.append(edit, markPaid, markSent, payment);
+            if (invoice.paymentLink) {
               const checkout = document.createElement("a");
               checkout.className = "button secondary";
-              checkout.href = invoice.mollieCheckoutUrl;
+              checkout.href = invoice.paymentLink;
               checkout.target = "_blank";
               checkout.rel = "noopener";
-              checkout.textContent = "Open betaallink";
+              checkout.textContent = "Open betaalpagina";
               actions.append(checkout);
             }
-            invoiceEmailActions(invoice).forEach((emailAction) => {
-              const emailButton = document.createElement("button");
-              emailButton.className = "button secondary";
-              emailButton.type = "button";
-              emailButton.textContent = emailAction.label;
-              emailButton.addEventListener("click", () => sendInvoiceEmail(invoice.id, emailAction.type, emailButton));
-              actions.append(emailButton);
-            });
+            actions.append(cancel);
             row.append(
-              createCell(invoice.customerCompany || invoice.customerName || "Geen klant", "strong"),
               createCell(invoice.invoiceNumber),
-              createCell(invoice.title),
-              createCell(money(invoice.amount)),
-              createBadge(billingStatusLabel(invoice.status), billingStatusClass(invoice.status)),
-              createBadge(billingStatusLabel(invoice.molliePaymentStatus || invoice.status), billingStatusClass(invoice.molliePaymentStatus || invoice.status)),
+              createCell(invoice.customerCompany || invoice.customerName || "Geen klant", "strong"),
+              createCell(invoice.type || "-"),
+              createBadge(invoiceStatusLabels[invoice.status] || invoice.status, billingStatusClass(invoice.status)),
+              createCell(invoice.invoiceDate || "-"),
               createCell(formatDate(invoice.dueDate)),
-              createCell(invoice.molliePaymentId || "-"),
-              createCell(invoice.mollieCheckoutUrl ? "Beschikbaar" : "Geen betaallink"),
-              createCell(invoice.pdfFilePath || "Geen PDF"),
-              createInvoiceEmailSummary(invoice),
+              createCell(money(invoice.total)),
               actions
             );
             invoiceList.append(row);
@@ -3139,6 +3629,8 @@
         }
 
         async function loadBilling(showLoading = false) {
+          state.invoices = readStoredInvoices();
+          renderInvoices();
           if (!state.adminToken) return;
           if (showLoading) renderState(invoiceList, "Billing laden...", "Facturen en abonnementen worden opgehaald.", "Laden", "status-prepared");
           try {
@@ -3148,13 +3640,12 @@
             const data = await response.json().catch(() => ({}));
             if (!response.ok || !data.success) throw new Error(data.error || "Billing kon niet worden geladen.");
             state.subscriptions = Array.isArray(data.subscriptions) ? data.subscriptions : [];
-            state.invoices = Array.isArray(data.invoices) ? data.invoices : [];
             renderSubscriptions();
             renderInvoices();
             await loadDashboardMetrics(false);
           } catch (error) {
             renderState(subscriptionList, "Abonnementen niet beschikbaar", "Controleer Supabase billing-tabellen.", "Fout", "status-attention");
-            renderState(invoiceList, "Facturen niet beschikbaar", error.message || "Controleer Supabase billing-tabellen.", "Fout", "status-attention");
+            renderInvoices();
           }
         }
 
@@ -3204,17 +3695,26 @@
           const invoice = invoiceById(id);
           state.selectedInvoiceId = invoice?.id || "";
           invoiceForm.reset();
-          populateBillingProfileOptions(document.getElementById("invoice-profile"));
-          document.getElementById("invoice-id").value = invoice?.id || "";
-          document.getElementById("invoice-profile").value = invoice?.profileId || state.selectedCustomerId || "";
-          document.getElementById("invoice-number").value = invoice?.invoiceNumber || "";
-          document.getElementById("invoice-title").value = invoice?.title || "Onderhoud website";
-          document.getElementById("invoice-amount").value = invoice?.amount ?? "";
-          document.getElementById("invoice-status").value = invoice?.status || "draft";
-          document.getElementById("invoice-due").value = toDateInput(invoice?.dueDate);
-          document.getElementById("invoice-paid-at").value = toDateTimeInput(invoice?.paidAt);
-          document.getElementById("invoice-pdf").value = invoice?.pdfFilePath || "";
-          document.getElementById("invoice-notes").value = invoice?.notes || "";
+          populateInvoicePresets();
+          invoiceFields.id.value = invoice?.id || "";
+          invoiceFields.profile.value = invoice?.profileId || state.selectedCustomerId || "";
+          populateInvoiceOptions(invoiceFields.profile.value);
+          invoiceFields.profile.value = invoice?.profileId || state.selectedCustomerId || "";
+          invoiceFields.website.value = invoice?.websiteId || "";
+          invoiceFields.project.value = invoice?.projectId || "";
+          invoiceFields.number.value = invoice?.invoiceNumber || nextInvoiceNumber();
+          invoiceFields.type.value = invoice?.type || "Website";
+          invoiceFields.title.value = invoice?.title || "Nieuwe factuur";
+          invoiceFields.status.value = invoice?.status || "concept";
+          invoiceFields.invoiceDate.value = invoice?.invoiceDate || new Date().toISOString().slice(0, 10);
+          invoiceFields.dueDate.value = toDateInput(invoice?.dueDate) || "";
+          invoiceFields.paidAt.value = toDateTimeInput(invoice?.paidAt);
+          invoiceFields.paymentLink.value = invoice?.paymentLink || (invoice?.id ? invoicePaymentUrl(invoice.id) : "");
+          invoiceFields.pdf.value = invoice?.pdfFilePath || "";
+          invoiceFields.notes.value = invoice?.notes || "";
+          currentInvoiceLines = invoice?.lines?.length ? invoice.lines.map(normalizeInvoiceLine) : [normalizeInvoiceLine({ description: "", quantity: 1, unitPrice: 0, vatRate: 21 })];
+          renderInvoiceLines();
+          updatePaymentLinkActions(invoice || null);
           setBillingMessage(invoiceMessage, "", "");
           invoiceModal.hidden = false;
           document.body.classList.add("admin-modal-open");
@@ -3256,21 +3756,27 @@
           setBillingMessage(invoiceMessage, "", "");
 
           try {
-            await postBilling({
-              action: "save_invoice",
-              id: document.getElementById("invoice-id").value,
-              profileId: document.getElementById("invoice-profile").value,
-              invoiceNumber: document.getElementById("invoice-number").value,
-              title: document.getElementById("invoice-title").value,
-              amount: document.getElementById("invoice-amount").value,
-              status: document.getElementById("invoice-status").value,
-              dueDate: document.getElementById("invoice-due").value,
-              paidAt: document.getElementById("invoice-paid-at").value,
-              pdfFilePath: document.getElementById("invoice-pdf").value,
-              notes: document.getElementById("invoice-notes").value,
+            const invoice = saveInvoiceLocally({
+              id: invoiceFields.id.value,
+              profileId: invoiceFields.profile.value,
+              websiteId: invoiceFields.website.value,
+              projectId: invoiceFields.project.value,
+              invoiceNumber: invoiceFields.number.value,
+              type: invoiceFields.type.value,
+              title: invoiceFields.title.value,
+              status: invoiceFields.status.value,
+              invoiceDate: invoiceFields.invoiceDate.value,
+              dueDate: invoiceFields.dueDate.value,
+              paidAt: invoiceFields.paidAt.value,
+              paymentLink: invoiceFields.paymentLink.value,
+              pdfFilePath: invoiceFields.pdf.value,
+              notes: invoiceFields.notes.value,
+              lines: currentInvoiceLines,
             });
-            await loadBilling(false);
-            closeModal(invoiceModal);
+            await loadCRMData(false);
+            state.selectedInvoiceId = invoice.id;
+            openInvoiceModal(invoice.id);
+            setBillingMessage(invoiceMessage, "Factuur opgeslagen.", "success");
           } catch (error) {
             setBillingMessage(invoiceMessage, error.message || "Factuur kon niet worden opgeslagen.", "error");
           } finally {
@@ -3390,34 +3896,46 @@
         }
 
         async function setInvoiceStatus(id, status, select) {
-          select.disabled = true;
+          if (select) select.disabled = true;
           try {
-            await postBilling({ action: "set_invoice_status", id, status });
-            await loadBilling(false);
+            const invoice = updateInvoiceStatusLocally(id, status);
+            await loadCRMData(false);
+            if (state.selectedInvoiceId === id) openInvoiceModal(invoice.id);
           } catch (error) {
             window.alert(error.message || "Factuurstatus kon niet worden bijgewerkt.");
-            await loadBilling(false);
           } finally {
-            select.disabled = false;
+            if (select) select.disabled = false;
           }
         }
 
         async function createMolliePayment(id, button) {
           const originalText = button.textContent;
           button.disabled = true;
-          button.textContent = "Aanmaken...";
+          button.textContent = "Demo-link...";
           setAdminAccessMessage("", "");
 
           try {
-            const data = await postMolliePayment({ invoice_id: id });
-            await loadBilling(false);
-            setAdminAccessMessage(data.warning || "Betaalverzoek aangemaakt. De betaallink staat bij de factuur.", data.warning ? "" : "success");
+            const invoice = invoiceById(id);
+            if (!invoice) throw new Error("Factuur niet gevonden.");
+            const saved = saveInvoiceLocally({ ...invoice, paymentLink: invoice.paymentLink || invoicePaymentUrl(invoice.id), status: invoice.status === "concept" ? "verzonden" : invoice.status });
+            await loadCRMData(false);
+            if (state.selectedInvoiceId === id) openInvoiceModal(saved.id);
+            setAdminAccessMessage("Demo-betaalverzoek staat klaar. Geen echte Mollie-betaling aangemaakt.", "success");
           } catch (error) {
-            setAdminAccessMessage(error.message || "Betaalverzoek kon niet worden aangemaakt.", "error");
+            setAdminAccessMessage(error.message || "Demo-betaalverzoek kon niet worden aangemaakt.", "error");
           } finally {
             button.disabled = false;
             button.textContent = originalText;
           }
+        }
+
+        async function cancelInvoice(id = state.selectedInvoiceId) {
+          if (!id) return;
+          const confirmed = window.confirm("Weet je zeker dat je deze factuur wilt annuleren?");
+          if (!confirmed) return;
+          const invoice = updateInvoiceStatusLocally(id, "geannuleerd");
+          await loadCRMData(false);
+          if (state.selectedInvoiceId === id) openInvoiceModal(invoice.id);
         }
 
         async function postMolliePayment(payload) {
@@ -3800,6 +4318,66 @@
           document.getElementById("bestanden").scrollIntoView({ behavior: "smooth", block: "start" });
         }
 
+        function createInvoiceFromCustomer() {
+          const customer = selectedCustomer();
+          if (!customer) return;
+          openInvoiceModal();
+          invoiceFields.profile.value = customer.id;
+          populateInvoiceOptions(customer.id);
+          invoiceFields.profile.value = customer.id;
+        }
+
+        function createInvoiceFromWebsite() {
+          const website = selectedWebsite();
+          if (!website) return;
+          openInvoiceModal();
+          invoiceFields.profile.value = website.profileId || "";
+          populateInvoiceOptions(website.profileId || "");
+          invoiceFields.profile.value = website.profileId || "";
+          invoiceFields.website.value = website.id;
+        }
+
+        function createInvoiceFromProject() {
+          const project = selectedProject();
+          if (!project) return;
+          openInvoiceModal();
+          invoiceFields.profile.value = project.customerId || "";
+          populateInvoiceOptions(project.customerId || "");
+          invoiceFields.profile.value = project.customerId || "";
+          invoiceFields.website.value = project.websiteId || "";
+          invoiceFields.project.value = project.id;
+        }
+
+        function viewInvoicesForCustomer() {
+          const customer = selectedCustomer();
+          if (!customer) return;
+          invoiceCustomerFilter.value = customer.id;
+          invoiceProjectFilter.value = "";
+          invoiceWebsiteFilter.value = "";
+          renderInvoices();
+          document.getElementById("facturen").scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+
+        function viewInvoicesForWebsite() {
+          const website = selectedWebsite();
+          if (!website) return;
+          invoiceCustomerFilter.value = "";
+          invoiceProjectFilter.value = "";
+          invoiceWebsiteFilter.value = website.id;
+          renderInvoices();
+          document.getElementById("facturen").scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+
+        function viewInvoicesForProject() {
+          const project = selectedProject();
+          if (!project) return;
+          invoiceCustomerFilter.value = "";
+          invoiceProjectFilter.value = project.id;
+          invoiceWebsiteFilter.value = "";
+          renderInvoices();
+          document.getElementById("facturen").scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+
         function requestMatchesFilters(request) {
           const selectedStatus = requestStatusFilter.value;
           const selectedPriority = normalize(requestPriorityFilter.value);
@@ -3977,10 +4555,12 @@
             state.websites = readStoredWebsites();
             state.projects = readStoredProjects();
             state.files = readStoredFiles();
+            state.invoices = readStoredInvoices();
             renderCustomers();
             renderWebsites();
             renderProjects();
             renderFiles();
+            renderInvoices();
             renderCareOverview();
             updateMetrics();
             if (state.selectedCustomerId && selectedCustomer()) selectCustomer(state.selectedCustomerId);
@@ -4051,6 +4631,8 @@
           if (website) copyText(website.githubRepoUrl, "GitHub URL gekopieerd.");
         });
         websiteQuickActions.startProject.addEventListener("click", startProjectFromWebsite);
+        websiteQuickActions.createInvoice.addEventListener("click", createInvoiceFromWebsite);
+        websiteQuickActions.viewInvoices.addEventListener("click", viewInvoicesForWebsite);
         detailLinkLogin.addEventListener("click", linkLogin);
         detailResetPassword.addEventListener("click", sendPasswordReset);
         detailSendInvite.addEventListener("click", sendInviteFromDetail);
@@ -4058,10 +4640,14 @@
         detailStartProject.addEventListener("click", startProjectFromCustomer);
         detailAddFile.addEventListener("click", startFileFromCustomer);
         detailViewFiles.addEventListener("click", viewFilesForCustomer);
+        detailCreateInvoice.addEventListener("click", createInvoiceFromCustomer);
+        detailViewInvoices.addEventListener("click", viewInvoicesForCustomer);
         projectDetailForm.addEventListener("submit", saveProject);
         projectDelete.addEventListener("click", deleteProject);
         projectAddFile.addEventListener("click", startFileFromProject);
         projectViewFiles.addEventListener("click", viewFilesForProject);
+        projectCreateInvoice.addEventListener("click", createInvoiceFromProject);
+        projectViewInvoices.addEventListener("click", viewInvoicesForProject);
         projectTaskAdd.addEventListener("click", addProjectTask);
         projectFields.customer.addEventListener("change", () => {
           const selectedCustomerId = projectFields.customer.value;
@@ -4077,6 +4663,25 @@
           const file = selectedFile();
           if (file) copyText(file.location, "Bestandslink gekopieerd.", setFileMessage);
         });
+        invoiceAddLine.addEventListener("click", () => addInvoiceLine({ description: "", quantity: 1, unitPrice: 0, vatRate: 21 }));
+        invoicePreset.addEventListener("change", addInvoicePreset);
+        invoiceFields.profile.addEventListener("change", () => {
+          const selectedCustomerId = invoiceFields.profile.value;
+          populateInvoiceOptions(selectedCustomerId);
+          invoiceFields.profile.value = selectedCustomerId;
+        });
+        invoiceFields.paymentLink.addEventListener("input", () => updatePaymentLinkActions(invoiceById(state.selectedInvoiceId)));
+        invoiceMarkSent.addEventListener("click", () => state.selectedInvoiceId && setInvoiceStatus(state.selectedInvoiceId, "verzonden", invoiceMarkSent));
+        invoiceMarkPaid.addEventListener("click", () => state.selectedInvoiceId && setInvoiceStatus(state.selectedInvoiceId, "betaald", invoiceMarkPaid));
+        invoiceDemoPayment.addEventListener("click", () => state.selectedInvoiceId && createMolliePayment(state.selectedInvoiceId, invoiceDemoPayment));
+        invoiceOpenPayment.addEventListener("click", (event) => {
+          if (event.currentTarget.getAttribute("aria-disabled") === "true") event.preventDefault();
+        });
+        invoiceCopyPayment.addEventListener("click", () => {
+          const link = invoiceFields.paymentLink.value;
+          if (link) copyText(link, "Betaalverzoek gekopieerd.", (text, type) => setBillingMessage(invoiceMessage, text, type));
+        });
+        invoiceCancel.addEventListener("click", () => state.selectedInvoiceId && cancelInvoice(state.selectedInvoiceId));
         fileFields.customer.addEventListener("change", () => {
           const selectedCustomerId = fileFields.customer.value;
           populateFileOptions(selectedCustomerId);
@@ -4086,6 +4691,7 @@
         newSendInvite.addEventListener("click", sendInviteFromNewCustomer);
         [customerSearch, customerStatusFilter, customerPackageFilter].forEach((filter) => filter.addEventListener("input", renderCustomers));
         [fileSearch, fileCategoryFilter, fileStatusFilter, fileCustomerFilter, fileProjectFilter].forEach((filter) => filter.addEventListener("input", renderFiles));
+        [invoiceSearch, invoiceStatusFilter, invoiceTypeFilter, invoiceCustomerFilter, invoiceProjectFilter, invoiceWebsiteFilter].forEach((filter) => filter.addEventListener("input", renderInvoices));
         [requestStatusFilter, requestPriorityFilter, requestCategoryFilter].forEach((filter) => filter.addEventListener("change", renderRequests));
         requestStatusSave.addEventListener("click", saveRequestStatus);
         detailOpenWebsite.addEventListener("click", (event) => {

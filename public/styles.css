@@ -5392,7 +5392,78 @@ h3 {
 }
 
 .invoice-row {
-  grid-template-columns: minmax(120px, 1fr) minmax(105px, 0.8fr) minmax(125px, 1fr) minmax(80px, 0.6fr) minmax(95px, 0.7fr) minmax(105px, 0.8fr) minmax(105px, 0.75fr) minmax(115px, 0.85fr) minmax(105px, 0.75fr) minmax(115px, 0.85fr) minmax(145px, 0.95fr) minmax(170px, 1fr);
+  grid-template-columns: minmax(120px, 0.9fr) minmax(150px, 1.1fr) minmax(120px, 0.85fr) minmax(90px, 0.7fr) minmax(95px, 0.7fr) minmax(105px, 0.75fr) minmax(105px, 0.75fr) minmax(240px, 1.4fr);
+}
+
+.invoice-stats-grid {
+  grid-template-columns: repeat(5, minmax(140px, 1fr));
+}
+
+.invoice-filters {
+  align-items: end;
+}
+
+.invoice-line-editor {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  margin-top: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.invoice-line-list {
+  display: grid;
+  gap: 10px;
+}
+
+.invoice-line-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(78px, 0.35fr) minmax(110px, 0.5fr) minmax(80px, 0.35fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.invoice-line-row input {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 0 12px;
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.07);
+  font: inherit;
+}
+
+.invoice-line-head {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.invoice-totals-card {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(120px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.invoice-totals-card span {
+  display: grid;
+  gap: 5px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.invoice-totals-card strong {
+  color: var(--white);
+  font-size: 20px;
 }
 
 .invoice-email-summary {
@@ -7853,6 +7924,9 @@ h3 {
   }
 
   .project-stats-grid,
+  .invoice-stats-grid,
+  .invoice-totals-card,
+  .invoice-line-row,
   .website-stats-grid,
   .project-detail-summary,
   .file-detail-summary,
