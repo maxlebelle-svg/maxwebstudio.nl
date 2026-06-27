@@ -625,9 +625,11 @@
             <button class="button secondary" id="invoice-mark-paid" type="button">Markeer betaald</button>
             <button class="button secondary" id="invoice-demo-payment" type="button">Verstuur betaalverzoek demo</button>
             <a class="button secondary is-disabled" id="invoice-open-payment" href="#" target="_blank" rel="noopener" aria-disabled="true">Open betaalpagina</a>
+            <button class="button secondary" id="invoice-open-quote" type="button">Open offerte</button>
             <button class="button secondary" id="invoice-copy-payment" type="button">Kopieer betaalverzoek</button>
             <button class="button secondary" id="invoice-clear-pdf" type="button">PDF-pad verwijderen</button>
             <button class="button secondary danger" id="invoice-cancel" type="button">Archiveer/annuleer</button>
+            <p class="admin-form-message" id="invoice-source-message" role="status"></p>
             <p class="admin-form-message" id="invoice-message" role="status"></p>
           </div>
         </form>
@@ -678,7 +680,9 @@
             <a class="button secondary is-disabled" id="quote-open-link" href="#" target="_blank" rel="noopener" aria-disabled="true">Open demo-offerte</a>
             <button class="button secondary" id="quote-copy-link" type="button">Kopieer demo-offertelink</button>
             <button class="button secondary" id="quote-convert-invoice" type="button">Maak factuur van offerte</button>
+            <button class="button secondary" id="quote-open-invoice" type="button">Open factuur</button>
             <button class="button secondary danger" id="quote-cancel" type="button">Archiveer/annuleer</button>
+            <p class="admin-form-message" id="quote-conversion-message" role="status"></p>
             <p class="admin-form-message" id="quote-message" role="status"></p>
           </div>
         </form>
@@ -1030,7 +1034,9 @@
         const quoteOpenLink = document.getElementById("quote-open-link");
         const quoteCopyLink = document.getElementById("quote-copy-link");
         const quoteConvertInvoice = document.getElementById("quote-convert-invoice");
+        const quoteOpenInvoice = document.getElementById("quote-open-invoice");
         const quoteCancel = document.getElementById("quote-cancel");
+        const quoteConversionMessage = document.getElementById("quote-conversion-message");
         const quoteSearch = document.getElementById("quote-search");
         const quoteStatusFilter = document.getElementById("quote-status-filter");
         const quoteTypeFilter = document.getElementById("quote-type-filter");
@@ -1073,8 +1079,10 @@
         const invoiceMarkPaid = document.getElementById("invoice-mark-paid");
         const invoiceDemoPayment = document.getElementById("invoice-demo-payment");
         const invoiceOpenPayment = document.getElementById("invoice-open-payment");
+        const invoiceOpenQuote = document.getElementById("invoice-open-quote");
         const invoiceCopyPayment = document.getElementById("invoice-copy-payment");
         const invoiceCancel = document.getElementById("invoice-cancel");
+        const invoiceSourceMessage = document.getElementById("invoice-source-message");
         const invoiceSearch = document.getElementById("invoice-search");
         const invoiceStatusFilter = document.getElementById("invoice-status-filter");
         const invoiceTypeFilter = document.getElementById("invoice-type-filter");
@@ -1880,6 +1888,8 @@
             paymentStatus: normalizeInvoiceStatus(invoice.paymentStatus || invoice.molliePaymentStatus || invoice.status),
             pdfFilePath: invoice.pdfFilePath || "",
             notes: String(invoice.notes || "").trim(),
+            sourceQuoteId: invoice.sourceQuoteId || "",
+            sourceQuoteNumber: invoice.sourceQuoteNumber || "",
             createdAt,
             updatedAt: invoice.updatedAt || createdAt,
           };
@@ -1947,6 +1957,73 @@
           const invoices = readStoredInvoices().filter((invoice) => invoice.id !== id);
           writeStoredInvoices(invoices);
           return invoices;
+        }
+
+        function addDays(value, days) {
+          const date = value ? new Date(value) : new Date();
+          if (Number.isNaN(date.getTime())) return "";
+          date.setDate(date.getDate() + days);
+          return date.toISOString().slice(0, 10);
+        }
+
+        function invoiceTypeFromQuoteType(type) {
+          const normalizedType = normalize(type);
+          if (normalizedType === "website" || normalizedType === "website + onderhoud" || normalizedType === "website onderhoud") return "Website";
+          if (normalizedType === "hosting & onderhoud" || normalizedType === "hosting onderhoud") return "Hosting & onderhoud";
+          if (normalizedType === "maatwerk") return "Maatwerk";
+          if (normalizedType === "seo") return "SEO";
+          if (normalizedType === "extra paginas" || normalizedType === "extra pagina's") return "Extra pagina's";
+          return "Overig";
+        }
+
+        function convertQuoteToInvoice(id) {
+          const quotes = readStoredQuotes();
+          const quoteIndex = quotes.findIndex((quote) => quote.id === id);
+          if (quoteIndex < 0) throw new Error("Offerte niet gevonden.");
+          const quote = quotes[quoteIndex];
+          if (quote.status !== "geaccepteerd") {
+            throw new Error("Alleen geaccepteerde offertes kunnen worden omgezet naar factuur.");
+          }
+          if (quote.convertedToInvoiceId) {
+            const existingInvoice = readStoredInvoices().find((invoice) => invoice.id === quote.convertedToInvoiceId);
+            if (existingInvoice) {
+              return { invoice: existingInvoice, quote, alreadyConverted: true };
+            }
+          }
+
+          const confirmed = window.confirm("Weet je zeker dat je van deze offerte een factuur wilt maken?");
+          if (!confirmed) return { invoice: null, quote, cancelled: true };
+
+          const invoiceId = createCrmId();
+          const today = new Date().toISOString().slice(0, 10);
+          const invoice = saveInvoiceLocally({
+            id: invoiceId,
+            profileId: quote.profileId,
+            websiteId: quote.websiteId,
+            projectId: quote.projectId,
+            invoiceNumber: nextInvoiceNumber(),
+            type: invoiceTypeFromQuoteType(quote.type),
+            title: quote.title || `Factuur voor ${quote.quoteNumber}`,
+            status: "concept",
+            invoiceDate: today,
+            dueDate: addDays(today, 14),
+            paidAt: "",
+            paymentLink: invoicePaymentUrl(invoiceId),
+            pdfFilePath: "",
+            notes: [`Aangemaakt vanuit offerte ${quote.quoteNumber}.`, quote.proposal ? `Voorsteltekst: ${quote.proposal}` : "", quote.notes ? `Interne offertenotitie: ${quote.notes}` : ""].filter(Boolean).join("\n\n"),
+            lines: quote.lines.map((line) => ({ ...line, id: createCrmId() })),
+            sourceQuoteId: quote.id,
+            sourceQuoteNumber: quote.quoteNumber,
+          });
+
+          quotes[quoteIndex] = normalizeQuote({
+            ...quote,
+            convertedToInvoiceId: invoice.id,
+            convertedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          });
+          writeStoredQuotes(quotes);
+          return { invoice, quote: quotes[quoteIndex], alreadyConverted: false };
         }
 
         function toDateInput(value) {
@@ -3741,6 +3818,22 @@
           quoteCopyLink.disabled = !link;
         }
 
+        function updateQuoteConversionActions(quote) {
+          const linkedInvoice = quote?.convertedToInvoiceId ? invoiceById(quote.convertedToInvoiceId) : null;
+          quoteOpenInvoice.disabled = !linkedInvoice;
+          quoteConvertInvoice.disabled = !quote || quote.status !== "geaccepteerd" || Boolean(linkedInvoice);
+          if (!quote) {
+            quoteConversionMessage.textContent = "";
+          } else if (linkedInvoice) {
+            quoteConversionMessage.textContent = `Omgezet naar factuur ${linkedInvoice.invoiceNumber}.`;
+          } else if (quote.status === "geaccepteerd") {
+            quoteConversionMessage.textContent = "Deze geaccepteerde offerte kan worden omgezet naar een conceptfactuur.";
+          } else {
+            quoteConversionMessage.textContent = "Alleen geaccepteerde offertes kunnen worden omgezet naar factuur.";
+          }
+          quoteConversionMessage.className = `admin-form-message ${linkedInvoice || quote?.status === "geaccepteerd" ? "success" : ""}`.trim();
+        }
+
         function populateInvoiceOptions(selectedCustomerId = "") {
           const selectedProfileValue = invoiceFields.profile.value;
           const selectedWebsiteValue = invoiceFields.website.value;
@@ -3933,6 +4026,18 @@
           invoiceOpenPayment.classList.toggle("is-disabled", !link);
           invoiceOpenPayment.toggleAttribute("aria-disabled", !link);
           invoiceCopyPayment.disabled = !link;
+        }
+
+        function updateInvoiceSourceActions(invoice) {
+          const sourceQuote = invoice?.sourceQuoteId ? quoteById(invoice.sourceQuoteId) : null;
+          invoiceOpenQuote.disabled = !sourceQuote;
+          if (sourceQuote) {
+            invoiceSourceMessage.textContent = `Aangemaakt vanuit offerte ${invoice.sourceQuoteNumber || sourceQuote.quoteNumber}.`;
+            invoiceSourceMessage.className = "admin-form-message success";
+          } else {
+            invoiceSourceMessage.textContent = "";
+            invoiceSourceMessage.className = "admin-form-message";
+          }
         }
 
         function renderSubscriptions() {
@@ -4293,6 +4398,7 @@
           currentInvoiceLines = invoice?.lines?.length ? invoice.lines.map(normalizeInvoiceLine) : [normalizeInvoiceLine({ description: "", quantity: 1, unitPrice: 0, vatRate: 21 })];
           renderInvoiceLines();
           updatePaymentLinkActions(invoice || null);
+          updateInvoiceSourceActions(invoice || null);
           setBillingMessage(invoiceMessage, "", "");
           invoiceModal.hidden = false;
           document.body.classList.add("admin-modal-open");
@@ -4321,6 +4427,7 @@
           currentQuoteLines = quote?.lines?.length ? quote.lines.map(normalizeInvoiceLine) : [normalizeInvoiceLine({ description: "", quantity: 1, unitPrice: 0, vatRate: 21 })];
           renderQuoteLines();
           updateQuoteLinkActions(quote || null);
+          updateQuoteConversionActions(quote || null);
           setBillingMessage(quoteMessage, "", "");
           quoteModal.hidden = false;
           document.body.classList.add("admin-modal-open");
@@ -5040,8 +5147,50 @@
           document.getElementById("offertes").scrollIntoView({ behavior: "smooth", block: "start" });
         }
 
-        function showQuoteConversionPlaceholder() {
-          setBillingMessage(quoteMessage, "Offerte naar factuur wordt gebouwd in Fase 8.8.", "success");
+        async function createInvoiceFromQuote() {
+          if (!state.selectedQuoteId) return;
+          quoteConvertInvoice.disabled = true;
+          quoteConvertInvoice.textContent = "Factuur maken...";
+          setBillingMessage(quoteMessage, "", "");
+          try {
+            const result = convertQuoteToInvoice(state.selectedQuoteId);
+            if (result.cancelled) return;
+            await loadCRMData(false);
+            state.selectedQuoteId = result.quote.id;
+            openQuoteModal(result.quote.id);
+            if (result.alreadyConverted) {
+              setBillingMessage(quoteMessage, `Deze offerte is al omgezet naar factuur ${result.invoice.invoiceNumber}.`, "success");
+            } else {
+              setBillingMessage(quoteMessage, `Conceptfactuur ${result.invoice.invoiceNumber} aangemaakt vanuit offerte ${result.quote.quoteNumber}.`, "success");
+            }
+          } catch (error) {
+            setBillingMessage(quoteMessage, error.message || "Offerte kon niet worden omgezet naar factuur.", "error");
+          } finally {
+            quoteConvertInvoice.textContent = "Maak factuur van offerte";
+            updateQuoteConversionActions(quoteById(state.selectedQuoteId));
+          }
+        }
+
+        function openInvoiceFromQuote() {
+          const quote = quoteById(state.selectedQuoteId);
+          const invoice = quote?.convertedToInvoiceId ? invoiceById(quote.convertedToInvoiceId) : null;
+          if (!invoice) {
+            setBillingMessage(quoteMessage, "Er is nog geen gekoppelde factuur voor deze offerte.", "error");
+            return;
+          }
+          closeModal(quoteModal);
+          openInvoiceModal(invoice.id);
+        }
+
+        function openQuoteFromInvoice() {
+          const invoice = invoiceById(state.selectedInvoiceId);
+          const quote = invoice?.sourceQuoteId ? quoteById(invoice.sourceQuoteId) : null;
+          if (!quote) {
+            setBillingMessage(invoiceMessage, "Er is geen gekoppelde offerte gevonden voor deze factuur.", "error");
+            return;
+          }
+          closeModal(invoiceModal);
+          openQuoteModal(quote.id);
         }
 
         function createInvoiceFromCustomer() {
@@ -5420,7 +5569,8 @@
           const link = quoteFields.link.value;
           if (link) copyText(link, "Demo-offertelink gekopieerd.", (text, type) => setBillingMessage(quoteMessage, text, type));
         });
-        quoteConvertInvoice.addEventListener("click", showQuoteConversionPlaceholder);
+        quoteConvertInvoice.addEventListener("click", createInvoiceFromQuote);
+        quoteOpenInvoice.addEventListener("click", openInvoiceFromQuote);
         quoteCancel.addEventListener("click", () => state.selectedQuoteId && cancelQuote(state.selectedQuoteId));
         invoiceAddLine.addEventListener("click", () => addInvoiceLine({ description: "", quantity: 1, unitPrice: 0, vatRate: 21 }));
         invoicePreset.addEventListener("change", addInvoicePreset);
@@ -5436,6 +5586,7 @@
         invoiceOpenPayment.addEventListener("click", (event) => {
           if (event.currentTarget.getAttribute("aria-disabled") === "true") event.preventDefault();
         });
+        invoiceOpenQuote.addEventListener("click", openQuoteFromInvoice);
         invoiceCopyPayment.addEventListener("click", () => {
           const link = invoiceFields.paymentLink.value;
           if (link) copyText(link, "Betaalverzoek gekopieerd.", (text, type) => setBillingMessage(invoiceMessage, text, type));

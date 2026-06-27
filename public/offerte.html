@@ -136,7 +136,9 @@
 
           const note = document.createElement("p");
           note.className = "admin-form-message success";
-          note.textContent = "Demo/local: accepteren werkt alleen in deze browseropslag en is nog geen digitale ondertekening.";
+          note.textContent = quote.status === "geaccepteerd"
+            ? "Offerte geaccepteerd. Max Webstudio maakt hierna de factuur aan. Demo/local: dit is nog geen digitale ondertekening."
+            : "Demo/local: accepteren werkt alleen in deze browseropslag en is nog geen digitale ondertekening.";
 
           card.append(kicker, heading, proposal, meta, lines, total, accept, note);
         }
