@@ -22,6 +22,11 @@ const demoCarousel = document.querySelector("[data-demo-grid]");
 const demoPrev = document.querySelector("[data-demo-prev]");
 const demoNext = document.querySelector("[data-demo-next]");
 const demoDots = document.querySelector("[data-demo-dots]");
+const reviewCarousel = document.querySelector("[data-review-grid]");
+const reviewCards = document.querySelectorAll("[data-review-card]");
+const reviewPrev = document.querySelector("[data-review-prev]");
+const reviewNext = document.querySelector("[data-review-next]");
+const reviewDots = document.querySelector("[data-review-dots]");
 
 const calendlyUrl = "https://calendly.com/maxwebstudio/gratis-kennismakingsgesprek";
 let calendlyLoadPromise;
@@ -240,6 +245,90 @@ demoCarousel?.addEventListener("keydown", (event) => {
 });
 
 setActiveDemo(0);
+
+let activeReviewIndex = 0;
+
+function setActiveReview(index) {
+  if (!reviewCards.length) {
+    return;
+  }
+
+  activeReviewIndex = Math.max(0, Math.min(index, reviewCards.length - 1));
+
+  reviewCards.forEach((card, cardIndex) => {
+    card.classList.toggle("active", cardIndex === activeReviewIndex);
+  });
+
+  reviewDots?.querySelectorAll("button").forEach((dot, dotIndex) => {
+    dot.classList.toggle("active", dotIndex === activeReviewIndex);
+  });
+}
+
+function scrollToReview(index) {
+  const targetCard = reviewCards[index];
+
+  if (!targetCard) {
+    return;
+  }
+
+  targetCard.scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" });
+  setActiveReview(index);
+}
+
+function getNearestReviewIndex() {
+  if (!reviewCarousel || !reviewCards.length) {
+    return 0;
+  }
+
+  const carouselLeft = reviewCarousel.getBoundingClientRect().left;
+  let nearestIndex = 0;
+  let nearestDistance = Infinity;
+
+  reviewCards.forEach((card, index) => {
+    const distance = Math.abs(card.getBoundingClientRect().left - carouselLeft);
+
+    if (distance < nearestDistance) {
+      nearestIndex = index;
+      nearestDistance = distance;
+    }
+  });
+
+  return nearestIndex;
+}
+
+reviewCards.forEach((card, index) => {
+  const dot = document.createElement("button");
+  dot.type = "button";
+  dot.setAttribute("aria-label", `Ga naar review ${index + 1}`);
+  dot.addEventListener("click", () => scrollToReview(index));
+  reviewDots?.appendChild(dot);
+});
+
+reviewPrev?.addEventListener("click", () => {
+  scrollToReview(activeReviewIndex <= 0 ? reviewCards.length - 1 : activeReviewIndex - 1);
+});
+
+reviewNext?.addEventListener("click", () => {
+  scrollToReview(activeReviewIndex >= reviewCards.length - 1 ? 0 : activeReviewIndex + 1);
+});
+
+reviewCarousel?.addEventListener("scroll", () => {
+  window.requestAnimationFrame(() => setActiveReview(getNearestReviewIndex()));
+});
+
+reviewCarousel?.addEventListener("keydown", (event) => {
+  if (event.key === "ArrowLeft") {
+    event.preventDefault();
+    scrollToReview(activeReviewIndex <= 0 ? reviewCards.length - 1 : activeReviewIndex - 1);
+  }
+
+  if (event.key === "ArrowRight") {
+    event.preventDefault();
+    scrollToReview(activeReviewIndex >= reviewCards.length - 1 ? 0 : activeReviewIndex + 1);
+  }
+});
+
+setActiveReview(0);
 
 function loadCalendlyWidget() {
   if (window.Calendly) {
