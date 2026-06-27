@@ -27,6 +27,7 @@
           <a href="#dashboard">Dashboard</a>
           <a href="#klanten">Klanten</a>
           <a href="#websites">Websites</a>
+          <a href="#projecten">Projecten</a>
           <a href="#wijzigingsverzoeken">Wijzigingsverzoeken</a>
           <a href="#bestanden">Bestanden</a>
           <a href="#onderhoud">Onderhoud</a>
@@ -169,6 +170,7 @@
                 <button class="button primary" id="detail-save" type="submit" disabled>Opslaan</button>
                 <a class="button secondary is-disabled" id="detail-open-website" href="#" target="_blank" rel="noopener" aria-disabled="true">Website openen</a>
                 <a class="button secondary" href="/login.html" target="_blank" rel="noopener">Klantportaal openen</a>
+                <button class="button secondary" id="detail-start-project" type="button" disabled>Project starten</button>
                 <button class="button secondary danger" id="detail-archive" type="button" disabled>Archiveren</button>
               </div>
               <p class="admin-form-message" id="customer-detail-message" role="status"></p>
@@ -182,7 +184,7 @@
               <p class="section-kicker">Website Operations Center</p>
               <h2>Websiteomgevingen</h2>
             </div>
-            <button class="button primary" id="new-website" type="button">Nieuwe website</button>
+            <button class="button primary" id="new-managed-website" type="button">Nieuwe website</button>
           </div>
           <div class="admin-grid website-stats-grid" aria-label="Website statistieken">
             <article class="admin-card detail-card"><span>Totaal websites</span><strong id="website-stat-total">0</strong></article>
@@ -238,6 +240,7 @@
                 <a class="button secondary is-disabled" id="website-open-netlify" href="#" target="_blank" rel="noopener" aria-disabled="true">Open Netlify</a>
                 <button class="button secondary" id="website-copy-domain" type="button" disabled>Kopieer domein</button>
                 <button class="button secondary" id="website-copy-github" type="button" disabled>Kopieer GitHub URL</button>
+                <button class="button secondary" id="website-start-project" type="button" disabled>Project koppelen/starten</button>
               </div>
             </form>
           </div>
@@ -251,6 +254,88 @@
             </div>
             <div class="admin-grid health-summary-grid" id="website-health-list" aria-live="polite"></div>
             <p class="admin-form-message" id="website-health-message" role="status"></p>
+          </div>
+        </section>
+
+        <section class="admin-section" id="projecten">
+          <div class="admin-section-heading">
+            <div>
+              <p class="section-kicker">Onboarding</p>
+              <h2>Projectmanagement</h2>
+            </div>
+            <button class="button primary" id="new-project" type="button">Nieuw project</button>
+          </div>
+          <div class="admin-grid project-stats-grid" aria-label="Project statistieken">
+            <article class="admin-card detail-card"><span>Actieve projecten</span><strong id="project-stat-active">0</strong></article>
+            <article class="admin-card detail-card"><span>Onboarding</span><strong id="project-stat-onboarding">0</strong></article>
+            <article class="admin-card detail-card"><span>Feedback</span><strong id="project-stat-feedback">0</strong></article>
+            <article class="admin-card detail-card"><span>Klaar voor live</span><strong id="project-stat-ready">0</strong></article>
+            <article class="admin-card detail-card"><span>Gemiddelde voortgang</span><strong id="project-stat-progress">0%</strong></article>
+          </div>
+          <div class="project-management-grid">
+            <div class="admin-table project-table" id="project-list" role="table" aria-label="Projecten" aria-live="polite"></div>
+            <form class="admin-card admin-profile-form project-detail-panel" id="project-detail-form">
+              <div class="admin-profile-form-heading">
+                <div>
+                  <strong>Projectdetail</strong>
+                  <span id="project-detail-subtitle">Selecteer een project of start een nieuwe onboarding.</span>
+                </div>
+                <mark class="status-badge status-planned" id="project-detail-state">Niet geselecteerd</mark>
+              </div>
+              <div class="admin-profile-fields">
+                <label class="admin-profile-wide" for="project-customer">Klant<select id="project-customer" disabled></select></label>
+                <label class="admin-profile-wide" for="project-website">Website<select id="project-website" disabled></select></label>
+                <label for="project-name">Projectnaam<input id="project-name" type="text" disabled /></label>
+                <label for="project-type">Projecttype<select id="project-type" disabled><option value="Nieuwe website">Nieuwe website</option><option value="Redesign">Redesign</option><option value="Onderhoud">Onderhoud</option><option value="Extra pagina's">Extra pagina's</option><option value="SEO">SEO</option><option value="Maatwerk">Maatwerk</option></select></label>
+                <label for="project-status">Status<select id="project-status" disabled><option value="nieuw">Nieuw</option><option value="onboarding">Onboarding</option><option value="in_ontwerp">In ontwerp</option><option value="in_ontwikkeling">In ontwikkeling</option><option value="feedback">Feedback</option><option value="testen">Testen</option><option value="live">Live</option><option value="onderhoud">Onderhoud</option><option value="gepauzeerd">Gepauzeerd</option></select></label>
+                <label for="project-phase">Fase<input id="project-phase" type="text" placeholder="Intake" disabled /></label>
+                <label for="project-start">Startdatum<input id="project-start" type="date" disabled /></label>
+                <label for="project-deadline">Deadline<input id="project-deadline" type="date" disabled /></label>
+                <label class="admin-profile-wide" for="project-notes">Interne notities<textarea id="project-notes" disabled placeholder="Interne context, klantafspraken of aandachtspunten"></textarea></label>
+              </div>
+              <div class="project-progress-card">
+                <div>
+                  <strong>Voortgang</strong>
+                  <span id="project-progress-label">0%</span>
+                </div>
+                <div class="project-progress-track" aria-hidden="true"><span id="project-progress-bar"></span></div>
+              </div>
+              <div class="project-detail-summary" id="project-detail-summary" aria-live="polite"></div>
+              <div class="admin-profile-actions">
+                <button class="button primary" id="project-save" type="submit" disabled>Project opslaan</button>
+                <button class="button secondary danger" id="project-delete" type="button" disabled>Verwijderen</button>
+                <p class="admin-form-message" id="project-detail-message" role="status"></p>
+              </div>
+              <div class="project-work-grid">
+                <article class="admin-card project-work-card">
+                  <div class="project-work-heading">
+                    <strong>Onboarding checklist</strong>
+                    <span id="project-checklist-count">0/0</span>
+                  </div>
+                  <div class="project-checklist" id="project-checklist"></div>
+                </article>
+                <article class="admin-card project-work-card">
+                  <div class="project-work-heading">
+                    <strong>Projecttaken</strong>
+                    <span id="project-task-count">0 open</span>
+                  </div>
+                  <div class="project-task-form">
+                    <input id="project-task-title" type="text" placeholder="Nieuwe taak" disabled />
+                    <select id="project-task-priority" disabled><option value="laag">Laag</option><option value="normaal" selected>Normaal</option><option value="hoog">Hoog</option></select>
+                    <input id="project-task-deadline" type="date" disabled />
+                    <button class="button secondary" id="project-task-add" type="button" disabled>Taak toevoegen</button>
+                  </div>
+                  <div class="project-task-list" id="project-task-list"></div>
+                </article>
+              </div>
+              <article class="admin-card project-work-card">
+                <div class="project-work-heading">
+                  <strong>Tijdlijn</strong>
+                  <span id="project-timeline-count">0 events</span>
+                </div>
+                <div class="project-timeline" id="project-timeline"></div>
+              </article>
+            </form>
           </div>
         </section>
 
@@ -440,6 +525,7 @@
         const adminTokenStorageKey = "mws_admin_token";
         const crmCustomersStorageKey = "maxwebstudioCrmCustomers";
         const managedSitesStorageKey = "maxwebstudioManagedSites";
+        const projectsStorageKey = "maxwebstudioProjects";
         const completedStatuses = new Set(["afgerond"]);
         const statusLabels = {
           nieuw: "Nieuw",
@@ -460,18 +546,55 @@
           waiting_client: "Wachten op klant",
           offline: "Offline",
         };
+        const projectStatusLabels = {
+          nieuw: "Nieuw",
+          onboarding: "Onboarding",
+          in_ontwerp: "In ontwerp",
+          in_ontwikkeling: "In ontwikkeling",
+          feedback: "Feedback",
+          testen: "Testen",
+          live: "Live",
+          onderhoud: "Onderhoud",
+          gepauzeerd: "Gepauzeerd",
+        };
+        const defaultProjectChecklist = [
+          "Logo ontvangen",
+          "Huisstijl/kleurwensen ontvangen",
+          "Teksten ontvangen",
+          "Foto's ontvangen",
+          "Domeinnaam bekend",
+          "Hosting keuze gemaakt",
+          "E-mailadressen bekend",
+          "Google Maps link ontvangen",
+          "Social media links ontvangen",
+          "Voorbeelden/inspiratie ontvangen",
+          "Algemene voorwaarden akkoord",
+          "Aanbetaling/factuur geregeld",
+        ];
+        const defaultProjectTasks = [
+          "Intake verwerken",
+          "Homepage opzetten",
+          "Dienstenpagina opzetten",
+          "Contactformulier testen",
+          "Mobiel controleren",
+          "SEO basics toevoegen",
+          "Klantfeedback verwerken",
+          "Livegang voorbereiden",
+        ];
         const state = {
           adminToken: sessionStorage.getItem(adminTokenStorageKey) || "",
           customers: [],
           profiles: [],
           authUsers: [],
           websites: [],
+          projects: [],
           healthWebsites: [],
           subscriptions: [],
           invoices: [],
           requests: [],
           selectedCustomerId: "",
           selectedWebsiteId: "",
+          selectedProjectId: "",
           selectedSubscriptionId: "",
           selectedInvoiceId: "",
           selectedRequestId: "",
@@ -559,6 +682,45 @@
           netlify: document.getElementById("website-open-netlify"),
           copyDomain: document.getElementById("website-copy-domain"),
           copyGithub: document.getElementById("website-copy-github"),
+          startProject: document.getElementById("website-start-project"),
+        };
+        const projectList = document.getElementById("project-list");
+        const projectDetailForm = document.getElementById("project-detail-form");
+        const projectFields = {
+          customer: document.getElementById("project-customer"),
+          website: document.getElementById("project-website"),
+          name: document.getElementById("project-name"),
+          type: document.getElementById("project-type"),
+          status: document.getElementById("project-status"),
+          phase: document.getElementById("project-phase"),
+          startDate: document.getElementById("project-start"),
+          deadline: document.getElementById("project-deadline"),
+          notes: document.getElementById("project-notes"),
+        };
+        const projectSave = document.getElementById("project-save");
+        const projectDelete = document.getElementById("project-delete");
+        const projectDetailState = document.getElementById("project-detail-state");
+        const projectDetailSubtitle = document.getElementById("project-detail-subtitle");
+        const projectDetailMessage = document.getElementById("project-detail-message");
+        const projectDetailSummary = document.getElementById("project-detail-summary");
+        const projectProgressLabel = document.getElementById("project-progress-label");
+        const projectProgressBar = document.getElementById("project-progress-bar");
+        const projectChecklist = document.getElementById("project-checklist");
+        const projectChecklistCount = document.getElementById("project-checklist-count");
+        const projectTaskTitle = document.getElementById("project-task-title");
+        const projectTaskPriority = document.getElementById("project-task-priority");
+        const projectTaskDeadline = document.getElementById("project-task-deadline");
+        const projectTaskAdd = document.getElementById("project-task-add");
+        const projectTaskList = document.getElementById("project-task-list");
+        const projectTaskCount = document.getElementById("project-task-count");
+        const projectTimeline = document.getElementById("project-timeline");
+        const projectTimelineCount = document.getElementById("project-timeline-count");
+        const projectStats = {
+          active: document.getElementById("project-stat-active"),
+          onboarding: document.getElementById("project-stat-onboarding"),
+          feedback: document.getElementById("project-stat-feedback"),
+          ready: document.getElementById("project-stat-ready"),
+          progress: document.getElementById("project-stat-progress"),
         };
         const websiteHealthList = document.getElementById("website-health-list");
         const websiteHealthRefresh = document.getElementById("website-health-refresh");
@@ -597,6 +759,7 @@
         const detailSubtitle = document.getElementById("customer-detail-subtitle");
         const detailMessage = document.getElementById("customer-detail-message");
         const detailOpenWebsite = document.getElementById("detail-open-website");
+        const detailStartProject = document.getElementById("detail-start-project");
         const detailAuthStatus = document.getElementById("detail-auth-status");
         const detailLinkLogin = document.getElementById("detail-link-login");
         const detailResetPassword = document.getElementById("detail-reset-password");
@@ -668,6 +831,15 @@
           if (status === "development" || status === "staging" || status === "pending") return "status-prepared";
           if (status === "maintenance" || status === "onderhoud" || status === "paused" || status === "waiting client" || status === "wachten op klant") return "status-warning";
           if (status === "offline" || status === "gearchiveerd" || status === "inactive") return "status-attention";
+          return "status-planned";
+        }
+
+        function projectStatusClass(value) {
+          const status = statusKey(value);
+          if (status === "live" || status === "onderhoud") return "status-active";
+          if (status === "nieuw" || status === "onboarding" || status === "in_ontwerp" || status === "in_ontwikkeling" || status === "testen") return "status-prepared";
+          if (status === "feedback") return "status-warning";
+          if (status === "gepauzeerd") return "status-attention";
           return "status-planned";
         }
 
@@ -870,6 +1042,162 @@
           return nextWebsites;
         }
 
+        function websiteById(id) {
+          return state.websites.find((website) => website.id === id) || null;
+        }
+
+        function createDefaultChecklist(existingItems = []) {
+          return defaultProjectChecklist.map((label) => {
+            const existing = existingItems.find((item) => item.label === label || item.title === label) || {};
+            return {
+              id: existing.id || createCrmId(),
+              label,
+              completed: Boolean(existing.completed),
+              completedAt: existing.completedAt || "",
+            };
+          });
+        }
+
+        function createDefaultTasks(existingTasks = []) {
+          if (existingTasks.length) {
+            return existingTasks.map((task) => ({
+              id: task.id || createCrmId(),
+              title: String(task.title || "").trim(),
+              priority: task.priority || "normaal",
+              deadline: task.deadline || "",
+              status: task.status || (task.completed ? "afgerond" : "open"),
+              completed: Boolean(task.completed || task.status === "afgerond"),
+              completedAt: task.completedAt || "",
+            })).filter((task) => task.title);
+          }
+          return defaultProjectTasks.map((title) => ({
+            id: createCrmId(),
+            title,
+            priority: "normaal",
+            deadline: "",
+            status: "open",
+            completed: false,
+            completedAt: "",
+          }));
+        }
+
+        function normalizeProjectTimeline(events = []) {
+          return events.map((event) => ({
+            id: event.id || createCrmId(),
+            type: event.type || "update",
+            label: String(event.label || "Project bijgewerkt").trim(),
+            createdAt: event.createdAt || new Date().toISOString(),
+          }));
+        }
+
+        function calculateProjectProgress(project) {
+          const checklist = Array.isArray(project.checklist) ? project.checklist : [];
+          const tasks = Array.isArray(project.tasks) ? project.tasks : [];
+          const total = checklist.length + tasks.length;
+          if (!total) return 0;
+          const done = checklist.filter((item) => item.completed).length + tasks.filter((task) => task.completed || task.status === "afgerond").length;
+          return Math.round((done / total) * 100);
+        }
+
+        function normalizeProject(project = {}) {
+          const now = new Date().toISOString();
+          const createdAt = project.createdAt || now;
+          const customerId = project.customerId || project.profileId || "";
+          const websiteId = project.websiteId || "";
+          const customer = customerById(customerId);
+          const website = websiteById(websiteId);
+          const checklist = createDefaultChecklist(Array.isArray(project.checklist) ? project.checklist : []);
+          const tasks = createDefaultTasks(Array.isArray(project.tasks) ? project.tasks : []);
+          const normalized = {
+            id: project.id || createCrmId(),
+            customerId,
+            profileId: customerId,
+            websiteId,
+            customerName: customer?.name || project.customerName || "",
+            customerCompany: customer?.company || project.customerCompany || "",
+            customerEmail: customer?.email || project.customerEmail || "",
+            customerPhone: customer?.phone || project.customerPhone || "",
+            websiteName: website?.name || project.websiteName || "",
+            websiteDomain: website?.domain || project.websiteDomain || "",
+            name: String(project.name || website?.name || customer?.company || "Nieuw project").trim(),
+            type: project.type || "Nieuwe website",
+            status: statusKey(project.status || "nieuw"),
+            phase: String(project.phase || "Intake").trim(),
+            progress: Number(project.progress || 0),
+            startDate: project.startDate || createdAt.slice(0, 10),
+            deadline: project.deadline || "",
+            lastUpdateAt: project.lastUpdateAt || project.updatedAt || createdAt,
+            notes: String(project.notes || "").trim(),
+            checklist,
+            tasks,
+            timeline: normalizeProjectTimeline(project.timeline || []),
+            createdAt,
+            updatedAt: project.updatedAt || createdAt,
+          };
+          normalized.progress = calculateProjectProgress(normalized);
+          if (!normalized.timeline.length) {
+            normalized.timeline.push({ id: createCrmId(), type: "created", label: "Project aangemaakt", createdAt });
+          }
+          return normalized;
+        }
+
+        function readStoredProjects() {
+          try {
+            const stored = JSON.parse(localStorage.getItem(projectsStorageKey) || "[]");
+            return Array.isArray(stored) ? stored.map(normalizeProject) : [];
+          } catch (error) {
+            console.error("Projects could not be read", error);
+            return [];
+          }
+        }
+
+        function writeStoredProjects(projects) {
+          localStorage.setItem(projectsStorageKey, JSON.stringify(projects.map(normalizeProject)));
+        }
+
+        function validateProjectPayload(payload) {
+          if (!payload.customerId) return "Kies eerst een klant.";
+          if (!String(payload.name || "").trim()) return "Vul een projectnaam in.";
+          return "";
+        }
+
+        function addProjectEvent(project, type, label) {
+          project.timeline = normalizeProjectTimeline(project.timeline);
+          project.timeline.unshift({ id: createCrmId(), type, label, createdAt: new Date().toISOString() });
+          return project;
+        }
+
+        function saveProjectLocally(payload, eventLabel = "Project bijgewerkt") {
+          const projects = readStoredProjects();
+          const existingIndex = projects.findIndex((project) => project.id === payload.id);
+          const existing = existingIndex >= 0 ? projects[existingIndex] : {};
+          const now = new Date().toISOString();
+          const project = normalizeProject({
+            ...existing,
+            ...payload,
+            id: payload.id || existing.id || createCrmId(),
+            createdAt: existing.createdAt || now,
+            updatedAt: now,
+            lastUpdateAt: now,
+          });
+          const validationError = validateProjectPayload(project);
+          if (validationError) throw new Error(validationError);
+          addProjectEvent(project, "update", existingIndex >= 0 ? eventLabel : "Project aangemaakt");
+          if (existing.status && existing.status !== project.status) {
+            addProjectEvent(project, "status", project.status === "live" ? "Project live gezet" : `Status gewijzigd naar ${projectStatusLabels[project.status] || project.status}`);
+          }
+          if (existingIndex >= 0) projects[existingIndex] = project;
+          else projects.unshift(project);
+          writeStoredProjects(projects);
+          return project;
+        }
+
+        function deleteProjectLocally(id) {
+          const projects = readStoredProjects().filter((project) => project.id !== id);
+          writeStoredProjects(projects);
+          return projects;
+        }
+
         function toDateInput(value) {
           if (!value) return "";
           const date = new Date(value);
@@ -950,6 +1278,7 @@
           websiteStats.online.textContent = String(liveWebsites);
           websiteStats.development.textContent = String(state.websites.filter((website) => website.status === "development").length);
           websiteStats.maintenance.textContent = String(state.websites.filter((website) => website.status === "maintenance").length);
+          renderProjectStats();
         }
 
         async function loadDashboardMetrics(showLoading = false) {
@@ -1161,6 +1490,7 @@
           detailOpenWebsite.href = customer.website || "#";
           detailOpenWebsite.classList.toggle("is-disabled", !customer.website);
           detailOpenWebsite.toggleAttribute("aria-disabled", !customer.website);
+          detailStartProject.disabled = false;
         }
 
         async function saveCustomer(event) {
@@ -1402,6 +1732,7 @@
           websiteArchive.disabled = !enabled || !state.selectedWebsiteId;
           websiteQuickActions.copyDomain.disabled = !enabled || !websiteFields.domain.value;
           websiteQuickActions.copyGithub.disabled = !enabled || !websiteFields.githubRepoUrl.value;
+          websiteQuickActions.startProject.disabled = !enabled || !state.selectedWebsiteId;
         }
 
         function resetWebsiteForm() {
@@ -1441,6 +1772,7 @@
           setActionLink(websiteQuickActions.netlify, website ? netlifyUrl(website) : "");
           websiteQuickActions.copyDomain.disabled = !website?.domain;
           websiteQuickActions.copyGithub.disabled = !website?.githubRepoUrl;
+          websiteQuickActions.startProject.disabled = !website;
         }
 
         function addWebsiteSummaryCard(title, items) {
@@ -1890,6 +2222,385 @@
             card.append(createCell(carePackage, "span"), createCell(String(count), "strong"));
             careOverview.append(card);
           });
+        }
+
+        function selectedProject() {
+          return state.projects.find((project) => project.id === state.selectedProjectId);
+        }
+
+        function populateProjectOptions(selectedCustomerOverride = "") {
+          projectFields.customer.replaceChildren();
+          const emptyCustomer = document.createElement("option");
+          emptyCustomer.value = "";
+          emptyCustomer.textContent = "Kies klant";
+          projectFields.customer.append(emptyCustomer);
+          state.customers.forEach((customer) => {
+            const option = document.createElement("option");
+            option.value = customer.id;
+            option.textContent = `${customer.company || customer.name || "Klant"}${customer.email ? ` - ${customer.email}` : ""}`;
+            projectFields.customer.append(option);
+          });
+
+          projectFields.website.replaceChildren();
+          const emptyWebsite = document.createElement("option");
+          emptyWebsite.value = "";
+          emptyWebsite.textContent = "Geen website gekoppeld";
+          projectFields.website.append(emptyWebsite);
+          const selectedCustomerId = selectedCustomerOverride || projectFields.customer.value;
+          state.websites
+            .filter((website) => !selectedCustomerId || website.profileId === selectedCustomerId)
+            .forEach((website) => {
+              const option = document.createElement("option");
+              option.value = website.id;
+              option.textContent = `${website.name || website.domain || "Website"}${website.domain ? ` - ${website.domain}` : ""}`;
+              projectFields.website.append(option);
+            });
+        }
+
+        function setProjectMessage(text, type = "") {
+          projectDetailMessage.textContent = text;
+          projectDetailMessage.className = `admin-form-message ${type}`.trim();
+        }
+
+        function enableProjectFields(enabled) {
+          Object.values(projectFields).forEach((field) => {
+            field.disabled = !enabled;
+          });
+          projectSave.disabled = !enabled;
+          projectDelete.disabled = !enabled || !state.selectedProjectId;
+          projectTaskTitle.disabled = !enabled || !state.selectedProjectId;
+          projectTaskPriority.disabled = !enabled || !state.selectedProjectId;
+          projectTaskDeadline.disabled = !enabled || !state.selectedProjectId;
+          projectTaskAdd.disabled = !enabled || !state.selectedProjectId;
+        }
+
+        function renderProjectStats() {
+          const activeStatuses = new Set(["nieuw", "onboarding", "in_ontwerp", "in_ontwikkeling", "feedback", "testen"]);
+          const active = state.projects.filter((project) => activeStatuses.has(project.status)).length;
+          const average = state.projects.length ? Math.round(state.projects.reduce((sum, project) => sum + Number(project.progress || 0), 0) / state.projects.length) : 0;
+          projectStats.active.textContent = String(active);
+          projectStats.onboarding.textContent = String(state.projects.filter((project) => project.status === "onboarding").length);
+          projectStats.feedback.textContent = String(state.projects.filter((project) => project.status === "feedback").length);
+          projectStats.ready.textContent = String(state.projects.filter((project) => project.status === "testen").length);
+          projectStats.progress.textContent = `${average}%`;
+        }
+
+        function renderProjects() {
+          projectList.replaceChildren();
+          populateProjectOptions();
+          renderProjectStats();
+          if (!state.projects.length) {
+            renderState(projectList, "Nog geen projecten", "Start een project vanuit een klant, website of met de knop Nieuw project.", "Leeg");
+            return;
+          }
+          const head = document.createElement("div");
+          head.className = "admin-table-row admin-table-head project-row";
+          ["Project", "Klant", "Website", "Status", "Fase", "Voortgang", "Deadline", "Actie"].forEach((label) => head.append(createCell(label)));
+          projectList.append(head);
+          state.projects.forEach((project) => {
+            const row = document.createElement("div");
+            row.className = "admin-table-row project-row";
+            const progress = document.createElement("span");
+            progress.className = "mini-progress";
+            const progressBar = document.createElement("span");
+            progressBar.style.width = `${project.progress || 0}%`;
+            progress.append(progressBar, createCell(`${project.progress || 0}%`));
+            const action = document.createElement("button");
+            action.className = "button secondary";
+            action.type = "button";
+            action.textContent = "Bekijk";
+            action.addEventListener("click", () => selectProject(project.id));
+            row.append(
+              createCell(project.name || "-", "strong"),
+              createCell(project.customerCompany || project.customerName || "-"),
+              createCell(project.websiteName || project.websiteDomain || "-"),
+              createBadge(projectStatusLabels[project.status] || project.status, projectStatusClass(project.status)),
+              createCell(project.phase || "-"),
+              progress,
+              createCell(project.deadline || "-"),
+              action
+            );
+            projectList.append(row);
+          });
+        }
+
+        function resetProjectForm(seed = {}) {
+          state.selectedProjectId = "";
+          projectDetailForm.reset();
+          populateProjectOptions(seed.customerId || "");
+          projectFields.customer.value = seed.customerId || "";
+          populateProjectOptions(seed.customerId || "");
+          projectFields.customer.value = seed.customerId || "";
+          projectFields.website.value = seed.websiteId || "";
+          projectFields.name.value = seed.name || "";
+          projectFields.type.value = seed.type || "Nieuwe website";
+          projectFields.status.value = seed.status || "nieuw";
+          projectFields.phase.value = seed.phase || "Intake";
+          projectFields.startDate.value = new Date().toISOString().slice(0, 10);
+          projectDetailState.textContent = "Nieuw";
+          projectDetailState.className = "status-badge status-prepared";
+          projectDetailSubtitle.textContent = "Nieuw project voorbereiden.";
+          projectProgressLabel.textContent = "0%";
+          projectProgressBar.style.width = "0%";
+          projectDetailSummary.replaceChildren();
+          projectChecklist.replaceChildren();
+          projectTaskList.replaceChildren();
+          projectTimeline.replaceChildren();
+          projectChecklistCount.textContent = "0/0";
+          projectTaskCount.textContent = "0 open";
+          projectTimelineCount.textContent = "0 events";
+          setProjectMessage("", "");
+          enableProjectFields(true);
+        }
+
+        function addProjectSummaryCard(title, items) {
+          const card = document.createElement("article");
+          card.className = "admin-card website-summary-card";
+          card.append(createCell(title, "strong"));
+          items.forEach(([label, value]) => {
+            const row = document.createElement("span");
+            row.append(createCell(label), createCell(value));
+            card.append(row);
+          });
+          projectDetailSummary.append(card);
+        }
+
+        function renderProjectDetail(project) {
+          projectDetailSummary.replaceChildren();
+          if (!project) return;
+          addProjectSummaryCard("Klantgegevens", [
+            ["Klant-ID", project.customerId || "-"],
+            ["Naam", project.customerName || "-"],
+            ["Bedrijf", project.customerCompany || "-"],
+            ["Telefoon", project.customerPhone || "-"],
+            ["E-mail", project.customerEmail || "-"],
+          ]);
+          addProjectSummaryCard("Websitegegevens", [
+            ["Website-ID", project.websiteId || "-"],
+            ["Naam", project.websiteName || "-"],
+            ["Domein", project.websiteDomain || "-"],
+          ]);
+          addProjectSummaryCard("Planning", [
+            ["Project-ID", project.id || "-"],
+            ["Startdatum", project.startDate || "-"],
+            ["Deadline", project.deadline || "-"],
+            ["Laatste update", formatDate(project.lastUpdateAt)],
+          ]);
+        }
+
+        function renderProjectChecklist(project) {
+          projectChecklist.replaceChildren();
+          const completed = project.checklist.filter((item) => item.completed).length;
+          projectChecklistCount.textContent = `${completed}/${project.checklist.length}`;
+          project.checklist.forEach((item) => {
+            const label = document.createElement("label");
+            label.className = "project-check-item";
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.checked = item.completed;
+            checkbox.addEventListener("change", () => toggleChecklistItem(item.id, checkbox.checked));
+            label.append(checkbox, createCell(item.label));
+            projectChecklist.append(label);
+          });
+        }
+
+        function renderProjectTasks(project) {
+          projectTaskList.replaceChildren();
+          const openTasks = project.tasks.filter((task) => !task.completed && task.status !== "afgerond").length;
+          projectTaskCount.textContent = `${openTasks} open`;
+          project.tasks.forEach((task) => {
+            const item = document.createElement("article");
+            item.className = "project-task-item";
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.checked = task.completed || task.status === "afgerond";
+            checkbox.addEventListener("change", () => toggleTask(task.id, checkbox.checked));
+            const content = document.createElement("div");
+            content.append(createCell(task.title, "strong"), createCell(`${task.priority} - ${task.deadline || "geen deadline"}`));
+            const remove = document.createElement("button");
+            remove.className = "button secondary danger";
+            remove.type = "button";
+            remove.textContent = "Verwijder";
+            remove.addEventListener("click", () => removeProjectTask(task.id));
+            item.append(checkbox, content, createBadge(task.status || "open", task.completed ? "status-active" : priorityClass(task.priority)), remove);
+            projectTaskList.append(item);
+          });
+        }
+
+        function renderProjectTimeline(project) {
+          projectTimeline.replaceChildren();
+          projectTimelineCount.textContent = `${project.timeline.length} events`;
+          project.timeline.slice(0, 20).forEach((event) => {
+            const item = document.createElement("article");
+            item.className = "project-timeline-item";
+            item.append(createCell(event.label, "strong"), createCell(formatDate(event.createdAt)));
+            projectTimeline.append(item);
+          });
+        }
+
+        function selectProject(id) {
+          state.selectedProjectId = id;
+          const project = selectedProject();
+          if (!project) return;
+          populateProjectOptions(project.customerId || "");
+          projectFields.customer.value = project.customerId || "";
+          populateProjectOptions(project.customerId || "");
+          projectFields.customer.value = project.customerId || "";
+          projectFields.website.value = project.websiteId || "";
+          projectFields.name.value = project.name || "";
+          projectFields.type.value = project.type || "Nieuwe website";
+          projectFields.status.value = project.status || "nieuw";
+          projectFields.phase.value = project.phase || "Intake";
+          projectFields.startDate.value = project.startDate || "";
+          projectFields.deadline.value = project.deadline || "";
+          projectFields.notes.value = project.notes || "";
+          projectDetailState.textContent = projectStatusLabels[project.status] || project.status || "Project";
+          projectDetailState.className = `status-badge ${projectStatusClass(project.status)}`;
+          projectDetailSubtitle.textContent = `${project.customerCompany || project.customerName || "Klant"} - ${project.name}`;
+          projectProgressLabel.textContent = `${project.progress || 0}%`;
+          projectProgressBar.style.width = `${project.progress || 0}%`;
+          renderProjectDetail(project);
+          renderProjectChecklist(project);
+          renderProjectTasks(project);
+          renderProjectTimeline(project);
+          setProjectMessage("", "");
+          enableProjectFields(true);
+        }
+
+        function projectPayload(extra = {}) {
+          return {
+            id: state.selectedProjectId,
+            customerId: projectFields.customer.value,
+            websiteId: projectFields.website.value,
+            name: projectFields.name.value,
+            type: projectFields.type.value,
+            status: projectFields.status.value,
+            phase: projectFields.phase.value,
+            startDate: projectFields.startDate.value,
+            deadline: projectFields.deadline.value,
+            notes: projectFields.notes.value,
+            ...extra,
+          };
+        }
+
+        async function saveProject(event) {
+          event.preventDefault();
+          projectSave.disabled = true;
+          projectSave.textContent = "Opslaan...";
+          setProjectMessage("", "");
+          try {
+            const project = saveProjectLocally(projectPayload(), "Projectgegevens opgeslagen");
+            await loadCRMData(false);
+            state.selectedProjectId = project.id;
+            selectProject(project.id);
+            setProjectMessage("Project opgeslagen.", "success");
+          } catch (error) {
+            setProjectMessage(error.message || "Project kon niet worden opgeslagen.", "error");
+          } finally {
+            projectSave.disabled = false;
+            projectSave.textContent = "Project opslaan";
+          }
+        }
+
+        function updateProject(project, eventType, eventLabel) {
+          project.updatedAt = new Date().toISOString();
+          project.lastUpdateAt = project.updatedAt;
+          project.progress = calculateProjectProgress(project);
+          addProjectEvent(project, eventType, eventLabel);
+          const projects = readStoredProjects();
+          const index = projects.findIndex((item) => item.id === project.id);
+          if (index >= 0) projects[index] = project;
+          writeStoredProjects(projects);
+          state.projects = readStoredProjects();
+          renderProjects();
+          selectProject(project.id);
+        }
+
+        function toggleChecklistItem(id, completed) {
+          const project = selectedProject();
+          if (!project) return;
+          project.checklist = project.checklist.map((item) => item.id === id ? { ...item, completed, completedAt: completed ? new Date().toISOString() : "" } : item);
+          const item = project.checklist.find((entry) => entry.id === id);
+          updateProject(project, "checklist", `${item?.label || "Checklist-item"} ${completed ? "afgerond" : "heropend"}`);
+        }
+
+        function addProjectTask() {
+          const project = selectedProject();
+          if (!project) return;
+          const title = projectTaskTitle.value.trim();
+          if (!title) {
+            setProjectMessage("Vul eerst een taaknaam in.", "error");
+            return;
+          }
+          project.tasks.unshift({
+            id: createCrmId(),
+            title,
+            priority: projectTaskPriority.value || "normaal",
+            deadline: projectTaskDeadline.value || "",
+            status: "open",
+            completed: false,
+            completedAt: "",
+          });
+          projectTaskTitle.value = "";
+          projectTaskDeadline.value = "";
+          projectTaskPriority.value = "normaal";
+          updateProject(project, "task", `Taak toegevoegd: ${title}`);
+          setProjectMessage("Taak toegevoegd.", "success");
+        }
+
+        function toggleTask(id, completed) {
+          const project = selectedProject();
+          if (!project) return;
+          project.tasks = project.tasks.map((task) => task.id === id ? { ...task, completed, status: completed ? "afgerond" : "open", completedAt: completed ? new Date().toISOString() : "" } : task);
+          const task = project.tasks.find((entry) => entry.id === id);
+          updateProject(project, "task", `Taak ${completed ? "afgerond" : "heropend"}: ${task?.title || "Taak"}`);
+        }
+
+        function removeProjectTask(id) {
+          const project = selectedProject();
+          if (!project) return;
+          const task = project.tasks.find((entry) => entry.id === id);
+          project.tasks = project.tasks.filter((entry) => entry.id !== id);
+          updateProject(project, "task", `Taak verwijderd: ${task?.title || "Taak"}`);
+          setProjectMessage("Taak verwijderd.", "success");
+        }
+
+        async function deleteProject() {
+          const project = selectedProject();
+          if (!project) return;
+          const confirmed = window.confirm("Weet je zeker dat je dit project wilt verwijderen?");
+          if (!confirmed) return;
+          deleteProjectLocally(project.id);
+          await loadCRMData(false);
+          resetProjectForm();
+          setProjectMessage("Project verwijderd.", "success");
+        }
+
+        function startProjectFromCustomer() {
+          const customer = selectedCustomer();
+          if (!customer) return;
+          const firstWebsite = state.websites.find((website) => website.profileId === customer.id);
+          resetProjectForm({
+            customerId: customer.id,
+            websiteId: firstWebsite?.id || "",
+            name: `${customer.company || customer.name} websiteproject`,
+            status: "onboarding",
+            phase: "Intake",
+          });
+          document.getElementById("projecten").scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+
+        function startProjectFromWebsite() {
+          const website = selectedWebsite();
+          if (!website) return;
+          resetProjectForm({
+            customerId: website.profileId,
+            websiteId: website.id,
+            name: `${website.name || website.domain} project`,
+            status: "onboarding",
+            phase: "Intake",
+          });
+          document.getElementById("projecten").scrollIntoView({ behavior: "smooth", block: "start" });
         }
 
         function money(value) {
@@ -2770,13 +3481,17 @@
             state.profiles = state.customers;
             state.authUsers = [];
             state.websites = readStoredWebsites();
+            state.projects = readStoredProjects();
             renderCustomers();
             renderWebsites();
+            renderProjects();
             renderCareOverview();
             updateMetrics();
             if (state.selectedCustomerId && selectedCustomer()) selectCustomer(state.selectedCustomerId);
             if (state.selectedWebsiteId && selectedWebsite()) selectWebsite(state.selectedWebsiteId);
+            if (state.selectedProjectId && selectedProject()) selectProject(state.selectedProjectId);
             populateWebsiteProfileOptions();
+            populateProjectOptions();
             if (state.adminToken) {
               await loadDashboardMetrics(false);
               await loadWebsiteHealth(false);
@@ -2809,7 +3524,8 @@
 
         document.getElementById("open-new-customer").addEventListener("click", openNewCustomerModal);
         document.getElementById("open-new-customer-secondary").addEventListener("click", openNewCustomerModal);
-        document.getElementById("new-website").addEventListener("click", resetWebsiteForm);
+        document.getElementById("new-managed-website").addEventListener("click", resetWebsiteForm);
+        document.getElementById("new-project").addEventListener("click", () => resetProjectForm());
         document.getElementById("new-subscription").addEventListener("click", () => openSubscriptionModal());
         document.getElementById("new-invoice").addEventListener("click", () => openInvoiceModal());
         websiteHealthRefresh.addEventListener("click", () => loadWebsiteHealth(true));
@@ -2835,10 +3551,20 @@
           const website = selectedWebsite();
           if (website) copyText(website.githubRepoUrl, "GitHub URL gekopieerd.");
         });
+        websiteQuickActions.startProject.addEventListener("click", startProjectFromWebsite);
         detailLinkLogin.addEventListener("click", linkLogin);
         detailResetPassword.addEventListener("click", sendPasswordReset);
         detailSendInvite.addEventListener("click", sendInviteFromDetail);
         detailArchive.addEventListener("click", archiveCustomer);
+        detailStartProject.addEventListener("click", startProjectFromCustomer);
+        projectDetailForm.addEventListener("submit", saveProject);
+        projectDelete.addEventListener("click", deleteProject);
+        projectTaskAdd.addEventListener("click", addProjectTask);
+        projectFields.customer.addEventListener("change", () => {
+          const selectedCustomerId = projectFields.customer.value;
+          populateProjectOptions(selectedCustomerId);
+          projectFields.customer.value = selectedCustomerId;
+        });
         newCustomerForm.addEventListener("submit", createCustomer);
         newSendInvite.addEventListener("click", sendInviteFromNewCustomer);
         [customerSearch, customerStatusFilter, customerPackageFilter].forEach((filter) => filter.addEventListener("input", renderCustomers));

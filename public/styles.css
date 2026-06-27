@@ -5104,9 +5104,26 @@ h3 {
   margin-bottom: 14px;
 }
 
+.project-stats-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-bottom: 14px;
+}
+
 .website-filters {
   grid-template-columns: minmax(220px, 1.35fr) repeat(3, minmax(150px, 1fr));
   margin-bottom: 16px;
+}
+
+.project-management-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(420px, 0.92fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.project-detail-panel {
+  position: sticky;
+  top: 18px;
 }
 
 .website-detail-panel {
@@ -5164,6 +5181,176 @@ h3 {
 .website-quick-actions {
   justify-content: flex-start;
   padding-top: 4px;
+}
+
+.project-row {
+  grid-template-columns:
+    minmax(150px, 1.15fr)
+    minmax(130px, 1fr)
+    minmax(120px, 0.9fr)
+    minmax(110px, 0.85fr)
+    minmax(105px, 0.8fr)
+    minmax(130px, 0.9fr)
+    minmax(105px, 0.75fr)
+    minmax(90px, 0.65fr);
+}
+
+.mini-progress {
+  display: grid;
+  grid-template-columns: minmax(50px, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  min-width: 110px;
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.mini-progress::before {
+  content: "";
+  display: block;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.mini-progress > span:first-child {
+  height: 8px;
+  max-width: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--primary), #60a5fa);
+  grid-column: 1;
+  grid-row: 1;
+  z-index: 1;
+}
+
+.project-progress-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(147, 197, 253, 0.18);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.project-progress-card > div:first-child,
+.project-work-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.project-progress-card strong,
+.project-work-heading strong {
+  color: var(--white);
+}
+
+.project-progress-card span,
+.project-work-heading span {
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.project-progress-track {
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.project-progress-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--primary), #60a5fa);
+  transition: width 0.25s ease;
+}
+
+.project-detail-summary,
+.project-work-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.project-work-card {
+  gap: 14px;
+  padding: 14px;
+}
+
+.project-checklist,
+.project-task-list,
+.project-timeline {
+  display: grid;
+  gap: 8px;
+}
+
+.project-check-item,
+.project-task-item,
+.project-timeline-item {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.project-check-item {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  cursor: pointer;
+}
+
+.project-check-item input,
+.project-task-item input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+}
+
+.project-task-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px 140px auto;
+  gap: 8px;
+}
+
+.project-task-form input,
+.project-task-form select {
+  min-height: 40px;
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  padding: 0 10px;
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.08);
+  font: inherit;
+}
+
+.project-task-form option {
+  color: var(--ink);
+}
+
+.project-task-item {
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+}
+
+.project-task-item div {
+  display: grid;
+  gap: 2px;
+}
+
+.project-task-item strong,
+.project-timeline-item strong {
+  color: var(--white);
 }
 
 .billing-row {
@@ -7341,6 +7528,7 @@ h3 {
   .admin-crm-shell,
   .admin-crm-grid,
   .website-operations-grid,
+  .project-management-grid,
   .bi-dashboard-grid,
   .admin-grid,
   .admin-two-column,
@@ -7612,6 +7800,7 @@ h3 {
   .admin-table-row,
   .crm-customer-row,
   .website-row,
+  .project-row,
   .billing-row,
   .invoice-row,
   .file-row,
@@ -7629,6 +7818,19 @@ h3 {
 
   .client-profile-table .crm-customer-row {
     min-width: 0;
+  }
+
+  .project-stats-grid,
+  .website-stats-grid,
+  .project-detail-summary,
+  .project-work-grid,
+  .project-task-form,
+  .project-task-item {
+    grid-template-columns: 1fr;
+  }
+
+  .project-detail-panel {
+    position: static;
   }
 
   .admin-table-row .button {
