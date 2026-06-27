@@ -1,8 +1,32 @@
 const BASE_PROFILE_FIELDS = ["id", "auth_user_id", "name", "company", "website", "package", "created_at", "updated_at"];
 const CRM_PROFILE_FIELDS = [...BASE_PROFILE_FIELDS, "email", "phone", "status", "customer_since", "archived_at"];
 const REQUEST_FIELDS = ["first_name", "last_name", "company_name", "email", "phone", "website", "care_plan", "status", "auth_user_id", "created_at"].join(",");
+const WEBSITE_FIELDS = [
+  "id",
+  "profile_id",
+  "customer_auth_user_id",
+  "name",
+  "domain",
+  "live_url",
+  "staging_url",
+  "netlify_project_name",
+  "netlify_site_id",
+  "github_repo_url",
+  "github_branch",
+  "status",
+  "ssl_status",
+  "hosting_status",
+  "last_deploy_at",
+  "last_checked_at",
+  "notes",
+  "created_at",
+  "updated_at",
+].join(",");
 const allowedPackages = new Set(["Basis", "Plus", "Premium"]);
 const allowedStatuses = new Set(["actief", "onboarding", "pauze", "gearchiveerd"]);
+const allowedWebsiteStatuses = new Set(["live", "staging", "onderhoud", "gearchiveerd"]);
+const allowedSslStatuses = new Set(["active", "pending", "inactive", "unknown"]);
+const allowedHostingStatuses = new Set(["active", "paused", "inactive", "unknown"]);
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -31,20 +55,23 @@ exports.handler = async (event) => {
 
   try {
     if (event.httpMethod === "GET") {
-      const [profiles, authUsers, changeRequests] = await Promise.all([
+      const [profiles, authUsers, changeRequests, websites] = await Promise.all([
         fetchProfiles(supabaseUrl, serviceRoleKey),
         fetchAuthUsers(supabaseUrl, serviceRoleKey),
         fetchRequestCandidates(supabaseUrl, serviceRoleKey),
+        fetchWebsites(supabaseUrl, serviceRoleKey),
       ]);
 
       const normalizedAuthUsers = authUsers.map(normalizeAuthUser).filter((user) => user.id);
       const normalizedProfiles = profiles.map(normalizeProfile);
+      const normalizedWebsites = websites.map(normalizeWebsite);
       const notes = await fetchCustomerNotes(supabaseUrl, serviceRoleKey);
 
       return jsonResponse(200, {
         success: true,
         profiles: normalizedProfiles,
-        customers: buildCustomers(normalizedProfiles, normalizedAuthUsers, changeRequests, notes),
+        customers: buildCustomers(normalizedProfiles, normalizedAuthUsers, changeRequests, notes, normalizedWebsites),
+        websites: buildWebsites(normalizedWebsites, normalizedProfiles),
         authUsers: normalizedAuthUsers,
         clientCandidates: buildClientCandidates(profiles, changeRequests),
       });
@@ -52,13 +79,20 @@ exports.handler = async (event) => {
 
     const payload = parsePayload(event.body);
     const action = cleanText(payload.action || "save");
-    const authUsers = await fetchAuthUsers(supabaseUrl, serviceRoleKey);
 
-    if (action === "check_auth_user") {
-      return jsonResponse(200, {
-        success: true,
-        authUser: findAuthUserByEmail(payload.email, authUsers.map(normalizeAuthUser).filter((user) => user.id)),
-      });
+    if (action === "save_website") {
+      const normalizedProfiles = (await fetchProfiles(supabaseUrl, serviceRoleKey)).map(normalizeProfile);
+      const validation = validateWebsitePayload(payload, normalizedProfiles);
+      if (!validation.success) return jsonResponse(400, { success: false, error: validation.error });
+      const savedWebsite = await upsertWebsite(supabaseUrl, serviceRoleKey, validation.website);
+      return jsonResponse(200, { success: true, website: normalizeWebsite(savedWebsite) });
+    }
+
+    if (action === "archive_website") {
+      const id = cleanText(payload.id);
+      if (!uuidPattern.test(id)) return jsonResponse(400, { success: false, error: "Kies een geldige website." });
+      const archivedWebsite = await archiveWebsite(supabaseUrl, serviceRoleKey, id);
+      return jsonResponse(200, { success: true, website: normalizeWebsite(archivedWebsite) });
     }
 
     if (action === "send_invite") {
@@ -69,6 +103,15 @@ exports.handler = async (event) => {
     if (action === "send_password_reset") {
       const result = await sendPasswordReset(supabaseUrl, serviceRoleKey, payload.email);
       return jsonResponse(200, result);
+    }
+
+    const authUsers = await fetchAuthUsers(supabaseUrl, serviceRoleKey);
+
+    if (action === "check_auth_user") {
+      return jsonResponse(200, {
+        success: true,
+        authUser: findAuthUserByEmail(payload.email, authUsers.map(normalizeAuthUser).filter((user) => user.id)),
+      });
     }
 
     const validation = validateProfilePayload(payload, authUsers.map(normalizeAuthUser).filter((user) => user.id), action);
@@ -228,6 +271,22 @@ async function fetchRequestCandidates(supabaseUrl, serviceRoleKey) {
   );
 }
 
+async function fetchWebsites(supabaseUrl, serviceRoleKey) {
+  try {
+    return await supabaseFetch(
+      `${supabaseUrl}/rest/v1/customer_websites?select=${WEBSITE_FIELDS}&order=updated_at.desc.nullslast&limit=300`,
+      {
+        method: "GET",
+        headers: restHeaders(serviceRoleKey),
+      }
+    );
+  } catch (error) {
+    if (!isSchemaColumnError(error) && error.status !== 404) throw error;
+    console.error("Customer websites table missing, continuing without website operations data", { message: error.message });
+    return [];
+  }
+}
+
 async function upsertProfile(supabaseUrl, serviceRoleKey, profile) {
   const record = {
     auth_user_id: profile.authUserId,
@@ -341,6 +400,137 @@ async function linkExistingRequests(supabaseUrl, serviceRoleKey, profile) {
   return Array.isArray(data) ? data.length : 0;
 }
 
+function validateWebsitePayload(payload, profiles) {
+  const id = cleanText(payload.id);
+  const profileId = cleanText(payload.profileId);
+  const profile = profiles.find((item) => item.id === profileId);
+  const name = cleanText(payload.name);
+  const domain = cleanText(payload.domain);
+  const liveUrl = cleanText(payload.liveUrl);
+  const stagingUrl = cleanText(payload.stagingUrl);
+  const netlifyProjectName = cleanText(payload.netlifyProjectName);
+  const netlifySiteId = cleanText(payload.netlifySiteId);
+  const githubRepoUrl = cleanText(payload.githubRepoUrl);
+  const githubBranch = cleanText(payload.githubBranch) || "main";
+  const status = cleanText(payload.status || "live").toLowerCase();
+  const sslStatus = cleanText(payload.sslStatus || "unknown").toLowerCase();
+  const hostingStatus = cleanText(payload.hostingStatus || "active").toLowerCase();
+  const lastDeployAt = cleanText(payload.lastDeployAt);
+  const lastCheckedAt = cleanText(payload.lastCheckedAt);
+  const notes = cleanText(payload.notes).slice(0, 4000);
+
+  if (id && !uuidPattern.test(id)) {
+    return { success: false, error: "Kies een geldige website." };
+  }
+
+  if (!profile) {
+    return { success: false, error: "Koppel de website aan een geldige klant." };
+  }
+
+  if (!name) {
+    return { success: false, error: "Vul een websitetitel in." };
+  }
+
+  if (!domain && !liveUrl) {
+    return { success: false, error: "Vul minimaal een domein of live URL in." };
+  }
+
+  if (!allowedWebsiteStatuses.has(status)) {
+    return { success: false, error: "Kies een geldige websitestatus." };
+  }
+
+  if (!allowedSslStatuses.has(sslStatus)) {
+    return { success: false, error: "Kies een geldige SSL-status." };
+  }
+
+  if (!allowedHostingStatuses.has(hostingStatus)) {
+    return { success: false, error: "Kies een geldige hostingstatus." };
+  }
+
+  return {
+    success: true,
+    website: {
+      id,
+      profileId,
+      customerAuthUserId: profile.authUserId || null,
+      name,
+      domain,
+      liveUrl,
+      stagingUrl,
+      netlifyProjectName,
+      netlifySiteId,
+      githubRepoUrl,
+      githubBranch,
+      status,
+      sslStatus,
+      hostingStatus,
+      lastDeployAt,
+      lastCheckedAt,
+      notes,
+    },
+  };
+}
+
+async function upsertWebsite(supabaseUrl, serviceRoleKey, website) {
+  const record = {
+    profile_id: website.profileId,
+    customer_auth_user_id: website.customerAuthUserId,
+    name: website.name,
+    domain: website.domain,
+    live_url: website.liveUrl,
+    staging_url: website.stagingUrl,
+    netlify_project_name: website.netlifyProjectName,
+    netlify_site_id: website.netlifySiteId,
+    github_repo_url: website.githubRepoUrl,
+    github_branch: website.githubBranch,
+    status: website.status,
+    ssl_status: website.sslStatus,
+    hosting_status: website.hostingStatus,
+    last_deploy_at: website.lastDeployAt || null,
+    last_checked_at: website.lastCheckedAt || null,
+    notes: website.notes,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (website.id) record.id = website.id;
+
+  const data = await supabaseFetch(`${supabaseUrl}/rest/v1/customer_websites?on_conflict=id`, {
+    method: "POST",
+    headers: {
+      ...restHeaders(serviceRoleKey),
+      "Content-Type": "application/json",
+      "Content-Profile": "public",
+      Prefer: "resolution=merge-duplicates,return=representation",
+    },
+    body: JSON.stringify(record),
+  });
+
+  const savedWebsite = Array.isArray(data) ? data[0] : data;
+  if (!savedWebsite) throw new Error("Supabase returned no website after upsert.");
+  return savedWebsite;
+}
+
+async function archiveWebsite(supabaseUrl, serviceRoleKey, id) {
+  const data = await supabaseFetch(`${supabaseUrl}/rest/v1/customer_websites?id=eq.${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: {
+      ...restHeaders(serviceRoleKey),
+      "Content-Type": "application/json",
+      "Content-Profile": "public",
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify({
+      status: "gearchiveerd",
+      hosting_status: "inactive",
+      updated_at: new Date().toISOString(),
+    }),
+  });
+
+  const archivedWebsite = Array.isArray(data) ? data[0] : data;
+  if (!archivedWebsite) throw new Error("Supabase returned no website after archive.");
+  return archivedWebsite;
+}
+
 async function supabaseFetch(url, options) {
   const response = await fetch(url, options);
   const text = await response.text();
@@ -431,9 +621,15 @@ function buildClientCandidates(profiles, changeRequests) {
   return Array.from(candidates.values()).sort((a, b) => a.label.localeCompare(b.label, "nl"));
 }
 
-function buildCustomers(profiles, authUsers, changeRequests, notes) {
+function buildCustomers(profiles, authUsers, changeRequests, notes, websites = []) {
   const authUserMap = new Map(authUsers.map((user) => [user.id, user]));
   const requestMap = new Map();
+  const websiteMap = new Map();
+
+  websites.forEach((website) => {
+    if (!website.profileId || website.status === "gearchiveerd") return;
+    if (!websiteMap.has(website.profileId)) websiteMap.set(website.profileId, website);
+  });
 
   changeRequests.forEach((request) => {
     const authUserId = cleanText(request.auth_user_id);
@@ -446,6 +642,7 @@ function buildCustomers(profiles, authUsers, changeRequests, notes) {
   return profiles.map((profile) => {
     const authUser = authUserMap.get(profile.authUserId);
     const request = requestMap.get(profile.authUserId) || requestMap.get(cleanText(profile.email).toLowerCase()) || {};
+    const websiteRecord = websiteMap.get(profile.id);
     const email = cleanText(profile.email || authUser?.email || request.email);
     const phone = cleanText(profile.phone || request.phone);
     const status = cleanText(profile.status || "actief").toLowerCase();
@@ -454,6 +651,7 @@ function buildCustomers(profiles, authUsers, changeRequests, notes) {
       ...profile,
       email,
       phone,
+      website: websiteRecord?.liveUrl || profile.website,
       status: allowedStatuses.has(status) ? status : "actief",
       authEmail: cleanText(authUser?.email),
       authStatus: authUser?.id ? "login actief" : "geen login",
@@ -461,6 +659,44 @@ function buildCustomers(profiles, authUsers, changeRequests, notes) {
       portalUrl: "/client-dashboard.html",
     };
   });
+}
+
+function buildWebsites(websites, profiles) {
+  const profileMap = new Map(profiles.map((profile) => [profile.id, profile]));
+
+  return websites.map((website) => {
+    const profile = profileMap.get(website.profileId) || {};
+    return {
+      ...website,
+      customerName: profile.name || "",
+      customerCompany: profile.company || "",
+      customerEmail: profile.email || "",
+    };
+  });
+}
+
+function normalizeWebsite(row) {
+  return {
+    id: cleanText(row.id),
+    profileId: cleanText(row.profile_id),
+    customerAuthUserId: cleanText(row.customer_auth_user_id),
+    name: cleanText(row.name),
+    domain: cleanText(row.domain),
+    liveUrl: cleanText(row.live_url),
+    stagingUrl: cleanText(row.staging_url),
+    netlifyProjectName: cleanText(row.netlify_project_name),
+    netlifySiteId: cleanText(row.netlify_site_id),
+    githubRepoUrl: cleanText(row.github_repo_url),
+    githubBranch: cleanText(row.github_branch || "main"),
+    status: cleanText(row.status || "live").toLowerCase(),
+    sslStatus: cleanText(row.ssl_status || "unknown").toLowerCase(),
+    hostingStatus: cleanText(row.hosting_status || "active").toLowerCase(),
+    lastDeployAt: cleanText(row.last_deploy_at),
+    lastCheckedAt: cleanText(row.last_checked_at),
+    notes: cleanText(row.notes),
+    createdAt: cleanText(row.created_at),
+    updatedAt: cleanText(row.updated_at),
+  };
 }
 
 function normalizeProfile(row) {

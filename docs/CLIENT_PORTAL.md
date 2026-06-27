@@ -30,6 +30,7 @@ Het klantenportaal gebruikt Supabase Auth met `SUPABASE_ANON_KEY` in de browser.
 Portaaldata:
 
 - `profiles`: klantprofiel gekoppeld aan `auth.users`
+- `customer_websites`: websiteomgevingen gekoppeld aan klantprofielen en Auth-users
 - `change_requests.auth_user_id`: koppeling tussen klant en wijzigingsverzoeken
 
 CRM-profielvelden:
@@ -48,7 +49,7 @@ Het klantdashboard toont:
 
 - naam
 - bedrijf
-- website
+- websitegegevens uit `customer_websites` wanneer beschikbaar, anders fallback op `profiles.website`
 - onderhoudspakket
 - klant sinds
 - eigen wijzigingsverzoeken met titel, status, categorie en datum
@@ -81,6 +82,25 @@ Het admin-dashboard is de centrale plek voor klantbeheer. Max Web Studio kan daa
 - een uitnodiging versturen via Supabase Auth
 
 Admin-only notities worden opgeslagen in `public.admin_customer_notes`. Deze staan niet in de klantleesbare `profiles`-data en mogen niet in het klantdashboard worden getoond.
+
+## Website Operations Center
+
+Admin CRM Fase 5.3 maakt de module Websites operationeel. Max Web Studio kan per klant websiteomgevingen beheren met:
+
+- websitetitel
+- domein
+- live URL
+- staging URL
+- GitHub repo en branch
+- Netlify projectnaam en site ID
+- websitestatus
+- hostingstatus
+- SSL-status
+- laatste deploy
+- laatste check
+- interne notities
+
+Klanten lezen alleen eigen websiteomgevingen via RLS op `customer_websites.customer_auth_user_id = auth.uid()`. Het klantdashboard bevat geen adminacties en toont geen service role data.
 
 ## Doel
 

@@ -44,6 +44,7 @@ Die blijft alleen server-side beschikbaar voor Netlify Functions.
 Het portaal gebruikt:
 
 - `public.profiles`
+- `public.customer_websites`
 - `public.change_requests.auth_user_id`
 
 SQL staat in:
@@ -57,6 +58,7 @@ Wanneer een ingelogde klant een wijziging indient via `/public/wijziging-doorgev
 Klanten mogen alleen hun eigen gegevens lezen:
 
 - `profiles.auth_user_id = auth.uid()`
+- `customer_websites.customer_auth_user_id = auth.uid()`
 - `change_requests.auth_user_id = auth.uid()`
 
 Admin- en automationflows blijven via server-side service role lopen.
@@ -68,6 +70,7 @@ Admin- en automationflows blijven via server-side service role lopen.
 - profieldata uit `profiles`
 - wijzigingsverzoeken uit `change_requests`
 - maximaal 5 recente wijzigingsverzoeken in de tabel
+- eigen websiteomgevingen uit `customer_websites`
 
 De frontend gebruikt alleen de Supabase anon key en vertrouwt op RLS. Klanten kunnen geen status wijzigen en zien geen interne classificatie.
 
@@ -96,8 +99,11 @@ De adminfunctie kan:
 - een Supabase Auth-uitnodiging versturen
 - een Supabase Auth-wachtwoord reset versturen
 - admin-only notities opslaan in `public.admin_customer_notes`
+- websiteomgevingen beheren in `public.customer_websites`
 
 Na opslaan leest het klantenportaal de nieuwe profielgegevens direct via de bestaande Supabase Auth-sessie en RLS.
+
+Websiteomgevingen die via het admin-dashboard aan een profiel worden gekoppeld, krijgen ook `customer_auth_user_id`. Daardoor kan de klant de eigen websitegegevens direct lezen via RLS zonder service role key in de browser.
 
 Nieuwe CRM-klanten worden gekoppeld aan een Supabase Auth-user wanneer het ingevoerde e-mailadres al bestaat in Supabase Auth. Als er nog geen Auth-user bestaat, kan de admin eerst een uitnodiging versturen vanuit het CRM en daarna het profiel opslaan zodra Supabase de gebruiker beschikbaar maakt.
 

@@ -2310,8 +2310,37 @@ h3 {
   grid-template-columns: minmax(130px, 1fr) minmax(140px, 1.1fr) minmax(150px, 1.2fr) minmax(100px, 0.7fr) minmax(105px, 0.8fr) minmax(130px, 0.9fr) auto;
 }
 
+.website-operations-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(360px, 0.75fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.website-detail-panel {
+  position: sticky;
+  top: 18px;
+}
+
 .website-row {
-  grid-template-columns: minmax(160px, 1.2fr) minmax(180px, 1.4fr) minmax(110px, 0.8fr) minmax(90px, 0.7fr) auto;
+  grid-template-columns:
+    minmax(130px, 1fr)
+    minmax(130px, 1fr)
+    minmax(110px, 0.9fr)
+    minmax(160px, 1.2fr)
+    minmax(90px, 0.65fr)
+    minmax(90px, 0.65fr)
+    minmax(80px, 0.6fr)
+    minmax(150px, 1.1fr)
+    minmax(120px, 0.9fr)
+    minmax(120px, 0.8fr)
+    minmax(150px, 1fr);
+}
+
+.website-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .file-row {
@@ -4140,6 +4169,7 @@ h3 {
   .change-request-layout,
   .admin-crm-shell,
   .admin-crm-grid,
+  .website-operations-grid,
   .admin-grid,
   .admin-two-column,
   .admin-profile-manager,
@@ -4240,7 +4270,8 @@ h3 {
   }
 
   .admin-sidebar,
-  .crm-detail-panel {
+  .crm-detail-panel,
+  .website-detail-panel {
     position: static;
     max-height: none;
   }

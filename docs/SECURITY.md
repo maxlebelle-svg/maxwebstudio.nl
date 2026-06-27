@@ -73,16 +73,19 @@ Het klantenportaal gebruikt:
 - Supabase Auth voor login
 - `SUPABASE_ANON_KEY` in de browser
 - RLS op `profiles` en `change_requests`
+- RLS op `customer_websites`
 - `auth.uid()` als grens tussen klantaccounts
 - admin-profielbeheer via `ADMIN_TOKEN` en een server-side Netlify Function
 - Admin CRM-bewerkingen voor klantprofielen lopen via `/.netlify/functions/admin-client-profiles`
 - CRM-acties zoals uitnodigen, wachtwoord-reset, login koppelen en archiveren vereisen `ADMIN_TOKEN` en gebruiken de service role alleen server-side.
 - Admin-only notities staan in `public.admin_customer_notes` met RLS ingeschakeld en zonder klantbeleid. Deze notities mogen niet in het klantdashboard worden getoond.
+- Website Operations data staat in `public.customer_websites`; klanten mogen alleen records lezen waar `customer_auth_user_id = auth.uid()`.
 
 Risico:
 
 - Zonder correcte RLS kan een anon key te veel data lezen.
 - Bestaande wijzigingsverzoeken zonder `auth_user_id` zijn niet zichtbaar voor klanten.
+- Websiteomgevingen zonder `customer_auth_user_id` zijn niet zichtbaar voor klanten.
 - Het admin-dashboard heeft nog geen volledige admin-login, rollenmodel of audit trail.
 - `ADMIN_TOKEN` is een tussenlaag en moet strikt geheim blijven.
 
@@ -94,6 +97,7 @@ Aanbevelingen:
 - Vervang het tijdelijke admin-tokenmodel later door echte admin-authenticatie met rollen en logging.
 - Voer de CRM-kolommen uit `/docs/supabase-client-portal.sql` uit zodat e-mail, telefoon en klantstatus duurzaam in `profiles` worden opgeslagen.
 - Voer ook de admin-notities tabel uit `/docs/supabase-client-portal.sql` uit voordat interne klantnotities operationeel worden gebruikt.
+- Voer ook de `customer_websites` tabel en RLS-policy uit `/docs/supabase-client-portal.sql` uit voordat het Website Operations Center live wordt gebruikt.
 
 ### Uploads
 

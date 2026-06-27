@@ -136,3 +136,7 @@ Belangrijk:
 - Admin CRM Fase 5.2 breidt klantbeheer uit met aanmaken, bewerken, archiveren, statusbeheer (`actief`, `onboarding`, `pauze`, `gearchiveerd`), klant-sinds beheer, auth-status, login koppelen, Supabase uitnodigingen en wachtwoord-reset acties.
 - Admin-only klantnotities staan bewust in `public.admin_customer_notes` en niet zichtbaar in `profiles` voor het klantportaal.
 - `/functions/admin-client-profiles.js` blijft de enige CRM-route voor deze adminacties en vereist altijd `ADMIN_TOKEN`.
+- Admin CRM Fase 5.3 voegt een Website Operations Center toe aan de module Websites.
+- Websitegegevens worden beheerd in `public.customer_websites` met klantkoppeling, domein, live/staging URL, GitHub repo, branch, Netlify project, hostingstatus, SSL-status en deploy/check metadata.
+- Het klantenportaal leest `customer_websites` via Supabase RLS en valt terug op `profiles.website` als er nog geen website-record bestaat.
+- Er is nog geen echte Netlify API-, GitHub API- of deploy-triggerkoppeling; dit zijn in deze fase beheerlinks en operationele metadata.

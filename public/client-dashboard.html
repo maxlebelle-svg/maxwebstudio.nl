@@ -41,8 +41,8 @@
         <div class="portal-website-grid">
           <article class="admin-card detail-card"><span>Bedrijf</span><strong id="profile-company">-</strong></article>
           <article class="admin-card detail-card"><span>Website URL</span><strong id="profile-website">-</strong></article>
-          <article class="admin-card detail-card"><span>Hostingstatus</span><strong>Actief</strong></article>
-          <article class="admin-card detail-card"><span>SSL</span><strong>Actief</strong></article>
+          <article class="admin-card detail-card"><span>Hostingstatus</span><strong id="profile-hosting-status">-</strong></article>
+          <article class="admin-card detail-card"><span>SSL</span><strong id="profile-ssl-status">-</strong></article>
           <article class="admin-card detail-card"><span>Onderhoudspakket</span><strong id="profile-package">-</strong></article>
           <article class="admin-card detail-card"><span>Klant sinds</span><strong id="profile-created-at">-</strong></article>
         </div>
@@ -97,7 +97,7 @@
         afgerond: "Afgerond",
       };
       const statusFlow = ["nieuw", "in_behandeling", "wacht_op_klant", "afgerond"];
-      const state = { client: null, session: null, profile: null, requests: [] };
+      const state = { client: null, session: null, profile: null, websites: [], requests: [] };
 
       const clientName = document.querySelector("#client-name");
       const logoutButton = document.querySelector("#client-logout");
@@ -169,20 +169,21 @@
         dashboardMessage.className = `portal-message ${type}`.trim();
       }
 
-      function renderProfile(user, profile) {
+      function renderProfile(user, profile, websites = []) {
+        const primaryWebsite = websites.find((website) => website.status === "live") || websites[0] || null;
         const displayName = profile?.name || user.user_metadata?.name || user.email;
         const company = profile?.company || "Nog niet ingesteld";
-        const website = profile?.website || "";
+        const website = primaryWebsite?.live_url || profile?.website || "";
         const packageName = profile?.package || "-";
         const websiteLabel = website ? "Live" : "Nog geen website ingesteld";
 
         clientName.textContent = displayName;
-        document.querySelector("#metric-website").textContent = website ? "Live" : "Niet ingesteld";
+        document.querySelector("#metric-website").textContent = primaryWebsite?.status === "live" || website ? "Live" : "Niet ingesteld";
         document.querySelector("#metric-website-label").replaceChildren();
         if (website) {
           const dot = document.createElement("span");
           dot.className = "portal-dot";
-          document.querySelector("#metric-website-label").append(dot, document.createTextNode("Live"));
+          document.querySelector("#metric-website-label").append(dot, document.createTextNode(primaryWebsite?.domain || "Live"));
         } else {
           document.querySelector("#metric-website-label").textContent = websiteLabel;
         }
@@ -190,6 +191,8 @@
         document.querySelector("#profile-company").textContent = company;
         document.querySelector("#profile-package").textContent = packageName;
         document.querySelector("#profile-website").textContent = website || "Nog niet ingesteld";
+        document.querySelector("#profile-hosting-status").textContent = primaryWebsite?.hosting_status || "Nog niet ingesteld";
+        document.querySelector("#profile-ssl-status").textContent = primaryWebsite?.ssl_status || "Nog niet ingesteld";
         document.querySelector("#profile-created-at").textContent = formatDate(profile?.created_at);
         const websiteLink = document.querySelector("#view-website-link");
         websiteLink.href = website || "#";
@@ -432,9 +435,25 @@
 
           if (requestError) throw requestError;
 
+          const { data: websites, error: websiteError } = await state.client
+            .from("customer_websites")
+            .select("id,name,domain,live_url,staging_url,status,ssl_status,hosting_status,last_deploy_at,last_checked_at,updated_at")
+            .eq("customer_auth_user_id", user.id)
+            .neq("status", "gearchiveerd")
+            .order("updated_at", { ascending: false })
+            .limit(20);
+
+          if (websiteError) {
+            const websiteErrorText = `${websiteError.code || ""} ${websiteError.message || ""}`.toLowerCase();
+            if (!websiteErrorText.includes("customer_websites") && !websiteErrorText.includes("42p01")) {
+              throw websiteError;
+            }
+          }
+
           state.profile = profile;
+          state.websites = !websiteError && Array.isArray(websites) ? websites : [];
           state.requests = Array.isArray(requests) ? requests : [];
-          renderProfile(user, profile);
+          renderProfile(user, profile, state.websites);
           renderMetrics(state.requests);
           renderRequests(state.requests);
         } catch (error) {
