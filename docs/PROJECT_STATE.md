@@ -177,3 +177,9 @@ Belangrijk:
 - Als een Mollie Customer nog geen geldige mandate heeft, maakt `admin-mollie-subscription.js` eerst een `sequenceType: first` betaling aan en slaat de mandate checkout URL op.
 - `mollie-webhook.js` herkent mandatebetalingen, maakt na succesvolle eerste betaling automatisch de subscription aan en synchroniseert subscriptionstatus, mandate status, laatste betaling en volgende incasso.
 - De SQL voor syncvelden staat in `/docs/supabase-mollie-subscriptions-sync.sql`.
+- Fase 6.3 voegt beheeracties voor onderhoudsabonnementen toe via `/.netlify/functions/admin-mollie-subscription-action`.
+- De aanvullende SQL voor adminacties staat in `/docs/supabase-mollie-subscription-actions.sql`.
+- Admins kunnen abonnementen pauzeren, hervatten, opzeggen en synchroniseren vanuit de Onderhoud-module.
+- Opzeggen loopt server-side via Mollie en werkt daarna de lokale subscriptionstatus bij.
+- Pauzeren en hervatten zijn in deze fase lokale CRM-acties met een expliciete melding in `admin_action_last_error`, zodat beheer ziet dat Mollie geen directe pauzeer-/hervatactie is uitgevoerd.
+- Het klantdashboard toont abonnementen klantvriendelijk als actief, gepauzeerd, opgezegd of wacht op machtiging.

@@ -43,6 +43,7 @@
           <article class="admin-card detail-card"><span>Maandbedrag</span><strong id="billing-amount">-</strong></article>
           <article class="admin-card detail-card"><span>Status abonnement</span><strong id="billing-status">-</strong></article>
           <article class="admin-card detail-card"><span>Volgende incasso</span><strong id="billing-next-date">-</strong></article>
+          <article class="admin-card detail-card"><span>Opgezegd op</span><strong id="billing-canceled-date">-</strong></article>
         </div>
         <div class="portal-actions" id="billing-actions"></div>
         <div class="admin-table portal-invoice-table" id="client-invoice-list" role="table" aria-label="Laatste facturen" aria-live="polite">
@@ -200,6 +201,18 @@
           && !["paid", "cancelled", "canceled", "expired", "failed"].includes(paymentStatus);
       }
 
+      function clientSubscriptionLabel(subscription) {
+        if (!subscription) return "-";
+        const localStatus = normalize(subscription.status);
+        const mollieStatus = normalize(subscription.mollie_subscription_status);
+        const mandateStatus = normalize(subscription.mandate_status);
+        if (subscription.mandate_checkout_url && mandateStatus !== "valid") return "Wacht op machtiging";
+        if (["canceled", "cancelled"].includes(localStatus) || ["canceled", "cancelled"].includes(mollieStatus)) return "Opgezegd";
+        if (["paused", "suspended"].includes(localStatus) || ["paused", "suspended"].includes(mollieStatus)) return "Gepauzeerd";
+        if (localStatus === "active" || mollieStatus === "active") return "Actief";
+        return billingStatusLabel(mollieStatus || localStatus);
+      }
+
       function formatDate(value) {
         if (!value) return "-";
         const date = new Date(value);
@@ -308,12 +321,9 @@
         document.querySelector("#billing-package").textContent = subscription?.package_name || state.profile?.package || "-";
         document.querySelector("#billing-amount").textContent = money(subscription?.monthly_amount);
         const mandateStatus = normalize(subscription?.mandate_status);
-        const subscriptionStatus = normalize(subscription?.mollie_subscription_status || subscription?.status);
-        const displayStatus = subscription?.mandate_checkout_url && mandateStatus !== "valid"
-          ? "Machtiging vereist"
-          : billingStatusLabel(subscriptionStatus);
-        document.querySelector("#billing-status").textContent = displayStatus;
+        document.querySelector("#billing-status").textContent = clientSubscriptionLabel(subscription);
         document.querySelector("#billing-next-date").textContent = formatDate(subscription?.next_payment_at || subscription?.next_invoice_date);
+        document.querySelector("#billing-canceled-date").textContent = formatDate(subscription?.canceled_at || subscription?.cancellation_requested_at);
         const billingActions = document.querySelector("#billing-actions");
         billingActions.replaceChildren();
         if (subscription?.mandate_checkout_url && mandateStatus !== "valid") {
@@ -659,7 +669,7 @@
 
           let { data: subscriptionRows, error: subscriptionError } = await state.client
             .from("customer_subscriptions")
-            .select("id,package_name,billing_cycle,monthly_amount,status,start_date,next_invoice_date,mollie_subscription_status,last_payment_at,next_payment_at,mandate_status,mandate_checkout_url,mandate_payment_status,subscription_synced_at,updated_at")
+            .select("id,package_name,billing_cycle,monthly_amount,status,start_date,next_invoice_date,mollie_subscription_status,last_payment_at,next_payment_at,canceled_at,paused_at,resumed_at,cancellation_requested_at,mandate_status,mandate_checkout_url,mandate_payment_status,subscription_synced_at,updated_at")
             .eq("customer_auth_user_id", user.id)
             .order("updated_at", { ascending: false })
             .limit(20);

@@ -194,6 +194,16 @@ Factuur-PDF's gebruiken Supabase Storage:
 - admin uploadt PDF's voorlopig handmatig naar Supabase Storage of later via server-side upload
 - geen publieke Supabase URL opslaan in `pdf_file_path`
 
+Mollie subscription beheer in Fase 6.3:
+
+- adminacties lopen via `/.netlify/functions/admin-mollie-subscription-action`
+- `ADMIN_TOKEN` is verplicht
+- `MOLLIE_API_KEY` en `SUPABASE_SERVICE_ROLE_KEY` blijven server-side
+- klanten kunnen geen abonnementen pauzeren, hervatten, opzeggen of synchroniseren
+- opzeggen wordt server-side bij Mollie uitgevoerd
+- lokale pauzeer- en hervatacties schrijven een expliciete melding naar `admin_action_last_error`
+- webhook-sync werkt alleen bekende Mollie-statussen door naar de lokale status, zodat onduidelijke events geen handmatige status ongemerkt overschrijven
+
 Aanbevelingen:
 
 - limieten blijven handhaven

@@ -230,6 +230,31 @@ Controleer:
 - `mollie_payment_id` staat op de factuur
 - Netlify function logs tonen geen Supabase-configuratiefout
 
+### Abonnement opzeggen testen
+
+Voor Fase 6.3:
+
+1. Voer `/docs/supabase-mollie-subscription-actions.sql` uit.
+2. Zorg dat een abonnement een `mollie_customer_id` en `mollie_subscription_id` heeft.
+3. Klik in de Onderhoud-module op `Opzeggen`.
+4. Bevestig de actie en vul optioneel een opzegreden in.
+5. Verwacht:
+   - lokale status `canceled`
+   - Mollie-status `canceled`
+   - `canceled_at` en `cancellation_requested_at` gevuld
+   - `admin_action_last_type` = `cancel`
+6. Controleer in Mollie test dashboard dat de subscription is opgezegd.
+
+### Abonnement pauzeren/hervatten testen
+
+Pauzeren en hervatten zijn in deze fase lokale CRM-acties:
+
+1. Klik op `Pauzeren`.
+2. Verwacht lokale status `paused` en een melding in `admin_action_last_error`.
+3. Klik op `Hervatten`.
+4. Verwacht lokale status `active`, `resumed_at` gevuld en opnieuw een duidelijke melding.
+5. Gebruik `Synchroniseer abonnement` om de actuele Mollie-status naast de lokale CRM-status te controleren.
+
 ### Factuurmail kan niet worden verzonden
 
 Controleer:

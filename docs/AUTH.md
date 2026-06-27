@@ -140,6 +140,14 @@ Als een klant nog geen geldige mandate heeft, maakt de adminfunction server-side
 
 Nieuwe CRM-klanten worden gekoppeld aan een Supabase Auth-user wanneer het ingevoerde e-mailadres al bestaat in Supabase Auth. Als er nog geen Auth-user bestaat, kan de admin eerst een uitnodiging versturen vanuit het CRM en daarna het profiel opslaan zodra Supabase de gebruiker beschikbaar maakt.
 
+## Fase 6.3 - Subscription Beheer
+
+Klanten gebruiken nog steeds alleen de Supabase Auth sessie en anon key in de browser. Het klantportaal mag abonnementen uitsluitend lezen via RLS.
+
+Abonnementen pauzeren, hervatten, opzeggen en synchroniseren zijn adminacties. Deze lopen via `/.netlify/functions/admin-mollie-subscription-action` met `ADMIN_TOKEN` en service role server-side.
+
+Er zijn geen klant-selfservice acties voor abonnementbeheer in deze fase.
+
 ## Beperkingen
 
 - Er is nog geen self-service registratie.

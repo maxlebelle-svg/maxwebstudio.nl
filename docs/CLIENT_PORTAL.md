@@ -292,3 +292,25 @@ Huidige aanknopingspunten:
 - onderhoudspakketten
 
 Deze moeten eerst betrouwbaarder gekoppeld worden voordat een klantportaal logisch is.
+
+## Fase 6.3 - Abonnementsstatus Klantportaal
+
+Het klantportaal leest onderhoudsabonnementen uit `public.customer_subscriptions` via Supabase RLS en toont alleen klantvriendelijke informatie.
+
+Zichtbaar voor de klant:
+
+- huidig onderhoudspakket
+- maandbedrag
+- status abonnement
+- volgende incasso
+- opzegdatum indien beschikbaar
+- knop `Voltooi machtiging` wanneer een mandate checkout URL openstaat
+
+Statussen worden klantvriendelijk vertaald:
+
+- `active` -> Actief
+- `paused` / `suspended` -> Gepauzeerd
+- `canceled` / `cancelled` -> Opgezegd
+- open mandate checkout -> Wacht op machtiging
+
+Klanten kunnen in deze fase geen abonnement pauzeren, hervatten of opzeggen. Alle beheeracties lopen via het Admin CRM en server-side Netlify Functions.

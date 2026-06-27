@@ -221,11 +221,43 @@ Controleer:
 - `MOLLIE_API_KEY`, `SUPABASE_URL` en `SUPABASE_SERVICE_ROLE_KEY` staan in Netlify
 - `/docs/supabase-mollie-subscriptions-sync.sql` is uitgevoerd
 
+## Fase 6.3 - Abonnementen Beheren
+
+Admin kan onderhoudsabonnementen beheren via:
+
+- `/.netlify/functions/admin-mollie-subscription-action`
+
+Ondersteunde acties:
+
+- `pause`
+- `resume`
+- `cancel`
+- `sync`
+
+De function vereist altijd `ADMIN_TOKEN` en gebruikt `MOLLIE_API_KEY`, `SUPABASE_URL` en `SUPABASE_SERVICE_ROLE_KEY` alleen server-side.
+
+Voor `cancel` wordt de gekoppelde Mollie Subscription server-side opgezegd via Mollie. Daarna worden lokaal onder andere `status`, `mollie_subscription_status`, `canceled_at`, `cancellation_requested_at`, `cancellation_reason`, `admin_action_last_type` en `admin_action_last_at` bijgewerkt.
+
+Voor `pause` en `resume` wordt in deze fase de lokale CRM-status bijgewerkt. De function schrijft bewust een duidelijke melding naar `admin_action_last_error`, omdat er in deze integratie geen directe Mollie-pauzeer- of hervatactie wordt aangeroepen. Daardoor blijft zichtbaar dat de Mollie-status nog via sync/webhook gecontroleerd moet worden.
+
+Voor `sync` haalt de function de actuele Mollie Subscription en mandate op en synchroniseert onder andere:
+
+- `mollie_subscription_status`
+- lokale `status` bij duidelijke Mollie-statussen
+- `mandate_status`
+- `next_payment_at`
+- `subscription_synced_at`
+- `admin_action_last_*`
+
+De aanvullende SQL staat in:
+
+- `/docs/supabase-mollie-subscription-actions.sql`
+
 ## Bekende Beperkingen
 
-Admin kan in deze fase nog niet pauzeren, hervatten of opzeggen vanuit het CRM.
-
 Automatische retries en mislukte-incasso workflows zijn nog niet gebouwd.
+
+Pauzeren en hervatten zijn in Fase 6.3 lokale CRM-acties met expliciete waarschuwing. Opzeggen en synchroniseren werken server-side met Mollie.
 
 ## Security
 

@@ -273,6 +273,8 @@ async function fetchSingleCustomerSubscription(supabaseUrl, serviceRoleKey, filt
     "mollie_mandate_id",
     "last_payment_at",
     "next_payment_at",
+    "canceled_at",
+    "paused_at",
     "mandate_status",
     "mandate_reference",
     "mandate_checkout_url",
@@ -387,7 +389,7 @@ async function fetchMollieSubscription(mollieApiKey, mollieCustomerId, mollieSub
 
 function subscriptionPatchFromMollie(mollieSubscription, mandate, extra = {}) {
   const status = cleanText(mollieSubscription.status || "pending");
-  return {
+  const patch = {
     ...extra,
     mollie_subscription_id: cleanText(mollieSubscription.id || extra.mollie_subscription_id) || null,
     mollie_subscription_status: status,
@@ -395,11 +397,21 @@ function subscriptionPatchFromMollie(mollieSubscription, mandate, extra = {}) {
     mandate_status: cleanText(mandate?.status || (mollieSubscription.mandateId ? "valid" : "")) || null,
     mandate_reference: cleanText(mandate?.method || mandate?.reference) || null,
     next_payment_at: cleanText(mollieSubscription.nextPaymentDate) || null,
-    canceled_at: status === "canceled" ? new Date().toISOString() : null,
-    paused_at: status === "suspended" ? new Date().toISOString() : null,
     subscription_synced_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
+
+  if (status === "active") patch.status = "active";
+  if (status === "canceled") {
+    patch.status = "canceled";
+    patch.canceled_at = cleanText(mollieSubscription.canceledAt) || new Date().toISOString();
+  }
+  if (status === "suspended") {
+    patch.status = "paused";
+    patch.paused_at = new Date().toISOString();
+  }
+
+  return patch;
 }
 
 async function fetchInvoiceByPaymentId(supabaseUrl, serviceRoleKey, paymentId) {

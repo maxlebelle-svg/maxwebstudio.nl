@@ -25,6 +25,12 @@ const SUBSCRIPTION_FIELDS = [
   "subscription_synced_at",
   "webhook_last_event",
   "webhook_last_received_at",
+  "admin_action_last_type",
+  "admin_action_last_at",
+  "admin_action_last_error",
+  "cancellation_reason",
+  "cancellation_requested_at",
+  "resumed_at",
   "notes",
   "created_at",
   "updated_at",
@@ -109,7 +115,7 @@ const LEGACY_INVOICE_FIELDS = [
   "updated_at",
 ].join(",");
 
-const allowedSubscriptionStatuses = new Set(["active", "paused", "cancelled"]);
+const allowedSubscriptionStatuses = new Set(["active", "paused", "cancelled", "canceled"]);
 const allowedBillingCycles = new Set(["monthly", "quarterly", "yearly"]);
 const allowedInvoiceStatuses = new Set(["draft", "sent", "paid", "expired", "canceled", "failed"]);
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -434,6 +440,12 @@ function normalizeSubscription(row) {
     subscriptionSyncedAt: cleanText(row.subscription_synced_at),
     webhookLastEvent: cleanText(row.webhook_last_event),
     webhookLastReceivedAt: cleanText(row.webhook_last_received_at),
+    adminActionLastType: cleanText(row.admin_action_last_type),
+    adminActionLastAt: cleanText(row.admin_action_last_at),
+    adminActionLastError: cleanText(row.admin_action_last_error),
+    cancellationReason: cleanText(row.cancellation_reason),
+    cancellationRequestedAt: cleanText(row.cancellation_requested_at),
+    resumedAt: cleanText(row.resumed_at),
     notes: cleanText(row.notes),
     createdAt: cleanText(row.created_at),
     updatedAt: cleanText(row.updated_at),

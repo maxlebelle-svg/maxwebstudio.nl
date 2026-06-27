@@ -322,7 +322,7 @@
             <label for="subscription-package">Pakket<input id="subscription-package" type="text" placeholder="Plus" required /></label>
             <label for="subscription-amount">Bedrag per maand<input id="subscription-amount" type="number" min="0" step="0.01" /></label>
             <label for="subscription-cycle">Cyclus<select id="subscription-cycle"><option value="monthly">Maandelijks</option><option value="quarterly">Per kwartaal</option><option value="yearly">Jaarlijks</option></select></label>
-            <label for="subscription-status">Status<select id="subscription-status"><option value="active">Actief</option><option value="paused">Gepauzeerd</option><option value="cancelled">Geannuleerd</option></select></label>
+            <label for="subscription-status">Status<select id="subscription-status"><option value="active">Actief</option><option value="paused">Gepauzeerd</option><option value="canceled">Geannuleerd</option></select></label>
             <label for="subscription-start">Startdatum<input id="subscription-start" type="date" /></label>
             <label for="subscription-next">Volgende factuurdatum<input id="subscription-next" type="date" /></label>
             <label class="admin-profile-wide" for="subscription-notes">Notities<textarea id="subscription-notes"></textarea></label>
@@ -371,6 +371,7 @@
         const billingEndpoint = "/.netlify/functions/admin-billing";
         const molliePaymentEndpoint = "/.netlify/functions/admin-mollie-payment";
         const mollieSubscriptionEndpoint = "/.netlify/functions/admin-mollie-subscription";
+        const mollieSubscriptionActionEndpoint = "/.netlify/functions/admin-mollie-subscription-action";
         const invoiceEmailEndpoint = "/.netlify/functions/admin-invoice-email";
         const listEndpoint = "/.netlify/functions/list-change-requests";
         const updateEndpoint = "/.netlify/functions/update-change-request-status";
@@ -1372,11 +1373,23 @@
             ["Volgende betaling", formatDate(subscription.nextPaymentAt)],
             ["Sync", formatDate(subscription.subscriptionSyncedAt)],
             ["Webhook", subscription.webhookLastEvent],
+            ["Adminactie", subscription.adminActionLastType],
+            ["Actiemoment", formatDate(subscription.adminActionLastAt)],
+            ["Gepauzeerd", formatDate(subscription.pausedAt)],
+            ["Hervat", formatDate(subscription.resumedAt)],
+            ["Opgezegd", formatDate(subscription.canceledAt || subscription.cancellationRequestedAt)],
+            ["Opzegreden", subscription.cancellationReason],
           ].forEach(([label, value]) => {
             const item = document.createElement("small");
             item.textContent = `${label}: ${value || "-"}`;
             wrapper.append(item);
           });
+          if (subscription.adminActionLastError) {
+            const error = document.createElement("small");
+            error.className = "status-attention";
+            error.textContent = `Laatste melding: ${subscription.adminActionLastError}`;
+            wrapper.append(error);
+          }
           return wrapper;
         }
 
@@ -1461,12 +1474,32 @@
             edit.type = "button";
             edit.textContent = "Bewerken";
             edit.addEventListener("click", () => openSubscriptionModal(subscription.id));
-            const toggle = document.createElement("button");
-            toggle.className = "button secondary";
-            toggle.type = "button";
-            toggle.textContent = subscription.status === "active" ? "Pauzeren" : "Activeren";
-            toggle.addEventListener("click", () => setSubscriptionStatus(subscription.id, subscription.status === "active" ? "paused" : "active", toggle));
-            actions.append(edit, toggle);
+            actions.append(edit);
+            const normalizedStatus = normalize(subscription.status || subscription.mollieSubscriptionStatus);
+            if (!["paused", "suspended", "canceled", "cancelled"].includes(normalizedStatus)) {
+              const pause = document.createElement("button");
+              pause.className = "button secondary";
+              pause.type = "button";
+              pause.textContent = "Pauzeren";
+              pause.addEventListener("click", () => runMollieSubscriptionAction(subscription.id, "pause", pause));
+              actions.append(pause);
+            }
+            if (["paused", "suspended"].includes(normalizedStatus)) {
+              const resume = document.createElement("button");
+              resume.className = "button secondary";
+              resume.type = "button";
+              resume.textContent = "Hervatten";
+              resume.addEventListener("click", () => runMollieSubscriptionAction(subscription.id, "resume", resume));
+              actions.append(resume);
+            }
+            if (!["canceled", "cancelled"].includes(normalizedStatus)) {
+              const cancel = document.createElement("button");
+              cancel.className = "button secondary";
+              cancel.type = "button";
+              cancel.textContent = "Opzeggen";
+              cancel.addEventListener("click", () => cancelMollieSubscription(subscription.id, cancel));
+              actions.append(cancel);
+            }
             if (!subscription.mollieSubscriptionId) {
               const mollie = document.createElement("button");
               mollie.className = "button secondary";
@@ -1489,7 +1522,7 @@
               sync.className = "button secondary";
               sync.type = "button";
               sync.textContent = "Synchroniseer abonnement";
-              sync.addEventListener("click", () => syncMollieSubscription(subscription.id, sync));
+              sync.addEventListener("click", () => runMollieSubscriptionAction(subscription.id, "sync", sync));
               actions.append(sync);
             }
             row.append(
@@ -1761,28 +1794,34 @@
           }
         }
 
-        async function syncMollieSubscription(id, button) {
+        async function cancelMollieSubscription(id, button) {
+          if (!window.confirm("Weet je zeker dat je dit onderhoudsabonnement wilt opzeggen?")) return;
+          const reason = window.prompt("Optionele opzegreden voor de administratie:", "") || "";
+          await runMollieSubscriptionAction(id, "cancel", button, { cancellationReason: reason });
+        }
+
+        async function runMollieSubscriptionAction(id, action, button, extraPayload = {}) {
           const originalText = button.textContent;
           button.disabled = true;
-          button.textContent = "Synchroniseren...";
+          button.textContent = action === "sync" ? "Synchroniseren..." : "Verwerken...";
           setAdminAccessMessage("", "");
 
           try {
-            const response = await fetch(mollieSubscriptionEndpoint, {
+            const response = await fetch(mollieSubscriptionActionEndpoint, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
                 Accept: "application/json",
                 Authorization: `Bearer ${state.adminToken}`,
               },
-              body: JSON.stringify({ action: "sync_subscription", subscription_id: id }),
+              body: JSON.stringify({ action, subscription_id: id, ...extraPayload }),
             });
             const data = await response.json().catch(() => ({}));
-            if (!response.ok || !data.success) throw new Error(data.error || "Mollie abonnement kon niet worden gesynchroniseerd.");
+            if (!response.ok || !data.success) throw new Error(data.error || "Mollie abonnementsactie kon niet worden uitgevoerd.");
             await loadBilling(false);
-            setAdminAccessMessage(data.message || "Mollie abonnement gesynchroniseerd.", "success");
+            setAdminAccessMessage(data.warning || data.message || "Mollie abonnementsactie uitgevoerd.", data.warning ? "" : "success");
           } catch (error) {
-            setAdminAccessMessage(error.message || "Mollie abonnement kon niet worden gesynchroniseerd.", "error");
+            setAdminAccessMessage(error.message || "Mollie abonnementsactie kon niet worden uitgevoerd.", "error");
           } finally {
             button.disabled = false;
             button.textContent = originalText;
