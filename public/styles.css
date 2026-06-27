@@ -1382,8 +1382,8 @@ h3 {
 
 .demo-preview {
   position: relative;
-  min-height: 500px;
-  padding: 30px;
+  min-height: 560px;
+  padding: 32px;
   overflow: hidden;
   background:
     radial-gradient(circle at 78% 18%, rgba(25, 194, 255, 0.18), transparent 30%),
@@ -1440,7 +1440,7 @@ h3 {
 .demo-browser {
   position: relative;
   z-index: 1;
-  width: min(91%, 640px);
+  width: min(94%, 700px);
   overflow: hidden;
   border: 1px solid rgba(214, 226, 240, 0.92);
   border-radius: 24px;
@@ -1474,15 +1474,17 @@ h3 {
 }
 
 .demo-browser-body {
-  min-height: 370px;
+  min-height: 430px;
   padding: 0;
+  background:
+    linear-gradient(180deg, #ffffff, #f8fbff);
 }
 
 .mini-site {
   position: relative;
   display: grid;
   gap: 0;
-  min-height: 370px;
+  min-height: 430px;
   overflow: hidden;
   border-radius: 0 0 22px 22px;
   background: #ffffff;
@@ -1521,8 +1523,8 @@ h3 {
   position: relative;
   display: grid;
   align-content: center;
-  min-height: 258px;
-  padding: 78px 28px 30px;
+  min-height: 304px;
+  padding: 84px 34px 38px;
   overflow: hidden;
   color: var(--white);
   background:
@@ -1543,8 +1545,8 @@ h3 {
   inset: 0;
   z-index: 0;
   background:
-    linear-gradient(180deg, rgba(6, 18, 31, 0.03), rgba(6, 18, 31, 0.14)),
-    linear-gradient(90deg, rgba(6, 18, 31, 0.28) 0 34%, rgba(6, 18, 31, 0.1) 58%, rgba(6, 18, 31, 0.02));
+    linear-gradient(180deg, rgba(6, 18, 31, 0), rgba(6, 18, 31, 0.12)),
+    linear-gradient(90deg, rgba(6, 18, 31, 0.2) 0 30%, rgba(6, 18, 31, 0.07) 56%, rgba(6, 18, 31, 0));
 }
 
 .mini-hero::after {
@@ -1566,8 +1568,8 @@ h3 {
 .mini-hero strong {
   position: relative;
   z-index: 1;
-  max-width: 360px;
-  font-size: 34px;
+  max-width: 430px;
+  font-size: 40px;
   line-height: 0.98;
   letter-spacing: -0.02em;
   text-shadow: 0 3px 22px rgba(0, 0, 0, 0.34);
@@ -1576,10 +1578,10 @@ h3 {
 .mini-hero p {
   position: relative;
   z-index: 1;
-  max-width: 340px;
+  max-width: 390px;
   margin: 10px 0 0;
   color: rgba(255, 255, 255, 0.74);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 800;
   line-height: 1.5;
   text-shadow: 0 2px 14px rgba(0, 0, 0, 0.3);
@@ -1592,9 +1594,9 @@ h3 {
   align-items: center;
   justify-content: center;
   width: max-content;
-  min-height: 28px;
-  margin-top: 14px;
-  padding: 0 14px;
+  min-height: 34px;
+  margin-top: 18px;
+  padding: 0 16px;
   border-radius: 999px;
   color: var(--ink);
   background: var(--white);
@@ -1615,7 +1617,7 @@ h3 {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
-  padding: 14px;
+  padding: 18px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 251, 255, 0.96));
 }
@@ -1631,8 +1633,8 @@ h3 {
 .mini-products span {
   display: grid;
   align-content: end;
-  min-height: 64px;
-  padding: 10px;
+  min-height: 82px;
+  padding: 14px;
   border: 1px solid rgba(214, 226, 240, 0.86);
   border-radius: 14px;
   color: #334155;
@@ -1640,7 +1642,7 @@ h3 {
     radial-gradient(circle at 82% 18%, rgba(21, 94, 239, 0.1), transparent 34%),
     rgba(255, 255, 255, 0.92);
   box-shadow: 0 12px 26px rgba(6, 18, 31, 0.06);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 900;
 }
 
@@ -2021,92 +2023,109 @@ h3 {
   z-index: 2;
   display: grid;
   align-content: start;
-  gap: 12px;
-  width: 126px;
-  min-height: 238px;
-  padding: 16px 12px;
+  gap: 10px;
+  width: 138px;
+  min-height: 276px;
+  padding: 15px 12px 12px;
   border: 8px solid rgba(15, 23, 42, 0.94);
   border-radius: 28px;
   background:
-    linear-gradient(180deg, #ffffff 0 18%, #eef6ff 18% 100%);
+    linear-gradient(180deg, #ffffff 0 16%, #eef6ff 16% 100%);
   box-shadow: 0 22px 58px rgba(6, 18, 31, 0.18);
 }
 
+.demo-phone::before {
+  content: "";
+  width: 100%;
+  height: 28px;
+  border-radius: 14px;
+  background:
+    linear-gradient(90deg, rgba(15, 23, 42, 0.9) 0 32%, transparent 32% 54%, rgba(15, 23, 42, 0.22) 54% 100%),
+    rgba(255, 255, 255, 0.86);
+  box-shadow: 0 8px 18px rgba(6, 18, 31, 0.12);
+}
+
 .demo-phone span {
-  width: 64%;
-  height: 11px;
+  width: 48%;
+  height: 8px;
   border-radius: 999px;
-  background: var(--ink);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
 }
 
 .demo-phone strong {
-  color: var(--ink);
-  font-size: 17px;
-  line-height: 1.12;
+  max-width: 104px;
+  color: var(--white);
+  font-size: 18px;
+  line-height: 1.04;
+  text-shadow: 0 3px 18px rgba(0, 0, 0, 0.36);
 }
 
 .demo-phone i {
-  height: 24px;
-  border-radius: 999px;
-  background: rgba(21, 94, 239, 0.1);
+  height: 30px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: 0 8px 18px rgba(6, 18, 31, 0.1);
 }
 
 .demo-phone i:last-child {
-  width: 72%;
+  width: 74%;
+  height: 24px;
+  border-radius: 999px;
   background: var(--blue);
 }
 
 .demo-preview-build .demo-phone {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0 20%, rgba(255, 255, 255, 0.5) 20%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0 16%, rgba(6, 18, 31, 0.32) 16% 62%, rgba(255, 255, 255, 0.92) 62%),
     url("assets/demo-images/demo-hero-bouw.jpg") center / cover;
 }
 
 .demo-preview-restaurant .demo-phone {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0 20%, rgba(59, 29, 15, 0.2) 20%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0 16%, rgba(59, 29, 15, 0.32) 16% 62%, rgba(255, 250, 242, 0.94) 62%),
     url("assets/demo-images/demo-hero-horeca.jpg") center / cover;
 }
 
 .demo-preview-coach .demo-phone {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0 20%, rgba(6, 18, 31, 0.16) 20%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0 16%, rgba(6, 18, 31, 0.22) 16% 62%, rgba(248, 251, 255, 0.94) 62%),
     url("assets/demo-images/demo-hero-coaching.jpg") center / cover;
 }
 
 .demo-preview-realestate .demo-phone {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0 20%, rgba(6, 18, 31, 0.16) 20%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0 16%, rgba(6, 18, 31, 0.26) 16% 62%, rgba(248, 251, 255, 0.94) 62%),
     url("assets/demo-images/demo-hero-vastgoed.jpg") center / cover;
 }
 
 .demo-preview-install .demo-phone {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0 20%, rgba(15, 118, 110, 0.18) 20%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0 16%, rgba(15, 118, 110, 0.26) 16% 62%, rgba(248, 251, 255, 0.94) 62%),
     url("assets/demo-images/demo-hero-installatie.jpg") center / cover;
 }
 
 .demo-preview-dentist .demo-phone {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0 20%, rgba(12, 74, 110, 0.14) 20%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0 16%, rgba(12, 74, 110, 0.2) 16% 62%, rgba(248, 251, 255, 0.96) 62%),
     url("assets/demo-images/demo-hero-zorg.jpg") center / cover;
 }
 
 .demo-preview-salon .demo-phone {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0 20%, rgba(124, 45, 85, 0.16) 20%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0 16%, rgba(124, 45, 85, 0.26) 16% 62%, rgba(255, 250, 252, 0.94) 62%),
     url("assets/demo-images/demo-hero-kapsalon.jpg") center / cover;
 }
 
 .demo-preview-auto .demo-phone {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0 20%, rgba(2, 6, 23, 0.2) 20%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0 16%, rgba(2, 6, 23, 0.38) 16% 62%, rgba(248, 251, 255, 0.94) 62%),
     url("assets/demo-images/demo-hero-automotive.jpg") center / cover;
 }
 
 .demo-preview-ecommerce .demo-phone {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0 20%, rgba(29, 78, 216, 0.14) 20%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0 16%, rgba(29, 78, 216, 0.2) 16% 62%, rgba(248, 251, 255, 0.94) 62%),
     url("assets/demo-images/demo-hero-ecommerce.jpg") center / cover;
 }
 
@@ -7491,30 +7510,30 @@ h3 {
   }
 
   .demo-preview {
-    min-height: 340px;
-    padding: 22px;
+    min-height: 420px;
+    padding: 20px;
   }
 
   .demo-browser {
-    width: 92%;
+    width: 94%;
   }
 
   .demo-browser-body {
-    min-height: 220px;
+    min-height: 286px;
     padding: 0;
   }
 
   .mini-site {
-    min-height: 250px;
+    min-height: 286px;
   }
 
   .mini-hero {
-    min-height: 162px;
-    padding: 62px 16px 18px;
+    min-height: 198px;
+    padding: 62px 17px 22px;
   }
 
   .mini-hero strong {
-    font-size: 21px;
+    font-size: 25px;
   }
 
   .mini-stats,
@@ -7542,10 +7561,10 @@ h3 {
   }
 
   .demo-phone {
-    right: 16px;
-    bottom: 18px;
-    width: 108px;
-    min-height: 204px;
+    right: 14px;
+    bottom: 16px;
+    width: 112px;
+    min-height: 220px;
   }
 
   .demo-card-copy {
