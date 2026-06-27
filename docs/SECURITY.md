@@ -85,6 +85,8 @@ Het klantenportaal gebruikt:
 - Billing-mutaties lopen via `/.netlify/functions/admin-billing`, vereisen `ADMIN_TOKEN` en gebruiken de service role alleen server-side.
 - Factuur-PDF's staan in private Supabase Storage bucket `invoice-pdfs`.
 - Klantdownloads lopen via `/.netlify/functions/invoice-download`, vereisen een Supabase Auth JWT en gebruiken korte signed URLs.
+- Mollie betaalverzoeken voor facturen lopen via `/.netlify/functions/admin-mollie-payment`, vereisen `ADMIN_TOKEN` en gebruiken `MOLLIE_API_KEY` alleen server-side.
+- Mollie webhookstatussen worden server-side opgehaald en gekoppeld via `customer_invoices.mollie_payment_id`.
 
 Risico:
 
@@ -93,6 +95,7 @@ Risico:
 - Websiteomgevingen zonder `customer_auth_user_id` zijn niet zichtbaar voor klanten.
 - Abonnementen of facturen zonder `customer_auth_user_id` zijn niet zichtbaar voor klanten.
 - Factuur-PDF paden mogen geen publieke URL's zijn; `admin-billing.js` accepteert alleen private objectpaden.
+- `mollie_checkout_url` is zichtbaar voor de gekoppelde klant via RLS; deze URL mag alleen worden opgeslagen nadat de payment server-side is aangemaakt.
 - Het admin-dashboard heeft nog geen volledige admin-login, rollenmodel of audit trail.
 - `ADMIN_TOKEN` is een tussenlaag en moet strikt geheim blijven.
 
@@ -108,6 +111,17 @@ Aanbevelingen:
 - Voer `/docs/supabase-website-health.sql` uit voordat health monitoring operationeel wordt gebruikt.
 - Voer `/docs/supabase-billing.sql` uit voordat facturatie en abonnementen operationeel worden gebruikt.
 - Voer `/docs/supabase-invoice-storage.sql` uit voordat factuur-PDF downloads operationeel worden gebruikt.
+- Voer `/docs/supabase-mollie-payments.sql` uit voordat Mollie betaalverzoeken voor facturen operationeel worden gebruikt.
+
+Server-side environment variables voor factuurbetalingen:
+
+- `MOLLIE_API_KEY`
+- `SITE_URL`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `ADMIN_TOKEN`
+
+Deze waarden mogen nooit in frontendcode worden geplaatst.
 
 ### Website Health Monitoring
 

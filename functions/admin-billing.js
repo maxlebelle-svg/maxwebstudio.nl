@@ -27,6 +27,26 @@ const INVOICE_FIELDS = [
   "paid_at",
   "pdf_file_path",
   "mollie_payment_id",
+  "mollie_checkout_url",
+  "mollie_payment_status",
+  "mollie_payment_created_at",
+  "mollie_payment_expires_at",
+  "notes",
+  "created_at",
+  "updated_at",
+].join(",");
+const LEGACY_INVOICE_FIELDS = [
+  "id",
+  "profile_id",
+  "customer_auth_user_id",
+  "invoice_number",
+  "title",
+  "amount",
+  "status",
+  "due_date",
+  "paid_at",
+  "pdf_file_path",
+  "mollie_payment_id",
   "notes",
   "created_at",
   "updated_at",
@@ -34,7 +54,7 @@ const INVOICE_FIELDS = [
 
 const allowedSubscriptionStatuses = new Set(["active", "paused", "cancelled"]);
 const allowedBillingCycles = new Set(["monthly", "quarterly", "yearly"]);
-const allowedInvoiceStatuses = new Set(["draft", "sent", "paid", "overdue", "cancelled"]);
+const allowedInvoiceStatuses = new Set(["draft", "sent", "paid", "overdue", "cancelled", "failed"]);
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 exports.handler = async (event) => {
@@ -168,10 +188,18 @@ async function fetchSubscriptions(supabaseUrl, serviceRoleKey) {
 }
 
 async function fetchInvoices(supabaseUrl, serviceRoleKey) {
-  return supabaseFetch(`${supabaseUrl}/rest/v1/customer_invoices?select=${INVOICE_FIELDS}&order=created_at.desc.nullslast&limit=300`, {
-    method: "GET",
-    headers: restHeaders(serviceRoleKey),
-  });
+  try {
+    return await supabaseFetch(`${supabaseUrl}/rest/v1/customer_invoices?select=${INVOICE_FIELDS}&order=created_at.desc.nullslast&limit=300`, {
+      method: "GET",
+      headers: restHeaders(serviceRoleKey),
+    });
+  } catch (error) {
+    if (!isSchemaColumnError(error)) throw error;
+    return supabaseFetch(`${supabaseUrl}/rest/v1/customer_invoices?select=${LEGACY_INVOICE_FIELDS}&order=created_at.desc.nullslast&limit=300`, {
+      method: "GET",
+      headers: restHeaders(serviceRoleKey),
+    });
+  }
 }
 
 function validateSubscriptionPayload(payload, profiles) {
@@ -340,6 +368,10 @@ function normalizeInvoice(row) {
     paidAt: cleanText(row.paid_at),
     pdfFilePath: cleanText(row.pdf_file_path),
     molliePaymentId: cleanText(row.mollie_payment_id),
+    mollieCheckoutUrl: cleanText(row.mollie_checkout_url),
+    molliePaymentStatus: cleanText(row.mollie_payment_status),
+    molliePaymentCreatedAt: cleanText(row.mollie_payment_created_at),
+    molliePaymentExpiresAt: cleanText(row.mollie_payment_expires_at),
     notes: cleanText(row.notes),
     createdAt: cleanText(row.created_at),
     updatedAt: cleanText(row.updated_at),

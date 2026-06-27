@@ -155,3 +155,8 @@ Belangrijk:
 - De storage SQL en instructies staan in `/docs/supabase-invoice-storage.sql`.
 - `/functions/invoice-download.js` controleert de Supabase Auth JWT, verifieert dat de factuur bij de ingelogde klant hoort en geeft daarna pas een tijdelijke signed URL terug.
 - Admins beheren voorlopig alleen `customer_invoices.pdf_file_path`; echte PDF-upload gebeurt handmatig in Supabase Storage of later via een server-side uploadfunctie.
+- Fase 5.7 voegt Mollie betaalverzoeken voor losse facturen toe via `/.netlify/functions/admin-mollie-payment`.
+- De database-uitbreiding voor Mollie betaalmetadata staat in `/docs/supabase-mollie-payments.sql`.
+- `mollie-webhook.js` werkt facturen bij wanneer een Mollie payment id overeenkomt met `customer_invoices.mollie_payment_id`.
+- Het klantdashboard toont een knop `Betaal factuur` wanneer `mollie_checkout_url` bestaat en de factuur nog niet betaald, geannuleerd, verlopen of mislukt is.
+- Er zijn nog geen Mollie subscriptions, automatische incasso, PDF-generatie of e-mailherinneringen.

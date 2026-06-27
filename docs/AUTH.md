@@ -54,6 +54,7 @@ SQL staat in:
 - `/docs/supabase-client-portal.sql`
 - `/docs/supabase-billing.sql`
 - `/docs/supabase-invoice-storage.sql`
+- `/docs/supabase-mollie-payments.sql`
 
 Wanneer een ingelogde klant een wijziging indient via `/public/wijziging-doorgeven.html`, stuurt de frontend de Supabase access token mee. `submit-change-request.js` valideert die token server-side en vult `auth_user_id` op het nieuwe wijzigingsverzoek.
 
@@ -122,6 +123,10 @@ Healthdata blijft onderdeel van `customer_websites`. Admin-mutaties lopen via `A
 Abonnementen en facturen staan in `public.customer_subscriptions` en `public.customer_invoices`. Admin-mutaties lopen via `ADMIN_TOKEN` en service role server-side. Klanten lezen alleen eigen billingdata via RLS en krijgen geen adminacties.
 
 Admin beheert factuur-PDF paden via `/.netlify/functions/admin-billing`. Het veld `pdf_file_path` hoort alleen een private Supabase Storage objectpad te bevatten, geen publieke URL. Uploads naar de bucket gebeuren voorlopig handmatig of later via een aparte server-side uploadfunctie.
+
+Admin maakt losse Mollie betaalverzoeken voor facturen via `/.netlify/functions/admin-mollie-payment`. Deze function vereist `ADMIN_TOKEN` en gebruikt `MOLLIE_API_KEY`, `SITE_URL`, `SUPABASE_URL` en `SUPABASE_SERVICE_ROLE_KEY` alleen server-side. Klanten zien alleen de opgeslagen checkout URL van hun eigen factuur via RLS en kunnen geen payment aanmaken.
+
+`/.netlify/functions/mollie-webhook` ontvangt Mollie statusupdates, haalt de payment status server-side op met `MOLLIE_API_KEY` en werkt alleen een factuur bij wanneer `customer_invoices.mollie_payment_id` overeenkomt.
 
 Nieuwe CRM-klanten worden gekoppeld aan een Supabase Auth-user wanneer het ingevoerde e-mailadres al bestaat in Supabase Auth. Als er nog geen Auth-user bestaat, kan de admin eerst een uitnodiging versturen vanuit het CRM en daarna het profiel opslaan zodra Supabase de gebruiker beschikbaar maakt.
 

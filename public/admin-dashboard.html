@@ -369,6 +369,7 @@
         const crmEndpoint = "/.netlify/functions/admin-client-profiles";
         const healthEndpoint = "/.netlify/functions/admin-website-health";
         const billingEndpoint = "/.netlify/functions/admin-billing";
+        const molliePaymentEndpoint = "/.netlify/functions/admin-mollie-payment";
         const listEndpoint = "/.netlify/functions/list-change-requests";
         const updateEndpoint = "/.netlify/functions/update-change-request-status";
         const adminTokenStorageKey = "mws_admin_token";
@@ -1346,6 +1347,10 @@
             sent: "Verzonden",
             paid: "Betaald",
             overdue: "Verlopen",
+            failed: "Mislukt",
+            canceled: "Geannuleerd",
+            open: "Open",
+            pending: "In behandeling",
           }[normalize(value)] || value || "-";
         }
 
@@ -1411,7 +1416,7 @@
           }
           const head = document.createElement("div");
           head.className = "admin-table-row admin-table-head invoice-row";
-          ["Klant", "Factuurnummer", "Titel", "Bedrag", "Status", "Vervaldatum", "Betaaldatum", "PDF", "Acties"].forEach((label) => head.append(createCell(label)));
+          ["Klant", "Factuurnummer", "Titel", "Bedrag", "Status", "Betaalstatus", "Vervaldatum", "Mollie ID", "Betaallink", "PDF", "Acties"].forEach((label) => head.append(createCell(label)));
           invoiceList.append(head);
           state.invoices.forEach((invoice) => {
             const row = document.createElement("div");
@@ -1425,22 +1430,38 @@
             edit.addEventListener("click", () => openInvoiceModal(invoice.id));
             const status = document.createElement("select");
             status.value = invoice.status || "draft";
-            ["draft", "sent", "paid", "overdue", "cancelled"].forEach((value) => {
+            ["draft", "sent", "paid", "overdue", "cancelled", "failed"].forEach((value) => {
               const option = document.createElement("option");
               option.value = value;
               option.textContent = billingStatusLabel(value);
               status.append(option);
             });
             status.addEventListener("change", () => setInvoiceStatus(invoice.id, status.value, status));
-            actions.append(edit, status);
+            const payment = document.createElement("button");
+            payment.className = "button secondary";
+            payment.type = "button";
+            payment.textContent = invoice.molliePaymentId ? "Betaalverzoek vernieuwen" : "Betaalverzoek maken";
+            payment.addEventListener("click", () => createMolliePayment(invoice.id, payment));
+            actions.append(edit, status, payment);
+            if (invoice.mollieCheckoutUrl) {
+              const checkout = document.createElement("a");
+              checkout.className = "button secondary";
+              checkout.href = invoice.mollieCheckoutUrl;
+              checkout.target = "_blank";
+              checkout.rel = "noopener";
+              checkout.textContent = "Open betaallink";
+              actions.append(checkout);
+            }
             row.append(
               createCell(invoice.customerCompany || invoice.customerName || "Geen klant", "strong"),
               createCell(invoice.invoiceNumber),
               createCell(invoice.title),
               createCell(money(invoice.amount)),
               createBadge(billingStatusLabel(invoice.status), billingStatusClass(invoice.status)),
+              createBadge(billingStatusLabel(invoice.molliePaymentStatus || invoice.status), billingStatusClass(invoice.molliePaymentStatus || invoice.status)),
               createCell(formatDate(invoice.dueDate)),
-              createCell(formatDate(invoice.paidAt)),
+              createCell(invoice.molliePaymentId || "-"),
+              createCell(invoice.mollieCheckoutUrl ? "Beschikbaar" : "Geen betaallink"),
               createCell(invoice.pdfFilePath || "Geen PDF"),
               actions
             );
@@ -1613,6 +1634,39 @@
           } finally {
             select.disabled = false;
           }
+        }
+
+        async function createMolliePayment(id, button) {
+          const originalText = button.textContent;
+          button.disabled = true;
+          button.textContent = "Aanmaken...";
+          setAdminAccessMessage("", "");
+
+          try {
+            await postMolliePayment({ invoice_id: id });
+            await loadBilling(false);
+            setAdminAccessMessage("Betaalverzoek aangemaakt. De betaallink staat bij de factuur.", "success");
+          } catch (error) {
+            setAdminAccessMessage(error.message || "Betaalverzoek kon niet worden aangemaakt.", "error");
+          } finally {
+            button.disabled = false;
+            button.textContent = originalText;
+          }
+        }
+
+        async function postMolliePayment(payload) {
+          const response = await fetch(molliePaymentEndpoint, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+              Authorization: `Bearer ${state.adminToken}`,
+            },
+            body: JSON.stringify(payload),
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || !data.success) throw new Error(data.error || "Betaalverzoek kon niet worden aangemaakt.");
+          return data;
         }
 
         function clearInvoicePdfPath() {

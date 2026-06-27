@@ -153,9 +153,19 @@ Fase 5.6 voegt private factuur-PDF opslag toe:
 - klanten krijgen geen directe buckettoegang en kunnen niet vrij door facturen bladeren
 - de downloadknop vraagt server-side een signed URL op via `/.netlify/functions/invoice-download`
 
+Fase 5.7 voegt Mollie betaalverzoeken voor losse facturen toe:
+
+- admin maakt een betaalverzoek aan via `/.netlify/functions/admin-mollie-payment`
+- de function vereist `ADMIN_TOKEN`
+- Mollie API key blijft server-side in `MOLLIE_API_KEY`
+- checkout URL en Mollie payment id worden opgeslagen op `customer_invoices`
+- `/.netlify/functions/mollie-webhook` haalt de status server-side op bij Mollie en werkt de factuur bij
+- het klantportaal toont een knop `Betaal factuur` wanneer de factuur een actieve checkout URL heeft
+- klanten kunnen geen Mollie payment aanmaken
+
 Nog niet gebouwd in deze fase:
 
-- echte Mollie-koppeling
+- Mollie subscriptions
 - automatische incasso
 - PDF-generatie
 - e-mailherinneringen

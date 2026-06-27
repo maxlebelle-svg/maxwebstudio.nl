@@ -171,6 +171,10 @@
           sent: "Verzonden",
           paid: "Betaald",
           overdue: "Verlopen",
+          failed: "Mislukt",
+          canceled: "Geannuleerd",
+          open: "Open",
+          pending: "In behandeling",
         }[normalize(value)] || value || "-";
       }
 
@@ -180,6 +184,14 @@
         if (["sent", "draft"].includes(status)) return "status-prepared";
         if (["paused", "overdue"].includes(status)) return "status-warning";
         return "status-attention";
+      }
+
+      function canPayInvoice(invoice) {
+        const invoiceStatus = normalize(invoice.status);
+        const paymentStatus = normalize(invoice.mollie_payment_status);
+        return Boolean(invoice.mollie_checkout_url)
+          && !["paid", "cancelled", "canceled", "overdue", "expired", "failed"].includes(invoiceStatus)
+          && !["paid", "cancelled", "canceled", "expired", "failed"].includes(paymentStatus);
       }
 
       function formatDate(value) {
@@ -300,13 +312,23 @@
 
         const head = document.createElement("div");
         head.className = "admin-table-row admin-table-head portal-invoice-row";
-        ["Factuur", "Titel", "Bedrag", "Status", "Vervaldatum", "Download"].forEach((label) => head.append(createCell(label)));
+        ["Factuur", "Titel", "Bedrag", "Status", "Betaalstatus", "Vervaldatum", "Acties"].forEach((label) => head.append(createCell(label)));
         invoiceList.append(head);
 
         state.invoices.slice(0, 5).forEach((invoice) => {
           const row = document.createElement("div");
           row.className = "admin-table-row portal-invoice-row";
           const action = document.createElement("span");
+          action.className = "website-actions";
+          if (canPayInvoice(invoice)) {
+            const pay = document.createElement("a");
+            pay.className = "button primary";
+            pay.href = invoice.mollie_checkout_url;
+            pay.target = "_blank";
+            pay.rel = "noopener";
+            pay.textContent = "Betaal factuur";
+            action.append(pay);
+          }
           if (invoice.pdf_file_path) {
             const download = document.createElement("button");
             download.className = "button secondary";
@@ -314,7 +336,8 @@
             download.textContent = "Download";
             download.addEventListener("click", () => openInvoicePdf(invoice.id, download));
             action.append(download);
-          } else {
+          }
+          if (!action.children.length) {
             action.textContent = "-";
           }
           row.append(
@@ -322,6 +345,7 @@
             createCell(invoice.title || "Factuur", "strong"),
             createCell(money(invoice.amount)),
             createBadge(billingStatusLabel(invoice.status), billingStatusClass(invoice.status)),
+            createBadge(billingStatusLabel(invoice.mollie_payment_status || invoice.status), billingStatusClass(invoice.mollie_payment_status || invoice.status)),
             createCell(formatDate(invoice.due_date)),
             action
           );
@@ -625,10 +649,24 @@
 
           let { data: invoiceRows, error: invoiceError } = await state.client
             .from("customer_invoices")
-            .select("id,invoice_number,title,amount,status,due_date,paid_at,pdf_file_path,created_at")
+            .select("id,invoice_number,title,amount,status,due_date,paid_at,pdf_file_path,mollie_checkout_url,mollie_payment_status,created_at")
             .eq("customer_auth_user_id", user.id)
             .order("created_at", { ascending: false })
             .limit(20);
+
+          if (invoiceError) {
+            const schemaErrorText = `${invoiceError.code || ""} ${invoiceError.message || ""}`.toLowerCase();
+            if (schemaErrorText.includes("column") || schemaErrorText.includes("schema cache")) {
+              const fallback = await state.client
+                .from("customer_invoices")
+                .select("id,invoice_number,title,amount,status,due_date,paid_at,pdf_file_path,created_at")
+                .eq("customer_auth_user_id", user.id)
+                .order("created_at", { ascending: false })
+                .limit(20);
+              invoiceRows = fallback.data;
+              invoiceError = fallback.error;
+            }
+          }
 
           const invoiceErrorText = `${invoiceError?.code || ""} ${invoiceError?.message || ""}`.toLowerCase();
           if (invoiceError && !invoiceErrorText.includes("customer_invoices") && !invoiceErrorText.includes("42p01")) {
