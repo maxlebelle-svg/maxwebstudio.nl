@@ -40,6 +40,7 @@
           <a href="#klantportaal">Klantportaal</a>
           <a href="#instellingen">Instellingen</a>
           <a href="#integraties">Integraties</a>
+          <a href="#demo-omgeving">Demo omgeving</a>
         </nav>
         <article class="admin-card admin-token-card">
           <div>
@@ -637,6 +638,68 @@
             </div>
           </form>
         </section>
+
+        <section class="admin-section settings-section" id="demo-omgeving">
+          <div class="admin-section-heading">
+            <div>
+              <p class="section-kicker">Demo omgeving</p>
+              <h2>Productievoorbereiding & demo-data</h2>
+            </div>
+            <span class="status-badge status-prepared">Local demo</span>
+          </div>
+          <div class="settings-alert">
+            <strong>Demo/local omgeving</strong>
+            <span>Deze tools zijn bedoeld om de volledige flow te testen met lokale browserdata. Voor echte klantdata is Supabase/Auth nodig.</span>
+          </div>
+          <div class="settings-grid">
+            <article class="admin-card settings-card settings-card-wide">
+              <div class="settings-card-heading"><div><span>Demo account</span><strong>Complete testflow laden</strong></div><mark class="status-badge status-prepared">Seeder</mark></div>
+              <p>Laad een realistische demo: lead → klant → website → project → offerte → factuur → abonnement → klantportaal.</p>
+              <div class="settings-actions">
+                <button class="button primary" id="demo-load" type="button">Demo data laden</button>
+                <button class="button secondary" id="demo-reset" type="button">Demo data resetten</button>
+                <button class="button secondary" id="demo-export-all" type="button">Alle lokale data exporteren</button>
+                <button class="button secondary danger" id="demo-wipe-all" type="button">Alle lokale data wissen</button>
+              </div>
+              <div class="settings-actions">
+                <button class="button secondary" id="demo-import-placeholder" type="button">Import JSON backup</button>
+              </div>
+              <p class="admin-form-message" id="demo-message" role="status"></p>
+            </article>
+
+            <article class="admin-card settings-card settings-card-wide">
+              <div class="settings-card-heading"><div><span>Demo flow checker</span><strong>Teststatus volledige klantreis</strong></div><mark class="status-badge status-prepared">Checklist</mark></div>
+              <div class="settings-status-list" id="demo-flow-checklist"></div>
+              <div class="settings-actions">
+                <button class="button secondary" id="demo-open-customer" type="button">Open klant</button>
+                <button class="button secondary" id="demo-open-quote" type="button">Open offerte</button>
+                <button class="button secondary" id="demo-open-invoice" type="button">Open factuur</button>
+                <button class="button secondary" id="demo-open-subscription" type="button">Open abonnement</button>
+                <a class="button secondary is-disabled" id="demo-open-portal" href="#" target="_blank" rel="noopener" aria-disabled="true">Open klantportaal</a>
+              </div>
+            </article>
+
+            <article class="admin-card settings-card settings-card-wide">
+              <div class="settings-card-heading"><div><span>LocalStorage beheer</span><strong>Bekende Max Webstudio keys</strong></div><mark class="status-badge status-warning">Browserdata</mark></div>
+              <div class="admin-table billing-table" id="local-storage-key-list" role="table" aria-label="LocalStorage keys"></div>
+            </article>
+
+            <article class="admin-card settings-card">
+              <div class="settings-card-heading"><div><span>Omgevingsstatus</span><strong>Demo vs productie</strong></div><mark class="status-badge status-prepared">Voorbereiding</mark></div>
+              <div class="settings-status-list" id="environment-status-list"></div>
+            </article>
+
+            <article class="admin-card settings-card">
+              <div class="settings-card-heading"><div><span>Migratie naar productie</span><strong>Supabase/Auth voorbereiding</strong></div><mark class="status-badge status-planned">Fase later</mark></div>
+              <div class="settings-status-list" id="migration-checklist"></div>
+            </article>
+
+            <article class="admin-card settings-card settings-card-wide">
+              <div class="settings-card-heading"><div><span>Datastructuur</span><strong>Compacte module-documentatie</strong></div><mark class="status-badge status-prepared">Local schema</mark></div>
+              <div class="admin-grid compact-admin-grid" id="data-structure-docs"></div>
+            </article>
+          </div>
+        </section>
       </div>
     </main>
 
@@ -866,6 +929,27 @@
         const quotesStorageKey = "maxwebstudioQuotes";
         const settingsStorageKey = "maxwebstudioSettings";
         const subscriptionsStorageKey = "maxwebstudioSubscriptions";
+        const demoScenarioId = "maxwebstudio-demo-001";
+        const demoCustomerId = "demo-customer-timmerbedrijf-de-vries";
+        const demoWebsiteId = "demo-website-timmerbedrijf-de-vries";
+        const demoProjectId = "demo-project-timmerbedrijf-de-vries";
+        const demoQuoteId = "demo-quote-timmerbedrijf-de-vries";
+        const demoInvoiceId = "demo-invoice-timmerbedrijf-de-vries";
+        const demoSubscriptionId = "demo-subscription-care-plus";
+        const managedLocalStorageKeys = [
+          { key: "maxwebstudioLeads", label: "Leads", description: "Lokale leadregistratie vanuit demo-flow" },
+          { key: "maxwebstudioLeadRequests", label: "Aanvragen", description: "Aanvraagformulier back-up uit publieke website" },
+          { key: "maxwebstudioCustomers", label: "Klanten fallback", description: "Klantportaal fallback-key voor klantprofielen" },
+          { key: crmCustomersStorageKey, label: "CRM klanten", description: "Primaire lokale CRM-klanten" },
+          { key: "maxwebstudioWebsites", label: "Websites fallback", description: "Fallback-key voor websitebeheer" },
+          { key: managedSitesStorageKey, label: "Websites", description: "Primaire lokale websitebeheerdata" },
+          { key: projectsStorageKey, label: "Projecten", description: "Onboarding en projectmanagement" },
+          { key: filesStorageKey, label: "Bestanden", description: "Bestandsregistratie en links" },
+          { key: quotesStorageKey, label: "Offertes", description: "Offertes en demo-offertelinks" },
+          { key: invoicesStorageKey, label: "Facturen", description: "Facturen en demo-betaallinks" },
+          { key: subscriptionsStorageKey, label: "Abonnementen", description: "Onderhoudsabonnementen en recurring billing" },
+          { key: settingsStorageKey, label: "Instellingen", description: "Bedrijfs-, factuur- en integratie-instellingen" },
+        ];
         const completedStatuses = new Set(["afgerond"]);
         const statusLabels = {
           nieuw: "Nieuw",
@@ -1420,6 +1504,24 @@
         const settingsMessage = document.getElementById("settings-message");
         const settingsIntegrations = document.getElementById("settings-integrations");
         const settingsSystemStatus = document.getElementById("settings-system-status");
+        const demoMessage = document.getElementById("demo-message");
+        const demoFlowChecklist = document.getElementById("demo-flow-checklist");
+        const localStorageKeyList = document.getElementById("local-storage-key-list");
+        const environmentStatusList = document.getElementById("environment-status-list");
+        const migrationChecklist = document.getElementById("migration-checklist");
+        const dataStructureDocs = document.getElementById("data-structure-docs");
+        const demoActions = {
+          load: document.getElementById("demo-load"),
+          reset: document.getElementById("demo-reset"),
+          exportAll: document.getElementById("demo-export-all"),
+          wipeAll: document.getElementById("demo-wipe-all"),
+          importPlaceholder: document.getElementById("demo-import-placeholder"),
+          openCustomer: document.getElementById("demo-open-customer"),
+          openQuote: document.getElementById("demo-open-quote"),
+          openInvoice: document.getElementById("demo-open-invoice"),
+          openSubscription: document.getElementById("demo-open-subscription"),
+          openPortal: document.getElementById("demo-open-portal"),
+        };
 
         if (state.adminToken) adminTokenInput.value = state.adminToken;
 
@@ -1623,6 +1725,451 @@
           });
         }
 
+        function setDemoMessage(text, type = "success") {
+          demoMessage.textContent = text;
+          demoMessage.dataset.type = type;
+        }
+
+        function parseLocalStorageValue(key) {
+          const raw = localStorage.getItem(key);
+          if (!raw) return { exists: false, value: null, count: 0, updatedAt: "" };
+          try {
+            const value = JSON.parse(raw);
+            const records = Array.isArray(value) ? value : [];
+            const updatedAt = Array.isArray(value)
+              ? records.map((item) => item?.updatedAt || item?.createdAt || item?.date || "").filter(Boolean).sort().at(-1)
+              : value?.updatedAt || "";
+            return { exists: true, value, count: Array.isArray(value) ? value.length : 1, updatedAt };
+          } catch (error) {
+            return { exists: true, value: raw, count: 1, updatedAt: "" };
+          }
+        }
+
+        function writeJsonDownload(filename, data) {
+          const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = filename;
+          document.body.append(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(url);
+        }
+
+        function exportLocalStorageKey(key) {
+          const parsed = parseLocalStorageValue(key);
+          writeJsonDownload(`${key}-${new Date().toISOString().slice(0, 10)}.json`, { [key]: parsed.value });
+          setDemoMessage(`${key} geexporteerd.`, "success");
+        }
+
+        function removeDemoRecordsFromKey(key) {
+          const parsed = parseLocalStorageValue(key);
+          if (!parsed.exists) return 0;
+          if (!Array.isArray(parsed.value)) return 0;
+          const before = parsed.value.length;
+          const next = parsed.value.filter((item) => !(item?.isDemo && item?.demoScenarioId === demoScenarioId));
+          localStorage.setItem(key, JSON.stringify(next));
+          return before - next.length;
+        }
+
+        function resetDemoData(options = {}) {
+          const removed = managedLocalStorageKeys.reduce((count, item) => count + removeDemoRecordsFromKey(item.key), 0);
+          state.selectedCustomerId = state.selectedCustomerId === demoCustomerId ? "" : state.selectedCustomerId;
+          state.selectedWebsiteId = state.selectedWebsiteId === demoWebsiteId ? "" : state.selectedWebsiteId;
+          state.selectedProjectId = state.selectedProjectId === demoProjectId ? "" : state.selectedProjectId;
+          state.selectedQuoteId = state.selectedQuoteId === demoQuoteId ? "" : state.selectedQuoteId;
+          state.selectedInvoiceId = state.selectedInvoiceId === demoInvoiceId ? "" : state.selectedInvoiceId;
+          state.selectedSubscriptionId = state.selectedSubscriptionId === demoSubscriptionId ? "" : state.selectedSubscriptionId;
+          if (!options.silent) {
+            loadCRMData(false);
+            renderDemoEnvironment();
+            setDemoMessage(`${removed} demo-record${removed === 1 ? "" : "s"} verwijderd. Handmatige lokale data is behouden.`, "success");
+          }
+          return removed;
+        }
+
+        function demoToday(offsetDays = 0) {
+          return addDays(new Date().toISOString().slice(0, 10), offsetDays);
+        }
+
+        function loadDemoData() {
+          resetDemoData({ silent: true });
+          const now = new Date().toISOString();
+          const customer = normalizeStoredCustomer({
+            id: demoCustomerId,
+            name: "Demo Klant",
+            company: "Timmerbedrijf De Vries",
+            email: "demo@maxwebstudio.nl",
+            phone: "06-12345678",
+            website: "https://demo.maxwebstudio.nl",
+            package: "Care Plus",
+            status: "actief",
+            portalStatus: "actief",
+            customerSince: demoToday(-30),
+            notes: "Demo zakelijke klant voor volledige platformtest.",
+            isDemo: true,
+            demoScenarioId,
+            createdAt: now,
+            updatedAt: now,
+          });
+          state.customers = [customer, ...readStoredCustomers().filter((item) => item.id !== customer.id)];
+          state.profiles = state.customers;
+          writeStoredCustomers(state.customers);
+          localStorage.setItem("maxwebstudioCustomers", JSON.stringify(state.customers));
+
+          const website = normalizeManagedSite({
+            id: demoWebsiteId,
+            profileId: customer.id,
+            name: "Website Timmerbedrijf De Vries",
+            domain: "demo.maxwebstudio.nl",
+            liveUrl: "https://demo.maxwebstudio.nl",
+            stagingUrl: "https://staging-demo.maxwebstudio.nl",
+            githubRepoUrl: "https://github.com/maxwebstudio/demo-timmerbedrijf-de-vries",
+            githubBranch: "main",
+            netlifyProjectName: "demo-timmerbedrijf-de-vries",
+            netlifySiteId: "demo-site-001",
+            status: "development",
+            hostingPackage: "Business Hosting",
+            carePackage: "Care Plus",
+            sslStatus: "active",
+            lastDeployAt: now,
+            lastUpdateAt: now,
+            notes: "Demo website in ontwikkeling.",
+            isDemo: true,
+            demoScenarioId,
+            createdAt: now,
+            updatedAt: now,
+          });
+          state.websites = [website, ...readStoredWebsites().filter((item) => item.id !== website.id)];
+          writeStoredWebsites(state.websites);
+          localStorage.setItem("maxwebstudioWebsites", JSON.stringify(state.websites));
+
+          const project = normalizeProject({
+            id: demoProjectId,
+            customerId: customer.id,
+            websiteId: website.id,
+            name: "Nieuwe website Timmerbedrijf De Vries",
+            type: "Nieuwe website",
+            status: "in_ontwerp",
+            phase: "Design / content verzamelen",
+            startDate: demoToday(0),
+            deadline: demoToday(14),
+            notes: "Demo project voor onboarding en delivery.",
+            checklist: [
+              { label: "Logo ontvangen", completed: true, completedAt: now },
+              { label: "Huisstijl/kleurwensen ontvangen", completed: true, completedAt: now },
+              { label: "Teksten ontvangen", completed: false },
+              { label: "Foto’s ontvangen", completed: false },
+            ],
+            tasks: [
+              { title: "Intake verwerken", done: true, priority: "normaal", status: "afgerond" },
+              { title: "Homepage opzetten", done: false, priority: "hoog", status: "in behandeling", deadline: demoToday(5) },
+              { title: "Mobiel controleren", done: false, priority: "normaal", status: "open", deadline: demoToday(12) },
+            ],
+            timeline: [{ id: "demo-event-001", type: "created", label: "Demo project aangemaakt", createdAt: now }],
+            isDemo: true,
+            demoScenarioId,
+            createdAt: now,
+            updatedAt: now,
+          });
+          state.projects = [project, ...readStoredProjects().filter((item) => item.id !== project.id)];
+          writeStoredProjects(state.projects);
+
+          const invoice = normalizeInvoice({
+            id: demoInvoiceId,
+            invoiceNumber: "INV-DEMO-001",
+            profileId: customer.id,
+            websiteId: website.id,
+            projectId: project.id,
+            type: "Website",
+            title: "Aanbetaling Business Website",
+            status: "verzonden",
+            invoiceDate: demoToday(0),
+            dueDate: demoToday(14),
+            paymentLink: invoicePaymentUrl(demoInvoiceId),
+            lines: [{ description: "Aanbetaling Business Website", quantity: 1, unitPrice: 300, vatRate: 21 }],
+            notes: "Demo factuur met werkende demo-betaallink.",
+            isDemo: true,
+            demoScenarioId,
+            createdAt: now,
+            updatedAt: now,
+          });
+          state.invoices = [invoice, ...readStoredInvoices().filter((item) => item.id !== invoice.id)];
+          writeStoredInvoices(state.invoices);
+
+          const quote = normalizeQuote({
+            id: demoQuoteId,
+            quoteNumber: "OFF-DEMO-001",
+            profileId: customer.id,
+            websiteId: website.id,
+            projectId: project.id,
+            type: "Website + onderhoud",
+            title: "Business Website + Care Plus",
+            status: "geaccepteerd",
+            quoteDate: demoToday(-2),
+            validUntil: demoToday(14),
+            quoteLink: quoteLinkUrl(demoQuoteId),
+            proposal: "Demo-offerte voor een professionele website inclusief onderhoud.",
+            lines: [
+              { description: "Business Website", quantity: 1, unitPrice: 995, vatRate: 21 },
+              { description: "Care Plus", quantity: 1, unitPrice: 49, vatRate: 21 },
+            ],
+            convertedToInvoiceId: invoice.id,
+            convertedAt: now,
+            isDemo: true,
+            demoScenarioId,
+            createdAt: now,
+            updatedAt: now,
+          });
+          state.quotes = [quote, ...readStoredQuotes().filter((item) => item.id !== quote.id)];
+          writeStoredQuotes(state.quotes);
+
+          const subscription = normalizeSubscription({
+            id: demoSubscriptionId,
+            profileId: customer.id,
+            websiteId: website.id,
+            projectId: project.id,
+            plan: "Care Plus",
+            status: "actief",
+            startDate: demoToday(0),
+            nextInvoiceDate: demoToday(30),
+            billingCycle: "monthly",
+            priceExVat: 49,
+            vatRate: 21,
+            paymentStatus: "demo",
+            autoInvoiceEnabled: true,
+            notes: "Demo onderhoudsabonnement voor recurring billing.",
+            isDemo: true,
+            demoScenarioId,
+            createdAt: now,
+            updatedAt: now,
+          });
+          state.subscriptions = [subscription, ...readStoredSubscriptions().filter((item) => item.id !== subscription.id)];
+          writeStoredSubscriptions(state.subscriptions);
+
+          const demoFiles = [
+            ["demo-file-logo", "Logo concept", "Huisstijl", "PNG", "https://demo.maxwebstudio.nl/assets/logo-concept.png", "goedgekeurd"],
+            ["demo-file-briefing", "Website briefing", "Document", "PDF", "https://demo.maxwebstudio.nl/docs/website-briefing.pdf", "actief"],
+            ["demo-file-domain", "Domeingegevens checklist", "Document", "DOCX", "https://demo.maxwebstudio.nl/docs/domein-checklist.docx", "in_review"],
+            ["demo-file-preview", "Preview link", "Overig", "URL", "https://staging-demo.maxwebstudio.nl", "actief"],
+          ].map(([id, name, category, type, location, status]) => normalizeStoredFile({
+            id,
+            customerId: customer.id,
+            websiteId: website.id,
+            projectId: project.id,
+            name,
+            category,
+            type,
+            location,
+            status,
+            notes: "Demo bestandsregistratie.",
+            isDemo: true,
+            demoScenarioId,
+            createdAt: now,
+            updatedAt: now,
+          }));
+          const existingFiles = readStoredFiles().filter((item) => item.demoScenarioId !== demoScenarioId);
+          state.files = [...demoFiles, ...existingFiles];
+          writeStoredFiles(state.files);
+
+          const demoLead = {
+            id: "demo-lead-timmerbedrijf-de-vries",
+            name: "Demo Klant",
+            company: "Timmerbedrijf De Vries",
+            email: "demo@maxwebstudio.nl",
+            phone: "06-12345678",
+            source: "Website formulier",
+            interest: "Business Website + Care Plus",
+            status: "gewonnen",
+            convertedCustomerId: customer.id,
+            isDemo: true,
+            demoScenarioId,
+            createdAt: now,
+            updatedAt: now,
+          };
+          ["maxwebstudioLeads", "maxwebstudioLeadRequests"].forEach((key) => {
+            const parsed = parseLocalStorageValue(key);
+            const existing = Array.isArray(parsed.value) ? parsed.value.filter((item) => item.demoScenarioId !== demoScenarioId) : [];
+            localStorage.setItem(key, JSON.stringify([demoLead, ...existing]));
+          });
+
+          loadCRMData(false);
+          renderDemoEnvironment();
+          setDemoMessage("Demo data geladen. De volledige lokale klantflow is beschikbaar.", "success");
+        }
+
+        function exportAllLocalData() {
+          const payload = {
+            exportedAt: new Date().toISOString(),
+            source: "Max Webstudio localStorage demo backup",
+            data: {},
+          };
+          managedLocalStorageKeys.forEach((item) => {
+            payload.data[item.key] = parseLocalStorageValue(item.key).value;
+          });
+          writeJsonDownload(`maxwebstudio-local-backup-${new Date().toISOString().slice(0, 10)}.json`, payload);
+          setDemoMessage("Lokale Max Webstudio-data geexporteerd als JSON-backup.", "success");
+        }
+
+        function wipeAllLocalData() {
+          if (!window.confirm("Weet je zeker dat je alle bekende lokale Max Webstudio-data wilt wissen?")) return;
+          const confirmation = window.prompt("Typ WISSEN om alle lokale demo/CRM-data in deze browser te verwijderen.");
+          if (confirmation !== "WISSEN") {
+            setDemoMessage("Wissen geannuleerd. Er is geen data verwijderd.", "error");
+            return;
+          }
+          managedLocalStorageKeys.forEach((item) => localStorage.removeItem(item.key));
+          loadCRMData(false);
+          renderDemoEnvironment();
+          setDemoMessage("Alle bekende lokale Max Webstudio-data is gewist.", "success");
+        }
+
+        function clearLocalStorageKey(key) {
+          if (!window.confirm(`Weet je zeker dat je ${key} wilt wissen?`)) return;
+          localStorage.removeItem(key);
+          loadCRMData(false);
+          renderDemoEnvironment();
+          setDemoMessage(`${key} is gewist.`, "success");
+        }
+
+        function renderLocalStorageKeyList() {
+          localStorageKeyList.replaceChildren();
+          const head = document.createElement("div");
+          head.className = "admin-table-row admin-table-head billing-row";
+          ["Key", "Status", "Records", "Laatste update", "Acties"].forEach((label) => head.append(createCell(label)));
+          localStorageKeyList.append(head);
+          managedLocalStorageKeys.forEach((item) => {
+            const parsed = parseLocalStorageValue(item.key);
+            const actions = document.createElement("span");
+            actions.className = "website-actions";
+            const exportButton = document.createElement("button");
+            exportButton.className = "button secondary";
+            exportButton.type = "button";
+            exportButton.textContent = "Exporteer key";
+            exportButton.disabled = !parsed.exists;
+            exportButton.addEventListener("click", () => exportLocalStorageKey(item.key));
+            const clearButton = document.createElement("button");
+            clearButton.className = "button secondary danger";
+            clearButton.type = "button";
+            clearButton.textContent = "Wis key";
+            clearButton.disabled = !parsed.exists;
+            clearButton.addEventListener("click", () => clearLocalStorageKey(item.key));
+            actions.append(exportButton, clearButton);
+            const row = document.createElement("div");
+            row.className = "admin-table-row billing-row";
+            row.append(
+              createCell(`${item.key} - ${item.description}`, "strong"),
+              createBadge(parsed.exists ? "Bestaat" : "Ontbreekt", parsed.exists ? "status-active" : "status-planned"),
+              createCell(String(parsed.count)),
+              createCell(formatDate(parsed.updatedAt)),
+              actions
+            );
+            localStorageKeyList.append(row);
+          });
+        }
+
+        function renderDemoFlowChecklist() {
+          const leads = parseLocalStorageValue("maxwebstudioLeads").value;
+          const demoLead = Array.isArray(leads) ? leads.find((item) => item.demoScenarioId === demoScenarioId) : null;
+          const demoCustomer = customerById(demoCustomerId);
+          const demoWebsite = websiteById(demoWebsiteId);
+          const demoProject = projectById(demoProjectId);
+          const demoQuote = quoteById(demoQuoteId);
+          const demoInvoice = invoiceById(demoInvoiceId);
+          const demoSubscription = subscriptionById(demoSubscriptionId);
+          const checks = [
+            ["Lead aanwezig", Boolean(demoLead)],
+            ["Klant aanwezig", Boolean(demoCustomer)],
+            ["Website aanwezig", Boolean(demoWebsite)],
+            ["Project aanwezig", Boolean(demoProject)],
+            ["Offerte aanwezig", Boolean(demoQuote)],
+            ["Offerte geaccepteerd", demoQuote?.status === "geaccepteerd"],
+            ["Factuur aanwezig", Boolean(demoInvoice)],
+            ["Betaallink aanwezig", Boolean(demoInvoice?.paymentLink)],
+            ["Abonnement actief", demoSubscription?.status === "actief"],
+            ["Klantportaal-link beschikbaar", Boolean(demoCustomer)],
+          ];
+          demoFlowChecklist.replaceChildren();
+          checks.forEach(([label, ready]) => {
+            const row = document.createElement("div");
+            row.append(createCell(label), createBadge(ready ? "Gereed" : "Ontbreekt", ready ? "status-active" : "status-warning"));
+            demoFlowChecklist.append(row);
+          });
+          demoActions.openCustomer.disabled = !demoCustomer;
+          demoActions.openQuote.disabled = !demoQuote;
+          demoActions.openInvoice.disabled = !demoInvoice;
+          demoActions.openSubscription.disabled = !demoSubscription;
+          demoActions.openPortal.href = demoCustomer ? customerPortalUrl(demoCustomer.id) : "#";
+          demoActions.openPortal.classList.toggle("is-disabled", !demoCustomer);
+          demoActions.openPortal.toggleAttribute("aria-disabled", !demoCustomer);
+        }
+
+        function renderEnvironmentStatus() {
+          const statuses = [
+            ["Opslag", "localStorage", "status-active"],
+            ["Auth", "Niet actief", "status-warning"],
+            ["Betalingen", "Demo", "status-prepared"],
+            ["E-mail", "Demo/voorbereid", "status-prepared"],
+            ["Bestanden", "Linkregistratie/local", "status-prepared"],
+            ["Database", "Niet gekoppeld", "status-warning"],
+            ["Productiestatus", "Demo/voorbereiding", "status-planned"],
+          ];
+          environmentStatusList.replaceChildren();
+          statuses.forEach(([label, status, type]) => {
+            const row = document.createElement("div");
+            row.append(createCell(label), createBadge(status, type));
+            environmentStatusList.append(row);
+          });
+        }
+
+        function renderMigrationChecklist() {
+          const items = [
+            "Datamodel documenteren",
+            "Supabase-tabellen aanmaken",
+            "Admin login bouwen",
+            "Klant login bouwen",
+            "Bestandsopslag koppelen",
+            "Mollie live koppelen",
+            "Resend live koppelen",
+            "Back-ups instellen",
+          ];
+          migrationChecklist.replaceChildren();
+          items.forEach((item) => {
+            const row = document.createElement("div");
+            row.append(createCell(item), createBadge("Gepland", "status-planned"));
+            migrationChecklist.append(row);
+          });
+        }
+
+        function renderDataStructureDocs() {
+          const docs = [
+            ["CRM klanten", crmCustomersStorageKey, "Klantprofiel, contact, status, portalstatus"],
+            ["Websites", managedSitesStorageKey, "Klantkoppeling, domein, hosting, SSL, Netlify/GitHub"],
+            ["Projecten", projectsStorageKey, "Klant, website, status, fase, checklist, taken"],
+            ["Bestanden", filesStorageKey, "Klant/project, categorie, link, status"],
+            ["Offertes", quotesStorageKey, "Klant, regels, status, demo-offertelink"],
+            ["Facturen", invoicesStorageKey, "Klant, regels, status, betaallink, abonnement"],
+            ["Abonnementen", subscriptionsStorageKey, "Plan, frequentie, MRR, volgende factuurdatum"],
+            ["Instellingen", settingsStorageKey, "Bedrijf, factuurregels, integratievoorbereiding"],
+          ];
+          dataStructureDocs.replaceChildren();
+          docs.forEach(([title, key, description]) => {
+            const card = document.createElement("article");
+            card.className = "admin-card request-card";
+            card.append(createCell(title, "strong"), createCell(key), createCell(description));
+            dataStructureDocs.append(card);
+          });
+        }
+
+        function renderDemoEnvironment() {
+          renderLocalStorageKeyList();
+          renderDemoFlowChecklist();
+          renderEnvironmentStatus();
+          renderMigrationChecklist();
+          renderDataStructureDocs();
+        }
+
         function saveSettings(event) {
           event.preventDefault();
           writeStoredSettings(collectSettingsForm());
@@ -1669,6 +2216,8 @@
             notes: String(customer.notes || "").trim(),
             portalStatus,
             authStatus: portalStatus === "actief" ? "login actief" : "geen login",
+            isDemo: Boolean(customer.isDemo),
+            demoScenarioId: customer.demoScenarioId || "",
           };
         }
 
@@ -1754,6 +2303,8 @@
             openTasks: Number.isFinite(Number(site.openTasks)) ? Math.max(0, Number(site.openTasks)) : 0,
             notes: String(site.notes || "").trim(),
             metadata: site.metadata && typeof site.metadata === "object" ? site.metadata : {},
+            isDemo: Boolean(site.isDemo),
+            demoScenarioId: site.demoScenarioId || "",
             createdAt,
             updatedAt: site.updatedAt || createdAt,
           };
@@ -1899,6 +2450,8 @@
             checklist,
             tasks,
             timeline: normalizeProjectTimeline(project.timeline || []),
+            isDemo: Boolean(project.isDemo),
+            demoScenarioId: project.demoScenarioId || "",
             createdAt,
             updatedAt: project.updatedAt || createdAt,
           };
@@ -2003,6 +2556,8 @@
             addedAt: createdAt,
             updatedAt: file.updatedAt || createdAt,
             metadata: file.metadata && typeof file.metadata === "object" ? file.metadata : {},
+            isDemo: Boolean(file.isDemo),
+            demoScenarioId: file.demoScenarioId || "",
           };
         }
 
@@ -2133,6 +2688,8 @@
             demoQuoteLink: quote.quoteLink || quote.demoQuoteLink || quoteLinkUrl(id),
             convertedToInvoiceId: quote.convertedToInvoiceId || "",
             convertedAt: quote.convertedAt || "",
+            isDemo: Boolean(quote.isDemo),
+            demoScenarioId: quote.demoScenarioId || "",
             createdAt,
             updatedAt: quote.updatedAt || createdAt,
           };
@@ -2296,6 +2853,8 @@
             subscriptionPlan: invoice.subscriptionPlan || "",
             subscriptionBillingCycle: invoice.subscriptionBillingCycle || "",
             subscriptionInvoicePeriod: invoice.subscriptionInvoicePeriod || "",
+            isDemo: Boolean(invoice.isDemo),
+            demoScenarioId: invoice.demoScenarioId || "",
             createdAt,
             updatedAt: invoice.updatedAt || createdAt,
           };
@@ -4068,6 +4627,8 @@
             subscriptionInvoiceSequence: Number(subscription.subscriptionInvoiceSequence || 0),
             nextAutoInvoiceRun: subscription.nextAutoInvoiceRun || subscription.nextInvoiceDate || "",
             invoiceGenerationLog: Array.isArray(subscription.invoiceGenerationLog) ? subscription.invoiceGenerationLog : [],
+            isDemo: Boolean(subscription.isDemo),
+            demoScenarioId: subscription.demoScenarioId || "",
             notes: String(subscription.notes || "").trim(),
             createdAt: subscription.createdAt || now,
             updatedAt: subscription.updatedAt || subscription.createdAt || now,
@@ -6404,6 +6965,7 @@
             populateProjectOptions();
             populateFileOptions();
             populateQuoteOptions();
+            renderDemoEnvironment();
             if (state.adminToken) {
               await loadDashboardMetrics(false);
               await loadWebsiteHealth(false);
@@ -6443,6 +7005,24 @@
         websiteHealthRefresh.addEventListener("click", () => loadWebsiteHealth(true));
         adminLoadButton.addEventListener("click", () => loadCRMData(true));
         biPeriodFilter.addEventListener("change", () => loadDashboardMetrics(true));
+        demoActions.load.addEventListener("click", loadDemoData);
+        demoActions.reset.addEventListener("click", () => {
+          if (window.confirm("Demo data resetten? Alleen records met isDemo worden verwijderd.")) resetDemoData();
+        });
+        demoActions.exportAll.addEventListener("click", exportAllLocalData);
+        demoActions.wipeAll.addEventListener("click", wipeAllLocalData);
+        demoActions.importPlaceholder.addEventListener("click", () => setDemoMessage("Import wordt gebouwd in Fase 10.1.", "success"));
+        demoActions.openCustomer.addEventListener("click", () => {
+          if (!customerById(demoCustomerId)) return;
+          selectCustomer(demoCustomerId);
+          document.getElementById("klanten")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+        demoActions.openQuote.addEventListener("click", () => quoteById(demoQuoteId) && openQuoteModal(demoQuoteId));
+        demoActions.openInvoice.addEventListener("click", () => invoiceById(demoInvoiceId) && openInvoiceModal(demoInvoiceId));
+        demoActions.openSubscription.addEventListener("click", () => subscriptionById(demoSubscriptionId) && openSubscriptionModal(demoSubscriptionId));
+        demoActions.openPortal.addEventListener("click", (event) => {
+          if (event.currentTarget.getAttribute("aria-disabled") === "true") event.preventDefault();
+        });
         detailForm.addEventListener("submit", saveCustomer);
         websiteDetailForm.addEventListener("submit", saveWebsite);
         subscriptionForm.addEventListener("submit", saveSubscription);
