@@ -774,7 +774,17 @@
                 <button class="button secondary" id="view-customer-mapping-preview" type="button">Bekijk mapping preview</button>
                 <button class="button secondary" id="view-customer-duplicates" type="button">Bekijk duplicaten</button>
                 <button class="button secondary" id="view-customer-missing-fields" type="button">Bekijk ontbrekende velden</button>
-                <button class="button secondary" type="button" disabled>Live migratie wordt gebouwd in Fase 11.7.</button>
+                <button class="button secondary" id="create-customer-pre-migration-backup" type="button">Maak pre-migration backup</button>
+              </div>
+              <div class="admin-profile-fields">
+                <label for="customer-migration-include-demo">Demo-klanten meenemen<select id="customer-migration-include-demo"><option value="false">Nee</option><option value="true">Ja</option></select></label>
+                <label for="customer-migration-include-production">Productie-klanten meenemen<select id="customer-migration-include-production"><option value="true">Ja</option><option value="false">Nee</option></select></label>
+                <label for="customer-migration-batch-size">Batch size<input id="customer-migration-batch-size" type="number" min="1" max="100" value="25" /></label>
+                <label for="customer-migration-skip-duplicates">Duplicaten overslaan<select id="customer-migration-skip-duplicates"><option value="true">Ja</option><option value="false">Nee</option></select></label>
+              </div>
+              <div class="settings-actions">
+                <button class="button secondary" id="view-customer-write-preview" type="button">Bekijk write preview</button>
+                <button class="button primary" id="start-customer-live-migration" type="button" disabled>Start live migratie naar Supabase</button>
               </div>
               <div class="admin-grid compact-admin-grid" id="developer-tools-output"></div>
             </article>
@@ -1626,6 +1636,13 @@
         const viewCustomerMappingPreviewButton = document.getElementById("view-customer-mapping-preview");
         const viewCustomerDuplicatesButton = document.getElementById("view-customer-duplicates");
         const viewCustomerMissingFieldsButton = document.getElementById("view-customer-missing-fields");
+        const createCustomerPreMigrationBackupButton = document.getElementById("create-customer-pre-migration-backup");
+        const viewCustomerWritePreviewButton = document.getElementById("view-customer-write-preview");
+        const startCustomerLiveMigrationButton = document.getElementById("start-customer-live-migration");
+        const customerMigrationIncludeDemo = document.getElementById("customer-migration-include-demo");
+        const customerMigrationIncludeProduction = document.getElementById("customer-migration-include-production");
+        const customerMigrationBatchSize = document.getElementById("customer-migration-batch-size");
+        const customerMigrationSkipDuplicates = document.getElementById("customer-migration-skip-duplicates");
         const demoEmailList = document.getElementById("demo-email-list");
         const demoImportPreview = document.getElementById("demo-import-preview");
         const importLogList = document.getElementById("import-log-list");
@@ -2622,9 +2639,14 @@
             ["Supabase voorbereiding", "Niet gekoppeld", "Tabellen voorbereid: profiles, leads, customer_websites, customer_projects, customer_files, customer_quotes, customer_invoices, customer_subscriptions. Env vars later: SUPABASE_URL en SUPABASE_ANON_KEY."],
             ["CRM Supabase mapping", "Voorbereid", "CustomerRepository kan lokale klantrecords naar customers-rijen mappen"],
             ["CRM migratie dry run", "Gereed", "Developer Mode analyseert klanten zonder databasewrites"],
-            ["CRM live migratie", "Niet actief", "Live customer writes worden pas in Fase 11.7 gebouwd"],
+            ["CRM live writes basis", "Niet actief", "Live customer writes blijven afhankelijk van Supabase client readiness"],
             ["Customer validation", "Gereed", "Ontbrekende velden, e-mails, status en timestamps worden gecontroleerd"],
             ["Duplicate detection", "Gereed", "Duplicaten op id, e-mail en bedrijfsnaam + telefoon worden gesignaleerd"],
+            ["CRM backup verplicht", "Gereed", "Pre-migration backup moet lokaal worden gemaakt voor live migratie"],
+            ["CRM live migratie", "Voorbereid", "Live knop blijft geblokkeerd totdat alle voorwaarden en Supabase client klaar zijn"],
+            ["CRM live writes", "Niet actief", "Afhankelijk van Supabase config en browserclient/package"],
+            ["CRM rollback", "Voorbereid", "Handmatig via backup; geen gevaarlijke Supabase deletes gebouwd"],
+            ["Local fallback", "Gereed", "Provider blijft localStorage na migratie totdat handmatig omgezet"],
             ["Auth modellen", "Voorbereid", "AuthUser, Session en Permission staan klaar"],
             ["Rollen", "Voorbereid", "super_admin, admin, sales, developer, support, customer en demo_user"],
             ["Permissions", "Voorbereid", "Centrale permissiematrix voorbereid voor navigatie en acties"],
@@ -2801,6 +2823,81 @@
               `${log.readyCount}/${log.totalCustomers} klaar - ${log.duplicateCount} duplicaten - ${log.missingFieldCount} aandacht`,
             ])
             : ["Nog geen CRM migratie dry-run uitgevoerd."]);
+        }
+
+        function customerMigrationOptions() {
+          return {
+            includeDemo: customerMigrationIncludeDemo.value === "true",
+            includeProduction: customerMigrationIncludeProduction.value !== "false",
+            batchSize: Number(customerMigrationBatchSize.value || 25),
+            skipDuplicates: customerMigrationSkipDuplicates.value !== "false",
+          };
+        }
+
+        function renderCustomerLiveMigrationChecklist(readiness) {
+          startCustomerLiveMigrationButton.disabled = !readiness.allowed;
+          appendDeveloperCard("Veilige live migratie voorwaarden", [
+            ["Supabase URL aanwezig", readiness.supabase.hasUrl ? "Ja" : "Nee"],
+            ["Anon key aanwezig", readiness.supabase.hasAnonKey ? "Ja" : "Nee"],
+            ["Provider mode", readiness.providerMode],
+            ["Laatste dry-run", readiness.lastDryRun ? `${readiness.lastDryRun.status} - ${formatDate(readiness.lastDryRun.createdAt)}` : "Ontbreekt"],
+            ["Backup", readiness.lastBackup ? `${readiness.lastBackup.id} - ${formatDate(readiness.lastBackup.createdAt)}` : "Ontbreekt"],
+            ["Records klaar met opties", String(readiness.readyRecords || 0)],
+            ["Supabase client package", readiness.supabase.clientPackageAvailable ? "Beschikbaar" : "Niet actief"],
+            ["Customer writes", readiness.supabase.customerWritesEnabled ? "Actief" : "Geblokkeerd"],
+            ["Migratieknop", readiness.allowed ? "Actief" : "Geblokkeerd"],
+          ]);
+          appendDeveloperCard("Ontbrekende voorwaarden", readiness.missing.length ? readiness.missing : ["Alle voorwaarden zijn voldaan."]);
+        }
+
+        function renderCustomerWritePreview(preview) {
+          appendDeveloperCard("CRM write preview", [
+            ["Doel tabel", preview.targetTable],
+            ["Klaar voor schrijven", String(preview.readyCount || 0)],
+            ["Demo", String(preview.demoCount || 0)],
+            ["Productie", String(preview.productionCount || 0)],
+            ["Duplicaten lokaal", String(preview.duplicateCount || 0)],
+            ["Overgeslagen", String(preview.skippedCount || 0)],
+            ["Remote duplicate-check", preview.remoteDuplicateCheck ? "Beschikbaar" : preview.remoteDuplicateWarning],
+            ["Batch size", String(preview.batchSize || 25)],
+            ["Batches", String(Math.ceil((preview.readyCount || 0) / (preview.batchSize || 25)) || 0)],
+          ]);
+          preview.preview.forEach((record) => {
+            appendDeveloperCard(`Write ${record.email || record.id || "klant"}`, [
+              ["id", record.id || "-"],
+              ["company_name", record.company_name || "-"],
+              ["email", record.email || "-"],
+              ["environment", record.environment || "-"],
+              ["status", record.status || "-"],
+            ]);
+          });
+        }
+
+        function renderCustomerMigrationResult(result) {
+          appendDeveloperCard("CRM migratie resultaat", [
+            ["Status", result.status],
+            ["Gestart", formatDate(result.startedAt)],
+            ["Voltooid", formatDate(result.completedAt)],
+            ["Pogingen", String(result.totalAttempted || 0)],
+            ["Batches", String(result.batches || 0)],
+            ["Inserted", String(result.inserted || 0)],
+            ["Skipped", String(result.skipped || 0)],
+            ["Failed", String(result.failed || 0)],
+            ["Backup", result.backupId || "Geen"],
+            ["Dry run", result.dryRunId || "Geen"],
+            ["Provider", result.providerStillLocal ? "Blijft localStorage" : "Onbekend"],
+            ["Samenvatting", result.summary || "-"],
+          ]);
+          if (result.errors?.length) appendDeveloperCard("CRM migratie errors", result.errors.slice(0, 10));
+        }
+
+        function renderRollbackPreparation(readiness) {
+          appendDeveloperCard("Rollback voorbereiding", [
+            ["Backup gekoppeld", readiness.lastBackup?.id || "Nog geen backup"],
+            ["Backup datum", readiness.lastBackup ? formatDate(readiness.lastBackup.createdAt) : "-"],
+            ["Uitleg", "Rollback betekent: Supabase data handmatig verwijderen/herstellen en lokale backup terugzetten."],
+            ["Automatische deletes", "Niet gebouwd in deze fase"],
+          ]);
         }
 
         function renderEnvExampleSummary() {
@@ -2993,6 +3090,7 @@
             const supabaseReadiness = modules.migrationService.checkSupabaseReadiness();
             const customerMigration = modules.customerMigrationService.analyzeCustomerData();
             const customerMigrationLogs = modules.customerMigrationService.getCustomerMigrationLogs();
+            const liveCustomerReadiness = modules.customerMigrationService.canRunLiveCustomerMigration(customerMigrationOptions());
             const recentActivities = modules.activityLogService.listRecentActivities(5);
             const session = modules.authService.getCurrentSession();
             const user = modules.authService.getCurrentUser();
@@ -3009,6 +3107,8 @@
             renderSupabaseSetupChecklist();
             renderCustomerMigrationCard(customerMigration);
             renderCustomerMigrationLogs(customerMigrationLogs);
+            renderCustomerLiveMigrationChecklist(liveCustomerReadiness);
+            renderRollbackPreparation(liveCustomerReadiness);
             renderAuthProviderStatus(modules.authService);
             appendDeveloperCard("Auth sessie", [
               ["Gebruiker", user?.name || user?.email || "Geen sessie"],
@@ -3029,6 +3129,8 @@
             if (extra.customerMappingPreview) renderCustomerMappingPreview(extra.customerMappingPreview);
             if (extra.customerDuplicates) renderCustomerDuplicates(extra.customerDuplicates);
             if (extra.customerMissingFields) renderCustomerMissingFields(extra.customerMissingFields);
+            if (extra.customerWritePreview) renderCustomerWritePreview(extra.customerWritePreview);
+            if (extra.customerMigrationResult) renderCustomerMigrationResult(extra.customerMigrationResult);
             if (extra.customerDryRun) {
               renderCustomerMappingPreview({
                 summary: {
@@ -3245,6 +3347,61 @@
           } catch (error) {
             console.error("Customer missing fields failed", error);
             setSettingsMessage("CRM ontbrekende velden konden niet worden getoond.", "error");
+          }
+        }
+
+        async function createCustomerPreMigrationBackupHandler() {
+          try {
+            const { customerMigrationService, activityLogService } = await loadDeveloperModules();
+            const { marker } = customerMigrationService.createPreMigrationBackup();
+            activityLogService.logActivity("developer_tools", "customers", "customer_pre_migration_backup", { backupId: marker.id });
+            await renderDeveloperToolsSummary();
+            setSettingsMessage("Pre-migration backup aangemaakt en download gestart.", "success");
+          } catch (error) {
+            console.error("Customer pre-migration backup failed", error);
+            setSettingsMessage("Pre-migration backup kon niet worden aangemaakt.", "error");
+          }
+        }
+
+        async function showCustomerWritePreviewHandler() {
+          try {
+            const { customerMigrationService, activityLogService } = await loadDeveloperModules();
+            const preview = customerMigrationService.getCustomerMigrationWritePreview(customerMigrationOptions());
+            activityLogService.logActivity("developer_tools", "customers", "view_customer_write_preview", { readyCount: preview.readyCount });
+            await renderDeveloperToolsSummary({ customerWritePreview: preview });
+            setSettingsMessage("CRM write preview getoond. Er zijn geen writes uitgevoerd.", "success");
+          } catch (error) {
+            console.error("Customer write preview failed", error);
+            setSettingsMessage("CRM write preview kon niet worden getoond.", "error");
+          }
+        }
+
+        async function startCustomerLiveMigrationHandler() {
+          try {
+            const { customerMigrationService, activityLogService } = await loadDeveloperModules();
+            const options = { ...customerMigrationOptions(), dryRunOnly: false };
+            const readiness = customerMigrationService.canRunLiveCustomerMigration(options);
+            if (!readiness.allowed) {
+              await renderDeveloperToolsSummary();
+              setSettingsMessage(`Live migratie geblokkeerd: ${readiness.missing.join(" ")}`, "error");
+              return;
+            }
+            const firstConfirm = window.confirm("Weet je zeker dat je CRM-klanten naar Supabase wilt migreren? Controleer backup, dry-run en preview.");
+            if (!firstConfirm) return;
+            const secondConfirm = window.confirm("Laatste waarschuwing: localStorage blijft actief, maar Supabase kan records ontvangen. Doorgaan?");
+            if (!secondConfirm) return;
+            activityLogService.logActivity("developer_tools", "customers", "customer_live_migration_started", options);
+            const result = await customerMigrationService.runCustomerMigrationBatch(options);
+            activityLogService.logActivity("developer_tools", "customers", result.failed ? "customer_live_migration_failed" : "customer_live_migration_completed", {
+              inserted: result.inserted,
+              failed: result.failed,
+              status: result.status,
+            });
+            await renderDeveloperToolsSummary({ customerMigrationResult: result });
+            setSettingsMessage("CRM migratie uitgevoerd/voorbereid. De app blijft lokaal draaien totdat provider live wordt omgezet.", result.failed ? "error" : "success");
+          } catch (error) {
+            console.error("Customer live migration failed", error);
+            setSettingsMessage("CRM live migratie kon niet worden gestart.", "error");
           }
         }
 
@@ -8321,6 +8478,13 @@
         viewCustomerMappingPreviewButton.addEventListener("click", showCustomerMappingPreviewHandler);
         viewCustomerDuplicatesButton.addEventListener("click", showCustomerDuplicatesHandler);
         viewCustomerMissingFieldsButton.addEventListener("click", showCustomerMissingFieldsHandler);
+        createCustomerPreMigrationBackupButton.addEventListener("click", createCustomerPreMigrationBackupHandler);
+        viewCustomerWritePreviewButton.addEventListener("click", showCustomerWritePreviewHandler);
+        startCustomerLiveMigrationButton.addEventListener("click", startCustomerLiveMigrationHandler);
+        [customerMigrationIncludeDemo, customerMigrationIncludeProduction, customerMigrationBatchSize, customerMigrationSkipDuplicates].forEach((field) => {
+          field.addEventListener("input", () => renderDeveloperToolsSummary());
+          field.addEventListener("change", () => renderDeveloperToolsSummary());
+        });
         document.querySelectorAll("[data-settings-demo]").forEach((button) => {
           button.addEventListener("click", () => setSettingsMessage(button.dataset.settingsDemo, "success"));
         });

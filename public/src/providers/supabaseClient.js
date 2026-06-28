@@ -6,8 +6,10 @@ export function getSupabaseClientStatus() {
     ...status,
     connected: false,
     liveQueriesEnabled: false,
+    clientPackageAvailable: false,
+    customerWritesEnabled: false,
     reason: status.configured
-      ? "Supabase voorbereid, live queries komen in Fase 11.5/11.6."
+      ? "Supabase configuratie voorbereid, maar de browserclient/package is nog niet actief."
       : status.reason,
   };
 }
