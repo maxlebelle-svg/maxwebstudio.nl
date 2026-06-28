@@ -76,6 +76,8 @@
           <article class="admin-card metric-card"><span>Open offertes</span><strong id="metric-open-quotes">0</strong><small>Concept of verzonden</small></article>
           <article class="admin-card metric-card"><span>Open facturen</span><strong id="metric-open-invoices-local">0</strong><small>Concept, verzonden of verlopen</small></article>
           <article class="admin-card metric-card"><span>Betaald bedrag</span><strong id="metric-paid-amount">€ 0</strong><small>Facturen betaald</small></article>
+          <article class="admin-card metric-card"><span>Te factureren abonnementen</span><strong id="metric-subscriptions-due">0</strong><small>Verlopen / vandaag / 7 dagen</small></article>
+          <article class="admin-card metric-card"><span>Recurring omzet</span><strong id="metric-recurring-revenue">€ 0,00</strong><small id="metric-recurring-label">MRR / ARR / actief</small></article>
           <article class="admin-card metric-card"><span>Demo-modus</span><strong id="metric-demo-status">Actief</strong><small>Lokale opslag actief</small></article>
         </section>
 
@@ -449,6 +451,8 @@
             <article class="admin-card detail-card"><span>MRR incl. btw</span><strong id="subscription-stat-mrr-in">€ 0,00</strong></article>
             <article class="admin-card detail-card"><span>Jaarwaarde ex. btw</span><strong id="subscription-stat-arr-ex">€ 0,00</strong></article>
             <article class="admin-card detail-card"><span>Binnenkort factureren</span><strong id="subscription-stat-due">0</strong></article>
+            <article class="admin-card detail-card"><span>Te factureren</span><strong id="subscription-stat-due-overview">0 / 0 / 0</strong><small>Verlopen / vandaag / 7 dagen</small></article>
+            <article class="admin-card detail-card"><span>Gem. abonnementwaarde</span><strong id="subscription-stat-average">€ 0,00</strong><small>MRR ex. btw</small></article>
             <article class="admin-card detail-card"><span>Opgezegd</span><strong id="subscription-stat-canceled">0</strong></article>
           </div>
           <div class="admin-grid compact-admin-grid" id="care-overview"></div>
@@ -723,6 +727,7 @@
             <label for="subscription-mandate">Payment mandate ID placeholder<input id="subscription-mandate" type="text" /></label>
             <label class="admin-profile-wide" for="subscription-notes">Notities<textarea id="subscription-notes"></textarea></label>
           </div>
+          <div class="admin-grid compact-admin-grid subscription-detail-summary" id="subscription-detail-summary" aria-live="polite"></div>
           <div class="admin-profile-actions">
             <button class="button primary" id="subscription-save" type="submit">Abonnement opslaan</button>
             <p class="admin-form-message" id="subscription-message" role="status"></p>
@@ -775,6 +780,7 @@
             <button class="button secondary" id="invoice-demo-payment" type="button">Verstuur betaalverzoek demo</button>
             <a class="button secondary is-disabled" id="invoice-open-payment" href="#" target="_blank" rel="noopener" aria-disabled="true">Open betaalpagina</a>
             <button class="button secondary" id="invoice-open-quote" type="button">Open offerte</button>
+            <button class="button secondary" id="invoice-open-subscription" type="button">Open abonnement</button>
             <button class="button secondary" id="invoice-copy-payment" type="button">Kopieer betaalverzoek</button>
             <button class="button secondary" id="invoice-clear-pdf" type="button">PDF-pad verwijderen</button>
             <button class="button secondary danger" id="invoice-cancel" type="button">Archiveer/annuleer</button>
@@ -1051,6 +1057,9 @@
         const openQuotesMetric = document.getElementById("metric-open-quotes");
         const openInvoicesLocalMetric = document.getElementById("metric-open-invoices-local");
         const paidAmountMetric = document.getElementById("metric-paid-amount");
+        const subscriptionsDueMetric = document.getElementById("metric-subscriptions-due");
+        const recurringRevenueMetric = document.getElementById("metric-recurring-revenue");
+        const recurringRevenueLabel = document.getElementById("metric-recurring-label");
         const demoStatusMetric = document.getElementById("metric-demo-status");
         const biPeriodFilter = document.getElementById("bi-period-filter");
         const biActionList = document.getElementById("bi-action-list");
@@ -1225,6 +1234,8 @@
           mrrIn: document.getElementById("subscription-stat-mrr-in"),
           arrEx: document.getElementById("subscription-stat-arr-ex"),
           due: document.getElementById("subscription-stat-due"),
+          dueOverview: document.getElementById("subscription-stat-due-overview"),
+          average: document.getElementById("subscription-stat-average"),
           canceled: document.getElementById("subscription-stat-canceled"),
         };
         const quoteList = document.getElementById("quote-list");
@@ -1239,6 +1250,7 @@
         const quoteMessage = document.getElementById("quote-message");
         const invoiceMessage = document.getElementById("invoice-message");
         const subscriptionSave = document.getElementById("subscription-save");
+        const subscriptionDetailSummary = document.getElementById("subscription-detail-summary");
         const subscriptionFields = {
           id: document.getElementById("subscription-id"),
           profile: document.getElementById("subscription-profile"),
@@ -1334,6 +1346,7 @@
         const invoiceDemoPayment = document.getElementById("invoice-demo-payment");
         const invoiceOpenPayment = document.getElementById("invoice-open-payment");
         const invoiceOpenQuote = document.getElementById("invoice-open-quote");
+        const invoiceOpenSubscription = document.getElementById("invoice-open-subscription");
         const invoiceCopyPayment = document.getElementById("invoice-copy-payment");
         const invoiceCancel = document.getElementById("invoice-cancel");
         const invoiceSourceMessage = document.getElementById("invoice-source-message");
@@ -2211,6 +2224,9 @@
         }
 
         function nextInvoiceNumber() {
+          const settings = readStoredSettings();
+          const prefix = String(settings.invoicePrefix || defaultSettings.invoicePrefix || "INV").trim() || "INV";
+          const startNumber = Number(settings.invoiceStartNumber || defaultSettings.invoiceStartNumber || 1);
           const year = new Date().getFullYear();
           let rawInvoices = [];
           try {
@@ -2218,8 +2234,8 @@
           } catch (error) {
             rawInvoices = [];
           }
-          const count = Array.isArray(rawInvoices) ? rawInvoices.filter((invoice) => String(invoice.invoiceNumber || "").includes(String(year))).length + 1 : 1;
-          return `MWS-${year}-${String(count).padStart(3, "0")}`;
+          const count = Array.isArray(rawInvoices) ? rawInvoices.filter((invoice) => String(invoice.invoiceNumber || "").startsWith(`${prefix}-${year}-`)).length : 0;
+          return `${prefix}-${year}-${String(startNumber + count).padStart(3, "0")}`;
         }
 
         function invoicePaymentUrl(id) {
@@ -2276,6 +2292,10 @@
             notes: String(invoice.notes || "").trim(),
             sourceQuoteId: invoice.sourceQuoteId || "",
             sourceQuoteNumber: invoice.sourceQuoteNumber || "",
+            subscriptionId: invoice.subscriptionId || "",
+            subscriptionPlan: invoice.subscriptionPlan || "",
+            subscriptionBillingCycle: invoice.subscriptionBillingCycle || "",
+            subscriptionInvoicePeriod: invoice.subscriptionInvoicePeriod || "",
             createdAt,
             updatedAt: invoice.updatedAt || createdAt,
           };
@@ -2349,6 +2369,15 @@
           const date = value ? new Date(value) : new Date();
           if (Number.isNaN(date.getTime())) return "";
           date.setDate(date.getDate() + days);
+          return date.toISOString().slice(0, 10);
+        }
+
+        function addMonths(value, months) {
+          const date = value ? new Date(value) : new Date();
+          if (Number.isNaN(date.getTime())) return "";
+          const originalDate = date.getDate();
+          date.setMonth(date.getMonth() + Number(months || 0));
+          if (date.getDate() < originalDate) date.setDate(0);
           return date.toISOString().slice(0, 10);
         }
 
@@ -2495,6 +2524,10 @@
             .filter((invoice) => normalizeInvoiceStatus(invoice.status) === "betaald")
             .reduce((sum, invoice) => sum + Number(invoice.total || invoice.amount || 0), 0);
           const openLeadCount = state.requests.filter(isOpenRequest).length;
+          const activeSubscriptions = state.subscriptions.filter((subscription) => subscription.status === "actief");
+          const dueBuckets = subscriptionDueBuckets();
+          const mrrEx = activeSubscriptions.reduce((sum, subscription) => sum + subscriptionMonthlyAmount(subscription, false), 0);
+          const averageSubscriptionValue = activeSubscriptions.length ? mrrEx / activeSubscriptions.length : 0;
 
           totalLeadsMetric.textContent = String(openLeadCount);
           totalCustomersMetric.textContent = String(state.customers.length);
@@ -2504,6 +2537,9 @@
           openQuotesMetric.textContent = String(openQuotes);
           openInvoicesLocalMetric.textContent = String(openInvoices);
           paidAmountMetric.textContent = money(paidAmount);
+          subscriptionsDueMetric.textContent = `${dueBuckets.overdue} / ${dueBuckets.today} / ${dueBuckets.week}`;
+          recurringRevenueMetric.textContent = money(mrrEx);
+          recurringRevenueLabel.textContent = `${money(mrrEx * 12)} ARR - ${activeSubscriptions.length} actief - gem. ${money(averageSubscriptionValue)}`;
           demoStatusMetric.textContent = "Actief";
           websiteStats.total.textContent = String(state.websites.length);
           websiteStats.online.textContent = String(liveWebsites);
@@ -2719,7 +2755,15 @@
           const paidInvoices = customerInvoices.filter((invoice) => invoice.status === "betaald").length;
           const customerSubscriptions = state.subscriptions.filter((subscription) => subscription.profileId === customer.id);
           const activeSubscription = customerSubscriptions.find((subscription) => subscription.status === "actief");
-          detailSubtitle.textContent = `${customer.company || customer.name || "Klantprofiel"} - ${customerFileCount} bestand${customerFileCount === 1 ? "" : "en"} - ${customerQuotes.length} offerte${customerQuotes.length === 1 ? "" : "s"} (${openQuotes} open, ${acceptedQuotes} geaccepteerd, ${rejectedQuotes} afgewezen) - ${customerInvoices.length} factuur${customerInvoices.length === 1 ? "" : "en"} (${openInvoices} open, ${paidInvoices} betaald) - ${customerSubscriptions.length} abonnement${customerSubscriptions.length === 1 ? "" : "en"}${activeSubscription ? `, actief: ${activeSubscription.plan} (${money(subscriptionMonthlyAmount(activeSubscription, false))} MRR ex.)` : ""}`;
+          const activeSubscriptions = customerSubscriptions.filter((subscription) => subscription.status === "actief");
+          const customerMrr = activeSubscriptions.reduce((sum, subscription) => sum + subscriptionMonthlyAmount(subscription, false), 0);
+          const nextCustomerInvoice = activeSubscriptions
+            .filter((subscription) => subscription.nextInvoiceDate)
+            .sort((a, b) => String(a.nextInvoiceDate).localeCompare(String(b.nextInvoiceDate)))[0];
+          const lastCustomerInvoice = customerInvoices
+            .filter((invoice) => invoice.subscriptionId)
+            .sort((a, b) => String(b.invoiceDate || b.createdAt).localeCompare(String(a.invoiceDate || a.createdAt)))[0];
+          detailSubtitle.textContent = `${customer.company || customer.name || "Klantprofiel"} - ${customerFileCount} bestand${customerFileCount === 1 ? "" : "en"} - ${customerQuotes.length} offerte${customerQuotes.length === 1 ? "" : "s"} (${openQuotes} open, ${acceptedQuotes} geaccepteerd, ${rejectedQuotes} afgewezen) - ${customerInvoices.length} factuur${customerInvoices.length === 1 ? "" : "en"} (${openInvoices} open, ${paidInvoices} betaald) - ${customerSubscriptions.length} abonnement${customerSubscriptions.length === 1 ? "" : "en"} - MRR klant ${money(customerMrr)}${nextCustomerInvoice ? ` - volgende factuur ${formatDate(nextCustomerInvoice.nextInvoiceDate)}` : ""}${lastCustomerInvoice ? ` - laatste factuur ${lastCustomerInvoice.invoiceNumber}` : ""}`;
           const hasLogin = customer.portalStatus === "actief" || customer.authStatus === "login actief";
           const authLabel = customer.portalStatus === "uitgenodigd" ? "Uitgenodigd" : hasLogin ? "Login actief" : customer.portalStatus === "geblokkeerd" ? "Geblokkeerd" : "Geen login";
           detailAuthStatus.textContent = authLabel;
@@ -3062,6 +3106,9 @@
           const websiteInvoices = state.invoices.filter((invoice) => invoice.websiteId === website.id);
           const websiteQuotes = state.quotes.filter((quote) => quote.websiteId === website.id);
           const websiteSubscription = state.subscriptions.find((subscription) => subscription.websiteId === website.id && subscription.status !== "opgezegd");
+          const websiteLastSubscriptionInvoice = websiteInvoices
+            .filter((invoice) => invoice.subscriptionId)
+            .sort((a, b) => String(b.invoiceDate || b.createdAt).localeCompare(String(a.invoiceDate || a.createdAt)))[0];
           addWebsiteSummaryCard("Algemeen", [
             ["Website-ID", website.id || "-"],
             ["Domein", website.domain || "-"],
@@ -3085,6 +3132,8 @@
             ["Abonnementstatus", websiteSubscription ? billingStatusLabel(websiteSubscription.status) : "-"],
             ["Volgende factuur", formatDate(websiteSubscription?.nextInvoiceDate)],
             ["Maandwaarde ex.", websiteSubscription ? money(subscriptionMonthlyAmount(websiteSubscription, false)) : "-"],
+            ["Laatste factuur", websiteLastSubscriptionInvoice?.invoiceNumber || "-"],
+            ["MRR website", websiteSubscription ? money(subscriptionMonthlyAmount(websiteSubscription, false)) : "-"],
             ["Laatste update", formatDate(website.lastUpdateAt)],
             ["Open taken", String(website.openTasks || 0)],
             ["Offertes", String(websiteQuotes.length)],
@@ -4016,6 +4065,9 @@
             paymentMandateId: subscription.paymentMandateId || "",
             lastInvoiceId: subscription.lastInvoiceId || "",
             lastInvoiceDate: subscription.lastInvoiceDate || "",
+            subscriptionInvoiceSequence: Number(subscription.subscriptionInvoiceSequence || 0),
+            nextAutoInvoiceRun: subscription.nextAutoInvoiceRun || subscription.nextInvoiceDate || "",
+            invoiceGenerationLog: Array.isArray(subscription.invoiceGenerationLog) ? subscription.invoiceGenerationLog : [],
             notes: String(subscription.notes || "").trim(),
             createdAt: subscription.createdAt || now,
             updatedAt: subscription.updatedAt || subscription.createdAt || now,
@@ -4663,8 +4715,13 @@
         function updateInvoiceSourceActions(invoice) {
           const sourceQuote = invoice?.sourceQuoteId ? quoteById(invoice.sourceQuoteId) : null;
           invoiceOpenQuote.disabled = !sourceQuote;
+          const sourceSubscription = invoice?.subscriptionId ? subscriptionById(invoice.subscriptionId) : null;
+          invoiceOpenSubscription.disabled = !sourceSubscription;
           if (sourceQuote) {
             invoiceSourceMessage.textContent = `Aangemaakt vanuit offerte ${invoice.sourceQuoteNumber || sourceQuote.quoteNumber}.`;
+            invoiceSourceMessage.className = "admin-form-message success";
+          } else if (sourceSubscription) {
+            invoiceSourceMessage.textContent = `Aangemaakt vanuit abonnement ${invoice.subscriptionPlan || sourceSubscription.plan} - ${subscriptionCycleLabel(invoice.subscriptionBillingCycle || sourceSubscription.billingCycle)} - periode ${invoice.subscriptionInvoicePeriod || "-"}.`;
             invoiceSourceMessage.className = "admin-form-message success";
           } else {
             invoiceSourceMessage.textContent = "";
@@ -4676,17 +4733,15 @@
           const active = state.subscriptions.filter((subscription) => subscription.status === "actief");
           const mrrEx = active.reduce((sum, subscription) => sum + subscriptionMonthlyAmount(subscription, false), 0);
           const mrrIn = active.reduce((sum, subscription) => sum + subscriptionMonthlyAmount(subscription, true), 0);
-          const soon = new Date();
-          soon.setDate(soon.getDate() + 14);
-          const dueSoon = active.filter((subscription) => {
-            const date = new Date(subscription.nextInvoiceDate);
-            return subscription.nextInvoiceDate && !Number.isNaN(date.getTime()) && date <= soon;
-          }).length;
+          const dueBuckets = subscriptionDueBuckets();
+          const dueSoon = dueBuckets.overdue + dueBuckets.today + dueBuckets.week;
           subscriptionStats.active.textContent = String(active.length);
           subscriptionStats.mrrEx.textContent = money(mrrEx);
           subscriptionStats.mrrIn.textContent = money(mrrIn);
           subscriptionStats.arrEx.textContent = money(mrrEx * 12);
           subscriptionStats.due.textContent = String(dueSoon);
+          subscriptionStats.dueOverview.textContent = `${dueBuckets.overdue} / ${dueBuckets.today} / ${dueBuckets.week}`;
+          subscriptionStats.average.textContent = money(active.length ? mrrEx / active.length : 0);
           subscriptionStats.canceled.textContent = String(state.subscriptions.filter((subscription) => subscription.status === "opgezegd").length);
         }
 
@@ -4740,7 +4795,9 @@
             const invoice = document.createElement("button");
             invoice.className = "button secondary";
             invoice.type = "button";
-            invoice.textContent = "Conceptfactuur demo";
+            invoice.textContent = "Maak conceptfactuur";
+            invoice.disabled = subscription.status !== "actief";
+            invoice.title = subscription.status === "actief" ? "Maak een conceptfactuur voor de volgende periode" : "Alleen actieve abonnementen kunnen facturen genereren";
             invoice.addEventListener("click", () => createSubscriptionInvoice(subscription.id, invoice));
             const remove = document.createElement("button");
             remove.className = "button secondary danger";
@@ -4948,8 +5005,129 @@
           return state.invoices.find((invoice) => invoice.id === id) || null;
         }
 
+        function subscriptionInvoicePeriod(subscription, dateValue = "") {
+          const date = dateValue ? new Date(dateValue) : new Date();
+          if (Number.isNaN(date.getTime())) return "";
+          const year = date.getFullYear();
+          const month = date.getMonth() + 1;
+          if (subscription.billingCycle === "yearly") return String(year);
+          if (subscription.billingCycle === "quarterly") return `${year}-Q${Math.ceil(month / 3)}`;
+          return `${year}-${String(month).padStart(2, "0")}`;
+        }
+
+        function nextSubscriptionInvoiceDate(subscription, baseDate = "") {
+          const start = baseDate || subscription.nextInvoiceDate || new Date().toISOString().slice(0, 10);
+          if (subscription.billingCycle === "yearly") return addMonths(start, 12);
+          if (subscription.billingCycle === "quarterly") return addMonths(start, 3);
+          return addMonths(start, 1);
+        }
+
+        function subscriptionInvoiceExists(subscription, period) {
+          return state.invoices.some((invoice) =>
+            invoice.subscriptionId === subscription.id
+            && invoice.subscriptionInvoicePeriod === period
+            && invoice.type === "Hosting & onderhoud"
+            && invoice.status !== "geannuleerd"
+          );
+        }
+
+        function subscriptionDueBuckets() {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const week = new Date(today);
+          week.setDate(week.getDate() + 7);
+          return state.subscriptions
+            .filter((subscription) => subscription.status === "actief")
+            .reduce((buckets, subscription) => {
+              const date = new Date(subscription.nextInvoiceDate);
+              if (!subscription.nextInvoiceDate || Number.isNaN(date.getTime())) return buckets;
+              date.setHours(0, 0, 0, 0);
+              if (date < today) buckets.overdue += 1;
+              else if (date.getTime() === today.getTime()) buckets.today += 1;
+              else if (date <= week) buckets.week += 1;
+              return buckets;
+            }, { overdue: 0, today: 0, week: 0 });
+        }
+
         function quoteById(id) {
           return state.quotes.find((quote) => quote.id === id) || null;
+        }
+
+        function renderSubscriptionDetailSummary(subscription) {
+          subscriptionDetailSummary.replaceChildren();
+          const addCard = (title, rows, actions = []) => {
+            const card = document.createElement("article");
+            card.className = "admin-card request-card";
+            const body = document.createElement("div");
+            body.append(createCell(title, "strong"));
+            rows.forEach(([label, value]) => body.append(createCell(`${label}: ${value || "-"}`)));
+            card.append(body);
+            if (actions.length) {
+              const actionWrap = document.createElement("span");
+              actionWrap.className = "website-actions";
+              actions.forEach((action) => actionWrap.append(action));
+              card.append(actionWrap);
+            }
+            subscriptionDetailSummary.append(card);
+          };
+
+          if (!subscription) {
+            addCard("Facturatie", [["Laatste factuur", "-"], ["Volgende factuurdatum", "-"], ["Factuurgeschiedenis", "Nog geen abonnement opgeslagen"]]);
+            return;
+          }
+
+          const lastInvoice = invoiceById(subscription.lastInvoiceId);
+          const website = websiteById(subscription.websiteId);
+          const history = state.invoices
+            .filter((invoice) => invoice.subscriptionId === subscription.id)
+            .sort((a, b) => String(b.invoiceDate || b.createdAt).localeCompare(String(a.invoiceDate || a.createdAt)));
+          const actions = [];
+
+          if (lastInvoice) {
+            const openInvoice = document.createElement("button");
+            openInvoice.className = "button secondary";
+            openInvoice.type = "button";
+            openInvoice.textContent = "Open laatste factuur";
+            openInvoice.addEventListener("click", () => openInvoiceModal(lastInvoice.id));
+            actions.push(openInvoice);
+          }
+
+          if (subscription.profileId) {
+            const openCustomer = document.createElement("button");
+            openCustomer.className = "button secondary";
+            openCustomer.type = "button";
+            openCustomer.textContent = "Open klant";
+            openCustomer.addEventListener("click", () => {
+              closeModal(subscriptionModal);
+              selectCustomer(subscription.profileId);
+              document.getElementById("klanten")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            });
+            actions.push(openCustomer);
+          }
+
+          if (website?.liveUrl) {
+            const openWebsite = document.createElement("a");
+            openWebsite.className = "button secondary";
+            openWebsite.href = website.liveUrl;
+            openWebsite.target = "_blank";
+            openWebsite.rel = "noopener";
+            openWebsite.textContent = "Open website";
+            actions.push(openWebsite);
+          }
+
+          addCard("Facturatie", [
+            ["Laatste factuur", lastInvoice ? `${lastInvoice.invoiceNumber} (${billingStatusLabel(lastInvoice.status)})` : "-"],
+            ["Laatste factuurdatum", formatDate(subscription.lastInvoiceDate)],
+            ["Volgende factuurdatum", formatDate(subscription.nextInvoiceDate)],
+            ["Sequence", String(subscription.subscriptionInvoiceSequence || 0)],
+            ["Volgende auto-run", formatDate(subscription.nextAutoInvoiceRun)],
+          ], actions);
+
+          addCard("Factuurgeschiedenis", [
+            ["Aantal facturen", String(history.length)],
+            ["Laatste periode", history[0]?.subscriptionInvoicePeriod || "-"],
+            ["Laatste totaal", history[0] ? money(history[0].total) : "-"],
+          ]);
         }
 
         function openSubscriptionModal(id = "") {
@@ -4977,6 +5155,7 @@
           subscriptionFields.mandate.value = subscription?.paymentMandateId || "";
           subscriptionFields.notes.value = subscription?.notes || "";
           updateSubscriptionTotal();
+          renderSubscriptionDetailSummary(subscription || null);
           setBillingMessage(subscriptionMessage, "", "");
           subscriptionModal.hidden = false;
           document.body.classList.add("admin-modal-open");
@@ -5069,39 +5248,78 @@
         function createSubscriptionInvoice(id, button) {
           const subscription = subscriptionById(id);
           if (!subscription) return;
-          if (subscription.lastInvoiceId && invoiceById(subscription.lastInvoiceId)) {
-            setAdminAccessMessage("Er bestaat al een conceptfactuur voor dit abonnement. Open de facturenmodule om deze te bekijken.", "error");
+          if (subscription.status !== "actief") {
+            setAdminAccessMessage("Alleen actieve abonnementen kunnen een conceptfactuur genereren.", "error");
             return;
           }
+          const periodBase = subscription.nextInvoiceDate || new Date().toISOString().slice(0, 10);
+          const period = subscriptionInvoicePeriod(subscription, periodBase);
+          if (subscriptionInvoiceExists(subscription, period)) {
+            setAdminAccessMessage("Voor deze periode bestaat al een factuur.", "error");
+            return;
+          }
+          if (!window.confirm(`Conceptfactuur maken voor ${subscription.plan} (${period})?`)) return;
           button.disabled = true;
-          const invoice = saveInvoiceLocally({
-            profileId: subscription.profileId,
-            websiteId: subscription.websiteId,
-            projectId: subscription.projectId,
-            type: "Hosting & onderhoud",
-            title: `${subscription.plan} - ${subscriptionCycleLabel(subscription.billingCycle)}`,
-            status: "concept",
-            invoiceDate: new Date().toISOString().slice(0, 10),
-            dueDate: subscription.nextInvoiceDate || "",
-            lines: [{
-              description: `${subscription.plan} (${subscriptionCycleLabel(subscription.billingCycle)})`,
-              quantity: 1,
-              unitPrice: subscription.priceExVat,
-              vatRate: subscription.vatRate,
-            }],
-            notes: `Demo-conceptfactuur vanuit onderhoudsabonnement ${subscription.id}.`,
-          });
-          updateSubscriptionStatusLocally(subscription.id, subscription.status, {
-            lastInvoiceId: invoice.id,
-            lastInvoiceDate: invoice.invoiceDate,
-          });
-          state.invoices = readStoredInvoices();
-          state.subscriptions = readStoredSubscriptions();
-          renderInvoices();
-          renderSubscriptions();
-          updateMetrics();
-          setAdminAccessMessage("Conceptfactuur demo aangemaakt vanuit abonnement.", "success");
-          button.disabled = false;
+          const originalText = button.textContent;
+          button.textContent = "Factuur maken...";
+          try {
+            const settings = readStoredSettings();
+            const today = new Date().toISOString().slice(0, 10);
+            const paymentTermDays = Number(settings.paymentTermDays || defaultSettings.paymentTermDays || 14);
+            const vatRate = Number(subscription.vatRate || settings.defaultVatRate || defaultSettings.defaultVatRate || 21);
+            const invoice = saveInvoiceLocally({
+              profileId: subscription.profileId,
+              websiteId: subscription.websiteId,
+              projectId: subscription.projectId,
+              subscriptionId: subscription.id,
+              subscriptionPlan: subscription.plan,
+              subscriptionBillingCycle: subscription.billingCycle,
+              subscriptionInvoicePeriod: period,
+              type: "Hosting & onderhoud",
+              title: `${subscription.plan} - onderhoud & hosting`,
+              status: "concept",
+              invoiceDate: today,
+              dueDate: addDays(today, paymentTermDays),
+              lines: [{
+                description: `${subscription.plan} - onderhoud & hosting`,
+                quantity: 1,
+                unitPrice: subscription.priceExVat,
+                vatRate,
+              }],
+              notes: "Aangemaakt vanuit abonnement.",
+            });
+            const nextInvoiceDate = nextSubscriptionInvoiceDate(subscription, periodBase);
+            const generationLog = [
+              ...(subscription.invoiceGenerationLog || []),
+              {
+                id: createCrmId(),
+                invoiceId: invoice.id,
+                invoiceNumber: invoice.invoiceNumber,
+                period,
+                createdAt: new Date().toISOString(),
+                status: "concept",
+              },
+            ];
+            updateSubscriptionStatusLocally(subscription.id, subscription.status, {
+              lastInvoiceId: invoice.id,
+              lastInvoiceDate: invoice.invoiceDate,
+              nextInvoiceDate,
+              nextAutoInvoiceRun: nextInvoiceDate,
+              subscriptionInvoiceSequence: Number(subscription.subscriptionInvoiceSequence || 0) + 1,
+              invoiceGenerationLog: generationLog,
+            });
+            state.invoices = readStoredInvoices();
+            state.subscriptions = readStoredSubscriptions();
+            renderInvoices();
+            renderSubscriptions();
+            updateMetrics();
+            setAdminAccessMessage(`Conceptfactuur ${invoice.invoiceNumber} aangemaakt vanuit abonnement.`, "success");
+          } catch (error) {
+            setAdminAccessMessage(error.message || "Conceptfactuur kon niet worden aangemaakt.", "error");
+          } finally {
+            button.disabled = false;
+            button.textContent = originalText;
+          }
         }
 
         async function saveSubscription(event) {
@@ -5877,6 +6095,17 @@
           openQuoteModal(quote.id);
         }
 
+        function openSubscriptionFromInvoice() {
+          const invoice = invoiceById(state.selectedInvoiceId);
+          const subscription = invoice?.subscriptionId ? subscriptionById(invoice.subscriptionId) : null;
+          if (!subscription) {
+            setBillingMessage(invoiceMessage, "Er is geen gekoppeld abonnement gevonden voor deze factuur.", "error");
+            return;
+          }
+          closeModal(invoiceModal);
+          openSubscriptionModal(subscription.id);
+        }
+
         function createInvoiceFromCustomer() {
           const customer = selectedCustomer();
           if (!customer) return;
@@ -6327,6 +6556,7 @@
           if (event.currentTarget.getAttribute("aria-disabled") === "true") event.preventDefault();
         });
         invoiceOpenQuote.addEventListener("click", openQuoteFromInvoice);
+        invoiceOpenSubscription.addEventListener("click", openSubscriptionFromInvoice);
         invoiceCopyPayment.addEventListener("click", () => {
           const link = invoiceFields.paymentLink.value;
           if (link) copyText(link, "Betaalverzoek gekopieerd.", (text, type) => setBillingMessage(invoiceMessage, text, type));

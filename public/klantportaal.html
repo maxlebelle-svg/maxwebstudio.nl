@@ -318,12 +318,20 @@
 
         if (!subscriptions.length) subscriptionList.append(createEmpty("Geen onderhoudsabonnementen", "Er is nog geen onderhoudsplan gekoppeld aan dit klantprofiel."));
         subscriptions.forEach((subscription) => {
+          const lastInvoice = subscription.lastInvoiceId
+            ? invoices.find((invoice) => invoice.id === subscription.lastInvoiceId)
+            : invoices
+              .filter((invoice) => invoice.subscriptionId === subscription.id)
+              .sort((a, b) => String(b.invoiceDate || b.createdAt).localeCompare(String(a.invoiceDate || a.createdAt)))[0];
           subscriptionList.append(createInfoCard(subscription.plan || subscription.packageName || "Onderhoudsplan", [
             ["Status", createBadge(subscription.status)],
             ["Prijs/frequentie", `${money(subscription.totalInclVat || subscription.monthlyAmount || 0)} incl. btw - ${subscription.billingCycle === "quarterly" ? "per kwartaal" : subscription.billingCycle === "yearly" ? "jaarlijks" : "maandelijks"}`],
             ["Volgende factuurdatum", formatDate(subscription.nextInvoiceDate)],
+            ["Laatste factuur", lastInvoice ? `${lastInvoice.invoiceNumber || "Factuur"} - ${formatDate(lastInvoice.invoiceDate)}` : "-"],
             ["Website", subscription.websiteName || subscription.websiteDomain || "-"],
             ["Betaalstatus", subscription.paymentStatus === "demo" ? "Demo voorbereid" : subscription.paymentStatus],
+          ], [
+            createActionLink("Bekijk laatste factuur", lastInvoice?.id ? `/betalen.html?invoiceId=${encodeURIComponent(lastInvoice.id)}` : "")
           ]));
         });
 
