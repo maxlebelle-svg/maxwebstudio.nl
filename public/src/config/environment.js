@@ -9,6 +9,7 @@ export const PROVIDERS = Object.freeze({
   SUPABASE_PREPARED: "supabase-prepared",
   SUPABASE_READONLY: "supabase-readonly",
   SUPABASE_WRITE_TEST: "supabase-write-test",
+  SUPABASE_MIGRATION: "supabase-migration",
   SUPABASE: "supabase",
 });
 

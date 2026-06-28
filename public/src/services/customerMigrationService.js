@@ -1,5 +1,5 @@
 import { STORAGE_KEYS, getKnownStorageKeys } from "../config/storageKeys.js";
-import { getCurrentProviderType } from "../config/environment.js";
+import { getCurrentProviderType, PROVIDERS } from "../config/environment.js";
 import { getSupabaseClientStatus } from "../providers/supabaseClient.js";
 import { supabaseProvider } from "../providers/supabaseProvider.js";
 import {
@@ -8,6 +8,7 @@ import {
   validateCustomerForSupabase,
 } from "../repositories/CustomerRepository.js";
 import { normalizeCustomer, customerIdentityKeys } from "../utils/customerNormalizer.js";
+import { logActivity } from "./activityLogService.js";
 
 function readArray(key) {
   try {
@@ -33,6 +34,23 @@ function readJson(key, fallback = null) {
 
 function writeJson(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
+}
+
+function readSessionJson(key, fallback = null) {
+  try {
+    const value = JSON.parse(sessionStorage.getItem(key) || "null");
+    return value ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeSessionJson(key, value) {
+  try {
+    sessionStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Session markers only gate risky actions; local logs still keep display history.
+  }
 }
 
 function createId(prefix = "migration") {
@@ -161,8 +179,20 @@ function downloadJsonFile(filename, data) {
   return true;
 }
 
+function sessionKey(name) {
+  return `${name}:session`;
+}
+
+function latestMigrationLogs(type) {
+  return readArray(STORAGE_KEYS.migrationLog).filter((entry) => entry.type === type);
+}
+
+function logMigrationEntry(entry) {
+  writeArray(STORAGE_KEYS.migrationLog, [entry, ...readArray(STORAGE_KEYS.migrationLog)].slice(0, 120));
+  return entry;
+}
+
 function logDryRun(analysis) {
-  const logs = readArray(STORAGE_KEYS.migrationLog);
   const entry = {
     id: createId("customer-migration-dry-run"),
     type: "customer_migration_dry_run",
@@ -175,7 +205,8 @@ function logDryRun(analysis) {
     status: analysis.duplicateCount || analysis.missingFieldCount ? "attention_needed" : "ready",
     summary: `${analysis.readyCount}/${analysis.uniqueCustomers} unieke klanten klaar voor CRM Supabase dry-run.`,
   };
-  writeArray(STORAGE_KEYS.migrationLog, [entry, ...logs].slice(0, 50));
+  logMigrationEntry(entry);
+  writeSessionJson(sessionKey("customer_migration_dry_run"), entry);
   return entry;
 }
 
@@ -209,103 +240,337 @@ export function createPreMigrationBackup(options = {}) {
     filename: `maxwebstudio-customers-pre-migration-backup-${createdAt.slice(0, 10)}.json`,
   };
   writeJson(STORAGE_KEYS.lastPreMigrationBackup, marker);
-  const logs = readArray(STORAGE_KEYS.migrationLog);
-  writeArray(STORAGE_KEYS.migrationLog, [{
+  const log = logMigrationEntry({
     id: backup.id,
     type: "pre_migration_backup",
     createdAt,
     migrationType: "customers",
     status: "created",
     summary: "Pre-migration backup aangemaakt voor CRM klantenmigratie.",
-  }, ...logs].slice(0, 50));
+  });
+  writeSessionJson(sessionKey("pre_migration_backup"), marker);
   if (options.download !== false) downloadJsonFile(marker.filename, backup);
-  return { backup, marker, downloaded: options.download !== false };
+  return { backup, marker, log, downloaded: options.download !== false };
 }
 
 export function getLastPreMigrationBackup() {
   return readJson(STORAGE_KEYS.lastPreMigrationBackup, null);
 }
 
+function isDeveloperModeEnabled() {
+  return Boolean(readJson(STORAGE_KEYS.settings, {})?.developerMode);
+}
+
+function normalizeMigrationOptions(options = {}) {
+  return {
+    includeDemo: Boolean(options.includeDemo),
+    includeProduction: options.includeProduction !== false,
+    batchSize: Math.max(1, Math.min(Number(options.batchSize || 10), 100)),
+    skipDuplicates: options.skipDuplicates !== false,
+    stopOnError: options.stopOnError !== false,
+    allowRemoteDuplicateWarning: Boolean(options.allowRemoteDuplicateWarning),
+  };
+}
+
+function optionsSignature(options = {}) {
+  const normalized = normalizeMigrationOptions(options);
+  return JSON.stringify({
+    includeDemo: normalized.includeDemo,
+    includeProduction: normalized.includeProduction,
+    batchSize: normalized.batchSize,
+    skipDuplicates: normalized.skipDuplicates,
+    stopOnError: normalized.stopOnError,
+  });
+}
+
 export function canRunLiveCustomerMigration(options = {}) {
+  const normalizedOptions = normalizeMigrationOptions(options);
   const analysis = analyzeCustomerData();
   const supabase = getSupabaseClientStatus();
   const providerMode = getCurrentProviderType();
   const lastBackup = getLastPreMigrationBackup();
-  const lastDryRun = readArray(STORAGE_KEYS.migrationLog).find((entry) => entry.type === "customer_migration_dry_run");
+  const sessionBackup = readSessionJson(sessionKey("pre_migration_backup"), null);
+  const sessionDryRun = readSessionJson(sessionKey("customer_migration_dry_run"), null);
+  const sessionWritePreview = readSessionJson(sessionKey(STORAGE_KEYS.lastCustomerWritePreview), null);
+  const sessionWriteTest = readSessionJson(sessionKey(STORAGE_KEYS.lastSupabaseWriteTest), null);
+  const lastDryRun = sessionDryRun || latestMigrationLogs("customer_migration_dry_run")[0];
   const lastReadOnlyTest = readJson(STORAGE_KEYS.lastSupabaseReadOnlyTest, null);
   const lastWriteTest = readJson(STORAGE_KEYS.lastSupabaseWriteTest, null);
-  const readyRecords = getCustomerMigrationWritePreview(options).records.length;
+  const writePreview = getCustomerMigrationWritePreview(normalizedOptions);
+  const readyRecords = writePreview.records.length;
   const missing = [];
+  if (!isDeveloperModeEnabled()) missing.push("Developer Mode staat niet aan.");
   if (!supabase.hasUrl) missing.push("Supabase URL ontbreekt.");
   if (!supabase.hasAnonKey) missing.push("Supabase anon key ontbreekt.");
-  if (!["supabase-prepared", "supabase"].includes(providerMode)) missing.push("Provider mode is niet supabase-prepared/supabase.");
-  if (!lastDryRun || lastDryRun.status !== "ready") missing.push("Laatste dry-run is niet succesvol of ontbreekt.");
-  if (!lastBackup?.id) missing.push("Pre-migration backup ontbreekt in deze browser.");
+  if (![PROVIDERS.SUPABASE_WRITE_TEST, PROVIDERS.SUPABASE_MIGRATION].includes(providerMode)) {
+    missing.push("Provider mode is niet supabase-write-test of supabase-migration.");
+  }
+  if (!sessionDryRun?.id || !["ready", "attention_needed"].includes(sessionDryRun.status)) {
+    missing.push("Dry-run succesvol binnen huidige sessie ontbreekt.");
+  }
+  if (!lastDryRun || !["ready", "attention_needed"].includes(lastDryRun.status)) missing.push("Laatste dry-run is niet uitgevoerd.");
+  if (!lastBackup?.id || !sessionBackup?.id || sessionBackup.id !== lastBackup.id) {
+    missing.push("Pre-migration backup binnen huidige sessie ontbreekt.");
+  }
+  if (!sessionWritePreview?.id || sessionWritePreview.signature !== optionsSignature(normalizedOptions)) {
+    missing.push("Write preview met huidige opties is nog niet bekeken in deze sessie.");
+  }
   if (readyRecords < 1) missing.push("Geen klanten klaar voor migratie met de gekozen opties.");
-  if (!supabase.clientPackageAvailable || !supabase.customerWritesEnabled) missing.push("Supabase client package nog niet actief; live migratie blijft geblokkeerd.");
   if (!supabase.clientPackageAvailable) missing.push("Supabase client is niet geladen.");
   if (!lastReadOnlyTest?.connected && !lastReadOnlyTest?.success) missing.push("Supabase read-only connectietest ontbreekt of is niet succesvol.");
   const customersTableConfirmed = lastReadOnlyTest?.customersTableAccessible === true
     || (lastReadOnlyTest?.tableName === "customers" && lastReadOnlyTest?.success === true);
   if (!customersTableConfirmed) missing.push("Customers table check ontbreekt of is niet succesvol.");
-  if (lastWriteTest?.status !== "completed") missing.push("Supabase write-test succesvol binnen huidige sessie ontbreekt.");
-  missing.push("Live customer migratie wordt vrijgegeven in Fase 12.0.");
+  if (lastWriteTest?.status !== "completed" || sessionWriteTest?.status !== "completed") {
+    missing.push("Supabase write-test succesvol binnen huidige sessie ontbreekt.");
+  }
   return {
     allowed: missing.length === 0,
     missing,
     providerMode,
+    developerMode: isDeveloperModeEnabled(),
     supabase,
     lastBackup,
+    sessionBackup,
     lastDryRun,
+    sessionDryRun,
     lastReadOnlyTest,
     lastWriteTest,
+    sessionWriteTest,
+    sessionWritePreview,
     readyRecords,
+    writePreview,
     analysis,
   };
 }
 
 export function getCustomerMigrationWritePreview(options = {}) {
   const {
-    includeDemo = false,
-    includeProduction = true,
-    batchSize = 25,
-    skipDuplicates = true,
-  } = options;
+    includeDemo,
+    includeProduction,
+    batchSize,
+    skipDuplicates,
+  } = normalizeMigrationOptions(options);
   const analysis = analyzeCustomerData();
   const duplicateIds = new Set(analysis.duplicates.map((item) => item.customer.id).filter(Boolean));
-  const records = analysis.payload.filter((row) => {
+  const skipped = [];
+  const entries = analysis.readyCustomers.map((localCustomer) => {
+    const row = mapLocalCustomerToSupabase(localCustomer);
+    row.metadata = {
+      ...(row.metadata || {}),
+      migrationPreparedBy: "customerMigrationService",
+      migrationPreparedAt: nowIso(),
+    };
     const isDemo = row.is_demo || row.is_demo_journey || row.environment === "demo";
-    if (isDemo && !includeDemo) return false;
-    if (!isDemo && !includeProduction) return false;
-    if (skipDuplicates && duplicateIds.has(row.id)) return false;
-    return true;
+    const reasons = [];
+    if (isDemo && !includeDemo) reasons.push("Demo-klant uitgesloten door opties.");
+    if (!isDemo && !includeProduction) reasons.push("Productieklant uitgesloten door opties.");
+    if (skipDuplicates && duplicateIds.has(row.id)) reasons.push("Lokale duplicate overgeslagen.");
+    return {
+      localCustomer,
+      supabaseRecord: row,
+      isDemo,
+      skipped: reasons.length > 0,
+      reasons,
+    };
   });
+  const readyEntries = entries.filter((entry) => !entry.skipped);
+  entries.filter((entry) => entry.skipped).forEach((entry) => {
+    skipped.push({
+      localCustomerId: entry.localCustomer.id || entry.supabaseRecord.id,
+      email: entry.supabaseRecord.email || "",
+      company: entry.supabaseRecord.company_name || "",
+      reasons: entry.reasons,
+    });
+  });
+  const records = readyEntries.map((entry) => entry.supabaseRecord);
   return {
+    id: createId("customer-write-preview"),
     targetTable: "customers",
     includeDemo,
     includeProduction,
     skipDuplicates,
-    batchSize: Number(batchSize || 25),
+    batchSize,
+    signature: optionsSignature({ includeDemo, includeProduction, batchSize, skipDuplicates }),
     readyCount: records.length,
     demoCount: records.filter((row) => row.environment === "demo").length,
     productionCount: records.filter((row) => row.environment !== "demo").length,
     duplicateCount: analysis.duplicateCount,
-    skippedCount: analysis.payload.length - records.length,
-    remoteDuplicateCheck: false,
-    remoteDuplicateWarning: "Remote duplicate-check niet beschikbaar.",
+    skippedCount: skipped.length,
+    remoteDuplicateCheck: true,
+    remoteDuplicateWarning: "Remote duplicate-check wordt tijdens live migratie per klant uitgevoerd.",
+    skipped,
+    entries: readyEntries,
     records,
     preview: records.slice(0, 10),
   };
 }
 
-export async function runCustomerMigrationBatch(options = {}) {
-  const normalizedOptions = {
-    includeDemo: Boolean(options.includeDemo),
-    includeProduction: options.includeProduction !== false,
-    batchSize: Number(options.batchSize || 25),
-    dryRunOnly: options.dryRunOnly !== false,
-    skipDuplicates: options.skipDuplicates !== false,
+export function markCustomerWritePreviewViewed(options = {}) {
+  const preview = getCustomerMigrationWritePreview(options);
+  const marker = {
+    id: preview.id,
+    type: "customer_write_preview",
+    status: "viewed",
+    viewedAt: nowIso(),
+    signature: preview.signature,
+    readyCount: preview.readyCount,
+    includeDemo: preview.includeDemo,
+    includeProduction: preview.includeProduction,
+    batchSize: preview.batchSize,
+    skipDuplicates: preview.skipDuplicates,
   };
+  writeJson(STORAGE_KEYS.lastCustomerWritePreview, marker);
+  writeSessionJson(sessionKey(STORAGE_KEYS.lastCustomerWritePreview), marker);
+  logMigrationEntry({
+    ...marker,
+    createdAt: marker.viewedAt,
+    summary: `${preview.readyCount} customer records bekeken in write preview.`,
+  });
+  return preview;
+}
+
+function logCustomerMigrationItem(type, payload = {}) {
+  const entry = {
+    id: createId(`customer-live-migration-${type}`),
+    type: `customer_live_migration_${type}`,
+    createdAt: nowIso(),
+    ...payload,
+  };
+  logMigrationEntry(entry);
+  return entry;
+}
+
+function localDuplicateReason(localCustomer, batchId) {
+  const normalized = normalizeCustomer(localCustomer);
+  if (normalized.migrationStatus === "migrated" || normalized.supabaseCustomerId) {
+    return `Klant is lokaal al gemarkeerd als gemigreerd (${normalized.supabaseCustomerId || "zonder Supabase id"}).`;
+  }
+  const identities = customerIdentityKeys(normalized);
+  const migrated = getLocalCustomers().map(normalizeCustomer).find((customer) => {
+    if (customer.id === normalized.id) return false;
+    if (customer.migrationBatchId === batchId) return false;
+    if (customer.supabaseCustomerId && customer.email && normalized.email && customer.email === normalized.email) return true;
+    if (customer.supabaseCustomerId && customer.company && normalized.company && customer.company === normalized.company && customer.phone === normalized.phone) return true;
+    return false;
+  });
+  if (!migrated) return "";
+  const migratedKeys = customerIdentityKeys(migrated);
+  if (identities.email && identities.email === migratedKeys.email) return "E-mailadres is lokaal al gekoppeld aan een gemigreerde klant.";
+  if (identities.companyPhone && identities.companyPhone === migratedKeys.companyPhone) return "Bedrijf + telefoon is lokaal al gekoppeld aan een gemigreerde klant.";
+  return "Lokale duplicate met bestaande gemigreerde klant.";
+}
+
+async function checkRemoteDuplicate(record, options = {}) {
+  const result = await supabaseProvider.findDuplicateCustomer(record);
+  if (result.warning && !options.allowRemoteDuplicateWarning) {
+    throw new Error(`Remote duplicate-check gaf waarschuwing en is niet expliciet bevestigd: ${result.warning}`);
+  }
+  return result;
+}
+
+export function markCustomerAsMigrated(localCustomer, supabaseResult, context = {}) {
+  const sourceKeys = [localCustomer.sourceKey, STORAGE_KEYS.crmCustomers, STORAGE_KEYS.customers].filter(Boolean);
+  const updatedAt = nowIso();
+  for (const sourceKey of sourceKeys) {
+    const records = readArray(sourceKey);
+    const index = records.findIndex((record) => String(record.id || "") === String(localCustomer.id || ""));
+    if (index < 0) continue;
+    const original = records[index];
+    records[index] = {
+      ...original,
+      supabaseCustomerId: supabaseResult?.data?.id || supabaseResult?.id || "",
+      migratedToSupabaseAt: updatedAt,
+      migrationStatus: "migrated",
+      migrationBatchId: context.batchId || "",
+      lastMigrationProvider: PROVIDERS.SUPABASE_MIGRATION,
+      migrationOriginalData: original.migrationOriginalData || original,
+      updatedAt,
+    };
+    writeArray(sourceKey, records);
+    return records[index];
+  }
+  return null;
+}
+
+export async function migrateCustomerBatch(customers = [], options = {}) {
+  const normalizedOptions = normalizeMigrationOptions(options);
+  const batchId = options.batchId || createId("customer-migration-batch");
+  const batchResult = {
+    batchId,
+    attempted: customers.length,
+    inserted: 0,
+    skipped: 0,
+    failed: 0,
+    migrated: [],
+    skippedRecords: [],
+    errors: [],
+    warnings: [],
+  };
+  for (const entry of customers) {
+    const localCustomer = entry.localCustomer || entry;
+    const record = entry.supabaseRecord || mapLocalCustomerToSupabase(localCustomer);
+    record.metadata = {
+      ...(record.metadata || {}),
+      migrationPreparedBy: "customerMigrationService",
+      migrationBatchId: batchId,
+    };
+    const validation = validateCustomerForSupabase(localCustomer);
+    const baseLog = {
+      batchId,
+      localCustomerId: localCustomer.id || record.metadata?.localStorageId || record.id || "",
+      email: record.email || "",
+      company: record.company_name || "",
+    };
+    if (!validation.ready) {
+      const reason = validation.errors.join(" ");
+      batchResult.skipped += 1;
+      batchResult.skippedRecords.push({ ...baseLog, reason });
+      logCustomerMigrationItem("skipped", { ...baseLog, status: "skipped", reason });
+      logActivity("developer_tools", "customers", "customer_live_migration_skipped", { ...baseLog, reason });
+      continue;
+    }
+    if (normalizedOptions.skipDuplicates) {
+      const reason = localDuplicateReason(localCustomer, batchId);
+      if (reason) {
+        batchResult.skipped += 1;
+        batchResult.skippedRecords.push({ ...baseLog, reason });
+        logCustomerMigrationItem("skipped", { ...baseLog, status: "skipped", reason });
+        logActivity("developer_tools", "customers", "customer_live_migration_skipped", { ...baseLog, reason });
+        continue;
+      }
+    }
+    try {
+      const remoteDuplicate = await checkRemoteDuplicate(record, normalizedOptions);
+      if (remoteDuplicate.warning) batchResult.warnings.push(`${record.email || record.id}: ${remoteDuplicate.warning}`);
+      if (remoteDuplicate.duplicate && normalizedOptions.skipDuplicates) {
+        const reason = `Remote duplicate gevonden via ${remoteDuplicate.type}.`;
+        batchResult.skipped += 1;
+        batchResult.skippedRecords.push({ ...baseLog, reason, supabaseCustomerId: remoteDuplicate.data?.id || "" });
+        logCustomerMigrationItem("skipped", { ...baseLog, supabaseCustomerId: remoteDuplicate.data?.id || "", status: "skipped", reason });
+        logActivity("developer_tools", "customers", "customer_live_migration_skipped", { ...baseLog, reason });
+        continue;
+      }
+      const inserted = await supabaseProvider.create("customers", record);
+      const marked = markCustomerAsMigrated(localCustomer, inserted, { batchId });
+      const supabaseCustomerId = inserted.data?.id || record.id || "";
+      batchResult.inserted += 1;
+      batchResult.migrated.push({ ...baseLog, supabaseCustomerId, marked: Boolean(marked) });
+      logCustomerMigrationItem("migrated", { ...baseLog, supabaseCustomerId, status: "migrated" });
+      logActivity("developer_tools", "customers", "customer_live_migration_customer_migrated", { ...baseLog, supabaseCustomerId });
+    } catch (error) {
+      batchResult.failed += 1;
+      batchResult.errors.push({ ...baseLog, error: error.message || "Onbekende migratiefout." });
+      logCustomerMigrationItem("failed", { ...baseLog, status: "failed", error: error.message || "Onbekende migratiefout." });
+      logActivity("developer_tools", "customers", "customer_live_migration_customer_failed", { ...baseLog, error: error.message });
+      if (normalizedOptions.stopOnError) break;
+    }
+  }
+  return batchResult;
+}
+
+export async function runLiveCustomerMigration(options = {}) {
+  const normalizedOptions = normalizeMigrationOptions(options);
   const startedAt = nowIso();
   const writePreview = getCustomerMigrationWritePreview(normalizedOptions);
   const readiness = canRunLiveCustomerMigration(normalizedOptions);
@@ -315,51 +580,82 @@ export async function runCustomerMigrationBatch(options = {}) {
     id: createId("customer-live-migration"),
     type: "customer_live_migration",
     status: "blocked",
+    batchId: createId("customer-migration-batch"),
     startedAt,
     completedAt: "",
     totalAttempted: writePreview.records.length,
+    successful: 0,
     inserted: 0,
     skipped: 0,
     failed: 0,
     errors: [],
+    warnings: [],
+    skippedReasons: [],
+    migrated: [],
     backupId: backup?.id || "",
     dryRunId: dryRun?.id || "",
     includeDemo: normalizedOptions.includeDemo,
     includeProduction: normalizedOptions.includeProduction,
     batchSize: normalizedOptions.batchSize,
     batches: Math.ceil(writePreview.records.length / normalizedOptions.batchSize) || 0,
-    dryRunOnly: normalizedOptions.dryRunOnly,
+    skipDuplicates: normalizedOptions.skipDuplicates,
+    stopOnError: normalizedOptions.stopOnError,
+    dryRunOnly: false,
     summary: "",
+    rollback: "Rollback is handmatig: gebruik backup om lokale data te herstellen en verwijder test/migratierecords in Supabase handmatig indien nodig.",
   };
-  if (normalizedOptions.dryRunOnly) {
-    result.status = "dry_run_only";
-    result.skipped = writePreview.records.length;
-    result.summary = "Batch migratie voorbereid als dry-run only. Geen Supabase writes uitgevoerd.";
-  } else if (!readiness.allowed) {
+  logCustomerMigrationItem("started", {
+    batchId: result.batchId,
+    status: "started",
+    includeDemo: result.includeDemo,
+    includeProduction: result.includeProduction,
+    totalAttempted: result.totalAttempted,
+  });
+  logActivity("developer_tools", "customers", "customer_live_migration_started", {
+    batchId: result.batchId,
+    totalAttempted: result.totalAttempted,
+  });
+  if (!readiness.allowed) {
     result.errors = readiness.missing;
     result.failed = writePreview.records.length;
     result.summary = `Live migratie geblokkeerd: ${readiness.missing.join(" ")}`;
+    logCustomerMigrationItem("failed", { batchId: result.batchId, status: "blocked", error: result.summary });
   } else {
-    for (let index = 0; index < writePreview.records.length; index += normalizedOptions.batchSize) {
-      const batch = writePreview.records.slice(index, index + normalizedOptions.batchSize);
-      for (const record of batch) {
-        try {
-          await supabaseProvider.create("customers", record);
-          result.inserted += 1;
-        } catch (error) {
-          result.failed += 1;
-          result.errors.push(`${record.email || record.id || "record"}: ${error.message}`);
-        }
-      }
+    for (let index = 0; index < writePreview.entries.length; index += normalizedOptions.batchSize) {
+      const batch = writePreview.entries.slice(index, index + normalizedOptions.batchSize);
+      const batchResult = await migrateCustomerBatch(batch, { ...normalizedOptions, batchId: result.batchId });
+      result.successful += batchResult.inserted;
+      result.inserted = result.successful;
+      result.skipped += batchResult.skipped;
+      result.failed += batchResult.failed;
+      result.migrated.push(...batchResult.migrated);
+      result.skippedReasons.push(...batchResult.skippedRecords);
+      result.errors.push(...batchResult.errors);
+      result.warnings.push(...batchResult.warnings);
+      if (normalizedOptions.stopOnError && batchResult.failed) break;
     }
     result.status = result.failed ? "failed" : "completed";
     result.summary = result.failed
       ? "CRM live migratie afgerond met fouten. Provider blijft localStorage."
       : "CRM live migratie afgerond. Provider blijft localStorage.";
+    logCustomerMigrationItem(result.failed ? "failed" : "completed", {
+      batchId: result.batchId,
+      status: result.status,
+      successful: result.successful,
+      skipped: result.skipped,
+      failed: result.failed,
+      summary: result.summary,
+    });
+    logActivity("developer_tools", "customers", result.failed ? "customer_live_migration_failed" : "customer_live_migration_completed", {
+      batchId: result.batchId,
+      successful: result.successful,
+      skipped: result.skipped,
+      failed: result.failed,
+    });
   }
   result.completedAt = nowIso();
-  const logs = readArray(STORAGE_KEYS.migrationLog);
-  writeArray(STORAGE_KEYS.migrationLog, [result, ...logs].slice(0, 50));
+  logMigrationEntry(result);
+  writeJson(STORAGE_KEYS.lastCustomerMigrationResult, result);
   return {
     ...result,
     providerStillLocal: true,
@@ -368,9 +664,53 @@ export async function runCustomerMigrationBatch(options = {}) {
   };
 }
 
+export async function runCustomerMigrationBatch(options = {}) {
+  if (options.dryRunOnly !== false) {
+    const normalizedOptions = normalizeMigrationOptions(options);
+    const writePreview = getCustomerMigrationWritePreview(normalizedOptions);
+    const result = {
+      id: createId("customer-live-migration"),
+      type: "customer_live_migration",
+      status: "dry_run_only",
+      startedAt: nowIso(),
+      completedAt: nowIso(),
+      totalAttempted: writePreview.records.length,
+      successful: 0,
+      inserted: 0,
+      skipped: writePreview.records.length,
+      failed: 0,
+      errors: [],
+      includeDemo: normalizedOptions.includeDemo,
+      includeProduction: normalizedOptions.includeProduction,
+      batchSize: normalizedOptions.batchSize,
+      batches: Math.ceil(writePreview.records.length / normalizedOptions.batchSize) || 0,
+      dryRunOnly: true,
+      summary: "Batch migratie voorbereid als dry-run only. Geen Supabase writes uitgevoerd.",
+    };
+    logMigrationEntry(result);
+    writeJson(STORAGE_KEYS.lastCustomerMigrationResult, result);
+    return { ...result, providerStillLocal: true, writePreview, readiness: canRunLiveCustomerMigration(normalizedOptions) };
+  }
+  return runLiveCustomerMigration(options);
+}
+
+export function getCustomerMigrationResult() {
+  return readJson(STORAGE_KEYS.lastCustomerMigrationResult, null);
+}
+
 export function getCustomerMigrationLogs(limit = 5) {
   return readArray(STORAGE_KEYS.migrationLog)
-    .filter((entry) => ["customer_migration_dry_run", "customer_live_migration", "pre_migration_backup"].includes(entry.type))
+    .filter((entry) => [
+      "customer_migration_dry_run",
+      "customer_live_migration",
+      "customer_live_migration_started",
+      "customer_live_migration_migrated",
+      "customer_live_migration_skipped",
+      "customer_live_migration_failed",
+      "customer_live_migration_completed",
+      "pre_migration_backup",
+      "customer_write_preview",
+    ].includes(entry.type))
     .slice(0, limit);
 }
 

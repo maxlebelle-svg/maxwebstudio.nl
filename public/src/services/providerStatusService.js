@@ -31,6 +31,9 @@ export function getProviderWarnings() {
   if (providerMode === PROVIDERS.SUPABASE_WRITE_TEST) {
     warnings.push("Supabase write-test mode is actief. Alleen veilige testcustomer-acties zijn toegestaan; massamigratie blijft geblokkeerd.");
   }
+  if (providerMode === PROVIDERS.SUPABASE_MIGRATION) {
+    warnings.push("Supabase migratiemodus is actief. Alleen gecontroleerde customer inserts zijn toegestaan; provider switch blijft uit.");
+  }
   if (!supabaseStatus.configured) {
     warnings.push("Supabase URL of anon key ontbreekt. Vul deze alleen in via environment configuratie, nooit hardcoded.");
   }
@@ -55,8 +58,9 @@ export function getActiveProviderStatus() {
     supabaseProjectIdPresent: supabaseStatus.hasProjectId,
     liveDatabaseActive: false,
     liveQueriesEnabled: Boolean(providerMode === PROVIDERS.SUPABASE_READONLY && supabaseStatus.liveQueriesEnabled),
-    readOnlyEnabled: Boolean(providerMode === PROVIDERS.SUPABASE_READONLY || providerMode === PROVIDERS.SUPABASE_WRITE_TEST),
+    readOnlyEnabled: Boolean(providerMode === PROVIDERS.SUPABASE_READONLY || providerMode === PROVIDERS.SUPABASE_WRITE_TEST || providerMode === PROVIDERS.SUPABASE_MIGRATION),
     writeTestEnabled: Boolean(providerMode === PROVIDERS.SUPABASE_WRITE_TEST),
+    migrationWriteEnabled: Boolean(providerMode === PROVIDERS.SUPABASE_MIGRATION),
     supabaseClientLoaded: Boolean(supabaseStatus.clientPackageAvailable),
     supabaseConnected: Boolean(supabaseStatus.connected),
     safeSupabaseSummary: getSafeSupabaseClientSummary(),

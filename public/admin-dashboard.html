@@ -657,7 +657,7 @@
                 <label><input id="setting-developer-mode" name="developerMode" type="checkbox" /> Developer Mode</label>
               </div>
               <div class="admin-profile-fields">
-                <label class="admin-profile-wide" for="setting-data-provider-mode">Data provider mode<select id="setting-data-provider-mode" name="dataProviderMode"><option value="localStorage">localStorage</option><option value="supabase-prepared">supabase-prepared</option><option value="supabase-readonly">supabase-readonly</option><option value="supabase-write-test">supabase-write-test</option></select></label>
+                <label class="admin-profile-wide" for="setting-data-provider-mode">Data provider mode<select id="setting-data-provider-mode" name="dataProviderMode"><option value="localStorage">localStorage</option><option value="supabase-prepared">supabase-prepared</option><option value="supabase-readonly">supabase-readonly</option><option value="supabase-write-test">supabase-write-test</option><option value="supabase-migration">supabase-migration</option></select></label>
               </div>
             </article>
 
@@ -788,11 +788,15 @@
                 <label for="customer-migration-include-production">Productie-klanten meenemen<select id="customer-migration-include-production"><option value="true">Ja</option><option value="false">Nee</option></select></label>
                 <label for="customer-migration-batch-size">Batch size<input id="customer-migration-batch-size" type="number" min="1" max="100" value="25" /></label>
                 <label for="customer-migration-skip-duplicates">Duplicaten overslaan<select id="customer-migration-skip-duplicates"><option value="true">Ja</option><option value="false">Nee</option></select></label>
+                <label for="customer-migration-stop-on-error">Stoppen bij fout<select id="customer-migration-stop-on-error"><option value="true">Ja</option><option value="false">Nee</option></select></label>
               </div>
               <div class="settings-actions">
                 <button class="button secondary" id="view-customer-write-preview" type="button">Bekijk write preview</button>
                 <button class="button primary" id="start-customer-live-migration" type="button" disabled>Start live migratie naar Supabase</button>
+                <button class="button secondary" id="download-customer-migration-result" type="button">Download migratieresultaat</button>
+                <button class="button secondary" id="download-customer-pre-migration-backup" type="button">Download pre-migration backup</button>
               </div>
+              <p class="settings-note">Na migratie blijft Max Webstudio lokaal draaien totdat de provider later bewust wordt omgezet. Rollback is handmatig via backup en Supabase beheer.</p>
               <div class="admin-grid compact-admin-grid" id="developer-tools-output"></div>
             </article>
           </div>
@@ -1657,6 +1661,9 @@
         const customerMigrationIncludeProduction = document.getElementById("customer-migration-include-production");
         const customerMigrationBatchSize = document.getElementById("customer-migration-batch-size");
         const customerMigrationSkipDuplicates = document.getElementById("customer-migration-skip-duplicates");
+        const customerMigrationStopOnError = document.getElementById("customer-migration-stop-on-error");
+        const downloadCustomerMigrationResultButton = document.getElementById("download-customer-migration-result");
+        const downloadCustomerPreMigrationBackupButton = document.getElementById("download-customer-pre-migration-backup");
         const demoEmailList = document.getElementById("demo-email-list");
         const demoImportPreview = document.getElementById("demo-import-preview");
         const importLogList = document.getElementById("import-log-list");
@@ -2657,7 +2664,11 @@
             ["Supabase write-test", "Voorbereid", "Mode supabase-write-test mag alleen veilige testcustomer-acties uitvoeren"],
             ["Testcustomer lifecycle", "Voorbereid", "Create, update en delete zijn beperkt tot safeToDelete=true testrecords"],
             ["Supabase writes", "Geblokkeerd", "Algemene writes blijven dicht"],
-            ["Migratie writes", "Niet actief", "Live customer migratie wordt pas in Fase 12.0 vrijgegeven"],
+            ["CRM live migration", "Beschikbaar onder voorwaarden", "Alleen met Developer Mode, backup, dry-run, write-preview en succesvolle write-test"],
+            ["CRM migration logs", "Actief", "Live migratie schrijft batch- en klantlogs naar maxwebstudioMigrationLog"],
+            ["CRM local fallback", "Actief", "Na migratie blijft localStorage leidend tot provider switch"],
+            ["CRM provider switch", "Nog niet actief", "Geen automatische switch naar Supabase"],
+            ["Supabase customers data", "Gedeeltelijk mogelijk", "Alleen gecontroleerde customer inserts via migratiemodus"],
             ["CRM Supabase mapping", "Voorbereid", "CustomerRepository kan lokale klantrecords naar customers-rijen mappen"],
             ["CRM migratie dry run", "Gereed", "Developer Mode analyseert klanten zonder databasewrites"],
             ["CRM live writes basis", "Niet actief", "Live customer writes blijven afhankelijk van Supabase client readiness"],
@@ -2918,6 +2929,7 @@
             includeProduction: customerMigrationIncludeProduction.value !== "false",
             batchSize: Number(customerMigrationBatchSize.value || 25),
             skipDuplicates: customerMigrationSkipDuplicates.value !== "false",
+            stopOnError: customerMigrationStopOnError.value !== "false",
           };
         }
 
@@ -2926,18 +2938,25 @@
           const customersTableConfirmed = readiness.lastReadOnlyTest?.customersTableAccessible === true
             || (readiness.lastReadOnlyTest?.tableName === "customers" && readiness.lastReadOnlyTest?.success === true);
           appendDeveloperCard("Veilige live migratie voorwaarden", [
+            ["Developer Mode", readiness.developerMode ? "Aan" : "Uit"],
             ["Supabase URL aanwezig", readiness.supabase.hasUrl ? "Ja" : "Nee"],
             ["Anon key aanwezig", readiness.supabase.hasAnonKey ? "Ja" : "Nee"],
             ["Provider mode", readiness.providerMode],
-            ["Laatste dry-run", readiness.lastDryRun ? `${readiness.lastDryRun.status} - ${formatDate(readiness.lastDryRun.createdAt)}` : "Ontbreekt"],
-            ["Backup", readiness.lastBackup ? `${readiness.lastBackup.id} - ${formatDate(readiness.lastBackup.createdAt)}` : "Ontbreekt"],
+            ["Dry-run huidige sessie", readiness.sessionDryRun ? `${readiness.sessionDryRun.status} - ${formatDate(readiness.sessionDryRun.createdAt)}` : "Ontbreekt"],
+            ["Backup huidige sessie", readiness.sessionBackup ? `${readiness.sessionBackup.id} - ${formatDate(readiness.sessionBackup.createdAt)}` : "Ontbreekt"],
+            ["Write preview huidige sessie", readiness.sessionWritePreview ? `${readiness.sessionWritePreview.readyCount} records - ${formatDate(readiness.sessionWritePreview.viewedAt)}` : "Ontbreekt"],
             ["Records klaar met opties", String(readiness.readyRecords || 0)],
             ["Supabase client package", readiness.supabase.clientPackageAvailable ? "Beschikbaar" : "Niet actief"],
             ["Read-only test", readiness.lastReadOnlyTest ? `${readiness.lastReadOnlyTest.success || readiness.lastReadOnlyTest.connected ? "Succesvol" : "Niet succesvol"} - ${formatDate(readiness.lastReadOnlyTest.testedAt)}` : "Ontbreekt"],
             ["Customers table", customersTableConfirmed ? "Bereikbaar" : "Niet bevestigd"],
-            ["Laatste write-test", readiness.lastWriteTest ? `${readiness.lastWriteTest.status || "-"} - ${formatDate(readiness.lastWriteTest.completedAt || readiness.lastWriteTest.createdAt)}` : "Ontbreekt"],
-            ["Customer writes", readiness.supabase.customerWritesEnabled ? "Actief" : "Geblokkeerd"],
-            ["Migratieknop", "Geblokkeerd tot Fase 12.0"],
+            ["Write-test huidige sessie", readiness.sessionWriteTest ? `${readiness.sessionWriteTest.status || "-"} - ${formatDate(readiness.sessionWriteTest.completedAt || readiness.sessionWriteTest.createdAt)}` : "Ontbreekt"],
+            ["Customer writes", readiness.allowed ? "Gecontroleerd beschikbaar" : "Geblokkeerd"],
+            ["Migratieknop", readiness.allowed ? "Actief" : "Geblokkeerd"],
+          ]);
+          appendDeveloperCard("Live migratie waarschuwing", [
+            ["Provider switch", "Niet automatisch"],
+            ["Rollback", "Handmatig via backup en Supabase beheer"],
+            ["Scope", "Alleen customers, geen delete, geen andere tabellen"],
           ]);
           appendDeveloperCard("Ontbrekende voorwaarden", readiness.missing.length ? readiness.missing : ["Alle voorwaarden zijn voldaan."]);
         }
@@ -2953,6 +2972,7 @@
             ["Remote duplicate-check", preview.remoteDuplicateCheck ? "Beschikbaar" : preview.remoteDuplicateWarning],
             ["Batch size", String(preview.batchSize || 25)],
             ["Batches", String(Math.ceil((preview.readyCount || 0) / (preview.batchSize || 25)) || 0)],
+            ["Preview status", "Bekeken in huidige sessie na klikken op write preview"],
           ]);
           preview.preview.forEach((record) => {
             appendDeveloperCard(`Write ${record.email || record.id || "klant"}`, [
@@ -2968,19 +2988,42 @@
         function renderCustomerMigrationResult(result) {
           appendDeveloperCard("CRM migratie resultaat", [
             ["Status", result.status],
+            ["Batch ID", result.batchId || result.id || "-"],
             ["Gestart", formatDate(result.startedAt)],
             ["Voltooid", formatDate(result.completedAt)],
             ["Pogingen", String(result.totalAttempted || 0)],
             ["Batches", String(result.batches || 0)],
-            ["Inserted", String(result.inserted || 0)],
+            ["Succesvol", String(result.successful ?? result.inserted ?? 0)],
             ["Skipped", String(result.skipped || 0)],
             ["Failed", String(result.failed || 0)],
+            ["Demo meegenomen", result.includeDemo ? "Ja" : "Nee"],
+            ["Productie meegenomen", result.includeProduction ? "Ja" : "Nee"],
+            ["Skip duplicates", result.skipDuplicates ? "Ja" : "Nee"],
+            ["Stop on error", result.stopOnError ? "Ja" : "Nee"],
             ["Backup", result.backupId || "Geen"],
             ["Dry run", result.dryRunId || "Geen"],
             ["Provider", result.providerStillLocal ? "Blijft localStorage" : "Onbekend"],
             ["Samenvatting", result.summary || "-"],
+            ["Rollback", result.rollback || "Handmatig via backup; geen automatische Supabase deletes."],
           ]);
-          if (result.errors?.length) appendDeveloperCard("CRM migratie errors", result.errors.slice(0, 10));
+          if (result.migrated?.length) {
+            appendDeveloperCard("Gemigreerde klanten", result.migrated.slice(0, 10).map((item) => [
+              item.email || item.company || item.localCustomerId || "-",
+              item.supabaseCustomerId || "-",
+            ]));
+          }
+          if (result.skippedReasons?.length) {
+            appendDeveloperCard("Overgeslagen klanten", result.skippedReasons.slice(0, 10).map((item) => [
+              item.email || item.company || item.localCustomerId || "-",
+              item.reason || "-",
+            ]));
+          }
+          if (result.warnings?.length) appendDeveloperCard("CRM migratie waarschuwingen", result.warnings.slice(0, 10));
+          if (result.errors?.length) {
+            appendDeveloperCard("CRM migratie errors", result.errors.slice(0, 10).map((item) => (
+              typeof item === "string" ? item : `${item.email || item.company || item.localCustomerId || "record"}: ${item.error || "-"}`
+            )));
+          }
         }
 
         function renderRollbackPreparation(readiness) {
@@ -3592,7 +3635,7 @@
         async function showCustomerWritePreviewHandler() {
           try {
             const { customerMigrationService, activityLogService } = await loadDeveloperModules();
-            const preview = customerMigrationService.getCustomerMigrationWritePreview(customerMigrationOptions());
+            const preview = customerMigrationService.markCustomerWritePreviewViewed(customerMigrationOptions());
             activityLogService.logActivity("developer_tools", "customers", "view_customer_write_preview", { readyCount: preview.readyCount });
             await renderDeveloperToolsSummary({ customerWritePreview: preview });
             setSettingsMessage("CRM write preview getoond. Er zijn geen writes uitgevoerd.", "success");
@@ -3614,12 +3657,14 @@
             }
             const firstConfirm = window.confirm("Weet je zeker dat je CRM-klanten naar Supabase wilt migreren? Controleer backup, dry-run en preview.");
             if (!firstConfirm) return;
-            const secondConfirm = window.confirm("Laatste waarschuwing: localStorage blijft actief, maar Supabase kan records ontvangen. Doorgaan?");
+            const secondConfirm = window.confirm("Laatste waarschuwing: localStorage blijft actief, maar Supabase kan customer records ontvangen. Er wordt niets verwijderd. Doorgaan?");
             if (!secondConfirm) return;
+            const duplicateConfirm = window.confirm("Remote duplicate-check wordt per klant geprobeerd. Als een optionele check zoals external_id niet beschikbaar is, mag de migratie doorgaan met e-mail/bedrijf checks?");
+            if (!duplicateConfirm) return;
             activityLogService.logActivity("developer_tools", "customers", "customer_live_migration_started", options);
-            const result = await customerMigrationService.runCustomerMigrationBatch(options);
+            const result = await customerMigrationService.runLiveCustomerMigration({ ...options, allowRemoteDuplicateWarning: true });
             activityLogService.logActivity("developer_tools", "customers", result.failed ? "customer_live_migration_failed" : "customer_live_migration_completed", {
-              inserted: result.inserted,
+              inserted: result.successful ?? result.inserted,
               failed: result.failed,
               status: result.status,
             });
@@ -3628,6 +3673,41 @@
           } catch (error) {
             console.error("Customer live migration failed", error);
             setSettingsMessage("CRM live migratie kon niet worden gestart.", "error");
+          }
+        }
+
+        async function downloadCustomerMigrationResultHandler() {
+          try {
+            const { customerMigrationService } = await loadDeveloperModules();
+            const result = customerMigrationService.getCustomerMigrationResult();
+            if (!result) {
+              setSettingsMessage("Er is nog geen migratieresultaat om te downloaden.", "error");
+              return;
+            }
+            writeJsonDownload(`maxwebstudio-customer-migration-result-${new Date().toISOString().slice(0, 10)}.json`, result);
+            setSettingsMessage("Migratieresultaat gedownload.", "success");
+          } catch (error) {
+            console.error("Download customer migration result failed", error);
+            setSettingsMessage("Migratieresultaat kon niet worden gedownload.", "error");
+          }
+        }
+
+        async function downloadCustomerPreMigrationBackupHandler() {
+          try {
+            const { customerMigrationService } = await loadDeveloperModules();
+            const marker = customerMigrationService.getLastPreMigrationBackup();
+            if (!marker?.id) {
+              setSettingsMessage("Er is nog geen pre-migration backup om te downloaden.", "error");
+              return;
+            }
+            writeJsonDownload(marker.filename || `maxwebstudio-customers-pre-migration-backup-${new Date().toISOString().slice(0, 10)}.json`, {
+              marker,
+              note: "Gebruik de originele backupdownload indien beschikbaar. Deze marker bevestigt welke backup bij de migratie hoort.",
+            });
+            setSettingsMessage("Pre-migration backup marker gedownload.", "success");
+          } catch (error) {
+            console.error("Download customer pre-migration backup failed", error);
+            setSettingsMessage("Pre-migration backup kon niet worden gedownload.", "error");
           }
         }
 
@@ -3694,7 +3774,9 @@
           renderProductionReadiness();
           renderDeveloperMode();
           renderAuthSession();
-          if (settings.dataProviderMode === "supabase-write-test") {
+          if (settings.dataProviderMode === "supabase-migration") {
+            setSettingsMessage("Instellingen opgeslagen. Supabase migratiemodus staat klaar voor gecontroleerde customer inserts; provider switch blijft uit.", "success");
+          } else if (settings.dataProviderMode === "supabase-write-test") {
             setSettingsMessage("Instellingen opgeslagen. Supabase write-test mode staat klaar voor testcustomers; massamigratie blijft geblokkeerd.", "success");
           } else if (settings.dataProviderMode === "supabase-readonly") {
             setSettingsMessage("Instellingen opgeslagen. Supabase read-only checks zijn beschikbaar; writes blijven geblokkeerd.", "success");
@@ -8718,7 +8800,9 @@
         createCustomerPreMigrationBackupButton.addEventListener("click", createCustomerPreMigrationBackupHandler);
         viewCustomerWritePreviewButton.addEventListener("click", showCustomerWritePreviewHandler);
         startCustomerLiveMigrationButton.addEventListener("click", startCustomerLiveMigrationHandler);
-        [customerMigrationIncludeDemo, customerMigrationIncludeProduction, customerMigrationBatchSize, customerMigrationSkipDuplicates].forEach((field) => {
+        downloadCustomerMigrationResultButton.addEventListener("click", downloadCustomerMigrationResultHandler);
+        downloadCustomerPreMigrationBackupButton.addEventListener("click", downloadCustomerPreMigrationBackupHandler);
+        [customerMigrationIncludeDemo, customerMigrationIncludeProduction, customerMigrationBatchSize, customerMigrationSkipDuplicates, customerMigrationStopOnError].forEach((field) => {
           field.addEventListener("input", () => renderDeveloperToolsSummary());
           field.addEventListener("change", () => renderDeveloperToolsSummary());
         });

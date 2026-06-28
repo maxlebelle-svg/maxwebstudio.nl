@@ -27,6 +27,10 @@ function isWriteTestMode() {
   return getCurrentProviderType() === PROVIDERS.SUPABASE_WRITE_TEST;
 }
 
+function isMigrationMode() {
+  return getCurrentProviderType() === PROVIDERS.SUPABASE_MIGRATION;
+}
+
 function isSafeTestCustomer(record = {}) {
   return record.company_name === "Supabase Write Test Klant"
     && record.name === "Supabase Test"
@@ -37,8 +41,17 @@ function isSafeTestCustomer(record = {}) {
     && record.metadata?.safeToDelete === true;
 }
 
-async function getWriteClient() {
-  if (!isWriteTestMode()) throw new Error("Supabase writes zijn alleen toegestaan in supabase-write-test mode.");
+function isCustomerMigrationRecord(record = {}) {
+  return record.source === "localStorage"
+    && Boolean(record.metadata?.localStorageId || record.id)
+    && record.environment !== "test"
+    && record.metadata?.migrationPreparedBy === "customerMigrationService";
+}
+
+async function getWriteClient({ allowMigration = false } = {}) {
+  if (!isWriteTestMode() && !(allowMigration && isMigrationMode())) {
+    throw new Error("Supabase writes zijn alleen toegestaan in supabase-write-test of gecontroleerde supabase-migration mode.");
+  }
   const client = await getSupabaseClient();
   if (!client) throw new Error("Supabase client niet beschikbaar; write-test blijft geblokkeerd.");
   return client;
@@ -73,8 +86,11 @@ export const supabaseProvider = {
 
   async create(table, record = {}) {
     if (!isCustomersTable(table)) throw new Error("Supabase write-test ondersteunt alleen de customers tabel.");
-    if (!isSafeTestCustomer(record)) throw new Error("Alleen de veilige Supabase Write Test Klant mag worden aangemaakt.");
-    const client = await getWriteClient();
+    if (isWriteTestMode() && !isSafeTestCustomer(record) && !isCustomerMigrationRecord(record)) {
+      throw new Error("Alleen de veilige Supabase Write Test Klant of gecontroleerde customer migratierecords mogen worden aangemaakt in write-test mode.");
+    }
+    if (isMigrationMode() && !isCustomerMigrationRecord(record)) throw new Error("Alleen gecontroleerde customer migratierecords mogen worden aangemaakt in supabase-migration mode.");
+    const client = await getWriteClient({ allowMigration: true });
     const { data, error } = await client.from("customers").insert(record).select("*").single();
     if (error) throw new Error(error.message || "Testcustomer aanmaken is mislukt.");
     return { success: true, table: "customers", action: "create", data };
@@ -126,6 +142,30 @@ export const supabaseProvider = {
     const { count, error } = await client.from("customers").select("id", { count: "exact", head: true });
     if (error) throw new Error(error.message || "Customers tellen uit Supabase is mislukt.");
     return count ?? 0;
+  },
+
+  async findDuplicateCustomer(record = {}) {
+    const client = await getReadClient("customers");
+    const warnings = [];
+    const checks = [
+      record.id && { type: "id", query: () => client.from("customers").select("id,email,company_name,phone").eq("id", record.id).maybeSingle() },
+      record.metadata?.localStorageId && { type: "external_id", query: () => client.from("customers").select("id,email,company_name,phone").eq("external_id", record.metadata.localStorageId).maybeSingle() },
+      record.email && { type: "email", query: () => client.from("customers").select("id,email,company_name,phone").eq("email", record.email).maybeSingle() },
+      record.company_name && record.phone && {
+        type: "company_phone",
+        query: () => client.from("customers").select("id,email,company_name,phone").eq("company_name", record.company_name).eq("phone", record.phone).maybeSingle(),
+      },
+    ].filter(Boolean);
+    for (const check of checks) {
+      try {
+        const { data, error } = await check.query();
+        if (error) throw error;
+        if (data?.id) return { duplicate: true, type: check.type, data, warning: warnings.join(" ") };
+      } catch (error) {
+        warnings.push(`${check.type}: ${error.message || "Remote duplicate-check mislukt."}`);
+      }
+    }
+    return { duplicate: false, type: "", data: null, warning: warnings.join(" ") };
   },
 
   getStatus() {

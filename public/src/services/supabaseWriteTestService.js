@@ -30,6 +30,14 @@ function writeJson(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
+function writeSessionJson(key, value) {
+  try {
+    sessionStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Session storage is only a safety marker; local result remains leading for display.
+  }
+}
+
 function createId(prefix = "write-test") {
   if (window.crypto?.randomUUID) return window.crypto.randomUUID();
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -65,6 +73,7 @@ function logMigrationStep(step, status, payload = {}) {
 
 function writeLatestResult(result) {
   writeJson(STORAGE_KEYS.lastSupabaseWriteTest, result);
+  if (result.status === "completed") writeSessionJson(`${STORAGE_KEYS.lastSupabaseWriteTest}:session`, result);
   return result;
 }
 
