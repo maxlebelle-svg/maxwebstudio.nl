@@ -263,6 +263,7 @@
       const websiteInputs = document.querySelectorAll('input[name="websitePackage"]');
       const careInputs = document.querySelectorAll('input[name="carePackage"]');
       const params = new URLSearchParams(window.location.search);
+      const invoiceId = params.get("invoiceId") || "";
       const requestedWebsite = params.get("website");
       const legacyProduct = params.get("product");
       const requestedCare = params.get("care");
@@ -281,6 +282,48 @@
         care_plus: "care_plus",
         care_growth: "care_growth",
       };
+
+      function readInvoices() {
+        try {
+          const stored = JSON.parse(localStorage.getItem("maxwebstudioInvoices") || "[]");
+          return Array.isArray(stored) ? stored : [];
+        } catch (error) {
+          return [];
+        }
+      }
+
+      function writeInvoices(invoices) {
+        localStorage.setItem("maxwebstudioInvoices", JSON.stringify(invoices));
+      }
+
+      function currentInvoice() {
+        return invoiceId ? readInvoices().find((invoice) => invoice.id === invoiceId) : null;
+      }
+
+      function logDemoPaymentEmail(invoice) {
+        if (!invoice?.isDemoJourney || !invoice.demoJourneyId) return;
+        try {
+          const key = "maxwebstudioDemoEmails";
+          const emails = JSON.parse(localStorage.getItem(key) || "[]");
+          const exists = Array.isArray(emails) && emails.some((email) => email.demoJourneyId === invoice.demoJourneyId && email.type === "betaling_demo_ontvangen");
+          if (exists) return;
+          const email = {
+            id: `demo-email-betaling-${Date.now()}`,
+            customerId: invoice.profileId || invoice.customerId || "",
+            type: "betaling_demo_ontvangen",
+            subject: "Demo-betaling ontvangen",
+            to: invoice.customerEmail || "",
+            body: `Factuur ${invoice.invoiceNumber || ""} is lokaal als betaald gemarkeerd.`,
+            status: "demo/verzonden lokaal",
+            createdAt: new Date().toISOString(),
+            isDemoJourney: true,
+            demoJourneyId: invoice.demoJourneyId,
+          };
+          localStorage.setItem(key, JSON.stringify([email, ...(Array.isArray(emails) ? emails : [])]));
+        } catch (error) {
+          console.warn("Demo betaalmail kon niet worden opgeslagen", error);
+        }
+      }
 
       function selectRadio(name, value, fallback) {
         const safeValue = value || fallback;
@@ -325,6 +368,24 @@
       selectRadio("carePackage", initialCare, "no_care");
       updateSummary();
 
+      const invoice = currentInvoice();
+      if (invoice) {
+        document.querySelector(".payment-hero .eyebrow").textContent = "Demo factuurbetaling";
+        document.querySelector(".payment-hero h1").textContent = `Betaal demo-factuur ${invoice.invoiceNumber || ""}.`;
+        document.querySelector(".payment-hero p").textContent = "Deze checkout markeert de factuur lokaal als betaald. Er wordt geen echte Mollie-betaling gestart.";
+        document.querySelector('input[name="customerName"]').value = invoice.customerName || "";
+        document.querySelector('input[name="customerEmail"]').value = invoice.customerEmail || "";
+        document.querySelector('input[name="customerPhone"]').value = invoice.customerPhone || "";
+        document.querySelector('input[name="companyName"]').value = invoice.customerCompany || "";
+        summaryWebsite.textContent = invoice.title || invoice.type || "Factuur";
+        depositIncl.textContent = new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(Number(invoice.total || invoice.amount || 0));
+        depositEx.textContent = "Demo factuurbedrag";
+        remainingEx.textContent = "€0,00 ex. btw";
+        remainingIncl.textContent = "€0,00 incl. btw";
+        submitButton.textContent = invoice.status === "betaald" ? "Factuur al betaald" : "Markeer demo-betaling als betaald";
+        submitButton.disabled = invoice.status === "betaald";
+      }
+
       if (requestedWebsite || requestedCare || legacyProduct) {
         requestAnimationFrame(() => {
           form.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -341,6 +402,19 @@
         submitButton.textContent = "Betaling wordt gestart...";
 
         const formData = new FormData(form);
+        const invoice = currentInvoice();
+        if (invoice) {
+          const paidAt = new Date().toISOString();
+          const invoices = readInvoices().map((item) => item.id === invoice.id ? { ...item, status: "betaald", paymentStatus: "betaald", paidAt, updatedAt: paidAt } : item);
+          const paidInvoice = invoices.find((item) => item.id === invoice.id);
+          writeInvoices(invoices);
+          logDemoPaymentEmail(paidInvoice);
+          message.textContent = "Demo-betaling ontvangen. De factuur is lokaal als betaald gemarkeerd.";
+          submitButton.textContent = "Factuur betaald";
+          submitButton.disabled = true;
+          return;
+        }
+
         const payload = {
           websitePackage: formData.get("websitePackage"),
           carePackage: formData.get("carePackage"),

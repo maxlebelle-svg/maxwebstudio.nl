@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Demo klantreis | Max Webstudio</title>
+    <meta name="description" content="Lokale end-to-end demo klantreis voor Max Webstudio." />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      .journey-shell { padding: 120px 24px 64px; background: linear-gradient(180deg, #f7fbff 0%, #eef5ff 100%); min-height: 100vh; }
+      .journey-container { width: min(1180px, 100%); margin: 0 auto; display: grid; gap: 24px; }
+      .journey-hero, .journey-card { background: rgba(255,255,255,.9); border: 1px solid rgba(37,99,235,.12); border-radius: 28px; box-shadow: 0 24px 70px rgba(15,23,42,.10); }
+      .journey-hero { padding: clamp(28px, 5vw, 56px); display: grid; grid-template-columns: 1.2fr .8fr; gap: 28px; align-items: center; }
+      .journey-hero h1 { margin: 0; max-width: 760px; font-size: clamp(2.3rem, 5vw, 4.8rem); letter-spacing: -0.04em; line-height: .95; color: #06152b; }
+      .journey-hero p { color: #526173; font-size: 1.08rem; line-height: 1.7; max-width: 700px; }
+      .journey-demo-badge { display: inline-flex; width: fit-content; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; background: #eaf2ff; color: #1d4ed8; font-weight: 800; font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; }
+      .journey-card { padding: clamp(20px, 3vw, 32px); }
+      .journey-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+      .journey-care-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+      .journey-option { position: relative; display: grid; gap: 10px; padding: 18px; border-radius: 20px; border: 1px solid #dbe7ff; background: #fff; cursor: pointer; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+      .journey-option:hover, .journey-option:has(input:checked) { transform: translateY(-4px); border-color: #2563eb; box-shadow: 0 18px 40px rgba(37,99,235,.14); }
+      .journey-option input { position: absolute; inset: 16px 16px auto auto; }
+      .journey-option strong { color: #06152b; font-size: 1.05rem; }
+      .journey-option em { font-style: normal; color: #2563eb; font-weight: 900; font-size: 1.55rem; }
+      .journey-option small, .journey-muted { color: #64748b; line-height: 1.55; }
+      .journey-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+      .journey-form label { display: grid; gap: 8px; color: #334155; font-weight: 800; }
+      .journey-form input, .journey-form select, .journey-form textarea { width: 100%; border: 1px solid #dbe7ff; border-radius: 16px; padding: 14px 16px; font: inherit; background: #fff; color: #0f172a; }
+      .journey-form textarea, .journey-wide { grid-column: 1 / -1; }
+      .journey-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+      .journey-status-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+      .journey-status-item { padding: 16px; border-radius: 18px; background: #f8fbff; border: 1px solid #dbe7ff; display: grid; gap: 8px; }
+      .journey-status-item strong { color: #06152b; }
+      .journey-inbox { display: grid; gap: 12px; }
+      .journey-email { display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: center; padding: 14px; border-radius: 16px; background: #f8fbff; border: 1px solid #dbe7ff; }
+      .journey-message { min-height: 24px; font-weight: 800; color: #2563eb; }
+      .journey-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+      @media (max-width: 900px) {
+        .journey-hero, .journey-columns { grid-template-columns: 1fr; }
+        .journey-grid, .journey-care-grid, .journey-status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      }
+      @media (max-width: 620px) {
+        .journey-shell { padding-inline: 16px; }
+        .journey-grid, .journey-care-grid, .journey-status-grid, .journey-form { grid-template-columns: 1fr; }
+        .journey-actions .button { width: 100%; justify-content: center; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="Max Webstudio home">
+        <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true"><rect x="6" y="6" width="68" height="68" rx="18"></rect><path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path><path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path></svg>
+        <span>Max Webstudio</span>
+      </a>
+      <nav class="main-nav" aria-label="Demo navigatie">
+        <a href="admin-dashboard.html#demo-omgeving">Admin demo</a>
+        <a href="klantportaal.html" id="header-portal-link">Klantportaal</a>
+      </nav>
+      <a class="header-cta" href="admin-dashboard.html#demo-omgeving">Terug naar admin</a>
+    </header>
+
+    <main class="journey-shell">
+      <div class="journey-container">
+        <section class="journey-hero">
+          <div>
+            <span class="journey-demo-badge">Demo klantreis · localStorage</span>
+            <h1>Test de volledige klantflow alsof je zelf klant bent.</h1>
+            <p>Kies een pakket, dien een aanvraag in, bekijk demo e-mails, accepteer de offerte, genereer een factuur, rond een demo-betaling af en open daarna het klantportaal.</p>
+            <div class="journey-actions">
+              <a class="button primary" href="#aanvraag">Start demo aanvraag</a>
+              <button class="button secondary" id="refresh-journey" type="button">Ververs status</button>
+            </div>
+          </div>
+          <aside class="journey-card">
+            <strong>Demo/local waarschuwing</strong>
+            <p class="journey-muted">Er wordt niets echt verzonden, betaald of opgeslagen op een server. Alle records worden lokaal in deze browser aangemaakt.</p>
+            <p class="journey-message" id="journey-message" role="status"></p>
+          </aside>
+        </section>
+
+        <section class="journey-card" id="pakket">
+          <p class="section-kicker">Stap 1</p>
+          <h2>Kies websitepakket</h2>
+          <div class="journey-grid" id="package-options"></div>
+          <h3>Onderhoud</h3>
+          <div class="journey-care-grid" id="care-options"></div>
+        </section>
+
+        <section class="journey-card" id="aanvraag">
+          <p class="section-kicker">Stap 2</p>
+          <h2>Demo aanvraagformulier</h2>
+          <form id="journey-form" class="journey-form">
+            <label>Voornaam<input name="firstName" required value="Demo" /></label>
+            <label>Achternaam<input name="lastName" required value="Klant" /></label>
+            <label>Bedrijfsnaam<input name="company" required value="Timmerbedrijf De Vries" /></label>
+            <label>E-mailadres<input name="email" type="email" required value="demo@maxwebstudio.nl" /></label>
+            <label>Telefoon<input name="phone" required value="06-12345678" /></label>
+            <label>Gewenste domeinnaam<input name="domain" required value="timmerbedrijfdevries.nl" /></label>
+            <label>Branche<input name="industry" required value="Bouwbedrijf" /></label>
+            <label>Heeft al een website<select name="hasWebsite"><option value="nee">Nee</option><option value="ja">Ja</option></select></label>
+            <label>Huidige website URL<input name="currentWebsite" placeholder="https://..." /></label>
+            <label>Extra pagina's<input name="extraPages" type="number" min="0" value="1" /></label>
+            <label><span>SEO basis optimalisatie</span><select name="seo"><option value="ja">Ja</option><option value="nee">Nee</option></select></label>
+            <label>Maatwerkbedrag demo<input name="customAmount" type="number" min="0" step="50" value="0" /></label>
+            <label class="journey-wide">Korte omschrijving bedrijf<textarea name="description" required>Wij maken maatwerk meubels, aanbouwen en renovaties voor particuliere klanten.</textarea></label>
+            <label class="journey-wide">Doel van website<textarea name="goal" required>Meer offerteaanvragen ontvangen en professioneel vertrouwen uitstralen.</textarea></label>
+            <label class="journey-wide">Opmerkingen<textarea name="notes">Graag een moderne website met WhatsApp-knop, projecten en duidelijke offerte CTA.</textarea></label>
+            <div class="journey-actions journey-wide">
+              <button class="button primary" type="submit">Demo aanvraag indienen</button>
+              <button class="button secondary" id="reset-current-journey" type="button">Reset deze klantreis</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="journey-columns">
+          <article class="journey-card">
+            <p class="section-kicker">Stap 3</p>
+            <h2>Demo e-mail inbox</h2>
+            <div class="journey-inbox" id="journey-inbox"></div>
+          </article>
+          <article class="journey-card">
+            <p class="section-kicker">Acties</p>
+            <h2>Volgende stappen</h2>
+            <div class="journey-actions">
+              <a class="button secondary" id="open-quote" href="#" target="_blank" rel="noopener">Bekijk offerte</a>
+              <button class="button secondary" id="generate-invoice" type="button">Genereer aanbetalingsfactuur</button>
+              <a class="button secondary" id="open-payment" href="#" target="_blank" rel="noopener">Open betaallink</a>
+              <a class="button secondary" id="open-portal" href="#" target="_blank" rel="noopener">Open klantportaal</a>
+            </div>
+          </article>
+        </section>
+
+        <section class="journey-card">
+          <p class="section-kicker">Stap 8</p>
+          <h2>Voortgangstijdlijn</h2>
+          <div class="journey-status-grid" id="journey-timeline"></div>
+        </section>
+      </div>
+    </main>
+
+    <script>
+      (() => {
+        const keys = {
+          leads: "maxwebstudioLeads",
+          customers: "maxwebstudioCrmCustomers",
+          customersFallback: "maxwebstudioCustomers",
+          websites: "maxwebstudioManagedSites",
+          websitesFallback: "maxwebstudioWebsites",
+          projects: "maxwebstudioProjects",
+          quotes: "maxwebstudioQuotes",
+          invoices: "maxwebstudioInvoices",
+          subscriptions: "maxwebstudioSubscriptions",
+          files: "maxwebstudioFiles",
+          settings: "maxwebstudioSettings",
+          emails: "maxwebstudioDemoEmails",
+        };
+        const vatRate = 21;
+        const params = new URLSearchParams(window.location.search);
+        let demoJourneyId = params.get("demoJourneyId") || localStorage.getItem("maxwebstudioLastDemoJourneyId") || "";
+
+        const packages = {
+          starter: { label: "Starter Site", price: 495, deposit: 150, remaining: 345 },
+          business: { label: "Business Website", price: 995, deposit: 300, remaining: 695 },
+          premium: { label: "Premium Growth", price: 1750, deposit: 500, remaining: 1250 },
+        };
+        const carePlans = {
+          none: { label: "Geen onderhoud", price: 0 },
+          basic: { label: "Care Basic", price: 19.95 },
+          plus: { label: "Care Plus", price: 49 },
+          growth: { label: "Care Growth", price: 99 },
+        };
+        const extras = {
+          extraPage: 125,
+          seo: 195,
+        };
+
+        const packageOptions = document.querySelector("#package-options");
+        const careOptions = document.querySelector("#care-options");
+        const form = document.querySelector("#journey-form");
+        const message = document.querySelector("#journey-message");
+        const inbox = document.querySelector("#journey-inbox");
+        const timeline = document.querySelector("#journey-timeline");
+        const openQuote = document.querySelector("#open-quote");
+        const generateInvoice = document.querySelector("#generate-invoice");
+        const openPayment = document.querySelector("#open-payment");
+        const openPortal = document.querySelector("#open-portal");
+        const headerPortal = document.querySelector("#header-portal-link");
+
+        function read(key) {
+          try {
+            const value = JSON.parse(localStorage.getItem(key) || "[]");
+            return Array.isArray(value) ? value : [];
+          } catch {
+            return [];
+          }
+        }
+
+        function write(key, records) {
+          localStorage.setItem(key, JSON.stringify(records));
+        }
+
+        function upsert(key, record) {
+          const records = read(key).filter((item) => item.id !== record.id);
+          records.unshift(record);
+          write(key, records);
+          return record;
+        }
+
+        function id(prefix) {
+          return `${prefix}-${demoJourneyId}`;
+        }
+
+        function today(offset = 0) {
+          const date = new Date();
+          date.setDate(date.getDate() + offset);
+          return date.toISOString().slice(0, 10);
+        }
+
+        function money(value) {
+          return new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(Number(value || 0));
+        }
+
+        function line(description, unitPrice) {
+          return { id: `line-${Math.random().toString(16).slice(2)}`, description, quantity: 1, unitPrice: Number(unitPrice || 0), vatRate };
+        }
+
+        function totals(lines) {
+          const subtotal = lines.reduce((sum, item) => sum + Number(item.unitPrice || 0) * Number(item.quantity || 1), 0);
+          const vat = lines.reduce((sum, item) => sum + Number(item.unitPrice || 0) * Number(item.quantity || 1) * (Number(item.vatRate || 0) / 100), 0);
+          return { subtotal, vat, total: subtotal + vat };
+        }
+
+        function selectedPackage() {
+          return packages[new FormData(form).get("package") || "business"];
+        }
+
+        function selectedCare() {
+          return carePlans[new FormData(form).get("care") || "plus"];
+        }
+
+        function demoMeta() {
+          return { isDemoJourney: true, demoJourneyId, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+        }
+
+        function findByJourney(key) {
+          return read(key).find((item) => item.demoJourneyId === demoJourneyId);
+        }
+
+        function createEmail(type, subject, to, body, customerId = "") {
+          const email = { id: `demo-email-${type}-${Date.now()}-${Math.random().toString(16).slice(2)}`, customerId, type, subject, to, body, status: "demo/verzonden lokaal", createdAt: new Date().toISOString(), isDemoJourney: true, demoJourneyId };
+          write(keys.emails, [email, ...read(keys.emails)]);
+          return email;
+        }
+
+        function renderOptions() {
+          packageOptions.innerHTML = Object.entries(packages).map(([key, item]) => `
+            <label class="journey-option">
+              <input type="radio" name="package" value="${key}" ${key === "business" ? "checked" : ""} />
+              <strong>${item.label}</strong>
+              <em>${money(item.price)} ex. btw</em>
+              <small>Aanbetaling ${money(item.deposit)} · restbetaling ${money(item.remaining)}</small>
+            </label>
+          `).join("");
+          careOptions.innerHTML = Object.entries(carePlans).map(([key, item]) => `
+            <label class="journey-option">
+              <input type="radio" name="care" value="${key}" ${key === "plus" ? "checked" : ""} />
+              <strong>${item.label}</strong>
+              <em>${money(item.price)} p/m</em>
+              <small>${item.price ? "Onderhoud zichtbaar in klantportaal" : "Geen abonnement aangemaakt"}</small>
+            </label>
+          `).join("");
+        }
+
+        function createJourney(event) {
+          event.preventDefault();
+          demoJourneyId = `journey-${Date.now()}`;
+          localStorage.setItem("maxwebstudioLastDemoJourneyId", demoJourneyId);
+          const data = Object.fromEntries(new FormData(form).entries());
+          const pkg = selectedPackage();
+          const care = selectedCare();
+          const customerId = id("customer");
+          const websiteId = id("website");
+          const projectId = id("project");
+          const quoteId = id("quote");
+          const subscriptionId = id("subscription");
+          const fullName = `${data.firstName} ${data.lastName}`.trim();
+          const domain = data.domain.replace(/^https?:\/\//, "").replace(/\/$/, "");
+          const base = demoMeta();
+
+          const lead = { id: id("lead"), name: fullName, company: data.company, email: data.email, phone: data.phone, source: "Demo klantreis", interest: `${pkg.label} + ${care.label}`, status: "nieuw", ...base };
+          upsert(keys.leads, lead);
+
+          const customer = { id: customerId, name: fullName, company: data.company, email: data.email.toLowerCase(), authEmail: data.email.toLowerCase(), phone: data.phone, website: `https://${domain}`, package: care.label, status: "onboarding", portalStatus: "actief", customerSince: today(0), notes: "Aangemaakt vanuit demo klantreis.", ...base };
+          upsert(keys.customers, customer);
+          upsert(keys.customersFallback, customer);
+
+          const customerData = { customerName: fullName, customerCompany: data.company, customerEmail: data.email.toLowerCase(), customerPhone: data.phone };
+          const website = { id: websiteId, profileId: customerId, customerId, ...customerData, name: `Website ${data.company}`, domain, liveUrl: `https://${domain}`, stagingUrl: `https://staging-${domain}`, status: "waiting_client", hostingPackage: "Business Hosting", carePackage: care.label, sslStatus: "unknown", notes: "Demo website wordt automatisch voorbereid.", ...base };
+          upsert(keys.websites, website);
+          upsert(keys.websitesFallback, website);
+
+          const project = { id: projectId, customerId, profileId: customerId, websiteId, ...customerData, websiteName: `Website ${data.company}`, websiteDomain: domain, name: `Nieuwe website ${data.company}`, type: "Nieuwe website", status: "onboarding", phase: "Aanvraag ontvangen", progress: 15, startDate: today(0), deadline: today(14), notes: "Klantveilige demo projectdata.", checklist: [], tasks: [], timeline: [{ id: id("event-created"), type: "created", label: "Demo aanvraag ontvangen", createdAt: new Date().toISOString() }], ...base };
+          upsert(keys.projects, project);
+
+          const quoteLines = [line(pkg.label, pkg.price)];
+          if (care.price) quoteLines.push(line(`${care.label} - eerste maand onderhoud`, care.price));
+          if (Number(data.extraPages || 0) > 0) quoteLines.push(line(`${data.extraPages} extra pagina${Number(data.extraPages) === 1 ? "" : "'s"}`, Number(data.extraPages) * extras.extraPage));
+          if (data.seo === "ja") quoteLines.push(line("SEO basis optimalisatie", extras.seo));
+          if (Number(data.customAmount || 0) > 0) quoteLines.push(line("Maatwerk demo", Number(data.customAmount)));
+          const quoteTotals = totals(quoteLines);
+          const quote = { id: quoteId, quoteNumber: `OFF-DEMO-${demoJourneyId.slice(-6)}`, profileId: customerId, customerId, websiteId, projectId, ...customerData, websiteName: `Website ${data.company}`, websiteDomain: domain, projectName: `Nieuwe website ${data.company}`, type: "Website + onderhoud", title: `${pkg.label} + ${care.label}`, status: "verzonden", quoteDate: today(0), validUntil: today(14), lines: quoteLines, subtotal: quoteTotals.subtotal, vat: quoteTotals.vat, total: quoteTotals.total, amount: quoteTotals.total, proposal: `Demo-offerte voor ${data.company}.`, quoteLink: `/offerte.html?quoteId=${quoteId}`, demoQuoteLink: `/offerte.html?quoteId=${quoteId}`, ...base };
+          upsert(keys.quotes, quote);
+
+          if (care.price) {
+            const subscription = { id: subscriptionId, profileId: customerId, customerId, websiteId, projectId, ...customerData, websiteName: `Website ${data.company}`, websiteDomain: domain, projectName: `Nieuwe website ${data.company}`, plan: care.label, packageName: care.label, status: "actief", startDate: today(0), nextInvoiceDate: today(30), billingCycle: "monthly", priceExVat: care.price, monthlyAmount: care.price, vatRate, totalInclVat: care.price * 1.21, paymentStatus: "demo", autoInvoiceEnabled: true, notes: "Demo onderhoudsabonnement.", ...base };
+            upsert(keys.subscriptions, subscription);
+          }
+
+          const file = { id: id("file-briefing"), customerId, profileId: customerId, websiteId, projectId, ...customerData, websiteName: `Website ${data.company}`, websiteDomain: domain, projectName: `Nieuwe website ${data.company}`, name: "Demo briefing klantreis", category: "Document", type: "PDF", location: "https://demo.maxwebstudio.nl/briefing.pdf", status: "actief", notes: "", ...base };
+          upsert(keys.files, file);
+
+          createEmail("aanvraagbevestiging", "Bedankt voor je demo-aanvraag bij Max Webstudio", data.email, `Hi ${data.firstName}, je aanvraag voor ${pkg.label} is lokaal ontvangen.`, customerId);
+          createEmail("offerte_klaar", "Je demo-offerte staat klaar", data.email, `Je offerte ${quote.quoteNumber} staat klaar om te bekijken en accepteren.`, customerId);
+          message.textContent = "Demo aanvraag aangemaakt. Open nu de offerte en accepteer deze.";
+          renderJourney();
+        }
+
+        function generateDepositInvoice() {
+          const quote = findByJourney(keys.quotes);
+          if (!quote || quote.status !== "geaccepteerd") {
+            message.textContent = "Accepteer eerst de offerte en ververs daarna de status.";
+            return;
+          }
+          const existing = read(keys.invoices).find((invoice) => invoice.demoJourneyId === demoJourneyId && invoice.sourceQuoteId === quote.id && invoice.type === "Aanbetaling");
+          if (existing) {
+            message.textContent = "Er bestaat al een aanbetalingsfactuur voor deze demo-klantreis.";
+            renderJourney();
+            return;
+          }
+          const pkg = Object.values(packages).find((item) => quote.title.includes(item.label)) || packages.business;
+          const invoiceId = id("invoice");
+          const invoiceLines = [line(`Aanbetaling ${pkg.label}`, pkg.deposit)];
+          const invoiceTotals = totals(invoiceLines);
+          const invoice = { id: invoiceId, invoiceNumber: `INV-DEMO-${demoJourneyId.slice(-6)}`, profileId: quote.profileId, customerId: quote.profileId, websiteId: quote.websiteId, projectId: quote.projectId, customerName: quote.customerName, customerCompany: quote.customerCompany, customerEmail: quote.customerEmail, customerPhone: quote.customerPhone, websiteName: quote.websiteName, websiteDomain: quote.websiteDomain, projectName: quote.projectName, sourceQuoteId: quote.id, sourceQuoteNumber: quote.quoteNumber, type: "Aanbetaling", title: `Aanbetaling ${pkg.label}`, status: "verzonden", invoiceDate: today(0), dueDate: today(14), lines: invoiceLines, subtotal: invoiceTotals.subtotal, vat: invoiceTotals.vat, total: invoiceTotals.total, amount: invoiceTotals.total, paymentLink: `/betalen.html?invoiceId=${invoiceId}`, mollieCheckoutUrl: `/betalen.html?invoiceId=${invoiceId}`, notes: "Aangemaakt vanuit demo klantreis.", ...demoMeta() };
+          upsert(keys.invoices, invoice);
+          createEmail("factuur_klaar", "Je demo-factuur staat klaar", quote.customerEmail || "", `Factuur ${invoice.invoiceNumber} staat klaar met demo-betaallink.`, quote.profileId);
+          message.textContent = "Aanbetalingsfactuur aangemaakt. Open de betaallink om demo-betaling te markeren.";
+          renderJourney();
+        }
+
+        function syncPaidState() {
+          const invoice = findByJourney(keys.invoices);
+          if (!invoice || invoice.status !== "betaald") return;
+          const project = findByJourney(keys.projects);
+          const website = findByJourney(keys.websites);
+          if (project && project.status !== "in_ontwikkeling") {
+            upsert(keys.projects, { ...project, status: "in_ontwikkeling", phase: "Project gestart", progress: Math.max(Number(project.progress || 0), 35), updatedAt: new Date().toISOString() });
+            createEmail("project_gestart", "Je demo-project is gestart", invoice.customerEmail || "", "De demo-betaling is verwerkt en het project staat op gestart.", invoice.profileId);
+          }
+          if (website && website.status !== "development") upsert(keys.websites, { ...website, status: "development", updatedAt: new Date().toISOString() });
+          const alreadyLogged = read(keys.emails).some((email) => email.demoJourneyId === demoJourneyId && email.type === "betaling_demo_ontvangen");
+          if (!alreadyLogged) createEmail("betaling_demo_ontvangen", "Demo-betaling ontvangen", invoice.customerEmail || "", "De demo-aanbetaling is lokaal als betaald gemarkeerd.", invoice.profileId);
+        }
+
+        function renderInbox() {
+          const emails = read(keys.emails).filter((email) => email.demoJourneyId === demoJourneyId);
+          inbox.innerHTML = emails.length ? "" : "<p class='journey-muted'>Nog geen demo e-mails. Dien eerst een aanvraag in.</p>";
+          emails.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))).forEach((email) => {
+            const item = document.createElement("article");
+            item.className = "journey-email";
+            item.innerHTML = `<div><strong>${email.subject}</strong><small>Demo e-mail — niet echt verzonden · ${new Date(email.createdAt).toLocaleString("nl-NL")}</small></div><span class="status-badge status-prepared">${email.status}</span>`;
+            item.addEventListener("click", () => window.alert(`${email.subject}\n\n${email.body}`));
+            inbox.append(item);
+          });
+        }
+
+        function renderTimeline() {
+          const lead = findByJourney(keys.leads);
+          const quote = findByJourney(keys.quotes);
+          const invoice = findByJourney(keys.invoices);
+          const project = findByJourney(keys.projects);
+          const website = findByJourney(keys.websites);
+          const customer = findByJourney(keys.customers);
+          const steps = [
+            ["Aanvraag ontvangen", Boolean(lead), lead?.createdAt],
+            ["Offerte opgesteld", Boolean(quote), quote?.createdAt],
+            ["Offerte geaccepteerd", quote?.status === "geaccepteerd", quote?.updatedAt],
+            ["Aanbetaling gefactureerd", Boolean(invoice), invoice?.createdAt],
+            ["Betaling ontvangen", invoice?.status === "betaald", invoice?.paidAt || invoice?.updatedAt],
+            ["Project gestart", ["in_ontwikkeling", "lopend"].includes(project?.status), project?.updatedAt],
+            ["Website in ontwikkeling", website?.status === "development", website?.updatedAt],
+            ["Klantportaal actief", Boolean(customer), customer?.createdAt],
+          ];
+          timeline.innerHTML = "";
+          steps.forEach(([label, ready, date]) => {
+            const item = document.createElement("article");
+            item.className = "journey-status-item";
+            item.innerHTML = `<span class="status-badge ${ready ? "status-active" : "status-warning"}">${ready ? "Gereed" : "Wacht op actie"}</span><strong>${label}</strong><small>${date ? new Date(date).toLocaleString("nl-NL") : "Nog geen datum"}</small>`;
+            timeline.append(item);
+          });
+        }
+
+        function renderActions() {
+          const quote = findByJourney(keys.quotes);
+          const invoice = findByJourney(keys.invoices);
+          const customer = findByJourney(keys.customers);
+          const quoteUrl = quote ? `/offerte.html?quoteId=${quote.id}` : "#";
+          const invoiceUrl = invoice ? `/betalen.html?invoiceId=${invoice.id}` : "#";
+          const portalUrl = customer ? `/klantportaal.html?customerId=${customer.id}` : "#";
+          openQuote.href = quoteUrl;
+          openPayment.href = invoiceUrl;
+          openPortal.href = portalUrl;
+          headerPortal.href = portalUrl;
+          [openQuote, openPayment, openPortal].forEach((link) => {
+            const disabled = link.getAttribute("href") === "#";
+            link.classList.toggle("is-disabled", disabled);
+            link.toggleAttribute("aria-disabled", disabled);
+          });
+          generateInvoice.disabled = !(quote && quote.status === "geaccepteerd") || Boolean(invoice);
+        }
+
+        function renderJourney() {
+          syncPaidState();
+          renderInbox();
+          renderTimeline();
+          renderActions();
+        }
+
+        function resetCurrentJourney() {
+          if (!demoJourneyId || !window.confirm("Deze demo-klantreis resetten?")) return;
+          Object.values(keys).forEach((key) => {
+            const records = read(key);
+            if (records.length) write(key, records.filter((item) => item.demoJourneyId !== demoJourneyId));
+          });
+          localStorage.removeItem("maxwebstudioLastDemoJourneyId");
+          demoJourneyId = "";
+          message.textContent = "Deze demo-klantreis is verwijderd.";
+          renderJourney();
+        }
+
+        renderOptions();
+        renderJourney();
+        form.addEventListener("submit", createJourney);
+        document.querySelector("#generate-invoice").addEventListener("click", generateDepositInvoice);
+        document.querySelector("#refresh-journey").addEventListener("click", () => {
+          renderJourney();
+          message.textContent = "Status ververst.";
+        });
+        document.querySelector("#reset-current-journey").addEventListener("click", resetCurrentJourney);
+      })();
+    </script>
+  </body>
+</html>

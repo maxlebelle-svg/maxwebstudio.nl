@@ -658,6 +658,9 @@
               <div class="settings-actions">
                 <button class="button primary" id="demo-load" type="button">Demo data laden</button>
                 <button class="button secondary" id="demo-reset" type="button">Demo data resetten</button>
+                <a class="button secondary" id="demo-open-journey" href="demo-klantreis.html" target="_blank" rel="noopener">Open demo klantreis</a>
+                <a class="button secondary is-disabled" id="demo-open-latest-journey" href="#" target="_blank" rel="noopener" aria-disabled="true">Laatste demo klantreis</a>
+                <button class="button secondary" id="demo-reset-journeys" type="button">Reset demo klantreizen</button>
                 <button class="button secondary" id="demo-export-all" type="button">Alle lokale data exporteren</button>
                 <button class="button secondary danger" id="demo-wipe-all" type="button">Alle lokale data wissen</button>
               </div>
@@ -677,6 +680,11 @@
                 <button class="button secondary" id="demo-open-subscription" type="button">Open abonnement</button>
                 <a class="button secondary is-disabled" id="demo-open-portal" href="#" target="_blank" rel="noopener" aria-disabled="true">Open klantportaal</a>
               </div>
+            </article>
+
+            <article class="admin-card settings-card settings-card-wide">
+              <div class="settings-card-heading"><div><span>Demo e-mail inbox</span><strong>Lokale klantreis e-mails</strong></div><mark class="status-badge status-prepared">Niet echt verzonden</mark></div>
+              <div class="admin-table billing-table" id="demo-email-list" role="table" aria-label="Demo e-mails"></div>
             </article>
 
             <article class="admin-card settings-card settings-card-wide">
@@ -929,6 +937,7 @@
         const quotesStorageKey = "maxwebstudioQuotes";
         const settingsStorageKey = "maxwebstudioSettings";
         const subscriptionsStorageKey = "maxwebstudioSubscriptions";
+        const demoEmailsStorageKey = "maxwebstudioDemoEmails";
         const demoScenarioId = "maxwebstudio-demo-001";
         const demoCustomerId = "demo-customer-timmerbedrijf-de-vries";
         const demoWebsiteId = "demo-website-timmerbedrijf-de-vries";
@@ -949,6 +958,7 @@
           { key: invoicesStorageKey, label: "Facturen", description: "Facturen en demo-betaallinks" },
           { key: subscriptionsStorageKey, label: "Abonnementen", description: "Onderhoudsabonnementen en recurring billing" },
           { key: settingsStorageKey, label: "Instellingen", description: "Bedrijfs-, factuur- en integratie-instellingen" },
+          { key: demoEmailsStorageKey, label: "Demo e-mails", description: "Lokale e-mailpreview inbox voor demo-klantreizen" },
         ];
         const completedStatuses = new Set(["afgerond"]);
         const statusLabels = {
@@ -1510,12 +1520,16 @@
         const environmentStatusList = document.getElementById("environment-status-list");
         const migrationChecklist = document.getElementById("migration-checklist");
         const dataStructureDocs = document.getElementById("data-structure-docs");
+        const demoEmailList = document.getElementById("demo-email-list");
         const demoActions = {
           load: document.getElementById("demo-load"),
           reset: document.getElementById("demo-reset"),
+          resetJourneys: document.getElementById("demo-reset-journeys"),
           exportAll: document.getElementById("demo-export-all"),
           wipeAll: document.getElementById("demo-wipe-all"),
           importPlaceholder: document.getElementById("demo-import-placeholder"),
+          openJourney: document.getElementById("demo-open-journey"),
+          openLatestJourney: document.getElementById("demo-open-latest-journey"),
           openCustomer: document.getElementById("demo-open-customer"),
           openQuote: document.getElementById("demo-open-quote"),
           openInvoice: document.getElementById("demo-open-invoice"),
@@ -1787,6 +1801,32 @@
             setDemoMessage(`${removed} demo-record${removed === 1 ? "" : "s"} verwijderd. Handmatige lokale data is behouden.`, "success");
           }
           return removed;
+        }
+
+        function removeDemoJourneyRecordsFromKey(key) {
+          const parsed = parseLocalStorageValue(key);
+          if (!parsed.exists || !Array.isArray(parsed.value)) return 0;
+          const before = parsed.value.length;
+          const next = parsed.value.filter((item) => !item?.isDemoJourney);
+          localStorage.setItem(key, JSON.stringify(next));
+          return before - next.length;
+        }
+
+        function resetDemoJourneys() {
+          if (!window.confirm("Alle demo-klantreizen resetten? Normale demo-data uit Fase 10.0 blijft staan.")) return;
+          const removed = managedLocalStorageKeys.reduce((count, item) => count + removeDemoJourneyRecordsFromKey(item.key), 0);
+          loadCRMData(false);
+          renderDemoEnvironment();
+          setDemoMessage(`${removed} demo-klantreis record${removed === 1 ? "" : "s"} verwijderd.`, "success");
+        }
+
+        function latestDemoJourneyId() {
+          const keys = ["maxwebstudioLeads", crmCustomersStorageKey, quotesStorageKey, invoicesStorageKey];
+          const items = keys.flatMap((key) => {
+            const parsed = parseLocalStorageValue(key);
+            return Array.isArray(parsed.value) ? parsed.value.filter((item) => item?.isDemoJourney && item?.demoJourneyId) : [];
+          });
+          return items.sort((a, b) => String(b.updatedAt || b.createdAt).localeCompare(String(a.updatedAt || a.createdAt)))[0]?.demoJourneyId || "";
         }
 
         function demoToday(offsetDays = 0) {
@@ -2105,6 +2145,38 @@
           demoActions.openPortal.toggleAttribute("aria-disabled", !demoCustomer);
         }
 
+        function renderDemoEmailInbox() {
+          demoEmailList.replaceChildren();
+          const emails = parseLocalStorageValue(demoEmailsStorageKey).value;
+          const rows = Array.isArray(emails) ? emails.slice().sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))) : [];
+          if (!rows.length) {
+            renderState(demoEmailList, "Geen demo e-mails", "Start een demo-klantreis om lokale e-mailpreviews op te bouwen.", "Leeg", "status-planned");
+            return;
+          }
+          const head = document.createElement("div");
+          head.className = "admin-table-row admin-table-head billing-row";
+          ["Ontvanger", "Type", "Onderwerp", "Status", "Datum", "Actie"].forEach((label) => head.append(createCell(label)));
+          demoEmailList.append(head);
+          rows.forEach((email) => {
+            const view = document.createElement("button");
+            view.className = "button secondary";
+            view.type = "button";
+            view.textContent = "Bekijken";
+            view.addEventListener("click", () => window.alert(`${email.subject}\n\n${email.body || email.content || ""}`));
+            const row = document.createElement("div");
+            row.className = "admin-table-row billing-row";
+            row.append(
+              createCell(email.to || "-"),
+              createCell(email.type || "-"),
+              createCell(email.subject || "-"),
+              createBadge(email.status || "demo", "status-prepared"),
+              createCell(formatDate(email.createdAt)),
+              view
+            );
+            demoEmailList.append(row);
+          });
+        }
+
         function renderEnvironmentStatus() {
           const statuses = [
             ["Opslag", "localStorage", "status-active"],
@@ -2165,9 +2237,14 @@
         function renderDemoEnvironment() {
           renderLocalStorageKeyList();
           renderDemoFlowChecklist();
+          renderDemoEmailInbox();
           renderEnvironmentStatus();
           renderMigrationChecklist();
           renderDataStructureDocs();
+          const journeyId = latestDemoJourneyId();
+          demoActions.openLatestJourney.href = journeyId ? `demo-klantreis.html?demoJourneyId=${encodeURIComponent(journeyId)}` : "#";
+          demoActions.openLatestJourney.classList.toggle("is-disabled", !journeyId);
+          demoActions.openLatestJourney.toggleAttribute("aria-disabled", !journeyId);
         }
 
         function saveSettings(event) {
@@ -7009,6 +7086,7 @@
         demoActions.reset.addEventListener("click", () => {
           if (window.confirm("Demo data resetten? Alleen records met isDemo worden verwijderd.")) resetDemoData();
         });
+        demoActions.resetJourneys.addEventListener("click", resetDemoJourneys);
         demoActions.exportAll.addEventListener("click", exportAllLocalData);
         demoActions.wipeAll.addEventListener("click", wipeAllLocalData);
         demoActions.importPlaceholder.addEventListener("click", () => setDemoMessage("Import wordt gebouwd in Fase 10.1.", "success"));
@@ -7021,6 +7099,9 @@
         demoActions.openInvoice.addEventListener("click", () => invoiceById(demoInvoiceId) && openInvoiceModal(demoInvoiceId));
         demoActions.openSubscription.addEventListener("click", () => subscriptionById(demoSubscriptionId) && openSubscriptionModal(demoSubscriptionId));
         demoActions.openPortal.addEventListener("click", (event) => {
+          if (event.currentTarget.getAttribute("aria-disabled") === "true") event.preventDefault();
+        });
+        demoActions.openLatestJourney.addEventListener("click", (event) => {
           if (event.currentTarget.getAttribute("aria-disabled") === "true") event.preventDefault();
         });
         detailForm.addEventListener("submit", saveCustomer);

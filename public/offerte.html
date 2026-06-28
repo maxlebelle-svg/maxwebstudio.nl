@@ -70,6 +70,31 @@
           localStorage.setItem(storageKey, JSON.stringify(quotes));
         }
 
+        function logDemoEmail(quote) {
+          if (!quote?.isDemoJourney || !quote.demoJourneyId) return;
+          try {
+            const key = "maxwebstudioDemoEmails";
+            const emails = JSON.parse(localStorage.getItem(key) || "[]");
+            const exists = Array.isArray(emails) && emails.some((email) => email.demoJourneyId === quote.demoJourneyId && email.type === "offerte_geaccepteerd");
+            if (exists) return;
+            const email = {
+              id: `demo-email-offerte-geaccepteerd-${Date.now()}`,
+              customerId: quote.profileId || quote.customerId || "",
+              type: "offerte_geaccepteerd",
+              subject: "Demo-offerte geaccepteerd",
+              to: quote.customerEmail || "",
+              body: `Offerte ${quote.quoteNumber || ""} is lokaal geaccepteerd.`,
+              status: "demo/verzonden lokaal",
+              createdAt: new Date().toISOString(),
+              isDemoJourney: true,
+              demoJourneyId: quote.demoJourneyId,
+            };
+            localStorage.setItem(key, JSON.stringify([email, ...(Array.isArray(emails) ? emails : [])]));
+          } catch (error) {
+            console.warn("Demo e-mail kon niet worden opgeslagen", error);
+          }
+        }
+
         function createRow(label, value) {
           const row = document.createElement("div");
           const dt = document.createElement("dt");
@@ -129,8 +154,10 @@
           accept.textContent = quote.status === "geaccepteerd" ? "Offerte geaccepteerd" : "Offerte accepteren";
           accept.disabled = quote.status === "geaccepteerd";
           accept.addEventListener("click", () => {
-            const next = readQuotes().map((item) => item.id === quote.id ? { ...item, status: "geaccepteerd", updatedAt: new Date().toISOString() } : item);
+            const acceptedQuote = { ...quote, status: "geaccepteerd", updatedAt: new Date().toISOString() };
+            const next = readQuotes().map((item) => item.id === quote.id ? acceptedQuote : item);
             writeQuotes(next);
+            logDemoEmail(acceptedQuote);
             renderQuote();
           });
 
