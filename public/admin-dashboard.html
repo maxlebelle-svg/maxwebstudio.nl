@@ -759,6 +759,9 @@
                 <button class="button secondary" id="run-data-validation" type="button">Run data validatie</button>
                 <button class="button secondary" id="seed-demo-users" type="button">Seed demo users</button>
                 <button class="button secondary" id="clear-demo-session" type="button">Clear demo session</button>
+                <button class="button secondary" id="view-migration-plan" type="button">Bekijk migratieplan</button>
+                <button class="button secondary" id="view-planned-tables" type="button">Bekijk geplande tabellen</button>
+                <button class="button secondary" id="run-supabase-migration-check" type="button">Run localStorage migratie-check</button>
               </div>
               <div class="admin-grid compact-admin-grid" id="developer-tools-output"></div>
             </article>
@@ -1598,6 +1601,9 @@
         const runDataValidation = document.getElementById("run-data-validation");
         const seedDemoUsersButton = document.getElementById("seed-demo-users");
         const clearDemoSessionButton = document.getElementById("clear-demo-session");
+        const viewMigrationPlanButton = document.getElementById("view-migration-plan");
+        const viewPlannedTablesButton = document.getElementById("view-planned-tables");
+        const runSupabaseMigrationCheckButton = document.getElementById("run-supabase-migration-check");
         const demoEmailList = document.getElementById("demo-email-list");
         const demoImportPreview = document.getElementById("demo-import-preview");
         const importLogList = document.getElementById("import-log-list");
@@ -2663,6 +2669,63 @@
           ]);
         }
 
+        function renderSupabaseReadinessCard(readiness) {
+          appendDeveloperCard("Supabase schema voorbereiding", [
+            ["Geplande tabellen", String(readiness?.plannedTables || 0)],
+            ["Schema status", readiness?.schemaStatus || "prepared"],
+            ["RLS status", readiness?.rlsStatus || "prepared"],
+            ["Demo seed", readiness?.demoSeedStatus || "prepared"],
+            ["Migratieplan", readiness?.migrationPlanStatus || "prepared"],
+            ["Huidige provider", readiness?.provider || "localStorage"],
+            ["Live switch", readiness?.liveSwitch === "not_active" ? "Niet actief" : readiness?.liveSwitch || "Niet actief"],
+          ]);
+        }
+
+        function renderSupabaseMigrationPlanSummary(readiness) {
+          appendDeveloperCard("Migratieplan samenvatting", [
+            ["Planbestand", "supabase/migration-plan.md"],
+            ["Schema", "supabase/schema.sql"],
+            ["RLS policies", "supabase/rls-policies.sql"],
+            ["Demo seed", "supabase/seed-demo.sql"],
+            ["Volgorde", "Klanten -> websites/projecten -> offertes/facturen -> abonnementen"],
+            ["Rollback", "JSON export bewaren en provider op localStorage laten"],
+          ]);
+          if (readiness) renderSupabaseReadinessCard(readiness);
+        }
+
+        function renderPlannedTables(tableMapping = []) {
+          appendDeveloperCard("Geplande Supabase tabellen", tableMapping.map((item) => [
+            item.table,
+            `${item.keys.join(" + ")} | ${item.relation}`,
+          ]));
+        }
+
+        function renderSupabaseMigrationCheck(readiness) {
+          appendDeveloperCard("localStorage migratie-check", [
+            ["Klaar voor proefmigratie", readiness.ready ? "Ja" : "Nog niet"],
+            ["Records klaar", String(readiness.readyRecords || 0)],
+            ["Records geblokkeerd", String(readiness.blockedRecords || 0)],
+            ["Demo-records", String(readiness.demoRecords || 0)],
+            ["Productie-records", String(readiness.productionRecords || 0)],
+            ["Gebroken relaties", String(readiness.missingForeignKeys?.length || 0)],
+          ]);
+          Object.entries(readiness.records || {}).forEach(([module, item]) => {
+            appendDeveloperCard(`Migratie ${module}`, [
+              ["Totaal", String(item.total || 0)],
+              ["Klaar", String(item.ready || 0)],
+              ["Geblokkeerd", String(item.blocked || 0)],
+              ["Demo", String(item.demo || 0)],
+              ["Productie", String(item.production || 0)],
+            ]);
+          });
+          if (readiness.missingForeignKeys?.length) {
+            appendDeveloperCard("Gebroken relaties", readiness.missingForeignKeys.slice(0, 8).map((issue) => [
+              issue.module || "module",
+              `${issue.id || "zonder id"} - ${issue.message || "relatie ontbreekt"}`,
+            ]));
+          }
+        }
+
         async function renderAuthSession() {
           try {
             const { authService } = await loadDeveloperModules();
@@ -2703,6 +2766,7 @@
             const environment = modules.environment.getEnvironmentInfo();
             const provider = modules.providerFactory.getProviderInfo();
             const counts = modules.migrationService.getRecordCounts();
+            const supabaseReadiness = modules.migrationService.checkSupabaseReadiness();
             const recentActivities = modules.activityLogService.listRecentActivities(5);
             const session = modules.authService.getCurrentSession();
             const user = modules.authService.getCurrentUser();
@@ -2725,6 +2789,7 @@
               resource,
               Array.isArray(actions) ? actions.join(", ") : String(actions),
             ]));
+            renderSupabaseReadinessCard(supabaseReadiness);
             appendDeveloperCard("Record counts", Object.entries(counts).map(([key, value]) => [key, String(value)]));
             appendDeveloperCard("Laatste activiteiten", recentActivities.length
               ? recentActivities.map((activity) => [activity.action || "Activiteit", formatDate(activity.createdAt)])
@@ -2774,6 +2839,50 @@
           } catch (error) {
             console.error("Demo users could not be seeded", error);
             setSettingsMessage("Demo users konden niet worden voorbereid.", "error");
+          }
+        }
+
+        async function showMigrationPlanHandler() {
+          try {
+            const { migrationService, activityLogService } = await loadDeveloperModules();
+            const readiness = migrationService.checkSupabaseReadiness();
+            activityLogService.logActivity("developer_tools", "supabase", "view_migration_plan", { source: "admin-dashboard" });
+            await renderDeveloperToolsSummary();
+            renderSupabaseMigrationPlanSummary(readiness);
+            setSettingsMessage("Migratieplan samenvatting getoond.", "success");
+          } catch (error) {
+            console.error("Migration plan summary failed", error);
+            setSettingsMessage("Migratieplan kon niet worden getoond.", "error");
+          }
+        }
+
+        async function showPlannedTablesHandler() {
+          try {
+            const { migrationService, activityLogService } = await loadDeveloperModules();
+            activityLogService.logActivity("developer_tools", "supabase", "view_planned_tables", { source: "admin-dashboard" });
+            await renderDeveloperToolsSummary();
+            renderPlannedTables(migrationService.getSupabaseTableMapping());
+            setSettingsMessage("Geplande Supabase tabellen getoond.", "success");
+          } catch (error) {
+            console.error("Planned tables summary failed", error);
+            setSettingsMessage("Geplande tabellen konden niet worden getoond.", "error");
+          }
+        }
+
+        async function runSupabaseMigrationCheckHandler() {
+          try {
+            const { migrationService, activityLogService } = await loadDeveloperModules();
+            const readiness = migrationService.checkSupabaseReadiness();
+            activityLogService.logActivity("developer_tools", "supabase", "run_supabase_migration_check", {
+              ready: readiness.ready,
+              missingForeignKeys: readiness.missingForeignKeys.length,
+            });
+            await renderDeveloperToolsSummary();
+            renderSupabaseMigrationCheck(readiness);
+            setSettingsMessage("Supabase migratie-check uitgevoerd.", "success");
+          } catch (error) {
+            console.error("Supabase migration check failed", error);
+            setSettingsMessage("Supabase migratie-check kon niet worden uitgevoerd.", "error");
           }
         }
 
@@ -7833,6 +7942,9 @@
         runDataValidation.addEventListener("click", runDataValidationHandler);
         seedDemoUsersButton.addEventListener("click", seedDemoUsersHandler);
         clearDemoSessionButton.addEventListener("click", logoutDemoSession);
+        viewMigrationPlanButton.addEventListener("click", showMigrationPlanHandler);
+        viewPlannedTablesButton.addEventListener("click", showPlannedTablesHandler);
+        runSupabaseMigrationCheckButton.addEventListener("click", runSupabaseMigrationCheckHandler);
         document.querySelectorAll("[data-settings-demo]").forEach((button) => {
           button.addEventListener("click", () => setSettingsMessage(button.dataset.settingsDemo, "success"));
         });
