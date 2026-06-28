@@ -770,6 +770,11 @@
                 <button class="button secondary" id="check-supabase-config" type="button">Check Supabase configuratie</button>
                 <button class="button secondary" id="view-env-example" type="button">Bekijk .env voorbeeld</button>
                 <button class="button secondary" id="why-local-storage" type="button">Waarom nog localStorage?</button>
+                <button class="button secondary" id="run-customer-migration-dry-run" type="button">Run CRM migratie dry run</button>
+                <button class="button secondary" id="view-customer-mapping-preview" type="button">Bekijk mapping preview</button>
+                <button class="button secondary" id="view-customer-duplicates" type="button">Bekijk duplicaten</button>
+                <button class="button secondary" id="view-customer-missing-fields" type="button">Bekijk ontbrekende velden</button>
+                <button class="button secondary" type="button" disabled>Live migratie wordt gebouwd in Fase 11.7.</button>
               </div>
               <div class="admin-grid compact-admin-grid" id="developer-tools-output"></div>
             </article>
@@ -1617,6 +1622,10 @@
         const checkSupabaseConfigButton = document.getElementById("check-supabase-config");
         const viewEnvExampleButton = document.getElementById("view-env-example");
         const whyLocalStorageButton = document.getElementById("why-local-storage");
+        const runCustomerMigrationDryRunButton = document.getElementById("run-customer-migration-dry-run");
+        const viewCustomerMappingPreviewButton = document.getElementById("view-customer-mapping-preview");
+        const viewCustomerDuplicatesButton = document.getElementById("view-customer-duplicates");
+        const viewCustomerMissingFieldsButton = document.getElementById("view-customer-missing-fields");
         const demoEmailList = document.getElementById("demo-email-list");
         const demoImportPreview = document.getElementById("demo-import-preview");
         const importLogList = document.getElementById("import-log-list");
@@ -2611,6 +2620,11 @@
             ["Providerlaag", "Gereed", "localStorage en Supabase providers delen dezelfde interface"],
             ["Repositories", "Gereed", "Modules kunnen via repositories naar data lezen/schrijven"],
             ["Supabase voorbereiding", "Niet gekoppeld", "Tabellen voorbereid: profiles, leads, customer_websites, customer_projects, customer_files, customer_quotes, customer_invoices, customer_subscriptions. Env vars later: SUPABASE_URL en SUPABASE_ANON_KEY."],
+            ["CRM Supabase mapping", "Voorbereid", "CustomerRepository kan lokale klantrecords naar customers-rijen mappen"],
+            ["CRM migratie dry run", "Gereed", "Developer Mode analyseert klanten zonder databasewrites"],
+            ["CRM live migratie", "Niet actief", "Live customer writes worden pas in Fase 11.7 gebouwd"],
+            ["Customer validation", "Gereed", "Ontbrekende velden, e-mails, status en timestamps worden gecontroleerd"],
+            ["Duplicate detection", "Gereed", "Duplicaten op id, e-mail en bedrijfsnaam + telefoon worden gesignaleerd"],
             ["Auth modellen", "Voorbereid", "AuthUser, Session en Permission staan klaar"],
             ["Rollen", "Voorbereid", "super_admin, admin, sales, developer, support, customer en demo_user"],
             ["Permissions", "Voorbereid", "Centrale permissiematrix voorbereid voor navigatie en acties"],
@@ -2647,6 +2661,7 @@
             providerFactory: await import("./src/providers/providerFactory.js"),
             providerStatusService: await import("./src/services/providerStatusService.js"),
             migrationService: await import("./src/services/migrationService.js"),
+            customerMigrationService: await import("./src/services/customerMigrationService.js"),
             dataValidationService: await import("./src/services/dataValidationService.js"),
             activityLogService: await import("./src/services/activityLogService.js"),
             authService: await import("./src/services/authService.js"),
@@ -2726,6 +2741,66 @@
             ["8", "Eerste module migreren"],
             ["9", "Back-up maken voor migratie"],
           ]);
+        }
+
+        function renderCustomerMigrationCard(analysis) {
+          appendDeveloperCard("CRM migratie naar Supabase", [
+            ["Klanten in localStorage", String(analysis.totalCustomers || 0)],
+            ["Unieke klanten", String(analysis.uniqueCustomers || 0)],
+            ["Demo-klanten", String((analysis.demoCustomers || 0) + (analysis.demoJourneyCustomers || 0))],
+            ["Productie/eigen klanten", String(analysis.productionCustomers || 0)],
+            ["Mogelijke duplicaten", String(analysis.duplicateCount || 0)],
+            ["Ontbrekende velden/aandacht", String(analysis.missingFieldCount || 0)],
+            ["Klaar voor migratie", String(analysis.readyCount || 0)],
+            ["Live migratie", "Nog niet actief - Fase 11.7"],
+          ]);
+        }
+
+        function renderCustomerMappingPreview(preview) {
+          appendDeveloperCard("CRM mapping preview", [
+            ["Totaal", String(preview.summary.totalCustomers || 0)],
+            ["Uniek", String(preview.summary.uniqueCustomers || 0)],
+            ["Klaar", String(preview.summary.readyCount || 0)],
+            ["Preview", "Maximaal 12 records"],
+          ]);
+          preview.rows.forEach((item) => {
+            appendDeveloperCard(`Mapping ${item.localId || item.supabase.email || "klant"}`, [
+              ["localStorage id", item.localId || "-"],
+              ["Supabase tabel", "customers"],
+              ["name", item.supabase.name || "-"],
+              ["company_name", item.supabase.company_name || "-"],
+              ["email", item.supabase.email || "-"],
+              ["status", item.supabase.status || "-"],
+              ["environment", item.supabase.environment || "-"],
+            ]);
+          });
+        }
+
+        function renderCustomerDuplicates(duplicates = []) {
+          appendDeveloperCard("CRM duplicaten", duplicates.length
+            ? duplicates.slice(0, 12).map((item) => [
+              item.key,
+              `${item.customer.name || item.customer.company || item.customer.email || "Klant"} lijkt dubbel met ${item.duplicateOf || "eerder record"}`,
+            ])
+            : ["Geen mogelijke duplicaten gevonden."]);
+        }
+
+        function renderCustomerMissingFields(missingFields = []) {
+          appendDeveloperCard("CRM ontbrekende velden", missingFields.length
+            ? missingFields.slice(0, 12).map((item) => [
+              item.customer.name || item.customer.company || item.customer.id || "Klant",
+              item.missing.join(" | "),
+            ])
+            : ["Geen ontbrekende klantvelden gevonden."]);
+        }
+
+        function renderCustomerMigrationLogs(logs = []) {
+          appendDeveloperCard("Laatste CRM dry runs", logs.length
+            ? logs.map((log) => [
+              formatDate(log.createdAt),
+              `${log.readyCount}/${log.totalCustomers} klaar - ${log.duplicateCount} duplicaten - ${log.missingFieldCount} aandacht`,
+            ])
+            : ["Nog geen CRM migratie dry-run uitgevoerd."]);
         }
 
         function renderEnvExampleSummary() {
@@ -2916,6 +2991,8 @@
             const providerStatus = modules.providerStatusService.getActiveProviderStatus();
             const counts = modules.migrationService.getRecordCounts();
             const supabaseReadiness = modules.migrationService.checkSupabaseReadiness();
+            const customerMigration = modules.customerMigrationService.analyzeCustomerData();
+            const customerMigrationLogs = modules.customerMigrationService.getCustomerMigrationLogs();
             const recentActivities = modules.activityLogService.listRecentActivities(5);
             const session = modules.authService.getCurrentSession();
             const user = modules.authService.getCurrentUser();
@@ -2930,6 +3007,8 @@
             ]);
             renderSupabaseConnectionStatus(providerStatus);
             renderSupabaseSetupChecklist();
+            renderCustomerMigrationCard(customerMigration);
+            renderCustomerMigrationLogs(customerMigrationLogs);
             renderAuthProviderStatus(modules.authService);
             appendDeveloperCard("Auth sessie", [
               ["Gebruiker", user?.name || user?.email || "Geen sessie"],
@@ -2947,6 +3026,25 @@
               ? recentActivities.map((activity) => [activity.action || "Activiteit", formatDate(activity.createdAt)])
               : ["Nog geen activiteit gelogd."]);
             if (extra.showAccountRequests) renderAccountRequestsList(modules.authService);
+            if (extra.customerMappingPreview) renderCustomerMappingPreview(extra.customerMappingPreview);
+            if (extra.customerDuplicates) renderCustomerDuplicates(extra.customerDuplicates);
+            if (extra.customerMissingFields) renderCustomerMissingFields(extra.customerMissingFields);
+            if (extra.customerDryRun) {
+              renderCustomerMappingPreview({
+                summary: {
+                  totalCustomers: extra.customerDryRun.totalCustomers,
+                  uniqueCustomers: extra.customerDryRun.uniqueCustomers,
+                  readyCount: extra.customerDryRun.readyCount,
+                  duplicateCount: extra.customerDryRun.duplicateCount,
+                  missingFieldCount: extra.customerDryRun.missingFieldCount,
+                  demoCustomers: extra.customerDryRun.demoCustomers,
+                  productionCustomers: extra.customerDryRun.productionCustomers,
+                },
+                rows: extra.customerDryRun.payload.slice(0, 8).map((row) => ({ localId: row.metadata?.localStorageId || row.id, supabase: row })),
+              });
+              renderCustomerDuplicates(extra.customerDryRun.duplicates);
+              renderCustomerMissingFields(extra.customerDryRun.missingFields);
+            }
             if (extra.migrationSummary) renderMigrationSummary(extra.migrationSummary);
             if (extra.validationReport) renderValidationSummary(extra.validationReport);
           } catch (error) {
@@ -3091,6 +3189,62 @@
           } catch (error) {
             console.error("localStorage explanation failed", error);
             setSettingsMessage("Uitleg kon niet worden getoond.", "error");
+          }
+        }
+
+        async function runCustomerMigrationDryRunHandler() {
+          try {
+            const { customerMigrationService, activityLogService } = await loadDeveloperModules();
+            const dryRun = customerMigrationService.runCustomerMigrationDryRun();
+            activityLogService.logActivity("developer_tools", "customers", "customer_migration_dry_run", {
+              readyCount: dryRun.readyCount,
+              duplicateCount: dryRun.duplicateCount,
+              missingFieldCount: dryRun.missingFieldCount,
+            });
+            await renderDeveloperToolsSummary({ customerDryRun: dryRun });
+            setSettingsMessage("CRM migratie dry-run uitgevoerd. Er zijn geen Supabase writes gedaan.", "success");
+          } catch (error) {
+            console.error("Customer migration dry run failed", error);
+            setSettingsMessage("CRM migratie dry-run kon niet worden uitgevoerd.", "error");
+          }
+        }
+
+        async function showCustomerMappingPreviewHandler() {
+          try {
+            const { customerMigrationService, activityLogService } = await loadDeveloperModules();
+            const preview = customerMigrationService.getCustomerMigrationPreview();
+            activityLogService.logActivity("developer_tools", "customers", "view_customer_mapping_preview", { count: preview.summary.totalCustomers });
+            await renderDeveloperToolsSummary({ customerMappingPreview: preview });
+            setSettingsMessage("CRM mapping preview getoond.", "success");
+          } catch (error) {
+            console.error("Customer mapping preview failed", error);
+            setSettingsMessage("CRM mapping preview kon niet worden getoond.", "error");
+          }
+        }
+
+        async function showCustomerDuplicatesHandler() {
+          try {
+            const { customerMigrationService, activityLogService } = await loadDeveloperModules();
+            const duplicates = customerMigrationService.detectDuplicateCustomers();
+            activityLogService.logActivity("developer_tools", "customers", "view_customer_duplicates", { count: duplicates.length });
+            await renderDeveloperToolsSummary({ customerDuplicates: duplicates });
+            setSettingsMessage("CRM duplicaten getoond.", "success");
+          } catch (error) {
+            console.error("Customer duplicates failed", error);
+            setSettingsMessage("CRM duplicaten konden niet worden getoond.", "error");
+          }
+        }
+
+        async function showCustomerMissingFieldsHandler() {
+          try {
+            const { customerMigrationService, activityLogService } = await loadDeveloperModules();
+            const missingFields = customerMigrationService.detectMissingCustomerFields();
+            activityLogService.logActivity("developer_tools", "customers", "view_customer_missing_fields", { count: missingFields.length });
+            await renderDeveloperToolsSummary({ customerMissingFields: missingFields });
+            setSettingsMessage("CRM ontbrekende velden getoond.", "success");
+          } catch (error) {
+            console.error("Customer missing fields failed", error);
+            setSettingsMessage("CRM ontbrekende velden konden niet worden getoond.", "error");
           }
         }
 
@@ -8163,6 +8317,10 @@
         checkSupabaseConfigButton.addEventListener("click", checkSupabaseConfigHandler);
         viewEnvExampleButton.addEventListener("click", showEnvExampleHandler);
         whyLocalStorageButton.addEventListener("click", showWhyLocalStorageHandler);
+        runCustomerMigrationDryRunButton.addEventListener("click", runCustomerMigrationDryRunHandler);
+        viewCustomerMappingPreviewButton.addEventListener("click", showCustomerMappingPreviewHandler);
+        viewCustomerDuplicatesButton.addEventListener("click", showCustomerDuplicatesHandler);
+        viewCustomerMissingFieldsButton.addEventListener("click", showCustomerMissingFieldsHandler);
         document.querySelectorAll("[data-settings-demo]").forEach((button) => {
           button.addEventListener("click", () => setSettingsMessage(button.dataset.settingsDemo, "success"));
         });

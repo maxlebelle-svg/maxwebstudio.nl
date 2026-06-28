@@ -1,4 +1,5 @@
 import { STORAGE_KEYS } from "../config/storageKeys.js";
+import { normalizeCustomer, customerIdentityKeys } from "../utils/customerNormalizer.js";
 
 function readArray(key) {
   try {
@@ -45,8 +46,26 @@ export function validateLocalStorageData() {
     ["files", files],
   ].forEach(([module, records]) => validateIds(module, records, issues));
 
-  customers.forEach((customer) => {
+  const emailSeen = new Map();
+  const companyPhoneSeen = new Map();
+  customers.map(normalizeCustomer).forEach((customer) => {
     if (!customer.name && !customer.company) pushIssue(issues, "warning", "customers", "Klant mist naam en bedrijf.", customer.id);
+    if (!customer.email) pushIssue(issues, "warning", "customers", "Klant mist e-mailadres.", customer.id);
+    if (customer.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)) pushIssue(issues, "error", "customers", "Klant heeft ongeldig e-mailadres.", customer.id);
+    if (!customer.status) pushIssue(issues, "warning", "customers", "Klant mist status.", customer.id);
+    if (!customer.createdAt) pushIssue(issues, "warning", "customers", "Klant mist createdAt.", customer.id);
+    if ((customer.isDemo || customer.isDemoJourney || customer.environment === "demo") && !customer.demoScenarioId && !customer.demoJourneyId) {
+      pushIssue(issues, "info", "customers", "Demo-klant mist demoScenarioId/demoJourneyId.", customer.id);
+    }
+    const keys = customerIdentityKeys(customer);
+    if (keys.email) {
+      if (emailSeen.has(keys.email)) pushIssue(issues, "warning", "customers", "Dubbele e-mail gevonden.", customer.id);
+      emailSeen.set(keys.email, customer.id);
+    }
+    if (keys.companyPhone) {
+      if (companyPhoneSeen.has(keys.companyPhone)) pushIssue(issues, "warning", "customers", "Dubbele bedrijfsnaam + telefoon gevonden.", customer.id);
+      companyPhoneSeen.set(keys.companyPhone, customer.id);
+    }
   });
   invoices.forEach((invoice) => {
     if (!Array.isArray(invoice.lines) || !invoice.lines.length) pushIssue(issues, "error", "invoices", "Factuur mist factuurregels.", invoice.id);

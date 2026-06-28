@@ -1,45 +1,50 @@
 import { getSupabaseClientStatus } from "./supabaseClient.js";
 
-function preparedMessage() {
+function preparedMessage(table = "") {
   const status = getSupabaseClientStatus();
-  if (!status.configured) return "Supabase niet geconfigureerd. Vul SUPABASE_URL en SUPABASE_ANON_KEY veilig in via environment variables.";
-  return "Supabase voorbereid, live queries komen in Fase 11.5/11.6.";
+  const suffix = table ? ` Tabel ${table} blijft dry-run/no-op in deze fase.` : "";
+  if (!status.configured) return `Supabase niet geconfigureerd. Vul SUPABASE_URL en SUPABASE_ANON_KEY veilig in via environment variables.${suffix}`;
+  return `Supabase voorbereid, live queries komen in een gecontroleerde vervolgfase.${suffix}`;
 }
 
-function readNotActive() {
-  console.info(preparedMessage());
+function isCustomersTable(table) {
+  return table === "customers" || table === "maxwebstudioCrmCustomers" || table === "maxwebstudioCustomers";
+}
+
+function readNotActive(table) {
+  console.info(preparedMessage(isCustomersTable(table) ? "customers" : table));
   return [];
 }
 
-function writeNotActive() {
-  throw new Error(preparedMessage());
+function writeNotActive(table) {
+  throw new Error(preparedMessage(isCustomersTable(table) ? "customers" : table));
 }
 
 export const supabaseProvider = {
   type: "supabase-prepared",
   status: "prepared",
 
-  getAll() {
-    return readNotActive();
+  getAll(table) {
+    return readNotActive(table);
   },
-  getById() {
-    console.info(preparedMessage());
+  getById(table) {
+    console.info(preparedMessage(table));
     return null;
   },
-  create() {
-    return writeNotActive();
+  create(table) {
+    return writeNotActive(table);
   },
-  update() {
-    return writeNotActive();
+  update(table) {
+    return writeNotActive(table);
   },
-  delete() {
-    return writeNotActive();
+  delete(table) {
+    return writeNotActive(table);
   },
-  setAll() {
-    return writeNotActive();
+  setAll(table) {
+    return writeNotActive(table);
   },
-  count() {
-    console.info(preparedMessage());
+  count(table) {
+    console.info(preparedMessage(isCustomersTable(table) ? "customers" : table));
     return 0;
   },
   getStatus() {

@@ -14,6 +14,7 @@ export const STORAGE_KEYS = Object.freeze({
   demoEmails: "maxwebstudioDemoEmails",
   importLog: "maxwebstudioImportLog",
   activityLog: "maxwebstudioActivityLog",
+  migrationLog: "maxwebstudioMigrationLog",
   authUsers: "maxwebstudioAuthUsers",
   currentSession: "maxwebstudioCurrentSession",
   accountRequests: "maxwebstudioAccountRequests",
@@ -30,7 +31,7 @@ export const MODULE_STORAGE_KEYS = Object.freeze({
   subscriptions: [STORAGE_KEYS.subscriptions],
   settings: [STORAGE_KEYS.settings],
   auth: [STORAGE_KEYS.authUsers, STORAGE_KEYS.currentSession, STORAGE_KEYS.accountRequests],
-  demo: [STORAGE_KEYS.demoEmails, STORAGE_KEYS.importLog, STORAGE_KEYS.activityLog],
+  demo: [STORAGE_KEYS.demoEmails, STORAGE_KEYS.importLog, STORAGE_KEYS.activityLog, STORAGE_KEYS.migrationLog],
 });
 
 export const PRIMARY_MODULE_KEYS = Object.freeze({
@@ -46,6 +47,7 @@ export const PRIMARY_MODULE_KEYS = Object.freeze({
   demoEmails: STORAGE_KEYS.demoEmails,
   importLog: STORAGE_KEYS.importLog,
   activityLog: STORAGE_KEYS.activityLog,
+  migrationLog: STORAGE_KEYS.migrationLog,
   authUsers: STORAGE_KEYS.authUsers,
   currentSession: STORAGE_KEYS.currentSession,
   accountRequests: STORAGE_KEYS.accountRequests,
