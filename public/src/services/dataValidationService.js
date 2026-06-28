@@ -1,6 +1,7 @@
 import { STORAGE_KEYS } from "../config/storageKeys.js";
 import { normalizeCustomer, customerIdentityKeys } from "../utils/customerNormalizer.js";
 import { normalizeWebsite } from "../utils/websiteNormalizer.js";
+import { normalizeProject, projectIdentityKeys } from "../utils/projectNormalizer.js";
 
 function readArray(key) {
   try {
@@ -77,9 +78,6 @@ export function validateLocalStorageData() {
   subscriptions.forEach((subscription) => {
     if (!subscription.profileId && !subscription.customerId) pushIssue(issues, "error", "subscriptions", "Abonnement mist klantkoppeling.", subscription.id);
   });
-  projects.forEach((project) => {
-    if (!project.customerId && !project.profileId) pushIssue(issues, "error", "projects", "Project mist klantkoppeling.", project.id);
-  });
   const websiteDomains = new Map();
   websites.map(normalizeWebsite).forEach((website) => {
     if (!website.name) pushIssue(issues, "error", "websites", "Website mist naam.", website.id);
@@ -95,6 +93,29 @@ export function validateLocalStorageData() {
     if (website.domain) {
       if (websiteDomains.has(website.domain)) pushIssue(issues, "warning", "websites", "Dubbel domein gevonden.", website.id);
       websiteDomains.set(website.domain, website.id);
+    }
+  });
+
+  const customerIds = new Set(customers.map((customer) => normalizeCustomer(customer).id).filter(Boolean));
+  const websiteIds = new Set(websites.map((website) => normalizeWebsite(website).id).filter(Boolean));
+  const projectKeys = new Map();
+  projects.map(normalizeProject).forEach((project) => {
+    if (!project.name) pushIssue(issues, "error", "projects", "Project mist projectnaam.", project.id);
+    if (!project.customerId && !project.profileId) pushIssue(issues, "error", "projects", "Project mist klantkoppeling.", project.id);
+    if (project.customerId && !customerIds.has(project.customerId)) pushIssue(issues, "error", "projects", "Project heeft ontbrekende klant.", project.id);
+    if (project.websiteId && !websiteIds.has(project.websiteId)) pushIssue(issues, "warning", "projects", "Project heeft ontbrekende website.", project.id);
+    if (!project.status) pushIssue(issues, "warning", "projects", "Project mist status.", project.id);
+    if (!project.phase) pushIssue(issues, "warning", "projects", "Project mist fase.", project.id);
+    if (!project.createdAt) pushIssue(issues, "warning", "projects", "Project mist createdAt.", project.id);
+    if (!project.updatedAt) pushIssue(issues, "warning", "projects", "Project mist updatedAt.", project.id);
+    if ((project.isDemo || project.isDemoJourney || project.environment === "demo") && !project.demoScenarioId && !project.demoJourneyId) {
+      pushIssue(issues, "info", "projects", "Demo-project mist demoScenarioId/demoJourneyId.", project.id);
+    }
+    const keys = projectIdentityKeys(project);
+    const key = keys.customerWebsiteName || keys.customerName;
+    if (key) {
+      if (projectKeys.has(key)) pushIssue(issues, "warning", "projects", "Dubbele projectnaam bij dezelfde klant/website gevonden.", project.id);
+      projectKeys.set(key, project.id);
     }
   });
 

@@ -9,9 +9,14 @@ function isWebsitesTable(table) {
   return table === "websites" || table === "maxwebstudioManagedSites" || table === "maxwebstudioWebsites";
 }
 
+function isProjectsTable(table) {
+  return table === "projects" || table === "maxwebstudioProjects";
+}
+
 function normalizedTable(table) {
   if (isCustomersTable(table)) return "customers";
   if (isWebsitesTable(table)) return "websites";
+  if (isProjectsTable(table)) return "projects";
   return table;
 }
 
@@ -89,12 +94,23 @@ function assertWebsiteWriteTable(table) {
   if (!isWebsitesTable(table)) throw new Error("Website writes ondersteunen alleen de websites tabel.");
 }
 
+async function getProjectWriteClient(context = {}) {
+  if (context.projectWrite !== true) throw new Error("Project write context ontbreekt.");
+  const client = await getSupabaseClient();
+  if (!client) throw new Error("Supabase client niet beschikbaar; project write blijft geblokkeerd.");
+  return client;
+}
+
+function assertProjectWriteTable(table) {
+  if (!isProjectsTable(table)) throw new Error("Project writes ondersteunen alleen de projects tabel.");
+}
+
 export const supabaseProvider = {
   type: "supabase-readonly",
   status: "read-only",
 
   async getAll(table, options = {}) {
-    if (!isCustomersTable(table) && !isWebsitesTable(table)) {
+    if (!isCustomersTable(table) && !isWebsitesTable(table) && !isProjectsTable(table)) {
       console.info(preparedMessage(table));
       return [];
     }
@@ -107,7 +123,7 @@ export const supabaseProvider = {
   },
 
   async getById(table, id) {
-    if (!isCustomersTable(table) && !isWebsitesTable(table)) {
+    if (!isCustomersTable(table) && !isWebsitesTable(table) && !isProjectsTable(table)) {
       console.info(preparedMessage(table));
       return null;
     }
@@ -241,12 +257,51 @@ export const supabaseProvider = {
     }, context);
   },
 
+  async createProject(record = {}, context = {}) {
+    assertProjectWriteTable("projects");
+    const client = await getProjectWriteClient(context);
+    const payload = {
+      ...record,
+      updated_at: record.updated_at || new Date().toISOString(),
+      created_at: record.created_at || new Date().toISOString(),
+    };
+    const { data, error } = await client.from("projects").insert(payload).select("*").single();
+    if (error) throw new Error(error.message || "Project aanmaken in Supabase is mislukt.");
+    return { success: true, table: "projects", action: "create_project", data };
+  },
+
+  async updateProject(id, updates = {}, context = {}) {
+    assertProjectWriteTable("projects");
+    const client = await getProjectWriteClient(context);
+    const payload = {
+      ...updates,
+      updated_at: updates.updated_at || new Date().toISOString(),
+    };
+    const { data, error } = await client.from("projects").update(payload).eq("id", id).select("*").single();
+    if (error) throw new Error(error.message || "Project bijwerken in Supabase is mislukt.");
+    return { success: true, table: "projects", action: "update_project", data };
+  },
+
+  async archiveProject(id, context = {}) {
+    return this.updateProject(id, {
+      status: "archived",
+      deleted_at: new Date().toISOString(),
+    }, context);
+  },
+
+  async reactivateProject(id, context = {}) {
+    return this.updateProject(id, {
+      status: "active",
+      deleted_at: null,
+    }, context);
+  },
+
   setAll() {
     return writeBlocked();
   },
 
   async count(table) {
-    if (!isCustomersTable(table) && !isWebsitesTable(table)) {
+    if (!isCustomersTable(table) && !isWebsitesTable(table) && !isProjectsTable(table)) {
       console.info(preparedMessage(table));
       return 0;
     }

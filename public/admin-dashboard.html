@@ -342,6 +342,10 @@
             <article class="admin-card detail-card"><span>Klaar voor live</span><strong id="project-stat-ready">0</strong></article>
             <article class="admin-card detail-card"><span>Gemiddelde voortgang</span><strong id="project-stat-progress">0%</strong></article>
           </div>
+          <div class="admin-filters website-filters" aria-label="Projecten bron filteren">
+            <label for="project-data-mode">Project data mode<select id="project-data-mode"><option value="local">Local</option><option value="supabase-read">Supabase read</option><option value="hybrid">Hybrid</option></select></label>
+          </div>
+          <div class="admin-grid compact-admin-grid" id="project-source-summary" aria-live="polite"></div>
           <div class="project-management-grid">
             <div class="admin-table project-table" id="project-list" role="table" aria-label="Projecten" aria-live="polite"></div>
             <form class="admin-card admin-profile-form project-detail-panel" id="project-detail-form">
@@ -357,7 +361,7 @@
                 <label class="admin-profile-wide" for="project-website">Website<select id="project-website" disabled></select></label>
                 <label for="project-name">Projectnaam<input id="project-name" type="text" disabled /></label>
                 <label for="project-type">Projecttype<select id="project-type" disabled><option value="Nieuwe website">Nieuwe website</option><option value="Redesign">Redesign</option><option value="Onderhoud">Onderhoud</option><option value="Extra pagina's">Extra pagina's</option><option value="SEO">SEO</option><option value="Maatwerk">Maatwerk</option></select></label>
-                <label for="project-status">Status<select id="project-status" disabled><option value="nieuw">Nieuw</option><option value="onboarding">Onboarding</option><option value="in_ontwerp">In ontwerp</option><option value="in_ontwikkeling">In ontwikkeling</option><option value="feedback">Feedback</option><option value="testen">Testen</option><option value="live">Live</option><option value="onderhoud">Onderhoud</option><option value="gepauzeerd">Gepauzeerd</option></select></label>
+                <label for="project-status">Status<select id="project-status" disabled><option value="nieuw">Nieuw</option><option value="onboarding">Onboarding</option><option value="in_ontwerp">In ontwerp</option><option value="in_ontwikkeling">In ontwikkeling</option><option value="feedback">Feedback</option><option value="testen">Testen</option><option value="live">Live</option><option value="onderhoud">Onderhoud</option><option value="gepauzeerd">Gepauzeerd</option><option value="gearchiveerd">Gearchiveerd</option></select></label>
                 <label for="project-phase">Fase<input id="project-phase" type="text" placeholder="Intake" disabled /></label>
                 <label for="project-start">Startdatum<input id="project-start" type="date" disabled /></label>
                 <label for="project-deadline">Deadline<input id="project-deadline" type="date" disabled /></label>
@@ -370,9 +374,12 @@
                 </div>
                 <div class="project-progress-track" aria-hidden="true"><span id="project-progress-bar"></span></div>
               </div>
+              <div class="settings-status-list" id="project-source-detail"></div>
               <div class="project-detail-summary" id="project-detail-summary" aria-live="polite"></div>
               <div class="admin-profile-actions">
+                <button class="button secondary" id="project-edit" type="button" disabled>Bewerken</button>
                 <button class="button primary" id="project-save" type="submit" disabled>Project opslaan</button>
+                <button class="button secondary" id="project-cancel" type="button" disabled>Annuleren</button>
                 <button class="button secondary" id="project-add-file" type="button" disabled>Bestand toevoegen</button>
                 <button class="button secondary" id="project-view-files" type="button" disabled>Bestanden bekijken</button>
                 <a class="button secondary is-disabled" id="project-open-portal" href="#" target="_blank" rel="noopener" aria-disabled="true">Open klantportaal</a>
@@ -380,9 +387,13 @@
                 <button class="button secondary" id="project-view-quotes" type="button" disabled>Offertes bekijken</button>
                 <button class="button secondary" id="project-create-invoice" type="button" disabled>Factuur aanmaken</button>
                 <button class="button secondary" id="project-view-invoices" type="button" disabled>Facturen bekijken</button>
-                <button class="button secondary danger" id="project-delete" type="button" disabled>Verwijderen</button>
+                <button class="button secondary" id="project-refresh-supabase" type="button" disabled>Ververs vanuit Supabase</button>
+                <button class="button secondary" id="project-history" type="button" disabled>Bekijk wijzigingshistorie</button>
+                <button class="button secondary" id="project-reactivate" type="button" disabled>Reactiveren</button>
+                <button class="button secondary danger" id="project-delete" type="button" disabled>Archiveren</button>
                 <p class="admin-form-message" id="project-detail-message" role="status"></p>
               </div>
+              <div class="settings-status-list" id="project-history-list" hidden></div>
               <div class="project-work-grid">
                 <article class="admin-card project-work-card">
                   <div class="project-work-heading">
@@ -803,6 +814,14 @@
                 <button class="button secondary" id="test-supabase-websites-read" type="button">Test website read</button>
                 <button class="button secondary" id="test-supabase-website-write" type="button">Test website write</button>
                 <button class="button secondary" id="reset-website-data-mode" type="button">Reset website data mode naar local</button>
+                <button class="button secondary" id="run-project-migration-dry-run" type="button">Run project migratie dry-run</button>
+                <button class="button secondary" id="view-project-mapping-preview" type="button">Bekijk project mapping preview</button>
+                <button class="button secondary" id="view-project-missing-customer-links" type="button">Bekijk ontbrekende project-klantkoppelingen</button>
+                <button class="button secondary" id="view-project-missing-website-links" type="button">Bekijk ontbrekende project-websitekoppelingen</button>
+                <button class="button secondary" id="view-project-duplicates" type="button">Bekijk project duplicaten</button>
+                <button class="button secondary" id="test-supabase-projects-read" type="button">Test project read</button>
+                <button class="button secondary" id="test-supabase-project-write" type="button">Test project write</button>
+                <button class="button secondary" id="reset-project-data-mode" type="button">Reset project data mode naar local</button>
                 <button class="button secondary" id="view-env-example" type="button">Bekijk .env voorbeeld</button>
                 <button class="button secondary" id="why-local-storage" type="button">Waarom nog localStorage?</button>
                 <button class="button secondary" id="run-customer-migration-dry-run" type="button">Run CRM migratie dry run</button>
@@ -1119,6 +1138,7 @@
           live: "Live",
           onderhoud: "Onderhoud",
           gepauzeerd: "Gepauzeerd",
+          gearchiveerd: "Gearchiveerd",
         };
         const fileStatusLabels = {
           actief: "Actief",
@@ -1274,6 +1294,8 @@
           customerWriteReadiness: null,
           websiteSourceStatus: null,
           websiteWriteReadiness: null,
+          projectSourceStatus: null,
+          projectWriteReadiness: null,
         };
 
         const adminTokenInput = document.getElementById("admin-token");
@@ -1393,6 +1415,9 @@
         };
         const projectList = document.getElementById("project-list");
         const projectDetailForm = document.getElementById("project-detail-form");
+        const projectDataModeSelect = document.getElementById("project-data-mode");
+        const projectSourceSummary = document.getElementById("project-source-summary");
+        const projectSourceDetail = document.getElementById("project-source-detail");
         const projectFields = {
           customer: document.getElementById("project-customer"),
           website: document.getElementById("project-website"),
@@ -1404,7 +1429,9 @@
           deadline: document.getElementById("project-deadline"),
           notes: document.getElementById("project-notes"),
         };
+        const projectEdit = document.getElementById("project-edit");
         const projectSave = document.getElementById("project-save");
+        const projectCancel = document.getElementById("project-cancel");
         const projectAddFile = document.getElementById("project-add-file");
         const projectViewFiles = document.getElementById("project-view-files");
         const projectOpenPortal = document.getElementById("project-open-portal");
@@ -1413,10 +1440,14 @@
         const projectCreateInvoice = document.getElementById("project-create-invoice");
         const projectViewInvoices = document.getElementById("project-view-invoices");
         const projectDelete = document.getElementById("project-delete");
+        const projectRefreshSupabase = document.getElementById("project-refresh-supabase");
+        const projectHistory = document.getElementById("project-history");
+        const projectReactivate = document.getElementById("project-reactivate");
         const projectDetailState = document.getElementById("project-detail-state");
         const projectDetailSubtitle = document.getElementById("project-detail-subtitle");
         const projectDetailMessage = document.getElementById("project-detail-message");
         const projectDetailSummary = document.getElementById("project-detail-summary");
+        const projectHistoryList = document.getElementById("project-history-list");
         const projectProgressLabel = document.getElementById("project-progress-label");
         const projectProgressBar = document.getElementById("project-progress-bar");
         const projectChecklist = document.getElementById("project-checklist");
@@ -1709,6 +1740,14 @@
         const testSupabaseWebsitesReadButton = document.getElementById("test-supabase-websites-read");
         const testSupabaseWebsiteWriteButton = document.getElementById("test-supabase-website-write");
         const resetWebsiteDataModeButton = document.getElementById("reset-website-data-mode");
+        const runProjectMigrationDryRunButton = document.getElementById("run-project-migration-dry-run");
+        const viewProjectMappingPreviewButton = document.getElementById("view-project-mapping-preview");
+        const viewProjectMissingCustomerLinksButton = document.getElementById("view-project-missing-customer-links");
+        const viewProjectMissingWebsiteLinksButton = document.getElementById("view-project-missing-website-links");
+        const viewProjectDuplicatesButton = document.getElementById("view-project-duplicates");
+        const testSupabaseProjectsReadButton = document.getElementById("test-supabase-projects-read");
+        const testSupabaseProjectWriteButton = document.getElementById("test-supabase-project-write");
+        const resetProjectDataModeButton = document.getElementById("reset-project-data-mode");
         const viewEnvExampleButton = document.getElementById("view-env-example");
         const whyLocalStorageButton = document.getElementById("why-local-storage");
         const runCustomerMigrationDryRunButton = document.getElementById("run-customer-migration-dry-run");
@@ -1821,7 +1860,7 @@
           if (status === "live" || status === "onderhoud") return "status-active";
           if (status === "nieuw" || status === "onboarding" || status === "in_ontwerp" || status === "in_ontwikkeling" || status === "testen") return "status-prepared";
           if (status === "feedback") return "status-warning";
-          if (status === "gepauzeerd") return "status-attention";
+          if (status === "gepauzeerd" || status === "gearchiveerd") return "status-attention";
           return "status-planned";
         }
 
@@ -2765,6 +2804,14 @@
             ["Website hard delete", "Geblokkeerd", "Harde deletes voor Supabase websites zijn niet beschikbaar in het CRM"],
             ["Website customer linking", "Voorbereid", "Websites worden pas migratieklaar als de gekoppelde klant een Supabase customer-id heeft"],
             ["Website conflict detection", "Actief", "Remote updated_at blokkeert blind overschrijven en vraagt refresh"],
+            ["Project Supabase mapping", "Voorbereid", "ProjectRepository kan lokale projecten naar projects-rijen mappen met customer/website koppeling"],
+            ["Project read", "Voorbereid/actief", "Project Management kan projecten read-only uit Supabase laden"],
+            ["Project hybrid mode", "Actief", "Project Management combineert Supabase, ongemigreerde local en demo projecten"],
+            ["Project create/update", "Gecontroleerd", "Projecten kunnen onder readiness-voorwaarden individueel naar Supabase schrijven"],
+            ["Project migration dry-run", "Actief", "Developer Mode analyseert projecten zonder databasewrites"],
+            ["Project live bulk migration", "Nog niet actief", "Bulk migratie blijft geblokkeerd; alleen individuele test/create/update flows"],
+            ["Project customer linkage", "Actief gecontroleerd", "Projecten vereisen een Supabase customer ID tenzij expliciet testcontext"],
+            ["Project website linkage", "Actief gecontroleerd", "Projecten met website vereisen een Supabase website ID"],
             ["CRM Supabase mapping", "Voorbereid", "CustomerRepository kan lokale klantrecords naar customers-rijen mappen"],
             ["CRM migratie dry run", "Gereed", "Developer Mode analyseert klanten zonder databasewrites"],
             ["CRM live writes basis", "Niet actief", "Live customer writes blijven afhankelijk van Supabase client readiness"],
@@ -2811,12 +2858,14 @@
             providerFactory: await import("./src/providers/providerFactory.js"),
             customerRepository: await import("./src/repositories/CustomerRepository.js"),
             websiteRepository: await import("./src/repositories/WebsiteRepository.js"),
+            projectRepository: await import("./src/repositories/ProjectRepository.js"),
             providerStatusService: await import("./src/services/providerStatusService.js"),
             supabaseReadinessService: await import("./src/services/supabaseReadinessService.js"),
             supabaseWriteTestService: await import("./src/services/supabaseWriteTestService.js"),
             migrationService: await import("./src/services/migrationService.js"),
             customerMigrationService: await import("./src/services/customerMigrationService.js"),
             websiteMigrationService: await import("./src/services/websiteMigrationService.js"),
+            projectMigrationService: await import("./src/services/projectMigrationService.js"),
             dataValidationService: await import("./src/services/dataValidationService.js"),
             activityLogService: await import("./src/services/activityLogService.js"),
             authService: await import("./src/services/authService.js"),
@@ -3225,6 +3274,110 @@
           }
         }
 
+        function renderProjectDataSourceStatus(status = state.projectSourceStatus || {}) {
+          const counts = status.counts || {};
+          appendDeveloperCard("Project data source", [
+            ["Project data mode", status.mode || currentProjectDataMode()],
+            ["Supabase read status", status.error ? "Fout" : status.mode === "local" ? "Niet gebruikt" : "Beschikbaar"],
+            ["Local count", String(counts.local ?? 0)],
+            ["Supabase count", String(counts.supabase ?? 0)],
+            ["Hybrid count", String(counts.hybrid ?? state.projects.length ?? 0)],
+            ["Duplicate merge count", String(counts.duplicateMerges ?? 0)],
+            ["Demo projecten", String(counts.demo ?? 0)],
+            ["Ongemigreerd lokaal", String(counts.unmigratedLocal ?? 0)],
+            ["Fallback status", status.fallbackUsed ? "Local fallback gebruikt" : "Geen fallback"],
+            ["Laatste refresh", status.refreshedAt ? formatDate(status.refreshedAt) : "-"],
+            ["Error", status.error || "-"],
+          ]);
+        }
+
+        function renderProjectSupabaseReadiness(modules) {
+          const summary = modules.projectMigrationService.getProjectReadinessSummary();
+          const recentProjectWrites = modules.activityLogService
+            .listRecentActivities(40)
+            .filter((activity) => activity.entityType === "projects" || activity.entityType === "developer_tools")
+            .filter((activity) => String(activity.action || "").includes("project"))
+            .slice(0, 6);
+          appendDeveloperCard("Project Supabase readiness", [
+            ["Klaar voor mapping", String(summary.ready || 0)],
+            ["Wachten op customer migratie", String(summary.waitingForCustomer || 0)],
+            ["Wachten op website migratie", String(summary.waitingForWebsite || 0)],
+            ["Klantkoppeling ontbreekt", String(summary.missingCustomer || 0)],
+            ["Websitekoppeling ontbreekt", String(summary.missingWebsite || 0)],
+            ["Mogelijke duplicaten", String(summary.duplicates || 0)],
+            ["Ontbrekende velden/aandacht", String(summary.missingFields || 0)],
+            ["Laatste dry-run", summary.lastDryRun?.createdAt ? formatDate(summary.lastDryRun.createdAt) : "Nog niet uitgevoerd"],
+            ["Live bulk migratie", "Geblokkeerd in deze fase"],
+            ["Write scope", "Alleen gecontroleerde create/update/archive/reactivate per project"],
+          ]);
+          appendDeveloperCard("Laatste project activiteiten", recentProjectWrites.length
+            ? recentProjectWrites.map((activity) => [activity.action || "project", formatDate(activity.createdAt)])
+            : ["Nog geen project migratie/write activiteit."]);
+        }
+
+        function renderProjectMappingPreview(preview) {
+          appendDeveloperCard("Project mapping preview", [
+            ["Totaal", String(preview.summary.totalProjects || 0)],
+            ["Uniek", String(preview.summary.uniqueProjects || 0)],
+            ["Klaar", String(preview.summary.readyCount || 0)],
+            ["Wacht op klant", String(preview.summary.waitingForCustomer || 0)],
+            ["Wacht op website", String(preview.summary.waitingForWebsite || 0)],
+            ["Klant ontbreekt", String(preview.summary.missingCustomer || 0)],
+            ["Website ontbreekt", String(preview.summary.missingWebsite || 0)],
+            ["Duplicaten", String(preview.summary.duplicateCount || 0)],
+            ["Preview", "Maximaal 20 records"],
+          ]);
+          preview.rows.slice(0, 12).forEach((item) => {
+            appendDeveloperCard(`Project mapping ${item.name || item.localId || "project"}`, [
+              ["localStorage id", item.localId || "-"],
+              ["Supabase tabel", "projects"],
+              ["project_name", item.payload?.project_name || item.payload?.name || "-"],
+              ["customer_id", item.payload?.customer_id || "-"],
+              ["website_id", item.payload?.website_id || "-"],
+              ["klantkoppeling", item.customerStatus || "-"],
+              ["websitekoppeling", item.websiteStatus || "-"],
+              ["ready", item.ready ? "Ja" : "Nee"],
+              ["errors", item.errors?.length ? item.errors.join(" | ") : "-"],
+              ["warnings", item.warnings?.length ? item.warnings.join(" | ") : "-"],
+            ]);
+          });
+        }
+
+        function renderProjectMissingLinks(items = [], type = "all") {
+          const title = type === "customer" ? "Project ontbrekende klantkoppelingen" : type === "website" ? "Project ontbrekende websitekoppelingen" : "Project ontbrekende koppelingen";
+          appendDeveloperCard(title, items.length
+            ? items.slice(0, 12).map((item) => [
+              item.name || item.id || "Project",
+              type === "customer"
+                ? `${item.customerLink?.status || "onbekend"} - ${item.customerLink?.message || item.errors?.join(" | ") || item.warnings?.join(" | ") || "controle nodig"}`
+                : `${item.websiteLink?.status || "onbekend"} - ${item.websiteLink?.message || item.errors?.join(" | ") || item.warnings?.join(" | ") || "controle nodig"}`,
+            ])
+            : ["Geen ontbrekende projectkoppelingen gevonden."]);
+        }
+
+        function renderProjectDuplicates(duplicates = []) {
+          appendDeveloperCard("Project duplicaten", duplicates.length
+            ? duplicates.slice(0, 12).map((item) => [
+              item.key || item.project?.name || "duplicate",
+              `${item.project?.name || "Project"} lijkt dubbel met ${item.duplicateOf || "eerder record"}`,
+            ])
+            : ["Geen mogelijke projectduplicaten gevonden."]);
+        }
+
+        function renderProjectWriteTestResult(result = {}) {
+          appendDeveloperCard("Project write-test resultaat", [
+            ["Status", result.status || "-"],
+            ["Testproject", result.testProjectId || result.projectId || "-"],
+            ["Stap", result.step || result.type || "-"],
+            ["Aangemaakt", result.createdAt ? formatDate(result.createdAt) : "-"],
+            ["Voltooid", result.completedAt ? formatDate(result.completedAt) : "-"],
+            ["Fout", result.error || "-"],
+          ]);
+          if (result.steps?.length) {
+            appendDeveloperCard("Project write-test stappen", result.steps.map((step) => [step.step, step.status]));
+          }
+        }
+
         function renderCustomerMigrationResult(result) {
           appendDeveloperCard("CRM migratie resultaat", [
             ["Status", result.status],
@@ -3488,6 +3641,8 @@
             renderCustomerWriteReadiness(modules);
             renderWebsiteDataSourceStatus(state.websiteSourceStatus);
             renderWebsiteSupabaseReadiness(modules);
+            renderProjectDataSourceStatus(state.projectSourceStatus);
+            renderProjectSupabaseReadiness(modules);
             renderSupabaseSetupChecklist();
             renderCustomerMigrationCard(customerMigration);
             renderCustomerMigrationLogs(customerMigrationLogs);
@@ -3533,6 +3688,16 @@
               renderWebsiteMappingPreview(extra.websiteDryRun.preview);
               renderWebsiteMissingLinks(extra.websiteDryRun.missingFields);
               renderWebsiteDuplicates(extra.websiteDryRun.duplicates);
+            }
+            if (extra.projectMappingPreview) renderProjectMappingPreview(extra.projectMappingPreview);
+            if (extra.projectMissingCustomerLinks) renderProjectMissingLinks(extra.projectMissingCustomerLinks, "customer");
+            if (extra.projectMissingWebsiteLinks) renderProjectMissingLinks(extra.projectMissingWebsiteLinks, "website");
+            if (extra.projectDuplicates) renderProjectDuplicates(extra.projectDuplicates);
+            if (extra.projectWriteTestResult) renderProjectWriteTestResult(extra.projectWriteTestResult);
+            if (extra.projectDryRun) {
+              renderProjectMappingPreview(extra.projectDryRun.preview);
+              renderProjectMissingLinks(extra.projectDryRun.missingLinks, "all");
+              renderProjectDuplicates(extra.projectDryRun.duplicates);
             }
             if (extra.customerDryRun) {
               renderCustomerMappingPreview({
@@ -4231,6 +4396,215 @@
           }
         }
 
+        async function setProjectDataMode(mode, options = {}) {
+          const settings = { ...readStoredSettings(), projectDataMode: mode };
+          writeStoredSettings(settings);
+          localStorage.setItem("maxwebstudioProjectDataMode", mode);
+          projectDataModeSelect.value = mode;
+          try {
+            const { activityLogService } = await loadDeveloperModules();
+            activityLogService.logActivity("developer_tools", "projects", "project_source_mode_changed", { mode, ...options });
+          } catch {
+            // Logging is helpful, but changing the project read mode should not depend on Developer Tools imports.
+          }
+          await loadCRMData(false);
+        }
+
+        async function changeProjectDataModeHandler(event) {
+          const mode = event.target.value || "local";
+          if (mode !== "local") {
+            const confirmed = window.confirm(`Project data mode wijzigen naar ${mode}? Er wordt geen data verwijderd en er worden geen Supabase bulk-writes uitgevoerd.`);
+            if (!confirmed) {
+              projectDataModeSelect.value = readStoredSettings().projectDataMode || localStorage.getItem("maxwebstudioProjectDataMode") || "local";
+              return;
+            }
+          }
+          await setProjectDataMode(mode, { source: "project_select" });
+          await renderDeveloperToolsSummary();
+        }
+
+        async function resetProjectDataModeHandler() {
+          await setProjectDataMode("local", { source: "developer_reset" });
+          await renderDeveloperToolsSummary();
+          setSettingsMessage("Project data mode teruggezet naar local.", "success");
+        }
+
+        async function runProjectMigrationDryRunHandler() {
+          try {
+            const { projectMigrationService, activityLogService } = await loadDeveloperModules();
+            const dryRun = projectMigrationService.runProjectMigrationDryRun();
+            activityLogService.logActivity("developer_tools", "projects", "project_dry_run", {
+              readyCount: dryRun.analysis.readyCount,
+              waitingForCustomer: dryRun.analysis.waitingForCustomer,
+              waitingForWebsite: dryRun.analysis.waitingForWebsite,
+              duplicateCount: dryRun.analysis.duplicateCount,
+            });
+            await renderDeveloperToolsSummary({ projectDryRun: dryRun });
+            setSettingsMessage("Project migratie dry-run uitgevoerd. Er zijn geen Supabase writes gedaan.", "success");
+          } catch (error) {
+            console.error("Project migration dry run failed", error);
+            setSettingsMessage("Project migratie dry-run kon niet worden uitgevoerd.", "error");
+          }
+        }
+
+        async function showProjectMappingPreviewHandler() {
+          try {
+            const { projectMigrationService, activityLogService } = await loadDeveloperModules();
+            const preview = projectMigrationService.getProjectMigrationPreview();
+            activityLogService.logActivity("developer_tools", "projects", "view_project_mapping_preview", { count: preview.summary.totalProjects });
+            await renderDeveloperToolsSummary({ projectMappingPreview: preview });
+            setSettingsMessage("Project mapping preview getoond.", "success");
+          } catch (error) {
+            console.error("Project mapping preview failed", error);
+            setSettingsMessage("Project mapping preview kon niet worden getoond.", "error");
+          }
+        }
+
+        async function showProjectMissingCustomerLinksHandler() {
+          try {
+            const { projectMigrationService, activityLogService } = await loadDeveloperModules();
+            const missing = projectMigrationService.detectMissingProjectLinks().filter((item) => item.customerLink?.status !== "linked");
+            activityLogService.logActivity("developer_tools", "projects", "view_project_missing_customer_links", { count: missing.length });
+            await renderDeveloperToolsSummary({ projectMissingCustomerLinks: missing });
+            setSettingsMessage("Ontbrekende project-klantkoppelingen getoond.", "success");
+          } catch (error) {
+            console.error("Project missing customer links failed", error);
+            setSettingsMessage("Ontbrekende project-klantkoppelingen konden niet worden getoond.", "error");
+          }
+        }
+
+        async function showProjectMissingWebsiteLinksHandler() {
+          try {
+            const { projectMigrationService, activityLogService } = await loadDeveloperModules();
+            const missing = projectMigrationService.detectMissingProjectLinks().filter((item) => !["linked", "not_required"].includes(item.websiteLink?.status));
+            activityLogService.logActivity("developer_tools", "projects", "view_project_missing_website_links", { count: missing.length });
+            await renderDeveloperToolsSummary({ projectMissingWebsiteLinks: missing });
+            setSettingsMessage("Ontbrekende project-websitekoppelingen getoond.", "success");
+          } catch (error) {
+            console.error("Project missing website links failed", error);
+            setSettingsMessage("Ontbrekende project-websitekoppelingen konden niet worden getoond.", "error");
+          }
+        }
+
+        async function showProjectDuplicatesHandler() {
+          try {
+            const { projectMigrationService, activityLogService } = await loadDeveloperModules();
+            const duplicates = projectMigrationService.detectDuplicateProjects();
+            activityLogService.logActivity("developer_tools", "projects", "view_project_duplicates", { count: duplicates.length });
+            await renderDeveloperToolsSummary({ projectDuplicates: duplicates });
+            setSettingsMessage("Project duplicaten getoond.", "success");
+          } catch (error) {
+            console.error("Project duplicates failed", error);
+            setSettingsMessage("Project duplicaten konden niet worden getoond.", "error");
+          }
+        }
+
+        async function testSupabaseProjectsReadHandler() {
+          try {
+            const { projectRepository, activityLogService } = await loadDeveloperModules();
+            const projects = await projectRepository.listSupabaseProjects();
+            activityLogService.logActivity("developer_tools", "projects", "read_supabase_projects", { rows: projects.length });
+            await renderDeveloperToolsSummary({
+              projectMappingPreview: {
+                summary: {
+                  totalProjects: projects.length,
+                  uniqueProjects: projects.length,
+                  readyCount: projects.length,
+                  waitingForCustomer: 0,
+                  waitingForWebsite: 0,
+                  missingCustomer: 0,
+                  missingWebsite: 0,
+                  duplicateCount: 0,
+                },
+                rows: projects.slice(0, 10).map((project) => ({
+                  localId: project._localProjectId || project.id,
+                  name: project.name,
+                  customerStatus: project._linkedCustomerStatus || "-",
+                  websiteStatus: project._linkedWebsiteStatus || "-",
+                  ready: true,
+                  errors: [],
+                  warnings: [],
+                  payload: {
+                    name: project.name,
+                    project_name: project.name,
+                    customer_id: project.supabaseCustomerId || project.customerId || "-",
+                    website_id: project.supabaseWebsiteId || project.websiteId || "-",
+                  },
+                })),
+              },
+            });
+            setSettingsMessage(`${projects.length} Supabase projecten gelezen.`, "success");
+          } catch (error) {
+            console.error("Read Supabase projects failed", error);
+            setSettingsMessage(error.message || "Supabase projecten lezen kon niet worden uitgevoerd.", "error");
+          }
+        }
+
+        async function testSupabaseProjectWriteHandler() {
+          const first = window.confirm("Testproject schrijven naar Supabase? Dit gebruikt een veilig testproject en geen echte klantdata.");
+          if (!first) return;
+          const second = window.confirm("Bevestig: dit is alleen bedoeld voor gecontroleerde write-test, geen bulkactie.");
+          if (!second) return;
+          const result = {
+            status: "started",
+            type: "project_write_test",
+            createdAt: new Date().toISOString(),
+            steps: [],
+          };
+          try {
+            const { projectRepository, activityLogService } = await loadDeveloperModules();
+            const testProject = {
+              name: "Supabase Project Test",
+              type: "Maatwerk",
+              status: "test",
+              phase: "Testfase",
+              environment: "test",
+              isDemo: true,
+              metadata: {
+                createdBy: "supabase-project-write-test",
+                safeToDelete: true,
+                allowNoWebsite: true,
+              },
+            };
+            result.steps.push({ step: "create", status: "started" });
+            const created = await projectRepository.createProject(testProject, {
+              target: "supabase",
+              mode: currentProjectDataMode(),
+              allowDemoSupabase: true,
+              allowOrphanProject: true,
+              projectWriteTest: true,
+            });
+            result.testProjectId = created._supabaseProjectId || created.supabaseProjectId || created.id;
+            result.projectId = result.testProjectId;
+            result.steps[result.steps.length - 1].status = "completed";
+            result.steps.push({ step: "archive", status: "started" });
+            await projectRepository.archiveProject(created.id, {
+              project: created,
+              target: "supabase",
+              mode: currentProjectDataMode(),
+              baseUpdatedAt: created.updatedAt,
+              projectWriteTest: true,
+              allowDemoSupabase: true,
+              allowOrphanProject: true,
+            });
+            result.steps[result.steps.length - 1].status = "completed";
+            result.status = "project_completed";
+            result.completedAt = new Date().toISOString();
+            localStorage.setItem("maxwebstudioLastProjectWriteTest", JSON.stringify(result));
+            activityLogService.logActivity("developer_tools", "projects", "project_write_test_completed", { testProjectId: result.testProjectId });
+            await renderDeveloperToolsSummary({ projectWriteTestResult: result });
+            setSettingsMessage("Supabase project write-test voltooid en testproject gearchiveerd.", "success");
+          } catch (error) {
+            result.status = "failed";
+            result.error = error.message || "Project write-test mislukt.";
+            result.completedAt = new Date().toISOString();
+            localStorage.setItem("maxwebstudioLastProjectWriteTest", JSON.stringify(result));
+            console.error("Project write-test failed", error);
+            await renderDeveloperToolsSummary({ projectWriteTestResult: result });
+            setSettingsMessage(result.error, "error");
+          }
+        }
+
         function renderDeveloperMode() {
           const enabled = isDeveloperModeEnabled();
           developerToolsCard.hidden = !enabled;
@@ -4406,6 +4780,10 @@
           return websiteDataModeSelect.value || readStoredSettings().websiteDataMode || localStorage.getItem("maxwebstudioWebsiteDataMode") || "local";
         }
 
+        function currentProjectDataMode() {
+          return projectDataModeSelect.value || readStoredSettings().projectDataMode || localStorage.getItem("maxwebstudioProjectDataMode") || "local";
+        }
+
         async function getCustomerRepositoryModule() {
           const modules = await loadDeveloperModules();
           return modules.customerRepository;
@@ -4414,6 +4792,11 @@
         async function getWebsiteRepositoryModule() {
           const modules = await loadDeveloperModules();
           return modules.websiteRepository;
+        }
+
+        async function getProjectRepositoryModule() {
+          const modules = await loadDeveloperModules();
+          return modules.projectRepository;
         }
 
         function customerSupabaseId(customer = {}) {
@@ -4530,6 +4913,21 @@
             refreshedAt: result.refreshedAt,
           }));
           return result.websites.map(normalizeManagedSite);
+        }
+
+        async function loadProjectsByDataMode() {
+          const mode = currentProjectDataMode();
+          const { ProjectRepository } = await import("./src/repositories/ProjectRepository.js");
+          const result = await ProjectRepository.listByDataMode(mode);
+          state.projectSourceStatus = result;
+          localStorage.setItem("maxwebstudioLastProjectSourceStatus", JSON.stringify({
+            mode: result.mode,
+            counts: result.counts,
+            fallbackUsed: result.fallbackUsed,
+            error: result.error,
+            refreshedAt: result.refreshedAt,
+          }));
+          return result.projects.map(normalizeProject);
         }
 
         function normalizeWebsiteStatus(value) {
@@ -4754,7 +5152,25 @@
             tasks,
             timeline: normalizeProjectTimeline(project.timeline || []),
             isDemo: Boolean(project.isDemo),
+            isDemoJourney: Boolean(project.isDemoJourney),
             demoScenarioId: project.demoScenarioId || "",
+            demoJourneyId: project.demoJourneyId || "",
+            environment: project.environment || (project.isDemo || project.isDemoJourney ? "demo" : "production"),
+            supabaseProjectId: project.supabaseProjectId || project._supabaseProjectId || "",
+            supabaseCustomerId: project.supabaseCustomerId || project._supabaseCustomerId || "",
+            supabaseWebsiteId: project.supabaseWebsiteId || project._supabaseWebsiteId || "",
+            migratedToSupabaseAt: project.migratedToSupabaseAt || "",
+            migrationStatus: project.migrationStatus || "",
+            _source: project._source || "",
+            _isMigrated: Boolean(project._isMigrated || project.supabaseProjectId || project.migratedToSupabaseAt),
+            _supabaseProjectId: project._supabaseProjectId || project.supabaseProjectId || "",
+            _localProjectId: project._localProjectId || project.id || "",
+            _customerSource: project._customerSource || "",
+            _websiteSource: project._websiteSource || "",
+            _linkedCustomerStatus: project._linkedCustomerStatus || "",
+            _linkedWebsiteStatus: project._linkedWebsiteStatus || "",
+            _sourceMeta: project._sourceMeta || {},
+            metadata: project.metadata && typeof project.metadata === "object" ? project.metadata : {},
             createdAt,
             updatedAt: project.updatedAt || createdAt,
           };
@@ -4776,7 +5192,21 @@
         }
 
         function writeStoredProjects(projects) {
-          localStorage.setItem(projectsStorageKey, JSON.stringify(projects.map(normalizeProject)));
+          localStorage.setItem(projectsStorageKey, JSON.stringify(projects.map((project) => {
+            const {
+              _source,
+              _isMigrated,
+              _supabaseProjectId,
+              _localProjectId,
+              _customerSource,
+              _websiteSource,
+              _linkedCustomerStatus,
+              _linkedWebsiteStatus,
+              _sourceMeta,
+              ...storedProject
+            } = normalizeProject(project);
+            return storedProject;
+          })));
         }
 
         function validateProjectPayload(payload) {
@@ -6905,6 +7335,97 @@
           return state.projects.find((project) => project.id === state.selectedProjectId);
         }
 
+        function isSupabaseManagedProject(project = {}) {
+          return ["supabase", "hybrid"].includes(project._source) || Boolean(project._supabaseProjectId || project.supabaseProjectId);
+        }
+
+        function projectSourceLabel(project = {}) {
+          if (project._source === "hybrid") return "Hybrid";
+          if (project._source === "supabase") return "Supabase";
+          if (project._source === "demo" || project.isDemo || project.environment === "demo") return "Demo/local";
+          return "Local";
+        }
+
+        function projectSourceClass(project = {}) {
+          if (project._source === "supabase") return "status-active";
+          if (project._source === "hybrid") return "status-warning";
+          if (project._source === "demo" || project.isDemo || project.environment === "demo") return "status-prepared";
+          return "status-planned";
+        }
+
+        function renderProjectSourceSummary() {
+          const status = state.projectSourceStatus || { mode: currentProjectDataMode(), counts: {} };
+          const counts = status.counts || {};
+          projectSourceSummary.replaceChildren();
+          [
+            ["Project data mode", status.mode || currentProjectDataMode()],
+            ["Local", String(counts.local ?? state.projects.length ?? 0)],
+            ["Supabase", String(counts.supabase ?? 0)],
+            ["Hybrid zichtbaar", String(counts.hybrid ?? state.projects.length ?? 0)],
+            ["Demo", String(counts.demo ?? state.projects.filter((project) => project._source === "demo").length)],
+            ["Zonder Supabase customer", String(state.projects.filter((project) => project._linkedCustomerStatus && project._linkedCustomerStatus !== "linked").length)],
+            ["Zonder Supabase website", String(state.projects.filter((project) => project._linkedWebsiteStatus && !["linked", "not_required"].includes(project._linkedWebsiteStatus)).length)],
+          ].forEach(([label, value]) => {
+            const card = document.createElement("article");
+            card.className = "admin-card metric-card";
+            card.append(createCell(label), createCell(value, "strong"));
+            projectSourceSummary.append(card);
+          });
+          if (status.error) {
+            const card = document.createElement("article");
+            card.className = "admin-card request-card request-state-card";
+            card.append(createBadge(status.fallbackUsed ? "Fallback actief" : "Supabase fout", status.fallbackUsed ? "status-warning" : "status-attention"), createCell(status.error));
+            projectSourceSummary.append(card);
+          }
+        }
+
+        function renderProjectSourceDetail(project = null, readiness = null) {
+          projectSourceDetail.replaceChildren();
+          if (!project) return;
+          [
+            ["Databron", projectSourceLabel(project)],
+            ["Migratiestatus", project._isMigrated || project.migrationStatus === "migrated" ? "Gemigreerd" : "Lokaal/niet gemigreerd"],
+            ["Supabase project ID", project._supabaseProjectId || project.supabaseProjectId || "-"],
+            ["Lokale project ID", project._localProjectId || project.id || "-"],
+            ["Gekoppelde klant", project.customerCompany || project.customerName || project.customerId || "-"],
+            ["Supabase customer ID", project.supabaseCustomerId || project._supabaseCustomerId || "-"],
+            ["Klantkoppeling", project._linkedCustomerStatus || readiness?.customerLink?.status || "-"],
+            ["Gekoppelde website", project.websiteName || project.websiteDomain || project.websiteId || "-"],
+            ["Supabase website ID", project.supabaseWebsiteId || project._supabaseWebsiteId || "-"],
+            ["Websitekoppeling", project._linkedWebsiteStatus || readiness?.websiteLink?.status || "-"],
+            ["Laatste update", formatDate(project.updatedAt || project._sourceMeta?.refreshedAt || "")],
+            ["Project write", readiness ? readiness.allowed ? "Beschikbaar" : "Geblokkeerd" : isSupabaseManagedProject(project) ? "Wordt gecontroleerd" : "LocalStorage"],
+            ["Write reden", readiness?.reason || readiness?.customerLink?.message || readiness?.websiteLink?.message || "-"],
+          ].forEach(([label, value]) => {
+            const row = document.createElement("div");
+            row.append(createCell(label), createCell(value, "strong"));
+            projectSourceDetail.append(row);
+          });
+        }
+
+        function renderProjectHistory(project) {
+          projectHistoryList.replaceChildren();
+          if (!project) {
+            projectHistoryList.hidden = true;
+            return;
+          }
+          const history = state.developerModules?.projectRepository?.getProjectHistory(project.id) || [];
+          if (!history.length) {
+            const row = document.createElement("div");
+            row.append(createCell("Wijzigingshistorie"), createCell("Nog geen project write-activiteiten."));
+            projectHistoryList.append(row);
+            projectHistoryList.hidden = false;
+            return;
+          }
+          history.slice(0, 8).forEach((item) => {
+            const changed = item.metadata?.changedFields?.length ? item.metadata.changedFields.join(", ") : item.metadata?.action || "-";
+            const row = document.createElement("div");
+            row.append(createCell(formatDate(item.createdAt)), createCell(`${item.action || "update"} - ${item.metadata?.source || "local"} - ${changed}`, "strong"));
+            projectHistoryList.append(row);
+          });
+          projectHistoryList.hidden = false;
+        }
+
         function populateProjectOptions(selectedCustomerOverride = "") {
           projectFields.customer.replaceChildren();
           const emptyCustomer = document.createElement("option");
@@ -6943,8 +7464,13 @@
           Object.values(projectFields).forEach((field) => {
             field.disabled = !enabled;
           });
+          projectEdit.disabled = !state.selectedProjectId;
+          projectCancel.disabled = !state.selectedProjectId;
           projectSave.disabled = !enabled;
           projectDelete.disabled = !enabled || !state.selectedProjectId;
+          projectReactivate.disabled = true;
+          projectRefreshSupabase.disabled = !state.selectedProjectId;
+          projectHistory.disabled = !state.selectedProjectId;
           projectAddFile.disabled = !enabled || !state.selectedProjectId;
           projectViewFiles.disabled = !enabled || !state.selectedProjectId;
           projectOpenPortal.classList.toggle("is-disabled", !enabled || !state.selectedProjectId || !projectFields.customer.value);
@@ -6958,6 +7484,63 @@
           projectTaskPriority.disabled = !enabled || !state.selectedProjectId;
           projectTaskDeadline.disabled = !enabled || !state.selectedProjectId;
           projectTaskAdd.disabled = !enabled || !state.selectedProjectId;
+        }
+
+        function setProjectFieldsDisabled(disabled) {
+          Object.values(projectFields).forEach((field) => {
+            field.disabled = disabled;
+          });
+        }
+
+        function resetProjectWriteControls() {
+          state.projectWriteReadiness = null;
+          projectEdit.disabled = true;
+          projectCancel.disabled = true;
+          projectRefreshSupabase.disabled = true;
+          projectHistory.disabled = true;
+          projectReactivate.disabled = true;
+          projectHistoryList.hidden = true;
+          projectHistoryList.replaceChildren();
+        }
+
+        async function applyProjectWriteReadiness(project) {
+          if (!project) return;
+          projectHistory.disabled = false;
+          projectRefreshSupabase.disabled = !isSupabaseManagedProject(project);
+          try {
+            const repo = await getProjectRepositoryModule();
+            const target = isSupabaseManagedProject(project) ? "supabase" : "local";
+            const readiness = repo.canWriteProject(project, { target, mode: currentProjectDataMode() });
+            state.projectWriteReadiness = readiness;
+            projectEdit.disabled = target === "supabase" && !readiness.allowed;
+            projectCancel.disabled = false;
+            if (target === "local") {
+              setProjectFieldsDisabled(false);
+              projectSave.disabled = false;
+              projectDelete.disabled = false;
+              projectReactivate.disabled = project.status !== "gearchiveerd";
+              renderProjectSourceDetail(project, readiness);
+              return;
+            }
+            setProjectFieldsDisabled(!readiness.allowed);
+            projectSave.disabled = !readiness.allowed;
+            projectDelete.disabled = !readiness.allowed || project.status === "gearchiveerd";
+            projectReactivate.disabled = !readiness.allowed || project.status !== "gearchiveerd";
+            renderProjectSourceDetail(project, readiness);
+            if (!readiness.allowed) {
+              setProjectMessage(`Supabase project write geblokkeerd: ${readiness.reason}`, "error");
+            } else if (!projectDetailMessage.textContent) {
+              setProjectMessage("Supabase project write is gecontroleerd beschikbaar voor dit project.", "success");
+            }
+          } catch (error) {
+            setProjectFieldsDisabled(true);
+            projectEdit.disabled = true;
+            projectCancel.disabled = false;
+            projectSave.disabled = true;
+            projectDelete.disabled = true;
+            projectReactivate.disabled = true;
+            setProjectMessage(error.message || "Project write readiness kon niet worden bepaald.", "error");
+          }
         }
 
         function renderProjectStats() {
@@ -6975,6 +7558,7 @@
           projectList.replaceChildren();
           populateProjectOptions();
           renderProjectStats();
+          renderProjectSourceSummary();
           if (!state.projects.length) {
             renderState(projectList, "Nog geen projecten", "Start een project vanuit een klant, website of met de knop Nieuw project.", "Leeg", "status-planned", { label: "Project aanmaken", primary: true, onClick: () => resetProjectForm() });
             return;
@@ -6997,7 +7581,11 @@
             action.textContent = "Bekijk";
             action.addEventListener("click", () => selectProject(project.id));
             row.append(
-              createCell(project.name || "-", "strong"),
+              (() => {
+                const cell = document.createElement("div");
+                cell.append(createCell(project.name || "-", "strong"), createBadge(projectSourceLabel(project), projectSourceClass(project)));
+                return cell;
+              })(),
               createCell(project.customerCompany || project.customerName || "-"),
               createCell(project.websiteName || project.websiteDomain || "-"),
               createBadge(projectStatusLabels[project.status] || project.status, projectStatusClass(project.status)),
@@ -7012,6 +7600,7 @@
 
         function resetProjectForm(seed = {}) {
           state.selectedProjectId = "";
+          resetProjectWriteControls();
           projectDetailForm.reset();
           populateProjectOptions(seed.customerId || "");
           projectFields.customer.value = seed.customerId || "";
@@ -7035,6 +7624,7 @@
           projectChecklistCount.textContent = "0/0";
           projectTaskCount.textContent = "0 open";
           projectTimelineCount.textContent = "0 events";
+          renderProjectSourceDetail(null);
           setProjectMessage("", "");
           enableProjectFields(true);
         }
@@ -7134,6 +7724,7 @@
           state.selectedProjectId = id;
           const project = selectedProject();
           if (!project) return;
+          resetProjectWriteControls();
           populateProjectOptions(project.customerId || "");
           projectFields.customer.value = project.customerId || "";
           populateProjectOptions(project.customerId || "");
@@ -7158,8 +7749,12 @@
           renderProjectChecklist(project);
           renderProjectTasks(project);
           renderProjectTimeline(project);
-          setProjectMessage("", "");
-          enableProjectFields(true);
+          renderProjectSourceDetail(project);
+          setProjectMessage(isSupabaseManagedProject(project) ? "Supabase project write readiness wordt gecontroleerd..." : "", isSupabaseManagedProject(project) ? "success" : "");
+          setProjectFieldsDisabled(isSupabaseManagedProject(project));
+          projectSave.disabled = isSupabaseManagedProject(project);
+          projectDelete.disabled = isSupabaseManagedProject(project) || project.status === "gearchiveerd";
+          applyProjectWriteReadiness(project);
           projectAddFile.disabled = false;
           projectViewFiles.disabled = false;
           projectCreateQuote.disabled = false;
@@ -7188,15 +7783,54 @@
           projectSave.textContent = "Opslaan...";
           setProjectMessage("", "");
           try {
-            const project = saveProjectLocally(projectPayload(), "Projectgegevens opgeslagen");
+            const currentProject = selectedProject();
+            const payload = projectPayload();
+            const repo = await getProjectRepositoryModule();
+            let project = null;
+            if (currentProject && isSupabaseManagedProject(currentProject)) {
+              try {
+                project = await repo.updateProject(currentProject.id, payload, {
+                  oldProject: currentProject,
+                  mode: currentProjectDataMode(),
+                  baseUpdatedAt: currentProject.updatedAt,
+                });
+              } catch (error) {
+                if (error.code === "PROJECT_UPDATED_AT_MISSING" && window.confirm("Dit Supabase-project mist updated_at. Toch gecontroleerd opslaan?")) {
+                  project = await repo.updateProject(currentProject.id, payload, {
+                    oldProject: currentProject,
+                    mode: currentProjectDataMode(),
+                    baseUpdatedAt: currentProject.updatedAt,
+                    confirmMissingUpdatedAt: true,
+                  });
+                } else {
+                  throw error;
+                }
+              }
+            } else if (currentProject) {
+              project = await repo.updateProject(currentProject.id, payload, {
+                oldProject: currentProject,
+                target: "local",
+                mode: currentProjectDataMode(),
+              });
+            } else {
+              const mode = currentProjectDataMode();
+              const createInSupabase = mode !== "local" && window.confirm("Project in Supabase aanmaken? Kies Annuleren om lokaal op te slaan.");
+              project = await repo.createProject(payload, {
+                target: createInSupabase ? "supabase" : "local",
+                mode,
+              });
+            }
             await loadCRMData(false);
             state.selectedProjectId = project.id;
             selectProject(project.id);
             setProjectMessage("Project opgeslagen.", "success");
           } catch (error) {
-            setProjectMessage(error.message || "Project kon niet worden opgeslagen.", "error");
+            const message = error.code === "PROJECT_CONFLICT"
+              ? "Supabase heeft een nieuwere projectversie. Ververs projectgegevens voordat je opslaat."
+              : error.message || "Project kon niet worden opgeslagen.";
+            setProjectMessage(message, "error");
           } finally {
-            projectSave.disabled = false;
+            projectSave.disabled = isSupabaseManagedProject(selectedProject()) && !state.projectWriteReadiness?.allowed;
             projectSave.textContent = "Project opslaan";
           }
         }
@@ -7267,12 +7901,109 @@
         async function deleteProject() {
           const project = selectedProject();
           if (!project) return;
-          const confirmed = window.confirm("Weet je zeker dat je dit project wilt verwijderen?");
+          const confirmed = window.confirm("Weet je zeker dat je dit project wilt archiveren?");
           if (!confirmed) return;
-          deleteProjectLocally(project.id);
-          await loadCRMData(false);
-          resetProjectForm();
-          setProjectMessage("Project verwijderd.", "success");
+          if (isSupabaseManagedProject(project) && !window.confirm("Supabase-project archiveren is een soft delete. Bevestig dat je geen hard delete uitvoert.")) return;
+          projectDelete.disabled = true;
+          projectDelete.textContent = "Archiveren...";
+          setProjectMessage("", "");
+          try {
+            const repo = await getProjectRepositoryModule();
+            await repo.archiveProject(project.id, {
+              project,
+              target: isSupabaseManagedProject(project) ? "supabase" : "local",
+              mode: currentProjectDataMode(),
+              baseUpdatedAt: project.updatedAt,
+            });
+            await loadCRMData(false);
+            state.selectedProjectId = project.id;
+            if (selectedProject()) selectProject(state.selectedProjectId);
+            else resetProjectForm();
+            setProjectMessage("Project gearchiveerd.", "success");
+          } catch (error) {
+            setProjectMessage(error.message || "Project kon niet worden gearchiveerd.", "error");
+          } finally {
+            projectDelete.textContent = "Archiveren";
+            projectDelete.disabled = !selectedProject();
+          }
+        }
+
+        async function reactivateProject() {
+          const project = selectedProject();
+          if (!project) return;
+          if (!window.confirm("Dit project opnieuw activeren?")) return;
+          projectReactivate.disabled = true;
+          projectReactivate.textContent = "Reactiveren...";
+          setProjectMessage("", "");
+          try {
+            const repo = await getProjectRepositoryModule();
+            const updated = await repo.reactivateProject(project.id, {
+              project,
+              target: isSupabaseManagedProject(project) ? "supabase" : "local",
+              mode: currentProjectDataMode(),
+              baseUpdatedAt: project.updatedAt,
+            });
+            await loadCRMData(false);
+            state.selectedProjectId = updated?.id || project.id;
+            selectProject(state.selectedProjectId);
+            setProjectMessage("Project opnieuw geactiveerd.", "success");
+          } catch (error) {
+            setProjectMessage(error.message || "Project kon niet opnieuw worden geactiveerd.", "error");
+          } finally {
+            projectReactivate.textContent = "Reactiveren";
+            projectReactivate.disabled = selectedProject()?.status !== "gearchiveerd" || (isSupabaseManagedProject(selectedProject()) && !state.projectWriteReadiness?.allowed);
+          }
+        }
+
+        async function refreshSelectedProjectFromSupabase() {
+          const project = selectedProject();
+          if (!project || !isSupabaseManagedProject(project)) return;
+          projectRefreshSupabase.disabled = true;
+          projectRefreshSupabase.textContent = "Verversen...";
+          setProjectMessage("", "");
+          try {
+            await loadCRMData(false);
+            const remoteId = project._supabaseProjectId || project.supabaseProjectId || project.id;
+            const refreshed = state.projects.find((item) => item.id === remoteId || item._supabaseProjectId === remoteId || item.supabaseProjectId === remoteId || item.id === project.id);
+            state.selectedProjectId = refreshed?.id || project.id;
+            selectProject(state.selectedProjectId);
+            setProjectMessage("Projectgegevens opnieuw geladen vanuit de actieve project data source.", "success");
+          } catch (error) {
+            setProjectMessage(error.message || "Projectgegevens konden niet worden ververst.", "error");
+          } finally {
+            projectRefreshSupabase.textContent = "Ververs vanuit Supabase";
+            projectRefreshSupabase.disabled = !isSupabaseManagedProject(selectedProject());
+          }
+        }
+
+        function enableProjectEditing() {
+          const project = selectedProject();
+          if (!project) return;
+          if (isSupabaseManagedProject(project) && !state.projectWriteReadiness?.allowed) {
+            setProjectMessage(`Supabase project write geblokkeerd: ${state.projectWriteReadiness?.reason || "voorwaarden ontbreken"}`, "error");
+            return;
+          }
+          setProjectFieldsDisabled(false);
+          projectSave.disabled = false;
+          projectCancel.disabled = false;
+          setProjectMessage("Projectdetail staat klaar om te bewerken.", "success");
+        }
+
+        function cancelProjectEditing() {
+          if (!state.selectedProjectId) return;
+          selectProject(state.selectedProjectId);
+          setProjectMessage("Wijzigingen geannuleerd.", "success");
+        }
+
+        async function toggleProjectHistory() {
+          const project = selectedProject();
+          if (!project) return;
+          if (!state.developerModules?.projectRepository) await getProjectRepositoryModule();
+          if (!projectHistoryList.hidden) {
+            projectHistoryList.hidden = true;
+            return;
+          }
+          renderProjectHistory(project);
         }
 
         function startProjectFromCustomer() {
@@ -9734,11 +10465,12 @@
           try {
             customerDataModeSelect.value = currentCustomerDataMode();
             websiteDataModeSelect.value = currentWebsiteDataMode();
+            projectDataModeSelect.value = currentProjectDataMode();
             state.customers = await loadCustomersByDataMode();
             state.profiles = state.customers;
             state.authUsers = [];
             state.websites = await loadWebsitesByDataMode();
-            state.projects = readStoredProjects();
+            state.projects = await loadProjectsByDataMode();
             state.files = readStoredFiles();
             state.quotes = readStoredQuotes();
             state.invoices = readStoredInvoices();
@@ -9768,7 +10500,18 @@
             }
             const sourceStatus = state.customerSourceStatus || {};
             const websiteSourceStatus = state.websiteSourceStatus || {};
-            if (websiteSourceStatus.error && websiteSourceStatus.fallbackUsed) {
+            const projectSourceStatus = state.projectSourceStatus || {};
+            if (projectSourceStatus.error && projectSourceStatus.fallbackUsed) {
+              try {
+                const { activityLogService } = await loadDeveloperModules();
+                activityLogService.logActivity("developer_tools", "projects", "project_source_fallback_local", { mode: projectSourceStatus.mode, error: projectSourceStatus.error });
+              } catch {
+                // Optional developer logging only.
+              }
+              setAdminAccessMessage(`Project hybrid fallback actief: ${projectSourceStatus.error}`, "error");
+            } else if (projectSourceStatus.error) {
+              setAdminAccessMessage(`Supabase projecten konden niet worden gelezen: ${projectSourceStatus.error}`, "error");
+            } else if (websiteSourceStatus.error && websiteSourceStatus.fallbackUsed) {
               try {
                 const { activityLogService } = await loadDeveloperModules();
                 activityLogService.logActivity("developer_tools", "websites", "website_source_fallback_local", { mode: websiteSourceStatus.mode, error: websiteSourceStatus.error });
@@ -9789,7 +10532,7 @@
             } else if (sourceStatus.error) {
               setAdminAccessMessage(`Supabase customers konden niet worden gelezen: ${sourceStatus.error}`, "error");
             } else {
-              setAdminAccessMessage(`CRM geladen via customer mode ${sourceStatus.mode || "local"} en website mode ${websiteSourceStatus.mode || "local"}.`, "success");
+              setAdminAccessMessage(`CRM geladen via customer mode ${sourceStatus.mode || "local"}, website mode ${websiteSourceStatus.mode || "local"} en project mode ${projectSourceStatus.mode || "local"}.`, "success");
             }
           } catch (error) {
             setAdminAccessMessage(error.message || "CRM-klanten konden niet worden geladen.", "error");
@@ -9813,9 +10556,17 @@
               error: error.message || "CRM/website data kon niet worden geladen.",
               refreshedAt: new Date().toISOString(),
             };
+            state.projectSourceStatus = {
+              mode: currentProjectDataMode(),
+              counts: { local: readStoredProjects().length, supabase: 0, hybrid: 0, duplicateMerges: 0, demo: 0, unmigratedLocal: 0 },
+              fallbackUsed: false,
+              error: error.message || "CRM/project data kon niet worden geladen.",
+              refreshedAt: new Date().toISOString(),
+            };
             renderState(customerList, "CRM-klanten konden niet worden geladen", "Supabase-read kon geen klanten laden. Zet de customer data mode terug naar local of controleer de Supabase configuratie.", "Fout", "status-attention", { label: "Terug naar local", primary: true, onClick: () => setCustomerDataMode("local", { source: "supabase_read_error" }) });
             renderCustomerSourceSummary();
             renderWebsiteSourceSummary();
+            renderProjectSourceSummary();
           } finally {
             adminLoadButton.disabled = false;
             adminLoadButton.textContent = "Laden";
@@ -9940,6 +10691,11 @@
         detailViewSubscriptions.addEventListener("click", viewSubscriptionsForCustomer);
         projectDetailForm.addEventListener("submit", saveProject);
         projectDelete.addEventListener("click", deleteProject);
+        projectEdit.addEventListener("click", enableProjectEditing);
+        projectCancel.addEventListener("click", cancelProjectEditing);
+        projectRefreshSupabase.addEventListener("click", refreshSelectedProjectFromSupabase);
+        projectHistory.addEventListener("click", toggleProjectHistory);
+        projectReactivate.addEventListener("click", reactivateProject);
         projectAddFile.addEventListener("click", startFileFromProject);
         projectViewFiles.addEventListener("click", viewFilesForProject);
         projectCreateQuote.addEventListener("click", createQuoteFromProject);
@@ -9952,6 +10708,7 @@
           populateProjectOptions(selectedCustomerId);
           projectFields.customer.value = selectedCustomerId;
         });
+        projectDataModeSelect.addEventListener("change", changeProjectDataModeHandler);
         fileArchive.addEventListener("click", () => archiveFile());
         fileDelete.addEventListener("click", deleteFile);
         fileQuickActions.open.addEventListener("click", (event) => {
@@ -10055,6 +10812,14 @@
         testSupabaseWebsitesReadButton.addEventListener("click", testSupabaseWebsitesReadHandler);
         testSupabaseWebsiteWriteButton.addEventListener("click", testSupabaseWebsiteWriteHandler);
         resetWebsiteDataModeButton.addEventListener("click", resetWebsiteDataModeHandler);
+        runProjectMigrationDryRunButton.addEventListener("click", runProjectMigrationDryRunHandler);
+        viewProjectMappingPreviewButton.addEventListener("click", showProjectMappingPreviewHandler);
+        viewProjectMissingCustomerLinksButton.addEventListener("click", showProjectMissingCustomerLinksHandler);
+        viewProjectMissingWebsiteLinksButton.addEventListener("click", showProjectMissingWebsiteLinksHandler);
+        viewProjectDuplicatesButton.addEventListener("click", showProjectDuplicatesHandler);
+        testSupabaseProjectsReadButton.addEventListener("click", testSupabaseProjectsReadHandler);
+        testSupabaseProjectWriteButton.addEventListener("click", testSupabaseProjectWriteHandler);
+        resetProjectDataModeButton.addEventListener("click", resetProjectDataModeHandler);
         [customerMigrationIncludeDemo, customerMigrationIncludeProduction, customerMigrationBatchSize, customerMigrationSkipDuplicates, customerMigrationStopOnError].forEach((field) => {
           field.addEventListener("input", () => renderDeveloperToolsSummary());
           field.addEventListener("change", () => renderDeveloperToolsSummary());
@@ -10093,6 +10858,7 @@
         fillSettingsForm(readStoredSettings());
         customerDataModeSelect.value = readStoredSettings().customerDataMode || localStorage.getItem("maxwebstudioCustomerDataMode") || "local";
         websiteDataModeSelect.value = readStoredSettings().websiteDataMode || localStorage.getItem("maxwebstudioWebsiteDataMode") || "local";
+        projectDataModeSelect.value = readStoredSettings().projectDataMode || localStorage.getItem("maxwebstudioProjectDataMode") || "local";
         renderIntegrations();
         renderSystemStatus();
         syncActiveNav();
