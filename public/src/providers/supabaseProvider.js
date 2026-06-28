@@ -1,34 +1,48 @@
-function notActive() {
-  console.info("Supabase provider voorbereid, nog niet actief.");
-  return "Supabase provider voorbereid, nog niet actief.";
+import { getSupabaseClientStatus } from "./supabaseClient.js";
+
+function preparedMessage() {
+  const status = getSupabaseClientStatus();
+  if (!status.configured) return "Supabase niet geconfigureerd. Vul SUPABASE_URL en SUPABASE_ANON_KEY veilig in via environment variables.";
+  return "Supabase voorbereid, live queries komen in Fase 11.5/11.6.";
+}
+
+function readNotActive() {
+  console.info(preparedMessage());
+  return [];
+}
+
+function writeNotActive() {
+  throw new Error(preparedMessage());
 }
 
 export const supabaseProvider = {
-  type: "supabase",
+  type: "supabase-prepared",
   status: "prepared",
 
   getAll() {
-    notActive();
-    return [];
+    return readNotActive();
   },
   getById() {
-    notActive();
+    console.info(preparedMessage());
     return null;
   },
   create() {
-    throw new Error(notActive());
+    return writeNotActive();
   },
   update() {
-    throw new Error(notActive());
+    return writeNotActive();
   },
   delete() {
-    throw new Error(notActive());
+    return writeNotActive();
   },
   setAll() {
-    throw new Error(notActive());
+    return writeNotActive();
   },
   count() {
-    notActive();
+    console.info(preparedMessage());
     return 0;
+  },
+  getStatus() {
+    return getSupabaseClientStatus();
   },
 };

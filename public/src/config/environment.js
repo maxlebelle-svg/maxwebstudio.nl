@@ -6,6 +6,7 @@ export const ENVIRONMENTS = Object.freeze({
 
 export const PROVIDERS = Object.freeze({
   LOCAL_STORAGE: "localStorage",
+  SUPABASE_PREPARED: "supabase-prepared",
   SUPABASE: "supabase",
 });
 
@@ -17,7 +18,10 @@ export function getCurrentEnvironment() {
 }
 
 export function getCurrentProviderType() {
-  return window.__MAXWEBSTUDIO_PROVIDER__ || localStorage.getItem("maxwebstudioProvider") || DEFAULT_PROVIDER;
+  return window.__MAXWEBSTUDIO_PROVIDER__
+    || localStorage.getItem("maxwebstudioProvider")
+    || localStorage.getItem("maxwebstudioDataProviderMode")
+    || DEFAULT_PROVIDER;
 }
 
 export function isDemoEnvironment() {

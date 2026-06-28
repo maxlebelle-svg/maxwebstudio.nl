@@ -656,6 +656,9 @@
               <div class="settings-checkbox-grid">
                 <label><input id="setting-developer-mode" name="developerMode" type="checkbox" /> Developer Mode</label>
               </div>
+              <div class="admin-profile-fields">
+                <label class="admin-profile-wide" for="setting-data-provider-mode">Data provider mode<select id="setting-data-provider-mode" name="dataProviderMode"><option value="localStorage">localStorage</option><option value="supabase-prepared">supabase-prepared</option></select></label>
+              </div>
             </article>
 
             <div class="settings-submit-row">
@@ -762,6 +765,9 @@
                 <button class="button secondary" id="view-migration-plan" type="button">Bekijk migratieplan</button>
                 <button class="button secondary" id="view-planned-tables" type="button">Bekijk geplande tabellen</button>
                 <button class="button secondary" id="run-supabase-migration-check" type="button">Run localStorage migratie-check</button>
+                <button class="button secondary" id="check-supabase-config" type="button">Check Supabase configuratie</button>
+                <button class="button secondary" id="view-env-example" type="button">Bekijk .env voorbeeld</button>
+                <button class="button secondary" id="why-local-storage" type="button">Waarom nog localStorage?</button>
               </div>
               <div class="admin-grid compact-admin-grid" id="developer-tools-output"></div>
             </article>
@@ -1137,6 +1143,7 @@
           portalShowFiles: true,
           portalWelcomeText: "Welkom in je Max Webstudio klantomgeving. Hier vind je jouw offertes, facturen, projecten, websites en bestanden.",
           developerMode: false,
+          dataProviderMode: "localStorage",
         };
         const integrationDefinitions = [
           { name: "Mollie", category: "Betalingen", status: "Demo voorbereid", action: "Bekijk status", description: "Betaalverzoeken zijn voorbereid en kunnen later via de Mollie API actief worden gekoppeld." },
@@ -1604,6 +1611,9 @@
         const viewMigrationPlanButton = document.getElementById("view-migration-plan");
         const viewPlannedTablesButton = document.getElementById("view-planned-tables");
         const runSupabaseMigrationCheckButton = document.getElementById("run-supabase-migration-check");
+        const checkSupabaseConfigButton = document.getElementById("check-supabase-config");
+        const viewEnvExampleButton = document.getElementById("view-env-example");
+        const whyLocalStorageButton = document.getElementById("why-local-storage");
         const demoEmailList = document.getElementById("demo-email-list");
         const demoImportPreview = document.getElementById("demo-import-preview");
         const importLogList = document.getElementById("import-log-list");
@@ -2627,6 +2637,7 @@
           state.developerModules = {
             environment: await import("./src/config/environment.js"),
             providerFactory: await import("./src/providers/providerFactory.js"),
+            providerStatusService: await import("./src/services/providerStatusService.js"),
             migrationService: await import("./src/services/migrationService.js"),
             dataValidationService: await import("./src/services/dataValidationService.js"),
             activityLogService: await import("./src/services/activityLogService.js"),
@@ -2678,6 +2689,53 @@
             ["Migratieplan", readiness?.migrationPlanStatus || "prepared"],
             ["Huidige provider", readiness?.provider || "localStorage"],
             ["Live switch", readiness?.liveSwitch === "not_active" ? "Niet actief" : readiness?.liveSwitch || "Niet actief"],
+          ]);
+        }
+
+        function renderSupabaseConnectionStatus(providerStatus) {
+          appendDeveloperCard("Supabase connectiestatus", [
+            ["Supabase URL aanwezig", providerStatus.supabaseUrlPresent ? "Ja" : "Nee"],
+            ["Anon key aanwezig", providerStatus.supabaseAnonKeyPresent ? "Ja" : "Nee"],
+            ["Project ID aanwezig", providerStatus.supabaseProjectIdPresent ? "Ja" : "Nee"],
+            ["Provider mode", providerStatus.providerMode],
+            ["Actieve opslag", providerStatus.activeStorage],
+            ["Live queries", providerStatus.liveQueriesEnabled ? "Actief" : "Niet actief"],
+            ["Schema status", "Voorbereid"],
+            ["RLS status", "Voorbereid"],
+          ]);
+          appendDeveloperCard("Provider waarschuwingen", providerStatus.warnings);
+        }
+
+        function renderSupabaseSetupChecklist() {
+          appendDeveloperCard("Supabase setup checklist", [
+            ["1", "Supabase project aanmaken"],
+            ["2", "SQL schema uitvoeren"],
+            ["3", "RLS policies controleren"],
+            ["4", "Demo seed optioneel uitvoeren"],
+            ["5", "Environment variables invullen"],
+            ["6", "Provider switch testen"],
+            ["7", "Auth live koppelen"],
+            ["8", "Eerste module migreren"],
+            ["9", "Back-up maken voor migratie"],
+          ]);
+        }
+
+        function renderEnvExampleSummary() {
+          appendDeveloperCard(".env voorbeeld", [
+            ["SUPABASE_URL", "invullen via Netlify/env, niet committen"],
+            ["SUPABASE_ANON_KEY", "publieke anon key, alleen gebruiken met RLS"],
+            ["SUPABASE_PROJECT_ID", "projectreferentie"],
+            ["APP_ENV", "demo"],
+            ["DATA_PROVIDER", "localStorage"],
+            ["Bestanden", ".env.example en .env.local.example"],
+          ]);
+        }
+
+        function renderWhyLocalStorage() {
+          appendDeveloperCard("Waarom nog localStorage?", [
+            "De demo-omgeving en salesflow blijven veilig werken zonder live database.",
+            "Supabase schema, RLS en configuratie zijn voorbereid, maar live writes komen pas in een gecontroleerde vervolgfase.",
+            "Zo gaat er geen lokale data verloren en kan migratie eerst worden gevalideerd.",
           ]);
         }
 
@@ -2765,6 +2823,7 @@
             const modules = await loadDeveloperModules();
             const environment = modules.environment.getEnvironmentInfo();
             const provider = modules.providerFactory.getProviderInfo();
+            const providerStatus = modules.providerStatusService.getActiveProviderStatus();
             const counts = modules.migrationService.getRecordCounts();
             const supabaseReadiness = modules.migrationService.checkSupabaseReadiness();
             const recentActivities = modules.activityLogService.listRecentActivities(5);
@@ -2775,10 +2834,12 @@
 
             appendDeveloperCard("Omgeving", [
               ["Mode", environment.environment],
-              ["Provider", provider.provider],
+              ["Provider", provider.provider || provider.type],
               ["Demo actief", environment.isDemo ? "Ja" : "Nee"],
               ["Productie actief", environment.isProduction ? "Ja" : "Nee"],
             ]);
+            renderSupabaseConnectionStatus(providerStatus);
+            renderSupabaseSetupChecklist();
             appendDeveloperCard("Auth sessie", [
               ["Gebruiker", user?.name || user?.email || "Geen sessie"],
               ["Rol", permissionPreview.roleLabel],
@@ -2886,6 +2947,49 @@
           }
         }
 
+        async function checkSupabaseConfigHandler() {
+          try {
+            const { providerStatusService, activityLogService } = await loadDeveloperModules();
+            const providerStatus = providerStatusService.getActiveProviderStatus();
+            activityLogService.logActivity("developer_tools", "supabase", "check_supabase_config", {
+              configured: providerStatus.supabaseConfigured,
+              providerMode: providerStatus.providerMode,
+            });
+            await renderDeveloperToolsSummary();
+            renderSupabaseConnectionStatus(providerStatus);
+            setSettingsMessage("Supabase configuratiestatus gecontroleerd.", "success");
+          } catch (error) {
+            console.error("Supabase config check failed", error);
+            setSettingsMessage("Supabase configuratie kon niet worden gecontroleerd.", "error");
+          }
+        }
+
+        async function showEnvExampleHandler() {
+          try {
+            const { activityLogService } = await loadDeveloperModules();
+            activityLogService.logActivity("developer_tools", "supabase", "view_env_example", { source: "admin-dashboard" });
+            await renderDeveloperToolsSummary();
+            renderEnvExampleSummary();
+            setSettingsMessage(".env voorbeeld getoond.", "success");
+          } catch (error) {
+            console.error("Env example summary failed", error);
+            setSettingsMessage(".env voorbeeld kon niet worden getoond.", "error");
+          }
+        }
+
+        async function showWhyLocalStorageHandler() {
+          try {
+            const { activityLogService } = await loadDeveloperModules();
+            activityLogService.logActivity("developer_tools", "supabase", "why_local_storage", { source: "admin-dashboard" });
+            await renderDeveloperToolsSummary();
+            renderWhyLocalStorage();
+            setSettingsMessage("Uitleg over localStorage getoond.", "success");
+          } catch (error) {
+            console.error("localStorage explanation failed", error);
+            setSettingsMessage("Uitleg kon niet worden getoond.", "error");
+          }
+        }
+
         function renderDeveloperMode() {
           const enabled = isDeveloperModeEnabled();
           developerToolsCard.hidden = !enabled;
@@ -2944,10 +3048,16 @@
           event.preventDefault();
           const settings = collectSettingsForm();
           writeStoredSettings(settings);
+          localStorage.setItem("maxwebstudioProvider", settings.dataProviderMode || "localStorage");
+          localStorage.setItem("maxwebstudioDataProviderMode", settings.dataProviderMode || "localStorage");
           renderProductionReadiness();
           renderDeveloperMode();
           renderAuthSession();
-          setSettingsMessage("Instellingen opgeslagen in lokale dashboardopslag.", "success");
+          if (settings.dataProviderMode === "supabase-prepared") {
+            setSettingsMessage("Instellingen opgeslagen. Supabase provider is voorbereid, maar live datawrites zijn nog niet actief.", "success");
+          } else {
+            setSettingsMessage("Instellingen opgeslagen in lokale dashboardopslag.", "success");
+          }
         }
 
         function syncActiveNav(id = window.location.hash.replace("#", "") || "dashboard") {
@@ -7945,6 +8055,9 @@
         viewMigrationPlanButton.addEventListener("click", showMigrationPlanHandler);
         viewPlannedTablesButton.addEventListener("click", showPlannedTablesHandler);
         runSupabaseMigrationCheckButton.addEventListener("click", runSupabaseMigrationCheckHandler);
+        checkSupabaseConfigButton.addEventListener("click", checkSupabaseConfigHandler);
+        viewEnvExampleButton.addEventListener("click", showEnvExampleHandler);
+        whyLocalStorageButton.addEventListener("click", showWhyLocalStorageHandler);
         document.querySelectorAll("[data-settings-demo]").forEach((button) => {
           button.addEventListener("click", () => setSettingsMessage(button.dataset.settingsDemo, "success"));
         });
