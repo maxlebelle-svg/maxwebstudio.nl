@@ -17,6 +17,7 @@ export const STORAGE_KEYS = Object.freeze({
   migrationLog: "maxwebstudioMigrationLog",
   lastPreMigrationBackup: "maxwebstudioLastPreMigrationBackup",
   lastSupabaseReadOnlyTest: "maxwebstudioLastSupabaseReadOnlyTest",
+  lastSupabaseWriteTest: "maxwebstudioLastSupabaseWriteTest",
   authUsers: "maxwebstudioAuthUsers",
   currentSession: "maxwebstudioCurrentSession",
   accountRequests: "maxwebstudioAccountRequests",

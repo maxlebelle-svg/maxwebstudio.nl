@@ -8,6 +8,7 @@ export const PROVIDERS = Object.freeze({
   LOCAL_STORAGE: "localStorage",
   SUPABASE_PREPARED: "supabase-prepared",
   SUPABASE_READONLY: "supabase-readonly",
+  SUPABASE_WRITE_TEST: "supabase-write-test",
   SUPABASE: "supabase",
 });
 

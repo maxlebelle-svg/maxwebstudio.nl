@@ -657,7 +657,7 @@
                 <label><input id="setting-developer-mode" name="developerMode" type="checkbox" /> Developer Mode</label>
               </div>
               <div class="admin-profile-fields">
-                <label class="admin-profile-wide" for="setting-data-provider-mode">Data provider mode<select id="setting-data-provider-mode" name="dataProviderMode"><option value="localStorage">localStorage</option><option value="supabase-prepared">supabase-prepared</option><option value="supabase-readonly">supabase-readonly</option></select></label>
+                <label class="admin-profile-wide" for="setting-data-provider-mode">Data provider mode<select id="setting-data-provider-mode" name="dataProviderMode"><option value="localStorage">localStorage</option><option value="supabase-prepared">supabase-prepared</option><option value="supabase-readonly">supabase-readonly</option><option value="supabase-write-test">supabase-write-test</option></select></label>
               </div>
             </article>
 
@@ -771,6 +771,10 @@
                 <button class="button secondary" id="test-supabase-connection" type="button">Test Supabase verbinding</button>
                 <button class="button secondary" id="read-supabase-customers" type="button">Lees eerste 10 customers</button>
                 <button class="button secondary" id="check-supabase-customers-table" type="button">Check customers table</button>
+                <button class="button secondary" id="run-supabase-write-test" type="button">Run volledige write-test</button>
+                <button class="button secondary" id="create-supabase-test-customer" type="button">Maak testcustomer</button>
+                <button class="button secondary" id="update-supabase-test-customer" type="button">Update testcustomer</button>
+                <button class="button secondary" id="delete-supabase-test-customer" type="button">Verwijder testcustomer</button>
                 <button class="button secondary" id="view-env-example" type="button">Bekijk .env voorbeeld</button>
                 <button class="button secondary" id="why-local-storage" type="button">Waarom nog localStorage?</button>
                 <button class="button secondary" id="run-customer-migration-dry-run" type="button">Run CRM migratie dry run</button>
@@ -1636,6 +1640,10 @@
         const testSupabaseConnectionButton = document.getElementById("test-supabase-connection");
         const readSupabaseCustomersButton = document.getElementById("read-supabase-customers");
         const checkSupabaseCustomersTableButton = document.getElementById("check-supabase-customers-table");
+        const runSupabaseWriteTestButton = document.getElementById("run-supabase-write-test");
+        const createSupabaseTestCustomerButton = document.getElementById("create-supabase-test-customer");
+        const updateSupabaseTestCustomerButton = document.getElementById("update-supabase-test-customer");
+        const deleteSupabaseTestCustomerButton = document.getElementById("delete-supabase-test-customer");
         const viewEnvExampleButton = document.getElementById("view-env-example");
         const whyLocalStorageButton = document.getElementById("why-local-storage");
         const runCustomerMigrationDryRunButton = document.getElementById("run-customer-migration-dry-run");
@@ -2646,8 +2654,10 @@
             ["Supabase client", "Voorbereid", "Browserclient wordt veilig gedetecteerd via runtime factory/module, zonder secrets"],
             ["Supabase read-only", "Voorbereid", "Mode supabase-readonly kan connectie en customers-select testen"],
             ["Customers table check", "Voorbereid", "Developer Mode kan customers read-only tellen/lezen"],
-            ["Supabase writes", "Geblokkeerd", "Writes blijven dicht tot Fase 11.9"],
-            ["Migratie writes", "Niet actief", "Fase 11.9 activeert expliciet write-mode"],
+            ["Supabase write-test", "Voorbereid", "Mode supabase-write-test mag alleen veilige testcustomer-acties uitvoeren"],
+            ["Testcustomer lifecycle", "Voorbereid", "Create, update en delete zijn beperkt tot safeToDelete=true testrecords"],
+            ["Supabase writes", "Geblokkeerd", "Algemene writes blijven dicht"],
+            ["Migratie writes", "Niet actief", "Live customer migratie wordt pas in Fase 12.0 vrijgegeven"],
             ["CRM Supabase mapping", "Voorbereid", "CustomerRepository kan lokale klantrecords naar customers-rijen mappen"],
             ["CRM migratie dry run", "Gereed", "Developer Mode analyseert klanten zonder databasewrites"],
             ["CRM live writes basis", "Niet actief", "Live customer writes blijven afhankelijk van Supabase client readiness"],
@@ -2694,6 +2704,7 @@
             providerFactory: await import("./src/providers/providerFactory.js"),
             providerStatusService: await import("./src/services/providerStatusService.js"),
             supabaseReadinessService: await import("./src/services/supabaseReadinessService.js"),
+            supabaseWriteTestService: await import("./src/services/supabaseWriteTestService.js"),
             migrationService: await import("./src/services/migrationService.js"),
             customerMigrationService: await import("./src/services/customerMigrationService.js"),
             dataValidationService: await import("./src/services/dataValidationService.js"),
@@ -2792,6 +2803,41 @@
           ]);
         }
 
+        function renderSupabaseWriteTestStatus(readiness, results = []) {
+          const latest = results[0] || readiness.latestResult || {};
+          const customersTableConfirmed = readiness.readOnly?.customersTableAccessible === true
+            || (readiness.readOnly?.tableName === "customers" && readiness.readOnly?.success === true);
+          appendDeveloperCard("Supabase customer write-test", [
+            ["Provider mode", readiness.providerMode],
+            ["Developer Mode", readiness.developerMode ? "Aan" : "Uit"],
+            ["Supabase URL", readiness.supabase.hasUrl ? "Aanwezig" : "Ontbreekt"],
+            ["Anon key", readiness.supabase.hasAnonKey ? "Aanwezig" : "Ontbreekt"],
+            ["Client geladen", readiness.supabase.clientPackageAvailable ? "Ja" : "Nee"],
+            ["Read-only test", readiness.readOnly?.success || readiness.readOnly?.connected ? "Succesvol" : "Niet succesvol"],
+            ["Customers table", customersTableConfirmed ? "Bereikbaar" : "Niet bevestigd"],
+            ["Write-test enabled", readiness.allowed ? "Ja" : "Nee"],
+            ["Waarschuwing", "Alleen testcustomer, geen echte migratie"],
+            ["Laatste teststatus", latest.status || "Nog niet uitgevoerd"],
+            ["Laatste testcustomer", latest.testCustomerId || "-"],
+            ["Laatste fout", latest.error || "-"],
+          ]);
+          appendDeveloperCard("Write-test ontbrekende voorwaarden", readiness.missing.length ? readiness.missing : ["Alle write-test voorwaarden zijn voldaan."]);
+        }
+
+        function renderSupabaseWriteTestResult(result) {
+          appendDeveloperCard("Write-test resultaat", [
+            ["Status", result.status || "-"],
+            ["Testcustomer", result.testCustomerId || "-"],
+            ["Stap", result.step || result.type || "-"],
+            ["Aangemaakt", result.createdAt ? formatDate(result.createdAt) : "-"],
+            ["Voltooid", result.completedAt ? formatDate(result.completedAt) : "-"],
+            ["Fout", result.error || "-"],
+          ]);
+          if (result.steps?.length) {
+            appendDeveloperCard("Write-test stappen", result.steps.map((step) => [step.step, step.status]));
+          }
+        }
+
         function renderSupabaseSetupChecklist() {
           appendDeveloperCard("Supabase setup checklist", [
             ["1", "Supabase project aanmaken"],
@@ -2877,6 +2923,8 @@
 
         function renderCustomerLiveMigrationChecklist(readiness) {
           startCustomerLiveMigrationButton.disabled = !readiness.allowed;
+          const customersTableConfirmed = readiness.lastReadOnlyTest?.customersTableAccessible === true
+            || (readiness.lastReadOnlyTest?.tableName === "customers" && readiness.lastReadOnlyTest?.success === true);
           appendDeveloperCard("Veilige live migratie voorwaarden", [
             ["Supabase URL aanwezig", readiness.supabase.hasUrl ? "Ja" : "Nee"],
             ["Anon key aanwezig", readiness.supabase.hasAnonKey ? "Ja" : "Nee"],
@@ -2886,9 +2934,10 @@
             ["Records klaar met opties", String(readiness.readyRecords || 0)],
             ["Supabase client package", readiness.supabase.clientPackageAvailable ? "Beschikbaar" : "Niet actief"],
             ["Read-only test", readiness.lastReadOnlyTest ? `${readiness.lastReadOnlyTest.success || readiness.lastReadOnlyTest.connected ? "Succesvol" : "Niet succesvol"} - ${formatDate(readiness.lastReadOnlyTest.testedAt)}` : "Ontbreekt"],
-            ["Customers table", readiness.lastReadOnlyTest?.customersTableAccessible || readiness.lastReadOnlyTest?.tableName === "customers" ? "Bereikbaar" : "Niet bevestigd"],
+            ["Customers table", customersTableConfirmed ? "Bereikbaar" : "Niet bevestigd"],
+            ["Laatste write-test", readiness.lastWriteTest ? `${readiness.lastWriteTest.status || "-"} - ${formatDate(readiness.lastWriteTest.completedAt || readiness.lastWriteTest.createdAt)}` : "Ontbreekt"],
             ["Customer writes", readiness.supabase.customerWritesEnabled ? "Actief" : "Geblokkeerd"],
-            ["Migratieknop", readiness.allowed ? "Actief" : "Geblokkeerd"],
+            ["Migratieknop", "Geblokkeerd tot Fase 12.0"],
           ]);
           appendDeveloperCard("Ontbrekende voorwaarden", readiness.missing.length ? readiness.missing : ["Alle voorwaarden zijn voldaan."]);
         }
@@ -3130,6 +3179,8 @@
             const provider = modules.providerFactory.getProviderInfo();
             const providerStatus = modules.providerStatusService.getActiveProviderStatus();
             const readOnlySummary = modules.supabaseReadinessService.getReadOnlySummary();
+            const writeTestReadiness = modules.supabaseWriteTestService.getWriteTestReadiness();
+            const writeTestResults = modules.supabaseWriteTestService.getLatestWriteTestResults();
             const counts = modules.migrationService.getRecordCounts();
             const supabaseReadiness = modules.migrationService.checkSupabaseReadiness();
             const customerMigration = modules.customerMigrationService.analyzeCustomerData();
@@ -3149,6 +3200,7 @@
             ]);
             renderSupabaseConnectionStatus(providerStatus);
             renderSupabaseReadOnlyTest(readOnlySummary);
+            renderSupabaseWriteTestStatus(writeTestReadiness, writeTestResults);
             renderSupabaseSetupChecklist();
             renderCustomerMigrationCard(customerMigration);
             renderCustomerMigrationLogs(customerMigrationLogs);
@@ -3172,6 +3224,7 @@
               : ["Nog geen activiteit gelogd."]);
             if (extra.showAccountRequests) renderAccountRequestsList(modules.authService);
             if (extra.supabaseReadOnlyResult) renderSupabaseReadOnlyResult(extra.supabaseReadOnlyTitle || "Supabase read-only resultaat", extra.supabaseReadOnlyResult);
+            if (extra.supabaseWriteTestResult) renderSupabaseWriteTestResult(extra.supabaseWriteTestResult);
             if (extra.supabaseCustomerRows) {
               appendDeveloperCard("Eerste Supabase customers", extra.supabaseCustomerRows.length
                 ? extra.supabaseCustomerRows.map((row) => [
@@ -3379,6 +3432,68 @@
           }
         }
 
+        function confirmSupabaseWriteTest(actionLabel) {
+          const first = window.confirm(`${actionLabel}: dit mag alleen een veilige Supabase testcustomer raken. Doorgaan?`);
+          if (!first) return false;
+          return window.confirm("Laatste bevestiging: geen echte klanten, geen bulkactie, alleen testrecord met safeToDelete=true.");
+        }
+
+        async function runSupabaseWriteTestHandler() {
+          if (!confirmSupabaseWriteTest("Volledige write-test uitvoeren")) return;
+          try {
+            const { supabaseWriteTestService } = await loadDeveloperModules();
+            const result = await supabaseWriteTestService.runFullCustomerWriteTest();
+            await renderDeveloperToolsSummary({ supabaseWriteTestResult: result });
+            setSettingsMessage("Volledige Supabase write-test voltooid.", "success");
+          } catch (error) {
+            console.error("Supabase write test failed", error);
+            await renderDeveloperToolsSummary({ supabaseWriteTestResult: error.result || { status: "failed", error: error.message } });
+            setSettingsMessage(error.message || "Supabase write-test mislukt.", "error");
+          }
+        }
+
+        async function createSupabaseTestCustomerHandler() {
+          if (!confirmSupabaseWriteTest("Testcustomer aanmaken")) return;
+          try {
+            const { supabaseWriteTestService } = await loadDeveloperModules();
+            const result = await supabaseWriteTestService.createTestCustomer();
+            await renderDeveloperToolsSummary({ supabaseWriteTestResult: result });
+            setSettingsMessage("Supabase testcustomer aangemaakt.", "success");
+          } catch (error) {
+            console.error("Create testcustomer failed", error);
+            await renderDeveloperToolsSummary({ supabaseWriteTestResult: { status: "failed", step: "create", error: error.message } });
+            setSettingsMessage(error.message || "Testcustomer aanmaken mislukt.", "error");
+          }
+        }
+
+        async function updateSupabaseTestCustomerHandler() {
+          if (!confirmSupabaseWriteTest("Testcustomer updaten")) return;
+          try {
+            const { supabaseWriteTestService } = await loadDeveloperModules();
+            const result = await supabaseWriteTestService.updateTestCustomer();
+            await renderDeveloperToolsSummary({ supabaseWriteTestResult: result });
+            setSettingsMessage("Supabase testcustomer geupdatet.", "success");
+          } catch (error) {
+            console.error("Update testcustomer failed", error);
+            await renderDeveloperToolsSummary({ supabaseWriteTestResult: { status: "failed", step: "update", error: error.message } });
+            setSettingsMessage(error.message || "Testcustomer updaten mislukt.", "error");
+          }
+        }
+
+        async function deleteSupabaseTestCustomerHandler() {
+          if (!confirmSupabaseWriteTest("Testcustomer verwijderen")) return;
+          try {
+            const { supabaseWriteTestService } = await loadDeveloperModules();
+            const result = await supabaseWriteTestService.deleteTestCustomer();
+            await renderDeveloperToolsSummary({ supabaseWriteTestResult: result });
+            setSettingsMessage("Supabase testcustomer verwijderd.", "success");
+          } catch (error) {
+            console.error("Delete testcustomer failed", error);
+            await renderDeveloperToolsSummary({ supabaseWriteTestResult: { status: "failed", step: "delete", error: error.message } });
+            setSettingsMessage(error.message || "Testcustomer verwijderen mislukt.", "error");
+          }
+        }
+
         async function showEnvExampleHandler() {
           try {
             const { activityLogService } = await loadDeveloperModules();
@@ -3579,7 +3694,9 @@
           renderProductionReadiness();
           renderDeveloperMode();
           renderAuthSession();
-          if (settings.dataProviderMode === "supabase-readonly") {
+          if (settings.dataProviderMode === "supabase-write-test") {
+            setSettingsMessage("Instellingen opgeslagen. Supabase write-test mode staat klaar voor testcustomers; massamigratie blijft geblokkeerd.", "success");
+          } else if (settings.dataProviderMode === "supabase-readonly") {
             setSettingsMessage("Instellingen opgeslagen. Supabase read-only checks zijn beschikbaar; writes blijven geblokkeerd.", "success");
           } else if (settings.dataProviderMode === "supabase-prepared") {
             setSettingsMessage("Instellingen opgeslagen. Supabase provider is voorbereid, maar live datawrites zijn nog niet actief.", "success");
@@ -8588,6 +8705,10 @@
         testSupabaseConnectionButton.addEventListener("click", testSupabaseConnectionHandler);
         readSupabaseCustomersButton.addEventListener("click", readSupabaseCustomersHandler);
         checkSupabaseCustomersTableButton.addEventListener("click", checkSupabaseCustomersTableHandler);
+        runSupabaseWriteTestButton.addEventListener("click", runSupabaseWriteTestHandler);
+        createSupabaseTestCustomerButton.addEventListener("click", createSupabaseTestCustomerHandler);
+        updateSupabaseTestCustomerButton.addEventListener("click", updateSupabaseTestCustomerHandler);
+        deleteSupabaseTestCustomerButton.addEventListener("click", deleteSupabaseTestCustomerHandler);
         viewEnvExampleButton.addEventListener("click", showEnvExampleHandler);
         whyLocalStorageButton.addEventListener("click", showWhyLocalStorageHandler);
         runCustomerMigrationDryRunButton.addEventListener("click", runCustomerMigrationDryRunHandler);

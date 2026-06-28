@@ -233,6 +233,7 @@ export function canRunLiveCustomerMigration(options = {}) {
   const lastBackup = getLastPreMigrationBackup();
   const lastDryRun = readArray(STORAGE_KEYS.migrationLog).find((entry) => entry.type === "customer_migration_dry_run");
   const lastReadOnlyTest = readJson(STORAGE_KEYS.lastSupabaseReadOnlyTest, null);
+  const lastWriteTest = readJson(STORAGE_KEYS.lastSupabaseWriteTest, null);
   const readyRecords = getCustomerMigrationWritePreview(options).records.length;
   const missing = [];
   if (!supabase.hasUrl) missing.push("Supabase URL ontbreekt.");
@@ -247,6 +248,8 @@ export function canRunLiveCustomerMigration(options = {}) {
   const customersTableConfirmed = lastReadOnlyTest?.customersTableAccessible === true
     || (lastReadOnlyTest?.tableName === "customers" && lastReadOnlyTest?.success === true);
   if (!customersTableConfirmed) missing.push("Customers table check ontbreekt of is niet succesvol.");
+  if (lastWriteTest?.status !== "completed") missing.push("Supabase write-test succesvol binnen huidige sessie ontbreekt.");
+  missing.push("Live customer migratie wordt vrijgegeven in Fase 12.0.");
   return {
     allowed: missing.length === 0,
     missing,
@@ -255,6 +258,7 @@ export function canRunLiveCustomerMigration(options = {}) {
     lastBackup,
     lastDryRun,
     lastReadOnlyTest,
+    lastWriteTest,
     readyRecords,
     analysis,
   };

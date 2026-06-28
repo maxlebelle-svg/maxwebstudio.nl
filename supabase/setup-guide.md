@@ -42,6 +42,7 @@ Beschikbare modes:
 - `localStorage`: standaard actief, veilig voor demo en sales.
 - `supabase-prepared`: toont voorbereiding/status, maar voert nog geen live reads/writes uit.
 - `supabase-readonly`: voert alleen veilige connectie- en select-checks uit. Writes blijven geblokkeerd.
+- `supabase-write-test`: staat alleen testcustomer create/update/delete toe. Geen bulkacties en geen echte klantmigratie.
 
 De echte write/live provider komt pas in een latere fase.
 
@@ -74,6 +75,34 @@ Gebruik in Admin Dashboard -> Developer Mode:
 
 Deze checks doen alleen `select`/`count` op de tabel `customers`. Er worden geen records aangemaakt, aangepast of verwijderd.
 
+## 4.4 Customer write-test
+
+Fase 11.9 voegt een gecontroleerde write-test toe voor de tabel `customers`.
+
+De write-test:
+
+- gebruikt provider mode `supabase-write-test`
+- werkt alleen in Developer Mode
+- vereist een succesvolle read-only connectiecheck
+- vereist een succesvolle customers table check
+- vraagt dubbele bevestiging in de UI
+- schrijft uitsluitend een herkenbaar testrecord
+
+Het testrecord is herkenbaar aan:
+
+- `company_name = Supabase Write Test Klant`
+- `name = Supabase Test`
+- `email = supabase-write-test@maxwebstudio.nl`
+- `status = test`
+- `is_demo = true`
+- `environment = test`
+- `metadata.createdBy = supabase-write-test`
+- `metadata.safeToDelete = true`
+
+RLS moet voor deze test alleen toestaan wat nodig is voor dit testrecord. Gebruik nooit de service role key in de frontend. Als `delete` niet lukt, verwijder het testrecord handmatig in Supabase en controleer daarna de RLS policy voor testrecords.
+
+Massamigratie blijft geblokkeerd tot een latere fase. De write-test bewijst alleen dat een veilige individuele create/update/delete technisch mogelijk is.
+
 ## 4.3 RLS errors oplossen
 
 Als de read-only test een RLS- of permission-error toont:
@@ -99,13 +128,15 @@ Zolang `DATA_PROVIDER=localStorage` of de dashboardsetting op localStorage staat
 - Commit nooit `.env` of `.env.local`.
 - Zet nooit `SUPABASE_SERVICE_ROLE_KEY` in browsercode.
 - Test RLS eerst met losse testgebruikers.
-- Laat writes geblokkeerd tot Fase 11.9 expliciet write-mode activeert.
+- Laat algemene writes geblokkeerd tot een latere fase expliciet migratie-write-mode activeert.
+- Gebruik write-test alleen voor `Supabase Write Test Klant`; echte klantdata migreren komt later.
 - Zet de provider pas live om na succesvolle migratiecheck en back-up.
 
 ## 7. Volgende fases
 
 - Fase 11.8: read-only connectiechecks.
-- Fase 11.9: gecontroleerde customer write-mode.
+- Fase 11.9: gecontroleerde customer write-test mode.
+- Fase 12.0: expliciete vrijgave van veilige customer migratie.
 - Auth live koppelen aan Supabase Auth.
 - Eerste module gecontroleerd migreren.
 - Back-up en rollbackprocedure testen.

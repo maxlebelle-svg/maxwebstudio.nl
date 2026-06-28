@@ -28,6 +28,9 @@ export function getProviderWarnings() {
   if (providerMode === PROVIDERS.SUPABASE_READONLY) {
     warnings.push("Supabase read-only mode is actief voor connectiechecks. Writes blijven geblokkeerd en app-data blijft localStorage.");
   }
+  if (providerMode === PROVIDERS.SUPABASE_WRITE_TEST) {
+    warnings.push("Supabase write-test mode is actief. Alleen veilige testcustomer-acties zijn toegestaan; massamigratie blijft geblokkeerd.");
+  }
   if (!supabaseStatus.configured) {
     warnings.push("Supabase URL of anon key ontbreekt. Vul deze alleen in via environment configuratie, nooit hardcoded.");
   }
@@ -52,7 +55,8 @@ export function getActiveProviderStatus() {
     supabaseProjectIdPresent: supabaseStatus.hasProjectId,
     liveDatabaseActive: false,
     liveQueriesEnabled: Boolean(providerMode === PROVIDERS.SUPABASE_READONLY && supabaseStatus.liveQueriesEnabled),
-    readOnlyEnabled: Boolean(providerMode === PROVIDERS.SUPABASE_READONLY),
+    readOnlyEnabled: Boolean(providerMode === PROVIDERS.SUPABASE_READONLY || providerMode === PROVIDERS.SUPABASE_WRITE_TEST),
+    writeTestEnabled: Boolean(providerMode === PROVIDERS.SUPABASE_WRITE_TEST),
     supabaseClientLoaded: Boolean(supabaseStatus.clientPackageAvailable),
     supabaseConnected: Boolean(supabaseStatus.connected),
     safeSupabaseSummary: getSafeSupabaseClientSummary(),

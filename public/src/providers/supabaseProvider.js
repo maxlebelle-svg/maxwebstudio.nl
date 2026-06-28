@@ -1,3 +1,4 @@
+import { getCurrentProviderType, PROVIDERS } from "../config/environment.js";
 import { getSupabaseClient, getSupabaseClientStatus } from "./supabaseClient.js";
 
 function isCustomersTable(table) {
@@ -20,6 +21,27 @@ async function getReadClient(table = "") {
 
 function writeBlocked() {
   throw new Error("Supabase writes zijn nog geblokkeerd in read-only mode.");
+}
+
+function isWriteTestMode() {
+  return getCurrentProviderType() === PROVIDERS.SUPABASE_WRITE_TEST;
+}
+
+function isSafeTestCustomer(record = {}) {
+  return record.company_name === "Supabase Write Test Klant"
+    && record.name === "Supabase Test"
+    && record.email === "supabase-write-test@maxwebstudio.nl"
+    && record.is_demo === true
+    && record.environment === "test"
+    && record.metadata?.createdBy === "supabase-write-test"
+    && record.metadata?.safeToDelete === true;
+}
+
+async function getWriteClient() {
+  if (!isWriteTestMode()) throw new Error("Supabase writes zijn alleen toegestaan in supabase-write-test mode.");
+  const client = await getSupabaseClient();
+  if (!client) throw new Error("Supabase client niet beschikbaar; write-test blijft geblokkeerd.");
+  return client;
 }
 
 export const supabaseProvider = {
@@ -49,15 +71,48 @@ export const supabaseProvider = {
     return data || null;
   },
 
-  create() {
-    return writeBlocked();
+  async create(table, record = {}) {
+    if (!isCustomersTable(table)) throw new Error("Supabase write-test ondersteunt alleen de customers tabel.");
+    if (!isSafeTestCustomer(record)) throw new Error("Alleen de veilige Supabase Write Test Klant mag worden aangemaakt.");
+    const client = await getWriteClient();
+    const { data, error } = await client.from("customers").insert(record).select("*").single();
+    if (error) throw new Error(error.message || "Testcustomer aanmaken is mislukt.");
+    return { success: true, table: "customers", action: "create", data };
   },
-  update() {
-    return writeBlocked();
+
+  async update(table, id, updates = {}) {
+    if (!isCustomersTable(table)) throw new Error("Supabase write-test ondersteunt alleen de customers tabel.");
+    const existing = await this.getById("customers", id);
+    if (!existing?.metadata?.safeToDelete || existing?.metadata?.createdBy !== "supabase-write-test") {
+      throw new Error("Alleen veilige testcustomers met safeToDelete=true mogen worden bijgewerkt.");
+    }
+    const safeUpdates = {
+      ...updates,
+      metadata: {
+        ...(existing.metadata || {}),
+        ...(updates.metadata || {}),
+        createdBy: "supabase-write-test",
+        safeToDelete: true,
+      },
+    };
+    const client = await getWriteClient();
+    const { data, error } = await client.from("customers").update(safeUpdates).eq("id", id).select("*").single();
+    if (error) throw new Error(error.message || "Testcustomer updaten is mislukt.");
+    return { success: true, table: "customers", action: "update", data };
   },
-  delete() {
-    return writeBlocked();
+
+  async delete(table, id) {
+    if (!isCustomersTable(table)) throw new Error("Supabase write-test ondersteunt alleen de customers tabel.");
+    const existing = await this.getById("customers", id);
+    if (!existing?.metadata?.safeToDelete || existing?.metadata?.createdBy !== "supabase-write-test") {
+      throw new Error("Alleen testrecords met safeToDelete=true mogen worden verwijderd.");
+    }
+    const client = await getWriteClient();
+    const { data, error } = await client.from("customers").delete().eq("id", id).select("*").single();
+    if (error) throw new Error(error.message || "Testcustomer verwijderen is mislukt.");
+    return { success: true, table: "customers", action: "delete", data };
   },
+
   setAll() {
     return writeBlocked();
   },
