@@ -175,3 +175,11 @@ Factuurbeheer in het Admin CRM gebruikt in deze fase nog geen nieuwe auth-flow. 
 Klanttoegang tot live facturen wordt pas hard gemaakt wanneer Supabase Auth, route guards en RLS voor het klantportaal volledig actief zijn.
 
 De bestaande demo-betaalpagina blijft werken op localStorage-data. Live factuurdata uit Supabase mag later pas klantzichtbaar worden wanneer de ingelogde gebruiker via RLS alleen eigen facturen en factuurregels kan lezen.
+
+## Fase 12.7 - Abonnementen
+
+Abonnementbeheer in het Admin CRM gebruikt in deze fase nog geen nieuwe auth-flow. De Supabase-voorbereiding voor `subscriptions` blijft achter de bestaande adminomgeving en Developer Mode.
+
+Klanttoegang tot live abonnementen wordt pas hard gemaakt wanneer Supabase Auth, route guards en RLS voor het klantportaal volledig actief zijn.
+
+De bestaande demo-klantportaalweergave blijft werken op localStorage-data. Live subscriptiondata uit Supabase mag later pas klantzichtbaar worden wanneer de ingelogde gebruiker via RLS alleen eigen abonnementen kan lezen.

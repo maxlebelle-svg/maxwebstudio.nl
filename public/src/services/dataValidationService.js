@@ -4,6 +4,7 @@ import { normalizeWebsite } from "../utils/websiteNormalizer.js";
 import { normalizeProject, projectIdentityKeys } from "../utils/projectNormalizer.js";
 import { calculateQuoteTotals, normalizeQuote, quoteIdentityKeys } from "../utils/quoteNormalizer.js";
 import { calculateInvoiceTotals, normalizeInvoice, invoiceIdentityKeys } from "../utils/invoiceNormalizer.js";
+import { normalizeSubscription, subscriptionIdentityKeys } from "../utils/subscriptionNormalizer.js";
 
 function readArray(key) {
   try {
@@ -96,8 +97,27 @@ export function validateLocalStorageData() {
       quoteNumbers.set(keys.quoteNumber, quote.id);
     }
   });
-  subscriptions.forEach((subscription) => {
+  const activeSubscriptionKeys = new Map();
+  subscriptions.map(normalizeSubscription).forEach((subscription) => {
     if (!subscription.profileId && !subscription.customerId) pushIssue(issues, "error", "subscriptions", "Abonnement mist klantkoppeling.", subscription.id);
+    if (subscription.profileId && !customerIds.has(subscription.profileId)) pushIssue(issues, "error", "subscriptions", "Abonnement heeft ontbrekende klant.", subscription.id);
+    if (subscription.websiteId && !websiteIds.has(subscription.websiteId)) pushIssue(issues, "warning", "subscriptions", "Abonnement heeft ontbrekende website.", subscription.id);
+    if (subscription.projectId && !projectIds.has(subscription.projectId)) pushIssue(issues, "warning", "subscriptions", "Abonnement heeft ontbrekend project.", subscription.id);
+    if (subscription.lastInvoiceId && !invoices.some((invoice) => invoice.id === subscription.lastInvoiceId)) pushIssue(issues, "warning", "subscriptions", "Abonnement heeft ontbrekende laatste factuur.", subscription.id);
+    if (!subscription.plan) pushIssue(issues, "warning", "subscriptions", "Abonnement mist plan.", subscription.id);
+    if (!subscription.status) pushIssue(issues, "warning", "subscriptions", "Abonnement mist status.", subscription.id);
+    if (!subscription.invoiceFrequency && !subscription.billingCycle) pushIssue(issues, "warning", "subscriptions", "Abonnement mist frequentie.", subscription.id);
+    if (!subscription.startDate) pushIssue(issues, "warning", "subscriptions", "Abonnement mist startdatum.", subscription.id);
+    if (subscription.nextInvoiceDate && Number.isNaN(new Date(subscription.nextInvoiceDate).getTime())) pushIssue(issues, "warning", "subscriptions", "Abonnement heeft ongeldige volgende factuurdatum.", subscription.id);
+    if (subscription.priceExVat < 0) pushIssue(issues, "error", "subscriptions", "Abonnement heeft negatieve prijs.", subscription.id);
+    if ((subscription.isDemo || subscription.isDemoJourney || subscription.environment === "demo") && !subscription.demoScenarioId && !subscription.demoJourneyId) {
+      pushIssue(issues, "info", "subscriptions", "Demo-abonnement mist demoScenarioId/demoJourneyId.", subscription.id);
+    }
+    const keys = subscriptionIdentityKeys(subscription);
+    if (subscription.status === "actief" && keys.customerWebsitePlan) {
+      if (activeSubscriptionKeys.has(keys.customerWebsitePlan)) pushIssue(issues, "warning", "subscriptions", "Dubbel actief abonnement voor klant/website/plan.", subscription.id);
+      activeSubscriptionKeys.set(keys.customerWebsitePlan, subscription.id);
+    }
   });
 
   const invoiceNumbers = new Map();

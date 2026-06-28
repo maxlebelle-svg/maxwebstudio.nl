@@ -207,3 +207,10 @@ Belangrijk:
 - Gecontroleerde factuuracties zijn voorbereid voor create, update, archive, reactivate, mark sent, mark paid en mark expired; er is geen hard delete, bulk-write of provider switch toegevoegd.
 - Factuurregels worden voorbereid als aparte `invoice_lines`, zodat bedragen, btw en regels later niet als losse JSON in één factuurrecord hoeven te blijven.
 - Bestaande lokale factuurflow, demo-betaalpagina, offerte-naar-factuur conversie en abonnement-naar-conceptfactuur flow blijven intact.
+- Fase 12.7 bereidt abonnement-migratie naar Supabase voor met tabel `subscriptions`.
+- De SQL-basis voor abonnementen staat in `/docs/supabase-subscriptions.sql`.
+- Het Admin CRM heeft nu een `Subscription data mode` met `local`, `supabase-read` en `hybrid`; standaard blijft veilig `local`.
+- Abonnementen kunnen in Developer Mode worden geanalyseerd via dry-run, mapping preview, ontbrekende koppelingen, duplicaten, MRR-impact, read-test en een veilige testabonnement-write.
+- Gecontroleerde abonnementacties zijn voorbereid voor create, update, pause, cancel, reactivate en archive; er is geen hard delete, bulk-write, provider switch of echte Mollie subscription-mutatie toegevoegd.
+- Abonnementkoppelingen naar customer, website, project en laatste factuur worden gevalideerd voordat Supabase-writes toegestaan worden.
+- Bestaande lokale recurring billing, MRR/ARR-berekening en abonnement-naar-conceptfactuur flow blijven intact.

@@ -496,8 +496,12 @@
         <section class="admin-section" id="onderhoud">
           <div class="admin-section-heading">
             <div><p class="section-kicker">Onderhoud</p><h2>Abonnementen</h2></div>
-            <button class="button primary" id="new-subscription" type="button">Nieuw abonnement</button>
+            <div class="admin-actions">
+              <label for="subscription-data-mode">Subscription data mode<select id="subscription-data-mode"><option value="local">Local</option><option value="supabase-read">Supabase read</option><option value="hybrid">Hybrid</option></select></label>
+              <button class="button primary" id="new-subscription" type="button">Nieuw abonnement</button>
+            </div>
           </div>
+          <div class="admin-grid compact-admin-grid" id="subscription-source-summary" aria-live="polite"></div>
           <div class="admin-grid invoice-stats-grid" aria-label="Abonnement statistieken">
             <article class="admin-card detail-card"><span>Actieve abonnementen</span><strong id="subscription-stat-active">0</strong></article>
             <article class="admin-card detail-card"><span>MRR ex. btw</span><strong id="subscription-stat-mrr-ex">€ 0,00</strong></article>
@@ -511,7 +515,7 @@
           <div class="admin-grid compact-admin-grid" id="care-overview"></div>
           <div class="admin-filters invoice-filters" aria-label="Abonnementen filteren">
             <label for="subscription-search">Zoeken<input id="subscription-search" type="search" placeholder="Klant, bedrijf, website, plan of status" /></label>
-            <label for="subscription-status-filter">Status<select id="subscription-status-filter"><option value="">Alle statussen</option><option value="actief">Actief</option><option value="concept">Concept</option><option value="gepauzeerd">Gepauzeerd</option><option value="opgezegd">Opgezegd</option><option value="verlopen">Verlopen</option></select></label>
+            <label for="subscription-status-filter">Status<select id="subscription-status-filter"><option value="">Alle statussen</option><option value="actief">Actief</option><option value="concept">Concept</option><option value="gepauzeerd">Gepauzeerd</option><option value="opgezegd">Opgezegd</option><option value="verlopen">Verlopen</option><option value="gearchiveerd">Gearchiveerd</option><option value="test">Test</option></select></label>
             <label for="subscription-plan-filter">Plan<select id="subscription-plan-filter"><option value="">Alle plannen</option><option value="Geen onderhoud">Geen onderhoud</option><option value="Care Basic">Care Basic</option><option value="Care Plus">Care Plus</option><option value="Care Growth">Care Growth</option><option value="Custom">Custom</option></select></label>
             <label for="subscription-customer-filter">Klant<select id="subscription-customer-filter"><option value="">Alle klanten</option></select></label>
             <label for="subscription-website-filter">Website<select id="subscription-website-filter"><option value="">Alle websites</option></select></label>
@@ -846,6 +850,14 @@
                 <button class="button secondary" id="test-supabase-invoices-read" type="button">Test invoice read</button>
                 <button class="button secondary" id="test-supabase-invoice-write" type="button">Test invoice write met testfactuur</button>
                 <button class="button secondary" id="reset-invoice-data-mode" type="button">Reset invoice data mode naar local</button>
+                <button class="button secondary" id="run-subscription-migration-dry-run" type="button">Run abonnement migratie dry-run</button>
+                <button class="button secondary" id="view-subscription-mapping-preview" type="button">Bekijk abonnement mapping preview</button>
+                <button class="button secondary" id="view-subscription-missing-links" type="button">Bekijk ontbrekende abonnement-koppelingen</button>
+                <button class="button secondary" id="view-subscription-duplicates" type="button">Bekijk abonnement duplicaten</button>
+                <button class="button secondary" id="view-subscription-mrr-impact" type="button">Bekijk MRR impact</button>
+                <button class="button secondary" id="test-supabase-subscriptions-read" type="button">Test subscription read</button>
+                <button class="button secondary" id="test-supabase-subscription-write" type="button">Test subscription write met testabonnement</button>
+                <button class="button secondary" id="reset-subscription-data-mode" type="button">Reset subscription data mode naar local</button>
                 <button class="button secondary" id="view-env-example" type="button">Bekijk .env voorbeeld</button>
                 <button class="button secondary" id="why-local-storage" type="button">Waarom nog localStorage?</button>
                 <button class="button secondary" id="run-customer-migration-dry-run" type="button">Run CRM migratie dry run</button>
@@ -948,7 +960,7 @@
             <label class="admin-profile-wide" for="subscription-website">Website<select id="subscription-website"></select></label>
             <label class="admin-profile-wide" for="subscription-project">Project<select id="subscription-project"></select></label>
             <label for="subscription-package">Plan<select id="subscription-package" required><option value="Geen onderhoud">Geen onderhoud</option><option value="Care Basic">Care Basic</option><option value="Care Plus">Care Plus</option><option value="Care Growth">Care Growth</option><option value="Custom">Custom</option></select></label>
-            <label for="subscription-status">Status<select id="subscription-status"><option value="actief">Actief</option><option value="concept">Concept</option><option value="gepauzeerd">Gepauzeerd</option><option value="opgezegd">Opgezegd</option><option value="verlopen">Verlopen</option></select></label>
+            <label for="subscription-status">Status<select id="subscription-status"><option value="actief">Actief</option><option value="concept">Concept</option><option value="gepauzeerd">Gepauzeerd</option><option value="opgezegd">Opgezegd</option><option value="verlopen">Verlopen</option><option value="gearchiveerd">Gearchiveerd</option><option value="test">Test</option></select></label>
             <label for="subscription-start">Startdatum<input id="subscription-start" type="date" /></label>
             <label for="subscription-end">Einddatum optioneel<input id="subscription-end" type="date" /></label>
             <label for="subscription-next">Volgende factuurdatum<input id="subscription-next" type="date" /></label>
@@ -963,8 +975,15 @@
             <label class="admin-profile-wide" for="subscription-notes">Notities<textarea id="subscription-notes"></textarea></label>
           </div>
           <div class="admin-grid compact-admin-grid subscription-detail-summary" id="subscription-detail-summary" aria-live="polite"></div>
+          <div class="settings-status-list admin-profile-wide" id="subscription-source-detail"></div>
+          <div class="settings-status-list admin-profile-wide" id="subscription-history-list" hidden></div>
           <div class="admin-profile-actions">
             <button class="button primary" id="subscription-save" type="submit">Abonnement opslaan</button>
+            <button class="button secondary" id="subscription-pause" type="button">Pauzeren</button>
+            <button class="button secondary" id="subscription-reactivate" type="button">Reactiveren</button>
+            <button class="button secondary" id="subscription-refresh-supabase" type="button">Ververs uit Supabase</button>
+            <button class="button secondary" id="subscription-history" type="button">Historie</button>
+            <button class="button secondary danger" id="subscription-archive" type="button">Archiveer</button>
             <p class="admin-form-message" id="subscription-message" role="status"></p>
           </div>
         </form>
@@ -1264,6 +1283,7 @@
           projectDataMode: "local",
           quoteDataMode: "local",
           invoiceDataMode: "local",
+          subscriptionDataMode: "local",
         };
         const integrationDefinitions = [
           { name: "Mollie", category: "Betalingen", status: "Demo voorbereid", action: "Bekijk status", description: "Betaalverzoeken zijn voorbereid en kunnen later via de Mollie API actief worden gekoppeld." },
@@ -1343,6 +1363,8 @@
           quoteWriteReadiness: null,
           invoiceSourceStatus: null,
           invoiceWriteReadiness: null,
+          subscriptionSourceStatus: null,
+          subscriptionWriteReadiness: null,
         };
 
         const adminTokenInput = document.getElementById("admin-token");
@@ -1552,6 +1574,8 @@
         };
         const careOverview = document.getElementById("care-overview");
         const subscriptionList = document.getElementById("subscription-list");
+        const subscriptionDataModeSelect = document.getElementById("subscription-data-mode");
+        const subscriptionSourceSummary = document.getElementById("subscription-source-summary");
         const subscriptionSearch = document.getElementById("subscription-search");
         const subscriptionStatusFilter = document.getElementById("subscription-status-filter");
         const subscriptionPlanFilter = document.getElementById("subscription-plan-filter");
@@ -1581,6 +1605,13 @@
         const invoiceMessage = document.getElementById("invoice-message");
         const subscriptionSave = document.getElementById("subscription-save");
         const subscriptionDetailSummary = document.getElementById("subscription-detail-summary");
+        const subscriptionSourceDetail = document.getElementById("subscription-source-detail");
+        const subscriptionHistoryList = document.getElementById("subscription-history-list");
+        const subscriptionPause = document.getElementById("subscription-pause");
+        const subscriptionReactivate = document.getElementById("subscription-reactivate");
+        const subscriptionRefreshSupabase = document.getElementById("subscription-refresh-supabase");
+        const subscriptionHistory = document.getElementById("subscription-history");
+        const subscriptionArchive = document.getElementById("subscription-archive");
         const subscriptionFields = {
           id: document.getElementById("subscription-id"),
           profile: document.getElementById("subscription-profile"),
@@ -1825,6 +1856,14 @@
         const testSupabaseInvoicesReadButton = document.getElementById("test-supabase-invoices-read");
         const testSupabaseInvoiceWriteButton = document.getElementById("test-supabase-invoice-write");
         const resetInvoiceDataModeButton = document.getElementById("reset-invoice-data-mode");
+        const runSubscriptionMigrationDryRunButton = document.getElementById("run-subscription-migration-dry-run");
+        const viewSubscriptionMappingPreviewButton = document.getElementById("view-subscription-mapping-preview");
+        const viewSubscriptionMissingLinksButton = document.getElementById("view-subscription-missing-links");
+        const viewSubscriptionDuplicatesButton = document.getElementById("view-subscription-duplicates");
+        const viewSubscriptionMrrImpactButton = document.getElementById("view-subscription-mrr-impact");
+        const testSupabaseSubscriptionsReadButton = document.getElementById("test-supabase-subscriptions-read");
+        const testSupabaseSubscriptionWriteButton = document.getElementById("test-supabase-subscription-write");
+        const resetSubscriptionDataModeButton = document.getElementById("reset-subscription-data-mode");
         const viewEnvExampleButton = document.getElementById("view-env-example");
         const whyLocalStorageButton = document.getElementById("why-local-storage");
         const runCustomerMigrationDryRunButton = document.getElementById("run-customer-migration-dry-run");
@@ -2951,6 +2990,7 @@
             projectRepository: await import("./src/repositories/ProjectRepository.js"),
             quoteRepository: await import("./src/repositories/QuoteRepository.js"),
             invoiceRepository: await import("./src/repositories/InvoiceRepository.js"),
+            subscriptionRepository: await import("./src/repositories/SubscriptionRepository.js"),
             providerStatusService: await import("./src/services/providerStatusService.js"),
             supabaseReadinessService: await import("./src/services/supabaseReadinessService.js"),
             supabaseWriteTestService: await import("./src/services/supabaseWriteTestService.js"),
@@ -2960,6 +3000,7 @@
             projectMigrationService: await import("./src/services/projectMigrationService.js"),
             quoteMigrationService: await import("./src/services/quoteMigrationService.js"),
             invoiceMigrationService: await import("./src/services/invoiceMigrationService.js"),
+            subscriptionMigrationService: await import("./src/services/subscriptionMigrationService.js"),
             dataValidationService: await import("./src/services/dataValidationService.js"),
             activityLogService: await import("./src/services/activityLogService.js"),
             authService: await import("./src/services/authService.js"),
@@ -3714,6 +3755,142 @@
           }
         }
 
+        function renderSubscriptionDataSourceStatus(status = state.subscriptionSourceStatus || {}) {
+          const counts = status.counts || {};
+          appendDeveloperCard("Subscription data source", [
+            ["Subscription data mode", status.mode || currentSubscriptionDataMode()],
+            ["Supabase read status", status.error ? "Fout" : status.mode === "local" ? "Niet gebruikt" : "Beschikbaar"],
+            ["Local count", String(counts.local ?? 0)],
+            ["Supabase count", String(counts.supabase ?? 0)],
+            ["Hybrid count", String(counts.hybrid ?? state.subscriptions.length ?? 0)],
+            ["Duplicate merge count", String(counts.duplicateMerges ?? 0)],
+            ["Demo abonnementen", String(counts.demo ?? 0)],
+            ["Ongemigreerd lokaal", String(counts.unmigratedLocal ?? 0)],
+            ["Actief", String(counts.active ?? 0)],
+            ["Gepauzeerd", String(counts.paused ?? 0)],
+            ["Opgezegd", String(counts.cancelled ?? 0)],
+            ["MRR ex. btw", money(counts.mrrExVat ?? 0)],
+            ["MRR incl. btw", money(counts.mrrInclVat ?? 0)],
+            ["ARR ex. btw", money(counts.arrExVat ?? 0)],
+            ["ARR incl. btw", money(counts.arrInclVat ?? 0)],
+            ["Fallback status", status.fallbackUsed ? "Local fallback gebruikt" : "Geen fallback"],
+            ["Laatste refresh", status.refreshedAt ? formatDate(status.refreshedAt) : "-"],
+            ["Error", status.error || "-"],
+          ]);
+        }
+
+        function renderSubscriptionSupabaseReadiness(modules) {
+          const summary = modules.subscriptionMigrationService.getSubscriptionReadinessSummary();
+          const recentSubscriptionWrites = modules.activityLogService
+            .listRecentActivities(50)
+            .filter((activity) => activity.entityType === "subscriptions" || activity.entityType === "developer_tools")
+            .filter((activity) => String(activity.action || "").includes("subscription"))
+            .slice(0, 6);
+          appendDeveloperCard("Abonnement Supabase readiness", [
+            ["Klaar voor mapping", String(summary.ready || 0)],
+            ["Wachten op customer migratie", String(summary.waitingForCustomer || 0)],
+            ["Wachten op website migratie", String(summary.waitingForWebsite || 0)],
+            ["Wachten op project migratie", String(summary.waitingForProject || 0)],
+            ["Wachten op laatste factuur migratie", String(summary.waitingForInvoice || 0)],
+            ["Klantkoppeling ontbreekt", String(summary.missingCustomer || 0)],
+            ["Mogelijke duplicaten", String(summary.duplicates || 0)],
+            ["Ontbrekende velden/aandacht", String(summary.missingFields || 0)],
+            ["MRR klaar ex. btw", money(summary.mrrImpact?.readyMrrExVat || 0)],
+            ["MRR geblokkeerd ex. btw", money(summary.mrrImpact?.blockedMrrExVat || 0)],
+            ["Laatste dry-run", summary.lastDryRun?.createdAt ? formatDate(summary.lastDryRun.createdAt) : "Nog niet uitgevoerd"],
+            ["Live bulk migratie", "Geblokkeerd in deze fase"],
+            ["Write scope", "Alleen gecontroleerde create/update/pause/cancel/reactivate/archive per abonnement"],
+          ]);
+          appendDeveloperCard("Laatste abonnement activiteiten", recentSubscriptionWrites.length
+            ? recentSubscriptionWrites.map((activity) => [activity.action || "subscription", formatDate(activity.createdAt)])
+            : ["Nog geen abonnement migratie/write activiteit."]);
+        }
+
+        function renderSubscriptionMappingPreview(preview) {
+          appendDeveloperCard("Abonnement mapping preview", [
+            ["Totaal", String(preview.summary.totalSubscriptions || 0)],
+            ["Uniek", String(preview.summary.uniqueSubscriptions || 0)],
+            ["Klaar", String(preview.summary.readyCount || 0)],
+            ["Wacht op klant", String(preview.summary.waitingForCustomer || 0)],
+            ["Wacht op website", String(preview.summary.waitingForWebsite || 0)],
+            ["Wacht op project", String(preview.summary.waitingForProject || 0)],
+            ["Wacht op laatste factuur", String(preview.summary.waitingForInvoice || 0)],
+            ["Duplicaten", String(preview.summary.duplicateCount || 0)],
+            ["MRR klaar ex. btw", money(preview.summary.mrrImpact?.readyMrrExVat || 0)],
+            ["MRR totaal ex. btw", money(preview.summary.mrrImpact?.totalMrrExVat || 0)],
+            ["Preview", "Maximaal 20 records"],
+          ]);
+          preview.rows.slice(0, 12).forEach((item) => {
+            appendDeveloperCard(`Abonnement mapping ${item.plan || item.localId || "abonnement"}`, [
+              ["localStorage id", item.localId || "-"],
+              ["Supabase tabel", "subscriptions"],
+              ["customer_id", item.payload?.subscription?.customer_id || "-"],
+              ["website_id", item.payload?.subscription?.website_id || "-"],
+              ["project_id", item.payload?.subscription?.project_id || "-"],
+              ["last_invoice_id", item.payload?.subscription?.last_invoice_id || "-"],
+              ["status", item.payload?.subscription?.status || item.status || "-"],
+              ["frequentie", item.payload?.subscription?.invoice_frequency || "-"],
+              ["MRR ex. btw", money(item.mrrExVat || 0)],
+              ["MRR incl. btw", money(item.mrrInclVat || 0)],
+              ["ready", item.ready ? "Ja" : "Nee"],
+              ["errors", item.errors?.length ? item.errors.join(" | ") : "-"],
+              ["warnings", item.warnings?.length ? item.warnings.join(" | ") : "-"],
+            ]);
+          });
+        }
+
+        function renderSubscriptionMissingLinks(items = []) {
+          appendDeveloperCard("Abonnement ontbrekende koppelingen", items.length
+            ? items.slice(0, 12).map((item) => [
+              item.plan || item.id || "Abonnement",
+              [
+                item.customerLink?.status ? `klant: ${item.customerLink.status}` : "",
+                item.websiteLink?.status ? `website: ${item.websiteLink.status}` : "",
+                item.projectLink?.status ? `project: ${item.projectLink.status}` : "",
+                item.invoiceLink?.status ? `laatste factuur: ${item.invoiceLink.status}` : "",
+              ].filter(Boolean).join(" | "),
+            ])
+            : ["Geen ontbrekende abonnement-koppelingen gevonden."]);
+        }
+
+        function renderSubscriptionDuplicates(duplicates = []) {
+          appendDeveloperCard("Abonnement duplicaten", duplicates.length
+            ? duplicates.slice(0, 12).map((item) => [
+              item.key || item.subscription?.plan || "duplicate",
+              `${item.subscription?.plan || "Abonnement"} lijkt dubbel met ${item.duplicateOf || "eerder record"}`,
+            ])
+            : ["Geen mogelijke abonnement-duplicaten gevonden."]);
+        }
+
+        function renderSubscriptionMrrImpact(impact = {}) {
+          appendDeveloperCard("Abonnement MRR impact", [
+            ["Actieve abonnementen", String(impact.activeCount || 0)],
+            ["Klaar voor Supabase", String(impact.readyCount || 0)],
+            ["Geblokkeerd", String(impact.blockedCount || 0)],
+            ["Klaar MRR ex. btw", money(impact.readyMrrExVat || 0)],
+            ["Klaar MRR incl. btw", money(impact.readyMrrInclVat || 0)],
+            ["Klaar ARR ex. btw", money(impact.readyArrExVat || 0)],
+            ["Klaar ARR incl. btw", money(impact.readyArrInclVat || 0)],
+            ["Geblokkeerde MRR ex. btw", money(impact.blockedMrrExVat || 0)],
+            ["Totaal MRR ex. btw", money(impact.totalMrrExVat || 0)],
+            ["Totaal ARR ex. btw", money(impact.totalArrExVat || 0)],
+          ]);
+        }
+
+        function renderSubscriptionWriteTestResult(result = {}) {
+          appendDeveloperCard("Subscription write-test resultaat", [
+            ["Status", result.status || "-"],
+            ["Testabonnement", result.testSubscriptionId || result.subscriptionId || "-"],
+            ["Stap", result.step || result.type || "-"],
+            ["Aangemaakt", result.createdAt ? formatDate(result.createdAt) : "-"],
+            ["Voltooid", result.completedAt ? formatDate(result.completedAt) : "-"],
+            ["Fout", result.error || "-"],
+          ]);
+          if (result.steps?.length) {
+            appendDeveloperCard("Subscription write-test stappen", result.steps.map((step) => [step.step, step.status]));
+          }
+        }
+
         function renderCustomerMigrationResult(result) {
           appendDeveloperCard("CRM migratie resultaat", [
             ["Status", result.status],
@@ -3983,6 +4160,8 @@
             renderQuoteSupabaseReadiness(modules);
             renderInvoiceDataSourceStatus(state.invoiceSourceStatus);
             renderInvoiceSupabaseReadiness(modules);
+            renderSubscriptionDataSourceStatus(state.subscriptionSourceStatus);
+            renderSubscriptionSupabaseReadiness(modules);
             renderSupabaseSetupChecklist();
             renderCustomerMigrationCard(customerMigration);
             renderCustomerMigrationLogs(customerMigrationLogs);
@@ -4060,6 +4239,17 @@
               renderInvoiceMissingLinks(extra.invoiceDryRun.missingLinks);
               renderInvoiceInvalidLines(extra.invoiceDryRun.invalidLines);
               renderInvoiceDuplicates(extra.invoiceDryRun.duplicates);
+            }
+            if (extra.subscriptionMappingPreview) renderSubscriptionMappingPreview(extra.subscriptionMappingPreview);
+            if (extra.subscriptionMissingLinks) renderSubscriptionMissingLinks(extra.subscriptionMissingLinks);
+            if (extra.subscriptionDuplicates) renderSubscriptionDuplicates(extra.subscriptionDuplicates);
+            if (extra.subscriptionMrrImpact) renderSubscriptionMrrImpact(extra.subscriptionMrrImpact);
+            if (extra.subscriptionWriteTestResult) renderSubscriptionWriteTestResult(extra.subscriptionWriteTestResult);
+            if (extra.subscriptionDryRun) {
+              renderSubscriptionMappingPreview(extra.subscriptionDryRun.preview);
+              renderSubscriptionMissingLinks(extra.subscriptionDryRun.missingLinks);
+              renderSubscriptionDuplicates(extra.subscriptionDryRun.duplicates);
+              renderSubscriptionMrrImpact(extra.subscriptionDryRun.mrrImpact);
             }
             if (extra.customerDryRun) {
               renderCustomerMappingPreview({
@@ -5021,6 +5211,33 @@
           await renderDeveloperToolsSummary();
         }
 
+        async function setSubscriptionDataMode(mode, options = {}) {
+          const settings = { ...readStoredSettings(), subscriptionDataMode: mode };
+          writeStoredSettings(settings);
+          localStorage.setItem("maxwebstudioSubscriptionDataMode", mode);
+          subscriptionDataModeSelect.value = mode;
+          try {
+            const { activityLogService } = await loadDeveloperModules();
+            activityLogService.logActivity("developer_tools", "subscriptions", "subscription_source_mode_changed", { mode, ...options });
+          } catch {
+            // Logging is helpful, but changing subscription read mode should not depend on Developer Tools imports.
+          }
+          await loadCRMData(false);
+        }
+
+        async function changeSubscriptionDataModeHandler(event) {
+          const mode = event.target.value || "local";
+          if (mode !== "local") {
+            const confirmed = window.confirm(`Subscription data mode wijzigen naar ${mode}? Er wordt geen data verwijderd en er worden geen Supabase bulk-writes uitgevoerd.`);
+            if (!confirmed) {
+              subscriptionDataModeSelect.value = readStoredSettings().subscriptionDataMode || localStorage.getItem("maxwebstudioSubscriptionDataMode") || "local";
+              return;
+            }
+          }
+          await setSubscriptionDataMode(mode, { source: "subscription_select" });
+          await renderDeveloperToolsSummary();
+        }
+
         async function resetQuoteDataModeHandler() {
           await setQuoteDataMode("local", { source: "developer_reset" });
           await renderDeveloperToolsSummary();
@@ -5212,6 +5429,12 @@
           await setInvoiceDataMode("local", { source: "developer_reset" });
           await renderDeveloperToolsSummary();
           setSettingsMessage("Invoice data mode teruggezet naar local.", "success");
+        }
+
+        async function resetSubscriptionDataModeHandler() {
+          await setSubscriptionDataMode("local", { source: "developer_reset" });
+          await renderDeveloperToolsSummary();
+          setSettingsMessage("Subscription data mode teruggezet naar local.", "success");
         }
 
         async function runInvoiceMigrationDryRunHandler() {
@@ -5414,6 +5637,233 @@
           }
         }
 
+        async function runSubscriptionMigrationDryRunHandler() {
+          try {
+            const { subscriptionMigrationService, activityLogService } = await loadDeveloperModules();
+            const dryRun = subscriptionMigrationService.runSubscriptionMigrationDryRun();
+            activityLogService.logActivity("developer_tools", "subscriptions", "subscription_dry_run", {
+              readyCount: dryRun.analysis.readyCount,
+              waitingForCustomer: dryRun.analysis.waitingForCustomer,
+              duplicateCount: dryRun.analysis.duplicateCount,
+              mrrExVat: dryRun.mrrImpact.totalMrrExVat,
+            });
+            await renderDeveloperToolsSummary({ subscriptionDryRun: dryRun });
+            setSettingsMessage("Abonnement migratie dry-run uitgevoerd. Er zijn geen Supabase writes gedaan.", "success");
+          } catch (error) {
+            console.error("Subscription migration dry run failed", error);
+            setSettingsMessage("Abonnement migratie dry-run kon niet worden uitgevoerd.", "error");
+          }
+        }
+
+        async function showSubscriptionMappingPreviewHandler() {
+          try {
+            const { subscriptionMigrationService, activityLogService } = await loadDeveloperModules();
+            const preview = subscriptionMigrationService.getSubscriptionMigrationPreview();
+            activityLogService.logActivity("developer_tools", "subscriptions", "view_subscription_mapping_preview", { count: preview.summary.totalSubscriptions });
+            await renderDeveloperToolsSummary({ subscriptionMappingPreview: preview });
+            setSettingsMessage("Abonnement mapping preview getoond.", "success");
+          } catch (error) {
+            console.error("Subscription mapping preview failed", error);
+            setSettingsMessage("Abonnement mapping preview kon niet worden getoond.", "error");
+          }
+        }
+
+        async function showSubscriptionMissingLinksHandler() {
+          try {
+            const { subscriptionMigrationService, activityLogService } = await loadDeveloperModules();
+            const missing = subscriptionMigrationService.detectMissingSubscriptionLinks();
+            activityLogService.logActivity("developer_tools", "subscriptions", "view_subscription_missing_links", { count: missing.length });
+            await renderDeveloperToolsSummary({ subscriptionMissingLinks: missing });
+            setSettingsMessage("Ontbrekende abonnement-koppelingen getoond.", "success");
+          } catch (error) {
+            console.error("Subscription missing links failed", error);
+            setSettingsMessage("Ontbrekende abonnement-koppelingen konden niet worden getoond.", "error");
+          }
+        }
+
+        async function showSubscriptionDuplicatesHandler() {
+          try {
+            const { subscriptionMigrationService, activityLogService } = await loadDeveloperModules();
+            const duplicates = subscriptionMigrationService.detectDuplicateSubscriptions();
+            activityLogService.logActivity("developer_tools", "subscriptions", "view_subscription_duplicates", { count: duplicates.length });
+            await renderDeveloperToolsSummary({ subscriptionDuplicates: duplicates });
+            setSettingsMessage("Abonnement duplicaten getoond.", "success");
+          } catch (error) {
+            console.error("Subscription duplicates failed", error);
+            setSettingsMessage("Abonnement duplicaten konden niet worden getoond.", "error");
+          }
+        }
+
+        async function showSubscriptionMrrImpactHandler() {
+          try {
+            const { subscriptionMigrationService, activityLogService } = await loadDeveloperModules();
+            const impact = subscriptionMigrationService.calculateSubscriptionMigrationMrrImpact();
+            activityLogService.logActivity("developer_tools", "subscriptions", "view_subscription_mrr_impact", {
+              activeCount: impact.activeCount,
+              readyMrrExVat: impact.readyMrrExVat,
+              totalMrrExVat: impact.totalMrrExVat,
+            });
+            await renderDeveloperToolsSummary({ subscriptionMrrImpact: impact });
+            setSettingsMessage("Abonnement MRR impact getoond.", "success");
+          } catch (error) {
+            console.error("Subscription MRR impact failed", error);
+            setSettingsMessage("Abonnement MRR impact kon niet worden getoond.", "error");
+          }
+        }
+
+        async function testSupabaseSubscriptionsReadHandler() {
+          try {
+            const { subscriptionRepository, activityLogService } = await loadDeveloperModules();
+            const subscriptions = await subscriptionRepository.listSupabaseSubscriptions();
+            activityLogService.logActivity("developer_tools", "subscriptions", "read_supabase_subscriptions", { rows: subscriptions.length });
+            await renderDeveloperToolsSummary({
+              subscriptionMappingPreview: {
+                summary: {
+                  totalSubscriptions: subscriptions.length,
+                  uniqueSubscriptions: subscriptions.length,
+                  readyCount: subscriptions.length,
+                  waitingForCustomer: 0,
+                  waitingForWebsite: 0,
+                  waitingForProject: 0,
+                  waitingForInvoice: 0,
+                  duplicateCount: 0,
+                  mrrImpact: subscriptionMigrationServiceSafeMrr(subscriptions),
+                },
+                rows: subscriptions.slice(0, 10).map((subscription) => ({
+                  localId: subscription._localSubscriptionId || subscription.id,
+                  plan: subscription.plan,
+                  status: subscription.status,
+                  ready: true,
+                  errors: [],
+                  warnings: [],
+                  mrrExVat: subscription._mrrExVat || subscriptionMonthlyAmount(subscription, false),
+                  mrrInclVat: subscription._mrrInclVat || subscriptionMonthlyAmount(subscription, true),
+                  payload: {
+                    subscription: {
+                      customer_id: subscription.supabaseCustomerId || subscription.customerId || "-",
+                      website_id: subscription.supabaseWebsiteId || subscription.websiteId || "-",
+                      project_id: subscription.supabaseProjectId || subscription.projectId || "-",
+                      last_invoice_id: subscription.supabaseLastInvoiceId || subscription.lastInvoiceId || "-",
+                      status: subscription.status,
+                      invoice_frequency: subscription.billingCycle,
+                    },
+                  },
+                })),
+              },
+            });
+            setSettingsMessage(`${subscriptions.length} Supabase abonnementen gelezen.`, "success");
+          } catch (error) {
+            console.error("Read Supabase subscriptions failed", error);
+            setSettingsMessage(error.message || "Supabase abonnementen lezen kon niet worden uitgevoerd.", "error");
+          }
+        }
+
+        function subscriptionMigrationServiceSafeMrr(subscriptions = []) {
+          const active = subscriptions.filter((subscription) => subscription.status === "actief");
+          const totalMrrExVat = active.reduce((sum, subscription) => sum + subscriptionMonthlyAmount(subscription, false), 0);
+          const totalMrrInclVat = active.reduce((sum, subscription) => sum + subscriptionMonthlyAmount(subscription, true), 0);
+          return {
+            activeCount: active.length,
+            readyCount: active.length,
+            blockedCount: 0,
+            readyMrrExVat: totalMrrExVat,
+            readyMrrInclVat: totalMrrInclVat,
+            readyArrExVat: totalMrrExVat * 12,
+            readyArrInclVat: totalMrrInclVat * 12,
+            blockedMrrExVat: 0,
+            totalMrrExVat,
+            totalMrrInclVat,
+            totalArrExVat: totalMrrExVat * 12,
+            totalArrInclVat: totalMrrInclVat * 12,
+          };
+        }
+
+        async function testSupabaseSubscriptionWriteHandler() {
+          const first = window.confirm("Testabonnement schrijven naar Supabase? Dit gebruikt een veilig testabonnement en geen echte klantdata.");
+          if (!first) return;
+          const second = window.confirm("Bevestig: dit is alleen bedoeld voor gecontroleerde write-test, geen bulkactie.");
+          if (!second) return;
+          const result = {
+            status: "started",
+            type: "subscription_write_test",
+            createdAt: new Date().toISOString(),
+            steps: [],
+          };
+          try {
+            const { subscriptionRepository, activityLogService } = await loadDeveloperModules();
+            const testSubscription = {
+              plan: "Supabase Subscription Test",
+              status: "test",
+              priceExVat: 49,
+              vatRate: 21,
+              vatPercentage: 21,
+              billingCycle: "monthly",
+              invoiceFrequency: "monthly",
+              startDate: new Date().toISOString().slice(0, 10),
+              nextInvoiceDate: new Date().toISOString().slice(0, 10),
+              environment: "test",
+              isDemo: true,
+              metadata: {
+                createdBy: "supabase-subscription-write-test",
+                safeToDelete: true,
+              },
+            };
+            const existingTestSubscription = (await subscriptionRepository.listSupabaseSubscriptions())
+              .find((subscription) => subscription.plan === "Supabase Subscription Test" && subscription.status === "test");
+            result.steps.push({ step: existingTestSubscription ? "update_existing_test" : "create", status: "started" });
+            const created = existingTestSubscription
+              ? await subscriptionRepository.updateSubscription(existingTestSubscription.id, {
+                ...existingTestSubscription,
+                ...testSubscription,
+                id: existingTestSubscription.id,
+                supabaseSubscriptionId: existingTestSubscription._supabaseSubscriptionId || existingTestSubscription.supabaseSubscriptionId || existingTestSubscription.id,
+              }, {
+                oldSubscription: existingTestSubscription,
+                target: "supabase",
+                mode: currentSubscriptionDataMode(),
+                allowDemoSupabase: true,
+                allowOrphanSubscription: true,
+                subscriptionWriteTest: true,
+              })
+              : await subscriptionRepository.createSubscription(testSubscription, {
+                target: "supabase",
+                mode: currentSubscriptionDataMode(),
+                allowDemoSupabase: true,
+                allowOrphanSubscription: true,
+                subscriptionWriteTest: true,
+              });
+            result.testSubscriptionId = created._supabaseSubscriptionId || created.supabaseSubscriptionId || created.id;
+            result.subscriptionId = result.testSubscriptionId;
+            result.steps[result.steps.length - 1].status = "completed";
+            result.steps.push({ step: "archive", status: "started" });
+            await subscriptionRepository.archiveSubscription(created.id, {
+              subscription: created,
+              oldSubscription: created,
+              target: "supabase",
+              mode: currentSubscriptionDataMode(),
+              baseUpdatedAt: created.updatedAt,
+              subscriptionWriteTest: true,
+              allowDemoSupabase: true,
+              allowOrphanSubscription: true,
+            });
+            result.steps[result.steps.length - 1].status = "completed";
+            result.status = "subscription_completed";
+            result.completedAt = new Date().toISOString();
+            localStorage.setItem("maxwebstudioLastSubscriptionWriteTest", JSON.stringify(result));
+            activityLogService.logActivity("developer_tools", "subscriptions", "subscription_write_test_completed", { testSubscriptionId: result.testSubscriptionId });
+            await renderDeveloperToolsSummary({ subscriptionWriteTestResult: result });
+            setSettingsMessage("Supabase subscription write-test voltooid en testabonnement gearchiveerd.", "success");
+          } catch (error) {
+            result.status = "failed";
+            result.error = error.message || "Subscription write-test mislukt.";
+            result.completedAt = new Date().toISOString();
+            localStorage.setItem("maxwebstudioLastSubscriptionWriteTest", JSON.stringify(result));
+            console.error("Subscription write-test failed", error);
+            await renderDeveloperToolsSummary({ subscriptionWriteTestResult: result });
+            setSettingsMessage(result.error, "error");
+          }
+        }
+
         function renderDeveloperMode() {
           const enabled = isDeveloperModeEnabled();
           developerToolsCard.hidden = !enabled;
@@ -5601,6 +6051,10 @@
           return invoiceDataModeSelect.value || readStoredSettings().invoiceDataMode || localStorage.getItem("maxwebstudioInvoiceDataMode") || "local";
         }
 
+        function currentSubscriptionDataMode() {
+          return subscriptionDataModeSelect.value || readStoredSettings().subscriptionDataMode || localStorage.getItem("maxwebstudioSubscriptionDataMode") || "local";
+        }
+
         async function getCustomerRepositoryModule() {
           const modules = await loadDeveloperModules();
           return modules.customerRepository;
@@ -5624,6 +6078,11 @@
         async function getInvoiceRepositoryModule() {
           const modules = await loadDeveloperModules();
           return modules.invoiceRepository;
+        }
+
+        async function getSubscriptionRepositoryModule() {
+          const modules = await loadDeveloperModules();
+          return modules.subscriptionRepository;
         }
 
         function customerSupabaseId(customer = {}) {
@@ -5785,6 +6244,21 @@
             refreshedAt: result.refreshedAt,
           }));
           return result.invoices.map(normalizeInvoice);
+        }
+
+        async function loadSubscriptionsByDataMode() {
+          const mode = currentSubscriptionDataMode();
+          const { SubscriptionRepository } = await import("./src/repositories/SubscriptionRepository.js");
+          const result = await SubscriptionRepository.listByDataMode(mode);
+          state.subscriptionSourceStatus = result;
+          localStorage.setItem("maxwebstudioLastSubscriptionSourceStatus", JSON.stringify({
+            mode: result.mode,
+            counts: result.counts,
+            fallbackUsed: result.fallbackUsed,
+            error: result.error,
+            refreshedAt: result.refreshedAt,
+          }));
+          return result.subscriptions.map(normalizeSubscription);
         }
 
         function normalizeWebsiteStatus(value) {
@@ -8531,6 +9005,106 @@
           invoiceHistoryList.hidden = false;
         }
 
+        function subscriptionSourceLabel(subscription = {}) {
+          const source = subscription._source || "local";
+          if (source === "supabase") return "Supabase";
+          if (source === "hybrid") return "Hybrid";
+          if (source === "demo") return "Demo";
+          return "Local";
+        }
+
+        function subscriptionSourceClass(subscription = {}) {
+          const source = subscription._source || "local";
+          if (source === "supabase") return "status-active";
+          if (source === "hybrid") return "status-warning";
+          if (source === "demo" || subscription.isDemo || subscription.environment === "demo") return "status-prepared";
+          return "status-planned";
+        }
+
+        function isSupabaseManagedSubscription(subscription = {}) {
+          return ["supabase", "hybrid"].includes(subscription._source) || Boolean(subscription._supabaseSubscriptionId || subscription.supabaseSubscriptionId);
+        }
+
+        function renderSubscriptionSourceSummary() {
+          const status = state.subscriptionSourceStatus || { mode: currentSubscriptionDataMode(), counts: {} };
+          const counts = status.counts || {};
+          subscriptionSourceSummary.replaceChildren();
+          [
+            ["Subscription data mode", status.mode || currentSubscriptionDataMode()],
+            ["Local", String(counts.local ?? state.subscriptions.length ?? 0)],
+            ["Supabase", String(counts.supabase ?? 0)],
+            ["Hybrid zichtbaar", String(counts.hybrid ?? state.subscriptions.length ?? 0)],
+            ["Demo", String(counts.demo ?? state.subscriptions.filter((subscription) => subscription._source === "demo").length)],
+            ["Actief", String(counts.active ?? state.subscriptions.filter((subscription) => subscription.status === "actief").length)],
+            ["Pauze/opgezegd", `${counts.paused ?? state.subscriptions.filter((subscription) => subscription.status === "gepauzeerd").length} / ${counts.cancelled ?? state.subscriptions.filter((subscription) => subscription.status === "opgezegd").length}`],
+            ["MRR ex. btw", money(counts.mrrExVat ?? state.subscriptions.filter((subscription) => subscription.status === "actief").reduce((sum, subscription) => sum + subscriptionMonthlyAmount(subscription, false), 0))],
+            ["MRR incl. btw", money(counts.mrrInclVat ?? state.subscriptions.filter((subscription) => subscription.status === "actief").reduce((sum, subscription) => sum + subscriptionMonthlyAmount(subscription, true), 0))],
+            ["ARR ex. btw", money(counts.arrExVat ?? state.subscriptions.filter((subscription) => subscription.status === "actief").reduce((sum, subscription) => sum + subscriptionMonthlyAmount(subscription, false), 0) * 12)],
+            ["ARR incl. btw", money(counts.arrInclVat ?? state.subscriptions.filter((subscription) => subscription.status === "actief").reduce((sum, subscription) => sum + subscriptionMonthlyAmount(subscription, true), 0) * 12)],
+            ["Ongemigreerd local", String(counts.unmigratedLocal ?? 0)],
+          ].forEach(([label, value]) => {
+            const card = document.createElement("article");
+            card.className = "admin-card metric-card";
+            card.append(createCell(label), createCell(value, "strong"));
+            subscriptionSourceSummary.append(card);
+          });
+          if (status.error) {
+            const card = document.createElement("article");
+            card.className = "admin-card request-card request-state-card";
+            card.append(createBadge(status.fallbackUsed ? "Fallback actief" : "Supabase fout", status.fallbackUsed ? "status-warning" : "status-attention"), createCell(status.error));
+            subscriptionSourceSummary.append(card);
+          }
+        }
+
+        function renderSubscriptionSourceDetail(subscription = null, readiness = null) {
+          subscriptionSourceDetail.replaceChildren();
+          if (!subscription) return;
+          [
+            ["Databron", subscriptionSourceLabel(subscription)],
+            ["Migratiestatus", subscription._isMigrated || subscription.supabaseSubscriptionId ? "Gemigreerd" : "Lokaal/niet gemigreerd"],
+            ["Supabase subscription ID", subscription._supabaseSubscriptionId || subscription.supabaseSubscriptionId || "-"],
+            ["Lokale subscription ID", subscription._localSubscriptionId || subscription.id || "-"],
+            ["Klantkoppeling", subscription._linkedCustomerStatus || readiness?.customerLink?.status || "-"],
+            ["Websitekoppeling", subscription._linkedWebsiteStatus || readiness?.websiteLink?.status || "-"],
+            ["Projectkoppeling", subscription._linkedProjectStatus || readiness?.projectLink?.status || "-"],
+            ["Laatste factuur koppeling", subscription._linkedInvoiceStatus || readiness?.invoiceLink?.status || "-"],
+            ["MRR ex. btw", money(subscription._mrrExVat ?? subscriptionMonthlyAmount(subscription, false))],
+            ["MRR incl. btw", money(subscription._mrrInclVat ?? subscriptionMonthlyAmount(subscription, true))],
+            ["ARR ex. btw", money(subscription._arrExVat ?? subscriptionMonthlyAmount(subscription, false) * 12)],
+            ["ARR incl. btw", money(subscription._arrInclVat ?? subscriptionMonthlyAmount(subscription, true) * 12)],
+            ["Volgende factuurdatum", formatDate(subscription.nextInvoiceDate)],
+            ["Laatste update", formatDate(subscription.updatedAt || subscription._sourceMeta?.refreshedAt || "")],
+            ["Subscription write", readiness ? readiness.allowed ? "Beschikbaar" : "Geblokkeerd" : isSupabaseManagedSubscription(subscription) ? "Wordt gecontroleerd" : "LocalStorage"],
+            ["Write reden", readiness?.reason || readiness?.customerLink?.message || "-"],
+          ].forEach(([label, value]) => {
+            const row = document.createElement("div");
+            row.append(createCell(label), createCell(value, "strong"));
+            subscriptionSourceDetail.append(row);
+          });
+        }
+
+        function renderSubscriptionHistory(subscription) {
+          subscriptionHistoryList.replaceChildren();
+          if (!subscription) {
+            subscriptionHistoryList.hidden = true;
+            return;
+          }
+          const history = state.developerModules?.subscriptionRepository?.getSubscriptionHistory(subscription.id) || [];
+          if (!history.length) {
+            const row = document.createElement("div");
+            row.append(createCell("Wijzigingshistorie"), createCell("Nog geen abonnement write-activiteiten."));
+            subscriptionHistoryList.append(row);
+            subscriptionHistoryList.hidden = false;
+            return;
+          }
+          history.slice(0, 8).forEach((item) => {
+            const row = document.createElement("div");
+            row.append(createCell(formatDate(item.createdAt)), createCell(`${item.action || "update"} - ${item.metadata?.source || "local"}`, "strong"));
+            subscriptionHistoryList.append(row);
+          });
+          subscriptionHistoryList.hidden = false;
+        }
+
         function populateProjectOptions(selectedCustomerOverride = "") {
           projectFields.customer.replaceChildren();
           const emptyCustomer = document.createElement("option");
@@ -9169,6 +9743,9 @@
             overdue: "Verlopen",
             expired: "Verlopen",
             failed: "Mislukt",
+            gearchiveerd: "Gearchiveerd",
+            archived: "Gearchiveerd",
+            test: "Test",
             open: "Open",
             pending: "In behandeling",
             suspended: "Gepauzeerd",
@@ -9224,7 +9801,7 @@
           const project = projectById(projectId);
           const plan = subscription.plan || subscription.packageName || "Care Basic";
           const priceExVat = Number(subscription.priceExVat ?? subscription.monthlyAmount ?? maintenancePlanPrices[plan] ?? 0);
-          const vatRate = Number(subscription.vatRate ?? 21);
+          const vatRate = Number(subscription.vatRate ?? subscription.vatPercentage ?? 21);
           const id = subscription.id || createCrmId();
           return {
             id,
@@ -9244,23 +9821,46 @@
             startDate: subscription.startDate || now.slice(0, 10),
             endDate: subscription.endDate || "",
             nextInvoiceDate: subscription.nextInvoiceDate || "",
-            billingCycle: subscription.billingCycle || "monthly",
+            billingCycle: subscription.billingCycle || subscription.invoiceFrequency || "monthly",
+            invoiceFrequency: subscription.invoiceFrequency || subscription.billingCycle || "monthly",
             priceExVat,
             monthlyAmount: priceExVat,
             vatRate,
+            vatPercentage: vatRate,
             totalInclVat: subscriptionTotal(priceExVat, vatRate),
             paymentStatus: subscription.paymentStatus || "demo",
             autoInvoiceEnabled: Boolean(subscription.autoInvoiceEnabled),
             paymentProviderCustomerId: subscription.paymentProviderCustomerId || "",
             paymentMandateId: subscription.paymentMandateId || "",
+            supabaseSubscriptionId: subscription.supabaseSubscriptionId || subscription._supabaseSubscriptionId || "",
+            supabaseCustomerId: subscription.supabaseCustomerId || subscription.customer_id || "",
+            supabaseWebsiteId: subscription.supabaseWebsiteId || subscription.website_id || "",
+            supabaseProjectId: subscription.supabaseProjectId || subscription.project_id || "",
+            supabaseLastInvoiceId: subscription.supabaseLastInvoiceId || subscription.last_invoice_id || "",
             lastInvoiceId: subscription.lastInvoiceId || "",
             lastInvoiceDate: subscription.lastInvoiceDate || "",
             subscriptionInvoiceSequence: Number(subscription.subscriptionInvoiceSequence || 0),
             nextAutoInvoiceRun: subscription.nextAutoInvoiceRun || subscription.nextInvoiceDate || "",
             invoiceGenerationLog: Array.isArray(subscription.invoiceGenerationLog) ? subscription.invoiceGenerationLog : [],
             isDemo: Boolean(subscription.isDemo),
+            isDemoJourney: Boolean(subscription.isDemoJourney),
+            environment: subscription.environment || (subscription.isDemo ? "demo" : "production"),
             demoScenarioId: subscription.demoScenarioId || "",
+            demoJourneyId: subscription.demoJourneyId || "",
             notes: String(subscription.notes || "").trim(),
+            _source: subscription._source || "",
+            _isMigrated: Boolean(subscription._isMigrated || subscription.supabaseSubscriptionId || subscription._supabaseSubscriptionId),
+            _supabaseSubscriptionId: subscription._supabaseSubscriptionId || subscription.supabaseSubscriptionId || "",
+            _localSubscriptionId: subscription._localSubscriptionId || subscription.id || "",
+            _linkedCustomerStatus: subscription._linkedCustomerStatus || "",
+            _linkedWebsiteStatus: subscription._linkedWebsiteStatus || "",
+            _linkedProjectStatus: subscription._linkedProjectStatus || "",
+            _linkedInvoiceStatus: subscription._linkedInvoiceStatus || "",
+            _mrrExVat: subscription._mrrExVat ?? undefined,
+            _mrrInclVat: subscription._mrrInclVat ?? undefined,
+            _arrExVat: subscription._arrExVat ?? undefined,
+            _arrInclVat: subscription._arrInclVat ?? undefined,
+            _sourceMeta: subscription._sourceMeta || {},
             createdAt: subscription.createdAt || now,
             updatedAt: subscription.updatedAt || subscription.createdAt || now,
           };
@@ -9277,7 +9877,27 @@
         }
 
         function writeStoredSubscriptions(subscriptions) {
-          localStorage.setItem(subscriptionsStorageKey, JSON.stringify(subscriptions.map(normalizeSubscription)));
+          const cleanSubscriptions = subscriptions.map((subscription) => {
+            const normalized = normalizeSubscription(subscription);
+            const {
+              _source,
+              _isMigrated,
+              _supabaseSubscriptionId,
+              _localSubscriptionId,
+              _linkedCustomerStatus,
+              _linkedWebsiteStatus,
+              _linkedProjectStatus,
+              _linkedInvoiceStatus,
+              _mrrExVat,
+              _mrrInclVat,
+              _arrExVat,
+              _arrInclVat,
+              _sourceMeta,
+              ...clean
+            } = normalized;
+            return clean;
+          });
+          localStorage.setItem(subscriptionsStorageKey, JSON.stringify(cleanSubscriptions));
         }
 
         function saveSubscriptionLocally(payload) {
@@ -9941,6 +10561,7 @@
           subscriptionList.replaceChildren();
           populateSubscriptionOptions();
           renderSubscriptionStats();
+          renderSubscriptionSourceSummary();
           renderCareOverview();
           if (!state.subscriptions.length) {
             renderState(subscriptionList, "Geen abonnementen", "Maak het eerste onderhoudsabonnement voor een klant of website.", "Leeg", "status-planned", { label: "Abonnement aanmaken", primary: true, onClick: () => openSubscriptionModal() });
@@ -9953,7 +10574,7 @@
           }
           const head = document.createElement("div");
           head.className = "admin-table-row admin-table-head billing-row";
-          ["Klant", "Website", "Plan", "Status", "Prijs ex.", "Totaal incl.", "Frequentie", "Volgende factuur", "Acties"].forEach((label) => head.append(createCell(label)));
+          ["Klant", "Website", "Plan", "Bron", "Status", "Prijs ex.", "Totaal incl.", "Frequentie", "Volgende factuur", "Acties"].forEach((label) => head.append(createCell(label)));
           subscriptionList.append(head);
           subscriptions.forEach((subscription) => {
             const row = document.createElement("div");
@@ -10001,6 +10622,7 @@
               createCell(subscription.customerCompany || subscription.customerName || "Geen klant", "strong"),
               createCell(subscription.websiteName || subscription.websiteDomain || "-"),
               createCell(subscription.plan),
+              createBadge(subscriptionSourceLabel(subscription), subscriptionSourceClass(subscription)),
               createBadge(billingStatusLabel(subscription.status), billingStatusClass(subscription.status)),
               createCell(money(subscription.priceExVat)),
               createCell(money(subscription.totalInclVat)),
@@ -10194,7 +10816,11 @@
         }
 
         function subscriptionById(id) {
-          return state.subscriptions.find((subscription) => subscription.id === id) || null;
+          return state.subscriptions.find((subscription) =>
+            subscription.id === id
+            || subscription.supabaseSubscriptionId === id
+            || subscription._supabaseSubscriptionId === id
+          ) || null;
         }
 
         function invoiceById(id) {
@@ -10352,6 +10978,20 @@
           subscriptionFields.notes.value = subscription?.notes || "";
           updateSubscriptionTotal();
           renderSubscriptionDetailSummary(subscription || null);
+          const readiness = subscription && state.developerModules?.subscriptionRepository
+            ? state.developerModules.subscriptionRepository.canWriteSubscription(subscription, {
+              target: isSupabaseManagedSubscription(subscription) ? "supabase" : "local",
+              mode: currentSubscriptionDataMode(),
+            })
+            : null;
+          state.subscriptionWriteReadiness = readiness;
+          renderSubscriptionSourceDetail(subscription || null, readiness);
+          subscriptionHistoryList.hidden = true;
+          subscriptionRefreshSupabase.disabled = !subscription || !isSupabaseManagedSubscription(subscription);
+          subscriptionHistory.disabled = !subscription;
+          subscriptionPause.disabled = !subscription || subscription.status !== "actief";
+          subscriptionReactivate.disabled = !subscription || !["gepauzeerd", "opgezegd", "gearchiveerd"].includes(subscription.status);
+          subscriptionArchive.disabled = !subscription || subscription.status === "gearchiveerd";
           setBillingMessage(subscriptionMessage, "", "");
           subscriptionModal.hidden = false;
           document.body.classList.add("admin-modal-open");
@@ -10459,16 +11099,31 @@
           setSubscriptionStatus(id, "opgezegd", button);
         }
 
-        function removeSubscription(id) {
-          if (!window.confirm("Weet je zeker dat je dit abonnement wilt verwijderen?")) return;
-          deleteSubscriptionLocally(id);
-          state.subscriptions = readStoredSubscriptions();
-          renderSubscriptions();
-          updateMetrics();
-          setAdminAccessMessage("Abonnement verwijderd uit lokale opslag.", "success");
+        async function removeSubscription(id) {
+          if (!window.confirm("Abonnement archiveren? Er wordt niets hard verwijderd.")) return;
+          try {
+            const subscription = subscriptionById(id);
+            if (!subscription) throw new Error("Abonnement niet gevonden.");
+            if (isSupabaseManagedSubscription(subscription)) {
+              const repo = await getSubscriptionRepositoryModule();
+              await repo.archiveSubscription(subscription.id, {
+                subscription,
+                oldSubscription: subscription,
+                target: "supabase",
+                mode: currentSubscriptionDataMode(),
+                baseUpdatedAt: subscription.updatedAt,
+              });
+            } else {
+              updateSubscriptionStatusLocally(id, "gearchiveerd");
+            }
+            await loadCRMData(false);
+            setAdminAccessMessage("Abonnement gearchiveerd.", "success");
+          } catch (error) {
+            setAdminAccessMessage(error.message || "Abonnement kon niet worden gearchiveerd.", "error");
+          }
         }
 
-        function createSubscriptionInvoice(id, button) {
+        async function createSubscriptionInvoice(id, button) {
           const subscription = subscriptionById(id);
           if (!subscription) return;
           if (subscription.status !== "actief") {
@@ -10490,11 +11145,18 @@
             const today = new Date().toISOString().slice(0, 10);
             const paymentTermDays = Number(settings.paymentTermDays || defaultSettings.paymentTermDays || 14);
             const vatRate = Number(subscription.vatRate || settings.defaultVatRate || defaultSettings.defaultVatRate || 21);
-            const invoice = saveInvoiceLocally({
+            if (isSupabaseManagedSubscription(subscription) && currentInvoiceDataMode() === "local") {
+              throw new Error("Dit abonnement komt uit Supabase. Zet invoice data mode eerst op hybrid/supabase-read voordat je een gekoppelde factuur maakt.");
+            }
+            const invoicePayload = {
               profileId: subscription.profileId,
               websiteId: subscription.websiteId,
               projectId: subscription.projectId,
               subscriptionId: subscription.id,
+              supabaseSubscriptionId: subscription._supabaseSubscriptionId || subscription.supabaseSubscriptionId || "",
+              supabaseCustomerId: subscription.supabaseCustomerId || "",
+              supabaseWebsiteId: subscription.supabaseWebsiteId || "",
+              supabaseProjectId: subscription.supabaseProjectId || "",
               subscriptionPlan: subscription.plan,
               subscriptionBillingCycle: subscription.billingCycle,
               subscriptionInvoicePeriod: period,
@@ -10510,7 +11172,13 @@
                 vatRate,
               }],
               notes: "Aangemaakt vanuit abonnement.",
-            });
+            };
+            const invoice = isSupabaseManagedSubscription(subscription)
+              ? await (await getInvoiceRepositoryModule()).createInvoice(invoicePayload, {
+                target: "supabase",
+                mode: currentInvoiceDataMode(),
+              })
+              : saveInvoiceLocally(invoicePayload);
             const nextInvoiceDate = nextSubscriptionInvoiceDate(subscription, periodBase);
             const generationLog = [
               ...(subscription.invoiceGenerationLog || []),
@@ -10523,18 +11191,27 @@
                 status: "concept",
               },
             ];
-            updateSubscriptionStatusLocally(subscription.id, subscription.status, {
+            const subscriptionUpdate = {
               lastInvoiceId: invoice.id,
+              supabaseLastInvoiceId: invoice._supabaseInvoiceId || invoice.supabaseInvoiceId || "",
               lastInvoiceDate: invoice.invoiceDate,
               nextInvoiceDate,
               nextAutoInvoiceRun: nextInvoiceDate,
               subscriptionInvoiceSequence: Number(subscription.subscriptionInvoiceSequence || 0) + 1,
               invoiceGenerationLog: generationLog,
-            });
-            state.invoices = readStoredInvoices();
-            state.subscriptions = readStoredSubscriptions();
-            renderInvoices();
-            renderSubscriptions();
+            };
+            if (isSupabaseManagedSubscription(subscription)) {
+              const repo = await getSubscriptionRepositoryModule();
+              await repo.updateSubscription(subscription.id, subscriptionUpdate, {
+                oldSubscription: subscription,
+                target: "supabase",
+                mode: currentSubscriptionDataMode(),
+                baseUpdatedAt: subscription.updatedAt,
+              });
+            } else {
+              updateSubscriptionStatusLocally(subscription.id, subscription.status, subscriptionUpdate);
+            }
+            await loadCRMData(false);
             updateMetrics();
             setAdminAccessMessage(`Conceptfactuur ${invoice.invoiceNumber} aangemaakt vanuit abonnement.`, "success");
           } catch (error) {
@@ -10552,7 +11229,8 @@
           setBillingMessage(subscriptionMessage, "", "");
 
           try {
-            saveSubscriptionLocally({
+            const existingSubscription = subscriptionById(subscriptionFields.id.value);
+            const payload = {
               id: subscriptionFields.id.value,
               profileId: subscriptionFields.profile.value,
               websiteId: subscriptionFields.website.value,
@@ -10570,12 +11248,30 @@
               paymentProviderCustomerId: subscriptionFields.providerCustomer.value,
               paymentMandateId: subscriptionFields.mandate.value,
               notes: subscriptionFields.notes.value,
-            });
-            state.subscriptions = readStoredSubscriptions();
-            renderSubscriptions();
+            };
+            const shouldUseRepository = currentSubscriptionDataMode() !== "local" || isSupabaseManagedSubscription(existingSubscription || {});
+            const subscription = shouldUseRepository
+              ? await (async () => {
+                const repo = await getSubscriptionRepositoryModule();
+                if (existingSubscription) {
+                  return repo.updateSubscription(existingSubscription.id, payload, {
+                    oldSubscription: existingSubscription,
+                    target: currentSubscriptionDataMode() === "local" ? "local" : isSupabaseManagedSubscription(existingSubscription) ? "supabase" : "local",
+                    mode: currentSubscriptionDataMode(),
+                    baseUpdatedAt: existingSubscription.updatedAt,
+                  });
+                }
+                return repo.createSubscription(payload, {
+                  target: currentSubscriptionDataMode() === "local" ? "local" : "supabase",
+                  mode: currentSubscriptionDataMode(),
+                });
+              })()
+              : saveSubscriptionLocally(payload);
+            await loadCRMData(false);
+            state.selectedSubscriptionId = subscription.id;
+            openSubscriptionModal(subscription.id);
             updateMetrics();
-            closeModal(subscriptionModal);
-            setAdminAccessMessage("Abonnement opgeslagen in lokale opslag.", "success");
+            setAdminAccessMessage("Abonnement opgeslagen.", "success");
           } catch (error) {
             setBillingMessage(subscriptionMessage, error.message || "Abonnement kon niet worden opgeslagen.", "error");
           } finally {
@@ -10697,9 +11393,26 @@
           button.disabled = true;
           button.textContent = "Opslaan...";
           try {
-            updateSubscriptionStatusLocally(id, status, status === "opgezegd" ? { endDate: new Date().toISOString().slice(0, 10) } : {});
-            state.subscriptions = readStoredSubscriptions();
-            renderSubscriptions();
+            const subscription = subscriptionById(id);
+            if (!subscription) throw new Error("Abonnement niet gevonden.");
+            if (isSupabaseManagedSubscription(subscription)) {
+              const repo = await getSubscriptionRepositoryModule();
+              const options = {
+                subscription,
+                oldSubscription: subscription,
+                target: "supabase",
+                mode: currentSubscriptionDataMode(),
+                baseUpdatedAt: subscription.updatedAt,
+              };
+              if (status === "gepauzeerd") await repo.pauseSubscription(subscription.id, options);
+              else if (status === "opgezegd") await repo.cancelSubscription(subscription.id, options);
+              else if (status === "actief") await repo.reactivateSubscription(subscription.id, options);
+              else await repo.updateSubscription(subscription.id, { status }, options);
+            } else {
+              updateSubscriptionStatusLocally(id, status, status === "opgezegd" ? { endDate: new Date().toISOString().slice(0, 10) } : {});
+            }
+            await loadCRMData(false);
+            if (state.selectedSubscriptionId) openSubscriptionModal(state.selectedSubscriptionId);
             updateMetrics();
             setAdminAccessMessage("Abonnementsstatus bijgewerkt.", "success");
           } catch (error) {
@@ -10707,6 +11420,41 @@
             button.disabled = false;
             button.textContent = originalText;
           }
+        }
+
+        async function refreshSelectedSubscriptionFromSupabase() {
+          const subscription = subscriptionById(state.selectedSubscriptionId);
+          if (!subscription || !isSupabaseManagedSubscription(subscription)) return;
+          subscriptionRefreshSupabase.disabled = true;
+          subscriptionRefreshSupabase.textContent = "Verversen...";
+          try {
+            await loadCRMData(false);
+            openSubscriptionModal(state.selectedSubscriptionId);
+            setBillingMessage(subscriptionMessage, "Abonnement opnieuw geladen vanuit de actieve databron.", "success");
+          } catch (error) {
+            setBillingMessage(subscriptionMessage, error.message || "Abonnement kon niet worden ververst.", "error");
+          } finally {
+            subscriptionRefreshSupabase.disabled = false;
+            subscriptionRefreshSupabase.textContent = "Ververs uit Supabase";
+          }
+        }
+
+        function toggleSubscriptionHistory() {
+          const subscription = subscriptionById(state.selectedSubscriptionId);
+          if (!subscription) return;
+          if (!subscriptionHistoryList.hidden) {
+            subscriptionHistoryList.hidden = true;
+            return;
+          }
+          renderSubscriptionHistory(subscription);
+        }
+
+        async function archiveSelectedSubscription() {
+          if (!state.selectedSubscriptionId) return;
+          await removeSubscription(state.selectedSubscriptionId);
+          const stillSelected = subscriptionById(state.selectedSubscriptionId);
+          if (stillSelected) openSubscriptionModal(state.selectedSubscriptionId);
+          else closeModal(subscriptionModal);
         }
 
         async function activateMollieSubscription(id, button) {
@@ -11781,6 +12529,7 @@
             projectDataModeSelect.value = currentProjectDataMode();
             quoteDataModeSelect.value = currentQuoteDataMode();
             invoiceDataModeSelect.value = currentInvoiceDataMode();
+            subscriptionDataModeSelect.value = currentSubscriptionDataMode();
             state.customers = await loadCustomersByDataMode();
             state.profiles = state.customers;
             state.authUsers = [];
@@ -11789,7 +12538,7 @@
             state.files = readStoredFiles();
             state.quotes = await loadQuotesByDataMode();
             state.invoices = await loadInvoicesByDataMode();
-            state.subscriptions = readStoredSubscriptions();
+            state.subscriptions = await loadSubscriptionsByDataMode();
             renderCustomers();
             renderWebsites();
             renderProjects();
@@ -11818,7 +12567,12 @@
             const projectSourceStatus = state.projectSourceStatus || {};
             const quoteSourceStatus = state.quoteSourceStatus || {};
             const invoiceSourceStatus = state.invoiceSourceStatus || {};
-            if (invoiceSourceStatus.error && invoiceSourceStatus.fallbackUsed) {
+            const subscriptionSourceStatus = state.subscriptionSourceStatus || {};
+            if (subscriptionSourceStatus.error && subscriptionSourceStatus.fallbackUsed) {
+              setAdminAccessMessage(`Abonnement hybrid fallback actief: ${subscriptionSourceStatus.error}`, "error");
+            } else if (subscriptionSourceStatus.error) {
+              setAdminAccessMessage(`Supabase abonnementen konden niet worden gelezen: ${subscriptionSourceStatus.error}`, "error");
+            } else if (invoiceSourceStatus.error && invoiceSourceStatus.fallbackUsed) {
               setAdminAccessMessage(`Factuur hybrid fallback actief: ${invoiceSourceStatus.error}`, "error");
             } else if (invoiceSourceStatus.error) {
               setAdminAccessMessage(`Supabase facturen konden niet worden gelezen: ${invoiceSourceStatus.error}`, "error");
@@ -11857,7 +12611,7 @@
             } else if (sourceStatus.error) {
               setAdminAccessMessage(`Supabase customers konden niet worden gelezen: ${sourceStatus.error}`, "error");
             } else {
-              setAdminAccessMessage(`CRM geladen via customer mode ${sourceStatus.mode || "local"}, website mode ${websiteSourceStatus.mode || "local"}, project mode ${projectSourceStatus.mode || "local"}, quote mode ${quoteSourceStatus.mode || "local"} en invoice mode ${invoiceSourceStatus.mode || "local"}.`, "success");
+              setAdminAccessMessage(`CRM geladen via customer mode ${sourceStatus.mode || "local"}, website mode ${websiteSourceStatus.mode || "local"}, project mode ${projectSourceStatus.mode || "local"}, quote mode ${quoteSourceStatus.mode || "local"}, invoice mode ${invoiceSourceStatus.mode || "local"} en subscription mode ${subscriptionSourceStatus.mode || "local"}.`, "success");
             }
           } catch (error) {
             setAdminAccessMessage(error.message || "CRM-klanten konden niet worden geladen.", "error");
@@ -11902,12 +12656,20 @@
               error: error.message || "CRM/invoice data kon niet worden geladen.",
               refreshedAt: new Date().toISOString(),
             };
+            state.subscriptionSourceStatus = {
+              mode: currentSubscriptionDataMode(),
+              counts: { local: readStoredSubscriptions().length, supabase: 0, hybrid: 0, duplicateMerges: 0, demo: 0, unmigratedLocal: 0 },
+              fallbackUsed: false,
+              error: error.message || "CRM/subscription data kon niet worden geladen.",
+              refreshedAt: new Date().toISOString(),
+            };
             renderState(customerList, "CRM-klanten konden niet worden geladen", "Supabase-read kon geen klanten laden. Zet de customer data mode terug naar local of controleer de Supabase configuratie.", "Fout", "status-attention", { label: "Terug naar local", primary: true, onClick: () => setCustomerDataMode("local", { source: "supabase_read_error" }) });
             renderCustomerSourceSummary();
             renderWebsiteSourceSummary();
             renderProjectSourceSummary();
             renderQuoteSourceSummary();
             renderInvoiceSourceSummary();
+            renderSubscriptionSourceSummary();
           } finally {
             adminLoadButton.disabled = false;
             adminLoadButton.textContent = "Laden";
@@ -11976,6 +12738,11 @@
           populateSubscriptionOptions(selectedCustomerId);
           subscriptionFields.profile.value = selectedCustomerId;
         });
+        subscriptionPause.addEventListener("click", () => state.selectedSubscriptionId && setSubscriptionStatus(state.selectedSubscriptionId, "gepauzeerd", subscriptionPause));
+        subscriptionReactivate.addEventListener("click", () => state.selectedSubscriptionId && setSubscriptionStatus(state.selectedSubscriptionId, "actief", subscriptionReactivate));
+        subscriptionRefreshSupabase.addEventListener("click", refreshSelectedSubscriptionFromSupabase);
+        subscriptionHistory.addEventListener("click", toggleSubscriptionHistory);
+        subscriptionArchive.addEventListener("click", archiveSelectedSubscription);
         quoteForm.addEventListener("submit", saveQuote);
         invoiceForm.addEventListener("submit", saveInvoice);
         fileDetailForm.addEventListener("submit", saveFile);
@@ -12118,6 +12885,7 @@
         websiteDataModeSelect.addEventListener("change", changeWebsiteDataModeHandler);
         quoteDataModeSelect.addEventListener("change", changeQuoteDataModeHandler);
         invoiceDataModeSelect.addEventListener("change", changeInvoiceDataModeHandler);
+        subscriptionDataModeSelect.addEventListener("change", changeSubscriptionDataModeHandler);
         [customerSearch, customerStatusFilter, customerPackageFilter].forEach((filter) => filter.addEventListener("input", renderCustomers));
         [fileSearch, fileCategoryFilter, fileStatusFilter, fileCustomerFilter, fileProjectFilter].forEach((filter) => filter.addEventListener("input", renderFiles));
         [quoteSearch, quoteStatusFilter, quoteTypeFilter, quoteCustomerFilter, quoteProjectFilter, quoteWebsiteFilter].forEach((filter) => filter.addEventListener("input", renderQuotes));
@@ -12185,6 +12953,14 @@
         testSupabaseInvoicesReadButton.addEventListener("click", testSupabaseInvoicesReadHandler);
         testSupabaseInvoiceWriteButton.addEventListener("click", testSupabaseInvoiceWriteHandler);
         resetInvoiceDataModeButton.addEventListener("click", resetInvoiceDataModeHandler);
+        runSubscriptionMigrationDryRunButton.addEventListener("click", runSubscriptionMigrationDryRunHandler);
+        viewSubscriptionMappingPreviewButton.addEventListener("click", showSubscriptionMappingPreviewHandler);
+        viewSubscriptionMissingLinksButton.addEventListener("click", showSubscriptionMissingLinksHandler);
+        viewSubscriptionDuplicatesButton.addEventListener("click", showSubscriptionDuplicatesHandler);
+        viewSubscriptionMrrImpactButton.addEventListener("click", showSubscriptionMrrImpactHandler);
+        testSupabaseSubscriptionsReadButton.addEventListener("click", testSupabaseSubscriptionsReadHandler);
+        testSupabaseSubscriptionWriteButton.addEventListener("click", testSupabaseSubscriptionWriteHandler);
+        resetSubscriptionDataModeButton.addEventListener("click", resetSubscriptionDataModeHandler);
         [customerMigrationIncludeDemo, customerMigrationIncludeProduction, customerMigrationBatchSize, customerMigrationSkipDuplicates, customerMigrationStopOnError].forEach((field) => {
           field.addEventListener("input", () => renderDeveloperToolsSummary());
           field.addEventListener("change", () => renderDeveloperToolsSummary());
@@ -12226,6 +13002,7 @@
         projectDataModeSelect.value = readStoredSettings().projectDataMode || localStorage.getItem("maxwebstudioProjectDataMode") || "local";
         quoteDataModeSelect.value = readStoredSettings().quoteDataMode || localStorage.getItem("maxwebstudioQuoteDataMode") || "local";
         invoiceDataModeSelect.value = readStoredSettings().invoiceDataMode || localStorage.getItem("maxwebstudioInvoiceDataMode") || "local";
+        subscriptionDataModeSelect.value = readStoredSettings().subscriptionDataMode || localStorage.getItem("maxwebstudioSubscriptionDataMode") || "local";
         renderIntegrations();
         renderSystemStatus();
         syncActiveNav();

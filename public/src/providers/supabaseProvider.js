@@ -29,6 +29,10 @@ function isInvoiceLinesTable(table) {
   return table === "invoice_lines" || table === "maxwebstudioInvoiceLines";
 }
 
+function isSubscriptionsTable(table) {
+  return table === "subscriptions" || table === "maxwebstudioSubscriptions";
+}
+
 function normalizedTable(table) {
   if (isCustomersTable(table)) return "customers";
   if (isWebsitesTable(table)) return "websites";
@@ -37,6 +41,7 @@ function normalizedTable(table) {
   if (isQuoteLinesTable(table)) return "quote_lines";
   if (isInvoicesTable(table)) return "invoices";
   if (isInvoiceLinesTable(table)) return "invoice_lines";
+  if (isSubscriptionsTable(table)) return "subscriptions";
   return table;
 }
 
@@ -147,12 +152,23 @@ function assertInvoiceWriteTable(table) {
   if (!isInvoicesTable(table)) throw new Error("Invoice writes ondersteunen alleen de invoices tabel.");
 }
 
+async function getSubscriptionWriteClient(context = {}) {
+  if (context.subscriptionWrite !== true) throw new Error("Subscription write context ontbreekt.");
+  const client = await getSupabaseClient();
+  if (!client) throw new Error("Supabase client niet beschikbaar; subscription write blijft geblokkeerd.");
+  return client;
+}
+
+function assertSubscriptionWriteTable(table) {
+  if (!isSubscriptionsTable(table)) throw new Error("Subscription writes ondersteunen alleen de subscriptions tabel.");
+}
+
 export const supabaseProvider = {
   type: "supabase-readonly",
   status: "read-only",
 
   async getAll(table, options = {}) {
-    if (!isCustomersTable(table) && !isWebsitesTable(table) && !isProjectsTable(table) && !isQuotesTable(table) && !isQuoteLinesTable(table) && !isInvoicesTable(table) && !isInvoiceLinesTable(table)) {
+    if (!isCustomersTable(table) && !isWebsitesTable(table) && !isProjectsTable(table) && !isQuotesTable(table) && !isQuoteLinesTable(table) && !isInvoicesTable(table) && !isInvoiceLinesTable(table) && !isSubscriptionsTable(table)) {
       console.info(preparedMessage(table));
       return [];
     }
@@ -165,7 +181,7 @@ export const supabaseProvider = {
   },
 
   async getById(table, id) {
-    if (!isCustomersTable(table) && !isWebsitesTable(table) && !isProjectsTable(table) && !isQuotesTable(table) && !isQuoteLinesTable(table) && !isInvoicesTable(table) && !isInvoiceLinesTable(table)) {
+    if (!isCustomersTable(table) && !isWebsitesTable(table) && !isProjectsTable(table) && !isQuotesTable(table) && !isQuoteLinesTable(table) && !isInvoicesTable(table) && !isInvoiceLinesTable(table) && !isSubscriptionsTable(table)) {
       console.info(preparedMessage(table));
       return null;
     }
@@ -528,12 +544,65 @@ export const supabaseProvider = {
     }, null, context);
   },
 
+  async createSubscription(record = {}, context = {}) {
+    assertSubscriptionWriteTable("subscriptions");
+    const client = await getSubscriptionWriteClient(context);
+    const payload = {
+      ...record,
+      updated_at: record.updated_at || new Date().toISOString(),
+      created_at: record.created_at || new Date().toISOString(),
+    };
+    const { data, error } = await client.from("subscriptions").insert(payload).select("*").single();
+    if (error) throw new Error(error.message || "Abonnement aanmaken in Supabase is mislukt.");
+    return { success: true, table: "subscriptions", action: "create_subscription", data };
+  },
+
+  async updateSubscription(id, updates = {}, context = {}) {
+    assertSubscriptionWriteTable("subscriptions");
+    const client = await getSubscriptionWriteClient(context);
+    const payload = {
+      ...updates,
+      updated_at: updates.updated_at || new Date().toISOString(),
+    };
+    const { data, error } = await client.from("subscriptions").update(payload).eq("id", id).select("*").single();
+    if (error) throw new Error(error.message || "Abonnement bijwerken in Supabase is mislukt.");
+    return { success: true, table: "subscriptions", action: "update_subscription", data };
+  },
+
+  async pauseSubscription(id, context = {}) {
+    return this.updateSubscription(id, {
+      status: "paused",
+    }, context);
+  },
+
+  async cancelSubscription(id, context = {}) {
+    return this.updateSubscription(id, {
+      status: "cancelled",
+      end_date: new Date().toISOString().slice(0, 10),
+    }, context);
+  },
+
+  async reactivateSubscription(id, context = {}) {
+    return this.updateSubscription(id, {
+      status: "active",
+      end_date: null,
+      deleted_at: null,
+    }, context);
+  },
+
+  async archiveSubscription(id, context = {}) {
+    return this.updateSubscription(id, {
+      status: "archived",
+      deleted_at: new Date().toISOString(),
+    }, context);
+  },
+
   setAll() {
     return writeBlocked();
   },
 
   async count(table) {
-    if (!isCustomersTable(table) && !isWebsitesTable(table) && !isProjectsTable(table) && !isQuotesTable(table) && !isQuoteLinesTable(table) && !isInvoicesTable(table) && !isInvoiceLinesTable(table)) {
+    if (!isCustomersTable(table) && !isWebsitesTable(table) && !isProjectsTable(table) && !isQuotesTable(table) && !isQuoteLinesTable(table) && !isInvoicesTable(table) && !isInvoiceLinesTable(table) && !isSubscriptionsTable(table)) {
       console.info(preparedMessage(table));
       return 0;
     }

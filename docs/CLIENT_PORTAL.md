@@ -350,3 +350,16 @@ Belangrijk:
 - klantportaal toont nog geen nieuwe live Supabase-factuurdata via Auth in deze fase
 - klantveilige live factuurweergave volgt pas na de live klantportaaldata-, Auth- en RLS-fases
 - factuurregels zijn al voorbereid als losse `invoice_lines`, zodat toekomstige klantportaalweergave duidelijke regels en totalen kan tonen
+
+## Fase 12.7 - Abonnementen en klantportaal
+
+Onderhoudsabonnementen blijven voor klanten zichtbaar via de bestaande lokale/demo klantportaalweergave. De productiebasis wordt voorbereid met `subscriptions`, zodat klantabonnementen later veilig uit Supabase gelezen kunnen worden.
+
+Belangrijk:
+
+- lokale demo-abonnementen en recurring billing blijven werken
+- MRR/ARR-berekeningen blijven beschikbaar in het Admin CRM
+- abonnement-naar-conceptfactuur flow blijft lokaal/demo intact, en wordt voor Supabase-managed abonnementen bewust geblokkeerd wanneer invoice data mode nog `local` is
+- klantportaal toont nog geen nieuwe live Supabase-abonnementdata via Auth in deze fase
+- klantveilige live abonnementweergave volgt pas na de live klantportaaldata-, Auth- en RLS-fases
+- abonnementen zijn al voorbereid met koppelingen naar customer, website, project en laatste factuur

@@ -244,6 +244,17 @@ Factuur-Supabasevoorbereiding in Fase 12.6:
 - Factuurkoppelingen naar customer, website, project, quote en subscription worden gevalideerd voordat Supabase-writes toegestaan worden.
 - Bestaande demo-betaallinks blijven lokaal/demo; er worden geen live betaalprovidergegevens door de browser geschreven.
 
+Abonnement-Supabasevoorbereiding in Fase 12.7:
+
+- `subscriptions` is voorbereid met RLS aan en service-role policy voor server-side beheer.
+- De frontend gebruikt geen service role key.
+- `Subscription data mode` start standaard op `local`; `supabase-read` en `hybrid` lezen alleen via de publieke Supabase client.
+- Schrijfacties zijn bewust beperkt tot gecontroleerde create/update/pause/cancel/reactivate/archive per abonnement.
+- Bulk-migratie, hard delete, echte Mollie subscription-mutaties en provider switch zijn niet toegevoegd.
+- De veilige testsubscription gebruikt plan `Supabase Subscription Test`, `status: test`, `priceExVat: 49`, `vatPercentage: 21`, `invoiceFrequency: monthly`, `environment: test`, `is_demo: true` en `safeToDelete: true`.
+- Abonnementkoppelingen naar customer, website, project en laatste factuur worden gevalideerd voordat Supabase-writes toegestaan worden.
+- Bestaande lokale recurring billing blijft lokaal/demo totdat klantportaaldata, Auth en RLS live hardgemaakt zijn.
+
 Aanbevelingen:
 
 - limieten blijven handhaven
