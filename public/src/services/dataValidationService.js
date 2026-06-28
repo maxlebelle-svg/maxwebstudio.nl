@@ -3,6 +3,7 @@ import { normalizeCustomer, customerIdentityKeys } from "../utils/customerNormal
 import { normalizeWebsite } from "../utils/websiteNormalizer.js";
 import { normalizeProject, projectIdentityKeys } from "../utils/projectNormalizer.js";
 import { calculateQuoteTotals, normalizeQuote, quoteIdentityKeys } from "../utils/quoteNormalizer.js";
+import { calculateInvoiceTotals, normalizeInvoice, invoiceIdentityKeys } from "../utils/invoiceNormalizer.js";
 
 function readArray(key) {
   try {
@@ -70,11 +71,11 @@ export function validateLocalStorageData() {
       companyPhoneSeen.set(keys.companyPhone, customer.id);
     }
   });
-  invoices.forEach((invoice) => {
-    if (!Array.isArray(invoice.lines) || !invoice.lines.length) pushIssue(issues, "error", "invoices", "Factuur mist factuurregels.", invoice.id);
-  });
   const customerIds = new Set(customers.map((customer) => normalizeCustomer(customer).id).filter(Boolean));
   const websiteIds = new Set(websites.map((website) => normalizeWebsite(website).id).filter(Boolean));
+  const projectIds = new Set(projects.map((project) => normalizeProject(project).id).filter(Boolean));
+  const quoteIds = new Set(quotes.map((quote) => normalizeQuote(quote).id).filter(Boolean));
+  const subscriptionIds = new Set(subscriptions.map((subscription) => subscription.id).filter(Boolean));
   const quoteNumbers = new Map();
   quotes.map(normalizeQuote).forEach((quote) => {
     if (!quote.quoteNumber) pushIssue(issues, "error", "quotes", "Offerte mist offertenummer.", quote.id);
@@ -98,6 +99,37 @@ export function validateLocalStorageData() {
   subscriptions.forEach((subscription) => {
     if (!subscription.profileId && !subscription.customerId) pushIssue(issues, "error", "subscriptions", "Abonnement mist klantkoppeling.", subscription.id);
   });
+
+  const invoiceNumbers = new Map();
+  invoices.map(normalizeInvoice).forEach((invoice) => {
+    if (!invoice.invoiceNumber) pushIssue(issues, "error", "invoices", "Factuur mist factuurnummer.", invoice.id);
+    if (!invoice.profileId && !invoice.customerId) pushIssue(issues, "error", "invoices", "Factuur mist klantkoppeling.", invoice.id);
+    if (invoice.profileId && !customerIds.has(invoice.profileId)) pushIssue(issues, "error", "invoices", "Factuur heeft ontbrekende klant.", invoice.id);
+    if (invoice.websiteId && !websiteIds.has(invoice.websiteId)) pushIssue(issues, "warning", "invoices", "Factuur heeft ontbrekende website.", invoice.id);
+    if (invoice.projectId && !projectIds.has(invoice.projectId)) pushIssue(issues, "warning", "invoices", "Factuur heeft ontbrekend project.", invoice.id);
+    if (invoice.sourceQuoteId && !quoteIds.has(invoice.sourceQuoteId)) pushIssue(issues, "warning", "invoices", "Factuur heeft ontbrekende gekoppelde offerte.", invoice.id);
+    if (invoice.subscriptionId && !subscriptionIds.has(invoice.subscriptionId)) pushIssue(issues, "warning", "invoices", "Factuur heeft ontbrekend abonnement.", invoice.id);
+    if (!invoice.status) pushIssue(issues, "warning", "invoices", "Factuur mist status.", invoice.id);
+    if (!invoice.paymentStatus) pushIssue(issues, "warning", "invoices", "Factuur mist betaalstatus.", invoice.id);
+    if (!invoice.invoiceDate) pushIssue(issues, "warning", "invoices", "Factuur mist factuurdatum.", invoice.id);
+    if (!Array.isArray(invoice.lines) || !invoice.lines.length) pushIssue(issues, "error", "invoices", "Factuur mist factuurregels.", invoice.id);
+    invoice.lines.forEach((line, index) => {
+      if (!line.description) pushIssue(issues, "error", "invoices", `Factuurregel ${index + 1} mist omschrijving.`, invoice.id);
+      if (line.quantity <= 0) pushIssue(issues, "error", "invoices", `Factuurregel ${index + 1} heeft een ongeldige hoeveelheid.`, invoice.id);
+      if (line.unitPrice < 0) pushIssue(issues, "error", "invoices", `Factuurregel ${index + 1} heeft een negatieve prijs.`, invoice.id);
+    });
+    const totals = calculateInvoiceTotals(invoice.lines);
+    if (Math.abs(Number(invoice.total || 0) - Number(totals.total || 0)) > 0.05) pushIssue(issues, "warning", "invoices", "Factuurtotaal wijkt af van berekende factuurregels.", invoice.id);
+    if ((invoice.isDemo || invoice.isDemoJourney || invoice.environment === "demo") && !invoice.demoScenarioId && !invoice.demoJourneyId) {
+      pushIssue(issues, "info", "invoices", "Demo-factuur mist demoScenarioId/demoJourneyId.", invoice.id);
+    }
+    const keys = invoiceIdentityKeys(invoice);
+    if (keys.invoiceNumber) {
+      if (invoiceNumbers.has(keys.invoiceNumber)) pushIssue(issues, "warning", "invoices", "Dubbel factuurnummer gevonden.", invoice.id);
+      invoiceNumbers.set(keys.invoiceNumber, invoice.id);
+    }
+  });
+
   const websiteDomains = new Map();
   websites.map(normalizeWebsite).forEach((website) => {
     if (!website.name) pushIssue(issues, "error", "websites", "Website mist naam.", website.id);

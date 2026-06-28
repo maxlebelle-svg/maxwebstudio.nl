@@ -337,3 +337,16 @@ Belangrijk:
 - offerte-naar-factuur conversie blijft lokaal/demo intact
 - klantportaal toont nog geen nieuwe live Supabase-offertedata via Auth in deze fase
 - klantveilige offerteweergave volgt pas na de live klantportaaldata- en Auth-fases
+
+## Fase 12.6 - Facturen en klantportaal
+
+Facturen blijven voor klanten zichtbaar via de bestaande demo-betaalflow en lokale klantportaalweergave. De productiebasis wordt voorbereid met `invoices` en `invoice_lines`, zodat klantfacturen later veilig uit Supabase gelezen kunnen worden.
+
+Belangrijk:
+
+- lokale demo-facturen en `/betalen.html?invoiceId=...` blijven werken
+- offerte-naar-factuur conversie blijft lokaal/demo intact
+- abonnement-naar-conceptfactuur flow blijft lokaal/demo intact
+- klantportaal toont nog geen nieuwe live Supabase-factuurdata via Auth in deze fase
+- klantveilige live factuurweergave volgt pas na de live klantportaaldata-, Auth- en RLS-fases
+- factuurregels zijn al voorbereid als losse `invoice_lines`, zodat toekomstige klantportaalweergave duidelijke regels en totalen kan tonen

@@ -167,3 +167,11 @@ Klanten kunnen geen retry-status wijzigen, geen retry-mail triggeren en geen tec
 Offertebeheer in het Admin CRM gebruikt in deze fase nog geen nieuwe auth-flow. De Supabase-voorbereiding voor `quotes` en `quote_lines` blijft achter de bestaande adminomgeving en Developer Mode.
 
 Klanttoegang tot live offertes wordt pas hard gemaakt wanneer Supabase Auth, route guards en RLS voor het klantportaal volledig actief zijn.
+
+## Fase 12.6 - Facturen
+
+Factuurbeheer in het Admin CRM gebruikt in deze fase nog geen nieuwe auth-flow. De Supabase-voorbereiding voor `invoices` en `invoice_lines` blijft achter de bestaande adminomgeving en Developer Mode.
+
+Klanttoegang tot live facturen wordt pas hard gemaakt wanneer Supabase Auth, route guards en RLS voor het klantportaal volledig actief zijn.
+
+De bestaande demo-betaalpagina blijft werken op localStorage-data. Live factuurdata uit Supabase mag later pas klantzichtbaar worden wanneer de ingelogde gebruiker via RLS alleen eigen facturen en factuurregels kan lezen.

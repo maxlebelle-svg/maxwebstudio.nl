@@ -21,12 +21,22 @@ function isQuoteLinesTable(table) {
   return table === "quote_lines" || table === "maxwebstudioQuoteLines";
 }
 
+function isInvoicesTable(table) {
+  return table === "invoices" || table === "maxwebstudioInvoices";
+}
+
+function isInvoiceLinesTable(table) {
+  return table === "invoice_lines" || table === "maxwebstudioInvoiceLines";
+}
+
 function normalizedTable(table) {
   if (isCustomersTable(table)) return "customers";
   if (isWebsitesTable(table)) return "websites";
   if (isProjectsTable(table)) return "projects";
   if (isQuotesTable(table)) return "quotes";
   if (isQuoteLinesTable(table)) return "quote_lines";
+  if (isInvoicesTable(table)) return "invoices";
+  if (isInvoiceLinesTable(table)) return "invoice_lines";
   return table;
 }
 
@@ -126,12 +136,23 @@ function assertQuoteWriteTable(table) {
   if (!isQuotesTable(table)) throw new Error("Quote writes ondersteunen alleen de quotes tabel.");
 }
 
+async function getInvoiceWriteClient(context = {}) {
+  if (context.invoiceWrite !== true) throw new Error("Invoice write context ontbreekt.");
+  const client = await getSupabaseClient();
+  if (!client) throw new Error("Supabase client niet beschikbaar; invoice write blijft geblokkeerd.");
+  return client;
+}
+
+function assertInvoiceWriteTable(table) {
+  if (!isInvoicesTable(table)) throw new Error("Invoice writes ondersteunen alleen de invoices tabel.");
+}
+
 export const supabaseProvider = {
   type: "supabase-readonly",
   status: "read-only",
 
   async getAll(table, options = {}) {
-    if (!isCustomersTable(table) && !isWebsitesTable(table) && !isProjectsTable(table) && !isQuotesTable(table) && !isQuoteLinesTable(table)) {
+    if (!isCustomersTable(table) && !isWebsitesTable(table) && !isProjectsTable(table) && !isQuotesTable(table) && !isQuoteLinesTable(table) && !isInvoicesTable(table) && !isInvoiceLinesTable(table)) {
       console.info(preparedMessage(table));
       return [];
     }
@@ -144,7 +165,7 @@ export const supabaseProvider = {
   },
 
   async getById(table, id) {
-    if (!isCustomersTable(table) && !isWebsitesTable(table) && !isProjectsTable(table) && !isQuotesTable(table) && !isQuoteLinesTable(table)) {
+    if (!isCustomersTable(table) && !isWebsitesTable(table) && !isProjectsTable(table) && !isQuotesTable(table) && !isQuoteLinesTable(table) && !isInvoicesTable(table) && !isInvoiceLinesTable(table)) {
       console.info(preparedMessage(table));
       return null;
     }
@@ -405,12 +426,114 @@ export const supabaseProvider = {
     }, null, context);
   },
 
+  async createInvoice(record = {}, lines = [], context = {}) {
+    assertInvoiceWriteTable("invoices");
+    const client = await getInvoiceWriteClient(context);
+    const payload = {
+      ...record,
+      updated_at: record.updated_at || new Date().toISOString(),
+      created_at: record.created_at || new Date().toISOString(),
+    };
+    const { data, error } = await client.from("invoices").insert(payload).select("*").single();
+    if (error) throw new Error(error.message || "Factuur aanmaken in Supabase is mislukt.");
+    let savedLines = [];
+    if (Array.isArray(lines) && lines.length) {
+      const linePayload = lines.map((line, index) => {
+        const payloadLine = {
+          ...line,
+          invoice_id: data.id,
+          sort_order: line.sort_order ?? index,
+          updated_at: line.updated_at || new Date().toISOString(),
+          created_at: line.created_at || new Date().toISOString(),
+        };
+        if (!payloadLine.id) delete payloadLine.id;
+        return payloadLine;
+      });
+      const { data: lineData, error: lineError } = await client.from("invoice_lines").insert(linePayload).select("*");
+      if (lineError) throw new Error(lineError.message || "Factuurregels opslaan in Supabase is mislukt.");
+      savedLines = Array.isArray(lineData) ? lineData : [];
+    }
+    return { success: true, table: "invoices", action: "create_invoice", data, lines: savedLines };
+  },
+
+  async updateInvoice(id, updates = {}, lines = null, context = {}) {
+    assertInvoiceWriteTable("invoices");
+    const client = await getInvoiceWriteClient(context);
+    const payload = {
+      ...updates,
+      updated_at: updates.updated_at || new Date().toISOString(),
+    };
+    const { data, error } = await client.from("invoices").update(payload).eq("id", id).select("*").single();
+    if (error) throw new Error(error.message || "Factuur bijwerken in Supabase is mislukt.");
+    let savedLines = [];
+    if (Array.isArray(lines)) {
+      const linePayload = lines.map((line, index) => {
+        const linePayload = {
+          ...line,
+          invoice_id: id,
+          sort_order: line.sort_order ?? index,
+          updated_at: line.updated_at || new Date().toISOString(),
+        };
+        if (!linePayload.id) delete linePayload.id;
+        return {
+          ...linePayload,
+          created_at: line.created_at || new Date().toISOString(),
+        };
+      });
+      if (linePayload.length) {
+        const { data: lineData, error: lineError } = await client
+          .from("invoice_lines")
+          .upsert(linePayload, { onConflict: "invoice_id,external_id" })
+          .select("*");
+        if (lineError) throw new Error(lineError.message || "Factuurregels bijwerken in Supabase is mislukt.");
+        savedLines = Array.isArray(lineData) ? lineData : [];
+      }
+    }
+    return { success: true, table: "invoices", action: "update_invoice", data, lines: savedLines };
+  },
+
+  async archiveInvoice(id, context = {}) {
+    return this.updateInvoice(id, {
+      status: "archived",
+      deleted_at: new Date().toISOString(),
+    }, null, context);
+  },
+
+  async reactivateInvoice(id, context = {}) {
+    return this.updateInvoice(id, {
+      status: "draft",
+      deleted_at: null,
+    }, null, context);
+  },
+
+  async markInvoicePaid(id, context = {}) {
+    return this.updateInvoice(id, {
+      status: "paid",
+      payment_status: "paid",
+      paid_at: new Date().toISOString(),
+    }, null, context);
+  },
+
+  async markInvoiceSent(id, context = {}) {
+    return this.updateInvoice(id, {
+      status: "sent",
+      payment_status: "sent",
+    }, null, context);
+  },
+
+  async markInvoiceExpired(id, context = {}) {
+    return this.updateInvoice(id, {
+      status: "expired",
+      payment_status: "expired",
+    }, null, context);
+  },
+
   setAll() {
     return writeBlocked();
   },
 
   async count(table) {
-    if (!isCustomersTable(table) && !isWebsitesTable(table) && !isProjectsTable(table) && !isQuotesTable(table) && !isQuoteLinesTable(table)) {
+    if (!isCustomersTable(table) && !isWebsitesTable(table) && !isProjectsTable(table) && !isQuotesTable(table) && !isQuoteLinesTable(table) && !isInvoicesTable(table) && !isInvoiceLinesTable(table)) {
       console.info(preparedMessage(table));
       return 0;
     }

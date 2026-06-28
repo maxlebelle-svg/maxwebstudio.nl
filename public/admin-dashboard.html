@@ -552,8 +552,12 @@
           <section class="admin-section" id="facturen">
             <div class="admin-section-heading">
               <div><p class="section-kicker">Facturen</p><h2>Facturatie</h2></div>
-              <button class="button primary" id="new-invoice" type="button">Nieuwe factuur</button>
+              <div class="admin-actions">
+                <label for="invoice-data-mode">Invoice data mode<select id="invoice-data-mode"><option value="local">Local</option><option value="supabase-read">Supabase read</option><option value="hybrid">Hybrid</option></select></label>
+                <button class="button primary" id="new-invoice" type="button">Nieuwe factuur</button>
+              </div>
             </div>
+            <div class="admin-grid compact-admin-grid" id="invoice-source-summary" aria-live="polite"></div>
             <div class="admin-grid invoice-stats-grid" aria-label="Factuur statistieken">
               <article class="admin-card detail-card"><span>Totaal gefactureerd</span><strong id="invoice-stat-total">€ 0,00</strong></article>
               <article class="admin-card detail-card"><span>Openstaand</span><strong id="invoice-stat-open">€ 0,00</strong></article>
@@ -563,7 +567,7 @@
             </div>
             <div class="admin-filters invoice-filters" aria-label="Facturen filteren">
               <label for="invoice-search">Zoeken<input id="invoice-search" type="search" placeholder="Factuurnummer, klant, project, website of type" /></label>
-              <label for="invoice-status-filter">Status<select id="invoice-status-filter"><option value="">Alle statussen</option><option value="concept">Concept</option><option value="verzonden">Verzonden</option><option value="betaald">Betaald</option><option value="verlopen">Verlopen</option><option value="geannuleerd">Geannuleerd</option></select></label>
+              <label for="invoice-status-filter">Status<select id="invoice-status-filter"><option value="">Alle statussen</option><option value="concept">Concept</option><option value="verzonden">Verzonden</option><option value="betaald">Betaald</option><option value="verlopen">Verlopen</option><option value="geannuleerd">Geannuleerd</option><option value="gearchiveerd">Gearchiveerd</option><option value="test">Test</option></select></label>
               <label for="invoice-type-filter">Type<select id="invoice-type-filter"><option value="">Alle types</option><option value="Website">Website</option><option value="Aanbetaling">Aanbetaling</option><option value="Restbetaling">Restbetaling</option><option value="Hosting & onderhoud">Hosting & onderhoud</option><option value="Maatwerk">Maatwerk</option><option value="Extra pagina's">Extra pagina's</option><option value="SEO">SEO</option><option value="Overig">Overig</option></select></label>
               <label for="invoice-customer-filter">Klant<select id="invoice-customer-filter"><option value="">Alle klanten</option></select></label>
               <label for="invoice-project-filter">Project<select id="invoice-project-filter"><option value="">Alle projecten</option></select></label>
@@ -834,6 +838,14 @@
                 <button class="button secondary" id="test-supabase-quotes-read" type="button">Test quote read</button>
                 <button class="button secondary" id="test-supabase-quote-write" type="button">Test quote write met testofferte</button>
                 <button class="button secondary" id="reset-quote-data-mode" type="button">Reset quote data mode naar local</button>
+                <button class="button secondary" id="run-invoice-migration-dry-run" type="button">Run factuur migratie dry-run</button>
+                <button class="button secondary" id="view-invoice-mapping-preview" type="button">Bekijk factuur mapping preview</button>
+                <button class="button secondary" id="view-invoice-missing-links" type="button">Bekijk ontbrekende factuur-koppelingen</button>
+                <button class="button secondary" id="view-invoice-invalid-lines" type="button">Bekijk ongeldige factuurregels</button>
+                <button class="button secondary" id="view-invoice-duplicates" type="button">Bekijk factuur duplicaten</button>
+                <button class="button secondary" id="test-supabase-invoices-read" type="button">Test invoice read</button>
+                <button class="button secondary" id="test-supabase-invoice-write" type="button">Test invoice write met testfactuur</button>
+                <button class="button secondary" id="reset-invoice-data-mode" type="button">Reset invoice data mode naar local</button>
                 <button class="button secondary" id="view-env-example" type="button">Bekijk .env voorbeeld</button>
                 <button class="button secondary" id="why-local-storage" type="button">Waarom nog localStorage?</button>
                 <button class="button secondary" id="run-customer-migration-dry-run" type="button">Run CRM migratie dry run</button>
@@ -975,7 +987,7 @@
             <label for="invoice-number">Factuurnummer<input id="invoice-number" type="text" /></label>
             <label for="invoice-type">Factuurtype<select id="invoice-type"><option value="Website">Website</option><option value="Aanbetaling">Aanbetaling</option><option value="Restbetaling">Restbetaling</option><option value="Hosting & onderhoud">Hosting & onderhoud</option><option value="Maatwerk">Maatwerk</option><option value="Extra pagina's">Extra pagina's</option><option value="SEO">SEO</option><option value="Overig">Overig</option></select></label>
             <label for="invoice-title">Titel<input id="invoice-title" type="text" required /></label>
-            <label for="invoice-status">Status<select id="invoice-status"><option value="concept">Concept</option><option value="verzonden">Verzonden</option><option value="betaald">Betaald</option><option value="verlopen">Verlopen</option><option value="geannuleerd">Geannuleerd</option></select></label>
+            <label for="invoice-status">Status<select id="invoice-status"><option value="concept">Concept</option><option value="verzonden">Verzonden</option><option value="betaald">Betaald</option><option value="verlopen">Verlopen</option><option value="geannuleerd">Geannuleerd</option><option value="gearchiveerd">Gearchiveerd</option><option value="test">Test</option></select></label>
             <label for="invoice-date">Factuurdatum<input id="invoice-date" type="date" /></label>
             <label for="invoice-due">Vervaldatum<input id="invoice-due" type="date" /></label>
             <label for="invoice-paid-at">Betaaldatum<input id="invoice-paid-at" type="datetime-local" /></label>
@@ -996,6 +1008,8 @@
             <span>BTW<strong id="invoice-vat">€ 0,00</strong></span>
             <span>Totaal incl. btw<strong id="invoice-total">€ 0,00</strong></span>
           </div>
+          <div class="settings-status-list admin-profile-wide" id="invoice-source-detail"></div>
+          <div class="settings-status-list admin-profile-wide" id="invoice-history-list" hidden></div>
           <div class="admin-profile-actions">
             <button class="button primary" id="invoice-save" type="submit">Factuur opslaan</button>
             <button class="button secondary" id="invoice-mark-sent" type="button">Zet op verzonden</button>
@@ -1004,6 +1018,9 @@
             <a class="button secondary is-disabled" id="invoice-open-payment" href="#" target="_blank" rel="noopener" aria-disabled="true">Open betaalpagina</a>
             <button class="button secondary" id="invoice-open-quote" type="button">Open offerte</button>
             <button class="button secondary" id="invoice-open-subscription" type="button">Open abonnement</button>
+            <button class="button secondary" id="invoice-refresh-supabase" type="button">Ververs uit Supabase</button>
+            <button class="button secondary" id="invoice-history" type="button">Historie</button>
+            <button class="button secondary" id="invoice-reactivate" type="button">Heractiveer</button>
             <button class="button secondary" id="invoice-copy-payment" type="button">Kopieer betaalverzoek</button>
             <button class="button secondary" id="invoice-clear-pdf" type="button">PDF-pad verwijderen</button>
             <button class="button secondary danger" id="invoice-cancel" type="button">Archiveer/annuleer</button>
@@ -1169,6 +1186,9 @@
           betaald: "Betaald",
           verlopen: "Verlopen",
           geannuleerd: "Geannuleerd",
+          gearchiveerd: "Gearchiveerd",
+          test: "Test",
+          mislukt: "Mislukt",
         };
         const invoicePresets = [
           { group: "Website totaal", label: "Starter Site", description: "Starter Site", price: 495 },
@@ -1243,6 +1263,7 @@
           websiteDataMode: "local",
           projectDataMode: "local",
           quoteDataMode: "local",
+          invoiceDataMode: "local",
         };
         const integrationDefinitions = [
           { name: "Mollie", category: "Betalingen", status: "Demo voorbereid", action: "Bekijk status", description: "Betaalverzoeken zijn voorbereid en kunnen later via de Mollie API actief worden gekoppeld." },
@@ -1320,6 +1341,8 @@
           projectWriteReadiness: null,
           quoteSourceStatus: null,
           quoteWriteReadiness: null,
+          invoiceSourceStatus: null,
+          invoiceWriteReadiness: null,
         };
 
         const adminTokenInput = document.getElementById("admin-token");
@@ -1444,6 +1467,8 @@
         const projectSourceDetail = document.getElementById("project-source-detail");
         const quoteDataModeSelect = document.getElementById("quote-data-mode");
         const quoteSourceSummary = document.getElementById("quote-source-summary");
+        const invoiceDataModeSelect = document.getElementById("invoice-data-mode");
+        const invoiceSourceSummary = document.getElementById("invoice-source-summary");
         const projectFields = {
           customer: document.getElementById("project-customer"),
           website: document.getElementById("project-website"),
@@ -1657,9 +1682,14 @@
         const invoiceOpenPayment = document.getElementById("invoice-open-payment");
         const invoiceOpenQuote = document.getElementById("invoice-open-quote");
         const invoiceOpenSubscription = document.getElementById("invoice-open-subscription");
+        const invoiceRefreshSupabase = document.getElementById("invoice-refresh-supabase");
+        const invoiceHistory = document.getElementById("invoice-history");
+        const invoiceReactivate = document.getElementById("invoice-reactivate");
         const invoiceCopyPayment = document.getElementById("invoice-copy-payment");
         const invoiceCancel = document.getElementById("invoice-cancel");
         const invoiceSourceMessage = document.getElementById("invoice-source-message");
+        const invoiceSourceDetail = document.getElementById("invoice-source-detail");
+        const invoiceHistoryList = document.getElementById("invoice-history-list");
         const invoiceSearch = document.getElementById("invoice-search");
         const invoiceStatusFilter = document.getElementById("invoice-status-filter");
         const invoiceTypeFilter = document.getElementById("invoice-type-filter");
@@ -1787,6 +1817,14 @@
         const testSupabaseQuotesReadButton = document.getElementById("test-supabase-quotes-read");
         const testSupabaseQuoteWriteButton = document.getElementById("test-supabase-quote-write");
         const resetQuoteDataModeButton = document.getElementById("reset-quote-data-mode");
+        const runInvoiceMigrationDryRunButton = document.getElementById("run-invoice-migration-dry-run");
+        const viewInvoiceMappingPreviewButton = document.getElementById("view-invoice-mapping-preview");
+        const viewInvoiceMissingLinksButton = document.getElementById("view-invoice-missing-links");
+        const viewInvoiceInvalidLinesButton = document.getElementById("view-invoice-invalid-lines");
+        const viewInvoiceDuplicatesButton = document.getElementById("view-invoice-duplicates");
+        const testSupabaseInvoicesReadButton = document.getElementById("test-supabase-invoices-read");
+        const testSupabaseInvoiceWriteButton = document.getElementById("test-supabase-invoice-write");
+        const resetInvoiceDataModeButton = document.getElementById("reset-invoice-data-mode");
         const viewEnvExampleButton = document.getElementById("view-env-example");
         const whyLocalStorageButton = document.getElementById("why-local-storage");
         const runCustomerMigrationDryRunButton = document.getElementById("run-customer-migration-dry-run");
@@ -2851,6 +2889,19 @@
             ["Project live bulk migration", "Nog niet actief", "Bulk migratie blijft geblokkeerd; alleen individuele test/create/update flows"],
             ["Project customer linkage", "Actief gecontroleerd", "Projecten vereisen een Supabase customer ID tenzij expliciet testcontext"],
             ["Project website linkage", "Actief gecontroleerd", "Projecten met website vereisen een Supabase website ID"],
+            ["Invoice Supabase mapping", "Voorbereid", "InvoiceRepository kan lokale facturen naar invoices + invoice_lines mappen"],
+            ["Invoice lines mapping", "Voorbereid", "Factuurregels worden apart voorbereid voor invoice_lines met totalen en btw"],
+            ["Invoice read", "Voorbereid/actief", "Facturatie kan facturen read-only uit Supabase laden"],
+            ["Invoice hybrid mode", "Actief", "Facturatie combineert Supabase, ongemigreerde local en demo facturen"],
+            ["Invoice create/update", "Gecontroleerd", "Facturen kunnen onder readiness-voorwaarden individueel naar Supabase schrijven"],
+            ["Invoice archive/reactivate", "Gecontroleerd", "Archiveren is soft delete; reactiveren zet status terug naar concept"],
+            ["Invoice payment status", "Gecontroleerd", "Verzonden, betaald en verlopen kunnen per factuur worden bijgewerkt"],
+            ["Invoice migration dry-run", "Actief", "Developer Mode analyseert facturen zonder databasewrites"],
+            ["Invoice live bulk migration", "Nog niet actief", "Bulk migratie blijft geblokkeerd; alleen individuele test/create/update flows"],
+            ["Invoice customer linkage", "Actief gecontroleerd", "Facturen vereisen een Supabase customer ID tenzij expliciet testcontext"],
+            ["Invoice website/project linkage", "Actief gecontroleerd", "Website-, project-, offerte- en abonnementkoppelingen worden gevalideerd"],
+            ["Quote naar invoice flow", "Behouden", "Lokale offerte naar factuur conversie blijft werken naast Supabase voorbereiding"],
+            ["Subscription naar invoice flow", "Behouden", "Lokale recurring conceptfactuur flow blijft werken naast Supabase voorbereiding"],
             ["CRM Supabase mapping", "Voorbereid", "CustomerRepository kan lokale klantrecords naar customers-rijen mappen"],
             ["CRM migratie dry run", "Gereed", "Developer Mode analyseert klanten zonder databasewrites"],
             ["CRM live writes basis", "Niet actief", "Live customer writes blijven afhankelijk van Supabase client readiness"],
@@ -2899,6 +2950,7 @@
             websiteRepository: await import("./src/repositories/WebsiteRepository.js"),
             projectRepository: await import("./src/repositories/ProjectRepository.js"),
             quoteRepository: await import("./src/repositories/QuoteRepository.js"),
+            invoiceRepository: await import("./src/repositories/InvoiceRepository.js"),
             providerStatusService: await import("./src/services/providerStatusService.js"),
             supabaseReadinessService: await import("./src/services/supabaseReadinessService.js"),
             supabaseWriteTestService: await import("./src/services/supabaseWriteTestService.js"),
@@ -2907,6 +2959,7 @@
             websiteMigrationService: await import("./src/services/websiteMigrationService.js"),
             projectMigrationService: await import("./src/services/projectMigrationService.js"),
             quoteMigrationService: await import("./src/services/quoteMigrationService.js"),
+            invoiceMigrationService: await import("./src/services/invoiceMigrationService.js"),
             dataValidationService: await import("./src/services/dataValidationService.js"),
             activityLogService: await import("./src/services/activityLogService.js"),
             authService: await import("./src/services/authService.js"),
@@ -3535,6 +3588,132 @@
           }
         }
 
+        function renderInvoiceDataSourceStatus(status = state.invoiceSourceStatus || {}) {
+          const counts = status.counts || {};
+          appendDeveloperCard("Invoice data source", [
+            ["Invoice data mode", status.mode || currentInvoiceDataMode()],
+            ["Supabase read status", status.error ? "Fout" : status.mode === "local" ? "Niet gebruikt" : "Beschikbaar"],
+            ["Local count", String(counts.local ?? 0)],
+            ["Supabase count", String(counts.supabase ?? 0)],
+            ["Hybrid count", String(counts.hybrid ?? state.invoices.length ?? 0)],
+            ["Duplicate merge count", String(counts.duplicateMerges ?? 0)],
+            ["Demo facturen", String(counts.demo ?? 0)],
+            ["Ongemigreerd lokaal", String(counts.unmigratedLocal ?? 0)],
+            ["Openstaand bedrag", money(counts.openAmount ?? 0)],
+            ["Betaald bedrag", money(counts.paidAmount ?? 0)],
+            ["Fallback status", status.fallbackUsed ? "Local fallback gebruikt" : "Geen fallback"],
+            ["Laatste refresh", status.refreshedAt ? formatDate(status.refreshedAt) : "-"],
+            ["Error", status.error || "-"],
+          ]);
+        }
+
+        function renderInvoiceSupabaseReadiness(modules) {
+          const summary = modules.invoiceMigrationService.getInvoiceReadinessSummary();
+          const recentInvoiceWrites = modules.activityLogService
+            .listRecentActivities(40)
+            .filter((activity) => activity.entityType === "invoices" || activity.entityType === "developer_tools")
+            .filter((activity) => String(activity.action || "").includes("invoice"))
+            .slice(0, 6);
+          appendDeveloperCard("Factuur Supabase readiness", [
+            ["Klaar voor mapping", String(summary.ready || 0)],
+            ["Wachten op customer migratie", String(summary.waitingForCustomer || 0)],
+            ["Wachten op website migratie", String(summary.waitingForWebsite || 0)],
+            ["Wachten op project migratie", String(summary.waitingForProject || 0)],
+            ["Wachten op quote migratie", String(summary.waitingForQuote || 0)],
+            ["Wachten op subscription migratie", String(summary.waitingForSubscription || 0)],
+            ["Klantkoppeling ontbreekt", String(summary.missingCustomer || 0)],
+            ["Ongeldige regels", String(summary.invalidLines || 0)],
+            ["Mogelijke duplicaten", String(summary.duplicates || 0)],
+            ["Ontbrekende velden/aandacht", String(summary.missingFields || 0)],
+            ["Laatste dry-run", summary.lastDryRun?.createdAt ? formatDate(summary.lastDryRun.createdAt) : "Nog niet uitgevoerd"],
+            ["Live bulk migratie", "Geblokkeerd in deze fase"],
+            ["Write scope", "Alleen gecontroleerde create/update/archive/reactivate/status per factuur"],
+          ]);
+          appendDeveloperCard("Laatste factuur activiteiten", recentInvoiceWrites.length
+            ? recentInvoiceWrites.map((activity) => [activity.action || "invoice", formatDate(activity.createdAt)])
+            : ["Nog geen factuur migratie/write activiteit."]);
+        }
+
+        function renderInvoiceMappingPreview(preview) {
+          appendDeveloperCard("Factuur mapping preview", [
+            ["Totaal", String(preview.summary.totalInvoices || 0)],
+            ["Uniek", String(preview.summary.uniqueInvoices || 0)],
+            ["Klaar", String(preview.summary.readyCount || 0)],
+            ["Wacht op klant", String(preview.summary.waitingForCustomer || 0)],
+            ["Wacht op website", String(preview.summary.waitingForWebsite || 0)],
+            ["Wacht op project", String(preview.summary.waitingForProject || 0)],
+            ["Wacht op quote", String(preview.summary.waitingForQuote || 0)],
+            ["Wacht op subscription", String(preview.summary.waitingForSubscription || 0)],
+            ["Ongeldige regels", String(preview.summary.invalidLines || 0)],
+            ["Duplicaten", String(preview.summary.duplicateCount || 0)],
+            ["Preview", "Maximaal 20 records"],
+          ]);
+          preview.rows.slice(0, 12).forEach((item) => {
+            appendDeveloperCard(`Factuur mapping ${item.invoiceNumber || item.localId || "factuur"}`, [
+              ["localStorage id", item.localId || "-"],
+              ["Supabase tabellen", "invoices + invoice_lines"],
+              ["title", item.payload?.invoice?.title || item.title || "-"],
+              ["customer_id", item.payload?.invoice?.customer_id || "-"],
+              ["website_id", item.payload?.invoice?.website_id || "-"],
+              ["project_id", item.payload?.invoice?.project_id || "-"],
+              ["quote_id", item.payload?.invoice?.quote_id || "-"],
+              ["subscription_id", item.payload?.invoice?.subscription_id || "-"],
+              ["regels", String(item.lineCount || item.payload?.lines?.length || 0)],
+              ["totaal", money(item.total || item.payload?.invoice?.total_amount || 0)],
+              ["ready", item.ready ? "Ja" : "Nee"],
+              ["errors", item.errors?.length ? item.errors.join(" | ") : "-"],
+              ["warnings", item.warnings?.length ? item.warnings.join(" | ") : "-"],
+            ]);
+          });
+        }
+
+        function renderInvoiceMissingLinks(items = []) {
+          appendDeveloperCard("Factuur ontbrekende koppelingen", items.length
+            ? items.slice(0, 12).map((item) => [
+              item.invoiceNumber || item.title || item.id || "Factuur",
+              [
+                item.customerLink?.status ? `klant: ${item.customerLink.status}` : "",
+                item.websiteLink?.status ? `website: ${item.websiteLink.status}` : "",
+                item.projectLink?.status ? `project: ${item.projectLink.status}` : "",
+                item.quoteLink?.status ? `quote: ${item.quoteLink.status}` : "",
+                item.subscriptionLink?.status ? `subscription: ${item.subscriptionLink.status}` : "",
+              ].filter(Boolean).join(" | "),
+            ])
+            : ["Geen ontbrekende factuur-koppelingen gevonden."]);
+        }
+
+        function renderInvoiceInvalidLines(items = []) {
+          appendDeveloperCard("Ongeldige factuurregels", items.length
+            ? items.slice(0, 12).map((item) => [
+              item.invoiceNumber || item.title || item.id || "Factuur",
+              item.errors?.join(" | ") || "Controle nodig",
+            ])
+            : ["Geen ongeldige factuurregels gevonden."]);
+        }
+
+        function renderInvoiceDuplicates(duplicates = []) {
+          appendDeveloperCard("Factuur duplicaten", duplicates.length
+            ? duplicates.slice(0, 12).map((item) => [
+              item.key || item.invoice?.invoiceNumber || "duplicate",
+              `${item.invoice?.invoiceNumber || item.invoice?.title || "Factuur"} lijkt dubbel met ${item.duplicateOf || "eerder record"}`,
+            ])
+            : ["Geen mogelijke factuur-duplicaten gevonden."]);
+        }
+
+        function renderInvoiceWriteTestResult(result = {}) {
+          appendDeveloperCard("Invoice write-test resultaat", [
+            ["Status", result.status || "-"],
+            ["Testfactuur", result.testInvoiceId || result.invoiceId || "-"],
+            ["Stap", result.step || result.type || "-"],
+            ["Aangemaakt", result.createdAt ? formatDate(result.createdAt) : "-"],
+            ["Voltooid", result.completedAt ? formatDate(result.completedAt) : "-"],
+            ["Fout", result.error || "-"],
+          ]);
+          if (result.steps?.length) {
+            appendDeveloperCard("Invoice write-test stappen", result.steps.map((step) => [step.step, step.status]));
+          }
+        }
+
         function renderCustomerMigrationResult(result) {
           appendDeveloperCard("CRM migratie resultaat", [
             ["Status", result.status],
@@ -3802,6 +3981,8 @@
             renderProjectSupabaseReadiness(modules);
             renderQuoteDataSourceStatus(state.quoteSourceStatus);
             renderQuoteSupabaseReadiness(modules);
+            renderInvoiceDataSourceStatus(state.invoiceSourceStatus);
+            renderInvoiceSupabaseReadiness(modules);
             renderSupabaseSetupChecklist();
             renderCustomerMigrationCard(customerMigration);
             renderCustomerMigrationLogs(customerMigrationLogs);
@@ -3868,6 +4049,17 @@
               renderQuoteMissingLinks(extra.quoteDryRun.missingLinks);
               renderQuoteInvalidLines(extra.quoteDryRun.invalidLines);
               renderQuoteDuplicates(extra.quoteDryRun.duplicates);
+            }
+            if (extra.invoiceMappingPreview) renderInvoiceMappingPreview(extra.invoiceMappingPreview);
+            if (extra.invoiceMissingLinks) renderInvoiceMissingLinks(extra.invoiceMissingLinks);
+            if (extra.invoiceInvalidLines) renderInvoiceInvalidLines(extra.invoiceInvalidLines);
+            if (extra.invoiceDuplicates) renderInvoiceDuplicates(extra.invoiceDuplicates);
+            if (extra.invoiceWriteTestResult) renderInvoiceWriteTestResult(extra.invoiceWriteTestResult);
+            if (extra.invoiceDryRun) {
+              renderInvoiceMappingPreview(extra.invoiceDryRun.preview);
+              renderInvoiceMissingLinks(extra.invoiceDryRun.missingLinks);
+              renderInvoiceInvalidLines(extra.invoiceDryRun.invalidLines);
+              renderInvoiceDuplicates(extra.invoiceDryRun.duplicates);
             }
             if (extra.customerDryRun) {
               renderCustomerMappingPreview({
@@ -4802,6 +4994,33 @@
           await renderDeveloperToolsSummary();
         }
 
+        async function setInvoiceDataMode(mode, options = {}) {
+          const settings = { ...readStoredSettings(), invoiceDataMode: mode };
+          writeStoredSettings(settings);
+          localStorage.setItem("maxwebstudioInvoiceDataMode", mode);
+          invoiceDataModeSelect.value = mode;
+          try {
+            const { activityLogService } = await loadDeveloperModules();
+            activityLogService.logActivity("developer_tools", "invoices", "invoice_source_mode_changed", { mode, ...options });
+          } catch {
+            // Logging is helpful, but changing invoice read mode should not depend on Developer Tools imports.
+          }
+          await loadCRMData(false);
+        }
+
+        async function changeInvoiceDataModeHandler(event) {
+          const mode = event.target.value || "local";
+          if (mode !== "local") {
+            const confirmed = window.confirm(`Invoice data mode wijzigen naar ${mode}? Er wordt geen data verwijderd en er worden geen Supabase bulk-writes uitgevoerd.`);
+            if (!confirmed) {
+              invoiceDataModeSelect.value = readStoredSettings().invoiceDataMode || localStorage.getItem("maxwebstudioInvoiceDataMode") || "local";
+              return;
+            }
+          }
+          await setInvoiceDataMode(mode, { source: "invoice_select" });
+          await renderDeveloperToolsSummary();
+        }
+
         async function resetQuoteDataModeHandler() {
           await setQuoteDataMode("local", { source: "developer_reset" });
           await renderDeveloperToolsSummary();
@@ -4989,6 +5208,212 @@
           }
         }
 
+        async function resetInvoiceDataModeHandler() {
+          await setInvoiceDataMode("local", { source: "developer_reset" });
+          await renderDeveloperToolsSummary();
+          setSettingsMessage("Invoice data mode teruggezet naar local.", "success");
+        }
+
+        async function runInvoiceMigrationDryRunHandler() {
+          try {
+            const { invoiceMigrationService, activityLogService } = await loadDeveloperModules();
+            const dryRun = invoiceMigrationService.runInvoiceMigrationDryRun();
+            activityLogService.logActivity("developer_tools", "invoices", "invoice_dry_run", {
+              readyCount: dryRun.analysis.readyCount,
+              waitingForCustomer: dryRun.analysis.waitingForCustomer,
+              invalidLines: dryRun.analysis.invalidLines,
+              duplicateCount: dryRun.analysis.duplicateCount,
+            });
+            await renderDeveloperToolsSummary({ invoiceDryRun: dryRun });
+            setSettingsMessage("Factuur migratie dry-run uitgevoerd. Er zijn geen Supabase writes gedaan.", "success");
+          } catch (error) {
+            console.error("Invoice migration dry run failed", error);
+            setSettingsMessage("Factuur migratie dry-run kon niet worden uitgevoerd.", "error");
+          }
+        }
+
+        async function showInvoiceMappingPreviewHandler() {
+          try {
+            const { invoiceMigrationService, activityLogService } = await loadDeveloperModules();
+            const preview = invoiceMigrationService.getInvoiceMigrationPreview();
+            activityLogService.logActivity("developer_tools", "invoices", "view_invoice_mapping_preview", { count: preview.summary.totalInvoices });
+            await renderDeveloperToolsSummary({ invoiceMappingPreview: preview });
+            setSettingsMessage("Factuur mapping preview getoond.", "success");
+          } catch (error) {
+            console.error("Invoice mapping preview failed", error);
+            setSettingsMessage("Factuur mapping preview kon niet worden getoond.", "error");
+          }
+        }
+
+        async function showInvoiceMissingLinksHandler() {
+          try {
+            const { invoiceMigrationService, activityLogService } = await loadDeveloperModules();
+            const missing = invoiceMigrationService.detectMissingInvoiceLinks();
+            activityLogService.logActivity("developer_tools", "invoices", "view_invoice_missing_links", { count: missing.length });
+            await renderDeveloperToolsSummary({ invoiceMissingLinks: missing });
+            setSettingsMessage("Ontbrekende factuur-koppelingen getoond.", "success");
+          } catch (error) {
+            console.error("Invoice missing links failed", error);
+            setSettingsMessage("Ontbrekende factuur-koppelingen konden niet worden getoond.", "error");
+          }
+        }
+
+        async function showInvoiceInvalidLinesHandler() {
+          try {
+            const { invoiceMigrationService, activityLogService } = await loadDeveloperModules();
+            const invalidLines = invoiceMigrationService.detectInvalidInvoiceLines();
+            activityLogService.logActivity("developer_tools", "invoices", "view_invoice_invalid_lines", { count: invalidLines.length });
+            await renderDeveloperToolsSummary({ invoiceInvalidLines: invalidLines });
+            setSettingsMessage("Ongeldige factuurregels getoond.", "success");
+          } catch (error) {
+            console.error("Invoice invalid lines failed", error);
+            setSettingsMessage("Ongeldige factuurregels konden niet worden getoond.", "error");
+          }
+        }
+
+        async function showInvoiceDuplicatesHandler() {
+          try {
+            const { invoiceMigrationService, activityLogService } = await loadDeveloperModules();
+            const duplicates = invoiceMigrationService.detectDuplicateInvoices();
+            activityLogService.logActivity("developer_tools", "invoices", "view_invoice_duplicates", { count: duplicates.length });
+            await renderDeveloperToolsSummary({ invoiceDuplicates: duplicates });
+            setSettingsMessage("Factuur duplicaten getoond.", "success");
+          } catch (error) {
+            console.error("Invoice duplicates failed", error);
+            setSettingsMessage("Factuur duplicaten konden niet worden getoond.", "error");
+          }
+        }
+
+        async function testSupabaseInvoicesReadHandler() {
+          try {
+            const { invoiceRepository, activityLogService } = await loadDeveloperModules();
+            const invoices = await invoiceRepository.listSupabaseInvoices();
+            activityLogService.logActivity("developer_tools", "invoices", "read_supabase_invoices", { rows: invoices.length });
+            await renderDeveloperToolsSummary({
+              invoiceMappingPreview: {
+                summary: {
+                  totalInvoices: invoices.length,
+                  uniqueInvoices: invoices.length,
+                  readyCount: invoices.length,
+                  waitingForCustomer: 0,
+                  waitingForWebsite: 0,
+                  waitingForProject: 0,
+                  waitingForQuote: 0,
+                  waitingForSubscription: 0,
+                  invalidLines: 0,
+                  duplicateCount: 0,
+                },
+                rows: invoices.slice(0, 10).map((invoice) => ({
+                  localId: invoice._localInvoiceId || invoice.id,
+                  invoiceNumber: invoice.invoiceNumber,
+                  title: invoice.title,
+                  lineCount: invoice.lines?.length || 0,
+                  total: invoice.total,
+                  ready: true,
+                  errors: [],
+                  warnings: [],
+                  payload: {
+                    invoice: {
+                      invoice_number: invoice.invoiceNumber,
+                      customer_id: invoice.supabaseCustomerId || invoice.customerId || "-",
+                      total_amount: invoice.total,
+                    },
+                    lines: invoice.lines || [],
+                  },
+                })),
+              },
+            });
+            setSettingsMessage(`${invoices.length} Supabase facturen gelezen.`, "success");
+          } catch (error) {
+            console.error("Read Supabase invoices failed", error);
+            setSettingsMessage(error.message || "Supabase facturen lezen kon niet worden uitgevoerd.", "error");
+          }
+        }
+
+        async function testSupabaseInvoiceWriteHandler() {
+          const first = window.confirm("Testfactuur schrijven naar Supabase? Dit gebruikt een veilige testfactuur en geen echte klantdata.");
+          if (!first) return;
+          const second = window.confirm("Bevestig: dit is alleen bedoeld voor gecontroleerde write-test, geen bulkactie.");
+          if (!second) return;
+          const result = {
+            status: "started",
+            type: "invoice_write_test",
+            createdAt: new Date().toISOString(),
+            steps: [],
+          };
+          try {
+            const { invoiceRepository, activityLogService } = await loadDeveloperModules();
+            const testInvoice = {
+              invoiceNumber: "SUPABASE-INVOICE-TEST",
+              title: "Supabase invoice write-test",
+              type: "Maatwerk",
+              status: "test",
+              paymentStatus: "test",
+              invoiceDate: new Date().toISOString().slice(0, 10),
+              dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+              environment: "test",
+              isDemo: true,
+              lines: [{ description: "Veilige testregel", quantity: 1, unitPrice: 1, vatRate: 21 }],
+              metadata: {
+                createdBy: "supabase-invoice-write-test",
+                safeToDelete: true,
+              },
+            };
+            const existingTestInvoice = (await invoiceRepository.listSupabaseInvoices())
+              .find((invoice) => invoice.invoiceNumber === "SUPABASE-INVOICE-TEST");
+            result.steps.push({ step: existingTestInvoice ? "update_existing_test" : "create", status: "started" });
+            const created = existingTestInvoice
+              ? await invoiceRepository.updateInvoice(existingTestInvoice.id, {
+                ...existingTestInvoice,
+                ...testInvoice,
+                id: existingTestInvoice.id,
+                supabaseInvoiceId: existingTestInvoice._supabaseInvoiceId || existingTestInvoice.supabaseInvoiceId || existingTestInvoice.id,
+              }, {
+                oldInvoice: existingTestInvoice,
+                target: "supabase",
+                mode: currentInvoiceDataMode(),
+                allowDemoSupabase: true,
+                allowOrphanInvoice: true,
+                invoiceWriteTest: true,
+              })
+              : await invoiceRepository.createInvoice(testInvoice, {
+                target: "supabase",
+                mode: currentInvoiceDataMode(),
+                allowDemoSupabase: true,
+                allowOrphanInvoice: true,
+                invoiceWriteTest: true,
+              });
+            result.testInvoiceId = created._supabaseInvoiceId || created.supabaseInvoiceId || created.id;
+            result.invoiceId = result.testInvoiceId;
+            result.steps[result.steps.length - 1].status = "completed";
+            result.steps.push({ step: "archive", status: "started" });
+            await invoiceRepository.archiveInvoice(created.id, {
+              invoice: created,
+              target: "supabase",
+              mode: currentInvoiceDataMode(),
+              baseUpdatedAt: created.updatedAt,
+              invoiceWriteTest: true,
+              allowDemoSupabase: true,
+              allowOrphanInvoice: true,
+            });
+            result.steps[result.steps.length - 1].status = "completed";
+            result.status = "invoice_completed";
+            result.completedAt = new Date().toISOString();
+            localStorage.setItem("maxwebstudioLastInvoiceWriteTest", JSON.stringify(result));
+            activityLogService.logActivity("developer_tools", "invoices", "invoice_write_test_completed", { testInvoiceId: result.testInvoiceId });
+            await renderDeveloperToolsSummary({ invoiceWriteTestResult: result });
+            setSettingsMessage("Supabase invoice write-test voltooid en testfactuur gearchiveerd.", "success");
+          } catch (error) {
+            result.status = "failed";
+            result.error = error.message || "Invoice write-test mislukt.";
+            result.completedAt = new Date().toISOString();
+            localStorage.setItem("maxwebstudioLastInvoiceWriteTest", JSON.stringify(result));
+            console.error("Invoice write-test failed", error);
+            await renderDeveloperToolsSummary({ invoiceWriteTestResult: result });
+            setSettingsMessage(result.error, "error");
+          }
+        }
+
         function renderDeveloperMode() {
           const enabled = isDeveloperModeEnabled();
           developerToolsCard.hidden = !enabled;
@@ -5172,6 +5597,10 @@
           return quoteDataModeSelect.value || readStoredSettings().quoteDataMode || localStorage.getItem("maxwebstudioQuoteDataMode") || "local";
         }
 
+        function currentInvoiceDataMode() {
+          return invoiceDataModeSelect.value || readStoredSettings().invoiceDataMode || localStorage.getItem("maxwebstudioInvoiceDataMode") || "local";
+        }
+
         async function getCustomerRepositoryModule() {
           const modules = await loadDeveloperModules();
           return modules.customerRepository;
@@ -5190,6 +5619,11 @@
         async function getQuoteRepositoryModule() {
           const modules = await loadDeveloperModules();
           return modules.quoteRepository;
+        }
+
+        async function getInvoiceRepositoryModule() {
+          const modules = await loadDeveloperModules();
+          return modules.invoiceRepository;
         }
 
         function customerSupabaseId(customer = {}) {
@@ -5336,6 +5770,21 @@
             refreshedAt: result.refreshedAt,
           }));
           return result.quotes.map(normalizeQuote);
+        }
+
+        async function loadInvoicesByDataMode() {
+          const mode = currentInvoiceDataMode();
+          const { InvoiceRepository } = await import("./src/repositories/InvoiceRepository.js");
+          const result = await InvoiceRepository.listByDataMode(mode);
+          state.invoiceSourceStatus = result;
+          localStorage.setItem("maxwebstudioLastInvoiceSourceStatus", JSON.stringify({
+            mode: result.mode,
+            counts: result.counts,
+            fallbackUsed: result.fallbackUsed,
+            error: result.error,
+            refreshedAt: result.refreshedAt,
+          }));
+          return result.invoices.map(normalizeInvoice);
         }
 
         function normalizeWebsiteStatus(value) {
@@ -6022,7 +6471,27 @@
             subscriptionBillingCycle: invoice.subscriptionBillingCycle || "",
             subscriptionInvoicePeriod: invoice.subscriptionInvoicePeriod || "",
             isDemo: Boolean(invoice.isDemo),
+            isDemoJourney: Boolean(invoice.isDemoJourney),
+            environment: invoice.environment || (invoice.isDemo || invoice.isDemoJourney ? "demo" : "production"),
             demoScenarioId: invoice.demoScenarioId || "",
+            demoJourneyId: invoice.demoJourneyId || "",
+            supabaseInvoiceId: invoice.supabaseInvoiceId || invoice._supabaseInvoiceId || "",
+            supabaseCustomerId: invoice.supabaseCustomerId || invoice._supabaseCustomerId || "",
+            supabaseWebsiteId: invoice.supabaseWebsiteId || invoice._supabaseWebsiteId || "",
+            supabaseProjectId: invoice.supabaseProjectId || invoice._supabaseProjectId || "",
+            supabaseQuoteId: invoice.supabaseQuoteId || invoice._supabaseQuoteId || "",
+            supabaseSubscriptionId: invoice.supabaseSubscriptionId || invoice._supabaseSubscriptionId || "",
+            _source: invoice._source || "",
+            _isMigrated: Boolean(invoice._isMigrated || invoice.supabaseInvoiceId || invoice._supabaseInvoiceId),
+            _supabaseInvoiceId: invoice._supabaseInvoiceId || invoice.supabaseInvoiceId || "",
+            _localInvoiceId: invoice._localInvoiceId || invoice.id || "",
+            _linkedCustomerStatus: invoice._linkedCustomerStatus || "",
+            _linkedWebsiteStatus: invoice._linkedWebsiteStatus || "",
+            _linkedProjectStatus: invoice._linkedProjectStatus || "",
+            _linkedQuoteStatus: invoice._linkedQuoteStatus || "",
+            _linkedSubscriptionStatus: invoice._linkedSubscriptionStatus || "",
+            _sourceMeta: invoice._sourceMeta || {},
+            metadata: invoice.metadata && typeof invoice.metadata === "object" ? invoice.metadata : {},
             createdAt,
             updatedAt: invoice.updatedAt || createdAt,
           };
@@ -6039,7 +6508,23 @@
         }
 
         function writeStoredInvoices(invoices) {
-          localStorage.setItem(invoicesStorageKey, JSON.stringify(invoices.map(normalizeInvoice)));
+          localStorage.setItem(invoicesStorageKey, JSON.stringify(invoices.map((invoice) => {
+            const normalized = normalizeInvoice(invoice);
+            const {
+              _source,
+              _isMigrated,
+              _supabaseInvoiceId,
+              _localInvoiceId,
+              _linkedCustomerStatus,
+              _linkedWebsiteStatus,
+              _linkedProjectStatus,
+              _linkedQuoteStatus,
+              _linkedSubscriptionStatus,
+              _sourceMeta,
+              ...clean
+            } = normalized;
+            return clean;
+          })));
         }
 
         function validateInvoicePayload(payload) {
@@ -7951,6 +8436,101 @@
           quoteHistoryList.hidden = false;
         }
 
+        function invoiceSourceLabel(invoice = {}) {
+          const source = invoice._source || "local";
+          if (source === "supabase") return "Supabase";
+          if (source === "hybrid") return "Hybrid";
+          if (source === "demo") return "Demo";
+          return "Local";
+        }
+
+        function invoiceSourceClass(invoice = {}) {
+          const source = invoice._source || "local";
+          if (source === "supabase") return "status-active";
+          if (source === "hybrid") return "status-warning";
+          if (source === "demo" || invoice.isDemo || invoice.environment === "demo") return "status-prepared";
+          return "status-planned";
+        }
+
+        function isSupabaseManagedInvoice(invoice = {}) {
+          return ["supabase", "hybrid"].includes(invoice._source) || Boolean(invoice._supabaseInvoiceId || invoice.supabaseInvoiceId);
+        }
+
+        function renderInvoiceSourceSummary() {
+          const status = state.invoiceSourceStatus || { mode: currentInvoiceDataMode(), counts: {} };
+          const counts = status.counts || {};
+          invoiceSourceSummary.replaceChildren();
+          [
+            ["Invoice data mode", status.mode || currentInvoiceDataMode()],
+            ["Local", String(counts.local ?? state.invoices.length ?? 0)],
+            ["Supabase", String(counts.supabase ?? 0)],
+            ["Hybrid zichtbaar", String(counts.hybrid ?? state.invoices.length ?? 0)],
+            ["Demo", String(counts.demo ?? state.invoices.filter((invoice) => invoice._source === "demo").length)],
+            ["Ongemigreerd local", String(counts.unmigratedLocal ?? 0)],
+            ["Openstaand", money(counts.openAmount ?? state.invoices.filter((invoice) => !["betaald", "geannuleerd", "gearchiveerd"].includes(invoice.status)).reduce((sum, invoice) => sum + Number(invoice.total || 0), 0))],
+            ["Betaald", money(counts.paidAmount ?? state.invoices.filter((invoice) => invoice.status === "betaald").reduce((sum, invoice) => sum + Number(invoice.total || 0), 0))],
+          ].forEach(([label, value]) => {
+            const card = document.createElement("article");
+            card.className = "admin-card metric-card";
+            card.append(createCell(label), createCell(value, "strong"));
+            invoiceSourceSummary.append(card);
+          });
+          if (status.error) {
+            const card = document.createElement("article");
+            card.className = "admin-card request-card request-state-card";
+            card.append(createBadge(status.fallbackUsed ? "Fallback actief" : "Supabase fout", status.fallbackUsed ? "status-warning" : "status-attention"), createCell(status.error));
+            invoiceSourceSummary.append(card);
+          }
+        }
+
+        function renderInvoiceSourceDetail(invoice = null, readiness = null) {
+          invoiceSourceDetail.replaceChildren();
+          if (!invoice) return;
+          [
+            ["Databron", invoiceSourceLabel(invoice)],
+            ["Migratiestatus", invoice._isMigrated || invoice.supabaseInvoiceId ? "Gemigreerd" : "Lokaal/niet gemigreerd"],
+            ["Supabase invoice ID", invoice._supabaseInvoiceId || invoice.supabaseInvoiceId || "-"],
+            ["Lokale invoice ID", invoice._localInvoiceId || invoice.id || "-"],
+            ["Supabase customer", invoice.supabaseCustomerId || readiness?.customerLink?.supabaseCustomerId || "-"],
+            ["Klantkoppeling", invoice._linkedCustomerStatus || readiness?.customerLink?.status || "-"],
+            ["Websitekoppeling", invoice._linkedWebsiteStatus || readiness?.websiteLink?.status || "-"],
+            ["Projectkoppeling", invoice._linkedProjectStatus || readiness?.projectLink?.status || "-"],
+            ["Offertekoppeling", invoice._linkedQuoteStatus || readiness?.quoteLink?.status || "-"],
+            ["Abonnementkoppeling", invoice._linkedSubscriptionStatus || readiness?.subscriptionLink?.status || "-"],
+            ["Betaalstatus", invoice.paymentStatus || "-"],
+            ["Regels", String(invoice.lines?.length || 0)],
+            ["Laatste update", formatDate(invoice.updatedAt || invoice._sourceMeta?.refreshedAt || "")],
+            ["Invoice write", readiness ? readiness.allowed ? "Beschikbaar" : "Geblokkeerd" : isSupabaseManagedInvoice(invoice) ? "Wordt gecontroleerd" : "LocalStorage"],
+            ["Write reden", readiness?.reason || readiness?.customerLink?.message || "-"],
+          ].forEach(([label, value]) => {
+            const row = document.createElement("div");
+            row.append(createCell(label), createCell(value, "strong"));
+            invoiceSourceDetail.append(row);
+          });
+        }
+
+        function renderInvoiceHistory(invoice) {
+          invoiceHistoryList.replaceChildren();
+          if (!invoice) {
+            invoiceHistoryList.hidden = true;
+            return;
+          }
+          const history = state.developerModules?.invoiceRepository?.getInvoiceHistory(invoice.id) || [];
+          if (!history.length) {
+            const row = document.createElement("div");
+            row.append(createCell("Wijzigingshistorie"), createCell("Nog geen factuur write-activiteiten."));
+            invoiceHistoryList.append(row);
+            invoiceHistoryList.hidden = false;
+            return;
+          }
+          history.slice(0, 8).forEach((item) => {
+            const row = document.createElement("div");
+            row.append(createCell(formatDate(item.createdAt)), createCell(`${item.action || "update"} - ${item.metadata?.source || "local"}`, "strong"));
+            invoiceHistoryList.append(row);
+          });
+          invoiceHistoryList.hidden = false;
+        }
+
         function populateProjectOptions(selectedCustomerOverride = "") {
           projectFields.customer.replaceChildren();
           const emptyCustomer = document.createElement("option");
@@ -8566,8 +9146,9 @@
         function billingStatusClass(value) {
           const status = normalize(value);
           if (["active", "actief", "paid", "betaald", "geaccepteerd", "goedgekeurd", "normal", "resolved"].includes(status)) return "status-active";
-          if (["sent", "verzonden", "draft", "concept", "demo"].includes(status)) return "status-prepared";
+          if (["sent", "verzonden", "draft", "concept", "demo", "test"].includes(status)) return "status-prepared";
           if (["paused", "gepauzeerd", "suspended", "expired", "verlopen", "overdue", "pending", "open", "attention", "payment_failed", "retry_needed"].includes(status)) return "status-warning";
+          if (["archived", "gearchiveerd"].includes(status)) return "status-planned";
           return "status-attention";
         }
 
@@ -9517,6 +10098,7 @@
           invoiceList.replaceChildren();
           populateInvoiceOptions();
           renderInvoiceStats();
+          renderInvoiceSourceSummary();
           if (!state.invoices.length) {
             renderState(invoiceList, "Geen facturen", "Maak de eerste factuur voor een klant.", "Leeg", "status-planned", { label: "Factuur aanmaken", primary: true, onClick: () => openInvoiceModal() });
             return;
@@ -9528,7 +10110,7 @@
           }
           const head = document.createElement("div");
           head.className = "admin-table-row admin-table-head invoice-row";
-          ["Factuurnummer", "Klant", "Type", "Status", "Datum", "Vervaldatum", "Totaal", "Acties"].forEach((label) => head.append(createCell(label)));
+          ["Factuurnummer", "Klant", "Type", "Status", "Bron", "Datum", "Vervaldatum", "Totaal", "Acties"].forEach((label) => head.append(createCell(label)));
           invoiceList.append(head);
           invoices.forEach((invoice) => {
             const row = document.createElement("div");
@@ -9578,6 +10160,7 @@
               createCell(invoice.customerCompany || invoice.customerName || "Geen klant", "strong"),
               createCell(invoice.type || "-"),
               createBadge(invoiceStatusLabels[invoice.status] || invoice.status, billingStatusClass(invoice.status)),
+              createBadge(invoiceSourceLabel(invoice), invoiceSourceClass(invoice)),
               createCell(invoice.invoiceDate || "-"),
               createCell(formatDate(invoice.dueDate)),
               createCell(money(invoice.total)),
@@ -9588,7 +10171,7 @@
         }
 
         async function loadBilling(showLoading = false) {
-          state.invoices = readStoredInvoices();
+          state.invoices = await loadInvoicesByDataMode();
           state.subscriptions = readStoredSubscriptions();
           renderSubscriptions();
           renderInvoices();
@@ -9615,7 +10198,7 @@
         }
 
         function invoiceById(id) {
-          return state.invoices.find((invoice) => invoice.id === id) || null;
+          return state.invoices.find((invoice) => invoice.id === id || invoice.supabaseInvoiceId === id || invoice._supabaseInvoiceId === id) || null;
         }
 
         function subscriptionInvoicePeriod(subscription, dateValue = "") {
@@ -9799,6 +10382,21 @@
           renderInvoiceLines();
           updatePaymentLinkActions(invoice || null);
           updateInvoiceSourceActions(invoice || null);
+          const readiness = invoice && state.developerModules?.invoiceRepository
+            ? state.developerModules.invoiceRepository.canWriteInvoice(invoice, {
+              target: isSupabaseManagedInvoice(invoice) ? "supabase" : "local",
+              mode: currentInvoiceDataMode(),
+            })
+            : null;
+          state.invoiceWriteReadiness = readiness;
+          renderInvoiceSourceDetail(invoice || null, readiness);
+          invoiceHistoryList.hidden = true;
+          invoiceRefreshSupabase.disabled = !invoice || !isSupabaseManagedInvoice(invoice);
+          invoiceHistory.disabled = !invoice;
+          invoiceReactivate.disabled = !invoice || invoice.status !== "gearchiveerd";
+          invoiceCancel.disabled = invoice?.status === "gearchiveerd";
+          invoiceMarkSent.disabled = invoice?.status === "verzonden" || invoice?.status === "betaald" || invoice?.status === "gearchiveerd";
+          invoiceMarkPaid.disabled = invoice?.status === "betaald" || invoice?.status === "gearchiveerd";
           setBillingMessage(invoiceMessage, "", "");
           invoiceModal.hidden = false;
           document.body.classList.add("admin-modal-open");
@@ -9993,7 +10591,8 @@
           setBillingMessage(invoiceMessage, "", "");
 
           try {
-            const invoice = saveInvoiceLocally({
+            const existingInvoice = invoiceById(invoiceFields.id.value);
+            const payload = {
               id: invoiceFields.id.value,
               profileId: invoiceFields.profile.value,
               websiteId: invoiceFields.website.value,
@@ -10009,7 +10608,25 @@
               pdfFilePath: invoiceFields.pdf.value,
               notes: invoiceFields.notes.value,
               lines: currentInvoiceLines,
-            });
+            };
+            const shouldUseRepository = currentInvoiceDataMode() !== "local" || isSupabaseManagedInvoice(existingInvoice || {});
+            const invoice = shouldUseRepository
+              ? await (async () => {
+                const repo = await getInvoiceRepositoryModule();
+                if (existingInvoice) {
+                  return repo.updateInvoice(existingInvoice.id, payload, {
+                    oldInvoice: existingInvoice,
+                    target: currentInvoiceDataMode() === "local" ? "local" : isSupabaseManagedInvoice(existingInvoice) ? "supabase" : "local",
+                    mode: currentInvoiceDataMode(),
+                    baseUpdatedAt: existingInvoice.updatedAt,
+                  });
+                }
+                return repo.createInvoice(payload, {
+                  target: currentInvoiceDataMode() === "local" ? "local" : "supabase",
+                  mode: currentInvoiceDataMode(),
+                });
+              })()
+              : saveInvoiceLocally(payload);
             await loadCRMData(false);
             state.selectedInvoiceId = invoice.id;
             openInvoiceModal(invoice.id);
@@ -10191,7 +10808,43 @@
         async function setInvoiceStatus(id, status, select) {
           if (select) select.disabled = true;
           try {
-            const invoice = updateInvoiceStatusLocally(id, status);
+            const existingInvoice = invoiceById(id);
+            if (!existingInvoice) throw new Error("Factuur niet gevonden.");
+            let invoice;
+            if (isSupabaseManagedInvoice(existingInvoice)) {
+              const repo = await getInvoiceRepositoryModule();
+              if (status === "betaald") {
+                invoice = await repo.markInvoicePaid(existingInvoice.id, {
+                  invoice: existingInvoice,
+                  target: "supabase",
+                  mode: currentInvoiceDataMode(),
+                  baseUpdatedAt: existingInvoice.updatedAt,
+                });
+              } else if (status === "verzonden") {
+                invoice = await repo.markInvoiceSent(existingInvoice.id, {
+                  invoice: existingInvoice,
+                  target: "supabase",
+                  mode: currentInvoiceDataMode(),
+                  baseUpdatedAt: existingInvoice.updatedAt,
+                });
+              } else if (status === "verlopen") {
+                invoice = await repo.markInvoiceExpired(existingInvoice.id, {
+                  invoice: existingInvoice,
+                  target: "supabase",
+                  mode: currentInvoiceDataMode(),
+                  baseUpdatedAt: existingInvoice.updatedAt,
+                });
+              } else {
+                invoice = await repo.updateInvoice(existingInvoice.id, { ...existingInvoice, status, paymentStatus: status }, {
+                  oldInvoice: existingInvoice,
+                  target: "supabase",
+                  mode: currentInvoiceDataMode(),
+                  baseUpdatedAt: existingInvoice.updatedAt,
+                });
+              }
+            } else {
+              invoice = updateInvoiceStatusLocally(id, status);
+            }
             await loadCRMData(false);
             if (state.selectedInvoiceId === id) openInvoiceModal(invoice.id);
           } catch (error) {
@@ -10261,9 +10914,64 @@
           if (!id) return;
           const confirmed = window.confirm("Weet je zeker dat je deze factuur wilt annuleren?");
           if (!confirmed) return;
-          const invoice = updateInvoiceStatusLocally(id, "geannuleerd");
+          const existingInvoice = invoiceById(id);
+          if (!existingInvoice) return;
+          const invoice = isSupabaseManagedInvoice(existingInvoice)
+            ? await (await getInvoiceRepositoryModule()).archiveInvoice(existingInvoice.id, {
+              invoice: existingInvoice,
+              target: "supabase",
+              mode: currentInvoiceDataMode(),
+              baseUpdatedAt: existingInvoice.updatedAt,
+            })
+            : updateInvoiceStatusLocally(id, "geannuleerd");
           await loadCRMData(false);
           if (state.selectedInvoiceId === id) openInvoiceModal(invoice.id);
+        }
+
+        async function reactivateSelectedInvoice() {
+          const invoice = invoiceById(state.selectedInvoiceId);
+          if (!invoice) return;
+          if (!window.confirm("Deze factuur opnieuw activeren als concept?")) return;
+          const saved = isSupabaseManagedInvoice(invoice)
+            ? await (await getInvoiceRepositoryModule()).reactivateInvoice(invoice.id, {
+              invoice,
+              target: "supabase",
+              mode: currentInvoiceDataMode(),
+              baseUpdatedAt: invoice.updatedAt,
+            })
+            : saveInvoiceLocally({ ...invoice, status: "concept", paymentStatus: "concept" });
+          await loadCRMData(false);
+          openInvoiceModal(saved.id);
+        }
+
+        async function refreshSelectedInvoiceFromSupabase() {
+          const invoice = invoiceById(state.selectedInvoiceId);
+          if (!invoice || !isSupabaseManagedInvoice(invoice)) return;
+          invoiceRefreshSupabase.disabled = true;
+          invoiceRefreshSupabase.textContent = "Verversen...";
+          try {
+            await loadCRMData(false);
+            const remoteId = invoice._supabaseInvoiceId || invoice.supabaseInvoiceId || invoice.id;
+            const refreshed = state.invoices.find((item) => item.id === remoteId || item._supabaseInvoiceId === remoteId || item.supabaseInvoiceId === remoteId || item.id === invoice.id);
+            openInvoiceModal(refreshed?.id || invoice.id);
+            setBillingMessage(invoiceMessage, "Factuur opnieuw geladen vanuit de actieve invoice data source.", "success");
+          } catch (error) {
+            setBillingMessage(invoiceMessage, error.message || "Factuur kon niet worden ververst.", "error");
+          } finally {
+            invoiceRefreshSupabase.textContent = "Ververs uit Supabase";
+            invoiceRefreshSupabase.disabled = !isSupabaseManagedInvoice(invoiceById(state.selectedInvoiceId));
+          }
+        }
+
+        async function toggleInvoiceHistory() {
+          const invoice = invoiceById(state.selectedInvoiceId);
+          if (!invoice) return;
+          if (!state.developerModules?.invoiceRepository) await getInvoiceRepositoryModule();
+          if (!invoiceHistoryList.hidden) {
+            invoiceHistoryList.hidden = true;
+            return;
+          }
+          renderInvoiceHistory(invoice);
         }
 
         async function cancelQuote(id = state.selectedQuoteId) {
@@ -11072,6 +11780,7 @@
             websiteDataModeSelect.value = currentWebsiteDataMode();
             projectDataModeSelect.value = currentProjectDataMode();
             quoteDataModeSelect.value = currentQuoteDataMode();
+            invoiceDataModeSelect.value = currentInvoiceDataMode();
             state.customers = await loadCustomersByDataMode();
             state.profiles = state.customers;
             state.authUsers = [];
@@ -11079,7 +11788,7 @@
             state.projects = await loadProjectsByDataMode();
             state.files = readStoredFiles();
             state.quotes = await loadQuotesByDataMode();
-            state.invoices = readStoredInvoices();
+            state.invoices = await loadInvoicesByDataMode();
             state.subscriptions = readStoredSubscriptions();
             renderCustomers();
             renderWebsites();
@@ -11108,7 +11817,12 @@
             const websiteSourceStatus = state.websiteSourceStatus || {};
             const projectSourceStatus = state.projectSourceStatus || {};
             const quoteSourceStatus = state.quoteSourceStatus || {};
-            if (quoteSourceStatus.error && quoteSourceStatus.fallbackUsed) {
+            const invoiceSourceStatus = state.invoiceSourceStatus || {};
+            if (invoiceSourceStatus.error && invoiceSourceStatus.fallbackUsed) {
+              setAdminAccessMessage(`Factuur hybrid fallback actief: ${invoiceSourceStatus.error}`, "error");
+            } else if (invoiceSourceStatus.error) {
+              setAdminAccessMessage(`Supabase facturen konden niet worden gelezen: ${invoiceSourceStatus.error}`, "error");
+            } else if (quoteSourceStatus.error && quoteSourceStatus.fallbackUsed) {
               setAdminAccessMessage(`Offerte hybrid fallback actief: ${quoteSourceStatus.error}`, "error");
             } else if (quoteSourceStatus.error) {
               setAdminAccessMessage(`Supabase offertes konden niet worden gelezen: ${quoteSourceStatus.error}`, "error");
@@ -11143,7 +11857,7 @@
             } else if (sourceStatus.error) {
               setAdminAccessMessage(`Supabase customers konden niet worden gelezen: ${sourceStatus.error}`, "error");
             } else {
-              setAdminAccessMessage(`CRM geladen via customer mode ${sourceStatus.mode || "local"}, website mode ${websiteSourceStatus.mode || "local"}, project mode ${projectSourceStatus.mode || "local"} en quote mode ${quoteSourceStatus.mode || "local"}.`, "success");
+              setAdminAccessMessage(`CRM geladen via customer mode ${sourceStatus.mode || "local"}, website mode ${websiteSourceStatus.mode || "local"}, project mode ${projectSourceStatus.mode || "local"}, quote mode ${quoteSourceStatus.mode || "local"} en invoice mode ${invoiceSourceStatus.mode || "local"}.`, "success");
             }
           } catch (error) {
             setAdminAccessMessage(error.message || "CRM-klanten konden niet worden geladen.", "error");
@@ -11181,11 +11895,19 @@
               error: error.message || "CRM/quote data kon niet worden geladen.",
               refreshedAt: new Date().toISOString(),
             };
+            state.invoiceSourceStatus = {
+              mode: currentInvoiceDataMode(),
+              counts: { local: readStoredInvoices().length, supabase: 0, hybrid: 0, duplicateMerges: 0, demo: 0, unmigratedLocal: 0 },
+              fallbackUsed: false,
+              error: error.message || "CRM/invoice data kon niet worden geladen.",
+              refreshedAt: new Date().toISOString(),
+            };
             renderState(customerList, "CRM-klanten konden niet worden geladen", "Supabase-read kon geen klanten laden. Zet de customer data mode terug naar local of controleer de Supabase configuratie.", "Fout", "status-attention", { label: "Terug naar local", primary: true, onClick: () => setCustomerDataMode("local", { source: "supabase_read_error" }) });
             renderCustomerSourceSummary();
             renderWebsiteSourceSummary();
             renderProjectSourceSummary();
             renderQuoteSourceSummary();
+            renderInvoiceSourceSummary();
           } finally {
             adminLoadButton.disabled = false;
             adminLoadButton.textContent = "Laden";
@@ -11377,6 +12099,9 @@
         });
         invoiceOpenQuote.addEventListener("click", openQuoteFromInvoice);
         invoiceOpenSubscription.addEventListener("click", openSubscriptionFromInvoice);
+        invoiceRefreshSupabase.addEventListener("click", refreshSelectedInvoiceFromSupabase);
+        invoiceHistory.addEventListener("click", toggleInvoiceHistory);
+        invoiceReactivate.addEventListener("click", reactivateSelectedInvoice);
         invoiceCopyPayment.addEventListener("click", () => {
           const link = invoiceFields.paymentLink.value;
           if (link) copyText(link, "Betaalverzoek gekopieerd.", (text, type) => setBillingMessage(invoiceMessage, text, type));
@@ -11392,6 +12117,7 @@
         customerDataModeSelect.addEventListener("change", changeCustomerDataModeHandler);
         websiteDataModeSelect.addEventListener("change", changeWebsiteDataModeHandler);
         quoteDataModeSelect.addEventListener("change", changeQuoteDataModeHandler);
+        invoiceDataModeSelect.addEventListener("change", changeInvoiceDataModeHandler);
         [customerSearch, customerStatusFilter, customerPackageFilter].forEach((filter) => filter.addEventListener("input", renderCustomers));
         [fileSearch, fileCategoryFilter, fileStatusFilter, fileCustomerFilter, fileProjectFilter].forEach((filter) => filter.addEventListener("input", renderFiles));
         [quoteSearch, quoteStatusFilter, quoteTypeFilter, quoteCustomerFilter, quoteProjectFilter, quoteWebsiteFilter].forEach((filter) => filter.addEventListener("input", renderQuotes));
@@ -11451,6 +12177,14 @@
         testSupabaseQuotesReadButton.addEventListener("click", testSupabaseQuotesReadHandler);
         testSupabaseQuoteWriteButton.addEventListener("click", testSupabaseQuoteWriteHandler);
         resetQuoteDataModeButton.addEventListener("click", resetQuoteDataModeHandler);
+        runInvoiceMigrationDryRunButton.addEventListener("click", runInvoiceMigrationDryRunHandler);
+        viewInvoiceMappingPreviewButton.addEventListener("click", showInvoiceMappingPreviewHandler);
+        viewInvoiceMissingLinksButton.addEventListener("click", showInvoiceMissingLinksHandler);
+        viewInvoiceInvalidLinesButton.addEventListener("click", showInvoiceInvalidLinesHandler);
+        viewInvoiceDuplicatesButton.addEventListener("click", showInvoiceDuplicatesHandler);
+        testSupabaseInvoicesReadButton.addEventListener("click", testSupabaseInvoicesReadHandler);
+        testSupabaseInvoiceWriteButton.addEventListener("click", testSupabaseInvoiceWriteHandler);
+        resetInvoiceDataModeButton.addEventListener("click", resetInvoiceDataModeHandler);
         [customerMigrationIncludeDemo, customerMigrationIncludeProduction, customerMigrationBatchSize, customerMigrationSkipDuplicates, customerMigrationStopOnError].forEach((field) => {
           field.addEventListener("input", () => renderDeveloperToolsSummary());
           field.addEventListener("change", () => renderDeveloperToolsSummary());
@@ -11491,6 +12225,7 @@
         websiteDataModeSelect.value = readStoredSettings().websiteDataMode || localStorage.getItem("maxwebstudioWebsiteDataMode") || "local";
         projectDataModeSelect.value = readStoredSettings().projectDataMode || localStorage.getItem("maxwebstudioProjectDataMode") || "local";
         quoteDataModeSelect.value = readStoredSettings().quoteDataMode || localStorage.getItem("maxwebstudioQuoteDataMode") || "local";
+        invoiceDataModeSelect.value = readStoredSettings().invoiceDataMode || localStorage.getItem("maxwebstudioInvoiceDataMode") || "local";
         renderIntegrations();
         renderSystemStatus();
         syncActiveNav();

@@ -233,6 +233,17 @@ Offerte-Supabasevoorbereiding in Fase 12.5:
 - Bulk-migratie, hard delete en provider switch zijn niet toegevoegd.
 - De veilige testofferte gebruikt `SUPABASE-QUOTE-TEST`, `environment: test`, `is_demo: true` en `safeToDelete: true`.
 
+Factuur-Supabasevoorbereiding in Fase 12.6:
+
+- `invoices` en `invoice_lines` zijn voorbereid met RLS aan en service-role policies voor server-side beheer.
+- De frontend gebruikt geen service role key.
+- `Invoice data mode` start standaard op `local`; `supabase-read` en `hybrid` lezen alleen via de publieke Supabase client.
+- Schrijfacties zijn bewust beperkt tot gecontroleerde create/update/archive/reactivate/mark sent/mark paid/mark expired per factuur.
+- Bulk-migratie, hard delete, echte Mollie-mutaties en provider switch zijn niet toegevoegd.
+- De veilige testfactuur gebruikt `SUPABASE-INVOICE-TEST`, `status: test`, `paymentStatus: test`, `environment: test`, `is_demo: true` en `safeToDelete: true`.
+- Factuurkoppelingen naar customer, website, project, quote en subscription worden gevalideerd voordat Supabase-writes toegestaan worden.
+- Bestaande demo-betaallinks blijven lokaal/demo; er worden geen live betaalprovidergegevens door de browser geschreven.
+
 Aanbevelingen:
 
 - limieten blijven handhaven

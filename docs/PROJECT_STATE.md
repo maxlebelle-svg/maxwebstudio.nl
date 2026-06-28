@@ -200,3 +200,10 @@ Belangrijk:
 - Offertes kunnen in Developer Mode worden geanalyseerd via dry-run, mapping preview, ontbrekende koppelingen, ongeldige regels, duplicaten, read-test en een veilige testofferte-write.
 - Gecontroleerde offerte-acties zijn voorbereid voor create, update, archive, reactivate en accept; er is geen hard delete of bulk-write toegevoegd.
 - Bestaande lokale offerteflow en offerte-naar-factuur conversie blijven intact.
+- Fase 12.6 bereidt factuur-migratie naar Supabase voor met tabellen `invoices` en `invoice_lines`.
+- De SQL-basis voor facturen staat in `/docs/supabase-invoices.sql`.
+- Het Admin CRM heeft nu een `Invoice data mode` met `local`, `supabase-read` en `hybrid`; standaard blijft veilig `local`.
+- Facturen kunnen in Developer Mode worden geanalyseerd via dry-run, mapping preview, ontbrekende koppelingen, ongeldige regels, duplicaten, read-test en een veilige testfactuur-write.
+- Gecontroleerde factuuracties zijn voorbereid voor create, update, archive, reactivate, mark sent, mark paid en mark expired; er is geen hard delete, bulk-write of provider switch toegevoegd.
+- Factuurregels worden voorbereid als aparte `invoice_lines`, zodat bedragen, btw en regels later niet als losse JSON in één factuurrecord hoeven te blijven.
+- Bestaande lokale factuurflow, demo-betaalpagina, offerte-naar-factuur conversie en abonnement-naar-conceptfactuur flow blijven intact.
