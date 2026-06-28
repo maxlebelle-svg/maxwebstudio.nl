@@ -326,3 +326,14 @@ Als een abonnement een open retryprobleem heeft, toont het klantportaal een kort
 Als `mandate_checkout_url` beschikbaar is en de mandate nog niet geldig is, blijft de knop `Voltooi machtiging` zichtbaar.
 
 Klanten kunnen retry-statussen niet aanpassen en kunnen geen retry-mails triggeren.
+
+## Fase 12.5 - Offertes en klantportaal
+
+Offertes blijven zichtbaar via de bestaande demo/offerteflow. De productiebasis wordt voorbereid met `quotes` en `quote_lines`, zodat klantoffertes later veilig uit Supabase gelezen kunnen worden.
+
+Belangrijk:
+
+- lokale demo-offertes blijven werken
+- offerte-naar-factuur conversie blijft lokaal/demo intact
+- klantportaal toont nog geen nieuwe live Supabase-offertedata via Auth in deze fase
+- klantveilige offerteweergave volgt pas na de live klantportaaldata- en Auth-fases

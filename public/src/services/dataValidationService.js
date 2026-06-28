@@ -2,6 +2,7 @@ import { STORAGE_KEYS } from "../config/storageKeys.js";
 import { normalizeCustomer, customerIdentityKeys } from "../utils/customerNormalizer.js";
 import { normalizeWebsite } from "../utils/websiteNormalizer.js";
 import { normalizeProject, projectIdentityKeys } from "../utils/projectNormalizer.js";
+import { calculateQuoteTotals, normalizeQuote, quoteIdentityKeys } from "../utils/quoteNormalizer.js";
 
 function readArray(key) {
   try {
@@ -72,8 +73,27 @@ export function validateLocalStorageData() {
   invoices.forEach((invoice) => {
     if (!Array.isArray(invoice.lines) || !invoice.lines.length) pushIssue(issues, "error", "invoices", "Factuur mist factuurregels.", invoice.id);
   });
-  quotes.forEach((quote) => {
+  const customerIds = new Set(customers.map((customer) => normalizeCustomer(customer).id).filter(Boolean));
+  const websiteIds = new Set(websites.map((website) => normalizeWebsite(website).id).filter(Boolean));
+  const quoteNumbers = new Map();
+  quotes.map(normalizeQuote).forEach((quote) => {
+    if (!quote.quoteNumber) pushIssue(issues, "error", "quotes", "Offerte mist offertenummer.", quote.id);
+    if (!quote.profileId && !quote.customerId) pushIssue(issues, "error", "quotes", "Offerte mist klantkoppeling.", quote.id);
+    if (quote.profileId && !customerIds.has(quote.profileId)) pushIssue(issues, "error", "quotes", "Offerte heeft ontbrekende klant.", quote.id);
+    if (quote.websiteId && !websiteIds.has(quote.websiteId)) pushIssue(issues, "warning", "quotes", "Offerte heeft ontbrekende website.", quote.id);
     if (!Array.isArray(quote.lines) || !quote.lines.length) pushIssue(issues, "error", "quotes", "Offerte mist offertregels.", quote.id);
+    quote.lines.forEach((line, index) => {
+      if (!line.description) pushIssue(issues, "error", "quotes", `Offertregel ${index + 1} mist omschrijving.`, quote.id);
+      if (line.quantity <= 0) pushIssue(issues, "error", "quotes", `Offertregel ${index + 1} heeft een ongeldige hoeveelheid.`, quote.id);
+      if (line.unitPrice < 0) pushIssue(issues, "error", "quotes", `Offertregel ${index + 1} heeft een negatieve prijs.`, quote.id);
+    });
+    const totals = calculateQuoteTotals(quote.lines);
+    if (Math.abs(Number(quote.total || 0) - Number(totals.total || 0)) > 0.05) pushIssue(issues, "warning", "quotes", "Offertetotaal wijkt af van berekende offertregels.", quote.id);
+    const keys = quoteIdentityKeys(quote);
+    if (keys.quoteNumber) {
+      if (quoteNumbers.has(keys.quoteNumber)) pushIssue(issues, "warning", "quotes", "Dubbel offertenummer gevonden.", quote.id);
+      quoteNumbers.set(keys.quoteNumber, quote.id);
+    }
   });
   subscriptions.forEach((subscription) => {
     if (!subscription.profileId && !subscription.customerId) pushIssue(issues, "error", "subscriptions", "Abonnement mist klantkoppeling.", subscription.id);
@@ -96,8 +116,6 @@ export function validateLocalStorageData() {
     }
   });
 
-  const customerIds = new Set(customers.map((customer) => normalizeCustomer(customer).id).filter(Boolean));
-  const websiteIds = new Set(websites.map((website) => normalizeWebsite(website).id).filter(Boolean));
   const projectKeys = new Map();
   projects.map(normalizeProject).forEach((project) => {
     if (!project.name) pushIssue(issues, "error", "projects", "Project mist projectnaam.", project.id);

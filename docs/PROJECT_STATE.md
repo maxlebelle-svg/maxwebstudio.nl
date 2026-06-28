@@ -194,3 +194,9 @@ Belangrijk:
 - Het dashboard toont MRR, ARR, actieve klanten, websites, actieve abonnementen, hoog risico, factuur-KPI's, mandate-wachtrij, retrydruk en open wijzigingsverzoeken.
 - Eenvoudige SVG-grafieken tonen omzet per maand, abonnementengroei, factuurstatusverdeling en abonnementstatusverdeling zonder externe chart library.
 - Documentatie voor KPI-definities staat in `/docs/BUSINESS_DASHBOARD.md`.
+- Fase 12.5 bereidt offerte-migratie naar Supabase voor met tabellen `quotes` en `quote_lines`.
+- De SQL-basis voor offertes staat in `/docs/supabase-quotes.sql`.
+- Het Admin CRM heeft nu een `Quote data mode` met `local`, `supabase-read` en `hybrid`; standaard blijft veilig `local`.
+- Offertes kunnen in Developer Mode worden geanalyseerd via dry-run, mapping preview, ontbrekende koppelingen, ongeldige regels, duplicaten, read-test en een veilige testofferte-write.
+- Gecontroleerde offerte-acties zijn voorbereid voor create, update, archive, reactivate en accept; er is geen hard delete of bulk-write toegevoegd.
+- Bestaande lokale offerteflow en offerte-naar-factuur conversie blijven intact.

@@ -526,6 +526,10 @@
               <div><p class="section-kicker">Offertes</p><h2>Offertebeheer</h2></div>
               <button class="button primary" id="new-quote" type="button">Nieuwe offerte</button>
             </div>
+            <div class="admin-filters source-mode-filters" aria-label="Offerte databron">
+              <label for="quote-data-mode">Quote data mode<select id="quote-data-mode"><option value="local">Local</option><option value="supabase-read">Supabase read</option><option value="hybrid">Hybrid</option></select></label>
+            </div>
+            <div class="admin-grid compact-admin-grid" id="quote-source-summary" aria-live="polite"></div>
             <div class="admin-grid invoice-stats-grid" aria-label="Offerte statistieken">
               <article class="admin-card detail-card"><span>Totaal geoffreerd</span><strong id="quote-stat-total">€ 0,00</strong></article>
               <article class="admin-card detail-card"><span>Openstaand</span><strong id="quote-stat-open">€ 0,00</strong></article>
@@ -536,7 +540,7 @@
             </div>
             <div class="admin-filters invoice-filters" aria-label="Offertes filteren">
               <label for="quote-search">Zoeken<input id="quote-search" type="search" placeholder="Offertenummer, klant, project, website of type" /></label>
-              <label for="quote-status-filter">Status<select id="quote-status-filter"><option value="">Alle statussen</option><option value="concept">Concept</option><option value="verzonden">Verzonden</option><option value="geaccepteerd">Geaccepteerd</option><option value="afgewezen">Afgewezen</option><option value="verlopen">Verlopen</option><option value="geannuleerd">Geannuleerd</option></select></label>
+              <label for="quote-status-filter">Status<select id="quote-status-filter"><option value="">Alle statussen</option><option value="concept">Concept</option><option value="verzonden">Verzonden</option><option value="geaccepteerd">Geaccepteerd</option><option value="afgewezen">Afgewezen</option><option value="verlopen">Verlopen</option><option value="geannuleerd">Geannuleerd</option><option value="gearchiveerd">Gearchiveerd</option></select></label>
               <label for="quote-type-filter">Type<select id="quote-type-filter"><option value="">Alle types</option><option value="Website">Website</option><option value="Website + onderhoud">Website + onderhoud</option><option value="Maatwerk">Maatwerk</option><option value="Extra pagina's">Extra pagina's</option><option value="SEO">SEO</option><option value="Hosting & onderhoud">Hosting & onderhoud</option><option value="Overig">Overig</option></select></label>
               <label for="quote-customer-filter">Klant<select id="quote-customer-filter"><option value="">Alle klanten</option></select></label>
               <label for="quote-project-filter">Project<select id="quote-project-filter"><option value="">Alle projecten</option></select></label>
@@ -822,6 +826,14 @@
                 <button class="button secondary" id="test-supabase-projects-read" type="button">Test project read</button>
                 <button class="button secondary" id="test-supabase-project-write" type="button">Test project write</button>
                 <button class="button secondary" id="reset-project-data-mode" type="button">Reset project data mode naar local</button>
+                <button class="button secondary" id="run-quote-migration-dry-run" type="button">Run offerte migratie dry-run</button>
+                <button class="button secondary" id="view-quote-mapping-preview" type="button">Bekijk offerte mapping preview</button>
+                <button class="button secondary" id="view-quote-missing-links" type="button">Bekijk ontbrekende offerte-koppelingen</button>
+                <button class="button secondary" id="view-quote-invalid-lines" type="button">Bekijk ongeldige offertregels</button>
+                <button class="button secondary" id="view-quote-duplicates" type="button">Bekijk offerte duplicaten</button>
+                <button class="button secondary" id="test-supabase-quotes-read" type="button">Test quote read</button>
+                <button class="button secondary" id="test-supabase-quote-write" type="button">Test quote write met testofferte</button>
+                <button class="button secondary" id="reset-quote-data-mode" type="button">Reset quote data mode naar local</button>
                 <button class="button secondary" id="view-env-example" type="button">Bekijk .env voorbeeld</button>
                 <button class="button secondary" id="why-local-storage" type="button">Waarom nog localStorage?</button>
                 <button class="button secondary" id="run-customer-migration-dry-run" type="button">Run CRM migratie dry run</button>
@@ -1018,7 +1030,7 @@
             <label for="quote-number">Offertenummer<input id="quote-number" type="text" /></label>
             <label for="quote-type">Offertetype<select id="quote-type"><option value="Website">Website</option><option value="Website + onderhoud">Website + onderhoud</option><option value="Maatwerk">Maatwerk</option><option value="Extra pagina's">Extra pagina's</option><option value="SEO">SEO</option><option value="Hosting & onderhoud">Hosting & onderhoud</option><option value="Overig">Overig</option></select></label>
             <label for="quote-title">Titel<input id="quote-title" type="text" required /></label>
-            <label for="quote-status">Status<select id="quote-status"><option value="concept">Concept</option><option value="verzonden">Verzonden</option><option value="geaccepteerd">Geaccepteerd</option><option value="afgewezen">Afgewezen</option><option value="verlopen">Verlopen</option><option value="geannuleerd">Geannuleerd</option></select></label>
+            <label for="quote-status">Status<select id="quote-status"><option value="concept">Concept</option><option value="verzonden">Verzonden</option><option value="geaccepteerd">Geaccepteerd</option><option value="afgewezen">Afgewezen</option><option value="verlopen">Verlopen</option><option value="geannuleerd">Geannuleerd</option><option value="gearchiveerd">Gearchiveerd</option></select></label>
             <label for="quote-date">Offertedatum<input id="quote-date" type="date" /></label>
             <label for="quote-valid-until">Geldig tot<input id="quote-valid-until" type="date" /></label>
             <label class="admin-profile-wide" for="quote-link">Demo-offertelink<input id="quote-link" type="text" placeholder="/offerte.html?quoteId=..." /></label>
@@ -1038,6 +1050,8 @@
             <span>BTW<strong id="quote-vat">€ 0,00</strong></span>
             <span>Totaal incl. btw<strong id="quote-total">€ 0,00</strong></span>
           </div>
+          <div class="settings-status-list admin-profile-wide" id="quote-source-detail"></div>
+          <div class="settings-status-list admin-profile-wide" id="quote-history-list" hidden></div>
           <div class="admin-profile-actions">
             <button class="button primary" id="quote-save" type="submit">Offerte opslaan</button>
             <button class="button secondary" id="quote-mark-sent" type="button">Zet op verzonden</button>
@@ -1047,6 +1061,9 @@
             <button class="button secondary" id="quote-copy-link" type="button">Kopieer demo-offertelink</button>
             <button class="button secondary" id="quote-convert-invoice" type="button">Maak factuur van offerte</button>
             <button class="button secondary" id="quote-open-invoice" type="button">Open factuur</button>
+            <button class="button secondary" id="quote-refresh-supabase" type="button">Ververs uit Supabase</button>
+            <button class="button secondary" id="quote-history" type="button">Historie</button>
+            <button class="button secondary" id="quote-reactivate" type="button">Heractiveer</button>
             <button class="button secondary danger" id="quote-cancel" type="button">Archiveer/annuleer</button>
             <p class="admin-form-message" id="quote-conversion-message" role="status"></p>
             <p class="admin-form-message" id="quote-message" role="status"></p>
@@ -1178,6 +1195,8 @@
           afgewezen: "Afgewezen",
           verlopen: "Verlopen",
           geannuleerd: "Geannuleerd",
+          gearchiveerd: "Gearchiveerd",
+          test: "Test",
         };
         const defaultSettings = {
           companyName: "Max Webstudio",
@@ -1221,6 +1240,9 @@
           developerMode: false,
           dataProviderMode: "localStorage",
           customerDataMode: "local",
+          websiteDataMode: "local",
+          projectDataMode: "local",
+          quoteDataMode: "local",
         };
         const integrationDefinitions = [
           { name: "Mollie", category: "Betalingen", status: "Demo voorbereid", action: "Bekijk status", description: "Betaalverzoeken zijn voorbereid en kunnen later via de Mollie API actief worden gekoppeld." },
@@ -1296,6 +1318,8 @@
           websiteWriteReadiness: null,
           projectSourceStatus: null,
           projectWriteReadiness: null,
+          quoteSourceStatus: null,
+          quoteWriteReadiness: null,
         };
 
         const adminTokenInput = document.getElementById("admin-token");
@@ -1418,6 +1442,8 @@
         const projectDataModeSelect = document.getElementById("project-data-mode");
         const projectSourceSummary = document.getElementById("project-source-summary");
         const projectSourceDetail = document.getElementById("project-source-detail");
+        const quoteDataModeSelect = document.getElementById("quote-data-mode");
+        const quoteSourceSummary = document.getElementById("quote-source-summary");
         const projectFields = {
           customer: document.getElementById("project-customer"),
           website: document.getElementById("project-website"),
@@ -1573,6 +1599,8 @@
         const quoteSubtotal = document.getElementById("quote-subtotal");
         const quoteVat = document.getElementById("quote-vat");
         const quoteTotal = document.getElementById("quote-total");
+        const quoteSourceDetail = document.getElementById("quote-source-detail");
+        const quoteHistoryList = document.getElementById("quote-history-list");
         const quoteMarkSent = document.getElementById("quote-mark-sent");
         const quoteMarkAccepted = document.getElementById("quote-mark-accepted");
         const quoteMarkRejected = document.getElementById("quote-mark-rejected");
@@ -1580,6 +1608,9 @@
         const quoteCopyLink = document.getElementById("quote-copy-link");
         const quoteConvertInvoice = document.getElementById("quote-convert-invoice");
         const quoteOpenInvoice = document.getElementById("quote-open-invoice");
+        const quoteRefreshSupabase = document.getElementById("quote-refresh-supabase");
+        const quoteHistory = document.getElementById("quote-history");
+        const quoteReactivate = document.getElementById("quote-reactivate");
         const quoteCancel = document.getElementById("quote-cancel");
         const quoteConversionMessage = document.getElementById("quote-conversion-message");
         const quoteSearch = document.getElementById("quote-search");
@@ -1748,6 +1779,14 @@
         const testSupabaseProjectsReadButton = document.getElementById("test-supabase-projects-read");
         const testSupabaseProjectWriteButton = document.getElementById("test-supabase-project-write");
         const resetProjectDataModeButton = document.getElementById("reset-project-data-mode");
+        const runQuoteMigrationDryRunButton = document.getElementById("run-quote-migration-dry-run");
+        const viewQuoteMappingPreviewButton = document.getElementById("view-quote-mapping-preview");
+        const viewQuoteMissingLinksButton = document.getElementById("view-quote-missing-links");
+        const viewQuoteInvalidLinesButton = document.getElementById("view-quote-invalid-lines");
+        const viewQuoteDuplicatesButton = document.getElementById("view-quote-duplicates");
+        const testSupabaseQuotesReadButton = document.getElementById("test-supabase-quotes-read");
+        const testSupabaseQuoteWriteButton = document.getElementById("test-supabase-quote-write");
+        const resetQuoteDataModeButton = document.getElementById("reset-quote-data-mode");
         const viewEnvExampleButton = document.getElementById("view-env-example");
         const whyLocalStorageButton = document.getElementById("why-local-storage");
         const runCustomerMigrationDryRunButton = document.getElementById("run-customer-migration-dry-run");
@@ -2773,7 +2812,7 @@
             ["Data validatie", "Voorbereid", "Developer Mode kan lokale data controleren"],
             ["Providerlaag", "Gereed", "localStorage en Supabase providers delen dezelfde interface"],
             ["Repositories", "Gereed", "Modules kunnen via repositories naar data lezen/schrijven"],
-            ["Supabase voorbereiding", "Niet gekoppeld", "Tabellen voorbereid: profiles, leads, customer_websites, customer_projects, customer_files, customer_quotes, customer_invoices, customer_subscriptions. Env vars later: SUPABASE_URL en SUPABASE_ANON_KEY."],
+            ["Supabase voorbereiding", "Niet gekoppeld", "Tabellen voorbereid: profiles, leads, customers, websites, projects, files, quotes, quote_lines, invoices, invoice_lines en subscriptions. Env vars later: SUPABASE_URL en SUPABASE_ANON_KEY."],
             ["Supabase client", "Voorbereid", "Browserclient wordt veilig gedetecteerd via runtime factory/module, zonder secrets"],
             ["Supabase read-only", "Voorbereid", "Mode supabase-readonly kan connectie en customers-select testen"],
             ["Customers table check", "Voorbereid", "Developer Mode kan customers read-only tellen/lezen"],
@@ -2859,6 +2898,7 @@
             customerRepository: await import("./src/repositories/CustomerRepository.js"),
             websiteRepository: await import("./src/repositories/WebsiteRepository.js"),
             projectRepository: await import("./src/repositories/ProjectRepository.js"),
+            quoteRepository: await import("./src/repositories/QuoteRepository.js"),
             providerStatusService: await import("./src/services/providerStatusService.js"),
             supabaseReadinessService: await import("./src/services/supabaseReadinessService.js"),
             supabaseWriteTestService: await import("./src/services/supabaseWriteTestService.js"),
@@ -2866,6 +2906,7 @@
             customerMigrationService: await import("./src/services/customerMigrationService.js"),
             websiteMigrationService: await import("./src/services/websiteMigrationService.js"),
             projectMigrationService: await import("./src/services/projectMigrationService.js"),
+            quoteMigrationService: await import("./src/services/quoteMigrationService.js"),
             dataValidationService: await import("./src/services/dataValidationService.js"),
             activityLogService: await import("./src/services/activityLogService.js"),
             authService: await import("./src/services/authService.js"),
@@ -3378,6 +3419,122 @@
           }
         }
 
+        function renderQuoteDataSourceStatus(status = state.quoteSourceStatus || {}) {
+          const counts = status.counts || {};
+          appendDeveloperCard("Quote data source", [
+            ["Quote data mode", status.mode || currentQuoteDataMode()],
+            ["Supabase read status", status.error ? "Fout" : status.mode === "local" ? "Niet gebruikt" : "Beschikbaar"],
+            ["Local count", String(counts.local ?? 0)],
+            ["Supabase count", String(counts.supabase ?? 0)],
+            ["Hybrid count", String(counts.hybrid ?? state.quotes.length ?? 0)],
+            ["Duplicate merge count", String(counts.duplicateMerges ?? 0)],
+            ["Demo offertes", String(counts.demo ?? 0)],
+            ["Ongemigreerd lokaal", String(counts.unmigratedLocal ?? 0)],
+            ["Fallback status", status.fallbackUsed ? "Local fallback gebruikt" : "Geen fallback"],
+            ["Laatste refresh", status.refreshedAt ? formatDate(status.refreshedAt) : "-"],
+            ["Error", status.error || "-"],
+          ]);
+        }
+
+        function renderQuoteSupabaseReadiness(modules) {
+          const summary = modules.quoteMigrationService.getQuoteReadinessSummary();
+          const recentQuoteWrites = modules.activityLogService
+            .listRecentActivities(40)
+            .filter((activity) => activity.entityType === "quotes" || activity.entityType === "developer_tools")
+            .filter((activity) => String(activity.action || "").includes("quote"))
+            .slice(0, 6);
+          appendDeveloperCard("Quote Supabase readiness", [
+            ["Klaar voor mapping", String(summary.ready || 0)],
+            ["Wachten op customer migratie", String(summary.waitingForCustomer || 0)],
+            ["Wachten op website migratie", String(summary.waitingForWebsite || 0)],
+            ["Wachten op project migratie", String(summary.waitingForProject || 0)],
+            ["Klantkoppeling ontbreekt", String(summary.missingCustomer || 0)],
+            ["Ongeldige regels", String(summary.invalidLines || 0)],
+            ["Mogelijke duplicaten", String(summary.duplicates || 0)],
+            ["Ontbrekende velden/aandacht", String(summary.missingFields || 0)],
+            ["Laatste dry-run", summary.lastDryRun?.createdAt ? formatDate(summary.lastDryRun.createdAt) : "Nog niet uitgevoerd"],
+            ["Live bulk migratie", "Geblokkeerd in deze fase"],
+            ["Write scope", "Alleen gecontroleerde create/update/archive/reactivate/accept per offerte"],
+          ]);
+          appendDeveloperCard("Laatste offerte activiteiten", recentQuoteWrites.length
+            ? recentQuoteWrites.map((activity) => [activity.action || "quote", formatDate(activity.createdAt)])
+            : ["Nog geen offerte migratie/write activiteit."]);
+        }
+
+        function renderQuoteMappingPreview(preview) {
+          appendDeveloperCard("Offerte mapping preview", [
+            ["Totaal", String(preview.summary.totalQuotes || 0)],
+            ["Uniek", String(preview.summary.uniqueQuotes || 0)],
+            ["Klaar", String(preview.summary.readyCount || 0)],
+            ["Wacht op klant", String(preview.summary.waitingForCustomer || 0)],
+            ["Wacht op website", String(preview.summary.waitingForWebsite || 0)],
+            ["Wacht op project", String(preview.summary.waitingForProject || 0)],
+            ["Ongeldige regels", String(preview.summary.invalidLines || 0)],
+            ["Duplicaten", String(preview.summary.duplicateCount || 0)],
+            ["Preview", "Maximaal 20 records"],
+          ]);
+          preview.rows.slice(0, 12).forEach((item) => {
+            appendDeveloperCard(`Offerte mapping ${item.quoteNumber || item.localId || "offerte"}`, [
+              ["localStorage id", item.localId || "-"],
+              ["Supabase tabellen", "quotes + quote_lines"],
+              ["title", item.payload?.quote?.title || item.title || "-"],
+              ["customer_id", item.payload?.quote?.customer_id || "-"],
+              ["website_id", item.payload?.quote?.website_id || "-"],
+              ["project_id", item.payload?.quote?.project_id || "-"],
+              ["regels", String(item.lineCount || item.payload?.lines?.length || 0)],
+              ["totaal", money(item.total || item.payload?.quote?.total_amount || 0)],
+              ["ready", item.ready ? "Ja" : "Nee"],
+              ["errors", item.errors?.length ? item.errors.join(" | ") : "-"],
+              ["warnings", item.warnings?.length ? item.warnings.join(" | ") : "-"],
+            ]);
+          });
+        }
+
+        function renderQuoteMissingLinks(items = []) {
+          appendDeveloperCard("Offerte ontbrekende koppelingen", items.length
+            ? items.slice(0, 12).map((item) => [
+              item.quoteNumber || item.title || item.id || "Offerte",
+              [
+                item.customerLink?.status ? `klant: ${item.customerLink.status}` : "",
+                item.websiteLink?.status ? `website: ${item.websiteLink.status}` : "",
+                item.projectLink?.status ? `project: ${item.projectLink.status}` : "",
+              ].filter(Boolean).join(" | "),
+            ])
+            : ["Geen ontbrekende offerte-koppelingen gevonden."]);
+        }
+
+        function renderQuoteInvalidLines(items = []) {
+          appendDeveloperCard("Ongeldige offertregels", items.length
+            ? items.slice(0, 12).map((item) => [
+              item.quoteNumber || item.title || item.id || "Offerte",
+              item.errors?.join(" | ") || "Controle nodig",
+            ])
+            : ["Geen ongeldige offertregels gevonden."]);
+        }
+
+        function renderQuoteDuplicates(duplicates = []) {
+          appendDeveloperCard("Offerte duplicaten", duplicates.length
+            ? duplicates.slice(0, 12).map((item) => [
+              item.key || item.quote?.quoteNumber || "duplicate",
+              `${item.quote?.quoteNumber || item.quote?.title || "Offerte"} lijkt dubbel met ${item.duplicateOf || "eerder record"}`,
+            ])
+            : ["Geen mogelijke offerte-duplicaten gevonden."]);
+        }
+
+        function renderQuoteWriteTestResult(result = {}) {
+          appendDeveloperCard("Quote write-test resultaat", [
+            ["Status", result.status || "-"],
+            ["Testofferte", result.testQuoteId || result.quoteId || "-"],
+            ["Stap", result.step || result.type || "-"],
+            ["Aangemaakt", result.createdAt ? formatDate(result.createdAt) : "-"],
+            ["Voltooid", result.completedAt ? formatDate(result.completedAt) : "-"],
+            ["Fout", result.error || "-"],
+          ]);
+          if (result.steps?.length) {
+            appendDeveloperCard("Quote write-test stappen", result.steps.map((step) => [step.step, step.status]));
+          }
+        }
+
         function renderCustomerMigrationResult(result) {
           appendDeveloperCard("CRM migratie resultaat", [
             ["Status", result.status],
@@ -3643,6 +3800,8 @@
             renderWebsiteSupabaseReadiness(modules);
             renderProjectDataSourceStatus(state.projectSourceStatus);
             renderProjectSupabaseReadiness(modules);
+            renderQuoteDataSourceStatus(state.quoteSourceStatus);
+            renderQuoteSupabaseReadiness(modules);
             renderSupabaseSetupChecklist();
             renderCustomerMigrationCard(customerMigration);
             renderCustomerMigrationLogs(customerMigrationLogs);
@@ -3698,6 +3857,17 @@
               renderProjectMappingPreview(extra.projectDryRun.preview);
               renderProjectMissingLinks(extra.projectDryRun.missingLinks, "all");
               renderProjectDuplicates(extra.projectDryRun.duplicates);
+            }
+            if (extra.quoteMappingPreview) renderQuoteMappingPreview(extra.quoteMappingPreview);
+            if (extra.quoteMissingLinks) renderQuoteMissingLinks(extra.quoteMissingLinks);
+            if (extra.quoteInvalidLines) renderQuoteInvalidLines(extra.quoteInvalidLines);
+            if (extra.quoteDuplicates) renderQuoteDuplicates(extra.quoteDuplicates);
+            if (extra.quoteWriteTestResult) renderQuoteWriteTestResult(extra.quoteWriteTestResult);
+            if (extra.quoteDryRun) {
+              renderQuoteMappingPreview(extra.quoteDryRun.preview);
+              renderQuoteMissingLinks(extra.quoteDryRun.missingLinks);
+              renderQuoteInvalidLines(extra.quoteDryRun.invalidLines);
+              renderQuoteDuplicates(extra.quoteDryRun.duplicates);
             }
             if (extra.customerDryRun) {
               renderCustomerMappingPreview({
@@ -4605,6 +4775,220 @@
           }
         }
 
+        async function setQuoteDataMode(mode, options = {}) {
+          const settings = { ...readStoredSettings(), quoteDataMode: mode };
+          writeStoredSettings(settings);
+          localStorage.setItem("maxwebstudioQuoteDataMode", mode);
+          quoteDataModeSelect.value = mode;
+          try {
+            const { activityLogService } = await loadDeveloperModules();
+            activityLogService.logActivity("developer_tools", "quotes", "quote_source_mode_changed", { mode, ...options });
+          } catch {
+            // Logging is helpful, but changing quote read mode should not depend on Developer Tools imports.
+          }
+          await loadCRMData(false);
+        }
+
+        async function changeQuoteDataModeHandler(event) {
+          const mode = event.target.value || "local";
+          if (mode !== "local") {
+            const confirmed = window.confirm(`Quote data mode wijzigen naar ${mode}? Er wordt geen data verwijderd en er worden geen Supabase bulk-writes uitgevoerd.`);
+            if (!confirmed) {
+              quoteDataModeSelect.value = readStoredSettings().quoteDataMode || localStorage.getItem("maxwebstudioQuoteDataMode") || "local";
+              return;
+            }
+          }
+          await setQuoteDataMode(mode, { source: "quote_select" });
+          await renderDeveloperToolsSummary();
+        }
+
+        async function resetQuoteDataModeHandler() {
+          await setQuoteDataMode("local", { source: "developer_reset" });
+          await renderDeveloperToolsSummary();
+          setSettingsMessage("Quote data mode teruggezet naar local.", "success");
+        }
+
+        async function runQuoteMigrationDryRunHandler() {
+          try {
+            const { quoteMigrationService, activityLogService } = await loadDeveloperModules();
+            const dryRun = quoteMigrationService.runQuoteMigrationDryRun();
+            activityLogService.logActivity("developer_tools", "quotes", "quote_dry_run", {
+              readyCount: dryRun.analysis.readyCount,
+              waitingForCustomer: dryRun.analysis.waitingForCustomer,
+              invalidLines: dryRun.analysis.invalidLines,
+              duplicateCount: dryRun.analysis.duplicateCount,
+            });
+            await renderDeveloperToolsSummary({ quoteDryRun: dryRun });
+            setSettingsMessage("Offerte migratie dry-run uitgevoerd. Er zijn geen Supabase writes gedaan.", "success");
+          } catch (error) {
+            console.error("Quote migration dry run failed", error);
+            setSettingsMessage("Offerte migratie dry-run kon niet worden uitgevoerd.", "error");
+          }
+        }
+
+        async function showQuoteMappingPreviewHandler() {
+          try {
+            const { quoteMigrationService, activityLogService } = await loadDeveloperModules();
+            const preview = quoteMigrationService.getQuoteMigrationPreview();
+            activityLogService.logActivity("developer_tools", "quotes", "view_quote_mapping_preview", { count: preview.summary.totalQuotes });
+            await renderDeveloperToolsSummary({ quoteMappingPreview: preview });
+            setSettingsMessage("Offerte mapping preview getoond.", "success");
+          } catch (error) {
+            console.error("Quote mapping preview failed", error);
+            setSettingsMessage("Offerte mapping preview kon niet worden getoond.", "error");
+          }
+        }
+
+        async function showQuoteMissingLinksHandler() {
+          try {
+            const { quoteMigrationService, activityLogService } = await loadDeveloperModules();
+            const missing = quoteMigrationService.detectMissingQuoteLinks();
+            activityLogService.logActivity("developer_tools", "quotes", "view_quote_missing_links", { count: missing.length });
+            await renderDeveloperToolsSummary({ quoteMissingLinks: missing });
+            setSettingsMessage("Ontbrekende offerte-koppelingen getoond.", "success");
+          } catch (error) {
+            console.error("Quote missing links failed", error);
+            setSettingsMessage("Ontbrekende offerte-koppelingen konden niet worden getoond.", "error");
+          }
+        }
+
+        async function showQuoteInvalidLinesHandler() {
+          try {
+            const { quoteMigrationService, activityLogService } = await loadDeveloperModules();
+            const invalidLines = quoteMigrationService.detectInvalidQuoteLines();
+            activityLogService.logActivity("developer_tools", "quotes", "view_quote_invalid_lines", { count: invalidLines.length });
+            await renderDeveloperToolsSummary({ quoteInvalidLines: invalidLines });
+            setSettingsMessage("Ongeldige offertregels getoond.", "success");
+          } catch (error) {
+            console.error("Quote invalid lines failed", error);
+            setSettingsMessage("Ongeldige offertregels konden niet worden getoond.", "error");
+          }
+        }
+
+        async function showQuoteDuplicatesHandler() {
+          try {
+            const { quoteMigrationService, activityLogService } = await loadDeveloperModules();
+            const duplicates = quoteMigrationService.detectDuplicateQuotes();
+            activityLogService.logActivity("developer_tools", "quotes", "view_quote_duplicates", { count: duplicates.length });
+            await renderDeveloperToolsSummary({ quoteDuplicates: duplicates });
+            setSettingsMessage("Offerte duplicaten getoond.", "success");
+          } catch (error) {
+            console.error("Quote duplicates failed", error);
+            setSettingsMessage("Offerte duplicaten konden niet worden getoond.", "error");
+          }
+        }
+
+        async function testSupabaseQuotesReadHandler() {
+          try {
+            const { quoteRepository, activityLogService } = await loadDeveloperModules();
+            const quotes = await quoteRepository.listSupabaseQuotes();
+            activityLogService.logActivity("developer_tools", "quotes", "read_supabase_quotes", { rows: quotes.length });
+            await renderDeveloperToolsSummary({
+              quoteMappingPreview: {
+                summary: {
+                  totalQuotes: quotes.length,
+                  uniqueQuotes: quotes.length,
+                  readyCount: quotes.length,
+                  waitingForCustomer: 0,
+                  waitingForWebsite: 0,
+                  waitingForProject: 0,
+                  invalidLines: 0,
+                  duplicateCount: 0,
+                },
+                rows: quotes.slice(0, 10).map((quote) => ({
+                  localId: quote._localQuoteId || quote.id,
+                  quoteNumber: quote.quoteNumber,
+                  title: quote.title,
+                  lineCount: quote.lines?.length || 0,
+                  total: quote.total,
+                  ready: true,
+                  errors: [],
+                  warnings: [],
+                  payload: {
+                    quote: {
+                      quote_number: quote.quoteNumber,
+                      customer_id: quote.supabaseCustomerId || quote.customerId || "-",
+                      total_amount: quote.total,
+                    },
+                    lines: quote.lines || [],
+                  },
+                })),
+              },
+            });
+            setSettingsMessage(`${quotes.length} Supabase offertes gelezen.`, "success");
+          } catch (error) {
+            console.error("Read Supabase quotes failed", error);
+            setSettingsMessage(error.message || "Supabase offertes lezen kon niet worden uitgevoerd.", "error");
+          }
+        }
+
+        async function testSupabaseQuoteWriteHandler() {
+          const first = window.confirm("Testofferte schrijven naar Supabase? Dit gebruikt een veilige testofferte en geen echte klantdata.");
+          if (!first) return;
+          const second = window.confirm("Bevestig: dit is alleen bedoeld voor gecontroleerde write-test, geen bulkactie.");
+          if (!second) return;
+          const result = {
+            status: "started",
+            type: "quote_write_test",
+            createdAt: new Date().toISOString(),
+            steps: [],
+          };
+          try {
+            const { quoteRepository, activityLogService } = await loadDeveloperModules();
+            const testQuote = {
+              quoteNumber: "SUPABASE-QUOTE-TEST",
+              title: "Supabase quote write-test",
+              type: "Maatwerk",
+              status: "test",
+              quoteDate: new Date().toISOString().slice(0, 10),
+              validUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+              environment: "test",
+              isDemo: true,
+              lines: [{ description: "Veilige testregel", quantity: 1, unitPrice: 1, vatRate: 21 }],
+              metadata: {
+                createdBy: "supabase-quote-write-test",
+                safeToDelete: true,
+              },
+            };
+            result.steps.push({ step: "create", status: "started" });
+            const created = await quoteRepository.createQuote(testQuote, {
+              target: "supabase",
+              mode: currentQuoteDataMode(),
+              allowDemoSupabase: true,
+              allowOrphanQuote: true,
+              quoteWriteTest: true,
+            });
+            result.testQuoteId = created._supabaseQuoteId || created.supabaseQuoteId || created.id;
+            result.quoteId = result.testQuoteId;
+            result.steps[result.steps.length - 1].status = "completed";
+            result.steps.push({ step: "archive", status: "started" });
+            await quoteRepository.archiveQuote(created.id, {
+              oldQuote: created,
+              target: "supabase",
+              mode: currentQuoteDataMode(),
+              baseUpdatedAt: created.updatedAt,
+              quoteWriteTest: true,
+              allowDemoSupabase: true,
+              allowOrphanQuote: true,
+            });
+            result.steps[result.steps.length - 1].status = "completed";
+            result.status = "quote_completed";
+            result.completedAt = new Date().toISOString();
+            localStorage.setItem("maxwebstudioLastQuoteWriteTest", JSON.stringify(result));
+            activityLogService.logActivity("developer_tools", "quotes", "quote_write_test_completed", { testQuoteId: result.testQuoteId });
+            await renderDeveloperToolsSummary({ quoteWriteTestResult: result });
+            setSettingsMessage("Supabase quote write-test voltooid en testofferte gearchiveerd.", "success");
+          } catch (error) {
+            result.status = "failed";
+            result.error = error.message || "Quote write-test mislukt.";
+            result.completedAt = new Date().toISOString();
+            localStorage.setItem("maxwebstudioLastQuoteWriteTest", JSON.stringify(result));
+            console.error("Quote write-test failed", error);
+            await renderDeveloperToolsSummary({ quoteWriteTestResult: result });
+            setSettingsMessage(result.error, "error");
+          }
+        }
+
         function renderDeveloperMode() {
           const enabled = isDeveloperModeEnabled();
           developerToolsCard.hidden = !enabled;
@@ -4784,6 +5168,10 @@
           return projectDataModeSelect.value || readStoredSettings().projectDataMode || localStorage.getItem("maxwebstudioProjectDataMode") || "local";
         }
 
+        function currentQuoteDataMode() {
+          return quoteDataModeSelect.value || readStoredSettings().quoteDataMode || localStorage.getItem("maxwebstudioQuoteDataMode") || "local";
+        }
+
         async function getCustomerRepositoryModule() {
           const modules = await loadDeveloperModules();
           return modules.customerRepository;
@@ -4797,6 +5185,11 @@
         async function getProjectRepositoryModule() {
           const modules = await loadDeveloperModules();
           return modules.projectRepository;
+        }
+
+        async function getQuoteRepositoryModule() {
+          const modules = await loadDeveloperModules();
+          return modules.quoteRepository;
         }
 
         function customerSupabaseId(customer = {}) {
@@ -4928,6 +5321,21 @@
             refreshedAt: result.refreshedAt,
           }));
           return result.projects.map(normalizeProject);
+        }
+
+        async function loadQuotesByDataMode() {
+          const mode = currentQuoteDataMode();
+          const { QuoteRepository } = await import("./src/repositories/QuoteRepository.js");
+          const result = await QuoteRepository.listByDataMode(mode);
+          state.quoteSourceStatus = result;
+          localStorage.setItem("maxwebstudioLastQuoteSourceStatus", JSON.stringify({
+            mode: result.mode,
+            counts: result.counts,
+            fallbackUsed: result.fallbackUsed,
+            error: result.error,
+            refreshedAt: result.refreshedAt,
+          }));
+          return result.quotes.map(normalizeQuote);
         }
 
         function normalizeWebsiteStatus(value) {
@@ -5422,7 +5830,19 @@
             convertedToInvoiceId: quote.convertedToInvoiceId || "",
             convertedAt: quote.convertedAt || "",
             isDemo: Boolean(quote.isDemo),
+            isDemoJourney: Boolean(quote.isDemoJourney),
+            environment: quote.environment || (quote.isDemo ? "demo" : "production"),
             demoScenarioId: quote.demoScenarioId || "",
+            demoJourneyId: quote.demoJourneyId || "",
+            supabaseQuoteId: quote.supabaseQuoteId || quote._supabaseQuoteId || "",
+            _source: quote._source || "",
+            _isMigrated: Boolean(quote._isMigrated || quote.supabaseQuoteId || quote._supabaseQuoteId),
+            _supabaseQuoteId: quote._supabaseQuoteId || quote.supabaseQuoteId || "",
+            _localQuoteId: quote._localQuoteId || quote.id || "",
+            _linkedCustomerStatus: quote._linkedCustomerStatus || "",
+            _linkedWebsiteStatus: quote._linkedWebsiteStatus || "",
+            _linkedProjectStatus: quote._linkedProjectStatus || "",
+            _sourceMeta: quote._sourceMeta || {},
             createdAt,
             updatedAt: quote.updatedAt || createdAt,
           };
@@ -5439,7 +5859,22 @@
         }
 
         function writeStoredQuotes(quotes) {
-          localStorage.setItem(quotesStorageKey, JSON.stringify(quotes.map(normalizeQuote)));
+          const cleanQuotes = quotes.map((quote) => {
+            const normalized = normalizeQuote(quote);
+            const {
+              _source,
+              _isMigrated,
+              _supabaseQuoteId,
+              _localQuoteId,
+              _linkedCustomerStatus,
+              _linkedWebsiteStatus,
+              _linkedProjectStatus,
+              _sourceMeta,
+              ...clean
+            } = normalized;
+            return clean;
+          });
+          localStorage.setItem(quotesStorageKey, JSON.stringify(cleanQuotes));
         }
 
         function validateQuotePayload(payload) {
@@ -7426,6 +7861,96 @@
           projectHistoryList.hidden = false;
         }
 
+        function quoteSourceLabel(quote = {}) {
+          const source = quote._source || "local";
+          if (source === "supabase") return "Supabase";
+          if (source === "hybrid") return "Hybrid";
+          if (source === "demo") return "Demo";
+          return "Local";
+        }
+
+        function quoteSourceClass(quote = {}) {
+          const source = quote._source || "local";
+          if (source === "supabase") return "status-active";
+          if (source === "hybrid") return "status-warning";
+          if (source === "demo" || quote.isDemo || quote.environment === "demo") return "status-prepared";
+          return "status-planned";
+        }
+
+        function isSupabaseManagedQuote(quote = {}) {
+          return ["supabase", "hybrid"].includes(quote._source) || Boolean(quote._supabaseQuoteId || quote.supabaseQuoteId);
+        }
+
+        function renderQuoteSourceSummary() {
+          const status = state.quoteSourceStatus || { mode: currentQuoteDataMode(), counts: {} };
+          const counts = status.counts || {};
+          quoteSourceSummary.replaceChildren();
+          [
+            ["Quote data mode", status.mode || currentQuoteDataMode()],
+            ["Local", String(counts.local ?? state.quotes.length ?? 0)],
+            ["Supabase", String(counts.supabase ?? 0)],
+            ["Hybrid zichtbaar", String(counts.hybrid ?? state.quotes.length ?? 0)],
+            ["Demo", String(counts.demo ?? state.quotes.filter((quote) => quote._source === "demo").length)],
+            ["Ongemigreerd local", String(counts.unmigratedLocal ?? 0)],
+          ].forEach(([label, value]) => {
+            const card = document.createElement("article");
+            card.className = "admin-card metric-card";
+            card.append(createCell(label), createCell(value, "strong"));
+            quoteSourceSummary.append(card);
+          });
+          if (status.error) {
+            const card = document.createElement("article");
+            card.className = "admin-card request-card request-state-card";
+            card.append(createBadge(status.fallbackUsed ? "Fallback actief" : "Supabase fout", status.fallbackUsed ? "status-warning" : "status-attention"), createCell(status.error));
+            quoteSourceSummary.append(card);
+          }
+        }
+
+        function renderQuoteSourceDetail(quote = null, readiness = null) {
+          quoteSourceDetail.replaceChildren();
+          if (!quote) return;
+          [
+            ["Databron", quoteSourceLabel(quote)],
+            ["Migratiestatus", quote._isMigrated || quote.supabaseQuoteId ? "Gemigreerd" : "Lokaal/niet gemigreerd"],
+            ["Supabase quote ID", quote._supabaseQuoteId || quote.supabaseQuoteId || "-"],
+            ["Lokale quote ID", quote._localQuoteId || quote.id || "-"],
+            ["Supabase customer", quote.supabaseCustomerId || readiness?.customerLink?.supabaseCustomerId || "-"],
+            ["Klantkoppeling", quote._linkedCustomerStatus || readiness?.customerLink?.status || "-"],
+            ["Websitekoppeling", quote._linkedWebsiteStatus || readiness?.websiteLink?.status || "-"],
+            ["Projectkoppeling", quote._linkedProjectStatus || readiness?.projectLink?.status || "-"],
+            ["Regels", String(quote.lines?.length || 0)],
+            ["Laatste update", formatDate(quote.updatedAt || quote._sourceMeta?.refreshedAt || "")],
+            ["Quote write", readiness ? readiness.allowed ? "Beschikbaar" : "Geblokkeerd" : isSupabaseManagedQuote(quote) ? "Wordt gecontroleerd" : "LocalStorage"],
+            ["Write reden", readiness?.reason || readiness?.customerLink?.message || "-"],
+          ].forEach(([label, value]) => {
+            const row = document.createElement("div");
+            row.append(createCell(label), createCell(value, "strong"));
+            quoteSourceDetail.append(row);
+          });
+        }
+
+        function renderQuoteHistory(quote) {
+          quoteHistoryList.replaceChildren();
+          if (!quote) {
+            quoteHistoryList.hidden = true;
+            return;
+          }
+          const history = state.developerModules?.quoteRepository?.getQuoteHistory(quote.id) || [];
+          if (!history.length) {
+            const row = document.createElement("div");
+            row.append(createCell("Wijzigingshistorie"), createCell("Nog geen offerte write-activiteiten."));
+            quoteHistoryList.append(row);
+            quoteHistoryList.hidden = false;
+            return;
+          }
+          history.slice(0, 8).forEach((item) => {
+            const row = document.createElement("div");
+            row.append(createCell(formatDate(item.createdAt)), createCell(`${item.action || "update"} - ${item.metadata?.source || "local"}`, "strong"));
+            quoteHistoryList.append(row);
+          });
+          quoteHistoryList.hidden = false;
+        }
+
         function populateProjectOptions(selectedCustomerOverride = "") {
           projectFields.customer.replaceChildren();
           const emptyCustomer = document.createElement("option");
@@ -8910,6 +9435,7 @@
           quoteList.replaceChildren();
           populateQuoteOptions();
           renderQuoteStats();
+          renderQuoteSourceSummary();
           if (!state.quotes.length) {
             renderState(quoteList, "Geen offertes", "Maak de eerste offerte voor een klant.", "Leeg", "status-planned", { label: "Offerte aanmaken", primary: true, onClick: () => openQuoteModal() });
             return;
@@ -8921,7 +9447,7 @@
           }
           const head = document.createElement("div");
           head.className = "admin-table-row admin-table-head invoice-row";
-          ["Offertenummer", "Klant", "Type", "Status", "Datum", "Geldig tot", "Totaal", "Acties"].forEach((label) => head.append(createCell(label)));
+          ["Offertenummer", "Klant", "Type", "Bron", "Status", "Datum", "Geldig tot", "Totaal", "Acties"].forEach((label) => head.append(createCell(label)));
           quoteList.append(head);
           quotes.forEach((quote) => {
             const row = document.createElement("div");
@@ -8976,6 +9502,7 @@
               createCell(quote.quoteNumber),
               createCell(quote.customerCompany || quote.customerName || "Geen klant", "strong"),
               createCell(quote.type || "-"),
+              createBadge(quoteSourceLabel(quote), quoteSourceClass(quote)),
               createBadge(quoteStatusLabels[quote.status] || quote.status, billingStatusClass(quote.status)),
               createCell(quote.quoteDate || "-"),
               createCell(formatDate(quote.validUntil)),
@@ -9301,6 +9828,18 @@
           renderQuoteLines();
           updateQuoteLinkActions(quote || null);
           updateQuoteConversionActions(quote || null);
+          const readiness = quote && state.developerModules?.quoteRepository
+            ? state.developerModules.quoteRepository.canWriteQuote(quote, {
+              target: isSupabaseManagedQuote(quote) ? "supabase" : "local",
+              mode: currentQuoteDataMode(),
+            })
+            : null;
+          state.quoteWriteReadiness = readiness;
+          renderQuoteSourceDetail(quote || null, readiness);
+          quoteHistoryList.hidden = true;
+          quoteRefreshSupabase.disabled = !quote || !isSupabaseManagedQuote(quote);
+          quoteHistory.disabled = !quote;
+          quoteReactivate.disabled = !quote || quote.status !== "gearchiveerd";
           setBillingMessage(quoteMessage, "", "");
           quoteModal.hidden = false;
           document.body.classList.add("admin-modal-open");
@@ -9489,7 +10028,8 @@
           quoteSave.textContent = "Opslaan...";
           setBillingMessage(quoteMessage, "", "");
           try {
-            const quote = saveQuoteLocally({
+            const existingQuote = quoteById(quoteFields.id.value);
+            const payload = {
               id: quoteFields.id.value,
               profileId: quoteFields.profile.value,
               websiteId: quoteFields.website.value,
@@ -9504,7 +10044,25 @@
               proposal: quoteFields.proposal.value,
               notes: quoteFields.notes.value,
               lines: currentQuoteLines,
-            });
+            };
+            let quote;
+            const shouldUseRepository = currentQuoteDataMode() !== "local" || isSupabaseManagedQuote(existingQuote || {});
+            if (shouldUseRepository) {
+              const repo = await getQuoteRepositoryModule();
+              quote = existingQuote
+                ? await repo.updateQuote(existingQuote.id, payload, {
+                  oldQuote: existingQuote,
+                  target: isSupabaseManagedQuote(existingQuote) ? "supabase" : "local",
+                  mode: currentQuoteDataMode(),
+                  baseUpdatedAt: existingQuote.updatedAt,
+                })
+                : await repo.createQuote(payload, {
+                  target: currentQuoteDataMode() === "local" ? "local" : "supabase",
+                  mode: currentQuoteDataMode(),
+                });
+            } else {
+              quote = saveQuoteLocally(payload);
+            }
             await loadCRMData(false);
             state.selectedQuoteId = quote.id;
             openQuoteModal(quote.id);
@@ -9646,7 +10204,29 @@
         async function setQuoteStatus(id, status, button) {
           if (button) button.disabled = true;
           try {
-            const quote = updateQuoteStatusLocally(id, status);
+            const existingQuote = quoteById(id);
+            if (!existingQuote) throw new Error("Offerte niet gevonden.");
+            let quote;
+            if (isSupabaseManagedQuote(existingQuote)) {
+              const repo = await getQuoteRepositoryModule();
+              if (status === "geaccepteerd") {
+                quote = await repo.acceptQuote(existingQuote.id, {
+                  oldQuote: existingQuote,
+                  target: "supabase",
+                  mode: currentQuoteDataMode(),
+                  baseUpdatedAt: existingQuote.updatedAt,
+                });
+              } else {
+                quote = await repo.updateQuote(existingQuote.id, { ...existingQuote, status }, {
+                  oldQuote: existingQuote,
+                  target: "supabase",
+                  mode: currentQuoteDataMode(),
+                  baseUpdatedAt: existingQuote.updatedAt,
+                });
+              }
+            } else {
+              quote = updateQuoteStatusLocally(id, status);
+            }
             await loadCRMData(false);
             if (state.selectedQuoteId === id) openQuoteModal(quote.id);
           } catch (error) {
@@ -9690,9 +10270,34 @@
           if (!id) return;
           const confirmed = window.confirm("Weet je zeker dat je deze offerte wilt annuleren?");
           if (!confirmed) return;
-          const quote = updateQuoteStatusLocally(id, "geannuleerd");
+          const existingQuote = quoteById(id);
+          if (!existingQuote) return;
+          const quote = isSupabaseManagedQuote(existingQuote)
+            ? await (await getQuoteRepositoryModule()).archiveQuote(existingQuote.id, {
+              oldQuote: existingQuote,
+              target: "supabase",
+              mode: currentQuoteDataMode(),
+              baseUpdatedAt: existingQuote.updatedAt,
+            })
+            : updateQuoteStatusLocally(id, "gearchiveerd");
           await loadCRMData(false);
           if (state.selectedQuoteId === id) openQuoteModal(quote.id);
+        }
+
+        async function reactivateSelectedQuote() {
+          const quote = quoteById(state.selectedQuoteId);
+          if (!quote) return;
+          const nextQuote = isSupabaseManagedQuote(quote)
+            ? await (await getQuoteRepositoryModule()).reactivateQuote(quote.id, {
+              oldQuote: quote,
+              target: "supabase",
+              mode: currentQuoteDataMode(),
+              baseUpdatedAt: quote.updatedAt,
+            })
+            : updateQuoteStatusLocally(quote.id, "concept");
+          await loadCRMData(false);
+          openQuoteModal(nextQuote.id);
+          setBillingMessage(quoteMessage, "Offerte heractiveerd.", "success");
         }
 
         async function postMolliePayment(payload) {
@@ -10466,13 +11071,14 @@
             customerDataModeSelect.value = currentCustomerDataMode();
             websiteDataModeSelect.value = currentWebsiteDataMode();
             projectDataModeSelect.value = currentProjectDataMode();
+            quoteDataModeSelect.value = currentQuoteDataMode();
             state.customers = await loadCustomersByDataMode();
             state.profiles = state.customers;
             state.authUsers = [];
             state.websites = await loadWebsitesByDataMode();
             state.projects = await loadProjectsByDataMode();
             state.files = readStoredFiles();
-            state.quotes = readStoredQuotes();
+            state.quotes = await loadQuotesByDataMode();
             state.invoices = readStoredInvoices();
             state.subscriptions = readStoredSubscriptions();
             renderCustomers();
@@ -10501,7 +11107,12 @@
             const sourceStatus = state.customerSourceStatus || {};
             const websiteSourceStatus = state.websiteSourceStatus || {};
             const projectSourceStatus = state.projectSourceStatus || {};
-            if (projectSourceStatus.error && projectSourceStatus.fallbackUsed) {
+            const quoteSourceStatus = state.quoteSourceStatus || {};
+            if (quoteSourceStatus.error && quoteSourceStatus.fallbackUsed) {
+              setAdminAccessMessage(`Offerte hybrid fallback actief: ${quoteSourceStatus.error}`, "error");
+            } else if (quoteSourceStatus.error) {
+              setAdminAccessMessage(`Supabase offertes konden niet worden gelezen: ${quoteSourceStatus.error}`, "error");
+            } else if (projectSourceStatus.error && projectSourceStatus.fallbackUsed) {
               try {
                 const { activityLogService } = await loadDeveloperModules();
                 activityLogService.logActivity("developer_tools", "projects", "project_source_fallback_local", { mode: projectSourceStatus.mode, error: projectSourceStatus.error });
@@ -10532,7 +11143,7 @@
             } else if (sourceStatus.error) {
               setAdminAccessMessage(`Supabase customers konden niet worden gelezen: ${sourceStatus.error}`, "error");
             } else {
-              setAdminAccessMessage(`CRM geladen via customer mode ${sourceStatus.mode || "local"}, website mode ${websiteSourceStatus.mode || "local"} en project mode ${projectSourceStatus.mode || "local"}.`, "success");
+              setAdminAccessMessage(`CRM geladen via customer mode ${sourceStatus.mode || "local"}, website mode ${websiteSourceStatus.mode || "local"}, project mode ${projectSourceStatus.mode || "local"} en quote mode ${quoteSourceStatus.mode || "local"}.`, "success");
             }
           } catch (error) {
             setAdminAccessMessage(error.message || "CRM-klanten konden niet worden geladen.", "error");
@@ -10563,10 +11174,18 @@
               error: error.message || "CRM/project data kon niet worden geladen.",
               refreshedAt: new Date().toISOString(),
             };
+            state.quoteSourceStatus = {
+              mode: currentQuoteDataMode(),
+              counts: { local: readStoredQuotes().length, supabase: 0, hybrid: 0, duplicateMerges: 0, demo: 0, unmigratedLocal: 0 },
+              fallbackUsed: false,
+              error: error.message || "CRM/quote data kon niet worden geladen.",
+              refreshedAt: new Date().toISOString(),
+            };
             renderState(customerList, "CRM-klanten konden niet worden geladen", "Supabase-read kon geen klanten laden. Zet de customer data mode terug naar local of controleer de Supabase configuratie.", "Fout", "status-attention", { label: "Terug naar local", primary: true, onClick: () => setCustomerDataMode("local", { source: "supabase_read_error" }) });
             renderCustomerSourceSummary();
             renderWebsiteSourceSummary();
             renderProjectSourceSummary();
+            renderQuoteSourceSummary();
           } finally {
             adminLoadButton.disabled = false;
             adminLoadButton.textContent = "Laden";
@@ -10738,6 +11357,9 @@
         });
         quoteConvertInvoice.addEventListener("click", createInvoiceFromQuote);
         quoteOpenInvoice.addEventListener("click", openInvoiceFromQuote);
+        quoteRefreshSupabase.addEventListener("click", () => loadCRMData(false));
+        quoteHistory.addEventListener("click", () => renderQuoteHistory(quoteById(state.selectedQuoteId)));
+        quoteReactivate.addEventListener("click", reactivateSelectedQuote);
         quoteCancel.addEventListener("click", () => state.selectedQuoteId && cancelQuote(state.selectedQuoteId));
         invoiceAddLine.addEventListener("click", () => addInvoiceLine({ description: "", quantity: 1, unitPrice: 0, vatRate: 21 }));
         invoicePreset.addEventListener("change", addInvoicePreset);
@@ -10769,6 +11391,7 @@
         newSendInvite.addEventListener("click", sendInviteFromNewCustomer);
         customerDataModeSelect.addEventListener("change", changeCustomerDataModeHandler);
         websiteDataModeSelect.addEventListener("change", changeWebsiteDataModeHandler);
+        quoteDataModeSelect.addEventListener("change", changeQuoteDataModeHandler);
         [customerSearch, customerStatusFilter, customerPackageFilter].forEach((filter) => filter.addEventListener("input", renderCustomers));
         [fileSearch, fileCategoryFilter, fileStatusFilter, fileCustomerFilter, fileProjectFilter].forEach((filter) => filter.addEventListener("input", renderFiles));
         [quoteSearch, quoteStatusFilter, quoteTypeFilter, quoteCustomerFilter, quoteProjectFilter, quoteWebsiteFilter].forEach((filter) => filter.addEventListener("input", renderQuotes));
@@ -10820,6 +11443,14 @@
         testSupabaseProjectsReadButton.addEventListener("click", testSupabaseProjectsReadHandler);
         testSupabaseProjectWriteButton.addEventListener("click", testSupabaseProjectWriteHandler);
         resetProjectDataModeButton.addEventListener("click", resetProjectDataModeHandler);
+        runQuoteMigrationDryRunButton.addEventListener("click", runQuoteMigrationDryRunHandler);
+        viewQuoteMappingPreviewButton.addEventListener("click", showQuoteMappingPreviewHandler);
+        viewQuoteMissingLinksButton.addEventListener("click", showQuoteMissingLinksHandler);
+        viewQuoteInvalidLinesButton.addEventListener("click", showQuoteInvalidLinesHandler);
+        viewQuoteDuplicatesButton.addEventListener("click", showQuoteDuplicatesHandler);
+        testSupabaseQuotesReadButton.addEventListener("click", testSupabaseQuotesReadHandler);
+        testSupabaseQuoteWriteButton.addEventListener("click", testSupabaseQuoteWriteHandler);
+        resetQuoteDataModeButton.addEventListener("click", resetQuoteDataModeHandler);
         [customerMigrationIncludeDemo, customerMigrationIncludeProduction, customerMigrationBatchSize, customerMigrationSkipDuplicates, customerMigrationStopOnError].forEach((field) => {
           field.addEventListener("input", () => renderDeveloperToolsSummary());
           field.addEventListener("change", () => renderDeveloperToolsSummary());
@@ -10859,6 +11490,7 @@
         customerDataModeSelect.value = readStoredSettings().customerDataMode || localStorage.getItem("maxwebstudioCustomerDataMode") || "local";
         websiteDataModeSelect.value = readStoredSettings().websiteDataMode || localStorage.getItem("maxwebstudioWebsiteDataMode") || "local";
         projectDataModeSelect.value = readStoredSettings().projectDataMode || localStorage.getItem("maxwebstudioProjectDataMode") || "local";
+        quoteDataModeSelect.value = readStoredSettings().quoteDataMode || localStorage.getItem("maxwebstudioQuoteDataMode") || "local";
         renderIntegrations();
         renderSystemStatus();
         syncActiveNav();

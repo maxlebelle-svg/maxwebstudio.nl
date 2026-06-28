@@ -224,6 +224,15 @@ Business Intelligence dashboard in Fase 6.5:
 - er worden geen secrets, service role keys of ruwe betaalproviderresponses naar de frontend gestuurd
 - het dashboard is nog geen vervanging voor echte admin-auth met rollen en audit trail
 
+Offerte-Supabasevoorbereiding in Fase 12.5:
+
+- `quotes` en `quote_lines` zijn voorbereid met RLS aan en service-role policies voor server-side beheer.
+- De frontend gebruikt geen service role key.
+- `Quote data mode` start standaard op `local`; `supabase-read` en `hybrid` lezen alleen via de publieke Supabase client.
+- Schrijfacties zijn bewust beperkt tot gecontroleerde create/update/archive/reactivate/accept per offerte.
+- Bulk-migratie, hard delete en provider switch zijn niet toegevoegd.
+- De veilige testofferte gebruikt `SUPABASE-QUOTE-TEST`, `environment: test`, `is_demo: true` en `safeToDelete: true`.
+
 Aanbevelingen:
 
 - limieten blijven handhaven

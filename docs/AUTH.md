@@ -162,3 +162,8 @@ Klanten kunnen geen retry-status wijzigen, geen retry-mail triggeren en geen tec
 - Profielen moeten voorlopig door Max Web Studio via het admin-dashboard worden aangemaakt of bijgewerkt.
 - Bestaande wijzigingsverzoeken zonder overeenkomend e-mailadres moeten nog handmatig of via migratie aan `auth_user_id` gekoppeld worden.
 - Er is nog geen audit trail voor klantacties.
+## Fase 12.5 - Offertes
+
+Offertebeheer in het Admin CRM gebruikt in deze fase nog geen nieuwe auth-flow. De Supabase-voorbereiding voor `quotes` en `quote_lines` blijft achter de bestaande adminomgeving en Developer Mode.
+
+Klanttoegang tot live offertes wordt pas hard gemaakt wanneer Supabase Auth, route guards en RLS voor het klantportaal volledig actief zijn.

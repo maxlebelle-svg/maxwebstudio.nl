@@ -10,7 +10,7 @@
  * @property {number} total
  * @property {string} convertedToInvoiceId
  *
- * Supabase table: customer_quotes
- * Migratie: lines wordt jsonb; later eventueel quote_lines.
+ * Supabase tables: quotes + quote_lines
+ * Migratie: quote metadata staat in quotes; regels worden uitgesplitst naar quote_lines.
  */
-export const quoteModel = { table: "customer_quotes", primaryKey: "id" };
+export const quoteModel = { table: "quotes", linesTable: "quote_lines", primaryKey: "id" };

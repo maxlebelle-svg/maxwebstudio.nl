@@ -13,10 +13,20 @@ function isProjectsTable(table) {
   return table === "projects" || table === "maxwebstudioProjects";
 }
 
+function isQuotesTable(table) {
+  return table === "quotes" || table === "maxwebstudioQuotes";
+}
+
+function isQuoteLinesTable(table) {
+  return table === "quote_lines" || table === "maxwebstudioQuoteLines";
+}
+
 function normalizedTable(table) {
   if (isCustomersTable(table)) return "customers";
   if (isWebsitesTable(table)) return "websites";
   if (isProjectsTable(table)) return "projects";
+  if (isQuotesTable(table)) return "quotes";
+  if (isQuoteLinesTable(table)) return "quote_lines";
   return table;
 }
 
@@ -105,12 +115,23 @@ function assertProjectWriteTable(table) {
   if (!isProjectsTable(table)) throw new Error("Project writes ondersteunen alleen de projects tabel.");
 }
 
+async function getQuoteWriteClient(context = {}) {
+  if (context.quoteWrite !== true) throw new Error("Quote write context ontbreekt.");
+  const client = await getSupabaseClient();
+  if (!client) throw new Error("Supabase client niet beschikbaar; quote write blijft geblokkeerd.");
+  return client;
+}
+
+function assertQuoteWriteTable(table) {
+  if (!isQuotesTable(table)) throw new Error("Quote writes ondersteunen alleen de quotes tabel.");
+}
+
 export const supabaseProvider = {
   type: "supabase-readonly",
   status: "read-only",
 
   async getAll(table, options = {}) {
-    if (!isCustomersTable(table) && !isWebsitesTable(table) && !isProjectsTable(table)) {
+    if (!isCustomersTable(table) && !isWebsitesTable(table) && !isProjectsTable(table) && !isQuotesTable(table) && !isQuoteLinesTable(table)) {
       console.info(preparedMessage(table));
       return [];
     }
@@ -123,7 +144,7 @@ export const supabaseProvider = {
   },
 
   async getById(table, id) {
-    if (!isCustomersTable(table) && !isWebsitesTable(table) && !isProjectsTable(table)) {
+    if (!isCustomersTable(table) && !isWebsitesTable(table) && !isProjectsTable(table) && !isQuotesTable(table) && !isQuoteLinesTable(table)) {
       console.info(preparedMessage(table));
       return null;
     }
@@ -296,12 +317,100 @@ export const supabaseProvider = {
     }, context);
   },
 
+  async createQuote(record = {}, lines = [], context = {}) {
+    assertQuoteWriteTable("quotes");
+    const client = await getQuoteWriteClient(context);
+    const payload = {
+      ...record,
+      updated_at: record.updated_at || new Date().toISOString(),
+      created_at: record.created_at || new Date().toISOString(),
+    };
+    const { data, error } = await client.from("quotes").insert(payload).select("*").single();
+    if (error) throw new Error(error.message || "Offerte aanmaken in Supabase is mislukt.");
+    let savedLines = [];
+    if (Array.isArray(lines) && lines.length) {
+      const linePayload = lines.map((line, index) => {
+        const payloadLine = {
+          ...line,
+          quote_id: data.id,
+          sort_order: line.sort_order ?? index,
+          updated_at: line.updated_at || new Date().toISOString(),
+          created_at: line.created_at || new Date().toISOString(),
+        };
+        if (!payloadLine.id) delete payloadLine.id;
+        return payloadLine;
+      });
+      const { data: lineData, error: lineError } = await client.from("quote_lines").insert(linePayload).select("*");
+      if (lineError) throw new Error(lineError.message || "Offertregels opslaan in Supabase is mislukt.");
+      savedLines = Array.isArray(lineData) ? lineData : [];
+    }
+    return { success: true, table: "quotes", action: "create_quote", data, lines: savedLines };
+  },
+
+  async updateQuote(id, updates = {}, lines = null, context = {}) {
+    assertQuoteWriteTable("quotes");
+    const client = await getQuoteWriteClient(context);
+    const payload = {
+      ...updates,
+      updated_at: updates.updated_at || new Date().toISOString(),
+    };
+    const { data, error } = await client.from("quotes").update(payload).eq("id", id).select("*").single();
+    if (error) throw new Error(error.message || "Offerte bijwerken in Supabase is mislukt.");
+    const savedLines = [];
+    if (Array.isArray(lines)) {
+      for (const [index, line] of lines.entries()) {
+        const linePayload = {
+          ...line,
+          quote_id: id,
+          sort_order: line.sort_order ?? index,
+          updated_at: line.updated_at || new Date().toISOString(),
+        };
+        if (line.id) {
+          const { data: lineData, error: lineError } = await client.from("quote_lines").update(linePayload).eq("id", line.id).select("*").single();
+          if (lineError) throw new Error(lineError.message || "Offertregel bijwerken in Supabase is mislukt.");
+          savedLines.push(lineData);
+        } else {
+          const insertLinePayload = {
+            ...linePayload,
+            created_at: line.created_at || new Date().toISOString(),
+          };
+          if (!insertLinePayload.id) delete insertLinePayload.id;
+          const { data: lineData, error: lineError } = await client.from("quote_lines").insert(insertLinePayload).select("*").single();
+          if (lineError) throw new Error(lineError.message || "Offertregel toevoegen in Supabase is mislukt.");
+          savedLines.push(lineData);
+        }
+      }
+    }
+    return { success: true, table: "quotes", action: "update_quote", data, lines: savedLines };
+  },
+
+  async archiveQuote(id, context = {}) {
+    return this.updateQuote(id, {
+      status: "archived",
+      deleted_at: new Date().toISOString(),
+    }, null, context);
+  },
+
+  async reactivateQuote(id, context = {}) {
+    return this.updateQuote(id, {
+      status: "draft",
+      deleted_at: null,
+    }, null, context);
+  },
+
+  async acceptQuote(id, context = {}) {
+    return this.updateQuote(id, {
+      status: "accepted",
+      accepted_at: new Date().toISOString(),
+    }, null, context);
+  },
+
   setAll() {
     return writeBlocked();
   },
 
   async count(table) {
-    if (!isCustomersTable(table) && !isWebsitesTable(table) && !isProjectsTable(table)) {
+    if (!isCustomersTable(table) && !isWebsitesTable(table) && !isProjectsTable(table) && !isQuotesTable(table) && !isQuoteLinesTable(table)) {
       console.info(preparedMessage(table));
       return 0;
     }
