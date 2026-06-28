@@ -630,6 +630,9 @@
             <article class="admin-card settings-card">
               <div class="settings-card-heading"><div><span>Systeemstatus</span><strong>Dashboardstatus</strong></div><mark class="status-badge status-prepared">Overzicht</mark></div>
               <div class="settings-status-list" id="settings-system-status"></div>
+              <div class="settings-checkbox-grid">
+                <label><input id="setting-developer-mode" name="developerMode" type="checkbox" /> Developer Mode</label>
+              </div>
             </article>
 
             <div class="settings-submit-row">
@@ -719,6 +722,20 @@
             <article class="admin-card settings-card settings-card-wide">
               <div class="settings-card-heading"><div><span>Datastructuur</span><strong>Compacte module-documentatie</strong></div><mark class="status-badge status-prepared">Local schema</mark></div>
               <div class="admin-grid compact-admin-grid" id="data-structure-docs"></div>
+            </article>
+
+            <article class="admin-card settings-card settings-card-wide">
+              <div class="settings-card-heading"><div><span>Productie gereedheid</span><strong>Foundation status</strong></div><mark class="status-badge status-prepared">Fase 11.1</mark></div>
+              <div class="admin-grid compact-admin-grid" id="production-readiness-list"></div>
+            </article>
+
+            <article class="admin-card settings-card settings-card-wide" id="developer-tools-card" hidden>
+              <div class="settings-card-heading"><div><span>Developer Tools</span><strong>Provider, migratie & validatie</strong></div><mark class="status-badge status-warning">Technisch</mark></div>
+              <div class="settings-actions">
+                <button class="button secondary" id="run-migration-analysis" type="button">Run migratie-analyse</button>
+                <button class="button secondary" id="run-data-validation" type="button">Run data validatie</button>
+              </div>
+              <div class="admin-grid compact-admin-grid" id="developer-tools-output"></div>
             </article>
           </div>
         </section>
@@ -953,6 +970,7 @@
         const subscriptionsStorageKey = "maxwebstudioSubscriptions";
         const demoEmailsStorageKey = "maxwebstudioDemoEmails";
         const importLogStorageKey = "maxwebstudioImportLog";
+        const activityLogStorageKey = "maxwebstudioActivityLog";
         const demoScenarioId = "maxwebstudio-demo-001";
         const demoCustomerId = "demo-customer-timmerbedrijf-de-vries";
         const demoWebsiteId = "demo-website-timmerbedrijf-de-vries";
@@ -975,6 +993,7 @@
           { key: settingsStorageKey, label: "Instellingen", description: "Bedrijfs-, factuur- en integratie-instellingen" },
           { key: demoEmailsStorageKey, label: "Demo e-mails", description: "Lokale e-mailpreview inbox voor demo-klantreizen" },
           { key: importLogStorageKey, label: "Importlog", description: "Lokaal logboek van JSON imports/restores" },
+          { key: activityLogStorageKey, label: "Activity log", description: "Voorbereid lokaal activiteitenlogboek voor productieplatform" },
         ];
         const completedStatuses = new Set(["afgerond"]);
         const statusLabels = {
@@ -1085,6 +1104,7 @@
           portalShowWebsites: true,
           portalShowFiles: true,
           portalWelcomeText: "Welkom in je Max Webstudio klantomgeving. Hier vind je jouw offertes, facturen, projecten, websites en bestanden.",
+          developerMode: false,
         };
         const integrationDefinitions = [
           { name: "Mollie", category: "Betalingen", status: "Demo voorbereid", action: "Bekijk status", description: "Betaalverzoeken zijn voorbereid en kunnen later via de Mollie API actief worden gekoppeld." },
@@ -1153,6 +1173,7 @@
           selectedQuoteId: "",
           selectedRequestId: "",
           dashboardMetrics: null,
+          developerModules: null,
         };
 
         const adminTokenInput = document.getElementById("admin-token");
@@ -1536,6 +1557,11 @@
         const environmentStatusList = document.getElementById("environment-status-list");
         const migrationChecklist = document.getElementById("migration-checklist");
         const dataStructureDocs = document.getElementById("data-structure-docs");
+        const productionReadinessList = document.getElementById("production-readiness-list");
+        const developerToolsCard = document.getElementById("developer-tools-card");
+        const developerToolsOutput = document.getElementById("developer-tools-output");
+        const runMigrationAnalysis = document.getElementById("run-migration-analysis");
+        const runDataValidation = document.getElementById("run-data-validation");
         const demoEmailList = document.getElementById("demo-email-list");
         const demoImportPreview = document.getElementById("demo-import-preview");
         const importLogList = document.getElementById("import-log-list");
@@ -2504,6 +2530,161 @@
           });
         }
 
+        function readinessStatusClass(status) {
+          const normalized = normalize(status);
+          if (normalized.includes("gereed")) return "status-active";
+          if (normalized.includes("voorbereid")) return "status-prepared";
+          if (normalized.includes("actie")) return "status-warning";
+          if (normalized.includes("niet actief") || normalized.includes("niet gekoppeld")) return "status-planned";
+          return "status-planned";
+        }
+
+        function renderProductionReadiness() {
+          const leadCount = parseLocalStorageValue("maxwebstudioLeads").count + parseLocalStorageValue("maxwebstudioLeadRequests").count;
+          const items = [
+            ["CRM data", state.customers.length ? "Gereed" : "Actie nodig", `${state.customers.length} lokale klantrecords`],
+            ["Leads data", leadCount ? "Gereed" : "Voorbereid", `${leadCount} lokale leadrecords`],
+            ["Websites data", state.websites.length ? "Gereed" : "Voorbereid", `${state.websites.length} beheerde websites`],
+            ["Projecten data", state.projects.length ? "Gereed" : "Voorbereid", `${state.projects.length} onboarding/projectrecords`],
+            ["Bestanden data", state.files.length ? "Gereed" : "Voorbereid", `${state.files.length} bestandsregistraties`],
+            ["Offertes data", state.quotes.length ? "Gereed" : "Voorbereid", `${state.quotes.length} offertes`],
+            ["Facturen data", state.invoices.length ? "Gereed" : "Voorbereid", `${state.invoices.length} facturen`],
+            ["Abonnementen data", state.subscriptions.length ? "Gereed" : "Voorbereid", `${state.subscriptions.length} onderhoudsabonnementen`],
+            ["Demo omgeving", "Gereed", "LocalStorage blijft de actieve demo-provider"],
+            ["Backup export/import", "Gereed", "JSON export, import en restore blijven lokaal beschikbaar"],
+            ["Data validatie", "Voorbereid", "Developer Mode kan lokale data controleren"],
+            ["Providerlaag", "Gereed", "localStorage en Supabase providers delen dezelfde interface"],
+            ["Repositories", "Gereed", "Modules kunnen via repositories naar data lezen/schrijven"],
+            ["Supabase voorbereiding", "Niet gekoppeld", "Tabellen voorbereid: profiles, leads, customer_websites, customer_projects, customer_files, customer_quotes, customer_invoices, customer_subscriptions. Env vars later: SUPABASE_URL en SUPABASE_ANON_KEY."],
+            ["Auth voorbereiding", "Niet actief", "Auth-model en user-structuur zijn voorbereid"],
+            ["Storage voorbereiding", "Niet actief", "Bestandsmetadata is migratieklaar, echte opslag later"],
+            ["Resend voorbereiding", "Voorbereid", "Publieke leadmails blijven server-side via bestaande functie"],
+            ["Mollie voorbereiding", "Voorbereid", "Demo-billing blijft lokaal, live API later"],
+          ];
+
+          productionReadinessList.replaceChildren();
+          items.forEach(([title, status, description]) => {
+            const card = document.createElement("article");
+            card.className = "admin-card request-card";
+            card.append(createCell(title, "strong"), createBadge(status, readinessStatusClass(status)), createCell(description));
+            productionReadinessList.append(card);
+          });
+        }
+
+        function isDeveloperModeEnabled() {
+          return Boolean(readStoredSettings().developerMode);
+        }
+
+        async function loadDeveloperModules() {
+          if (state.developerModules) return state.developerModules;
+          state.developerModules = {
+            environment: await import("./src/config/environment.js"),
+            providerFactory: await import("./src/providers/providerFactory.js"),
+            migrationService: await import("./src/services/migrationService.js"),
+            dataValidationService: await import("./src/services/dataValidationService.js"),
+            activityLogService: await import("./src/services/activityLogService.js"),
+          };
+          return state.developerModules;
+        }
+
+        function appendDeveloperCard(title, rows = []) {
+          const card = document.createElement("article");
+          card.className = "admin-card request-card";
+          card.append(createCell(title, "strong"));
+          rows.forEach((row) => {
+            if (Array.isArray(row)) {
+              const line = document.createElement("div");
+              line.append(createCell(row[0]), createCell(row[1]));
+              card.append(line);
+            } else {
+              card.append(createCell(row));
+            }
+          });
+          developerToolsOutput.append(card);
+        }
+
+        function renderMigrationSummary(summary) {
+          appendDeveloperCard("Migratie-analyse", [
+            ["Records totaal", String(summary?.totalRecords || 0)],
+            ["Ontbrekende verplichte velden", String(summary?.missingRequiredFields?.length || 0)],
+            ["Gebroken referenties", String(summary?.brokenReferences?.length || 0)],
+            ["Advies", summary?.readyForMigration ? "Klaar voor proefmigratie" : "Eerst datakwaliteit nalopen"],
+          ]);
+        }
+
+        function renderValidationSummary(report) {
+          appendDeveloperCard("Data validatie", [
+            ["Status", report?.ok ? "Geen blokkerende fouten" : "Aandacht nodig"],
+            ["Fouten", String(report?.errors?.length || 0)],
+            ["Waarschuwingen", String(report?.warnings?.length || 0)],
+            ["Info", String(report?.info?.length || 0)],
+          ]);
+        }
+
+        async function renderDeveloperToolsSummary(extra = {}) {
+          if (!isDeveloperModeEnabled()) return;
+          developerToolsOutput.replaceChildren();
+          try {
+            const modules = await loadDeveloperModules();
+            const environment = modules.environment.getEnvironmentInfo();
+            const provider = modules.providerFactory.getProviderInfo();
+            const counts = modules.migrationService.getRecordCounts();
+            const recentActivities = modules.activityLogService.listRecentActivities(5);
+
+            appendDeveloperCard("Omgeving", [
+              ["Mode", environment.environment],
+              ["Provider", provider.provider],
+              ["Demo actief", environment.isDemo ? "Ja" : "Nee"],
+              ["Productie actief", environment.isProduction ? "Ja" : "Nee"],
+            ]);
+            appendDeveloperCard("Record counts", Object.entries(counts).map(([key, value]) => [key, String(value)]));
+            appendDeveloperCard("Laatste activiteiten", recentActivities.length
+              ? recentActivities.map((activity) => [activity.action || "Activiteit", formatDate(activity.createdAt)])
+              : ["Nog geen activiteit gelogd."]);
+            if (extra.migrationSummary) renderMigrationSummary(extra.migrationSummary);
+            if (extra.validationReport) renderValidationSummary(extra.validationReport);
+          } catch (error) {
+            console.error("Developer tools could not be loaded", error);
+            appendDeveloperCard("Developer tools", ["De modulaire dev-tools konden niet worden geladen. Controleer de browserconsole."]);
+          }
+        }
+
+        function renderDeveloperMode() {
+          const enabled = isDeveloperModeEnabled();
+          developerToolsCard.hidden = !enabled;
+          if (enabled) {
+            renderDeveloperToolsSummary();
+          } else {
+            developerToolsOutput.replaceChildren();
+          }
+        }
+
+        async function runMigrationAnalysisHandler() {
+          try {
+            const modules = await loadDeveloperModules();
+            modules.activityLogService.logActivity("developer_tools", "migration", "run_migration_analysis", { source: "admin-dashboard" });
+            const summary = modules.migrationService.generateMigrationSummary();
+            await renderDeveloperToolsSummary({ migrationSummary: summary });
+            setSettingsMessage("Migratie-analyse uitgevoerd in Developer Mode.", "success");
+          } catch (error) {
+            console.error("Migration analysis failed", error);
+            setSettingsMessage("Migratie-analyse kon niet worden uitgevoerd.", "error");
+          }
+        }
+
+        async function runDataValidationHandler() {
+          try {
+            const modules = await loadDeveloperModules();
+            modules.activityLogService.logActivity("developer_tools", "validation", "run_data_validation", { source: "admin-dashboard" });
+            const report = modules.dataValidationService.validateLocalStorageData();
+            await renderDeveloperToolsSummary({ validationReport: report });
+            setSettingsMessage("Data validatie uitgevoerd in Developer Mode.", "success");
+          } catch (error) {
+            console.error("Data validation failed", error);
+            setSettingsMessage("Data validatie kon niet worden uitgevoerd.", "error");
+          }
+        }
+
         function renderDemoEnvironment() {
           renderLocalStorageKeyList();
           renderDemoFlowChecklist();
@@ -2513,6 +2694,8 @@
           renderEnvironmentStatus();
           renderMigrationChecklist();
           renderDataStructureDocs();
+          renderProductionReadiness();
+          renderDeveloperMode();
           const journeyId = latestDemoJourneyId();
           demoActions.openLatestJourney.href = journeyId ? `demo-klantreis.html?demoJourneyId=${encodeURIComponent(journeyId)}` : "#";
           demoActions.openLatestJourney.classList.toggle("is-disabled", !journeyId);
@@ -2521,7 +2704,10 @@
 
         function saveSettings(event) {
           event.preventDefault();
-          writeStoredSettings(collectSettingsForm());
+          const settings = collectSettingsForm();
+          writeStoredSettings(settings);
+          renderProductionReadiness();
+          renderDeveloperMode();
           setSettingsMessage("Instellingen opgeslagen in lokale dashboardopslag.", "success");
         }
 
@@ -7511,6 +7697,8 @@
         [invoiceSearch, invoiceStatusFilter, invoiceTypeFilter, invoiceCustomerFilter, invoiceProjectFilter, invoiceWebsiteFilter].forEach((filter) => filter.addEventListener("input", renderInvoices));
         [requestStatusFilter, requestPriorityFilter, requestCategoryFilter].forEach((filter) => filter.addEventListener("change", renderRequests));
         settingsForm.addEventListener("submit", saveSettings);
+        runMigrationAnalysis.addEventListener("click", runMigrationAnalysisHandler);
+        runDataValidation.addEventListener("click", runDataValidationHandler);
         document.querySelectorAll("[data-settings-demo]").forEach((button) => {
           button.addEventListener("click", () => setSettingsMessage(button.dataset.settingsDemo, "success"));
         });

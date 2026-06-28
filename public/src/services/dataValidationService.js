@@ -1,0 +1,76 @@
+import { STORAGE_KEYS } from "../config/storageKeys.js";
+
+function readArray(key) {
+  try {
+    const value = JSON.parse(localStorage.getItem(key) || "[]");
+    return Array.isArray(value) ? value : [];
+  } catch {
+    return [];
+  }
+}
+
+function pushIssue(issues, severity, module, message, id = "") {
+  issues.push({ severity, module, message, id });
+}
+
+function validateIds(module, records, issues) {
+  const seen = new Set();
+  records.forEach((record) => {
+    if (!record.id) pushIssue(issues, "error", module, "Record mist id.");
+    if (record.id && seen.has(record.id)) pushIssue(issues, "error", module, "Dubbele id gevonden.", record.id);
+    if (record.id) seen.add(record.id);
+    if (!record.createdAt) pushIssue(issues, "warning", module, "Record mist createdAt.", record.id);
+    if (!record.updatedAt) pushIssue(issues, "warning", module, "Record mist updatedAt.", record.id);
+    if (record.isDemo || record.isDemoJourney) pushIssue(issues, "info", module, "Demo-record aanwezig.", record.id);
+  });
+}
+
+export function validateLocalStorageData() {
+  const issues = [];
+  const customers = readArray(STORAGE_KEYS.crmCustomers);
+  const websites = readArray(STORAGE_KEYS.managedSites);
+  const projects = readArray(STORAGE_KEYS.projects);
+  const quotes = readArray(STORAGE_KEYS.quotes);
+  const invoices = readArray(STORAGE_KEYS.invoices);
+  const subscriptions = readArray(STORAGE_KEYS.subscriptions);
+  const files = readArray(STORAGE_KEYS.files);
+
+  [
+    ["customers", customers],
+    ["websites", websites],
+    ["projects", projects],
+    ["quotes", quotes],
+    ["invoices", invoices],
+    ["subscriptions", subscriptions],
+    ["files", files],
+  ].forEach(([module, records]) => validateIds(module, records, issues));
+
+  customers.forEach((customer) => {
+    if (!customer.name && !customer.company) pushIssue(issues, "warning", "customers", "Klant mist naam en bedrijf.", customer.id);
+  });
+  invoices.forEach((invoice) => {
+    if (!Array.isArray(invoice.lines) || !invoice.lines.length) pushIssue(issues, "error", "invoices", "Factuur mist factuurregels.", invoice.id);
+  });
+  quotes.forEach((quote) => {
+    if (!Array.isArray(quote.lines) || !quote.lines.length) pushIssue(issues, "error", "quotes", "Offerte mist offertregels.", quote.id);
+  });
+  subscriptions.forEach((subscription) => {
+    if (!subscription.profileId && !subscription.customerId) pushIssue(issues, "error", "subscriptions", "Abonnement mist klantkoppeling.", subscription.id);
+  });
+  projects.forEach((project) => {
+    if (!project.customerId && !project.profileId) pushIssue(issues, "error", "projects", "Project mist klantkoppeling.", project.id);
+  });
+  websites.forEach((website) => {
+    if (!website.profileId && !website.customerId) pushIssue(issues, "error", "websites", "Website mist klantkoppeling.", website.id);
+  });
+
+  const ready = !issues.some((issue) => issue.severity === "error");
+  return {
+    ready,
+    ok: ready,
+    errors: issues.filter((issue) => issue.severity === "error"),
+    warnings: issues.filter((issue) => issue.severity === "warning"),
+    info: issues.filter((issue) => issue.severity === "info"),
+    issues,
+  };
+}
