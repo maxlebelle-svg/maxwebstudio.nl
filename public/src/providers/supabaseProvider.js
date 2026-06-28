@@ -67,7 +67,7 @@ export const supabaseProvider = {
       return [];
     }
     const client = await getReadClient("customers");
-    const limit = Math.min(Number(options.limit || 10), 50);
+    const limit = Math.min(Number(options.limit || 10), 100);
     const { data, error } = await client.from("customers").select("*").limit(limit);
     if (error) throw new Error(error.message || "Customers lezen uit Supabase is mislukt.");
     return Array.isArray(data) ? data : [];

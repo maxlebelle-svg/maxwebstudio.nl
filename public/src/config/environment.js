@@ -13,6 +13,12 @@ export const PROVIDERS = Object.freeze({
   SUPABASE: "supabase",
 });
 
+export const CUSTOMER_DATA_MODES = Object.freeze({
+  LOCAL: "local",
+  SUPABASE_READ: "supabase-read",
+  HYBRID: "hybrid",
+});
+
 const DEFAULT_ENVIRONMENT = ENVIRONMENTS.DEMO;
 const DEFAULT_PROVIDER = PROVIDERS.LOCAL_STORAGE;
 

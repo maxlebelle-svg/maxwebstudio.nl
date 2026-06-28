@@ -150,10 +150,12 @@
           </div>
 
           <div class="admin-filters crm-filters" aria-label="Klanten filteren">
+            <label for="customer-data-mode">Customer data mode<select id="customer-data-mode"><option value="local">Local</option><option value="supabase-read">Supabase read</option><option value="hybrid">Hybrid</option></select></label>
             <label for="customer-search">Zoeken<input id="customer-search" type="search" placeholder="Naam, bedrijf, e-mail of website" /></label>
             <label for="customer-status-filter">Status<select id="customer-status-filter"><option value="">Alle statussen</option><option value="actief">Actief</option><option value="onboarding">Onboarding</option><option value="pauze">Pauze</option><option value="gearchiveerd">Gearchiveerd</option></select></label>
             <label for="customer-package-filter">Pakket<select id="customer-package-filter"><option value="">Alle pakketten</option><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option></select></label>
           </div>
+          <div class="admin-grid compact-admin-grid" id="customer-source-summary" aria-live="polite"></div>
 
           <div class="admin-crm-grid">
             <div class="admin-table client-profile-table" id="customer-list" role="table" aria-label="Klanten" aria-live="polite">
@@ -189,6 +191,7 @@
                 <label for="detail-customer-since">Klant sinds<input id="detail-customer-since" type="date" disabled /></label>
                 <label class="admin-profile-wide" for="detail-notes">Notities admin-only<textarea id="detail-notes" disabled placeholder="Interne notities, niet zichtbaar in het klantenportaal"></textarea></label>
               </div>
+              <div class="settings-status-list" id="customer-source-detail"></div>
 
               <div class="crm-auth-panel">
                 <div>
@@ -775,6 +778,9 @@
                 <button class="button secondary" id="create-supabase-test-customer" type="button">Maak testcustomer</button>
                 <button class="button secondary" id="update-supabase-test-customer" type="button">Update testcustomer</button>
                 <button class="button secondary" id="delete-supabase-test-customer" type="button">Verwijder testcustomer</button>
+                <button class="button secondary" id="refresh-customer-sources" type="button">Refresh customer sources</button>
+                <button class="button secondary" id="test-hybrid-merge" type="button">Test hybrid merge</button>
+                <button class="button secondary" id="reset-customer-data-mode" type="button">Reset customer data mode naar local</button>
                 <button class="button secondary" id="view-env-example" type="button">Bekijk .env voorbeeld</button>
                 <button class="button secondary" id="why-local-storage" type="button">Waarom nog localStorage?</button>
                 <button class="button secondary" id="run-customer-migration-dry-run" type="button">Run CRM migratie dry run</button>
@@ -1172,6 +1178,7 @@
           portalWelcomeText: "Welkom in je Max Webstudio klantomgeving. Hier vind je jouw offertes, facturen, projecten, websites en bestanden.",
           developerMode: false,
           dataProviderMode: "localStorage",
+          customerDataMode: "local",
         };
         const integrationDefinitions = [
           { name: "Mollie", category: "Betalingen", status: "Demo voorbereid", action: "Bekijk status", description: "Betaalverzoeken zijn voorbereid en kunnen later via de Mollie API actief worden gekoppeld." },
@@ -1241,6 +1248,7 @@
           selectedRequestId: "",
           dashboardMetrics: null,
           developerModules: null,
+          customerSourceStatus: null,
         };
 
         const adminTokenInput = document.getElementById("admin-token");
@@ -1293,6 +1301,9 @@
           subscriptionStatusTotal: document.getElementById("chart-subscription-status-total"),
         };
         const customerList = document.getElementById("customer-list");
+        const customerDataModeSelect = document.getElementById("customer-data-mode");
+        const customerSourceSummary = document.getElementById("customer-source-summary");
+        const customerSourceDetail = document.getElementById("customer-source-detail");
         const websiteList = document.getElementById("website-list");
         const websiteDetailForm = document.getElementById("website-detail-form");
         const websiteFields = {
@@ -1648,6 +1659,9 @@
         const createSupabaseTestCustomerButton = document.getElementById("create-supabase-test-customer");
         const updateSupabaseTestCustomerButton = document.getElementById("update-supabase-test-customer");
         const deleteSupabaseTestCustomerButton = document.getElementById("delete-supabase-test-customer");
+        const refreshCustomerSourcesButton = document.getElementById("refresh-customer-sources");
+        const testHybridMergeButton = document.getElementById("test-hybrid-merge");
+        const resetCustomerDataModeButton = document.getElementById("reset-customer-data-mode");
         const viewEnvExampleButton = document.getElementById("view-env-example");
         const whyLocalStorageButton = document.getElementById("why-local-storage");
         const runCustomerMigrationDryRunButton = document.getElementById("run-customer-migration-dry-run");
@@ -1727,6 +1741,22 @@
           if (status === "onboarding") return "status-prepared";
           if (status === "pauze") return "status-warning";
           if (status === "gearchiveerd") return "status-attention";
+          return "status-planned";
+        }
+
+        function customerSourceLabel(customer = {}) {
+          const source = customer._source || "local";
+          if (source === "supabase") return "Supabase";
+          if (source === "hybrid") return "Hybrid";
+          if (source === "demo") return "Demo";
+          return "Local";
+        }
+
+        function customerSourceClass(customer = {}) {
+          const source = customer._source || "local";
+          if (source === "supabase") return "status-prepared";
+          if (source === "hybrid") return "status-active";
+          if (source === "demo") return "status-warning";
           return "status-planned";
         }
 
@@ -2669,6 +2699,11 @@
             ["CRM local fallback", "Actief", "Na migratie blijft localStorage leidend tot provider switch"],
             ["CRM provider switch", "Nog niet actief", "Geen automatische switch naar Supabase"],
             ["Supabase customers data", "Gedeeltelijk mogelijk", "Alleen gecontroleerde customer inserts via migratiemodus"],
+            ["Customer Supabase read", "Voorbereid/actief", "CRM kan customers read-only uit Supabase laden"],
+            ["Customer hybrid mode", "Actief", "CRM combineert Supabase, ongemigreerde local en demo customers"],
+            ["Customer Supabase edit", "Nog niet actief", "Bewerken van Supabase-klanten komt in Fase 12.2"],
+            ["Local fallback", "Actief", "Hybrid valt terug op localStorage bij Supabase read-fouten"],
+            ["Demo customer source", "Local/demo", "Demo-klanten blijven uit localStorage komen"],
             ["CRM Supabase mapping", "Voorbereid", "CustomerRepository kan lokale klantrecords naar customers-rijen mappen"],
             ["CRM migratie dry run", "Gereed", "Developer Mode analyseert klanten zonder databasewrites"],
             ["CRM live writes basis", "Niet actief", "Live customer writes blijven afhankelijk van Supabase client readiness"],
@@ -2713,6 +2748,7 @@
           state.developerModules = {
             environment: await import("./src/config/environment.js"),
             providerFactory: await import("./src/providers/providerFactory.js"),
+            customerRepository: await import("./src/repositories/CustomerRepository.js"),
             providerStatusService: await import("./src/services/providerStatusService.js"),
             supabaseReadinessService: await import("./src/services/supabaseReadinessService.js"),
             supabaseWriteTestService: await import("./src/services/supabaseWriteTestService.js"),
@@ -2847,6 +2883,21 @@
           if (result.steps?.length) {
             appendDeveloperCard("Write-test stappen", result.steps.map((step) => [step.step, step.status]));
           }
+        }
+
+        function renderCustomerDataSourceStatus(status = state.customerSourceStatus || {}) {
+          const counts = status.counts || {};
+          appendDeveloperCard("Customer data source", [
+            ["Customer data mode", status.mode || currentCustomerDataMode()],
+            ["Supabase read status", status.error ? "Fout" : status.mode === "local" ? "Niet gebruikt" : "Beschikbaar"],
+            ["Local count", String(counts.local ?? 0)],
+            ["Supabase count", String(counts.supabase ?? 0)],
+            ["Hybrid count", String(counts.hybrid ?? state.customers.length ?? 0)],
+            ["Duplicate merge count", String(counts.duplicateMerges ?? 0)],
+            ["Fallback status", status.fallbackUsed ? "Local fallback gebruikt" : "Geen fallback"],
+            ["Laatste refresh", status.refreshedAt ? formatDate(status.refreshedAt) : "-"],
+            ["Error", status.error || "-"],
+          ]);
         }
 
         function renderSupabaseSetupChecklist() {
@@ -3244,6 +3295,7 @@
             renderSupabaseConnectionStatus(providerStatus);
             renderSupabaseReadOnlyTest(readOnlySummary);
             renderSupabaseWriteTestStatus(writeTestReadiness, writeTestResults);
+            renderCustomerDataSourceStatus(state.customerSourceStatus);
             renderSupabaseSetupChecklist();
             renderCustomerMigrationCard(customerMigration);
             renderCustomerMigrationLogs(customerMigrationLogs);
@@ -3711,6 +3763,77 @@
           }
         }
 
+        async function setCustomerDataMode(mode, options = {}) {
+          const settings = { ...readStoredSettings(), customerDataMode: mode };
+          writeStoredSettings(settings);
+          localStorage.setItem("maxwebstudioCustomerDataMode", mode);
+          customerDataModeSelect.value = mode;
+          try {
+            const { activityLogService } = await loadDeveloperModules();
+            activityLogService.logActivity("developer_tools", "customers", "customer_data_mode_changed", { mode, ...options });
+          } catch {
+            // Logging is helpful, but changing the customer read mode should not depend on Developer Tools imports.
+          }
+          await loadCRMData(false);
+        }
+
+        async function changeCustomerDataModeHandler(event) {
+          const mode = event.target.value || "local";
+          if (mode !== "local") {
+            const confirmed = window.confirm(`Customer data mode wijzigen naar ${mode}? Er wordt geen data verwijderd en er worden geen Supabase writes uitgevoerd.`);
+            if (!confirmed) {
+              customerDataModeSelect.value = readStoredSettings().customerDataMode || "local";
+              return;
+            }
+          }
+          await setCustomerDataMode(mode, { source: "crm_select" });
+        }
+
+        async function refreshCustomerSourcesHandler() {
+          await loadCRMData(false);
+          try {
+            const { activityLogService } = await loadDeveloperModules();
+            activityLogService.logActivity("developer_tools", "customers", "customer_sources_refreshed", { mode: currentCustomerDataMode() });
+          } catch {
+            // Optional developer logging only.
+          }
+          await renderDeveloperToolsSummary();
+          setSettingsMessage("Customer sources vernieuwd.", "success");
+        }
+
+        async function testHybridMergeHandler() {
+          const previousMode = currentCustomerDataMode();
+          customerDataModeSelect.value = "hybrid";
+          try {
+            const { CustomerRepository } = await import("./src/repositories/CustomerRepository.js");
+            const result = await CustomerRepository.listByDataMode("hybrid");
+            state.customerSourceStatus = result;
+            renderCustomerSourceSummary();
+            try {
+              const { activityLogService } = await loadDeveloperModules();
+              activityLogService.logActivity("developer_tools", "customers", "customer_hybrid_merge_tested", {
+                hybridCount: result.counts?.hybrid ?? result.customers.length,
+                duplicateMergeCount: result.counts?.duplicateMerges ?? 0,
+                fallbackUsed: Boolean(result.fallbackUsed),
+              });
+            } catch {
+              // Optional developer logging only.
+            }
+            await renderDeveloperToolsSummary();
+            setSettingsMessage(`Hybrid merge getest: ${result.counts?.hybrid ?? result.customers.length} klanten, ${result.counts?.duplicateMerges ?? 0} merges.`, result.error ? "error" : "success");
+          } catch (error) {
+            setSettingsMessage(error.message || "Hybrid merge test mislukt.", "error");
+          } finally {
+            customerDataModeSelect.value = previousMode;
+          }
+        }
+
+        async function resetCustomerDataModeHandler() {
+          await setCustomerDataMode("local", { source: "developer_reset" });
+          await renderDeveloperToolsSummary();
+          setSettingsMessage("Customer data mode teruggezet naar local.", "success");
+        }
+
         function renderDeveloperMode() {
           const enabled = isDeveloperModeEnabled();
           developerToolsCard.hidden = !enabled;
@@ -3804,7 +3927,10 @@
         }
 
         function writeStoredCustomers(customers) {
-          localStorage.setItem(crmCustomersStorageKey, JSON.stringify(customers.map(normalizeStoredCustomer)));
+          localStorage.setItem(crmCustomersStorageKey, JSON.stringify(customers.map((customer) => {
+            const { _source, _isMigrated, _supabaseCustomerId, _localCustomerId, _sourceMeta, ...storedCustomer } = normalizeStoredCustomer(customer);
+            return storedCustomer;
+          })));
         }
 
         function normalizeStoredCustomer(customer = {}) {
@@ -3829,6 +3955,16 @@
             authStatus: portalStatus === "actief" ? "login actief" : "geen login",
             isDemo: Boolean(customer.isDemo),
             demoScenarioId: customer.demoScenarioId || "",
+            supabaseCustomerId: customer.supabaseCustomerId || customer._supabaseCustomerId || "",
+            migratedToSupabaseAt: customer.migratedToSupabaseAt || "",
+            migrationStatus: customer.migrationStatus || "",
+            migrationBatchId: customer.migrationBatchId || "",
+            lastMigrationProvider: customer.lastMigrationProvider || "",
+            _source: customer._source || "",
+            _isMigrated: Boolean(customer._isMigrated || customer.supabaseCustomerId || customer.migratedToSupabaseAt),
+            _supabaseCustomerId: customer._supabaseCustomerId || customer.supabaseCustomerId || "",
+            _localCustomerId: customer._localCustomerId || customer.id || "",
+            _sourceMeta: customer._sourceMeta || {},
           };
         }
 
@@ -3863,6 +3999,25 @@
 
         function customerById(id) {
           return state.customers.find((customer) => customer.id === id) || null;
+        }
+
+        function currentCustomerDataMode() {
+          return customerDataModeSelect.value || readStoredSettings().customerDataMode || localStorage.getItem("maxwebstudioCustomerDataMode") || "local";
+        }
+
+        async function loadCustomersByDataMode() {
+          const mode = currentCustomerDataMode();
+          const { CustomerRepository } = await import("./src/repositories/CustomerRepository.js");
+          const result = await CustomerRepository.listByDataMode(mode);
+          state.customerSourceStatus = result;
+          localStorage.setItem("maxwebstudioLastCustomerSourceStatus", JSON.stringify({
+            mode: result.mode,
+            counts: result.counts,
+            fallbackUsed: result.fallbackUsed,
+            error: result.error,
+            refreshedAt: result.refreshedAt,
+          }));
+          return result.customers.map(normalizeStoredCustomer);
         }
 
         function normalizeWebsiteStatus(value) {
@@ -4681,6 +4836,10 @@
           return state.websites.find((website) => website.id === state.selectedWebsiteId);
         }
 
+        function isSupabaseManagedCustomer(customer = {}) {
+          return ["supabase", "hybrid"].includes(customer._source);
+        }
+
         function healthWebsiteById(id) {
           return state.healthWebsites.find((website) => website.id === id);
         }
@@ -4851,9 +5010,55 @@
             && (!selectedPackage || customer.package === selectedPackage);
         }
 
+        function renderCustomerSourceSummary() {
+          customerSourceSummary.replaceChildren();
+          const status = state.customerSourceStatus || {};
+          const counts = status.counts || {};
+          const mode = status.mode || readStoredSettings().customerDataMode || "local";
+          [
+            ["Mode", mode],
+            ["Actieve bron", status.fallbackUsed ? "Local fallback" : mode === "hybrid" ? "Hybrid" : mode === "supabase-read" ? "Supabase" : "Local"],
+            ["Local customers", String(counts.local ?? state.customers.length ?? 0)],
+            ["Supabase customers", String(counts.supabase ?? 0)],
+            ["Hybrid merged", String(counts.hybrid ?? state.customers.length ?? 0)],
+            ["Demo customers", String(counts.demo ?? 0)],
+            ["Niet gemigreerd local", String(counts.unmigratedLocal ?? 0)],
+            ["Merge duplicates", String(counts.duplicateMerges ?? 0)],
+            ["Laatste refresh", status.refreshedAt ? formatDate(status.refreshedAt) : "-"],
+          ].forEach(([label, value]) => {
+            const card = document.createElement("article");
+            card.className = "admin-card metric-card";
+            card.append(createCell(label), createCell(value, "strong"));
+            customerSourceSummary.append(card);
+          });
+          if (status.error) {
+            const card = document.createElement("article");
+            card.className = "admin-card request-card request-state-card";
+            card.append(createBadge(status.fallbackUsed ? "Fallback actief" : "Supabase fout", status.fallbackUsed ? "status-warning" : "status-attention"), createCell(status.error));
+            customerSourceSummary.append(card);
+          }
+        }
+
+        function renderCustomerSourceDetail(customer = null) {
+          customerSourceDetail.replaceChildren();
+          if (!customer) return;
+          [
+            ["Databron", customerSourceLabel(customer)],
+            ["Migratiestatus", customer._isMigrated || customer.migrationStatus === "migrated" ? "Gemigreerd" : "Lokaal/niet gemigreerd"],
+            ["Supabase customer ID", customer._supabaseCustomerId || customer.supabaseCustomerId || "-"],
+            ["Lokale ID", customer._localCustomerId || customer.id || "-"],
+            ["Hybrid waarschuwing", customer._source === "hybrid" ? "Supabase data wint; lokale relatie-ID blijft behouden voor bestaande modules." : "-"],
+          ].forEach(([label, value]) => {
+            const row = document.createElement("div");
+            row.append(createCell(label), createCell(value, "strong"));
+            customerSourceDetail.append(row);
+          });
+        }
+
         function renderCustomers() {
           const customers = state.customers.filter(customerMatchesFilters);
           customerList.replaceChildren();
+          renderCustomerSourceSummary();
 
           if (!state.customers.length) {
             renderState(customerList, "Nog geen klanten", "Maak je eerste klant aan om het CRM te vullen.", "Leeg", "status-planned", { label: "Nieuwe klant", primary: true, onClick: openNewCustomerModal });
@@ -4874,13 +5079,17 @@
             const row = document.createElement("div");
             row.className = "admin-table-row crm-customer-row";
             row.setAttribute("role", "row");
+            const nameCell = document.createElement("span");
+            const name = document.createElement("strong");
+            name.textContent = customer.name || "-";
+            nameCell.append(name, createBadge(customerSourceLabel(customer), customerSourceClass(customer)));
             const action = document.createElement("button");
             action.className = "button secondary";
             action.type = "button";
             action.textContent = "Bekijk";
             action.addEventListener("click", () => selectCustomer(customer.id));
             row.append(
-              createCell(customer.name, "strong"),
+              nameCell,
               createCell(customer.company),
               createCell(customer.website || "Nog niet ingesteld"),
               createCell(customer.package || "-"),
@@ -4896,6 +5105,10 @@
           state.selectedCustomerId = id;
           const customer = selectedCustomer();
           if (!customer) return;
+          if (isSupabaseManagedCustomer(customer)) {
+            setDetailMessage("Bewerken van Supabase-klanten wordt gebouwd in Fase 12.2.", "error");
+            return;
+          }
 
           detailFields.name.value = customer.name || "";
           detailFields.email.value = customer.email || customer.authEmail || "";
@@ -4907,12 +5120,14 @@
           detailFields.portalStatus.value = customer.portalStatus || "geen_login";
           detailFields.customerSince.value = toDateInput(customer.customerSince || customer.createdAt);
           detailFields.notes.value = customer.notes || "";
+          renderCustomerSourceDetail(customer);
 
+          const supabaseManaged = isSupabaseManagedCustomer(customer);
           Object.values(detailFields).forEach((field) => {
-            field.disabled = false;
+            field.disabled = supabaseManaged;
           });
-          detailSave.disabled = false;
-          detailArchive.disabled = customer.status === "gearchiveerd";
+          detailSave.disabled = supabaseManaged;
+          detailArchive.disabled = supabaseManaged || customer.status === "gearchiveerd";
           detailState.textContent = "Geselecteerd";
           detailState.className = `status-badge ${customerStatusClass(customer.status)}`;
           const customerFileCount = state.files.filter((file) => file.customerId === customer.id).length;
@@ -4938,10 +5153,10 @@
           const authLabel = customer.portalStatus === "uitgenodigd" ? "Uitgenodigd" : hasLogin ? "Login actief" : customer.portalStatus === "geblokkeerd" ? "Geblokkeerd" : "Geen login";
           detailAuthStatus.textContent = authLabel;
           detailAuthStatus.className = `status-badge ${hasLogin ? "status-active" : "status-planned"}`;
-          detailLinkLogin.disabled = hasLogin || !detailFields.email.value || customer.portalStatus === "geblokkeerd";
-          detailResetPassword.disabled = !hasLogin || !detailFields.email.value;
-          detailSendInvite.disabled = !detailFields.email.value;
-          setDetailMessage("", "");
+          detailLinkLogin.disabled = supabaseManaged || hasLogin || !detailFields.email.value || customer.portalStatus === "geblokkeerd";
+          detailResetPassword.disabled = supabaseManaged || !hasLogin || !detailFields.email.value;
+          detailSendInvite.disabled = supabaseManaged || !detailFields.email.value;
+          setDetailMessage(supabaseManaged ? "Bewerken van Supabase-klanten wordt gebouwd in Fase 12.2." : "", supabaseManaged ? "error" : "");
           detailOpenWebsite.href = customer.website || "#";
           detailOpenWebsite.classList.toggle("is-disabled", !customer.website);
           detailOpenWebsite.toggleAttribute("aria-disabled", !customer.website);
@@ -4964,6 +5179,10 @@
           event.preventDefault();
           const customer = selectedCustomer();
           if (!customer) return;
+          if (isSupabaseManagedCustomer(customer)) {
+            setDetailMessage("Archiveren van Supabase-klanten wordt gebouwd in Fase 12.2.", "error");
+            return;
+          }
 
           detailSave.disabled = true;
           detailSave.textContent = "Opslaan...";
@@ -5103,7 +5322,7 @@
           } finally {
             detailLinkLogin.textContent = "Login koppelen";
             const refreshed = selectedCustomer();
-            detailLinkLogin.disabled = refreshed?.authStatus === "login actief" || !detailFields.email.value;
+            detailLinkLogin.disabled = isSupabaseManagedCustomer(refreshed) || refreshed?.authStatus === "login actief" || !detailFields.email.value;
           }
         }
 
@@ -5118,7 +5337,7 @@
             setDetailMessage(error.message || "Wachtwoord reset kon niet worden verstuurd.", "error");
           } finally {
             detailResetPassword.textContent = "Wachtwoord reset versturen";
-            detailResetPassword.disabled = selectedCustomer()?.authStatus !== "login actief" || !detailFields.email.value;
+            detailResetPassword.disabled = isSupabaseManagedCustomer(selectedCustomer()) || selectedCustomer()?.authStatus !== "login actief" || !detailFields.email.value;
           }
         }
 
@@ -5133,7 +5352,7 @@
             setDetailMessage(error.message || "Uitnodiging kon niet worden verstuurd.", "error");
           } finally {
             detailSendInvite.textContent = "Uitnodiging versturen";
-            detailSendInvite.disabled = !detailFields.email.value;
+            detailSendInvite.disabled = isSupabaseManagedCustomer(selectedCustomer()) || !detailFields.email.value;
           }
         }
 
@@ -8549,7 +8768,8 @@
           if (showLoading) setAdminAccessMessage("CRM-klanten laden...", "");
 
           try {
-            state.customers = readStoredCustomers();
+            customerDataModeSelect.value = currentCustomerDataMode();
+            state.customers = await loadCustomersByDataMode();
             state.profiles = state.customers;
             state.authUsers = [];
             state.websites = readStoredWebsites();
@@ -8581,10 +8801,37 @@
               await loadDashboardMetrics(false);
               await loadWebsiteHealth(false);
             }
-            setAdminAccessMessage("CRM-klanten geladen uit lokale opslag.", "success");
+            const sourceStatus = state.customerSourceStatus || {};
+            if (sourceStatus.error && sourceStatus.fallbackUsed) {
+              try {
+                const { activityLogService } = await loadDeveloperModules();
+                activityLogService.logActivity("developer_tools", "customers", "customer_source_fallback_local", { mode: sourceStatus.mode, error: sourceStatus.error });
+              } catch {
+                // Optional developer logging only.
+              }
+              setAdminAccessMessage(`Hybrid fallback actief: ${sourceStatus.error}`, "error");
+            } else if (sourceStatus.error) {
+              setAdminAccessMessage(`Supabase customers konden niet worden gelezen: ${sourceStatus.error}`, "error");
+            } else {
+              setAdminAccessMessage(`CRM-klanten geladen via customer data mode: ${sourceStatus.mode || "local"}.`, "success");
+            }
           } catch (error) {
             setAdminAccessMessage(error.message || "CRM-klanten konden niet worden geladen.", "error");
-            renderState(customerList, "CRM-klanten konden niet worden geladen", "Controleer lokale opslag of probeer opnieuw.", "Fout", "status-attention");
+            try {
+              const { activityLogService } = await loadDeveloperModules();
+              activityLogService.logActivity("developer_tools", "customers", "customer_source_supabase_read_error", { mode: currentCustomerDataMode(), error: error.message });
+            } catch {
+              // Optional developer logging only.
+            }
+            state.customerSourceStatus = {
+              mode: currentCustomerDataMode(),
+              counts: { local: readStoredCustomers().length, supabase: 0, hybrid: 0, duplicateMerges: 0, demo: 0, unmigratedLocal: 0 },
+              fallbackUsed: false,
+              error: error.message || "CRM-klanten konden niet worden geladen.",
+              refreshedAt: new Date().toISOString(),
+            };
+            renderState(customerList, "CRM-klanten konden niet worden geladen", "Supabase-read kon geen klanten laden. Zet de customer data mode terug naar local of controleer de Supabase configuratie.", "Fout", "status-attention", { label: "Terug naar local", primary: true, onClick: () => setCustomerDataMode("local", { source: "supabase_read_error" }) });
+            renderCustomerSourceSummary();
           } finally {
             adminLoadButton.disabled = false;
             adminLoadButton.textContent = "Laden";
@@ -8769,6 +9016,7 @@
         });
         newCustomerForm.addEventListener("submit", createCustomer);
         newSendInvite.addEventListener("click", sendInviteFromNewCustomer);
+        customerDataModeSelect.addEventListener("change", changeCustomerDataModeHandler);
         [customerSearch, customerStatusFilter, customerPackageFilter].forEach((filter) => filter.addEventListener("input", renderCustomers));
         [fileSearch, fileCategoryFilter, fileStatusFilter, fileCustomerFilter, fileProjectFilter].forEach((filter) => filter.addEventListener("input", renderFiles));
         [quoteSearch, quoteStatusFilter, quoteTypeFilter, quoteCustomerFilter, quoteProjectFilter, quoteWebsiteFilter].forEach((filter) => filter.addEventListener("input", renderQuotes));
@@ -8791,6 +9039,9 @@
         createSupabaseTestCustomerButton.addEventListener("click", createSupabaseTestCustomerHandler);
         updateSupabaseTestCustomerButton.addEventListener("click", updateSupabaseTestCustomerHandler);
         deleteSupabaseTestCustomerButton.addEventListener("click", deleteSupabaseTestCustomerHandler);
+        refreshCustomerSourcesButton.addEventListener("click", refreshCustomerSourcesHandler);
+        testHybridMergeButton.addEventListener("click", testHybridMergeHandler);
+        resetCustomerDataModeButton.addEventListener("click", resetCustomerDataModeHandler);
         viewEnvExampleButton.addEventListener("click", showEnvExampleHandler);
         whyLocalStorageButton.addEventListener("click", showWhyLocalStorageHandler);
         runCustomerMigrationDryRunButton.addEventListener("click", runCustomerMigrationDryRunHandler);
@@ -8838,6 +9089,7 @@
         });
 
         fillSettingsForm(readStoredSettings());
+        customerDataModeSelect.value = readStoredSettings().customerDataMode || localStorage.getItem("maxwebstudioCustomerDataMode") || "local";
         renderIntegrations();
         renderSystemStatus();
         syncActiveNav();

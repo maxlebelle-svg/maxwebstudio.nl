@@ -1,13 +1,219 @@
-import { PRIMARY_MODULE_KEYS } from "../config/storageKeys.js";
-import { getCurrentProviderType, PROVIDERS } from "../config/environment.js";
+import { PRIMARY_MODULE_KEYS, STORAGE_KEYS } from "../config/storageKeys.js";
+import { CUSTOMER_DATA_MODES, getCurrentProviderType, PROVIDERS } from "../config/environment.js";
 import { supabaseProvider } from "../providers/supabaseProvider.js";
 import { normalizeCustomer, customerIdentityKeys } from "../utils/customerNormalizer.js";
 import { createRepository } from "./createRepository.js";
 
 const localCustomerRepository = createRepository(PRIMARY_MODULE_KEYS.customers);
 
+function readArray(key) {
+  try {
+    const value = JSON.parse(localStorage.getItem(key) || "[]");
+    return Array.isArray(value) ? value : [];
+  } catch {
+    return [];
+  }
+}
+
+function localCustomersFromStorage() {
+  const sourceKeys = [STORAGE_KEYS.crmCustomers, STORAGE_KEYS.customers];
+  const seen = new Set();
+  return sourceKeys.flatMap((sourceKey) => readArray(sourceKey).map((customer) => ({ ...customer, _localSourceKey: sourceKey })))
+    .map(normalizeCustomer)
+    .filter((customer) => {
+      const key = customer.id || customer.email || `${customer.company}|${customer.phone}`;
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+function sourceLabel(customer = {}) {
+  if (customer.isDemo || customer.isDemoJourney || customer.environment === "demo") return "demo";
+  return customer._source || "local";
+}
+
+export function markCustomerSource(customer = {}, source = "local", extra = {}) {
+  return {
+    ...customer,
+    _source: sourceLabel({ ...customer, _source: source }),
+    _isMigrated: Boolean(customer.supabaseCustomerId || customer.migratedToSupabaseAt || extra.supabaseCustomerId),
+    _supabaseCustomerId: extra.supabaseCustomerId || customer.supabaseCustomerId || customer.id || "",
+    _localCustomerId: extra.localCustomerId || customer._localCustomerId || customer.metadata?.localStorageId || "",
+    _sourceMeta: {
+      ...(customer._sourceMeta || {}),
+      ...extra,
+    },
+  };
+}
+
+export function getCustomerSource(customer = {}) {
+  return sourceLabel(customer);
+}
+
+function mergeSupabaseWithLocal(localCustomer, supabaseCustomer, reason = "supabase_match") {
+  return markCustomerSource({
+    ...localCustomer,
+    ...supabaseCustomer,
+    id: localCustomer.id || supabaseCustomer.id,
+    createdAt: supabaseCustomer.createdAt || localCustomer.createdAt,
+    updatedAt: supabaseCustomer.updatedAt || localCustomer.updatedAt,
+    customerSince: supabaseCustomer.customerSince || localCustomer.customerSince,
+    isDemo: Boolean(localCustomer.isDemo || supabaseCustomer.isDemo),
+    environment: localCustomer.environment === "demo" ? "demo" : supabaseCustomer.environment || localCustomer.environment,
+  }, "hybrid", {
+    reason,
+    localCustomerId: localCustomer.id || "",
+    supabaseCustomerId: supabaseCustomer.id || localCustomer.supabaseCustomerId || "",
+  });
+}
+
+export function mergeCustomerSources(localCustomers = [], supabaseCustomers = []) {
+  const merged = [];
+  const duplicateMerges = [];
+  const usedLocalIds = new Set();
+  const localBySupabaseId = new Map();
+  const localByEmail = new Map();
+  const localByCompanyPhone = new Map();
+  localCustomers.forEach((customer) => {
+    const normalized = normalizeCustomer(customer);
+    const keys = customerIdentityKeys(normalized);
+    if (normalized.supabaseCustomerId) localBySupabaseId.set(String(normalized.supabaseCustomerId), normalized);
+    if (keys.email) localByEmail.set(keys.email, normalized);
+    if (keys.companyPhone) localByCompanyPhone.set(keys.companyPhone, normalized);
+  });
+
+  supabaseCustomers.forEach((customer) => {
+    const normalized = normalizeCustomer(customer);
+    const keys = customerIdentityKeys(normalized);
+    const localMatch = localBySupabaseId.get(String(normalized.id))
+      || (keys.email ? localByEmail.get(keys.email) : null)
+      || (keys.companyPhone ? localByCompanyPhone.get(keys.companyPhone) : null);
+    if (localMatch) {
+      usedLocalIds.add(localMatch.id);
+      const reason = localMatch.supabaseCustomerId === normalized.id ? "supabaseCustomerId" : keys.email && localByEmail.get(keys.email) ? "email" : "company_phone";
+      duplicateMerges.push({ reason, localCustomerId: localMatch.id, supabaseCustomerId: normalized.id, email: normalized.email, company: normalized.company });
+      merged.push(mergeSupabaseWithLocal(localMatch, normalized, reason));
+      return;
+    }
+    merged.push(markCustomerSource(normalized, "supabase", { supabaseCustomerId: normalized.id }));
+  });
+
+  localCustomers.map(normalizeCustomer).forEach((customer) => {
+    if (usedLocalIds.has(customer.id)) return;
+    if (customer.supabaseCustomerId && !customer.isDemo && customer.environment !== "demo") return;
+    merged.push(markCustomerSource(customer, customer.isDemo || customer.environment === "demo" ? "demo" : "local", {
+      localCustomerId: customer.id,
+      supabaseCustomerId: customer.supabaseCustomerId || "",
+    }));
+  });
+
+  return {
+    customers: merged,
+    duplicateMerges,
+    counts: {
+      local: localCustomers.length,
+      supabase: supabaseCustomers.length,
+      hybrid: merged.length,
+      duplicateMerges: duplicateMerges.length,
+      demo: merged.filter((customer) => getCustomerSource(customer) === "demo").length,
+      unmigratedLocal: merged.filter((customer) => getCustomerSource(customer) === "local" && !customer._isMigrated).length,
+    },
+  };
+}
+
+export function listLocalCustomers() {
+  return localCustomersFromStorage().map((customer) => markCustomerSource(customer, customer.isDemo || customer.environment === "demo" ? "demo" : "local", {
+    localCustomerId: customer.id,
+    supabaseCustomerId: customer.supabaseCustomerId || "",
+  }));
+}
+
+export async function listSupabaseCustomers() {
+  const rows = await supabaseProvider.getAll("customers", { limit: 100 });
+  return rows.map((row) => markCustomerSource(mapSupabaseCustomerToLocal(row), "supabase", {
+    supabaseCustomerId: row.id,
+    localCustomerId: row.metadata?.localStorageId || "",
+  }));
+}
+
+export async function listHybridCustomers() {
+  const localCustomers = listLocalCustomers();
+  const supabaseCustomers = await listSupabaseCustomers();
+  return mergeCustomerSources(localCustomers, supabaseCustomers);
+}
+
+export async function listByDataMode(mode = CUSTOMER_DATA_MODES.LOCAL) {
+  if (mode === CUSTOMER_DATA_MODES.SUPABASE_READ) {
+    const customers = await listSupabaseCustomers();
+    return {
+      mode,
+      customers,
+      counts: {
+        local: listLocalCustomers().length,
+        supabase: customers.length,
+        hybrid: customers.length,
+        duplicateMerges: 0,
+        demo: 0,
+        unmigratedLocal: 0,
+      },
+      fallbackUsed: false,
+      error: "",
+      refreshedAt: new Date().toISOString(),
+    };
+  }
+  if (mode === CUSTOMER_DATA_MODES.HYBRID) {
+    try {
+      const merged = await listHybridCustomers();
+      return { mode, ...merged, fallbackUsed: false, error: "", refreshedAt: new Date().toISOString() };
+    } catch (error) {
+      const customers = listLocalCustomers();
+      return {
+        mode,
+        customers,
+        counts: {
+          local: customers.length,
+          supabase: 0,
+          hybrid: customers.length,
+          duplicateMerges: 0,
+          demo: customers.filter((customer) => getCustomerSource(customer) === "demo").length,
+          unmigratedLocal: customers.filter((customer) => getCustomerSource(customer) === "local" && !customer._isMigrated).length,
+        },
+        duplicateMerges: [],
+        fallbackUsed: true,
+        error: error.message || "Supabase customers konden niet worden gelezen.",
+        refreshedAt: new Date().toISOString(),
+      };
+    }
+  }
+  const customers = listLocalCustomers();
+  return {
+    mode: CUSTOMER_DATA_MODES.LOCAL,
+    customers,
+    counts: {
+      local: customers.length,
+      supabase: 0,
+      hybrid: customers.length,
+      duplicateMerges: 0,
+      demo: customers.filter((customer) => getCustomerSource(customer) === "demo").length,
+      unmigratedLocal: customers.filter((customer) => getCustomerSource(customer) === "local" && !customer._isMigrated).length,
+    },
+    duplicateMerges: [],
+    fallbackUsed: false,
+    error: "",
+    refreshedAt: new Date().toISOString(),
+  };
+}
+
 export const CustomerRepository = {
   ...localCustomerRepository,
+  listByDataMode,
+  listLocalCustomers,
+  listSupabaseCustomers,
+  listHybridCustomers,
+  getCustomerSource,
+  mergeCustomerSources,
+  markCustomerSource,
   list(options = {}) {
     if (getCurrentProviderType() === PROVIDERS.SUPABASE_READONLY) {
       return supabaseProvider.getAll("customers", { limit: options.limit || 10 }).then((rows) => rows.map(mapSupabaseCustomerToLocal));
@@ -98,6 +304,8 @@ export function mapSupabaseCustomerToLocal(row = {}) {
     environment: row.environment,
     demoScenarioId: row.demo_scenario_id,
     demoJourneyId: row.demo_journey_id,
+    supabaseCustomerId: row.id,
+    metadata: row.metadata && typeof row.metadata === "object" ? row.metadata : {},
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   });
