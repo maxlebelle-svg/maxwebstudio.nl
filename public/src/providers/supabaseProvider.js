@@ -57,6 +57,17 @@ async function getWriteClient({ allowMigration = false } = {}) {
   return client;
 }
 
+async function getCustomerWriteClient(context = {}) {
+  if (context.customerWrite !== true) throw new Error("Customer write context ontbreekt.");
+  const client = await getSupabaseClient();
+  if (!client) throw new Error("Supabase client niet beschikbaar; customer write blijft geblokkeerd.");
+  return client;
+}
+
+function assertCustomerWriteTable(table) {
+  if (!isCustomersTable(table)) throw new Error("Customer writes ondersteunen alleen de customers tabel.");
+}
+
 export const supabaseProvider = {
   type: "supabase-readonly",
   status: "read-only",
@@ -127,6 +138,45 @@ export const supabaseProvider = {
     const { data, error } = await client.from("customers").delete().eq("id", id).select("*").single();
     if (error) throw new Error(error.message || "Testcustomer verwijderen is mislukt.");
     return { success: true, table: "customers", action: "delete", data };
+  },
+
+  async createCustomer(record = {}, context = {}) {
+    assertCustomerWriteTable("customers");
+    const client = await getCustomerWriteClient(context);
+    const payload = {
+      ...record,
+      updated_at: record.updated_at || new Date().toISOString(),
+      created_at: record.created_at || new Date().toISOString(),
+    };
+    const { data, error } = await client.from("customers").insert(payload).select("*").single();
+    if (error) throw new Error(error.message || "Customer aanmaken in Supabase is mislukt.");
+    return { success: true, table: "customers", action: "create_customer", data };
+  },
+
+  async updateCustomer(id, updates = {}, context = {}) {
+    assertCustomerWriteTable("customers");
+    const client = await getCustomerWriteClient(context);
+    const payload = {
+      ...updates,
+      updated_at: updates.updated_at || new Date().toISOString(),
+    };
+    const { data, error } = await client.from("customers").update(payload).eq("id", id).select("*").single();
+    if (error) throw new Error(error.message || "Customer bijwerken in Supabase is mislukt.");
+    return { success: true, table: "customers", action: "update_customer", data };
+  },
+
+  async archiveCustomer(id, context = {}) {
+    return this.updateCustomer(id, {
+      status: "archived",
+      deleted_at: new Date().toISOString(),
+    }, context);
+  },
+
+  async reactivateCustomer(id, context = {}) {
+    return this.updateCustomer(id, {
+      status: "active",
+      deleted_at: null,
+    }, context);
   },
 
   setAll() {

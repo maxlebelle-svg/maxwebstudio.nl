@@ -206,7 +206,9 @@
               </div>
 
               <div class="admin-profile-actions">
+                <button class="button secondary" id="detail-edit" type="button" disabled>Bewerken</button>
                 <button class="button primary" id="detail-save" type="submit" disabled>Opslaan</button>
+                <button class="button secondary" id="detail-cancel" type="button" disabled>Annuleren</button>
                 <a class="button secondary is-disabled" id="detail-open-website" href="#" target="_blank" rel="noopener" aria-disabled="true">Website openen</a>
                 <a class="button secondary is-disabled" id="detail-open-portal" href="#" target="_blank" rel="noopener" aria-disabled="true">Open klantportaal</a>
                 <button class="button secondary" id="detail-copy-portal" type="button" disabled>Kopieer klantportaal-link</button>
@@ -219,8 +221,12 @@
                 <button class="button secondary" id="detail-view-invoices" type="button" disabled>Facturen bekijken</button>
                 <button class="button secondary" id="detail-create-subscription" type="button" disabled>Abonnement aanmaken</button>
                 <button class="button secondary" id="detail-view-subscriptions" type="button" disabled>Abonnementen bekijken</button>
+                <button class="button secondary" id="detail-refresh-supabase" type="button" disabled>Ververs vanuit Supabase</button>
+                <button class="button secondary" id="detail-history" type="button" disabled>Bekijk wijzigingshistorie</button>
+                <button class="button secondary" id="detail-reactivate" type="button" disabled>Reactiveren</button>
                 <button class="button secondary danger" id="detail-archive" type="button" disabled>Archiveren</button>
               </div>
+              <div class="settings-status-list" id="customer-history-list" hidden></div>
               <p class="admin-form-message" id="customer-detail-message" role="status"></p>
             </form>
           </div>
@@ -1249,6 +1255,7 @@
           dashboardMetrics: null,
           developerModules: null,
           customerSourceStatus: null,
+          customerWriteReadiness: null,
         };
 
         const adminTokenInput = document.getElementById("admin-token");
@@ -1594,7 +1601,9 @@
           customerSince: document.getElementById("detail-customer-since"),
           notes: document.getElementById("detail-notes"),
         };
+        const detailEdit = document.getElementById("detail-edit");
         const detailSave = document.getElementById("detail-save");
+        const detailCancel = document.getElementById("detail-cancel");
         const detailState = document.getElementById("customer-detail-state");
         const detailSubtitle = document.getElementById("customer-detail-subtitle");
         const detailMessage = document.getElementById("customer-detail-message");
@@ -1610,11 +1619,15 @@
         const detailViewInvoices = document.getElementById("detail-view-invoices");
         const detailCreateSubscription = document.getElementById("detail-create-subscription");
         const detailViewSubscriptions = document.getElementById("detail-view-subscriptions");
+        const detailRefreshSupabase = document.getElementById("detail-refresh-supabase");
+        const detailHistory = document.getElementById("detail-history");
+        const detailReactivate = document.getElementById("detail-reactivate");
         const detailAuthStatus = document.getElementById("detail-auth-status");
         const detailLinkLogin = document.getElementById("detail-link-login");
         const detailResetPassword = document.getElementById("detail-reset-password");
         const detailSendInvite = document.getElementById("detail-send-invite");
         const detailArchive = document.getElementById("detail-archive");
+        const customerHistoryList = document.getElementById("customer-history-list");
         const newCustomerModal = document.getElementById("new-customer-modal");
         const newCustomerForm = document.getElementById("new-customer-form");
         const newCustomerSave = document.getElementById("new-customer-save");
@@ -2701,7 +2714,12 @@
             ["Supabase customers data", "Gedeeltelijk mogelijk", "Alleen gecontroleerde customer inserts via migratiemodus"],
             ["Customer Supabase read", "Voorbereid/actief", "CRM kan customers read-only uit Supabase laden"],
             ["Customer hybrid mode", "Actief", "CRM combineert Supabase, ongemigreerde local en demo customers"],
-            ["Customer Supabase edit", "Nog niet actief", "Bewerken van Supabase-klanten komt in Fase 12.2"],
+            ["Customer Supabase create", "Actief onder voorwaarden", "Nieuwe customers kunnen gecontroleerd naar Supabase wanneer write-readiness groen is"],
+            ["Customer Supabase update", "Actief onder voorwaarden", "Supabase/hybrid customers kunnen per klant worden bijgewerkt met conflictcontrole"],
+            ["Customer archive/reactivate", "Actief onder voorwaarden", "Archiveren is soft delete via status/deleted_at; reactiveren zet status terug actief"],
+            ["Customer hard delete", "Geblokkeerd", "Harde deletes voor Supabase customers zijn niet beschikbaar in het CRM"],
+            ["Customer change history", "Actief", "Customer writes loggen created/updated/archived/reactivated/failed in activity log"],
+            ["Customer conflict detection", "Actief", "Remote updated_at blokkeert blind overschrijven en vraagt refresh"],
             ["Local fallback", "Actief", "Hybrid valt terug op localStorage bij Supabase read-fouten"],
             ["Demo customer source", "Local/demo", "Demo-klanten blijven uit localStorage komen"],
             ["CRM Supabase mapping", "Voorbereid", "CustomerRepository kan lokale klantrecords naar customers-rijen mappen"],
@@ -2897,6 +2915,36 @@
             ["Fallback status", status.fallbackUsed ? "Local fallback gebruikt" : "Geen fallback"],
             ["Laatste refresh", status.refreshedAt ? formatDate(status.refreshedAt) : "-"],
             ["Error", status.error || "-"],
+          ]);
+        }
+
+        function renderCustomerWriteReadiness(modules) {
+          const customer = selectedCustomer() || {};
+          const target = isSupabaseManagedCustomer(customer) || currentCustomerDataMode() !== "local" ? "supabase" : "local";
+          const readiness = modules.customerRepository.canWriteCustomer(customer, {
+            target,
+            mode: currentCustomerDataMode(),
+          });
+          const recentCustomerWrites = modules.activityLogService
+            .listRecentActivities(30)
+            .filter((activity) => activity.entityType === "customers" && String(activity.action || "").startsWith("customer_"));
+          const lastWrite = recentCustomerWrites.find((activity) => activity.action !== "customer_write_failed");
+          const lastError = recentCustomerWrites.find((activity) => activity.action === "customer_write_failed");
+          const customersTableConfirmed = readiness.readOnly?.customersTableAccessible === true
+            || (readiness.readOnly?.tableName === "customers" && readiness.readOnly?.success === true);
+          appendDeveloperCard("Customer write readiness", [
+            ["Geselecteerde klant", customer.name || customer.company || customer.id || "Geen klant geselecteerd"],
+            ["Doel", readiness.target],
+            ["Customer data mode", readiness.mode],
+            ["Supabase URL", readiness.supabase?.hasUrl ? "Aanwezig" : "Ontbreekt"],
+            ["Anon key", readiness.supabase?.hasAnonKey ? "Aanwezig" : "Ontbreekt"],
+            ["Client status", readiness.supabase?.clientPackageAvailable ? "Beschikbaar" : "Niet actief"],
+            ["Read-only test", readiness.readOnly?.success || readiness.readOnly?.connected ? "Succesvol" : "Niet succesvol"],
+            ["Customers table write", customersTableConfirmed && readiness.writeTest?.status === "completed" ? "Voorwaardelijk beschikbaar" : "Geblokkeerd"],
+            ["RLS/permission", readiness.writeTest?.error ? readiness.writeTest.error : readiness.allowed ? "Laatste write-test akkoord" : "Niet bevestigd"],
+            ["Laatste write", lastWrite ? `${lastWrite.action} - ${formatDate(lastWrite.createdAt)}` : "-"],
+            ["Laatste fout", lastError ? `${formatDate(lastError.createdAt)} - ${lastError.metadata?.error || "Onbekend"}` : "-"],
+            ["Status", readiness.allowed ? "Klaar voor gecontroleerde customer write" : readiness.reason || "Geblokkeerd"],
           ]);
         }
 
@@ -3296,6 +3344,7 @@
             renderSupabaseReadOnlyTest(readOnlySummary);
             renderSupabaseWriteTestStatus(writeTestReadiness, writeTestResults);
             renderCustomerDataSourceStatus(state.customerSourceStatus);
+            renderCustomerWriteReadiness(modules);
             renderSupabaseSetupChecklist();
             renderCustomerMigrationCard(customerMigration);
             renderCustomerMigrationLogs(customerMigrationLogs);
@@ -4003,6 +4052,97 @@
 
         function currentCustomerDataMode() {
           return customerDataModeSelect.value || readStoredSettings().customerDataMode || localStorage.getItem("maxwebstudioCustomerDataMode") || "local";
+        }
+
+        async function getCustomerRepositoryModule() {
+          const modules = await loadDeveloperModules();
+          return modules.customerRepository;
+        }
+
+        function customerSupabaseId(customer = {}) {
+          return customer._supabaseCustomerId || customer.supabaseCustomerId || customer.id || "";
+        }
+
+        function resetCustomerWriteControls() {
+          state.customerWriteReadiness = null;
+          detailEdit.disabled = true;
+          detailCancel.disabled = true;
+          detailRefreshSupabase.disabled = true;
+          detailHistory.disabled = true;
+          detailReactivate.disabled = true;
+          customerHistoryList.hidden = true;
+          customerHistoryList.replaceChildren();
+        }
+
+        function setCustomerFieldsDisabled(disabled) {
+          Object.values(detailFields).forEach((field) => {
+            field.disabled = disabled;
+          });
+        }
+
+        function renderCustomerHistory(customer) {
+          customerHistoryList.replaceChildren();
+          if (!customer) {
+            customerHistoryList.hidden = true;
+            return;
+          }
+          const history = state.developerModules?.customerRepository?.getCustomerHistory(customer.id) || [];
+          if (!history.length) {
+            const row = document.createElement("div");
+            row.append(createCell("Wijzigingshistorie"), createCell("Nog geen customer write-activiteiten."));
+            customerHistoryList.append(row);
+            customerHistoryList.hidden = false;
+            return;
+          }
+          history.slice(0, 8).forEach((item) => {
+            const changed = item.metadata?.changedFields?.length ? item.metadata.changedFields.join(", ") : item.metadata?.action || "-";
+            const row = document.createElement("div");
+            row.append(
+              createCell(formatDate(item.createdAt)),
+              createCell(`${item.action || "update"} - ${item.metadata?.source || "local"} - ${changed}`, "strong")
+            );
+            customerHistoryList.append(row);
+          });
+          customerHistoryList.hidden = false;
+        }
+
+        async function applyCustomerWriteReadiness(customer) {
+          if (!customer) return;
+          detailHistory.disabled = false;
+          detailRefreshSupabase.disabled = !isSupabaseManagedCustomer(customer);
+          try {
+            const repo = await getCustomerRepositoryModule();
+            const target = isSupabaseManagedCustomer(customer) ? "supabase" : "local";
+            const readiness = repo.canWriteCustomer(customer, { target, mode: currentCustomerDataMode() });
+            state.customerWriteReadiness = readiness;
+            detailEdit.disabled = target === "supabase" && !readiness.allowed;
+            detailCancel.disabled = false;
+            if (target === "local") {
+              setCustomerFieldsDisabled(false);
+              detailSave.disabled = false;
+              detailArchive.disabled = customer.status === "gearchiveerd";
+              detailReactivate.disabled = customer.status !== "gearchiveerd";
+              return;
+            }
+            setCustomerFieldsDisabled(!readiness.allowed);
+            detailSave.disabled = !readiness.allowed;
+            detailArchive.disabled = !readiness.allowed || customer.status === "gearchiveerd";
+            detailReactivate.disabled = !readiness.allowed || customer.status !== "gearchiveerd";
+            renderCustomerSourceDetail(customer, readiness);
+            if (!readiness.allowed) {
+              setDetailMessage(`Supabase customer write geblokkeerd: ${readiness.reason}`, "error");
+            } else if (!detailMessage.textContent) {
+              setDetailMessage("Supabase customer write is gecontroleerd beschikbaar voor deze klant.", "success");
+            }
+          } catch (error) {
+            setCustomerFieldsDisabled(true);
+            detailEdit.disabled = true;
+            detailCancel.disabled = false;
+            detailSave.disabled = true;
+            detailArchive.disabled = true;
+            detailReactivate.disabled = true;
+            setDetailMessage(error.message || "Customer write readiness kon niet worden bepaald.", "error");
+          }
         }
 
         async function loadCustomersByDataMode() {
@@ -5039,7 +5179,7 @@
           }
         }
 
-        function renderCustomerSourceDetail(customer = null) {
+        function renderCustomerSourceDetail(customer = null, readiness = null) {
           customerSourceDetail.replaceChildren();
           if (!customer) return;
           [
@@ -5047,6 +5187,9 @@
             ["Migratiestatus", customer._isMigrated || customer.migrationStatus === "migrated" ? "Gemigreerd" : "Lokaal/niet gemigreerd"],
             ["Supabase customer ID", customer._supabaseCustomerId || customer.supabaseCustomerId || "-"],
             ["Lokale ID", customer._localCustomerId || customer.id || "-"],
+            ["Laatste update", formatDate(customer.updatedAt || customer.updated_at || customer._sourceMeta?.refreshedAt || "")],
+            ["Customer write", readiness ? readiness.allowed ? "Beschikbaar" : "Geblokkeerd" : isSupabaseManagedCustomer(customer) ? "Wordt gecontroleerd" : "LocalStorage"],
+            ["Write reden", readiness?.reason || "-"],
             ["Hybrid waarschuwing", customer._source === "hybrid" ? "Supabase data wint; lokale relatie-ID blijft behouden voor bestaande modules." : "-"],
           ].forEach(([label, value]) => {
             const row = document.createElement("div");
@@ -5105,10 +5248,7 @@
           state.selectedCustomerId = id;
           const customer = selectedCustomer();
           if (!customer) return;
-          if (isSupabaseManagedCustomer(customer)) {
-            setDetailMessage("Bewerken van Supabase-klanten wordt gebouwd in Fase 12.2.", "error");
-            return;
-          }
+          resetCustomerWriteControls();
 
           detailFields.name.value = customer.name || "";
           detailFields.email.value = customer.email || customer.authEmail || "";
@@ -5156,7 +5296,7 @@
           detailLinkLogin.disabled = supabaseManaged || hasLogin || !detailFields.email.value || customer.portalStatus === "geblokkeerd";
           detailResetPassword.disabled = supabaseManaged || !hasLogin || !detailFields.email.value;
           detailSendInvite.disabled = supabaseManaged || !detailFields.email.value;
-          setDetailMessage(supabaseManaged ? "Bewerken van Supabase-klanten wordt gebouwd in Fase 12.2." : "", supabaseManaged ? "error" : "");
+          setDetailMessage(supabaseManaged ? "Supabase customer write readiness wordt gecontroleerd..." : "", supabaseManaged ? "success" : "");
           detailOpenWebsite.href = customer.website || "#";
           detailOpenWebsite.classList.toggle("is-disabled", !customer.website);
           detailOpenWebsite.toggleAttribute("aria-disabled", !customer.website);
@@ -5173,23 +5313,20 @@
           detailViewInvoices.disabled = false;
           detailCreateSubscription.disabled = false;
           detailViewSubscriptions.disabled = false;
+          applyCustomerWriteReadiness(customer);
         }
 
         async function saveCustomer(event) {
           event.preventDefault();
           const customer = selectedCustomer();
           if (!customer) return;
-          if (isSupabaseManagedCustomer(customer)) {
-            setDetailMessage("Archiveren van Supabase-klanten wordt gebouwd in Fase 12.2.", "error");
-            return;
-          }
 
           detailSave.disabled = true;
           detailSave.textContent = "Opslaan...";
           setDetailMessage("", "");
 
           try {
-            const data = await postCustomer({
+            const payload = {
               authUserId: customer.authUserId,
               id: customer.id,
               name: detailFields.name.value,
@@ -5202,16 +5339,47 @@
               portalStatus: detailFields.portalStatus.value,
               customerSince: detailFields.customerSince.value,
               notes: detailFields.notes.value,
-            });
+            };
+            let profile = null;
+            const repo = await getCustomerRepositoryModule();
+            if (isSupabaseManagedCustomer(customer)) {
+              try {
+                profile = await repo.updateCustomer(customer.id, payload, {
+                  oldCustomer: customer,
+                  mode: currentCustomerDataMode(),
+                  baseUpdatedAt: customer.updatedAt,
+                });
+              } catch (error) {
+                if (error.code === "CUSTOMER_UPDATED_AT_MISSING" && window.confirm("Deze Supabase-klant mist updated_at. Toch gecontroleerd opslaan?")) {
+                  profile = await repo.updateCustomer(customer.id, payload, {
+                    oldCustomer: customer,
+                    mode: currentCustomerDataMode(),
+                    baseUpdatedAt: customer.updatedAt,
+                    confirmMissingUpdatedAt: true,
+                  });
+                } else {
+                  throw error;
+                }
+              }
+            } else {
+              profile = await repo.updateCustomer(customer.id, payload, {
+                oldCustomer: customer,
+                target: "local",
+                mode: currentCustomerDataMode(),
+              });
+            }
             await loadCRMData(false);
-            state.selectedCustomerId = data.profile?.id || customer.id;
+            state.selectedCustomerId = profile?.id || customer.id;
             selectCustomer(state.selectedCustomerId);
-            setDetailMessage(data.warning || "Klantprofiel opgeslagen.", data.warning ? "error" : "success");
-            setAdminAccessMessage("Klantprofiel opgeslagen in lokale CRM-opslag.", "success");
+            setDetailMessage("Klantprofiel opgeslagen.", "success");
+            setAdminAccessMessage(isSupabaseManagedCustomer(customer) ? "Klantprofiel gecontroleerd opgeslagen in Supabase customers." : "Klantprofiel opgeslagen in lokale CRM-opslag.", "success");
           } catch (error) {
-            setDetailMessage(error.message || "Klantprofiel kon niet worden opgeslagen.", "error");
+            const message = error.code === "CUSTOMER_CONFLICT"
+              ? "Supabase heeft een nieuwere versie. Ververs klantgegevens voordat je opslaat."
+              : error.message || "Klantprofiel kon niet worden opgeslagen.";
+            setDetailMessage(message, "error");
           } finally {
-            detailSave.disabled = false;
+            detailSave.disabled = isSupabaseManagedCustomer(selectedCustomer()) && !state.customerWriteReadiness?.allowed;
             detailSave.textContent = "Opslaan";
           }
         }
@@ -5223,7 +5391,7 @@
           setNewCustomerMessage("", "");
 
           try {
-            const data = await postCustomer({
+            const payload = {
               name: document.getElementById("new-name").value,
               email: document.getElementById("new-email").value,
               phone: document.getElementById("new-phone").value,
@@ -5234,13 +5402,22 @@
               portalStatus: document.getElementById("new-portal-status").value,
               customerSince: document.getElementById("new-customer-since").value,
               notes: document.getElementById("new-notes").value,
-            });
+            };
+            let profile = null;
+            const mode = currentCustomerDataMode();
+            const repo = await getCustomerRepositoryModule();
+            const createInSupabase = mode !== "local" && window.confirm("Klant in Supabase aanmaken? Kies Annuleren om lokaal op te slaan.");
+            if (createInSupabase) {
+              profile = await repo.createCustomer(payload, { target: "supabase", mode });
+            } else {
+              profile = await repo.createCustomer(payload, { target: "local", mode });
+            }
             await loadCRMData(false);
             newCustomerForm.reset();
             closeModal(newCustomerModal);
-            state.selectedCustomerId = data.profile?.id || "";
+            state.selectedCustomerId = profile?.id || "";
             if (state.selectedCustomerId) selectCustomer(state.selectedCustomerId);
-            setAdminAccessMessage("Nieuwe klant aangemaakt in lokale CRM-opslag.", "success");
+            setAdminAccessMessage(createInSupabase ? "Nieuwe klant aangemaakt in Supabase customers." : "Nieuwe klant aangemaakt in lokale CRM-opslag.", "success");
           } catch (error) {
             setNewCustomerMessage(error.message || "Klant kon niet worden opgeslagen.", "error");
           } finally {
@@ -5361,13 +5538,28 @@
           if (!customer) return;
           const confirmed = window.confirm("Weet je zeker dat je deze klant wilt archiveren?");
           if (!confirmed) return;
+          if (isSupabaseManagedCustomer(customer) && !window.confirm("Supabase-klant archiveren is een soft delete. Bevestig dat je geen hard delete uitvoert.")) return;
           detailArchive.disabled = true;
           detailArchive.textContent = "Archiveren...";
           setDetailMessage("", "");
           try {
-            const data = await postCustomer(currentDetailPayload({ status: "gearchiveerd" }));
+            let profile = null;
+            const repo = await getCustomerRepositoryModule();
+            if (isSupabaseManagedCustomer(customer)) {
+              profile = await repo.archiveCustomer(customer.id, {
+                customer,
+                mode: currentCustomerDataMode(),
+                baseUpdatedAt: customer.updatedAt,
+              });
+            } else {
+              profile = await repo.archiveCustomer(customer.id, {
+                customer,
+                target: "local",
+                mode: currentCustomerDataMode(),
+              });
+            }
             await loadCRMData(false);
-            state.selectedCustomerId = data.profile?.id || customer.id;
+            state.selectedCustomerId = profile?.id || customer.id;
             selectCustomer(state.selectedCustomerId);
             setDetailMessage("Klant gearchiveerd.", "success");
           } catch (error) {
@@ -5376,6 +5568,92 @@
             detailArchive.textContent = "Archiveren";
             detailArchive.disabled = selectedCustomer()?.status === "gearchiveerd";
           }
+        }
+
+        async function reactivateCustomer() {
+          const customer = selectedCustomer();
+          if (!customer) return;
+          if (!window.confirm("Deze klant opnieuw activeren?")) return;
+          detailReactivate.disabled = true;
+          detailReactivate.textContent = "Reactiveren...";
+          setDetailMessage("", "");
+          try {
+            let profile = null;
+            const repo = await getCustomerRepositoryModule();
+            if (isSupabaseManagedCustomer(customer)) {
+              profile = await repo.reactivateCustomer(customer.id, {
+                customer,
+                mode: currentCustomerDataMode(),
+                baseUpdatedAt: customer.updatedAt,
+              });
+            } else {
+              profile = await repo.reactivateCustomer(customer.id, {
+                customer,
+                target: "local",
+                mode: currentCustomerDataMode(),
+              });
+            }
+            await loadCRMData(false);
+            state.selectedCustomerId = profile?.id || customer.id;
+            selectCustomer(state.selectedCustomerId);
+            setDetailMessage("Klant opnieuw geactiveerd.", "success");
+          } catch (error) {
+            setDetailMessage(error.message || "Klant kon niet opnieuw worden geactiveerd.", "error");
+          } finally {
+            detailReactivate.textContent = "Reactiveren";
+            detailReactivate.disabled = selectedCustomer()?.status !== "gearchiveerd" || (isSupabaseManagedCustomer(selectedCustomer()) && !state.customerWriteReadiness?.allowed);
+          }
+        }
+
+        async function refreshSelectedCustomerFromSupabase() {
+          const customer = selectedCustomer();
+          if (!customer || !isSupabaseManagedCustomer(customer)) return;
+          detailRefreshSupabase.disabled = true;
+          detailRefreshSupabase.textContent = "Verversen...";
+          setDetailMessage("", "");
+          try {
+            await loadCRMData(false);
+            const remoteId = customerSupabaseId(customer);
+            const refreshed = state.customers.find((item) => item.id === remoteId || customerSupabaseId(item) === remoteId || item.id === customer.id);
+            state.selectedCustomerId = refreshed?.id || customer.id;
+            selectCustomer(state.selectedCustomerId);
+            setDetailMessage("Klantgegevens opnieuw geladen vanuit de actieve customer data source.", "success");
+          } catch (error) {
+            setDetailMessage(error.message || "Klantgegevens konden niet worden ververst.", "error");
+          } finally {
+            detailRefreshSupabase.textContent = "Ververs vanuit Supabase";
+            detailRefreshSupabase.disabled = !isSupabaseManagedCustomer(selectedCustomer());
+          }
+        }
+
+        function enableCustomerEditing() {
+          const customer = selectedCustomer();
+          if (!customer) return;
+          if (isSupabaseManagedCustomer(customer) && !state.customerWriteReadiness?.allowed) {
+            setDetailMessage(`Supabase customer write geblokkeerd: ${state.customerWriteReadiness?.reason || "voorwaarden ontbreken"}`, "error");
+            return;
+          }
+          setCustomerFieldsDisabled(false);
+          detailSave.disabled = false;
+          detailCancel.disabled = false;
+          setDetailMessage("Klantdetail staat klaar om te bewerken.", "success");
+        }
+
+        function cancelCustomerEditing() {
+          if (!state.selectedCustomerId) return;
+          selectCustomer(state.selectedCustomerId);
+          setDetailMessage("Wijzigingen geannuleerd.", "success");
+        }
+
+        async function toggleCustomerHistory() {
+          const customer = selectedCustomer();
+          if (!customer) return;
+          if (!state.developerModules?.customerRepository) await getCustomerRepositoryModule();
+          if (!customerHistoryList.hidden) {
+            customerHistoryList.hidden = true;
+            return;
+          }
+          renderCustomerHistory(customer);
         }
 
         async function sendInviteFromNewCustomer() {
@@ -8930,6 +9208,11 @@
         detailLinkLogin.addEventListener("click", linkLogin);
         detailResetPassword.addEventListener("click", sendPasswordReset);
         detailSendInvite.addEventListener("click", sendInviteFromDetail);
+        detailEdit.addEventListener("click", enableCustomerEditing);
+        detailCancel.addEventListener("click", cancelCustomerEditing);
+        detailRefreshSupabase.addEventListener("click", refreshSelectedCustomerFromSupabase);
+        detailHistory.addEventListener("click", toggleCustomerHistory);
+        detailReactivate.addEventListener("click", reactivateCustomer);
         detailArchive.addEventListener("click", archiveCustomer);
         detailCopyPortal.addEventListener("click", () => {
           const customer = selectedCustomer();
