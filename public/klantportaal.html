@@ -132,8 +132,11 @@
 
         function renderSessionNotice() {
           const session = readCurrentSession();
-          if (!session) return;
           portalAuthMessage.hidden = false;
+          if (!session) {
+            portalAuthText.textContent = "Demo toegang via link actief. Echte login wordt voorbereid met Supabase Auth.";
+            return;
+          }
           const roleLabel = session.role === "customer" ? "demo-klant" : session.role || "demo-gebruiker";
           if (session.customerId && customerId && String(session.customerId) !== String(customerId)) {
             portalAuthText.textContent = `Ingelogd als ${roleLabel}, maar deze demo-sessie hoort bij een andere klant. Echte beveiliging volgt met Supabase Auth/RLS.`;

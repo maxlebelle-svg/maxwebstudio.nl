@@ -16,6 +16,7 @@ export const STORAGE_KEYS = Object.freeze({
   activityLog: "maxwebstudioActivityLog",
   authUsers: "maxwebstudioAuthUsers",
   currentSession: "maxwebstudioCurrentSession",
+  accountRequests: "maxwebstudioAccountRequests",
 });
 
 export const MODULE_STORAGE_KEYS = Object.freeze({
@@ -28,7 +29,7 @@ export const MODULE_STORAGE_KEYS = Object.freeze({
   invoices: [STORAGE_KEYS.invoices],
   subscriptions: [STORAGE_KEYS.subscriptions],
   settings: [STORAGE_KEYS.settings],
-  auth: [STORAGE_KEYS.authUsers, STORAGE_KEYS.currentSession],
+  auth: [STORAGE_KEYS.authUsers, STORAGE_KEYS.currentSession, STORAGE_KEYS.accountRequests],
   demo: [STORAGE_KEYS.demoEmails, STORAGE_KEYS.importLog, STORAGE_KEYS.activityLog],
 });
 
@@ -47,6 +48,7 @@ export const PRIMARY_MODULE_KEYS = Object.freeze({
   activityLog: STORAGE_KEYS.activityLog,
   authUsers: STORAGE_KEYS.authUsers,
   currentSession: STORAGE_KEYS.currentSession,
+  accountRequests: STORAGE_KEYS.accountRequests,
 });
 
 export function getKnownStorageKeys() {

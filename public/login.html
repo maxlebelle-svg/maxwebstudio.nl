@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex, nofollow" />
-    <title>Demo login | Max Webstudio</title>
-    <meta name="description" content="Demo login voor de Max Webstudio productie-login voorbereiding." />
+    <title>Login | Max Webstudio</title>
+    <meta name="description" content="Login en accountaanvraag voor Max Webstudio." />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -13,34 +13,87 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body class="portal-body">
-    <main class="portal-auth-shell">
+    <main class="portal-auth-shell portal-auth-shell-wide">
       <section class="portal-auth-card">
         <a class="brand" href="index.html" aria-label="Max Webstudio home">
           <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true"><rect x="6" y="6" width="68" height="68" rx="18"></rect><path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path><path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path></svg>
           <span>Max Webstudio</span>
         </a>
         <div>
-          <p class="section-kicker">Demo login</p>
-          <h1>Productie-login voorbereiding</h1>
-          <p>Deze pagina gebruikt tijdelijke demo-rollen. Echte Supabase Auth wordt in een latere fase gekoppeld.</p>
+          <p class="section-kicker">Login</p>
+          <h1>Demo-login en productie-auth staan klaar.</h1>
+          <p>Gebruik demo-login voor testen. Echte Supabase Auth is voorbereid, maar nog niet live gekoppeld.</p>
         </div>
 
-        <div class="portal-login-form" aria-label="Demo rollen">
-          <button class="button primary" type="button" data-demo-role="admin">Login als Demo Admin</button>
-          <button class="button secondary" type="button" data-demo-role="sales">Login als Demo Sales</button>
-          <button class="button secondary" type="button" data-demo-role="developer">Login als Demo Developer</button>
-          <button class="button secondary" type="button" data-demo-role="customer">Login als Demo Klant</button>
-          <button class="button secondary" type="button" data-demo-role="demo_user">Login als Demo Gebruiker</button>
-          <p class="portal-message" id="portal-login-message" role="status" aria-live="polite"></p>
+        <div class="portal-auth-tabs" role="tablist" aria-label="Login opties">
+          <button class="is-active" type="button" data-auth-panel-trigger="demo">Demo login</button>
+          <button type="button" data-auth-panel-trigger="real">Echte login</button>
+          <button type="button" data-auth-panel-trigger="request">Account aanvragen</button>
+          <button type="button" data-auth-panel-trigger="reset">Wachtwoord vergeten</button>
         </div>
+
+        <section class="portal-auth-panel is-active" data-auth-panel="demo">
+          <div class="portal-message" role="note">
+            <strong>Demo actief</strong>
+            <span>Deze rollen gebruiken lokale sessies in je browser. Ideaal voor salesdemo's en interne tests.</span>
+          </div>
+          <div class="portal-login-form portal-demo-role-grid" aria-label="Demo rollen">
+            <button class="button primary" type="button" data-demo-role="admin">Demo Admin</button>
+            <button class="button secondary" type="button" data-demo-role="sales">Demo Sales</button>
+            <button class="button secondary" type="button" data-demo-role="developer">Demo Developer</button>
+            <button class="button secondary" type="button" data-demo-role="customer">Demo Klant</button>
+            <button class="button secondary" type="button" data-demo-role="demo_user">Demo Gebruiker</button>
+          </div>
+        </section>
+
+        <section class="portal-auth-panel" data-auth-panel="real" hidden>
+          <div class="portal-message" role="note">
+            <strong>Echte login voorbereid</strong>
+            <span id="real-login-status">Supabase Auth wordt gecontroleerd...</span>
+          </div>
+          <form class="portal-login-form" id="real-login-form">
+            <label for="login-email">E-mailadres<input id="login-email" name="email" type="email" autocomplete="email" required /></label>
+            <label for="login-password">Wachtwoord<input id="login-password" name="password" type="password" autocomplete="current-password" required /></label>
+            <button class="button primary" type="submit">Inloggen</button>
+            <button class="button secondary" type="button" data-auth-panel-trigger="reset">Wachtwoord vergeten</button>
+          </form>
+        </section>
+
+        <section class="portal-auth-panel" data-auth-panel="request" hidden>
+          <div class="portal-message" role="note">
+            <strong>Account aanvragen</strong>
+            <span>Deze aanvraag wordt lokaal geregistreerd voor admin-review. Er wordt nog geen echte Supabase gebruiker aangemaakt.</span>
+          </div>
+          <form class="portal-login-form" id="account-request-form">
+            <label for="request-name">Naam<input id="request-name" name="name" type="text" autocomplete="name" required /></label>
+            <label for="request-email">E-mailadres<input id="request-email" name="email" type="email" autocomplete="email" required /></label>
+            <label for="request-company">Bedrijfsnaam<input id="request-company" name="company" type="text" autocomplete="organization" /></label>
+            <label for="request-type">Rol/type<select id="request-type" name="type"><option value="klant">Klant</option><option value="medewerker">Medewerker</option></select></label>
+            <button class="button primary" type="submit">Account aanvragen</button>
+          </form>
+        </section>
+
+        <section class="portal-auth-panel" data-auth-panel="reset" hidden>
+          <div class="portal-message" role="note">
+            <strong>Wachtwoord reset voorbereid</strong>
+            <span>Resetlinks worden later via Supabase Auth verstuurd. Zolang Auth niet actief is, wordt er geen e-mail geclaimd.</span>
+          </div>
+          <form class="portal-login-form" id="password-reset-form">
+            <label for="reset-email">E-mailadres<input id="reset-email" name="email" type="email" autocomplete="email" required /></label>
+            <button class="button primary" type="submit">Resetlink aanvragen</button>
+          </form>
+        </section>
+
+        <p class="portal-message" id="portal-login-message" role="status" aria-live="polite"></p>
       </section>
       <aside class="portal-auth-aside">
         <p class="section-kicker">Auth architectuur</p>
-        <h2>Rollen en permissies staan klaar voor productie.</h2>
+        <h2>Demo blijft werken terwijl productie-auth wordt voorbereid.</h2>
         <ul>
           <li>Demo-sessies blijven lokaal in deze browser.</li>
-          <li>Geen wachtwoorden of secrets worden opgeslagen.</li>
-          <li>Supabase Auth en RLS worden later live gekoppeld.</li>
+          <li>Echte login gebruikt straks Supabase Auth en RLS.</li>
+          <li>Geen wachtwoorden, API keys of secrets worden in de frontend opgeslagen.</li>
+          <li>Accountaanvragen worden tijdelijk lokaal bewaard in <code>maxwebstudioAccountRequests</code>.</li>
         </ul>
       </aside>
     </main>
@@ -48,18 +101,52 @@
     <script>
       (() => {
         const message = document.querySelector("#portal-login-message");
-        const buttons = [...document.querySelectorAll("[data-demo-role]")];
+        const demoButtons = [...document.querySelectorAll("[data-demo-role]")];
+        const panelButtons = [...document.querySelectorAll("[data-auth-panel-trigger]")];
+        const panels = [...document.querySelectorAll("[data-auth-panel]")];
+        const realLoginForm = document.getElementById("real-login-form");
+        const accountRequestForm = document.getElementById("account-request-form");
+        const passwordResetForm = document.getElementById("password-reset-form");
+        const realLoginStatus = document.getElementById("real-login-status");
 
         function setMessage(text, type = "") {
           message.textContent = text;
           message.className = `portal-message ${type}`.trim();
         }
 
+        function activatePanel(name) {
+          panels.forEach((panel) => {
+            const active = panel.dataset.authPanel === name;
+            panel.hidden = !active;
+            panel.classList.toggle("is-active", active);
+          });
+          panelButtons.forEach((button) => {
+            button.classList.toggle("is-active", button.dataset.authPanelTrigger === name);
+          });
+        }
+
+        async function loadAuth() {
+          return import("./src/services/authService.js");
+        }
+
+        async function renderAuthStatus() {
+          try {
+            const auth = await loadAuth();
+            const status = auth.getAuthStatus();
+            realLoginStatus.textContent = status.supabaseAuthConfigured
+              ? "Supabase configuratie is gevonden, maar echte Auth-login is nog niet live actief."
+              : "Echte login is voorbereid maar nog niet actief. Gebruik demo-login voor testen.";
+          } catch (error) {
+            console.error("Auth status failed", error);
+            realLoginStatus.textContent = "Auth-status kon niet worden geladen. Gebruik demo-login voor testen.";
+          }
+        }
+
         async function loginAs(role) {
           setMessage("Demo-sessie wordt gestart...");
-          buttons.forEach((button) => { button.disabled = true; });
+          demoButtons.forEach((button) => { button.disabled = true; });
           try {
-            const auth = await import("./src/services/authService.js");
+            const auth = await loadAuth();
             const { session } = auth.loginDemoUser(role);
             const redirect = auth.getLoginRedirectForRole(session.role, session.customerId);
             setMessage("Demo-sessie actief. Je wordt doorgestuurd.", "success");
@@ -67,13 +154,58 @@
           } catch (error) {
             console.error("Demo login failed", error);
             setMessage("Demo login kon niet worden gestart.", "error");
-            buttons.forEach((button) => { button.disabled = false; });
+            demoButtons.forEach((button) => { button.disabled = false; });
           }
         }
 
-        buttons.forEach((button) => {
+        realLoginForm.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          const data = Object.fromEntries(new FormData(realLoginForm).entries());
+          setMessage("Echte login wordt gecontroleerd...");
+          try {
+            const auth = await loadAuth();
+            await auth.signInWithEmail(data.email, data.password);
+            setMessage("Login gelukt.", "success");
+          } catch (error) {
+            console.info("Supabase login prepared", error);
+            setMessage(error.message || "Supabase Auth nog niet actief/geconfigureerd.", "error");
+          }
+        });
+
+        accountRequestForm.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          const data = Object.fromEntries(new FormData(accountRequestForm).entries());
+          try {
+            const auth = await loadAuth();
+            const request = auth.saveAccountRequest(data);
+            accountRequestForm.reset();
+            setMessage(`Accountaanvraag opgeslagen voor ${request.email}. Admin kan deze lokaal bekijken.`, "success");
+          } catch (error) {
+            console.error("Account request failed", error);
+            setMessage("Accountaanvraag kon niet worden opgeslagen.", "error");
+          }
+        });
+
+        passwordResetForm.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          const data = Object.fromEntries(new FormData(passwordResetForm).entries());
+          try {
+            const auth = await loadAuth();
+            await auth.resetPassword(data.email);
+            setMessage("Resetlink aangevraagd.", "success");
+          } catch (error) {
+            console.info("Password reset prepared", error);
+            setMessage(error.message || "Wachtwoord reset is voorbereid maar nog niet actief.", "error");
+          }
+        });
+
+        panelButtons.forEach((button) => {
+          button.addEventListener("click", () => activatePanel(button.dataset.authPanelTrigger));
+        });
+        demoButtons.forEach((button) => {
           button.addEventListener("click", () => loginAs(button.dataset.demoRole));
         });
+        renderAuthStatus();
       })();
     </script>
   </body>

@@ -762,6 +762,8 @@
                 <button class="button secondary" id="run-data-validation" type="button">Run data validatie</button>
                 <button class="button secondary" id="seed-demo-users" type="button">Seed demo users</button>
                 <button class="button secondary" id="clear-demo-session" type="button">Clear demo session</button>
+                <a class="button secondary" href="login.html" target="_blank" rel="noopener">Open loginpagina</a>
+                <button class="button secondary" id="view-account-requests" type="button">Bekijk account requests</button>
                 <button class="button secondary" id="view-migration-plan" type="button">Bekijk migratieplan</button>
                 <button class="button secondary" id="view-planned-tables" type="button">Bekijk geplande tabellen</button>
                 <button class="button secondary" id="run-supabase-migration-check" type="button">Run localStorage migratie-check</button>
@@ -1608,6 +1610,7 @@
         const runDataValidation = document.getElementById("run-data-validation");
         const seedDemoUsersButton = document.getElementById("seed-demo-users");
         const clearDemoSessionButton = document.getElementById("clear-demo-session");
+        const viewAccountRequestsButton = document.getElementById("view-account-requests");
         const viewMigrationPlanButton = document.getElementById("view-migration-plan");
         const viewPlannedTablesButton = document.getElementById("view-planned-tables");
         const runSupabaseMigrationCheckButton = document.getElementById("run-supabase-migration-check");
@@ -2611,8 +2614,13 @@
             ["Auth modellen", "Voorbereid", "AuthUser, Session en Permission staan klaar"],
             ["Rollen", "Voorbereid", "super_admin, admin, sales, developer, support, customer en demo_user"],
             ["Permissions", "Voorbereid", "Centrale permissiematrix voorbereid voor navigatie en acties"],
+            ["Auth provider factory", "Gereed", "Demo auth en Supabase Auth provider delen dezelfde login-service laag"],
+            ["Demo auth provider", "Gereed", "Lokale demo-users, role switch en sessies blijven actief"],
+            ["Supabase auth provider", "Voorbereid", "E-mail login, reset en registratie hebben veilige placeholders zonder fake succes"],
+            ["Login UI", "Voorbereid", "Demo login, echte login, account aanvraag en resetflow staan gescheiden op login.html"],
+            ["Route guards", "Voorbereid", "Waarschuwingslaag staat klaar zonder bestaande demo-routes hard te blokkeren"],
             ["Demo login", "Gereed", "Lokale demo-sessies actief via login.html"],
-            ["Supabase Auth", "Niet actief", "Wordt in Fase 11.2+ later live gekoppeld"],
+            ["Supabase Auth", "Niet actief", "Echte Supabase Auth is voorbereid, maar nog niet live gekoppeld"],
             ["Echte wachtwoorden", "Niet actief", "Geen wachtwoorden of secrets in de demo-authlaag"],
             ["Storage voorbereiding", "Niet actief", "Bestandsmetadata is migratieklaar, echte opslag later"],
             ["Resend voorbereiding", "Voorbereid", "Publieke leadmails blijven server-side via bestaande functie"],
@@ -2816,6 +2824,88 @@
           }
         }
 
+        function renderAuthProviderStatus(authService) {
+          const status = authService.getAuthStatus();
+          const demo = status.demoStatus || {};
+          const supabase = status.supabaseStatus || {};
+          appendDeveloperCard("Auth status", [
+            ["Auth mode", status.mode],
+            ["Supabase Auth geconfigureerd", status.supabaseAuthConfigured ? "Ja" : "Nee"],
+            ["Supabase Auth actief", status.supabaseAuthActive ? "Ja" : "Nee"],
+            ["Demo auth actief", status.demoAuthActive ? "Ja" : "Nee"],
+            ["Huidige sessie", demo.session ? `${demo.currentUser?.name || demo.currentUser?.email || demo.session.userId} (${demo.session.role})` : "Geen sessie"],
+            ["Demo users", String(demo.demoUsers || 0)],
+            ["Account requests", String(demo.accountRequests || 0)],
+            ["Laatste auth activiteit", demo.lastActivity ? `${demo.lastActivity.action || "auth"} - ${formatDate(demo.lastActivity.createdAt)}` : "Geen activiteit"],
+            ["Supabase reden", supabase.reason || status.reason],
+          ]);
+        }
+
+        function accountRequestStatusClass(status) {
+          const normalized = normalize(status);
+          if (normalized === "goedgekeurd_demo") return "status-active";
+          if (normalized === "bekeken") return "status-prepared";
+          if (normalized === "verwijderd") return "status-attention";
+          return "status-warning";
+        }
+
+        function renderAccountRequestsList(authService) {
+          const requests = authService.listAccountRequests();
+          const card = document.createElement("article");
+          card.className = "admin-card request-card";
+          card.append(createCell("Account requests", "strong"));
+          if (!requests.length) {
+            card.append(createCell("Nog geen accountaanvragen. Nieuwe aanvragen via login.html worden lokaal opgeslagen."));
+            developerToolsOutput.append(card);
+            return;
+          }
+          requests.slice(0, 10).forEach((request) => {
+            const row = document.createElement("div");
+            row.className = "settings-card-heading";
+            const info = document.createElement("div");
+            const title = document.createElement("strong");
+            const meta = document.createElement("span");
+            title.textContent = `${request.name || "Onbekend"} - ${request.email || "geen e-mail"}`;
+            meta.textContent = `${request.company || "Geen bedrijf"} - ${request.type || "klant"} - ${formatDate(request.createdAt)}`;
+            info.append(title, meta);
+            const actions = document.createElement("div");
+            actions.className = "settings-actions";
+            const status = createBadge(request.status || "nieuw", accountRequestStatusClass(request.status));
+            const viewed = document.createElement("button");
+            viewed.className = "button secondary";
+            viewed.type = "button";
+            viewed.textContent = "Markeer bekeken";
+            viewed.addEventListener("click", async () => {
+              authService.updateAccountRequestStatus(request.id, "bekeken");
+              await renderDeveloperToolsSummary({ showAccountRequests: true });
+              setSettingsMessage("Account request gemarkeerd als bekeken.", "success");
+            });
+            const approved = document.createElement("button");
+            approved.className = "button secondary";
+            approved.type = "button";
+            approved.textContent = "Goedgekeurd demo";
+            approved.addEventListener("click", async () => {
+              authService.updateAccountRequestStatus(request.id, "goedgekeurd_demo");
+              await renderDeveloperToolsSummary({ showAccountRequests: true });
+              setSettingsMessage("Account request demo-goedgekeurd. Er is geen echte gebruiker aangemaakt.", "success");
+            });
+            const remove = document.createElement("button");
+            remove.className = "button secondary";
+            remove.type = "button";
+            remove.textContent = "Verwijder";
+            remove.addEventListener("click", async () => {
+              if (!window.confirm("Account request lokaal verwijderen?")) return;
+              authService.deleteAccountRequest(request.id);
+              await renderDeveloperToolsSummary({ showAccountRequests: true });
+              setSettingsMessage("Account request verwijderd.", "success");
+            });
+            actions.append(status, viewed, approved, remove);
+            row.append(info, actions);
+            card.append(row);
+          });
+          developerToolsOutput.append(card);
+        }
+
         async function renderDeveloperToolsSummary(extra = {}) {
           if (!isDeveloperModeEnabled()) return;
           developerToolsOutput.replaceChildren();
@@ -2840,6 +2930,7 @@
             ]);
             renderSupabaseConnectionStatus(providerStatus);
             renderSupabaseSetupChecklist();
+            renderAuthProviderStatus(modules.authService);
             appendDeveloperCard("Auth sessie", [
               ["Gebruiker", user?.name || user?.email || "Geen sessie"],
               ["Rol", permissionPreview.roleLabel],
@@ -2855,6 +2946,7 @@
             appendDeveloperCard("Laatste activiteiten", recentActivities.length
               ? recentActivities.map((activity) => [activity.action || "Activiteit", formatDate(activity.createdAt)])
               : ["Nog geen activiteit gelogd."]);
+            if (extra.showAccountRequests) renderAccountRequestsList(modules.authService);
             if (extra.migrationSummary) renderMigrationSummary(extra.migrationSummary);
             if (extra.validationReport) renderValidationSummary(extra.validationReport);
           } catch (error) {
@@ -2900,6 +2992,18 @@
           } catch (error) {
             console.error("Demo users could not be seeded", error);
             setSettingsMessage("Demo users konden niet worden voorbereid.", "error");
+          }
+        }
+
+        async function showAccountRequestsHandler() {
+          try {
+            const { activityLogService } = await loadDeveloperModules();
+            activityLogService.logActivity("developer_tools", "auth", "view_account_requests", { source: "admin-dashboard" });
+            await renderDeveloperToolsSummary({ showAccountRequests: true });
+            setSettingsMessage("Account requests getoond.", "success");
+          } catch (error) {
+            console.error("Account requests could not be rendered", error);
+            setSettingsMessage("Account requests konden niet worden getoond.", "error");
           }
         }
 
@@ -8052,6 +8156,7 @@
         runDataValidation.addEventListener("click", runDataValidationHandler);
         seedDemoUsersButton.addEventListener("click", seedDemoUsersHandler);
         clearDemoSessionButton.addEventListener("click", logoutDemoSession);
+        viewAccountRequestsButton.addEventListener("click", showAccountRequestsHandler);
         viewMigrationPlanButton.addEventListener("click", showMigrationPlanHandler);
         viewPlannedTablesButton.addEventListener("click", showPlannedTablesHandler);
         runSupabaseMigrationCheckButton.addEventListener("click", runSupabaseMigrationCheckHandler);

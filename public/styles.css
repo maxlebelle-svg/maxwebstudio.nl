@@ -6045,6 +6045,10 @@ h3 {
   align-items: center;
 }
 
+.portal-auth-shell-wide {
+  grid-template-columns: minmax(340px, 1.15fr) minmax(300px, 0.85fr);
+}
+
 .portal-shell {
   display: grid;
   gap: clamp(22px, 3vw, 34px);
@@ -6117,6 +6121,56 @@ h3 {
   color: var(--white);
   background: rgba(255, 255, 255, 0.08);
   font: inherit;
+}
+
+.portal-login-form select {
+  min-height: 52px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  padding: 0 14px;
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.08);
+  font: inherit;
+}
+
+.portal-auth-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.portal-auth-tabs button {
+  flex: 1 1 150px;
+  border: 0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: rgba(255, 255, 255, 0.72);
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.portal-auth-tabs button:hover,
+.portal-auth-tabs button.is-active {
+  color: var(--white);
+  background: rgba(37, 99, 235, 0.72);
+  transform: translateY(-1px);
+}
+
+.portal-auth-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.portal-demo-role-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .portal-header {
@@ -7840,7 +7894,10 @@ h3 {
   .compact-admin-grid,
   .payment-layout,
   .payment-configurator,
-  .intake-shell {
+  .intake-shell,
+  .portal-auth-shell,
+  .portal-auth-shell-wide,
+  .portal-demo-role-grid {
     grid-template-columns: 1fr;
   }
 
