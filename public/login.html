@@ -4,14 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex, nofollow" />
-    <title>Inloggen | Max Webstudio Klantenportaal</title>
-    <meta name="description" content="Log in op het Max Webstudio klantenportaal." />
+    <title>Demo login | Max Webstudio</title>
+    <meta name="description" content="Demo login voor de Max Webstudio productie-login voorbereiding." />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
   <body class="portal-body">
     <main class="portal-auth-shell">
@@ -21,107 +20,61 @@
           <span>Max Webstudio</span>
         </a>
         <div>
-          <p class="section-kicker">Klantenportaal</p>
-          <h1>Welkom terug</h1>
-          <p>Log in om je website, onderhoud en wijzigingsverzoeken te bekijken.</p>
+          <p class="section-kicker">Demo login</p>
+          <h1>Productie-login voorbereiding</h1>
+          <p>Deze pagina gebruikt tijdelijke demo-rollen. Echte Supabase Auth wordt in een latere fase gekoppeld.</p>
         </div>
 
-        <form class="portal-login-form" id="portal-login-form">
-          <label for="portal-email">E-mailadres<input id="portal-email" name="email" type="email" autocomplete="email" required /></label>
-          <label for="portal-password">Wachtwoord<input id="portal-password" name="password" type="password" autocomplete="current-password" required /></label>
-          <button class="button primary" id="portal-login-button" type="submit">Inloggen</button>
-          <button class="button secondary" id="portal-reset-button" type="button">Wachtwoord vergeten</button>
+        <div class="portal-login-form" aria-label="Demo rollen">
+          <button class="button primary" type="button" data-demo-role="admin">Login als Demo Admin</button>
+          <button class="button secondary" type="button" data-demo-role="sales">Login als Demo Sales</button>
+          <button class="button secondary" type="button" data-demo-role="developer">Login als Demo Developer</button>
+          <button class="button secondary" type="button" data-demo-role="customer">Login als Demo Klant</button>
+          <button class="button secondary" type="button" data-demo-role="demo_user">Login als Demo Gebruiker</button>
           <p class="portal-message" id="portal-login-message" role="status" aria-live="polite"></p>
-        </form>
+        </div>
       </section>
       <aside class="portal-auth-aside">
-        <p class="section-kicker">Websitebeheer</p>
-        <h2>Alles rond je website overzichtelijk op één plek.</h2>
+        <p class="section-kicker">Auth architectuur</p>
+        <h2>Rollen en permissies staan klaar voor productie.</h2>
         <ul>
-          <li>Bekijk je onderhoudspakket en websitegegevens.</li>
-          <li>Volg wijzigingsverzoeken en updates.</li>
-          <li>Geef snel een nieuwe wijziging door.</li>
+          <li>Demo-sessies blijven lokaal in deze browser.</li>
+          <li>Geen wachtwoorden of secrets worden opgeslagen.</li>
+          <li>Supabase Auth en RLS worden later live gekoppeld.</li>
         </ul>
       </aside>
     </main>
 
     <script>
-      const loginForm = document.querySelector("#portal-login-form");
-      const emailInput = document.querySelector("#portal-email");
-      const passwordInput = document.querySelector("#portal-password");
-      const loginButton = document.querySelector("#portal-login-button");
-      const resetButton = document.querySelector("#portal-reset-button");
-      const message = document.querySelector("#portal-login-message");
+      (() => {
+        const message = document.querySelector("#portal-login-message");
+        const buttons = [...document.querySelectorAll("[data-demo-role]")];
 
-      async function loadSupabase() {
-        const response = await fetch("/.netlify/functions/client-auth-config", { headers: { Accept: "application/json" } });
-        const config = await response.json().catch(() => ({}));
-
-        if (!response.ok || !config.success) {
-          throw new Error(config.error || "Supabase Auth is nog niet geconfigureerd.");
+        function setMessage(text, type = "") {
+          message.textContent = text;
+          message.className = `portal-message ${type}`.trim();
         }
 
-        return window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
-      }
-
-      function setMessage(text, type = "") {
-        message.textContent = text;
-        message.className = `portal-message ${type}`.trim();
-      }
-
-      async function initLogin() {
-        let client;
-
-        try {
-          client = await loadSupabase();
-          const { data } = await client.auth.getSession();
-          if (data.session) window.location.href = "/client-dashboard.html";
-        } catch (error) {
-          setMessage(error.message || "Inloggen is tijdelijk niet beschikbaar.", "error");
-          loginButton.disabled = true;
-          resetButton.disabled = true;
-          return;
+        async function loginAs(role) {
+          setMessage("Demo-sessie wordt gestart...");
+          buttons.forEach((button) => { button.disabled = true; });
+          try {
+            const auth = await import("./src/services/authService.js");
+            const { session } = auth.loginDemoUser(role);
+            const redirect = auth.getLoginRedirectForRole(session.role, session.customerId);
+            setMessage("Demo-sessie actief. Je wordt doorgestuurd.", "success");
+            window.location.href = redirect;
+          } catch (error) {
+            console.error("Demo login failed", error);
+            setMessage("Demo login kon niet worden gestart.", "error");
+            buttons.forEach((button) => { button.disabled = false; });
+          }
         }
 
-        loginForm.addEventListener("submit", async (event) => {
-          event.preventDefault();
-          setMessage("");
-          loginButton.disabled = true;
-          loginButton.textContent = "Inloggen...";
-
-          const { error } = await client.auth.signInWithPassword({
-            email: emailInput.value.trim(),
-            password: passwordInput.value,
-          });
-
-          if (error) {
-            setMessage("Controleer je e-mailadres en wachtwoord.", "error");
-            loginButton.disabled = false;
-            loginButton.textContent = "Inloggen";
-            return;
-          }
-
-          window.location.href = "/client-dashboard.html";
+        buttons.forEach((button) => {
+          button.addEventListener("click", () => loginAs(button.dataset.demoRole));
         });
-
-        resetButton.addEventListener("click", async () => {
-          const email = emailInput.value.trim();
-          if (!email) {
-            setMessage("Vul eerst je e-mailadres in.", "error");
-            return;
-          }
-
-          resetButton.disabled = true;
-          const { error } = await client.auth.resetPasswordForEmail(email, {
-            redirectTo: `${window.location.origin}/login.html`,
-          });
-          resetButton.disabled = false;
-
-          setMessage(error ? "De resetmail kon niet worden verstuurd." : "Als dit e-mailadres bekend is, ontvang je een resetlink.", error ? "error" : "success");
-        });
-      }
-
-      initLogin();
+      })();
     </script>
   </body>
 </html>

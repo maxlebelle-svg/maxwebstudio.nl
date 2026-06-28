@@ -28,6 +28,11 @@
         <span>Deze pagina gebruikt lokale data uit deze browser en heeft nog geen echte login of beveiliging. Er worden geen interne admin-notities getoond.</span>
       </section>
 
+      <section class="portal-message" id="portal-auth-message" role="note" hidden>
+        <strong>Demo auth</strong>
+        <span id="portal-auth-text"></span>
+      </section>
+
       <section class="admin-grid customer-portal-kpis" aria-label="Klantoverzicht">
         <article class="admin-card metric-card"><span>Open offertes</span><strong id="metric-quotes">0</strong><small>Concept of verzonden</small></article>
         <article class="admin-card metric-card"><span>Open facturen</span><strong id="metric-invoices">0</strong><small id="metric-invoice-total">€ 0,00 openstaand</small></article>
@@ -74,6 +79,8 @@
         const customerId = params.get("customerId") || "";
         const portalTitle = document.getElementById("portal-title");
         const portalSubtitle = document.getElementById("portal-subtitle");
+        const portalAuthMessage = document.getElementById("portal-auth-message");
+        const portalAuthText = document.getElementById("portal-auth-text");
         const customerProfile = document.getElementById("customer-profile");
         const quoteList = document.getElementById("portal-quotes");
         const invoiceList = document.getElementById("portal-invoices");
@@ -115,9 +122,31 @@
           return [];
         }
 
+        function readCurrentSession() {
+          try {
+            return JSON.parse(localStorage.getItem("maxwebstudioCurrentSession") || "null");
+          } catch {
+            return null;
+          }
+        }
+
+        function renderSessionNotice() {
+          const session = readCurrentSession();
+          if (!session) return;
+          portalAuthMessage.hidden = false;
+          const roleLabel = session.role === "customer" ? "demo-klant" : session.role || "demo-gebruiker";
+          if (session.customerId && customerId && String(session.customerId) !== String(customerId)) {
+            portalAuthText.textContent = `Ingelogd als ${roleLabel}, maar deze demo-sessie hoort bij een andere klant. Echte beveiliging volgt met Supabase Auth/RLS.`;
+            return;
+          }
+          portalAuthText.textContent = `Ingelogd als ${roleLabel}. Dit is een lokale demo-sessie; echte Supabase Auth wordt later gekoppeld.`;
+        }
+
         function belongsToCustomer(item) {
           return [item.customerId, item.profileId, item.authUserId].filter(Boolean).map(String).includes(String(customerId));
         }
+
+        renderSessionNotice();
 
         function statusClass(value) {
           const status = normalize(value);

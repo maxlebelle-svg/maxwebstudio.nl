@@ -44,6 +44,29 @@
         </nav>
         <article class="admin-card admin-token-card">
           <div>
+            <strong>Auth voorbereiding</strong>
+            <span id="auth-session-summary">Geen actieve sessie — demo/auth voorbereiding.</span>
+          </div>
+          <div class="settings-status-list" id="auth-session-status"></div>
+          <label for="auth-role-switcher">Wissel demo rol</label>
+          <div class="admin-profile-inline">
+            <select id="auth-role-switcher">
+              <option value="admin">Demo Admin</option>
+              <option value="sales">Demo Sales</option>
+              <option value="developer">Demo Developer</option>
+              <option value="support">Demo Support</option>
+              <option value="customer">Demo Klant</option>
+              <option value="demo_user">Demo Gebruiker</option>
+            </select>
+            <button class="button secondary" id="auth-switch-role" type="button">Wissel</button>
+          </div>
+          <div class="settings-actions">
+            <a class="button secondary" href="login.html">Open login</a>
+            <button class="button secondary" id="auth-logout" type="button">Uitloggen</button>
+          </div>
+        </article>
+        <article class="admin-card admin-token-card">
+          <div>
             <strong>Admin toegang</strong>
             <span>Gebruik het interne admin-token om CRM-data te laden en klanten te beheren.</span>
           </div>
@@ -734,6 +757,8 @@
               <div class="settings-actions">
                 <button class="button secondary" id="run-migration-analysis" type="button">Run migratie-analyse</button>
                 <button class="button secondary" id="run-data-validation" type="button">Run data validatie</button>
+                <button class="button secondary" id="seed-demo-users" type="button">Seed demo users</button>
+                <button class="button secondary" id="clear-demo-session" type="button">Clear demo session</button>
               </div>
               <div class="admin-grid compact-admin-grid" id="developer-tools-output"></div>
             </article>
@@ -971,6 +996,8 @@
         const demoEmailsStorageKey = "maxwebstudioDemoEmails";
         const importLogStorageKey = "maxwebstudioImportLog";
         const activityLogStorageKey = "maxwebstudioActivityLog";
+        const authUsersStorageKey = "maxwebstudioAuthUsers";
+        const currentSessionStorageKey = "maxwebstudioCurrentSession";
         const demoScenarioId = "maxwebstudio-demo-001";
         const demoCustomerId = "demo-customer-timmerbedrijf-de-vries";
         const demoWebsiteId = "demo-website-timmerbedrijf-de-vries";
@@ -994,6 +1021,8 @@
           { key: demoEmailsStorageKey, label: "Demo e-mails", description: "Lokale e-mailpreview inbox voor demo-klantreizen" },
           { key: importLogStorageKey, label: "Importlog", description: "Lokaal logboek van JSON imports/restores" },
           { key: activityLogStorageKey, label: "Activity log", description: "Voorbereid lokaal activiteitenlogboek voor productieplatform" },
+          { key: authUsersStorageKey, label: "Auth users", description: "Lokale demo-users voor rollen en permissies" },
+          { key: currentSessionStorageKey, label: "Current session", description: "Tijdelijke demo-sessie voor authvoorbereiding" },
         ];
         const completedStatuses = new Set(["afgerond"]);
         const statusLabels = {
@@ -1177,6 +1206,11 @@
         };
 
         const adminTokenInput = document.getElementById("admin-token");
+        const authSessionSummary = document.getElementById("auth-session-summary");
+        const authSessionStatus = document.getElementById("auth-session-status");
+        const authRoleSwitcher = document.getElementById("auth-role-switcher");
+        const authSwitchRole = document.getElementById("auth-switch-role");
+        const authLogout = document.getElementById("auth-logout");
         const adminNavLinks = [...document.querySelectorAll(".admin-sidebar-nav a")];
         const adminLoadButton = document.getElementById("admin-load");
         const adminAccessMessage = document.getElementById("admin-access-message");
@@ -1562,6 +1596,8 @@
         const developerToolsOutput = document.getElementById("developer-tools-output");
         const runMigrationAnalysis = document.getElementById("run-migration-analysis");
         const runDataValidation = document.getElementById("run-data-validation");
+        const seedDemoUsersButton = document.getElementById("seed-demo-users");
+        const clearDemoSessionButton = document.getElementById("clear-demo-session");
         const demoEmailList = document.getElementById("demo-email-list");
         const demoImportPreview = document.getElementById("demo-import-preview");
         const importLogList = document.getElementById("import-log-list");
@@ -2556,7 +2592,12 @@
             ["Providerlaag", "Gereed", "localStorage en Supabase providers delen dezelfde interface"],
             ["Repositories", "Gereed", "Modules kunnen via repositories naar data lezen/schrijven"],
             ["Supabase voorbereiding", "Niet gekoppeld", "Tabellen voorbereid: profiles, leads, customer_websites, customer_projects, customer_files, customer_quotes, customer_invoices, customer_subscriptions. Env vars later: SUPABASE_URL en SUPABASE_ANON_KEY."],
-            ["Auth voorbereiding", "Niet actief", "Auth-model en user-structuur zijn voorbereid"],
+            ["Auth modellen", "Voorbereid", "AuthUser, Session en Permission staan klaar"],
+            ["Rollen", "Voorbereid", "super_admin, admin, sales, developer, support, customer en demo_user"],
+            ["Permissions", "Voorbereid", "Centrale permissiematrix voorbereid voor navigatie en acties"],
+            ["Demo login", "Gereed", "Lokale demo-sessies actief via login.html"],
+            ["Supabase Auth", "Niet actief", "Wordt in Fase 11.2+ later live gekoppeld"],
+            ["Echte wachtwoorden", "Niet actief", "Geen wachtwoorden of secrets in de demo-authlaag"],
             ["Storage voorbereiding", "Niet actief", "Bestandsmetadata is migratieklaar, echte opslag later"],
             ["Resend voorbereiding", "Voorbereid", "Publieke leadmails blijven server-side via bestaande functie"],
             ["Mollie voorbereiding", "Voorbereid", "Demo-billing blijft lokaal, live API later"],
@@ -2583,6 +2624,7 @@
             migrationService: await import("./src/services/migrationService.js"),
             dataValidationService: await import("./src/services/dataValidationService.js"),
             activityLogService: await import("./src/services/activityLogService.js"),
+            authService: await import("./src/services/authService.js"),
           };
           return state.developerModules;
         }
@@ -2621,6 +2663,38 @@
           ]);
         }
 
+        async function renderAuthSession() {
+          try {
+            const { authService } = await loadDeveloperModules();
+            const session = authService.getCurrentSession();
+            const user = authService.getCurrentUser();
+            authSessionStatus.replaceChildren();
+            if (!session || !user) {
+              authSessionSummary.textContent = "Geen actieve sessie — demo/auth voorbereiding.";
+              const row = document.createElement("div");
+              row.append(createCell("Sessie"), createBadge("Niet actief", "status-warning"));
+              authSessionStatus.append(row);
+              return;
+            }
+            authSessionSummary.textContent = `${user.name || user.email} — ${authService.getRoleLabel(session.role)}`;
+            authRoleSwitcher.value = session.role;
+            const rows = [
+              ["Gebruiker", user.name || user.email],
+              ["Rol", authService.getRoleLabel(session.role)],
+              ["Omgeving", session.environment || "DEMO"],
+              ["Demo", session.isDemo ? "Ja" : "Nee"],
+            ];
+            rows.forEach(([label, value]) => {
+              const row = document.createElement("div");
+              row.append(createCell(label), createCell(value));
+              authSessionStatus.append(row);
+            });
+          } catch (error) {
+            console.error("Auth session could not be rendered", error);
+            authSessionSummary.textContent = "Auth status kon niet worden geladen.";
+          }
+        }
+
         async function renderDeveloperToolsSummary(extra = {}) {
           if (!isDeveloperModeEnabled()) return;
           developerToolsOutput.replaceChildren();
@@ -2630,6 +2704,10 @@
             const provider = modules.providerFactory.getProviderInfo();
             const counts = modules.migrationService.getRecordCounts();
             const recentActivities = modules.activityLogService.listRecentActivities(5);
+            const session = modules.authService.getCurrentSession();
+            const user = modules.authService.getCurrentUser();
+            const permissionPreview = modules.authService.getCurrentPermissionPreview();
+            const authUsers = modules.authService.getAuthUsers();
 
             appendDeveloperCard("Omgeving", [
               ["Mode", environment.environment],
@@ -2637,6 +2715,16 @@
               ["Demo actief", environment.isDemo ? "Ja" : "Nee"],
               ["Productie actief", environment.isProduction ? "Ja" : "Nee"],
             ]);
+            appendDeveloperCard("Auth sessie", [
+              ["Gebruiker", user?.name || user?.email || "Geen sessie"],
+              ["Rol", permissionPreview.roleLabel],
+              ["Auth users", String(authUsers.length)],
+              ["Demo sessie", session?.isDemo ? "Ja" : "Nee"],
+            ]);
+            appendDeveloperCard("Permissions preview", Object.entries(permissionPreview.permissions || {}).map(([resource, actions]) => [
+              resource,
+              Array.isArray(actions) ? actions.join(", ") : String(actions),
+            ]));
             appendDeveloperCard("Record counts", Object.entries(counts).map(([key, value]) => [key, String(value)]));
             appendDeveloperCard("Laatste activiteiten", recentActivities.length
               ? recentActivities.map((activity) => [activity.action || "Activiteit", formatDate(activity.createdAt)])
@@ -2646,6 +2734,46 @@
           } catch (error) {
             console.error("Developer tools could not be loaded", error);
             appendDeveloperCard("Developer tools", ["De modulaire dev-tools konden niet worden geladen. Controleer de browserconsole."]);
+          }
+        }
+
+        async function switchDemoRole(role) {
+          try {
+            const { authService } = await loadDeveloperModules();
+            const { session } = authService.loginDemoUser(role);
+            state.developerModules.activityLogService.logActivity("auth", session.userId, "role_switch", { role: session.role });
+            await renderAuthSession();
+            await renderDeveloperToolsSummary();
+            setSettingsMessage(`Demo rol actief: ${authService.getRoleLabel(session.role)}.`, "success");
+          } catch (error) {
+            console.error("Demo role switch failed", error);
+            setSettingsMessage("Demo rol kon niet worden gewisseld.", "error");
+          }
+        }
+
+        async function logoutDemoSession() {
+          try {
+            const { authService } = await loadDeveloperModules();
+            authService.logout();
+            await renderAuthSession();
+            await renderDeveloperToolsSummary();
+            setSettingsMessage("Demo sessie beëindigd.", "success");
+          } catch (error) {
+            console.error("Demo logout failed", error);
+            setSettingsMessage("Demo sessie kon niet worden beëindigd.", "error");
+          }
+        }
+
+        async function seedDemoUsersHandler() {
+          try {
+            const { authService } = await loadDeveloperModules();
+            const users = authService.seedDemoUsers();
+            await renderAuthSession();
+            await renderDeveloperToolsSummary();
+            setSettingsMessage(`${users.length} demo users voorbereid.`, "success");
+          } catch (error) {
+            console.error("Demo users could not be seeded", error);
+            setSettingsMessage("Demo users konden niet worden voorbereid.", "error");
           }
         }
 
@@ -2696,6 +2824,7 @@
           renderDataStructureDocs();
           renderProductionReadiness();
           renderDeveloperMode();
+          renderAuthSession();
           const journeyId = latestDemoJourneyId();
           demoActions.openLatestJourney.href = journeyId ? `demo-klantreis.html?demoJourneyId=${encodeURIComponent(journeyId)}` : "#";
           demoActions.openLatestJourney.classList.toggle("is-disabled", !journeyId);
@@ -2708,6 +2837,7 @@
           writeStoredSettings(settings);
           renderProductionReadiness();
           renderDeveloperMode();
+          renderAuthSession();
           setSettingsMessage("Instellingen opgeslagen in lokale dashboardopslag.", "success");
         }
 
@@ -7539,6 +7669,8 @@
         document.getElementById("new-invoice").addEventListener("click", () => openInvoiceModal());
         websiteHealthRefresh.addEventListener("click", () => loadWebsiteHealth(true));
         adminLoadButton.addEventListener("click", () => loadCRMData(true));
+        authSwitchRole.addEventListener("click", () => switchDemoRole(authRoleSwitcher.value));
+        authLogout.addEventListener("click", logoutDemoSession);
         biPeriodFilter.addEventListener("change", () => loadDashboardMetrics(true));
         demoActions.load.addEventListener("click", loadDemoData);
         demoActions.reset.addEventListener("click", () => {
@@ -7699,6 +7831,8 @@
         settingsForm.addEventListener("submit", saveSettings);
         runMigrationAnalysis.addEventListener("click", runMigrationAnalysisHandler);
         runDataValidation.addEventListener("click", runDataValidationHandler);
+        seedDemoUsersButton.addEventListener("click", seedDemoUsersHandler);
+        clearDemoSessionButton.addEventListener("click", logoutDemoSession);
         document.querySelectorAll("[data-settings-demo]").forEach((button) => {
           button.addEventListener("click", () => setSettingsMessage(button.dataset.settingsDemo, "success"));
         });
