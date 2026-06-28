@@ -1,65 +1,78 @@
-import { getSupabaseClientStatus } from "./supabaseClient.js";
-
-function preparedMessage(table = "") {
-  const status = getSupabaseClientStatus();
-  const suffix = table ? ` Tabel ${table} blijft dry-run/no-op in deze fase.` : "";
-  if (!status.configured) return `Supabase niet geconfigureerd. Vul SUPABASE_URL en SUPABASE_ANON_KEY veilig in via environment variables.${suffix}`;
-  return `Supabase voorbereid, live queries komen in een gecontroleerde vervolgfase.${suffix}`;
-}
+import { getSupabaseClient, getSupabaseClientStatus } from "./supabaseClient.js";
 
 function isCustomersTable(table) {
   return table === "customers" || table === "maxwebstudioCrmCustomers" || table === "maxwebstudioCustomers";
 }
 
-function readNotActive(table) {
-  console.info(preparedMessage(isCustomersTable(table) ? "customers" : table));
-  return [];
-}
-
-function writeNotActive(table) {
-  throw new Error(preparedMessage(isCustomersTable(table) ? "customers" : table));
-}
-
-function customerWriteBlocked() {
+function preparedMessage(table = "") {
   const status = getSupabaseClientStatus();
-  if (!status.configured) {
-    throw new Error("Supabase niet geconfigureerd. CRM live migratie blijft geblokkeerd.");
-  }
-  if (!status.clientPackageAvailable || !status.customerWritesEnabled) {
-    throw new Error("Supabase client package nog niet actief; live migratie blijft geblokkeerd.");
-  }
-  throw new Error("Supabase customers write is voorbereid, maar nog niet vrijgegeven.");
+  const suffix = table ? ` Tabel ${table} blijft read-only.` : "";
+  if (!status.configured) return `Supabase niet geconfigureerd. Vul SUPABASE_URL en SUPABASE_ANON_KEY veilig in via runtime/environment configuratie.${suffix}`;
+  if (!status.clientPackageAvailable) return `Supabase client package nog niet actief; read-only check blijft geblokkeerd.${suffix}`;
+  return `Supabase read-only voorbereid.${suffix}`;
+}
+
+async function getReadClient(table = "") {
+  const client = await getSupabaseClient();
+  if (!client) throw new Error(preparedMessage(table));
+  return client;
+}
+
+function writeBlocked() {
+  throw new Error("Supabase writes zijn nog geblokkeerd in read-only mode.");
 }
 
 export const supabaseProvider = {
-  type: "supabase-prepared",
-  status: "prepared",
+  type: "supabase-readonly",
+  status: "read-only",
 
-  getAll(table) {
-    return readNotActive(table);
+  async getAll(table, options = {}) {
+    if (!isCustomersTable(table)) {
+      console.info(preparedMessage(table));
+      return [];
+    }
+    const client = await getReadClient("customers");
+    const limit = Math.min(Number(options.limit || 10), 50);
+    const { data, error } = await client.from("customers").select("*").limit(limit);
+    if (error) throw new Error(error.message || "Customers lezen uit Supabase is mislukt.");
+    return Array.isArray(data) ? data : [];
   },
-  getById(table) {
-    console.info(preparedMessage(table));
-    return null;
+
+  async getById(table, id) {
+    if (!isCustomersTable(table)) {
+      console.info(preparedMessage(table));
+      return null;
+    }
+    const client = await getReadClient("customers");
+    const { data, error } = await client.from("customers").select("*").eq("id", id).maybeSingle();
+    if (error) throw new Error(error.message || "Customer lezen uit Supabase is mislukt.");
+    return data || null;
   },
-  create(table) {
-    if (isCustomersTable(table)) return customerWriteBlocked();
-    return writeNotActive(table);
+
+  create() {
+    return writeBlocked();
   },
-  update(table) {
-    if (isCustomersTable(table)) return customerWriteBlocked();
-    return writeNotActive(table);
+  update() {
+    return writeBlocked();
   },
-  delete(table) {
-    return writeNotActive(table);
+  delete() {
+    return writeBlocked();
   },
-  setAll(table) {
-    return writeNotActive(table);
+  setAll() {
+    return writeBlocked();
   },
-  count(table) {
-    console.info(preparedMessage(isCustomersTable(table) ? "customers" : table));
-    return 0;
+
+  async count(table) {
+    if (!isCustomersTable(table)) {
+      console.info(preparedMessage(table));
+      return 0;
+    }
+    const client = await getReadClient("customers");
+    const { count, error } = await client.from("customers").select("id", { count: "exact", head: true });
+    if (error) throw new Error(error.message || "Customers tellen uit Supabase is mislukt.");
+    return count ?? 0;
   },
+
   getStatus() {
     return getSupabaseClientStatus();
   },

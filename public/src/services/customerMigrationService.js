@@ -232,6 +232,7 @@ export function canRunLiveCustomerMigration(options = {}) {
   const providerMode = getCurrentProviderType();
   const lastBackup = getLastPreMigrationBackup();
   const lastDryRun = readArray(STORAGE_KEYS.migrationLog).find((entry) => entry.type === "customer_migration_dry_run");
+  const lastReadOnlyTest = readJson(STORAGE_KEYS.lastSupabaseReadOnlyTest, null);
   const readyRecords = getCustomerMigrationWritePreview(options).records.length;
   const missing = [];
   if (!supabase.hasUrl) missing.push("Supabase URL ontbreekt.");
@@ -241,6 +242,11 @@ export function canRunLiveCustomerMigration(options = {}) {
   if (!lastBackup?.id) missing.push("Pre-migration backup ontbreekt in deze browser.");
   if (readyRecords < 1) missing.push("Geen klanten klaar voor migratie met de gekozen opties.");
   if (!supabase.clientPackageAvailable || !supabase.customerWritesEnabled) missing.push("Supabase client package nog niet actief; live migratie blijft geblokkeerd.");
+  if (!supabase.clientPackageAvailable) missing.push("Supabase client is niet geladen.");
+  if (!lastReadOnlyTest?.connected && !lastReadOnlyTest?.success) missing.push("Supabase read-only connectietest ontbreekt of is niet succesvol.");
+  const customersTableConfirmed = lastReadOnlyTest?.customersTableAccessible === true
+    || (lastReadOnlyTest?.tableName === "customers" && lastReadOnlyTest?.success === true);
+  if (!customersTableConfirmed) missing.push("Customers table check ontbreekt of is niet succesvol.");
   return {
     allowed: missing.length === 0,
     missing,
@@ -248,6 +254,7 @@ export function canRunLiveCustomerMigration(options = {}) {
     supabase,
     lastBackup,
     lastDryRun,
+    lastReadOnlyTest,
     readyRecords,
     analysis,
   };

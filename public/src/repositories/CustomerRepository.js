@@ -1,8 +1,36 @@
 import { PRIMARY_MODULE_KEYS } from "../config/storageKeys.js";
+import { getCurrentProviderType, PROVIDERS } from "../config/environment.js";
+import { supabaseProvider } from "../providers/supabaseProvider.js";
 import { normalizeCustomer, customerIdentityKeys } from "../utils/customerNormalizer.js";
 import { createRepository } from "./createRepository.js";
 
-export const CustomerRepository = createRepository(PRIMARY_MODULE_KEYS.customers);
+const localCustomerRepository = createRepository(PRIMARY_MODULE_KEYS.customers);
+
+export const CustomerRepository = {
+  ...localCustomerRepository,
+  list(options = {}) {
+    if (getCurrentProviderType() === PROVIDERS.SUPABASE_READONLY) {
+      return supabaseProvider.getAll("customers", { limit: options.limit || 10 }).then((rows) => rows.map(mapSupabaseCustomerToLocal));
+    }
+    return localCustomerRepository.list();
+  },
+  count() {
+    if (getCurrentProviderType() === PROVIDERS.SUPABASE_READONLY) return supabaseProvider.count("customers");
+    return localCustomerRepository.count();
+  },
+  create(data) {
+    if (getCurrentProviderType() === PROVIDERS.SUPABASE_READONLY) throw new Error("Supabase writes zijn nog geblokkeerd in read-only mode.");
+    return localCustomerRepository.create(data);
+  },
+  update(id, data) {
+    if (getCurrentProviderType() === PROVIDERS.SUPABASE_READONLY) throw new Error("Supabase writes zijn nog geblokkeerd in read-only mode.");
+    return localCustomerRepository.update(id, data);
+  },
+  remove(id) {
+    if (getCurrentProviderType() === PROVIDERS.SUPABASE_READONLY) throw new Error("Supabase writes zijn nog geblokkeerd in read-only mode.");
+    return localCustomerRepository.remove(id);
+  },
+};
 
 function compactObject(value) {
   return Object.fromEntries(Object.entries(value).filter(([, item]) => item !== undefined));

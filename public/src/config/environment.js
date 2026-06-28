@@ -7,6 +7,7 @@ export const ENVIRONMENTS = Object.freeze({
 export const PROVIDERS = Object.freeze({
   LOCAL_STORAGE: "localStorage",
   SUPABASE_PREPARED: "supabase-prepared",
+  SUPABASE_READONLY: "supabase-readonly",
   SUPABASE: "supabase",
 });
 

@@ -657,7 +657,7 @@
                 <label><input id="setting-developer-mode" name="developerMode" type="checkbox" /> Developer Mode</label>
               </div>
               <div class="admin-profile-fields">
-                <label class="admin-profile-wide" for="setting-data-provider-mode">Data provider mode<select id="setting-data-provider-mode" name="dataProviderMode"><option value="localStorage">localStorage</option><option value="supabase-prepared">supabase-prepared</option></select></label>
+                <label class="admin-profile-wide" for="setting-data-provider-mode">Data provider mode<select id="setting-data-provider-mode" name="dataProviderMode"><option value="localStorage">localStorage</option><option value="supabase-prepared">supabase-prepared</option><option value="supabase-readonly">supabase-readonly</option></select></label>
               </div>
             </article>
 
@@ -768,6 +768,9 @@
                 <button class="button secondary" id="view-planned-tables" type="button">Bekijk geplande tabellen</button>
                 <button class="button secondary" id="run-supabase-migration-check" type="button">Run localStorage migratie-check</button>
                 <button class="button secondary" id="check-supabase-config" type="button">Check Supabase configuratie</button>
+                <button class="button secondary" id="test-supabase-connection" type="button">Test Supabase verbinding</button>
+                <button class="button secondary" id="read-supabase-customers" type="button">Lees eerste 10 customers</button>
+                <button class="button secondary" id="check-supabase-customers-table" type="button">Check customers table</button>
                 <button class="button secondary" id="view-env-example" type="button">Bekijk .env voorbeeld</button>
                 <button class="button secondary" id="why-local-storage" type="button">Waarom nog localStorage?</button>
                 <button class="button secondary" id="run-customer-migration-dry-run" type="button">Run CRM migratie dry run</button>
@@ -1630,6 +1633,9 @@
         const viewPlannedTablesButton = document.getElementById("view-planned-tables");
         const runSupabaseMigrationCheckButton = document.getElementById("run-supabase-migration-check");
         const checkSupabaseConfigButton = document.getElementById("check-supabase-config");
+        const testSupabaseConnectionButton = document.getElementById("test-supabase-connection");
+        const readSupabaseCustomersButton = document.getElementById("read-supabase-customers");
+        const checkSupabaseCustomersTableButton = document.getElementById("check-supabase-customers-table");
         const viewEnvExampleButton = document.getElementById("view-env-example");
         const whyLocalStorageButton = document.getElementById("why-local-storage");
         const runCustomerMigrationDryRunButton = document.getElementById("run-customer-migration-dry-run");
@@ -2637,6 +2643,11 @@
             ["Providerlaag", "Gereed", "localStorage en Supabase providers delen dezelfde interface"],
             ["Repositories", "Gereed", "Modules kunnen via repositories naar data lezen/schrijven"],
             ["Supabase voorbereiding", "Niet gekoppeld", "Tabellen voorbereid: profiles, leads, customer_websites, customer_projects, customer_files, customer_quotes, customer_invoices, customer_subscriptions. Env vars later: SUPABASE_URL en SUPABASE_ANON_KEY."],
+            ["Supabase client", "Voorbereid", "Browserclient wordt veilig gedetecteerd via runtime factory/module, zonder secrets"],
+            ["Supabase read-only", "Voorbereid", "Mode supabase-readonly kan connectie en customers-select testen"],
+            ["Customers table check", "Voorbereid", "Developer Mode kan customers read-only tellen/lezen"],
+            ["Supabase writes", "Geblokkeerd", "Writes blijven dicht tot Fase 11.9"],
+            ["Migratie writes", "Niet actief", "Fase 11.9 activeert expliciet write-mode"],
             ["CRM Supabase mapping", "Voorbereid", "CustomerRepository kan lokale klantrecords naar customers-rijen mappen"],
             ["CRM migratie dry run", "Gereed", "Developer Mode analyseert klanten zonder databasewrites"],
             ["CRM live writes basis", "Niet actief", "Live customer writes blijven afhankelijk van Supabase client readiness"],
@@ -2682,6 +2693,7 @@
             environment: await import("./src/config/environment.js"),
             providerFactory: await import("./src/providers/providerFactory.js"),
             providerStatusService: await import("./src/services/providerStatusService.js"),
+            supabaseReadinessService: await import("./src/services/supabaseReadinessService.js"),
             migrationService: await import("./src/services/migrationService.js"),
             customerMigrationService: await import("./src/services/customerMigrationService.js"),
             dataValidationService: await import("./src/services/dataValidationService.js"),
@@ -2745,10 +2757,39 @@
             ["Provider mode", providerStatus.providerMode],
             ["Actieve opslag", providerStatus.activeStorage],
             ["Live queries", providerStatus.liveQueriesEnabled ? "Actief" : "Niet actief"],
+            ["Read-only mode", providerStatus.readOnlyEnabled ? "Actief" : "Niet actief"],
+            ["Client geladen", providerStatus.supabaseClientLoaded ? "Ja" : "Nee"],
+            ["Connection", providerStatus.supabaseConnected ? "Succesvol" : "Niet verbonden"],
             ["Schema status", "Voorbereid"],
             ["RLS status", "Voorbereid"],
           ]);
           appendDeveloperCard("Provider waarschuwingen", providerStatus.warnings);
+        }
+
+        function renderSupabaseReadOnlyTest(summary) {
+          appendDeveloperCard("Supabase read-only test", [
+            ["Supabase configured", summary.configured ? "Ja" : "Nee"],
+            ["Client geladen", summary.clientLoaded ? "Ja" : "Nee"],
+            ["Connection status", summary.connected ? "Verbonden" : "Niet verbonden"],
+            ["Customers table bereikbaar", summary.customersTableAccessible ? "Ja" : "Nee"],
+            ["Customers count", summary.customersCount === null || summary.customersCount === undefined ? "-" : String(summary.customersCount)],
+            ["Laatste testtijd", summary.lastTestedAt ? formatDate(summary.lastTestedAt) : "-"],
+            ["Writes", summary.writesBlocked ? "Geblokkeerd" : "Onbekend"],
+            ["Foutmelding", summary.error || "-"],
+          ]);
+        }
+
+        function renderSupabaseReadOnlyResult(title, result) {
+          appendDeveloperCard(title, [
+            ["Succes", result.success ? "Ja" : "Nee"],
+            ["Table", result.tableName || "customers"],
+            ["Client geladen", result.clientLoaded === undefined ? "-" : result.clientLoaded ? "Ja" : "Nee"],
+            ["Connected", result.connected === undefined ? "-" : result.connected ? "Ja" : "Nee"],
+            ["Accessible", result.accessible === undefined ? result.customersTableAccessible ? "Ja" : "Nee" : result.accessible ? "Ja" : "Nee"],
+            ["Count", result.count === null || result.count === undefined ? "-" : String(result.count)],
+            ["Getest", result.testedAt ? formatDate(result.testedAt) : "-"],
+            ["Error", result.error || "-"],
+          ]);
         }
 
         function renderSupabaseSetupChecklist() {
@@ -2844,6 +2885,8 @@
             ["Backup", readiness.lastBackup ? `${readiness.lastBackup.id} - ${formatDate(readiness.lastBackup.createdAt)}` : "Ontbreekt"],
             ["Records klaar met opties", String(readiness.readyRecords || 0)],
             ["Supabase client package", readiness.supabase.clientPackageAvailable ? "Beschikbaar" : "Niet actief"],
+            ["Read-only test", readiness.lastReadOnlyTest ? `${readiness.lastReadOnlyTest.success || readiness.lastReadOnlyTest.connected ? "Succesvol" : "Niet succesvol"} - ${formatDate(readiness.lastReadOnlyTest.testedAt)}` : "Ontbreekt"],
+            ["Customers table", readiness.lastReadOnlyTest?.customersTableAccessible || readiness.lastReadOnlyTest?.tableName === "customers" ? "Bereikbaar" : "Niet bevestigd"],
             ["Customer writes", readiness.supabase.customerWritesEnabled ? "Actief" : "Geblokkeerd"],
             ["Migratieknop", readiness.allowed ? "Actief" : "Geblokkeerd"],
           ]);
@@ -3086,6 +3129,7 @@
             const environment = modules.environment.getEnvironmentInfo();
             const provider = modules.providerFactory.getProviderInfo();
             const providerStatus = modules.providerStatusService.getActiveProviderStatus();
+            const readOnlySummary = modules.supabaseReadinessService.getReadOnlySummary();
             const counts = modules.migrationService.getRecordCounts();
             const supabaseReadiness = modules.migrationService.checkSupabaseReadiness();
             const customerMigration = modules.customerMigrationService.analyzeCustomerData();
@@ -3104,6 +3148,7 @@
               ["Productie actief", environment.isProduction ? "Ja" : "Nee"],
             ]);
             renderSupabaseConnectionStatus(providerStatus);
+            renderSupabaseReadOnlyTest(readOnlySummary);
             renderSupabaseSetupChecklist();
             renderCustomerMigrationCard(customerMigration);
             renderCustomerMigrationLogs(customerMigrationLogs);
@@ -3126,6 +3171,15 @@
               ? recentActivities.map((activity) => [activity.action || "Activiteit", formatDate(activity.createdAt)])
               : ["Nog geen activiteit gelogd."]);
             if (extra.showAccountRequests) renderAccountRequestsList(modules.authService);
+            if (extra.supabaseReadOnlyResult) renderSupabaseReadOnlyResult(extra.supabaseReadOnlyTitle || "Supabase read-only resultaat", extra.supabaseReadOnlyResult);
+            if (extra.supabaseCustomerRows) {
+              appendDeveloperCard("Eerste Supabase customers", extra.supabaseCustomerRows.length
+                ? extra.supabaseCustomerRows.map((row) => [
+                  row.email || row.id || "customer",
+                  `${row.name || "-"} - ${row.company || row.companyName || "-"}`,
+                ])
+                : ["Geen customers gelezen of tabel niet bereikbaar."]);
+            }
             if (extra.customerMappingPreview) renderCustomerMappingPreview(extra.customerMappingPreview);
             if (extra.customerDuplicates) renderCustomerDuplicates(extra.customerDuplicates);
             if (extra.customerMissingFields) renderCustomerMissingFields(extra.customerMissingFields);
@@ -3265,6 +3319,63 @@
           } catch (error) {
             console.error("Supabase config check failed", error);
             setSettingsMessage("Supabase configuratie kon niet worden gecontroleerd.", "error");
+          }
+        }
+
+        async function testSupabaseConnectionHandler() {
+          try {
+            const { supabaseReadinessService, activityLogService } = await loadDeveloperModules();
+            const result = await supabaseReadinessService.checkSupabaseConnection();
+            activityLogService.logActivity("developer_tools", "supabase", "test_supabase_connection", {
+              success: result.success,
+              customersCount: result.count,
+            });
+            await renderDeveloperToolsSummary({ supabaseReadOnlyTitle: "Supabase verbindingstest", supabaseReadOnlyResult: result });
+            setSettingsMessage(result.success ? "Supabase verbinding succesvol getest." : "Supabase verbindingstest gaf een nette foutmelding.", result.success ? "success" : "error");
+          } catch (error) {
+            console.error("Supabase connection test failed", error);
+            setSettingsMessage("Supabase verbindingstest kon niet worden uitgevoerd.", "error");
+          }
+        }
+
+        async function checkSupabaseCustomersTableHandler() {
+          try {
+            const { supabaseReadinessService, activityLogService } = await loadDeveloperModules();
+            const result = await supabaseReadinessService.checkCustomersTable();
+            activityLogService.logActivity("developer_tools", "supabase", "check_customers_table", {
+              success: result.success,
+              count: result.count,
+            });
+            await renderDeveloperToolsSummary({ supabaseReadOnlyTitle: "Customers table check", supabaseReadOnlyResult: result });
+            setSettingsMessage(result.success ? "Customers table is read-only bereikbaar." : "Customers table is niet bereikbaar of RLS blokkeert selectie.", result.success ? "success" : "error");
+          } catch (error) {
+            console.error("Customers table check failed", error);
+            setSettingsMessage("Customers table check kon niet worden uitgevoerd.", "error");
+          }
+        }
+
+        async function readSupabaseCustomersHandler() {
+          try {
+            const { supabaseReadinessService, activityLogService } = await loadDeveloperModules();
+            const tableCheck = await supabaseReadinessService.checkCustomersTable();
+            let rows = [];
+            if (tableCheck.success) {
+              const { supabaseProvider } = await import("./src/providers/supabaseProvider.js");
+              rows = await supabaseProvider.getAll("customers", { limit: 10 });
+            }
+            activityLogService.logActivity("developer_tools", "supabase", "read_supabase_customers", {
+              success: tableCheck.success,
+              rows: rows.length,
+            });
+            await renderDeveloperToolsSummary({
+              supabaseReadOnlyTitle: "Lees eerste 10 customers",
+              supabaseReadOnlyResult: tableCheck,
+              supabaseCustomerRows: rows,
+            });
+            setSettingsMessage(tableCheck.success ? `${rows.length} Supabase customers gelezen.` : "Customers lezen is niet gelukt; zie read-only status.", tableCheck.success ? "success" : "error");
+          } catch (error) {
+            console.error("Read Supabase customers failed", error);
+            setSettingsMessage("Supabase customers lezen kon niet worden uitgevoerd.", "error");
           }
         }
 
@@ -3468,7 +3579,9 @@
           renderProductionReadiness();
           renderDeveloperMode();
           renderAuthSession();
-          if (settings.dataProviderMode === "supabase-prepared") {
+          if (settings.dataProviderMode === "supabase-readonly") {
+            setSettingsMessage("Instellingen opgeslagen. Supabase read-only checks zijn beschikbaar; writes blijven geblokkeerd.", "success");
+          } else if (settings.dataProviderMode === "supabase-prepared") {
             setSettingsMessage("Instellingen opgeslagen. Supabase provider is voorbereid, maar live datawrites zijn nog niet actief.", "success");
           } else {
             setSettingsMessage("Instellingen opgeslagen in lokale dashboardopslag.", "success");
@@ -8472,6 +8585,9 @@
         viewPlannedTablesButton.addEventListener("click", showPlannedTablesHandler);
         runSupabaseMigrationCheckButton.addEventListener("click", runSupabaseMigrationCheckHandler);
         checkSupabaseConfigButton.addEventListener("click", checkSupabaseConfigHandler);
+        testSupabaseConnectionButton.addEventListener("click", testSupabaseConnectionHandler);
+        readSupabaseCustomersButton.addEventListener("click", readSupabaseCustomersHandler);
+        checkSupabaseCustomersTableButton.addEventListener("click", checkSupabaseCustomersTableHandler);
         viewEnvExampleButton.addEventListener("click", showEnvExampleHandler);
         whyLocalStorageButton.addEventListener("click", showWhyLocalStorageHandler);
         runCustomerMigrationDryRunButton.addEventListener("click", runCustomerMigrationDryRunHandler);
