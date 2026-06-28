@@ -1,5 +1,6 @@
 import { STORAGE_KEYS } from "../config/storageKeys.js";
 import { normalizeCustomer, customerIdentityKeys } from "../utils/customerNormalizer.js";
+import { normalizeWebsite } from "../utils/websiteNormalizer.js";
 
 function readArray(key) {
   try {
@@ -79,8 +80,22 @@ export function validateLocalStorageData() {
   projects.forEach((project) => {
     if (!project.customerId && !project.profileId) pushIssue(issues, "error", "projects", "Project mist klantkoppeling.", project.id);
   });
-  websites.forEach((website) => {
+  const websiteDomains = new Map();
+  websites.map(normalizeWebsite).forEach((website) => {
+    if (!website.name) pushIssue(issues, "error", "websites", "Website mist naam.", website.id);
     if (!website.profileId && !website.customerId) pushIssue(issues, "error", "websites", "Website mist klantkoppeling.", website.id);
+    if (!website.domain && !website.liveUrl) pushIssue(issues, "error", "websites", "Website mist domein/live URL.", website.id);
+    if (website.liveUrl && !/^https?:\/\//i.test(website.liveUrl)) pushIssue(issues, "error", "websites", "Website heeft ongeldige live URL.", website.id);
+    if (!website.status) pushIssue(issues, "warning", "websites", "Website mist status.", website.id);
+    if (!website.createdAt) pushIssue(issues, "warning", "websites", "Website mist createdAt.", website.id);
+    if (!website.updatedAt) pushIssue(issues, "warning", "websites", "Website mist updatedAt.", website.id);
+    if ((website.isDemo || website.isDemoJourney || website.environment === "demo") && !website.demoScenarioId && !website.demoJourneyId) {
+      pushIssue(issues, "info", "websites", "Demo-website mist demoScenarioId/demoJourneyId.", website.id);
+    }
+    if (website.domain) {
+      if (websiteDomains.has(website.domain)) pushIssue(issues, "warning", "websites", "Dubbel domein gevonden.", website.id);
+      websiteDomains.set(website.domain, website.id);
+    }
   });
 
   const ready = !issues.some((issue) => issue.severity === "error");

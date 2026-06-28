@@ -247,11 +247,13 @@
             <article class="admin-card detail-card"><span>Onderhoud</span><strong id="website-stat-maintenance">0</strong></article>
           </div>
           <div class="admin-filters website-filters" aria-label="Websites filteren">
+            <label for="website-data-mode">Website data mode<select id="website-data-mode"><option value="local">Local</option><option value="supabase-read">Supabase read</option><option value="hybrid">Hybrid</option></select></label>
             <label for="website-search">Zoeken<input id="website-search" type="search" placeholder="Domein, bedrijf, klant of website" /></label>
             <label for="website-status-filter">Status<select id="website-status-filter"><option value="">Alle statussen</option><option value="online">Online</option><option value="development">In ontwikkeling</option><option value="maintenance">Onderhoud</option><option value="waiting_client">Wachten op klant</option><option value="offline">Offline</option></select></label>
             <label for="website-hosting-filter">Hostingpakket<select id="website-hosting-filter"><option value="">Alle hostingpakketten</option><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option><option value="Maatwerk">Maatwerk</option></select></label>
             <label for="website-care-filter">Onderhoudspakket<select id="website-care-filter"><option value="">Alle onderhoudspakketten</option><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option><option value="Geen">Geen</option></select></label>
           </div>
+          <div class="admin-grid compact-admin-grid" id="website-source-summary" aria-live="polite"></div>
           <div class="website-operations-grid">
             <div class="admin-table website-table" id="website-list" role="table" aria-label="Websites" aria-live="polite"></div>
             <form class="admin-card admin-profile-form website-detail-panel" id="website-detail-form">
@@ -281,12 +283,19 @@
                 <label for="website-open-tasks">Open taken<input id="website-open-tasks" type="number" min="0" step="1" disabled /></label>
                 <label class="admin-profile-wide" for="website-notes">Notities<textarea id="website-notes" disabled></textarea></label>
               </div>
+              <div class="settings-status-list" id="website-source-detail"></div>
               <div class="website-detail-summary" id="website-detail-summary" aria-live="polite"></div>
               <div class="admin-profile-actions">
+                <button class="button secondary" id="website-edit" type="button" disabled>Bewerken</button>
                 <button class="button primary" id="website-save" type="submit" disabled>Website opslaan</button>
-                <button class="button secondary danger" id="website-archive" type="button" disabled>Verwijderen</button>
+                <button class="button secondary" id="website-cancel" type="button" disabled>Annuleren</button>
+                <button class="button secondary" id="website-refresh-supabase" type="button" disabled>Ververs vanuit Supabase</button>
+                <button class="button secondary" id="website-history" type="button" disabled>Bekijk wijzigingshistorie</button>
+                <button class="button secondary" id="website-reactivate" type="button" disabled>Reactiveren</button>
+                <button class="button secondary danger" id="website-archive" type="button" disabled>Archiveren</button>
                 <p class="admin-form-message" id="website-detail-message" role="status"></p>
               </div>
+              <div class="settings-status-list" id="website-history-list" hidden></div>
               <div class="admin-profile-actions website-quick-actions" aria-label="Website acties">
                 <a class="button secondary is-disabled" id="website-open-live" href="#" target="_blank" rel="noopener" aria-disabled="true">Open website</a>
                 <a class="button secondary is-disabled" id="website-open-staging" href="#" target="_blank" rel="noopener" aria-disabled="true">Open staging</a>
@@ -787,6 +796,13 @@
                 <button class="button secondary" id="refresh-customer-sources" type="button">Refresh customer sources</button>
                 <button class="button secondary" id="test-hybrid-merge" type="button">Test hybrid merge</button>
                 <button class="button secondary" id="reset-customer-data-mode" type="button">Reset customer data mode naar local</button>
+                <button class="button secondary" id="run-website-migration-dry-run" type="button">Run website migratie dry-run</button>
+                <button class="button secondary" id="view-website-mapping-preview" type="button">Bekijk website mapping preview</button>
+                <button class="button secondary" id="view-website-missing-links" type="button">Bekijk ontbrekende klantkoppelingen</button>
+                <button class="button secondary" id="view-website-duplicates" type="button">Bekijk website duplicaten</button>
+                <button class="button secondary" id="test-supabase-websites-read" type="button">Test website read</button>
+                <button class="button secondary" id="test-supabase-website-write" type="button">Test website write</button>
+                <button class="button secondary" id="reset-website-data-mode" type="button">Reset website data mode naar local</button>
                 <button class="button secondary" id="view-env-example" type="button">Bekijk .env voorbeeld</button>
                 <button class="button secondary" id="why-local-storage" type="button">Waarom nog localStorage?</button>
                 <button class="button secondary" id="run-customer-migration-dry-run" type="button">Run CRM migratie dry run</button>
@@ -1256,6 +1272,8 @@
           developerModules: null,
           customerSourceStatus: null,
           customerWriteReadiness: null,
+          websiteSourceStatus: null,
+          websiteWriteReadiness: null,
         };
 
         const adminTokenInput = document.getElementById("admin-token");
@@ -1311,6 +1329,9 @@
         const customerDataModeSelect = document.getElementById("customer-data-mode");
         const customerSourceSummary = document.getElementById("customer-source-summary");
         const customerSourceDetail = document.getElementById("customer-source-detail");
+        const websiteDataModeSelect = document.getElementById("website-data-mode");
+        const websiteSourceSummary = document.getElementById("website-source-summary");
+        const websiteSourceDetail = document.getElementById("website-source-detail");
         const websiteList = document.getElementById("website-list");
         const websiteDetailForm = document.getElementById("website-detail-form");
         const websiteFields = {
@@ -1332,12 +1353,18 @@
           openTasks: document.getElementById("website-open-tasks"),
           notes: document.getElementById("website-notes"),
         };
+        const websiteEdit = document.getElementById("website-edit");
         const websiteSave = document.getElementById("website-save");
+        const websiteCancel = document.getElementById("website-cancel");
         const websiteArchive = document.getElementById("website-archive");
+        const websiteRefreshSupabase = document.getElementById("website-refresh-supabase");
+        const websiteHistory = document.getElementById("website-history");
+        const websiteReactivate = document.getElementById("website-reactivate");
         const websiteDetailState = document.getElementById("website-detail-state");
         const websiteDetailSubtitle = document.getElementById("website-detail-subtitle");
         const websiteDetailMessage = document.getElementById("website-detail-message");
         const websiteDetailSummary = document.getElementById("website-detail-summary");
+        const websiteHistoryList = document.getElementById("website-history-list");
         const websiteSearch = document.getElementById("website-search");
         const websiteStatusFilter = document.getElementById("website-status-filter");
         const websiteHostingFilter = document.getElementById("website-hosting-filter");
@@ -1675,6 +1702,13 @@
         const refreshCustomerSourcesButton = document.getElementById("refresh-customer-sources");
         const testHybridMergeButton = document.getElementById("test-hybrid-merge");
         const resetCustomerDataModeButton = document.getElementById("reset-customer-data-mode");
+        const runWebsiteMigrationDryRunButton = document.getElementById("run-website-migration-dry-run");
+        const viewWebsiteMappingPreviewButton = document.getElementById("view-website-mapping-preview");
+        const viewWebsiteMissingLinksButton = document.getElementById("view-website-missing-links");
+        const viewWebsiteDuplicatesButton = document.getElementById("view-website-duplicates");
+        const testSupabaseWebsitesReadButton = document.getElementById("test-supabase-websites-read");
+        const testSupabaseWebsiteWriteButton = document.getElementById("test-supabase-website-write");
+        const resetWebsiteDataModeButton = document.getElementById("reset-website-data-mode");
         const viewEnvExampleButton = document.getElementById("view-env-example");
         const whyLocalStorageButton = document.getElementById("why-local-storage");
         const runCustomerMigrationDryRunButton = document.getElementById("run-customer-migration-dry-run");
@@ -2722,6 +2756,15 @@
             ["Customer conflict detection", "Actief", "Remote updated_at blokkeert blind overschrijven en vraagt refresh"],
             ["Local fallback", "Actief", "Hybrid valt terug op localStorage bij Supabase read-fouten"],
             ["Demo customer source", "Local/demo", "Demo-klanten blijven uit localStorage komen"],
+            ["Website Supabase mapping", "Voorbereid", "WebsiteRepository kan lokale websites naar websites-rijen mappen met klantkoppeling"],
+            ["Website migratie dry run", "Gereed", "Developer Mode analyseert websites zonder databasewrites"],
+            ["Website Supabase read", "Voorbereid/actief", "Website Management kan websites read-only uit Supabase laden"],
+            ["Website hybrid mode", "Actief", "Website Management combineert Supabase, ongemigreerde local en demo websites"],
+            ["Website create/update", "Actief onder voorwaarden", "Supabase websites kunnen gecontroleerd worden aangemaakt/bijgewerkt wanneer write-readiness groen is"],
+            ["Website archive/reactivate", "Actief onder voorwaarden", "Archiveren is soft delete via status/deleted_at; reactiveren zet status terug actief"],
+            ["Website hard delete", "Geblokkeerd", "Harde deletes voor Supabase websites zijn niet beschikbaar in het CRM"],
+            ["Website customer linking", "Voorbereid", "Websites worden pas migratieklaar als de gekoppelde klant een Supabase customer-id heeft"],
+            ["Website conflict detection", "Actief", "Remote updated_at blokkeert blind overschrijven en vraagt refresh"],
             ["CRM Supabase mapping", "Voorbereid", "CustomerRepository kan lokale klantrecords naar customers-rijen mappen"],
             ["CRM migratie dry run", "Gereed", "Developer Mode analyseert klanten zonder databasewrites"],
             ["CRM live writes basis", "Niet actief", "Live customer writes blijven afhankelijk van Supabase client readiness"],
@@ -2767,11 +2810,13 @@
             environment: await import("./src/config/environment.js"),
             providerFactory: await import("./src/providers/providerFactory.js"),
             customerRepository: await import("./src/repositories/CustomerRepository.js"),
+            websiteRepository: await import("./src/repositories/WebsiteRepository.js"),
             providerStatusService: await import("./src/services/providerStatusService.js"),
             supabaseReadinessService: await import("./src/services/supabaseReadinessService.js"),
             supabaseWriteTestService: await import("./src/services/supabaseWriteTestService.js"),
             migrationService: await import("./src/services/migrationService.js"),
             customerMigrationService: await import("./src/services/customerMigrationService.js"),
+            websiteMigrationService: await import("./src/services/websiteMigrationService.js"),
             dataValidationService: await import("./src/services/dataValidationService.js"),
             activityLogService: await import("./src/services/activityLogService.js"),
             authService: await import("./src/services/authService.js"),
@@ -3084,6 +3129,102 @@
           });
         }
 
+        function renderWebsiteDataSourceStatus(status = state.websiteSourceStatus || {}) {
+          const counts = status.counts || {};
+          appendDeveloperCard("Website data source", [
+            ["Website data mode", status.mode || currentWebsiteDataMode()],
+            ["Supabase read status", status.error ? "Fout" : status.mode === "local" ? "Niet gebruikt" : "Beschikbaar"],
+            ["Local count", String(counts.local ?? 0)],
+            ["Supabase count", String(counts.supabase ?? 0)],
+            ["Hybrid count", String(counts.hybrid ?? state.websites.length ?? 0)],
+            ["Duplicate merge count", String(counts.duplicateMerges ?? 0)],
+            ["Demo websites", String(counts.demo ?? 0)],
+            ["Ongemigreerd lokaal", String(counts.unmigratedLocal ?? 0)],
+            ["Fallback status", status.fallbackUsed ? "Local fallback gebruikt" : "Geen fallback"],
+            ["Laatste refresh", status.refreshedAt ? formatDate(status.refreshedAt) : "-"],
+            ["Error", status.error || "-"],
+          ]);
+        }
+
+        function renderWebsiteSupabaseReadiness(modules) {
+          const summary = modules.websiteMigrationService.getWebsiteReadinessSummary();
+          const recentWebsiteWrites = modules.activityLogService
+            .listRecentActivities(40)
+            .filter((activity) => activity.entityType === "websites" || activity.entityType === "developer_tools")
+            .filter((activity) => String(activity.action || "").includes("website"))
+            .slice(0, 6);
+          appendDeveloperCard("Website Supabase readiness", [
+            ["Klaar voor mapping", String(summary.ready || 0)],
+            ["Wachten op customer migratie", String(summary.waitingForCustomer || 0)],
+            ["Klantkoppeling ontbreekt", String(summary.missingCustomer || 0)],
+            ["Mogelijke duplicaten", String(summary.duplicates || 0)],
+            ["Ontbrekende velden/aandacht", String(summary.missingFields || 0)],
+            ["Laatste dry-run", summary.lastDryRun?.createdAt ? formatDate(summary.lastDryRun.createdAt) : "Nog niet uitgevoerd"],
+            ["Live bulk migratie", "Geblokkeerd in deze fase"],
+            ["Write scope", "Alleen gecontroleerde create/update/archive/reactivate per website"],
+          ]);
+          appendDeveloperCard("Laatste website activiteiten", recentWebsiteWrites.length
+            ? recentWebsiteWrites.map((activity) => [activity.action || "website", formatDate(activity.createdAt)])
+            : ["Nog geen website migratie/write activiteit."]);
+        }
+
+        function renderWebsiteMappingPreview(preview) {
+          appendDeveloperCard("Website mapping preview", [
+            ["Totaal", String(preview.summary.totalWebsites || 0)],
+            ["Uniek", String(preview.summary.uniqueWebsites || 0)],
+            ["Klaar", String(preview.summary.readyCount || 0)],
+            ["Wacht op klant", String(preview.summary.waitingForCustomer || 0)],
+            ["Klant ontbreekt", String(preview.summary.missingCustomer || 0)],
+            ["Duplicaten", String(preview.summary.duplicateCount || 0)],
+            ["Preview", "Maximaal 20 records"],
+          ]);
+          preview.rows.slice(0, 12).forEach((item) => {
+            appendDeveloperCard(`Website mapping ${item.name || item.domain || item.localId || "website"}`, [
+              ["localStorage id", item.localId || "-"],
+              ["Supabase tabel", "websites"],
+              ["name", item.payload?.name || "-"],
+              ["domain", item.payload?.domain || "-"],
+              ["customer_id", item.payload?.customer_id || "-"],
+              ["klantkoppeling", item.customerStatus || "-"],
+              ["ready", item.ready ? "Ja" : "Nee"],
+              ["errors", item.errors?.length ? item.errors.join(" | ") : "-"],
+              ["warnings", item.warnings?.length ? item.warnings.join(" | ") : "-"],
+            ]);
+          });
+        }
+
+        function renderWebsiteMissingLinks(items = []) {
+          appendDeveloperCard("Website ontbrekende klantkoppelingen", items.length
+            ? items.slice(0, 12).map((item) => [
+              item.name || item.domain || item.id || "Website",
+              `${item.customerLink?.status || "onbekend"} - ${item.customerLink?.reason || item.errors?.join(" | ") || item.warnings?.join(" | ") || "controle nodig"}`,
+            ])
+            : ["Geen ontbrekende website-klantkoppelingen gevonden."]);
+        }
+
+        function renderWebsiteDuplicates(duplicates = []) {
+          appendDeveloperCard("Website duplicaten", duplicates.length
+            ? duplicates.slice(0, 12).map((item) => [
+              item.key || item.domain || "duplicate",
+              `${item.website?.name || item.website?.domain || "Website"} lijkt dubbel met ${item.duplicateOf || "eerder record"}`,
+            ])
+            : ["Geen mogelijke website-duplicaten gevonden."]);
+        }
+
+        function renderWebsiteWriteTestResult(result = {}) {
+          appendDeveloperCard("Website write-test resultaat", [
+            ["Status", result.status || "-"],
+            ["Testwebsite", result.testWebsiteId || result.websiteId || "-"],
+            ["Stap", result.step || result.type || "-"],
+            ["Aangemaakt", result.createdAt ? formatDate(result.createdAt) : "-"],
+            ["Voltooid", result.completedAt ? formatDate(result.completedAt) : "-"],
+            ["Fout", result.error || "-"],
+          ]);
+          if (result.steps?.length) {
+            appendDeveloperCard("Website write-test stappen", result.steps.map((step) => [step.step, step.status]));
+          }
+        }
+
         function renderCustomerMigrationResult(result) {
           appendDeveloperCard("CRM migratie resultaat", [
             ["Status", result.status],
@@ -3345,6 +3486,8 @@
             renderSupabaseWriteTestStatus(writeTestReadiness, writeTestResults);
             renderCustomerDataSourceStatus(state.customerSourceStatus);
             renderCustomerWriteReadiness(modules);
+            renderWebsiteDataSourceStatus(state.websiteSourceStatus);
+            renderWebsiteSupabaseReadiness(modules);
             renderSupabaseSetupChecklist();
             renderCustomerMigrationCard(customerMigration);
             renderCustomerMigrationLogs(customerMigrationLogs);
@@ -3382,6 +3525,15 @@
             if (extra.customerMissingFields) renderCustomerMissingFields(extra.customerMissingFields);
             if (extra.customerWritePreview) renderCustomerWritePreview(extra.customerWritePreview);
             if (extra.customerMigrationResult) renderCustomerMigrationResult(extra.customerMigrationResult);
+            if (extra.websiteMappingPreview) renderWebsiteMappingPreview(extra.websiteMappingPreview);
+            if (extra.websiteMissingLinks) renderWebsiteMissingLinks(extra.websiteMissingLinks);
+            if (extra.websiteDuplicates) renderWebsiteDuplicates(extra.websiteDuplicates);
+            if (extra.websiteWriteTestResult) renderWebsiteWriteTestResult(extra.websiteWriteTestResult);
+            if (extra.websiteDryRun) {
+              renderWebsiteMappingPreview(extra.websiteDryRun.preview);
+              renderWebsiteMissingLinks(extra.websiteDryRun.missingFields);
+              renderWebsiteDuplicates(extra.websiteDryRun.duplicates);
+            }
             if (extra.customerDryRun) {
               renderCustomerMappingPreview({
                 summary: {
@@ -3883,6 +4035,202 @@
           setSettingsMessage("Customer data mode teruggezet naar local.", "success");
         }
 
+        async function setWebsiteDataMode(mode, options = {}) {
+          const settings = { ...readStoredSettings(), websiteDataMode: mode };
+          writeStoredSettings(settings);
+          localStorage.setItem("maxwebstudioWebsiteDataMode", mode);
+          websiteDataModeSelect.value = mode;
+          try {
+            const { activityLogService } = await loadDeveloperModules();
+            activityLogService.logActivity("developer_tools", "websites", "website_source_mode_changed", { mode, ...options });
+          } catch {
+            // Logging is helpful, but changing the website read mode should not depend on Developer Tools imports.
+          }
+          await loadCRMData(false);
+        }
+
+        async function changeWebsiteDataModeHandler(event) {
+          const mode = event.target.value || "local";
+          if (mode !== "local") {
+            const confirmed = window.confirm(`Website data mode wijzigen naar ${mode}? Er wordt geen data verwijderd en er worden geen Supabase bulk-writes uitgevoerd.`);
+            if (!confirmed) {
+              websiteDataModeSelect.value = readStoredSettings().websiteDataMode || localStorage.getItem("maxwebstudioWebsiteDataMode") || "local";
+              return;
+            }
+          }
+          await setWebsiteDataMode(mode, { source: "website_select" });
+          await renderDeveloperToolsSummary();
+        }
+
+        async function resetWebsiteDataModeHandler() {
+          await setWebsiteDataMode("local", { source: "developer_reset" });
+          await renderDeveloperToolsSummary();
+          setSettingsMessage("Website data mode teruggezet naar local.", "success");
+        }
+
+        async function runWebsiteMigrationDryRunHandler() {
+          try {
+            const { websiteMigrationService, activityLogService } = await loadDeveloperModules();
+            const dryRun = websiteMigrationService.runWebsiteMigrationDryRun();
+            activityLogService.logActivity("developer_tools", "websites", "website_dry_run", {
+              readyCount: dryRun.analysis.readyCount,
+              waitingForCustomer: dryRun.analysis.waitingForCustomer,
+              duplicateCount: dryRun.analysis.duplicateCount,
+              missingCustomer: dryRun.analysis.missingCustomer,
+            });
+            await renderDeveloperToolsSummary({ websiteDryRun: dryRun });
+            setSettingsMessage("Website migratie dry-run uitgevoerd. Er zijn geen Supabase writes gedaan.", "success");
+          } catch (error) {
+            console.error("Website migration dry run failed", error);
+            setSettingsMessage("Website migratie dry-run kon niet worden uitgevoerd.", "error");
+          }
+        }
+
+        async function showWebsiteMappingPreviewHandler() {
+          try {
+            const { websiteMigrationService, activityLogService } = await loadDeveloperModules();
+            const preview = websiteMigrationService.getWebsiteMigrationPreview();
+            activityLogService.logActivity("developer_tools", "websites", "view_website_mapping_preview", { count: preview.summary.totalWebsites });
+            await renderDeveloperToolsSummary({ websiteMappingPreview: preview });
+            setSettingsMessage("Website mapping preview getoond.", "success");
+          } catch (error) {
+            console.error("Website mapping preview failed", error);
+            setSettingsMessage("Website mapping preview kon niet worden getoond.", "error");
+          }
+        }
+
+        async function showWebsiteMissingLinksHandler() {
+          try {
+            const { websiteMigrationService, activityLogService } = await loadDeveloperModules();
+            const missing = websiteMigrationService.detectMissingWebsiteFields()
+              .filter((item) => ["missing_customer", "customer_not_found", "waiting_customer_migration"].includes(item.customerLink?.status) || item.errors?.length);
+            activityLogService.logActivity("developer_tools", "websites", "view_website_missing_links", { count: missing.length });
+            await renderDeveloperToolsSummary({ websiteMissingLinks: missing });
+            setSettingsMessage("Ontbrekende website-klantkoppelingen getoond.", "success");
+          } catch (error) {
+            console.error("Website missing links failed", error);
+            setSettingsMessage("Ontbrekende website-klantkoppelingen konden niet worden getoond.", "error");
+          }
+        }
+
+        async function showWebsiteDuplicatesHandler() {
+          try {
+            const { websiteMigrationService, activityLogService } = await loadDeveloperModules();
+            const duplicates = websiteMigrationService.detectDuplicateWebsites();
+            activityLogService.logActivity("developer_tools", "websites", "view_website_duplicates", { count: duplicates.length });
+            await renderDeveloperToolsSummary({ websiteDuplicates: duplicates });
+            setSettingsMessage("Website duplicaten getoond.", "success");
+          } catch (error) {
+            console.error("Website duplicates failed", error);
+            setSettingsMessage("Website duplicaten konden niet worden getoond.", "error");
+          }
+        }
+
+        async function testSupabaseWebsitesReadHandler() {
+          try {
+            const { websiteRepository, activityLogService } = await loadDeveloperModules();
+            const websites = await websiteRepository.listSupabaseWebsites();
+            activityLogService.logActivity("developer_tools", "websites", "read_supabase_websites", { rows: websites.length });
+            await renderDeveloperToolsSummary({
+              websiteMappingPreview: {
+                summary: {
+                  totalWebsites: websites.length,
+                  uniqueWebsites: websites.length,
+                  readyCount: websites.length,
+                  waitingForCustomer: 0,
+                  missingCustomer: 0,
+                  duplicateCount: 0,
+                },
+                rows: websites.slice(0, 10).map((website) => ({
+                  localId: website._localWebsiteId || website.id,
+                  name: website.name,
+                  domain: website.domain,
+                  customerStatus: website._linkedCustomerStatus || "-",
+                  ready: true,
+                  errors: [],
+                  warnings: [],
+                  payload: {
+                    name: website.name,
+                    domain: website.domain,
+                    customer_id: website.supabaseCustomerId || website.customerId || "-",
+                  },
+                })),
+              },
+            });
+            setSettingsMessage(`${websites.length} Supabase websites gelezen.`, "success");
+          } catch (error) {
+            console.error("Read Supabase websites failed", error);
+            setSettingsMessage(error.message || "Supabase websites lezen kon niet worden uitgevoerd.", "error");
+          }
+        }
+
+        async function testSupabaseWebsiteWriteHandler() {
+          const first = window.confirm("Testwebsite schrijven naar Supabase? Dit gebruikt een veilige testwebsite en geen echte klantdata.");
+          if (!first) return;
+          const second = window.confirm("Bevestig: dit is alleen bedoeld voor gecontroleerde write-test, geen bulkactie.");
+          if (!second) return;
+          const result = {
+            status: "started",
+            type: "website_write_test",
+            createdAt: new Date().toISOString(),
+            steps: [],
+          };
+          try {
+            const { websiteRepository, activityLogService } = await loadDeveloperModules();
+            const testWebsite = {
+              name: "Supabase Website Test",
+              domain: `supabase-website-test-${Date.now()}.maxwebstudio.nl`,
+              liveUrl: "https://supabase-website-test.maxwebstudio.nl",
+              status: "online",
+              hostingPackage: "Test",
+              carePackage: "Test",
+              sslStatus: "valid",
+              environment: "test",
+              isDemo: true,
+              metadata: {
+                createdBy: "supabase-website-write-test",
+                safeToDelete: true,
+              },
+            };
+            result.steps.push({ step: "create", status: "started" });
+            const created = await websiteRepository.createWebsite(testWebsite, {
+              target: "supabase",
+              mode: currentWebsiteDataMode(),
+              allowDemoSupabase: true,
+              allowOrphanWebsite: true,
+              websiteWriteTest: true,
+            });
+            result.testWebsiteId = created._supabaseWebsiteId || created.supabaseWebsiteId || created.id;
+            result.websiteId = result.testWebsiteId;
+            result.steps[result.steps.length - 1].status = "completed";
+            result.steps.push({ step: "archive", status: "started" });
+            await websiteRepository.archiveWebsite(created.id, {
+              website: created,
+              target: "supabase",
+              mode: currentWebsiteDataMode(),
+              baseUpdatedAt: created.updatedAt,
+              websiteWriteTest: true,
+              allowDemoSupabase: true,
+              allowOrphanWebsite: true,
+            });
+            result.steps[result.steps.length - 1].status = "completed";
+            result.status = "website_completed";
+            result.completedAt = new Date().toISOString();
+            localStorage.setItem("maxwebstudioLastWebsiteWriteTest", JSON.stringify(result));
+            activityLogService.logActivity("developer_tools", "websites", "website_write_test_completed", { testWebsiteId: result.testWebsiteId });
+            await renderDeveloperToolsSummary({ websiteWriteTestResult: result });
+            setSettingsMessage("Supabase website write-test voltooid en testwebsite gearchiveerd.", "success");
+          } catch (error) {
+            result.status = "failed";
+            result.error = error.message || "Website write-test mislukt.";
+            result.completedAt = new Date().toISOString();
+            localStorage.setItem("maxwebstudioLastWebsiteWriteTest", JSON.stringify(result));
+            console.error("Website write-test failed", error);
+            await renderDeveloperToolsSummary({ websiteWriteTestResult: result });
+            setSettingsMessage(result.error, "error");
+          }
+        }
+
         function renderDeveloperMode() {
           const enabled = isDeveloperModeEnabled();
           developerToolsCard.hidden = !enabled;
@@ -4054,9 +4402,18 @@
           return customerDataModeSelect.value || readStoredSettings().customerDataMode || localStorage.getItem("maxwebstudioCustomerDataMode") || "local";
         }
 
+        function currentWebsiteDataMode() {
+          return websiteDataModeSelect.value || readStoredSettings().websiteDataMode || localStorage.getItem("maxwebstudioWebsiteDataMode") || "local";
+        }
+
         async function getCustomerRepositoryModule() {
           const modules = await loadDeveloperModules();
           return modules.customerRepository;
+        }
+
+        async function getWebsiteRepositoryModule() {
+          const modules = await loadDeveloperModules();
+          return modules.websiteRepository;
         }
 
         function customerSupabaseId(customer = {}) {
@@ -4160,6 +4517,21 @@
           return result.customers.map(normalizeStoredCustomer);
         }
 
+        async function loadWebsitesByDataMode() {
+          const mode = currentWebsiteDataMode();
+          const { WebsiteRepository } = await import("./src/repositories/WebsiteRepository.js");
+          const result = await WebsiteRepository.listByDataMode(mode);
+          state.websiteSourceStatus = result;
+          localStorage.setItem("maxwebstudioLastWebsiteSourceStatus", JSON.stringify({
+            mode: result.mode,
+            counts: result.counts,
+            fallbackUsed: result.fallbackUsed,
+            error: result.error,
+            refreshedAt: result.refreshedAt,
+          }));
+          return result.websites.map(normalizeManagedSite);
+        }
+
         function normalizeWebsiteStatus(value) {
           const status = normalize(value);
           if (status === "live") return "online";
@@ -4210,7 +4582,20 @@
             notes: String(site.notes || "").trim(),
             metadata: site.metadata && typeof site.metadata === "object" ? site.metadata : {},
             isDemo: Boolean(site.isDemo),
+            isDemoJourney: Boolean(site.isDemoJourney),
             demoScenarioId: site.demoScenarioId || "",
+            demoJourneyId: site.demoJourneyId || "",
+            supabaseWebsiteId: site.supabaseWebsiteId || site._supabaseWebsiteId || "",
+            supabaseCustomerId: site.supabaseCustomerId || site._supabaseCustomerId || "",
+            migratedToSupabaseAt: site.migratedToSupabaseAt || "",
+            migrationStatus: site.migrationStatus || "",
+            _source: site._source || "",
+            _isMigrated: Boolean(site._isMigrated || site.supabaseWebsiteId || site.migratedToSupabaseAt),
+            _supabaseWebsiteId: site._supabaseWebsiteId || site.supabaseWebsiteId || "",
+            _localWebsiteId: site._localWebsiteId || site.id || "",
+            _customerSource: site._customerSource || "",
+            _linkedCustomerStatus: site._linkedCustomerStatus || "",
+            _sourceMeta: site._sourceMeta || {},
             createdAt,
             updatedAt: site.updatedAt || createdAt,
           };
@@ -4227,7 +4612,19 @@
         }
 
         function writeStoredWebsites(websites) {
-          localStorage.setItem(managedSitesStorageKey, JSON.stringify(websites.map(normalizeManagedSite)));
+          localStorage.setItem(managedSitesStorageKey, JSON.stringify(websites.map((website) => {
+            const {
+              _source,
+              _isMigrated,
+              _supabaseWebsiteId,
+              _localWebsiteId,
+              _customerSource,
+              _linkedCustomerStatus,
+              _sourceMeta,
+              ...storedWebsite
+            } = normalizeManagedSite(website);
+            return storedWebsite;
+          })));
         }
 
         function validateWebsitePayload(payload) {
@@ -4980,6 +5377,26 @@
           return ["supabase", "hybrid"].includes(customer._source);
         }
 
+        function isSupabaseManagedWebsite(website = {}) {
+          return ["supabase", "hybrid"].includes(website._source);
+        }
+
+        function websiteSourceLabel(website = {}) {
+          const source = website._source || "local";
+          if (source === "supabase") return "Supabase";
+          if (source === "hybrid") return "Hybrid";
+          if (source === "demo") return "Demo";
+          return "Local";
+        }
+
+        function websiteSourceClass(website = {}) {
+          const source = website._source || "local";
+          if (source === "supabase") return "status-prepared";
+          if (source === "hybrid") return "status-active";
+          if (source === "demo") return "status-warning";
+          return "status-planned";
+        }
+
         function healthWebsiteById(id) {
           return state.healthWebsites.find((website) => website.id === id);
         }
@@ -5195,6 +5612,52 @@
             const row = document.createElement("div");
             row.append(createCell(label), createCell(value, "strong"));
             customerSourceDetail.append(row);
+          });
+        }
+
+        function renderWebsiteSourceSummary() {
+          const status = state.websiteSourceStatus || { mode: currentWebsiteDataMode(), counts: {} };
+          const counts = status.counts || {};
+          websiteSourceSummary.replaceChildren();
+          [
+            ["Website data mode", status.mode || currentWebsiteDataMode()],
+            ["Local", String(counts.local ?? state.websites.length ?? 0)],
+            ["Supabase", String(counts.supabase ?? 0)],
+            ["Hybrid zichtbaar", String(counts.hybrid ?? state.websites.length ?? 0)],
+            ["Demo", String(counts.demo ?? state.websites.filter((website) => website._source === "demo").length)],
+            ["Zonder Supabase customer", String(state.websites.filter((website) => website._linkedCustomerStatus && website._linkedCustomerStatus !== "linked").length)],
+          ].forEach(([label, value]) => {
+            const card = document.createElement("article");
+            card.className = "admin-card metric-card";
+            card.append(createCell(label), createCell(value, "strong"));
+            websiteSourceSummary.append(card);
+          });
+          if (status.error) {
+            const card = document.createElement("article");
+            card.className = "admin-card request-card request-state-card";
+            card.append(createBadge(status.fallbackUsed ? "Fallback actief" : "Supabase fout", status.fallbackUsed ? "status-warning" : "status-attention"), createCell(status.error));
+            websiteSourceSummary.append(card);
+          }
+        }
+
+        function renderWebsiteSourceDetail(website = null, readiness = null) {
+          websiteSourceDetail.replaceChildren();
+          if (!website) return;
+          [
+            ["Databron", websiteSourceLabel(website)],
+            ["Migratiestatus", website._isMigrated || website.migrationStatus === "migrated" ? "Gemigreerd" : "Lokaal/niet gemigreerd"],
+            ["Supabase website ID", website._supabaseWebsiteId || website.supabaseWebsiteId || "-"],
+            ["Lokale website ID", website._localWebsiteId || website.id || "-"],
+            ["Gekoppelde klant", website.customerCompany || website.customerName || website.profileId || "-"],
+            ["Supabase customer ID", website.supabaseCustomerId || website._supabaseCustomerId || "-"],
+            ["Klantkoppeling", website._linkedCustomerStatus || readiness?.customerLink?.status || "-"],
+            ["Laatste update", formatDate(website.updatedAt || website._sourceMeta?.refreshedAt || "")],
+            ["Website write", readiness ? readiness.allowed ? "Beschikbaar" : "Geblokkeerd" : isSupabaseManagedWebsite(website) ? "Wordt gecontroleerd" : "LocalStorage"],
+            ["Write reden", readiness?.reason || readiness?.customerLink?.message || "-"],
+          ].forEach(([label, value]) => {
+            const row = document.createElement("div");
+            row.append(createCell(label), createCell(value, "strong"));
+            websiteSourceDetail.append(row);
           });
         }
 
@@ -5692,8 +6155,13 @@
           Object.values(websiteFields).forEach((field) => {
             field.disabled = !enabled;
           });
+          websiteEdit.disabled = !enabled;
+          websiteCancel.disabled = !enabled;
           websiteSave.disabled = !enabled;
           websiteArchive.disabled = !enabled || !state.selectedWebsiteId;
+          websiteReactivate.disabled = true;
+          websiteRefreshSupabase.disabled = true;
+          websiteHistory.disabled = !state.selectedWebsiteId;
           websiteQuickActions.copyDomain.disabled = !enabled || !websiteFields.domain.value;
           websiteQuickActions.copyGithub.disabled = !enabled || !websiteFields.githubRepoUrl.value;
           websiteQuickActions.startProject.disabled = !enabled || !state.selectedWebsiteId;
@@ -5705,8 +6173,89 @@
           websiteQuickActions.viewSubscriptions.disabled = !enabled || !state.selectedWebsiteId;
         }
 
+        function setWebsiteFieldsDisabled(disabled) {
+          Object.values(websiteFields).forEach((field) => {
+            field.disabled = disabled;
+          });
+        }
+
+        function resetWebsiteWriteControls() {
+          state.websiteWriteReadiness = null;
+          websiteEdit.disabled = true;
+          websiteCancel.disabled = true;
+          websiteRefreshSupabase.disabled = true;
+          websiteHistory.disabled = true;
+          websiteReactivate.disabled = true;
+          websiteHistoryList.hidden = true;
+          websiteHistoryList.replaceChildren();
+        }
+
+        function renderWebsiteHistory(website) {
+          websiteHistoryList.replaceChildren();
+          if (!website) {
+            websiteHistoryList.hidden = true;
+            return;
+          }
+          const history = state.developerModules?.websiteRepository?.getWebsiteHistory(website.id) || [];
+          if (!history.length) {
+            const row = document.createElement("div");
+            row.append(createCell("Wijzigingshistorie"), createCell("Nog geen website write-activiteiten."));
+            websiteHistoryList.append(row);
+            websiteHistoryList.hidden = false;
+            return;
+          }
+          history.slice(0, 8).forEach((item) => {
+            const changed = item.metadata?.changedFields?.length ? item.metadata.changedFields.join(", ") : item.metadata?.action || "-";
+            const row = document.createElement("div");
+            row.append(createCell(formatDate(item.createdAt)), createCell(`${item.action || "update"} - ${item.metadata?.source || "local"} - ${changed}`, "strong"));
+            websiteHistoryList.append(row);
+          });
+          websiteHistoryList.hidden = false;
+        }
+
+        async function applyWebsiteWriteReadiness(website) {
+          if (!website) return;
+          websiteHistory.disabled = false;
+          websiteRefreshSupabase.disabled = !isSupabaseManagedWebsite(website);
+          try {
+            const repo = await getWebsiteRepositoryModule();
+            const target = isSupabaseManagedWebsite(website) ? "supabase" : "local";
+            const readiness = repo.canWriteWebsite(website, { target, mode: currentWebsiteDataMode() });
+            state.websiteWriteReadiness = readiness;
+            websiteEdit.disabled = target === "supabase" && !readiness.allowed;
+            websiteCancel.disabled = false;
+            if (target === "local") {
+              setWebsiteFieldsDisabled(false);
+              websiteSave.disabled = false;
+              websiteArchive.disabled = false;
+              websiteReactivate.disabled = website.status !== "offline";
+              renderWebsiteSourceDetail(website, readiness);
+              return;
+            }
+            setWebsiteFieldsDisabled(!readiness.allowed);
+            websiteSave.disabled = !readiness.allowed;
+            websiteArchive.disabled = !readiness.allowed || website.status === "offline";
+            websiteReactivate.disabled = !readiness.allowed || website.status !== "offline";
+            renderWebsiteSourceDetail(website, readiness);
+            if (!readiness.allowed) {
+              setWebsiteMessage(`Supabase website write geblokkeerd: ${readiness.reason}`, "error");
+            } else if (!websiteDetailMessage.textContent) {
+              setWebsiteMessage("Supabase website write is gecontroleerd beschikbaar voor deze website.", "success");
+            }
+          } catch (error) {
+            setWebsiteFieldsDisabled(true);
+            websiteEdit.disabled = true;
+            websiteCancel.disabled = false;
+            websiteSave.disabled = true;
+            websiteArchive.disabled = true;
+            websiteReactivate.disabled = true;
+            setWebsiteMessage(error.message || "Website write readiness kon niet worden bepaald.", "error");
+          }
+        }
+
         function resetWebsiteForm() {
           state.selectedWebsiteId = "";
+          resetWebsiteWriteControls();
           websiteDetailForm.reset();
           populateWebsiteProfileOptions();
           websiteFields.githubBranch.value = "main";
@@ -5719,6 +6268,7 @@
           websiteDetailState.className = "status-badge status-prepared";
           websiteDetailSubtitle.textContent = "Nieuwe website koppelen aan een klant.";
           renderWebsiteDetailSummary(null);
+          renderWebsiteSourceDetail(null);
           updateWebsiteQuickActions(null);
           setWebsiteMessage("", "");
           enableWebsiteFields(true);
@@ -5819,6 +6369,7 @@
           state.selectedWebsiteId = id;
           const website = selectedWebsite();
           if (!website) return;
+          resetWebsiteWriteControls();
           populateWebsiteProfileOptions();
           websiteFields.profile.value = website.profileId || "";
           websiteFields.name.value = website.name || "";
@@ -5841,9 +6392,13 @@
           websiteDetailState.className = `status-badge ${websiteStatusClass(website.status)}`;
           websiteDetailSubtitle.textContent = `${website.customerCompany || website.customerName || "Klant"} - ${website.name || "Website"}`;
           renderWebsiteDetailSummary(website);
+          renderWebsiteSourceDetail(website);
           updateWebsiteQuickActions(website);
-          setWebsiteMessage("", "");
-          enableWebsiteFields(true);
+          setWebsiteMessage(isSupabaseManagedWebsite(website) ? "Supabase website write readiness wordt gecontroleerd..." : "", isSupabaseManagedWebsite(website) ? "success" : "");
+          setWebsiteFieldsDisabled(isSupabaseManagedWebsite(website));
+          websiteSave.disabled = isSupabaseManagedWebsite(website);
+          websiteArchive.disabled = isSupabaseManagedWebsite(website) || website.status === "offline";
+          applyWebsiteWriteReadiness(website);
         }
 
         function websitePayload(extra = {}) {
@@ -5877,16 +6432,55 @@
           setWebsiteMessage("", "");
 
           try {
-            const website = saveWebsiteLocally(websitePayload());
+            const currentWebsite = selectedWebsite();
+            const payload = websitePayload();
+            const repo = await getWebsiteRepositoryModule();
+            let website = null;
+            if (currentWebsite && isSupabaseManagedWebsite(currentWebsite)) {
+              try {
+                website = await repo.updateWebsite(currentWebsite.id, payload, {
+                  oldWebsite: currentWebsite,
+                  mode: currentWebsiteDataMode(),
+                  baseUpdatedAt: currentWebsite.updatedAt,
+                });
+              } catch (error) {
+                if (error.code === "WEBSITE_UPDATED_AT_MISSING" && window.confirm("Deze Supabase-website mist updated_at. Toch gecontroleerd opslaan?")) {
+                  website = await repo.updateWebsite(currentWebsite.id, payload, {
+                    oldWebsite: currentWebsite,
+                    mode: currentWebsiteDataMode(),
+                    baseUpdatedAt: currentWebsite.updatedAt,
+                    confirmMissingUpdatedAt: true,
+                  });
+                } else {
+                  throw error;
+                }
+              }
+            } else if (currentWebsite) {
+              website = await repo.updateWebsite(currentWebsite.id, payload, {
+                oldWebsite: currentWebsite,
+                target: "local",
+                mode: currentWebsiteDataMode(),
+              });
+            } else {
+              const mode = currentWebsiteDataMode();
+              const createInSupabase = mode !== "local" && window.confirm("Website in Supabase aanmaken? Kies Annuleren om lokaal op te slaan.");
+              website = await repo.createWebsite(payload, {
+                target: createInSupabase ? "supabase" : "local",
+                mode,
+              });
+            }
             await loadCRMData(false);
             state.selectedWebsiteId = website.id;
             if (state.selectedWebsiteId) selectWebsite(state.selectedWebsiteId);
             setWebsiteMessage("Website opgeslagen.", "success");
-            setAdminAccessMessage("Website opgeslagen in lokale website-opslag.", "success");
+            setAdminAccessMessage(isSupabaseManagedWebsite(currentWebsite || website) ? "Website gecontroleerd opgeslagen in Supabase websites." : "Website opgeslagen in lokale website-opslag.", "success");
           } catch (error) {
-            setWebsiteMessage(error.message || "Website kon niet worden opgeslagen.", "error");
+            const message = error.code === "WEBSITE_CONFLICT"
+              ? "Supabase heeft een nieuwere websiteversie. Ververs websitegegevens voordat je opslaat."
+              : error.message || "Website kon niet worden opgeslagen.";
+            setWebsiteMessage(message, "error");
           } finally {
-            websiteSave.disabled = false;
+            websiteSave.disabled = isSupabaseManagedWebsite(selectedWebsite()) && !state.websiteWriteReadiness?.allowed;
             websiteSave.textContent = "Website opslaan";
           }
         }
@@ -5894,24 +6488,111 @@
         async function archiveWebsite() {
           const website = selectedWebsite();
           if (!website) return;
-          const confirmed = window.confirm("Weet je zeker dat je deze website wilt verwijderen?");
+          const confirmed = window.confirm("Weet je zeker dat je deze website wilt archiveren?");
           if (!confirmed) return;
+          if (isSupabaseManagedWebsite(website) && !window.confirm("Supabase-website archiveren is een soft delete. Bevestig dat je geen hard delete uitvoert.")) return;
           websiteArchive.disabled = true;
-          websiteArchive.textContent = "Verwijderen...";
+          websiteArchive.textContent = "Archiveren...";
           setWebsiteMessage("", "");
 
           try {
-            deleteWebsiteLocally(website.id);
+            const repo = await getWebsiteRepositoryModule();
+            await repo.archiveWebsite(website.id, {
+              website,
+              target: isSupabaseManagedWebsite(website) ? "supabase" : "local",
+              mode: currentWebsiteDataMode(),
+              baseUpdatedAt: website.updatedAt,
+            });
             await loadCRMData(false);
-            resetWebsiteForm();
-            setWebsiteMessage("Website verwijderd.", "success");
-            setAdminAccessMessage("Website verwijderd uit lokale website-opslag.", "success");
+            state.selectedWebsiteId = website.id;
+            if (selectedWebsite()) selectWebsite(state.selectedWebsiteId);
+            else resetWebsiteForm();
+            setWebsiteMessage("Website gearchiveerd.", "success");
+            setAdminAccessMessage(isSupabaseManagedWebsite(website) ? "Website als soft delete gearchiveerd in Supabase." : "Website lokaal gearchiveerd.", "success");
           } catch (error) {
-            setWebsiteMessage(error.message || "Website kon niet worden verwijderd.", "error");
+            setWebsiteMessage(error.message || "Website kon niet worden gearchiveerd.", "error");
           } finally {
-            websiteArchive.textContent = "Verwijderen";
+            websiteArchive.textContent = "Archiveren";
             websiteArchive.disabled = !selectedWebsite();
           }
+        }
+
+        async function reactivateWebsite() {
+          const website = selectedWebsite();
+          if (!website) return;
+          if (!window.confirm("Deze website opnieuw activeren?")) return;
+          websiteReactivate.disabled = true;
+          websiteReactivate.textContent = "Reactiveren...";
+          setWebsiteMessage("", "");
+          try {
+            const repo = await getWebsiteRepositoryModule();
+            const profile = await repo.reactivateWebsite(website.id, {
+              website,
+              target: isSupabaseManagedWebsite(website) ? "supabase" : "local",
+              mode: currentWebsiteDataMode(),
+              baseUpdatedAt: website.updatedAt,
+            });
+            await loadCRMData(false);
+            state.selectedWebsiteId = profile?.id || website.id;
+            selectWebsite(state.selectedWebsiteId);
+            setWebsiteMessage("Website opnieuw geactiveerd.", "success");
+          } catch (error) {
+            setWebsiteMessage(error.message || "Website kon niet opnieuw worden geactiveerd.", "error");
+          } finally {
+            websiteReactivate.textContent = "Reactiveren";
+            websiteReactivate.disabled = selectedWebsite()?.status !== "offline" || (isSupabaseManagedWebsite(selectedWebsite()) && !state.websiteWriteReadiness?.allowed);
+          }
+        }
+
+        async function refreshSelectedWebsiteFromSupabase() {
+          const website = selectedWebsite();
+          if (!website || !isSupabaseManagedWebsite(website)) return;
+          websiteRefreshSupabase.disabled = true;
+          websiteRefreshSupabase.textContent = "Verversen...";
+          setWebsiteMessage("", "");
+          try {
+            await loadCRMData(false);
+            const remoteId = website._supabaseWebsiteId || website.supabaseWebsiteId || website.id;
+            const refreshed = state.websites.find((item) => item.id === remoteId || item._supabaseWebsiteId === remoteId || item.supabaseWebsiteId === remoteId || item.id === website.id);
+            state.selectedWebsiteId = refreshed?.id || website.id;
+            selectWebsite(state.selectedWebsiteId);
+            setWebsiteMessage("Websitegegevens opnieuw geladen vanuit de actieve website data source.", "success");
+          } catch (error) {
+            setWebsiteMessage(error.message || "Websitegegevens konden niet worden ververst.", "error");
+          } finally {
+            websiteRefreshSupabase.textContent = "Ververs vanuit Supabase";
+            websiteRefreshSupabase.disabled = !isSupabaseManagedWebsite(selectedWebsite());
+          }
+        }
+
+        function enableWebsiteEditing() {
+          const website = selectedWebsite();
+          if (!website) return;
+          if (isSupabaseManagedWebsite(website) && !state.websiteWriteReadiness?.allowed) {
+            setWebsiteMessage(`Supabase website write geblokkeerd: ${state.websiteWriteReadiness?.reason || "voorwaarden ontbreken"}`, "error");
+            return;
+          }
+          setWebsiteFieldsDisabled(false);
+          websiteSave.disabled = false;
+          websiteCancel.disabled = false;
+          setWebsiteMessage("Websitedetail staat klaar om te bewerken.", "success");
+        }
+
+        function cancelWebsiteEditing() {
+          if (!state.selectedWebsiteId) return;
+          selectWebsite(state.selectedWebsiteId);
+          setWebsiteMessage("Wijzigingen geannuleerd.", "success");
+        }
+
+        async function toggleWebsiteHistory() {
+          const website = selectedWebsite();
+          if (!website) return;
+          if (!state.developerModules?.websiteRepository) await getWebsiteRepositoryModule();
+          if (!websiteHistoryList.hidden) {
+            websiteHistoryList.hidden = true;
+            return;
+          }
+          renderWebsiteHistory(website);
         }
 
         function scoreLabel(value) {
@@ -6120,6 +6801,7 @@
         function renderWebsites() {
           const websites = filteredWebsites();
           websiteList.replaceChildren();
+          renderWebsiteSourceSummary();
           populateWebsiteProfileOptions();
 
           if (!state.websites.length) {
@@ -6188,9 +6870,13 @@
             edit.textContent = "Bewerken";
             edit.addEventListener("click", () => selectWebsite(website.id));
             actions.append(openWebsite, openGithub, openNetlify, copyDomain, edit);
+            const websiteCell = document.createElement("span");
+            const websiteTitle = document.createElement("strong");
+            websiteTitle.textContent = website.name || "-";
+            websiteCell.append(websiteTitle, createBadge(websiteSourceLabel(website), websiteSourceClass(website)));
             row.append(
               createCell(website.customerCompany || website.customerName || "Geen klant", "strong"),
-              createCell(website.name || "-"),
+              websiteCell,
               createCell(website.domain || "-"),
               createBadge(websiteStatusLabels[website.status] || website.status, websiteStatusClass(website.status)),
               createBadge(website.hostingPackage || "-", "status-prepared"),
@@ -9047,10 +9733,11 @@
 
           try {
             customerDataModeSelect.value = currentCustomerDataMode();
+            websiteDataModeSelect.value = currentWebsiteDataMode();
             state.customers = await loadCustomersByDataMode();
             state.profiles = state.customers;
             state.authUsers = [];
-            state.websites = readStoredWebsites();
+            state.websites = await loadWebsitesByDataMode();
             state.projects = readStoredProjects();
             state.files = readStoredFiles();
             state.quotes = readStoredQuotes();
@@ -9080,7 +9767,18 @@
               await loadWebsiteHealth(false);
             }
             const sourceStatus = state.customerSourceStatus || {};
-            if (sourceStatus.error && sourceStatus.fallbackUsed) {
+            const websiteSourceStatus = state.websiteSourceStatus || {};
+            if (websiteSourceStatus.error && websiteSourceStatus.fallbackUsed) {
+              try {
+                const { activityLogService } = await loadDeveloperModules();
+                activityLogService.logActivity("developer_tools", "websites", "website_source_fallback_local", { mode: websiteSourceStatus.mode, error: websiteSourceStatus.error });
+              } catch {
+                // Optional developer logging only.
+              }
+              setAdminAccessMessage(`Website hybrid fallback actief: ${websiteSourceStatus.error}`, "error");
+            } else if (websiteSourceStatus.error) {
+              setAdminAccessMessage(`Supabase websites konden niet worden gelezen: ${websiteSourceStatus.error}`, "error");
+            } else if (sourceStatus.error && sourceStatus.fallbackUsed) {
               try {
                 const { activityLogService } = await loadDeveloperModules();
                 activityLogService.logActivity("developer_tools", "customers", "customer_source_fallback_local", { mode: sourceStatus.mode, error: sourceStatus.error });
@@ -9091,7 +9789,7 @@
             } else if (sourceStatus.error) {
               setAdminAccessMessage(`Supabase customers konden niet worden gelezen: ${sourceStatus.error}`, "error");
             } else {
-              setAdminAccessMessage(`CRM-klanten geladen via customer data mode: ${sourceStatus.mode || "local"}.`, "success");
+              setAdminAccessMessage(`CRM geladen via customer mode ${sourceStatus.mode || "local"} en website mode ${websiteSourceStatus.mode || "local"}.`, "success");
             }
           } catch (error) {
             setAdminAccessMessage(error.message || "CRM-klanten konden niet worden geladen.", "error");
@@ -9108,8 +9806,16 @@
               error: error.message || "CRM-klanten konden niet worden geladen.",
               refreshedAt: new Date().toISOString(),
             };
+            state.websiteSourceStatus = {
+              mode: currentWebsiteDataMode(),
+              counts: { local: readStoredWebsites().length, supabase: 0, hybrid: 0, duplicateMerges: 0, demo: 0, unmigratedLocal: 0 },
+              fallbackUsed: false,
+              error: error.message || "CRM/website data kon niet worden geladen.",
+              refreshedAt: new Date().toISOString(),
+            };
             renderState(customerList, "CRM-klanten konden niet worden geladen", "Supabase-read kon geen klanten laden. Zet de customer data mode terug naar local of controleer de Supabase configuratie.", "Fout", "status-attention", { label: "Terug naar local", primary: true, onClick: () => setCustomerDataMode("local", { source: "supabase_read_error" }) });
             renderCustomerSourceSummary();
+            renderWebsiteSourceSummary();
           } finally {
             adminLoadButton.disabled = false;
             adminLoadButton.textContent = "Laden";
@@ -9183,6 +9889,11 @@
         fileDetailForm.addEventListener("submit", saveFile);
         invoiceClearPdf.addEventListener("click", clearInvoicePdfPath);
         websiteArchive.addEventListener("click", archiveWebsite);
+        websiteReactivate.addEventListener("click", reactivateWebsite);
+        websiteEdit.addEventListener("click", enableWebsiteEditing);
+        websiteCancel.addEventListener("click", cancelWebsiteEditing);
+        websiteRefreshSupabase.addEventListener("click", refreshSelectedWebsiteFromSupabase);
+        websiteHistory.addEventListener("click", toggleWebsiteHistory);
         [subscriptionSearch, subscriptionStatusFilter, subscriptionPlanFilter, subscriptionCustomerFilter, subscriptionWebsiteFilter, subscriptionFrequencyFilter].forEach((filter) => filter.addEventListener("input", renderSubscriptions));
         [websiteSearch, websiteStatusFilter, websiteHostingFilter, websiteCareFilter].forEach((filter) => filter.addEventListener("input", renderWebsites));
         [websiteQuickActions.live, websiteQuickActions.staging, websiteQuickActions.github, websiteQuickActions.netlify, websiteQuickActions.portal, detailOpenPortal, projectOpenPortal].forEach((link) => {
@@ -9300,6 +10011,7 @@
         newCustomerForm.addEventListener("submit", createCustomer);
         newSendInvite.addEventListener("click", sendInviteFromNewCustomer);
         customerDataModeSelect.addEventListener("change", changeCustomerDataModeHandler);
+        websiteDataModeSelect.addEventListener("change", changeWebsiteDataModeHandler);
         [customerSearch, customerStatusFilter, customerPackageFilter].forEach((filter) => filter.addEventListener("input", renderCustomers));
         [fileSearch, fileCategoryFilter, fileStatusFilter, fileCustomerFilter, fileProjectFilter].forEach((filter) => filter.addEventListener("input", renderFiles));
         [quoteSearch, quoteStatusFilter, quoteTypeFilter, quoteCustomerFilter, quoteProjectFilter, quoteWebsiteFilter].forEach((filter) => filter.addEventListener("input", renderQuotes));
@@ -9336,6 +10048,13 @@
         startCustomerLiveMigrationButton.addEventListener("click", startCustomerLiveMigrationHandler);
         downloadCustomerMigrationResultButton.addEventListener("click", downloadCustomerMigrationResultHandler);
         downloadCustomerPreMigrationBackupButton.addEventListener("click", downloadCustomerPreMigrationBackupHandler);
+        runWebsiteMigrationDryRunButton.addEventListener("click", runWebsiteMigrationDryRunHandler);
+        viewWebsiteMappingPreviewButton.addEventListener("click", showWebsiteMappingPreviewHandler);
+        viewWebsiteMissingLinksButton.addEventListener("click", showWebsiteMissingLinksHandler);
+        viewWebsiteDuplicatesButton.addEventListener("click", showWebsiteDuplicatesHandler);
+        testSupabaseWebsitesReadButton.addEventListener("click", testSupabaseWebsitesReadHandler);
+        testSupabaseWebsiteWriteButton.addEventListener("click", testSupabaseWebsiteWriteHandler);
+        resetWebsiteDataModeButton.addEventListener("click", resetWebsiteDataModeHandler);
         [customerMigrationIncludeDemo, customerMigrationIncludeProduction, customerMigrationBatchSize, customerMigrationSkipDuplicates, customerMigrationStopOnError].forEach((field) => {
           field.addEventListener("input", () => renderDeveloperToolsSummary());
           field.addEventListener("change", () => renderDeveloperToolsSummary());
@@ -9373,6 +10092,7 @@
 
         fillSettingsForm(readStoredSettings());
         customerDataModeSelect.value = readStoredSettings().customerDataMode || localStorage.getItem("maxwebstudioCustomerDataMode") || "local";
+        websiteDataModeSelect.value = readStoredSettings().websiteDataMode || localStorage.getItem("maxwebstudioWebsiteDataMode") || "local";
         renderIntegrations();
         renderSystemStatus();
         syncActiveNav();

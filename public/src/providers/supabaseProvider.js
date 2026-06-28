@@ -5,6 +5,16 @@ function isCustomersTable(table) {
   return table === "customers" || table === "maxwebstudioCrmCustomers" || table === "maxwebstudioCustomers";
 }
 
+function isWebsitesTable(table) {
+  return table === "websites" || table === "maxwebstudioManagedSites" || table === "maxwebstudioWebsites";
+}
+
+function normalizedTable(table) {
+  if (isCustomersTable(table)) return "customers";
+  if (isWebsitesTable(table)) return "websites";
+  return table;
+}
+
 function preparedMessage(table = "") {
   const status = getSupabaseClientStatus();
   const suffix = table ? ` Tabel ${table} blijft read-only.` : "";
@@ -68,30 +78,43 @@ function assertCustomerWriteTable(table) {
   if (!isCustomersTable(table)) throw new Error("Customer writes ondersteunen alleen de customers tabel.");
 }
 
+async function getWebsiteWriteClient(context = {}) {
+  if (context.websiteWrite !== true) throw new Error("Website write context ontbreekt.");
+  const client = await getSupabaseClient();
+  if (!client) throw new Error("Supabase client niet beschikbaar; website write blijft geblokkeerd.");
+  return client;
+}
+
+function assertWebsiteWriteTable(table) {
+  if (!isWebsitesTable(table)) throw new Error("Website writes ondersteunen alleen de websites tabel.");
+}
+
 export const supabaseProvider = {
   type: "supabase-readonly",
   status: "read-only",
 
   async getAll(table, options = {}) {
-    if (!isCustomersTable(table)) {
+    if (!isCustomersTable(table) && !isWebsitesTable(table)) {
       console.info(preparedMessage(table));
       return [];
     }
-    const client = await getReadClient("customers");
+    const normalized = normalizedTable(table);
+    const client = await getReadClient(normalized);
     const limit = Math.min(Number(options.limit || 10), 100);
-    const { data, error } = await client.from("customers").select("*").limit(limit);
-    if (error) throw new Error(error.message || "Customers lezen uit Supabase is mislukt.");
+    const { data, error } = await client.from(normalized).select("*").limit(limit);
+    if (error) throw new Error(error.message || `${normalized} lezen uit Supabase is mislukt.`);
     return Array.isArray(data) ? data : [];
   },
 
   async getById(table, id) {
-    if (!isCustomersTable(table)) {
+    if (!isCustomersTable(table) && !isWebsitesTable(table)) {
       console.info(preparedMessage(table));
       return null;
     }
-    const client = await getReadClient("customers");
-    const { data, error } = await client.from("customers").select("*").eq("id", id).maybeSingle();
-    if (error) throw new Error(error.message || "Customer lezen uit Supabase is mislukt.");
+    const normalized = normalizedTable(table);
+    const client = await getReadClient(normalized);
+    const { data, error } = await client.from(normalized).select("*").eq("id", id).maybeSingle();
+    if (error) throw new Error(error.message || `${normalized} lezen uit Supabase is mislukt.`);
     return data || null;
   },
 
@@ -179,18 +202,58 @@ export const supabaseProvider = {
     }, context);
   },
 
+  async createWebsite(record = {}, context = {}) {
+    assertWebsiteWriteTable("websites");
+    const client = await getWebsiteWriteClient(context);
+    const payload = {
+      ...record,
+      updated_at: record.updated_at || new Date().toISOString(),
+      created_at: record.created_at || new Date().toISOString(),
+    };
+    const { data, error } = await client.from("websites").insert(payload).select("*").single();
+    if (error) throw new Error(error.message || "Website aanmaken in Supabase is mislukt.");
+    return { success: true, table: "websites", action: "create_website", data };
+  },
+
+  async updateWebsite(id, updates = {}, context = {}) {
+    assertWebsiteWriteTable("websites");
+    const client = await getWebsiteWriteClient(context);
+    const payload = {
+      ...updates,
+      updated_at: updates.updated_at || new Date().toISOString(),
+    };
+    const { data, error } = await client.from("websites").update(payload).eq("id", id).select("*").single();
+    if (error) throw new Error(error.message || "Website bijwerken in Supabase is mislukt.");
+    return { success: true, table: "websites", action: "update_website", data };
+  },
+
+  async archiveWebsite(id, context = {}) {
+    return this.updateWebsite(id, {
+      status: "archived",
+      deleted_at: new Date().toISOString(),
+    }, context);
+  },
+
+  async reactivateWebsite(id, context = {}) {
+    return this.updateWebsite(id, {
+      status: "active",
+      deleted_at: null,
+    }, context);
+  },
+
   setAll() {
     return writeBlocked();
   },
 
   async count(table) {
-    if (!isCustomersTable(table)) {
+    if (!isCustomersTable(table) && !isWebsitesTable(table)) {
       console.info(preparedMessage(table));
       return 0;
     }
-    const client = await getReadClient("customers");
-    const { count, error } = await client.from("customers").select("id", { count: "exact", head: true });
-    if (error) throw new Error(error.message || "Customers tellen uit Supabase is mislukt.");
+    const normalized = normalizedTable(table);
+    const client = await getReadClient(normalized);
+    const { count, error } = await client.from(normalized).select("id", { count: "exact", head: true });
+    if (error) throw new Error(error.message || `${normalized} tellen uit Supabase is mislukt.`);
     return count ?? 0;
   },
 
