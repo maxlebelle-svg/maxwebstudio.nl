@@ -665,7 +665,16 @@
                 <button class="button secondary danger" id="demo-wipe-all" type="button">Alle lokale data wissen</button>
               </div>
               <div class="settings-actions">
-                <button class="button secondary" id="demo-import-placeholder" type="button">Import JSON backup</button>
+                <label class="button secondary" for="demo-import-file">Import JSON backup</label>
+                <input id="demo-import-file" type="file" accept="application/json,.json" hidden />
+              </div>
+              <div class="admin-profile-fields">
+                <label class="admin-profile-wide" for="demo-import-mode">Importmodus<select id="demo-import-mode"><option value="merge">Samenvoegen</option><option value="replace-selected">Overschrijven per key</option><option value="restore-all">Volledig herstellen</option></select></label>
+              </div>
+              <div class="admin-table billing-table" id="demo-import-preview" role="table" aria-label="Import preview"></div>
+              <div class="settings-actions">
+                <button class="button primary" id="demo-import-confirm" type="button" disabled>Import uitvoeren</button>
+                <button class="button secondary" id="demo-import-clear" type="button" disabled>Preview wissen</button>
               </div>
               <p class="admin-form-message" id="demo-message" role="status"></p>
             </article>
@@ -690,6 +699,11 @@
             <article class="admin-card settings-card settings-card-wide">
               <div class="settings-card-heading"><div><span>LocalStorage beheer</span><strong>Bekende Max Webstudio keys</strong></div><mark class="status-badge status-warning">Browserdata</mark></div>
               <div class="admin-table billing-table" id="local-storage-key-list" role="table" aria-label="LocalStorage keys"></div>
+            </article>
+
+            <article class="admin-card settings-card settings-card-wide">
+              <div class="settings-card-heading"><div><span>Importgeschiedenis</span><strong>JSON restore log</strong></div><mark class="status-badge status-prepared">Lokaal logboek</mark></div>
+              <div class="admin-table billing-table" id="import-log-list" role="table" aria-label="Importgeschiedenis"></div>
             </article>
 
             <article class="admin-card settings-card">
@@ -938,6 +952,7 @@
         const settingsStorageKey = "maxwebstudioSettings";
         const subscriptionsStorageKey = "maxwebstudioSubscriptions";
         const demoEmailsStorageKey = "maxwebstudioDemoEmails";
+        const importLogStorageKey = "maxwebstudioImportLog";
         const demoScenarioId = "maxwebstudio-demo-001";
         const demoCustomerId = "demo-customer-timmerbedrijf-de-vries";
         const demoWebsiteId = "demo-website-timmerbedrijf-de-vries";
@@ -959,6 +974,7 @@
           { key: subscriptionsStorageKey, label: "Abonnementen", description: "Onderhoudsabonnementen en recurring billing" },
           { key: settingsStorageKey, label: "Instellingen", description: "Bedrijfs-, factuur- en integratie-instellingen" },
           { key: demoEmailsStorageKey, label: "Demo e-mails", description: "Lokale e-mailpreview inbox voor demo-klantreizen" },
+          { key: importLogStorageKey, label: "Importlog", description: "Lokaal logboek van JSON imports/restores" },
         ];
         const completedStatuses = new Set(["afgerond"]);
         const statusLabels = {
@@ -1521,13 +1537,18 @@
         const migrationChecklist = document.getElementById("migration-checklist");
         const dataStructureDocs = document.getElementById("data-structure-docs");
         const demoEmailList = document.getElementById("demo-email-list");
+        const demoImportPreview = document.getElementById("demo-import-preview");
+        const importLogList = document.getElementById("import-log-list");
         const demoActions = {
           load: document.getElementById("demo-load"),
           reset: document.getElementById("demo-reset"),
           resetJourneys: document.getElementById("demo-reset-journeys"),
           exportAll: document.getElementById("demo-export-all"),
           wipeAll: document.getElementById("demo-wipe-all"),
-          importPlaceholder: document.getElementById("demo-import-placeholder"),
+          importFile: document.getElementById("demo-import-file"),
+          importMode: document.getElementById("demo-import-mode"),
+          importConfirm: document.getElementById("demo-import-confirm"),
+          importClear: document.getElementById("demo-import-clear"),
           openJourney: document.getElementById("demo-open-journey"),
           openLatestJourney: document.getElementById("demo-open-latest-journey"),
           openCustomer: document.getElementById("demo-open-customer"),
@@ -2041,15 +2062,238 @@
 
         function exportAllLocalData() {
           const payload = {
+            app: "Max Webstudio",
+            type: "localStorageBackup",
+            version: "1.0",
             exportedAt: new Date().toISOString(),
             source: "Max Webstudio localStorage demo backup",
-            data: {},
+            keys: {},
           };
           managedLocalStorageKeys.forEach((item) => {
-            payload.data[item.key] = parseLocalStorageValue(item.key).value;
+            payload.keys[item.key] = parseLocalStorageValue(item.key).value;
           });
           writeJsonDownload(`maxwebstudio-local-backup-${new Date().toISOString().slice(0, 10)}.json`, payload);
           setDemoMessage("Lokale Max Webstudio-data geexporteerd als JSON-backup.", "success");
+        }
+
+        function allowedStorageKeySet() {
+          return new Set(managedLocalStorageKeys.map((item) => item.key));
+        }
+
+        function backupDataFromPayload(payload) {
+          if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
+          if (payload.keys && typeof payload.keys === "object" && !Array.isArray(payload.keys)) return payload.keys;
+          if (payload.data && typeof payload.data === "object" && !Array.isArray(payload.data)) return payload.data;
+          return payload;
+        }
+
+        function isSafeImportValue(value) {
+          return Array.isArray(value) || (value && typeof value === "object") || typeof value === "string" || value === null;
+        }
+
+        function normalizeBackupPayload(payload, filename = "") {
+          const data = backupDataFromPayload(payload);
+          const allowed = allowedStorageKeySet();
+          if (!data) throw new Error("Ongeldige backupstructuur.");
+          const keys = Object.entries(data)
+            .filter(([key]) => allowed.has(key))
+            .filter(([, value]) => isSafeImportValue(value))
+            .map(([key, value]) => ({ key, value }));
+          if (!keys.length) throw new Error("Backup bevat geen herkende Max Webstudio localStorage keys.");
+          const ignoredKeys = Object.keys(data).filter((key) => !allowed.has(key));
+          return {
+            filename,
+            app: payload.app || "Onbekend",
+            type: payload.type || "legacy",
+            version: payload.version || "legacy",
+            exportedAt: payload.exportedAt || "",
+            keys,
+            ignoredKeys,
+          };
+        }
+
+        function importRecordIdentity(record) {
+          if (!record || typeof record !== "object") return "";
+          return String(record.id || record.quoteId || record.invoiceId || record.customerId || record.profileId || record.demoJourneyId || "");
+        }
+
+        function mergeImportValues(existingValue, backupValue) {
+          if (!Array.isArray(existingValue) && backupValue && typeof backupValue === "object" && !Array.isArray(backupValue)) {
+            return { value: { ...(existingValue && typeof existingValue === "object" ? existingValue : {}), ...backupValue }, added: 1, skipped: 0 };
+          }
+          if (!Array.isArray(existingValue) || !Array.isArray(backupValue)) {
+            return { value: existingValue ?? backupValue, added: 0, skipped: backupValue ? 1 : 0 };
+          }
+          const existingIds = new Set(existingValue.map(importRecordIdentity).filter(Boolean));
+          const next = [...existingValue];
+          let added = 0;
+          let skipped = 0;
+          backupValue.forEach((record) => {
+            const identity = importRecordIdentity(record);
+            if (identity && existingIds.has(identity)) {
+              skipped += 1;
+              return;
+            }
+            next.push(record);
+            if (identity) existingIds.add(identity);
+            added += 1;
+          });
+          return { value: next, added, skipped };
+        }
+
+        function readImportLog() {
+          const parsed = parseLocalStorageValue(importLogStorageKey);
+          return Array.isArray(parsed.value) ? parsed.value : [];
+        }
+
+        function writeImportLog(entry) {
+          localStorage.setItem(importLogStorageKey, JSON.stringify([entry, ...readImportLog()].slice(0, 50)));
+        }
+
+        function selectedImportKeys() {
+          return [...demoImportPreview.querySelectorAll("[data-import-key]:checked")].map((input) => input.value);
+        }
+
+        function renderImportPreview() {
+          const preview = state.pendingImportPreview;
+          demoImportPreview.replaceChildren();
+          demoActions.importConfirm.disabled = !preview;
+          demoActions.importClear.disabled = !preview;
+          if (!preview) {
+            renderState(demoImportPreview, "Geen importpreview", "Kies een JSON-backup om eerst veilig te controleren.", "Wachten", "status-planned");
+            return;
+          }
+          const warning = document.createElement("div");
+          warning.className = "admin-table-row billing-row";
+          warning.append(
+            createCell(`Bestand: ${preview.filename || "-"} · Exportdatum: ${formatDate(preview.exportedAt)} · Herkende keys: ${preview.keys.length}`, "strong"),
+            createBadge("Maak eerst een export voordat je data overschrijft.", "status-warning")
+          );
+          demoImportPreview.append(warning);
+          const head = document.createElement("div");
+          head.className = "admin-table-row admin-table-head billing-row";
+          ["Importeren", "Key", "Type", "Backup records", "Huidig", "Actie"].forEach((label) => head.append(createCell(label)));
+          demoImportPreview.append(head);
+          preview.keys.forEach((item) => {
+            const current = parseLocalStorageValue(item.key);
+            const backupCount = Array.isArray(item.value) ? item.value.length : item.value ? 1 : 0;
+            const row = document.createElement("div");
+            row.className = "admin-table-row billing-row";
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.value = item.key;
+            checkbox.checked = true;
+            checkbox.dataset.importKey = item.key;
+            row.append(
+              checkbox,
+              createCell(item.key, "strong"),
+              createCell(Array.isArray(item.value) ? "array" : typeof item.value),
+              createCell(String(backupCount)),
+              createCell(String(current.count)),
+              createCell(demoActions.importMode.value === "merge" ? "Samenvoegen" : demoActions.importMode.value === "restore-all" ? "Volledig herstellen" : "Overschrijven indien geselecteerd")
+            );
+            demoImportPreview.append(row);
+          });
+          if (preview.ignoredKeys.length) {
+            const ignored = document.createElement("div");
+            ignored.className = "admin-table-row billing-row";
+            ignored.append(createCell(`Genegeerde onbekende keys: ${preview.ignoredKeys.join(", ")}`), createBadge("Genegeerd", "status-planned"));
+            demoImportPreview.append(ignored);
+          }
+        }
+
+        async function handleImportFile(event) {
+          const file = event.target.files?.[0];
+          if (!file) return;
+          if (!file.name.toLowerCase().endsWith(".json")) {
+            setDemoMessage("Kies een geldig .json bestand.", "error");
+            return;
+          }
+          try {
+            const payload = JSON.parse(await file.text());
+            state.pendingImportPreview = normalizeBackupPayload(payload, file.name);
+            renderImportPreview();
+            setDemoMessage("Backup gecontroleerd. Bekijk de preview en kies een importmodus.", "success");
+          } catch (error) {
+            state.pendingImportPreview = null;
+            renderImportPreview();
+            setDemoMessage(error.message || "JSON-backup kon niet worden gelezen.", "error");
+          }
+        }
+
+        function clearImportPreview() {
+          state.pendingImportPreview = null;
+          demoActions.importFile.value = "";
+          renderImportPreview();
+          setDemoMessage("Importpreview gewist.", "success");
+        }
+
+        function executeImport() {
+          const preview = state.pendingImportPreview;
+          if (!preview) return;
+          const mode = demoActions.importMode.value;
+          const selected = mode === "restore-all"
+            ? preview.keys.map((item) => item.key)
+            : selectedImportKeys();
+          if (!selected.length) {
+            setDemoMessage("Selecteer minimaal één key om te importeren.", "error");
+            return;
+          }
+          if (mode === "restore-all") {
+            if (!window.confirm("Volledig herstellen vervangt alle bekende Max Webstudio localStorage keys. Eerst export maken is sterk aanbevolen.")) return;
+            const confirmation = window.prompt("Typ HERSTELLEN om volledig herstel uit te voeren.");
+            if (confirmation !== "HERSTELLEN") {
+              setDemoMessage("Volledig herstel geannuleerd.", "error");
+              return;
+            }
+          } else if (!window.confirm(`Import uitvoeren in modus: ${demoActions.importMode.options[demoActions.importMode.selectedIndex].textContent}?`)) {
+            return;
+          }
+
+          const entry = {
+            id: createCrmId(),
+            importedAt: new Date().toISOString(),
+            filename: preview.filename,
+            mode,
+            recognizedKeys: preview.keys.map((item) => item.key),
+            addedRecords: 0,
+            skippedRecords: 0,
+            overwrittenKeys: [],
+            status: "success",
+            error: "",
+          };
+
+          try {
+            if (mode === "restore-all") {
+              managedLocalStorageKeys.forEach((item) => localStorage.removeItem(item.key));
+            }
+            preview.keys.forEach((item) => {
+              if (!selected.includes(item.key)) return;
+              if (mode === "merge") {
+                const current = parseLocalStorageValue(item.key).value;
+                const result = mergeImportValues(current, item.value);
+                localStorage.setItem(item.key, JSON.stringify(result.value));
+                entry.addedRecords += result.added;
+                entry.skippedRecords += result.skipped;
+                return;
+              }
+              localStorage.setItem(item.key, JSON.stringify(item.value));
+              entry.overwrittenKeys.push(item.key);
+              entry.addedRecords += Array.isArray(item.value) ? item.value.length : item.value ? 1 : 0;
+            });
+            writeImportLog(entry);
+            state.pendingImportPreview = null;
+            demoActions.importFile.value = "";
+            loadCRMData(false);
+            renderDemoEnvironment();
+            setDemoMessage(`Import voltooid. Toegevoegd: ${entry.addedRecords}, overgeslagen: ${entry.skippedRecords}.`, "success");
+          } catch (error) {
+            entry.status = "error";
+            entry.error = error.message || "Import mislukt.";
+            writeImportLog(entry);
+            renderImportLog();
+            setDemoMessage(entry.error, "error");
+          }
         }
 
         function wipeAllLocalData() {
@@ -2177,6 +2421,32 @@
           });
         }
 
+        function renderImportLog() {
+          importLogList.replaceChildren();
+          const logs = readImportLog();
+          if (!logs.length) {
+            renderState(importLogList, "Geen importgeschiedenis", "Importeer een backup om hier het logboek te zien.", "Leeg", "status-planned");
+            return;
+          }
+          const head = document.createElement("div");
+          head.className = "admin-table-row admin-table-head billing-row";
+          ["Datum", "Bestand", "Modus", "Keys", "Resultaat", "Status"].forEach((label) => head.append(createCell(label)));
+          importLogList.append(head);
+          logs.forEach((log) => {
+            const row = document.createElement("div");
+            row.className = "admin-table-row billing-row";
+            row.append(
+              createCell(formatDate(log.importedAt)),
+              createCell(log.filename || "-"),
+              createCell(log.mode || "-"),
+              createCell(String(log.recognizedKeys?.length || 0)),
+              createCell(`+${log.addedRecords || 0} / skip ${log.skippedRecords || 0} / overwrite ${log.overwrittenKeys?.length || 0}`),
+              createBadge(log.status === "success" ? "Gelukt" : "Fout", log.status === "success" ? "status-active" : "status-attention")
+            );
+            importLogList.append(row);
+          });
+        }
+
         function renderEnvironmentStatus() {
           const statuses = [
             ["Opslag", "localStorage", "status-active"],
@@ -2238,6 +2508,8 @@
           renderLocalStorageKeyList();
           renderDemoFlowChecklist();
           renderDemoEmailInbox();
+          renderImportPreview();
+          renderImportLog();
           renderEnvironmentStatus();
           renderMigrationChecklist();
           renderDataStructureDocs();
@@ -7089,7 +7361,10 @@
         demoActions.resetJourneys.addEventListener("click", resetDemoJourneys);
         demoActions.exportAll.addEventListener("click", exportAllLocalData);
         demoActions.wipeAll.addEventListener("click", wipeAllLocalData);
-        demoActions.importPlaceholder.addEventListener("click", () => setDemoMessage("Import wordt gebouwd in Fase 10.1.", "success"));
+        demoActions.importFile.addEventListener("change", handleImportFile);
+        demoActions.importMode.addEventListener("change", renderImportPreview);
+        demoActions.importConfirm.addEventListener("click", executeImport);
+        demoActions.importClear.addEventListener("click", clearImportPreview);
         demoActions.openCustomer.addEventListener("click", () => {
           if (!customerById(demoCustomerId)) return;
           selectCustomer(demoCustomerId);
