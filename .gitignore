@@ -3,4 +3,4 @@
 .env.*.local
 !.env.example
 !.env.local.example
-
+supabase/.temp/

@@ -7,16 +7,17 @@ Dit document voert geen SQL uit, draait geen Supabase CLI, wijzigt geen staging 
 
 ## Uitkomst
 
-Huidige status: `NOT_READY`
+Huidige status: `READY_FOR_STAGING_EXECUTION`
 
 Reden:
 
-- Supabase CLI is geinstalleerd, maar staat niet in de shell `PATH` die Codex gebruikt.
+- Supabase CLI is geinstalleerd en werkt via absoluut pad `/opt/homebrew/bin/supabase`.
 - Supabase CLI versie is bevestigd via absoluut pad: `2.108.0`.
-- De CLI probeerde telemetry naar `~/.supabase` te schrijven; dat valt buiten de toegestane workspace. De versiecheck werkt met tijdelijke `HOME=/private/tmp`.
-- De CLI is nog niet aantoonbaar gekoppeld aan uitsluitend het test/staging project.
-- Er is geen test-only PostgreSQL connection string aanwezig.
-- Migration drafts kunnen daardoor nog niet veilig en reproduceerbaar vanuit deze werkomgeving worden uitgevoerd.
+- De CLI is gekoppeld aan het test/staging project `maxwebstudio-test`.
+- Project ref komt overeen met de test `SUPABASE_URL` host.
+- Lokale Supabase linkmetadata staat in `supabase/.temp/` en wordt door Git genegeerd.
+- Er is geen test-only PostgreSQL connection string aanwezig, maar dat is geen blocker zolang de Supabase CLI route gebruikt wordt.
+- Migration drafts kunnen in de volgende fase via de Supabase CLI-route gecontroleerd worden uitgevoerd.
 
 ## Huidige Tooling
 
@@ -26,7 +27,7 @@ Reden:
 | Node.js | Aanwezig | Syntaxchecks, JSON parsechecks, readiness scripts |
 | npm | Aanwezig | Project tooling indien nodig |
 | psql | Aanwezig | Fallback voor SQL execution, maar alleen met test-only DB connection string |
-| Supabase CLI | Aanwezig, niet volledig bruikbaar | Versie `2.108.0`; niet in Codex PATH; projectlink nog niet bewezen |
+| Supabase CLI | Ready via absoluut pad | Versie `2.108.0`; gebruik `/opt/homebrew/bin/supabase` |
 | Netlify CLI | Ontbreekt | Niet nodig voor SQL execution, later nuttig voor function runtime tests |
 
 ## Benodigde `.env.local` Variabelen
@@ -194,19 +195,21 @@ Fase 28 mag opnieuw starten wanneer:
 
 ## Ready/Not Ready Besluit
 
-Huidige status: `NOT_READY`
+Huidige status: `READY_FOR_STAGING_EXECUTION`
 
 Verbeterd:
 
 - Supabase CLI is lokaal aanwezig.
 - Versie `2.108.0` is bevestigd.
+- Supabase CLI is gekoppeld aan `maxwebstudio-test`.
+- `supabase/.temp/` wordt genegeerd door Git.
 
-Ontbreekt nog:
+Nog te bewaken:
 
-- Supabase CLI moet bruikbaar zijn in de Codex shell via `PATH` of expliciet absoluut pad.
-- Supabase CLI moet veilig gekoppeld zijn aan uitsluitend het test/staging project, of een test-only database connection string moet beschikbaar zijn voor psql fallback.
-- Telemetry/config writes moeten binnen toegestane lokale omgeving kunnen plaatsvinden of bewust via tijdelijke HOME worden uitgevoerd.
+- Gebruik in Codex het absolute pad `/opt/homebrew/bin/supabase`.
+- Voer SQL alleen uit op het gelinkte test/staging project.
+- Leg elke stap vast in `TEST_RESULTS.md`.
 
 Aanbevolen volgende actie:
 
-Maak de CLI bruikbaar voor de execution-shell en bevestig de staging projectkoppeling zonder SQL uit te voeren. Gebruik psql alleen als fallback wanneer een test-only database connection string veilig beschikbaar is.
+Hervat Fase 28 met de Supabase CLI-route. Voer migration drafts alleen in de vastgelegde volgorde uit en stop direct bij kritieke fouten.

@@ -990,14 +990,14 @@ Uitkomst:
 - `.env.local` blijft veilig genegeerd.
 - Test/staging env-context is aanwezig.
 - Geen productie-indicatoren gevonden.
-- Environment blijft `NOT_READY`.
+- CLI is gelinkt aan `maxwebstudio-test`.
+- Environment is `READY_FOR_STAGING_EXECUTION`.
 
-Resterend:
+Resterend aandachtspunt:
 
-- CLI staat nog niet in de Codex shell PATH.
-- CLI projectlink naar test/staging is nog niet bewezen.
-- Er is nog geen test-only DB connection string voor psql fallback.
+- Gebruik `/opt/homebrew/bin/supabase` als expliciet CLI-pad.
+- Geen psql fallback nodig zolang de Supabase CLI-route wordt gebruikt.
 
 Volgende actie:
 
-Maak de CLI bruikbaar voor de execution-shell en bevestig daarna de staging projectkoppeling zonder SQL uit te voeren.
+Herstart Fase 28 en voer de migration drafts gecontroleerd uit op het gelinkte test/staging project.

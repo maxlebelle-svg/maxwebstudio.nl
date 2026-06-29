@@ -1244,25 +1244,27 @@ Bewust niet uitgevoerd:
 
 ## Fase 28.1 Hercontrole - Supabase CLI
 
-Status: hercontrole uitgevoerd. Environment blijft `NOT_READY`.
+Status: hercontrole uitgevoerd. Environment is `READY_FOR_STAGING_EXECUTION`.
 
 Resultaat:
 
 - Supabase CLI is geinstalleerd.
 - Versie bevestigd: `2.108.0`.
 - De binary staat op `/opt/homebrew/bin/supabase`.
-- `supabase` staat nog niet in de shell `PATH` die Codex gebruikt.
-- De CLI probeert telemetry/config naar `~/.supabase` te schrijven; dit is in de sandbox geblokkeerd.
-- Versiecheck werkt met tijdelijke `HOME=/private/tmp`.
+- De CLI wordt in Codex gebruikt via absoluut pad.
+- CLI login/link is succesvol afgerond.
+- Gelinkt project is `maxwebstudio-test`.
+- Project ref matcht de test `SUPABASE_URL`.
+- Lokale linkmetadata staat in `supabase/.temp/` en is toegevoegd aan `.gitignore`.
 - `.env.local` blijft genegeerd door Git.
 - `APP_ENV=test` en `APP_ENVIRONMENT=test`.
 - Supabase testconfig is aanwezig zonder waarden te tonen.
 - Er zijn geen productie-indicatoren aangetroffen in de gecontroleerde env-context.
 
-Resterende blockers:
+Resterende aandachtspunten:
 
-- CLI moet bruikbaar zijn voor de execution-shell via PATH of expliciet absoluut pad.
-- CLI moet veilig gekoppeld zijn aan uitsluitend het test/staging project, of psql fallback moet een test-only DB connection string krijgen.
+- Gebruik `/opt/homebrew/bin/supabase` als expliciet CLI-pad.
+- Voer SQL alleen uit volgens de migration-volgorde en documenteer per stap.
 
 Bewust niet uitgevoerd:
 

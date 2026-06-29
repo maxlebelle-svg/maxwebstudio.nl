@@ -7,30 +7,30 @@ Doel: objectief bepalen of Fase 28 opnieuw mag starten.
 
 - [x] Supabase CLI is aanwezig.
 - [x] Supabase CLI versie is genoteerd: `2.108.0`.
-- [ ] Supabase CLI staat in de shell `PATH` of wordt bewust via absoluut pad gebruikt.
-- [ ] Supabase CLI is gekoppeld aan het test/staging project.
+- [x] Supabase CLI staat in de shell `PATH` of wordt bewust via absoluut pad gebruikt: `/opt/homebrew/bin/supabase`.
+- [x] Supabase CLI is gekoppeld aan het test/staging project `maxwebstudio-test`.
 - [ ] Of: psql fallback heeft een test-only database connection string.
-- [ ] Git werkt.
-- [ ] Node.js werkt.
+- [x] Git werkt.
+- [x] Node.js werkt.
 
 ## Environment
 
-- [ ] `.env.local` bestaat.
-- [ ] `.env.local` staat in `.gitignore`.
-- [ ] `APP_ENV=test`.
-- [ ] `APP_ENVIRONMENT=test`.
-- [ ] `SUPABASE_URL` aanwezig.
-- [ ] `SUPABASE_ANON_KEY` aanwezig.
-- [ ] `SUPABASE_SERVICE_ROLE_KEY` aanwezig.
-- [ ] `SUPABASE_PROJECT_ID` aanwezig.
-- [ ] Geen secretwaarden staan in docs of git output.
+- [x] `.env.local` bestaat.
+- [x] `.env.local` staat in `.gitignore`.
+- [x] `APP_ENV=test`.
+- [x] `APP_ENVIRONMENT=test`.
+- [x] `SUPABASE_URL` aanwezig.
+- [x] `SUPABASE_ANON_KEY` aanwezig.
+- [x] `SUPABASE_SERVICE_ROLE_KEY` aanwezig.
+- [x] `SUPABASE_PROJECT_ID` aanwezig.
+- [x] Geen secretwaarden staan in docs of git output.
 
 ## Staging Project
 
-- [ ] Project is aantoonbaar test/staging.
-- [ ] Project is niet productie.
+- [x] Project is aantoonbaar test/staging: `maxwebstudio-test`.
+- [x] Project is niet productie.
 - [ ] Geen echte klantdata aanwezig.
-- [ ] Service role key wordt alleen lokaal/server-side gebruikt.
+- [x] Service role key wordt alleen lokaal/server-side gebruikt.
 
 ## Migration Drafts
 
@@ -43,7 +43,7 @@ Doel: objectief bepalen of Fase 28 opnieuw mag starten.
 
 ## Execution
 
-- [ ] Execution route gekozen: Supabase CLI, psql of SQL Editor.
+- [x] Execution route gekozen: Supabase CLI via `/opt/homebrew/bin/supabase`.
 - [ ] SQL wordt per bestand uitgevoerd.
 - [ ] Stopcondities zijn bekend.
 - [ ] Rollback/reset route is bekend.
