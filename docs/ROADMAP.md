@@ -750,3 +750,32 @@ Aanbevolen volgende stappen:
 2. Vertaal het plan pas daarna naar een expliciete SQL patch/migration draft.
 3. Test de SQL uitsluitend in Supabase testomgeving.
 4. Herhaal Customer A/B isolation en audit/security checks voordat productie ooit wordt geraakt.
+
+## Fase 24 - Supabase Migration Scripts Draft
+
+Afgerond als draft/readinessfase:
+
+- aparte map `supabase/migration-drafts/`
+- schema/tables draft
+- indexes draft
+- RLS enablement draft
+- RLS policies draft
+- audit logging foundation draft
+- optionele demo seed draft
+- reviewchecklist voor schema/RLS/backup/staging/rollback/approval
+
+Nog niet uitgevoerd:
+
+- geen SQL
+- geen Supabase CLI
+- geen productiegegevens
+- geen schemawijziging
+- geen runtimewijziging
+
+Aanbevolen volgende stappen:
+
+1. Review de migration drafts bestand voor bestand.
+2. Corrigeer eventuele schema/RLS opmerkingen in een aparte reviewfase.
+3. Voer daarna alleen in een Supabase testproject uit.
+4. Registreer test-evidence en Customer A/B isolation-resultaten.
+5. Productie blijft No-Go tot release approval.

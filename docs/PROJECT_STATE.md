@@ -995,3 +995,33 @@ Bewust nog niet uitgevoerd:
 - Geen productiegegevens gewijzigd.
 - Geen RLS live geactiveerd.
 - Geen externe integraties of API keys toegevoegd.
+
+## Fase 24 - Supabase Migration Scripts Draft
+
+Status: afgerond als migration draft/readinessfase zonder SQL-uitvoering, Supabase CLI, productiegegevens of runtimewijzigingen.
+
+Aangemaakt/bijgewerkt:
+
+- `supabase/migration-drafts/README.md`
+- `supabase/migration-drafts/001_schema_tables.sql`
+- `supabase/migration-drafts/002_indexes.sql`
+- `supabase/migration-drafts/003_rls_enablement.sql`
+- `supabase/migration-drafts/004_rls_policies.sql`
+- `supabase/migration-drafts/005_audit_logging_foundation.sql`
+- `supabase/migration-drafts/006_seed_demo_data_optional.sql`
+- `docs/SUPABASE_MIGRATION_DRAFT_REVIEW_CHECKLIST.md`
+- `docs/deployment/SQL_BUNDLE.md`
+
+Resultaat:
+
+- Concept-migraties staan klaar als reviewbundel.
+- Schema/tables, indexes, RLS enablement, RLS policies, audit foundation en optionele demo seed zijn gescheiden.
+- Elk SQL-bestand bevat waarschuwingen: `DRAFT ONLY`, `DO NOT RUN WITHOUT EXPLICIT APPROVAL` en `REVIEW RLS BEFORE PRODUCTION`.
+- Reviewstappen voor schema, RLS, backup, staging/testproject, rollback en approval zijn vastgelegd.
+
+Bewust niet uitgevoerd:
+
+- Geen SQL uitgevoerd.
+- Geen Supabase CLI gebruikt.
+- Geen schema of productiegegevens aangepast.
+- Geen API keys of externe services toegevoegd.

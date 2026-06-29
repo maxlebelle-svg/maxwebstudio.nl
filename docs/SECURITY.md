@@ -602,3 +602,22 @@ Status:
 - Geen SQL uitgevoerd.
 - Geen RLS live geactiveerd.
 - Geen productiegegevens gewijzigd.
+
+## Fase 24 - Migration drafts securitystatus
+
+Fase 24 maakt SQL-drafts, maar activeert niets.
+
+Securityregels:
+
+- Migration drafts mogen niet rechtstreeks op productie worden uitgevoerd.
+- RLS policies moeten eerst handmatig gereviewd worden op recursie en Customer A/B isolation.
+- De optionele demo seed is test/demo-only.
+- Audit logging foundation mag geen secrets, signed URLs, reset tokens of volledige providerpayloads loggen.
+- Legacy `customer_*` tabellen blijven uitgesloten.
+
+Status:
+
+- Draftbestanden aangemaakt.
+- Geen SQL uitgevoerd.
+- Geen Supabase CLI gebruikt.
+- Geen productiegegevens gewijzigd.

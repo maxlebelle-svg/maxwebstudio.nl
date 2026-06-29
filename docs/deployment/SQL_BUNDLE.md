@@ -40,3 +40,27 @@ Legacy tabellen blijven historische context:
 - `customer_subscriptions`
 
 Nieuwe productiefeatures gebruiken canonical tabellen.
+
+## Fase 24 Migration Drafts
+
+Nieuwe draftbundel:
+
+- `supabase/migration-drafts/001_schema_tables.sql`
+- `supabase/migration-drafts/002_indexes.sql`
+- `supabase/migration-drafts/003_rls_enablement.sql`
+- `supabase/migration-drafts/004_rls_policies.sql`
+- `supabase/migration-drafts/005_audit_logging_foundation.sql`
+- `supabase/migration-drafts/006_seed_demo_data_optional.sql`
+
+Status:
+
+- Draft only.
+- Niet uitgevoerd.
+- Niet uitvoeren zonder expliciete approval.
+- Eerst reviewen met `docs/SUPABASE_MIGRATION_DRAFT_REVIEW_CHECKLIST.md`.
+
+Belangrijk:
+
+- Deze drafts zijn bedoeld als opvolger van de canonical schema/RLS-planning.
+- Legacy `customer_*` tabellen blijven uitgesloten.
+- `006_seed_demo_data_optional.sql` is alleen test/demo.
