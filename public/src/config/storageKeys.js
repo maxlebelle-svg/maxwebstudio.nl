@@ -58,6 +58,7 @@ export const STORAGE_KEYS = Object.freeze({
   lastAccessControlTest: "maxwebstudioLastAccessControlTest",
   deploymentBlockers: "maxwebstudioDeploymentBlockers",
   aiWebsiteWizardState: "maxwebstudioAiWebsiteWizardState",
+  aiAdminAssistantDrafts: "maxwebstudioAiAdminAssistantDrafts",
 });
 
 export const MODULE_STORAGE_KEYS = Object.freeze({
@@ -74,7 +75,7 @@ export const MODULE_STORAGE_KEYS = Object.freeze({
   clientPortal: [STORAGE_KEYS.clientPortalSettings, STORAGE_KEYS.lastClientPortalDataTest, STORAGE_KEYS.clientPortalMessages, STORAGE_KEYS.clientPortalNotifications, STORAGE_KEYS.changeRequests],
   auth: [STORAGE_KEYS.authUsers, STORAGE_KEYS.profiles, STORAGE_KEYS.currentSession, STORAGE_KEYS.accountRequests, STORAGE_KEYS.lastProfileReadinessTest, STORAGE_KEYS.accessControlSettings, STORAGE_KEYS.lastAccessControlTest],
   deployment: [STORAGE_KEYS.deploymentBlockers],
-  aiWebsiteWizard: [STORAGE_KEYS.aiWebsiteWizardState],
+  aiWebsiteWizard: [STORAGE_KEYS.aiWebsiteWizardState, STORAGE_KEYS.aiAdminAssistantDrafts],
   demo: [STORAGE_KEYS.demoEmails, STORAGE_KEYS.importLog, STORAGE_KEYS.activityLog, STORAGE_KEYS.migrationLog],
 });
 
@@ -105,6 +106,7 @@ export const PRIMARY_MODULE_KEYS = Object.freeze({
   accessControlSettings: STORAGE_KEYS.accessControlSettings,
   lastAccessControlTest: STORAGE_KEYS.lastAccessControlTest,
   deploymentBlockers: STORAGE_KEYS.deploymentBlockers,
+  aiAdminAssistantDrafts: STORAGE_KEYS.aiAdminAssistantDrafts,
 });
 
 export function getKnownStorageKeys() {

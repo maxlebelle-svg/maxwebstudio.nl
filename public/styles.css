@@ -6967,6 +6967,39 @@ h3 {
   max-width: 72ch;
 }
 
+.ai-admin-assistant-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.ai-admin-assistant-card,
+.ai-admin-output-card {
+  min-width: 0;
+}
+
+.ai-admin-output-card {
+  grid-column: 1 / -1;
+}
+
+.ai-admin-output-card .settings-status-list div,
+.ai-admin-assistant-card .settings-status-list div {
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ai-admin-output-card .settings-status-list div:last-child,
+.ai-admin-assistant-card .settings-status-list div:last-child {
+  border-bottom: 0;
+}
+
+.ai-admin-output-card .settings-status-list span,
+.ai-admin-assistant-card .settings-status-list span {
+  max-width: 76ch;
+  text-align: right;
+  line-height: 1.45;
+}
+
 .settings-checkbox-grid label,
 .settings-toggle,
 .settings-wide-label {
@@ -8917,6 +8950,7 @@ h3 {
   .admin-profile-actions,
   .settings-grid,
   .ai-wizard-layout,
+  .ai-admin-assistant-grid,
   .settings-checkbox-grid,
   .settings-alert,
   .settings-submit-row,
@@ -8947,6 +8981,7 @@ h3 {
 
   .ai-wizard-preview-card,
   .ai-wizard-output-card,
+  .ai-admin-output-card,
   .ai-wizard-debug-card {
     grid-column: 1;
   }

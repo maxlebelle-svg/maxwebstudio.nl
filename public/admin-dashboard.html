@@ -41,6 +41,7 @@
           <span class="admin-nav-group">Platform</span>
           <a href="#klantportaal">Klantportaal</a>
           <a href="#ai">AI Wizard</a>
+          <a href="#ai-assistant">AI Assistent</a>
           <a href="#instellingen">Instellingen</a>
           <a href="#integraties">Integraties</a>
           <a href="#demo-omgeving">Demo omgeving</a>
@@ -830,6 +831,64 @@
                   <mark class="status-badge status-warning">Alleen intern</mark>
                 </div>
                 <div class="settings-status-list" id="ai-wizard-debug-output"></div>
+              </article>
+            </div>
+          </section>
+
+          <section class="admin-section" id="ai-assistant">
+            <div class="admin-section-heading">
+              <div>
+                <p class="section-kicker">AI Admin Assistant</p>
+                <h2>AI readiness voor CRM en sales</h2>
+                <p class="admin-section-intro">Bereid AI-acties voor op lokale demo-data. Deze module toont wat later server-side naar een AI-provideradapter zou gaan, maar voert nu geen externe calls uit.</p>
+              </div>
+              <mark class="status-badge status-planned">Mock only</mark>
+            </div>
+            <div class="settings-alert">
+              <strong>Geen AI-provider actief</strong>
+              <span>Alle output komt uit lokale template-logica. Er worden geen OpenAI-calls, API keys, productiegegevens of externe services gebruikt.</span>
+            </div>
+
+            <div class="ai-admin-assistant-grid">
+              <form class="admin-card settings-card ai-admin-assistant-card" id="ai-admin-assistant-form">
+                <div class="settings-card-heading">
+                  <div>
+                    <span>Actie</span>
+                    <strong>Mock AI-output maken</strong>
+                  </div>
+                  <mark class="status-badge status-prepared">Local/demo</mark>
+                </div>
+                <div class="admin-profile-fields">
+                  <label for="ai-admin-action">AI-actie<select id="ai-admin-action"></select></label>
+                  <label for="ai-admin-context">Context/selectie<select id="ai-admin-context"></select></label>
+                </div>
+                <div class="admin-profile-actions">
+                  <button class="button primary" type="submit">Maak preview</button>
+                  <p class="admin-form-message" id="ai-admin-message" role="status"></p>
+                </div>
+                <div class="settings-status-list" id="ai-admin-data-policy"></div>
+              </form>
+
+              <article class="admin-card settings-card ai-admin-assistant-card">
+                <div class="settings-card-heading">
+                  <div>
+                    <span>Readiness</span>
+                    <strong>Wat nog nodig is voor echte AI</strong>
+                  </div>
+                  <mark class="status-badge status-warning">Blocked</mark>
+                </div>
+                <div class="settings-status-list" id="ai-admin-readiness"></div>
+              </article>
+
+              <article class="admin-card settings-card ai-admin-output-card">
+                <div class="settings-card-heading">
+                  <div>
+                    <span>Output preview</span>
+                    <strong>Lokale template-output</strong>
+                  </div>
+                  <mark class="status-badge status-prepared" id="ai-admin-output-status">Nog geen output</mark>
+                </div>
+                <div class="settings-status-list" id="ai-admin-output"></div>
               </article>
             </div>
           </section>
@@ -3370,6 +3429,7 @@
             testEnvironmentService: await import("./src/services/testEnvironmentService.js"),
             releaseDecisionService: await import("./src/services/releaseDecisionService.js"),
             aiWebsiteWizardService: await import("./src/services/aiWebsiteWizardService.js"),
+            aiAdminAssistantService: await import("./src/services/aiAdminAssistantService.js"),
           };
           return state.developerModules;
         }
@@ -4959,6 +5019,26 @@
           appendDeveloperCard("AI Wizard volgende capabilities", summary.readiness.nextCapabilities);
         }
 
+        function renderAiAdminAssistantReadiness(modules) {
+          const summary = modules.aiAdminAssistantService.getAiAdminAssistantSummary();
+          appendDeveloperCard("AI Admin Assistant readiness", [
+            ["Status", summary.readiness.status],
+            ["AI-calls", summary.readiness.aiCalls],
+            ["Storage key", summary.readiness.storageKey],
+            ["Mock acties", String(summary.actionCount)],
+            ["Draft previews", String(summary.draftCount)],
+            ["Future adapter", summary.readiness.futureAdapter],
+          ]);
+          appendDeveloperCard("AI Assistant lokale data", Object.entries(summary.localDataCounts).map(([key, value]) => [
+            key,
+            String(value),
+          ]));
+          appendDeveloperCard("AI Assistant blockers", summary.readiness.items.map((item) => [
+            item.label,
+            `${item.status} - ${item.note}`,
+          ]));
+        }
+
         function evidenceSummary(blocker = {}) {
           const detailCount = Object.values(blocker.evidenceDetails || {}).filter(Boolean).length;
           const missing = blocker.missingEvidence?.length ? `Ontbreekt: ${blocker.missingEvidence.join(", ")}` : "Evidence compleet";
@@ -5276,6 +5356,7 @@
             renderSubscriptionSupabaseReadiness(modules);
             renderClientPortalReadiness(modules);
             renderAiWebsiteWizardReadiness(modules);
+            renderAiAdminAssistantReadiness(modules);
             renderSupabaseSqlAuditStatus();
             renderDatabaseConsolidationStatus();
             renderSupabaseSetupChecklist();
@@ -15281,6 +15362,131 @@
       }
 
       initLeadfinder();
+    </script>
+    <script type="module">
+      import {
+        generateAndSaveAiAdminAssistantPreview,
+        getAiAdminAssistantActions,
+        getAiAdminAssistantContextOptions,
+        getAiAdminAssistantReadiness,
+        listAiAdminAssistantDrafts,
+      } from "./src/services/aiAdminAssistantService.js";
+
+      const aiAdminElements = {
+        form: document.getElementById("ai-admin-assistant-form"),
+        action: document.getElementById("ai-admin-action"),
+        context: document.getElementById("ai-admin-context"),
+        message: document.getElementById("ai-admin-message"),
+        dataPolicy: document.getElementById("ai-admin-data-policy"),
+        readiness: document.getElementById("ai-admin-readiness"),
+        output: document.getElementById("ai-admin-output"),
+        outputStatus: document.getElementById("ai-admin-output-status"),
+      };
+
+      function escapeHtml(value) {
+        return String(value || "").replace(/[&<>"']/g, (character) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#039;",
+        })[character]);
+      }
+
+      function fillSelect(select, options, placeholder = "Kies optie") {
+        if (!select) return;
+        select.innerHTML = `<option value="">${escapeHtml(placeholder)}</option>`;
+        options.forEach((option) => {
+          const element = document.createElement("option");
+          element.value = option.value;
+          element.textContent = option.label;
+          select.appendChild(element);
+        });
+      }
+
+      function setAiAdminMessage(message, type = "success") {
+        if (!aiAdminElements.message) return;
+        aiAdminElements.message.textContent = message;
+        aiAdminElements.message.className = `admin-form-message ${type}`;
+      }
+
+      function renderAiAdminReadiness() {
+        const readiness = getAiAdminAssistantReadiness();
+        if (aiAdminElements.readiness) {
+          aiAdminElements.readiness.innerHTML = readiness.items.map((item) => `
+            <div>
+              <strong>${escapeHtml(item.label)}</strong>
+              <span>${escapeHtml(item.status)} · ${escapeHtml(item.note)}</span>
+            </div>
+          `).join("");
+        }
+        if (aiAdminElements.dataPolicy) {
+          aiAdminElements.dataPolicy.innerHTML = [
+            ["Data policy", "Alleen local/demo data"],
+            ["Future adapter", readiness.futureAdapter],
+            ["AI-calls", readiness.aiCalls],
+            ["Geschiedenis", `${listAiAdminAssistantDrafts().length} lokale previews`],
+          ].map(([label, value]) => `<div><strong>${escapeHtml(label)}</strong><span>${escapeHtml(value)}</span></div>`).join("");
+        }
+      }
+
+      function updateAiAdminContextOptions() {
+        const actionId = aiAdminElements.action?.value || "";
+        const options = getAiAdminAssistantContextOptions(actionId);
+        fillSelect(aiAdminElements.context, options, options.length ? "Kies context" : "Geen lokale data gevonden");
+      }
+
+      function renderAiAdminOutput(preview = null) {
+        if (!aiAdminElements.output) return;
+        if (!preview) {
+          aiAdminElements.outputStatus.textContent = "Nog geen output";
+          aiAdminElements.output.innerHTML = `
+            <div><strong>Status</strong><span>Kies een actie en maak een preview.</span></div>
+            <div><strong>Generator</strong><span>local_template_mock</span></div>
+          `;
+          return;
+        }
+        aiAdminElements.outputStatus.textContent = "Preview klaar";
+        const rows = [
+          ["Actie", preview.actionLabel],
+          ["Titel", preview.output?.title],
+          ["Concept", preview.output?.body],
+          ["Bullets", (preview.output?.bullets || []).join(" · ")],
+          ["Data naar toekomstige provider", `${preview.futureProviderPayload.module} / ${preview.futureProviderPayload.action}`],
+          ["Policy", preview.dataPolicy],
+          ["Generator", preview.generator],
+        ];
+        aiAdminElements.output.innerHTML = rows.map(([label, value]) => `
+          <div><strong>${escapeHtml(label)}</strong><span>${escapeHtml(value || "-")}</span></div>
+        `).join("");
+      }
+
+      function handleAiAdminSubmit(event) {
+        event.preventDefault();
+        const actionId = aiAdminElements.action?.value || "";
+        if (!actionId) {
+          setAiAdminMessage("Kies eerst een AI-actie.", "error");
+          return;
+        }
+        const preview = generateAndSaveAiAdminAssistantPreview({
+          actionId,
+          targetId: aiAdminElements.context?.value || "",
+        });
+        renderAiAdminOutput(preview);
+        renderAiAdminReadiness();
+        setAiAdminMessage("Lokale AI-preview gemaakt zonder externe call.", "success");
+      }
+
+      function initAiAdminAssistant() {
+        if (!aiAdminElements.form) return;
+        fillSelect(aiAdminElements.action, getAiAdminAssistantActions(), "Kies AI-actie");
+        renderAiAdminReadiness();
+        renderAiAdminOutput();
+        aiAdminElements.action?.addEventListener("change", updateAiAdminContextOptions);
+        aiAdminElements.form.addEventListener("submit", handleAiAdminSubmit);
+      }
+
+      initAiAdminAssistant();
     </script>
   </body>
 </html>

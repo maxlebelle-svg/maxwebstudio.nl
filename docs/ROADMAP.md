@@ -637,3 +637,32 @@ Aanbevolen volgende stappen:
 2. Bepalen welke draft-output straks klantveilig zichtbaar mag worden.
 3. Pas na productie Auth/RLS een server-side AI-provideradapter ontwerpen.
 4. Daarna AI-output koppelen aan projectbrief, offertevoorstel en website-scaffold.
+
+## Fase 20 - AI Admin Assistant Readiness
+
+Afgerond als local/demo AI-readinesslaag:
+
+- centrale AI Assistent-sectie in het admin-dashboard
+- mockacties voor CRM, Leadfinder, offertes, projecten, SEO, klantberichten en wijzigingsverzoeken
+- lokale output-preview zonder externe calls
+- readiness/blokkades zichtbaar voor echte AI-integratie
+- lokale previewgeschiedenis voorbereid
+
+Nieuwe localStorage voorbereiding:
+
+- `maxwebstudioAiAdminAssistantDrafts`
+
+Nog demo/local:
+
+- geen OpenAI API
+- geen API keys
+- geen server-side AI-provideradapter
+- geen productiegegevens
+- geen automatische klantcommunicatie
+
+Aanbevolen volgende stappen:
+
+1. Bepalen welke AI-acties als eerste echte server-side adapter krijgen.
+2. Promptlogging, consent en rate limiting ontwerpen.
+3. Pas na Auth/RLS en privacybesluit echte AI-calls activeren.
+4. AI-output altijd eerst als admin-review houden voordat klantcommunicatie wordt verstuurd.

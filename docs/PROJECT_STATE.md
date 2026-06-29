@@ -888,3 +888,32 @@ Bewust nog demo/local/mock:
 - Geen websitebuilder/scaffold.
 - Geen Supabase writes.
 - Geen nieuwe API keys of dependencies.
+
+## Fase 20 - AI Admin Assistant Readiness
+
+Status: centrale AI Admin Assistant voorbereid als local/demo/mock laag zonder OpenAI-calls, API keys, SQL, productiegegevens of externe services.
+
+Bijgewerkt:
+
+- `public/admin-dashboard.html`
+- `public/styles.css`
+- `public/src/config/storageKeys.js`
+- `public/src/services/aiAdminAssistantService.js`
+- `docs/AI_ADMIN_ASSISTANT.md`
+
+Resultaat:
+
+- Het admin-dashboard bevat nu een sectie `AI Assistent`.
+- Mock/template-acties zijn beschikbaar voor klant samenvatten, project samenvatten, lead analyseren, opvolgadvies, offerte-intro, SEO verbeterpunten, klantbericht en wijzigingsverzoek samenvatten.
+- Output-preview wordt lokaal gegenereerd via `local_template_mock`.
+- Readiness/blokkades zijn zichtbaar voor Auth/RLS, server-side adapter, secrets/env, logging, rate limiting en consent/privacy.
+- Nieuwe localStorage key: `maxwebstudioAiAdminAssistantDrafts`.
+
+Bewust nog demo/local/mock:
+
+- Geen OpenAI API.
+- Geen AI-provideradapter.
+- Geen API keys of secrets.
+- Geen productiegegevens.
+- Geen automatische klantcommunicatie.
+- Geen externe services.
