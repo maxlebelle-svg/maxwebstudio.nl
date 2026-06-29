@@ -511,7 +511,7 @@ Open approvalpunten:
 
 ## Fase 28 runtime role grants blocker
 
-Status: `BLOCKED`
+Status: `RESOLVED_ON_STAGING`
 
 Na expliciete approval is de staging reset uitgevoerd en zijn alle migration drafts succesvol toegepast op `maxwebstudio-test`.
 
@@ -559,7 +559,7 @@ Prepared patch:
 
 Patchstatus:
 
-- `PREPARED / NOT EXECUTED`
+- `EXECUTED_ON_STAGING / VALIDATED`
 
 Grantstrategie:
 
@@ -568,8 +568,15 @@ Grantstrategie:
 - `service_role`: server-side backend/admin/test grants.
 - `audit_logs`: geen directe authenticated insert/update/delete; audit helper service-role-only.
 
-Approval nodig:
+Validatie:
 
-- Review `007_runtime_role_grants.sql`.
-- Bevestig staging-only uitvoering.
-- Herhaal daarna Customer A/B isolation.
+- Customer A/B isolation PASS.
+- Demo user isolation PASS.
+- Customer ziet geen Leadfinder-data.
+- Customer kan audit logs niet lezen of direct muteren.
+- Anonymous krijgt geen klantdatatabelrechten.
+- Interne basisrollen werken volgens de huidige policies.
+
+Resterend:
+
+- Productie blijft `NO-GO` tot alle releasecandidate approvals en production environment checks zijn afgerond.

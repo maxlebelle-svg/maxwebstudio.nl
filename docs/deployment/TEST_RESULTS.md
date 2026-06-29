@@ -843,7 +843,7 @@ Next action:
 
 ### Fase 28.2 - Runtime Role Grants Patch
 
-Status: `PATCH PREPARED / NOT EXECUTED`
+Status: `PATCH EXECUTED ON STAGING / VALIDATED`
 
 Patch:
 
@@ -865,14 +865,40 @@ Grant review:
 | `service_role` | Select/insert/update/delete op app-tabellen en sequences | Server-side backend/admin/testflows | PREPARED |
 | `add_audit_log()` | Execute alleen voor `service_role` | Audit inserts blijven server-side | PREPARED |
 
-Nog niet uitgevoerd:
+Uitvoering:
 
-- Patch is niet op staging uitgevoerd.
-- Customer A/B isolation is nog niet opnieuw getest.
+- Patch uitgevoerd op uitsluitend Supabase staging/testproject `maxwebstudio-test`.
+- Geen productieproject geraakt.
+- Geen andere migrations opnieuw uitgevoerd.
+- Geen schema-drift patches.
+- Geen RLS policies versoepeld.
 
-Next action:
+Validatie na patch:
 
-1. Review `007_runtime_role_grants.sql`.
-2. Geef expliciete approval voor staging-only uitvoering.
-3. Voer patch uit op `maxwebstudio-test`.
-4. Herhaal Customer A/B isolation, demo isolation en interne role checks.
+| Testnaam | Verwacht resultaat | Werkelijk resultaat | Status | Evidence / notities |
+| --- | --- | --- | --- | --- |
+| Runtime grants patch | `007_runtime_role_grants.sql` draait zonder SQL-fout | Patch succesvol uitgevoerd | PASS | Alleen staging/test |
+| Customer A isolation | Customer A ziet eigen customer/site, niet Customer B | `own_customer_visible=1`, `other_customer_visible=0`, `own_website_visible=1`, `other_website_visible=0` | PASS | Geen permission denied vóór RLS |
+| Customer B isolation | Customer B ziet eigen customer/site, niet Customer A | `own_customer_visible=1`, `other_customer_visible=0`, `own_website_visible=1`, `other_website_visible=0` | PASS | Geen permission denied vóór RLS |
+| Leadfinder klanttoegang | Customer ziet geen interne leads | `visible_leads=0` | PASS | Leadfinder blijft intern |
+| Audit read customer | Customer ziet geen audit logs | `visible_audit_logs=0` | PASS | Audit blijft afgeschermd |
+| Audit insert customer | Customer kan niet direct audit log inserten | `permission denied for table audit_logs` | PASS | Verwachte blokkade |
+| Anonymous klantdata | Anonymous krijgt geen klantdatatoegang | `permission denied for table customers` | PASS | `anon` heeft bewust geen table grants |
+| Admin basisread | Admin kan beheerdata lezen | `visible_customers=3`, `visible_leads=1` | PASS | Staging testdata |
+| Sales basisread | Sales kan salesdata lezen, geen audit logs | `visible_customers=3`, `visible_leads=1`, `visible_audit_logs=0` | PASS | Past bij policy |
+| Support basisread | Support kan support/klantdata lezen | `visible_customers=3`, `visible_leads=1` | PASS | Staging testdata |
+| Developer basisread | Developer kan technische settings lezen | `visible_customers=3`, `visible_settings=1` | PASS | Staging testdata |
+| Demo user isolation | Demo user ziet demo data en geen non-demo testcustomers | `visible_demo_customers=1`, `visible_non_demo_test_customers=0`, `visible_demo_websites=1` | PASS | Demo isolatie bewezen |
+
+Conclusie:
+
+- De runtime role grants blocker is opgelost op staging.
+- `authenticated` faalt niet meer vóór RLS-policy-evaluatie.
+- Customer A/B isolation is bewezen voor klanten en websites.
+- Demo user isolation is bewezen.
+- Interne basisrollen werken volgens de huidige policies.
+
+GO/NO-GO:
+
+- Fase 28 staging database foundation: `GO`.
+- Productie/live release: blijft `NO-GO` totdat production approvals, environment checks, monitoring, Storage/productie, Resend/Mollie en verdere releasecriteria expliciet zijn afgerond.

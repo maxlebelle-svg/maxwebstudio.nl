@@ -1059,7 +1059,7 @@ Volgende actie:
 
 ## Fase 28.2 - Runtime Role Grants Patch
 
-Status: `PATCH PREPARED / NOT EXECUTED`
+Status: `STAGING VALIDATED / PRODUCTION NO-GO`
 
 Uitkomst:
 
@@ -1070,9 +1070,21 @@ Uitkomst:
 - `service_role` blijft server-side.
 - Audit insert helper blijft service-role-only.
 
+Uitvoering:
+
+- `007_runtime_role_grants.sql` uitgevoerd op uitsluitend `maxwebstudio-test`.
+- Customer A/B isolation PASS.
+- Demo user isolation PASS.
+- Leadfinder blijft intern voor customers.
+- Audit logs blijven afgeschermd voor customers.
+- Interne basisrollen werken volgens policy.
+
+Besluit:
+
+- Supabase staging database foundation is `GO`.
+- Productie blijft `NO-GO` tot production approvals en live-readinesschecks compleet zijn.
+
 Volgende actie:
 
-1. Review `007_runtime_role_grants.sql`.
-2. Geef expliciet akkoord voor staging-only uitvoering.
-3. Voer patch uit op `maxwebstudio-test`.
-4. Herhaal Customer A/B isolation en demo isolation.
+1. Fase 28.3: formele data-layer GO/NO-GO review; of
+2. start Fase 29: Supabase Data Layer, met behoud van hybrid fallback.

@@ -1359,7 +1359,7 @@ Volgende stap:
 
 ## Fase 28.2 - Runtime Role Grants Patch
 
-Status: `PATCH PREPARED / NOT EXECUTED`
+Status: `STAGING VALIDATED / PRODUCTION NO-GO`
 
 Patch:
 
@@ -1373,8 +1373,23 @@ Doel:
 - `service_role` blijft server-side.
 - Audit helper blijft service-role-only.
 
-Nog niet uitgevoerd:
+Uitgevoerd:
 
-- Geen staging patch uitgevoerd.
-- Geen productie geraakt.
-- Customer A/B isolation blijft blocked tot patchapproval en rerun.
+- `007_runtime_role_grants.sql` op uitsluitend `maxwebstudio-test`.
+- Customer A/B isolation opnieuw getest.
+- Demo user isolation getest.
+- Interne basisrollen getest.
+
+Resultaat:
+
+- Runtime grants blocker is opgelost.
+- Customer A ziet alleen eigen customer/site.
+- Customer B ziet alleen eigen customer/site.
+- Demo user ziet alleen demo data.
+- Customer ziet geen Leadfinder-data of audit logs.
+- Directe audit insert door customer blijft geblokkeerd.
+
+Besluit:
+
+- Fase 28 staging database foundation: `GO`.
+- Productie/live release: blijft `NO-GO`.

@@ -1,0 +1,39 @@
+{
+  "date": "2026-06-29",
+  "scope": "Fase 28.2 Runtime Role Grants Patch",
+  "status": "STAGING_GO_PRODUCTION_NO_GO",
+  "project": {
+    "name": "maxwebstudio-test",
+    "environment": "test",
+    "productionTouched": false
+  },
+  "patch": {
+    "file": "supabase/migration-drafts/007_runtime_role_grants.sql",
+    "executed": true,
+    "status": "PASS"
+  },
+  "validation": {
+    "authenticatedPermissionBlockerResolved": true,
+    "customerAIsolation": "PASS",
+    "customerBIsolation": "PASS",
+    "demoUserIsolation": "PASS",
+    "leadfinderHiddenFromCustomer": true,
+    "auditLogsHiddenFromCustomer": true,
+    "auditInsertBlockedForCustomer": true,
+    "anonymousCustomerDataBlocked": true,
+    "internalRoleBaseReads": "PASS"
+  },
+  "decision": {
+    "stagingDatabaseFoundation": "GO",
+    "productionRelease": "NO-GO"
+  },
+  "remainingProductionRequirements": [
+    "production approvals",
+    "production environment confirmation",
+    "backup and restore evidence",
+    "monitoring and logging readiness",
+    "storage production review",
+    "Resend and Mollie production checks",
+    "final release candidate decision"
+  ]
+}
