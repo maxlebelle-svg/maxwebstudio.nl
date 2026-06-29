@@ -496,3 +496,15 @@ De testdocumenten staan in:
 - `/docs/RLS_TEST_LOG_TEMPLATE.md`
 
 Totdat deze tests slagen blijft live klantportaal-RLS No-Go.
+
+## Fase 13.5 - Klantportaal in deployment bundle
+
+Het klantportaal is onderdeel van de production checklist:
+
+- klant A/B isolatie
+- demo-isolatie
+- anonymous block
+- offertes/facturen/abonnementen klantveilig zichtbaar
+- storage downloads veilig via signed URLs
+
+De deployment validator blijft `NO-GO` totdat klantisolatie en klantportaaltests handmatig zijn vastgelegd.

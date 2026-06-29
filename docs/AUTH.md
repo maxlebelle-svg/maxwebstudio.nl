@@ -338,3 +338,20 @@ Belangrijk:
 - demo-user isolatie moet bewezen zijn
 - anonymous toegang moet klantdata blokkeren
 - productie-RLS blijft No-Go totdat de preflight checklist compleet is
+
+## Fase 13.5 - Auth in deployment bundle
+
+Auth is opgenomen in de centrale deployment bundle:
+
+- `/docs/deployment/02_AUTH.md`
+- `/docs/deployment/README.md`
+- `/docs/deployment/PRODUCTION_CHECKLIST.md`
+
+Voordat Auth live mag:
+
+- testusers/profiles moeten pass zijn
+- rollen moeten getest zijn
+- customer/profile ownership moet getest zijn
+- route guards mogen pas hard wanneer RLS en preflight pass zijn
+
+Deployment status blijft `NO-GO` zolang Auth-testresultaten ontbreken.

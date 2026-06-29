@@ -330,3 +330,28 @@ Status:
 - RLS live status: niet actief.
 - Go/No-Go: No-Go tot handmatige Supabase testresultaten zijn vastgelegd.
 - Geen productie-execution zonder volledige preflight checklist.
+
+## Fase 13.5 - Supabase Deployment Bundle & Production Readiness
+
+Status: afgerond als deploymentproces. Er is geen SQL uitgevoerd en er is geen productieomgeving aangepast.
+
+Toegevoegd:
+
+- `/docs/deployment/README.md`
+- `/docs/deployment/01_SCHEMA.md`
+- `/docs/deployment/02_AUTH.md`
+- `/docs/deployment/03_RLS.md`
+- `/docs/deployment/04_STORAGE.md`
+- `/docs/deployment/05_FUNCTIONS.md`
+- `/docs/deployment/06_MOLLIE.md`
+- `/docs/deployment/07_RESEND.md`
+- `/docs/deployment/08_POST_DEPLOY_CHECKS.md`
+- `/docs/deployment/09_ROLLBACK.md`
+- `/docs/deployment/SQL_BUNDLE.md`
+- `/docs/deployment/PRODUCTION_CHECKLIST.md`
+- `/docs/deployment/ROLLBACK_PLAN.md`
+- `/public/src/services/deploymentReadinessService.js`
+
+Developer Mode toont nu `Production Deployment` met module-statussen, checklist, blockers, rollbackreferentie en SQL bundle-referentie.
+
+Go/No-Go status blijft `NO-GO` zolang blockers openstaan zoals ontbrekende backup, RLS review, testlog, Auth test, klantisolatie en env-var controle.

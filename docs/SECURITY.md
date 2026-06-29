@@ -406,3 +406,27 @@ Status:
 - RLS live execution: niet actief.
 - Go/No-Go: No-Go totdat testprojectresultaten en preflight checklist handmatig zijn afgerond.
 - Geen productie-execution zonder testlog, backup, rollbackplan en expliciete review.
+
+## Fase 13.5 - Deployment bundle security gate
+
+Fase 13.5 centraliseert de productie-uitrol in `/docs/deployment/`.
+
+Security-relevante onderdelen:
+
+- `03_RLS.md`
+- `PRODUCTION_CHECKLIST.md`
+- `ROLLBACK_PLAN.md`
+- `SQL_BUNDLE.md`
+- `08_POST_DEPLOY_CHECKS.md`
+
+De deployment validator geeft `NO-GO` zolang kritieke blockers openstaan:
+
+- geen backup
+- geen RLS review
+- geen testlog
+- geen Auth test
+- geen klantisolatie
+- rollbackplan niet expliciet goedgekeurd
+- environment variables niet gecontroleerd
+
+Er zijn geen secrets toegevoegd en er is geen SQL uitgevoerd.

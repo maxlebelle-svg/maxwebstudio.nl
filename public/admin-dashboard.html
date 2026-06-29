@@ -834,6 +834,10 @@
                 <button class="button secondary" id="view-rls-test-readiness" type="button">Bekijk RLS test readiness</button>
                 <button class="button secondary" id="run-rls-local-readiness-test" type="button">Run lokale readiness self-test</button>
                 <button class="button secondary" id="view-rls-go-no-go" type="button">Toon Go/No-Go samenvatting</button>
+                <button class="button secondary" id="view-deployment-checklist" type="button">Bekijk deployment checklist</button>
+                <button class="button secondary" id="view-deployment-blockers" type="button">Bekijk blockers</button>
+                <button class="button secondary" id="view-deployment-rollback" type="button">Bekijk rollback plan</button>
+                <button class="button secondary" id="view-deployment-sql-bundle" type="button">Bekijk SQL bundle</button>
                 <button class="button secondary" id="view-migration-plan" type="button">Bekijk migratieplan</button>
                 <button class="button secondary" id="view-planned-tables" type="button">Bekijk geplande tabellen</button>
                 <button class="button secondary" id="run-supabase-migration-check" type="button">Run localStorage migratie-check</button>
@@ -1863,6 +1867,10 @@
         const viewRlsTestReadinessButton = document.getElementById("view-rls-test-readiness");
         const runRlsLocalReadinessTestButton = document.getElementById("run-rls-local-readiness-test");
         const viewRlsGoNoGoButton = document.getElementById("view-rls-go-no-go");
+        const viewDeploymentChecklistButton = document.getElementById("view-deployment-checklist");
+        const viewDeploymentBlockersButton = document.getElementById("view-deployment-blockers");
+        const viewDeploymentRollbackButton = document.getElementById("view-deployment-rollback");
+        const viewDeploymentSqlBundleButton = document.getElementById("view-deployment-sql-bundle");
         const viewMigrationPlanButton = document.getElementById("view-migration-plan");
         const viewPlannedTablesButton = document.getElementById("view-planned-tables");
         const runSupabaseMigrationCheckButton = document.getElementById("run-supabase-migration-check");
@@ -3072,6 +3080,7 @@
             routeGuardService: await import("./src/services/routeGuardService.js"),
             accessControlTestService: await import("./src/services/accessControlTestService.js"),
             securityReadinessService: await import("./src/services/securityReadinessService.js"),
+            deploymentReadinessService: await import("./src/services/deploymentReadinessService.js"),
           };
           return state.developerModules;
         }
@@ -4393,6 +4402,42 @@
           ]));
         }
 
+        function renderProductionDeployment(modules) {
+          const readiness = modules.deploymentReadinessService.getDeploymentReadiness();
+          appendDeveloperCard("Production Deployment", [
+            ["Go/No-Go", readiness.goNoGo.decision],
+            ["Blockers", String(readiness.blockers.length)],
+            ["Documenten", String(readiness.checklist.documents.length)],
+            ["Laatste check", readiness.generatedAt ? formatDate(readiness.generatedAt) : "-"],
+          ]);
+          appendDeveloperCard("Deployment modules", readiness.checklist.areas.map((area) => [
+            area.label,
+            `${area.status} - ${area.reason}`,
+          ]));
+        }
+
+        function renderDeploymentChecklist(checklist = {}) {
+          appendDeveloperCard("Deployment checklist", (checklist.requiredManualChecks || []).map((item) => [
+            item,
+            "handmatig te controleren",
+          ]));
+          appendDeveloperCard("Deployment documenten", (checklist.documents || []).map((file) => [
+            file,
+            "aanwezig in bundle",
+          ]));
+        }
+
+        function renderDeploymentBlockers(blockers = []) {
+          appendDeveloperCard("Deployment blockers", blockers.map((blocker) => [
+            `${blocker.severity.toUpperCase()} - ${blocker.label}`,
+            blocker.id,
+          ]));
+        }
+
+        function renderDeploymentReference(title, rows = []) {
+          appendDeveloperCard(title, rows);
+        }
+
         function renderProfileReadiness(modules) {
           const summary = modules.authProfileService.getProfileReadinessSummary();
           const routeReadiness = modules.routeGuardService.getRouteAccessReadiness();
@@ -4596,6 +4641,7 @@
             renderProfileReadiness(modules);
             renderAccessControlReadiness(modules);
             renderSecurityReadiness(modules);
+            renderProductionDeployment(modules);
             appendDeveloperCard("Auth sessie", [
               ["Gebruiker", user?.name || user?.email || "Geen sessie"],
               ["Rol", permissionPreview.roleLabel],
@@ -4620,6 +4666,9 @@
             if (extra.securityReadinessSelfTest) renderSecurityReadinessSelfTest(extra.securityReadinessSelfTest);
             if (extra.rlsTestReadiness) renderRlsTestReadiness(extra.rlsTestReadiness);
             if (extra.rlsGoNoGoSummary) renderRlsGoNoGoSummary(extra.rlsGoNoGoSummary);
+            if (extra.deploymentChecklist) renderDeploymentChecklist(extra.deploymentChecklist);
+            if (extra.deploymentBlockers) renderDeploymentBlockers(extra.deploymentBlockers);
+            if (extra.deploymentReference) renderDeploymentReference(extra.deploymentReference.title, extra.deploymentReference.rows);
             if (extra.supabaseReadOnlyResult) renderSupabaseReadOnlyResult(extra.supabaseReadOnlyTitle || "Supabase read-only resultaat", extra.supabaseReadOnlyResult);
             if (extra.supabaseWriteTestResult) renderSupabaseWriteTestResult(extra.supabaseWriteTestResult);
             if (extra.supabaseCustomerRows) {
@@ -4935,6 +4984,60 @@
             console.error("RLS Go/No-Go could not be rendered", error);
             setSettingsMessage("RLS Go/No-Go kon niet worden getoond.", "error");
           }
+        }
+
+        async function showDeploymentChecklistHandler() {
+          try {
+            const modules = await loadDeveloperModules();
+            const checklist = modules.deploymentReadinessService.getDeploymentChecklist();
+            await renderDeveloperToolsSummary({ deploymentChecklist: checklist });
+            setSettingsMessage("Deployment checklist getoond. Er is niets uitgevoerd.", "success");
+          } catch (error) {
+            console.error("Deployment checklist could not be rendered", error);
+            setSettingsMessage("Deployment checklist kon niet worden getoond.", "error");
+          }
+        }
+
+        async function showDeploymentBlockersHandler() {
+          try {
+            const modules = await loadDeveloperModules();
+            const blockers = modules.deploymentReadinessService.getBlockingIssues();
+            await renderDeveloperToolsSummary({ deploymentBlockers: blockers });
+            setSettingsMessage("Deployment blockers getoond. Status blijft NO-GO.", "success");
+          } catch (error) {
+            console.error("Deployment blockers could not be rendered", error);
+            setSettingsMessage("Deployment blockers konden niet worden getoond.", "error");
+          }
+        }
+
+        async function showDeploymentRollbackHandler() {
+          await renderDeveloperToolsSummary({
+            deploymentReference: {
+              title: "Rollback plan",
+              rows: [
+                ["Document", "docs/deployment/ROLLBACK_PLAN.md"],
+                ["Procedure", "Netlify rollback, webhook pauze, database backup/restore en handmatige RLS review."],
+                ["Rollback SQL", "Niet opgenomen; alleen procedure na review."],
+                ["Status", "Verplicht vóór Go."],
+              ],
+            },
+          });
+          setSettingsMessage("Rollback plan referentie getoond.", "success");
+        }
+
+        async function showDeploymentSqlBundleHandler() {
+          await renderDeveloperToolsSummary({
+            deploymentReference: {
+              title: "SQL bundle",
+              rows: [
+                ["Document", "docs/deployment/SQL_BUNDLE.md"],
+                ["Uitvoeren in test", "supabase/schema.sql, RLS draft na review, optioneel seed-demo.sql."],
+                ["Niet blind uitvoeren", "legacy customer_* scripts en overlap-scripts."],
+                ["Status", "Index only; geen SQL uitgevoerd."],
+              ],
+            },
+          });
+          setSettingsMessage("SQL bundle referentie getoond. Er is geen SQL uitgevoerd.", "success");
         }
 
         async function updateAccessMode(mode) {
@@ -13644,6 +13747,10 @@
         viewRlsTestReadinessButton.addEventListener("click", showRlsTestReadinessHandler);
         runRlsLocalReadinessTestButton.addEventListener("click", runRlsLocalReadinessTestHandler);
         viewRlsGoNoGoButton.addEventListener("click", showRlsGoNoGoHandler);
+        viewDeploymentChecklistButton.addEventListener("click", showDeploymentChecklistHandler);
+        viewDeploymentBlockersButton.addEventListener("click", showDeploymentBlockersHandler);
+        viewDeploymentRollbackButton.addEventListener("click", showDeploymentRollbackHandler);
+        viewDeploymentSqlBundleButton.addEventListener("click", showDeploymentSqlBundleHandler);
         viewMigrationPlanButton.addEventListener("click", showMigrationPlanHandler);
         viewPlannedTablesButton.addEventListener("click", showPlannedTablesHandler);
         runSupabaseMigrationCheckButton.addEventListener("click", runSupabaseMigrationCheckHandler);

@@ -196,3 +196,26 @@ Niet live:
 Volgende logische stap:
 
 - Supabase testproject inrichten, canonical schema + synthetische testdata uitvoeren, RLS-draft daar testen en testlog invullen. Productie blijft No-Go tot die ronde geslaagd is.
+
+### 13.5 - Supabase Deployment Bundle & Production Readiness
+
+Afgerond als professioneel deploymentproces:
+
+- centrale map `/docs/deployment/`
+- deployment README met volgorde en rollback per stap
+- SQL bundle index
+- production checklist
+- rollback procedure
+- deployment readiness validator
+- Developer Mode `Production Deployment` kaart
+
+Niet live:
+
+- geen SQL uitgevoerd
+- geen productie aangepast
+- geen RLS live gezet
+- geen provider switch
+
+Volgende logische stap:
+
+- Deployment bundle reviewen, testomgeving volgens de bundle opbouwen en pas daarna Go/No-Go opnieuw beoordelen.
