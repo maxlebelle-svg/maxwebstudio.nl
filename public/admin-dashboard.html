@@ -3795,11 +3795,21 @@
           } catch {
             leadfinderSourceStatus = null;
           }
+          let crmTaskWriteStatus = null;
+          try {
+            crmTaskWriteStatus = JSON.parse(localStorage.getItem("maxwebstudioLastCrmTaskWriteStatus") || "null");
+          } catch {
+            crmTaskWriteStatus = null;
+          }
+          const crmTaskWriteEnabled = ["true", "1", "yes", "ja", "enabled"].includes(String(localStorage.getItem("maxwebstudioCrmTaskWriteEnabled") || "").toLowerCase());
           appendDeveloperCard("Supabase Data Layer MVP", [
             ["Status", status.readsPrepared ? "Read layer actief" : "Niet actief"],
             ["Modules", status.modules.join(", ")],
             ["Default mode", status.defaultMode],
             ["Writes", status.writesEnabled ? "Aan" : "Uitgeschakeld"],
+            ["CRM task write gate", crmTaskWriteEnabled ? "Lokaal toegestaan" : "Uit"],
+            ["CRM task laatste write", crmTaskWriteStatus?.status || "Nog niet uitgevoerd"],
+            ["CRM task fallback", crmTaskWriteStatus?.fallbackUsed ? "Ja" : "Nee"],
             ["Productie ready", status.productionReady ? "Ja" : "Nee"],
             ["Customers bron", state.customerSourceStatus?.dataLayer || "-"],
             ["Websites bron", state.websiteSourceStatus?.dataLayer || "-"],
@@ -14929,8 +14939,8 @@
         getCanonicalCrmRelationships,
         getCrmWorkflowSummary,
         readCrmTasks,
-        saveCrmTaskLocally,
       } from "./src/services/crmWorkflowService.js";
+      import { saveCrmTaskWithWriteFallback } from "./src/services/crmTaskWriteService.js";
 
       const workflowStorageKeys = {
         customers: ["maxwebstudioCrmCustomers", "maxwebstudioCustomers"],
@@ -15166,30 +15176,34 @@
         if (workflowElements.priority) workflowElements.priority.value = "normaal";
       }
 
-      function handleTaskSubmit(event) {
+      async function handleTaskSubmit(event) {
         event.preventDefault();
         const title = workflowElements.title?.value.trim();
         if (!title) {
           setMessage("Vul een titel in voor de opvolgactie.", "error");
           return;
         }
-        saveCrmTaskLocally({
-          title,
-          type: workflowElements.type?.value || "general",
-          status: workflowElements.status?.value || "open",
-          priority: workflowElements.priority?.value || "normaal",
-          dueDate: workflowElements.dueDate?.value || "",
-          customerId: workflowElements.customer?.value || "",
-          websiteId: workflowElements.website?.value || "",
-          projectId: workflowElements.project?.value || "",
-          quoteId: workflowElements.quote?.value || "",
-          invoiceId: workflowElements.invoice?.value || "",
-          subscriptionId: workflowElements.subscription?.value || "",
-          notes: workflowElements.notes?.value || "",
-        });
-        resetTaskForm();
-        setMessage("Opvolgactie opgeslagen.", "success");
-        renderTaskList();
+        try {
+          const result = await saveCrmTaskWithWriteFallback({
+            title,
+            type: workflowElements.type?.value || "general",
+            status: workflowElements.status?.value || "open",
+            priority: workflowElements.priority?.value || "normaal",
+            dueDate: workflowElements.dueDate?.value || "",
+            customerId: workflowElements.customer?.value || "",
+            websiteId: workflowElements.website?.value || "",
+            projectId: workflowElements.project?.value || "",
+            quoteId: workflowElements.quote?.value || "",
+            invoiceId: workflowElements.invoice?.value || "",
+            subscriptionId: workflowElements.subscription?.value || "",
+            notes: workflowElements.notes?.value || "",
+          });
+          resetTaskForm();
+          setMessage(result.fallbackUsed ? "Opvolgactie lokaal opgeslagen. Supabase write-gate staat uit of viel terug." : "Opvolgactie opgeslagen via Supabase staging en lokaal gespiegeld.", "success");
+          renderTaskList();
+        } catch (error) {
+          setMessage(error.message || "Opvolgactie kon niet worden opgeslagen.", "error");
+        }
       }
 
       function handleTaskAction(event) {
@@ -15239,8 +15253,8 @@
         saveLeadFinderLeadLocally,
         updateLeadFinderLeadLocally,
       } from "./src/services/leadFinderService.js";
-      import { saveCrmTaskLocally } from "./src/services/crmWorkflowService.js";
       import { readSupabaseDataLayerModule } from "./src/services/supabaseDataLayerService.js";
+      import { saveCrmTaskWithWriteFallback } from "./src/services/crmTaskWriteService.js";
 
       const leadfinderElements = {
         metrics: document.getElementById("leadfinder-metrics"),
@@ -15482,9 +15496,9 @@
         if (leadfinderElements.score) leadfinderElements.score.value = "70";
       }
 
-      function createWorkflowTaskForLead(lead) {
+      async function createWorkflowTaskForLead(lead) {
         if (!lead) return null;
-        return saveCrmTaskLocally({
+        return saveCrmTaskWithWriteFallback({
           title: `Lead opvolgen: ${lead.companyName}`,
           type: "lead",
           status: "open",
@@ -15527,7 +15541,7 @@
         await reloadLeadfinderAfterLocalChange();
       }
 
-      function handleLeadfinderListClick(event) {
+      async function handleLeadfinderListClick(event) {
         const button = event.target.closest("[data-leadfinder-action]");
         if (!button) return;
         const row = button.closest("[data-leadfinder-id]");
@@ -15536,8 +15550,12 @@
         if (!lead) return;
         selectedLeadFinderId = lead.id;
         if (button.dataset.leadfinderAction === "task") {
-          createWorkflowTaskForLead(lead);
-          setLeadfinderMessage("Opvolgtaak aangemaakt in CRM Workflow.", "success");
+          try {
+            const result = await createWorkflowTaskForLead(lead);
+            setLeadfinderMessage(result?.fallbackUsed ? "Opvolgtaak lokaal aangemaakt in CRM Workflow." : "Opvolgtaak via Supabase staging aangemaakt en lokaal gespiegeld.", "success");
+          } catch (error) {
+            setLeadfinderMessage(error.message || "Opvolgtaak kon niet worden aangemaakt.", "error");
+          }
         }
         renderLeadfinderList();
       }
@@ -15570,7 +15588,7 @@
           setLeadfinderMessage("Lead kon niet worden geconverteerd.", "error");
           return;
         }
-        createWorkflowTaskForLead({ ...result.lead, followUpDate: "", notes: "Nieuwe CRM-klant aangemaakt vanuit Leadfinder. Plan intake/kwalificatie." });
+        await createWorkflowTaskForLead({ ...result.lead, followUpDate: "", notes: "Nieuwe CRM-klant aangemaakt vanuit Leadfinder. Plan intake/kwalificatie." });
         setLeadfinderMessage(result.alreadyConverted ? "Lead was al gekoppeld aan een CRM-klant." : "Lead geconverteerd naar lokale CRM-klant.", "success");
         await reloadLeadfinderAfterLocalChange();
       }
@@ -15611,9 +15629,13 @@
         });
         leadfinderElements.list.addEventListener("click", handleLeadfinderListClick);
         leadfinderElements.saveNote?.addEventListener("click", saveLeadfinderDetailNote);
-        leadfinderElements.createTask?.addEventListener("click", () => {
-          createWorkflowTaskForLead(selectedLeadFinderLead());
-          setLeadfinderMessage("Opvolgtaak aangemaakt in CRM Workflow.", "success");
+        leadfinderElements.createTask?.addEventListener("click", async () => {
+          try {
+            const result = await createWorkflowTaskForLead(selectedLeadFinderLead());
+            setLeadfinderMessage(result?.fallbackUsed ? "Opvolgtaak lokaal aangemaakt in CRM Workflow." : "Opvolgtaak via Supabase staging aangemaakt en lokaal gespiegeld.", "success");
+          } catch (error) {
+            setLeadfinderMessage(error.message || "Opvolgtaak kon niet worden aangemaakt.", "error");
+          }
           renderLeadfinderList();
         });
         leadfinderElements.convertCustomer?.addEventListener("click", convertSelectedLeadToCustomer);

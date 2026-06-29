@@ -1262,3 +1262,26 @@ Volgende stap:
 
 1. Fase 35A: gated `crm_tasks` create voorbereiden en eerst op staging bewijzen.
 2. Daarna pas andere low-risk writes toevoegen.
+
+## Fase 35A - Low-risk Supabase Write MVP: CRM Tasks
+
+Status: `AFGEROND`
+
+Scope:
+
+- `crm_tasks` create-only write pad toegevoegd.
+- CRM Workflow en Leadfinder-opvolgtaken gebruiken een write-aware service met local fallback.
+- Feature/readiness gate via `supabase-write-test` en `maxwebstudioCrmTaskWriteEnabled=true`.
+- Developer Mode toont laatste CRM task write/fallback status.
+
+Niet in scope:
+
+- Supabase update/delete voor CRM-taken.
+- Leadnotities, wijzigingsverzoeken, klantportaalberichten.
+- Facturen, betalingen, rollen, storage, AI-mutaties.
+- Productieproject of echte klantdata.
+
+Volgende stap:
+
+1. Fase 35B: leadnotitie append voorbereiden als volgende low-risk write.
+2. Daarna `change_requests` create en `client_portal_messages` create gefaseerd toevoegen.

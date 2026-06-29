@@ -1559,3 +1559,40 @@ Bewust nog geblokkeerd:
 - Geen SQL uitgevoerd.
 - Geen provider writes geactiveerd.
 - Geen productieproject of echte klantdata geraakt.
+
+## Fase 35A - Low-risk Supabase Write MVP: CRM Tasks
+
+Status: `AFGEROND`
+
+Doel:
+
+- Eerste low-risk Supabase write-MVP toevoegen voor alleen `crm_tasks` aanmaken.
+- Bestaande local/demo CRM Workflow en Leadfinder-opvolging behouden.
+- Geen algemene write-mode, update/delete, productieproject of echte klantdata.
+
+Toegevoegd/aangepast:
+
+- `public/src/services/crmTaskWriteService.js` valideert CRM-taken en orkestreert Supabase write + local fallback.
+- `public/src/providers/supabaseProvider.js` ondersteunt alleen `createCrmTask()` met testmetadata.
+- `public/admin-dashboard.html` gebruikt de write-aware service in CRM Workflow en Leadfinder-opvolgtaken.
+- Developer Mode toont de CRM task write-gate en laatste write/fallback status.
+- `public/src/config/storageKeys.js` registreert de write-gate en laatste statuskeys.
+
+Write-gate:
+
+- Provider mode moet `supabase-write-test` zijn.
+- Lokale vlag `maxwebstudioCrmTaskWriteEnabled=true` moet expliciet aan staan.
+- Productieomgeving blokkeert de write.
+- Payload wordt altijd als `is_demo=true`, `environment=test` en `crm-task-write-mvp` metadata verstuurd.
+
+Fallback:
+
+- Als de gate dichtstaat of Supabase/RLS faalt, wordt de taak lokaal opgeslagen in `maxwebstudioCrmTasks`.
+- Laatste resultaat staat in `maxwebstudioLastCrmTaskWriteStatus`.
+
+Bewust nog geblokkeerd:
+
+- Supabase update/delete voor CRM-taken.
+- Leadnotities, wijzigingsverzoeken en klantportaalberichten.
+- Facturen, betalingen, abonnementen, rollen, storage en AI-mutaties.
+- Server-side audit logging en productie-write-mode.

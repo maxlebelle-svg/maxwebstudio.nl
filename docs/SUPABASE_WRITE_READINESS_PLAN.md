@@ -1,6 +1,6 @@
 # Supabase Write Readiness Plan
 
-Status: `DRAFT - GEEN WRITES ACTIEF`
+Status: `FASE 35A MVP - CRM_TASKS CREATE TEST-GATED`
 
 Dit document legt vast hoe Max Webstudio gecontroleerd van read-only Supabase/hybrid naar veilige write-mode kan groeien. Het is een planningsdocument: er wordt geen SQL uitgevoerd, geen provider gewijzigd en geen productieproject geraakt.
 
@@ -23,7 +23,7 @@ De volgende modules lopen inmiddels via de Supabase/hybrid data-layer met local/
 - `client_portal_notifications`
 - `crm_tasks`
 
-Writes blijven uitgeschakeld behalve bestaande lokale demo-acties en eerder gebouwde gated test/migratieflows.
+Writes blijven uitgeschakeld behalve bestaande lokale demo-acties, eerder gebouwde gated test/migratieflows en Fase 35A `crm_tasks` create-only achter een expliciete test-gate.
 
 ## Write-principes
 
@@ -338,10 +338,41 @@ Daarna:
 2. change request create.
 3. client portal message create.
 
+## Fase 35A - CRM tasks create MVP
+
+Status: `GEIMPLEMENTEERD ALS TEST-GATED MVP`
+
+Toegevoegd:
+
+- `public/src/services/crmTaskWriteService.js`
+- `supabaseProvider.createCrmTask()`
+- Admin CRM Workflow en Leadfinder opvolgtaak-knoppen gebruiken nu dezelfde write-aware service.
+
+Gate:
+
+- Provider mode moet `supabase-write-test` zijn.
+- `maxwebstudioCrmTaskWriteEnabled=true` moet lokaal expliciet zijn gezet.
+- Productieomgeving blokkeert de write.
+- Payload wordt altijd gemarkeerd als `is_demo=true` en `environment=test`.
+- Metadata vereist `createdBy=crm-task-write-mvp` en `safeToArchive=true`.
+
+Fallback:
+
+- Als de gate dichtstaat, Supabase niet beschikbaar is of RLS de insert blokkeert, wordt de taak lokaal opgeslagen in `maxwebstudioCrmTasks`.
+- Laatste resultaat wordt vastgelegd in `maxwebstudioLastCrmTaskWriteStatus`.
+
+Beperkingen:
+
+- Alleen `create`.
+- Geen update/delete op Supabase CRM-taken.
+- Lokale niet-UUID relaties worden niet als foreign key verstuurd; ze worden veilig bewaard in metadata.
+- Server-side audit logging is nog niet actief.
+- Productie blijft geblokkeerd totdat staging evidence en auditstrategie zijn afgerond.
+
 ## Open blockers
 
-- RLS policies voor `crm_tasks` en `leads` zijn functioneel, maar nog te breed voor fijnmazige write-MVP.
+- RLS policies voor `crm_tasks` en `leads` zijn functioneel, maar nog te breed voor bredere production write-mode.
 - Audit logging is voorbereid, maar server-side auditstrategie moet gekozen worden.
-- Er is nog geen dedicated write service per low-risk module.
+- Alleen `crm_tasks` heeft nu een dedicated low-risk write service.
 - Conflict handling en pending-sync UX moeten per module worden ontworpen.
 - Productie blijft `NO-GO` voor writes totdat staging evidence is toegevoegd.

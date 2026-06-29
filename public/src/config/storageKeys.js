@@ -23,6 +23,8 @@ export const STORAGE_KEYS = Object.freeze({
   lastPreMigrationBackup: "maxwebstudioLastPreMigrationBackup",
   lastSupabaseReadOnlyTest: "maxwebstudioLastSupabaseReadOnlyTest",
   lastSupabaseWriteTest: "maxwebstudioLastSupabaseWriteTest",
+  crmTaskWriteEnabled: "maxwebstudioCrmTaskWriteEnabled",
+  lastCrmTaskWriteStatus: "maxwebstudioLastCrmTaskWriteStatus",
   lastCustomerWritePreview: "maxwebstudioLastCustomerWritePreview",
   lastCustomerMigrationResult: "maxwebstudioLastCustomerMigrationResult",
   customerDataMode: "maxwebstudioCustomerDataMode",
@@ -70,7 +72,7 @@ export const MODULE_STORAGE_KEYS = Object.freeze({
   quotes: [STORAGE_KEYS.quotes],
   invoices: [STORAGE_KEYS.invoices],
   subscriptions: [STORAGE_KEYS.subscriptions],
-  workflow: [STORAGE_KEYS.crmTasks, STORAGE_KEYS.activityLog],
+  workflow: [STORAGE_KEYS.crmTasks, STORAGE_KEYS.activityLog, STORAGE_KEYS.crmTaskWriteEnabled, STORAGE_KEYS.lastCrmTaskWriteStatus],
   settings: [STORAGE_KEYS.settings],
   clientPortal: [STORAGE_KEYS.clientPortalSettings, STORAGE_KEYS.lastClientPortalDataTest, STORAGE_KEYS.clientPortalMessages, STORAGE_KEYS.clientPortalNotifications, STORAGE_KEYS.changeRequests],
   auth: [STORAGE_KEYS.authUsers, STORAGE_KEYS.profiles, STORAGE_KEYS.currentSession, STORAGE_KEYS.accountRequests, STORAGE_KEYS.lastProfileReadinessTest, STORAGE_KEYS.accessControlSettings, STORAGE_KEYS.lastAccessControlTest],
@@ -106,6 +108,8 @@ export const PRIMARY_MODULE_KEYS = Object.freeze({
   accessControlSettings: STORAGE_KEYS.accessControlSettings,
   lastAccessControlTest: STORAGE_KEYS.lastAccessControlTest,
   deploymentBlockers: STORAGE_KEYS.deploymentBlockers,
+  crmTaskWriteEnabled: STORAGE_KEYS.crmTaskWriteEnabled,
+  lastCrmTaskWriteStatus: STORAGE_KEYS.lastCrmTaskWriteStatus,
   aiAdminAssistantDrafts: STORAGE_KEYS.aiAdminAssistantDrafts,
 });
 

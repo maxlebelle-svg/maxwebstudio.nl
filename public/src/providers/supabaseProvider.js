@@ -141,6 +141,13 @@ function isCustomerMigrationRecord(record = {}) {
     && record.metadata?.migrationPreparedBy === "customerMigrationService";
 }
 
+function isSafeCrmTaskWriteRecord(record = {}) {
+  return record.is_demo === true
+    && record.environment === "test"
+    && record.metadata?.createdBy === "crm-task-write-mvp"
+    && record.metadata?.safeToArchive === true;
+}
+
 async function getWriteClient({ allowMigration = false } = {}) {
   if (!isWriteTestMode() && !(allowMigration && isMigrationMode())) {
     throw new Error("Supabase writes zijn alleen toegestaan in supabase-write-test of gecontroleerde supabase-migration mode.");
@@ -225,6 +232,15 @@ async function getSubscriptionWriteClient(context = {}) {
 
 function assertSubscriptionWriteTable(table) {
   if (!isSubscriptionsTable(table)) throw new Error("Subscription writes ondersteunen alleen de subscriptions tabel.");
+}
+
+async function getCrmTaskWriteClient(context = {}) {
+  if (context.crmTaskWrite !== true) throw new Error("CRM task write context ontbreekt.");
+  return getWriteClient();
+}
+
+function assertCrmTaskWriteTable(table) {
+  if (!isCrmTasksTable(table)) throw new Error("CRM task writes ondersteunen alleen de crm_tasks tabel.");
 }
 
 export const supabaseProvider = {
@@ -699,6 +715,22 @@ export const supabaseProvider = {
       status: "archived",
       deleted_at: new Date().toISOString(),
     }, context);
+  },
+
+  async createCrmTask(record = {}, context = {}) {
+    assertCrmTaskWriteTable("crm_tasks");
+    if (!isSafeCrmTaskWriteRecord(record)) {
+      throw new Error("CRM task writes vereisen testomgeving, is_demo=true en veilige crm-task-write-mvp metadata.");
+    }
+    const client = await getCrmTaskWriteClient(context);
+    const payload = {
+      ...record,
+      updated_at: record.updated_at || new Date().toISOString(),
+      created_at: record.created_at || new Date().toISOString(),
+    };
+    const { data, error } = await client.from("crm_tasks").insert(payload).select("*").single();
+    if (error) throw new Error(error.message || "CRM-taak aanmaken in Supabase staging is mislukt.");
+    return { success: true, table: "crm_tasks", action: "create_crm_task", data };
   },
 
   setAll() {
