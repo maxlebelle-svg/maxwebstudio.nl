@@ -1135,3 +1135,25 @@ Volgende stap:
 
 1. CRM/admin gericht aansluiten op dezelfde read-layer.
 2. Daarna pas gecontroleerde write-mode voorbereiden.
+
+## Fase 31 - CRM/Admin Supabase Read MVP
+
+Status: `AFGEROND`
+
+Scope:
+
+- Admin/CRM leest `customers`, `websites` en `projects` via de Supabase Data Layer MVP.
+- Developer Mode toont data-layer status en fallback.
+- Local/demo fallback blijft intact.
+
+Niet in scope:
+
+- Productieproject.
+- Echte klantdata.
+- Writes.
+- Offertes/facturen/abonnementen volledig live maken.
+
+Volgende stap:
+
+1. Data-layer review voor write-readiness voorbereiden.
+2. Daarna per module gecontroleerde write-mode plannen.

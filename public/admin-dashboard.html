@@ -3432,6 +3432,7 @@
             releaseDecisionService: await import("./src/services/releaseDecisionService.js"),
             aiWebsiteWizardService: await import("./src/services/aiWebsiteWizardService.js"),
             aiAdminAssistantService: await import("./src/services/aiAdminAssistantService.js"),
+            supabaseDataLayerService: await import("./src/services/supabaseDataLayerService.js"),
           };
           return state.developerModules;
         }
@@ -3785,6 +3786,21 @@
           ]);
         }
 
+        function renderSupabaseDataLayerMvpCard(modules) {
+          const status = modules.supabaseDataLayerService.getSupabaseDataLayerMvpStatus();
+          appendDeveloperCard("Supabase Data Layer MVP", [
+            ["Status", status.readsPrepared ? "Read layer actief" : "Niet actief"],
+            ["Modules", status.modules.join(", ")],
+            ["Default mode", status.defaultMode],
+            ["Writes", status.writesEnabled ? "Aan" : "Uitgeschakeld"],
+            ["Productie ready", status.productionReady ? "Ja" : "Nee"],
+            ["Customers bron", state.customerSourceStatus?.dataLayer || "-"],
+            ["Websites bron", state.websiteSourceStatus?.dataLayer || "-"],
+            ["Projects bron", state.projectSourceStatus?.dataLayer || "-"],
+            ["Fallback actief", [state.customerSourceStatus, state.websiteSourceStatus, state.projectSourceStatus].some((item) => item?.fallbackUsed) ? "Ja" : "Nee"],
+          ]);
+        }
+
         function renderSupabaseReadOnlyResult(title, result) {
           appendDeveloperCard(title, [
             ["Succes", result.success ? "Ja" : "Nee"],
@@ -3843,6 +3859,7 @@
             ["Hybrid count", String(counts.hybrid ?? state.customers.length ?? 0)],
             ["Duplicate merge count", String(counts.duplicateMerges ?? 0)],
             ["Fallback status", status.fallbackUsed ? "Local fallback gebruikt" : "Geen fallback"],
+            ["Data layer", status.dataLayer || "repository/local"],
             ["Laatste refresh", status.refreshedAt ? formatDate(status.refreshedAt) : "-"],
             ["Error", status.error || "-"],
           ]);
@@ -4026,6 +4043,7 @@
             ["Demo websites", String(counts.demo ?? 0)],
             ["Ongemigreerd lokaal", String(counts.unmigratedLocal ?? 0)],
             ["Fallback status", status.fallbackUsed ? "Local fallback gebruikt" : "Geen fallback"],
+            ["Data layer", status.dataLayer || "repository/local"],
             ["Laatste refresh", status.refreshedAt ? formatDate(status.refreshedAt) : "-"],
             ["Error", status.error || "-"],
           ]);
@@ -4122,6 +4140,7 @@
             ["Demo projecten", String(counts.demo ?? 0)],
             ["Ongemigreerd lokaal", String(counts.unmigratedLocal ?? 0)],
             ["Fallback status", status.fallbackUsed ? "Local fallback gebruikt" : "Geen fallback"],
+            ["Data layer", status.dataLayer || "repository/local"],
             ["Laatste refresh", status.refreshedAt ? formatDate(status.refreshedAt) : "-"],
             ["Error", status.error || "-"],
           ]);
@@ -5393,6 +5412,7 @@
             ]);
             renderSupabaseConnectionStatus(providerStatus);
             renderSupabaseReadOnlyTest(readOnlySummary);
+            renderSupabaseDataLayerMvpCard(modules);
             renderSupabaseWriteTestStatus(writeTestReadiness, writeTestResults);
             renderCustomerDataSourceStatus(state.customerSourceStatus);
             renderCustomerWriteReadiness(modules);
@@ -6368,14 +6388,21 @@
           const previousMode = currentCustomerDataMode();
           customerDataModeSelect.value = "hybrid";
           try {
-            const { CustomerRepository } = await import("./src/repositories/CustomerRepository.js");
-            const result = await CustomerRepository.listByDataMode("hybrid");
-            state.customerSourceStatus = result;
+            const result = await readAdminDataLayerModule("customers", "hybrid");
+            state.customerSourceStatus = {
+              mode: result.mode,
+              counts: result.counts,
+              duplicateMerges: result.duplicateMerges,
+              fallbackUsed: result.fallbackUsed,
+              error: result.error,
+              refreshedAt: result.refreshedAt,
+              dataLayer: result.dataLayer,
+            };
             renderCustomerSourceSummary();
             try {
               const { activityLogService } = await loadDeveloperModules();
               activityLogService.logActivity("developer_tools", "customers", "customer_hybrid_merge_tested", {
-                hybridCount: result.counts?.hybrid ?? result.customers.length,
+                hybridCount: result.counts?.hybrid ?? result.records.length,
                 duplicateMergeCount: result.counts?.duplicateMerges ?? 0,
                 fallbackUsed: Boolean(result.fallbackUsed),
               });
@@ -7806,6 +7833,21 @@
           return modules.subscriptionRepository;
         }
 
+        async function readAdminDataLayerModule(moduleName, mode) {
+          const { readSupabaseDataLayerModule } = await import("./src/services/supabaseDataLayerService.js");
+          const result = await readSupabaseDataLayerModule(moduleName, { mode });
+          return {
+            mode: result.mode || mode,
+            records: Array.isArray(result.records) ? result.records : [],
+            counts: result.counts || {},
+            duplicateMerges: result.duplicateMerges || [],
+            fallbackUsed: Boolean(result.fallbackUsed),
+            error: result.error || "",
+            refreshedAt: result.refreshedAt || new Date().toISOString(),
+            dataLayer: "supabase-data-layer-mvp",
+          };
+        }
+
         function customerSupabaseId(customer = {}) {
           return customer._supabaseCustomerId || customer.supabaseCustomerId || customer.id || "";
         }
@@ -7894,47 +7936,71 @@
 
         async function loadCustomersByDataMode() {
           const mode = currentCustomerDataMode();
-          const { CustomerRepository } = await import("./src/repositories/CustomerRepository.js");
-          const result = await CustomerRepository.listByDataMode(mode);
-          state.customerSourceStatus = result;
+          const result = await readAdminDataLayerModule("customers", mode);
+          state.customerSourceStatus = {
+            mode: result.mode,
+            counts: result.counts,
+            duplicateMerges: result.duplicateMerges,
+            fallbackUsed: result.fallbackUsed,
+            error: result.error,
+            refreshedAt: result.refreshedAt,
+            dataLayer: result.dataLayer,
+          };
           localStorage.setItem("maxwebstudioLastCustomerSourceStatus", JSON.stringify({
             mode: result.mode,
             counts: result.counts,
             fallbackUsed: result.fallbackUsed,
             error: result.error,
             refreshedAt: result.refreshedAt,
+            dataLayer: result.dataLayer,
           }));
-          return result.customers.map(normalizeStoredCustomer);
+          return result.records.map(normalizeStoredCustomer);
         }
 
         async function loadWebsitesByDataMode() {
           const mode = currentWebsiteDataMode();
-          const { WebsiteRepository } = await import("./src/repositories/WebsiteRepository.js");
-          const result = await WebsiteRepository.listByDataMode(mode);
-          state.websiteSourceStatus = result;
+          const result = await readAdminDataLayerModule("websites", mode);
+          state.websiteSourceStatus = {
+            mode: result.mode,
+            counts: result.counts,
+            duplicateMerges: result.duplicateMerges,
+            fallbackUsed: result.fallbackUsed,
+            error: result.error,
+            refreshedAt: result.refreshedAt,
+            dataLayer: result.dataLayer,
+          };
           localStorage.setItem("maxwebstudioLastWebsiteSourceStatus", JSON.stringify({
             mode: result.mode,
             counts: result.counts,
             fallbackUsed: result.fallbackUsed,
             error: result.error,
             refreshedAt: result.refreshedAt,
+            dataLayer: result.dataLayer,
           }));
-          return result.websites.map(normalizeManagedSite);
+          return result.records.map(normalizeManagedSite);
         }
 
         async function loadProjectsByDataMode() {
           const mode = currentProjectDataMode();
-          const { ProjectRepository } = await import("./src/repositories/ProjectRepository.js");
-          const result = await ProjectRepository.listByDataMode(mode);
-          state.projectSourceStatus = result;
+          const result = await readAdminDataLayerModule("projects", mode);
+          state.projectSourceStatus = {
+            mode: result.mode,
+            counts: result.counts,
+            duplicateMerges: result.duplicateMerges,
+            fallbackUsed: result.fallbackUsed,
+            error: result.error,
+            refreshedAt: result.refreshedAt,
+            dataLayer: result.dataLayer,
+          };
           localStorage.setItem("maxwebstudioLastProjectSourceStatus", JSON.stringify({
             mode: result.mode,
             counts: result.counts,
             fallbackUsed: result.fallbackUsed,
             error: result.error,
             refreshedAt: result.refreshedAt,
+            dataLayer: result.dataLayer,
           }));
-          return result.projects.map(normalizeProject);
+          return result.records.map(normalizeProject);
         }
 
         async function loadQuotesByDataMode() {
@@ -9134,6 +9200,7 @@
             ["Demo customers", String(counts.demo ?? 0)],
             ["Niet gemigreerd local", String(counts.unmigratedLocal ?? 0)],
             ["Merge duplicates", String(counts.duplicateMerges ?? 0)],
+            ["Data layer", status.dataLayer || "repository/local"],
             ["Laatste refresh", status.refreshedAt ? formatDate(status.refreshedAt) : "-"],
           ].forEach(([label, value]) => {
             const card = document.createElement("article");
@@ -9179,6 +9246,7 @@
             ["Hybrid zichtbaar", String(counts.hybrid ?? state.websites.length ?? 0)],
             ["Demo", String(counts.demo ?? state.websites.filter((website) => website._source === "demo").length)],
             ["Zonder Supabase customer", String(state.websites.filter((website) => website._linkedCustomerStatus && website._linkedCustomerStatus !== "linked").length)],
+            ["Data layer", status.dataLayer || "repository/local"],
           ].forEach(([label, value]) => {
             const card = document.createElement("article");
             card.className = "admin-card metric-card";
@@ -10498,6 +10566,7 @@
             ["Demo", String(counts.demo ?? state.projects.filter((project) => project._source === "demo").length)],
             ["Zonder Supabase customer", String(state.projects.filter((project) => project._linkedCustomerStatus && project._linkedCustomerStatus !== "linked").length)],
             ["Zonder Supabase website", String(state.projects.filter((project) => project._linkedWebsiteStatus && !["linked", "not_required"].includes(project._linkedWebsiteStatus)).length)],
+            ["Data layer", status.dataLayer || "repository/local"],
           ].forEach(([label, value]) => {
             const card = document.createElement("article");
             card.className = "admin-card metric-card";

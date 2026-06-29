@@ -1436,3 +1436,26 @@ MVP-grenzen:
 - Geen productieproject of echte klantdata.
 - Offertes, facturen, abonnementen, bestanden, berichten en notificaties blijven op bestaande local/hybrid routes.
 - Writes blijven uitgeschakeld.
+
+## Fase 31 - CRM/Admin Supabase Read MVP
+
+Status: `AFGEROND`
+
+Doel:
+
+- Admin-dashboard/CRM gecontroleerd laten lezen via dezelfde Supabase Data Layer MVP als het klantportaal.
+- `customers`, `websites` en `projects` read-only via `supabaseDataLayerService`.
+- Bestaande local/demo fallback behouden.
+
+Toegevoegd/aangepast:
+
+- `public/admin-dashboard.html` gebruikt de Supabase Data Layer MVP voor CRM customers, websites en projects.
+- Developer Mode toont de data-layer status, write-status en fallbackstatus.
+- Customer hybrid merge test gebruikt dezelfde data-layer route.
+
+MVP-grenzen:
+
+- Geen productieproject of echte klantdata.
+- Geen writes toegevoegd.
+- Offertes, facturen, abonnementen, bestanden en workflow blijven op bestaande routes.
+- Productie blijft `NO-GO` tot expliciete releaseapproval.
