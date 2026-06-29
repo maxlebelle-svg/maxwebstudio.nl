@@ -16,6 +16,9 @@ function createElement(tagName, className, text = "") {
 function createPreview(demoSite) {
   const preview = createElement("div", "official-demo-preview");
   preview.style.setProperty("--demo-accent", demoSite.accentColor || "#155eef");
+  if (demoSite.desktopThumbnail) {
+    preview.style.setProperty("--demo-cover", `url("/${demoSite.desktopThumbnail}")`);
+  }
 
   const desktop = createElement("div", "official-demo-desktop");
   const desktopTop = createElement("div", "official-demo-browser-top");
@@ -38,6 +41,9 @@ function createPreview(demoSite) {
   desktop.append(desktopTop, desktopBody);
 
   const phone = createElement("div", "official-demo-mobile");
+  if (demoSite.mobileThumbnail || demoSite.desktopThumbnail) {
+    phone.style.setProperty("--demo-mobile-cover", `url("/${demoSite.mobileThumbnail || demoSite.desktopThumbnail}")`);
+  }
   phone.append(createElement("span"), createElement("strong", "", demoSite.name), createElement("p", "", demoSite.ctaLabel || "Demo bekijken"));
 
   preview.append(desktop, phone);

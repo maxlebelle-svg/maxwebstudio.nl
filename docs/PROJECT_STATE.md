@@ -686,3 +686,34 @@ Nog niet actief:
 - Geen Supabase.
 - Geen AI-generatie.
 - Geen backend.
+
+## Bouwbedrijf Demo Site
+
+Status: eerste officiele demo-site gebouwd en actief gekoppeld aan de Demo Portfolio Engine.
+
+Toegevoegd:
+
+- `public/demo-sites/bouwbedrijf-demo/index.html`
+- `public/demo-sites/bouwbedrijf-demo/styles.css`
+- `public/demo-sites/bouwbedrijf-demo/script.js`
+
+Bijgewerkt:
+
+- `public/src/config/demoSites.js`
+- `public/src/components/demoPortfolioEngine.js`
+- `public/styles.css`
+
+Resultaat:
+
+- `bouwbedrijf-demo` staat in de registry op `live`.
+- Demo URL is `/demo-sites/bouwbedrijf-demo/`.
+- Portfolio-engine toont nu een actieve knop `Bekijk live demo`.
+- Demo-site is een zelfstandige premium one-page bouwbedrijfsite voor Bouwbedrijf Van Dijk & Partners.
+- Formulier verwerkt lokaal met nette succesmelding; geen backend of database.
+
+Nog niet actief:
+
+- Geen echte klantdata.
+- Geen offertebackend.
+- Geen Supabase.
+- Geen AI-generatie.

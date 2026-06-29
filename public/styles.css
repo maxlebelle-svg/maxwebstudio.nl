@@ -1363,6 +1363,8 @@ h3 {
   padding: 22px;
   overflow: hidden;
   background:
+    linear-gradient(135deg, rgba(6, 18, 31, 0.28), rgba(6, 18, 31, 0.04)),
+    var(--demo-cover, none) center / cover,
     radial-gradient(circle at 80% 20%, color-mix(in srgb, var(--demo-accent, #155eef) 18%, transparent), transparent 30%),
     linear-gradient(145deg, #eff6ff, #ffffff 74%);
 }
@@ -1432,7 +1434,8 @@ h3 {
   border-radius: 16px;
   color: var(--white);
   background:
-    linear-gradient(135deg, rgba(6, 18, 31, 0.72), color-mix(in srgb, var(--demo-accent, #155eef) 62%, #06121f));
+    linear-gradient(135deg, rgba(6, 18, 31, 0.82), color-mix(in srgb, var(--demo-accent, #155eef) 42%, rgba(6, 18, 31, 0.72))),
+    var(--demo-cover, none) center / cover;
 }
 
 .official-demo-mini-hero strong {
@@ -1490,7 +1493,8 @@ h3 {
   border-radius: 26px;
   color: var(--white);
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--demo-accent, #155eef) 82%, #06121f), #06121f);
+    linear-gradient(180deg, color-mix(in srgb, var(--demo-accent, #155eef) 44%, rgba(6, 18, 31, 0.68)), #06121f),
+    var(--demo-mobile-cover, none) center / cover;
   box-shadow: 0 18px 40px rgba(6, 18, 31, 0.2);
 }
 

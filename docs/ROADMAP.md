@@ -453,3 +453,24 @@ Niet live:
 Volgende logische stap:
 
 - `bouwbedrijf-demo` inhoudelijk bouwen en daarna in de registry op `live` zetten met een echte `demoUrl` en thumbnails.
+
+### Bouwbedrijf Demo Site
+
+Afgerond als eerste live demo:
+
+- zelfstandige demo-site in `public/demo-sites/bouwbedrijf-demo/`
+- premium one-page bouwbedrijfwebsite gebouwd
+- registry bijgewerkt naar status `live`
+- portfolio-engine toont actieve live demo-knop
+- desktop/mobile preview gebruikt bouw-coverbeeld
+
+Niet live/productie:
+
+- geen echte klant
+- geen backend
+- geen database
+- geen AI-calls
+
+Volgende logische stap:
+
+- volgende demo-site toevoegen via dezelfde engine, bijvoorbeeld `restaurant-demo` of `sportschool-demo`.
