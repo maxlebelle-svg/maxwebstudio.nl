@@ -150,7 +150,18 @@ async function readPortalDataLayerModules(mode) {
   try {
     const dataLayerResult = await readSupabaseDataLayerMvp({
       mode: repositoryMode(mode),
-      modules: ["customers", "websites", "projects", "quotes", "invoices", "subscriptions"],
+      modules: [
+        "customers",
+        "websites",
+        "projects",
+        "quotes",
+        "invoices",
+        "subscriptions",
+        "files",
+        "change_requests",
+        "client_portal_messages",
+        "client_portal_notifications",
+      ],
     });
     return {
       customers: dataLayerModuleResult(dataLayerResult, "customers", mode),
@@ -159,6 +170,10 @@ async function readPortalDataLayerModules(mode) {
       quotes: dataLayerModuleResult(dataLayerResult, "quotes", mode),
       invoices: dataLayerModuleResult(dataLayerResult, "invoices", mode),
       subscriptions: dataLayerModuleResult(dataLayerResult, "subscriptions", mode),
+      files: dataLayerModuleResult(dataLayerResult, "files", mode),
+      changeRequests: dataLayerModuleResult(dataLayerResult, "change_requests", mode),
+      messages: dataLayerModuleResult(dataLayerResult, "client_portal_messages", mode),
+      notifications: dataLayerModuleResult(dataLayerResult, "client_portal_notifications", mode),
       dataLayerStatus: {
         ...getSupabaseDataLayerMvpStatus(),
         mode: dataLayerResult.mode,
@@ -177,8 +192,12 @@ async function readPortalDataLayerModules(mode) {
       listModule(InvoiceRepository, "invoices", CLIENT_PORTAL_DATA_MODES.LOCAL),
       listModule(SubscriptionRepository, "subscriptions", CLIENT_PORTAL_DATA_MODES.LOCAL),
     ]);
+    const files = { items: localFiles(), status: { mode: "local", fallbackUsed: true, error: "", count: localFiles().length, refreshedAt: new Date().toISOString() } };
+    const changeRequests = { items: localChangeRequests(), status: { mode: "local", fallbackUsed: true, error: "", count: localChangeRequests().length, refreshedAt: new Date().toISOString() } };
+    const messages = { items: localMessages(), status: { mode: "local", fallbackUsed: true, error: "", count: localMessages().length, refreshedAt: new Date().toISOString() } };
+    const notifications = { items: localNotifications(), status: { mode: "local", fallbackUsed: true, error: "", count: localNotifications().length, refreshedAt: new Date().toISOString() } };
     const fallbackMessage = error.message || "Supabase Data Layer MVP kon niet worden gelezen.";
-    [customers, websites, projects, quotes, invoices, subscriptions].forEach((result) => {
+    [customers, websites, projects, quotes, invoices, subscriptions, files, changeRequests, messages, notifications].forEach((result) => {
       result.status.fallbackUsed = true;
       result.status.error = fallbackMessage;
       result.status.dataLayer = "local-fallback-after-data-layer-error";
@@ -190,11 +209,26 @@ async function readPortalDataLayerModules(mode) {
       quotes,
       invoices,
       subscriptions,
+      files,
+      changeRequests,
+      messages,
+      notifications,
       dataLayerStatus: {
         ...getSupabaseDataLayerMvpStatus(),
         mode: CLIENT_PORTAL_DATA_MODES.LOCAL,
         fallbackUsed: true,
-        fallbackModules: ["customers", "websites", "projects", "quotes", "invoices", "subscriptions"],
+        fallbackModules: [
+          "customers",
+          "websites",
+          "projects",
+          "quotes",
+          "invoices",
+          "subscriptions",
+          "files",
+          "change_requests",
+          "client_portal_messages",
+          "client_portal_notifications",
+        ],
         errors: [{ module: "clientPortalDataService", error: fallbackMessage }],
         refreshedAt: new Date().toISOString(),
       },
@@ -400,10 +434,6 @@ export function getClientPortalSourceSummary(data = {}) {
 
 async function readAllForMode(mode) {
   const portalDataLayer = await readPortalDataLayerModules(mode);
-  const files = { items: localFiles(), status: { mode: "local", fallbackUsed: false, error: "", count: localFiles().length, refreshedAt: new Date().toISOString() } };
-  const changeRequests = { items: localChangeRequests(), status: { mode: "local", fallbackUsed: false, error: "", count: localChangeRequests().length, refreshedAt: new Date().toISOString() } };
-  const messages = { items: localMessages(), status: { mode: "local", fallbackUsed: false, error: "", count: localMessages().length, refreshedAt: new Date().toISOString() } };
-  const notifications = { items: localNotifications(), status: { mode: "local", fallbackUsed: false, error: "", count: localNotifications().length, refreshedAt: new Date().toISOString() } };
   return {
     customers: portalDataLayer.customers,
     websites: portalDataLayer.websites,
@@ -411,10 +441,10 @@ async function readAllForMode(mode) {
     quotes: portalDataLayer.quotes,
     invoices: portalDataLayer.invoices,
     subscriptions: portalDataLayer.subscriptions,
-    files,
-    changeRequests,
-    messages,
-    notifications,
+    files: portalDataLayer.files,
+    changeRequests: portalDataLayer.changeRequests,
+    messages: portalDataLayer.messages,
+    notifications: portalDataLayer.notifications,
     dataLayerStatus: portalDataLayer.dataLayerStatus,
   };
 }

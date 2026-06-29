@@ -1181,3 +1181,28 @@ Volgende stap:
 
 1. Data-layer GO/NO-GO review voor write-readiness.
 2. Daarna gecontroleerde write-mode per finance module ontwerpen.
+
+## Fase 33 - Operations Data Layer MVP
+
+Status: `AFGEROND`
+
+Scope:
+
+- Data-layer read support voor `files`, `change_requests`, `client_portal_messages`, `client_portal_notifications` en `crm_tasks`.
+- Klantportaal gebruikt de operations read-layer voor bestanden, wijzigingsverzoeken, berichten en notificaties.
+- Admin/CRM gebruikt de read-layer voor bestandsmetadata.
+- Developer Mode toont operationsmodules binnen de Supabase Data Layer MVP-status.
+- Local/demo fallback blijft intact.
+
+Niet in scope:
+
+- Productieproject.
+- Echte klantdata.
+- Writes.
+- Supabase Storage uploads.
+- OpenAI/Mollie/Resend.
+
+Volgende stap:
+
+1. Leadfinder-data read-layer voorbereiden of data-layer write-readiness review uitvoeren.
+2. Daarna pas gecontroleerde write-mode per module plannen.

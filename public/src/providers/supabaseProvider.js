@@ -37,6 +37,43 @@ function isSubscriptionsTable(table) {
   return table === "subscriptions" || table === "maxwebstudioSubscriptions";
 }
 
+function isFilesTable(table) {
+  return table === "files" || table === "maxwebstudioFiles";
+}
+
+function isChangeRequestsTable(table) {
+  return table === "change_requests" || table === "maxwebstudioChangeRequests";
+}
+
+function isCrmTasksTable(table) {
+  return table === "crm_tasks" || table === "maxwebstudioCrmTasks";
+}
+
+function isClientPortalMessagesTable(table) {
+  return table === "client_portal_messages" || table === "maxwebstudioClientPortalMessages";
+}
+
+function isClientPortalNotificationsTable(table) {
+  return table === "client_portal_notifications" || table === "maxwebstudioClientPortalNotifications";
+}
+
+function isReadableTable(table) {
+  return isProfilesTable(table)
+    || isCustomersTable(table)
+    || isWebsitesTable(table)
+    || isProjectsTable(table)
+    || isQuotesTable(table)
+    || isQuoteLinesTable(table)
+    || isInvoicesTable(table)
+    || isInvoiceLinesTable(table)
+    || isSubscriptionsTable(table)
+    || isFilesTable(table)
+    || isChangeRequestsTable(table)
+    || isCrmTasksTable(table)
+    || isClientPortalMessagesTable(table)
+    || isClientPortalNotificationsTable(table);
+}
+
 function normalizedTable(table) {
   if (isProfilesTable(table)) return "profiles";
   if (isCustomersTable(table)) return "customers";
@@ -47,6 +84,11 @@ function normalizedTable(table) {
   if (isInvoicesTable(table)) return "invoices";
   if (isInvoiceLinesTable(table)) return "invoice_lines";
   if (isSubscriptionsTable(table)) return "subscriptions";
+  if (isFilesTable(table)) return "files";
+  if (isChangeRequestsTable(table)) return "change_requests";
+  if (isCrmTasksTable(table)) return "crm_tasks";
+  if (isClientPortalMessagesTable(table)) return "client_portal_messages";
+  if (isClientPortalNotificationsTable(table)) return "client_portal_notifications";
   return table;
 }
 
@@ -184,7 +226,7 @@ export const supabaseProvider = {
   status: "read-only",
 
   async getAll(table, options = {}) {
-    if (!isProfilesTable(table) && !isCustomersTable(table) && !isWebsitesTable(table) && !isProjectsTable(table) && !isQuotesTable(table) && !isQuoteLinesTable(table) && !isInvoicesTable(table) && !isInvoiceLinesTable(table) && !isSubscriptionsTable(table)) {
+    if (!isReadableTable(table)) {
       console.info(preparedMessage(table));
       return [];
     }
@@ -197,7 +239,7 @@ export const supabaseProvider = {
   },
 
   async getById(table, id) {
-    if (!isProfilesTable(table) && !isCustomersTable(table) && !isWebsitesTable(table) && !isProjectsTable(table) && !isQuotesTable(table) && !isQuoteLinesTable(table) && !isInvoicesTable(table) && !isInvoiceLinesTable(table) && !isSubscriptionsTable(table)) {
+    if (!isReadableTable(table)) {
       console.info(preparedMessage(table));
       return null;
     }
@@ -658,7 +700,7 @@ export const supabaseProvider = {
   },
 
   async count(table) {
-    if (!isProfilesTable(table) && !isCustomersTable(table) && !isWebsitesTable(table) && !isProjectsTable(table) && !isQuotesTable(table) && !isQuoteLinesTable(table) && !isInvoicesTable(table) && !isInvoiceLinesTable(table) && !isSubscriptionsTable(table)) {
+    if (!isReadableTable(table)) {
       console.info(preparedMessage(table));
       return 0;
     }

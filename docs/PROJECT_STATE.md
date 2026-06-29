@@ -1483,3 +1483,28 @@ MVP-grenzen:
 - Geen Resend of OpenAI.
 - Geen productieproject of echte klantdata.
 - Quote/invoice lines worden gelezen als veilige afgeleide read-view uit offerte/factuur records.
+
+## Fase 33 - Operations Data Layer MVP
+
+Status: `AFGEROND`
+
+Doel:
+
+- De Supabase Data Layer MVP read-only uitbreiden met operationele modules.
+- Bestanden, wijzigingsverzoeken, klantportaalberichten, klantportaalnotificaties en CRM-taken via dezelfde hybrid/local fallback benaderen.
+- Klantportaal en admin read-only aansluiten waar veilig.
+
+Toegevoegd/aangepast:
+
+- `public/src/services/supabaseDataLayerService.js` ondersteunt `files`, `change_requests`, `client_portal_messages`, `client_portal_notifications` en `crm_tasks`.
+- `public/src/services/clientPortalDataService.js` leest bestanden, wijzigingsverzoeken, berichten en notificaties via de data-layer.
+- `public/admin-dashboard.html` leest bestandsmetadata via de data-layer en toont operations-readiness in Developer Mode.
+- `public/src/providers/supabaseProvider.js` staat read-only reads toe voor de operationele tabellen.
+
+MVP-grenzen:
+
+- Read-only.
+- Geen Supabase Storage uploads.
+- Geen production writes of echte klantdata.
+- CRM workflow-acties blijven local/demo tot aparte write-mode fase.
+- Change request status-updates via bestaande endpoint blijven buiten deze read-layer migratie.

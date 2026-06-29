@@ -1705,6 +1705,7 @@
           invoiceWriteReadiness: null,
           subscriptionSourceStatus: null,
           subscriptionWriteReadiness: null,
+          fileSourceStatus: null,
           aiWizardService: null,
           aiWizardSelectedStepId: "",
         };
@@ -3797,7 +3798,9 @@
             ["Customers bron", state.customerSourceStatus?.dataLayer || "-"],
             ["Websites bron", state.websiteSourceStatus?.dataLayer || "-"],
             ["Projects bron", state.projectSourceStatus?.dataLayer || "-"],
-            ["Fallback actief", [state.customerSourceStatus, state.websiteSourceStatus, state.projectSourceStatus].some((item) => item?.fallbackUsed) ? "Ja" : "Nee"],
+            ["Files bron", state.fileSourceStatus?.dataLayer || "-"],
+            ["Operations modules", status.modules.filter((moduleName) => ["files", "change_requests", "client_portal_messages", "client_portal_notifications", "crm_tasks"].includes(moduleName)).join(", ")],
+            ["Fallback actief", [state.customerSourceStatus, state.websiteSourceStatus, state.projectSourceStatus, state.quoteSourceStatus, state.invoiceSourceStatus, state.subscriptionSourceStatus, state.fileSourceStatus].some((item) => item?.fallbackUsed) ? "Ja" : "Nee"],
           ]);
         }
 
@@ -8073,6 +8076,29 @@
             dataLayer: result.dataLayer,
           }));
           return result.records.map(normalizeSubscription);
+        }
+
+        async function loadFilesByDataMode() {
+          const mode = currentCustomerDataMode();
+          const result = await readAdminDataLayerModule("files", mode);
+          state.fileSourceStatus = {
+            mode: result.mode,
+            counts: result.counts,
+            duplicateMerges: result.duplicateMerges,
+            fallbackUsed: result.fallbackUsed,
+            error: result.error,
+            refreshedAt: result.refreshedAt,
+            dataLayer: result.dataLayer,
+          };
+          localStorage.setItem("maxwebstudioLastFileSourceStatus", JSON.stringify({
+            mode: result.mode,
+            counts: result.counts,
+            fallbackUsed: result.fallbackUsed,
+            error: result.error,
+            refreshedAt: result.refreshedAt,
+            dataLayer: result.dataLayer,
+          }));
+          return result.records.map(normalizeStoredFile);
         }
 
         function normalizeWebsiteStatus(value) {
@@ -14370,7 +14396,7 @@
             state.authUsers = [];
             state.websites = await loadWebsitesByDataMode();
             state.projects = await loadProjectsByDataMode();
-            state.files = readStoredFiles();
+            state.files = await loadFilesByDataMode();
             state.quotes = await loadQuotesByDataMode();
             state.invoices = await loadInvoicesByDataMode();
             state.subscriptions = await loadSubscriptionsByDataMode();
@@ -14403,7 +14429,12 @@
             const quoteSourceStatus = state.quoteSourceStatus || {};
             const invoiceSourceStatus = state.invoiceSourceStatus || {};
             const subscriptionSourceStatus = state.subscriptionSourceStatus || {};
-            if (subscriptionSourceStatus.error && subscriptionSourceStatus.fallbackUsed) {
+            const fileSourceStatus = state.fileSourceStatus || {};
+            if (fileSourceStatus.error && fileSourceStatus.fallbackUsed) {
+              setAdminAccessMessage(`Bestanden hybrid fallback actief: ${fileSourceStatus.error}`, "error");
+            } else if (fileSourceStatus.error) {
+              setAdminAccessMessage(`Supabase bestanden konden niet worden gelezen: ${fileSourceStatus.error}`, "error");
+            } else if (subscriptionSourceStatus.error && subscriptionSourceStatus.fallbackUsed) {
               setAdminAccessMessage(`Abonnement hybrid fallback actief: ${subscriptionSourceStatus.error}`, "error");
             } else if (subscriptionSourceStatus.error) {
               setAdminAccessMessage(`Supabase abonnementen konden niet worden gelezen: ${subscriptionSourceStatus.error}`, "error");
@@ -14446,7 +14477,7 @@
             } else if (sourceStatus.error) {
               setAdminAccessMessage(`Supabase customers konden niet worden gelezen: ${sourceStatus.error}`, "error");
             } else {
-              setAdminAccessMessage(`CRM geladen via customer mode ${sourceStatus.mode || "local"}, website mode ${websiteSourceStatus.mode || "local"}, project mode ${projectSourceStatus.mode || "local"}, quote mode ${quoteSourceStatus.mode || "local"}, invoice mode ${invoiceSourceStatus.mode || "local"} en subscription mode ${subscriptionSourceStatus.mode || "local"}.`, "success");
+              setAdminAccessMessage(`CRM geladen via customer mode ${sourceStatus.mode || "local"}, website mode ${websiteSourceStatus.mode || "local"}, project mode ${projectSourceStatus.mode || "local"}, quote mode ${quoteSourceStatus.mode || "local"}, invoice mode ${invoiceSourceStatus.mode || "local"}, subscription mode ${subscriptionSourceStatus.mode || "local"} en files mode ${fileSourceStatus.mode || "local"}.`, "success");
             }
           } catch (error) {
             setAdminAccessMessage(error.message || "CRM-klanten konden niet worden geladen.", "error");
