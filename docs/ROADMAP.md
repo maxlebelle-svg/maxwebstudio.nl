@@ -103,3 +103,20 @@ Belangrijk voor de roadmap:
 - Fase 13 start pas na review van de SQL-audit.
 - De productiearchitectuur moet kiezen voor een primaire lijn. Aanbevolen: `supabase/schema.sql` met platformtabellen.
 - Oude `customer_*` billing/portal scripts moeten worden geconsolideerd voordat Mollie, e-mail en klantportaal live-hardening op productie gaan.
+
+## Fase 13.0 - Supabase Database Consolidation
+
+Status: afgerond als documentatie/consolidatiefase.
+
+Output:
+
+- `SUPABASE_LEGACY_MAPPING.md`
+- `SUPABASE_CANONICAL_SCHEMA.md`
+- `SUPABASE_CONSOLIDATED_PLAN.md`
+- `SUPABASE_PATCH_PLAN.md`
+
+Roadmapbesluit:
+
+- Canonical lijn wordt `profiles -> customers -> websites -> projects -> quotes -> quote_lines -> invoices -> invoice_lines -> subscriptions`.
+- Legacy `customer_websites`, `customer_invoices` en `customer_subscriptions` worden niet meer als basis voor nieuwe productiefeatures gebruikt.
+- Auth/RLS hardening schuift door naar Fase 13.1 en blijft geblokkeerd tot review van het consolidated plan.

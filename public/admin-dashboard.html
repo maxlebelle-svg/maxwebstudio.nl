@@ -3095,6 +3095,18 @@
           ]);
         }
 
+        function renderDatabaseConsolidationStatus() {
+          appendDeveloperCard("Database consolidation status", [
+            ["Canonical schema", "Gekozen: profiles -> customers -> websites -> projects -> quotes -> invoices -> subscriptions"],
+            ["Legacy customer_* lijn", "Gedetecteerd: customer_websites, customer_invoices, customer_subscriptions"],
+            ["SQL audit", "Afgerond"],
+            ["Consolidation plan", "Aanwezig: docs/SUPABASE_CONSOLIDATED_PLAN.md"],
+            ["Patch plan", "Aanwezig: docs/SUPABASE_PATCH_PLAN.md"],
+            ["Auth/RLS hardening", "Geblokkeerd tot review"],
+            ["Waarschuwing", "Voer SQL niet blind uit; volg SUPABASE_CONSOLIDATED_PLAN.md."],
+          ]);
+        }
+
         function renderMigrationSummary(summary) {
           appendDeveloperCard("Migratie-analyse", [
             ["Records totaal", String(summary?.totalRecords || 0)],
@@ -4235,6 +4247,7 @@
             renderSubscriptionSupabaseReadiness(modules);
             renderClientPortalReadiness(modules);
             renderSupabaseSqlAuditStatus();
+            renderDatabaseConsolidationStatus();
             renderSupabaseSetupChecklist();
             renderCustomerMigrationCard(customerMigration);
             renderCustomerMigrationLogs(customerMigrationLogs);

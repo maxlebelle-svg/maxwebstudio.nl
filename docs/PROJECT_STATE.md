@@ -225,3 +225,8 @@ Belangrijk:
 - Nieuwe auditdocumenten: `/docs/SUPABASE_SQL_AUDIT.md`, `/docs/SUPABASE_EXECUTION_PLAN.md` en `/docs/SUPABASE_SQL_INDEX.md`.
 - De audit constateert dat er twee SQL-lijnen bestaan: de nieuwe platformlijn (`customers`, `websites`, `projects`, `quotes`, `invoices`, `subscriptions`) en oudere klantportaal/billingtabellen (`customer_websites`, `customer_invoices`, `customer_subscriptions`).
 - Fase 13 mag pas starten nadat de SQL-audit is gereviewd en de definitieve productiearchitectuur is bevestigd.
+- Fase 13.0 consolideert de database-architectuur op papier vóór Auth/RLS hardening.
+- Canonical productielijn: `profiles -> customers -> websites -> projects -> quotes -> quote_lines -> invoices -> invoice_lines -> subscriptions`.
+- Legacy lijn: `customer_websites`, `customer_invoices` en `customer_subscriptions`; nieuwe ontwikkeling mag hier niet meer op worden gebaseerd.
+- Nieuwe consolidatiedocumenten: `/docs/SUPABASE_LEGACY_MAPPING.md`, `/docs/SUPABASE_CANONICAL_SCHEMA.md`, `/docs/SUPABASE_CONSOLIDATED_PLAN.md` en `/docs/SUPABASE_PATCH_PLAN.md`.
+- Fase 13.1 Auth/RLS blijft geblokkeerd totdat het consolidated plan is gereviewd.

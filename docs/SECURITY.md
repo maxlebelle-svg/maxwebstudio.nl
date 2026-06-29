@@ -273,6 +273,14 @@ Supabase SQL audit in Fase 12.9:
 - `supabase/rls-policies.sql` is nog conceptueel en moet pas worden uitgevoerd wanneer Auth-rollen/JWT-claims getest zijn.
 - Oude `customer_*` billing/portal tabellen en nieuwe platformtabellen mogen niet blind naast elkaar naar productie worden uitgerold.
 
+Database consolidation in Fase 13.0:
+
+- Canonical tabellen voor productie zijn `customers`, `websites`, `projects`, `quotes`, `quote_lines`, `invoices`, `invoice_lines` en `subscriptions`.
+- `profiles` blijft de Auth/role-brug en wordt niet gebruikt als primaire klantentabel.
+- Legacy `customer_websites`, `customer_invoices` en `customer_subscriptions` mogen niet meer worden gebruikt voor nieuwe productie-RLS.
+- Auth/RLS hardening is geblokkeerd tot `SUPABASE_CONSOLIDATED_PLAN.md` en `SUPABASE_PATCH_PLAN.md` zijn gereviewd.
+- Geen SQL uitvoeren zonder consolidated plan; geen `DROP` of destructieve migraties.
+
 Aanbevelingen:
 
 - limieten blijven handhaven

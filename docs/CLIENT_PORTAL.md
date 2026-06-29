@@ -407,3 +407,19 @@ De SQL-audit bevestigt dat het klantportaal tijdelijk meerdere databronnen moet 
 - oudere klantportaal/billingtabellen: `customer_websites`, `customer_invoices`, `customer_subscriptions`
 
 Voor nieuwe productieontwikkeling is de aanbevolen richting de platformtabellen. Het klantportaal blijft daarom via de centrale data-service werken met `demo`, `local`, `supabase-read` en `hybrid`, totdat Fase 13 Auth/RLS definitief hardgemaakt is.
+
+## Fase 13.0 - Klantportaal op canonical tabellen
+
+De klantportaalrichting is geconsolideerd naar:
+
+- `customers`
+- `websites`
+- `projects`
+- `quotes`
+- `invoices`
+- `subscriptions`
+- `files`
+
+Legacy tabellen `customer_websites`, `customer_invoices` en `customer_subscriptions` blijven alleen historische context totdat data eventueel gemigreerd is. Het klantportaal mag voor nieuwe live data niet opnieuw afhankelijk worden van deze legacy-tabellen.
+
+Auth/RLS-routeguards blijven geblokkeerd tot het consolidated plan en patch plan zijn gereviewd.

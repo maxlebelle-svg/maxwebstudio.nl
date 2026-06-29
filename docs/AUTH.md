@@ -213,3 +213,13 @@ Conclusie voor Auth:
 - `profiles` moet primair de Auth/role-brug blijven.
 - klantdata hoort in `customers`, niet verspreid over een tweede `profiles`-semantiek.
 - Fase 13 start pas na review van de SQL audit.
+
+## Fase 13.0 - Database consolidation voor Auth
+
+Auth/RLS wordt pas hardgemaakt nadat de database op één canonical lijn is bevestigd:
+
+- `profiles` = Auth/rollen/profielbasis
+- `customers` = zakelijke klantbron
+- `websites`, `projects`, `quotes`, `invoices`, `subscriptions` = klantmodules
+
+Legacy `customer_websites`, `customer_invoices` en `customer_subscriptions` worden niet de basis voor nieuwe Auth/RLS policies. Bestaande historische documentatie over deze tabellen blijft context, maar nieuwe productiebeveiliging moet op de canonical tabellen worden ontworpen.
