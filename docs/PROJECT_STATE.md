@@ -1531,3 +1531,31 @@ MVP-grenzen:
 - Lokale Leadfinder-acties blijven local/demo.
 - Remote/hybrid leads kunnen bekeken worden en gebruikt worden voor lokale opvolgtaken.
 - Converteren, notities wijzigen en verwijderen blijven beperkt tot lokale leads tot een aparte write-mode fase.
+
+## Fase 35 - Supabase Write Readiness Plan
+
+Status: `AFGEROND`
+
+Doel:
+
+- Gecontroleerde Supabase write-mode voorbereiden zonder writes te activeren.
+- Vastleggen welke mutaties veilig als eerste MVP mogen komen.
+- Risico's, RLS-behoeften, audit, rollback/fallback en UI-impact per write benoemen.
+
+Toegevoegd:
+
+- `docs/SUPABASE_WRITE_READINESS_PLAN.md`
+
+Aanbevolen eerste write-MVP:
+
+1. `crm_tasks` aanmaken.
+2. Leadnotitie toevoegen.
+3. `change_requests` aanmaken.
+4. `client_portal_messages` aanmaken.
+
+Bewust nog geblokkeerd:
+
+- Facturen, betalingen, abonnementen, rollen, storage/files, deployments en AI-mutaties.
+- Geen SQL uitgevoerd.
+- Geen provider writes geactiveerd.
+- Geen productieproject of echte klantdata geraakt.

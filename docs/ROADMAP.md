@@ -1232,3 +1232,33 @@ Volgende stap:
 
 1. Read-only datalaag reviewen als geheel.
 2. Daarna gecontroleerde write-mode per module ontwerpen.
+
+## Fase 35 - Supabase Write Readiness Plan
+
+Status: `AFGEROND`
+
+Scope:
+
+- Read-only Supabase/hybrid modules geinventariseerd.
+- Gefaseerd write-plan vastgelegd voor low-risk, medium-risk, high-risk en restricted writes.
+- Per eerste write-MVP vastgelegd: RLS, validatie, audit logging, rollback/fallback, UI-impact en risico.
+
+Aanbevolen eerste write-MVP:
+
+1. `crm_tasks` create.
+2. Leadnotitie append.
+3. `change_requests` create.
+4. `client_portal_messages` create.
+
+Niet in scope:
+
+- Writes activeren.
+- SQL uitvoeren.
+- Productieproject.
+- Echte klantdata.
+- OpenAI/Mollie/Resend.
+
+Volgende stap:
+
+1. Fase 35A: gated `crm_tasks` create voorbereiden en eerst op staging bewijzen.
+2. Daarna pas andere low-risk writes toevoegen.
