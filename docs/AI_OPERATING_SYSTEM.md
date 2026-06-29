@@ -81,3 +81,26 @@ Na iedere opdracht rapporteert Codex:
 - Mollie-aanbetalingen lopen via Netlify Functions.
 - De onboarding-wizard verstuurt intakes via Netlify Functions en Resend.
 - Intake-opslag gebruikt momenteel tijdelijke `/tmp` opslag en is niet duurzaam.
+
+## Fase 15.0 - AI Website Wizard Foundation
+
+De AI Website Wizard is voorbereid als modulaire foundation, zonder AI-calls of productie-impact.
+
+Nieuwe bronnen:
+
+- `docs/AI_WEBSITE_WIZARD.md`
+- `public/src/config/aiWebsiteWizardWorkflow.js`
+- `public/src/models/AIWebsiteWizardState.js`
+- `public/src/services/aiWebsiteWizardService.js`
+
+Belangrijk:
+
+- Geen OpenAI-calls.
+- Geen logo-generatie.
+- Geen AI-contentgeneratie.
+- Geen websitebouw.
+- Geen SQL.
+- Geen nieuwe dependencies.
+- Geen nieuwe API keys.
+
+De wizard is nu alleen een workflow/state/readiness-laag. Toekomstige AI-functionaliteit moet via aparte provider/adapters worden toegevoegd en mag nooit secrets in frontendcode plaatsen.

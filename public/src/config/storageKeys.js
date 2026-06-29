@@ -52,6 +52,7 @@ export const STORAGE_KEYS = Object.freeze({
   accessControlSettings: "maxwebstudioAccessControlSettings",
   lastAccessControlTest: "maxwebstudioLastAccessControlTest",
   deploymentBlockers: "maxwebstudioDeploymentBlockers",
+  aiWebsiteWizardState: "maxwebstudioAiWebsiteWizardState",
 });
 
 export const MODULE_STORAGE_KEYS = Object.freeze({
@@ -67,6 +68,7 @@ export const MODULE_STORAGE_KEYS = Object.freeze({
   clientPortal: [STORAGE_KEYS.clientPortalSettings, STORAGE_KEYS.lastClientPortalDataTest],
   auth: [STORAGE_KEYS.authUsers, STORAGE_KEYS.profiles, STORAGE_KEYS.currentSession, STORAGE_KEYS.accountRequests, STORAGE_KEYS.lastProfileReadinessTest, STORAGE_KEYS.accessControlSettings, STORAGE_KEYS.lastAccessControlTest],
   deployment: [STORAGE_KEYS.deploymentBlockers],
+  aiWebsiteWizard: [STORAGE_KEYS.aiWebsiteWizardState],
   demo: [STORAGE_KEYS.demoEmails, STORAGE_KEYS.importLog, STORAGE_KEYS.activityLog, STORAGE_KEYS.migrationLog],
 });
 

@@ -3092,6 +3092,7 @@
             deploymentBlockerService: await import("./src/services/deploymentBlockerService.js"),
             testEnvironmentService: await import("./src/services/testEnvironmentService.js"),
             releaseDecisionService: await import("./src/services/releaseDecisionService.js"),
+            aiWebsiteWizardService: await import("./src/services/aiWebsiteWizardService.js"),
           };
           return state.developerModules;
         }
@@ -4469,6 +4470,27 @@
           ]));
         }
 
+        function renderAiWebsiteWizardReadiness(modules) {
+          const summary = modules.aiWebsiteWizardService.getWizardDeveloperSummary();
+          appendDeveloperCard("AI Website Wizard foundation", [
+            ["Status", summary.readiness.status],
+            ["Workflow versie", summary.readiness.workflowVersion],
+            ["Fases", String(summary.readiness.phaseCount)],
+            ["Stappen", String(summary.readiness.stepCount)],
+            ["Storage key", summary.architecture.stateStorage],
+            ["AI-calls", summary.architecture.aiCalls],
+            ["Database", summary.architecture.database],
+            ["Dependencies", summary.architecture.dependencies],
+            ["Drafts lokaal", String(summary.draftCount)],
+          ]);
+          appendDeveloperCard("AI Wizard workflow", summary.workflow.steps.map((step) => [
+            step.title,
+            `${step.phase} - ${step.requiredInputs.length} inputvelden voorbereid`,
+          ]));
+          appendDeveloperCard("AI Wizard waarschuwingen", summary.readiness.warnings);
+          appendDeveloperCard("AI Wizard volgende capabilities", summary.readiness.nextCapabilities);
+        }
+
         function evidenceSummary(blocker = {}) {
           const detailCount = Object.values(blocker.evidenceDetails || {}).filter(Boolean).length;
           const missing = blocker.missingEvidence?.length ? `Ontbreekt: ${blocker.missingEvidence.join(", ")}` : "Evidence compleet";
@@ -4785,6 +4807,7 @@
             renderSubscriptionDataSourceStatus(state.subscriptionSourceStatus);
             renderSubscriptionSupabaseReadiness(modules);
             renderClientPortalReadiness(modules);
+            renderAiWebsiteWizardReadiness(modules);
             renderSupabaseSqlAuditStatus();
             renderDatabaseConsolidationStatus();
             renderSupabaseSetupChecklist();

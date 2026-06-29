@@ -376,3 +376,30 @@ Status:
 Volgende logische stap:
 
 - handmatige evidence/approvals invullen en daarna pas een finale GO/NO-GO releasebeslissing nemen.
+
+## Fase 15 - Max Webstudio Operating System
+
+### 15.0 - AI Website Wizard Foundation
+
+Afgerond als technische basis:
+
+- AI Website Wizard architectuurdocument toegevoegd
+- workflowconfig toegevoegd
+- state model toegevoegd
+- placeholder service toegevoegd
+- lokale state key gereserveerd
+- Developer Mode readiness-kaart toegevoegd
+
+Niet live:
+
+- geen OpenAI-calls
+- geen logo-generatie
+- geen AI-content
+- geen websitebouw
+- geen SQL
+- geen nieuwe dependencies
+- geen API keys
+
+Volgende logische stap:
+
+- AI intake/briefing-provider ontwerpen en pas daarna gecontroleerd een server-side AI-adapter toevoegen.

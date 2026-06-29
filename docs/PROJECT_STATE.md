@@ -590,3 +590,36 @@ Resultaat:
 Status blijft:
 
 - `NO-GO / AWAITING MANUAL APPROVAL`
+
+## Fase 15.0 - AI Website Wizard Foundation
+
+Status: voorbereid als modulaire foundation. Er is geen productie aangepast, geen SQL uitgevoerd, geen nieuwe dependency toegevoegd en geen AI-provider gekoppeld.
+
+Toegevoegd:
+
+- `docs/AI_WEBSITE_WIZARD.md`
+- `public/src/config/aiWebsiteWizardWorkflow.js`
+- `public/src/models/AIWebsiteWizardState.js`
+- `public/src/services/aiWebsiteWizardService.js`
+
+Bijgewerkt:
+
+- `public/src/config/storageKeys.js`
+- `public/admin-dashboard.html`
+- `docs/AI_OPERATING_SYSTEM.md`
+
+Resultaat:
+
+- Centrale AI Website Wizard workflow met 5 fases en 15 stappen.
+- State model met lokale sleutel `maxwebstudioAiWebsiteWizardState`.
+- Placeholder service voor architecture/readiness, draft-state en progress.
+- Developer Mode toont de AI Website Wizard foundation read-only.
+
+Nog niet actief:
+
+- OpenAI-calls.
+- Logo-generatie.
+- AI-contentgeneratie.
+- Website scaffold/build.
+- Database-uitbreiding.
+- Nieuwe API keys.
