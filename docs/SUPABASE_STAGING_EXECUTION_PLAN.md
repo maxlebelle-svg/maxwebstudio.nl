@@ -13,6 +13,22 @@ Dit document voert geen SQL uit.
 - Geen API keys of secrets documenteren.
 - Geen OpenAI, Mollie of Resend live-acties.
 
+## Developer Mode Readiness UI
+
+Fase 26 voegt in het admin-dashboard een Developer Mode-kaart toe voor Supabase Staging Readiness.
+
+Deze kaart toont alleen lokale readiness-informatie:
+
+- migration drafts aanwezig in de repository;
+- staging checklist;
+- rollbackplan;
+- testresultatenregister;
+- approvalstatus;
+- open deployment blockers;
+- GO/NO-GO status.
+
+De kaart voert geen SQL uit, gebruikt geen Supabase CLI, doet geen Supabase calls en wijzigt geen test- of productieomgeving.
+
 ## Voorwaarden Voor Start
 
 1. Apart Supabase testproject bestaat.
@@ -207,4 +223,3 @@ Staging execution is pas geslaagd wanneer:
 - testresultaten en blockers zijn bijgewerkt.
 
 Productie blijft daarna nog steeds No-Go tot aparte production release approval.
-

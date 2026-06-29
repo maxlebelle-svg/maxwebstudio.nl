@@ -3428,6 +3428,7 @@
             deploymentReadinessService: await import("./src/services/deploymentReadinessService.js"),
             deploymentBlockerService: await import("./src/services/deploymentBlockerService.js"),
             testEnvironmentService: await import("./src/services/testEnvironmentService.js"),
+            stagingReadinessService: await import("./src/services/stagingReadinessService.js"),
             releaseDecisionService: await import("./src/services/releaseDecisionService.js"),
             aiWebsiteWizardService: await import("./src/services/aiWebsiteWizardService.js"),
             aiAdminAssistantService: await import("./src/services/aiAdminAssistantService.js"),
@@ -5006,6 +5007,36 @@
           ]));
         }
 
+        function renderStagingExecutionReadiness(modules) {
+          const readiness = modules.stagingReadinessService.getStagingExecutionReadiness();
+          const requiredDocuments = new Map(readiness.documents.map((document) => [document.id, document]));
+          appendDeveloperCard("Supabase Staging Readiness", [
+            ["GO/NO-GO", readiness.decision],
+            ["Status", readiness.status === "ready" ? "Ready" : "Blocked"],
+            ["Migration drafts", `${readiness.migrationDrafts.count} bestanden - ${readiness.migrationDrafts.status}`],
+            ["Staging checklist", requiredDocuments.get("staging_checklist")?.status || "-"],
+            ["Rollbackplan", requiredDocuments.get("rollback_plan")?.status || "-"],
+            ["Testresultaten", `${readiness.testResults.status} - ${readiness.testResults.file}`],
+            ["Approvals", `${readiness.approvals.approvedCount}/${readiness.approvals.requiredCount}`],
+            ["Open blockers", String(readiness.blockers.length)],
+            ["SQL uitgevoerd", readiness.safety.sqlExecuted ? "Ja" : "Nee"],
+            ["Supabase CLI", readiness.safety.supabaseCliRun ? "Uitgevoerd" : "Niet uitgevoerd"],
+          ]);
+          appendDeveloperCard("Staging readiness checklist", readiness.checklist.map((item) => [
+            item.label,
+            `${item.status} - ${item.detail}`,
+          ]));
+          appendDeveloperCard("Staging ontbrekende approvals", readiness.approvals.missing.length
+            ? readiness.approvals.missing.map((item) => [item.title, item.nextAction])
+            : ["Alle verplichte approvals zijn ingevuld."]);
+          appendDeveloperCard("Staging blockers", readiness.blockers.length
+            ? readiness.blockers.map((blocker) => [
+              blocker.label,
+              `${blocker.status} - ${(blocker.missingEvidence || []).join(", ") || blocker.reason}`,
+            ])
+            : ["Geen open deployment blockers."]);
+        }
+
         function renderProductionValidation(modules) {
           const summary = modules.testEnvironmentService.getEnvironmentSummary();
           appendDeveloperCard("Production Validation", summary.areas.map((area) => [
@@ -5391,6 +5422,7 @@
             renderAccessControlReadiness(modules);
             renderSecurityReadiness(modules);
             renderProductionDeployment(modules);
+            renderStagingExecutionReadiness(modules);
             renderTestEnvironment(modules);
             renderProductionValidation(modules);
             appendDeveloperCard("Auth sessie", [
