@@ -153,6 +153,39 @@ Nodige vervolgstap:
 - Voeg in het testproject expliciete grants toe voor `anon`, `authenticated` en `service_role` op de canonical tabellen/sequences/functions waar nodig.
 - Herhaal daarna Fase 14.4B RLS/customer-isolation tests.
 
+## Fase 14.4C Supabase RLS permission patch
+
+Status: `PATCH PREPARED / NOT EXECUTED`
+
+Probleem uit 14.4B:
+
+- `POST /rest/v1/profiles` met service role gaf `403 permission denied`.
+- Daardoor konden profile/customer testrecords niet geplaatst worden.
+- RLS en customer isolation konden niet betrouwbaar worden getest.
+
+Patch:
+
+- `supabase/service-role-grants.sql`
+
+Analyse:
+
+| Controle | Resultaat | Status | Notities |
+| --- | --- | --- | --- |
+| Canonical tabellen bepaald | `profiles`, `customers`, `leads`, `websites`, `projects`, `files`, `quotes`, `quote_lines`, `invoices`, `invoice_lines`, `subscriptions`, `settings`, `demo_emails`, `activity_logs`, `import_logs` | PASS | Sluit aan op `supabase/schema.sql` |
+| Helperfuncties bepaald | `current_profile_id`, `current_app_role`, `has_app_role`, `is_admin_role`, `set_updated_at` | PASS | Sluit aan op RLS helperfuncties en triggerfunctie |
+| Geen legacy `customer_*` grants | Geen grants voor `customer_websites`, `customer_invoices`, `customer_subscriptions` | PASS | Canonical architectuur blijft leidend |
+| Geen destructive SQL | Geen `drop`, `truncate`, `delete`, data-mutatie of schema-drop | PASS | Alleen `grant` statements |
+| Service role backend/admin/testflow | `select`, `insert`, `update`, `delete` op canonical tabellen | PASS | Nodig voor server-side beheer en testrecord setup via PostgREST |
+| Authenticated RLS toegang | Alleen `select` op canonical tabellen | PASS | Genoeg voor klantportaal/RLS read-isolation tests; mutaties blijven server-side |
+| Anonymous RLS toegang | Alleen `select` op canonical tabellen | PASS | RLS policies bepalen dat anonymous geen klantdata krijgt |
+
+Belangrijk:
+
+- Deze patch is nog niet uitgevoerd.
+- Eerst handmatig reviewen.
+- Daarna alleen uitvoeren op het Supabase testproject.
+- Daarna Fase 14.4B opnieuw draaien voor Auth/RLS/customer-isolation/storage evidence.
+
 ## Fase 14.3 lokale rooktest
 
 Uitgevoerd zonder productie, zonder SQL en zonder live Supabase.

@@ -3,57 +3,39 @@
 Project: Max Webstudio  
 Generated at: 2026-06-29  
 Decision: NO-GO  
-Scope: Fase 14.4B Supabase Test Environment Validation
+Scope: Fase 14.4C Supabase RLS Permission Patch
 
 ## Samenvatting
 
-De Supabase testomgeving is gedeeltelijk gevalideerd. Schema en RLS policies zijn succesvol uitgevoerd op het testproject. Auth Admin kan testgebruikers aanmaken. Storage werkt voor private bucket, server-side upload, signed URL en publieke blokkade.
+De Supabase testomgeving is gedeeltelijk gevalideerd en de permission blocker uit Fase 14.4B is onderzocht.
 
-De release blijft `NO-GO / BLOCKED`, omdat database/RLS/customer-isolation niet voltooid konden worden. De service role kreeg via PostgREST geen toegang tot `public.profiles`, waardoor testrecords niet geplaatst konden worden.
+Er is een SQL patch voorbereid:
 
-## PASS
+- `supabase/service-role-grants.sql`
 
-- `.env.local` aanwezig en correct als testconfig herkend.
-- `.env.local` wordt uitgesloten door `.gitignore`.
-- `schema.sql` succesvol uitgevoerd op testproject.
-- `rls-policies.sql` succesvol uitgevoerd op testproject.
-- Auth Admin API kon 2 testgebruikers aanmaken.
-- Storage bucket beschikbaar.
-- Storage upload geslaagd.
-- Storage signed URL aangemaakt.
-- Public endpoint voor private object geblokkeerd.
-- Geen productie aangepast.
-- Geen echte klantdata gebruikt.
+De patch is nog niet uitgevoerd. Productie is niet geraakt.
 
-## FAIL
+## Patchscope
 
-- Service role PostgREST insert op `public.profiles` faalde met `403 permission denied`.
-- Anonymous database probe gaf een 500 JSON response in plaats van een nette empty/401/403 response.
+- Alleen canonical tabellen uit `supabase/schema.sql`.
+- Geen legacy `customer_*` tabellen.
+- Geen data-mutaties.
+- Geen destructieve SQL.
+- Select grants voor `anon` en `authenticated`, plus server-side beheergrants voor `service_role`, zodat RLS policies via PostgREST getest kunnen worden.
 
 ## BLOCKED
 
-- Auth login/session/profile mapping.
-- RLS per module.
-- Customer A/B isolation.
-- Deployment blocker approvals.
-
-## Belangrijkste technische blocker
-
-`POST /rest/v1/profiles` met service role gaf:
-
-`permission denied for table profiles`
-
-Supabase gaf de hint:
-
-`GRANT SELECT, INSERT ON public.profiles TO service_role;`
-
-Waarschijnlijk ontbreken expliciete grants voor PostgREST-rollen op de canonical tabellen nadat het schema via SQL Editor is aangemaakt.
+- Patch is nog niet handmatig gereviewd.
+- Patch is nog niet uitgevoerd op het testproject.
+- Fase 14.4B is nog niet opnieuw uitgevoerd.
+- Customer A/B isolation is nog niet bewezen.
+- Deployment blockers zijn niet approved.
 
 ## Next Actions
 
-1. Voeg in het testproject expliciete grants toe voor `anon`, `authenticated` en `service_role` waar nodig.
-2. Controleer dat grants alleen op het testproject worden uitgevoerd.
-3. Herhaal Fase 14.4B voor database/RLS/customer-isolation.
+1. Review `supabase/service-role-grants.sql`.
+2. Voer de patch alleen uit op het Supabase testproject.
+3. Herhaal Fase 14.4B voor Auth/RLS/customer-isolation.
 4. Vul daarna blocker evidence opnieuw aan.
 5. Laat blockers handmatig reviewen.
 

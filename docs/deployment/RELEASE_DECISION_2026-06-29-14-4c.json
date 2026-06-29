@@ -6,31 +6,15 @@
   "scope": "Prepare SQL permission patch only. No production changes, no SQL execution.",
   "patchFile": "supabase/service-role-grants.sql",
   "patchExecuted": false,
+  "productionTouched": false,
+  "realCustomerDataUsed": false,
   "summary": {
     "blockerInvestigated": true,
     "rootCause": "PostgREST roles lack table privileges on canonical tables, causing service_role REST insert on public.profiles to fail.",
     "legacyTablesIncluded": false,
     "destructiveSqlIncluded": false,
-    "goNoGo": "BLOCKED",
     "status": "PATCH PREPARED / NOT EXECUTED"
   },
-  "pass": [
-    "Permission blocker investigated",
-    "SQL patch prepared",
-    "Patch scoped to canonical tables only",
-    "No legacy customer_* grants included",
-    "No destructive SQL included",
-    "No production touched",
-    "No real customer data used",
-    "No secrets included"
-  ],
-  "blocked": [
-    "Patch manual review",
-    "Patch execution on Supabase test project",
-    "Fase 14.4B rerun",
-    "Customer A/B isolation evidence",
-    "Deployment blocker approvals"
-  ],
   "grants": {
     "anon": ["usage on schema public", "execute helper functions", "select on canonical tables"],
     "authenticated": ["usage on schema public", "execute helper functions", "select on canonical tables"],
@@ -40,9 +24,7 @@
     "Review supabase/service-role-grants.sql.",
     "Execute the patch only on the Supabase test project after approval.",
     "Repeat Fase 14.4B tests.",
-    "Keep release status NO-GO until Customer A/B isolation passes and blockers are manually reviewed."
+    "Keep release NO-GO until Customer A/B isolation passes."
   ],
-  "secretsIncluded": false,
-  "productionTouched": false,
-  "realCustomerDataUsed": false
+  "secretsIncluded": false
 }

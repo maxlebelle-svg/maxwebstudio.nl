@@ -83,6 +83,34 @@ Belangrijkste technische blocker:
 
 Geen blocker is automatisch approved.
 
+## Fase 14.4C - Permission patch voorbereid
+
+Status: `PATCH PREPARED / NOT EXECUTED`
+
+Patchbestand:
+
+- `supabase/service-role-grants.sql`
+
+Doel:
+
+- PostgREST-grants toevoegen voor de canonical tabellen.
+- Service role backend/admin/testflows toestaan via de REST API.
+- `anon` en `authenticated` genoeg tabeltoegang geven zodat RLS policies de daadwerkelijke toegang kunnen bepalen.
+
+Scope:
+
+- Alleen canonical tabellen uit `supabase/schema.sql`.
+- Geen legacy `customer_*` tabellen.
+- Geen data-mutaties.
+- Geen productie-execution.
+
+Volgende actie:
+
+1. Review `supabase/service-role-grants.sql`.
+2. Voer de patch alleen uit op het Supabase testproject.
+3. Herhaal Fase 14.4B.
+4. Zet blockers pas in review/approved na echte Customer A/B evidence.
+
 ## Bewijsregels
 
 - Geen secrets in evidence.
