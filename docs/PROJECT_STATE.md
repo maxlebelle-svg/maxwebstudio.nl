@@ -1173,3 +1173,34 @@ Bewust niet uitgevoerd:
 - Geen SQL.
 - Geen Supabase wijzigingen.
 - Geen API keys of secrets.
+
+## Fase 28 - Supabase Staging Execution
+
+Status: gestart en veilig geblokkeerd als `BLOCKED_PRE_EXECUTION`.
+
+Aangemaakt/bijgewerkt:
+
+- `docs/deployment/TEST_RESULTS.md`
+- `docs/deployment/DEPLOYMENT_BLOCKERS.md`
+- `docs/deployment/RELEASE_DECISION_2026-06-29-28.md`
+- `docs/deployment/RELEASE_DECISION_2026-06-29-28.json`
+- `docs/PROJECT_STATE.md`
+- `docs/ROADMAP.md`
+
+Resultaat:
+
+- `.env.local` bestaat en is uitgesloten via `.gitignore`.
+- `APP_ENV=test` en `APP_ENVIRONMENT=test`.
+- Supabase testconfiguratie is aanwezig zonder waarden te tonen.
+- Supabase CLI ontbreekt.
+- Er is geen test-only database connection string aanwezig.
+- Daarom is er geen veilige geautomatiseerde route om de migration drafts uit te voeren.
+
+Bewust niet uitgevoerd:
+
+- Geen SQL uitgevoerd.
+- Geen Supabase CLI uitgevoerd.
+- Geen staging database gewijzigd.
+- Geen productie geraakt.
+- Geen echte klantdata gebruikt.
+- Geen API keys of secrets vastgelegd.

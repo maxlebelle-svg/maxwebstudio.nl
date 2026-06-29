@@ -631,3 +631,48 @@ Te gebruiken documenten:
 - `docs/SUPABASE_MIGRATION_DRAFT_REVIEW_CHECKLIST.md`
 
 Resultaten worden pas ingevuld wanneer de migration drafts expliciet in een aparte Supabase testomgeving worden uitgevoerd.
+
+## Fase 28 - Supabase Staging Execution
+
+Status: `BLOCKED_PRE_EXECUTION`
+
+Doel van deze run:
+
+- migration drafts gecontroleerd uitvoeren op een afzonderlijk Supabase staging/testproject;
+- iedere stap documenteren;
+- tabellen, indexes, foreign keys, RLS, policies, customer isolation, demo user, interne rollen en audit foundation valideren.
+
+Resultaat:
+
+- De lokale `.env.local` is aanwezig en wordt uitgesloten door `.gitignore`.
+- De lokale environment wijst naar test via `APP_ENV=test` en `APP_ENVIRONMENT=test`.
+- `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` en `SUPABASE_PROJECT_ID` zijn aanwezig.
+- Er is geen Supabase CLI beschikbaar in deze werkomgeving.
+- Er is geen database connection string aanwezig (`DATABASE_URL`, `SUPABASE_DB_URL`, `POSTGRES_URL` of vergelijkbaar).
+- Daarom is er geen veilige geautomatiseerde route om de SQL migration drafts uit te voeren.
+- Er is geen SQL uitgevoerd.
+- Productie is niet aangepast.
+
+| Testnaam | Stappen | Verwacht resultaat | Werkelijk resultaat | Status | Evidence / notities |
+| --- | --- | --- | --- | --- | --- |
+| `.env.local` preflight | Controleer alleen aanwezigheid van keys zonder waarden te tonen | Testconfig aanwezig en uitgesloten van Git | `.env.local` bestaat; `.gitignore` sluit `.env.local` uit | PASS | Geen secretwaarden gelezen of gelogd |
+| Testomgeving flags | Controleer `APP_ENV` en `APP_ENVIRONMENT` | Beide staan op `test` | `APP_ENV=test`, `APP_ENVIRONMENT=test` | PASS | Past bij staging/test execution |
+| Supabase env presence | Controleer aanwezigheid van Supabase URL, anon key, service role key en project id | Vereiste keys aanwezig | Alle vier aanwezig | PASS | Geen waarden opgeslagen |
+| SQL execution tool | Controleer Supabase CLI en database connection string | Minimaal een veilige SQL-uitvoerroute beschikbaar | Supabase CLI ontbreekt; DB connection string ontbreekt | BLOCKED | `psql` is beschikbaar, maar zonder DB connection string niet bruikbaar |
+| Migration drafts uitvoeren | Voer `001` t/m `005` uit op staging/test | Drafts uitgevoerd in volgorde | Niet uitgevoerd | BLOCKED | Veilig gestopt door ontbrekend SQL-uitvoerkanaal |
+| Optional demo seed | Alleen uitvoeren als test/demo expliciet gekozen is | Demo seed optioneel | Niet uitgevoerd | NOT_APPLICABLE | Geen SQL-run gestart |
+| Tabellen/indexes/FKs valideren | Query testdatabase na migration execution | Validatiegegevens beschikbaar | Niet uitgevoerd | BLOCKED | Vereist migration execution |
+| RLS enablement en policies valideren | Controleer RLS en policies op staging | RLS/policies bewezen | Niet uitgevoerd | BLOCKED | Vereist migration execution |
+| Customer A/B isolation | Test klantisolatie met Auth/RLS | A en B zien alleen eigen data | Niet uitgevoerd | BLOCKED | Vereist migration execution en testusers |
+| Demo user isolation | Test demo-only toegang | Demo user ziet alleen demo data | Niet uitgevoerd | BLOCKED | Vereist migration execution en testdata |
+| Audit foundation | Controleer audit helper en secretvrije metadata | Audit foundation veilig | Niet uitgevoerd | BLOCKED | Vereist migration execution |
+
+Conclusie:
+
+Fase 28 mag pas worden hervat wanneer een veilige SQL execution route beschikbaar is:
+
+1. Supabase CLI installeren en koppelen aan het staging/testproject; of
+2. een test-only database connection string toevoegen aan `.env.local`; of
+3. de migration drafts handmatig uitvoeren via de Supabase SQL Editor en de resultaten hier registreren.
+
+Tot die tijd blijft de releasebeslissing `NO-GO / BLOCKED`.

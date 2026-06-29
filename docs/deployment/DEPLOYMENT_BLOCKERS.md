@@ -363,3 +363,35 @@ Audit trail:
 - approvalHistory[]
 
 Elke history entry bewaart `fromStatus`, `toStatus`, `by`, `at`, `reason` en een evidence snapshot. Noteer nooit secrets in evidence, notes of reason.
+
+## Fase 28 staging execution blocker
+
+Status: `BLOCKED_PRE_EXECUTION`
+
+Fase 28 is gestart met productieplatform-mindset, maar bewust gestopt voordat SQL werd uitgevoerd.
+
+Evidence:
+
+- `.env.local` bestaat en is uitgesloten via `.gitignore`.
+- `APP_ENV=test` en `APP_ENVIRONMENT=test`.
+- Supabase testkeys zijn aanwezig zonder waarden te tonen.
+- Supabase CLI is niet beschikbaar.
+- Er is geen database connection string aanwezig.
+- `psql` is lokaal aanwezig, maar zonder staging database connection string niet bruikbaar.
+- Geen SQL uitgevoerd.
+- Geen productie geraakt.
+
+Risico:
+
+Zonder expliciet SQL-uitvoerkanaal zou execution alleen via handmatige of oncontroleerbare routes kunnen. Dat past niet bij de releaseguardrails.
+
+Next actions:
+
+1. Kies één veilige execution route:
+   - Supabase CLI voor staging/test; of
+   - test-only database connection string; of
+   - handmatige SQL Editor execution met evidence.
+2. Leg vast welke route is gekozen.
+3. Herstart Fase 28 vanaf `001_schema_tables.sql`.
+4. Vul `TEST_RESULTS.md` per SQL-stap aan.
+5. Houd release `NO-GO` totdat staging execution, RLS en customer isolation bewezen zijn.

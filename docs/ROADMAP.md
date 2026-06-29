@@ -926,3 +926,31 @@ Vanaf dit punt worden geen extra strategische visiedocumenten toegevoegd voordat
 Volgende fase:
 
 - Fase 28: Supabase Staging Execution.
+
+## Fase 28 - Supabase Staging Execution
+
+Gestart met productieplatform-mindset, maar veilig geblokkeerd voordat SQL werd uitgevoerd.
+
+Preflight:
+
+- `.env.local` aanwezig en door Git genegeerd.
+- `APP_ENV=test`.
+- `APP_ENVIRONMENT=test`.
+- Supabase testconfig aanwezig.
+- Supabase CLI ontbreekt.
+- Test-only database connection string ontbreekt.
+
+Besluit:
+
+- Geen SQL uitvoeren zonder veilige execution route.
+- Productie blijft onaangeraakt.
+- Release blijft `NO-GO / BLOCKED`.
+
+Volgende actie:
+
+1. Kies execution route:
+   - Supabase CLI installeren/configureren; of
+   - test-only database connection string toevoegen; of
+   - SQL-drafts handmatig uitvoeren in Supabase SQL Editor met evidence.
+2. Hervat Fase 28 vanaf `001_schema_tables.sql`.
+3. Leg alle resultaten vast in `TEST_RESULTS.md`.
