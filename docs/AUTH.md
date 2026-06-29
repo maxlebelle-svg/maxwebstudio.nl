@@ -198,3 +198,18 @@ Status:
 - harde Supabase Auth route guards, rollen en RLS-audit volgen in Fase 13
 
 Tot Fase 13 mag het klantportaal niet als volledig beveiligde productie-login worden behandeld.
+
+## Fase 12.9 - SQL audit voor Auth/RLS
+
+Voor Fase 13 is een SQL audit uitgevoerd en gedocumenteerd in:
+
+- `/docs/SUPABASE_SQL_AUDIT.md`
+- `/docs/SUPABASE_EXECUTION_PLAN.md`
+- `/docs/SUPABASE_SQL_INDEX.md`
+
+Conclusie voor Auth:
+
+- `supabase/rls-policies.sql` bevat conceptrollen en policies, maar is nog niet productie-hard.
+- `profiles` moet primair de Auth/role-brug blijven.
+- klantdata hoort in `customers`, niet verspreid over een tweede `profiles`-semantiek.
+- Fase 13 start pas na review van de SQL audit.

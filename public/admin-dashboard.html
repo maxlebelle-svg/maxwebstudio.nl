@@ -3085,6 +3085,16 @@
           ]);
         }
 
+        function renderSupabaseSqlAuditStatus() {
+          appendDeveloperCard("Supabase SQL audit status", [
+            ["Auditdocument", "Aanwezig: docs/SUPABASE_SQL_AUDIT.md"],
+            ["Execution plan", "Aanwezig: docs/SUPABASE_EXECUTION_PLAN.md"],
+            ["SQL index", "Aanwezig: docs/SUPABASE_SQL_INDEX.md"],
+            ["SQL-bestanden gedetecteerd", "17"],
+            ["Waarschuwing", "Voer SQL niet handmatig uit zonder het execution plan te volgen."],
+          ]);
+        }
+
         function renderMigrationSummary(summary) {
           appendDeveloperCard("Migratie-analyse", [
             ["Records totaal", String(summary?.totalRecords || 0)],
@@ -4224,6 +4234,7 @@
             renderSubscriptionDataSourceStatus(state.subscriptionSourceStatus);
             renderSubscriptionSupabaseReadiness(modules);
             renderClientPortalReadiness(modules);
+            renderSupabaseSqlAuditStatus();
             renderSupabaseSetupChecklist();
             renderCustomerMigrationCard(customerMigration);
             renderCustomerMigrationLogs(customerMigrationLogs);

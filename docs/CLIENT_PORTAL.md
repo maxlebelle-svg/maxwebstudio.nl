@@ -398,3 +398,12 @@ Nog niet live-hardgemaakt:
 - volledige RLS-audit op klantportaalroutes
 - klantportaal writes
 - echte bestandsdownloads via klant-auth voor alle lokale file metadata
+
+## Fase 12.9 - SQL audit impact op klantportaal
+
+De SQL-audit bevestigt dat het klantportaal tijdelijk meerdere databronnen moet kunnen lezen, omdat er twee SQL-lijnen bestaan:
+
+- nieuwe platformtabellen: `customers`, `websites`, `projects`, `quotes`, `invoices`, `subscriptions`
+- oudere klantportaal/billingtabellen: `customer_websites`, `customer_invoices`, `customer_subscriptions`
+
+Voor nieuwe productieontwikkeling is de aanbevolen richting de platformtabellen. Het klantportaal blijft daarom via de centrale data-service werken met `demo`, `local`, `supabase-read` en `hybrid`, totdat Fase 13 Auth/RLS definitief hardgemaakt is.

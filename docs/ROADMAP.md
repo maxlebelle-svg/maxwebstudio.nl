@@ -88,3 +88,18 @@ Mogelijke onderdelen:
 - Automatische reminders
 
 Deze fase vereist aparte technische keuzes en security review.
+## Fase 12.9 - Supabase SQL Audit
+
+Status: afgerond als documentatie/auditfase.
+
+Output:
+
+- `SUPABASE_SQL_AUDIT.md`
+- `SUPABASE_EXECUTION_PLAN.md`
+- `SUPABASE_SQL_INDEX.md`
+
+Belangrijk voor de roadmap:
+
+- Fase 13 start pas na review van de SQL-audit.
+- De productiearchitectuur moet kiezen voor een primaire lijn. Aanbevolen: `supabase/schema.sql` met platformtabellen.
+- Oude `customer_*` billing/portal scripts moeten worden geconsolideerd voordat Mollie, e-mail en klantportaal live-hardening op productie gaan.

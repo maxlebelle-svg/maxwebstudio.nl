@@ -221,3 +221,7 @@ Belangrijk:
 - Developer Mode bevat nu `Klantportaal live data readiness`, tests voor geselecteerde/demo/hybrid klantportaaldata, een sanitized payload preview en een reset naar demo/local.
 - Offerte- en betaallinks blijven lokaal werken en ondersteunen aanvullend `supabaseQuoteId` en `supabaseInvoiceId` voor toekomstige live data.
 - Klantportaal live data staat op voorbereid; Supabase read/hybrid is voorbereid/actief, writes blijven geblokkeerd en harde auth/route guards volgen in Fase 13.
+- Fase 12.9 voert een Supabase SQL/architectuur-audit uit zonder SQL uit te voeren.
+- Nieuwe auditdocumenten: `/docs/SUPABASE_SQL_AUDIT.md`, `/docs/SUPABASE_EXECUTION_PLAN.md` en `/docs/SUPABASE_SQL_INDEX.md`.
+- De audit constateert dat er twee SQL-lijnen bestaan: de nieuwe platformlijn (`customers`, `websites`, `projects`, `quotes`, `invoices`, `subscriptions`) en oudere klantportaal/billingtabellen (`customer_websites`, `customer_invoices`, `customer_subscriptions`).
+- Fase 13 mag pas starten nadat de SQL-audit is gereviewd en de definitieve productiearchitectuur is bevestigd.

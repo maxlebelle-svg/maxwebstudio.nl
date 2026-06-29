@@ -266,6 +266,13 @@ Klantportaal live data-readiness in Fase 12.8:
 - Klantportaal-writes blijven geblokkeerd.
 - Harde route guards, echte loginverplichting en volledige RLS-audit blijven gepland voor Fase 13.
 
+Supabase SQL audit in Fase 12.9:
+
+- Er is geen SQL uitgevoerd.
+- `SUPABASE_SQL_AUDIT.md` en `SUPABASE_EXECUTION_PLAN.md` moeten worden gereviewd voordat Fase 13 route guards/RLS hard worden gemaakt.
+- `supabase/rls-policies.sql` is nog conceptueel en moet pas worden uitgevoerd wanneer Auth-rollen/JWT-claims getest zijn.
+- Oude `customer_*` billing/portal tabellen en nieuwe platformtabellen mogen niet blind naast elkaar naar productie worden uitgerold.
+
 Aanbevelingen:
 
 - limieten blijven handhaven
