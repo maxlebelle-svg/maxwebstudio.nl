@@ -1508,3 +1508,26 @@ MVP-grenzen:
 - Geen production writes of echte klantdata.
 - CRM workflow-acties blijven local/demo tot aparte write-mode fase.
 - Change request status-updates via bestaande endpoint blijven buiten deze read-layer migratie.
+
+## Fase 34 - Leadfinder Data Layer MVP
+
+Status: `AFGEROND`
+
+Doel:
+
+- Leadfinder read-only aansluiten op de Supabase/hybrid data-layer.
+- Lokale/demo fallback behouden.
+- Geen scraping, externe API's, Google Maps API of writes toevoegen.
+
+Toegevoegd/aangepast:
+
+- `public/src/services/supabaseDataLayerService.js` ondersteunt `leads` als read-only module.
+- `public/src/providers/supabaseProvider.js` staat read-only reads toe voor `public.leads`.
+- `public/admin-dashboard.html` leest Leadfinder-prospects via de data-layer en toont bron/fallback in Developer Mode.
+
+MVP-grenzen:
+
+- Read-only voor Supabase/hybrid leads.
+- Lokale Leadfinder-acties blijven local/demo.
+- Remote/hybrid leads kunnen bekeken worden en gebruikt worden voor lokale opvolgtaken.
+- Converteren, notities wijzigen en verwijderen blijven beperkt tot lokale leads tot een aparte write-mode fase.

@@ -3789,6 +3789,12 @@
 
         function renderSupabaseDataLayerMvpCard(modules) {
           const status = modules.supabaseDataLayerService.getSupabaseDataLayerMvpStatus();
+          let leadfinderSourceStatus = null;
+          try {
+            leadfinderSourceStatus = JSON.parse(localStorage.getItem("maxwebstudioLastLeadfinderSourceStatus") || "null");
+          } catch {
+            leadfinderSourceStatus = null;
+          }
           appendDeveloperCard("Supabase Data Layer MVP", [
             ["Status", status.readsPrepared ? "Read layer actief" : "Niet actief"],
             ["Modules", status.modules.join(", ")],
@@ -3798,9 +3804,10 @@
             ["Customers bron", state.customerSourceStatus?.dataLayer || "-"],
             ["Websites bron", state.websiteSourceStatus?.dataLayer || "-"],
             ["Projects bron", state.projectSourceStatus?.dataLayer || "-"],
+            ["Leadfinder bron", leadfinderSourceStatus?.dataLayer || "-"],
             ["Files bron", state.fileSourceStatus?.dataLayer || "-"],
-            ["Operations modules", status.modules.filter((moduleName) => ["files", "change_requests", "client_portal_messages", "client_portal_notifications", "crm_tasks"].includes(moduleName)).join(", ")],
-            ["Fallback actief", [state.customerSourceStatus, state.websiteSourceStatus, state.projectSourceStatus, state.quoteSourceStatus, state.invoiceSourceStatus, state.subscriptionSourceStatus, state.fileSourceStatus].some((item) => item?.fallbackUsed) ? "Ja" : "Nee"],
+            ["Operations modules", status.modules.filter((moduleName) => ["leads", "files", "change_requests", "client_portal_messages", "client_portal_notifications", "crm_tasks"].includes(moduleName)).join(", ")],
+            ["Fallback actief", [state.customerSourceStatus, state.websiteSourceStatus, state.projectSourceStatus, state.quoteSourceStatus, state.invoiceSourceStatus, state.subscriptionSourceStatus, state.fileSourceStatus, leadfinderSourceStatus].some((item) => item?.fallbackUsed) ? "Ja" : "Nee"],
           ]);
         }
 
@@ -15233,6 +15240,7 @@
         updateLeadFinderLeadLocally,
       } from "./src/services/leadFinderService.js";
       import { saveCrmTaskLocally } from "./src/services/crmWorkflowService.js";
+      import { readSupabaseDataLayerModule } from "./src/services/supabaseDataLayerService.js";
 
       const leadfinderElements = {
         metrics: document.getElementById("leadfinder-metrics"),
@@ -15270,6 +15278,8 @@
       };
 
       let selectedLeadFinderId = "";
+      let leadfinderDataLayerLeads = [];
+      let leadfinderSourceStatus = null;
 
       function escapeHtml(value) {
         return String(value || "").replace(/[&<>"']/g, (character) => ({
@@ -15299,11 +15309,57 @@
         leadfinderElements.message.className = `admin-form-message ${type}`;
       }
 
+      function currentLeadfinderDataMode() {
+        return localStorage.getItem("maxwebstudioLeadfinderDataMode")
+          || localStorage.getItem("maxwebstudioCustomerDataMode")
+          || "hybrid";
+      }
+
+      async function loadLeadfinderDataLayer() {
+        try {
+          const result = await readSupabaseDataLayerModule("leads", { mode: currentLeadfinderDataMode() });
+          leadfinderDataLayerLeads = Array.isArray(result.records) ? result.records : [];
+          leadfinderSourceStatus = {
+            mode: result.mode,
+            counts: result.counts || {},
+            fallbackUsed: Boolean(result.fallbackUsed),
+            error: result.error || "",
+            refreshedAt: result.refreshedAt || new Date().toISOString(),
+            dataLayer: "supabase-data-layer-mvp",
+          };
+          localStorage.setItem("maxwebstudioLastLeadfinderSourceStatus", JSON.stringify(leadfinderSourceStatus));
+        } catch (error) {
+          leadfinderDataLayerLeads = readLeadFinderLeads();
+          leadfinderSourceStatus = {
+            mode: "local",
+            counts: { local: leadfinderDataLayerLeads.length, supabase: 0, hybrid: leadfinderDataLayerLeads.length },
+            fallbackUsed: true,
+            error: error.message || "Leadfinder data-layer kon niet worden gelezen.",
+            refreshedAt: new Date().toISOString(),
+            dataLayer: "local-fallback-after-data-layer-error",
+          };
+          localStorage.setItem("maxwebstudioLastLeadfinderSourceStatus", JSON.stringify(leadfinderSourceStatus));
+        }
+      }
+
+      function getLeadfinderLeads() {
+        return leadfinderSourceStatus ? leadfinderDataLayerLeads : readLeadFinderLeads();
+      }
+
+      function isLocalLead(lead = {}) {
+        return !lead._source || lead._source === "local";
+      }
+
       function renderLeadfinderMetrics(leads) {
         if (!leadfinderElements.metrics) return;
         const summary = getLeadFinderSummary(leads);
+        const sourceLabel = leadfinderSourceStatus?.fallbackUsed
+          ? "Hybrid fallback naar lokaal"
+          : leadfinderSourceStatus?.mode
+            ? `Bron: ${leadfinderSourceStatus.mode}`
+            : "Lokale leadfinder records";
         leadfinderElements.metrics.innerHTML = [
-          ["Prospects", summary.total, "Lokale leadfinder records"],
+          ["Prospects", summary.total, sourceLabel],
           ["Hot leads", summary.hot, "Score 80 of hoger"],
           ["Actie nodig", summary.actionNeeded, "Te bellen of opvolgen"],
           ["Vandaag opvolgen", summary.due, "Opvolgdatum verlopen/vandaag"],
@@ -15324,7 +15380,7 @@
         const region = String(leadfinderElements.filterRegion?.value || "").trim().toLowerCase();
         const minScore = Number(leadfinderElements.filterScore?.value || 0);
 
-        return readLeadFinderLeads().filter((lead) => {
+        return getLeadfinderLeads().filter((lead) => {
           const haystack = [lead.companyName, lead.industry, lead.region, lead.phone, lead.email, lead.websiteUrl, lead.notes, lead.source].join(" ").toLowerCase();
           return (!query || haystack.includes(query))
             && (!websiteStatus || lead.websiteStatus === websiteStatus)
@@ -15336,11 +15392,11 @@
       }
 
       function selectedLeadFinderLead() {
-        return readLeadFinderLeads().find((lead) => lead.id === selectedLeadFinderId) || null;
+        return getLeadfinderLeads().find((lead) => lead.id === selectedLeadFinderId) || null;
       }
 
       function renderLeadfinderList() {
-        const allLeads = readLeadFinderLeads();
+        const allLeads = getLeadfinderLeads();
         const leads = getFilteredLeadfinderLeads();
         renderLeadfinderMetrics(allLeads);
 
@@ -15405,12 +15461,16 @@
             ["Opvolgdatum", lead.followUpDate || "-"],
             ["Notities", lead.notes || "-"],
             ["CRM klant", lead.convertedCustomerId || "Nog niet geconverteerd"],
+            ["Bron", lead._source || leadfinderSourceStatus?.mode || "local"],
           ].map(([label, value]) => `<div><strong>${escapeHtml(label)}</strong><span>${escapeHtml(value)}</span></div>`).join("") : `
             <div><strong>Geen lead geselecteerd</strong><span>Klik op Bekijk in de lijst.</span></div>
           `;
         }
         if (leadfinderElements.detailCallStatus) leadfinderElements.detailCallStatus.value = lead?.callStatus || "";
-        [leadfinderElements.saveNote, leadfinderElements.createTask, leadfinderElements.convertCustomer, leadfinderElements.deleteLead, leadfinderElements.detailCallStatus].forEach((element) => {
+        [leadfinderElements.saveNote, leadfinderElements.convertCustomer, leadfinderElements.deleteLead, leadfinderElements.detailCallStatus].forEach((element) => {
+          if (element) element.disabled = !hasLead || !isLocalLead(lead);
+        });
+        [leadfinderElements.createTask].forEach((element) => {
           if (element) element.disabled = !hasLead;
         });
       }
@@ -15435,7 +15495,12 @@
         });
       }
 
-      function handleLeadfinderSubmit(event) {
+      async function reloadLeadfinderAfterLocalChange() {
+        await loadLeadfinderDataLayer();
+        renderLeadfinderList();
+      }
+
+      async function handleLeadfinderSubmit(event) {
         event.preventDefault();
         const companyName = leadfinderElements.company?.value.trim();
         if (!companyName) {
@@ -15459,7 +15524,7 @@
         selectedLeadFinderId = lead.id;
         resetLeadfinderForm();
         setLeadfinderMessage("Lead opgeslagen in de lokale sales pipeline.", "success");
-        renderLeadfinderList();
+        await reloadLeadfinderAfterLocalChange();
       }
 
       function handleLeadfinderListClick(event) {
@@ -15467,7 +15532,7 @@
         if (!button) return;
         const row = button.closest("[data-leadfinder-id]");
         const leadId = row?.dataset.leadfinderId;
-        const lead = readLeadFinderLeads().find((item) => item.id === leadId);
+        const lead = getLeadfinderLeads().find((item) => item.id === leadId);
         if (!lead) return;
         selectedLeadFinderId = lead.id;
         if (button.dataset.leadfinderAction === "task") {
@@ -15477,21 +15542,29 @@
         renderLeadfinderList();
       }
 
-      function saveLeadfinderDetailNote() {
+      async function saveLeadfinderDetailNote() {
         const lead = selectedLeadFinderLead();
         if (!lead) return;
+        if (!isLocalLead(lead)) {
+          setLeadfinderMessage("Deze lead komt uit de read-only data-layer. Notities wijzigen blijft local/write-mode voor later.", "error");
+          return;
+        }
         const note = String(leadfinderElements.detailNote?.value || "").trim();
         const callStatus = leadfinderElements.detailCallStatus?.value || lead.callStatus;
         const notes = note ? `${lead.notes ? `${lead.notes}\n` : ""}${new Date().toISOString().slice(0, 10)}: ${note}` : lead.notes;
         updateLeadFinderLeadLocally(lead.id, { notes, callStatus });
         if (leadfinderElements.detailNote) leadfinderElements.detailNote.value = "";
         setLeadfinderMessage("Leadnotitie en belstatus bijgewerkt.", "success");
-        renderLeadfinderList();
+        await reloadLeadfinderAfterLocalChange();
       }
 
-      function convertSelectedLeadToCustomer() {
+      async function convertSelectedLeadToCustomer() {
         const lead = selectedLeadFinderLead();
         if (!lead) return;
+        if (!isLocalLead(lead)) {
+          setLeadfinderMessage("Deze lead komt uit de read-only data-layer. Converteren naar klant blijft local/write-mode voor later.", "error");
+          return;
+        }
         const result = convertLeadFinderLeadToCustomer(lead.id);
         if (!result?.customer) {
           setLeadfinderMessage("Lead kon niet worden geconverteerd.", "error");
@@ -15499,19 +15572,23 @@
         }
         createWorkflowTaskForLead({ ...result.lead, followUpDate: "", notes: "Nieuwe CRM-klant aangemaakt vanuit Leadfinder. Plan intake/kwalificatie." });
         setLeadfinderMessage(result.alreadyConverted ? "Lead was al gekoppeld aan een CRM-klant." : "Lead geconverteerd naar lokale CRM-klant.", "success");
-        renderLeadfinderList();
+        await reloadLeadfinderAfterLocalChange();
       }
 
-      function deleteSelectedLead() {
+      async function deleteSelectedLead() {
         const lead = selectedLeadFinderLead();
         if (!lead || !window.confirm("Deze Leadfinder lead verwijderen?")) return;
+        if (!isLocalLead(lead)) {
+          setLeadfinderMessage("Deze lead komt uit de read-only data-layer. Verwijderen blijft local/write-mode voor later.", "error");
+          return;
+        }
         deleteLeadFinderLeadLocally(lead.id);
         selectedLeadFinderId = "";
         setLeadfinderMessage("Lead verwijderd.", "success");
-        renderLeadfinderList();
+        await reloadLeadfinderAfterLocalChange();
       }
 
-      function initLeadfinder() {
+      async function initLeadfinder() {
         if (!leadfinderElements.form || !leadfinderElements.list) return;
         fillSelect(leadfinderElements.websiteStatus, LEADFINDER_WEBSITE_STATUSES, "Kies website-status", "onbekend");
         fillSelect(leadfinderElements.callStatus, LEADFINDER_CALL_STATUSES, "Kies belstatus", "nieuw");
@@ -15520,6 +15597,7 @@
         fillSelect(leadfinderElements.filterScore, LEADFINDER_SCORE_BUCKETS, "Alle scores");
         fillSelect(leadfinderElements.detailCallStatus, LEADFINDER_CALL_STATUSES, "Belstatus");
         ensureLeadFinderDemoData();
+        await loadLeadfinderDataLayer();
         renderLeadfinderList();
 
         leadfinderElements.form.addEventListener("submit", handleLeadfinderSubmit);

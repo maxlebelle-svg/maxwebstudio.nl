@@ -1206,3 +1206,29 @@ Volgende stap:
 
 1. Leadfinder-data read-layer voorbereiden of data-layer write-readiness review uitvoeren.
 2. Daarna pas gecontroleerde write-mode per module plannen.
+
+## Fase 34 - Leadfinder Data Layer MVP
+
+Status: `AFGEROND`
+
+Scope:
+
+- Data-layer read support voor `leads`.
+- Admin/Leadfinder gebruikt de read-layer voor prospects met local/demo fallback.
+- Developer Mode toont Leadfinder-bronstatus binnen de Supabase Data Layer MVP-status.
+- Lokale opvolgtaken blijven mogelijk vanuit zowel lokale als read-only leads.
+
+Niet in scope:
+
+- Scraping.
+- Google Maps API.
+- Externe leaddatabronnen.
+- Productieproject.
+- Echte klantdata.
+- Writes.
+- OpenAI/Mollie/Resend.
+
+Volgende stap:
+
+1. Read-only datalaag reviewen als geheel.
+2. Daarna gecontroleerde write-mode per module ontwerpen.

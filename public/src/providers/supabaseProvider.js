@@ -5,6 +5,10 @@ function isCustomersTable(table) {
   return table === "customers" || table === "maxwebstudioCrmCustomers" || table === "maxwebstudioCustomers";
 }
 
+function isLeadsTable(table) {
+  return table === "leads" || table === "maxwebstudioLeads" || table === "maxwebstudioLeadFinderLeads";
+}
+
 function isProfilesTable(table) {
   return table === "profiles" || table === "maxwebstudioProfiles";
 }
@@ -59,6 +63,7 @@ function isClientPortalNotificationsTable(table) {
 
 function isReadableTable(table) {
   return isProfilesTable(table)
+    || isLeadsTable(table)
     || isCustomersTable(table)
     || isWebsitesTable(table)
     || isProjectsTable(table)
@@ -76,6 +81,7 @@ function isReadableTable(table) {
 
 function normalizedTable(table) {
   if (isProfilesTable(table)) return "profiles";
+  if (isLeadsTable(table)) return "leads";
   if (isCustomersTable(table)) return "customers";
   if (isWebsitesTable(table)) return "websites";
   if (isProjectsTable(table)) return "projects";

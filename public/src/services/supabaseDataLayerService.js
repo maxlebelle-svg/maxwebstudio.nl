@@ -8,9 +8,11 @@ import { ProjectRepository } from "../repositories/ProjectRepository.js";
 import { QuoteRepository } from "../repositories/QuoteRepository.js";
 import { InvoiceRepository } from "../repositories/InvoiceRepository.js";
 import { SubscriptionRepository } from "../repositories/SubscriptionRepository.js";
+import { normalizeLeadFinderLead, readLeadFinderLeads } from "./leadFinderService.js";
 import { normalizeCrmTask, readCrmTasks } from "./crmWorkflowService.js";
 
 const MVP_MODULES = Object.freeze([
+  "leads",
   "customers",
   "websites",
   "projects",
@@ -78,6 +80,97 @@ function lineModuleResult(module, parentResult = {}, parentRecordsKey, lineParen
     error: parentResult.error || "",
     refreshedAt: parentResult.refreshedAt || new Date().toISOString(),
   };
+}
+
+function mapLeadStatus(value) {
+  const status = String(value || "").trim().toLowerCase();
+  if (status === "new") return "nieuw";
+  if (status === "qualified") return "interesse";
+  if (status === "contacted") return "gebeld";
+  if (status === "follow_up") return "opvolgen";
+  if (status === "converted") return "geconverteerd";
+  if (status === "lost") return "geen_interesse";
+  return status || "nieuw";
+}
+
+function mapWebsiteStatus(value) {
+  const status = String(value || "").trim().toLowerCase();
+  if (status === "unknown") return "onbekend";
+  if (status === "no_website") return "geen_website";
+  if (status === "not_mobile_friendly") return "niet_mobielvriendelijk";
+  if (status === "no_ssl") return "geen_ssl";
+  return status || "onbekend";
+}
+
+function mapLead(row = {}, source = "local") {
+  const normalized = normalizeLeadFinderLead({
+    id: row.id,
+    companyName: firstValue(row.companyName, row.company, row.businessName, row.name),
+    industry: firstValue(row.industry, row.branch, row.branche),
+    region: firstValue(row.region, row.city, row.plaats),
+    phone: firstValue(row.phone),
+    email: firstValue(row.email),
+    websiteUrl: firstValue(row.websiteUrl, row.website_url, row.website),
+    websiteStatus: mapWebsiteStatus(firstValue(row.websiteStatus, row.website_status)),
+    leadScore: firstValue(row.leadScore, row.lead_score, row.score),
+    callStatus: firstValue(row.callStatus, row.call_status, mapLeadStatus(row.status)),
+    followUpDate: firstValue(row.followUpDate, row.follow_up_date),
+    notes: firstValue(row.notes),
+    source: firstValue(row.source, source),
+    convertedCustomerId: firstValue(row.convertedCustomerId, row.converted_customer_id),
+    createdAt: firstValue(row.createdAt, row.created_at),
+    updatedAt: firstValue(row.updatedAt, row.updated_at),
+  });
+  return {
+    ...normalized,
+    status: String(firstValue(row.status, normalized.callStatus)),
+    metadata: row.metadata && typeof row.metadata === "object" ? row.metadata : {},
+    isDemo: Boolean(row.isDemo || row.is_demo),
+    environment: String(firstValue(row.environment, row.isDemo || row.is_demo ? "demo" : "local")),
+    convertedAt: String(firstValue(row.convertedAt, row.converted_at)),
+    _source: source,
+    _supabaseId: source === "supabase" ? String(row.id || "") : "",
+    _localId: source === "local" ? String(row.id || "") : String(firstValue(row.external_id, row.metadata?.localStorageId)),
+  };
+}
+
+async function readLeadModule(mode) {
+  const local = readLeadFinderLeads().map((lead) => mapLead(lead, "local"));
+  if (mode === CUSTOMER_DATA_MODES.LOCAL) {
+    return moduleResult("leads", {
+      mode: CUSTOMER_DATA_MODES.LOCAL,
+      records: local,
+      counts: { local: local.length, supabase: 0, hybrid: local.length },
+    }, "records");
+  }
+  try {
+    const rows = await supabaseProvider.getAll("leads", { limit: 100 });
+    const remote = rows.map((row) => mapLead(row, "supabase"));
+    const records = mode === CUSTOMER_DATA_MODES.HYBRID ? mergeOperationRecords(remote, local) : remote;
+    return moduleResult("leads", {
+      mode,
+      records,
+      counts: { local: local.length, supabase: remote.length, hybrid: records.length },
+      fallbackUsed: false,
+    }, "records");
+  } catch (error) {
+    if (mode === CUSTOMER_DATA_MODES.HYBRID) {
+      return moduleResult("leads", {
+        mode: CUSTOMER_DATA_MODES.LOCAL,
+        records: local,
+        counts: { local: local.length, supabase: 0, hybrid: local.length },
+        fallbackUsed: true,
+        error: error.message || "Leads konden niet uit Supabase worden gelezen.",
+      }, "records");
+    }
+    return moduleResult("leads", {
+      mode,
+      records: [],
+      counts: { local: local.length, supabase: 0, hybrid: 0 },
+      fallbackUsed: false,
+      error: error.message || "Leads konden niet uit Supabase worden gelezen.",
+    }, "records");
+  }
 }
 
 function readStoredArray(key) {
@@ -314,6 +407,9 @@ async function readOperationModule(module, mode) {
 }
 
 async function readModule(module, mode) {
+  if (module === "leads") {
+    return readLeadModule(mode);
+  }
   if (module === "customers") {
     return moduleResult(module, await CustomerRepository.listByDataMode(mode), "customers");
   }
@@ -378,7 +474,7 @@ export async function readSupabaseDataLayerMvp(options = {}) {
 export function getSupabaseDataLayerMvpStatus() {
   const supabase = getSafeSupabaseClientSummary();
   return {
-    phase: "33",
+    phase: "34",
     name: "Supabase Data Layer MVP",
     modules: MVP_MODULES,
     defaultMode: CUSTOMER_DATA_MODES.HYBRID,
@@ -391,7 +487,7 @@ export function getSupabaseDataLayerMvpStatus() {
     readsPrepared: true,
     writesEnabled: false,
     productionReady: false,
-    reason: "Customers, websites, projects, finance en operationele modules hebben read-only Supabase services met localStorage fallback. Productie blijft uit tot expliciete releaseapproval.",
+    reason: "Leadfinder, customers, websites, projects, finance en operationele modules hebben read-only Supabase services met localStorage fallback. Productie blijft uit tot expliciete releaseapproval.",
   };
 }
 
