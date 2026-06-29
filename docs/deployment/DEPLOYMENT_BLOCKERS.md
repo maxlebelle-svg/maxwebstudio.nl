@@ -53,6 +53,36 @@ Blockers die hierdoor nog open blijven:
 
 Nieuwe evidence mag alleen verwijzen naar testproject, screenshots/logsamenvattingen en checkliststatus. Noteer nooit keys of wachtwoorden.
 
+## Fase 14.4B - Echte testomgeving evidence
+
+Status: `NO-GO / BLOCKED`
+
+Uitgevoerd:
+
+- `supabase/schema.sql` is door gebruiker succesvol uitgevoerd op het Supabase testproject.
+- `supabase/rls-policies.sql` is door gebruiker succesvol uitgevoerd op het Supabase testproject.
+- Auth Admin API kon 2 testgebruikers aanmaken.
+- Storage testbucket kon worden aangemaakt/hergebruikt.
+- Storage upload, signed URL en private public-endpoint blokkade zijn geslaagd.
+
+Open blockers:
+
+| Blocker | Status | Evidence | Volgende actie |
+| --- | --- | --- | --- |
+| `env_vars_verified` | in_review | `.env.local` aanwezig, testflags actief, `.gitignore` sluit `.env.local` uit | Handmatig bevestigen dat Supabase URL/project id naar testproject wijzen |
+| `auth_test_completed` | blocked | Auth Admin user creation PASS | Login/session/profile mapping opnieuw testen na database grants |
+| `rls_test_log_completed` | blocked | RLS policies uitgevoerd, maar RLS-testrecords konden niet worden geplaatst | Grants toevoegen en RLS A/B test opnieuw draaien |
+| `customer_isolation_test_completed` | blocked | Customer A/B users bestaan, maar isolatie niet uitvoerbaar | Testrecords plaatsen en A/B isolatie opnieuw testen |
+| Storage evidence | in_review | Bucket/upload/signed URL/private endpoint PASS | Handmatig reviewen of bucketconfig past bij productieplan |
+
+Belangrijkste technische blocker:
+
+- `POST /rest/v1/profiles` met service role gaf `403 permission denied for table profiles`.
+- Supabase gaf als hint: `GRANT SELECT, INSERT ON public.profiles TO service_role;`
+- Hierdoor zijn database/RLS/customer-isolation tests nog niet betrouwbaar uitvoerbaar.
+
+Geen blocker is automatisch approved.
+
 ## Bewijsregels
 
 - Geen secrets in evidence.

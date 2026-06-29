@@ -114,6 +114,45 @@ Open voor Fase 14.4B:
 - testusers aanmaken
 - Auth/RLS/klantisolatie/Storage evidence verzamelen
 
+## Fase 14.4B Supabase testomgeving-validatie
+
+Status: `NO-GO / BLOCKED`
+
+Uitgevoerd op het aparte Supabase testproject. Productie is niet aangepast en er is geen echte klantdata gebruikt.
+
+Evidence run:
+
+- Auth/database run: `phase-14-4b-1782735251877`
+- Storage run: `phase-14-4b-storage-1782735279249`
+
+| Testnaam | Stappen | Verwacht resultaat | Werkelijk resultaat | Status | Evidence / notities |
+| --- | --- | --- | --- | --- | --- |
+| `.env.local` ingelezen | Test-env-vars lokaal controleren zonder waarden te tonen | Testconfig aanwezig en `APP_ENV=test` | Supabase URL, anon key, service role key en project id aanwezig; `APP_ENV=test`, `APP_ENVIRONMENT=test` | PASS | `.env.local` blijft uitgesloten via `.gitignore` |
+| Schema execution | `supabase/schema.sql` uitvoeren op leeg testproject | Schema succesvol | Door gebruiker bevestigd als succesvol uitgevoerd | PASS | Geen productie geraakt |
+| RLS policies execution | `supabase/rls-policies.sql` uitvoeren op testproject | RLS/policies succesvol | Door gebruiker bevestigd als succesvol uitgevoerd | PASS | Geen productie geraakt |
+| Auth testusers aanmaken | Customer A en Customer B aanmaken via Supabase Auth Admin API | 2 testusers aangemaakt | 2 testusers aangemaakt | PASS | Geen wachtwoorden of keys gelogd |
+| Testrecords plaatsen via service role | Profiles/customers/testrecords plaatsen voor RLS A/B-test | Service role kan testrecords plaatsen | `POST /rest/v1/profiles` gaf 403 permission denied | FAIL | Supabase hint: `GRANT SELECT, INSERT ON public.profiles TO service_role;` |
+| Auth login/session | Customer A/B login testen | Beide users kunnen inloggen | Niet uitgevoerd na database-grant failure | BLOCKED | Testrecords/profile mapping ontbreekt |
+| RLS per module | Customers/websites/projects/files/quotes/invoices/subscriptions testen | Customer A/B zien alleen eigen data | Niet uitvoerbaar | BLOCKED | Testrecords konden niet worden geplaatst |
+| Customer isolation | Customer A probeert B-data te lezen/schrijven en andersom | Cross-customer access geweigerd | Niet uitvoerbaar | BLOCKED | Vereist testrecords + werkende PostgREST grants |
+| Anonymous DB access | Anonymous select-probe op `profiles` | Empty/401/403 zonder server error | Probe gaf 500 JSON response | FAIL | Wijst op ontbrekende grants/policy execution-readiness |
+| Storage bucket | Private testbucket aanmaken of hergebruiken | Bucket beschikbaar en private | Bucket create/hergebruik status 200 | PASS | Bucket: `maxwebstudio-test-evidence` |
+| Storage upload | Testobject server-side uploaden | Upload lukt | Upload status 200 | PASS | Service role alleen server-side gebruikt |
+| Storage signed URL | Tijdelijke signed URL maken | Signed URL wordt gemaakt | Signed URL status 200 | PASS | Geen URL/secret opgeslagen |
+| Storage public endpoint | Publieke endpoint direct openen | Private object niet publiek bereikbaar | Public endpoint status 400 | PASS | Private toegang geblokkeerd |
+
+Conclusie:
+
+- Auth Admin API werkt voor testuser creation.
+- Storage basis werkt: private bucket, upload, signed URL en public-blocking zijn bewezen.
+- Database/RLS/customer-isolation zijn nog niet gevalideerd door ontbrekende PostgREST privileges op canonical tabellen.
+- Release blijft `NO-GO / BLOCKED`.
+
+Nodige vervolgstap:
+
+- Voeg in het testproject expliciete grants toe voor `anon`, `authenticated` en `service_role` op de canonical tabellen/sequences/functions waar nodig.
+- Herhaal daarna Fase 14.4B RLS/customer-isolation tests.
+
 ## Fase 14.3 lokale rooktest
 
 Uitgevoerd zonder productie, zonder SQL en zonder live Supabase.

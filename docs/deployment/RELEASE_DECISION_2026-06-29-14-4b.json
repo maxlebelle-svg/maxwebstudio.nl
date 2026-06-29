@@ -11,8 +11,8 @@
   "summary": {
     "envLocalPresent": true,
     "envLocalIgnoredByGit": true,
-    "schemaExecutedOnTestProject": true,
-    "rlsPoliciesExecutedOnTestProject": true,
+    "schemaExecutedByUser": true,
+    "rlsPoliciesExecutedByUser": true,
     "authUsersCreated": 2,
     "databaseRecordsInserted": false,
     "rlsTested": false,
@@ -26,8 +26,8 @@
   "pass": [
     ".env.local is present and configured for test",
     ".env.local is ignored by git",
-    "schema.sql executed successfully on test project",
-    "rls-policies.sql executed successfully on test project",
+    "schema.sql executed successfully on test project, confirmed by user",
+    "rls-policies.sql executed successfully on test project, confirmed by user",
     "Auth Admin API created 2 test users",
     "Storage bucket create/reuse returned status 200",
     "Storage upload returned status 200",
