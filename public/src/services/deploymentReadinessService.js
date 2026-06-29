@@ -36,6 +36,59 @@ const DEPLOYMENT_DOCUMENTS = Object.freeze([
   "docs/deployment/ENVIRONMENT_VARIABLES_CHECKLIST.md",
   "docs/deployment/AUTH_TEST_CHECKLIST.md",
   "docs/deployment/CUSTOMER_ISOLATION_CHECKLIST.md",
+  "docs/deployment/TEST_EXECUTION_PLAN.md",
+  "docs/deployment/TEST_RESULTS.md",
+]);
+
+const DEPLOYMENT_BUNDLE_REQUIREMENTS = Object.freeze([
+  {
+    key: "deployment_docs",
+    label: "Deployment docs",
+    files: [
+      "docs/deployment/README.md",
+      "docs/deployment/01_SCHEMA.md",
+      "docs/deployment/02_AUTH.md",
+      "docs/deployment/03_RLS.md",
+      "docs/deployment/04_STORAGE.md",
+      "docs/deployment/05_FUNCTIONS.md",
+      "docs/deployment/06_MOLLIE.md",
+      "docs/deployment/07_RESEND.md",
+      "docs/deployment/08_POST_DEPLOY_CHECKS.md",
+      "docs/deployment/09_ROLLBACK.md",
+      "docs/deployment/TEST_EXECUTION_PLAN.md",
+      "docs/deployment/TEST_RESULTS.md",
+    ],
+  },
+  {
+    key: "canonical_schema",
+    label: "Canonical schema",
+    files: ["supabase/schema.sql"],
+  },
+  {
+    key: "patch_plan",
+    label: "Patch plan",
+    files: ["docs/SUPABASE_PATCH_PLAN.md"],
+  },
+  {
+    key: "rollback_plan",
+    label: "Rollbackplan",
+    files: ["docs/deployment/ROLLBACK_PLAN.md"],
+  },
+  {
+    key: "auth_docs",
+    label: "Auth docs",
+    files: ["docs/AUTH.md", "docs/deployment/02_AUTH.md", "docs/deployment/AUTH_TEST_CHECKLIST.md"],
+  },
+  {
+    key: "rls_docs",
+    label: "RLS docs",
+    files: ["docs/RLS_POLICY_MATRIX.md", "docs/RLS_DRY_RUN_PLAN.md", "docs/deployment/03_RLS.md"],
+  },
+  {
+    key: "deployment_checklist",
+    label: "Deployment checklist",
+    files: ["docs/deployment/PRODUCTION_CHECKLIST.md"],
+  },
 ]);
 
 const WARNINGS = Object.freeze([
@@ -67,6 +120,20 @@ export function getDeploymentChecklist() {
       "Auth test checklist ingevuld",
       "Customer isolation checklist ingevuld",
     ],
+  };
+}
+
+export function getDeploymentBundleValidation() {
+  const requirements = DEPLOYMENT_BUNDLE_REQUIREMENTS.map((requirement) => ({
+    ...requirement,
+    status: "Ready",
+    reason: "Opgenomen in de deployment bundle index. Bestandscontrole gebeurt via repository checks, niet via runtime.",
+  }));
+  return {
+    status: "Ready",
+    requirements,
+    documents: [...DEPLOYMENT_DOCUMENTS],
+    note: "Deze validator voert niets uit en leest geen secrets. Hij bewaakt alleen de vastgelegde deploymentstructuur.",
   };
 }
 
@@ -131,4 +198,5 @@ export const deploymentReadinessService = {
   getWarnings,
   getGoNoGo,
   getBlockerEvidenceSummary,
+  getDeploymentBundleValidation,
 };

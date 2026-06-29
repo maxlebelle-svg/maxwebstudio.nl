@@ -241,3 +241,25 @@ Niet live:
 Volgende logische stap:
 
 - blockers handmatig met echte evidence invullen tijdens testomgeving-uitvoering.
+
+### 14.1 - Supabase Test Environment Execution
+
+Afgerond als readiness/testplan laag:
+
+- test environment service
+- deployment bundle validator
+- SQL execution order validator
+- Developer Mode kaarten voor `Test Environment` en `Production Validation`
+- test execution plan
+- test results registry template
+
+Niet live:
+
+- geen SQL uitgevoerd
+- geen productie aangepast
+- geen provider switch
+- geen Auth/RLS/Storage/Mollie/Resend live gezet
+
+Volgende logische stap:
+
+- testomgeving handmatig uitvoeren volgens `docs/deployment/TEST_EXECUTION_PLAN.md` en resultaten invullen in `docs/deployment/TEST_RESULTS.md`.

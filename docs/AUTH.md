@@ -369,3 +369,17 @@ Benodigde evidence:
 - open issues
 
 De checklist staat in `/docs/deployment/AUTH_TEST_CHECKLIST.md`. Zolang deze blocker niet approved/not_applicable is, blijft deployment `NO-GO`.
+
+## Fase 14.1 - Auth in testomgeving-uitvoering
+
+Auth is opgenomen in het test execution plan.
+
+Te testen in een echte Supabase testomgeving:
+
+- login met testusers
+- role/profile mapping
+- customer/profile ownership
+- route guard gedrag
+- klantportaal toegang
+
+Resultaten horen in `/docs/deployment/TEST_RESULTS.md`. De blocker `auth_test_completed` blijft open totdat evidence handmatig is vastgelegd en goedgekeurd.

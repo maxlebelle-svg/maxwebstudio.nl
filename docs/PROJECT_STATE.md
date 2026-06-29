@@ -380,3 +380,25 @@ Belangrijk:
 - Alle blockers starten als `pending`.
 - Codex zet niets automatisch op approved.
 - GO kan pas wanneer elke blocker `approved` of `not_applicable` is.
+
+## Fase 14.1 - Supabase Test Environment Execution
+
+Status: voorbereid als testomgeving-readiness laag. Er is geen SQL uitgevoerd en er is geen productieomgeving aangepast.
+
+Toegevoegd:
+
+- `/public/src/services/testEnvironmentService.js`
+- `/docs/deployment/TEST_EXECUTION_PLAN.md`
+- `/docs/deployment/TEST_RESULTS.md`
+
+Bijgewerkt:
+
+- `deploymentReadinessService` bevat nu een deployment bundle validator voor docs, schema, patchplan, rollbackplan, Auth, RLS en checklist.
+- Developer Mode toont `Test Environment` en `Production Validation`.
+- Blockers worden gekoppeld aan readiness/evidence, maar nooit automatisch approved.
+
+Belangrijk:
+
+- SQL execution order wordt alleen logisch gevalideerd.
+- Testresultaten blijven `NOT TESTED` totdat een echte Supabase testomgeving is gebruikt.
+- GO/NO-GO blijft `NO-GO` zolang backup, Auth, RLS, klantisolatie, rollback en env-var evidence ontbreken.

@@ -838,6 +838,8 @@
                 <button class="button secondary" id="view-deployment-blockers" type="button">Bekijk blockers</button>
                 <button class="button secondary" id="view-deployment-rollback" type="button">Bekijk rollback plan</button>
                 <button class="button secondary" id="view-deployment-sql-bundle" type="button">Bekijk SQL bundle</button>
+                <button class="button secondary" id="run-production-validation" type="button">Run validation</button>
+                <button class="button secondary" id="view-test-execution-plan" type="button">Bekijk testplan</button>
                 <button class="button secondary" id="view-migration-plan" type="button">Bekijk migratieplan</button>
                 <button class="button secondary" id="view-planned-tables" type="button">Bekijk geplande tabellen</button>
                 <button class="button secondary" id="run-supabase-migration-check" type="button">Run localStorage migratie-check</button>
@@ -1871,6 +1873,8 @@
         const viewDeploymentBlockersButton = document.getElementById("view-deployment-blockers");
         const viewDeploymentRollbackButton = document.getElementById("view-deployment-rollback");
         const viewDeploymentSqlBundleButton = document.getElementById("view-deployment-sql-bundle");
+        const runProductionValidationButton = document.getElementById("run-production-validation");
+        const viewTestExecutionPlanButton = document.getElementById("view-test-execution-plan");
         const viewMigrationPlanButton = document.getElementById("view-migration-plan");
         const viewPlannedTablesButton = document.getElementById("view-planned-tables");
         const runSupabaseMigrationCheckButton = document.getElementById("run-supabase-migration-check");
@@ -3082,6 +3086,7 @@
             securityReadinessService: await import("./src/services/securityReadinessService.js"),
             deploymentReadinessService: await import("./src/services/deploymentReadinessService.js"),
             deploymentBlockerService: await import("./src/services/deploymentBlockerService.js"),
+            testEnvironmentService: await import("./src/services/testEnvironmentService.js"),
           };
           return state.developerModules;
         }
@@ -4406,6 +4411,7 @@
         function renderProductionDeployment(modules) {
           const readiness = modules.deploymentReadinessService.getDeploymentReadiness();
           const blockerStatus = readiness.blockerStatus || {};
+          const bundleValidation = modules.deploymentReadinessService.getDeploymentBundleValidation();
           appendDeveloperCard("Production Deployment", [
             ["Go/No-Go", readiness.goNoGo.decision],
             ["Blockers totaal", String(blockerStatus.total || readiness.blockers.length)],
@@ -4414,13 +4420,48 @@
             ["Approved", String(blockerStatus.approved || 0)],
             ["Rejected", String(blockerStatus.rejected || 0)],
             ["Documenten", String(readiness.checklist.documents.length)],
+            ["Bundle validatie", bundleValidation.status],
             ["Laatste check", readiness.generatedAt ? formatDate(readiness.generatedAt) : "-"],
           ]);
+          appendDeveloperCard("Deployment bundle validator", bundleValidation.requirements.map((requirement) => [
+            requirement.label,
+            `${requirement.status} - ${requirement.files.join(", ")}`,
+          ]));
           appendDeveloperCard("Deployment modules", readiness.checklist.areas.map((area) => [
             area.label,
             `${area.status} - ${area.reason}`,
           ]));
           renderDeploymentBlockerManager(modules);
+        }
+
+        function renderTestEnvironment(modules) {
+          const status = modules.testEnvironmentService.getTestEnvironmentStatus();
+          appendDeveloperCard("Test Environment", [
+            ["Environment", status.environment.environment || "Test"],
+            ["Provider mode", status.environment.providerMode || "-"],
+            ["Canonical schema", `${status.canonicalSchema.status} - ${status.canonicalSchema.reason}`],
+            ["Deployment bundle", status.deploymentBundle.status],
+            ["Environment variables", `${status.environmentVariables.status} - ${status.environmentVariables.reason}`],
+            ["SQL execution order", status.deploymentOrder.status],
+            ["Rollback", `${status.rollback.status} - ${status.rollback.blockerStatus}`],
+            ["GO/NO-GO", `${status.goNoGo.status} - ${status.goNoGo.decision}`],
+          ]);
+          appendDeveloperCard("SQL execution order", status.deploymentOrder.order.map((step) => [
+            `${step.position}. ${step.label}`,
+            step.dependency,
+          ]));
+          appendDeveloperCard("Blocker readiness evidence", status.blockerReadiness.map((blocker) => [
+            blocker.title,
+            `${blocker.status} - ${blocker.blockerStatus}${blocker.hasEvidence ? " - evidence aanwezig" : " - evidence ontbreekt"}`,
+          ]));
+        }
+
+        function renderProductionValidation(modules) {
+          const summary = modules.testEnvironmentService.getEnvironmentSummary();
+          appendDeveloperCard("Production Validation", summary.areas.map((area) => [
+            area.label,
+            `${area.status} - ${area.reason}`,
+          ]));
         }
 
         function evidenceSummary(blocker = {}) {
@@ -4704,6 +4745,8 @@
             renderAccessControlReadiness(modules);
             renderSecurityReadiness(modules);
             renderProductionDeployment(modules);
+            renderTestEnvironment(modules);
+            renderProductionValidation(modules);
             appendDeveloperCard("Auth sessie", [
               ["Gebruiker", user?.name || user?.email || "Geen sessie"],
               ["Rol", permissionPreview.roleLabel],
@@ -4731,6 +4774,8 @@
             if (extra.deploymentChecklist) renderDeploymentChecklist(extra.deploymentChecklist);
             if (extra.deploymentBlockers) renderDeploymentBlockers(extra.deploymentBlockers);
             if (extra.deploymentReference) renderDeploymentReference(extra.deploymentReference.title, extra.deploymentReference.rows);
+            if (extra.productionValidation) renderProductionValidation(modules);
+            if (extra.testExecutionPlan) renderDeploymentReference(extra.testExecutionPlan.title, extra.testExecutionPlan.rows);
             if (extra.supabaseReadOnlyResult) renderSupabaseReadOnlyResult(extra.supabaseReadOnlyTitle || "Supabase read-only resultaat", extra.supabaseReadOnlyResult);
             if (extra.supabaseWriteTestResult) renderSupabaseWriteTestResult(extra.supabaseWriteTestResult);
             if (extra.supabaseCustomerRows) {
@@ -5100,6 +5145,33 @@
             },
           });
           setSettingsMessage("SQL bundle referentie getoond. Er is geen SQL uitgevoerd.", "success");
+        }
+
+        async function runProductionValidationHandler() {
+          try {
+            const modules = await loadDeveloperModules();
+            const status = modules.testEnvironmentService.getTestEnvironmentStatus();
+            await renderDeveloperToolsSummary({ productionValidation: true });
+            setSettingsMessage(`Production validation uitgevoerd als readiness-check: ${status.status}. Er is niets gedeployed.`, status.status === "READY" ? "success" : "error");
+          } catch (error) {
+            console.error("Production validation readiness check failed", error);
+            setSettingsMessage("Production validation kon niet worden uitgevoerd.", "error");
+          }
+        }
+
+        async function showTestExecutionPlanHandler() {
+          await renderDeveloperToolsSummary({
+            testExecutionPlan: {
+              title: "Test execution plan",
+              rows: [
+                ["Document", "docs/deployment/TEST_EXECUTION_PLAN.md"],
+                ["Resultatenregister", "docs/deployment/TEST_RESULTS.md"],
+                ["Volgorde", "Schema, Auth, RLS, Storage, Functions, Mollie, Resend, Customer tests, Go/No-Go"],
+                ["Status", "Alleen planning/template; geen testresultaten ingevuld."],
+              ],
+            },
+          });
+          setSettingsMessage("Testplan referentie getoond. Er is niets uitgevoerd.", "success");
         }
 
         async function updateDeploymentBlockerHandler(blockerId, status) {
@@ -13859,6 +13931,8 @@
         viewDeploymentBlockersButton.addEventListener("click", showDeploymentBlockersHandler);
         viewDeploymentRollbackButton.addEventListener("click", showDeploymentRollbackHandler);
         viewDeploymentSqlBundleButton.addEventListener("click", showDeploymentSqlBundleHandler);
+        runProductionValidationButton.addEventListener("click", runProductionValidationHandler);
+        viewTestExecutionPlanButton.addEventListener("click", showTestExecutionPlanHandler);
         viewMigrationPlanButton.addEventListener("click", showMigrationPlanHandler);
         viewPlannedTablesButton.addEventListener("click", showPlannedTablesHandler);
         runSupabaseMigrationCheckButton.addEventListener("click", runSupabaseMigrationCheckHandler);

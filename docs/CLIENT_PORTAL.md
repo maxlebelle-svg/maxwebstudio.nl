@@ -522,3 +522,17 @@ Benodigde evidence:
 - klantportaal mismatch toont geen andere klantdata
 
 De checklist staat in `/docs/deployment/CUSTOMER_ISOLATION_CHECKLIST.md`.
+
+## Fase 14.1 - Klantportaal testomgeving
+
+Het klantportaal is onderdeel van de test execution planning.
+
+Te valideren:
+
+- Customer A ziet alleen A
+- Customer B ziet alleen B
+- anonymous ziet geen klantdata
+- demo-user krijgt geen productiedata
+- offertes, facturen, projecten, websites, bestanden en abonnementen blijven klantveilig
+
+Resultaten horen in `/docs/deployment/TEST_RESULTS.md`. De blocker `customer_isolation_test_completed` blijft open totdat deze tests echt zijn uitgevoerd.

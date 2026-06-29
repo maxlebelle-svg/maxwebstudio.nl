@@ -451,3 +451,22 @@ Nieuwe checklists:
 - `CUSTOMER_ISOLATION_CHECKLIST.md`
 
 Er is geen productieomgeving aangepast.
+
+## Fase 14.1 - Test environment security readiness
+
+Fase 14.1 voegt testomgeving-validatie toe zonder runtime security te wijzigen.
+
+Securityregels:
+
+- geen SQL execution vanuit de app
+- geen service role key in frontend
+- geen secrets in testresultaten
+- server-side env vars worden alleen via checklist bevestigd
+- Auth/RLS/klantisolatie blijven blockers totdat echte test-evidence is toegevoegd
+
+Nieuwe documenten:
+
+- `TEST_EXECUTION_PLAN.md`
+- `TEST_RESULTS.md`
+
+Developer Mode toont readiness, maar voert geen deployment uit.
