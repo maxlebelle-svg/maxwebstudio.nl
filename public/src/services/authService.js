@@ -5,7 +5,7 @@ import {
   getEmailAuthProvider,
   getSessionAuthProvider,
 } from "./authProviderFactory.js";
-import { roleHasPermission, getPermissionsForRole } from "../config/permissions.js";
+import { NAVIGATION_PERMISSIONS, roleHasPermission, getPermissionsForRole } from "../config/permissions.js";
 import { ProfileRepository } from "../repositories/ProfileRepository.js";
 
 const demoProvider = () => getSessionAuthProvider();
@@ -53,11 +53,30 @@ export function hasPermission(resource, action) {
 }
 
 export function requirePermission(resource, action) {
-  return demoProvider().requirePermission(resource, action);
+  if (!hasPermission(resource, action)) {
+    throw new Error(`Geen permissie voor ${resource}:${action}.`);
+  }
+  return true;
 }
 
 export function getVisibleNavigationItems() {
-  return demoProvider().getVisibleNavigationItems();
+  return NAVIGATION_PERMISSIONS.filter((item) => hasPermission(item.resource, item.action));
+}
+
+export function filterActionsByPermission(actions = []) {
+  return actions.filter((action) => !action.resource || !action.action || hasPermission(action.resource, action.action));
+}
+
+export function canShowDeveloperTools() {
+  return hasPermission("developerTools", "view");
+}
+
+export function canShowMigrationTools() {
+  return hasPermission("developerTools", "migrate");
+}
+
+export function canShowSettings() {
+  return hasPermission("settings", "view");
 }
 
 export function getCurrentPermissionPreview() {

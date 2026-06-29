@@ -324,3 +324,29 @@ De nieuwe profile-laag is bewust voorbereid zonder productieblokkades:
 - Echte RLS, harde route guards en rolvalidatie volgen in Fase 13.2/13.3.
 
 Belangrijk: deze fase maakt de architectuur klaar, maar is nog geen volledige productiebeveiliging.
+
+## Fase 13.2 - Access control hardening
+
+Access control is uitgebreid met soft route guards en action guards.
+
+Actief:
+
+- access modes `preview`, `soft` en `hard`
+- default mode `soft`
+- protected routes registry
+- role-based navigation in het admin-dashboard
+- soft action guards voor gevaarlijke acties zoals data wissen, migratie starten, provider mode wijzigen en technische write-tests
+- customer access guard voor het klantportaal
+- activity logging voor access warnings, denied decisions, navigation filtering, action guard blocks en customer mismatches
+
+Niet actief:
+
+- geen definitieve RLS SQL uitgevoerd
+- geen service role key in frontend
+- geen harde blokkade standaard
+- geen homepage/SEO/analytics wijziging
+
+Securitygrens:
+
+- Soft route guards voorkomen onbedoelde UI-acties, maar vervangen RLS niet.
+- Fase 13.3 moet RLS, API-security en database policies definitief auditen voordat echte klantdata live gebruikt wordt.

@@ -136,3 +136,18 @@ Volgende logische stap:
 
 - 13.2: route guards, rollen en RLS-readiness strakker maken zonder demo-flow te breken.
 - 13.3: RLS/security audit voor productiegebruik.
+
+### 13.2 - Route Guards & Access Control Hardening
+
+Afgerond:
+
+- soft route guards actief
+- hard route guards voorbereid
+- role navigation actief
+- action guards actief voor gevaarlijke acties
+- customer access guard soft actief
+- access audit logging actief
+
+Volgende logische stap:
+
+- 13.3: RLS/security audit, API security en database policies definitief hard maken.

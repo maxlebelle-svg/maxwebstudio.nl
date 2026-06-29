@@ -80,6 +80,7 @@
     <script>
       (async () => {
         const { getClientPortalData } = await import("./src/services/clientPortalDataService.js");
+        const { requireCustomerAccess } = await import("./src/services/routeGuardService.js");
         const params = new URLSearchParams(window.location.search);
         const customerId = params.get("customerId") || "";
         const supabaseCustomerId = params.get("supabaseCustomerId") || "";
@@ -144,6 +145,21 @@
         }
 
         renderSessionNotice();
+
+        const customerAccessDecision = requireCustomerAccess(customerId, {
+          pageName: "klantportaal",
+          allowDemo: true,
+        });
+        if (!customerAccessDecision.allowed && customerAccessDecision.decision === "customer_access_mismatch") {
+          portalTitle.textContent = "Geen toegang tot deze klantdata";
+          portalSubtitle.textContent = "Deze sessie hoort bij een andere klant.";
+          portalSourceBadge.textContent = "Soft guard";
+          portalSourceBadge.className = "status-badge status-warning";
+          portalSourceText.textContent = "Customer access guard heeft een mismatch gevonden. In deze fase tonen we daarom geen klantdata van een andere klant.";
+          customerProfile.append(createEmpty("Klantdata afgeschermd", "Open je eigen klantportaal of log opnieuw in met de juiste demo-klant."));
+          [quoteList, invoiceList, subscriptionList, projectList, websiteList, fileList].forEach((target) => target.append(createEmpty("Geen data", "Deze data wordt bewust niet getoond bij een customer mismatch.")));
+          return;
+        }
 
         function statusClass(value) {
           const status = normalize(value);

@@ -251,3 +251,27 @@ Nog niet actief:
 - harde route guards
 - RLS hardening
 - Supabase uitnodigingsmails
+
+## Fase 13.2 - Route Guards & Access Control Hardening
+
+Status: afgerond als soft access-control laag.
+
+Toegevoegd:
+
+- `protectedRoutes.js` met route registry
+- access modes `preview`, `soft`, `hard`
+- `routeGuardService` met auth/role/permission/customer guards
+- `accessControlTestService` met self-tests en readiness summary
+- role-based navigation in het admin-dashboard
+- soft action guards voor gevaarlijke acties
+- customer access guard in `klantportaal.html`
+- activity logging voor access decisions
+- Developer Mode Access Control readiness kaart en testknoppen
+
+Nog niet actief:
+
+- harde route guards standaard
+- definitieve RLS policies
+- echte productie-admin-login
+
+Default blijft `soft`, zodat demo-login en bestaande klantflows blijven werken.

@@ -440,3 +440,17 @@ Bewust niet gedaan:
 - geen blokkade op `/klantportaal.html?customerId=...`
 - geen RLS-hardening
 - geen klantmutaties vanuit het portaal
+
+## Fase 13.2 - Customer access guard
+
+Het klantportaal gebruikt nu `requireCustomerAccess(customerId, { allowDemo: true })`.
+
+Gedrag:
+
+- demo/local links blijven bruikbaar voor verkoop en testen
+- zonder sessie blijft het demoportaal toegankelijk
+- bij een duidelijke customer/profile mismatch wordt geen klantdata getoond
+- de pagina toont dan een veilige empty state met uitleg
+- hard blocking blijft voorbereid maar niet standaard actief
+
+Dit is een browserlaag. Database-hardening via RLS blijft gepland voor Fase 13.3.

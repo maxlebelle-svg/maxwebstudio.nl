@@ -249,6 +249,40 @@ Niet gewijzigd:
 - Er is geen service role key in de frontend geplaatst.
 - Legacy `customer_*` tabellen zijn niet opnieuw gebruikt voor nieuwe auth.
 
+## Fase 13.2 - Route Guards & Access Control
+
+Access control is nu production-ready voorbereid met drie modes:
+
+- `preview`: alleen uitleg/waarschuwingen, geen blokkade.
+- `soft`: standaardmodus; waarschuwingen, role-based navigation en veilige action guards, zonder demo-flow hard te breken.
+- `hard`: voorbereid voor testscenario's; kan beschermde routes redirecten/blokkeren wanneer expliciet gekozen.
+
+Beschermde routes staan centraal in:
+
+- `/public/src/config/protectedRoutes.js`
+
+Belangrijkste routes:
+
+- `admin-dashboard`: admin/super_admin/developer/sales/support met acties per rol beperkt.
+- `klantportaal`: customer/admin/super_admin/demo_user met customer access guard.
+- `demo-klantreis`: demo/admin/super_admin/developer/sales.
+- `login`: publiek.
+- `offerte` en `betalen`: publiek/demo-safe zolang de lokale demo-flow nodig is.
+
+Het admin-dashboard toont de huidige sessie/profile/rol, access mode en waarschuwingen. Developer Mode heeft een Access Control readiness kaart en self-tests.
+
+Customer access:
+
+- Demo-links blijven bereikbaar.
+- Zonder sessie blijft lokale demo-toegang mogelijk.
+- Als een ingelogde customer/profile duidelijk bij een andere klant hoort, toont het klantportaal geen data van die andere klant.
+- In hard mode kan later worden geblokkeerd/geredirect.
+
+RLS blijft voor Fase 13.3:
+
+- Route guards beschermen de browserervaring.
+- RLS moet daarna de databasegrens definitief hard maken.
+
 - `profiles` = Auth/rollen/profielbasis
 - `customers` = zakelijke klantbron
 - `websites`, `projects`, `quotes`, `invoices`, `subscriptions` = klantmodules

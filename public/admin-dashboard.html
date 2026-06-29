@@ -64,6 +64,15 @@
             <a class="button secondary" href="login.html">Open login</a>
             <button class="button secondary" id="auth-logout" type="button">Uitloggen</button>
           </div>
+          <label for="access-control-mode">Access mode</label>
+          <div class="admin-profile-inline">
+            <select id="access-control-mode">
+              <option value="preview">Preview</option>
+              <option value="soft" selected>Soft</option>
+              <option value="hard">Hard</option>
+            </select>
+            <button class="button secondary" id="access-mode-reset" type="button">Reset soft</button>
+          </div>
         </article>
         <article class="admin-card admin-token-card">
           <div>
@@ -90,6 +99,11 @@
             <button class="button primary" id="open-new-customer" type="button">Nieuwe klant</button>
             <span class="admin-preview-badge">CRM basis</span>
           </div>
+        </section>
+
+        <section class="portal-message" id="admin-access-control-banner" role="note">
+          <strong>Access control</strong>
+          <span id="admin-access-control-text">Soft access-control laden...</span>
         </section>
 
         <section class="admin-grid admin-metrics" aria-label="CRM overzicht">
@@ -808,6 +822,11 @@
                 <button class="button secondary" id="prepare-account-request-profiles" type="button">Prepare profiles</button>
                 <button class="button secondary" id="test-session-profile-mapping" type="button">Test session → profile</button>
                 <button class="button secondary" id="test-profile-customer-link" type="button">Test profile/customer link</button>
+                <button class="button secondary" id="test-admin-access" type="button">Test admin access</button>
+                <button class="button secondary" id="test-customer-portal-access" type="button">Test customer portal access</button>
+                <button class="button secondary" id="test-sales-navigation" type="button">Test sales navigation</button>
+                <button class="button secondary" id="test-support-navigation" type="button">Test support navigation</button>
+                <button class="button secondary" id="test-developer-navigation" type="button">Test developer navigation</button>
                 <button class="button secondary" id="view-migration-plan" type="button">Bekijk migratieplan</button>
                 <button class="button secondary" id="view-planned-tables" type="button">Bekijk geplande tabellen</button>
                 <button class="button secondary" id="run-supabase-migration-check" type="button">Run localStorage migratie-check</button>
@@ -1381,6 +1400,9 @@
         const authRoleSwitcher = document.getElementById("auth-role-switcher");
         const authSwitchRole = document.getElementById("auth-switch-role");
         const authLogout = document.getElementById("auth-logout");
+        const accessControlMode = document.getElementById("access-control-mode");
+        const accessModeReset = document.getElementById("access-mode-reset");
+        const adminAccessControlText = document.getElementById("admin-access-control-text");
         const adminNavLinks = [...document.querySelectorAll(".admin-sidebar-nav a")];
         const adminLoadButton = document.getElementById("admin-load");
         const adminAccessMessage = document.getElementById("admin-access-message");
@@ -1822,6 +1844,11 @@
         const prepareAccountRequestProfilesButton = document.getElementById("prepare-account-request-profiles");
         const testSessionProfileMappingButton = document.getElementById("test-session-profile-mapping");
         const testProfileCustomerLinkButton = document.getElementById("test-profile-customer-link");
+        const testAdminAccessButton = document.getElementById("test-admin-access");
+        const testCustomerPortalAccessButton = document.getElementById("test-customer-portal-access");
+        const testSalesNavigationButton = document.getElementById("test-sales-navigation");
+        const testSupportNavigationButton = document.getElementById("test-support-navigation");
+        const testDeveloperNavigationButton = document.getElementById("test-developer-navigation");
         const viewMigrationPlanButton = document.getElementById("view-migration-plan");
         const viewPlannedTablesButton = document.getElementById("view-planned-tables");
         const runSupabaseMigrationCheckButton = document.getElementById("run-supabase-migration-check");
@@ -3029,6 +3056,7 @@
             authService: await import("./src/services/authService.js"),
             authProfileService: await import("./src/services/authProfileService.js"),
             routeGuardService: await import("./src/services/routeGuardService.js"),
+            accessControlTestService: await import("./src/services/accessControlTestService.js"),
           };
           return state.developerModules;
         }
@@ -4146,6 +4174,107 @@
           ]);
         }
 
+        async function applyAccessControl() {
+          try {
+            const modules = await loadDeveloperModules();
+            const context = modules.routeGuardService.getAccessContext();
+            const decision = modules.routeGuardService.requireAuth({ pageName: "admin-dashboard", mode: context.mode, allowDemo: true });
+            const visibleItems = modules.authService.getVisibleNavigationItems().map((item) => item.id);
+            let filteredNavigationCount = 0;
+            if (accessControlMode.value !== context.mode) accessControlMode.value = context.mode;
+            adminAccessControlText.textContent = `${context.mode.toUpperCase()} mode - rol: ${context.role || "geen sessie"} - ${decision.allowed ? "admin voorbereid" : decision.reason}`;
+            adminNavLinks.forEach((link) => {
+              const id = link.getAttribute("href")?.replace("#", "");
+              const alwaysVisible = id === "dashboard";
+              const visible = alwaysVisible || visibleItems.includes(id);
+              if (!visible) filteredNavigationCount += 1;
+              link.hidden = !visible;
+              link.setAttribute("aria-hidden", visible ? "false" : "true");
+            });
+            const developerAllowed = modules.routeGuardService.canShowDeveloperTools();
+            const migrationAllowed = modules.routeGuardService.canShowMigrationTools();
+            developerToolsCard.hidden = !isDeveloperModeEnabled() || !developerAllowed;
+            let blockedActionCount = 0;
+            document.querySelectorAll("[id*='migration'], #start-customer-live-migration, #run-supabase-write-test, #create-supabase-test-customer, #update-supabase-test-customer, #delete-supabase-test-customer").forEach((button) => {
+              if (!(button instanceof HTMLButtonElement)) return;
+              if (!migrationAllowed) {
+                button.dataset.accessGuarded = "true";
+                button.disabled = true;
+                button.title = "Deze technische actie vereist admin/developer permissie.";
+                blockedActionCount += 1;
+              } else if (button.dataset.accessGuarded === "true") {
+                button.disabled = false;
+                button.title = "";
+                delete button.dataset.accessGuarded;
+              }
+            });
+            document.querySelectorAll(".button.danger, #demo-wipe-all, #setting-developer-mode, #setting-data-provider-mode").forEach((element) => {
+              const allowed = modules.authService.hasPermission("settings", "update") || modules.authService.hasPermission("developerTools", "migrate");
+              if (element instanceof HTMLButtonElement || element instanceof HTMLInputElement || element instanceof HTMLSelectElement) {
+                if (!allowed) {
+                  element.dataset.accessGuarded = "true";
+                  element.disabled = true;
+                  element.title = "Deze actie is verborgen/geblokkeerd in soft access-control voor deze rol.";
+                  blockedActionCount += 1;
+                } else if (element.dataset.accessGuarded === "true") {
+                  element.disabled = false;
+                  element.title = "";
+                  delete element.dataset.accessGuarded;
+                }
+              }
+            });
+            if (!decision.allowed) {
+              modules.routeGuardService.showAccessWarning(decision.reason, { pageName: "admin-dashboard", mode: context.mode, target: document.querySelector(".admin-crm-main") });
+            }
+            if (filteredNavigationCount) {
+              modules.activityLogService.logActivity("access", "navigation", "role_navigation_filtered", { role: context.role, mode: context.mode, filteredNavigationCount });
+            }
+            if (blockedActionCount) {
+              modules.activityLogService.logActivity("access", "actions", "action_guard_blocked", { role: context.role, mode: context.mode, blockedActionCount });
+            }
+          } catch (error) {
+            console.error("Access control could not be applied", error);
+            adminAccessControlText.textContent = "Access control kon niet worden geladen. Soft mode blijft uitgangspunt.";
+          }
+        }
+
+        function renderAccessControlReadiness(modules) {
+          const summary = modules.accessControlTestService.getAccessControlReadinessSummary();
+          appendDeveloperCard("Access control readiness", [
+            ["Access mode", summary.accessMode],
+            ["Sessie/profile", summary.currentContext.profile?.email || summary.currentContext.user?.email || "Geen sessie"],
+            ["Rol", summary.currentContext.role || "-"],
+            ["Permissions", summary.permissionsStatus],
+            ["Route guard", summary.routeGuardStatus],
+            ["Customer access", summary.customerAccessStatus],
+            ["Hard-ready routes", summary.hardReadyRoutes.join(", ") || "-"],
+            ["Soft-only routes", summary.softOnlyRoutes.join(", ") || "-"],
+          ]);
+          appendDeveloperCard("Protected routes", summary.protectedRoutes.map((route) => [
+            route.pageName,
+            `${route.path} - ${route.hardReady ? "hard-ready" : "soft-only"}${route.public ? " - publiek" : ""}`,
+          ]));
+          appendDeveloperCard("Laatste access decisions", summary.latestDecisions.length
+            ? summary.latestDecisions.map((activity) => [activity.action || "access", `${activity.metadata?.pageName || activity.entityId || "-"} - ${formatDate(activity.createdAt)}`])
+            : ["Nog geen access decisions gelogd."]);
+        }
+
+        function renderAccessControlTestResult(result = {}) {
+          appendDeveloperCard("Access control self-test", [
+            ["Getest op", result.testedAt ? formatDate(result.testedAt) : "-"],
+            ["Registry routes", String(result.registry?.count || 0)],
+            ["Registry ok", result.registry?.ok ? "Ja" : "Nee"],
+            ["Access mode", result.settings?.mode || "-"],
+            ["Customer scenario", result.customerAccess?.mismatch?.decision || "-"],
+          ]);
+          (result.roles || []).forEach((roleResult) => {
+            appendDeveloperCard(`Role navigation ${roleResult.role}`, roleResult.decisions.map((decision) => [
+              decision.pageName,
+              decision.allowed ? "Toegestaan" : decision.decision || "Geblokkeerd",
+            ]));
+          });
+        }
+
         function renderProfileReadiness(modules) {
           const summary = modules.authProfileService.getProfileReadinessSummary();
           const routeReadiness = modules.routeGuardService.getRouteAccessReadiness();
@@ -4347,6 +4476,7 @@
             renderRollbackPreparation(liveCustomerReadiness);
             renderAuthProviderStatus(modules.authService);
             renderProfileReadiness(modules);
+            renderAccessControlReadiness(modules);
             appendDeveloperCard("Auth sessie", [
               ["Gebruiker", user?.name || user?.email || "Geen sessie"],
               ["Rol", permissionPreview.roleLabel],
@@ -4364,6 +4494,7 @@
               : ["Nog geen activiteit gelogd."]);
             if (extra.showAccountRequests) renderAccountRequestsList(modules.authService);
             if (extra.profileActionResult) renderProfileActionResult(extra.profileActionResult);
+            if (extra.accessControlTestResult) renderAccessControlTestResult(extra.accessControlTestResult);
             if (extra.supabaseReadOnlyResult) renderSupabaseReadOnlyResult(extra.supabaseReadOnlyTitle || "Supabase read-only resultaat", extra.supabaseReadOnlyResult);
             if (extra.supabaseWriteTestResult) renderSupabaseWriteTestResult(extra.supabaseWriteTestResult);
             if (extra.supabaseCustomerRows) {
@@ -4463,6 +4594,7 @@
             const { session } = authService.loginDemoUser(role);
             state.developerModules.activityLogService.logActivity("auth", session.userId, "role_switch", { role: session.role });
             await renderAuthSession();
+            await applyAccessControl();
             await renderDeveloperToolsSummary();
             setSettingsMessage(`Demo rol actief: ${authService.getRoleLabel(session.role)}.`, "success");
           } catch (error) {
@@ -4476,6 +4608,7 @@
             const { authService } = await loadDeveloperModules();
             authService.logout();
             await renderAuthSession();
+            await applyAccessControl();
             await renderDeveloperToolsSummary();
             setSettingsMessage("Demo sessie beëindigd.", "success");
           } catch (error) {
@@ -4489,6 +4622,7 @@
             const { authService } = await loadDeveloperModules();
             const users = authService.seedDemoUsers();
             await renderAuthSession();
+            await applyAccessControl();
             await renderDeveloperToolsSummary();
             setSettingsMessage(`${users.length} demo users voorbereid.`, "success");
           } catch (error) {
@@ -4570,6 +4704,53 @@
           } catch (error) {
             console.error("Profile customer link test failed", error);
             setSettingsMessage(error.message || "Profile/customer link-test mislukt.", "error");
+          }
+        }
+
+        async function runAccessControlTestHandler(test = "all") {
+          try {
+            const modules = await loadDeveloperModules();
+            let result = null;
+            if (test === "admin") {
+              result = { testedAt: new Date().toISOString(), roles: [{ role: "current", decisions: [modules.routeGuardService.getAccessDecision("admin-dashboard", modules.routeGuardService.getAccessContext())] }], registry: modules.accessControlTestService.testProtectedRoutesRegistry(), settings: modules.routeGuardService.getAccessControlSettings(), customerAccess: modules.accessControlTestService.testCustomerAccessScenario() };
+            } else if (test === "customer") {
+              result = { testedAt: new Date().toISOString(), roles: [{ role: "current", decisions: [modules.routeGuardService.requireCustomerAccess(selectedCustomer()?.id || "demo-customer", { mode: "preview", pageName: "klantportaal", allowDemo: true })] }], registry: modules.accessControlTestService.testProtectedRoutesRegistry(), settings: modules.routeGuardService.getAccessControlSettings(), customerAccess: modules.accessControlTestService.testCustomerAccessScenario() };
+            } else if (["sales", "support", "developer"].includes(test)) {
+              result = { testedAt: new Date().toISOString(), roles: [{ role: test, decisions: modules.accessControlTestService.testRoleAccess(test) }], registry: modules.accessControlTestService.testProtectedRoutesRegistry(), settings: modules.routeGuardService.getAccessControlSettings(), customerAccess: modules.accessControlTestService.testCustomerAccessScenario() };
+            } else {
+              result = modules.accessControlTestService.runAccessControlSelfTest();
+            }
+            await renderDeveloperToolsSummary({ accessControlTestResult: result });
+            setSettingsMessage("Access control test uitgevoerd.", "success");
+          } catch (error) {
+            console.error("Access control test failed", error);
+            setSettingsMessage(error.message || "Access control test kon niet worden uitgevoerd.", "error");
+          }
+        }
+
+        async function updateAccessMode(mode) {
+          try {
+            const modules = await loadDeveloperModules();
+            modules.routeGuardService.setAccessControlMode(mode);
+            await applyAccessControl();
+            await renderDeveloperToolsSummary();
+            setSettingsMessage(`Access mode ingesteld op ${mode}.`, "success");
+          } catch (error) {
+            console.error("Access mode update failed", error);
+            setSettingsMessage("Access mode kon niet worden bijgewerkt.", "error");
+          }
+        }
+
+        async function resetAccessModeHandler() {
+          try {
+            const modules = await loadDeveloperModules();
+            modules.routeGuardService.resetAccessControlMode();
+            await applyAccessControl();
+            await renderDeveloperToolsSummary();
+            setSettingsMessage("Access mode teruggezet naar soft.", "success");
+          } catch (error) {
+            console.error("Access mode reset failed", error);
+            setSettingsMessage("Access mode kon niet worden gereset.", "error");
           }
         }
 
@@ -6233,6 +6414,7 @@
           renderProductionReadiness();
           renderDeveloperMode();
           renderAuthSession();
+          applyAccessControl();
           const journeyId = latestDemoJourneyId();
           demoActions.openLatestJourney.href = journeyId ? `demo-klantreis.html?demoJourneyId=${encodeURIComponent(journeyId)}` : "#";
           demoActions.openLatestJourney.classList.toggle("is-disabled", !journeyId);
@@ -13235,10 +13417,17 @@
         runDataValidation.addEventListener("click", runDataValidationHandler);
         seedDemoUsersButton.addEventListener("click", seedDemoUsersHandler);
         clearDemoSessionButton.addEventListener("click", logoutDemoSession);
+        accessControlMode.addEventListener("change", () => updateAccessMode(accessControlMode.value));
+        accessModeReset.addEventListener("click", resetAccessModeHandler);
         viewAccountRequestsButton.addEventListener("click", showAccountRequestsHandler);
         prepareAccountRequestProfilesButton.addEventListener("click", prepareAccountRequestProfilesHandler);
         testSessionProfileMappingButton.addEventListener("click", testSessionProfileMappingHandler);
         testProfileCustomerLinkButton.addEventListener("click", testProfileCustomerLinkHandler);
+        testAdminAccessButton.addEventListener("click", () => runAccessControlTestHandler("admin"));
+        testCustomerPortalAccessButton.addEventListener("click", () => runAccessControlTestHandler("customer"));
+        testSalesNavigationButton.addEventListener("click", () => runAccessControlTestHandler("sales"));
+        testSupportNavigationButton.addEventListener("click", () => runAccessControlTestHandler("support"));
+        testDeveloperNavigationButton.addEventListener("click", () => runAccessControlTestHandler("developer"));
         viewMigrationPlanButton.addEventListener("click", showMigrationPlanHandler);
         viewPlannedTablesButton.addEventListener("click", showPlannedTablesHandler);
         runSupabaseMigrationCheckButton.addEventListener("click", runSupabaseMigrationCheckHandler);
@@ -13353,6 +13542,7 @@
         renderIntegrations();
         renderSystemStatus();
         syncActiveNav();
+        applyAccessControl();
         loadChangeRequests();
         loadCRMData(false);
       })();
