@@ -274,7 +274,7 @@ Resultaat:
 
 - Repo templates bevatten de belangrijkste Supabase, Admin, Resend, Mollie en URL keys.
 - Runtime/functions gebruiken dezelfde kernkeys.
-- Extra runtime keys gevonden die niet in de templates staan: `EMAIL_PROVIDER`, `BASE_URL`, `MOLLIE_MODE`, `MOLLIE_TEST_API_KEY`.
+- Extra runtime keys gevonden en toegevoegd aan de env templates: `EMAIL_PROVIDER`, `BASE_URL`, `MOLLIE_MODE`, `MOLLIE_TEST_API_KEY`.
 - Lokale repo bevat geen Netlify CLI, geen `.netlify/state.json`, geen `NETLIFY_AUTH_TOKEN` en geen `NETLIFY_SITE_ID`.
 - Daardoor kon de echte Netlify environment variable configuratie per deploy context niet automatisch worden uitgelezen.
 
@@ -302,14 +302,14 @@ Open blocker update:
 | `env_vars_verified` | blocked | Repo/templates/runtime geaudit; Netlify live contexten niet uitleesbaar vanuit lokale repo | Handmatig Netlify UI/API export controleren en contextstatus vastleggen |
 | `netlify_functions_runtime` | pending | Function env usage in kaart gebracht; runtime context secrets niet bewezen | Test minimaal één function in de beoogde deploy context |
 | `resend_readiness` | pending | `RESEND_API_KEY`, `FROM_EMAIL`, `ADMIN_EMAIL`, `LEAD_*` vereist/optioneel in kaart | Bevestig contexten en testmail of markeer not_applicable |
-| `mollie_readiness` | pending | `MOLLIE_API_KEY`; extra keys `MOLLIE_MODE`, `MOLLIE_TEST_API_KEY`, `BASE_URL` gevonden | Bevestig contexten en testmodus of markeer not_applicable |
+| `mollie_readiness` | pending | `MOLLIE_API_KEY`, `MOLLIE_MODE`, `MOLLIE_TEST_API_KEY` en `BASE_URL` staan nu in templates | Bevestig contexten en testmodus of markeer not_applicable |
 
 Next actions:
 
 1. Open Netlify > Site configuration > Environment variables.
 2. Controleer per key alleen aanwezigheid en deploy context, geen waarden kopiëren.
 3. Leg vast of `SUPABASE_SERVICE_ROLE_KEY` alleen production heeft of ook test/preview.
-4. Voeg ontbrekende templatekeys toe of markeer `EMAIL_PROVIDER`, `BASE_URL`, `MOLLIE_MODE`, `MOLLIE_TEST_API_KEY` bewust optioneel.
+4. Bevestig of `EMAIL_PROVIDER`, `BASE_URL`, `MOLLIE_MODE` en `MOLLIE_TEST_API_KEY` per context nodig zijn of bewust optioneel/not_applicable.
 5. Houd release `NO-GO` totdat `env_vars_verified` handmatig approved is.
 
 ## Bewijsregels

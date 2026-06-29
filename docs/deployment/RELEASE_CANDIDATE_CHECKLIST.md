@@ -114,10 +114,10 @@ Controleer in Netlify per deploy context zonder waarden te kopiëren.
 | `LEAD_FROM_EMAIL` | ja | ja | te bevestigen | te bevestigen indien leadtest | te bevestigen indien leadtest | optioneel | Leadmail-afzender valt terug of faalt |
 | `MOLLIE_API_KEY` | ja | ja | alleen live key bij production GO | niet gebruiken of testkey apart | niet gebruiken of testkey apart | niet gebruiken of testkey | Betaalverzoeken/webhooks falen of raken verkeerde Mollie omgeving |
 | `MOLLIE_WEBHOOK_SECRET` | ja in template | beperkt/optioneel | te bevestigen indien webhookvalidatie actief is | optioneel test | optioneel test | optioneel | Webhookvalidatie kan incompleet zijn |
-| `EMAIL_PROVIDER` | ontbreekt in templates | ja | optioneel, default `resend` | optioneel | optioneel | optioneel | Provider-keuze niet expliciet |
-| `BASE_URL` | ontbreekt in templates | ja, `mollie-products.js` | te bevestigen of vervangen door `SITE_URL`-strategie | contextspecifiek | contextspecifiek | optioneel | Product/payment links kunnen fallback gebruiken |
-| `MOLLIE_MODE` | ontbreekt in templates | ja, `mollie-products.js` | `live` pas bij GO | `test` indien gebruikt | `test` indien gebruikt | `test` | Verkeerde Mollie key-selectie |
-| `MOLLIE_TEST_API_KEY` | ontbreekt in templates | ja, `mollie-products.js` | optioneel/niet production | te bevestigen indien Mollie test | te bevestigen indien Mollie test | optioneel | Mollie testproducten werken niet |
+| `EMAIL_PROVIDER` | ja | ja | optioneel, default `resend` | optioneel | optioneel | optioneel | Provider-keuze niet expliciet |
+| `BASE_URL` | ja | ja, `mollie-products.js` | te bevestigen of vervangen door `SITE_URL`-strategie | contextspecifiek | contextspecifiek | lokaal via `.env.local` | Product/payment links kunnen fallback gebruiken |
+| `MOLLIE_MODE` | ja | ja, `mollie-products.js` | `live` pas bij GO | `test` indien gebruikt | `test` indien gebruikt | `test` | Verkeerde Mollie key-selectie |
+| `MOLLIE_TEST_API_KEY` | ja | ja, `mollie-products.js` | optioneel/niet production | te bevestigen indien Mollie test | te bevestigen indien Mollie test | optioneel | Mollie testproducten werken niet |
 
 ### Service Role Key Context Beoordeling
 
@@ -136,7 +136,7 @@ Risico-inschatting:
 - Middel voor release readiness zolang niet handmatig bevestigd is welke context de key heeft.
 - Hoog als production functions live moeten werken maar de key alleen in een niet-production context staat.
 
-## Ontbrekende Keys T.o.v. Templates En Runtime
+## Template Coverage T.o.v. Runtime
 
 Aanwezig in `.env.example` en `.env.local.example`:
 
@@ -152,15 +152,19 @@ Aanwezig in `.env.example` en `.env.local.example`:
 - `SITE_URL`
 - `CLIENT_PORTAL_REDIRECT_URL`
 - `ADMIN_REDIRECT_URL`
+- `EMAIL_PROVIDER`
 - `RESEND_API_KEY`
 - `FROM_EMAIL`
 - `ADMIN_EMAIL`
 - `LEAD_TO_EMAIL`
 - `LEAD_FROM_EMAIL`
+- `BASE_URL`
+- `MOLLIE_MODE`
 - `MOLLIE_API_KEY`
+- `MOLLIE_TEST_API_KEY`
 - `MOLLIE_WEBHOOK_SECRET`
 
-Gebruikt door functions maar ontbreekt in de env templates:
+Eerder gevonden als runtime-only en nu toegevoegd aan `.env.example` en `.env.local.example`:
 
 - `EMAIL_PROVIDER`
 - `BASE_URL`
@@ -172,7 +176,7 @@ Aanbevolen next actions:
 1. Bevestig in Netlify UI per key in welke context deze aanwezig is: production, deploy preview, branch deploy en eventueel local/dev.
 2. Noteer alleen `present/missing/not_applicable`, nooit waarden.
 3. Beslis of `SUPABASE_SERVICE_ROLE_KEY` alleen production krijgt of ook een aparte test/preview context.
-4. Voeg ontbrekende runtime keys toe aan de templates of markeer ze bewust optioneel/not_applicable.
+4. Bevestig of de toegevoegde runtime keys per context nodig zijn of bewust `not_applicable`.
 5. Test minimaal één Netlify Function in de context waarin production straks draait.
 
 ## Rollback Approval
