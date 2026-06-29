@@ -6557,6 +6557,11 @@ h3 {
   grid-template-columns: minmax(340px, 1.15fr) minmax(300px, 0.85fr);
 }
 
+.portal-auth-shell-wide:not(.is-developer-mode) {
+  grid-template-columns: minmax(0, 620px);
+  justify-content: center;
+}
+
 .portal-shell {
   display: grid;
   gap: clamp(22px, 3vw, 34px);
@@ -6574,8 +6579,8 @@ h3 {
 
 .portal-auth-card {
   display: grid;
-  gap: 28px;
-  padding: clamp(24px, 4vw, 42px);
+  gap: clamp(30px, 4vw, 42px);
+  padding: clamp(28px, 4vw, 48px);
 }
 
 .portal-auth-card h1,
@@ -6608,14 +6613,46 @@ h3 {
   line-height: 1.65;
 }
 
+.portal-login-status-card {
+  display: grid;
+  gap: 8px;
+  padding: clamp(16px, 3vw, 22px);
+  border: 1px solid rgba(37, 99, 235, 0.34);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.2), rgba(25, 194, 255, 0.08)),
+    rgba(255, 255, 255, 0.07);
+  box-shadow: 0 18px 44px rgba(8, 18, 38, 0.22);
+}
+
+.portal-login-status-card span {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.portal-login-status-card strong {
+  color: var(--white);
+  font-size: clamp(18px, 2.4vw, 24px);
+  line-height: 1.2;
+}
+
+.portal-login-status-card p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.74);
+  line-height: 1.65;
+}
+
 .portal-login-form {
   display: grid;
-  gap: 16px;
+  gap: 22px;
 }
 
 .portal-login-form label {
   display: grid;
-  gap: 8px;
+  gap: 10px;
   color: rgba(255, 255, 255, 0.7);
   font-size: 13px;
   font-weight: 900;
@@ -6644,7 +6681,7 @@ h3 {
 .portal-auth-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px;
   padding: 6px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
@@ -6674,7 +6711,7 @@ h3 {
 
 .portal-auth-panel {
   display: grid;
-  gap: 16px;
+  gap: 22px;
 }
 
 .portal-demo-role-grid {
