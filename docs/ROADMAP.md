@@ -525,3 +525,26 @@ Niet te vroeg bouwen:
 - leadfinder met externe databronnen.
 - klantportaal live zonder harde Auth/RLS.
 - nieuwe SQL uitvoeren zonder aparte expliciete fase.
+
+## Fase 16 - Klantportaal afronden
+
+Afgerond als demo/local/hybrid klantportaaluitbreiding:
+
+- compleet klantdashboard met extra KPI's
+- projectstatus met voortgang en tijdlijn
+- wijzigingsverzoeken
+- berichten
+- notificaties
+- Supabase/data-readiness per module
+
+Nieuwe localStorage voorbereiding:
+
+- `maxwebstudioChangeRequests`
+- `maxwebstudioClientPortalMessages`
+- `maxwebstudioClientPortalNotifications`
+
+Volgende logische stappen:
+
+1. Klantportaal testdata/seeder uitbreiden met berichten, notificaties en wijzigingsverzoeken.
+2. Daarna live Auth/RLS/customer isolation opnieuw valideren.
+3. Daarna Supabase-read voor klantportaalmodules gecontroleerd activeren.

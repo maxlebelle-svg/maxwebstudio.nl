@@ -536,3 +536,37 @@ Te valideren:
 - offertes, facturen, projecten, websites, bestanden en abonnementen blijven klantveilig
 
 Resultaten horen in `/docs/deployment/TEST_RESULTS.md`. De blocker `customer_isolation_test_completed` blijft open totdat deze tests echt zijn uitgevoerd.
+
+## Fase 16 - Klantportaal afronden
+
+Het demo/local klantportaal op `/klantportaal.html?customerId=...` is uitgebreid naar een completer klantdashboard.
+
+Toegevoegd aan het portaal:
+
+- extra KPI's voor wijzigingsverzoeken, berichten en notificaties
+- notificatieblok met afgeleide updates uit open facturen, lopende projecten en open wijzigingsverzoeken
+- wijzigingsverzoekenoverzicht
+- berichtenblok
+- projectvoortgang met progressbar en klantvriendelijke tijdlijn
+- Supabase/data-readiness blok met databronnen per module
+
+Nieuwe localStorage keys:
+
+- `maxwebstudioChangeRequests`
+- `maxwebstudioClientPortalMessages`
+- `maxwebstudioClientPortalNotifications`
+
+Belangrijk:
+
+- Er zijn geen klantportaal-writes toegevoegd.
+- Berichten en notificaties blijven local/demo of afgeleid uit bestaande klantdata.
+- De service `clientPortalDataService` sanitizet klantportaaldata en toont geen interne notities.
+- Supabase blijft voorbereid via `demo`, `local`, `supabase-read` en `hybrid`, maar live Auth/RLS blijft vereist voordat echte klantdata breed gebruikt mag worden.
+
+Nog niet live:
+
+- geen echte klantberichten via backend
+- geen realtime notificaties
+- geen klantportaal writes
+- geen harde productie-routeguard
+- geen live Supabase Storage downloads voor alle lokale file metadata

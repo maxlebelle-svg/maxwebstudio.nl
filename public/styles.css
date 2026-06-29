@@ -6778,7 +6778,7 @@ h3 {
 }
 
 .customer-portal-kpis {
-  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
 
 .customer-portal-profile {
@@ -7019,6 +7019,49 @@ h3 {
 
 .customer-portal-card .portal-actions {
   justify-content: flex-start;
+}
+
+.portal-progress {
+  width: 100%;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.portal-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--blue), #19c2ff);
+}
+
+.portal-mini-timeline {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.portal-mini-timeline li {
+  position: relative;
+  padding-left: 16px;
+}
+
+.portal-mini-timeline li::before {
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #19c2ff;
+  content: "";
 }
 
 .portal-file-list .button {

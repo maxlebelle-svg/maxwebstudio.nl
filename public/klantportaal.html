@@ -42,9 +42,17 @@
         <article class="admin-card metric-card"><span>Lopende projecten</span><strong id="metric-projects">0</strong><small>Niet afgerond</small></article>
         <article class="admin-card metric-card"><span>Actieve websites</span><strong id="metric-websites">0</strong><small>Online of actief</small></article>
         <article class="admin-card metric-card"><span>Actieve abonnementen</span><strong id="metric-subscriptions">0</strong><small>Onderhoud actief</small></article>
+        <article class="admin-card metric-card"><span>Wijzigingsverzoeken</span><strong id="metric-change-requests">0</strong><small>Open aanvragen</small></article>
+        <article class="admin-card metric-card"><span>Berichten</span><strong id="metric-messages">0</strong><small>Ongelezen</small></article>
+        <article class="admin-card metric-card"><span>Notificaties</span><strong id="metric-notifications">0</strong><small>Aandachtspunten</small></article>
       </section>
 
       <section class="admin-card customer-portal-profile" id="customer-profile" aria-live="polite"></section>
+
+      <section class="admin-section">
+        <div class="admin-section-heading"><div><p class="section-kicker">Notificaties</p><h2>Belangrijke updates</h2></div></div>
+        <div class="portal-card-grid" id="portal-notifications" aria-live="polite"></div>
+      </section>
 
       <section class="admin-section">
         <div class="admin-section-heading"><div><p class="section-kicker">Offertes</p><h2>Jouw offertes</h2></div></div>
@@ -67,6 +75,16 @@
       </section>
 
       <section class="admin-section">
+        <div class="admin-section-heading"><div><p class="section-kicker">Wijzigingen</p><h2>Wijzigingsverzoeken</h2></div></div>
+        <div class="portal-table" id="portal-change-requests" aria-live="polite"></div>
+      </section>
+
+      <section class="admin-section">
+        <div class="admin-section-heading"><div><p class="section-kicker">Berichten</p><h2>Berichten van Max Webstudio</h2></div></div>
+        <div class="portal-card-grid" id="portal-messages" aria-live="polite"></div>
+      </section>
+
+      <section class="admin-section">
         <div class="admin-section-heading"><div><p class="section-kicker">Websites</p><h2>Jouw websites</h2></div></div>
         <div class="portal-card-grid" id="portal-websites" aria-live="polite"></div>
       </section>
@@ -74,6 +92,11 @@
       <section class="admin-section">
         <div class="admin-section-heading"><div><p class="section-kicker">Bestanden</p><h2>Bestanden & links</h2></div></div>
         <div class="portal-card-grid" id="portal-files" aria-live="polite"></div>
+      </section>
+
+      <section class="admin-section">
+        <div class="admin-section-heading"><div><p class="section-kicker">Readiness</p><h2>Voorbereid op live klantdata</h2></div></div>
+        <div class="portal-card-grid" id="portal-readiness" aria-live="polite"></div>
       </section>
     </main>
 
@@ -96,8 +119,12 @@
         const invoiceList = document.getElementById("portal-invoices");
         const subscriptionList = document.getElementById("portal-subscriptions");
         const projectList = document.getElementById("portal-projects");
+        const changeRequestList = document.getElementById("portal-change-requests");
+        const messageList = document.getElementById("portal-messages");
+        const notificationList = document.getElementById("portal-notifications");
         const websiteList = document.getElementById("portal-websites");
         const fileList = document.getElementById("portal-files");
+        const readinessList = document.getElementById("portal-readiness");
         const metrics = {
           quotes: document.getElementById("metric-quotes"),
           invoices: document.getElementById("metric-invoices"),
@@ -105,6 +132,9 @@
           projects: document.getElementById("metric-projects"),
           websites: document.getElementById("metric-websites"),
           subscriptions: document.getElementById("metric-subscriptions"),
+          changeRequests: document.getElementById("metric-change-requests"),
+          messages: document.getElementById("metric-messages"),
+          notifications: document.getElementById("metric-notifications"),
         };
 
         const money = (value) => new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(Number(value || 0));
@@ -290,6 +320,27 @@
           return card;
         }
 
+        function createProgress(value) {
+          const progress = document.createElement("div");
+          progress.className = "portal-progress";
+          const bar = document.createElement("span");
+          const safeValue = Math.max(0, Math.min(Number(value || 0), 100));
+          bar.style.width = `${safeValue}%`;
+          progress.append(bar);
+          return progress;
+        }
+
+        function createTimeline(items = []) {
+          const timeline = document.createElement("ol");
+          timeline.className = "portal-mini-timeline";
+          items.filter(Boolean).slice(0, 4).forEach((item) => {
+            const entry = document.createElement("li");
+            entry.textContent = item;
+            timeline.append(entry);
+          });
+          return timeline;
+        }
+
         function quoteUrl(quote) {
           const query = new URLSearchParams();
           if (quote.id) query.set("quoteId", quote.id);
@@ -330,13 +381,13 @@
 
         const payload = await getClientPortalData(customerId, { supabaseCustomerId, mode: portalDataMode });
         updateSourceMessage(payload);
-        const { customer, websites, projects, files, invoices, subscriptions, quotes, metrics: portalMetrics } = payload;
+        const { customer, websites, projects, files, invoices, subscriptions, quotes, changeRequests, messages, notifications, metrics: portalMetrics, sourceSummary } = payload;
 
         if (!customer) {
           portalTitle.textContent = "Klant niet gevonden";
           portalSubtitle.textContent = "Open het klantportaal opnieuw vanuit het admin-dashboard.";
           customerProfile.append(createEmpty("Geen klantdata", payload.warnings?.[0] || "Deze klant staat niet in de gekozen klantportaal-bron."));
-          [quoteList, invoiceList, subscriptionList, projectList, websiteList, fileList].forEach((target) => target.append(createEmpty("Geen data", "Geen klant geselecteerd.")));
+          [quoteList, invoiceList, subscriptionList, projectList, changeRequestList, messageList, notificationList, websiteList, fileList, readinessList].forEach((target) => target.append(createEmpty("Geen data", "Geen klant geselecteerd.")));
           return;
         }
 
@@ -348,6 +399,9 @@
         metrics.projects.textContent = String(portalMetrics.runningProjects || 0);
         metrics.websites.textContent = String(portalMetrics.activeWebsites || 0);
         metrics.subscriptions.textContent = String(portalMetrics.activeSubscriptions || 0);
+        metrics.changeRequests.textContent = String(portalMetrics.openChangeRequests || 0);
+        metrics.messages.textContent = String(portalMetrics.unreadMessages || 0);
+        metrics.notifications.textContent = String(portalMetrics.unreadNotifications || 0);
 
         customerProfile.append(createInfoCard("Klantgegevens", [
           ["Naam", customer.name],
@@ -405,14 +459,59 @@
           ]));
         });
 
+        if (!notifications.length) notificationList.append(createEmpty("Geen notificaties", "Belangrijke updates over projecten, facturen en wijzigingen verschijnen hier."));
+        notifications.forEach((notification) => {
+          notificationList.append(createInfoCard(notification.title || "Notificatie", [
+            ["Status", createBadge(notification.status || "nieuw")],
+            ["Type", notification.type || "-"],
+            ["Datum", formatDate(notification.createdAt)],
+            ["Actie nodig voor", formatDate(notification.dueAt)],
+            ["Bericht", notification.body || "-"],
+          ], [
+            createActionLink(notification.actionLabel || "Openen", notification.actionUrl || "")
+          ]));
+        });
+
         if (!projects.length) projectList.append(createEmpty("Geen projecten", "Er staan nog geen projecten klaar voor dit klantprofiel."));
         projects.forEach((project) => {
-          projectList.append(createInfoCard(project.name || "Project", [
+          const card = createInfoCard(project.name || project.projectName || "Project", [
             ["Status", createBadge(project.status)],
             ["Fase", project.phase],
             ["Startdatum", formatDate(project.startDate)],
             ["Verwachte oplevering", formatDate(project.deadline)],
             ["Voortgang", `${project.progress || 0}%`],
+          ]);
+          card.append(createProgress(project.progress || 0));
+          card.append(createTimeline([
+            project.startDate ? `Gestart op ${formatDate(project.startDate)}` : "",
+            project.phase ? `Huidige fase: ${project.phase}` : "",
+            project.updatedAt ? `Laatste update: ${formatDate(project.updatedAt)}` : "",
+            project.deadline ? `Verwachte oplevering: ${formatDate(project.deadline)}` : "",
+          ]));
+          projectList.append(card);
+        });
+
+        renderTable(changeRequestList, changeRequests, ["Verzoek", "Status", "Categorie", "Prioriteit", "Datum", "Omschrijving"], (request) => {
+          const row = document.createElement("div");
+          row.className = "admin-table-row portal-customer-row";
+          row.append(
+            Object.assign(document.createElement("span"), { textContent: request.title || "Wijzigingsverzoek" }),
+            createBadge(request.status || "nieuw"),
+            Object.assign(document.createElement("span"), { textContent: request.category || request.changeCategory || "-" }),
+            Object.assign(document.createElement("span"), { textContent: request.priority || "Normaal" }),
+            Object.assign(document.createElement("span"), { textContent: formatDate(request.createdAt || request.created_at) }),
+            Object.assign(document.createElement("span"), { textContent: request.description || "-" })
+          );
+          return row;
+        }, "Geen wijzigingsverzoeken", "Nieuwe wijzigingsverzoeken verschijnen hier zodra ze aan je klantprofiel gekoppeld zijn.");
+
+        if (!messages.length) messageList.append(createEmpty("Geen berichten", "Berichten van Max Webstudio verschijnen hier zodra ze beschikbaar zijn."));
+        messages.forEach((message) => {
+          messageList.append(createInfoCard(message.subject || message.title || "Bericht", [
+            ["Afzender", message.sender || "Max Webstudio"],
+            ["Status", createBadge(message.status || (message.readAt ? "gelezen" : "nieuw"))],
+            ["Datum", formatDate(message.createdAt)],
+            ["Bericht", message.body || message.message || "-"],
           ]));
         });
 
@@ -444,6 +543,30 @@
             ["Locatie", location || "-"],
           ], [createActionLink("Openen", openable ? location : ""), copy]));
         });
+
+        const moduleLabels = {
+          customers: "Klantprofiel",
+          websites: "Websites",
+          projects: "Projecten",
+          quotes: "Offertes",
+          invoices: "Facturen",
+          subscriptions: "Abonnementen",
+          files: "Bestanden",
+          changeRequests: "Wijzigingsverzoeken",
+          messages: "Berichten",
+          notifications: "Notificaties",
+        };
+        const readinessPairs = Object.entries(sourceSummary?.modules || {}).map(([key, status]) => [
+          moduleLabels[key] || key,
+          `${status.count || 0} records - ${status.mode || "local"}${status.fallbackUsed ? " fallback" : ""}`,
+        ]);
+        readinessList.append(createInfoCard("Databronnen", [
+          ["Portaalmodus", sourceSummary?.mode || payload.mode],
+          ["Klantbron", sourceSummary?.customerSource || "-"],
+          ["Fallback gebruikt", sourceSummary?.fallbackUsed ? "Ja" : "Nee"],
+          ["Warnings", String(sourceSummary?.warningCount || 0)],
+          ...readinessPairs,
+        ]));
       })();
     </script>
   </body>

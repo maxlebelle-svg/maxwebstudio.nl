@@ -771,3 +771,31 @@ Resultaat:
 Volgende logische stap:
 
 - Public website live/source consistency en QA afronden, daarna de Supabase testomgeving en canonical CRM-datalijn verder hardmaken.
+
+## Fase 16 - Klantportaal afronden
+
+Status: klantportaal demo/local/hybrid verder afgerond zonder productie-aanpassingen, SQL of nieuwe externe koppelingen.
+
+Bijgewerkt:
+
+- `public/klantportaal.html`
+- `public/styles.css`
+- `public/src/config/storageKeys.js`
+- `public/src/services/clientPortalDataService.js`
+- `docs/CLIENT_PORTAL.md`
+
+Resultaat:
+
+- Het klantportaal toont nu naast klantgegevens, offertes, facturen, abonnementen, projecten, websites en bestanden ook wijzigingsverzoeken, berichten en notificaties.
+- Projecten tonen klantvriendelijke voortgang met progressbar en tijdlijn.
+- Notificaties worden deels afgeleid uit open facturen, lopende projecten en open wijzigingsverzoeken.
+- Nieuwe localStorage keys zijn voorbereid: `maxwebstudioChangeRequests`, `maxwebstudioClientPortalMessages` en `maxwebstudioClientPortalNotifications`.
+- De data-service blijft sanitizen en filtert op klantkoppeling/e-mailadres zonder interne admin-notities te tonen.
+- Supabase-readiness is zichtbaar per module in het klantportaal, zonder writes of productie-acties.
+
+Nog niet actief:
+
+- Geen echte realtime berichten.
+- Geen klantportaal writes.
+- Geen live Supabase Auth/RLS hardening.
+- Geen nieuwe backend of API keys.

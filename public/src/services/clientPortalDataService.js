@@ -14,12 +14,13 @@ export const CLIENT_PORTAL_DATA_MODES = Object.freeze({
   HYBRID: "hybrid",
 });
 
-const MODULES = Object.freeze(["customers", "websites", "projects", "quotes", "invoices", "subscriptions", "files"]);
+const MODULES = Object.freeze(["customers", "websites", "projects", "quotes", "invoices", "subscriptions", "files", "changeRequests", "messages", "notifications"]);
 const OPEN_QUOTE_STATUSES = new Set(["concept", "draft", "verzonden", "sent", "geaccepteerd", "accepted"]);
 const OPEN_INVOICE_STATUSES = new Set(["concept", "draft", "verzonden", "sent", "verlopen", "expired", "open"]);
 const RUNNING_PROJECT_EXCLUDED = new Set(["live", "onderhoud", "maintenance", "gepauzeerd", "paused", "gearchiveerd", "archived"]);
 const ACTIVE_WEBSITE_STATUSES = new Set(["online", "active", "actief", "live"]);
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(["actief", "active", "wacht_op_mandate", "mandate_required"]);
+const OPEN_CHANGE_REQUEST_EXCLUDED = new Set(["afgerond", "gereed", "done", "closed", "gearchiveerd", "archived"]);
 
 function readJson(key, fallback = null) {
   try {
@@ -85,6 +86,18 @@ function localFiles() {
   return readArray(STORAGE_KEYS.files).map((file) => ({ ...file, _source: file._source || "local" }));
 }
 
+function localChangeRequests() {
+  return readArray(STORAGE_KEYS.changeRequests).map((request) => ({ ...request, _source: request._source || "local" }));
+}
+
+function localMessages() {
+  return readArray(STORAGE_KEYS.clientPortalMessages).map((message) => ({ ...message, _source: message._source || "local" }));
+}
+
+function localNotifications() {
+  return readArray(STORAGE_KEYS.clientPortalNotifications).map((notification) => ({ ...notification, _source: notification._source || "local" }));
+}
+
 async function listModule(repository, collectionKey, mode) {
   if (!repository?.listByDataMode) {
     return { items: [], status: { mode, fallbackUsed: false, error: "", count: 0 } };
@@ -122,6 +135,7 @@ function identityValues(record = {}) {
     record.customerId,
     record.profileId,
     record.authUserId,
+    record.auth_user_id,
     record.supabaseCustomerId,
     record._supabaseCustomerId,
     record.customer_id,
@@ -130,6 +144,15 @@ function identityValues(record = {}) {
     record.metadata?.localStorageId,
     record._localCustomerId,
   ].filter(Boolean).map(String);
+}
+
+function emailValues(record = {}) {
+  return [
+    record.email,
+    record.customerEmail,
+    record.contactEmail,
+    record.metadata?.email,
+  ].filter(Boolean).map((value) => String(value).trim().toLowerCase());
 }
 
 function customerMatches(customer = {}, ids = {}) {
@@ -158,7 +181,10 @@ function findCustomer(customers = [], ids = {}) {
 
 function belongsToCustomer(item = {}, customer = {}) {
   const values = new Set(identityValues(customer));
-  return identityValues(item).some((value) => values.has(value));
+  const idMatch = identityValues(item).some((value) => values.has(value));
+  if (idMatch) return true;
+  const customerEmails = new Set(emailValues(customer));
+  return emailValues(item).some((value) => customerEmails.has(value));
 }
 
 function pick(record = {}, keys = []) {
@@ -223,6 +249,27 @@ function safeFile(file = {}) {
   };
 }
 
+function safeChangeRequest(request = {}) {
+  return {
+    ...pick(request, ["id", "title", "status", "priority", "category", "changeCategory", "description", "createdAt", "created_at", "updatedAt", "fileNames"]),
+    ...safeSource(request),
+  };
+}
+
+function safeMessage(message = {}) {
+  return {
+    ...pick(message, ["id", "subject", "title", "body", "message", "sender", "status", "createdAt", "updatedAt", "readAt"]),
+    ...safeSource(message),
+  };
+}
+
+function safeNotification(notification = {}) {
+  return {
+    ...pick(notification, ["id", "title", "body", "type", "status", "createdAt", "dueAt", "readAt", "actionLabel", "actionUrl"]),
+    ...safeSource(notification),
+  };
+}
+
 export function sanitizeClientPortalData(data = {}) {
   return {
     mode: data.mode || CLIENT_PORTAL_DATA_MODES.LOCAL,
@@ -233,6 +280,9 @@ export function sanitizeClientPortalData(data = {}) {
     invoices: (data.invoices || []).map(safeInvoice),
     subscriptions: (data.subscriptions || []).map(safeSubscription),
     files: (data.files || []).map(safeFile),
+    changeRequests: (data.changeRequests || []).map(safeChangeRequest),
+    messages: (data.messages || []).map(safeMessage),
+    notifications: (data.notifications || []).map(safeNotification),
     metrics: data.metrics || {},
     sourceSummary: data.sourceSummary || {},
     warnings: data.warnings || [],
@@ -245,6 +295,9 @@ function computeMetrics(payload = {}) {
   const projects = payload.projects || [];
   const websites = payload.websites || [];
   const subscriptions = payload.subscriptions || [];
+  const changeRequests = payload.changeRequests || [];
+  const messages = payload.messages || [];
+  const notifications = payload.notifications || [];
   const openInvoices = invoices.filter((invoice) => OPEN_INVOICE_STATUSES.has(normalizeKey(invoice.status)));
   return {
     openQuotes: quotes.filter((quote) => OPEN_QUOTE_STATUSES.has(normalizeKey(quote.status))).length,
@@ -253,6 +306,9 @@ function computeMetrics(payload = {}) {
     runningProjects: projects.filter((project) => !RUNNING_PROJECT_EXCLUDED.has(normalizeKey(project.status))).length,
     activeWebsites: websites.filter((website) => ACTIVE_WEBSITE_STATUSES.has(normalizeKey(website.status))).length,
     activeSubscriptions: subscriptions.filter((subscription) => ACTIVE_SUBSCRIPTION_STATUSES.has(normalizeKey(subscription.status))).length,
+    openChangeRequests: changeRequests.filter((request) => !OPEN_CHANGE_REQUEST_EXCLUDED.has(normalizeKey(request.status))).length,
+    unreadMessages: messages.filter((message) => !message.readAt && !["gelezen", "read"].includes(normalizeKey(message.status))).length,
+    unreadNotifications: notifications.filter((notification) => !notification.readAt && !["gelezen", "read", "resolved", "opgelost"].includes(normalizeKey(notification.status))).length,
   };
 }
 
@@ -278,7 +334,55 @@ async function readAllForMode(mode) {
     listModule(SubscriptionRepository, "subscriptions", mode),
   ]);
   const files = { items: localFiles(), status: { mode: "local", fallbackUsed: false, error: "", count: localFiles().length, refreshedAt: new Date().toISOString() } };
-  return { customers, websites, projects, quotes, invoices, subscriptions, files };
+  const changeRequests = { items: localChangeRequests(), status: { mode: "local", fallbackUsed: false, error: "", count: localChangeRequests().length, refreshedAt: new Date().toISOString() } };
+  const messages = { items: localMessages(), status: { mode: "local", fallbackUsed: false, error: "", count: localMessages().length, refreshedAt: new Date().toISOString() } };
+  const notifications = { items: localNotifications(), status: { mode: "local", fallbackUsed: false, error: "", count: localNotifications().length, refreshedAt: new Date().toISOString() } };
+  return { customers, websites, projects, quotes, invoices, subscriptions, files, changeRequests, messages, notifications };
+}
+
+function derivedNotifications(raw = {}) {
+  const notifications = [];
+  (raw.invoices || [])
+    .filter((invoice) => OPEN_INVOICE_STATUSES.has(normalizeKey(invoice.status)))
+    .slice(0, 3)
+    .forEach((invoice) => notifications.push({
+      id: `invoice-${invoice.id}`,
+      title: "Factuur openstaand",
+      body: `${invoice.invoiceNumber || "Factuur"} staat nog open.`,
+      type: "invoice",
+      status: "nieuw",
+      createdAt: invoice.invoiceDate || invoice.createdAt,
+      dueAt: invoice.dueDate,
+      actionLabel: "Bekijk factuur",
+      actionUrl: invoice.id ? `/betalen.html?invoiceId=${encodeURIComponent(invoice.id)}` : "",
+      _source: "derived",
+    }));
+  (raw.projects || [])
+    .filter((project) => !RUNNING_PROJECT_EXCLUDED.has(normalizeKey(project.status)))
+    .slice(0, 2)
+    .forEach((project) => notifications.push({
+      id: `project-${project.id}`,
+      title: "Project loopt",
+      body: `${project.name || project.projectName || "Project"} staat op ${project.phase || project.status || "in behandeling"}.`,
+      type: "project",
+      status: "nieuw",
+      createdAt: project.updatedAt || project.startDate,
+      dueAt: project.deadline,
+      _source: "derived",
+    }));
+  (raw.changeRequests || [])
+    .filter((request) => !OPEN_CHANGE_REQUEST_EXCLUDED.has(normalizeKey(request.status)))
+    .slice(0, 2)
+    .forEach((request) => notifications.push({
+      id: `request-${request.id}`,
+      title: "Wijzigingsverzoek open",
+      body: `${request.title || "Wijzigingsverzoek"} wordt opgevolgd.`,
+      type: "change_request",
+      status: "nieuw",
+      createdAt: request.createdAt || request.created_at,
+      _source: "derived",
+    }));
+  return notifications;
 }
 
 export async function getClientCustomer(customerId, options = {}) {
@@ -318,6 +422,21 @@ export async function getClientFiles(customerId, options = {}) {
   return data.files;
 }
 
+export async function getClientChangeRequests(customerId, options = {}) {
+  const data = await getClientPortalData(customerId, options);
+  return data.changeRequests;
+}
+
+export async function getClientMessages(customerId, options = {}) {
+  const data = await getClientPortalData(customerId, options);
+  return data.messages;
+}
+
+export async function getClientNotifications(customerId, options = {}) {
+  const data = await getClientPortalData(customerId, options);
+  return data.notifications;
+}
+
 export async function getClientPortalData(customerId, options = {}) {
   const mode = resolveClientPortalDataMode({ ...options, customerId });
   const results = await readAllForMode(mode);
@@ -335,6 +454,9 @@ export async function getClientPortalData(customerId, options = {}) {
       invoices: [],
       subscriptions: [],
       files: [],
+      changeRequests: [],
+      messages: [],
+      notifications: [],
       metrics: computeMetrics({}),
       sourceSummary: getClientPortalSourceSummary({ mode, moduleStatuses, warnings }),
       warnings,
@@ -349,9 +471,13 @@ export async function getClientPortalData(customerId, options = {}) {
     invoices: results.invoices.items.filter((item) => belongsToCustomer(item, match.customer)),
     subscriptions: results.subscriptions.items.filter((item) => belongsToCustomer(item, match.customer)),
     files: results.files.items.filter((item) => belongsToCustomer(item, match.customer)),
+    changeRequests: results.changeRequests.items.filter((item) => belongsToCustomer(item, match.customer)),
+    messages: results.messages.items.filter((item) => belongsToCustomer(item, match.customer)),
+    notifications: results.notifications.items.filter((item) => belongsToCustomer(item, match.customer)),
     warnings,
     moduleStatuses,
   };
+  raw.notifications = [...raw.notifications, ...derivedNotifications(raw)];
   raw.metrics = computeMetrics(raw);
   raw.sourceSummary = getClientPortalSourceSummary(raw);
   return sanitizeClientPortalData(raw);
