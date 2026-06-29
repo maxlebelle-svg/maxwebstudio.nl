@@ -23,6 +23,107 @@ Dit bestand is een leeg template. Vul alleen testresultaten in vanuit een echte 
 | Customer tests | NOT TESTED |  |  |  |  |
 | Go/No-Go | NOT TESTED |  |  |  |  |
 
+## RLS tests
+
+Status: `NOT TESTED`
+
+| Scenario | Status | Evidence | Opmerkingen |
+| --- | --- | --- | --- |
+| Admin leest toegestane testdata | NOT TESTED |  |  |
+| Customer A ziet alleen eigen data | NOT TESTED |  |  |
+| Customer B ziet alleen eigen data | NOT TESTED |  |  |
+| Anonymous ziet geen klantdata | NOT TESTED |  |  |
+| Demo-user ziet geen productiedata | NOT TESTED |  |  |
+
+## Auth tests
+
+Status: `NOT TESTED`
+
+| Scenario | Status | Evidence | Opmerkingen |
+| --- | --- | --- | --- |
+| Login testuser | NOT TESTED |  |  |
+| Profile mapping | NOT TESTED |  |  |
+| Role mapping | NOT TESTED |  |  |
+| Route guards | NOT TESTED |  |  |
+
+## Customer isolation tests
+
+Status: `NOT TESTED`
+
+| Scenario | Status | Evidence | Opmerkingen |
+| --- | --- | --- | --- |
+| Customer A scenario | NOT TESTED |  |  |
+| Customer B scenario | NOT TESTED |  |  |
+| Demo scenario | NOT TESTED |  |  |
+| Anonymous scenario | NOT TESTED |  |  |
+
+## Client portal tests
+
+Status: `NOT TESTED`
+
+| Scenario | Status | Evidence | Opmerkingen |
+| --- | --- | --- | --- |
+| Klantdashboard | NOT TESTED |  |  |
+| Offertes | NOT TESTED |  |  |
+| Facturen | NOT TESTED |  |  |
+| Projecten | NOT TESTED |  |  |
+| Bestanden | NOT TESTED |  |  |
+
+## Mollie tests
+
+Status: `NOT TESTED`
+
+| Scenario | Status | Evidence | Opmerkingen |
+| --- | --- | --- | --- |
+| Test payment aanmaken | NOT TESTED |  |  |
+| Checkoutlink openen | NOT TESTED |  |  |
+| Webhook verwerken | NOT TESTED |  |  |
+| Factuurstatus bijwerken | NOT TESTED |  |  |
+
+## Resend tests
+
+Status: `NOT TESTED`
+
+| Scenario | Status | Evidence | Opmerkingen |
+| --- | --- | --- | --- |
+| Interne mail | NOT TESTED |  |  |
+| Klantbevestiging | NOT TESTED |  |  |
+| Factuurmail | NOT TESTED |  |  |
+| Afzender/reply-to | NOT TESTED |  |  |
+
+## Storage tests
+
+Status: `NOT TESTED`
+
+| Scenario | Status | Evidence | Opmerkingen |
+| --- | --- | --- | --- |
+| Private bucket | NOT TESTED |  |  |
+| Signed URL | NOT TESTED |  |  |
+| Klantbestand isolatie | NOT TESTED |  |  |
+| Admin upload/download | NOT TESTED |  |  |
+
+## Functions tests
+
+Status: `NOT TESTED`
+
+| Scenario | Status | Evidence | Opmerkingen |
+| --- | --- | --- | --- |
+| JSON responses | NOT TESTED |  |  |
+| Admin token checks | NOT TESTED |  |  |
+| Server-side secrets | NOT TESTED |  |  |
+| Error handling | NOT TESTED |  |  |
+
+## Post-deploy checks
+
+Status: `NOT TESTED`
+
+| Scenario | Status | Evidence | Opmerkingen |
+| --- | --- | --- | --- |
+| Monitoring | NOT TESTED |  |  |
+| Rollback route bekend | NOT TESTED |  |  |
+| Backup bevestigd | NOT TESTED |  |  |
+| GO/NO-GO besluit geëxporteerd | NOT TESTED |  |  |
+
 ## Dag 1 - Schema
 
 Status: `NOT TESTED`

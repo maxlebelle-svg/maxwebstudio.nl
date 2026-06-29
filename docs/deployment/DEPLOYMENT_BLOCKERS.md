@@ -37,3 +37,48 @@ Status: alle blockers starten als `pending`. Codex mag geen approvals faken.
 - Geen API keys, tokens of wachtwoorden opslaan.
 - Evidence is tekst/notitie in Developer Mode of documentverwijzing.
 - Approved/rejected vraagt handmatige bevestiging.
+## Fase 14.2 - Evidence en manual approval flow
+
+Elke blocker gebruikt nu een blocker-specifiek evidence schema. Codex mag blockers niet automatisch goedkeuren.
+
+Statusflow:
+
+- `pending`
+- `in_review`
+- `approved`
+- `rejected`
+- `not_applicable`
+
+Regels:
+
+- `approved` vereist alle verplichte evidencevelden.
+- `approved` vereist een reviewer/approver.
+- `rejected` vereist een reden.
+- `not_applicable` vereist een reden.
+- reset naar `pending` vereist een reden.
+- GO kan alleen wanneer alle blockers `approved` of `not_applicable` zijn.
+
+Evidencevelden:
+
+| Blocker | Verplichte velden |
+| --- | --- |
+| backup_confirmed | backupName, backupDate, backupLocation, verifiedBy, notes |
+| rls_review_approved | reviewer, reviewDate, reviewedDocs, findings, approvalNotes |
+| rls_test_log_completed | testLogReference, testDate, passCount, failCount, blockedCount, summary |
+| auth_test_completed | testDate, rolesTested, loginFlowResult, profileMappingResult, issues |
+| customer_isolation_test_completed | testDate, customerAScenario, customerBScenario, demoScenario, anonymousScenario, resultSummary |
+| rollback_plan_approved | approver, approvalDate, rollbackPlanVersion, rollbackNotes |
+| legacy_customer_tables_mitigated | mitigationDecision, reviewedFiles, riskAcceptedBy, mitigationNotes |
+| env_vars_verified | environmentName, verifiedBy, verificationDate, checkedVariables, missingVariables, notes |
+
+Audit trail:
+
+- createdAt
+- updatedAt
+- statusChangedAt
+- statusChangedBy
+- evidenceUpdatedAt
+- evidenceUpdatedBy
+- approvalHistory[]
+
+Elke history entry bewaart `fromStatus`, `toStatus`, `by`, `at`, `reason` en een evidence snapshot. Noteer nooit secrets in evidence, notes of reason.

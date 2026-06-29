@@ -470,3 +470,18 @@ Nieuwe documenten:
 - `TEST_RESULTS.md`
 
 Developer Mode toont readiness, maar voert geen deployment uit.
+
+## Fase 14.2 - Release approval security
+
+Fase 14.2 maakt de deployment blocker-flow strenger.
+
+Securityregels:
+
+- `approved` mag alleen met volledige evidence.
+- `approved` vereist reviewer/approver registratie.
+- `rejected`, `not_applicable` en reset vereisen een reden.
+- approval history bewaart statuswijzigingen en evidence snapshots.
+- evidence mag nooit secrets bevatten.
+- release decision export bevat alleen samenvattingen en geen geheime waarden.
+
+GO blijft `NO-GO` zolang blockers openstaan, evidence ontbreekt of een blocker rejected/in_review/pending is.

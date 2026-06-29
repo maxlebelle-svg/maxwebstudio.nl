@@ -8,6 +8,66 @@ export const DEPLOYMENT_BLOCKER_STATUSES = Object.freeze({
   NOT_APPLICABLE: "not_applicable",
 });
 
+export const DEPLOYMENT_BLOCKER_EVIDENCE_SCHEMA = Object.freeze({
+  backup_confirmed: [
+    "backupName",
+    "backupDate",
+    "backupLocation",
+    "verifiedBy",
+    "notes",
+  ],
+  rls_review_approved: [
+    "reviewer",
+    "reviewDate",
+    "reviewedDocs",
+    "findings",
+    "approvalNotes",
+  ],
+  rls_test_log_completed: [
+    "testLogReference",
+    "testDate",
+    "passCount",
+    "failCount",
+    "blockedCount",
+    "summary",
+  ],
+  auth_test_completed: [
+    "testDate",
+    "rolesTested",
+    "loginFlowResult",
+    "profileMappingResult",
+    "issues",
+  ],
+  customer_isolation_test_completed: [
+    "testDate",
+    "customerAScenario",
+    "customerBScenario",
+    "demoScenario",
+    "anonymousScenario",
+    "resultSummary",
+  ],
+  rollback_plan_approved: [
+    "approver",
+    "approvalDate",
+    "rollbackPlanVersion",
+    "rollbackNotes",
+  ],
+  legacy_customer_tables_mitigated: [
+    "mitigationDecision",
+    "reviewedFiles",
+    "riskAcceptedBy",
+    "mitigationNotes",
+  ],
+  env_vars_verified: [
+    "environmentName",
+    "verifiedBy",
+    "verificationDate",
+    "checkedVariables",
+    "missingVariables",
+    "notes",
+  ],
+});
+
 export const DEPLOYMENT_BLOCKER_DEFINITIONS = Object.freeze([
   {
     id: "backup_confirmed",
@@ -94,6 +154,18 @@ function sanitizeText(value = "") {
   return String(value || "").trim().slice(0, 2000);
 }
 
+function sanitizeEvidenceDetails(blockerId, details = {}) {
+  const schema = DEPLOYMENT_BLOCKER_EVIDENCE_SCHEMA[blockerId] || [];
+  return schema.reduce((clean, field) => {
+    clean[field] = sanitizeText(details?.[field]);
+    return clean;
+  }, {});
+}
+
+function missingEvidenceFields(blockerId, details = {}) {
+  return (DEPLOYMENT_BLOCKER_EVIDENCE_SCHEMA[blockerId] || []).filter((field) => !sanitizeText(details[field]));
+}
+
 function storedBlockersById() {
   const stored = readJson(STORAGE_KEYS.deploymentBlockers, {});
   if (Array.isArray(stored)) {
@@ -102,20 +174,47 @@ function storedBlockersById() {
   return stored && typeof stored === "object" ? stored : {};
 }
 
+function normalizeHistory(history = []) {
+  return Array.isArray(history)
+    ? history.slice(-50).map((entry) => ({
+      fromStatus: sanitizeStatus(entry.fromStatus),
+      toStatus: sanitizeStatus(entry.toStatus),
+      by: sanitizeText(entry.by),
+      at: entry.at || "",
+      reason: sanitizeText(entry.reason),
+      evidenceSnapshot: entry.evidenceSnapshot && typeof entry.evidenceSnapshot === "object" ? entry.evidenceSnapshot : {},
+    }))
+    : [];
+}
+
 function normalizeBlocker(definition, stored = {}) {
   const status = sanitizeStatus(stored.status);
+  const evidenceDetails = sanitizeEvidenceDetails(definition.id, stored.evidenceDetails || stored.details || {});
+  const createdAt = stored.createdAt || nowIso();
+  const missingEvidence = missingEvidenceFields(definition.id, evidenceDetails);
   return {
     id: definition.id,
     title: definition.title,
     description: definition.description,
     requiredEvidence: definition.requiredEvidence,
+    evidenceFields: [...(DEPLOYMENT_BLOCKER_EVIDENCE_SCHEMA[definition.id] || [])],
     approver: definition.approver,
     status,
     evidence: sanitizeText(stored.evidence),
+    evidenceDetails,
+    missingEvidence,
+    hasRequiredEvidence: missingEvidence.length === 0,
     approvedBy: sanitizeText(stored.approvedBy),
     approvedAt: stored.approvedAt || "",
-    updatedAt: stored.updatedAt || "",
+    createdAt,
+    updatedAt: stored.updatedAt || createdAt,
+    statusChangedAt: stored.statusChangedAt || "",
+    statusChangedBy: sanitizeText(stored.statusChangedBy),
+    evidenceUpdatedAt: stored.evidenceUpdatedAt || "",
+    evidenceUpdatedBy: sanitizeText(stored.evidenceUpdatedBy),
     notes: sanitizeText(stored.notes),
+    reason: sanitizeText(stored.reason),
+    approvalHistory: normalizeHistory(stored.approvalHistory),
   };
 }
 
@@ -124,6 +223,27 @@ function persistBlocker(blocker) {
   stored[blocker.id] = blocker;
   writeJson(STORAGE_KEYS.deploymentBlockers, stored);
   return blocker;
+}
+
+function getDefinition(blockerId) {
+  const definition = DEPLOYMENT_BLOCKER_DEFINITIONS.find((item) => item.id === blockerId);
+  if (!definition) throw new Error(`Onbekende deployment blocker: ${blockerId}`);
+  return definition;
+}
+
+function validateStatusChange(current, nextStatus, payload = {}) {
+  const missing = missingEvidenceFields(current.id, payload.evidenceDetails || current.evidenceDetails);
+  const reason = sanitizeText(payload.reason || payload.notes || current.reason);
+  const actor = sanitizeText(payload.by || payload.approvedBy || payload.statusChangedBy);
+  if (nextStatus === DEPLOYMENT_BLOCKER_STATUSES.APPROVED && missing.length) {
+    throw new Error(`Approve geblokkeerd. Ontbrekende evidence: ${missing.join(", ")}.`);
+  }
+  if (nextStatus === DEPLOYMENT_BLOCKER_STATUSES.APPROVED && !actor) {
+    throw new Error("Approve vereist een reviewer/approver.");
+  }
+  if ([DEPLOYMENT_BLOCKER_STATUSES.REJECTED, DEPLOYMENT_BLOCKER_STATUSES.NOT_APPLICABLE].includes(nextStatus) && !reason) {
+    throw new Error(`${nextStatus} vereist een reden of notitie.`);
+  }
 }
 
 export function getDeploymentBlockers() {
@@ -136,32 +256,103 @@ export function getBlockerStatus(blockerId) {
   return blocker?.status || DEPLOYMENT_BLOCKER_STATUSES.PENDING;
 }
 
-export function updateBlockerStatus(blockerId, status, evidence = {}) {
-  const definition = DEPLOYMENT_BLOCKER_DEFINITIONS.find((item) => item.id === blockerId);
-  if (!definition) throw new Error(`Onbekende deployment blocker: ${blockerId}`);
-  const current = getDeploymentBlockers().find((item) => item.id === blockerId) || normalizeBlocker(definition);
-  const nextStatus = sanitizeStatus(status);
-  const next = {
-    ...current,
-    status: nextStatus,
-    evidence: evidence.evidence !== undefined ? sanitizeText(evidence.evidence) : current.evidence,
-    notes: evidence.notes !== undefined ? sanitizeText(evidence.notes) : current.notes,
-    approvedBy: evidence.approvedBy !== undefined ? sanitizeText(evidence.approvedBy) : current.approvedBy,
-    approvedAt: [DEPLOYMENT_BLOCKER_STATUSES.APPROVED, DEPLOYMENT_BLOCKER_STATUSES.NOT_APPLICABLE].includes(nextStatus)
-      ? evidence.approvedAt || current.approvedAt || nowIso()
-      : "",
-    updatedAt: nowIso(),
+export function getBlockerEvidenceSchema(blockerId) {
+  return [...(DEPLOYMENT_BLOCKER_EVIDENCE_SCHEMA[blockerId] || [])];
+}
+
+export function validateBlockerEvidence(blockerId, evidenceDetails = {}) {
+  const missing = missingEvidenceFields(blockerId, sanitizeEvidenceDetails(blockerId, evidenceDetails));
+  return {
+    valid: missing.length === 0,
+    missing,
   };
+}
+
+export function updateBlockerEvidence(blockerId, evidence = {}) {
+  const definition = getDefinition(blockerId);
+  const current = getDeploymentBlockers().find((item) => item.id === blockerId) || normalizeBlocker(definition);
+  const evidenceDetails = sanitizeEvidenceDetails(blockerId, {
+    ...current.evidenceDetails,
+    ...(evidence.evidenceDetails || {}),
+  });
+  const next = normalizeBlocker(definition, {
+    ...current,
+    evidence: evidence.evidence !== undefined ? evidence.evidence : current.evidence,
+    evidenceDetails,
+    notes: evidence.notes !== undefined ? evidence.notes : current.notes,
+    reason: evidence.reason !== undefined ? evidence.reason : current.reason,
+    evidenceUpdatedAt: nowIso(),
+    evidenceUpdatedBy: evidence.by || evidence.evidenceUpdatedBy || current.evidenceUpdatedBy,
+    updatedAt: nowIso(),
+  });
   return persistBlocker(next);
 }
 
-export function resetBlockerStatus(blockerId) {
-  const definition = DEPLOYMENT_BLOCKER_DEFINITIONS.find((item) => item.id === blockerId);
-  if (!definition) throw new Error(`Onbekende deployment blocker: ${blockerId}`);
-  const stored = storedBlockersById();
-  delete stored[blockerId];
-  writeJson(STORAGE_KEYS.deploymentBlockers, stored);
-  return normalizeBlocker(definition);
+export function updateBlockerStatus(blockerId, status, evidence = {}) {
+  const definition = getDefinition(blockerId);
+  const current = getDeploymentBlockers().find((item) => item.id === blockerId) || normalizeBlocker(definition);
+  const nextStatus = sanitizeStatus(status);
+  const evidenceDetails = sanitizeEvidenceDetails(blockerId, {
+    ...current.evidenceDetails,
+    ...(evidence.evidenceDetails || {}),
+  });
+  const actor = sanitizeText(evidence.by || evidence.approvedBy || evidence.statusChangedBy || "");
+  const reason = sanitizeText(evidence.reason || evidence.notes || current.reason);
+  validateStatusChange(current, nextStatus, { ...evidence, evidenceDetails, reason });
+  const changedAt = nowIso();
+  const historyEntry = {
+    fromStatus: current.status,
+    toStatus: nextStatus,
+    by: actor,
+    at: changedAt,
+    reason,
+    evidenceSnapshot: evidenceDetails,
+  };
+  const next = normalizeBlocker(definition, {
+    ...current,
+    status: nextStatus,
+    evidence: evidence.evidence !== undefined ? evidence.evidence : current.evidence,
+    evidenceDetails,
+    notes: evidence.notes !== undefined ? evidence.notes : current.notes,
+    reason,
+    approvedBy: [DEPLOYMENT_BLOCKER_STATUSES.APPROVED, DEPLOYMENT_BLOCKER_STATUSES.NOT_APPLICABLE].includes(nextStatus)
+      ? actor || current.approvedBy
+      : "",
+    approvedAt: [DEPLOYMENT_BLOCKER_STATUSES.APPROVED, DEPLOYMENT_BLOCKER_STATUSES.NOT_APPLICABLE].includes(nextStatus)
+      ? evidence.approvedAt || current.approvedAt || changedAt
+      : "",
+    updatedAt: changedAt,
+    statusChangedAt: changedAt,
+    statusChangedBy: actor,
+    approvalHistory: [...current.approvalHistory, historyEntry],
+  });
+  return persistBlocker(next);
+}
+
+export function resetBlockerStatus(blockerId, options = {}) {
+  const definition = getDefinition(blockerId);
+  const current = getDeploymentBlockers().find((item) => item.id === blockerId) || normalizeBlocker(definition);
+  const reason = sanitizeText(options.reason);
+  if (!reason) throw new Error("Reset vereist een reden.");
+  const resetAt = nowIso();
+  const next = normalizeBlocker(definition, {
+    approvalHistory: [
+      ...current.approvalHistory,
+      {
+        fromStatus: current.status,
+        toStatus: DEPLOYMENT_BLOCKER_STATUSES.PENDING,
+        by: sanitizeText(options.by),
+        at: resetAt,
+        reason,
+        evidenceSnapshot: current.evidenceDetails,
+      },
+    ],
+    createdAt: current.createdAt,
+    updatedAt: resetAt,
+    statusChangedAt: resetAt,
+    statusChangedBy: sanitizeText(options.by),
+  });
+  return persistBlocker(next);
 }
 
 export function getResolvedBlockers() {
@@ -179,6 +370,7 @@ export function getBlockingIssues() {
     severity: blocker.status === DEPLOYMENT_BLOCKER_STATUSES.REJECTED ? "critical" : "high",
     status: blocker.status,
     reason: blocker.description,
+    missingEvidence: blocker.missingEvidence,
   }));
 }
 
@@ -189,6 +381,8 @@ export function getDeploymentGoNoGoStatus() {
     return summary;
   }, {});
   const pending = getPendingBlockers();
+  const rejected = blockers.filter((blocker) => blocker.status === DEPLOYMENT_BLOCKER_STATUSES.REJECTED);
+  const missingEvidence = blockers.filter((blocker) => !blocker.hasRequiredEvidence);
   return {
     decision: pending.length ? "NO-GO" : "GO",
     total: blockers.length,
@@ -198,15 +392,27 @@ export function getDeploymentGoNoGoStatus() {
     rejected: counts.rejected || 0,
     notApplicable: counts.not_applicable || 0,
     blockers: pending,
+    rejectedBlockers: rejected,
+    missingEvidence,
     reason: pending.length
-      ? "Deployment blijft geblokkeerd totdat alle blockers approved of not_applicable zijn."
+      ? "Deployment blijft geblokkeerd totdat alle blockers approved of not_applicable zijn en verplichte evidence is vastgelegd."
       : "Alle deployment blockers zijn approved of not_applicable.",
+    nextActions: pending.map((blocker) => ({
+      id: blocker.id,
+      title: blocker.title,
+      action: blocker.missingEvidence.length
+        ? `Vul evidence aan: ${blocker.missingEvidence.join(", ")}`
+        : "Laat blocker reviewen en approve/not_applicable markeren.",
+    })),
   };
 }
 
 export const deploymentBlockerService = {
   getDeploymentBlockers,
   getBlockerStatus,
+  getBlockerEvidenceSchema,
+  validateBlockerEvidence,
+  updateBlockerEvidence,
   updateBlockerStatus,
   resetBlockerStatus,
   getDeploymentGoNoGoStatus,

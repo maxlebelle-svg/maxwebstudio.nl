@@ -840,6 +840,8 @@
                 <button class="button secondary" id="view-deployment-sql-bundle" type="button">Bekijk SQL bundle</button>
                 <button class="button secondary" id="run-production-validation" type="button">Run validation</button>
                 <button class="button secondary" id="view-test-execution-plan" type="button">Bekijk testplan</button>
+                <button class="button secondary" id="export-release-decision-json" type="button">Export release JSON</button>
+                <button class="button secondary" id="show-release-decision-markdown" type="button">Toon release markdown</button>
                 <button class="button secondary" id="view-migration-plan" type="button">Bekijk migratieplan</button>
                 <button class="button secondary" id="view-planned-tables" type="button">Bekijk geplande tabellen</button>
                 <button class="button secondary" id="run-supabase-migration-check" type="button">Run localStorage migratie-check</button>
@@ -1875,6 +1877,8 @@
         const viewDeploymentSqlBundleButton = document.getElementById("view-deployment-sql-bundle");
         const runProductionValidationButton = document.getElementById("run-production-validation");
         const viewTestExecutionPlanButton = document.getElementById("view-test-execution-plan");
+        const exportReleaseDecisionJsonButton = document.getElementById("export-release-decision-json");
+        const showReleaseDecisionMarkdownButton = document.getElementById("show-release-decision-markdown");
         const viewMigrationPlanButton = document.getElementById("view-migration-plan");
         const viewPlannedTablesButton = document.getElementById("view-planned-tables");
         const runSupabaseMigrationCheckButton = document.getElementById("run-supabase-migration-check");
@@ -3087,6 +3091,7 @@
             deploymentReadinessService: await import("./src/services/deploymentReadinessService.js"),
             deploymentBlockerService: await import("./src/services/deploymentBlockerService.js"),
             testEnvironmentService: await import("./src/services/testEnvironmentService.js"),
+            releaseDecisionService: await import("./src/services/releaseDecisionService.js"),
           };
           return state.developerModules;
         }
@@ -4465,10 +4470,12 @@
         }
 
         function evidenceSummary(blocker = {}) {
-          const evidence = blocker.evidence ? `Evidence: ${blocker.evidence}` : "Evidence ontbreekt";
+          const detailCount = Object.values(blocker.evidenceDetails || {}).filter(Boolean).length;
+          const missing = blocker.missingEvidence?.length ? `Ontbreekt: ${blocker.missingEvidence.join(", ")}` : "Evidence compleet";
+          const evidence = blocker.evidence ? `Evidence: ${blocker.evidence}` : `${detailCount}/${blocker.evidenceFields?.length || 0} velden ingevuld`;
           const notes = blocker.notes ? `Notities: ${blocker.notes}` : "Geen notities";
           const approved = blocker.approvedBy ? `Approved by: ${blocker.approvedBy}` : "";
-          return [evidence, notes, approved].filter(Boolean).join(" | ");
+          return [evidence, missing, notes, approved].filter(Boolean).join(" | ");
         }
 
         function renderDeploymentBlockerManager(modules) {
@@ -4485,34 +4492,68 @@
             title.textContent = `${blocker.title} (${blocker.status})`;
             meta.textContent = `${blocker.description} - ${evidenceSummary(blocker)}`;
             info.append(title, meta);
+            const fields = document.createElement("span");
+            fields.textContent = `Verplichte velden: ${blocker.evidenceFields.join(", ")}`;
+            info.append(fields);
+            if (blocker.missingEvidence.length) {
+              const warning = document.createElement("span");
+              warning.textContent = `Missing evidence: ${blocker.missingEvidence.join(", ")}`;
+              warning.className = "status-badge status-attention";
+              info.append(warning);
+            }
+            if (blocker.approvalHistory?.length) {
+              const history = document.createElement("span");
+              history.textContent = `History: ${blocker.approvalHistory.slice(-3).map((entry) => `${entry.fromStatus}→${entry.toStatus} ${entry.by ? `door ${entry.by}` : ""}`).join(" | ")}`;
+              info.append(history);
+            }
+            const approverInput = document.createElement("input");
+            approverInput.type = "text";
+            approverInput.placeholder = "Reviewer/approver";
+            approverInput.value = blocker.statusChangedBy || blocker.approvedBy || "";
+            const reasonInput = document.createElement("textarea");
+            reasonInput.placeholder = "Reason/notes (geen secrets)";
+            reasonInput.rows = 2;
+            reasonInput.value = blocker.reason || blocker.notes || "";
+            info.append(approverInput, reasonInput);
             const actions = document.createElement("div");
             actions.className = "settings-actions";
+            const withFormValues = () => ({
+              by: approverInput.value,
+              approvedBy: approverInput.value,
+              reason: reasonInput.value,
+              notes: reasonInput.value,
+            });
             const inReview = document.createElement("button");
             inReview.className = "button secondary";
             inReview.type = "button";
             inReview.textContent = "Markeer in review";
-            inReview.addEventListener("click", () => updateDeploymentBlockerHandler(blocker.id, "in_review"));
+            inReview.addEventListener("click", () => updateDeploymentBlockerHandler(blocker.id, "in_review", withFormValues()));
             const approve = document.createElement("button");
             approve.className = "button secondary";
             approve.type = "button";
-            approve.textContent = "Markeer approved";
-            approve.addEventListener("click", () => updateDeploymentBlockerHandler(blocker.id, "approved"));
+            approve.textContent = "Approve";
+            approve.addEventListener("click", () => updateDeploymentBlockerHandler(blocker.id, "approved", withFormValues()));
             const reject = document.createElement("button");
             reject.className = "button secondary";
             reject.type = "button";
-            reject.textContent = "Markeer rejected";
-            reject.addEventListener("click", () => updateDeploymentBlockerHandler(blocker.id, "rejected"));
+            reject.textContent = "Reject";
+            reject.addEventListener("click", () => updateDeploymentBlockerHandler(blocker.id, "rejected", withFormValues()));
+            const notApplicable = document.createElement("button");
+            notApplicable.className = "button secondary";
+            notApplicable.type = "button";
+            notApplicable.textContent = "Not applicable";
+            notApplicable.addEventListener("click", () => updateDeploymentBlockerHandler(blocker.id, "not_applicable", withFormValues()));
             const evidence = document.createElement("button");
             evidence.className = "button secondary";
             evidence.type = "button";
-            evidence.textContent = "Voeg evidence/notitie toe";
-            evidence.addEventListener("click", () => updateDeploymentBlockerEvidenceHandler(blocker.id));
+            evidence.textContent = "Evidence invullen";
+            evidence.addEventListener("click", () => updateDeploymentBlockerEvidenceHandler(blocker.id, withFormValues()));
             const reset = document.createElement("button");
             reset.className = "button secondary";
             reset.type = "button";
             reset.textContent = "Reset";
-            reset.addEventListener("click", () => resetDeploymentBlockerHandler(blocker.id));
-            actions.append(inReview, approve, reject, evidence, reset);
+            reset.addEventListener("click", () => resetDeploymentBlockerHandler(blocker.id, withFormValues()));
+            actions.append(inReview, approve, reject, notApplicable, evidence, reset);
             row.append(info, actions);
             card.append(row);
           });
@@ -4539,6 +4580,17 @@
 
         function renderDeploymentReference(title, rows = []) {
           appendDeveloperCard(title, rows);
+        }
+
+        function renderReleaseDecisionMarkdown(markdown = "") {
+          const card = document.createElement("article");
+          card.className = "admin-card request-card";
+          card.append(createCell("Release decision markdown", "strong"));
+          const pre = document.createElement("pre");
+          pre.style.whiteSpace = "pre-wrap";
+          pre.textContent = markdown;
+          card.append(pre);
+          developerToolsOutput.append(card);
         }
 
         function renderProfileReadiness(modules) {
@@ -4776,6 +4828,7 @@
             if (extra.deploymentReference) renderDeploymentReference(extra.deploymentReference.title, extra.deploymentReference.rows);
             if (extra.productionValidation) renderProductionValidation(modules);
             if (extra.testExecutionPlan) renderDeploymentReference(extra.testExecutionPlan.title, extra.testExecutionPlan.rows);
+            if (extra.releaseDecisionMarkdown) renderReleaseDecisionMarkdown(extra.releaseDecisionMarkdown);
             if (extra.supabaseReadOnlyResult) renderSupabaseReadOnlyResult(extra.supabaseReadOnlyTitle || "Supabase read-only resultaat", extra.supabaseReadOnlyResult);
             if (extra.supabaseWriteTestResult) renderSupabaseWriteTestResult(extra.supabaseWriteTestResult);
             if (extra.supabaseCustomerRows) {
@@ -5174,12 +5227,49 @@
           setSettingsMessage("Testplan referentie getoond. Er is niets uitgevoerd.", "success");
         }
 
-        async function updateDeploymentBlockerHandler(blockerId, status) {
+        async function exportReleaseDecisionJsonHandler() {
           try {
-            if (["approved", "rejected"].includes(status) && !window.confirm(`Weet je zeker dat je deze blocker op ${status} wilt zetten?`)) return;
-            const evidence = {};
-            if (status === "approved") {
+            const modules = await loadDeveloperModules();
+            const json = modules.releaseDecisionService.exportReleaseDecisionJson();
+            const blob = new Blob([json], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `maxwebstudio-release-decision-${new Date().toISOString().slice(0, 10)}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+            setSettingsMessage("Release decision JSON geëxporteerd. Er is niets gedeployed.", "success");
+          } catch (error) {
+            console.error("Release decision JSON export failed", error);
+            setSettingsMessage("Release decision JSON kon niet worden geëxporteerd.", "error");
+          }
+        }
+
+        async function showReleaseDecisionMarkdownHandler() {
+          try {
+            const modules = await loadDeveloperModules();
+            const markdown = modules.releaseDecisionService.getReleaseDecisionMarkdown();
+            await renderDeveloperToolsSummary({ releaseDecisionMarkdown: markdown });
+            setSettingsMessage("Release decision markdown getoond. Er is niets gedeployed.", "success");
+          } catch (error) {
+            console.error("Release decision markdown failed", error);
+            setSettingsMessage("Release decision markdown kon niet worden getoond.", "error");
+          }
+        }
+
+        async function updateDeploymentBlockerHandler(blockerId, status, formValues = {}) {
+          try {
+            if (["approved", "rejected", "not_applicable"].includes(status) && !window.confirm(`Weet je zeker dat je deze blocker op ${status} wilt zetten?`)) return;
+            const evidence = { ...formValues };
+            if (["rejected", "not_applicable"].includes(status) && !evidence.reason) {
+              const reason = window.prompt(`${status} vereist een reden (geen secrets):`, "") || "";
+              if (!reason) return;
+              evidence.reason = reason;
+              evidence.notes = reason;
+            }
+            if (status === "approved" && !evidence.approvedBy) {
               evidence.approvedBy = window.prompt("Approved by (geen secrets):", "") || "";
+              evidence.by = evidence.approvedBy;
             }
             const modules = await loadDeveloperModules();
             modules.deploymentBlockerService.updateBlockerStatus(blockerId, status, evidence);
@@ -5191,27 +5281,37 @@
           }
         }
 
-        async function updateDeploymentBlockerEvidenceHandler(blockerId) {
+        async function updateDeploymentBlockerEvidenceHandler(blockerId, formValues = {}) {
           try {
             const modules = await loadDeveloperModules();
             const blocker = modules.deploymentBlockerService.getDeploymentBlockers().find((item) => item.id === blockerId);
-            const evidence = window.prompt("Evidence/notitie toevoegen (geen secrets):", blocker?.evidence || "");
+            const evidenceDetails = {};
+            (blocker?.evidenceFields || []).forEach((field) => {
+              const value = window.prompt(`${field} (geen secrets):`, blocker?.evidenceDetails?.[field] || "");
+              if (value !== null) evidenceDetails[field] = value;
+            });
+            const evidence = window.prompt("Korte evidence reference (bijv. testlogregel/document, geen secrets):", blocker?.evidence || "");
             if (evidence === null) return;
-            const notes = window.prompt("Aanvullende notities (geen secrets):", blocker?.notes || "");
-            modules.deploymentBlockerService.updateBlockerStatus(blockerId, blocker?.status || "pending", { evidence, notes: notes || "" });
+            modules.deploymentBlockerService.updateBlockerEvidence(blockerId, {
+              ...formValues,
+              evidence,
+              evidenceDetails,
+            });
             await renderDeveloperToolsSummary();
-            setSettingsMessage("Evidence/notitie opgeslagen in lokale readiness-status.", "success");
+            setSettingsMessage("Evidence opgeslagen in lokale readiness-status.", "success");
           } catch (error) {
             console.error("Deployment blocker evidence update failed", error);
             setSettingsMessage(error.message || "Evidence kon niet worden opgeslagen.", "error");
           }
         }
 
-        async function resetDeploymentBlockerHandler(blockerId) {
+        async function resetDeploymentBlockerHandler(blockerId, formValues = {}) {
           try {
             if (!window.confirm("Deze blocker resetten naar pending?")) return;
+            const reason = formValues.reason || window.prompt("Reset vereist een reden (geen secrets):", "") || "";
+            if (!reason) return;
             const modules = await loadDeveloperModules();
-            modules.deploymentBlockerService.resetBlockerStatus(blockerId);
+            modules.deploymentBlockerService.resetBlockerStatus(blockerId, { ...formValues, reason });
             await renderDeveloperToolsSummary();
             setSettingsMessage("Deployment blocker gereset.", "success");
           } catch (error) {
@@ -13933,6 +14033,8 @@
         viewDeploymentSqlBundleButton.addEventListener("click", showDeploymentSqlBundleHandler);
         runProductionValidationButton.addEventListener("click", runProductionValidationHandler);
         viewTestExecutionPlanButton.addEventListener("click", showTestExecutionPlanHandler);
+        exportReleaseDecisionJsonButton.addEventListener("click", exportReleaseDecisionJsonHandler);
+        showReleaseDecisionMarkdownButton.addEventListener("click", showReleaseDecisionMarkdownHandler);
         viewMigrationPlanButton.addEventListener("click", showMigrationPlanHandler);
         viewPlannedTablesButton.addEventListener("click", showPlannedTablesHandler);
         runSupabaseMigrationCheckButton.addEventListener("click", runSupabaseMigrationCheckHandler);

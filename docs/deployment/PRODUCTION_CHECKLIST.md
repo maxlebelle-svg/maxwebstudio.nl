@@ -54,3 +54,23 @@ Status: No-Go totdat alle punten zijn afgevinkt.
 - [ ] Deployment blockers approved/not_applicable.
 - [ ] Execution window gepland.
 - [ ] Go expliciet gegeven.
+## Fase 14.2 - Release decision gate
+
+Voor GO moet het volgende kloppen:
+
+- alle deployment blockers zijn `approved` of `not_applicable`
+- approved blockers hebben reviewer/approver registratie
+- geen blocker staat op `pending`, `in_review` of `rejected`
+- alle verplichte evidencevelden zijn ingevuld
+- rollbackplan is goedgekeurd
+- testresultaten zijn gekoppeld via evidence references
+- release decision JSON of Markdown is geëxporteerd voor het besluit
+
+Developer Mode bevat hiervoor:
+
+- blocker evidencevelden
+- approval history
+- release decision JSON export
+- release decision Markdown
+
+Deze acties voeren geen deployment uit.

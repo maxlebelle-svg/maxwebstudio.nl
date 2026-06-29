@@ -153,6 +153,9 @@ export function getGoNoGo() {
     blockers,
     summary: blockerStatus,
     reason: blockerStatus.reason,
+    missingEvidence: blockerStatus.missingEvidence || [],
+    rejectedBlockers: blockerStatus.rejectedBlockers || [],
+    nextActions: blockerStatus.nextActions || [],
   };
 }
 
@@ -183,6 +186,13 @@ export function getBlockerEvidenceSummary() {
       approvedBy: blocker.approvedBy || "",
       approvedAt: blocker.approvedAt || "",
       updatedAt: blocker.updatedAt || "",
+      statusChangedAt: blocker.statusChangedAt || "",
+      statusChangedBy: blocker.statusChangedBy || "",
+      evidenceUpdatedAt: blocker.evidenceUpdatedAt || "",
+      evidenceUpdatedBy: blocker.evidenceUpdatedBy || "",
+      missingEvidence: blocker.missingEvidence || [],
+      evidenceDetails: blocker.evidenceDetails || {},
+      approvalHistory: blocker.approvalHistory || [],
       evidenceSummary: blocker.evidence ? blocker.evidence.slice(0, 180) : "",
       notesSummary: blocker.notes ? blocker.notes.slice(0, 180) : "",
     })),

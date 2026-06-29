@@ -49,3 +49,16 @@ Extra checklists:
 - `docs/RLS_TEST_LOG_TEMPLATE.md`
 - `docs/deployment/ROLLBACK_PLAN.md`
 - `docs/deployment/DEPLOYMENT_BLOCKERS.md`
+## Fase 14.2 - Approval flow
+
+Deployment blockers zijn de formele release-gate.
+
+Gebruik:
+
+1. Vul evidence per blocker in.
+2. Zet blocker op `in_review`.
+3. Laat reviewer/approver de evidence beoordelen.
+4. Markeer als `approved`, `rejected` of `not_applicable`.
+5. Exporteer release decision JSON/Markdown.
+
+GO/NO-GO blijft `NO-GO` zolang één blocker niet approved/not_applicable is. Er wordt vanuit Developer Mode geen SQL, RLS, Auth, Storage, Mollie, Resend of productie-deployment uitgevoerd.

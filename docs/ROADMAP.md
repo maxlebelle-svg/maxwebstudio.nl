@@ -263,3 +263,24 @@ Niet live:
 Volgende logische stap:
 
 - testomgeving handmatig uitvoeren volgens `docs/deployment/TEST_EXECUTION_PLAN.md` en resultaten invullen in `docs/deployment/TEST_RESULTS.md`.
+
+### 14.2 - Deployment Blockers Evidence & Manual Approval Flow
+
+Afgerond als release governance:
+
+- evidence schema per blocker
+- handmatige approval flow
+- audit trail per blocker
+- release decision JSON export
+- release decision Markdown
+- uitgebreid test results template
+
+Niet live:
+
+- geen SQL uitgevoerd
+- geen productie aangepast
+- geen Auth/RLS/Storage/Mollie/Resend live gezet
+
+Volgende logische stap:
+
+- echte testomgeving-resultaten invullen en per blocker evidence laten reviewen.

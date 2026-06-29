@@ -402,3 +402,26 @@ Belangrijk:
 - SQL execution order wordt alleen logisch gevalideerd.
 - Testresultaten blijven `NOT TESTED` totdat een echte Supabase testomgeving is gebruikt.
 - GO/NO-GO blijft `NO-GO` zolang backup, Auth, RLS, klantisolatie, rollback en env-var evidence ontbreken.
+
+## Fase 14.2 - Deployment Blockers Evidence & Manual Approval Flow
+
+Status: afgerond als release-control laag. Er is geen SQL uitgevoerd en er is geen productieomgeving aangepast.
+
+Toegevoegd:
+
+- `/public/src/services/releaseDecisionService.js`
+
+Bijgewerkt:
+
+- `deploymentBlockerService` heeft blocker-specifieke evidencevelden, validatie en approval history.
+- Developer Mode toont verplichte evidencevelden, missing evidence, reason/approver velden en approval history.
+- Release decision kan als JSON worden geëxporteerd of als Markdown worden getoond.
+- `TEST_RESULTS.md` bevat nu aparte secties voor RLS, Auth, klantisolatie, klantportaal, Mollie, Resend, Storage, Functions en post-deploy checks.
+
+Belangrijk:
+
+- `approved` vereist volledige evidence.
+- `approved` vereist reviewer/approver registratie.
+- `rejected`, `not_applicable` en reset vereisen een reden.
+- Codex keurt niets automatisch goed.
+- GO blijft `NO-GO` zolang evidence/approval ontbreekt.
