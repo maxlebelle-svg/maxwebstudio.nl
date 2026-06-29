@@ -525,3 +525,22 @@ Securityconclusie:
 - De juiste beslissing blijft `NO-GO / BLOCKED`.
 - Auth/RLS/Storage mogen niet live worden gezet totdat een aparte testomgeving met echte Customer A/B isolatie-evidence is gevalideerd.
 - De volgende testuitvoering moet expliciet bewijzen dat de gebruikte Supabase variabelen naar een testproject wijzen en niet naar productie.
+
+## Fase 14.4A - Supabase test setup security
+
+Fase 14.4A bereidt de testomgeving voor zonder secrets, SQL of productieaanpassingen.
+
+Securityregels:
+
+- `.env.example` en `.env.local.example` bevatten alleen lege placeholders.
+- `SUPABASE_SERVICE_ROLE_KEY` is expliciet setup/server-side only.
+- Testproject moet aantoonbaar gescheiden zijn van productie.
+- Auth redirects moeten naar lokale/test-URLs wijzen.
+- Schema/RLS/Storage tests mogen pas in Fase 14.4B worden uitgevoerd.
+- Deployment blockers worden niet automatisch approved.
+
+Status:
+
+- `blocked_pending_supabase_test_setup`
+- Geen productie geraakt.
+- Geen secrets toegevoegd.

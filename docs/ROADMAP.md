@@ -327,3 +327,24 @@ Resultaat:
 Volgende logische stap:
 
 - Apart Supabase testproject configureren, test-env-vars toevoegen, execution route bevestigen en Fase 14.4 opnieuw uitvoeren met echte schema/Auth/RLS/Storage evidence.
+
+### 14.4A - Supabase Test Setup
+
+Afgerond als voorbereiding:
+
+- test-env-vars exact gedocumenteerd
+- `.env.example` en `.env.local.example` uitgebreid als veilige invultemplates
+- checklist voor apart Supabase testproject toegevoegd
+- schema/Auth/RLS/Storage testinstructies vastgelegd
+- deployment blockers voorzien van concrete next actions
+
+Niet live:
+
+- geen SQL uitgevoerd
+- geen productie geraakt
+- geen echte klantdata gebruikt
+- geen Supabase project gekoppeld
+
+Volgende logische stap:
+
+- Testproject en test-env-vars door Max klaarzetten, daarna Fase 14.4B uitvoeren voor echte Supabase schema/Auth/RLS/Storage validatie.

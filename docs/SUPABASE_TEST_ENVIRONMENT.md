@@ -23,9 +23,14 @@ Gebruik alleen environment variables, nooit hardcoded secrets:
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY` alleen server-side/setup, nooit frontend
+- `SUPABASE_PROJECT_ID` om test/productie handmatig te onderscheiden
+- `APP_ENV=test`
+- `APP_ENVIRONMENT=test`
 - `ADMIN_TOKEN` alleen voor admin/server-side testtools waar nodig
 
 Voor een testproject is het verstandig aparte waarden te gebruiken, bijvoorbeeld via Netlify deploy context of lokale `.env` die niet wordt gecommit.
+
+De gedetailleerde testsetup staat in `docs/deployment/SUPABASE_TEST_SETUP.md`.
 
 ## Scheiding demo/test/productie
 

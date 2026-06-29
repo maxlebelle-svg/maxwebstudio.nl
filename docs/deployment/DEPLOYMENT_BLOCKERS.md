@@ -31,6 +31,28 @@ Status: alle blockers starten als `pending`. Codex mag geen approvals faken.
 | `legacy_customer_tables_mitigated` | Legacy `customer_*` mag niet terug in live-flow. | Mitigatie is gekozen en gedocumenteerd. | verwijzing naar consolidated plan/mapping | technisch verantwoordelijke |
 | `env_vars_verified` | Verkeerde env vars kunnen productie breken. | Namen/omgevingen zijn gecontroleerd zonder secrets op te slaan. | checklist, datum, omgeving | eigenaar/technisch verantwoordelijke |
 
+## Fase 14.4A - Next actions voor Supabase test setup
+
+Status: `blocked_pending_supabase_test_setup`
+
+Voordat Fase 14.4B uitgevoerd kan worden:
+
+1. Maak een apart Supabase testproject aan.
+2. Leg vast dat het project niet de productieomgeving is.
+3. Vul lokale of Netlify test-env-vars in zonder ze te committen.
+4. Bevestig dat `SUPABASE_URL`, `SUPABASE_ANON_KEY` en `SUPABASE_SERVICE_ROLE_KEY` naar test wijzen.
+5. Maak Supabase CLI of een goedgekeurde alternatieve execution route beschikbaar.
+6. Voer daarna pas schema/Auth/RLS/Storage tests uit.
+
+Blockers die hierdoor nog open blijven:
+
+- `env_vars_verified`
+- `auth_test_completed`
+- `rls_test_log_completed`
+- `customer_isolation_test_completed`
+
+Nieuwe evidence mag alleen verwijzen naar testproject, screenshots/logsamenvattingen en checkliststatus. Noteer nooit keys of wachtwoorden.
+
 ## Bewijsregels
 
 - Geen secrets in evidence.

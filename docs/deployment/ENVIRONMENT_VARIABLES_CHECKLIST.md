@@ -7,6 +7,7 @@ Status: invullen zonder waarden of secrets.
 | `SUPABASE_URL` | Supabase project URL | Netlify env / lokale testenv |  |
 | `SUPABASE_ANON_KEY` | Browser-safe Supabase anon key voor RLS | Netlify env / lokale testenv |  |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server-side admin/service acties | Netlify env, nooit frontend |  |
+| `SUPABASE_PROJECT_ID` | Projectcontrole voor test/prod scheiding | lokale testenv / Netlify env |  |
 | `ADMIN_TOKEN` | Admin function authorisatie | Netlify env |  |
 | `RESEND_API_KEY` | E-mails via Resend | Netlify env |  |
 | `FROM_EMAIL` | Afzender e-mail | Netlify env |  |
@@ -27,3 +28,26 @@ Status: invullen zonder waarden of secrets.
 - Service role key mag nooit in frontend of docs terechtkomen.
 - Productie en test gebruiken aparte waarden.
 - Controleer ook Supabase Auth redirect URLs.
+
+## Fase 14.4A - Supabase test setup
+
+Status: `blocked_pending_supabase_test_setup`
+
+Voor Fase 14.4B moeten minimaal deze testwaarden aanwezig zijn:
+
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_PROJECT_ID`
+- `APP_ENV=test`
+- `APP_ENVIRONMENT=test`
+
+Controleer zonder secretwaarden te noteren:
+
+- de Supabase URL wijst naar het testproject
+- de service role key staat alleen lokaal/server-side
+- de anon key is de publieke test anon key
+- Auth redirect URLs wijzen naar test-/lokale URLs
+- productie-URL en test-URL zijn niet gelijk
+
+Zie ook: `docs/deployment/SUPABASE_TEST_SETUP.md`.

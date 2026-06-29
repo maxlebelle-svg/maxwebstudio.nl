@@ -21,6 +21,8 @@ Voer in een testomgeving deze bestanden in volgorde uit:
 
 Controleer na iedere stap of er geen errors zijn.
 
+Voor releasevalidatie vanaf Fase 14.4A geldt: volg eerst `docs/deployment/SUPABASE_TEST_SETUP.md`. Voer schema, RLS of seeddata uitsluitend uit op een apart Supabase testproject totdat de releasebeslissing expliciet GO is.
+
 ## 3. Environment variables
 
 Gebruik `.env.example` of `.env.local.example` als invullijst:
@@ -28,9 +30,12 @@ Gebruik `.env.example` of `.env.local.example` als invullijst:
 ```text
 SUPABASE_URL=
 SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
 SUPABASE_PROJECT_ID=
-APP_ENV=demo
+APP_ENV=test
+APP_ENVIRONMENT=test
 DATA_PROVIDER=localStorage
+DATA_PROVIDER_MODE=local
 ```
 
 Voor Netlify komen deze waarden in de Netlify environment settings, niet in de repository.

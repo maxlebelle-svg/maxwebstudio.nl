@@ -482,3 +482,31 @@ Belangrijk:
 
 - Status blijft `NO-GO / BLOCKED`.
 - De volgende stap is een apart Supabase testproject met test-env-vars configureren en daarna Fase 14.4 opnieuw uitvoeren met echte evidence.
+
+## Fase 14.4A - Supabase Test Setup
+
+Status: voorbereid als testsetupfase. Er is geen SQL uitgevoerd, geen productieomgeving aangepast en geen testproject gekoppeld vanuit Codex.
+
+Toegevoegd/bijgewerkt:
+
+- `/docs/deployment/SUPABASE_TEST_SETUP.md`
+- `.env.example`
+- `.env.local.example`
+- `/docs/deployment/ENVIRONMENT_VARIABLES_CHECKLIST.md`
+- `/docs/deployment/DEPLOYMENT_BLOCKERS.md`
+- `/docs/deployment/TEST_RESULTS.md`
+- `/docs/SUPABASE_TEST_ENVIRONMENT.md`
+- `/supabase/setup-guide.md`
+
+Doel:
+
+- exact vastleggen welke Supabase testvariabelen nodig zijn
+- veilig checklisten hoe een apart testproject wordt aangemaakt
+- documenteren hoe schema/Auth/RLS/Storage straks getest worden
+- Fase 14.4B voorbereiden zonder productie of echte klantdata te raken
+
+Belangrijk:
+
+- Status blijft `blocked_pending_supabase_test_setup`.
+- `.env` templates bevatten alleen namen en lege waarden.
+- De service role key blijft server-side/setup-only en mag nooit naar frontend of documentatie met waarde.

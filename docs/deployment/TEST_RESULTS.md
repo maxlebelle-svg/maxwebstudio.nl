@@ -90,6 +90,30 @@ Belangrijkste conclusie:
 | Storage evidence | BLOCKED | Geen bucket getest | Test private buckets en signed URL flow in testproject |
 | Environment variables verified | BLOCKED | Env-vars ontbreken | Vul checklist in zonder secrets te noteren |
 
+## Fase 14.4A Supabase test setup
+
+Status: `blocked_pending_supabase_test_setup`
+
+Deze fase heeft de testsetup voorbereid, maar geen testomgeving uitgevoerd.
+
+| Testnaam | Stappen | Verwacht resultaat | Werkelijk resultaat | Status | Evidence / notities |
+| --- | --- | --- | --- | --- | --- |
+| Supabase test-env-vars documenteren | Benodigde variabelen vastleggen | Duidelijke lijst zonder secrets | Vastgelegd in `SUPABASE_TEST_SETUP.md` en env examples | PASS | Geen waarden toegevoegd |
+| Testproject checklist | Stappen voor apart testproject documenteren | Veilig uitvoerbare checklist | Vastgelegd in `SUPABASE_TEST_SETUP.md` | PASS | Geen productie geraakt |
+| Supabase CLI instructies | Gebruik documenteren zonder destructieve actie | CLI-route duidelijk, geen uitvoering | Vastgelegd in `SUPABASE_TEST_SETUP.md` | PASS | CLI niet geinstalleerd of uitgevoerd |
+| `.env` templates | Template uitbreiden met testvars | Invullijst zonder secrets | `.env.example` en `.env.local.example` bijgewerkt | PASS | Waarden leeg |
+| Schema/Auth/RLS/Storage instructies | Herhaalbare testflow vastleggen | 14.4B kan gericht worden uitgevoerd | Vastgelegd in `SUPABASE_TEST_SETUP.md` | PASS | Geen SQL uitgevoerd |
+| Deployment blockers next actions | Blockers koppelen aan concrete setup-acties | Open blockers hebben duidelijke vervolgstappen | `DEPLOYMENT_BLOCKERS.md` bijgewerkt | PASS | Geen approvals gezet |
+
+Open voor Fase 14.4B:
+
+- testproject daadwerkelijk aanmaken
+- env-vars lokaal of in Netlify testcontext instellen
+- bevestigen dat de waarden naar test wijzen
+- schema uitvoeren op testomgeving
+- testusers aanmaken
+- Auth/RLS/klantisolatie/Storage evidence verzamelen
+
 ## Fase 14.3 lokale rooktest
 
 Uitgevoerd zonder productie, zonder SQL en zonder live Supabase.
