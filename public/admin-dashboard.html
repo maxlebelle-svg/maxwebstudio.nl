@@ -827,6 +827,10 @@
                 <button class="button secondary" id="test-sales-navigation" type="button">Test sales navigation</button>
                 <button class="button secondary" id="test-support-navigation" type="button">Test support navigation</button>
                 <button class="button secondary" id="test-developer-navigation" type="button">Test developer navigation</button>
+                <button class="button secondary" id="view-security-checklist" type="button">Bekijk security checklist</button>
+                <button class="button secondary" id="run-security-readiness-test" type="button">Run security readiness self-test</button>
+                <button class="button secondary" id="view-security-risks" type="button">Bekijk bekende risico's</button>
+                <button class="button secondary" id="view-rls-coverage" type="button">Bekijk RLS coverage summary</button>
                 <button class="button secondary" id="view-migration-plan" type="button">Bekijk migratieplan</button>
                 <button class="button secondary" id="view-planned-tables" type="button">Bekijk geplande tabellen</button>
                 <button class="button secondary" id="run-supabase-migration-check" type="button">Run localStorage migratie-check</button>
@@ -1849,6 +1853,10 @@
         const testSalesNavigationButton = document.getElementById("test-sales-navigation");
         const testSupportNavigationButton = document.getElementById("test-support-navigation");
         const testDeveloperNavigationButton = document.getElementById("test-developer-navigation");
+        const viewSecurityChecklistButton = document.getElementById("view-security-checklist");
+        const runSecurityReadinessTestButton = document.getElementById("run-security-readiness-test");
+        const viewSecurityRisksButton = document.getElementById("view-security-risks");
+        const viewRlsCoverageButton = document.getElementById("view-rls-coverage");
         const viewMigrationPlanButton = document.getElementById("view-migration-plan");
         const viewPlannedTablesButton = document.getElementById("view-planned-tables");
         const runSupabaseMigrationCheckButton = document.getElementById("run-supabase-migration-check");
@@ -3057,6 +3065,7 @@
             authProfileService: await import("./src/services/authProfileService.js"),
             routeGuardService: await import("./src/services/routeGuardService.js"),
             accessControlTestService: await import("./src/services/accessControlTestService.js"),
+            securityReadinessService: await import("./src/services/securityReadinessService.js"),
           };
           return state.developerModules;
         }
@@ -4266,6 +4275,7 @@
             ["Registry ok", result.registry?.ok ? "Ja" : "Nee"],
             ["Access mode", result.settings?.mode || "-"],
             ["Customer scenario", result.customerAccess?.mismatch?.decision || "-"],
+            ["Security tests", result.securityTests?.ok ? "Geslaagd" : result.securityTests ? "Aandacht nodig" : "Niet uitgevoerd"],
           ]);
           (result.roles || []).forEach((roleResult) => {
             appendDeveloperCard(`Role navigation ${roleResult.role}`, roleResult.decisions.map((decision) => [
@@ -4273,6 +4283,68 @@
               decision.allowed ? "Toegestaan" : decision.decision || "Geblokkeerd",
             ]));
           });
+          if (result.securityTests?.tests?.length) {
+            appendDeveloperCard("Security access tests", result.securityTests.tests.map((test) => [
+              test.name,
+              `${test.ok ? "OK" : "Aandacht"} - ${test.details}`,
+            ]));
+          }
+        }
+
+        function renderSecurityReadiness(modules) {
+          const summary = modules.securityReadinessService.getSecurityReadinessSummary();
+          appendDeveloperCard("Security & RLS readiness", [
+            ["RLS policy matrix", summary.statuses.MATRIX],
+            ["Auth claims strategy", summary.statuses.CLAIMS],
+            ["RLS SQL draft", summary.statuses.SQL_DRAFT],
+            ["Security risk audit", summary.statuses.RISK_AUDIT],
+            ["RLS live execution", summary.statuses.LIVE_EXECUTION],
+            ["Frontend route guards", summary.statuses.ROUTE_GUARDS],
+            ["Database-level security", summary.statuses.DATABASE_SECURITY],
+          ]);
+        }
+
+        function renderSecurityChecklist(checklist = []) {
+          appendDeveloperCard("Security checklist", checklist.map((item) => [
+            item.item,
+            `${item.status} - ${item.file}`,
+          ]));
+        }
+
+        function renderSecurityRisks(risks = []) {
+          appendDeveloperCard("Bekende security risico's", risks.map((risk) => [
+            `${risk.level.toUpperCase()} - ${risk.title}`,
+            risk.mitigation,
+          ]));
+        }
+
+        function renderRlsCoverageSummary(coverage = {}) {
+          appendDeveloperCard("RLS coverage summary", [
+            ["Canonical tabellen", String(coverage.canonicalTables?.length || 0)],
+            ["Legacy uitgesloten", coverage.legacyTablesExcluded?.join(", ") || "-"],
+            ["Live uitgevoerd", coverage.liveExecution ? "Ja" : "Nee"],
+            ["SQL uitgevoerd", coverage.sqlExecuted ? "Ja" : "Nee"],
+            ["Status", coverage.status || "-"],
+          ]);
+          appendDeveloperCard("Canonical RLS tabellen", (coverage.canonicalTables || []).map((table) => [
+            table.table,
+            `${table.planned ? "gepland" : "niet gepland"} - ${table.live ? "live" : "niet live"}`,
+          ]));
+          appendDeveloperCard("Role coverage", (coverage.roleCoverage || []).map((role) => [
+            role.role,
+            `${role.status} - ${role.boundary}`,
+          ]));
+        }
+
+        function renderSecurityReadinessSelfTest(result = {}) {
+          appendDeveloperCard("Security readiness self-test", [
+            ["Getest op", result.testedAt ? formatDate(result.testedAt) : "-"],
+            ["Status", result.status || "-"],
+            ["OK", result.ok ? "Ja" : "Nee"],
+            ["Live-safe", result.liveSafe ? "Ja" : "Nee"],
+            ["Risico's", `${result.riskCount || 0} totaal, ${result.highRiskCount || 0} hoog`],
+            ["Melding", result.message || "-"],
+          ]);
         }
 
         function renderProfileReadiness(modules) {
@@ -4477,6 +4549,7 @@
             renderAuthProviderStatus(modules.authService);
             renderProfileReadiness(modules);
             renderAccessControlReadiness(modules);
+            renderSecurityReadiness(modules);
             appendDeveloperCard("Auth sessie", [
               ["Gebruiker", user?.name || user?.email || "Geen sessie"],
               ["Rol", permissionPreview.roleLabel],
@@ -4495,6 +4568,10 @@
             if (extra.showAccountRequests) renderAccountRequestsList(modules.authService);
             if (extra.profileActionResult) renderProfileActionResult(extra.profileActionResult);
             if (extra.accessControlTestResult) renderAccessControlTestResult(extra.accessControlTestResult);
+            if (extra.securityChecklist) renderSecurityChecklist(extra.securityChecklist);
+            if (extra.securityRisks) renderSecurityRisks(extra.securityRisks);
+            if (extra.rlsCoverageSummary) renderRlsCoverageSummary(extra.rlsCoverageSummary);
+            if (extra.securityReadinessSelfTest) renderSecurityReadinessSelfTest(extra.securityReadinessSelfTest);
             if (extra.supabaseReadOnlyResult) renderSupabaseReadOnlyResult(extra.supabaseReadOnlyTitle || "Supabase read-only resultaat", extra.supabaseReadOnlyResult);
             if (extra.supabaseWriteTestResult) renderSupabaseWriteTestResult(extra.supabaseWriteTestResult);
             if (extra.supabaseCustomerRows) {
@@ -4725,6 +4802,54 @@
           } catch (error) {
             console.error("Access control test failed", error);
             setSettingsMessage(error.message || "Access control test kon niet worden uitgevoerd.", "error");
+          }
+        }
+
+        async function showSecurityChecklistHandler() {
+          try {
+            const modules = await loadDeveloperModules();
+            const checklist = modules.securityReadinessService.getSecurityHardeningChecklist();
+            await renderDeveloperToolsSummary({ securityChecklist: checklist });
+            setSettingsMessage("Security checklist getoond. Dit voert geen SQL uit.", "success");
+          } catch (error) {
+            console.error("Security checklist could not be rendered", error);
+            setSettingsMessage("Security checklist kon niet worden getoond.", "error");
+          }
+        }
+
+        async function runSecurityReadinessTestHandler() {
+          try {
+            const modules = await loadDeveloperModules();
+            const result = modules.securityReadinessService.runSecurityReadinessSelfTest();
+            await renderDeveloperToolsSummary({ securityReadinessSelfTest: result });
+            setSettingsMessage("Security readiness self-test uitgevoerd. RLS is niet live gezet.", "success");
+          } catch (error) {
+            console.error("Security readiness self-test failed", error);
+            setSettingsMessage("Security readiness self-test kon niet worden uitgevoerd.", "error");
+          }
+        }
+
+        async function showSecurityRisksHandler() {
+          try {
+            const modules = await loadDeveloperModules();
+            const risks = modules.securityReadinessService.getKnownSecurityRisks();
+            await renderDeveloperToolsSummary({ securityRisks: risks });
+            setSettingsMessage("Bekende security risico's getoond.", "success");
+          } catch (error) {
+            console.error("Security risks could not be rendered", error);
+            setSettingsMessage("Security risico's konden niet worden getoond.", "error");
+          }
+        }
+
+        async function showRlsCoverageHandler() {
+          try {
+            const modules = await loadDeveloperModules();
+            const coverage = modules.securityReadinessService.getRlsCoverageSummary();
+            await renderDeveloperToolsSummary({ rlsCoverageSummary: coverage });
+            setSettingsMessage("RLS coverage summary getoond. Live execution blijft geblokkeerd.", "success");
+          } catch (error) {
+            console.error("RLS coverage could not be rendered", error);
+            setSettingsMessage("RLS coverage summary kon niet worden getoond.", "error");
           }
         }
 
@@ -13428,6 +13553,10 @@
         testSalesNavigationButton.addEventListener("click", () => runAccessControlTestHandler("sales"));
         testSupportNavigationButton.addEventListener("click", () => runAccessControlTestHandler("support"));
         testDeveloperNavigationButton.addEventListener("click", () => runAccessControlTestHandler("developer"));
+        viewSecurityChecklistButton.addEventListener("click", showSecurityChecklistHandler);
+        runSecurityReadinessTestButton.addEventListener("click", runSecurityReadinessTestHandler);
+        viewSecurityRisksButton.addEventListener("click", showSecurityRisksHandler);
+        viewRlsCoverageButton.addEventListener("click", showRlsCoverageHandler);
         viewMigrationPlanButton.addEventListener("click", showMigrationPlanHandler);
         viewPlannedTablesButton.addEventListener("click", showPlannedTablesHandler);
         runSupabaseMigrationCheckButton.addEventListener("click", runSupabaseMigrationCheckHandler);

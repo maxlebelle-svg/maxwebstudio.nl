@@ -454,3 +454,25 @@ Gedrag:
 - hard blocking blijft voorbereid maar niet standaard actief
 
 Dit is een browserlaag. Database-hardening via RLS blijft gepland voor Fase 13.3.
+
+## Fase 13.3 - Klantportaal RLS readiness
+
+De klantportaalbeveiliging is nu op database-niveau ontworpen, maar nog niet live uitgevoerd.
+
+Belangrijk voor het klantportaal:
+
+- Klanten mogen alleen eigen `customers` data lezen.
+- `websites`, `projects`, `quotes`, `invoices`, `subscriptions` en `files` erven klanttoegang via `customer_id`.
+- `change_requests` blijft gekoppeld via `auth_user_id` totdat deze later eventueel aan `customers.id` wordt gekoppeld.
+- `quote_lines` en `invoice_lines` erven toegang via hun parent-record.
+- Interne notities, activity logs, import logs, adminmetadata en technische debugvelden blijven buiten de klantpayload.
+- Demo-klantportaaldata moet gescheiden blijven via `is_demo` en `environment = 'demo'`.
+
+Nieuwe documenten:
+
+- `/docs/RLS_POLICY_MATRIX.md`
+- `/docs/AUTH_CLAIMS_STRATEGY.md`
+- `/docs/SECURITY_RISK_AUDIT.md`
+- `/docs/supabase-rls-canonical-draft.sql`
+
+Status: klantportaal route guard is soft actief; database-level RLS is voorbereid maar nog niet live.

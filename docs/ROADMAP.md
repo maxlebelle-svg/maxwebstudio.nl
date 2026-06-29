@@ -151,3 +151,24 @@ Afgerond:
 Volgende logische stap:
 
 - 13.3: RLS/security audit, API security en database policies definitief hard maken.
+
+### 13.3 - RLS Policy Hardening & Security Audit
+
+Afgerond als voorbereiding:
+
+- RLS policy matrix voor canonical tabellen.
+- Auth claims strategy op basis van `profiles`, `auth_user_id`, rollen en customer ownership.
+- Canonical RLS SQL draft zonder live uitvoering.
+- Security risk audit met bekende risico's en mitigaties.
+- Developer Mode Security & RLS readiness kaart.
+- Extra access-control self-tests voor customer/demo/sales/support/developer/anonymous scenario's.
+
+Niet live:
+
+- RLS SQL is niet uitgevoerd.
+- Database-level security staat nog niet hard aan als productiegrens.
+- Hard route guards zijn niet standaard actief.
+
+Volgende logische stap:
+
+- Review van de RLS draft en daarna gecontroleerde testuitvoering in een Supabase testomgeving voordat productie-RLS live mag.

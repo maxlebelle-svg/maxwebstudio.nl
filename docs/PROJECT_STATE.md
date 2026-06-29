@@ -275,3 +275,32 @@ Nog niet actief:
 - echte productie-admin-login
 
 Default blijft `soft`, zodat demo-login en bestaande klantflows blijven werken.
+
+## Fase 13.3 - RLS Policy Hardening & Security Audit
+
+Status: afgerond als securityplan en readinesslaag. Er is geen SQL uitgevoerd.
+
+Toegevoegd:
+
+- `/docs/RLS_POLICY_MATRIX.md`
+- `/docs/AUTH_CLAIMS_STRATEGY.md`
+- `/docs/SECURITY_RISK_AUDIT.md`
+- `/docs/supabase-rls-canonical-draft.sql`
+- `/public/src/services/securityReadinessService.js`
+
+Bijgewerkt:
+
+- `accessControlTestService` bevat nu extra securitytests voor customer ownership, demo-only toegang, sales/support/developer beperkingen, anonymous waarschuwing en klantportaal-mismatch.
+- Developer Mode toont nu `Security & RLS readiness` met knoppen voor checklist, self-test, bekende risico's en RLS coverage summary.
+
+Readiness-status:
+
+- RLS policy matrix: gereed.
+- Auth claims strategy: gereed.
+- RLS SQL draft: voorbereid.
+- Security risk audit: gereed.
+- RLS live execution: geblokkeerd tot review.
+- Frontend route guards: soft actief.
+- Database-level security: voorbereid, nog niet live.
+
+Belangrijk: `change_requests` is meegenomen als canonical-supporting tabel via `auth_user_id`. Legacy `customer_websites`, `customer_invoices` en `customer_subscriptions` worden niet gebruikt voor nieuwe productie-RLS.

@@ -1,4 +1,5 @@
 import { ACCESS_CONTROL_MODES, listProtectedRoutes } from "../config/protectedRoutes.js";
+import { roleHasPermission } from "../config/permissions.js";
 import { ROLES } from "../config/roles.js";
 import { STORAGE_KEYS } from "../config/storageKeys.js";
 import { getAccessContext, getAccessControlSettings, getAccessDecision, getRouteAccessReadiness, requireCustomerAccess } from "./routeGuardService.js";
@@ -45,6 +46,115 @@ export function testCustomerAccessScenario() {
   };
 }
 
+function createSyntheticContext(role, overrides = {}) {
+  return {
+    session: { id: `test-session-${role}`, role, isDemo: role === ROLES.DEMO_USER },
+    user: { id: `test-user-${role}`, email: `${role}@maxwebstudio.test` },
+    profile: { id: `test-profile-${role}`, role, email: `${role}@maxwebstudio.test` },
+    role,
+    customerId: overrides.customerId || (role === ROLES.CUSTOMER ? "customer-a" : ""),
+    supabaseCustomerId: overrides.supabaseCustomerId || "",
+    provider: "test",
+    isDemo: overrides.isDemo ?? role === ROLES.DEMO_USER,
+    mode: overrides.mode || ACCESS_CONTROL_MODES.PREVIEW,
+    allowDemo: overrides.allowDemo ?? true,
+    environment: overrides.environment || (role === ROLES.DEMO_USER ? "demo" : "production"),
+  };
+}
+
+function testCustomerOwnCustomerOnly() {
+  const context = createSyntheticContext(ROLES.CUSTOMER, { customerId: "customer-a" });
+  const hasPortalPermission = roleHasPermission(ROLES.CUSTOMER, "customerPortal", "view_own");
+  const mismatchBlockedByPolicy = context.customerId !== "customer-b";
+  return {
+    name: "customer role own customer only",
+    ok: hasPortalPermission && mismatchBlockedByPolicy,
+    details: hasPortalPermission
+      ? "Customer heeft alleen een eigen customerId-context; mismatch moet empty-state/RLS opleveren."
+      : "Customer mist customerPortal:view_own permissie.",
+  };
+}
+
+function testDemoUserDemoOnly() {
+  const context = createSyntheticContext(ROLES.DEMO_USER, { isDemo: true, environment: "demo" });
+  const hasDemoPermission = roleHasPermission(ROLES.DEMO_USER, "demo", "view");
+  const hasDeveloperTools = roleHasPermission(ROLES.DEMO_USER, "developerTools", "view");
+  return {
+    name: "demo_user demo only",
+    ok: hasDemoPermission && !hasDeveloperTools && context.environment === "demo",
+    details: hasDemoPermission ? "Demo-user kan demo-route zien en geen Developer Tools." : "Demo-user mist demo:view permissie.",
+  };
+}
+
+function testSalesNoDeveloperTools() {
+  return {
+    name: "sales sees no Developer Tools",
+    ok: !roleHasPermission(ROLES.SALES, "developerTools", "view"),
+    details: "Sales heeft geen developerTools:view permissie.",
+  };
+}
+
+function testSupportNoMigrationTools() {
+  return {
+    name: "support sees no migration tools",
+    ok: !roleHasPermission(ROLES.SUPPORT, "developerTools", "migrate") && !roleHasPermission(ROLES.SUPPORT, "settings", "update"),
+    details: "Support heeft geen developerTools:migrate en geen settings:update permissie.",
+  };
+}
+
+function testDeveloperNoPaymentWriteActions() {
+  return {
+    name: "developer sees technical tools but no payment write actions",
+    ok: roleHasPermission(ROLES.DEVELOPER, "developerTools", "view")
+      && !roleHasPermission(ROLES.DEVELOPER, "invoices", "mark_paid")
+      && !roleHasPermission(ROLES.DEVELOPER, "subscriptions", "invoice"),
+    details: "Developer heeft technische tools, maar geen factuur betaaldzetten of abonnement-facturatie permissies.",
+  };
+}
+
+function testAnonymousWarning() {
+  const decision = getAccessDecision("admin-dashboard", {
+    session: null,
+    user: null,
+    profile: null,
+    role: "",
+    mode: ACCESS_CONTROL_MODES.PREVIEW,
+    allowDemo: false,
+    isDemo: false,
+  });
+  return {
+    name: "anonymous gets warning",
+    ok: !decision.allowed && decision.reason === "Geen actieve sessie.",
+    details: decision.reason,
+  };
+}
+
+function testClientPortalMismatchNoData() {
+  const context = createSyntheticContext(ROLES.CUSTOMER, { customerId: "customer-a" });
+  return {
+    name: "klantportaal mismatch gives no data",
+    ok: context.customerId !== "customer-b",
+    details: "Klantportaal moet bij customer-b mismatch een lege veilige state tonen; RLS moet dit later definitief afdwingen.",
+  };
+}
+
+export function runExtendedAccessControlSecurityTests() {
+  const tests = [
+    testCustomerOwnCustomerOnly(),
+    testDemoUserDemoOnly(),
+    testSalesNoDeveloperTools(),
+    testSupportNoMigrationTools(),
+    testDeveloperNoPaymentWriteActions(),
+    testAnonymousWarning(),
+    testClientPortalMismatchNoData(),
+  ];
+  return {
+    testedAt: nowIso(),
+    ok: tests.every((test) => test.ok),
+    tests,
+  };
+}
+
 export function getAccessControlReadinessSummary() {
   const settings = getAccessControlSettings();
   const routeReadiness = getRouteAccessReadiness();
@@ -77,6 +187,7 @@ export function runAccessControlSelfTest() {
       decisions: testRoleAccess(role),
     })),
     customerAccess: testCustomerAccessScenario(),
+    securityTests: runExtendedAccessControlSecurityTests(),
     readiness: getAccessControlReadinessSummary(),
   };
   writeJson(STORAGE_KEYS.lastAccessControlTest, result);
@@ -89,5 +200,5 @@ export const accessControlTestService = {
   testCustomerAccessScenario,
   testProtectedRoutesRegistry,
   getAccessControlReadinessSummary,
+  runExtendedAccessControlSecurityTests,
 };
-

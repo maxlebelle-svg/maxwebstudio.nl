@@ -350,3 +350,33 @@ Securitygrens:
 
 - Soft route guards voorkomen onbedoelde UI-acties, maar vervangen RLS niet.
 - Fase 13.3 moet RLS, API-security en database policies definitief auditen voordat echte klantdata live gebruikt wordt.
+
+## Fase 13.3 - RLS hardening audit
+
+Fase 13.3 heeft security verder uitgewerkt zonder policies live te zetten.
+
+Toegevoegd:
+
+- `/docs/RLS_POLICY_MATRIX.md`: matrix per canonical tabel en rol.
+- `/docs/AUTH_CLAIMS_STRATEGY.md`: strategie voor `profiles`, rollen en customer ownership.
+- `/docs/supabase-rls-canonical-draft.sql`: SQL-draft met `rollback` aan het einde, dus niet bedoeld als directe live-uitvoering.
+- `/docs/SECURITY_RISK_AUDIT.md`: risico-overzicht met mitigaties.
+- `/public/src/services/securityReadinessService.js`: read-only readinessinformatie voor Developer Mode.
+
+Productie-readiness:
+
+- RLS policy matrix: gereed.
+- Auth claims strategy: gereed.
+- RLS SQL draft: voorbereid.
+- Security risk audit: gereed.
+- RLS live execution: geblokkeerd tot review.
+- Frontend route guards: soft actief.
+- Database-level security: voorbereid, nog niet live.
+
+Belangrijkste risico's blijven:
+
+- klantdata-cross-access zonder database-RLS
+- demo/productie vermenging
+- open offerte- en betaallinks zonder tokenized/authenticated toegang
+- interne notities en logs die per ongeluk klantzichtbaar worden
+- legacy `customer_*` tabellen opnieuw gebruiken

@@ -288,3 +288,31 @@ RLS blijft voor Fase 13.3:
 - `websites`, `projects`, `quotes`, `invoices`, `subscriptions` = klantmodules
 
 Legacy `customer_websites`, `customer_invoices` en `customer_subscriptions` worden niet de basis voor nieuwe Auth/RLS policies. Bestaande historische documentatie over deze tabellen blijft context, maar nieuwe productiebeveiliging moet op de canonical tabellen worden ontworpen.
+
+## Fase 13.3 - RLS Policy Hardening & Security Audit
+
+Auth/RLS is verder uitgewerkt als ontwerp, zonder live SQL uit te voeren.
+
+Nieuwe documenten:
+
+- `/docs/RLS_POLICY_MATRIX.md`
+- `/docs/AUTH_CLAIMS_STRATEGY.md`
+- `/docs/supabase-rls-canonical-draft.sql`
+- `/docs/SECURITY_RISK_AUDIT.md`
+
+Strategie:
+
+- `profiles` blijft de brug tussen Supabase Auth, rollen en omgeving.
+- `customers.auth_user_id` en `customers.profile_id` bepalen klantownership.
+- Child-tabellen erven toegang via `customer_id`, `quote_id` of `invoice_id`.
+- Demo-toegang blijft gescheiden via `is_demo` en `environment = 'demo'`.
+- Custom JWT-claims zijn bewust nog niet de eerste stap; tabelgebaseerde checks via `profiles` zijn beter controleerbaar.
+
+Status:
+
+- RLS policy matrix: gereed.
+- Auth claims strategy: gereed.
+- RLS SQL draft: voorbereid.
+- RLS live execution: geblokkeerd tot review.
+- Frontend route guards: soft actief.
+- Database-level security: voorbereid, nog niet live.
