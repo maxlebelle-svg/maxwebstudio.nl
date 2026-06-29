@@ -214,3 +214,10 @@ Belangrijk:
 - Gecontroleerde abonnementacties zijn voorbereid voor create, update, pause, cancel, reactivate en archive; er is geen hard delete, bulk-write, provider switch of echte Mollie subscription-mutatie toegevoegd.
 - Abonnementkoppelingen naar customer, website, project en laatste factuur worden gevalideerd voordat Supabase-writes toegestaan worden.
 - Bestaande lokale recurring billing, MRR/ARR-berekening en abonnement-naar-conceptfactuur flow blijven intact.
+- Fase 12.8 bereidt het klantportaal voor op live data via `public/src/services/clientPortalDataService.js`.
+- `/public/klantportaal.html` gebruikt nu een centrale klantportaal-dataservice met modi `demo`, `local`, `supabase-read` en `hybrid`.
+- Het portaal kan klanten vinden via lokale `customerId`, via `supabaseCustomerId`, of via een gecombineerde link zonder tokens.
+- Klantportaaldata wordt strikt gesanitized voordat deze wordt getoond; interne notities, adminmetadata, migratielogs, debugvelden, sessiedata en betaalproviderdetails worden niet naar de klantweergave doorgelaten.
+- Developer Mode bevat nu `Klantportaal live data readiness`, tests voor geselecteerde/demo/hybrid klantportaaldata, een sanitized payload preview en een reset naar demo/local.
+- Offerte- en betaallinks blijven lokaal werken en ondersteunen aanvullend `supabaseQuoteId` en `supabaseInvoiceId` voor toekomstige live data.
+- Klantportaal live data staat op voorbereid; Supabase read/hybrid is voorbereid/actief, writes blijven geblokkeerd en harde auth/route guards volgen in Fase 13.

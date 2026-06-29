@@ -363,3 +363,38 @@ Belangrijk:
 - klantportaal toont nog geen nieuwe live Supabase-abonnementdata via Auth in deze fase
 - klantveilige live abonnementweergave volgt pas na de live klantportaaldata-, Auth- en RLS-fases
 - abonnementen zijn al voorbereid met koppelingen naar customer, website, project en laatste factuur
+
+## Fase 12.8 - Live data-readiness en hybrid fallback
+
+Het demo-klantportaal op `/klantportaal.html?customerId=...` gebruikt nu een centrale data-service:
+
+- `public/src/services/clientPortalDataService.js`
+- `public/src/services/clientPortalTestService.js`
+
+Ondersteunde modi:
+
+- `demo`
+- `local`
+- `supabase-read`
+- `hybrid`
+
+De instelling kan worden opgeslagen in `maxwebstudioClientPortalSettings`. Zonder expliciete instelling blijft het portaal veilig op local/demo fallback draaien.
+
+Belangrijk gedrag:
+
+- lokale demo-klantreis blijft werken zonder Supabase
+- `customerId` blijft werken voor lokale/demo-klanten
+- `supabaseCustomerId` wordt ondersteund voor gemigreerde klanten
+- bij mismatch tussen lokale en Supabase klant-ID wordt geen andere klantdata getoond
+- klantdata wordt eerst gesanitized voordat het portaal rendert
+- interne admin-notities, metadata, migratielogs, debugdata, sessiedata en betaalproviderdetails worden niet getoond
+- offertes en facturen ondersteunen toekomstige Supabase links via `supabaseQuoteId` en `supabaseInvoiceId`
+
+Het portaal toont nu ook een subtiele bronbadge (`Demo`, `Local`, `Supabase`, `Hybrid`) en een klantvriendelijke melding over de gebruikte databron.
+
+Nog niet live-hardgemaakt:
+
+- echte Supabase Auth route guards
+- volledige RLS-audit op klantportaalroutes
+- klantportaal writes
+- echte bestandsdownloads via klant-auth voor alle lokale file metadata

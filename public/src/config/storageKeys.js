@@ -42,6 +42,8 @@ export const STORAGE_KEYS = Object.freeze({
   lastSubscriptionSourceStatus: "maxwebstudioLastSubscriptionSourceStatus",
   lastSubscriptionMigrationDryRun: "maxwebstudioLastSubscriptionMigrationDryRun",
   lastSubscriptionWriteTest: "maxwebstudioLastSubscriptionWriteTest",
+  clientPortalSettings: "maxwebstudioClientPortalSettings",
+  lastClientPortalDataTest: "maxwebstudioLastClientPortalDataTest",
   authUsers: "maxwebstudioAuthUsers",
   currentSession: "maxwebstudioCurrentSession",
   accountRequests: "maxwebstudioAccountRequests",
@@ -57,6 +59,7 @@ export const MODULE_STORAGE_KEYS = Object.freeze({
   invoices: [STORAGE_KEYS.invoices],
   subscriptions: [STORAGE_KEYS.subscriptions],
   settings: [STORAGE_KEYS.settings],
+  clientPortal: [STORAGE_KEYS.clientPortalSettings, STORAGE_KEYS.lastClientPortalDataTest],
   auth: [STORAGE_KEYS.authUsers, STORAGE_KEYS.currentSession, STORAGE_KEYS.accountRequests],
   demo: [STORAGE_KEYS.demoEmails, STORAGE_KEYS.importLog, STORAGE_KEYS.activityLog, STORAGE_KEYS.migrationLog],
 });

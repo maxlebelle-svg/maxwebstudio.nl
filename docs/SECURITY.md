@@ -255,6 +255,17 @@ Abonnement-Supabasevoorbereiding in Fase 12.7:
 - Abonnementkoppelingen naar customer, website, project en laatste factuur worden gevalideerd voordat Supabase-writes toegestaan worden.
 - Bestaande lokale recurring billing blijft lokaal/demo totdat klantportaaldata, Auth en RLS live hardgemaakt zijn.
 
+Klantportaal live data-readiness in Fase 12.8:
+
+- `clientPortalDataService` filtert data op exacte `customerId` en/of `supabaseCustomerId`.
+- Er is geen fuzzy matching op e-mail of bedrijfsnaam toegevoegd om datalekken tussen klanten te voorkomen.
+- Bij mismatch tussen lokale en Supabase klant-ID wordt geen klantdata getoond.
+- `sanitizeClientPortalData` laat alleen klantveilige velden door.
+- Interne notities, adminnotities, metadata, migratielogs, activity logs, sessie/debugvelden, tokens, secrets en betaalprovider-mandate/customerdetails worden niet aan het klantportaal gegeven.
+- Supabase service role keys blijven buiten de frontend.
+- Klantportaal-writes blijven geblokkeerd.
+- Harde route guards, echte loginverplichting en volledige RLS-audit blijven gepland voor Fase 13.
+
 Aanbevelingen:
 
 - limieten blijven handhaven

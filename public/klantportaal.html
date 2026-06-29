@@ -20,12 +20,15 @@
           <h1 id="portal-title">Klantportaal laden...</h1>
           <p id="portal-subtitle">Een overzicht van je websites, projecten, offertes, facturen en bestanden.</p>
         </div>
-        <a class="button secondary" href="index.html">Terug naar website</a>
+        <div class="portal-actions">
+          <span class="status-badge status-prepared" id="portal-source-badge">Bron laden</span>
+          <a class="button secondary" href="index.html">Terug naar website</a>
+        </div>
       </header>
 
-      <section class="portal-message" role="note">
+      <section class="portal-message" id="portal-source-message" role="note">
         <strong>Demo klantportaal</strong>
-        <span>Deze pagina gebruikt lokale data uit deze browser en heeft nog geen echte login of beveiliging. Er worden geen interne admin-notities getoond.</span>
+        <span id="portal-source-text">Deze pagina gebruikt lokale data uit deze browser en heeft nog geen echte login of beveiliging. Er worden geen interne admin-notities getoond.</span>
       </section>
 
       <section class="portal-message" id="portal-auth-message" role="note" hidden>
@@ -38,6 +41,7 @@
         <article class="admin-card metric-card"><span>Open facturen</span><strong id="metric-invoices">0</strong><small id="metric-invoice-total">€ 0,00 openstaand</small></article>
         <article class="admin-card metric-card"><span>Lopende projecten</span><strong id="metric-projects">0</strong><small>Niet afgerond</small></article>
         <article class="admin-card metric-card"><span>Actieve websites</span><strong id="metric-websites">0</strong><small>Online of actief</small></article>
+        <article class="admin-card metric-card"><span>Actieve abonnementen</span><strong id="metric-subscriptions">0</strong><small>Onderhoud actief</small></article>
       </section>
 
       <section class="admin-card customer-portal-profile" id="customer-profile" aria-live="polite"></section>
@@ -74,11 +78,16 @@
     </main>
 
     <script>
-      (() => {
+      (async () => {
+        const { getClientPortalData } = await import("./src/services/clientPortalDataService.js");
         const params = new URLSearchParams(window.location.search);
         const customerId = params.get("customerId") || "";
+        const supabaseCustomerId = params.get("supabaseCustomerId") || "";
+        const portalDataMode = params.get("portalDataMode") || params.get("mode") || "";
         const portalTitle = document.getElementById("portal-title");
         const portalSubtitle = document.getElementById("portal-subtitle");
+        const portalSourceBadge = document.getElementById("portal-source-badge");
+        const portalSourceText = document.getElementById("portal-source-text");
         const portalAuthMessage = document.getElementById("portal-auth-message");
         const portalAuthText = document.getElementById("portal-auth-text");
         const customerProfile = document.getElementById("customer-profile");
@@ -94,6 +103,7 @@
           invoiceTotal: document.getElementById("metric-invoice-total"),
           projects: document.getElementById("metric-projects"),
           websites: document.getElementById("metric-websites"),
+          subscriptions: document.getElementById("metric-subscriptions"),
         };
 
         const money = (value) => new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(Number(value || 0));
@@ -109,18 +119,6 @@
           if (/^https?:\/\//i.test(url) || url.startsWith("/")) return url;
           return `https://${url}`;
         };
-
-        function readStorage(...keys) {
-          for (const key of keys) {
-            try {
-              const value = JSON.parse(localStorage.getItem(key) || "[]");
-              if (Array.isArray(value) && value.length) return value;
-            } catch (error) {
-              // Try the next known key.
-            }
-          }
-          return [];
-        }
 
         function readCurrentSession() {
           try {
@@ -143,10 +141,6 @@
             return;
           }
           portalAuthText.textContent = `Ingelogd als ${roleLabel}. Dit is een lokale demo-sessie; echte Supabase Auth wordt later gekoppeld.`;
-        }
-
-        function belongsToCustomer(item) {
-          return [item.customerId, item.profileId, item.authUserId].filter(Boolean).map(String).includes(String(customerId));
         }
 
         renderSessionNotice();
@@ -280,36 +274,64 @@
           return card;
         }
 
-        const customers = readStorage("maxwebstudioCustomers", "maxwebstudioCrmCustomers");
-        const websites = readStorage("maxwebstudioWebsites", "maxwebstudioManagedSites").filter(belongsToCustomer);
-        const projects = readStorage("maxwebstudioProjects").filter(belongsToCustomer);
-        const files = readStorage("maxwebstudioFiles").filter(belongsToCustomer);
-        const invoices = readStorage("maxwebstudioInvoices").filter(belongsToCustomer);
-        const subscriptions = readStorage("maxwebstudioSubscriptions").filter(belongsToCustomer);
-        const quotes = readStorage("maxwebstudioQuotes").filter(belongsToCustomer);
-        const customer = customers.find((item) => String(item.id) === String(customerId));
+        function quoteUrl(quote) {
+          const query = new URLSearchParams();
+          if (quote.id) query.set("quoteId", quote.id);
+          if (quote.supabaseQuoteId) query.set("supabaseQuoteId", quote.supabaseQuoteId);
+          return query.toString() ? `/offerte.html?${query.toString()}` : "";
+        }
+
+        function invoiceUrl(invoice) {
+          const query = new URLSearchParams();
+          if (invoice.id) query.set("invoiceId", invoice.id);
+          if (invoice.supabaseInvoiceId) query.set("supabaseInvoiceId", invoice.supabaseInvoiceId);
+          return query.toString() ? `/betalen.html?${query.toString()}` : "";
+        }
+
+        function updateSourceMessage(payload) {
+          const mode = payload.mode || "local";
+          const labels = {
+            demo: "Demo",
+            local: "Local",
+            "supabase-read": "Supabase",
+            hybrid: "Hybrid",
+          };
+          portalSourceBadge.textContent = labels[mode] || mode;
+          portalSourceBadge.className = `status-badge ${mode === "hybrid" || mode === "supabase-read" ? "status-active" : "status-prepared"}`;
+          if (mode === "hybrid") {
+            portalSourceText.textContent = "Dit portaal gebruikt hybrid read: Supabase waar beschikbaar en lokale demo/fallback-data waar nodig. Interne admin-data wordt gefilterd.";
+          } else if (mode === "supabase-read") {
+            portalSourceText.textContent = "Dit portaal gebruikt Supabase read-only data. Schrijven blijft geblokkeerd en interne admin-data wordt gefilterd.";
+          } else if (mode === "demo") {
+            portalSourceText.textContent = "Dit is het demo-klantportaal met lokale browserdata. Echte login/beveiliging volgt in Fase 13.";
+          } else {
+            portalSourceText.textContent = "Dit portaal gebruikt lokale browserdata als veilige fallback. Interne admin-notities worden niet getoond.";
+          }
+          if (payload.warnings?.length) {
+            portalSourceText.textContent = `${portalSourceText.textContent} Waarschuwing: ${payload.warnings.join(" ")}`;
+          }
+        }
+
+        const payload = await getClientPortalData(customerId, { supabaseCustomerId, mode: portalDataMode });
+        updateSourceMessage(payload);
+        const { customer, websites, projects, files, invoices, subscriptions, quotes, metrics: portalMetrics } = payload;
 
         if (!customer) {
           portalTitle.textContent = "Klant niet gevonden";
           portalSubtitle.textContent = "Open het klantportaal opnieuw vanuit het admin-dashboard.";
-          customerProfile.append(createEmpty("Geen klantdata", "Deze klant staat niet in de lokale CRM-opslag van deze browser."));
+          customerProfile.append(createEmpty("Geen klantdata", payload.warnings?.[0] || "Deze klant staat niet in de gekozen klantportaal-bron."));
           [quoteList, invoiceList, subscriptionList, projectList, websiteList, fileList].forEach((target) => target.append(createEmpty("Geen data", "Geen klant geselecteerd.")));
           return;
         }
 
-        const openQuotes = quotes.filter((quote) => ["concept", "verzonden"].includes(quote.status));
-        const openInvoices = invoices.filter((invoice) => ["concept", "verzonden", "verlopen"].includes(invoice.status));
-        const runningProjects = projects.filter((project) => !["live", "onderhoud", "gepauzeerd"].includes(project.status));
-        const activeWebsites = websites.filter((website) => ["online", "active", "live"].includes(website.status));
-        const openInvoiceTotal = openInvoices.reduce((sum, invoice) => sum + Number(invoice.total || invoice.amount || 0), 0);
-
         portalTitle.textContent = `Welkom ${customer.name || customer.company || "terug"}`;
         portalSubtitle.textContent = customer.company || customer.email || "Jouw Max Webstudio overzicht";
-        metrics.quotes.textContent = String(openQuotes.length);
-        metrics.invoices.textContent = String(openInvoices.length);
-        metrics.invoiceTotal.textContent = `${money(openInvoiceTotal)} openstaand`;
-        metrics.projects.textContent = String(runningProjects.length);
-        metrics.websites.textContent = String(activeWebsites.length);
+        metrics.quotes.textContent = String(portalMetrics.openQuotes || 0);
+        metrics.invoices.textContent = String(portalMetrics.openInvoices || 0);
+        metrics.invoiceTotal.textContent = `${money(portalMetrics.openInvoiceTotal || 0)} openstaand`;
+        metrics.projects.textContent = String(portalMetrics.runningProjects || 0);
+        metrics.websites.textContent = String(portalMetrics.activeWebsites || 0);
+        metrics.subscriptions.textContent = String(portalMetrics.activeSubscriptions || 0);
 
         customerProfile.append(createInfoCard("Klantgegevens", [
           ["Naam", customer.name],
@@ -329,7 +351,7 @@
             Object.assign(document.createElement("span"), { textContent: formatDate(quote.quoteDate) }),
             Object.assign(document.createElement("span"), { textContent: formatDate(quote.validUntil) }),
             Object.assign(document.createElement("span"), { textContent: money(quote.total || quote.amount) }),
-            createActionLink("Bekijk offerte", quote.id ? `/offerte.html?quoteId=${encodeURIComponent(quote.id)}` : "")
+            createActionLink("Bekijk offerte", quoteUrl(quote))
           );
           return row;
         }, "Geen offertes", "Er zijn nog geen offertes gekoppeld aan dit klantprofiel.");
@@ -343,7 +365,7 @@
             Object.assign(document.createElement("span"), { textContent: formatDate(invoice.invoiceDate) }),
             Object.assign(document.createElement("span"), { textContent: formatDate(invoice.dueDate) }),
             Object.assign(document.createElement("span"), { textContent: money(invoice.total || invoice.amount) }),
-            createActionLink("Bekijk/betaal factuur", invoice.id ? `/betalen.html?invoiceId=${encodeURIComponent(invoice.id)}` : "")
+            createActionLink("Bekijk/betaal factuur", invoiceUrl(invoice))
           );
           return row;
         }, "Geen facturen", "Er zijn nog geen facturen gekoppeld aan dit klantprofiel.");
@@ -363,7 +385,7 @@
             ["Website", subscription.websiteName || subscription.websiteDomain || "-"],
             ["Betaalstatus", subscription.paymentStatus === "demo" ? "Demo voorbereid" : subscription.paymentStatus],
           ], [
-            createActionLink("Bekijk laatste factuur", lastInvoice?.id ? `/betalen.html?invoiceId=${encodeURIComponent(lastInvoice.id)}` : "")
+            createActionLink("Bekijk laatste factuur", lastInvoice ? invoiceUrl(lastInvoice) : "")
           ]));
         });
 

@@ -183,3 +183,18 @@ Abonnementbeheer in het Admin CRM gebruikt in deze fase nog geen nieuwe auth-flo
 Klanttoegang tot live abonnementen wordt pas hard gemaakt wanneer Supabase Auth, route guards en RLS voor het klantportaal volledig actief zijn.
 
 De bestaande demo-klantportaalweergave blijft werken op localStorage-data. Live subscriptiondata uit Supabase mag later pas klantzichtbaar worden wanneer de ingelogde gebruiker via RLS alleen eigen abonnementen kan lezen.
+
+## Fase 12.8 - Klantportaal read zonder harde auth
+
+Het klantportaal kan nu data lezen via `demo`, `local`, `supabase-read` en `hybrid`, maar dit is nog geen vervanging voor echte productie-auth.
+
+Status:
+
+- demo/local toegang via link blijft actief
+- Supabase/hybrid read is voorbereid voor gemigreerde klantdata
+- links bevatten alleen klant-ID's en geen tokens
+- writes blijven geblokkeerd
+- klantportaaldata wordt gesanitized voordat deze zichtbaar wordt
+- harde Supabase Auth route guards, rollen en RLS-audit volgen in Fase 13
+
+Tot Fase 13 mag het klantportaal niet als volledig beveiligde productie-login worden behandeld.

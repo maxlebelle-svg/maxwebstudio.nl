@@ -47,6 +47,7 @@
         const storageKey = "maxwebstudioQuotes";
         const params = new URLSearchParams(window.location.search);
         const quoteId = params.get("quoteId") || "";
+        const supabaseQuoteId = params.get("supabaseQuoteId") || "";
         const title = document.getElementById("quote-page-title");
         const subtitle = document.getElementById("quote-page-subtitle");
         const card = document.getElementById("quote-card");
@@ -107,7 +108,10 @@
 
         function renderQuote() {
           const quotes = readQuotes();
-          const quote = quotes.find((item) => item.id === quoteId);
+          const quote = quotes.find((item) => {
+            const ids = [item.id, item.quoteId, item.supabaseQuoteId, item._supabaseQuoteId].filter(Boolean).map(String);
+            return (quoteId && ids.includes(String(quoteId))) || (supabaseQuoteId && ids.includes(String(supabaseQuoteId)));
+          });
           card.replaceChildren();
           if (!quote) {
             title.textContent = "Offerte niet gevonden";

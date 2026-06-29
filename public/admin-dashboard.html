@@ -858,6 +858,11 @@
                 <button class="button secondary" id="test-supabase-subscriptions-read" type="button">Test subscription read</button>
                 <button class="button secondary" id="test-supabase-subscription-write" type="button">Test subscription write met testabonnement</button>
                 <button class="button secondary" id="reset-subscription-data-mode" type="button">Reset subscription data mode naar local</button>
+                <button class="button secondary" id="test-client-portal-selected" type="button">Test klantportaal data geselecteerde klant</button>
+                <button class="button secondary" id="test-client-portal-demo" type="button">Test demo klantportaal</button>
+                <button class="button secondary" id="test-client-portal-hybrid" type="button">Test Supabase/hybrid klantportaal</button>
+                <button class="button secondary" id="view-client-portal-sanitized" type="button">Bekijk sanitized payload preview</button>
+                <button class="button secondary" id="reset-client-portal-data-mode" type="button">Reset client portal data mode naar demo/local</button>
                 <button class="button secondary" id="view-env-example" type="button">Bekijk .env voorbeeld</button>
                 <button class="button secondary" id="why-local-storage" type="button">Waarom nog localStorage?</button>
                 <button class="button secondary" id="run-customer-migration-dry-run" type="button">Run CRM migratie dry run</button>
@@ -1864,6 +1869,11 @@
         const testSupabaseSubscriptionsReadButton = document.getElementById("test-supabase-subscriptions-read");
         const testSupabaseSubscriptionWriteButton = document.getElementById("test-supabase-subscription-write");
         const resetSubscriptionDataModeButton = document.getElementById("reset-subscription-data-mode");
+        const testClientPortalSelectedButton = document.getElementById("test-client-portal-selected");
+        const testClientPortalDemoButton = document.getElementById("test-client-portal-demo");
+        const testClientPortalHybridButton = document.getElementById("test-client-portal-hybrid");
+        const viewClientPortalSanitizedButton = document.getElementById("view-client-portal-sanitized");
+        const resetClientPortalDataModeButton = document.getElementById("reset-client-portal-data-mode");
         const viewEnvExampleButton = document.getElementById("view-env-example");
         const whyLocalStorageButton = document.getElementById("why-local-storage");
         const runCustomerMigrationDryRunButton = document.getElementById("run-customer-migration-dry-run");
@@ -2744,7 +2754,7 @@
           demoActions.openQuote.disabled = !demoQuote;
           demoActions.openInvoice.disabled = !demoInvoice;
           demoActions.openSubscription.disabled = !demoSubscription;
-          demoActions.openPortal.href = demoCustomer ? customerPortalUrl(demoCustomer.id) : "#";
+          demoActions.openPortal.href = demoCustomer ? customerPortalUrl(demoCustomer) : "#";
           demoActions.openPortal.classList.toggle("is-disabled", !demoCustomer);
           demoActions.openPortal.toggleAttribute("aria-disabled", !demoCustomer);
         }
@@ -2941,6 +2951,10 @@
             ["Invoice website/project linkage", "Actief gecontroleerd", "Website-, project-, offerte- en abonnementkoppelingen worden gevalideerd"],
             ["Quote naar invoice flow", "Behouden", "Lokale offerte naar factuur conversie blijft werken naast Supabase voorbereiding"],
             ["Subscription naar invoice flow", "Behouden", "Lokale recurring conceptfactuur flow blijft werken naast Supabase voorbereiding"],
+            ["Client portal live data", "Voorbereid", "Klantportaal kan demo/local/supabase-read/hybrid lezen via centrale sanitized data-service"],
+            ["Client portal hybrid mode", "Actief", "Hybrid leest Supabase waar beschikbaar en behoudt lokale fallback voor demo en ongemigreerde records"],
+            ["Client portal sanitizing", "Actief", "Interne notities, metadata, migratielogs en provider/debugvelden worden uit klantpayloads verwijderd"],
+            ["Client portal writes", "Geblokkeerd", "Klantportaal schrijft nog geen live data; hard Auth/RLS volgt in Fase 13"],
             ["CRM Supabase mapping", "Voorbereid", "CustomerRepository kan lokale klantrecords naar customers-rijen mappen"],
             ["CRM migratie dry run", "Gereed", "Developer Mode analyseert klanten zonder databasewrites"],
             ["CRM live writes basis", "Niet actief", "Live customer writes blijven afhankelijk van Supabase client readiness"],
@@ -3002,6 +3016,8 @@
             invoiceMigrationService: await import("./src/services/invoiceMigrationService.js"),
             subscriptionMigrationService: await import("./src/services/subscriptionMigrationService.js"),
             dataValidationService: await import("./src/services/dataValidationService.js"),
+            clientPortalDataService: await import("./src/services/clientPortalDataService.js"),
+            clientPortalTestService: await import("./src/services/clientPortalTestService.js"),
             activityLogService: await import("./src/services/activityLogService.js"),
             authService: await import("./src/services/authService.js"),
           };
@@ -3022,6 +3038,51 @@
             }
           });
           developerToolsOutput.append(card);
+        }
+
+        function selectedCustomerForPortalTest() {
+          return selectedCustomer() || state.customers[0] || null;
+        }
+
+        function renderClientPortalReadiness(modules) {
+          const summary = modules.clientPortalTestService.getClientPortalReadinessSummary();
+          appendDeveloperCard("Klantportaal live data readiness", [
+            ["Live data", summary.clientPortalLiveData],
+            ["Portal data mode", summary.portalDataMode],
+            ["Supabase read", summary.supabaseRead],
+            ["Hybrid mode", summary.hybridMode],
+            ["Sanitizing", summary.sanitizing],
+            ["Writes", summary.writes],
+            ["Demo portal", summary.demoPortal],
+            ["Auth hardening", summary.authHardening],
+            ["Laatste test", summary.lastTest?.testedAt ? formatDate(summary.lastTest.testedAt) : "Nog niet getest"],
+          ]);
+        }
+
+        function renderClientPortalTestResult(result = {}) {
+          const validation = result.validation || {};
+          appendDeveloperCard("Klantportaal data test", [
+            ["Status", result.status || "-"],
+            ["Mode", result.mode || "-"],
+            ["Klant", result.payload?.customer?.company || result.payload?.customer?.name || result.customerId || "-"],
+            ["Sensitive fields", validation.sensitiveFields?.length ? validation.sensitiveFields.map((field) => field.path).join(", ") : "Geen gevonden"],
+            ["Waarschuwingen", String(validation.warningCount || 0)],
+            ["Getest op", result.testedAt ? formatDate(result.testedAt) : "-"],
+          ]);
+        }
+
+        function renderClientPortalSanitizedPreview(result = {}) {
+          const payload = result.payload || result;
+          appendDeveloperCard("Sanitized payload preview", [
+            ["Klant", payload.customer?.company || payload.customer?.name || "Geen klant"],
+            ["Websites", String(payload.websites?.length || 0)],
+            ["Projecten", String(payload.projects?.length || 0)],
+            ["Offertes", String(payload.quotes?.length || 0)],
+            ["Facturen", String(payload.invoices?.length || 0)],
+            ["Abonnementen", String(payload.subscriptions?.length || 0)],
+            ["Bestanden", String(payload.files?.length || 0)],
+            ["Bron", payload.sourceSummary?.mode || payload.mode || "-"],
+          ]);
         }
 
         function renderMigrationSummary(summary) {
@@ -4162,6 +4223,7 @@
             renderInvoiceSupabaseReadiness(modules);
             renderSubscriptionDataSourceStatus(state.subscriptionSourceStatus);
             renderSubscriptionSupabaseReadiness(modules);
+            renderClientPortalReadiness(modules);
             renderSupabaseSetupChecklist();
             renderCustomerMigrationCard(customerMigration);
             renderCustomerMigrationLogs(customerMigrationLogs);
@@ -4251,6 +4313,8 @@
               renderSubscriptionDuplicates(extra.subscriptionDryRun.duplicates);
               renderSubscriptionMrrImpact(extra.subscriptionDryRun.mrrImpact);
             }
+            if (extra.clientPortalTestResult) renderClientPortalTestResult(extra.clientPortalTestResult);
+            if (extra.clientPortalSanitizedPreview) renderClientPortalSanitizedPreview(extra.clientPortalSanitizedPreview);
             if (extra.customerDryRun) {
               renderCustomerMappingPreview({
                 summary: {
@@ -5435,6 +5499,81 @@
           await setSubscriptionDataMode("local", { source: "developer_reset" });
           await renderDeveloperToolsSummary();
           setSettingsMessage("Subscription data mode teruggezet naar local.", "success");
+        }
+
+        function clientPortalSupabaseId(customer = {}) {
+          return customer.supabaseCustomerId || customer._supabaseCustomerId || customer.supabase_customer_id || "";
+        }
+
+        function writeClientPortalMode(mode) {
+          const current = (() => {
+            try {
+              return JSON.parse(localStorage.getItem("maxwebstudioClientPortalSettings") || "{}");
+            } catch {
+              return {};
+            }
+          })();
+          localStorage.setItem("maxwebstudioClientPortalSettings", JSON.stringify({
+            ...current,
+            clientPortalDataMode: mode,
+            updatedAt: new Date().toISOString(),
+          }));
+        }
+
+        async function testClientPortalSelectedHandler(mode = "") {
+          const customer = selectedCustomerForPortalTest();
+          if (!customer) {
+            setSettingsMessage("Selecteer eerst een klant voor de klantportaal-test.", "error");
+            return;
+          }
+          try {
+            const { clientPortalTestService } = await loadDeveloperModules();
+            const result = await clientPortalTestService.runClientPortalDataTest(customer.id, {
+              mode,
+              supabaseCustomerId: clientPortalSupabaseId(customer),
+            });
+            await renderDeveloperToolsSummary({ clientPortalTestResult: result });
+            setSettingsMessage("Klantportaal data-test uitgevoerd.", "success");
+          } catch (error) {
+            console.error("Client portal data test failed", error);
+            setSettingsMessage("Klantportaal data-test mislukt.", "error");
+          }
+        }
+
+        async function testClientPortalDemoHandler() {
+          const demoCustomer = state.customers.find((customer) => customer.isDemo || customer.environment === "demo") || state.customers[0];
+          if (!demoCustomer) {
+            setSettingsMessage("Geen demo-klant gevonden voor klantportaal-test.", "error");
+            return;
+          }
+          const { clientPortalTestService } = await loadDeveloperModules();
+          const result = await clientPortalTestService.runClientPortalDataTest(demoCustomer.id, { mode: "demo" });
+          await renderDeveloperToolsSummary({ clientPortalTestResult: result });
+          setSettingsMessage("Demo klantportaal-test uitgevoerd.", "success");
+        }
+
+        async function testClientPortalHybridHandler() {
+          await testClientPortalSelectedHandler("hybrid");
+        }
+
+        async function viewClientPortalSanitizedPreviewHandler() {
+          try {
+            const latest = JSON.parse(localStorage.getItem("maxwebstudioLastClientPortalDataTest") || "null");
+            if (latest) {
+              await renderDeveloperToolsSummary({ clientPortalSanitizedPreview: latest });
+              return;
+            }
+            await testClientPortalSelectedHandler();
+          } catch (error) {
+            console.error("Client portal sanitized preview failed", error);
+            setSettingsMessage("Sanitized payload preview kon niet worden getoond.", "error");
+          }
+        }
+
+        async function resetClientPortalDataModeHandler() {
+          writeClientPortalMode("demo");
+          await renderDeveloperToolsSummary();
+          setSettingsMessage("Client portal data mode teruggezet naar demo/local.", "success");
         }
 
         async function runInvoiceMigrationDryRunHandler() {
@@ -6890,8 +7029,16 @@
           return `/betalen.html?invoiceId=${encodeURIComponent(id)}`;
         }
 
-        function customerPortalUrl(id) {
-          return `/klantportaal.html?customerId=${encodeURIComponent(id || "")}`;
+        function customerPortalUrl(customerOrId) {
+          const customer = typeof customerOrId === "object"
+            ? customerOrId
+            : customerById(customerOrId) || { id: customerOrId };
+          const query = new URLSearchParams();
+          const localId = customer.id || customer.customerId || customer.profileId || "";
+          const supabaseId = customer.supabaseCustomerId || customer._supabaseCustomerId || customer.supabase_customer_id || "";
+          if (localId) query.set("customerId", localId);
+          if (supabaseId && String(supabaseId) !== String(localId)) query.set("supabaseCustomerId", supabaseId);
+          return `/klantportaal.html?${query.toString()}`;
         }
 
         function normalizeInvoice(invoice = {}) {
@@ -7587,7 +7734,7 @@
           detailOpenWebsite.href = customer.website || "#";
           detailOpenWebsite.classList.toggle("is-disabled", !customer.website);
           detailOpenWebsite.toggleAttribute("aria-disabled", !customer.website);
-          detailOpenPortal.href = customerPortalUrl(customer.id);
+          detailOpenPortal.href = customerPortalUrl(customer);
           detailOpenPortal.classList.remove("is-disabled");
           detailOpenPortal.toggleAttribute("aria-disabled", false);
           detailCopyPortal.disabled = false;
@@ -12786,7 +12933,7 @@
         detailArchive.addEventListener("click", archiveCustomer);
         detailCopyPortal.addEventListener("click", () => {
           const customer = selectedCustomer();
-          if (customer) copyText(customerPortalUrl(customer.id), "Klantportaal-link gekopieerd.", setDetailMessage);
+          if (customer) copyText(customerPortalUrl(customer), "Klantportaal-link gekopieerd.", setDetailMessage);
         });
         detailStartProject.addEventListener("click", startProjectFromCustomer);
         detailAddFile.addEventListener("click", startFileFromCustomer);
@@ -12961,6 +13108,11 @@
         testSupabaseSubscriptionsReadButton.addEventListener("click", testSupabaseSubscriptionsReadHandler);
         testSupabaseSubscriptionWriteButton.addEventListener("click", testSupabaseSubscriptionWriteHandler);
         resetSubscriptionDataModeButton.addEventListener("click", resetSubscriptionDataModeHandler);
+        testClientPortalSelectedButton.addEventListener("click", () => testClientPortalSelectedHandler());
+        testClientPortalDemoButton.addEventListener("click", testClientPortalDemoHandler);
+        testClientPortalHybridButton.addEventListener("click", testClientPortalHybridHandler);
+        viewClientPortalSanitizedButton.addEventListener("click", viewClientPortalSanitizedPreviewHandler);
+        resetClientPortalDataModeButton.addEventListener("click", resetClientPortalDataModeHandler);
         [customerMigrationIncludeDemo, customerMigrationIncludeProduction, customerMigrationBatchSize, customerMigrationSkipDuplicates, customerMigrationStopOnError].forEach((field) => {
           field.addEventListener("input", () => renderDeveloperToolsSummary());
           field.addEventListener("change", () => renderDeveloperToolsSummary());

@@ -264,6 +264,7 @@
       const careInputs = document.querySelectorAll('input[name="carePackage"]');
       const params = new URLSearchParams(window.location.search);
       const invoiceId = params.get("invoiceId") || "";
+      const supabaseInvoiceId = params.get("supabaseInvoiceId") || "";
       const requestedWebsite = params.get("website");
       const legacyProduct = params.get("product");
       const requestedCare = params.get("care");
@@ -297,7 +298,11 @@
       }
 
       function currentInvoice() {
-        return invoiceId ? readInvoices().find((invoice) => invoice.id === invoiceId) : null;
+        if (!invoiceId && !supabaseInvoiceId) return null;
+        return readInvoices().find((invoice) => {
+          const ids = [invoice.id, invoice.invoiceId, invoice.supabaseInvoiceId, invoice._supabaseInvoiceId].filter(Boolean).map(String);
+          return (invoiceId && ids.includes(String(invoiceId))) || (supabaseInvoiceId && ids.includes(String(supabaseInvoiceId)));
+        }) || null;
       }
 
       function logDemoPaymentEmail(invoice) {
