@@ -617,7 +617,7 @@ Resterende blockers:
 
 ## Fase 35B Lead notes write validation
 
-Status: `IMPLEMENTED / STAGING VALIDATION BLOCKED`
+Status: `VALIDATED_ON_STAGING`
 
 Scope:
 
@@ -631,19 +631,21 @@ Evidence:
 - Local fallback: `PASS`
 - Syntaxchecks: `PASS`
 - Supabase testconfig aanwezig zonder waarden te tonen: `PASS`
-- Staging write/RLS: `BLOCKED_BY_DNS`
+- DNS/root cause: `PASS`, eerdere `ENOTFOUND` niet meer reproduceerbaar
+- Staging write/RLS: `PASS`
+- Evidence run: `phase-35b1-rerun-1782775482334`
+- Allowed fields: alleen `notes`, `updated_at` en veilige metadata gewijzigd
+- Customer/no-profile/anonymous: blocked of empty result zoals verwacht
+- Testdata: synthetisch, `environment=test`, `is_demo=false`, `metadata.safeToArchive=true`
 
-Blocker:
+Belangrijke testnotitie:
 
-- DNS-resolutie faalde tijdens de staging run:
-  - Supabase-host: `ENOTFOUND`
-  - Algemene DNS-check: `ENOTFOUND`
-- Daardoor is er geen staging write uitgevoerd en geen testdata aangemaakt.
+- Een eerste run met `is_demo=true` is niet gebruikt als customer-isolation bewijs, omdat demo-records bewust via demo-read policies zichtbaar mogen zijn.
+- De gevalideerde run gebruikt daarom non-demo synthetische testdata.
 
-Next actions:
+Resterende blockers:
 
-1. Herstel/controleer netwerk/DNS in de Codex/runtime omgeving.
-2. Herhaal Fase 35B stagingvalidatie.
-3. Bewijs sales/admin leadnote append.
-4. Bewijs dat customer/no-profile geen leadnote write kan doen.
-5. Houd productie-write-mode geblokkeerd tot die evidence PASS is.
+1. Productie-write-mode blijft geblokkeerd.
+2. Server-side audit logging voor leadnote writes ontbreekt nog.
+3. Brede lead update/delete blijft geblokkeerd.
+4. Change requests en klantportaalberichten moeten nog apart als write-MVP worden gevalideerd.

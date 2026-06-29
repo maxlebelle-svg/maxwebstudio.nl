@@ -1630,7 +1630,7 @@ Bewust nog geblokkeerd:
 
 ## Fase 35B - Low-risk Supabase Write MVP: Lead Notes
 
-Status: `IMPLEMENTATIE AFGEROND / STAGING VALIDATIE GEBLOKKEERD`
+Status: `AFGEROND / STAGING GEVALIDEERD`
 
 Doel:
 
@@ -1661,8 +1661,12 @@ Fallback:
 Validatie:
 
 - Lokale fallback-test: `PASS`.
-- Staging write: `BLOCKED_BY_DNS` tijdens deze run; algemene DNS en Supabase-host gaven `ENOTFOUND`.
-- Er is daardoor geen staging write uitgevoerd en geen testdata aangemaakt in deze poging.
+- DNS/root cause-check: `PASS`; de eerdere `ENOTFOUND` was tijdelijk en niet meer reproduceerbaar.
+- Staging write: `PASS` met run `phase-35b1-rerun-1782775482334`.
+- RLS: interne rol kon notitie toevoegen; customer/no-profile kregen 0 rows; anonymous kreeg 401.
+- Allowed-fields check: alleen `notes`, `updated_at` en veilige metadata wijzigden.
+- Testdata is synthetisch gemarkeerd met `environment=test`, `is_demo=false` en `metadata.safeToArchive=true`.
+- Een eerste demo-record test is bewust niet gebruikt voor isolatiebewijs, omdat demo-records via demo-read policies zichtbaar kunnen zijn.
 
 Bewust nog geblokkeerd:
 

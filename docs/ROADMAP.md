@@ -1310,7 +1310,7 @@ Volgende stap:
 
 ## Fase 35B - Low-risk Supabase Write MVP: Lead Notes
 
-Status: `IMPLEMENTATIE AFGEROND / STAGING VALIDATIE GEBLOKKEERD`
+Status: `AFGEROND / STAGING GEVALIDEERD`
 
 Scope:
 
@@ -1330,9 +1330,13 @@ Niet in scope:
 Validatie:
 
 - Local fallback: `PASS`.
-- Staging write/RLS: `BLOCKED_BY_DNS` in deze run; geen staging write uitgevoerd.
+- DNS/root cause: `PASS`; eerdere `ENOTFOUND` is opgelost.
+- Staging write/RLS: `PASS` met run `phase-35b1-rerun-1782775482334`.
+- Allowed fields: alleen `notes`, `updated_at` en veilige metadata.
+- Customer/no-profile/anonymous: geblokkeerd of empty result zoals verwacht.
+- Testdata: synthetisch, `environment=test`, `is_demo=false`, `safeToArchive=true`.
 
 Volgende stap:
 
-1. Herhaal Fase 35B stagingvalidatie zodra DNS/netwerk naar Supabase beschikbaar is.
+1. Productie-write-mode blijft dicht tot audit/approval.
 2. Daarna pas `change_requests` create als volgende low-risk write oppakken.

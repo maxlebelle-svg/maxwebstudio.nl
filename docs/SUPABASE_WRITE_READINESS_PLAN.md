@@ -371,7 +371,7 @@ Beperkingen:
 
 ## Fase 35B - Lead notes append MVP
 
-Status: `GEIMPLEMENTEERD / STAGING VALIDATIE GEBLOKKEERD DOOR DNS`
+Status: `GEIMPLEMENTEERD / STAGING GEVALIDEERD`
 
 Toegevoegd:
 
@@ -404,14 +404,18 @@ Fallback:
 Stagingstatus:
 
 - Lokale fallback-test: `PASS`.
-- Staging write-test: `BLOCKED_BY_DNS` in deze run (`ENOTFOUND` voor algemene DNS en Supabase-host).
-- Geen staging write uitgevoerd en geen testdata aangemaakt tijdens de geblokkeerde poging.
+- DNS/root cause-check: `PASS`; de eerdere `ENOTFOUND` was tijdelijk en is opgelost.
+- Staging write-test: `PASS` met run `phase-35b1-rerun-1782775482334`.
+- RLS-test: interne rol kon notitie toevoegen; customer/no-profile kregen 0 rows; anonymous kreeg 401.
+- Allowed-fields check: alleen `notes`, `updated_at` en veilige metadata zijn gewijzigd.
+- Testdata bleef bewust staan als synthetische stagingdata met `environment=test`, `is_demo=false` en `metadata.safeToArchive=true`.
+- Een eerste `is_demo=true` lead is niet gebruikt als isolatiebewijs, omdat demo-read policies demo-records bewust zichtbaar kunnen maken.
 
 Beperkingen:
 
 - Server-side audit logging is nog niet actief.
 - Fijnmazigere lead-note-only RLS blijft later wenselijk; huidige stagingpolicy gebruikt `leads_admin_sales_manage`.
-- Productie blijft geblokkeerd totdat staging evidence opnieuw kan worden verzameld.
+- Productie blijft geblokkeerd totdat audit/approval en production write-governance afgerond zijn.
 
 ## Open blockers
 

@@ -942,7 +942,7 @@ Resterend:
 
 ## Fase 35B Lead Notes Write MVP
 
-Status: `IMPLEMENTED / STAGING BLOCKED`
+Status: `PASS / STAGING VALIDATED`
 
 Scope:
 
@@ -955,12 +955,15 @@ Scope:
 | Lead note service syntax | `leadNoteWriteService.js` controleren | Geen syntaxfouten | Syntaxcheck groen | PASS | Geen runtime secrets |
 | Lead note local fallback | Gate uit, lokale lead, notitie opslaan | Notitie wordt lokaal appended | `lead note fallback test: ok` | PASS | `maxwebstudioLeadFinderLeads`, status `fallback_local` |
 | Supabase testconfig aanwezig | `.env.local` aanwezigheid controleren zonder waarden te tonen | Testconfig aanwezig | Supabase keys en testflags aanwezig | PASS | Geen secretwaarden gelogd |
-| DNS naar Supabase staging | Supabase host resolven | Host bereikbaar | `ENOTFOUND` | BLOCKED | Algemene DNS lookup gaf ook `ENOTFOUND` |
-| Staging lead note write | Sales-role testlead bijwerken via bestaande service | Notitie komt in `public.leads.notes` | Niet uitgevoerd door DNS-blocker | BLOCKED | Geen write uitgevoerd, geen testdata aangemaakt |
-| Customer/no-profile RLS | Customer/no-profile probeert leadnote write | RLS blokkeert update | Niet uitvoerbaar door DNS-blocker | BLOCKED | Herhalen zodra netwerk/DNS beschikbaar is |
+| DNS naar Supabase staging | Supabase host resolven | Host bereikbaar | DNS ok | PASS | Eerdere `ENOTFOUND` was een tijdelijke runtime/netwerk-blocker |
+| Demo-record isolation check | Eerste run met `is_demo=true` testlead | Niet gebruiken als customer-isolation bewijs | Demo-policy maakte record bewust zichtbaar | NOT_APPLICABLE | Demo-records zijn bedoeld voor brede demo-read policies |
+| Staging lead note write | Sales-role testlead bijwerken via bestaande service | Notitie komt in `public.leads.notes` | Notitie appended op synthetische non-demo testlead | PASS | Run `phase-35b1-rerun-1782775482334` |
+| Allowed fields guard | Vergelijk velden voor/na update | Alleen `notes`, `updated_at` en veilige metadata wijzigen | Alleen toegestane velden gewijzigd | PASS | Geen volledige lead overwrite |
+| Customer/no-profile RLS | Customer/no-profile probeert leadnote write | RLS blokkeert update | Customer en no-profile kregen 0 rows; anonymous kreeg 401 | PASS | Customer read gaf ook 0 rows |
 
 Conclusie:
 
-- De leadnote write-MVP is technisch toegevoegd en lokale fallback is bewezen.
-- Staging write/RLS evidence kon niet worden verzameld door DNS-resolutieproblemen in deze run.
+- De leadnote write-MVP is technisch toegevoegd, lokale fallback is bewezen en staging write/RLS is gevalideerd.
+- De eerdere DNS-blocker is opgelost; de Supabase staging-host en algemene DNS-resolutie werken weer.
+- Customer isolation is bewezen met synthetische testdata (`environment=test`, `is_demo=false`, `safeToArchive=true`), omdat demo-records bewust via demo-read policies zichtbaar kunnen zijn.
 - Productie blijft `NO-GO`.
