@@ -81,6 +81,74 @@ function createDisabledAction(label, className) {
   return button;
 }
 
+function getCardStep(grid) {
+  const firstCard = grid.querySelector(".official-demo-card");
+  if (!firstCard) return 0;
+  const styles = window.getComputedStyle(grid);
+  const gap = Number.parseFloat(styles.columnGap || styles.gap || "0") || 0;
+  return firstCard.getBoundingClientRect().width + gap;
+}
+
+function getActiveIndex(grid) {
+  const step = getCardStep(grid);
+  if (!step) return 0;
+  return Math.round(grid.scrollLeft / step);
+}
+
+function scrollToDemoCard(grid, index) {
+  const cards = [...grid.querySelectorAll(".official-demo-card")];
+  const target = cards[Math.max(0, Math.min(index, cards.length - 1))];
+  if (!target) return;
+  grid.scrollTo({
+    left: target.offsetLeft - grid.offsetLeft,
+    behavior: "smooth",
+  });
+}
+
+function updateCarouselState(grid, dots) {
+  const cards = [...grid.querySelectorAll(".official-demo-card")];
+  const activeIndex = Math.max(0, Math.min(getActiveIndex(grid), cards.length - 1));
+  cards.forEach((card, index) => card.classList.toggle("is-active", index === activeIndex));
+  dots.forEach((dot, index) => {
+    dot.classList.toggle("active", index === activeIndex);
+    dot.setAttribute("aria-current", index === activeIndex ? "true" : "false");
+  });
+}
+
+function setupCarousel(root, demoSites) {
+  const grid = root.querySelector("[data-demo-sites-grid]");
+  const prev = root.querySelector("[data-official-demo-prev]");
+  const next = root.querySelector("[data-official-demo-next]");
+  const dotsContainer = root.querySelector("[data-official-demo-dots]");
+  if (!grid || !dotsContainer) return;
+
+  const dots = demoSites.map((demoSite, index) => {
+    const dot = document.createElement("button");
+    dot.type = "button";
+    dot.setAttribute("aria-label", `${demoSite.name} tonen`);
+    dot.addEventListener("click", () => scrollToDemoCard(grid, index));
+    dotsContainer.append(dot);
+    return dot;
+  });
+
+  prev?.addEventListener("click", () => scrollToDemoCard(grid, getActiveIndex(grid) - 1));
+  next?.addEventListener("click", () => scrollToDemoCard(grid, getActiveIndex(grid) + 1));
+
+  grid.addEventListener("keydown", (event) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    event.preventDefault();
+    scrollToDemoCard(grid, getActiveIndex(grid) + (event.key === "ArrowRight" ? 1 : -1));
+  });
+
+  let scrollFrame = 0;
+  grid.addEventListener("scroll", () => {
+    window.cancelAnimationFrame(scrollFrame);
+    scrollFrame = window.requestAnimationFrame(() => updateCarouselState(grid, dots));
+  }, { passive: true });
+  window.addEventListener("resize", () => updateCarouselState(grid, dots));
+  updateCarouselState(grid, dots);
+}
+
 function createScoreGrid(demoSite) {
   const grid = createElement("div", "official-demo-score-grid");
   Object.entries(scoreLabels).forEach(([key, label]) => {
@@ -143,14 +211,17 @@ function createDemoCard(demoSite) {
 export function renderDemoPortfolioEngine(root = document) {
   const grid = root.querySelector("[data-demo-sites-grid]");
   const count = root.querySelector("[data-demo-sites-count]");
+  const dots = root.querySelector("[data-official-demo-dots]");
   if (!grid) return;
 
   const demoSites = listDemoSites();
+  dots?.replaceChildren();
   grid.replaceChildren(...demoSites.map(createDemoCard));
   if (count) {
     const liveCount = demoSites.filter((demoSite) => demoSite.status === DEMO_SITE_STATUS.LIVE).length;
     count.textContent = `${liveCount} live / ${demoSites.length} voorbereid`;
   }
+  setupCarousel(root, demoSites);
 }
 
 renderDemoPortfolioEngine();

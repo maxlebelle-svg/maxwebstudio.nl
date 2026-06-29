@@ -720,7 +720,7 @@ Nog niet actief:
 
 ## Premium Demo Portfolio Showcase
 
-Status: demo-engine opgewaardeerd naar een commerciele premium showcase zonder nieuwe demo-sites te bouwen.
+Status: demo-engine opgewaardeerd naar een commerciele premium showcase-carousel zonder nieuwe demo-sites te bouwen.
 
 Bijgewerkt:
 
@@ -735,6 +735,9 @@ Resultaat:
 - De registry bevat showcase-data zoals SEO-score, performance, responsive, conversie, doelgroep, pagina-aantal, doorlooptijd, highlights en CTA-labels.
 - `bouwbedrijf-demo` blijft de eerste live demo en gebruikt realistische scores: SEO 98, Performance 96, Responsive 100 en Conversie 97.
 - De portfolio-sectie heeft een sterkere introductie met trust stats en duidelijke CTA's: `Bekijk live demo` en `Vraag deze website aan`.
+- De officiele demo-weergave is nu een horizontale carousel met pijlen, dots, swipe/trackpad scroll en keyboard arrows.
+- De registry is voorbereid op 20 branches, waaronder restaurant, sportschool, advocaat, autobedrijf, kapsalon, tandarts, elektricien, loodgieter, hovenier, makelaar en meer.
+- De oude dubbele hardcoded demo-carousel is van de homepage verwijderd.
 - De aanvraag-CTA verwijst naar de bestaande aanvraagsectie en gebruikt geen nieuwe backend.
 
 Nog niet actief:

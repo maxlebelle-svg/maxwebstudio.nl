@@ -479,11 +479,15 @@ Volgende logische stap:
 
 Afgerond als presentatielaag bovenop de bestaande Demo Portfolio Engine:
 
-- demo-cards tonen nu een premium desktop- en mobiele showcase in plaats van eenvoudige placeholders
+- demo-cards tonen nu een premium desktop- en mobiele showcase in een horizontale carousel
+- carousel ondersteunt pijlen, dots, swipe/trackpad scroll en keyboard arrows
+- desktop toont drie cards tegelijk, tablet twee en mobiel een
 - registry uitgebreid met scores, metadata, doelgroep, doorlooptijd, devices, highlights en CTA-data
+- registry voorbereid op 20 branches
 - bouwbedrijf-demo blijft live gekoppeld en wordt commercieel sterker gepresenteerd
 - portfolio-intro versterkt met trust stats: 20+ branches, 100% responsive, SEO-klaar en conversiegericht
 - CTA's sturen naar de live demo en bestaande aanvraagsectie
+- oude dubbele hardcoded demo-carousel verwijderd van de homepage
 
 Niet gewijzigd:
 
