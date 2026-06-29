@@ -20,11 +20,16 @@ function createElement(tagName, className, text = "") {
   return element;
 }
 
+function getImageUrl(imagePath) {
+  if (!imagePath) return "";
+  return imagePath.startsWith("http") ? imagePath : `/${imagePath}`;
+}
+
 function createPreview(demoSite) {
   const preview = createElement("div", "official-demo-preview");
   preview.style.setProperty("--demo-accent", demoSite.accentColor || "#155eef");
   if (demoSite.desktopThumbnail) {
-    preview.style.setProperty("--demo-cover", `url("/${demoSite.desktopThumbnail}")`);
+    preview.style.setProperty("--demo-cover", `url("${getImageUrl(demoSite.desktopThumbnail)}")`);
   }
 
   const deviceBadges = createElement("div", "official-demo-device-badges");
@@ -52,7 +57,7 @@ function createPreview(demoSite) {
 
   const phone = createElement("div", "official-demo-mobile");
   if (demoSite.mobileThumbnail || demoSite.desktopThumbnail) {
-    phone.style.setProperty("--demo-mobile-cover", `url("/${demoSite.mobileThumbnail || demoSite.desktopThumbnail}")`);
+    phone.style.setProperty("--demo-mobile-cover", `url("${getImageUrl(demoSite.mobileThumbnail || demoSite.desktopThumbnail)}")`);
   }
   phone.append(createElement("span"), createElement("strong", "", demoSite.name), createElement("p", "", demoSite.primaryCtaLabel || demoSite.ctaLabel || "Demo bekijken"));
 
