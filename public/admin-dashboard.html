@@ -4245,6 +4245,7 @@
             ["Demo offertes", String(counts.demo ?? 0)],
             ["Ongemigreerd lokaal", String(counts.unmigratedLocal ?? 0)],
             ["Fallback status", status.fallbackUsed ? "Local fallback gebruikt" : "Geen fallback"],
+            ["Data layer", status.dataLayer || "repository/local"],
             ["Laatste refresh", status.refreshedAt ? formatDate(status.refreshedAt) : "-"],
             ["Error", status.error || "-"],
           ]);
@@ -4363,6 +4364,7 @@
             ["Openstaand bedrag", money(counts.openAmount ?? 0)],
             ["Betaald bedrag", money(counts.paidAmount ?? 0)],
             ["Fallback status", status.fallbackUsed ? "Local fallback gebruikt" : "Geen fallback"],
+            ["Data layer", status.dataLayer || "repository/local"],
             ["Laatste refresh", status.refreshedAt ? formatDate(status.refreshedAt) : "-"],
             ["Error", status.error || "-"],
           ]);
@@ -4494,6 +4496,7 @@
             ["ARR ex. btw", money(counts.arrExVat ?? 0)],
             ["ARR incl. btw", money(counts.arrInclVat ?? 0)],
             ["Fallback status", status.fallbackUsed ? "Local fallback gebruikt" : "Geen fallback"],
+            ["Data layer", status.dataLayer || "repository/local"],
             ["Laatste refresh", status.refreshedAt ? formatDate(status.refreshedAt) : "-"],
             ["Error", status.error || "-"],
           ]);
@@ -8005,47 +8008,71 @@
 
         async function loadQuotesByDataMode() {
           const mode = currentQuoteDataMode();
-          const { QuoteRepository } = await import("./src/repositories/QuoteRepository.js");
-          const result = await QuoteRepository.listByDataMode(mode);
-          state.quoteSourceStatus = result;
+          const result = await readAdminDataLayerModule("quotes", mode);
+          state.quoteSourceStatus = {
+            mode: result.mode,
+            counts: result.counts,
+            duplicateMerges: result.duplicateMerges,
+            fallbackUsed: result.fallbackUsed,
+            error: result.error,
+            refreshedAt: result.refreshedAt,
+            dataLayer: result.dataLayer,
+          };
           localStorage.setItem("maxwebstudioLastQuoteSourceStatus", JSON.stringify({
             mode: result.mode,
             counts: result.counts,
             fallbackUsed: result.fallbackUsed,
             error: result.error,
             refreshedAt: result.refreshedAt,
+            dataLayer: result.dataLayer,
           }));
-          return result.quotes.map(normalizeQuote);
+          return result.records.map(normalizeQuote);
         }
 
         async function loadInvoicesByDataMode() {
           const mode = currentInvoiceDataMode();
-          const { InvoiceRepository } = await import("./src/repositories/InvoiceRepository.js");
-          const result = await InvoiceRepository.listByDataMode(mode);
-          state.invoiceSourceStatus = result;
+          const result = await readAdminDataLayerModule("invoices", mode);
+          state.invoiceSourceStatus = {
+            mode: result.mode,
+            counts: result.counts,
+            duplicateMerges: result.duplicateMerges,
+            fallbackUsed: result.fallbackUsed,
+            error: result.error,
+            refreshedAt: result.refreshedAt,
+            dataLayer: result.dataLayer,
+          };
           localStorage.setItem("maxwebstudioLastInvoiceSourceStatus", JSON.stringify({
             mode: result.mode,
             counts: result.counts,
             fallbackUsed: result.fallbackUsed,
             error: result.error,
             refreshedAt: result.refreshedAt,
+            dataLayer: result.dataLayer,
           }));
-          return result.invoices.map(normalizeInvoice);
+          return result.records.map(normalizeInvoice);
         }
 
         async function loadSubscriptionsByDataMode() {
           const mode = currentSubscriptionDataMode();
-          const { SubscriptionRepository } = await import("./src/repositories/SubscriptionRepository.js");
-          const result = await SubscriptionRepository.listByDataMode(mode);
-          state.subscriptionSourceStatus = result;
+          const result = await readAdminDataLayerModule("subscriptions", mode);
+          state.subscriptionSourceStatus = {
+            mode: result.mode,
+            counts: result.counts,
+            duplicateMerges: result.duplicateMerges,
+            fallbackUsed: result.fallbackUsed,
+            error: result.error,
+            refreshedAt: result.refreshedAt,
+            dataLayer: result.dataLayer,
+          };
           localStorage.setItem("maxwebstudioLastSubscriptionSourceStatus", JSON.stringify({
             mode: result.mode,
             counts: result.counts,
             fallbackUsed: result.fallbackUsed,
             error: result.error,
             refreshedAt: result.refreshedAt,
+            dataLayer: result.dataLayer,
           }));
-          return result.subscriptions.map(normalizeSubscription);
+          return result.records.map(normalizeSubscription);
         }
 
         function normalizeWebsiteStatus(value) {

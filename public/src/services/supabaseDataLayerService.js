@@ -3,8 +3,20 @@ import { getSafeSupabaseClientSummary } from "../providers/supabaseClient.js";
 import { CustomerRepository } from "../repositories/CustomerRepository.js";
 import { WebsiteRepository } from "../repositories/WebsiteRepository.js";
 import { ProjectRepository } from "../repositories/ProjectRepository.js";
+import { QuoteRepository } from "../repositories/QuoteRepository.js";
+import { InvoiceRepository } from "../repositories/InvoiceRepository.js";
+import { SubscriptionRepository } from "../repositories/SubscriptionRepository.js";
 
-const MVP_MODULES = Object.freeze(["customers", "websites", "projects"]);
+const MVP_MODULES = Object.freeze([
+  "customers",
+  "websites",
+  "projects",
+  "quotes",
+  "quote_lines",
+  "invoices",
+  "invoice_lines",
+  "subscriptions",
+]);
 
 function normalizeMode(mode = CUSTOMER_DATA_MODES.HYBRID) {
   return Object.values(CUSTOMER_DATA_MODES).includes(mode) ? mode : CUSTOMER_DATA_MODES.HYBRID;
@@ -25,6 +37,33 @@ function moduleResult(module, result = {}, recordsKey) {
   };
 }
 
+function lineModuleResult(module, parentResult = {}, parentRecordsKey, lineParentKey) {
+  const parents = Array.isArray(parentResult[parentRecordsKey]) ? parentResult[parentRecordsKey] : [];
+  const records = parents.flatMap((parent) => (Array.isArray(parent.lines) ? parent.lines : []).map((line, index) => ({
+    ...line,
+    [lineParentKey]: line[lineParentKey] || parent.id || "",
+    parentNumber: parent.quoteNumber || parent.invoiceNumber || "",
+    parentStatus: parent.status || "",
+    parentSource: parent._source || parent.source || "",
+    sortOrder: line.sortOrder ?? index,
+  })));
+  return {
+    module,
+    mode: parentResult.mode || CUSTOMER_DATA_MODES.LOCAL,
+    records,
+    count: records.length,
+    counts: {
+      ...(parentResult.counts || {}),
+      parentCount: parents.length,
+      lineCount: records.length,
+    },
+    duplicateMerges: parentResult.duplicateMerges || [],
+    fallbackUsed: Boolean(parentResult.fallbackUsed),
+    error: parentResult.error || "",
+    refreshedAt: parentResult.refreshedAt || new Date().toISOString(),
+  };
+}
+
 async function readModule(module, mode) {
   if (module === "customers") {
     return moduleResult(module, await CustomerRepository.listByDataMode(mode), "customers");
@@ -34,6 +73,21 @@ async function readModule(module, mode) {
   }
   if (module === "projects") {
     return moduleResult(module, await ProjectRepository.listByDataMode(mode), "projects");
+  }
+  if (module === "quotes") {
+    return moduleResult(module, await QuoteRepository.listByDataMode(mode), "quotes");
+  }
+  if (module === "quote_lines") {
+    return lineModuleResult(module, await QuoteRepository.listByDataMode(mode), "quotes", "quoteId");
+  }
+  if (module === "invoices") {
+    return moduleResult(module, await InvoiceRepository.listByDataMode(mode), "invoices");
+  }
+  if (module === "invoice_lines") {
+    return lineModuleResult(module, await InvoiceRepository.listByDataMode(mode), "invoices", "invoiceId");
+  }
+  if (module === "subscriptions") {
+    return moduleResult(module, await SubscriptionRepository.listByDataMode(mode), "subscriptions");
   }
   throw new Error(`Onbekende Supabase Data Layer module: ${module}`);
 }
@@ -72,7 +126,7 @@ export async function readSupabaseDataLayerMvp(options = {}) {
 export function getSupabaseDataLayerMvpStatus() {
   const supabase = getSafeSupabaseClientSummary();
   return {
-    phase: "29",
+    phase: "32",
     name: "Supabase Data Layer MVP",
     modules: MVP_MODULES,
     defaultMode: CUSTOMER_DATA_MODES.HYBRID,
@@ -85,7 +139,7 @@ export function getSupabaseDataLayerMvpStatus() {
     readsPrepared: true,
     writesEnabled: false,
     productionReady: false,
-    reason: "Customers, websites en projects hebben read-only Supabase services met localStorage fallback. Productie blijft uit tot expliciete releaseapproval.",
+    reason: "Customers, websites, projects en finance modules hebben read-only Supabase services met localStorage fallback. Productie blijft uit tot expliciete releaseapproval.",
   };
 }
 

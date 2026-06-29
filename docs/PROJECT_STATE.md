@@ -1459,3 +1459,27 @@ MVP-grenzen:
 - Geen writes toegevoegd.
 - Offertes, facturen, abonnementen, bestanden en workflow blijven op bestaande routes.
 - Productie blijft `NO-GO` tot expliciete releaseapproval.
+
+## Fase 32 - Finance Data Layer MVP
+
+Status: `AFGEROND`
+
+Doel:
+
+- De Supabase Data Layer MVP read-only uitbreiden met finance modules.
+- Offertes, offertregels, facturen, factuurregels en abonnementen via dezelfde hybrid/local fallback benaderen.
+- Klantportaal en admin read-only aansluiten waar veilig.
+
+Toegevoegd/aangepast:
+
+- `public/src/services/supabaseDataLayerService.js` ondersteunt `quotes`, `quote_lines`, `invoices`, `invoice_lines` en `subscriptions`.
+- `public/src/services/clientPortalDataService.js` leest offertes, facturen en abonnementen via de data-layer.
+- `public/admin-dashboard.html` leest offertes, facturen en abonnementen via de data-layer en toont bronstatus.
+
+MVP-grenzen:
+
+- Read-only.
+- Geen Mollie live payments.
+- Geen Resend of OpenAI.
+- Geen productieproject of echte klantdata.
+- Quote/invoice lines worden gelezen als veilige afgeleide read-view uit offerte/factuur records.

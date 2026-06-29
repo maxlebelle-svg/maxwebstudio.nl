@@ -1157,3 +1157,27 @@ Volgende stap:
 
 1. Data-layer review voor write-readiness voorbereiden.
 2. Daarna per module gecontroleerde write-mode plannen.
+
+## Fase 32 - Finance Data Layer MVP
+
+Status: `AFGEROND`
+
+Scope:
+
+- Data-layer read support voor `quotes`, `quote_lines`, `invoices`, `invoice_lines` en `subscriptions`.
+- Klantportaal gebruikt de finance read-layer voor offertes, facturen en abonnementen.
+- Admin/CRM gebruikt de finance read-layer voor offertes, facturen en abonnementen.
+- Local/demo fallback blijft intact.
+
+Niet in scope:
+
+- Productieproject.
+- Echte klantdata.
+- Writes.
+- Mollie live payments.
+- Resend/OpenAI.
+
+Volgende stap:
+
+1. Data-layer GO/NO-GO review voor write-readiness.
+2. Daarna gecontroleerde write-mode per finance module ontwerpen.

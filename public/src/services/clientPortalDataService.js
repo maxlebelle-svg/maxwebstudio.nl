@@ -146,16 +146,19 @@ function dataLayerModuleResult(dataLayerResult = {}, moduleName, fallbackMode) {
   };
 }
 
-async function readCoreDataLayerModules(mode) {
+async function readPortalDataLayerModules(mode) {
   try {
     const dataLayerResult = await readSupabaseDataLayerMvp({
       mode: repositoryMode(mode),
-      modules: ["customers", "websites", "projects"],
+      modules: ["customers", "websites", "projects", "quotes", "invoices", "subscriptions"],
     });
     return {
       customers: dataLayerModuleResult(dataLayerResult, "customers", mode),
       websites: dataLayerModuleResult(dataLayerResult, "websites", mode),
       projects: dataLayerModuleResult(dataLayerResult, "projects", mode),
+      quotes: dataLayerModuleResult(dataLayerResult, "quotes", mode),
+      invoices: dataLayerModuleResult(dataLayerResult, "invoices", mode),
+      subscriptions: dataLayerModuleResult(dataLayerResult, "subscriptions", mode),
       dataLayerStatus: {
         ...getSupabaseDataLayerMvpStatus(),
         mode: dataLayerResult.mode,
@@ -166,13 +169,16 @@ async function readCoreDataLayerModules(mode) {
       },
     };
   } catch (error) {
-    const [customers, websites, projects] = await Promise.all([
+    const [customers, websites, projects, quotes, invoices, subscriptions] = await Promise.all([
       listModule(CustomerRepository, "customers", CLIENT_PORTAL_DATA_MODES.LOCAL),
       listModule(WebsiteRepository, "websites", CLIENT_PORTAL_DATA_MODES.LOCAL),
       listModule(ProjectRepository, "projects", CLIENT_PORTAL_DATA_MODES.LOCAL),
+      listModule(QuoteRepository, "quotes", CLIENT_PORTAL_DATA_MODES.LOCAL),
+      listModule(InvoiceRepository, "invoices", CLIENT_PORTAL_DATA_MODES.LOCAL),
+      listModule(SubscriptionRepository, "subscriptions", CLIENT_PORTAL_DATA_MODES.LOCAL),
     ]);
     const fallbackMessage = error.message || "Supabase Data Layer MVP kon niet worden gelezen.";
-    [customers, websites, projects].forEach((result) => {
+    [customers, websites, projects, quotes, invoices, subscriptions].forEach((result) => {
       result.status.fallbackUsed = true;
       result.status.error = fallbackMessage;
       result.status.dataLayer = "local-fallback-after-data-layer-error";
@@ -181,11 +187,14 @@ async function readCoreDataLayerModules(mode) {
       customers,
       websites,
       projects,
+      quotes,
+      invoices,
+      subscriptions,
       dataLayerStatus: {
         ...getSupabaseDataLayerMvpStatus(),
         mode: CLIENT_PORTAL_DATA_MODES.LOCAL,
         fallbackUsed: true,
-        fallbackModules: ["customers", "websites", "projects"],
+        fallbackModules: ["customers", "websites", "projects", "quotes", "invoices", "subscriptions"],
         errors: [{ module: "clientPortalDataService", error: fallbackMessage }],
         refreshedAt: new Date().toISOString(),
       },
@@ -390,28 +399,23 @@ export function getClientPortalSourceSummary(data = {}) {
 }
 
 async function readAllForMode(mode) {
-  const [coreDataLayer, quotes, invoices, subscriptions] = await Promise.all([
-    readCoreDataLayerModules(mode),
-    listModule(QuoteRepository, "quotes", mode),
-    listModule(InvoiceRepository, "invoices", mode),
-    listModule(SubscriptionRepository, "subscriptions", mode),
-  ]);
+  const portalDataLayer = await readPortalDataLayerModules(mode);
   const files = { items: localFiles(), status: { mode: "local", fallbackUsed: false, error: "", count: localFiles().length, refreshedAt: new Date().toISOString() } };
   const changeRequests = { items: localChangeRequests(), status: { mode: "local", fallbackUsed: false, error: "", count: localChangeRequests().length, refreshedAt: new Date().toISOString() } };
   const messages = { items: localMessages(), status: { mode: "local", fallbackUsed: false, error: "", count: localMessages().length, refreshedAt: new Date().toISOString() } };
   const notifications = { items: localNotifications(), status: { mode: "local", fallbackUsed: false, error: "", count: localNotifications().length, refreshedAt: new Date().toISOString() } };
   return {
-    customers: coreDataLayer.customers,
-    websites: coreDataLayer.websites,
-    projects: coreDataLayer.projects,
-    quotes,
-    invoices,
-    subscriptions,
+    customers: portalDataLayer.customers,
+    websites: portalDataLayer.websites,
+    projects: portalDataLayer.projects,
+    quotes: portalDataLayer.quotes,
+    invoices: portalDataLayer.invoices,
+    subscriptions: portalDataLayer.subscriptions,
     files,
     changeRequests,
     messages,
     notifications,
-    dataLayerStatus: coreDataLayer.dataLayerStatus,
+    dataLayerStatus: portalDataLayer.dataLayerStatus,
   };
 }
 
