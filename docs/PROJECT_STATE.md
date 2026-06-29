@@ -1241,3 +1241,32 @@ Bewust niet uitgevoerd:
 - Geen staging writes.
 - Geen productie geraakt.
 - Geen secrets getoond of gelogd.
+
+## Fase 28.1 Hercontrole - Supabase CLI
+
+Status: hercontrole uitgevoerd. Environment blijft `NOT_READY`.
+
+Resultaat:
+
+- Supabase CLI is geinstalleerd.
+- Versie bevestigd: `2.108.0`.
+- De binary staat op `/opt/homebrew/bin/supabase`.
+- `supabase` staat nog niet in de shell `PATH` die Codex gebruikt.
+- De CLI probeert telemetry/config naar `~/.supabase` te schrijven; dit is in de sandbox geblokkeerd.
+- Versiecheck werkt met tijdelijke `HOME=/private/tmp`.
+- `.env.local` blijft genegeerd door Git.
+- `APP_ENV=test` en `APP_ENVIRONMENT=test`.
+- Supabase testconfig is aanwezig zonder waarden te tonen.
+- Er zijn geen productie-indicatoren aangetroffen in de gecontroleerde env-context.
+
+Resterende blockers:
+
+- CLI moet bruikbaar zijn voor de execution-shell via PATH of expliciet absoluut pad.
+- CLI moet veilig gekoppeld zijn aan uitsluitend het test/staging project, of psql fallback moet een test-only DB connection string krijgen.
+
+Bewust niet uitgevoerd:
+
+- Geen SQL.
+- Geen migrations.
+- Geen Supabase writes.
+- Geen productieproject.

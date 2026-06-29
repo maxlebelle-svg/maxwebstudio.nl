@@ -980,3 +980,24 @@ Roadmapbesluit:
 3. Daarna Fase 28 opnieuw uitvoeren.
 4. Daarna Fase 28.2: resultaten beoordelen en GO/NO-GO voor datalaag.
 5. Pas daarna Fase 29: Supabase Data Layer.
+
+### Hercontrole Supabase CLI
+
+Uitkomst:
+
+- Supabase CLI is aanwezig.
+- Versie: `2.108.0`.
+- `.env.local` blijft veilig genegeerd.
+- Test/staging env-context is aanwezig.
+- Geen productie-indicatoren gevonden.
+- Environment blijft `NOT_READY`.
+
+Resterend:
+
+- CLI staat nog niet in de Codex shell PATH.
+- CLI projectlink naar test/staging is nog niet bewezen.
+- Er is nog geen test-only DB connection string voor psql fallback.
+
+Volgende actie:
+
+Maak de CLI bruikbaar voor de execution-shell en bevestig daarna de staging projectkoppeling zonder SQL uit te voeren.

@@ -5,8 +5,9 @@ Doel: objectief bepalen of Fase 28 opnieuw mag starten.
 
 ## Tooling
 
-- [ ] Supabase CLI is aanwezig.
-- [ ] Supabase CLI versie is genoteerd.
+- [x] Supabase CLI is aanwezig.
+- [x] Supabase CLI versie is genoteerd: `2.108.0`.
+- [ ] Supabase CLI staat in de shell `PATH` of wordt bewust via absoluut pad gebruikt.
 - [ ] Supabase CLI is gekoppeld aan het test/staging project.
 - [ ] Of: psql fallback heeft een test-only database connection string.
 - [ ] Git werkt.

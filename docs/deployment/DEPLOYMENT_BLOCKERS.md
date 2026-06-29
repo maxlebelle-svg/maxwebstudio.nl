@@ -408,7 +408,7 @@ Readiness inventarisatie:
 | Node.js | ready | Beschikbaar voor checks |
 | npm | ready | Beschikbaar |
 | psql | partial | Aanwezig, maar geen test-only connection string |
-| Supabase CLI | missing | Voorkeursroute ontbreekt |
+| Supabase CLI | partial | Geinstalleerd; versie `2.108.0`; niet in Codex shell PATH en projectlink nog niet bewezen |
 | Netlify CLI | missing | Niet nodig voor migration execution |
 | `.env.local` | ready | Aanwezig en door Git genegeerd |
 | `APP_ENV` / `APP_ENVIRONMENT` | ready | Beide op test |
@@ -422,3 +422,15 @@ Aanbevolen execution route:
 3. Handmatig: Supabase SQL Editor alleen met extra evidence per stap.
 
 Blocker blijft open totdat route 1 of 2 klaar is, of handmatige SQL Editor execution expliciet gekozen en gedocumenteerd is.
+
+Hercontrole na installatie:
+
+- Supabase CLI binary gevonden via `/opt/homebrew/bin/supabase`.
+- Versie bevestigd met tijdelijke HOME: `2.108.0`.
+- Directe `supabase --version` werkt nog niet in de Codex shell omdat `/opt/homebrew/bin` niet in PATH staat.
+- CLI probeerde telemetry/config naar `~/.supabase` te schrijven; in deze sandbox is daarvoor geen schrijfrecht.
+- Geen SQL uitgevoerd en geen Supabase project geraakt.
+
+Resterende blocker:
+
+- Maak de CLI bruikbaar voor execution via PATH/absolute path + veilige HOME/config, en bevestig daarna de test/staging projectkoppeling zonder productie te raken.
