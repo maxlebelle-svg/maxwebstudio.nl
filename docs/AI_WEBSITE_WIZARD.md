@@ -1,6 +1,6 @@
 # AI Website Wizard
 
-Status: Fase 15.1 intake UI. Geen productieaanpassingen, geen SQL, geen API keys en geen AI-calls.
+Status: Fase 19 intake & draft engine readiness. Geen productieaanpassingen, geen SQL, geen API keys en geen AI-calls.
 
 ## Doel
 
@@ -12,13 +12,14 @@ De AI Website Wizard wordt de toekomstige workflow waarmee Max Webstudio website
 - placeholder services
 - Developer Mode readiness
 - intake UI in het admin-dashboard
+- lokale template/mock draftgenerator
 - uitbreidbaarheid voor latere AI-functionaliteit
 
 ## Niet In Deze Fase
 
 - Geen OpenAI-calls.
 - Geen logo-generatie.
-- Geen AI-content generatie.
+- Geen echte AI-content generatie via externe provider.
 - Geen websitebouw/scaffold generatie.
 - Geen database-uitbreiding.
 - Geen nieuwe dependencies.
@@ -159,6 +160,47 @@ Verplichte velden:
 - belangrijkste CTA
 
 De intake wordt verdeeld over bestaande workflowstappen zoals `business_information`, `industry_selection`, `services`, `pages`, `contact_details`, `ctas`, `brand_style`, `colors` en `domain`. Daardoor blijft de state migreerbaar naar een latere Supabase-tabel zonder dat de UI een apart dataspoor maakt.
+
+## Fase 19 - Intake & Draft Engine Readiness
+
+De wizard is uitgebreid tot een bruikbare lokale intake- en conceptgenerator.
+
+Extra velden:
+
+- regio
+- tone of voice
+- concurrenten
+- SEO zoekwoorden
+- klantdoel
+- gekoppelde klant
+- gekoppelde website
+- gekoppeld project
+
+Local/demo draft-output:
+
+- homepage structuur
+- hero titel en subtitel
+- CTA's
+- dienstenblokken
+- over-ons tekst
+- FAQ's
+- SEO titel
+- meta description
+- zoekwoorden
+- projectbrief
+
+Belangrijk:
+
+- De output komt uit `local_template_mock`.
+- Er worden geen OpenAI-calls uitgevoerd.
+- Er worden geen API keys gebruikt.
+- De output wordt opgeslagen in `metadata.draftOutput` binnen `maxwebstudioAiWebsiteWizardState`.
+- Koppelingen naar klanten, websites en projecten blijven local/demo en worden opgeslagen als `customerId`, `websiteId` en `projectId`.
+
+Nieuwe servicefuncties:
+
+- `generateWizardDraftOutput()`
+- `generateAndSaveWizardDraftOutput()`
 
 ## Toekomstige Providers
 

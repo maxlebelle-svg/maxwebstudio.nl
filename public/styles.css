@@ -6894,6 +6894,7 @@ h3 {
 }
 
 .ai-wizard-preview-card,
+.ai-wizard-output-card,
 .ai-wizard-debug-card {
   grid-column: 2;
 }
@@ -6935,27 +6936,35 @@ h3 {
 }
 
 .ai-wizard-preview-card .settings-status-list div,
+.ai-wizard-output-card .settings-status-list div,
 .ai-wizard-debug-card .settings-status-list div {
   padding: 10px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .ai-wizard-preview-card .settings-status-list div:last-child,
+.ai-wizard-output-card .settings-status-list div:last-child,
 .ai-wizard-debug-card .settings-status-list div:last-child {
   border-bottom: 0;
 }
 
 .ai-wizard-preview-card .settings-status-list strong,
+.ai-wizard-output-card .settings-status-list strong,
 .ai-wizard-debug-card .settings-status-list strong {
   color: var(--white);
   font-size: 13px;
 }
 
 .ai-wizard-preview-card .settings-status-list span,
+.ai-wizard-output-card .settings-status-list span,
 .ai-wizard-debug-card .settings-status-list span {
   max-width: 58ch;
   text-align: right;
   line-height: 1.45;
+}
+
+.ai-wizard-output-card .settings-status-list span {
+  max-width: 72ch;
 }
 
 .settings-checkbox-grid label,
@@ -8937,6 +8946,7 @@ h3 {
   }
 
   .ai-wizard-preview-card,
+  .ai-wizard-output-card,
   .ai-wizard-debug-card {
     grid-column: 1;
   }

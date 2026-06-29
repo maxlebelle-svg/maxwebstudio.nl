@@ -765,26 +765,35 @@
                 <div class="settings-card-heading">
                   <div>
                     <span>Intake</span>
-                    <strong>Bedrijfsinformatie verzamelen</strong>
+                    <strong>Bedrijfsinformatie en conceptbrief</strong>
                   </div>
-                  <mark class="status-badge status-planned">Fase 15.1</mark>
+                  <mark class="status-badge status-planned">Fase 19</mark>
                 </div>
                 <div class="admin-profile-fields">
+                  <label for="ai-wizard-customer">Klant koppelen<select id="ai-wizard-customer" name="customerId"><option value="">Geen klant gekoppeld</option></select></label>
+                  <label for="ai-wizard-website">Website koppelen<select id="ai-wizard-website" name="websiteId"><option value="">Geen website gekoppeld</option></select></label>
+                  <label for="ai-wizard-project">Project koppelen<select id="ai-wizard-project" name="projectId"><option value="">Geen project gekoppeld</option></select></label>
                   <label for="ai-wizard-company-name">Bedrijfsnaam<input id="ai-wizard-company-name" name="companyName" type="text" autocomplete="organization" required /></label>
                   <label for="ai-wizard-industry">Branche<input id="ai-wizard-industry" name="industry" type="text" placeholder="Bijv. bouwbedrijf, horeca, coaching" required /></label>
+                  <label for="ai-wizard-region">Regio<input id="ai-wizard-region" name="region" type="text" placeholder="Bijv. Rotterdam, Westland, Nederland" /></label>
+                  <label for="ai-wizard-tone">Tone of voice<input id="ai-wizard-tone" name="toneOfVoice" type="text" placeholder="Zakelijk, warm, direct, premium..." /></label>
                   <label class="admin-profile-wide" for="ai-wizard-audience">Doelgroep<textarea id="ai-wizard-audience" name="audience" required placeholder="Voor wie is de website bedoeld?"></textarea></label>
                   <label class="admin-profile-wide" for="ai-wizard-services">Belangrijkste diensten<textarea id="ai-wizard-services" name="services" required placeholder="Noem de belangrijkste diensten of producten."></textarea></label>
                   <label class="admin-profile-wide" for="ai-wizard-unique-value">Onderscheidend vermogen<textarea id="ai-wizard-unique-value" name="uniqueValue" placeholder="Waarom kiezen klanten voor dit bedrijf?"></textarea></label>
                   <label for="ai-wizard-style">Gewenste uitstraling<input id="ai-wizard-style" name="desiredStyle" type="text" placeholder="Modern, luxe, rustig, zakelijk..." /></label>
                   <label for="ai-wizard-colors">Kleurenvoorkeur<input id="ai-wizard-colors" name="colorPreference" type="text" placeholder="Blauw/wit, warm, donker..." /></label>
                   <label for="ai-wizard-existing-website">Bestaande website<input id="ai-wizard-existing-website" name="existingWebsite" type="url" placeholder="https://..." /></label>
+                  <label class="admin-profile-wide" for="ai-wizard-competitors">Concurrenten<textarea id="ai-wizard-competitors" name="competitors" placeholder="Concurrenten, voorbeeldsites of inspiratie."></textarea></label>
                   <label for="ai-wizard-contact">Contactgegevens<input id="ai-wizard-contact" name="contactDetails" type="text" placeholder="E-mail, telefoon, WhatsApp" required /></label>
                   <label class="admin-profile-wide" for="ai-wizard-pages">Gewenste pagina's<textarea id="ai-wizard-pages" name="desiredPages" required placeholder="Home, Over ons, Diensten, Projecten, Contact..."></textarea></label>
                   <label for="ai-wizard-primary-cta">Belangrijkste CTA<input id="ai-wizard-primary-cta" name="primaryCta" type="text" placeholder="Offerte aanvragen, afspraak maken..." required /></label>
+                  <label class="admin-profile-wide" for="ai-wizard-seo">SEO zoekwoorden<textarea id="ai-wizard-seo" name="seoKeywords" placeholder="Bijv. aannemer Rotterdam, warmtepomp installateur Breda"></textarea></label>
+                  <label for="ai-wizard-goal">Klantdoel<select id="ai-wizard-goal" name="customerGoal"><option value="">Kies doel</option><option value="Meer aanvragen">Meer aanvragen</option><option value="Meer betrouwbaarheid">Meer betrouwbaarheid</option><option value="Portfolio beter tonen">Portfolio beter tonen</option><option value="Webshop verkopen">Webshop verkopen</option><option value="Afspraken plannen">Afspraken plannen</option><option value="Personeel werven">Personeel werven</option></select></label>
                   <label class="admin-profile-wide" for="ai-wizard-notes">Notities<textarea id="ai-wizard-notes" name="notes" placeholder="Extra context voor latere AI-briefing."></textarea></label>
                 </div>
                 <div class="admin-profile-actions">
                   <button class="button primary" type="submit">Concept opslaan</button>
+                  <button class="button secondary" id="ai-wizard-generate" type="button">Genereer demo-draft</button>
                   <button class="button secondary" id="ai-wizard-reset" type="button">Concept wissen</button>
                   <p class="admin-form-message" id="ai-wizard-message" role="status"></p>
                 </div>
@@ -799,6 +808,17 @@
                   <mark class="status-badge status-planned" id="ai-wizard-validation">Concept</mark>
                 </div>
                 <div class="settings-status-list" id="ai-wizard-preview"></div>
+              </article>
+
+              <article class="admin-card settings-card ai-wizard-output-card">
+                <div class="settings-card-heading">
+                  <div>
+                    <span>Demo-draft</span>
+                    <strong>Lokale conceptgenerator</strong>
+                  </div>
+                  <mark class="status-badge status-prepared" id="ai-wizard-output-status">Mock</mark>
+                </div>
+                <div class="settings-status-list ai-wizard-output" id="ai-wizard-output"></div>
               </article>
 
               <article class="admin-card settings-card ai-wizard-debug-card" id="ai-wizard-debug" hidden>
@@ -1840,6 +1860,7 @@
         };
         const aiWizardForm = document.getElementById("ai-wizard-form");
         const aiWizardReset = document.getElementById("ai-wizard-reset");
+        const aiWizardGenerate = document.getElementById("ai-wizard-generate");
         const aiWizardMessage = document.getElementById("ai-wizard-message");
         const aiWizardStepNav = document.getElementById("ai-wizard-step-nav");
         const aiWizardStatus = document.getElementById("ai-wizard-status");
@@ -1849,18 +1870,28 @@
         const aiWizardValidation = document.getElementById("ai-wizard-validation");
         const aiWizardDebug = document.getElementById("ai-wizard-debug");
         const aiWizardDebugOutput = document.getElementById("ai-wizard-debug-output");
+        const aiWizardOutput = document.getElementById("ai-wizard-output");
+        const aiWizardOutputStatus = document.getElementById("ai-wizard-output-status");
         const aiWizardFields = {
+          customerId: document.getElementById("ai-wizard-customer"),
+          websiteId: document.getElementById("ai-wizard-website"),
+          projectId: document.getElementById("ai-wizard-project"),
           companyName: document.getElementById("ai-wizard-company-name"),
           industry: document.getElementById("ai-wizard-industry"),
+          region: document.getElementById("ai-wizard-region"),
+          toneOfVoice: document.getElementById("ai-wizard-tone"),
           audience: document.getElementById("ai-wizard-audience"),
           services: document.getElementById("ai-wizard-services"),
           uniqueValue: document.getElementById("ai-wizard-unique-value"),
           desiredStyle: document.getElementById("ai-wizard-style"),
           colorPreference: document.getElementById("ai-wizard-colors"),
           existingWebsite: document.getElementById("ai-wizard-existing-website"),
+          competitors: document.getElementById("ai-wizard-competitors"),
           contactDetails: document.getElementById("ai-wizard-contact"),
           desiredPages: document.getElementById("ai-wizard-pages"),
           primaryCta: document.getElementById("ai-wizard-primary-cta"),
+          seoKeywords: document.getElementById("ai-wizard-seo"),
+          customerGoal: document.getElementById("ai-wizard-goal"),
           notes: document.getElementById("ai-wizard-notes"),
         };
         const careOverview = document.getElementById("care-overview");
@@ -3353,7 +3384,26 @@
           return Object.fromEntries(Object.entries(aiWizardFields).map(([key, field]) => [key, field?.value?.trim() || ""]));
         }
 
+        function fillAiWizardSelect(field, items = [], placeholder = "Niet gekoppeld", selectedValue = "") {
+          if (!field) return;
+          field.innerHTML = `<option value="">${placeholder}</option>`;
+          items.forEach((item, index) => {
+            const option = document.createElement("option");
+            option.value = item.id || item.customerId || item.profileId || "";
+            option.textContent = item.name || item.company || item.companyName || item.title || item.websiteName || item.domain || `Record ${index + 1}`;
+            if (option.value) field.append(option);
+          });
+          field.value = selectedValue || "";
+        }
+
+        function fillAiWizardRelationshipSelects(intake = {}) {
+          fillAiWizardSelect(aiWizardFields.customerId, readStoredCustomers(), "Geen klant gekoppeld", intake.customerId);
+          fillAiWizardSelect(aiWizardFields.websiteId, readStoredWebsites(), "Geen website gekoppeld", intake.websiteId);
+          fillAiWizardSelect(aiWizardFields.projectId, readStoredProjects(), "Geen project gekoppeld", intake.projectId);
+        }
+
         function fillAiWizardForm(intake = {}) {
+          fillAiWizardRelationshipSelects(intake);
           Object.entries(aiWizardFields).forEach(([key, field]) => {
             if (field) field.value = intake[key] || "";
           });
@@ -3377,6 +3427,33 @@
             item.append(label, value);
             container.append(item);
           });
+        }
+
+        function renderAiWizardDraftOutput(output = null) {
+          if (!aiWizardOutput) return;
+          aiWizardOutput.replaceChildren();
+          if (!output) {
+            aiWizardOutputStatus.textContent = "Nog geen draft";
+            renderAiWizardRows(aiWizardOutput, [
+              { label: "Status", value: "Sla een intake op en klik op Genereer demo-draft." },
+              { label: "AI-calls", value: "Uitgeschakeld" },
+              { label: "Generator", value: "Lokale template/mock-generator" },
+            ]);
+            return;
+          }
+          aiWizardOutputStatus.textContent = "Gegenereerd";
+          const rows = [
+            { label: "Hero titel", value: output.hero?.title || "-" },
+            { label: "Hero subtitel", value: output.hero?.subtitle || "-" },
+            { label: "Primaire CTA", value: output.hero?.primaryCta || "-" },
+            { label: "Dienstenblokken", value: (output.services || []).map((item) => item.title).join(", ") || "-" },
+            { label: "FAQ's", value: String(output.faqs?.length || 0) },
+            { label: "SEO titel", value: output.seo?.title || "-" },
+            { label: "Meta description", value: output.seo?.metaDescription || "-" },
+            { label: "Projectbrief", value: `${output.projectBrief?.industry || "-"} · ${output.projectBrief?.goal || "-"}` },
+            { label: "Generator", value: output.generator || "local_template_mock" },
+          ];
+          renderAiWizardRows(aiWizardOutput, rows);
         }
 
         function renderAiWizardStepNav(service, summary) {
@@ -3430,6 +3507,7 @@
             fillAiWizardForm(summary.intake);
             renderAiWizardStepNav(service, summary);
             renderAiWizardRows(aiWizardPreview, summary.rows);
+            renderAiWizardDraftOutput(summary.state.metadata?.draftOutput || null);
             aiWizardProgressLabel.textContent = `${summary.progress.percentage}%`;
             aiWizardProgressBar.style.width = `${summary.progress.percentage}%`;
             aiWizardStatus.textContent = summary.state.status || "Prepared";
@@ -3455,6 +3533,20 @@
           const result = service.saveWizardIntake(data);
           state.aiWizardSelectedStepId = result.state.currentStepId;
           await renderAiWizardUi({ text: "AI Website Wizard intake opgeslagen als lokaal concept.", type: "success" });
+          await renderDeveloperToolsSummary();
+        }
+
+        async function generateAiWizardDraft() {
+          const service = await loadAiWizardService();
+          const data = getAiWizardFormData();
+          const validation = service.validateWizardIntake(data);
+          if (!validation.valid) {
+            setAiWizardMessage(validation.errors.join(" "), "error");
+            return;
+          }
+          const result = service.generateAndSaveWizardDraftOutput(data);
+          state.aiWizardSelectedStepId = "ai_content";
+          await renderAiWizardUi({ text: "Demo-draft lokaal gegenereerd zonder OpenAI-call.", type: "success" });
           await renderDeveloperToolsSummary();
         }
 
@@ -4856,6 +4948,8 @@
             ["Drafts lokaal", String(summary.draftCount)],
             ["Laatste progress", intakeSummary ? `${intakeSummary.progress.percentage}%` : "Geen draft"],
             ["Intake validatie", intakeSummary?.validation.valid ? "Compleet" : "Concept / ontbrekende velden"],
+            ["Draft-output", summary.latestDraftOutput ? "Aanwezig" : "Nog niet gegenereerd"],
+            ["Generator", summary.latestDraftOutput?.generator || "local_template_mock voorbereid"],
           ]);
           appendDeveloperCard("AI Wizard workflow", summary.workflow.steps.map((step) => [
             step.title,
@@ -14403,6 +14497,7 @@
         [requestStatusFilter, requestPriorityFilter, requestCategoryFilter].forEach((filter) => filter.addEventListener("change", renderRequests));
         settingsForm.addEventListener("submit", saveSettings);
         aiWizardForm.addEventListener("submit", saveAiWizardIntake);
+        aiWizardGenerate.addEventListener("click", generateAiWizardDraft);
         aiWizardReset.addEventListener("click", resetAiWizardDraft);
         runMigrationAnalysis.addEventListener("click", runMigrationAnalysisHandler);
         runDataValidation.addEventListener("click", runDataValidationHandler);

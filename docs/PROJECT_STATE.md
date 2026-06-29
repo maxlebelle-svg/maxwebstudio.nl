@@ -860,3 +860,31 @@ Bewust nog demo/local/mock:
 - Geen productiegegevens.
 - Geen OpenAI-calls of automatische leadscore.
 - Geen Resend/Mollie acties.
+
+## Fase 19 - AI Website Wizard Intake & Draft Engine Readiness
+
+Status: AI Website Wizard uitgebreid tot lokale intake- en conceptgenerator zonder OpenAI-calls, API keys, SQL of productiegegevens.
+
+Bijgewerkt:
+
+- `public/admin-dashboard.html`
+- `public/styles.css`
+- `public/src/services/aiWebsiteWizardService.js`
+- `docs/AI_WEBSITE_WIZARD.md`
+
+Resultaat:
+
+- Intakeflow ondersteunt nu extra velden voor regio, tone of voice, concurrenten, SEO zoekwoorden en klantdoel.
+- Wizardconcepten kunnen gekoppeld worden aan lokale/demo klanten, websites en projecten.
+- De lokale template/mock-generator maakt demo-draft-output voor homepage structuur, hero tekst, dienstenblokken, over-ons tekst, FAQ's, CTA's, SEO titel/meta description en projectbrief.
+- Draft-output wordt opgeslagen in `metadata.draftOutput` binnen `maxwebstudioAiWebsiteWizardState`.
+- Developer Mode toont of draft-output aanwezig is en welke generator gebruikt is.
+
+Bewust nog demo/local/mock:
+
+- Geen OpenAI API.
+- Geen echte AI-content provider.
+- Geen logo-generatie.
+- Geen websitebuilder/scaffold.
+- Geen Supabase writes.
+- Geen nieuwe API keys of dependencies.

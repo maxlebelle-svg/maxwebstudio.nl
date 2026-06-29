@@ -608,3 +608,32 @@ Aanbevolen volgende stappen:
 2. Daarna bepalen welke salesstatussen en opvolgprocessen leidend worden.
 3. Later pas externe leadbronnen, AI lead scoring en sales automation toevoegen.
 4. Productie-koppeling pas ontwerpen na Supabase Auth/RLS en canonical CRM-validatie.
+
+## Fase 19 - AI Website Wizard Intake & Draft Engine Readiness
+
+Afgerond als local/demo wizarduitbreiding:
+
+- extra intakevelden voor regio, tone of voice, concurrenten, SEO zoekwoorden en klantdoel
+- koppeling aan lokale klanten, websites en projecten
+- lokale template/mock-generator voor demo-drafts
+- output voor homepage structuur, hero, diensten, over-ons, FAQ's, CTA's, SEO en projectbrief
+- Developer Mode toont draft-output readiness
+
+Gebruikte localStorage:
+
+- `maxwebstudioAiWebsiteWizardState`
+
+Nog demo/local:
+
+- geen OpenAI API
+- geen API keys
+- geen Supabase writes
+- geen echte websitegenerator
+- geen logo-generatie
+
+Aanbevolen volgende stappen:
+
+1. Demo-drafts testen met bestaande CRM-klanten en projecten.
+2. Bepalen welke draft-output straks klantveilig zichtbaar mag worden.
+3. Pas na productie Auth/RLS een server-side AI-provideradapter ontwerpen.
+4. Daarna AI-output koppelen aan projectbrief, offertevoorstel en website-scaffold.
