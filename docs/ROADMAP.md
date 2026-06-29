@@ -1088,3 +1088,28 @@ Volgende actie:
 
 1. Fase 28.3: formele data-layer GO/NO-GO review; of
 2. start Fase 29: Supabase Data Layer, met behoud van hybrid fallback.
+
+## Fase 29 - Supabase Data Layer MVP
+
+Status: `AFGEROND`
+
+Scope:
+
+- Customers read service.
+- Websites read service.
+- Projects read service.
+- Hybrid/local fallback.
+- Feature/readiness status via `supabaseDataLayerService`.
+
+Niet in scope:
+
+- Productieproject.
+- Echte klantdata.
+- Brede writes.
+- OpenAI/Mollie/Resend.
+
+Volgende stap:
+
+1. Developer/admin UI later gericht koppelen aan de MVP-service.
+2. Daarna klantportaal/CRM stap voor stap op echte data aansluiten.
+3. Write-mode pas na expliciete releaseapproval en aanvullende canonical write-mapping.

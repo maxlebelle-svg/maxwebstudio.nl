@@ -1393,3 +1393,24 @@ Besluit:
 
 - Fase 28 staging database foundation: `GO`.
 - Productie/live release: blijft `NO-GO`.
+
+## Fase 29 - Supabase Data Layer MVP
+
+Status: `AFGEROND`
+
+Doel:
+
+- Eerste applicatielaag aansluiten op Supabase reads voor `customers`, `websites` en `projects`.
+- Bestaande localStorage/demo fallback behouden.
+- Geen productieproject, echte klantdata of brede writes.
+
+Toegevoegd:
+
+- `public/src/services/supabaseDataLayerService.js`
+
+MVP-grenzen:
+
+- Read-only/hybrid data layer.
+- Writes blijven buiten scope behalve bestaande gated test/migratieflows.
+- Productie blijft `NO-GO` tot releaseapproval.
+- Supabase staging foundation blijft `GO`; productie blijft bewust onaangeraakt.
