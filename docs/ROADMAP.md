@@ -430,3 +430,26 @@ Niet live:
 Volgende logische stap:
 
 - AI intake/briefing-output voorbereiden op basis van de verzamelde lokale wizard-state, nog steeds zonder externe AI-provider of productie-impact.
+
+## Demo Portfolio
+
+### Demo Portfolio Engine
+
+Afgerond als infrastructuur:
+
+- centrale demo-sites registry toegevoegd
+- homepage demo-engine toegevoegd naast de bestaande carousel
+- premium desktop/mobile placeholder previews toegevoegd
+- `public/demo-sites/bouwbedrijf-demo/` voorbereid als eerste demo-map
+
+Niet live:
+
+- geen inhoudelijke demo-site
+- geen echte screenshots
+- geen demo-backend
+- geen database
+- geen AI-generatie
+
+Volgende logische stap:
+
+- `bouwbedrijf-demo` inhoudelijk bouwen en daarna in de registry op `live` zetten met een echte `demoUrl` en thumbnails.

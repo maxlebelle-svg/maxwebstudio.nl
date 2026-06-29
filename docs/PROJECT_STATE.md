@@ -654,3 +654,35 @@ Nog niet actief:
 - Website scaffold/build.
 - Supabase opslag voor wizard-state.
 - Publicatie-automatisering.
+
+## Demo Portfolio Engine
+
+Status: voorbereid als schaalbare demo-sites infrastructuur. Er is geen inhoudelijke demo-site gebouwd en er zijn geen backend-, database- of AI-koppelingen toegevoegd.
+
+Toegevoegd:
+
+- `public/src/config/demoSites.js`
+- `public/src/components/demoPortfolioEngine.js`
+- `public/demo-sites/bouwbedrijf-demo/.gitkeep`
+
+Bijgewerkt:
+
+- `public/index.html`
+- `public/styles.css`
+
+Resultaat:
+
+- Centrale registry voor officiele demo-websites.
+- Demo-sites kunnen later per branche worden toegevoegd met `id`, naam, branche, omschrijving, status, accentkleur, thumbnails, demo-URL, tags en CTA-label.
+- Homepage portfolio-sectie heeft een aparte registry-gedreven demo-engine naast de bestaande live demo-carousel.
+- Luxe desktop- en mobiele placeholder previews zijn voorbereid zonder echte screenshots of externe assets.
+- Eerste geplande demo: `bouwbedrijf-demo`.
+
+Nog niet actief:
+
+- Geen inhoudelijke demo-site.
+- Geen echte screenshots/thumbnails.
+- Geen database.
+- Geen Supabase.
+- Geen AI-generatie.
+- Geen backend.
