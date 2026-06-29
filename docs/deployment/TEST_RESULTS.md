@@ -762,3 +762,81 @@ Open evidence:
 - Bevestiging dat er geen echte klantdata in staging staat.
 - Bevestiging of testdata eerst geexporteerd moet worden.
 - Handmatige approval om testdata te verwijderen.
+
+## Fase 28 - Supabase Staging Execution na reset
+
+Status: `NO-GO / BLOCKED`
+
+Uitgevoerd op:
+
+- Gelinkt Supabase project: `maxwebstudio-test`
+- Project ref: matcht de test `SUPABASE_URL`
+- Execution route: `/opt/homebrew/bin/supabase db query --linked`
+- Productie geraakt: nee
+- Echte klantdata gebruikt: nee
+- Secrets gelogd: nee
+
+Reset:
+
+- `public` schema is gereset op het gelinkte staging/testproject.
+- Voor reset stonden er 22 publieke tabellen in staging.
+- Na reset waren er 0 publieke tabellen.
+- Geen productieproject geraakt.
+
+Migration resultaten:
+
+| Stap | Bestand | Werkelijk resultaat | Status | Evidence / notities |
+| --- | --- | --- | --- | --- |
+| Reset | `public` schema reset | Uitgevoerd op `maxwebstudio-test` | PASS | Alleen staging/test |
+| 1 | `supabase/migration-drafts/001_schema_tables.sql` | Query succesvol uitgevoerd | PASS | Schema/tables aangemaakt |
+| 2 | `supabase/migration-drafts/002_indexes.sql` | Query succesvol uitgevoerd | PASS | Eerdere `lead_score` drift opgelost |
+| 3 | `supabase/migration-drafts/003_rls_enablement.sql` | Query succesvol uitgevoerd | PASS | RLS enablement toegepast |
+| 4 | `supabase/migration-drafts/004_rls_policies.sql` | Query succesvol uitgevoerd | PASS | Policies aangemaakt zonder SQL-fout |
+| 5 | `supabase/migration-drafts/005_audit_logging_foundation.sql` | Query succesvol uitgevoerd | PASS | Audit helper aangemaakt |
+| 6 | `supabase/migration-drafts/006_seed_demo_data_optional.sql` | Query succesvol uitgevoerd | PASS | Alleen test/demo seed |
+
+Structurele validatie:
+
+| Check | Resultaat | Status |
+| --- | --- | --- |
+| Public table count | 22 tabellen | PASS |
+| `public.leads.lead_score` | Kolom bestaat | PASS |
+| Belangrijke leadfinderkolommen | `branch`, `region`, `website_status`, `call_status`, `lead_score` bestaan | PASS |
+| Index count | 85 indexes | PASS |
+| RLS enabled tables | 22 tabellen met RLS | PASS |
+| Policy count | 70 policies | PASS |
+| Optional demo seed | 1 demo customer, 1 demo website, 1 demo setting | PASS |
+
+Customer isolation test:
+
+| Testnaam | Verwacht resultaat | Werkelijk resultaat | Status | Evidence / notities |
+| --- | --- | --- | --- | --- |
+| Customer A/B testdata | Testusers, profiles, customers en websites aangemaakt | Testdata succesvol aangemaakt | PASS | Alleen staging/testdata met `example.test` |
+| Customer A isolation | Customer A ziet eigen records, niet Customer B | Query faalde voordat RLS kon evalueren | BLOCKED | `ERROR 42501: permission denied for table customers` |
+| Customer B isolation | Customer B ziet eigen records, niet Customer A | Niet uitgevoerd na permission blocker | BLOCKED | Stop na kritieke blocker |
+
+Nieuwe blocker:
+
+- De migration drafts maken schema, indexes, RLS en policies aan, maar geven de runtime database roles nog niet de minimale tabelrechten die nodig zijn om RLS te evalueren.
+- Supabase hint: `GRANT SELECT ON public.customers TO authenticated;`
+- Waarschijnlijk is een expliciete grants-migration nodig voor `authenticated`, `anon` waar passend en `service_role`, afgestemd op RLS.
+
+Conclusie:
+
+- De staging reset en alle migration drafts zijn succesvol uitgevoerd.
+- De eerdere schema drift is opgelost.
+- RLS policies zijn aangemaakt, maar Customer A/B isolation is nog niet bewezen.
+- Release blijft `NO-GO / BLOCKED` totdat runtime role grants expliciet zijn ontworpen, uitgevoerd op staging en Customer A/B isolation volledig PASS is.
+
+Rollback:
+
+- Geen rollback uitgevoerd.
+- Productie is niet geraakt.
+- Staging kan opnieuw worden gereset conform `STAGING_RESET_PLAN.md` als een grants-fixfase fout loopt.
+
+Next action:
+
+1. Maak een expliciete runtime role grants draft/patch voor staging.
+2. Review minimale grants per rol/tabel.
+3. Voer de grants alleen op staging uit na approval.
+4. Herhaal Customer A/B isolation, demo user isolation en role checks.

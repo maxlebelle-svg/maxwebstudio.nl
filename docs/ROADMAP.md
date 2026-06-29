@@ -1034,3 +1034,25 @@ Uitkomst:
 Nieuw document:
 
 - `deployment/STAGING_RESET_PLAN.md`
+
+### Staging execution na reset
+
+Uitkomst:
+
+- Staging `public` schema is gereset.
+- Alle migration drafts `001` t/m `006` zijn succesvol uitgevoerd.
+- Eerdere `lead_score` schema drift is opgelost.
+- Structurele validatie is geslaagd: tabellen, indexes, RLS enablement, policies en demo seed.
+
+Nieuwe blocker:
+
+- Customer A/B isolation is nog niet bewezen.
+- Runtime rol `authenticated` mist tabelrechten op `public.customers`.
+- Release blijft `NO-GO / BLOCKED`.
+
+Volgende actie:
+
+1. Maak een minimale runtime role grants patch/migration.
+2. Review grants per tabel/rol.
+3. Voer alleen op staging uit na expliciete approval.
+4. Herhaal RLS/customer-isolation tests.

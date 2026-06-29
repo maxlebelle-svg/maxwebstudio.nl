@@ -1,0 +1,69 @@
+{
+  "date": "2026-06-29",
+  "scope": "Fase 28 Supabase staging execution after reset",
+  "status": "NO-GO",
+  "state": "BLOCKED",
+  "project": {
+    "name": "maxwebstudio-test",
+    "environment": "test",
+    "productionTouched": false
+  },
+  "reset": {
+    "executed": true,
+    "scope": "public schema",
+    "preResetPublicTables": 22,
+    "postResetPublicTables": 0
+  },
+  "migrations": [
+    {
+      "file": "001_schema_tables.sql",
+      "status": "PASS"
+    },
+    {
+      "file": "002_indexes.sql",
+      "status": "PASS"
+    },
+    {
+      "file": "003_rls_enablement.sql",
+      "status": "PASS"
+    },
+    {
+      "file": "004_rls_policies.sql",
+      "status": "PASS"
+    },
+    {
+      "file": "005_audit_logging_foundation.sql",
+      "status": "PASS"
+    },
+    {
+      "file": "006_seed_demo_data_optional.sql",
+      "status": "PASS"
+    }
+  ],
+  "validation": {
+    "publicTables": 22,
+    "indexes": 85,
+    "rlsEnabledTables": 22,
+    "policies": 70,
+    "leadScoreColumnExists": true,
+    "demoSeedApplied": true
+  },
+  "customerIsolation": {
+    "tested": true,
+    "status": "BLOCKED",
+    "reason": "authenticated role is missing table grants; customers query failed with permission denied"
+  },
+  "blockers": [
+    {
+      "id": "runtime_role_grants_missing",
+      "severity": "critical",
+      "description": "Runtime database roles need explicit table grants before RLS/customer isolation can be proven."
+    }
+  ],
+  "nextActions": [
+    "Prepare minimal runtime role grants patch.",
+    "Review grants per table and role.",
+    "Execute grants on staging only after approval.",
+    "Repeat Customer A/B isolation and demo isolation tests."
+  ]
+}

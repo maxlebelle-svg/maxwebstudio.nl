@@ -1326,3 +1326,33 @@ Besluit:
 Document:
 
 - `docs/deployment/STAGING_RESET_PLAN.md`
+
+## Fase 28 - Staging Execution After Reset
+
+Status: `NO-GO / BLOCKED`
+
+Uitgevoerd:
+
+- Staging `public` schema reset op `maxwebstudio-test`.
+- Migration drafts `001` t/m `006` succesvol uitgevoerd.
+- Structurele validatie uitgevoerd.
+
+Resultaat:
+
+- Schema drift rond `public.leads.lead_score` is opgelost.
+- 22 tabellen aanwezig.
+- 85 indexes aanwezig.
+- 22 tabellen met RLS enabled.
+- 70 policies aanwezig.
+- Demo seed aanwezig.
+
+Blocker:
+
+- Customer A/B isolation is nog niet bewezen.
+- Test als `authenticated` faalde op ontbrekende tabelrechten: `permission denied for table customers`.
+
+Volgende stap:
+
+- Maak en review een minimale runtime role grants patch/migration.
+- Voer die alleen op staging uit na expliciete approval.
+- Herhaal Customer A/B isolation en demo isolation.

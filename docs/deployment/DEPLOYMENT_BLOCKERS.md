@@ -508,3 +508,47 @@ Open approvalpunten:
 - Bevestig dat er geen echte klantdata in staging staat.
 - Bevestig of bestaande testdata/export nodig is.
 - Bevestig dat testdata verloren mag gaan.
+
+## Fase 28 runtime role grants blocker
+
+Status: `BLOCKED`
+
+Na expliciete approval is de staging reset uitgevoerd en zijn alle migration drafts succesvol toegepast op `maxwebstudio-test`.
+
+Geslaagd:
+
+- `public` schema reset.
+- `001_schema_tables.sql`.
+- `002_indexes.sql`.
+- `003_rls_enablement.sql`.
+- `004_rls_policies.sql`.
+- `005_audit_logging_foundation.sql`.
+- `006_seed_demo_data_optional.sql`.
+
+Structurele evidence:
+
+- 22 public tabellen.
+- 85 indexes.
+- 22 RLS-enabled tabellen.
+- 70 policies.
+- `public.leads.lead_score` bestaat.
+- Demo seed aanwezig.
+
+Blocker:
+
+- Customer A/B isolation kon niet worden bewezen.
+- RLS-test als `authenticated` faalde met `ERROR 42501: permission denied for table customers`.
+- Supabase hint: `GRANT SELECT ON public.customers TO authenticated;`
+
+Risico:
+
+- Zonder runtime role grants kunnen frontend/Auth/RLS-flows niet betrouwbaar lezen of schrijven.
+- RLS policies kunnen inhoudelijk correct zijn, maar blijven ontestbaar voor echte runtime rollen.
+
+Next actions:
+
+1. Ontwerp een minimale runtime role grants migration/patch.
+2. Review per tabel welke acties `authenticated`, `anon` en `service_role` nodig hebben.
+3. Voer grants alleen uit op staging na expliciete approval.
+4. Herhaal Customer A/B isolation en demo isolation.
+5. Houd release `NO-GO` tot isolatie volledig bewezen is.
