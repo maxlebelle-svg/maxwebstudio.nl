@@ -151,3 +151,17 @@ Belangrijk voor toekomstige Codex-sessies:
 - Max AI ondersteunt, maar neemt geen beslissingen over betalingen, facturen, rollen, deployment, database of productieconfiguratie.
 - De mascotte/visuele verschijning wordt pas in Fase 33 technisch geïntroduceerd.
 - Voeg geen Max AI-mascotte, afbeelding of UI toe vóór een expliciete Fase 33-opdracht.
+
+## Fase 27.2 - Max AI Persona & Interaction Model
+
+Max AI is als digitale medewerker vastgelegd in:
+
+- `docs/MAX_AI_PERSONA.md`
+
+Belangrijk voor toekomstige Codex-sessies:
+
+- Max AI heeft drie rollen: Adviseur, Projectmanager en Collega.
+- Max AI belooft: "Ik help je van het eerste idee tot de livegang van je website."
+- Max AI werkt via vier stappen: begrijpen, verduidelijken, adviseren en voorbereiden.
+- Max AI moet in iedere context voelen als dezelfde digitale medewerker.
+- Dit is de laatste strategische documentatiefase voor de productiebouw; vervolgwerk moet weer richting werkende productiefunctionaliteit gaan.

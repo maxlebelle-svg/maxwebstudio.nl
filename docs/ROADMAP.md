@@ -895,3 +895,34 @@ Aanbevolen volgende stap:
 
 1. Geen extra documentatiefase meer toevoegen.
 2. Start daarna Fase 28: Supabase Staging Execution.
+
+## Fase 27.2 - Max AI Persona & Interaction Model
+
+Afgerond als laatste strategische productdocument:
+
+- Max AI is vastgelegd als digitale webdesigner van Max Webstudio.
+- De drie rollen zijn vastgelegd: Adviseur, Projectmanager en Collega.
+- Het interaction model is vastgelegd: begrijpen, verduidelijken, adviseren, voorbereiden.
+- De productbelofte is vastgelegd: "Ik help je van het eerste idee tot de livegang van je website."
+
+Nieuw document:
+
+- `MAX_AI_PERSONA.md`
+
+Nog niet uitgevoerd:
+
+- geen code
+- geen UI
+- geen afbeelding
+- geen OpenAI
+- geen Supabase
+- geen SQL
+- geen API keys
+
+Roadmapbesluit:
+
+Vanaf dit punt worden geen extra strategische visiedocumenten toegevoegd voordat de productie-implementatie hervat wordt.
+
+Volgende fase:
+
+- Fase 28: Supabase Staging Execution.

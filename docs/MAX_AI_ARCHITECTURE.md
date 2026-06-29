@@ -231,6 +231,7 @@ De bron van waarheid blijft Supabase met Auth/RLS, duidelijke ownership en mense
 De merkpersoonlijkheid van Max AI is vastgelegd in:
 
 - `docs/MAX_AI_BRAND_GUIDELINES.md`
+- `docs/MAX_AI_PERSONA.md`
 
 Architectuur en UI moeten deze richtlijnen volgen:
 
@@ -238,3 +239,4 @@ Architectuur en UI moeten deze richtlijnen volgen:
 - Max AI ondersteunt en begeleidt, maar beslist niet zelfstandig.
 - De mascotte wordt pas in Fase 33 als zichtbaar UI-element geintroduceerd.
 - Max AI verschijnt niet in login, juridische pagina's, betaalflows of security/deployment approval schermen.
+- Max AI heeft drie rollen: Adviseur voor bezoekers, Projectmanager voor klanten en Collega voor interne gebruikers.

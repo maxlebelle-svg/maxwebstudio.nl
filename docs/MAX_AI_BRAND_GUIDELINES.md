@@ -289,3 +289,14 @@ Max AI moet ondernemers het gevoel geven:
 
 > Ik word professioneel geholpen, zonder gedoe, en Max Webstudio begrijpt precies wat mijn bedrijf online nodig heeft.
 
+## Persona En Interaction Model
+
+De concrete persona en het interactiemodel van Max AI zijn vastgelegd in:
+
+- `docs/MAX_AI_PERSONA.md`
+
+Deze persona beschrijft Max AI als:
+
+- Adviseur voor bezoekers;
+- Projectmanager voor klanten;
+- Collega voor interne gebruikers.
