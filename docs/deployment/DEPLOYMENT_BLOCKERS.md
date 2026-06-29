@@ -580,3 +580,37 @@ Validatie:
 Resterend:
 
 - Productie blijft `NO-GO` tot alle releasecandidate approvals en production environment checks zijn afgerond.
+
+## Fase 35A.1 CRM task write validation
+
+Status: `VALIDATED_ON_STAGING`
+
+Scope:
+
+- Alleen bestaande Fase 35A `crm_tasks` create MVP.
+- Geen nieuwe write-features.
+- Geen update/delete.
+- Geen productieproject of echte klantdata.
+
+Evidence:
+
+- Run: `phase-35a1-1782774691838`
+- Fallback gate-off test: `PASS`
+- Anonymous insert blokkade: `PASS`
+- Authenticated user zonder actief profile: `PASS`
+- Sales profile write via bestaande service: `PASS`
+- Sales readback: `PASS`
+- Anonymous readback blokkade: `PASS`
+
+Resultaat:
+
+- `crm_tasks` create-only write is bewezen op staging/test.
+- De write-gate werkt: provider `supabase-write-test` + `maxwebstudioCrmTaskWriteEnabled=true` is verplicht.
+- Testrecords zijn gemarkeerd als `is_demo=true`, `environment=test` en `safeToArchive=true`.
+
+Resterende blockers:
+
+- Productie-write-mode blijft geblokkeerd.
+- Server-side audit logging ontbreekt nog.
+- Fijnmazige ownership voor sales/support moet worden aangescherpt voordat bredere CRM task writes naar productie mogen.
+- Leadnotities, change requests en klantportaalberichten zijn nog niet gevalideerd als writes.

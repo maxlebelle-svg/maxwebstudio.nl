@@ -1596,3 +1596,34 @@ Bewust nog geblokkeerd:
 - Leadnotities, wijzigingsverzoeken en klantportaalberichten.
 - Facturen, betalingen, abonnementen, rollen, storage en AI-mutaties.
 - Server-side audit logging en productie-write-mode.
+
+## Fase 35A.1 - CRM Task Staging Write Validation
+
+Status: `AFGEROND`
+
+Doel:
+
+- De bestaande Fase 35A CRM task write MVP valideren op Supabase staging/test.
+- Geen nieuwe write-features toevoegen.
+- Fallback, RLS en testdata-markering bewijzen.
+
+Evidence:
+
+- Run: `phase-35a1-1782774691838`
+- Staging write: `PASS`
+- Fallback gate-off: `PASS`
+- RLS anonymous/no-profile blokkade: `PASS`
+- Sales role write + readback: `PASS`
+
+Resultaat:
+
+- Eén test CRM-taak is via de bestaande write-service aangemaakt in `public.crm_tasks`.
+- Testdata blijft gemarkeerd als `is_demo=true`, `environment=test`, `safeToArchive=true`.
+- Gate uit blijft lokaal fallbacken naar `maxwebstudioCrmTasks`.
+
+Bewust nog geblokkeerd:
+
+- Productie-write-mode.
+- Supabase update/delete voor CRM-taken.
+- Server-side audit logging.
+- Leadnotities, wijzigingsverzoeken en klantportaalberichten.

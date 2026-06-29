@@ -902,3 +902,40 @@ GO/NO-GO:
 
 - Fase 28 staging database foundation: `GO`.
 - Productie/live release: blijft `NO-GO` totdat production approvals, environment checks, monitoring, Storage/productie, Resend/Mollie en verdere releasecriteria expliciet zijn afgerond.
+
+## Fase 35A.1 CRM Task Staging Write Validation
+
+Status: `PASS`
+
+Uitgevoerd op uitsluitend Supabase staging/testproject `maxwebstudio-test`. Productie is niet aangepast, er is geen echte klantdata gebruikt en er zijn geen nieuwe write-features toegevoegd.
+
+Evidence run:
+
+- Run: `phase-35a1-1782774691838`
+- Scope: bestaande CRM task write MVP uit Fase 35A
+- Testdata: gemarkeerd als `is_demo=true`, `environment=test`, `safeToArchive=true`
+
+| Testnaam | Stappen | Verwacht resultaat | Werkelijk resultaat | Status | Evidence / notities |
+| --- | --- | --- | --- | --- | --- |
+| Testconfig aanwezig | `.env.local` aanwezigheid controleren zonder waarden te tonen | Supabase testconfig en `APP_ENV=test` beschikbaar | Supabase URL, anon key, service role key en project id aanwezig; testflags actief | PASS | Geen secretwaarden gelogd |
+| Write gate uit | Provider local/demo en `maxwebstudioCrmTaskWriteEnabled` uit laten | CRM-taak lokaal opslaan, geen remote write | `fallback_local` | PASS | Lokaal opgeslagen via `maxwebstudioCrmTasks` |
+| Anonymous insert blokkade | Directe `crm_tasks` insert zonder gebruiker proberen | RLS/PostgREST blokkeert write | HTTP 401 | PASS | Geen taak aangemaakt |
+| Authenticated zonder profile | Testuser zonder actief profile probeert `crm_tasks` insert | RLS blokkeert write | HTTP 403 | PASS | Geen taak aangemaakt |
+| Sales profile setup | Testuser met actief `sales` profile aanmaken | Interne rol beschikbaar voor RLS-test | Rol `sales` beschikbaar | PASS | Synthetische testuser/profile |
+| CRM task write via bestaande service | Provider `supabase-write-test` + `maxwebstudioCrmTaskWriteEnabled=true`, daarna `saveCrmTaskWithWriteFallback()` gebruiken | Taak komt in `public.crm_tasks` terecht | `supabase_created` | PASS | Bestaande servicepad gevalideerd |
+| Sales readback | De aangemaakte taak teruglezen met sales-token | Sales kan eigen/roltoegestane taak lezen | 1 rij zichtbaar | PASS | RLS evalueert succesvol |
+| Anonymous readback | De aangemaakte taak proberen te lezen zonder gebruiker | Geen toegang of lege response | HTTP 401 | PASS | Geen publieke taaktoegang |
+
+Conclusie:
+
+- De eerste low-risk write-MVP voor `crm_tasks` is op staging bewezen.
+- De lokale fallback werkt wanneer de gate uit staat.
+- RLS blokkeert anonymous en authenticated users zonder actief profile.
+- Een interne `sales` rol kan via de bestaande write-service een testtaak aanmaken.
+- Testdata is bewust gemarkeerd als veilige staging-testdata en niet verwijderd, zodat er geen delete-feature nodig was.
+
+Resterend:
+
+- Productie-write-mode blijft `NO-GO`.
+- Server-side audit logging is nog niet actief voor deze write.
+- Fijnmazigere sales/support ownership policies blijven later nodig voordat bredere productie-writes live mogen.

@@ -1285,3 +1285,25 @@ Volgende stap:
 
 1. Fase 35B: leadnotitie append voorbereiden als volgende low-risk write.
 2. Daarna `change_requests` create en `client_portal_messages` create gefaseerd toevoegen.
+
+## Fase 35A.1 - CRM Task Staging Write Validation
+
+Status: `AFGEROND`
+
+Scope:
+
+- Bestaande Fase 35A CRM task write MVP gevalideerd op staging/test.
+- Fallback met gate uit getest.
+- RLS-blokkade voor anonymous en authenticated users zonder profile getest.
+- Sales-role write en readback getest.
+
+Resultaat:
+
+- `crm_tasks` create-only write MVP is bewezen op staging.
+- Productie-write-mode blijft geblokkeerd.
+- Testdata is gemarkeerd als demo/test en safe-to-archive.
+
+Volgende stap:
+
+1. Fase 35B: leadnotitie append als volgende low-risk write ontwerpen en gated bouwen.
+2. Daarna pas change requests en klantportaalberichten.
