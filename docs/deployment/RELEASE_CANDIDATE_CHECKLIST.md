@@ -62,6 +62,13 @@ Leg alleen metadata vast, nooit secrets of klantinhoud:
 
 Bevestig per omgeving alleen status, nooit waarden.
 
+Status van deze audit:
+
+- Repo templates gecontroleerd: `.env.example` en `.env.local.example`.
+- Function runtime usage gecontroleerd via `process.env.*`.
+- Netlify live-config kon vanuit deze lokale repo niet automatisch worden uitgelezen: geen Netlify CLI, geen `.netlify/state.json`, geen `NETLIFY_AUTH_TOKEN` en geen `NETLIFY_SITE_ID` aanwezig.
+- Daarom blijft Netlify env-var confirmation `in_review` totdat de Netlify UI of Netlify API metadata handmatig is bevestigd.
+
 ### Test
 
 - `SUPABASE_URL`
@@ -85,6 +92,88 @@ Bevestig per omgeving alleen status, nooit waarden.
 - `FROM_EMAIL`
 - `ADMIN_EMAIL`
 - `MOLLIE_API_KEY`
+
+## Netlify Env-Var Context Audit
+
+Controleer in Netlify per deploy context zonder waarden te kopiëren.
+
+| Key | Vereist volgens repo | Gebruikt door runtime/functions | Production | Deploy preview | Branch deploy | Local/dev | Risico als ontbreekt |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `SUPABASE_URL` | ja | ja | te bevestigen | te bevestigen indien preview Supabase gebruikt | te bevestigen indien branch Supabase gebruikt | lokaal via `.env.local` | Supabase reads/writes en Auth-config falen |
+| `SUPABASE_ANON_KEY` | ja | ja | te bevestigen | te bevestigen indien preview Auth/RLS test | te bevestigen indien branch Auth/RLS test | lokaal via `.env.local` | Client Auth-config en RLS reads falen |
+| `SUPABASE_SERVICE_ROLE_KEY` | ja, server-only | ja | te bevestigen | bewust wel/niet bevestigen | bewust wel/niet bevestigen | alleen lokaal/server-side | Admin/functions kunnen geen server-side Supabase acties uitvoeren |
+| `SUPABASE_PROJECT_ID` | ja | indirect/checklist | te bevestigen | te bevestigen | te bevestigen | lokaal via `.env.local` | Test/prod verwisseling minder goed controleerbaar |
+| `ADMIN_TOKEN` | ja | ja | te bevestigen | te bevestigen indien admin functions getest worden | te bevestigen indien admin functions getest worden | lokaal indien admin tests | Admin endpoints blokkeren of zijn niet testbaar |
+| `SITE_URL` | ja | ja | te bevestigen | contextspecifiek bevestigen | contextspecifiek bevestigen | lokaal via `.env.local` | Mollie/Auth/e-mail links kunnen naar verkeerde URL wijzen |
+| `APP_ENVIRONMENT` | ja | ja/checklist | `production` bevestigen | `test` of `preview` bevestigen | `test` of branchnaam bevestigen | `test` | Verkeerde environment-logica of releasebesluit |
+| `DATA_PROVIDER_MODE` | ja | ja/app settings | productie-modus bevestigen | preview-modus bevestigen | branch-modus bevestigen | local/hybrid | Data-provider kan onverwacht local/Supabase kiezen |
+| `RESEND_API_KEY` | ja | ja | te bevestigen indien e-mail live moet | alleen testkey of niet aanwezig | alleen testkey of niet aanwezig | optioneel test | E-mails worden overgeslagen of falen |
+| `FROM_EMAIL` | ja | ja | te bevestigen | te bevestigen indien e-mailtest | te bevestigen indien e-mailtest | optioneel | Afzender valt terug of Resend weigert |
+| `ADMIN_EMAIL` | ja | ja | te bevestigen | te bevestigen indien notificaties getest | te bevestigen indien notificaties getest | optioneel | Interne notificaties vallen terug of missen BCC |
+| `LEAD_TO_EMAIL` | ja | ja | te bevestigen | te bevestigen indien leadtest | te bevestigen indien leadtest | optioneel | Leadmails vallen terug of gaan niet naar juiste inbox |
+| `LEAD_FROM_EMAIL` | ja | ja | te bevestigen | te bevestigen indien leadtest | te bevestigen indien leadtest | optioneel | Leadmail-afzender valt terug of faalt |
+| `MOLLIE_API_KEY` | ja | ja | alleen live key bij production GO | niet gebruiken of testkey apart | niet gebruiken of testkey apart | niet gebruiken of testkey | Betaalverzoeken/webhooks falen of raken verkeerde Mollie omgeving |
+| `MOLLIE_WEBHOOK_SECRET` | ja in template | beperkt/optioneel | te bevestigen indien webhookvalidatie actief is | optioneel test | optioneel test | optioneel | Webhookvalidatie kan incompleet zijn |
+| `EMAIL_PROVIDER` | ontbreekt in templates | ja | optioneel, default `resend` | optioneel | optioneel | optioneel | Provider-keuze niet expliciet |
+| `BASE_URL` | ontbreekt in templates | ja, `mollie-products.js` | te bevestigen of vervangen door `SITE_URL`-strategie | contextspecifiek | contextspecifiek | optioneel | Product/payment links kunnen fallback gebruiken |
+| `MOLLIE_MODE` | ontbreekt in templates | ja, `mollie-products.js` | `live` pas bij GO | `test` indien gebruikt | `test` indien gebruikt | `test` | Verkeerde Mollie key-selectie |
+| `MOLLIE_TEST_API_KEY` | ontbreekt in templates | ja, `mollie-products.js` | optioneel/niet production | te bevestigen indien Mollie test | te bevestigen indien Mollie test | optioneel | Mollie testproducten werken niet |
+
+### Service Role Key Context Beoordeling
+
+`SUPABASE_SERVICE_ROLE_KEY` mag nooit in frontendcode, publieke runtimeconfig of documentatie met waarde staan. In deze repo wordt de key alleen server-side via Netlify Functions gebruikt.
+
+Als `SUPABASE_SERVICE_ROLE_KEY` bewust maar in 1 Netlify deploy context staat:
+
+- Dat is veilig wanneer alleen die context server-side Supabase adminflows mag uitvoeren.
+- Dat blokkeert bewust admin/functions in andere contexten.
+- Deploy previews en branch deploys moeten dan niet gebruikt worden voor admin/Supabase-write tests, tenzij daar een aparte test service role key is ingesteld.
+- Production GO vereist dat production functions toegang hebben tot de production service role key.
+
+Risico-inschatting:
+
+- Laag voor security als de key alleen server-side en contextspecifiek staat.
+- Middel voor release readiness zolang niet handmatig bevestigd is welke context de key heeft.
+- Hoog als production functions live moeten werken maar de key alleen in een niet-production context staat.
+
+## Ontbrekende Keys T.o.v. Templates En Runtime
+
+Aanwezig in `.env.example` en `.env.local.example`:
+
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_PROJECT_ID`
+- `APP_ENV`
+- `APP_ENVIRONMENT`
+- `DATA_PROVIDER`
+- `DATA_PROVIDER_MODE`
+- `ADMIN_TOKEN`
+- `SITE_URL`
+- `CLIENT_PORTAL_REDIRECT_URL`
+- `ADMIN_REDIRECT_URL`
+- `RESEND_API_KEY`
+- `FROM_EMAIL`
+- `ADMIN_EMAIL`
+- `LEAD_TO_EMAIL`
+- `LEAD_FROM_EMAIL`
+- `MOLLIE_API_KEY`
+- `MOLLIE_WEBHOOK_SECRET`
+
+Gebruikt door functions maar ontbreekt in de env templates:
+
+- `EMAIL_PROVIDER`
+- `BASE_URL`
+- `MOLLIE_MODE`
+- `MOLLIE_TEST_API_KEY`
+
+Aanbevolen next actions:
+
+1. Bevestig in Netlify UI per key in welke context deze aanwezig is: production, deploy preview, branch deploy en eventueel local/dev.
+2. Noteer alleen `present/missing/not_applicable`, nooit waarden.
+3. Beslis of `SUPABASE_SERVICE_ROLE_KEY` alleen production krijgt of ook een aparte test/preview context.
+4. Voeg ontbrekende runtime keys toe aan de templates of markeer ze bewust optioneel/not_applicable.
+5. Test minimaal één Netlify Function in de context waarin production straks draait.
 
 ## Rollback Approval
 

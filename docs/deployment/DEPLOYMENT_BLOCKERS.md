@@ -256,6 +256,62 @@ Approval/evidence-items:
 
 Release blijft `NO-GO` totdat alle vereiste blockers `approved` of `not_applicable` zijn.
 
+## Netlify environment variables audit
+
+Status: `NO-GO / ENV VAR CONFIRMATION REQUIRED`
+
+Uitgevoerd zonder secretwaarden te tonen.
+
+Wat is gecontroleerd:
+
+- `.env.example`
+- `.env.local.example`
+- `netlify.toml`
+- Functions met `process.env.*`
+- Lokale Netlify metadata/auth beschikbaarheid
+
+Resultaat:
+
+- Repo templates bevatten de belangrijkste Supabase, Admin, Resend, Mollie en URL keys.
+- Runtime/functions gebruiken dezelfde kernkeys.
+- Extra runtime keys gevonden die niet in de templates staan: `EMAIL_PROVIDER`, `BASE_URL`, `MOLLIE_MODE`, `MOLLIE_TEST_API_KEY`.
+- Lokale repo bevat geen Netlify CLI, geen `.netlify/state.json`, geen `NETLIFY_AUTH_TOKEN` en geen `NETLIFY_SITE_ID`.
+- Daardoor kon de echte Netlify environment variable configuratie per deploy context niet automatisch worden uitgelezen.
+
+Deploy-context status:
+
+| Context | Status | Risico | Volgende actie |
+| --- | --- | --- | --- |
+| Production | te bevestigen | Hoog als production functions secrets missen | Bevestig alle production keys in Netlify UI |
+| Deploy preview | te bevestigen / mogelijk not_applicable | Middel als previews Supabase/Auth/RLS moeten testen | Bevestig of preview eigen testkeys krijgt of bewust geen adminflows draait |
+| Branch deploy | te bevestigen / mogelijk not_applicable | Middel als branch deploys als testomgeving gebruikt worden | Bevestig branch-context policy |
+| Local/dev | gedeeltelijk bewezen via `.env.local` testflags | Laag voor repo, maar geen Netlify bewijs | Blijft lokale evidence; geen Netlify approval |
+
+Specifieke beoordeling `SUPABASE_SERVICE_ROLE_KEY`:
+
+- Repo-gebruik is server-side via Netlify Functions.
+- Er is geen bewijs dat de key in frontendcode of docs met waarde staat.
+- Het is veilig dat deze key bewust maar in 1 deploy context staat als alleen die context server-side Supabase adminflows mag uitvoeren.
+- Het is release-blokkerend als production functions live moeten draaien maar de key alleen in een andere context staat.
+- Deploy previews/branch deploys zonder service role key zijn acceptabel als admin/write tests daar bewust `not_applicable` zijn.
+
+Open blocker update:
+
+| Blocker | Status | Evidence | Volgende actie |
+| --- | --- | --- | --- |
+| `env_vars_verified` | blocked | Repo/templates/runtime geaudit; Netlify live contexten niet uitleesbaar vanuit lokale repo | Handmatig Netlify UI/API export controleren en contextstatus vastleggen |
+| `netlify_functions_runtime` | pending | Function env usage in kaart gebracht; runtime context secrets niet bewezen | Test minimaal één function in de beoogde deploy context |
+| `resend_readiness` | pending | `RESEND_API_KEY`, `FROM_EMAIL`, `ADMIN_EMAIL`, `LEAD_*` vereist/optioneel in kaart | Bevestig contexten en testmail of markeer not_applicable |
+| `mollie_readiness` | pending | `MOLLIE_API_KEY`; extra keys `MOLLIE_MODE`, `MOLLIE_TEST_API_KEY`, `BASE_URL` gevonden | Bevestig contexten en testmodus of markeer not_applicable |
+
+Next actions:
+
+1. Open Netlify > Site configuration > Environment variables.
+2. Controleer per key alleen aanwezigheid en deploy context, geen waarden kopiëren.
+3. Leg vast of `SUPABASE_SERVICE_ROLE_KEY` alleen production heeft of ook test/preview.
+4. Voeg ontbrekende templatekeys toe of markeer `EMAIL_PROVIDER`, `BASE_URL`, `MOLLIE_MODE`, `MOLLIE_TEST_API_KEY` bewust optioneel.
+5. Houd release `NO-GO` totdat `env_vars_verified` handmatig approved is.
+
 ## Bewijsregels
 
 - Geen secrets in evidence.
