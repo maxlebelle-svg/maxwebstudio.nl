@@ -510,3 +510,26 @@ Belangrijk:
 - Status blijft `blocked_pending_supabase_test_setup`.
 - `.env` templates bevatten alleen namen en lege waarden.
 - De service role key blijft server-side/setup-only en mag nooit naar frontend of documentatie met waarde.
+
+## Fase 14.4B rerun - Supabase testomgeving na grants
+
+Status: uitgevoerd op het Supabase testproject. Productie is niet aangepast en er is geen echte klantdata gebruikt.
+
+Resultaten:
+
+- `supabase/service-role-grants.sql` is door de gebruiker succesvol uitgevoerd op het testproject.
+- De eerdere `403 permission denied` op `public.profiles` is opgelost.
+- Service role kan profiles en canonical testrecords plaatsen.
+- Auth Admin API kan testgebruikers aanmaken.
+- Customer A/B login werkt.
+- Storage blijft PASS voor private bucket, upload, signed URL en public-blocking.
+
+Nieuwe blocker:
+
+- RLS-selects geven `500 stack depth limit exceeded`.
+- Customer isolation is daardoor nog niet bewezen.
+- Waarschijnlijke oorzaak is RLS-recursie rond `current_app_role()` en policies die `public.profiles` raadplegen.
+
+Status blijft:
+
+- `NO-GO / BLOCKED`

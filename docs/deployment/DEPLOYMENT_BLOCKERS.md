@@ -111,6 +111,38 @@ Volgende actie:
 3. Herhaal Fase 14.4B.
 4. Zet blockers pas in review/approved na echte Customer A/B evidence.
 
+## Fase 14.4B rerun - Evidence na grants
+
+Status: `NO-GO / BLOCKED`
+
+Uitgevoerd nadat `supabase/service-role-grants.sql` succesvol op het Supabase testproject is uitgevoerd.
+
+Verbeterd:
+
+- De eerdere `403 permission denied for table profiles` is opgelost.
+- Service role kan via PostgREST testprofiles plaatsen.
+- Auth Admin API kan testgebruikers aanmaken.
+- Customer A/B kunnen inloggen.
+- Canonical testrecords konden worden geplaatst.
+- Storage private bucket/upload/signed URL/public-blocking blijft PASS.
+
+Nieuwe blocker:
+
+- RLS-selects geven `500 stack depth limit exceeded`.
+- Dit wijst op RLS-recursie in de rol/profile helperlaag.
+- Customer isolation is daarom nog niet bewezen.
+
+Open blockers:
+
+| Blocker | Status | Evidence | Volgende actie |
+| --- | --- | --- | --- |
+| `auth_test_completed` | in_review | Auth users created + login PASS | Profile/RLS mapping pas afronden na RLS-recursiefix |
+| `rls_test_log_completed` | blocked | RLS select faalt met `stack depth limit exceeded` | RLS helper/policies aanpassen zodat `profiles` niet recursief zichzelf bevraagt |
+| `customer_isolation_test_completed` | blocked | A/B testrecords bestaan, maar reads falen met 500 | Na RLS-recursiefix A/B exact-id test opnieuw draaien |
+| `env_vars_verified` | in_review | `.env.local` testflags actief en gitignored | Handmatig bevestigen dat project werkelijk test is |
+
+Geen blocker is automatisch approved.
+
 ## Bewijsregels
 
 - Geen secrets in evidence.

@@ -186,6 +186,46 @@ Belangrijk:
 - Daarna alleen uitvoeren op het Supabase testproject.
 - Daarna Fase 14.4B opnieuw draaien voor Auth/RLS/customer-isolation/storage evidence.
 
+## Fase 14.4B rerun na service-role grants
+
+Status: `NO-GO / BLOCKED`
+
+Uitgevoerd op het aparte Supabase testproject nadat `supabase/service-role-grants.sql` door de gebruiker succesvol op het testproject is uitgevoerd. Productie is niet aangepast en er is geen echte klantdata gebruikt.
+
+Evidence runs:
+
+- Volledige rerun: `phase-14-4b-rerun-1782736453275`
+- RLS foutdetail: `phase-14-4b-error-1782736500509`
+
+| Testnaam | Stappen | Verwacht resultaat | Werkelijk resultaat | Status | Evidence / notities |
+| --- | --- | --- | --- | --- | --- |
+| Service role profile insert | `profiles` insert via PostgREST service role | Eerdere 403 is opgelost | 2 profiles geplaatst | PASS | `previous403Resolved=true` |
+| Auth testusers aanmaken | Customer A en Customer B aanmaken via Auth Admin API | 2 testusers aangemaakt | 2 testusers aangemaakt | PASS | Geen wachtwoorden of keys gelogd |
+| Auth login/session | Customer A en Customer B inloggen | Beide krijgen sessie | `loginA=true`, `loginB=true` | PASS | Auth basis werkt |
+| Canonical testrecords plaatsen | Records plaatsen voor profiles/customers/websites/projects/files/quotes/quote_lines/invoices/invoice_lines/subscriptions | A/B testdata bestaat | 2 records per module geplaatst | PASS | Alleen synthetische testdata |
+| RLS select eigen profile | Ingelogde klant leest eigen profile | 1 rij zichtbaar | 500 response | FAIL | `stack depth limit exceeded` |
+| RLS per module | A/B exact-id reads per module | Eigen rij zichtbaar, andere klant leeg | 500 response op alle modules | FAIL | Waarschijnlijk RLS-helper recursie |
+| Customer isolation | Customer A/B cross-read exact-id | Cross-customer access leeg | Niet betrouwbaar uitvoerbaar door 500 | BLOCKED | Eerst RLS-recursie oplossen |
+| Anonymous DB access | Anonymous select | Leeg/401/403 zonder server error | 500 response | FAIL | Zelfde RLS-recursiepad |
+| Storage bucket | Private testbucket aanmaken/hergebruiken | Bucket beschikbaar | Bucket create/hergebruik OK | PASS | Bucket: `maxwebstudio-test-evidence` |
+| Storage upload | Testobject server-side uploaden | Upload lukt | Upload status 200 | PASS | Service role alleen server-side gebruikt |
+| Storage signed URL | Tijdelijke signed URL maken | Signed URL wordt gemaakt | Signed URL status 200 | PASS | Geen URL/secret opgeslagen |
+| Storage public endpoint | Publieke endpoint direct openen | Private object niet publiek bereikbaar | Public endpoint status 400 | PASS | Private toegang geblokkeerd |
+
+Nieuwe technische blocker:
+
+- RLS-selects geven `500`.
+- Supabase/Postgres foutcode: `54001`.
+- Foutmelding: `stack depth limit exceeded`.
+- Waarschijnlijke oorzaak: RLS-recursie doordat policies/helperfuncties zoals `current_app_role()` zelf `public.profiles` raadplegen terwijl policies op `public.profiles` ook rolchecks uitvoeren.
+
+Conclusie:
+
+- De eerdere `403 permission denied on public.profiles` is opgelost.
+- Auth en Storage zijn bewezen werkend in het testproject.
+- RLS en customer isolation zijn nog niet geslaagd.
+- Release blijft `NO-GO / BLOCKED`.
+
 ## Fase 14.3 lokale rooktest
 
 Uitgevoerd zonder productie, zonder SQL en zonder live Supabase.
