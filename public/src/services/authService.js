@@ -5,6 +5,8 @@ import {
   getEmailAuthProvider,
   getSessionAuthProvider,
 } from "./authProviderFactory.js";
+import { roleHasPermission, getPermissionsForRole } from "../config/permissions.js";
+import { ProfileRepository } from "../repositories/ProfileRepository.js";
 
 const demoProvider = () => getSessionAuthProvider();
 const emailProvider = () => getEmailAuthProvider();
@@ -42,7 +44,12 @@ export function isDemoSession() {
 }
 
 export function hasPermission(resource, action) {
-  return demoProvider().hasPermission(resource, action);
+  const session = getCurrentSession();
+  if (!session) return false;
+  const user = getCurrentUser();
+  const profile = ProfileRepository.getByAuthUserId(session.userId) || ProfileRepository.getByEmail(user?.email || "");
+  const role = profile?.role || session.role;
+  return roleHasPermission(role, resource, action);
 }
 
 export function requirePermission(resource, action) {
@@ -54,7 +61,19 @@ export function getVisibleNavigationItems() {
 }
 
 export function getCurrentPermissionPreview() {
-  return demoProvider().getCurrentPermissionPreview();
+  const session = getCurrentSession();
+  if (!session) return demoProvider().getCurrentPermissionPreview();
+  const user = getCurrentUser();
+  const profile = ProfileRepository.getByAuthUserId(session.userId) || ProfileRepository.getByEmail(user?.email || "");
+  if (!profile) return demoProvider().getCurrentPermissionPreview();
+  return {
+    role: profile.role,
+    roleLabel: getRoleLabel(profile.role),
+    roleDescription: getRoleDefinition(profile.role).description,
+    permissions: getPermissionsForRole(profile.role),
+    source: "profile",
+    profileId: profile.id,
+  };
 }
 
 export function getLoginRedirectForRole(role, customerId = "") {

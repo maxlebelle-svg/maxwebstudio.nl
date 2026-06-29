@@ -805,6 +805,9 @@
                 <button class="button secondary" id="clear-demo-session" type="button">Clear demo session</button>
                 <a class="button secondary" href="login.html" target="_blank" rel="noopener">Open loginpagina</a>
                 <button class="button secondary" id="view-account-requests" type="button">Bekijk account requests</button>
+                <button class="button secondary" id="prepare-account-request-profiles" type="button">Prepare profiles</button>
+                <button class="button secondary" id="test-session-profile-mapping" type="button">Test session → profile</button>
+                <button class="button secondary" id="test-profile-customer-link" type="button">Test profile/customer link</button>
                 <button class="button secondary" id="view-migration-plan" type="button">Bekijk migratieplan</button>
                 <button class="button secondary" id="view-planned-tables" type="button">Bekijk geplande tabellen</button>
                 <button class="button secondary" id="run-supabase-migration-check" type="button">Run localStorage migratie-check</button>
@@ -1816,6 +1819,9 @@
         const seedDemoUsersButton = document.getElementById("seed-demo-users");
         const clearDemoSessionButton = document.getElementById("clear-demo-session");
         const viewAccountRequestsButton = document.getElementById("view-account-requests");
+        const prepareAccountRequestProfilesButton = document.getElementById("prepare-account-request-profiles");
+        const testSessionProfileMappingButton = document.getElementById("test-session-profile-mapping");
+        const testProfileCustomerLinkButton = document.getElementById("test-profile-customer-link");
         const viewMigrationPlanButton = document.getElementById("view-migration-plan");
         const viewPlannedTablesButton = document.getElementById("view-planned-tables");
         const runSupabaseMigrationCheckButton = document.getElementById("run-supabase-migration-check");
@@ -3005,6 +3011,7 @@
             quoteRepository: await import("./src/repositories/QuoteRepository.js"),
             invoiceRepository: await import("./src/repositories/InvoiceRepository.js"),
             subscriptionRepository: await import("./src/repositories/SubscriptionRepository.js"),
+            profileRepository: await import("./src/repositories/ProfileRepository.js"),
             providerStatusService: await import("./src/services/providerStatusService.js"),
             supabaseReadinessService: await import("./src/services/supabaseReadinessService.js"),
             supabaseWriteTestService: await import("./src/services/supabaseWriteTestService.js"),
@@ -3020,6 +3027,8 @@
             clientPortalTestService: await import("./src/services/clientPortalTestService.js"),
             activityLogService: await import("./src/services/activityLogService.js"),
             authService: await import("./src/services/authService.js"),
+            authProfileService: await import("./src/services/authProfileService.js"),
+            routeGuardService: await import("./src/services/routeGuardService.js"),
           };
           return state.developerModules;
         }
@@ -4137,11 +4146,48 @@
           ]);
         }
 
+        function renderProfileReadiness(modules) {
+          const summary = modules.authProfileService.getProfileReadinessSummary();
+          const routeReadiness = modules.routeGuardService.getRouteAccessReadiness();
+          appendDeveloperCard("Profiles readiness", [
+            ["Demo users", String(summary.demoUsers || 0)],
+            ["Account requests", String(summary.accountRequests || 0)],
+            ["Prepared profiles", String(summary.preparedProfiles || 0)],
+            ["Profiles table", summary.profilesTableStatus],
+            ["Supabase Auth provider", summary.supabaseAuthProviderStatus],
+            ["Roles config", summary.rolesConfigStatus],
+            ["Permissions config", summary.permissionsConfigStatus],
+            ["Session → profile", summary.sessionProfileMappingStatus],
+            ["Customer/profile link", summary.customerProfileLinkStatus],
+          ]);
+          appendDeveloperCard("Route guard preview", [
+            ["Status", routeReadiness.status],
+            ["Hard blocking", routeReadiness.hardBlocking ? "Aan" : "Uit"],
+            ["Huidige rol", routeReadiness.currentRole],
+            ["Session/profile mapping", routeReadiness.sessionProfileMapping],
+            ["Volgende fase", routeReadiness.nextPhase],
+          ]);
+        }
+
+        function renderProfileActionResult(result = {}) {
+          appendDeveloperCard("Profile action resultaat", [
+            ["Actie", result.action || "-"],
+            ["Status", result.status || "-"],
+            ["Profile", result.profile?.email || result.profile?.id || result.profileId || "-"],
+            ["Klant", result.customer?.company || result.customer?.name || result.customerId || "-"],
+            ["Melding", result.message || "-"],
+          ]);
+        }
+
         function accountRequestStatusClass(status) {
           const normalized = normalize(status);
           if (normalized === "goedgekeurd_demo") return "status-active";
+          if (normalized === "profile_prepared" || normalized === "invited_later") return "status-active";
           if (normalized === "bekeken") return "status-prepared";
+          if (normalized === "reviewed") return "status-prepared";
+          if (normalized === "pending" || normalized === "nieuw") return "status-warning";
           if (normalized === "verwijderd") return "status-attention";
+          if (normalized === "rejected") return "status-attention";
           return "status-warning";
         }
 
@@ -4185,6 +4231,52 @@
               await renderDeveloperToolsSummary({ showAccountRequests: true });
               setSettingsMessage("Account request demo-goedgekeurd. Er is geen echte gebruiker aangemaakt.", "success");
             });
+            const prepareProfile = document.createElement("button");
+            prepareProfile.className = "button secondary";
+            prepareProfile.type = "button";
+            prepareProfile.textContent = "Maak profile concept";
+            prepareProfile.addEventListener("click", async () => {
+              const modules = await loadDeveloperModules();
+              const profile = modules.authProfileService.prepareProfileFromAccountRequest(request);
+              await renderDeveloperToolsSummary({
+                showAccountRequests: true,
+                profileActionResult: { action: "profile_concept", status: "voorbereid", profile, message: "Profile-concept lokaal voorbereid." },
+              });
+              setSettingsMessage("Profile-concept voorbereid. Er is geen Supabase Auth-user aangemaakt.", "success");
+            });
+            const linkCustomer = document.createElement("button");
+            linkCustomer.className = "button secondary";
+            linkCustomer.type = "button";
+            linkCustomer.textContent = "Koppel aan klant";
+            linkCustomer.addEventListener("click", async () => {
+              const modules = await loadDeveloperModules();
+              const profile = modules.authProfileService.prepareProfileFromAccountRequest(request);
+              const customer = state.customers.find((item) => String(item.email || "").toLowerCase() === String(request.email || "").toLowerCase())
+                || state.customers.find((item) => normalize(item.company) && normalize(item.company) === normalize(request.company));
+              if (!customer) {
+                await renderDeveloperToolsSummary({
+                  showAccountRequests: true,
+                  profileActionResult: { action: "profile_customer_link", status: "geen klantmatch", profile, message: "Maak of selecteer eerst een CRM-klant met hetzelfde e-mailadres." },
+                });
+                setSettingsMessage("Geen passende klant gevonden om te koppelen.", "error");
+                return;
+              }
+              const linkedProfile = modules.authProfileService.linkProfileToCustomer(profile.id, customer.id, { supabaseCustomerId: customer.supabaseCustomerId || customer._supabaseCustomerId || "" });
+              await renderDeveloperToolsSummary({
+                showAccountRequests: true,
+                profileActionResult: { action: "profile_customer_link", status: "gekoppeld", profile: linkedProfile, customer, message: "Profile lokaal gekoppeld aan klant." },
+              });
+              setSettingsMessage("Profile gekoppeld aan klant.", "success");
+            });
+            const readyForAuth = document.createElement("button");
+            readyForAuth.className = "button secondary";
+            readyForAuth.type = "button";
+            readyForAuth.textContent = "Markeer klaar voor Supabase Auth";
+            readyForAuth.addEventListener("click", async () => {
+              authService.updateAccountRequestStatus(request.id, "invited_later");
+              await renderDeveloperToolsSummary({ showAccountRequests: true });
+              setSettingsMessage("Gemarkeerd als klaar voor latere Supabase Auth-uitnodiging.", "success");
+            });
             const remove = document.createElement("button");
             remove.className = "button secondary";
             remove.type = "button";
@@ -4195,7 +4287,7 @@
               await renderDeveloperToolsSummary({ showAccountRequests: true });
               setSettingsMessage("Account request verwijderd.", "success");
             });
-            actions.append(status, viewed, approved, remove);
+            actions.append(status, viewed, approved, prepareProfile, linkCustomer, readyForAuth, remove);
             row.append(info, actions);
             card.append(row);
           });
@@ -4254,6 +4346,7 @@
             renderCustomerLiveMigrationChecklist(liveCustomerReadiness);
             renderRollbackPreparation(liveCustomerReadiness);
             renderAuthProviderStatus(modules.authService);
+            renderProfileReadiness(modules);
             appendDeveloperCard("Auth sessie", [
               ["Gebruiker", user?.name || user?.email || "Geen sessie"],
               ["Rol", permissionPreview.roleLabel],
@@ -4270,6 +4363,7 @@
               ? recentActivities.map((activity) => [activity.action || "Activiteit", formatDate(activity.createdAt)])
               : ["Nog geen activiteit gelogd."]);
             if (extra.showAccountRequests) renderAccountRequestsList(modules.authService);
+            if (extra.profileActionResult) renderProfileActionResult(extra.profileActionResult);
             if (extra.supabaseReadOnlyResult) renderSupabaseReadOnlyResult(extra.supabaseReadOnlyTitle || "Supabase read-only resultaat", extra.supabaseReadOnlyResult);
             if (extra.supabaseWriteTestResult) renderSupabaseWriteTestResult(extra.supabaseWriteTestResult);
             if (extra.supabaseCustomerRows) {
@@ -4412,6 +4506,70 @@
           } catch (error) {
             console.error("Account requests could not be rendered", error);
             setSettingsMessage("Account requests konden niet worden getoond.", "error");
+          }
+        }
+
+        async function prepareAccountRequestProfilesHandler() {
+          try {
+            const modules = await loadDeveloperModules();
+            const profiles = modules.authProfileService.prepareProfilesFromAccountRequests();
+            await renderDeveloperToolsSummary({
+              showAccountRequests: true,
+              profileActionResult: { action: "prepare_account_requests", status: "voorbereid", message: `${profiles.length} profile-concept(en) voorbereid.` },
+            });
+            setSettingsMessage(`${profiles.length} profile-concept(en) voorbereid vanuit account requests.`, "success");
+          } catch (error) {
+            console.error("Profile preparation failed", error);
+            setSettingsMessage(error.message || "Profile-concepts konden niet worden voorbereid.", "error");
+          }
+        }
+
+        async function testSessionProfileMappingHandler() {
+          try {
+            const modules = await loadDeveloperModules();
+            const session = modules.authService.getCurrentSession();
+            const profile = modules.authProfileService.resolveProfileForSession(session);
+            await renderDeveloperToolsSummary({
+              profileActionResult: {
+                action: "session_profile_mapping",
+                status: profile ? "voorbereid" : "geen actieve sessie/profile",
+                profile,
+                message: profile ? "Huidige sessie kan naar een profile worden herleid." : "Start eerst een demo-sessie of bereid een profile voor.",
+              },
+            });
+            setSettingsMessage(profile ? "Session → profile mapping getest." : "Geen actieve profile mapping gevonden.", profile ? "success" : "error");
+          } catch (error) {
+            console.error("Session profile mapping failed", error);
+            setSettingsMessage("Session/profile mapping kon niet worden getest.", "error");
+          }
+        }
+
+        async function testProfileCustomerLinkHandler() {
+          try {
+            const modules = await loadDeveloperModules();
+            const customer = selectedCustomer() || state.customers[0];
+            if (!customer) throw new Error("Geen klant beschikbaar voor profile/customer link-test.");
+            let profile = modules.profileRepository.ProfileRepository.getByEmail(customer.email)
+              || modules.profileRepository.ProfileRepository.list().find((item) => item.customerId === customer.id);
+            if (!profile) {
+              profile = modules.profileRepository.ProfileRepository.createProfile({
+                email: customer.email || `klant-${customer.id}@maxwebstudio.local`,
+                name: customer.name || customer.company || "Klant",
+                role: "customer",
+                status: "pending",
+                customerId: customer.id,
+                supabaseCustomerId: customer.supabaseCustomerId || customer._supabaseCustomerId || "",
+                metadata: { source: "admin_profile_customer_link_test" },
+              });
+            }
+            const linkedProfile = modules.authProfileService.linkProfileToCustomer(profile.id, customer.id, { supabaseCustomerId: customer.supabaseCustomerId || customer._supabaseCustomerId || "" });
+            await renderDeveloperToolsSummary({
+              profileActionResult: { action: "profile_customer_link_test", status: "gekoppeld", profile: linkedProfile, customer, message: "Testkoppeling lokaal opgeslagen." },
+            });
+            setSettingsMessage("Profile/customer link-test uitgevoerd.", "success");
+          } catch (error) {
+            console.error("Profile customer link test failed", error);
+            setSettingsMessage(error.message || "Profile/customer link-test mislukt.", "error");
           }
         }
 
@@ -7729,6 +7887,16 @@
           detailState.textContent = "Geselecteerd";
           detailState.className = `status-badge ${customerStatusClass(customer.status)}`;
           const customerFileCount = state.files.filter((file) => file.customerId === customer.id).length;
+          const linkedProfiles = (() => {
+            try {
+              const profiles = JSON.parse(localStorage.getItem("maxwebstudioProfiles") || "[]");
+              return Array.isArray(profiles)
+                ? profiles.filter((profile) => profile.customerId === customer.id || profile.supabaseCustomerId === customer.supabaseCustomerId || profile.supabaseCustomerId === customer._supabaseCustomerId)
+                : [];
+            } catch {
+              return [];
+            }
+          })();
           const customerQuotes = state.quotes.filter((quote) => quote.profileId === customer.id);
           const openQuotes = customerQuotes.filter((quote) => ["concept", "verzonden"].includes(quote.status)).length;
           const acceptedQuotes = customerQuotes.filter((quote) => quote.status === "geaccepteerd").length;
@@ -7746,7 +7914,7 @@
           const lastCustomerInvoice = customerInvoices
             .filter((invoice) => invoice.subscriptionId)
             .sort((a, b) => String(b.invoiceDate || b.createdAt).localeCompare(String(a.invoiceDate || a.createdAt)))[0];
-          detailSubtitle.textContent = `${customer.company || customer.name || "Klantprofiel"} - ${customerFileCount} bestand${customerFileCount === 1 ? "" : "en"} - ${customerQuotes.length} offerte${customerQuotes.length === 1 ? "" : "s"} (${openQuotes} open, ${acceptedQuotes} geaccepteerd, ${rejectedQuotes} afgewezen) - ${customerInvoices.length} factuur${customerInvoices.length === 1 ? "" : "en"} (${openInvoices} open, ${paidInvoices} betaald) - ${customerSubscriptions.length} abonnement${customerSubscriptions.length === 1 ? "" : "en"} - MRR klant ${money(customerMrr)}${nextCustomerInvoice ? ` - volgende factuur ${formatDate(nextCustomerInvoice.nextInvoiceDate)}` : ""}${lastCustomerInvoice ? ` - laatste factuur ${lastCustomerInvoice.invoiceNumber}` : ""}`;
+          detailSubtitle.textContent = `${customer.company || customer.name || "Klantprofiel"} - ${linkedProfiles.length} auth profile${linkedProfiles.length === 1 ? "" : "s"} - ${customerFileCount} bestand${customerFileCount === 1 ? "" : "en"} - ${customerQuotes.length} offerte${customerQuotes.length === 1 ? "" : "s"} (${openQuotes} open, ${acceptedQuotes} geaccepteerd, ${rejectedQuotes} afgewezen) - ${customerInvoices.length} factuur${customerInvoices.length === 1 ? "" : "en"} (${openInvoices} open, ${paidInvoices} betaald) - ${customerSubscriptions.length} abonnement${customerSubscriptions.length === 1 ? "" : "en"} - MRR klant ${money(customerMrr)}${nextCustomerInvoice ? ` - volgende factuur ${formatDate(nextCustomerInvoice.nextInvoiceDate)}` : ""}${lastCustomerInvoice ? ` - laatste factuur ${lastCustomerInvoice.invoiceNumber}` : ""}`;
           const hasLogin = customer.portalStatus === "actief" || customer.authStatus === "login actief";
           const authLabel = customer.portalStatus === "uitgenodigd" ? "Uitgenodigd" : hasLogin ? "Login actief" : customer.portalStatus === "geblokkeerd" ? "Geblokkeerd" : "Geen login";
           detailAuthStatus.textContent = authLabel;
@@ -13068,6 +13236,9 @@
         seedDemoUsersButton.addEventListener("click", seedDemoUsersHandler);
         clearDemoSessionButton.addEventListener("click", logoutDemoSession);
         viewAccountRequestsButton.addEventListener("click", showAccountRequestsHandler);
+        prepareAccountRequestProfilesButton.addEventListener("click", prepareAccountRequestProfilesHandler);
+        testSessionProfileMappingButton.addEventListener("click", testSessionProfileMappingHandler);
+        testProfileCustomerLinkButton.addEventListener("click", testProfileCustomerLinkHandler);
         viewMigrationPlanButton.addEventListener("click", showMigrationPlanHandler);
         viewPlannedTablesButton.addEventListener("click", showPlannedTablesHandler);
         runSupabaseMigrationCheckButton.addEventListener("click", runSupabaseMigrationCheckHandler);

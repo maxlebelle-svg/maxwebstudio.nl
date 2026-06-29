@@ -218,6 +218,37 @@ Conclusie voor Auth:
 
 Auth/RLS wordt pas hardgemaakt nadat de database op één canonical lijn is bevestigd:
 
+## Fase 13.1 - Profiles foundation
+
+De Auth/Profile foundation is voorbereid op de canonical lijn:
+
+- `profiles` is de rollen- en Supabase Auth-brug.
+- `customers` blijft de centrale klantbron.
+- demo-login blijft actief en gebruikt lokale browserdata.
+- accountaanvragen uit `maxwebstudioAccountRequests` kunnen lokaal naar profile-concepts worden voorbereid.
+- profile-concepts worden opgeslagen in `maxwebstudioProfiles`.
+- een profile kan alvast gekoppeld worden aan een lokale `customerId` en toekomstige `supabaseCustomerId`.
+- permissions geven voorrang aan de huidige profile-rol wanneer er een profile aan de sessie gekoppeld is.
+- route guards geven alleen readiness/uitleg; er wordt nog niet hard geblokkeerd.
+
+Status:
+
+- Profiles canonical model: gereed.
+- Profile repository: voorbereid.
+- Auth user naar profile mapping: voorbereid.
+- Account request naar profile: voorbereid.
+- Customer/profile link: voorbereid.
+- Supabase Auth live: nog niet actief.
+- Hard route guards: Fase 13.2.
+- RLS hardening: Fase 13.2/13.3.
+
+Niet gewijzigd:
+
+- Er is geen echte Supabase uitnodiging verstuurd.
+- Er is geen hard route-blocking geactiveerd.
+- Er is geen service role key in de frontend geplaatst.
+- Legacy `customer_*` tabellen zijn niet opnieuw gebruikt voor nieuwe auth.
+
 - `profiles` = Auth/rollen/profielbasis
 - `customers` = zakelijke klantbron
 - `websites`, `projects`, `quotes`, `invoices`, `subscriptions` = klantmodules

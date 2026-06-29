@@ -45,8 +45,10 @@ export const STORAGE_KEYS = Object.freeze({
   clientPortalSettings: "maxwebstudioClientPortalSettings",
   lastClientPortalDataTest: "maxwebstudioLastClientPortalDataTest",
   authUsers: "maxwebstudioAuthUsers",
+  profiles: "maxwebstudioProfiles",
   currentSession: "maxwebstudioCurrentSession",
   accountRequests: "maxwebstudioAccountRequests",
+  lastProfileReadinessTest: "maxwebstudioLastProfileReadinessTest",
 });
 
 export const MODULE_STORAGE_KEYS = Object.freeze({
@@ -60,7 +62,7 @@ export const MODULE_STORAGE_KEYS = Object.freeze({
   subscriptions: [STORAGE_KEYS.subscriptions],
   settings: [STORAGE_KEYS.settings],
   clientPortal: [STORAGE_KEYS.clientPortalSettings, STORAGE_KEYS.lastClientPortalDataTest],
-  auth: [STORAGE_KEYS.authUsers, STORAGE_KEYS.currentSession, STORAGE_KEYS.accountRequests],
+  auth: [STORAGE_KEYS.authUsers, STORAGE_KEYS.profiles, STORAGE_KEYS.currentSession, STORAGE_KEYS.accountRequests, STORAGE_KEYS.lastProfileReadinessTest],
   demo: [STORAGE_KEYS.demoEmails, STORAGE_KEYS.importLog, STORAGE_KEYS.activityLog, STORAGE_KEYS.migrationLog],
 });
 
@@ -79,8 +81,10 @@ export const PRIMARY_MODULE_KEYS = Object.freeze({
   activityLog: STORAGE_KEYS.activityLog,
   migrationLog: STORAGE_KEYS.migrationLog,
   authUsers: STORAGE_KEYS.authUsers,
+  profiles: STORAGE_KEYS.profiles,
   currentSession: STORAGE_KEYS.currentSession,
   accountRequests: STORAGE_KEYS.accountRequests,
+  lastProfileReadinessTest: STORAGE_KEYS.lastProfileReadinessTest,
 });
 
 export function getKnownStorageKeys() {

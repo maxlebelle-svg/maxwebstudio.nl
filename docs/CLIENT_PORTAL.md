@@ -423,3 +423,20 @@ De klantportaalrichting is geconsolideerd naar:
 Legacy tabellen `customer_websites`, `customer_invoices` en `customer_subscriptions` blijven alleen historische context totdat data eventueel gemigreerd is. Het klantportaal mag voor nieuwe live data niet opnieuw afhankelijk worden van deze legacy-tabellen.
 
 Auth/RLS-routeguards blijven geblokkeerd tot het consolidated plan en patch plan zijn gereviewd.
+## Fase 13.1 - Profile-koppeling voorbereid
+
+Het klantportaal blijft in deze fase demo/local/hybrid-read gebruiken. Er is nog geen harde loginverplichting.
+
+Wel voorbereid:
+
+- accountaanvragen kunnen naar `profiles` profile-concepts worden vertaald
+- profiles kunnen aan lokale klanten en toekomstige Supabase customers worden gekoppeld
+- session naar profile mapping is testbaar in Developer Mode
+- route guard preview kan tonen welke rol straks toegang zou krijgen
+
+Bewust niet gedaan:
+
+- geen harde klantlogin
+- geen blokkade op `/klantportaal.html?customerId=...`
+- geen RLS-hardening
+- geen klantmutaties vanuit het portaal

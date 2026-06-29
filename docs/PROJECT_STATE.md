@@ -230,3 +230,24 @@ Belangrijk:
 - Legacy lijn: `customer_websites`, `customer_invoices` en `customer_subscriptions`; nieuwe ontwikkeling mag hier niet meer op worden gebaseerd.
 - Nieuwe consolidatiedocumenten: `/docs/SUPABASE_LEGACY_MAPPING.md`, `/docs/SUPABASE_CANONICAL_SCHEMA.md`, `/docs/SUPABASE_CONSOLIDATED_PLAN.md` en `/docs/SUPABASE_PATCH_PLAN.md`.
 - Fase 13.1 Auth/RLS blijft geblokkeerd totdat het consolidated plan is gereviewd.
+## Fase 13.1 - Supabase Auth & Profiles Foundation
+
+Status: afgerond als voorbereiding.
+
+Toegevoegd:
+
+- canonical `Profile` model voor `profiles`
+- `ProfileRepository` met localStorage profile-concepts en Supabase read/write mapping
+- `authProfileService` voor session/profile mapping, account request voorbereiding en customer/profile links
+- Supabase provider ondersteuning voor `profiles`
+- permissions-prioriteit: profile role -> session role -> demo fallback
+- route guard readiness/uitleg zonder harde blokkade
+- loginpagina bereidt accountaanvragen als profile-concept voor
+- Developer Mode toont Profiles readiness en testacties
+
+Nog niet actief:
+
+- echte Supabase Auth-login voor klanten/admin
+- harde route guards
+- RLS hardening
+- Supabase uitnodigingsmails

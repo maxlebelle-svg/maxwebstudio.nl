@@ -51,6 +51,10 @@
             <strong>Echte login voorbereid</strong>
             <span id="real-login-status">Supabase Auth wordt gecontroleerd...</span>
           </div>
+          <div class="portal-message" role="note">
+            <strong>Supabase Auth status</strong>
+            <span>Echte login wordt voorbereid via Supabase Auth. Demo-login blijft beschikbaar.</span>
+          </div>
           <form class="portal-login-form" id="real-login-form">
             <label for="login-email">E-mailadres<input id="login-email" name="email" type="email" autocomplete="email" required /></label>
             <label for="login-password">Wachtwoord<input id="login-password" name="password" type="password" autocomplete="current-password" required /></label>
@@ -62,7 +66,7 @@
         <section class="portal-auth-panel" data-auth-panel="request" hidden>
           <div class="portal-message" role="note">
             <strong>Account aanvragen</strong>
-            <span>Deze aanvraag wordt lokaal geregistreerd voor admin-review. Er wordt nog geen echte Supabase gebruiker aangemaakt.</span>
+            <span>Deze aanvraag wordt lokaal geregistreerd en voorbereid als profile-concept. Er wordt nog geen echte Supabase gebruiker aangemaakt.</span>
           </div>
           <form class="portal-login-form" id="account-request-form">
             <label for="request-name">Naam<input id="request-name" name="name" type="text" autocomplete="name" required /></label>
@@ -129,6 +133,10 @@
           return import("./src/services/authService.js");
         }
 
+        async function loadAuthProfile() {
+          return import("./src/services/authProfileService.js");
+        }
+
         async function renderAuthStatus() {
           try {
             const auth = await loadAuth();
@@ -178,8 +186,10 @@
           try {
             const auth = await loadAuth();
             const request = auth.saveAccountRequest(data);
+            const authProfile = await loadAuthProfile();
+            authProfile.prepareProfileFromAccountRequest(request);
             accountRequestForm.reset();
-            setMessage(`Accountaanvraag opgeslagen voor ${request.email}. Admin kan deze lokaal bekijken.`, "success");
+            setMessage(`Accountaanvraag opgeslagen voor ${request.email}. Profile-concept is voorbereid voor admin-review.`, "success");
           } catch (error) {
             console.error("Account request failed", error);
             setMessage("Accountaanvraag kon niet worden opgeslagen.", "error");

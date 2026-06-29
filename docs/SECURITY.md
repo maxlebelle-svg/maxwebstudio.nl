@@ -311,3 +311,16 @@ De site verwerkt mogelijk:
 - betaalmetadata
 
 Privacyverklaring moet meegroeien met analytics, CRM, portal en opslagkeuzes.
+## Fase 13.1 - Auth/Profile voorbereiding
+
+De nieuwe profile-laag is bewust voorbereid zonder productieblokkades:
+
+- Demo-login blijft localStorage-only.
+- Profile-concepts staan lokaal in `maxwebstudioProfiles`.
+- Frontend bevat geen service role key en geen secrets.
+- Supabase profile-writes zijn alleen via expliciete `profileWrite` context voorbereid en worden niet automatisch vanuit de UI uitgevoerd.
+- Hard deletes voor profiles zijn niet beschikbaar; archiveren/disable/reactivate zijn statuswijzigingen.
+- Route guards geven alleen een preview van wat straks geblokkeerd zou worden.
+- Echte RLS, harde route guards en rolvalidatie volgen in Fase 13.2/13.3.
+
+Belangrijk: deze fase maakt de architectuur klaar, maar is nog geen volledige productiebeveiliging.

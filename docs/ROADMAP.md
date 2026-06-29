@@ -120,3 +120,19 @@ Roadmapbesluit:
 - Canonical lijn wordt `profiles -> customers -> websites -> projects -> quotes -> quote_lines -> invoices -> invoice_lines -> subscriptions`.
 - Legacy `customer_websites`, `customer_invoices` en `customer_subscriptions` worden niet meer als basis voor nieuwe productiefeatures gebruikt.
 - Auth/RLS hardening schuift door naar Fase 13.1 en blijft geblokkeerd tot review van het consolidated plan.
+## Fase 13
+
+### 13.1 - Supabase Auth & Profiles Foundation
+
+Afgerond:
+
+- Profile model/repository/service voorbereid.
+- Account requests kunnen profile-concepts worden.
+- Profile/customer koppeling is lokaal voorbereid.
+- Route guard preview is beschikbaar.
+- Demo-login blijft werken.
+
+Volgende logische stap:
+
+- 13.2: route guards, rollen en RLS-readiness strakker maken zonder demo-flow te breken.
+- 13.3: RLS/security audit voor productiegebruik.

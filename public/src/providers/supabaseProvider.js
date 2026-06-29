@@ -5,6 +5,10 @@ function isCustomersTable(table) {
   return table === "customers" || table === "maxwebstudioCrmCustomers" || table === "maxwebstudioCustomers";
 }
 
+function isProfilesTable(table) {
+  return table === "profiles" || table === "maxwebstudioProfiles";
+}
+
 function isWebsitesTable(table) {
   return table === "websites" || table === "maxwebstudioManagedSites" || table === "maxwebstudioWebsites";
 }
@@ -34,6 +38,7 @@ function isSubscriptionsTable(table) {
 }
 
 function normalizedTable(table) {
+  if (isProfilesTable(table)) return "profiles";
   if (isCustomersTable(table)) return "customers";
   if (isWebsitesTable(table)) return "websites";
   if (isProjectsTable(table)) return "projects";
@@ -108,6 +113,17 @@ function assertCustomerWriteTable(table) {
   if (!isCustomersTable(table)) throw new Error("Customer writes ondersteunen alleen de customers tabel.");
 }
 
+async function getProfileWriteClient(context = {}) {
+  if (context.profileWrite !== true) throw new Error("Profile write context ontbreekt.");
+  const client = await getSupabaseClient();
+  if (!client) throw new Error("Supabase client niet beschikbaar; profile write blijft geblokkeerd.");
+  return client;
+}
+
+function assertProfileWriteTable(table) {
+  if (!isProfilesTable(table)) throw new Error("Profile writes ondersteunen alleen de profiles tabel.");
+}
+
 async function getWebsiteWriteClient(context = {}) {
   if (context.websiteWrite !== true) throw new Error("Website write context ontbreekt.");
   const client = await getSupabaseClient();
@@ -168,7 +184,7 @@ export const supabaseProvider = {
   status: "read-only",
 
   async getAll(table, options = {}) {
-    if (!isCustomersTable(table) && !isWebsitesTable(table) && !isProjectsTable(table) && !isQuotesTable(table) && !isQuoteLinesTable(table) && !isInvoicesTable(table) && !isInvoiceLinesTable(table) && !isSubscriptionsTable(table)) {
+    if (!isProfilesTable(table) && !isCustomersTable(table) && !isWebsitesTable(table) && !isProjectsTable(table) && !isQuotesTable(table) && !isQuoteLinesTable(table) && !isInvoicesTable(table) && !isInvoiceLinesTable(table) && !isSubscriptionsTable(table)) {
       console.info(preparedMessage(table));
       return [];
     }
@@ -181,7 +197,7 @@ export const supabaseProvider = {
   },
 
   async getById(table, id) {
-    if (!isCustomersTable(table) && !isWebsitesTable(table) && !isProjectsTable(table) && !isQuotesTable(table) && !isQuoteLinesTable(table) && !isInvoicesTable(table) && !isInvoiceLinesTable(table) && !isSubscriptionsTable(table)) {
+    if (!isProfilesTable(table) && !isCustomersTable(table) && !isWebsitesTable(table) && !isProjectsTable(table) && !isQuotesTable(table) && !isQuoteLinesTable(table) && !isInvoicesTable(table) && !isInvoiceLinesTable(table) && !isSubscriptionsTable(table)) {
       console.info(preparedMessage(table));
       return null;
     }
@@ -235,6 +251,46 @@ export const supabaseProvider = {
     const { data, error } = await client.from("customers").delete().eq("id", id).select("*").single();
     if (error) throw new Error(error.message || "Testcustomer verwijderen is mislukt.");
     return { success: true, table: "customers", action: "delete", data };
+  },
+
+  async createProfile(record = {}, context = {}) {
+    assertProfileWriteTable("profiles");
+    const client = await getProfileWriteClient(context);
+    const payload = {
+      ...record,
+      updated_at: record.updated_at || new Date().toISOString(),
+      created_at: record.created_at || new Date().toISOString(),
+    };
+    const { data, error } = await client.from("profiles").insert(payload).select("*").single();
+    if (error) throw new Error(error.message || "Profile aanmaken in Supabase is mislukt.");
+    return { success: true, table: "profiles", action: "create_profile", data };
+  },
+
+  async updateProfile(id, updates = {}, context = {}) {
+    assertProfileWriteTable("profiles");
+    const client = await getProfileWriteClient(context);
+    const payload = {
+      ...updates,
+      updated_at: updates.updated_at || new Date().toISOString(),
+    };
+    const { data, error } = await client.from("profiles").update(payload).eq("id", id).select("*").single();
+    if (error) throw new Error(error.message || "Profile bijwerken in Supabase is mislukt.");
+    return { success: true, table: "profiles", action: "update_profile", data };
+  },
+
+  async archiveProfile(id, context = {}) {
+    return this.updateProfile(id, {
+      status: "archived",
+      metadata: { archivedAt: new Date().toISOString() },
+    }, context);
+  },
+
+  async disableProfile(id, context = {}) {
+    return this.updateProfile(id, { status: "disabled" }, context);
+  },
+
+  async reactivateProfile(id, context = {}) {
+    return this.updateProfile(id, { status: "active" }, context);
   },
 
   async createCustomer(record = {}, context = {}) {
@@ -602,7 +658,7 @@ export const supabaseProvider = {
   },
 
   async count(table) {
-    if (!isCustomersTable(table) && !isWebsitesTable(table) && !isProjectsTable(table) && !isQuotesTable(table) && !isQuoteLinesTable(table) && !isInvoicesTable(table) && !isInvoiceLinesTable(table) && !isSubscriptionsTable(table)) {
+    if (!isProfilesTable(table) && !isCustomersTable(table) && !isWebsitesTable(table) && !isProjectsTable(table) && !isQuotesTable(table) && !isQuoteLinesTable(table) && !isInvoicesTable(table) && !isInvoiceLinesTable(table) && !isSubscriptionsTable(table)) {
       console.info(preparedMessage(table));
       return 0;
     }

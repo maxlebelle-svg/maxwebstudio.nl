@@ -14,7 +14,7 @@
  * @property {string} createdAt
  * @property {string} updatedAt
  *
- * Supabase table: profiles
+ * Supabase table: customers
  * Migratie: crmCustomers is leidend; customers blijft fallback voor demo/portal.
  */
-export const customerModel = { table: "profiles", primaryKey: "id" };
+export const customerModel = { table: "customers", primaryKey: "id" };

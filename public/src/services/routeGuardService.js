@@ -1,5 +1,6 @@
 import { ROLES } from "../config/roles.js";
 import { getCurrentSession, getCurrentUser, hasPermission } from "./authService.js";
+import { getCurrentProfile, validateProfileAccess } from "./authProfileService.js";
 
 const PAGE_RULES = Object.freeze({
   "admin-dashboard": { roles: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.SALES, ROLES.DEVELOPER, ROLES.SUPPORT], resource: "dashboard", action: "view" },
@@ -21,6 +22,58 @@ export function canAccessPage(pageName) {
   if (rule.roles?.length && !rule.roles.includes(session.role)) return false;
   if (rule.resource && rule.action) return hasPermission(rule.resource, rule.action);
   return true;
+}
+
+export function getAccessContext() {
+  const session = getCurrentSession();
+  const user = getCurrentUser();
+  const profile = getCurrentProfile();
+  return {
+    session,
+    user,
+    profile,
+    role: profile?.role || session?.role || "",
+    provider: session?.provider || "none",
+    hardBlocking: false,
+    note: "Preview only; harde route guards volgen in Fase 13.2.",
+  };
+}
+
+export function explainAccessDecision(pageName, role = "") {
+  const rule = PAGE_RULES[pageName];
+  if (!rule) return { allowed: true, pageName, role, reason: "Geen specifieke paginaregel.", hardBlocking: false };
+  if (!role) return { allowed: false, pageName, role, reason: "Geen rol beschikbaar.", hardBlocking: false };
+  if (rule.roles?.length && !rule.roles.includes(role)) {
+    return { allowed: false, pageName, role, reason: `Rol ${role} staat niet in de voorbereide toegangsregel.`, hardBlocking: false };
+  }
+  const permission = rule.resource && rule.action
+    ? validateProfileAccess({ role, status: "active" }, rule.resource, rule.action)
+    : { allowed: true };
+  return {
+    allowed: Boolean(permission.allowed),
+    pageName,
+    role,
+    resource: rule.resource,
+    action: rule.action,
+    reason: permission.allowed ? "Rol past bij de voorbereide route-regel." : "Rol mist de voorbereide permissie.",
+    hardBlocking: false,
+  };
+}
+
+export function wouldBlockInProduction(pageName, role = "") {
+  return !explainAccessDecision(pageName, role).allowed;
+}
+
+export function getRouteAccessReadiness() {
+  const context = getAccessContext();
+  return {
+    status: "voorbereid",
+    hardBlocking: false,
+    currentRole: context.role || "geen sessie",
+    sessionProfileMapping: context.profile ? "voorbereid" : "nog geen profile gevonden",
+    pages: Object.keys(PAGE_RULES).map((pageName) => explainAccessDecision(pageName, context.role)),
+    nextPhase: "Fase 13.2 maakt route guards hard.",
+  };
 }
 
 export function showAccessWarning(message = "Deze pagina gebruikt voorlopig demo-toegang. Echte routebeveiliging wordt voorbereid.") {
