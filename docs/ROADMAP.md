@@ -548,3 +548,32 @@ Volgende logische stappen:
 1. Klantportaal testdata/seeder uitbreiden met berichten, notificaties en wijzigingsverzoeken.
 2. Daarna live Auth/RLS/customer isolation opnieuw valideren.
 3. Daarna Supabase-read voor klantportaalmodules gecontroleerd activeren.
+
+## Fase 17 - CRM Completion & Internal Workflow Readiness
+
+Afgerond als local/demo CRM-workflowuitbreiding:
+
+- admin-dashboard bevat nu een centrale workflowsectie
+- interne opvolgacties kunnen worden aangemaakt, gekoppeld en beheerd
+- workflowtaken koppelen aan klanten, websites, projecten, offertes, facturen en abonnementen
+- statusflow: nieuw, open, in behandeling, wacht op klant, afgerond, gearchiveerd
+- KPI's voor open opvolging, hoge prioriteit, achterstallig en komende 7 dagen
+- canonical datalijn zichtbaar in het CRM
+
+Nieuwe localStorage voorbereiding:
+
+- `maxwebstudioCrmTasks`
+
+Nog demo/local:
+
+- workflowtaken zijn geen productiebron
+- geen Supabase writes
+- geen externe API's
+- geen live notificaties of e-mailacties
+
+Aanbevolen volgende stappen:
+
+1. CRM-workflow testen met demo-klanten en lopende projecten.
+2. Supabase testomgeving opnieuw valideren voordat workflowdata naar productie gaat.
+3. Later een canonical `crm_tasks`/`activity_log` productielaag ontwerpen.
+4. Daarna pas Leadfinder, AI-acties en live automatiseringen op deze workflow aansluiten.

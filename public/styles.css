@@ -5582,6 +5582,13 @@ h3 {
   gap: 18px;
 }
 
+.admin-section-intro {
+  max-width: 820px;
+  margin: 8px 0 0;
+  color: rgba(255, 255, 255, 0.68);
+  line-height: 1.65;
+}
+
 .admin-section-heading h2 {
   margin-bottom: 0;
   font-size: clamp(28px, 3vw, 42px);
@@ -7167,6 +7174,44 @@ h3 {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.workflow-metrics {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.crm-workflow-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.55fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.crm-readiness-card {
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+}
+
+.crm-workflow-table .admin-table-row {
+  grid-template-columns: minmax(180px, 1.35fr) minmax(110px, 0.7fr) minmax(120px, 0.8fr) minmax(140px, 0.9fr) minmax(140px, 0.9fr) minmax(190px, auto);
+}
+
+.crm-workflow-table .crm-task-meta {
+  display: grid;
+  gap: 4px;
+}
+
+.crm-workflow-table .crm-task-meta small {
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 800;
+}
+
+.crm-task-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .automation-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -8553,6 +8598,7 @@ h3 {
   .change-request-layout,
   .admin-crm-shell,
   .admin-crm-grid,
+  .crm-workflow-grid,
   .website-operations-grid,
   .project-management-grid,
   .file-management-grid,

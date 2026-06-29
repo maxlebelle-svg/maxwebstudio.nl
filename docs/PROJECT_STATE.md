@@ -799,3 +799,32 @@ Nog niet actief:
 - Geen klantportaal writes.
 - Geen live Supabase Auth/RLS hardening.
 - Geen nieuwe backend of API keys.
+
+## Fase 17 - CRM Completion & Internal Workflow Readiness
+
+Status: interne CRM-workflow afgerond als local/demo readiness-laag zonder productie-aanpassingen, SQL of externe koppelingen.
+
+Bijgewerkt:
+
+- `public/admin-dashboard.html`
+- `public/styles.css`
+- `public/src/config/storageKeys.js`
+- `public/src/services/crmWorkflowService.js`
+- `docs/CRM_WORKFLOW.md`
+
+Resultaat:
+
+- Het admin-dashboard bevat nu een sectie `Workflow` voor interne opvolgacties.
+- Opvolgacties kunnen lokaal worden aangemaakt, gekoppeld, gefilterd, afgerond, gearchiveerd en verwijderd.
+- Taken kunnen optioneel worden gekoppeld aan klanten, websites, projecten, offertes, facturen en abonnementen.
+- De workflow toont KPI's voor open taken, hoge prioriteit, achterstallige taken en komende deadlines.
+- De CRM-sectie toont de canonical productielijn en markeert `crm_tasks` als local/demo voorbereiding.
+- Nieuwe localStorage key: `maxwebstudioCrmTasks`.
+
+Bewust nog demo/local/mock:
+
+- Geen live Supabase writes.
+- Geen productie activity/taken tabel.
+- Geen Resend-, Mollie- of OpenAI-acties.
+- Geen nieuwe API keys.
+- Geen legacy `customer_*` productiefeatures.

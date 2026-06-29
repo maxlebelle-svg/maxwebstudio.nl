@@ -26,6 +26,7 @@
         <nav class="admin-sidebar-nav">
           <span class="admin-nav-group">Dashboard</span>
           <a href="#dashboard">Overzicht</a>
+          <a href="#workflow">Workflow</a>
           <span class="admin-nav-group">Sales</span>
           <a href="#wijzigingsverzoeken">Leads</a>
           <a href="#klanten">CRM-klanten</a>
@@ -153,6 +154,68 @@
             <article class="admin-card bi-chart-card"><div><span>Abonnementstatus verdeling</span><strong id="chart-subscription-status-total">-</strong></div><div class="bi-chart" id="chart-subscription-status"></div></article>
           </div>
           <div class="admin-table bi-action-table" id="bi-action-list" role="table" aria-label="Actie vereist" aria-live="polite"></div>
+        </section>
+
+        <section class="admin-section" id="workflow">
+          <div class="admin-section-heading">
+            <div>
+              <p class="section-kicker">CRM workflow</p>
+              <h2>Interne opvolging</h2>
+              <p class="admin-section-intro">Leg acties vast over leads, klanten, projecten, offertes, facturen, websites en wijzigingsverzoeken. Deze laag blijft local/demo en is voorbereid op de canonical productielijn.</p>
+            </div>
+            <span class="admin-preview-badge">Local readiness</span>
+          </div>
+
+          <div class="admin-grid workflow-metrics" id="crm-workflow-metrics" aria-live="polite"></div>
+
+          <div class="crm-workflow-grid">
+            <form class="admin-card admin-profile-form crm-workflow-form" id="crm-task-form">
+              <div class="admin-profile-form-heading">
+                <div>
+                  <strong>Opvolgactie toevoegen</strong>
+                  <span>Maak een interne taak en koppel deze optioneel aan een klant, website, project, offerte, factuur of abonnement.</span>
+                </div>
+              </div>
+              <div class="admin-profile-fields">
+                <label class="admin-profile-wide" for="crm-task-title">Titel<input id="crm-task-title" type="text" placeholder="Bijv. offerte nabellen of feedback verwerken" required /></label>
+                <label for="crm-task-type">Type<select id="crm-task-type"></select></label>
+                <label for="crm-task-status">Status<select id="crm-task-status"></select></label>
+                <label for="crm-task-priority">Prioriteit<select id="crm-task-priority"></select></label>
+                <label for="crm-task-due">Deadline<input id="crm-task-due" type="date" /></label>
+                <label for="crm-task-customer">Klant<select id="crm-task-customer"><option value="">Geen specifieke klant</option></select></label>
+                <label for="crm-task-website">Website<select id="crm-task-website"><option value="">Geen specifieke website</option></select></label>
+                <label for="crm-task-project">Project<select id="crm-task-project"><option value="">Geen specifiek project</option></select></label>
+                <label for="crm-task-quote">Offerte<select id="crm-task-quote"><option value="">Geen specifieke offerte</option></select></label>
+                <label for="crm-task-invoice">Factuur<select id="crm-task-invoice"><option value="">Geen specifieke factuur</option></select></label>
+                <label for="crm-task-subscription">Abonnement<select id="crm-task-subscription"><option value="">Geen specifiek abonnement</option></select></label>
+                <label class="admin-profile-wide" for="crm-task-notes">Interne notities<textarea id="crm-task-notes" placeholder="Context, afspraak of volgende stap"></textarea></label>
+              </div>
+              <div class="admin-profile-actions">
+                <button class="button primary" type="submit">Taak opslaan</button>
+                <button class="button secondary" id="crm-task-reset" type="button">Formulier leegmaken</button>
+                <p class="admin-form-message" id="crm-task-message" role="status"></p>
+              </div>
+            </form>
+
+            <article class="admin-card crm-readiness-card">
+              <div class="admin-profile-form-heading">
+                <div>
+                  <strong>Canonical datalijn</strong>
+                  <span>Nieuwe CRM-opvolging gebruikt geen legacy `customer_*` lijn.</span>
+                </div>
+              </div>
+              <div class="settings-status-list" id="crm-canonical-readiness" aria-live="polite"></div>
+            </article>
+          </div>
+
+          <div class="admin-filters crm-workflow-filters" aria-label="Workflow filteren">
+            <label for="crm-task-search">Zoeken<input id="crm-task-search" type="search" placeholder="Titel, klant, project, factuur of notitie" /></label>
+            <label for="crm-task-filter-status">Status<select id="crm-task-filter-status"><option value="">Alle statussen</option></select></label>
+            <label for="crm-task-filter-priority">Prioriteit<select id="crm-task-filter-priority"><option value="">Alle prioriteiten</option></select></label>
+            <label for="crm-task-filter-type">Type<select id="crm-task-filter-type"><option value="">Alle types</option></select></label>
+          </div>
+
+          <div class="admin-table crm-workflow-table" id="crm-task-list" role="table" aria-label="CRM workflow taken" aria-live="polite"></div>
         </section>
 
         <section class="admin-section" id="klanten">
@@ -1250,6 +1313,7 @@
         const quotesStorageKey = "maxwebstudioQuotes";
         const settingsStorageKey = "maxwebstudioSettings";
         const subscriptionsStorageKey = "maxwebstudioSubscriptions";
+        const crmTasksStorageKey = "maxwebstudioCrmTasks";
         const demoEmailsStorageKey = "maxwebstudioDemoEmails";
         const importLogStorageKey = "maxwebstudioImportLog";
         const activityLogStorageKey = "maxwebstudioActivityLog";
@@ -1274,6 +1338,7 @@
           { key: quotesStorageKey, label: "Offertes", description: "Offertes en demo-offertelinks" },
           { key: invoicesStorageKey, label: "Facturen", description: "Facturen en demo-betaallinks" },
           { key: subscriptionsStorageKey, label: "Abonnementen", description: "Onderhoudsabonnementen en recurring billing" },
+          { key: crmTasksStorageKey, label: "CRM workflow", description: "Interne opvolgacties en taken" },
           { key: settingsStorageKey, label: "Instellingen", description: "Bedrijfs-, factuur- en integratie-instellingen" },
           { key: demoEmailsStorageKey, label: "Demo e-mails", description: "Lokale e-mailpreview inbox voor demo-klantreizen" },
           { key: importLogStorageKey, label: "Importlog", description: "Lokaal logboek van JSON imports/restores" },
@@ -14412,6 +14477,313 @@
         loadChangeRequests();
         loadCRMData(false);
       })();
+    </script>
+    <script type="module">
+      import {
+        CRM_TASK_PRIORITIES,
+        CRM_TASK_STATUSES,
+        CRM_TASK_TYPES,
+        archiveCrmTaskLocally,
+        completeCrmTaskLocally,
+        deleteCrmTaskLocally,
+        getCanonicalCrmRelationships,
+        getCrmWorkflowSummary,
+        readCrmTasks,
+        saveCrmTaskLocally,
+      } from "./src/services/crmWorkflowService.js";
+
+      const workflowStorageKeys = {
+        customers: ["maxwebstudioCrmCustomers", "maxwebstudioCustomers"],
+        websites: ["maxwebstudioManagedSites", "maxwebstudioWebsites"],
+        projects: ["maxwebstudioProjects"],
+        quotes: ["maxwebstudioQuotes"],
+        invoices: ["maxwebstudioInvoices"],
+        subscriptions: ["maxwebstudioSubscriptions"],
+      };
+
+      const workflowElements = {
+        metrics: document.getElementById("crm-workflow-metrics"),
+        form: document.getElementById("crm-task-form"),
+        title: document.getElementById("crm-task-title"),
+        type: document.getElementById("crm-task-type"),
+        status: document.getElementById("crm-task-status"),
+        priority: document.getElementById("crm-task-priority"),
+        dueDate: document.getElementById("crm-task-due"),
+        customer: document.getElementById("crm-task-customer"),
+        website: document.getElementById("crm-task-website"),
+        project: document.getElementById("crm-task-project"),
+        quote: document.getElementById("crm-task-quote"),
+        invoice: document.getElementById("crm-task-invoice"),
+        subscription: document.getElementById("crm-task-subscription"),
+        notes: document.getElementById("crm-task-notes"),
+        reset: document.getElementById("crm-task-reset"),
+        message: document.getElementById("crm-task-message"),
+        readiness: document.getElementById("crm-canonical-readiness"),
+        search: document.getElementById("crm-task-search"),
+        filterStatus: document.getElementById("crm-task-filter-status"),
+        filterPriority: document.getElementById("crm-task-filter-priority"),
+        filterType: document.getElementById("crm-task-filter-type"),
+        list: document.getElementById("crm-task-list"),
+      };
+
+      const statusLabels = Object.fromEntries(CRM_TASK_STATUSES.map((item) => [item.value, item.label]));
+      const priorityLabels = Object.fromEntries(CRM_TASK_PRIORITIES.map((item) => [item.value, item.label]));
+      const typeLabels = Object.fromEntries(CRM_TASK_TYPES.map((item) => [item.value, item.label]));
+
+      function escapeHtml(value) {
+        return String(value || "").replace(/[&<>"']/g, (character) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#039;",
+        })[character]);
+      }
+
+      function readStoredArray(keys) {
+        const combined = [];
+        keys.forEach((key) => {
+          try {
+            const parsed = JSON.parse(localStorage.getItem(key) || "[]");
+            if (Array.isArray(parsed)) combined.push(...parsed);
+          } catch (error) {
+            console.warn(`Kon ${key} niet lezen voor CRM workflow`, error);
+          }
+        });
+        const seen = new Set();
+        return combined.filter((item) => {
+          const id = String(item?.id || item?.customerId || item?.profileId || "");
+          if (!id || seen.has(id)) return false;
+          seen.add(id);
+          return true;
+        });
+      }
+
+      function getStoredContext() {
+        return {
+          customers: readStoredArray(workflowStorageKeys.customers),
+          websites: readStoredArray(workflowStorageKeys.websites),
+          projects: readStoredArray(workflowStorageKeys.projects),
+          quotes: readStoredArray(workflowStorageKeys.quotes),
+          invoices: readStoredArray(workflowStorageKeys.invoices),
+          subscriptions: readStoredArray(workflowStorageKeys.subscriptions),
+        };
+      }
+
+      function optionLabel(item, fallback) {
+        return item?.name || item?.company || item?.companyName || item?.businessName || item?.title || item?.websiteName || item?.domain || item?.number || item?.invoiceNumber || item?.quoteNumber || item?.packageName || fallback;
+      }
+
+      function fillSelect(select, options, placeholder, selectedValue = "") {
+        if (!select) return;
+        select.innerHTML = `<option value="">${escapeHtml(placeholder)}</option>`;
+        options.forEach((option) => {
+          const element = document.createElement("option");
+          element.value = option.value;
+          element.textContent = option.label;
+          select.appendChild(element);
+        });
+        select.value = selectedValue;
+      }
+
+      function fillStaticSelects() {
+        fillSelect(workflowElements.type, CRM_TASK_TYPES, "Kies type", "general");
+        fillSelect(workflowElements.status, CRM_TASK_STATUSES, "Kies status", "open");
+        fillSelect(workflowElements.priority, CRM_TASK_PRIORITIES, "Kies prioriteit", "normaal");
+        fillSelect(workflowElements.filterStatus, CRM_TASK_STATUSES, "Alle statussen");
+        fillSelect(workflowElements.filterPriority, CRM_TASK_PRIORITIES, "Alle prioriteiten");
+        fillSelect(workflowElements.filterType, CRM_TASK_TYPES, "Alle types");
+      }
+
+      function fillRelationshipSelects() {
+        const context = getStoredContext();
+        const toOptions = (items, fallbackPrefix) => items.map((item, index) => ({
+          value: String(item.id || item.customerId || item.profileId || ""),
+          label: optionLabel(item, `${fallbackPrefix} ${index + 1}`),
+        })).filter((item) => item.value);
+
+        fillSelect(workflowElements.customer, toOptions(context.customers, "Klant"), "Geen specifieke klant");
+        fillSelect(workflowElements.website, toOptions(context.websites, "Website"), "Geen specifieke website");
+        fillSelect(workflowElements.project, toOptions(context.projects, "Project"), "Geen specifiek project");
+        fillSelect(workflowElements.quote, toOptions(context.quotes, "Offerte"), "Geen specifieke offerte");
+        fillSelect(workflowElements.invoice, toOptions(context.invoices, "Factuur"), "Geen specifieke factuur");
+        fillSelect(workflowElements.subscription, toOptions(context.subscriptions, "Abonnement"), "Geen specifiek abonnement");
+      }
+
+      function renderMetrics(tasks) {
+        if (!workflowElements.metrics) return;
+        const summary = getCrmWorkflowSummary(tasks);
+        workflowElements.metrics.innerHTML = [
+          ["Open taken", summary.open, "Nog niet afgerond"],
+          ["Hoog prioriteit", summary.highPriority, "Direct opvolgen"],
+          ["Achterstallig", summary.overdue, "Deadline verlopen"],
+          ["Komende 7 dagen", summary.nextSevenDays, "Binnenkort opvolgen"],
+        ].map(([label, value, caption]) => `
+          <article class="admin-card metric-card">
+            <span>${escapeHtml(label)}</span>
+            <strong>${escapeHtml(value)}</strong>
+            <small>${escapeHtml(caption)}</small>
+          </article>
+        `).join("");
+      }
+
+      function renderCanonicalReadiness() {
+        if (!workflowElements.readiness) return;
+        workflowElements.readiness.innerHTML = getCanonicalCrmRelationships().map((item) => `
+          <div>
+            <strong>${escapeHtml(item.table)}</strong>
+            <span>${escapeHtml(item.readiness)} · ${escapeHtml(item.source)}<br>${escapeHtml(item.note)}</span>
+          </div>
+        `).join("");
+      }
+
+      function getEntityLabel(task) {
+        const context = getStoredContext();
+        const lookups = [
+          ["customerId", context.customers, "Klant"],
+          ["websiteId", context.websites, "Website"],
+          ["projectId", context.projects, "Project"],
+          ["quoteId", context.quotes, "Offerte"],
+          ["invoiceId", context.invoices, "Factuur"],
+          ["subscriptionId", context.subscriptions, "Abonnement"],
+        ];
+        for (const [key, items, label] of lookups) {
+          if (!task[key]) continue;
+          const match = items.find((item) => String(item.id || item.customerId || item.profileId) === String(task[key]));
+          return match ? `${label}: ${optionLabel(match, task[key])}` : `${label}: ${task[key]}`;
+        }
+        return "Algemene opvolging";
+      }
+
+      function getFilteredTasks() {
+        const query = String(workflowElements.search?.value || "").trim().toLowerCase();
+        const status = workflowElements.filterStatus?.value || "";
+        const priority = workflowElements.filterPriority?.value || "";
+        const type = workflowElements.filterType?.value || "";
+
+        return readCrmTasks().filter((task) => {
+          const haystack = [task.title, task.notes, task.type, task.status, task.priority, getEntityLabel(task)].join(" ").toLowerCase();
+          return (!query || haystack.includes(query))
+            && (!status || task.status === status)
+            && (!priority || task.priority === priority)
+            && (!type || task.type === type);
+        });
+      }
+
+      function renderTaskList() {
+        const allTasks = readCrmTasks();
+        const tasks = getFilteredTasks();
+        renderMetrics(allTasks);
+        renderCanonicalReadiness();
+
+        if (!workflowElements.list) return;
+        if (!tasks.length) {
+          workflowElements.list.innerHTML = `
+            <article class="admin-card request-card request-state-card">
+              <div>
+                <strong>Geen workflowtaken gevonden</strong>
+                <span>Maak een opvolgactie aan of pas de filters aan.</span>
+              </div>
+            </article>
+          `;
+          return;
+        }
+
+        workflowElements.list.innerHTML = `
+          <div class="admin-table-row admin-table-head" role="row">
+            <span>Taak</span><span>Type</span><span>Status</span><span>Prioriteit</span><span>Koppeling</span><span>Acties</span>
+          </div>
+          ${tasks.map((task) => `
+            <div class="admin-table-row" role="row" data-crm-task-id="${escapeHtml(task.id)}">
+              <div class="crm-task-meta">
+                <strong>${escapeHtml(task.title)}</strong>
+                <small>${task.dueDate ? `Deadline ${escapeHtml(task.dueDate)}` : "Geen deadline"} · bijgewerkt ${escapeHtml((task.updatedAt || "").slice(0, 10))}</small>
+              </div>
+              <span>${escapeHtml(typeLabels[task.type] || task.type)}</span>
+              <mark class="status-badge status-planned">${escapeHtml(statusLabels[task.status] || task.status)}</mark>
+              <mark class="status-badge status-active">${escapeHtml(priorityLabels[task.priority] || task.priority)}</mark>
+              <span>${escapeHtml(getEntityLabel(task))}</span>
+              <div class="crm-task-actions">
+                <button class="button secondary" type="button" data-crm-task-action="complete">Afronden</button>
+                <button class="button secondary" type="button" data-crm-task-action="archive">Archiveren</button>
+                <button class="button secondary danger" type="button" data-crm-task-action="delete">Verwijderen</button>
+              </div>
+            </div>
+          `).join("")}
+        `;
+      }
+
+      function setMessage(text, type = "success") {
+        if (!workflowElements.message) return;
+        workflowElements.message.textContent = text;
+        workflowElements.message.className = `admin-form-message ${type}`;
+      }
+
+      function resetTaskForm() {
+        workflowElements.form?.reset();
+        if (workflowElements.type) workflowElements.type.value = "general";
+        if (workflowElements.status) workflowElements.status.value = "open";
+        if (workflowElements.priority) workflowElements.priority.value = "normaal";
+      }
+
+      function handleTaskSubmit(event) {
+        event.preventDefault();
+        const title = workflowElements.title?.value.trim();
+        if (!title) {
+          setMessage("Vul een titel in voor de opvolgactie.", "error");
+          return;
+        }
+        saveCrmTaskLocally({
+          title,
+          type: workflowElements.type?.value || "general",
+          status: workflowElements.status?.value || "open",
+          priority: workflowElements.priority?.value || "normaal",
+          dueDate: workflowElements.dueDate?.value || "",
+          customerId: workflowElements.customer?.value || "",
+          websiteId: workflowElements.website?.value || "",
+          projectId: workflowElements.project?.value || "",
+          quoteId: workflowElements.quote?.value || "",
+          invoiceId: workflowElements.invoice?.value || "",
+          subscriptionId: workflowElements.subscription?.value || "",
+          notes: workflowElements.notes?.value || "",
+        });
+        resetTaskForm();
+        setMessage("Opvolgactie opgeslagen.", "success");
+        renderTaskList();
+      }
+
+      function handleTaskAction(event) {
+        const button = event.target.closest("[data-crm-task-action]");
+        if (!button) return;
+        const row = button.closest("[data-crm-task-id]");
+        const taskId = row?.dataset.crmTaskId;
+        if (!taskId) return;
+        const action = button.dataset.crmTaskAction;
+        if (action === "complete") completeCrmTaskLocally(taskId);
+        if (action === "archive") archiveCrmTaskLocally(taskId);
+        if (action === "delete" && window.confirm("Deze workflowtaak verwijderen?")) deleteCrmTaskLocally(taskId);
+        renderTaskList();
+      }
+
+      function initCrmWorkflow() {
+        if (!workflowElements.form || !workflowElements.list) return;
+        fillStaticSelects();
+        fillRelationshipSelects();
+        renderTaskList();
+
+        workflowElements.form.addEventListener("submit", handleTaskSubmit);
+        workflowElements.reset?.addEventListener("click", () => {
+          resetTaskForm();
+          setMessage("Formulier leeggemaakt.", "success");
+        });
+        [workflowElements.search, workflowElements.filterStatus, workflowElements.filterPriority, workflowElements.filterType].forEach((element) => {
+          element?.addEventListener("input", renderTaskList);
+          element?.addEventListener("change", renderTaskList);
+        });
+        workflowElements.list.addEventListener("click", handleTaskAction);
+      }
+
+      initCrmWorkflow();
     </script>
   </body>
 </html>
