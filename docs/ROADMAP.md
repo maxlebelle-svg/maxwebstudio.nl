@@ -666,3 +666,33 @@ Aanbevolen volgende stappen:
 2. Promptlogging, consent en rate limiting ontwerpen.
 3. Pas na Auth/RLS en privacybesluit echte AI-calls activeren.
 4. AI-output altijd eerst als admin-review houden voordat klantcommunicatie wordt verstuurd.
+
+## Fase 21 - Supabase Production Readiness Plan
+
+Afgerond als architectuur/readinessfase:
+
+- alle localStorage keys en demo/local modules geinventariseerd
+- mapping gemaakt naar toekomstige Supabase-tabellen
+- canonical productielijn bevestigd
+- aanvullende productietabellen benoemd voor leads, CRM-taken, klantportaalberichten, notificaties, AI-drafts en audit logs
+- per tabel RLS/security-risico's en migratiebron vastgelegd
+- gefaseerd migratieplan vastgelegd van Auth/profiles tot RLS/security/audit
+
+Nieuw document:
+
+- `SUPABASE_PRODUCTION_READINESS_PLAN.md`
+
+Nog niet uitgevoerd:
+
+- geen SQL
+- geen productieaanpassing
+- geen provider switch
+- geen API keys
+- geen externe integraties
+
+Aanbevolen volgende stappen:
+
+1. Review het readiness plan en bevestig de aanvullende tabellen.
+2. Werk daarna het canonical schema/SQL-plan bij in een aparte expliciete fase.
+3. Valideer opnieuw in Supabase testomgeving voordat productie-RLS, Storage, Mollie, Resend of AI live gaan.
+4. Houd legacy `customer_*` tabellen uitgesloten van nieuwe productiefeatures.

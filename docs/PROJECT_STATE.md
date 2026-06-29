@@ -917,3 +917,29 @@ Bewust nog demo/local/mock:
 - Geen productiegegevens.
 - Geen automatische klantcommunicatie.
 - Geen externe services.
+
+## Fase 21 - Supabase Production Readiness Plan
+
+Status: afgerond als architectuur- en migratieplanning zonder SQL, productieaanpassingen, API keys of externe calls.
+
+Toegevoegd:
+
+- `docs/SUPABASE_PRODUCTION_READINESS_PLAN.md`
+
+Resultaat:
+
+- Alle huidige localStorage keys en local/demo modules zijn geinventariseerd.
+- Elke module is gemapt naar toekomstige Supabase-tabellen.
+- De canonical productielijn is opnieuw bevestigd: `profiles`, `customers`, `websites`, `projects`, `quotes`, `quote_lines`, `invoices`, `invoice_lines`, `subscriptions`, `files` en `change_requests`.
+- Aanvullende productietabellen zijn vastgelegd voor `leads`, `crm_tasks`, `client_portal_messages`, `client_portal_notifications`, `ai_drafts`, `ai_assistant_drafts` en `audit_logs`.
+- Per tabel is doel, kernvelden, relaties, ownership/access, RLS-risico, migratiebron en productie-kritikaliteit beschreven.
+- De migratievolgorde is vastgelegd van Auth/profiles tot RLS/security/audit.
+
+Bewust niet uitgevoerd:
+
+- Geen SQL uitgevoerd.
+- Geen Supabase schema aangepast.
+- Geen productiegegevens gewijzigd.
+- Geen API keys toegevoegd.
+- Geen OpenAI-, Mollie- of Resend-calls.
+- Geen runtimefunctionaliteit gewijzigd.

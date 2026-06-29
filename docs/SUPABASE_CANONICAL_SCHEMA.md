@@ -16,6 +16,16 @@ Ondersteunende tabellen:
 - `import_logs`
 - `change_requests`
 
+Aanvullende productietabellen uit Fase 21 readiness:
+
+- `leads`
+- `crm_tasks`
+- `client_portal_messages`
+- `client_portal_notifications`
+- `ai_drafts`
+- `ai_assistant_drafts`
+- `audit_logs`
+
 Legacy tabellen:
 
 - `customer_websites`
@@ -569,6 +579,13 @@ Relatie:
 | `activity_logs` | canonical |
 | `import_logs` | canonical |
 | `change_requests` | canonical-supporting |
+| `leads` | Fase 21 aanvullend |
+| `crm_tasks` | Fase 21 aanvullend |
+| `client_portal_messages` | Fase 21 aanvullend |
+| `client_portal_notifications` | Fase 21 aanvullend |
+| `ai_drafts` | Fase 21 aanvullend |
+| `ai_assistant_drafts` | Fase 21 aanvullend |
+| `audit_logs` | Fase 21 aanvullend |
 | `customer_websites` | legacy |
 | `customer_invoices` | legacy |
 | `customer_subscriptions` | legacy |
