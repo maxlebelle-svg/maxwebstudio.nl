@@ -580,3 +580,25 @@ Status:
 - Geen SQL uitgevoerd.
 - Geen productiegegevens gewijzigd.
 - Geen echte Supabase Auth writes uitgevoerd.
+
+## Fase 23 - Schema/RLS securityplan
+
+Fase 23 legt het productie-RLS-plan vast zonder SQL uit te voeren.
+
+Securityregels:
+
+- Iedere klantgebonden tabel moet via `customer_id` of parent ownership naar `customers` herleidbaar zijn.
+- Child tables zoals `quote_lines` en `invoice_lines` erven toegang via parent records.
+- `audit_logs` zijn security/admin-only en moeten later append-only via server-side routes worden gevuld.
+- `activity_logs` zijn functioneel en mogen niet automatisch als klantzichtbare tijdlijn worden gebruikt.
+- `leads` en salesdata blijven intern en zijn niet klantzichtbaar.
+- `client_portal_messages` en `client_portal_notifications` vereisen harde Customer A/B isolatie.
+- AI-drafts blijven intern totdat review/publicatie expliciet is goedgekeurd.
+- AI-context moet persoonsgegevens, betaaldata, provider IDs, storage paths en interne notities minimaliseren of maskeren.
+
+Status:
+
+- Conceptschema en RLS-plan voorbereid.
+- Geen SQL uitgevoerd.
+- Geen RLS live geactiveerd.
+- Geen productiegegevens gewijzigd.

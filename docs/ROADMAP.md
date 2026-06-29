@@ -721,3 +721,32 @@ Aanbevolen volgende stappen:
 2. Supabase testgebruikers en profile-koppeling in testomgeving bewijzen.
 3. Customer A/B isolation opnieuw testen met echte Auth users.
 4. Daarna pas een aparte fase plannen voor hard route guards en production Auth activation.
+
+## Fase 23 - Supabase Schema Draft & RLS Policy Plan
+
+Afgerond als ontwerp/readinessfase:
+
+- conceptschema per canonical en aanvullende productietabel uitgewerkt
+- ownershipmodel per tabel vastgelegd
+- roltoegang per tabel en per rol aangescherpt
+- RLS policy matrix uitgebreid met leads, CRM-taken, klantportaalberichten, notificaties, AI-drafts en audit logs
+- audit logging en AI/privacy-aanpak vastgelegd
+
+Nieuw document:
+
+- `SUPABASE_RLS_POLICY_PLAN.md`
+
+Nog niet uitgevoerd:
+
+- geen SQL
+- geen schemawijziging
+- geen productiegegevens
+- geen RLS live
+- geen API keys of externe services
+
+Aanbevolen volgende stappen:
+
+1. Review Fase 23 schema/RLS-plan.
+2. Vertaal het plan pas daarna naar een expliciete SQL patch/migration draft.
+3. Test de SQL uitsluitend in Supabase testomgeving.
+4. Herhaal Customer A/B isolation en audit/security checks voordat productie ooit wordt geraakt.

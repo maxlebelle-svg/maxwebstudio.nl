@@ -970,3 +970,28 @@ Bewust nog niet live:
 - Geen hard route guards standaard aangezet.
 - Geen RLS live geactiveerd.
 - Geen service role of secrets in frontend.
+
+## Fase 23 - Supabase Schema Draft & RLS Policy Plan
+
+Status: afgerond als schema/RLS-ontwerpfase zonder SQL, productieaanpassingen, secrets of runtimefeatures.
+
+Toegevoegd/bijgewerkt:
+
+- `docs/SUPABASE_RLS_POLICY_PLAN.md`
+- `docs/RLS_POLICY_MATRIX.md`
+- `docs/SECURITY.md`
+
+Resultaat:
+
+- Conceptschema beschreven voor `profiles`, `customers`, `websites`, `projects`, `quotes`, `quote_lines`, `invoices`, `invoice_lines`, `subscriptions`, `files`, `change_requests`, `leads`, `crm_tasks`, `client_portal_messages`, `client_portal_notifications`, `ai_drafts`, `ai_assistant_drafts` en `audit_logs`.
+- Per tabel zijn primaire velden, foreign keys, statusvelden, timestamps, soft-delete/archivering, ownership en roltoegang vastgelegd.
+- RLS-aanpak per rol is vastgelegd voor `super_admin`, `admin`, `sales`, `support`, `developer`, `customer` en `demo_user`.
+- Klantisolatie, audit logging en AI/privacy-risico's zijn expliciet beschreven.
+
+Bewust nog niet uitgevoerd:
+
+- Geen SQL uitgevoerd.
+- Geen Supabase schema aangepast.
+- Geen productiegegevens gewijzigd.
+- Geen RLS live geactiveerd.
+- Geen externe integraties of API keys toegevoegd.

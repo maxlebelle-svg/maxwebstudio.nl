@@ -2,11 +2,15 @@
 
 Status: gereed als ontwerpdocument, nog niet live uitgevoerd.
 
+Fase 23 aanvulling: het uitgebreidere schema- en RLS-plan staat in `SUPABASE_RLS_POLICY_PLAN.md`. Dat document voegt de nieuwere tabellen `leads`, `crm_tasks`, `client_portal_messages`, `client_portal_notifications`, `ai_drafts`, `ai_assistant_drafts` en `audit_logs` toe aan het productiebeleid.
+
 Deze matrix hoort bij de geconsolideerde Supabase-architectuur:
 
 `profiles -> customers -> websites -> projects -> quotes -> quote_lines -> invoices -> invoice_lines -> subscriptions`
 
 Ondersteunende tabellen: `files`, `change_requests`, `settings`, `demo_emails`, `activity_logs`, `import_logs`.
+
+Aanvullende Fase 21/23-tabellen: `leads`, `crm_tasks`, `client_portal_messages`, `client_portal_notifications`, `ai_drafts`, `ai_assistant_drafts`, `audit_logs`.
 
 Legacy tabellen zoals `customer_websites`, `customer_invoices` en `customer_subscriptions` zijn geen basis meer voor nieuwe RLS.
 
@@ -49,6 +53,13 @@ Legacy tabellen zoals `customer_websites`, `customer_invoices` en `customer_subs
 | `demo_emails` | alles | select/insert/update/delete | select/insert voor demo | geen | select | geen | demo-only select indien nodig | geen |
 | `activity_logs` | alles | select | geen standaard toegang | geen standaard toegang | select technical | geen | geen | geen |
 | `import_logs` | alles | select | geen | geen | select technical | geen | geen | geen |
+| `leads` | alles | select/insert/update/archive | select/insert/update | select beperkt | select technical | geen | demo-leads select | geen |
+| `crm_tasks` | alles | select/insert/update/archive | eigen sales/opvolgtaken | supporttaken | select technical | geen | demo-taken select | geen |
+| `client_portal_messages` | alles | select/insert/update | geen standaard toegang | select/insert/update gekoppeld aan support | geen standaard toegang | eigen berichten select/insert | demo-berichten select | geen |
+| `client_portal_notifications` | alles | select/insert/update | geen standaard toegang | select/update gekoppeld aan support | geen standaard toegang | eigen notificaties select/update read-status | demo-notificaties select | geen |
+| `ai_drafts` | alles | select/insert/update/archive | select beperkt | select beperkt | select/insert/update technical | geen standaard toegang | demo-drafts select | geen |
+| `ai_assistant_drafts` | alles | select/insert/update/archive | salesconcepten | supportconcepten | select/insert/update technical | geen | demo-drafts select | geen |
+| `audit_logs` | select/insert server-side | select | geen | geen | select technical subset | geen | geen | geen |
 
 ## Mutatiegrenzen
 
