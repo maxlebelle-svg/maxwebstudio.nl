@@ -3420,6 +3420,7 @@
             clientPortalTestService: await import("./src/services/clientPortalTestService.js"),
             activityLogService: await import("./src/services/activityLogService.js"),
             authService: await import("./src/services/authService.js"),
+            authReadinessService: await import("./src/services/authReadinessService.js"),
             authProfileService: await import("./src/services/authProfileService.js"),
             routeGuardService: await import("./src/services/routeGuardService.js"),
             accessControlTestService: await import("./src/services/accessControlTestService.js"),
@@ -3653,6 +3654,26 @@
             ["Auth hardening", summary.authHardening],
             ["Laatste test", summary.lastTest?.testedAt ? formatDate(summary.lastTest.testedAt) : "Nog niet getest"],
           ]);
+        }
+
+        function renderAuthProfilesFoundation(modules) {
+          const readiness = modules.authReadinessService.getAuthProfilesReadiness();
+          appendDeveloperCard("Auth & Profiles foundation", [
+            ["Status", readiness.status],
+            ["Live", readiness.live ? "Ja" : "Nee"],
+            ["Supabase Auth configured", readiness.supabaseAuthConfigured ? "Ja" : "Nog niet"],
+            ["Supabase Auth active", readiness.supabaseAuthActive ? "Ja" : "Nee"],
+            ["Demo login", readiness.demoLoginActive ? "Actief" : "Niet actief"],
+            ["Profiles", String(readiness.profileSummary.profileCount || 0)],
+            ["Prepared profiles", String(readiness.profileSummary.preparedProfiles || 0)],
+            ["Provider", readiness.authProvider],
+            ["Writes", readiness.writesEnabled ? "Actief" : "Geblokkeerd"],
+          ]);
+          appendDeveloperCard("Auth pagina-toegang", readiness.pages.map((page) => [
+            page.path,
+            `${page.requiredRolesLabel} - ${page.currentRouteGuard}`,
+          ]));
+          appendDeveloperCard("Auth blockers", readiness.blockers);
         }
 
         function renderClientPortalTestResult(result = {}) {
@@ -5355,6 +5376,7 @@
             renderSubscriptionDataSourceStatus(state.subscriptionSourceStatus);
             renderSubscriptionSupabaseReadiness(modules);
             renderClientPortalReadiness(modules);
+            renderAuthProfilesFoundation(modules);
             renderAiWebsiteWizardReadiness(modules);
             renderAiAdminAssistantReadiness(modules);
             renderSupabaseSqlAuditStatus();

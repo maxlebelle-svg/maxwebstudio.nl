@@ -943,3 +943,30 @@ Bewust niet uitgevoerd:
 - Geen API keys toegevoegd.
 - Geen OpenAI-, Mollie- of Resend-calls.
 - Geen runtimefunctionaliteit gewijzigd.
+
+## Fase 22 - Supabase Auth & Profiles Foundation
+
+Status: afgerond als voorbereiding op echte Supabase Auth/profiles zonder SQL, productiegegevens, secrets of live Auth-writes.
+
+Toegevoegd/bijgewerkt:
+
+- `public/src/services/authReadinessService.js`
+- `public/admin-dashboard.html`
+- `docs/AUTH_PROFILES_FOUNDATION.md`
+- `docs/AUTH.md`
+
+Resultaat:
+
+- Auth/profiles readiness is centraal beschikbaar als service.
+- Developer Mode toont een `Auth & Profiles foundation` kaart met providerstatus, profile-aantallen, demo-loginstatus, pagina-toegang en blockers.
+- Rollen zijn bevestigd: `super_admin`, `admin`, `sales`, `support`, `developer`, `customer` en `demo_user`.
+- Productiekoppeling is vastgelegd als `auth.users -> profiles -> customers`.
+- Pagina-toegang is vastgelegd voor login, admin-dashboard, klantportaal, Leadfinder/sales en Developer Mode.
+
+Bewust nog niet live:
+
+- Geen Supabase SQL uitgevoerd.
+- Geen production Auth-user writes.
+- Geen hard route guards standaard aangezet.
+- Geen RLS live geactiveerd.
+- Geen service role of secrets in frontend.

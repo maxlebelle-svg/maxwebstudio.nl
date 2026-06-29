@@ -696,3 +696,28 @@ Aanbevolen volgende stappen:
 2. Werk daarna het canonical schema/SQL-plan bij in een aparte expliciete fase.
 3. Valideer opnieuw in Supabase testomgeving voordat productie-RLS, Storage, Mollie, Resend of AI live gaan.
 4. Houd legacy `customer_*` tabellen uitgesloten van nieuwe productiefeatures.
+
+## Fase 22 - Supabase Auth & Profiles Foundation
+
+Afgerond als veilige Auth/profiles voorbereiding:
+
+- Auth-readiness service toegevoegd.
+- Developer Mode toont Auth & Profiles foundation status.
+- Rollen en pagina-toegang zijn bevestigd.
+- `auth.users -> profiles -> customers` is vastgelegd als productiekoppeling.
+- Demo-login blijft actief als lokale fallback.
+
+Nog niet live:
+
+- geen SQL
+- geen production Auth writes
+- geen hard route guards standaard aan
+- geen RLS live
+- geen secrets/API keys
+
+Aanbevolen volgende stappen:
+
+1. Auth/profiles readiness reviewen.
+2. Supabase testgebruikers en profile-koppeling in testomgeving bewijzen.
+3. Customer A/B isolation opnieuw testen met echte Auth users.
+4. Daarna pas een aparte fase plannen voor hard route guards en production Auth activation.

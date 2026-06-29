@@ -559,3 +559,24 @@ Securityregels vanaf deze fase:
 - Legacy `customer_websites`, `customer_invoices` en `customer_subscriptions` mogen niet opnieuw als basis voor nieuwe RLS of klantportaalfeatures worden gebruikt.
 - AI Website Wizard mag geen externe AI-provider, API key, databasewrite of automatische publicatie uitvoeren zonder aparte goedgekeurde fase.
 - Mollie live payments en Resend live-notificaties blijven geblokkeerd totdat testomgeving, env-vars, rollback en release approval zijn afgerond.
+
+## Fase 22 - Auth/profiles securitygrenzen
+
+Fase 22 bereidt Supabase Auth en profiles voor zonder live activatie.
+
+Securityregels:
+
+- `profiles.auth_user_id` wordt de brug naar `auth.users`.
+- `customers.profile_id` en `customers.auth_user_id` bepalen klantownership.
+- E-mailadres mag alleen helpen bij migratie/matching en mag niet de enige productie-autorisatie zijn.
+- Klanten mogen nooit via losse link of demo-session bij andere klantdata komen.
+- `demo_user` blijft strikt demo/local en mag geen productiedata lezen.
+- Hard route guards en RLS mogen pas live na testomgeving-evidence voor Auth, profiles en Customer A/B isolation.
+- Service role blijft uitsluitend server-side.
+
+Status:
+
+- Auth/profile readiness voorbereid.
+- Geen SQL uitgevoerd.
+- Geen productiegegevens gewijzigd.
+- Geen echte Supabase Auth writes uitgevoerd.

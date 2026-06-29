@@ -2,6 +2,13 @@
 
 Dit document beschrijft de authenticatiebasis voor het Max Web Studio klantenportaal.
 
+Actuele production-readiness aanvulling:
+
+- Fase 22 Auth & Profiles Foundation staat in `AUTH_PROFILES_FOUNDATION.md`.
+- Canonical Auth-lijn: `auth.users -> profiles -> customers`.
+- Nieuwe productiefeatures mogen niet meer op legacy `customer_*` authvelden gebaseerd worden.
+- Demo-login blijft actief totdat Supabase Auth, RLS en customer isolation in test en release-governance zijn goedgekeurd.
+
 ## Huidige Implementatie
 
 - `/public/login.html`: loginpagina met Supabase Auth.
@@ -38,6 +45,42 @@ Nooit in frontend gebruiken:
 - `SUPABASE_SERVICE_ROLE_KEY`
 
 Die blijft alleen server-side beschikbaar voor Netlify Functions.
+
+## Fase 22 - Auth & Profiles Foundation
+
+De voorbereidende Auth-laag is aangescherpt rond de canonical productielijn:
+
+- `profiles.auth_user_id -> auth.users.id`
+- `customers.profile_id -> profiles.id`
+- `customers.auth_user_id -> auth.users.id`
+
+Rollen:
+
+- `super_admin`
+- `admin`
+- `sales`
+- `support`
+- `developer`
+- `customer`
+- `demo_user`
+
+Pagina-toegang:
+
+- `/login.html`: publiek.
+- `/admin-dashboard.html`: `super_admin`, `admin`, `developer`, `sales`, `support`.
+- `/klantportaal.html`: `customer` en optioneel `admin`/`super_admin` voor support, altijd met customer ownership.
+- `/admin-dashboard.html#leadfinder`: `super_admin`, `admin`, `sales`.
+- `/admin-dashboard.html#instellingen`: `super_admin`, `admin`, `developer`.
+
+Developer Mode toont nu een Auth & Profiles foundation kaart met providerstatus, profile-aantallen, pagina-toegang en blockers.
+
+Nog niet live:
+
+- Geen SQL uitgevoerd.
+- Geen echte Supabase Auth writes.
+- Geen harde route guards standaard geactiveerd.
+- Geen productiegegevens gewijzigd.
+- Geen RLS live geactiveerd.
 
 ## Database
 
