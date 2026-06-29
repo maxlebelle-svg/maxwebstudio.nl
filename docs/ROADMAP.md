@@ -577,3 +577,34 @@ Aanbevolen volgende stappen:
 2. Supabase testomgeving opnieuw valideren voordat workflowdata naar productie gaat.
 3. Later een canonical `crm_tasks`/`activity_log` productielaag ontwerpen.
 4. Daarna pas Leadfinder, AI-acties en live automatiseringen op deze workflow aansluiten.
+
+## Fase 18 - Leadfinder Foundation & Sales Pipeline Readiness
+
+Afgerond als local/demo sales-pipeline foundation:
+
+- admin-dashboard bevat nu een Leadfinder-sectie
+- prospects kunnen handmatig worden geregistreerd
+- velden voor branche, regio, website-status, leadscore, belstatus en opvolgdatum zijn voorbereid
+- filters en zoekfunctie zijn toegevoegd
+- leads kunnen notities krijgen en belstatus wijzigen
+- leads kunnen een CRM Workflow opvolgtaak aanmaken
+- leads kunnen lokaal naar CRM-klantrecords worden geconverteerd
+
+Nieuwe localStorage voorbereiding:
+
+- `maxwebstudioLeadFinderLeads`
+
+Nog demo/local:
+
+- geen scraping
+- geen Google Maps API
+- geen externe leadbronnen
+- geen Supabase writes
+- geen AI lead scoring
+
+Aanbevolen volgende stappen:
+
+1. Leadfinder testen met realistische demo-prospects.
+2. Daarna bepalen welke salesstatussen en opvolgprocessen leidend worden.
+3. Later pas externe leadbronnen, AI lead scoring en sales automation toevoegen.
+4. Productie-koppeling pas ontwerpen na Supabase Auth/RLS en canonical CRM-validatie.

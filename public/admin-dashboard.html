@@ -28,6 +28,7 @@
           <a href="#dashboard">Overzicht</a>
           <a href="#workflow">Workflow</a>
           <span class="admin-nav-group">Sales</span>
+          <a href="#leadfinder">Leadfinder</a>
           <a href="#wijzigingsverzoeken">Leads</a>
           <a href="#klanten">CRM-klanten</a>
           <a href="#offertes">Offertes</a>
@@ -216,6 +217,79 @@
           </div>
 
           <div class="admin-table crm-workflow-table" id="crm-task-list" role="table" aria-label="CRM workflow taken" aria-live="polite"></div>
+        </section>
+
+        <section class="admin-section" id="leadfinder">
+          <div class="admin-section-heading">
+            <div>
+              <p class="section-kicker">Sales pipeline</p>
+              <h2>Leadfinder</h2>
+              <p class="admin-section-intro">Registreer potentiële klanten, beoordeel websitekansen en maak opvolging aan in de CRM Workflow. Dit is demo/local en gebruikt geen scraping of externe API's.</p>
+            </div>
+            <span class="admin-preview-badge">Geen scraping</span>
+          </div>
+
+          <div class="admin-grid workflow-metrics" id="leadfinder-metrics" aria-live="polite"></div>
+
+          <div class="leadfinder-grid">
+            <form class="admin-card admin-profile-form leadfinder-form" id="leadfinder-form">
+              <div class="admin-profile-form-heading">
+                <div>
+                  <strong>Lead registreren</strong>
+                  <span>Voeg handmatig een bedrijf toe aan de lokale sales pipeline.</span>
+                </div>
+              </div>
+              <div class="admin-profile-fields">
+                <label for="leadfinder-company">Bedrijfsnaam<input id="leadfinder-company" type="text" required /></label>
+                <label for="leadfinder-industry">Branche<input id="leadfinder-industry" type="text" placeholder="Bijv. bouwbedrijf, kapsalon of installatiebedrijf" /></label>
+                <label for="leadfinder-region">Plaats/regio<input id="leadfinder-region" type="text" /></label>
+                <label for="leadfinder-phone">Telefoon<input id="leadfinder-phone" type="tel" /></label>
+                <label for="leadfinder-email">E-mail<input id="leadfinder-email" type="email" /></label>
+                <label for="leadfinder-website">Website URL<input id="leadfinder-website" type="url" placeholder="https://..." /></label>
+                <label for="leadfinder-website-status">Website-status<select id="leadfinder-website-status"></select></label>
+                <label for="leadfinder-score">Leadscore<input id="leadfinder-score" type="number" min="0" max="100" value="70" /></label>
+                <label for="leadfinder-call-status">Belstatus<select id="leadfinder-call-status"></select></label>
+                <label for="leadfinder-follow-up">Opvolgdatum<input id="leadfinder-follow-up" type="date" /></label>
+                <label class="admin-profile-wide" for="leadfinder-source">Bron<input id="leadfinder-source" type="text" placeholder="Handmatig, netwerk, social, demo..." /></label>
+                <label class="admin-profile-wide" for="leadfinder-notes">Notities<textarea id="leadfinder-notes" placeholder="Waarom is dit een kans? Welke websiteproblemen zijn zichtbaar?"></textarea></label>
+              </div>
+              <div class="admin-profile-actions">
+                <button class="button primary" type="submit">Lead opslaan</button>
+                <button class="button secondary" id="leadfinder-reset" type="button">Formulier leegmaken</button>
+                <p class="admin-form-message" id="leadfinder-message" role="status"></p>
+              </div>
+            </form>
+
+            <article class="admin-card leadfinder-detail-card" id="leadfinder-detail">
+              <div class="admin-profile-form-heading">
+                <div>
+                  <strong>Leaddetail</strong>
+                  <span id="leadfinder-detail-subtitle">Selecteer een lead om opvolging te beheren.</span>
+                </div>
+                <mark class="status-badge status-planned" id="leadfinder-detail-state">Niet geselecteerd</mark>
+              </div>
+              <div class="settings-status-list" id="leadfinder-detail-list"></div>
+              <label class="admin-profile-wide" for="leadfinder-detail-note">Nieuwe notitie<textarea id="leadfinder-detail-note" placeholder="Korte belnotitie of opvolgafspraak"></textarea></label>
+              <div class="admin-profile-actions">
+                <select id="leadfinder-detail-call-status" aria-label="Belstatus wijzigen"></select>
+                <button class="button secondary" id="leadfinder-save-note" type="button" disabled>Notitie opslaan</button>
+                <button class="button secondary" id="leadfinder-create-task" type="button" disabled>Maak opvolgtaak</button>
+                <button class="button secondary" id="leadfinder-convert-customer" type="button" disabled>Converteren naar klant</button>
+                <button class="button secondary danger" id="leadfinder-delete" type="button" disabled>Verwijderen</button>
+              </div>
+            </article>
+          </div>
+
+          <div class="admin-filters leadfinder-filters" aria-label="Leadfinder filteren">
+            <label for="leadfinder-search">Zoeken<input id="leadfinder-search" type="search" placeholder="Bedrijf, branche, regio, notitie of website" /></label>
+            <label for="leadfinder-filter-website-status">Website-status<select id="leadfinder-filter-website-status"><option value="">Alle statussen</option></select></label>
+            <label for="leadfinder-filter-call-status">Belstatus<select id="leadfinder-filter-call-status"><option value="">Alle belstatussen</option></select></label>
+            <label for="leadfinder-filter-industry">Branche<input id="leadfinder-filter-industry" type="search" placeholder="Bijv. bouw" /></label>
+            <label for="leadfinder-filter-region">Regio<input id="leadfinder-filter-region" type="search" placeholder="Bijv. Breda" /></label>
+            <label for="leadfinder-filter-score">Score<select id="leadfinder-filter-score"><option value="">Alle scores</option></select></label>
+          </div>
+
+          <div class="admin-table leadfinder-table" id="leadfinder-list" role="table" aria-label="Leadfinder bedrijven" aria-live="polite"></div>
         </section>
 
         <section class="admin-section" id="klanten">
@@ -1306,6 +1380,7 @@
         const updateEndpoint = "/.netlify/functions/update-change-request-status";
         const adminTokenStorageKey = "mws_admin_token";
         const crmCustomersStorageKey = "maxwebstudioCrmCustomers";
+        const leadFinderStorageKey = "maxwebstudioLeadFinderLeads";
         const managedSitesStorageKey = "maxwebstudioManagedSites";
         const projectsStorageKey = "maxwebstudioProjects";
         const filesStorageKey = "maxwebstudioFiles";
@@ -1329,6 +1404,7 @@
         const managedLocalStorageKeys = [
           { key: "maxwebstudioLeads", label: "Leads", description: "Lokale leadregistratie vanuit demo-flow" },
           { key: "maxwebstudioLeadRequests", label: "Aanvragen", description: "Aanvraagformulier back-up uit publieke website" },
+          { key: leadFinderStorageKey, label: "Leadfinder", description: "Lokale salesprospects en belstatussen" },
           { key: "maxwebstudioCustomers", label: "Klanten fallback", description: "Klantportaal fallback-key voor klantprofielen" },
           { key: crmCustomersStorageKey, label: "CRM klanten", description: "Primaire lokale CRM-klanten" },
           { key: "maxwebstudioWebsites", label: "Websites fallback", description: "Fallback-key voor websitebeheer" },
@@ -14784,6 +14860,332 @@
       }
 
       initCrmWorkflow();
+    </script>
+    <script type="module">
+      import {
+        LEADFINDER_CALL_STATUSES,
+        LEADFINDER_SCORE_BUCKETS,
+        LEADFINDER_WEBSITE_STATUSES,
+        convertLeadFinderLeadToCustomer,
+        deleteLeadFinderLeadLocally,
+        ensureLeadFinderDemoData,
+        getLeadFinderLabel,
+        getLeadFinderSummary,
+        readLeadFinderLeads,
+        saveLeadFinderLeadLocally,
+        updateLeadFinderLeadLocally,
+      } from "./src/services/leadFinderService.js";
+      import { saveCrmTaskLocally } from "./src/services/crmWorkflowService.js";
+
+      const leadfinderElements = {
+        metrics: document.getElementById("leadfinder-metrics"),
+        form: document.getElementById("leadfinder-form"),
+        company: document.getElementById("leadfinder-company"),
+        industry: document.getElementById("leadfinder-industry"),
+        region: document.getElementById("leadfinder-region"),
+        phone: document.getElementById("leadfinder-phone"),
+        email: document.getElementById("leadfinder-email"),
+        website: document.getElementById("leadfinder-website"),
+        websiteStatus: document.getElementById("leadfinder-website-status"),
+        score: document.getElementById("leadfinder-score"),
+        callStatus: document.getElementById("leadfinder-call-status"),
+        followUp: document.getElementById("leadfinder-follow-up"),
+        source: document.getElementById("leadfinder-source"),
+        notes: document.getElementById("leadfinder-notes"),
+        reset: document.getElementById("leadfinder-reset"),
+        message: document.getElementById("leadfinder-message"),
+        search: document.getElementById("leadfinder-search"),
+        filterWebsiteStatus: document.getElementById("leadfinder-filter-website-status"),
+        filterCallStatus: document.getElementById("leadfinder-filter-call-status"),
+        filterIndustry: document.getElementById("leadfinder-filter-industry"),
+        filterRegion: document.getElementById("leadfinder-filter-region"),
+        filterScore: document.getElementById("leadfinder-filter-score"),
+        list: document.getElementById("leadfinder-list"),
+        detailSubtitle: document.getElementById("leadfinder-detail-subtitle"),
+        detailState: document.getElementById("leadfinder-detail-state"),
+        detailList: document.getElementById("leadfinder-detail-list"),
+        detailNote: document.getElementById("leadfinder-detail-note"),
+        detailCallStatus: document.getElementById("leadfinder-detail-call-status"),
+        saveNote: document.getElementById("leadfinder-save-note"),
+        createTask: document.getElementById("leadfinder-create-task"),
+        convertCustomer: document.getElementById("leadfinder-convert-customer"),
+        deleteLead: document.getElementById("leadfinder-delete"),
+      };
+
+      let selectedLeadFinderId = "";
+
+      function escapeHtml(value) {
+        return String(value || "").replace(/[&<>"']/g, (character) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#039;",
+        })[character]);
+      }
+
+      function fillSelect(select, options, placeholder, selected = "") {
+        if (!select) return;
+        select.innerHTML = `<option value="">${escapeHtml(placeholder)}</option>`;
+        options.forEach((option) => {
+          const element = document.createElement("option");
+          element.value = option.value;
+          element.textContent = option.label;
+          select.appendChild(element);
+        });
+        select.value = selected;
+      }
+
+      function setLeadfinderMessage(message, type = "success") {
+        if (!leadfinderElements.message) return;
+        leadfinderElements.message.textContent = message;
+        leadfinderElements.message.className = `admin-form-message ${type}`;
+      }
+
+      function renderLeadfinderMetrics(leads) {
+        if (!leadfinderElements.metrics) return;
+        const summary = getLeadFinderSummary(leads);
+        leadfinderElements.metrics.innerHTML = [
+          ["Prospects", summary.total, "Lokale leadfinder records"],
+          ["Hot leads", summary.hot, "Score 80 of hoger"],
+          ["Actie nodig", summary.actionNeeded, "Te bellen of opvolgen"],
+          ["Vandaag opvolgen", summary.due, "Opvolgdatum verlopen/vandaag"],
+        ].map(([label, value, caption]) => `
+          <article class="admin-card metric-card">
+            <span>${escapeHtml(label)}</span>
+            <strong>${escapeHtml(value)}</strong>
+            <small>${escapeHtml(caption)}</small>
+          </article>
+        `).join("");
+      }
+
+      function getFilteredLeadfinderLeads() {
+        const query = String(leadfinderElements.search?.value || "").trim().toLowerCase();
+        const websiteStatus = leadfinderElements.filterWebsiteStatus?.value || "";
+        const callStatus = leadfinderElements.filterCallStatus?.value || "";
+        const industry = String(leadfinderElements.filterIndustry?.value || "").trim().toLowerCase();
+        const region = String(leadfinderElements.filterRegion?.value || "").trim().toLowerCase();
+        const minScore = Number(leadfinderElements.filterScore?.value || 0);
+
+        return readLeadFinderLeads().filter((lead) => {
+          const haystack = [lead.companyName, lead.industry, lead.region, lead.phone, lead.email, lead.websiteUrl, lead.notes, lead.source].join(" ").toLowerCase();
+          return (!query || haystack.includes(query))
+            && (!websiteStatus || lead.websiteStatus === websiteStatus)
+            && (!callStatus || lead.callStatus === callStatus)
+            && (!industry || String(lead.industry).toLowerCase().includes(industry))
+            && (!region || String(lead.region).toLowerCase().includes(region))
+            && (!minScore || lead.leadScore >= minScore);
+        });
+      }
+
+      function selectedLeadFinderLead() {
+        return readLeadFinderLeads().find((lead) => lead.id === selectedLeadFinderId) || null;
+      }
+
+      function renderLeadfinderList() {
+        const allLeads = readLeadFinderLeads();
+        const leads = getFilteredLeadfinderLeads();
+        renderLeadfinderMetrics(allLeads);
+
+        if (!leadfinderElements.list) return;
+        if (!leads.length) {
+          leadfinderElements.list.innerHTML = `
+            <article class="admin-card request-card request-state-card">
+              <div>
+                <strong>Geen leadfinder resultaten</strong>
+                <span>Voeg een prospect toe of pas je filters aan.</span>
+              </div>
+            </article>
+          `;
+          renderLeadfinderDetail();
+          return;
+        }
+
+        leadfinderElements.list.innerHTML = `
+          <div class="admin-table-row admin-table-head" role="row">
+            <span>Bedrijf</span><span>Branche</span><span>Regio</span><span>Website-status</span><span>Score</span><span>Belstatus</span><span>Acties</span>
+          </div>
+          ${leads.map((lead) => `
+            <div class="admin-table-row" role="row" data-leadfinder-id="${escapeHtml(lead.id)}">
+              <div class="leadfinder-meta">
+                <strong>${escapeHtml(lead.companyName || "Naamloos bedrijf")}</strong>
+                <small>${escapeHtml(lead.websiteUrl || "Geen website-url")} · ${escapeHtml(lead.source || "handmatig")}</small>
+              </div>
+              <span>${escapeHtml(lead.industry || "-")}</span>
+              <span>${escapeHtml(lead.region || "-")}</span>
+              <mark class="status-badge status-planned">${escapeHtml(getLeadFinderLabel(LEADFINDER_WEBSITE_STATUSES, lead.websiteStatus))}</mark>
+              <strong>${escapeHtml(lead.leadScore)}</strong>
+              <mark class="status-badge status-active">${escapeHtml(getLeadFinderLabel(LEADFINDER_CALL_STATUSES, lead.callStatus))}</mark>
+              <div class="leadfinder-actions">
+                <button class="button secondary" type="button" data-leadfinder-action="view">Bekijk</button>
+                <button class="button secondary" type="button" data-leadfinder-action="task">Opvolgtaak</button>
+              </div>
+            </div>
+          `).join("")}
+        `;
+        renderLeadfinderDetail();
+      }
+
+      function renderLeadfinderDetail() {
+        const lead = selectedLeadFinderLead();
+        const hasLead = Boolean(lead);
+        if (leadfinderElements.detailSubtitle) {
+          leadfinderElements.detailSubtitle.textContent = hasLead ? `${lead.companyName} · ${lead.industry || "branche onbekend"}` : "Selecteer een lead om opvolging te beheren.";
+        }
+        if (leadfinderElements.detailState) {
+          leadfinderElements.detailState.textContent = hasLead ? getLeadFinderLabel(LEADFINDER_CALL_STATUSES, lead.callStatus) : "Niet geselecteerd";
+        }
+        if (leadfinderElements.detailList) {
+          leadfinderElements.detailList.innerHTML = hasLead ? [
+            ["Bedrijf", lead.companyName],
+            ["Branche", lead.industry || "-"],
+            ["Regio", lead.region || "-"],
+            ["Telefoon", lead.phone || "-"],
+            ["E-mail", lead.email || "-"],
+            ["Website", lead.websiteUrl || "Geen website"],
+            ["Website-status", getLeadFinderLabel(LEADFINDER_WEBSITE_STATUSES, lead.websiteStatus)],
+            ["Leadscore", `${lead.leadScore}/100`],
+            ["Opvolgdatum", lead.followUpDate || "-"],
+            ["Notities", lead.notes || "-"],
+            ["CRM klant", lead.convertedCustomerId || "Nog niet geconverteerd"],
+          ].map(([label, value]) => `<div><strong>${escapeHtml(label)}</strong><span>${escapeHtml(value)}</span></div>`).join("") : `
+            <div><strong>Geen lead geselecteerd</strong><span>Klik op Bekijk in de lijst.</span></div>
+          `;
+        }
+        if (leadfinderElements.detailCallStatus) leadfinderElements.detailCallStatus.value = lead?.callStatus || "";
+        [leadfinderElements.saveNote, leadfinderElements.createTask, leadfinderElements.convertCustomer, leadfinderElements.deleteLead, leadfinderElements.detailCallStatus].forEach((element) => {
+          if (element) element.disabled = !hasLead;
+        });
+      }
+
+      function resetLeadfinderForm() {
+        leadfinderElements.form?.reset();
+        if (leadfinderElements.websiteStatus) leadfinderElements.websiteStatus.value = "onbekend";
+        if (leadfinderElements.callStatus) leadfinderElements.callStatus.value = "nieuw";
+        if (leadfinderElements.score) leadfinderElements.score.value = "70";
+      }
+
+      function createWorkflowTaskForLead(lead) {
+        if (!lead) return null;
+        return saveCrmTaskLocally({
+          title: `Lead opvolgen: ${lead.companyName}`,
+          type: "lead",
+          status: "open",
+          priority: lead.leadScore >= 80 ? "hoog" : "normaal",
+          dueDate: lead.followUpDate || "",
+          leadId: lead.id,
+          notes: `Leadfinder lead (${lead.industry || "branche onbekend"}, ${lead.region || "regio onbekend"}). Website-status: ${getLeadFinderLabel(LEADFINDER_WEBSITE_STATUSES, lead.websiteStatus)}. ${lead.notes || ""}`.trim(),
+        });
+      }
+
+      function handleLeadfinderSubmit(event) {
+        event.preventDefault();
+        const companyName = leadfinderElements.company?.value.trim();
+        if (!companyName) {
+          setLeadfinderMessage("Vul een bedrijfsnaam in.", "error");
+          return;
+        }
+        const lead = saveLeadFinderLeadLocally({
+          companyName,
+          industry: leadfinderElements.industry?.value || "",
+          region: leadfinderElements.region?.value || "",
+          phone: leadfinderElements.phone?.value || "",
+          email: leadfinderElements.email?.value || "",
+          websiteUrl: leadfinderElements.website?.value || "",
+          websiteStatus: leadfinderElements.websiteStatus?.value || "onbekend",
+          leadScore: leadfinderElements.score?.value || 70,
+          callStatus: leadfinderElements.callStatus?.value || "nieuw",
+          followUpDate: leadfinderElements.followUp?.value || "",
+          source: leadfinderElements.source?.value || "handmatig",
+          notes: leadfinderElements.notes?.value || "",
+        });
+        selectedLeadFinderId = lead.id;
+        resetLeadfinderForm();
+        setLeadfinderMessage("Lead opgeslagen in de lokale sales pipeline.", "success");
+        renderLeadfinderList();
+      }
+
+      function handleLeadfinderListClick(event) {
+        const button = event.target.closest("[data-leadfinder-action]");
+        if (!button) return;
+        const row = button.closest("[data-leadfinder-id]");
+        const leadId = row?.dataset.leadfinderId;
+        const lead = readLeadFinderLeads().find((item) => item.id === leadId);
+        if (!lead) return;
+        selectedLeadFinderId = lead.id;
+        if (button.dataset.leadfinderAction === "task") {
+          createWorkflowTaskForLead(lead);
+          setLeadfinderMessage("Opvolgtaak aangemaakt in CRM Workflow.", "success");
+        }
+        renderLeadfinderList();
+      }
+
+      function saveLeadfinderDetailNote() {
+        const lead = selectedLeadFinderLead();
+        if (!lead) return;
+        const note = String(leadfinderElements.detailNote?.value || "").trim();
+        const callStatus = leadfinderElements.detailCallStatus?.value || lead.callStatus;
+        const notes = note ? `${lead.notes ? `${lead.notes}\n` : ""}${new Date().toISOString().slice(0, 10)}: ${note}` : lead.notes;
+        updateLeadFinderLeadLocally(lead.id, { notes, callStatus });
+        if (leadfinderElements.detailNote) leadfinderElements.detailNote.value = "";
+        setLeadfinderMessage("Leadnotitie en belstatus bijgewerkt.", "success");
+        renderLeadfinderList();
+      }
+
+      function convertSelectedLeadToCustomer() {
+        const lead = selectedLeadFinderLead();
+        if (!lead) return;
+        const result = convertLeadFinderLeadToCustomer(lead.id);
+        if (!result?.customer) {
+          setLeadfinderMessage("Lead kon niet worden geconverteerd.", "error");
+          return;
+        }
+        createWorkflowTaskForLead({ ...result.lead, followUpDate: "", notes: "Nieuwe CRM-klant aangemaakt vanuit Leadfinder. Plan intake/kwalificatie." });
+        setLeadfinderMessage(result.alreadyConverted ? "Lead was al gekoppeld aan een CRM-klant." : "Lead geconverteerd naar lokale CRM-klant.", "success");
+        renderLeadfinderList();
+      }
+
+      function deleteSelectedLead() {
+        const lead = selectedLeadFinderLead();
+        if (!lead || !window.confirm("Deze Leadfinder lead verwijderen?")) return;
+        deleteLeadFinderLeadLocally(lead.id);
+        selectedLeadFinderId = "";
+        setLeadfinderMessage("Lead verwijderd.", "success");
+        renderLeadfinderList();
+      }
+
+      function initLeadfinder() {
+        if (!leadfinderElements.form || !leadfinderElements.list) return;
+        fillSelect(leadfinderElements.websiteStatus, LEADFINDER_WEBSITE_STATUSES, "Kies website-status", "onbekend");
+        fillSelect(leadfinderElements.callStatus, LEADFINDER_CALL_STATUSES, "Kies belstatus", "nieuw");
+        fillSelect(leadfinderElements.filterWebsiteStatus, LEADFINDER_WEBSITE_STATUSES, "Alle statussen");
+        fillSelect(leadfinderElements.filterCallStatus, LEADFINDER_CALL_STATUSES, "Alle belstatussen");
+        fillSelect(leadfinderElements.filterScore, LEADFINDER_SCORE_BUCKETS, "Alle scores");
+        fillSelect(leadfinderElements.detailCallStatus, LEADFINDER_CALL_STATUSES, "Belstatus");
+        ensureLeadFinderDemoData();
+        renderLeadfinderList();
+
+        leadfinderElements.form.addEventListener("submit", handleLeadfinderSubmit);
+        leadfinderElements.reset?.addEventListener("click", () => {
+          resetLeadfinderForm();
+          setLeadfinderMessage("Formulier leeggemaakt.", "success");
+        });
+        [leadfinderElements.search, leadfinderElements.filterWebsiteStatus, leadfinderElements.filterCallStatus, leadfinderElements.filterIndustry, leadfinderElements.filterRegion, leadfinderElements.filterScore].forEach((element) => {
+          element?.addEventListener("input", renderLeadfinderList);
+          element?.addEventListener("change", renderLeadfinderList);
+        });
+        leadfinderElements.list.addEventListener("click", handleLeadfinderListClick);
+        leadfinderElements.saveNote?.addEventListener("click", saveLeadfinderDetailNote);
+        leadfinderElements.createTask?.addEventListener("click", () => {
+          createWorkflowTaskForLead(selectedLeadFinderLead());
+          setLeadfinderMessage("Opvolgtaak aangemaakt in CRM Workflow.", "success");
+          renderLeadfinderList();
+        });
+        leadfinderElements.convertCustomer?.addEventListener("click", convertSelectedLeadToCustomer);
+        leadfinderElements.deleteLead?.addEventListener("click", deleteSelectedLead);
+      }
+
+      initLeadfinder();
     </script>
   </body>
 </html>

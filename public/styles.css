@@ -7185,7 +7185,20 @@ h3 {
   align-items: start;
 }
 
+.leadfinder-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(360px, 0.75fr);
+  gap: 16px;
+  align-items: start;
+}
+
 .crm-readiness-card {
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+}
+
+.leadfinder-detail-card {
   display: grid;
   gap: 16px;
   padding: 22px;
@@ -7195,17 +7208,28 @@ h3 {
   grid-template-columns: minmax(180px, 1.35fr) minmax(110px, 0.7fr) minmax(120px, 0.8fr) minmax(140px, 0.9fr) minmax(140px, 0.9fr) minmax(190px, auto);
 }
 
+.leadfinder-table .admin-table-row {
+  grid-template-columns: minmax(170px, 1.2fr) minmax(120px, 0.8fr) minmax(120px, 0.8fr) minmax(130px, 0.8fr) minmax(100px, 0.6fr) minmax(120px, 0.8fr) minmax(150px, auto);
+}
+
 .crm-workflow-table .crm-task-meta {
   display: grid;
   gap: 4px;
 }
 
-.crm-workflow-table .crm-task-meta small {
+.crm-workflow-table .crm-task-meta small,
+.leadfinder-table .leadfinder-meta small {
   color: rgba(255, 255, 255, 0.55);
   font-weight: 800;
 }
 
-.crm-task-actions {
+.leadfinder-table .leadfinder-meta {
+  display: grid;
+  gap: 4px;
+}
+
+.crm-task-actions,
+.leadfinder-actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
@@ -8599,6 +8623,7 @@ h3 {
   .admin-crm-shell,
   .admin-crm-grid,
   .crm-workflow-grid,
+  .leadfinder-grid,
   .website-operations-grid,
   .project-management-grid,
   .file-management-grid,

@@ -1,6 +1,7 @@
 export const STORAGE_KEYS = Object.freeze({
   leads: "maxwebstudioLeads",
   leadRequests: "maxwebstudioLeadRequests",
+  leadFinderLeads: "maxwebstudioLeadFinderLeads",
   customers: "maxwebstudioCustomers",
   crmCustomers: "maxwebstudioCrmCustomers",
   websites: "maxwebstudioWebsites",
@@ -60,7 +61,7 @@ export const STORAGE_KEYS = Object.freeze({
 });
 
 export const MODULE_STORAGE_KEYS = Object.freeze({
-  leads: [STORAGE_KEYS.leads, STORAGE_KEYS.leadRequests],
+  leads: [STORAGE_KEYS.leads, STORAGE_KEYS.leadRequests, STORAGE_KEYS.leadFinderLeads],
   customers: [STORAGE_KEYS.crmCustomers, STORAGE_KEYS.customers],
   websites: [STORAGE_KEYS.managedSites, STORAGE_KEYS.websites],
   projects: [STORAGE_KEYS.projects],
@@ -79,6 +80,7 @@ export const MODULE_STORAGE_KEYS = Object.freeze({
 
 export const PRIMARY_MODULE_KEYS = Object.freeze({
   leads: STORAGE_KEYS.leads,
+  leadFinderLeads: STORAGE_KEYS.leadFinderLeads,
   customers: STORAGE_KEYS.crmCustomers,
   websites: STORAGE_KEYS.managedSites,
   projects: STORAGE_KEYS.projects,

@@ -828,3 +828,35 @@ Bewust nog demo/local/mock:
 - Geen Resend-, Mollie- of OpenAI-acties.
 - Geen nieuwe API keys.
 - Geen legacy `customer_*` productiefeatures.
+
+## Fase 18 - Leadfinder Foundation & Sales Pipeline Readiness
+
+Status: Leadfinder-basis afgerond als local/demo sales-pipeline zonder scraping, externe API's, Supabase SQL of productiegegevens.
+
+Bijgewerkt:
+
+- `public/admin-dashboard.html`
+- `public/styles.css`
+- `public/src/config/storageKeys.js`
+- `public/src/services/leadFinderService.js`
+- `docs/LEADFINDER.md`
+
+Resultaat:
+
+- Het admin-dashboard bevat nu een sectie `Leadfinder`.
+- Prospects kunnen lokaal worden geregistreerd met bedrijfsnaam, branche, regio, contactgegevens, website-status, leadscore, belstatus, opvolgdatum, bron en notities.
+- Leadfinder heeft filters op zoekterm, website-status, belstatus, branche, regio en minimale score.
+- Demo-leads worden lokaal voorbereid als de Leadfinder nog leeg is.
+- Leads kunnen notities en belstatusupdates krijgen.
+- Leads kunnen een opvolgtaak aanmaken in de CRM Workflow via `maxwebstudioCrmTasks`.
+- Leads kunnen lokaal worden geconverteerd naar CRM-klantrecords in `maxwebstudioCrmCustomers` en fallback `maxwebstudioCustomers`.
+- Nieuwe localStorage key: `maxwebstudioLeadFinderLeads`.
+
+Bewust nog demo/local/mock:
+
+- Geen scraping of Google Maps API.
+- Geen externe leadbronnen.
+- Geen live Supabase writes.
+- Geen productiegegevens.
+- Geen OpenAI-calls of automatische leadscore.
+- Geen Resend/Mollie acties.
