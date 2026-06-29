@@ -643,3 +643,28 @@ Status:
 - Geen SQL uitgevoerd.
 - Geen Supabase CLI gebruikt.
 - Geen productiegegevens gewijzigd.
+
+## Fase 27 - Max AI Security Boundaries
+
+Fase 27 legt vast dat Max AI een centrale Experience Layer wordt, maar niet boven de securitygrenzen staat.
+
+Securityregels:
+
+- AI-provider calls mogen alleen server-side plaatsvinden.
+- AI-provider keys mogen nooit in frontendcode staan.
+- AI-context mag pas echte klantdata bevatten nadat Auth/RLS en Customer A/B isolation bewezen zijn.
+- Bezoekers krijgen alleen publieke context.
+- Klanten krijgen alleen eigen customer-context.
+- Demo users krijgen alleen demo data.
+- AI mag geen factuurbedragen, betaalstatussen, Mollie data, gebruikers, rollen, RLS policies, Supabase schema, deployment of productieconfiguratie direct wijzigen.
+- AI mag geen secrets, signed URLs, reset tokens, API keys of volledige providerpayloads in prompts of logs opnemen.
+- AI-output voor offertes, facturen, betalingen, publicatie en klantcommunicatie vereist menselijke of server-side review.
+- Prompt/output logging moet metadata vastleggen zonder onnodige persoonsgegevens.
+- Privacy/consent, masking, rate limiting en audit logging zijn verplicht voor live AI.
+
+Status:
+
+- Max AI roadmap en module map zijn vastgelegd.
+- Geen OpenAI-calls uitgevoerd.
+- Geen API keys toegevoegd.
+- Geen runtime AI-integratie geactiveerd.

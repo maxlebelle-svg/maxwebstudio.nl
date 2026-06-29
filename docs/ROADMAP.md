@@ -828,3 +828,43 @@ Aanbevolen volgende stappen:
 2. Voer daarna pas expliciet een echte staging/test execution fase uit.
 3. Leg alle staging-resultaten vast in `TEST_RESULTS.md`.
 4. Houd productie op NO-GO tot alle kritieke checks groen zijn.
+
+## Fase 27 - Master Roadmap v2.0 & Max AI Experience Architecture
+
+Afgerond als strategische architectuurfase:
+
+- Max AI is vastgelegd als centrale Experience Layer van het volledige platform.
+- Master Roadmap v2.0 is toegevoegd.
+- User journey en module map zijn toegevoegd.
+- AI securitygrenzen zijn aangescherpt.
+
+Nieuwe strategische documenten:
+
+- `MASTER_ROADMAP_V2.md`
+- `MAX_AI_ARCHITECTURE.md`
+- `MAX_AI_USER_JOURNEY.md`
+- `MAX_AI_MODULE_MAP.md`
+
+Roadmapbesluit:
+
+1. Eerst Supabase staging execution en evidence afronden.
+2. Daarna Supabase read/write lagen gecontroleerd activeren.
+3. Daarna Max AI als public intake MVP zichtbaar maken zonder echte AI-provider.
+4. Daarna pas server-side AI adapter en OpenAI MVP.
+5. Websitegenerator, voice AI, sales agent en marketing AI blijven V3.
+
+Nog niet uitgevoerd:
+
+- geen codewijziging in runtime
+- geen SQL
+- geen OpenAI
+- geen Supabase wijziging
+- geen API keys
+- geen externe integraties
+
+Aanbevolen volgende stappen:
+
+1. Review Master Roadmap v2.0.
+2. Bevestig dat Max AI de centrale productlaag wordt.
+3. Hervat daarna Fase 28: Supabase staging execution met evidence.
+4. Bouw pas daarna zichtbare Max AI intake MVP.

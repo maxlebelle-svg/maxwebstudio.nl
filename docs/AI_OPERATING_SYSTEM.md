@@ -118,3 +118,22 @@ Belangrijk voor toekomstige Codex-sessies:
 - Geen OpenAI-calls, logo-generatie, contentgeneratie of automatische websitebouw zonder aparte expliciete fase.
 - AI-output moet later aansluiten op de canonical productielijn: `customers`, `websites`, `projects`, `quotes`, `invoices`, `subscriptions` en `files`.
 - Codex mag geen AI-provider keys toevoegen of gebruiken zonder expliciete toestemming van Max.
+
+## Fase 27 - Max AI Experience Architecture
+
+Max AI is vanaf Fase 27 de centrale Experience Layer van het Max Webstudio-platform.
+
+Nieuwe bronbestanden:
+
+- `docs/MASTER_ROADMAP_V2.md`
+- `docs/MAX_AI_ARCHITECTURE.md`
+- `docs/MAX_AI_USER_JOURNEY.md`
+- `docs/MAX_AI_MODULE_MAP.md`
+
+Belangrijk voor toekomstige Codex-sessies:
+
+- Behandel Max AI niet als losse chatbot.
+- Ontwerp nieuwe AI-functies altijd als onderdeel van de volledige klantreis: bezoeker, intake, CRM, project, klantportaal en opvolging.
+- Bouw eerst veilige context, toestemming, logging, masking en server-side adapters voordat echte AI-provider calls worden toegevoegd.
+- Max AI mag in MVP concepten maken en acties voorstellen, maar mag geen facturen, betalingen, gebruikers, rollen, RLS, Supabase schema, deployment of productieconfiguratie direct wijzigen.
+- OpenAI, andere AI-providers en API keys blijven geblokkeerd tot een expliciete goedgekeurde fase.

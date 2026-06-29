@@ -1079,3 +1079,39 @@ Bewust niet uitgevoerd:
 - Geen Supabase calls gedaan.
 - Geen test- of productieproject aangepast.
 - Geen API keys of secrets toegevoegd.
+
+## Fase 27 - Master Roadmap v2.0 & Max AI Experience Architecture
+
+Status: afgerond als strategische architectuurfase zonder codewijziging in runtime, SQL, OpenAI, Supabase wijzigingen, API keys of productieacties.
+
+Aangemaakt/bijgewerkt:
+
+- `docs/MASTER_ROADMAP_V2.md`
+- `docs/MAX_AI_ARCHITECTURE.md`
+- `docs/MAX_AI_USER_JOURNEY.md`
+- `docs/MAX_AI_MODULE_MAP.md`
+- `docs/PROJECT_STATE.md`
+- `docs/ROADMAP.md`
+- `docs/AI_OPERATING_SYSTEM.md`
+- `docs/SECURITY.md`
+
+Kernbesluit:
+
+- Max AI wordt niet behandeld als losse chatbot, maar als centrale Experience Layer over website, aanvraagflow, AI Website Wizard, CRM, Leadfinder, projecten, offertes, facturen, klantportaal, wijzigingsverzoeken en toekomstige websitegenerator.
+- Max AI mag in MVP vooral begeleiden, samenvatten en concepten maken.
+- Kritieke acties zoals factuurbedragen, betaalstatussen, gebruikers/rollen, Supabase schema, RLS, deployment en productiegegevens blijven buiten directe AI-writes.
+- Echte AI-providerintegratie blijft geblokkeerd tot Auth/RLS, Customer A/B isolation, server-side AI adapter, logging, rate limiting, masking en consent zijn bewezen.
+
+MVP/V2/V3:
+
+- MVP: veilige intake, AI Website Wizard, CRM/klantportaal aansluiting, Supabase foundation en conceptoutput.
+- V2: OpenAI via server-side adapter, SEO AI, CRM AI, Lead AI, Project AI en klantcommunicatieconcepten.
+- V3: websitegenerator, logo-generator, voice AI, AI sales agent, marketing AI en support AI.
+
+Bewust niet uitgevoerd:
+
+- Geen runtimecode aangepast.
+- Geen SQL uitgevoerd.
+- Geen OpenAI-calls gedaan.
+- Geen Supabase omgeving gewijzigd.
+- Geen API keys of secrets toegevoegd.
