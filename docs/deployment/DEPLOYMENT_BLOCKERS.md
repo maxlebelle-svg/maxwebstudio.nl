@@ -224,6 +224,38 @@ Belangrijk:
 - Geen blocker is automatisch approved.
 - Release blijft `NO-GO` totdat de vereiste handmatige approvals en backup-evidence zijn vastgelegd.
 
+## Fase 14.5 - Release Candidate Approval Pack
+
+Status: `NO-GO / AWAITING MANUAL APPROVAL`
+
+Nieuw centraal document:
+
+- `docs/deployment/RELEASE_CANDIDATE_CHECKLIST.md`
+
+Doel:
+
+- Alle resterende blockers omzetten naar concrete approval/evidence-items.
+- Een finale checklist maken voordat er een GO/NO-GO releasebesluit genomen wordt.
+- Geen productie wijzigen en geen approvals faken.
+
+Approval/evidence-items:
+
+| Item | Status | Evidence / document | Volgende actie |
+| --- | --- | --- | --- |
+| Backup evidence | pending | `RELEASE_CANDIDATE_CHECKLIST.md` beschrijft benodigde metadata | Backup maken/aanwijzen en verificatie vastleggen |
+| Env-var confirmation | in_review | Test/prod variabelenlijst vastgelegd zonder waarden | Eigenaar bevestigt scheiding test/productie |
+| Auth approval | in_review | Run `phase-14-4b-final-1782737698429` | Handmatig reviewen en approve/reject vastleggen |
+| RLS review approval | pending | RLS policies, service grants en recursion patch beschikbaar | Technische review vastleggen |
+| RLS testlog approval | in_review | RLS exact-id tests PASS | Handmatig reviewen en approve/reject vastleggen |
+| Customer isolation approval | in_review | A/B isolation PASS op 10/10 canonical tabellen | Handmatig reviewen en approve/reject vastleggen |
+| Rollback approval | pending | `ROLLBACK_PLAN.md` + RC checklist | Owner approval vastleggen |
+| Storage review | in_review | Private bucket/upload/signed URL/public-blocking PASS | Productie bucketstrategie reviewen |
+| Mollie readiness | pending | Nog geen live/testmodus evidence in deze RC | Testen of bewust `not_applicable` maken |
+| Resend readiness | pending | Nog geen live/testmail evidence in deze RC | Testen of bewust `not_applicable` maken |
+| Netlify Functions runtime | pending | Syntax PASS, runtime calls niet in deze RC bewezen | Runtime test of bewust `not_applicable` maken |
+
+Release blijft `NO-GO` totdat alle vereiste blockers `approved` of `not_applicable` zijn.
+
 ## Bewijsregels
 
 - Geen secrets in evidence.

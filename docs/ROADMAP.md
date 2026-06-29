@@ -348,3 +348,31 @@ Niet live:
 Volgende logische stap:
 
 - Testproject en test-env-vars door Max klaarzetten, daarna Fase 14.4B uitvoeren voor echte Supabase schema/Auth/RLS/Storage validatie.
+
+### 14.5 - Release Candidate Approval Pack
+
+Afgerond als release-governance voorbereiding:
+
+- finale release candidate checklist toegevoegd
+- ontbrekende approvals concreet gemaakt
+- backup-evidence requirements vastgelegd
+- test/productie env-var confirmation requirements vastgelegd
+- rollback approval requirements vastgelegd
+- storage review requirements vastgelegd
+- release decision 14.5 geëxporteerd als Markdown en JSON
+
+Niet live:
+
+- geen productie deploy
+- geen productie databasewijziging
+- geen echte klantdata
+- geen nieuwe features
+- geen approvals automatisch gezet
+
+Status:
+
+- `NO-GO / AWAITING MANUAL APPROVAL`
+
+Volgende logische stap:
+
+- handmatige evidence/approvals invullen en daarna pas een finale GO/NO-GO releasebeslissing nemen.

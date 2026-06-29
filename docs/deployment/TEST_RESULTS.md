@@ -295,6 +295,28 @@ Conclusie:
 - Storage werkt voor private bucket, upload, signed URL en public-blocking.
 - Release blijft `NO-GO` totdat deployment blockers handmatig zijn gereviewd en approved.
 
+## Fase 14.5 Release Candidate Approval Pack
+
+Status: `NO-GO / AWAITING MANUAL APPROVAL`
+
+Uitgevoerd als release-governance voorbereiding. Productie is niet aangepast, er is geen productie-SQL uitgevoerd, er is geen echte klantdata gebruikt en er zijn geen nieuwe features gebouwd.
+
+| Testnaam | Stappen | Verwacht resultaat | Werkelijk resultaat | Status | Evidence / notities |
+| --- | --- | --- | --- | --- | --- |
+| Finale RC checklist | Centrale checklist maken voor resterende approvals/evidence | Checklist bestaat en wijzigt niets aan productie | `docs/deployment/RELEASE_CANDIDATE_CHECKLIST.md` toegevoegd | PASS | Governance-only |
+| Manual approvals inventaris | Ontbrekende approvals vastleggen | Open approvals zijn concreet | Backup, env-vars, Auth, RLS, klantisolatie, rollback, storage en integrations vastgelegd | PASS | Geen approvals gefaket |
+| Backup evidence requirements | Vastleggen welke backup-evidence nodig is | Backupmetadata bekend zonder klantdata/secrets | Backupnaam, datum, locatie, verificatie, stable commit/deploy beschreven | PASS | Evidence zelf blijft pending |
+| Env-var confirmation requirements | Test/prod env-var namen vastleggen zonder waarden | Geen secrets in docs | Test- en productievariabelen benoemd zonder waarden | PASS | Handmatige bevestiging blijft nodig |
+| Rollback approval requirements | Rollback approvalcriteria vastleggen | Approvalroute duidelijk | Owner, datum, frontend/database/integratie rollbackcriteria vastgelegd | PASS | Approval zelf blijft pending |
+| Storage review requirements | Storage reviewcriteria vastleggen | Private bucket/signed URL reviewpad duidelijk | Private buckets, signed URLs, service-role server-side en bucket-isolatiecriteria vastgelegd | PASS | Review zelf blijft pending |
+| Release decision export | Nieuwe RC release decision JSON/Markdown genereren | NO-GO export bestaat | `RELEASE_DECISION_2026-06-29-14-5.md` en `.json` toegevoegd | PASS | Status blijft NO-GO |
+
+Conclusie:
+
+- Release candidate approval pack is voorbereid.
+- Alle resterende NO-GO punten zijn omgezet naar concrete evidence/approval-items.
+- Status blijft `NO-GO` totdat approvals echt zijn ingevuld.
+
 Rollback:
 
 - Herstel de helperfuncties uit `supabase/rls-policies.sql`.

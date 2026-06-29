@@ -565,3 +565,28 @@ Reden:
 
 - De technische Supabase testvalidatie is geslaagd.
 - Handmatige approvals, backup-evidence, env-var bevestiging, rollback approval en storage review ontbreken nog.
+
+## Fase 14.5 - Release Candidate Approval Pack
+
+Status: voorbereid als release-governance fase. Productie is niet aangepast, er is geen productie-SQL uitgevoerd, er is geen echte klantdata gebruikt en er zijn geen nieuwe features gebouwd.
+
+Toegevoegd:
+
+- `docs/deployment/RELEASE_CANDIDATE_CHECKLIST.md`
+- `docs/deployment/RELEASE_DECISION_2026-06-29-14-5.md`
+- `docs/deployment/RELEASE_DECISION_2026-06-29-14-5.json`
+
+Bijgewerkt:
+
+- `docs/deployment/TEST_RESULTS.md`
+- `docs/deployment/DEPLOYMENT_BLOCKERS.md`
+
+Resultaat:
+
+- Alle resterende NO-GO punten zijn vertaald naar concrete approval/evidence-items.
+- Backup-evidence, env-var bevestiging, Auth/RLS/customer-isolation approvals, rollback approval en storage review zijn expliciet gemaakt.
+- Mollie, Resend en runtime function readiness staan als pending of bewust later `not_applicable` te maken.
+
+Status blijft:
+
+- `NO-GO / AWAITING MANUAL APPROVAL`
