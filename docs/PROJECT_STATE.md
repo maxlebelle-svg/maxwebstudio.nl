@@ -533,3 +533,35 @@ Nieuwe blocker:
 Status blijft:
 
 - `NO-GO / BLOCKED`
+
+## Fase 14.4B final rerun - Supabase testomgeving na RLS recursion patch
+
+Status: uitgevoerd op het Supabase testproject. Productie is niet aangepast en er is geen echte klantdata gebruikt.
+
+Resultaten:
+
+- `supabase/rls-recursion-patch.sql` is door de gebruiker succesvol uitgevoerd op het testproject.
+- De eerdere `403 permission denied` op `public.profiles` blijft opgelost.
+- De eerdere `500 stack depth limit exceeded` is verdwenen.
+- Auth testusers Customer A/B konden worden aangemaakt en inloggen.
+- Canonical testrecords konden worden geplaatst.
+- Customer A ziet uitsluitend eigen records.
+- Customer B ziet uitsluitend eigen records.
+- Cross-customer reads geven 0 rijen.
+- Anonymous reads geven 0 rijen.
+- Storage blijft PASS voor private bucket, upload, signed URL en public-blocking.
+
+Evidence:
+
+- Run: `phase-14-4b-final-1782737698429`
+- Zie `docs/deployment/TEST_RESULTS.md`.
+- Zie `docs/deployment/RELEASE_DECISION_2026-06-29-14-4b-final.md`.
+
+Status blijft:
+
+- `NO-GO / AWAITING MANUAL APPROVAL`
+
+Reden:
+
+- De technische Supabase testvalidatie is geslaagd.
+- Handmatige approvals, backup-evidence, env-var bevestiging, rollback approval en storage review ontbreken nog.

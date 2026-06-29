@@ -26,6 +26,19 @@ Evidence run:
 
 - `phase-14-4b-final-1782737698429`
 
+Geteste tabellen:
+
+- `profiles`
+- `customers`
+- `websites`
+- `projects`
+- `files`
+- `quotes`
+- `quote_lines`
+- `invoices`
+- `invoice_lines`
+- `subscriptions`
+
 ## Waarom Nog NO-GO
 
 De technische test is geslaagd, maar release blijft `NO-GO` omdat deployment-governance nog handmatige approvals vereist.
@@ -40,6 +53,13 @@ Open voor release:
 - Rollbackplan moet handmatig worden approved.
 - Storage-config moet handmatig worden gereviewd.
 
+## Productie
+
+- Productie is niet aangepast.
+- Er is geen productie-SQL uitgevoerd.
+- Er is geen echte klantdata gebruikt.
+- Er zijn geen secrets opgeslagen.
+
 ## Next Actions
 
 1. Review de evidence in `TEST_RESULTS.md`.
@@ -47,5 +67,3 @@ Open voor release:
 3. Voeg backup-evidence toe.
 4. Bevestig env-var scheiding test/productie.
 5. Houd release `NO-GO` totdat alle blockers `approved` of `not_applicable` zijn.
-
-Er is geen productie geraakt en er zijn geen secrets opgeslagen.

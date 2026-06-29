@@ -83,9 +83,9 @@ Belangrijkste technische blocker:
 
 Geen blocker is automatisch approved.
 
-## Fase 14.4D - RLS recursion patch voorbereid
+## Fase 14.4D - RLS recursion patch
 
-Status: `PATCH PREPARED / NOT EXECUTED`
+Status: `PATCH EXECUTED ON TEST / VALIDATED`
 
 Patchbestand:
 
@@ -108,12 +108,12 @@ Rollback:
 - Herstel helperfunctie-definities uit `supabase/rls-policies.sql`.
 - Herhaal RLS/customer-isolation tests.
 
-Volgende actie:
+Uitgevoerd:
 
-1. Review `supabase/rls-recursion-patch.sql`.
-2. Voer de patch alleen uit op het Supabase testproject.
-3. Herhaal Fase 14.4B exact-id RLS/customer-isolation tests.
-4. Zet blockers pas in review/approved na echte PASS evidence.
+1. `supabase/rls-recursion-patch.sql` is door de gebruiker uitgevoerd op het Supabase testproject.
+2. Fase 14.4B exact-id RLS/customer-isolation tests zijn herhaald.
+3. Customer A/B isolation is technisch PASS in run `phase-14-4b-final-1782737698429`.
+4. Blockers blijven in review totdat handmatige approval is vastgelegd.
 
 ## Fase 14.4C - Permission patch voorbereid
 
@@ -174,6 +174,55 @@ Open blockers:
 | `env_vars_verified` | in_review | `.env.local` testflags actief en gitignored | Handmatig bevestigen dat project werkelijk test is |
 
 Geen blocker is automatisch approved.
+
+## Fase 14.4B final rerun - Evidence na RLS recursion patch
+
+Status: `NO-GO / AWAITING MANUAL APPROVAL`
+
+Uitgevoerd nadat `supabase/rls-recursion-patch.sql` succesvol op het Supabase testproject is uitgevoerd.
+
+Verbeterd:
+
+- De eerdere `403 permission denied for table profiles` blijft opgelost.
+- De eerdere `500 stack depth limit exceeded` is verdwenen.
+- Auth Admin API kan testgebruikers aanmaken.
+- Customer A/B kunnen inloggen.
+- Canonical testrecords konden worden geplaatst.
+- RLS exact-id reads werken zonder recursie.
+- Customer A ziet uitsluitend eigen records.
+- Customer B ziet uitsluitend eigen records.
+- Cross-customer access geeft 0 rijen.
+- Anonymous access geeft 0 rijen.
+- Storage private bucket/upload/signed URL/public-blocking blijft PASS.
+
+Evidence:
+
+- Run: `phase-14-4b-final-1782737698429`
+- Tabellen: `profiles`, `customers`, `websites`, `projects`, `files`, `quotes`, `quote_lines`, `invoices`, `invoice_lines`, `subscriptions`
+- Resultaat per tabel:
+  - Customer A own: 1 rij
+  - Customer A cross: 0 rijen
+  - Customer B own: 1 rij
+  - Customer B cross: 0 rijen
+  - Anonymous: 0 rijen
+
+Open blockers:
+
+| Blocker | Status | Evidence | Volgende actie |
+| --- | --- | --- | --- |
+| `env_vars_verified` | in_review | `.env.local` aanwezig, testflags actief en gitignored | Eigenaar bevestigt handmatig dat de URL/project id naar het testproject wijzen |
+| `auth_test_completed` | in_review | Auth users created + login/session PASS in run `phase-14-4b-final-1782737698429` | Handmatige review/approval toevoegen |
+| `rls_test_log_completed` | in_review | RLS exact-id reads PASS; geen `stack depth limit exceeded` meer | Handmatige review/approval toevoegen |
+| `customer_isolation_test_completed` | in_review | Customer A/B isolation PASS op 10/10 canonical tabellen | Handmatige review/approval toevoegen |
+| Storage evidence | in_review | Private bucket/upload/signed URL/public-blocking PASS | Handmatig reviewen of bucketconfig past bij productieplan |
+| `rollback_plan_approved` | pending | Rollbackplan bestaat, maar approval ontbreekt | Eigenaar reviewt en keurt rollbackplan goed |
+| `backup_confirmed` | pending | Geen nieuwe backup-evidence in deze run | Backup-evidence toevoegen voor production readiness |
+
+Belangrijk:
+
+- Deze technische tests geven sterke release-evidence.
+- Geen blocker is automatisch approved.
+- Release blijft `NO-GO` totdat de vereiste handmatige approvals en backup-evidence zijn vastgelegd.
 
 ## Bewijsregels
 

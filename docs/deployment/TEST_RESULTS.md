@@ -27,14 +27,14 @@ Scope: Fase 14.4 Supabase Test Environment Validation, zonder productie, zonder 
 | Deployment readiness | PASS | 2026-06-29 | Codex | `getTestEnvironmentStatus`, status NOT READY, GO/NO-GO BLOCKED | Verwacht resultaat: eerlijk NO-GO |
 | Security readiness | PASS | 2026-06-29 | Codex | `getSecurityReadinessSummary`, liveSafe=false, decision=No-Go | Verwacht resultaat: niet live |
 | Release decision export | PASS | 2026-06-29 | Codex | `exportReleaseDecisionJson`, `getReleaseDecisionMarkdown` | JSON en Markdown genereren lokaal |
-| Schema | BLOCKED | 2026-06-29 | Codex | Geen SQL uitgevoerd | Vereist echte Supabase testomgeving |
-| Auth | BLOCKED | 2026-06-29 | Codex | Geen Supabase Auth live/testproject geactiveerd | Vereist testusers/profiles in Supabase testomgeving |
-| RLS | BLOCKED | 2026-06-29 | Codex | Geen RLS SQL uitgevoerd | Vereist testproject en handmatige RLS-test |
-| Storage | BLOCKED | 2026-06-29 | Codex | Geen bucket aangemaakt of getest | Vereist private bucket test |
+| Schema | PASS | 2026-06-29 | Codex | Testproject schema door gebruiker uitgevoerd | Alleen Supabase testproject; geen productie |
+| Auth | PASS | 2026-06-29 | Codex | Run `phase-14-4b-final-1782737698429` | Customer A/B testusers aangemaakt en login/session PASS |
+| RLS | PASS | 2026-06-29 | Codex | Run `phase-14-4b-final-1782737698429` | RLS-recursie opgelost; exact-id A/B-isolatie PASS op canonical tabellen |
+| Storage | PASS | 2026-06-29 | Codex | Bucket `maxwebstudio-test-evidence` | Private bucket, upload, signed URL en public-blocking PASS |
 | Functions | PASS | 2026-06-29 | Codex | `node --check functions/*.js`, 24 files checked | Alleen syntax/readiness; runtime env test blijft blocked |
 | Mollie | BLOCKED | 2026-06-29 | Codex | Mollie functions syntax OK via functions check | Echte testmodus/webhook niet uitgevoerd |
 | Resend | BLOCKED | 2026-06-29 | Codex | Resend functions syntax OK via functions check | Echte mailtest/env test niet uitgevoerd |
-| Go/No-Go | BLOCKED | 2026-06-29 | Codex | Deployment blockers missen echte evidence/approvals | Status blijft terecht NO-GO |
+| Go/No-Go | BLOCKED | 2026-06-29 | Codex | Technische Supabase evidence PASS; handmatige approvals ontbreken | Status blijft terecht NO-GO tot blockers approved zijn |
 
 ## Fase 14.4 Supabase testomgeving-validatie
 
@@ -155,7 +155,7 @@ Nodige vervolgstap:
 
 ## Fase 14.4C Supabase RLS permission patch
 
-Status: `PATCH PREPARED / NOT EXECUTED`
+Status: `PATCH EXECUTED ON TEST / VALIDATED`
 
 Probleem uit 14.4B:
 
@@ -258,6 +258,43 @@ Impact:
 - Laat bestaande customer ownership policies intact.
 - Voegt geen brede bypass policies toe.
 
+## Fase 14.4B final rerun na RLS recursion patch
+
+Status: `PASS / AWAITING MANUAL APPROVAL`
+
+Uitgevoerd op het aparte Supabase testproject nadat `supabase/rls-recursion-patch.sql` door de gebruiker succesvol op het testproject is uitgevoerd. Productie is niet aangepast en er is geen echte klantdata gebruikt.
+
+Evidence run:
+
+- Volledige final rerun: `phase-14-4b-final-1782737698429`
+
+| Testnaam | Stappen | Verwacht resultaat | Werkelijk resultaat | Status | Evidence / notities |
+| --- | --- | --- | --- | --- | --- |
+| `.env.local` testconfig | Lokale env-config controleren zonder waarden te tonen | Test-env aanwezig, gitignored en testflags actief | `SUPABASE_URL`, anon key en service role key aanwezig; `APP_ENV=test`, `APP_ENVIRONMENT=test`; `.env.local` staat in `.gitignore` | PASS | Geen secrets gelogd of opgeslagen |
+| Auth testusers aanmaken | Customer A en Customer B aanmaken via Auth Admin API | 2 testusers aangemaakt | 2 testusers aangemaakt | PASS | Alleen synthetische testusers; geen wachtwoorden gelogd |
+| Auth login/session | Customer A en Customer B inloggen via Supabase Auth | Beide krijgen een sessie | `loginA=true`, `loginB=true` | PASS | Auth werkt na RLS-recursiepatch |
+| Canonical testrecords plaatsen | Profiles/customers/websites/projects/files/quotes/quote_lines/invoices/invoice_lines/subscriptions plaatsen | 2 records per module | 2 records per canonical module geplaatst | PASS | Service role grants blijven werken |
+| Stack depth regression | Exact-id reads uitvoeren na patch | Geen `stack depth limit exceeded` meer | Geen 500 responses en geen stack depth errors op alle geteste tabellen | PASS | `noStackDepthErrors=true` |
+| Customer A own access | Customer A leest eigen records per canonical tabel | Per tabel 1 rij zichtbaar | 1 rij zichtbaar voor eigen records op 10/10 tabellen | PASS | `profiles`, `customers`, `websites`, `projects`, `files`, `quotes`, `quote_lines`, `invoices`, `invoice_lines`, `subscriptions` |
+| Customer A cross access | Customer A probeert Customer B records te lezen | 0 rijen zichtbaar | 0 rijen zichtbaar op 10/10 tabellen | PASS | Cross-customer access geblokkeerd door RLS |
+| Customer B own access | Customer B leest eigen records per canonical tabel | Per tabel 1 rij zichtbaar | 1 rij zichtbaar voor eigen records op 10/10 tabellen | PASS | A/B-isolatie werkt beide kanten op |
+| Customer B cross access | Customer B probeert Customer A records te lezen | 0 rijen zichtbaar | 0 rijen zichtbaar op 10/10 tabellen | PASS | Cross-customer access geblokkeerd door RLS |
+| Anonymous DB access | Anonymous exact-id reads op Customer A records | 0 rijen, 401 of 403 zonder server error | 200 responses met 0 rijen op 10/10 tabellen | PASS | Geen klantdata zichtbaar voor anonymous |
+| Storage private bucket | Bucket `maxwebstudio-test-evidence` hergebruiken | Bucket bereikbaar en private | Bucket check status 400 door bestaand bucket-hergebruik, behandeld als OK | PASS | Bucket bestond al in testproject |
+| Storage upload | Testobject server-side uploaden | Upload lukt | Upload status 200 | PASS | Service role alleen server-side gebruikt |
+| Storage signed URL | Tijdelijke signed URL maken | Signed URL wordt gemaakt | Signed URL status 200 | PASS | Geen URL of secret opgeslagen |
+| Storage public endpoint | Publieke endpoint direct openen | Private object niet publiek bereikbaar | Public endpoint status 400 | PASS | Private toegang geblokkeerd |
+
+Conclusie:
+
+- De eerdere `403 permission denied` op `public.profiles` blijft opgelost.
+- De eerdere `500 stack depth limit exceeded` is verdwenen.
+- Auth werkt.
+- RLS werkt zonder recursie.
+- Customer A/B isolation is bewezen op de canonical tabellen.
+- Storage werkt voor private bucket, upload, signed URL en public-blocking.
+- Release blijft `NO-GO` totdat deployment blockers handmatig zijn gereviewd en approved.
+
 Rollback:
 
 - Herstel de helperfuncties uit `supabase/rls-policies.sql`.
@@ -265,10 +302,10 @@ Rollback:
 
 Belangrijk:
 
-- Deze patch is nog niet uitgevoerd.
-- Eerst handmatig reviewen.
-- Daarna alleen uitvoeren op het Supabase testproject.
-- Daarna opnieuw RLS/customer-isolation testen.
+- Deze patch is alleen op het Supabase testproject uitgevoerd.
+- Productie is niet aangepast.
+- De patch is gevalideerd via de final rerun hierboven.
+- Handmatige release-approval blijft vereist voordat productie overwogen mag worden.
 
 ## Fase 14.3 lokale rooktest
 
