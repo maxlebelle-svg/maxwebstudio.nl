@@ -355,3 +355,17 @@ Voordat Auth live mag:
 - route guards mogen pas hard wanneer RLS en preflight pass zijn
 
 Deployment status blijft `NO-GO` zolang Auth-testresultaten ontbreken.
+
+## Fase 13.6 - Auth blocker readiness
+
+De Auth blocker `auth_test_completed` kan nu handmatig worden bijgehouden in Developer Mode.
+
+Benodigde evidence:
+
+- testdatum
+- geteste rollen
+- profile/customer link resultaat
+- route guard soft/hard bevindingen
+- open issues
+
+De checklist staat in `/docs/deployment/AUTH_TEST_CHECKLIST.md`. Zolang deze blocker niet approved/not_applicable is, blijft deployment `NO-GO`.

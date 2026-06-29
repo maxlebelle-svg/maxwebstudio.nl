@@ -219,3 +219,25 @@ Niet live:
 Volgende logische stap:
 
 - Deployment bundle reviewen, testomgeving volgens de bundle opbouwen en pas daarna Go/No-Go opnieuw beoordelen.
+
+### 13.6 - Resolve Deployment Blockers Readiness
+
+Afgerond als voorbereiding:
+
+- deployment blocker model
+- localStorage readiness-status onder `maxwebstudioDeploymentBlockers`
+- handmatige evidence/notitievelden
+- Developer Mode blockeracties
+- environment variables checklist
+- auth test checklist
+- customer isolation checklist
+
+Niet live:
+
+- geen SQL uitgevoerd
+- geen productie aangepast
+- geen blockers automatisch approved
+
+Volgende logische stap:
+
+- blockers handmatig met echte evidence invullen tijdens testomgeving-uitvoering.

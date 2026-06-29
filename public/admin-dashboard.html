@@ -3081,6 +3081,7 @@
             accessControlTestService: await import("./src/services/accessControlTestService.js"),
             securityReadinessService: await import("./src/services/securityReadinessService.js"),
             deploymentReadinessService: await import("./src/services/deploymentReadinessService.js"),
+            deploymentBlockerService: await import("./src/services/deploymentBlockerService.js"),
           };
           return state.developerModules;
         }
@@ -4404,9 +4405,14 @@
 
         function renderProductionDeployment(modules) {
           const readiness = modules.deploymentReadinessService.getDeploymentReadiness();
+          const blockerStatus = readiness.blockerStatus || {};
           appendDeveloperCard("Production Deployment", [
             ["Go/No-Go", readiness.goNoGo.decision],
-            ["Blockers", String(readiness.blockers.length)],
+            ["Blockers totaal", String(blockerStatus.total || readiness.blockers.length)],
+            ["Pending", String(blockerStatus.pending || 0)],
+            ["In review", String(blockerStatus.inReview || 0)],
+            ["Approved", String(blockerStatus.approved || 0)],
+            ["Rejected", String(blockerStatus.rejected || 0)],
             ["Documenten", String(readiness.checklist.documents.length)],
             ["Laatste check", readiness.generatedAt ? formatDate(readiness.generatedAt) : "-"],
           ]);
@@ -4414,6 +4420,62 @@
             area.label,
             `${area.status} - ${area.reason}`,
           ]));
+          renderDeploymentBlockerManager(modules);
+        }
+
+        function evidenceSummary(blocker = {}) {
+          const evidence = blocker.evidence ? `Evidence: ${blocker.evidence}` : "Evidence ontbreekt";
+          const notes = blocker.notes ? `Notities: ${blocker.notes}` : "Geen notities";
+          const approved = blocker.approvedBy ? `Approved by: ${blocker.approvedBy}` : "";
+          return [evidence, notes, approved].filter(Boolean).join(" | ");
+        }
+
+        function renderDeploymentBlockerManager(modules) {
+          const blockers = modules.deploymentBlockerService.getDeploymentBlockers();
+          const card = document.createElement("article");
+          card.className = "admin-card request-card";
+          card.append(createCell("Deployment blockers", "strong"));
+          blockers.forEach((blocker) => {
+            const row = document.createElement("div");
+            row.className = "settings-card-heading";
+            const info = document.createElement("div");
+            const title = document.createElement("strong");
+            const meta = document.createElement("span");
+            title.textContent = `${blocker.title} (${blocker.status})`;
+            meta.textContent = `${blocker.description} - ${evidenceSummary(blocker)}`;
+            info.append(title, meta);
+            const actions = document.createElement("div");
+            actions.className = "settings-actions";
+            const inReview = document.createElement("button");
+            inReview.className = "button secondary";
+            inReview.type = "button";
+            inReview.textContent = "Markeer in review";
+            inReview.addEventListener("click", () => updateDeploymentBlockerHandler(blocker.id, "in_review"));
+            const approve = document.createElement("button");
+            approve.className = "button secondary";
+            approve.type = "button";
+            approve.textContent = "Markeer approved";
+            approve.addEventListener("click", () => updateDeploymentBlockerHandler(blocker.id, "approved"));
+            const reject = document.createElement("button");
+            reject.className = "button secondary";
+            reject.type = "button";
+            reject.textContent = "Markeer rejected";
+            reject.addEventListener("click", () => updateDeploymentBlockerHandler(blocker.id, "rejected"));
+            const evidence = document.createElement("button");
+            evidence.className = "button secondary";
+            evidence.type = "button";
+            evidence.textContent = "Voeg evidence/notitie toe";
+            evidence.addEventListener("click", () => updateDeploymentBlockerEvidenceHandler(blocker.id));
+            const reset = document.createElement("button");
+            reset.className = "button secondary";
+            reset.type = "button";
+            reset.textContent = "Reset";
+            reset.addEventListener("click", () => resetDeploymentBlockerHandler(blocker.id));
+            actions.append(inReview, approve, reject, evidence, reset);
+            row.append(info, actions);
+            card.append(row);
+          });
+          developerToolsOutput.append(card);
         }
 
         function renderDeploymentChecklist(checklist = {}) {
@@ -4429,8 +4491,8 @@
 
         function renderDeploymentBlockers(blockers = []) {
           appendDeveloperCard("Deployment blockers", blockers.map((blocker) => [
-            `${blocker.severity.toUpperCase()} - ${blocker.label}`,
-            blocker.id,
+            `${(blocker.severity || "high").toUpperCase()} - ${blocker.label}`,
+            `${blocker.id}${blocker.status ? ` - ${blocker.status}` : ""}`,
           ]));
         }
 
@@ -5038,6 +5100,52 @@
             },
           });
           setSettingsMessage("SQL bundle referentie getoond. Er is geen SQL uitgevoerd.", "success");
+        }
+
+        async function updateDeploymentBlockerHandler(blockerId, status) {
+          try {
+            if (["approved", "rejected"].includes(status) && !window.confirm(`Weet je zeker dat je deze blocker op ${status} wilt zetten?`)) return;
+            const evidence = {};
+            if (status === "approved") {
+              evidence.approvedBy = window.prompt("Approved by (geen secrets):", "") || "";
+            }
+            const modules = await loadDeveloperModules();
+            modules.deploymentBlockerService.updateBlockerStatus(blockerId, status, evidence);
+            await renderDeveloperToolsSummary();
+            setSettingsMessage(`Deployment blocker bijgewerkt naar ${status}.`, "success");
+          } catch (error) {
+            console.error("Deployment blocker status update failed", error);
+            setSettingsMessage(error.message || "Deployment blocker kon niet worden bijgewerkt.", "error");
+          }
+        }
+
+        async function updateDeploymentBlockerEvidenceHandler(blockerId) {
+          try {
+            const modules = await loadDeveloperModules();
+            const blocker = modules.deploymentBlockerService.getDeploymentBlockers().find((item) => item.id === blockerId);
+            const evidence = window.prompt("Evidence/notitie toevoegen (geen secrets):", blocker?.evidence || "");
+            if (evidence === null) return;
+            const notes = window.prompt("Aanvullende notities (geen secrets):", blocker?.notes || "");
+            modules.deploymentBlockerService.updateBlockerStatus(blockerId, blocker?.status || "pending", { evidence, notes: notes || "" });
+            await renderDeveloperToolsSummary();
+            setSettingsMessage("Evidence/notitie opgeslagen in lokale readiness-status.", "success");
+          } catch (error) {
+            console.error("Deployment blocker evidence update failed", error);
+            setSettingsMessage(error.message || "Evidence kon niet worden opgeslagen.", "error");
+          }
+        }
+
+        async function resetDeploymentBlockerHandler(blockerId) {
+          try {
+            if (!window.confirm("Deze blocker resetten naar pending?")) return;
+            const modules = await loadDeveloperModules();
+            modules.deploymentBlockerService.resetBlockerStatus(blockerId);
+            await renderDeveloperToolsSummary();
+            setSettingsMessage("Deployment blocker gereset.", "success");
+          } catch (error) {
+            console.error("Deployment blocker reset failed", error);
+            setSettingsMessage(error.message || "Deployment blocker kon niet worden gereset.", "error");
+          }
         }
 
         async function updateAccessMode(mode) {

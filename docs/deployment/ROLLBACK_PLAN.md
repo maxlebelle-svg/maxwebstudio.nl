@@ -18,6 +18,7 @@ Status: procedure. Geen rollback SQL.
 - Netlify deploy rollback beschikbaar
 - lijst met uitgevoerde SQL-stappen
 - testlog en incidentnotities
+- expliciete approval op blocker `rollback_plan_approved`
 
 ## Rollback stappen
 
@@ -45,3 +46,7 @@ Status: procedure. Geen rollback SQL.
 - Resend delivery logs controleren
 - Supabase logs exporteren
 - nieuw testplan maken voordat opnieuw live wordt gegaan
+
+## Approval
+
+Rollback approval wordt niet automatisch gezet. Leg approvedBy, datum en opmerkingen vast via Developer Mode of deploymentnotities.

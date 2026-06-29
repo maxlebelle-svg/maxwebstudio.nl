@@ -1,3 +1,5 @@
+import { getBlockingIssues as getDeploymentBlockerIssues, getDeploymentBlockers, getDeploymentGoNoGoStatus, getResolvedBlockers } from "./deploymentBlockerService.js";
+
 const DEPLOYMENT_AREAS = Object.freeze([
   { key: "schema", label: "Schema", status: "Ready", reason: "Canonical schema is gedocumenteerd." },
   { key: "profiles", label: "Profiles", status: "Ready", reason: "Profile foundation is voorbereid." },
@@ -30,18 +32,10 @@ const DEPLOYMENT_DOCUMENTS = Object.freeze([
   "docs/deployment/SQL_BUNDLE.md",
   "docs/deployment/PRODUCTION_CHECKLIST.md",
   "docs/deployment/ROLLBACK_PLAN.md",
-]);
-
-const BLOCKING_ISSUES = Object.freeze([
-  { id: "backup-missing", label: "Geen backup bevestigd", severity: "high" },
-  { id: "rls-review-missing", label: "Geen RLS review/testapproval", severity: "high" },
-  { id: "testlog-missing", label: "Geen RLS/Supabase testlog", severity: "high" },
-  { id: "auth-test-missing", label: "Geen Auth testresultaat", severity: "high" },
-  { id: "customer-isolation-missing", label: "Geen klantisolatie-test", severity: "critical" },
-  { id: "rollback-not-approved", label: "Rollbackplan nog niet expliciet goedgekeurd", severity: "high" },
-  { id: "legacy-tables-active", label: "Legacy customer_* tabellen nog actief in live-flow", severity: "high" },
-  { id: "legacy-risk", label: "Legacy customer_* scripts mogen niet blind uitgevoerd worden", severity: "medium" },
-  { id: "env-vars-unverified", label: "Environment variables nog niet productie-gecontroleerd", severity: "high" },
+  "docs/deployment/DEPLOYMENT_BLOCKERS.md",
+  "docs/deployment/ENVIRONMENT_VARIABLES_CHECKLIST.md",
+  "docs/deployment/AUTH_TEST_CHECKLIST.md",
+  "docs/deployment/CUSTOMER_ISOLATION_CHECKLIST.md",
 ]);
 
 const WARNINGS = Object.freeze([
@@ -68,12 +62,16 @@ export function getDeploymentChecklist() {
       "Resend test pass",
       "Storage test pass",
       "Rollbackplan goedgekeurd",
+      "Deployment blockers approved/not_applicable",
+      "Environment variables checklist ingevuld zonder secrets",
+      "Auth test checklist ingevuld",
+      "Customer isolation checklist ingevuld",
     ],
   };
 }
 
 export function getBlockingIssues() {
-  return [...BLOCKING_ISSUES];
+  return getDeploymentBlockerIssues();
 }
 
 export function getWarnings() {
@@ -81,26 +79,48 @@ export function getWarnings() {
 }
 
 export function getGoNoGo() {
+  const blockerStatus = getDeploymentGoNoGoStatus();
   const blockers = getBlockingIssues();
   return {
-    decision: blockers.length ? "NO-GO" : "GO",
+    decision: blockerStatus.decision,
     blockers,
-    reason: blockers.length
-      ? "Production deployment blijft geblokkeerd tot alle handmatige bewijzen en testresultaten aanwezig zijn."
-      : "Alle blockers zijn opgelost.",
+    summary: blockerStatus,
+    reason: blockerStatus.reason,
   };
 }
 
 export function getDeploymentReadiness() {
   const checklist = getDeploymentChecklist();
   const goNoGo = getGoNoGo();
+  const blockerStatus = getDeploymentGoNoGoStatus();
   return {
     generatedAt: new Date().toISOString(),
     status: goNoGo.decision,
     checklist,
     blockers: goNoGo.blockers,
+    blockerStatus,
+    blockerEvidence: getBlockerEvidenceSummary(),
     warnings: getWarnings(),
     goNoGo,
+  };
+}
+
+export function getBlockerEvidenceSummary() {
+  return {
+    blockers: getDeploymentBlockers().map((blocker) => ({
+      id: blocker.id,
+      title: blocker.title,
+      status: blocker.status,
+      hasEvidence: Boolean(blocker.evidence),
+      hasNotes: Boolean(blocker.notes),
+      approvedBy: blocker.approvedBy || "",
+      approvedAt: blocker.approvedAt || "",
+      updatedAt: blocker.updatedAt || "",
+      evidenceSummary: blocker.evidence ? blocker.evidence.slice(0, 180) : "",
+      notesSummary: blocker.notes ? blocker.notes.slice(0, 180) : "",
+    })),
+    resolvedCount: getResolvedBlockers().length,
+    pendingCount: getDeploymentBlockerIssues().length,
   };
 }
 
@@ -110,4 +130,5 @@ export const deploymentReadinessService = {
   getBlockingIssues,
   getWarnings,
   getGoNoGo,
+  getBlockerEvidenceSummary,
 };

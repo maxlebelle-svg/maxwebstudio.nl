@@ -430,3 +430,24 @@ De deployment validator geeft `NO-GO` zolang kritieke blockers openstaan:
 - environment variables niet gecontroleerd
 
 Er zijn geen secrets toegevoegd en er is geen SQL uitgevoerd.
+
+## Fase 13.6 - Deployment blocker readiness
+
+Deployment blockers zijn nu expliciet gemaakt en lokaal bij te houden via Developer Mode.
+
+Securityregels:
+
+- evidence mag geen secrets bevatten
+- approvals worden niet automatisch gezet
+- approved/rejected vraagt bevestiging
+- GO blijft geblokkeerd zolang één blocker pending, in_review of rejected is
+- localStorage key: `maxwebstudioDeploymentBlockers`
+
+Nieuwe checklists:
+
+- `DEPLOYMENT_BLOCKERS.md`
+- `ENVIRONMENT_VARIABLES_CHECKLIST.md`
+- `AUTH_TEST_CHECKLIST.md`
+- `CUSTOMER_ISOLATION_CHECKLIST.md`
+
+Er is geen productieomgeving aangepast.

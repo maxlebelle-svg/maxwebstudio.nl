@@ -355,3 +355,28 @@ Toegevoegd:
 Developer Mode toont nu `Production Deployment` met module-statussen, checklist, blockers, rollbackreferentie en SQL bundle-referentie.
 
 Go/No-Go status blijft `NO-GO` zolang blockers openstaan zoals ontbrekende backup, RLS review, testlog, Auth test, klantisolatie en env-var controle.
+
+## Fase 13.6 - Resolve Deployment Blockers Readiness
+
+Status: afgerond als blocker-readiness systeem. Er is geen SQL uitgevoerd en er is geen productieomgeving aangepast.
+
+Toegevoegd:
+
+- `/public/src/services/deploymentBlockerService.js`
+- localStorage key `maxwebstudioDeploymentBlockers`
+- `/docs/deployment/DEPLOYMENT_BLOCKERS.md`
+- `/docs/deployment/ENVIRONMENT_VARIABLES_CHECKLIST.md`
+- `/docs/deployment/AUTH_TEST_CHECKLIST.md`
+- `/docs/deployment/CUSTOMER_ISOLATION_CHECKLIST.md`
+
+Bijgewerkt:
+
+- `deploymentReadinessService` gebruikt nu de handmatige blockerstatussen voor GO/NO-GO.
+- Developer Mode toont per deployment blocker status, evidence, notities en acties.
+- `PRODUCTION_CHECKLIST.md`, `README.md` en `ROLLBACK_PLAN.md` verwijzen naar blocker approvals.
+
+Belangrijk:
+
+- Alle blockers starten als `pending`.
+- Codex zet niets automatisch op approved.
+- GO kan pas wanneer elke blocker `approved` of `not_applicable` is.

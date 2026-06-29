@@ -30,6 +30,17 @@ Doel: één centrale routekaart voor het opbouwen van een Supabase testomgeving 
 - Geen service role key in frontend.
 - Geen Go zonder backup, rollbackplan en preflight.
 
+## Blocker readiness
+
+Voordat deployment naar `GO` mag, moeten alle blockers uit `DEPLOYMENT_BLOCKERS.md` handmatig op `approved` of `not_applicable` staan.
+
+Extra checklists:
+
+- `ENVIRONMENT_VARIABLES_CHECKLIST.md`
+- `AUTH_TEST_CHECKLIST.md`
+- `CUSTOMER_ISOLATION_CHECKLIST.md`
+- `PRODUCTION_CHECKLIST.md`
+
 ## Belangrijkste referenties
 
 - `docs/SUPABASE_SQL_INDEX.md`
@@ -37,3 +48,4 @@ Doel: één centrale routekaart voor het opbouwen van een Supabase testomgeving 
 - `docs/RLS_PREFLIGHT_CHECKLIST.md`
 - `docs/RLS_TEST_LOG_TEMPLATE.md`
 - `docs/deployment/ROLLBACK_PLAN.md`
+- `docs/deployment/DEPLOYMENT_BLOCKERS.md`

@@ -508,3 +508,17 @@ Het klantportaal is onderdeel van de production checklist:
 - storage downloads veilig via signed URLs
 
 De deployment validator blijft `NO-GO` totdat klantisolatie en klantportaaltests handmatig zijn vastgelegd.
+
+## Fase 13.6 - Klantportaal isolatieblocker
+
+De blocker `customer_isolation_test_completed` borgt dat klantportaaldata pas live mag wanneer isolatie bewezen is.
+
+Benodigde evidence:
+
+- Customer A ziet alleen A
+- Customer B ziet alleen B
+- demo-user ziet alleen demo
+- anonymous ziet geen klantdata
+- klantportaal mismatch toont geen andere klantdata
+
+De checklist staat in `/docs/deployment/CUSTOMER_ISOLATION_CHECKLIST.md`.

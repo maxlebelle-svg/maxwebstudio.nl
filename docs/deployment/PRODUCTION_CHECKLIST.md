@@ -8,6 +8,7 @@ Status: No-Go totdat alle punten zijn afgevinkt.
 - [ ] Git schoon.
 - [ ] Deployment branch/commit bevestigd.
 - [ ] Environment variables gecontroleerd.
+- [ ] Deployment blockers reviewed.
 
 ## Database
 
@@ -20,7 +21,9 @@ Status: No-Go totdat alle punten zijn afgevinkt.
 
 - [ ] RLS getest in testomgeving.
 - [ ] Auth getest.
+- [ ] Auth test checklist ingevuld.
 - [ ] Customer A/B isolatie getest.
+- [ ] Customer isolation checklist ingevuld.
 - [ ] Demo-user getest.
 - [ ] Anonymous block getest.
 - [ ] Route guards gecontroleerd.
@@ -47,5 +50,7 @@ Status: No-Go totdat alle punten zijn afgevinkt.
 
 - [ ] Testlog ingevuld.
 - [ ] Rollbackplan klaar.
+- [ ] Rollbackplan expliciet approved.
+- [ ] Deployment blockers approved/not_applicable.
 - [ ] Execution window gepland.
 - [ ] Go expliciet gegeven.
