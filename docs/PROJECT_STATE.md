@@ -1306,4 +1306,23 @@ Bewust niet uitgevoerd:
 
 Volgende stap:
 
-- Stagingdatabase resetten/nieuwe testbranch gebruiken of een gerichte schema-drift patch maken.
+- Geen schema-drift patch maken.
+- Gebruik `docs/deployment/STAGING_RESET_PLAN.md`.
+- Reset staging of maak een nieuwe schone testbranch na expliciete approval.
+- Herhaal daarna Fase 28 vanaf `001_schema_tables.sql`.
+
+## Fase 28 - Staging Reset Plan
+
+Status: `READY_FOR_MANUAL_APPROVAL`
+
+Er is een resetplan toegevoegd voor de Supabase staging/testdatabase.
+
+Besluit:
+
+- De schema drift in staging wordt niet opgelost met een compatibiliteitspatch.
+- Staging moet de canonical architectuur schoon bewijzen.
+- Testdata mag pas verwijderd worden na expliciete approval.
+
+Document:
+
+- `docs/deployment/STAGING_RESET_PLAN.md`

@@ -1017,6 +1017,20 @@ Blocker:
 
 Volgende actie:
 
-1. Kies staging reset/nieuwe testbranch of schema-drift patch.
-2. Herhaal Fase 28.
-3. Pas daarna Fase 28.2: GO/NO-GO voor datalaag.
+1. Geen schema-drift patch maken.
+2. Volg `docs/deployment/STAGING_RESET_PLAN.md`.
+3. Reset staging of maak een nieuwe schone testbranch na expliciete approval.
+4. Herhaal Fase 28 vanaf `001_schema_tables.sql`.
+5. Pas daarna Fase 28.2: GO/NO-GO voor datalaag.
+
+### Staging resetplan
+
+Uitkomst:
+
+- Staging reset/nieuwe testbranch is gekozen als voorkeursroute boven drift patches.
+- Resetplan documenteert data-impact, export/evidence, resetroute, validatie en rollbackrelatie.
+- Fase 28 blijft `NO-GO / BLOCKED` tot handmatige resetapproval en een schone rerun.
+
+Nieuw document:
+
+- `deployment/STAGING_RESET_PLAN.md`

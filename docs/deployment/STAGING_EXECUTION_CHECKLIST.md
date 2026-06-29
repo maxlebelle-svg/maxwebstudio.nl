@@ -12,6 +12,8 @@ Status: Fase 25 checklist. Geen SQL uitvoeren vanuit dit document.
 - [ ] Service role key alleen server-side/setup.
 - [ ] Migration drafts gereviewd.
 - [ ] Rollbackprocedure gelezen.
+- [ ] Staging resetplan gelezen indien eerdere schema drift is gevonden.
+- [ ] Staging reset of nieuwe testbranch expliciet goedgekeurd indien nodig.
 - [ ] Reviewer/approver vastgelegd.
 
 ## SQL Draft Execution
@@ -70,4 +72,3 @@ Status: Fase 25 checklist. Geen SQL uitvoeren vanuit dit document.
 - [ ] Release decision bijgewerkt.
 - [ ] Customer isolation evidence toegevoegd.
 - [ ] Reviewer/approver toegevoegd.
-

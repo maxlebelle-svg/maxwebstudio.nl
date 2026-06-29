@@ -739,6 +739,26 @@ Rollback:
 
 Next action:
 
-1. Kies reset van stagingdatabase of maak een gerichte schema-drift patch.
-2. Herhaal Fase 28 vanaf stap 1.
-3. Voer RLS/customer isolation pas uit nadat alle migration drafts zonder kritieke fout zijn toegepast.
+1. Gebruik geen schema-drift patch voor deze stagingdatabase.
+2. Volg `docs/deployment/STAGING_RESET_PLAN.md`.
+3. Reset de stagingdatabase of maak een nieuwe schone testbranch na expliciete approval.
+4. Herhaal Fase 28 vanaf stap 1.
+5. Voer RLS/customer isolation pas uit nadat alle migration drafts zonder kritieke fout zijn toegepast.
+
+### Resetbesluit na schema drift
+
+Status: `blocked_pending_manual_staging_reset_approval`
+
+Uitkomst:
+
+- Er wordt geen schema-drift patch gemaakt voor `public.leads`.
+- De stagingdatabase moet worden gereset of vervangen door een schone testbranch.
+- Resetprocedure is vastgelegd in `docs/deployment/STAGING_RESET_PLAN.md`.
+- Fase 28 mag daarna opnieuw starten vanaf `001_schema_tables.sql`.
+
+Open evidence:
+
+- Bevestiging dat reset uitsluitend `maxwebstudio-test` raakt.
+- Bevestiging dat er geen echte klantdata in staging staat.
+- Bevestiging of testdata eerst geexporteerd moet worden.
+- Handmatige approval om testdata te verwijderen.

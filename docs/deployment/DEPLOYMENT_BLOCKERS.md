@@ -474,8 +474,37 @@ Risico:
 
 Next actions:
 
-1. Reset de stagingdatabase of maak een nieuwe schone testbranch; of
-2. maak een expliciete schema-drift patch voor `public.leads` en mogelijk andere bestaande tabellen;
-3. herhaal daarna Fase 28 vanaf `001_schema_tables.sql`.
+1. Gebruik geen schema-drift patch voor deze stagingdatabase.
+2. Volg `docs/deployment/STAGING_RESET_PLAN.md`.
+3. Reset de stagingdatabase of maak een nieuwe schone testbranch na expliciete approval.
+4. Herhaal daarna Fase 28 vanaf `001_schema_tables.sql`.
 
 Release blijft `NO-GO` totdat migration execution, RLS en Customer A/B isolation volledig PASS zijn.
+
+## Fase 28 staging reset decision
+
+Status: `READY_FOR_MANUAL_APPROVAL`
+
+Besluit:
+
+- Geen schema-drift patch maken.
+- Staging moet terug naar een schone canonical basis.
+- Fase 28 wordt pas hervat na handmatige resetapproval.
+
+Waarom:
+
+- Een patch zou uitzonderingen bouwen rond een vervuilde testdatabase.
+- De canonical architectuur moet op een schone stagingomgeving bewezen worden.
+- RLS/customer-isolation evidence is pas betrouwbaar nadat de volledige migrationvolgorde vanaf `001` slaagt.
+
+Plan:
+
+- Zie `docs/deployment/STAGING_RESET_PLAN.md`.
+
+Open approvalpunten:
+
+- Bevestig dat reset uitsluitend `maxwebstudio-test` raakt.
+- Bevestig dat productie niet gelinkt is.
+- Bevestig dat er geen echte klantdata in staging staat.
+- Bevestig of bestaande testdata/export nodig is.
+- Bevestig dat testdata verloren mag gaan.
