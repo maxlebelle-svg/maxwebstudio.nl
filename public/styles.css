@@ -1369,6 +1369,7 @@ h3 {
 
 .official-demo-grid {
   display: grid;
+  align-items: stretch;
   grid-auto-flow: column;
   grid-auto-columns: calc((100% - 44px) / 3);
   gap: 22px;
@@ -1387,6 +1388,7 @@ h3 {
 .official-demo-card {
   display: grid;
   grid-template-rows: auto 1fr;
+  height: 100%;
   scroll-snap-align: start;
   overflow: hidden;
   min-width: 0;
@@ -1411,7 +1413,7 @@ h3 {
 
 .official-demo-preview {
   position: relative;
-  min-height: 330px;
+  min-height: 350px;
   padding: 24px;
   overflow: hidden;
   background:
@@ -1493,7 +1495,7 @@ h3 {
 .official-demo-browser-body {
   display: grid;
   gap: 12px;
-  min-height: 215px;
+  min-height: 232px;
   padding: 13px;
   background: linear-gradient(180deg, #ffffff, #f8fbff);
 }
@@ -1515,8 +1517,9 @@ h3 {
   display: grid;
   align-content: center;
   gap: 7px;
-  min-height: 128px;
+  min-height: 150px;
   padding: 18px;
+  overflow: hidden;
   border-radius: 16px;
   color: var(--white);
   background:
@@ -1525,21 +1528,26 @@ h3 {
 }
 
 .official-demo-mini-hero strong {
-  max-width: 280px;
-  font-size: 22px;
-  line-height: 1.05;
+  max-width: min(100%, 260px);
+  font-size: clamp(17px, 1.55vw, 21px);
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  hyphens: auto;
 }
 
 .official-demo-mini-hero p {
-  max-width: 270px;
+  max-width: min(100%, 265px);
   margin: 0;
   color: rgba(255, 255, 255, 0.78);
-  font-size: 11px;
+  font-size: clamp(9px, 0.82vw, 11px);
   line-height: 1.45;
+  overflow-wrap: break-word;
 }
 
 .official-demo-mini-hero em {
   width: fit-content;
+  max-width: 100%;
   padding: 7px 10px;
   border-radius: 999px;
   color: var(--ink);
@@ -1547,6 +1555,9 @@ h3 {
   font-size: 9px;
   font-style: normal;
   font-weight: 950;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .official-demo-mini-blocks {
@@ -1574,8 +1585,8 @@ h3 {
   display: grid;
   align-content: start;
   gap: 10px;
-  width: 112px;
-  min-height: 210px;
+  width: 104px;
+  min-height: 194px;
   padding: 14px 10px;
   border: 6px solid #06121f;
   border-radius: 28px;
@@ -1597,8 +1608,10 @@ h3 {
 
 .official-demo-mobile strong {
   margin-top: 18px;
-  font-size: 14px;
+  font-size: clamp(11px, 1.1vw, 13px);
   line-height: 1.08;
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 
 .official-demo-mobile p {
@@ -1607,6 +1620,7 @@ h3 {
   font-size: 10px;
   font-weight: 800;
   line-height: 1.35;
+  overflow-wrap: break-word;
 }
 
 .official-demo-copy {
@@ -9077,18 +9091,18 @@ h3 {
   }
 
   .official-demo-preview {
-    min-height: 390px;
+    min-height: 350px;
     padding: 16px;
   }
 
   .official-demo-desktop {
     width: 100%;
-    margin-top: 44px;
+    margin-top: 40px;
     border-radius: 18px;
   }
 
   .official-demo-browser-body {
-    min-height: 250px;
+    min-height: 226px;
     padding: 12px;
   }
 
@@ -9097,16 +9111,18 @@ h3 {
   }
 
   .official-demo-mini-hero {
-    min-height: 150px;
-    padding: 18px;
+    min-height: 136px;
+    padding: 15px;
     border-radius: 16px;
   }
 
   .official-demo-mini-hero strong {
-    font-size: 24px;
+    max-width: calc(100% - 86px);
+    font-size: clamp(16px, 5vw, 20px);
   }
 
   .official-demo-mini-hero p {
+    max-width: calc(100% - 78px);
     font-size: 11px;
   }
 
@@ -9122,15 +9138,16 @@ h3 {
   .official-demo-mobile {
     right: 12px;
     bottom: 12px;
-    width: 104px;
-    min-height: 192px;
+    width: 86px;
+    min-height: 164px;
     border-width: 6px;
-    border-radius: 28px;
+    border-radius: 24px;
+    padding: 12px 8px;
   }
 
   .official-demo-mobile strong {
-    margin-top: 16px;
-    font-size: 14px;
+    margin-top: 12px;
+    font-size: 11px;
   }
 
   .official-demo-score-grid {
