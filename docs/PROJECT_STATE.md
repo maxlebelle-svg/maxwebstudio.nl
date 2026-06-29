@@ -425,3 +425,30 @@ Belangrijk:
 - `rejected`, `not_applicable` en reset vereisen een reden.
 - Codex keurt niets automatisch goed.
 - GO blijft `NO-GO` zolang evidence/approval ontbreekt.
+
+## Fase 14.3 - Complete Test Execution
+
+Status: afgerond als lokale QA/release-testfase. Er is geen SQL uitgevoerd en er is geen productieomgeving aangepast.
+
+Uitgevoerd:
+
+- lokale rooktest op CRM/klanten, websites, projecten, offertes, facturen en abonnementen
+- klantportaal sanitized payload test
+- route guard readiness test
+- security readiness test
+- deployment readiness test
+- blocker approval guard test
+- release decision JSON/Markdown export test
+- syntaxcheck van 24 Netlify Functions
+
+Resultaten:
+
+- lokale rooktest: 20 PASS / 0 FAIL
+- function syntaxcheck: PASS
+- testresultaten vastgelegd in `/docs/deployment/TEST_RESULTS.md`
+- releasebesluit vastgelegd in `/docs/deployment/RELEASE_DECISION_2026-06-29.md` en `.json`
+
+Belangrijk:
+
+- Status blijft `NO-GO`.
+- Supabase schema, Auth, RLS, Storage, Mollie, Resend en runtime function tests blijven `BLOCKED` totdat ze in een echte testomgeving zijn uitgevoerd.
