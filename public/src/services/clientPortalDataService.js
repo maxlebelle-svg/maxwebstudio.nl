@@ -6,6 +6,7 @@ import * as ProjectRepository from "../repositories/ProjectRepository.js";
 import * as QuoteRepository from "../repositories/QuoteRepository.js";
 import * as InvoiceRepository from "../repositories/InvoiceRepository.js";
 import * as SubscriptionRepository from "../repositories/SubscriptionRepository.js";
+import { getSupabaseDataLayerMvpStatus, readSupabaseDataLayerMvp } from "./supabaseDataLayerService.js";
 
 export const CLIENT_PORTAL_DATA_MODES = Object.freeze({
   DEMO: "demo",
@@ -123,6 +124,69 @@ async function listModule(repository, collectionKey, mode) {
         fallbackUsed: true,
         error: error.message || "Data kon niet worden gelezen.",
         count: 0,
+        refreshedAt: new Date().toISOString(),
+      },
+    };
+  }
+}
+
+function dataLayerModuleResult(dataLayerResult = {}, moduleName, fallbackMode) {
+  const module = dataLayerResult.modules?.[moduleName] || {};
+  const items = Array.isArray(module.records) ? module.records : [];
+  return {
+    items,
+    status: {
+      mode: module.mode || dataLayerResult.mode || repositoryMode(fallbackMode),
+      fallbackUsed: Boolean(module.fallbackUsed),
+      error: module.error || "",
+      count: items.length,
+      refreshedAt: module.refreshedAt || dataLayerResult.refreshedAt || new Date().toISOString(),
+      dataLayer: "supabase-data-layer-mvp",
+    },
+  };
+}
+
+async function readCoreDataLayerModules(mode) {
+  try {
+    const dataLayerResult = await readSupabaseDataLayerMvp({
+      mode: repositoryMode(mode),
+      modules: ["customers", "websites", "projects"],
+    });
+    return {
+      customers: dataLayerModuleResult(dataLayerResult, "customers", mode),
+      websites: dataLayerModuleResult(dataLayerResult, "websites", mode),
+      projects: dataLayerModuleResult(dataLayerResult, "projects", mode),
+      dataLayerStatus: {
+        ...getSupabaseDataLayerMvpStatus(),
+        mode: dataLayerResult.mode,
+        fallbackUsed: dataLayerResult.fallbackUsed,
+        fallbackModules: dataLayerResult.fallbackModules || [],
+        errors: dataLayerResult.errors || [],
+        refreshedAt: dataLayerResult.refreshedAt,
+      },
+    };
+  } catch (error) {
+    const [customers, websites, projects] = await Promise.all([
+      listModule(CustomerRepository, "customers", CLIENT_PORTAL_DATA_MODES.LOCAL),
+      listModule(WebsiteRepository, "websites", CLIENT_PORTAL_DATA_MODES.LOCAL),
+      listModule(ProjectRepository, "projects", CLIENT_PORTAL_DATA_MODES.LOCAL),
+    ]);
+    const fallbackMessage = error.message || "Supabase Data Layer MVP kon niet worden gelezen.";
+    [customers, websites, projects].forEach((result) => {
+      result.status.fallbackUsed = true;
+      result.status.error = fallbackMessage;
+      result.status.dataLayer = "local-fallback-after-data-layer-error";
+    });
+    return {
+      customers,
+      websites,
+      projects,
+      dataLayerStatus: {
+        ...getSupabaseDataLayerMvpStatus(),
+        mode: CLIENT_PORTAL_DATA_MODES.LOCAL,
+        fallbackUsed: true,
+        fallbackModules: ["customers", "websites", "projects"],
+        errors: [{ module: "clientPortalDataService", error: fallbackMessage }],
         refreshedAt: new Date().toISOString(),
       },
     };
@@ -319,16 +383,15 @@ export function getClientPortalSourceSummary(data = {}) {
     customerSource: data.customer ? sourceOf(data.customer) : "none",
     modules: Object.fromEntries(MODULES.map((moduleName) => [moduleName, moduleStatuses[moduleName] || { count: 0, mode: "local" }])),
     fallbackUsed: Object.values(moduleStatuses).some((status) => status?.fallbackUsed),
+    dataLayer: data.dataLayerStatus || data.dataLayer || null,
     warningCount: (data.warnings || []).length,
     generatedAt: new Date().toISOString(),
   };
 }
 
 async function readAllForMode(mode) {
-  const [customers, websites, projects, quotes, invoices, subscriptions] = await Promise.all([
-    listModule(CustomerRepository, "customers", mode),
-    listModule(WebsiteRepository, "websites", mode),
-    listModule(ProjectRepository, "projects", mode),
+  const [coreDataLayer, quotes, invoices, subscriptions] = await Promise.all([
+    readCoreDataLayerModules(mode),
     listModule(QuoteRepository, "quotes", mode),
     listModule(InvoiceRepository, "invoices", mode),
     listModule(SubscriptionRepository, "subscriptions", mode),
@@ -337,7 +400,19 @@ async function readAllForMode(mode) {
   const changeRequests = { items: localChangeRequests(), status: { mode: "local", fallbackUsed: false, error: "", count: localChangeRequests().length, refreshedAt: new Date().toISOString() } };
   const messages = { items: localMessages(), status: { mode: "local", fallbackUsed: false, error: "", count: localMessages().length, refreshedAt: new Date().toISOString() } };
   const notifications = { items: localNotifications(), status: { mode: "local", fallbackUsed: false, error: "", count: localNotifications().length, refreshedAt: new Date().toISOString() } };
-  return { customers, websites, projects, quotes, invoices, subscriptions, files, changeRequests, messages, notifications };
+  return {
+    customers: coreDataLayer.customers,
+    websites: coreDataLayer.websites,
+    projects: coreDataLayer.projects,
+    quotes,
+    invoices,
+    subscriptions,
+    files,
+    changeRequests,
+    messages,
+    notifications,
+    dataLayerStatus: coreDataLayer.dataLayerStatus,
+  };
 }
 
 function derivedNotifications(raw = {}) {
@@ -441,6 +516,7 @@ export async function getClientPortalData(customerId, options = {}) {
   const mode = resolveClientPortalDataMode({ ...options, customerId });
   const results = await readAllForMode(mode);
   const moduleStatuses = Object.fromEntries(Object.entries(results).map(([key, result]) => [key, result.status]));
+  delete moduleStatuses.dataLayerStatus;
   const match = findCustomer(results.customers.items, { customerId, supabaseCustomerId: options.supabaseCustomerId });
   const warnings = [...match.warnings];
   if (!match.customer) {
@@ -458,7 +534,7 @@ export async function getClientPortalData(customerId, options = {}) {
       messages: [],
       notifications: [],
       metrics: computeMetrics({}),
-      sourceSummary: getClientPortalSourceSummary({ mode, moduleStatuses, warnings }),
+      sourceSummary: getClientPortalSourceSummary({ mode, moduleStatuses, dataLayerStatus: results.dataLayerStatus, warnings }),
       warnings,
     });
   }
@@ -476,6 +552,7 @@ export async function getClientPortalData(customerId, options = {}) {
     notifications: results.notifications.items.filter((item) => belongsToCustomer(item, match.customer)),
     warnings,
     moduleStatuses,
+    dataLayerStatus: results.dataLayerStatus,
   };
   raw.notifications = [...raw.notifications, ...derivedNotifications(raw)];
   raw.metrics = computeMetrics(raw);

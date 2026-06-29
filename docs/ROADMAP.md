@@ -1113,3 +1113,25 @@ Volgende stap:
 1. Developer/admin UI later gericht koppelen aan de MVP-service.
 2. Daarna klantportaal/CRM stap voor stap op echte data aansluiten.
 3. Write-mode pas na expliciete releaseapproval en aanvullende canonical write-mapping.
+
+## Fase 30 - Klantportaal Supabase Read MVP
+
+Status: `AFGEROND`
+
+Scope:
+
+- Klantportaal leest `customers`, `websites` en `projects` via de Supabase Data Layer MVP.
+- Readinesskaart toont data-layer mode, modules, write-status en fallback.
+- Local/demo fallback blijft intact.
+
+Niet in scope:
+
+- Productieproject.
+- Echte klantdata.
+- Writes.
+- Offertes/facturen/abonnementen volledig live maken.
+
+Volgende stap:
+
+1. CRM/admin gericht aansluiten op dezelfde read-layer.
+2. Daarna pas gecontroleerde write-mode voorbereiden.

@@ -1414,3 +1414,25 @@ MVP-grenzen:
 - Writes blijven buiten scope behalve bestaande gated test/migratieflows.
 - Productie blijft `NO-GO` tot releaseapproval.
 - Supabase staging foundation blijft `GO`; productie blijft bewust onaangeraakt.
+
+## Fase 30 - Klantportaal Supabase Read MVP
+
+Status: `AFGEROND`
+
+Doel:
+
+- Het klantportaal gecontroleerd laten lezen via de Fase 29 Supabase Data Layer MVP.
+- Alleen `customers`, `websites` en `projects` via de nieuwe read-laag laten lopen.
+- Local/demo fallback behouden voor veilige portaalwerking.
+
+Toegevoegd/aangepast:
+
+- `public/src/services/clientPortalDataService.js` gebruikt `supabaseDataLayerService` voor de drie MVP-modules.
+- `public/klantportaal.html` toont de data-layer status in de readinesskaart.
+
+MVP-grenzen:
+
+- Read-only.
+- Geen productieproject of echte klantdata.
+- Offertes, facturen, abonnementen, bestanden, berichten en notificaties blijven op bestaande local/hybrid routes.
+- Writes blijven uitgeschakeld.
