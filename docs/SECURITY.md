@@ -621,3 +621,25 @@ Status:
 - Geen SQL uitgevoerd.
 - Geen Supabase CLI gebruikt.
 - Geen productiegegevens gewijzigd.
+
+## Fase 25 - Staging/test execution securityplan
+
+Fase 25 plant de testuitvoering zonder die uit te voeren.
+
+Securityregels:
+
+- Alleen een apart Supabase test/staging project mag gebruikt worden.
+- Geen echte klantdata.
+- Geen productie-Supabase URL of project-ID.
+- Service role key blijft setup/server-side only.
+- Demo seed mag alleen in test/demo en moet `is_demo = true` plus `environment = demo` gebruiken.
+- Customer A/B isolation is een verplichte pass voordat productie wordt overwogen.
+- Leadfinderdata, AI-drafts en audit logs moeten intern blijven.
+
+Status:
+
+- Staging execution plan klaar.
+- Checklist klaar.
+- Geen SQL uitgevoerd.
+- Geen Supabase CLI gebruikt.
+- Geen productiegegevens gewijzigd.

@@ -58,6 +58,8 @@ Status:
 - Niet uitgevoerd.
 - Niet uitvoeren zonder expliciete approval.
 - Eerst reviewen met `docs/SUPABASE_MIGRATION_DRAFT_REVIEW_CHECKLIST.md`.
+- Testuitvoering plannen met `docs/SUPABASE_STAGING_EXECUTION_PLAN.md`.
+- Afvinken met `docs/deployment/STAGING_EXECUTION_CHECKLIST.md`.
 
 Belangrijk:
 

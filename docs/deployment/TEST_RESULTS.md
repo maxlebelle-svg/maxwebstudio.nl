@@ -618,3 +618,16 @@ Open blockers:
 Goedgekeurd door:
 
 - Niet van toepassing. Geen GO.
+# Test Results
+
+## Fase 25 - Staging/Test Supabase Execution Plan
+
+Status: gepland, niet uitgevoerd.
+
+Te gebruiken documenten:
+
+- `docs/SUPABASE_STAGING_EXECUTION_PLAN.md`
+- `docs/deployment/STAGING_EXECUTION_CHECKLIST.md`
+- `docs/SUPABASE_MIGRATION_DRAFT_REVIEW_CHECKLIST.md`
+
+Resultaten worden pas ingevuld wanneer de migration drafts expliciet in een aparte Supabase testomgeving worden uitgevoerd.

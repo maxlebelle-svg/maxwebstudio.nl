@@ -779,3 +779,27 @@ Aanbevolen volgende stappen:
 3. Voer daarna alleen in een Supabase testproject uit.
 4. Registreer test-evidence en Customer A/B isolation-resultaten.
 5. Productie blijft No-Go tot release approval.
+
+## Fase 25 - Staging/Test Supabase Execution Plan
+
+Afgerond als QA/release-planning:
+
+- staging execution plan voor Supabase migration drafts
+- checklist voor preflight, SQL draft execution, rollen/isolatie, modulechecks, audit/security en evidence
+- rollbackplan voor staging/test
+- testresultatenregister voorbereid voor Fase 25 evidence
+
+Nog niet uitgevoerd:
+
+- geen SQL
+- geen Supabase CLI
+- geen testprojectwijziging
+- geen productiegegevens
+- geen secrets/API keys
+
+Aanbevolen volgende stappen:
+
+1. Handmatige review van Fase 24 drafts en Fase 25 execution plan.
+2. Daarna pas expliciet starten met een echte staging/test execution fase.
+3. Alle resultaten vastleggen in `TEST_RESULTS.md` en deployment blockers.
+4. Productie blijft No-Go tot staging evidence en approvals compleet zijn.

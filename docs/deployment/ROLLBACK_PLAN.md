@@ -31,6 +31,17 @@ Status: procedure. Geen rollback SQL.
 7. Controleer admin-dashboard en klantportaal.
 8. Leg incident en oplossing vast.
 
+## Staging/test rollback
+
+Voor de Fase 24 migration drafts geldt eerst een staging/test rollback:
+
+1. Stop direct bij de eerste kritieke SQL-, RLS- of isolatiefout.
+2. Leg de exacte stap, foutmelding en context vast in `TEST_RESULTS.md`.
+3. Reset de Supabase testdatabase, herstel snapshot of maak een nieuwe testbranch.
+4. Pas de draft niet rechtstreeks in Supabase aan; corrigeer in Git in een aparte fixfase.
+5. Herhaal de volledige execution flow vanaf `001_schema_tables.sql`.
+6. Productie blijft onaangeraakt en No-Go.
+
 ## Wat niet automatisch wordt teruggedraaid
 
 - RLS policies zonder handmatige review.

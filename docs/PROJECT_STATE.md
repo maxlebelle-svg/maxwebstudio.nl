@@ -1025,3 +1025,30 @@ Bewust niet uitgevoerd:
 - Geen Supabase CLI gebruikt.
 - Geen schema of productiegegevens aangepast.
 - Geen API keys of externe services toegevoegd.
+
+## Fase 25 - Staging/Test Supabase Execution Plan
+
+Status: afgerond als staging/test uitvoeringsplan zonder SQL, Supabase CLI, productiegegevens, secrets of runtimewijzigingen.
+
+Aangemaakt/bijgewerkt:
+
+- `docs/SUPABASE_STAGING_EXECUTION_PLAN.md`
+- `docs/deployment/STAGING_EXECUTION_CHECKLIST.md`
+- `docs/deployment/SQL_BUNDLE.md`
+- `docs/deployment/ROLLBACK_PLAN.md`
+- `docs/deployment/TEST_RESULTS.md`
+
+Resultaat:
+
+- Uitvoeringsvolgorde voor migration drafts is vastgelegd.
+- Validaties per stap zijn beschreven: tabellen, indexes, RLS enablement, policies, audit logging en optionele demo seed.
+- Testscenario's zijn vastgelegd voor admin, klantisolatie, demo_user, Leadfinder, AI-drafts en audit logs.
+- Rollback voor staging/test is beschreven.
+- Evidence- en Go/No-Go voorwaarden zijn vastgelegd.
+
+Bewust niet uitgevoerd:
+
+- Geen SQL uitgevoerd.
+- Geen Supabase CLI gebruikt.
+- Geen test- of productieproject aangepast.
+- Geen API keys of secrets toegevoegd.
