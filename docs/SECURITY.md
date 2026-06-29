@@ -380,3 +380,29 @@ Belangrijkste risico's blijven:
 - open offerte- en betaallinks zonder tokenized/authenticated toegang
 - interne notities en logs die per ongeluk klantzichtbaar worden
 - legacy `customer_*` tabellen opnieuw gebruiken
+
+## Fase 13.4 - Supabase testomgeving en RLS dry-run
+
+Fase 13.4 bereidt de testuitvoering voor zonder SQL uit te voeren.
+
+Toegevoegd:
+
+- `/docs/SUPABASE_TEST_ENVIRONMENT.md`
+- `/docs/RLS_DRY_RUN_PLAN.md`
+- `/docs/RLS_TEST_SCENARIOS.md`
+- `/docs/RLS_TEST_DATA_PLAN.md`
+- `/docs/RLS_EXPECTED_ACCESS_MATRIX.md`
+- `/docs/RLS_PREFLIGHT_CHECKLIST.md`
+- `/docs/RLS_TEST_LOG_TEMPLATE.md`
+
+Developer Mode toont nu `RLS testomgeving & dry-run` met:
+
+- testdocument-status
+- lokale readiness self-test
+- Go/No-Go samenvatting
+
+Status:
+
+- RLS live execution: niet actief.
+- Go/No-Go: No-Go totdat testprojectresultaten en preflight checklist handmatig zijn afgerond.
+- Geen productie-execution zonder testlog, backup, rollbackplan en expliciete review.

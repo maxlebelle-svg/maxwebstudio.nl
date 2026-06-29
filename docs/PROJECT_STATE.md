@@ -304,3 +304,29 @@ Readiness-status:
 - Database-level security: voorbereid, nog niet live.
 
 Belangrijk: `change_requests` is meegenomen als canonical-supporting tabel via `auth_user_id`. Legacy `customer_websites`, `customer_invoices` en `customer_subscriptions` worden niet gebruikt voor nieuwe productie-RLS.
+
+## Fase 13.4 - Supabase Test Environment & RLS Dry Run Plan
+
+Status: afgerond als testplan/readinesslaag. Er is geen SQL uitgevoerd.
+
+Toegevoegd:
+
+- `/docs/SUPABASE_TEST_ENVIRONMENT.md`
+- `/docs/RLS_DRY_RUN_PLAN.md`
+- `/docs/RLS_TEST_SCENARIOS.md`
+- `/docs/RLS_TEST_DATA_PLAN.md`
+- `/docs/RLS_EXPECTED_ACCESS_MATRIX.md`
+- `/docs/RLS_PREFLIGHT_CHECKLIST.md`
+- `/docs/RLS_TEST_LOG_TEMPLATE.md`
+
+Bijgewerkt:
+
+- `securityReadinessService` bevat nu RLS testomgeving, dry-run status, scenario coverage, preflight status en Go/No-Go summary.
+- `accessControlTestService` bevat extra simulaties voor A/B isolatie, demo-isolatie, anonymous block, role navigation, dangerous actions en klantportaal-mismatch.
+- Developer Mode toont nu `RLS testomgeving & dry-run` met lokale readiness knoppen.
+
+Status:
+
+- RLS live status: niet actief.
+- Go/No-Go: No-Go tot handmatige Supabase testresultaten zijn vastgelegd.
+- Geen productie-execution zonder volledige preflight checklist.

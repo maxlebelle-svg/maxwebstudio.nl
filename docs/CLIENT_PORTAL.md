@@ -476,3 +476,23 @@ Nieuwe documenten:
 - `/docs/supabase-rls-canonical-draft.sql`
 
 Status: klantportaal route guard is soft actief; database-level RLS is voorbereid maar nog niet live.
+
+## Fase 13.4 - Klantportaal in RLS dry-run
+
+Het klantportaal moet in het Supabase testproject expliciet worden getest met:
+
+- Customer A ziet alleen Customer A.
+- Customer B ziet alleen Customer B.
+- Customer A ziet geen Customer B data.
+- Demo-user ziet alleen demo-records.
+- Anonymous ziet geen klantdata.
+- Klantportaal mismatch toont geen data.
+
+De testdocumenten staan in:
+
+- `/docs/RLS_TEST_SCENARIOS.md`
+- `/docs/RLS_TEST_DATA_PLAN.md`
+- `/docs/RLS_EXPECTED_ACCESS_MATRIX.md`
+- `/docs/RLS_TEST_LOG_TEMPLATE.md`
+
+Totdat deze tests slagen blijft live klantportaal-RLS No-Go.

@@ -172,3 +172,27 @@ Niet live:
 Volgende logische stap:
 
 - Review van de RLS draft en daarna gecontroleerde testuitvoering in een Supabase testomgeving voordat productie-RLS live mag.
+
+### 13.4 - Supabase Test Environment & RLS Dry Run Plan
+
+Afgerond als voorbereiding:
+
+- testomgevingstrategie
+- RLS dry-run plan
+- testscenario's per rol
+- testdata plan
+- expected access matrix
+- preflight checklist
+- testlog template
+- Developer Mode RLS testomgeving & dry-run kaart
+
+Niet live:
+
+- geen SQL uitgevoerd
+- geen productie-database aangepast
+- geen provider switch
+- geen harde RLS live execution
+
+Volgende logische stap:
+
+- Supabase testproject inrichten, canonical schema + synthetische testdata uitvoeren, RLS-draft daar testen en testlog invullen. Productie blijft No-Go tot die ronde geslaagd is.

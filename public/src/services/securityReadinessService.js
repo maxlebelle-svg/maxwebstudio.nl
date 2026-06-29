@@ -50,6 +50,27 @@ const knownRisks = Object.freeze([
   { id: "legacy-customer-tables", level: "hoog", title: "Legacy customer_* tabellen opnieuw gebruikt", mitigation: "Nieuwe RLS uitsluitend canonical ontwerpen." },
 ]);
 
+const rlsTestDocuments = Object.freeze([
+  { key: "testEnvironment", label: "Testomgeving plan", file: "docs/SUPABASE_TEST_ENVIRONMENT.md", status: "aanwezig" },
+  { key: "dryRunPlan", label: "Dry-run plan", file: "docs/RLS_DRY_RUN_PLAN.md", status: "aanwezig" },
+  { key: "testScenarios", label: "Testscenario's", file: "docs/RLS_TEST_SCENARIOS.md", status: "aanwezig" },
+  { key: "testDataPlan", label: "Testdata plan", file: "docs/RLS_TEST_DATA_PLAN.md", status: "aanwezig" },
+  { key: "expectedAccessMatrix", label: "Expected access matrix", file: "docs/RLS_EXPECTED_ACCESS_MATRIX.md", status: "aanwezig" },
+  { key: "preflightChecklist", label: "Preflight checklist", file: "docs/RLS_PREFLIGHT_CHECKLIST.md", status: "aanwezig" },
+  { key: "testLogTemplate", label: "Testlog template", file: "docs/RLS_TEST_LOG_TEMPLATE.md", status: "aanwezig" },
+]);
+
+const rlsScenarioCoverage = Object.freeze([
+  { scenario: "admin full access", role: "admin", covered: true, needsSupabaseTest: true },
+  { scenario: "sales limited access", role: "sales", covered: true, needsSupabaseTest: true },
+  { scenario: "support no payment writes", role: "support", covered: true, needsSupabaseTest: true },
+  { scenario: "developer no customer payment writes", role: "developer", covered: true, needsSupabaseTest: true },
+  { scenario: "customer A/B isolation", role: "customer", covered: true, needsSupabaseTest: true },
+  { scenario: "demo isolation", role: "demo_user", covered: true, needsSupabaseTest: true },
+  { scenario: "anonymous blocked", role: "anonymous", covered: true, needsSupabaseTest: true },
+  { scenario: "customer portal mismatch", role: "customer", covered: true, needsSupabaseTest: true },
+]);
+
 export function getSecurityHardeningChecklist() {
   return [
     { item: "RLS policy matrix", status: RLS_READINESS_STATUS.MATRIX, file: "docs/RLS_POLICY_MATRIX.md" },
@@ -82,10 +103,88 @@ export function getKnownSecurityRisks() {
   return [...knownRisks];
 }
 
+export function getRlsTestEnvironmentReadiness() {
+  return {
+    status: "voorbereid",
+    liveRlsActive: false,
+    productionExecutionAllowed: false,
+    documents: [...rlsTestDocuments],
+    requiredEnvironmentVariables: ["SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY server-side only", "ADMIN_TOKEN server-side/admin only"],
+    message: "Testomgevingplan is voorbereid. Productie-RLS blijft geblokkeerd tot handmatige testresultaten.",
+  };
+}
+
+export function getRlsDryRunPlanStatus() {
+  return {
+    status: "voorbereid",
+    steps: [
+      "Supabase testproject gebruiken",
+      "Canonical schema uitvoeren",
+      "Synthetische testdata toevoegen",
+      "Testprofiles/Auth-users aanmaken",
+      "RLS draft in test uitvoeren na review",
+      "Alle rolscenario's testen",
+      "Resultaten loggen",
+      "Pas daarna productieplan voorbereiden",
+    ],
+    sqlExecuted: false,
+    productionTouched: false,
+  };
+}
+
+export function getRlsTestScenarioCoverage() {
+  return {
+    status: "gedocumenteerd",
+    scenarioCount: rlsScenarioCoverage.length,
+    coveredCount: rlsScenarioCoverage.filter((scenario) => scenario.covered).length,
+    scenarios: [...rlsScenarioCoverage],
+    note: "Frontend-tests zijn simulaties; echte pass/fail vereist Supabase Auth + RLS in testproject.",
+  };
+}
+
+export function getRlsPreflightChecklistStatus() {
+  return {
+    status: "no-go",
+    completed: false,
+    requiredBeforeGo: [
+      "canonical schema bevestigd",
+      "testproject aangemaakt",
+      "RLS draft reviewed",
+      "testdata aangemaakt",
+      "alle scenario's getest",
+      "A/B isolatie geslaagd",
+      "demo/productie isolatie geslaagd",
+      "anonymous block geslaagd",
+      "rollbackplan klaar",
+      "backup klaar",
+      "execution window gepland",
+    ],
+    openItems: 11,
+  };
+}
+
+export function getRlsGoNoGoSummary() {
+  const readiness = getRlsTestEnvironmentReadiness();
+  const dryRun = getRlsDryRunPlanStatus();
+  const scenarios = getRlsTestScenarioCoverage();
+  const preflight = getRlsPreflightChecklistStatus();
+  return {
+    decision: "No-Go",
+    reason: "RLS is voorbereid, maar handmatige Supabase testresultaten en preflight-afvinking ontbreken nog.",
+    liveRlsActive: false,
+    productionExecutionAllowed: false,
+    readiness,
+    dryRun,
+    scenarios,
+    preflight,
+  };
+}
+
 export function runSecurityReadinessSelfTest() {
   const checklist = getSecurityHardeningChecklist();
   const coverage = getRlsCoverageSummary();
   const risks = getKnownSecurityRisks();
+  const goNoGo = getRlsGoNoGoSummary();
   return {
     testedAt: new Date().toISOString(),
     ok: checklist.every((entry) => entry.status !== "ontbreekt") && coverage.canonicalTables.every((entry) => entry.planned),
@@ -95,7 +194,8 @@ export function runSecurityReadinessSelfTest() {
     coverage,
     highRiskCount: risks.filter((risk) => risk.level === "hoog").length,
     riskCount: risks.length,
-    message: "Security readiness is voorbereid. RLS is nog niet live uitgevoerd.",
+    goNoGo,
+    message: "Security readiness is voorbereid. RLS is nog niet live uitgevoerd en Go/No-Go blijft No-Go.",
   };
 }
 
@@ -111,6 +211,11 @@ export const securityReadinessService = {
   getSecurityHardeningChecklist,
   getRlsCoverageSummary,
   getKnownSecurityRisks,
+  getRlsTestEnvironmentReadiness,
+  getRlsDryRunPlanStatus,
+  getRlsTestScenarioCoverage,
+  getRlsPreflightChecklistStatus,
+  getRlsGoNoGoSummary,
   runSecurityReadinessSelfTest,
   getSecurityReadinessSummary,
 };

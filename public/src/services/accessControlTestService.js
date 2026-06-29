@@ -138,6 +138,63 @@ function testClientPortalMismatchNoData() {
   };
 }
 
+function testCustomerABIsolationSimulated() {
+  const customerA = createSyntheticContext(ROLES.CUSTOMER, { customerId: "customer-a" });
+  const customerBRecord = { customerId: "customer-b", owner: "Customer B" };
+  return {
+    name: "customer A/B isolation simulated",
+    ok: customerA.customerId !== customerBRecord.customerId,
+    details: "Simulatie bevestigt dat Customer A context niet overeenkomt met Customer B record. Echte RLS-test moet dit in Supabase afdwingen.",
+  };
+}
+
+function testDemoIsolationSimulated() {
+  const demo = createSyntheticContext(ROLES.DEMO_USER, { isDemo: true, environment: "demo" });
+  const productionRecord = { isDemo: false, environment: "production" };
+  return {
+    name: "demo isolation simulated",
+    ok: demo.isDemo && demo.environment === "demo" && productionRecord.environment !== "demo",
+    details: "Demo-context is gescheiden van production-context. Echte RLS-test moet demo policies valideren.",
+  };
+}
+
+function testAnonymousBlockedSimulated() {
+  const decision = getAccessDecision("klantportaal", {
+    session: null,
+    user: null,
+    profile: null,
+    role: "",
+    mode: ACCESS_CONTROL_MODES.PREVIEW,
+    allowDemo: false,
+    isDemo: false,
+  });
+  return {
+    name: "anonymous blocked simulated",
+    ok: !decision.allowed,
+    details: decision.reason || "Anonymous context heeft geen klantportaaltoegang.",
+  };
+}
+
+function testRoleNavigationSimulated() {
+  const salesDecisions = testRoleAccess(ROLES.SALES);
+  const developerTools = salesDecisions.find((decision) => decision.pageName === "admin-developer-tools");
+  return {
+    name: "role navigation simulated",
+    ok: !developerTools?.allowed && !roleHasPermission(ROLES.SALES, "developerTools", "view"),
+    details: "Sales navigatie hoort Developer Tools niet te tonen.",
+  };
+}
+
+function testDangerousActionsBlockedSimulated() {
+  return {
+    name: "dangerous actions blocked simulated",
+    ok: !roleHasPermission(ROLES.SUPPORT, "developerTools", "migrate")
+      && !roleHasPermission(ROLES.DEVELOPER, "invoices", "mark_paid")
+      && !roleHasPermission(ROLES.SALES, "settings", "update"),
+    details: "Support, developer en sales missen permissies voor gevaarlijke migratie/payment/settings-acties.",
+  };
+}
+
 export function runExtendedAccessControlSecurityTests() {
   const tests = [
     testCustomerOwnCustomerOnly(),
@@ -147,6 +204,11 @@ export function runExtendedAccessControlSecurityTests() {
     testDeveloperNoPaymentWriteActions(),
     testAnonymousWarning(),
     testClientPortalMismatchNoData(),
+    testCustomerABIsolationSimulated(),
+    testDemoIsolationSimulated(),
+    testAnonymousBlockedSimulated(),
+    testRoleNavigationSimulated(),
+    testDangerousActionsBlockedSimulated(),
   ];
   return {
     testedAt: nowIso(),

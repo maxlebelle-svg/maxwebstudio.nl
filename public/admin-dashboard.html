@@ -831,6 +831,9 @@
                 <button class="button secondary" id="run-security-readiness-test" type="button">Run security readiness self-test</button>
                 <button class="button secondary" id="view-security-risks" type="button">Bekijk bekende risico's</button>
                 <button class="button secondary" id="view-rls-coverage" type="button">Bekijk RLS coverage summary</button>
+                <button class="button secondary" id="view-rls-test-readiness" type="button">Bekijk RLS test readiness</button>
+                <button class="button secondary" id="run-rls-local-readiness-test" type="button">Run lokale readiness self-test</button>
+                <button class="button secondary" id="view-rls-go-no-go" type="button">Toon Go/No-Go samenvatting</button>
                 <button class="button secondary" id="view-migration-plan" type="button">Bekijk migratieplan</button>
                 <button class="button secondary" id="view-planned-tables" type="button">Bekijk geplande tabellen</button>
                 <button class="button secondary" id="run-supabase-migration-check" type="button">Run localStorage migratie-check</button>
@@ -1857,6 +1860,9 @@
         const runSecurityReadinessTestButton = document.getElementById("run-security-readiness-test");
         const viewSecurityRisksButton = document.getElementById("view-security-risks");
         const viewRlsCoverageButton = document.getElementById("view-rls-coverage");
+        const viewRlsTestReadinessButton = document.getElementById("view-rls-test-readiness");
+        const runRlsLocalReadinessTestButton = document.getElementById("run-rls-local-readiness-test");
+        const viewRlsGoNoGoButton = document.getElementById("view-rls-go-no-go");
         const viewMigrationPlanButton = document.getElementById("view-migration-plan");
         const viewPlannedTablesButton = document.getElementById("view-planned-tables");
         const runSupabaseMigrationCheckButton = document.getElementById("run-supabase-migration-check");
@@ -4293,6 +4299,7 @@
 
         function renderSecurityReadiness(modules) {
           const summary = modules.securityReadinessService.getSecurityReadinessSummary();
+          const rlsTest = modules.securityReadinessService.getRlsGoNoGoSummary();
           appendDeveloperCard("Security & RLS readiness", [
             ["RLS policy matrix", summary.statuses.MATRIX],
             ["Auth claims strategy", summary.statuses.CLAIMS],
@@ -4301,6 +4308,17 @@
             ["RLS live execution", summary.statuses.LIVE_EXECUTION],
             ["Frontend route guards", summary.statuses.ROUTE_GUARDS],
             ["Database-level security", summary.statuses.DATABASE_SECURITY],
+          ]);
+          appendDeveloperCard("RLS testomgeving & dry-run", [
+            ["Testomgeving plan", rlsTest.readiness.documents.find((item) => item.key === "testEnvironment")?.status || "ontbreekt"],
+            ["Dry-run plan", rlsTest.readiness.documents.find((item) => item.key === "dryRunPlan")?.status || "ontbreekt"],
+            ["Testscenario's", rlsTest.readiness.documents.find((item) => item.key === "testScenarios")?.status || "ontbreekt"],
+            ["Testdata plan", rlsTest.readiness.documents.find((item) => item.key === "testDataPlan")?.status || "ontbreekt"],
+            ["Expected access matrix", rlsTest.readiness.documents.find((item) => item.key === "expectedAccessMatrix")?.status || "ontbreekt"],
+            ["Preflight checklist", rlsTest.readiness.documents.find((item) => item.key === "preflightChecklist")?.status || "ontbreekt"],
+            ["Testlog template", rlsTest.readiness.documents.find((item) => item.key === "testLogTemplate")?.status || "ontbreekt"],
+            ["RLS live status", rlsTest.liveRlsActive ? "actief" : "niet actief"],
+            ["Go/No-Go", rlsTest.decision],
           ]);
         }
 
@@ -4345,6 +4363,34 @@
             ["Risico's", `${result.riskCount || 0} totaal, ${result.highRiskCount || 0} hoog`],
             ["Melding", result.message || "-"],
           ]);
+        }
+
+        function renderRlsTestReadiness(readiness = {}) {
+          appendDeveloperCard("RLS test readiness", [
+            ["Status", readiness.status || "-"],
+            ["Live RLS", readiness.liveRlsActive ? "Actief" : "Niet actief"],
+            ["Productie execution", readiness.productionExecutionAllowed ? "Toegestaan" : "Geblokkeerd"],
+            ["Melding", readiness.message || "-"],
+          ]);
+          appendDeveloperCard("RLS testdocumenten", (readiness.documents || []).map((item) => [
+            item.label,
+            `${item.status} - ${item.file}`,
+          ]));
+        }
+
+        function renderRlsGoNoGoSummary(summary = {}) {
+          appendDeveloperCard("RLS Go/No-Go", [
+            ["Beslissing", summary.decision || "No-Go"],
+            ["Reden", summary.reason || "-"],
+            ["Live RLS actief", summary.liveRlsActive ? "Ja" : "Nee"],
+            ["Productie execution", summary.productionExecutionAllowed ? "Toegestaan" : "Geblokkeerd"],
+            ["Scenario coverage", `${summary.scenarios?.coveredCount || 0}/${summary.scenarios?.scenarioCount || 0}`],
+            ["Preflight", summary.preflight?.status || "-"],
+          ]);
+          appendDeveloperCard("Open preflight items", (summary.preflight?.requiredBeforeGo || []).map((item) => [
+            item,
+            "open",
+          ]));
         }
 
         function renderProfileReadiness(modules) {
@@ -4572,6 +4618,8 @@
             if (extra.securityRisks) renderSecurityRisks(extra.securityRisks);
             if (extra.rlsCoverageSummary) renderRlsCoverageSummary(extra.rlsCoverageSummary);
             if (extra.securityReadinessSelfTest) renderSecurityReadinessSelfTest(extra.securityReadinessSelfTest);
+            if (extra.rlsTestReadiness) renderRlsTestReadiness(extra.rlsTestReadiness);
+            if (extra.rlsGoNoGoSummary) renderRlsGoNoGoSummary(extra.rlsGoNoGoSummary);
             if (extra.supabaseReadOnlyResult) renderSupabaseReadOnlyResult(extra.supabaseReadOnlyTitle || "Supabase read-only resultaat", extra.supabaseReadOnlyResult);
             if (extra.supabaseWriteTestResult) renderSupabaseWriteTestResult(extra.supabaseWriteTestResult);
             if (extra.supabaseCustomerRows) {
@@ -4850,6 +4898,42 @@
           } catch (error) {
             console.error("RLS coverage could not be rendered", error);
             setSettingsMessage("RLS coverage summary kon niet worden getoond.", "error");
+          }
+        }
+
+        async function showRlsTestReadinessHandler() {
+          try {
+            const modules = await loadDeveloperModules();
+            const readiness = modules.securityReadinessService.getRlsTestEnvironmentReadiness();
+            await renderDeveloperToolsSummary({ rlsTestReadiness: readiness });
+            setSettingsMessage("RLS test readiness getoond. Er is geen SQL uitgevoerd.", "success");
+          } catch (error) {
+            console.error("RLS test readiness could not be rendered", error);
+            setSettingsMessage("RLS test readiness kon niet worden getoond.", "error");
+          }
+        }
+
+        async function runRlsLocalReadinessTestHandler() {
+          try {
+            const modules = await loadDeveloperModules();
+            const result = modules.securityReadinessService.runSecurityReadinessSelfTest();
+            await renderDeveloperToolsSummary({ securityReadinessSelfTest: result, rlsGoNoGoSummary: result.goNoGo });
+            setSettingsMessage("Lokale RLS readiness self-test uitgevoerd. Go/No-Go blijft No-Go.", "success");
+          } catch (error) {
+            console.error("Local RLS readiness test failed", error);
+            setSettingsMessage("Lokale RLS readiness test kon niet worden uitgevoerd.", "error");
+          }
+        }
+
+        async function showRlsGoNoGoHandler() {
+          try {
+            const modules = await loadDeveloperModules();
+            const summary = modules.securityReadinessService.getRlsGoNoGoSummary();
+            await renderDeveloperToolsSummary({ rlsGoNoGoSummary: summary });
+            setSettingsMessage("Go/No-Go samenvatting getoond. Status blijft No-Go.", "success");
+          } catch (error) {
+            console.error("RLS Go/No-Go could not be rendered", error);
+            setSettingsMessage("RLS Go/No-Go kon niet worden getoond.", "error");
           }
         }
 
@@ -13557,6 +13641,9 @@
         runSecurityReadinessTestButton.addEventListener("click", runSecurityReadinessTestHandler);
         viewSecurityRisksButton.addEventListener("click", showSecurityRisksHandler);
         viewRlsCoverageButton.addEventListener("click", showRlsCoverageHandler);
+        viewRlsTestReadinessButton.addEventListener("click", showRlsTestReadinessHandler);
+        runRlsLocalReadinessTestButton.addEventListener("click", runRlsLocalReadinessTestHandler);
+        viewRlsGoNoGoButton.addEventListener("click", showRlsGoNoGoHandler);
         viewMigrationPlanButton.addEventListener("click", showMigrationPlanHandler);
         viewPlannedTablesButton.addEventListener("click", showPlannedTablesHandler);
         runSupabaseMigrationCheckButton.addEventListener("click", runSupabaseMigrationCheckHandler);

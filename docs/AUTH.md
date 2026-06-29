@@ -316,3 +316,25 @@ Status:
 - RLS live execution: geblokkeerd tot review.
 - Frontend route guards: soft actief.
 - Database-level security: voorbereid, nog niet live.
+
+## Fase 13.4 - RLS/Auth testomgeving
+
+Auth/RLS krijgt nu een gecontroleerd testpad vóór live execution.
+
+Documenten:
+
+- `/docs/SUPABASE_TEST_ENVIRONMENT.md`
+- `/docs/RLS_DRY_RUN_PLAN.md`
+- `/docs/RLS_TEST_SCENARIOS.md`
+- `/docs/RLS_TEST_DATA_PLAN.md`
+- `/docs/RLS_EXPECTED_ACCESS_MATRIX.md`
+- `/docs/RLS_PREFLIGHT_CHECKLIST.md`
+- `/docs/RLS_TEST_LOG_TEMPLATE.md`
+
+Belangrijk:
+
+- testusers/profiles moeten synthetisch zijn
+- klant A/B isolatie moet met echte Supabase Auth-sessies getest worden
+- demo-user isolatie moet bewezen zijn
+- anonymous toegang moet klantdata blokkeren
+- productie-RLS blijft No-Go totdat de preflight checklist compleet is
