@@ -11,6 +11,7 @@ Doel: bepalen wanneer de migration drafts veilig naar een testomgeving mogen.
 - `supabase/migration-drafts/004_rls_policies.sql`
 - `supabase/migration-drafts/005_audit_logging_foundation.sql`
 - `supabase/migration-drafts/006_seed_demo_data_optional.sql`
+- `supabase/migration-drafts/007_runtime_role_grants.sql`
 
 ## Reviewstappen Voor Uitvoering
 
@@ -57,6 +58,15 @@ Doel: bepalen wanneer de migration drafts veilig naar een testomgeving mogen.
 - Environment variables gecontroleerd zonder secretwaarden te tonen.
 - Reviewer/approver geregistreerd in deployment blockers.
 
+### 7. Runtime Role Grants Review
+
+- Controleer dat PostgreSQL table privileges minimaal genoeg zijn om RLS te laten evalueren.
+- Controleer dat `anon` geen directe klantdatatabelrechten krijgt.
+- Controleer dat `authenticated` alleen werkt in combinatie met bestaande RLS policies.
+- Controleer dat `service_role` alleen server-side wordt gebruikt.
+- Controleer dat `audit_logs` niet direct door normale frontend-clients gemuteerd kan worden.
+- Controleer dat `add_audit_log()` niet publiek uitvoerbaar is.
+
 ## Go/No-Go Voor Testomgeving
 
 Go naar testomgeving mag pas wanneer:
@@ -75,4 +85,3 @@ Productie blijft No-Go totdat testomgeving bewijs levert voor:
 - admin/sales/support/developer rolgrenzen;
 - Storage/signed URL flows;
 - audit logging basis.
-

@@ -31,6 +31,9 @@ Status: Fase 25 checklist. Geen SQL uitvoeren vanuit dit document.
 - [ ] `005_audit_logging_foundation.sql` uitgevoerd in test.
 - [ ] Audit helper gecontroleerd.
 - [ ] `006_seed_demo_data_optional.sql` alleen uitgevoerd indien test/demo expliciet gekozen is.
+- [ ] `007_runtime_role_grants.sql` gereviewd.
+- [ ] `007_runtime_role_grants.sql` alleen op staging uitgevoerd na approval.
+- [ ] Runtime grants blokkeren RLS niet meer met table permission errors.
 
 ## Rollen En Isolatie
 

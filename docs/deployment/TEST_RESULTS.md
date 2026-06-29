@@ -840,3 +840,39 @@ Next action:
 2. Review minimale grants per rol/tabel.
 3. Voer de grants alleen op staging uit na approval.
 4. Herhaal Customer A/B isolation, demo user isolation en role checks.
+
+### Fase 28.2 - Runtime Role Grants Patch
+
+Status: `PATCH PREPARED / NOT EXECUTED`
+
+Patch:
+
+- `supabase/migration-drafts/007_runtime_role_grants.sql`
+
+Doel:
+
+- PostgreSQL table privileges toevoegen zodat RLS policies daadwerkelijk geevalueerd kunnen worden voor Supabase runtime roles.
+- De eerder gevonden `permission denied for table customers` blocker oplossen.
+
+Grant review:
+
+| Rol | Grants | Reden | Status |
+| --- | --- | --- | --- |
+| `anon` | Alleen schema usage, geen app table grants | Publieke website mag geen directe klantdata lezen | PREPARED |
+| `authenticated` | Select/insert/update/delete op app-tabellen waar RLS policies acties toestaan | Logged-in customers en interne rollen gebruiken DB role `authenticated`; RLS blijft leidend | PREPARED |
+| `authenticated` op `import_logs` | Select only | Alleen admin/developer read-policy bestaat | PREPARED |
+| `authenticated` op `audit_logs` | Select only | Geen directe frontend audit-mutaties; RLS beperkt read tot adminrollen | PREPARED |
+| `service_role` | Select/insert/update/delete op app-tabellen en sequences | Server-side backend/admin/testflows | PREPARED |
+| `add_audit_log()` | Execute alleen voor `service_role` | Audit inserts blijven server-side | PREPARED |
+
+Nog niet uitgevoerd:
+
+- Patch is niet op staging uitgevoerd.
+- Customer A/B isolation is nog niet opnieuw getest.
+
+Next action:
+
+1. Review `007_runtime_role_grants.sql`.
+2. Geef expliciete approval voor staging-only uitvoering.
+3. Voer patch uit op `maxwebstudio-test`.
+4. Herhaal Customer A/B isolation, demo isolation en interne role checks.

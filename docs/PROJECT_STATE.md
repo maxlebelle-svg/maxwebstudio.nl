@@ -1356,3 +1356,25 @@ Volgende stap:
 - Maak en review een minimale runtime role grants patch/migration.
 - Voer die alleen op staging uit na expliciete approval.
 - Herhaal Customer A/B isolation en demo isolation.
+
+## Fase 28.2 - Runtime Role Grants Patch
+
+Status: `PATCH PREPARED / NOT EXECUTED`
+
+Patch:
+
+- `supabase/migration-drafts/007_runtime_role_grants.sql`
+
+Doel:
+
+- Runtime roles minimale grants geven zodat RLS policies kunnen worden geevalueerd.
+- `anon` krijgt geen klantdatatabelrechten.
+- `authenticated` krijgt SQL-operaties die door RLS beperkt blijven.
+- `service_role` blijft server-side.
+- Audit helper blijft service-role-only.
+
+Nog niet uitgevoerd:
+
+- Geen staging patch uitgevoerd.
+- Geen productie geraakt.
+- Customer A/B isolation blijft blocked tot patchapproval en rerun.

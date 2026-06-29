@@ -1056,3 +1056,23 @@ Volgende actie:
 2. Review grants per tabel/rol.
 3. Voer alleen op staging uit na expliciete approval.
 4. Herhaal RLS/customer-isolation tests.
+
+## Fase 28.2 - Runtime Role Grants Patch
+
+Status: `PATCH PREPARED / NOT EXECUTED`
+
+Uitkomst:
+
+- Nieuwe draft migration toegevoegd: `supabase/migration-drafts/007_runtime_role_grants.sql`.
+- Patch is bedoeld om PostgreSQL runtime privileges te geven voordat RLS policies kunnen evalueren.
+- `anon` krijgt geen directe klantdatatabelrechten.
+- `authenticated` krijgt alleen SQL-operaties die vervolgens door RLS worden beperkt.
+- `service_role` blijft server-side.
+- Audit insert helper blijft service-role-only.
+
+Volgende actie:
+
+1. Review `007_runtime_role_grants.sql`.
+2. Geef expliciet akkoord voor staging-only uitvoering.
+3. Voer patch uit op `maxwebstudio-test`.
+4. Herhaal Customer A/B isolation en demo isolation.

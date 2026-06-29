@@ -13,6 +13,7 @@ Voer deze bestanden niet uit zonder expliciete review, testomgeving-validatie en
 4. `004_rls_policies.sql`
 5. `005_audit_logging_foundation.sql`
 6. `006_seed_demo_data_optional.sql` alleen voor test/demo, nooit productie zonder expliciet akkoord
+7. `007_runtime_role_grants.sql` na RLS/policies/audit foundation, eerst staging-only review
 
 ## Vereiste Review Voor Uitvoering
 
@@ -22,6 +23,7 @@ Voer deze bestanden niet uit zonder expliciete review, testomgeving-validatie en
 - Staging/test Supabase project bevestigd.
 - Rollbackplan bevestigd.
 - Customer A/B isolation testplan bevestigd.
+- Runtime role grants review bevestigd.
 - Release approval vastgelegd.
 
 ## Belangrijk
@@ -29,4 +31,4 @@ Voer deze bestanden niet uit zonder expliciete review, testomgeving-validatie en
 - Geen bestand in deze map is automatisch uitgevoerd.
 - Deze map vervangt geen handmatige review.
 - Legacy `customer_*` tabellen zijn bewust uitgesloten.
-
+- Runtime role grants maken RLS niet ruimer; ze zorgen alleen dat PostgreSQL de RLS policies kan evalueren.

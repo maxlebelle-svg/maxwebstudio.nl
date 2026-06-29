@@ -552,3 +552,24 @@ Next actions:
 3. Voer grants alleen uit op staging na expliciete approval.
 4. Herhaal Customer A/B isolation en demo isolation.
 5. Houd release `NO-GO` tot isolatie volledig bewezen is.
+
+Prepared patch:
+
+- `supabase/migration-drafts/007_runtime_role_grants.sql`
+
+Patchstatus:
+
+- `PREPARED / NOT EXECUTED`
+
+Grantstrategie:
+
+- `anon`: schema usage, geen directe klantdatatabelrechten.
+- `authenticated`: minimale SQL-operaties op app-tabellen zodat RLS policies kunnen evalueren.
+- `service_role`: server-side backend/admin/test grants.
+- `audit_logs`: geen directe authenticated insert/update/delete; audit helper service-role-only.
+
+Approval nodig:
+
+- Review `007_runtime_role_grants.sql`.
+- Bevestig staging-only uitvoering.
+- Herhaal daarna Customer A/B isolation.
