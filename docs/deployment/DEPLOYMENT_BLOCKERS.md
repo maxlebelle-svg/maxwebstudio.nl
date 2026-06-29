@@ -442,3 +442,40 @@ Ready update:
 - Project ref matcht de test `SUPABASE_URL`.
 - `supabase/.temp/` is toegevoegd aan `.gitignore`.
 - Fase 28 kan opnieuw starten met de Supabase CLI-route.
+
+## Fase 28 staging schema drift blocker
+
+Status: `BLOCKED`
+
+Fase 28 is opnieuw gestart en heeft de eerste echte migration execution op staging bereikt.
+
+Resultaat:
+
+- `001_schema_tables.sql`: PASS.
+- `002_indexes.sql`: FAIL.
+- `003_rls_enablement.sql`: niet uitgevoerd.
+- `004_rls_policies.sql`: niet uitgevoerd.
+- `005_audit_logging_foundation.sql`: niet uitgevoerd.
+- `006_seed_demo_data_optional.sql`: niet uitgevoerd.
+
+Fout:
+
+- `ERROR 42703: column "lead_score" does not exist`
+- Faalpunt: `create index if not exists leads_score_idx on public.leads(lead_score);`
+
+Oorzaak:
+
+- Staging bevat een oudere `public.leads` tabel zonder `lead_score`.
+- De nieuwe schema draft gebruikt `create table if not exists`, waardoor bestaande drift niet wordt gepatcht.
+
+Risico:
+
+- RLS/policies uitvoeren bovenop schema drift kan onbetrouwbare of misleidende testresultaten geven.
+
+Next actions:
+
+1. Reset de stagingdatabase of maak een nieuwe schone testbranch; of
+2. maak een expliciete schema-drift patch voor `public.leads` en mogelijk andere bestaande tabellen;
+3. herhaal daarna Fase 28 vanaf `001_schema_tables.sql`.
+
+Release blijft `NO-GO` totdat migration execution, RLS en Customer A/B isolation volledig PASS zijn.

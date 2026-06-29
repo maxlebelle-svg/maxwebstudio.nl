@@ -1272,3 +1272,38 @@ Bewust niet uitgevoerd:
 - Geen migrations.
 - Geen Supabase writes.
 - Geen productieproject.
+
+## Fase 28 - Supabase Staging Execution Rerun
+
+Status: uitgevoerd tot eerste kritieke fout. Release blijft `NO-GO / BLOCKED`.
+
+Aangemaakt/bijgewerkt:
+
+- `docs/deployment/TEST_RESULTS.md`
+- `docs/deployment/DEPLOYMENT_BLOCKERS.md`
+- `docs/deployment/RELEASE_DECISION_2026-06-29-28-rerun.md`
+- `docs/deployment/RELEASE_DECISION_2026-06-29-28-rerun.json`
+- `docs/PROJECT_STATE.md`
+- `docs/ROADMAP.md`
+
+Resultaat:
+
+- `001_schema_tables.sql` is uitgevoerd op staging/test en geslaagd.
+- `002_indexes.sql` faalde op `lead_score`.
+- `003_rls_enablement.sql`, `004_rls_policies.sql`, `005_audit_logging_foundation.sql` en optionele demo seed zijn niet uitgevoerd.
+
+Oorzaak:
+
+- Staging bevat een oudere `public.leads` tabel zonder `lead_score`.
+- De schema draft gebruikt `create table if not exists` en patcht bestaande schema drift niet.
+
+Bewust niet uitgevoerd:
+
+- Geen verdere migrations na de fout.
+- Geen RLS/customer isolation test op driftend schema.
+- Geen productieaanpassing.
+- Geen echte klantdata gebruikt.
+
+Volgende stap:
+
+- Stagingdatabase resetten/nieuwe testbranch gebruiken of een gerichte schema-drift patch maken.

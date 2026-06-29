@@ -1001,3 +1001,22 @@ Resterend aandachtspunt:
 Volgende actie:
 
 Herstart Fase 28 en voer de migration drafts gecontroleerd uit op het gelinkte test/staging project.
+
+### Rerun resultaat
+
+Uitkomst:
+
+- `001_schema_tables.sql`: PASS.
+- `002_indexes.sql`: FAIL.
+- Resterende migration drafts: niet uitgevoerd.
+
+Blocker:
+
+- Staging heeft schema drift: `public.leads` mist `lead_score`.
+- RLS/customer isolation mag nog niet worden getest op deze driftende basis.
+
+Volgende actie:
+
+1. Kies staging reset/nieuwe testbranch of schema-drift patch.
+2. Herhaal Fase 28.
+3. Pas daarna Fase 28.2: GO/NO-GO voor datalaag.

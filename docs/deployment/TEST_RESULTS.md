@@ -676,3 +676,69 @@ Fase 28 mag pas worden hervat wanneer een veilige SQL execution route beschikbaa
 3. de migration drafts handmatig uitvoeren via de Supabase SQL Editor en de resultaten hier registreren.
 
 Tot die tijd blijft de releasebeslissing `NO-GO / BLOCKED`.
+
+## Fase 28 - Supabase Staging Execution rerun
+
+Status: `NO-GO / BLOCKED`
+
+Uitgevoerd op:
+
+- Gelinkt Supabase project: `maxwebstudio-test`
+- Project ref: matcht de test `SUPABASE_URL`
+- Execution route: `/opt/homebrew/bin/supabase db query --linked --file`
+- Productie geraakt: nee
+- Echte klantdata gebruikt: nee
+- Secrets gelogd: nee
+
+| Stap | Bestand | Verwacht resultaat | Werkelijk resultaat | Status | Evidence / notities |
+| --- | --- | --- | --- | --- | --- |
+| 1 | `supabase/migration-drafts/001_schema_tables.sql` | Schema/tables worden aangemaakt of bestaan idempotent | Query succesvol uitgevoerd | PASS | Geen SQL-fout |
+| 2 | `supabase/migration-drafts/002_indexes.sql` | Indexes worden aangemaakt | Fout op `leads_score_idx`: kolom `lead_score` bestaat niet | FAIL | Supabase error `42703: column "lead_score" does not exist` |
+| 3 | `supabase/migration-drafts/003_rls_enablement.sql` | RLS activeren | Niet uitgevoerd | BLOCKED | Gestopt na kritieke fout in stap 2 |
+| 4 | `supabase/migration-drafts/004_rls_policies.sql` | Policies aanmaken | Niet uitgevoerd | BLOCKED | Gestopt na kritieke fout in stap 2 |
+| 5 | `supabase/migration-drafts/005_audit_logging_foundation.sql` | Audit foundation aanmaken | Niet uitgevoerd | BLOCKED | Gestopt na kritieke fout in stap 2 |
+| 6 | `supabase/migration-drafts/006_seed_demo_data_optional.sql` | Optionele demo seed | Niet uitgevoerd | NOT_APPLICABLE | Niet gekozen en execution gestopt |
+
+Drift-analyse:
+
+- De lokale `001_schema_tables.sql` bevat `public.leads.lead_score`.
+- De stagingdatabase bevat al een oudere `public.leads` tabel zonder `lead_score`.
+- Omdat `001_schema_tables.sql` `create table if not exists` gebruikt, wordt een bestaande oudere tabel niet automatisch aangepast.
+- Daardoor faalt `002_indexes.sql` bij het aanmaken van `leads_score_idx`.
+
+Geobserveerde staging `public.leads` kolommen:
+
+- `id`
+- `customer_id`
+- `name`
+- `company`
+- `email`
+- `phone`
+- `source`
+- `interest`
+- `status`
+- `converted_customer_id`
+- `message`
+- `is_demo`
+- `environment`
+- `metadata`
+- `created_at`
+- `updated_at`
+
+Conclusie:
+
+- De migration drafts zijn nog niet succesvol uitvoerbaar op deze bestaande stagingdatabase.
+- De stagingdatabase is niet schoon of bevat schema drift uit eerdere testfases.
+- RLS, customer isolation, demo user, interne rollen en audit foundation zijn niet getest in deze run.
+
+Rollback:
+
+- Geen automatische rollback uitgevoerd.
+- Productie is niet geraakt.
+- Aanbevolen: stagingdatabase resetten/nieuwe testbranch gebruiken of een expliciete schema-drift patch maken in een aparte fixfase.
+
+Next action:
+
+1. Kies reset van stagingdatabase of maak een gerichte schema-drift patch.
+2. Herhaal Fase 28 vanaf stap 1.
+3. Voer RLS/customer isolation pas uit nadat alle migration drafts zonder kritieke fout zijn toegepast.
