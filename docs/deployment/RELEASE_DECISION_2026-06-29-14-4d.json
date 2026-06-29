@@ -6,33 +6,27 @@
   "scope": "Prepare targeted SQL patch for RLS recursion only. No production changes, no SQL execution.",
   "patchFile": "supabase/rls-recursion-patch.sql",
   "patchExecuted": false,
+  "productionTouched": false,
+  "realCustomerDataUsed": false,
   "summary": {
     "blockerInvestigated": true,
     "rootCause": "current_app_role() and current_profile_id() read public.profiles while policies can invoke those helpers again, causing RLS recursion.",
     "customerIsolationWeakened": false,
     "broadBypassPoliciesAdded": false,
     "destructiveSqlIncluded": false,
-    "goNoGo": "BLOCKED",
     "status": "PATCH PREPARED / NOT EXECUTED"
   },
-  "pass": [
-    "RLS recursion blocker investigated",
-    "Targeted SQL patch prepared",
-    "Patch only changes helper functions",
-    "No broad bypass policies added",
-    "Customer ownership policies remain in place",
-    "No production touched",
-    "No real customer data used",
-    "No secrets included"
+  "helpersChanged": [
+    "current_profile_id",
+    "current_app_role",
+    "has_app_role",
+    "is_admin_role"
   ],
-  "blocked": [
-    "Patch manual review",
-    "Patch execution on Supabase test project",
-    "Fase 14.4B rerun",
-    "Customer A/B isolation evidence",
-    "Deployment blocker approvals"
+  "expectedImpact": [
+    "Profile and role lookup avoids recursive profile RLS evaluation.",
+    "Customer ownership policies remain in place.",
+    "Customer A/B isolation must still be proven by rerun."
   ],
-  "helpersChanged": ["current_profile_id", "current_app_role", "has_app_role", "is_admin_role"],
   "rollback": [
     "Restore helper definitions from supabase/rls-policies.sql.",
     "Repeat Fase 14.4B tests."
@@ -43,7 +37,5 @@
     "Repeat Fase 14.4B RLS/customer-isolation tests.",
     "Keep release NO-GO until Customer A/B isolation passes and blockers are manually reviewed."
   ],
-  "secretsIncluded": false,
-  "productionTouched": false,
-  "realCustomerDataUsed": false
+  "secretsIncluded": false
 }

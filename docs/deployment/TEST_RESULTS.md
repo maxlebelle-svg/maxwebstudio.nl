@@ -226,6 +226,50 @@ Conclusie:
 - RLS en customer isolation zijn nog niet geslaagd.
 - Release blijft `NO-GO / BLOCKED`.
 
+## Fase 14.4D RLS recursion patch
+
+Status: `PATCH PREPARED / NOT EXECUTED`
+
+Probleem uit de 14.4B rerun:
+
+- RLS-selects geven `500`.
+- Postgres foutcode: `54001`.
+- Foutmelding: `stack depth limit exceeded`.
+
+Analyse:
+
+| Controle | Resultaat | Status | Notities |
+| --- | --- | --- | --- |
+| `current_profile_id()` | Leest `public.profiles` | RECURSION RISK | Wordt gebruikt binnen policies die via `profiles` kunnen lopen |
+| `current_app_role()` | Leest `public.profiles.role` | RECURSION RISK | Wordt gebruikt door admin/staff/demo policies, ook op `profiles` |
+| `has_app_role()` | Roept `current_app_role()` aan | RECURSION RISK | Erft recursierisico |
+| `is_admin_role()` | Roept `has_app_role()` aan | RECURSION RISK | Erft recursierisico |
+| Customer policies | Blijven gekoppeld via `customers.auth_user_id` of `customers.profile_id` | OK | Customer isolation wordt niet verzwakt |
+
+Patch:
+
+- `supabase/rls-recursion-patch.sql`
+
+Impact:
+
+- Maakt `current_profile_id()`, `current_app_role()`, `has_app_role()` en `is_admin_role()` `SECURITY DEFINER`.
+- Zet een expliciete `search_path`.
+- Beperkt helperlookup tot actieve profiles.
+- Laat bestaande customer ownership policies intact.
+- Voegt geen brede bypass policies toe.
+
+Rollback:
+
+- Herstel de helperfuncties uit `supabase/rls-policies.sql`.
+- Voer daarna Fase 14.4B opnieuw uit.
+
+Belangrijk:
+
+- Deze patch is nog niet uitgevoerd.
+- Eerst handmatig reviewen.
+- Daarna alleen uitvoeren op het Supabase testproject.
+- Daarna opnieuw RLS/customer-isolation testen.
+
 ## Fase 14.3 lokale rooktest
 
 Uitgevoerd zonder productie, zonder SQL en zonder live Supabase.

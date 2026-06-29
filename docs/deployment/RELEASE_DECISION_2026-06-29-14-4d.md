@@ -7,7 +7,7 @@ Scope: Fase 14.4D RLS Recursion Patch
 
 ## Samenvatting
 
-De RLS-recursie uit de 14.4B rerun is geanalyseerd.
+De RLS-recursie uit de 14.4B rerun is geanalyseerd. De helperfuncties `current_profile_id()` en `current_app_role()` lezen `public.profiles`, terwijl policies op `public.profiles` en gerelateerde tabellen opnieuw rol/profile checks aanroepen. Daardoor ontstaat recursie en eindigt de test met `stack depth limit exceeded`.
 
 Er is een gerichte SQL patch voorbereid:
 
@@ -29,11 +29,16 @@ De patch is nog niet uitgevoerd. Productie is niet geraakt.
 - Herstel de helperfuncties uit `supabase/rls-policies.sql`.
 - Herhaal Fase 14.4B.
 
+## BLOCKED
+
+- Patch is nog niet handmatig gereviewd.
+- Patch is nog niet uitgevoerd op het testproject.
+- RLS/customer-isolation is nog niet opnieuw getest.
+- Deployment blockers zijn niet approved.
+
 ## Next Actions
 
 1. Review `supabase/rls-recursion-patch.sql`.
 2. Voer de patch alleen uit op het Supabase testproject.
 3. Herhaal Fase 14.4B RLS/customer-isolation tests.
 4. Houd release `NO-GO` totdat Customer A/B isolation PASS is.
-
-Er is geen productie geraakt en er zijn geen secrets opgeslagen.

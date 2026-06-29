@@ -83,6 +83,38 @@ Belangrijkste technische blocker:
 
 Geen blocker is automatisch approved.
 
+## Fase 14.4D - RLS recursion patch voorbereid
+
+Status: `PATCH PREPARED / NOT EXECUTED`
+
+Patchbestand:
+
+- `supabase/rls-recursion-patch.sql`
+
+Doel:
+
+- RLS-recursie oplossen in helperfuncties die `public.profiles` raadplegen.
+- Customer isolation intact houden.
+- Geen brede bypass policies toevoegen.
+
+Verwachte impact:
+
+- `current_profile_id()` en `current_app_role()` kunnen profile/role lookup uitvoeren zonder recursie door profile-RLS.
+- `has_app_role()` en `is_admin_role()` blijven dezelfde rolgrens gebruiken.
+- Policies op klanten, websites, projecten, bestanden, offertes, facturen en abonnementen blijven ownership afdwingen via customer-koppelingen.
+
+Rollback:
+
+- Herstel helperfunctie-definities uit `supabase/rls-policies.sql`.
+- Herhaal RLS/customer-isolation tests.
+
+Volgende actie:
+
+1. Review `supabase/rls-recursion-patch.sql`.
+2. Voer de patch alleen uit op het Supabase testproject.
+3. Herhaal Fase 14.4B exact-id RLS/customer-isolation tests.
+4. Zet blockers pas in review/approved na echte PASS evidence.
+
 ## Fase 14.4C - Permission patch voorbereid
 
 Status: `PATCH PREPARED / NOT EXECUTED`
