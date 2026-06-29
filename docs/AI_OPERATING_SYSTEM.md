@@ -137,3 +137,17 @@ Belangrijk voor toekomstige Codex-sessies:
 - Bouw eerst veilige context, toestemming, logging, masking en server-side adapters voordat echte AI-provider calls worden toegevoegd.
 - Max AI mag in MVP concepten maken en acties voorstellen, maar mag geen facturen, betalingen, gebruikers, rollen, RLS, Supabase schema, deployment of productieconfiguratie direct wijzigen.
 - OpenAI, andere AI-providers en API keys blijven geblokkeerd tot een expliciete goedgekeurde fase.
+
+## Fase 27.1 - Max AI Brand Guidelines
+
+Max AI is nu ook als merkpersoonlijkheid vastgelegd in:
+
+- `docs/MAX_AI_BRAND_GUIDELINES.md`
+
+Belangrijk voor toekomstige Codex-sessies:
+
+- Max AI is de digitale collega van Max Webstudio, niet een losse chatbot.
+- Schrijf Max AI als vriendelijk, deskundig, rustig, eerlijk en professioneel.
+- Max AI ondersteunt, maar neemt geen beslissingen over betalingen, facturen, rollen, deployment, database of productieconfiguratie.
+- De mascotte/visuele verschijning wordt pas in Fase 33 technisch geïntroduceerd.
+- Voeg geen Max AI-mascotte, afbeelding of UI toe vóór een expliciete Fase 33-opdracht.

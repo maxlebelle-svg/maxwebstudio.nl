@@ -1115,3 +1115,30 @@ Bewust niet uitgevoerd:
 - Geen OpenAI-calls gedaan.
 - Geen Supabase omgeving gewijzigd.
 - Geen API keys of secrets toegevoegd.
+
+## Fase 27.1 - Max AI Brand Guidelines
+
+Status: afgerond als merk- en productrichtlijn zonder code, UI, afbeelding, OpenAI, Supabase wijzigingen, API keys of runtimeaanpassingen.
+
+Aangemaakt/bijgewerkt:
+
+- `docs/MAX_AI_BRAND_GUIDELINES.md`
+- `docs/PROJECT_STATE.md`
+- `docs/ROADMAP.md`
+- `docs/AI_OPERATING_SYSTEM.md`
+- `docs/MAX_AI_ARCHITECTURE.md`
+
+Resultaat:
+
+- Max AI is vastgelegd als officiële digitale medewerker van Max Webstudio.
+- Persoonlijkheid, tone of voice, rol, veiligheidsgrenzen en verschijningsvorm zijn beschreven.
+- De mascotte wordt pas in Fase 33 technisch geïntroduceerd als onderdeel van de Max AI Experience MVP.
+- Max AI verschijnt niet op loginpagina's, juridische pagina's, foutpagina's, betaalflows of security/deployment approval schermen.
+
+Bewust niet uitgevoerd:
+
+- Geen UI toegevoegd.
+- Geen afbeelding of mascottebestand toegevoegd.
+- Geen OpenAI-calls.
+- Geen codewijzigingen in runtime.
+- Geen API keys of secrets toegevoegd.

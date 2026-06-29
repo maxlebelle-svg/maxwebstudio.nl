@@ -226,3 +226,15 @@ Max AI wordt het brein boven de workflows, maar niet de eigenaar van kritieke wa
 
 De bron van waarheid blijft Supabase met Auth/RLS, duidelijke ownership en menselijke controle op kritieke acties.
 
+## Merkidentiteit
+
+De merkpersoonlijkheid van Max AI is vastgelegd in:
+
+- `docs/MAX_AI_BRAND_GUIDELINES.md`
+
+Architectuur en UI moeten deze richtlijnen volgen:
+
+- Max AI voelt als een vriendelijke digitale collega van Max Webstudio.
+- Max AI ondersteunt en begeleidt, maar beslist niet zelfstandig.
+- De mascotte wordt pas in Fase 33 als zichtbaar UI-element geintroduceerd.
+- Max AI verschijnt niet in login, juridische pagina's, betaalflows of security/deployment approval schermen.

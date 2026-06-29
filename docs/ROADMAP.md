@@ -868,3 +868,30 @@ Aanbevolen volgende stappen:
 2. Bevestig dat Max AI de centrale productlaag wordt.
 3. Hervat daarna Fase 28: Supabase staging execution met evidence.
 4. Bouw pas daarna zichtbare Max AI intake MVP.
+
+## Fase 27.1 - Max AI Brand Guidelines
+
+Afgerond als merk- en productrichtlijn:
+
+- Max AI is beschreven als digitale collega van Max Webstudio.
+- Persoonlijkheid, tone of voice en veiligheidsgrenzen zijn vastgelegd.
+- Visuele richting voor de toekomstige mascotte is vastgelegd zonder UI of asset toe te voegen.
+- Fase 33 blijft het moment waarop Max AI voor bezoekers zichtbaar wordt.
+
+Nieuw document:
+
+- `MAX_AI_BRAND_GUIDELINES.md`
+
+Nog niet uitgevoerd:
+
+- geen code
+- geen UI
+- geen afbeelding
+- geen OpenAI
+- geen Supabase
+- geen API keys
+
+Aanbevolen volgende stap:
+
+1. Geen extra documentatiefase meer toevoegen.
+2. Start daarna Fase 28: Supabase Staging Execution.
