@@ -623,3 +623,34 @@ Nog niet actief:
 - Website scaffold/build.
 - Database-uitbreiding.
 - Nieuwe API keys.
+
+## Fase 15.1 - AI Website Wizard Intake UI
+
+Status: gebouwd als lokale admin/developer intake-UI. Er zijn geen AI-calls, databasewijzigingen, SQL, nieuwe dependencies of productieaanpassingen gedaan.
+
+Bijgewerkt:
+
+- `public/admin-dashboard.html`
+- `public/styles.css`
+- `public/src/services/aiWebsiteWizardService.js`
+- `docs/AI_WEBSITE_WIZARD.md`
+
+Resultaat:
+
+- Admin-module **AI Wizard** toegevoegd aan de platformnavigatie.
+- Intakeformulier met bedrijfsnaam, branche, doelgroep, diensten, onderscheidend vermogen, stijl, kleuren, bestaande website, contactgegevens, pagina's, CTA en notities.
+- Verplichte intakevalidatie voor de basisvelden.
+- Conceptopslag in `maxwebstudioAiWebsiteWizardState`.
+- Stapnavigatie en voortgang op basis van de bestaande 15-stappen workflow.
+- Read-only samenvatting/preview van de verzamelde input.
+- Reset/clear draft functionaliteit met bevestiging.
+- Developer Mode debugkaart toont alleen interne wizardmetadata wanneer Developer Mode aan staat.
+
+Nog niet actief:
+
+- OpenAI-calls.
+- AI-contentgeneratie.
+- Logo-generatie.
+- Website scaffold/build.
+- Supabase opslag voor wizard-state.
+- Publicatie-automatisering.

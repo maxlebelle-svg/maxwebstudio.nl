@@ -402,4 +402,31 @@ Niet live:
 
 Volgende logische stap:
 
-- AI intake/briefing-provider ontwerpen en pas daarna gecontroleerd een server-side AI-adapter toevoegen.
+- intake-UI bouwen waarin klant/medewerker bedrijfsinformatie lokaal kan vastleggen.
+
+### 15.1 - AI Website Wizard Intake UI
+
+Afgerond als eerste zichtbare wizardlaag:
+
+- AI Wizard-module toegevoegd aan het admin-dashboard
+- lokale intakevelden toegevoegd
+- validatie toegevoegd
+- progress en stapnavigatie toegevoegd
+- read-only preview toegevoegd
+- reset/clear draft toegevoegd
+- Developer Mode debug toegevoegd
+- opslag blijft `maxwebstudioAiWebsiteWizardState`
+
+Niet live:
+
+- geen OpenAI-calls
+- geen AI-content
+- geen logo-generatie
+- geen websitebouw
+- geen SQL
+- geen nieuwe dependencies
+- geen API keys
+
+Volgende logische stap:
+
+- AI intake/briefing-output voorbereiden op basis van de verzamelde lokale wizard-state, nog steeds zonder externe AI-provider of productie-impact.

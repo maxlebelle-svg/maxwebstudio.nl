@@ -1,16 +1,17 @@
 # AI Website Wizard
 
-Status: Fase 15.0 foundation. Geen productieaanpassingen, geen SQL, geen API keys en geen AI-calls.
+Status: Fase 15.1 intake UI. Geen productieaanpassingen, geen SQL, geen API keys en geen AI-calls.
 
 ## Doel
 
-De AI Website Wizard wordt de toekomstige workflow waarmee Max Webstudio websites kan voorbereiden voor klanten. In deze fase is alleen de technische basis gelegd:
+De AI Website Wizard wordt de toekomstige workflow waarmee Max Webstudio websites kan voorbereiden voor klanten. In deze fase is de technische basis gelegd en is de eerste lokale intake-UI toegevoegd:
 
 - architectuur
 - workflow
 - state management
 - placeholder services
 - Developer Mode readiness
+- intake UI in het admin-dashboard
 - uitbreidbaarheid voor latere AI-functionaliteit
 
 ## Niet In Deze Fase
@@ -99,18 +100,65 @@ Deze interfaces zijn bedoeld als migratievriendelijke contracten voor toekomstig
 
 ## Placeholder Services
 
-De service exposeert bewust alleen veilige foundation-functies:
+De service exposeert bewust alleen veilige foundation- en intakefuncties:
 
 - `getAiWebsiteWizardArchitecture()`
 - `getAiWebsiteWizardReadiness()`
 - `getWizardDeveloperSummary()`
 - `getAiWebsiteWizardWorkflow()`
+- `getOrCreateWizardDraft()`
 - `createWizardDraft()`
 - `updateWizardStep()`
 - `listWizardDrafts()`
+- `validateWizardIntake()`
+- `saveWizardIntake()`
+- `getWizardIntakeSummary()`
+- `clearWizardDrafts()`
 - `getWizardProgress()`
 
 Deze functies voeren geen externe calls uit.
+
+## Fase 15.1 - Intake UI
+
+De eerste zichtbare wizard staat in `public/admin-dashboard.html` onder de module **AI Wizard**.
+
+De UI bevat:
+
+- stapnavigatie op basis van de bestaande workflowconfig
+- voortgangsbalk
+- intakeformulier
+- validatie op verplichte intakevelden
+- lokale opslag in `maxwebstudioAiWebsiteWizardState`
+- read-only samenvatting/preview
+- reset/clear draft actie met bevestiging
+- Developer Mode debugkaart
+
+Velden in de intake:
+
+- bedrijfsnaam
+- branche
+- doelgroep
+- belangrijkste diensten
+- onderscheidend vermogen
+- gewenste uitstraling
+- kleurenvoorkeur
+- bestaande website
+- contactgegevens
+- gewenste pagina's
+- belangrijkste CTA
+- notities
+
+Verplichte velden:
+
+- bedrijfsnaam
+- branche
+- doelgroep
+- belangrijkste diensten
+- contactgegevens
+- gewenste pagina's
+- belangrijkste CTA
+
+De intake wordt verdeeld over bestaande workflowstappen zoals `business_information`, `industry_selection`, `services`, `pages`, `contact_details`, `ctas`, `brand_style`, `colors` en `domain`. Daardoor blijft de state migreerbaar naar een latere Supabase-tabel zonder dat de UI een apart dataspoor maakt.
 
 ## Toekomstige Providers
 
@@ -136,10 +184,14 @@ Developer Mode toont:
 - aantal fases/stappen
 - storage key
 - huidige draft count
+- laatste intake-progress
+- intake-validatiestatus
 - waarschuwingen
 - toekomstige capabilities
 
-De kaart is read-only en voert geen AI-acties uit.
+De Developer Mode debugkaart in de AI Wizard-sectie toont alleen interne draftinformatie wanneer Developer Mode aan staat.
+
+De kaarten voeren geen AI-acties uit.
 
 ## Security
 
@@ -152,12 +204,15 @@ De kaart is read-only en voert geen AI-acties uit.
 
 ## Release Status
 
-Fase 15.0 is klaar wanneer:
+Fase 15.1 is klaar wanneer:
 
 - docs bestaan
 - workflowconfig bestaat
 - state model bestaat
 - service bestaat
-- Developer Mode readiness zichtbaar is
+- intake UI zichtbaar is in de admin
+- intakeconcept lokaal opslaat
+- preview en reset werken
+- Developer Mode readiness/debug zichtbaar is
 - JS syntaxchecks slagen
 - geen secrets zijn toegevoegd

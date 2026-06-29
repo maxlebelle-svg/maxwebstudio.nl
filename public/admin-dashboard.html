@@ -38,6 +38,7 @@
           <a href="#bestanden">Bestanden</a>
           <span class="admin-nav-group">Platform</span>
           <a href="#klantportaal">Klantportaal</a>
+          <a href="#ai">AI Wizard</a>
           <a href="#instellingen">Instellingen</a>
           <a href="#integraties">Integraties</a>
           <a href="#demo-omgeving">Demo omgeving</a>
@@ -595,8 +596,85 @@
           </section>
 
           <section class="admin-section" id="ai">
-            <div class="admin-section-heading"><div><p class="section-kicker">AI</p><h2>AI placeholder</h2></div></div>
-            <article class="admin-card detail-card"><span>Status</span><strong>Gepland</strong><small>Geen AI-acties in deze fase.</small></article>
+            <div class="admin-section-heading">
+              <div>
+                <p class="section-kicker">AI Website Wizard</p>
+                <h2>Intake UI</h2>
+              </div>
+              <mark class="status-badge status-prepared">Lokale conceptmodus</mark>
+            </div>
+            <div class="settings-alert">
+              <strong>Geen AI-calls actief</strong>
+              <span>Deze wizard verzamelt alleen intakegegevens in lokale concept-state. OpenAI, logo-generatie, databasewrites en publicatie blijven uitgeschakeld.</span>
+            </div>
+
+            <div class="ai-wizard-layout">
+              <article class="admin-card settings-card ai-wizard-progress-card">
+                <div class="settings-card-heading">
+                  <div>
+                    <span>Workflow</span>
+                    <strong>Stap voor stap</strong>
+                  </div>
+                  <mark class="status-badge status-prepared" id="ai-wizard-status">Prepared</mark>
+                </div>
+                <div class="project-progress-card">
+                  <div><strong>Voortgang</strong><span id="ai-wizard-progress-label">0%</span></div>
+                  <div class="project-progress-track" aria-hidden="true"><span id="ai-wizard-progress-bar"></span></div>
+                </div>
+                <div class="ai-wizard-step-nav" id="ai-wizard-step-nav" aria-label="AI Website Wizard stappen"></div>
+              </article>
+
+              <form class="admin-card settings-card ai-wizard-form" id="ai-wizard-form">
+                <div class="settings-card-heading">
+                  <div>
+                    <span>Intake</span>
+                    <strong>Bedrijfsinformatie verzamelen</strong>
+                  </div>
+                  <mark class="status-badge status-planned">Fase 15.1</mark>
+                </div>
+                <div class="admin-profile-fields">
+                  <label for="ai-wizard-company-name">Bedrijfsnaam<input id="ai-wizard-company-name" name="companyName" type="text" autocomplete="organization" required /></label>
+                  <label for="ai-wizard-industry">Branche<input id="ai-wizard-industry" name="industry" type="text" placeholder="Bijv. bouwbedrijf, horeca, coaching" required /></label>
+                  <label class="admin-profile-wide" for="ai-wizard-audience">Doelgroep<textarea id="ai-wizard-audience" name="audience" required placeholder="Voor wie is de website bedoeld?"></textarea></label>
+                  <label class="admin-profile-wide" for="ai-wizard-services">Belangrijkste diensten<textarea id="ai-wizard-services" name="services" required placeholder="Noem de belangrijkste diensten of producten."></textarea></label>
+                  <label class="admin-profile-wide" for="ai-wizard-unique-value">Onderscheidend vermogen<textarea id="ai-wizard-unique-value" name="uniqueValue" placeholder="Waarom kiezen klanten voor dit bedrijf?"></textarea></label>
+                  <label for="ai-wizard-style">Gewenste uitstraling<input id="ai-wizard-style" name="desiredStyle" type="text" placeholder="Modern, luxe, rustig, zakelijk..." /></label>
+                  <label for="ai-wizard-colors">Kleurenvoorkeur<input id="ai-wizard-colors" name="colorPreference" type="text" placeholder="Blauw/wit, warm, donker..." /></label>
+                  <label for="ai-wizard-existing-website">Bestaande website<input id="ai-wizard-existing-website" name="existingWebsite" type="url" placeholder="https://..." /></label>
+                  <label for="ai-wizard-contact">Contactgegevens<input id="ai-wizard-contact" name="contactDetails" type="text" placeholder="E-mail, telefoon, WhatsApp" required /></label>
+                  <label class="admin-profile-wide" for="ai-wizard-pages">Gewenste pagina's<textarea id="ai-wizard-pages" name="desiredPages" required placeholder="Home, Over ons, Diensten, Projecten, Contact..."></textarea></label>
+                  <label for="ai-wizard-primary-cta">Belangrijkste CTA<input id="ai-wizard-primary-cta" name="primaryCta" type="text" placeholder="Offerte aanvragen, afspraak maken..." required /></label>
+                  <label class="admin-profile-wide" for="ai-wizard-notes">Notities<textarea id="ai-wizard-notes" name="notes" placeholder="Extra context voor latere AI-briefing."></textarea></label>
+                </div>
+                <div class="admin-profile-actions">
+                  <button class="button primary" type="submit">Concept opslaan</button>
+                  <button class="button secondary" id="ai-wizard-reset" type="button">Concept wissen</button>
+                  <p class="admin-form-message" id="ai-wizard-message" role="status"></p>
+                </div>
+              </form>
+
+              <article class="admin-card settings-card ai-wizard-preview-card">
+                <div class="settings-card-heading">
+                  <div>
+                    <span>Preview</span>
+                    <strong>Samenvatting intake</strong>
+                  </div>
+                  <mark class="status-badge status-planned" id="ai-wizard-validation">Concept</mark>
+                </div>
+                <div class="settings-status-list" id="ai-wizard-preview"></div>
+              </article>
+
+              <article class="admin-card settings-card ai-wizard-debug-card" id="ai-wizard-debug" hidden>
+                <div class="settings-card-heading">
+                  <div>
+                    <span>Developer Mode</span>
+                    <strong>Wizard debug</strong>
+                  </div>
+                  <mark class="status-badge status-warning">Alleen intern</mark>
+                </div>
+                <div class="settings-status-list" id="ai-wizard-debug-output"></div>
+              </article>
+            </div>
           </section>
         </div>
 
@@ -1407,6 +1485,8 @@
           invoiceWriteReadiness: null,
           subscriptionSourceStatus: null,
           subscriptionWriteReadiness: null,
+          aiWizardService: null,
+          aiWizardSelectedStepId: "",
         };
 
         const adminTokenInput = document.getElementById("admin-token");
@@ -1616,6 +1696,31 @@
         const fileQuickActions = {
           open: document.getElementById("file-open"),
           copy: document.getElementById("file-copy-link"),
+        };
+        const aiWizardForm = document.getElementById("ai-wizard-form");
+        const aiWizardReset = document.getElementById("ai-wizard-reset");
+        const aiWizardMessage = document.getElementById("ai-wizard-message");
+        const aiWizardStepNav = document.getElementById("ai-wizard-step-nav");
+        const aiWizardStatus = document.getElementById("ai-wizard-status");
+        const aiWizardProgressLabel = document.getElementById("ai-wizard-progress-label");
+        const aiWizardProgressBar = document.getElementById("ai-wizard-progress-bar");
+        const aiWizardPreview = document.getElementById("ai-wizard-preview");
+        const aiWizardValidation = document.getElementById("ai-wizard-validation");
+        const aiWizardDebug = document.getElementById("ai-wizard-debug");
+        const aiWizardDebugOutput = document.getElementById("ai-wizard-debug-output");
+        const aiWizardFields = {
+          companyName: document.getElementById("ai-wizard-company-name"),
+          industry: document.getElementById("ai-wizard-industry"),
+          audience: document.getElementById("ai-wizard-audience"),
+          services: document.getElementById("ai-wizard-services"),
+          uniqueValue: document.getElementById("ai-wizard-unique-value"),
+          desiredStyle: document.getElementById("ai-wizard-style"),
+          colorPreference: document.getElementById("ai-wizard-colors"),
+          existingWebsite: document.getElementById("ai-wizard-existing-website"),
+          contactDetails: document.getElementById("ai-wizard-contact"),
+          desiredPages: document.getElementById("ai-wizard-pages"),
+          primaryCta: document.getElementById("ai-wizard-primary-cta"),
+          notes: document.getElementById("ai-wizard-notes"),
         };
         const careOverview = document.getElementById("care-overview");
         const subscriptionList = document.getElementById("subscription-list");
@@ -3097,6 +3202,131 @@
           return state.developerModules;
         }
 
+        async function loadAiWizardService() {
+          if (state.aiWizardService) return state.aiWizardService;
+          state.aiWizardService = await import("./src/services/aiWebsiteWizardService.js");
+          return state.aiWizardService;
+        }
+
+        function getAiWizardFormData() {
+          return Object.fromEntries(Object.entries(aiWizardFields).map(([key, field]) => [key, field?.value?.trim() || ""]));
+        }
+
+        function fillAiWizardForm(intake = {}) {
+          Object.entries(aiWizardFields).forEach(([key, field]) => {
+            if (field) field.value = intake[key] || "";
+          });
+        }
+
+        function setAiWizardMessage(text = "", type = "success") {
+          aiWizardMessage.textContent = text;
+          aiWizardMessage.dataset.type = type;
+          aiWizardMessage.classList.toggle("success", type === "success");
+          aiWizardMessage.classList.toggle("error", type === "error");
+        }
+
+        function renderAiWizardRows(container, rows = []) {
+          container.replaceChildren();
+          rows.forEach((row) => {
+            const item = document.createElement("div");
+            const label = document.createElement("strong");
+            const value = document.createElement("span");
+            label.textContent = row.label;
+            value.textContent = row.value || "-";
+            item.append(label, value);
+            container.append(item);
+          });
+        }
+
+        function renderAiWizardStepNav(service, summary) {
+          const workflow = service.getAiWebsiteWizardWorkflow();
+          const selectedStepId = state.aiWizardSelectedStepId || summary.state.currentStepId || workflow.steps[0]?.id || "";
+          state.aiWizardSelectedStepId = selectedStepId;
+          aiWizardStepNav.replaceChildren();
+          workflow.steps.forEach((step) => {
+            const button = document.createElement("button");
+            const stepState = summary.state.steps[step.id] || {};
+            button.className = "ai-wizard-step-button";
+            button.type = "button";
+            button.classList.toggle("is-active", step.id === selectedStepId);
+            button.innerHTML = `${step.title}<small>${step.phase} - ${stepState.status || "pending"}</small>`;
+            button.addEventListener("click", async () => {
+              state.aiWizardSelectedStepId = step.id;
+              const draft = service.getOrCreateWizardDraft();
+              service.updateWizardStep(draft.id, step.id, { status: stepState.status || "pending" });
+              await renderAiWizardUi();
+            });
+            aiWizardStepNav.append(button);
+          });
+        }
+
+        function renderAiWizardDebug(service, summary) {
+          const developerMode = isDeveloperModeEnabled();
+          aiWizardDebug.hidden = !developerMode;
+          if (!developerMode) {
+            aiWizardDebugOutput.replaceChildren();
+            return;
+          }
+          const drafts = service.listWizardDrafts();
+          renderAiWizardRows(aiWizardDebugOutput, [
+            { label: "Storage key", value: "maxwebstudioAiWebsiteWizardState" },
+            { label: "Drafts", value: String(drafts.length) },
+            { label: "Laatste draft", value: summary.state.id },
+            { label: "Workflow versie", value: summary.state.workflowVersion },
+            { label: "Huidige stap", value: summary.state.currentStepId },
+            { label: "Status", value: summary.state.status },
+            { label: "Laatste update", value: formatDate(summary.state.updatedAt) },
+            { label: "AI-calls", value: "Uitgeschakeld" },
+          ]);
+        }
+
+        async function renderAiWizardUi(message = null) {
+          if (!aiWizardForm) return;
+          try {
+            const service = await loadAiWizardService();
+            const draft = service.listWizardDrafts()[0] || null;
+            const summary = service.getWizardIntakeSummary(draft);
+            fillAiWizardForm(summary.intake);
+            renderAiWizardStepNav(service, summary);
+            renderAiWizardRows(aiWizardPreview, summary.rows);
+            aiWizardProgressLabel.textContent = `${summary.progress.percentage}%`;
+            aiWizardProgressBar.style.width = `${summary.progress.percentage}%`;
+            aiWizardStatus.textContent = summary.state.status || "Prepared";
+            aiWizardValidation.textContent = summary.validation.valid ? "Compleet" : "Concept";
+            aiWizardValidation.className = `status-badge ${summary.validation.valid ? "status-active" : "status-planned"}`;
+            renderAiWizardDebug(service, summary);
+            if (message) setAiWizardMessage(message.text, message.type);
+          } catch (error) {
+            console.error("AI Website Wizard UI kon niet laden", error);
+            setAiWizardMessage("AI Website Wizard kon niet worden geladen.", "error");
+          }
+        }
+
+        async function saveAiWizardIntake(event) {
+          event.preventDefault();
+          const service = await loadAiWizardService();
+          const data = getAiWizardFormData();
+          const validation = service.validateWizardIntake(data);
+          if (!validation.valid) {
+            setAiWizardMessage(validation.errors.join(" "), "error");
+            return;
+          }
+          const result = service.saveWizardIntake(data);
+          state.aiWizardSelectedStepId = result.state.currentStepId;
+          await renderAiWizardUi({ text: "AI Website Wizard intake opgeslagen als lokaal concept.", type: "success" });
+          await renderDeveloperToolsSummary();
+        }
+
+        async function resetAiWizardDraft() {
+          if (!window.confirm("AI Website Wizard concept lokaal wissen?")) return;
+          const service = await loadAiWizardService();
+          service.clearWizardDrafts();
+          state.aiWizardSelectedStepId = "";
+          fillAiWizardForm({});
+          await renderAiWizardUi({ text: "AI Website Wizard concept gewist.", type: "success" });
+          await renderDeveloperToolsSummary();
+        }
+
         function appendDeveloperCard(title, rows = []) {
           const card = document.createElement("article");
           card.className = "admin-card request-card";
@@ -4472,6 +4702,7 @@
 
         function renderAiWebsiteWizardReadiness(modules) {
           const summary = modules.aiWebsiteWizardService.getWizardDeveloperSummary();
+          const intakeSummary = summary.latestDraft ? modules.aiWebsiteWizardService.getWizardIntakeSummary(summary.latestDraft) : null;
           appendDeveloperCard("AI Website Wizard foundation", [
             ["Status", summary.readiness.status],
             ["Workflow versie", summary.readiness.workflowVersion],
@@ -4482,6 +4713,8 @@
             ["Database", summary.architecture.database],
             ["Dependencies", summary.architecture.dependencies],
             ["Drafts lokaal", String(summary.draftCount)],
+            ["Laatste progress", intakeSummary ? `${intakeSummary.progress.percentage}%` : "Geen draft"],
+            ["Intake validatie", intakeSummary?.validation.valid ? "Compleet" : "Concept / ontbrekende velden"],
           ]);
           appendDeveloperCard("AI Wizard workflow", summary.workflow.steps.map((step) => [
             step.title,
@@ -14028,6 +14261,8 @@
         [invoiceSearch, invoiceStatusFilter, invoiceTypeFilter, invoiceCustomerFilter, invoiceProjectFilter, invoiceWebsiteFilter].forEach((filter) => filter.addEventListener("input", renderInvoices));
         [requestStatusFilter, requestPriorityFilter, requestCategoryFilter].forEach((filter) => filter.addEventListener("change", renderRequests));
         settingsForm.addEventListener("submit", saveSettings);
+        aiWizardForm.addEventListener("submit", saveAiWizardIntake);
+        aiWizardReset.addEventListener("click", resetAiWizardDraft);
         runMigrationAnalysis.addEventListener("click", runMigrationAnalysisHandler);
         runDataValidation.addEventListener("click", runDataValidationHandler);
         seedDemoUsersButton.addEventListener("click", seedDemoUsersHandler);
@@ -14171,6 +14406,7 @@
         subscriptionDataModeSelect.value = readStoredSettings().subscriptionDataMode || localStorage.getItem("maxwebstudioSubscriptionDataMode") || "local";
         renderIntegrations();
         renderSystemStatus();
+        renderAiWizardUi();
         syncActiveNav();
         applyAccessControl();
         loadChangeRequests();
