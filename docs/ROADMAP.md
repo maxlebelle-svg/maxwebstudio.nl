@@ -954,3 +954,29 @@ Volgende actie:
    - SQL-drafts handmatig uitvoeren in Supabase SQL Editor met evidence.
 2. Hervat Fase 28 vanaf `001_schema_tables.sql`.
 3. Leg alle resultaten vast in `TEST_RESULTS.md`.
+
+## Fase 28.1 - Development Environment & Staging Readiness
+
+Afgerond als release-engineering readinessfase.
+
+Uitkomst:
+
+- Huidige status: `NOT_READY`.
+- Supabase CLI ontbreekt.
+- Test-only database connection string ontbreekt.
+- psql is aanwezig maar kan zonder connection string niet veilig worden gebruikt.
+- Voorkeursroute is Supabase CLI.
+- Fallbackroute is psql met test-only database connection string.
+
+Nieuwe documenten:
+
+- `DEVELOPMENT_STAGING_READINESS.md`
+- `deployment/DEVELOPMENT_STAGING_READY_CHECKLIST.md`
+
+Roadmapbesluit:
+
+1. Geen nieuwe productfeatures bouwen voordat staging execution uitvoerbaar is.
+2. Eerst tooling of test-only DB-verbinding gereedmaken.
+3. Daarna Fase 28 opnieuw uitvoeren.
+4. Daarna Fase 28.2: resultaten beoordelen en GO/NO-GO voor datalaag.
+5. Pas daarna Fase 29: Supabase Data Layer.

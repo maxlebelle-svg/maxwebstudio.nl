@@ -1204,3 +1204,40 @@ Bewust niet uitgevoerd:
 - Geen productie geraakt.
 - Geen echte klantdata gebruikt.
 - Geen API keys of secrets vastgelegd.
+
+## Fase 28.1 - Development Environment & Staging Readiness
+
+Status: afgerond als release-engineering readinessfase. Huidige environment status: `NOT_READY`.
+
+Aangemaakt/bijgewerkt:
+
+- `docs/DEVELOPMENT_STAGING_READINESS.md`
+- `docs/deployment/DEVELOPMENT_STAGING_READY_CHECKLIST.md`
+- `docs/deployment/DEPLOYMENT_BLOCKERS.md`
+- `docs/PROJECT_STATE.md`
+- `docs/ROADMAP.md`
+
+Resultaat:
+
+- Tooling is geinventariseerd.
+- `.env.local` bevat testflags en Supabase testconfig zonder waarden te tonen.
+- `psql`, Node, npm en Git zijn aanwezig.
+- Supabase CLI ontbreekt.
+- Netlify CLI ontbreekt.
+- Een test-only database connection string ontbreekt.
+- Voorkeursroute is vastgelegd: Supabase CLI.
+- Fallback is vastgelegd: psql met test-only database connection string.
+- SQL Editor is beschreven als handmatige derde route met extra evidenceplicht.
+
+Conclusie:
+
+- Fase 28 mag nog niet opnieuw worden uitgevoerd.
+- Eerst Supabase CLI installeren/configureren of een test-only database connection string toevoegen.
+
+Bewust niet uitgevoerd:
+
+- Geen SQL uitgevoerd.
+- Geen Supabase CLI uitgevoerd.
+- Geen staging writes.
+- Geen productie geraakt.
+- Geen secrets getoond of gelogd.

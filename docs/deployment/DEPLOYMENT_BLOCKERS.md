@@ -395,3 +395,30 @@ Next actions:
 3. Herstart Fase 28 vanaf `001_schema_tables.sql`.
 4. Vul `TEST_RESULTS.md` per SQL-stap aan.
 5. Houd release `NO-GO` totdat staging execution, RLS en customer isolation bewezen zijn.
+
+## Fase 28.1 development environment readiness
+
+Status: `NOT_READY`
+
+Readiness inventarisatie:
+
+| Onderdeel | Status | Notitie |
+| --- | --- | --- |
+| Git | ready | Beschikbaar voor evidence commits |
+| Node.js | ready | Beschikbaar voor checks |
+| npm | ready | Beschikbaar |
+| psql | partial | Aanwezig, maar geen test-only connection string |
+| Supabase CLI | missing | Voorkeursroute ontbreekt |
+| Netlify CLI | missing | Niet nodig voor migration execution |
+| `.env.local` | ready | Aanwezig en door Git genegeerd |
+| `APP_ENV` / `APP_ENVIRONMENT` | ready | Beide op test |
+| Supabase test keys | present | Aanwezig zonder waarden te tonen |
+| DB connection string | missing | Nodig voor psql fallback |
+
+Aanbevolen execution route:
+
+1. Primair: Supabase CLI installeren en koppelen aan test/staging.
+2. Fallback: test-only DB connection string gebruiken met psql.
+3. Handmatig: Supabase SQL Editor alleen met extra evidence per stap.
+
+Blocker blijft open totdat route 1 of 2 klaar is, of handmatige SQL Editor execution expliciet gekozen en gedocumenteerd is.
