@@ -717,3 +717,33 @@ Nog niet actief:
 - Geen offertebackend.
 - Geen Supabase.
 - Geen AI-generatie.
+
+## Premium Demo Portfolio Showcase
+
+Status: demo-engine opgewaardeerd naar een commerciele premium showcase zonder nieuwe demo-sites te bouwen.
+
+Bijgewerkt:
+
+- `public/index.html`
+- `public/styles.css`
+- `public/src/config/demoSites.js`
+- `public/src/components/demoPortfolioEngine.js`
+
+Resultaat:
+
+- Demo's worden nu gepresenteerd als hoogwaardige agency-cases met desktop- en mobiele mockups.
+- De registry bevat showcase-data zoals SEO-score, performance, responsive, conversie, doelgroep, pagina-aantal, doorlooptijd, highlights en CTA-labels.
+- `bouwbedrijf-demo` blijft de eerste live demo en gebruikt realistische scores: SEO 98, Performance 96, Responsive 100 en Conversie 97.
+- De portfolio-sectie heeft een sterkere introductie met trust stats en duidelijke CTA's: `Bekijk live demo` en `Vraag deze website aan`.
+- De aanvraag-CTA verwijst naar de bestaande aanvraagsectie en gebruikt geen nieuwe backend.
+
+Nog niet actief:
+
+- Geen nieuwe demo-site.
+- Geen database.
+- Geen Supabase.
+- Geen AI-generatie.
+
+Volgende geplande demo:
+
+- `restaurant-demo`.

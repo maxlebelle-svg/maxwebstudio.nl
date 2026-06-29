@@ -474,3 +474,23 @@ Niet live/productie:
 Volgende logische stap:
 
 - volgende demo-site toevoegen via dezelfde engine, bijvoorbeeld `restaurant-demo` of `sportschool-demo`.
+
+### Premium Demo Portfolio Showcase
+
+Afgerond als presentatielaag bovenop de bestaande Demo Portfolio Engine:
+
+- demo-cards tonen nu een premium desktop- en mobiele showcase in plaats van eenvoudige placeholders
+- registry uitgebreid met scores, metadata, doelgroep, doorlooptijd, devices, highlights en CTA-data
+- bouwbedrijf-demo blijft live gekoppeld en wordt commercieel sterker gepresenteerd
+- portfolio-intro versterkt met trust stats: 20+ branches, 100% responsive, SEO-klaar en conversiegericht
+- CTA's sturen naar de live demo en bestaande aanvraagsectie
+
+Niet gewijzigd:
+
+- geen nieuwe demo-site gebouwd
+- geen database of Supabase toegevoegd
+- geen backend of AI-calls toegevoegd
+
+Volgende geplande demo:
+
+- `restaurant-demo`.
