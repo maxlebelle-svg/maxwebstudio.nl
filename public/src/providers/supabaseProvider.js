@@ -243,6 +243,27 @@ function assertCrmTaskWriteTable(table) {
   if (!isCrmTasksTable(table)) throw new Error("CRM task writes ondersteunen alleen de crm_tasks tabel.");
 }
 
+async function getLeadNoteWriteClient(context = {}) {
+  if (context.leadNoteWrite !== true) throw new Error("Lead note write context ontbreekt.");
+  return getWriteClient();
+}
+
+function assertLeadNoteWriteTable(table) {
+  if (!isLeadsTable(table)) throw new Error("Lead note writes ondersteunen alleen de leads tabel.");
+}
+
+function assertLeadNotePayload(updates = {}) {
+  const allowed = new Set(["notes", "updated_at", "metadata"]);
+  const keys = Object.keys(updates);
+  if (!keys.length) throw new Error("Lead note write bevat geen toegestane velden.");
+  const blocked = keys.filter((key) => !allowed.has(key));
+  if (blocked.length) throw new Error(`Lead note write mag alleen notes, updated_at en metadata wijzigen. Geblokkeerd: ${blocked.join(", ")}.`);
+  if (typeof updates.notes !== "string" || !updates.notes.trim()) throw new Error("Lead note write vereist een notes-waarde.");
+  if (updates.metadata && updates.metadata.createdBy !== "lead-note-write-mvp") {
+    throw new Error("Lead note write vereist veilige lead-note-write-mvp metadata.");
+  }
+}
+
 export const supabaseProvider = {
   type: "supabase-readonly",
   status: "read-only",
@@ -731,6 +752,20 @@ export const supabaseProvider = {
     const { data, error } = await client.from("crm_tasks").insert(payload).select("*").single();
     if (error) throw new Error(error.message || "CRM-taak aanmaken in Supabase staging is mislukt.");
     return { success: true, table: "crm_tasks", action: "create_crm_task", data };
+  },
+
+  async appendLeadNote(id, updates = {}, context = {}) {
+    assertLeadNoteWriteTable("leads");
+    if (!id) throw new Error("Lead note write vereist een lead id.");
+    assertLeadNotePayload(updates);
+    const client = await getLeadNoteWriteClient(context);
+    const payload = {
+      ...updates,
+      updated_at: updates.updated_at || new Date().toISOString(),
+    };
+    const { data, error } = await client.from("leads").update(payload).eq("id", id).select("*").single();
+    if (error) throw new Error(error.message || "Leadnotitie opslaan in Supabase staging is mislukt.");
+    return { success: true, table: "leads", action: "append_lead_note", data };
   },
 
   setAll() {

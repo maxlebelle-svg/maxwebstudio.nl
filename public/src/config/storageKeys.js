@@ -25,6 +25,8 @@ export const STORAGE_KEYS = Object.freeze({
   lastSupabaseWriteTest: "maxwebstudioLastSupabaseWriteTest",
   crmTaskWriteEnabled: "maxwebstudioCrmTaskWriteEnabled",
   lastCrmTaskWriteStatus: "maxwebstudioLastCrmTaskWriteStatus",
+  leadNoteWriteEnabled: "maxwebstudioLeadNoteWriteEnabled",
+  lastLeadNoteWriteStatus: "maxwebstudioLastLeadNoteWriteStatus",
   lastCustomerWritePreview: "maxwebstudioLastCustomerWritePreview",
   lastCustomerMigrationResult: "maxwebstudioLastCustomerMigrationResult",
   customerDataMode: "maxwebstudioCustomerDataMode",
@@ -64,7 +66,7 @@ export const STORAGE_KEYS = Object.freeze({
 });
 
 export const MODULE_STORAGE_KEYS = Object.freeze({
-  leads: [STORAGE_KEYS.leads, STORAGE_KEYS.leadRequests, STORAGE_KEYS.leadFinderLeads],
+  leads: [STORAGE_KEYS.leads, STORAGE_KEYS.leadRequests, STORAGE_KEYS.leadFinderLeads, STORAGE_KEYS.leadNoteWriteEnabled, STORAGE_KEYS.lastLeadNoteWriteStatus],
   customers: [STORAGE_KEYS.crmCustomers, STORAGE_KEYS.customers],
   websites: [STORAGE_KEYS.managedSites, STORAGE_KEYS.websites],
   projects: [STORAGE_KEYS.projects],
@@ -110,6 +112,8 @@ export const PRIMARY_MODULE_KEYS = Object.freeze({
   deploymentBlockers: STORAGE_KEYS.deploymentBlockers,
   crmTaskWriteEnabled: STORAGE_KEYS.crmTaskWriteEnabled,
   lastCrmTaskWriteStatus: STORAGE_KEYS.lastCrmTaskWriteStatus,
+  leadNoteWriteEnabled: STORAGE_KEYS.leadNoteWriteEnabled,
+  lastLeadNoteWriteStatus: STORAGE_KEYS.lastLeadNoteWriteStatus,
   aiAdminAssistantDrafts: STORAGE_KEYS.aiAdminAssistantDrafts,
 });
 

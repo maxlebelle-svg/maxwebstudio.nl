@@ -1627,3 +1627,46 @@ Bewust nog geblokkeerd:
 - Supabase update/delete voor CRM-taken.
 - Server-side audit logging.
 - Leadnotities, wijzigingsverzoeken en klantportaalberichten.
+
+## Fase 35B - Low-risk Supabase Write MVP: Lead Notes
+
+Status: `IMPLEMENTATIE AFGEROND / STAGING VALIDATIE GEBLOKKEERD`
+
+Doel:
+
+- Tweede low-risk write-MVP toevoegen voor leadnotities.
+- Alleen notitie append op bestaande leads.
+- Geen brede lead-update, delete, scraping of externe API.
+
+Toegevoegd/aangepast:
+
+- `public/src/services/leadNoteWriteService.js` valideert en appendt leadnotities met local fallback.
+- `public/src/providers/supabaseProvider.js` ondersteunt `appendLeadNote()` met veldbeperking.
+- `public/admin-dashboard.html` laat remote/hybrid Leadfinder-records notities opslaan via de write-aware service.
+- `public/src/config/storageKeys.js` registreert de write-gate en laatste statuskeys.
+
+Write-gate:
+
+- Provider mode moet `supabase-write-test` zijn.
+- Lokale vlag `maxwebstudioLeadNoteWriteEnabled=true` moet expliciet aan staan.
+- Productieomgeving blokkeert de write.
+- Supabase runtime-config moet aanwezig zijn.
+
+Fallback:
+
+- Gate uit of Supabase/RLS-fout: notitie wordt lokaal appended in `maxwebstudioLeadFinderLeads`.
+- Lokale leads behouden de bestaande belstatus-update.
+- Laatste resultaat staat in `maxwebstudioLastLeadNoteWriteStatus`.
+
+Validatie:
+
+- Lokale fallback-test: `PASS`.
+- Staging write: `BLOCKED_BY_DNS` tijdens deze run; algemene DNS en Supabase-host gaven `ENOTFOUND`.
+- Er is daardoor geen staging write uitgevoerd en geen testdata aangemaakt in deze poging.
+
+Bewust nog geblokkeerd:
+
+- Productie-write-mode.
+- Lead delete of volledige lead-update.
+- Server-side audit logging.
+- Change requests en klantportaalberichten als writes.

@@ -3801,7 +3801,14 @@
           } catch {
             crmTaskWriteStatus = null;
           }
+          let leadNoteWriteStatus = null;
+          try {
+            leadNoteWriteStatus = JSON.parse(localStorage.getItem("maxwebstudioLastLeadNoteWriteStatus") || "null");
+          } catch {
+            leadNoteWriteStatus = null;
+          }
           const crmTaskWriteEnabled = ["true", "1", "yes", "ja", "enabled"].includes(String(localStorage.getItem("maxwebstudioCrmTaskWriteEnabled") || "").toLowerCase());
+          const leadNoteWriteEnabled = ["true", "1", "yes", "ja", "enabled"].includes(String(localStorage.getItem("maxwebstudioLeadNoteWriteEnabled") || "").toLowerCase());
           appendDeveloperCard("Supabase Data Layer MVP", [
             ["Status", status.readsPrepared ? "Read layer actief" : "Niet actief"],
             ["Modules", status.modules.join(", ")],
@@ -3810,6 +3817,9 @@
             ["CRM task write gate", crmTaskWriteEnabled ? "Lokaal toegestaan" : "Uit"],
             ["CRM task laatste write", crmTaskWriteStatus?.status || "Nog niet uitgevoerd"],
             ["CRM task fallback", crmTaskWriteStatus?.fallbackUsed ? "Ja" : "Nee"],
+            ["Lead note write gate", leadNoteWriteEnabled ? "Lokaal toegestaan" : "Uit"],
+            ["Lead note laatste write", leadNoteWriteStatus?.status || "Nog niet uitgevoerd"],
+            ["Lead note fallback", leadNoteWriteStatus?.fallbackUsed ? "Ja" : "Nee"],
             ["Productie ready", status.productionReady ? "Ja" : "Nee"],
             ["Customers bron", state.customerSourceStatus?.dataLayer || "-"],
             ["Websites bron", state.websiteSourceStatus?.dataLayer || "-"],
@@ -15251,10 +15261,10 @@
         getLeadFinderSummary,
         readLeadFinderLeads,
         saveLeadFinderLeadLocally,
-        updateLeadFinderLeadLocally,
       } from "./src/services/leadFinderService.js";
       import { readSupabaseDataLayerModule } from "./src/services/supabaseDataLayerService.js";
       import { saveCrmTaskWithWriteFallback } from "./src/services/crmTaskWriteService.js";
+      import { saveLeadNoteWithWriteFallback } from "./src/services/leadNoteWriteService.js";
 
       const leadfinderElements = {
         metrics: document.getElementById("leadfinder-metrics"),
@@ -15481,7 +15491,8 @@
           `;
         }
         if (leadfinderElements.detailCallStatus) leadfinderElements.detailCallStatus.value = lead?.callStatus || "";
-        [leadfinderElements.saveNote, leadfinderElements.convertCustomer, leadfinderElements.deleteLead, leadfinderElements.detailCallStatus].forEach((element) => {
+        if (leadfinderElements.saveNote) leadfinderElements.saveNote.disabled = !hasLead;
+        [leadfinderElements.convertCustomer, leadfinderElements.deleteLead, leadfinderElements.detailCallStatus].forEach((element) => {
           if (element) element.disabled = !hasLead || !isLocalLead(lead);
         });
         [leadfinderElements.createTask].forEach((element) => {
@@ -15563,16 +15574,17 @@
       async function saveLeadfinderDetailNote() {
         const lead = selectedLeadFinderLead();
         if (!lead) return;
-        if (!isLocalLead(lead)) {
-          setLeadfinderMessage("Deze lead komt uit de read-only data-layer. Notities wijzigen blijft local/write-mode voor later.", "error");
+        const note = String(leadfinderElements.detailNote?.value || "").trim();
+        const callStatus = isLocalLead(lead) ? leadfinderElements.detailCallStatus?.value || lead.callStatus : lead.callStatus;
+        try {
+          const result = await saveLeadNoteWithWriteFallback(lead, note, { callStatus });
+          selectedLeadFinderId = result.lead?.id || lead.id;
+          setLeadfinderMessage(result.fallbackUsed ? "Leadnotitie lokaal opgeslagen." : "Leadnotitie via Supabase staging opgeslagen en lokaal gespiegeld.", "success");
+        } catch (error) {
+          setLeadfinderMessage(error.message || "Leadnotitie kon niet worden opgeslagen.", "error");
           return;
         }
-        const note = String(leadfinderElements.detailNote?.value || "").trim();
-        const callStatus = leadfinderElements.detailCallStatus?.value || lead.callStatus;
-        const notes = note ? `${lead.notes ? `${lead.notes}\n` : ""}${new Date().toISOString().slice(0, 10)}: ${note}` : lead.notes;
-        updateLeadFinderLeadLocally(lead.id, { notes, callStatus });
         if (leadfinderElements.detailNote) leadfinderElements.detailNote.value = "";
-        setLeadfinderMessage("Leadnotitie en belstatus bijgewerkt.", "success");
         await reloadLeadfinderAfterLocalChange();
       }
 

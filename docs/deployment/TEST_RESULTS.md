@@ -939,3 +939,28 @@ Resterend:
 - Productie-write-mode blijft `NO-GO`.
 - Server-side audit logging is nog niet actief voor deze write.
 - Fijnmazigere sales/support ownership policies blijven later nodig voordat bredere productie-writes live mogen.
+
+## Fase 35B Lead Notes Write MVP
+
+Status: `IMPLEMENTED / STAGING BLOCKED`
+
+Scope:
+
+- Tweede low-risk write-MVP voor leadnotities.
+- Geen productie, geen echte klantdata, geen scraping of externe API.
+- Geen volledige lead overwrite; alleen `notes`, `updated_at` en veilige metadata.
+
+| Testnaam | Stappen | Verwacht resultaat | Werkelijk resultaat | Status | Evidence / notities |
+| --- | --- | --- | --- | --- | --- |
+| Lead note service syntax | `leadNoteWriteService.js` controleren | Geen syntaxfouten | Syntaxcheck groen | PASS | Geen runtime secrets |
+| Lead note local fallback | Gate uit, lokale lead, notitie opslaan | Notitie wordt lokaal appended | `lead note fallback test: ok` | PASS | `maxwebstudioLeadFinderLeads`, status `fallback_local` |
+| Supabase testconfig aanwezig | `.env.local` aanwezigheid controleren zonder waarden te tonen | Testconfig aanwezig | Supabase keys en testflags aanwezig | PASS | Geen secretwaarden gelogd |
+| DNS naar Supabase staging | Supabase host resolven | Host bereikbaar | `ENOTFOUND` | BLOCKED | Algemene DNS lookup gaf ook `ENOTFOUND` |
+| Staging lead note write | Sales-role testlead bijwerken via bestaande service | Notitie komt in `public.leads.notes` | Niet uitgevoerd door DNS-blocker | BLOCKED | Geen write uitgevoerd, geen testdata aangemaakt |
+| Customer/no-profile RLS | Customer/no-profile probeert leadnote write | RLS blokkeert update | Niet uitvoerbaar door DNS-blocker | BLOCKED | Herhalen zodra netwerk/DNS beschikbaar is |
+
+Conclusie:
+
+- De leadnote write-MVP is technisch toegevoegd en lokale fallback is bewezen.
+- Staging write/RLS evidence kon niet worden verzameld door DNS-resolutieproblemen in deze run.
+- Productie blijft `NO-GO`.

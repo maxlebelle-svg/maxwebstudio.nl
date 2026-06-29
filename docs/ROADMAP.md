@@ -1307,3 +1307,32 @@ Volgende stap:
 
 1. Fase 35B: leadnotitie append als volgende low-risk write ontwerpen en gated bouwen.
 2. Daarna pas change requests en klantportaalberichten.
+
+## Fase 35B - Low-risk Supabase Write MVP: Lead Notes
+
+Status: `IMPLEMENTATIE AFGEROND / STAGING VALIDATIE GEBLOKKEERD`
+
+Scope:
+
+- Leadnotities append-only/veldbeperkt toegevoegd.
+- Alleen `notes`, `updated_at` en veilige metadata mogen remote wijzigen.
+- Leadfinder detailnotities gebruiken een write-aware service met local fallback.
+- Feature/readiness gate via `supabase-write-test` en `maxwebstudioLeadNoteWriteEnabled=true`.
+
+Niet in scope:
+
+- Lead delete.
+- Volledige lead overwrite.
+- Scraping of externe leadbronnen.
+- Productieproject of echte klantdata.
+- Facturen, betalingen, rollen, storage, AI-mutaties.
+
+Validatie:
+
+- Local fallback: `PASS`.
+- Staging write/RLS: `BLOCKED_BY_DNS` in deze run; geen staging write uitgevoerd.
+
+Volgende stap:
+
+1. Herhaal Fase 35B stagingvalidatie zodra DNS/netwerk naar Supabase beschikbaar is.
+2. Daarna pas `change_requests` create als volgende low-risk write oppakken.

@@ -614,3 +614,36 @@ Resterende blockers:
 - Server-side audit logging ontbreekt nog.
 - Fijnmazige ownership voor sales/support moet worden aangescherpt voordat bredere CRM task writes naar productie mogen.
 - Leadnotities, change requests en klantportaalberichten zijn nog niet gevalideerd als writes.
+
+## Fase 35B Lead notes write validation
+
+Status: `IMPLEMENTED / STAGING VALIDATION BLOCKED`
+
+Scope:
+
+- Alleen leadnotities append/veldbeperkt.
+- Geen volledige lead-update.
+- Geen delete.
+- Geen productieproject of echte klantdata.
+
+Evidence:
+
+- Local fallback: `PASS`
+- Syntaxchecks: `PASS`
+- Supabase testconfig aanwezig zonder waarden te tonen: `PASS`
+- Staging write/RLS: `BLOCKED_BY_DNS`
+
+Blocker:
+
+- DNS-resolutie faalde tijdens de staging run:
+  - Supabase-host: `ENOTFOUND`
+  - Algemene DNS-check: `ENOTFOUND`
+- Daardoor is er geen staging write uitgevoerd en geen testdata aangemaakt.
+
+Next actions:
+
+1. Herstel/controleer netwerk/DNS in de Codex/runtime omgeving.
+2. Herhaal Fase 35B stagingvalidatie.
+3. Bewijs sales/admin leadnote append.
+4. Bewijs dat customer/no-profile geen leadnote write kan doen.
+5. Houd productie-write-mode geblokkeerd tot die evidence PASS is.

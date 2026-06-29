@@ -369,10 +369,54 @@ Beperkingen:
 - Server-side audit logging is nog niet actief.
 - Productie blijft geblokkeerd totdat staging evidence en auditstrategie zijn afgerond.
 
+## Fase 35B - Lead notes append MVP
+
+Status: `GEIMPLEMENTEERD / STAGING VALIDATIE GEBLOKKEERD DOOR DNS`
+
+Toegevoegd:
+
+- `public/src/services/leadNoteWriteService.js`
+- `supabaseProvider.appendLeadNote()`
+- Leadfinder detailnotities gebruiken nu dezelfde write-aware service.
+
+Gate:
+
+- Provider mode moet `supabase-write-test` zijn.
+- `maxwebstudioLeadNoteWriteEnabled=true` moet lokaal expliciet zijn gezet.
+- Productieomgeving blokkeert de write.
+- Supabase runtime-config moet aanwezig zijn.
+
+Write-scope:
+
+- Alleen bestaande `leads` records.
+- Alleen veldbeperkte update van `notes`, `updated_at` en veilige metadata.
+- Geen lead delete.
+- Geen volledige lead overwrite.
+- Geen status/score/contactveld update op Supabase.
+
+Fallback:
+
+- Als de gate dichtstaat of Supabase/RLS faalt, wordt de notitie lokaal appended in `maxwebstudioLeadFinderLeads`.
+- Lokale leads behouden de bestaande belstatus-update vanuit de Leadfinder UI.
+- Remote/hybrid leads krijgen lokaal een mirror/fallback wanneer remote niet beschikbaar is.
+- Laatste resultaat wordt vastgelegd in `maxwebstudioLastLeadNoteWriteStatus`.
+
+Stagingstatus:
+
+- Lokale fallback-test: `PASS`.
+- Staging write-test: `BLOCKED_BY_DNS` in deze run (`ENOTFOUND` voor algemene DNS en Supabase-host).
+- Geen staging write uitgevoerd en geen testdata aangemaakt tijdens de geblokkeerde poging.
+
+Beperkingen:
+
+- Server-side audit logging is nog niet actief.
+- Fijnmazigere lead-note-only RLS blijft later wenselijk; huidige stagingpolicy gebruikt `leads_admin_sales_manage`.
+- Productie blijft geblokkeerd totdat staging evidence opnieuw kan worden verzameld.
+
 ## Open blockers
 
 - RLS policies voor `crm_tasks` en `leads` zijn functioneel, maar nog te breed voor bredere production write-mode.
 - Audit logging is voorbereid, maar server-side auditstrategie moet gekozen worden.
-- Alleen `crm_tasks` heeft nu een dedicated low-risk write service.
+- `crm_tasks` en leadnotities hebben nu dedicated low-risk write services.
 - Conflict handling en pending-sync UX moeten per module worden ontworpen.
 - Productie blijft `NO-GO` voor writes totdat staging evidence is toegevoegd.
