@@ -9,7 +9,7 @@ Statusopties:
 
 Laatste QA-run: 2026-06-29
 Tester: Codex
-Scope: Fase 14.3 Complete Test Execution, lokale release/QA-rooktest zonder productie, zonder SQL en zonder live Supabase/Auth/RLS.
+Scope: Fase 14.4 Supabase Test Environment Validation, zonder productie, zonder echte klantdata en zonder live Mollie/Resend transacties.
 
 ## Samenvatting
 
@@ -35,6 +35,60 @@ Scope: Fase 14.3 Complete Test Execution, lokale release/QA-rooktest zonder prod
 | Mollie | BLOCKED | 2026-06-29 | Codex | Mollie functions syntax OK via functions check | Echte testmodus/webhook niet uitgevoerd |
 | Resend | BLOCKED | 2026-06-29 | Codex | Resend functions syntax OK via functions check | Echte mailtest/env test niet uitgevoerd |
 | Go/No-Go | BLOCKED | 2026-06-29 | Codex | Deployment blockers missen echte evidence/approvals | Status blijft terecht NO-GO |
+
+## Fase 14.4 Supabase testomgeving-validatie
+
+Uitgevoerd zonder productie, zonder SQL en zonder echte klantdata.
+
+Belangrijkste conclusie:
+
+- De Supabase testomgeving kon in deze werkomgeving nog niet echt gevalideerd worden.
+- Er zijn geen Supabase test environment variables aanwezig.
+- De Supabase CLI is niet beschikbaar in de shell.
+- Daarom zijn schema execution, Auth-testgebruikers, RLS, klantisolatie en Storage bewust niet uitgevoerd.
+- De releasebeslissing blijft `NO-GO / BLOCKED`.
+
+### Environment readiness
+
+| Check | Werkelijk resultaat | Status | Evidence / notities |
+| --- | --- | --- | --- |
+| `SUPABASE_TEST_URL` | Niet aanwezig | BLOCKED | Env presence check gaf `false`; waarde niet gelezen of gelogd |
+| `SUPABASE_TEST_ANON_KEY` | Niet aanwezig | BLOCKED | Env presence check gaf `false`; waarde niet gelezen of gelogd |
+| `SUPABASE_TEST_SERVICE_ROLE_KEY` | Niet aanwezig | BLOCKED | Env presence check gaf `false`; waarde niet gelezen of gelogd |
+| `SUPABASE_URL` | Niet aanwezig | BLOCKED | Geen fallback testconfiguratie aanwezig |
+| `SUPABASE_ANON_KEY` | Niet aanwezig | BLOCKED | Geen fallback testconfiguratie aanwezig |
+| `SUPABASE_SERVICE_ROLE_KEY` | Niet aanwezig | BLOCKED | Geen fallback testconfiguratie aanwezig |
+| Supabase CLI | Niet beschikbaar | BLOCKED | `command -v supabase` gaf geen pad terug |
+| Netlify CLI | Niet beschikbaar | WARNING | Runtime function tests met Netlify CLI niet uitvoerbaar in deze omgeving |
+| Node.js | `v22.19.0` | PASS | Syntaxchecks kunnen lokaal worden uitgevoerd |
+| Git status voor edits | Schoon | PASS | Geen openstaande wijzigingen aan het begin van 14.4 |
+
+### Supabase test execution
+
+| Testnaam | Stappen | Verwacht resultaat | Werkelijk resultaat | Status | Evidence / notities |
+| --- | --- | --- | --- | --- | --- |
+| Supabase test env-vars controleren | Alleen aanwezigheid van test/prod Supabase env-vars controleren, zonder waarden te tonen | Testconfiguratie beschikbaar of nette blocker | Geen Supabase env-vars aanwezig | BLOCKED | Geen secrets gelogd |
+| Schema uitvoeren op testomgeving | Canonical schema alleen op testproject uitvoeren | Schema draait in testomgeving | Niet uitgevoerd | BLOCKED | Geen testproject/env/CLI beschikbaar |
+| Customer A/B Auth-users aanmaken | Testusers aanmaken in Supabase Auth testproject | Customer A en B bestaan met profiles | Niet uitgevoerd | BLOCKED | Geen testproject/env/CLI beschikbaar |
+| Auth login/logout/session | Login/logout/session met testusers controleren | Sessies werken en rollen/profiles koppelen | Niet uitgevoerd | BLOCKED | Geen testusers beschikbaar |
+| RLS customers/websites/projects | Customer A/B en anonymous toegang testen | Alleen eigen data zichtbaar | Niet uitgevoerd | BLOCKED | RLS niet op testproject uitgevoerd |
+| RLS quotes/invoices/subscriptions | Customer A/B toegang tot commerciele data testen | Alleen eigen data zichtbaar | Niet uitgevoerd | BLOCKED | RLS niet op testproject uitgevoerd |
+| Customer A/B isolatiebewijs | Proberen data van B te lezen/schrijven als A | Cross-customer access geweigerd | Niet uitgevoerd | BLOCKED | Vereist Auth + RLS + testdata |
+| Storage bucket toegang | Private bucket en signed URL flow testen | Alleen toegestane bestanden bereikbaar | Niet uitgevoerd | BLOCKED | Geen Storage testomgeving bereikbaar |
+| Deployment blocker evidence | Evidence toevoegen op basis van echte testresultaten | Blockers kunnen naar review zodra bewezen | Niet toegevoegd | BLOCKED | Er is geen echte Supabase evidence |
+| Release decision export 14.4 | Nieuwe releasebeslissing vastleggen | NO-GO blijft met concrete redenen | Export toegevoegd | PASS | Zie `RELEASE_DECISION_2026-06-29-14-4.md` en `.json` |
+
+### Fase 14.4 blockers
+
+| Blocker | Status | Reden | Nodige actie |
+| --- | --- | --- | --- |
+| Test Supabase environment configured | BLOCKED | Geen test env-vars aanwezig | Maak apart Supabase testproject en zet test env-vars lokaal/Netlify testcontext |
+| Schema execution evidence | BLOCKED | Geen SQL uitgevoerd | Voer canonical schema uit op testproject en registreer output/screenshot |
+| Auth test evidence | BLOCKED | Geen testusers aangemaakt | Maak Customer A/B testusers en test login/logout/session |
+| RLS test evidence | BLOCKED | Geen RLS policies getest | Voer RLS dry-run scenario's uit en vul testlog in |
+| Customer isolation evidence | BLOCKED | Geen A/B isolatie bewezen | Bewijs dat Customer A geen data van B kan lezen/schrijven |
+| Storage evidence | BLOCKED | Geen bucket getest | Test private buckets en signed URL flow in testproject |
+| Environment variables verified | BLOCKED | Env-vars ontbreken | Vul checklist in zonder secrets te noteren |
 
 ## Fase 14.3 lokale rooktest
 

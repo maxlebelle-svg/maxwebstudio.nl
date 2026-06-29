@@ -452,3 +452,33 @@ Belangrijk:
 
 - Status blijft `NO-GO`.
 - Supabase schema, Auth, RLS, Storage, Mollie, Resend en runtime function tests blijven `BLOCKED` totdat ze in een echte testomgeving zijn uitgevoerd.
+
+## Fase 14.4 - Supabase Test Environment Validation
+
+Status: uitgevoerd als veilige testomgeving-gate, maar geblokkeerd door ontbrekende testconfiguratie. Er is geen SQL uitgevoerd en er is geen productieomgeving aangepast.
+
+Gecontroleerd:
+
+- aanwezigheid van Supabase test environment variables zonder waarden te tonen
+- beschikbaarheid van Supabase CLI en Netlify CLI
+- Node.js beschikbaarheid voor lokale syntaxchecks
+- releasebesluit voor Fase 14.4
+
+Resultaat:
+
+- `SUPABASE_TEST_URL`, `SUPABASE_TEST_ANON_KEY` en `SUPABASE_TEST_SERVICE_ROLE_KEY` zijn niet aanwezig in de shell.
+- Fallback `SUPABASE_URL`, `SUPABASE_ANON_KEY` en `SUPABASE_SERVICE_ROLE_KEY` zijn ook niet aanwezig.
+- Supabase CLI is niet beschikbaar.
+- Netlify CLI is niet beschikbaar.
+- Schema execution, Auth-testgebruikers, RLS, klantisolatie en Storage zijn bewust niet uitgevoerd.
+
+Output:
+
+- `/docs/deployment/TEST_RESULTS.md` bevat nu Fase 14.4 testomgeving-resultaten.
+- `/docs/deployment/RELEASE_DECISION_2026-06-29-14-4.md`
+- `/docs/deployment/RELEASE_DECISION_2026-06-29-14-4.json`
+
+Belangrijk:
+
+- Status blijft `NO-GO / BLOCKED`.
+- De volgende stap is een apart Supabase testproject met test-env-vars configureren en daarna Fase 14.4 opnieuw uitvoeren met echte evidence.
