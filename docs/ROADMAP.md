@@ -498,3 +498,30 @@ Niet gewijzigd:
 Volgende geplande demo:
 
 - `restaurant-demo`.
+
+## Fase 15.x - Architectuur & Productie-roadmap
+
+Afgerond als documentatie- en beslisfase:
+
+- `docs/PRODUCTION_ARCHITECTURE.md` toegevoegd.
+- `docs/MODULE_BOUNDARIES.md` toegevoegd.
+- demo/local, Supabase-productie, legacy en toekomstige AI-grenzen vastgelegd.
+
+Aanbevolen volgorde vanaf nu:
+
+1. Public website live/source consistency en conversie-QA.
+2. Supabase testomgeving en release blockers volledig sluiten.
+3. CRM canonical data live maken via Supabase providers.
+4. Klantportaal live read-data + Auth/RLS hardmaken.
+5. Storage, Resend en Mollie test/live-validatie.
+6. Release candidate en productie GO.
+7. AI Website Wizard pas daarna uitbreiden met echte AI-providerintegraties.
+8. Leadfinder en sales automation pas na stabiele productieplatformbasis.
+
+Niet te vroeg bouwen:
+
+- OpenAI-calls.
+- live Mollie payments.
+- leadfinder met externe databronnen.
+- klantportaal live zonder harde Auth/RLS.
+- nieuwe SQL uitvoeren zonder aparte expliciete fase.

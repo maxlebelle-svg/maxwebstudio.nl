@@ -73,15 +73,15 @@ Het klantenportaal gebruikt:
 - Supabase Auth voor login
 - `SUPABASE_ANON_KEY` in de browser
 - RLS op `profiles` en `change_requests`
-- RLS op `customer_websites`
+- RLS op canonical klanttabellen; oude `customer_websites`-policies zijn legacy en mogen niet als basis voor nieuwe productiefeatures worden gebruikt
 - `auth.uid()` als grens tussen klantaccounts
 - admin-profielbeheer via `ADMIN_TOKEN` en een server-side Netlify Function
 - Admin CRM-bewerkingen voor klantprofielen lopen via `/.netlify/functions/admin-client-profiles`
 - CRM-acties zoals uitnodigen, wachtwoord-reset, login koppelen en archiveren vereisen `ADMIN_TOKEN` en gebruiken de service role alleen server-side.
 - Admin-only notities staan in `public.admin_customer_notes` met RLS ingeschakeld en zonder klantbeleid. Deze notities mogen niet in het klantdashboard worden getoond.
-- Website Operations data staat in `public.customer_websites`; klanten mogen alleen records lezen waar `customer_auth_user_id = auth.uid()`.
+- Website Operations gebruikte historisch `public.customer_websites`; nieuwe productieontwikkeling moet naar canonical `websites` met customer/profile-koppeling.
 - Website Health mutaties lopen via `/.netlify/functions/admin-website-health`, vereisen `ADMIN_TOKEN` en gebruiken de service role alleen server-side.
-- Billingdata staat in `public.customer_subscriptions` en `public.customer_invoices`; klanten mogen alleen eigen records lezen waar `customer_auth_user_id = auth.uid()`.
+- Billingdata gebruikte historisch `public.customer_subscriptions` en `public.customer_invoices`; nieuwe productieontwikkeling moet naar canonical `subscriptions`, `invoices` en `invoice_lines`.
 - Billing-mutaties lopen via `/.netlify/functions/admin-billing`, vereisen `ADMIN_TOKEN` en gebruiken de service role alleen server-side.
 - Factuur-PDF's staan in private Supabase Storage bucket `invoice-pdfs`.
 - Klantdownloads lopen via `/.netlify/functions/invoice-download`, vereisen een Supabase Auth JWT en gebruiken korte signed URLs.
@@ -109,7 +109,7 @@ Aanbevelingen:
 - Vervang het tijdelijke admin-tokenmodel later door echte admin-authenticatie met rollen en logging.
 - Voer de CRM-kolommen uit `/docs/supabase-client-portal.sql` uit zodat e-mail, telefoon en klantstatus duurzaam in `profiles` worden opgeslagen.
 - Voer ook de admin-notities tabel uit `/docs/supabase-client-portal.sql` uit voordat interne klantnotities operationeel worden gebruikt.
-- Voer ook de `customer_websites` tabel en RLS-policy uit `/docs/supabase-client-portal.sql` uit voordat het Website Operations Center live wordt gebruikt.
+- Gebruik `customer_websites` alleen nog als legacy-referentie. Nieuwe Website Operations livegang moet op canonical `websites` en bijbehorende RLS worden gebaseerd.
 - Voer `/docs/supabase-website-health.sql` uit voordat health monitoring operationeel wordt gebruikt.
 - Voer `/docs/supabase-billing.sql` uit voordat facturatie en abonnementen operationeel worden gebruikt.
 - Voer `/docs/supabase-invoice-storage.sql` uit voordat factuur-PDF downloads operationeel worden gebruikt.
@@ -544,3 +544,18 @@ Status:
 - `blocked_pending_supabase_test_setup`
 - Geen productie geraakt.
 - Geen secrets toegevoegd.
+
+## Fase 15.x - Architectuur en securitygrenzen
+
+De productiearchitectuur en modulegrenzen zijn vastgelegd in:
+
+- `docs/PRODUCTION_ARCHITECTURE.md`
+- `docs/MODULE_BOUNDARIES.md`
+
+Securityregels vanaf deze fase:
+
+- Supabase is de toekomstige productiebron voor canonical klant-, website-, project-, offerte-, factuur-, abonnement-, bestands- en klantportaaldata.
+- Local/demo blijft toegestaan voor demo's en drafts, maar mag niet worden behandeld als productiebron.
+- Legacy `customer_websites`, `customer_invoices` en `customer_subscriptions` mogen niet opnieuw als basis voor nieuwe RLS of klantportaalfeatures worden gebruikt.
+- AI Website Wizard mag geen externe AI-provider, API key, databasewrite of automatische publicatie uitvoeren zonder aparte goedgekeurde fase.
+- Mollie live payments en Resend live-notificaties blijven geblokkeerd totdat testomgeving, env-vars, rollback en release approval zijn afgerond.

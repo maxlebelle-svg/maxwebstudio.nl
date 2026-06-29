@@ -104,3 +104,17 @@ Belangrijk:
 - Geen nieuwe API keys.
 
 De wizard is nu alleen een workflow/state/readiness-laag. Toekomstige AI-functionaliteit moet via aparte provider/adapters worden toegevoegd en mag nooit secrets in frontendcode plaatsen.
+
+## Fase 15.x - Architectuurgrenzen
+
+De productiearchitectuur en modulegrenzen staan nu centraal in:
+
+- `docs/PRODUCTION_ARCHITECTURE.md`
+- `docs/MODULE_BOUNDARIES.md`
+
+Belangrijk voor toekomstige Codex-sessies:
+
+- AI Website Wizard blijft local/intake/readiness totdat CRM, klantportaal, Auth/RLS en releasecontrole stabiel zijn.
+- Geen OpenAI-calls, logo-generatie, contentgeneratie of automatische websitebouw zonder aparte expliciete fase.
+- AI-output moet later aansluiten op de canonical productielijn: `customers`, `websites`, `projects`, `quotes`, `invoices`, `subscriptions` en `files`.
+- Codex mag geen AI-provider keys toevoegen of gebruiken zonder expliciete toestemming van Max.

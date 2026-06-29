@@ -139,11 +139,11 @@ Belangrijk:
 - Admin-only klantnotities staan bewust in `public.admin_customer_notes` en niet zichtbaar in `profiles` voor het klantportaal.
 - `/functions/admin-client-profiles.js` blijft de enige CRM-route voor deze adminacties en vereist altijd `ADMIN_TOKEN`.
 - Admin CRM Fase 5.3 voegt een Website Operations Center toe aan de module Websites.
-- Websitegegevens worden beheerd in `public.customer_websites` met klantkoppeling, domein, live/staging URL, GitHub repo, branch, Netlify project, hostingstatus, SSL-status en deploy/check metadata.
-- Het klantenportaal leest `customer_websites` via Supabase RLS en valt terug op `profiles.website` als er nog geen website-record bestaat.
+- Historisch werden websitegegevens voorbereid in `public.customer_websites` met klantkoppeling, domein, live/staging URL, GitHub repo, branch, Netlify project, hostingstatus, SSL-status en deploy/check metadata.
+- Deze `customer_websites`-lijn is nu legacy. Nieuwe productieontwikkeling moet de canonical `websites`-tabel gebruiken.
 - Er is nog geen echte Netlify API-, GitHub API- of deploy-triggerkoppeling; dit zijn in deze fase beheerlinks en operationele metadata.
 - Admin CRM Fase 5.4 voegt Website Health Monitoring toe met `/.netlify/functions/admin-website-health`.
-- Healthdata staat op `public.customer_websites` via de losse migratie `/docs/supabase-website-health.sql`.
+- Healthdata stond historisch op `public.customer_websites` via de losse migratie `/docs/supabase-website-health.sql`; nieuwe productie-healthdata moet op canonical `websites` worden geconsolideerd.
 - De health-function gebruikt nu mock-checks voor uptime, DNS, SSL en scores; er zijn nog geen externe API-koppelingen.
 - Het klantdashboard toont alleen klantvriendelijke statussen zoals website online, SSL actief en laatste controle.
 - Admin CRM Fase 5.5 voegt Facturatie & Abonnementen Basis toe met `public.customer_subscriptions` en `public.customer_invoices`.
@@ -750,3 +750,24 @@ Nog niet actief:
 Volgende geplande demo:
 
 - `restaurant-demo`.
+
+## Fase 15.x - Architectuur & Productie-roadmap
+
+Status: vastgelegd als documentatiefase. Er is geen codefunctionaliteit gewijzigd, geen productieomgeving aangepast en geen SQL uitgevoerd.
+
+Toegevoegd:
+
+- `docs/PRODUCTION_ARCHITECTURE.md`
+- `docs/MODULE_BOUNDARIES.md`
+
+Resultaat:
+
+- De canonical productielijn is opnieuw bevestigd: `profiles -> customers -> websites -> projects -> quotes -> quote_lines -> invoices -> invoice_lines -> subscriptions`, aangevuld met `files` en `change_requests`.
+- Demo/local blijft toegestaan voor salesdemo's, lokale CRM-demo's, AI Wizard drafts en release-readiness, maar is geen productiebron.
+- Supabase wordt de leidende productiedatalaag voor klanten, websites, projecten, offertes, facturen, abonnementen, bestandenmetadata, wijzigingsverzoeken en klantportaaldata.
+- Legacy `customer_websites`, `customer_invoices` en `customer_subscriptions` mogen niet meer als basis voor nieuwe productiefeatures worden gebruikt.
+- AI Website Wizard blijft voorlopig local/intake/readiness zonder OpenAI-calls, databasewrites of automatische websitegeneratie.
+
+Volgende logische stap:
+
+- Public website live/source consistency en QA afronden, daarna de Supabase testomgeving en canonical CRM-datalijn verder hardmaken.
