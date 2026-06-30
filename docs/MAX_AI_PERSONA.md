@@ -260,6 +260,7 @@ Deze helper:
 - wijst naar de aanvraag;
 - kan worden geminimaliseerd;
 - blijft terugroepbaar via een compacte Max-launcher;
+- ondersteunt vanaf Sprint 4A.1 herkenbare animatiestates;
 - opent geen echte chat;
 - gebruikt geen OpenAI, backend of automatisering.
 
@@ -275,6 +276,25 @@ Visueel is Max vanaf nu geen klein icoontje, maar een herkenbaar digitaal karakt
 De definitieve interactieve Max AI Experience volgt later in de Experience Layer.
 
 Tot die tijd blijft deze persona leidend: Max stelt zich voor, maar handelt nog niet zelfstandig.
+
+### Character States
+
+Max moet uiteindelijk voelen als een levend digitaal karakter, niet als een stilstaande illustratie.
+
+De eerste frontend-structuur ondersteunt deze states:
+
+- `idle`: rustige basisbeweging;
+- `wave`: begroeting;
+- `thumbs-up`: positieve bevestiging;
+- `thinking`: nadenken tijdens een aanvraag of wizardstap;
+- `celebrate`: felicitatie na een toekomstige conversie;
+- `look`: subtiele aandacht richting bezoeker;
+- `blink`: voorbereid voor latere ooganimatie;
+- `error-safe`: vriendelijke uitleg wanneer iets niet mag of kan.
+
+In Sprint 4A.1 zijn deze states alleen CSS-only en werken ze met subtiele transforms op de huidige PNG.
+
+Omdat `public/assets/max-ai-character.png` een vlakke fallback-afbeelding is, kunnen armen, ogen en hoofd nog niet echt onafhankelijk bewegen. Echte lichaamsanimatie vereist later aparte animated assets zoals WebM, animated WebP, Lottie of Rive.
 
 ## Relatie Met Andere Documenten
 

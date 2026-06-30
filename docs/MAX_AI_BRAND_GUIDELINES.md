@@ -205,6 +205,7 @@ Visuele UX-regels:
 - De asset moet op alle plekken hetzelfde blijven: homepage, helper, Website Wizard, klantportaal, CRM en toekomstige AI Experience.
 - De componentstructuur moet vervangbaar blijven voor `max-ai-mascot.webp` of `max-ai-mascot-animated.webp`.
 - Animatie blijft subtiel: licht zweven, statuspulse en rustige entrance.
+- Character states moeten centraal worden aangestuurd, zodat Max later dezelfde gedragingen kan tonen met PNG, WebM, Lottie of Rive.
 - Max mag nooit belangrijke CTA's, betaalflows of juridische content blokkeren.
 
 Belangrijk:
@@ -214,6 +215,34 @@ De huidige `public/assets/max-ai-character.png` is de eerste primaire premium ch
 `public/assets/max-ai-mascot.svg` blijft alleen een lichte fallback/placeholder.
 
 Een definitieve premium PNG/WebP/animated asset kan later worden toegevoegd zonder de HTML-structuur opnieuw te ontwerpen.
+
+## Animation Direction
+
+Max AI krijgt vanaf de Experience Layer herkenbare animatiestates.
+
+Basisstates:
+
+- `idle`: subtiel ademen of zweven;
+- `wave`: vriendelijke begroeting;
+- `thumbs-up`: korte bevestiging;
+- `thinking`: nadenken of verwerken;
+- `celebrate`: felicitatie met lichte confetti;
+- `look`: aandacht of focus;
+- `blink`: voorbereid voor latere ooganimatie;
+- `error-safe`: rustige uitleg wanneer iets niet kan.
+
+Sprint 4A.1 gebruikt alleen CSS-motion op de huidige `max-ai-character.png`.
+
+De huidige PNG is een fallback. Echte arm-, oog- en hoofdanimatie moet later via aparte assets worden toegevoegd, bijvoorbeeld:
+
+- `max-ai-idle.webm`
+- `max-ai-wave.webm`
+- `max-ai-thumbs-up.webm`
+- `max-ai-celebrate.webm`
+- animated WebP
+- Lottie of Rive
+
+Alle animaties blijven ondergeschikt aan vertrouwen, rust en duidelijkheid. Max mag levendig voelen, maar nooit schreeuwerig of afleidend.
 
 ## Relatie Met Het Platform
 

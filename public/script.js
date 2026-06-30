@@ -31,11 +31,15 @@ const reviewDots = document.querySelector("[data-review-dots]");
 const maxAiHelper = document.querySelector("[data-max-ai-helper]");
 const maxAiLauncher = document.querySelector("[data-max-ai-launcher]");
 const maxAiDismissButtons = document.querySelectorAll("[data-max-ai-dismiss]");
+const maxAiPrimaryAction = document.querySelector("[data-max-ai-primary-action]");
+const maxAiSpeech = document.querySelector("[data-max-ai-speech]");
 
 const calendlyUrl = "https://calendly.com/maxwebstudio/gratis-kennismakingsgesprek";
 const leadStorageKey = "maxwebstudioLeadRequests";
 const maxAiHelperDismissedKey = "maxwebstudioMaxAiHelperDismissed";
+const maxAiStates = ["idle", "wave", "thumbs-up", "thinking", "celebrate", "look", "blink", "error-safe"];
 let calendlyLoadPromise;
+let maxAiStateTimer;
 
 const checkoutPackages = {
   "Starter Site": {
@@ -397,6 +401,57 @@ function setMaxAiHelperState(state) {
   }
 }
 
+function setMaxAiState(state) {
+  if (!maxAiHelper || !maxAiStates.includes(state)) {
+    return;
+  }
+
+  maxAiHelper.dataset.maxState = state;
+}
+
+function restoreMaxAiIdle() {
+  if (maxAiStateTimer) {
+    window.clearTimeout(maxAiStateTimer);
+    maxAiStateTimer = null;
+  }
+
+  setMaxAiState("idle");
+
+  if (maxAiSpeech) {
+    maxAiSpeech.hidden = true;
+    maxAiSpeech.textContent = "";
+  }
+}
+
+function playMaxAiState(state, duration = 1400) {
+  if (!maxAiStates.includes(state)) {
+    return;
+  }
+
+  if (maxAiStateTimer) {
+    window.clearTimeout(maxAiStateTimer);
+  }
+
+  setMaxAiState(state);
+  maxAiStateTimer = window.setTimeout(restoreMaxAiIdle, duration);
+}
+
+function celebrateMaxAi(message = "Gefeliciteerd!") {
+  if (maxAiSpeech) {
+    maxAiSpeech.textContent = message;
+    maxAiSpeech.hidden = false;
+  }
+
+  playMaxAiState("celebrate", 2400);
+}
+
+window.maxWebstudioMaxAi = {
+  setState: setMaxAiState,
+  playState: playMaxAiState,
+  restoreIdle: restoreMaxAiIdle,
+  celebrate: celebrateMaxAi,
+};
+
 try {
   const savedMaxAiHelperState = localStorage.getItem(maxAiHelperDismissedKey);
 
@@ -415,7 +470,18 @@ maxAiDismissButtons.forEach((button) => {
 
 maxAiLauncher?.addEventListener("click", () => {
   setMaxAiHelperState("open");
+  playMaxAiState("wave", 1500);
 });
+
+maxAiPrimaryAction?.addEventListener("mouseenter", () => playMaxAiState("thumbs-up", 1100));
+maxAiPrimaryAction?.addEventListener("focus", () => playMaxAiState("thumbs-up", 1100));
+maxAiPrimaryAction?.addEventListener("click", () => playMaxAiState("thinking", 900));
+
+window.setTimeout(() => {
+  if (maxAiHelper && !maxAiHelper.hidden) {
+    playMaxAiState("wave", 1600);
+  }
+}, 900);
 
 if ("IntersectionObserver" in window) {
   const revealObserver = new IntersectionObserver(

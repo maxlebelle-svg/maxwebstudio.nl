@@ -2123,4 +2123,10 @@ Sprint 4A.1:
 - Max blijft terugroepbaar via een compacte launcher;
 - sluiten en `Later` minimaliseren de helper in plaats van hem definitief te verbergen;
 - de launcher opent dezelfde character-led helper opnieuw;
+- de helper heeft nu een `data-max-state` structuur voor character animation states;
+- ondersteunde states zijn `idle`, `wave`, `thumbs-up`, `thinking`, `celebrate`, `look`, `blink` en `error-safe`;
+- `window.maxWebstudioMaxAi` exposeert veilige demo/test helpers voor state-wissels en `celebrateMaxAi`-gedrag;
+- de huidige animaties zijn CSS-only en gebruiken transforms op `public/assets/max-ai-character.png`;
+- `celebrate` toont alleen een lichte CSS-confetti en speech bubble, zonder echte aankooplogica;
+- echte arm-, oog- en hoofdanimatie vereist later aparte animated assets zoals WebM, animated WebP, Lottie of Rive;
 - er is geen chat, backend, analytics of nieuwe AI-functionaliteit toegevoegd.

@@ -870,17 +870,21 @@
       </section>
     </main>
 
-    <aside class="max-ai-floating-helper" data-max-ai-helper aria-label="Max AI helper">
+    <aside class="max-ai-floating-helper" data-max-ai-helper data-max-state="idle" aria-label="Max AI helper">
       <button class="max-ai-helper-close" type="button" data-max-ai-dismiss aria-label="Max AI helper sluiten">×</button>
       <div class="max-ai-character max-ai-helper-character" aria-hidden="true">
         <img class="max-ai-character-image" src="assets/max-ai-character.png" alt="" loading="lazy" data-max-ai-character />
         <span></span>
       </div>
+      <div class="max-ai-speech" data-max-ai-speech hidden>Gefeliciteerd!</div>
+      <div class="max-ai-confetti" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
       <div class="max-ai-helper-copy">
         <strong>Hoi, ik ben Max.</strong>
         <p>Zal ik je helpen met je website?</p>
         <div class="max-ai-helper-actions">
-          <a href="#aanvraag">Start aanvraag</a>
+          <a href="#aanvraag" data-max-ai-primary-action>Start aanvraag</a>
           <button type="button" data-max-ai-dismiss>Later</button>
         </div>
       </div>

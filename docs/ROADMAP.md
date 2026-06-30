@@ -1811,6 +1811,10 @@ Output:
 - `Later` minimaliseert naar dezelfde launcher;
 - klikken op de launcher opent Max opnieuw;
 - localStorage bewaart `minimized` of `open` onder `maxwebstudioMaxAiHelperDismissed`;
+- Max heeft een frontend animation state structuur via `data-max-state`;
+- CSS-only states zijn voorbereid voor `idle`, `wave`, `thumbs-up`, `thinking`, `celebrate`, `look`, `blink` en `error-safe`;
+- `celebrate` is alleen een veilige demo/test helper met CSS-confetti en tekst, nog zonder conversie- of aankooptrigger;
+- latere echte lichaamsanimatie vraagt om WebM, animated WebP, Lottie of Rive assets;
 - Max blijft character-led en geen chatbot.
 
 Volgende logische stappen:
