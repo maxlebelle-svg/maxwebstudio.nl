@@ -3436,6 +3436,7 @@
             stagingReadinessService: await import("./src/services/stagingReadinessService.js"),
             storageSecurityReadinessService: await import("./src/services/storageSecurityReadinessService.js"),
             releaseGovernanceReadinessService: await import("./src/services/releaseGovernanceReadinessService.js"),
+            monitoringBackupReadinessService: await import("./src/services/monitoringBackupReadinessService.js"),
             releaseDecisionService: await import("./src/services/releaseDecisionService.js"),
             aiWebsiteWizardService: await import("./src/services/aiWebsiteWizardService.js"),
             aiAdminAssistantService: await import("./src/services/aiAdminAssistantService.js"),
@@ -3940,6 +3941,26 @@
           appendDeveloperCard("Release rollen", readiness.roles.map((role) => [
             role.role,
             `Wel: ${role.responsibilities.join(", ")} | Niet: ${role.cannot.join(", ")}`,
+          ]));
+        }
+
+        function renderMonitoringBackupFoundation(modules) {
+          const readiness = modules.monitoringBackupReadinessService.getMonitoringBackupReadiness();
+          appendDeveloperCard("Monitoring & Backups Foundation", [
+            ["Status", readiness.status],
+            ["Sprint", readiness.sprint],
+            ["Monitoring provider", readiness.monitoringProvider],
+            ["External alerts", readiness.externalAlerts],
+            ["Production monitoring", readiness.productionMonitoring],
+            ["Events", String(readiness.events.length)],
+            ["Auto NO-GO regels", String(readiness.automaticNoGoRules.length)],
+            ["Backup targets", String(readiness.backupStrategy.length)],
+            ["Restore procedures", String(readiness.restoreProcedures.length)],
+            ["Open blockers", String(readiness.blockers.length)],
+          ]);
+          appendDeveloperCard("Monitoring events", readiness.events.map((event) => [
+            event.event,
+            `${event.severity} - ${event.owner}: ${event.action}`,
           ]));
         }
 
@@ -5561,6 +5582,7 @@
             renderAuditObservabilityFoundation(modules);
             renderStorageSecurityFoundation(modules);
             renderReleaseGovernanceFoundation(modules);
+            renderMonitoringBackupFoundation(modules);
             renderSupabaseWriteTestStatus(writeTestReadiness, writeTestResults);
             renderCustomerDataSourceStatus(state.customerSourceStatus);
             renderCustomerWriteReadiness(modules);

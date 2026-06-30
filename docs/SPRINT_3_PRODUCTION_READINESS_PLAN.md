@@ -1,6 +1,6 @@
 # Sprint 3 - Production Readiness
 
-Status: `GESTART / SPRINT 3A-3C FOUNDATION READY`
+Status: `GESTART / SPRINT 3A-3D FOUNDATION READY`
 
 Datum: 2026-06-30
 
@@ -50,7 +50,7 @@ Sprint 3 is pas afgerond wanneer:
 | 3A | Audit & Observability Foundation | P0 | Foundation | Auditmodel, lokale service en observability-taxonomie voorbereiden zonder secrets | `audit_logs`, gated writes, RLS | `docs/SPRINT_3A_AUDIT_OBSERVABILITY_FOUNDATION.md` + lokale foundationservice |
 | 3B | Storage Security Foundation | P0 | Foundation | Veilige bestandsopslag voorbereiden met klantisolatie | Supabase Storage, files table, RLS | `docs/SPRINT_3B_STORAGE_SECURITY_FOUNDATION.md` + readinessservice |
 | 3C | Release Governance Foundation | P0 | Foundation | Production gates, approvals en rollback aanscherpen | Deployment bundle, blockers, release decision | `docs/SPRINT_3C_RELEASE_GOVERNANCE_FOUNDATION.md` + readinessservice |
-| 3D | Monitoring & Backups Foundation | P1 | Foundation | Fouten, write failures, backups en restore evidence voorbereiden | Audit logging, Storage plan | Monitoring checklist/statuspaneel + backup/restore evidence-template |
+| 3D | Monitoring & Backups Foundation | P1 | Foundation | Fouten, write failures, backups en restore evidence voorbereiden | Audit logging, Storage plan | `docs/SPRINT_3D_MONITORING_BACKUPS_FOUNDATION.md` + readinessservice |
 | 3E | Release governance hardening | P0 | Proces + readiness | Governance aanscherpen na monitoring/backups evidence | Deployment bundle, blockers, release decision | Updated gates/checklists/NO-GO regels |
 | 3F | Environment hardening | P0 | Controle + docs | Development, staging en production strikt scheiden | `.env` templates, Netlify contexts, Supabase projects | Env matrix, risk review, missing actions |
 | 3G | Sprint 3 Review | P0 | Review | Officieel vaststellen wat production-ready is | 3A-3F | Sprint reviewdocument |
@@ -196,6 +196,19 @@ Nog niet:
 - gevoelige documenten zonder audit.
 
 ## 3. Monitoring
+
+Sprint 3D heeft de monitoring- en backups-foundation voorbereid.
+
+Vastgelegd in:
+
+- `docs/SPRINT_3D_MONITORING_BACKUPS_FOUNDATION.md`
+
+Toegevoegd:
+
+- `public/src/services/monitoringBackupReadinessService.js`
+- Developer Mode-kaart `Monitoring & Backups Foundation`
+
+Belangrijk: dit koppelt nog geen externe monitoringdienst en voert geen backup/restore uit. Het legt vast welke events, alerts, backup targets, restoreprocedures en Max AI-uitlegregels later leidend zijn.
 
 ### Te monitoren events
 

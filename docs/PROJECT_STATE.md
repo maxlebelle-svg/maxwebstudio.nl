@@ -1927,7 +1927,7 @@ Advies:
 
 ## Sprint 3 - Trust Infrastructure
 
-Status: `GESTART / SPRINT 3A-3C FOUNDATION READY`
+Status: `GESTART / SPRINT 3A-3D FOUNDATION READY`
 
 Leidend document:
 
@@ -2031,3 +2031,29 @@ Bewust nog geblokkeerd:
 - production write-mode;
 - rollback execution;
 - OpenAI/Storage/Mollie/Resend.
+
+## Sprint 3D - Monitoring & Backups Foundation
+
+Status: `FOUNDATION READY / GEEN EXTERNE MONITORING / GEEN PRODUCTIE`
+
+Toegevoegd:
+
+- `docs/SPRINT_3D_MONITORING_BACKUPS_FOUNDATION.md`
+- `public/src/services/monitoringBackupReadinessService.js`
+- Developer Mode-kaart `Monitoring & Backups Foundation`
+
+Werking:
+
+- Monitoringevents zijn vastgelegd voor applicatiefouten, write failures, RLS/security denials, fallback activaties, release failures, storage failures en toekomstige AI failures.
+- Alertingregels bepalen welke events production automatisch `NO-GO` houden.
+- Backupstrategie is vastgelegd voor database, storage, config/evidence en local/demo export.
+- Restoreprocedures zijn vastgelegd voor staging en production.
+- Max AI-regels zijn vastgelegd: Max mag storingen uitleggen, maar nooit rollback of restore uitvoeren.
+
+Bewust nog geblokkeerd:
+
+- externe monitoringdienst;
+- echte alert routing;
+- backup/restore automation;
+- production monitoring;
+- AI herstelacties.

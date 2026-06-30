@@ -708,3 +708,21 @@ Status:
 - Geen deployment gebouwd.
 - Geen productie gewijzigd.
 - Geen SQL uitgevoerd.
+
+## Sprint 3D - Monitoring & Backups Foundation
+
+Sprint 3D maakt monitoring, alerting, backup en restore onderdeel van de Trust Infrastructure.
+
+Securityregels:
+
+- customer isolation failure, RLS regressie, production write failure en ontbrekende backup/restore evidence houden productie automatisch `NO-GO`;
+- restore is een technische herstelactie en vereist rollback approval of expliciet incidentbesluit;
+- Max AI mag storingen en blokkades uitleggen, maar nooit rollback, restore of alertconfiguratie zelfstandig uitvoeren;
+- monitoring en backup evidence mogen geen secrets, API keys, signed URLs of volledige providerpayloads bevatten.
+
+Status:
+
+- Monitoring & Backups foundation vastgelegd.
+- Geen externe monitoringdienst gekoppeld.
+- Geen backup/restore uitgevoerd.
+- Geen productie gewijzigd.

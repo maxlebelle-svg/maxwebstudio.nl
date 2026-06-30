@@ -1591,7 +1591,7 @@ Dit hoofdstuk bouwt richting productie-ervaring en daarna Max AI:
 
 ## Sprint 3 - Trust Infrastructure
 
-Status: `GESTART / SPRINT 3A-3C FOUNDATION READY`
+Status: `GESTART / SPRINT 3A-3D FOUNDATION READY`
 
 Leidend document:
 
@@ -1691,3 +1691,29 @@ Nog niet live:
 Volgende stap:
 
 - Sprint 3D Monitoring & Backups foundation, daarna Sprint 3 Review.
+
+### Sprint 3D - Monitoring & Backups Foundation
+
+Status: `FOUNDATION READY`
+
+Output:
+
+- monitoringmodel;
+- alertingstrategie;
+- automatische NO-GO regels;
+- backupstrategie;
+- staging/production restoreprocedures;
+- Max AI storing/restore-uitlegregels;
+- Developer Mode-readinesskaart;
+- documentatie in `docs/SPRINT_3D_MONITORING_BACKUPS_FOUNDATION.md`.
+
+Nog niet live:
+
+- geen externe monitoringdienst;
+- geen backup/restore automation;
+- geen production monitoring;
+- geen nieuwe writes.
+
+Volgende stap:
+
+- Sprint 3 Review, daarna bepalen of Max AI Experience kan starten.
