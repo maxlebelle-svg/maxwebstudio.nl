@@ -258,7 +258,8 @@ Deze helper:
 
 - begroet de bezoeker;
 - wijst naar de aanvraag;
-- kan worden weggeklikt;
+- kan worden geminimaliseerd;
+- blijft terugroepbaar via een compacte Max-launcher;
 - opent geen echte chat;
 - gebruikt geen OpenAI, backend of automatisering.
 

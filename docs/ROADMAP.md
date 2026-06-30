@@ -1789,6 +1789,7 @@ Output:
 
 - eerste publieke Max-introductie op de homepage;
 - vaste, wegklikbare Max AI helper als subtiele gids naar de aanvraag;
+- compacte Max-launcher wanneer de helper wordt geminimaliseerd;
 - manifest vastgelegd in `docs/MAX_WEBSTUDIO_PLATFORM_MANIFEST.md`;
 - geen chat, OpenAI, backend, wizard of automatisering.
 
@@ -1799,6 +1800,18 @@ Belangrijk:
 - De huidige helper gebruikt alleen frontend, CSS-animatie en localStorage voor dismiss.
 - De visuele richting is nu een premium 3D-achtige digitale collega, geen klein icoon.
 - Dezelfde Max asset/character-structuur moet leidend blijven voor Website Wizard, klantportaal, CRM en toekomstige AI Experience.
+
+### Sprint 4A.1 - Max Helper UX Polish
+
+Status: `COMPLETE`
+
+Output:
+
+- sluiten minimaliseert naar een compacte launcher;
+- `Later` minimaliseert naar dezelfde launcher;
+- klikken op de launcher opent Max opnieuw;
+- localStorage bewaart `minimized` of `open` onder `maxwebstudioMaxAiHelperDismissed`;
+- Max blijft character-led en geen chatbot.
 
 Volgende logische stappen:
 

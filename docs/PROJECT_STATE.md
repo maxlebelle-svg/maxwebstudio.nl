@@ -2093,7 +2093,7 @@ Toegevoegd:
 
 - `docs/MAX_WEBSTUDIO_PLATFORM_MANIFEST.md`
 - publieke Max-introductie op `/public/index.html`
-- vaste Max AI helper op de homepage met dismiss via `maxwebstudioMaxAiHelperDismissed`
+- vaste Max AI helper op de homepage met minimize/launcher-gedrag via `maxwebstudioMaxAiHelperDismissed`
 
 Productregel:
 
@@ -2109,10 +2109,18 @@ Sprint 4A:
 - Max wordt voor het eerst zichtbaar op de homepage;
 - Max stelt zich voor als digitale webdesigner en vaste begeleider;
 - rechts op de pagina staat een compacte helper die naar de aanvraag leidt;
-- de helper is wegklikbaar en onthoudt die keuze lokaal;
+- de helper is minimaliseerbaar en onthoudt die keuze lokaal via `maxwebstudioMaxAiHelperDismissed`;
+- bij minimaliseren blijft een compact Max-knopje zichtbaar waarmee de helper teruggehaald kan worden;
 - op mobiel klapt de helper compact in zodat hij bestaande sticky contactknoppen niet blokkeert;
 - `public/assets/max-ai-character.png` is ingericht als eerste premium character asset;
 - `public/assets/max-ai-mascot.svg` blijft alleen fallback/placeholder;
 - homepage-intro en floating helper gebruiken dezelfde `max-ai-character` structuur, zodat latere WebP/animated assets centraal vervangbaar zijn;
 - CTA's blijven naar bestaande veilige flows gaan;
 - er is geen chat, OpenAI, backend, wizard, databasewijziging of automatisering toegevoegd.
+
+Sprint 4A.1:
+
+- Max blijft terugroepbaar via een compacte launcher;
+- sluiten en `Later` minimaliseren de helper in plaats van hem definitief te verbergen;
+- de launcher opent dezelfde character-led helper opnieuw;
+- er is geen chat, backend, analytics of nieuwe AI-functionaliteit toegevoegd.

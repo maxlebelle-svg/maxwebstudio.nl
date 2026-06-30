@@ -29,6 +29,7 @@ const reviewPrev = document.querySelector("[data-review-prev]");
 const reviewNext = document.querySelector("[data-review-next]");
 const reviewDots = document.querySelector("[data-review-dots]");
 const maxAiHelper = document.querySelector("[data-max-ai-helper]");
+const maxAiLauncher = document.querySelector("[data-max-ai-launcher]");
 const maxAiDismissButtons = document.querySelectorAll("[data-max-ai-dismiss]");
 
 const calendlyUrl = "https://calendly.com/maxwebstudio/gratis-kennismakingsgesprek";
@@ -380,30 +381,40 @@ calendlyTriggers.forEach((trigger) => {
   });
 });
 
-function dismissMaxAiHelper() {
-  if (!maxAiHelper) {
+function setMaxAiHelperState(state) {
+  if (!maxAiHelper || !maxAiLauncher) {
     return;
   }
 
-  maxAiHelper.hidden = true;
+  const isMinimized = state === "minimized";
+  maxAiHelper.hidden = isMinimized;
+  maxAiLauncher.hidden = !isMinimized;
 
   try {
-    localStorage.setItem(maxAiHelperDismissedKey, "true");
+    localStorage.setItem(maxAiHelperDismissedKey, isMinimized ? "minimized" : "open");
   } catch (error) {
     // localStorage can be unavailable in strict privacy modes.
   }
 }
 
 try {
-  if (maxAiHelper && localStorage.getItem(maxAiHelperDismissedKey) === "true") {
-    maxAiHelper.hidden = true;
+  const savedMaxAiHelperState = localStorage.getItem(maxAiHelperDismissedKey);
+
+  if (savedMaxAiHelperState === "true" || savedMaxAiHelperState === "minimized") {
+    setMaxAiHelperState("minimized");
+  } else {
+    setMaxAiHelperState("open");
   }
 } catch (error) {
   // Keep the helper visible when localStorage cannot be read.
 }
 
 maxAiDismissButtons.forEach((button) => {
-  button.addEventListener("click", dismissMaxAiHelper);
+  button.addEventListener("click", () => setMaxAiHelperState("minimized"));
+});
+
+maxAiLauncher?.addEventListener("click", () => {
+  setMaxAiHelperState("open");
 });
 
 if ("IntersectionObserver" in window) {
