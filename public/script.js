@@ -33,10 +33,17 @@ const maxAiLauncher = document.querySelector("[data-max-ai-launcher]");
 const maxAiDismissButtons = document.querySelectorAll("[data-max-ai-dismiss]");
 const maxAiPrimaryAction = document.querySelector("[data-max-ai-primary-action]");
 const maxAiSpeech = document.querySelector("[data-max-ai-speech]");
+const cookieConsent = document.querySelector("[data-cookie-consent]");
+const cookieAnalyticsInput = document.querySelector("[data-cookie-analytics]");
+const cookieAcceptAllButton = document.querySelector("[data-cookie-accept-all]");
+const cookieNecessaryButton = document.querySelector("[data-cookie-necessary]");
+const cookieSaveButton = document.querySelector("[data-cookie-save]");
+const cookieSettingsButtons = document.querySelectorAll("[data-cookie-settings]");
 
 const calendlyUrl = "https://calendly.com/maxwebstudio/gratis-kennismakingsgesprek";
 const leadStorageKey = "maxwebstudioLeadRequests";
 const maxAiHelperDismissedKey = "maxwebstudioMaxAiHelperDismissed";
+const cookieConsentStorageKey = "maxwebstudioCookieConsent";
 const maxAiStates = ["idle", "wave", "thumbs-up", "thinking", "celebrate", "look", "blink", "error-safe"];
 let calendlyLoadPromise;
 let maxAiStateTimer;
@@ -651,4 +658,99 @@ form?.addEventListener("submit", (event) => {
 
 formButton?.addEventListener("click", () => {
   handleLeadFormSubmit();
+});
+
+function readCookieConsent() {
+  try {
+    const storedConsent = localStorage.getItem(cookieConsentStorageKey);
+
+    if (!storedConsent) {
+      return null;
+    }
+
+    const parsedConsent = JSON.parse(storedConsent);
+
+    return {
+      necessary: true,
+      analytics: Boolean(parsedConsent.analytics),
+      version: Number(parsedConsent.version) || 1,
+      updatedAt: parsedConsent.updatedAt || null,
+    };
+  } catch (error) {
+    return null;
+  }
+}
+
+function setCookieConsentControls(consent) {
+  if (!cookieAnalyticsInput) {
+    return;
+  }
+
+  cookieAnalyticsInput.checked = Boolean(consent?.analytics);
+}
+
+function showCookieConsent() {
+  if (!cookieConsent) {
+    return;
+  }
+
+  setCookieConsentControls(readCookieConsent());
+  cookieConsent.hidden = false;
+  document.body.dataset.cookieConsentVisible = "true";
+}
+
+function hideCookieConsent() {
+  if (!cookieConsent) {
+    return;
+  }
+
+  cookieConsent.hidden = true;
+  delete document.body.dataset.cookieConsentVisible;
+}
+
+function storeCookieConsent(analyticsAllowed) {
+  const consent = {
+    necessary: true,
+    analytics: Boolean(analyticsAllowed),
+    version: 1,
+    updatedAt: new Date().toISOString(),
+  };
+
+  try {
+    localStorage.setItem(cookieConsentStorageKey, JSON.stringify(consent));
+  } catch (error) {
+    // Consent can still be honored for this page view when localStorage is blocked.
+  }
+
+  window.dispatchEvent(new CustomEvent("maxwebstudio:cookie-consent", { detail: consent }));
+  setCookieConsentControls(consent);
+  hideCookieConsent();
+}
+
+if (cookieConsent) {
+  const savedCookieConsent = readCookieConsent();
+
+  if (!savedCookieConsent) {
+    showCookieConsent();
+  } else {
+    setCookieConsentControls(savedCookieConsent);
+  }
+}
+
+cookieAcceptAllButton?.addEventListener("click", () => {
+  storeCookieConsent(true);
+});
+
+cookieNecessaryButton?.addEventListener("click", () => {
+  storeCookieConsent(false);
+});
+
+cookieSaveButton?.addEventListener("click", () => {
+  storeCookieConsent(Boolean(cookieAnalyticsInput?.checked));
+});
+
+cookieSettingsButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    showCookieConsent();
+  });
 });

@@ -8251,6 +8251,149 @@ h3 {
   box-shadow: 0 24px 56px rgba(21, 94, 239, 0.3);
 }
 
+.cookie-consent {
+  position: fixed;
+  left: clamp(14px, 3vw, 28px);
+  bottom: clamp(18px, 3vw, 28px);
+  z-index: 41;
+  width: min(520px, calc(100vw - 28px));
+  animation: cookieConsentIn 420ms ease both;
+}
+
+.cookie-consent[hidden] {
+  display: none;
+}
+
+.cookie-consent-card {
+  display: grid;
+  gap: 16px;
+  padding: clamp(16px, 2.2vw, 22px);
+  border: 1px solid rgba(198, 216, 238, 0.92);
+  border-radius: 24px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.97), rgba(239, 247, 255, 0.94)),
+    var(--white);
+  box-shadow: 0 24px 70px rgba(6, 18, 31, 0.2);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+}
+
+.cookie-consent-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.cookie-consent-copy .section-kicker {
+  margin-bottom: 0;
+  font-size: 11px;
+}
+
+.cookie-consent h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(21px, 2vw, 28px);
+  line-height: 1.05;
+}
+
+.cookie-consent p:not(.section-kicker) {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 750;
+  line-height: 1.55;
+}
+
+.cookie-consent-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.cookie-consent-links a {
+  color: var(--blue);
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.cookie-consent-links a:hover {
+  text-decoration: underline;
+}
+
+.cookie-consent-options {
+  display: grid;
+  gap: 10px;
+}
+
+.cookie-option {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 12px;
+  border: 1px solid rgba(214, 226, 240, 0.9);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.cookie-option input {
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  accent-color: var(--blue);
+}
+
+.cookie-option strong {
+  display: block;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.cookie-option small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+  line-height: 1.35;
+}
+
+.cookie-option-locked {
+  background: rgba(239, 247, 255, 0.7);
+}
+
+.cookie-consent-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.cookie-consent-actions .button {
+  min-height: 42px;
+  padding: 0 12px;
+  font-size: 12px;
+  white-space: normal;
+}
+
+.cookie-consent-actions .button.ghost {
+  border: 1px solid rgba(214, 226, 240, 0.95);
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+@keyframes cookieConsentIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .max-ai-floating-helper {
   position: fixed;
   right: clamp(14px, 3vw, 28px);
@@ -8936,7 +9079,19 @@ h3 {
   transition: color 180ms ease;
 }
 
-.footer-bottom a:hover {
+.footer-cookie-settings {
+  padding: 0;
+  border: 0;
+  color: rgba(219, 234, 254, 0.68);
+  background: transparent;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  transition: color 180ms ease;
+}
+
+.footer-bottom a:hover,
+.footer-cookie-settings:hover {
   color: var(--white);
 }
 
@@ -10272,6 +10427,61 @@ h3 {
     width: auto;
   }
 
+  .cookie-consent {
+    right: 12px;
+    bottom: 82px;
+    left: 12px;
+    width: auto;
+  }
+
+  .cookie-consent-card {
+    gap: 12px;
+    padding: 14px;
+    border-radius: 20px;
+  }
+
+  .cookie-consent-copy .section-kicker {
+    font-size: 10px;
+  }
+
+  .cookie-consent h2 {
+    font-size: 19px;
+  }
+
+  .cookie-consent p:not(.section-kicker) {
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .cookie-consent-options {
+    gap: 8px;
+  }
+
+  .cookie-option {
+    padding: 10px;
+  }
+
+  .cookie-option strong {
+    font-size: 13px;
+  }
+
+  .cookie-option small {
+    font-size: 11px;
+  }
+
+  .cookie-consent-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .cookie-consent-actions .button {
+    min-height: 38px;
+  }
+
+  body[data-cookie-consent-visible="true"] .max-ai-floating-helper,
+  body[data-cookie-consent-visible="true"] .max-ai-launcher {
+    display: none;
+  }
+
   .max-ai-helper-character {
     width: 86px;
     margin: 0 0 -56px 14px;
@@ -10390,6 +10600,7 @@ h3 {
   .max-ai-confetti,
   .max-ai-confetti span,
   .max-ai-speech,
+  .cookie-consent,
   .browser-device,
   .phone-device,
   .floating-panel,

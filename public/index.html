@@ -870,6 +870,41 @@
       <a class="sticky-secondary" href="tel:+31616217771" aria-label="Bel direct">Bel</a>
     </div>
 
+    <section class="cookie-consent" data-cookie-consent hidden aria-label="Cookievoorkeuren">
+      <div class="cookie-consent-card">
+        <div class="cookie-consent-copy">
+          <p class="section-kicker">Cookievoorkeuren</p>
+          <h2>Cookies bij Max Webstudio</h2>
+          <p>We gebruiken noodzakelijke cookies om de website goed te laten werken. Analytics staat standaard uit en wordt pas gebruikt na jouw toestemming.</p>
+          <div class="cookie-consent-links" aria-label="Cookie en privacy links">
+            <a href="cookiebeleid.html">Cookiebeleid</a>
+            <a href="privacyverklaring.html">Privacyverklaring</a>
+          </div>
+        </div>
+        <div class="cookie-consent-options">
+          <label class="cookie-option cookie-option-locked">
+            <input type="checkbox" checked disabled />
+            <span>
+              <strong>Noodzakelijk</strong>
+              <small>Altijd actief voor basisfuncties en voorkeuren.</small>
+            </span>
+          </label>
+          <label class="cookie-option">
+            <input type="checkbox" data-cookie-analytics />
+            <span>
+              <strong>Analytics</strong>
+              <small>Helpt ons de website te verbeteren. Geen tracking zonder toestemming.</small>
+            </span>
+          </label>
+        </div>
+        <div class="cookie-consent-actions">
+          <button class="button primary" type="button" data-cookie-accept-all>Alles accepteren</button>
+          <button class="button secondary" type="button" data-cookie-necessary>Alleen noodzakelijk</button>
+          <button class="button ghost" type="button" data-cookie-save>Voorkeuren opslaan</button>
+        </div>
+      </div>
+    </section>
+
     <footer class="site-footer">
       <div class="footer-shell">
         <section class="footer-conversion" aria-labelledby="footer-conversion-title">
@@ -954,12 +989,17 @@
         <div class="footer-bottom">
           <span>© 2026 Max Webstudio</span>
           <span>Professionele websites • Hosting • Onderhoud • Sinds 2018</span>
-          <nav aria-label="Juridische snelkoppelingen"><a href="algemene-voorwaarden.html">Voorwaarden</a><a href="privacyverklaring.html">Privacy</a><a href="cookiebeleid.html">Cookies</a></nav>
+          <nav aria-label="Juridische snelkoppelingen">
+            <a href="algemene-voorwaarden.html">Voorwaarden</a>
+            <a href="privacyverklaring.html">Privacy</a>
+            <a href="cookiebeleid.html">Cookies</a>
+            <button class="footer-cookie-settings" type="button" data-cookie-settings>Cookie-instellingen</button>
+          </nav>
         </div>
       </div>
     </footer>
 
     <script type="module" src="src/components/demoPortfolioEngine.js"></script>
-    <script src="script.js?v=7.9.3"></script>
+    <script src="script.js?v=7.9.4"></script>
   </body>
 </html>
