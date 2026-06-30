@@ -1531,3 +1531,34 @@ Volgende stap:
 1. Sprint 2 Review uitvoeren.
 2. Productie-write-mode dicht houden tot release approval.
 3. Infrastructure Sprint pas starten na review.
+
+## Sprint 2 Review - Operationele Workflow Writes
+
+Status: `AFGEROND`
+
+Vastgelegd in:
+
+- `docs/SPRINT_2_OPERATIONAL_WORKFLOW_WRITES_REVIEW.md`
+
+Samenvatting:
+
+- 2A Project Status Updates: staging PASS.
+- 2B Customer Contact Updates: staging PASS.
+- 2C Website Operational Updates: staging PASS.
+- Sprint completion: `100%`.
+- Productie-write-mode blijft `NO-GO`.
+
+Volgende sprint:
+
+`Production Readiness Sprint`
+
+Focus:
+
+1. Server-side audit logging.
+2. Storage/file-upload security.
+3. Monitoring en observability.
+4. Backups en restore evidence.
+5. Release approvals en production write-governance.
+6. Environment hardening.
+
+Niet starten met finance, payments, storage uploads of AI-writes voordat deze production readiness-basis verder is afgerond.
