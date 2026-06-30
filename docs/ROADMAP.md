@@ -1787,7 +1787,7 @@ Status: `FOUNDATION READY`
 
 Output:
 
-- eerste publieke Max-introductie op de homepage;
+- eerste publieke Max-aanwezigheid als vaste gids op de homepage;
 - vaste, wegklikbare Max AI helper als subtiele gids naar de aanvraag;
 - compacte Max-launcher wanneer de helper wordt geminimaliseerd;
 - manifest vastgelegd in `docs/MAX_WEBSTUDIO_PLATFORM_MANIFEST.md`;
@@ -1797,6 +1797,7 @@ Belangrijk:
 
 - Max is geen standaard chatbot-widget.
 - Max is een herkenbare digitale begeleider die later de website, wizard, klantportaal en CRM-ervaring verbindt.
+- Max is geen losse homepage-sectie; de homepage blijft primair gericht op websites, portfolio, pakketten, vertrouwen en conversie.
 - De huidige helper gebruikt alleen frontend, CSS-animatie en localStorage voor dismiss.
 - De visuele richting is nu een premium 3D-achtige digitale collega, geen klein icoon.
 - Dezelfde Max asset/character-structuur moet leidend blijven voor Website Wizard, klantportaal, CRM en toekomstige AI Experience.

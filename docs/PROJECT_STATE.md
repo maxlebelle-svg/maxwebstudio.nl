@@ -2106,15 +2106,15 @@ Experience Rule:
 
 Sprint 4A:
 
-- Max wordt voor het eerst zichtbaar op de homepage;
-- Max stelt zich voor als digitale webdesigner en vaste begeleider;
+- Max wordt voor het eerst zichtbaar als vaste begeleider op de publieke website;
+- de grote homepage-introductiesectie is verwijderd, zodat de homepage weer primair draait om websites, portfolio, pakketten, vertrouwen en conversie;
 - rechts op de pagina staat een compacte helper die naar de aanvraag leidt;
 - de helper is minimaliseerbaar en onthoudt die keuze lokaal via `maxwebstudioMaxAiHelperDismissed`;
 - bij minimaliseren blijft een compact Max-knopje zichtbaar waarmee de helper teruggehaald kan worden;
 - op mobiel klapt de helper compact in zodat hij bestaande sticky contactknoppen niet blokkeert;
 - `public/assets/max-ai-character.png` is ingericht als eerste premium character asset;
 - `public/assets/max-ai-mascot.svg` blijft alleen fallback/placeholder;
-- homepage-intro en floating helper gebruiken dezelfde `max-ai-character` structuur, zodat latere WebP/animated assets centraal vervangbaar zijn;
+- de floating helper gebruikt de centrale `max-ai-character` structuur, zodat latere WebP/animated assets centraal vervangbaar zijn;
 - CTA's blijven naar bestaande veilige flows gaan;
 - er is geen chat, OpenAI, backend, wizard, databasewijziging of automatisering toegevoegd.
 

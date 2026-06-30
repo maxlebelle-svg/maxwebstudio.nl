@@ -250,9 +250,9 @@ De mascotte is de herkenbare vorm van dezelfde persona:
 - Projectmanager;
 - Collega.
 
-De eerste publieke Max-introductie start in Sprint 4A als rustige merkervaring op de homepage.
+De eerste publieke Max-aanwezigheid start in Sprint 4A als rustige vaste gids op de homepage.
 
-Vanaf deze sprint verschijnt Max ook als compacte, vaste helper aan de rechterkant van de publieke website.
+Vanaf deze sprint verschijnt Max als compacte, vaste helper aan de rechterkant van de publieke website.
 
 Deze helper:
 
