@@ -401,6 +401,10 @@ function setMaxAiHelperState(state) {
   }
 }
 
+function isCompactMaxAiViewport() {
+  return window.matchMedia("(max-width: 640px)").matches;
+}
+
 function setMaxAiState(state) {
   if (!maxAiHelper || !maxAiStates.includes(state)) {
     return;
@@ -455,7 +459,7 @@ window.maxWebstudioMaxAi = {
 try {
   const savedMaxAiHelperState = localStorage.getItem(maxAiHelperDismissedKey);
 
-  if (savedMaxAiHelperState === "true" || savedMaxAiHelperState === "minimized") {
+  if (isCompactMaxAiViewport() || savedMaxAiHelperState === "true" || savedMaxAiHelperState === "minimized") {
     setMaxAiHelperState("minimized");
   } else {
     setMaxAiHelperState("open");
