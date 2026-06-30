@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+Disallow: /admin-dashboard.html
+Disallow: /client-dashboard.html
+Disallow: /klantportaal.html
+Disallow: /login.html
+Disallow: /offerte.html
+Disallow: /demo-klantreis.html
+
+Sitemap: https://maxwebstudio.nl/sitemap.xml
