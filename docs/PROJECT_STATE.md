@@ -2084,3 +2084,28 @@ Productiestatus:
 Volgende sprint:
 
 - Sprint 4 - Experience Layer.
+
+## Max Webstudio Platform Manifest v1.0
+
+Status: `ACTIVE / EXPERIENCE LAYER STARTED`
+
+Toegevoegd:
+
+- `docs/MAX_WEBSTUDIO_PLATFORM_MANIFEST.md`
+- publieke Max-introductie op `/public/index.html`
+
+Productregel:
+
+> Technologie is niet ons product. De ervaring met Max is ons product.
+
+Experience Rule:
+
+- bezoekers, klanten en interne gebruikers moeten uiteindelijk niet voelen welke module zij gebruiken;
+- de ervaring moet voelen alsof zij met Max samenwerken.
+
+Sprint 4A:
+
+- Max wordt voor het eerst zichtbaar op de homepage;
+- Max stelt zich voor als digitale webdesigner;
+- CTA's blijven naar bestaande veilige flows gaan;
+- er is geen chat, OpenAI, backend, wizard, databasewijziging of automatisering toegevoegd.

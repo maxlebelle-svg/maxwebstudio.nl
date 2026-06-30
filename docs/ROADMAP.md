@@ -1745,3 +1745,55 @@ Belangrijk:
 
 - Sprint 4 bouwt eerst de ervaring, niet OpenAI.
 - OpenAI/server-side AI volgt pas in Sprint 5.
+
+## Max Webstudio Platform Manifest v1.0
+
+Status: `ACTIVE`
+
+Leidend document:
+
+- `docs/MAX_WEBSTUDIO_PLATFORM_MANIFEST.md`
+
+Nieuwe productregel:
+
+> Technologie is niet ons product. De ervaring met Max is ons product.
+
+Productlagen:
+
+1. Foundation - `COMPLETE`.
+2. Trust Infrastructure - `COMPLETE AS FOUNDATION`.
+3. Experience - `STARTING`.
+4. Intelligence - `FUTURE`.
+5. Automation - `FUTURE`.
+
+Experience Rule:
+
+- De gebruiker mag niet voelen of hij in CRM, klantportaal, wizard, AI of website zit.
+- De gebruiker moet voelen dat hij samenwerkt met Max.
+
+## Sprint 4 - Experience Layer
+
+Status: `STARTED`
+
+Doel:
+
+- de klant ontmoet Max;
+- Max wordt de herkenbare interface van de volledige klantreis;
+- eerst UX en merkervaring, pas later OpenAI.
+
+### Sprint 4A - Max AI Introduction
+
+Status: `FOUNDATION READY`
+
+Output:
+
+- eerste publieke Max-introductie op de homepage;
+- manifest vastgelegd in `docs/MAX_WEBSTUDIO_PLATFORM_MANIFEST.md`;
+- geen chat, OpenAI, backend, wizard of automatisering.
+
+Volgende logische stappen:
+
+1. Website Experience.
+2. Website Wizard Experience.
+3. Klantportaal Experience.
+4. CRM Experience.

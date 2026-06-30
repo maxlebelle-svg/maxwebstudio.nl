@@ -1,7 +1,7 @@
 # Max AI Persona & Interaction Model
 
-Status: productdocument.  
-Fase: 27.2.  
+Status: productdocument.
+Fase: 27.2.
 Doel: vastleggen wie Max AI is als digitale medewerker en hoe hij gebruikers begeleidt tijdens de volledige klantreis.
 
 Dit document voegt geen code, UI, afbeelding, OpenAI-call, runtimewijziging, Supabase wijziging of API key toe.
@@ -250,11 +250,11 @@ De mascotte is de herkenbare vorm van dezelfde persona:
 - Projectmanager;
 - Collega.
 
-De mascotte wordt technisch pas geïntroduceerd tijdens:
+De eerste publieke Max-introductie start in Sprint 4A als rustige merkervaring op de homepage.
 
-**Fase 33 - Max AI Experience MVP**
+De definitieve interactieve Max AI Experience volgt later in de Experience Layer.
 
-Tot die tijd blijft deze persona leidend.
+Tot die tijd blijft deze persona leidend: Max stelt zich voor, maar handelt nog niet zelfstandig.
 
 ## Relatie Met Andere Documenten
 
@@ -265,10 +265,10 @@ Dit document vormt samen met deze documenten de leidende productvisie:
 - `docs/MAX_AI_USER_JOURNEY.md`
 - `docs/MAX_AI_MODULE_MAP.md`
 - `docs/MASTER_ROADMAP_V2.md`
+- `docs/MAX_WEBSTUDIO_PLATFORM_MANIFEST.md`
 
 ## Belangrijkste Regel
 
 Max moet altijd voelen als dezelfde digitale medewerker.
 
 De technologie mag veranderen, maar de ervaring moet herkenbaar blijven.
-
