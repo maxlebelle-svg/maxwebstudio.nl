@@ -642,7 +642,7 @@ async function handleLeadFormSubmit() {
     }
     setLeadFormStatus("Bedankt! Je aanvraag is succesvol verzonden. Ik neem meestal dezelfde dag contact met je op.", "success");
   } catch (error) {
-    console.error("Lead request email failed", error);
+    console.warn("Lead request email failed", error);
     if (formButton) {
       formButton.textContent = "Verstuur aanvraag";
       formButton.disabled = false;
