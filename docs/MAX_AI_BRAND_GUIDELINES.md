@@ -209,7 +209,9 @@ Visuele UX-regels:
 
 Belangrijk:
 
-De huidige `public/assets/max-ai-mascot.svg` is de eerste technische fallback voor deze richting.
+De huidige `public/assets/max-ai-character.png` is de eerste primaire premium character asset voor deze richting.
+
+`public/assets/max-ai-mascot.svg` blijft alleen een lichte fallback/placeholder.
 
 Een definitieve premium PNG/WebP/animated asset kan later worden toegevoegd zonder de HTML-structuur opnieuw te ontwerpen.
 
