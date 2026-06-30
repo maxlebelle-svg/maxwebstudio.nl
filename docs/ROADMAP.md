@@ -1431,3 +1431,30 @@ Aanbevolen Sprint 2:
 1. `projects` status/fase/voortgang update.
 2. `websites` status/notities/onderhoudsvelden update.
 3. `customers` beperkte contactvelden update.
+
+## Sprint 2A - Project Status Write MVP
+
+Status: `AFGEROND`
+
+Samenvatting:
+
+- Medium-risk write gestart met de kleinste veilige projectmutatie.
+- Alleen `projects.status`, `projects.phase` en `projects.progress` zijn write-enabled.
+- Feature gate: `maxwebstudioProjectStatusWriteEnabled=true` + provider mode `supabase-write-test`.
+- Local/demo fallback blijft actief.
+- Productie-write-mode blijft dicht.
+
+Staging evidence:
+
+- Patch `010_project_status_update_grants.sql` uitgevoerd op staging.
+- PASS-run: `phase-35-2a-1782801332755`.
+- Support update PASS.
+- Customer/no-profile/anonymous blocked of 0 rows changed.
+- Spoofing van `customer_id` en extra velden geblokkeerd.
+- Klantportaal-read ziet bijgewerkte status.
+
+Volgende stap:
+
+1. Sprint 2B plannen: beperkte customer contact updates.
+2. Eerst auditstrategie en customer-field allowlist vastleggen.
+3. Nog niet starten met websites, finance, storage of AI-writes.

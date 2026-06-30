@@ -1053,3 +1053,45 @@ Conclusie:
 - Sprint 1 is volledig staging-gevalideerd.
 - Productie-write-mode blijft dicht.
 - Sprint 2 mag pas starten na expliciete medium-risk writeplanning, auditstrategie en production governance.
+
+## Sprint 2A Project Status Write
+
+Status: `PASS / STAGING VALIDATED`
+
+Scope:
+
+- Alleen `projects`.
+- Alleen `status`, `phase`, `progress`, `updated_at` en veilige metadata.
+- Geen project create/delete/archive.
+- Geen `customer_id`, `website_id`, notes, ownership of finance fields.
+- Alleen via `supabase-write-test` en `maxwebstudioProjectStatusWriteEnabled=true`.
+
+Staging patch:
+
+- `supabase/migration-drafts/010_project_status_update_grants.sql`
+- Uitgevoerd op staging/testproject `maxwebstudio-test`.
+- Doel: `authenticated` update beperken tot projectstatuskolommen voordat RLS policies evalueren.
+
+Evidence:
+
+- Eerste run: `phase-35-2a-1782801289791`
+- Bevinding: customer/no-profile requests kregen HTTP 200 met lege resultset; er werd geen rij aangepast. Testverwachting aangescherpt naar "0 rows changed = blocked".
+- PASS-run: `phase-35-2a-1782801332755`
+
+| Test | Verwacht | Resultaat | Status | Notities |
+| --- | --- | --- | --- | --- |
+| Support update | Bevoegde interne rol kan projectstatus aanpassen | HTTP 200, status `development`, progress `45` | PASS | RLS `projects_support_update` werkt |
+| Customer update | Customer kan projectstatus niet wijzigen | HTTP 200 met 0 gewijzigde rijen | PASS | RLS blokkeert effectieve update |
+| Anonymous update | Anonymous wordt geblokkeerd | HTTP 401 | PASS | Geen publieke write-toegang |
+| No-profile update | Authenticated zonder profile kan niet wijzigen | HTTP 200 met 0 gewijzigde rijen | PASS | Geen effectieve update |
+| Customer/ownership spoof | Extra `customer_id` veld wordt geblokkeerd | HTTP 403 | PASS | Column-level grants blokkeren gevoelige velden |
+| Notes/extra field spoof | Extra `notes` veld wordt geblokkeerd | HTTP 403 | PASS | Alleen statuskolommen toegestaan |
+| Customer portal read | Customer leest bijgewerkte projectstatus via RLS/readlaag | HTTP 200, status `development`, progress `45` | PASS | Klantportaal-read blijft klantveilig |
+| Local fallback | Gate/provider uit gebruikt localStorage fallback | `fallback_local` | PASS | Geen Supabase write zonder gate |
+
+Conclusie:
+
+- Sprint 2A Project Status Write is staging-gevalideerd.
+- Productie-write-mode blijft `NO-GO`.
+- Server-side audit logging ontbreekt nog.
+- Patch `010` is alleen staging-toegepast en vereist production release approval vóór live.

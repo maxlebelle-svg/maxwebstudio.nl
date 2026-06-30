@@ -1791,3 +1791,37 @@ Conclusie:
 - Productie-write-mode blijft bewust dicht.
 - Server-side audit logging en production approvals blijven open blockers.
 - Sprint 2 mag pas starten na medium-risk write-governance.
+
+## Sprint 2A - Project Status Write MVP
+
+Status: `AFGEROND / STAGING GEVALIDEERD / PRODUCTIE DICHT`
+
+Toegevoegd:
+
+- `public/src/services/projectStatusWriteService.js`
+- `maxwebstudioProjectStatusWriteEnabled`
+- `maxwebstudioLastProjectStatusWriteStatus`
+- `supabase/migration-drafts/010_project_status_update_grants.sql`
+
+Werking:
+
+- Supabase-projecten kunnen via de admin alleen `status`, `phase` en `progress` bijwerken.
+- Brede projectupdates, project create/delete/archive en ownership/customer fields blijven dicht.
+- Local/demo fallback blijft actief wanneer provider/gate niet op `supabase-write-test` staat.
+- Admin UI houdt Supabase-projecten beperkt tot status/fase in Sprint 2A.
+
+Staging evidence:
+
+- Patch `010` uitgevoerd op `maxwebstudio-test`.
+- PASS-run: `phase-35-2a-1782801332755`.
+- Support update PASS.
+- Customer/no-profile/anonymous writes geblokkeerd of 0 rijen gewijzigd.
+- Customer/extra-field spoofing geblokkeerd.
+- Klantportaal-read ziet bijgewerkte projectstatus via RLS/readlaag.
+
+Bewust nog geblokkeerd:
+
+- Productie-write-mode.
+- Server-side audit logging.
+- Project create/delete/archive.
+- Customer/website/finance writes.

@@ -1,6 +1,6 @@
 # Supabase Write Readiness Plan
 
-Status: `SPRINT 1 LOW-RISK WRITES AFGEROND / PRODUCTIE WRITE-MODE NO-GO`
+Status: `SPRINT 2A PROJECT STATUS WRITE GEVALIDEERD / PRODUCTIE WRITE-MODE NO-GO`
 
 Dit document legt vast hoe Max Webstudio gecontroleerd van read-only Supabase/hybrid naar veilige write-mode kan groeien. Het is een planningsdocument: er wordt geen SQL uitgevoerd, geen provider gewijzigd en geen productieproject geraakt.
 
@@ -23,7 +23,7 @@ De volgende modules lopen inmiddels via de Supabase/hybrid data-layer met local/
 - `client_portal_notifications`
 - `crm_tasks`
 
-Writes blijven uitgeschakeld behalve bestaande lokale demo-acties, eerder gebouwde gated test/migratieflows en de staging-gevalideerde Sprint 1 low-risk writes achter expliciete test-gates.
+Writes blijven uitgeschakeld behalve bestaande lokale demo-acties, eerder gebouwde gated test/migratieflows, de staging-gevalideerde Sprint 1 low-risk writes en de Sprint 2A projectstatus-write achter expliciete test-gates.
 
 Zie ook `docs/SPRINT_1_LOW_RISK_WRITES_REVIEW.md`.
 
@@ -96,6 +96,12 @@ Sprint 1 low-risk writes zijn afgerond en staging-gevalideerd:
 - `client_portal_messages` create.
 
 Productie-write-mode blijft dicht totdat audit/approval en production governance zijn afgerond.
+
+Sprint 2A medium-risk write is staging-gevalideerd:
+
+- `projects.status`, `projects.phase` en `projects.progress` update.
+
+Productie-write-mode blijft ook hiervoor dicht totdat audit/approval en production governance zijn afgerond.
 
 ### 1. CRM-taak aanmaken
 
@@ -538,4 +544,56 @@ Beperkingen:
 
 - Server-side audit logging is nog niet actief.
 - Productie blijft geblokkeerd totdat patches `008`/`009`, audit/approval en production write-governance expliciet zijn goedgekeurd.
+
+## Sprint 2A - Project status update MVP
+
+Status: `GEIMPLEMENTEERD / STAGING GEVALIDEERD`
+
+Toegevoegd:
+
+- `public/src/services/projectStatusWriteService.js`
+- `supabaseProvider.updateProjectStatus()`
+- Developer Mode-status voor `maxwebstudioProjectStatusWriteEnabled` en `maxwebstudioLastProjectStatusWriteStatus`.
+- RLS/grants-patch `supabase/migration-drafts/010_project_status_update_grants.sql`.
+
+Gate:
+
+- Provider mode moet `supabase-write-test` zijn.
+- `maxwebstudioProjectStatusWriteEnabled=true` moet lokaal expliciet zijn gezet.
+- Productieomgeving blokkeert de write.
+- Supabase runtime-config en bevoegde interne rol zijn vereist.
+
+Write-scope:
+
+- Alleen `projects` update.
+- Alleen `status`, `phase`, `progress`, `updated_at` en veilige metadata.
+- Geen create/delete/archive.
+- Geen `customer_id`, `website_id`, notes, checklist, tasks, timeline, ownership, finance, files of AI-velden.
+
+Databasebeperking:
+
+- Patch `010_project_status_update_grants.sql` trekt brede `authenticated` update terug.
+- Daarna krijgt `authenticated` alleen column-level update op `status`, `phase`, `progress`, `updated_at` en `metadata`.
+- RLS blijft bepalen welke rollen de rij mogen wijzigen.
+
+Fallback:
+
+- Als de gate dichtstaat, Supabase/Auth ontbreekt of RLS de update blokkeert, wordt de projectstatus lokaal opgeslagen in `maxwebstudioProjects`.
+- Laatste resultaat wordt vastgelegd in `maxwebstudioLastProjectStatusWriteStatus`.
+
+Stagingstatus:
+
+- Lokale fallback-test: `PASS`.
+- Patch `010_project_status_update_grants.sql` is uitsluitend op staging uitgevoerd.
+- Staging write/RLS-test: `PASS` met run `phase-35-2a-1782801332755`.
+- Support update: HTTP 200.
+- Customer/no-profile update: 0 gewijzigde rijen.
+- Anonymous update: HTTP 401.
+- `customer_id` spoofing en extra `notes` veld: HTTP 403.
+- Customer portal readback: bijgewerkte projectstatus zichtbaar via RLS/readlaag.
+
+Beperkingen:
+
+- Server-side audit logging is nog niet actief.
+- Productie blijft geblokkeerd totdat patch `010`, audit/approval en production write-governance expliciet zijn goedgekeurd.
 - Sprint 2 medium-risk writes moeten eerst via aparte Sprint Review worden gepland.

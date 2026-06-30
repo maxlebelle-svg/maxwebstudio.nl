@@ -3416,6 +3416,7 @@
             quoteMigrationService: await import("./src/services/quoteMigrationService.js"),
             invoiceMigrationService: await import("./src/services/invoiceMigrationService.js"),
             subscriptionMigrationService: await import("./src/services/subscriptionMigrationService.js"),
+            projectStatusWriteService: await import("./src/services/projectStatusWriteService.js"),
             dataValidationService: await import("./src/services/dataValidationService.js"),
             clientPortalDataService: await import("./src/services/clientPortalDataService.js"),
             clientPortalTestService: await import("./src/services/clientPortalTestService.js"),
@@ -3819,10 +3820,17 @@
           } catch {
             clientPortalMessageWriteStatus = null;
           }
+          let projectStatusWriteStatus = null;
+          try {
+            projectStatusWriteStatus = JSON.parse(localStorage.getItem("maxwebstudioLastProjectStatusWriteStatus") || "null");
+          } catch {
+            projectStatusWriteStatus = null;
+          }
           const crmTaskWriteEnabled = ["true", "1", "yes", "ja", "enabled"].includes(String(localStorage.getItem("maxwebstudioCrmTaskWriteEnabled") || "").toLowerCase());
           const leadNoteWriteEnabled = ["true", "1", "yes", "ja", "enabled"].includes(String(localStorage.getItem("maxwebstudioLeadNoteWriteEnabled") || "").toLowerCase());
           const changeRequestWriteEnabled = ["true", "1", "yes", "ja", "enabled"].includes(String(localStorage.getItem("maxwebstudioChangeRequestWriteEnabled") || "").toLowerCase());
           const clientPortalMessageWriteEnabled = ["true", "1", "yes", "ja", "enabled"].includes(String(localStorage.getItem("maxwebstudioClientPortalMessageWriteEnabled") || "").toLowerCase());
+          const projectStatusWriteEnabled = ["true", "1", "yes", "ja", "enabled"].includes(String(localStorage.getItem("maxwebstudioProjectStatusWriteEnabled") || "").toLowerCase());
           appendDeveloperCard("Supabase Data Layer MVP", [
             ["Status", status.readsPrepared ? "Read layer actief" : "Niet actief"],
             ["Modules", status.modules.join(", ")],
@@ -3840,6 +3848,9 @@
             ["Client message write gate", clientPortalMessageWriteEnabled ? "Lokaal toegestaan" : "Uit"],
             ["Client message laatste write", clientPortalMessageWriteStatus?.status || "Nog niet uitgevoerd"],
             ["Client message fallback", clientPortalMessageWriteStatus?.fallbackUsed ? "Ja" : "Nee"],
+            ["Project status write gate", projectStatusWriteEnabled ? "Lokaal toegestaan" : "Uit"],
+            ["Project status laatste write", projectStatusWriteStatus?.status || "Nog niet uitgevoerd"],
+            ["Project status fallback", projectStatusWriteStatus?.fallbackUsed ? "Ja" : "Nee"],
             ["Productie ready", status.productionReady ? "Ja" : "Nee"],
             ["Customers bron", state.customerSourceStatus?.dataLayer || "-"],
             ["Websites bron", state.websiteSourceStatus?.dataLayer || "-"],
@@ -11079,6 +11090,14 @@
           });
         }
 
+        function setProjectStatusFieldsOnly(enabled) {
+          Object.values(projectFields).forEach((field) => {
+            field.disabled = true;
+          });
+          projectFields.status.disabled = !enabled;
+          projectFields.phase.disabled = !enabled;
+        }
+
         function resetProjectWriteControls() {
           state.projectWriteReadiness = null;
           projectEdit.disabled = true;
@@ -11098,8 +11117,13 @@
             const repo = await getProjectRepositoryModule();
             const target = isSupabaseManagedProject(project) ? "supabase" : "local";
             const readiness = repo.canWriteProject(project, { target, mode: currentProjectDataMode() });
-            state.projectWriteReadiness = readiness;
-            projectEdit.disabled = target === "supabase" && !readiness.allowed;
+            let statusReadiness = null;
+            if (target === "supabase") {
+              if (!state.developerModules?.projectStatusWriteService) await loadDeveloperModules();
+              statusReadiness = state.developerModules.projectStatusWriteService.getProjectStatusWriteReadiness();
+            }
+            state.projectWriteReadiness = target === "supabase" ? { ...readiness, statusWrite: statusReadiness, allowed: Boolean(statusReadiness?.allowed), reason: statusReadiness?.missing?.join(" ") || readiness.reason } : readiness;
+            projectEdit.disabled = target === "supabase" && !state.projectWriteReadiness.allowed;
             projectCancel.disabled = false;
             if (target === "local") {
               setProjectFieldsDisabled(false);
@@ -11109,15 +11133,15 @@
               renderProjectSourceDetail(project, readiness);
               return;
             }
-            setProjectFieldsDisabled(!readiness.allowed);
-            projectSave.disabled = !readiness.allowed;
-            projectDelete.disabled = !readiness.allowed || project.status === "gearchiveerd";
-            projectReactivate.disabled = !readiness.allowed || project.status !== "gearchiveerd";
-            renderProjectSourceDetail(project, readiness);
-            if (!readiness.allowed) {
-              setProjectMessage(`Supabase project write geblokkeerd: ${readiness.reason}`, "error");
+            setProjectStatusFieldsOnly(state.projectWriteReadiness.allowed);
+            projectSave.disabled = !state.projectWriteReadiness.allowed;
+            projectDelete.disabled = true;
+            projectReactivate.disabled = true;
+            renderProjectSourceDetail(project, state.projectWriteReadiness);
+            if (!state.projectWriteReadiness.allowed) {
+              setProjectMessage(`Supabase projectstatus write geblokkeerd: ${state.projectWriteReadiness.reason}`, "error");
             } else if (!projectDetailMessage.textContent) {
-              setProjectMessage("Supabase project write is gecontroleerd beschikbaar voor dit project.", "success");
+              setProjectMessage("Supabase projectstatus write is gecontroleerd beschikbaar voor status, fase en voortgang.", "success");
             }
           } catch (error) {
             setProjectFieldsDisabled(true);
@@ -11259,6 +11283,7 @@
 
         function renderProjectChecklist(project) {
           projectChecklist.replaceChildren();
+          const locked = isSupabaseManagedProject(project);
           const completed = project.checklist.filter((item) => item.completed).length;
           projectChecklistCount.textContent = `${completed}/${project.checklist.length}`;
           project.checklist.forEach((item) => {
@@ -11267,6 +11292,7 @@
             const checkbox = document.createElement("input");
             checkbox.type = "checkbox";
             checkbox.checked = item.completed;
+            checkbox.disabled = locked;
             checkbox.addEventListener("change", () => toggleChecklistItem(item.id, checkbox.checked));
             label.append(checkbox, createCell(item.label));
             projectChecklist.append(label);
@@ -11275,6 +11301,7 @@
 
         function renderProjectTasks(project) {
           projectTaskList.replaceChildren();
+          const locked = isSupabaseManagedProject(project);
           const openTasks = project.tasks.filter((task) => !task.completed && task.status !== "afgerond").length;
           projectTaskCount.textContent = `${openTasks} open`;
           project.tasks.forEach((task) => {
@@ -11283,6 +11310,7 @@
             const checkbox = document.createElement("input");
             checkbox.type = "checkbox";
             checkbox.checked = task.completed || task.status === "afgerond";
+            checkbox.disabled = locked;
             checkbox.addEventListener("change", () => toggleTask(task.id, checkbox.checked));
             const content = document.createElement("div");
             content.append(createCell(task.title, "strong"), createCell(`${task.priority} - ${task.deadline || "geen deadline"}`));
@@ -11290,6 +11318,7 @@
             remove.className = "button secondary danger";
             remove.type = "button";
             remove.textContent = "Verwijder";
+            remove.disabled = locked;
             remove.addEventListener("click", () => removeProjectTask(task.id));
             item.append(checkbox, content, createBadge(task.status || "open", task.completed ? "status-active" : priorityClass(task.priority)), remove);
             projectTaskList.append(item);
@@ -11375,24 +11404,13 @@
             const repo = await getProjectRepositoryModule();
             let project = null;
             if (currentProject && isSupabaseManagedProject(currentProject)) {
-              try {
-                project = await repo.updateProject(currentProject.id, payload, {
-                  oldProject: currentProject,
-                  mode: currentProjectDataMode(),
-                  baseUpdatedAt: currentProject.updatedAt,
-                });
-              } catch (error) {
-                if (error.code === "PROJECT_UPDATED_AT_MISSING" && window.confirm("Dit Supabase-project mist updated_at. Toch gecontroleerd opslaan?")) {
-                  project = await repo.updateProject(currentProject.id, payload, {
-                    oldProject: currentProject,
-                    mode: currentProjectDataMode(),
-                    baseUpdatedAt: currentProject.updatedAt,
-                    confirmMissingUpdatedAt: true,
-                  });
-                } else {
-                  throw error;
-                }
-              }
+              if (!state.developerModules?.projectStatusWriteService) await loadDeveloperModules();
+              const statusResult = await state.developerModules.projectStatusWriteService.saveProjectStatusWithWriteFallback(currentProject, {
+                status: payload.status,
+                phase: payload.phase,
+                progress: currentProject.progress || 0,
+              });
+              project = statusResult.project;
             } else if (currentProject) {
               project = await repo.updateProject(currentProject.id, payload, {
                 oldProject: currentProject,
@@ -11410,7 +11428,7 @@
             await loadCRMData(false);
             state.selectedProjectId = project.id;
             selectProject(project.id);
-            setProjectMessage("Project opgeslagen.", "success");
+            setProjectMessage(isSupabaseManagedProject(currentProject) ? "Projectstatus opgeslagen." : "Project opgeslagen.", "success");
           } catch (error) {
             const message = error.code === "PROJECT_CONFLICT"
               ? "Supabase heeft een nieuwere projectversie. Ververs projectgegevens voordat je opslaat."
@@ -11570,10 +11588,15 @@
             setProjectMessage(`Supabase project write geblokkeerd: ${state.projectWriteReadiness?.reason || "voorwaarden ontbreken"}`, "error");
             return;
           }
-          setProjectFieldsDisabled(false);
+          if (isSupabaseManagedProject(project)) {
+            setProjectStatusFieldsOnly(true);
+            setProjectMessage("Alleen status en fase zijn bewerkbaar voor Supabase-projecten in Sprint 2A.", "success");
+          } else {
+            setProjectFieldsDisabled(false);
+            setProjectMessage("Projectdetail staat klaar om te bewerken.", "success");
+          }
           projectSave.disabled = false;
           projectCancel.disabled = false;
-          setProjectMessage("Projectdetail staat klaar om te bewerken.", "success");
         }
 
         function cancelProjectEditing() {

@@ -166,6 +166,18 @@ function isSafeClientPortalMessageWriteRecord(record = {}) {
     && record.metadata?.safeToArchive === true;
 }
 
+function assertProjectStatusPayload(updates = {}) {
+  const allowed = new Set(["status", "phase", "progress", "updated_at", "metadata"]);
+  const keys = Object.keys(updates);
+  if (!keys.length) throw new Error("Project status write bevat geen toegestane velden.");
+  const blocked = keys.filter((key) => !allowed.has(key));
+  if (blocked.length) throw new Error(`Project status write mag alleen status, phase, progress, updated_at en metadata wijzigen. Geblokkeerd: ${blocked.join(", ")}.`);
+  if (!updates.status) throw new Error("Project status write vereist een status.");
+  if (updates.metadata && updates.metadata.updatedBy !== "project-status-write-mvp") {
+    throw new Error("Project status write vereist veilige project-status-write-mvp metadata.");
+  }
+}
+
 async function getWriteClient({ allowMigration = false } = {}) {
   if (!isWriteTestMode() && !(allowMigration && isMigrationMode())) {
     throw new Error("Supabase writes zijn alleen toegestaan in supabase-write-test of gecontroleerde supabase-migration mode.");
@@ -588,6 +600,27 @@ export const supabaseProvider = {
     const { data, error } = await client.from("projects").update(payload).eq("id", id).select("*").single();
     if (error) throw new Error(error.message || "Project bijwerken in Supabase is mislukt.");
     return { success: true, table: "projects", action: "update_project", data };
+  },
+
+  async updateProjectStatus(id, updates = {}, context = {}) {
+    assertProjectWriteTable("projects");
+    if (!id) throw new Error("Project status write vereist een project id.");
+    assertProjectStatusPayload(updates);
+    const client = await getProjectWriteClient(context);
+    const payload = {
+      status: updates.status,
+      phase: updates.phase || null,
+      progress: Number.isFinite(Number(updates.progress)) ? Math.max(0, Math.min(100, Number(updates.progress))) : 0,
+      updated_at: updates.updated_at || new Date().toISOString(),
+      metadata: {
+        ...(updates.metadata || {}),
+        updatedBy: "project-status-write-mvp",
+        safeToArchive: true,
+      },
+    };
+    const { data, error } = await client.from("projects").update(payload).eq("id", id).select("*").single();
+    if (error) throw new Error(error.message || "Projectstatus bijwerken in Supabase staging is mislukt.");
+    return { success: true, table: "projects", action: "update_project_status", data };
   },
 
   async archiveProject(id, context = {}) {

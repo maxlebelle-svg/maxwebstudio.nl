@@ -719,3 +719,36 @@ Resterende blockers:
 2. Server-side audit logging voor low-risk writes ontbreekt nog.
 3. RLS-patches `008` en `009` zijn alleen op staging toegepast; productie-uitvoering vereist release approval.
 4. Medium-risk writes mogen pas na Sprint Review en production governance-plan.
+
+## Sprint 2A Project status write validation
+
+Status: `VALIDATED_ON_STAGING`
+
+Scope:
+
+- Alleen interne projectstatus update op `projects`.
+- Toegestane velden: `status`, `phase`, `progress`, `updated_at`, veilige metadata.
+- Geen create/delete/archive.
+- Geen ownership/customer/website/finance/file/AI writes.
+
+Evidence:
+
+- Patch uitgevoerd op staging: `supabase/migration-drafts/010_project_status_update_grants.sql`
+- Eerste staging run: `phase-35-2a-1782801289791`
+- Testinterpretatie aangescherpt: customer/no-profile kregen HTTP 200 met 0 gewijzigde rijen; dit is een RLS-block zonder effectieve update.
+- Herhaalde staging/RLS run: `phase-35-2a-1782801332755`
+- Support update: `PASS`, HTTP 200
+- Customer update: `PASS`, 0 gewijzigde rijen
+- Anonymous update: `PASS`, HTTP 401
+- No-profile update: `PASS`, 0 gewijzigde rijen
+- Customer/ownership spoofing: `PASS`, HTTP 403
+- Extra field spoofing: `PASS`, HTTP 403
+- Customer portal readback: `PASS`
+- Local fallback: `PASS`
+
+Resterende blockers:
+
+1. Productie-write-mode blijft geblokkeerd.
+2. Server-side audit logging voor medium-risk writes ontbreekt nog.
+3. Patch `010` is alleen op staging toegepast; productie-uitvoering vereist release approval.
+4. Sprint 2B mag pas starten na expliciete keuze en validatieplan voor customer contact updates.
