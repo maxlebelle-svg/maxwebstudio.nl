@@ -1591,7 +1591,7 @@ Dit hoofdstuk bouwt richting productie-ervaring en daarna Max AI:
 
 ## Sprint 3 - Production Readiness
 
-Status: `GEPLAND / NIET GESTART`
+Status: `GESTART / SPRINT 3A FOUNDATION READY`
 
 Leidend document:
 
@@ -1617,3 +1617,26 @@ Belangrijk:
 - Geen OpenAI/Mollie/Resend live flows.
 - Geen production writes zonder expliciete release approval.
 - Sprint 4 Max AI Experience start pas na voldoende production readiness.
+
+### Sprint 3A - Audit & Observability Foundation
+
+Status: `FOUNDATION READY`
+
+Output:
+
+- audit logging architectuur;
+- observability eventtaxonomie;
+- lokale audit/observability-service;
+- Developer Mode-readinesskaart;
+- documentatie in `docs/SPRINT_3A_AUDIT_OBSERVABILITY_FOUNDATION.md`.
+
+Nog niet live:
+
+- geen SQL;
+- geen productie-audittrail;
+- geen server-side audit inserts;
+- geen externe monitoringdienst.
+
+Volgende stap:
+
+- server-side audit logging MVP of Storage security foundation, met productie-write-mode nog steeds gesloten.

@@ -1,6 +1,6 @@
 # Sprint 3 - Production Readiness
 
-Status: `GEPLAND / NIET GESTART`
+Status: `GESTART / SPRINT 3A FOUNDATION READY`
 
 Datum: 2026-06-30
 
@@ -47,7 +47,7 @@ Sprint 3 is pas afgerond wanneer:
 
 | ID | Onderdeel | Prioriteit | Type | Doel | Afhankelijkheden | Output |
 | --- | --- | --- | --- | --- | --- | --- |
-| 3A | Server-side audit logging MVP | P0 | Implementatie | Bewijs vastleggen voor write-acties zonder secrets | `audit_logs`, gated writes, RLS | Audit service/function of gecontroleerde audit adapter + staging evidence |
+| 3A | Audit & Observability Foundation | P0 | Foundation | Auditmodel, lokale service en observability-taxonomie voorbereiden zonder secrets | `audit_logs`, gated writes, RLS | `docs/SPRINT_3A_AUDIT_OBSERVABILITY_FOUNDATION.md` + lokale foundationservice |
 | 3B | Storage security plan + foundation | P0 | Plan + beperkte implementatie | Veilige bestandsopslag voorbereiden met klantisolatie | Supabase Storage, files table, RLS | Bucketstrategie, policies, upload/download plan |
 | 3C | Monitoring & observability baseline | P1 | Implementatie/readiness | Fouten, write failures en security-events zichtbaar maken | Audit logging, admin/developer mode | Monitoring checklist/statuspaneel/loggingrichtlijn |
 | 3D | Backup & restore evidence | P1 | Proces + evidence | Herstelbaarheid bewijzen voordat productie open gaat | Supabase backup/export, Storage plan | Backup checklist, restore testlog, evidence-template |
@@ -56,6 +56,19 @@ Sprint 3 is pas afgerond wanneer:
 | 3G | Sprint 3 Review | P0 | Review | Officieel vaststellen wat production-ready is | 3A-3F | Sprint reviewdocument |
 
 ## 1. Audit Logging
+
+Sprint 3A heeft de audit- en observability-foundation voorbereid.
+
+Vastgelegd in:
+
+- `docs/SPRINT_3A_AUDIT_OBSERVABILITY_FOUNDATION.md`
+
+Toegevoegd:
+
+- `public/src/services/auditObservabilityService.js`
+- Developer Mode-kaart `Audit & Observability Foundation`
+
+Belangrijk: dit is nog geen productie-audittrail. Server-side insert-only logging naar `audit_logs` blijft de volgende stap voordat production writes open mogen.
 
 ### Strategie
 

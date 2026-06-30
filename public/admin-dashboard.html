@@ -3423,6 +3423,7 @@
             clientPortalDataService: await import("./src/services/clientPortalDataService.js"),
             clientPortalTestService: await import("./src/services/clientPortalTestService.js"),
             activityLogService: await import("./src/services/activityLogService.js"),
+            auditObservabilityService: await import("./src/services/auditObservabilityService.js"),
             authService: await import("./src/services/authService.js"),
             authReadinessService: await import("./src/services/authReadinessService.js"),
             authProfileService: await import("./src/services/authProfileService.js"),
@@ -3881,6 +3882,22 @@
             ["Files bron", state.fileSourceStatus?.dataLayer || "-"],
             ["Operations modules", status.modules.filter((moduleName) => ["leads", "files", "change_requests", "client_portal_messages", "client_portal_notifications", "crm_tasks"].includes(moduleName)).join(", ")],
             ["Fallback actief", [state.customerSourceStatus, state.websiteSourceStatus, state.projectSourceStatus, state.quoteSourceStatus, state.invoiceSourceStatus, state.subscriptionSourceStatus, state.fileSourceStatus, leadfinderSourceStatus].some((item) => item?.fallbackUsed) ? "Ja" : "Nee"],
+          ]);
+        }
+
+        function renderAuditObservabilityFoundation(modules) {
+          const readiness = modules.auditObservabilityService.getAuditObservabilityReadiness();
+          appendDeveloperCard("Audit & Observability Foundation", [
+            ["Status", readiness.status],
+            ["Sprint", readiness.sprint],
+            ["Auditwaardige acties", String(readiness.auditableActions.length)],
+            ["Observability events", readiness.observabilityEvents.join(", ")],
+            ["Storage key", readiness.storageKey],
+            ["Verboden velden", readiness.forbiddenFields.join(", ")],
+            ["Lokale foundation", readiness.localFoundationOnly ? "Ja" : "Nee"],
+            ["Server-side audit", readiness.serverSideAuditLogging],
+            ["Productie audit writes", readiness.productionAuditWrites],
+            ["Laatste event", readiness.latest?.lastAction || "Nog geen lokaal event"],
           ]);
         }
 
@@ -5499,6 +5516,7 @@
             renderSupabaseConnectionStatus(providerStatus);
             renderSupabaseReadOnlyTest(readOnlySummary);
             renderSupabaseDataLayerMvpCard(modules);
+            renderAuditObservabilityFoundation(modules);
             renderSupabaseWriteTestStatus(writeTestReadiness, writeTestResults);
             renderCustomerDataSourceStatus(state.customerSourceStatus);
             renderCustomerWriteReadiness(modules);

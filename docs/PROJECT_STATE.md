@@ -1927,7 +1927,7 @@ Advies:
 
 ## Sprint 3 - Production Readiness
 
-Status: `GEPLAND / PLAN GEREED / IMPLEMENTATIE NOG NIET GESTART`
+Status: `GESTART / SPRINT 3A FOUNDATION READY`
 
 Leidend document:
 
@@ -1953,3 +1953,30 @@ Productstatus:
 - Platform Experience is gestart met Production Readiness.
 - Productie-write-mode blijft `NO-GO`.
 - Sprint 4 Max AI Experience wordt pas gestart nadat Sprint 3 voldoende evidence heeft opgeleverd.
+
+## Sprint 3A - Audit & Observability Foundation
+
+Status: `FOUNDATION READY / GEEN PRODUCTIE`
+
+Toegevoegd:
+
+- `docs/SPRINT_3A_AUDIT_OBSERVABILITY_FOUNDATION.md`
+- `public/src/services/auditObservabilityService.js`
+- Developer Mode-kaart `Audit & Observability Foundation`
+- localStorage keys `maxwebstudioAuditObservabilityEvents` en `maxwebstudioLastAuditObservabilityStatus`
+
+Werking:
+
+- Auditwaardige acties uit Sprint 1 en Sprint 2 zijn geinventariseerd.
+- Een standaard audit event model is vastgelegd.
+- Gevoelige velden worden lokaal geredacteerd voordat evidence wordt opgeslagen.
+- Observability events zoals write success/failure, RLS denied, fallback activated, gate blocked en validation failed zijn voorbereid.
+
+Bewust nog geblokkeerd:
+
+- productie-audittrail;
+- server-side writes naar `audit_logs`;
+- externe monitoring;
+- Storage;
+- OpenAI/Mollie/Resend;
+- production writes.
