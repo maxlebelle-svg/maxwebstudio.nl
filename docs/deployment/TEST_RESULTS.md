@@ -1095,3 +1095,39 @@ Conclusie:
 - Productie-write-mode blijft `NO-GO`.
 - Server-side audit logging ontbreekt nog.
 - Patch `010` is alleen staging-toegepast en vereist production release approval vóór live.
+
+## Sprint 2B Customer Contact Write
+
+Status: `IMPLEMENTED / STAGING BLOCKED`
+
+Scope:
+
+- Alleen `customers`.
+- Alleen `name`, `email`, `phone`, `notes`, `updated_at` en veilige metadata.
+- Geen customer create/delete/archive.
+- Geen `auth_user_id`, `profile_id`, ownership, status, portal/login, facturatie, abonnementen of rollen.
+- Alleen via `supabase-write-test` en `maxwebstudioCustomerContactWriteEnabled=true`.
+
+Voorbereide staging patch:
+
+- `supabase/migration-drafts/011_customer_contact_update_grants.sql`
+- Doel: `authenticated` update beperken tot customer-contactkolommen voordat RLS policies evalueren.
+
+Uitgevoerde checks:
+
+| Test | Verwacht | Resultaat | Status | Notities |
+| --- | --- | --- | --- | --- |
+| JS syntax | Gewijzigde JS is valide | `node --check` groen | PASS | `customerContactWriteService`, provider, storage keys |
+| Admin inline script | Dashboard script valide | Groen | PASS | Inline scriptcheck |
+| Local fallback | Gate/provider uit gebruikt localStorage fallback | `fallback_local` | PASS | Geen Supabase write zonder gate |
+| Staging patch `011` | Patch uitgevoerd op `maxwebstudio-test` | Niet uitgevoerd | BLOCKED | CLI access token ontbreekt en pooler vraagt DB-wachtwoord |
+| Interne rol update | Sales/support/admin kan contactvelden updaten | Niet uitgevoerd | BLOCKED | Vereist patch `011` op staging |
+| Customer/no-profile/anonymous blokkade | Geen effectieve update | Niet uitgevoerd | BLOCKED | Vereist patch `011` op staging |
+| Spoofing | Extra status/auth/profile velden blokkeren | Niet uitgevoerd | BLOCKED | Vereist patch `011` op staging |
+| Readback | Bijgewerkte contactdata leesbaar via read-layer | Niet uitgevoerd | BLOCKED | Vereist patch `011` op staging |
+
+Conclusie:
+
+- Sprint 2B is geimplementeerd, maar nog niet bewezen op staging.
+- Productie-write-mode blijft `NO-GO`.
+- Volgende actie: herstel staging execution access via `supabase login` of een test-only database connection string met wachtwoord, voer patch `011` uit en herhaal de RLS-validatie.

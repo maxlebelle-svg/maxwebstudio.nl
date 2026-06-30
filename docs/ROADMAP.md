@@ -1426,11 +1426,11 @@ Belangrijk:
 - Patches `008` en `009` zijn staging-bewezen, maar productie-uitvoering vereist release approval.
 - Sprint 2 mag pas starten na expliciete keuze voor de eerste medium-risk write.
 
-Aanbevolen Sprint 2:
+Sprint 2 - Operationele Workflow Writes:
 
 1. `projects` status/fase/voortgang update.
-2. `websites` status/notities/onderhoudsvelden update.
-3. `customers` beperkte contactvelden update.
+2. `customers` beperkte contactvelden update.
+3. `websites` status/notities/onderhoudsvelden update.
 
 ## Sprint 2A - Project Status Write MVP
 
@@ -1455,6 +1455,38 @@ Staging evidence:
 
 Volgende stap:
 
-1. Sprint 2B plannen: beperkte customer contact updates.
-2. Eerst auditstrategie en customer-field allowlist vastleggen.
-3. Nog niet starten met websites, finance, storage of AI-writes.
+1. Sprint 2B stagingtoegang herstellen en customer contact updates valideren.
+2. Daarna pas Sprint 2C plannen: beperkte website operational updates.
+3. Nog niet starten met finance, storage of AI-writes.
+
+## Sprint 2B - Customer Contact Write MVP
+
+Status: `GEIMPLEMENTEERD / STAGING GEBLOKKEERD`
+
+Samenvatting:
+
+- Medium-risk write voorbereid voor beperkte klantcontactmutaties.
+- Alleen `customers.name`, `customers.email`, `customers.phone` en `customers.notes` zijn write-enabled.
+- Feature gate: `maxwebstudioCustomerContactWriteEnabled=true` + provider mode `supabase-write-test`.
+- Local/demo fallback blijft actief.
+- Productie-write-mode blijft dicht.
+
+Staging evidence:
+
+- Patch `011_customer_contact_update_grants.sql` is voorbereid, maar nog niet uitgevoerd op staging.
+- Local fallback: `PASS`.
+- Staging patch/write/RLS/readback: `BLOCKED`.
+- Blokkade: de Supabase CLI sessie mist een access token en de test-only poolerverbinding mist het databasewachtwoord.
+
+Sprint 2 acceptance:
+
+- 2A Project Status Updates: bewezen.
+- 2B Customer Contact Updates: implementatie klaar, staging evidence ontbreekt nog.
+- 2C Website Operational Updates: nog niet gestart.
+- Sprint completion blijft `33%` op basis van bewezen acceptance criteria.
+
+Volgende stap:
+
+1. Herstel staging execution access via `supabase login` of een test-only database connection string met wachtwoord.
+2. Voer uitsluitend patch `011_customer_contact_update_grants.sql` uit op `maxwebstudio-test`.
+3. Herhaal 2B-validatie: interne rol, customer/no-profile/anonymous, spoofing, fallback en readback.

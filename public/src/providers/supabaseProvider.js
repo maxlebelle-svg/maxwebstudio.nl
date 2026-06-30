@@ -178,6 +178,20 @@ function assertProjectStatusPayload(updates = {}) {
   }
 }
 
+function assertCustomerContactPayload(updates = {}) {
+  const allowed = new Set(["name", "email", "phone", "notes", "updated_at", "metadata"]);
+  const keys = Object.keys(updates);
+  if (!keys.length) throw new Error("Customer contact write bevat geen toegestane velden.");
+  const blocked = keys.filter((key) => !allowed.has(key));
+  if (blocked.length) throw new Error(`Customer contact write mag alleen name, email, phone, notes, updated_at en metadata wijzigen. Geblokkeerd: ${blocked.join(", ")}.`);
+  if (updates.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(updates.email))) {
+    throw new Error("Customer contact write vereist een geldig e-mailadres.");
+  }
+  if (updates.metadata && updates.metadata.updatedBy !== "customer-contact-write-mvp") {
+    throw new Error("Customer contact write vereist veilige customer-contact-write-mvp metadata.");
+  }
+}
+
 async function getWriteClient({ allowMigration = false } = {}) {
   if (!isWriteTestMode() && !(allowMigration && isMigrationMode())) {
     throw new Error("Supabase writes zijn alleen toegestaan in supabase-write-test of gecontroleerde supabase-migration mode.");
@@ -522,6 +536,28 @@ export const supabaseProvider = {
     const { data, error } = await client.from("customers").update(payload).eq("id", id).select("*").single();
     if (error) throw new Error(error.message || "Customer bijwerken in Supabase is mislukt.");
     return { success: true, table: "customers", action: "update_customer", data };
+  },
+
+  async updateCustomerContact(id, updates = {}, context = {}) {
+    assertCustomerWriteTable("customers");
+    if (!id) throw new Error("Customer contact write vereist een customer id.");
+    assertCustomerContactPayload(updates);
+    const client = await getCustomerWriteClient(context);
+    const payload = {
+      name: updates.name || null,
+      email: updates.email || null,
+      phone: updates.phone || null,
+      notes: updates.notes || null,
+      updated_at: updates.updated_at || new Date().toISOString(),
+      metadata: {
+        ...(updates.metadata || {}),
+        updatedBy: "customer-contact-write-mvp",
+        safeToArchive: true,
+      },
+    };
+    const { data, error } = await client.from("customers").update(payload).eq("id", id).select("*").single();
+    if (error) throw new Error(error.message || "Klantcontactgegevens bijwerken in Supabase staging is mislukt.");
+    return { success: true, table: "customers", action: "update_customer_contact", data };
   },
 
   async archiveCustomer(id, context = {}) {

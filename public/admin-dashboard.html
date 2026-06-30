@@ -3417,6 +3417,7 @@
             invoiceMigrationService: await import("./src/services/invoiceMigrationService.js"),
             subscriptionMigrationService: await import("./src/services/subscriptionMigrationService.js"),
             projectStatusWriteService: await import("./src/services/projectStatusWriteService.js"),
+            customerContactWriteService: await import("./src/services/customerContactWriteService.js"),
             dataValidationService: await import("./src/services/dataValidationService.js"),
             clientPortalDataService: await import("./src/services/clientPortalDataService.js"),
             clientPortalTestService: await import("./src/services/clientPortalTestService.js"),
@@ -3826,11 +3827,18 @@
           } catch {
             projectStatusWriteStatus = null;
           }
+          let customerContactWriteStatus = null;
+          try {
+            customerContactWriteStatus = JSON.parse(localStorage.getItem("maxwebstudioLastCustomerContactWriteStatus") || "null");
+          } catch {
+            customerContactWriteStatus = null;
+          }
           const crmTaskWriteEnabled = ["true", "1", "yes", "ja", "enabled"].includes(String(localStorage.getItem("maxwebstudioCrmTaskWriteEnabled") || "").toLowerCase());
           const leadNoteWriteEnabled = ["true", "1", "yes", "ja", "enabled"].includes(String(localStorage.getItem("maxwebstudioLeadNoteWriteEnabled") || "").toLowerCase());
           const changeRequestWriteEnabled = ["true", "1", "yes", "ja", "enabled"].includes(String(localStorage.getItem("maxwebstudioChangeRequestWriteEnabled") || "").toLowerCase());
           const clientPortalMessageWriteEnabled = ["true", "1", "yes", "ja", "enabled"].includes(String(localStorage.getItem("maxwebstudioClientPortalMessageWriteEnabled") || "").toLowerCase());
           const projectStatusWriteEnabled = ["true", "1", "yes", "ja", "enabled"].includes(String(localStorage.getItem("maxwebstudioProjectStatusWriteEnabled") || "").toLowerCase());
+          const customerContactWriteEnabled = ["true", "1", "yes", "ja", "enabled"].includes(String(localStorage.getItem("maxwebstudioCustomerContactWriteEnabled") || "").toLowerCase());
           appendDeveloperCard("Supabase Data Layer MVP", [
             ["Status", status.readsPrepared ? "Read layer actief" : "Niet actief"],
             ["Modules", status.modules.join(", ")],
@@ -3851,6 +3859,9 @@
             ["Project status write gate", projectStatusWriteEnabled ? "Lokaal toegestaan" : "Uit"],
             ["Project status laatste write", projectStatusWriteStatus?.status || "Nog niet uitgevoerd"],
             ["Project status fallback", projectStatusWriteStatus?.fallbackUsed ? "Ja" : "Nee"],
+            ["Customer contact write gate", customerContactWriteEnabled ? "Lokaal toegestaan" : "Uit"],
+            ["Customer contact laatste write", customerContactWriteStatus?.status || "Nog niet uitgevoerd"],
+            ["Customer contact fallback", customerContactWriteStatus?.fallbackUsed ? "Ja" : "Nee"],
             ["Productie ready", status.productionReady ? "Ja" : "Nee"],
             ["Customers bron", state.customerSourceStatus?.dataLayer || "-"],
             ["Websites bron", state.websiteSourceStatus?.dataLayer || "-"],
@@ -7933,6 +7944,16 @@
           });
         }
 
+        function setCustomerContactFieldsOnly(enabled) {
+          Object.values(detailFields).forEach((field) => {
+            field.disabled = true;
+          });
+          detailFields.name.disabled = !enabled;
+          detailFields.email.disabled = !enabled;
+          detailFields.phone.disabled = !enabled;
+          detailFields.notes.disabled = !enabled;
+        }
+
         function renderCustomerHistory(customer) {
           customerHistoryList.replaceChildren();
           if (!customer) {
@@ -7967,8 +7988,13 @@
             const repo = await getCustomerRepositoryModule();
             const target = isSupabaseManagedCustomer(customer) ? "supabase" : "local";
             const readiness = repo.canWriteCustomer(customer, { target, mode: currentCustomerDataMode() });
-            state.customerWriteReadiness = readiness;
-            detailEdit.disabled = target === "supabase" && !readiness.allowed;
+            let contactReadiness = null;
+            if (target === "supabase") {
+              if (!state.developerModules?.customerContactWriteService) await loadDeveloperModules();
+              contactReadiness = state.developerModules.customerContactWriteService.getCustomerContactWriteReadiness();
+            }
+            state.customerWriteReadiness = target === "supabase" ? { ...readiness, contactWrite: contactReadiness, allowed: Boolean(contactReadiness?.allowed), reason: contactReadiness?.missing?.join(" ") || readiness.reason } : readiness;
+            detailEdit.disabled = target === "supabase" && !state.customerWriteReadiness.allowed;
             detailCancel.disabled = false;
             if (target === "local") {
               setCustomerFieldsDisabled(false);
@@ -7977,15 +8003,15 @@
               detailReactivate.disabled = customer.status !== "gearchiveerd";
               return;
             }
-            setCustomerFieldsDisabled(!readiness.allowed);
-            detailSave.disabled = !readiness.allowed;
-            detailArchive.disabled = !readiness.allowed || customer.status === "gearchiveerd";
-            detailReactivate.disabled = !readiness.allowed || customer.status !== "gearchiveerd";
-            renderCustomerSourceDetail(customer, readiness);
-            if (!readiness.allowed) {
-              setDetailMessage(`Supabase customer write geblokkeerd: ${readiness.reason}`, "error");
+            setCustomerContactFieldsOnly(state.customerWriteReadiness.allowed);
+            detailSave.disabled = !state.customerWriteReadiness.allowed;
+            detailArchive.disabled = true;
+            detailReactivate.disabled = true;
+            renderCustomerSourceDetail(customer, state.customerWriteReadiness);
+            if (!state.customerWriteReadiness.allowed) {
+              setDetailMessage(`Supabase customer contact write geblokkeerd: ${state.customerWriteReadiness.reason}`, "error");
             } else if (!detailMessage.textContent) {
-              setDetailMessage("Supabase customer write is gecontroleerd beschikbaar voor deze klant.", "success");
+              setDetailMessage("Supabase customer contact write is gecontroleerd beschikbaar voor naam, e-mail, telefoon en notities.", "success");
             }
           } catch (error) {
             setCustomerFieldsDisabled(true);
@@ -9548,24 +9574,14 @@
             let profile = null;
             const repo = await getCustomerRepositoryModule();
             if (isSupabaseManagedCustomer(customer)) {
-              try {
-                profile = await repo.updateCustomer(customer.id, payload, {
-                  oldCustomer: customer,
-                  mode: currentCustomerDataMode(),
-                  baseUpdatedAt: customer.updatedAt,
-                });
-              } catch (error) {
-                if (error.code === "CUSTOMER_UPDATED_AT_MISSING" && window.confirm("Deze Supabase-klant mist updated_at. Toch gecontroleerd opslaan?")) {
-                  profile = await repo.updateCustomer(customer.id, payload, {
-                    oldCustomer: customer,
-                    mode: currentCustomerDataMode(),
-                    baseUpdatedAt: customer.updatedAt,
-                    confirmMissingUpdatedAt: true,
-                  });
-                } else {
-                  throw error;
-                }
-              }
+              if (!state.developerModules?.customerContactWriteService) await loadDeveloperModules();
+              const contactResult = await state.developerModules.customerContactWriteService.saveCustomerContactWithWriteFallback(customer, {
+                name: payload.name,
+                email: payload.email,
+                phone: payload.phone,
+                notes: payload.notes,
+              });
+              profile = contactResult.customer;
             } else {
               profile = await repo.updateCustomer(customer.id, payload, {
                 oldCustomer: customer,
@@ -9576,8 +9592,8 @@
             await loadCRMData(false);
             state.selectedCustomerId = profile?.id || customer.id;
             selectCustomer(state.selectedCustomerId);
-            setDetailMessage("Klantprofiel opgeslagen.", "success");
-            setAdminAccessMessage(isSupabaseManagedCustomer(customer) ? "Klantprofiel gecontroleerd opgeslagen in Supabase customers." : "Klantprofiel opgeslagen in lokale CRM-opslag.", "success");
+            setDetailMessage(isSupabaseManagedCustomer(customer) ? "Klantcontactgegevens opgeslagen." : "Klantprofiel opgeslagen.", "success");
+            setAdminAccessMessage(isSupabaseManagedCustomer(customer) ? "Klantcontactgegevens gecontroleerd opgeslagen via Sprint 2B." : "Klantprofiel opgeslagen in lokale CRM-opslag.", "success");
           } catch (error) {
             const message = error.code === "CUSTOMER_CONFLICT"
               ? "Supabase heeft een nieuwere versie. Ververs klantgegevens voordat je opslaat."
@@ -9835,13 +9851,18 @@
           const customer = selectedCustomer();
           if (!customer) return;
           if (isSupabaseManagedCustomer(customer) && !state.customerWriteReadiness?.allowed) {
-            setDetailMessage(`Supabase customer write geblokkeerd: ${state.customerWriteReadiness?.reason || "voorwaarden ontbreken"}`, "error");
+            setDetailMessage(`Supabase customer contact write geblokkeerd: ${state.customerWriteReadiness?.reason || "voorwaarden ontbreken"}`, "error");
             return;
           }
-          setCustomerFieldsDisabled(false);
+          if (isSupabaseManagedCustomer(customer)) {
+            setCustomerContactFieldsOnly(true);
+            setDetailMessage("Alleen naam, e-mail, telefoon en notities zijn bewerkbaar voor Supabase-klanten in Sprint 2B.", "success");
+          } else {
+            setCustomerFieldsDisabled(false);
+            setDetailMessage("Klantdetail staat klaar om te bewerken.", "success");
+          }
           detailSave.disabled = false;
           detailCancel.disabled = false;
-          setDetailMessage("Klantdetail staat klaar om te bewerken.", "success");
         }
 
         function cancelCustomerEditing() {

@@ -1825,3 +1825,34 @@ Bewust nog geblokkeerd:
 - Server-side audit logging.
 - Project create/delete/archive.
 - Customer/website/finance writes.
+
+## Sprint 2B - Customer Contact Write MVP
+
+Status: `GEIMPLEMENTEERD / STAGING BLOCKED / PRODUCTIE DICHT`
+
+Toegevoegd:
+
+- `public/src/services/customerContactWriteService.js`
+- `maxwebstudioCustomerContactWriteEnabled`
+- `maxwebstudioLastCustomerContactWriteStatus`
+- `supabase/migration-drafts/011_customer_contact_update_grants.sql`
+
+Werking:
+
+- Supabase-klanten kunnen via de admin alleen contactvelden voorbereiden: naam, e-mail, telefoon en notities.
+- Bedrijf, website, pakket, status, portal/login, ownership, auth/profile en finance blijven dicht.
+- Local/demo fallback blijft actief wanneer provider/gate niet op `supabase-write-test` staat.
+- Admin UI houdt Supabase-klanten beperkt tot contactvelden in Sprint 2B.
+
+Evidence:
+
+- Local fallback: `PASS`.
+- Syntaxchecks: `PASS`.
+- Staging patch/validatie: `BLOCKED`, omdat de CLI-token niet beschikbaar was en de pooler-verbinding een DB-wachtwoord vroeg.
+
+Bewust nog geblokkeerd:
+
+- Productie-write-mode.
+- Patch `011` op staging.
+- RLS-validatie voor interne rol, customer, no-profile, anonymous en spoofing.
+- Sprint 2B acceptance kan pas groen na stagingvalidatie.

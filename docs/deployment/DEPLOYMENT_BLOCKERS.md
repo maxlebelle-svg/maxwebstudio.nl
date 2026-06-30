@@ -752,3 +752,41 @@ Resterende blockers:
 2. Server-side audit logging voor medium-risk writes ontbreekt nog.
 3. Patch `010` is alleen op staging toegepast; productie-uitvoering vereist release approval.
 4. Sprint 2B mag pas starten na expliciete keuze en validatieplan voor customer contact updates.
+
+## Sprint 2B Customer contact write validation
+
+Status: `IMPLEMENTED / BLOCKED_PENDING_STAGING_ACCESS`
+
+Scope:
+
+- Alleen customer contactvelden op `customers`.
+- Toegestane velden: `name`, `email`, `phone`, `notes`, `updated_at`, veilige metadata.
+- Geen ownership/account/status/finance/subscription/role writes.
+
+Voorbereid:
+
+- `public/src/services/customerContactWriteService.js`
+- `supabaseProvider.updateCustomerContact()`
+- Feature gate `maxwebstudioCustomerContactWriteEnabled`
+- Laatste status key `maxwebstudioLastCustomerContactWriteStatus`
+- Patch `supabase/migration-drafts/011_customer_contact_update_grants.sql`
+
+Evidence:
+
+- Local fallback: `PASS`
+- JS/admin syntaxchecks: `PASS`
+- Staging patch: `BLOCKED`
+
+Blocker:
+
+- Supabase CLI had geen beschikbaar access token in deze sessie.
+- Fallback via pooler-url bereikte de host, maar vroeg om een databasewachtwoord dat niet beschikbaar is in de test-env.
+- Patch `011` is daarom niet uitgevoerd.
+- RLS/customer/no-profile/anonymous/spoofing tests zijn nog niet uitgevoerd.
+
+Next actions:
+
+1. Log lokaal opnieuw in met Supabase CLI of voeg een test-only database connection string met wachtwoord toe.
+2. Voer uitsluitend `supabase/migration-drafts/011_customer_contact_update_grants.sql` uit op `maxwebstudio-test`.
+3. Herhaal Sprint 2B stagingvalidatie.
+4. Houd productie-write-mode dicht tot alle checks PASS zijn.

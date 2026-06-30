@@ -35,6 +35,8 @@ export const STORAGE_KEYS = Object.freeze({
   lastCustomerMigrationResult: "maxwebstudioLastCustomerMigrationResult",
   customerDataMode: "maxwebstudioCustomerDataMode",
   lastCustomerSourceStatus: "maxwebstudioLastCustomerSourceStatus",
+  customerContactWriteEnabled: "maxwebstudioCustomerContactWriteEnabled",
+  lastCustomerContactWriteStatus: "maxwebstudioLastCustomerContactWriteStatus",
   websiteDataMode: "maxwebstudioWebsiteDataMode",
   lastWebsiteSourceStatus: "maxwebstudioLastWebsiteSourceStatus",
   lastWebsiteMigrationDryRun: "maxwebstudioLastWebsiteMigrationDryRun",
@@ -73,7 +75,7 @@ export const STORAGE_KEYS = Object.freeze({
 
 export const MODULE_STORAGE_KEYS = Object.freeze({
   leads: [STORAGE_KEYS.leads, STORAGE_KEYS.leadRequests, STORAGE_KEYS.leadFinderLeads, STORAGE_KEYS.leadNoteWriteEnabled, STORAGE_KEYS.lastLeadNoteWriteStatus],
-  customers: [STORAGE_KEYS.crmCustomers, STORAGE_KEYS.customers],
+  customers: [STORAGE_KEYS.crmCustomers, STORAGE_KEYS.customers, STORAGE_KEYS.customerContactWriteEnabled, STORAGE_KEYS.lastCustomerContactWriteStatus],
   websites: [STORAGE_KEYS.managedSites, STORAGE_KEYS.websites],
   projects: [STORAGE_KEYS.projects, STORAGE_KEYS.projectStatusWriteEnabled, STORAGE_KEYS.lastProjectStatusWriteStatus],
   files: [STORAGE_KEYS.files],
@@ -118,6 +120,8 @@ export const PRIMARY_MODULE_KEYS = Object.freeze({
   deploymentBlockers: STORAGE_KEYS.deploymentBlockers,
   projectStatusWriteEnabled: STORAGE_KEYS.projectStatusWriteEnabled,
   lastProjectStatusWriteStatus: STORAGE_KEYS.lastProjectStatusWriteStatus,
+  customerContactWriteEnabled: STORAGE_KEYS.customerContactWriteEnabled,
+  lastCustomerContactWriteStatus: STORAGE_KEYS.lastCustomerContactWriteStatus,
   crmTaskWriteEnabled: STORAGE_KEYS.crmTaskWriteEnabled,
   lastCrmTaskWriteStatus: STORAGE_KEYS.lastCrmTaskWriteStatus,
   leadNoteWriteEnabled: STORAGE_KEYS.leadNoteWriteEnabled,
