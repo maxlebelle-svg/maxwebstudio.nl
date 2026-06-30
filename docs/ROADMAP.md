@@ -1580,18 +1580,18 @@ Dit hoofdstuk omvat de technische fundering:
 
 ## Hoofdstuk 2 - Platform Experience
 
-Status: `GESTART`
+Status: `GESTART / TRUST INFRASTRUCTURE COMPLETE`
 
 Dit hoofdstuk bouwt richting productie-ervaring en daarna Max AI:
 
-1. Sprint 3 - Production Readiness.
-2. Sprint 4 - Max AI Experience First.
+1. Sprint 3 - Trust Infrastructure. `COMPLETE`
+2. Sprint 4 - Experience Layer.
 3. Sprint 5 - Server-side AI/OpenAI foundation.
 4. Sprint 6 - Business Automation.
 
 ## Sprint 3 - Trust Infrastructure
 
-Status: `GESTART / SPRINT 3A-3D FOUNDATION READY`
+Status: `COMPLETE / TRUST INFRASTRUCTURE READY`
 
 Leidend document:
 
@@ -1717,3 +1717,31 @@ Nog niet live:
 Volgende stap:
 
 - Sprint 3 Review, daarna bepalen of Max AI Experience kan starten.
+
+### Sprint 3 Review - Trust Infrastructure
+
+Status: `COMPLETE`
+
+Output:
+
+- `docs/SPRINT_3_TRUST_INFRASTRUCTURE_REVIEW.md`
+- bevestiging Sprint 3 completion: `100%`
+- Trust Infrastructure: `COMPLETE as foundation`
+- productie blijft `NO-GO`
+
+Volgende sprint:
+
+`Sprint 4 - Experience Layer`
+
+Aanbevolen volgorde:
+
+1. Max AI Introduction.
+2. Website Experience.
+3. Website Wizard Experience.
+4. Klantportaal Experience.
+5. CRM Experience.
+
+Belangrijk:
+
+- Sprint 4 bouwt eerst de ervaring, niet OpenAI.
+- OpenAI/server-side AI volgt pas in Sprint 5.

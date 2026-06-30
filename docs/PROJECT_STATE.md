@@ -1927,7 +1927,7 @@ Advies:
 
 ## Sprint 3 - Trust Infrastructure
 
-Status: `GESTART / SPRINT 3A-3D FOUNDATION READY`
+Status: `COMPLETE / TRUST INFRASTRUCTURE READY / PRODUCTIE NO-GO`
 
 Leidend document:
 
@@ -1950,9 +1950,10 @@ Sprint 3 backlog:
 Productstatus:
 
 - Platform Foundation is afgerond.
-- Platform Experience is gestart met Production Readiness.
+- Trust Infrastructure is afgerond als foundation.
+- Platform Experience kan starten met Sprint 4.
 - Productie-write-mode blijft `NO-GO`.
-- Sprint 4 Max AI Experience wordt pas gestart nadat Sprint 3 voldoende evidence heeft opgeleverd.
+- Sprint 4 Experience Layer start zonder OpenAI/productie-acties.
 
 ## Sprint 3A - Audit & Observability Foundation
 
@@ -2057,3 +2058,29 @@ Bewust nog geblokkeerd:
 - backup/restore automation;
 - production monitoring;
 - AI herstelacties.
+
+## Sprint 3 Review - Trust Infrastructure
+
+Status: `COMPLETE`
+
+Vastgelegd in:
+
+- `docs/SPRINT_3_TRUST_INFRASTRUCTURE_REVIEW.md`
+
+Eindstatus:
+
+- 3A Audit Foundation: `COMPLETE`.
+- 3B Storage Security Foundation: `COMPLETE`.
+- 3C Release Governance Foundation: `COMPLETE`.
+- 3D Monitoring & Backups Foundation: `COMPLETE`.
+- Sprint 3 Completion: `100%`.
+- Trust Infrastructure: `COMPLETE as foundation`.
+
+Productiestatus:
+
+- Productie blijft `NO-GO`.
+- Production writes, Storage uploads, OpenAI, Mollie, Resend en automatisering blijven geblokkeerd tot aparte release approval.
+
+Volgende sprint:
+
+- Sprint 4 - Experience Layer.

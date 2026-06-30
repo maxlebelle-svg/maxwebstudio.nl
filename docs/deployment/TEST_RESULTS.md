@@ -35,6 +35,7 @@ Scope: Fase 14.4 Supabase Test Environment Validation, zonder productie, zonder 
 | Mollie | BLOCKED | 2026-06-29 | Codex | Mollie functions syntax OK via functions check | Echte testmodus/webhook niet uitgevoerd |
 | Resend | BLOCKED | 2026-06-29 | Codex | Resend functions syntax OK via functions check | Echte mailtest/env test niet uitgevoerd |
 | Go/No-Go | BLOCKED | 2026-06-29 | Codex | Technische Supabase evidence PASS; handmatige approvals ontbreken | Status blijft terecht NO-GO tot blockers approved zijn |
+| Sprint 3 Trust Infrastructure Review | PASS | 2026-06-30 | Codex | `docs/SPRINT_3_TRUST_INFRASTRUCTURE_REVIEW.md` | 3A Audit, 3B Storage, 3C Release Governance en 3D Monitoring/Backups als foundation afgerond; productie blijft NO-GO |
 
 ## Fase 14.4 Supabase testomgeving-validatie
 
