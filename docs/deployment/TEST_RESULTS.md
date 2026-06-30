@@ -1132,3 +1132,41 @@ Conclusie:
 - Productie-write-mode blijft `NO-GO`.
 - Patch `011` is alleen staging-toegepast en vereist production release approval vóór live.
 - Server-side audit logging ontbreekt nog.
+
+## Sprint 2C Website Operational Write
+
+Status: `PASS / STAGING GEVALIDEERD`
+
+Scope:
+
+- Alleen `websites`.
+- Alleen `status`, `care_package`, `notes`, `last_checked_at`, `updated_at` en veilige metadata.
+- Geen website create/delete/archive.
+- Geen `customer_id`, `profile_id`, domein, GitHub, Netlify, hosting/deployment configuratie, billing of ownershipvelden.
+- Alleen via `supabase-write-test` en `maxwebstudioWebsiteOperationalWriteEnabled=true`.
+
+Staging patch:
+
+- `supabase/migration-drafts/012_website_operational_update_grants.sql`
+- Doel: `authenticated` update beperken tot website-operationele kolommen voordat RLS policies evalueren.
+
+Uitgevoerde checks:
+
+| Test | Verwacht | Resultaat | Status | Notities |
+| --- | --- | --- | --- | --- |
+| JS syntax | Gewijzigde JS is valide | `node --check` groen | PASS | `websiteOperationalWriteService`, provider, storage keys |
+| Admin inline script | Dashboard script valide | Groen | PASS | Inline scriptcheck |
+| Local fallback | Gate/provider uit gebruikt localStorage fallback | `fallback_local` | PASS | Geen Supabase write zonder gate |
+| Staging patch `012` | Patch uitgevoerd op `maxwebstudio-test` | Uitgevoerd | PASS | Alleen `012_website_operational_update_grants.sql` |
+| Interne rol update | Developer/admin kan operationele websitevelden updaten | Developer update HTTP 200 | PASS | Run `sprint-2c-1782814909471` |
+| Customer/no-profile/anonymous blokkade | Geen effectieve update | Customer/no-profile 0 rows, anonymous HTTP 401 | PASS | RLS blokkeert effectieve update |
+| Spoofing | Extra customer/domain/deployment velden blokkeren | HTTP 403 | PASS | Customer/domain/Netlify spoofing geblokkeerd |
+| Readback | Bijgewerkte website operationele data leesbaar via read-layer | Status/onderhoud/notities zichtbaar, domain/Netlify ongewijzigd | PASS | Customer portal read ook PASS |
+
+Conclusie:
+
+- Sprint 2C Website Operational Write is staging-gevalideerd.
+- Sprint 2 Operationele Workflow Writes is volledig staging-gevalideerd.
+- Productie-write-mode blijft `NO-GO`.
+- Patch `012` is alleen staging-toegepast en vereist production release approval vóór live.
+- Server-side audit logging ontbreekt nog.

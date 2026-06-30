@@ -1861,3 +1861,40 @@ Bewust nog geblokkeerd:
 - Patch `011` naar productie zonder release approval.
 - Server-side audit logging.
 - Customer create/delete/archive, ownership, rollen, status, finance en abonnementen.
+
+## Sprint 2C - Website Operational Write MVP
+
+Status: `GEIMPLEMENTEERD / STAGING GEVALIDEERD / PRODUCTIE DICHT`
+
+Toegevoegd:
+
+- `public/src/services/websiteOperationalWriteService.js`
+- `maxwebstudioWebsiteOperationalWriteEnabled`
+- `maxwebstudioLastWebsiteOperationalWriteStatus`
+- `supabase/migration-drafts/012_website_operational_update_grants.sql`
+
+Werking:
+
+- Supabase-websites kunnen via de admin alleen operationele velden aanpassen: status, onderhoudspakket en notities.
+- Domein, URL's, GitHub, Netlify, klantkoppeling, ownership, hosting/deployment configuratie en finance blijven dicht.
+- Local/demo fallback blijft actief wanneer provider/gate niet op `supabase-write-test` staat.
+- Admin UI houdt Supabase-websites beperkt tot operationele velden in Sprint 2C.
+
+Evidence:
+
+- Local fallback: `PASS`.
+- Syntaxchecks: `PASS`.
+- Patch `012` uitgevoerd op staging `maxwebstudio-test`.
+- Staging patch/validatie: `PASS` met run `sprint-2c-1782814909471`.
+- Interne developer-role update: `PASS`.
+- Customer/no-profile/anonymous blokkade: `PASS`.
+- Spoofing van customer/domain/Netlify: `PASS`.
+- Customer portal readback: `PASS`.
+
+Bewust nog geblokkeerd:
+
+- Productie-write-mode.
+- Patch `012` naar productie zonder release approval.
+- Server-side audit logging.
+- Website create/delete/archive, customer/project/ownership, domein, deployment, hostingconfiguratie, billing en storage.
+- Sprint 2 Review moet nog worden uitgevoerd.

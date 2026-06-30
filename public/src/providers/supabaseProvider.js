@@ -192,6 +192,21 @@ function assertCustomerContactPayload(updates = {}) {
   }
 }
 
+function assertWebsiteOperationalPayload(updates = {}) {
+  const allowed = new Set(["status", "care_package", "notes", "last_checked_at", "updated_at", "metadata"]);
+  const allowedStatuses = new Set(["online", "development", "maintenance", "waiting_customer", "offline"]);
+  const keys = Object.keys(updates);
+  if (!keys.length) throw new Error("Website operational write bevat geen toegestane velden.");
+  const blocked = keys.filter((key) => !allowed.has(key));
+  if (blocked.length) throw new Error(`Website operational write mag alleen status, care_package, notes, last_checked_at, updated_at en metadata wijzigen. Geblokkeerd: ${blocked.join(", ")}.`);
+  if (updates.status && !allowedStatuses.has(String(updates.status))) {
+    throw new Error("Website operational write bevat een ongeldige status.");
+  }
+  if (updates.metadata && updates.metadata.updatedBy !== "website-operational-write-mvp") {
+    throw new Error("Website operational write vereist veilige website-operational-write-mvp metadata.");
+  }
+}
+
 async function getWriteClient({ allowMigration = false } = {}) {
   if (!isWriteTestMode() && !(allowMigration && isMigrationMode())) {
     throw new Error("Supabase writes zijn alleen toegestaan in supabase-write-test of gecontroleerde supabase-migration mode.");
@@ -597,6 +612,28 @@ export const supabaseProvider = {
     const { data, error } = await client.from("websites").update(payload).eq("id", id).select("*").single();
     if (error) throw new Error(error.message || "Website bijwerken in Supabase is mislukt.");
     return { success: true, table: "websites", action: "update_website", data };
+  },
+
+  async updateWebsiteOperational(id, updates = {}, context = {}) {
+    assertWebsiteWriteTable("websites");
+    if (!id) throw new Error("Website operational write vereist een website id.");
+    assertWebsiteOperationalPayload(updates);
+    const client = await getWebsiteWriteClient(context);
+    const payload = {
+      status: updates.status,
+      care_package: updates.care_package || null,
+      notes: updates.notes || null,
+      last_checked_at: updates.last_checked_at || new Date().toISOString(),
+      updated_at: updates.updated_at || new Date().toISOString(),
+      metadata: {
+        ...(updates.metadata || {}),
+        updatedBy: "website-operational-write-mvp",
+        safeToArchive: true,
+      },
+    };
+    const { data, error } = await client.from("websites").update(payload).eq("id", id).select("*").single();
+    if (error) throw new Error(error.message || "Website operationele velden bijwerken in Supabase staging is mislukt.");
+    return { success: true, table: "websites", action: "update_website_operational", data };
   },
 
   async archiveWebsite(id, context = {}) {

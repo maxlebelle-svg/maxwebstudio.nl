@@ -3418,6 +3418,7 @@
             subscriptionMigrationService: await import("./src/services/subscriptionMigrationService.js"),
             projectStatusWriteService: await import("./src/services/projectStatusWriteService.js"),
             customerContactWriteService: await import("./src/services/customerContactWriteService.js"),
+            websiteOperationalWriteService: await import("./src/services/websiteOperationalWriteService.js"),
             dataValidationService: await import("./src/services/dataValidationService.js"),
             clientPortalDataService: await import("./src/services/clientPortalDataService.js"),
             clientPortalTestService: await import("./src/services/clientPortalTestService.js"),
@@ -3833,12 +3834,19 @@
           } catch {
             customerContactWriteStatus = null;
           }
+          let websiteOperationalWriteStatus = null;
+          try {
+            websiteOperationalWriteStatus = JSON.parse(localStorage.getItem("maxwebstudioLastWebsiteOperationalWriteStatus") || "null");
+          } catch {
+            websiteOperationalWriteStatus = null;
+          }
           const crmTaskWriteEnabled = ["true", "1", "yes", "ja", "enabled"].includes(String(localStorage.getItem("maxwebstudioCrmTaskWriteEnabled") || "").toLowerCase());
           const leadNoteWriteEnabled = ["true", "1", "yes", "ja", "enabled"].includes(String(localStorage.getItem("maxwebstudioLeadNoteWriteEnabled") || "").toLowerCase());
           const changeRequestWriteEnabled = ["true", "1", "yes", "ja", "enabled"].includes(String(localStorage.getItem("maxwebstudioChangeRequestWriteEnabled") || "").toLowerCase());
           const clientPortalMessageWriteEnabled = ["true", "1", "yes", "ja", "enabled"].includes(String(localStorage.getItem("maxwebstudioClientPortalMessageWriteEnabled") || "").toLowerCase());
           const projectStatusWriteEnabled = ["true", "1", "yes", "ja", "enabled"].includes(String(localStorage.getItem("maxwebstudioProjectStatusWriteEnabled") || "").toLowerCase());
           const customerContactWriteEnabled = ["true", "1", "yes", "ja", "enabled"].includes(String(localStorage.getItem("maxwebstudioCustomerContactWriteEnabled") || "").toLowerCase());
+          const websiteOperationalWriteEnabled = ["true", "1", "yes", "ja", "enabled"].includes(String(localStorage.getItem("maxwebstudioWebsiteOperationalWriteEnabled") || "").toLowerCase());
           appendDeveloperCard("Supabase Data Layer MVP", [
             ["Status", status.readsPrepared ? "Read layer actief" : "Niet actief"],
             ["Modules", status.modules.join(", ")],
@@ -3862,6 +3870,9 @@
             ["Customer contact write gate", customerContactWriteEnabled ? "Lokaal toegestaan" : "Uit"],
             ["Customer contact laatste write", customerContactWriteStatus?.status || "Nog niet uitgevoerd"],
             ["Customer contact fallback", customerContactWriteStatus?.fallbackUsed ? "Ja" : "Nee"],
+            ["Website operational write gate", websiteOperationalWriteEnabled ? "Lokaal toegestaan" : "Uit"],
+            ["Website operational laatste write", websiteOperationalWriteStatus?.status || "Nog niet uitgevoerd"],
+            ["Website operational fallback", websiteOperationalWriteStatus?.fallbackUsed ? "Ja" : "Nee"],
             ["Productie ready", status.productionReady ? "Ja" : "Nee"],
             ["Customers bron", state.customerSourceStatus?.dataLayer || "-"],
             ["Websites bron", state.websiteSourceStatus?.dataLayer || "-"],
@@ -9942,6 +9953,13 @@
           });
         }
 
+        function setWebsiteOperationalFieldsOnly(enabled) {
+          setWebsiteFieldsDisabled(true);
+          ["status", "carePackage", "notes"].forEach((key) => {
+            if (websiteFields[key]) websiteFields[key].disabled = !enabled;
+          });
+        }
+
         function resetWebsiteWriteControls() {
           state.websiteWriteReadiness = null;
           websiteEdit.disabled = true;
@@ -9983,7 +10001,14 @@
           try {
             const repo = await getWebsiteRepositoryModule();
             const target = isSupabaseManagedWebsite(website) ? "supabase" : "local";
-            const readiness = repo.canWriteWebsite(website, { target, mode: currentWebsiteDataMode() });
+            let readiness = repo.canWriteWebsite(website, { target, mode: currentWebsiteDataMode() });
+            if (target === "supabase") {
+              const modules = await loadDeveloperModules();
+              readiness = {
+                ...readiness,
+                ...modules.websiteOperationalWriteService.getWebsiteOperationalWriteReadiness(),
+              };
+            }
             state.websiteWriteReadiness = readiness;
             websiteEdit.disabled = target === "supabase" && !readiness.allowed;
             websiteCancel.disabled = false;
@@ -9995,15 +10020,15 @@
               renderWebsiteSourceDetail(website, readiness);
               return;
             }
-            setWebsiteFieldsDisabled(!readiness.allowed);
+            setWebsiteOperationalFieldsOnly(readiness.allowed);
             websiteSave.disabled = !readiness.allowed;
-            websiteArchive.disabled = !readiness.allowed || website.status === "offline";
-            websiteReactivate.disabled = !readiness.allowed || website.status !== "offline";
+            websiteArchive.disabled = true;
+            websiteReactivate.disabled = true;
             renderWebsiteSourceDetail(website, readiness);
             if (!readiness.allowed) {
-              setWebsiteMessage(`Supabase website write geblokkeerd: ${readiness.reason}`, "error");
+              setWebsiteMessage(`Supabase website operational write geblokkeerd: ${readiness.missing?.join(" ") || readiness.reason}`, "error");
             } else if (!websiteDetailMessage.textContent) {
-              setWebsiteMessage("Supabase website write is gecontroleerd beschikbaar voor deze website.", "success");
+              setWebsiteMessage("Supabase website operational write is beperkt beschikbaar: status, onderhoudspakket en notities.", "success");
             }
           } catch (error) {
             setWebsiteFieldsDisabled(true);
@@ -10200,24 +10225,13 @@
             const repo = await getWebsiteRepositoryModule();
             let website = null;
             if (currentWebsite && isSupabaseManagedWebsite(currentWebsite)) {
-              try {
-                website = await repo.updateWebsite(currentWebsite.id, payload, {
-                  oldWebsite: currentWebsite,
-                  mode: currentWebsiteDataMode(),
-                  baseUpdatedAt: currentWebsite.updatedAt,
-                });
-              } catch (error) {
-                if (error.code === "WEBSITE_UPDATED_AT_MISSING" && window.confirm("Deze Supabase-website mist updated_at. Toch gecontroleerd opslaan?")) {
-                  website = await repo.updateWebsite(currentWebsite.id, payload, {
-                    oldWebsite: currentWebsite,
-                    mode: currentWebsiteDataMode(),
-                    baseUpdatedAt: currentWebsite.updatedAt,
-                    confirmMissingUpdatedAt: true,
-                  });
-                } else {
-                  throw error;
-                }
-              }
+              const modules = await loadDeveloperModules();
+              const result = await modules.websiteOperationalWriteService.saveWebsiteOperationalWithWriteFallback(currentWebsite, {
+                status: payload.status,
+                carePackage: payload.carePackage,
+                notes: payload.notes,
+              });
+              website = result.website;
             } else if (currentWebsite) {
               website = await repo.updateWebsite(currentWebsite.id, payload, {
                 oldWebsite: currentWebsite,
@@ -10236,7 +10250,7 @@
             state.selectedWebsiteId = website.id;
             if (state.selectedWebsiteId) selectWebsite(state.selectedWebsiteId);
             setWebsiteMessage("Website opgeslagen.", "success");
-            setAdminAccessMessage(isSupabaseManagedWebsite(currentWebsite || website) ? "Website gecontroleerd opgeslagen in Supabase websites." : "Website opgeslagen in lokale website-opslag.", "success");
+            setAdminAccessMessage(isSupabaseManagedWebsite(currentWebsite || website) ? "Website operationele velden gecontroleerd opgeslagen via Sprint 2C write-gate." : "Website opgeslagen in lokale website-opslag.", "success");
           } catch (error) {
             const message = error.code === "WEBSITE_CONFLICT"
               ? "Supabase heeft een nieuwere websiteversie. Ververs websitegegevens voordat je opslaat."
@@ -10332,13 +10346,18 @@
           const website = selectedWebsite();
           if (!website) return;
           if (isSupabaseManagedWebsite(website) && !state.websiteWriteReadiness?.allowed) {
-            setWebsiteMessage(`Supabase website write geblokkeerd: ${state.websiteWriteReadiness?.reason || "voorwaarden ontbreken"}`, "error");
+            setWebsiteMessage(`Supabase website operational write geblokkeerd: ${state.websiteWriteReadiness?.missing?.join(" ") || state.websiteWriteReadiness?.reason || "voorwaarden ontbreken"}`, "error");
             return;
           }
-          setWebsiteFieldsDisabled(false);
+          if (isSupabaseManagedWebsite(website)) {
+            setWebsiteOperationalFieldsOnly(true);
+            setWebsiteMessage("Sprint 2C: alleen status, onderhoudspakket en notities zijn bewerkbaar voor Supabase-websites.", "success");
+          } else {
+            setWebsiteFieldsDisabled(false);
+            setWebsiteMessage("Websitedetail staat klaar om te bewerken.", "success");
+          }
           websiteSave.disabled = false;
           websiteCancel.disabled = false;
-          setWebsiteMessage("Websitedetail staat klaar om te bewerken.", "success");
         }
 
         function cancelWebsiteEditing() {

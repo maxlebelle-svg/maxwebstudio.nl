@@ -41,6 +41,8 @@ export const STORAGE_KEYS = Object.freeze({
   lastWebsiteSourceStatus: "maxwebstudioLastWebsiteSourceStatus",
   lastWebsiteMigrationDryRun: "maxwebstudioLastWebsiteMigrationDryRun",
   lastWebsiteWriteTest: "maxwebstudioLastWebsiteWriteTest",
+  websiteOperationalWriteEnabled: "maxwebstudioWebsiteOperationalWriteEnabled",
+  lastWebsiteOperationalWriteStatus: "maxwebstudioLastWebsiteOperationalWriteStatus",
   projectDataMode: "maxwebstudioProjectDataMode",
   lastProjectSourceStatus: "maxwebstudioLastProjectSourceStatus",
   lastProjectMigrationDryRun: "maxwebstudioLastProjectMigrationDryRun",
@@ -76,7 +78,7 @@ export const STORAGE_KEYS = Object.freeze({
 export const MODULE_STORAGE_KEYS = Object.freeze({
   leads: [STORAGE_KEYS.leads, STORAGE_KEYS.leadRequests, STORAGE_KEYS.leadFinderLeads, STORAGE_KEYS.leadNoteWriteEnabled, STORAGE_KEYS.lastLeadNoteWriteStatus],
   customers: [STORAGE_KEYS.crmCustomers, STORAGE_KEYS.customers, STORAGE_KEYS.customerContactWriteEnabled, STORAGE_KEYS.lastCustomerContactWriteStatus],
-  websites: [STORAGE_KEYS.managedSites, STORAGE_KEYS.websites],
+  websites: [STORAGE_KEYS.managedSites, STORAGE_KEYS.websites, STORAGE_KEYS.websiteOperationalWriteEnabled, STORAGE_KEYS.lastWebsiteOperationalWriteStatus],
   projects: [STORAGE_KEYS.projects, STORAGE_KEYS.projectStatusWriteEnabled, STORAGE_KEYS.lastProjectStatusWriteStatus],
   files: [STORAGE_KEYS.files],
   quotes: [STORAGE_KEYS.quotes],

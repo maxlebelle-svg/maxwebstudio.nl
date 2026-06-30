@@ -795,4 +795,40 @@ Resterende blockers:
 1. Productie-write-mode blijft dicht.
 2. Patch `011` is alleen staging-toegepast en vereist production release approval.
 3. Server-side audit logging ontbreekt nog.
-4. Sprint 2C Website Operational Updates is nog niet gestart.
+4. Sprint 2C Website Operational Updates vereist nog production release approval.
+
+## Sprint 2C Website operational write validation
+
+Status: `PASS / STAGING GEVALIDEERD / PRODUCTIE NOG GEBLOKKEERD`
+
+Scope:
+
+- Alleen operationele websitevelden op `websites`.
+- Toegestane velden: `status`, `care_package`, `notes`, `last_checked_at`, `updated_at`, veilige metadata.
+- Geen customer/project/profile/domain/deployment/hosting/billing/ownership writes.
+
+Voorbereid:
+
+- `public/src/services/websiteOperationalWriteService.js`
+- `supabaseProvider.updateWebsiteOperational()`
+- Feature gate `maxwebstudioWebsiteOperationalWriteEnabled`
+- Laatste status key `maxwebstudioLastWebsiteOperationalWriteStatus`
+- Patch `supabase/migration-drafts/012_website_operational_update_grants.sql`
+
+Evidence:
+
+- Local fallback: `PASS`
+- JS/admin syntaxchecks: `PASS`
+- Staging patch: `PASS`
+- Staging validation run: `sprint-2c-1782814909471`
+- Interne developer-role update: `PASS`
+- Customer/no-profile/anonymous blokkade: `PASS`
+- Spoofing van customer/domain/Netlify: `PASS`
+- Customer portal readback: `PASS`
+
+Resterende blockers:
+
+1. Productie-write-mode blijft dicht.
+2. Patch `012` is alleen staging-toegepast en vereist production release approval.
+3. Server-side audit logging ontbreekt nog.
+4. Sprint 2 Review moet nog uitgevoerd worden voordat Sprint 3 start.

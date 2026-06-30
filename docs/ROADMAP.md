@@ -1455,8 +1455,8 @@ Staging evidence:
 
 Volgende stap:
 
-1. Sprint 2C plannen: beperkte website operational updates.
-2. Daarna Sprint 2 Review uitvoeren.
+1. Sprint 2 Review uitvoeren.
+2. Daarna pas Infrastructure Sprint plannen.
 3. Nog niet starten met finance, storage of AI-writes.
 
 ## Sprint 2B - Customer Contact Write MVP
@@ -1486,11 +1486,48 @@ Sprint 2 acceptance:
 
 - 2A Project Status Updates: bewezen.
 - 2B Customer Contact Updates: bewezen.
-- 2C Website Operational Updates: nog niet gestart.
-- Sprint completion is `66%` op basis van bewezen acceptance criteria.
+- 2C Website Operational Updates: bewezen.
+- Sprint completion is `100%` op basis van bewezen acceptance criteria.
 
 Volgende stap:
 
-1. Start Sprint 2C: beperkte website operational updates.
+1. Voer Sprint 2 Review uit.
 2. Houd productie-write-mode dicht.
-3. Voer na 2C een Sprint 2 Review uit.
+3. Start daarna pas de Infrastructure Sprint.
+
+## Sprint 2C - Website Operational Write MVP
+
+Status: `AFGEROND / STAGING GEVALIDEERD`
+
+Samenvatting:
+
+- Medium-risk write voorbereid voor beperkte operationele websitevelden.
+- Alleen `websites.status`, `websites.care_package`, `websites.notes` en `websites.last_checked_at` zijn write-enabled.
+- Feature gate: `maxwebstudioWebsiteOperationalWriteEnabled=true` + provider mode `supabase-write-test`.
+- Local/demo fallback blijft actief.
+- Productie-write-mode blijft dicht.
+
+Staging evidence:
+
+- Patch `012_website_operational_update_grants.sql` is uitgevoerd op staging.
+- Local fallback: `PASS`.
+- Staging patch/write/RLS/readback: `PASS`.
+- PASS-run: `sprint-2c-1782814909471`.
+- Interne developer-role update: HTTP 200.
+- Customer/no-profile: effectieve update geblokkeerd met 0 gewijzigde rijen.
+- Anonymous: HTTP 401.
+- Spoofing van customer/domain/Netlify: HTTP 403.
+- Klantportaal-read ziet bijgewerkte website status.
+
+Sprint 2 acceptance:
+
+- 2A Project Status Updates: bewezen.
+- 2B Customer Contact Updates: bewezen.
+- 2C Website Operational Updates: bewezen.
+- Sprint completion is `100%`.
+
+Volgende stap:
+
+1. Sprint 2 Review uitvoeren.
+2. Productie-write-mode dicht houden tot release approval.
+3. Infrastructure Sprint pas starten na review.

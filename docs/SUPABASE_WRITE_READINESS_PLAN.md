@@ -1,6 +1,6 @@
 # Supabase Write Readiness Plan
 
-Status: `SPRINT 2B CUSTOMER CONTACT WRITE GEVALIDEERD / PRODUCTIE WRITE-MODE NO-GO`
+Status: `SPRINT 2 OPERATIONELE WORKFLOW WRITES GEVALIDEERD / PRODUCTIE WRITE-MODE NO-GO`
 
 Dit document legt vast hoe Max Webstudio gecontroleerd van read-only Supabase/hybrid naar veilige write-mode kan groeien. Het is een planningsdocument: er wordt geen SQL uitgevoerd, geen provider gewijzigd en geen productieproject geraakt.
 
@@ -23,7 +23,7 @@ De volgende modules lopen inmiddels via de Supabase/hybrid data-layer met local/
 - `client_portal_notifications`
 - `crm_tasks`
 
-Writes blijven uitgeschakeld behalve bestaande lokale demo-acties, eerder gebouwde gated test/migratieflows, de staging-gevalideerde Sprint 1 low-risk writes, de Sprint 2A projectstatus-write en de Sprint 2B customer-contact write achter expliciete test-gates.
+Writes blijven uitgeschakeld behalve bestaande lokale demo-acties, eerder gebouwde gated test/migratieflows, de staging-gevalideerde Sprint 1 low-risk writes en de Sprint 2 operationele workflow writes achter expliciete test-gates.
 
 Zie ook `docs/SPRINT_1_LOW_RISK_WRITES_REVIEW.md`.
 
@@ -104,6 +104,10 @@ Sprint 2A medium-risk write is staging-gevalideerd:
 Sprint 2B medium-risk write is staging-gevalideerd:
 
 - `customers.name`, `customers.email`, `customers.phone` en `customers.notes` update.
+
+Sprint 2C medium-risk write is staging-gevalideerd:
+
+- `websites.status`, `websites.care_package`, `websites.notes` en `websites.last_checked_at` update.
 
 Productie-write-mode blijft ook hiervoor dicht totdat audit/approval en production governance zijn afgerond.
 
@@ -654,4 +658,59 @@ Beperkingen:
 
 - Server-side audit logging is nog niet actief.
 - Productie blijft geblokkeerd totdat patch `011`, staging evidence, audit/approval en production write-governance expliciet zijn goedgekeurd.
-- Sprint 2 completion is `66%`; 2C Website Operational Updates moet nog volledig staging-bewezen worden.
+- Sprint 2C is afgerond; Sprint 2 Review moet nog uitgevoerd worden voordat Sprint 3 start.
+
+## Sprint 2C - Website operational update MVP
+
+Status: `GEIMPLEMENTEERD / STAGING GEVALIDEERD`
+
+Toegevoegd:
+
+- `public/src/services/websiteOperationalWriteService.js`
+- `supabaseProvider.updateWebsiteOperational()`
+- Developer Mode-status voor `maxwebstudioWebsiteOperationalWriteEnabled` en `maxwebstudioLastWebsiteOperationalWriteStatus`.
+- RLS/grants-patch `supabase/migration-drafts/012_website_operational_update_grants.sql`.
+
+Gate:
+
+- Provider mode moet `supabase-write-test` zijn.
+- `maxwebstudioWebsiteOperationalWriteEnabled=true` moet lokaal expliciet zijn gezet.
+- Productieomgeving blokkeert de write.
+- Supabase runtime-config en een bevoegde interne rol zijn vereist.
+
+Write-scope:
+
+- Alleen `websites` update.
+- Alleen `status`, `care_package`, `notes`, `last_checked_at`, `updated_at` en veilige metadata.
+- Geen create/delete/archive.
+- Geen `customer_id`, `profile_id`, `project_id`, domein, URL's, GitHub, Netlify, hosting/deployment configuratie, billing, storage of ownershipvelden.
+- `maintenance_status`, `maintenance_plan`, `publish_status` en `seo_notes` zijn niet als losse kolommen meegenomen omdat deze velden niet in het canonical schema aanwezig zijn.
+
+Databasebeperking:
+
+- Patch `012_website_operational_update_grants.sql` trekt brede `authenticated` update terug.
+- Daarna krijgt `authenticated` alleen column-level update op `status`, `care_package`, `notes`, `last_checked_at`, `updated_at` en `metadata`.
+- RLS blijft bepalen welke rollen de rij mogen wijzigen.
+
+Fallback:
+
+- Als de gate dichtstaat, Supabase/Auth ontbreekt of RLS de update blokkeert, worden operationele websitevelden lokaal opgeslagen in `maxwebstudioManagedSites` en `maxwebstudioWebsites`.
+- Laatste resultaat wordt vastgelegd in `maxwebstudioLastWebsiteOperationalWriteStatus`.
+
+Stagingstatus:
+
+- Lokale fallback-test: `PASS`.
+- Patch `012_website_operational_update_grants.sql` is uitsluitend op staging uitgevoerd.
+- Staging write/RLS-test: `PASS` met run `sprint-2c-1782814909471`.
+- Bevoegde developer-role update: HTTP 200.
+- Customer/no-profile: effectieve update geblokkeerd met 0 gewijzigde rijen.
+- Anonymous: HTTP 401.
+- Spoofing van customer/domain/Netlify: HTTP 403.
+- Readback toont uitsluitend de toegestane operationele mutatie; domain en Netlify bleven ongewijzigd.
+- Customer portal readback: bijgewerkte website status zichtbaar via RLS/readlaag.
+
+Beperkingen:
+
+- Server-side audit logging is nog niet actief.
+- Productie blijft geblokkeerd totdat patch `012`, staging evidence, audit/approval en production write-governance expliciet zijn goedgekeurd.
+- Sprint 2 completion is `100%`; Sprint 2 Review moet nog uitgevoerd worden.
