@@ -1927,7 +1927,7 @@ Advies:
 
 ## Sprint 3 - Trust Infrastructure
 
-Status: `GESTART / SPRINT 3A-3B FOUNDATION READY`
+Status: `GESTART / SPRINT 3A-3C FOUNDATION READY`
 
 Leidend document:
 
@@ -2006,3 +2006,28 @@ Bewust nog geblokkeerd:
 - file isolation staging tests;
 - productie-storage;
 - AI-bestandsanalyse met echte klantdata.
+
+## Sprint 3C - Release Governance Foundation
+
+Status: `FOUNDATION READY / GEEN DEPLOYMENT / GEEN PRODUCTIE`
+
+Toegevoegd:
+
+- `docs/SPRINT_3C_RELEASE_GOVERNANCE_FOUNDATION.md`
+- `public/src/services/releaseGovernanceReadinessService.js`
+- Developer Mode-kaart `Release Governance Foundation`
+
+Werking:
+
+- Release rollen zijn vastgelegd: developer, admin, release approver, support en production operator.
+- Releaseflow is vastgelegd als Development -> Staging -> Evidence -> Approval -> Production.
+- Verplichte evidence, automatische NO-GO voorwaarden en rollback governance zijn expliciet gemaakt.
+- Max AI-regels zijn vastgelegd: Max mag releaseblokkades uitleggen, maar nooit releases goedkeuren, starten of rollback uitvoeren.
+
+Bewust nog geblokkeerd:
+
+- deployment automation;
+- productieknoppen;
+- production write-mode;
+- rollback execution;
+- OpenAI/Storage/Mollie/Resend.

@@ -1,6 +1,6 @@
 # Sprint 3 - Production Readiness
 
-Status: `GESTART / SPRINT 3A-3B FOUNDATION READY`
+Status: `GESTART / SPRINT 3A-3C FOUNDATION READY`
 
 Datum: 2026-06-30
 
@@ -49,9 +49,9 @@ Sprint 3 is pas afgerond wanneer:
 | --- | --- | --- | --- | --- | --- | --- |
 | 3A | Audit & Observability Foundation | P0 | Foundation | Auditmodel, lokale service en observability-taxonomie voorbereiden zonder secrets | `audit_logs`, gated writes, RLS | `docs/SPRINT_3A_AUDIT_OBSERVABILITY_FOUNDATION.md` + lokale foundationservice |
 | 3B | Storage Security Foundation | P0 | Foundation | Veilige bestandsopslag voorbereiden met klantisolatie | Supabase Storage, files table, RLS | `docs/SPRINT_3B_STORAGE_SECURITY_FOUNDATION.md` + readinessservice |
-| 3C | Monitoring & observability baseline | P1 | Implementatie/readiness | Fouten, write failures en security-events zichtbaar maken | Audit logging, admin/developer mode | Monitoring checklist/statuspaneel/loggingrichtlijn |
-| 3D | Backup & restore evidence | P1 | Proces + evidence | Herstelbaarheid bewijzen voordat productie open gaat | Supabase backup/export, Storage plan | Backup checklist, restore testlog, evidence-template |
-| 3E | Release governance hardening | P0 | Proces + readiness | Production gates, approvals en rollback aanscherpen | Deployment bundle, blockers, release decision | Updated gates/checklists/NO-GO regels |
+| 3C | Release Governance Foundation | P0 | Foundation | Production gates, approvals en rollback aanscherpen | Deployment bundle, blockers, release decision | `docs/SPRINT_3C_RELEASE_GOVERNANCE_FOUNDATION.md` + readinessservice |
+| 3D | Monitoring & Backups Foundation | P1 | Foundation | Fouten, write failures, backups en restore evidence voorbereiden | Audit logging, Storage plan | Monitoring checklist/statuspaneel + backup/restore evidence-template |
+| 3E | Release governance hardening | P0 | Proces + readiness | Governance aanscherpen na monitoring/backups evidence | Deployment bundle, blockers, release decision | Updated gates/checklists/NO-GO regels |
 | 3F | Environment hardening | P0 | Controle + docs | Development, staging en production strikt scheiden | `.env` templates, Netlify contexts, Supabase projects | Env matrix, risk review, missing actions |
 | 3G | Sprint 3 Review | P0 | Review | Officieel vaststellen wat production-ready is | 3A-3F | Sprint reviewdocument |
 
@@ -268,6 +268,19 @@ Vastleggen:
 - klantcommunicatie bij incident.
 
 ## 5. Release Governance
+
+Sprint 3C heeft de release governance foundation voorbereid.
+
+Vastgelegd in:
+
+- `docs/SPRINT_3C_RELEASE_GOVERNANCE_FOUNDATION.md`
+
+Toegevoegd:
+
+- `public/src/services/releaseGovernanceReadinessService.js`
+- Developer Mode-kaart `Release Governance Foundation`
+
+Belangrijk: dit bouwt geen deploymentknoppen of productieautomatisering. Het definieert wie mag goedkeuren, welke evidence nodig is, wanneer NO-GO automatisch blijft gelden en hoe Max AI deze regels later uitlegt.
 
 ### Approvals
 

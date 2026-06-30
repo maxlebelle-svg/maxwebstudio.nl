@@ -1591,7 +1591,7 @@ Dit hoofdstuk bouwt richting productie-ervaring en daarna Max AI:
 
 ## Sprint 3 - Trust Infrastructure
 
-Status: `GESTART / SPRINT 3A-3B FOUNDATION READY`
+Status: `GESTART / SPRINT 3A-3C FOUNDATION READY`
 
 Leidend document:
 
@@ -1665,3 +1665,29 @@ Nog niet live:
 Volgende stap:
 
 - staging-only Storage migration/policy draft of signed URL endpoint ontwerp, met customer isolation als verplichte acceptance criteria.
+
+### Sprint 3C - Release Governance Foundation
+
+Status: `FOUNDATION READY`
+
+Output:
+
+- release rollen;
+- releaseflow Development -> Staging -> Evidence -> Approval -> Production;
+- verplichte evidence;
+- automatische NO-GO regels;
+- rollback governance;
+- Max AI release-uitlegregels;
+- Developer Mode-readinesskaart;
+- documentatie in `docs/SPRINT_3C_RELEASE_GOVERNANCE_FOUNDATION.md`.
+
+Nog niet live:
+
+- geen deployment automation;
+- geen productieknoppen;
+- geen production writes;
+- geen rollback execution.
+
+Volgende stap:
+
+- Sprint 3D Monitoring & Backups foundation, daarna Sprint 3 Review.

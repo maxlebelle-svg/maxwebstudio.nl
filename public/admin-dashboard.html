@@ -3435,6 +3435,7 @@
             testEnvironmentService: await import("./src/services/testEnvironmentService.js"),
             stagingReadinessService: await import("./src/services/stagingReadinessService.js"),
             storageSecurityReadinessService: await import("./src/services/storageSecurityReadinessService.js"),
+            releaseGovernanceReadinessService: await import("./src/services/releaseGovernanceReadinessService.js"),
             releaseDecisionService: await import("./src/services/releaseDecisionService.js"),
             aiWebsiteWizardService: await import("./src/services/aiWebsiteWizardService.js"),
             aiAdminAssistantService: await import("./src/services/aiAdminAssistantService.js"),
@@ -3919,6 +3920,26 @@
           appendDeveloperCard("Storage buckets", readiness.buckets.map((bucket) => [
             bucket.id,
             `${bucket.privacy} - ${bucket.purpose}`,
+          ]));
+        }
+
+        function renderReleaseGovernanceFoundation(modules) {
+          const readiness = modules.releaseGovernanceReadinessService.getReleaseGovernanceReadiness();
+          appendDeveloperCard("Release Governance Foundation", [
+            ["Status", readiness.status],
+            ["Sprint", readiness.sprint],
+            ["Flow", readiness.releaseFlow.join(" -> ")],
+            ["GO/NO-GO", readiness.decision],
+            ["Reden", readiness.primaryReason || "-"],
+            ["Approvals", `${readiness.approvalCoverage.approvedOrNotApplicable}/${readiness.approvalCoverage.total}`],
+            ["Evidence", `${readiness.approvalCoverage.evidenceComplete}/${readiness.approvalCoverage.total}`],
+            ["Open blockers", String(readiness.openBlockerCount)],
+            ["Production deploys", readiness.productionDeployments],
+            ["Deployment automation", readiness.deploymentAutomation],
+          ]);
+          appendDeveloperCard("Release rollen", readiness.roles.map((role) => [
+            role.role,
+            `Wel: ${role.responsibilities.join(", ")} | Niet: ${role.cannot.join(", ")}`,
           ]));
         }
 
@@ -5539,6 +5560,7 @@
             renderSupabaseDataLayerMvpCard(modules);
             renderAuditObservabilityFoundation(modules);
             renderStorageSecurityFoundation(modules);
+            renderReleaseGovernanceFoundation(modules);
             renderSupabaseWriteTestStatus(writeTestReadiness, writeTestResults);
             renderCustomerDataSourceStatus(state.customerSourceStatus);
             renderCustomerWriteReadiness(modules);

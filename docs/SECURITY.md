@@ -689,3 +689,22 @@ Status:
 - Geen SQL uitgevoerd.
 - Geen Supabase Storage buckets aangemaakt.
 - Geen productiegegevens gewijzigd.
+
+## Sprint 3C - Release Governance Foundation
+
+Sprint 3C maakt release governance onderdeel van de Trust Infrastructure.
+
+Securityregels:
+
+- productie blijft `NO-GO` zolang blockers openstaan;
+- releases vereisen staging evidence, RLS/write/security checks, rollback approval en expliciete menselijke approval;
+- rollback mag alleen via release approver of production operator met vastgelegde evidence;
+- Max AI mag releaseblokkades uitleggen, maar nooit release approval, deployment of rollback uitvoeren;
+- secrets, API keys en productieconfiguratie mogen niet in release evidence worden gelogd.
+
+Status:
+
+- Release governance foundation vastgelegd.
+- Geen deployment gebouwd.
+- Geen productie gewijzigd.
+- Geen SQL uitgevoerd.
