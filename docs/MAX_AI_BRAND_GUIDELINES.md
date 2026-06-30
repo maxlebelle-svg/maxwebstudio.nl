@@ -178,12 +178,16 @@ Reden: op die plekken moet de ervaring zakelijk, juridisch of transactioneel bli
 
 ## Visuele Richting
 
-Max AI wordt later een vaste 3D-achtige mascotte.
+Max AI is vanaf de Experience Layer een vaste, herkenbare digitale collega.
+
+Een aangeleverde referentie bepaalt de definitieve richting: niet om exact na te bouwen, maar als kwaliteitslat voor uitstraling, houding en premium gevoel.
 
 Kenmerken:
 
-- jonge professionele ondernemer;
-- moderne casual kleding;
+- groter en herkenbaarder dan een chat-icoon;
+- 3D-achtige digitale medewerker;
+- jonge professionele webdesigner;
+- moderne casual/professionele kleding;
 - vriendelijke uitstraling;
 - premium maar toegankelijk;
 - herkenbare Max Webstudio branding;
@@ -192,13 +196,22 @@ Kenmerken:
 - niet cartoonachtig goedkoop;
 - niet te futuristisch of onpersoonlijk.
 
-De mascotte moet vertrouwen geven, niet afleiden.
+Max moet voelen als iemand die bezoekers begeleidt, niet als een marketingillustratie of standaard chatbot-widget.
+
+Visuele UX-regels:
+
+- Max mag zichtbaar aanwezig zijn, maar niet schreeuwerig.
+- Max verschijnt als character/component, niet als losse geplakte afbeelding.
+- De asset moet op alle plekken hetzelfde blijven: homepage, helper, Website Wizard, klantportaal, CRM en toekomstige AI Experience.
+- De componentstructuur moet vervangbaar blijven voor `max-ai-mascot.webp` of `max-ai-mascot-animated.webp`.
+- Animatie blijft subtiel: licht zweven, statuspulse en rustige entrance.
+- Max mag nooit belangrijke CTA's, betaalflows of juridische content blokkeren.
 
 Belangrijk:
 
-De definitieve illustratie wordt pas technisch geïntroduceerd tijdens Fase 33: Max AI Experience MVP.
+De huidige `public/assets/max-ai-mascot.svg` is de eerste technische fallback voor deze richting.
 
-Tot die tijd blijft visuele uitwerking bewust losgekoppeld van architectuur, code en UI.
+Een definitieve premium PNG/WebP/animated asset kan later worden toegevoegd zonder de HTML-structuur opnieuw te ontwerpen.
 
 ## Relatie Met Het Platform
 

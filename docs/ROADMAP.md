@@ -1797,6 +1797,8 @@ Belangrijk:
 - Max is geen standaard chatbot-widget.
 - Max is een herkenbare digitale begeleider die later de website, wizard, klantportaal en CRM-ervaring verbindt.
 - De huidige helper gebruikt alleen frontend, CSS-animatie en localStorage voor dismiss.
+- De visuele richting is nu een premium 3D-achtige digitale collega, geen klein icoon.
+- Dezelfde Max asset/character-structuur moet leidend blijven voor Website Wizard, klantportaal, CRM en toekomstige AI Experience.
 
 Volgende logische stappen:
 

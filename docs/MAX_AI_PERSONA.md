@@ -262,6 +262,15 @@ Deze helper:
 - opent geen echte chat;
 - gebruikt geen OpenAI, backend of automatisering.
 
+Visueel is Max vanaf nu geen klein icoontje, maar een herkenbaar digitaal karakter:
+
+- premium;
+- rustig;
+- 3D-achtig;
+- vriendelijk;
+- professioneel;
+- consistent over homepage, Website Wizard, klantportaal, CRM en toekomstige AI Experience.
+
 De definitieve interactieve Max AI Experience volgt later in de Experience Layer.
 
 Tot die tijd blijft deze persona leidend: Max stelt zich voor, maar handelt nog niet zelfstandig.

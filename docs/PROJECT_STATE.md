@@ -2111,5 +2111,7 @@ Sprint 4A:
 - rechts op de pagina staat een compacte helper die naar de aanvraag leidt;
 - de helper is wegklikbaar en onthoudt die keuze lokaal;
 - op mobiel klapt de helper compact in zodat hij bestaande sticky contactknoppen niet blokkeert;
+- `public/assets/max-ai-mascot.svg` is ingericht als eerste premium character fallback;
+- homepage-intro en floating helper gebruiken dezelfde `max-ai-character` structuur, zodat latere WebP/animated assets centraal vervangbaar zijn;
 - CTA's blijven naar bestaande veilige flows gaan;
 - er is geen chat, OpenAI, backend, wizard, databasewijziging of automatisering toegevoegd.
