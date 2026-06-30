@@ -4,3 +4,9 @@
 !.env.example
 !.env.local.example
 supabase/.temp/
+
+# macOS
+.DS_Store
+
+# Local client workspaces
+Klanten MaxWebstudio/
