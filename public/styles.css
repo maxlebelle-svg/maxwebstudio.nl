@@ -8254,28 +8254,17 @@ h3 {
 .cookie-consent {
   position: fixed;
   right: clamp(14px, 3vw, 28px);
-  bottom: clamp(34px, 6vw, 70px);
+  bottom: clamp(12px, 2vw, 22px);
   left: clamp(14px, 3vw, 28px);
-  z-index: 42;
+  z-index: 41;
   width: auto;
-  max-width: 1268px;
+  max-width: 1188px;
   margin-inline: auto;
   animation: cookieConsentIn 420ms ease both;
 }
 
 .cookie-consent[hidden] {
   display: none;
-}
-
-body[data-cookie-consent-visible="true"]::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 41;
-  background: rgba(2, 6, 23, 0.52);
-  -webkit-backdrop-filter: blur(7px);
-  backdrop-filter: blur(7px);
-  pointer-events: none;
 }
 
 body[data-cookie-consent-visible="true"] .max-ai-floating-helper,
@@ -8287,21 +8276,21 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
 .cookie-consent-card {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(310px, 0.42fr) minmax(0, 1fr);
-  gap: clamp(30px, 4vw, 70px);
+  grid-template-columns: minmax(250px, 0.34fr) minmax(0, 1fr);
+  gap: clamp(20px, 3vw, 46px);
   align-items: center;
-  min-height: clamp(360px, 34vw, 438px);
-  padding: clamp(32px, 4vw, 54px) clamp(30px, 4vw, 60px);
-  border: 1px solid rgba(166, 180, 214, 0.22);
+  min-height: 205px;
+  padding: clamp(18px, 2.4vw, 30px) clamp(18px, 3vw, 44px);
+  border: 1px solid rgba(99, 117, 154, 0.38);
   border-radius: 24px;
   color: rgba(255, 255, 255, 0.9);
   background:
-    radial-gradient(circle at 16% 34%, rgba(124, 92, 255, 0.28), transparent 28%),
-    radial-gradient(circle at 92% 10%, rgba(50, 104, 255, 0.2), transparent 30%),
-    linear-gradient(135deg, rgba(10, 15, 26, 0.94), rgba(7, 11, 20, 0.91));
-  box-shadow: 0 32px 90px rgba(2, 6, 23, 0.44);
-  -webkit-backdrop-filter: blur(22px);
-  backdrop-filter: blur(22px);
+    radial-gradient(circle at 18% 44%, rgba(88, 76, 255, 0.15), transparent 34%),
+    radial-gradient(circle at 86% 18%, rgba(21, 94, 239, 0.14), transparent 32%),
+    linear-gradient(135deg, rgba(5, 16, 34, 0.97), rgba(8, 18, 37, 0.96));
+  box-shadow: 0 22px 72px rgba(2, 6, 23, 0.42);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
   overflow: hidden;
 }
 
@@ -8318,7 +8307,7 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   position: relative;
   z-index: 1;
   display: grid;
-  min-height: 320px;
+  min-height: 170px;
   place-items: center;
   align-self: stretch;
 }
@@ -8329,17 +8318,17 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   left: 0;
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 9px;
   color: rgba(255, 255, 255, 0.9);
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 950;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .cookie-consent-brand .brand-mark {
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   color: var(--white);
 }
 
@@ -8358,17 +8347,17 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
 }
 
 .cookie-graphic {
-  width: min(100%, 365px);
-  max-height: 312px;
+  width: min(100%, 245px);
+  max-height: 176px;
   object-fit: contain;
-  filter: drop-shadow(0 28px 58px rgba(0, 0, 0, 0.34));
+  filter: drop-shadow(0 18px 42px rgba(0, 0, 0, 0.3));
 }
 
 .cookie-consent-copy {
   position: relative;
   z-index: 1;
   display: grid;
-  gap: 12px;
+  gap: 9px;
 }
 
 .cookie-consent-copy .section-kicker {
@@ -8381,8 +8370,8 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   max-width: 640px;
   margin: 0;
   color: var(--white);
-  font-size: clamp(46px, 5.2vw, 68px);
-  line-height: 0.98;
+  font-size: clamp(30px, 3.35vw, 42px);
+  line-height: 1.04;
 }
 
 .cookie-consent h2 span {
@@ -8393,9 +8382,9 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   max-width: 670px;
   margin: 0;
   color: rgba(226, 232, 240, 0.82);
-  font-size: clamp(17px, 1.65vw, 21px);
+  font-size: clamp(13px, 1.2vw, 16px);
   font-weight: 750;
-  line-height: 1.65;
+  line-height: 1.55;
 }
 
 .cookie-consent p strong {
@@ -8410,7 +8399,7 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
 
 .cookie-consent-links a {
   color: #9b8cff;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 900;
   text-decoration: none;
 }
@@ -8476,14 +8465,14 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   grid-column: 2;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
 .cookie-consent-actions .button {
-  min-height: 60px;
-  padding: 0 22px;
+  min-height: 44px;
+  padding: 0 15px;
   border-radius: 8px;
-  font-size: 18px;
+  font-size: 13px;
   white-space: normal;
 }
 
@@ -8494,15 +8483,15 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
 
 .cookie-consent-actions .button.primary::before {
   content: "✓";
-  margin-right: 10px;
-  font-size: 21px;
+  margin-right: 8px;
+  font-size: 16px;
   line-height: 1;
 }
 
 .cookie-consent-actions .button.ghost::before {
   content: "⚙";
-  margin-right: 10px;
-  font-size: 19px;
+  margin-right: 8px;
+  font-size: 15px;
   line-height: 1;
 }
 
@@ -10565,7 +10554,7 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
 
   .cookie-consent {
     right: 12px;
-    bottom: 82px;
+    bottom: 12px;
     left: 12px;
     width: auto;
   }
@@ -10579,7 +10568,7 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   }
 
   .cookie-consent-visual {
-    min-height: 92px;
+    min-height: 70px;
     justify-items: start;
   }
 
@@ -10597,10 +10586,10 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
 
   .cookie-graphic {
     position: absolute;
-    right: -8px;
-    top: 16px;
-    width: 118px;
-    max-height: 104px;
+    right: -6px;
+    top: 8px;
+    width: 96px;
+    max-height: 84px;
   }
 
   .cookie-consent-copy .section-kicker {
@@ -10608,13 +10597,13 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   }
 
   .cookie-consent h2 {
-    max-width: calc(100% - 72px);
-    font-size: 24px;
+    max-width: calc(100% - 58px);
+    font-size: 22px;
     line-height: 1.04;
   }
 
   .cookie-consent p:not(.section-kicker) {
-    font-size: 12px;
+    font-size: 11px;
     line-height: 1.45;
   }
 
@@ -10642,7 +10631,7 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   }
 
   .cookie-consent-actions .button {
-    min-height: 42px;
+    min-height: 38px;
     font-size: 13px;
   }
 
