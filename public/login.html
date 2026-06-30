@@ -22,20 +22,20 @@
         <div>
           <p class="section-kicker">Login</p>
           <h1>Inloggen bij Max Webstudio.</h1>
-          <p>Log in om verder te gaan naar je dashboard, klantomgeving of demo-account.</p>
+          <p>Log in om verder te gaan naar je dashboard of vraag toegang aan tot je klantomgeving.</p>
         </div>
 
         <div class="portal-login-status-card" role="status" aria-live="polite">
           <span>Loginstatus</span>
-          <strong id="login-status-title">Demo-login beschikbaar</strong>
-          <p id="real-login-status">Kies een optie en log veilig in binnen de Max Webstudio omgeving.</p>
+          <strong id="login-status-title">Klantportaal wordt afgerond</strong>
+          <p id="real-login-status">Het klantportaal wordt momenteel klaargezet. Heb je al een website via Max Webstudio? Vraag toegang aan of neem contact op.</p>
         </div>
 
         <div class="portal-auth-tabs" role="tablist" aria-label="Login opties">
-          <button class="is-active" type="button" data-auth-panel-trigger="demo">Demo login</button>
+          <button class="is-active" type="button" data-auth-panel-trigger="demo" data-developer-only-tab>Demo login</button>
           <button type="button" data-auth-panel-trigger="real">Klantlogin</button>
           <button type="button" data-auth-panel-trigger="request">Account aanvragen</button>
-          <button type="button" data-auth-panel-trigger="reset">Wachtwoord vergeten</button>
+          <button type="button" data-auth-panel-trigger="reset" data-auth-live-only>Wachtwoord vergeten</button>
         </div>
 
         <section class="portal-auth-panel is-active" data-auth-panel="demo">
@@ -49,6 +49,11 @@
         </section>
 
         <section class="portal-auth-panel" data-auth-panel="real" hidden>
+          <div class="portal-login-unavailable" data-real-login-unavailable>
+            <strong>Binnenkort beschikbaar</strong>
+            <p>We werken momenteel aan een vernieuwd klantportaal. Zodra jouw portaal beschikbaar is ontvang je automatisch je inloggegevens.</p>
+            <button class="button primary" type="button" data-auth-panel-trigger="request">Toegang aanvragen</button>
+          </div>
           <form class="portal-login-form" id="real-login-form">
             <label for="login-email">E-mailadres<input id="login-email" name="email" type="email" autocomplete="email" required /></label>
             <label for="login-password">Wachtwoord<input id="login-password" name="password" type="password" autocomplete="current-password" required /></label>
@@ -67,7 +72,7 @@
           </form>
         </section>
 
-        <section class="portal-auth-panel" data-auth-panel="reset" hidden>
+        <section class="portal-auth-panel" data-auth-panel="reset" data-auth-live-only hidden>
           <form class="portal-login-form" id="password-reset-form">
             <label for="reset-email">E-mailadres<input id="reset-email" name="email" type="email" autocomplete="email" required /></label>
             <button class="button primary" type="submit">Resetlink aanvragen</button>
@@ -99,17 +104,21 @@
         const passwordResetForm = document.getElementById("password-reset-form");
         const shell = document.getElementById("portal-auth-shell");
         const developerOnlyBlocks = [...document.querySelectorAll("[data-developer-only]")];
+        const developerOnlyTabs = [...document.querySelectorAll("[data-developer-only-tab]")];
+        const authLiveOnlyBlocks = [...document.querySelectorAll("[data-auth-live-only]")];
         const loginStatusTitle = document.getElementById("login-status-title");
         const realLoginStatus = document.getElementById("real-login-status");
+        const realLoginUnavailable = document.querySelector("[data-real-login-unavailable]");
         let realLoginStatusMessage = "";
+        let realLoginActive = false;
         const statusCopy = {
           demo: {
             title: "Demo-login beschikbaar",
             body: "Kies een demo-account om de omgeving direct te bekijken.",
           },
           real: {
-            title: "Klantlogin",
-            body: "Vul je e-mailadres en wachtwoord in om in te loggen.",
+            title: "Klantportaal wordt afgerond",
+            body: "Heb je al een account of wil je toegang? Vraag toegang aan, dan zetten we je klantportaal netjes klaar.",
           },
           request: {
             title: "Account aanvragen",
@@ -137,6 +146,22 @@
           developerOnlyBlocks.forEach((block) => {
             block.hidden = !developerMode;
           });
+          developerOnlyTabs.forEach((button) => {
+            button.hidden = !developerMode;
+          });
+          if (!developerMode && document.querySelector("[data-auth-panel='demo']")?.classList.contains("is-active")) {
+            activatePanel("real");
+          }
+        }
+
+        function renderAuthLiveVisibility() {
+          const shouldShow = realLoginActive || isDeveloperModeEnabled();
+          authLiveOnlyBlocks.forEach((block) => {
+            block.hidden = !shouldShow;
+          });
+          if (!shouldShow && document.querySelector("[data-auth-panel='reset']")?.classList.contains("is-active")) {
+            activatePanel("real");
+          }
         }
 
         function renderLoginStatus(name, customBody = "") {
@@ -174,15 +199,27 @@
           try {
             const auth = await loadAuth();
             const status = auth.getAuthStatus();
-            realLoginStatusMessage = status.supabaseAuthConfigured
-              ? "Klantlogin is voorbereid. Gebruik je e-mailadres en wachtwoord zodra je account actief is."
-              : "Klantlogin is nog niet actief. Gebruik tijdelijk demo-login of vraag toegang aan.";
+            realLoginActive = Boolean(status.supabaseAuthActive);
+            realLoginStatusMessage = realLoginActive
+              ? "Klantlogin is actief. Gebruik je e-mailadres en wachtwoord om in te loggen."
+              : "Het klantportaal wordt momenteel afgerond. Vraag toegang aan of neem contact op als je al klant bent.";
+            realLoginForm.hidden = !realLoginActive && !isDeveloperModeEnabled();
+            if (realLoginUnavailable) {
+              realLoginUnavailable.hidden = realLoginActive;
+            }
+            renderAuthLiveVisibility();
             if (document.querySelector("[data-auth-panel='real']").classList.contains("is-active")) {
               renderLoginStatus("real", realLoginStatusMessage);
             }
           } catch (error) {
-            console.error("Auth status failed", error);
-            realLoginStatusMessage = "Loginstatus kon niet worden geladen. Gebruik tijdelijk demo-login.";
+            console.info("Auth status unavailable", error);
+            realLoginActive = false;
+            realLoginStatusMessage = "Het klantportaal wordt momenteel afgerond. Vraag toegang aan of neem contact op als je al klant bent.";
+            realLoginForm.hidden = !isDeveloperModeEnabled();
+            if (realLoginUnavailable) {
+              realLoginUnavailable.hidden = false;
+            }
+            renderAuthLiveVisibility();
             if (document.querySelector("[data-auth-panel='real']").classList.contains("is-active")) {
               renderLoginStatus("real", realLoginStatusMessage);
             }
@@ -207,6 +244,11 @@
 
         realLoginForm.addEventListener("submit", async (event) => {
           event.preventDefault();
+          if (!realLoginActive && !isDeveloperModeEnabled()) {
+            activatePanel("request");
+            setMessage("Het klantportaal wordt momenteel afgerond. Vraag toegang aan, dan nemen we contact met je op.", "success");
+            return;
+          }
           const data = Object.fromEntries(new FormData(realLoginForm).entries());
           setMessage("Echte login wordt gecontroleerd...");
           try {
@@ -215,7 +257,9 @@
             setMessage("Login gelukt.", "success");
           } catch (error) {
             console.info("Supabase login prepared", error);
-            setMessage(error.message || "Inloggen is nog niet beschikbaar voor dit account.", "error");
+            setMessage(isDeveloperModeEnabled()
+              ? (error.message || "Inloggen is nog niet beschikbaar voor dit account.")
+              : "Het klantportaal wordt momenteel afgerond. Vraag toegang aan of neem contact met ons op.", "error");
           }
         });
 
@@ -244,7 +288,9 @@
             setMessage("Resetlink aangevraagd.", "success");
           } catch (error) {
             console.info("Password reset prepared", error);
-            setMessage(error.message || "Wachtwoord reset is voorbereid maar nog niet actief.", "error");
+            setMessage(isDeveloperModeEnabled()
+              ? (error.message || "Wachtwoord reset is voorbereid maar nog niet actief.")
+              : "Wachtwoord reset is nog niet beschikbaar. Vraag toegang aan of neem contact met ons op.", "error");
           }
         });
 
@@ -255,7 +301,8 @@
           button.addEventListener("click", () => loginAs(button.dataset.demoRole));
         });
         renderDeveloperModeVisibility();
-        renderLoginStatus("demo");
+        renderAuthLiveVisibility();
+        activatePanel(isDeveloperModeEnabled() ? "demo" : "real");
         renderAuthStatus();
       })();
     </script>
