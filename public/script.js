@@ -399,10 +399,21 @@ function setMaxAiHelperState(state) {
   } catch (error) {
     // localStorage can be unavailable in strict privacy modes.
   }
+
+  syncMaxAiMobileLauncherVisibility();
 }
 
 function isCompactMaxAiViewport() {
   return window.matchMedia("(max-width: 640px)").matches;
+}
+
+function syncMaxAiMobileLauncherVisibility() {
+  if (!maxAiHelper || !maxAiLauncher) {
+    return;
+  }
+
+  const deferLauncher = isCompactMaxAiViewport() && maxAiHelper.hidden && window.scrollY < 520;
+  maxAiLauncher.dataset.mobileDeferred = deferLauncher ? "true" : "false";
 }
 
 function setMaxAiState(state) {
@@ -467,6 +478,10 @@ try {
 } catch (error) {
   // Keep the helper visible when localStorage cannot be read.
 }
+
+syncMaxAiMobileLauncherVisibility();
+window.addEventListener("scroll", syncMaxAiMobileLauncherVisibility, { passive: true });
+window.addEventListener("resize", syncMaxAiMobileLauncherVisibility);
 
 maxAiDismissButtons.forEach((button) => {
   button.addEventListener("click", () => setMaxAiHelperState("minimized"));

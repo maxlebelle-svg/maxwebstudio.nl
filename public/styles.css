@@ -10330,6 +10330,13 @@ h3 {
     border-radius: 20px;
   }
 
+  .max-ai-launcher[data-mobile-deferred="true"] {
+    animation: none;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(10px);
+  }
+
   .max-ai-launcher img {
     width: 68px;
     transform: translateY(-10px);
