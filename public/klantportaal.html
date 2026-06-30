@@ -76,6 +76,26 @@
 
       <section class="admin-section">
         <div class="admin-section-heading"><div><p class="section-kicker">Wijzigingen</p><h2>Wijzigingsverzoeken</h2></div></div>
+        <article class="admin-card customer-portal-card" id="portal-change-request-create">
+          <strong>Nieuw wijzigingsverzoek</strong>
+          <form class="admin-form portal-change-request-form" id="portal-change-request-form">
+            <label>Titel<input id="change-request-title" name="title" type="text" maxlength="160" placeholder="Bijvoorbeeld: tekst op homepage aanpassen" required /></label>
+            <label>Categorie<select id="change-request-category" name="category">
+              <option value="content">Tekst/content</option>
+              <option value="design">Design</option>
+              <option value="technical">Technisch</option>
+              <option value="seo">SEO</option>
+              <option value="other">Overig</option>
+            </select></label>
+            <label>Website<select id="change-request-website" name="websiteId"><option value="">Geen specifieke website</option></select></label>
+            <label>Project<select id="change-request-project" name="projectId"><option value="">Geen specifiek project</option></select></label>
+            <label class="admin-profile-wide">Omschrijving<textarea id="change-request-description" name="description" rows="4" maxlength="2500" placeholder="Beschrijf kort wat je wilt laten aanpassen." required></textarea></label>
+            <div class="portal-actions">
+              <button class="button primary" id="change-request-submit" type="submit">Verstuur wijzigingsverzoek</button>
+              <span class="form-helper" id="change-request-status" role="status" aria-live="polite"></span>
+            </div>
+          </form>
+        </article>
         <div class="portal-table" id="portal-change-requests" aria-live="polite"></div>
       </section>
 
@@ -104,6 +124,7 @@
       (async () => {
         const { getClientPortalData } = await import("./src/services/clientPortalDataService.js");
         const { requireCustomerAccess } = await import("./src/services/routeGuardService.js");
+        const { saveChangeRequestWithWriteFallback } = await import("./src/services/changeRequestWriteService.js");
         const params = new URLSearchParams(window.location.search);
         const customerId = params.get("customerId") || "";
         const supabaseCustomerId = params.get("supabaseCustomerId") || "";
@@ -120,6 +141,11 @@
         const subscriptionList = document.getElementById("portal-subscriptions");
         const projectList = document.getElementById("portal-projects");
         const changeRequestList = document.getElementById("portal-change-requests");
+        const changeRequestForm = document.getElementById("portal-change-request-form");
+        const changeRequestStatus = document.getElementById("change-request-status");
+        const changeRequestSubmit = document.getElementById("change-request-submit");
+        const changeRequestWebsite = document.getElementById("change-request-website");
+        const changeRequestProject = document.getElementById("change-request-project");
         const messageList = document.getElementById("portal-messages");
         const notificationList = document.getElementById("portal-notifications");
         const websiteList = document.getElementById("portal-websites");
@@ -295,6 +321,37 @@
           rows.forEach((row) => target.append(rowBuilder(row)));
         }
 
+        function sourceRecordId(record = {}) {
+          return String(record._supabaseId || record.supabaseId || record.id || "").trim();
+        }
+
+        function populateSelect(select, records, labelBuilder) {
+          records.forEach((record) => {
+            const id = sourceRecordId(record);
+            if (!id) return;
+            const option = document.createElement("option");
+            option.value = id;
+            option.textContent = labelBuilder(record);
+            select.append(option);
+          });
+        }
+
+        function renderChangeRequestRows(rows) {
+          renderTable(changeRequestList, rows, ["Verzoek", "Status", "Categorie", "Prioriteit", "Datum", "Omschrijving"], (request) => {
+            const row = document.createElement("div");
+            row.className = "admin-table-row portal-customer-row";
+            row.append(
+              Object.assign(document.createElement("span"), { textContent: request.title || "Wijzigingsverzoek" }),
+              createBadge(request.status || "nieuw"),
+              Object.assign(document.createElement("span"), { textContent: request.category || request.changeCategory || "-" }),
+              Object.assign(document.createElement("span"), { textContent: request.priority || "Normaal" }),
+              Object.assign(document.createElement("span"), { textContent: formatDate(request.createdAt || request.created_at) }),
+              Object.assign(document.createElement("span"), { textContent: request.description || "-" })
+            );
+            return row;
+          }, "Geen wijzigingsverzoeken", "Nieuwe wijzigingsverzoeken verschijnen hier zodra ze aan je klantprofiel gekoppeld zijn.");
+        }
+
         function createInfoCard(title, pairs, actions = []) {
           const card = document.createElement("article");
           card.className = "admin-card customer-portal-card";
@@ -382,6 +439,7 @@
         const payload = await getClientPortalData(customerId, { supabaseCustomerId, mode: portalDataMode });
         updateSourceMessage(payload);
         const { customer, websites, projects, files, invoices, subscriptions, quotes, changeRequests, messages, notifications, metrics: portalMetrics, sourceSummary } = payload;
+        const customerChangeRequests = [...changeRequests];
 
         if (!customer) {
           portalTitle.textContent = "Klant niet gevonden";
@@ -411,6 +469,38 @@
           ["Onderhoudspakket", customer.package],
           ["Klant sinds", formatDate(customer.customerSince || customer.createdAt)],
         ]));
+
+        populateSelect(changeRequestWebsite, websites, (website) => website.name || website.domain || "Website");
+        populateSelect(changeRequestProject, projects, (project) => project.name || project.projectName || "Project");
+
+        changeRequestForm.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          changeRequestStatus.textContent = "";
+          changeRequestSubmit.disabled = true;
+          changeRequestSubmit.textContent = "Verzoek opslaan...";
+          try {
+            const formData = new FormData(changeRequestForm);
+            const result = await saveChangeRequestWithWriteFallback({
+              title: formData.get("title"),
+              category: formData.get("category"),
+              websiteId: formData.get("websiteId"),
+              projectId: formData.get("projectId"),
+              description: formData.get("description"),
+            }, { customer, websites, projects });
+            customerChangeRequests.unshift(result.request);
+            renderChangeRequestRows(customerChangeRequests);
+            metrics.changeRequests.textContent = String(customerChangeRequests.filter((request) => !["afgerond", "gereed", "done", "closed", "gearchiveerd", "archived"].includes(normalize(request.status))).length);
+            changeRequestForm.reset();
+            changeRequestStatus.textContent = result.fallbackUsed
+              ? "Je verzoek is lokaal opgeslagen. Supabase-write blijft veilig achter de gate."
+              : "Je wijzigingsverzoek is ontvangen.";
+          } catch (error) {
+            changeRequestStatus.textContent = error.message || "Wijzigingsverzoek kon niet worden opgeslagen.";
+          } finally {
+            changeRequestSubmit.disabled = false;
+            changeRequestSubmit.textContent = "Verstuur wijzigingsverzoek";
+          }
+        });
 
         renderTable(quoteList, quotes, ["Offerte", "Status", "Datum", "Geldig tot", "Totaal", "Actie"], (quote) => {
           const row = document.createElement("div");
@@ -491,19 +581,7 @@
           projectList.append(card);
         });
 
-        renderTable(changeRequestList, changeRequests, ["Verzoek", "Status", "Categorie", "Prioriteit", "Datum", "Omschrijving"], (request) => {
-          const row = document.createElement("div");
-          row.className = "admin-table-row portal-customer-row";
-          row.append(
-            Object.assign(document.createElement("span"), { textContent: request.title || "Wijzigingsverzoek" }),
-            createBadge(request.status || "nieuw"),
-            Object.assign(document.createElement("span"), { textContent: request.category || request.changeCategory || "-" }),
-            Object.assign(document.createElement("span"), { textContent: request.priority || "Normaal" }),
-            Object.assign(document.createElement("span"), { textContent: formatDate(request.createdAt || request.created_at) }),
-            Object.assign(document.createElement("span"), { textContent: request.description || "-" })
-          );
-          return row;
-        }, "Geen wijzigingsverzoeken", "Nieuwe wijzigingsverzoeken verschijnen hier zodra ze aan je klantprofiel gekoppeld zijn.");
+        renderChangeRequestRows(customerChangeRequests);
 
         if (!messages.length) messageList.append(createEmpty("Geen berichten", "Berichten van Max Webstudio verschijnen hier zodra ze beschikbaar zijn."));
         messages.forEach((message) => {

@@ -3807,8 +3807,15 @@
           } catch {
             leadNoteWriteStatus = null;
           }
+          let changeRequestWriteStatus = null;
+          try {
+            changeRequestWriteStatus = JSON.parse(localStorage.getItem("maxwebstudioLastChangeRequestWriteStatus") || "null");
+          } catch {
+            changeRequestWriteStatus = null;
+          }
           const crmTaskWriteEnabled = ["true", "1", "yes", "ja", "enabled"].includes(String(localStorage.getItem("maxwebstudioCrmTaskWriteEnabled") || "").toLowerCase());
           const leadNoteWriteEnabled = ["true", "1", "yes", "ja", "enabled"].includes(String(localStorage.getItem("maxwebstudioLeadNoteWriteEnabled") || "").toLowerCase());
+          const changeRequestWriteEnabled = ["true", "1", "yes", "ja", "enabled"].includes(String(localStorage.getItem("maxwebstudioChangeRequestWriteEnabled") || "").toLowerCase());
           appendDeveloperCard("Supabase Data Layer MVP", [
             ["Status", status.readsPrepared ? "Read layer actief" : "Niet actief"],
             ["Modules", status.modules.join(", ")],
@@ -3820,6 +3827,9 @@
             ["Lead note write gate", leadNoteWriteEnabled ? "Lokaal toegestaan" : "Uit"],
             ["Lead note laatste write", leadNoteWriteStatus?.status || "Nog niet uitgevoerd"],
             ["Lead note fallback", leadNoteWriteStatus?.fallbackUsed ? "Ja" : "Nee"],
+            ["Change request write gate", changeRequestWriteEnabled ? "Lokaal toegestaan" : "Uit"],
+            ["Change request laatste write", changeRequestWriteStatus?.status || "Nog niet uitgevoerd"],
+            ["Change request fallback", changeRequestWriteStatus?.fallbackUsed ? "Ja" : "Nee"],
             ["Productie ready", status.productionReady ? "Ja" : "Nee"],
             ["Customers bron", state.customerSourceStatus?.dataLayer || "-"],
             ["Websites bron", state.websiteSourceStatus?.dataLayer || "-"],

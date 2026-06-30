@@ -1340,3 +1340,30 @@ Volgende stap:
 
 1. Productie-write-mode blijft dicht tot audit/approval.
 2. Daarna pas `change_requests` create als volgende low-risk write oppakken.
+
+## Fase 35C - Low-risk Supabase Write MVP: Change Requests
+
+Status: `AFGEROND / STAGING GEVALIDEERD`
+
+Scope:
+
+- Customer create-only wijzigingsverzoeken vanuit het klantportaal.
+- Geen update, delete of statuswijziging door customer.
+- Local/demo fallback behouden.
+- Feature/readiness gate via `supabase-write-test` en `maxwebstudioChangeRequestWriteEnabled=true`.
+
+Validatie:
+
+- Local fallback: `PASS`.
+- Eerste stagingrun vond een RLS customer_id-spoofingrisico.
+- RLS-patch `008_change_request_customer_ownership.sql` is op staging uitgevoerd.
+- Herhaalde staging write/RLS: `PASS` met run `phase-35c-rerun-1782798584503`.
+- Eigen customer insert: HTTP 201.
+- Spoofing met/zonder `auth_user_id`: HTTP 403.
+- Anonymous insert: HTTP 401.
+- Customer read isolation: eigen rows 1, andere rows 0.
+
+Volgende stap:
+
+1. Productie-write-mode blijft dicht tot audit/approval.
+2. Daarna pas `client_portal_messages` create als laatste Sprint 1 low-risk write oppakken.

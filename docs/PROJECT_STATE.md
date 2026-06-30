@@ -1674,3 +1674,47 @@ Bewust nog geblokkeerd:
 - Lead delete of volledige lead-update.
 - Server-side audit logging.
 - Change requests en klantportaalberichten als writes.
+
+## Fase 35C - Low-risk Supabase Write MVP: Change Requests
+
+Status: `AFGEROND / STAGING GEVALIDEERD`
+
+Doel:
+
+- Klanten kunnen vanuit het klantportaal een nieuw wijzigingsverzoek aanmaken.
+- Alleen create, geen update/delete/statuswijziging.
+- Local/demo fallback blijft actief.
+
+Toegevoegd/aangepast:
+
+- `public/src/services/changeRequestWriteService.js` valideert en bewaart wijzigingsverzoeken met local fallback.
+- `public/src/providers/supabaseProvider.js` ondersteunt `createChangeRequest()` met customer-sessiecontrole.
+- `public/klantportaal.html` bevat een compacte kaart voor nieuwe wijzigingsverzoeken.
+- `public/admin-dashboard.html` toont de nieuwe gate/status in Developer Mode.
+- `public/src/config/storageKeys.js` registreert `maxwebstudioChangeRequestWriteEnabled` en `maxwebstudioLastChangeRequestWriteStatus`.
+- `supabase/migration-drafts/008_change_request_customer_ownership.sql` scherpt staging-RLS voor customer ownership aan.
+
+Write-gate:
+
+- Provider mode moet `supabase-write-test` zijn.
+- Lokale vlag `maxwebstudioChangeRequestWriteEnabled=true` moet expliciet aan staan.
+- Productieomgeving blokkeert de write.
+- Geldige Supabase customer-sessie is nodig voor remote write.
+
+Validatie:
+
+- Lokale fallback-test: `PASS`.
+- Eerste stagingrun vond een RLS-spoofingrisico waarbij eigen `auth_user_id` met ander `customer_id` gecombineerd kon worden.
+- Patch `008_change_request_customer_ownership.sql` is uitsluitend op staging uitgevoerd.
+- Herhaalde stagingrun: `PASS` met run `phase-35c-rerun-1782798584503`.
+- Eigen customer insert: HTTP 201.
+- Customer spoofing met/zonder `auth_user_id`: HTTP 403.
+- Anonymous insert: HTTP 401.
+- Customer read isolation: eigen rows 1, andere rows 0.
+
+Bewust nog geblokkeerd:
+
+- Productie-write-mode.
+- Change request update/delete/statuswijziging.
+- Server-side audit logging.
+- Client portal messages als laatste low-risk Sprint 1 write.

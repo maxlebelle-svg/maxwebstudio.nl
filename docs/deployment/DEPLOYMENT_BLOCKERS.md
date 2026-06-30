@@ -649,3 +649,34 @@ Resterende blockers:
 2. Server-side audit logging voor leadnote writes ontbreekt nog.
 3. Brede lead update/delete blijft geblokkeerd.
 4. Change requests en klantportaalberichten moeten nog apart als write-MVP worden gevalideerd.
+
+## Fase 35C Change requests write validation
+
+Status: `VALIDATED_ON_STAGING`
+
+Scope:
+
+- Alleen customer create van `change_requests`.
+- Geen update/delete.
+- Geen customer statuswijziging.
+- Geen productieproject of echte klantdata.
+
+Evidence:
+
+- Local fallback: `PASS`
+- Syntaxchecks: `PASS`
+- Eerste staging security run: `phase-35c-1782798481392`
+- Bevinding: customer kon met eigen `auth_user_id` een ander `customer_id` meesturen door te brede RLS insert/read policy.
+- Patch uitgevoerd op staging: `supabase/migration-drafts/008_change_request_customer_ownership.sql`
+- Herhaalde staging/RLS run: `phase-35c-rerun-1782798584503`
+- Eigen customer insert: `PASS`, HTTP 201
+- Customer spoofing met/zonder `auth_user_id`: `PASS`, HTTP 403
+- Anonymous insert: `PASS`, HTTP 401
+- Customer read isolation: `PASS`, eigen rows 1, andere rows 0
+
+Resterende blockers:
+
+1. Productie-write-mode blijft geblokkeerd.
+2. Server-side audit logging voor change-request writes ontbreekt nog.
+3. De RLS-patch is alleen op staging toegepast; productie-uitvoering vereist release approval.
+4. Client portal messages moeten nog apart als write-MVP worden gevalideerd.

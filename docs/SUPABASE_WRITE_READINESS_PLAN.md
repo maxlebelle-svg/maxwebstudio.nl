@@ -421,6 +421,55 @@ Beperkingen:
 
 - RLS policies voor `crm_tasks` en `leads` zijn functioneel, maar nog te breed voor bredere production write-mode.
 - Audit logging is voorbereid, maar server-side auditstrategie moet gekozen worden.
-- `crm_tasks` en leadnotities hebben nu dedicated low-risk write services.
+- `crm_tasks`, leadnotities en wijzigingsverzoeken hebben nu dedicated low-risk write services.
 - Conflict handling en pending-sync UX moeten per module worden ontworpen.
-- Productie blijft `NO-GO` voor writes totdat staging evidence is toegevoegd.
+- Productie blijft `NO-GO` voor writes totdat production approvals, auditstrategie en write-governance expliciet zijn afgerond.
+
+## Fase 35C - Change requests create MVP
+
+Status: `GEIMPLEMENTEERD / STAGING GEVALIDEERD`
+
+Toegevoegd:
+
+- `public/src/services/changeRequestWriteService.js`
+- `supabaseProvider.createChangeRequest()`
+- Klantportaalformulier voor een nieuw wijzigingsverzoek.
+- Developer Mode-status voor `maxwebstudioChangeRequestWriteEnabled` en `maxwebstudioLastChangeRequestWriteStatus`.
+- RLS-patch `supabase/migration-drafts/008_change_request_customer_ownership.sql`.
+
+Gate:
+
+- Provider mode moet `supabase-write-test` zijn.
+- `maxwebstudioChangeRequestWriteEnabled=true` moet lokaal expliciet zijn gezet.
+- Productieomgeving blokkeert de write.
+- Supabase runtime-config en een geldige customer-sessie zijn vereist.
+
+Write-scope:
+
+- Alleen `change_requests` create.
+- Alleen status `nieuw`.
+- Geen update/delete.
+- Geen statuswijziging door customer.
+- `auth_user_id` wordt door de provider vergrendeld op de actuele Supabase user.
+
+Fallback:
+
+- Als de gate dichtstaat, Supabase/Auth ontbreekt of RLS de insert blokkeert, wordt het verzoek lokaal opgeslagen in `maxwebstudioChangeRequests`.
+- Laatste resultaat wordt vastgelegd in `maxwebstudioLastChangeRequestWriteStatus`.
+
+Stagingstatus:
+
+- Lokale fallback-test: `PASS`.
+- Eerste stagingrun vond een RLS-spoofingrisico: customer kon eigen `auth_user_id` combineren met een ander `customer_id`.
+- Patch `008_change_request_customer_ownership.sql` is uitsluitend op staging uitgevoerd.
+- Herhaalde staging write/RLS-test: `PASS` met run `phase-35c-rerun-1782798584503`.
+- Eigen customer insert: HTTP 201.
+- Spoofing met/zonder `auth_user_id`: HTTP 403.
+- Anonymous insert: HTTP 401.
+- Customer read isolation: eigen rows 1, andere rows 0.
+
+Beperkingen:
+
+- Server-side audit logging is nog niet actief.
+- Productie blijft geblokkeerd totdat patch `008`, audit/approval en production write-governance expliciet zijn goedgekeurd.
+- Client portal messages zijn de resterende low-risk write in Sprint 1.

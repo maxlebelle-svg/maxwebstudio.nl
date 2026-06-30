@@ -12,6 +12,7 @@ Doel: bepalen wanneer de migration drafts veilig naar een testomgeving mogen.
 - `supabase/migration-drafts/005_audit_logging_foundation.sql`
 - `supabase/migration-drafts/006_seed_demo_data_optional.sql`
 - `supabase/migration-drafts/007_runtime_role_grants.sql`
+- `supabase/migration-drafts/008_change_request_customer_ownership.sql`
 
 ## Reviewstappen Voor Uitvoering
 

@@ -967,3 +967,37 @@ Conclusie:
 - De eerdere DNS-blocker is opgelost; de Supabase staging-host en algemene DNS-resolutie werken weer.
 - Customer isolation is bewezen met synthetische testdata (`environment=test`, `is_demo=false`, `safeToArchive=true`), omdat demo-records bewust via demo-read policies zichtbaar kunnen zijn.
 - Productie blijft `NO-GO`.
+
+## Fase 35C Change Requests Write MVP
+
+Status: `PASS / STAGING VALIDATED`
+
+Scope:
+
+- Derde low-risk write-MVP voor wijzigingsverzoeken vanuit het klantportaal.
+- Customer mag alleen een nieuw `change_request` aanmaken.
+- Geen update, delete of statuswijziging door customer.
+- Geen productie, geen echte klantdata en geen admin-workflow.
+
+Evidence runs:
+
+- Eerste security run: `phase-35c-1782798481392`
+- RLS patch: `supabase/migration-drafts/008_change_request_customer_ownership.sql`
+- Herhaalde PASS-run: `phase-35c-rerun-1782798584503`
+
+| Testnaam | Stappen | Verwacht resultaat | Werkelijk resultaat | Status | Evidence / notities |
+| --- | --- | --- | --- | --- | --- |
+| Change request service syntax | `changeRequestWriteService.js` controleren | Geen syntaxfouten | Syntaxcheck groen | PASS | Geen runtime secrets |
+| Change request local fallback | Gate uit, lokale klant, verzoek opslaan | Verzoek wordt lokaal opgeslagen | `change request fallback test: ok` | PASS | `maxwebstudioChangeRequests`, status `fallback_local` |
+| Customer eigen insert | Customer met eigen `customer_id` maakt wijzigingsverzoek aan | Insert toegestaan | HTTP 201, 1 rij | PASS | Run `phase-35c-rerun-1782798584503` |
+| Customer spoof met eigen `auth_user_id` | Customer probeert ander `customer_id` mee te sturen | RLS blokkeert insert | Eerst kwetsbaar, na patch HTTP 403 | PASS | Patch `008` vereist `owns_customer(customer_id)` |
+| Customer spoof zonder `auth_user_id` | Customer probeert ander `customer_id` zonder auth_user_id | RLS blokkeert insert | HTTP 403 | PASS | Geen spoofing toegestaan |
+| Anonymous insert | Anonymous probeert wijzigingsverzoek aan te maken | RLS/PostgREST blokkeert write | HTTP 401 | PASS | Geen publieke write-toegang |
+| Customer read isolation | Customer leest eigen en andere customer requests | Alleen eigen request zichtbaar | Eigen rows 1, andere rows 0 | PASS | Customer isolation bewezen |
+
+Conclusie:
+
+- De klantportaal change-request create-MVP werkt met local fallback en staging write.
+- De eerste stagingrun vond terecht een RLS-spoofingrisico in de bestaande insert/read policies.
+- Patch `008_change_request_customer_ownership.sql` scherpt `change_requests_owner_read` en `change_requests_customer_insert` aan zonder andere writes te verbreden.
+- Productie blijft `NO-GO` totdat production approvals, server-side audit logging en write-governance zijn afgerond.

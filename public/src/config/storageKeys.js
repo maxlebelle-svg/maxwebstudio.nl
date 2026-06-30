@@ -27,6 +27,8 @@ export const STORAGE_KEYS = Object.freeze({
   lastCrmTaskWriteStatus: "maxwebstudioLastCrmTaskWriteStatus",
   leadNoteWriteEnabled: "maxwebstudioLeadNoteWriteEnabled",
   lastLeadNoteWriteStatus: "maxwebstudioLastLeadNoteWriteStatus",
+  changeRequestWriteEnabled: "maxwebstudioChangeRequestWriteEnabled",
+  lastChangeRequestWriteStatus: "maxwebstudioLastChangeRequestWriteStatus",
   lastCustomerWritePreview: "maxwebstudioLastCustomerWritePreview",
   lastCustomerMigrationResult: "maxwebstudioLastCustomerMigrationResult",
   customerDataMode: "maxwebstudioCustomerDataMode",
@@ -76,7 +78,7 @@ export const MODULE_STORAGE_KEYS = Object.freeze({
   subscriptions: [STORAGE_KEYS.subscriptions],
   workflow: [STORAGE_KEYS.crmTasks, STORAGE_KEYS.activityLog, STORAGE_KEYS.crmTaskWriteEnabled, STORAGE_KEYS.lastCrmTaskWriteStatus],
   settings: [STORAGE_KEYS.settings],
-  clientPortal: [STORAGE_KEYS.clientPortalSettings, STORAGE_KEYS.lastClientPortalDataTest, STORAGE_KEYS.clientPortalMessages, STORAGE_KEYS.clientPortalNotifications, STORAGE_KEYS.changeRequests],
+  clientPortal: [STORAGE_KEYS.clientPortalSettings, STORAGE_KEYS.lastClientPortalDataTest, STORAGE_KEYS.clientPortalMessages, STORAGE_KEYS.clientPortalNotifications, STORAGE_KEYS.changeRequests, STORAGE_KEYS.changeRequestWriteEnabled, STORAGE_KEYS.lastChangeRequestWriteStatus],
   auth: [STORAGE_KEYS.authUsers, STORAGE_KEYS.profiles, STORAGE_KEYS.currentSession, STORAGE_KEYS.accountRequests, STORAGE_KEYS.lastProfileReadinessTest, STORAGE_KEYS.accessControlSettings, STORAGE_KEYS.lastAccessControlTest],
   deployment: [STORAGE_KEYS.deploymentBlockers],
   aiWebsiteWizard: [STORAGE_KEYS.aiWebsiteWizardState, STORAGE_KEYS.aiAdminAssistantDrafts],
@@ -114,6 +116,8 @@ export const PRIMARY_MODULE_KEYS = Object.freeze({
   lastCrmTaskWriteStatus: STORAGE_KEYS.lastCrmTaskWriteStatus,
   leadNoteWriteEnabled: STORAGE_KEYS.leadNoteWriteEnabled,
   lastLeadNoteWriteStatus: STORAGE_KEYS.lastLeadNoteWriteStatus,
+  changeRequestWriteEnabled: STORAGE_KEYS.changeRequestWriteEnabled,
+  lastChangeRequestWriteStatus: STORAGE_KEYS.lastChangeRequestWriteStatus,
   aiAdminAssistantDrafts: STORAGE_KEYS.aiAdminAssistantDrafts,
 });
 

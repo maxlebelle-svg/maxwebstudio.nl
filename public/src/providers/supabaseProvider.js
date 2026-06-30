@@ -148,6 +148,15 @@ function isSafeCrmTaskWriteRecord(record = {}) {
     && record.metadata?.safeToArchive === true;
 }
 
+function isSafeChangeRequestWriteRecord(record = {}) {
+  return record.status === "nieuw"
+    && record.is_demo === false
+    && record.environment === "test"
+    && record.source === "client_portal"
+    && record.metadata?.createdBy === "change-request-write-mvp"
+    && record.metadata?.safeToArchive === true;
+}
+
 async function getWriteClient({ allowMigration = false } = {}) {
   if (!isWriteTestMode() && !(allowMigration && isMigrationMode())) {
     throw new Error("Supabase writes zijn alleen toegestaan in supabase-write-test of gecontroleerde supabase-migration mode.");
@@ -252,6 +261,15 @@ function assertLeadNoteWriteTable(table) {
   if (!isLeadsTable(table)) throw new Error("Lead note writes ondersteunen alleen de leads tabel.");
 }
 
+async function getChangeRequestWriteClient(context = {}) {
+  if (context.changeRequestWrite !== true) throw new Error("Change request write context ontbreekt.");
+  return getWriteClient();
+}
+
+function assertChangeRequestWriteTable(table) {
+  if (!isChangeRequestsTable(table)) throw new Error("Change request writes ondersteunen alleen de change_requests tabel.");
+}
+
 function assertLeadNotePayload(updates = {}) {
   const allowed = new Set(["notes", "updated_at", "metadata"]);
   const keys = Object.keys(updates);
@@ -262,6 +280,46 @@ function assertLeadNotePayload(updates = {}) {
   if (updates.metadata && updates.metadata.createdBy !== "lead-note-write-mvp") {
     throw new Error("Lead note write vereist veilige lead-note-write-mvp metadata.");
   }
+}
+
+async function currentSupabaseAuthUser(client) {
+  if (!client?.auth?.getUser) return null;
+  const { data, error } = await client.auth.getUser();
+  if (error) throw new Error(error.message || "Supabase auth user kon niet worden gecontroleerd.");
+  return data?.user || null;
+}
+
+function assertChangeRequestPayload(record = {}) {
+  const allowed = new Set([
+    "customer_id",
+    "auth_user_id",
+    "website_id",
+    "project_id",
+    "name",
+    "company",
+    "email",
+    "phone",
+    "title",
+    "description",
+    "category",
+    "priority",
+    "status",
+    "files",
+    "source",
+    "is_demo",
+    "environment",
+    "metadata",
+    "created_at",
+    "updated_at",
+  ]);
+  const blocked = Object.keys(record).filter((key) => !allowed.has(key));
+  if (blocked.length) throw new Error(`Change request write bevat geblokkeerde velden: ${blocked.join(", ")}.`);
+  if (!isSafeChangeRequestWriteRecord(record)) {
+    throw new Error("Change request writes vereisen testomgeving, status nieuw en veilige change-request-write-mvp metadata.");
+  }
+  if (!record.customer_id) throw new Error("Change request write vereist een customer_id.");
+  if (!record.title || String(record.title).trim().length < 3) throw new Error("Change request write vereist een titel.");
+  if (!record.description || String(record.description).trim().length < 5) throw new Error("Change request write vereist een omschrijving.");
 }
 
 export const supabaseProvider = {
@@ -766,6 +824,28 @@ export const supabaseProvider = {
     const { data, error } = await client.from("leads").update(payload).eq("id", id).select("*").single();
     if (error) throw new Error(error.message || "Leadnotitie opslaan in Supabase staging is mislukt.");
     return { success: true, table: "leads", action: "append_lead_note", data };
+  },
+
+  async createChangeRequest(record = {}, context = {}) {
+    assertChangeRequestWriteTable("change_requests");
+    assertChangeRequestPayload(record);
+    const client = await getChangeRequestWriteClient(context);
+    const user = await currentSupabaseAuthUser(client);
+    if (!user?.id) throw new Error("Change request write vereist een geldige Supabase customer-sessie.");
+    const payload = {
+      ...record,
+      auth_user_id: user.id,
+      status: "nieuw",
+      updated_at: record.updated_at || new Date().toISOString(),
+      created_at: record.created_at || new Date().toISOString(),
+      metadata: {
+        ...(record.metadata || {}),
+        authUserLockedByProvider: true,
+      },
+    };
+    const { data, error } = await client.from("change_requests").insert(payload).select("*").single();
+    if (error) throw new Error(error.message || "Wijzigingsverzoek aanmaken in Supabase staging is mislukt.");
+    return { success: true, table: "change_requests", action: "create_change_request", data };
   },
 
   setAll() {

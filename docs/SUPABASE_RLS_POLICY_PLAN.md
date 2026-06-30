@@ -213,7 +213,7 @@ Geen productie-autorisatie op basis van alleen e-mailadres.
   - `super_admin/admin`: all.
   - `support`: read/update status.
   - `sales/developer`: read.
-  - `customer`: eigen verzoeken read/create; geen statusmutaties.
+  - `customer`: eigen verzoeken read/create; geen statusmutaties. Create/read moet zowel `auth_user_id = auth.uid()` als ownership van `customer_id` afdwingen wanneer `customer_id` aanwezig is.
   - `demo_user`: demo/source demo.
 
 ### `leads`
@@ -439,4 +439,3 @@ Dit plan mag pas naar SQL worden vertaald wanneer:
 4. Auth/users/profiles testdata klaarstaat.
 5. Customer A/B isolation testplan is herbevestigd.
 6. Rollback en backup evidence klaar zijn.
-

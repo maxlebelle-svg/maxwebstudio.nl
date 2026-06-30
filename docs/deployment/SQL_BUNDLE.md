@@ -51,6 +51,8 @@ Nieuwe draftbundel:
 - `supabase/migration-drafts/004_rls_policies.sql`
 - `supabase/migration-drafts/005_audit_logging_foundation.sql`
 - `supabase/migration-drafts/006_seed_demo_data_optional.sql`
+- `supabase/migration-drafts/007_runtime_role_grants.sql`
+- `supabase/migration-drafts/008_change_request_customer_ownership.sql`
 
 Status:
 
@@ -66,3 +68,5 @@ Belangrijk:
 - Deze drafts zijn bedoeld als opvolger van de canonical schema/RLS-planning.
 - Legacy `customer_*` tabellen blijven uitgesloten.
 - `006_seed_demo_data_optional.sql` is alleen test/demo.
+- `007_runtime_role_grants.sql` is nodig zodat runtime rollen RLS-policies kunnen bereiken.
+- `008_change_request_customer_ownership.sql` scherpt customer ownership voor wijzigingsverzoeken aan en is eerst op staging bewezen.
