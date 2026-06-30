@@ -1400,3 +1400,34 @@ Volgende stap:
 
 1. Korte Sprint Review voor low-risk writes.
 2. Daarna pas Sprint 2 medium-risk writes plannen.
+
+## Sprint 1 Review - Low-risk Writes Completion
+
+Status: `AFGEROND`
+
+Samenvatting:
+
+- CRM Tasks: staging PASS.
+- Lead Notes: staging PASS.
+- Change Requests: staging PASS.
+- Client Portal Messages: staging PASS.
+
+Vastgelegd in:
+
+- `docs/SPRINT_1_LOW_RISK_WRITES_REVIEW.md`
+- `docs/deployment/TEST_RESULTS.md`
+- `docs/deployment/DEPLOYMENT_BLOCKERS.md`
+- `docs/SUPABASE_WRITE_READINESS_PLAN.md`
+
+Belangrijk:
+
+- Productie-write-mode blijft dicht.
+- Server-side audit logging ontbreekt nog.
+- Patches `008` en `009` zijn staging-bewezen, maar productie-uitvoering vereist release approval.
+- Sprint 2 mag pas starten na expliciete keuze voor de eerste medium-risk write.
+
+Aanbevolen Sprint 2:
+
+1. `projects` status/fase/voortgang update.
+2. `websites` status/notities/onderhoudsvelden update.
+3. `customers` beperkte contactvelden update.

@@ -1,6 +1,6 @@
 # Supabase Write Readiness Plan
 
-Status: `FASE 35A MVP - CRM_TASKS CREATE TEST-GATED`
+Status: `SPRINT 1 LOW-RISK WRITES AFGEROND / PRODUCTIE WRITE-MODE NO-GO`
 
 Dit document legt vast hoe Max Webstudio gecontroleerd van read-only Supabase/hybrid naar veilige write-mode kan groeien. Het is een planningsdocument: er wordt geen SQL uitgevoerd, geen provider gewijzigd en geen productieproject geraakt.
 
@@ -23,7 +23,9 @@ De volgende modules lopen inmiddels via de Supabase/hybrid data-layer met local/
 - `client_portal_notifications`
 - `crm_tasks`
 
-Writes blijven uitgeschakeld behalve bestaande lokale demo-acties, eerder gebouwde gated test/migratieflows en Fase 35A `crm_tasks` create-only achter een expliciete test-gate.
+Writes blijven uitgeschakeld behalve bestaande lokale demo-acties, eerder gebouwde gated test/migratieflows en de staging-gevalideerde Sprint 1 low-risk writes achter expliciete test-gates.
+
+Zie ook `docs/SPRINT_1_LOW_RISK_WRITES_REVIEW.md`.
 
 ## Write-principes
 
@@ -85,6 +87,15 @@ Niet rechtstreeks vanuit frontend:
 Deze mutaties vereisen server-side routes, expliciete approval en extra logging.
 
 ## Low-risk write specificaties
+
+Sprint 1 low-risk writes zijn afgerond en staging-gevalideerd:
+
+- `crm_tasks` create;
+- `leads.notes` append;
+- `change_requests` create;
+- `client_portal_messages` create.
+
+Productie-write-mode blijft dicht totdat audit/approval en production governance zijn afgerond.
 
 ### 1. CRM-taak aanmaken
 

@@ -1768,3 +1768,26 @@ Bewust nog geblokkeerd:
 - Client portal message update/delete.
 - Server-side audit logging.
 - Medium-risk writes tot na Sprint Review.
+
+## Sprint 1 Review - Low-risk Writes Completion
+
+Status: `AFGEROND`
+
+Sprint 1 low-risk writes:
+
+- CRM Tasks: `PASS`.
+- Lead Notes: `PASS`.
+- Change Requests: `PASS`.
+- Client Portal Messages: `PASS`.
+
+Nieuw reviewdocument:
+
+- `docs/SPRINT_1_LOW_RISK_WRITES_REVIEW.md`
+
+Conclusie:
+
+- Alle Sprint 1 writes zijn gated, hebben local/demo fallback en zijn op staging gevalideerd.
+- RLS/spoofing checks zijn uitgevoerd.
+- Productie-write-mode blijft bewust dicht.
+- Server-side audit logging en production approvals blijven open blockers.
+- Sprint 2 mag pas starten na medium-risk write-governance.

@@ -1036,3 +1036,20 @@ Conclusie:
 - Patch `009_client_portal_message_customer_ownership.sql` scherpt owner insert aan voor customer context en sender identity.
 - Sprint 1 low-risk writes is nu volledig gevalideerd op staging: CRM Tasks, Lead Notes, Change Requests en Client Portal Messages.
 - Productie blijft `NO-GO` totdat production approvals, server-side audit logging en write-governance zijn afgerond.
+
+## Sprint 1 Review Low-risk Writes
+
+Status: `PASS / COMPLETED`
+
+| Module | Evidence run | Staging | Fallback | RLS/security | Productie |
+| --- | --- | --- | --- | --- | --- |
+| CRM Tasks | `phase-35a1-1782774691838` | PASS | PASS | PASS | NO-GO |
+| Lead Notes | `phase-35b1-rerun-1782775482334` | PASS | PASS | PASS | NO-GO |
+| Change Requests | `phase-35c-rerun-1782798584503` | PASS | PASS | PASS | NO-GO |
+| Client Portal Messages | `phase-35d-1782800213876` | PASS | PASS | PASS | NO-GO |
+
+Conclusie:
+
+- Sprint 1 is volledig staging-gevalideerd.
+- Productie-write-mode blijft dicht.
+- Sprint 2 mag pas starten na expliciete medium-risk writeplanning, auditstrategie en production governance.
