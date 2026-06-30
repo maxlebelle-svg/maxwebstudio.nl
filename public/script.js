@@ -41,12 +41,15 @@ const cookieSaveButton = document.querySelector("[data-cookie-save]");
 const cookieSettingsButtons = document.querySelectorAll("[data-cookie-settings]");
 
 const calendlyUrl = "https://calendly.com/maxwebstudio/gratis-kennismakingsgesprek";
+const googleAnalyticsMeasurementId = "G-7BQ266CT0C";
+const googleAnalyticsScriptId = "maxwebstudio-google-analytics";
 const leadStorageKey = "maxwebstudioLeadRequests";
 const maxAiHelperDismissedKey = "maxwebstudioMaxAiHelperDismissed";
 const cookieConsentStorageKey = "maxwebstudioCookieConsent";
 const maxAiStates = ["idle", "wave", "thumbs-up", "thinking", "celebrate", "look", "blink", "error-safe"];
 let calendlyLoadPromise;
 let maxAiStateTimer;
+let googleAnalyticsLoaded = false;
 
 const checkoutPackages = {
   "Starter Site": {
@@ -689,6 +692,44 @@ function setCookieConsentControls(consent) {
   cookieAnalyticsInput.checked = Boolean(consent?.analytics);
 }
 
+function disableGoogleAnalytics() {
+  window[`ga-disable-${googleAnalyticsMeasurementId}`] = true;
+}
+
+function loadGoogleAnalytics() {
+  if (googleAnalyticsLoaded || document.getElementById(googleAnalyticsScriptId)) {
+    googleAnalyticsLoaded = true;
+    return;
+  }
+
+  window[`ga-disable-${googleAnalyticsMeasurementId}`] = false;
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = window.gtag || function gtag() {
+    window.dataLayer.push(arguments);
+  };
+
+  window.gtag("js", new Date());
+  window.gtag("config", googleAnalyticsMeasurementId, {
+    anonymize_ip: true,
+  });
+
+  const analyticsScript = document.createElement("script");
+  analyticsScript.id = googleAnalyticsScriptId;
+  analyticsScript.async = true;
+  analyticsScript.src = `https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsMeasurementId}`;
+  document.head.appendChild(analyticsScript);
+  googleAnalyticsLoaded = true;
+}
+
+function applyCookieConsent(consent) {
+  if (consent?.analytics) {
+    loadGoogleAnalytics();
+    return;
+  }
+
+  disableGoogleAnalytics();
+}
+
 function showCookieConsent() {
   if (!cookieConsent) {
     return;
@@ -727,6 +768,7 @@ function storeCookieConsent(analyticsAllowed) {
   }
 
   window.dispatchEvent(new CustomEvent("maxwebstudio:cookie-consent", { detail: consent }));
+  applyCookieConsent(consent);
   setCookieConsentControls(consent);
   hideCookieConsent();
 }
@@ -735,8 +777,10 @@ if (cookieConsent) {
   const savedCookieConsent = readCookieConsent();
 
   if (!savedCookieConsent) {
+    disableGoogleAnalytics();
     showCookieConsent();
   } else {
+    applyCookieConsent(savedCookieConsent);
     setCookieConsentControls(savedCookieConsent);
   }
 }
