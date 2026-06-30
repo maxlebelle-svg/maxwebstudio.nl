@@ -680,3 +680,42 @@ Resterende blockers:
 2. Server-side audit logging voor change-request writes ontbreekt nog.
 3. De RLS-patch is alleen op staging toegepast; productie-uitvoering vereist release approval.
 4. Client portal messages moeten nog apart als write-MVP worden gevalideerd.
+
+## Fase 35D Client portal messages write validation
+
+Status: `VALIDATED_ON_STAGING`
+
+Scope:
+
+- Alleen customer create van `client_portal_messages`.
+- Geen update/delete.
+- Geen sender spoofing.
+- Geen productieproject of echte klantdata.
+
+Evidence:
+
+- Local fallback: `PASS`
+- Syntaxchecks: `PASS`
+- Patch uitgevoerd op staging: `supabase/migration-drafts/009_client_portal_message_customer_ownership.sql`
+- Staging/RLS run: `phase-35d-1782800213876`
+- Eigen customer insert: `PASS`, HTTP 201
+- Sender spoofing `admin`: `PASS`, HTTP 403
+- Customer spoofing: `PASS`, HTTP 403
+- Sender profile spoofing: `PASS`, HTTP 403
+- No-profile user: `PASS`, HTTP 403
+- Anonymous insert: `PASS`, HTTP 401
+- Customer read isolation: `PASS`, eigen rows 1, andere rows 0
+
+Sprint 1 status:
+
+- CRM Tasks: `VALIDATED_ON_STAGING`
+- Lead Notes: `VALIDATED_ON_STAGING`
+- Change Requests: `VALIDATED_ON_STAGING`
+- Client Portal Messages: `VALIDATED_ON_STAGING`
+
+Resterende blockers:
+
+1. Productie-write-mode blijft geblokkeerd.
+2. Server-side audit logging voor low-risk writes ontbreekt nog.
+3. RLS-patches `008` en `009` zijn alleen op staging toegepast; productie-uitvoering vereist release approval.
+4. Medium-risk writes mogen pas na Sprint Review en production governance-plan.

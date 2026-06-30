@@ -1718,3 +1718,53 @@ Bewust nog geblokkeerd:
 - Change request update/delete/statuswijziging.
 - Server-side audit logging.
 - Client portal messages als laatste low-risk Sprint 1 write.
+
+## Fase 35D - Low-risk Supabase Write MVP: Client Portal Messages
+
+Status: `AFGEROND / STAGING GEVALIDEERD`
+
+Doel:
+
+- Klanten kunnen vanuit het klantportaal een nieuw bericht sturen.
+- Alleen create, geen update/delete/sender spoofing.
+- Local/demo fallback blijft actief.
+
+Toegevoegd/aangepast:
+
+- `public/src/services/clientPortalMessageWriteService.js` valideert en bewaart klantportaalberichten met local fallback.
+- `public/src/providers/supabaseProvider.js` ondersteunt `createClientPortalMessage()` met customer-sessie en profilecontrole.
+- `public/klantportaal.html` bevat een compacte kaart voor nieuw bericht.
+- `public/admin-dashboard.html` toont de nieuwe gate/status in Developer Mode.
+- `public/src/config/storageKeys.js` registreert `maxwebstudioClientPortalMessageWriteEnabled` en `maxwebstudioLastClientPortalMessageWriteStatus`.
+- `supabase/migration-drafts/009_client_portal_message_customer_ownership.sql` scherpt staging-RLS voor sender/customer ownership aan.
+
+Write-gate:
+
+- Provider mode moet `supabase-write-test` zijn.
+- Lokale vlag `maxwebstudioClientPortalMessageWriteEnabled=true` moet expliciet aan staan.
+- Productieomgeving blokkeert de write.
+- Geldige Supabase customer-sessie en actief customer profile zijn nodig voor remote write.
+
+Validatie:
+
+- Lokale fallback-test: `PASS`.
+- Patch `009_client_portal_message_customer_ownership.sql` is uitsluitend op staging uitgevoerd.
+- Stagingrun: `PASS` met run `phase-35d-1782800213876`.
+- Eigen customer insert: HTTP 201.
+- Sender spoofing, customer spoofing, sender profile spoofing en no-profile: HTTP 403.
+- Anonymous insert: HTTP 401.
+- Customer read isolation: eigen rows 1, andere rows 0.
+
+Sprint 1 low-risk writes:
+
+- CRM Tasks: `PASS`.
+- Lead Notes: `PASS`.
+- Change Requests: `PASS`.
+- Client Portal Messages: `PASS`.
+
+Bewust nog geblokkeerd:
+
+- Productie-write-mode.
+- Client portal message update/delete.
+- Server-side audit logging.
+- Medium-risk writes tot na Sprint Review.

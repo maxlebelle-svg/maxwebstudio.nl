@@ -53,6 +53,7 @@ Nieuwe draftbundel:
 - `supabase/migration-drafts/006_seed_demo_data_optional.sql`
 - `supabase/migration-drafts/007_runtime_role_grants.sql`
 - `supabase/migration-drafts/008_change_request_customer_ownership.sql`
+- `supabase/migration-drafts/009_client_portal_message_customer_ownership.sql`
 
 Status:
 
@@ -70,3 +71,4 @@ Belangrijk:
 - `006_seed_demo_data_optional.sql` is alleen test/demo.
 - `007_runtime_role_grants.sql` is nodig zodat runtime rollen RLS-policies kunnen bereiken.
 - `008_change_request_customer_ownership.sql` scherpt customer ownership voor wijzigingsverzoeken aan en is eerst op staging bewezen.
+- `009_client_portal_message_customer_ownership.sql` scherpt customer/sender ownership voor klantportaalberichten aan en is eerst op staging bewezen.

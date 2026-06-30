@@ -1367,3 +1367,36 @@ Volgende stap:
 
 1. Productie-write-mode blijft dicht tot audit/approval.
 2. Daarna pas `client_portal_messages` create als laatste Sprint 1 low-risk write oppakken.
+
+## Fase 35D - Low-risk Supabase Write MVP: Client Portal Messages
+
+Status: `AFGEROND / STAGING GEVALIDEERD`
+
+Scope:
+
+- Customer create-only klantportaalberichten.
+- Geen update, delete of sender spoofing.
+- Local/demo fallback behouden.
+- Feature/readiness gate via `supabase-write-test` en `maxwebstudioClientPortalMessageWriteEnabled=true`.
+
+Validatie:
+
+- Local fallback: `PASS`.
+- RLS-patch `009_client_portal_message_customer_ownership.sql` is op staging uitgevoerd.
+- Staging write/RLS: `PASS` met run `phase-35d-1782800213876`.
+- Eigen customer insert: HTTP 201.
+- Sender spoofing, customer spoofing, sender profile spoofing en no-profile: HTTP 403.
+- Anonymous insert: HTTP 401.
+- Customer read isolation: eigen rows 1, andere rows 0.
+
+Sprint 1 resultaat:
+
+- CRM Tasks: afgerond.
+- Lead Notes: afgerond.
+- Change Requests: afgerond.
+- Client Portal Messages: afgerond.
+
+Volgende stap:
+
+1. Korte Sprint Review voor low-risk writes.
+2. Daarna pas Sprint 2 medium-risk writes plannen.

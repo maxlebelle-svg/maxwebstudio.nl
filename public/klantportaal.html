@@ -101,6 +101,17 @@
 
       <section class="admin-section">
         <div class="admin-section-heading"><div><p class="section-kicker">Berichten</p><h2>Berichten van Max Webstudio</h2></div></div>
+        <article class="admin-card customer-portal-card" id="portal-message-create">
+          <strong>Bericht sturen</strong>
+          <form class="admin-form portal-message-form" id="portal-message-form">
+            <label>Onderwerp<input id="portal-message-subject" name="subject" type="text" maxlength="180" placeholder="Bijvoorbeeld: vraag over planning" required /></label>
+            <label class="admin-profile-wide">Bericht<textarea id="portal-message-body" name="body" rows="4" maxlength="2500" placeholder="Typ je bericht aan Max Webstudio." required></textarea></label>
+            <div class="portal-actions">
+              <button class="button primary" id="portal-message-submit" type="submit">Verstuur bericht</button>
+              <span class="form-helper" id="portal-message-status" role="status" aria-live="polite"></span>
+            </div>
+          </form>
+        </article>
         <div class="portal-card-grid" id="portal-messages" aria-live="polite"></div>
       </section>
 
@@ -125,6 +136,7 @@
         const { getClientPortalData } = await import("./src/services/clientPortalDataService.js");
         const { requireCustomerAccess } = await import("./src/services/routeGuardService.js");
         const { saveChangeRequestWithWriteFallback } = await import("./src/services/changeRequestWriteService.js");
+        const { saveClientPortalMessageWithWriteFallback } = await import("./src/services/clientPortalMessageWriteService.js");
         const params = new URLSearchParams(window.location.search);
         const customerId = params.get("customerId") || "";
         const supabaseCustomerId = params.get("supabaseCustomerId") || "";
@@ -147,6 +159,9 @@
         const changeRequestWebsite = document.getElementById("change-request-website");
         const changeRequestProject = document.getElementById("change-request-project");
         const messageList = document.getElementById("portal-messages");
+        const portalMessageForm = document.getElementById("portal-message-form");
+        const portalMessageStatus = document.getElementById("portal-message-status");
+        const portalMessageSubmit = document.getElementById("portal-message-submit");
         const notificationList = document.getElementById("portal-notifications");
         const websiteList = document.getElementById("portal-websites");
         const fileList = document.getElementById("portal-files");
@@ -352,6 +367,22 @@
           }, "Geen wijzigingsverzoeken", "Nieuwe wijzigingsverzoeken verschijnen hier zodra ze aan je klantprofiel gekoppeld zijn.");
         }
 
+        function renderMessages(rows) {
+          messageList.replaceChildren();
+          if (!rows.length) {
+            messageList.append(createEmpty("Geen berichten", "Berichten van Max Webstudio verschijnen hier zodra ze beschikbaar zijn."));
+            return;
+          }
+          rows.forEach((message) => {
+            messageList.append(createInfoCard(message.subject || message.title || "Bericht", [
+              ["Afzender", message.sender || (message.senderType === "customer" ? "Klant" : "Max Webstudio")],
+              ["Status", createBadge(message.status || (message.readAt ? "gelezen" : "nieuw"))],
+              ["Datum", formatDate(message.createdAt)],
+              ["Bericht", message.body || message.message || "-"],
+            ]));
+          });
+        }
+
         function createInfoCard(title, pairs, actions = []) {
           const card = document.createElement("article");
           card.className = "admin-card customer-portal-card";
@@ -440,6 +471,7 @@
         updateSourceMessage(payload);
         const { customer, websites, projects, files, invoices, subscriptions, quotes, changeRequests, messages, notifications, metrics: portalMetrics, sourceSummary } = payload;
         const customerChangeRequests = [...changeRequests];
+        const customerMessages = [...messages];
 
         if (!customer) {
           portalTitle.textContent = "Klant niet gevonden";
@@ -499,6 +531,32 @@
           } finally {
             changeRequestSubmit.disabled = false;
             changeRequestSubmit.textContent = "Verstuur wijzigingsverzoek";
+          }
+        });
+
+        portalMessageForm.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          portalMessageStatus.textContent = "";
+          portalMessageSubmit.disabled = true;
+          portalMessageSubmit.textContent = "Bericht opslaan...";
+          try {
+            const formData = new FormData(portalMessageForm);
+            const result = await saveClientPortalMessageWithWriteFallback({
+              subject: formData.get("subject"),
+              body: formData.get("body"),
+            }, { customer });
+            customerMessages.unshift(result.message);
+            renderMessages(customerMessages);
+            metrics.messages.textContent = String(customerMessages.filter((message) => !message.readAt && !["gelezen", "read"].includes(normalize(message.status))).length);
+            portalMessageForm.reset();
+            portalMessageStatus.textContent = result.fallbackUsed
+              ? "Je bericht is lokaal opgeslagen. Supabase-write blijft veilig achter de gate."
+              : "Je bericht is ontvangen.";
+          } catch (error) {
+            portalMessageStatus.textContent = error.message || "Bericht kon niet worden opgeslagen.";
+          } finally {
+            portalMessageSubmit.disabled = false;
+            portalMessageSubmit.textContent = "Verstuur bericht";
           }
         });
 
@@ -583,15 +641,7 @@
 
         renderChangeRequestRows(customerChangeRequests);
 
-        if (!messages.length) messageList.append(createEmpty("Geen berichten", "Berichten van Max Webstudio verschijnen hier zodra ze beschikbaar zijn."));
-        messages.forEach((message) => {
-          messageList.append(createInfoCard(message.subject || message.title || "Bericht", [
-            ["Afzender", message.sender || "Max Webstudio"],
-            ["Status", createBadge(message.status || (message.readAt ? "gelezen" : "nieuw"))],
-            ["Datum", formatDate(message.createdAt)],
-            ["Bericht", message.body || message.message || "-"],
-          ]));
-        });
+        renderMessages(customerMessages);
 
         if (!websites.length) websiteList.append(createEmpty("Geen websites", "Er is nog geen website gekoppeld aan dit klantprofiel."));
         websites.forEach((website) => {

@@ -473,3 +473,58 @@ Beperkingen:
 - Server-side audit logging is nog niet actief.
 - Productie blijft geblokkeerd totdat patch `008`, audit/approval en production write-governance expliciet zijn goedgekeurd.
 - Client portal messages zijn de resterende low-risk write in Sprint 1.
+
+## Fase 35D - Client portal messages create MVP
+
+Status: `GEIMPLEMENTEERD / STAGING GEVALIDEERD`
+
+Toegevoegd:
+
+- `public/src/services/clientPortalMessageWriteService.js`
+- `supabaseProvider.createClientPortalMessage()`
+- Klantportaalformulier voor nieuw bericht.
+- Developer Mode-status voor `maxwebstudioClientPortalMessageWriteEnabled` en `maxwebstudioLastClientPortalMessageWriteStatus`.
+- RLS-patch `supabase/migration-drafts/009_client_portal_message_customer_ownership.sql`.
+
+Gate:
+
+- Provider mode moet `supabase-write-test` zijn.
+- `maxwebstudioClientPortalMessageWriteEnabled=true` moet lokaal expliciet zijn gezet.
+- Productieomgeving blokkeert de write.
+- Supabase runtime-config en een geldig actief customer profile zijn vereist.
+
+Write-scope:
+
+- Alleen `client_portal_messages` create.
+- Alleen `sender_type=customer`.
+- Alleen status `open`.
+- Geen update/delete.
+- `sender_profile_id` wordt door de provider vergrendeld op het actuele profile.
+
+Fallback:
+
+- Als de gate dichtstaat, Supabase/Auth ontbreekt of RLS de insert blokkeert, wordt het bericht lokaal opgeslagen in `maxwebstudioClientPortalMessages`.
+- Laatste resultaat wordt vastgelegd in `maxwebstudioLastClientPortalMessageWriteStatus`.
+
+Stagingstatus:
+
+- Lokale fallback-test: `PASS`.
+- Patch `009_client_portal_message_customer_ownership.sql` is uitsluitend op staging uitgevoerd.
+- Staging write/RLS-test: `PASS` met run `phase-35d-1782800213876`.
+- Eigen customer insert: HTTP 201.
+- Sender spoofing, customer spoofing, sender profile spoofing en no-profile: HTTP 403.
+- Anonymous insert: HTTP 401.
+- Customer read isolation: eigen rows 1, andere rows 0.
+
+Sprint 1 resultaat:
+
+- `crm_tasks` create: gevalideerd.
+- `leads.notes` append: gevalideerd.
+- `change_requests` create: gevalideerd.
+- `client_portal_messages` create: gevalideerd.
+
+Beperkingen:
+
+- Server-side audit logging is nog niet actief.
+- Productie blijft geblokkeerd totdat patches `008`/`009`, audit/approval en production write-governance expliciet zijn goedgekeurd.
+- Sprint 2 medium-risk writes moeten eerst via aparte Sprint Review worden gepland.

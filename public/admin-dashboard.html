@@ -3813,9 +3813,16 @@
           } catch {
             changeRequestWriteStatus = null;
           }
+          let clientPortalMessageWriteStatus = null;
+          try {
+            clientPortalMessageWriteStatus = JSON.parse(localStorage.getItem("maxwebstudioLastClientPortalMessageWriteStatus") || "null");
+          } catch {
+            clientPortalMessageWriteStatus = null;
+          }
           const crmTaskWriteEnabled = ["true", "1", "yes", "ja", "enabled"].includes(String(localStorage.getItem("maxwebstudioCrmTaskWriteEnabled") || "").toLowerCase());
           const leadNoteWriteEnabled = ["true", "1", "yes", "ja", "enabled"].includes(String(localStorage.getItem("maxwebstudioLeadNoteWriteEnabled") || "").toLowerCase());
           const changeRequestWriteEnabled = ["true", "1", "yes", "ja", "enabled"].includes(String(localStorage.getItem("maxwebstudioChangeRequestWriteEnabled") || "").toLowerCase());
+          const clientPortalMessageWriteEnabled = ["true", "1", "yes", "ja", "enabled"].includes(String(localStorage.getItem("maxwebstudioClientPortalMessageWriteEnabled") || "").toLowerCase());
           appendDeveloperCard("Supabase Data Layer MVP", [
             ["Status", status.readsPrepared ? "Read layer actief" : "Niet actief"],
             ["Modules", status.modules.join(", ")],
@@ -3830,6 +3837,9 @@
             ["Change request write gate", changeRequestWriteEnabled ? "Lokaal toegestaan" : "Uit"],
             ["Change request laatste write", changeRequestWriteStatus?.status || "Nog niet uitgevoerd"],
             ["Change request fallback", changeRequestWriteStatus?.fallbackUsed ? "Ja" : "Nee"],
+            ["Client message write gate", clientPortalMessageWriteEnabled ? "Lokaal toegestaan" : "Uit"],
+            ["Client message laatste write", clientPortalMessageWriteStatus?.status || "Nog niet uitgevoerd"],
+            ["Client message fallback", clientPortalMessageWriteStatus?.fallbackUsed ? "Ja" : "Nee"],
             ["Productie ready", status.productionReady ? "Ja" : "Nee"],
             ["Customers bron", state.customerSourceStatus?.dataLayer || "-"],
             ["Websites bron", state.websiteSourceStatus?.dataLayer || "-"],

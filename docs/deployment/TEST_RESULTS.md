@@ -1001,3 +1001,38 @@ Conclusie:
 - De eerste stagingrun vond terecht een RLS-spoofingrisico in de bestaande insert/read policies.
 - Patch `008_change_request_customer_ownership.sql` scherpt `change_requests_owner_read` en `change_requests_customer_insert` aan zonder andere writes te verbreden.
 - Productie blijft `NO-GO` totdat production approvals, server-side audit logging en write-governance zijn afgerond.
+
+## Fase 35D Client Portal Messages Write MVP
+
+Status: `PASS / STAGING VALIDATED`
+
+Scope:
+
+- Vierde low-risk write-MVP voor klantportaalberichten.
+- Customer mag alleen een nieuw bericht binnen eigen klantcontext aanmaken.
+- Geen update, delete of sender spoofing.
+- Geen productie, geen echte klantdata en geen externe services.
+
+Evidence run:
+
+- Run: `phase-35d-1782800213876`
+- RLS patch: `supabase/migration-drafts/009_client_portal_message_customer_ownership.sql`
+
+| Testnaam | Stappen | Verwacht resultaat | Werkelijk resultaat | Status | Evidence / notities |
+| --- | --- | --- | --- | --- | --- |
+| Client portal message service syntax | `clientPortalMessageWriteService.js` controleren | Geen syntaxfouten | Syntaxcheck groen | PASS | Geen runtime secrets |
+| Client portal message local fallback | Gate uit, lokale klant, bericht opslaan | Bericht wordt lokaal opgeslagen | `client portal message fallback test: ok` | PASS | `maxwebstudioClientPortalMessages`, status `fallback_local` |
+| Customer eigen insert | Customer met eigen `customer_id` maakt bericht aan | Insert toegestaan | HTTP 201, 1 rij | PASS | Run `phase-35d-1782800213876` |
+| Sender spoofing | Customer probeert `sender_type=admin` | RLS blokkeert insert | HTTP 403 | PASS | Sender blijft customer-only |
+| Customer spoofing | Customer probeert ander `customer_id` | RLS blokkeert insert | HTTP 403 | PASS | Ownership afgedwongen |
+| Sender profile spoofing | Customer probeert ander `sender_profile_id` | RLS blokkeert insert | HTTP 403 | PASS | Eigen profile verplicht |
+| No-profile user | Authenticated user zonder profile probeert insert | RLS blokkeert insert | HTTP 403 | PASS | Geldig profile vereist |
+| Anonymous insert | Anonymous probeert bericht aan te maken | RLS/PostgREST blokkeert write | HTTP 401 | PASS | Geen publieke write-toegang |
+| Customer read isolation | Customer leest eigen en andere customer messages | Alleen eigen message zichtbaar | Eigen rows 1, andere rows 0 | PASS | Customer isolation bewezen |
+
+Conclusie:
+
+- De klantportaalbericht create-MVP werkt met local fallback en staging write.
+- Patch `009_client_portal_message_customer_ownership.sql` scherpt owner insert aan voor customer context en sender identity.
+- Sprint 1 low-risk writes is nu volledig gevalideerd op staging: CRM Tasks, Lead Notes, Change Requests en Client Portal Messages.
+- Productie blijft `NO-GO` totdat production approvals, server-side audit logging en write-governance zijn afgerond.

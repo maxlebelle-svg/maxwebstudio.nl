@@ -257,7 +257,7 @@ Geen productie-autorisatie op basis van alleen e-mailadres.
 - Ownership: via `customer_id`.
 - Lezen/schrijven:
   - `super_admin/admin/support`: read/write.
-  - `customer`: eigen messages read/create.
+  - `customer`: eigen messages read/create. Create moet `sender_type='customer'`, eigen `sender_profile_id` en ownership van `customer_id` afdwingen.
   - `sales/developer`: geen standaard toegang behalve read na expliciete rolreview.
 
 ### `client_portal_notifications`

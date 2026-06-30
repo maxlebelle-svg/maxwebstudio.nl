@@ -157,6 +157,15 @@ function isSafeChangeRequestWriteRecord(record = {}) {
     && record.metadata?.safeToArchive === true;
 }
 
+function isSafeClientPortalMessageWriteRecord(record = {}) {
+  return record.status === "open"
+    && record.sender_type === "customer"
+    && record.is_demo === false
+    && record.environment === "test"
+    && record.metadata?.createdBy === "client-portal-message-write-mvp"
+    && record.metadata?.safeToArchive === true;
+}
+
 async function getWriteClient({ allowMigration = false } = {}) {
   if (!isWriteTestMode() && !(allowMigration && isMigrationMode())) {
     throw new Error("Supabase writes zijn alleen toegestaan in supabase-write-test of gecontroleerde supabase-migration mode.");
@@ -270,6 +279,15 @@ function assertChangeRequestWriteTable(table) {
   if (!isChangeRequestsTable(table)) throw new Error("Change request writes ondersteunen alleen de change_requests tabel.");
 }
 
+async function getClientPortalMessageWriteClient(context = {}) {
+  if (context.clientPortalMessageWrite !== true) throw new Error("Client portal message write context ontbreekt.");
+  return getWriteClient();
+}
+
+function assertClientPortalMessageWriteTable(table) {
+  if (!isClientPortalMessagesTable(table)) throw new Error("Client portal message writes ondersteunen alleen de client_portal_messages tabel.");
+}
+
 function assertLeadNotePayload(updates = {}) {
   const allowed = new Set(["notes", "updated_at", "metadata"]);
   const keys = Object.keys(updates);
@@ -287,6 +305,13 @@ async function currentSupabaseAuthUser(client) {
   const { data, error } = await client.auth.getUser();
   if (error) throw new Error(error.message || "Supabase auth user kon niet worden gecontroleerd.");
   return data?.user || null;
+}
+
+async function currentSupabaseProfile(client, authUserId = "") {
+  if (!authUserId) return null;
+  const { data, error } = await client.from("profiles").select("id, role, status, auth_user_id").eq("auth_user_id", authUserId).maybeSingle();
+  if (error) throw new Error(error.message || "Supabase profile kon niet worden gecontroleerd.");
+  return data || null;
 }
 
 function assertChangeRequestPayload(record = {}) {
@@ -320,6 +345,32 @@ function assertChangeRequestPayload(record = {}) {
   if (!record.customer_id) throw new Error("Change request write vereist een customer_id.");
   if (!record.title || String(record.title).trim().length < 3) throw new Error("Change request write vereist een titel.");
   if (!record.description || String(record.description).trim().length < 5) throw new Error("Change request write vereist een omschrijving.");
+}
+
+function assertClientPortalMessagePayload(record = {}) {
+  const allowed = new Set([
+    "customer_id",
+    "profile_id",
+    "sender_profile_id",
+    "sender_type",
+    "subject",
+    "body",
+    "status",
+    "read_at",
+    "is_demo",
+    "environment",
+    "metadata",
+    "created_at",
+    "updated_at",
+  ]);
+  const blocked = Object.keys(record).filter((key) => !allowed.has(key));
+  if (blocked.length) throw new Error(`Client portal message write bevat geblokkeerde velden: ${blocked.join(", ")}.`);
+  if (!isSafeClientPortalMessageWriteRecord(record)) {
+    throw new Error("Client portal message writes vereisen testomgeving, sender_type customer en veilige client-portal-message-write-mvp metadata.");
+  }
+  if (!record.customer_id) throw new Error("Client portal message write vereist een customer_id.");
+  if (!record.subject || String(record.subject).trim().length < 3) throw new Error("Client portal message write vereist een onderwerp.");
+  if (!record.body || String(record.body).trim().length < 5) throw new Error("Client portal message write vereist een bericht.");
 }
 
 export const supabaseProvider = {
@@ -846,6 +897,34 @@ export const supabaseProvider = {
     const { data, error } = await client.from("change_requests").insert(payload).select("*").single();
     if (error) throw new Error(error.message || "Wijzigingsverzoek aanmaken in Supabase staging is mislukt.");
     return { success: true, table: "change_requests", action: "create_change_request", data };
+  },
+
+  async createClientPortalMessage(record = {}, context = {}) {
+    assertClientPortalMessageWriteTable("client_portal_messages");
+    assertClientPortalMessagePayload(record);
+    const client = await getClientPortalMessageWriteClient(context);
+    const user = await currentSupabaseAuthUser(client);
+    if (!user?.id) throw new Error("Client portal message write vereist een geldige Supabase customer-sessie.");
+    const profile = await currentSupabaseProfile(client, user.id);
+    if (!profile?.id || profile.role !== "customer" || profile.status !== "active") {
+      throw new Error("Client portal message write vereist een actief customer profile.");
+    }
+    const payload = {
+      ...record,
+      profile_id: profile.id,
+      sender_profile_id: profile.id,
+      sender_type: "customer",
+      status: "open",
+      updated_at: record.updated_at || new Date().toISOString(),
+      created_at: record.created_at || new Date().toISOString(),
+      metadata: {
+        ...(record.metadata || {}),
+        senderLockedByProvider: true,
+      },
+    };
+    const { data, error } = await client.from("client_portal_messages").insert(payload).select("*").single();
+    if (error) throw new Error(error.message || "Klantportaalbericht aanmaken in Supabase staging is mislukt.");
+    return { success: true, table: "client_portal_messages", action: "create_client_portal_message", data };
   },
 
   setAll() {
