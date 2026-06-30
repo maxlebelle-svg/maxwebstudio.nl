@@ -1589,9 +1589,9 @@ Dit hoofdstuk bouwt richting productie-ervaring en daarna Max AI:
 3. Sprint 5 - Server-side AI/OpenAI foundation.
 4. Sprint 6 - Business Automation.
 
-## Sprint 3 - Production Readiness
+## Sprint 3 - Trust Infrastructure
 
-Status: `GESTART / SPRINT 3A FOUNDATION READY`
+Status: `GESTART / SPRINT 3A-3B FOUNDATION READY`
 
 Leidend document:
 
@@ -1640,3 +1640,28 @@ Nog niet live:
 Volgende stap:
 
 - server-side audit logging MVP of Storage security foundation, met productie-write-mode nog steeds gesloten.
+
+### Sprint 3B - Storage Security Foundation
+
+Status: `FOUNDATION READY`
+
+Output:
+
+- canonical bucketstrategie;
+- rolgebaseerde upload/downloadmatrix;
+- signed URL-beleid;
+- file metadata-regels;
+- Max AI-bestandsgrenzen;
+- Developer Mode-readinesskaart;
+- documentatie in `docs/SPRINT_3B_STORAGE_SECURITY_FOUNDATION.md`.
+
+Nog niet live:
+
+- geen SQL;
+- geen Supabase Storage buckets aangemaakt;
+- geen upload/download endpoint;
+- geen productie-storage.
+
+Volgende stap:
+
+- staging-only Storage migration/policy draft of signed URL endpoint ontwerp, met customer isolation als verplichte acceptance criteria.

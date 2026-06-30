@@ -1925,9 +1925,9 @@ Advies:
 - Volgende sprint: `Production Readiness Sprint`.
 - Nog niet starten met finance, storage uploads, payments of AI-writes voordat de production readiness-basis verder is afgerond.
 
-## Sprint 3 - Production Readiness
+## Sprint 3 - Trust Infrastructure
 
-Status: `GESTART / SPRINT 3A FOUNDATION READY`
+Status: `GESTART / SPRINT 3A-3B FOUNDATION READY`
 
 Leidend document:
 
@@ -1980,3 +1980,29 @@ Bewust nog geblokkeerd:
 - Storage;
 - OpenAI/Mollie/Resend;
 - production writes.
+
+## Sprint 3B - Storage Security Foundation
+
+Status: `FOUNDATION READY / GEEN UPLOADS / GEEN SQL`
+
+Toegevoegd:
+
+- `docs/SPRINT_3B_STORAGE_SECURITY_FOUNDATION.md`
+- `public/src/services/storageSecurityReadinessService.js`
+- Developer Mode-kaart `Storage Security Foundation`
+
+Werking:
+
+- Canonical bucketstrategie is vastgelegd voor customer files, website assets, contracts, invoices, AI assets, demo assets en internal documents.
+- Rollenmatrix voor upload/download is voorbereid.
+- Bestandsbeleid, signed URL-regels en Max AI-bestandsgrenzen zijn vastgelegd.
+- Historische buckets `change-request-files` en `invoice-pdfs` blijven context/legacy totdat een expliciete migratiefase volgt.
+
+Bewust nog geblokkeerd:
+
+- echte uploads/downloads;
+- Supabase Storage bucketmigraties;
+- signed URL endpoints;
+- file isolation staging tests;
+- productie-storage;
+- AI-bestandsanalyse met echte klantdata.

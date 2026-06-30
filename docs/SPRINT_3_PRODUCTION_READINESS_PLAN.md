@@ -1,6 +1,6 @@
 # Sprint 3 - Production Readiness
 
-Status: `GESTART / SPRINT 3A FOUNDATION READY`
+Status: `GESTART / SPRINT 3A-3B FOUNDATION READY`
 
 Datum: 2026-06-30
 
@@ -48,7 +48,7 @@ Sprint 3 is pas afgerond wanneer:
 | ID | Onderdeel | Prioriteit | Type | Doel | Afhankelijkheden | Output |
 | --- | --- | --- | --- | --- | --- | --- |
 | 3A | Audit & Observability Foundation | P0 | Foundation | Auditmodel, lokale service en observability-taxonomie voorbereiden zonder secrets | `audit_logs`, gated writes, RLS | `docs/SPRINT_3A_AUDIT_OBSERVABILITY_FOUNDATION.md` + lokale foundationservice |
-| 3B | Storage security plan + foundation | P0 | Plan + beperkte implementatie | Veilige bestandsopslag voorbereiden met klantisolatie | Supabase Storage, files table, RLS | Bucketstrategie, policies, upload/download plan |
+| 3B | Storage Security Foundation | P0 | Foundation | Veilige bestandsopslag voorbereiden met klantisolatie | Supabase Storage, files table, RLS | `docs/SPRINT_3B_STORAGE_SECURITY_FOUNDATION.md` + readinessservice |
 | 3C | Monitoring & observability baseline | P1 | Implementatie/readiness | Fouten, write failures en security-events zichtbaar maken | Audit logging, admin/developer mode | Monitoring checklist/statuspaneel/loggingrichtlijn |
 | 3D | Backup & restore evidence | P1 | Proces + evidence | Herstelbaarheid bewijzen voordat productie open gaat | Supabase backup/export, Storage plan | Backup checklist, restore testlog, evidence-template |
 | 3E | Release governance hardening | P0 | Proces + readiness | Production gates, approvals en rollback aanscherpen | Deployment bundle, blockers, release decision | Updated gates/checklists/NO-GO regels |
@@ -138,6 +138,19 @@ Aanbevolen:
 - service role of veilige serverfunctie schrijft.
 
 ## 2. Storage
+
+Sprint 3B heeft de storage security foundation voorbereid.
+
+Vastgelegd in:
+
+- `docs/SPRINT_3B_STORAGE_SECURITY_FOUNDATION.md`
+
+Toegevoegd:
+
+- `public/src/services/storageSecurityReadinessService.js`
+- Developer Mode-kaart `Storage Security Foundation`
+
+Belangrijk: dit is nog geen upload/downloadflow. Supabase Storage buckets, signed URL endpoints en file isolation tests blijven vervolgstappen.
 
 ### Strategie
 

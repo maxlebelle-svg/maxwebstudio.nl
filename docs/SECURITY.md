@@ -668,3 +668,24 @@ Status:
 - Geen OpenAI-calls uitgevoerd.
 - Geen API keys toegevoegd.
 - Geen runtime AI-integratie geactiveerd.
+
+## Sprint 3B - Storage Security Foundation
+
+Sprint 3B maakt Storage onderdeel van de Trust Infrastructure.
+
+Securityregels:
+
+- private klantbestanden krijgen geen permanente publieke URLs;
+- signed URLs worden alleen server-side gemaakt;
+- klanten mogen alleen eigen customer/project/website bestanden zien;
+- demo users zien alleen demo-assets;
+- Max AI mag bestanden niet zelfstandig verwijderen, publiceren of signed URLs delen;
+- file metadata mag geen signed URLs, tokens, API keys, base64-content of providerpayloads bevatten;
+- productie-uploads blijven geblokkeerd totdat bucket policies, signed URL flow en customer isolation op staging bewezen zijn.
+
+Status:
+
+- Storage security foundation vastgelegd.
+- Geen SQL uitgevoerd.
+- Geen Supabase Storage buckets aangemaakt.
+- Geen productiegegevens gewijzigd.

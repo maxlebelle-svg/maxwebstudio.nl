@@ -3434,6 +3434,7 @@
             deploymentBlockerService: await import("./src/services/deploymentBlockerService.js"),
             testEnvironmentService: await import("./src/services/testEnvironmentService.js"),
             stagingReadinessService: await import("./src/services/stagingReadinessService.js"),
+            storageSecurityReadinessService: await import("./src/services/storageSecurityReadinessService.js"),
             releaseDecisionService: await import("./src/services/releaseDecisionService.js"),
             aiWebsiteWizardService: await import("./src/services/aiWebsiteWizardService.js"),
             aiAdminAssistantService: await import("./src/services/aiAdminAssistantService.js"),
@@ -3899,6 +3900,26 @@
             ["Productie audit writes", readiness.productionAuditWrites],
             ["Laatste event", readiness.latest?.lastAction || "Nog geen lokaal event"],
           ]);
+        }
+
+        function renderStorageSecurityFoundation(modules) {
+          const readiness = modules.storageSecurityReadinessService.getStorageSecurityReadiness();
+          appendDeveloperCard("Storage Security Foundation", [
+            ["Status", readiness.status],
+            ["Sprint", readiness.sprint],
+            ["Buckets", String(readiness.buckets.length)],
+            ["Uploads", readiness.uploadsEnabled ? "Aan" : "Geblokkeerd"],
+            ["Downloads", readiness.downloadsEnabled ? "Aan" : "Geblokkeerd"],
+            ["Productie storage", readiness.productionStorage],
+            ["Signed URL download", `${readiness.signedUrlPolicy.downloadTtlSeconds}s via ${readiness.signedUrlPolicy.generatedBy}`],
+            ["Max bestandsgrootte", `${readiness.fileTypePolicy.maxUploadMb} MB`],
+            ["Max AI file policy", `${readiness.maxAiFilePolicy.length} regels voorbereid`],
+            ["Open blockers", String(readiness.blockers.length)],
+          ]);
+          appendDeveloperCard("Storage buckets", readiness.buckets.map((bucket) => [
+            bucket.id,
+            `${bucket.privacy} - ${bucket.purpose}`,
+          ]));
         }
 
         function renderSupabaseReadOnlyResult(title, result) {
@@ -5517,6 +5538,7 @@
             renderSupabaseReadOnlyTest(readOnlySummary);
             renderSupabaseDataLayerMvpCard(modules);
             renderAuditObservabilityFoundation(modules);
+            renderStorageSecurityFoundation(modules);
             renderSupabaseWriteTestStatus(writeTestReadiness, writeTestResults);
             renderCustomerDataSourceStatus(state.customerSourceStatus);
             renderCustomerWriteReadiness(modules);
