@@ -1550,7 +1550,7 @@ Samenvatting:
 
 Volgende sprint:
 
-`Production Readiness Sprint`
+`Sprint 3 - Production Readiness`
 
 Focus:
 
@@ -1562,3 +1562,58 @@ Focus:
 6. Environment hardening.
 
 Niet starten met finance, payments, storage uploads of AI-writes voordat deze production readiness-basis verder is afgerond.
+
+## Hoofdstuk 1 - Platform Foundation
+
+Status: `AFGEROND`
+
+Dit hoofdstuk omvat de technische fundering:
+
+- Supabase staging foundation;
+- canonical schema en RLS;
+- repository/data layer;
+- read-only hybrid modules;
+- Sprint 1 Low-risk Writes;
+- Sprint 2 Operationele Workflow Writes;
+- deployment/readiness proces;
+- Max AI architectuur en persona.
+
+## Hoofdstuk 2 - Platform Experience
+
+Status: `GESTART`
+
+Dit hoofdstuk bouwt richting productie-ervaring en daarna Max AI:
+
+1. Sprint 3 - Production Readiness.
+2. Sprint 4 - Max AI Experience First.
+3. Sprint 5 - Server-side AI/OpenAI foundation.
+4. Sprint 6 - Business Automation.
+
+## Sprint 3 - Production Readiness
+
+Status: `GEPLAND / NIET GESTART`
+
+Leidend document:
+
+- `docs/SPRINT_3_PRODUCTION_READINESS_PLAN.md`
+
+Doel:
+
+- Max Webstudio productie-gereed maken voordat production writes, Storage uploads, high-risk finance flows of AI-acties worden vrijgegeven.
+
+Backlog:
+
+1. Server-side audit logging MVP.
+2. Storage security foundation.
+3. Monitoring en observability baseline.
+4. Backups en restore evidence.
+5. Release governance hardening.
+6. Environment hardening.
+7. Sprint 3 Review.
+
+Belangrijk:
+
+- Geen nieuwe eindgebruikersfeatures.
+- Geen OpenAI/Mollie/Resend live flows.
+- Geen production writes zonder expliciete release approval.
+- Sprint 4 Max AI Experience start pas na voldoende production readiness.

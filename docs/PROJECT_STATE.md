@@ -1924,3 +1924,32 @@ Advies:
 
 - Volgende sprint: `Production Readiness Sprint`.
 - Nog niet starten met finance, storage uploads, payments of AI-writes voordat de production readiness-basis verder is afgerond.
+
+## Sprint 3 - Production Readiness
+
+Status: `GEPLAND / PLAN GEREED / IMPLEMENTATIE NOG NIET GESTART`
+
+Leidend document:
+
+- `docs/SPRINT_3_PRODUCTION_READINESS_PLAN.md`
+
+Doel:
+
+- De laatste infrastructuurvoorwaarden afronden voordat production writes en Max AI Experience veilig kunnen worden vrijgegeven.
+
+Sprint 3 backlog:
+
+- server-side audit logging;
+- Storage security;
+- monitoring en observability;
+- backups en restore evidence;
+- release governance;
+- environment hardening;
+- Sprint 3 Review.
+
+Productstatus:
+
+- Platform Foundation is afgerond.
+- Platform Experience is gestart met Production Readiness.
+- Productie-write-mode blijft `NO-GO`.
+- Sprint 4 Max AI Experience wordt pas gestart nadat Sprint 3 voldoende evidence heeft opgeleverd.
