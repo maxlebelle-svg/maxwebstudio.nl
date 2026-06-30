@@ -2093,6 +2093,7 @@ Toegevoegd:
 
 - `docs/MAX_WEBSTUDIO_PLATFORM_MANIFEST.md`
 - publieke Max-introductie op `/public/index.html`
+- vaste Max AI helper op de homepage met dismiss via `maxwebstudioMaxAiHelperDismissed`
 
 Productregel:
 
@@ -2106,6 +2107,9 @@ Experience Rule:
 Sprint 4A:
 
 - Max wordt voor het eerst zichtbaar op de homepage;
-- Max stelt zich voor als digitale webdesigner;
+- Max stelt zich voor als digitale webdesigner en vaste begeleider;
+- rechts op de pagina staat een compacte helper die naar de aanvraag leidt;
+- de helper is wegklikbaar en onthoudt die keuze lokaal;
+- op mobiel klapt de helper compact in zodat hij bestaande sticky contactknoppen niet blokkeert;
 - CTA's blijven naar bestaande veilige flows gaan;
 - er is geen chat, OpenAI, backend, wizard, databasewijziging of automatisering toegevoegd.

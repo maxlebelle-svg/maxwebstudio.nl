@@ -252,6 +252,16 @@ De mascotte is de herkenbare vorm van dezelfde persona:
 
 De eerste publieke Max-introductie start in Sprint 4A als rustige merkervaring op de homepage.
 
+Vanaf deze sprint verschijnt Max ook als compacte, vaste helper aan de rechterkant van de publieke website.
+
+Deze helper:
+
+- begroet de bezoeker;
+- wijst naar de aanvraag;
+- kan worden weggeklikt;
+- opent geen echte chat;
+- gebruikt geen OpenAI, backend of automatisering.
+
 De definitieve interactieve Max AI Experience volgt later in de Experience Layer.
 
 Tot die tijd blijft deze persona leidend: Max stelt zich voor, maar handelt nog niet zelfstandig.

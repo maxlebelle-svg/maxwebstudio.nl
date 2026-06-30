@@ -28,9 +28,12 @@ const reviewCards = document.querySelectorAll("[data-review-card]");
 const reviewPrev = document.querySelector("[data-review-prev]");
 const reviewNext = document.querySelector("[data-review-next]");
 const reviewDots = document.querySelector("[data-review-dots]");
+const maxAiHelper = document.querySelector("[data-max-ai-helper]");
+const maxAiDismissButtons = document.querySelectorAll("[data-max-ai-dismiss]");
 
 const calendlyUrl = "https://calendly.com/maxwebstudio/gratis-kennismakingsgesprek";
 const leadStorageKey = "maxwebstudioLeadRequests";
+const maxAiHelperDismissedKey = "maxwebstudioMaxAiHelperDismissed";
 let calendlyLoadPromise;
 
 const checkoutPackages = {
@@ -375,6 +378,32 @@ calendlyTriggers.forEach((trigger) => {
     event.preventDefault();
     openCalendlyPopup();
   });
+});
+
+function dismissMaxAiHelper() {
+  if (!maxAiHelper) {
+    return;
+  }
+
+  maxAiHelper.hidden = true;
+
+  try {
+    localStorage.setItem(maxAiHelperDismissedKey, "true");
+  } catch (error) {
+    // localStorage can be unavailable in strict privacy modes.
+  }
+}
+
+try {
+  if (maxAiHelper && localStorage.getItem(maxAiHelperDismissedKey) === "true") {
+    maxAiHelper.hidden = true;
+  }
+} catch (error) {
+  // Keep the helper visible when localStorage cannot be read.
+}
+
+maxAiDismissButtons.forEach((button) => {
+  button.addEventListener("click", dismissMaxAiHelper);
 });
 
 if ("IntersectionObserver" in window) {
