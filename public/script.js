@@ -695,6 +695,10 @@ function showCookieConsent() {
   }
 
   setCookieConsentControls(readCookieConsent());
+  cookieConsent.dataset.preferencesOpen = "false";
+  if (cookieSaveButton) {
+    cookieSaveButton.textContent = "Voorkeuren";
+  }
   cookieConsent.hidden = false;
   document.body.dataset.cookieConsentVisible = "true";
 }
@@ -746,6 +750,15 @@ cookieNecessaryButton?.addEventListener("click", () => {
 });
 
 cookieSaveButton?.addEventListener("click", () => {
+  if (cookieConsent?.dataset.preferencesOpen !== "true") {
+    if (cookieConsent) {
+      cookieConsent.dataset.preferencesOpen = "true";
+    }
+    cookieSaveButton.textContent = "Voorkeuren opslaan";
+    cookieAnalyticsInput?.focus();
+    return;
+  }
+
   storeCookieConsent(Boolean(cookieAnalyticsInput?.checked));
 });
 
