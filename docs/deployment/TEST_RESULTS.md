@@ -1098,7 +1098,7 @@ Conclusie:
 
 ## Sprint 2B Customer Contact Write
 
-Status: `IMPLEMENTED / STAGING BLOCKED`
+Status: `PASS / STAGING GEVALIDEERD`
 
 Scope:
 
@@ -1120,14 +1120,15 @@ Uitgevoerde checks:
 | JS syntax | Gewijzigde JS is valide | `node --check` groen | PASS | `customerContactWriteService`, provider, storage keys |
 | Admin inline script | Dashboard script valide | Groen | PASS | Inline scriptcheck |
 | Local fallback | Gate/provider uit gebruikt localStorage fallback | `fallback_local` | PASS | Geen Supabase write zonder gate |
-| Staging patch `011` | Patch uitgevoerd op `maxwebstudio-test` | Niet uitgevoerd | BLOCKED | CLI access token ontbreekt en pooler vraagt DB-wachtwoord |
-| Interne rol update | Sales/support/admin kan contactvelden updaten | Niet uitgevoerd | BLOCKED | Vereist patch `011` op staging |
-| Customer/no-profile/anonymous blokkade | Geen effectieve update | Niet uitgevoerd | BLOCKED | Vereist patch `011` op staging |
-| Spoofing | Extra status/auth/profile velden blokkeren | Niet uitgevoerd | BLOCKED | Vereist patch `011` op staging |
-| Readback | Bijgewerkte contactdata leesbaar via read-layer | Niet uitgevoerd | BLOCKED | Vereist patch `011` op staging |
+| Staging patch `011` | Patch uitgevoerd op `maxwebstudio-test` | Uitgevoerd | PASS | Alleen `011_customer_contact_update_grants.sql` |
+| Interne rol update | Sales/support/admin kan contactvelden updaten | Sales update HTTP 200 | PASS | Run `sprint-2b-1782814316233` |
+| Customer/no-profile/anonymous blokkade | Geen effectieve update | Customer/no-profile 0 rows, anonymous HTTP 401 | PASS | RLS blokkeert effectieve update |
+| Spoofing | Extra status/auth/profile velden blokkeren | HTTP 403 | PASS | Status/auth/company spoofing geblokkeerd |
+| Readback | Bijgewerkte contactdata leesbaar via read-layer | Bijgewerkte contactvelden zichtbaar, status/company ongewijzigd | PASS | Customer owner read ook PASS |
 
 Conclusie:
 
-- Sprint 2B is geimplementeerd, maar nog niet bewezen op staging.
+- Sprint 2B Customer Contact Write is staging-gevalideerd.
 - Productie-write-mode blijft `NO-GO`.
-- Volgende actie: herstel staging execution access via `supabase login` of een test-only database connection string met wachtwoord, voer patch `011` uit en herhaal de RLS-validatie.
+- Patch `011` is alleen staging-toegepast en vereist production release approval vóór live.
+- Server-side audit logging ontbreekt nog.

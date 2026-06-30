@@ -1,6 +1,6 @@
 # Supabase Write Readiness Plan
 
-Status: `SPRINT 2B CUSTOMER CONTACT WRITE GEIMPLEMENTEERD / STAGING GEBLOKKEERD / PRODUCTIE WRITE-MODE NO-GO`
+Status: `SPRINT 2B CUSTOMER CONTACT WRITE GEVALIDEERD / PRODUCTIE WRITE-MODE NO-GO`
 
 Dit document legt vast hoe Max Webstudio gecontroleerd van read-only Supabase/hybrid naar veilige write-mode kan groeien. Het is een planningsdocument: er wordt geen SQL uitgevoerd, geen provider gewijzigd en geen productieproject geraakt.
 
@@ -23,7 +23,7 @@ De volgende modules lopen inmiddels via de Supabase/hybrid data-layer met local/
 - `client_portal_notifications`
 - `crm_tasks`
 
-Writes blijven uitgeschakeld behalve bestaande lokale demo-acties, eerder gebouwde gated test/migratieflows, de staging-gevalideerde Sprint 1 low-risk writes, de Sprint 2A projectstatus-write achter expliciete test-gates en de Sprint 2B customer-contact implementatie die nog op staging bewezen moet worden.
+Writes blijven uitgeschakeld behalve bestaande lokale demo-acties, eerder gebouwde gated test/migratieflows, de staging-gevalideerde Sprint 1 low-risk writes, de Sprint 2A projectstatus-write en de Sprint 2B customer-contact write achter expliciete test-gates.
 
 Zie ook `docs/SPRINT_1_LOW_RISK_WRITES_REVIEW.md`.
 
@@ -101,11 +101,11 @@ Sprint 2A medium-risk write is staging-gevalideerd:
 
 - `projects.status`, `projects.phase` en `projects.progress` update.
 
-Sprint 2B medium-risk write is geimplementeerd maar nog niet staging-gevalideerd:
+Sprint 2B medium-risk write is staging-gevalideerd:
 
 - `customers.name`, `customers.email`, `customers.phone` en `customers.notes` update.
 
-Productie-write-mode blijft ook hiervoor dicht totdat staging evidence, audit/approval en production governance zijn afgerond.
+Productie-write-mode blijft ook hiervoor dicht totdat audit/approval en production governance zijn afgerond.
 
 ### 1. CRM-taak aanmaken
 
@@ -600,11 +600,11 @@ Beperkingen:
 
 - Server-side audit logging is nog niet actief.
 - Productie blijft geblokkeerd totdat patch `010`, audit/approval en production write-governance expliciet zijn goedgekeurd.
-- Sprint 2B is de volgende medium-risk write, maar telt pas als afgerond na staging/RLS evidence.
+- Sprint 2B is afgerond; Sprint 2C Website Operational Updates is de volgende medium-risk write.
 
 ## Sprint 2B - Customer contact update MVP
 
-Status: `GEIMPLEMENTEERD / STAGING GEBLOKKEERD`
+Status: `GEIMPLEMENTEERD / STAGING GEVALIDEERD`
 
 Toegevoegd:
 
@@ -642,19 +642,16 @@ Fallback:
 Stagingstatus:
 
 - Lokale fallback-test: `PASS`.
-- Patch `011_customer_contact_update_grants.sql` is voorbereid, maar nog niet uitgevoerd.
-- Staging patch/write/RLS-test: `BLOCKED`.
-- Blokkade: de Supabase CLI sessie mist een access token en de test-only poolerverbinding mist het databasewachtwoord.
-
-Nog te bewijzen:
-
-- Bevoegde interne rol kan contactvelden updaten.
-- Customer/no-profile/anonymous worden geblokkeerd volgens policy.
-- Spoofing van ownership, rollen, status en extra velden wordt geblokkeerd of genegeerd.
-- Readback toont uitsluitend de toegestane contactmutatie.
+- Patch `011_customer_contact_update_grants.sql` is uitsluitend op staging uitgevoerd.
+- Staging write/RLS-test: `PASS` met run `sprint-2b-1782814316233`.
+- Bevoegde sales-role update: HTTP 200.
+- Customer/no-profile: effectieve update geblokkeerd met 0 gewijzigde rijen.
+- Anonymous: HTTP 401.
+- Spoofing van status/auth/company: HTTP 403.
+- Readback toont uitsluitend de toegestane contactmutatie; status en company bleven ongewijzigd.
 
 Beperkingen:
 
 - Server-side audit logging is nog niet actief.
 - Productie blijft geblokkeerd totdat patch `011`, staging evidence, audit/approval en production write-governance expliciet zijn goedgekeurd.
-- Sprint 2 completion blijft `33%` totdat 2B en 2C volledig staging-bewezen zijn.
+- Sprint 2 completion is `66%`; 2C Website Operational Updates moet nog volledig staging-bewezen worden.

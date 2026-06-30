@@ -1455,13 +1455,13 @@ Staging evidence:
 
 Volgende stap:
 
-1. Sprint 2B stagingtoegang herstellen en customer contact updates valideren.
-2. Daarna pas Sprint 2C plannen: beperkte website operational updates.
+1. Sprint 2C plannen: beperkte website operational updates.
+2. Daarna Sprint 2 Review uitvoeren.
 3. Nog niet starten met finance, storage of AI-writes.
 
 ## Sprint 2B - Customer Contact Write MVP
 
-Status: `GEIMPLEMENTEERD / STAGING GEBLOKKEERD`
+Status: `AFGEROND / STAGING GEVALIDEERD`
 
 Samenvatting:
 
@@ -1473,20 +1473,24 @@ Samenvatting:
 
 Staging evidence:
 
-- Patch `011_customer_contact_update_grants.sql` is voorbereid, maar nog niet uitgevoerd op staging.
+- Patch `011_customer_contact_update_grants.sql` is uitgevoerd op staging.
 - Local fallback: `PASS`.
-- Staging patch/write/RLS/readback: `BLOCKED`.
-- Blokkade: de Supabase CLI sessie mist een access token en de test-only poolerverbinding mist het databasewachtwoord.
+- Staging patch/write/RLS/readback: `PASS`.
+- PASS-run: `sprint-2b-1782814316233`.
+- Interne sales-role update: HTTP 200.
+- Customer/no-profile: effectieve update geblokkeerd met 0 gewijzigde rijen.
+- Anonymous: HTTP 401.
+- Spoofing van status/auth/company: HTTP 403.
 
 Sprint 2 acceptance:
 
 - 2A Project Status Updates: bewezen.
-- 2B Customer Contact Updates: implementatie klaar, staging evidence ontbreekt nog.
+- 2B Customer Contact Updates: bewezen.
 - 2C Website Operational Updates: nog niet gestart.
-- Sprint completion blijft `33%` op basis van bewezen acceptance criteria.
+- Sprint completion is `66%` op basis van bewezen acceptance criteria.
 
 Volgende stap:
 
-1. Herstel staging execution access via `supabase login` of een test-only database connection string met wachtwoord.
-2. Voer uitsluitend patch `011_customer_contact_update_grants.sql` uit op `maxwebstudio-test`.
-3. Herhaal 2B-validatie: interne rol, customer/no-profile/anonymous, spoofing, fallback en readback.
+1. Start Sprint 2C: beperkte website operational updates.
+2. Houd productie-write-mode dicht.
+3. Voer na 2C een Sprint 2 Review uit.

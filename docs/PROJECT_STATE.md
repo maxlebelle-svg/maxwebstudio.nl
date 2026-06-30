@@ -1828,7 +1828,7 @@ Bewust nog geblokkeerd:
 
 ## Sprint 2B - Customer Contact Write MVP
 
-Status: `GEIMPLEMENTEERD / STAGING BLOCKED / PRODUCTIE DICHT`
+Status: `GEIMPLEMENTEERD / STAGING GEVALIDEERD / PRODUCTIE DICHT`
 
 Toegevoegd:
 
@@ -1848,11 +1848,16 @@ Evidence:
 
 - Local fallback: `PASS`.
 - Syntaxchecks: `PASS`.
-- Staging patch/validatie: `BLOCKED`, omdat de CLI-token niet beschikbaar was en de pooler-verbinding een DB-wachtwoord vroeg.
+- Patch `011` uitgevoerd op staging `maxwebstudio-test`.
+- Staging patch/validatie: `PASS` met run `sprint-2b-1782814316233`.
+- Interne sales-role update: `PASS`.
+- Customer/no-profile/anonymous blokkade: `PASS`.
+- Spoofing van status/auth/company: `PASS`.
+- Readback: `PASS`.
 
 Bewust nog geblokkeerd:
 
 - Productie-write-mode.
-- Patch `011` op staging.
-- RLS-validatie voor interne rol, customer, no-profile, anonymous en spoofing.
-- Sprint 2B acceptance kan pas groen na stagingvalidatie.
+- Patch `011` naar productie zonder release approval.
+- Server-side audit logging.
+- Customer create/delete/archive, ownership, rollen, status, finance en abonnementen.
