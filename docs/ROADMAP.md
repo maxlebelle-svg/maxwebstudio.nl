@@ -2605,4 +2605,31 @@ Bewust niet uitgevoerd:
 
 Volgende aanbevolen stap:
 
-- `Epic 2B.3 - Staging Migration Apply & RLS Validation`
+- `Epic 2B.3 - Production Schema Deployment Readiness`
+
+## Epic 2B.3 - Production Schema Deployment Readiness
+
+Status: `PREFLIGHT PREPARED / PRODUCTION EXECUTION NO-GO`
+
+Doel:
+
+- productieproject `maxwebstudio` identificeren;
+- laatste schema/RLS preflight vastleggen;
+- exacte migration-volgorde, rollback en testplan voorbereiden;
+- voorkomen dat demo-data of stagingconfiguratie in productie komt.
+
+Bevindingen:
+
+- productieproject is `maxwebstudio` met project ref `yxxahurphdbblkuxoeje`;
+- staging/test blijft `maxwebstudio-test` met project ref `xlxpuuycigeqhgxqtzni`;
+- lokale CLI-link blijft veilig op staging/test;
+- `006_seed_demo_data_optional.sql` is expliciet uitgesloten voor productie;
+- productie execution blijft geblokkeerd tot read-only productie-inspectie, backup, env-scheiding en approval groen zijn.
+
+Opgeleverd:
+
+- `docs/EPIC_2B_PRODUCTION_SCHEMA_DEPLOYMENT_READINESS.md`
+
+Volgende aanbevolen stap:
+
+- `Epic 2B.4 - Production Read-only Database Preflight`

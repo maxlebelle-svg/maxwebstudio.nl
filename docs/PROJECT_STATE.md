@@ -3141,3 +3141,38 @@ Nog niet bewezen:
 - session restore na refresh;
 - password resetmail;
 - Customer A/B Auth-isolatie.
+
+## Epic 2B.3 - Production Schema Deployment Readiness
+
+Status: `PREFLIGHT PREPARED / PRODUCTION EXECUTION NO-GO`
+
+Productieomgeving:
+
+- Supabase project: `maxwebstudio`
+- Project ref: `yxxahurphdbblkuxoeje`
+- Database host: `db.yxxahurphdbblkuxoeje.supabase.co`
+
+Staging/testomgeving:
+
+- Supabase project: `maxwebstudio-test`
+- Project ref: `xlxpuuycigeqhgxqtzni`
+- Database host: `db.xlxpuuycigeqhgxqtzni.supabase.co`
+
+Vastgelegd:
+
+- productie mag niet automatisch via de lokale staging-link worden geraakt;
+- demo seed migration `006_seed_demo_data_optional.sql` mag niet op productie;
+- klantportaal schema/RLS execution krijgt een eigen approvalmoment;
+- service-role blijft server-side only;
+- productie-auth blijft dicht totdat schema/RLS groen is.
+
+Nog geblokkeerd:
+
+- read-only productie database-inspectie van huidige tabellen;
+- harde bevestiging dat er geen echte klantdata of demo/staging-data in productie staat;
+- controle dat Netlify production env vars naar `maxwebstudio` wijzen en gescheiden zijn van test;
+- backup/snapshot en rollback-approval vóór execution.
+
+Leidend document:
+
+- `docs/EPIC_2B_PRODUCTION_SCHEMA_DEPLOYMENT_READINESS.md`
