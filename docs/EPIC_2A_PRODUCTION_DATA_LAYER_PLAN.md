@@ -408,3 +408,84 @@ Bewust niet uitgevoerd:
 Volgende aanbevolen stap:
 
 `Epic 2A.5 - Client Portal Messages Production Data Foundation`
+
+## Epic 2A.5 - Berichten Production Data Foundation
+
+Status: `IMPLEMENTED / READ-WRITE FOUNDATION / PRODUCTION AUTH NO-GO`
+
+Doel:
+
+- klantportaalberichten voorbereiden op echte Supabase-data;
+- bestaande berichten read-only ophalen op `customer_id`;
+- nieuw bericht via Supabase aanmaken als er een veilige Auth/customer-context bestaat;
+- bestaande demo/localStorage fallback behouden zolang Supabase-data of write-permissie ontbreekt.
+
+Toegevoegd:
+
+- `public/src/services/clientPortalMessageContextService.js`
+
+Werking read:
+
+1. Gebruik de bestaande Supabase Auth-sessie.
+2. Gebruik de customer context uit Epic 2A.2.
+3. Lees read-only `client_portal_messages` op `customer_id`.
+4. Normaliseer records naar de bestaande thread-vorm.
+5. Als records ontbreken of niet veilig gelezen kunnen worden, blijft de bestaande portal payload actief.
+
+Werking send:
+
+1. Valideer onderwerp en bericht.
+2. Controleer of `customer_id` production-ready is.
+3. Maak via Supabase REST een `client_portal_messages` record aan met de ingelogde Auth-sessie.
+4. Zet `sender_type` altijd op `customer`.
+5. Als Supabase-context ontbreekt of create faalt, valt de flow terug op de bestaande lokale fallback.
+
+Ondersteunde states:
+
+- `loading`;
+- `found`;
+- `missing`;
+- `send_success`;
+- `send_error`;
+- `error`.
+
+Benodigde Supabase-velden voor `client_portal_messages`:
+
+- `id`;
+- `customer_id`;
+- `profile_id`;
+- `sender_profile_id`;
+- `sender_type`;
+- `subject`;
+- `body` als klantvriendelijk `message`;
+- `status`;
+- `read_at`;
+- `is_demo`;
+- `environment`;
+- `metadata`;
+- `created_at`;
+- `updated_at`.
+
+Securityregels:
+
+- Geen service role naar frontend.
+- Reads en sends gebruiken de ingelogde Supabase Auth-sessie.
+- RLS moet afdwingen dat de klant alleen eigen `client_portal_messages` kan lezen en aanmaken.
+- `customer_id` mag niet vanuit formulierinput komen.
+- `sender_type` wordt client-side vastgezet op `customer` en moet server/RLS-side worden afgedwongen.
+- Customer mag geen admin/support/system sender spoofen.
+- Geen e-mailintegratie in deze stap.
+
+Bewust niet uitgevoerd:
+
+- geen redesign;
+- geen SQL;
+- geen productie-auth activatie;
+- geen echte klantdata;
+- geen e-mailintegratie;
+- geen OpenAI/Mollie;
+- geen nieuwe dependencies.
+
+Volgende aanbevolen stap:
+
+`Epic 2A.6 - Finance Production Read Foundation`

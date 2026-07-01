@@ -590,6 +590,66 @@ Volgende aanbevolen stap:
 
 - `Epic 2A.5 - Client Portal Messages Production Data Foundation`
 
+## Epic 2A.5 - Berichten Production Data Foundation
+
+Status: `IMPLEMENTED / READ-WRITE FOUNDATION / PRODUCTIE NO-GO`
+
+Klantportaalberichten zijn voorbereid op echte Supabase-data.
+
+Toegevoegd:
+
+- `public/src/services/clientPortalMessageContextService.js`
+
+Werking:
+
+- gebruikt de bestaande Supabase Auth-sessie;
+- gebruikt de customer context uit Epic 2A.2;
+- leest `client_portal_messages` read-only op `customer_id`;
+- maakt een nieuw `client_portal_messages` record aan via Supabase als er een veilige customer context bestaat;
+- valt terug op de bestaande demo/localStorage flow als Supabase-data of write-permissie ontbreekt.
+
+Ondersteunde states:
+
+- `loading`;
+- `found`;
+- `missing`;
+- `send_success`;
+- `send_error`;
+- `error`.
+
+Voorbereide velden:
+
+- `customer_id`;
+- `sender_type`;
+- `subject`;
+- `body` als klantvriendelijk bericht;
+- `status`;
+- `read_at`;
+- `created_at`;
+- `updated_at`.
+
+Belangrijkste securitybesluit:
+
+- Geen service role naar frontend.
+- `customer_id` komt niet uit formulierinput.
+- `sender_type` wordt vastgezet op `customer` en moet later ook server/RLS-side worden afgedwongen.
+- Customers mogen geen admin/support/system afzender spoofen.
+- Geen e-mailintegratie in deze stap.
+
+Bewust niet uitgevoerd:
+
+- geen redesign;
+- geen SQL;
+- geen productie-auth activatie;
+- geen echte klantdata;
+- geen e-mailintegratie;
+- geen OpenAI/Mollie;
+- geen nieuwe dependencies.
+
+Volgende aanbevolen stap:
+
+- `Epic 2A.6 - Finance Production Read Foundation`
+
 ## Sterke Punten
 
 - Duidelijke premium positionering.

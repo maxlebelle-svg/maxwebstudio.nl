@@ -214,9 +214,9 @@
         const { getClientCustomerProfileContext } = await import("./src/services/clientCustomerProfileContextService.js");
         const { getClientWebsiteProjectContext } = await import("./src/services/clientWebsiteProjectContextService.js");
         const { getClientChangeRequestContext, saveClientChangeRequestWithSupabaseFallback } = await import("./src/services/clientChangeRequestContextService.js");
+        const { getClientPortalMessageContext, saveClientPortalMessageWithSupabaseFallback } = await import("./src/services/clientPortalMessageContextService.js");
         const { ensureStagingClientPortalDemoSession } = await import("./src/services/stagingClientPortalAuthBridgeService.js");
         const { signOut: signOutSupabase } = await import("./src/services/supabaseAuthProvider.js");
-        const { saveClientPortalMessageWithWriteFallback } = await import("./src/services/clientPortalMessageWriteService.js");
         const params = new URLSearchParams(window.location.search);
         let customerId = params.get("customerId") || "";
         let supabaseCustomerId = params.get("supabaseCustomerId") || "";
@@ -1163,6 +1163,28 @@
         } else if (changeRequestContext.state === "error" && isDeveloperModeEnabled()) {
           payload.warnings = [...(payload.warnings || []), changeRequestContext.error || changeRequestContext.message];
         }
+        const messageContext = await getClientPortalMessageContext({
+          customerId,
+          supabaseCustomerId,
+          customer: payload.customer,
+        });
+        if (messageContext.found) {
+          payload.messages = messageContext.messages;
+          payload.sourceSummary = {
+            ...(payload.sourceSummary || {}),
+            messageContext: {
+              state: messageContext.state,
+              source: messageContext.source,
+              count: messageContext.messages.length,
+            },
+          };
+          payload.metrics = {
+            ...(payload.metrics || {}),
+            unreadMessages: messageContext.messages.filter((message) => !message.readAt && !["gelezen", "read"].includes(String(message.status || "").toLowerCase())).length,
+          };
+        } else if (messageContext.state === "error" && isDeveloperModeEnabled()) {
+          payload.warnings = [...(payload.warnings || []), messageContext.error || messageContext.statusMessage];
+        }
         const { customer, websites, projects, files, invoices, subscriptions, quotes, changeRequests, messages, notifications, metrics: portalMetrics, sourceSummary } = payload;
         const customerChangeRequests = [...changeRequests];
         const customerMessages = [...messages];
@@ -1238,10 +1260,10 @@
           portalMessageSubmit.textContent = "Bericht opslaan...";
           try {
             const formData = new FormData(portalMessageForm);
-            const result = await saveClientPortalMessageWithWriteFallback({
+            const result = await saveClientPortalMessageWithSupabaseFallback({
               subject: formData.get("subject"),
               body: formData.get("body"),
-            }, { customer });
+            }, { customer, supabaseCustomerId });
             customerMessages.unshift(result.message);
             renderMessages(customerMessages);
             metrics.messages.textContent = String(customerMessages.filter((message) => !message.readAt && !["gelezen", "read"].includes(normalize(message.status))).length);
