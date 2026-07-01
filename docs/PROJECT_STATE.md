@@ -3217,7 +3217,7 @@ Conclusie:
 
 ## Epic 2B.5 - Production Read-only SQL Inspection
 
-Status: `BLOCKED / NO PRODUCTION DB READ ROUTE / PRODUCTION EXECUTION NO-GO`
+Status: `READ COMPLETED / CONDITIONAL GO FULL ORDER / DIRECT 013 NO-GO`
 
 Doel:
 
@@ -3232,6 +3232,10 @@ Bevinding:
 - De lokale Supabase CLI-link staat nog veilig op `maxwebstudio-test`.
 - Productie is niet tijdelijk gelinkt.
 - Er is geen SQL uitgevoerd.
+- De production read-only SQL output is handmatig aangeleverd.
+- `profiles` bestaat met 1 rij.
+- `change_requests` bestaat met 2 rijen.
+- `customers`, `websites`, `projects`, `client_portal_messages`, `quotes`, `invoices`, `subscriptions` en `client_portal_notifications` ontbreken.
 
 Gedocumenteerd:
 
@@ -3245,5 +3249,7 @@ Gedocumenteerd:
 
 Conclusie:
 
-- Productie SQL execution blijft `NO-GO`.
-- Voor een GO is nu alleen nog production read-only output nodig via Supabase SQL Editor of een tijdelijke DB connection string die niet wordt gecommit.
+- Productie is `CONDITIONAL GO` voor volledige migration-volgorde.
+- Direct alleen migration `013_client_portal_schema_rls_alignment.sql` uitvoeren blijft `NO-GO`.
+- Vóór execution moeten backup/snapshot, bestaande recordbeoordeling, env-scheiding en rollback approval groen zijn.
+- Productie-auth blijft dicht totdat schema/RLS en customer-isolation checks groen zijn.

@@ -1,6 +1,6 @@
 # Epic 2B.3 - Production Schema Deployment Readiness
 
-Status: `PREFLIGHT PARTIAL / PRODUCTION EXECUTION NO-GO UNTIL FINAL DB READ`
+Status: `CONDITIONAL GO / FULL MIGRATION ORDER ONLY / DIRECT 013 NO-GO`
 
 Doel:
 
@@ -34,16 +34,16 @@ Bevinding:
 | Migration draft aanwezig | PASS | `supabase/migration-drafts/013_client_portal_schema_rls_alignment.sql` |
 | Rollback-notes aanwezig | PASS | `docs/deployment/ROLLBACK_PLAN.md` |
 | Demo seed uitgesloten | PASS | `006_seed_demo_data_optional.sql` mag niet op productie |
-| Huidige productie-tabellen | BLOCKED | vereist read-only productie database inspectie |
-| Echte productie-klantdata | BLOCKED | gebruiker geeft aan dat er geen klantdata is, maar dit moet read-only worden bevestigd |
+| Huidige productie-tabellen | PARTIAL PASS | `profiles` en `change_requests` bestaan; klantportaal-basistabellen ontbreken |
+| Echte productie-klantdata | CONDITIONAL | `profiles` heeft 1 rij en `change_requests` heeft 2 rijen; bevestig inhoud vóór execution |
 | RLS runtime op productie | BLOCKED | pas bewijsbaar na migration execution en isolatietest |
 | Productie env vars in hosting | BLOCKED | Netlify production env moet handmatig worden gecontroleerd zonder secrets te tonen |
 
 Conclusie:
 
-- De deployment is voorbereid, maar productie blijft `NO-GO`.
-- De volgende stap is een read-only productie-inspectie van tabellen en datacounts.
-- Pas na expliciete bevestiging dat productie leeg/veilig is mag SQL worden uitgevoerd.
+- Productie is `CONDITIONAL GO` voor de volledige migration-volgorde.
+- Productie is `NO-GO` voor het direct uitvoeren van alleen `013_client_portal_schema_rls_alignment.sql`.
+- Reden: migration `013` verwacht bestaande canonical tabellen zoals `customers`, `websites`, `projects`, `client_portal_messages`, `quotes`, `invoices`, `subscriptions` en `client_portal_notifications`.
 
 ## Read-only Productie Inspectie
 
@@ -100,9 +100,9 @@ where table_schema = 'public'
 
 Als relevante kolommen bestaan, controleer dat productie geen demo/staging records bevat.
 
-## Uitvoeringsvolgorde Als Preflight Groen Wordt
+## Uitvoeringsvolgorde Voor Conditional GO
 
-Productie mag alleen deze volgorde gebruiken na expliciete approval.
+Productie mag alleen deze volledige volgorde gebruiken na expliciete approval.
 
 1. `001_schema_tables.sql`
 2. `002_indexes.sql`
@@ -129,6 +129,51 @@ Reden:
 - `010` t/m `012` horen bij operationele admin writes.
 - Het klantportaal kan eerst live met Auth, customer context, reads en klantveilige low-risk creates.
 - Productie admin-writes krijgen een aparte releasegate.
+
+### Waarom `013` niet standalone mag draaien
+
+De read-only productie-inspectie laat zien:
+
+- `profiles` bestaat al met 1 rij;
+- `change_requests` bestaat al met 2 rijen;
+- `customers` ontbreekt;
+- `websites` ontbreekt;
+- `projects` ontbreekt;
+- `client_portal_messages` ontbreekt;
+- `quotes` ontbreekt;
+- `invoices` ontbreekt;
+- `subscriptions` ontbreekt;
+- `client_portal_notifications` ontbreekt.
+
+Migration `013_client_portal_schema_rls_alignment.sql` begint met `alter table` statements op bestaande tabellen. Daardoor faalt `013` direct wanneer `public.customers` en de andere canonical tabellen nog niet bestaan.
+
+Correcte aanpak:
+
+1. Eerst `001_schema_tables.sql` om ontbrekende canonical tabellen aan te maken.
+2. Daarna `002` t/m `009` voor indexes, RLS, policies, audit en ownership hardening.
+3. Daarna pas `013` voor klantportaal schema/RLS alignment.
+
+### Niet uitvoeren op productie
+
+Nooit uitvoeren tijdens deze productie-uitrol:
+
+- `006_seed_demo_data_optional.sql`
+
+Reden:
+
+- productie mag geen demo-data, staging-accounts, testklanten of mockrecords bevatten;
+- eerste echte klantdata wordt pas na schema/RLS validatie en release approval gekoppeld.
+
+### Eerst controleren op bestaande tabellen/kolommen
+
+Vóór execution moet handmatig bevestigd zijn:
+
+- de ene bestaande `profiles` rij is geen waardevolle klantdata of mag veilig blijven;
+- de twee bestaande `change_requests` records zijn geen waardevolle klantdata of zijn compatibel met het canonical schema;
+- `profiles` bevat minimaal compatibele kolommen voor `id`, `auth_user_id`, `role`, `status`, `created_at` en `updated_at`;
+- `change_requests` bevat compatibele kolommen voor `id`, `customer_id`, `auth_user_id`, `website_id`, `project_id`, `title`, `description`, `priority`, `status`, `created_at` en `updated_at`, of wordt door de volledige migrationvolgorde veilig aangevuld;
+- bestaande helper functions hebben geen afwijkende signatures;
+- bestaande policies op `profiles` en `change_requests` blokkeren de nieuwe RLS-set niet onverwacht.
 
 ## Rollback Stappen
 
@@ -194,16 +239,26 @@ Nooit automatisch doen:
 
 ## Production Go/No-Go
 
-Productie schema execution blijft `NO-GO` totdat:
+Productie schema execution is `CONDITIONAL GO` voor de volledige migration-volgorde zodra:
 
-- read-only productie-inspectie is uitgevoerd;
-- productie datacounts veilig/leeg zijn bevestigd;
+- read-only productie-inspectie is uitgevoerd en opgeslagen;
+- de 1 `profiles` rij en 2 `change_requests` records inhoudelijk veilig/compatibel zijn verklaard;
 - productie env vars in Netlify gescheiden zijn van test;
 - backup/snapshot is bevestigd;
 - rollback approver is bevestigd;
 - expliciete approval voor execution is gegeven.
 
-Na deze checks kan de status naar `GO FOR PRODUCTION SCHEMA EXECUTION`.
+Direct alleen `013_client_portal_schema_rls_alignment.sql` uitvoeren blijft:
+
+```text
+NO-GO
+```
+
+Na deze checks kan de status naar:
+
+```text
+GO FOR FULL PRODUCTION MIGRATION ORDER
+```
 
 ## Epic 2B.4 - Production Database Preflight Inspection
 
@@ -321,7 +376,7 @@ Daarvoor is expliciet nodig:
 
 ## Epic 2B.5 - Production Read-only SQL Inspection
 
-Status: `BLOCKED / AWAITING PRODUCTION DB READ ROUTE / NO SQL EXECUTED`
+Status: `READ COMPLETED BY SQL EDITOR / CONDITIONAL GO / DIRECT 013 NO-GO`
 
 Doel:
 
@@ -344,14 +399,21 @@ Gecontroleerd:
 Resultaat:
 
 ```text
-Production read-only SQL inspection kon niet worden uitgevoerd in deze sessie.
+Production read-only SQL inspection is handmatig uitgevoerd via Supabase SQL Editor output.
 ```
 
-Reden:
+Samenvatting van aangeleverde output:
 
-- Er is geen productie database connection string beschikbaar.
-- Er is geen handmatige Supabase SQL Editor output aangeleverd.
-- Om accidental writes te voorkomen is productie niet gelinkt.
+- `profiles` bestaat met 1 rij;
+- `change_requests` bestaat met 2 rijen;
+- `customers` ontbreekt;
+- `websites` ontbreekt;
+- `projects` ontbreekt;
+- `client_portal_messages` ontbreekt;
+- `quotes` ontbreekt;
+- `invoices` ontbreekt;
+- `subscriptions` ontbreekt;
+- `client_portal_notifications` ontbreekt.
 
 ### Read-only SQL voor handmatige inspectie
 
@@ -514,14 +576,20 @@ Migration `013_client_portal_schema_rls_alignment.sql` is pas veilig uitvoerbaar
 
 | Onderdeel | Status | Resultaat |
 | --- | --- | --- |
-| Tabelinspectie | BLOCKED | Geen productie DB-read route |
-| Kolominspectie | BLOCKED | Geen productie DB-read route |
-| RLS/policy inspectie | BLOCKED | Geen productie DB-read route |
-| Row counts | BLOCKED | Geen productie DB-read route |
-| Klantdata aanwezig ja/nee | BLOCKED | Niet hard te bevestigen zonder row counts |
-| Migration 013 conflictvrij | BLOCKED | Alleen statisch beoordeeld, DB-read vereist |
+| Tabelinspectie | PARTIAL PASS | `profiles` en `change_requests` bestaan; portal-tabellen ontbreken |
+| Kolominspectie | NEEDS REVIEW | bestaande `profiles` en `change_requests` kolommen moeten compatibel zijn |
+| RLS/policy inspectie | NEEDS REVIEW | policy/function output moet geen afwijkende helpers tonen |
+| Row counts | PASS WITH CAUTION | `profiles`: 1, `change_requests`: 2, overige portal-tabellen ontbreken |
+| Klantdata aanwezig ja/nee | NEEDS CONFIRMATION | bestaande 3 records inhoudelijk bevestigen vóór execution |
+| Migration 013 conflictvrij | NO-GO standalone | `013` kan niet direct draaien omdat basistabellen ontbreken |
 
 Productie schema/RLS execution blijft:
+
+```text
+CONDITIONAL GO FOR FULL MIGRATION ORDER
+```
+
+Direct alleen `013` blijft:
 
 ```text
 NO-GO
@@ -529,5 +597,40 @@ NO-GO
 
 Volgende stap:
 
-- voer bovenstaande read-only SQL uit via Supabase SQL Editor op `maxwebstudio`; of
-- lever tijdelijk een production database connection string lokaal aan en commit deze niet.
+- backup/snapshot bevestigen;
+- inhoud van bestaande `profiles` en `change_requests` records veilig/compatibel verklaren;
+- volledige migration-volgorde uitvoeren, niet alleen `013`;
+- daarna RLS/customer-isolation testplan uitvoeren.
+
+## Backup/Snapshot Checklist Vóór Execution
+
+Vóór productie-SQL:
+
+- [ ] Supabase project `maxwebstudio` geopend, niet `maxwebstudio-test`.
+- [ ] Project ref `yxxahurphdbblkuxoeje` bevestigd.
+- [ ] Supabase backup/snapshot bevestigd.
+- [ ] Schema-only export of metadata snapshot opgeslagen.
+- [ ] Row counts vóór execution vastgelegd.
+- [ ] Inhoud van 1 `profiles` record beoordeeld.
+- [ ] Inhoud van 2 `change_requests` records beoordeeld.
+- [ ] Rollback-approver bevestigd.
+- [ ] Netlify production env vars gecontroleerd zonder secrets te tonen.
+- [ ] Productie-auth blijft dicht.
+- [ ] Demo seed expliciet uitgesloten.
+
+## Post-migration RLS/Customer-isolation Testplan
+
+Na volledige migration-volgorde:
+
+1. Controleer dat alle klantportaal-tabellen bestaan.
+2. Controleer dat RLS aan staat op alle klantportaal-tabellen.
+3. Controleer dat anonymous geen klantdata kan lezen.
+4. Controleer dat een user zonder profile geen klantdata kan lezen.
+5. Controleer Customer A/B isolatie.
+6. Controleer dat customer alleen eigen `customers`, `websites`, `projects`, `quotes`, `invoices`, `subscriptions`, `change_requests`, `client_portal_messages` en `client_portal_notifications` kan lezen.
+7. Controleer dat customer alleen eigen `change_requests` kan aanmaken.
+8. Controleer dat customer alleen eigen `client_portal_messages` kan aanmaken.
+9. Controleer dat customer geen finance, ownership, roles, websites of projects kan wijzigen.
+10. Controleer dat staff/admin policies alleen werken voor bevoegde interne rollen.
+11. Controleer dat service-role niet naar frontend wordt gelekt.
+12. Houd productie-auth dicht totdat bovenstaande checks groen zijn.

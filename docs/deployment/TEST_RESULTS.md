@@ -1540,7 +1540,7 @@ Volgende stap:
 
 ## Epic 2B.5 - Production Read-only SQL Inspection
 
-Status: `BLOCKED / NO PRODUCTION DB READ ROUTE / PRODUCTIE NO-GO`
+Status: `READ COMPLETED / CONDITIONAL GO FULL ORDER / DIRECT 013 NO-GO`
 
 Scope:
 
@@ -1556,14 +1556,14 @@ Validatie:
 
 | Test | Verwacht | Resultaat | Status | Notities |
 | --- | --- | --- | --- | --- |
-| Production DB route | Tijdelijke DB connection string of SQL Editor output beschikbaar | Niet beschikbaar | BLOCKED | `.env.local` bevat alleen staging/test config |
+| Production DB route | Tijdelijke DB connection string of SQL Editor output beschikbaar | Handmatige SQL Editor output aangeleverd | PASS | Geen secrets gelogd |
 | CLI link safety | CLI niet op productie | CLI blijft op `maxwebstudio-test` | PASS | Productie niet gelinkt |
-| Bestaande tabellen | Read-only tabeloverzicht | Niet uitgevoerd | BLOCKED | Productie DB-read nodig |
-| Bestaande kolommen | Read-only kolomoverzicht | Niet uitgevoerd | BLOCKED | Productie DB-read nodig |
-| Bestaande RLS policies | Read-only policy-overzicht | Niet uitgevoerd | BLOCKED | Productie DB-read nodig |
-| Row counts | Counts voor portal-tabellen | Niet uitgevoerd | BLOCKED | Productie DB-read nodig |
-| Echte klantdata | Hard bewijs leeg/veilig | Niet bevestigd | BLOCKED | Vereist row counts |
-| Migration 013 conflicts | Conflict/no-conflict conclusie | Niet hard te bepalen | BLOCKED | Alleen statische inschatting beschikbaar |
+| Bestaande tabellen | Read-only tabeloverzicht | `profiles` en `change_requests` bestaan; portal-basistabellen ontbreken | PARTIAL_PASS | Basismigrations moeten eerst draaien |
+| Bestaande kolommen | Read-only kolomoverzicht | Nog inhoudelijk beoordelen voor bestaande tabellen | NEEDS_REVIEW | Vooral `profiles` en `change_requests` |
+| Bestaande RLS policies | Read-only policy-overzicht | Nog inhoudelijk beoordelen op afwijkende helpers/policies | NEEDS_REVIEW | Geen standalone GO voor `013` |
+| Row counts | Counts voor portal-tabellen | `profiles`: 1, `change_requests`: 2, overige portal-tabellen ontbreken | PASS_WITH_CAUTION | Bestaande records inhoudelijk checken |
+| Echte klantdata | Hard bewijs leeg/veilig | Nog bevestigen voor bestaande 3 records | NEEDS_CONFIRMATION | Geen deletes uitvoeren |
+| Migration 013 conflicts | Conflict/no-conflict conclusie | `013` faalt standalone door ontbrekende tabellen | DIRECT_013_NO_GO | Full migration order is conditional GO |
 
 Read-only SQL voor handmatige uitvoering is toegevoegd aan:
 
@@ -1571,6 +1571,7 @@ Read-only SQL voor handmatige uitvoering is toegevoegd aan:
 
 Conclusie:
 
-- Epic 2B.5 is niet groen omdat er geen productie DB-read route beschikbaar is.
-- Er is geen productie SQL uitgevoerd.
-- Productie schema execution blijft `NO-GO`.
+- Productie is `CONDITIONAL GO` voor de volledige migration-volgorde.
+- Productie is `NO-GO` voor het direct uitvoeren van alleen `013_client_portal_schema_rls_alignment.sql`.
+- Reden: `013` verwacht bestaande canonical tabellen, terwijl `customers`, `websites`, `projects`, `client_portal_messages`, `quotes`, `invoices`, `subscriptions` en `client_portal_notifications` ontbreken.
+- Er is geen productie SQL uitgevoerd door Codex.
