@@ -2633,3 +2633,30 @@ Opgeleverd:
 Volgende aanbevolen stap:
 
 - `Epic 2B.4 - Production Read-only Database Preflight`
+
+## Epic 2B.6 - Production Migration Runbook
+
+Status: `RUNBOOK READY / NO SQL EXECUTED`
+
+Doel:
+
+- exact vastleggen hoe de klantportaal database veilig op productie wordt uitgerold;
+- voorkomen dat alleen `013` standalone wordt uitgevoerd;
+- demo seed uitsluiten;
+- backup, rollback, validatie en release approval vóór execution afdwingen.
+
+Opgeleverd:
+
+- `docs/EPIC_2B_PRODUCTION_MIGRATION_RUNBOOK.md`
+
+Runbookbesluit:
+
+- productie is `CONDITIONAL GO` voor de volledige migration-volgorde;
+- direct alleen `013_client_portal_schema_rls_alignment.sql` blijft `NO-GO`;
+- `006_seed_demo_data_optional.sql` mag niet op productie;
+- `010` t/m `012` vereisen aparte write-release approval;
+- productie-auth blijft dicht totdat schema/RLS/customer-isolation groen is.
+
+Volgende aanbevolen stap:
+
+- `Epic 2B.7 - Production Migration Execution Approval`

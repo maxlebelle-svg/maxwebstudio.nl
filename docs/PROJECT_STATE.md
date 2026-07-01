@@ -3253,3 +3253,32 @@ Conclusie:
 - Direct alleen migration `013_client_portal_schema_rls_alignment.sql` uitvoeren blijft `NO-GO`.
 - Vóór execution moeten backup/snapshot, bestaande recordbeoordeling, env-scheiding en rollback approval groen zijn.
 - Productie-auth blijft dicht totdat schema/RLS en customer-isolation checks groen zijn.
+
+## Epic 2B.6 - Production Migration Runbook
+
+Status: `RUNBOOK READY / NO SQL EXECUTED / PRODUCTION AUTH CLOSED`
+
+Toegevoegd:
+
+- `docs/EPIC_2B_PRODUCTION_MIGRATION_RUNBOOK.md`
+
+Vastgelegd:
+
+- preflight checklist;
+- backup/snapshot stap;
+- exacte migration-volgorde;
+- welke bestanden wel en niet op productie mogen draaien;
+- controle na elke stap;
+- rollback per stap;
+- post-migration validatie;
+- RLS/customer-isolation testplan;
+- criteria voor wanneer productie-auth open mag;
+- release approval checklist.
+
+Belangrijkste besluit:
+
+- productie krijgt alleen een conditional GO voor de volledige migration-volgorde;
+- direct alleen `013` blijft NO-GO;
+- `006_seed_demo_data_optional.sql` is uitgesloten;
+- `010` t/m `012` blijven apart goed te keuren voor operational/admin write rollout;
+- productie-auth blijft dicht tot schema, RLS en customer-isolation volledig groen zijn.
