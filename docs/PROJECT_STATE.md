@@ -3661,3 +3661,34 @@ Open:
 - klant moet de activatielink handmatig openen en zelf een wachtwoord instellen;
 - daarna live login, portalweergave zonder demo-fallback en logout valideren;
 - Resend live verzending pas koppelen na deze volledige loginvalidatie.
+
+## Sprint 3B - Admin Sales Pipeline Blueprint
+
+Status: `BLUEPRINT / NO LIVE AUTOMATION`
+
+Doel:
+
+- het adminportaal laten doorgroeien van klantbeheer naar commerciële motor;
+- de route `lead -> offerte -> verkocht -> klantportaal actief` productmatig vastleggen;
+- de bestaande live customer provisioning gebruiken als eindpunt van de salesflow.
+
+Opgeleverd:
+
+- nieuw document: `docs/SPRINT_3B_ADMIN_SALES_PIPELINE.md`;
+- minimale pipeline-statussen en leadvelden;
+- admin UX-flow voor lead aanmaken, bellen/loggen, notities, follow-up, offertevoorbereiding en verkoop;
+- koppeling naar de bestaande server-side klant-aanmaak wizard;
+- grenzen vastgelegd: geen VoIP, Mollie, Resend live, AI, Leadfinder of Sales Portal in deze blueprint.
+
+Veiligheidsstatus:
+
+- geen codewijzigingen;
+- geen SQL;
+- geen productiegegevens gewijzigd;
+- service-role blijft server-side;
+- live klantprovisioning blijft de enige route om een verkochte lead klantportaal-klaar te maken.
+
+Aanbevolen vervolg:
+
+- `Sprint 3B.1 - Lead Pipeline UI MVP`;
+- daarna pas leadnotities, call log, offerteplaceholder en lead-to-customer prefill bouwen.

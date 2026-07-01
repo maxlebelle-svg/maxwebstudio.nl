@@ -2918,3 +2918,42 @@ Volgende stap:
 3. Controleren dat het klantportaal echte production customer-context toont zonder demo-fallback.
 4. Logout valideren.
 5. Daarna pas Resend live uitnodigingsmails koppelen.
+
+## Sprint 3B - Admin Sales Pipeline Blueprint
+
+Status: `BLUEPRINT / COMMERCIAL ENGINE NEXT`
+
+Doel:
+
+- vastleggen hoe het adminportaal de volledige salesflow ondersteunt;
+- de brug maken van lead naar actieve klant;
+- voorkomen dat verkoop, klant-aanmaak en klantportaalactivatie losse handmatige stappen blijven.
+
+Salesflow:
+
+```text
+Nieuwe lead
+-> Bellen
+-> Notities
+-> Offerte
+-> Verkocht
+-> Klant-aanmaak wizard
+-> Klant actief
+```
+
+Opgeleverd:
+
+- blueprint: `docs/SPRINT_3B_ADMIN_SALES_PIPELINE.md`;
+- minimale pipeline-statussen;
+- leadvelden;
+- admin UX-flow;
+- koppeling naar bestaande customer onboarding wizard;
+- duidelijke out-of-scope grenzen voor VoIP, Mollie, Resend live, AI, Leadfinder en Sales Portal.
+
+Aanbevolen vervolg:
+
+1. `Sprint 3B.1 - Lead Pipeline UI MVP`.
+2. `Sprint 3B.2 - Lead Notes & Call Log MVP`.
+3. `Sprint 3B.3 - Quote Preparation Placeholder`.
+4. `Sprint 3B.4 - Convert Lead To Customer Wizard`.
+5. `Sprint 3B Review`.
