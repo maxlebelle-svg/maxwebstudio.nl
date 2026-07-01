@@ -2241,3 +2241,30 @@ Bewust niet uitgevoerd:
 - geen RLS-wijzigingen;
 - geen productie-auth;
 - geen echte klantdata.
+
+## Klantportaal v1B - Staging Login/Logout Test
+
+Status: `PARTIAL PASS / GELDIGE LOGIN NOG BLOCKED / PRODUCTIE NO-GO`
+
+Gecontroleerd:
+
+- Staging Auth endpoint is bereikbaar via de publieke Supabase config.
+- Dummy/verkeerde login wordt correct geblokkeerd met een Auth-fout.
+- Normale bezoekers blijven op de veilige fallback zolang Auth niet live is.
+- Er zijn geen testaccountcredentials in `.env.local`, dus geldige login/logout is bewust niet uitgevoerd.
+
+Nog geblokkeerd:
+
+- geldig staging testaccount voor Customer A;
+- geldig staging testaccount voor Customer B;
+- logout met echte sessie;
+- password reset met staging-mail;
+- Customer A/B Auth-isolatie met echte sessies.
+
+Bewust niet uitgevoerd:
+
+- geen Supabase Auth activatie;
+- geen SQL;
+- geen RLS-wijzigingen;
+- geen productie-auth;
+- geen echte klantdata.

@@ -1232,3 +1232,36 @@ Conclusie:
 - Klantportaal v1A is klaar voor de volgende stap: echte staging Auth wiring met testaccounts.
 - Productie blijft `NO-GO`.
 - Echte login/logout, password reset en Customer A/B Auth-isolatie moeten nog met stagingaccounts worden uitgevoerd.
+
+## Klantportaal v1B - Staging Login/Logout Test
+
+Status: `PARTIAL PASS / GELDIGE LOGIN GEBLOKKEERD DOOR ONTBREKEN TESTACCOUNT / PRODUCTIE NO-GO`
+
+Scope:
+
+- Alleen staging/local env.
+- Alleen publieke Supabase Auth endpoint met anon key.
+- Geen productie-auth geactiveerd.
+- Geen SQL.
+- Geen RLS-wijzigingen.
+- Geen echte klantdata.
+
+Uitgevoerde checks:
+
+| Test | Verwacht | Resultaat | Status | Notities |
+| --- | --- | --- | --- | --- |
+| Staging config aanwezig | Testconfig beschikbaar zonder waarden te tonen | `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `APP_ENV=test`, `APP_ENVIRONMENT=test` aanwezig | PASS | Geen waarden gelogd |
+| Testaccountcredentials aanwezig | Geldig staging testaccount beschikbaar | Geen testaccount e-mail/wachtwoord keys aanwezig in `.env.local` | BLOCKED | Geldige login niet veilig uitvoerbaar zonder credentials |
+| Supabase Auth endpoint bereikbaar | Endpoint bereikbaar op staging URL | Endpoint reageert | PASS | Geen waarden gelogd |
+| Verkeerd wachtwoord/dummy account | Auth blokkeert foutieve login | HTTP 400 met errorpayload | PASS | Geen geldig account gebruikt |
+| Logout met geldige sessie | Sessie kan worden beëindigd | Niet uitgevoerd | BLOCKED | Vereist geldige staging sessie |
+| Klantportaal alleen met geldige sessie | Zonder sessie geen echte klantdata | Huidige portal blijft demo/fallback en production Auth uit | PASS | Geen klantdata zichtbaar gemaakt |
+| Niet-ingelogde bezoeker fallback | Bezoeker ziet geen technische Auth-details | Login blijft `Binnenkort beschikbaar` zolang Auth niet live is | PASS | Codepad ongewijzigd |
+| Password reset | Alleen testen wanneer staging resetmail veilig is ingericht | Niet uitgevoerd | BLOCKED | Wacht op staging testaccount en mailconfig |
+
+Conclusie:
+
+- Staging Auth endpoint is bereikbaar en blokkeert foutieve login.
+- Echte login/logout is nog niet bewezen, omdat er geen veilige testaccountcredentials beschikbaar zijn.
+- Productie blijft `NO-GO`.
+- Volgende stap: staging testaccounts en tijdelijke testcredentials veilig beschikbaar maken buiten de repo.

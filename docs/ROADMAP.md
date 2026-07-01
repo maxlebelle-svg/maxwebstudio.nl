@@ -1910,3 +1910,25 @@ Open blockers:
 Volgende stap:
 
 - `Klantportaal v1B - Staging Auth Wiring` alleen op test/staging.
+
+### Klantportaal v1B - Staging Login/Logout Test
+
+Status: `PARTIAL PASS`
+
+Resultaat:
+
+- staging Auth endpoint bereikbaar;
+- foutieve login wordt geblokkeerd;
+- normale bezoekers blijven op fallback;
+- geldige login/logout is nog niet getest door ontbrekende staging testaccountcredentials.
+
+Open blockers:
+
+1. Customer A/B testaccounts veilig klaarzetten.
+2. Tijdelijke testcredentials buiten de repo beschikbaar maken.
+3. Login/logout opnieuw uitvoeren met geldige staging sessie.
+4. Password reset en customer isolation daarna testen.
+
+Productie blijft:
+
+- `NO-GO`.
