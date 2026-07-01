@@ -30,6 +30,7 @@ Huidige production read-only conclusie:
 - productie is `CONDITIONAL GO` voor de volledige migration-volgorde;
 - productie is `NO-GO` voor alleen `013_client_portal_schema_rls_alignment.sql`.
 - productie is `NO-GO` voor direct `001_schema_tables.sql` zolang oudere `profiles` en `change_requests` niet eerst zijn uitgelijnd.
+- `001_schema_tables.sql` is te breed voor de eerste klantportaal-livegang en wordt vervangen door `001_client_portal_baseline.sql`.
 
 ## Releasebesluit
 
@@ -45,6 +46,7 @@ Niet toegestaan:
 
 - alleen `013` direct uitvoeren;
 - `001_schema_tables.sql` direct uitvoeren zonder `000_production_existing_tables_alignment.sql`;
+- `001_schema_tables.sql` uitvoeren tijdens de eerste minimale klantportaal-livegang;
 - `006_seed_demo_data_optional.sql` uitvoeren;
 - demo-data seeden;
 - productie-auth openzetten vóór groene validatie;
@@ -144,221 +146,70 @@ Rollback:
 Bestand:
 
 ```text
-supabase/migration-drafts/001_schema_tables.sql
+supabase/migration-drafts/001_client_portal_baseline.sql
 ```
 
 Doel:
 
-- ontbrekende canonical tabellen aanmaken;
-- bestaande `profiles` en `change_requests` ongemoeid laten waar ze al bestaan;
-- basisconstraints en timestamps voorbereiden.
+- alleen de minimale klantportaal-baseline aanmaken;
+- `customers`, `websites`, `projects`, `client_portal_messages` en `client_portal_notifications` aanmaken;
+- bestaande `change_requests` verder veilig aanvullen voor klantportaalgebruik;
+- `set_updated_at` helper/triggers alleen voor deze beperkte tabellenset toevoegen.
 
 Controle na stap:
 
 - `customers` bestaat;
 - `websites` bestaat;
 - `projects` bestaat;
-- `quotes` bestaat;
-- `invoices` bestaat;
-- `subscriptions` bestaat;
 - `client_portal_messages` bestaat;
 - `client_portal_notifications` bestaat;
 - `profiles` bestaat nog;
 - `change_requests` bestaat nog.
+- finance-tabellen bestaan nog niet door deze stap;
+- CRM/AI/logging tabellen bestaan nog niet door deze stap.
 
 Rollback:
 
 - Bij fout vóór commit: transactie faalt en wordt niet toegepast.
 - Bij fout na gedeeltelijke toepassing: stop, gebruik Supabase backup/snapshot; verwijder geen data handmatig.
 
-### Stap 3
+## Stopmoment Na Baseline
 
-Bestand:
+Na `001_client_portal_baseline.sql` stopt deze eerste productie-uitrol.
 
-```text
-supabase/migration-drafts/002_indexes.sql
-```
+Niet automatisch doorgaan met bestaande brede migrations:
 
-Doel:
+- `002_indexes.sql`
+- `003_rls_enablement.sql`
+- `004_rls_policies.sql`
+- `005_audit_logging_foundation.sql`
+- `007_runtime_role_grants.sql`
+- `008_change_request_customer_ownership.sql`
+- `009_client_portal_message_customer_ownership.sql`
+- `013_client_portal_schema_rls_alignment.sql`
 
-- indexes voor performance, joins en RLS-readiness.
+Reden:
 
-Controle na stap:
+- deze bestanden zijn nog gebaseerd op het brede platformschema;
+- ze verwijzen naar uitgesloten tabellen zoals leads, finance, files, CRM, AI, settings en logs;
+- voor de minimale klantportaal-livegang moeten hierna aparte minimal-scope drafts komen.
 
-- indexes bestaan zonder fout;
-- geen indexfouten op ontbrekende kolommen.
+Volgende stap na baseline-validatie:
 
-Rollback:
-
-- Bij indexfout stoppen en blocker documenteren.
-- Geen handmatige schema-patches zonder review.
-
-### Stap 4
-
-Bestand:
-
-```text
-supabase/migration-drafts/003_rls_enablement.sql
-```
-
-Doel:
-
-- RLS aanzetten op canonical tabellen.
-
-Controle na stap:
-
-- RLS staat aan op alle klantportaal-tabellen.
-
-Rollback:
-
-- Bij fout stoppen.
-- Productie-auth blijft dicht.
-- Herstel via backup/snapshot of expliciet reviewed RLS rollback.
-
-### Stap 5
-
-Bestand:
-
-```text
-supabase/migration-drafts/004_rls_policies.sql
-```
-
-Doel:
-
-- basis RLS helper functions en policies plaatsen.
-
-Controle na stap:
-
-- helper functions bestaan;
-- policies bestaan;
-- anonymous toegang is niet per ongeluk open.
-
-Rollback:
-
-- Bij policyfout stoppen.
-- Geen policy versoepelen als snelle fix.
-
-### Stap 6
-
-Bestand:
-
-```text
-supabase/migration-drafts/005_audit_logging_foundation.sql
-```
-
-Doel:
-
-- audit logging foundation voorbereiden.
-
-Controle na stap:
-
-- audit foundation objecten bestaan;
-- geen secrets of gevoelige payloads verplicht gemaakt.
-
-Rollback:
-
-- Bij fout stoppen en audit foundation opnieuw reviewen.
-
-### Stap 7
-
-Bestand:
-
-```text
-supabase/migration-drafts/007_runtime_role_grants.sql
-```
-
-Doel:
-
-- minimale runtime grants zodat RLS policies geëvalueerd kunnen worden.
-
-Controle na stap:
-
-- `authenticated` heeft minimale tabelrechten;
-- RLS blijft leidend;
-- grants maken geen brede data-openstelling.
-
-Rollback:
-
-- Bij te brede grant: stop, revoke na review of restore snapshot.
-
-### Stap 8
-
-Bestand:
-
-```text
-supabase/migration-drafts/008_change_request_customer_ownership.sql
-```
-
-Doel:
-
-- change request ownership/customer spoofing fix toepassen.
-
-Controle na stap:
-
-- customer kan alleen eigen wijzigingsverzoeken aanmaken/lezen;
-- spoofing van `customer_id` wordt geblokkeerd.
-
-Rollback:
-
-- Bij ownershipfout productie-auth dicht houden en policy herstellen via review.
-
-### Stap 9
-
-Bestand:
-
-```text
-supabase/migration-drafts/009_client_portal_message_customer_ownership.sql
-```
-
-Doel:
-
-- client portal message ownership/customer spoofing fix toepassen.
-
-Controle na stap:
-
-- customer kan alleen eigen berichten aanmaken/lezen;
-- sender/customer spoofing wordt geblokkeerd.
-
-Rollback:
-
-- Bij ownershipfout productie-auth dicht houden en policy herstellen via review.
-
-### Stap 10
-
-Bestand:
-
-```text
-supabase/migration-drafts/013_client_portal_schema_rls_alignment.sql
-```
-
-Doel:
-
-- klantportaal schema/RLS alignment afronden;
-- portalvelden toevoegen;
-- strictere customer-facing policies plaatsen;
-- klantportaal read/write basis klaarmaken.
-
-Controle na stap:
-
-- `profiles.customer_id` bestaat;
-- `customers.internal_notes` bestaat;
-- website portalvelden bestaan;
-- project notes velden bestaan;
-- `change_requests.type` bestaat;
-- `client_portal_messages.auth_user_id` bestaat;
-- notificatie CTA/related velden bestaan;
-- policies uit `013` bestaan;
-- helper functions bestaan;
-- runtime grants zijn aanwezig.
-
-Rollback:
-
-- Bij fout direct stoppen.
-- Productie-auth dicht houden.
-- Restore backup/snapshot als schema-consistentie geraakt is.
-- Alleen policy rollback uitvoeren na review.
+- maak minimale index/RLS/policy/grants drafts voor alleen `profiles`, `customers`, `websites`, `projects`, `change_requests`, `client_portal_messages` en `client_portal_notifications`.
 
 ## Niet Uitvoeren
+
+Niet uitvoeren op productie:
+
+```text
+supabase/migration-drafts/001_schema_tables.sql
+```
+
+Reden:
+
+- te breed voor de eerste klantportaal-livegang;
+- bevat leads, crm_tasks, finance, files, AI drafts, settings, demo_emails, activity/import/audit logs en brede trigger setup.
 
 Niet uitvoeren op productie:
 

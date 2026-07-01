@@ -3310,5 +3310,40 @@ Patchgedrag:
 Nieuwe execution-volgorde:
 
 - eerst `000_production_existing_tables_alignment.sql`;
-- daarna pas `001_schema_tables.sql`;
-- direct `001` of direct `013` blijft NO-GO.
+- daarna `001_client_portal_baseline.sql`;
+- direct `001_schema_tables.sql` of direct `013` blijft NO-GO.
+
+## Epic 2B.8 - Minimal Client Portal Production Baseline
+
+Status: `DRAFT CREATED / NO SQL EXECUTED / PRODUCTION AUTH CLOSED`
+
+Toegevoegd:
+
+- `supabase/migration-drafts/001_client_portal_baseline.sql`
+
+Waarom:
+
+- `001_schema_tables.sql` is te breed voor de eerste klantportaal-livegang;
+- de eerste productie-uitrol heeft alleen klantportaal-basistabellen nodig;
+- CRM, Leadfinder, finance, AI, files, settings en logs worden later apart uitgerold.
+
+Bevat alleen:
+
+- `customers`;
+- `websites`;
+- `projects`;
+- verdere veilige alignment van bestaande `change_requests`;
+- `client_portal_messages`;
+- `client_portal_notifications`;
+- `set_updated_at` helper/triggers voor deze beperkte scope.
+
+Bewust niet meegenomen:
+
+- leads;
+- crm_tasks;
+- quotes/invoices/subscriptions;
+- files;
+- ai_drafts/ai_assistant_drafts;
+- settings;
+- demo_emails;
+- activity_logs/import_logs/audit_logs.

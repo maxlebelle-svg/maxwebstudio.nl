@@ -1,6 +1,6 @@
 # Epic 2B.3 - Production Schema Deployment Readiness
 
-Status: `CONDITIONAL GO / FULL MIGRATION ORDER ONLY / DIRECT 013 NO-GO`
+Status: `CONDITIONAL GO / MINIMAL CLIENT PORTAL BASELINE ONLY / DIRECT 013 NO-GO`
 
 Doel:
 
@@ -31,7 +31,7 @@ Bevinding:
 | Staging gescheiden van productie | PASS | CLI-link staat op `maxwebstudio-test` |
 | Lokale env gescheiden van productie | PASS | `.env.local` gebruikt test/staging context |
 | Service role niet naar frontend | PASS | `client-auth-config` geeft alleen `SUPABASE_URL` en `SUPABASE_ANON_KEY` terug |
-| Migration draft aanwezig | PASS | `supabase/migration-drafts/013_client_portal_schema_rls_alignment.sql` |
+| Minimale baseline draft aanwezig | PASS | `supabase/migration-drafts/001_client_portal_baseline.sql` |
 | Rollback-notes aanwezig | PASS | `docs/deployment/ROLLBACK_PLAN.md` |
 | Demo seed uitgesloten | PASS | `006_seed_demo_data_optional.sql` mag niet op productie |
 | Huidige productie-tabellen | PARTIAL PASS | `profiles` en `change_requests` bestaan; klantportaal-basistabellen ontbreken |
@@ -41,9 +41,9 @@ Bevinding:
 
 Conclusie:
 
-- Productie is `CONDITIONAL GO` voor de volledige migration-volgorde.
+- Productie is `CONDITIONAL GO` voor de minimale klantportaal-baseline-volgorde.
 - Productie is `NO-GO` voor het direct uitvoeren van alleen `013_client_portal_schema_rls_alignment.sql`.
-- Productie is `NO-GO` voor direct `001_schema_tables.sql` zonder de production alignment patch.
+- Productie is `NO-GO` voor direct `001_schema_tables.sql`; deze is te breed voor de eerste klantportaal-livegang.
 - Reden: migration `013` verwacht bestaande canonical tabellen zoals `customers`, `websites`, `projects`, `client_portal_messages`, `quotes`, `invoices`, `subscriptions` en `client_portal_notifications`.
 
 ## Read-only Productie Inspectie
@@ -101,24 +101,31 @@ where table_schema = 'public'
 
 Als relevante kolommen bestaan, controleer dat productie geen demo/staging records bevat.
 
-## Uitvoeringsvolgorde Voor Conditional GO
+## Uitvoeringsvolgorde Voor Minimale Klantportaal-livegang
 
-Productie mag alleen deze volledige volgorde gebruiken na expliciete approval.
+Productie mag voor de eerste minimale klantportaal-livegang alleen deze volgorde gebruiken na expliciete approval.
 
 0. `000_production_existing_tables_alignment.sql`
-1. `001_schema_tables.sql`
-2. `002_indexes.sql`
-3. `003_rls_enablement.sql`
-4. `004_rls_policies.sql`
-5. `005_audit_logging_foundation.sql`
-6. `007_runtime_role_grants.sql`
-7. `008_change_request_customer_ownership.sql`
-8. `009_client_portal_message_customer_ownership.sql`
-9. `013_client_portal_schema_rls_alignment.sql`
+1. `001_client_portal_baseline.sql`
 
 Niet uitvoeren op productie:
 
+- `001_schema_tables.sql`
+- `002_indexes.sql`
+- `003_rls_enablement.sql`
+- `004_rls_policies.sql`
+- `005_audit_logging_foundation.sql`
 - `006_seed_demo_data_optional.sql`
+- `007_runtime_role_grants.sql`
+- `008_change_request_customer_ownership.sql`
+- `009_client_portal_message_customer_ownership.sql`
+- `013_client_portal_schema_rls_alignment.sql`
+
+Reden:
+
+- deze bestaande drafts zijn nog breed en verwijzen naar tabellen buiten de minimale klantportaal-scope.
+- na `001_client_portal_baseline.sql` volgt eerst validatie.
+- daarna worden aparte minimal-scope index/RLS/policy/grant drafts gemaakt.
 
 Nog apart goedkeuren voordat ze op productie mogen:
 
@@ -152,15 +159,17 @@ Migration `013_client_portal_schema_rls_alignment.sql` begint met `alter table` 
 Correcte aanpak:
 
 1. Eerst `000_production_existing_tables_alignment.sql` om oudere `profiles` en `change_requests` tabellen uit te lijnen.
-2. Daarna `001_schema_tables.sql` om ontbrekende canonical tabellen aan te maken.
-3. Daarna `002` t/m `009` voor indexes, RLS, policies, audit en ownership hardening.
-4. Daarna pas `013` voor klantportaal schema/RLS alignment.
+2. Daarna `001_client_portal_baseline.sql` om alleen de minimale klantportaal-tabellen aan te maken.
+3. Stoppen en valideren.
+4. Daarna pas nieuwe minimal-scope indexes/RLS/policies/grants drafts maken voor de klantportaal-tabellen.
 
-### Waarom `001` niet direct mag draaien
+### Waarom `001_schema_tables.sql` niet direct mag draaien
 
 De bestaande productie-tabellen `profiles` en `change_requests` lijken ouder dan het canonical schema.
 
 `001_schema_tables.sql` gebruikt `create table if not exists`. PostgreSQL vult bestaande tabellen daardoor niet aan met ontbrekende kolommen.
+
+Daarnaast is `001_schema_tables.sql` te breed voor de eerste klantportaal-livegang. Het bevat onder andere CRM-, Leadfinder-, finance-, AI-, settings-, demo- en logtabellen.
 
 Daarom zou direct `001` risico geven op latere fouten in `002` of `013`, bijvoorbeeld bij indexes/policies op:
 
@@ -174,6 +183,7 @@ Eerst nodig:
 
 ```text
 000_production_existing_tables_alignment.sql
+001_client_portal_baseline.sql
 ```
 
 ### Niet uitvoeren op productie
@@ -277,7 +287,7 @@ Direct alleen `013_client_portal_schema_rls_alignment.sql` uitvoeren blijft:
 NO-GO
 ```
 
-Direct `001_schema_tables.sql` uitvoeren zonder `000_production_existing_tables_alignment.sql` blijft:
+Direct `001_schema_tables.sql` uitvoeren blijft:
 
 ```text
 NO-GO

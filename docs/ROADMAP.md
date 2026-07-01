@@ -2682,3 +2682,30 @@ Belangrijk:
 - geen productie-auth;
 - geen NOT NULL constraints forceren op bestaande records;
 - volledige production migration-volgorde start nu met `000`, daarna pas `001`.
+
+## Epic 2B.8 - Minimal Client Portal Production Baseline
+
+Status: `DRAFT CREATED / NO SQL EXECUTED`
+
+Doel:
+
+- `001_schema_tables.sql` vervangen door een minimale klantportaal-baseline voor de eerste livegang;
+- alleen tabellen aanmaken die nodig zijn voor het klantportaal v1.
+
+Opgeleverd:
+
+- `supabase/migration-drafts/001_client_portal_baseline.sql`
+
+Scope:
+
+- `customers`;
+- `websites`;
+- `projects`;
+- veilige verdere alignment van bestaande `change_requests`;
+- `client_portal_messages`;
+- `client_portal_notifications`;
+- `set_updated_at` helper/triggers alleen voor deze tabellen.
+
+Bewust uitgesloten:
+
+- leads, CRM, finance, files, AI, settings, demo emails, activity logs, import logs en audit logs.
