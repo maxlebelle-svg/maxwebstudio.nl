@@ -2199,3 +2199,42 @@ Bewust beperkt:
 - geen RLS-wijzigingen;
 - geen productiegegevens;
 - geldige staging-login is niet opnieuw uitgevoerd zonder testwachtwoord in deze sessie.
+
+## Epic 2 - Production Rollout Plan
+
+Status: `PLANNED / NO PRODUCTION CHANGES`
+
+Doel:
+
+- productie-uitrol van klantportaal en Digital Account Manager veilig voorbereiden;
+- vastleggen wanneer productie `GO` of `NO-GO` is;
+- voorkomen dat demo/staging/testdata in productie belandt.
+
+Toegevoegd:
+
+- `docs/EPIC_2_PRODUCTION_ROLLOUT_PLAN.md`
+
+Vastgelegd:
+
+- Production Definition;
+- Production Go/No-Go Criteria;
+- productie Auth-plan;
+- echte klantdata en klantprofielkoppeling;
+- Supabase canonical tabellen voor rollout;
+- RLS/security-eisen;
+- adminbeheer;
+- migratievolgorde;
+- rollback;
+- testplan;
+- release approval;
+- roadmapregel: iedere nieuwe feature moet directe klantwaarde opleveren of tijd besparen voor Max Webstudio.
+
+Bewust beperkt:
+
+- geen code;
+- geen SQL;
+- geen productie-auth activatie;
+- geen echte klantdatawijzigingen;
+- geen OpenAI;
+- geen Mollie/Resend;
+- geen runtimewijzigingen.

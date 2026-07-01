@@ -344,6 +344,34 @@ Bewust niet uitgevoerd:
 - geen productiegegevens;
 - geldige staging-login is niet opnieuw uitgevoerd zonder testwachtwoord in deze sessie.
 
+## Epic 2 - Production Rollout Plan
+
+Status: `PLANNED / NO PRODUCTION CHANGES`
+
+Het productie-uitrolplan voor klantportaal en Digital Account Manager is vastgelegd.
+
+Toegevoegd:
+
+- `docs/EPIC_2_PRODUCTION_ROLLOUT_PLAN.md`
+
+Belangrijkste beslissingen:
+
+- productie bevat uitsluitend echte klanten, echte klantprofielen, echte domeinen, echte websites, echte hostinginformatie, echte abonnementen, echte facturen en echte notificaties;
+- productie bevat nooit demo-data, staging-accounts, testklanten, placeholder-content of mock responses;
+- productie-auth blijft dicht totdat go/no-go groen is;
+- Customer A/B-isolatie, password reset, session restore, logout, audit logging, backups en rollback zijn verplichte releasecriteria;
+- iedere nieuwe feature moet direct klantwaarde opleveren of tijd besparen voor Max Webstudio.
+
+Bewust niet uitgevoerd:
+
+- geen code;
+- geen SQL;
+- geen productie-auth activatie;
+- geen echte klantdatawijzigingen;
+- geen OpenAI;
+- geen Mollie/Resend;
+- geen runtimewijzigingen.
+
 ## Sterke Punten
 
 - Duidelijke premium positionering.
