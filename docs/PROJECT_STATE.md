@@ -867,6 +867,47 @@ Volgende aanbevolen stap:
 
 - `Epic 2B.2 - Draft Customer Portal Schema/RLS Migrations`
 
+## Epic 2B.2 - Create Staging Schema Migration Draft
+
+Status: `DRAFT CREATED / NOT EXECUTED / PRODUCTIE NO-GO`
+
+Er is een uitvoerbare Supabase migration draft gemaakt voor klantportaal schema/RLS alignment. De draft is bedoeld voor staging/test en is nog niet uitgevoerd.
+
+Toegevoegd:
+
+- `supabase/migration-drafts/013_client_portal_schema_rls_alignment.sql`
+
+Inhoud:
+
+- schema alignment voor klantportaalvelden;
+- foreign key alignment voor `profiles.customer_id` en `client_portal_messages.auth_user_id`;
+- indexes voor customer-scoped reads;
+- RLS helper `current_customer_id()`;
+- aangescherpte customer read policies;
+- create-only policies voor `change_requests` en `client_portal_messages`;
+- read-only policies voor `quotes`, `invoices`, `subscriptions` en `client_portal_notifications`;
+- minimale grants voor `authenticated`;
+- server-side-only afbakening voor `service_role`.
+
+Execution/rollback:
+
+- execution stappen en rollback zijn vastgelegd in `docs/EPIC_2B_SUPABASE_SCHEMA_RLS_PLAN.md`;
+- staging apply vereist expliciete approval;
+- productie blijft dicht tot staging evidence groen is.
+
+Bewust niet uitgevoerd:
+
+- geen SQL uitgevoerd;
+- geen staging apply;
+- geen productie-auth activatie;
+- geen echte klantdata;
+- geen seed/testdata;
+- geen runtime codewijzigingen.
+
+Volgende aanbevolen stap:
+
+- `Epic 2B.3 - Staging Migration Apply & RLS Validation`
+
 ## Sterke Punten
 
 - Duidelijke premium positionering.

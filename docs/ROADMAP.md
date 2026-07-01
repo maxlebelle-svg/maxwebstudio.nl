@@ -2567,3 +2567,42 @@ Bewust niet uitgevoerd:
 Volgende aanbevolen stap:
 
 - `Epic 2B.2 - Draft Customer Portal Schema/RLS Migrations`
+
+## Epic 2B.2 - Create Staging Schema Migration Draft
+
+Status: `DRAFT CREATED / NOT EXECUTED / STAGING ONLY`
+
+Doel:
+
+- een uitvoerbare staging/test migration klaarzetten voor klantportaal schema/RLS alignment;
+- nog niets uitvoeren op staging of productie;
+- schema, indexes, RLS helpers, policies en grants reviewbaar maken.
+
+Opgeleverd:
+
+- `supabase/migration-drafts/013_client_portal_schema_rls_alignment.sql`
+
+Bevat:
+
+- schema alignment voor `profiles`, `customers`, `websites`, `projects`, `change_requests`, `client_portal_messages` en `client_portal_notifications`;
+- indexes voor customer-scoped reads;
+- RLS helpers waaronder `current_customer_id()`;
+- RLS enablement en policies;
+- customer-isolatie voor alle portal reads;
+- create-only policies voor wijzigingsverzoeken en berichten;
+- read-only finance/notificatie policies;
+- minimale runtime grants;
+- service-role afbakening als server-side only.
+
+Bewust niet uitgevoerd:
+
+- geen SQL uitgevoerd;
+- geen staging apply;
+- geen productie-auth;
+- geen echte klantdata;
+- geen seed/testdata;
+- geen runtime codewijzigingen.
+
+Volgende aanbevolen stap:
+
+- `Epic 2B.3 - Staging Migration Apply & RLS Validation`

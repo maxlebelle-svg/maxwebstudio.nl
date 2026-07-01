@@ -715,3 +715,71 @@ Doel van die stap:
 - dit plan omzetten naar draft SQL-bestanden;
 - nog steeds niets uitvoeren;
 - reviewbare migrations klaarzetten voor staging execution.
+
+## Epic 2B.2 - Staging Schema Migration Draft
+
+Status: `DRAFT CREATED / NOT EXECUTED / STAGING ONLY`
+
+Toegevoegd:
+
+- `supabase/migration-drafts/013_client_portal_schema_rls_alignment.sql`
+
+Doel:
+
+- klantportaalvelden toevoegen die na Epic 2A nodig zijn;
+- RLS helpers en policies aanscherpen rond `current_customer_id()`;
+- runtime grants beperken tot wat het klantportaal nodig heeft;
+- staging/test voorbereiden zonder productie te raken.
+
+Belangrijke inhoud:
+
+- schema alignment voor `profiles.customer_id`;
+- extra klantportaalvelden op `websites`, `projects`, `change_requests`, `client_portal_messages` en `client_portal_notifications`;
+- indexes voor customer-scoped reads;
+- RLS helpers:
+  - `current_profile_id()`;
+  - `current_customer_id()`;
+  - `current_app_role()`;
+  - `has_app_role()`;
+  - `is_admin_role()`;
+  - `is_staff_role()`;
+  - `owns_customer()`;
+- RLS enablement voor klantportaal-tabellen;
+- strikte customer read policies;
+- expliciete cleanup van oudere brede update-policies die niet bij deze rollout horen;
+- create-only customer policies voor `change_requests` en `client_portal_messages`;
+- read-only customer policies voor finance en notificaties;
+- minimale grants voor `authenticated`;
+- server-side-only afbakening voor `service_role`.
+
+Execution stappen voor staging:
+
+1. Bevestig dat de CLI aan `maxwebstudio-test` gekoppeld is.
+2. Bevestig `APP_ENV=test` en `APP_ENVIRONMENT=test`.
+3. Maak een schema snapshot of backup.
+4. Review `013_client_portal_schema_rls_alignment.sql`.
+5. Voer alleen deze draft uit op staging/test na expliciete approval.
+6. Test Customer A/B isolation.
+7. Test no-profile en anonymous blocks.
+8. Test klantportaal reads voor websites/projects/change requests/messages/finance/notifications.
+9. Test customer create voor wijzigingsverzoeken en berichten.
+10. Leg evidence vast in `docs/deployment/TEST_RESULTS.md`.
+
+Rollback:
+
+1. Stop direct bij recursie, permission denied regressie of cross-customer access.
+2. Drop de policies uit `013_client_portal_schema_rls_alignment.sql`.
+3. Re-apply de vorige bewezen policies uit de eerdere staging baseline indien nodig.
+4. Revoke de extra grants voor `authenticated` indien ze de blocker veroorzaken.
+5. Laat toegevoegde nullable kolommen staan tenzij schema rollback expliciet noodzakelijk is.
+6. Herstel vanaf schema snapshot als RLS rollback onvoldoende is.
+7. Documenteer rollback evidence in `TEST_RESULTS.md`.
+
+Bewust niet uitgevoerd:
+
+- geen SQL uitgevoerd;
+- geen staging apply;
+- geen productie-auth activatie;
+- geen echte klantdata;
+- geen seed/testdata aangemaakt;
+- geen runtime code gewijzigd.
