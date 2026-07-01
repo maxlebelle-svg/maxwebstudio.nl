@@ -75,6 +75,23 @@ Niet toegestaan:
 - browser localStorage met service role key;
 - frontend JavaScript met hardcoded secrets.
 
+## Lokale testvoorwaarde
+
+`public/login.html` kan `.env.local` niet zelf lezen. De browser ziet alleen wat via een veilige runtime-config of serverless endpoint wordt aangeboden.
+
+Voor lokale stagingtests moet daarom een van deze routes actief zijn:
+
+1. Netlify Dev of een vergelijkbare lokale server die `/.netlify/functions/client-auth-config` met `.env.local` laadt.
+2. Een veilige runtime-config voor development die alleen `SUPABASE_URL` en `SUPABASE_ANON_KEY` injecteert.
+
+Een gewone statische server of `file://` is niet genoeg om `.env.local` naar de loginpagina door te geven.
+
+Belangrijk:
+
+- `SUPABASE_SERVICE_ROLE_KEY` mag nooit via runtime-config of frontend beschikbaar worden.
+- Als `client-auth-config` lokaal niet bereikbaar is, blijft de loginpagina terecht in veilige fallback.
+- Zelfs bij aanwezige publieke config blijft echte login verborgen zolang `authLive=false`.
+
 ## Testaccounts
 
 Maak minimaal deze stagingaccounts:

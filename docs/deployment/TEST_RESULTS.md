@@ -1265,3 +1265,35 @@ Conclusie:
 - Echte login/logout is nog niet bewezen, omdat er geen veilige testaccountcredentials beschikbaar zijn.
 - Productie blijft `NO-GO`.
 - Volgende stap: staging testaccounts en tijdelijke testcredentials veilig beschikbaar maken buiten de repo.
+
+## Klantportaal Auth Config Debug
+
+Status: `DIAGNOSE COMPLETE / GEEN AUTH ACTIVATIE / PRODUCTIE NO-GO`
+
+Aanleiding:
+
+- `login.html` toont nog `Binnenkort beschikbaar` terwijl `.env.local` publieke Supabase config bevat.
+
+Uitgevoerde checks:
+
+| Check | Resultaat | Status | Notities |
+| --- | --- | --- | --- |
+| `.env.local` keys | `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `APP_ENV`, `APP_ENVIRONMENT` aanwezig | PASS | Geen waarden getoond |
+| Service role scope | `SUPABASE_SERVICE_ROLE_KEY` staat lokaal, maar wordt niet door `client-auth-config` teruggegeven | PASS | Server-side only blijft intact |
+| Directe function test | `functions/client-auth-config.js` geeft met geladen env alleen `supabaseUrl` en `supabaseAnonKey` terug | PASS | Geen service role in response |
+| Lokale endpoint via static localhost | `/.netlify/functions/client-auth-config` en `/api/client-auth-config` niet bereikbaar in deze sessie | BLOCKED | Gewone/static server laadt Netlify Functions niet |
+| Readiness-service keynamen | Verwacht `supabaseUrl`/`SUPABASE_URL` en `supabaseAnonKey`/`SUPABASE_ANON_KEY` | PASS | Keynamen kloppen |
+| Auth live flag | `authLive=false` en `supabaseAuthActive=false` houden echte login verborgen | PASS | Bewust beveiligingsgedrag |
+
+Conclusie:
+
+- De oorzaak is niet een ontbrekende `.env.local`, maar de route van `.env.local` naar de browser.
+- `login.html` kan `.env.local` niet direct lezen.
+- Voor lokale Auth-tests moet de site via Netlify Dev/functions of veilige runtime-config draaien.
+- `Binnenkort beschikbaar` blijft terecht zichtbaar zolang `authLive=false`.
+
+Next actions:
+
+1. Start lokale test via Netlify Dev of configureer een veilige runtime-config met alleen `SUPABASE_URL` en `SUPABASE_ANON_KEY`.
+2. Houd `SUPABASE_SERVICE_ROLE_KEY` server-side only.
+3. Zet echte login pas aan in een aparte staging Auth wiring fase.

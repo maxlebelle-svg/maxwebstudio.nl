@@ -1932,3 +1932,19 @@ Open blockers:
 Productie blijft:
 
 - `NO-GO`.
+
+### Klantportaal Auth Config Debug
+
+Status: `DIAGNOSE COMPLETE`
+
+Conclusie:
+
+- `.env.local` is niet automatisch beschikbaar in de browser.
+- `client-auth-config` of runtime-config moet de publieke `SUPABASE_URL` en `SUPABASE_ANON_KEY` aanbieden.
+- Static localhost/file-server is onvoldoende voor Auth wiring.
+- `authLive=false` houdt login bewust verborgen.
+
+Volgende stap:
+
+1. Lokale test draaien via Netlify Dev/functions of veilige runtime-config.
+2. Daarna pas `Klantportaal v1C - Valid staging Auth session test`.

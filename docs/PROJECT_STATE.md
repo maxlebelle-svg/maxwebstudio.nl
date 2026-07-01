@@ -2268,3 +2268,21 @@ Bewust niet uitgevoerd:
 - geen RLS-wijzigingen;
 - geen productie-auth;
 - geen echte klantdata.
+
+## Klantportaal Auth Config Debug
+
+Status: `DIAGNOSE COMPLETE / AUTH NOG UIT`
+
+Bevinding:
+
+- `.env.local` bevat de benodigde publieke Supabase keys en server-side service role key zonder waarden te tonen.
+- `functions/client-auth-config.js` geeft bij directe function-test alleen publieke browserconfig terug en geen service role.
+- De loginpagina kan `.env.local` niet direct lezen; een statische localhost/file-server geeft die waarden niet automatisch door aan de browser.
+- In deze sessie waren `/.netlify/functions/client-auth-config` en `/api/client-auth-config` via localhost niet bereikbaar.
+- `authLive=false` en `supabaseAuthActive=false` blokkeren de echte login bewust, ook als publieke config aanwezig is.
+
+Conclusie:
+
+- `Binnenkort beschikbaar` is verwacht gedrag zolang Auth niet expliciet live/staging-wired is.
+- Voor de volgende echte test moet lokaal via Netlify Dev/functions of veilige runtime-config worden gedraaid.
+- `SUPABASE_SERVICE_ROLE_KEY` blijft server-side only.
