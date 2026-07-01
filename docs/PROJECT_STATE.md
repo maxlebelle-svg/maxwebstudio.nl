@@ -3541,3 +3541,27 @@ Manual Netlify checklist:
 - zet `CLIENT_PORTAL_AUTH_LIVE=true` pas na release approval;
 - test daarna live login/logout/session restore/password reset;
 - test dat klantdata zonder sessie niet zichtbaar is.
+
+## Production Portal Customer Context Fix
+
+Status: `FRONTEND FIXED / NO SQL`
+
+Aanleiding:
+
+- productie-login werkte;
+- `auth.users`, `profiles` en `customers` waren gekoppeld;
+- het portaal viel toch terug naar `Klant niet gevonden` omdat de algemene data-layer de customer opnieuw probeerde te vinden.
+
+Oplossing:
+
+- `clientCustomerProfileContextService` blijft de leidende customer-context zodra `profileFound=true`;
+- `klantportaal.html` gebruikt die production customer als geldige portalcontext wanneer de brede data-layer nog geen customerlijst teruggeeft;
+- lege websites, projecten, berichten, notificaties of facturen blokkeren het portaal niet meer;
+- Supabase sessie wordt ook gebruikt voor de portal statusmelding, zodat een echte login niet meer als demo-only sessie wordt behandeld.
+
+Veiligheidsstatus:
+
+- geen SQL;
+- geen RLS-wijzigingen;
+- geen productiegegevens gewijzigd;
+- fallback blijft actief bij ontbrekende sessie, ontbrekend profile, ontbrekende customer of RLS-denial.

@@ -1762,3 +1762,25 @@ NO-GO totdat handmatig in Netlify bevestigd:
 - waarden wijzen naar production project `maxwebstudio`;
 - `CLIENT_PORTAL_AUTH_LIVE` is bewust op het juiste moment gezet;
 - live auth smoke test is uitgevoerd.
+
+## Production Portal Customer Context Fix
+
+Datum: 2026-07-01
+
+Status: `PASS / FRONTEND ONLY`
+
+Resultaat:
+
+- production login/profile/customer koppeling wordt door de portal als geldige klantcontext gebruikt: PASS;
+- lege websites/projects/messages/notifications blijven toegestaan: PASS;
+- ontbrekende customer blijft veilige fallback: PASS;
+- geen SQL uitgevoerd: PASS;
+- geen productiegegevens gewijzigd: PASS.
+
+Checks:
+
+- `git diff --check`: PASS;
+- `node --check public/script.js`: PASS;
+- `node --check functions/client-auth-config.js`: PASS;
+- JS syntaxcheck voor functions/services/config/providers/repositories: PASS;
+- inline classic scriptcheck voor homepage/login/klantportaal/admin: PASS.

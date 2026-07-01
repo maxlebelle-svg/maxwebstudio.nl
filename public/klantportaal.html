@@ -218,7 +218,7 @@
         const { getClientFinanceContext } = await import("./src/services/clientFinanceContextService.js");
         const { getClientNotificationContext } = await import("./src/services/clientNotificationContextService.js");
         const { ensureStagingClientPortalDemoSession } = await import("./src/services/stagingClientPortalAuthBridgeService.js");
-        const { signOut: signOutSupabase } = await import("./src/services/supabaseAuthProvider.js");
+        const { signOut: signOutSupabase, getSession: getSupabaseSession } = await import("./src/services/supabaseAuthProvider.js");
         const params = new URLSearchParams(window.location.search);
         let customerId = params.get("customerId") || "";
         let supabaseCustomerId = params.get("supabaseCustomerId") || "";
@@ -272,6 +272,7 @@
           notifications: document.getElementById("metric-notifications"),
         };
         const profileContext = await getClientCustomerProfileContext();
+        const supabaseSessionResult = await getSupabaseSession();
         let stagingBridge = { active: false, reason: "", customerId: "", mode: "" };
         if (profileContext.profileFound) {
           customerId = customerId || profileContext.customerId;
@@ -309,10 +310,19 @@
 
         function readCurrentSession() {
           try {
-            return JSON.parse(localStorage.getItem("maxwebstudioCurrentSession") || "null");
+            const localSession = JSON.parse(localStorage.getItem("maxwebstudioCurrentSession") || "null");
+            if (localSession) return localSession;
           } catch {
-            return null;
+            // Continue with Supabase session fallback.
           }
+          const supabaseSession = supabaseSessionResult?.session;
+          if (!supabaseSession?.access_token) return null;
+          return {
+            provider: supabaseSessionResult.provider || "supabase",
+            role: profileContext.profile?.role || "customer",
+            customerId: profileContext.customerId || "",
+            userId: supabaseSession.user?.id || "",
+          };
         }
 
         function isDeveloperModeEnabled() {
@@ -1117,6 +1127,22 @@
         }
 
         const payload = await getClientPortalData(customerId, { supabaseCustomerId, mode: portalDataMode });
+        if (profileContext.profileFound && !payload.customer) {
+          payload.customer = profileContext.customer;
+          payload.mode = profileContext.mode || payload.mode || "hybrid";
+          payload.warnings = (payload.warnings || []).filter((warning) => !String(warning || "").includes("Klant niet gevonden"));
+          payload.sourceSummary = {
+            ...(payload.sourceSummary || {}),
+            mode: profileContext.mode || payload.mode || "hybrid",
+            customerSource: profileContext.customer?.source || "supabase-profile",
+            profileContext: {
+              state: profileContext.state,
+              source: profileContext.source,
+              profileFound: true,
+              customerFound: true,
+            },
+          };
+        }
         updateSourceMessage(payload);
         const websiteProjectContext = await getClientWebsiteProjectContext({
           customerId,
