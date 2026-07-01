@@ -598,3 +598,84 @@ Bewust niet uitgevoerd:
 Volgende aanbevolen stap:
 
 `Epic 2A.7 - Notifications Production Read Foundation`
+
+## Epic 2A.7 - Notificaties Production Data Foundation
+
+Status: `IMPLEMENTED / READ-ONLY FOUNDATION / PRODUCTION AUTH NO-GO`
+
+Doel:
+
+- notificaties en het actiecentrum voorbereiden op echte Supabase-data;
+- bestaande notificatie demo/localStorage fallback behouden;
+- geen push, e-mail of realtime notificaties activeren.
+
+Toegevoegd:
+
+- `public/src/services/clientNotificationContextService.js`
+
+Werking:
+
+1. Gebruik de bestaande Supabase Auth-sessie.
+2. Gebruik de customer context uit Epic 2A.2.
+3. Lees read-only `client_portal_notifications` op `customer_id`.
+4. Normaliseer records naar de bestaande klantportaalvorm.
+5. Als Supabase-data ontbreekt of niet veilig gelezen kan worden, blijft de bestaande portal payload actief.
+
+Ondersteunde states:
+
+- `loading`;
+- `found`;
+- `missing`;
+- `error`.
+
+Benodigde Supabase-velden voor `client_portal_notifications`:
+
+- `id`;
+- `customer_id`;
+- `title`;
+- `message`;
+- `type`;
+- `related_type`;
+- `related_id`;
+- `cta_label`;
+- `cta_target`;
+- `read_at`;
+- `created_at`;
+- `updated_at`.
+
+Ondersteunde notificatietypes:
+
+- `action_required`;
+- `completed`;
+- `info`.
+
+Mapping naar klantportaal:
+
+- `message` wordt getoond als klantvriendelijke bodytekst;
+- `cta_label` wordt `actionLabel`;
+- `cta_target` wordt `actionUrl`;
+- `action_required` valt in de kolom `Aandacht nodig`;
+- `completed` valt in de kolom `Recent afgerond`;
+- `info` valt in de kolom `Informatief`.
+
+Securityregels:
+
+- Geen service role naar frontend.
+- Reads gebruiken de ingelogde Supabase Auth-sessie.
+- RLS moet afdwingen dat de klant alleen eigen `client_portal_notifications` kan lezen.
+- Notificaties mogen geen interne debugdetails, secrets, betaalgegevens of deploymentinformatie bevatten.
+- Markeren als gelezen, push/e-mailnotificaties en realtime updates blijven geblokkeerd tot aparte release.
+
+Bewust niet uitgevoerd:
+
+- geen redesign;
+- geen SQL;
+- geen productie-auth activatie;
+- geen echte klantdata;
+- geen push/e-mailnotificaties;
+- geen OpenAI/Mollie;
+- geen nieuwe dependencies.
+
+Volgende aanbevolen stap:
+
+`Epic 2A Review - Production Data Foundation Completion Review`

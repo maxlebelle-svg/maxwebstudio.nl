@@ -216,6 +216,7 @@
         const { getClientChangeRequestContext, saveClientChangeRequestWithSupabaseFallback } = await import("./src/services/clientChangeRequestContextService.js");
         const { getClientPortalMessageContext, saveClientPortalMessageWithSupabaseFallback } = await import("./src/services/clientPortalMessageContextService.js");
         const { getClientFinanceContext } = await import("./src/services/clientFinanceContextService.js");
+        const { getClientNotificationContext } = await import("./src/services/clientNotificationContextService.js");
         const { ensureStagingClientPortalDemoSession } = await import("./src/services/stagingClientPortalAuthBridgeService.js");
         const { signOut: signOutSupabase } = await import("./src/services/supabaseAuthProvider.js");
         const params = new URLSearchParams(window.location.search);
@@ -850,7 +851,7 @@
           const status = normalize(notification.status);
           const type = normalize(notification.type);
           if (notification.readAt || ["afgerond", "gereed", "done", "closed", "gelezen", "read"].includes(status)) return "done";
-          if (notification.dueAt || ["invoice", "factuur", "change request", "wijziging"].includes(type) || ["nieuw", "open", "verzonden"].includes(status)) return "attention";
+          if (notification.dueAt || ["action_required", "invoice", "factuur", "change request", "wijziging"].includes(type) || ["nieuw", "open", "verzonden"].includes(status)) return "attention";
           return "info";
         }
 
@@ -1218,6 +1219,28 @@
           };
         } else if (financeContext.state === "error" && isDeveloperModeEnabled()) {
           payload.warnings = [...(payload.warnings || []), financeContext.error || financeContext.message];
+        }
+        const notificationContext = await getClientNotificationContext({
+          customerId,
+          supabaseCustomerId,
+          customer: payload.customer,
+        });
+        if (notificationContext.found) {
+          payload.notifications = notificationContext.notifications;
+          payload.sourceSummary = {
+            ...(payload.sourceSummary || {}),
+            notificationContext: {
+              state: notificationContext.state,
+              source: notificationContext.source,
+              count: notificationContext.notifications.length,
+            },
+          };
+          payload.metrics = {
+            ...(payload.metrics || {}),
+            unreadNotifications: notificationContext.notifications.filter((notification) => !notification.readAt && !["afgerond", "gereed", "done", "closed", "gelezen", "read"].includes(String(notification.status || "").toLowerCase())).length,
+          };
+        } else if (notificationContext.state === "error" && isDeveloperModeEnabled()) {
+          payload.warnings = [...(payload.warnings || []), notificationContext.error || notificationContext.message];
         }
         const { customer, websites, projects, files, invoices, subscriptions, quotes, changeRequests, messages, notifications, metrics: portalMetrics, sourceSummary } = payload;
         const customerChangeRequests = [...changeRequests];

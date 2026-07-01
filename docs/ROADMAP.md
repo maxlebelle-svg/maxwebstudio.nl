@@ -2459,3 +2459,36 @@ Belangrijk:
 Volgende aanbevolen stap:
 
 - `Epic 2A.7 - Notifications Production Read Foundation`
+
+## Epic 2A.7 - Notificaties Production Data Foundation
+
+Status: `IMPLEMENTED / READ-ONLY FOUNDATION / PRODUCTION AUTH NO-GO`
+
+Doel:
+
+- notificaties en actiecentrum voorbereiden op echte Supabase-data;
+- notificaties lezen op `customer_id` als er een veilige Auth/customer-context bestaat;
+- fallback naar demo/localStorage behouden zolang Supabase-data of permissie ontbreekt.
+
+Opgeleverd:
+
+- `clientNotificationContextService`;
+- read-only `client_portal_notifications` lookup op `customer_id`;
+- normalisatie naar de bestaande klantportaalvorm;
+- ondersteuning voor `action_required`, `completed` en `info`;
+- states voor `loading`, `found`, `missing` en `error`;
+- bestaande klantportaal-UX blijft gelijk.
+
+Belangrijk:
+
+- geen redesign;
+- geen SQL;
+- geen productie-auth activatie;
+- geen echte klantdata;
+- geen push/e-mailnotificaties;
+- geen OpenAI/Mollie;
+- geen nieuwe dependencies.
+
+Volgende aanbevolen stap:
+
+- `Epic 2A Review - Production Data Foundation Completion Review`

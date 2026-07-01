@@ -712,6 +712,68 @@ Volgende aanbevolen stap:
 
 - `Epic 2A.7 - Notifications Production Read Foundation`
 
+## Epic 2A.7 - Notificaties Production Data Foundation
+
+Status: `IMPLEMENTED / READ-ONLY FOUNDATION / PRODUCTIE NO-GO`
+
+Notificaties en het actiecentrum zijn voorbereid op echte Supabase-data.
+
+Toegevoegd:
+
+- `public/src/services/clientNotificationContextService.js`
+
+Werking:
+
+- gebruikt de bestaande Supabase Auth-sessie;
+- gebruikt de customer context uit Epic 2A.2;
+- leest `client_portal_notifications` read-only op `customer_id`;
+- normaliseert records naar de bestaande klantportaalvorm;
+- werkt de notificatie-metrics bij als Supabase-data beschikbaar is;
+- valt terug op de bestaande demo/localStorage flow als Supabase-data of read-permissie ontbreekt.
+
+Ondersteunde states:
+
+- `loading`;
+- `found`;
+- `missing`;
+- `error`.
+
+Voorbereide velden:
+
+- `customer_id`;
+- `title`;
+- `message`;
+- `type`;
+- `related_type`;
+- `related_id`;
+- `cta_label`;
+- `cta_target`;
+- `read_at`;
+- `created_at`;
+- `updated_at`.
+
+Belangrijkste securitybesluit:
+
+- Geen service role naar frontend.
+- Notificatie reads gebruiken de ingelogde Supabase Auth-sessie.
+- RLS moet afdwingen dat klanten alleen eigen `client_portal_notifications` kunnen lezen.
+- Notificaties mogen geen interne debugdetails, secrets, betaalgegevens of deploymentinformatie bevatten.
+- Push, e-mail, realtime updates en markeren-als-gelezen blijven buiten deze stap.
+
+Bewust niet uitgevoerd:
+
+- geen redesign;
+- geen SQL;
+- geen productie-auth activatie;
+- geen echte klantdata;
+- geen push/e-mailnotificaties;
+- geen OpenAI/Mollie;
+- geen nieuwe dependencies.
+
+Volgende aanbevolen stap:
+
+- `Epic 2A Review - Production Data Foundation Completion Review`
+
 ## Sterke Punten
 
 - Duidelijke premium positionering.
