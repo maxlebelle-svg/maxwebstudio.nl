@@ -10,3 +10,6 @@ supabase/.temp/
 
 # Local client workspaces
 Klanten MaxWebstudio/
+
+# Local Netlify folder
+.netlify
