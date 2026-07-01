@@ -1869,3 +1869,22 @@ Volgende stap:
 1. `Klantportaal v1A - Staging Auth Validation`.
 2. Daarna pas echte sessie -> profile -> customer mapping.
 3. Daarna pas hard route guards.
+
+### Klantportaal v1.2 - Staging Auth wiring plan
+
+Status: `PLAN ONLY`
+
+Output:
+
+- `docs/CLIENT_PORTAL_STAGING_AUTH_WIRING_PLAN.md`
+- staging env-var checklist;
+- testaccountplan;
+- login/logout en password reset testflow;
+- RLS/security checklist;
+- rollback en evidenceplan.
+
+Volgende stap:
+
+1. Staging Auth testaccounts voorbereiden.
+2. Daarna pas Auth wiring in staging activeren.
+3. Productie blijft `NO-GO`.

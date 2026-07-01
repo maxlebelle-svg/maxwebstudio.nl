@@ -344,6 +344,23 @@ Niet toegestaan in v1.1:
 - writes uitvoeren;
 - productieklantdata tonen.
 
+## Klantportaal v1.2 - Staging Auth wiring plan
+
+Status: `PLAN ONLY / GEEN AUTH ACTIVATIE / GEEN SQL`
+
+Het concrete stagingdraaiboek staat in `docs/CLIENT_PORTAL_STAGING_AUTH_WIRING_PLAN.md`.
+
+Dit plan beschrijft:
+
+- vereiste Supabase env vars;
+- veilige opslaglocaties buiten de repo;
+- staging testaccounts;
+- login/logout flow;
+- password reset flow;
+- RLS/security checklist;
+- rollback;
+- pagina's die pas na login zichtbaar worden.
+
 ## Volgende Codex-fase
 
 Aanbevolen volgende uitvoerende fase:

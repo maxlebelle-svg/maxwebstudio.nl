@@ -2182,3 +2182,31 @@ Bewust niet uitgevoerd:
 - geen RLS-wijzigingen;
 - geen database writes;
 - geen productieklantdata.
+
+## Klantportaal v1.2 - Staging Auth wiring plan
+
+Status: `PLAN ONLY / GEEN AUTH ACTIVATIE / GEEN SQL / GEEN KLANTDATA`
+
+Toegevoegd:
+
+- `docs/CLIENT_PORTAL_STAGING_AUTH_WIRING_PLAN.md`
+
+Vastgelegd:
+
+- benodigde browserveilige Supabase env vars;
+- server-side-only secretregels;
+- veilige opslaglocaties buiten de repo;
+- staging testaccounts voor Customer A/B, admin, support en no-profile;
+- login/logout flow;
+- password reset flow;
+- RLS en spoofing checklist;
+- pagina's die achter login komen;
+- rollback en evidence-eisen.
+
+Bewust niet uitgevoerd:
+
+- geen Supabase Auth activatie;
+- geen SQL;
+- geen RLS-wijzigingen;
+- geen echte klantdata;
+- geen runtime feature change.
