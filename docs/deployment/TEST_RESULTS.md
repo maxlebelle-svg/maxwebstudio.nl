@@ -1789,7 +1789,7 @@ Checks:
 
 Datum: 2026-07-01
 
-Status: `IMPLEMENTED / STATIC CHECKS PASS / RUNTIME ADMIN TEST PENDING`
+Status: `IMPLEMENTED / MOCK FLOW PASS / LIVE ADMIN TEST PENDING`
 
 Scope:
 
@@ -1802,12 +1802,13 @@ Scope:
 
 Te valideren:
 
-- admin-token verplicht: implemented, runtime test pending;
-- serverless function weigert zonder admin-token: implemented, runtime test pending;
-- bestaande Auth user wordt hergebruikt: implemented, runtime test pending;
-- nieuwe Auth user wordt server-side klaargezet: implemented, runtime test pending;
-- profile/customer/website/project worden gekoppeld: implemented, runtime test pending;
-- mailconcept wordt getoond zonder verzending: implemented, runtime test pending;
+- admin-token verplicht: PASS in mock flow;
+- serverless function weigert zonder admin-token: PASS in mock flow;
+- verplichte velden validatie: PASS in mock flow;
+- nieuwe Auth user wordt server-side klaargezet: PASS in mock flow;
+- profile/customer/website/project worden gekoppeld: PASS in mock flow;
+- mailconcept wordt getoond zonder verzending: PASS in mock flow;
+- test/staging omgeving markeert records als `environment=test` en `is_demo=true`: PASS in mock flow;
 - service-role komt niet in frontend terecht: PASS by code review.
 
 Checks:
@@ -1817,3 +1818,10 @@ Checks:
 - `node --check functions/admin-customer-onboarding.js`: PASS;
 - admin-dashboard inline scriptcheck: PASS;
 - secrets-scan: PASS, alleen variabelnamen/documentatiereferenties gevonden, geen secretwaarden.
+- mock onboarding flow: PASS, geen echte Supabase-writes uitgevoerd.
+
+Open:
+
+- live/staging admin wizard openen en visueel testen;
+- één gecontroleerde testklant via Netlify function aanmaken zodra de juiste staging/productie-keuze is bevestigd;
+- daarna Resend-uitnodiging als aparte gecontroleerde stap koppelen.

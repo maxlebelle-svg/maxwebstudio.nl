@@ -31,6 +31,8 @@ exports.handler = async (event) => {
     if (!payload.success) return jsonResponse(400, { success: false, error: payload.error });
 
     const input = payload.value;
+    const recordEnvironment = getRecordEnvironment();
+    const isDemoRecord = recordEnvironment !== "production";
     const authUser = await ensureAuthUser(supabaseUrl, serviceRoleKey, input);
     const profile = await upsertByLookup({
       supabaseUrl,
@@ -47,11 +49,12 @@ exports.handler = async (event) => {
         package: input.package,
         role: "customer",
         status: "active",
-        is_demo: false,
-        environment: "production",
+        is_demo: isDemoRecord,
+        environment: recordEnvironment,
         metadata: {
           createdBy: "admin-customer-create-wizard",
           authAction: authUser.action,
+          sourceEnvironment: recordEnvironment,
         },
         updated_at: new Date().toISOString(),
       },
@@ -74,10 +77,11 @@ exports.handler = async (event) => {
         status: "active",
         portal_status: "active",
         customer_since: new Date().toISOString().slice(0, 10),
-        is_demo: false,
-        environment: "production",
+        is_demo: isDemoRecord,
+        environment: recordEnvironment,
         metadata: {
           createdBy: "admin-customer-create-wizard",
+          sourceEnvironment: recordEnvironment,
         },
         updated_at: new Date().toISOString(),
       },
@@ -101,10 +105,11 @@ exports.handler = async (event) => {
         hosting_status: "unknown",
         uptime_status: "unknown",
         dns_status: "unknown",
-        is_demo: false,
-        environment: "production",
+        is_demo: isDemoRecord,
+        environment: recordEnvironment,
         metadata: {
           createdBy: "admin-customer-create-wizard",
+          sourceEnvironment: recordEnvironment,
         },
         updated_at: new Date().toISOString(),
       },
@@ -126,10 +131,11 @@ exports.handler = async (event) => {
         checklist: [],
         tasks: [],
         timeline: [],
-        is_demo: false,
-        environment: "production",
+        is_demo: isDemoRecord,
+        environment: recordEnvironment,
         metadata: {
           createdBy: "admin-customer-create-wizard",
+          sourceEnvironment: recordEnvironment,
         },
         updated_at: new Date().toISOString(),
       },
@@ -204,6 +210,13 @@ function validatePayload(payload) {
   if (!value.domain) return { success: false, error: "Vul een website of domein in." };
 
   return { success: true, value };
+}
+
+function getRecordEnvironment() {
+  const environment = cleanText(process.env.APP_ENVIRONMENT || process.env.APP_ENV).toLowerCase();
+  if (environment === "production") return "production";
+  if (environment === "demo") return "demo";
+  return "test";
 }
 
 async function ensureAuthUser(supabaseUrl, serviceRoleKey, input) {
