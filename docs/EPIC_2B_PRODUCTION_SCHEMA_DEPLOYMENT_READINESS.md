@@ -318,3 +318,216 @@ Daarvoor is expliciet nodig:
 - productie DB connection string of Supabase SQL Editor read-only uitvoering;
 - geen migration apply;
 - alleen select queries voor tabellen, policies, RLS en datacounts.
+
+## Epic 2B.5 - Production Read-only SQL Inspection
+
+Status: `BLOCKED / AWAITING PRODUCTION DB READ ROUTE / NO SQL EXECUTED`
+
+Doel:
+
+- bestaande productie-tabellen read-only uitlezen;
+- bestaande kolommen read-only uitlezen;
+- bestaande RLS policies read-only uitlezen;
+- row counts voor klantportaal-tabellen vastleggen;
+- conflicten met `013_client_portal_schema_rls_alignment.sql` beoordelen;
+- bepalen of productie leeg/veilig genoeg is voor schema/RLS execution.
+
+### Beschikbare execution routes
+
+Gecontroleerd:
+
+- `.env.local` bevat alleen staging/test Supabase config.
+- Er is geen lokale `DATABASE_URL`, `SUPABASE_DB_URL` of `POSTGRES_URL` voor productie.
+- De lokale Supabase CLI-link staat nog op `maxwebstudio-test`.
+- Productie `maxwebstudio` is bewust niet tijdelijk gelinkt.
+
+Resultaat:
+
+```text
+Production read-only SQL inspection kon niet worden uitgevoerd in deze sessie.
+```
+
+Reden:
+
+- Er is geen productie database connection string beschikbaar.
+- Er is geen handmatige Supabase SQL Editor output aangeleverd.
+- Om accidental writes te voorkomen is productie niet gelinkt.
+
+### Read-only SQL voor handmatige inspectie
+
+Voer onderstaande queries alleen uit op Supabase project:
+
+```text
+maxwebstudio / yxxahurphdbblkuxoeje
+```
+
+Controleer vóór uitvoering dat de SQL Editor niet in project `maxwebstudio-test` staat.
+
+#### 1. Bestaande public tabellen
+
+```sql
+select table_name
+from information_schema.tables
+where table_schema = 'public'
+order by table_name;
+```
+
+#### 2. Bestaande kolommen voor klantportaal-tabellen
+
+```sql
+select table_name, column_name, data_type, is_nullable
+from information_schema.columns
+where table_schema = 'public'
+  and table_name in (
+    'profiles',
+    'customers',
+    'websites',
+    'projects',
+    'change_requests',
+    'client_portal_messages',
+    'quotes',
+    'invoices',
+    'subscriptions',
+    'client_portal_notifications'
+  )
+order by table_name, ordinal_position;
+```
+
+#### 3. RLS status
+
+```sql
+select
+  c.relname as table_name,
+  c.relrowsecurity as rls_enabled,
+  c.relforcerowsecurity as rls_forced
+from pg_class c
+join pg_namespace n on n.oid = c.relnamespace
+where n.nspname = 'public'
+  and c.relkind = 'r'
+  and c.relname in (
+    'profiles',
+    'customers',
+    'websites',
+    'projects',
+    'change_requests',
+    'client_portal_messages',
+    'quotes',
+    'invoices',
+    'subscriptions',
+    'client_portal_notifications'
+  )
+order by c.relname;
+```
+
+#### 4. Policy namen
+
+```sql
+select
+  schemaname,
+  tablename,
+  policyname,
+  permissive,
+  roles,
+  cmd
+from pg_policies
+where schemaname = 'public'
+  and tablename in (
+    'profiles',
+    'customers',
+    'websites',
+    'projects',
+    'change_requests',
+    'client_portal_messages',
+    'quotes',
+    'invoices',
+    'subscriptions',
+    'client_portal_notifications'
+  )
+order by tablename, policyname;
+```
+
+#### 5. Veilige row counts, ook als tabellen ontbreken
+
+```sql
+with target_tables(table_name) as (
+  values
+    ('profiles'),
+    ('customers'),
+    ('websites'),
+    ('projects'),
+    ('change_requests'),
+    ('client_portal_messages'),
+    ('quotes'),
+    ('invoices'),
+    ('subscriptions'),
+    ('client_portal_notifications')
+)
+select
+  t.table_name,
+  case when c.oid is null then false else true end as exists,
+  case
+    when c.oid is null then null
+    else (xpath('/row/cnt/text()', query_to_xml(format('select count(*) as cnt from public.%I', t.table_name), false, true, '')))[1]::text::bigint
+  end as row_count
+from target_tables t
+left join pg_class c
+  on c.relname = t.table_name
+left join pg_namespace n
+  on n.oid = c.relnamespace
+ and n.nspname = 'public'
+order by t.table_name;
+```
+
+#### 6. Helper functions
+
+```sql
+select
+  p.proname as function_name,
+  pg_get_function_identity_arguments(p.oid) as arguments
+from pg_proc p
+join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public'
+  and p.proname in (
+    'current_profile_id',
+    'current_customer_id',
+    'current_app_role',
+    'has_app_role',
+    'is_admin_role',
+    'is_staff_role',
+    'owns_customer'
+  )
+order by p.proname;
+```
+
+### Conflictcheck voor migration 013
+
+Migration `013_client_portal_schema_rls_alignment.sql` is pas veilig uitvoerbaar als:
+
+- bestaande kolommen dezelfde of compatibele datatypes hebben;
+- bestaande policies geen onverwachte brede customer/admin toegang bevatten;
+- RLS niet uit staat op klantportaal-tabellen;
+- bestaande data geen nieuwe foreign keys of constraints blokkeert;
+- helper functions niet met afwijkende signatures bestaan;
+- row counts bevestigen dat er geen onverwachte klantdata aanwezig is.
+
+### Huidige conclusie
+
+| Onderdeel | Status | Resultaat |
+| --- | --- | --- |
+| Tabelinspectie | BLOCKED | Geen productie DB-read route |
+| Kolominspectie | BLOCKED | Geen productie DB-read route |
+| RLS/policy inspectie | BLOCKED | Geen productie DB-read route |
+| Row counts | BLOCKED | Geen productie DB-read route |
+| Klantdata aanwezig ja/nee | BLOCKED | Niet hard te bevestigen zonder row counts |
+| Migration 013 conflictvrij | BLOCKED | Alleen statisch beoordeeld, DB-read vereist |
+
+Productie schema/RLS execution blijft:
+
+```text
+NO-GO
+```
+
+Volgende stap:
+
+- voer bovenstaande read-only SQL uit via Supabase SQL Editor op `maxwebstudio`; of
+- lever tijdelijk een production database connection string lokaal aan en commit deze niet.

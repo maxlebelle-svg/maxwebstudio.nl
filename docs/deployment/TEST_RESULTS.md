@@ -1537,3 +1537,40 @@ Conclusie:
 Volgende stap:
 
 - `Epic 2B.5 - Production read-only SQL inspection`
+
+## Epic 2B.5 - Production Read-only SQL Inspection
+
+Status: `BLOCKED / NO PRODUCTION DB READ ROUTE / PRODUCTIE NO-GO`
+
+Scope:
+
+- Alleen read-only SQL-inspectie.
+- Geen schemawijzigingen.
+- Geen writes.
+- Geen deletes.
+- Geen migration apply.
+- Geen demo seed.
+- Geen secrets loggen of committen.
+
+Validatie:
+
+| Test | Verwacht | Resultaat | Status | Notities |
+| --- | --- | --- | --- | --- |
+| Production DB route | Tijdelijke DB connection string of SQL Editor output beschikbaar | Niet beschikbaar | BLOCKED | `.env.local` bevat alleen staging/test config |
+| CLI link safety | CLI niet op productie | CLI blijft op `maxwebstudio-test` | PASS | Productie niet gelinkt |
+| Bestaande tabellen | Read-only tabeloverzicht | Niet uitgevoerd | BLOCKED | Productie DB-read nodig |
+| Bestaande kolommen | Read-only kolomoverzicht | Niet uitgevoerd | BLOCKED | Productie DB-read nodig |
+| Bestaande RLS policies | Read-only policy-overzicht | Niet uitgevoerd | BLOCKED | Productie DB-read nodig |
+| Row counts | Counts voor portal-tabellen | Niet uitgevoerd | BLOCKED | Productie DB-read nodig |
+| Echte klantdata | Hard bewijs leeg/veilig | Niet bevestigd | BLOCKED | Vereist row counts |
+| Migration 013 conflicts | Conflict/no-conflict conclusie | Niet hard te bepalen | BLOCKED | Alleen statische inschatting beschikbaar |
+
+Read-only SQL voor handmatige uitvoering is toegevoegd aan:
+
+- `docs/EPIC_2B_PRODUCTION_SCHEMA_DEPLOYMENT_READINESS.md`
+
+Conclusie:
+
+- Epic 2B.5 is niet groen omdat er geen productie DB-read route beschikbaar is.
+- Er is geen productie SQL uitgevoerd.
+- Productie schema execution blijft `NO-GO`.

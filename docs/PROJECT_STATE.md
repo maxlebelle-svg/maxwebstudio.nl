@@ -3214,3 +3214,36 @@ Conclusie:
 
 - Productie schema/RLS execution blijft `NO-GO`.
 - Volgende veilige stap is een expliciete production read-only SQL-inspectie met een tijdelijke DB connection string of handmatige Supabase SQL Editor output.
+
+## Epic 2B.5 - Production Read-only SQL Inspection
+
+Status: `BLOCKED / NO PRODUCTION DB READ ROUTE / PRODUCTION EXECUTION NO-GO`
+
+Doel:
+
+- productie-tabellen, kolommen, RLS policies en row counts read-only inspecteren;
+- bepalen of migration `013_client_portal_schema_rls_alignment.sql` veilig toepasbaar is;
+- hard bevestigen of productie leeg genoeg is voor schema/RLS execution.
+
+Bevinding:
+
+- Er is geen productie database connection string aanwezig in `.env.local`.
+- Er is geen `DATABASE_URL`, `SUPABASE_DB_URL` of `POSTGRES_URL` voor productie gevonden.
+- De lokale Supabase CLI-link staat nog veilig op `maxwebstudio-test`.
+- Productie is niet tijdelijk gelinkt.
+- Er is geen SQL uitgevoerd.
+
+Gedocumenteerd:
+
+- handmatige read-only SQL voor tabellen;
+- handmatige read-only SQL voor kolommen;
+- handmatige read-only SQL voor RLS status;
+- handmatige read-only SQL voor policy namen;
+- handmatige read-only SQL voor veilige row counts;
+- handmatige read-only SQL voor helper functions;
+- conflictcriteria voor migration `013`.
+
+Conclusie:
+
+- Productie SQL execution blijft `NO-GO`.
+- Voor een GO is nu alleen nog production read-only output nodig via Supabase SQL Editor of een tijdelijke DB connection string die niet wordt gecommit.
