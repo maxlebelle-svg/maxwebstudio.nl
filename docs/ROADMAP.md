@@ -2876,7 +2876,8 @@ Provisioning-flow:
 6. website record wordt aangemaakt/gekoppeld;
 7. project record wordt aangemaakt/gekoppeld;
 8. password setup/reset link wordt gegenereerd;
-9. welkomstmail wordt als concept teruggegeven.
+9. welkomstmail wordt als concept teruggegeven;
+10. klant opent de setup-link en stelt veilig een eigen wachtwoord in.
 
 Nog niet:
 

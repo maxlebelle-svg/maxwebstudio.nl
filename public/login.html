@@ -79,6 +79,14 @@
           </form>
         </section>
 
+        <section class="portal-auth-panel" data-auth-panel="recovery" data-auth-live-only hidden>
+          <form class="portal-login-form" id="password-update-form">
+            <label for="new-password">Nieuw wachtwoord<input id="new-password" name="password" type="password" autocomplete="new-password" minlength="10" required /></label>
+            <label for="confirm-password">Herhaal wachtwoord<input id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" minlength="10" required /></label>
+            <button class="button primary" type="submit">Wachtwoord instellen</button>
+          </form>
+        </section>
+
         <p class="portal-message" id="portal-login-message" role="status" aria-live="polite"></p>
       </section>
       <aside class="portal-auth-aside" data-developer-only hidden>
@@ -102,6 +110,7 @@
         const realLoginForm = document.getElementById("real-login-form");
         const accountRequestForm = document.getElementById("account-request-form");
         const passwordResetForm = document.getElementById("password-reset-form");
+        const passwordUpdateForm = document.getElementById("password-update-form");
         const shell = document.getElementById("portal-auth-shell");
         const developerOnlyBlocks = [...document.querySelectorAll("[data-developer-only]")];
         const developerOnlyTabs = [...document.querySelectorAll("[data-developer-only-tab]")];
@@ -129,6 +138,10 @@
           reset: {
             title: "Wachtwoord vergeten",
             body: "Vul je e-mailadres in om een resetlink aan te vragen.",
+          },
+          recovery: {
+            title: "Nieuw wachtwoord instellen",
+            body: "Kies een veilig wachtwoord om je klantportaal te activeren.",
           },
         };
 
@@ -371,6 +384,59 @@
           }
         });
 
+        passwordUpdateForm.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          const data = Object.fromEntries(new FormData(passwordUpdateForm).entries());
+          if (String(data.password || "").length < 10) {
+            setMessage("Gebruik minimaal 10 tekens voor je wachtwoord.", "error");
+            return;
+          }
+          if (data.password !== data.confirmPassword) {
+            setMessage("De wachtwoorden komen nog niet overeen.", "error");
+            return;
+          }
+          try {
+            const auth = await loadAuth();
+            await auth.updatePassword(data.password);
+            passwordUpdateForm.reset();
+            activatePanel("real");
+            setMessage("Je wachtwoord is ingesteld. Log nu in met je e-mailadres en nieuwe wachtwoord.", "success");
+          } catch (error) {
+            const debug = error?.supabaseAuth || {};
+            console.info("Supabase password update failed", {
+              code: debug.code || error?.code || "UNKNOWN",
+              message: debug.message || error?.message || "",
+              status: debug.status || error?.status || "",
+              projectRef: debug.projectRef || "",
+              host: debug.host || "",
+              keyType: debug.keyType || "",
+            });
+            setMessage(isDeveloperModeEnabled()
+              ? getDeveloperLoginErrorMessage(error)
+              : "Wachtwoord instellen is niet gelukt. Vraag een nieuwe resetlink aan of neem contact op.", "error");
+          }
+        });
+
+        async function activateRecoveryFromUrl() {
+          if (!/type=recovery|access_token=/.test(`${window.location.search}${window.location.hash}`)) return false;
+          try {
+            const auth = await loadAuth();
+            const result = await auth.consumeRecoverySessionFromUrl();
+            if (!result.success) return false;
+            await renderAuthStatus();
+            activatePanel("recovery");
+            setMessage("Kies nu je nieuwe wachtwoord.", "success");
+            return true;
+          } catch (error) {
+            console.info("Supabase recovery session failed", {
+              code: error?.code || "UNKNOWN",
+              message: error?.message || "",
+            });
+            setMessage("Deze herstel-link is verlopen of niet compleet. Vraag een nieuwe resetlink aan.", "error");
+            return false;
+          }
+        }
+
         panelButtons.forEach((button) => {
           button.addEventListener("click", () => activatePanel(button.dataset.authPanelTrigger));
         });
@@ -380,7 +446,7 @@
         renderDeveloperModeVisibility();
         renderAuthLiveVisibility();
         activatePanel(isDeveloperModeEnabled() ? "demo" : "real");
-        renderAuthStatus();
+        renderAuthStatus().then(() => activateRecoveryFromUrl());
       })();
     </script>
   </body>

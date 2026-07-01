@@ -1848,6 +1848,7 @@ Resultaten:
 - production records blijven `environment=production` en `is_demo=false`: implemented by environment gate;
 - password setup/recovery link genereren via Supabase admin endpoint: PASS in mock provisioning;
 - setup-link wordt in mailconcept geplaatst: PASS;
+- loginpagina kan recovery-link consumeren en nieuw wachtwoord instellen: implemented, live test pending;
 - service-role of secrets komen niet in response terecht: PASS.
 
 Checks:

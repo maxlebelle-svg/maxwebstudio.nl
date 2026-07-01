@@ -85,6 +85,40 @@ function recoveryRedirectUrl() {
   return origin ? `${origin}/login.html?type=recovery` : "";
 }
 
+function readRecoveryParamsFromUrl() {
+  if (typeof window === "undefined") return null;
+  const hash = new URLSearchParams(String(window.location.hash || "").replace(/^#/, ""));
+  const search = new URLSearchParams(String(window.location.search || "").replace(/^\?/, ""));
+  const accessToken = hash.get("access_token") || search.get("access_token") || "";
+  const refreshToken = hash.get("refresh_token") || search.get("refresh_token") || "";
+  const type = hash.get("type") || search.get("type") || "";
+  if (!accessToken || type !== "recovery") return null;
+  const expiresIn = Number(hash.get("expires_in") || search.get("expires_in") || 3600);
+  const expiresAt = Number(hash.get("expires_at") || search.get("expires_at")) || Math.floor(Date.now() / 1000) + expiresIn;
+  return {
+    access_token: accessToken,
+    refresh_token: refreshToken,
+    token_type: hash.get("token_type") || search.get("token_type") || "bearer",
+    expires_in: expiresIn,
+    expires_at: expiresAt,
+    user: null,
+    recovery: true,
+  };
+}
+
+function clearRecoveryParamsFromUrl() {
+  if (typeof window === "undefined" || !window.history?.replaceState) return;
+  const url = new URL(window.location.href);
+  url.hash = "";
+  url.searchParams.delete("access_token");
+  url.searchParams.delete("refresh_token");
+  url.searchParams.delete("expires_in");
+  url.searchParams.delete("expires_at");
+  url.searchParams.delete("token_type");
+  url.searchParams.delete("type");
+  window.history.replaceState({}, document.title, url.pathname + url.search);
+}
+
 async function getRuntimeAuthConfig() {
   let endpointConfig = {};
   try {
@@ -279,9 +313,64 @@ export async function resetPassword(email) {
   return { success: true, provider: "supabase", redirectTo };
 }
 
+export async function consumeRecoverySessionFromUrl() {
+  const config = await getRuntimeAuthConfig();
+  if (!config.active) return { success: false, reason: "auth_inactive" };
+  const session = readRecoveryParamsFromUrl();
+  if (!session?.access_token) return { success: false, reason: "no_recovery_session" };
+  storeSession(session);
+  clearRecoveryParamsFromUrl();
+  return { success: true, provider: "supabase" };
+}
+
 export async function updatePassword(newPassword) {
   if (!newPassword) throw new Error("Vul een nieuw wachtwoord in.");
-  return throwPrepared("updatePassword");
+  const config = await getRuntimeAuthConfig();
+  if (!config.active) return throwPrepared("updatePassword");
+  const session = readStoredSession();
+  if (!session?.access_token) {
+    const error = new Error("De herstel-link is verlopen of niet compleet. Vraag een nieuwe resetlink aan.");
+    error.code = "SUPABASE_RECOVERY_SESSION_MISSING";
+    throw error;
+  }
+
+  let response;
+  try {
+    response = await fetch(`${config.url}/auth/v1/user`, {
+      method: "PUT",
+      headers: {
+        apikey: config.anonKey,
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ password: newPassword }),
+    });
+  } catch (requestError) {
+    const error = new Error("Wachtwoord instellen kon de loginomgeving niet bereiken.");
+    error.code = "SUPABASE_PASSWORD_UPDATE_NETWORK_ERROR";
+    error.supabaseAuth = {
+      code: error.code,
+      message: sanitizeAuthMessage(requestError?.message || "Network request failed"),
+      status: "",
+      host: config.host || "",
+      projectRef: config.projectRef || "",
+      keyType: config.keyType || "unknown",
+    };
+    throw error;
+  }
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const debug = createAuthDebug(config, response, payload);
+    const error = new Error(debug.message || "Wachtwoord instellen is niet gelukt.");
+    error.code = debug.code || "SUPABASE_PASSWORD_UPDATE_FAILED";
+    error.status = response.status;
+    error.supabaseAuth = debug;
+    throw error;
+  }
+
+  localStorage.removeItem(AUTH_SESSION_KEY);
+  return { success: true, provider: "supabase" };
 }
 
 export function onAuthStateChange(callback) {
@@ -330,6 +419,7 @@ export const supabaseAuthProvider = {
   getSession,
   getUser,
   resetPassword,
+  consumeRecoverySessionFromUrl,
   updatePassword,
   onAuthStateChange,
   getStatus: getSupabaseAuthStatus,

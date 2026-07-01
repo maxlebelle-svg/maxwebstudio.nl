@@ -3618,6 +3618,7 @@ Opgeleverd:
 - test/staging records krijgen automatisch `environment=test` en `is_demo=true`;
 - production records krijgen `environment=production` en `is_demo=false`;
 - Supabase password setup/recovery link wordt server-side gegenereerd en in het mailconcept geplaatst;
+- loginpagina kan een Supabase recovery-link verwerken en daarna een nieuw wachtwoord laten instellen;
 - admin krijgt status terug zonder service-role of secrets.
 
 Bewust nog niet actief:
