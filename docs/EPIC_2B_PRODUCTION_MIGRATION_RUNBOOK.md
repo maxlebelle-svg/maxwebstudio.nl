@@ -1,6 +1,6 @@
 # Epic 2B.6 - Production Migration Runbook
 
-Status: `MINIMAL BASELINE GREEN / 002-004 DRAFT READY / NEXT SQL NOT EXECUTED`
+Status: `MINIMAL RLS APPLIED / LEGACY POLICY CLEANUP DRAFT READY / PRODUCTION AUTH CLOSED`
 
 Doel:
 
@@ -30,7 +30,10 @@ Huidige production read-only conclusie:
 - `001_client_portal_baseline.sql` is uitgevoerd en groen gevalideerd;
 - `customers`, `websites`, `projects`, `client_portal_messages` en `client_portal_notifications` bestaan nu;
 - finance-, CRM-, AI-, file- en logtabellen blijven buiten deze minimale livegang;
-- productie is `CONDITIONAL GO` voor de minimale 002/003/004 klantportaal-volgorde;
+- `002_client_portal_indexes.sql` is uitgevoerd en groen gevalideerd;
+- `003_client_portal_rls_enablement.sql` is uitgevoerd en groen gevalideerd;
+- `004_client_portal_rls_policies_and_grants.sql` is uitgevoerd en groen gevalideerd;
+- oudere legacy policies zijn gedetecteerd en moeten worden opgeschoond vóór productie-auth;
 - productie is `NO-GO` voor alleen `013_client_portal_schema_rls_alignment.sql`.
 - productie is `NO-GO` voor direct `001_schema_tables.sql` zolang oudere `profiles` en `change_requests` niet eerst zijn uitgelijnd.
 - `001_schema_tables.sql` is te breed voor de eerste klantportaal-livegang en wordt vervangen door `001_client_portal_baseline.sql`.
@@ -247,9 +250,41 @@ Rollback:
 - Bij fout vóór commit: transactie faalt en wordt niet toegepast.
 - Bij fout na commit: productie-auth blijft dicht; herstel via backup/snapshot of aparte reviewed rollback-migration.
 
+### Stap 6
+
+Bestand:
+
+```text
+supabase/migration-drafts/005_client_portal_legacy_policy_cleanup.sql
+```
+
+Doel:
+
+- oude legacy policies verwijderen die vóór de minimale production RLS-set bestonden;
+- voorkomen dat klanten via oude profile/update policies meer kunnen dan bedoeld;
+- policy-ruis verwijderen voordat productie-auth open mag.
+
+Verwijdert alleen:
+
+- `"Clients can read own profile"` op `public.profiles`;
+- `"Clients can update own profile"` op `public.profiles`;
+- `"Clients can read own change requests"` op `public.change_requests`.
+
+Controle na stap:
+
+- deze drie legacy policies bestaan niet meer;
+- de nieuwe minimale policies uit `004` bestaan nog;
+- grants blijven ongewijzigd;
+- productie-auth blijft dicht tot customer-isolation groen is.
+
+Rollback:
+
+- Bij fout vóór commit: transactie faalt en wordt niet toegepast.
+- Bij fout na commit: productie-auth blijft dicht; alleen herstellen via reviewed policy migration als dat nodig blijkt.
+
 ## Niet Automatisch Doorgaan Met Brede Migrations
 
-Na `004_client_portal_rls_policies_and_grants.sql` stopt deze minimale productie-uitrol opnieuw voor validatie.
+Na `005_client_portal_legacy_policy_cleanup.sql` stopt deze minimale productie-uitrol opnieuw voor validatie.
 
 Niet automatisch doorgaan met bestaande brede migrations:
 

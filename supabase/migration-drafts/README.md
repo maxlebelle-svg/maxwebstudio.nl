@@ -12,6 +12,7 @@ Voer deze bestanden niet uit zonder expliciete review, testomgeving-validatie en
 2. `002_client_portal_indexes.sql` voor minimale klantportaal-indexes
 3. `003_client_portal_rls_enablement.sql` voor minimale klantportaal-RLS enablement
 4. `004_client_portal_rls_policies_and_grants.sql` voor minimale klantportaal-policies en runtime grants
+5. `005_client_portal_legacy_policy_cleanup.sql` voor het opruimen van oude klantportaal-policies vóór productie-auth
 
 Elke stap vereist aparte review, handmatige execution approval en read-only validatie voordat de volgende stap mag starten.
 

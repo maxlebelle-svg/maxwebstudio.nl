@@ -3350,7 +3350,7 @@ Bewust niet meegenomen:
 
 ## Epic 2B.9 - Minimal Client Portal Indexes, RLS & Grants Drafts
 
-Status: `DRAFT CREATED / NO SQL EXECUTED / PRODUCTION AUTH CLOSED`
+Status: `PRODUCTION EXECUTED / VALIDATED GREEN / PRODUCTION AUTH CLOSED`
 
 Toegevoegd:
 
@@ -3385,6 +3385,33 @@ Bewust niet meegenomen:
 
 Belangrijk:
 
-- geen SQL uitgevoerd in deze stap;
 - productie-auth blijft dicht;
-- `002` moet eerst apart worden gereviewd en handmatig worden uitgevoerd voordat `003` of `004` mag volgen.
+- legacy policies moeten eerst worden opgeschoond voordat productie-auth open mag.
+
+## Epic 2B.10 - Client Portal Legacy Policy Cleanup
+
+Status: `DRAFT CREATED / NO SQL EXECUTED / PRODUCTION AUTH CLOSED`
+
+Toegevoegd:
+
+- `supabase/migration-drafts/005_client_portal_legacy_policy_cleanup.sql`
+
+Waarom:
+
+- productie-validatie na `004` liet oudere policies zien naast de nieuwe minimale RLS policies;
+- `"Clients can update own profile"` kan ongewenst profielupdates toestaan als productie-auth live gaat;
+- cleanup voorkomt policy-ruis en houdt de canonical klantisolatie leidend.
+
+Scope:
+
+- verwijdert alleen `"Clients can read own profile"`;
+- verwijdert alleen `"Clients can update own profile"`;
+- verwijdert alleen `"Clients can read own change requests"`.
+
+Belangrijk:
+
+- geen tabellen wijzigen;
+- geen data wijzigen;
+- geen grants wijzigen;
+- geen brede platformtabellen;
+- productie-auth blijft dicht tot cleanup en RLS/customer-isolation groen zijn.
