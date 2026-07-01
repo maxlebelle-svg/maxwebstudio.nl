@@ -1330,3 +1330,34 @@ Checks:
 | Logout | Geldige sessie kan uitloggen | Nog niet uitgevoerd | BLOCKED | Vereist geldige sessie |
 | Session restore | Refresh behoudt sessie | Nog niet uitgevoerd | BLOCKED | Vereist geldige sessie |
 | Password reset | Staging resetmail werkt | Nog niet uitgevoerd | BLOCKED | Vereist staging mail/testaccount |
+
+## Klantportaal v1D - Link Staging Auth User to Demo Client Profile
+
+Status: `IMPLEMENTED / STAGING-DEMO LINK READY / PRODUCTIE NO-GO`
+
+Scope:
+
+- Alleen local/staging.
+- Geen productie-auth.
+- Geen echte klantdata.
+- Geen SQL.
+- Geen RLS-wijzigingen.
+- Geen service role naar frontend.
+
+Resultaat:
+
+- Een geldige Supabase staging-sessie kan nu lokaal worden gekoppeld aan een veilige demo-klant.
+- `/klantportaal.html` vult automatisch `demo-staging-testklant` als klantcontext wanneer geen `customerId` in de URL staat.
+- Het portaal toont daarna demo klantdata in plaats van `Klant niet gevonden`.
+- De bronmelding vermeldt duidelijk dat dit een staging/demo-klantportaal is.
+- Er is een staging-uitlogknop toegevoegd die de Supabase staging-sessie en lokale demo-sessie wist.
+
+Checks:
+
+| Test | Verwacht | Resultaat | Status | Notities |
+| --- | --- | --- | --- | --- |
+| Staging Auth bridge | Supabase staging user koppelt aan demo klant | Bridge seeding toegevoegd | PASS | Alleen als `CLIENT_PORTAL_AUTH_LIVE` + test/staging actief is |
+| Productie dicht | Geen productie-auth of echte klantdata | Gate vereist staging/test | PASS | Geen SQL/RLS-wijzigingen |
+| Service role scope | Geen service role naar frontend | Niet gebruikt | PASS | Alleen bestaande publieke staging-sessie |
+| Klantportaal fallback | Geen `Klant niet gevonden` na staging login | Demo customer context wordt gezet | READY_FOR_MANUAL_VERIFY | Browsertest na login nodig |
+| Logout | Staging/demo sessie wissen | Uitlogknop toegevoegd | READY_FOR_MANUAL_VERIFY | Te testen met ingelogde staging-sessie |

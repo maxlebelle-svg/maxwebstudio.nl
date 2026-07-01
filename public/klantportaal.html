@@ -22,6 +22,7 @@
         </div>
         <div class="portal-actions">
           <span class="status-badge status-prepared" id="portal-source-badge">Bron laden</span>
+          <button class="button secondary" id="portal-logout" type="button" hidden>Uitloggen</button>
           <a class="button secondary" href="index.html">Terug naar website</a>
         </div>
       </header>
@@ -136,16 +137,19 @@
         const { getClientPortalData } = await import("./src/services/clientPortalDataService.js");
         const { requireCustomerAccess } = await import("./src/services/routeGuardService.js");
         const { getClientAuthReadiness } = await import("./src/services/clientAuthReadinessService.js");
+        const { ensureStagingClientPortalDemoSession } = await import("./src/services/stagingClientPortalAuthBridgeService.js");
+        const { signOut: signOutSupabase } = await import("./src/services/supabaseAuthProvider.js");
         const { saveChangeRequestWithWriteFallback } = await import("./src/services/changeRequestWriteService.js");
         const { saveClientPortalMessageWithWriteFallback } = await import("./src/services/clientPortalMessageWriteService.js");
         const params = new URLSearchParams(window.location.search);
-        const customerId = params.get("customerId") || "";
+        let customerId = params.get("customerId") || "";
         const supabaseCustomerId = params.get("supabaseCustomerId") || "";
-        const portalDataMode = params.get("portalDataMode") || params.get("mode") || "";
+        let portalDataMode = params.get("portalDataMode") || params.get("mode") || "";
         const portalTitle = document.getElementById("portal-title");
         const portalSubtitle = document.getElementById("portal-subtitle");
         const portalSourceBadge = document.getElementById("portal-source-badge");
         const portalSourceText = document.getElementById("portal-source-text");
+        const portalLogout = document.getElementById("portal-logout");
         const portalAuthMessage = document.getElementById("portal-auth-message");
         const portalAuthText = document.getElementById("portal-auth-text");
         const customerProfile = document.getElementById("customer-profile");
@@ -178,6 +182,18 @@
           messages: document.getElementById("metric-messages"),
           notifications: document.getElementById("metric-notifications"),
         };
+        const stagingBridge = await ensureStagingClientPortalDemoSession();
+        if (stagingBridge.active) {
+          customerId = customerId || stagingBridge.customerId;
+          portalDataMode = portalDataMode || stagingBridge.mode;
+          portalLogout.hidden = false;
+        }
+
+        portalLogout.addEventListener("click", async () => {
+          await signOutSupabase();
+          localStorage.removeItem("maxwebstudioCurrentSession");
+          window.location.href = "/login.html";
+        });
 
         const money = (value) => new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(Number(value || 0));
         const formatDate = (value) => {
@@ -474,7 +490,9 @@
           } else if (mode === "supabase-read") {
             portalSourceText.textContent = "Dit portaal gebruikt Supabase read-only data. Schrijven blijft geblokkeerd en interne admin-data wordt gefilterd.";
           } else if (mode === "demo") {
-            portalSourceText.textContent = "Dit is het demo-klantportaal met lokale browserdata. Echte login/beveiliging volgt in Fase 13.";
+            portalSourceText.textContent = stagingBridge.active
+              ? "Dit is een staging/demo-klantportaal: ingelogd via Supabase Auth, gekoppeld aan veilige lokale demo-klantdata."
+              : "Dit is het demo-klantportaal met lokale browserdata. Echte login/beveiliging volgt in Fase 13.";
           } else {
             portalSourceText.textContent = "Dit portaal gebruikt lokale browserdata als veilige fallback. Interne admin-notities worden niet getoond.";
           }
