@@ -211,13 +211,14 @@
         const { getClientPortalData } = await import("./src/services/clientPortalDataService.js");
         const { requireCustomerAccess } = await import("./src/services/routeGuardService.js");
         const { getClientAuthReadiness } = await import("./src/services/clientAuthReadinessService.js");
+        const { getClientCustomerProfileContext } = await import("./src/services/clientCustomerProfileContextService.js");
         const { ensureStagingClientPortalDemoSession } = await import("./src/services/stagingClientPortalAuthBridgeService.js");
         const { signOut: signOutSupabase } = await import("./src/services/supabaseAuthProvider.js");
         const { saveChangeRequestWithWriteFallback } = await import("./src/services/changeRequestWriteService.js");
         const { saveClientPortalMessageWithWriteFallback } = await import("./src/services/clientPortalMessageWriteService.js");
         const params = new URLSearchParams(window.location.search);
         let customerId = params.get("customerId") || "";
-        const supabaseCustomerId = params.get("supabaseCustomerId") || "";
+        let supabaseCustomerId = params.get("supabaseCustomerId") || "";
         let portalDataMode = params.get("portalDataMode") || params.get("mode") || "";
         const portalTitle = document.getElementById("portal-title");
         const portalSubtitle = document.getElementById("portal-subtitle");
@@ -267,8 +268,17 @@
           messages: document.getElementById("metric-messages"),
           notifications: document.getElementById("metric-notifications"),
         };
-        const stagingBridge = await ensureStagingClientPortalDemoSession();
-        if (stagingBridge.active) {
+        const profileContext = await getClientCustomerProfileContext();
+        let stagingBridge = { active: false, reason: "", customerId: "", mode: "" };
+        if (profileContext.profileFound) {
+          customerId = customerId || profileContext.customerId;
+          supabaseCustomerId = supabaseCustomerId || profileContext.supabaseCustomerId;
+          portalDataMode = portalDataMode || profileContext.mode;
+          portalLogout.hidden = false;
+        } else {
+          stagingBridge = await ensureStagingClientPortalDemoSession();
+        }
+        if (!profileContext.profileFound && stagingBridge.active) {
           customerId = customerId || stagingBridge.customerId;
           portalDataMode = portalDataMode || stagingBridge.mode;
           portalLogout.hidden = false;
@@ -323,6 +333,24 @@
             return;
           }
           const roleLabel = session.role === "customer" ? "demo-klant" : session.role || "demo-gebruiker";
+          if (profileContext.profileFound) {
+            portalAuthText.textContent = developerMode
+              ? `Ingelogd met Supabase Auth. Klantprofiel gevonden via profiles/customer context. ${authReadiness.developerMessage}`
+              : "Ingelogd. Je klantprofiel is veilig gekoppeld aan dit portaal.";
+            return;
+          }
+          if (profileContext.state === "profile_missing") {
+            portalAuthText.textContent = developerMode
+              ? `${profileContext.message} Staging/demo fallback blijft beschikbaar zolang er geen echte customer-koppeling is.`
+              : `Ingelogd als ${roleLabel}. Dit is een veilige demo-weergave; echte klantgegevens worden later gekoppeld.`;
+            return;
+          }
+          if (profileContext.state === "error") {
+            portalAuthText.textContent = developerMode
+              ? `${profileContext.message} ${profileContext.error}`
+              : "Je klantprofiel kon nog niet worden opgehaald. Daarom tonen we tijdelijk een veilige demo-weergave.";
+            return;
+          }
           if (session.customerId && customerId && String(session.customerId) !== String(customerId)) {
             portalAuthText.textContent = `Ingelogd als ${roleLabel}, maar deze demo-sessie hoort bij een andere klant. Daarom tonen we geen data van een andere klant.`;
             return;
@@ -1068,7 +1096,9 @@
           portalSourceBadge.textContent = labels[mode] || mode;
           portalSourceBadge.className = `status-badge ${mode === "hybrid" || mode === "supabase-read" ? "status-active" : "status-prepared"}`;
           if (mode === "hybrid") {
-            portalSourceText.textContent = "Dit portaal gebruikt hybrid read: Supabase waar beschikbaar en lokale demo/fallback-data waar nodig. Interne admin-data wordt gefilterd.";
+            portalSourceText.textContent = profileContext.profileFound
+              ? "Dit portaal gebruikt een Supabase klantprofiel als context en vult overige modules hybrid aan waar nodig. Interne admin-data wordt gefilterd."
+              : "Dit portaal gebruikt hybrid read: Supabase waar beschikbaar en lokale demo/fallback-data waar nodig. Interne admin-data wordt gefilterd.";
           } else if (mode === "supabase-read") {
             portalSourceText.textContent = "Dit portaal gebruikt Supabase read-only data. Schrijven blijft geblokkeerd en interne admin-data wordt gefilterd.";
           } else if (mode === "demo") {

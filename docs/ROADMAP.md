@@ -2292,3 +2292,35 @@ Bewust niet uitgevoerd:
 Volgende aanbevolen stap:
 
 - `Epic 2A.2 - Production Customer Profile Read`
+
+## Epic 2A.2 - Supabase Customer Profile Foundation
+
+Status: `IMPLEMENTED / READ-ONLY FOUNDATION / PRODUCTION AUTH NO-GO`
+
+Doel:
+
+- klantcontext stap voor stap losmaken van demo/localStorage;
+- eerst een echt Supabase profile/customer proberen te lezen op basis van de ingelogde Auth user;
+- de bestaande staging/demo bridge behouden als veilige fallback.
+
+Opgeleverd:
+
+- `clientCustomerProfileContextService`;
+- read-only profile lookup via `profiles.auth_user_id`;
+- read-only customer lookup via `profiles.customer_id`;
+- klantportaal gebruikt deze context voordat de staging/demo fallback inspringt;
+- states voor `loading`, `profile_found`, `profile_missing` en `error`;
+- veilige foutmeldingen zonder secrets.
+
+Belangrijk:
+
+- UX blijft gelijk;
+- geen volledige portaldata-migratie;
+- geen writes;
+- geen SQL;
+- geen productie-auth activatie;
+- geen echte klantdata.
+
+Volgende aanbevolen stap:
+
+- `Epic 2A.3 - Mijn Website Production Read`

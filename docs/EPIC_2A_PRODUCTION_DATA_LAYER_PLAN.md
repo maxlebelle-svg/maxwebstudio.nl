@@ -149,3 +149,81 @@ Doel van die stap:
 - klantprofiel read-only tonen vanuit echte Supabase-data;
 - demo/local fallback behouden zolang production rollout `NO-GO` is;
 - geen writes activeren.
+
+## Epic 2A.2 - Supabase Customer Profile Foundation
+
+Status: `IMPLEMENTED / READ-ONLY FOUNDATION / PRODUCTION AUTH NO-GO`
+
+Doel:
+
+- de klantcontext niet langer uitsluitend uit demo/localStorage laten komen;
+- eerst proberen een klantprofiel op te halen op basis van de ingelogde Supabase Auth user;
+- veilig terugvallen naar de staging/demo bridge zolang er geen echt profile/customer bestaat.
+
+Toegevoegd:
+
+- `public/src/services/clientCustomerProfileContextService.js`
+
+Werking:
+
+1. Lees de bestaande Supabase Auth-sessie uit de browser.
+2. Haal publieke Supabase-config op via de bestaande client auth config route.
+3. Lees read-only `profiles` met `auth_user_id = session.user.id`.
+4. Lees read-only de gekoppelde `customers` record via `profiles.customer_id`.
+5. Geef een klantveilige context terug aan `klantportaal.html`.
+6. Als profile/customer ontbreekt of niet veilig gelezen kan worden, blijft de staging/demo fallback actief.
+
+Ondersteunde states:
+
+- `loading`: voorbereid voor UI-statussen;
+- `profile_found`: profile en customer gevonden;
+- `profile_missing`: sessie of customer-koppeling ontbreekt;
+- `error`: veilige foutstatus zonder secrets.
+
+Benodigde Supabase-velden:
+
+`profiles`:
+
+- `id`;
+- `auth_user_id`;
+- `email`;
+- `role`;
+- `customer_id`;
+- `status`.
+
+`customers`:
+
+- `id`;
+- `name`;
+- `company_name` of `company`;
+- `email`;
+- `phone`;
+- `website` of `website_url`;
+- `package` of `plan`;
+- `status`;
+- `portal_status`;
+- `customer_since`;
+- `created_at`;
+- `updated_at`.
+
+Securityregels:
+
+- Geen service role naar frontend.
+- Alleen Supabase Auth access token en anon/publishable key worden client-side gebruikt.
+- Customer context mag in productie niet uit URL-parameters of localStorage worden afgeleid.
+- RLS moet afdwingen dat de ingelogde customer alleen eigen `profiles` en `customers` ziet.
+- Fallback is uitsluitend bedoeld voor staging/demo/readiness.
+
+Bewust niet uitgevoerd:
+
+- geen volledige portaldata-migratie;
+- geen writes;
+- geen SQL;
+- geen productie-auth activatie;
+- geen echte klantdata;
+- geen redesign;
+- geen OpenAI/Mollie.
+
+Volgende aanbevolen stap:
+
+`Epic 2A.3 - Mijn Website Production Read`
