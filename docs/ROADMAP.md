@@ -2143,3 +2143,29 @@ Bewust beperkt:
 - geen productiegegevens;
 - geen OpenAI;
 - geen nieuwe dependencies.
+
+### Epic 1.7 - Max AI Begeleidende Laag
+
+Status: `IMPLEMENTED / STAGING-DEMO ONLY`
+
+Opgeleverd:
+
+- contextuele Max AI-kaarten door het klantportaal;
+- proactieve tip op `Vandaag`;
+- advieslaag bij `Mijn Website` voor snelheid, SEO en reviews;
+- hulpkaart bij `Wijzigingen` om verzoeken eenvoudiger te formuleren;
+- samenvatting/volgende stap bij `Berichten`;
+- eenvoudige uitleglaag bij `Facturen & offertes`;
+- aandachtspunten-samenvatting bij `Notificaties`;
+- duidelijke demo/placeholder-labels zonder echte AI-call.
+
+Bewust beperkt:
+
+- alleen bestaande staging/demo/localStorage data;
+- geen chatfunctie;
+- geen OpenAI;
+- geen backendwijzigingen;
+- geen SQL;
+- geen RLS-wijzigingen;
+- geen productiegegevens;
+- geen nieuwe dependencies.

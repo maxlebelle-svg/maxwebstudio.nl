@@ -59,10 +59,11 @@
         </div>
         <div class="portal-today-panel" aria-label="Website status vandaag">
           <div class="portal-health-grid" id="portal-health-grid"></div>
-          <article class="portal-max-tip" id="portal-max-tip">
+          <article class="portal-max-tip portal-ai-card" id="portal-max-tip">
             <span>Max zegt</span>
             <strong>Ik kijk even met je mee.</strong>
             <p>Je persoonlijke tip verschijnt zodra je klantdata is geladen.</p>
+            <em>Demo Max AI-laag - geen echte AI-call</em>
           </article>
         </div>
       </section>
@@ -92,20 +93,22 @@
 
       <section class="admin-section" id="notificaties">
         <div class="admin-section-heading"><div><p class="section-kicker">Notificaties</p><h2>Actiecentrum</h2></div></div>
-        <article class="portal-notification-summary" id="portal-notification-summary">
+        <article class="portal-notification-summary portal-ai-card" id="portal-notification-summary">
           <span>Max zegt</span>
           <strong>Ik vat je aandachtspunten samen.</strong>
           <p>Je ziet hier straks direct wat actie vraagt, wat is afgerond en wat alleen informatief is.</p>
+          <em>Demo Max AI-laag - geen echte AI-call</em>
         </article>
         <div class="portal-notification-board" id="portal-notifications" aria-live="polite"></div>
       </section>
 
       <section class="admin-section" id="facturen">
         <div class="admin-section-heading"><div><p class="section-kicker">Facturen & offertes</p><h2>Wat staat open en wat is afgerond?</h2></div></div>
-        <article class="portal-finance-summary" id="portal-finance-summary">
+        <article class="portal-finance-summary portal-ai-card" id="portal-finance-summary">
           <span>Max zegt</span>
           <strong>Ik zet je betalingen en offertes overzichtelijk klaar.</strong>
           <p>Je ziet hier straks direct wat openstaat, wat betaald is en waar je iets mee moet.</p>
+          <em>Demo Max AI-laag - geen echte AI-call</em>
         </article>
         <div class="portal-finance-grid" id="portal-finance-overview" aria-live="polite"></div>
       </section>
@@ -122,6 +125,12 @@
 
       <section class="admin-section" id="wijzigingen">
         <div class="admin-section-heading"><div><p class="section-kicker">Wijzigingen</p><h2>Iets aanpassen? Geef het simpel door.</h2></div></div>
+        <article class="portal-section-ai-card portal-ai-card" id="portal-change-guidance">
+          <span>Max zegt</span>
+          <strong>Ik help je je wijziging duidelijk te formuleren.</strong>
+          <p>Kies eerst wat je wilt aanpassen. Beschrijf daarna in gewone taal wat er anders moet; technisch hoeft niet.</p>
+          <em>Demo Max AI-laag - geen echte AI-call</em>
+        </article>
         <article class="admin-card customer-portal-card" id="portal-change-request-create">
           <strong>Wat wil je laten aanpassen?</strong>
           <form class="admin-form portal-change-request-form" id="portal-change-request-form">
@@ -154,10 +163,11 @@
 
       <section class="admin-section" id="berichten">
         <div class="admin-section-heading"><div><p class="section-kicker">Berichten</p><h2>Korte lijn met Max Webstudio</h2></div></div>
-        <article class="portal-message-summary" id="portal-message-summary">
+        <article class="portal-message-summary portal-ai-card" id="portal-message-summary">
           <span>Max zegt</span>
           <strong>Samenvatting / volgende stap</strong>
           <p>Je gesprekken verschijnen hier zodra je klantdata is geladen.</p>
+          <em>Demo Max AI-laag - geen echte AI-call</em>
         </article>
         <article class="admin-card customer-portal-card" id="portal-message-create">
           <strong>Stuur een bericht</strong>
@@ -175,6 +185,12 @@
 
       <section class="admin-section" id="mijn-website">
         <div class="admin-section-heading"><div><p class="section-kicker">Mijn Website</p><h2>Onder controle, zonder technisch gedoe</h2></div></div>
+        <article class="portal-section-ai-card portal-ai-card" id="portal-website-guidance">
+          <span>Max zegt</span>
+          <strong>Ik kijk naar snelheid, vindbaarheid en vertrouwen.</strong>
+          <p>Hier geef ik straks proactief advies over reviews, SEO en verbeterpunten voor je website.</p>
+          <em>Demo Max AI-laag - geen echte AI-call</em>
+        </article>
         <div id="portal-website-overview" aria-live="polite"></div>
         <div class="portal-card-grid" id="portal-websites" aria-live="polite"></div>
       </section>
@@ -222,6 +238,7 @@
         const subscriptionList = document.getElementById("portal-subscriptions");
         const projectList = document.getElementById("portal-projects");
         const changeRequestList = document.getElementById("portal-change-requests");
+        const changeGuidance = document.getElementById("portal-change-guidance");
         const changeRequestForm = document.getElementById("portal-change-request-form");
         const changeRequestStatus = document.getElementById("change-request-status");
         const changeRequestSubmit = document.getElementById("change-request-submit");
@@ -235,6 +252,7 @@
         const notificationList = document.getElementById("portal-notifications");
         const notificationSummary = document.getElementById("portal-notification-summary");
         const websiteOverview = document.getElementById("portal-website-overview");
+        const websiteGuidance = document.getElementById("portal-website-guidance");
         const websiteList = document.getElementById("portal-websites");
         const fileList = document.getElementById("portal-files");
         const readinessList = document.getElementById("portal-readiness");
@@ -466,6 +484,20 @@
 
         function renderChangeRequestRows(rows) {
           changeRequestList.replaceChildren();
+          const openRows = rows.filter((request) => isOpenStatus(request.status));
+          if (openRows.length) {
+            updateAiCard(
+              changeGuidance,
+              `${openRows.length} wijziging${openRows.length === 1 ? "" : "en"} lopen al.`,
+              "Wil je nog iets aanpassen? Voeg het als nieuw verzoek toe, dan blijft alles netjes gescheiden en overzichtelijk."
+            );
+          } else {
+            updateAiCard(
+              changeGuidance,
+              "Ik help je je wijziging duidelijk te formuleren.",
+              "Kies eerst wat je wilt aanpassen. Beschrijf daarna in gewone taal wat er anders moet; technisch hoeft niet."
+            );
+          }
           if (!rows.length) {
             changeRequestList.append(createEmpty("Geen wijzigingsverzoeken", "Wil je iets laten aanpassen? Gebruik de keuzehulp hierboven."));
             return;
@@ -744,6 +776,14 @@
           return action;
         }
 
+        function updateAiCard(card, title, text) {
+          if (!card) return;
+          const heading = card.querySelector("strong");
+          const copy = card.querySelector("p");
+          if (heading) heading.textContent = title;
+          if (copy) copy.textContent = text;
+        }
+
         function notificationGroup(notification = {}) {
           const status = normalize(notification.status);
           const type = normalize(notification.type);
@@ -859,6 +899,25 @@
           const backupLabel = website.lastBackupAt ? formatDate(website.lastBackupAt) : "Demo: dagelijks voorbereid";
           const speedScore = Number(website.performanceScore || website.speedScore || 96);
           const seoScore = Number(website.seoScore || 92);
+          if (seoScore < 90) {
+            updateAiCard(
+              websiteGuidance,
+              "Je vindbaarheid kan nog sterker.",
+              "Ik zou straks eerst naar je paginatitels, klantreviews en belangrijkste zoekwoorden kijken."
+            );
+          } else if (speedScore < 90) {
+            updateAiCard(
+              websiteGuidance,
+              "Je snelheid verdient aandacht.",
+              "Ik zou straks afbeeldingen, scripts en hostingchecks als eerste nalopen om de ervaring sneller te maken."
+            );
+          } else {
+            updateAiCard(
+              websiteGuidance,
+              "Je website staat er gezond voor.",
+              "Blijf vertrouwen opbouwen met recente reviews, duidelijke diensten en een korte aanvraagroute."
+            );
+          }
           const card = document.createElement("article");
           card.className = "portal-website-overview-card";
           const content = document.createElement("div");

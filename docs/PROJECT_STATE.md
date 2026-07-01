@@ -284,6 +284,35 @@ Bewust niet uitgevoerd:
 - geen nieuwe dependencies;
 - geen nieuwe backendfunctionaliteit.
 
+## Epic 1.7 - Max AI Begeleidende Laag
+
+Status: `IMPLEMENTED / STAGING-DEMO ONLY`
+
+De klantportaalervaring bevat nu Max AI als contextuele begeleider:
+
+- `Vandaag` toont een proactieve Max-tip op basis van demo-portaaldata;
+- `Mijn Website` geeft klantvriendelijk advies over snelheid, SEO en vertrouwen;
+- `Wijzigingen` helpt de klant een wijzigingsverzoek duidelijk te formuleren;
+- `Berichten` vat de volgende stap samen;
+- `Facturen & offertes` legt openstaande acties rustig uit;
+- `Notificaties` vat aandachtspunten samen;
+- iedere Max-kaart maakt zichtbaar dat dit een demo/placeholder-laag is zonder echte AI-call.
+
+De laag is bedoeld om de klant direct te laten voelen:
+
+> Max kijkt met mij mee en helpt mij de volgende stap kiezen.
+
+Bewust niet uitgevoerd:
+
+- geen productiegegevens;
+- geen SQL;
+- geen RLS-wijzigingen;
+- geen OpenAI;
+- geen chatfunctie;
+- geen backendwijzigingen;
+- geen nieuwe dependencies;
+- geen nieuwe backendfunctionaliteit.
+
 ## Sterke Punten
 
 - Duidelijke premium positionering.
