@@ -1967,3 +1967,43 @@ Nog te valideren:
 3. Session restore na refresh.
 4. Password reset.
 5. Klantportaaltoegang met echte sessie.
+
+## Epic 1 - Digital Account Manager
+
+Status: `BLUEPRINT COMPLETE / NO CODE`
+
+Doel:
+
+- Het klantportaal wordt niet ontworpen als beheerpaneel, maar als digitale accountmanager.
+- Een klant moet binnen 10 seconden begrijpen hoe zijn website ervoor staat, of actie nodig is en hoe hij eenvoudig hulp krijgt.
+- Max AI wordt geen losse pagina, maar een contextuele begeleidende laag door het hele portaal.
+
+Leidend document:
+
+- `docs/EPIC_1_DIGITAL_ACCOUNT_MANAGER_UX_BLUEPRINT.md`
+
+Scope van Epic 1:
+
+- Vandaag / overzicht
+- Dashboard
+- Mijn Website
+- Projectstatus
+- Wijzigingsverzoeken
+- Berichten
+- Facturen/offertes
+- Notificaties
+- Max AI als proactieve laag door alle schermen
+
+Productprincipes:
+
+- Minder klikken is beter dan meer functies.
+- Proactieve hulp is beter dan reactieve informatie.
+- Acties zijn belangrijker dan statistieken.
+- Vertrouwen is belangrijker dan technische details.
+- Rust en overzicht winnen altijd van een volle interface.
+
+Volgende stap:
+
+1. Bouw eerst het klantportaal startscherm rond `Vandaag / overzicht`.
+2. Behoud staging/demo-data en Supabase read-layer/fallback.
+3. Activeer nog geen nieuwe productiefunctionaliteit zonder aparte implementatiefase.

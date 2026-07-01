@@ -73,6 +73,51 @@ Belangrijk:
 - `admin-website-health.js`: beheert website healthdata server-side met `ADMIN_TOKEN` en mock-checks als basis voor latere monitoring.
 - `admin-billing.js`: beheert abonnementen en facturen server-side met `ADMIN_TOKEN` en Supabase service role.
 
+## Epic 1 - Digital Account Manager UX Blueprint
+
+Status: `BLUEPRINT COMPLETE / PRODUCT EXPERIENCE / NO CODE`
+
+Epic 1 legt vast hoe het klantportaal moet voelen voor een betalende klant:
+
+- als een persoonlijke digitale accountmanager;
+- niet als een technisch beheerpaneel;
+- proactief, rustig en gericht op de volgende stap;
+- met Max AI als contextuele begeleider door het hele portaal.
+
+North Star:
+
+> Max Webstudio is niet alleen een webbouwer. Het klantportaal moet voelen als een persoonlijke digitale accountmanager die proactief meedenkt, overzicht geeft en ondernemers helpt online te groeien.
+
+Belangrijkste uitgangspunt:
+
+- Een klant mag nooit hoeven nadenken over de status van zijn website.
+- Het portaal vertelt wat belangrijk is, wat aandacht nodig heeft en wat de volgende stap is.
+
+Vastgelegde klantgebieden:
+
+- Vandaag / overzicht
+- Dashboard
+- Mijn Website
+- Projectstatus
+- Wijzigingsverzoeken
+- Berichten
+- Facturen/offertes
+- Notificaties
+- Max AI als laag door het hele portaal
+
+Bewust niet uitgevoerd:
+
+- geen codewijzigingen;
+- geen nieuwe dependencies;
+- geen backendwijzigingen;
+- geen SQL;
+- geen OpenAI;
+- geen productiegegevens.
+
+Leidend document:
+
+- `docs/EPIC_1_DIGITAL_ACCOUNT_MANAGER_UX_BLUEPRINT.md`
+
 ## Sterke Punten
 
 - Duidelijke premium positionering.
