@@ -489,3 +489,112 @@ Bewust niet uitgevoerd:
 Volgende aanbevolen stap:
 
 `Epic 2A.6 - Finance Production Read Foundation`
+
+## Epic 2A.6 - Facturen/Offertes Production Data Foundation
+
+Status: `IMPLEMENTED / READ-ONLY FOUNDATION / PRODUCTION AUTH NO-GO`
+
+Doel:
+
+- facturen, offertes en abonnementen voorbereiden op echte Supabase-data;
+- bestaande finance demo/localStorage fallback behouden;
+- geen live betalingen of PDF-generatie activeren.
+
+Toegevoegd:
+
+- `public/src/services/clientFinanceContextService.js`
+
+Werking:
+
+1. Gebruik de bestaande Supabase Auth-sessie.
+2. Gebruik de customer context uit Epic 2A.2.
+3. Lees read-only `quotes` op `customer_id`.
+4. Lees read-only `invoices` op `customer_id`.
+5. Lees read-only `subscriptions` op `customer_id`.
+6. Normaliseer records naar de bestaande klantportaalvorm.
+7. Als Supabase-data ontbreekt of niet veilig gelezen kan worden, blijft de bestaande portal payload actief.
+
+Ondersteunde states:
+
+- `loading`;
+- `found`;
+- `missing`;
+- `error`.
+
+Benodigde Supabase-velden voor `quotes`:
+
+- `id`;
+- `customer_id`;
+- `website_id`;
+- `project_id`;
+- `quote_number`;
+- `type`;
+- `title`;
+- `proposal` of `notes` als omschrijving;
+- `status`;
+- `quote_date`;
+- `valid_until`;
+- `total`;
+- `accepted_at`;
+- `created_at`;
+- `updated_at`.
+
+Benodigde Supabase-velden voor `invoices`:
+
+- `id`;
+- `customer_id`;
+- `website_id`;
+- `project_id`;
+- `subscription_id`;
+- `invoice_number`;
+- `type`;
+- `title`;
+- `notes` als omschrijving;
+- `status`;
+- `mollie_payment_status`;
+- `invoice_date`;
+- `due_date`;
+- `paid_at`;
+- `total`;
+- `created_at`;
+- `updated_at`.
+
+Benodigde Supabase-velden voor `subscriptions`:
+
+- `id`;
+- `customer_id`;
+- `website_id`;
+- `project_id`;
+- `plan`;
+- `status`;
+- `billing_cycle`;
+- `total_incl_vat`;
+- `next_invoice_date`;
+- `last_invoice_id`;
+- `last_invoice_date`;
+- `mandate_status`;
+- `created_at`;
+- `updated_at`.
+
+Securityregels:
+
+- Geen service role naar frontend.
+- Reads gebruiken de ingelogde Supabase Auth-sessie.
+- RLS moet afdwingen dat de klant alleen eigen `quotes`, `invoices` en `subscriptions` kan lezen.
+- Betalen, akkoord geven, Mollie, PDF en statuswrites blijven geblokkeerd tot aparte release.
+- Mollie identifiers en interne payment/debugvelden mogen niet als klantactiebron worden gebruikt.
+
+Bewust niet uitgevoerd:
+
+- geen redesign;
+- geen SQL;
+- geen productie-auth activatie;
+- geen echte klantdata;
+- geen Mollie live;
+- geen PDF-generatie;
+- geen OpenAI;
+- geen nieuwe dependencies.
+
+Volgende aanbevolen stap:
+
+`Epic 2A.7 - Notifications Production Read Foundation`

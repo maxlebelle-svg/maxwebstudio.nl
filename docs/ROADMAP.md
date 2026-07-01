@@ -2423,3 +2423,39 @@ Belangrijk:
 Volgende aanbevolen stap:
 
 - `Epic 2A.6 - Finance Production Read Foundation`
+
+## Epic 2A.6 - Facturen/Offertes Production Data Foundation
+
+Status: `IMPLEMENTED / READ-ONLY FOUNDATION / PRODUCTION AUTH NO-GO`
+
+Doel:
+
+- facturen, offertes en abonnementen voorbereiden op echte Supabase-data;
+- finance-data lezen op `customer_id` als er een veilige Auth/customer-context bestaat;
+- fallback naar demo/localStorage behouden zolang Supabase-data of permissie ontbreekt.
+
+Opgeleverd:
+
+- `clientFinanceContextService`;
+- read-only `quotes` lookup op `customer_id`;
+- read-only `invoices` lookup op `customer_id`;
+- read-only `subscriptions` lookup op `customer_id`;
+- normalisatie naar de bestaande klantportaalvorm;
+- states voor `loading`, `found`, `missing` en `error`;
+- bestaande klantportaal-UX blijft gelijk;
+- finance-knoppen blijven demo/placeholders.
+
+Belangrijk:
+
+- geen redesign;
+- geen SQL;
+- geen productie-auth activatie;
+- geen echte klantdata;
+- geen Mollie live;
+- geen PDF-generatie;
+- geen OpenAI;
+- geen nieuwe dependencies.
+
+Volgende aanbevolen stap:
+
+- `Epic 2A.7 - Notifications Production Read Foundation`

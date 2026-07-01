@@ -650,6 +650,68 @@ Volgende aanbevolen stap:
 
 - `Epic 2A.6 - Finance Production Read Foundation`
 
+## Epic 2A.6 - Facturen/Offertes Production Data Foundation
+
+Status: `IMPLEMENTED / READ-ONLY FOUNDATION / PRODUCTIE NO-GO`
+
+Facturen, offertes en abonnementen zijn voorbereid op echte Supabase-data zonder live betalingen.
+
+Toegevoegd:
+
+- `public/src/services/clientFinanceContextService.js`
+
+Werking:
+
+- gebruikt de bestaande Supabase Auth-sessie;
+- gebruikt de customer context uit Epic 2A.2;
+- leest `quotes`, `invoices` en `subscriptions` read-only op `customer_id`;
+- normaliseert records naar de bestaande klantportaalvorm;
+- werkt de finance-metrics bij als Supabase-data beschikbaar is;
+- valt terug op de bestaande demo/localStorage flow als Supabase-data of read-permissie ontbreekt.
+
+Ondersteunde states:
+
+- `loading`;
+- `found`;
+- `missing`;
+- `error`.
+
+Voorbereide velden:
+
+- `customer_id`;
+- `type`;
+- `title`;
+- `description`;
+- `amount`;
+- `currency`;
+- `status`;
+- `due_date`;
+- `paid_at`;
+- `created_at`;
+- `updated_at`.
+
+Belangrijkste securitybesluit:
+
+- Geen service role naar frontend.
+- Finance reads gebruiken de ingelogde Supabase Auth-sessie.
+- RLS moet afdwingen dat klanten alleen eigen `quotes`, `invoices` en `subscriptions` kunnen lezen.
+- Betalen, akkoord geven, Mollie, PDF en statuswrites blijven demo/placeholders tot een aparte release.
+
+Bewust niet uitgevoerd:
+
+- geen redesign;
+- geen SQL;
+- geen productie-auth activatie;
+- geen echte klantdata;
+- geen Mollie live;
+- geen PDF-generatie;
+- geen OpenAI;
+- geen nieuwe dependencies.
+
+Volgende aanbevolen stap:
+
+- `Epic 2A.7 - Notifications Production Read Foundation`
+
 ## Sterke Punten
 
 - Duidelijke premium positionering.

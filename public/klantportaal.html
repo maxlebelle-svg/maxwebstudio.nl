@@ -215,6 +215,7 @@
         const { getClientWebsiteProjectContext } = await import("./src/services/clientWebsiteProjectContextService.js");
         const { getClientChangeRequestContext, saveClientChangeRequestWithSupabaseFallback } = await import("./src/services/clientChangeRequestContextService.js");
         const { getClientPortalMessageContext, saveClientPortalMessageWithSupabaseFallback } = await import("./src/services/clientPortalMessageContextService.js");
+        const { getClientFinanceContext } = await import("./src/services/clientFinanceContextService.js");
         const { ensureStagingClientPortalDemoSession } = await import("./src/services/stagingClientPortalAuthBridgeService.js");
         const { signOut: signOutSupabase } = await import("./src/services/supabaseAuthProvider.js");
         const params = new URLSearchParams(window.location.search);
@@ -1184,6 +1185,39 @@
           };
         } else if (messageContext.state === "error" && isDeveloperModeEnabled()) {
           payload.warnings = [...(payload.warnings || []), messageContext.error || messageContext.statusMessage];
+        }
+        const financeContext = await getClientFinanceContext({
+          customerId,
+          supabaseCustomerId,
+          customer: payload.customer,
+        });
+        if (financeContext.found) {
+          payload.quotes = financeContext.quotes;
+          payload.invoices = financeContext.invoices;
+          payload.subscriptions = financeContext.subscriptions;
+          payload.sourceSummary = {
+            ...(payload.sourceSummary || {}),
+            financeContext: {
+              state: financeContext.state,
+              source: financeContext.source,
+              quoteCount: financeContext.quotes.length,
+              invoiceCount: financeContext.invoices.length,
+              subscriptionCount: financeContext.subscriptions.length,
+            },
+          };
+          const openInvoiceStatuses = new Set(["concept", "draft", "verzonden", "sent", "verlopen", "expired", "open"]);
+          const openQuoteStatuses = new Set(["concept", "draft", "verzonden", "sent", "geaccepteerd", "accepted"]);
+          const activeSubscriptionStatuses = new Set(["actief", "active", "wacht_op_mandate", "mandate_required"]);
+          const openInvoices = financeContext.invoices.filter((invoice) => openInvoiceStatuses.has(String(invoice.status || "").toLowerCase()));
+          payload.metrics = {
+            ...(payload.metrics || {}),
+            openQuotes: financeContext.quotes.filter((quote) => openQuoteStatuses.has(String(quote.status || "").toLowerCase())).length,
+            openInvoices: openInvoices.length,
+            openInvoiceTotal: openInvoices.reduce((sum, invoice) => sum + Number(invoice.total || invoice.amount || 0), 0),
+            activeSubscriptions: financeContext.subscriptions.filter((subscription) => activeSubscriptionStatuses.has(String(subscription.status || "").toLowerCase())).length,
+          };
+        } else if (financeContext.state === "error" && isDeveloperModeEnabled()) {
+          payload.warnings = [...(payload.warnings || []), financeContext.error || financeContext.message];
         }
         const { customer, websites, projects, files, invoices, subscriptions, quotes, changeRequests, messages, notifications, metrics: portalMetrics, sourceSummary } = payload;
         const customerChangeRequests = [...changeRequests];
