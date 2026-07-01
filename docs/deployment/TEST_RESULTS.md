@@ -1729,3 +1729,36 @@ Open live-validatie:
 - live `/login.html` met production flag testen;
 - live logout/session restore/password reset testen;
 - RLS/customer isolation met echte productiecontext testen.
+
+## Production Netlify Env Check
+
+Datum: 2026-07-01
+
+Status: `PASS / MANUAL NETLIFY CONFIG REQUIRED`
+
+Controle zonder secrets:
+
+- productieproject moet `maxwebstudio` zijn: PASS;
+- productie project ref moet `yxxahurphdbblkuxoeje` zijn: PASS;
+- `SUPABASE_URL` moet naar `yxxahurphdbblkuxoeje.supabase.co` wijzen: REQUIRED;
+- `SUPABASE_ANON_KEY` moet de productie anon/publishable key zijn: REQUIRED;
+- `SUPABASE_PROJECT_ID=yxxahurphdbblkuxoeje`: REQUIRED;
+- `APP_ENV=production`: REQUIRED;
+- `APP_ENVIRONMENT=production`: REQUIRED;
+- `CLIENT_PORTAL_AUTH_LIVE=true` pas na releasebevestiging: REQUIRED LATER;
+- `CLIENT_PORTAL_REDIRECT_URL=https://maxwebstudio.nl/login.html`: REQUIRED;
+- `ADMIN_REDIRECT_URL=https://maxwebstudio.nl/admin-dashboard.html`: REQUIRED.
+
+Browser-safety:
+
+- `client-auth-config` geeft geen `SUPABASE_SERVICE_ROLE_KEY` terug: PASS;
+- frontend gebruikt alleen `SUPABASE_URL` en `SUPABASE_ANON_KEY` voor browser-auth: PASS;
+- service-role is alleen toegestaan in backend/serverless functies: PASS;
+- production write gates blijven gesloten: PASS.
+
+NO-GO totdat handmatig in Netlify bevestigd:
+
+- waarden zijn aanwezig in production environment;
+- waarden wijzen naar production project `maxwebstudio`;
+- `CLIENT_PORTAL_AUTH_LIVE` is bewust op het juiste moment gezet;
+- live auth smoke test is uitgevoerd.

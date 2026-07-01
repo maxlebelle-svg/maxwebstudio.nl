@@ -3492,3 +3492,52 @@ Volgende stap:
 - production Netlify env vars controleren zonder waarden te tonen;
 - `CLIENT_PORTAL_AUTH_LIVE` pas aanzetten na release approval;
 - live login, logout, session restore, password reset en RLS/customer-isolation testen.
+
+## Production Netlify Env Check
+
+Status: `READY FOR MANUAL NETLIFY CONFIG / NO SECRETS COMMITTED`
+
+Doel:
+
+- bepalen welke Netlify production environment variables nodig zijn om klantlogin live veilig te testen;
+- bevestigen dat alleen browser-safe config naar de frontend gaat;
+- productie writes gesloten houden.
+
+Production project:
+
+- Supabase project: `maxwebstudio`;
+- project ref: `yxxahurphdbblkuxoeje`;
+- verwacht hostpatroon: `yxxahurphdbblkuxoeje.supabase.co`.
+
+Vereist in Netlify production:
+
+- `SUPABASE_URL`: moet naar productieproject `maxwebstudio` wijzen;
+- `SUPABASE_ANON_KEY`: productie anon/publishable key, browser-safe en alleen veilig door RLS;
+- `SUPABASE_PROJECT_ID`: `yxxahurphdbblkuxoeje`;
+- `APP_ENV`: `production`;
+- `APP_ENVIRONMENT`: `production`;
+- `CLIENT_PORTAL_AUTH_LIVE`: pas `true` zetten na expliciete releasebevestiging;
+- `CLIENT_PORTAL_REDIRECT_URL`: `https://maxwebstudio.nl/login.html`;
+- `ADMIN_REDIRECT_URL`: `https://maxwebstudio.nl/admin-dashboard.html`;
+- `SITE_URL`/`BASE_URL`: `https://maxwebstudio.nl` wanneer gebruikt door serverless flows.
+
+Server-only:
+
+- `SUPABASE_SERVICE_ROLE_KEY` mag nooit naar browsercode;
+- service-role mag alleen in Netlify/serverless functions gebruikt worden waar dat functioneel nodig is;
+- `ADMIN_TOKEN`, Mollie- en Resend-keys blijven server-only.
+
+Codecheck:
+
+- `functions/client-auth-config.js` retourneert alleen publieke auth-config: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `APP_ENV`, `APP_ENVIRONMENT` en `clientPortalAuthLive`;
+- service-role wordt niet door `client-auth-config` teruggegeven;
+- frontend opent login alleen als public config veilig is en `CLIENT_PORTAL_AUTH_LIVE=true`;
+- productie change request en client portal message writes blijven apart geblokkeerd.
+
+Manual Netlify checklist:
+
+- controleer waarden in Netlify UI zonder ze in logs of documenten te plakken;
+- zet `CLIENT_PORTAL_AUTH_LIVE` eerst op `false` of leeg tijdens deploycheck;
+- zet `CLIENT_PORTAL_AUTH_LIVE=true` pas na release approval;
+- test daarna live login/logout/session restore/password reset;
+- test dat klantdata zonder sessie niet zichtbaar is.
