@@ -1453,3 +1453,48 @@ Polish:
 - directe toegang zonder klantcontext toont nu een nette veilige fallback;
 - klantsecties en formulieren worden verborgen zolang er geen geldige klant/sessie is;
 - bronmelding is klantvriendelijk gemaakt.
+
+## Epic 2A.8 - Production Data Layer QA
+
+Status: `PASS / LOCAL STATIC QA / PRODUCTIE NO-GO`
+
+Scope:
+
+- Alleen production-ready klantportaal datalagen.
+- Geen productie-auth.
+- Geen echte klantdata.
+- Geen SQL.
+- Geen RLS-wijzigingen.
+- Geen OpenAI/Mollie.
+- Geen nieuwe features.
+
+Gecontroleerde datalagen:
+
+- klantprofielcontext;
+- Mijn Website/projectcontext;
+- wijzigingsverzoeken;
+- berichten;
+- facturen/offertes/abonnementen;
+- notificaties.
+
+Validatie:
+
+| Test | Verwacht | Resultaat | Status | Notities |
+| --- | --- | --- | --- | --- |
+| Klantprofielcontext zonder sessie | Geen klantdata, veilige fallback | `profile_missing` | PASS | Geen actieve Supabase Auth-sessie geeft geen payload |
+| Website/projectcontext zonder sessie | Geen website/projectdata | `missing` | PASS | Fallback blijft beschikbaar |
+| Wijzigingsverzoeken zonder sessie | Geen Supabase-read/write | `missing` | PASS | Geen klantdata zonder context |
+| Berichten zonder sessie | Geen berichten uit Supabase | `missing` | PASS | Fallback blijft beschikbaar |
+| Finance zonder sessie | Geen facturen/offertes/abonnementen uit Supabase | `missing` | PASS | Geen betaal- of factuurdata zonder context |
+| Notificaties zonder sessie | Geen notificaties uit Supabase | `missing` | PASS | Actiecentrum valt terug op demo/local |
+| Portal inline script | Script parsebaar | `Inline scripts OK (1)` | PASS | Geen syntax regressie |
+| Service syntax | Nieuwe en bestaande contextservices parsebaar | `node --check` groen | PASS | Geen runtime feature toegevoegd |
+| Service role frontend scan | Geen service-role in gewijzigde frontend paden | Secrets-scan groen | PASS | Alleen een oude documentatieregel met testmetadata matcht |
+| Directe toegang zonder sessie | Geen klantdata zichtbaar | Contextservices geven geen `found` state | PASS | Echte browser-login niet opnieuw uitgevoerd |
+
+Conclusie:
+
+- Alle Epic 2A datalagen werken samen als production-ready foundation met veilige fallback.
+- Zonder geldige sessie/customer-context wordt geen echte klantdata opgehaald of getoond.
+- De bestaande staging/demo-flow blijft intact.
+- Productie blijft `NO-GO` totdat echte Supabase-tabellen, RLS en production Auth-rollout opnieuw zijn gevalideerd.

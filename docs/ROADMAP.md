@@ -2492,3 +2492,43 @@ Belangrijk:
 Volgende aanbevolen stap:
 
 - `Epic 2A Review - Production Data Foundation Completion Review`
+
+## Epic 2A.8 - Production Data Layer QA
+
+Status: `PASS / PRODUCTION DATA FOUNDATION COMPLETE / PRODUCTION AUTH NO-GO`
+
+Doel:
+
+- controleren of alle production-ready datalagen samenwerken;
+- bestaande staging/demo flow intact houden;
+- bevestigen dat zonder geldige sessie/customer-context geen klantdata zichtbaar wordt.
+
+Gecontroleerd:
+
+- klantprofielcontext;
+- Mijn Website/projectcontext;
+- wijzigingsverzoeken;
+- berichten;
+- facturen/offertes/abonnementen;
+- notificaties;
+- fallback naar demo/localStorage;
+- directe toegang zonder sessie;
+- service-role/secrets scan;
+- klantportaal inline script.
+
+Resultaat:
+
+- alle contextservices geven zonder sessie een veilige `missing` of `profile_missing` state;
+- geen service-role of secrets in frontend;
+- klantportaal-script parseert;
+- demo/local fallback blijft intact;
+- geen redesign, SQL, productie-auth, echte klantdata of nieuwe features toegevoegd.
+
+Conclusie:
+
+- Epic 2A production data foundation is compleet als voorbereiding.
+- Productie blijft `NO-GO` tot echte Supabase-tabellen, RLS en production Auth-rollout apart zijn gevalideerd.
+
+Volgende aanbevolen stap:
+
+- `Epic 2B - Supabase Tables & RLS Production Alignment`
