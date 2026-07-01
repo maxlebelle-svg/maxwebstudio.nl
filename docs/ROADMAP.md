@@ -2120,3 +2120,26 @@ Bewust beperkt:
 - geen productiegegevens;
 - geen OpenAI;
 - geen nieuwe dependencies.
+
+### Epic 1.6 - Notificaties en Actiecentrum
+
+Status: `IMPLEMENTED / STAGING-DEMO ONLY`
+
+Opgeleverd:
+
+- sectie `Notificaties` als actiecentrum;
+- indeling in `Aandacht nodig`, `Recent afgerond` en `Informatief`;
+- duidelijke statuslabels per notificatie;
+- contextuele CTA's voor wijziging, factuur, website en bericht;
+- Max AI-placeholder `Vat mijn aandachtspunten samen`;
+- mobiele layout waarin de actiepunten onder elkaar blijven.
+
+Bewust beperkt:
+
+- alleen bestaande staging/demo/localStorage data;
+- geen push- of e-mailnotificaties;
+- geen SQL;
+- geen RLS-wijzigingen;
+- geen productiegegevens;
+- geen OpenAI;
+- geen nieuwe dependencies.

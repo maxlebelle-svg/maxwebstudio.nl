@@ -44,6 +44,7 @@
         <a href="#wijzigingen">Wijzigingen</a>
         <a href="#berichten">Berichten</a>
         <a href="#facturen">Facturen</a>
+        <a href="#notificaties">Acties</a>
       </nav>
 
       <section class="portal-today" id="vandaag" aria-labelledby="portal-today-title">
@@ -89,9 +90,14 @@
 
       <section class="admin-card customer-portal-profile" id="customer-profile" aria-live="polite"></section>
 
-      <section class="admin-section">
-        <div class="admin-section-heading"><div><p class="section-kicker">Notificaties</p><h2>Belangrijke updates</h2></div></div>
-        <div class="portal-card-grid" id="portal-notifications" aria-live="polite"></div>
+      <section class="admin-section" id="notificaties">
+        <div class="admin-section-heading"><div><p class="section-kicker">Notificaties</p><h2>Actiecentrum</h2></div></div>
+        <article class="portal-notification-summary" id="portal-notification-summary">
+          <span>Max zegt</span>
+          <strong>Ik vat je aandachtspunten samen.</strong>
+          <p>Je ziet hier straks direct wat actie vraagt, wat is afgerond en wat alleen informatief is.</p>
+        </article>
+        <div class="portal-notification-board" id="portal-notifications" aria-live="polite"></div>
       </section>
 
       <section class="admin-section" id="facturen">
@@ -227,6 +233,7 @@
         const portalMessageSubmit = document.getElementById("portal-message-submit");
         const portalMessageSummary = document.getElementById("portal-message-summary");
         const notificationList = document.getElementById("portal-notifications");
+        const notificationSummary = document.getElementById("portal-notification-summary");
         const websiteOverview = document.getElementById("portal-website-overview");
         const websiteList = document.getElementById("portal-websites");
         const fileList = document.getElementById("portal-files");
@@ -368,6 +375,11 @@
             normal: "Normaal",
             high: "Belangrijk",
             urgent: "Spoed",
+            invoice: "Factuur",
+            project: "Project",
+            website: "Website",
+            change_request: "Wijziging",
+            message: "Bericht",
           };
           return labels[value] || value || "-";
         }
@@ -732,6 +744,107 @@
           return action;
         }
 
+        function notificationGroup(notification = {}) {
+          const status = normalize(notification.status);
+          const type = normalize(notification.type);
+          if (notification.readAt || ["afgerond", "gereed", "done", "closed", "gelezen", "read"].includes(status)) return "done";
+          if (notification.dueAt || ["invoice", "factuur", "change request", "wijziging"].includes(type) || ["nieuw", "open", "verzonden"].includes(status)) return "attention";
+          return "info";
+        }
+
+        function notificationAction(notification = {}) {
+          const type = normalize(notification.type);
+          if (notification.actionUrl) {
+            return {
+              label: notification.actionLabel || "Openen",
+              href: notification.actionUrl,
+            };
+          }
+          if (["change request", "wijziging"].includes(type)) return { label: "Bekijk wijziging", href: "#wijzigingen" };
+          if (["invoice", "factuur"].includes(type)) return { label: "Bekijk factuur", href: "#facturen" };
+          if (["project", "website"].includes(type)) return { label: "Open website", href: "#mijn-website" };
+          return { label: "Bericht sturen", href: "#berichten" };
+        }
+
+        function createNotificationCard(notification = {}, group = "info") {
+          const card = document.createElement("article");
+          card.className = `portal-notification-card is-${group}`;
+          const top = document.createElement("div");
+          top.className = "portal-notification-card-top";
+          const title = document.createElement("strong");
+          const body = document.createElement("p");
+          const meta = document.createElement("small");
+          const actionWrap = document.createElement("div");
+          actionWrap.className = "portal-actions";
+          const action = notificationAction(notification);
+
+          title.textContent = notification.title || "Notificatie";
+          body.textContent = notification.body || "Max Webstudio houdt dit voor je bij.";
+          meta.textContent = [
+            notification.type ? labelForStatus(notification.type) : "Update",
+            notification.dueAt ? `actie voor ${formatDate(notification.dueAt)}` : formatDate(notification.createdAt),
+          ].filter(Boolean).join(" - ");
+          top.append(title, createBadge(notification.status || (group === "done" ? "afgerond" : "nieuw")));
+          actionWrap.append(createWebsiteAction(action.label, action.href, group === "attention"));
+          card.append(top, body, meta, actionWrap);
+          return card;
+        }
+
+        function renderNotificationCenter(rows = []) {
+          notificationList.replaceChildren();
+          const groups = {
+            attention: {
+              title: "Aandacht nodig",
+              emptyTitle: "Geen actie nodig",
+              emptyText: "Je hoeft op dit moment niets te doen.",
+              rows: [],
+            },
+            done: {
+              title: "Recent afgerond",
+              emptyTitle: "Nog niets afgerond",
+              emptyText: "Afgeronde updates verschijnen hier.",
+              rows: [],
+            },
+            info: {
+              title: "Informatief",
+              emptyTitle: "Geen informatieve updates",
+              emptyText: "Algemene updates over je website verschijnen hier.",
+              rows: [],
+            },
+          };
+
+          rows.forEach((notification) => groups[notificationGroup(notification)].rows.push(notification));
+
+          const summaryTitle = notificationSummary.querySelector("strong");
+          const summaryText = notificationSummary.querySelector("p");
+          if (groups.attention.rows.length) {
+            summaryTitle.textContent = `${groups.attention.rows.length} aandachtspunt${groups.attention.rows.length === 1 ? "" : "en"} voor jou.`;
+            summaryText.textContent = "Ik heb de belangrijkste acties bovenaan gezet, zodat je direct ziet wat nu aandacht nodig heeft.";
+          } else if (groups.done.rows.length) {
+            summaryTitle.textContent = "Alles is onder controle.";
+            summaryText.textContent = "Er staat niets dringends open. Je kunt rustig terugkijken wat recent is afgerond.";
+          } else {
+            summaryTitle.textContent = "Geen nieuwe aandachtspunten.";
+            summaryText.textContent = "Zodra er iets speelt rond je website, facturen of wijzigingen, zie je dat hier terug.";
+          }
+
+          Object.entries(groups).forEach(([key, group]) => {
+            const column = document.createElement("section");
+            column.className = `portal-notification-column is-${key}`;
+            const heading = document.createElement("h3");
+            const count = document.createElement("span");
+            heading.textContent = group.title;
+            count.textContent = String(group.rows.length);
+            column.append(heading, count);
+            if (!group.rows.length) {
+              column.append(createEmpty(group.emptyTitle, group.emptyText));
+            } else {
+              group.rows.forEach((notification) => column.append(createNotificationCard(notification, key)));
+            }
+            notificationList.append(column);
+          });
+        }
+
         function renderMyWebsiteExperience({ websites, projects }) {
           websiteOverview.replaceChildren();
           if (!websites.length) {
@@ -819,7 +932,7 @@
             createActionCard("Wijzigingsverzoeken", openRequests.length, openRequests.length ? "Er loopt nog een wijziging." : "Geen open wijzigingen.", "#wijzigingen", openRequests.length ? "attention" : "ok"),
             createActionCard("Berichten", unreadMessages.length, unreadMessages.length ? "Er staan berichten klaar." : "Geen nieuwe berichten.", "#berichten", unreadMessages.length ? "attention" : "ok"),
             createActionCard("Facturen", openInvoices.length, openInvoices.length ? `${money(openInvoices.reduce((sum, invoice) => sum + Number(invoice.total || invoice.amount || 0), 0))} openstaand.` : "Alles is bijgewerkt.", "#facturen", openInvoices.length ? "attention" : "ok"),
-            createActionCard("Notificaties", openNotifications.length, openNotifications.length ? "Er zijn aandachtspunten." : "Geen urgente meldingen.", "#vandaag", openNotifications.length ? "attention" : "ok")
+            createActionCard("Notificaties", openNotifications.length, openNotifications.length ? "Er zijn aandachtspunten." : "Geen urgente meldingen.", "#notificaties", openNotifications.length ? "attention" : "ok")
           );
 
           const maxTitle = portalMaxTip.querySelector("strong");
@@ -997,18 +1110,7 @@
           ]));
         });
 
-        if (!notifications.length) notificationList.append(createEmpty("Geen notificaties", "Belangrijke updates over projecten, facturen en wijzigingen verschijnen hier."));
-        notifications.forEach((notification) => {
-          notificationList.append(createInfoCard(notification.title || "Notificatie", [
-            ["Status", createBadge(notification.status || "nieuw")],
-            ["Type", notification.type || "-"],
-            ["Datum", formatDate(notification.createdAt)],
-            ["Actie nodig voor", formatDate(notification.dueAt)],
-            ["Bericht", notification.body || "-"],
-          ], [
-            createActionLink(notification.actionLabel || "Openen", notification.actionUrl || "")
-          ]));
-        });
+        renderNotificationCenter(notifications);
 
         if (!projects.length) projectList.append(createEmpty("Geen projecten", "Er staan nog geen projecten klaar voor dit klantprofiel."));
         projects.forEach((project) => {

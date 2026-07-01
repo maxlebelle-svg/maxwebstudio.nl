@@ -7370,6 +7370,138 @@ h3 {
   flex: 1 1 150px;
 }
 
+.portal-notification-summary {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: clamp(18px, 3vw, 24px);
+  border: 1px solid rgba(25, 194, 255, 0.22);
+  border-radius: 8px;
+  color: var(--white);
+  background:
+    radial-gradient(circle at 92% 18%, rgba(37, 99, 235, 0.16), transparent 34%),
+    rgba(255, 255, 255, 0.07);
+}
+
+.portal-notification-summary span {
+  color: #19c2ff;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.portal-notification-summary strong {
+  font-size: clamp(20px, 2.4vw, 28px);
+  line-height: 1.18;
+}
+
+.portal-notification-summary p {
+  max-width: 70ch;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-weight: 800;
+  line-height: 1.6;
+}
+
+.portal-notification-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.portal-notification-column {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.portal-notification-column > h3 {
+  color: var(--white);
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.portal-notification-column > span {
+  justify-self: start;
+  min-width: 34px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: var(--white);
+  font-size: 12px;
+  font-weight: 900;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.portal-notification-card {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.portal-notification-card.is-attention {
+  border-color: rgba(255, 189, 90, 0.28);
+  background:
+    radial-gradient(circle at 92% 16%, rgba(255, 189, 90, 0.13), transparent 34%),
+    rgba(255, 255, 255, 0.07);
+}
+
+.portal-notification-card.is-done {
+  border-color: rgba(50, 213, 131, 0.22);
+  background:
+    radial-gradient(circle at 92% 16%, rgba(50, 213, 131, 0.12), transparent 34%),
+    rgba(255, 255, 255, 0.07);
+}
+
+.portal-notification-card.is-info {
+  border-color: rgba(25, 194, 255, 0.18);
+  background:
+    radial-gradient(circle at 92% 16%, rgba(25, 194, 255, 0.1), transparent 34%),
+    rgba(255, 255, 255, 0.07);
+}
+
+.portal-notification-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.portal-notification-card-top strong {
+  color: var(--white);
+  font-size: 17px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.portal-notification-card p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.74);
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.portal-notification-card small {
+  color: rgba(255, 255, 255, 0.56);
+  font-weight: 900;
+  line-height: 1.45;
+}
+
+.portal-notification-card .portal-actions .button {
+  flex: 1 1 150px;
+}
+
 .portal-website-overview-card {
   display: grid;
   grid-template-columns: minmax(0, 0.8fr) minmax(420px, 1.2fr);
@@ -10405,6 +10537,7 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   .customer-portal-kpis,
   .portal-today,
   .portal-website-overview-card,
+  .portal-notification-board,
   .integration-grid,
   .portal-website-grid,
   .health-summary-grid,

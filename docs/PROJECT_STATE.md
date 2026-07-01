@@ -258,6 +258,32 @@ Bewust niet uitgevoerd:
 - geen nieuwe dependencies;
 - geen nieuwe backendfunctionaliteit.
 
+## Epic 1.6 - Notificaties en Actiecentrum
+
+Status: `IMPLEMENTED / STAGING-DEMO ONLY`
+
+De klantportaalervaring bevat nu een actiecentrum:
+
+- notificaties worden gegroepeerd in `Aandacht nodig`, `Recent afgerond` en `Informatief`;
+- duidelijke statuslabels per notificatie;
+- directe CTA's zoals `Bekijk wijziging`, `Bekijk factuur`, `Open website` en `Bericht sturen`;
+- Max AI-placeholder voor `Vat mijn aandachtspunten samen`;
+- mobiele layout waarin actiepunten netjes onder elkaar staan.
+
+De pagina is bedoeld om de klant direct te laten begrijpen:
+
+> Moet ik iets doen, of is alles onder controle?
+
+Bewust niet uitgevoerd:
+
+- geen productiegegevens;
+- geen SQL;
+- geen RLS-wijzigingen;
+- geen push- of e-mailnotificaties;
+- geen OpenAI;
+- geen nieuwe dependencies;
+- geen nieuwe backendfunctionaliteit.
+
 ## Sterke Punten
 
 - Duidelijke premium positionering.
