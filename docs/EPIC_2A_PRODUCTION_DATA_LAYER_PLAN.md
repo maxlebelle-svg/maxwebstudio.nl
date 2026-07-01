@@ -1,0 +1,151 @@
+# Epic 2A - Production Data Layer Plan
+
+Status: `INVENTORY COMPLETE / NO CODE CHANGES`
+
+Epic 2A brengt in kaart welke demo- en localStorage-data in het klantportaal vervangen moet worden door echte Supabase-data.
+
+Dit document is de brug tussen:
+
+- Epic 1: Digital Account Manager demo-ervaring;
+- Epic 2: Production Rollout Plan;
+- de toekomstige productie-uitrol van het klantportaal.
+
+## Grenzen
+
+In deze fase is bewust niets geactiveerd.
+
+Niet uitgevoerd:
+
+- geen codewijzigingen;
+- geen SQL;
+- geen Supabase schemawijzigingen;
+- geen productie-auth activatie;
+- geen echte klantdata;
+- geen OpenAI;
+- geen Mollie/Resend;
+- geen runtimewijzigingen.
+
+## Huidige Datastroom
+
+Het klantportaal draait nu via `public/klantportaal.html`.
+
+De belangrijkste databronnen zijn:
+
+- `clientPortalDataService.js`: bouwt de klantveilige portal payload;
+- `stagingClientPortalAuthBridgeService.js`: koppelt een staging Auth-sessie tijdelijk aan demo klantdata;
+- repositories voor `customers`, `websites`, `projects`, `quotes`, `invoices` en `subscriptions`;
+- localStorage keys voor demo en fallback;
+- Supabase/hybrid read-layer waar die al veilig beschikbaar is.
+
+De staging bridge seedt nu demo-objecten zoals:
+
+- `demo-staging-testklant`;
+- `demo-staging-website`;
+- `demo-staging-project`;
+- demo offerte, factuur, abonnement, wijzigingsverzoek, bericht, notificatie en bestand.
+
+Die bridge is nuttig voor staging-validatie, maar mag geen productiebron worden.
+
+## Productie Data Inventory
+
+| Onderdeel | Huidige databron | Gewenste Supabase tabel/service | Benodigde velden | Auth-afhankelijkheid | RLS/security aandachtspunt | Migratievolgorde |
+| --- | --- | --- | --- | --- | --- | --- |
+| Auth en sessiecontext | `maxwebstudioSupabaseAuthSession`, `maxwebstudioCurrentSession`, staging bridge | Supabase Auth + `profiles` | `auth.users.id`, `email`, `role`, `customer_id`, `status`, timestamps | Supabase sessie is de enige production identity source | URL-parameters of localStorage mogen nooit autoriteit zijn; service role blijft server-side | 0 |
+| Klantprofiel | `maxwebstudioCrmCustomers`, `maxwebstudioCustomers`, staging demo seed | `customers` via `CustomerRepository` | `id`, `name`, `company`, `email`, `phone`, `website`, `package`, `status`, `portal_status`, `customer_since`, timestamps | `profiles.customer_id` bepaalt welke customer gelezen mag worden | Customer mag alleen eigen record lezen; interne notities niet naar portal payload | 1 |
+| Vandaag / Overzicht | Afgeleid uit websites, projects, invoices, change requests, messages, notifications, subscriptions | Afgeleide read-model laag boven Supabase services | websitegezondheid, open acties, laatste update, open facturen, unread berichten, actieve wijziging | Vereist geldige customer-context | Alleen data uit eigen customer scope combineren; geen cross-customer aggregatie | 2-6 |
+| Mijn Website | `maxwebstudioManagedSites`, `maxwebstudioWebsites`, staging demo website | `websites` + eventueel `subscriptions` voor onderhoud/hosting | `id`, `customer_id`, `project_id`, `name`, `domain`, `live_url`, `status`, `maintenance_status`, `maintenance_plan`, `publish_status`, `ssl_status`, `last_checked_at`, `last_deploy_at`, `last_backup_at`, `seo_notes`, `seo_score`, `performance_score`, timestamps | Website moet via `customer_id` aan ingelogde klant gekoppeld zijn | Klant leest alleen eigen websites; domein/hosting/deployment velden blijven write-restricted | 2 |
+| Projectstatus | `maxwebstudioProjects`, staging demo project | `projects` via `ProjectRepository` | `id`, `customer_id`, `website_id`, `name`, `status`, `phase`, `progress`, `start_date`, `deadline`, `public_notes`, `updated_at` | Project moet binnen eigen customer scope vallen | Customer read-only; interne rollen beheren status via bewezen write gates | 2 |
+| Wijzigingsverzoeken | `maxwebstudioChangeRequests`, write fallback, staging demo request | `change_requests` | `id`, `customer_id`, `website_id`, `project_id`, `title`, `description`, `category`, `priority`, `status`, `created_by`, timestamps | Customer mag alleen eigen request aanmaken/lezen | Geen customer_id spoofing; customer mag status/ownership niet wijzigen | 3 |
+| Berichten | `maxwebstudioClientPortalMessages`, write fallback, staging demo message | `client_portal_messages` | `id`, `customer_id`, `subject`, `body`, `sender_type`, `status`, `read_at`, timestamps | Bericht hoort bij eigen customer-context | Geen sender/customer spoofing; anonymous en no-profile blokkeren | 4 |
+| Facturen | `maxwebstudioInvoices`, staging demo invoice | `invoices` + `invoice_lines` via finance service | `id`, `customer_id`, `invoice_number`, `status`, `payment_status`, `invoice_date`, `due_date`, `total`, `paid_at`, `subscription_id`, line items | Alleen eigen facturen zichtbaar na Auth/customer binding | Customer read-only; betalingen en statuswijzigingen uitsluitend server-side later | 5 |
+| Offertes | `maxwebstudioQuotes`, staging demo quote | `quotes` + `quote_lines` via finance service | `id`, `customer_id`, `quote_number`, `status`, `quote_date`, `valid_until`, `total`, `accepted_at`, line items | Alleen eigen offertes zichtbaar na Auth/customer binding | Akkoord geven later via aparte server-side flow; geen brede customer writes | 5 |
+| Abonnementen / onderhoud | `maxwebstudioSubscriptions`, staging demo subscription | `subscriptions` | `id`, `customer_id`, `website_id`, `plan`, `status`, `billing_cycle`, `next_invoice_date`, `amount`, `payment_status`, timestamps | Eigen customer scope | Customer read-only; facturatie en abonnementen blijven high-risk writes | 5 |
+| Notificaties | `maxwebstudioClientPortalNotifications` en afgeleide notificaties | `client_portal_notifications` + afgeleide portal read laag | `id`, `customer_id`, `title`, `body`, `type`, `status`, `due_at`, `read_at`, `action_label`, `action_url`, timestamps | Alleen eigen customer notificaties | Notificaties mogen geen interne details of secrets bevatten | 6 |
+| Bestanden | `maxwebstudioFiles`, staging demo file | `files` metadata + later Supabase Storage policies | `id`, `customer_id`, `website_id`, `project_id`, `name`, `type`, `category`, `status`, `storage_path`, `created_at`, `updated_at` | Bestandmetadata moet aan eigen customer gekoppeld zijn | Signed URLs en Storage RLS verplicht voor echte uploads/downloads | 7 |
+| Max AI placeholders | Client-side demo teksten op basis van portal payload | Eerst afgeleid uit echte portal read-data; later `ai_drafts` en `ai_assistant_drafts` | Voor MVP geen aparte tabel; later `customer_id`, `entity_type`, `entity_id`, `draft_type`, `content`, `status`, timestamps | AI-context mag alleen eigen klantdata gebruiken | Geen prompts/secrets/logs naar klantweergave; toestemming en masking nodig voor echte AI | 8 |
+
+## LocalStorage Keys Die Niet Productie-Leidend Mogen Zijn
+
+Deze keys mogen in productie hooguit fallback/readiness zijn, maar niet de bron van waarheid:
+
+- `maxwebstudioSupabaseAuthSession`;
+- `maxwebstudioCurrentSession`;
+- `maxwebstudioCrmCustomers`;
+- `maxwebstudioCustomers`;
+- `maxwebstudioManagedSites`;
+- `maxwebstudioWebsites`;
+- `maxwebstudioProjects`;
+- `maxwebstudioQuotes`;
+- `maxwebstudioInvoices`;
+- `maxwebstudioSubscriptions`;
+- `maxwebstudioFiles`;
+- `maxwebstudioChangeRequests`;
+- `maxwebstudioClientPortalMessages`;
+- `maxwebstudioClientPortalNotifications`;
+- write-gate statuskeys zoals `maxwebstudioChangeRequestWriteEnabled` en `maxwebstudioClientPortalMessageWriteEnabled`.
+
+Staging identifiers zoals `demo-staging-testklant`, `demo-staging-website` en `demo-staging-project` horen uitsluitend in test/staging.
+
+## Implementatievolgorde
+
+1. **Auth user naar profile/customer binding**
+   - Supabase Auth sessie is leidend.
+   - `profiles.customer_id` bepaalt de klantcontext.
+   - URL params en localStorage mogen deze context niet overschrijven.
+
+2. **Klantprofiel read**
+   - Eerste echte production read.
+   - Portal toont alleen basisprofiel en duidelijke empty state als koppeling ontbreekt.
+
+3. **Mijn Website + Projectstatus read**
+   - `websites` en `projects` aansluiten op dezelfde customer-context.
+   - Dashboard/Terugkomreden wordt hiermee echt.
+
+4. **Wijzigingsverzoeken**
+   - Read eerst volledig op Supabase.
+   - Create/write pas production-gated na RLS, audit en approval.
+
+5. **Berichten**
+   - Read eerst volledig op Supabase.
+   - Create/write pas production-gated na RLS, audit en approval.
+
+6. **Facturen, offertes en abonnementen**
+   - Read-only naar productie.
+   - Geen Mollie-live of betaalstatuswrites zonder aparte release.
+
+7. **Notificaties**
+   - Eerst read-only.
+   - `read_at` of gelezen-status pas later als aparte low-risk write.
+
+8. **Bestanden**
+   - Eerst metadata read-only.
+   - Storage uploads/downloads pas na Storage Security uitvoering en signed URL-validatie.
+
+9. **Max AI placeholders**
+   - Blijven placeholder/regelgebaseerd.
+   - Later pas echte AI-context via server-side adapter.
+
+## Productieblockers Voor Bouwfase
+
+Voordat Epic 2A van inventory naar implementatie gaat:
+
+- production Auth-config moet expliciet zijn goedgekeurd;
+- password reset, logout en session restore moeten production-ready zijn;
+- Customer A/B RLS-isolatie moet opnieuw worden bewezen op production-like data;
+- productie mag geen demo/staging records bevatten;
+- adminbeheer voor klantprofielkoppeling moet duidelijk zijn;
+- audit logging, backup en rollback moeten release-ready zijn;
+- release governance moet productie `GO` geven.
+
+## Volgende Stap
+
+Aanbevolen vervolg:
+
+`Epic 2A.2 - Production Customer Profile Read`
+
+Doel van die stap:
+
+- Supabase Auth sessie koppelen aan `profiles.customer_id`;
+- klantprofiel read-only tonen vanuit echte Supabase-data;
+- demo/local fallback behouden zolang production rollout `NO-GO` is;
+- geen writes activeren.

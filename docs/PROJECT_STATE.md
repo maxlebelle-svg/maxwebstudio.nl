@@ -372,6 +372,57 @@ Bewust niet uitgevoerd:
 - geen Mollie/Resend;
 - geen runtimewijzigingen.
 
+## Epic 2A.1 - Production Data Layer Inventory
+
+Status: `COMPLETED / INVENTORY ONLY / NO CODE CHANGES`
+
+De productie-datalaag voor het klantportaal is geinventariseerd.
+
+Toegevoegd:
+
+- `docs/EPIC_2A_PRODUCTION_DATA_LAYER_PLAN.md`
+
+Vastgelegd:
+
+- welke demo/localStorage-bronnen nu het klantportaal voeden;
+- welke Supabase-tabellen en services straks leidend moeten worden;
+- welke velden per portalonderdeel nodig zijn;
+- hoe ieder onderdeel afhankelijk is van Supabase Auth, `profiles` en `customer_id`;
+- welke RLS/security-aandachtspunten per onderdeel gelden;
+- welke implementatievolgorde het minste risico geeft.
+
+Belangrijkste volgorde:
+
+1. Auth user naar profile/customer binding.
+2. Klantprofiel read.
+3. Mijn Website + Projectstatus read.
+4. Wijzigingsverzoeken.
+5. Berichten.
+6. Facturen, offertes en abonnementen.
+7. Notificaties.
+8. Bestanden.
+9. Max AI placeholders op echte read-data.
+
+Belangrijkste besluit:
+
+- LocalStorage en staging bridge blijven nuttig voor demo, fallback en test, maar mogen in productie niet de bron van waarheid zijn.
+- De productieklantcontext moet uit Supabase Auth + `profiles.customer_id` komen.
+- URL-parameters en localStorage mogen production customer-context niet bepalen.
+
+Bewust niet uitgevoerd:
+
+- geen code;
+- geen SQL;
+- geen productie-auth activatie;
+- geen echte klantdata;
+- geen OpenAI;
+- geen Mollie/Resend;
+- geen runtimewijzigingen.
+
+Volgende aanbevolen stap:
+
+- `Epic 2A.2 - Production Customer Profile Read`
+
 ## Sterke Punten
 
 - Duidelijke premium positionering.

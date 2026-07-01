@@ -2238,3 +2238,57 @@ Bewust beperkt:
 - geen OpenAI;
 - geen Mollie/Resend;
 - geen runtimewijzigingen.
+
+## Epic 2A.1 - Production Data Layer Inventory
+
+Status: `COMPLETED / INVENTORY ONLY / NO CODE CHANGES`
+
+Doel:
+
+- exact vastleggen welke demo/localStorage-data in het klantportaal vervangen moet worden door echte Supabase-data;
+- voorkomen dat het Digital Account Manager-portaal straks scherm voor scherm ad hoc wordt aangesloten;
+- de productievolgorde bepalen voordat er nieuwe code of SQL wordt uitgevoerd.
+
+Toegevoegd:
+
+- `docs/EPIC_2A_PRODUCTION_DATA_LAYER_PLAN.md`
+
+Geinventariseerd:
+
+- klantprofiel;
+- Vandaag / overzicht;
+- Mijn Website;
+- projectstatus;
+- wijzigingsverzoeken;
+- berichten;
+- facturen/offertes;
+- abonnementen;
+- notificaties;
+- bestanden;
+- Max AI placeholders.
+
+Aanbevolen implementatievolgorde:
+
+1. Auth user naar profile/customer binding.
+2. Klantprofiel read.
+3. Mijn Website + Projectstatus read.
+4. Wijzigingsverzoeken.
+5. Berichten.
+6. Facturen, offertes en abonnementen.
+7. Notificaties.
+8. Bestanden.
+9. Max AI placeholders op echte read-data.
+
+Bewust niet uitgevoerd:
+
+- geen code;
+- geen SQL;
+- geen productie-auth activatie;
+- geen echte klantdata;
+- geen OpenAI;
+- geen Mollie/Resend;
+- geen runtimewijzigingen.
+
+Volgende aanbevolen stap:
+
+- `Epic 2A.2 - Production Customer Profile Read`
