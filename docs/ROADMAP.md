@@ -2857,3 +2857,36 @@ Volgende stap:
 1. Test de wizard met een interne productie- of stagingklant.
 2. Controleer dat records correct gekoppeld worden.
 3. Koppel daarna pas bewust Resend aan deze flow voor echte uitnodigingen.
+
+## Sprint 3A.3 - Real Customer Provisioning
+
+Status: `IMPLEMENTED / READY FOR CONTROLLED LIVE TEST`
+
+Doel:
+
+- van handmatige klantkoppeling naar één adminactie: `Klantportaal klaarzetten`.
+
+Provisioning-flow:
+
+1. admin vult klantgegevens in;
+2. serverless function controleert admin-token;
+3. Supabase Auth user wordt aangemaakt of hergebruikt;
+4. profile wordt aangemaakt/gekoppeld;
+5. customer wordt aangemaakt/gekoppeld;
+6. website record wordt aangemaakt/gekoppeld;
+7. project record wordt aangemaakt/gekoppeld;
+8. password setup/reset link wordt gegenereerd;
+9. welkomstmail wordt als concept teruggegeven.
+
+Nog niet:
+
+- Resend live verzending;
+- Mollie;
+- AI;
+- Leadfinder;
+- Sales Portal.
+
+Volgende stap:
+
+- één gecontroleerde live/staging testklant aanmaken via de wizard;
+- daarna Resend-uitnodiging als aparte stap activeren.

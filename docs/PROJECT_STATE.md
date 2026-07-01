@@ -3600,3 +3600,30 @@ Veiligheidsstatus:
 - frontend ontvangt alleen publieke status/record-id's;
 - er wordt geen wachtwoord naar de klant gemaild;
 - klant moet later via veilige invite/reset/magic-link flow eigen toegang activeren.
+
+## Sprint 3A.3 - Real Customer Provisioning
+
+Status: `IMPLEMENTED / SERVER-SIDE PROVISIONING READY / NO LIVE EMAIL`
+
+Doel:
+
+- de admin wizard laten werken als echte klantprovisioning-flow in plaats van alleen een concept/mock;
+- na opslaan server-side Auth, profile, customer, website en project klaarmaken;
+- password setup/reset link voorbereiden zodat de klant veilig zelf toegang kan activeren.
+
+Opgeleverd:
+
+- Supabase Auth user wordt server-side aangemaakt of hergebruikt;
+- `profiles`, `customers`, `websites` en `projects` worden server-side aangemaakt of bijgewerkt;
+- test/staging records krijgen automatisch `environment=test` en `is_demo=true`;
+- production records krijgen `environment=production` en `is_demo=false`;
+- Supabase password setup/recovery link wordt server-side gegenereerd en in het mailconcept geplaatst;
+- admin krijgt status terug zonder service-role of secrets.
+
+Bewust nog niet actief:
+
+- geen echte Resend-verzending;
+- geen Mollie;
+- geen AI;
+- geen Sales Portal;
+- geen Leadfinder.

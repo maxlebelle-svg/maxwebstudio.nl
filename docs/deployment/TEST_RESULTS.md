@@ -1825,3 +1825,42 @@ Open:
 - live/staging admin wizard openen en visueel testen;
 - één gecontroleerde testklant via Netlify function aanmaken zodra de juiste staging/productie-keuze is bevestigd;
 - daarna Resend-uitnodiging als aparte gecontroleerde stap koppelen.
+
+## Sprint 3A.3 - Real Customer Provisioning
+
+Datum: 2026-07-01
+
+Status: `IMPLEMENTED / MOCK PROVISIONING PASS / LIVE TEST PENDING`
+
+Scope:
+
+- echte server-side provisioning-flow voorbereid;
+- geen SQL uitgevoerd;
+- geen echte klantdata gebruikt;
+- geen Resend live mail verstuurd;
+- geen Mollie/AI/Leadfinder/Sales Portal.
+
+Resultaten:
+
+- Auth user aanmaken/hergebruiken: PASS in mock provisioning;
+- profile/customer/website/project aanmaken of bijwerken: PASS in mock provisioning;
+- staging/test records markeren als `environment=test` en `is_demo=true`: PASS;
+- production records blijven `environment=production` en `is_demo=false`: implemented by environment gate;
+- password setup/recovery link genereren via Supabase admin endpoint: PASS in mock provisioning;
+- setup-link wordt in mailconcept geplaatst: PASS;
+- service-role of secrets komen niet in response terecht: PASS.
+
+Checks:
+
+- `git diff --check`: PASS;
+- `node --check public/script.js`: PASS;
+- `node --check functions/admin-customer-onboarding.js`: PASS;
+- admin-dashboard inline scriptcheck: PASS;
+- secrets-scan: PASS;
+- real provisioning mock test: PASS.
+
+Open:
+
+- één gecontroleerde live/staging test via Netlify function;
+- controleren dat klant daarna via setup/reset link kan inloggen;
+- Resend pas daarna koppelen voor echte verzending.

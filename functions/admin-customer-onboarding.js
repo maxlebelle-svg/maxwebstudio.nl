@@ -141,6 +141,8 @@ exports.handler = async (event) => {
       },
     });
 
+    const passwordSetup = await createPasswordSetupLink(supabaseUrl, serviceRoleKey, input);
+
     return jsonResponse(200, {
       success: true,
       onboarding: {
@@ -150,8 +152,12 @@ exports.handler = async (event) => {
         website: pickRecord(website),
         project: pickRecord(project),
         portalStatus: "active",
+        passwordSetup: {
+          status: passwordSetup.status,
+          redirectTo: passwordSetup.redirectTo,
+        },
       },
-      mailPreview: buildMailPreview(input),
+      mailPreview: buildMailPreview(input, passwordSetup),
       note: "Welkomstmail is alleen als concept klaargezet. Er is geen e-mail verzonden.",
     });
   } catch (error) {
@@ -260,6 +266,41 @@ async function findAuthUser(supabaseUrl, serviceRoleKey, email) {
   return (Array.isArray(data?.users) ? data.users : []).find((user) => cleanText(user.email).toLowerCase() === email) || null;
 }
 
+async function createPasswordSetupLink(supabaseUrl, serviceRoleKey, input) {
+  const redirectTo = cleanText(process.env.CLIENT_PORTAL_REDIRECT_URL) || "https://maxwebstudio.nl/login.html";
+
+  try {
+    const data = await supabaseFetch(`${supabaseUrl}/auth/v1/admin/generate_link`, {
+      method: "POST",
+      headers: authHeaders(serviceRoleKey),
+      body: JSON.stringify({
+        type: "recovery",
+        email: input.email,
+        redirect_to: redirectTo,
+      }),
+    });
+
+    const actionLink = cleanText(data?.action_link || data?.actionLink || data?.properties?.action_link || data?.properties?.actionLink);
+    return {
+      status: actionLink ? "generated" : "manual_required",
+      actionLink,
+      redirectTo,
+    };
+  } catch (error) {
+    console.error("Password setup link generation failed", {
+      status: error.status || 0,
+      code: error.code || "",
+      message: error.message,
+    });
+
+    return {
+      status: "manual_required",
+      actionLink: "",
+      redirectTo,
+    };
+  }
+}
+
 async function upsertByLookup({ supabaseUrl, serviceRoleKey, table, lookup, record }) {
   const existing = await supabaseFetch(`${supabaseUrl}/rest/v1/${table}?select=id&${lookup}&limit=1`, {
     method: "GET",
@@ -334,8 +375,11 @@ function restHeaders(serviceRoleKey) {
   };
 }
 
-function buildMailPreview(input) {
-  const loginLink = cleanText(process.env.CLIENT_PORTAL_REDIRECT_URL) || "https://maxwebstudio.nl/login.html";
+function buildMailPreview(input, passwordSetup = {}) {
+  const loginLink = cleanText(passwordSetup.actionLink) || cleanText(process.env.CLIENT_PORTAL_REDIRECT_URL) || "https://maxwebstudio.nl/login.html";
+  const setupInstruction = passwordSetup.status === "generated"
+    ? "Activeer je account via de knop Account activeren en stel daarna veilig je eigen wachtwoord in."
+    : "Open de loginpagina en kies wachtwoord opnieuw instellen om veilig je eigen wachtwoord te maken.";
   const subject = "Welkom bij Max Webstudio – je klantportaal staat klaar";
   const text = [
     `Hoi ${input.name},`,
@@ -343,7 +387,7 @@ function buildMailPreview(input) {
     `Je klantportaal voor ${input.company} staat klaar bij Max Webstudio.`,
     "In je portaal zie je de status van je website, kun je wijzigingen aanvragen, berichten volgen en belangrijke updates terugvinden.",
     "",
-    "Activeer je account via de knop Account activeren en stel daarna veilig je eigen wachtwoord in.",
+    setupInstruction,
     "",
     `Account activeren: ${loginLink}`,
     "",
