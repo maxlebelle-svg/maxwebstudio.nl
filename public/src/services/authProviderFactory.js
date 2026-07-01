@@ -51,14 +51,16 @@ export function getAuthStatus() {
   const mode = getAuthMode();
   return {
     mode,
-    activeProvider: "demo",
+    activeProvider: supabaseStatus.active ? "supabase-staging" : "demo",
     emailProvider: "supabase-prepared",
     demoAuthActive: true,
     supabaseAuthConfigured: Boolean(supabaseStatus.configured),
-    supabaseAuthActive: false,
+    supabaseAuthActive: Boolean(supabaseStatus.active),
     demoStatus,
     supabaseStatus,
-    reason: mode === "supabase-prepared"
+    reason: supabaseStatus.active
+      ? "Supabase Auth UI is actief voor test/staging. Productie blijft dicht."
+      : mode === "supabase-prepared"
       ? "Supabase Auth is voorbereid, maar demo/local sessies blijven actief totdat live Auth expliciet wordt gekoppeld."
       : "Demo auth actief. Supabase Auth is voorbereid als productiepad.",
   };

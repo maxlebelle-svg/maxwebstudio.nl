@@ -208,7 +208,7 @@
             const status = auth.getAuthStatus();
             authReadiness = await readinessService.getClientAuthReadiness();
             authConfigSafe = Boolean(authReadiness.canShowLoginForm);
-            realLoginActive = Boolean(status.supabaseAuthActive);
+            realLoginActive = Boolean(authReadiness.authLive);
             realLoginStatusMessage = realLoginActive
               ? "Klantlogin is actief. Gebruik je e-mailadres en wachtwoord om in te loggen."
               : authReadiness.visitorMessage;
@@ -271,6 +271,7 @@
             const auth = await loadAuth();
             await auth.signInWithEmail(data.email, data.password);
             setMessage("Login gelukt.", "success");
+            window.location.href = "/klantportaal.html";
           } catch (error) {
             console.info("Supabase login prepared", error);
             setMessage(isDeveloperModeEnabled()

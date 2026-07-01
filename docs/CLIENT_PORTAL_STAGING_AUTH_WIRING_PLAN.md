@@ -92,6 +92,31 @@ Belangrijk:
 - Als `client-auth-config` lokaal niet bereikbaar is, blijft de loginpagina terecht in veilige fallback.
 - Zelfs bij aanwezige publieke config blijft echte login verborgen zolang `authLive=false`.
 
+## Staging Auth UI feature flag
+
+Echte loginvelden mogen alleen zichtbaar worden als alle voorwaarden kloppen:
+
+- publieke Supabase config is veilig beschikbaar;
+- `CLIENT_PORTAL_AUTH_LIVE=true`;
+- `APP_ENV=test` of `APP_ENVIRONMENT=test`;
+- de config komt uit staging/local, niet productie.
+
+Voor productie blijft het klantportaal `Binnenkort beschikbaar` totdat release governance expliciet `GO` geeft.
+
+De frontend mag alleen ontvangen:
+
+- `SUPABASE_URL`;
+- `SUPABASE_ANON_KEY`;
+- `APP_ENV`;
+- `APP_ENVIRONMENT`;
+- `CLIENT_PORTAL_AUTH_LIVE`.
+
+Nooit:
+
+- `SUPABASE_SERVICE_ROLE_KEY`;
+- admin tokens;
+- provider secrets.
+
 ## Testaccounts
 
 Maak minimaal deze stagingaccounts:

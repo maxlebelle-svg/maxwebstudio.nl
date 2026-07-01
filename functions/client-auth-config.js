@@ -5,6 +5,10 @@ exports.handler = async (event) => {
 
   const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
   const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+  const appEnv = process.env.APP_ENV || "";
+  const appEnvironment = process.env.APP_ENVIRONMENT || "";
+  const environmentAllowed = ["test", "staging"].includes(appEnv) || ["test", "staging"].includes(appEnvironment);
+  const clientPortalAuthLive = environmentAllowed && process.env.CLIENT_PORTAL_AUTH_LIVE === "true";
 
   if (!supabaseUrl || !supabaseAnonKey) {
     console.error("Client auth config missing Supabase public configuration", {
@@ -22,6 +26,9 @@ exports.handler = async (event) => {
     success: true,
     supabaseUrl,
     supabaseAnonKey,
+    appEnv,
+    appEnvironment,
+    clientPortalAuthLive,
   });
 };
 

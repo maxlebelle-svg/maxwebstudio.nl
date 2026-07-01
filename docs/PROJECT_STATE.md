@@ -2286,3 +2286,23 @@ Conclusie:
 - `Binnenkort beschikbaar` is verwacht gedrag zolang Auth niet expliciet live/staging-wired is.
 - Voor de volgende echte test moet lokaal via Netlify Dev/functions of veilige runtime-config worden gedraaid.
 - `SUPABASE_SERVICE_ROLE_KEY` blijft server-side only.
+
+## Klantportaal v1C - Enable staging auth UI locally
+
+Status: `IMPLEMENTED / PRODUCTIE NO-GO`
+
+Werking:
+
+- `CLIENT_PORTAL_AUTH_LIVE=true` is toegevoegd als staging/local feature flag.
+- De echte login UI mag alleen openen wanneer publieke Supabase config veilig beschikbaar is en de omgeving `test`/`staging` is.
+- `functions/client-auth-config.js` geeft alleen publieke config, environment labels en de Auth UI flag terug.
+- `SUPABASE_SERVICE_ROLE_KEY` blijft server-side only.
+- `supabaseAuthProvider` ondersteunt nu staging login, logout, sessieherstel en password reset via Supabase Auth REST.
+
+Nog niet bewezen:
+
+- geldige login met staging testaccount;
+- logout met echte sessie;
+- session restore na refresh;
+- password resetmail;
+- Customer A/B Auth-isolatie.

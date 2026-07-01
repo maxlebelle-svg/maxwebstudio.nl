@@ -1948,3 +1948,22 @@ Volgende stap:
 
 1. Lokale test draaien via Netlify Dev/functions of veilige runtime-config.
 2. Daarna pas `Klantportaal v1C - Valid staging Auth session test`.
+
+### Klantportaal v1C - Enable staging auth UI locally
+
+Status: `IMPLEMENTED / WAITING FOR TESTACCOUNT`
+
+Output:
+
+- `CLIENT_PORTAL_AUTH_LIVE` feature flag;
+- test/staging-only Auth UI gate;
+- Supabase Auth REST login/logout/session/reset basis;
+- production fallback blijft dicht.
+
+Nog te valideren:
+
+1. Geldige login met staging testaccount.
+2. Logout.
+3. Session restore na refresh.
+4. Password reset.
+5. Klantportaaltoegang met echte sessie.

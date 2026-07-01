@@ -1297,3 +1297,36 @@ Next actions:
 1. Start lokale test via Netlify Dev of configureer een veilige runtime-config met alleen `SUPABASE_URL` en `SUPABASE_ANON_KEY`.
 2. Houd `SUPABASE_SERVICE_ROLE_KEY` server-side only.
 3. Zet echte login pas aan in een aparte staging Auth wiring fase.
+
+## Klantportaal v1C - Enable Staging Auth UI Locally
+
+Status: `IMPLEMENTED / WACHT OP GELDIGE TESTACCOUNTVALIDATIE / PRODUCTIE NO-GO`
+
+Scope:
+
+- Alleen staging/local Auth UI gate.
+- Geen productie-auth.
+- Geen SQL.
+- Geen RLS-wijzigingen.
+- Geen service role naar frontend.
+
+Toegevoegd gedrag:
+
+- `CLIENT_PORTAL_AUTH_LIVE=true` is vereist om de echte login UI te tonen.
+- De flag werkt alleen wanneer `APP_ENV=test` of `APP_ENVIRONMENT=test`.
+- `client-auth-config` geeft de flag en environment labels door naast de publieke Supabase config.
+- `supabaseAuthProvider` kan in staging via Supabase Auth REST inloggen, uitloggen, sessie herstellen en password reset starten.
+- Supabase sessie wordt lokaal bewaard onder een staging-auth key, niet als productie-auth.
+
+Checks:
+
+| Test | Verwacht | Resultaat | Status | Notities |
+| --- | --- | --- | --- | --- |
+| Feature flag template | `CLIENT_PORTAL_AUTH_LIVE=false` in voorbeelden | Toegevoegd | PASS | Geen secrets |
+| Productie dicht | Auth alleen actief bij test/staging env | Gate vereist test/staging | PASS | Productie blijft fallback |
+| Service role scope | Geen service role naar frontend | Function geeft alleen publieke config + env labels + flag terug | PASS | Geen secretwaarden |
+| JS syntax | Gewijzigde JS valide | `node --check` groen | PASS | Zie commitchecks |
+| Geldige login | Testaccount kan inloggen | Nog niet uitgevoerd | BLOCKED | Wacht op staging testaccountcredentials |
+| Logout | Geldige sessie kan uitloggen | Nog niet uitgevoerd | BLOCKED | Vereist geldige sessie |
+| Session restore | Refresh behoudt sessie | Nog niet uitgevoerd | BLOCKED | Vereist geldige sessie |
+| Password reset | Staging resetmail werkt | Nog niet uitgevoerd | BLOCKED | Vereist staging mail/testaccount |
