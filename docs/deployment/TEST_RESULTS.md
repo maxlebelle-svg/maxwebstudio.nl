@@ -1784,3 +1784,36 @@ Checks:
 - `node --check functions/client-auth-config.js`: PASS;
 - JS syntaxcheck voor functions/services/config/providers/repositories: PASS;
 - inline classic scriptcheck voor homepage/login/klantportaal/admin: PASS.
+
+## Sprint 3A.1 - Admin Customer Create Wizard
+
+Datum: 2026-07-01
+
+Status: `IMPLEMENTED / STATIC CHECKS PASS / RUNTIME ADMIN TEST PENDING`
+
+Scope:
+
+- admin-dashboard wizard voor klant aanmaken;
+- serverless onboarding handler;
+- mailpreview/concept zonder verzending;
+- geen SQL;
+- geen productie-datawijziging tijdens implementatie;
+- geen Resend live, Mollie of AI.
+
+Te valideren:
+
+- admin-token verplicht: implemented, runtime test pending;
+- serverless function weigert zonder admin-token: implemented, runtime test pending;
+- bestaande Auth user wordt hergebruikt: implemented, runtime test pending;
+- nieuwe Auth user wordt server-side klaargezet: implemented, runtime test pending;
+- profile/customer/website/project worden gekoppeld: implemented, runtime test pending;
+- mailconcept wordt getoond zonder verzending: implemented, runtime test pending;
+- service-role komt niet in frontend terecht: PASS by code review.
+
+Checks:
+
+- `git diff --check`: PASS;
+- `node --check public/script.js`: PASS;
+- `node --check functions/admin-customer-onboarding.js`: PASS;
+- admin-dashboard inline scriptcheck: PASS;
+- secrets-scan: PASS, alleen variabelnamen/documentatiereferenties gevonden, geen secretwaarden.

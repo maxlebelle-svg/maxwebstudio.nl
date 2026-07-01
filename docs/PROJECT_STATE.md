@@ -3565,3 +3565,38 @@ Veiligheidsstatus:
 - geen RLS-wijzigingen;
 - geen productiegegevens gewijzigd;
 - fallback blijft actief bij ontbrekende sessie, ontbrekend profile, ontbrekende customer of RLS-denial.
+
+## Sprint 3A.1 - Admin Customer Create Wizard
+
+Status: `MVP BUILT / SERVER-SIDE ONLY / NO LIVE EMAIL`
+
+Doel:
+
+- nieuwe klanten sneller en veiliger klaarmaken voor het klantportaal;
+- handmatig koppelen tussen Supabase Auth, `profiles`, `customers`, `websites` en `projects` verminderen;
+- service-role strikt buiten de frontend houden.
+
+Opgeleverd:
+
+- admin-dashboard wizard via de bestaande `Nieuwe klant` flow;
+- serverless function `admin-customer-onboarding`;
+- admin-token verplicht voor uitvoering;
+- Supabase Auth user wordt server-side hergebruikt of klaargezet;
+- `profile`, `customer`, `website` en `project` worden gekoppeld op de minimale production-baseline tabellen;
+- welkomstmail wordt als preview/concept klaargezet.
+
+Bewust nog niet actief:
+
+- geen Resend live verzending vanuit deze wizard;
+- geen Mollie;
+- geen AI;
+- geen Leadfinder;
+- geen Sales Portal;
+- geen extra brede platformtabellen.
+
+Veiligheidsstatus:
+
+- `SUPABASE_SERVICE_ROLE_KEY` blijft server-side in Netlify functions;
+- frontend ontvangt alleen publieke status/record-id's;
+- er wordt geen wachtwoord naar de klant gemaild;
+- klant moet later via veilige invite/reset/magic-link flow eigen toegang activeren.

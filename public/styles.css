@@ -6289,6 +6289,40 @@ h3 {
   flex: 1;
 }
 
+.admin-onboarding-preview {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid rgba(25, 194, 255, 0.28);
+  border-radius: 14px;
+  background:
+    linear-gradient(135deg, rgba(21, 94, 239, 0.2), rgba(25, 194, 255, 0.1)),
+    rgba(255, 255, 255, 0.06);
+}
+
+.admin-onboarding-preview[hidden] {
+  display: none;
+}
+
+.admin-onboarding-preview strong {
+  color: var(--white);
+  font-size: 16px;
+}
+
+.admin-onboarding-preview span {
+  color: rgba(255, 255, 255, 0.74);
+  font-weight: 900;
+}
+
+.admin-onboarding-preview pre {
+  max-height: 220px;
+  overflow: auto;
+  margin: 0;
+  white-space: pre-wrap;
+  color: rgba(255, 255, 255, 0.78);
+  font: 800 13px/1.6 inherit;
+}
+
 .admin-crm-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) clamp(340px, 32vw, 460px);

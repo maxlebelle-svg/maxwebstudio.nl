@@ -2835,3 +2835,25 @@ Volgende stap:
 3. Deploy frontend.
 4. Test live login/logout/session restore/password reset.
 5. Test dat klantdata zonder sessie onzichtbaar blijft en customer-isolatie werkt.
+
+## Sprint 3A.1 - Admin Customer Create Wizard
+
+Status: `MVP BUILT / READY FOR CONTROLLED ADMIN TEST`
+
+Doel:
+
+- eerste adminflow om een klantportaal-klant aan te maken zonder handmatige Supabase-koppelingen.
+
+Scope MVP:
+
+- admin vult naam, bedrijfsnaam, e-mail, telefoon, pakket, domein en optionele projectnaam in;
+- serverless function zet Auth/profile/customer/website/project klaar;
+- welkomstmail wordt voorbereid als concept;
+- geen echte e-mailverzending;
+- geen finance, CRM-uitbreiding, AI, Mollie, Resend live of brede platformtabellen.
+
+Volgende stap:
+
+1. Test de wizard met een interne productie- of stagingklant.
+2. Controleer dat records correct gekoppeld worden.
+3. Koppel daarna pas bewust Resend aan deze flow voor echte uitnodigingen.

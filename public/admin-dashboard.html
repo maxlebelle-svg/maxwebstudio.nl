@@ -1229,7 +1229,7 @@
         <div class="admin-modal-header">
           <div>
             <p class="section-kicker">CRM</p>
-            <h2 id="new-customer-modal-title">Nieuwe klant</h2>
+            <h2 id="new-customer-modal-title">Klant aanmaken</h2>
           </div>
           <button class="button secondary" type="button" data-modal-close>Sluiten</button>
         </div>
@@ -1239,16 +1239,18 @@
             <label for="new-email">E-mail<input id="new-email" type="email" required /></label>
             <label for="new-phone">Telefoon<input id="new-phone" type="tel" /></label>
             <label for="new-company">Bedrijf<input id="new-company" type="text" required /></label>
-            <label for="new-website">Website<input id="new-website" type="url" placeholder="https://voorbeeld.nl" /></label>
-            <label for="new-package">Onderhoudspakket<select id="new-package"><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option></select></label>
-            <label for="new-status">Status<select id="new-status"><option value="actief">Actief</option><option value="onboarding">Onboarding</option><option value="pauze">Pauze</option><option value="gearchiveerd">Gearchiveerd</option></select></label>
-            <label for="new-portal-status">Portal-status<select id="new-portal-status"><option value="geen_login">Geen login</option><option value="uitgenodigd">Uitgenodigd</option><option value="actief">Actief</option><option value="geblokkeerd">Geblokkeerd</option></select></label>
-            <label for="new-customer-since">Klant sinds<input id="new-customer-since" type="date" /></label>
-            <label class="admin-profile-wide" for="new-notes">Notities admin-only<textarea id="new-notes" placeholder="Interne notities, niet zichtbaar in het klantenportaal"></textarea></label>
+            <label for="new-website">Website / domein<input id="new-website" type="text" placeholder="voorbeeld.nl" required /></label>
+            <label for="new-package">Gekocht pakket<select id="new-package"><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option></select></label>
+            <label for="new-project-name">Projectnaam optioneel<input id="new-project-name" type="text" placeholder="Bijv. Nieuwe website" /></label>
+          </div>
+          <div class="admin-onboarding-preview" id="new-customer-onboarding-preview" hidden>
+            <strong>Welkomstmail concept</strong>
+            <span id="new-customer-mail-subject">Nog geen concept klaar.</span>
+            <pre id="new-customer-mail-body"></pre>
           </div>
           <div class="admin-profile-actions">
-            <button class="button primary" id="new-customer-save" type="submit">Klant opslaan</button>
-            <button class="button secondary" id="new-send-invite" type="button">Uitnodiging versturen</button>
+            <button class="button primary" id="new-customer-save" type="submit">Klantportaal klaarzetten</button>
+            <button class="button secondary" id="new-send-invite" type="button">Mailconcept bekijken</button>
             <p class="admin-form-message" id="new-customer-message" role="status"></p>
           </div>
         </form>
@@ -1447,6 +1449,7 @@
     <script>
       (() => {
         const crmEndpoint = "/.netlify/functions/admin-client-profiles";
+        const customerOnboardingEndpoint = "/.netlify/functions/admin-customer-onboarding";
         const healthEndpoint = "/.netlify/functions/admin-website-health";
         const billingEndpoint = "/.netlify/functions/admin-billing";
         const dashboardMetricsEndpoint = "/.netlify/functions/admin-dashboard-metrics";
@@ -2165,6 +2168,9 @@
         const newCustomerSave = document.getElementById("new-customer-save");
         const newSendInvite = document.getElementById("new-send-invite");
         const newCustomerMessage = document.getElementById("new-customer-message");
+        const newCustomerOnboardingPreview = document.getElementById("new-customer-onboarding-preview");
+        const newCustomerMailSubject = document.getElementById("new-customer-mail-subject");
+        const newCustomerMailBody = document.getElementById("new-customer-mail-body");
         const requestList = document.getElementById("change-request-list");
         const requestStatusFilter = document.getElementById("filter-status");
         const requestPriorityFilter = document.getElementById("filter-priority");
@@ -9703,8 +9709,9 @@
         async function createCustomer(event) {
           event.preventDefault();
           newCustomerSave.disabled = true;
-          newCustomerSave.textContent = "Opslaan...";
+          newCustomerSave.textContent = "Klaarzetten...";
           setNewCustomerMessage("", "");
+          renderNewCustomerMailPreview(null);
 
           try {
             const payload = {
@@ -9712,34 +9719,51 @@
               email: document.getElementById("new-email").value,
               phone: document.getElementById("new-phone").value,
               company: document.getElementById("new-company").value,
-              website: document.getElementById("new-website").value,
+              domain: document.getElementById("new-website").value,
               package: document.getElementById("new-package").value,
-              status: document.getElementById("new-status").value,
-              portalStatus: document.getElementById("new-portal-status").value,
-              customerSince: document.getElementById("new-customer-since").value,
-              notes: document.getElementById("new-notes").value,
+              projectName: document.getElementById("new-project-name").value,
             };
-            let profile = null;
-            const mode = currentCustomerDataMode();
-            const repo = await getCustomerRepositoryModule();
-            const createInSupabase = mode !== "local" && window.confirm("Klant in Supabase aanmaken? Kies Annuleren om lokaal op te slaan.");
-            if (createInSupabase) {
-              profile = await repo.createCustomer(payload, { target: "supabase", mode });
-            } else {
-              profile = await repo.createCustomer(payload, { target: "local", mode });
-            }
+
+            const token = adminTokenInput.value.trim();
+            if (!token) throw new Error("Vul eerst het admin-token in.");
+
+            const response = await fetch(customerOnboardingEndpoint, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify(payload),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data.success) throw new Error(data.error || "Klant kon niet worden klaargezet.");
+
             await loadCRMData(false);
-            newCustomerForm.reset();
-            closeModal(newCustomerModal);
-            state.selectedCustomerId = profile?.id || "";
+            renderNewCustomerMailPreview(data.mailPreview);
+            state.selectedCustomerId = data.onboarding?.profile?.id || "";
             if (state.selectedCustomerId) selectCustomer(state.selectedCustomerId);
-            setAdminAccessMessage(createInSupabase ? "Nieuwe klant aangemaakt in Supabase customers." : "Nieuwe klant aangemaakt in lokale CRM-opslag.", "success");
+            setNewCustomerMessage("Klantportaal klaargezet. Auth, profile, customer, website en project zijn gekoppeld. Mail is alleen als concept voorbereid.", "success");
+            setAdminAccessMessage("Nieuwe klant veilig klaargezet via server-side onboarding.", "success");
           } catch (error) {
             setNewCustomerMessage(error.message || "Klant kon niet worden opgeslagen.", "error");
           } finally {
             newCustomerSave.disabled = false;
-            newCustomerSave.textContent = "Klant opslaan";
+            newCustomerSave.textContent = "Klantportaal klaarzetten";
           }
+        }
+
+        function renderNewCustomerMailPreview(mailPreview) {
+          if (!newCustomerOnboardingPreview) return;
+          if (!mailPreview) {
+            newCustomerOnboardingPreview.hidden = true;
+            newCustomerMailSubject.textContent = "Nog geen concept klaar.";
+            newCustomerMailBody.textContent = "";
+            return;
+          }
+          newCustomerOnboardingPreview.hidden = false;
+          newCustomerMailSubject.textContent = mailPreview.subject || "Welkom bij Max Webstudio – je klantportaal staat klaar";
+          newCustomerMailBody.textContent = mailPreview.text || "";
         }
 
         async function postCustomer(payload) {
@@ -9978,20 +10002,24 @@
         }
 
         async function sendInviteFromNewCustomer() {
-          const email = document.getElementById("new-email").value;
-          newSendInvite.disabled = true;
-          newSendInvite.textContent = "Versturen...";
-          setNewCustomerMessage("", "");
-          try {
-            await postCustomer({ action: "send_invite", email });
-            setNewCustomerMessage("Uitnodiging verstuurd. Sla de klant op zodra de Auth gebruiker beschikbaar is.", "success");
-            await loadCRMData(false);
-          } catch (error) {
-            setNewCustomerMessage(error.message || "Uitnodiging kon niet worden verstuurd.", "error");
-          } finally {
-            newSendInvite.disabled = false;
-            newSendInvite.textContent = "Uitnodiging versturen";
-          }
+          const name = document.getElementById("new-name").value || "klant";
+          const company = document.getElementById("new-company").value || "je bedrijf";
+          renderNewCustomerMailPreview({
+            subject: "Welkom bij Max Webstudio – je klantportaal staat klaar",
+            text: [
+              `Hoi ${name},`,
+              "",
+              `Je klantportaal voor ${company} staat klaar bij Max Webstudio.`,
+              "In je portaal zie je de status van je website, kun je wijzigingen aanvragen, berichten volgen en belangrijke updates terugvinden.",
+              "",
+              "Activeer je account via de knop Account activeren en stel daarna veilig je eigen wachtwoord in.",
+              "",
+              "Account activeren: https://maxwebstudio.nl/login.html",
+              "",
+              "Heb je vragen? Neem gerust contact op met Max Webstudio.",
+            ].join("\n"),
+          });
+          setNewCustomerMessage("Mailconcept getoond. Er is nog geen echte e-mail verzonden.", "success");
         }
 
         function populateWebsiteProfileOptions() {
@@ -14532,9 +14560,7 @@
           newCustomerForm.reset();
           newCustomerModal.hidden = false;
           document.body.classList.add("admin-modal-open");
-          if (!document.getElementById("new-customer-since").value) {
-            document.getElementById("new-customer-since").value = new Date().toISOString().slice(0, 10);
-          }
+          renderNewCustomerMailPreview(null);
           setNewCustomerMessage("", "");
         }
 
