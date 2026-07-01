@@ -69,6 +69,12 @@ function createAuthDebug(config = {}, response = {}, payload = {}) {
   };
 }
 
+function recoveryRedirectUrl() {
+  if (typeof window === "undefined") return "";
+  const origin = window.location?.origin || "";
+  return origin ? `${origin}/login.html?type=recovery` : "";
+}
+
 async function getRuntimeAuthConfig() {
   let endpointConfig = {};
   try {
@@ -223,23 +229,44 @@ export async function resetPassword(email) {
   const config = await getRuntimeAuthConfig();
   if (!config.active) return throwPrepared("resetPassword");
 
-  const response = await fetch(`${config.url}/auth/v1/recover`, {
-    method: "POST",
-    headers: {
-      apikey: config.anonKey,
-      Authorization: `Bearer ${config.anonKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ email }),
-  });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const error = new Error(payload.error_description || payload.msg || payload.message || "Resetlink aanvragen is niet gelukt.");
-    error.code = payload.error || "SUPABASE_RESET_FAILED";
-    error.status = response.status;
+  const recoverUrl = new URL(`${config.url}/auth/v1/recover`);
+  const redirectTo = recoveryRedirectUrl();
+  if (redirectTo) recoverUrl.searchParams.set("redirect_to", redirectTo);
+  let response;
+  try {
+    response = await fetch(recoverUrl.toString(), {
+      method: "POST",
+      headers: {
+        apikey: config.anonKey,
+        Authorization: `Bearer ${config.anonKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email }),
+    });
+  } catch (requestError) {
+    const error = new Error("Supabase password reset kon de testomgeving niet bereiken.");
+    error.code = "SUPABASE_RESET_NETWORK_ERROR";
+    error.status = "";
+    error.supabaseAuth = {
+      code: error.code,
+      message: sanitizeAuthMessage(requestError?.message || "Network request failed"),
+      status: "",
+      host: config.host || "",
+      projectRef: config.projectRef || "",
+      keyType: config.keyType || "unknown",
+    };
     throw error;
   }
-  return { success: true, provider: "supabase-staging" };
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const debug = createAuthDebug(config, response, payload);
+    const error = new Error(debug.message || "Resetlink aanvragen is niet gelukt.");
+    error.code = debug.code || "SUPABASE_RESET_FAILED";
+    error.status = response.status;
+    error.supabaseAuth = debug;
+    throw error;
+  }
+  return { success: true, provider: "supabase-staging", redirectTo };
 }
 
 export async function updatePassword(newPassword) {

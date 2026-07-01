@@ -1392,3 +1392,33 @@ Conclusie:
 - De staging klantportaalflow is rond voor login -> demo-dashboard -> refresh -> logout -> veilige fallback.
 - Password reset blijft optioneel voor aparte mailconfig-validatie.
 - Productie blijft `NO-GO` totdat echte klantprofielkoppeling, RLS en release approval live zijn bewezen.
+
+## Klantportaal v1F - Validate Staging Password Reset
+
+Status: `PARTIAL PASS / SUPABASE EMAIL VALIDATION BLOCKER / PRODUCTIE NO-GO`
+
+Scope:
+
+- Alleen local/staging.
+- Geen productie-auth.
+- Geen echte klantdata.
+- Geen SQL.
+- Geen RLS-wijzigingen.
+- Geen service role naar frontend.
+
+Validatie:
+
+| Test | Verwacht | Resultaat | Status | Notities |
+| --- | --- | --- | --- | --- |
+| Reset endpoint bereikbaar | Supabase staging ontvangt request | Request bereikt staging Auth endpoint | PASS | Publieke anon key gebruikt, geen service role |
+| Project/context | Staging project wordt gebruikt | Project ref en key-type veilig vastgesteld | PASS | Geen keywaarden gelogd |
+| Resetmail aanvragen | Supabase accepteert testaccount voor recovery | Supabase retourneert `email_address_invalid` | BLOCKED | Testaccount/e-mailconfig moet in Supabase Auth worden gecontroleerd |
+| Redirect URL/config | Recovery redirect wordt meegegeven | `/login.html?type=recovery` wordt als redirect voorbereid | PASS | Supabase moet localhost/staging URL toestaan |
+| Foutmelding | Veilig en duidelijk | UI toont veilige resetfout; Developer Mode toont Supabase code/message | PASS | Geen e-mail, wachtwoord of keys in logs |
+| Secrets/logs | Geen gevoelige waarden | Secrets-scan groen | PASS | Alleen code/status/project-ref/key-type |
+
+Conclusie:
+
+- De frontend reset-flow is correct gekoppeld aan Supabase staging en geeft veilige feedback.
+- Supabase weigert de huidige resetaanvraag met `email_address_invalid`.
+- Next action: controleer in Supabase Auth of het testaccount/e-mailadres exact bestaat en of recovery/mailinstellingen en redirect URLs voor localhost/staging toegestaan zijn.

@@ -203,6 +203,24 @@
           return parts.join(" | ");
         }
 
+        function getSafeResetErrorMessage(error) {
+          const raw = String(error?.message || "").toLowerCase();
+          const code = String(error?.supabaseAuth?.code || error?.code || "").toLowerCase();
+          if (code.includes("email_address_invalid") || raw.includes("email address") || raw.includes("invalid email")) {
+            return "Dit e-mailadres kan in de testomgeving geen resetlink ontvangen.";
+          }
+          if (raw.includes("rate") || raw.includes("too many")) {
+            return "Er zijn te veel resetpogingen gedaan. Probeer het later opnieuw.";
+          }
+          if (raw.includes("redirect") || raw.includes("url")) {
+            return "De resetlink-configuratie is nog niet goed ingesteld voor de testomgeving.";
+          }
+          if (raw.includes("network") || raw.includes("fetch")) {
+            return "De testomgeving is nu niet bereikbaar. Probeer het zo opnieuw.";
+          }
+          return "Resetlink aanvragen is niet gelukt. Controleer het e-mailadres of probeer het later opnieuw.";
+        }
+
         function activatePanel(name) {
           panels.forEach((panel) => {
             const active = panel.dataset.authPanel === name;
@@ -336,12 +354,20 @@
           try {
             const auth = await loadAuth();
             await auth.resetPassword(data.email);
-            setMessage("Resetlink aangevraagd.", "success");
+            setMessage("Als dit e-mailadres bekend is in de testomgeving, wordt er een resetlink verstuurd.", "success");
           } catch (error) {
-            console.info("Password reset prepared", error);
+            const debug = error?.supabaseAuth || {};
+            console.info("Supabase password reset failed", {
+              code: debug.code || error?.code || "UNKNOWN",
+              message: debug.message || error?.message || "",
+              status: debug.status || error?.status || "",
+              projectRef: debug.projectRef || "",
+              host: debug.host || "",
+              keyType: debug.keyType || "",
+            });
             setMessage(isDeveloperModeEnabled()
-              ? (error.message || "Wachtwoord reset is voorbereid maar nog niet actief.")
-              : "Wachtwoord reset is nog niet beschikbaar. Vraag toegang aan of neem contact met ons op.", "error");
+              ? getDeveloperLoginErrorMessage(error)
+              : getSafeResetErrorMessage(error), "error");
           }
         });
 
