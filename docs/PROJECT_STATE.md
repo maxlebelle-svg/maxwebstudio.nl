@@ -3457,3 +3457,38 @@ Open vóór productie-auth:
 - eerste echte customer/profile koppeling;
 - logout/session restore/password reset live-check;
 - release approval.
+
+## Production Frontend Rollout - Auth Gate Foundation
+
+Status: `PREPARED / NOT DEPLOYED / PRODUCTION WRITES CLOSED`
+
+Opgeleverd:
+
+- `client-auth-config` staat productie-auth toe wanneer `APP_ENV` of `APP_ENVIRONMENT` `production` is en `CLIENT_PORTAL_AUTH_LIVE=true`;
+- client-side readiness herkent nu `production_auth_enabled`;
+- login/reset-copy is generiek gemaakt voor livegebruik in plaats van testomgeving-taal;
+- moderne Supabase publishable keys (`sb_publishable_...`) worden door de readiness-check geaccepteerd;
+- Supabase Auth provider gebruikt nu generieke providerlabel `supabase`.
+
+Veiligheidsstatus:
+
+- zonder `CLIENT_PORTAL_AUTH_LIVE=true` blijft productie-login dicht;
+- service-role wordt niet naar de frontend gestuurd;
+- change request en client portal message writes blijven in productie apart geblokkeerd door hun write gates;
+- geen SQL uitgevoerd;
+- geen productieconfig gewijzigd.
+
+Checks:
+
+- `git diff --check`: PASS;
+- `node --check public/script.js`: PASS;
+- `node --check functions/client-auth-config.js`: PASS;
+- JS syntaxcheck voor functions/services/config/providers/repositories: PASS;
+- inline classic scriptcheck voor homepage/login/klantportaal/admin: PASS;
+- production auth readiness simulatie met public Supabase config + `CLIENT_PORTAL_AUTH_LIVE=true`: PASS.
+
+Volgende stap:
+
+- production Netlify env vars controleren zonder waarden te tonen;
+- `CLIENT_PORTAL_AUTH_LIVE` pas aanzetten na release approval;
+- live login, logout, session restore, password reset en RLS/customer-isolation testen.

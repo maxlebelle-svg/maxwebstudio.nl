@@ -7,7 +7,8 @@ exports.handler = async (event) => {
   const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
   const appEnv = process.env.APP_ENV || "";
   const appEnvironment = process.env.APP_ENVIRONMENT || "";
-  const environmentAllowed = ["test", "staging"].includes(appEnv) || ["test", "staging"].includes(appEnvironment);
+  const environmentAllowed = ["test", "staging", "production"].includes(appEnv)
+    || ["test", "staging", "production"].includes(appEnvironment);
   const clientPortalAuthLive = environmentAllowed && process.env.CLIENT_PORTAL_AUTH_LIVE === "true";
 
   if (!supabaseUrl || !supabaseAnonKey) {

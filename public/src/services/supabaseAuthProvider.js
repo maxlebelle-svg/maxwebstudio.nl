@@ -15,6 +15,16 @@ function isTestEnvironment(config = {}) {
   return ["test", "staging"].includes(appEnv) || ["test", "staging"].includes(appEnvironment);
 }
 
+function isProductionEnvironment(config = {}) {
+  const appEnv = String(config.appEnv || config.APP_ENV || "").toLowerCase();
+  const appEnvironment = String(config.appEnvironment || config.APP_ENVIRONMENT || "").toLowerCase();
+  return appEnv === "production" || appEnvironment === "production";
+}
+
+function isAllowedAuthEnvironment(config = {}) {
+  return isTestEnvironment(config) || isProductionEnvironment(config);
+}
+
 function normalizePublicConfig(config = {}) {
   const url = String(config.supabaseUrl || config.SUPABASE_URL || config.url || "").replace(/\/$/, "");
   const project = getSupabaseProjectInfo(url);
@@ -94,7 +104,7 @@ async function getRuntimeAuthConfig() {
     ...runtimeConfig,
     ...endpointConfig,
   });
-  const active = Boolean(config.url && config.anonKey && config.clientPortalAuthLive && isTestEnvironment(config));
+  const active = Boolean(config.url && config.anonKey && config.clientPortalAuthLive && isAllowedAuthEnvironment(config));
 
   return {
     ...config,
@@ -126,7 +136,7 @@ function toSessionResult(session = null) {
   return {
     session,
     user: session?.user || null,
-    provider: "supabase-staging",
+    provider: "supabase",
     active: Boolean(session?.access_token),
   };
 }
@@ -169,7 +179,7 @@ export async function signInWithEmail(email, password) {
       body: JSON.stringify({ email, password }),
     });
   } catch (requestError) {
-    const error = new Error("Supabase Auth request kon de testomgeving niet bereiken.");
+    const error = new Error("Supabase Auth request kon de omgeving niet bereiken.");
     error.code = "SUPABASE_AUTH_NETWORK_ERROR";
     error.status = "";
     error.supabaseAuth = {
@@ -212,7 +222,7 @@ export async function signOut() {
     }).catch(() => null);
   }
   localStorage.removeItem(AUTH_SESSION_KEY);
-  return { success: true, provider: "supabase-staging" };
+  return { success: true, provider: "supabase" };
 }
 
 export async function getSession() {
@@ -221,7 +231,7 @@ export async function getSession() {
 
 export async function getUser() {
   const session = readStoredSession();
-  return { user: session?.user || null, provider: "supabase-staging", active: Boolean(session?.user) };
+  return { user: session?.user || null, provider: "supabase", active: Boolean(session?.user) };
 }
 
 export async function resetPassword(email) {
@@ -244,7 +254,7 @@ export async function resetPassword(email) {
       body: JSON.stringify({ email }),
     });
   } catch (requestError) {
-    const error = new Error("Supabase password reset kon de testomgeving niet bereiken.");
+    const error = new Error("Supabase password reset kon de omgeving niet bereiken.");
     error.code = "SUPABASE_RESET_NETWORK_ERROR";
     error.status = "";
     error.supabaseAuth = {
@@ -266,7 +276,7 @@ export async function resetPassword(email) {
     error.supabaseAuth = debug;
     throw error;
   }
-  return { success: true, provider: "supabase-staging", redirectTo };
+  return { success: true, provider: "supabase", redirectTo };
 }
 
 export async function updatePassword(newPassword) {
@@ -293,7 +303,8 @@ export function getSupabaseAuthStatus() {
     ...getSupabaseConfig(),
     ...(window.__MAXWEBSTUDIO_SUPABASE_CONFIG__ || {}),
   });
-  const active = Boolean(config.configured && browserConfig.clientPortalAuthLive && isTestEnvironment(browserConfig));
+  const productionEnvironment = isProductionEnvironment(browserConfig);
+  const active = Boolean(config.configured && browserConfig.clientPortalAuthLive && isAllowedAuthEnvironment(browserConfig));
   return {
     mode: "supabase-prepared",
     configured: Boolean(config.configured),
@@ -301,7 +312,9 @@ export function getSupabaseAuthStatus() {
     hasAnonKey: Boolean(config.hasAnonKey),
     active,
     reason: active
-      ? "Supabase Auth UI is actief voor test/staging."
+      ? productionEnvironment
+        ? "Supabase Auth UI is actief voor productie."
+        : "Supabase Auth UI is actief voor test/staging."
       : config.configured
       ? "Supabase Auth provider voorbereid; live client nog niet actief."
       : PREPARED_MESSAGE,

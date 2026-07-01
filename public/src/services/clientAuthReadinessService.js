@@ -15,7 +15,7 @@ function isSafeSupabaseUrl(value = "") {
 
 function isPublicAnonKeyShape(value = "") {
   const key = String(value || "").trim();
-  return key.split(".").length === 3 && key.length > 80;
+  return key.startsWith("sb_publishable_") || (key.split(".").length === 3 && key.length > 80);
 }
 
 function redactConfig(config = {}) {
@@ -36,6 +36,16 @@ function isTestEnvironment(config = {}) {
   return ["test", "staging"].includes(appEnv) || ["test", "staging"].includes(appEnvironment);
 }
 
+function isProductionEnvironment(config = {}) {
+  const appEnv = String(config.appEnv || config.APP_ENV || "").toLowerCase();
+  const appEnvironment = String(config.appEnvironment || config.APP_ENVIRONMENT || "").toLowerCase();
+  return appEnv === "production" || appEnvironment === "production";
+}
+
+function isAllowedAuthEnvironment(config = {}) {
+  return isTestEnvironment(config) || isProductionEnvironment(config);
+}
+
 export function evaluateClientAuthConfig(config = {}) {
   const supabaseUrl = String(config.supabaseUrl || config.SUPABASE_URL || config.url || "").trim();
   const anonKey = String(config.supabaseAnonKey || config.SUPABASE_ANON_KEY || config.anonKey || "").trim();
@@ -43,8 +53,10 @@ export function evaluateClientAuthConfig(config = {}) {
   const anonKeySafe = isPublicAnonKeyShape(anonKey);
   const configured = Boolean(urlSafe && anonKeySafe);
   const testEnvironment = isTestEnvironment(config);
+  const productionEnvironment = isProductionEnvironment(config);
+  const allowedEnvironment = isAllowedAuthEnvironment(config);
   const authLiveRequested = isTruthy(config.clientPortalAuthLive || config.CLIENT_PORTAL_AUTH_LIVE);
-  const authLive = Boolean(configured && testEnvironment && authLiveRequested);
+  const authLive = Boolean(configured && allowedEnvironment && authLiveRequested);
 
   return {
     configured,
@@ -53,19 +65,29 @@ export function evaluateClientAuthConfig(config = {}) {
     urlSafe,
     anonKeySafe,
     testEnvironment,
+    productionEnvironment,
+    allowedEnvironment,
     authLiveRequested,
     authLive,
     canShowLoginForm: authLive,
-    status: authLive ? "staging_auth_enabled" : configured ? "ready_for_staging_auth" : "not_ready",
+    status: authLive
+      ? productionEnvironment
+        ? "production_auth_enabled"
+        : "staging_auth_enabled"
+      : configured
+      ? "ready_for_auth_release"
+      : "not_ready",
     visitorMessage: authLive
-      ? "Klantlogin is actief in de veilige testomgeving."
+      ? "Klantlogin is actief. Gebruik je e-mailadres en wachtwoord om naar je portaal te gaan."
       : configured
       ? "Het klantportaal wordt gecontroleerd klaargezet. Je ontvangt toegang zodra je account is geactiveerd."
       : "Het klantportaal wordt momenteel afgerond. Vraag toegang aan of neem contact op als je al klant bent.",
     developerMessage: authLive
-      ? "Staging Auth UI is actief via CLIENT_PORTAL_AUTH_LIVE in test/staging. Productie blijft dicht."
+      ? productionEnvironment
+        ? "Production Auth UI is actief via CLIENT_PORTAL_AUTH_LIVE en production environment."
+        : "Staging Auth UI is actief via CLIENT_PORTAL_AUTH_LIVE in test/staging."
       : configured
-      ? "Publieke Supabase URL en anon key zijn veilig beschikbaar. Auth blijft uit totdat staging approval groen is."
+      ? "Publieke Supabase URL en anon key zijn veilig beschikbaar. Auth blijft uit totdat release approval groen is."
       : "Publieke Supabase URL of anon key ontbreekt of voldoet niet aan de veilige browserconfig-vorm.",
     safeSummary: redactConfig(config),
   };
@@ -109,9 +131,11 @@ export async function getClientAuthReadiness() {
     functionStatus,
     browserConfig,
     blockers: preferred.authLive
-      ? ["Alleen staging/test Auth UI is actief. Productie blijft geblokkeerd tot release approval."]
+      ? preferred.productionEnvironment
+        ? ["Production Auth UI is actief. Production writes blijven apart gegated."]
+        : ["Staging/test Auth UI is actief. Productie blijft geblokkeerd tot release approval."]
       : preferred.configured
-      ? ["Supabase Auth blijft bewust uit totdat staging Auth-validatie en release approval groen zijn."]
+      ? ["Supabase Auth blijft bewust uit totdat release approval groen is en CLIENT_PORTAL_AUTH_LIVE aan staat."]
       : ["Publieke Supabase Auth-config is nog niet veilig beschikbaar voor de browser."],
   };
 }

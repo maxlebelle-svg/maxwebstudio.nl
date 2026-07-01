@@ -2809,3 +2809,29 @@ Volgende stap:
 
 - RLS/customer-isolation validatie;
 - daarna pas productie-auth/frontend rollout beoordelen.
+
+## Production Frontend Rollout - Auth Gate Foundation
+
+Status: `PREPARED / PRODUCTION WRITES CLOSED`
+
+Doel:
+
+- de productie-frontend technisch klaarzetten om met de nieuwe productie-Supabase Auth te werken;
+- login pas openen via expliciete releaseflag;
+- geen database- of writegedrag wijzigen.
+
+Opgeleverd:
+
+- productieomgeving wordt door `client-auth-config` toegestaan naast test/staging;
+- `CLIENT_PORTAL_AUTH_LIVE=true` blijft verplicht voordat echte klantlogin zichtbaar wordt;
+- readiness-service geeft `production_auth_enabled` terug wanneer productieconfig en releaseflag groen zijn;
+- loginmeldingen zijn live-ready gemaakt;
+- production writes blijven apart gegated en staan niet automatisch open.
+
+Volgende stap:
+
+1. Controleer Netlify production env vars zonder waarden te tonen.
+2. Zet `CLIENT_PORTAL_AUTH_LIVE=true` pas na release approval.
+3. Deploy frontend.
+4. Test live login/logout/session restore/password reset.
+5. Test dat klantdata zonder sessie onzichtbaar blijft en customer-isolatie werkt.

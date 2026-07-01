@@ -186,7 +186,7 @@
             return "Bevestig eerst je e-mailadres voordat je inlogt.";
           }
           if (raw.includes("network") || raw.includes("fetch")) {
-            return "De testomgeving is nu niet bereikbaar. Probeer het zo opnieuw.";
+            return "De loginomgeving is nu niet bereikbaar. Probeer het zo opnieuw.";
           }
           return "Inloggen is niet gelukt. Controleer je gegevens of vraag toegang aan.";
         }
@@ -207,16 +207,16 @@
           const raw = String(error?.message || "").toLowerCase();
           const code = String(error?.supabaseAuth?.code || error?.code || "").toLowerCase();
           if (code.includes("email_address_invalid") || raw.includes("email address") || raw.includes("invalid email")) {
-            return "Dit e-mailadres kan in de testomgeving geen resetlink ontvangen.";
+            return "Dit e-mailadres kan nu geen resetlink ontvangen.";
           }
           if (raw.includes("rate") || raw.includes("too many")) {
             return "Er zijn te veel resetpogingen gedaan. Probeer het later opnieuw.";
           }
           if (raw.includes("redirect") || raw.includes("url")) {
-            return "De resetlink-configuratie is nog niet goed ingesteld voor de testomgeving.";
+            return "De resetlink-configuratie is nog niet goed ingesteld.";
           }
           if (raw.includes("network") || raw.includes("fetch")) {
-            return "De testomgeving is nu niet bereikbaar. Probeer het zo opnieuw.";
+            return "De loginomgeving is nu niet bereikbaar. Probeer het zo opnieuw.";
           }
           return "Resetlink aanvragen is niet gelukt. Controleer het e-mailadres of probeer het later opnieuw.";
         }
@@ -305,7 +305,7 @@
           if (!realLoginActive) {
             activatePanel("request");
             setMessage(isDeveloperModeEnabled() && authConfigSafe
-              ? "Supabase-config is aanwezig, maar login blijft uit tot staging approval groen is."
+              ? "Supabase-config is aanwezig, maar login blijft uit tot release approval groen is."
               : "Het klantportaal wordt momenteel afgerond. Vraag toegang aan, dan nemen we contact met je op.", "success");
             return;
           }
@@ -354,7 +354,7 @@
           try {
             const auth = await loadAuth();
             await auth.resetPassword(data.email);
-            setMessage("Als dit e-mailadres bekend is in de testomgeving, wordt er een resetlink verstuurd.", "success");
+            setMessage("Als dit e-mailadres bekend is, wordt er een resetlink verstuurd.", "success");
           } catch (error) {
             const debug = error?.supabaseAuth || {};
             console.info("Supabase password reset failed", {

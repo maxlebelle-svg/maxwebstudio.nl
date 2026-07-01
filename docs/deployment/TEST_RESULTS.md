@@ -1700,3 +1700,32 @@ where schemaname = 'public'
   )
 order by tablename, policyname;
 ```
+
+## Production Frontend Rollout - Auth Gate Foundation
+
+Datum: 2026-07-01
+
+Status: `PASS / PREPARED`
+
+Scope:
+
+- productie-auth gate voorbereid in frontend/serverless config;
+- geen productieconfig gewijzigd;
+- geen SQL uitgevoerd;
+- geen writes geopend.
+
+Resultaten:
+
+- `client-auth-config` accepteert production environment alleen met `CLIENT_PORTAL_AUTH_LIVE=true`: PASS;
+- client readiness herkent production auth releasegate: PASS;
+- Supabase Auth provider kan dezelfde veilige login/reset-flow voor production gebruiken: PASS;
+- service-role blijft buiten frontend: PASS;
+- production write gates blijven gesloten: PASS;
+- syntax/checks: PASS.
+
+Open live-validatie:
+
+- Netlify production env vars zonder waarden controleren;
+- live `/login.html` met production flag testen;
+- live logout/session restore/password reset testen;
+- RLS/customer isolation met echte productiecontext testen.
