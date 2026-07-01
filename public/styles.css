@@ -7073,6 +7073,81 @@ h3 {
   text-decoration: none;
 }
 
+.portal-website-overview-card {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(420px, 1.2fr);
+  gap: clamp(18px, 4vw, 34px);
+  align-items: stretch;
+  margin-bottom: 16px;
+  padding: clamp(22px, 4vw, 38px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: var(--white);
+  background:
+    radial-gradient(circle at 86% 16%, rgba(25, 194, 255, 0.18), transparent 32%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(37, 99, 235, 0.16)),
+    rgba(255, 255, 255, 0.07);
+  box-shadow: 0 26px 72px rgba(0, 0, 0, 0.18);
+}
+
+.portal-website-overview-content {
+  display: grid;
+  align-content: center;
+  gap: 14px;
+}
+
+.portal-website-overview-content h3 {
+  margin: 0;
+  font-size: clamp(32px, 4.5vw, 54px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  overflow-wrap: anywhere;
+}
+
+.portal-website-overview-content p:not(.section-kicker) {
+  max-width: 48ch;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-weight: 800;
+  line-height: 1.65;
+}
+
+.portal-website-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.portal-website-metric {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.portal-website-metric strong {
+  color: var(--white);
+  font-size: clamp(20px, 2.4vw, 28px);
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.portal-website-metric span {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.portal-website-metric small {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
 .customer-portal-kpis {
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
@@ -10032,6 +10107,7 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   .portal-auth-shell,
   .customer-portal-kpis,
   .portal-today,
+  .portal-website-overview-card,
   .integration-grid,
   .portal-website-grid,
   .health-summary-grid,
@@ -10049,7 +10125,8 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   }
 
   .portal-health-grid,
-  .portal-action-grid {
+  .portal-action-grid,
+  .portal-website-metrics {
     grid-template-columns: 1fr;
   }
 }
@@ -10078,6 +10155,10 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
 
   .portal-today-actions .button {
     width: 100%;
+  }
+
+  .portal-website-overview-card {
+    padding: 20px;
   }
 
   .header-cta {

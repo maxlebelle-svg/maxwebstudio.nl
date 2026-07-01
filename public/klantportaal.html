@@ -156,7 +156,8 @@
       </section>
 
       <section class="admin-section" id="mijn-website">
-        <div class="admin-section-heading"><div><p class="section-kicker">Websites</p><h2>Jouw websites</h2></div></div>
+        <div class="admin-section-heading"><div><p class="section-kicker">Mijn Website</p><h2>Onder controle, zonder technisch gedoe</h2></div></div>
+        <div id="portal-website-overview" aria-live="polite"></div>
         <div class="portal-card-grid" id="portal-websites" aria-live="polite"></div>
       </section>
 
@@ -213,6 +214,7 @@
         const portalMessageStatus = document.getElementById("portal-message-status");
         const portalMessageSubmit = document.getElementById("portal-message-submit");
         const notificationList = document.getElementById("portal-notifications");
+        const websiteOverview = document.getElementById("portal-website-overview");
         const websiteList = document.getElementById("portal-websites");
         const fileList = document.getElementById("portal-files");
         const readinessList = document.getElementById("portal-readiness");
@@ -305,7 +307,7 @@
           portalSourceBadge.className = "status-badge status-warning";
           portalSourceText.textContent = "Customer access guard heeft een mismatch gevonden. In deze fase tonen we daarom geen klantdata van een andere klant.";
           customerProfile.append(createEmpty("Klantdata afgeschermd", "Open je eigen klantportaal of log opnieuw in met de juiste demo-klant."));
-          [portalHealthGrid, portalActionGrid, quoteList, invoiceList, subscriptionList, projectList, websiteList, fileList].forEach((target) => target.append(createEmpty("Geen data", "Deze data wordt bewust niet getoond bij een customer mismatch.")));
+          [portalHealthGrid, portalActionGrid, quoteList, invoiceList, subscriptionList, projectList, websiteOverview, websiteList, fileList].forEach((target) => target.append(createEmpty("Geen data", "Deze data wordt bewust niet getoond bij een customer mismatch.")));
           return;
         }
 
@@ -551,6 +553,96 @@
           return card;
         }
 
+        function friendlyWebsiteStatus(website = {}) {
+          const status = normalize(website.status);
+          if (["online", "live", "actief", "active"].includes(status)) return "Online";
+          if (["development", "in ontwikkeling", "concept"].includes(status)) return "Wordt gebouwd";
+          if (["maintenance", "onderhoud"].includes(status)) return "In onderhoud";
+          return website.status ? labelForStatus(website.status) : "Voorbereid";
+        }
+
+        function friendlySafetyStatus(website = {}) {
+          const sslStatus = normalize(website.sslStatus || website.ssl);
+          if (!sslStatus || ["actief", "active", "valid", "geldig", "online"].includes(sslStatus)) return "Veilig actief";
+          return "Wordt gecontroleerd";
+        }
+
+        function createWebsiteMetric(label, value, text) {
+          const item = document.createElement("article");
+          item.className = "portal-website-metric";
+          const strong = document.createElement("strong");
+          const span = document.createElement("span");
+          const small = document.createElement("small");
+          strong.textContent = value;
+          span.textContent = label;
+          small.textContent = text;
+          item.append(strong, span, small);
+          return item;
+        }
+
+        function createWebsiteAction(label, href, primary = false) {
+          const action = document.createElement("a");
+          action.className = `button ${primary ? "primary" : "secondary"}`;
+          action.href = href || "#mijn-website";
+          action.textContent = label;
+          if (href && /^https?:\/\//i.test(href)) {
+            action.target = "_blank";
+            action.rel = "noopener";
+          }
+          return action;
+        }
+
+        function renderMyWebsiteExperience({ websites, projects }) {
+          websiteOverview.replaceChildren();
+          if (!websites.length) {
+            websiteOverview.append(createEmpty("Nog geen website gekoppeld", "Zodra jouw website actief is, zie je hier direct de status, laatste update en vervolgstappen."));
+            return;
+          }
+
+          const website = websites[0];
+          const project = projects[0] || {};
+          const websiteUrl = externalUrl(website.liveUrl || website.domain);
+          const lastUpdate = formatDate(website.updatedAt || website.lastDeployAt || project.updatedAt || project.startDate);
+          const backupLabel = website.lastBackupAt ? formatDate(website.lastBackupAt) : "Demo: dagelijks voorbereid";
+          const speedScore = Number(website.performanceScore || website.speedScore || 96);
+          const seoScore = Number(website.seoScore || 92);
+          const card = document.createElement("article");
+          card.className = "portal-website-overview-card";
+          const content = document.createElement("div");
+          content.className = "portal-website-overview-content";
+          const kicker = document.createElement("p");
+          kicker.className = "section-kicker";
+          kicker.textContent = "Website gezondheid";
+          const title = document.createElement("h3");
+          title.textContent = website.name || website.domain || "Jouw website";
+          const intro = document.createElement("p");
+          intro.textContent = "Je website is onder controle. Hieronder zie je in gewone taal wat belangrijk is.";
+          const actions = document.createElement("div");
+          actions.className = "portal-today-actions";
+          actions.append(
+            createWebsiteAction("Open website", websiteUrl, true),
+            createWebsiteAction("Wijziging aanvragen", "#wijzigingen"),
+            createWebsiteAction("Vraag Max om advies", "#vandaag")
+          );
+          content.append(kicker, title, intro, actions);
+
+          const metricsWrap = document.createElement("div");
+          metricsWrap.className = "portal-website-metrics";
+          metricsWrap.append(
+            createWebsiteMetric("Status", friendlyWebsiteStatus(website), "Je website is bereikbaar voor bezoekers."),
+            createWebsiteMetric("Domein", website.domain || "Nog niet gekoppeld", "Het webadres dat klanten gebruiken."),
+            createWebsiteMetric("Hosting", website.hostingPackage || website.carePackage ? "Actief" : "Voorbereid", "De technische basis wordt beheerd."),
+            createWebsiteMetric("Beveiliging", friendlySafetyStatus(website), "Veilig uitgelegd zonder technische details."),
+            createWebsiteMetric("Laatste update", lastUpdate, "Meest recente bekende wijziging."),
+            createWebsiteMetric("Backup", backupLabel, "Herstelbasis voor noodgevallen."),
+            createWebsiteMetric("Snelheid", `${Math.max(0, Math.min(speedScore, 100))}/100`, "Demo-score voor portaalervaring."),
+            createWebsiteMetric("SEO", `${Math.max(0, Math.min(seoScore, 100))}/100`, "Demo-score voor vindbaarheid.")
+          );
+
+          card.append(content, metricsWrap);
+          websiteOverview.append(card);
+        }
+
         function updateTodayExperience({ customer, websites, projects, invoices, changeRequests, messages, notifications, subscriptions }) {
           const primaryWebsite = websites[0] || {};
           const primaryProject = projects[0] || {};
@@ -657,7 +749,7 @@
           portalTitle.textContent = "Klant niet gevonden";
           portalSubtitle.textContent = "Open het klantportaal opnieuw vanuit het admin-dashboard.";
           customerProfile.append(createEmpty("Geen klantdata", payload.warnings?.[0] || "Deze klant staat niet in de gekozen klantportaal-bron."));
-          [portalHealthGrid, portalActionGrid, quoteList, invoiceList, subscriptionList, projectList, changeRequestList, messageList, notificationList, websiteList, fileList, readinessList].forEach((target) => target.append(createEmpty("Geen data", "Geen klant geselecteerd.")));
+          [portalHealthGrid, portalActionGrid, quoteList, invoiceList, subscriptionList, projectList, changeRequestList, messageList, notificationList, websiteOverview, websiteList, fileList, readinessList].forEach((target) => target.append(createEmpty("Geen data", "Geen klant geselecteerd.")));
           return;
         }
 
@@ -824,6 +916,8 @@
         renderChangeRequestRows(customerChangeRequests);
 
         renderMessages(customerMessages);
+
+        renderMyWebsiteExperience({ websites, projects });
 
         if (!websites.length) websiteList.append(createEmpty("Geen websites", "Er is nog geen website gekoppeld aan dit klantprofiel."));
         websites.forEach((website) => {

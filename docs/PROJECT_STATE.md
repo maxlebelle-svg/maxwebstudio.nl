@@ -147,6 +147,34 @@ Bewust niet uitgevoerd:
 - geen nieuwe dependencies;
 - geen nieuwe backendfunctionaliteit.
 
+## Epic 1.2 - Mijn Website Page
+
+Status: `IMPLEMENTED / STAGING-DEMO ONLY`
+
+De klantportaalervaring bevat nu een klantvriendelijke pagina/sectie `Mijn Website`:
+
+- website status in gewone taal;
+- domein en open-website actie;
+- hostingstatus;
+- beveiliging uitgelegd als `veilig actief`;
+- laatste update;
+- backup/demo-placeholder;
+- demo-scores voor snelheid en SEO;
+- CTA's voor `Open website`, `Wijziging aanvragen` en `Vraag Max om advies`.
+
+De pagina is bedoeld om de klant direct te laten voelen:
+
+> Mijn website is onder controle.
+
+Bewust niet uitgevoerd:
+
+- geen productiegegevens;
+- geen SQL;
+- geen RLS-wijzigingen;
+- geen OpenAI;
+- geen nieuwe dependencies;
+- geen nieuwe backendfunctionaliteit.
+
 ## Sterke Punten
 
 - Duidelijke premium positionering.

@@ -2029,3 +2029,24 @@ Bewust beperkt:
 - geen productiegegevens;
 - geen OpenAI;
 - geen nieuwe dependencies.
+
+### Epic 1.2 - Mijn Website Page
+
+Status: `IMPLEMENTED / STAGING-DEMO ONLY`
+
+Opgeleverd:
+
+- klantvriendelijke `Mijn Website` overzichtskaart;
+- website status, domein, hosting, veiligheid, laatste update en backup-placeholder;
+- demo-scores voor snelheid en SEO;
+- CTA's: `Open website`, `Wijziging aanvragen` en `Vraag Max om advies`;
+- technische termen worden klantvriendelijk uitgelegd.
+
+Bewust beperkt:
+
+- alleen bestaande staging/demo/localStorage data;
+- geen SQL;
+- geen RLS-wijzigingen;
+- geen productiegegevens;
+- geen OpenAI;
+- geen nieuwe dependencies.
