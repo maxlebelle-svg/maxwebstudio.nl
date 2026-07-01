@@ -1498,3 +1498,42 @@ Conclusie:
 - Zonder geldige sessie/customer-context wordt geen echte klantdata opgehaald of getoond.
 - De bestaande staging/demo-flow blijft intact.
 - Productie blijft `NO-GO` totdat echte Supabase-tabellen, RLS en production Auth-rollout opnieuw zijn gevalideerd.
+
+## Epic 2B.4 - Production Database Preflight Inspection
+
+Status: `PARTIAL PASS / DB READ BLOCKED / PRODUCTIE NO-GO`
+
+Scope:
+
+- Alleen read-only inspectie.
+- Geen SQL die schema/data wijzigt.
+- Geen migration apply.
+- Geen deletes.
+- Geen demo seed.
+- Geen productie-auth activatie.
+
+Validatie:
+
+| Test | Verwacht | Resultaat | Status | Notities |
+| --- | --- | --- | --- | --- |
+| Productieproject | `maxwebstudio` is productie | `maxwebstudio` gevonden | PASS | Project ref `yxxahurphdbblkuxoeje` |
+| Productie database host | Productie host bekend | `db.yxxahurphdbblkuxoeje.supabase.co` | PASS | Alleen host/ref vastgelegd, geen secrets |
+| Staging/testproject | `maxwebstudio-test` blijft test | `maxwebstudio-test` gevonden | PASS | Project ref `xlxpuuycigeqhgxqtzni` |
+| CLI linkstatus | CLI niet per ongeluk op productie | Lokale link staat op `maxwebstudio-test`; productie `linked: false` | PASS | `supabase/.temp/project-ref` bevat testref |
+| Lokale env scheiding | `.env.local` niet productie | `.env.local` wijst naar testref | PASS | Geen values of keys gelogd |
+| Productie tabellen | Tabellen read-only uitlezen | Niet uitgevoerd | BLOCKED | Productie DB connection string ontbreekt |
+| Productie RLS/policies | Policies read-only uitlezen | Niet uitgevoerd | BLOCKED | Productie DB connection string ontbreekt |
+| Productie datacounts | Counts van portal-tabellen uitlezen | Niet uitgevoerd | BLOCKED | Productie DB connection string ontbreekt |
+| Echte klantdata check | Hard bevestigen dat productie leeg/veilig is | Niet uitvoerbaar in deze sessie | BLOCKED | Vereist datacounts op productie |
+| Migration 013 safety | Conflicten met bestaande schema detecteren | Alleen statisch beoordeeld | PARTIAL | DB-read nodig voor harde conflictcheck |
+
+Conclusie:
+
+- Productie is correct geïdentificeerd.
+- De lokale CLI is veilig gekoppeld aan staging/test en niet aan productie.
+- Er is geen productie SQL uitgevoerd.
+- Productie schema execution blijft `NO-GO` tot een read-only DB-inspectie met productie connection string of Supabase SQL Editor is afgerond.
+
+Volgende stap:
+
+- `Epic 2B.5 - Production read-only SQL inspection`

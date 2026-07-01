@@ -3176,3 +3176,41 @@ Nog geblokkeerd:
 Leidend document:
 
 - `docs/EPIC_2B_PRODUCTION_SCHEMA_DEPLOYMENT_READINESS.md`
+
+## Epic 2B.4 - Production Database Preflight Inspection
+
+Status: `PARTIAL PASS / DB READ BLOCKED / PRODUCTION EXECUTION NO-GO`
+
+Uitgevoerd:
+
+- Supabase projectmetadata read-only opgehaald.
+- Productie bevestigd als `maxwebstudio`.
+- Productie ref bevestigd als `yxxahurphdbblkuxoeje`.
+- Staging/test bevestigd als `maxwebstudio-test`.
+- Staging/test ref bevestigd als `xlxpuuycigeqhgxqtzni`.
+- Lokale CLI-link gecontroleerd via `supabase/.temp/project-ref` en `linked-project.json`.
+
+Bevinding:
+
+- De lokale CLI is niet per ongeluk op productie gelinkt.
+- De lokale CLI staat nog op `maxwebstudio-test`.
+- `.env.local` wijst naar test/staging.
+- Productie is niet aangepast.
+
+Nog geblokkeerd:
+
+- bestaande productie-tabellen uitlezen;
+- bestaande productie-policies/RLS uitlezen;
+- productie datacounts uitlezen;
+- hard bevestigen dat er geen echte klantdata bestaat;
+- hard bevestigen dat migration `013` geen conflict heeft met bestaande productie-objecten.
+
+Waarom:
+
+- Er is geen productie database connection string aanwezig in de lokale omgeving.
+- Productie is bewust niet tijdelijk gelinkt om accidental writes te voorkomen.
+
+Conclusie:
+
+- Productie schema/RLS execution blijft `NO-GO`.
+- Volgende veilige stap is een expliciete production read-only SQL-inspectie met een tijdelijke DB connection string of handmatige Supabase SQL Editor output.

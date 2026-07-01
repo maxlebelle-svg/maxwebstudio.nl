@@ -1,6 +1,6 @@
 # Epic 2B.3 - Production Schema Deployment Readiness
 
-Status: `PREFLIGHT PREPARED / PRODUCTION EXECUTION NO-GO UNTIL FINAL DB READ`
+Status: `PREFLIGHT PARTIAL / PRODUCTION EXECUTION NO-GO UNTIL FINAL DB READ`
 
 Doel:
 
@@ -204,3 +204,117 @@ Productie schema execution blijft `NO-GO` totdat:
 - expliciete approval voor execution is gegeven.
 
 Na deze checks kan de status naar `GO FOR PRODUCTION SCHEMA EXECUTION`.
+
+## Epic 2B.4 - Production Database Preflight Inspection
+
+Status: `PARTIAL PASS / DB READ BLOCKED / NO SQL EXECUTED`
+
+Doel:
+
+- productieproject `maxwebstudio` read-only inspecteren vóór schema/RLS execution;
+- bevestigen dat de CLI niet per ongeluk op productie gelinkt staat;
+- bestaande tabellen, policies, RLS en datacounts controleren voordat migrations draaien.
+
+### Uitgevoerde read-only controles
+
+| Controle | Resultaat | Status |
+| --- | --- | --- |
+| Supabase projecten ophalen | `maxwebstudio` en `maxwebstudio-test` zichtbaar | PASS |
+| Productieproject bevestigen | `maxwebstudio`, ref `yxxahurphdbblkuxoeje` | PASS |
+| Productie database host bevestigen | `db.yxxahurphdbblkuxoeje.supabase.co` | PASS |
+| Staging/testproject bevestigen | `maxwebstudio-test`, ref `xlxpuuycigeqhgxqtzni` | PASS |
+| CLI linkstatus controleren | lokale link staat op `maxwebstudio-test` | PASS |
+| Productie niet lokaal linken | productie heeft `linked: false` | PASS |
+| `.env.local` projectcontext controleren | wijst naar test ref `xlxpuuycigeqhgxqtzni` | PASS |
+| Productie DB-tabellen uitlezen | productie DB connection string ontbreekt | BLOCKED |
+| Productie RLS/policies uitlezen | productie DB connection string ontbreekt | BLOCKED |
+| Productie datacounts uitlezen | productie DB connection string ontbreekt | BLOCKED |
+| Echte klantdata hard bevestigen | vereist productie datacounts | BLOCKED |
+
+### Niet uitgevoerd
+
+- Geen SQL uitgevoerd.
+- Geen migration apply uitgevoerd.
+- Geen productieproject gelinkt.
+- Geen deletes.
+- Geen demo seed.
+- Geen productie-auth opengezet.
+- Geen schema of data gewijzigd.
+
+### Waarom de database-inspectie nog blokkeert
+
+De Supabase CLI kan veilig projectmetadata ophalen via de ingelogde account, maar tabellen, policies, RLS en datacounts vereisen een echte databaseverbinding.
+
+De beschikbare lokale configuratie bevat alleen de test/staging projectref:
+
+```text
+xlxpuuycigeqhgxqtzni
+```
+
+Voor productie-inspectie is een tijdelijke, read-only execution route nodig naar:
+
+```text
+yxxahurphdbblkuxoeje
+```
+
+Veilige opties:
+
+1. Tijdelijke productie database connection string gebruiken met `supabase db query --db-url`, zonder de projectlink te wijzigen.
+2. De read-only SQL uit dit document handmatig draaien in de Supabase SQL Editor van project `maxwebstudio`.
+3. Tijdelijk productie linken alleen na expliciete approval, inspectie uitvoeren, en direct terug linken naar `maxwebstudio-test`. Deze optie heeft niet de voorkeur.
+
+### Migration 013 conflict-inschatting
+
+Zonder productie DB-read kan conflictvrij toepassen nog niet hard worden bevestigd.
+
+Wel statisch beoordeeld:
+
+- `013_client_portal_schema_rls_alignment.sql` gebruikt vooral `alter table ... add column if not exists`;
+- nieuwe indexes gebruiken `create index if not exists`;
+- RLS policies worden via `drop policy if exists` en `create policy` beheerd;
+- de migration bevat geen seed-data;
+- de migration bevat geen deletes van klantdata;
+- de migration wijzigt geen auth users;
+- de migration voert geen OpenAI/Mollie/Resend acties uit.
+
+Potentiële conflicten die alleen via DB-read zichtbaar worden:
+
+- bestaande policies met dezelfde of afwijkende namen;
+- bestaande kolommen met ander datatype;
+- bestaande foreign keys met afwijkende delete/update rules;
+- bestaande data die nieuwe constraints blokkeert;
+- bestaande RLS helpers met afwijkende implementatie.
+
+### Backup/export advies
+
+Ook als productie volgens verwachting leeg is, blijft vóór execution verplicht:
+
+1. Supabase backup/snapshot bevestigen.
+2. Schema-only export of metadata snapshot maken.
+3. Datacounts per klantportaal-tabel vastleggen.
+4. Rollback approver bevestigen.
+5. Production env vars in Netlify controleren zonder secrets te tonen.
+
+### Epic 2B.4 conclusie
+
+Productie is correct geïdentificeerd en de lokale CLI staat veilig op staging/test.
+
+Maar de echte database preflight is nog niet volledig afgerond, omdat er geen productie DB-read route beschikbaar is in deze sessie.
+
+Status blijft:
+
+```text
+PRODUCTION SCHEMA EXECUTION: NO-GO
+```
+
+Volgende veilige stap:
+
+```text
+Epic 2B.5 - Production read-only SQL inspection
+```
+
+Daarvoor is expliciet nodig:
+
+- productie DB connection string of Supabase SQL Editor read-only uitvoering;
+- geen migration apply;
+- alleen select queries voor tabellen, policies, RLS en datacounts.
