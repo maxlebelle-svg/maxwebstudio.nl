@@ -1422,3 +1422,34 @@ Conclusie:
 - De frontend reset-flow is correct gekoppeld aan Supabase staging en geeft veilige feedback.
 - Supabase weigert de huidige resetaanvraag met `email_address_invalid`.
 - Next action: controleer in Supabase Auth of het testaccount/e-mailadres exact bestaat en of recovery/mailinstellingen en redirect URLs voor localhost/staging toegestaan zijn.
+
+## Epic 1.8 - Portal QA & UX Polish
+
+Status: `PASS / STAGING-DEMO UX / PRODUCTIE NO-GO`
+
+Scope:
+
+- Alleen staging/demo klantportaal.
+- Geen productiegegevens.
+- Geen SQL.
+- Geen RLS-wijzigingen.
+- Geen OpenAI.
+- Geen backendwijzigingen.
+
+Validatie:
+
+| Test | Verwacht | Resultaat | Status | Notities |
+| --- | --- | --- | --- | --- |
+| Loginpagina | Login UI bereikbaar via localhost | Loginpagina laadt via `localhost:8888` | PASS | Echte loginvelden zichtbaar in staging/local |
+| Foutieve login | Duidelijke foutmelding zonder technische details | `Inloggen is niet gelukt. Controleer je e-mailadres en wachtwoord.` | PASS | Geen secrets of technische codes zichtbaar |
+| Directe portal zonder sessie | Geen klantdata zichtbaar | Veilige fallback met `Naar login` en `Terug naar website` | PASS | Klantsecties/formulieren verborgen |
+| Mobiel | Geen horizontale overflow | 390px viewport zonder overflow | PASS | Fallback blijft compact |
+| Console | Geen console-errors | Geen errors gevonden | PASS | In-app browser QA |
+| Technische termen | Geen klantzichtbare technische termen | Geen `RLS`, `SQL`, service role of anon key zichtbaar | PASS | Alleen klantvriendelijke fallback |
+| Geldige staging login | Niet opnieuw uitvoeren zonder testwachtwoord | Eerder bewezen in v1E | NOT_RUN | Geen credentials in deze sessie gebruikt of gelogd |
+
+Polish:
+
+- directe toegang zonder klantcontext toont nu een nette veilige fallback;
+- klantsecties en formulieren worden verborgen zolang er geen geldige klant/sessie is;
+- bronmelding is klantvriendelijk gemaakt.

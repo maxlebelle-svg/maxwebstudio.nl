@@ -113,7 +113,7 @@
         <div class="portal-finance-grid" id="portal-finance-overview" aria-live="polite"></div>
       </section>
 
-      <section class="admin-section">
+      <section class="admin-section" id="onderhoud">
         <div class="admin-section-heading"><div><p class="section-kicker">Onderhoud</p><h2>Onderhoudsabonnementen</h2></div></div>
         <div class="portal-card-grid" id="portal-subscriptions" aria-live="polite"></div>
       </section>
@@ -195,12 +195,12 @@
         <div class="portal-card-grid" id="portal-websites" aria-live="polite"></div>
       </section>
 
-      <section class="admin-section">
+      <section class="admin-section" id="bestanden">
         <div class="admin-section-heading"><div><p class="section-kicker">Bestanden</p><h2>Bestanden & links</h2></div></div>
         <div class="portal-card-grid" id="portal-files" aria-live="polite"></div>
       </section>
 
-      <section class="admin-section">
+      <section class="admin-section" id="readiness">
         <div class="admin-section-heading"><div><p class="section-kicker">Readiness</p><h2>Voorbereid op live klantdata</h2></div></div>
         <div class="portal-card-grid" id="portal-readiness" aria-live="polite"></div>
       </section>
@@ -645,6 +645,38 @@
           return card;
         }
 
+        function showSafePortalFallback(message = "Er is geen geldige klantcontext actief.") {
+          [
+            ".portal-nav",
+            "#vandaag",
+            ".portal-action-overview",
+            ".customer-portal-kpis",
+            "#notificaties",
+            "#facturen",
+            "#onderhoud",
+            "#projectstatus",
+            "#wijzigingen",
+            "#berichten",
+            "#mijn-website",
+            "#bestanden",
+            "#readiness",
+          ].forEach((selector) => {
+            const element = document.querySelector(selector);
+            if (element) element.hidden = true;
+          });
+          portalSourceBadge.textContent = "Veilig";
+          portalSourceBadge.className = "status-badge status-prepared";
+          portalSourceText.textContent = "Er wordt geen klantdata getoond zolang er geen geldige sessie of klantkoppeling is.";
+          customerProfile.replaceChildren(createInfoCard("Klantportaal niet geladen", [
+            ["Status", "Veilige fallback"],
+            ["Waarom", message],
+            ["Volgende stap", "Log opnieuw in of vraag toegang aan bij Max Webstudio."],
+          ], [
+            createWebsiteAction("Naar login", "/login.html", true),
+            createWebsiteAction("Terug naar website", "/"),
+          ]));
+        }
+
         function isPaidStatus(value) {
           return ["betaald", "paid", "geaccepteerd", "accepted"].includes(normalize(value));
         }
@@ -1058,10 +1090,9 @@
         const customerMessages = [...messages];
 
         if (!customer) {
-          portalTitle.textContent = "Klant niet gevonden";
-          portalSubtitle.textContent = "Open het klantportaal opnieuw vanuit het admin-dashboard.";
-          customerProfile.append(createEmpty("Geen klantdata", payload.warnings?.[0] || "Deze klant staat niet in de gekozen klantportaal-bron."));
-          [portalHealthGrid, portalActionGrid, financeOverview, subscriptionList, projectList, changeRequestList, messageList, notificationList, websiteOverview, websiteList, fileList, readinessList].forEach((target) => target.append(createEmpty("Geen data", "Geen klant geselecteerd.")));
+          portalTitle.textContent = "Log in om je klantportaal te bekijken";
+          portalSubtitle.textContent = "Je klantgegevens blijven afgeschermd totdat je sessie en klantkoppeling kloppen.";
+          showSafePortalFallback(payload.warnings?.[0] || "Er is geen klant gekoppeld aan deze portalweergave.");
           return;
         }
 

@@ -313,6 +313,37 @@ Bewust niet uitgevoerd:
 - geen nieuwe dependencies;
 - geen nieuwe backendfunctionaliteit.
 
+## Epic 1.8 - Portal QA & UX Polish
+
+Status: `IMPLEMENTED / STAGING-DEMO ONLY`
+
+Gecontroleerd als samenhangende productervaring:
+
+- loginpagina via lokale Netlify-route;
+- foutieve login toont een duidelijke klantvriendelijke foutmelding;
+- directe klantportaaltoegang zonder geldige klantcontext toont geen klantdata;
+- Vandaag/overzicht, Mijn Website, Wijzigingen, Berichten, Facturen/offertes, Notificaties en Max AI-kaarten;
+- mobiele fallback zonder horizontale overflow;
+- console-errors;
+- zichtbare technische termen voor normale klantweergave.
+
+Kleine polish:
+
+- zonder klantcontext worden portalnavigatie, klantsecties en formulieren verborgen;
+- de gebruiker ziet een nette statuskaart `Klantportaal niet geladen`;
+- CTA's `Naar login` en `Terug naar website` blijven beschikbaar;
+- bronmelding wordt klantvriendelijk `Veilig` in plaats van een lege technische demo-state.
+
+Bewust niet uitgevoerd:
+
+- geen nieuwe features;
+- geen backendwijzigingen;
+- geen OpenAI;
+- geen SQL;
+- geen RLS-wijzigingen;
+- geen productiegegevens;
+- geldige staging-login is niet opnieuw uitgevoerd zonder testwachtwoord in deze sessie.
+
 ## Sterke Punten
 
 - Duidelijke premium positionering.

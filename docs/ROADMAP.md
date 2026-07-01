@@ -2169,3 +2169,33 @@ Bewust beperkt:
 - geen RLS-wijzigingen;
 - geen productiegegevens;
 - geen nieuwe dependencies.
+
+### Epic 1.8 - Portal QA & UX Polish
+
+Status: `IMPLEMENTED / STAGING-DEMO ONLY`
+
+Gecontroleerd:
+
+- loginpagina via `localhost:8888`;
+- foutieve login met klantvriendelijke foutmelding;
+- directe klantportaaltoegang zonder geldige klantcontext;
+- Vandaag/overzicht, Mijn Website, Wijzigingen, Berichten, Facturen/offertes, Notificaties en Max AI-kaarten;
+- mobiele fallback zonder horizontale overflow;
+- console-errors;
+- zichtbare technische termen voor normale klantweergave.
+
+Polish:
+
+- directe toegang zonder klantcontext toont nu een nette veilige fallback;
+- klantsecties en formulieren worden verborgen wanneer er geen geldige klant/sessie is;
+- CTA's `Naar login` en `Terug naar website` blijven beschikbaar.
+
+Bewust beperkt:
+
+- geen nieuwe features;
+- geen backendwijzigingen;
+- geen OpenAI;
+- geen SQL;
+- geen RLS-wijzigingen;
+- geen productiegegevens;
+- geldige staging-login is niet opnieuw uitgevoerd zonder testwachtwoord in deze sessie.
