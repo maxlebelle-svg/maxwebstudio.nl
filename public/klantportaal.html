@@ -37,6 +37,45 @@
         <span id="portal-auth-text"></span>
       </section>
 
+      <nav class="portal-nav" aria-label="Klantportaal navigatie">
+        <a href="#vandaag">Vandaag</a>
+        <a href="#mijn-website">Mijn website</a>
+        <a href="#projectstatus">Project</a>
+        <a href="#wijzigingen">Wijzigingen</a>
+        <a href="#berichten">Berichten</a>
+        <a href="#facturen">Facturen</a>
+      </nav>
+
+      <section class="portal-today" id="vandaag" aria-labelledby="portal-today-title">
+        <div class="portal-today-main">
+          <p class="section-kicker">Vandaag</p>
+          <h2 id="portal-today-title">Je website wordt beheerd.</h2>
+          <p id="portal-today-subtitle">We laden je belangrijkste acties en websitegezondheid.</p>
+          <div class="portal-today-actions">
+            <a class="button primary" href="#wijzigingen">Wijziging aanvragen</a>
+            <a class="button secondary" id="portal-today-website-link" href="#mijn-website">Bekijk website</a>
+          </div>
+        </div>
+        <div class="portal-today-panel" aria-label="Website status vandaag">
+          <div class="portal-health-grid" id="portal-health-grid"></div>
+          <article class="portal-max-tip" id="portal-max-tip">
+            <span>Max zegt</span>
+            <strong>Ik kijk even met je mee.</strong>
+            <p>Je persoonlijke tip verschijnt zodra je klantdata is geladen.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="portal-action-overview" aria-labelledby="portal-action-title">
+        <div class="admin-section-heading">
+          <div>
+            <p class="section-kicker">Actie nodig</p>
+            <h2 id="portal-action-title">Wat vraagt vandaag aandacht?</h2>
+          </div>
+        </div>
+        <div class="portal-action-grid" id="portal-action-grid"></div>
+      </section>
+
       <section class="admin-grid customer-portal-kpis" aria-label="Klantoverzicht">
         <article class="admin-card metric-card"><span>Open offertes</span><strong id="metric-quotes">0</strong><small>Concept of verzonden</small></article>
         <article class="admin-card metric-card"><span>Open facturen</span><strong id="metric-invoices">0</strong><small id="metric-invoice-total">€ 0,00 openstaand</small></article>
@@ -55,7 +94,7 @@
         <div class="portal-card-grid" id="portal-notifications" aria-live="polite"></div>
       </section>
 
-      <section class="admin-section">
+      <section class="admin-section" id="facturen">
         <div class="admin-section-heading"><div><p class="section-kicker">Offertes</p><h2>Jouw offertes</h2></div></div>
         <div class="portal-table" id="portal-quotes" aria-live="polite"></div>
       </section>
@@ -70,12 +109,12 @@
         <div class="portal-card-grid" id="portal-subscriptions" aria-live="polite"></div>
       </section>
 
-      <section class="admin-section">
+      <section class="admin-section" id="projectstatus">
         <div class="admin-section-heading"><div><p class="section-kicker">Projecten</p><h2>Projectstatus</h2></div></div>
         <div class="portal-card-grid" id="portal-projects" aria-live="polite"></div>
       </section>
 
-      <section class="admin-section">
+      <section class="admin-section" id="wijzigingen">
         <div class="admin-section-heading"><div><p class="section-kicker">Wijzigingen</p><h2>Wijzigingsverzoeken</h2></div></div>
         <article class="admin-card customer-portal-card" id="portal-change-request-create">
           <strong>Nieuw wijzigingsverzoek</strong>
@@ -100,7 +139,7 @@
         <div class="portal-table" id="portal-change-requests" aria-live="polite"></div>
       </section>
 
-      <section class="admin-section">
+      <section class="admin-section" id="berichten">
         <div class="admin-section-heading"><div><p class="section-kicker">Berichten</p><h2>Berichten van Max Webstudio</h2></div></div>
         <article class="admin-card customer-portal-card" id="portal-message-create">
           <strong>Bericht sturen</strong>
@@ -116,7 +155,7 @@
         <div class="portal-card-grid" id="portal-messages" aria-live="polite"></div>
       </section>
 
-      <section class="admin-section">
+      <section class="admin-section" id="mijn-website">
         <div class="admin-section-heading"><div><p class="section-kicker">Websites</p><h2>Jouw websites</h2></div></div>
         <div class="portal-card-grid" id="portal-websites" aria-live="polite"></div>
       </section>
@@ -152,6 +191,12 @@
         const portalLogout = document.getElementById("portal-logout");
         const portalAuthMessage = document.getElementById("portal-auth-message");
         const portalAuthText = document.getElementById("portal-auth-text");
+        const portalTodayTitle = document.getElementById("portal-today-title");
+        const portalTodaySubtitle = document.getElementById("portal-today-subtitle");
+        const portalTodayWebsiteLink = document.getElementById("portal-today-website-link");
+        const portalHealthGrid = document.getElementById("portal-health-grid");
+        const portalActionGrid = document.getElementById("portal-action-grid");
+        const portalMaxTip = document.getElementById("portal-max-tip");
         const customerProfile = document.getElementById("customer-profile");
         const quoteList = document.getElementById("portal-quotes");
         const invoiceList = document.getElementById("portal-invoices");
@@ -260,7 +305,7 @@
           portalSourceBadge.className = "status-badge status-warning";
           portalSourceText.textContent = "Customer access guard heeft een mismatch gevonden. In deze fase tonen we daarom geen klantdata van een andere klant.";
           customerProfile.append(createEmpty("Klantdata afgeschermd", "Open je eigen klantportaal of log opnieuw in met de juiste demo-klant."));
-          [quoteList, invoiceList, subscriptionList, projectList, websiteList, fileList].forEach((target) => target.append(createEmpty("Geen data", "Deze data wordt bewust niet getoond bij een customer mismatch.")));
+          [portalHealthGrid, portalActionGrid, quoteList, invoiceList, subscriptionList, projectList, websiteList, fileList].forEach((target) => target.append(createEmpty("Geen data", "Deze data wordt bewust niet getoond bij een customer mismatch.")));
           return;
         }
 
@@ -461,6 +506,107 @@
           return timeline;
         }
 
+        function isOpenStatus(value) {
+          const status = normalize(value);
+          return !["afgerond", "gereed", "done", "closed", "gearchiveerd", "archived", "betaald", "paid", "gelezen", "read"].includes(status);
+        }
+
+        function latestDateLabel(records = [], fields = ["updatedAt", "createdAt", "updated_at", "created_at"]) {
+          const dates = records.flatMap((record) => fields.map((field) => record?.[field]))
+            .map((value) => new Date(value))
+            .filter((date) => !Number.isNaN(date.getTime()))
+            .sort((a, b) => b.getTime() - a.getTime());
+          if (!dates.length) return "vandaag";
+          return dates[0].toLocaleDateString("nl-NL", { day: "numeric", month: "long" });
+        }
+
+        function createHealthTile(label, value, text, tone = "active") {
+          const tile = document.createElement("article");
+          tile.className = `portal-health-tile portal-health-tile-${tone}`;
+          const dot = document.createElement("span");
+          dot.className = "portal-health-dot";
+          const title = document.createElement("strong");
+          const copy = document.createElement("p");
+          const small = document.createElement("small");
+          title.textContent = value;
+          copy.textContent = label;
+          small.textContent = text;
+          tile.append(dot, title, copy, small);
+          return tile;
+        }
+
+        function createActionCard(label, value, text, href, tone = "neutral") {
+          const card = document.createElement("article");
+          card.className = `portal-action-card portal-action-card-${tone}`;
+          const title = document.createElement("strong");
+          const count = document.createElement("span");
+          const copy = document.createElement("p");
+          const link = document.createElement("a");
+          title.textContent = label;
+          count.textContent = String(value);
+          copy.textContent = text;
+          link.href = href;
+          link.textContent = tone === "ok" ? "Bekijk" : "Openen";
+          card.append(count, title, copy, link);
+          return card;
+        }
+
+        function updateTodayExperience({ customer, websites, projects, invoices, changeRequests, messages, notifications, subscriptions }) {
+          const primaryWebsite = websites[0] || {};
+          const primaryProject = projects[0] || {};
+          const openInvoices = invoices.filter((invoice) => isOpenStatus(invoice.status));
+          const openRequests = changeRequests.filter((request) => isOpenStatus(request.status));
+          const unreadMessages = messages.filter((message) => !message.readAt && isOpenStatus(message.status));
+          const openNotifications = notifications.filter((notification) => isOpenStatus(notification.status));
+          const activeSubscriptions = subscriptions.filter((subscription) => ["actief", "active"].includes(normalize(subscription.status)));
+          const websiteStatus = normalize(primaryWebsite.status || "");
+          const websiteOnline = ["online", "live", "actief", "active"].includes(websiteStatus) || Number(websites.length) > 0;
+          const hostingActive = activeSubscriptions.length > 0 || Boolean(primaryWebsite.hostingPackage || primaryWebsite.carePackage);
+          const sslValue = primaryWebsite.sslStatus || primaryWebsite.ssl || "";
+          const sslActive = !sslValue || ["actief", "active", "valid", "geldig", "online"].includes(normalize(sslValue));
+          const latestUpdate = latestDateLabel([...projects, ...changeRequests, ...messages, ...notifications]);
+
+          portalTodayTitle.textContent = `Goedemorgen ${customer.name || customer.company || "Max"}`;
+          portalTodaySubtitle.textContent = websiteOnline
+            ? `Je website is online. Laatste update: ${latestUpdate}.`
+            : "We houden je website klaar voor de volgende stap.";
+          const websiteUrl = externalUrl(primaryWebsite.liveUrl || primaryWebsite.domain);
+          portalTodayWebsiteLink.href = websiteUrl || "#mijn-website";
+          portalTodayWebsiteLink.textContent = websiteUrl ? "Open website" : "Bekijk website";
+          portalTodayWebsiteLink.target = websiteUrl ? "_blank" : "";
+          portalTodayWebsiteLink.rel = websiteUrl ? "noopener" : "";
+
+          portalHealthGrid.replaceChildren(
+            createHealthTile("Website", websiteOnline ? "Online" : "In behandeling", websiteOnline ? "Je website is bereikbaar." : "We bereiden je website voor.", websiteOnline ? "active" : "warning"),
+            createHealthTile("Hosting", hostingActive ? "Actief" : "Klaarzetten", hostingActive ? "Hosting en onderhoud zijn gekoppeld." : "Hostingstatus volgt zodra deze beschikbaar is.", hostingActive ? "active" : "warning"),
+            createHealthTile("Veiligheid", sslActive ? "Veilig" : "Aandacht", sslActive ? "De basisbeveiliging is op orde." : "We controleren de beveiliging.", sslActive ? "active" : "warning"),
+            createHealthTile("Laatste update", latestUpdate, primaryProject.phase ? `Fase: ${primaryProject.phase}` : "Max Webstudio houdt je portaal bij.", "neutral")
+          );
+
+          portalActionGrid.replaceChildren(
+            createActionCard("Wijzigingsverzoeken", openRequests.length, openRequests.length ? "Er loopt nog een wijziging." : "Geen open wijzigingen.", "#wijzigingen", openRequests.length ? "attention" : "ok"),
+            createActionCard("Berichten", unreadMessages.length, unreadMessages.length ? "Er staan berichten klaar." : "Geen nieuwe berichten.", "#berichten", unreadMessages.length ? "attention" : "ok"),
+            createActionCard("Facturen", openInvoices.length, openInvoices.length ? `${money(openInvoices.reduce((sum, invoice) => sum + Number(invoice.total || invoice.amount || 0), 0))} openstaand.` : "Alles is bijgewerkt.", "#facturen", openInvoices.length ? "attention" : "ok"),
+            createActionCard("Notificaties", openNotifications.length, openNotifications.length ? "Er zijn aandachtspunten." : "Geen urgente meldingen.", "#vandaag", openNotifications.length ? "attention" : "ok")
+          );
+
+          const maxTitle = portalMaxTip.querySelector("strong");
+          const maxCopy = portalMaxTip.querySelector("p");
+          if (openInvoices.length) {
+            maxTitle.textContent = "Er staat nog een factuur open.";
+            maxCopy.textContent = "Bekijk je facturen wanneer het uitkomt. Ik houd de rest van je website-overzicht rustig bij.";
+          } else if (openRequests.length) {
+            maxTitle.textContent = "Je wijziging is in behandeling.";
+            maxCopy.textContent = "Je hoeft nergens achteraan. Zodra er iets verandert, zie je dat hier terug.";
+          } else if (!unreadMessages.length && websiteOnline) {
+            maxTitle.textContent = "Alles ziet er rustig uit.";
+            maxCopy.textContent = "Wil je meer aanvragen? Vraag eenvoudig een wijziging aan of voeg later klantreviews toe.";
+          } else {
+            maxTitle.textContent = "Ik help je de volgende stap kiezen.";
+            maxCopy.textContent = "Open je berichten of vraag direct een wijziging aan als je iets wilt aanpassen.";
+          }
+        }
+
         function quoteUrl(quote) {
           const query = new URLSearchParams();
           if (quote.id) query.set("quoteId", quote.id);
@@ -511,7 +657,7 @@
           portalTitle.textContent = "Klant niet gevonden";
           portalSubtitle.textContent = "Open het klantportaal opnieuw vanuit het admin-dashboard.";
           customerProfile.append(createEmpty("Geen klantdata", payload.warnings?.[0] || "Deze klant staat niet in de gekozen klantportaal-bron."));
-          [quoteList, invoiceList, subscriptionList, projectList, changeRequestList, messageList, notificationList, websiteList, fileList, readinessList].forEach((target) => target.append(createEmpty("Geen data", "Geen klant geselecteerd.")));
+          [portalHealthGrid, portalActionGrid, quoteList, invoiceList, subscriptionList, projectList, changeRequestList, messageList, notificationList, websiteList, fileList, readinessList].forEach((target) => target.append(createEmpty("Geen data", "Geen klant geselecteerd.")));
           return;
         }
 
@@ -526,6 +672,8 @@
         metrics.changeRequests.textContent = String(portalMetrics.openChangeRequests || 0);
         metrics.messages.textContent = String(portalMetrics.unreadMessages || 0);
         metrics.notifications.textContent = String(portalMetrics.unreadNotifications || 0);
+
+        updateTodayExperience({ customer, websites, projects, invoices, changeRequests, messages, notifications, subscriptions });
 
         customerProfile.append(createInfoCard("Klantgegevens", [
           ["Naam", customer.name],

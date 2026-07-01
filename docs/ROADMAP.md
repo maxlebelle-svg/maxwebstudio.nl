@@ -2007,3 +2007,25 @@ Volgende stap:
 1. Bouw eerst het klantportaal startscherm rond `Vandaag / overzicht`.
 2. Behoud staging/demo-data en Supabase read-layer/fallback.
 3. Activeer nog geen nieuwe productiefunctionaliteit zonder aparte implementatiefase.
+
+### Epic 1.1 - Portal Shell & Today Overview
+
+Status: `IMPLEMENTED / STAGING-DEMO ONLY`
+
+Opgeleverd:
+
+- Portal shell met compacte klantnavigatie.
+- `Vandaag / overzicht` als eerste scherm van het klantportaal.
+- Statuskaarten voor website, hosting, veiligheid en laatste update.
+- Actiekaarten voor wijzigingsverzoeken, berichten, facturen en notificaties.
+- Contextuele Max-tip als eerste placeholder voor de digitale accountmanager-ervaring.
+- Primaire CTA: `Wijziging aanvragen`.
+
+Bewust beperkt:
+
+- alleen bestaande staging/demo/localStorage data;
+- geen SQL;
+- geen RLS-wijzigingen;
+- geen productiegegevens;
+- geen OpenAI;
+- geen nieuwe dependencies.

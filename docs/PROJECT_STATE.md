@@ -118,6 +118,35 @@ Leidend document:
 
 - `docs/EPIC_1_DIGITAL_ACCOUNT_MANAGER_UX_BLUEPRINT.md`
 
+## Epic 1.1 - Portal Shell & Today Overview
+
+Status: `IMPLEMENTED / STAGING-DEMO ONLY`
+
+Het klantportaal heeft nu een eerste productervaring op basis van de Digital Account Manager UX Blueprint:
+
+- compacte portal shell/navigatie;
+- `Vandaag / overzicht` als eerste scherm;
+- websitegezondheid in begrijpelijke statuskaarten;
+- openstaande acties voor wijzigingen, berichten, facturen en notificaties;
+- Max AI-tip als contextuele begeleider;
+- duidelijke CTA `Wijziging aanvragen`;
+- mobile-first layout bovenop de bestaande staging/demo klantportaalflow.
+
+Gebruikte data:
+
+- bestaande demo/localStorage data;
+- bestaande Supabase/hybrid read-layer waar veilig beschikbaar;
+- bestaande staging auth bridge.
+
+Bewust niet uitgevoerd:
+
+- geen productiegegevens;
+- geen SQL;
+- geen RLS-wijzigingen;
+- geen OpenAI;
+- geen nieuwe dependencies;
+- geen nieuwe backendfunctionaliteit.
+
 ## Sterke Punten
 
 - Duidelijke premium positionering.
