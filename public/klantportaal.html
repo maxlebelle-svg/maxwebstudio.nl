@@ -115,23 +115,30 @@
       </section>
 
       <section class="admin-section" id="wijzigingen">
-        <div class="admin-section-heading"><div><p class="section-kicker">Wijzigingen</p><h2>Wijzigingsverzoeken</h2></div></div>
+        <div class="admin-section-heading"><div><p class="section-kicker">Wijzigingen</p><h2>Iets aanpassen? Geef het simpel door.</h2></div></div>
         <article class="admin-card customer-portal-card" id="portal-change-request-create">
-          <strong>Nieuw wijzigingsverzoek</strong>
+          <strong>Wat wil je laten aanpassen?</strong>
           <form class="admin-form portal-change-request-form" id="portal-change-request-form">
+            <fieldset class="portal-change-choice-grid">
+              <legend>Kies wat het beste past</legend>
+              <label><input type="radio" name="category" value="content" checked /><span><strong>Tekst aanpassen</strong><small>Een tekst, titel of blok wijzigen.</small></span></label>
+              <label><input type="radio" name="category" value="design" /><span><strong>Foto vervangen</strong><small>Een afbeelding of visueel onderdeel aanpassen.</small></span></label>
+              <label><input type="radio" name="category" value="content" /><span><strong>Nieuwe pagina</strong><small>Een extra pagina of onderdeel aanvragen.</small></span></label>
+              <label><input type="radio" name="category" value="seo" /><span><strong>SEO verbeteren</strong><small>Beter gevonden worden in Google.</small></span></label>
+              <label><input type="radio" name="category" value="other" /><span><strong>Anders</strong><small>Iets wat niet in de lijst staat.</small></span></label>
+            </fieldset>
             <label>Titel<input id="change-request-title" name="title" type="text" maxlength="160" placeholder="Bijvoorbeeld: tekst op homepage aanpassen" required /></label>
-            <label>Categorie<select id="change-request-category" name="category">
-              <option value="content">Tekst/content</option>
-              <option value="design">Design</option>
-              <option value="technical">Technisch</option>
-              <option value="seo">SEO</option>
-              <option value="other">Overig</option>
+            <label>Prioriteit<select id="change-request-priority" name="priority">
+              <option value="normal">Normaal</option>
+              <option value="high">Belangrijk</option>
+              <option value="low">Kan wachten</option>
+              <option value="urgent">Spoed</option>
             </select></label>
             <label>Website<select id="change-request-website" name="websiteId"><option value="">Geen specifieke website</option></select></label>
             <label>Project<select id="change-request-project" name="projectId"><option value="">Geen specifiek project</option></select></label>
             <label class="admin-profile-wide">Omschrijving<textarea id="change-request-description" name="description" rows="4" maxlength="2500" placeholder="Beschrijf kort wat je wilt laten aanpassen." required></textarea></label>
             <div class="portal-actions">
-              <button class="button primary" id="change-request-submit" type="submit">Verstuur wijzigingsverzoek</button>
+              <button class="button primary" id="change-request-submit" type="submit">Wijziging aanvragen</button>
               <span class="form-helper" id="change-request-status" role="status" aria-live="polite"></span>
             </div>
           </form>
@@ -346,6 +353,15 @@
             in_review: "In review",
             goedgekeurd: "Goedgekeurd",
             gearchiveerd: "Gearchiveerd",
+            content: "Tekst",
+            design: "Foto/design",
+            technical: "Technisch",
+            seo: "SEO",
+            other: "Anders",
+            low: "Kan wachten",
+            normal: "Normaal",
+            high: "Belangrijk",
+            urgent: "Spoed",
           };
           return labels[value] || value || "-";
         }
@@ -431,19 +447,28 @@
         }
 
         function renderChangeRequestRows(rows) {
-          renderTable(changeRequestList, rows, ["Verzoek", "Status", "Categorie", "Prioriteit", "Datum", "Omschrijving"], (request) => {
-            const row = document.createElement("div");
-            row.className = "admin-table-row portal-customer-row";
-            row.append(
-              Object.assign(document.createElement("span"), { textContent: request.title || "Wijzigingsverzoek" }),
-              createBadge(request.status || "nieuw"),
-              Object.assign(document.createElement("span"), { textContent: request.category || request.changeCategory || "-" }),
-              Object.assign(document.createElement("span"), { textContent: request.priority || "Normaal" }),
-              Object.assign(document.createElement("span"), { textContent: formatDate(request.createdAt || request.created_at) }),
-              Object.assign(document.createElement("span"), { textContent: request.description || "-" })
-            );
-            return row;
-          }, "Geen wijzigingsverzoeken", "Nieuwe wijzigingsverzoeken verschijnen hier zodra ze aan je klantprofiel gekoppeld zijn.");
+          changeRequestList.replaceChildren();
+          if (!rows.length) {
+            changeRequestList.append(createEmpty("Geen wijzigingsverzoeken", "Wil je iets laten aanpassen? Gebruik de keuzehulp hierboven."));
+            return;
+          }
+          const list = document.createElement("div");
+          list.className = "portal-change-request-list";
+          rows.forEach((request) => {
+            const card = document.createElement("article");
+            card.className = "portal-change-request-card";
+            const heading = document.createElement("div");
+            const title = document.createElement("strong");
+            const meta = document.createElement("span");
+            const description = document.createElement("p");
+            title.textContent = request.title || "Wijzigingsverzoek";
+            meta.textContent = `${labelForStatus(request.category || request.changeCategory || "other")} - ${request.priority || "Normaal"} - ${formatDate(request.createdAt || request.created_at)}`;
+            description.textContent = request.description || "Geen omschrijving toegevoegd.";
+            heading.append(title, createBadge(request.status || "nieuw"));
+            card.append(heading, meta, description);
+            list.append(card);
+          });
+          changeRequestList.append(list);
         }
 
         function renderMessages(rows) {
@@ -789,6 +814,7 @@
             const result = await saveChangeRequestWithWriteFallback({
               title: formData.get("title"),
               category: formData.get("category"),
+              priority: formData.get("priority"),
               websiteId: formData.get("websiteId"),
               projectId: formData.get("projectId"),
               description: formData.get("description"),
@@ -797,14 +823,15 @@
             renderChangeRequestRows(customerChangeRequests);
             metrics.changeRequests.textContent = String(customerChangeRequests.filter((request) => !["afgerond", "gereed", "done", "closed", "gearchiveerd", "archived"].includes(normalize(request.status))).length);
             changeRequestForm.reset();
+            changeRequestForm.querySelector('input[name="category"][value="content"]')?.click();
             changeRequestStatus.textContent = result.fallbackUsed
-              ? "Je verzoek is lokaal opgeslagen. Supabase-write blijft veilig achter de gate."
-              : "Je wijzigingsverzoek is ontvangen.";
+              ? "Je wijziging is veilig als demo opgeslagen. We pakken hem op in het portaal."
+              : "Je wijzigingsverzoek is ontvangen. We pakken dit voor je op.";
           } catch (error) {
             changeRequestStatus.textContent = error.message || "Wijzigingsverzoek kon niet worden opgeslagen.";
           } finally {
             changeRequestSubmit.disabled = false;
-            changeRequestSubmit.textContent = "Verstuur wijzigingsverzoek";
+            changeRequestSubmit.textContent = "Wijziging aanvragen";
           }
         });
 

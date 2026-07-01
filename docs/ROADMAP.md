@@ -2050,3 +2050,26 @@ Bewust beperkt:
 - geen productiegegevens;
 - geen OpenAI;
 - geen nieuwe dependencies.
+
+### Epic 1.3 - Wijzigingsverzoeken
+
+Status: `IMPLEMENTED / STAGING-DEMO ONLY`
+
+Opgeleverd:
+
+- klantvriendelijke wijzigingssectie;
+- keuzehulp voor `Tekst aanpassen`, `Foto vervangen`, `Nieuwe pagina`, `SEO verbeteren` en `Anders`;
+- eenvoudige velden voor titel, omschrijving en prioriteit;
+- duidelijke CTA `Wijziging aanvragen`;
+- demo-succesmelding;
+- overzicht van bestaande/open wijzigingsverzoeken als rustige kaarten.
+
+Bewust beperkt:
+
+- alleen bestaande staging/demo/localStorage data;
+- geen uploads;
+- geen SQL;
+- geen RLS-wijzigingen;
+- geen productiegegevens;
+- geen OpenAI;
+- geen nieuwe dependencies.

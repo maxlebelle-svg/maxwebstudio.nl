@@ -7073,6 +7073,110 @@ h3 {
   text-decoration: none;
 }
 
+.portal-change-choice-grid {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.portal-change-choice-grid legend {
+  grid-column: 1 / -1;
+  margin-bottom: 2px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.portal-change-choice-grid label {
+  position: relative;
+  min-height: 116px;
+  cursor: pointer;
+}
+
+.portal-change-choice-grid input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.portal-change-choice-grid span {
+  height: 100%;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.portal-change-choice-grid strong {
+  color: var(--white);
+  font-size: 15px;
+}
+
+.portal-change-choice-grid small {
+  color: rgba(255, 255, 255, 0.62);
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.portal-change-choice-grid label:hover span,
+.portal-change-choice-grid input:focus-visible + span,
+.portal-change-choice-grid input:checked + span {
+  border-color: rgba(25, 194, 255, 0.45);
+  background:
+    radial-gradient(circle at 92% 16%, rgba(25, 194, 255, 0.14), transparent 30%),
+    rgba(37, 99, 235, 0.16);
+  transform: translateY(-1px);
+}
+
+.portal-change-request-list {
+  display: grid;
+  gap: 12px;
+}
+
+.portal-change-request-card {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.portal-change-request-card > div {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.portal-change-request-card strong {
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.portal-change-request-card span:not(.status-badge) {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.portal-change-request-card p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-weight: 700;
+  line-height: 1.55;
+}
+
 .portal-website-overview-card {
   display: grid;
   grid-template-columns: minmax(0, 0.8fr) minmax(420px, 1.2fr);

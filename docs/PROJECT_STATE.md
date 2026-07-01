@@ -175,6 +175,33 @@ Bewust niet uitgevoerd:
 - geen nieuwe dependencies;
 - geen nieuwe backendfunctionaliteit.
 
+## Epic 1.3 - Wijzigingsverzoeken
+
+Status: `IMPLEMENTED / STAGING-DEMO ONLY`
+
+De klantportaalervaring bevat nu een klantvriendelijke wijzigingsflow:
+
+- keuzehulp voor het type wijziging;
+- simpele velden voor titel, omschrijving en prioriteit;
+- CTA `Wijziging aanvragen`;
+- demo-succesmelding;
+- bestaande/open wijzigingsverzoeken als overzichtelijke kaarten;
+- bestaande veilige write-fallback blijft behouden.
+
+De pagina is bedoeld om de klant direct te laten voelen:
+
+> Ik kan makkelijk iets laten aanpassen zonder te mailen of bellen.
+
+Bewust niet uitgevoerd:
+
+- geen productiegegevens;
+- geen SQL;
+- geen RLS-wijzigingen;
+- geen uploads;
+- geen OpenAI;
+- geen nieuwe dependencies;
+- geen nieuwe backendfunctionaliteit.
+
 ## Sterke Punten
 
 - Duidelijke premium positionering.
