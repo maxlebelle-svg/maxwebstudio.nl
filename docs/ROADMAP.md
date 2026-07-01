@@ -2096,3 +2096,27 @@ Bewust beperkt:
 - geen productiegegevens;
 - geen OpenAI;
 - geen nieuwe dependencies.
+
+### Epic 1.5 - Facturen en Offertes
+
+Status: `IMPLEMENTED / STAGING-DEMO ONLY`
+
+Opgeleverd:
+
+- gezamenlijke sectie `Facturen & offertes`;
+- actiegericht overzicht van openstaand, betaald en concept/offerte;
+- duidelijke statuslabels en korte uitleg per item;
+- CTA's voor `Bekijk details`, `Betaal later` en `Akkoord geven` als demo-placeholder;
+- Max AI-placeholder `Leg deze factuur/offerte uit`;
+- mobiele kaartlayout zonder live betaalflow.
+
+Bewust beperkt:
+
+- alleen bestaande staging/demo/localStorage data;
+- geen Mollie live;
+- geen PDF-generatie;
+- geen SQL;
+- geen RLS-wijzigingen;
+- geen productiegegevens;
+- geen OpenAI;
+- geen nieuwe dependencies.

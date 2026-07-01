@@ -7259,6 +7259,117 @@ h3 {
   line-height: 1.55;
 }
 
+.portal-finance-summary {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: clamp(18px, 3vw, 24px);
+  border: 1px solid rgba(25, 194, 255, 0.22);
+  border-radius: 8px;
+  color: var(--white);
+  background:
+    radial-gradient(circle at 92% 18%, rgba(25, 194, 255, 0.16), transparent 34%),
+    rgba(255, 255, 255, 0.07);
+}
+
+.portal-finance-summary span {
+  color: #19c2ff;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.portal-finance-summary strong {
+  font-size: clamp(20px, 2.4vw, 28px);
+  line-height: 1.18;
+}
+
+.portal-finance-summary p {
+  max-width: 70ch;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-weight: 800;
+  line-height: 1.6;
+}
+
+.portal-finance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.portal-finance-card {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.portal-finance-card.is-open {
+  border-color: rgba(255, 189, 90, 0.26);
+  background:
+    radial-gradient(circle at 92% 16%, rgba(255, 189, 90, 0.12), transparent 34%),
+    rgba(255, 255, 255, 0.07);
+}
+
+.portal-finance-card.is-settled {
+  border-color: rgba(50, 213, 131, 0.2);
+  background:
+    radial-gradient(circle at 92% 16%, rgba(50, 213, 131, 0.1), transparent 34%),
+    rgba(255, 255, 255, 0.07);
+}
+
+.portal-finance-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.portal-finance-card-top > span:not(.status-badge) {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.portal-finance-card > strong {
+  font-size: clamp(18px, 2vw, 24px);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.portal-finance-card > p {
+  margin: 0;
+  color: var(--white);
+  font-size: clamp(28px, 4vw, 42px);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.portal-finance-card > small {
+  color: rgba(255, 255, 255, 0.68);
+  font-weight: 800;
+  line-height: 1.55;
+}
+
+.portal-finance-card > em {
+  color: #19c2ff;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.portal-finance-card .portal-actions .button {
+  flex: 1 1 150px;
+}
+
 .portal-website-overview-card {
   display: grid;
   grid-template-columns: minmax(0, 0.8fr) minmax(420px, 1.2fr);
@@ -10318,6 +10429,10 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
 
   .portal-message-bubble {
     width: 100%;
+  }
+
+  .portal-finance-card .portal-actions .button {
+    flex-basis: 100%;
   }
 }
 

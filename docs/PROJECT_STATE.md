@@ -229,6 +229,35 @@ Bewust niet uitgevoerd:
 - geen nieuwe dependencies;
 - geen nieuwe backendfunctionaliteit.
 
+## Epic 1.5 - Facturen en Offertes
+
+Status: `IMPLEMENTED / STAGING-DEMO ONLY`
+
+De klantportaalervaring bevat nu een actiegerichte finance-laag:
+
+- gezamenlijke sectie `Facturen & offertes`;
+- openstaand, betaald en concept/offerte worden klantvriendelijk uitgelegd;
+- statuslabels per item;
+- CTA's `Bekijk details`, `Betaal later` en `Akkoord geven`;
+- demo-placeholder voor betaal- en akkoordacties;
+- Max AI-placeholder voor `Leg deze factuur/offerte uit`;
+- mobiele layout als kaarten in plaats van tabellen.
+
+De pagina is bedoeld om de klant direct te laten begrijpen:
+
+> Wat staat open, wat is betaald en waar moet ik iets mee?
+
+Bewust niet uitgevoerd:
+
+- geen productiegegevens;
+- geen SQL;
+- geen RLS-wijzigingen;
+- geen Mollie live;
+- geen PDF-generatie;
+- geen OpenAI;
+- geen nieuwe dependencies;
+- geen nieuwe backendfunctionaliteit.
+
 ## Sterke Punten
 
 - Duidelijke premium positionering.

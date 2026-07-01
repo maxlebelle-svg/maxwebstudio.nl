@@ -95,13 +95,13 @@
       </section>
 
       <section class="admin-section" id="facturen">
-        <div class="admin-section-heading"><div><p class="section-kicker">Offertes</p><h2>Jouw offertes</h2></div></div>
-        <div class="portal-table" id="portal-quotes" aria-live="polite"></div>
-      </section>
-
-      <section class="admin-section">
-        <div class="admin-section-heading"><div><p class="section-kicker">Facturen</p><h2>Jouw facturen</h2></div></div>
-        <div class="portal-table" id="portal-invoices" aria-live="polite"></div>
+        <div class="admin-section-heading"><div><p class="section-kicker">Facturen & offertes</p><h2>Wat staat open en wat is afgerond?</h2></div></div>
+        <article class="portal-finance-summary" id="portal-finance-summary">
+          <span>Max zegt</span>
+          <strong>Ik zet je betalingen en offertes overzichtelijk klaar.</strong>
+          <p>Je ziet hier straks direct wat openstaat, wat betaald is en waar je iets mee moet.</p>
+        </article>
+        <div class="portal-finance-grid" id="portal-finance-overview" aria-live="polite"></div>
       </section>
 
       <section class="admin-section">
@@ -211,8 +211,8 @@
         const portalActionGrid = document.getElementById("portal-action-grid");
         const portalMaxTip = document.getElementById("portal-max-tip");
         const customerProfile = document.getElementById("customer-profile");
-        const quoteList = document.getElementById("portal-quotes");
-        const invoiceList = document.getElementById("portal-invoices");
+        const financeOverview = document.getElementById("portal-finance-overview");
+        const financeSummary = document.getElementById("portal-finance-summary");
         const subscriptionList = document.getElementById("portal-subscriptions");
         const projectList = document.getElementById("portal-projects");
         const changeRequestList = document.getElementById("portal-change-requests");
@@ -320,7 +320,7 @@
           portalSourceBadge.className = "status-badge status-warning";
           portalSourceText.textContent = "Customer access guard heeft een mismatch gevonden. In deze fase tonen we daarom geen klantdata van een andere klant.";
           customerProfile.append(createEmpty("Klantdata afgeschermd", "Open je eigen klantportaal of log opnieuw in met de juiste demo-klant."));
-          [portalHealthGrid, portalActionGrid, quoteList, invoiceList, subscriptionList, projectList, websiteOverview, websiteList, fileList].forEach((target) => target.append(createEmpty("Geen data", "Deze data wordt bewust niet getoond bij een customer mismatch.")));
+          [portalHealthGrid, portalActionGrid, financeOverview, subscriptionList, projectList, websiteOverview, websiteList, fileList].forEach((target) => target.append(createEmpty("Geen data", "Deze data wordt bewust niet getoond bij een customer mismatch.")));
           return;
         }
 
@@ -601,6 +601,98 @@
           return card;
         }
 
+        function isPaidStatus(value) {
+          return ["betaald", "paid", "geaccepteerd", "accepted"].includes(normalize(value));
+        }
+
+        function financeStatusGroup(type, status) {
+          const normalized = normalize(status);
+          if (type === "quote") {
+            if (["concept", "draft"].includes(normalized)) return "Concept/offerte";
+            if (["geaccepteerd", "accepted"].includes(normalized)) return "Akkoord";
+            if (["verzonden", "sent"].includes(normalized)) return "Wacht op akkoord";
+            return labelForStatus(status || "offerte");
+          }
+          if (["betaald", "paid"].includes(normalized)) return "Betaald";
+          if (["concept", "draft"].includes(normalized)) return "Concept";
+          return "Openstaand";
+        }
+
+        function financeExplanation(type, item) {
+          const status = normalize(item.status);
+          if (type === "quote") {
+            if (["concept", "draft"].includes(status)) return "Deze offerte staat klaar als concept en vraagt nu nog geen actie.";
+            if (["geaccepteerd", "accepted"].includes(status)) return "Deze offerte is akkoord. Je hoeft hier nu niets mee.";
+            return "Bekijk de offerte rustig. Akkoord geven is hier nu nog een demo-actie.";
+          }
+          if (["betaald", "paid"].includes(status)) return "Deze factuur is betaald en netjes verwerkt.";
+          return "Deze factuur staat open. Betalen is in deze demo nog niet actief.";
+        }
+
+        function createDemoButton(label) {
+          const button = document.createElement("button");
+          button.className = "button secondary";
+          button.type = "button";
+          button.textContent = label;
+          button.addEventListener("click", () => {
+            button.textContent = `${label} (demo)`;
+            window.setTimeout(() => { button.textContent = label; }, 1600);
+          });
+          return button;
+        }
+
+        function createFinanceCard(type, item) {
+          const card = document.createElement("article");
+          const status = item.status || (type === "quote" ? "concept" : "open");
+          card.className = `portal-finance-card ${isPaidStatus(status) ? "is-settled" : "is-open"}`;
+          const top = document.createElement("div");
+          const title = document.createElement("strong");
+          const kind = document.createElement("span");
+          const amount = document.createElement("p");
+          const text = document.createElement("small");
+          const actions = document.createElement("div");
+          const max = document.createElement("em");
+          top.className = "portal-finance-card-top";
+          kind.textContent = type === "quote" ? "Offerte" : "Factuur";
+          title.textContent = type === "quote" ? item.quoteNumber || item.title || "Offerte" : item.invoiceNumber || "Factuur";
+          top.append(kind, createBadge(status));
+          amount.textContent = money(item.total || item.amount);
+          text.textContent = financeExplanation(type, item);
+          actions.className = "portal-actions";
+          actions.append(
+            createActionLink("Bekijk details", type === "quote" ? quoteUrl(item) : invoiceUrl(item)),
+            createDemoButton(type === "quote" ? "Akkoord geven" : "Betaal later"),
+            createDemoButton(type === "quote" ? "Leg offerte uit" : "Leg factuur uit")
+          );
+          max.textContent = `Max: ${financeStatusGroup(type, status)}`;
+          card.append(top, title, amount, text, actions, max);
+          return card;
+        }
+
+        function renderFinanceExperience({ quotes, invoices }) {
+          financeOverview.replaceChildren();
+          const summaryTitle = financeSummary.querySelector("strong");
+          const summaryText = financeSummary.querySelector("p");
+          const items = [
+            ...invoices.map((item) => ({ type: "invoice", item })),
+            ...quotes.map((item) => ({ type: "quote", item })),
+          ];
+          const openInvoices = invoices.filter((invoice) => !isPaidStatus(invoice.status));
+          const paidInvoices = invoices.filter((invoice) => isPaidStatus(invoice.status));
+          const pendingQuotes = quotes.filter((quote) => !isPaidStatus(quote.status));
+          summaryTitle.textContent = openInvoices.length
+            ? `${openInvoices.length} factuur${openInvoices.length === 1 ? "" : "en"} vraagt aandacht.`
+            : "Je financiën zijn rustig.";
+          summaryText.textContent = openInvoices.length
+            ? "Betalen blijft in deze demo uit. Je ziet wel alvast welke actie straks nodig is."
+            : `${paidInvoices.length} betaald, ${pendingQuotes.length} offerte${pendingQuotes.length === 1 ? "" : "s"} in beeld.`;
+          if (!items.length) {
+            financeOverview.append(createEmpty("Geen facturen of offertes", "Zodra er iets klaarstaat, zie je hier direct of actie nodig is."));
+            return;
+          }
+          items.forEach(({ type, item }) => financeOverview.append(createFinanceCard(type, item)));
+        }
+
         function friendlyWebsiteStatus(website = {}) {
           const status = normalize(website.status);
           if (["online", "live", "actief", "active"].includes(status)) return "Online";
@@ -797,7 +889,7 @@
           portalTitle.textContent = "Klant niet gevonden";
           portalSubtitle.textContent = "Open het klantportaal opnieuw vanuit het admin-dashboard.";
           customerProfile.append(createEmpty("Geen klantdata", payload.warnings?.[0] || "Deze klant staat niet in de gekozen klantportaal-bron."));
-          [portalHealthGrid, portalActionGrid, quoteList, invoiceList, subscriptionList, projectList, changeRequestList, messageList, notificationList, websiteOverview, websiteList, fileList, readinessList].forEach((target) => target.append(createEmpty("Geen data", "Geen klant geselecteerd.")));
+          [portalHealthGrid, portalActionGrid, financeOverview, subscriptionList, projectList, changeRequestList, messageList, notificationList, websiteOverview, websiteList, fileList, readinessList].forEach((target) => target.append(createEmpty("Geen data", "Geen klant geselecteerd.")));
           return;
         }
 
@@ -884,33 +976,7 @@
           }
         });
 
-        renderTable(quoteList, quotes, ["Offerte", "Status", "Datum", "Geldig tot", "Totaal", "Actie"], (quote) => {
-          const row = document.createElement("div");
-          row.className = "admin-table-row portal-customer-row";
-          row.append(
-            Object.assign(document.createElement("span"), { textContent: quote.quoteNumber || "-" }),
-            createBadge(quote.status),
-            Object.assign(document.createElement("span"), { textContent: formatDate(quote.quoteDate) }),
-            Object.assign(document.createElement("span"), { textContent: formatDate(quote.validUntil) }),
-            Object.assign(document.createElement("span"), { textContent: money(quote.total || quote.amount) }),
-            createActionLink("Bekijk offerte", quoteUrl(quote))
-          );
-          return row;
-        }, "Geen offertes", "Er zijn nog geen offertes gekoppeld aan dit klantprofiel.");
-
-        renderTable(invoiceList, invoices, ["Factuur", "Status", "Datum", "Vervaldatum", "Totaal", "Actie"], (invoice) => {
-          const row = document.createElement("div");
-          row.className = "admin-table-row portal-customer-row";
-          row.append(
-            Object.assign(document.createElement("span"), { textContent: invoice.invoiceNumber || "-" }),
-            createBadge(invoice.status),
-            Object.assign(document.createElement("span"), { textContent: formatDate(invoice.invoiceDate) }),
-            Object.assign(document.createElement("span"), { textContent: formatDate(invoice.dueDate) }),
-            Object.assign(document.createElement("span"), { textContent: money(invoice.total || invoice.amount) }),
-            createActionLink("Bekijk/betaal factuur", invoiceUrl(invoice))
-          );
-          return row;
-        }, "Geen facturen", "Er zijn nog geen facturen gekoppeld aan dit klantprofiel.");
+        renderFinanceExperience({ quotes, invoices });
 
         if (!subscriptions.length) subscriptionList.append(createEmpty("Geen onderhoudsabonnementen", "Er is nog geen onderhoudsplan gekoppeld aan dit klantprofiel."));
         subscriptions.forEach((subscription) => {
