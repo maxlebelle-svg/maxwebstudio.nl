@@ -2660,3 +2660,25 @@ Runbookbesluit:
 Volgende aanbevolen stap:
 
 - `Epic 2B.7 - Production Migration Execution Approval`
+
+## Epic 2B.7 - Production Existing Tables Alignment Patch
+
+Status: `DRAFT CREATED / NO SQL EXECUTED`
+
+Doel:
+
+- bestaande oudere productie-tabellen `profiles` en `change_requests` veilig uitlijnen vóór `001_schema_tables.sql`;
+- voorkomen dat `001` bestaande tabellen overslaat en latere migrations falen op ontbrekende kolommen.
+
+Opgeleverd:
+
+- `supabase/migration-drafts/000_production_existing_tables_alignment.sql`
+
+Belangrijk:
+
+- geen data verwijderen;
+- geen kolommen hernoemen;
+- geen demo seed;
+- geen productie-auth;
+- geen NOT NULL constraints forceren op bestaande records;
+- volledige production migration-volgorde start nu met `000`, daarna pas `001`.

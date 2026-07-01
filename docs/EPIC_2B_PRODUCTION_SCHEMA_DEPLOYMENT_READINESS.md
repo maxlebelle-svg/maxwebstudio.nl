@@ -43,6 +43,7 @@ Conclusie:
 
 - Productie is `CONDITIONAL GO` voor de volledige migration-volgorde.
 - Productie is `NO-GO` voor het direct uitvoeren van alleen `013_client_portal_schema_rls_alignment.sql`.
+- Productie is `NO-GO` voor direct `001_schema_tables.sql` zonder de production alignment patch.
 - Reden: migration `013` verwacht bestaande canonical tabellen zoals `customers`, `websites`, `projects`, `client_portal_messages`, `quotes`, `invoices`, `subscriptions` en `client_portal_notifications`.
 
 ## Read-only Productie Inspectie
@@ -104,6 +105,7 @@ Als relevante kolommen bestaan, controleer dat productie geen demo/staging recor
 
 Productie mag alleen deze volledige volgorde gebruiken na expliciete approval.
 
+0. `000_production_existing_tables_alignment.sql`
 1. `001_schema_tables.sql`
 2. `002_indexes.sql`
 3. `003_rls_enablement.sql`
@@ -149,9 +151,30 @@ Migration `013_client_portal_schema_rls_alignment.sql` begint met `alter table` 
 
 Correcte aanpak:
 
-1. Eerst `001_schema_tables.sql` om ontbrekende canonical tabellen aan te maken.
-2. Daarna `002` t/m `009` voor indexes, RLS, policies, audit en ownership hardening.
-3. Daarna pas `013` voor klantportaal schema/RLS alignment.
+1. Eerst `000_production_existing_tables_alignment.sql` om oudere `profiles` en `change_requests` tabellen uit te lijnen.
+2. Daarna `001_schema_tables.sql` om ontbrekende canonical tabellen aan te maken.
+3. Daarna `002` t/m `009` voor indexes, RLS, policies, audit en ownership hardening.
+4. Daarna pas `013` voor klantportaal schema/RLS alignment.
+
+### Waarom `001` niet direct mag draaien
+
+De bestaande productie-tabellen `profiles` en `change_requests` lijken ouder dan het canonical schema.
+
+`001_schema_tables.sql` gebruikt `create table if not exists`. PostgreSQL vult bestaande tabellen daardoor niet aan met ontbrekende kolommen.
+
+Daarom zou direct `001` risico geven op latere fouten in `002` of `013`, bijvoorbeeld bij indexes/policies op:
+
+- `profiles.role`;
+- `profiles.status`;
+- `change_requests.customer_id`;
+- `change_requests.auth_user_id`;
+- `change_requests.status`.
+
+Eerst nodig:
+
+```text
+000_production_existing_tables_alignment.sql
+```
 
 ### Niet uitvoeren op productie
 
@@ -254,10 +277,16 @@ Direct alleen `013_client_portal_schema_rls_alignment.sql` uitvoeren blijft:
 NO-GO
 ```
 
+Direct `001_schema_tables.sql` uitvoeren zonder `000_production_existing_tables_alignment.sql` blijft:
+
+```text
+NO-GO
+```
+
 Na deze checks kan de status naar:
 
 ```text
-GO FOR FULL PRODUCTION MIGRATION ORDER
+GO FOR FULL PRODUCTION MIGRATION ORDER STARTING WITH 000
 ```
 
 ## Epic 2B.4 - Production Database Preflight Inspection
@@ -599,7 +628,7 @@ Volgende stap:
 
 - backup/snapshot bevestigen;
 - inhoud van bestaande `profiles` en `change_requests` records veilig/compatibel verklaren;
-- volledige migration-volgorde uitvoeren, niet alleen `013`;
+- volledige migration-volgorde uitvoeren vanaf `000`, niet direct `001` of alleen `013`;
 - daarna RLS/customer-isolation testplan uitvoeren.
 
 ## Backup/Snapshot Checklist Vóór Execution

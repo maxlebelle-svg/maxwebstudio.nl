@@ -29,6 +29,7 @@ Huidige production read-only conclusie:
 - `customers`, `websites`, `projects`, `client_portal_messages`, `quotes`, `invoices`, `subscriptions` en `client_portal_notifications` ontbreken;
 - productie is `CONDITIONAL GO` voor de volledige migration-volgorde;
 - productie is `NO-GO` voor alleen `013_client_portal_schema_rls_alignment.sql`.
+- productie is `NO-GO` voor direct `001_schema_tables.sql` zolang oudere `profiles` en `change_requests` niet eerst zijn uitgelijnd.
 
 ## Releasebesluit
 
@@ -43,6 +44,7 @@ Toegestaan na approval:
 Niet toegestaan:
 
 - alleen `013` direct uitvoeren;
+- `001_schema_tables.sql` direct uitvoeren zonder `000_production_existing_tables_alignment.sql`;
 - `006_seed_demo_data_optional.sql` uitvoeren;
 - demo-data seeden;
 - productie-auth openzetten vóór groene validatie;
@@ -101,6 +103,47 @@ Voer exact deze volgorde uit.
 Bestand:
 
 ```text
+supabase/migration-drafts/000_production_existing_tables_alignment.sql
+```
+
+Doel:
+
+- bestaande oudere `profiles` tabel aanvullen met canonical kolommen;
+- bestaande oudere `change_requests` tabel aanvullen met canonical kolommen;
+- bestaande records intact houden;
+- veilige defaults zetten voor toekomstige records.
+
+Controle na stap:
+
+- `profiles.email` bestaat;
+- `profiles.phone` bestaat;
+- `profiles.role` bestaat;
+- `profiles.status` bestaat;
+- `profiles.is_demo` bestaat;
+- `profiles.environment` bestaat;
+- `profiles.metadata` bestaat;
+- `profiles.updated_at` bestaat;
+- `change_requests.customer_id` bestaat;
+- `change_requests.auth_user_id` bestaat;
+- `change_requests.website_id` bestaat;
+- `change_requests.project_id` bestaat;
+- `change_requests.title` bestaat;
+- `change_requests.description` bestaat;
+- `change_requests.priority` bestaat;
+- `change_requests.status` bestaat;
+- `change_requests.metadata` bestaat;
+- `change_requests.updated_at` bestaat.
+
+Rollback:
+
+- Bij fout vóór commit: transactie faalt en wordt niet toegepast.
+- Bij fout na commit: restore Supabase backup/snapshot; verwijder geen kolommen handmatig zonder review.
+
+### Stap 2
+
+Bestand:
+
+```text
 supabase/migration-drafts/001_schema_tables.sql
 ```
 
@@ -128,7 +171,7 @@ Rollback:
 - Bij fout vóór commit: transactie faalt en wordt niet toegepast.
 - Bij fout na gedeeltelijke toepassing: stop, gebruik Supabase backup/snapshot; verwijder geen data handmatig.
 
-### Stap 2
+### Stap 3
 
 Bestand:
 
@@ -150,7 +193,7 @@ Rollback:
 - Bij indexfout stoppen en blocker documenteren.
 - Geen handmatige schema-patches zonder review.
 
-### Stap 3
+### Stap 4
 
 Bestand:
 
@@ -172,7 +215,7 @@ Rollback:
 - Productie-auth blijft dicht.
 - Herstel via backup/snapshot of expliciet reviewed RLS rollback.
 
-### Stap 4
+### Stap 5
 
 Bestand:
 
@@ -195,7 +238,7 @@ Rollback:
 - Bij policyfout stoppen.
 - Geen policy versoepelen als snelle fix.
 
-### Stap 5
+### Stap 6
 
 Bestand:
 
@@ -216,7 +259,7 @@ Rollback:
 
 - Bij fout stoppen en audit foundation opnieuw reviewen.
 
-### Stap 6
+### Stap 7
 
 Bestand:
 
@@ -238,7 +281,7 @@ Rollback:
 
 - Bij te brede grant: stop, revoke na review of restore snapshot.
 
-### Stap 7
+### Stap 8
 
 Bestand:
 
@@ -259,7 +302,7 @@ Rollback:
 
 - Bij ownershipfout productie-auth dicht houden en policy herstellen via review.
 
-### Stap 8
+### Stap 9
 
 Bestand:
 
@@ -280,7 +323,7 @@ Rollback:
 
 - Bij ownershipfout productie-auth dicht houden en policy herstellen via review.
 
-### Stap 9
+### Stap 10
 
 Bestand:
 

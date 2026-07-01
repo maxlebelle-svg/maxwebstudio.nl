@@ -3282,3 +3282,33 @@ Belangrijkste besluit:
 - `006_seed_demo_data_optional.sql` is uitgesloten;
 - `010` t/m `012` blijven apart goed te keuren voor operational/admin write rollout;
 - productie-auth blijft dicht tot schema, RLS en customer-isolation volledig groen zijn.
+
+## Epic 2B.7 - Production Existing Tables Alignment Patch
+
+Status: `DRAFT CREATED / NO SQL EXECUTED / PRODUCTION AUTH CLOSED`
+
+Toegevoegd:
+
+- `supabase/migration-drafts/000_production_existing_tables_alignment.sql`
+
+Waarom:
+
+- productie bevat al oudere tabellen `profiles` en `change_requests`;
+- `001_schema_tables.sql` gebruikt `create table if not exists`;
+- daardoor zou `001` bestaande tabellen niet aanvullen met ontbrekende canonical kolommen;
+- latere migrations zouden kunnen falen op ontbrekende kolommen zoals `profiles.role`, `profiles.status` of `change_requests.customer_id`.
+
+Patchgedrag:
+
+- voegt alleen ontbrekende kolommen toe;
+- zet veilige defaults;
+- laat bestaande data intact;
+- forceert geen NOT NULL constraints op bestaande records;
+- voert geen demo seed uit;
+- opent productie-auth niet.
+
+Nieuwe execution-volgorde:
+
+- eerst `000_production_existing_tables_alignment.sql`;
+- daarna pas `001_schema_tables.sql`;
+- direct `001` of direct `013` blijft NO-GO.
