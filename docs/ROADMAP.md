@@ -2073,3 +2073,26 @@ Bewust beperkt:
 - geen productiegegevens;
 - geen OpenAI;
 - geen nieuwe dependencies.
+
+### Epic 1.4 - Berichten
+
+Status: `IMPLEMENTED / STAGING-DEMO ONLY`
+
+Opgeleverd:
+
+- berichten als rustige gespreksthread;
+- duidelijk onderscheid tussen klant en Max Webstudio;
+- eenvoudig berichtveld met CTA `Bericht sturen`;
+- demo-succesmelding;
+- Max AI-placeholder `Samenvatting / volgende stap`;
+- mobiele layout zonder e-mailgevoel.
+
+Bewust beperkt:
+
+- alleen bestaande staging/demo/localStorage data;
+- geen e-mailintegratie;
+- geen SQL;
+- geen RLS-wijzigingen;
+- geen productiegegevens;
+- geen OpenAI;
+- geen nieuwe dependencies.

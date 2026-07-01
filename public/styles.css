@@ -7177,6 +7177,88 @@ h3 {
   line-height: 1.55;
 }
 
+.portal-message-summary {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: clamp(18px, 3vw, 24px);
+  border: 1px solid rgba(25, 194, 255, 0.22);
+  border-radius: 8px;
+  color: var(--white);
+  background:
+    radial-gradient(circle at 92% 18%, rgba(25, 194, 255, 0.18), transparent 34%),
+    rgba(255, 255, 255, 0.07);
+}
+
+.portal-message-summary span {
+  color: #19c2ff;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.portal-message-summary strong {
+  font-size: clamp(20px, 2.4vw, 28px);
+  line-height: 1.18;
+}
+
+.portal-message-summary p {
+  max-width: 70ch;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-weight: 800;
+  line-height: 1.6;
+}
+
+.portal-message-thread {
+  display: grid;
+  gap: 14px;
+}
+
+.portal-message-bubble {
+  width: min(78%, 720px);
+  display: grid;
+  gap: 8px;
+  padding: 16px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.portal-message-bubble.is-customer {
+  justify-self: end;
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.34), rgba(25, 194, 255, 0.12)),
+    rgba(255, 255, 255, 0.07);
+}
+
+.portal-message-bubble.is-team {
+  justify-self: start;
+  background:
+    radial-gradient(circle at 8% 18%, rgba(50, 213, 131, 0.12), transparent 34%),
+    rgba(255, 255, 255, 0.08);
+}
+
+.portal-message-bubble span {
+  color: rgba(255, 255, 255, 0.56);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.portal-message-bubble strong {
+  font-size: 17px;
+  line-height: 1.25;
+}
+
+.portal-message-bubble p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.74);
+  font-weight: 700;
+  line-height: 1.55;
+}
+
 .portal-website-overview-card {
   display: grid;
   grid-template-columns: minmax(0, 0.8fr) minmax(420px, 1.2fr);
@@ -10232,6 +10314,10 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   .portal-action-grid,
   .portal-website-metrics {
     grid-template-columns: 1fr;
+  }
+
+  .portal-message-bubble {
+    width: 100%;
   }
 }
 

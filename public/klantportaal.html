@@ -147,14 +147,19 @@
       </section>
 
       <section class="admin-section" id="berichten">
-        <div class="admin-section-heading"><div><p class="section-kicker">Berichten</p><h2>Berichten van Max Webstudio</h2></div></div>
+        <div class="admin-section-heading"><div><p class="section-kicker">Berichten</p><h2>Korte lijn met Max Webstudio</h2></div></div>
+        <article class="portal-message-summary" id="portal-message-summary">
+          <span>Max zegt</span>
+          <strong>Samenvatting / volgende stap</strong>
+          <p>Je gesprekken verschijnen hier zodra je klantdata is geladen.</p>
+        </article>
         <article class="admin-card customer-portal-card" id="portal-message-create">
-          <strong>Bericht sturen</strong>
+          <strong>Stuur een bericht</strong>
           <form class="admin-form portal-message-form" id="portal-message-form">
-            <label>Onderwerp<input id="portal-message-subject" name="subject" type="text" maxlength="180" placeholder="Bijvoorbeeld: vraag over planning" required /></label>
-            <label class="admin-profile-wide">Bericht<textarea id="portal-message-body" name="body" rows="4" maxlength="2500" placeholder="Typ je bericht aan Max Webstudio." required></textarea></label>
+            <label>Waar gaat het over?<input id="portal-message-subject" name="subject" type="text" maxlength="180" placeholder="Bijvoorbeeld: vraag over planning" required /></label>
+            <label class="admin-profile-wide">Bericht<textarea id="portal-message-body" name="body" rows="4" maxlength="2500" placeholder="Typ kort wat je wilt vragen of doorgeven." required></textarea></label>
             <div class="portal-actions">
-              <button class="button primary" id="portal-message-submit" type="submit">Verstuur bericht</button>
+              <button class="button primary" id="portal-message-submit" type="submit">Bericht sturen</button>
               <span class="form-helper" id="portal-message-status" role="status" aria-live="polite"></span>
             </div>
           </form>
@@ -220,6 +225,7 @@
         const portalMessageForm = document.getElementById("portal-message-form");
         const portalMessageStatus = document.getElementById("portal-message-status");
         const portalMessageSubmit = document.getElementById("portal-message-submit");
+        const portalMessageSummary = document.getElementById("portal-message-summary");
         const notificationList = document.getElementById("portal-notifications");
         const websiteOverview = document.getElementById("portal-website-overview");
         const websiteList = document.getElementById("portal-websites");
@@ -473,18 +479,35 @@
 
         function renderMessages(rows) {
           messageList.replaceChildren();
+          const summaryTitle = portalMessageSummary.querySelector("strong");
+          const summaryText = portalMessageSummary.querySelector("p");
           if (!rows.length) {
+            summaryTitle.textContent = "Nog geen berichten.";
+            summaryText.textContent = "Heb je een vraag? Stuur hieronder kort een bericht, dan houden we het hier overzichtelijk bij.";
             messageList.append(createEmpty("Geen berichten", "Berichten van Max Webstudio verschijnen hier zodra ze beschikbaar zijn."));
             return;
           }
+          const latest = rows[0];
+          summaryTitle.textContent = latest.senderType === "customer" ? "Je laatste bericht is ontvangen." : "Er staat een update voor je klaar.";
+          summaryText.textContent = latest.senderType === "customer"
+            ? "We pakken je bericht op en reageren vanuit Max Webstudio."
+            : latest.body || latest.message || "Bekijk de laatste update in het gesprek hieronder.";
+          const thread = document.createElement("div");
+          thread.className = "portal-message-thread";
           rows.forEach((message) => {
-            messageList.append(createInfoCard(message.subject || message.title || "Bericht", [
-              ["Afzender", message.sender || (message.senderType === "customer" ? "Klant" : "Max Webstudio")],
-              ["Status", createBadge(message.status || (message.readAt ? "gelezen" : "nieuw"))],
-              ["Datum", formatDate(message.createdAt)],
-              ["Bericht", message.body || message.message || "-"],
-            ]));
+            const isCustomer = message.senderType === "customer" || normalize(message.sender) === "klant";
+            const bubble = document.createElement("article");
+            bubble.className = `portal-message-bubble ${isCustomer ? "is-customer" : "is-team"}`;
+            const meta = document.createElement("span");
+            const title = document.createElement("strong");
+            const body = document.createElement("p");
+            meta.textContent = `${isCustomer ? "Jij" : "Max Webstudio"} - ${formatDate(message.createdAt)}`;
+            title.textContent = message.subject || message.title || "Bericht";
+            body.textContent = message.body || message.message || "-";
+            bubble.append(meta, title, body);
+            thread.append(bubble);
           });
+          messageList.append(thread);
         }
 
         function createInfoCard(title, pairs, actions = []) {
@@ -851,13 +874,13 @@
             metrics.messages.textContent = String(customerMessages.filter((message) => !message.readAt && !["gelezen", "read"].includes(normalize(message.status))).length);
             portalMessageForm.reset();
             portalMessageStatus.textContent = result.fallbackUsed
-              ? "Je bericht is lokaal opgeslagen. Supabase-write blijft veilig achter de gate."
-              : "Je bericht is ontvangen.";
+              ? "Je bericht is veilig als demo opgeslagen. We reageren vanuit Max Webstudio."
+              : "Je bericht is ontvangen. We reageren vanuit Max Webstudio.";
           } catch (error) {
             portalMessageStatus.textContent = error.message || "Bericht kon niet worden opgeslagen.";
           } finally {
             portalMessageSubmit.disabled = false;
-            portalMessageSubmit.textContent = "Verstuur bericht";
+            portalMessageSubmit.textContent = "Bericht sturen";
           }
         });
 

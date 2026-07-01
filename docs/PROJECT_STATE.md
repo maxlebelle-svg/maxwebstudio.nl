@@ -202,6 +202,33 @@ Bewust niet uitgevoerd:
 - geen nieuwe dependencies;
 - geen nieuwe backendfunctionaliteit.
 
+## Epic 1.4 - Berichten
+
+Status: `IMPLEMENTED / STAGING-DEMO ONLY`
+
+De klantportaalervaring bevat nu een menselijke berichtenlaag:
+
+- gespreksthread in plaats van e-mailachtige lijsten;
+- duidelijk onderscheid tussen klant en Max Webstudio;
+- eenvoudige berichtinvoer met CTA `Bericht sturen`;
+- demo-succesmelding;
+- Max AI-placeholder voor `Samenvatting / volgende stap`;
+- mobiele layout die kort en direct blijft.
+
+De pagina is bedoeld om de klant direct te laten voelen:
+
+> Ik kan kort en direct communiceren met mijn digitale accountmanager.
+
+Bewust niet uitgevoerd:
+
+- geen productiegegevens;
+- geen SQL;
+- geen RLS-wijzigingen;
+- geen e-mailintegratie;
+- geen OpenAI;
+- geen nieuwe dependencies;
+- geen nieuwe backendfunctionaliteit.
+
 ## Sterke Punten
 
 - Duidelijke premium positionering.
