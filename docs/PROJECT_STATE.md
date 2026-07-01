@@ -3390,7 +3390,7 @@ Belangrijk:
 
 ## Epic 2B.10 - Client Portal Legacy Policy Cleanup
 
-Status: `DRAFT CREATED / NO SQL EXECUTED / PRODUCTION AUTH CLOSED`
+Status: `PRODUCTION EXECUTED / VALIDATED GREEN / PRODUCTION AUTH CLOSED`
 
 Toegevoegd:
 
@@ -3415,3 +3415,45 @@ Belangrijk:
 - geen grants wijzigen;
 - geen brede platformtabellen;
 - productie-auth blijft dicht tot cleanup en RLS/customer-isolation groen zijn.
+
+## Epic 2B.11 - Production Client Portal Baseline Checkpoint
+
+Status: `BASELINE COMPLETE / PRODUCTION AUTH CLOSED`
+
+Uitgevoerd op productie `maxwebstudio`:
+
+- `000_production_existing_tables_alignment.sql`: PASS;
+- `001_client_portal_baseline.sql`: PASS;
+- `002_client_portal_indexes.sql`: PASS;
+- `003_client_portal_rls_enablement.sql`: PASS;
+- `004_client_portal_rls_policies_and_grants.sql`: PASS;
+- `005_client_portal_legacy_policy_cleanup.sql`: PASS.
+
+Bevestigd:
+
+- minimale klantportaal-tabellen bestaan;
+- row counts zijn gecontroleerd;
+- triggers bestaan;
+- indexes bestaan;
+- geen brede platform-indexes aangemaakt;
+- RLS staat aan op alle 7 klantportaal-tabellen;
+- policies zijn aangemaakt;
+- legacy policies zijn verwijderd.
+
+Veiligheidsstatus:
+
+- schema is compleet voor de minimale klantportaal-baseline;
+- `anon` heeft geen directe klantdata-toegang volgens de minimale grants;
+- `authenticated` heeft alleen minimale toegang voor lezen en klantveilige creates;
+- `service_role` blijft backend-only;
+- geen demo seed;
+- geen finance/CRM/AI/brede platformtabellen;
+- productie-auth blijft dicht.
+
+Open vóór productie-auth:
+
+- RLS/customer-isolation test met echte productiecontext;
+- frontend production auth env/config review;
+- eerste echte customer/profile koppeling;
+- logout/session restore/password reset live-check;
+- release approval.

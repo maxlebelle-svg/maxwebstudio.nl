@@ -1575,3 +1575,128 @@ Conclusie:
 - Productie is `NO-GO` voor het direct uitvoeren van alleen `013_client_portal_schema_rls_alignment.sql`.
 - Reden: `013` verwacht bestaande canonical tabellen, terwijl `customers`, `websites`, `projects`, `client_portal_messages`, `quotes`, `invoices`, `subscriptions` en `client_portal_notifications` ontbreken.
 - Er is geen productie SQL uitgevoerd door Codex.
+
+## Epic 2B.11 - Production Client Portal Baseline Checkpoint
+
+Status: `PASS / BASELINE COMPLETE / PRODUCTIE-AUTH NO-GO`
+
+Scope:
+
+- Alleen review en documentatie.
+- Geen SQL uitgevoerd door Codex.
+- Geen productie gewijzigd door Codex.
+- Geen productie-auth geactiveerd.
+- Geen demo seed.
+- Geen OpenAI/Mollie/Resend.
+
+Uitgevoerd op productie `maxwebstudio` volgens handmatige Supabase SQL Editor-flow:
+
+| Migration | Verwacht | Resultaat | Status | Notities |
+| --- | --- | --- | --- | --- |
+| `000_production_existing_tables_alignment.sql` | Bestaande `profiles`/`change_requests` veilig uitlijnen | Uitgevoerd en gevalideerd | PASS | Geen data delete/rename |
+| `001_client_portal_baseline.sql` | Minimale klantportaal-tabellen aanmaken | Uitgevoerd en gevalideerd | PASS | Geen brede platformtabellen |
+| `002_client_portal_indexes.sql` | Alleen minimale klantportaal-indexes | Uitgevoerd en gevalideerd | PASS | Geen brede platform-indexes |
+| `003_client_portal_rls_enablement.sql` | RLS aan op 7 klantportaal-tabellen | Uitgevoerd en gevalideerd | PASS | Productie-auth blijft dicht |
+| `004_client_portal_rls_policies_and_grants.sql` | Minimale policies en grants | Uitgevoerd en gevalideerd | PASS | `anon` geen klantdata-grants; `authenticated` minimale grants |
+| `005_client_portal_legacy_policy_cleanup.sql` | Oude policies verwijderen | Uitgevoerd en gevalideerd | PASS | Legacy profile update/read policies verwijderd |
+
+Bevestigde validaties:
+
+| Controle | Resultaat | Status |
+| --- | --- | --- |
+| Klantportaal-tabellen bestaan | Bevestigd | PASS |
+| Row counts gecontroleerd | Bevestigd | PASS |
+| Triggers bestaan | Bevestigd | PASS |
+| Indexes bestaan | Bevestigd | PASS |
+| Geen brede platform-indexes | Bevestigd | PASS |
+| RLS op 7 klantportaal-tabellen | Bevestigd | PASS |
+| Policies aangemaakt | Bevestigd | PASS |
+| Legacy policies verwijderd | Bevestigd | PASS |
+| Demo seed uitgesloten | Bevestigd | PASS |
+| Finance/CRM/AI/brede platformtabellen uitgesloten | Bevestigd | PASS |
+
+Conclusie:
+
+- De minimale productie-databasebasis voor het klantportaal is compleet.
+- Productie-auth blijft `NO-GO` totdat RLS/customer-isolation en frontend production-auth rollout apart groen zijn.
+- Er zijn geen open schema blockers voor de volgende validatiefase.
+
+Aanbevolen read-only eindcontrole vóór productie-auth:
+
+```sql
+select table_name
+from information_schema.tables
+where table_schema = 'public'
+  and table_name in (
+    'profiles',
+    'customers',
+    'websites',
+    'projects',
+    'change_requests',
+    'client_portal_messages',
+    'client_portal_notifications'
+  )
+order by table_name;
+```
+
+```sql
+select c.relname as table_name, c.relrowsecurity as rls_enabled
+from pg_class c
+join pg_namespace n on n.oid = c.relnamespace
+where n.nspname = 'public'
+  and c.relname in (
+    'profiles',
+    'customers',
+    'websites',
+    'projects',
+    'change_requests',
+    'client_portal_messages',
+    'client_portal_notifications'
+  )
+order by c.relname;
+```
+
+```sql
+select schemaname, tablename, policyname, cmd, roles, qual, with_check
+from pg_policies
+where schemaname = 'public'
+  and tablename in (
+    'profiles',
+    'customers',
+    'websites',
+    'projects',
+    'change_requests',
+    'client_portal_messages',
+    'client_portal_notifications'
+  )
+order by tablename, policyname;
+```
+
+```sql
+select grantee, table_name, privilege_type
+from information_schema.role_table_grants
+where table_schema = 'public'
+  and table_name in (
+    'profiles',
+    'customers',
+    'websites',
+    'projects',
+    'change_requests',
+    'client_portal_messages',
+    'client_portal_notifications'
+  )
+  and grantee in ('anon', 'authenticated', 'service_role')
+order by table_name, grantee, privilege_type;
+```
+
+```sql
+select schemaname, tablename, policyname
+from pg_policies
+where schemaname = 'public'
+  and policyname in (
+    'Clients can read own profile',
+    'Clients can update own profile',
+    'Clients can read own change requests'
+  )
+order by tablename, policyname;
+```

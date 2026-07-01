@@ -1,6 +1,6 @@
 # Epic 2B.6 - Production Migration Runbook
 
-Status: `MINIMAL RLS APPLIED / LEGACY POLICY CLEANUP DRAFT READY / PRODUCTION AUTH CLOSED`
+Status: `MINIMAL CLIENT PORTAL BASELINE COMPLETE / PRODUCTION AUTH CLOSED`
 
 Doel:
 
@@ -33,7 +33,9 @@ Huidige production read-only conclusie:
 - `002_client_portal_indexes.sql` is uitgevoerd en groen gevalideerd;
 - `003_client_portal_rls_enablement.sql` is uitgevoerd en groen gevalideerd;
 - `004_client_portal_rls_policies_and_grants.sql` is uitgevoerd en groen gevalideerd;
-- oudere legacy policies zijn gedetecteerd en moeten worden opgeschoond vóór productie-auth;
+- `005_client_portal_legacy_policy_cleanup.sql` is uitgevoerd en groen gevalideerd;
+- legacy policies zijn verwijderd vóór productie-auth;
+- schema, indexes, RLS, policies, grants en legacy cleanup zijn compleet voor de minimale klantportaal-baseline;
 - productie is `NO-GO` voor alleen `013_client_portal_schema_rls_alignment.sql`.
 - productie is `NO-GO` voor direct `001_schema_tables.sql` zolang oudere `profiles` en `change_requests` niet eerst zijn uitgelijnd.
 - `001_schema_tables.sql` is te breed voor de eerste klantportaal-livegang en wordt vervangen door `001_client_portal_baseline.sql`.
@@ -303,7 +305,7 @@ Reden:
 - ze verwijzen naar uitgesloten tabellen zoals leads, finance, files, CRM, AI, settings en logs;
 - de minimale klantportaal-livegang gebruikt nu de aparte `002_client_portal_*`, `003_client_portal_*` en `004_client_portal_*` drafts.
 
-Volgende stap na `004`-validatie:
+Volgende stap na `005`-validatie:
 
 - voer RLS/customer-isolation tests uit voordat productie-auth open mag.
 
@@ -396,6 +398,96 @@ Data:
 - geen placeholder/mockrecords;
 - bestaande 1 `profiles` en 2 `change_requests` records zijn nog verklaarbaar/veilig.
 
+Checkpointstatus:
+
+- `000_production_existing_tables_alignment.sql`: uitgevoerd/groen;
+- `001_client_portal_baseline.sql`: uitgevoerd/groen;
+- `002_client_portal_indexes.sql`: uitgevoerd/groen;
+- `003_client_portal_rls_enablement.sql`: uitgevoerd/groen;
+- `004_client_portal_rls_policies_and_grants.sql`: uitgevoerd/groen;
+- `005_client_portal_legacy_policy_cleanup.sql`: uitgevoerd/groen;
+- productie-auth blijft dicht tot RLS/customer-isolation en frontend-auth rollout groen zijn.
+
+Read-only controlequeries voor eindcontrole:
+
+```sql
+select table_name
+from information_schema.tables
+where table_schema = 'public'
+  and table_name in (
+    'profiles',
+    'customers',
+    'websites',
+    'projects',
+    'change_requests',
+    'client_portal_messages',
+    'client_portal_notifications'
+  )
+order by table_name;
+```
+
+```sql
+select c.relname as table_name, c.relrowsecurity as rls_enabled
+from pg_class c
+join pg_namespace n on n.oid = c.relnamespace
+where n.nspname = 'public'
+  and c.relname in (
+    'profiles',
+    'customers',
+    'websites',
+    'projects',
+    'change_requests',
+    'client_portal_messages',
+    'client_portal_notifications'
+  )
+order by c.relname;
+```
+
+```sql
+select schemaname, tablename, policyname, cmd, roles, qual, with_check
+from pg_policies
+where schemaname = 'public'
+  and tablename in (
+    'profiles',
+    'customers',
+    'websites',
+    'projects',
+    'change_requests',
+    'client_portal_messages',
+    'client_portal_notifications'
+  )
+order by tablename, policyname;
+```
+
+```sql
+select grantee, table_name, privilege_type
+from information_schema.role_table_grants
+where table_schema = 'public'
+  and table_name in (
+    'profiles',
+    'customers',
+    'websites',
+    'projects',
+    'change_requests',
+    'client_portal_messages',
+    'client_portal_notifications'
+  )
+  and grantee in ('anon', 'authenticated', 'service_role')
+order by table_name, grantee, privilege_type;
+```
+
+```sql
+select schemaname, tablename, policyname
+from pg_policies
+where schemaname = 'public'
+  and policyname in (
+    'Clients can read own profile',
+    'Clients can update own profile',
+    'Clients can read own change requests'
+  )
+order by tablename, policyname;
+```
+
 Frontend:
 
 - service-role wordt niet naar browser gestuurd;
@@ -461,10 +553,14 @@ Deze runbook is bijgewerkt voor de minimale klantportaal-productievolgorde.
 
 - `000_production_existing_tables_alignment.sql` is uitgevoerd en groen gevalideerd.
 - `001_client_portal_baseline.sql` is uitgevoerd en groen gevalideerd.
-- `002_client_portal_indexes.sql`, `003_client_portal_rls_enablement.sql` en `004_client_portal_rls_policies_and_grants.sql` zijn draft-ready maar nog niet uitgevoerd.
+- `002_client_portal_indexes.sql` is uitgevoerd en groen gevalideerd.
+- `003_client_portal_rls_enablement.sql` is uitgevoerd en groen gevalideerd.
+- `004_client_portal_rls_policies_and_grants.sql` is uitgevoerd en groen gevalideerd.
+- `005_client_portal_legacy_policy_cleanup.sql` is uitgevoerd en groen gevalideerd.
+- Productie-auth blijft dicht totdat RLS/customer-isolation en frontend rollout groen zijn.
 
 Volgende stap:
 
 ```text
-Review en executeer 002_client_portal_indexes.sql handmatig na expliciete approval.
+Voer RLS/customer-isolation validatie uit met productie-auth nog dicht.
 ```

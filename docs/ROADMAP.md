@@ -2751,7 +2751,7 @@ Volgende stap:
 
 ## Epic 2B.10 - Client Portal Legacy Policy Cleanup
 
-Status: `DRAFT CREATED / NO SQL EXECUTED / PRODUCTION AUTH CLOSED`
+Status: `PRODUCTION EXECUTED / VALIDATED GREEN / PRODUCTION AUTH CLOSED`
 
 Doel:
 
@@ -2774,3 +2774,38 @@ Belangrijk:
 - geen data wijzigen;
 - geen grants wijzigen;
 - productie-auth blijft dicht.
+
+## Epic 2B.11 - Production Client Portal Baseline Checkpoint
+
+Status: `BASELINE COMPLETE / PRODUCTION AUTH CLOSED`
+
+Doel:
+
+- bevestigen dat de minimale klantportaal-productiebasis veilig en compleet is uitgevoerd;
+- vastleggen dat productie-auth nog niet open mag voordat RLS/customer-isolation en frontend rollout apart groen zijn.
+
+Uitgevoerd en groen gevalideerd:
+
+- `000_production_existing_tables_alignment.sql`;
+- `001_client_portal_baseline.sql`;
+- `002_client_portal_indexes.sql`;
+- `003_client_portal_rls_enablement.sql`;
+- `004_client_portal_rls_policies_and_grants.sql`;
+- `005_client_portal_legacy_policy_cleanup.sql`.
+
+Checkpoint:
+
+- klantportaal-tabellen bestaan;
+- triggers bestaan;
+- indexes bestaan;
+- RLS staat aan op alle 7 klantportaal-tabellen;
+- minimale policies staan erop;
+- legacy policies zijn verwijderd;
+- geen demo seed uitgevoerd;
+- geen finance/CRM/AI/brede platformtabellen uitgerold;
+- productie-auth blijft `NO-GO`.
+
+Volgende stap:
+
+- RLS/customer-isolation validatie;
+- daarna pas productie-auth/frontend rollout beoordelen.
