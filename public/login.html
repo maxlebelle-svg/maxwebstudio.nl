@@ -177,6 +177,20 @@
           message.className = `portal-message ${type}`.trim();
         }
 
+        function getSafeLoginErrorMessage(error) {
+          const raw = String(error?.message || "").toLowerCase();
+          if (raw.includes("invalid") || raw.includes("credentials") || raw.includes("login")) {
+            return "Inloggen is niet gelukt. Controleer je e-mailadres en wachtwoord.";
+          }
+          if (raw.includes("email not confirmed")) {
+            return "Bevestig eerst je e-mailadres voordat je inlogt.";
+          }
+          if (raw.includes("network") || raw.includes("fetch")) {
+            return "De testomgeving is nu niet bereikbaar. Probeer het zo opnieuw.";
+          }
+          return "Inloggen is niet gelukt. Controleer je gegevens of vraag toegang aan.";
+        }
+
         function activatePanel(name) {
           panels.forEach((panel) => {
             const active = panel.dataset.authPanel === name;
@@ -273,10 +287,13 @@
             setMessage("Login gelukt.", "success");
             window.location.href = "/klantportaal.html";
           } catch (error) {
-            console.info("Supabase login prepared", error);
+            console.info("Supabase login failed", {
+              code: error?.code || "UNKNOWN",
+              status: error?.status || "",
+            });
             setMessage(isDeveloperModeEnabled()
-              ? (error.message || "Inloggen is nog niet beschikbaar voor dit account.")
-              : "Het klantportaal wordt momenteel afgerond. Vraag toegang aan of neem contact met ons op.", "error");
+              ? (error.message || getSafeLoginErrorMessage(error))
+              : getSafeLoginErrorMessage(error), "error");
           }
         });
 
