@@ -3628,3 +3628,36 @@ Bewust nog niet actief:
 - geen AI;
 - geen Sales Portal;
 - geen Leadfinder.
+
+## Sprint 3A.4 - Live Provisioning Test With Internal Account
+
+Status: `LIVE PROVISIONING PASS / PASSWORD SETUP HANDOFF`
+
+Doel:
+
+- de echte productieprovisioning eenmalig gecontroleerd testen met een interne testklant;
+- bevestigen dat de admin wizard niet langer alleen mockt, maar live Auth/profile/customer/website/project klaarmaakt.
+
+Uitgevoerd:
+
+- live admin wizard gebruikt op `maxwebstudio.nl`;
+- interne testklant `test+klant@maxwebstudio.nl` gebruikt;
+- admin token is via Netlify production environment gevalideerd;
+- Auth user, profile, customer, website en project zijn server-side aangemaakt of gekoppeld;
+- password setup/recovery link is gegenereerd;
+- welkomstmail is als concept/preview klaargezet;
+- geen echte Resend-mail verzonden.
+
+Veiligheidsstatus:
+
+- service-role blijft server-side in Netlify Functions;
+- geen secrets of setup-link in documentatie vastgelegd;
+- geen SQL uitgevoerd;
+- geen echte klantdata gebruikt;
+- geen Mollie, AI, Leadfinder of Sales Portal geactiveerd.
+
+Open:
+
+- klant moet de activatielink handmatig openen en zelf een wachtwoord instellen;
+- daarna live login, portalweergave zonder demo-fallback en logout valideren;
+- Resend live verzending pas koppelen na deze volledige loginvalidatie.

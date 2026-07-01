@@ -2891,3 +2891,30 @@ Volgende stap:
 
 - één gecontroleerde live/staging testklant aanmaken via de wizard;
 - daarna Resend-uitnodiging als aparte stap activeren.
+
+## Sprint 3A.4 - Live Provisioning Test With Internal Account
+
+Status: `LIVE PROVISIONING PASS / PASSWORD SETUP HANDOFF`
+
+Doel:
+
+- bewijzen dat de admin wizard in productie een interne testklant kan klaarzetten;
+- bevestigen dat Auth, profile, customer, website en project automatisch worden gekoppeld.
+
+Resultaat:
+
+- live Netlify production function accepteert de admin-token na redeploy;
+- interne testklant `test+klant@maxwebstudio.nl` is via de wizard verwerkt;
+- Auth/profile/customer/website/project provisioning: PASS;
+- password setup/recovery link genereren: PASS;
+- welkomstmailconcept genereren: PASS;
+- geen Resend live verzending;
+- geen SQL, Mollie, AI, Leadfinder of Sales Portal.
+
+Volgende stap:
+
+1. Testklant opent de activatielink en stelt zelf een wachtwoord in.
+2. Live login op `maxwebstudio.nl/login.html` valideren.
+3. Controleren dat het klantportaal echte production customer-context toont zonder demo-fallback.
+4. Logout valideren.
+5. Daarna pas Resend live uitnodigingsmails koppelen.

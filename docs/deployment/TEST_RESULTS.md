@@ -1865,3 +1865,46 @@ Open:
 - één gecontroleerde live/staging test via Netlify function;
 - controleren dat klant daarna via setup/reset link kan inloggen;
 - Resend pas daarna koppelen voor echte verzending.
+
+## Sprint 3A.4 - Live Provisioning Test With Internal Account
+
+Datum: 2026-07-02
+
+Status: `LIVE PROVISIONING PASS / PASSWORD SETUP HANDOFF`
+
+Scope:
+
+- live admin wizard getest via `https://maxwebstudio.nl/admin-dashboard.html`;
+- Netlify production environment gebruikt;
+- interne testklant gebruikt: `test+klant@maxwebstudio.nl`;
+- geen echte klantdata gebruikt;
+- geen Resend live mail verstuurd;
+- geen Mollie, AI, Sales Portal of Leadfinder geactiveerd;
+- geen SQL uitgevoerd tijdens de test.
+
+Resultaten:
+
+- admin token validatie: PASS na Netlify redeploy en correcte tokeninvoer;
+- Auth user aanmaken/hergebruiken: PASS;
+- profile aanmaken/koppelen: PASS;
+- customer aanmaken/koppelen: PASS;
+- website record aanmaken/koppelen: PASS;
+- project record aanmaken/koppelen: PASS;
+- welkomstmailconcept genereren: PASS;
+- password setup/recovery link genereren: PASS;
+- service-role zichtbaar in frontend: PASS, niet zichtbaar;
+- live functie retourneert geen secrets: PASS.
+
+Mailconcept:
+
+- onderwerp: `Welkom bij Max Webstudio – je klantportaal staat klaar`;
+- inhoud bevat persoonlijke begroeting, uitleg over portaalfuncties, accountactivatie en contactoptie;
+- activatielink is gegenereerd maar niet in documentatie vastgelegd.
+
+Nog handmatig te valideren:
+
+- klant opent de activatielink;
+- klant stelt zelf een wachtwoord in;
+- klant logt in op productie;
+- klant ziet eigen portal zonder demo-fallback;
+- logout werkt.
