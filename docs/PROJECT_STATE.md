@@ -469,6 +469,64 @@ Volgende aanbevolen stap:
 
 - `Epic 2A.3 - Mijn Website Production Read`
 
+## Epic 2A.3 - Mijn Website Production Data Foundation
+
+Status: `IMPLEMENTED / READ-ONLY FOUNDATION / PRODUCTIE NO-GO`
+
+De databron voor `Mijn Website` en projectstatus is voorbereid op echte Supabase-data.
+
+Toegevoegd:
+
+- `public/src/services/clientWebsiteProjectContextService.js`
+
+Werking:
+
+- gebruikt de bestaande Supabase Auth-sessie;
+- gebruikt de customer context uit Epic 2A.2;
+- leest `websites` read-only op `customer_id`;
+- leest `projects` read-only op `customer_id`;
+- normaliseert website/projectvelden naar de bestaande klantportaalvorm;
+- valt terug op de bestaande demo/localStorage payload als Supabase-data ontbreekt of niet veilig gelezen kan worden.
+
+Ondersteunde states:
+
+- `loading`;
+- `found`;
+- `missing`;
+- `error`.
+
+Voorbereide velden:
+
+- website naam;
+- domein/live URL;
+- status;
+- hosting/onderhoud;
+- SSL/veiligheidsstatus;
+- laatste update;
+- backupstatus;
+- snelheid/SEO-score;
+- projectfase/status/voortgang.
+
+Belangrijkste securitybesluit:
+
+- Reads gebruiken de ingelogde Supabase Auth-sessie.
+- RLS moet de echte grens blijven voor `websites` en `projects`.
+- Hosting, deployment, domein en ownership-writes blijven geblokkeerd.
+
+Bewust niet uitgevoerd:
+
+- geen redesign;
+- geen writes;
+- geen SQL;
+- geen productie-auth activatie;
+- geen echte klantdata;
+- geen OpenAI/Mollie;
+- geen nieuwe dependencies.
+
+Volgende aanbevolen stap:
+
+- `Epic 2A.4 - Change Requests Production Read`
+
 ## Sterke Punten
 
 - Duidelijke premium positionering.

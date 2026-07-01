@@ -2324,3 +2324,36 @@ Belangrijk:
 Volgende aanbevolen stap:
 
 - `Epic 2A.3 - Mijn Website Production Read`
+
+## Epic 2A.3 - Mijn Website Production Data Foundation
+
+Status: `IMPLEMENTED / READ-ONLY FOUNDATION / PRODUCTION AUTH NO-GO`
+
+Doel:
+
+- website- en projectgegevens voorbereiden op echte Supabase-data;
+- bestaande UX voor `Mijn Website` en projectstatus behouden;
+- fallback naar demo/localStorage behouden zolang Supabase-data ontbreekt.
+
+Opgeleverd:
+
+- `clientWebsiteProjectContextService`;
+- read-only `websites` lookup op `customer_id`;
+- read-only `projects` lookup op `customer_id`;
+- normalisatie van websitevelden zoals domein, status, hosting, veiligheid, backups, SEO en snelheid;
+- normalisatie van projectvelden zoals status, fase, voortgang en laatste update;
+- states voor `loading`, `found`, `missing` en `error`;
+- klantportaal gebruikt deze data als die veilig beschikbaar is.
+
+Belangrijk:
+
+- geen redesign;
+- geen writes;
+- geen SQL;
+- geen productie-auth activatie;
+- geen echte klantdata;
+- geen OpenAI/Mollie.
+
+Volgende aanbevolen stap:
+
+- `Epic 2A.4 - Change Requests Production Read`

@@ -227,3 +227,96 @@ Bewust niet uitgevoerd:
 Volgende aanbevolen stap:
 
 `Epic 2A.3 - Mijn Website Production Read`
+
+## Epic 2A.3 - Mijn Website Production Data Foundation
+
+Status: `IMPLEMENTED / READ-ONLY FOUNDATION / PRODUCTION AUTH NO-GO`
+
+Doel:
+
+- de databron voor `Mijn Website` en projectstatus voorbereiden op echte Supabase-data;
+- bestaande portal UX behouden;
+- demo/localStorage fallback behouden zolang Supabase-data ontbreekt.
+
+Toegevoegd:
+
+- `public/src/services/clientWebsiteProjectContextService.js`
+
+Werking:
+
+1. Gebruik de bestaande Supabase Auth-sessie.
+2. Gebruik de klantcontext uit Epic 2A.2.
+3. Lees read-only `websites` op `customer_id`.
+4. Lees read-only `projects` op `customer_id`.
+5. Normaliseer de velden naar de bestaande klantportaalvorm.
+6. Als websites/projecten ontbreken of niet veilig gelezen kunnen worden, blijft de bestaande portal payload actief.
+
+Ondersteunde states:
+
+- `loading`: voorbereid voor UI-statussen;
+- `found`: websites en/of projecten gevonden;
+- `missing`: geen customer_id, sessie, config of records;
+- `error`: veilige foutstatus zonder secrets.
+
+Benodigde Supabase-velden voor `websites`:
+
+- `id`;
+- `customer_id`;
+- `project_id`;
+- `name`;
+- `domain`;
+- `live_url`;
+- `status`;
+- `hosting_package`;
+- `care_package`;
+- `maintenance_status`;
+- `maintenance_plan`;
+- `publish_status`;
+- `ssl_status`;
+- `safety_status`;
+- `backup_status`;
+- `last_backup_at`;
+- `last_checked_at`;
+- `last_deploy_at`;
+- `seo_notes`;
+- `seo_score`;
+- `performance_score`;
+- `updated_at`.
+
+Benodigde Supabase-velden voor `projects`:
+
+- `id`;
+- `customer_id`;
+- `website_id`;
+- `name`;
+- `project_name`;
+- `status`;
+- `phase`;
+- `progress`;
+- `start_date`;
+- `deadline`;
+- `public_notes`;
+- `client_visible_notes`;
+- `updated_at`.
+
+Securityregels:
+
+- Geen service role naar frontend.
+- Reads gebruiken de ingelogde Supabase Auth-sessie.
+- RLS moet afdwingen dat de klant alleen eigen `websites` en `projects` kan lezen.
+- Website/project `customer_id` mag in productie niet uit localStorage worden vertrouwd.
+- Hosting, deployment, domein en ownership-writes blijven geblokkeerd.
+
+Bewust niet uitgevoerd:
+
+- geen redesign;
+- geen writes;
+- geen SQL;
+- geen productie-auth activatie;
+- geen echte klantdata;
+- geen OpenAI/Mollie;
+- geen nieuwe dependencies.
+
+Volgende aanbevolen stap:
+
+`Epic 2A.4 - Change Requests Production Read`

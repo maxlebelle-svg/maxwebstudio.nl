@@ -212,6 +212,7 @@
         const { requireCustomerAccess } = await import("./src/services/routeGuardService.js");
         const { getClientAuthReadiness } = await import("./src/services/clientAuthReadinessService.js");
         const { getClientCustomerProfileContext } = await import("./src/services/clientCustomerProfileContextService.js");
+        const { getClientWebsiteProjectContext } = await import("./src/services/clientWebsiteProjectContextService.js");
         const { ensureStagingClientPortalDemoSession } = await import("./src/services/stagingClientPortalAuthBridgeService.js");
         const { signOut: signOutSupabase } = await import("./src/services/supabaseAuthProvider.js");
         const { saveChangeRequestWithWriteFallback } = await import("./src/services/changeRequestWriteService.js");
@@ -1115,6 +1116,31 @@
 
         const payload = await getClientPortalData(customerId, { supabaseCustomerId, mode: portalDataMode });
         updateSourceMessage(payload);
+        const websiteProjectContext = await getClientWebsiteProjectContext({
+          customerId,
+          supabaseCustomerId,
+          customer: payload.customer,
+        });
+        if (websiteProjectContext.found) {
+          payload.websites = websiteProjectContext.websites;
+          payload.projects = websiteProjectContext.projects;
+          payload.sourceSummary = {
+            ...(payload.sourceSummary || {}),
+            websiteProjectContext: {
+              state: websiteProjectContext.state,
+              source: websiteProjectContext.source,
+              websiteCount: websiteProjectContext.websites.length,
+              projectCount: websiteProjectContext.projects.length,
+            },
+          };
+          payload.metrics = {
+            ...(payload.metrics || {}),
+            activeWebsites: websiteProjectContext.websites.filter((website) => ["online", "live", "actief", "active"].includes(String(website.status || "").toLowerCase())).length,
+            runningProjects: websiteProjectContext.projects.filter((project) => !["live", "onderhoud", "maintenance", "gepauzeerd", "paused", "gearchiveerd", "archived"].includes(String(project.status || "").toLowerCase())).length,
+          };
+        } else if (websiteProjectContext.state === "error" && isDeveloperModeEnabled()) {
+          payload.warnings = [...(payload.warnings || []), websiteProjectContext.error || websiteProjectContext.message];
+        }
         const { customer, websites, projects, files, invoices, subscriptions, quotes, changeRequests, messages, notifications, metrics: portalMetrics, sourceSummary } = payload;
         const customerChangeRequests = [...changeRequests];
         const customerMessages = [...messages];
