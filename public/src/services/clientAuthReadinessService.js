@@ -53,7 +53,6 @@ export function evaluateClientAuthConfig(config = {}) {
 
 export async function getClientAuthReadiness() {
   const browserConfig = getSupabaseSafeSummary();
-  const localStatus = getSupabaseConfigStatus();
   let functionStatus = {
     checked: false,
     available: false,

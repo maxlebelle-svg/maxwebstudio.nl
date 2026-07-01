@@ -1888,3 +1888,25 @@ Volgende stap:
 1. Staging Auth testaccounts voorbereiden.
 2. Daarna pas Auth wiring in staging activeren.
 3. Productie blijft `NO-GO`.
+
+### Klantportaal v1A - Staging Auth Readiness Validation
+
+Status: `PARTIAL PASS`
+
+Resultaat:
+
+- staging/local env keys aanwezig zonder waarden te tonen;
+- `.env.local` genegeerd;
+- client auth config geeft alleen browserveilige config terug;
+- readiness-service rapporteert `ready_for_staging_auth`;
+- Auth blijft uit en productie blijft `NO-GO`.
+
+Open blockers:
+
+1. Echte staging login/logout met testaccounts.
+2. Password reset in staging.
+3. Customer A/B Auth-isolatie met echte sessies.
+
+Volgende stap:
+
+- `Klantportaal v1B - Staging Auth Wiring` alleen op test/staging.

@@ -2210,3 +2210,34 @@ Bewust niet uitgevoerd:
 - geen RLS-wijzigingen;
 - geen echte klantdata;
 - geen runtime feature change.
+
+## Klantportaal v1A - Staging Auth Readiness Validation
+
+Status: `PARTIAL PASS / AUTH NOG NIET LIVE / PRODUCTIE NO-GO`
+
+Gecontroleerd:
+
+- `.env.local` bevat de benodigde staging/testkeys zonder waarden te tonen.
+- `.env.local` blijft genegeerd door Git.
+- `APP_ENV` en `APP_ENVIRONMENT` staan op `test`.
+- `/.netlify/functions/client-auth-config` geeft alleen publieke Supabase browserconfig terug en geen service role.
+- `clientAuthReadinessService` rapporteert `ready_for_staging_auth`, maar houdt `authLive=false`.
+- `public/login.html` en `public/klantportaal.html` blijven op veilige fallback/readiness zolang Auth niet live is.
+
+Kleine fix:
+
+- `public/src/services/clientAuthReadinessService.js` had een oude interne statusverwijzing; deze is hersteld tijdens de validatie.
+
+Nog geblokkeerd:
+
+- echte staging login/logout met testaccount;
+- password reset met staging resetmail;
+- Customer A/B Auth-isolatie via echte sessies.
+
+Bewust niet uitgevoerd:
+
+- geen Supabase Auth activatie;
+- geen SQL;
+- geen RLS-wijzigingen;
+- geen productie-auth;
+- geen echte klantdata.

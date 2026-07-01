@@ -1193,3 +1193,42 @@ Conclusie:
 - Sprint 2 completion: `100%`.
 - Productie-write-mode blijft dicht.
 - Volgende aanbevolen sprint: `Production Readiness Sprint`.
+
+## Klantportaal v1A - Staging Auth Readiness Validation
+
+Status: `PARTIAL PASS / AUTH NOG NIET LIVE / PRODUCTIE NO-GO`
+
+Scope:
+
+- Alleen readinessvalidatie voor `public/login.html`, `public/klantportaal.html`, `client-auth-config` en lokale stagingconfig.
+- Geen Supabase Auth activatie.
+- Geen SQL.
+- Geen RLS-wijzigingen.
+- Geen echte klantdata.
+
+Uitgevoerde checks:
+
+| Test | Verwacht | Resultaat | Status | Notities |
+| --- | --- | --- | --- | --- |
+| `.env.local` aanwezigheid | Staging/testconfig lokaal aanwezig zonder waarden te tonen | `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_PROJECT_ID`, `APP_ENV`, `APP_ENVIRONMENT` aanwezig | PASS | Geen waarden gelogd |
+| `.env.local` Git-ignore | Secrets niet in repo | `.env.local` en `.env.*.local` genegeerd | PASS | `git check-ignore` bevestigt `.env.local` |
+| Omgevingsflags | Testomgeving herkenbaar | `APP_ENV=test`, `APP_ENVIRONMENT=test` | PASS | Geen productie-indicator in flags |
+| Supabase URL-vorm | Browserveilige project URL | `https` en `.supabase.co` host | PASS | Hostnaam niet gelogd |
+| Client auth config | Alleen publieke config teruggeven | HTTP 200, `supabaseUrl` en `supabaseAnonKey` aanwezig, geen service role in response | PASS | Geen secretwaarden gelogd |
+| Frontend readiness service | Config detecteren zonder Auth live te zetten | `ready_for_staging_auth`, `authLive=false`, 1 blocker | PASS | Blocker: Auth blijft uit tot staging approval |
+| Login inline script | Geen syntaxfout | Inline script OK | PASS | Geen UI redesign |
+| Klantportaal inline script | Geen syntaxfout | Inline script OK | PASS | Fallback/readiness blijft actief |
+| Normale bezoekersstatus | Geen technische Supabase-melding | Login blijft fallback `Binnenkort beschikbaar` zolang Auth niet live is | PASS | Gebaseerd op codepad/readiness |
+| Login/logout echte stagingaccount | Alleen uitvoeren als stagingaccount veilig beschikbaar is | Niet uitgevoerd | BLOCKED | Testaccounts nog niet actief gebruikt |
+| Password reset | Alleen uitvoeren als staging reset veilig is ingericht | Niet uitgevoerd | BLOCKED | Resetflow nog niet live gekoppeld |
+
+Bevinding:
+
+- Tijdens de validatie werd een kleine readiness-bug gevonden in `clientAuthReadinessService`.
+- De bug is hersteld zodat de readiness-service lokaal correct `ready_for_staging_auth` kan rapporteren zonder Auth live te zetten.
+
+Conclusie:
+
+- Klantportaal v1A is klaar voor de volgende stap: echte staging Auth wiring met testaccounts.
+- Productie blijft `NO-GO`.
+- Echte login/logout, password reset en Customer A/B Auth-isolatie moeten nog met stagingaccounts worden uitgevoerd.
