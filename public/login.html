@@ -191,6 +191,18 @@
           return "Inloggen is niet gelukt. Controleer je gegevens of vraag toegang aan.";
         }
 
+        function getDeveloperLoginErrorMessage(error) {
+          const debug = error?.supabaseAuth || {};
+          const parts = [
+            `Code: ${debug.code || error?.code || "UNKNOWN"}`,
+            `Bericht: ${debug.message || error?.message || "Onbekende Supabase Auth fout."}`,
+          ];
+          if (debug.status) parts.push(`Status: ${debug.status}`);
+          if (debug.projectRef || debug.host) parts.push(`Project: ${debug.projectRef || debug.host}`);
+          if (debug.keyType) parts.push(`Key: ${debug.keyType}`);
+          return parts.join(" | ");
+        }
+
         function activatePanel(name) {
           panels.forEach((panel) => {
             const active = panel.dataset.authPanel === name;
@@ -287,12 +299,17 @@
             setMessage("Login gelukt.", "success");
             window.location.href = "/klantportaal.html";
           } catch (error) {
+            const debug = error?.supabaseAuth || {};
             console.info("Supabase login failed", {
-              code: error?.code || "UNKNOWN",
-              status: error?.status || "",
+              code: debug.code || error?.code || "UNKNOWN",
+              message: debug.message || error?.message || "",
+              status: debug.status || error?.status || "",
+              projectRef: debug.projectRef || "",
+              host: debug.host || "",
+              keyType: debug.keyType || "",
             });
             setMessage(isDeveloperModeEnabled()
-              ? (error.message || getSafeLoginErrorMessage(error))
+              ? getDeveloperLoginErrorMessage(error)
               : getSafeLoginErrorMessage(error), "error");
           }
         });

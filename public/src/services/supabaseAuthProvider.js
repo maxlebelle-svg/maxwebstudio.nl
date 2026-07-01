@@ -16,12 +16,56 @@ function isTestEnvironment(config = {}) {
 }
 
 function normalizePublicConfig(config = {}) {
+  const url = String(config.supabaseUrl || config.SUPABASE_URL || config.url || "").replace(/\/$/, "");
+  const project = getSupabaseProjectInfo(url);
+  const anonKey = String(config.supabaseAnonKey || config.SUPABASE_ANON_KEY || config.anonKey || "");
   return {
-    url: String(config.supabaseUrl || config.SUPABASE_URL || config.url || "").replace(/\/$/, ""),
-    anonKey: String(config.supabaseAnonKey || config.SUPABASE_ANON_KEY || config.anonKey || ""),
+    url,
+    anonKey,
     appEnv: String(config.appEnv || config.APP_ENV || ""),
     appEnvironment: String(config.appEnvironment || config.APP_ENVIRONMENT || ""),
     clientPortalAuthLive: isTruthy(config.clientPortalAuthLive || config.CLIENT_PORTAL_AUTH_LIVE),
+    host: project.host,
+    projectRef: project.projectRef,
+    keyType: getPublicKeyType(anonKey),
+  };
+}
+
+function getSupabaseProjectInfo(url = "") {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname;
+    const projectRef = host.endsWith(".supabase.co") ? host.split(".")[0] : "";
+    return { host, projectRef };
+  } catch {
+    return { host: "", projectRef: "" };
+  }
+}
+
+function getPublicKeyType(key = "") {
+  if (key.startsWith("sb_publishable_")) return "publishable";
+  if (key.split(".").length === 3) return "jwt-anon";
+  return key ? "unknown-public-key-shape" : "missing";
+}
+
+function sanitizeAuthMessage(value = "") {
+  return String(value || "")
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[email]")
+    .replace(/Bearer\s+[A-Za-z0-9._-]+/gi, "Bearer [redacted]")
+    .replace(/apikey['":\s]+[A-Za-z0-9._-]+/gi, "apikey [redacted]")
+    .trim();
+}
+
+function createAuthDebug(config = {}, response = {}, payload = {}) {
+  const code = payload.error_code || payload.code || payload.error || "SUPABASE_AUTH_FAILED";
+  const message = sanitizeAuthMessage(payload.message || payload.msg || payload.error_description || "Inloggen is niet gelukt.");
+  return {
+    code,
+    message,
+    status: response.status || "",
+    host: config.host || "",
+    projectRef: config.projectRef || "",
+    keyType: config.keyType || "unknown",
   };
 }
 
@@ -107,20 +151,38 @@ export async function signInWithEmail(email, password) {
   const config = await getRuntimeAuthConfig();
   if (!config.active) return throwPrepared("signInWithEmail");
 
-  const response = await fetch(`${config.url}/auth/v1/token?grant_type=password`, {
-    method: "POST",
-    headers: {
-      apikey: config.anonKey,
-      Authorization: `Bearer ${config.anonKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ email, password }),
-  });
+  let response;
+  try {
+    response = await fetch(`${config.url}/auth/v1/token?grant_type=password`, {
+      method: "POST",
+      headers: {
+        apikey: config.anonKey,
+        Authorization: `Bearer ${config.anonKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, password }),
+    });
+  } catch (requestError) {
+    const error = new Error("Supabase Auth request kon de testomgeving niet bereiken.");
+    error.code = "SUPABASE_AUTH_NETWORK_ERROR";
+    error.status = "";
+    error.supabaseAuth = {
+      code: error.code,
+      message: sanitizeAuthMessage(requestError?.message || "Network request failed"),
+      status: "",
+      host: config.host || "",
+      projectRef: config.projectRef || "",
+      keyType: config.keyType || "unknown",
+    };
+    throw error;
+  }
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const error = new Error(payload.error_description || payload.msg || payload.message || "Inloggen is niet gelukt.");
-    error.code = payload.error || "SUPABASE_AUTH_FAILED";
+    const debug = createAuthDebug(config, response, payload);
+    const error = new Error(debug.message || "Inloggen is niet gelukt.");
+    error.code = debug.code;
     error.status = response.status;
+    error.supabaseAuth = debug;
     throw error;
   }
   return toSessionResult(storeSession(payload));
