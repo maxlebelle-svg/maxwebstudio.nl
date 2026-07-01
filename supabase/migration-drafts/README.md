@@ -9,8 +9,11 @@ Voer deze bestanden niet uit zonder expliciete review, testomgeving-validatie en
 
 0. `000_production_existing_tables_alignment.sql` alleen voor productie waar oudere `profiles`/`change_requests` al bestaan
 1. `001_client_portal_baseline.sql` voor de eerste minimale klantportaal-livegang
+2. `002_client_portal_indexes.sql` voor minimale klantportaal-indexes
+3. `003_client_portal_rls_enablement.sql` voor minimale klantportaal-RLS enablement
+4. `004_client_portal_rls_policies_and_grants.sql` voor minimale klantportaal-policies en runtime grants
 
-Voor de eerste minimale productie-uitrol stopt de volgorde hier. Daarna moeten aparte minimal-scope drafts worden gemaakt voor indexes, RLS, policies en grants.
+Elke stap vereist aparte review, handmatige execution approval en read-only validatie voordat de volgende stap mag starten.
 
 Brede platformdrafts blijven bestaan, maar zijn uitgesloten van de eerste minimale klantportaal-livegang:
 

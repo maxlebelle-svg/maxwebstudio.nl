@@ -2685,7 +2685,7 @@ Belangrijk:
 
 ## Epic 2B.8 - Minimal Client Portal Production Baseline
 
-Status: `DRAFT CREATED / NO SQL EXECUTED`
+Status: `PRODUCTION EXECUTED / VALIDATED GREEN / PRODUCTION AUTH CLOSED`
 
 Doel:
 
@@ -2709,3 +2709,44 @@ Scope:
 Bewust uitgesloten:
 
 - leads, CRM, finance, files, AI, settings, demo emails, activity logs, import logs en audit logs.
+
+## Epic 2B.9 - Minimal Client Portal Indexes, RLS & Grants Drafts
+
+Status: `DRAFT CREATED / NO SQL EXECUTED`
+
+Doel:
+
+- minimale vervolg-migrations maken voor de eerste klantportaal-livegang;
+- alleen indexes, RLS enablement, RLS policies en runtime grants toevoegen voor de klantportaal-baseline;
+- brede platformmigraties blijven uitgesloten.
+
+Opgeleverd:
+
+- `supabase/migration-drafts/002_client_portal_indexes.sql`
+- `supabase/migration-drafts/003_client_portal_rls_enablement.sql`
+- `supabase/migration-drafts/004_client_portal_rls_policies_and_grants.sql`
+
+Scope:
+
+- `profiles`;
+- `customers`;
+- `websites`;
+- `projects`;
+- `change_requests`;
+- `client_portal_messages`;
+- `client_portal_notifications`.
+
+Bewust uitgesloten:
+
+- finance;
+- CRM;
+- AI;
+- demo seed;
+- files/storage;
+- broad platform tables.
+
+Volgende stap:
+
+- review `002_client_portal_indexes.sql`;
+- voer alleen na expliciete approval handmatig uit;
+- valideer voordat `003` of `004` wordt uitgevoerd.

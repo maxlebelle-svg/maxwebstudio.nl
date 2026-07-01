@@ -3315,7 +3315,7 @@ Nieuwe execution-volgorde:
 
 ## Epic 2B.8 - Minimal Client Portal Production Baseline
 
-Status: `DRAFT CREATED / NO SQL EXECUTED / PRODUCTION AUTH CLOSED`
+Status: `PRODUCTION EXECUTED / VALIDATED GREEN / PRODUCTION AUTH CLOSED`
 
 Toegevoegd:
 
@@ -3347,3 +3347,44 @@ Bewust niet meegenomen:
 - settings;
 - demo_emails;
 - activity_logs/import_logs/audit_logs.
+
+## Epic 2B.9 - Minimal Client Portal Indexes, RLS & Grants Drafts
+
+Status: `DRAFT CREATED / NO SQL EXECUTED / PRODUCTION AUTH CLOSED`
+
+Toegevoegd:
+
+- `supabase/migration-drafts/002_client_portal_indexes.sql`
+- `supabase/migration-drafts/003_client_portal_rls_enablement.sql`
+- `supabase/migration-drafts/004_client_portal_rls_policies_and_grants.sql`
+
+Waarom:
+
+- `000` en `001_client_portal_baseline.sql` zijn uitgevoerd en groen gevalideerd op productie;
+- de bestaande brede `002_indexes.sql`, `003_rls_enablement.sql`, `004_rls_policies.sql` en `007_runtime_role_grants.sql` zijn te breed voor de eerste klantportaal-livegang;
+- de nieuwe drafts beperken indexes, RLS, policies en grants tot de minimale klantportaal-tabellen.
+
+Scope:
+
+- `profiles`;
+- `customers`;
+- `websites`;
+- `projects`;
+- `change_requests`;
+- `client_portal_messages`;
+- `client_portal_notifications`.
+
+Bewust niet meegenomen:
+
+- finance;
+- CRM;
+- AI;
+- demo seed;
+- files/storage;
+- brede platformtabellen.
+
+Belangrijk:
+
+- geen SQL uitgevoerd in deze stap;
+- productie-auth blijft dicht;
+- `002` moet eerst apart worden gereviewd en handmatig worden uitgevoerd voordat `003` of `004` mag volgen.

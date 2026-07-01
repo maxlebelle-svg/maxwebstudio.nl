@@ -107,6 +107,9 @@ Productie mag voor de eerste minimale klantportaal-livegang alleen deze volgorde
 
 0. `000_production_existing_tables_alignment.sql`
 1. `001_client_portal_baseline.sql`
+2. `002_client_portal_indexes.sql`
+3. `003_client_portal_rls_enablement.sql`
+4. `004_client_portal_rls_policies_and_grants.sql`
 
 Niet uitvoeren op productie:
 
@@ -124,8 +127,8 @@ Niet uitvoeren op productie:
 Reden:
 
 - deze bestaande drafts zijn nog breed en verwijzen naar tabellen buiten de minimale klantportaal-scope.
-- na `001_client_portal_baseline.sql` volgt eerst validatie.
-- daarna worden aparte minimal-scope index/RLS/policy/grant drafts gemaakt.
+- `000` en `001_client_portal_baseline.sql` zijn inmiddels uitgevoerd en groen gevalideerd.
+- `002_client_portal_indexes.sql`, `003_client_portal_rls_enablement.sql` en `004_client_portal_rls_policies_and_grants.sql` vervangen de brede platformdrafts voor deze minimale livegang.
 
 Nog apart goedkeuren voordat ze op productie mogen:
 

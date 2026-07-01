@@ -1,6 +1,6 @@
 # Epic 2B.6 - Production Migration Runbook
 
-Status: `RUNBOOK READY / NO SQL EXECUTED`
+Status: `MINIMAL BASELINE GREEN / 002-004 DRAFT READY / NEXT SQL NOT EXECUTED`
 
 Doel:
 
@@ -26,8 +26,11 @@ Huidige production read-only conclusie:
 
 - `profiles` bestaat met 1 rij;
 - `change_requests` bestaat met 2 rijen;
-- `customers`, `websites`, `projects`, `client_portal_messages`, `quotes`, `invoices`, `subscriptions` en `client_portal_notifications` ontbreken;
-- productie is `CONDITIONAL GO` voor de volledige migration-volgorde;
+- `000_production_existing_tables_alignment.sql` is uitgevoerd en groen gevalideerd;
+- `001_client_portal_baseline.sql` is uitgevoerd en groen gevalideerd;
+- `customers`, `websites`, `projects`, `client_portal_messages` en `client_portal_notifications` bestaan nu;
+- finance-, CRM-, AI-, file- en logtabellen blijven buiten deze minimale livegang;
+- productie is `CONDITIONAL GO` voor de minimale 002/003/004 klantportaal-volgorde;
 - productie is `NO-GO` voor alleen `013_client_portal_schema_rls_alignment.sql`.
 - productie is `NO-GO` voor direct `001_schema_tables.sql` zolang oudere `profiles` en `change_requests` niet eerst zijn uitgelijnd.
 - `001_schema_tables.sql` is te breed voor de eerste klantportaal-livegang en wordt vervangen door `001_client_portal_baseline.sql`.
@@ -173,9 +176,80 @@ Rollback:
 - Bij fout vóór commit: transactie faalt en wordt niet toegepast.
 - Bij fout na gedeeltelijke toepassing: stop, gebruik Supabase backup/snapshot; verwijder geen data handmatig.
 
-## Stopmoment Na Baseline
+### Stap 3
 
-Na `001_client_portal_baseline.sql` stopt deze eerste productie-uitrol.
+Bestand:
+
+```text
+supabase/migration-drafts/002_client_portal_indexes.sql
+```
+
+Doel:
+
+- alleen indexes toevoegen voor `profiles`, `customers`, `websites`, `projects`, `change_requests`, `client_portal_messages` en `client_portal_notifications`;
+- geen finance-, CRM-, AI-, file- of logindexes aanmaken.
+
+Controle na stap:
+
+- indexes bestaan voor klant-, website-, project-, wijzigings-, berichten- en notificatiequeries;
+- er zijn geen indexes aangemaakt op uitgesloten brede platformtabellen.
+
+Rollback:
+
+- Bij fout vóór commit: transactie faalt en wordt niet toegepast.
+- Bij fout na commit: stop en herstel via backup/snapshot of maak een aparte reviewed rollback-migration.
+
+### Stap 4
+
+Bestand:
+
+```text
+supabase/migration-drafts/003_client_portal_rls_enablement.sql
+```
+
+Doel:
+
+- RLS aanzetten voor alleen de minimale klantportaal-tabellen.
+
+Controle na stap:
+
+- `relrowsecurity = true` voor `profiles`, `customers`, `websites`, `projects`, `change_requests`, `client_portal_messages` en `client_portal_notifications`;
+- uitgesloten brede platformtabellen worden niet geraakt.
+
+Rollback:
+
+- Niet handmatig RLS uitschakelen zonder review. Bij kritieke fout: stop, rollback via backup/snapshot of aparte reviewed rollback-migration.
+
+### Stap 5
+
+Bestand:
+
+```text
+supabase/migration-drafts/004_client_portal_rls_policies_and_grants.sql
+```
+
+Doel:
+
+- minimale helper functions toevoegen;
+- RLS policies toevoegen voor klantisolatie, staff/admin toegang en klantveilige creates;
+- runtime grants toevoegen zodat PostgreSQL RLS kan evalueren.
+
+Controle na stap:
+
+- policies bestaan op de zeven minimale klantportaal-tabellen;
+- `anon` heeft geen directe klantportaal-table grants;
+- `authenticated` heeft alleen minimale grants;
+- `service_role` blijft server-side only;
+- Customer A/B isolation test is verplicht voordat productie-auth open mag.
+
+Rollback:
+
+- Bij fout vóór commit: transactie faalt en wordt niet toegepast.
+- Bij fout na commit: productie-auth blijft dicht; herstel via backup/snapshot of aparte reviewed rollback-migration.
+
+## Niet Automatisch Doorgaan Met Brede Migrations
+
+Na `004_client_portal_rls_policies_and_grants.sql` stopt deze minimale productie-uitrol opnieuw voor validatie.
 
 Niet automatisch doorgaan met bestaande brede migrations:
 
@@ -192,11 +266,11 @@ Reden:
 
 - deze bestanden zijn nog gebaseerd op het brede platformschema;
 - ze verwijzen naar uitgesloten tabellen zoals leads, finance, files, CRM, AI, settings en logs;
-- voor de minimale klantportaal-livegang moeten hierna aparte minimal-scope drafts komen.
+- de minimale klantportaal-livegang gebruikt nu de aparte `002_client_portal_*`, `003_client_portal_*` en `004_client_portal_*` drafts.
 
-Volgende stap na baseline-validatie:
+Volgende stap na `004`-validatie:
 
-- maak minimale index/RLS/policy/grants drafts voor alleen `profiles`, `customers`, `websites`, `projects`, `change_requests`, `client_portal_messages` en `client_portal_notifications`.
+- voer RLS/customer-isolation tests uit voordat productie-auth open mag.
 
 ## Niet Uitvoeren
 
@@ -304,7 +378,7 @@ Vereiste scenario's:
 4. Customer A leest eigen `customers`: toegestaan.
 5. Customer A leest Customer B: geblokkeerd.
 6. Customer A leest eigen website/project: toegestaan.
-7. Customer A leest finance van Customer B: geblokkeerd.
+7. Customer A kan geen uitgesloten finance/CRM/AI-tabellen benaderen via deze minimale livegang.
 8. Customer A maakt eigen `change_request`: toegestaan.
 9. Customer A spoofed `customer_id`: geblokkeerd.
 10. Customer A maakt eigen `client_portal_message`: toegestaan.
@@ -348,12 +422,14 @@ Pas daarna:
 
 ## Eindstatus
 
-Deze runbook is klaar voor review.
+Deze runbook is bijgewerkt voor de minimale klantportaal-productievolgorde.
 
-Er is nog niets uitgevoerd.
+- `000_production_existing_tables_alignment.sql` is uitgevoerd en groen gevalideerd.
+- `001_client_portal_baseline.sql` is uitgevoerd en groen gevalideerd.
+- `002_client_portal_indexes.sql`, `003_client_portal_rls_enablement.sql` en `004_client_portal_rls_policies_and_grants.sql` zijn draft-ready maar nog niet uitgevoerd.
 
 Volgende stap:
 
 ```text
-Epic 2B.7 - Production migration execution approval
+Review en executeer 002_client_portal_indexes.sql handmatig na expliciete approval.
 ```
