@@ -2532,3 +2532,38 @@ Conclusie:
 Volgende aanbevolen stap:
 
 - `Epic 2B - Supabase Tables & RLS Production Alignment`
+
+## Epic 2B.1 - Supabase Schema and RLS Implementation Plan
+
+Status: `PLAN COMPLETE / SQL PREVIEW ONLY / NO EXECUTION`
+
+Doel:
+
+- de Epic 2A production data foundation vertalen naar een concreet Supabase schema- en RLS-plan;
+- vastleggen welke canonical tabellen leidend zijn voor het klantportaal;
+- voorbereiden hoe Customer A/B isolatie, admin/support toegang, runtime grants, testaccounts en rollback worden bewezen.
+
+Opgeleverd:
+
+- `docs/EPIC_2B_SUPABASE_SCHEMA_RLS_PLAN.md`
+
+Belangrijkste keuzes:
+
+- `portal_messages` wordt niet als nieuwe tabel geïntroduceerd; canonical blijft `client_portal_messages`;
+- `finance_items` wordt niet als brede finance-tabel geïntroduceerd; canonical blijft gesplitst in `quotes`, `invoices` en `subscriptions`;
+- customers krijgen read-only toegang tot eigen finance en notificaties;
+- customers mogen alleen low-risk creates voor `change_requests` en `client_portal_messages`;
+- helpers zoals `current_customer_id()` en `current_app_role()` moeten RLS-recursie vermijden;
+- runtime grants blijven minimaal en RLS blijft leidend.
+
+Bewust niet uitgevoerd:
+
+- geen SQL;
+- geen migrations;
+- geen productie-auth;
+- geen echte klantdata;
+- geen runtime codewijzigingen.
+
+Volgende aanbevolen stap:
+
+- `Epic 2B.2 - Draft Customer Portal Schema/RLS Migrations`
