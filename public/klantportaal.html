@@ -135,6 +135,7 @@
       (async () => {
         const { getClientPortalData } = await import("./src/services/clientPortalDataService.js");
         const { requireCustomerAccess } = await import("./src/services/routeGuardService.js");
+        const { getClientAuthReadiness } = await import("./src/services/clientAuthReadinessService.js");
         const { saveChangeRequestWithWriteFallback } = await import("./src/services/changeRequestWriteService.js");
         const { saveClientPortalMessageWithWriteFallback } = await import("./src/services/clientPortalMessageWriteService.js");
         const params = new URLSearchParams(window.location.search);
@@ -200,22 +201,37 @@
           }
         }
 
-        function renderSessionNotice() {
+        function isDeveloperModeEnabled() {
+          try {
+            const settings = JSON.parse(localStorage.getItem("maxwebstudioSettings") || "{}");
+            return Boolean(settings.developerMode);
+          } catch {
+            return false;
+          }
+        }
+
+        async function renderSessionNotice() {
           const session = readCurrentSession();
+          const developerMode = isDeveloperModeEnabled();
+          const authReadiness = await getClientAuthReadiness();
           portalAuthMessage.hidden = false;
           if (!session) {
-            portalAuthText.textContent = "Demo toegang via link actief. Echte login wordt voorbereid met Supabase Auth.";
+            portalAuthText.textContent = developerMode
+              ? `${authReadiness.developerMessage} Auth blijft uit tot staging approval groen is.`
+              : "Je bekijkt nu een veilige demo van het klantportaal. Echte klantlogin wordt gecontroleerd klaargezet.";
             return;
           }
           const roleLabel = session.role === "customer" ? "demo-klant" : session.role || "demo-gebruiker";
           if (session.customerId && customerId && String(session.customerId) !== String(customerId)) {
-            portalAuthText.textContent = `Ingelogd als ${roleLabel}, maar deze demo-sessie hoort bij een andere klant. Echte beveiliging volgt met Supabase Auth/RLS.`;
+            portalAuthText.textContent = `Ingelogd als ${roleLabel}, maar deze demo-sessie hoort bij een andere klant. Daarom tonen we geen data van een andere klant.`;
             return;
           }
-          portalAuthText.textContent = `Ingelogd als ${roleLabel}. Dit is een lokale demo-sessie; echte Supabase Auth wordt later gekoppeld.`;
+          portalAuthText.textContent = developerMode
+            ? `Ingelogd als ${roleLabel}. ${authReadiness.developerMessage}`
+            : `Ingelogd als ${roleLabel}. Dit is een veilige demo-weergave; echte klantlogin wordt later geactiveerd na controle.`;
         }
 
-        renderSessionNotice();
+        await renderSessionNotice();
 
         const customerAccessDecision = requireCustomerAccess(customerId, {
           pageName: "klantportaal",

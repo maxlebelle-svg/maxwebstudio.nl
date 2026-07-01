@@ -111,6 +111,8 @@
         const realLoginUnavailable = document.querySelector("[data-real-login-unavailable]");
         let realLoginStatusMessage = "";
         let realLoginActive = false;
+        let authConfigSafe = false;
+        let authReadiness = null;
         const statusCopy = {
           demo: {
             title: "Demo-login beschikbaar",
@@ -195,17 +197,28 @@
           return import("./src/services/authProfileService.js");
         }
 
+        async function loadClientAuthReadiness() {
+          return import("./src/services/clientAuthReadinessService.js");
+        }
+
         async function renderAuthStatus() {
           try {
             const auth = await loadAuth();
+            const readinessService = await loadClientAuthReadiness();
             const status = auth.getAuthStatus();
+            authReadiness = await readinessService.getClientAuthReadiness();
+            authConfigSafe = Boolean(authReadiness.canShowLoginForm);
             realLoginActive = Boolean(status.supabaseAuthActive);
             realLoginStatusMessage = realLoginActive
               ? "Klantlogin is actief. Gebruik je e-mailadres en wachtwoord om in te loggen."
-              : "Het klantportaal wordt momenteel afgerond. Vraag toegang aan of neem contact op als je al klant bent.";
-            realLoginForm.hidden = !realLoginActive && !isDeveloperModeEnabled();
+              : authReadiness.visitorMessage;
+            realLoginForm.hidden = !(realLoginActive || (authConfigSafe && isDeveloperModeEnabled()));
             if (realLoginUnavailable) {
               realLoginUnavailable.hidden = realLoginActive;
+            }
+            if (isDeveloperModeEnabled() && authReadiness) {
+              const configStatus = authReadiness.configured ? "Config klaar, Auth nog uit." : "Config nog niet klaar.";
+              realLoginStatusMessage = `${authReadiness.developerMessage} ${configStatus}`;
             }
             renderAuthLiveVisibility();
             if (document.querySelector("[data-auth-panel='real']").classList.contains("is-active")) {
@@ -214,8 +227,9 @@
           } catch (error) {
             console.info("Auth status unavailable", error);
             realLoginActive = false;
+            authConfigSafe = false;
             realLoginStatusMessage = "Het klantportaal wordt momenteel afgerond. Vraag toegang aan of neem contact op als je al klant bent.";
-            realLoginForm.hidden = !isDeveloperModeEnabled();
+            realLoginForm.hidden = true;
             if (realLoginUnavailable) {
               realLoginUnavailable.hidden = false;
             }
@@ -244,9 +258,11 @@
 
         realLoginForm.addEventListener("submit", async (event) => {
           event.preventDefault();
-          if (!realLoginActive && !isDeveloperModeEnabled()) {
+          if (!realLoginActive) {
             activatePanel("request");
-            setMessage("Het klantportaal wordt momenteel afgerond. Vraag toegang aan, dan nemen we contact met je op.", "success");
+            setMessage(isDeveloperModeEnabled() && authConfigSafe
+              ? "Supabase-config is aanwezig, maar login blijft uit tot staging approval groen is."
+              : "Het klantportaal wordt momenteel afgerond. Vraag toegang aan, dan nemen we contact met je op.", "success");
             return;
           }
           const data = Object.fromEntries(new FormData(realLoginForm).entries());

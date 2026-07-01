@@ -2158,3 +2158,27 @@ Bewust niet uitgevoerd:
 - geen SQL;
 - geen database writes;
 - geen productieconfiguratie.
+
+## Klantportaal v1.1 - Auth readiness foundation
+
+Status: `CODE READINESS / AUTH NOG UIT / GEEN SQL`
+
+Toegevoegd:
+
+- `public/src/services/clientAuthReadinessService.js`
+
+Werking:
+
+- De canonical route `public/login.html` en `public/klantportaal.html` gebruikt nu een veilige Auth-readiness check.
+- De check detecteert alleen browserveilige Supabase config via runtime config of `/.netlify/functions/client-auth-config`.
+- Normale bezoekers blijven op een nette `Binnenkort beschikbaar`/demo-status zolang Auth niet live is.
+- Developer Mode mag technische Auth-readiness tonen zonder secret values.
+- Het echte loginformulier blijft verborgen voor normale bezoekers zolang production Auth niet actief is.
+
+Bewust niet uitgevoerd:
+
+- geen Supabase Auth activatie;
+- geen SQL;
+- geen RLS-wijzigingen;
+- geen database writes;
+- geen productieklantdata.

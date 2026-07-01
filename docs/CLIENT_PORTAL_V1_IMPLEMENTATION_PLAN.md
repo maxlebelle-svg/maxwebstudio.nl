@@ -321,6 +321,29 @@ Klantportaal v1 is pas klaar wanneer:
 - Geen nieuwe klantportaalfeatures.
 - Geen OpenAI, Mollie, Resend of Storage-uploads.
 
+## Klantportaal v1.1 - Auth readiness foundation
+
+Status: `CODE READINESS / AUTH NOG UIT / GEEN SQL`
+
+De eerste technische voorbereiding mag alleen aantonen of browserveilige Supabase Auth-config aanwezig is.
+
+Toegestaan in v1.1:
+
+- publieke Supabase URL/anon key aanwezigheid detecteren;
+- `/.netlify/functions/client-auth-config` gebruiken als gecontroleerde configbron;
+- normale bezoekers op `Binnenkort beschikbaar` houden;
+- technische status alleen in Developer Mode tonen;
+- loginformulier alleen tonen wanneer config veilig beschikbaar is en Auth expliciet live is of Developer Mode controleert.
+
+Niet toegestaan in v1.1:
+
+- Supabase Auth live activeren;
+- echte sessies afdwingen;
+- SQL uitvoeren;
+- RLS aanpassen;
+- writes uitvoeren;
+- productieklantdata tonen.
+
 ## Volgende Codex-fase
 
 Aanbevolen volgende uitvoerende fase:

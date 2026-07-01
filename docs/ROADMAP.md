@@ -1852,3 +1852,20 @@ Nog niet doen:
 - geen SQL;
 - geen database writes;
 - geen login live zetten zonder staging/RLS evidence.
+
+### Klantportaal v1.1 - Auth readiness foundation
+
+Status: `COMPLETE AS READINESS`
+
+Output:
+
+- browserveilige Supabase Auth-config detectie;
+- login blijft productieve `Binnenkort beschikbaar` fallback voor normale bezoekers;
+- Developer Mode toont technische readiness zonder secrets;
+- `public/login.html` en `public/klantportaal.html` blijven de canonical route.
+
+Volgende stap:
+
+1. `Klantportaal v1A - Staging Auth Validation`.
+2. Daarna pas echte sessie -> profile -> customer mapping.
+3. Daarna pas hard route guards.
