@@ -1,5 +1,14 @@
 # Client Portal
 
+Actuele v1-richting:
+
+- Het veilige implementatieplan voor het echte klantportaal staat in `docs/CLIENT_PORTAL_V1_IMPLEMENTATION_PLAN.md`.
+- Voor Klantportaal v1 is `public/login.html` + `public/klantportaal.html` de leidende route.
+- `public/client-dashboard.html` blijft voorlopig alleen een legacy/auth prototype en technische referentie.
+- Nieuwe klantportaalontwikkeling gebruikt de canonical tabellen `profiles`, `customers`, `websites`, `projects`, `quotes`, `invoices`, `subscriptions`, `files`, `change_requests`, `client_portal_messages` en `client_portal_notifications`.
+- Legacy tabellen zoals `customer_websites`, `customer_invoices` en `customer_subscriptions` mogen niet opnieuw leidend worden voor nieuwe productiefeatures.
+- Echte Supabase Auth, hard route guards en productie-portalactivatie volgen pas na staging Auth-validatie, RLS/customer-isolation evidence en release approval.
+
 Dit document beschrijft de richting voor een toekomstig klantportaal. Er is momenteel nog geen volledig klantportaal gebouwd.
 
 ## Huidige Bouwstenen

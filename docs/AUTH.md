@@ -5,14 +5,17 @@ Dit document beschrijft de authenticatiebasis voor het Max Web Studio klantenpor
 Actuele production-readiness aanvulling:
 
 - Fase 22 Auth & Profiles Foundation staat in `AUTH_PROFILES_FOUNDATION.md`.
+- Klantportaal v1 wordt voorbereid in `CLIENT_PORTAL_V1_IMPLEMENTATION_PLAN.md`.
 - Canonical Auth-lijn: `auth.users -> profiles -> customers`.
 - Nieuwe productiefeatures mogen niet meer op legacy `customer_*` authvelden gebaseerd worden.
 - Demo-login blijft actief totdat Supabase Auth, RLS en customer isolation in test en release-governance zijn goedgekeurd.
+- Voor het echte klantportaal is `public/login.html` + `public/klantportaal.html` de leidende route; `public/client-dashboard.html` blijft voorlopig legacy/auth prototype.
 
 ## Huidige Implementatie
 
 - `/public/login.html`: loginpagina met Supabase Auth.
-- `/public/client-dashboard.html`: afgeschermd klantdashboard.
+- `/public/klantportaal.html`: leidende v1 klantportaal-UX met canonical/hybrid data-layer.
+- `/public/client-dashboard.html`: ouder afgeschermd klantdashboard en auth-prototype, nog gebaseerd op legacy `customer_*` tabellen.
 - `/.netlify/functions/client-auth-config`: geeft alleen publieke Supabase browserconfig terug.
 
 ## Supabase Auth
@@ -25,7 +28,7 @@ De frontend gebruikt Supabase Auth met:
 
 Na succesvol inloggen gaat de gebruiker naar:
 
-- `/client-dashboard.html`
+- `/klantportaal.html` voor de v1 klantportaalroute
 
 Niet ingelogde bezoekers van het dashboard worden teruggestuurd naar:
 

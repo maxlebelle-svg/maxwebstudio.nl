@@ -2130,3 +2130,31 @@ Sprint 4A.1:
 - `celebrate` toont alleen een lichte CSS-confetti en speech bubble, zonder echte aankooplogica;
 - echte arm-, oog- en hoofdanimatie vereist later aparte animated assets zoals WebM, animated WebP, Lottie of Rive;
 - er is geen chat, backend, analytics of nieuwe AI-functionaliteit toegevoegd.
+
+## Klantportaal v1 - Auth & Portal Implementation Plan
+
+Status: `PLAN ONLY / GEEN AUTH ACTIVATIE / GEEN SQL / GEEN RUNTIME WIJZIGINGEN`
+
+Toegevoegd:
+
+- `docs/CLIENT_PORTAL_V1_IMPLEMENTATION_PLAN.md`
+
+Belangrijkste besluiten:
+
+- `public/login.html` + `public/klantportaal.html` wordt de leidende v1-route voor echte klantlogin.
+- `public/client-dashboard.html` blijft voorlopig legacy/auth prototype en technische referentie.
+- Nieuwe klantportaalontwikkeling gebruikt de canonical datalijn `auth.users -> profiles -> customers -> canonical modules`.
+- Legacy tabellen `customer_websites`, `customer_invoices` en `customer_subscriptions` worden niet opnieuw leidend voor productiefeatures.
+- Production Auth blijft uit totdat staging Auth-validatie, RLS/customer-isolation evidence en release approval groen zijn.
+
+Volgende veilige uitvoerende stap:
+
+- `Klantportaal v1A - Staging Auth Validation`
+
+Bewust niet uitgevoerd:
+
+- geen codewijzigingen;
+- geen Supabase Auth activatie;
+- geen SQL;
+- geen database writes;
+- geen productieconfiguratie.

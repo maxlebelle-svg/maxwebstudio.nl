@@ -1824,3 +1824,31 @@ Volgende logische stappen:
 2. Website Wizard Experience.
 3. Klantportaal Experience.
 4. CRM Experience.
+
+## Klantportaal v1 - Auth & Portal Implementation Plan
+
+Status: `PLAN ONLY`
+
+Leidend document:
+
+- `docs/CLIENT_PORTAL_V1_IMPLEMENTATION_PLAN.md`
+
+Besluit:
+
+- De echte klantportaalroute wordt `public/login.html` -> `public/klantportaal.html`.
+- `public/client-dashboard.html` blijft voorlopig legacy/auth prototype.
+- De canonical Supabase-lijn blijft leidend: `auth.users -> profiles -> customers -> websites/projects/finance/operations`.
+- Nieuwe productieontwikkeling mag niet terugvallen op legacy `customer_*` tabellen.
+
+Aanbevolen volgende fase:
+
+1. `Klantportaal v1A - Staging Auth Validation`.
+2. Daarna pas echte loginflow achter readiness gate.
+3. Daarna pas hard route guards en customer-session binding.
+
+Nog niet doen:
+
+- geen productie-Auth;
+- geen SQL;
+- geen database writes;
+- geen login live zetten zonder staging/RLS evidence.
