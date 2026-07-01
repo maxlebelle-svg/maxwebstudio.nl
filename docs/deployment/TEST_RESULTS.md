@@ -1361,3 +1361,34 @@ Checks:
 | Service role scope | Geen service role naar frontend | Niet gebruikt | PASS | Alleen bestaande publieke staging-sessie |
 | Klantportaal fallback | Geen `Klant niet gevonden` na staging login | Demo customer context wordt gezet | READY_FOR_MANUAL_VERIFY | Browsertest na login nodig |
 | Logout | Staging/demo sessie wissen | Uitlogknop toegevoegd | READY_FOR_MANUAL_VERIFY | Te testen met ingelogde staging-sessie |
+
+## Klantportaal v1E - Validate Staging Portal Session Flow
+
+Status: `PASS WITH LOCAL STAGING SESSION SIMULATION / PRODUCTIE NO-GO`
+
+Scope:
+
+- Alleen local/staging.
+- Geen productie-auth.
+- Geen echte klantdata.
+- Geen SQL.
+- Geen RLS-wijzigingen.
+- Geen service role naar frontend.
+
+Validatie:
+
+| Test | Verwacht | Resultaat | Status | Notities |
+| --- | --- | --- | --- | --- |
+| Login met testklant | Supabase staging login zet sessie | Eerder handmatig bewezen door gebruiker | PASS | `testklant@maxwebstudio.nl` redirect naar klantportaal werkt |
+| Dashboard demo-data zichtbaar | Staging sessie koppelt aan demo klant | Simulatie seedt `demo-staging-testklant` + dashboardrecords | PASS | Geen echte klantdata |
+| Refresh behoudt sessie | Bridge blijft actief bij bestaande Supabase sessie | `refreshActive=true` | PASS | Sessieherstel via local staging session |
+| Logout werkt | Supabase staging sessie + lokale sessie weg | `afterLogoutActive=false`, `currentSessionAfterLogout=false` | PASS | Uitlogknop aanwezig in portaal |
+| Na logout geen klantdata zichtbaar | Geen klantcontext zonder sessie | Bridge blijft inactief zonder Supabase sessie | PASS | Directe toegang zonder sessie valt terug op veilige fallback |
+| Password reset-flow | Reset alleen via staging Auth | Niet opnieuw uitgevoerd | NOT_RUN | Apart te testen met staging mailconfig |
+| Secrets/logs | Geen keys, wachtwoorden of service role | Secrets-scan groen | PASS | Alleen publieke staging sessie/context |
+
+Conclusie:
+
+- De staging klantportaalflow is rond voor login -> demo-dashboard -> refresh -> logout -> veilige fallback.
+- Password reset blijft optioneel voor aparte mailconfig-validatie.
+- Productie blijft `NO-GO` totdat echte klantprofielkoppeling, RLS en release approval live zijn bewezen.
