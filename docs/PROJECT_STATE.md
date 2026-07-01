@@ -527,6 +527,69 @@ Volgende aanbevolen stap:
 
 - `Epic 2A.4 - Change Requests Production Read`
 
+## Epic 2A.4 - Wijzigingsverzoeken Production Data Foundation
+
+Status: `IMPLEMENTED / READ-WRITE FOUNDATION / PRODUCTIE NO-GO`
+
+Wijzigingsverzoeken zijn voorbereid op echte Supabase-data.
+
+Toegevoegd:
+
+- `public/src/services/clientChangeRequestContextService.js`
+
+Werking:
+
+- gebruikt de bestaande Supabase Auth-sessie;
+- gebruikt de customer context uit Epic 2A.2;
+- leest `change_requests` read-only op `customer_id`;
+- maakt een nieuw `change_requests` record aan via Supabase als er een veilige customer context bestaat;
+- valt terug op de bestaande demo/localStorage flow als Supabase-data of write-permissie ontbreekt.
+
+Ondersteunde states:
+
+- `loading`;
+- `found`;
+- `missing`;
+- `create_success`;
+- `create_error`;
+- `error`.
+
+Voorbereide velden:
+
+- `customer_id`;
+- `auth_user_id`;
+- `website_id`;
+- `project_id`;
+- `category` als technisch veld voor klantvriendelijk type;
+- `title`;
+- `description`;
+- `priority`;
+- `status`;
+- `created_at`;
+- `updated_at`.
+
+Belangrijkste securitybesluit:
+
+- Geen service role naar frontend.
+- `customer_id` komt niet uit formulierinput.
+- RLS moet lezen en aanmaken beperken tot eigen klantcontext.
+- Customers mogen geen status, ownership, archive/delete of adminvelden wijzigen.
+- Uploads blijven uitgesloten tot Storage Security productie-uitvoering.
+
+Bewust niet uitgevoerd:
+
+- geen redesign;
+- geen SQL;
+- geen productie-auth activatie;
+- geen echte klantdata;
+- geen uploads;
+- geen OpenAI/Mollie;
+- geen nieuwe dependencies.
+
+Volgende aanbevolen stap:
+
+- `Epic 2A.5 - Client Portal Messages Production Data Foundation`
+
 ## Sterke Punten
 
 - Duidelijke premium positionering.

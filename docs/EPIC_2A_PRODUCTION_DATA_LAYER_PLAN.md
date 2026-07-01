@@ -320,3 +320,91 @@ Bewust niet uitgevoerd:
 Volgende aanbevolen stap:
 
 `Epic 2A.4 - Change Requests Production Read`
+
+## Epic 2A.4 - Wijzigingsverzoeken Production Data Foundation
+
+Status: `IMPLEMENTED / READ-WRITE FOUNDATION / PRODUCTION AUTH NO-GO`
+
+Doel:
+
+- wijzigingsverzoeken voorbereiden op echte Supabase-data;
+- bestaande wijzigingsverzoeken read-only ophalen op `customer_id`;
+- nieuw wijzigingsverzoek via Supabase aanmaken als er een veilige Auth/customer-context bestaat;
+- bestaande demo/localStorage fallback behouden zolang Supabase-data of write-permissie ontbreekt.
+
+Toegevoegd:
+
+- `public/src/services/clientChangeRequestContextService.js`
+
+Werking read:
+
+1. Gebruik de bestaande Supabase Auth-sessie.
+2. Gebruik de customer context uit Epic 2A.2.
+3. Lees read-only `change_requests` op `customer_id`.
+4. Normaliseer records naar de bestaande klantportaalvorm.
+5. Als records ontbreken of niet veilig gelezen kunnen worden, blijft de bestaande portal payload actief.
+
+Werking create:
+
+1. Valideer titel, omschrijving, type/categorie, prioriteit en gekoppelde website/project.
+2. Controleer of `customer_id` production-ready is.
+3. Maak via Supabase REST een `change_requests` record aan met de ingelogde Auth-sessie.
+4. Zet `auth_user_id` op de ingelogde gebruiker.
+5. Als Supabase-context ontbreekt of create faalt, valt de flow terug op de bestaande lokale fallback.
+
+Ondersteunde states:
+
+- `loading`;
+- `found`;
+- `missing`;
+- `create_success`;
+- `create_error`;
+- `error`.
+
+Benodigde Supabase-velden voor `change_requests`:
+
+- `id`;
+- `customer_id`;
+- `auth_user_id`;
+- `website_id`;
+- `project_id`;
+- `name`;
+- `company`;
+- `email`;
+- `phone`;
+- `title`;
+- `description`;
+- `category` als technisch veld voor klantvriendelijk `type`;
+- `priority`;
+- `status`;
+- `files`;
+- `source`;
+- `is_demo`;
+- `environment`;
+- `metadata`;
+- `created_at`;
+- `updated_at`.
+
+Securityregels:
+
+- Geen service role naar frontend.
+- Reads en creates gebruiken de ingelogde Supabase Auth-sessie.
+- RLS moet afdwingen dat de klant alleen eigen `change_requests` kan lezen en aanmaken.
+- `customer_id` mag niet vanuit formulierinput komen.
+- `auth_user_id` wordt client-side gevuld op basis van de actieve sessie en moet server/RLS-side worden gecontroleerd.
+- Customer mag geen status, ownership, archive/delete of adminvelden wijzigen.
+- Uploads blijven uitgesloten tot Storage Security productie-uitvoering.
+
+Bewust niet uitgevoerd:
+
+- geen redesign;
+- geen SQL;
+- geen productie-auth activatie;
+- geen echte klantdata;
+- geen uploads;
+- geen OpenAI/Mollie;
+- geen nieuwe dependencies.
+
+Volgende aanbevolen stap:
+
+`Epic 2A.5 - Client Portal Messages Production Data Foundation`

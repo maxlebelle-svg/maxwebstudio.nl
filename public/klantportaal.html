@@ -213,9 +213,9 @@
         const { getClientAuthReadiness } = await import("./src/services/clientAuthReadinessService.js");
         const { getClientCustomerProfileContext } = await import("./src/services/clientCustomerProfileContextService.js");
         const { getClientWebsiteProjectContext } = await import("./src/services/clientWebsiteProjectContextService.js");
+        const { getClientChangeRequestContext, saveClientChangeRequestWithSupabaseFallback } = await import("./src/services/clientChangeRequestContextService.js");
         const { ensureStagingClientPortalDemoSession } = await import("./src/services/stagingClientPortalAuthBridgeService.js");
         const { signOut: signOutSupabase } = await import("./src/services/supabaseAuthProvider.js");
-        const { saveChangeRequestWithWriteFallback } = await import("./src/services/changeRequestWriteService.js");
         const { saveClientPortalMessageWithWriteFallback } = await import("./src/services/clientPortalMessageWriteService.js");
         const params = new URLSearchParams(window.location.search);
         let customerId = params.get("customerId") || "";
@@ -1141,6 +1141,28 @@
         } else if (websiteProjectContext.state === "error" && isDeveloperModeEnabled()) {
           payload.warnings = [...(payload.warnings || []), websiteProjectContext.error || websiteProjectContext.message];
         }
+        const changeRequestContext = await getClientChangeRequestContext({
+          customerId,
+          supabaseCustomerId,
+          customer: payload.customer,
+        });
+        if (changeRequestContext.found) {
+          payload.changeRequests = changeRequestContext.changeRequests;
+          payload.sourceSummary = {
+            ...(payload.sourceSummary || {}),
+            changeRequestContext: {
+              state: changeRequestContext.state,
+              source: changeRequestContext.source,
+              count: changeRequestContext.changeRequests.length,
+            },
+          };
+          payload.metrics = {
+            ...(payload.metrics || {}),
+            openChangeRequests: changeRequestContext.changeRequests.filter((request) => !["afgerond", "gereed", "done", "closed", "gearchiveerd", "archived"].includes(String(request.status || "").toLowerCase())).length,
+          };
+        } else if (changeRequestContext.state === "error" && isDeveloperModeEnabled()) {
+          payload.warnings = [...(payload.warnings || []), changeRequestContext.error || changeRequestContext.message];
+        }
         const { customer, websites, projects, files, invoices, subscriptions, quotes, changeRequests, messages, notifications, metrics: portalMetrics, sourceSummary } = payload;
         const customerChangeRequests = [...changeRequests];
         const customerMessages = [...messages];
@@ -1185,14 +1207,14 @@
           changeRequestSubmit.textContent = "Verzoek opslaan...";
           try {
             const formData = new FormData(changeRequestForm);
-            const result = await saveChangeRequestWithWriteFallback({
+            const result = await saveClientChangeRequestWithSupabaseFallback({
               title: formData.get("title"),
               category: formData.get("category"),
               priority: formData.get("priority"),
               websiteId: formData.get("websiteId"),
               projectId: formData.get("projectId"),
               description: formData.get("description"),
-            }, { customer, websites, projects });
+            }, { customer, websites, projects, supabaseCustomerId });
             customerChangeRequests.unshift(result.request);
             renderChangeRequestRows(customerChangeRequests);
             metrics.changeRequests.textContent = String(customerChangeRequests.filter((request) => !["afgerond", "gereed", "done", "closed", "gearchiveerd", "archived"].includes(normalize(request.status))).length);

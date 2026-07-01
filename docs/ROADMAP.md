@@ -2357,3 +2357,36 @@ Belangrijk:
 Volgende aanbevolen stap:
 
 - `Epic 2A.4 - Change Requests Production Read`
+
+## Epic 2A.4 - Wijzigingsverzoeken Production Data Foundation
+
+Status: `IMPLEMENTED / READ-WRITE FOUNDATION / PRODUCTION AUTH NO-GO`
+
+Doel:
+
+- wijzigingsverzoeken voorbereiden op echte Supabase-data;
+- bestaande wijzigingsverzoeken lezen op `customer_id`;
+- nieuw wijzigingsverzoek aanmaken via Supabase als er een veilige Auth/customer-context bestaat;
+- fallback naar demo/localStorage behouden.
+
+Opgeleverd:
+
+- `clientChangeRequestContextService`;
+- read-only `change_requests` lookup op `customer_id`;
+- create-flow via Supabase Auth sessie en anon/publishable key;
+- fallback naar bestaande lokale wijzigingsverzoek-flow;
+- states voor `loading`, `found`, `missing`, `create_success`, `create_error` en `error`;
+- bestaande klantportaal-UX blijft gelijk.
+
+Belangrijk:
+
+- geen redesign;
+- geen SQL;
+- geen productie-auth activatie;
+- geen echte klantdata;
+- geen uploads;
+- geen OpenAI/Mollie.
+
+Volgende aanbevolen stap:
+
+- `Epic 2A.5 - Client Portal Messages Production Data Foundation`
