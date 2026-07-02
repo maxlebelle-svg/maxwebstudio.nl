@@ -2044,3 +2044,34 @@ Niet inbegrepen:
 - PDF;
 - nieuwe backendfunctie;
 - automatische provisioning zonder adminbevestiging.
+
+## Sprint 3E - Professional Invoice Experience
+
+Datum: 2026-07-02
+
+Status: `IMPLEMENTED / CHECKS PASS`
+
+Scope:
+
+- nieuwe professionele factuurpagina toegevoegd;
+- klantportaalfacturen openen via de factuurpagina;
+- admin heeft factuurpagina-acties gekregen;
+- printbare layout toegevoegd zonder backend-PDF.
+
+Checks:
+
+- `git diff --check`: PASS;
+- `node --check public/script.js`: PASS;
+- `node --check public/src/services/leadFinderService.js`: PASS;
+- inline scriptcheck `public/admin-dashboard.html`: PASS;
+- inline scriptcheck `public/factuur.html`: PASS;
+- inline scriptcheck `public/klantportaal.html`: PASS;
+- secrets-scan: PASS, alleen bekende false positive in storage readiness tekst.
+
+Niet inbegrepen:
+
+- SQL;
+- Mollie;
+- PDF-generatie backend;
+- factuurmail;
+- nieuwe dependencies.

@@ -3833,3 +3833,29 @@ Veiligheidsstatus:
 - geen PDF;
 - geen nieuwe backend;
 - geen automatische klantprovisioning zonder adminbevestiging.
+
+## Sprint 3E - Professional Invoice Experience
+
+Status: `IMPLEMENTED / FRONTEND MVP`
+
+Doel:
+
+- facturen professioneel zichtbaar maken voor klant en admin;
+- printen/opslaan als PDF via de browser mogelijk maken;
+- facturen in het klantportaal laten openen als factuurpagina in plaats van betaal/demo-pagina.
+
+Opgeleverd:
+
+- nieuwe `public/factuur.html` met factuurkop, klantgegevens, regels, totaal, status en printknop;
+- klantportaal verwijst voor facturen naar de professionele factuurpagina;
+- adminfacturen tonen `Open factuur` in de lijst en `Open factuurpagina` / `Kopieer factuurlink` in de modal;
+- print-CSS maakt de factuur schoon en licht bij browserprint.
+
+Veiligheidsstatus:
+
+- geen SQL;
+- geen Mollie;
+- geen backend-PDF;
+- geen nieuwe backend;
+- geen nieuwe dependencies;
+- bestaande betaal/demo-flow blijft apart beschikbaar.

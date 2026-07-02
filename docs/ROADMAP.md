@@ -3083,3 +3083,27 @@ Nog niet:
 - automatische factuur;
 - server-side quote acceptance;
 - Sales Portal.
+
+## Sprint 3E - Professional Invoice Experience
+
+Status: `IMPLEMENTED / FRONTEND MVP`
+
+Doel:
+
+- facturen als nette klantgerichte pagina tonen;
+- openstaand/betaald/verlopen duidelijk maken;
+- printen of opslaan als PDF mogelijk maken zonder backendgeneratie.
+
+Opgeleverd:
+
+- nieuwe publieke factuurpagina `public/factuur.html`;
+- klantportaal opent facturen via `/factuur.html`;
+- admin krijgt directe factuurpagina-acties bij facturen;
+- printvriendelijke layout toegevoegd.
+
+Nog niet:
+
+- Mollie;
+- server-side PDF-generatie;
+- e-mailverzending van facturen;
+- automatische factuur na offerte-akkoord.

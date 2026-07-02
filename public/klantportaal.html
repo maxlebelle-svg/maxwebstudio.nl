@@ -1095,7 +1095,7 @@
           const query = new URLSearchParams();
           if (invoice.id) query.set("invoiceId", invoice.id);
           if (invoice.supabaseInvoiceId) query.set("supabaseInvoiceId", invoice.supabaseInvoiceId);
-          return query.toString() ? `/betalen.html?${query.toString()}` : "";
+          return query.toString() ? `/factuur.html?${query.toString()}` : "";
         }
 
         function updateSourceMessage(payload) {

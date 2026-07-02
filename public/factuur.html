@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Factuur | Max Webstudio</title>
+    <meta name="description" content="Bekijk je factuur van Max Webstudio." />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="Max Webstudio home">
+        <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true"><rect x="6" y="6" width="68" height="68" rx="18"></rect><path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path><path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path></svg>
+        <span>Max Webstudio</span>
+      </a>
+      <nav class="main-nav" aria-label="Hoofdnavigatie">
+        <a href="index.html#projecten">Demo's</a>
+        <a href="index.html#prijzen">Pakketten</a>
+        <a href="index.html#aanvraag">Contact</a>
+      </nav>
+      <a class="header-cta" href="index.html#aanvraag">Plan gratis gesprek</a>
+    </header>
+
+    <main>
+      <section class="page-hero payment-hero invoice-public-hero">
+        <p class="eyebrow">Factuur</p>
+        <h1 id="invoice-page-title">Factuur laden...</h1>
+        <p id="invoice-page-subtitle">Bekijk je factuur rustig. Betalen via Mollie wordt later apart gekoppeld.</p>
+      </section>
+
+      <section class="content-page payment-page invoice-page-shell" id="invoice-page">
+        <article class="checkout-summary-card invoice-public-card" id="invoice-card" aria-live="polite">
+          <p class="section-kicker">Factuur</p>
+          <h2>Factuurgegevens</h2>
+          <p>Factuur niet gevonden. Open de factuur opnieuw via het klantportaal of neem contact op met Max Webstudio.</p>
+        </article>
+      </section>
+    </main>
+
+    <script>
+      (() => {
+        const storageKey = "maxwebstudioInvoices";
+        const params = new URLSearchParams(window.location.search);
+        const invoiceId = params.get("invoiceId") || "";
+        const supabaseInvoiceId = params.get("supabaseInvoiceId") || "";
+        const title = document.getElementById("invoice-page-title");
+        const subtitle = document.getElementById("invoice-page-subtitle");
+        const card = document.getElementById("invoice-card");
+        const money = (value) => new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(Number(value || 0));
+        const formatDate = (value) => {
+          if (!value) return "-";
+          const date = new Date(value);
+          return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("nl-NL");
+        };
+        const statusLabels = {
+          concept: "Concept",
+          verzonden: "Openstaand",
+          open: "Openstaand",
+          verlopen: "Verlopen",
+          betaald: "Betaald",
+          paid: "Betaald",
+          geannuleerd: "Geannuleerd",
+          gearchiveerd: "Gearchiveerd",
+        };
+
+        function readInvoices() {
+          try {
+            const stored = JSON.parse(localStorage.getItem(storageKey) || "[]");
+            return Array.isArray(stored) ? stored : [];
+          } catch (error) {
+            return [];
+          }
+        }
+
+        function findInvoice(invoices) {
+          return invoices.find((item) => {
+            const ids = [item.id, item.invoiceId, item.supabaseInvoiceId, item._supabaseInvoiceId].filter(Boolean).map(String);
+            return (invoiceId && ids.includes(String(invoiceId))) || (supabaseInvoiceId && ids.includes(String(supabaseInvoiceId)));
+          });
+        }
+
+        function createText(tag, className, text) {
+          const element = document.createElement(tag);
+          if (className) element.className = className;
+          element.textContent = text;
+          return element;
+        }
+
+        function createRow(label, value) {
+          const row = document.createElement("div");
+          const dt = document.createElement("dt");
+          const dd = document.createElement("dd");
+          dt.textContent = label;
+          dd.textContent = value || "-";
+          row.append(dt, dd);
+          return row;
+        }
+
+        function invoiceStatus(invoice) {
+          const normalized = String(invoice.status || invoice.paymentStatus || "open").toLowerCase();
+          const isOverdue = invoice.dueDate && !["betaald", "paid", "geannuleerd"].includes(normalized) && new Date(invoice.dueDate) < new Date();
+          if (isOverdue) return "verlopen";
+          return normalized;
+        }
+
+        function renderInvoice() {
+          const invoice = findInvoice(readInvoices());
+          card.replaceChildren();
+          if (!invoice) {
+            title.textContent = "Factuur niet gevonden";
+            subtitle.textContent = "Controleer de link of open de factuur vanuit je klantportaal.";
+            card.append(
+              createText("p", "section-kicker", "Niet gevonden"),
+              createText("h2", "", "Deze factuur kan niet worden geladen."),
+              createText("p", "summary-note", "Open de factuur opnieuw via je klantportaal. Blijft dit gebeuren? Neem dan even contact op.")
+            );
+            return;
+          }
+
+          const status = invoiceStatus(invoice);
+          const statusLabel = statusLabels[status] || statusLabels[invoice.status] || invoice.status || "Openstaand";
+          const lines = Array.isArray(invoice.lines) && invoice.lines.length ? invoice.lines : [{ description: invoice.title || "Factuurregel", quantity: 1, unitPrice: invoice.amount || invoice.total || 0, vatRate: 21 }];
+          const subtotal = Number(invoice.subtotal || lines.reduce((sum, line) => sum + Number(line.quantity || 1) * Number(line.unitPrice || 0), 0));
+          const vat = Number(invoice.vat || lines.reduce((sum, line) => sum + (Number(line.quantity || 1) * Number(line.unitPrice || 0) * Number(line.vatRate || 0)) / 100, 0));
+          const total = Number(invoice.total || invoice.amount || subtotal + vat);
+
+          title.textContent = invoice.invoiceNumber || "Factuur";
+          subtitle.textContent = `${invoice.customerCompany || invoice.customerName || "Klant"} - ${statusLabel}`;
+
+          const header = document.createElement("div");
+          header.className = "invoice-document-header";
+          const headingGroup = document.createElement("div");
+          headingGroup.append(createText("p", "section-kicker", "Max Webstudio factuur"), createText("h2", "", invoice.invoiceNumber || "Factuur"));
+          const statusBadge = createText("span", `invoice-status-badge invoice-status-${status}`, statusLabel);
+          header.append(headingGroup, statusBadge);
+
+          const intro = createText("p", "summary-note", invoice.notes || "Hieronder vind je het overzicht van deze factuur. Je kunt deze pagina printen of opslaan als PDF.");
+
+          const meta = document.createElement("dl");
+          meta.className = "summary-lines invoice-document-meta";
+          meta.append(
+            createRow("Klant", invoice.customerCompany || invoice.customerName || "-"),
+            createRow("E-mail", invoice.customerEmail || "-"),
+            createRow("Website", invoice.websiteDomain || invoice.websiteName || "-"),
+            createRow("Project", invoice.projectName || invoice.type || "-"),
+            createRow("Factuurdatum", formatDate(invoice.invoiceDate || invoice.createdAt)),
+            createRow("Vervaldatum", formatDate(invoice.dueDate)),
+            createRow("Betaald op", formatDate(invoice.paidAt)),
+            createRow("Status", statusLabel)
+          );
+
+          const lineTable = document.createElement("div");
+          lineTable.className = "invoice-line-table";
+          const head = document.createElement("div");
+          head.className = "invoice-line-row invoice-line-head";
+          ["Omschrijving", "Aantal", "Prijs", "BTW", "Totaal"].forEach((label) => head.append(createText("span", "", label)));
+          lineTable.append(head);
+          lines.forEach((line) => {
+            const quantity = Number(line.quantity || 1);
+            const unitPrice = Number(line.unitPrice || line.price || 0);
+            const vatRate = Number(line.vatRate || 0);
+            const lineTotal = quantity * unitPrice;
+            const row = document.createElement("div");
+            row.className = "invoice-line-row";
+            row.append(
+              createText("span", "", line.description || invoice.title || "Factuurregel"),
+              createText("span", "", String(quantity)),
+              createText("span", "", money(unitPrice)),
+              createText("span", "", `${vatRate}%`),
+              createText("span", "", money(lineTotal))
+            );
+            lineTable.append(row);
+          });
+
+          const totals = document.createElement("div");
+          totals.className = "summary-total invoice-document-total";
+          totals.innerHTML = `<span>Totaal incl. btw</span><strong>${money(total)}</strong><small>Subtotaal ${money(subtotal)} · BTW ${money(vat)}</small>`;
+
+          const actions = document.createElement("div");
+          actions.className = "invoice-document-actions";
+          const print = document.createElement("button");
+          print.className = "button primary";
+          print.type = "button";
+          print.textContent = "Print / opslaan als PDF";
+          print.addEventListener("click", () => window.print());
+          const portal = document.createElement("a");
+          portal.className = "button secondary";
+          portal.href = "klantportaal.html";
+          portal.textContent = "Terug naar klantportaal";
+          actions.append(print, portal);
+
+          const note = createText("p", "admin-form-message", status === "betaald"
+            ? "Deze factuur staat als betaald geregistreerd."
+            : "Online betalen via Mollie is nog niet actief. Neem contact op als je direct wilt betalen of vragen hebt over deze factuur.");
+
+          card.append(header, intro, meta, createText("h3", "", "Factuurregels"), lineTable, totals, actions, note);
+        }
+
+        renderInvoice();
+      })();
+    </script>
+  </body>
+</html>

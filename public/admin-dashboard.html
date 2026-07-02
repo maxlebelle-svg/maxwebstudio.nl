@@ -1381,6 +1381,8 @@
             <button class="button secondary" id="invoice-mark-sent" type="button">Zet op verzonden</button>
             <button class="button secondary" id="invoice-mark-paid" type="button">Markeer betaald</button>
             <button class="button secondary" id="invoice-demo-payment" type="button">Verstuur betaalverzoek demo</button>
+            <a class="button secondary is-disabled" id="invoice-open-view" href="#" target="_blank" rel="noopener" aria-disabled="true">Open factuurpagina</a>
+            <button class="button secondary" id="invoice-copy-view" type="button">Kopieer factuurlink</button>
             <a class="button secondary is-disabled" id="invoice-open-payment" href="#" target="_blank" rel="noopener" aria-disabled="true">Open betaalpagina</a>
             <button class="button secondary" id="invoice-open-quote" type="button">Open offerte</button>
             <button class="button secondary" id="invoice-open-subscription" type="button">Open abonnement</button>
@@ -2107,6 +2109,8 @@
         const invoiceMarkSent = document.getElementById("invoice-mark-sent");
         const invoiceMarkPaid = document.getElementById("invoice-mark-paid");
         const invoiceDemoPayment = document.getElementById("invoice-demo-payment");
+        const invoiceOpenView = document.getElementById("invoice-open-view");
+        const invoiceCopyView = document.getElementById("invoice-copy-view");
         const invoiceOpenPayment = document.getElementById("invoice-open-payment");
         const invoiceOpenQuote = document.getElementById("invoice-open-quote");
         const invoiceOpenSubscription = document.getElementById("invoice-open-subscription");
@@ -8943,6 +8947,10 @@
           return `/betalen.html?invoiceId=${encodeURIComponent(id)}`;
         }
 
+        function invoiceViewUrl(id) {
+          return `/factuur.html?invoiceId=${encodeURIComponent(id)}`;
+        }
+
         function customerPortalUrl(customerOrId) {
           const customer = typeof customerOrId === "object"
             ? customerOrId
@@ -12726,6 +12734,14 @@
           invoiceCopyPayment.disabled = !link;
         }
 
+        function updateInvoiceViewActions(invoice) {
+          const link = invoice?.id ? invoiceViewUrl(invoice.id) : "";
+          invoiceOpenView.href = link || "#";
+          invoiceOpenView.classList.toggle("is-disabled", !link);
+          invoiceOpenView.toggleAttribute("aria-disabled", !link);
+          invoiceCopyView.disabled = !link;
+        }
+
         function updateInvoiceSourceActions(invoice) {
           const sourceQuote = invoice?.sourceQuoteId ? quoteById(invoice.sourceQuoteId) : null;
           invoiceOpenQuote.disabled = !sourceQuote;
@@ -12971,12 +12987,18 @@
             payment.type = "button";
             payment.textContent = "Verstuur betaalverzoek demo";
             payment.addEventListener("click", () => createMolliePayment(invoice.id, payment));
+            const viewInvoice = document.createElement("a");
+            viewInvoice.className = "button secondary";
+            viewInvoice.href = invoiceViewUrl(invoice.id);
+            viewInvoice.target = "_blank";
+            viewInvoice.rel = "noopener";
+            viewInvoice.textContent = "Open factuur";
             const cancel = document.createElement("button");
             cancel.className = "button secondary danger";
             cancel.type = "button";
             cancel.textContent = "Annuleer";
             cancel.addEventListener("click", () => cancelInvoice(invoice.id));
-            actions.append(edit, markPaid, markSent, payment);
+            actions.append(edit, viewInvoice, markPaid, markSent, payment);
             if (invoice.paymentLink) {
               const checkout = document.createElement("a");
               checkout.className = "button secondary";
@@ -13231,6 +13253,7 @@
           currentInvoiceLines = invoice?.lines?.length ? invoice.lines.map(normalizeInvoiceLine) : [normalizeInvoiceLine({ description: "", quantity: 1, unitPrice: 0, vatRate: 21 })];
           renderInvoiceLines();
           updatePaymentLinkActions(invoice || null);
+          updateInvoiceViewActions(invoice || null);
           updateInvoiceSourceActions(invoice || null);
           const readiness = invoice && state.developerModules?.invoiceRepository
             ? state.developerModules.invoiceRepository.canWriteInvoice(invoice, {
@@ -15090,6 +15113,14 @@
         invoiceDemoPayment.addEventListener("click", () => state.selectedInvoiceId && createMolliePayment(state.selectedInvoiceId, invoiceDemoPayment));
         invoiceOpenPayment.addEventListener("click", (event) => {
           if (event.currentTarget.getAttribute("aria-disabled") === "true") event.preventDefault();
+        });
+        invoiceOpenView.addEventListener("click", (event) => {
+          if (event.currentTarget.getAttribute("aria-disabled") === "true") event.preventDefault();
+        });
+        invoiceCopyView.addEventListener("click", () => {
+          const invoice = invoiceById(state.selectedInvoiceId);
+          const link = invoice?.id ? invoiceViewUrl(invoice.id) : "";
+          if (link) copyText(link, "Factuurlink gekopieerd.", (text, type) => setBillingMessage(invoiceMessage, text, type));
         });
         invoiceOpenQuote.addEventListener("click", openQuoteFromInvoice);
         invoiceOpenSubscription.addEventListener("click", openSubscriptionFromInvoice);
