@@ -1908,3 +1908,26 @@ Nog handmatig te valideren:
 - klant logt in op productie;
 - klant ziet eigen portal zonder demo-fallback;
 - logout werkt.
+
+## Sprint 3B.1 - Admin Sales Pipeline MVP
+
+Datum: 2026-07-02
+
+Status: `IMPLEMENTED / CHECKS PASS`
+
+Scope:
+
+- admin sales pipeline aangescherpt in bestaande Leadfinder-sectie;
+- leadstatussen uitgebreid met commerciële fases;
+- lead aanmaken/status/notities/follow-up blijven local/demo of bestaande fallback;
+- `Maak klant aan` vult de bestaande customer onboarding wizard;
+- geen automatische provisioning zonder expliciete admin-submit in de wizard.
+
+Checks:
+
+- geen SQL;
+- geen nieuwe backendfunctie;
+- geen Resend live;
+- geen Mollie;
+- geen AI;
+- geen service-role in frontend.

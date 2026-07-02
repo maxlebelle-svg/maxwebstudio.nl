@@ -2957,3 +2957,32 @@ Aanbevolen vervolg:
 3. `Sprint 3B.3 - Quote Preparation Placeholder`.
 4. `Sprint 3B.4 - Convert Lead To Customer Wizard`.
 5. `Sprint 3B Review`.
+
+## Sprint 3B.1 - Admin Sales Pipeline MVP
+
+Status: `IMPLEMENTED / LOCAL-DEMO PIPELINE / WIZARD PREFILL`
+
+Doel:
+
+- de eerste verkoopflow in het adminportaal werkend maken zonder nieuwe backendrisico's;
+- een lead kunnen aanmaken, opvolgen en doorzetten naar de bestaande klant-aanmaak wizard.
+
+Opgeleverd:
+
+- Leadfinder-sectie gepositioneerd als `Sales pipeline`;
+- leadstatussen uitgebreid met commerciële fases zoals contact gepland, gekwalificeerd, offerte klaar, offerte verzonden, verkocht en klant actief;
+- lead aanmaken blijft local/demo;
+- leadstatus wijzigen via detailpaneel;
+- notitie toevoegen blijft via bestaande veilige lead-note flow/fallback;
+- follow-up datum blijft beschikbaar;
+- knop `Maak klant aan` vult de bestaande customer onboarding wizard met leadgegevens;
+- provisioning start pas nadat de admin bewust in de wizard op `Klantportaal klaarzetten` klikt.
+
+Nog niet:
+
+- VoIP;
+- Mollie;
+- Resend live;
+- Sales Portal;
+- Leadfinder automation;
+- productie-SQL voor sales tabellen.

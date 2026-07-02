@@ -3692,3 +3692,31 @@ Aanbevolen vervolg:
 
 - `Sprint 3B.1 - Lead Pipeline UI MVP`;
 - daarna pas leadnotities, call log, offerteplaceholder en lead-to-customer prefill bouwen.
+
+## Sprint 3B.1 - Admin Sales Pipeline MVP
+
+Status: `IMPLEMENTED / LOCAL-DEMO PIPELINE / WIZARD PREFILL`
+
+Doel:
+
+- eerste commerciële flow in het adminportaal werkend maken;
+- leads vanuit lokale/admin pipeline kunnen opvolgen en omzetten naar een klant-aanmaakactie.
+
+Opgeleverd:
+
+- Leadfinder is in de UI aangescherpt naar `Sales pipeline`;
+- statuslaag uitgebreid met commerciële pipelinefases;
+- lead aanmaken, status wijzigen, notitie toevoegen en follow-up datum blijven beschikbaar;
+- `Maak klant aan` opent de bestaande server-side klant-aanmaak wizard met vooraf ingevulde leadgegevens;
+- de lead wordt als `Verkocht` gemarkeerd voordat de admin de provisioning bewust afrondt;
+- er wordt geen klant aangemaakt totdat de admin in de wizard op `Klantportaal klaarzetten` klikt.
+
+Veiligheidsstatus:
+
+- geen nieuwe SQL;
+- geen nieuwe serverless function;
+- geen Resend live;
+- geen Mollie;
+- geen AI;
+- geen service-role in frontend;
+- salesdata blijft local/demo totdat een aparte salesdatalaag wordt goedgekeurd.

@@ -11,6 +11,14 @@ export const LEADFINDER_WEBSITE_STATUSES = Object.freeze([
 
 export const LEADFINDER_CALL_STATUSES = Object.freeze([
   { value: "nieuw", label: "Nieuw" },
+  { value: "contact_planned", label: "Contact gepland" },
+  { value: "contacted", label: "Contact gehad" },
+  { value: "qualified", label: "Gekwalificeerd" },
+  { value: "quote_ready", label: "Offerte klaar" },
+  { value: "quote_sent", label: "Offerte verzonden" },
+  { value: "won", label: "Verkocht" },
+  { value: "lost", label: "Niet doorgegaan" },
+  { value: "customer_active", label: "Klant actief" },
   { value: "te_bellen", label: "Te bellen" },
   { value: "gebeld", label: "Gebeld" },
   { value: "voicemail", label: "Voicemail" },
@@ -131,13 +139,13 @@ export function getLeadFinderSummary(leads = readLeadFinderLeads()) {
   return leads.reduce((summary, lead) => {
     summary.total += 1;
     if (lead.leadScore >= 80) summary.hot += 1;
-    if (["te_bellen", "opvolgen", "interesse"].includes(lead.callStatus)) summary.actionNeeded += 1;
-    if (lead.callStatus === "geconverteerd" || lead.convertedCustomerId) summary.converted += 1;
+    if (["te_bellen", "opvolgen", "interesse", "contact_planned", "qualified", "quote_ready", "quote_sent", "won"].includes(lead.callStatus)) summary.actionNeeded += 1;
+    if (["geconverteerd", "customer_active"].includes(lead.callStatus) || lead.convertedCustomerId) summary.converted += 1;
     if (lead.followUpDate) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const followUp = new Date(`${lead.followUpDate}T00:00:00`);
-      if (followUp <= today && !lead.convertedCustomerId) summary.due += 1;
+      if (followUp <= today && !lead.convertedCustomerId && lead.callStatus !== "customer_active") summary.due += 1;
     }
     return summary;
   }, {

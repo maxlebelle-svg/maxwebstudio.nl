@@ -234,6 +234,7 @@ Sprint 3B is klaar wanneer:
 
 1. `Sprint 3B.1 - Lead Pipeline UI MVP`
    - leadlijst, statuslabels, detailpaneel, follow-up datum.
+   - Status: `IMPLEMENTED / LOCAL-DEMO PIPELINE / WIZARD PREFILL`
 2. `Sprint 3B.2 - Lead Notes & Call Log MVP`
    - belnotities en eenvoudige opvolging.
 3. `Sprint 3B.3 - Quote Preparation Placeholder`
