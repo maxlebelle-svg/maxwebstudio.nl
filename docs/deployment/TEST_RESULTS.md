@@ -1931,3 +1931,33 @@ Checks:
 - geen Mollie;
 - geen AI;
 - geen service-role in frontend.
+
+## Sprint 3C - Resend Live Uitnodigingsmail
+
+Datum: 2026-07-02
+
+Status: `IMPLEMENTED / LIVE SEND READY`
+
+Scope:
+
+- bestaande server-side klant-aanmaakflow uitgebreid met echte Resend-welkomstmail;
+- activatie/password-setup link wordt opgenomen in de mail;
+- admin kan in de klant-aanmaak wizard bewust kiezen of de mail direct wordt verzonden;
+- geen Mollie, facturen, AI, Leadfinder of Sales Portal toegevoegd;
+- geen SQL uitgevoerd.
+
+Resultaten:
+
+- provisioning blijft leidend: Auth user, profile, customer, website en project worden eerst klaargezet;
+- Resend wordt uitsluitend server-side aangeroepen via de bestaande mailhelper;
+- service-role en Resend API key blijven buiten de frontend;
+- als Resend ontbreekt of faalt, blijft de klant-aanmaak afgerond en toont de admin een duidelijke mailstatus;
+- mailconcept-preview blijft zichtbaar in het adminportaal.
+
+Nog handmatig te valideren na deploy:
+
+- één interne klant aanmaken met `Welkomstmail direct versturen via Resend` actief;
+- controleren dat de klant de welkomstmail ontvangt;
+- klant opent de activatielink;
+- klant stelt wachtwoord in;
+- klant logt in en ziet eigen portaal.

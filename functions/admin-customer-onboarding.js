@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const { sendEmail } = require("./email");
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const allowedPackages = new Set(["Basis", "Plus", "Premium"]);
@@ -142,6 +143,10 @@ exports.handler = async (event) => {
     });
 
     const passwordSetup = await createPasswordSetupLink(supabaseUrl, serviceRoleKey, input);
+    const mailPreview = buildMailPreview(input, passwordSetup);
+    const email = input.sendWelcomeEmail
+      ? await sendWelcomeEmailMessage(input, mailPreview)
+      : { requested: false, sent: false, warning: "Welkomstmail is alleen als concept voorbereid." };
 
     return jsonResponse(200, {
       success: true,
@@ -157,8 +162,11 @@ exports.handler = async (event) => {
           redirectTo: passwordSetup.redirectTo,
         },
       },
-      mailPreview: buildMailPreview(input, passwordSetup),
-      note: "Welkomstmail is alleen als concept klaargezet. Er is geen e-mail verzonden.",
+      email,
+      mailPreview,
+      note: email.sent
+        ? "Welkomstmail is via Resend verzonden."
+        : "Welkomstmail is als concept klaargezet of kon nog niet worden verzonden.",
     });
   } catch (error) {
     console.error("Customer onboarding failed", {
@@ -207,6 +215,7 @@ function validatePayload(payload) {
     package: cleanText(payload.package) || "Basis",
     domain: cleanDomain(payload.domain || payload.website),
     projectName: cleanText(payload.projectName),
+    sendWelcomeEmail: Boolean(payload.sendWelcomeEmail || payload.sendEmail || payload.sendInvite),
   };
 
   if (!value.name) return { success: false, error: "Vul een klantnaam in." };
@@ -402,6 +411,77 @@ function buildMailPreview(input, passwordSetup = {}) {
   };
 }
 
+async function sendWelcomeEmailMessage(input, mailPreview) {
+  try {
+    const result = await sendEmail({
+      to: input.email,
+      from: cleanText(process.env.CUSTOMER_INVITE_FROM_EMAIL) || cleanText(process.env.FROM_EMAIL) || undefined,
+      bcc: cleanText(process.env.ADMIN_EMAIL) || undefined,
+      subject: mailPreview.subject,
+      html: buildWelcomeEmailHtml(input, mailPreview),
+      text: mailPreview.text,
+    });
+
+    return {
+      requested: true,
+      sent: Boolean(result.sent),
+      id: cleanText(result.id),
+      warning: cleanText(result.warning),
+    };
+  } catch (error) {
+    console.error("Customer welcome email failed", { message: error.message });
+    return {
+      requested: true,
+      sent: false,
+      id: "",
+      warning: "Welkomstmail kon niet worden verzonden.",
+    };
+  }
+}
+
+function buildWelcomeEmailHtml(input, mailPreview) {
+  const name = escapeHtml(input.name);
+  const company = escapeHtml(input.company);
+  const actionLink = escapeHtml(mailPreview.loginLink);
+  const buttonLabel = escapeHtml(mailPreview.buttonLabel || "Account activeren");
+
+  return `<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${escapeHtml(mailPreview.subject)}</title>
+  </head>
+  <body style="margin:0;background:#061626;color:#ffffff;font-family:Inter,Arial,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#061626;padding:28px 14px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;background:#102a3d;border:1px solid rgba(68,180,255,.26);border-radius:24px;overflow:hidden;">
+            <tr>
+              <td style="padding:32px 30px 18px;">
+                <div style="font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:#27c7ff;font-weight:800;">Max Webstudio</div>
+                <h1 style="margin:14px 0 10px;font-size:32px;line-height:1.12;color:#ffffff;">Je klantportaal staat klaar.</h1>
+                <p style="margin:0;color:#c9d7e8;font-size:16px;line-height:1.7;">Hoi ${name}, je klantportaal voor <strong style="color:#ffffff;">${company}</strong> is klaargezet.</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 30px 24px;">
+                <p style="margin:0 0 18px;color:#c9d7e8;font-size:16px;line-height:1.7;">In je portaal zie je de status van je website, kun je wijzigingen aanvragen, berichten volgen en belangrijke updates terugvinden.</p>
+                <a href="${actionLink}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:800;border-radius:14px;padding:14px 20px;">${buttonLabel}</a>
+                <p style="margin:18px 0 0;color:#91a6bc;font-size:13px;line-height:1.6;">Werkt de knop niet? Open dan deze link:<br /><a href="${actionLink}" style="color:#7dd3fc;">${actionLink}</a></p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:22px 30px;background:rgba(255,255,255,.05);color:#aabbd0;font-size:13px;line-height:1.6;">Heb je vragen? Reageer op deze mail of neem contact op met Max Webstudio.</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+}
+
 function pickRecord(record) {
   return {
     id: cleanText(record.id),
@@ -425,6 +505,15 @@ function cleanDomain(value) {
 
 function cleanText(value) {
   return String(value || "").trim();
+}
+
+function escapeHtml(value) {
+  return cleanText(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function jsonResponse(statusCode, body) {

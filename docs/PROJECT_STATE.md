@@ -3720,3 +3720,33 @@ Veiligheidsstatus:
 - geen AI;
 - geen service-role in frontend;
 - salesdata blijft local/demo totdat een aparte salesdatalaag wordt goedgekeurd.
+
+## Sprint 3C - Resend Live Uitnodigingsmail
+
+Status: `IMPLEMENTED / LIVE SEND READY`
+
+Doel:
+
+- de bestaande productieprovisioning uitbreiden met een echte welkomstmail;
+- klanten na aanmaken direct een accountactivatie/password-setup link kunnen sturen.
+
+Opgeleverd:
+
+- `functions/admin-customer-onboarding.js` gebruikt de bestaande Resend-mailhelper server-side;
+- de welkomstmail bevat persoonlijke begroeting, portaaluitleg en knop `Account activeren`;
+- `public/admin-dashboard.html` toont een bewuste optie `Welkomstmail direct versturen via Resend`;
+- mailpreview blijft zichtbaar na provisioning;
+- `CUSTOMER_INVITE_FROM_EMAIL` is als optionele env var toegevoegd aan de voorbeeldconfiguratie.
+
+Veiligheidsstatus:
+
+- `RESEND_API_KEY` en `SUPABASE_SERVICE_ROLE_KEY` blijven server-side;
+- frontend ontvangt alleen publieke verzendstatus, geen secrets;
+- provisioning faalt niet hard als Resend tijdelijk niet beschikbaar is;
+- geen SQL, Mollie, AI, factuurflow of brede salesautomatisering toegevoegd.
+
+Volgende stap:
+
+- deployen;
+- één interne klant aanmaken met live welkomstmail actief;
+- ontvangst, activatielink, wachtwoord instellen, login en logout valideren.

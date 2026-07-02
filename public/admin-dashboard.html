@@ -1242,6 +1242,7 @@
             <label for="new-website">Website / domein<input id="new-website" type="text" placeholder="voorbeeld.nl" required /></label>
             <label for="new-package">Gekocht pakket<select id="new-package"><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option></select></label>
             <label for="new-project-name">Projectnaam optioneel<input id="new-project-name" type="text" placeholder="Bijv. Nieuwe website" /></label>
+            <label class="settings-toggle admin-profile-wide" for="new-send-welcome-email"><input id="new-send-welcome-email" type="checkbox" checked /> Welkomstmail direct versturen via Resend</label>
           </div>
           <div class="admin-onboarding-preview" id="new-customer-onboarding-preview" hidden>
             <strong>Welkomstmail concept</strong>
@@ -2171,6 +2172,7 @@
         const newCustomerOnboardingPreview = document.getElementById("new-customer-onboarding-preview");
         const newCustomerMailSubject = document.getElementById("new-customer-mail-subject");
         const newCustomerMailBody = document.getElementById("new-customer-mail-body");
+        const newSendWelcomeEmail = document.getElementById("new-send-welcome-email");
         const requestList = document.getElementById("change-request-list");
         const requestStatusFilter = document.getElementById("filter-status");
         const requestPriorityFilter = document.getElementById("filter-priority");
@@ -9722,6 +9724,7 @@
               domain: document.getElementById("new-website").value,
               package: document.getElementById("new-package").value,
               projectName: document.getElementById("new-project-name").value,
+              sendWelcomeEmail: Boolean(newSendWelcomeEmail?.checked),
             };
 
             const token = adminTokenInput.value.trim();
@@ -9743,7 +9746,10 @@
             renderNewCustomerMailPreview(data.mailPreview);
             state.selectedCustomerId = data.onboarding?.profile?.id || "";
             if (state.selectedCustomerId) selectCustomer(state.selectedCustomerId);
-            setNewCustomerMessage("Klantportaal klaargezet. Auth, profile, customer, website en project zijn gekoppeld. Mail is alleen als concept voorbereid.", "success");
+            const emailStatus = data.email?.sent
+              ? " Welkomstmail is via Resend verzonden."
+              : " Welkomstmail is als concept voorbereid of kon nog niet worden verzonden.";
+            setNewCustomerMessage(`Klantportaal klaargezet. Auth, profile, customer, website en project zijn gekoppeld.${emailStatus}`, "success");
             setAdminAccessMessage("Nieuwe klant veilig klaargezet via server-side onboarding.", "success");
           } catch (error) {
             setNewCustomerMessage(error.message || "Klant kon niet worden opgeslagen.", "error");

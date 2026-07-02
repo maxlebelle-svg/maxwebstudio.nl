@@ -2986,3 +2986,28 @@ Nog niet:
 - Sales Portal;
 - Leadfinder automation;
 - productie-SQL voor sales tabellen.
+
+## Sprint 3C - Resend Live Uitnodigingsmail
+
+Status: `IMPLEMENTED / DEPLOY TEST NEXT`
+
+Doel:
+
+- de klant-aanmaakflow afronden met een echte welkomstmail;
+- de flow maken: `lead -> verkocht -> klant aanmaken -> mail automatisch -> klant logt in`.
+
+Opgeleverd:
+
+- server-side Resend-verzending vanuit `admin-customer-onboarding`;
+- activatie/password-setup link in de welkomstmail;
+- admin-wizard checkbox om de welkomstmail direct te versturen;
+- mailpreview blijft beschikbaar voor controle;
+- veilige fallback wanneer Resend niet beschikbaar is.
+
+Niet inbegrepen:
+
+- Mollie;
+- facturen;
+- AI;
+- Sales Portal;
+- live lead automation.
