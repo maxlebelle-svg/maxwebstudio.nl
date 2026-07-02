@@ -3157,3 +3157,34 @@ Nog niet:
 - SEPA;
 - Mollie live-betalingen zonder aparte approval;
 - automatische factuur na offerte-akkoord.
+
+## Sprint 3H - Mollie Test Payment Validation
+
+Status: `PREFLIGHT PASS / LIVE TEST PENDING`
+
+Doel:
+
+- de eerste losse factuurbetaling veilig valideren met Mollie testmodus;
+- betaalstatus van factuur en klantportaal bewijzen voordat live betalingen worden toegestaan.
+
+Opgeleverd:
+
+- admin-betaallink en webhook blokkeren live keys standaard;
+- `MOLLIE_MODE=test` en een `test_` key zijn verplicht zolang live payments niet expliciet zijn vrijgegeven;
+- Mollie keys blijven server-side.
+
+Nog te doen:
+
+- één testfactuur kiezen;
+- betaallink maken;
+- Mollie testcheckout afronden;
+- webhookstatus controleren;
+- factuur en klantportaal op `paid` controleren.
+
+Niet inbegrepen:
+
+- live geld innen;
+- SEPA;
+- automatische incasso;
+- subscriptions live;
+- Mollie live approval.

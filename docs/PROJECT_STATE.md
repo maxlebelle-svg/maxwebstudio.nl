@@ -3913,3 +3913,34 @@ Veiligheidsstatus:
 - geen service-role in frontend;
 - Mollie API key blijft server-side;
 - echte betaling pas na expliciete testmodus/live goedkeuring.
+
+## Sprint 3H - Mollie Test Payment Validation
+
+Status: `PREFLIGHT PASS / LIVE TEST PENDING`
+
+Doel:
+
+- één veilige Mollie testbetaling valideren voordat losse factuurbetalingen commercieel worden gebruikt;
+- voorkomen dat een live Mollie key per ongeluk een betaalverzoek kan aanmaken.
+
+Opgeleverd:
+
+- `functions/admin-mollie-payment.js` gebruikt testmodus als standaard en ondersteunt `MOLLIE_TEST_API_KEY`;
+- admin-betaallinks worden geblokkeerd wanneer `MOLLIE_MODE` niet `test` is of de actieve key niet met `test_` begint;
+- `functions/mollie-webhook.js` gebruikt dezelfde testmoduscontrole voordat payment-statussen bij Mollie worden opgehaald;
+- live payments kunnen later alleen bewust worden vrijgegeven via aparte approval/config.
+
+Nog te bewijzen:
+
+- concrete Mollie testcheckout openen;
+- testbetaling afronden;
+- webhook verwerkt de status;
+- factuur en klantportaal tonen `paid`.
+
+Veiligheidsstatus:
+
+- geen live betalingen;
+- geen automatische incasso;
+- geen SEPA;
+- geen SQL;
+- geen Mollie/service-role secrets in frontend.

@@ -2138,3 +2138,55 @@ Niet inbegrepen:
 - automatische incasso;
 - SEPA/subscriptions live;
 - SQL.
+
+## Sprint 3H - Mollie Test Payment Validation
+
+Datum: 2026-07-02
+
+Status: `PREFLIGHT PASS / LIVE TEST PENDING`
+
+Scope:
+
+- Mollie factuurbetalingen blijven beperkt tot testmodus;
+- admin-betaallinkfunctie weigert live keys tenzij later expliciet vrijgegeven;
+- webhook verwerkt Mollie-statussen alleen met testconfig zolang live payments niet zijn toegestaan;
+- geen Mollie key of service-role wordt naar de frontend gestuurd.
+
+Preflight-resultaat:
+
+- `MOLLIE_MODE=test` wordt als veilige standaard verwacht;
+- `MOLLIE_TEST_API_KEY` heeft voorkeur boven `MOLLIE_API_KEY` bij testmodus;
+- een key die niet met `test_` begint wordt geblokkeerd zolang `MOLLIE_ALLOW_LIVE_PAYMENTS` niet expliciet `true` is;
+- webhook haalt payment-status server-side op bij Mollie en werkt daarna de factuurstatus bij via service-role;
+- automatische incasso, SEPA en subscriptions blijven buiten scope.
+
+Live test nog uit te voeren:
+
+1. Maak of kies één testfactuur in productie/testcontext.
+2. Klik in admin op `Maak betaallink`.
+3. Controleer dat de response `testMode: true` meldt.
+4. Open de Mollie test-checkout.
+5. Rond de testbetaling af.
+6. Controleer dat de webhook de factuur naar `paid` zet.
+7. Controleer dat `factuur.html` en het klantportaal de betaalde status tonen.
+
+Blocker:
+
+- De daadwerkelijke Mollie checkout en webhook-validatie zijn nog niet uitgevoerd vanuit deze Codex-sessie, omdat hiervoor de live Netlify environment, Mollie test-dashboard en een concrete testfactuur nodig zijn.
+
+Checks:
+
+- `git diff --check`: PASS;
+- `node --check public/script.js`: PASS;
+- `node --check public/src/services/leadFinderService.js`: PASS;
+- `node --check functions/admin-mollie-payment.js`: PASS;
+- `node --check functions/mollie-webhook.js`: PASS;
+- secrets-scan: PASS, alleen bekende false positive in storage readiness tekst.
+
+Niet inbegrepen:
+
+- live geld innen;
+- automatische incasso;
+- SEPA-mandaten;
+- subscriptions live;
+- SQL.

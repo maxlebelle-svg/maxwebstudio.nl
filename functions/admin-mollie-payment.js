@@ -43,7 +43,8 @@ exports.handler = async (event) => {
       return jsonResponse(200, {
         success: true,
         reused: true,
-        testMode: isMollieTestMode(config.mollieApiKey),
+        testMode: config.testMode,
+        mollieMode: config.mollieMode,
         warning: "Er bestaat al een actieve betaallink voor deze factuur.",
         checkoutUrl: cleanText(invoice.mollie_checkout_url),
         paymentId: cleanText(invoice.mollie_payment_id),
@@ -73,7 +74,8 @@ exports.handler = async (event) => {
 
     return jsonResponse(200, {
       success: true,
-      testMode: isMollieTestMode(config.mollieApiKey),
+      testMode: config.testMode,
+      mollieMode: config.mollieMode,
       checkoutUrl,
       paymentId: payment.id,
       invoice: normalizeInvoice(updatedInvoice),
@@ -100,7 +102,12 @@ function verifyAdmin(event) {
 }
 
 function readConfig() {
-  const mollieApiKey = process.env.MOLLIE_API_KEY;
+  const mollieMode = cleanText(process.env.MOLLIE_MODE || "test").toLowerCase();
+  const configuredTestKey = process.env.MOLLIE_TEST_API_KEY;
+  const configuredDefaultKey = process.env.MOLLIE_API_KEY;
+  const mollieApiKey = mollieMode === "test" ? (configuredTestKey || configuredDefaultKey) : configuredDefaultKey;
+  const testMode = isMollieTestMode(mollieApiKey);
+  const livePaymentsAllowed = cleanText(process.env.MOLLIE_ALLOW_LIVE_PAYMENTS).toLowerCase() === "true";
   const siteUrl = (process.env.SITE_URL || "").replace(/\/$/, "");
   const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -108,6 +115,8 @@ function readConfig() {
   if (!mollieApiKey || !siteUrl || !supabaseUrl || !serviceRoleKey) {
     console.error("Admin Mollie payment missing configuration", {
       hasMollieApiKey: Boolean(mollieApiKey),
+      hasMollieTestApiKey: Boolean(configuredTestKey),
+      mollieMode,
       hasSiteUrl: Boolean(siteUrl),
       hasSupabaseUrl: Boolean(supabaseUrl),
       hasServiceRoleKey: Boolean(serviceRoleKey),
@@ -118,7 +127,22 @@ function readConfig() {
     };
   }
 
-  return { success: true, mollieApiKey, siteUrl, supabaseUrl, serviceRoleKey };
+  if ((mollieMode !== "test" || !testMode) && !livePaymentsAllowed) {
+    console.error("Admin Mollie payment blocked outside test mode", {
+      mollieMode,
+      testMode,
+      livePaymentsAllowed,
+    });
+    return {
+      success: false,
+      response: jsonResponse(403, {
+        success: false,
+        error: "Mollie staat alleen vrij in testmodus. Controleer MOLLIE_MODE=test en gebruik een test key.",
+      }),
+    };
+  }
+
+  return { success: true, mollieApiKey, mollieMode, testMode, siteUrl, supabaseUrl, serviceRoleKey };
 }
 
 function parsePayload(body) {

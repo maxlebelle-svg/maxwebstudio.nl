@@ -25,17 +25,21 @@ exports.handler = async (event) => {
     return textResponse(400, "Missing payment id");
   }
 
-  const apiKey = process.env.MOLLIE_API_KEY || getMollieApiKey();
+  const mollieConfig = readMollieWebhookConfig();
 
-  if (!apiKey) {
-    console.error("Mollie webhook missing API key configuration");
-    return textResponse(500, "Payment configuration missing");
+  if (!mollieConfig.success) {
+    console.error("Mollie webhook payment configuration blocked", {
+      reason: mollieConfig.reason,
+      mollieMode: mollieConfig.mollieMode,
+      testMode: mollieConfig.testMode,
+    });
+    return textResponse(200, "Webhook received");
   }
 
   try {
     const mollieResponse = await fetch(`https://api.mollie.com/v2/payments/${encodeURIComponent(paymentId)}`, {
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${mollieConfig.apiKey}`,
       },
     });
 
@@ -73,7 +77,7 @@ exports.handler = async (event) => {
     }
 
     if (isSubscriptionPayment(payment)) {
-      await updateSubscriptionPaymentIfPresent(payment, apiKey);
+      await updateSubscriptionPaymentIfPresent(payment, mollieConfig.apiKey);
     } else {
       await updateInvoicePaymentIfPresent(payment);
     }
@@ -88,6 +92,29 @@ exports.handler = async (event) => {
     return textResponse(200, "Webhook received");
   }
 };
+
+function readMollieWebhookConfig() {
+  const mollieMode = cleanText(process.env.MOLLIE_MODE || "test").toLowerCase();
+  const configuredTestKey = process.env.MOLLIE_TEST_API_KEY;
+  const configuredDefaultKey = process.env.MOLLIE_API_KEY || getMollieApiKey();
+  const apiKey = mollieMode === "test" ? (configuredTestKey || configuredDefaultKey) : configuredDefaultKey;
+  const testMode = isMollieTestMode(apiKey);
+  const livePaymentsAllowed = cleanText(process.env.MOLLIE_ALLOW_LIVE_PAYMENTS).toLowerCase() === "true";
+
+  if (!apiKey) {
+    return { success: false, reason: "missing_key", mollieMode, testMode };
+  }
+
+  if ((mollieMode !== "test" || !testMode) && !livePaymentsAllowed) {
+    return { success: false, reason: "test_mode_required", mollieMode, testMode };
+  }
+
+  return { success: true, apiKey, mollieMode, testMode };
+}
+
+function isMollieTestMode(apiKey) {
+  return cleanText(apiKey).startsWith("test_");
+}
 
 function isSubscriptionPayment(payment) {
   return Boolean(
