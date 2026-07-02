@@ -1,3 +1,5 @@
+const { verifyAdmin } = require("./_admin-auth");
+
 const SELECT_FIELDS = [
   "id",
   "created_at",
@@ -23,6 +25,9 @@ exports.handler = async (event) => {
   if (event.httpMethod !== "GET") {
     return jsonResponse(405, { success: false, error: "Alleen GET-verzoeken zijn toegestaan." });
   }
+
+  const adminCheck = await verifyAdmin(event, jsonResponse);
+  if (!adminCheck.success) return adminCheck.response;
 
   const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

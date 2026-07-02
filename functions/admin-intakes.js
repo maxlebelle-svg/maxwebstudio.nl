@@ -1,3 +1,4 @@
+const { verifyAdmin } = require("./_admin-auth");
 const { readIntakes } = require("./intake-storage");
 
 exports.handler = async (event) => {
@@ -5,12 +6,8 @@ exports.handler = async (event) => {
     return jsonResponse(405, { success: false, error: "Alleen GET-verzoeken zijn toegestaan." });
   }
 
-  const expectedToken = process.env.ADMIN_TOKEN;
-  const authHeader = event.headers.authorization || event.headers.Authorization || "";
-
-  if (!expectedToken || authHeader !== `Bearer ${expectedToken}`) {
-    return jsonResponse(401, { success: false, error: "Niet geautoriseerd." });
-  }
+  const adminCheck = await verifyAdmin(event, jsonResponse);
+  if (!adminCheck.success) return adminCheck.response;
 
   const intakes = await readIntakes();
   return jsonResponse(200, { success: true, intakes });

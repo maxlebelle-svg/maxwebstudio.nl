@@ -1,3 +1,5 @@
+const { verifyAdmin } = require("./_admin-auth");
+
 const allowedStatuses = new Set(["nieuw", "in_behandeling", "wacht_op_klant", "afgerond"]);
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -5,6 +7,9 @@ exports.handler = async (event) => {
   if (event.httpMethod !== "PATCH") {
     return jsonResponse(405, { success: false, error: "Alleen PATCH-verzoeken zijn toegestaan." });
   }
+
+  const adminCheck = await verifyAdmin(event, jsonResponse);
+  if (!adminCheck.success) return adminCheck.response;
 
   let payload;
 

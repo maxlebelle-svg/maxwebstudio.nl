@@ -1,3 +1,4 @@
+const { verifyAdmin } = require("./_admin-auth");
 const PROFILE_FIELDS = "id,auth_user_id,name,company,email,website,status,package,created_at";
 const WEBSITE_FIELDS = "id,profile_id,customer_auth_user_id,name,domain,live_url,status,hosting_status,ssl_status,created_at,updated_at";
 const SUBSCRIPTION_FIELDS = [
@@ -32,7 +33,7 @@ exports.handler = async (event) => {
       return jsonResponse(405, { success: false, error: "Alleen GET-verzoeken zijn toegestaan." });
     }
 
-    const adminCheck = verifyAdmin(event);
+    const adminCheck = await verifyAdmin(event, jsonResponse);
     if (!adminCheck.success) return adminCheck.response;
 
     const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
@@ -293,15 +294,6 @@ async function fetchRows(supabaseUrl, serviceRoleKey, table, fields, order, limi
     throw error;
   }
   return Array.isArray(data) ? data : [];
-}
-
-function verifyAdmin(event) {
-  const expectedToken = process.env.ADMIN_TOKEN;
-  const authHeader = event.headers.authorization || event.headers.Authorization || "";
-  if (!expectedToken || authHeader !== `Bearer ${expectedToken}`) {
-    return { success: false, response: jsonResponse(401, { success: false, error: "Niet geautoriseerd." }) };
-  }
-  return { success: true };
 }
 
 function periodRange(period) {

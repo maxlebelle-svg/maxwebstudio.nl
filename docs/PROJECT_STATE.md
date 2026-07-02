@@ -4051,3 +4051,23 @@ Besluit:
 - localStorage blijft alleen beschikbaar als demo/noodfallback en Developer Mode tooling;
 - oude browserinstellingen die nog op `local` stonden worden eenmalig naar `hybrid` gemigreerd;
 - Quantumbouw/Michel wordt pas als klantrecord aangemaakt wanneer de adminweergave Supabase-first groen is.
+
+## Admin Auth - Supabase Session
+
+Status: `READY FOR LIVE VALIDATION`
+
+Opgeleverd:
+
+- normale admin-toegang loopt via Supabase Auth met e-mail/wachtwoord;
+- `info@maxwebstudio.nl` is de standaard admin-login;
+- serverless adminfuncties accepteren een Supabase sessie alleen wanneer het e-mailadres server-side is toegestaan;
+- `ADMIN_EMAILS` kan later meerdere admins bevatten;
+- oude `ADMIN_TOKEN` blijft alleen als Developer Mode/noodfallback beschikbaar;
+- service-role blijft uitsluitend server-side;
+- zonder adminsessie toont het dashboard geen klant-, offerte-, factuur- of wijzigingsverzoekdata.
+
+Vervolg:
+
+- live inloggen met `info@maxwebstudio.nl`;
+- controleren dat het dashboard bovenin "Ingelogd als info@maxwebstudio.nl" toont;
+- daarna pas Quantumbouw/Michel als productieklant registreren.

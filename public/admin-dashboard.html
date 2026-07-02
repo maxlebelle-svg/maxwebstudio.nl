@@ -67,17 +67,32 @@
             <button class="button secondary" id="access-mode-reset" type="button">Reset soft</button>
           </div>
         </article>
-        <article class="admin-card admin-token-card">
+        <article class="admin-card admin-token-card" id="admin-login-card">
           <div>
-            <strong>Admin toegang</strong>
-            <span>Gebruik het interne admin-token om CRM-data te laden en klanten te beheren.</span>
+            <strong>Admin login</strong>
+            <span id="admin-session-label">Log in met je Max Webstudio admin-account.</span>
+          </div>
+          <label for="admin-email">E-mailadres</label>
+          <input id="admin-email" type="email" autocomplete="username" value="info@maxwebstudio.nl" />
+          <label for="admin-password">Wachtwoord</label>
+          <input id="admin-password" type="password" autocomplete="current-password" placeholder="Wachtwoord" />
+          <div class="admin-profile-inline">
+            <button class="button primary" id="admin-login" type="button">Inloggen</button>
+            <button class="button secondary" id="admin-load" type="button">Laden</button>
+          </div>
+          <button class="button secondary" id="admin-session-logout" type="button" hidden>Uitloggen</button>
+          <p class="admin-form-message" id="admin-access-message" role="status"></p>
+        </article>
+        <article class="admin-card admin-token-card admin-developer-only">
+          <div>
+            <strong>Admin token fallback</strong>
+            <span>Alleen voor Developer Mode/nooddiagnose. Normaal gebruik loopt via Supabase Auth.</span>
           </div>
           <label for="admin-token">Admin token</label>
           <div class="admin-profile-inline">
             <input id="admin-token" type="password" autocomplete="off" placeholder="ADMIN_TOKEN" />
-            <button class="button secondary" id="admin-load" type="button">Laden</button>
+            <button class="button secondary" id="admin-token-load" type="button">Gebruik token</button>
           </div>
-          <p class="admin-form-message" id="admin-access-message" role="status"></p>
         </article>
       </aside>
 
@@ -326,7 +341,7 @@
               <article class="admin-card request-card request-state-card">
                 <div>
                   <strong>Klantdata niet geladen</strong>
-                  <span>Vul het admin-token in om CRM-data op te halen.</span>
+                  <span>Log in als admin om CRM-data op te halen.</span>
                 </div>
               </article>
             </div>
@@ -1460,7 +1475,7 @@
     </div>
 
     <script>
-      (() => {
+      (async () => {
         const crmEndpoint = "/.netlify/functions/admin-client-profiles";
         const customerOnboardingEndpoint = "/.netlify/functions/admin-customer-onboarding";
         const healthEndpoint = "/.netlify/functions/admin-website-health";
@@ -1471,9 +1486,11 @@
         const mollieSubscriptionActionEndpoint = "/.netlify/functions/admin-mollie-subscription-action";
         const subscriptionRetryEndpoint = "/.netlify/functions/admin-subscription-retry";
         const invoiceEmailEndpoint = "/.netlify/functions/admin-invoice-email";
+        const authConfigEndpoint = "/.netlify/functions/client-auth-config";
         const listEndpoint = "/.netlify/functions/list-change-requests";
         const updateEndpoint = "/.netlify/functions/update-change-request-status";
         const adminTokenStorageKey = "mws_admin_token";
+        const adminSessionStorageKey = "mws_admin_supabase_session";
         const crmCustomersStorageKey = "maxwebstudioCrmCustomers";
         const leadFinderStorageKey = "maxwebstudioLeadFinderLeads";
         const managedSitesStorageKey = "maxwebstudioManagedSites";
@@ -1689,6 +1706,7 @@
         ];
         const state = {
           adminToken: sessionStorage.getItem(adminTokenStorageKey) || "",
+          adminSession: null,
           customers: [],
           profiles: [],
           authUsers: [],
@@ -1728,6 +1746,12 @@
         };
 
         const adminTokenInput = document.getElementById("admin-token");
+        const adminEmailInput = document.getElementById("admin-email");
+        const adminPasswordInput = document.getElementById("admin-password");
+        const adminLoginButton = document.getElementById("admin-login");
+        const adminSessionLogoutButton = document.getElementById("admin-session-logout");
+        const adminSessionLabel = document.getElementById("admin-session-label");
+        const adminTokenLoadButton = document.getElementById("admin-token-load");
         const authSessionSummary = document.getElementById("auth-session-summary");
         const authSessionStatus = document.getElementById("auth-session-status");
         const authRoleSwitcher = document.getElementById("auth-role-switcher");
@@ -2337,7 +2361,7 @@
           openPortal: document.getElementById("demo-open-portal"),
         };
 
-        if (state.adminToken) adminTokenInput.value = state.adminToken;
+        if (state.adminToken && adminTokenInput) adminTokenInput.value = state.adminToken;
 
         function normalize(value) {
           return String(value || "").trim().toLowerCase().replace(/[_-]+/g, " ");
@@ -9260,6 +9284,180 @@
           adminAccessMessage.className = `admin-form-message ${type}`.trim();
         }
 
+        function renderAdminLockedState() {
+          state.customers = [];
+          state.profiles = [];
+          state.authUsers = [];
+          state.websites = [];
+          state.projects = [];
+          state.files = [];
+          state.quotes = [];
+          state.invoices = [];
+          state.subscriptions = [];
+          state.requests = [];
+          renderState(customerList, "Admin login nodig", "Log in als admin om klantdata te bekijken.", "Beveiligd", "status-warning");
+          renderState(websiteList, "Admin login nodig", "Log in als admin om websites te bekijken.", "Beveiligd", "status-warning");
+          renderState(projectList, "Admin login nodig", "Log in als admin om projecten te bekijken.", "Beveiligd", "status-warning");
+          renderState(quoteList, "Admin login nodig", "Log in als admin om offertes te bekijken.", "Beveiligd", "status-warning");
+          renderState(invoiceList, "Admin login nodig", "Log in als admin om facturen te bekijken.", "Beveiligd", "status-warning");
+          renderState(subscriptionList, "Admin login nodig", "Log in als admin om abonnementen te bekijken.", "Beveiligd", "status-warning");
+          renderState(requestList, "Admin login nodig", "Log in als admin om wijzigingsverzoeken te bekijken.", "Beveiligd", "status-warning");
+          totalLeadsMetric.textContent = "-";
+          totalCustomersMetric.textContent = "-";
+          liveWebsitesMetric.textContent = "-";
+          activeProjectsMetric.textContent = "-";
+          openQuotesMetric.textContent = "-";
+          openInvoicesLocalMetric.textContent = "-";
+          paidAmountMetric.textContent = "-";
+          subscriptionsDueMetric.textContent = "-";
+          recurringRevenueMetric.textContent = "-";
+          demoStatusMetric.textContent = "Login nodig";
+        }
+
+        function readStoredAdminSession() {
+          try {
+            const session = JSON.parse(localStorage.getItem(adminSessionStorageKey) || "{}");
+            if (!session?.accessToken || !session?.expiresAt) return null;
+            if (Number(session.expiresAt) <= Date.now() + 30000) return null;
+            return session;
+          } catch {
+            return null;
+          }
+        }
+
+        function storeAdminSession(session) {
+          localStorage.setItem(adminSessionStorageKey, JSON.stringify(session));
+          state.adminSession = session;
+          state.adminToken = session.accessToken;
+          sessionStorage.removeItem(adminTokenStorageKey);
+        }
+
+        function clearAdminSession() {
+          localStorage.removeItem(adminSessionStorageKey);
+          state.adminSession = null;
+          state.adminToken = "";
+          sessionStorage.removeItem(adminTokenStorageKey);
+          if (adminTokenInput) adminTokenInput.value = "";
+        }
+
+        function getAdminBearer() {
+          return state.adminSession?.accessToken || state.adminToken || "";
+        }
+
+        function updateAdminSessionUi() {
+          const email = state.adminSession?.email || "";
+          const loggedIn = Boolean(email && state.adminSession?.accessToken);
+          adminSessionLabel.textContent = loggedIn ? `Ingelogd als ${email}` : "Log in met je Max Webstudio admin-account.";
+          adminSessionLogoutButton.hidden = !loggedIn;
+          adminLoginButton.hidden = loggedIn;
+          adminEmailInput.disabled = loggedIn;
+          adminPasswordInput.disabled = loggedIn;
+          adminLoadButton.disabled = !loggedIn && !state.adminToken;
+        }
+
+        async function fetchAdminAuthConfig() {
+          const response = await fetch(authConfigEndpoint, { headers: { Accept: "application/json" } });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || !data.success || !data.supabaseUrl || !data.supabaseAnonKey) {
+            throw new Error(data.error || "Admin login-configuratie is niet beschikbaar.");
+          }
+          return data;
+        }
+
+        async function loginAdminSession() {
+          const email = adminEmailInput.value.trim().toLowerCase();
+          const password = adminPasswordInput.value;
+          if (!email || !password) {
+            setAdminAccessMessage("Vul je e-mailadres en wachtwoord in.", "error");
+            return;
+          }
+          adminLoginButton.disabled = true;
+          adminLoginButton.textContent = "Inloggen...";
+          setAdminAccessMessage("Admin sessie controleren...", "");
+          try {
+            const config = await fetchAdminAuthConfig();
+            const response = await fetch(`${config.supabaseUrl.replace(/\/$/, "")}/auth/v1/token?grant_type=password`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                apikey: config.supabaseAnonKey,
+              },
+              body: JSON.stringify({ email, password }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data.access_token || !data.user?.email) {
+              throw new Error(data.error_description || data.msg || data.error || "Inloggen is niet gelukt.");
+            }
+            storeAdminSession({
+              accessToken: data.access_token,
+              refreshToken: data.refresh_token || "",
+              email: String(data.user.email || email).toLowerCase(),
+              userId: data.user.id || "",
+              expiresAt: Date.now() + Number(data.expires_in || 3600) * 1000,
+            });
+            adminPasswordInput.value = "";
+            updateAdminSessionUi();
+            setAdminAccessMessage(`Ingelogd als ${state.adminSession.email}.`, "success");
+            await loadCRMData(true);
+          } catch (error) {
+            clearAdminSession();
+            updateAdminSessionUi();
+            setAdminAccessMessage(error.message || "Admin login is niet gelukt.", "error");
+          } finally {
+            adminLoginButton.disabled = false;
+            adminLoginButton.textContent = "Inloggen";
+          }
+        }
+
+        async function restoreAdminSession() {
+          const session = readStoredAdminSession();
+          if (!session) {
+            clearAdminSession();
+            updateAdminSessionUi();
+            return false;
+          }
+          state.adminSession = session;
+          state.adminToken = session.accessToken;
+          updateAdminSessionUi();
+          setAdminAccessMessage(`Ingelogd als ${session.email}.`, "success");
+          return true;
+        }
+
+        async function logoutAdminSession() {
+          const session = state.adminSession;
+          try {
+            if (session?.accessToken) {
+              const config = await fetchAdminAuthConfig();
+              await fetch(`${config.supabaseUrl.replace(/\/$/, "")}/auth/v1/logout`, {
+                method: "POST",
+                headers: {
+                  apikey: config.supabaseAnonKey,
+                  Authorization: `Bearer ${session.accessToken}`,
+                },
+              }).catch(() => {});
+            }
+          } finally {
+            clearAdminSession();
+            updateAdminSessionUi();
+            setAdminAccessMessage("Uitgelogd.", "success");
+          }
+        }
+
+        function useAdminTokenFallback() {
+          const token = adminTokenInput.value.trim();
+          if (!token) {
+            setAdminAccessMessage("Vul een admin-token in voor Developer Mode fallback.", "error");
+            return;
+          }
+          clearAdminSession();
+          state.adminToken = token;
+          sessionStorage.setItem(adminTokenStorageKey, token);
+          updateAdminSessionUi();
+          setAdminAccessMessage("Developer Mode admin-token actief voor deze sessie.", "success");
+          loadCRMData(true);
+        }
+
         function setDetailMessage(text, type = "") {
           detailMessage.textContent = text;
           detailMessage.className = `admin-form-message ${type}`.trim();
@@ -9373,12 +9571,12 @@
         }
 
         async function loadDashboardMetrics(showLoading = false) {
-          if (!state.adminToken) return;
+          if (!getAdminBearer()) return;
           if (showLoading) renderState(biActionList, "Dashboardmetrics laden...", "KPI's worden opgehaald.", "Laden", "status-prepared");
           try {
             const period = biPeriodFilter.value || "month";
             const response = await fetch(`${dashboardMetricsEndpoint}?period=${encodeURIComponent(period)}`, {
-              headers: { Accept: "application/json", Authorization: `Bearer ${state.adminToken}` },
+              headers: { Accept: "application/json", Authorization: `Bearer ${getAdminBearer()}` },
             });
             const data = await response.json().catch(() => ({}));
             if (!response.ok || !data.success) throw new Error(data.error || "Dashboardmetrics konden niet worden geladen.");
@@ -9806,8 +10004,8 @@
               sendWelcomeEmail: Boolean(newSendWelcomeEmail?.checked),
             };
 
-            const token = adminTokenInput.value.trim();
-            if (!token) throw new Error("Vul eerst het admin-token in.");
+            const token = getAdminBearer();
+            if (!token) throw new Error("Log eerst in als admin.");
 
             const response = await fetch(customerOnboardingEndpoint, {
               method: "POST",
@@ -10663,7 +10861,7 @@
         }
 
         async function loadWebsiteHealth(showLoading = false) {
-          if (!state.adminToken) {
+          if (!getAdminBearer()) {
             renderWebsiteHealth();
             return;
           }
@@ -10676,7 +10874,7 @@
 
           try {
             const response = await fetch(healthEndpoint, {
-              headers: { Accept: "application/json", Authorization: `Bearer ${state.adminToken}` },
+              headers: { Accept: "application/json", Authorization: `Bearer ${getAdminBearer()}` },
             });
             const data = await response.json().catch(() => ({}));
             if (!response.ok || !data.success) throw new Error(data.error || "Healthdata kon niet worden geladen.");
@@ -10699,7 +10897,7 @@
             headers: {
               "Content-Type": "application/json",
               Accept: "application/json",
-              Authorization: `Bearer ${state.adminToken}`,
+              Authorization: `Bearer ${getAdminBearer()}`,
             },
             body: JSON.stringify(payload),
           });
@@ -13184,7 +13382,7 @@
             headers: {
               "Content-Type": "application/json",
               Accept: "application/json",
-              Authorization: `Bearer ${state.adminToken}`,
+              Authorization: `Bearer ${getAdminBearer()}`,
             },
             body: JSON.stringify(payload),
           });
@@ -13849,7 +14047,7 @@
               headers: {
                 "Content-Type": "application/json",
                 Accept: "application/json",
-                Authorization: `Bearer ${state.adminToken}`,
+                Authorization: `Bearer ${getAdminBearer()}`,
               },
               body: JSON.stringify({ subscription_id: id }),
             });
@@ -13883,7 +14081,7 @@
               headers: {
                 "Content-Type": "application/json",
                 Accept: "application/json",
-                Authorization: `Bearer ${state.adminToken}`,
+                Authorization: `Bearer ${getAdminBearer()}`,
               },
               body: JSON.stringify({ action, subscription_id: id, ...extraPayload }),
             });
@@ -13917,7 +14115,7 @@
               headers: {
                 "Content-Type": "application/json",
                 Accept: "application/json",
-                Authorization: `Bearer ${state.adminToken}`,
+                Authorization: `Bearer ${getAdminBearer()}`,
               },
               body: JSON.stringify({ action, subscription_id: id, ...extraPayload }),
             });
@@ -14032,7 +14230,7 @@
                 headers: {
                   "Content-Type": "application/json",
                   Accept: "application/json",
-                  Authorization: `Bearer ${state.adminToken}`,
+                  Authorization: `Bearer ${getAdminBearer()}`,
                 },
                 body: JSON.stringify({ invoice_id: invoiceEmailTargetId(invoice) }),
               });
@@ -14164,7 +14362,7 @@
             headers: {
               "Content-Type": "application/json",
               Accept: "application/json",
-              Authorization: `Bearer ${state.adminToken}`,
+              Authorization: `Bearer ${getAdminBearer()}`,
             },
             body: JSON.stringify(payload),
           });
@@ -14185,7 +14383,7 @@
               headers: {
                 "Content-Type": "application/json",
                 Accept: "application/json",
-                Authorization: `Bearer ${state.adminToken}`,
+                Authorization: `Bearer ${getAdminBearer()}`,
               },
               body: JSON.stringify({ invoice_id: id, email_type: emailType }),
             });
@@ -14932,7 +15130,7 @@
           try {
             const response = await fetch(updateEndpoint, {
               method: "PATCH",
-              headers: { "Content-Type": "application/json", Accept: "application/json" },
+              headers: { "Content-Type": "application/json", Accept: "application/json", Authorization: `Bearer ${getAdminBearer()}` },
               body: JSON.stringify({ id: request.id, status: nextStatus }),
             });
             const data = await response.json().catch(() => ({}));
@@ -14953,10 +15151,16 @@
         }
 
         async function loadCRMData(showLoading = true) {
-          const token = adminTokenInput.value.trim();
+          const token = getAdminBearer();
+          if (!token) {
+            renderAdminLockedState();
+            updateAdminSessionUi();
+            setAdminAccessMessage("Log in als admin om CRM-data te laden.", "error");
+            return;
+          }
 
           state.adminToken = token;
-          if (token) sessionStorage.setItem(adminTokenStorageKey, token);
+          if (!state.adminSession && token) sessionStorage.setItem(adminTokenStorageKey, token);
           adminLoadButton.disabled = true;
           adminLoadButton.textContent = "Laden...";
           if (showLoading) setAdminAccessMessage("CRM-klanten laden...", "");
@@ -14996,7 +15200,8 @@
             populateFileOptions();
             populateQuoteOptions();
             renderDemoEnvironment();
-            if (state.adminToken) {
+            await loadChangeRequests();
+            if (getAdminBearer()) {
               await loadDashboardMetrics(false);
               await loadWebsiteHealth(false);
             }
@@ -15116,13 +15321,18 @@
           } finally {
             adminLoadButton.disabled = false;
             adminLoadButton.textContent = "Laden";
+            updateAdminSessionUi();
           }
         }
 
         async function loadChangeRequests() {
+          if (!getAdminBearer()) {
+            renderState(requestList, "Admin login nodig", "Log in als admin om wijzigingsverzoeken te bekijken.", "Beveiligd", "status-warning");
+            return;
+          }
           renderState(requestList, "Wijzigingsverzoeken laden...", "De nieuwste aanvragen worden opgehaald.", "Laden", "status-prepared");
           try {
-            const response = await fetch(listEndpoint, { headers: { Accept: "application/json" } });
+            const response = await fetch(listEndpoint, { headers: { Accept: "application/json", Authorization: `Bearer ${getAdminBearer()}` } });
             const data = await response.json().catch(() => ({}));
             if (!response.ok || !data.success) throw new Error(data.error || "Ophalen mislukt.");
             state.requests = Array.isArray(data.changeRequests) ? data.changeRequests : [];
@@ -15143,6 +15353,12 @@
         document.getElementById("new-quote").addEventListener("click", () => openQuoteModal());
         document.getElementById("new-invoice").addEventListener("click", () => openInvoiceModal());
         websiteHealthRefresh.addEventListener("click", () => loadWebsiteHealth(true));
+        adminLoginButton.addEventListener("click", loginAdminSession);
+        adminPasswordInput.addEventListener("keydown", (event) => {
+          if (event.key === "Enter") loginAdminSession();
+        });
+        adminSessionLogoutButton.addEventListener("click", logoutAdminSession);
+        adminTokenLoadButton.addEventListener("click", useAdminTokenFallback);
         adminLoadButton.addEventListener("click", () => loadCRMData(true));
         authSwitchRole.addEventListener("click", () => switchDemoRole(authRoleSwitcher.value));
         authLogout.addEventListener("click", logoutDemoSession);
@@ -15498,6 +15714,7 @@
         renderAiWizardUi();
         syncActiveNav();
         applyAccessControl();
+        await restoreAdminSession();
         loadChangeRequests();
         loadCRMData(false);
       })();

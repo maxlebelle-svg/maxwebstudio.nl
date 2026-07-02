@@ -1,3 +1,4 @@
+const { verifyAdmin } = require("./_admin-auth");
 const BASE_PROFILE_FIELDS = ["id", "auth_user_id", "name", "company", "website", "package", "created_at", "updated_at"];
 const CRM_PROFILE_FIELDS = [...BASE_PROFILE_FIELDS, "email", "phone", "status", "customer_since", "archived_at"];
 const REQUEST_FIELDS = ["first_name", "last_name", "company_name", "email", "phone", "website", "care_plan", "status", "auth_user_id", "created_at"].join(",");
@@ -35,7 +36,7 @@ exports.handler = async (event) => {
     return jsonResponse(405, { success: false, error: "Alleen GET- en POST-verzoeken zijn toegestaan." });
   }
 
-  const adminCheck = verifyAdmin(event);
+  const adminCheck = await verifyAdmin(event, jsonResponse);
   if (!adminCheck.success) return adminCheck.response;
 
   const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
@@ -137,20 +138,6 @@ exports.handler = async (event) => {
     });
   }
 };
-
-function verifyAdmin(event) {
-  const expectedToken = process.env.ADMIN_TOKEN;
-  const authHeader = event.headers.authorization || event.headers.Authorization || "";
-
-  if (!expectedToken || authHeader !== `Bearer ${expectedToken}`) {
-    return {
-      success: false,
-      response: jsonResponse(401, { success: false, error: "Niet geautoriseerd." }),
-    };
-  }
-
-  return { success: true };
-}
 
 function parsePayload(body) {
   try {

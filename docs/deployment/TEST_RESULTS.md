@@ -2333,3 +2333,27 @@ Nog handmatig testen:
 - controleren dat customer/website/project/quote/invoice/subscription data modes niet meer standaard op `Local` staan;
 - controleren dat het dashboard Supabase-data toont of veilig hybrid fallback meldt;
 - daarna pas Quantumbouw via de admin wizard registreren met welkomstmail uit.
+
+## Admin Supabase Auth Flow
+
+Datum: 2026-07-02
+
+Status: `READY FOR LIVE VALIDATION`
+
+Uitgevoerd:
+
+- admin-dashboard krijgt e-mail/wachtwoord login voor `info@maxwebstudio.nl`;
+- Supabase Auth access-token wordt als Bearer meegestuurd naar adminfuncties;
+- adminfuncties controleren server-side of de sessie hoort bij een toegestaan admin e-mailadres;
+- `ADMIN_TOKEN` blijft alleen Developer Mode fallback;
+- zonder geldige adminsessie blijven klant-, website-, project-, offerte-, factuur-, abonnement- en wijzigingsverzoekdata afgeschermd;
+- service-role blijft server-side.
+
+Nog handmatig testen:
+
+- live admin-dashboard openen;
+- inloggen met `info@maxwebstudio.nl`;
+- controleren dat `Ingelogd als info@maxwebstudio.nl` zichtbaar is;
+- CRM laden;
+- uitloggen;
+- controleren dat data weer afgeschermd is.

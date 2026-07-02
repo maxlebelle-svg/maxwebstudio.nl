@@ -1,3 +1,4 @@
+const { verifyAdmin } = require("./_admin-auth");
 const { sendEmail } = require("./email");
 
 const SUBSCRIPTION_FIELDS = [
@@ -43,7 +44,7 @@ exports.handler = async (event) => {
       return jsonResponse(405, { success: false, error: "Alleen POST-verzoeken zijn toegestaan." });
     }
 
-    const adminCheck = verifyAdmin(event);
+    const adminCheck = await verifyAdmin(event, jsonResponse);
     if (!adminCheck.success) return adminCheck.response;
 
     const config = readConfig();
@@ -175,15 +176,6 @@ async function syncSubscription(config, subscription) {
     message: "Retry-status is gesynchroniseerd.",
     subscription: normalizeSubscription(updatedSubscription),
   });
-}
-
-function verifyAdmin(event) {
-  const expectedToken = process.env.ADMIN_TOKEN;
-  const authHeader = event.headers.authorization || event.headers.Authorization || "";
-  if (!expectedToken || authHeader !== `Bearer ${expectedToken}`) {
-    return { success: false, response: jsonResponse(401, { success: false, error: "Niet geautoriseerd." }) };
-  }
-  return { success: true };
 }
 
 function readConfig() {

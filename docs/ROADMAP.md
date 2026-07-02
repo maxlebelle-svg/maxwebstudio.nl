@@ -3290,3 +3290,20 @@ Acceptatie:
 - systeemstatus toont Supabase als gekoppelde database;
 - nieuwe klantflow blijft server-side en schrijft niet naar localStorage tenzij expliciet Developer Mode/fallback;
 - Quantumbouw wordt pas ingevoerd nadat deze status groen is.
+
+## Admin Auth - Productiewaardige Toegang
+
+Status: `READY FOR VALIDATION`
+
+Doel:
+
+- admin-dashboard gebruiken zonder handmatig tokenveld;
+- inloggen met `info@maxwebstudio.nl` via Supabase Auth;
+- adminfuncties server-side beschermen met Supabase sessie + admin allowlist;
+- `ADMIN_TOKEN` alleen nog als Developer Mode/noodfallback houden.
+
+Volgende stappen:
+
+- Netlify production env controleren op `ADMIN_EMAILS=info@maxwebstudio.nl` of fallback gebruiken;
+- live admin-login testen;
+- daarna pas eerste klantrecord Quantumbouw aanmaken.
