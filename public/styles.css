@@ -8538,6 +8538,135 @@ h3 {
   border-bottom: 0;
 }
 
+.google-places-card {
+  grid-column: 2;
+}
+
+.google-places-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.google-places-search input {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid rgba(171, 196, 224, 0.22);
+  border-radius: 8px;
+  padding: 0 14px;
+  color: #f8fbff;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.045)),
+    rgba(8, 24, 38, 0.78);
+  font-weight: 800;
+}
+
+.google-places-content {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.9fr) minmax(260px, 1.1fr);
+  gap: 0;
+  overflow: hidden;
+  min-height: 300px;
+  border: 1px solid rgba(171, 196, 224, 0.16);
+  border-radius: 8px;
+  background: rgba(3, 12, 22, 0.55);
+}
+
+.google-places-result {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  color: rgba(255, 255, 255, 0.75);
+  background:
+    linear-gradient(180deg, rgba(7, 18, 31, 0.15), rgba(7, 18, 31, 0.78)),
+    radial-gradient(circle at 12% 4%, rgba(37, 99, 235, 0.22), transparent 34%);
+}
+
+.google-places-result > strong,
+.google-place-summary strong {
+  color: var(--white);
+  font-size: 18px;
+}
+
+.google-place-summary {
+  display: grid;
+  gap: 4px;
+}
+
+.google-place-summary span {
+  color: rgba(255, 255, 255, 0.82);
+  font-weight: 800;
+}
+
+.google-place-summary small {
+  color: rgba(255, 255, 255, 0.58);
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.google-place-details {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.google-place-details div {
+  display: grid;
+  gap: 2px;
+}
+
+.google-place-details dt {
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.google-place-details dd {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.86);
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.google-place-details a {
+  color: #8fb4ff;
+}
+
+.google-place-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: auto;
+}
+
+.google-place-actions .button {
+  min-height: 38px;
+  padding: 0 10px;
+  font-size: 13px;
+}
+
+.google-place-actions [data-google-place-action="takeover"] {
+  grid-column: 1 / -1;
+}
+
+.google-places-map {
+  min-height: 300px;
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.14), rgba(25, 194, 255, 0.08)),
+    rgba(255, 255, 255, 0.04);
+}
+
+.google-places-tip {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .admin-profile-actions {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -10933,6 +11062,18 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
     grid-template-columns: 1fr;
   }
 
+  .google-places-card {
+    grid-column: auto;
+  }
+
+  .google-places-content {
+    grid-template-columns: 1fr;
+  }
+
+  .google-places-map {
+    min-height: 260px;
+  }
+
   .website-choice-grid,
   .care-choice-grid,
   .onboarding-steps,
@@ -11378,6 +11519,16 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   .portal-change-request-form .button,
   .portal-message-form .button {
     width: 100%;
+  }
+
+  .google-places-search,
+  .google-place-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .google-places-content,
+  .google-places-map {
+    min-height: 240px;
   }
 
   .invoice-document-header {

@@ -312,6 +312,29 @@
                 <button class="button secondary danger" id="leadfinder-delete" type="button" disabled>Verwijderen</button>
               </div>
             </article>
+
+            <article class="admin-card google-places-card" id="google-places-panel">
+              <div class="admin-profile-form-heading">
+                <div>
+                  <strong>Bedrijf opzoeken via Google Maps</strong>
+                  <span>Zoek een bedrijf en haal adresgegevens automatisch op.</span>
+                </div>
+                <mark class="status-badge status-prepared" id="google-places-state">Niet geladen</mark>
+              </div>
+              <div class="google-places-search">
+                <input id="google-places-query" type="search" placeholder="Bedrijfsnaam + plaats" autocomplete="off" />
+                <button class="button primary" id="google-places-search" type="button">Zoeken</button>
+              </div>
+              <div class="google-places-content">
+                <div class="google-places-result" id="google-places-result">
+                  <strong>Geen bedrijf geselecteerd</strong>
+                  <span>Zoek bijvoorbeeld op “Quantumbouw Bodegraven”.</span>
+                </div>
+                <div class="google-places-map" id="google-places-map" aria-label="Google Maps bedrijfskaart"></div>
+              </div>
+              <p class="admin-form-message" id="google-places-message" role="status"></p>
+              <p class="google-places-tip">Tip: Klik op “Gegevens overnemen” om adres, telefoon, e-mail en website automatisch in te vullen.</p>
+            </article>
           </div>
 
           <div class="admin-filters leadfinder-filters" aria-label="Leadfinder filteren">
@@ -16210,11 +16233,23 @@
         createTask: document.getElementById("leadfinder-create-task"),
         convertCustomer: document.getElementById("leadfinder-convert-customer"),
         deleteLead: document.getElementById("leadfinder-delete"),
+        googlePanel: document.getElementById("google-places-panel"),
+        googleState: document.getElementById("google-places-state"),
+        googleQuery: document.getElementById("google-places-query"),
+        googleSearch: document.getElementById("google-places-search"),
+        googleResult: document.getElementById("google-places-result"),
+        googleMap: document.getElementById("google-places-map"),
+        googleMessage: document.getElementById("google-places-message"),
       };
 
       let selectedLeadFinderId = "";
       let leadfinderDataLayerLeads = [];
       let leadfinderSourceStatus = null;
+      let googlePlacesMap = null;
+      let googlePlacesService = null;
+      let googlePlacesMarker = null;
+      let googlePlacesPlace = null;
+      let googlePlacesReady = false;
 
       function escapeHtml(value) {
         return String(value || "").replace(/[&<>"']/g, (character) => ({
@@ -16242,6 +16277,18 @@
         if (!leadfinderElements.message) return;
         leadfinderElements.message.textContent = message;
         leadfinderElements.message.className = `admin-form-message ${type}`;
+      }
+
+      function setGooglePlacesMessage(message, type = "success") {
+        if (!leadfinderElements.googleMessage) return;
+        leadfinderElements.googleMessage.textContent = message;
+        leadfinderElements.googleMessage.className = `admin-form-message ${type}`;
+      }
+
+      function setGooglePlacesState(label, statusClass = "status-prepared") {
+        if (!leadfinderElements.googleState) return;
+        leadfinderElements.googleState.textContent = label;
+        leadfinderElements.googleState.className = `status-badge ${statusClass}`;
       }
 
       function currentLeadfinderDataMode() {
@@ -16296,6 +16343,255 @@
 
       function isLocalLead(lead = {}) {
         return !lead._source || lead._source === "local";
+      }
+
+      function developerModeActive() {
+        return typeof window.isDeveloperModeEnabled === "function" && window.isDeveloperModeEnabled();
+      }
+
+      function logGooglePlacesIssue(message, details = null) {
+        if (!developerModeActive()) return;
+        if (details) {
+          console.warn(message, details);
+        } else {
+          console.warn(message);
+        }
+      }
+
+      function loadGoogleMapsScript(apiKey) {
+        if (window.google?.maps?.places) return Promise.resolve();
+        const existing = document.querySelector("script[data-google-maps-loader]");
+        if (existing) {
+          return new Promise((resolve, reject) => {
+            existing.addEventListener("load", resolve, { once: true });
+            existing.addEventListener("error", reject, { once: true });
+          });
+        }
+        return new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places&language=nl&region=NL`;
+          script.async = true;
+          script.defer = true;
+          script.dataset.googleMapsLoader = "true";
+          script.addEventListener("load", resolve, { once: true });
+          script.addEventListener("error", reject, { once: true });
+          document.head.appendChild(script);
+        });
+      }
+
+      async function initGooglePlacesPanel() {
+        if (!leadfinderElements.googlePanel) return;
+        setGooglePlacesState("Laden", "status-planned");
+        try {
+          const response = await fetch("/.netlify/functions/google-maps-config", { headers: { Accept: "application/json" } });
+          const config = await response.json().catch(() => ({}));
+          if (!response.ok || !config.success || !config.googleMapsApiKey) {
+            setGooglePlacesState("Niet geconfigureerd", "status-prepared");
+            renderGooglePlacesEmpty("Google Maps is nog niet gekoppeld.", "Voeg VITE_GOOGLE_MAPS_API_KEY of GOOGLE_MAPS_API_KEY toe aan de omgeving.");
+            setGooglePlacesMessage("Google Maps API key ontbreekt. Voeg de key toe in Netlify env.", "error");
+            return;
+          }
+          await loadGoogleMapsScript(config.googleMapsApiKey);
+          const center = { lat: 52.1326, lng: 5.2913 };
+          googlePlacesMap = new window.google.maps.Map(leadfinderElements.googleMap, {
+            center,
+            zoom: 7,
+            mapTypeControl: false,
+            streetViewControl: false,
+            fullscreenControl: true,
+          });
+          googlePlacesService = new window.google.maps.places.PlacesService(googlePlacesMap);
+          googlePlacesReady = true;
+          setGooglePlacesState("Klaar", "status-active");
+          setGooglePlacesMessage("");
+        } catch (error) {
+          logGooglePlacesIssue("Google Maps kon niet worden geladen.", error);
+          setGooglePlacesState("Niet geladen", "status-blocked");
+          renderGooglePlacesEmpty("Google Maps kon niet worden geladen.", "Controleer de API key, domeinrestricties en ingeschakelde API’s.");
+          setGooglePlacesMessage("Google Maps kon niet worden geladen. Controleer de configuratie.", "error");
+        }
+      }
+
+      function renderGooglePlacesEmpty(title, body) {
+        if (!leadfinderElements.googleResult) return;
+        leadfinderElements.googleResult.innerHTML = `
+          <strong>${escapeHtml(title)}</strong>
+          <span>${escapeHtml(body)}</span>
+        `;
+      }
+
+      function searchGooglePlace() {
+        const query = String(leadfinderElements.googleQuery?.value || "").trim();
+        if (!query) {
+          setGooglePlacesMessage("Vul een bedrijfsnaam en plaats in.", "error");
+          return;
+        }
+        if (!googlePlacesReady || !googlePlacesService) {
+          setGooglePlacesMessage("Google Maps is nog niet klaar of niet geconfigureerd.", "error");
+          return;
+        }
+        setGooglePlacesState("Zoeken", "status-planned");
+        setGooglePlacesMessage("");
+        googlePlacesService.textSearch({
+          query,
+          region: "nl",
+          fields: ["place_id", "name", "formatted_address", "geometry", "rating", "user_ratings_total", "types", "business_status"],
+        }, (results, status) => {
+          if (status !== window.google.maps.places.PlacesServiceStatus.OK || !results?.length) {
+            logGooglePlacesIssue("Geen Google Places resultaat.", { status, query });
+            setGooglePlacesState("Geen resultaat", "status-prepared");
+            renderGooglePlacesEmpty("Geen resultaat gevonden", "Probeer bedrijfsnaam + plaats, bijvoorbeeld “Quantumbouw Bodegraven”.");
+            setGooglePlacesMessage("Geen bedrijf gevonden voor deze zoekopdracht.", "error");
+            return;
+          }
+          fetchGooglePlaceDetails(results[0].place_id);
+        });
+      }
+
+      function fetchGooglePlaceDetails(placeId) {
+        googlePlacesService.getDetails({
+          placeId,
+          fields: [
+            "place_id",
+            "name",
+            "formatted_address",
+            "formatted_phone_number",
+            "international_phone_number",
+            "website",
+            "url",
+            "rating",
+            "user_ratings_total",
+            "geometry",
+            "types",
+            "business_status",
+          ],
+        }, (place, status) => {
+          if (status !== window.google.maps.places.PlacesServiceStatus.OK || !place) {
+            logGooglePlacesIssue("Google Place details konden niet worden opgehaald.", { status, placeId });
+            setGooglePlacesState("Details fout", "status-blocked");
+            setGooglePlacesMessage("Bedrijfsgegevens konden niet worden opgehaald.", "error");
+            return;
+          }
+          googlePlacesPlace = place;
+          renderGooglePlace(place);
+          focusGooglePlaceOnMap(place);
+          setGooglePlacesState("Gevonden", "status-active");
+          setGooglePlacesMessage("Bedrijf gevonden. Controleer de gegevens en neem ze over als ze kloppen.", "success");
+        });
+      }
+
+      function focusGooglePlaceOnMap(place) {
+        const location = place.geometry?.location;
+        if (!googlePlacesMap || !location) return;
+        googlePlacesMap.setCenter(location);
+        googlePlacesMap.setZoom(15);
+        if (!googlePlacesMarker) {
+          googlePlacesMarker = new window.google.maps.Marker({ map: googlePlacesMap });
+        }
+        googlePlacesMarker.setPosition(location);
+        googlePlacesMarker.setTitle(place.name || "Gevonden bedrijf");
+      }
+
+      function renderGooglePlace(place) {
+        if (!leadfinderElements.googleResult) return;
+        const category = place.types?.[0] ? readablePlaceType(place.types[0]) : "Bedrijf";
+        const rating = place.rating ? `${place.rating.toLocaleString("nl-NL")} ★ (${place.user_ratings_total || 0})` : "Geen rating";
+        const phone = place.formatted_phone_number || place.international_phone_number || "Geen telefoon bekend";
+        const website = place.website || "";
+        leadfinderElements.googleResult.innerHTML = `
+          <div class="google-place-summary">
+            <strong>${escapeHtml(place.name || "Onbekend bedrijf")}</strong>
+            <span>${escapeHtml(rating)} · ${escapeHtml(category)}</span>
+            <small>${escapeHtml(place.formatted_address || "Geen adres bekend")}</small>
+          </div>
+          <dl class="google-place-details">
+            <div><dt>Telefoon</dt><dd>${escapeHtml(phone)}</dd></div>
+            <div><dt>Website</dt><dd>${website ? `<a href="${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">${escapeHtml(cleanDisplayUrl(website))}</a>` : "Geen website bekend"}</dd></div>
+          </dl>
+          <div class="google-place-actions">
+            ${place.url ? `<a class="button secondary" href="${escapeHtml(place.url)}" target="_blank" rel="noopener noreferrer">Route</a>` : ""}
+            ${place.url ? `<button class="button secondary" type="button" data-google-place-action="share">Delen</button>` : ""}
+            ${website ? `<a class="button secondary" href="${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">Website</a>` : ""}
+            <button class="button primary" type="button" data-google-place-action="takeover">Gegevens overnemen</button>
+          </div>
+        `;
+      }
+
+      function readablePlaceType(type) {
+        return String(type || "")
+          .replace(/_/g, " ")
+          .replace(/\b\w/g, (letter) => letter.toUpperCase());
+      }
+
+      function cleanDisplayUrl(url) {
+        return String(url || "").replace(/^https?:\/\//i, "").replace(/\/$/, "");
+      }
+
+      function extractCityFromAddress(address) {
+        const parts = String(address || "").split(",").map((part) => part.trim()).filter(Boolean);
+        if (parts.length >= 2) {
+          return parts[parts.length - 2].replace(/^\d{4}\s?[A-Z]{2}\s+/i, "").trim();
+        }
+        return "";
+      }
+
+      function setLeadFieldIfAllowed(field, value, overwrite) {
+        if (!field || !value) return false;
+        if (field.value && !overwrite) return false;
+        field.value = value;
+        field.dispatchEvent(new Event("input", { bubbles: true }));
+        field.dispatchEvent(new Event("change", { bubbles: true }));
+        return true;
+      }
+
+      function takeoverGooglePlace() {
+        const place = googlePlacesPlace;
+        if (!place) {
+          setGooglePlacesMessage("Zoek eerst een bedrijf op.", "error");
+          return;
+        }
+        const candidateValues = [
+          [leadfinderElements.company, place.name],
+          [leadfinderElements.region, extractCityFromAddress(place.formatted_address) || leadfinderElements.googleQuery?.value],
+          [leadfinderElements.phone, place.formatted_phone_number || place.international_phone_number],
+          [leadfinderElements.website, place.website],
+          [leadfinderElements.source, "Google Maps"],
+        ];
+        const hasFilledFields = candidateValues.some(([field, value]) => field?.value && value && field.value !== value);
+        const overwrite = hasFilledFields
+          ? window.confirm("Sommige velden zijn al ingevuld. Wil je deze overschrijven?")
+          : false;
+        candidateValues.forEach(([field, value]) => setLeadFieldIfAllowed(field, value, overwrite));
+        const details = [
+          place.url ? `Google Maps: ${place.url}` : "",
+          place.formatted_address ? `Adres: ${place.formatted_address}` : "",
+          place.rating ? `Rating: ${place.rating} (${place.user_ratings_total || 0} reviews)` : "",
+          place.business_status ? `Status: ${place.business_status}` : "",
+        ].filter(Boolean).join("\n");
+        const currentNotes = String(leadfinderElements.notes?.value || "").trim();
+        if (leadfinderElements.notes && details && (!currentNotes.includes(place.url || details))) {
+          leadfinderElements.notes.value = [currentNotes, details].filter(Boolean).join("\n\n");
+        }
+        if (leadfinderElements.websiteStatus && (!leadfinderElements.websiteStatus.value || leadfinderElements.websiteStatus.value === "onbekend")) {
+          leadfinderElements.websiteStatus.value = place.website ? "onbekend" : "geen_website";
+        }
+        setGooglePlacesMessage("Gegevens overgenomen in het leadformulier. E-mail blijft leeg als Google die niet levert.", "success");
+      }
+
+      async function handleGooglePlaceResultClick(event) {
+        const action = event.target.closest("[data-google-place-action]")?.dataset.googlePlaceAction;
+        if (!action) return;
+        if (action === "takeover") {
+          takeoverGooglePlace();
+        }
+        if (action === "share" && googlePlacesPlace?.url) {
+          try {
+            await navigator.clipboard.writeText(googlePlacesPlace.url);
+            setGooglePlacesMessage("Google Maps link gekopieerd.", "success");
+          } catch (error) {
+            setGooglePlacesMessage("Kopiëren lukte niet. Open de Google Maps routeknop.", "error");
+          }
+        }
       }
 
       function renderLeadfinderMetrics(leads) {
@@ -16594,6 +16890,15 @@
         });
         leadfinderElements.convertCustomer?.addEventListener("click", convertSelectedLeadToCustomer);
         leadfinderElements.deleteLead?.addEventListener("click", deleteSelectedLead);
+        leadfinderElements.googleSearch?.addEventListener("click", searchGooglePlace);
+        leadfinderElements.googleQuery?.addEventListener("keydown", (event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            searchGooglePlace();
+          }
+        });
+        leadfinderElements.googleResult?.addEventListener("click", handleGooglePlaceResultClick);
+        await initGooglePlacesPanel();
       }
 
       initLeadfinder();
