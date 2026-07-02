@@ -2075,3 +2075,34 @@ Niet inbegrepen:
 - PDF-generatie backend;
 - factuurmail;
 - nieuwe dependencies.
+
+## Sprint 3F - Invoice Mail And Portal Completion
+
+Datum: 2026-07-02
+
+Status: `IMPLEMENTED / CHECKS PASS`
+
+Scope:
+
+- factuurmail-template aangepast naar professionele factuurpagina;
+- adminactie `Factuur mailen` toegevoegd;
+- lokale/demo-factuurmailpreview toegevoegd;
+- klantportaalfactuur-CTA verduidelijkt.
+
+Checks:
+
+- `git diff --check`: PASS;
+- `node --check public/script.js`: PASS;
+- `node --check public/src/services/leadFinderService.js`: PASS;
+- `node --check functions/admin-invoice-email.js`: PASS;
+- inline scriptcheck `public/admin-dashboard.html`: PASS;
+- inline scriptcheck `public/factuur.html`: PASS;
+- inline scriptcheck `public/klantportaal.html`: PASS;
+- secrets-scan: PASS, alleen bekende false positive in storage readiness tekst.
+
+Niet inbegrepen:
+
+- SQL;
+- Mollie;
+- backend-PDF;
+- automatische betaling.

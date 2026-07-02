@@ -777,7 +777,7 @@
           text.textContent = financeExplanation(type, item);
           actions.className = "portal-actions";
           actions.append(
-            createActionLink("Bekijk details", type === "quote" ? quoteUrl(item) : invoiceUrl(item)),
+            createActionLink(type === "quote" ? "Bekijk offerte" : "Bekijk/print factuur", type === "quote" ? quoteUrl(item) : invoiceUrl(item)),
             createDemoButton(type === "quote" ? "Akkoord geven" : "Betaal later"),
             createDemoButton(type === "quote" ? "Leg offerte uit" : "Leg factuur uit")
           );

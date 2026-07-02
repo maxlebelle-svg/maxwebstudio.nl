@@ -1383,6 +1383,7 @@
             <button class="button secondary" id="invoice-demo-payment" type="button">Verstuur betaalverzoek demo</button>
             <a class="button secondary is-disabled" id="invoice-open-view" href="#" target="_blank" rel="noopener" aria-disabled="true">Open factuurpagina</a>
             <button class="button secondary" id="invoice-copy-view" type="button">Kopieer factuurlink</button>
+            <button class="button secondary" id="invoice-send-email" type="button">Factuur mailen</button>
             <a class="button secondary is-disabled" id="invoice-open-payment" href="#" target="_blank" rel="noopener" aria-disabled="true">Open betaalpagina</a>
             <button class="button secondary" id="invoice-open-quote" type="button">Open offerte</button>
             <button class="button secondary" id="invoice-open-subscription" type="button">Open abonnement</button>
@@ -2111,6 +2112,7 @@
         const invoiceDemoPayment = document.getElementById("invoice-demo-payment");
         const invoiceOpenView = document.getElementById("invoice-open-view");
         const invoiceCopyView = document.getElementById("invoice-copy-view");
+        const invoiceSendEmail = document.getElementById("invoice-send-email");
         const invoiceOpenPayment = document.getElementById("invoice-open-payment");
         const invoiceOpenQuote = document.getElementById("invoice-open-quote");
         const invoiceOpenSubscription = document.getElementById("invoice-open-subscription");
@@ -9006,6 +9008,11 @@
             mollieCheckoutUrl: invoice.paymentLink || invoice.mollieCheckoutUrl || invoicePaymentUrl(id),
             paymentStatus: normalizeInvoiceStatus(invoice.paymentStatus || invoice.molliePaymentStatus || invoice.status),
             pdfFilePath: invoice.pdfFilePath || "",
+            emailSentAt: invoice.emailSentAt || invoice.email_sent_at || "",
+            paymentReminderSentAt: invoice.paymentReminderSentAt || invoice.payment_reminder_sent_at || "",
+            paidEmailSentAt: invoice.paidEmailSentAt || invoice.paid_email_sent_at || "",
+            expiredEmailSentAt: invoice.expiredEmailSentAt || invoice.expired_email_sent_at || "",
+            emailLastError: invoice.emailLastError || invoice.email_last_error || "",
             notes: String(invoice.notes || "").trim(),
             sourceQuoteId: invoice.sourceQuoteId || "",
             sourceQuoteNumber: invoice.sourceQuoteNumber || "",
@@ -12101,12 +12108,13 @@
         }
 
         function invoiceEmailTypeLabel(value) {
+          const key = String(value || "").trim().toLowerCase();
           return {
             invoice_sent: "Factuurmail",
             payment_reminder: "Herinnering",
             paid_confirmation: "Betaalbevestiging",
             expired_notice: "Verlopenmelding",
-          }[normalize(value)] || value || "E-mail";
+          }[key] || value || "E-mail";
         }
 
         function createInvoiceEmailSummary(invoice) {
@@ -12145,6 +12153,100 @@
             actions.push({ type: "expired_notice", label: "Verstuur verlopenmelding" });
           }
           return actions;
+        }
+
+        function invoiceEmailTimestampField(emailType) {
+          const key = String(emailType || "").trim().toLowerCase();
+          return {
+            invoice_sent: "emailSentAt",
+            payment_reminder: "paymentReminderSentAt",
+            paid_confirmation: "paidEmailSentAt",
+            expired_notice: "expiredEmailSentAt",
+          }[key] || "emailSentAt";
+        }
+
+        function isUuid(value) {
+          return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i.test(String(value || ""));
+        }
+
+        function invoiceEmailTargetId(invoice) {
+          const candidates = [invoice?.supabaseInvoiceId, invoice?._supabaseInvoiceId, invoice?.id];
+          return candidates.find(isUuid) || "";
+        }
+
+        function invoicePublicUrl(invoice) {
+          const id = invoice?.supabaseInvoiceId || invoice?._supabaseInvoiceId || invoice?.id || "";
+          return id ? `${window.location.origin}${invoiceViewUrl(id)}` : `${window.location.origin}/factuur.html`;
+        }
+
+        function buildInvoiceMailPreview(invoice, emailType = "invoice_sent") {
+          const customerName = invoice.customerName || invoice.customerCompany || "beste klant";
+          const invoiceNumber = invoice.invoiceNumber || "je factuur";
+          const amount = money(invoice.total || invoice.amount || 0);
+          const dueDate = invoice.dueDate ? `\nVervaldatum: ${formatDate(invoice.dueDate)}.` : "";
+          const link = invoicePublicUrl(invoice);
+          const subjectMap = {
+            invoice_sent: `Factuur ${invoiceNumber} van Max Webstudio`,
+            payment_reminder: `Herinnering factuur ${invoiceNumber} - Max Webstudio`,
+            paid_confirmation: `Betaling ontvangen voor factuur ${invoiceNumber}`,
+            expired_notice: `Factuur ${invoiceNumber} is verlopen`,
+          };
+          const introMap = {
+            invoice_sent: "Er staat een nieuwe factuur voor je klaar.",
+            payment_reminder: "Dit is een vriendelijke herinnering voor je openstaande factuur.",
+            paid_confirmation: "Bedankt, we hebben je betaling ontvangen.",
+            expired_notice: "Deze factuur staat als verlopen geregistreerd.",
+          };
+          const body = [
+            `Hallo ${customerName},`,
+            "",
+            introMap[emailType] || introMap.invoice_sent,
+            "",
+            `Factuur: ${invoiceNumber}`,
+            `Omschrijving: ${invoice.title || invoice.type || "Factuur"}`,
+            `Bedrag: ${amount}.${dueDate}`,
+            "",
+            `Bekijk je factuur hier: ${link}`,
+            "",
+            "Met vriendelijke groet,",
+            "Max Webstudio",
+          ].join("\n");
+          return {
+            subject: subjectMap[emailType] || subjectMap.invoice_sent,
+            body,
+            link,
+          };
+        }
+
+        function createLocalInvoiceEmailPreview(invoice, emailType = "invoice_sent") {
+          const preview = buildInvoiceMailPreview(invoice, emailType);
+          const now = new Date().toISOString();
+          const emails = parseLocalStorageValue(demoEmailsStorageKey).value;
+          const rows = Array.isArray(emails) ? emails : [];
+          const email = {
+            id: `invoice-mail-preview-${Date.now()}`,
+            customerId: invoice.profileId || invoice.customerId || "",
+            type: emailType,
+            subject: preview.subject,
+            to: invoice.customerEmail || "",
+            body: preview.body,
+            status: "concept/preview",
+            invoiceId: invoice.id,
+            invoiceNumber: invoice.invoiceNumber || "",
+            invoiceUrl: preview.link,
+            createdAt: now,
+          };
+          localStorage.setItem(demoEmailsStorageKey, JSON.stringify([email, ...rows]));
+          const field = invoiceEmailTimestampField(emailType);
+          const saved = saveInvoiceLocally({
+            ...invoice,
+            [field]: now,
+            emailLastError: "",
+          });
+          state.invoices = readStoredInvoices();
+          renderInvoices();
+          renderDemoEmailInbox();
+          return saved;
         }
 
         function populateBillingProfileOptions(select) {
@@ -12993,12 +13095,17 @@
             viewInvoice.target = "_blank";
             viewInvoice.rel = "noopener";
             viewInvoice.textContent = "Open factuur";
+            const sendEmail = document.createElement("button");
+            sendEmail.className = "button secondary";
+            sendEmail.type = "button";
+            sendEmail.textContent = "Factuur mailen";
+            sendEmail.addEventListener("click", () => sendInvoiceMailOrPreview(invoice.id, "invoice_sent", sendEmail));
             const cancel = document.createElement("button");
             cancel.className = "button secondary danger";
             cancel.type = "button";
             cancel.textContent = "Annuleer";
             cancel.addEventListener("click", () => cancelInvoice(invoice.id));
-            actions.append(edit, viewInvoice, markPaid, markSent, payment);
+            actions.append(edit, viewInvoice, sendEmail, markPaid, markSent, payment);
             if (invoice.paymentLink) {
               const checkout = document.createElement("a");
               checkout.className = "button secondary";
@@ -13270,6 +13377,7 @@
           invoiceCancel.disabled = invoice?.status === "gearchiveerd";
           invoiceMarkSent.disabled = invoice?.status === "verzonden" || invoice?.status === "betaald" || invoice?.status === "gearchiveerd";
           invoiceMarkPaid.disabled = invoice?.status === "betaald" || invoice?.status === "gearchiveerd";
+          invoiceSendEmail.disabled = !invoice || invoice?.status === "gearchiveerd";
           setBillingMessage(invoiceMessage, "", "");
           invoiceModal.hidden = false;
           document.body.classList.add("admin-modal-open");
@@ -14026,6 +14134,32 @@
             setAdminAccessMessage(data.message || `${invoiceEmailTypeLabel(emailType)} verzonden.`, "success");
           } catch (error) {
             setAdminAccessMessage(error.message || `${invoiceEmailTypeLabel(emailType)} kon niet worden verzonden.`, "error");
+          } finally {
+            button.disabled = false;
+            button.textContent = originalText;
+          }
+        }
+
+        async function sendInvoiceMailOrPreview(id, emailType = "invoice_sent", button = invoiceSendEmail) {
+          const invoice = invoiceById(id);
+          if (!invoice) {
+            setBillingMessage(invoiceMessage, "Factuur niet gevonden.", "error");
+            return;
+          }
+          const targetId = invoiceEmailTargetId(invoice);
+          if (targetId && isSupabaseManagedInvoice(invoice)) {
+            await sendInvoiceEmail(targetId, emailType, button);
+            return;
+          }
+          const originalText = button.textContent;
+          button.disabled = true;
+          button.textContent = "Concept maken...";
+          try {
+            createLocalInvoiceEmailPreview(invoice, emailType);
+            setBillingMessage(invoiceMessage, "Factuurmail als concept klaargezet in de demo e-mail inbox.", "success");
+            setAdminAccessMessage("Factuurmail-preview klaargezet. Er is geen echte e-mail verzonden.", "success");
+          } catch (error) {
+            setBillingMessage(invoiceMessage, error.message || "Factuurmail kon niet worden voorbereid.", "error");
           } finally {
             button.disabled = false;
             button.textContent = originalText;
@@ -15121,6 +15255,9 @@
           const invoice = invoiceById(state.selectedInvoiceId);
           const link = invoice?.id ? invoiceViewUrl(invoice.id) : "";
           if (link) copyText(link, "Factuurlink gekopieerd.", (text, type) => setBillingMessage(invoiceMessage, text, type));
+        });
+        invoiceSendEmail.addEventListener("click", () => {
+          if (state.selectedInvoiceId) sendInvoiceMailOrPreview(state.selectedInvoiceId, "invoice_sent", invoiceSendEmail);
         });
         invoiceOpenQuote.addEventListener("click", openQuoteFromInvoice);
         invoiceOpenSubscription.addEventListener("click", openSubscriptionFromInvoice);

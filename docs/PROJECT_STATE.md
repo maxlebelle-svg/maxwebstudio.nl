@@ -3859,3 +3859,30 @@ Veiligheidsstatus:
 - geen nieuwe backend;
 - geen nieuwe dependencies;
 - bestaande betaal/demo-flow blijft apart beschikbaar.
+
+## Sprint 3F - Invoice Mail And Portal Completion
+
+Status: `IMPLEMENTED / MAIL MVP`
+
+Doel:
+
+- factuurmail voorbereiden rond de professionele factuurpagina;
+- klanten via mail en klantportaal naar dezelfde factuurlink sturen;
+- nog geen Mollie-betaling of backend-PDF toevoegen.
+
+Opgeleverd:
+
+- `functions/admin-invoice-email.js` gebruikt nu `/factuur.html?supabaseInvoiceId=...` als primaire factuurlink;
+- adminfacturen hebben een actie `Factuur mailen`;
+- Supabase-facturen kunnen via de bestaande server-side mailfunctie worden verstuurd;
+- lokale/demo-facturen maken een mailpreview in de demo e-mail inbox;
+- klantportaal benoemt facturen als `Bekijk/print factuur`.
+
+Veiligheidsstatus:
+
+- service-role blijft server-side;
+- Resend-key blijft server-side;
+- geen Mollie;
+- geen PDF-generatie backend;
+- geen SQL;
+- geen automatische betaling.

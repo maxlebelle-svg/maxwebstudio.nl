@@ -179,6 +179,7 @@ function buildInvoiceEmail(emailType, invoice, profile) {
   const amount = formatMoney(invoice.amount);
   const dueDate = formatDate(invoice.due_date);
   const portalUrl = absoluteUrl("/client-dashboard.html");
+  const invoiceUrl = absoluteUrl(`/factuur.html?supabaseInvoiceId=${encodeURIComponent(invoice.id)}`);
   const payUrl = cleanText(invoice.mollie_checkout_url);
   const hasPdf = Boolean(cleanText(invoice.pdf_file_path));
   const footer = [
@@ -193,7 +194,8 @@ function buildInvoiceEmail(emailType, invoice, profile) {
       `Dit is een vriendelijke herinnering voor factuur ${invoiceNumber}: ${title}.`,
       `Bedrag: ${amount}.`,
       dueDate ? `Vervaldatum: ${dueDate}.` : "",
-      payUrl ? `Je kunt de factuur hier betalen: ${payUrl}` : `Je kunt de factuur bekijken in je klantportaal: ${portalUrl}`,
+      `Bekijk de factuur hier: ${invoiceUrl}`,
+      payUrl ? `Betaallink, indien van toepassing: ${payUrl}` : "",
       hasPdf ? `De PDF staat veilig klaar in je klantportaal: ${portalUrl}` : "",
       "",
       "Heb je de betaling net voldaan? Dan mag je deze herinnering negeren.",
@@ -203,7 +205,7 @@ function buildInvoiceEmail(emailType, invoice, profile) {
     return {
       subject: `Herinnering factuur ${invoiceNumber} - Max Web Studio`,
       text,
-      html: renderEmailHtml("Betalingsherinnering", text, payUrl, portalUrl),
+      html: renderEmailHtml("Betalingsherinnering", text, invoiceUrl),
     };
   }
 
@@ -221,7 +223,7 @@ function buildInvoiceEmail(emailType, invoice, profile) {
     return {
       subject: `Betaling ontvangen voor factuur ${invoiceNumber}`,
       text,
-      html: renderEmailHtml("Betaling ontvangen", text, "", portalUrl),
+      html: renderEmailHtml("Betaling ontvangen", text, invoiceUrl),
     };
   }
 
@@ -232,7 +234,8 @@ function buildInvoiceEmail(emailType, invoice, profile) {
       `Factuur ${invoiceNumber} staat als verlopen geregistreerd.`,
       `Factuur: ${title}.`,
       `Bedrag: ${amount}.`,
-      payUrl ? `Als de betaallink nog actief is, kun je hier betalen: ${payUrl}` : `Bekijk de factuur in je klantportaal: ${portalUrl}`,
+      `Bekijk de factuur hier: ${invoiceUrl}`,
+      payUrl ? `Betaallink, indien van toepassing: ${payUrl}` : "",
       "Neem gerust contact met ons op als de betaling al onderweg is of als je vragen hebt.",
       "",
       footer,
@@ -240,7 +243,7 @@ function buildInvoiceEmail(emailType, invoice, profile) {
     return {
       subject: `Factuur ${invoiceNumber} is verlopen`,
       text,
-      html: renderEmailHtml("Factuur verlopen", text, payUrl, portalUrl),
+      html: renderEmailHtml("Factuur verlopen", text, invoiceUrl),
     };
   }
 
@@ -251,7 +254,8 @@ function buildInvoiceEmail(emailType, invoice, profile) {
     `Factuur: ${title}.`,
     `Bedrag: ${amount}.`,
     dueDate ? `Vervaldatum: ${dueDate}.` : "",
-    payUrl ? `Je kunt de factuur direct betalen via deze betaallink: ${payUrl}` : `Je kunt de factuur bekijken in je klantportaal: ${portalUrl}`,
+    `Bekijk de factuur hier: ${invoiceUrl}`,
+    payUrl ? `Betaallink, indien van toepassing: ${payUrl}` : "",
     hasPdf ? `De factuur-PDF staat veilig klaar in je klantportaal: ${portalUrl}` : "",
     "",
     footer,
@@ -260,14 +264,13 @@ function buildInvoiceEmail(emailType, invoice, profile) {
   return {
     subject: `Factuur ${invoiceNumber} van Max Web Studio`,
     text,
-    html: renderEmailHtml("Nieuwe factuur", text, payUrl, portalUrl),
+    html: renderEmailHtml("Nieuwe factuur", text, invoiceUrl),
   };
 }
 
-function renderEmailHtml(heading, text, payUrl, portalUrl) {
+function renderEmailHtml(heading, text, actionUrl) {
   const paragraphs = text.split("\n").map((line) => line.trim()).filter(Boolean);
-  const actionUrl = payUrl || portalUrl;
-  const actionLabel = payUrl ? "Betaal factuur" : "Open klantportaal";
+  const actionLabel = "Bekijk factuur";
 
   return `
     <div style="margin:0;padding:0;background:#07111f;color:#eaf1ff;font-family:Arial,sans-serif;">

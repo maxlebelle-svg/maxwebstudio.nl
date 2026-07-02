@@ -3107,3 +3107,27 @@ Nog niet:
 - server-side PDF-generatie;
 - e-mailverzending van facturen;
 - automatische factuur na offerte-akkoord.
+
+## Sprint 3F - Invoice Mail And Portal Completion
+
+Status: `IMPLEMENTED / MAIL MVP`
+
+Doel:
+
+- factuurmail toevoegen aan de commerciële flow zonder betaalautomatisering;
+- de klant steeds naar dezelfde professionele factuurpagina sturen.
+
+Opgeleverd:
+
+- factuurmail-template verwijst naar `/factuur.html`;
+- adminactie `Factuur mailen`;
+- lokale/demo-factuurmailpreview;
+- server-side verzending blijft alleen voor Supabase-facturen via bestaande function;
+- klantportaal CTA verduidelijkt naar `Bekijk/print factuur`.
+
+Nog niet:
+
+- Mollie;
+- automatische incasso;
+- server-side PDF;
+- automatische factuurmail na offerte-akkoord.
