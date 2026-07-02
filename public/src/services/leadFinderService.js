@@ -92,6 +92,7 @@ export function normalizeLeadFinderLead(lead = {}) {
     source: sanitizeString(lead.source) || "handmatig",
     googlePlaceId: sanitizeString(lead.googlePlaceId || lead.google_place_id || lead.placeId),
     googleMapsUrl: sanitizeString(lead.googleMapsUrl || lead.google_maps_url || lead.mapsUrl),
+    websiteAnalysis: lead.websiteAnalysis && typeof lead.websiteAnalysis === "object" ? lead.websiteAnalysis : null,
     convertedCustomerId: sanitizeString(lead.convertedCustomerId),
     createdAt,
     updatedAt: sanitizeString(lead.updatedAt) || createdAt,
