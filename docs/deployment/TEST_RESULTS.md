@@ -1961,3 +1961,25 @@ Nog handmatig te valideren na deploy:
 - klant opent de activatielink;
 - klant stelt wachtwoord in;
 - klant logt in en ziet eigen portaal.
+
+Live test:
+
+- Netlify production deploy gecontroleerd: PASS;
+- live admin wizard bevat `Welkomstmail direct versturen via Resend`: PASS;
+- interne testklant met unieke `test+resend-*` mail aangemaakt: PASS;
+- Auth/profile/customer/website/project provisioning: PASS;
+- Resend verzendstatus in admin: PASS, welkomstmail is verzonden;
+- service-role zichtbaar in frontend: PASS, niet zichtbaar;
+- Resend API key zichtbaar in frontend: PASS, niet zichtbaar;
+- admin token zichtbaar in DOM: PASS, niet zichtbaar.
+
+Open:
+
+- inboxontvangst handmatig controleren;
+- activatielink openen;
+- wachtwoord instellen;
+- login/portal/logout valideren.
+
+Fix na live check:
+
+- admin AI Website Wizard service-loader robuuster gemaakt zodat de live adminconsole geen fout geeft wanneer de service als object-export geladen wordt.

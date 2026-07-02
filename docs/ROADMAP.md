@@ -3011,3 +3011,9 @@ Niet inbegrepen:
 - AI;
 - Sales Portal;
 - live lead automation.
+
+Live status:
+
+- productie-admin bevat de Resend-uitnodigingsoptie;
+- eerste interne live provisioning met Resend-verzendstatus is geslaagd;
+- handmatige inbox-, activatie-, login- en logoutcontrole is de laatste Sprint 3C-validatie.

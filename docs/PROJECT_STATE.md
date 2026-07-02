@@ -3750,3 +3750,11 @@ Volgende stap:
 - deployen;
 - één interne klant aanmaken met live welkomstmail actief;
 - ontvangst, activatielink, wachtwoord instellen, login en logout valideren.
+
+Live test update:
+
+- Sprint 3C is live gedeployed;
+- interne testklant met unieke `test+resend-*` mail aangemaakt;
+- adminmelding bevestigt dat de welkomstmail via Resend is verzonden;
+- frontend secrets-check groen: geen service-role, Resend API key of admin-token zichtbaar;
+- inboxontvangst en activatielink blijven handmatige eindvalidatie.

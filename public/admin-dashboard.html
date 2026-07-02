@@ -3455,7 +3455,8 @@
 
         async function loadAiWizardService() {
           if (state.aiWizardService) return state.aiWizardService;
-          state.aiWizardService = await import("./src/services/aiWebsiteWizardService.js");
+          const serviceModule = await import("./src/services/aiWebsiteWizardService.js");
+          state.aiWizardService = serviceModule.aiWebsiteWizardService || serviceModule;
           return state.aiWizardService;
         }
 
