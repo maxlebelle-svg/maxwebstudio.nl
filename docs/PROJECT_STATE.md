@@ -3758,3 +3758,27 @@ Live test update:
 - adminmelding bevestigt dat de welkomstmail via Resend is verzonden;
 - frontend secrets-check groen: geen service-role, Resend API key of admin-token zichtbaar;
 - inboxontvangst en activatielink blijven handmatige eindvalidatie.
+
+## Admin Portal Simplification Sprint
+
+Status: `IMPLEMENTED / UX CLEANUP`
+
+Doel:
+
+- het adminportaal terugbrengen naar een rustige dagelijkse werkruimte;
+- toekomstige modules, demo-tools, readinesschecks en technische instellingen standaard uit beeld halen.
+
+Opgeleverd:
+
+- hoofdstructuur aangescherpt naar Dashboard, Sales, Klanten, Websites, Projecten, Offertes, Facturen, Instellingen en Developer Mode;
+- dagelijkse acties bovenaan toegevoegd: nieuwe lead, nieuwe klant, open leads, actieve klanten, lopende projecten, open offertes en open facturen;
+- Developer Mode verbergt standaard BI, workflow/readiness, wijzigingsverzoeken, bestanden, onderhoud, AI-testblokken, integraties, data-provider mode en demo-omgeving;
+- bestaande functionaliteit blijft aanwezig en bereikbaar zodra Developer Mode aan staat;
+- klant-aanmaak wizard blijft prominent beschikbaar.
+
+Veiligheidsstatus:
+
+- geen SQL;
+- geen backendwijziging;
+- geen feature-uitbreiding;
+- alleen structuur, zichtbaarheid en UX-polish.

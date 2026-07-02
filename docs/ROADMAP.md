@@ -3017,3 +3017,19 @@ Live status:
 - productie-admin bevat de Resend-uitnodigingsoptie;
 - eerste interne live provisioning met Resend-verzendstatus is geslaagd;
 - handmatige inbox-, activatie-, login- en logoutcontrole is de laatste Sprint 3C-validatie.
+
+## Admin Portal Simplification Sprint
+
+Status: `IMPLEMENTED / DAILY WORKSPACE FIRST`
+
+Doel:
+
+- het adminportaal geschikt maken voor dagelijks gebruik;
+- lange technische/demo/readiness-blokken niet langer standaard tonen.
+
+Opgeleverd:
+
+- compacte navigatie met negen hoofditems;
+- dagelijkse actiestrook bovenaan het dashboard;
+- technische en toekomstige modules standaard achter Developer Mode;
+- bestaande modules behouden zonder nieuwe backend of SQL.

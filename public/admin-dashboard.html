@@ -24,29 +24,18 @@
           <span>Max CRM</span>
         </a>
         <nav class="admin-sidebar-nav">
-          <span class="admin-nav-group">Dashboard</span>
-          <a href="#dashboard">Overzicht</a>
-          <a href="#workflow">Workflow</a>
-          <span class="admin-nav-group">Sales</span>
-          <a href="#leadfinder">Leadfinder</a>
-          <a href="#wijzigingsverzoeken">Leads</a>
-          <a href="#klanten">CRM-klanten</a>
-          <a href="#offertes">Offertes</a>
-          <a href="#facturen">Facturen</a>
-          <a href="#onderhoud">Onderhoud</a>
-          <span class="admin-nav-group">Delivery</span>
+          <span class="admin-nav-group">Werkruimte</span>
+          <a href="#dashboard">Dashboard</a>
+          <a href="#leadfinder">Sales</a>
+          <a href="#klanten">Klanten</a>
           <a href="#websites">Websites</a>
           <a href="#projecten">Projecten</a>
-          <a href="#bestanden">Bestanden</a>
-          <span class="admin-nav-group">Platform</span>
-          <a href="#klantportaal">Klantportaal</a>
-          <a href="#ai">AI Wizard</a>
-          <a href="#ai-assistant">AI Assistent</a>
+          <a href="#offertes">Offertes</a>
+          <a href="#facturen">Facturen</a>
           <a href="#instellingen">Instellingen</a>
-          <a href="#integraties">Integraties</a>
-          <a href="#demo-omgeving">Demo omgeving</a>
+          <a class="admin-developer-only" href="#demo-omgeving">Developer Mode</a>
         </nav>
-        <article class="admin-card admin-token-card">
+        <article class="admin-card admin-token-card admin-developer-only">
           <div>
             <strong>Auth voorbereiding</strong>
             <span id="auth-session-summary">Geen actieve sessie — demo/auth voorbereiding.</span>
@@ -105,7 +94,26 @@
           </div>
         </section>
 
-        <section class="portal-message" id="admin-access-control-banner" role="note">
+        <section class="admin-section admin-quick-actions" aria-label="Dagelijkse admin-acties">
+          <div class="admin-section-heading">
+            <div>
+              <p class="section-kicker">Vandaag</p>
+              <h2>Dagelijkse acties</h2>
+            </div>
+            <span class="status-badge status-active">Werkmodus</span>
+          </div>
+          <div class="settings-actions admin-action-strip">
+            <a class="button secondary" href="#leadfinder">Nieuwe lead</a>
+            <button class="button primary" id="open-new-customer-quick" type="button">Nieuwe klant</button>
+            <a class="button secondary" href="#leadfinder">Open leads</a>
+            <a class="button secondary" href="#klanten">Actieve klanten</a>
+            <a class="button secondary" href="#projecten">Lopende projecten</a>
+            <a class="button secondary" href="#offertes">Open offertes</a>
+            <a class="button secondary" href="#facturen">Open facturen</a>
+          </div>
+        </section>
+
+        <section class="portal-message admin-developer-only" id="admin-access-control-banner" role="note">
           <strong>Access control</strong>
           <span id="admin-access-control-text">Soft access-control laden...</span>
         </section>
@@ -117,13 +125,13 @@
           <article class="admin-card metric-card"><span>Actieve websites</span><strong id="metric-live-websites">-</strong><small>Online/live</small></article>
           <article class="admin-card metric-card"><span>Open offertes</span><strong id="metric-open-quotes">0</strong><small>Concept of verzonden</small></article>
           <article class="admin-card metric-card"><span>Open facturen</span><strong id="metric-open-invoices-local">0</strong><small>Concept, verzonden of verlopen</small></article>
-          <article class="admin-card metric-card"><span>Betaald bedrag</span><strong id="metric-paid-amount">€ 0</strong><small>Facturen betaald</small></article>
-          <article class="admin-card metric-card"><span>Te factureren abonnementen</span><strong id="metric-subscriptions-due">0</strong><small>Verlopen / vandaag / 7 dagen</small></article>
-          <article class="admin-card metric-card"><span>Recurring omzet</span><strong id="metric-recurring-revenue">€ 0,00</strong><small id="metric-recurring-label">MRR / ARR / actief</small></article>
-          <article class="admin-card metric-card"><span>Demo-modus</span><strong id="metric-demo-status">Actief</strong><small>Lokale opslag actief</small></article>
+          <article class="admin-card metric-card admin-developer-only"><span>Betaald bedrag</span><strong id="metric-paid-amount">€ 0</strong><small>Facturen betaald</small></article>
+          <article class="admin-card metric-card admin-developer-only"><span>Te factureren abonnementen</span><strong id="metric-subscriptions-due">0</strong><small>Verlopen / vandaag / 7 dagen</small></article>
+          <article class="admin-card metric-card admin-developer-only"><span>Recurring omzet</span><strong id="metric-recurring-revenue">€ 0,00</strong><small id="metric-recurring-label">MRR / ARR / actief</small></article>
+          <article class="admin-card metric-card admin-developer-only"><span>Demo-modus</span><strong id="metric-demo-status">Actief</strong><small>Lokale opslag actief</small></article>
         </section>
 
-        <section class="admin-section bi-dashboard-section" aria-label="Business intelligence dashboard">
+        <section class="admin-section bi-dashboard-section admin-developer-only" aria-label="Business intelligence dashboard">
           <div class="admin-section-heading">
             <div>
               <p class="section-kicker">Business Intelligence</p>
@@ -158,7 +166,7 @@
           <div class="admin-table bi-action-table" id="bi-action-list" role="table" aria-label="Actie vereist" aria-live="polite"></div>
         </section>
 
-        <section class="admin-section" id="workflow">
+        <section class="admin-section admin-developer-only" id="workflow">
           <div class="admin-section-heading">
             <div>
               <p class="section-kicker">CRM workflow</p>
@@ -580,7 +588,7 @@
           </div>
         </section>
 
-        <section class="admin-section" id="wijzigingsverzoeken">
+        <section class="admin-section admin-developer-only" id="wijzigingsverzoeken">
           <div class="admin-section-heading">
             <div>
               <p class="section-kicker">Wijzigingsverzoeken</p>
@@ -595,7 +603,7 @@
           <div class="admin-table request-table" id="change-request-list" role="table" aria-label="Wijzigingsverzoeken" aria-live="polite"></div>
         </section>
 
-        <section class="admin-section" id="bestanden">
+        <section class="admin-section admin-developer-only" id="bestanden">
           <div class="admin-section-heading">
             <div>
               <p class="section-kicker">Bestanden</p>
@@ -646,7 +654,7 @@
           </div>
         </section>
 
-        <section class="admin-section" id="onderhoud">
+        <section class="admin-section admin-developer-only" id="onderhoud">
           <div class="admin-section-heading">
             <div><p class="section-kicker">Onderhoud</p><h2>Abonnementen</h2></div>
             <div class="admin-actions">
@@ -733,7 +741,7 @@
             <div class="admin-table billing-table" id="invoice-list" role="table" aria-label="Facturen" aria-live="polite"></div>
           </section>
 
-          <section class="admin-section" id="ai">
+          <section class="admin-section admin-developer-only" id="ai">
             <div class="admin-section-heading">
               <div>
                 <p class="section-kicker">AI Website Wizard</p>
@@ -835,7 +843,7 @@
             </div>
           </section>
 
-          <section class="admin-section" id="ai-assistant">
+          <section class="admin-section admin-developer-only" id="ai-assistant">
             <div class="admin-section-heading">
               <div>
                 <p class="section-kicker">AI Admin Assistant</p>
@@ -980,7 +988,7 @@
               </div>
             </article>
 
-            <article class="admin-card settings-card settings-card-wide" id="integraties">
+            <article class="admin-card settings-card settings-card-wide admin-developer-only" id="integraties">
               <div class="settings-card-heading"><div><span>Integraties</span><strong>Koppelingenoverzicht</strong></div><mark class="status-badge status-planned">API later</mark></div>
               <div class="integration-grid" id="settings-integrations"></div>
             </article>
@@ -1006,7 +1014,7 @@
                 <label><input id="setting-developer-mode" name="developerMode" type="checkbox" /> Developer Mode</label>
               </div>
               <div class="admin-profile-fields">
-                <label class="admin-profile-wide" for="setting-data-provider-mode">Data provider mode<select id="setting-data-provider-mode" name="dataProviderMode"><option value="localStorage">localStorage</option><option value="supabase-prepared">supabase-prepared</option><option value="supabase-readonly">supabase-readonly</option><option value="supabase-write-test">supabase-write-test</option><option value="supabase-migration">supabase-migration</option></select></label>
+                <label class="admin-profile-wide admin-developer-only" for="setting-data-provider-mode">Data provider mode<select id="setting-data-provider-mode" name="dataProviderMode"><option value="localStorage">localStorage</option><option value="supabase-prepared">supabase-prepared</option><option value="supabase-readonly">supabase-readonly</option><option value="supabase-write-test">supabase-write-test</option><option value="supabase-migration">supabase-migration</option></select></label>
               </div>
             </article>
 
@@ -1017,7 +1025,7 @@
           </form>
         </section>
 
-        <section class="admin-section settings-section" id="demo-omgeving">
+        <section class="admin-section settings-section admin-developer-only" id="demo-omgeving">
           <div class="admin-section-heading">
             <div>
               <p class="section-kicker">Demo omgeving</p>
@@ -7792,6 +7800,7 @@
 
         function renderDeveloperMode() {
           const enabled = isDeveloperModeEnabled();
+          document.body.classList.toggle("is-developer-mode", enabled);
           developerToolsCard.hidden = !enabled;
           if (enabled) {
             renderDeveloperToolsSummary();
@@ -14796,6 +14805,7 @@
         }
 
         document.getElementById("open-new-customer").addEventListener("click", openNewCustomerModal);
+        document.getElementById("open-new-customer-quick").addEventListener("click", openNewCustomerModal);
         document.getElementById("open-new-customer-secondary").addEventListener("click", openNewCustomerModal);
         document.getElementById("new-managed-website").addEventListener("click", resetWebsiteForm);
         document.getElementById("new-project").addEventListener("click", () => resetProjectForm());
