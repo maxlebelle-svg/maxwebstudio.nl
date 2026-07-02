@@ -3033,3 +3033,28 @@ Opgeleverd:
 - dagelijkse actiestrook bovenaan het dashboard;
 - technische en toekomstige modules standaard achter Developer Mode;
 - bestaande modules behouden zonder nieuwe backend of SQL.
+
+## Sprint 4A - Professional Quote Experience
+
+Status: `IMPLEMENTED / FRONTEND MVP`
+
+Doel:
+
+- de eerste commerciële offerte-ervaring neerzetten: klant kan een offerte professioneel bekijken en akkoord geven;
+- admin ziet `verzonden -> bekeken -> geaccepteerd` als lichte verkoopflow.
+
+Opgeleverd:
+
+- publieke offertepagina met premium Max Webstudio-layout;
+- akkoordformulier met naam, e-mail en bevestiging;
+- lokale statusupdate naar `bekeken` bij openen en `geaccepteerd` bij akkoord;
+- admin-status `Bekeken` toegevoegd;
+- demo-taal rond offertelinks verwijderd.
+
+Nog niet:
+
+- PDF;
+- Mollie;
+- echte digitale handtekening;
+- server-side offerte-acceptatie;
+- automatische factuur na akkoord.

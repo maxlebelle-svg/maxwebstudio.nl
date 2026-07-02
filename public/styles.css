@@ -9136,6 +9136,110 @@ h3 {
   width: 100%;
 }
 
+.quote-page-shell {
+  max-width: 1060px;
+}
+
+.quote-public-card {
+  position: relative;
+  top: auto;
+  gap: 22px;
+  width: 100%;
+  max-width: none;
+}
+
+.quote-public-card h3 {
+  margin: 6px 0 -4px;
+  color: var(--white);
+  font-size: 18px;
+}
+
+.quote-included-list {
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.quote-faq {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.quote-faq div {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.quote-faq strong {
+  color: var(--white);
+  line-height: 1.35;
+}
+
+.quote-faq p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
+.quote-accept-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.quote-accept-form label {
+  display: grid;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.quote-accept-form input:not([type="checkbox"]) {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  padding: 13px 14px;
+  color: var(--white);
+  font: inherit;
+  font-weight: 800;
+  background: rgba(6, 18, 31, 0.52);
+}
+
+.quote-accept-form input:not([type="checkbox"]):focus {
+  border-color: rgba(25, 194, 255, 0.65);
+  outline: 3px solid rgba(25, 194, 255, 0.18);
+}
+
+.quote-consent,
+.quote-accept-form .admin-form-message,
+.quote-accept-form .button {
+  grid-column: 1 / -1;
+}
+
+.quote-consent {
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  color: rgba(255, 255, 255, 0.74);
+  line-height: 1.55;
+}
+
+.quote-consent input {
+  margin-top: 3px;
+}
+
 .payment-trust {
   display: flex;
   flex-wrap: wrap;
@@ -10688,6 +10792,11 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   .change-request-aside,
   .intake-sidebar {
     position: static;
+  }
+
+  .quote-faq,
+  .quote-accept-form {
+    grid-template-columns: 1fr;
   }
 
   .admin-table-head {

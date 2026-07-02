@@ -123,7 +123,7 @@
           <article class="admin-card metric-card"><span>Klanten</span><strong id="metric-total-customers">-</strong><small id="metric-total-customers-label">Klantprofielen</small></article>
           <article class="admin-card metric-card"><span>Lopende projecten</span><strong id="metric-active-projects">0</strong><small>Niet afgerond</small></article>
           <article class="admin-card metric-card"><span>Actieve websites</span><strong id="metric-live-websites">-</strong><small>Online/live</small></article>
-          <article class="admin-card metric-card"><span>Open offertes</span><strong id="metric-open-quotes">0</strong><small>Concept of verzonden</small></article>
+          <article class="admin-card metric-card"><span>Open offertes</span><strong id="metric-open-quotes">0</strong><small>Concept, verzonden of bekeken</small></article>
           <article class="admin-card metric-card"><span>Open facturen</span><strong id="metric-open-invoices-local">0</strong><small>Concept, verzonden of verlopen</small></article>
           <article class="admin-card metric-card admin-developer-only"><span>Betaald bedrag</span><strong id="metric-paid-amount">€ 0</strong><small>Facturen betaald</small></article>
           <article class="admin-card metric-card admin-developer-only"><span>Te factureren abonnementen</span><strong id="metric-subscriptions-due">0</strong><small>Verlopen / vandaag / 7 dagen</small></article>
@@ -705,7 +705,7 @@
             </div>
             <div class="admin-filters invoice-filters" aria-label="Offertes filteren">
               <label for="quote-search">Zoeken<input id="quote-search" type="search" placeholder="Offertenummer, klant, project, website of type" /></label>
-              <label for="quote-status-filter">Status<select id="quote-status-filter"><option value="">Alle statussen</option><option value="concept">Concept</option><option value="verzonden">Verzonden</option><option value="geaccepteerd">Geaccepteerd</option><option value="afgewezen">Afgewezen</option><option value="verlopen">Verlopen</option><option value="geannuleerd">Geannuleerd</option><option value="gearchiveerd">Gearchiveerd</option></select></label>
+              <label for="quote-status-filter">Status<select id="quote-status-filter"><option value="">Alle statussen</option><option value="concept">Concept</option><option value="verzonden">Verzonden</option><option value="bekeken">Bekeken</option><option value="geaccepteerd">Geaccepteerd</option><option value="afgewezen">Afgewezen</option><option value="verlopen">Verlopen</option><option value="geannuleerd">Geannuleerd</option><option value="gearchiveerd">Gearchiveerd</option></select></label>
               <label for="quote-type-filter">Type<select id="quote-type-filter"><option value="">Alle types</option><option value="Website">Website</option><option value="Website + onderhoud">Website + onderhoud</option><option value="Maatwerk">Maatwerk</option><option value="Extra pagina's">Extra pagina's</option><option value="SEO">SEO</option><option value="Hosting & onderhoud">Hosting & onderhoud</option><option value="Overig">Overig</option></select></label>
               <label for="quote-customer-filter">Klant<select id="quote-customer-filter"><option value="">Alle klanten</option></select></label>
               <label for="quote-project-filter">Project<select id="quote-project-filter"><option value="">Alle projecten</option></select></label>
@@ -1413,10 +1413,10 @@
             <label for="quote-number">Offertenummer<input id="quote-number" type="text" /></label>
             <label for="quote-type">Offertetype<select id="quote-type"><option value="Website">Website</option><option value="Website + onderhoud">Website + onderhoud</option><option value="Maatwerk">Maatwerk</option><option value="Extra pagina's">Extra pagina's</option><option value="SEO">SEO</option><option value="Hosting & onderhoud">Hosting & onderhoud</option><option value="Overig">Overig</option></select></label>
             <label for="quote-title">Titel<input id="quote-title" type="text" required /></label>
-            <label for="quote-status">Status<select id="quote-status"><option value="concept">Concept</option><option value="verzonden">Verzonden</option><option value="geaccepteerd">Geaccepteerd</option><option value="afgewezen">Afgewezen</option><option value="verlopen">Verlopen</option><option value="geannuleerd">Geannuleerd</option><option value="gearchiveerd">Gearchiveerd</option></select></label>
+            <label for="quote-status">Status<select id="quote-status"><option value="concept">Concept</option><option value="verzonden">Verzonden</option><option value="bekeken">Bekeken</option><option value="geaccepteerd">Geaccepteerd</option><option value="afgewezen">Afgewezen</option><option value="verlopen">Verlopen</option><option value="geannuleerd">Geannuleerd</option><option value="gearchiveerd">Gearchiveerd</option></select></label>
             <label for="quote-date">Offertedatum<input id="quote-date" type="date" /></label>
             <label for="quote-valid-until">Geldig tot<input id="quote-valid-until" type="date" /></label>
-            <label class="admin-profile-wide" for="quote-link">Demo-offertelink<input id="quote-link" type="text" placeholder="/offerte.html?quoteId=..." /></label>
+            <label class="admin-profile-wide" for="quote-link">Publieke offertelink<input id="quote-link" type="text" placeholder="/offerte.html?quoteId=..." /></label>
             <label class="admin-profile-wide" for="quote-proposal">Voorsteltekst / klantnotitie<textarea id="quote-proposal" placeholder="Korte toelichting die zichtbaar mag zijn voor de klant."></textarea></label>
             <label class="admin-profile-wide" for="quote-notes">Interne notities<textarea id="quote-notes" placeholder="Alleen intern voor Max Webstudio."></textarea></label>
           </div>
@@ -1440,8 +1440,8 @@
             <button class="button secondary" id="quote-mark-sent" type="button">Zet op verzonden</button>
             <button class="button secondary" id="quote-mark-accepted" type="button">Markeer geaccepteerd</button>
             <button class="button secondary" id="quote-mark-rejected" type="button">Markeer afgewezen</button>
-            <a class="button secondary is-disabled" id="quote-open-link" href="#" target="_blank" rel="noopener" aria-disabled="true">Open demo-offerte</a>
-            <button class="button secondary" id="quote-copy-link" type="button">Kopieer demo-offertelink</button>
+            <a class="button secondary is-disabled" id="quote-open-link" href="#" target="_blank" rel="noopener" aria-disabled="true">Open offerte</a>
+            <button class="button secondary" id="quote-copy-link" type="button">Kopieer offertelink</button>
             <button class="button secondary" id="quote-convert-invoice" type="button">Maak factuur van offerte</button>
             <button class="button secondary" id="quote-open-invoice" type="button">Open factuur</button>
             <button class="button secondary" id="quote-refresh-supabase" type="button">Ververs uit Supabase</button>
@@ -1582,6 +1582,7 @@
         const quoteStatusLabels = {
           concept: "Concept",
           verzonden: "Verzonden",
+          bekeken: "Bekeken",
           geaccepteerd: "Geaccepteerd",
           afgewezen: "Afgewezen",
           verlopen: "Verlopen",
@@ -8722,6 +8723,7 @@
           const status = normalize(value);
           if (status === "draft") return "concept";
           if (status === "sent") return "verzonden";
+          if (status === "viewed") return "bekeken";
           if (status === "accepted") return "geaccepteerd";
           if (status === "rejected") return "afgewezen";
           if (status === "expired") return "verlopen";
@@ -8778,6 +8780,12 @@
             status: normalizeQuoteStatus(quote.status),
             quoteDate: quote.quoteDate || quote.createdAt?.slice?.(0, 10) || now.slice(0, 10),
             validUntil: quote.validUntil || "",
+            sentAt: quote.sentAt || "",
+            viewedAt: quote.viewedAt || "",
+            acceptedAt: quote.acceptedAt || "",
+            acceptedByName: quote.acceptedByName || "",
+            acceptedByEmail: quote.acceptedByEmail || "",
+            acceptanceMethod: quote.acceptanceMethod || "",
             lines,
             subtotal: totals.subtotal,
             vat: totals.vat,
@@ -8869,7 +8877,12 @@
           const quotes = readStoredQuotes();
           const index = quotes.findIndex((quote) => quote.id === id);
           if (index < 0) throw new Error("Offerte niet gevonden.");
-          quotes[index] = normalizeQuote({ ...quotes[index], status, updatedAt: new Date().toISOString() });
+          const now = new Date().toISOString();
+          const statusPatch = { status, updatedAt: now };
+          if (status === "verzonden" && !quotes[index].sentAt) statusPatch.sentAt = now;
+          if (status === "bekeken" && !quotes[index].viewedAt) statusPatch.viewedAt = now;
+          if (status === "geaccepteerd" && !quotes[index].acceptedAt) statusPatch.acceptedAt = now;
+          quotes[index] = normalizeQuote({ ...quotes[index], ...statusPatch });
           writeStoredQuotes(quotes);
           return quotes[index];
         }
@@ -9273,7 +9286,7 @@
         function updateMetrics() {
           const liveWebsites = state.websites.filter((website) => ["online", "live", "active"].includes(normalize(website.status))).length;
           const activeProjects = state.projects.filter((project) => !["live", "onderhoud", "gepauzeerd"].includes(statusKey(project.status))).length;
-          const openQuotes = state.quotes.filter((quote) => ["concept", "verzonden"].includes(normalizeQuoteStatus(quote.status))).length;
+          const openQuotes = state.quotes.filter((quote) => ["concept", "verzonden", "bekeken"].includes(normalizeQuoteStatus(quote.status))).length;
           const openInvoices = state.invoices.filter((invoice) => ["concept", "verzonden", "verlopen"].includes(normalizeInvoiceStatus(invoice.status))).length;
           const paidAmount = state.invoices
             .filter((invoice) => normalizeInvoiceStatus(invoice.status) === "betaald")
@@ -9616,7 +9629,7 @@
             }
           })();
           const customerQuotes = state.quotes.filter((quote) => quote.profileId === customer.id);
-          const openQuotes = customerQuotes.filter((quote) => ["concept", "verzonden"].includes(quote.status)).length;
+          const openQuotes = customerQuotes.filter((quote) => ["concept", "verzonden", "bekeken"].includes(quote.status)).length;
           const acceptedQuotes = customerQuotes.filter((quote) => quote.status === "geaccepteerd").length;
           const rejectedQuotes = customerQuotes.filter((quote) => quote.status === "afgewezen").length;
           const customerInvoices = state.invoices.filter((invoice) => invoice.profileId === customer.id);
@@ -12393,7 +12406,7 @@
           const total = quotes.reduce((sum, quote) => sum + Number(quote.total || 0), 0);
           const acceptedQuotes = quotes.filter((quote) => quote.status === "geaccepteerd");
           const accepted = acceptedQuotes.reduce((sum, quote) => sum + Number(quote.total || 0), 0);
-          const open = quotes.filter((quote) => ["concept", "verzonden"].includes(quote.status)).reduce((sum, quote) => sum + Number(quote.total || 0), 0);
+          const open = quotes.filter((quote) => ["concept", "verzonden", "bekeken"].includes(quote.status)).reduce((sum, quote) => sum + Number(quote.total || 0), 0);
           const rejectedCount = quotes.filter((quote) => ["afgewezen", "verlopen"].includes(quote.status)).length;
           const decided = quotes.filter((quote) => ["geaccepteerd", "afgewezen"].includes(quote.status)).length;
           const conversion = decided ? Math.round((acceptedQuotes.length / decided) * 100) : 0;
@@ -12765,7 +12778,7 @@
             markSent.className = "button secondary";
             markSent.type = "button";
             markSent.textContent = "Zet op verzonden";
-            markSent.disabled = quote.status === "verzonden" || quote.status === "geaccepteerd";
+            markSent.disabled = ["verzonden", "bekeken", "geaccepteerd"].includes(quote.status);
             markSent.addEventListener("click", () => setQuoteStatus(quote.id, "verzonden", markSent));
             const markAccepted = document.createElement("button");
             markAccepted.className = "button secondary";
@@ -12786,14 +12799,14 @@
               open.href = quote.quoteLink;
               open.target = "_blank";
               open.rel = "noopener";
-              open.textContent = "Open demo-offerte";
+              open.textContent = "Open offerte";
               actions.append(open);
             }
             const copy = document.createElement("button");
             copy.className = "button secondary";
             copy.type = "button";
             copy.textContent = "Kopieer link";
-            copy.addEventListener("click", () => copyText(quote.quoteLink, "Demo-offertelink gekopieerd."));
+            copy.addEventListener("click", () => copyText(quote.quoteLink, "Offertelink gekopieerd."));
             const cancel = document.createElement("button");
             cancel.className = "button secondary danger";
             cancel.type = "button";
@@ -14957,7 +14970,7 @@
         });
         quoteCopyLink.addEventListener("click", () => {
           const link = quoteFields.link.value;
-          if (link) copyText(link, "Demo-offertelink gekopieerd.", (text, type) => setBillingMessage(quoteMessage, text, type));
+          if (link) copyText(link, "Offertelink gekopieerd.", (text, type) => setBillingMessage(quoteMessage, text, type));
         });
         quoteConvertInvoice.addEventListener("click", createInvoiceFromQuote);
         quoteOpenInvoice.addEventListener("click", openInvoiceFromQuote);

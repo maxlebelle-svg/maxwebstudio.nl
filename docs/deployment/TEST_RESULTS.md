@@ -1983,3 +1983,34 @@ Open:
 Fix na live check:
 
 - admin AI Website Wizard service-loader robuuster gemaakt zodat de live adminconsole geen fout geeft wanneer de service als object-export geladen wordt.
+
+## Sprint 4A - Professional Quote Experience
+
+Datum: 2026-07-02
+
+Status: `IMPLEMENTED / CHECKS PASS`
+
+Scope:
+
+- publieke offertepagina opgewaardeerd naar professionele klantgerichte offerte-ervaring;
+- status `bekeken` toegevoegd voor lokaal/admin tracking;
+- akkoordformulier toegevoegd zonder betalingen, Mollie of backendwijzigingen;
+- adminlabels rond offertelinks opgeschoond.
+
+Checks:
+
+- `git diff --check`: PASS;
+- `node --check public/script.js`: PASS;
+- `node --check public/src/services/leadFinderService.js`: PASS;
+- inline scriptcheck `public/admin-dashboard.html`: PASS;
+- inline scriptcheck `public/offerte.html`: PASS;
+- secrets-scan: PASS, alleen verwachte env-var naamverwijzingen gevonden.
+
+Niet inbegrepen:
+
+- SQL;
+- Mollie;
+- PDF-generatie;
+- server-side acceptatie;
+- echte digitale handtekening;
+- nieuwe dependencies.

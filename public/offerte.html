@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex, nofollow" />
-    <title>Demo-offerte | Max Webstudio</title>
-    <meta name="description" content="Bekijk een lokale demo-offerte van Max Webstudio." />
+    <title>Offerte | Max Webstudio</title>
+    <meta name="description" content="Bekijk je persoonlijke offerte van Max Webstudio." />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -23,21 +23,21 @@
         <a href="index.html#prijzen">Pakketten</a>
         <a href="index.html#aanvraag">Contact</a>
       </nav>
-      <a class="header-cta" href="index.html#aanvraag">Vraag gratis preview aan</a>
+      <a class="header-cta" href="index.html#aanvraag">Plan gratis gesprek</a>
     </header>
 
     <main>
       <section class="page-hero payment-hero">
-        <p class="eyebrow">Demo-offerte</p>
+        <p class="eyebrow">Persoonlijke offerte</p>
         <h1 id="quote-page-title">Offerte laden...</h1>
-        <p id="quote-page-subtitle">Deze offerte wordt lokaal uit de CRM-demo-opslag geladen.</p>
+        <p id="quote-page-subtitle">Bekijk rustig wat inbegrepen is en geef akkoord wanneer alles klopt.</p>
       </section>
 
-      <section class="content-page payment-page" id="quote-page">
+      <section class="content-page payment-page quote-page-shell" id="quote-page">
         <article class="checkout-summary-card quote-public-card" id="quote-card" aria-live="polite">
           <p class="section-kicker">Offerte</p>
           <h2>Offertegegevens</h2>
-          <p>Offerte niet gevonden. Open de offerte opnieuw vanuit het admin-dashboard.</p>
+          <p>Offerte niet gevonden. Open de offerte opnieuw via de link die je van Max Webstudio hebt ontvangen.</p>
         </article>
       </section>
     </main>
@@ -106,35 +106,74 @@
           return row;
         }
 
-        function renderQuote() {
-          const quotes = readQuotes();
-          const quote = quotes.find((item) => {
+        function findQuote(quotes) {
+          return quotes.find((item) => {
             const ids = [item.id, item.quoteId, item.supabaseQuoteId, item._supabaseQuoteId].filter(Boolean).map(String);
             return (quoteId && ids.includes(String(quoteId))) || (supabaseQuoteId && ids.includes(String(supabaseQuoteId)));
           });
+        }
+
+        function updateStoredQuote(quote, patch = {}) {
+          const quotes = readQuotes();
+          const next = quotes.map((item) => {
+            const ids = [item.id, item.quoteId, item.supabaseQuoteId, item._supabaseQuoteId].filter(Boolean).map(String);
+            const matches = ids.includes(String(quote.id || quote.quoteId || quoteId || supabaseQuoteId));
+            return matches ? { ...item, ...patch, updatedAt: new Date().toISOString() } : item;
+          });
+          writeQuotes(next);
+          return findQuote(next) || { ...quote, ...patch };
+        }
+
+        function markQuoteViewed(quote) {
+          if (quote.acceptedAt || quote.status === "geaccepteerd") return quote;
+          if (quote.viewedAt && quote.status !== "verzonden") return quote;
+          const patch = {
+            viewedAt: quote.viewedAt || new Date().toISOString(),
+            status: quote.status === "verzonden" ? "bekeken" : quote.status,
+          };
+          return updateStoredQuote(quote, patch);
+        }
+
+        function createText(tag, className, text) {
+          const element = document.createElement(tag);
+          if (className) element.className = className;
+          element.textContent = text;
+          return element;
+        }
+
+        function renderQuote() {
+          const quotes = readQuotes();
+          let quote = findQuote(quotes);
           card.replaceChildren();
           if (!quote) {
             title.textContent = "Offerte niet gevonden";
-            subtitle.textContent = "Deze demo-offerte staat niet in de lokale browseropslag.";
-            card.append(Object.assign(document.createElement("p"), { className: "section-kicker", textContent: "Niet gevonden" }), Object.assign(document.createElement("h2"), { textContent: "Open de offerte opnieuw vanuit het CRM." }));
+            subtitle.textContent = "Controleer de link of neem contact op met Max Webstudio.";
+            card.append(
+              createText("p", "section-kicker", "Niet gevonden"),
+              createText("h2", "", "Deze offerte kan niet worden geladen."),
+              createText("p", "summary-note", "Open de offerte opnieuw via de link die je hebt ontvangen. Blijft dit gebeuren? Neem dan even contact op.")
+            );
             return;
           }
+          quote = markQuoteViewed(quote);
 
-          title.textContent = quote.title || "Offerte Max Webstudio";
+          title.textContent = quote.title || "Jouw offerte van Max Webstudio";
           subtitle.textContent = `${quote.customerCompany || quote.customerName || "Klant"} - ${quote.quoteNumber || "Offerte"}`;
 
           const kicker = document.createElement("p");
           kicker.className = "section-kicker";
-          kicker.textContent = quote.status || "concept";
+          kicker.textContent = quote.status === "geaccepteerd" ? "Akkoord ontvangen" : "Offerte klaar voor review";
           const heading = document.createElement("h2");
           heading.textContent = quote.quoteNumber || "Offerte";
           const proposal = document.createElement("p");
-          proposal.textContent = quote.proposal || "Bedankt voor je aanvraag. Hieronder staat de demo-offerte zoals lokaal opgeslagen in het CRM.";
+          proposal.textContent = quote.proposal || "Bedankt voor je aanvraag. Hieronder vind je het voorstel, de planning en wat Max Webstudio voor je verzorgt.";
 
           const meta = document.createElement("dl");
           meta.className = "summary-lines";
           meta.append(
             createRow("Klant", quote.customerCompany || quote.customerName || "-"),
+            createRow("Website", quote.websiteDomain || quote.websiteName || "Wordt afgestemd"),
+            createRow("Project", quote.projectName || quote.type || "-"),
             createRow("Offertedatum", formatDate(quote.quoteDate)),
             createRow("Geldig tot", formatDate(quote.validUntil)),
             createRow("Status", quote.status || "concept")
@@ -152,26 +191,77 @@
           total.className = "summary-total";
           total.innerHTML = `<span>Totaal incl. btw</span><strong>${money(quote.total)}</strong><small>Subtotaal ${money(quote.subtotal)} · BTW ${money(quote.vat)}</small>`;
 
+          const included = document.createElement("ul");
+          included.className = "summary-included quote-included-list";
+          [
+            "Website-opzet volgens afgesproken pakket",
+            "Mobielvriendelijke oplevering",
+            "Basiscontrole voor snelheid, veiligheid en vindbaarheid",
+            "Klantportaal voor voortgang, berichten en wijzigingen",
+          ].forEach((item) => included.append(createText("li", "", item)));
+
+          const faq = document.createElement("div");
+          faq.className = "quote-faq";
+          [
+            ["Wat gebeurt er na akkoord?", "Max Webstudio zet je project klaar, activeert je klantportaal en stemt de planning met je af."],
+            ["Is dit al een betaling?", "Nee. Akkoord geven bevestigt de offerte. Betaling en facturatie volgen apart."],
+            ["Kan ik nog iets wijzigen?", "Ja. Reageer eerst even voordat je akkoord geeft, dan passen we de offerte aan."],
+          ].forEach(([question, answer]) => {
+            const item = document.createElement("div");
+            item.append(createText("strong", "", question), createText("p", "", answer));
+            faq.append(item);
+          });
+
+          const acceptForm = document.createElement("form");
+          acceptForm.className = "quote-accept-form";
+          const nameLabel = document.createElement("label");
+          nameLabel.textContent = "Naam voor akkoord";
+          const nameInput = document.createElement("input");
+          nameInput.type = "text";
+          nameInput.required = true;
+          nameInput.value = quote.acceptedByName || quote.customerName || "";
+          nameLabel.append(nameInput);
+          const emailLabel = document.createElement("label");
+          emailLabel.textContent = "E-mailadres";
+          const emailInput = document.createElement("input");
+          emailInput.type = "email";
+          emailInput.required = true;
+          emailInput.value = quote.acceptedByEmail || quote.customerEmail || "";
+          emailLabel.append(emailInput);
+          const consentLabel = document.createElement("label");
+          consentLabel.className = "quote-consent";
+          const consent = document.createElement("input");
+          consent.type = "checkbox";
+          consent.required = true;
+          consentLabel.append(consent, document.createTextNode(" Ik ga akkoord met deze offerte en begrijp dat Max Webstudio daarna contact opneemt over de vervolgstap."));
           const accept = document.createElement("button");
           accept.className = "button primary";
-          accept.type = "button";
-          accept.textContent = quote.status === "geaccepteerd" ? "Offerte geaccepteerd" : "Offerte accepteren";
+          accept.type = "submit";
+          accept.textContent = quote.status === "geaccepteerd" ? "Offerte geaccepteerd" : "Akkoord geven";
           accept.disabled = quote.status === "geaccepteerd";
-          accept.addEventListener("click", () => {
-            const acceptedQuote = { ...quote, status: "geaccepteerd", updatedAt: new Date().toISOString() };
-            const next = readQuotes().map((item) => item.id === quote.id ? acceptedQuote : item);
-            writeQuotes(next);
+          const feedback = createText("p", "admin-form-message", "");
+          acceptForm.append(nameLabel, emailLabel, consentLabel, accept, feedback);
+          acceptForm.addEventListener("submit", (event) => {
+            event.preventDefault();
+            const acceptedAt = new Date().toISOString();
+            const acceptedQuote = updateStoredQuote(quote, {
+              status: "geaccepteerd",
+              acceptedAt,
+              acceptedByName: nameInput.value.trim(),
+              acceptedByEmail: emailInput.value.trim(),
+              acceptanceMethod: "public_quote_page",
+            });
             logDemoEmail(acceptedQuote);
             renderQuote();
           });
 
           const note = document.createElement("p");
-          note.className = "admin-form-message success";
+          note.className = `admin-form-message ${quote.status === "geaccepteerd" ? "success" : ""}`;
           note.textContent = quote.status === "geaccepteerd"
-            ? "Offerte geaccepteerd. Max Webstudio maakt hierna de factuur aan. Demo/local: dit is nog geen digitale ondertekening."
-            : "Demo/local: accepteren werkt alleen in deze browseropslag en is nog geen digitale ondertekening.";
+            ? `Akkoord ontvangen op ${formatDate(quote.acceptedAt || quote.updatedAt)}. Max Webstudio neemt contact op over de start.`
+            : "Akkoord geven is nog geen online betaling. Je bevestigt hiermee dat Max Webstudio het project mag voorbereiden.";
 
-          card.append(kicker, heading, proposal, meta, lines, total, accept, note);
+          card.append(kicker, heading, proposal, meta, createText("h3", "", "Wat is inbegrepen?"), included, lines, total, createText("h3", "", "Veelgestelde vragen"), faq, acceptForm, note);
         }
 
         renderQuote();

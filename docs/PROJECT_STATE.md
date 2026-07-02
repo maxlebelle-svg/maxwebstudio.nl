@@ -3782,3 +3782,29 @@ Veiligheidsstatus:
 - geen backendwijziging;
 - geen feature-uitbreiding;
 - alleen structuur, zichtbaarheid en UX-polish.
+
+## Sprint 4A - Professional Quote Experience
+
+Status: `IMPLEMENTED / FRONTEND MVP`
+
+Doel:
+
+- offertes niet langer als demo-link laten voelen, maar als een professionele klantgerichte akkoordpagina;
+- de verkoopflow versterken zonder Mollie, PDF-generatie of backend-uitbreiding.
+
+Opgeleverd:
+
+- `public/offerte.html` is omgezet naar een premium offertepagina met klantgegevens, inbegrepen onderdelen, FAQ, totaalbedrag en akkoordformulier;
+- offertepagina markeert een verzonden offerte lokaal als `bekeken`;
+- akkoordformulier slaat `geaccepteerd`, akkoordnaam, akkoordmail en tijdstip lokaal op;
+- admin ondersteunt de status `Bekeken`;
+- adminlabels zijn aangepast van demo-offertelink naar publieke offertelink.
+
+Veiligheidsstatus:
+
+- geen SQL;
+- geen Mollie;
+- geen live betaling;
+- geen digitale handtekening-backend;
+- geen nieuwe dependencies;
+- geen service-role of secrets in frontend.
