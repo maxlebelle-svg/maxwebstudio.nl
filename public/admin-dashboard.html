@@ -16476,7 +16476,12 @@
           renderGooglePlace(place);
           focusGooglePlaceOnMap(place);
           setGooglePlacesState("Gevonden", "status-active");
-          setGooglePlacesMessage("Bedrijf gevonden. Controleer de gegevens en neem ze over als ze kloppen.", "success");
+          const duplicate = findDuplicateLeadForGooglePlace(place);
+          if (duplicate) {
+            setGooglePlacesMessage(`Let op: deze lead lijkt al te bestaan als ${duplicate.companyName}. Controleer de bestaande lead voordat je opslaat.`, "error");
+          } else {
+            setGooglePlacesMessage("Bedrijf gevonden. Controleer de gegevens en neem ze over als ze kloppen.", "success");
+          }
         });
       }
 
@@ -16527,6 +16532,36 @@
         return String(url || "").replace(/^https?:\/\//i, "").replace(/\/$/, "");
       }
 
+      function normalizeComparableUrl(url) {
+        const raw = String(url || "").trim().toLowerCase();
+        if (!raw) return "";
+        try {
+          const parsed = new URL(raw.startsWith("http") ? raw : `https://${raw}`);
+          return parsed.hostname.replace(/^www\./, "") + parsed.pathname.replace(/\/$/, "");
+        } catch (error) {
+          return raw.replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/$/, "");
+        }
+      }
+
+      function normalizeComparablePhone(phone) {
+        return String(phone || "").replace(/[^\d+]/g, "").replace(/^0031/, "+31");
+      }
+
+      function findDuplicateLeadForGooglePlace(place) {
+        if (!place) return null;
+        const placeId = String(place.place_id || "").trim();
+        const website = normalizeComparableUrl(place.website);
+        const phone = normalizeComparablePhone(place.formatted_phone_number || place.international_phone_number);
+        return getLeadfinderLeads().find((lead) => {
+          const leadPlaceId = String(lead.googlePlaceId || lead.google_place_id || "").trim();
+          const leadWebsite = normalizeComparableUrl(lead.websiteUrl);
+          const leadPhone = normalizeComparablePhone(lead.phone);
+          return (placeId && leadPlaceId && placeId === leadPlaceId)
+            || (website && leadWebsite && website === leadWebsite)
+            || (phone && leadPhone && phone === leadPhone);
+        }) || null;
+      }
+
       function extractCityFromAddress(address) {
         const parts = String(address || "").split(",").map((part) => part.trim()).filter(Boolean);
         if (parts.length >= 2) {
@@ -16562,8 +16597,13 @@
           ? window.confirm("Sommige velden zijn al ingevuld. Wil je deze overschrijven?")
           : false;
         candidateValues.forEach(([field, value]) => setLeadFieldIfAllowed(field, value, overwrite));
+        if (leadfinderElements.form) {
+          leadfinderElements.form.dataset.googlePlaceId = place.place_id || "";
+          leadfinderElements.form.dataset.googleMapsUrl = place.url || "";
+        }
         const details = [
           place.url ? `Google Maps: ${place.url}` : "",
+          place.place_id ? `Google Place ID: ${place.place_id}` : "",
           place.formatted_address ? `Adres: ${place.formatted_address}` : "",
           place.rating ? `Rating: ${place.rating} (${place.user_ratings_total || 0} reviews)` : "",
           place.business_status ? `Status: ${place.business_status}` : "",
@@ -16575,7 +16615,12 @@
         if (leadfinderElements.websiteStatus && (!leadfinderElements.websiteStatus.value || leadfinderElements.websiteStatus.value === "onbekend")) {
           leadfinderElements.websiteStatus.value = place.website ? "onbekend" : "geen_website";
         }
-        setGooglePlacesMessage("Gegevens overgenomen in het leadformulier. E-mail blijft leeg als Google die niet levert.", "success");
+        const duplicate = findDuplicateLeadForGooglePlace(place);
+        if (duplicate) {
+          setGooglePlacesMessage(`Gegevens overgenomen, maar let op: mogelijk bestaat deze lead al als ${duplicate.companyName}.`, "error");
+        } else {
+          setGooglePlacesMessage("Gegevens overgenomen in het leadformulier. E-mail blijft leeg als Google die niet levert.", "success");
+        }
       }
 
       async function handleGooglePlaceResultClick(event) {
@@ -16704,6 +16749,7 @@
             ["Leadscore", `${lead.leadScore}/100`],
             ["Leadstatus", getLeadFinderLabel(LEADFINDER_CALL_STATUSES, lead.callStatus)],
             ["Opvolgdatum", lead.followUpDate || "-"],
+            ["Google Maps", lead.googleMapsUrl || lead.googlePlaceId || "-"],
             ["Notities", lead.notes || "-"],
             ["Klantstatus", lead.convertedCustomerId ? "Klant actief" : "Nog geen klant"],
             ["Bron", lead._source || leadfinderSourceStatus?.mode || "local"],
@@ -16726,6 +16772,10 @@
         if (leadfinderElements.websiteStatus) leadfinderElements.websiteStatus.value = "onbekend";
         if (leadfinderElements.callStatus) leadfinderElements.callStatus.value = "nieuw";
         if (leadfinderElements.score) leadfinderElements.score.value = "70";
+        if (leadfinderElements.form) {
+          leadfinderElements.form.dataset.googlePlaceId = "";
+          leadfinderElements.form.dataset.googleMapsUrl = "";
+        }
       }
 
       async function createWorkflowTaskForLead(lead) {
@@ -16753,19 +16803,35 @@
           setLeadfinderMessage("Vul een bedrijfsnaam in.", "error");
           return;
         }
+        const googlePlaceId = leadfinderElements.form?.dataset.googlePlaceId || "";
+        const googleMapsUrl = leadfinderElements.form?.dataset.googleMapsUrl || "";
+        const websiteUrl = leadfinderElements.website?.value || "";
+        const phone = leadfinderElements.phone?.value || "";
+        const duplicate = getLeadfinderLeads().find((lead) => {
+          const samePlace = googlePlaceId && lead.googlePlaceId === googlePlaceId;
+          const sameWebsite = normalizeComparableUrl(lead.websiteUrl) && normalizeComparableUrl(lead.websiteUrl) === normalizeComparableUrl(websiteUrl);
+          const samePhone = normalizeComparablePhone(lead.phone) && normalizeComparablePhone(lead.phone) === normalizeComparablePhone(phone);
+          return samePlace || sameWebsite || samePhone;
+        });
+        if (duplicate && !window.confirm(`Deze lead lijkt al te bestaan als ${duplicate.companyName}. Toch als nieuwe lead opslaan?`)) {
+          setLeadfinderMessage("Lead niet opgeslagen. Controleer eerst de bestaande lead.", "error");
+          return;
+        }
         const lead = saveLeadFinderLeadLocally({
           companyName,
           industry: leadfinderElements.industry?.value || "",
           region: leadfinderElements.region?.value || "",
-          phone: leadfinderElements.phone?.value || "",
+          phone,
           email: leadfinderElements.email?.value || "",
-          websiteUrl: leadfinderElements.website?.value || "",
+          websiteUrl,
           websiteStatus: leadfinderElements.websiteStatus?.value || "onbekend",
           leadScore: leadfinderElements.score?.value || 70,
           callStatus: leadfinderElements.callStatus?.value || "nieuw",
           followUpDate: leadfinderElements.followUp?.value || "",
           source: leadfinderElements.source?.value || "handmatig",
           notes: leadfinderElements.notes?.value || "",
+          googlePlaceId,
+          googleMapsUrl,
         });
         selectedLeadFinderId = lead.id;
         resetLeadfinderForm();

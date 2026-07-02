@@ -117,6 +117,8 @@ function mapLead(row = {}, source = "local") {
     followUpDate: firstValue(row.followUpDate, row.follow_up_date),
     notes: firstValue(row.notes),
     source: firstValue(row.source, source),
+    googlePlaceId: firstValue(row.googlePlaceId, row.google_place_id, row.place_id, row.metadata?.googlePlaceId, row.metadata?.google_place_id),
+    googleMapsUrl: firstValue(row.googleMapsUrl, row.google_maps_url, row.maps_url, row.metadata?.googleMapsUrl, row.metadata?.google_maps_url),
     convertedCustomerId: firstValue(row.convertedCustomerId, row.converted_customer_id),
     createdAt: firstValue(row.createdAt, row.created_at),
     updatedAt: firstValue(row.updatedAt, row.updated_at),

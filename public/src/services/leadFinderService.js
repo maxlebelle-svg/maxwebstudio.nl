@@ -90,6 +90,8 @@ export function normalizeLeadFinderLead(lead = {}) {
     followUpDate: sanitizeString(lead.followUpDate),
     notes: sanitizeString(lead.notes),
     source: sanitizeString(lead.source) || "handmatig",
+    googlePlaceId: sanitizeString(lead.googlePlaceId || lead.google_place_id || lead.placeId),
+    googleMapsUrl: sanitizeString(lead.googleMapsUrl || lead.google_maps_url || lead.mapsUrl),
     convertedCustomerId: sanitizeString(lead.convertedCustomerId),
     createdAt,
     updatedAt: sanitizeString(lead.updatedAt) || createdAt,
