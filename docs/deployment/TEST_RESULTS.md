@@ -2190,3 +2190,35 @@ Niet inbegrepen:
 - SEPA-mandaten;
 - subscriptions live;
 - SQL.
+
+## Release Candidate 1 - Product Polish
+
+Datum: 2026-07-02
+
+Status: `IN PROGRESS / POLISH PASS 1`
+
+Scope:
+
+- geen nieuwe modules;
+- bestaande klantflow professioneler maken;
+- zichtbare UX-ruwheid oplossen voordat een echte klant door de flow gaat.
+
+Polish uitgevoerd:
+
+- klantportaalformulier `Wijzigingen` professioneler gemaakt met duidelijke heading, rustige dark card en betere veldstyling;
+- klantportaalberichtformulier dezelfde premium structuur gegeven;
+- harde contrastregels toegevoegd zodat klantportaal-koppen en labels wit blijven op donkere achtergronden;
+- factuurpagina toont nu contextuele betaaltekst: met betaallink wordt betalen uitgelegd, zonder betaallink blijft er een nette contactmelding staan;
+- klantportaal browsertitel aangepast van demo naar productiewaardige titel.
+
+Nog te testen in volledige RC1-flow:
+
+- live login;
+- klantportaal mobiel/desktop;
+- admin lead -> offerte -> klant;
+- welkomstmail;
+- factuurmail;
+- Mollie testbetaling;
+- wijzigingsverzoek;
+- berichten;
+- logout.

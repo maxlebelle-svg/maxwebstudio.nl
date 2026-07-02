@@ -203,9 +203,12 @@
           portal.textContent = "Terug naar klantportaal";
           actions.append(print, portal);
 
-          const note = createText("p", "admin-form-message", status === "betaald"
+          const noteText = ["betaald", "paid"].includes(status)
             ? "Deze factuur staat als betaald geregistreerd."
-            : "Online betalen via Mollie is nog niet actief. Neem contact op als je direct wilt betalen of vragen hebt over deze factuur.");
+            : paymentLink
+              ? "Je kunt deze factuur veilig betalen via de betaalknop. Na betaling werken we de status automatisch bij."
+              : "Er staat nog geen betaallink klaar. Neem contact op als je direct wilt betalen of vragen hebt over deze factuur.";
+          const note = createText("p", "admin-form-message", noteText);
 
           card.append(header, intro, meta, createText("h3", "", "Factuurregels"), lineTable, totals, actions, note);
         }

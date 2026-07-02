@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex, nofollow" />
-    <title>Klantportaal demo | Max Webstudio</title>
+    <title>Klantportaal | Max Webstudio</title>
     <meta name="description" content="Demo-klantportaal voor Max Webstudio klanten met offertes, facturen, projecten, websites en bestanden." />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -131,8 +131,12 @@
           <p>Kies eerst wat je wilt aanpassen. Beschrijf daarna in gewone taal wat er anders moet; technisch hoeft niet.</p>
           <em>Demo Max AI-laag - geen echte AI-call</em>
         </article>
-        <article class="admin-card customer-portal-card" id="portal-change-request-create">
-          <strong>Wat wil je laten aanpassen?</strong>
+        <article class="admin-card customer-portal-card portal-request-create-card" id="portal-change-request-create">
+          <div class="portal-form-heading">
+            <p class="section-kicker">Nieuwe wijziging</p>
+            <h3>Wat wil je laten aanpassen?</h3>
+            <p>Kies een type wijziging en beschrijf kort wat je nodig hebt. Max Webstudio pakt de rest netjes op.</p>
+          </div>
           <form class="admin-form portal-change-request-form" id="portal-change-request-form">
             <fieldset class="portal-change-choice-grid">
               <legend>Kies wat het beste past</legend>
@@ -169,8 +173,12 @@
           <p>Je gesprekken verschijnen hier zodra je klantdata is geladen.</p>
           <em>Demo Max AI-laag - geen echte AI-call</em>
         </article>
-        <article class="admin-card customer-portal-card" id="portal-message-create">
-          <strong>Stuur een bericht</strong>
+        <article class="admin-card customer-portal-card portal-request-create-card" id="portal-message-create">
+          <div class="portal-form-heading">
+            <p class="section-kicker">Nieuw bericht</p>
+            <h3>Stuur een bericht</h3>
+            <p>Stel je vraag kort en direct. Je bericht komt rustig in de portaalgesprekken terecht.</p>
+          </div>
           <form class="admin-form portal-message-form" id="portal-message-form">
             <label>Waar gaat het over?<input id="portal-message-subject" name="subject" type="text" maxlength="180" placeholder="Bijvoorbeeld: vraag over planning" required /></label>
             <label class="admin-profile-wide">Bericht<textarea id="portal-message-body" name="body" rows="4" maxlength="2500" placeholder="Typ kort wat je wilt vragen of doorgeven." required></textarea></label>
