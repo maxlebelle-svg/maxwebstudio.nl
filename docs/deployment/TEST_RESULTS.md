@@ -2222,3 +2222,40 @@ Nog te testen in volledige RC1-flow:
 - wijzigingsverzoek;
 - berichten;
 - logout.
+
+## RC1 Live Customer Journey Test
+
+Datum: 2026-07-02
+
+Status: `PARTIAL / BLOCKED PENDING TEST LOGIN AND MOLLIE CHECKOUT`
+
+Uitgevoerd:
+
+- live `https://maxwebstudio.nl/login.html` geopend: PASS;
+- production auth UI zichtbaar: PASS;
+- directe toegang naar `https://maxwebstudio.nl/klantportaal.html` zonder sessie getest: eerste run toonde nog demo-portaalinterface;
+- fix toegevoegd: normale bezoekers zonder sessie krijgen nu alleen een veilige login-fallback, demo blijft achter Developer Mode.
+
+Nog niet volledig uitvoerbaar vanuit deze sessie:
+
+- geldige klantlogin;
+- wijzigingsverzoek versturen als echte klant;
+- bericht sturen als echte klant;
+- offerte akkoord geven als echte klant;
+- factuurmail/link live openen vanuit echte klantcontext;
+- Mollie testcheckout afronden;
+- webhook naar `paid` valideren;
+- klantportaal betaalstatus controleren na webhook.
+
+Blockers:
+
+- geldig testaccount/wachtwoord of actieve klantlogin nodig voor de echte klantreis;
+- één concrete testfactuur met Mollie betaallink nodig;
+- Mollie testcheckout moet in browser worden afgerond, zonder live geld.
+
+Veiligheidsstatus:
+
+- geen live geld geïnd;
+- geen secrets gelogd;
+- geen nieuwe features toegevoegd;
+- directe toegang zonder sessie is aangescherpt.

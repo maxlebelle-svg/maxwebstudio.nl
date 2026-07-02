@@ -287,7 +287,7 @@
           supabaseCustomerId = supabaseCustomerId || profileContext.supabaseCustomerId;
           portalDataMode = portalDataMode || profileContext.mode;
           portalLogout.hidden = false;
-        } else {
+        } else if (supabaseSessionResult?.session || isDeveloperModeEnabled()) {
           stagingBridge = await ensureStagingClientPortalDemoSession();
         }
         if (!profileContext.profileFound && stagingBridge.active) {
@@ -350,7 +350,7 @@
           if (!session) {
             portalAuthText.textContent = developerMode
               ? `${authReadiness.developerMessage} Auth blijft uit tot release approval groen is.`
-              : "Je bekijkt nu een veilige demo van het klantportaal. Echte klantlogin wordt gecontroleerd klaargezet.";
+              : "Log in om je klantportaal te bekijken. Zonder sessie tonen we geen klantportaalgegevens.";
             return;
           }
           const roleLabel = session.role === "customer" ? "demo-klant" : session.role || "demo-gebruiker";
@@ -383,9 +383,16 @@
 
         await renderSessionNotice();
 
+        if (!readCurrentSession() && !isDeveloperModeEnabled()) {
+          portalTitle.textContent = "Log in om je klantportaal te bekijken";
+          portalSubtitle.textContent = "Je klantgegevens blijven afgeschermd totdat je bent ingelogd.";
+          showSafePortalFallback("Je bent nog niet ingelogd.");
+          return;
+        }
+
         const customerAccessDecision = requireCustomerAccess(customerId, {
           pageName: "klantportaal",
-          allowDemo: true,
+          allowDemo: isDeveloperModeEnabled(),
         });
         if (!customerAccessDecision.allowed && customerAccessDecision.decision === "customer_access_mismatch") {
           portalTitle.textContent = "Geen toegang tot deze klantdata";
