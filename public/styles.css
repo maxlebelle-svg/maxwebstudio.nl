@@ -8379,6 +8379,228 @@ h3 {
   gap: 8px;
 }
 
+/* Admin RC polish: normal mode is for daily work; technical source/debug UI lives in Developer Mode. */
+.admin-body:not(.is-developer-mode) #customer-source-summary,
+.admin-body:not(.is-developer-mode) #customer-source-detail,
+.admin-body:not(.is-developer-mode) #website-source-summary,
+.admin-body:not(.is-developer-mode) #website-source-detail,
+.admin-body:not(.is-developer-mode) #project-source-summary,
+.admin-body:not(.is-developer-mode) #project-source-detail,
+.admin-body:not(.is-developer-mode) #quote-source-summary,
+.admin-body:not(.is-developer-mode) #quote-source-detail,
+.admin-body:not(.is-developer-mode) #invoice-source-summary,
+.admin-body:not(.is-developer-mode) #invoice-source-detail,
+.admin-body:not(.is-developer-mode) #subscription-source-summary,
+.admin-body:not(.is-developer-mode) #file-source-summary,
+.admin-body:not(.is-developer-mode) #file-source-detail,
+.admin-body:not(.is-developer-mode) .source-mode-filters,
+.admin-body:not(.is-developer-mode) label:has(#customer-data-mode),
+.admin-body:not(.is-developer-mode) label:has(#website-data-mode),
+.admin-body:not(.is-developer-mode) label:has(#project-data-mode),
+.admin-body:not(.is-developer-mode) label:has(#quote-data-mode),
+.admin-body:not(.is-developer-mode) label:has(#invoice-data-mode),
+.admin-body:not(.is-developer-mode) label:has(#subscription-data-mode) {
+  display: none !important;
+}
+
+.admin-body.is-admin-logged-in #admin-login-card label[for="admin-email"],
+.admin-body.is-admin-logged-in #admin-email,
+.admin-body.is-admin-logged-in #admin-login-card label[for="admin-password"],
+.admin-body.is-admin-logged-in #admin-password,
+.admin-body.is-admin-logged-in #admin-login,
+.admin-body.is-admin-logged-in #admin-forgot-password {
+  display: none;
+}
+
+.admin-body.is-admin-logged-in #admin-login-card {
+  gap: 12px;
+}
+
+#admin-access-message:empty {
+  display: none;
+}
+
+.admin-crm-shell {
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: 16px;
+}
+
+.admin-sidebar {
+  padding: 16px;
+}
+
+.admin-hero {
+  min-height: 0;
+  padding: clamp(24px, 4vw, 42px);
+}
+
+.admin-hero h1 {
+  font-size: clamp(42px, 5.2vw, 68px);
+}
+
+.admin-quick-actions .admin-action-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.admin-quick-actions .admin-action-strip .button {
+  min-width: 150px;
+  flex: 0 1 auto;
+}
+
+.admin-flow-steps {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.admin-flow-steps span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid rgba(37, 99, 235, 0.28);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.82);
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(25, 194, 255, 0.08)),
+    rgba(255, 255, 255, 0.05);
+  font-weight: 900;
+  text-align: center;
+}
+
+.admin-profile-form input,
+.admin-profile-form select,
+.admin-profile-form textarea,
+.admin-filters input,
+.admin-filters select,
+.settings-card input:not([type="checkbox"]),
+.settings-card select,
+.settings-card textarea {
+  border-color: rgba(171, 196, 224, 0.22);
+  color: #f8fbff;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.045)),
+    rgba(8, 24, 38, 0.78);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.admin-profile-form input::placeholder,
+.admin-profile-form textarea::placeholder,
+.admin-filters input::placeholder,
+.settings-card input::placeholder,
+.settings-card textarea::placeholder {
+  color: rgba(220, 232, 246, 0.48);
+  opacity: 1;
+}
+
+.settings-card input[type="checkbox"],
+.admin-profile-form input[type="checkbox"] {
+  width: 18px;
+  min-height: 18px;
+  accent-color: #2563eb;
+}
+
+.settings-status-list div {
+  min-width: 0;
+}
+
+.settings-status-list strong,
+.detail-card strong,
+.health-card strong {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.compact-admin-grid .detail-card strong,
+.settings-status-list strong {
+  font-size: clamp(20px, 2.4vw, 34px);
+  line-height: 1.05;
+}
+
+.leadfinder-grid {
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+}
+
+.leadfinder-form .admin-profile-fields,
+.leadfinder-detail-card .admin-profile-actions {
+  gap: 10px;
+}
+
+.leadfinder-detail-card .settings-status-list div {
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.leadfinder-detail-card .settings-status-list div:last-child {
+  border-bottom: 0;
+}
+
+.admin-profile-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  align-items: stretch;
+  width: 100%;
+}
+
+.admin-profile-actions .button,
+.admin-profile-actions select,
+.admin-profile-actions a.button {
+  width: 100%;
+  min-height: 44px;
+}
+
+.admin-profile-actions .admin-form-message {
+  grid-column: 1 / -1;
+}
+
+.crm-auth-actions,
+.website-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.admin-mail-option {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid rgba(37, 99, 235, 0.38);
+  border-radius: 8px;
+  color: var(--white);
+  background:
+    radial-gradient(circle at 92% 20%, rgba(25, 194, 255, 0.18), transparent 34%),
+    linear-gradient(135deg, rgba(37, 99, 235, 0.2), rgba(255, 255, 255, 0.055)),
+    rgba(8, 24, 38, 0.72);
+}
+
+.admin-mail-option span {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-mail-option strong {
+  color: var(--white);
+  font-size: 16px;
+}
+
+.admin-mail-option small {
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-transform: none;
+}
+
+.admin-mail-option input {
+  width: 22px;
+  min-height: 22px;
+}
+
 .automation-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }

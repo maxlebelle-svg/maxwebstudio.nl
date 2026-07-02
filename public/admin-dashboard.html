@@ -250,9 +250,17 @@
             <div>
               <p class="section-kicker">Sales pipeline</p>
               <h2>Sales pipeline</h2>
-              <p class="admin-section-intro">Beheer de route van nieuwe lead naar bellen, offerte, verkocht en klant actief. Dit blijft local/demo totdat de salesdatalaag apart wordt uitgerold.</p>
+              <p class="admin-section-intro">Volg nieuwe kansen van eerste contact tot offerte, verkoop en klantactivatie.</p>
             </div>
             <span class="admin-preview-badge">Geen scraping</span>
+          </div>
+
+          <div class="admin-flow-steps" aria-label="Salesflow">
+            <span>Lead</span>
+            <span>Bellen</span>
+            <span>Offerte</span>
+            <span>Verkocht</span>
+            <span>Klant actief</span>
           </div>
 
           <div class="admin-grid workflow-metrics" id="leadfinder-metrics" aria-live="polite"></div>
@@ -262,7 +270,7 @@
               <div class="admin-profile-form-heading">
                 <div>
                   <strong>Lead registreren</strong>
-                  <span>Voeg handmatig een bedrijf toe aan de lokale sales pipeline.</span>
+                  <span>Leg een nieuwe verkoopkans vast. De opvolging verschijnt direct in je saleslijst.</span>
                 </div>
               </div>
               <div class="admin-profile-fields">
@@ -1267,7 +1275,14 @@
             <label for="new-website">Website / domein<input id="new-website" type="text" placeholder="voorbeeld.nl" required /></label>
             <label for="new-package">Gekocht pakket<select id="new-package"><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option><option value="One Page Website">One Page Website</option></select></label>
             <label for="new-project-name">Projectnaam optioneel<input id="new-project-name" type="text" placeholder="Bijv. Nieuwe website" /></label>
-            <label class="settings-toggle admin-profile-wide" for="new-send-welcome-email"><input id="new-send-welcome-email" type="checkbox" /> Welkomstmail direct versturen via Resend</label>
+            <label class="admin-mail-option admin-profile-wide" for="new-send-welcome-email">
+              <input id="new-send-welcome-email" type="checkbox" />
+              <span>
+                <strong>Welkomstmail direct versturen</strong>
+                <small>Laat dit uit zolang je de klant nog niet wilt uitnodigen. Je kunt eerst het mailconcept bekijken.</small>
+              </span>
+              <mark class="status-badge status-prepared">Optioneel</mark>
+            </label>
           </div>
           <div class="admin-onboarding-preview" id="new-customer-onboarding-preview" hidden>
             <strong>Welkomstmail concept</strong>
@@ -9335,6 +9350,14 @@
           adminAccessMessage.className = `admin-form-message ${type}`.trim();
         }
 
+        function setAdminOperationalMessage(text, type = "") {
+          if (!isDeveloperModeEnabled() && type === "success") {
+            setAdminAccessMessage("", "");
+            return;
+          }
+          setAdminAccessMessage(text, type);
+        }
+
         function renderAdminLockedState() {
           state.customers = [];
           state.profiles = [];
@@ -9398,6 +9421,7 @@
         function updateAdminSessionUi() {
           const email = state.adminSession?.email || "";
           const loggedIn = Boolean(email && state.adminSession?.accessToken);
+          document.body.classList.toggle("is-admin-logged-in", loggedIn);
           adminSessionLabel.textContent = loggedIn ? `Ingelogd als ${email}` : "Log in met je Max Webstudio admin-account.";
           adminSessionLogoutButton.hidden = !loggedIn;
           adminLoginButton.hidden = loggedIn;
@@ -15297,7 +15321,27 @@
             const invoiceSourceStatus = state.invoiceSourceStatus || {};
             const subscriptionSourceStatus = state.subscriptionSourceStatus || {};
             const fileSourceStatus = state.fileSourceStatus || {};
-            if (fileSourceStatus.error && fileSourceStatus.fallbackUsed) {
+            const technicalStatusMessage = (() => {
+              if (fileSourceStatus.error && fileSourceStatus.fallbackUsed) return `Bestanden hybrid fallback actief: ${fileSourceStatus.error}`;
+              if (fileSourceStatus.error) return `Supabase bestanden konden niet worden gelezen: ${fileSourceStatus.error}`;
+              if (subscriptionSourceStatus.error && subscriptionSourceStatus.fallbackUsed) return `Abonnement hybrid fallback actief: ${subscriptionSourceStatus.error}`;
+              if (subscriptionSourceStatus.error) return `Supabase abonnementen konden niet worden gelezen: ${subscriptionSourceStatus.error}`;
+              if (invoiceSourceStatus.error && invoiceSourceStatus.fallbackUsed) return `Factuur hybrid fallback actief: ${invoiceSourceStatus.error}`;
+              if (invoiceSourceStatus.error) return `Supabase facturen konden niet worden gelezen: ${invoiceSourceStatus.error}`;
+              if (quoteSourceStatus.error && quoteSourceStatus.fallbackUsed) return `Offerte hybrid fallback actief: ${quoteSourceStatus.error}`;
+              if (quoteSourceStatus.error) return `Supabase offertes konden niet worden gelezen: ${quoteSourceStatus.error}`;
+              if (projectSourceStatus.error && projectSourceStatus.fallbackUsed) return `Project hybrid fallback actief: ${projectSourceStatus.error}`;
+              if (projectSourceStatus.error) return `Supabase projecten konden niet worden gelezen: ${projectSourceStatus.error}`;
+              if (websiteSourceStatus.error && websiteSourceStatus.fallbackUsed) return `Website hybrid fallback actief: ${websiteSourceStatus.error}`;
+              if (websiteSourceStatus.error) return `Supabase websites konden niet worden gelezen: ${websiteSourceStatus.error}`;
+              if (sourceStatus.error && sourceStatus.fallbackUsed) return `Hybrid fallback actief: ${sourceStatus.error}`;
+              if (sourceStatus.error) return `Supabase customers konden niet worden gelezen: ${sourceStatus.error}`;
+              return "";
+            })();
+
+            if (technicalStatusMessage && !isDeveloperModeEnabled()) {
+              setAdminAccessMessage("Niet alle gegevens konden worden geladen. Open Developer Mode voor technische details.", "error");
+            } else if (fileSourceStatus.error && fileSourceStatus.fallbackUsed) {
               setAdminAccessMessage(`Bestanden hybrid fallback actief: ${fileSourceStatus.error}`, "error");
             } else if (fileSourceStatus.error) {
               setAdminAccessMessage(`Supabase bestanden konden niet worden gelezen: ${fileSourceStatus.error}`, "error");
@@ -15344,7 +15388,7 @@
             } else if (sourceStatus.error) {
               setAdminAccessMessage(`Supabase customers konden niet worden gelezen: ${sourceStatus.error}`, "error");
             } else {
-              setAdminAccessMessage(`CRM geladen via customer mode ${sourceStatus.mode || "local"}, website mode ${websiteSourceStatus.mode || "local"}, project mode ${projectSourceStatus.mode || "local"}, quote mode ${quoteSourceStatus.mode || "local"}, invoice mode ${invoiceSourceStatus.mode || "local"}, subscription mode ${subscriptionSourceStatus.mode || "local"} en files mode ${fileSourceStatus.mode || "local"}.`, "success");
+              setAdminOperationalMessage(`CRM geladen via customer mode ${sourceStatus.mode || "local"}, website mode ${websiteSourceStatus.mode || "local"}, project mode ${projectSourceStatus.mode || "local"}, quote mode ${quoteSourceStatus.mode || "local"}, invoice mode ${invoiceSourceStatus.mode || "local"}, subscription mode ${subscriptionSourceStatus.mode || "local"} en files mode ${fileSourceStatus.mode || "local"}.`, "success");
             }
           } catch (error) {
             setAdminAccessMessage(error.message || "CRM-klanten konden niet worden geladen.", "error");
@@ -16234,7 +16278,20 @@
       }
 
       function getLeadfinderLeads() {
-        return leadfinderSourceStatus ? leadfinderDataLayerLeads : readLeadFinderLeads();
+        const leads = leadfinderSourceStatus ? leadfinderDataLayerLeads : readLeadFinderLeads();
+        if (isDeveloperModeEnabled()) return leads;
+        return leads.filter((lead) => !isDemoLeadfinderLead(lead));
+      }
+
+      function isDemoLeadfinderLead(lead = {}) {
+        const source = String(lead.source || lead._source || "").toLowerCase();
+        const id = String(lead.id || "").toLowerCase();
+        const email = String(lead.email || "").toLowerCase();
+        const website = String(lead.websiteUrl || "").toLowerCase();
+        return source.includes("demo")
+          || id.includes("demo")
+          || email.endsWith(".example")
+          || website.includes(".example");
       }
 
       function isLocalLead(lead = {}) {
