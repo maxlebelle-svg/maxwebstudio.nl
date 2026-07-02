@@ -3188,3 +3188,30 @@ Niet inbegrepen:
 - automatische incasso;
 - subscriptions live;
 - Mollie live approval.
+
+## RC1 - First Live Customer Release Candidate
+
+Status: `RC1 CANDIDATE / AWAITING FINAL MANUAL VALIDATION`
+
+Doel:
+
+- alles wat nu gebouwd is laten voelen alsof een betalende klant het morgen kan gebruiken;
+- geen nieuwe modules toevoegen totdat de laatste klantreis groen is.
+
+Nog te valideren:
+
+- geldig klantaccount;
+- wijzigingsverzoek;
+- bericht;
+- offerte akkoord;
+- factuur;
+- Mollie testbetaling;
+- logout;
+- directe toegang zonder sessie.
+
+RC2-richting na GO:
+
+- polish op offertes/facturen;
+- backup/restore governance aanscherpen;
+- sales/admin dagelijkse workflows verkorten;
+- daarna pas nieuwe modules zoals Sales Portal, Leadfinder AI, VoIP en echte Max AI-calls.

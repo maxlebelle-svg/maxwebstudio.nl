@@ -1,12 +1,33 @@
 # Release Candidate Approval Pack
 
-Status: `NO-GO / AWAITING MANUAL APPROVAL`
+Status: `RC1 CANDIDATE / AWAITING FINAL MANUAL VALIDATION`
 
-Deze checklist bereidt de release candidate voor. Dit document voert niets uit, deployt niets en wijzigt geen productie.
+Deze checklist bewaakt de laatste handmatige RC1-validatie. De productie-fundering is inmiddels ingericht; dit document voert niets uit, deployt niets en wijzigt geen productie.
+
+## Current Platform Status
+
+| Onderdeel | Status | Notities |
+| --- | --- | --- |
+| Production database foundation | PASS | Minimale klantportaal-baseline, indexes, RLS, policies en legacy cleanup uitgevoerd. |
+| Production authentication | PASS | Productie-login is actief en klantlogin is bewezen. |
+| Production customer onboarding | PASS | Admin onboarding/provisioning is gebouwd en server-side voorbereid. |
+| Production client portal | PASS | Klantportaal laadt achter sessie; directe toegang zonder sessie toont veilige fallback. |
+| Admin onboarding | PASS | Nieuwe klant-wizard en provisioningflow zijn aanwezig. |
+| Sales pipeline MVP | PASS | Lead -> offerte -> klantflow is aanwezig. |
+| Professional quote experience | PASS | Offertepagina en akkoordflow zijn voorbereid. |
+| Professional invoice experience | PASS | Factuurpagina, factuurmail/link en printbare ervaring zijn voorbereid. |
+| Mollie test payment | PENDING | Testmodus is afgedwongen; handmatige testbetaling moet nog groen worden. |
+| RC1 final customer journey | PENDING | Laatste end-to-end handmatige validatie staat klaar. |
+
+Resterend voor RC1 release:
+
+- Final customer journey validation.
+- Mollie test payment.
+- Optional Resend inbox verification.
 
 ## Doel
 
-Alle resterende NO-GO punten omzetten naar concrete approval/evidence-items zodat daarna pas een expliciet GO/NO-GO releasebesluit genomen kan worden.
+Alle resterende RC1-punten omzetten naar concrete handmatige evidence zodat daarna een expliciet GO/NO-GO releasebesluit genomen kan worden.
 
 ## Niet Doen In Deze Fase
 
@@ -32,6 +53,12 @@ Alle resterende NO-GO punten omzetten naar concrete approval/evidence-items zoda
 | Mollie readiness | Testmodus evidence of bewuste not-applicable voor RC | pending | eigenaar/technisch verantwoordelijke | Geen live betaling in deze fase |
 | Resend readiness | Testmail evidence of bewuste not-applicable voor RC | pending | eigenaar/technisch verantwoordelijke | Geen secrets in docs |
 | Netlify Functions runtime | Testcalls in testcontext of bewuste not-applicable voor RC | pending | technisch verantwoordelijke | Syntax is PASS; runtime nog los bevestigen |
+
+Backup-context voor RC1:
+
+- Supabase draait momenteel op een fase waarin nog geen bedrijfskritische klantdata in productie hoort te staan.
+- Voor de eerste RC is een handmatige backup/snapshot-notitie acceptabel als eigenaar-besluit, mits er geen echte klantdata verloren kan gaan.
+- Zodra de eerste betalende klanten actief zijn, wordt een betaalde backupstrategie of gecontroleerde Supabase backup/restore-procedure verplicht onderdeel van de releasecriteria.
 
 ## RC1 Final Handmatige Validatiechecklist
 

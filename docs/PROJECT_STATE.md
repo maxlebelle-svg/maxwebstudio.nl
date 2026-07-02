@@ -3944,3 +3944,23 @@ Veiligheidsstatus:
 - geen SEPA;
 - geen SQL;
 - geen Mollie/service-role secrets in frontend.
+
+## RC1 Release Candidate Status
+
+Status: `RC1 CANDIDATE / AWAITING FINAL MANUAL VALIDATION`
+
+Huidige stand:
+
+- publieke website is live-ready;
+- productie database foundation is ingericht;
+- productie-auth en klantportaal zijn actief achter sessie;
+- admin onboarding/provisioning is beschikbaar;
+- sales pipeline, offerte-ervaring en factuur-ervaring zijn aanwezig;
+- Mollie is test-mode ready, maar testbetaling moet nog handmatig groen worden.
+
+Laatste RC1-stappen:
+
+- final customer journey validation;
+- Mollie test payment;
+- optionele Resend inbox-verificatie;
+- owner GO/NO-GO op backup/rollback-context.
