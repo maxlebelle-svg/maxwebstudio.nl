@@ -1479,6 +1479,7 @@
     <script>
       (async () => {
         const crmEndpoint = "/.netlify/functions/admin-client-profiles";
+        const adminSupabaseDataEndpoint = "/.netlify/functions/admin-supabase-data";
         const customerOnboardingEndpoint = "/.netlify/functions/admin-customer-onboarding";
         const healthEndpoint = "/.netlify/functions/admin-website-health";
         const billingEndpoint = "/.netlify/functions/admin-billing";
@@ -8100,6 +8101,31 @@
         }
 
         async function readAdminDataLayerModule(moduleName, mode) {
+          if (mode === "supabase-read") {
+            const token = getAdminBearer();
+            if (!token) throw new Error("Log in als admin om Supabase-data te lezen.");
+            const response = await fetch(`${adminSupabaseDataEndpoint}?module=${encodeURIComponent(moduleName)}`, {
+              headers: {
+                Accept: "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || data.success === false) {
+              throw new Error(data.error || "Supabase admin-data kon niet worden gelezen.");
+            }
+            return {
+              mode: data.mode || mode,
+              records: Array.isArray(data.records) ? data.records : [],
+              counts: data.counts || {},
+              duplicateMerges: [],
+              fallbackUsed: false,
+              error: data.error || "",
+              warning: data.warning || "",
+              refreshedAt: data.refreshedAt || new Date().toISOString(),
+              dataLayer: "admin-supabase-data",
+            };
+          }
           const { readSupabaseDataLayerModule } = await import("./src/services/supabaseDataLayerService.js");
           const result = await readSupabaseDataLayerModule(moduleName, { mode });
           return {

@@ -2344,6 +2344,7 @@ Uitgevoerd:
 
 - admin-dashboard laadt de Supabase browserclient voor read-only adminmodules;
 - publieke Supabase runtime-config wordt opgehaald via `client-auth-config`;
+- adminmodules lezen klanten/websites/projecten en klantportaaldata via de beveiligde `admin-supabase-data` serverless function;
 - customer/website/project/quote/invoice/subscription modes migreren van `local`/`hybrid` naar `supabase-read`;
 - localStorage wordt niet meer automatisch als echte productiedatabron gebruikt zodra productie beschikbaar is;
 - files/storage is optioneel gemaakt zodat een ontbrekende files-tabel de klant-, website- en projectdata niet blokkeert;

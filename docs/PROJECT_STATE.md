@@ -4051,6 +4051,7 @@ Besluit:
 - localStorage blijft alleen beschikbaar als expliciete demo/noodfallback via Developer Mode tooling;
 - oude browserinstellingen die nog op `local` of `hybrid` stonden worden eenmalig naar `supabase-read` gemigreerd;
 - de Supabase browserclient wordt geladen en haalt alleen publieke runtime-config op via de bestaande Netlify `client-auth-config` endpoint;
+- admin-read voor productiedata loopt via de beveiligde server-side `admin-supabase-data` functie met Supabase adminsessie;
 - service-role blijft uitsluitend server-side;
 - bestandsregistratie is optioneel en blokkeert de admin productiedata niet zolang storage/files nog geen volledige productietabel heeft.
 
