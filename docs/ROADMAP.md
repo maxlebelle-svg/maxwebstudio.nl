@@ -3266,8 +3266,27 @@ Vastgelegd:
 
 Volgende operationele stappen:
 
-- Quantumbouw intern aanmaken in de productie-admin/CRM met portal access `pending_invitation`;
+- admin/CRM eerst Supabase-first laten draaien; geen Quantumbouw-record in Local Mode aanmaken;
+- Quantumbouw intern aanmaken in de productie-admin/CRM met portal access `pending_invitation` zodra de Supabase data modes groen zijn;
 - Quantumbouw-account pas definitief uitnodigen na handmatige GO;
 - betaald factuurrecord koppelen zodra finance-dataflow definitief groen is;
 - downloads/assets toevoegen zodra klantbestanden production-ready zijn;
 - wijzigingsverzoeken en berichten met Michel als eerste echte klant valideren.
+
+## Admin Data Layer - Supabase First
+
+Status: `IN PROGRESS`
+
+Doel:
+
+- klanten, websites, projecten, offertes, facturen en abonnementen standaard uit Supabase lezen;
+- localStorage uitsluitend behouden als fallback/demo;
+- voorkomen dat echte productieklanten alleen in de browser van de eigenaar bestaan;
+- daarna Quantumbouw als eerste echte productieklant permanent registreren.
+
+Acceptatie:
+
+- admin-dashboard toont geen `Local` meer als standaard data mode;
+- systeemstatus toont Supabase als gekoppelde database;
+- nieuwe klantflow blijft server-side en schrijft niet naar localStorage tenzij expliciet Developer Mode/fallback;
+- Quantumbouw wordt pas ingevoerd nadat deze status groen is.

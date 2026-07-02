@@ -2311,3 +2311,25 @@ Veiligheidsstatus:
 - geen service-role naar frontend;
 - geen OpenAI/Mollie/Resend-wijziging;
 - geen klant-specifieke hardcoding.
+
+## Admin Data Layer Supabase-First Prep
+
+Datum: 2026-07-02
+
+Status: `READY FOR ADMIN UI VALIDATION`
+
+Uitgevoerd:
+
+- admin-dashboard defaults omgezet van Local naar Supabase-first hybrid;
+- oude browserinstellingen met `local` worden eenmalig naar `hybrid` gebracht;
+- systeemstatus toont Supabase als gekoppelde database en localStorage als demo/noodfallback;
+- geen Quantumbouw/Michel klantrecord aangemaakt;
+- geen SQL uitgevoerd;
+- geen productie-data gewijzigd.
+
+Nog handmatig testen:
+
+- productie-admin openen na deploy;
+- controleren dat customer/website/project/quote/invoice/subscription data modes niet meer standaard op `Local` staan;
+- controleren dat het dashboard Supabase-data toont of veilig hybrid fallback meldt;
+- daarna pas Quantumbouw via de admin wizard registreren met welkomstmail uit.

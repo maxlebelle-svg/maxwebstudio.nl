@@ -4035,6 +4035,19 @@ Systeemstatus:
 
 Volgende veilige stap:
 
-- Quantumbouw intern aanmaken via de productie-admin wizard met welkomstmail uit;
+- admin-dashboard eerst Supabase-first gebruiken; geen nieuwe productieklanten meer lokaal aanmaken;
+- Quantumbouw intern aanmaken via de productie-admin wizard met welkomstmail uit zodra klanten/websites/projecten/offertes/facturen niet meer op Local Mode staan;
 - daarna pas klantportaal bekijken/valideren;
 - Michel pas uitnodigen wanneer de portal professioneel genoeg voelt.
+
+## Admin Data Layer - Supabase First
+
+Status: `IN PROGRESS / LOCAL ONLY FALLBACK`
+
+Besluit:
+
+- nieuwe productieklanten worden niet meer in localStorage aangemaakt;
+- admin-dashboard gebruikt standaard Supabase-first hybrid modes voor klanten, websites, projecten, offertes, facturen en abonnementen;
+- localStorage blijft alleen beschikbaar als demo/noodfallback en Developer Mode tooling;
+- oude browserinstellingen die nog op `local` stonden worden eenmalig naar `hybrid` gemigreerd;
+- Quantumbouw/Michel wordt pas als klantrecord aangemaakt wanneer de adminweergave Supabase-first groen is.

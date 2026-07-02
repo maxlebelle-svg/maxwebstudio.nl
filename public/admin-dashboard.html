@@ -1634,13 +1634,13 @@
           portalShowFiles: true,
           portalWelcomeText: "Welkom in je Max Webstudio klantomgeving. Hier vind je jouw offertes, facturen, projecten, websites en bestanden.",
           developerMode: false,
-          dataProviderMode: "localStorage",
-          customerDataMode: "local",
-          websiteDataMode: "local",
-          projectDataMode: "local",
-          quoteDataMode: "local",
-          invoiceDataMode: "local",
-          subscriptionDataMode: "local",
+          dataProviderMode: "supabase-readonly",
+          customerDataMode: "hybrid",
+          websiteDataMode: "hybrid",
+          projectDataMode: "hybrid",
+          quoteDataMode: "hybrid",
+          invoiceDataMode: "hybrid",
+          subscriptionDataMode: "hybrid",
         };
         const integrationDefinitions = [
           { name: "Mollie", category: "Betalingen", status: "Demo voorbereid", action: "Bekijk status", description: "Betaalverzoeken zijn voorbereid en kunnen later via de Mollie API actief worden gekoppeld." },
@@ -2461,6 +2461,37 @@
           localStorage.setItem(settingsStorageKey, JSON.stringify({ ...settings, updatedAt: new Date().toISOString() }));
         }
 
+        const supabaseFirstUpgradeKey = "maxwebstudioAdminSupabaseFirstApplied";
+        const supabaseFirstModeKeys = [
+          ["customerDataMode", "maxwebstudioCustomerDataMode"],
+          ["websiteDataMode", "maxwebstudioWebsiteDataMode"],
+          ["projectDataMode", "maxwebstudioProjectDataMode"],
+          ["quoteDataMode", "maxwebstudioQuoteDataMode"],
+          ["invoiceDataMode", "maxwebstudioInvoiceDataMode"],
+          ["subscriptionDataMode", "maxwebstudioSubscriptionDataMode"],
+        ];
+
+        function applySupabaseFirstAdminDefaults(settings) {
+          if (localStorage.getItem(supabaseFirstUpgradeKey)) return settings;
+          const upgraded = { ...settings };
+          let changed = false;
+          if (!upgraded.dataProviderMode || upgraded.dataProviderMode === "localStorage") {
+            upgraded.dataProviderMode = "supabase-readonly";
+            changed = true;
+          }
+          supabaseFirstModeKeys.forEach(([settingKey, storageKey]) => {
+            const current = upgraded[settingKey] || localStorage.getItem(storageKey);
+            if (!current || current === "local") {
+              upgraded[settingKey] = "hybrid";
+              localStorage.setItem(storageKey, "hybrid");
+              changed = true;
+            }
+          });
+          localStorage.setItem(supabaseFirstUpgradeKey, new Date().toISOString());
+          if (changed) writeStoredSettings(upgraded);
+          return upgraded;
+        }
+
         function settingsStatusClass(value) {
           const status = normalize(value);
           if (status === "actief" || status === "crm opslag actief") return "status-active";
@@ -2535,15 +2566,22 @@
         }
 
         function renderSystemStatus() {
+          const settings = readStoredSettings();
+          const modeLabel = (mode) => mode === "hybrid" ? "Supabase + fallback" : mode === "supabase-read" ? "Supabase read" : mode === "local" ? "Local fallback" : mode || "Onbekend";
+          const modeClass = (mode) => mode === "local" ? "status-warning" : "status-active";
           const statuses = [
-            ["CRM opslag", "localStorage actief", "status-active"],
+            ["CRM opslag", "Supabase-first", "status-active"],
+            ["Klanten", modeLabel(settings.customerDataMode), modeClass(settings.customerDataMode)],
+            ["Websites", modeLabel(settings.websiteDataMode), modeClass(settings.websiteDataMode)],
+            ["Projecten", modeLabel(settings.projectDataMode), modeClass(settings.projectDataMode)],
             ["Offertes", "Actief", "status-active"],
             ["Facturen", "Actief", "status-active"],
-            ["Klantportaal", "Demo actief", "status-prepared"],
-            ["Betalingen", "Demo", "status-prepared"],
+            ["Klantportaal", "Productie-auth actief", "status-active"],
+            ["Betalingen", "Mollie test voorbereid", "status-prepared"],
             ["Boekhouding", "Voorbereid", "status-planned"],
-            ["E-mail", "Voorbereid", "status-prepared"],
-            ["Database", "Nog niet gekoppeld", "status-warning"],
+            ["E-mail", "Resend server-side", "status-active"],
+            ["Database", "Supabase gekoppeld", "status-active"],
+            ["Fallback", "Local alleen demo/nood", "status-prepared"],
           ];
           settingsSystemStatus.replaceChildren();
           statuses.forEach(([label, status, type]) => {
@@ -7977,27 +8015,27 @@
         }
 
         function currentCustomerDataMode() {
-          return customerDataModeSelect.value || readStoredSettings().customerDataMode || localStorage.getItem("maxwebstudioCustomerDataMode") || "local";
+          return customerDataModeSelect.value || readStoredSettings().customerDataMode || localStorage.getItem("maxwebstudioCustomerDataMode") || "hybrid";
         }
 
         function currentWebsiteDataMode() {
-          return websiteDataModeSelect.value || readStoredSettings().websiteDataMode || localStorage.getItem("maxwebstudioWebsiteDataMode") || "local";
+          return websiteDataModeSelect.value || readStoredSettings().websiteDataMode || localStorage.getItem("maxwebstudioWebsiteDataMode") || "hybrid";
         }
 
         function currentProjectDataMode() {
-          return projectDataModeSelect.value || readStoredSettings().projectDataMode || localStorage.getItem("maxwebstudioProjectDataMode") || "local";
+          return projectDataModeSelect.value || readStoredSettings().projectDataMode || localStorage.getItem("maxwebstudioProjectDataMode") || "hybrid";
         }
 
         function currentQuoteDataMode() {
-          return quoteDataModeSelect.value || readStoredSettings().quoteDataMode || localStorage.getItem("maxwebstudioQuoteDataMode") || "local";
+          return quoteDataModeSelect.value || readStoredSettings().quoteDataMode || localStorage.getItem("maxwebstudioQuoteDataMode") || "hybrid";
         }
 
         function currentInvoiceDataMode() {
-          return invoiceDataModeSelect.value || readStoredSettings().invoiceDataMode || localStorage.getItem("maxwebstudioInvoiceDataMode") || "local";
+          return invoiceDataModeSelect.value || readStoredSettings().invoiceDataMode || localStorage.getItem("maxwebstudioInvoiceDataMode") || "hybrid";
         }
 
         function currentSubscriptionDataMode() {
-          return subscriptionDataModeSelect.value || readStoredSettings().subscriptionDataMode || localStorage.getItem("maxwebstudioSubscriptionDataMode") || "local";
+          return subscriptionDataModeSelect.value || readStoredSettings().subscriptionDataMode || localStorage.getItem("maxwebstudioSubscriptionDataMode") || "hybrid";
         }
 
         async function getCustomerRepositoryModule() {
@@ -15447,13 +15485,14 @@
           });
         });
 
-        fillSettingsForm(readStoredSettings());
-        customerDataModeSelect.value = readStoredSettings().customerDataMode || localStorage.getItem("maxwebstudioCustomerDataMode") || "local";
-        websiteDataModeSelect.value = readStoredSettings().websiteDataMode || localStorage.getItem("maxwebstudioWebsiteDataMode") || "local";
-        projectDataModeSelect.value = readStoredSettings().projectDataMode || localStorage.getItem("maxwebstudioProjectDataMode") || "local";
-        quoteDataModeSelect.value = readStoredSettings().quoteDataMode || localStorage.getItem("maxwebstudioQuoteDataMode") || "local";
-        invoiceDataModeSelect.value = readStoredSettings().invoiceDataMode || localStorage.getItem("maxwebstudioInvoiceDataMode") || "local";
-        subscriptionDataModeSelect.value = readStoredSettings().subscriptionDataMode || localStorage.getItem("maxwebstudioSubscriptionDataMode") || "local";
+        const bootSettings = applySupabaseFirstAdminDefaults(readStoredSettings());
+        fillSettingsForm(bootSettings);
+        customerDataModeSelect.value = bootSettings.customerDataMode || localStorage.getItem("maxwebstudioCustomerDataMode") || "hybrid";
+        websiteDataModeSelect.value = bootSettings.websiteDataMode || localStorage.getItem("maxwebstudioWebsiteDataMode") || "hybrid";
+        projectDataModeSelect.value = bootSettings.projectDataMode || localStorage.getItem("maxwebstudioProjectDataMode") || "hybrid";
+        quoteDataModeSelect.value = bootSettings.quoteDataMode || localStorage.getItem("maxwebstudioQuoteDataMode") || "hybrid";
+        invoiceDataModeSelect.value = bootSettings.invoiceDataMode || localStorage.getItem("maxwebstudioInvoiceDataMode") || "hybrid";
+        subscriptionDataModeSelect.value = bootSettings.subscriptionDataMode || localStorage.getItem("maxwebstudioSubscriptionDataMode") || "hybrid";
         renderIntegrations();
         renderSystemStatus();
         renderAiWizardUi();
