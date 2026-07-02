@@ -4069,5 +4069,6 @@ Opgeleverd:
 Vervolg:
 
 - live inloggen met `info@maxwebstudio.nl`;
+- als login `Invalid login credentials` geeft: volg `docs/ADMIN_AUTH_RUNBOOK.md` om te controleren of de eerste admin bestaat of een resetlink aan te vragen;
 - controleren dat het dashboard bovenin "Ingelogd als info@maxwebstudio.nl" toont;
 - daarna pas Quantumbouw/Michel als productieklant registreren.

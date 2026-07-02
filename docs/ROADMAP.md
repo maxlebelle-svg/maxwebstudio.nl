@@ -3305,5 +3305,6 @@ Doel:
 Volgende stappen:
 
 - Netlify production env controleren op `ADMIN_EMAILS=info@maxwebstudio.nl` of fallback gebruiken;
+- eerste admin bestaan/reset controleren via `docs/ADMIN_AUTH_RUNBOOK.md`;
 - live admin-login testen;
 - daarna pas eerste klantrecord Quantumbouw aanmaken.

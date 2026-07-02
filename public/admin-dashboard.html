@@ -80,6 +80,7 @@
             <button class="button primary" id="admin-login" type="button">Inloggen</button>
             <button class="button secondary" id="admin-load" type="button">Laden</button>
           </div>
+          <button class="button secondary" id="admin-forgot-password" type="button">Wachtwoord vergeten</button>
           <button class="button secondary" id="admin-session-logout" type="button" hidden>Uitloggen</button>
           <p class="admin-form-message" id="admin-access-message" role="status"></p>
         </article>
@@ -1749,6 +1750,7 @@
         const adminEmailInput = document.getElementById("admin-email");
         const adminPasswordInput = document.getElementById("admin-password");
         const adminLoginButton = document.getElementById("admin-login");
+        const adminForgotPasswordButton = document.getElementById("admin-forgot-password");
         const adminSessionLogoutButton = document.getElementById("admin-session-logout");
         const adminSessionLabel = document.getElementById("admin-session-label");
         const adminTokenLoadButton = document.getElementById("admin-token-load");
@@ -9410,6 +9412,40 @@
           }
         }
 
+        async function requestAdminPasswordReset() {
+          const email = adminEmailInput.value.trim().toLowerCase();
+          if (!email) {
+            setAdminAccessMessage("Vul eerst je admin e-mailadres in.", "error");
+            return;
+          }
+          adminForgotPasswordButton.disabled = true;
+          adminForgotPasswordButton.textContent = "Resetlink...";
+          setAdminAccessMessage("Resetlink aanvragen...", "");
+          try {
+            const config = await fetchAdminAuthConfig();
+            const recoverUrl = new URL(`${config.supabaseUrl.replace(/\/$/, "")}/auth/v1/recover`);
+            recoverUrl.searchParams.set("redirect_to", `${window.location.origin}/login.html?type=recovery`);
+            const response = await fetch(recoverUrl.toString(), {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                apikey: config.supabaseAnonKey,
+                Authorization: `Bearer ${config.supabaseAnonKey}`,
+              },
+              body: JSON.stringify({ email }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data.error_description || data.msg || data.error || "Resetlink aanvragen is niet gelukt.");
+            setAdminAccessMessage("Als dit admin-account bestaat, ontvang je een resetlink. Stel daarna je wachtwoord in en log hier opnieuw in.", "success");
+          } catch (error) {
+            setAdminAccessMessage(error.message || "Resetlink aanvragen is niet gelukt.", "error");
+          } finally {
+            adminForgotPasswordButton.disabled = false;
+            adminForgotPasswordButton.textContent = "Wachtwoord vergeten";
+          }
+        }
+
         async function restoreAdminSession() {
           const session = readStoredAdminSession();
           if (!session) {
@@ -15357,6 +15393,7 @@
         adminPasswordInput.addEventListener("keydown", (event) => {
           if (event.key === "Enter") loginAdminSession();
         });
+        adminForgotPasswordButton.addEventListener("click", requestAdminPasswordReset);
         adminSessionLogoutButton.addEventListener("click", logoutAdminSession);
         adminTokenLoadButton.addEventListener("click", useAdminTokenFallback);
         adminLoadButton.addEventListener("click", () => loadCRMData(true));
