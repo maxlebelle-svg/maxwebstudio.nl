@@ -3058,3 +3058,28 @@ Nog niet:
 - echte digitale handtekening;
 - server-side offerte-acceptatie;
 - automatische factuur na akkoord.
+
+## Sprint 4B - Quote To Customer Flow
+
+Status: `IMPLEMENTED / ADMIN MVP`
+
+Doel:
+
+- geaccepteerde offertes direct kunnen doorzetten naar klant-aanmaak;
+- de route `lead -> offerte -> akkoord -> klant actief` bruikbaar maken in het adminportaal.
+
+Opgeleverd:
+
+- actie `Maak klant` bij geaccepteerde offertes;
+- knop `Klant aanmaken vanuit offerte` in de offerte-modal;
+- bestaande klant-aanmaak wizard wordt vooraf gevuld met offertegegevens;
+- lokale gekoppelde lead wordt op `Verkocht` gezet wanneer matchbaar;
+- geen automatische provisioning zonder expliciete admin-submit.
+
+Nog niet:
+
+- Mollie;
+- PDF;
+- automatische factuur;
+- server-side quote acceptance;
+- Sales Portal.

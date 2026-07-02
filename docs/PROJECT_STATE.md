@@ -3808,3 +3808,28 @@ Veiligheidsstatus:
 - geen digitale handtekening-backend;
 - geen nieuwe dependencies;
 - geen service-role of secrets in frontend.
+
+## Sprint 4B - Quote To Customer Flow
+
+Status: `IMPLEMENTED / ADMIN MVP`
+
+Doel:
+
+- na akkoord op een offerte logisch door kunnen naar klant-aanmaak;
+- de salesflow afronden zonder automatische provisioning of nieuwe backendrisico's.
+
+Opgeleverd:
+
+- geaccepteerde offertes tonen in admin een actie `Maak klant`;
+- offerte-modal bevat `Klant aanmaken vanuit offerte`;
+- klant-aanmaak wizard wordt vooraf gevuld met naam, e-mail, telefoon, bedrijf, domein, pakket en projectnaam uit de offerte;
+- gekoppelde lokale lead wordt, indien gevonden, op `Verkocht` gezet met notitie;
+- provisioning start pas wanneer de admin bewust op `Klantportaal klaarzetten` klikt.
+
+Veiligheidsstatus:
+
+- geen SQL;
+- geen Mollie;
+- geen PDF;
+- geen nieuwe backend;
+- geen automatische klantprovisioning zonder adminbevestiging.

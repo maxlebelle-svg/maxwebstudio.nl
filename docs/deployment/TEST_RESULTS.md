@@ -2014,3 +2014,33 @@ Niet inbegrepen:
 - server-side acceptatie;
 - echte digitale handtekening;
 - nieuwe dependencies.
+
+## Sprint 4B - Quote To Customer Flow
+
+Datum: 2026-07-02
+
+Status: `IMPLEMENTED / CHECKS PASS`
+
+Scope:
+
+- geaccepteerde offertes krijgen een directe klant-aanmaakactie;
+- klant-aanmaak wizard wordt gevuld vanuit offertegegevens;
+- lokale lead wordt naar `Verkocht` gezet wanneer deze aan de offerte te koppelen is;
+- provisioning start niet automatisch.
+
+Checks:
+
+- `git diff --check`: PASS;
+- `node --check public/script.js`: PASS;
+- `node --check public/src/services/leadFinderService.js`: PASS;
+- inline scriptcheck `public/admin-dashboard.html`: PASS;
+- inline scriptcheck `public/offerte.html`: PASS;
+- secrets-scan: PASS, alleen verwachte false positive in storage readiness tekst.
+
+Niet inbegrepen:
+
+- SQL;
+- Mollie;
+- PDF;
+- nieuwe backendfunctie;
+- automatische provisioning zonder adminbevestiging.

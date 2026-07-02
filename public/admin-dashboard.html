@@ -1442,6 +1442,7 @@
             <button class="button secondary" id="quote-mark-rejected" type="button">Markeer afgewezen</button>
             <a class="button secondary is-disabled" id="quote-open-link" href="#" target="_blank" rel="noopener" aria-disabled="true">Open offerte</a>
             <button class="button secondary" id="quote-copy-link" type="button">Kopieer offertelink</button>
+            <button class="button secondary" id="quote-create-customer" type="button">Klant aanmaken vanuit offerte</button>
             <button class="button secondary" id="quote-convert-invoice" type="button">Maak factuur van offerte</button>
             <button class="button secondary" id="quote-open-invoice" type="button">Open factuur</button>
             <button class="button secondary" id="quote-refresh-supabase" type="button">Ververs uit Supabase</button>
@@ -2057,6 +2058,7 @@
         const quoteMarkRejected = document.getElementById("quote-mark-rejected");
         const quoteOpenLink = document.getElementById("quote-open-link");
         const quoteCopyLink = document.getElementById("quote-copy-link");
+        const quoteCreateCustomer = document.getElementById("quote-create-customer");
         const quoteConvertInvoice = document.getElementById("quote-convert-invoice");
         const quoteOpenInvoice = document.getElementById("quote-open-invoice");
         const quoteRefreshSupabase = document.getElementById("quote-refresh-supabase");
@@ -8775,6 +8777,7 @@
             websiteName: website?.name || quote.websiteName || "",
             websiteDomain: website?.domain || quote.websiteDomain || "",
             projectName: project?.name || quote.projectName || "",
+            leadId: quote.leadId || quote.sourceLeadId || "",
             type: quote.type || quote.quoteType || "Website",
             title: String(quote.title || quote.type || "Offerte").trim(),
             status: normalizeQuoteStatus(quote.status),
@@ -12430,16 +12433,103 @@
           const linkedInvoice = quote?.convertedToInvoiceId ? invoiceById(quote.convertedToInvoiceId) : null;
           quoteOpenInvoice.disabled = !linkedInvoice;
           quoteConvertInvoice.disabled = !quote || quote.status !== "geaccepteerd" || Boolean(linkedInvoice);
+          quoteCreateCustomer.disabled = !quote || quote.status !== "geaccepteerd";
           if (!quote) {
             quoteConversionMessage.textContent = "";
           } else if (linkedInvoice) {
             quoteConversionMessage.textContent = `Omgezet naar factuur ${linkedInvoice.invoiceNumber}.`;
           } else if (quote.status === "geaccepteerd") {
-            quoteConversionMessage.textContent = "Deze geaccepteerde offerte kan worden omgezet naar een conceptfactuur.";
+            quoteConversionMessage.textContent = "Deze geaccepteerde offerte kan worden omgezet naar klant-aanmaak of conceptfactuur.";
           } else {
-            quoteConversionMessage.textContent = "Alleen geaccepteerde offertes kunnen worden omgezet naar factuur.";
+            quoteConversionMessage.textContent = "Alleen geaccepteerde offertes kunnen worden doorgezet naar klant-aanmaak of factuur.";
           }
           quoteConversionMessage.className = `admin-form-message ${linkedInvoice || quote?.status === "geaccepteerd" ? "success" : ""}`.trim();
+        }
+
+        function inferPackageFromQuote(quote = {}) {
+          const text = normalize([
+            quote.type,
+            quote.title,
+            quote.proposal,
+            ...(Array.isArray(quote.lines) ? quote.lines.map((line) => line.description) : []),
+          ].join(" "));
+          if (text.includes("premium") || text.includes("growth")) return "Premium";
+          if (text.includes("plus") || text.includes("business")) return "Plus";
+          return "Basis";
+        }
+
+        function cleanDomain(value = "") {
+          return String(value || "").trim().replace(/^https?:\/\//i, "").replace(/^www\./i, "").replace(/\/.*$/, "");
+        }
+
+        function findLeadForQuote(quote = {}) {
+          let leads = [];
+          try {
+            leads = JSON.parse(localStorage.getItem(leadFinderStorageKey) || "[]");
+          } catch (error) {
+            leads = [];
+          }
+          if (!Array.isArray(leads)) return null;
+          const leadId = quote.leadId || quote.sourceLeadId || "";
+          const quoteEmail = normalize(quote.acceptedByEmail || quote.customerEmail || "");
+          const quoteCompany = normalize(quote.customerCompany || quote.customerName || "");
+          return leads.find((lead) => {
+            if (leadId && lead.id === leadId) return true;
+            const leadEmail = normalize(lead.email || "");
+            const leadCompany = normalize(lead.companyName || lead.company || lead.businessName || "");
+            return (quoteEmail && leadEmail && quoteEmail === leadEmail)
+              || (quoteCompany && leadCompany && quoteCompany === leadCompany);
+          }) || null;
+        }
+
+        function markLeadSoldFromQuote(quote = {}) {
+          const lead = findLeadForQuote(quote);
+          if (!lead || (lead._source && lead._source !== "local")) return null;
+          let leads = [];
+          try {
+            leads = JSON.parse(localStorage.getItem(leadFinderStorageKey) || "[]");
+          } catch (error) {
+            return null;
+          }
+          if (!Array.isArray(leads)) return null;
+          const now = new Date().toISOString();
+          const updatedLead = {
+            ...lead,
+            callStatus: lead.callStatus === "customer_active" ? "customer_active" : "won",
+            notes: [
+              lead.notes,
+              `[${new Date().toLocaleDateString("nl-NL")}] Offerte ${quote.quoteNumber || ""} geaccepteerd; klant-aanmaak wizard klaargezet.`,
+            ].filter(Boolean).join("\n"),
+            updatedAt: now,
+          };
+          localStorage.setItem(leadFinderStorageKey, JSON.stringify(leads.map((item) => item.id === lead.id ? updatedLead : item)));
+          return updatedLead;
+        }
+
+        function createCustomerFromQuote(quote = null) {
+          const selectedQuote = quote || quoteById(state.selectedQuoteId);
+          if (!selectedQuote) {
+            setBillingMessage(quoteMessage, "Selecteer eerst een offerte.", "error");
+            return;
+          }
+          if (selectedQuote.status !== "geaccepteerd") {
+            setBillingMessage(quoteMessage, "Alleen geaccepteerde offertes kunnen naar klant-aanmaak.", "error");
+            return;
+          }
+          const lead = markLeadSoldFromQuote(selectedQuote);
+          const domain = cleanDomain(selectedQuote.websiteDomain || selectedQuote.websiteName);
+          closeModal(quoteModal);
+          openNewCustomerModal({
+            name: selectedQuote.acceptedByName || selectedQuote.customerName || selectedQuote.customerCompany || "",
+            email: selectedQuote.acceptedByEmail || selectedQuote.customerEmail || "",
+            phone: selectedQuote.customerPhone || "",
+            company: selectedQuote.customerCompany || selectedQuote.customerName || "",
+            website: domain,
+            package: inferPackageFromQuote(selectedQuote),
+            projectName: selectedQuote.projectName || selectedQuote.title || `Website ${selectedQuote.customerCompany || selectedQuote.customerName || ""}`.trim(),
+            message: `Offerte ${selectedQuote.quoteNumber || ""} is geaccepteerd. Controleer de gegevens en klik daarna pas op Klantportaal klaarzetten.${lead ? " De gekoppelde lead is op Verkocht gezet." : ""}`,
+          });
+          setAdminAccessMessage("Klant-aanmaak wizard gevuld vanuit geaccepteerde offerte. Provisioning start pas na bevestiging.", "success");
         }
 
         function populateInvoiceOptions(selectedCustomerId = "") {
@@ -12793,6 +12883,14 @@
             markRejected.disabled = quote.status === "afgewezen";
             markRejected.addEventListener("click", () => setQuoteStatus(quote.id, "afgewezen", markRejected));
             actions.append(edit, markSent, markAccepted, markRejected);
+            if (quote.status === "geaccepteerd") {
+              const createCustomer = document.createElement("button");
+              createCustomer.className = "button secondary";
+              createCustomer.type = "button";
+              createCustomer.textContent = "Maak klant";
+              createCustomer.addEventListener("click", () => createCustomerFromQuote(quote));
+              actions.append(createCustomer);
+            }
             if (quote.quoteLink) {
               const open = document.createElement("a");
               open.className = "button secondary";
@@ -14972,6 +15070,7 @@
           const link = quoteFields.link.value;
           if (link) copyText(link, "Offertelink gekopieerd.", (text, type) => setBillingMessage(quoteMessage, text, type));
         });
+        quoteCreateCustomer.addEventListener("click", () => createCustomerFromQuote());
         quoteConvertInvoice.addEventListener("click", createInvoiceFromQuote);
         quoteOpenInvoice.addEventListener("click", openInvoiceFromQuote);
         quoteRefreshSupabase.addEventListener("click", () => loadCRMData(false));
