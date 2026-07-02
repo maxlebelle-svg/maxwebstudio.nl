@@ -2259,3 +2259,23 @@ Veiligheidsstatus:
 - geen secrets gelogd;
 - geen nieuwe features toegevoegd;
 - directe toegang zonder sessie is aangescherpt.
+
+## RC1 Final Validation Checklist Prepared
+
+Datum: 2026-07-02
+
+Status: `READY FOR MANUAL EXECUTION`
+
+Checklist:
+
+- toegevoegd aan `docs/deployment/RELEASE_CANDIDATE_CHECKLIST.md`;
+- bevat de laatste handmatige RC1-tests voor geldig klantaccount, wijzigingsverzoek, bericht, offerte akkoord, factuur, Mollie testbetaling, logout en directe toegang zonder sessie;
+- geen nieuwe features toegevoegd;
+- geen productie-data gewijzigd;
+- geen secrets vastgelegd.
+
+Volgende stap:
+
+- voer de checklist handmatig uit met een intern testaccount en een Mollie testfactuur;
+- noteer per stap alleen veilige evidence en PASS/FAIL;
+- RC1 blijft `NO-GO` totdat de kritieke checklistpunten groen zijn of expliciet door de eigenaar zijn goedgekeurd als `not_applicable`.

@@ -33,6 +33,95 @@ Alle resterende NO-GO punten omzetten naar concrete approval/evidence-items zoda
 | Resend readiness | Testmail evidence of bewuste not-applicable voor RC | pending | eigenaar/technisch verantwoordelijke | Geen secrets in docs |
 | Netlify Functions runtime | Testcalls in testcontext of bewuste not-applicable voor RC | pending | technisch verantwoordelijke | Syntax is PASS; runtime nog los bevestigen |
 
+## RC1 Final Handmatige Validatiechecklist
+
+Status: `READY FOR MANUAL EXECUTION`
+
+Gebruik deze korte checklist voor de laatste RC1-test met een intern testaccount en een testfactuur. Noteer alleen veilige evidence: datum, tester, testaccount-label, quote/factuur-id, Netlify deploy-id, commit hash en uitkomst. Noteer nooit wachtwoorden, tokens, API keys of volledige betaalgegevens.
+
+Voorwaarden:
+
+- Gebruik alleen een intern testaccount of expliciet goedgekeurde eerste klant.
+- Mollie blijft in testmodus; er wordt geen live geld geind.
+- Resend/Mollie/Supabase keys blijven server-side en worden niet in screenshots of docs gezet.
+- Test directe toegang zonder sessie in een incognito venster of na logout.
+
+### 1. Geldig Klantaccount
+
+- [ ] `https://maxwebstudio.nl/login.html` opent zonder console-breaking errors.
+- [ ] Inloggen met geldig klantaccount lukt.
+- [ ] Het klantportaal opent met de juiste klantcontext.
+- [ ] Er verschijnt geen demo-portaal of demo-fallback na geldige login.
+- [ ] Lege websites/projecten/berichten/facturen worden netjes als lege staat getoond, niet als "klant niet gevonden".
+
+### 2. Wijzigingsverzoek
+
+- [ ] Tab/sectie `Wijzigingen` opent.
+- [ ] Type, titel, omschrijving en prioriteit zijn bruikbaar op desktop en mobiel.
+- [ ] `Wijziging aanvragen` geeft een duidelijke succesmelding of nette foutmelding.
+- [ ] Het nieuwe verzoek is zichtbaar in het klantportaal of adminportaal.
+- [ ] Geen klantdata van een andere klant zichtbaar.
+
+### 3. Bericht
+
+- [ ] Tab/sectie `Berichten` opent.
+- [ ] Nieuw bericht sturen geeft een duidelijke succesmelding of nette foutmelding.
+- [ ] Het bericht is zichtbaar in de gespreksthread of admincontext.
+- [ ] De layout voelt als korte directe communicatie, niet als technische log.
+
+### 4. Offerte Akkoord
+
+- [ ] Offertelink opent professioneel en mobiel bruikbaar.
+- [ ] Klantnaam, pakket, bedrag en toelichting kloppen.
+- [ ] Akkoord geven vereist duidelijke klantactie.
+- [ ] Na akkoord is status `Geaccepteerd` zichtbaar in admin/offertecontext.
+- [ ] Er start geen automatische provisioning zonder adminbevestiging.
+
+### 5. Factuur
+
+- [ ] Factuurlink opent professioneel en mobiel bruikbaar.
+- [ ] Klant, bedrag, status en omschrijving kloppen.
+- [ ] Print/downloadweergave is bruikbaar.
+- [ ] `Betaal factuur` verschijnt alleen wanneer er een betaallink bestaat.
+- [ ] Zonder betaallink toont de pagina een nette uitleg.
+
+### 6. Mollie Testbetaling
+
+- [ ] Netlify production gebruikt Mollie testmodus voor deze validatie.
+- [ ] Adminactie `Maak betaallink` maakt server-side een Mollie testbetaling aan.
+- [ ] Er komt geen Mollie key naar de frontend.
+- [ ] Mollie test checkout opent.
+- [ ] Testbetaling wordt afgerond zonder live geld.
+- [ ] Webhook of veilige fallback-test verwerkt de status.
+- [ ] Factuurpagina toont daarna `Betaald`.
+- [ ] Klantportaal toont daarna `Betaald`.
+
+### 7. Logout
+
+- [ ] Logout werkt vanuit het klantportaal.
+- [ ] Na logout keert de gebruiker terug naar login of veilige fallback.
+- [ ] Browser back/direct URL toont geen klantdata meer zonder sessie.
+
+### 8. Directe Toegang Zonder Sessie
+
+- [ ] Open `https://maxwebstudio.nl/klantportaal.html` zonder sessie.
+- [ ] Er verschijnt alleen een veilige login/fallback melding.
+- [ ] Er is geen demo-portaal zichtbaar.
+- [ ] Er is geen klantdata zichtbaar.
+
+### RC1 GO/NO-GO
+
+RC1 mag pas naar `GO` wanneer minimaal deze punten groen zijn:
+
+- [ ] Geldige login + juiste klantcontext: PASS.
+- [ ] Directe toegang zonder sessie: PASS.
+- [ ] Wijzigingsverzoek: PASS.
+- [ ] Bericht: PASS.
+- [ ] Offerte akkoord: PASS.
+- [ ] Factuur openen: PASS.
+- [ ] Mollie testbetaling: PASS, of expliciet `not_applicable` met reden en owner approval.
+- [ ] Logout + geen klantdata na logout: PASS.
+
 ## Ontbrekende Approvals
 
 | Blocker | Huidige status | Nodig voor approval |
