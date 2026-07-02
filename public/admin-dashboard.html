@@ -314,7 +314,7 @@
             <label for="customer-data-mode">Customer data mode<select id="customer-data-mode"><option value="local">Local</option><option value="supabase-read">Supabase read</option><option value="hybrid">Hybrid</option></select></label>
             <label for="customer-search">Zoeken<input id="customer-search" type="search" placeholder="Naam, bedrijf, e-mail of website" /></label>
             <label for="customer-status-filter">Status<select id="customer-status-filter"><option value="">Alle statussen</option><option value="actief">Actief</option><option value="onboarding">Onboarding</option><option value="pauze">Pauze</option><option value="gearchiveerd">Gearchiveerd</option></select></label>
-            <label for="customer-package-filter">Pakket<select id="customer-package-filter"><option value="">Alle pakketten</option><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option></select></label>
+            <label for="customer-package-filter">Pakket<select id="customer-package-filter"><option value="">Alle pakketten</option><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option><option value="One Page Website">One Page Website</option></select></label>
           </div>
           <div class="admin-grid compact-admin-grid" id="customer-source-summary" aria-live="polite"></div>
 
@@ -346,7 +346,7 @@
                 <label for="detail-phone">Telefoon<input id="detail-phone" type="tel" disabled /></label>
                 <label for="detail-company">Bedrijf<input id="detail-company" type="text" disabled /></label>
                 <label for="detail-website">Website<input id="detail-website" type="url" disabled /></label>
-                <label for="detail-package">Onderhoudspakket<select id="detail-package" disabled><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option></select></label>
+                <label for="detail-package">Onderhoudspakket<select id="detail-package" disabled><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option><option value="One Page Website">One Page Website</option></select></label>
                 <label for="detail-status">Status<select id="detail-status" disabled><option value="actief">Actief</option><option value="onboarding">Onboarding</option><option value="pauze">Pauze</option><option value="gearchiveerd">Gearchiveerd</option></select></label>
                 <label for="detail-portal-status">Portal-status<select id="detail-portal-status" disabled><option value="geen_login">Geen login</option><option value="uitgenodigd">Uitgenodigd</option><option value="actief">Actief</option><option value="geblokkeerd">Geblokkeerd</option></select></label>
                 <label for="detail-customer-since">Klant sinds<input id="detail-customer-since" type="date" disabled /></label>
@@ -677,7 +677,7 @@
           <div class="admin-filters invoice-filters" aria-label="Abonnementen filteren">
             <label for="subscription-search">Zoeken<input id="subscription-search" type="search" placeholder="Klant, bedrijf, website, plan of status" /></label>
             <label for="subscription-status-filter">Status<select id="subscription-status-filter"><option value="">Alle statussen</option><option value="actief">Actief</option><option value="concept">Concept</option><option value="gepauzeerd">Gepauzeerd</option><option value="opgezegd">Opgezegd</option><option value="verlopen">Verlopen</option><option value="gearchiveerd">Gearchiveerd</option><option value="test">Test</option></select></label>
-            <label for="subscription-plan-filter">Plan<select id="subscription-plan-filter"><option value="">Alle plannen</option><option value="Geen onderhoud">Geen onderhoud</option><option value="Care Basic">Care Basic</option><option value="Care Plus">Care Plus</option><option value="Care Growth">Care Growth</option><option value="Custom">Custom</option></select></label>
+            <label for="subscription-plan-filter">Plan<select id="subscription-plan-filter"><option value="">Alle plannen</option><option value="Geen onderhoud">Geen onderhoud</option><option value="Starter Care / Hosting Basis">Starter Care / Hosting Basis</option><option value="Care Basic">Care Basic</option><option value="Care Plus">Care Plus</option><option value="Care Growth">Care Growth</option><option value="Custom">Custom</option></select></label>
             <label for="subscription-customer-filter">Klant<select id="subscription-customer-filter"><option value="">Alle klanten</option></select></label>
             <label for="subscription-website-filter">Website<select id="subscription-website-filter"><option value="">Alle websites</option></select></label>
             <label for="subscription-frequency-filter">Frequentie<select id="subscription-frequency-filter"><option value="">Alle frequenties</option><option value="monthly">Maandelijks</option><option value="quarterly">Per kwartaal</option><option value="yearly">Jaarlijks</option></select></label>
@@ -1248,9 +1248,9 @@
             <label for="new-phone">Telefoon<input id="new-phone" type="tel" /></label>
             <label for="new-company">Bedrijf<input id="new-company" type="text" required /></label>
             <label for="new-website">Website / domein<input id="new-website" type="text" placeholder="voorbeeld.nl" required /></label>
-            <label for="new-package">Gekocht pakket<select id="new-package"><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option></select></label>
+            <label for="new-package">Gekocht pakket<select id="new-package"><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option><option value="One Page Website">One Page Website</option></select></label>
             <label for="new-project-name">Projectnaam optioneel<input id="new-project-name" type="text" placeholder="Bijv. Nieuwe website" /></label>
-            <label class="settings-toggle admin-profile-wide" for="new-send-welcome-email"><input id="new-send-welcome-email" type="checkbox" checked /> Welkomstmail direct versturen via Resend</label>
+            <label class="settings-toggle admin-profile-wide" for="new-send-welcome-email"><input id="new-send-welcome-email" type="checkbox" /> Welkomstmail direct versturen via Resend</label>
           </div>
           <div class="admin-onboarding-preview" id="new-customer-onboarding-preview" hidden>
             <strong>Welkomstmail concept</strong>
@@ -1306,7 +1306,7 @@
             <label class="admin-profile-wide" for="subscription-profile">Klant<select id="subscription-profile" required></select></label>
             <label class="admin-profile-wide" for="subscription-website">Website<select id="subscription-website"></select></label>
             <label class="admin-profile-wide" for="subscription-project">Project<select id="subscription-project"></select></label>
-            <label for="subscription-package">Plan<select id="subscription-package" required><option value="Geen onderhoud">Geen onderhoud</option><option value="Care Basic">Care Basic</option><option value="Care Plus">Care Plus</option><option value="Care Growth">Care Growth</option><option value="Custom">Custom</option></select></label>
+            <label for="subscription-package">Plan<select id="subscription-package" required><option value="Geen onderhoud">Geen onderhoud</option><option value="Starter Care / Hosting Basis">Starter Care / Hosting Basis</option><option value="Care Basic">Care Basic</option><option value="Care Plus">Care Plus</option><option value="Care Growth">Care Growth</option><option value="Custom">Custom</option></select></label>
             <label for="subscription-status">Status<select id="subscription-status"><option value="actief">Actief</option><option value="concept">Concept</option><option value="gepauzeerd">Gepauzeerd</option><option value="opgezegd">Opgezegd</option><option value="verlopen">Verlopen</option><option value="gearchiveerd">Gearchiveerd</option><option value="test">Test</option></select></label>
             <label for="subscription-start">Startdatum<input id="subscription-start" type="date" /></label>
             <label for="subscription-end">Einddatum optioneel<input id="subscription-end" type="date" /></label>
@@ -12565,6 +12565,7 @@
           ].join(" "));
           if (text.includes("premium") || text.includes("growth")) return "Premium";
           if (text.includes("plus") || text.includes("business")) return "Plus";
+          if (text.includes("one page") || text.includes("one-page") || text.includes("landing")) return "One Page Website";
           return "Basis";
         }
 

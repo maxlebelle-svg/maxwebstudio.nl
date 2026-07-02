@@ -3243,3 +3243,30 @@ RC2-richting na GO:
 - backup/restore governance aanscherpen;
 - sales/admin dagelijkse workflows verkorten;
 - daarna pas nieuwe modules zoals Sales Portal, Leadfinder AI, VoIP en echte Max AI-calls.
+
+## Founding Customer Track - Quantumbouw
+
+Status: `ACTIVE / FIRST LIVE CUSTOMER`
+
+Doel:
+
+- Quantumbouw als eerste echte productieklant beheren vanuit Max Webstudio;
+- de klantregistratie generiek houden zodat iedere volgende klant dezelfde route kan volgen;
+- geen losse demo- of maatwerkflow introduceren.
+
+Vastgelegd:
+
+- klant/projectnummer `MWS-2026-0001`;
+- website `https://quantumbouw.nl` live op Netlify + Netlify DNS;
+- pakket One Page Website;
+- factuurstatus voldaan via handmatige Tikkie-betaling;
+- gratis periode van 6 maanden voor kleine aanpassingen en hosting/onderhoud;
+- gepland vervolgabonnement Starter Care / Hosting Basis a EUR 19,95 per maand;
+- incasso pas na expliciete machtiging.
+
+Volgende operationele stappen:
+
+- Quantumbouw-account definitief activeren in het productieklantportaal;
+- betaald factuurrecord koppelen zodra finance-dataflow definitief groen is;
+- downloads/assets toevoegen zodra klantbestanden production-ready zijn;
+- wijzigingsverzoeken en berichten met Michel als eerste echte klant valideren.

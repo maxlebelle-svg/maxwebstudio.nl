@@ -3990,3 +3990,43 @@ Nog handmatig te valideren:
 - bericht sturen;
 - logout;
 - directe toegang zonder sessie.
+
+## Founding Customer - Quantumbouw
+
+Status: `REGISTERED IN CUSTOMER SUCCESS LOG / PORTAL ACTIVATION READY`
+
+Quantumbouw is de eerste echte productieklant van Max Webstudio en wordt niet als demo behandeld.
+
+Klantgegevens:
+
+- klant/projectnummer: `MWS-2026-0001`;
+- bedrijf: Quantumbouw;
+- contactpersoon: Michel de Jong;
+- website: `https://quantumbouw.nl`;
+- domein: `quantumbouw.nl`;
+- website status: live;
+- hosting/DNS: Netlify + Netlify DNS;
+- pakket: One Page Website.
+
+Commerciele status:
+
+- verkoopprijs: EUR 495 excl. btw;
+- btw: 21%;
+- totaal betaald: EUR 598,95 incl. btw;
+- betaalmethode: handmatig via Tikkie;
+- betaalstatus: voldaan;
+- geen openstaande betaling tonen.
+
+Afspraken:
+
+- eerste 6 maanden kleine aanpassingen inbegrepen;
+- eerste 6 maanden hosting/onderhoud inbegrepen;
+- daarna gepland: Starter Care / Hosting Basis a EUR 19,95 per maand;
+- automatische incasso blijft uit totdat de klant expliciet akkoord/mandaat heeft gegeven.
+
+Systeemstatus:
+
+- `One Page Website` is toegevoegd aan de admin onboardingopties;
+- `Starter Care / Hosting Basis` is toegevoegd aan de abonnementopties;
+- customer success log is aangemaakt als bron voor founding customer afspraken;
+- geen automatische e-mails, Mollie-betalingen of incasso's gestart vanuit deze registratie.

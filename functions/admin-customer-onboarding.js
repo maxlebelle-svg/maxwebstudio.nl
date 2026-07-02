@@ -2,7 +2,15 @@ const crypto = require("crypto");
 const { sendEmail } = require("./email");
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const allowedPackages = new Set(["Basis", "Plus", "Premium"]);
+const allowedPackages = new Set([
+  "Basis",
+  "Plus",
+  "Premium",
+  "One Page Website",
+  "Starter Care",
+  "Hosting Basis",
+  "Maatwerk",
+]);
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
