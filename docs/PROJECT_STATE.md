@@ -3886,3 +3886,30 @@ Veiligheidsstatus:
 - geen PDF-generatie backend;
 - geen SQL;
 - geen automatische betaling.
+
+## Sprint 3G - Mollie Payment Flow Preparation
+
+Status: `IMPLEMENTED / TEST-MODE READY`
+
+Doel:
+
+- losse factuurbetalingen voorbereiden op Mollie zonder automatische incasso live te zetten;
+- bestaande server-side Mollie-flow aansluiten op de professionele factuurpagina.
+
+Opgeleverd:
+
+- adminactie `Maak betaallink` gebruikt voor echte Supabase-facturen de bestaande server-side Mollie function;
+- lokale/demo-facturen blijven veilig op demo-betaallinks zonder echte Mollie-call;
+- `functions/admin-mollie-payment.js` redirect na betaling naar `/factuur.html?supabaseInvoiceId=...`;
+- response geeft aan of de actieve Mollie key testmodus is;
+- factuurpagina toont alleen `Betaal factuur` wanneer er al een betaallink op de factuur staat;
+- webhookstatusmodel blijft voorbereid voor `paid`, `open`, `pending`, `failed`, `canceled`, `expired`, `refunded` en `charged_back`.
+
+Veiligheidsstatus:
+
+- geen automatische incasso;
+- geen SEPA/subscription livegang;
+- geen SQL;
+- geen service-role in frontend;
+- Mollie API key blijft server-side;
+- echte betaling pas na expliciete testmodus/live goedkeuring.

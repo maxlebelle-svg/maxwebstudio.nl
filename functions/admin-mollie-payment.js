@@ -43,6 +43,7 @@ exports.handler = async (event) => {
       return jsonResponse(200, {
         success: true,
         reused: true,
+        testMode: isMollieTestMode(config.mollieApiKey),
         warning: "Er bestaat al een actieve betaallink voor deze factuur.",
         checkoutUrl: cleanText(invoice.mollie_checkout_url),
         paymentId: cleanText(invoice.mollie_payment_id),
@@ -72,6 +73,7 @@ exports.handler = async (event) => {
 
     return jsonResponse(200, {
       success: true,
+      testMode: isMollieTestMode(config.mollieApiKey),
       checkoutUrl,
       paymentId: payment.id,
       invoice: normalizeInvoice(updatedInvoice),
@@ -156,7 +158,7 @@ async function createMolliePayment(config, invoice, amount) {
         value: amount.toFixed(2),
       },
       description: `Factuur ${invoiceNumber} - ${title}`.slice(0, 255),
-      redirectUrl: `${config.siteUrl}/client-dashboard.html`,
+      redirectUrl: `${config.siteUrl}/factuur.html?supabaseInvoiceId=${encodeURIComponent(invoice.id)}`,
       webhookUrl: `${config.siteUrl}/.netlify/functions/mollie-webhook`,
       metadata: {
         source: "admin_crm_invoice",
@@ -179,6 +181,10 @@ async function createMolliePayment(config, invoice, amount) {
   }
 
   return data;
+}
+
+function isMollieTestMode(apiKey) {
+  return cleanText(apiKey).startsWith("test_");
 }
 
 async function updateInvoice(supabaseUrl, serviceRoleKey, invoiceId, patch) {

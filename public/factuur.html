@@ -183,8 +183,17 @@
 
           const actions = document.createElement("div");
           actions.className = "invoice-document-actions";
+          const paymentLink = invoice.mollieCheckoutUrl || invoice.mollie_checkout_url || invoice.paymentLink || "";
+          if (paymentLink && !["betaald", "paid"].includes(status)) {
+            const pay = document.createElement("a");
+            pay.className = "button primary";
+            pay.href = paymentLink;
+            pay.rel = "noopener";
+            pay.textContent = "Betaal factuur";
+            actions.append(pay);
+          }
           const print = document.createElement("button");
-          print.className = "button primary";
+          print.className = paymentLink && !["betaald", "paid"].includes(status) ? "button secondary" : "button primary";
           print.type = "button";
           print.textContent = "Print / opslaan als PDF";
           print.addEventListener("click", () => window.print());

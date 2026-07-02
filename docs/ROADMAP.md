@@ -3131,3 +3131,29 @@ Nog niet:
 - automatische incasso;
 - server-side PDF;
 - automatische factuurmail na offerte-akkoord.
+
+## Sprint 3G - Mollie Payment Flow Preparation
+
+Status: `IMPLEMENTED / TEST-MODE READY`
+
+Doel:
+
+- losse factuurbetalingen veilig voorbereiden;
+- betaalstatussen en webhookroute klaarzetten voordat echte betaal/SEPA-flow live gaat.
+
+Opgeleverd:
+
+- adminactie `Maak betaallink`;
+- echte Supabase-facturen gebruiken server-side Mollie checkout;
+- lokale/demo-facturen blijven demo;
+- Mollie redirect terug naar de professionele factuurpagina;
+- factuurpagina toont betaalbutton alleen als er een betaallink bestaat;
+- testmodusstatus wordt teruggegeven aan admin.
+
+Nog niet:
+
+- automatische incasso;
+- abonnementen live activeren;
+- SEPA;
+- Mollie live-betalingen zonder aparte approval;
+- automatische factuur na offerte-akkoord.

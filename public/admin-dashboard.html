@@ -1380,7 +1380,7 @@
             <button class="button primary" id="invoice-save" type="submit">Factuur opslaan</button>
             <button class="button secondary" id="invoice-mark-sent" type="button">Zet op verzonden</button>
             <button class="button secondary" id="invoice-mark-paid" type="button">Markeer betaald</button>
-            <button class="button secondary" id="invoice-demo-payment" type="button">Verstuur betaalverzoek demo</button>
+            <button class="button secondary" id="invoice-demo-payment" type="button">Maak betaallink</button>
             <a class="button secondary is-disabled" id="invoice-open-view" href="#" target="_blank" rel="noopener" aria-disabled="true">Open factuurpagina</a>
             <button class="button secondary" id="invoice-copy-view" type="button">Kopieer factuurlink</button>
             <button class="button secondary" id="invoice-send-email" type="button">Factuur mailen</button>
@@ -13087,7 +13087,7 @@
             const payment = document.createElement("button");
             payment.className = "button secondary";
             payment.type = "button";
-            payment.textContent = "Verstuur betaalverzoek demo";
+            payment.textContent = "Maak betaallink";
             payment.addEventListener("click", () => createMolliePayment(invoice.id, payment));
             const viewInvoice = document.createElement("a");
             viewInvoice.className = "button secondary";
@@ -13981,18 +13981,40 @@
         async function createMolliePayment(id, button) {
           const originalText = button.textContent;
           button.disabled = true;
-          button.textContent = "Demo-link...";
+          button.textContent = "Betaallink...";
           setAdminAccessMessage("", "");
 
           try {
             const invoice = invoiceById(id);
             if (!invoice) throw new Error("Factuur niet gevonden.");
-            const saved = saveInvoiceLocally({ ...invoice, paymentLink: invoice.paymentLink || invoicePaymentUrl(invoice.id), status: invoice.status === "concept" ? "verzonden" : invoice.status });
+            if (isSupabaseManagedInvoice(invoice) && invoiceEmailTargetId(invoice)) {
+              const response = await fetch(molliePaymentEndpoint, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Accept: "application/json",
+                  Authorization: `Bearer ${state.adminToken}`,
+                },
+                body: JSON.stringify({ invoice_id: invoiceEmailTargetId(invoice) }),
+              });
+              const data = await response.json().catch(() => ({}));
+              if (!response.ok || !data.success) throw new Error(data.error || "Mollie betaallink kon niet worden aangemaakt.");
+              await loadCRMData(false);
+              if (state.selectedInvoiceId === id) openInvoiceModal(id);
+              const modeLabel = data.testMode ? "Mollie testmodus" : "Mollie";
+              setAdminAccessMessage(data.warning || `${modeLabel}-betaallink aangemaakt voor deze factuur.`, data.warning ? "" : "success");
+              return;
+            }
+            const saved = saveInvoiceLocally({
+              ...invoice,
+              paymentLink: invoice.paymentLink || invoicePaymentUrl(invoice.id),
+              status: invoice.status === "concept" ? "verzonden" : invoice.status,
+            });
             await loadCRMData(false);
             if (state.selectedInvoiceId === id) openInvoiceModal(saved.id);
-            setAdminAccessMessage("Demo-betaalverzoek staat klaar. Geen echte Mollie-betaling aangemaakt.", "success");
+            setAdminAccessMessage("Demo-betaalverzoek staat klaar. Geen echte Mollie-betaling aangemaakt voor lokale/demo-facturen.", "success");
           } catch (error) {
-            setAdminAccessMessage(error.message || "Demo-betaalverzoek kon niet worden aangemaakt.", "error");
+            setAdminAccessMessage(error.message || "Betaalverzoek kon niet worden aangemaakt.", "error");
           } finally {
             button.disabled = false;
             button.textContent = originalText;

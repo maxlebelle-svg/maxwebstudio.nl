@@ -2106,3 +2106,35 @@ Niet inbegrepen:
 - Mollie;
 - backend-PDF;
 - automatische betaling.
+
+## Sprint 3G - Mollie Payment Flow Preparation
+
+Datum: 2026-07-02
+
+Status: `IMPLEMENTED / CHECKS PASS`
+
+Scope:
+
+- adminactie `Maak betaallink` voorbereid;
+- Supabase-facturen kunnen via server-side Mollie function een checkoutlink krijgen;
+- lokale/demo-facturen blijven demo-only;
+- Mollie redirect wijst terug naar de professionele factuurpagina;
+- factuurpagina toont een betaalbutton wanneer een betaallink beschikbaar is.
+
+Checks:
+
+- `git diff --check`: PASS;
+- `node --check public/script.js`: PASS;
+- `node --check public/src/services/leadFinderService.js`: PASS;
+- `node --check functions/admin-mollie-payment.js`: PASS;
+- `node --check functions/mollie-webhook.js`: PASS;
+- inline scriptcheck `public/admin-dashboard.html`: PASS;
+- inline scriptcheck `public/factuur.html`: PASS;
+- secrets-scan: PASS, alleen bekende false positive in storage readiness tekst.
+
+Niet inbegrepen:
+
+- live Mollie betaling zonder aparte test;
+- automatische incasso;
+- SEPA/subscriptions live;
+- SQL.
