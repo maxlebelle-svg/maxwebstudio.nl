@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex, nofollow" />
     <title>Klantportaal | Max Webstudio</title>
-    <meta name="description" content="Demo-klantportaal voor Max Webstudio klanten met offertes, facturen, projecten, websites en bestanden." />
+    <meta name="description" content="Klantportaal voor Max Webstudio klanten met websites, wijzigingen, berichten en facturen." />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -21,19 +21,19 @@
           <p id="portal-subtitle">Een overzicht van je websites, projecten, offertes, facturen en bestanden.</p>
         </div>
         <div class="portal-actions">
-          <span class="status-badge status-prepared" id="portal-source-badge">Bron laden</span>
+          <span class="status-badge status-prepared" id="portal-source-badge">Portaal laden</span>
           <button class="button secondary" id="portal-logout" type="button" hidden>Uitloggen</button>
           <a class="button secondary" href="index.html">Terug naar website</a>
         </div>
       </header>
 
       <section class="portal-message" id="portal-source-message" role="note">
-        <strong>Demo klantportaal</strong>
-        <span id="portal-source-text">Deze pagina gebruikt lokale data uit deze browser en heeft nog geen echte login of beveiliging. Er worden geen interne admin-notities getoond.</span>
+        <strong>Klantportaal</strong>
+        <span id="portal-source-text">Je klantomgeving wordt veilig geladen. Zonder geldige sessie tonen we geen klantgegevens.</span>
       </section>
 
       <section class="portal-message" id="portal-auth-message" role="note" hidden>
-        <strong>Demo auth</strong>
+        <strong>Toegang</strong>
         <span id="portal-auth-text"></span>
       </section>
 
@@ -44,6 +44,7 @@
         <a href="#wijzigingen">Wijzigingen</a>
         <a href="#berichten">Berichten</a>
         <a href="#facturen">Facturen</a>
+        <a href="#account">Account</a>
         <a href="#notificaties">Acties</a>
       </nav>
 
@@ -63,7 +64,7 @@
             <span>Max zegt</span>
             <strong>Ik kijk even met je mee.</strong>
             <p>Je persoonlijke tip verschijnt zodra je klantdata is geladen.</p>
-            <em>Demo Max AI-laag - geen echte AI-call</em>
+            <em>Max AI-preview - nog geen automatische AI-actie</em>
           </article>
         </div>
       </section>
@@ -97,7 +98,7 @@
           <span>Max zegt</span>
           <strong>Ik vat je aandachtspunten samen.</strong>
           <p>Je ziet hier straks direct wat actie vraagt, wat is afgerond en wat alleen informatief is.</p>
-          <em>Demo Max AI-laag - geen echte AI-call</em>
+          <em>Max AI-preview - nog geen automatische AI-actie</em>
         </article>
         <div class="portal-notification-board" id="portal-notifications" aria-live="polite"></div>
       </section>
@@ -108,7 +109,7 @@
           <span>Max zegt</span>
           <strong>Ik zet je betalingen en offertes overzichtelijk klaar.</strong>
           <p>Je ziet hier straks direct wat openstaat, wat betaald is en waar je iets mee moet.</p>
-          <em>Demo Max AI-laag - geen echte AI-call</em>
+          <em>Max AI-preview - nog geen automatische AI-actie</em>
         </article>
         <div class="portal-finance-grid" id="portal-finance-overview" aria-live="polite"></div>
       </section>
@@ -129,7 +130,7 @@
           <span>Max zegt</span>
           <strong>Ik help je je wijziging duidelijk te formuleren.</strong>
           <p>Kies eerst wat je wilt aanpassen. Beschrijf daarna in gewone taal wat er anders moet; technisch hoeft niet.</p>
-          <em>Demo Max AI-laag - geen echte AI-call</em>
+          <em>Max AI-preview - nog geen automatische AI-actie</em>
         </article>
         <article class="admin-card customer-portal-card portal-request-create-card" id="portal-change-request-create">
           <div class="portal-form-heading">
@@ -171,7 +172,7 @@
           <span>Max zegt</span>
           <strong>Samenvatting / volgende stap</strong>
           <p>Je gesprekken verschijnen hier zodra je klantdata is geladen.</p>
-          <em>Demo Max AI-laag - geen echte AI-call</em>
+          <em>Max AI-preview - nog geen automatische AI-actie</em>
         </article>
         <article class="admin-card customer-portal-card portal-request-create-card" id="portal-message-create">
           <div class="portal-form-heading">
@@ -197,10 +198,15 @@
           <span>Max zegt</span>
           <strong>Ik kijk naar snelheid, vindbaarheid en vertrouwen.</strong>
           <p>Hier geef ik straks proactief advies over reviews, SEO en verbeterpunten voor je website.</p>
-          <em>Demo Max AI-laag - geen echte AI-call</em>
+          <em>Max AI-preview - nog geen automatische AI-actie</em>
         </article>
         <div id="portal-website-overview" aria-live="polite"></div>
         <div class="portal-card-grid" id="portal-websites" aria-live="polite"></div>
+      </section>
+
+      <section class="admin-section" id="account">
+        <div class="admin-section-heading"><div><p class="section-kicker">Account</p><h2>Je gegevens en toegang</h2></div></div>
+        <div class="portal-card-grid" id="portal-account" aria-live="polite"></div>
       </section>
 
       <section class="admin-section" id="bestanden">
@@ -266,6 +272,7 @@
         const websiteOverview = document.getElementById("portal-website-overview");
         const websiteGuidance = document.getElementById("portal-website-guidance");
         const websiteList = document.getElementById("portal-websites");
+        const accountList = document.getElementById("portal-account");
         const fileList = document.getElementById("portal-files");
         const readinessList = document.getElementById("portal-readiness");
         const metrics = {
@@ -353,7 +360,7 @@
               : "Log in om je klantportaal te bekijken. Zonder sessie tonen we geen klantportaalgegevens.";
             return;
           }
-          const roleLabel = session.role === "customer" ? "demo-klant" : session.role || "demo-gebruiker";
+          const roleLabel = session.role === "customer" ? "klant" : session.role || "gebruiker";
           if (profileContext.profileFound) {
             portalAuthText.textContent = developerMode
               ? `Ingelogd met Supabase Auth. Klantprofiel gevonden via profiles/customer context. ${authReadiness.developerMessage}`
@@ -363,22 +370,22 @@
           if (profileContext.state === "profile_missing") {
             portalAuthText.textContent = developerMode
               ? `${profileContext.message} Staging/demo fallback blijft beschikbaar zolang er geen echte customer-koppeling is.`
-              : `Ingelogd als ${roleLabel}. Dit is een veilige demo-weergave; echte klantgegevens worden later gekoppeld.`;
+              : `Ingelogd als ${roleLabel}. Je account is nog niet gekoppeld aan een klantprofiel. Neem contact op met Max Webstudio.`;
             return;
           }
           if (profileContext.state === "error") {
             portalAuthText.textContent = developerMode
               ? `${profileContext.message} ${profileContext.error}`
-              : "Je klantprofiel kon nog niet worden opgehaald. Daarom tonen we tijdelijk een veilige demo-weergave.";
+              : "Je klantprofiel kon nog niet veilig worden opgehaald. Probeer opnieuw in te loggen of neem contact op.";
             return;
           }
           if (session.customerId && customerId && String(session.customerId) !== String(customerId)) {
-            portalAuthText.textContent = `Ingelogd als ${roleLabel}, maar deze demo-sessie hoort bij een andere klant. Daarom tonen we geen data van een andere klant.`;
+            portalAuthText.textContent = `Ingelogd als ${roleLabel}, maar deze sessie hoort bij een andere klant. Daarom tonen we geen data van een andere klant.`;
             return;
           }
           portalAuthText.textContent = developerMode
             ? `Ingelogd als ${roleLabel}. ${authReadiness.developerMessage}`
-            : `Ingelogd als ${roleLabel}. Dit is een veilige demo-weergave; echte klantlogin wordt later geactiveerd na controle.`;
+            : `Ingelogd als ${roleLabel}. Je klantomgeving is veilig geladen.`;
         }
 
         await renderSessionNotice();
@@ -400,7 +407,7 @@
           portalSourceBadge.textContent = "Soft guard";
           portalSourceBadge.className = "status-badge status-warning";
           portalSourceText.textContent = "Customer access guard heeft een mismatch gevonden. In deze fase tonen we daarom geen klantdata van een andere klant.";
-          customerProfile.append(createEmpty("Klantdata afgeschermd", "Open je eigen klantportaal of log opnieuw in met de juiste demo-klant."));
+          customerProfile.append(createEmpty("Klantdata afgeschermd", "Open je eigen klantportaal of log opnieuw in met de juiste klant."));
           [portalHealthGrid, portalActionGrid, financeOverview, subscriptionList, projectList, websiteOverview, websiteList, fileList].forEach((target) => target.append(createEmpty("Geen data", "Deze data wordt bewust niet getoond bij een customer mismatch.")));
           return;
         }
@@ -714,6 +721,7 @@
             "#wijzigingen",
             "#berichten",
             "#mijn-website",
+            "#account",
             "#bestanden",
             "#readiness",
           ].forEach((selector) => {
@@ -755,19 +763,19 @@
           if (type === "quote") {
             if (["concept", "draft"].includes(status)) return "Deze offerte staat klaar als concept en vraagt nu nog geen actie.";
             if (["geaccepteerd", "accepted"].includes(status)) return "Deze offerte is akkoord. Je hoeft hier nu niets mee.";
-            return "Bekijk de offerte rustig. Akkoord geven is hier nu nog een demo-actie.";
+            return "Bekijk de offerte rustig. Akkoord geven doe je via de offertepagina.";
           }
           if (["betaald", "paid"].includes(status)) return "Deze factuur is betaald en netjes verwerkt.";
-          return "Deze factuur staat open. Betalen is in deze demo nog niet actief.";
+          return "Deze factuur staat open. Zodra er een betaallink klaarstaat kun je hem direct openen.";
         }
 
-        function createDemoButton(label) {
+        function createPreviewButton(label) {
           const button = document.createElement("button");
           button.className = "button secondary";
           button.type = "button";
           button.textContent = label;
           button.addEventListener("click", () => {
-            button.textContent = `${label} (demo)`;
+            button.textContent = `${label} (binnenkort)`;
             window.setTimeout(() => { button.textContent = label; }, 1600);
           });
           return button;
@@ -793,8 +801,8 @@
           actions.className = "portal-actions";
           actions.append(
             createActionLink(type === "quote" ? "Bekijk offerte" : "Bekijk/print factuur", type === "quote" ? quoteUrl(item) : invoiceUrl(item)),
-            createDemoButton(type === "quote" ? "Akkoord geven" : "Betaal later"),
-            createDemoButton(type === "quote" ? "Leg offerte uit" : "Leg factuur uit")
+            createPreviewButton(type === "quote" ? "Akkoord geven" : "Betaal later"),
+            createPreviewButton(type === "quote" ? "Leg offerte uit" : "Leg factuur uit")
           );
           max.textContent = `Max: ${financeStatusGroup(type, status)}`;
           card.append(top, title, amount, text, actions, max);
@@ -816,7 +824,7 @@
             ? `${openInvoices.length} factuur${openInvoices.length === 1 ? "" : "en"} vraagt aandacht.`
             : "Je financiën zijn rustig.";
           summaryText.textContent = openInvoices.length
-            ? "Betalen blijft in deze demo uit. Je ziet wel alvast welke actie straks nodig is."
+            ? "Bekijk de openstaande facturen. Zodra online betalen klaarstaat, zie je de betaalknop op de factuurpagina."
             : `${paidInvoices.length} betaald, ${pendingQuotes.length} offerte${pendingQuotes.length === 1 ? "" : "s"} in beeld.`;
           if (!items.length) {
             financeOverview.append(createEmpty("Geen facturen of offertes", "Zodra er iets klaarstaat, zie je hier direct of actie nodig is."));
@@ -984,7 +992,7 @@
           const project = projects[0] || {};
           const websiteUrl = externalUrl(website.liveUrl || website.domain);
           const lastUpdate = formatDate(website.updatedAt || website.lastDeployAt || project.updatedAt || project.startDate);
-          const backupLabel = website.lastBackupAt ? formatDate(website.lastBackupAt) : "Demo: dagelijks voorbereid";
+          const backupLabel = website.lastBackupAt ? formatDate(website.lastBackupAt) : "Wordt beheerd";
           const speedScore = Number(website.performanceScore || website.speedScore || 96);
           const seoScore = Number(website.seoScore || 92);
           if (seoScore < 90) {
@@ -1035,8 +1043,8 @@
             createWebsiteMetric("Beveiliging", friendlySafetyStatus(website), "Veilig uitgelegd zonder technische details."),
             createWebsiteMetric("Laatste update", lastUpdate, "Meest recente bekende wijziging."),
             createWebsiteMetric("Backup", backupLabel, "Herstelbasis voor noodgevallen."),
-            createWebsiteMetric("Snelheid", `${Math.max(0, Math.min(speedScore, 100))}/100`, "Demo-score voor portaalervaring."),
-            createWebsiteMetric("SEO", `${Math.max(0, Math.min(seoScore, 100))}/100`, "Demo-score voor vindbaarheid.")
+            createWebsiteMetric("Snelheid", `${Math.max(0, Math.min(speedScore, 100))}/100`, "Indicatie voor de gebruikerservaring."),
+            createWebsiteMetric("SEO", `${Math.max(0, Math.min(seoScore, 100))}/100`, "Indicatie voor vindbaarheid.")
           );
 
           card.append(content, metricsWrap);
@@ -1125,14 +1133,14 @@
           portalSourceBadge.className = `status-badge ${mode === "hybrid" || mode === "supabase-read" ? "status-active" : "status-prepared"}`;
           if (mode === "hybrid") {
             portalSourceText.textContent = profileContext.profileFound
-              ? "Dit portaal gebruikt een Supabase klantprofiel als context en vult overige modules hybrid aan waar nodig. Interne admin-data wordt gefilterd."
+              ? "Je klantprofiel is veilig gekoppeld. Alleen gegevens die bij jouw account horen worden getoond."
               : "Dit portaal gebruikt hybrid read: Supabase waar beschikbaar en lokale demo/fallback-data waar nodig. Interne admin-data wordt gefilterd.";
           } else if (mode === "supabase-read") {
-            portalSourceText.textContent = "Dit portaal gebruikt Supabase read-only data. Schrijven blijft geblokkeerd en interne admin-data wordt gefilterd.";
+            portalSourceText.textContent = "Je klantgegevens worden veilig geladen. Interne admin-data wordt niet getoond.";
           } else if (mode === "demo") {
             portalSourceText.textContent = stagingBridge.active
-              ? "Dit is een staging/demo-klantportaal: ingelogd via Supabase Auth, gekoppeld aan veilige lokale demo-klantdata."
-              : "Dit is het demo-klantportaal met lokale browserdata. Echte login/beveiliging volgt in Fase 13.";
+              ? "Dit is een staging-preview: ingelogd via Supabase Auth, gekoppeld aan veilige previewdata."
+              : "Dit is een lokale preview van het klantportaal. Echte klantgegevens worden alleen na login getoond.";
           } else {
             portalSourceText.textContent = "Dit portaal gebruikt lokale browserdata als veilige fallback. Interne admin-notities worden niet getoond.";
           }
@@ -1142,9 +1150,29 @@
         }
 
         const payload = await getClientPortalData(customerId, { supabaseCustomerId, mode: portalDataMode });
-        if (profileContext.profileFound && !payload.customer) {
+        if (profileContext.profileFound) {
           payload.customer = profileContext.customer;
           payload.mode = profileContext.mode || payload.mode || "hybrid";
+          payload.websites = [];
+          payload.projects = [];
+          payload.files = [];
+          payload.invoices = [];
+          payload.subscriptions = [];
+          payload.quotes = [];
+          payload.changeRequests = [];
+          payload.messages = [];
+          payload.notifications = [];
+          payload.metrics = {
+            openQuotes: 0,
+            openInvoices: 0,
+            openInvoiceTotal: 0,
+            runningProjects: 0,
+            activeWebsites: 0,
+            activeSubscriptions: 0,
+            openChangeRequests: 0,
+            unreadMessages: 0,
+            unreadNotifications: 0,
+          };
           payload.warnings = (payload.warnings || []).filter((warning) => !String(warning || "").includes("Klant niet gevonden"));
           payload.sourceSummary = {
             ...(payload.sourceSummary || {}),
@@ -1341,7 +1369,7 @@
             changeRequestForm.reset();
             changeRequestForm.querySelector('input[name="category"][value="content"]')?.click();
             changeRequestStatus.textContent = result.fallbackUsed
-              ? "Je wijziging is veilig als demo opgeslagen. We pakken hem op in het portaal."
+              ? "Je wijziging is tijdelijk in deze browser bewaard. Neem contact op als je geen bevestiging krijgt."
               : "Je wijzigingsverzoek is ontvangen. We pakken dit voor je op.";
           } catch (error) {
             changeRequestStatus.textContent = error.message || "Wijzigingsverzoek kon niet worden opgeslagen.";
@@ -1367,7 +1395,7 @@
             metrics.messages.textContent = String(customerMessages.filter((message) => !message.readAt && !["gelezen", "read"].includes(normalize(message.status))).length);
             portalMessageForm.reset();
             portalMessageStatus.textContent = result.fallbackUsed
-              ? "Je bericht is veilig als demo opgeslagen. We reageren vanuit Max Webstudio."
+              ? "Je bericht is tijdelijk in deze browser bewaard. Neem contact op als je geen bevestiging krijgt."
               : "Je bericht is ontvangen. We reageren vanuit Max Webstudio.";
           } catch (error) {
             portalMessageStatus.textContent = error.message || "Bericht kon niet worden opgeslagen.";
@@ -1392,7 +1420,7 @@
             ["Volgende factuurdatum", formatDate(subscription.nextInvoiceDate)],
             ["Laatste factuur", lastInvoice ? `${lastInvoice.invoiceNumber || "Factuur"} - ${formatDate(lastInvoice.invoiceDate)}` : "-"],
             ["Website", subscription.websiteName || subscription.websiteDomain || "-"],
-            ["Betaalstatus", subscription.paymentStatus === "demo" ? "Demo voorbereid" : subscription.paymentStatus],
+            ["Betaalstatus", subscription.paymentStatus === "demo" ? "Voorbereid" : subscription.paymentStatus],
           ], [
             createActionLink("Bekijk laatste factuur", lastInvoice ? invoiceUrl(lastInvoice) : "")
           ]));
@@ -1435,6 +1463,18 @@
             ["SSL", website.sslStatus],
           ], [createActionLink("Website openen", externalUrl(website.liveUrl || website.domain))]));
         });
+
+        accountList.append(createInfoCard("Bedrijfsgegevens", [
+          ["Bedrijf", customer.company],
+          ["Contactpersoon", customer.name],
+          ["E-mail", customer.email],
+          ["Telefoon", customer.phone],
+          ["Pakket", customer.package],
+          ["Portaalstatus", customer.portalStatus || customer.status],
+        ], [
+          createWebsiteAction("Wijziging aanvragen", "#wijzigingen", true),
+          createWebsiteAction("Wachtwoord wijzigen", "/login.html"),
+        ]));
 
         if (!files.length) fileList.append(createEmpty("Geen bestanden", "Er zijn nog geen klantveilige bestanden of links geregistreerd."));
         files.forEach((file) => {

@@ -3191,7 +3191,7 @@ Niet inbegrepen:
 
 ## RC1 - First Live Customer Release Candidate
 
-Status: `RC1 CANDIDATE / AWAITING FINAL MANUAL VALIDATION`
+Status: `RC1 CANDIDATE / FIRST CUSTOMER ACTIVATION`
 
 Doel:
 
@@ -3208,6 +3208,34 @@ Nog te valideren:
 - Mollie testbetaling;
 - logout;
 - directe toegang zonder sessie.
+
+## Sprint 1 - Customer Portal RC1 Production Activation
+
+Status: `IN PROGRESS`
+
+Doel:
+
+- eerste live klant onboarden op het Max Webstudio-platform;
+- klantportaal niet langer als demo behandelen, maar als generieke productie-ervaring;
+- Quantumbouw gebruiken als founding customer zonder hardcoded maatwerk.
+
+Scope:
+
+- dashboard;
+- mijn website;
+- wijzigingen;
+- berichten;
+- facturen/offertes;
+- accountgegevens;
+- veilige sessie/fallback.
+
+Niet inbegrepen:
+
+- nieuwe SQL;
+- nieuwe backendmodules;
+- live Mollie-geld;
+- OpenAI;
+- klant-specifieke hardcoding.
 
 RC2-richting na GO:
 

@@ -2278,4 +2278,36 @@ Volgende stap:
 
 - voer de checklist handmatig uit met een intern testaccount en een Mollie testfactuur;
 - noteer per stap alleen veilige evidence en PASS/FAIL;
-- RC1 blijft `NO-GO` totdat de kritieke checklistpunten groen zijn of expliciet door de eigenaar zijn goedgekeurd als `not_applicable`.
+- RC1 blijft `AWAITING FINAL MANUAL VALIDATION` totdat de kritieke checklistpunten groen zijn of expliciet door de eigenaar zijn goedgekeurd als `not_applicable`.
+
+## Customer Portal RC1 - Production Activation Polish
+
+Datum: 2026-07-02
+
+Status: `READY FOR FIRST CUSTOMER MANUAL VALIDATION`
+
+Uitgevoerd:
+
+- klantportaalcopy aangepast van demo/readiness-taal naar productietaal;
+- Account-sectie toegevoegd voor bedrijfsgegevens, pakket, portaalstatus en toegang;
+- bij een echt Supabase klantprofiel worden lokale/demo fallbackmodules eerst leeggemaakt;
+- echte contexten voor websites/projecten/wijzigingen/berichten/facturen/notificaties vullen daarna alleen eigen data;
+- lege modules blijven toegestaan en tonen nette lege staten;
+- wijzigingsverzoek- en berichtflow tonen geen demo-taal meer bij fallback/success.
+
+Nog handmatig testen:
+
+- Quantumbouw-login;
+- klantportaal laadt zonder demo-content;
+- wijzigingsverzoek indienen;
+- bericht sturen;
+- logout;
+- directe toegang zonder sessie.
+
+Veiligheidsstatus:
+
+- geen SQL;
+- geen productie-data gewijzigd;
+- geen service-role naar frontend;
+- geen OpenAI/Mollie/Resend-wijziging;
+- geen klant-specifieke hardcoding.

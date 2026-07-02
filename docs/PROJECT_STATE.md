@@ -3964,3 +3964,29 @@ Laatste RC1-stappen:
 - Mollie test payment;
 - optionele Resend inbox-verificatie;
 - owner GO/NO-GO op backup/rollback-context.
+
+## Customer Portal RC1 - Production Activation
+
+Status: `IN PROGRESS / FIRST CUSTOMER ACTIVATION`
+
+Doel:
+
+- Quantumbouw als eerste productieklant zelfstandig laten inloggen;
+- klantportaal generiek houden voor alle toekomstige klanten;
+- geen demo/local klantdata tonen zodra er een echte Supabase customer-context actief is.
+
+Opgeleverd in deze stap:
+
+- klantportaaltekst aangescherpt naar productietaal;
+- Account-sectie toegevoegd voor bedrijfsgegevens en toegang;
+- echte Supabase-klantcontext wist lokale/demo modulefallbacks voordat productiedata wordt gevuld;
+- lege modules tonen nette lege staten in plaats van demo-content;
+- wijzigingsverzoek- en berichtstatussen gebruiken geen demo-taal meer.
+
+Nog handmatig te valideren:
+
+- Quantumbouw-login;
+- wijziging aanvragen;
+- bericht sturen;
+- logout;
+- directe toegang zonder sessie.
