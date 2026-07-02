@@ -3266,7 +3266,8 @@ Vastgelegd:
 
 Volgende operationele stappen:
 
-- Quantumbouw-account definitief activeren in het productieklantportaal;
+- Quantumbouw intern aanmaken in de productie-admin/CRM met portal access `pending_invitation`;
+- Quantumbouw-account pas definitief uitnodigen na handmatige GO;
 - betaald factuurrecord koppelen zodra finance-dataflow definitief groen is;
 - downloads/assets toevoegen zodra klantbestanden production-ready zijn;
 - wijzigingsverzoeken en berichten met Michel als eerste echte klant valideren.

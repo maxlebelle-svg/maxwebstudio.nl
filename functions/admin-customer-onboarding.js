@@ -42,6 +42,8 @@ exports.handler = async (event) => {
     const input = payload.value;
     const recordEnvironment = getRecordEnvironment();
     const isDemoRecord = recordEnvironment !== "production";
+    const portalStatus = getPortalStatus(input);
+    const emailStatus = input.sendWelcomeEmail ? "send_requested" : "draft_only";
     const authUser = await ensureAuthUser(supabaseUrl, serviceRoleKey, input);
     const profile = await upsertByLookup({
       supabaseUrl,
@@ -64,6 +66,8 @@ exports.handler = async (event) => {
           createdBy: "admin-customer-create-wizard",
           authAction: authUser.action,
           sourceEnvironment: recordEnvironment,
+          portalAccessStatus: portalStatus.access,
+          emailStatus,
         },
         updated_at: new Date().toISOString(),
       },
@@ -84,13 +88,17 @@ exports.handler = async (event) => {
         website: input.domain,
         package: input.package,
         status: "active",
-        portal_status: "active",
+        portal_status: portalStatus.database,
         customer_since: new Date().toISOString().slice(0, 10),
         is_demo: isDemoRecord,
         environment: recordEnvironment,
         metadata: {
           createdBy: "admin-customer-create-wizard",
           sourceEnvironment: recordEnvironment,
+          portalAccessStatus: portalStatus.access,
+          emailStatus,
+          billingStatus: input.sendWelcomeEmail ? "pending_customer_activation" : "internal_record_only",
+          incassoMandate: "missing",
         },
         updated_at: new Date().toISOString(),
       },
@@ -119,6 +127,8 @@ exports.handler = async (event) => {
         metadata: {
           createdBy: "admin-customer-create-wizard",
           sourceEnvironment: recordEnvironment,
+          portalAccessStatus: portalStatus.access,
+          emailStatus,
         },
         updated_at: new Date().toISOString(),
       },
@@ -145,6 +155,8 @@ exports.handler = async (event) => {
         metadata: {
           createdBy: "admin-customer-create-wizard",
           sourceEnvironment: recordEnvironment,
+          portalAccessStatus: portalStatus.access,
+          emailStatus,
         },
         updated_at: new Date().toISOString(),
       },
@@ -240,6 +252,20 @@ function getRecordEnvironment() {
   if (environment === "production") return "production";
   if (environment === "demo") return "demo";
   return "test";
+}
+
+function getPortalStatus(input = {}) {
+  if (input.sendWelcomeEmail) {
+    return {
+      database: "invited",
+      access: "invited",
+    };
+  }
+
+  return {
+    database: "prepared",
+    access: "pending_invitation",
+  };
 }
 
 async function ensureAuthUser(supabaseUrl, serviceRoleKey, input) {

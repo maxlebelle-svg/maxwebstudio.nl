@@ -4029,4 +4029,12 @@ Systeemstatus:
 - `One Page Website` is toegevoegd aan de admin onboardingopties;
 - `Starter Care / Hosting Basis` is toegevoegd aan de abonnementopties;
 - customer success log is aangemaakt als bron voor founding customer afspraken;
-- geen automatische e-mails, Mollie-betalingen of incasso's gestart vanuit deze registratie.
+- geen automatische e-mails, Mollie-betalingen of incasso's gestart vanuit deze registratie;
+- nieuwe klanten blijven bij aanmaken zonder welkomstmail op `portal_status=prepared` met metadata `portalAccessStatus=pending_invitation`;
+- e-mailstatus blijft `draft_only` totdat verzending bewust wordt aangevinkt.
+
+Volgende veilige stap:
+
+- Quantumbouw intern aanmaken via de productie-admin wizard met welkomstmail uit;
+- daarna pas klantportaal bekijken/valideren;
+- Michel pas uitnodigen wanneer de portal professioneel genoeg voelt.

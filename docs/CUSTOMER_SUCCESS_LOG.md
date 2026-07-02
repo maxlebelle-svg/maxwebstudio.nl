@@ -60,6 +60,34 @@ Quantumbouw moet als echte productieklant zichtbaar zijn in het klantportaal/CRM
 - Downloads/assets: sectie voorbereid voor websitebeelden en assets.
 - Geen openstaande betaling tonen.
 - Geen automatische e-mail versturen zonder preview en goedkeuring.
+- Portal access status: pending_invitation / prepared.
+- E-mailstatus: draft_only.
+- Billing status: paid.
+- Subscription status: scheduled.
+- Incasso mandate: missing.
+
+### Interne productie-aanmaak
+
+Quantumbouw mag alvast intern worden aangemaakt in de productie-admin/CRM, maar Michel ontvangt nog niets totdat er handmatige GO is gegeven.
+
+Veilige uitgangspunten:
+
+- Geen uitnodigingsmail versturen.
+- Geen automatische incasso starten.
+- Geen Mollie-actie starten.
+- Geen klantlogin actief mailen.
+- Wel klantrecord, project, website, betaalstatus, gratis periode en gepland abonnement registreren.
+
+Aanbevolen admin-invoer:
+
+| Veld | Waarde |
+| --- | --- |
+| Naam | Michel de Jong |
+| Bedrijf | Quantumbouw |
+| Website / domein | quantumbouw.nl |
+| Gekocht pakket | One Page Website |
+| Projectnaam | MWS-2026-0001 - Quantumbouw |
+| Welkomstmail direct versturen | Uit |
 
 ### Upsellmogelijkheden
 

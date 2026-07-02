@@ -160,7 +160,7 @@ const LEGACY_INVOICE_FIELDS = [
   "updated_at",
 ].join(",");
 
-const allowedSubscriptionStatuses = new Set(["active", "paused", "cancelled", "canceled"]);
+const allowedSubscriptionStatuses = new Set(["active", "planned", "paused", "cancelled", "canceled"]);
 const allowedBillingCycles = new Set(["monthly", "quarterly", "yearly"]);
 const allowedInvoiceStatuses = new Set(["draft", "sent", "paid", "expired", "canceled", "failed"]);
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -213,7 +213,7 @@ exports.handler = async (event) => {
 
     if (action === "set_subscription_status") {
       const id = validateUuid(payload.id, "Kies een geldig abonnement.");
-      const status = cleanText(payload.status).toLowerCase();
+      const status = normalizeSubscriptionStatus(payload.status);
       if (!allowedSubscriptionStatuses.has(status)) return jsonResponse(400, { success: false, error: "Kies een geldige abonnementsstatus." });
       const savedSubscription = await patchRecord(supabaseUrl, serviceRoleKey, "customer_subscriptions", id, {
         status,
@@ -338,7 +338,7 @@ function validateSubscriptionPayload(payload, profiles) {
   const id = cleanText(payload.id);
   const profile = profileById(payload.profileId, profiles);
   const billingCycle = cleanText(payload.billingCycle || "monthly").toLowerCase();
-  const status = cleanText(payload.status || "active").toLowerCase();
+  const status = normalizeSubscriptionStatus(payload.status || "active");
 
   if (id && !uuidPattern.test(id)) throwValidation("Kies een geldig abonnement.");
   if (!profile) throwValidation("Koppel het abonnement aan een geldige klant.");
@@ -384,6 +384,15 @@ function validateInvoicePayload(payload, profiles) {
     notes: cleanText(payload.notes),
     updated_at: new Date().toISOString(),
   };
+}
+
+function normalizeSubscriptionStatus(value) {
+  const status = cleanText(value || "active").toLowerCase();
+  if (status === "gepland" || status === "scheduled") return "planned";
+  if (status === "actief") return "active";
+  if (status === "gepauzeerd") return "paused";
+  if (status === "opgezegd") return "cancelled";
+  return status;
 }
 
 function profileById(id, profiles) {

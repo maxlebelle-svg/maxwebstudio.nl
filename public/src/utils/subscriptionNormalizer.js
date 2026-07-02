@@ -1,6 +1,8 @@
 const LOCAL_STATUS_BY_REMOTE = Object.freeze({
   active: "actief",
   actief: "actief",
+  planned: "gepland",
+  gepland: "gepland",
   draft: "concept",
   concept: "concept",
   paused: "gepauzeerd",
@@ -19,6 +21,8 @@ const LOCAL_STATUS_BY_REMOTE = Object.freeze({
 const REMOTE_STATUS_BY_LOCAL = Object.freeze({
   actief: "active",
   active: "active",
+  gepland: "planned",
+  planned: "planned",
   concept: "draft",
   draft: "draft",
   gepauzeerd: "paused",
