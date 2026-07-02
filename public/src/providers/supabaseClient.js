@@ -1,4 +1,4 @@
-import { getSupabaseConfig, getSupabaseConfigStatus, getSupabaseSafeSummary } from "../config/supabaseConfig.js";
+import { ensureSupabaseRuntimeConfig, getSupabaseConfig, getSupabaseConfigStatus, getSupabaseSafeSummary } from "../config/supabaseConfig.js";
 
 let cachedClient = null;
 let cachedClientStatus = null;
@@ -45,6 +45,13 @@ export function getSupabaseClientStatus() {
 }
 
 export async function getSupabaseClient() {
+  await ensureSupabaseRuntimeConfig().catch((error) => {
+    cachedClientStatus = {
+      connected: false,
+      lastTestedAt: new Date().toISOString(),
+      lastError: error.message || "Supabase runtime-config kon niet worden geladen.",
+    };
+  });
   const config = getSupabaseConfig();
   const status = getSupabaseConfigStatus();
   if (!status.configured) {

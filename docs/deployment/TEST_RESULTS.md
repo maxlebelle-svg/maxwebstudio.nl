@@ -2316,7 +2316,7 @@ Veiligheidsstatus:
 
 Datum: 2026-07-02
 
-Status: `READY FOR ADMIN UI VALIDATION`
+Status: `SUPERSEDED BY PRODUCTION SUPABASE-READ DEFAULTS`
 
 Uitgevoerd:
 
@@ -2333,6 +2333,30 @@ Nog handmatig testen:
 - controleren dat customer/website/project/quote/invoice/subscription data modes niet meer standaard op `Local` staan;
 - controleren dat het dashboard Supabase-data toont of veilig hybrid fallback meldt;
 - daarna pas Quantumbouw via de admin wizard registreren met welkomstmail uit.
+
+## Admin Data Layer Production Supabase-Read
+
+Datum: 2026-07-02
+
+Status: `READY FOR LIVE ADMIN VALIDATION`
+
+Uitgevoerd:
+
+- admin-dashboard laadt de Supabase browserclient voor read-only adminmodules;
+- publieke Supabase runtime-config wordt opgehaald via `client-auth-config`;
+- customer/website/project/quote/invoice/subscription modes migreren van `local`/`hybrid` naar `supabase-read`;
+- localStorage wordt niet meer automatisch als echte productiedatabron gebruikt zodra productie beschikbaar is;
+- files/storage is optioneel gemaakt zodat een ontbrekende files-tabel de klant-, website- en projectdata niet blokkeert;
+- nieuwe klanten blijven via de server-side onboardingfunctie naar Supabase gaan;
+- geen klantmail, Mollie-actie, SQL of klantdatawijziging uitgevoerd.
+
+Nog handmatig testen:
+
+- deploy openen op productie-admin;
+- inloggen als admin;
+- controleren dat data modes op `Supabase read` staan;
+- `Nieuwe klant` openen en Quantumbouw met welkomstmail uit opslaan;
+- readback controleren in admin en Supabase.
 
 ## Admin Supabase Auth Flow
 

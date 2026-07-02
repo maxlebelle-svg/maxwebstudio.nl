@@ -4,6 +4,9 @@ export const SUPABASE_ENV_KEYS = Object.freeze({
   projectId: "SUPABASE_PROJECT_ID",
 });
 
+const AUTH_CONFIG_ENDPOINT = "/.netlify/functions/client-auth-config";
+let runtimeConfigPromise = null;
+
 function readBrowserConfig() {
   const runtimeConfig = window.__MAXWEBSTUDIO_SUPABASE_CONFIG__ || {};
   let storedConfig = {};
@@ -13,6 +16,35 @@ function readBrowserConfig() {
     storedConfig = {};
   }
   return { ...storedConfig, ...runtimeConfig };
+}
+
+export async function ensureSupabaseRuntimeConfig() {
+  const current = getSupabaseConfig();
+  if (current.url && current.anonKey) return current;
+  if (typeof fetch !== "function") return current;
+  if (!runtimeConfigPromise) {
+    runtimeConfigPromise = fetch(AUTH_CONFIG_ENDPOINT, { headers: { Accept: "application/json" } })
+      .then(async (response) => {
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success || !data.supabaseUrl || !data.supabaseAnonKey) {
+          throw new Error(data.error || "Supabase browserconfiguratie is niet beschikbaar.");
+        }
+        window.__MAXWEBSTUDIO_SUPABASE_CONFIG__ = {
+          ...(window.__MAXWEBSTUDIO_SUPABASE_CONFIG__ || {}),
+          supabaseUrl: data.supabaseUrl,
+          supabaseAnonKey: data.supabaseAnonKey,
+          supabaseProjectId: data.supabaseProjectId || "",
+          appEnv: data.appEnv || "",
+          appEnvironment: data.appEnvironment || "",
+        };
+        return getSupabaseConfig();
+      })
+      .catch((error) => {
+        runtimeConfigPromise = null;
+        throw error;
+      });
+  }
+  return runtimeConfigPromise;
 }
 
 export function getSupabaseConfig() {

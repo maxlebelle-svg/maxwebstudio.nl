@@ -11,6 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
   <body class="admin-body">
     <main class="admin-crm-shell">
@@ -1653,12 +1654,12 @@
           portalWelcomeText: "Welkom in je Max Webstudio klantomgeving. Hier vind je jouw offertes, facturen, projecten, websites en bestanden.",
           developerMode: false,
           dataProviderMode: "supabase-readonly",
-          customerDataMode: "hybrid",
-          websiteDataMode: "hybrid",
-          projectDataMode: "hybrid",
-          quoteDataMode: "hybrid",
-          invoiceDataMode: "hybrid",
-          subscriptionDataMode: "hybrid",
+          customerDataMode: "supabase-read",
+          websiteDataMode: "supabase-read",
+          projectDataMode: "supabase-read",
+          quoteDataMode: "supabase-read",
+          invoiceDataMode: "supabase-read",
+          subscriptionDataMode: "supabase-read",
         };
         const integrationDefinitions = [
           { name: "Mollie", category: "Betalingen", status: "Demo voorbereid", action: "Bekijk status", description: "Betaalverzoeken zijn voorbereid en kunnen later via de Mollie API actief worden gekoppeld." },
@@ -2488,6 +2489,7 @@
         }
 
         const supabaseFirstUpgradeKey = "maxwebstudioAdminSupabaseFirstApplied";
+        const productionSupabaseOnlyUpgradeKey = "maxwebstudioAdminProductionSupabaseOnlyApplied";
         const supabaseFirstModeKeys = [
           ["customerDataMode", "maxwebstudioCustomerDataMode"],
           ["websiteDataMode", "maxwebstudioWebsiteDataMode"],
@@ -2498,22 +2500,25 @@
         ];
 
         function applySupabaseFirstAdminDefaults(settings) {
-          if (localStorage.getItem(supabaseFirstUpgradeKey)) return settings;
           const upgraded = { ...settings };
           let changed = false;
           if (!upgraded.dataProviderMode || upgraded.dataProviderMode === "localStorage") {
             upgraded.dataProviderMode = "supabase-readonly";
             changed = true;
           }
-          supabaseFirstModeKeys.forEach(([settingKey, storageKey]) => {
-            const current = upgraded[settingKey] || localStorage.getItem(storageKey);
-            if (!current || current === "local") {
-              upgraded[settingKey] = "hybrid";
-              localStorage.setItem(storageKey, "hybrid");
-              changed = true;
-            }
-          });
-          localStorage.setItem(supabaseFirstUpgradeKey, new Date().toISOString());
+          const productionSupabaseOnlyApplied = localStorage.getItem(productionSupabaseOnlyUpgradeKey);
+          if (!productionSupabaseOnlyApplied) {
+            supabaseFirstModeKeys.forEach(([settingKey, storageKey]) => {
+              const current = upgraded[settingKey] || localStorage.getItem(storageKey);
+              if (!current || current === "local" || current === "hybrid") {
+                upgraded[settingKey] = "supabase-read";
+                localStorage.setItem(storageKey, "supabase-read");
+                changed = true;
+              }
+            });
+            localStorage.setItem(productionSupabaseOnlyUpgradeKey, new Date().toISOString());
+            localStorage.setItem(supabaseFirstUpgradeKey, new Date().toISOString());
+          }
           if (changed) writeStoredSettings(upgraded);
           return upgraded;
         }
@@ -8041,27 +8046,27 @@
         }
 
         function currentCustomerDataMode() {
-          return customerDataModeSelect.value || readStoredSettings().customerDataMode || localStorage.getItem("maxwebstudioCustomerDataMode") || "hybrid";
+          return customerDataModeSelect.value || readStoredSettings().customerDataMode || localStorage.getItem("maxwebstudioCustomerDataMode") || "supabase-read";
         }
 
         function currentWebsiteDataMode() {
-          return websiteDataModeSelect.value || readStoredSettings().websiteDataMode || localStorage.getItem("maxwebstudioWebsiteDataMode") || "hybrid";
+          return websiteDataModeSelect.value || readStoredSettings().websiteDataMode || localStorage.getItem("maxwebstudioWebsiteDataMode") || "supabase-read";
         }
 
         function currentProjectDataMode() {
-          return projectDataModeSelect.value || readStoredSettings().projectDataMode || localStorage.getItem("maxwebstudioProjectDataMode") || "hybrid";
+          return projectDataModeSelect.value || readStoredSettings().projectDataMode || localStorage.getItem("maxwebstudioProjectDataMode") || "supabase-read";
         }
 
         function currentQuoteDataMode() {
-          return quoteDataModeSelect.value || readStoredSettings().quoteDataMode || localStorage.getItem("maxwebstudioQuoteDataMode") || "hybrid";
+          return quoteDataModeSelect.value || readStoredSettings().quoteDataMode || localStorage.getItem("maxwebstudioQuoteDataMode") || "supabase-read";
         }
 
         function currentInvoiceDataMode() {
-          return invoiceDataModeSelect.value || readStoredSettings().invoiceDataMode || localStorage.getItem("maxwebstudioInvoiceDataMode") || "hybrid";
+          return invoiceDataModeSelect.value || readStoredSettings().invoiceDataMode || localStorage.getItem("maxwebstudioInvoiceDataMode") || "supabase-read";
         }
 
         function currentSubscriptionDataMode() {
-          return subscriptionDataModeSelect.value || readStoredSettings().subscriptionDataMode || localStorage.getItem("maxwebstudioSubscriptionDataMode") || "hybrid";
+          return subscriptionDataModeSelect.value || readStoredSettings().subscriptionDataMode || localStorage.getItem("maxwebstudioSubscriptionDataMode") || "supabase-read";
         }
 
         async function getCustomerRepositoryModule() {
@@ -8349,26 +8354,44 @@
         }
 
         async function loadFilesByDataMode() {
-          const mode = currentCustomerDataMode();
-          const result = await readAdminDataLayerModule("files", mode);
-          state.fileSourceStatus = {
-            mode: result.mode,
-            counts: result.counts,
-            duplicateMerges: result.duplicateMerges,
-            fallbackUsed: result.fallbackUsed,
-            error: result.error,
-            refreshedAt: result.refreshedAt,
-            dataLayer: result.dataLayer,
-          };
-          localStorage.setItem("maxwebstudioLastFileSourceStatus", JSON.stringify({
-            mode: result.mode,
-            counts: result.counts,
-            fallbackUsed: result.fallbackUsed,
-            error: result.error,
-            refreshedAt: result.refreshedAt,
-            dataLayer: result.dataLayer,
-          }));
-          return result.records.map(normalizeStoredFile);
+          try {
+            const result = await readAdminDataLayerModule("files", "supabase-read");
+            state.fileSourceStatus = {
+              mode: result.mode,
+              counts: result.counts,
+              duplicateMerges: result.duplicateMerges,
+              fallbackUsed: false,
+              error: "",
+              note: result.error,
+              refreshedAt: result.refreshedAt,
+              dataLayer: result.dataLayer,
+              optional: true,
+            };
+            localStorage.setItem("maxwebstudioLastFileSourceStatus", JSON.stringify({
+              mode: result.mode,
+              counts: result.counts,
+              fallbackUsed: false,
+              error: "",
+              note: result.error,
+              refreshedAt: result.refreshedAt,
+              dataLayer: result.dataLayer,
+              optional: true,
+            }));
+            return result.error ? [] : result.records.map(normalizeStoredFile);
+          } catch (error) {
+            state.fileSourceStatus = {
+              mode: "supabase-read",
+              counts: { local: 0, supabase: 0, hybrid: 0 },
+              duplicateMerges: [],
+              fallbackUsed: false,
+              error: "",
+              note: error.message || "Bestandenmodule is nog niet gekoppeld aan productie-Supabase.",
+              refreshedAt: new Date().toISOString(),
+              dataLayer: "supabase-data-layer-mvp",
+              optional: true,
+            };
+            return [];
+          }
         }
 
         function normalizeWebsiteStatus(value) {
@@ -15740,12 +15763,12 @@
 
         const bootSettings = applySupabaseFirstAdminDefaults(readStoredSettings());
         fillSettingsForm(bootSettings);
-        customerDataModeSelect.value = bootSettings.customerDataMode || localStorage.getItem("maxwebstudioCustomerDataMode") || "hybrid";
-        websiteDataModeSelect.value = bootSettings.websiteDataMode || localStorage.getItem("maxwebstudioWebsiteDataMode") || "hybrid";
-        projectDataModeSelect.value = bootSettings.projectDataMode || localStorage.getItem("maxwebstudioProjectDataMode") || "hybrid";
-        quoteDataModeSelect.value = bootSettings.quoteDataMode || localStorage.getItem("maxwebstudioQuoteDataMode") || "hybrid";
-        invoiceDataModeSelect.value = bootSettings.invoiceDataMode || localStorage.getItem("maxwebstudioInvoiceDataMode") || "hybrid";
-        subscriptionDataModeSelect.value = bootSettings.subscriptionDataMode || localStorage.getItem("maxwebstudioSubscriptionDataMode") || "hybrid";
+        customerDataModeSelect.value = bootSettings.customerDataMode || localStorage.getItem("maxwebstudioCustomerDataMode") || "supabase-read";
+        websiteDataModeSelect.value = bootSettings.websiteDataMode || localStorage.getItem("maxwebstudioWebsiteDataMode") || "supabase-read";
+        projectDataModeSelect.value = bootSettings.projectDataMode || localStorage.getItem("maxwebstudioProjectDataMode") || "supabase-read";
+        quoteDataModeSelect.value = bootSettings.quoteDataMode || localStorage.getItem("maxwebstudioQuoteDataMode") || "supabase-read";
+        invoiceDataModeSelect.value = bootSettings.invoiceDataMode || localStorage.getItem("maxwebstudioInvoiceDataMode") || "supabase-read";
+        subscriptionDataModeSelect.value = bootSettings.subscriptionDataMode || localStorage.getItem("maxwebstudioSubscriptionDataMode") || "supabase-read";
         renderIntegrations();
         renderSystemStatus();
         renderAiWizardUi();

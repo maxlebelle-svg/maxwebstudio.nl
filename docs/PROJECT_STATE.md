@@ -4042,15 +4042,24 @@ Volgende veilige stap:
 
 ## Admin Data Layer - Supabase First
 
-Status: `IN PROGRESS / LOCAL ONLY FALLBACK`
+Status: `READY FOR PRODUCTION ADMIN VALIDATION`
 
 Besluit:
 
 - nieuwe productieklanten worden niet meer in localStorage aangemaakt;
-- admin-dashboard gebruikt standaard Supabase-first hybrid modes voor klanten, websites, projecten, offertes, facturen en abonnementen;
-- localStorage blijft alleen beschikbaar als demo/noodfallback en Developer Mode tooling;
-- oude browserinstellingen die nog op `local` stonden worden eenmalig naar `hybrid` gemigreerd;
-- Quantumbouw/Michel wordt pas als klantrecord aangemaakt wanneer de adminweergave Supabase-first groen is.
+- admin-dashboard gebruikt standaard `supabase-read` voor klanten, websites, projecten, offertes, facturen en abonnementen;
+- localStorage blijft alleen beschikbaar als expliciete demo/noodfallback via Developer Mode tooling;
+- oude browserinstellingen die nog op `local` of `hybrid` stonden worden eenmalig naar `supabase-read` gemigreerd;
+- de Supabase browserclient wordt geladen en haalt alleen publieke runtime-config op via de bestaande Netlify `client-auth-config` endpoint;
+- service-role blijft uitsluitend server-side;
+- bestandsregistratie is optioneel en blokkeert de admin productiedata niet zolang storage/files nog geen volledige productietabel heeft.
+
+Volgende veilige stap:
+
+- productie-admin na deploy openen;
+- controleren dat klanten/websites/projecten op Supabase-read staan;
+- `Nieuwe klant` gebruiken met welkomstmail uit;
+- Quantumbouw/Michel als eerste permanente productieklant aanmaken in Supabase.
 
 ## Admin Auth - Supabase Session
 

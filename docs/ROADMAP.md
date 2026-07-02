@@ -3275,7 +3275,7 @@ Volgende operationele stappen:
 
 ## Admin Data Layer - Supabase First
 
-Status: `IN PROGRESS`
+Status: `READY FOR PRODUCTION ADMIN VALIDATION`
 
 Doel:
 
@@ -3286,10 +3286,18 @@ Doel:
 
 Acceptatie:
 
-- admin-dashboard toont geen `Local` meer als standaard data mode;
+- admin-dashboard toont `supabase-read` als standaard data mode;
 - systeemstatus toont Supabase als gekoppelde database;
-- nieuwe klantflow blijft server-side en schrijft niet naar localStorage tenzij expliciet Developer Mode/fallback;
+- nieuwe klantflow blijft server-side en schrijft naar Supabase via de beveiligde onboardingfunctie;
+- localStorage is alleen nog Developer Mode/demo/noodfallback, niet de normale productiedatabron;
 - Quantumbouw wordt pas ingevoerd nadat deze status groen is.
+
+Laatste stap voor Quantumbouw:
+
+- deploy uitvoeren;
+- admin-dashboard openen met Supabase adminsessie;
+- controleren dat CRM-data uit Supabase komt;
+- Quantumbouw als eerste echte productieklant aanmaken met mail uit en portal access `pending_invitation`.
 
 ## Admin Auth - Productiewaardige Toegang
 
