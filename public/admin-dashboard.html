@@ -16379,6 +16379,18 @@
         leadfinderElements.analysisMessage.className = `admin-form-message ${type}`;
       }
 
+      function getFriendlyWebsiteAnalysisReason(details = "") {
+        const text = String(details || "");
+        if (!text) return "De website reageerde niet of kon niet veilig worden opgehaald.";
+        if (/timeout|timed out|abort/i.test(text)) return "De website reageerde niet binnen de tijdslimiet.";
+        if (/dns|enotfound|eai_again|getaddrinfo/i.test(text)) return "Het domein kon niet worden gevonden.";
+        if (/ssl|certificate|cert_|tls/i.test(text)) return "De beveiligde verbinding kon niet worden gecontroleerd.";
+        if (/\b404\b/.test(text)) return "De homepage gaf een 404 terug.";
+        if (/\b5\d\d\b/.test(text)) return "De server gaf tijdelijk een fout terug.";
+        if (/failed to fetch|networkerror|load failed/i.test(text)) return "De website kon niet worden opgehaald. Controleer de URL of probeer opnieuw.";
+        return "De website kon niet worden geanalyseerd. Controleer de URL of probeer opnieuw.";
+      }
+
       function currentLeadfinderDataMode() {
         return localStorage.getItem("maxwebstudioLeadfinderDataMode")
           || localStorage.getItem("maxwebstudioCustomerDataMode")
@@ -16419,6 +16431,7 @@
       }
 
       function isDemoLeadfinderLead(lead = {}) {
+        if (!lead || typeof lead !== "object") return true;
         const source = String(lead.source || lead._source || "").toLowerCase();
         const id = String(lead.id || "").toLowerCase();
         const email = String(lead.email || "").toLowerCase();
@@ -16430,6 +16443,7 @@
       }
 
       function isLocalLead(lead = {}) {
+        if (!lead || typeof lead !== "object") return false;
         return !lead._source || lead._source === "local";
       }
 
@@ -17146,11 +17160,17 @@
         }
         if (!result.ok) {
           setLeadAnalysisState("Website niet bereikbaar", "status-blocked");
+          const rawDetails = result.details || result.error || "";
+          const friendlyReason = getFriendlyWebsiteAnalysisReason(rawDetails);
+          const technicalDetails = developerModeActive() && rawDetails
+            ? `<small>Technisch: ${escapeHtml(rawDetails)}</small>`
+            : "";
           if (leadfinderElements.analysisResult) {
             leadfinderElements.analysisResult.innerHTML = `
               <strong>Website niet bereikbaar</strong>
-              <p>${escapeHtml(result.error || "De website kon niet worden geanalyseerd.")}</p>
-              <small>${escapeHtml(result.details || "")}</small>
+              <p>${escapeHtml(friendlyReason)}</p>
+              <small>Gebruik “Analyse opnieuw uitvoeren” om de scan nogmaals te starten.</small>
+              ${technicalDetails}
             `;
           }
           return;
@@ -17331,17 +17351,24 @@
             if (leadfinderElements.score) leadfinderElements.score.value = String(Math.max(Number(leadfinderElements.score.value || 0), Number(analysis.score || 0)));
             renderLeadWebsiteAnalysis(null);
           }
-          setLeadAnalysisMessage(analysis.ok ? "Analyse afgerond. Gebruik de verkoopkansen als belhaakje." : analysis.error || "Website niet bereikbaar.", analysis.ok ? "success" : "error");
+          setLeadAnalysisMessage(
+            analysis.ok ? "Analyse afgerond. Gebruik de verkoopkansen als belhaakje." : getFriendlyWebsiteAnalysisReason(analysis.details || analysis.error),
+            analysis.ok ? "success" : "error"
+          );
         } catch (error) {
+          const rawMessage = error?.message || "De analyse kon niet worden uitgevoerd.";
+          if (developerModeActive()) {
+            console.warn("Website analyse fout", error);
+          }
           const failed = {
             ok: false,
             error: "Website niet bereikbaar",
-            details: error.message || "De analyse kon niet worden uitgevoerd.",
+            details: rawMessage,
           };
           websiteAnalysisState.set(target.key, failed);
           if (lead?.id) websiteAnalysisState.set(lead.id, failed);
           renderLeadWebsiteAnalysis(lead);
-          setLeadAnalysisMessage(error.message || "Website analyse kon niet worden uitgevoerd.", "error");
+          setLeadAnalysisMessage(getFriendlyWebsiteAnalysisReason(rawMessage), "error");
         } finally {
           if (leadfinderElements.analysisRun) leadfinderElements.analysisRun.disabled = !getLeadWebsiteScanTarget().url;
         }

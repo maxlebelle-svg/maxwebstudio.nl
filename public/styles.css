@@ -5729,16 +5729,22 @@ h3 {
 .project-detail-panel {
   position: sticky;
   top: 18px;
+  align-self: start;
+  height: auto;
 }
 
 .file-detail-panel {
   position: sticky;
   top: 18px;
+  align-self: start;
+  height: auto;
 }
 
 .website-detail-panel {
   position: sticky;
   top: 18px;
+  align-self: start;
+  height: auto;
 }
 
 .website-row {
@@ -6364,7 +6370,7 @@ h3 {
   display: grid;
   grid-template-columns: minmax(0, 1fr) clamp(340px, 32vw, 460px);
   gap: clamp(16px, 2vw, 24px);
-  align-items: stretch;
+  align-items: start;
 }
 
 .admin-crm-grid > * {
@@ -6376,6 +6382,8 @@ h3 {
   top: 18px;
   align-self: start;
   width: 100%;
+  height: auto;
+  max-height: none;
   z-index: 1;
 }
 
