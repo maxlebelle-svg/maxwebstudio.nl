@@ -17090,9 +17090,17 @@
         return ["concept", "verzonden", "bekeken"].includes(String(quote.status || "").toLowerCase());
       }
 
+      function readSalesCockpitQuotes() {
+        try {
+          const quotes = JSON.parse(localStorage.getItem("maxwebstudioQuotes") || "[]");
+          return Array.isArray(quotes) ? quotes : [];
+        } catch (error) {
+          return [];
+        }
+      }
+
       function getCurrentQuotes() {
-        if (Array.isArray(state?.quotes) && state.quotes.length) return state.quotes;
-        return typeof readStoredQuotes === "function" ? readStoredQuotes() : [];
+        return readSalesCockpitQuotes();
       }
 
       function renderSalesCockpit(leads = getLeadfinderLeads()) {
