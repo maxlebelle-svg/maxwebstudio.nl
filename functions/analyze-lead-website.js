@@ -30,10 +30,21 @@ exports.handler = async (event) => {
     await assertSafeUrl(startUrl);
 
     const result = await fetchWithRedirects(startUrl);
+    const finalUrl = new URL(result.finalUrl);
+    const [robotsFound, sitemapFound] = await Promise.all([
+      checkKnownFile(finalUrl, "/robots.txt"),
+      checkKnownFile(finalUrl, "/sitemap.xml"),
+    ]);
     const analysis = analyzeHtml(result.body, {
       inputUrl,
       finalUrl: result.finalUrl,
       statusCode: result.statusCode,
+      responseTimeMs: result.responseTimeMs,
+      pageSizeBytes: result.pageSizeBytes,
+      redirectedToHttps: result.redirectedToHttps,
+      redirectCount: result.redirectCount,
+      robotsFound,
+      sitemapFound,
     });
 
     return jsonResponse(200, analysis);
@@ -130,6 +141,9 @@ function isPrivateIp(value) {
 
 async function fetchWithRedirects(initialUrl) {
   let currentUrl = initialUrl;
+  const startedAt = Date.now();
+  const initialProtocol = initialUrl.protocol;
+  let redirectedToHttps = false;
   for (let redirectCount = 0; redirectCount <= MAX_REDIRECTS; redirectCount += 1) {
     await assertSafeUrl(currentUrl);
     const controller = new AbortController();
@@ -151,7 +165,11 @@ async function fetchWithRedirects(initialUrl) {
     }
 
     if (response.status >= 300 && response.status < 400 && response.headers.get("location")) {
-      currentUrl = new URL(response.headers.get("location"), currentUrl);
+      const nextUrl = new URL(response.headers.get("location"), currentUrl);
+      if (currentUrl.protocol === "http:" && nextUrl.protocol === "https:") {
+        redirectedToHttps = true;
+      }
+      currentUrl = nextUrl;
       continue;
     }
 
@@ -163,9 +181,14 @@ async function fetchWithRedirects(initialUrl) {
     }
 
     const body = await readLimitedBody(response);
+    const finalUrl = response.url || currentUrl.toString();
     return {
-      finalUrl: response.url || currentUrl.toString(),
+      finalUrl,
       statusCode: response.status,
+      responseTimeMs: Date.now() - startedAt,
+      pageSizeBytes: Buffer.byteLength(body, "utf8"),
+      redirectedToHttps: redirectedToHttps || (initialProtocol === "http:" && finalUrl.startsWith("https://")),
+      redirectCount,
       body,
     };
   }
@@ -173,6 +196,29 @@ async function fetchWithRedirects(initialUrl) {
   const error = new Error("Te veel redirects tijdens het ophalen van de website.");
   error.statusCode = 400;
   throw error;
+}
+
+async function checkKnownFile(baseUrl, path) {
+  const target = new URL(path, baseUrl);
+  await assertSafeUrl(target);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 4500);
+  try {
+    const response = await fetch(target, {
+      method: "GET",
+      redirect: "follow",
+      signal: controller.signal,
+      headers: {
+        "User-Agent": USER_AGENT,
+        Accept: "text/plain,application/xml,text/xml,*/*;q=0.7",
+      },
+    });
+    return response.status >= 200 && response.status < 400;
+  } catch (error) {
+    return false;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 async function readLimitedBody(response) {
@@ -200,6 +246,8 @@ async function readLimitedBody(response) {
 function analyzeHtml(html, context) {
   const finalUrl = String(context.finalUrl || "");
   const statusCode = Number(context.statusCode || 0);
+  const responseTimeMs = Number(context.responseTimeMs || 0);
+  const pageSizeBytes = Number(context.pageSizeBytes || Buffer.byteLength(String(html || ""), "utf8"));
   const text = stripHtml(html).toLowerCase();
   const raw = String(html || "");
   const titleText = extractFirst(raw, /<title[^>]*>([\s\S]*?)<\/title>/i);
@@ -207,6 +255,10 @@ function analyzeHtml(html, context) {
   const h1Text = extractFirst(raw, /<h1[^>]*>([\s\S]*?)<\/h1>/i);
   const hasViewportMeta = /<meta[^>]+name=["']viewport["'][^>]*>/i.test(raw);
   const hasMediaQuery = /@media\s*\(|min-width|max-width|container-query|srcset|sizes=/i.test(raw);
+  const hasOpenGraph = /<meta[^>]+(?:property|name)=["']og:/i.test(raw);
+  const hasFavicon = /<link[^>]+rel=["'][^"']*(?:icon|shortcut icon|apple-touch-icon)[^"']*["']/i.test(raw);
+  const hasTelLink = /href=["']tel:/i.test(raw);
+  const hasMailtoLink = /href=["']mailto:/i.test(raw);
   const hasContactFormSignal = /<form[\s>]/i.test(raw)
     || /type=["'](?:email|tel|text)["']/i.test(raw)
     || hasAny(text, ["contact", "offerte", "afspraak", "aanvraag", "bel ons", "neem contact op"]);
@@ -215,6 +267,11 @@ function analyzeHtml(html, context) {
   const hasPrivacySignal = hasAny(text, ["privacy", "privacyverklaring"]);
   const hasCookieSignal = hasAny(text, ["cookie", "cookiebeleid"]);
   const hasTermsSignal = hasAny(text, ["voorwaarden", "algemene voorwaarden"]);
+  const hasKvkSignal = /\bkvk\b|kamer van koophandel/i.test(raw);
+  const hasFacebook = /facebook\.com/i.test(raw);
+  const hasInstagram = /instagram\.com/i.test(raw);
+  const hasLinkedIn = /linkedin\.com/i.test(raw);
+  const hasYouTube = /youtube\.com|youtu\.be/i.test(raw);
   const hasCtaSignal = hasAny(text, [
     "offerte aanvragen",
     "afspraak maken",
@@ -229,22 +286,42 @@ function analyzeHtml(html, context) {
 
   const checks = {
     websiteReachable: statusCode >= 200 && statusCode < 400,
+    httpStatusOk: statusCode >= 200 && statusCode < 400,
+    statusCode,
     usesHttps: finalUrl.startsWith("https://"),
+    redirectedToHttps: Boolean(context.redirectedToHttps),
+    redirectCount: Number(context.redirectCount || 0),
+    responseTimeMs,
+    pageSizeBytes,
+    hasFastResponse: responseTimeMs > 0 && responseTimeMs <= 1800,
+    hasAcceptableResponse: responseTimeMs > 0 && responseTimeMs <= 3500,
+    hasReasonablePageSize: pageSizeBytes <= 1.2 * 1024 * 1024,
     hasTitle: Boolean(titleText),
     titleText,
     hasMetaDescription: Boolean(metaDescriptionText),
     metaDescriptionText,
     hasH1: Boolean(h1Text),
     h1Text,
+    hasOpenGraph,
+    hasFavicon,
     hasContactFormSignal,
+    hasTelLink,
+    hasMailtoLink,
     hasWhatsAppSignal,
     hasSocialLinksSignal,
     hasPrivacySignal,
     hasCookieSignal,
     hasTermsSignal,
+    hasKvkSignal,
     hasCtaSignal,
     hasViewportMeta,
     hasMobileResponsiveSignal,
+    robotsFound: Boolean(context.robotsFound),
+    sitemapFound: Boolean(context.sitemapFound),
+    hasFacebook,
+    hasInstagram,
+    hasLinkedIn,
+    hasYouTube,
   };
 
   const score = calculateScore(checks);
@@ -253,7 +330,10 @@ function analyzeHtml(html, context) {
     inputUrl: context.inputUrl,
     finalUrl,
     statusCode,
+    responseTimeMs,
+    pageSizeBytes,
     score,
+    scoreLabel: getScoreLabel(score),
     checks,
     improvements: buildImprovements(checks),
     salesOpportunities: buildSalesOpportunities(checks),
@@ -261,43 +341,77 @@ function analyzeHtml(html, context) {
 }
 
 function calculateScore(checks) {
-  const policySignal = checks.hasPrivacySignal || checks.hasCookieSignal || checks.hasTermsSignal;
-  const score = (checks.websiteReachable ? 20 : 0)
-    + (checks.usesHttps ? 10 : 0)
-    + (checks.hasTitle ? 8 : 0)
-    + (checks.hasMetaDescription ? 8 : 0)
-    + (checks.hasH1 ? 8 : 0)
-    + (checks.hasContactFormSignal ? 10 : 0)
-    + (checks.hasCtaSignal ? 10 : 0)
-    + (checks.hasWhatsAppSignal ? 5 : 0)
-    + (checks.hasSocialLinksSignal ? 5 : 0)
-    + (policySignal ? 8 : 0)
-    + (checks.hasMobileResponsiveSignal ? 8 : 0);
+  let score = 100;
+  const penalties = [
+    [!checks.websiteReachable, 25],
+    [!checks.usesHttps, 10],
+    [!checks.hasAcceptableResponse, 6],
+    [!checks.hasReasonablePageSize, 4],
+    [!checks.hasTitle, 6],
+    [!checks.hasMetaDescription, 6],
+    [!checks.hasH1, 6],
+    [!checks.hasOpenGraph, 4],
+    [!checks.hasFavicon, 3],
+    [!checks.hasContactFormSignal, 8],
+    [!checks.hasCtaSignal, 8],
+    [!checks.hasTelLink, 4],
+    [!checks.hasMailtoLink, 3],
+    [!checks.hasWhatsAppSignal, 5],
+    [!checks.hasPrivacySignal, 5],
+    [!checks.hasCookieSignal, 5],
+    [!checks.hasTermsSignal, 4],
+    [!checks.hasKvkSignal, 3],
+    [!checks.hasViewportMeta, 8],
+    [!checks.hasMobileResponsiveSignal, 5],
+    [!checks.robotsFound, 3],
+    [!checks.sitemapFound, 3],
+    [!(checks.hasFacebook || checks.hasInstagram || checks.hasLinkedIn || checks.hasYouTube), 4],
+  ];
+  penalties.forEach(([condition, penalty]) => {
+    if (condition) score -= penalty;
+  });
   return Math.max(0, Math.min(100, score));
+}
+
+function getScoreLabel(score) {
+  if (score >= 90) return "Uitstekend";
+  if (score >= 70) return "Redelijk";
+  if (score >= 50) return "Goede verkoopkans";
+  return "Hoge verkoopkans";
 }
 
 function buildImprovements(checks) {
   const items = [];
   if (!checks.usesHttps) items.push("Zorg dat de website veilig via HTTPS opent.");
+  if (!checks.hasAcceptableResponse) items.push("Verbeter de eerste responstijd van de homepage.");
+  if (!checks.hasReasonablePageSize) items.push("Maak de homepage lichter zodat hij sneller laadt.");
   if (!checks.hasTitle) items.push("Voeg een duidelijke SEO titel toe.");
   if (!checks.hasMetaDescription) items.push("Voeg een aantrekkelijke meta description toe.");
   if (!checks.hasH1) items.push("Maak de hoofdboodschap duidelijk met een H1-kop.");
+  if (!checks.hasOpenGraph) items.push("Voeg Open Graph gegevens toe voor delen via social media.");
+  if (!checks.hasFavicon) items.push("Voeg een herkenbaar favicon toe.");
   if (!checks.hasCtaSignal) items.push("Maak de belangrijkste call-to-action zichtbaarder.");
   if (!checks.hasContactFormSignal) items.push("Maak contact opnemen makkelijker met een formulier of duidelijke contactknop.");
+  if (!checks.hasTelLink && !checks.hasMailtoLink) items.push("Maak telefoon en e-mail direct klikbaar.");
+  if (!checks.hasWhatsAppSignal) items.push("Voeg laagdrempelig WhatsApp-contact toe als dat past bij het bedrijf.");
   if (!checks.hasMobileResponsiveSignal) items.push("Controleer of mobiele bezoekers een goede ervaring krijgen.");
-  if (!checks.hasPrivacySignal || !checks.hasCookieSignal) items.push("Maak privacy- en cookie-informatie duidelijk zichtbaar.");
+  if (!checks.hasPrivacySignal || !checks.hasCookieSignal || !checks.hasTermsSignal) items.push("Maak privacy-, cookie- en voorwaardeninformatie duidelijk zichtbaar.");
+  if (!checks.robotsFound || !checks.sitemapFound) items.push("Maak robots.txt en sitemap.xml bereikbaar voor zoekmachines.");
   return items.length ? items : ["De homepage bevat de belangrijkste basis-signalen. Controleer visueel of de uitstraling nog actueel is."];
 }
 
 function buildSalesOpportunities(checks) {
   const items = [];
   if (!checks.usesHttps) items.push("Bezoekers kunnen afhaken door een onveilig gevoel.");
+  if (!checks.hasAcceptableResponse) items.push("Een trage eerste reactie kan aanvragen kosten.");
   if (!checks.hasMetaDescription) items.push("Het Google-resultaat kan minder aantrekkelijk zijn.");
   if (!checks.hasH1) items.push("De pagina mist mogelijk een duidelijke hoofdboodschap.");
   if (!checks.hasCtaSignal) items.push("Bezoekers weten mogelijk niet wat de volgende stap is.");
+  if (!checks.hasTelLink && !checks.hasMailtoLink) items.push("Contact opnemen kost extra moeite.");
   if (!checks.hasWhatsAppSignal) items.push("Laagdrempelig contact via mobiel ontbreekt.");
   if (!checks.hasPrivacySignal || !checks.hasCookieSignal || !checks.hasTermsSignal) items.push("De website oogt minder professioneel en mogelijk minder AVG-proof.");
   if (!checks.hasMobileResponsiveSignal) items.push("Mobiele bezoekers kunnen afhaken.");
+  if (!checks.hasFacebook && !checks.hasInstagram && !checks.hasLinkedIn && !checks.hasYouTube) items.push("Social proof en actuele kanalen zijn niet direct zichtbaar.");
   return items.length ? items : ["Gebruik de scan als opening: de basis is aanwezig, maar design, snelheid en conversie kunnen vaak nog beter."];
 }
 

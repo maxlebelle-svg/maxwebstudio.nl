@@ -8697,6 +8697,17 @@ h3 {
   overflow-wrap: anywhere;
 }
 
+.lead-analysis-summary {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 92% 12%, rgba(25, 194, 255, 0.13), transparent 34%),
+    rgba(3, 12, 22, 0.38);
+}
+
 .lead-analysis-checks {
   display: flex;
   flex-wrap: wrap;
@@ -8721,6 +8732,91 @@ h3 {
 .lead-analysis-checks .is-missing {
   color: #fed7aa;
   background: rgba(245, 158, 11, 0.16);
+}
+
+.lead-analysis-check-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.lead-analysis-check-group {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(171, 196, 224, 0.14);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(25, 194, 255, 0.04)),
+    rgba(255, 255, 255, 0.035);
+}
+
+.lead-analysis-check-group > strong {
+  color: var(--white);
+  font-size: 13px;
+}
+
+.lead-analysis-check-group > div {
+  display: grid;
+  gap: 7px;
+}
+
+.lead-analysis-check-group span {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.35;
+}
+
+.lead-analysis-check-group b {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.lead-analysis-check-group small {
+  display: block;
+  margin-top: 2px;
+  color: rgba(255, 255, 255, 0.48);
+  font-size: 11px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.lead-analysis-check-group .is-pass {
+  color: #d7fbe2;
+}
+
+.lead-analysis-check-group .is-pass b {
+  color: #dcfce7;
+  background: rgba(34, 197, 94, 0.18);
+}
+
+.lead-analysis-check-group .is-warning {
+  color: #fde68a;
+}
+
+.lead-analysis-check-group .is-warning b {
+  color: #fef3c7;
+  background: rgba(245, 158, 11, 0.2);
+}
+
+.lead-analysis-check-group .is-missing {
+  color: #fecaca;
+}
+
+.lead-analysis-check-group .is-missing b {
+  color: #fee2e2;
+  background: rgba(239, 68, 68, 0.18);
 }
 
 .lead-analysis-columns {
@@ -9042,6 +9138,7 @@ h3 {
 
 .google-place-actions {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   margin-top: auto;
 }
@@ -9053,6 +9150,10 @@ h3 {
 }
 
 .google-place-actions [data-google-place-action="takeover"] {
+  grid-column: auto;
+}
+
+.google-place-actions .button:only-child {
   grid-column: 1 / -1;
 }
 
@@ -12503,6 +12604,11 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   .google-places-content,
   .google-places-map {
     min-height: 240px;
+  }
+
+  .lead-analysis-check-groups,
+  .lead-analysis-columns {
+    grid-template-columns: 1fr;
   }
 
   .invoice-document-header {

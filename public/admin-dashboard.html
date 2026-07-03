@@ -16807,6 +16807,7 @@
           </dl>
           <div class="google-place-actions">
             <button class="button primary" type="button" data-google-place-action="takeover">Gegevens overnemen</button>
+            ${website ? `<button class="button secondary" type="button" data-google-place-action="analyze">Website analyseren</button>` : ""}
           </div>
         `;
         renderGoogleTransferList(place);
@@ -16942,6 +16943,9 @@
         if (action === "takeover") {
           takeoverGooglePlace();
         }
+        if (action === "analyze") {
+          analyzeGooglePlaceWebsite();
+        }
         if (action === "share" && googlePlacesPlace?.url) {
           try {
             await navigator.clipboard.writeText(googlePlacesPlace.url);
@@ -16950,6 +16954,17 @@
             setGooglePlacesMessage("Kopiëren lukte niet. Open de Google Maps routeknop.", "error");
           }
         }
+      }
+
+      async function analyzeGooglePlaceWebsite() {
+        const place = googlePlacesPlace;
+        if (!place?.website) {
+          setGooglePlacesMessage("Google heeft geen website voor dit bedrijf geleverd.", "error");
+          return;
+        }
+        setLeadFieldIfAllowed(leadfinderElements.website, place.website, false);
+        setLeadFieldIfAllowed(leadfinderElements.source, "Google Maps", false);
+        await runLeadWebsiteAnalysis();
       }
 
       function renderLeadfinderMetrics(leads) {
@@ -17081,25 +17096,40 @@
         renderLeadWebsiteAnalysis(lead);
       }
 
+      function getLeadWebsiteScanTarget() {
+        const lead = selectedLeadFinderLead();
+        const formWebsite = String(leadfinderElements.website?.value || "").trim();
+        const googleWebsite = String(googlePlacesPlace?.website || "").trim();
+        const url = String(lead?.websiteUrl || formWebsite || googleWebsite || "").trim();
+        const key = lead?.id || (url ? `draft:${normalizeComparableUrl(url) || url}` : "");
+        return {
+          lead,
+          url,
+          key,
+          label: lead?.companyName || String(leadfinderElements.company?.value || googlePlacesPlace?.name || "Nieuwe lead").trim(),
+        };
+      }
+
+      function getWebsiteAnalysisResult(target, lead) {
+        if (!target?.key) return null;
+        return websiteAnalysisState.get(target.key)
+          || (lead && websiteAnalysisState.get(lead.id))
+          || lead?.websiteAnalysis
+          || null;
+      }
+
       function renderLeadWebsiteAnalysis(lead) {
-        const result = lead ? websiteAnalysisState.get(lead.id) || lead.websiteAnalysis || null : null;
-        const canRun = Boolean(lead?.websiteUrl);
+        const target = getLeadWebsiteScanTarget();
+        const result = getWebsiteAnalysisResult(target, lead);
+        const canRun = Boolean(target.url);
         if (leadfinderElements.analysisRun) {
           leadfinderElements.analysisRun.disabled = !canRun;
           leadfinderElements.analysisRun.textContent = result ? "Analyse opnieuw uitvoeren" : "Website analyseren";
         }
-        if (!lead) {
+        if (!canRun) {
           setLeadAnalysisState("Niet uitgevoerd", "status-prepared");
           if (leadfinderElements.analysisResult) {
-            leadfinderElements.analysisResult.textContent = "Selecteer een lead met website om een homepage-analyse uit te voeren.";
-          }
-          setLeadAnalysisMessage("");
-          return;
-        }
-        if (!canRun) {
-          setLeadAnalysisState("Geen website", "status-prepared");
-          if (leadfinderElements.analysisResult) {
-            leadfinderElements.analysisResult.textContent = "Deze lead heeft nog geen website-url. Vul eerst een website in of neem gegevens over via Google Maps.";
+            leadfinderElements.analysisResult.textContent = "Selecteer een lead met website of neem eerst een website over via Google Maps.";
           }
           setLeadAnalysisMessage("");
           return;
@@ -17108,7 +17138,7 @@
           setLeadAnalysisState("Niet uitgevoerd", "status-prepared");
           if (leadfinderElements.analysisResult) {
             leadfinderElements.analysisResult.innerHTML = `
-              <p>Scan de homepage handmatig voordat je belt. De analyse gebruikt geen AI en scant geen andere pagina’s.</p>
+              <p>Scan de homepage handmatig voordat je belt. De analyse gebruikt geen AI, geen bulk scan en kijkt alleen naar de homepage.</p>
             `;
           }
           setLeadAnalysisMessage("");
@@ -17126,48 +17156,120 @@
           return;
         }
 
-        const checks = result.checks || {};
-        const checklist = [
-          ["HTTPS", checks.usesHttps],
-          ["SEO titel", checks.hasTitle],
-          ["Meta description", checks.hasMetaDescription],
-          ["H1 hoofdboodschap", checks.hasH1],
-          ["Contact/formulier", checks.hasContactFormSignal],
-          ["Call-to-action", checks.hasCtaSignal],
-          ["WhatsApp", checks.hasWhatsAppSignal],
-          ["Social links", checks.hasSocialLinksSignal],
-          ["Privacy/cookie/voorwaarden", checks.hasPrivacySignal || checks.hasCookieSignal || checks.hasTermsSignal],
-          ["Mobiel signaal", checks.hasMobileResponsiveSignal],
-        ];
         setLeadAnalysisState(`${result.score}/100`, result.score >= 75 ? "status-active" : result.score >= 50 ? "status-planned" : "status-blocked");
         if (leadfinderElements.analysisResult) {
-          leadfinderElements.analysisResult.innerHTML = `
+          leadfinderElements.analysisResult.innerHTML = renderWebsiteAnalysisHtml(result, target);
+        }
+      }
+
+      function formatBytes(bytes) {
+        const size = Number(bytes || 0);
+        if (!size) return "-";
+        if (size < 1024) return `${size} B`;
+        if (size < 1024 * 1024) return `${Math.round(size / 1024)} KB`;
+        return `${(size / 1024 / 1024).toFixed(1)} MB`;
+      }
+
+      function websiteCheckStatus(passed, warning = false) {
+        if (passed) return { className: "is-pass", symbol: "✓" };
+        if (warning) return { className: "is-warning", symbol: "!" };
+        return { className: "is-missing", symbol: "×" };
+      }
+
+      function renderWebsiteCheck(label, passed, detail = "", warning = false) {
+        const status = websiteCheckStatus(Boolean(passed), warning);
+        return `
+          <span class="${status.className}">
+            <b>${status.symbol}</b>
+            <span>${escapeHtml(label)}${detail ? `<small>${escapeHtml(detail)}</small>` : ""}</span>
+          </span>
+        `;
+      }
+
+      function renderWebsiteCheckGroup(title, items) {
+        return `
+          <section class="lead-analysis-check-group">
+            <strong>${escapeHtml(title)}</strong>
+            <div>${items.join("")}</div>
+          </section>
+        `;
+      }
+
+      function renderWebsiteAnalysisHtml(result, target) {
+        const checks = result.checks || {};
+        const responseTime = Number(result.responseTimeMs || checks.responseTimeMs || 0);
+        const pageSize = Number(result.pageSizeBytes || checks.pageSizeBytes || 0);
+        const responseWarning = responseTime > 1800 && responseTime <= 3500;
+        const sizeWarning = pageSize > 1.2 * 1024 * 1024 && pageSize <= 2.2 * 1024 * 1024;
+        const groups = [
+          renderWebsiteCheckGroup("Bereikbaarheid", [
+            renderWebsiteCheck("Website bereikbaar", checks.websiteReachable),
+            renderWebsiteCheck("HTTP status", checks.httpStatusOk, String(result.statusCode || checks.statusCode || "-")),
+            renderWebsiteCheck("SSL/HTTPS aanwezig", checks.usesHttps),
+            renderWebsiteCheck("Redirect naar HTTPS", checks.redirectedToHttps || checks.usesHttps, checks.redirectCount ? `${checks.redirectCount} redirect(s)` : ""),
+          ]),
+          renderWebsiteCheckGroup("Performance", [
+            renderWebsiteCheck("Response tijd", checks.hasFastResponse || checks.hasAcceptableResponse, responseTime ? `${responseTime} ms` : "-", responseWarning),
+            renderWebsiteCheck("Paginagrootte", checks.hasReasonablePageSize, formatBytes(pageSize), sizeWarning),
+          ]),
+          renderWebsiteCheckGroup("SEO", [
+            renderWebsiteCheck("Title aanwezig", checks.hasTitle, checks.titleText || ""),
+            renderWebsiteCheck("Meta description", checks.hasMetaDescription, checks.metaDescriptionText || ""),
+            renderWebsiteCheck("H1 aanwezig", checks.hasH1, checks.h1Text || ""),
+            renderWebsiteCheck("Open Graph", checks.hasOpenGraph),
+            renderWebsiteCheck("Favicon", checks.hasFavicon),
+          ]),
+          renderWebsiteCheckGroup("Conversie", [
+            renderWebsiteCheck("Contactformulier", checks.hasContactFormSignal),
+            renderWebsiteCheck("CTA-knop", checks.hasCtaSignal),
+            renderWebsiteCheck("Telefoonlink", checks.hasTelLink),
+            renderWebsiteCheck("Mailto-link", checks.hasMailtoLink),
+            renderWebsiteCheck("WhatsApp-link", checks.hasWhatsAppSignal),
+          ]),
+          renderWebsiteCheckGroup("Vertrouwen", [
+            renderWebsiteCheck("Privacybeleid", checks.hasPrivacySignal),
+            renderWebsiteCheck("Cookiebeleid", checks.hasCookieSignal),
+            renderWebsiteCheck("Algemene voorwaarden", checks.hasTermsSignal),
+            renderWebsiteCheck("KvK-indicatie", checks.hasKvkSignal),
+          ]),
+          renderWebsiteCheckGroup("Techniek", [
+            renderWebsiteCheck("Viewport mobiel", checks.hasViewportMeta),
+            renderWebsiteCheck("Mobielvriendelijk signaal", checks.hasMobileResponsiveSignal),
+            renderWebsiteCheck("Robots.txt", checks.robotsFound),
+            renderWebsiteCheck("Sitemap.xml", checks.sitemapFound),
+          ]),
+          renderWebsiteCheckGroup("Social", [
+            renderWebsiteCheck("Facebook", checks.hasFacebook),
+            renderWebsiteCheck("Instagram", checks.hasInstagram),
+            renderWebsiteCheck("LinkedIn", checks.hasLinkedIn),
+            renderWebsiteCheck("YouTube", checks.hasYouTube),
+          ]),
+        ];
+
+        return `
+          <div class="lead-analysis-summary">
             <div class="lead-analysis-score">
               <strong>${escapeHtml(result.score)}/100</strong>
-              <span>Homepage scan</span>
+              <span>${escapeHtml(result.scoreLabel || "Homepage scan")}</span>
             </div>
             <div class="lead-analysis-meta">
-              <span>Status ${escapeHtml(result.statusCode || "-")}</span>
-              <a href="${escapeHtml(result.finalUrl || lead.websiteUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(result.finalUrl || lead.websiteUrl)}</a>
+              <span>${escapeHtml(target.label || "Lead")} · Status ${escapeHtml(result.statusCode || "-")}</span>
+              <a href="${escapeHtml(result.finalUrl || target.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(result.finalUrl || target.url)}</a>
             </div>
-            <div class="lead-analysis-checks">
-              ${checklist.map(([label, passed]) => `
-                <span class="${passed ? "is-pass" : "is-missing"}">${passed ? "✓" : "×"} ${escapeHtml(label)}</span>
-              `).join("")}
+          </div>
+          <div class="lead-analysis-check-groups">${groups.join("")}</div>
+          <div class="lead-analysis-columns">
+            <div>
+              <strong>Verbeterpunten</strong>
+              <ul>${(result.improvements || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
             </div>
-            <div class="lead-analysis-columns">
-              <div>
-                <strong>Verbeterpunten</strong>
-                <ul>${(result.improvements || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
-              </div>
-              <div>
-                <strong>Verkoopkansen</strong>
-                <ul>${(result.salesOpportunities || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
-              </div>
+            <div>
+              <strong>Verkoopkansen</strong>
+              <ul>${(result.salesOpportunities || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
             </div>
-            <p class="lead-analysis-disclaimer">Deze analyse is handmatig uitgevoerd en gebruikt geen AI.</p>
-          `;
-        }
+          </div>
+          <p class="lead-analysis-disclaimer">Deze scan is objectief, handmatig gestart en gebruikt geen AI.</p>
+        `;
       }
 
       function buildWebsiteAnalysisNote(analysis) {
@@ -17181,13 +17283,10 @@
       }
 
       async function runLeadWebsiteAnalysis() {
-        const lead = selectedLeadFinderLead();
-        if (!lead) {
-          setLeadAnalysisMessage("Selecteer eerst een lead.", "error");
-          return;
-        }
-        if (!lead.websiteUrl) {
-          setLeadAnalysisMessage("Deze lead heeft nog geen website-url.", "error");
+        const target = getLeadWebsiteScanTarget();
+        const lead = target.lead;
+        if (!target.url) {
+          setLeadAnalysisMessage("Vul eerst een website-url in of neem gegevens over via Google Maps.", "error");
           return;
         }
 
@@ -17202,13 +17301,14 @@
           const response = await fetch("/.netlify/functions/analyze-lead-website", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ url: lead.websiteUrl, leadId: lead.id }),
+            body: JSON.stringify({ url: target.url, leadId: lead?.id || "" }),
           });
           const analysis = await response.json().catch(() => null);
           if (!response.ok || !analysis) {
             throw new Error(analysis?.details || analysis?.error || "Website analyse kon niet worden uitgevoerd.");
           }
-          websiteAnalysisState.set(lead.id, analysis);
+          websiteAnalysisState.set(target.key, analysis);
+          if (lead?.id) websiteAnalysisState.set(lead.id, analysis);
           if (analysis.ok && isLocalLead(lead)) {
             const analysisNote = buildWebsiteAnalysisNote(analysis);
             const updatedLead = updateLeadFinderLeadLocally(lead.id, {
@@ -17222,6 +17322,15 @@
           } else {
             renderLeadWebsiteAnalysis(lead);
           }
+          if (!lead && analysis.ok) {
+            const analysisNote = buildWebsiteAnalysisNote(analysis);
+            const currentNotes = String(leadfinderElements.notes?.value || "").trim();
+            if (leadfinderElements.notes && analysisNote && !currentNotes.includes(analysis.finalUrl || analysis.inputUrl || target.url)) {
+              leadfinderElements.notes.value = [currentNotes, analysisNote].filter(Boolean).join("\n\n");
+            }
+            if (leadfinderElements.score) leadfinderElements.score.value = String(Math.max(Number(leadfinderElements.score.value || 0), Number(analysis.score || 0)));
+            renderLeadWebsiteAnalysis(null);
+          }
           setLeadAnalysisMessage(analysis.ok ? "Analyse afgerond. Gebruik de verkoopkansen als belhaakje." : analysis.error || "Website niet bereikbaar.", analysis.ok ? "success" : "error");
         } catch (error) {
           const failed = {
@@ -17229,11 +17338,12 @@
             error: "Website niet bereikbaar",
             details: error.message || "De analyse kon niet worden uitgevoerd.",
           };
-          websiteAnalysisState.set(lead.id, failed);
+          websiteAnalysisState.set(target.key, failed);
+          if (lead?.id) websiteAnalysisState.set(lead.id, failed);
           renderLeadWebsiteAnalysis(lead);
           setLeadAnalysisMessage(error.message || "Website analyse kon niet worden uitgevoerd.", "error");
         } finally {
-          if (leadfinderElements.analysisRun) leadfinderElements.analysisRun.disabled = !selectedLeadFinderLead()?.websiteUrl;
+          if (leadfinderElements.analysisRun) leadfinderElements.analysisRun.disabled = !getLeadWebsiteScanTarget().url;
         }
       }
 
