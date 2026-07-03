@@ -27,15 +27,30 @@
         <nav class="admin-sidebar-nav">
           <span class="admin-nav-group">Werkruimte</span>
           <a href="#dashboard">Dashboard</a>
-          <a href="#leadfinder">Sales</a>
+          <a href="#leadfinder">Leads</a>
           <a href="#klanten">Klanten</a>
-          <a href="#websites">Websites</a>
-          <a href="#projecten">Projecten</a>
+          <a class="admin-sales-secondary" href="#websites">Websites</a>
           <a href="#offertes">Offertes</a>
           <a href="#facturen">Facturen</a>
-          <a href="#instellingen">Instellingen</a>
+          <a href="#projecten">Projecten</a>
+          <a class="admin-developer-only" href="#onderhoud">Abonnementen</a>
+          <a class="admin-sales-secondary" href="#instellingen">Instellingen</a>
           <a class="admin-developer-only" href="#demo-omgeving">Developer Mode</a>
         </nav>
+        <div class="admin-topbar-actions" aria-label="Admin snelmenu">
+          <label class="admin-topbar-search" for="admin-global-search">
+            <span class="sr-only">Zoeken</span>
+            <input id="admin-global-search" type="search" placeholder="Zoeken..." />
+          </label>
+          <button class="admin-icon-button" type="button" aria-label="Meldingen">⌕</button>
+          <div class="admin-topbar-user" aria-label="Ingelogde admin">
+            <span class="admin-topbar-avatar">M</span>
+            <span>
+              <strong>info@maxwebstudio.nl</strong>
+              <small>Admin</small>
+            </span>
+          </div>
+        </div>
         <article class="admin-card admin-token-card admin-developer-only">
           <div>
             <strong>Auth voorbereiding</strong>
@@ -310,6 +325,27 @@
                 <button class="button secondary" id="leadfinder-create-task" type="button" disabled>Maak opvolgtaak</button>
                 <button class="button secondary" id="leadfinder-convert-customer" type="button" disabled>Maak klant aan</button>
                 <button class="button secondary danger" id="leadfinder-delete" type="button" disabled>Verwijderen</button>
+              </div>
+              <div class="lead-welcome-card">
+                <div class="lead-welcome-heading">
+                  <span aria-hidden="true">✉</span>
+                  <div>
+                    <strong>Welkomstmail naar klant</strong>
+                    <mark>Aanbevolen</mark>
+                  </div>
+                </div>
+                <p>Stuur de welkomstmail pas wanneer de klant officieel is verkocht en je hem wilt uitnodigen voor het klantportaal.</p>
+                <label class="lead-welcome-toggle" for="leadfinder-send-welcome-mail">
+                  <input id="leadfinder-send-welcome-mail" type="checkbox" />
+                  <span>
+                    <strong>Welkomstmail direct versturen</strong>
+                    <small>De klant ontvangt inloggegevens en onboarding informatie.</small>
+                  </span>
+                </label>
+                <details class="lead-extra-settings">
+                  <summary>Extra instellingen</summary>
+                  <p>Gebruik dit later voor taal, pakketdetails en onboarding-notities.</p>
+                </details>
               </div>
               <div class="lead-analysis-card" id="lead-website-analysis-card">
                 <div class="lead-analysis-header">
@@ -8020,10 +8056,23 @@
           }
         }
 
+        function isLeadfinderInFocus() {
+          const leadfinderSection = document.getElementById("leadfinder");
+          if (!leadfinderSection) return false;
+          const rect = leadfinderSection.getBoundingClientRect();
+          const focusLine = window.innerHeight * 0.42;
+          return rect.top <= focusLine && rect.bottom >= focusLine;
+        }
+
+        function syncSalesViewState(id = window.location.hash.replace("#", "") || "dashboard") {
+          document.body.classList.toggle("is-sales-view", id === "leadfinder" || isLeadfinderInFocus());
+        }
+
         function syncActiveNav(id = window.location.hash.replace("#", "") || "dashboard") {
           adminNavLinks.forEach((link) => {
             link.classList.toggle("is-active", link.getAttribute("href") === `#${id}`);
           });
+          syncSalesViewState(id);
         }
 
         function readStoredCustomers() {
@@ -15857,6 +15906,7 @@
           link.addEventListener("click", () => syncActiveNav(link.getAttribute("href").slice(1)));
         });
         window.addEventListener("hashchange", () => syncActiveNav());
+        window.addEventListener("scroll", () => syncSalesViewState(), { passive: true });
         if ("IntersectionObserver" in window) {
           const observedSections = adminNavLinks
             .map((link) => document.getElementById(link.getAttribute("href").slice(1)))
@@ -15864,7 +15914,7 @@
           const navObserver = new IntersectionObserver((entries) => {
             const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
             if (visible?.target?.id) syncActiveNav(visible.target.id);
-          }, { rootMargin: "-20% 0px -65% 0px", threshold: [0.12, 0.3, 0.6] });
+          }, { rootMargin: "-12% 0px -48% 0px", threshold: [0.02, 0.12, 0.3] });
           observedSections.forEach((section) => navObserver.observe(section));
         }
         requestStatusSave.addEventListener("click", saveRequestStatus);
