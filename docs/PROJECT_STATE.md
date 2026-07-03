@@ -2,6 +2,35 @@
 
 Laatste analyse: 2026-06-26.
 
+## Huidige Productfocus
+
+Status: `RC1 STABILISATIE / SALES ACCELERATION`
+
+Max Webstudio is verschoven van losse websitebouw naar een platform met marketingwebsite, klantportaal, adminportaal, Sales CRM, Google Maps Lead Finder en Website Scan MVP.
+
+De komende fase draait niet om meer losse functies, maar om verkoopkracht:
+
+- RC1 eerst afronden;
+- alleen bugs, UX-polish, performance, responsive gedrag en nette foutmeldingen;
+- Sales Workspace bruikbaar maken als dagelijkse verkoopomgeving;
+- een verkoper moet in minder dan 5 minuten een bedrijf vinden, website analyseren, verkoopkansen zien, lead opslaan en follow-up plannen;
+- nieuwe functies moeten direct bijdragen aan omzet, snelheid of schaalbaarheid.
+
+Leidend:
+
+- `docs/deployment/RC1_EXIT_CHECKLIST.md`
+- `docs/design/MAX_CRM_DESIGN_SYSTEM.md`
+- `docs/SALES_ACCELERATION.md`
+
+Niet doen zonder expliciete GO:
+
+- AI Sales Coach;
+- bulk scraping;
+- automatische cold outreach;
+- automatische offertegeneratie;
+- nieuwe sales portals;
+- complexe salesmanager-dashboarding.
+
 ## Project
 
 Deze repository bevat de officiele broncode van `maxwebstudio.nl`.

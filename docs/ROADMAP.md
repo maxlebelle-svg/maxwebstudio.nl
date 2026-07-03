@@ -2,6 +2,38 @@
 
 Deze roadmap beschrijft de logische doorontwikkeling van Max Web Studio. Grote wijzigingen moeten altijd eerst worden goedgekeurd.
 
+## Huidige Productfocus - RC1 En Sales Acceleration
+
+Status: `LEIDEND VOOR KOMENDE SPRINTS`
+
+Max Webstudio wordt vanaf nu behandeld als een product dat omzet, snelheid en schaalbaarheid moet ondersteunen.
+
+Korte termijn:
+
+- RC1 volledig afronden via `docs/deployment/RC1_EXIT_CHECKLIST.md`;
+- geen nieuwe grote features voordat RC1 stabiel is;
+- Sales Workspace stabiliseren als dagelijkse verkoopomgeving;
+- Google Maps Lead Finder en Website Scan alleen nog verbeteren met bugs, UX en betrouwbaarheid;
+- demo-data, technische meldingen en Developer-informatie uit normale workflows houden.
+
+Commerciele prioriteit:
+
+- een verkoper moet in minder dan 5 minuten een bedrijf vinden, website analyseren, verkoopkansen zien, lead opslaan en follow-up plannen;
+- alles wat een verkoper ziet moet leiden tot een nuttige volgende actie;
+- nieuwe functies moeten direct bijdragen aan omzet, snelheid of schaalbaarheid.
+
+Releasevolgorde:
+
+- RC1 - Foundation afronden;
+- Sales Acceleration - verkoopworkflow bruikbaar maken voor dagelijks werk;
+- RC2 - Website Intelligence;
+- RC3 - AI Sales Coach;
+- RC4 - Offerteflow.
+
+Leidend document:
+
+- `docs/SALES_ACCELERATION.md`
+
 ## Fase 1 - Stabiliseren
 
 Doel: de huidige website veilig en beheersbaar maken.
