@@ -1,210 +1,140 @@
-# Max Webstudio Vision
+# Max Webstudio Visie
 
-Status: `PRODUCT VISION / STRATEGIC COMPASS`
+Status: `PRODUCTVISIE / STRATEGISCH KOMPAS`
 
-## Why Max Webstudio Exists
+## Onze Missie
 
-Max Webstudio exists to help entrepreneurs grow online without needing to understand web technology, hosting, SEO, forms, updates, analytics or automation.
+Max Webstudio bestaat om ondernemers online te laten groeien, zonder dat zij zich hoeven te verdiepen in websites, hosting, SEO, beveiliging, onderhoud of digitale techniek.
 
-The customer should not feel like they bought "a website".
+Een klant moet nooit het gevoel hebben dat hij "alleen een website" heeft gekocht.
 
-They should feel:
+Hij moet het gevoel hebben:
 
-> My online presence is being handled by a professional digital partner.
+> Mijn volledige online aanwezigheid wordt professioneel beheerd door een betrouwbare digitale partner.
 
-## North Star
+## Onze Stip Op De Horizon
 
-Max Webstudio becomes the digital growth platform for small and medium-sized businesses in the Netherlands.
+Max Webstudio groeit uit tot het digitale groeiplatform voor het Nederlandse midden- en kleinbedrijf.
 
-It combines:
+Wij combineren:
 
 - premium websites;
-- hosting and maintenance;
-- customer portal;
+- hosting en onderhoud;
+- klantportaal;
 - sales CRM;
-- lead generation;
-- website intelligence;
-- billing and subscriptions;
+- Website Intelligence;
+- projectmanagement;
+- facturatie;
 - support;
-- future AI guidance.
+- AI-ondersteuning.
 
-The goal is not to build many disconnected tools.
+Niet als losse systemen.
 
-The goal is to build one calm, reliable operating system for selling, building and managing websites.
+Maar als een rustig, betrouwbaar en schaalbaar platform.
 
-## Three-Year Vision
+## Onze Productfilosofie
 
-In three years, Max Webstudio should be able to manage hundreds of customers without the business becoming chaotic.
+Technologie is niet het product.
 
-That means:
+De ervaring met Max is het product.
 
-- every customer has a clear portal;
-- every website has a known status;
-- every lead has a next step;
-- every invoice and subscription is traceable;
-- every project has a simple workflow;
-- every support request has ownership;
-- every salesperson follows the same process;
-- every future AI feature is grounded in real data.
+Iedere nieuwe functie moet minimaal een van deze doelen ondersteunen:
 
-The platform should make Max Webstudio easier to run as it grows.
+- websites verkopen;
+- klanten onboarden;
+- websites beheren;
+- klanten ondersteunen;
+- online groei stimuleren;
+- operationele tijd besparen.
 
-## Problems We Solve
+Als een functie dit niet doet, hoort deze niet op de roadmap.
 
-For customers:
+## Onze Kernwaarden
 
-- "I need a professional website, but I do not know where to start."
-- "I do not want to chase my web designer for updates."
-- "I want to know if my website is healthy."
-- "I want changes to be simple."
-- "I want invoices, support and project status in one place."
+### Rust Boven Complexiteit
 
-For Max Webstudio:
+Iedere pagina moet eenvoudiger zijn dan de vorige.
 
-- "I need to follow up leads faster."
-- "I need fewer manual admin steps."
-- "I need every customer to be onboarded the same way."
-- "I need one system for CRM, projects, billing and support."
-- "I need data before adding AI."
+### Eerst Data, Daarna AI
 
-## What Makes Us Different
+AI ondersteunt feiten.
 
-Max Webstudio is not only a web design service.
+AI verzint geen feiten.
 
-It is becoming a managed website platform with a personal, guided experience.
+### Een Workflow
 
-Differentiators:
+Nieuwe functies versterken bestaande processen.
 
-- character-led customer experience through Max;
-- customer portal as a digital account manager;
-- CRM connected to real lead data;
-- Google Maps Lead Finder;
-- objective Website Scan before AI advice;
-- quotes, invoices, projects and support in one workflow;
-- AI added only when it strengthens real workflows.
+We bouwen geen losse eilandjes.
 
-## Product Philosophy
+### Premium Ervaring
 
-Technology is not the product.
+Alles moet professioneel, rustig en betrouwbaar aanvoelen.
 
-The experience with Max is the product.
+### Schalen Door Systemen
 
-Every feature should make one of these things easier:
+Groei ontstaat door betere processen.
 
-- sell a website;
-- onboard a customer;
-- manage a website;
-- support a customer;
-- grow a customer's online presence;
-- save Max Webstudio operational time.
+Niet door harder werken.
 
-If a feature does none of these, it does not belong in the near-term roadmap.
+## Onze Doelgroep
 
-## Release Philosophy
+Wij richten ons op ondernemers die:
 
-Max Webstudio will grow through releases, not random feature stacking.
+- professioneel online zichtbaar willen zijn;
+- een vaste digitale partner zoeken;
+- geen technische kennis willen hebben;
+- ontzorgd willen worden.
 
-Current release path:
+Wij richten ons bewust niet op:
 
-- RC1 - Foundation: stabilize what exists.
-- RC2 - Website Intelligence: deepen objective website data.
-- RC3 - AI Sales Coach: translate facts into sales advice.
-- RC4 - Offerteflow: turn insight into a concrete proposal.
+- enterprise software;
+- maatwerksoftware;
+- de goedkoopste websites;
+- klanten die alles zelf willen beheren.
 
-Before each new release:
+## Hoe Wij Ons Onderscheiden
 
-- the previous release must be stable;
-- known limitations must be documented;
-- user-facing errors must be understandable;
-- new UI must follow the Max CRM Design System.
+Max Webstudio is geen traditioneel webdesignbureau.
 
-## What We Build Now
+Wij bouwen een digitaal platform waarin:
 
-Near-term focus:
+- CRM;
+- projecten;
+- websites;
+- support;
+- klantportaal;
+- onderhoud;
+- Website Intelligence;
+- AI;
 
-- RC1 stability;
-- UX consistency;
-- responsive polish;
-- clean error states;
-- Google Maps Lead Finder stability;
-- Website Scan reliability;
-- customer onboarding quality;
-- admin workflow clarity.
+een geheel vormen.
 
-This is the foundation for scale.
+## Onze Releasefilosofie
 
-## What We Build Later
+Wij bouwen niet op basis van willekeurige ideeen.
 
-Later phases may include:
+Wij bouwen in releases.
 
-- deeper Lighthouse-style website intelligence;
-- AI Sales Coach;
-- automatic quote generation;
-- advanced billing;
-- customer support automation;
-- lead enrichment;
-- sales portal;
-- website generation;
-- SEO and content AI;
-- branding tools.
+- RC1: Foundation
+- RC2: Website Intelligence
+- RC3: AI Sales Coach
+- RC4: Offerteflow
 
-These features should only be built when the workflow they support is already clear.
+Iedere release moet stabiel zijn voordat de volgende begint.
 
-## What We Do Not Build Yet
+## Onze Definitie Van Succes
 
-Not yet:
+Max Webstudio is succesvol wanneer:
 
-- bulk scraping;
-- automatic cold outreach;
-- AI that invents advice without objective data;
-- complex VoIP flows;
-- too many employee portals;
-- broad automation that bypasses human approval;
-- features that add complexity without improving daily work.
+- klanten vertrouwen hebben in hun digitale partner;
+- medewerkers efficient kunnen werken;
+- processen schaalbaar zijn;
+- AI mensen ondersteunt;
+- het platform rustiger wordt naarmate het groeit.
 
-## Decision Filter
+## Ons Einddoel
 
-Before building a new feature, ask:
+Wij bouwen niet simpelweg websites.
 
-1. Does this directly help a customer or save Max Webstudio time?
-2. Does it strengthen an existing workflow?
-3. Can objective data solve this before AI is needed?
-4. Does it fit the Max CRM Design System?
-5. Would a new employee understand this within one day?
-
-If the answer is no, the feature waits.
-
-## Action-Oriented Sales Principle
-
-Everything a salesperson sees should lead to a useful action.
-
-Not just:
-
-- "Meta description ontbreekt."
-- "Leadscore 64."
-- "Geen WhatsApp-link."
-
-But:
-
-- "Gebruik vindbaarheid als opening in je gesprek."
-- "Goede verkoopkans - focus op SEO en vertrouwen."
-- "Bel vandaag en benoem dat klanten sneller contact kunnen opnemen."
-
-RC2 creates the facts.
-
-RC3 turns those facts into advice.
-
-## Definition Of Success
-
-Max Webstudio succeeds when:
-
-- a customer can trust that their website is handled;
-- Max can onboard a new customer without manual chaos;
-- sales can find, qualify and follow up leads quickly;
-- support can see what needs attention;
-- the platform becomes calmer as it grows, not busier;
-- AI improves decisions instead of replacing the process.
-
-The long-term goal is not just to sell websites.
-
-The long-term goal is to build the operating system behind a scalable modern webstudio.
+Wij bouwen het besturingssysteem achter een modern, schaalbaar Nederlands webbureau.
