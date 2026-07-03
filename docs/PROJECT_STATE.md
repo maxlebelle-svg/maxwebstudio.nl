@@ -13,8 +13,15 @@ De komende fase draait niet om meer losse functies, maar om verkoopkracht:
 - RC1 eerst afronden;
 - alleen bugs, UX-polish, performance, responsive gedrag en nette foutmeldingen;
 - Sales Workspace bruikbaar maken als dagelijkse verkoopomgeving;
+- iedere sprint koppelen aan een meetbare KPI, verwachte impact en acceptatiecriterium;
 - een verkoper moet in minder dan 5 minuten een bedrijf vinden, website analyseren, verkoopkansen zien, lead opslaan en follow-up plannen;
 - nieuwe functies moeten direct bijdragen aan omzet, snelheid of schaalbaarheid.
+- features krijgen alleen prioriteit als ze binnen 90 dagen bijdragen aan omzet, snelheid of klantervaring.
+
+Volgende salesrichting na RC1:
+
+- Pipeline Automation: leadstatussen, volgende actie en waarschuwingen bij stilstaande leads;
+- Sales Cockpit: een dagelijkse werkruimte waarin een verkoper ziet wat vandaag aandacht nodig heeft en welke lead als volgende opgepakt moet worden.
 
 Leidend:
 

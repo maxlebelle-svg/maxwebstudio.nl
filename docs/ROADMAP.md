@@ -13,6 +13,7 @@ Korte termijn:
 - RC1 volledig afronden via `docs/deployment/RC1_EXIT_CHECKLIST.md`;
 - geen nieuwe grote features voordat RC1 stabiel is;
 - Sales Workspace stabiliseren als dagelijkse verkoopomgeving;
+- iedere nieuwe sprint koppelen aan een duidelijke KPI, verwachte impact en meetmethode;
 - Google Maps Lead Finder en Website Scan alleen nog verbeteren met bugs, UX en betrouwbaarheid;
 - demo-data, technische meldingen en Developer-informatie uit normale workflows houden.
 
@@ -21,11 +22,13 @@ Commerciele prioriteit:
 - een verkoper moet in minder dan 5 minuten een bedrijf vinden, website analyseren, verkoopkansen zien, lead opslaan en follow-up plannen;
 - alles wat een verkoper ziet moet leiden tot een nuttige volgende actie;
 - nieuwe functies moeten direct bijdragen aan omzet, snelheid of schaalbaarheid.
+- features worden alleen naar voren gehaald als ze binnen 90 dagen bijdragen aan omzet, snelheid of klantervaring.
 
 Releasevolgorde:
 
 - RC1 - Foundation afronden;
-- Sales Acceleration - verkoopworkflow bruikbaar maken voor dagelijks werk;
+- Sales Acceleration Sprint 1 - Pipeline Automation;
+- Sales Cockpit - dagelijkse werkruimte voor verkopers;
 - RC2 - Website Intelligence;
 - RC3 - AI Sales Coach;
 - RC4 - Offerteflow.

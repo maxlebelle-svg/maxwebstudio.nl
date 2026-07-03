@@ -26,6 +26,59 @@ Een verkoper moet in minder dan 5 minuten:
 
 Als deze workflow soepel loopt, is Max CRM niet alleen administratie, maar een verkoopmachine.
 
+## KPI-Gestuurde Sprints
+
+Vanaf Sales Acceleration krijgt iedere sprint een meetbaar bedrijfsdoel. We bouwen niet meer feature-first, maar business-first.
+
+Iedere sprint moet vooraf vastleggen:
+
+- Primaire KPI: welke verkoop-, snelheid- of klantervaringsmetric verbetert.
+- Verwachte impact: wat wordt sneller, beter of winstgevender.
+- Meetmethode: hoe we zien of het echt werkt.
+- Acceptatie: wanneer de sprint zakelijk geslaagd is.
+
+Voorbeeld:
+
+- Niet: Google Maps verbeteren.
+- Wel: Een verkoper bespaart gemiddeld 2 minuten per lead bij het verzamelen van bedrijfsgegevens.
+
+Als een feature binnen 90 dagen geen duidelijke bijdrage levert aan omzet, snelheid of klantervaring, gaat hij naar de backlog.
+
+## KPI Sets
+
+### Sales
+
+- Nieuwe leads per dag.
+- Gebelde leads.
+- Gesprekken gevoerd.
+- Offertes verstuurd.
+- Conversie afspraak naar verkoop.
+- Conversie lead naar klant.
+- Gemiddelde verkoopwaarde.
+
+### CRM Workflow
+
+- Tijd om een nieuwe lead aan te maken.
+- Tijd van Google Maps naar offerte.
+- Aantal klikken per verkoopworkflow.
+- Open follow-ups.
+- Gemiste follow-ups.
+
+### Website Scan
+
+- Gemiddelde leadscore.
+- Aantal scans per dag.
+- Meest voorkomende verbeterpunten.
+- Meest voorkomende verkoopkansen.
+
+### Bedrijf
+
+- Maandelijkse terugkerende omzet.
+- Aantal actieve klanten.
+- Opzegpercentage.
+- Gemiddelde klantwaarde.
+- Omzet per verkoper.
+
 ## Huidige Bouwstenen
 
 Max CRM heeft nu de kern van de Sales Workspace:
@@ -37,6 +90,38 @@ Max CRM heeft nu de kern van de Sales Workspace:
 - leadscore-basis;
 - follow-up en notities;
 - offerte- en klantflow als volgende stap.
+
+## Sales Cockpit
+
+De volgende productrichting is de Sales Cockpit: niet zomaar een extra pagina, maar de dagelijkse werkruimte van een verkoper.
+
+Doel:
+
+Een verkoper hoeft niet na te denken wat de volgende stap is. Max CRM toont automatisch waar aandacht nodig is en welke lead als eerste opgepakt moet worden.
+
+Eerste cockpit-blokken:
+
+- Vandaag:
+  - Nieuwe leads vandaag.
+  - Nog te bellen.
+  - Follow-ups.
+  - Open offertes.
+  - Verkocht vandaag.
+- Volgende lead:
+  - Google Maps context.
+  - Website Scan.
+  - Leadscore.
+  - Beladvies.
+  - Notities.
+  - Vorige contactmomenten.
+  - Offerte maken.
+  - Follow-up plannen.
+
+Belangrijk:
+
+- De Sales Cockpit vervangt niet direct bestaande modules.
+- Hij bundelt de belangrijkste acties uit Leads, Website Scan, Follow-up en Offertes.
+- De eerste versie mag eenvoudig zijn, zolang hij de verkoper sneller naar actie brengt.
 
 ## RC1 Focus
 
@@ -82,6 +167,49 @@ Offerte
 ```
 
 De verkoper moet zo min mogelijk wisselen tussen schermen.
+
+## Sprint 1 - Pipeline Automation
+
+Status: `NEXT AFTER RC1 STABILITY`
+
+Doel:
+
+Maak de salesflow voorspelbaar, zodat geen lead stil blijft liggen en iedere verkoper direct ziet wat de volgende actie is.
+
+Primaire KPI:
+
+- Minder gemiste follow-ups.
+- Minder handmatige denkstappen per lead.
+- Snellere route van lead naar offerte.
+
+Pipeline-statussen:
+
+- Nieuw.
+- Gebeld.
+- Afspraak.
+- Offerte verstuurd.
+- Gewonnen.
+- Verloren.
+
+Gedragsregels:
+
+- Een nieuwe lead start automatisch op `Nieuw`.
+- Na eerste contact kan de lead naar `Gebeld`.
+- Als er een afspraak staat, gaat de lead naar `Afspraak`.
+- Na offerteverzending gaat de lead naar `Offerte verstuurd`.
+- Bij akkoord gaat de lead naar `Gewonnen`.
+- Bij geen match of afwijzing gaat de lead naar `Verloren`.
+- Elke niet-afgeronde lead heeft een volgende actie nodig.
+- Elke niet-afgeronde lead heeft bij voorkeur een follow-up datum.
+- Leads die te lang stil liggen krijgen een duidelijke waarschuwing.
+
+Niet in deze sprint:
+
+- Geen AI.
+- Geen automatische outreach.
+- Geen bulk scraping.
+- Geen nieuwe finance-flow.
+- Geen sales manager leaderboard.
 
 ## RC2 - Website Intelligence
 
@@ -160,5 +288,9 @@ Elke nieuwe salesfunctie moet minimaal een van deze vragen met ja beantwoorden:
 - Helpt dit om sneller een offerte te maken?
 - Helpt dit om meer klanten te activeren?
 - Helpt dit om een salesteam schaalbaar aan te sturen?
+
+Extra filter:
+
+Levert dit binnen 90 dagen meer omzet, meer snelheid of een betere klantervaring op? Zo niet, dan hoort het niet in de eerstvolgende sprint.
 
 Zo niet, dan hoort de functie niet in de eerstvolgende sprint.
