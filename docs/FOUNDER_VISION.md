@@ -99,6 +99,10 @@ Niet alleen voor vandaag.
 
 Maar ook voor over vijf en tien jaar.
 
+Software is nooit het einddoel. Het einddoel is een bedrijf dat zonder chaos kan groeien.
+
+Na RC1 betekent discipline dat ik vaker nee zeg tegen goede ideeen, zodat verkoop, klantfeedback en kwaliteit leidend blijven.
+
 ## Beslisfilter
 
 Voordat ik ergens tijd of geld in investeer vraag ik mezelf af:

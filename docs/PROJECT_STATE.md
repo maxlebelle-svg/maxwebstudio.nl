@@ -4,24 +4,39 @@ Laatste analyse: 2026-06-26.
 
 ## Huidige Productfocus
 
-Status: `RC1 STABILISATIE / SALES ACCELERATION`
+Status: `RC1 FROZEN / SALES VALIDATION`
 
 Max Webstudio is verschoven van losse websitebouw naar een platform met marketingwebsite, klantportaal, adminportaal, Sales CRM, Google Maps Lead Finder en Website Scan MVP.
 
+RC1 is vanaf nu functioneel bevroren. Niet omdat alles perfect is, maar omdat de basis goed genoeg is om echte klanten te bedienen en echte verkoopfeedback te verzamelen.
+
 De komende fase draait niet om meer losse functies, maar om verkoopkracht:
 
-- RC1 eerst afronden;
-- alleen bugs, UX-polish, performance, responsive gedrag en nette foutmeldingen;
-- Sales Workspace bruikbaar maken als dagelijkse verkoopomgeving;
+- geen nieuwe platformmodules bouwen voor RC2;
+- geen AI-uitbreidingen;
+- geen bulk scraping of automatische outreach;
+- alleen blockers oplossen waar echte ondernemers, klanten of verkopers over vallen;
+- homepage en salesflow valideren met echte ondernemers;
 - iedere sprint koppelen aan een meetbare KPI, verwachte impact en acceptatiecriterium;
-- een verkoper moet in minder dan 5 minuten een bedrijf vinden, website analyseren, verkoopkansen zien, lead opslaan en follow-up plannen;
-- nieuwe functies moeten direct bijdragen aan omzet, snelheid of schaalbaarheid.
-- features krijgen alleen prioriteit als ze binnen 90 dagen bijdragen aan omzet, snelheid of klantervaring.
+- de eerste KPI is niet commits of features, maar de eerste 10 betalende klanten.
 
-Volgende salesrichting na RC1:
+Bedrijfsregel:
 
-- Pipeline Automation: leadstatussen, volgende actie en waarschuwingen bij stilstaande leads;
-- Sales Cockpit: een dagelijkse werkruimte waarin een verkoper ziet wat vandaag aandacht nodig heeft en welke lead als volgende opgepakt moet worden.
+> Software is nooit het einddoel. Het einddoel is een bedrijf dat zonder chaos kan groeien.
+
+7-daagse salesvalidatie:
+
+- Dag 1: 25 bedrijven bellen en de website/demo laten zien.
+- Dag 2: alleen verbeteren waar echte ondernemers over vallen.
+- Dag 3: opnieuw 25 bedrijven bellen.
+- Dag 4: website/salesflow aanpassen op basis van bewezen feedback.
+- Dag 5: opnieuw 25 bedrijven bellen.
+- Dag 6-7: feedback clusteren, eerste betalende klanten opvolgen en RC2-scope pas daarna heropenen.
+
+Volgende productrichting na salesvalidatie:
+
+- RC2 Website Intelligence: niet technisch voor de techniek, maar commercieel antwoord geven op: "Waarom is dit bedrijf een perfecte klant voor Max Webstudio?"
+- Leadscore moet helpen met openingszin, verkoopargument en volgende actie.
 
 Onderhoudsrichting:
 
@@ -38,6 +53,7 @@ Leidend:
 
 Niet doen zonder expliciete GO:
 
+- RC2 starten voordat salesvalidatie is afgerond;
 - AI Sales Coach;
 - bulk scraping;
 - automatische cold outreach;
@@ -3990,23 +4006,31 @@ Veiligheidsstatus:
 
 ## RC1 Release Candidate Status
 
-Status: `RC1 CANDIDATE / AWAITING FINAL MANUAL VALIDATION`
+Status: `RC1 FROZEN / SALES VALIDATION`
 
 Huidige stand:
 
 - publieke website is live-ready;
+- homepage is geoptimaliseerd voor verkoop en gecommit in `0f191b3 Optimize homepage sales flow RC1`;
 - productie database foundation is ingericht;
 - productie-auth en klantportaal zijn actief achter sessie;
 - admin onboarding/provisioning is beschikbaar;
-- sales pipeline, offerte-ervaring en factuur-ervaring zijn aanwezig;
+- Google Maps Lead Finder, Website Scan MVP, Sales Cockpit, leadflow, follow-ups, offerte-ervaring en factuur-ervaring zijn aanwezig;
 - Mollie is test-mode ready, maar testbetaling moet nog handmatig groen worden.
 
-Laatste RC1-stappen:
+RC1 Freeze-besluit:
+
+- geen nieuwe featurebouw totdat echte verkoopfeedback dit rechtvaardigt;
+- RC1 mag alleen worden aangepast voor blockers, aantoonbare conversiefrictie of stabiliteitsproblemen;
+- eerste zakelijke KPI: 10 betalende klanten.
+
+Laatste RC1-validatiepunten:
 
 - final customer journey validation;
 - Mollie test payment;
 - optionele Resend inbox-verificatie;
-- owner GO/NO-GO op backup/rollback-context.
+- owner GO/NO-GO op backup/rollback-context;
+- 10 onbekende ondernemers 2 minuten naar de homepage laten kijken en feedback vragen.
 
 ## Release Strategy - RC1 To RC4
 

@@ -38,6 +38,8 @@ Technologie is niet het product.
 
 De ervaring met Max is het product.
 
+Software is nooit het einddoel. Het einddoel is een bedrijf dat zonder chaos kan groeien.
+
 Iedere nieuwe functie moet minimaal een van deze doelen ondersteunen:
 
 - websites verkopen;
@@ -122,6 +124,8 @@ Wij bouwen in releases.
 - RC4: Offerteflow
 
 Iedere release moet stabiel zijn voordat de volgende begint.
+
+Na een release-freeze verschuift de prioriteit van bouwen naar verkopen, valideren en leren van echte ondernemers. Nieuwe software mag pas terug op de agenda wanneer klantfeedback of omzetkansen dit rechtvaardigen.
 
 ## Onze Definitie Van Succes
 

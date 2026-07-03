@@ -1,14 +1,18 @@
 # RC1 Exit Checklist
 
-Status: `DRAFT / REQUIRED BEFORE RC1 RELEASE`
+Status: `RC1 FROZEN / SALES VALIDATION REQUIRED`
 
 Doel:
 
-RC1 wordt pas vrijgegeven wanneer Max Webstudio en Max CRM voelen als een stabiel product voor dagelijks gebruik. Deze checklist voorkomt dat er nieuwe grote functies worden toegevoegd voordat de basis betrouwbaar, rustig en consistent is.
+RC1 is functioneel bevroren. Max Webstudio en Max CRM zijn goed genoeg om echte klanten te bedienen, maar RC1 wordt pas volledig vrijgegeven wanneer de laatste handmatige klantreis, salesvalidatie en eigenaar-GO groen zijn.
 
 ## Releaseprincipe
 
-RC1 draait om afronden, niet uitbreiden.
+RC1 draait vanaf nu om verkopen, valideren en alleen noodzakelijke polish. Niet uitbreiden.
+
+Bedrijfsregel:
+
+> Software is nooit het einddoel. Het einddoel is een bedrijf dat zonder chaos kan groeien.
 
 Toegestaan:
 
@@ -23,12 +27,30 @@ Toegestaan:
 
 Niet toegestaan binnen RC1:
 
+- nieuwe platformmodules;
 - nieuwe grote modules;
 - bulk scraping;
 - automatische cold outreach;
 - AI Sales Coach;
 - automatische offertegeneratie;
 - extra workflowcomplexiteit zonder expliciete RC2/RC3/RC4-goedkeuring.
+
+Alleen toegestaan na freeze:
+
+- blockers die verkoop of klantgebruik verhinderen;
+- bewezen conversiefrictie uit echte ondernemersfeedback;
+- stabiliteitsproblemen;
+- kleine copy/UX-correcties die direct helpen bij aanvragen of vertrouwen.
+
+## Sales Validation Gate
+
+- [ ] 25 bedrijven gebeld op dag 1.
+- [ ] Feedback van echte ondernemers vastgelegd.
+- [ ] Alleen bewezen frictiepunten aangepast.
+- [ ] Nog eens 25 bedrijven gebeld na eerste feedbackronde.
+- [ ] Minimaal 10 onbekende ondernemers hebben de homepage 2 minuten bekeken.
+- [ ] Vijf vragen beantwoord: wat verkoopt dit bedrijf, zou je een gratis preview aanvragen, wat gaf vertrouwen, wat miste je, wat houdt je tegen.
+- [ ] Eerste verkoop-KPI staat centraal: 10 betalende klanten.
 
 ## Productprincipes
 
@@ -128,4 +150,5 @@ RC1 mag pas `RELEASED` worden wanneer:
 - resterende open punten expliciet als `known limitation` zijn vastgelegd;
 - er geen zichtbare demo-data in normale productie staat;
 - er geen technische fouten zichtbaar zijn buiten Developer Mode;
+- salesvalidatie geen kritieke conversieblokkades meer toont;
 - de eigenaar handmatig GO geeft.

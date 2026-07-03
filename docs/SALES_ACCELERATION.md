@@ -1,6 +1,6 @@
 # Sales Acceleration
 
-Status: `RC1 PRIORITEIT / OMZETMOTOR`
+Status: `RC1 FROZEN / SALES VALIDATION`
 
 ## Doel
 
@@ -10,6 +10,12 @@ Vanaf RC1 bouwen we niets meer dat geen directe invloed heeft op:
 - snelheid;
 - schaalbaarheid;
 - kwaliteit van de dagelijkse verkoopworkflow.
+
+Na de RC1-freeze is software niet meer de primaire activiteit. De komende fase draait om verkopen, echte feedback verzamelen en alleen aanpassen waar ondernemers daadwerkelijk over vallen.
+
+Bedrijfsregel:
+
+> Software is nooit het einddoel. Het einddoel is een bedrijf dat zonder chaos kan groeien.
 
 Max CRM moet een verkoper helpen om sneller goede verkoopkansen te vinden, beter voorbereid te bellen en eenvoudiger door te gaan naar offerte en klantactivatie.
 
@@ -29,6 +35,16 @@ Als deze workflow soepel loopt, is Max CRM niet alleen administratie, maar een v
 ## KPI-Gestuurde Sprints
 
 Vanaf Sales Acceleration krijgt iedere sprint een meetbaar bedrijfsdoel. We bouwen niet meer feature-first, maar business-first.
+
+Eerste KPI na RC1-freeze:
+
+- 10 betalende klanten.
+
+Niet leidend:
+
+- aantal commits;
+- aantal features;
+- hoeveelheid code.
 
 Iedere sprint moet vooraf vastleggen:
 
@@ -125,7 +141,7 @@ Belangrijk:
 
 ## RC1 Focus
 
-RC1 wordt eerst afgerond voordat nieuwe grote salesfuncties worden toegevoegd.
+RC1 is functioneel bevroren. Nieuwe grote salesfuncties worden niet toegevoegd voordat echte verkoopfeedback dit rechtvaardigt.
 
 Toegestaan:
 
@@ -139,12 +155,38 @@ Toegestaan:
 
 Niet toegestaan zonder aparte GO:
 
+- RC2 starten;
 - AI Sales Coach;
 - bulk scraping;
 - automatische cold outreach;
 - nieuwe sales portals;
 - automatische offertegeneratie;
 - complexe salesmanager-dashboarding.
+
+## 7-Daagse Salesvalidatie
+
+Doel:
+
+Bewijzen of de homepage, demo en Sales Cockpit voldoende zijn om echte ondernemers richting een gratis website-preview en eerste betaling te bewegen.
+
+Ritme:
+
+- Dag 1: 25 bedrijven bellen en de homepage/demo laten zien.
+- Dag 2: alleen verbeteren waar echte ondernemers over vallen.
+- Dag 3: nog 25 bedrijven bellen.
+- Dag 4: feedback clusteren en alleen bewezen frictie oplossen.
+- Dag 5: nog 25 bedrijven bellen.
+- Dag 6-7: opvolgen, offertes sturen en eerste betalende klanten najagen.
+
+Feedbackvragen:
+
+1. Wat verkoopt dit bedrijf volgens jou?
+2. Zou je een gratis preview aanvragen?
+3. Wat gaf je vertrouwen?
+4. Wat miste je?
+5. Wat zou je tegenhouden om contact op te nemen?
+
+RC2 mag pas worden geopend wanneer deze feedback duidelijk maakt welke commerciële informatie een verkoper mist.
 
 ## Sales Workspace Workflow
 

@@ -2,26 +2,31 @@
 
 Deze roadmap beschrijft de logische doorontwikkeling van Max Web Studio. Grote wijzigingen moeten altijd eerst worden goedgekeurd.
 
-## Huidige Productfocus - RC1 En Sales Acceleration
+## Huidige Productfocus - RC1 Freeze En Sales Validation
 
-Status: `LEIDEND VOOR KOMENDE SPRINTS`
+Status: `RC1 FROZEN / LEIDEND VOOR KOMENDE 7 DAGEN`
 
 Max Webstudio wordt vanaf nu behandeld als een product dat omzet, snelheid en schaalbaarheid moet ondersteunen.
 
 Korte termijn:
 
-- RC1 volledig afronden via `docs/deployment/RC1_EXIT_CHECKLIST.md`;
-- geen nieuwe grote features voordat RC1 stabiel is;
-- Sales Workspace stabiliseren als dagelijkse verkoopomgeving;
+- RC1 functioneel bevriezen;
+- geen nieuwe platformmodules, AI-uitbreidingen, bulk scraping of automatische outreach;
+- alleen blockers, bewezen conversiefrictie en stabiliteitsproblemen oplossen;
+- homepage, demo en salesflow valideren met echte ondernemers;
 - iedere nieuwe sprint koppelen aan een duidelijke KPI, verwachte impact en meetmethode;
-- Google Maps Lead Finder en Website Scan alleen nog verbeteren met bugs, UX en betrouwbaarheid;
-- demo-data, technische meldingen en Developer-informatie uit normale workflows houden.
+- demo-data, technische meldingen en Developer-informatie uit normale workflows houden;
+- eerste KPI: 10 betalende klanten.
+
+Bedrijfsregel:
+
+> Software is nooit het einddoel. Het einddoel is een bedrijf dat zonder chaos kan groeien.
 
 Commerciele prioriteit:
 
-- een verkoper moet in minder dan 5 minuten een bedrijf vinden, website analyseren, verkoopkansen zien, lead opslaan en follow-up plannen;
-- alles wat een verkoper ziet moet leiden tot een nuttige volgende actie;
-- nieuwe functies moeten direct bijdragen aan omzet, snelheid of schaalbaarheid.
+- de komende 7 dagen draait om bellen, demo's tonen en echte bezwaren verzamelen;
+- 10 onbekende ondernemers beantwoorden minimaal: wat verkoopt dit bedrijf, zou je een gratis preview aanvragen, wat gaf vertrouwen, wat miste je en wat houdt je tegen;
+- alleen feedback van echte ondernemers mag RC1-polish of RC2-scope openen;
 - features worden alleen naar voren gehaald als ze binnen 90 dagen bijdragen aan omzet, snelheid of klantervaring.
 
 Onderhoudspropositie:
@@ -35,9 +40,9 @@ Onderhoudspropositie:
 
 Releasevolgorde:
 
-- RC1 - Foundation afronden;
-- Sales Acceleration Sprint 1 - Pipeline Automation;
-- Sales Cockpit - dagelijkse werkruimte voor verkopers;
+- RC1 - Foundation bevroren en salesvalidatie uitvoeren;
+- Sales Acceleration - verkopen, feedback verzamelen en eerste 10 betalende klanten winnen;
+- Sales Cockpit - dagelijkse werkruimte voor verkopers, alleen verder polishen op basis van echte verkoopfeedback;
 - Website Credits - onderhoudspropositie uitwerken voor bestaande klanten;
 - RC2 - Website Intelligence;
 - RC3 - AI Sales Coach;
@@ -3236,12 +3241,13 @@ Niet inbegrepen:
 
 ## RC1 - First Live Customer Release Candidate
 
-Status: `RC1 CANDIDATE / FIRST CUSTOMER ACTIVATION`
+Status: `RC1 FROZEN / FIRST CUSTOMER SALES VALIDATION`
 
 Doel:
 
 - alles wat nu gebouwd is laten voelen alsof een betalende klant het morgen kan gebruiken;
-- geen nieuwe modules toevoegen totdat de laatste klantreis groen is.
+- geen nieuwe modules toevoegen totdat echte verkoopfeedback dit rechtvaardigt;
+- eerste 10 betalende klanten winnen.
 
 Nog te valideren:
 
@@ -3284,8 +3290,8 @@ Niet inbegrepen:
 
 Release-richting na RC1:
 
-- RC1 - Foundation afronden: stabiliteit, UX-consistentie, bugs, responsive gedrag, performance en nette foutmeldingen. Geen nieuwe grote functies.
-- RC2 - Website Intelligence: objectieve websitedata verdiepen met performance, SEO, toegankelijkheid, broken links, image/font/JavaScript-signalen en een heldere leadscore. Geen AI als basis.
+- RC1 - Foundation bevroren: alleen blockers, bewezen conversiefrictie en stabiliteit. Geen nieuwe grote functies.
+- RC2 - Website Intelligence: commercieel uitleggen waarom een bedrijf een goede klant is voor Max Webstudio, met objectieve websitedata als basis. Geen AI als basis.
 - RC3 - AI Sales Coach: AI pas toevoegen bovenop de objectieve scanresultaten, zodat advies gebaseerd is op echte data in plaats van aannames.
 - RC4 - Offerteflow: scanresultaat -> leadscore -> advies -> pakketadvies -> conceptofferte -> klantflow.
 
