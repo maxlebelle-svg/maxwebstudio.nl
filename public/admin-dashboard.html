@@ -8056,23 +8056,15 @@
           }
         }
 
-        function isLeadfinderInFocus() {
-          const leadfinderSection = document.getElementById("leadfinder");
-          if (!leadfinderSection) return false;
-          const rect = leadfinderSection.getBoundingClientRect();
-          const focusLine = window.innerHeight * 0.42;
-          return rect.top <= focusLine && rect.bottom >= focusLine;
-        }
-
-        function syncSalesViewState(id = window.location.hash.replace("#", "") || "dashboard") {
-          document.body.classList.toggle("is-sales-view", id === "leadfinder" || isLeadfinderInFocus());
+        function syncSalesViewState() {
+          document.body.classList.remove("is-sales-view");
         }
 
         function syncActiveNav(id = window.location.hash.replace("#", "") || "dashboard") {
           adminNavLinks.forEach((link) => {
             link.classList.toggle("is-active", link.getAttribute("href") === `#${id}`);
           });
-          syncSalesViewState(id);
+          syncSalesViewState();
         }
 
         function readStoredCustomers() {
@@ -15906,7 +15898,7 @@
           link.addEventListener("click", () => syncActiveNav(link.getAttribute("href").slice(1)));
         });
         window.addEventListener("hashchange", () => syncActiveNav());
-        window.addEventListener("scroll", () => syncSalesViewState(), { passive: true });
+        syncSalesViewState();
         if ("IntersectionObserver" in window) {
           const observedSections = adminNavLinks
             .map((link) => document.getElementById(link.getAttribute("href").slice(1)))

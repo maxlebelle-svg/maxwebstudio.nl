@@ -8345,9 +8345,16 @@ h3 {
 
 .leadfinder-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.04fr) minmax(0, 0.64fr) minmax(0, 1.18fr);
-  gap: 14px;
+  grid-template-columns: minmax(0, 1fr) minmax(430px, 0.95fr);
+  grid-template-areas:
+    "form google"
+    "detail detail";
+  gap: 16px;
   align-items: start;
+}
+
+.leadfinder-form {
+  grid-area: form;
 }
 
 .crm-readiness-card {
@@ -8357,9 +8364,30 @@ h3 {
 }
 
 .leadfinder-detail-card {
+  grid-area: detail;
   display: grid;
+  grid-template-columns: minmax(220px, 0.72fr) minmax(280px, 1fr) minmax(260px, 0.84fr);
   gap: 16px;
   padding: 22px;
+}
+
+.leadfinder-detail-card .admin-profile-form-heading {
+  grid-column: 1;
+  align-self: start;
+}
+
+.leadfinder-detail-card > label {
+  grid-column: 2;
+}
+
+.leadfinder-detail-card .admin-profile-actions {
+  grid-column: 3;
+  align-self: start;
+}
+
+.leadfinder-detail-card .lead-welcome-card,
+.leadfinder-detail-card .lead-analysis-card {
+  grid-column: 1 / -1;
 }
 
 .crm-workflow-table .admin-table-row {
@@ -8540,8 +8568,11 @@ h3 {
 }
 
 .leadfinder-grid {
-  grid-template-columns: minmax(0, 1.04fr) minmax(0, 0.64fr) minmax(0, 1.18fr);
-  gap: 14px;
+  grid-template-columns: minmax(0, 1fr) minmax(430px, 0.95fr);
+  grid-template-areas:
+    "form google"
+    "detail detail";
+  gap: 16px;
 }
 
 .leadfinder-grid > * {
@@ -8719,6 +8750,7 @@ h3 {
 }
 
 .google-places-card {
+  grid-area: google;
   align-self: start;
   min-width: 0;
   overflow: hidden;
@@ -8988,10 +9020,9 @@ h3 {
 @media (max-width: 1280px) {
   .leadfinder-grid {
     grid-template-columns: minmax(0, 1fr) minmax(300px, 0.75fr);
-  }
-
-  .google-places-card {
-    grid-column: 1 / -1;
+    grid-template-areas:
+      "form google"
+      "detail detail";
   }
 }
 
@@ -11846,6 +11877,25 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   .portal-auth-shell-wide,
   .portal-demo-role-grid {
     grid-template-columns: 1fr;
+  }
+
+  .leadfinder-grid {
+    grid-template-areas:
+      "form"
+      "google"
+      "detail";
+  }
+
+  .leadfinder-detail-card {
+    grid-template-columns: 1fr;
+  }
+
+  .leadfinder-detail-card .admin-profile-form-heading,
+  .leadfinder-detail-card > label,
+  .leadfinder-detail-card .admin-profile-actions,
+  .leadfinder-detail-card .lead-welcome-card,
+  .leadfinder-detail-card .lead-analysis-card {
+    grid-column: auto;
   }
 
   .google-places-card {
