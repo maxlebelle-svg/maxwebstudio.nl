@@ -16323,6 +16323,7 @@
       let googlePlacesMap = null;
       let googlePlacesService = null;
       let googlePlacesMarkers = [];
+      let googlePlacesResults = [];
       let googlePlacesPlace = null;
       let googlePlacesReady = false;
 
@@ -16528,6 +16529,7 @@
       function clearGooglePlacesMarkers() {
         googlePlacesMarkers.forEach((marker) => marker.setMap(null));
         googlePlacesMarkers = [];
+        googlePlacesResults = [];
       }
 
       function uniqueGooglePlaceQueries(queries) {
@@ -16673,15 +16675,46 @@
           if (validResults.length === 1) {
             googlePlacesMap.setZoom(15);
           }
+          googlePlacesResults = validResults;
           setGooglePlacesState("Live", "status-active");
-          setGooglePlacesMessage(`${validResults.length} resultaat${validResults.length === 1 ? "" : "en"} gevonden. Klik op een marker of controleer het eerste resultaat.`, "success");
-          fetchGooglePlaceDetails(validResults[0].place_id);
+          setGooglePlacesMessage(`${validResults.length} resultaat${validResults.length === 1 ? "" : "en"} gevonden. Kies een resultaat of klik op een marker.`, "success");
+          renderGooglePlacesResultList(validResults, query);
           return;
         }
         logGooglePlacesIssue("Google Places gaf resultaten zonder bruikbare locatie.", { query, results });
         setGooglePlacesState("Geen resultaat", "status-prepared");
         renderGooglePlacesEmpty("Geen bruikbare locatie gevonden", "Google gaf geen kaartlocatie terug. Probeer bedrijfsnaam + plaats.");
         setGooglePlacesMessage(`Geen kaartlocatie gevonden voor “${query}”.`, "error");
+      }
+
+      function renderGooglePlacesResultList(results, query) {
+        if (!leadfinderElements.googleResult) return;
+        const resultCards = results.slice(0, 8).map((result, index) => {
+          const category = result.types?.[0] ? readablePlaceType(result.types[0]) : "Bedrijf";
+          const rating = result.rating ? `${result.rating.toLocaleString("nl-NL")} ★ (${result.user_ratings_total || 0})` : "Geen rating";
+          const address = result.formatted_address || result.vicinity || "Adres nog niet geladen";
+          return `
+            <button class="google-place-result-item" type="button" data-google-place-id="${escapeHtml(result.place_id)}">
+              <span class="google-place-result-index">${index + 1}</span>
+              <span class="google-place-result-content">
+                <strong>${escapeHtml(result.name || "Onbekend bedrijf")}</strong>
+                <small>${escapeHtml(rating)} · ${escapeHtml(category)}</small>
+                <em>${escapeHtml(address)}</em>
+              </span>
+            </button>
+          `;
+        }).join("");
+        leadfinderElements.googleResult.innerHTML = `
+          <div class="google-place-results-header">
+            <strong>${escapeHtml(results.length)} Google-resultaat${results.length === 1 ? "" : "en"}</strong>
+            <span>Zoekopdracht: ${escapeHtml(query)}</span>
+          </div>
+          <div class="google-place-results-list">
+            ${resultCards}
+          </div>
+          <p class="google-place-results-help">Klik op een resultaat of marker om bedrijfsgegevens op te halen.</p>
+        `;
+        renderGoogleTransferList(null);
       }
 
       function fetchGooglePlaceDetails(placeId) {
@@ -16899,6 +16932,11 @@
       }
 
       async function handleGooglePlaceResultClick(event) {
+        const resultButton = event.target.closest("[data-google-place-id]");
+        if (resultButton?.dataset.googlePlaceId) {
+          fetchGooglePlaceDetails(resultButton.dataset.googlePlaceId);
+          return;
+        }
         const action = event.target.closest("[data-google-place-action]")?.dataset.googlePlaceAction;
         if (!action) return;
         if (action === "takeover") {

@@ -8834,6 +8834,106 @@ h3 {
   line-height: 1.45;
 }
 
+.google-place-results-header {
+  display: grid;
+  gap: 4px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(171, 196, 224, 0.14);
+}
+
+.google-place-results-header strong {
+  color: var(--white);
+  font-size: 17px;
+  line-height: 1.2;
+}
+
+.google-place-results-header span {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.google-place-results-list {
+  display: grid;
+  gap: 10px;
+  max-height: 300px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.google-place-result-item {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid rgba(171, 196, 224, 0.14);
+  border-radius: 14px;
+  background:
+    linear-gradient(135deg, rgba(16, 41, 67, 0.92), rgba(4, 14, 28, 0.92)),
+    radial-gradient(circle at 14% 0%, rgba(37, 99, 235, 0.18), transparent 34%);
+  color: rgba(255, 255, 255, 0.82);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition: border-color 0.16s ease, transform 0.16s ease, background 0.16s ease;
+}
+
+.google-place-result-item:hover,
+.google-place-result-item:focus-visible {
+  border-color: rgba(37, 99, 235, 0.74);
+  background:
+    linear-gradient(135deg, rgba(24, 62, 101, 0.95), rgba(5, 20, 39, 0.95)),
+    radial-gradient(circle at 14% 0%, rgba(37, 99, 235, 0.26), transparent 34%);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.google-place-result-index {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(96, 165, 250, 0.28);
+  border-radius: 10px;
+  color: #bfdbfe;
+  background: rgba(37, 99, 235, 0.2);
+  font-weight: 950;
+}
+
+.google-place-result-content {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.google-place-result-content strong {
+  color: var(--white);
+  font-size: 15px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.google-place-result-content small {
+  color: rgba(191, 219, 254, 0.78);
+  font-weight: 850;
+}
+
+.google-place-result-content em {
+  color: rgba(255, 255, 255, 0.6);
+  font-style: normal;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.google-place-results-help {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
 .google-place-photo {
   display: grid;
   place-items: center;
