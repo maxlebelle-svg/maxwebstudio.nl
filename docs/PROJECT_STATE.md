@@ -3965,6 +3965,29 @@ Laatste RC1-stappen:
 - optionele Resend inbox-verificatie;
 - owner GO/NO-GO op backup/rollback-context.
 
+## Release Strategy - RC1 To RC4
+
+Status: `ACTIVE PRODUCT DIRECTION`
+
+Max Webstudio en Max CRM verschuiven vanaf nu van losse featurebouw naar releasegericht productwerk.
+
+Releasevolgorde:
+
+- RC1 - Foundation afronden: stabiliteit, UX-consistentie, bugs, responsive gedrag, performance en nette foutmeldingen. Geen nieuwe grote functies.
+- RC2 - Website Intelligence: objectieve websitedata verdiepen met performance, SEO, toegankelijkheid, broken links, image/font/JavaScript-signalen en een heldere leadscore.
+- RC3 - AI Sales Coach: AI pas toevoegen bovenop de objectieve scanresultaten, zodat Max advies geeft op basis van feiten.
+- RC4 - Offerteflow: scanresultaat -> leadscore -> advies -> pakketadvies -> conceptofferte -> klantflow.
+
+Productprincipes:
+
+- Nieuwe functies worden alleen toegevoegd als ze een bestaande workflow aantoonbaar versterken.
+- Geen AI toevoegen als objectieve data hetzelfde probleem eerst betrouwbaarder kan oplossen.
+- Elke nieuwe module moet passen binnen het Max CRM Design System.
+
+Leidend UI-document:
+
+- `docs/design/MAX_CRM_DESIGN_SYSTEM.md`
+
 ## Customer Portal RC1 - Production Activation
 
 Status: `IN PROGRESS / FIRST CUSTOMER ACTIVATION`

@@ -3237,12 +3237,18 @@ Niet inbegrepen:
 - OpenAI;
 - klant-specifieke hardcoding.
 
-RC2-richting na GO:
+Release-richting na RC1:
 
-- polish op offertes/facturen;
-- backup/restore governance aanscherpen;
-- sales/admin dagelijkse workflows verkorten;
-- daarna pas nieuwe modules zoals Sales Portal, Leadfinder AI, VoIP en echte Max AI-calls.
+- RC1 - Foundation afronden: stabiliteit, UX-consistentie, bugs, responsive gedrag, performance en nette foutmeldingen. Geen nieuwe grote functies.
+- RC2 - Website Intelligence: objectieve websitedata verdiepen met performance, SEO, toegankelijkheid, broken links, image/font/JavaScript-signalen en een heldere leadscore. Geen AI als basis.
+- RC3 - AI Sales Coach: AI pas toevoegen bovenop de objectieve scanresultaten, zodat advies gebaseerd is op echte data in plaats van aannames.
+- RC4 - Offerteflow: scanresultaat -> leadscore -> advies -> pakketadvies -> conceptofferte -> klantflow.
+
+Productprincipes voor deze releasefase:
+
+- Nieuwe functies worden alleen toegevoegd als ze een bestaande workflow aantoonbaar versterken.
+- Geen AI toevoegen als objectieve data hetzelfde probleem eerst betrouwbaarder kan oplossen.
+- Elke nieuwe module moet passen binnen het Max CRM Design System.
 
 ## Founding Customer Track - Quantumbouw
 
