@@ -5374,6 +5374,10 @@ h3 {
   display: none !important;
 }
 
+.admin-body:not(.is-developer-mode) #admin-access-message.success {
+  display: none;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -8367,27 +8371,38 @@ h3 {
   grid-area: detail;
   display: grid;
   grid-template-columns: minmax(260px, 0.8fr) minmax(320px, 1.1fr) minmax(320px, 0.9fr);
+  grid-template-areas:
+    "summary note actions"
+    "welcome analysis analysis";
   gap: 16px;
   padding: 22px;
 }
 
 .leadfinder-detail-card .admin-profile-form-heading {
-  grid-column: 1;
+  grid-area: summary;
   align-self: start;
+}
+
+.leadfinder-detail-card .settings-status-list {
+  grid-area: summary;
+  margin-top: 68px;
 }
 
 .leadfinder-detail-card > label {
-  grid-column: 2;
+  grid-area: note;
 }
 
 .leadfinder-detail-card .admin-profile-actions {
-  grid-column: 3;
+  grid-area: actions;
   align-self: start;
 }
 
-.leadfinder-detail-card .lead-welcome-card,
+.leadfinder-detail-card .lead-welcome-card {
+  grid-area: welcome;
+}
+
 .leadfinder-detail-card .lead-analysis-card {
-  grid-column: 1 / -1;
+  grid-area: analysis;
 }
 
 .crm-workflow-table .admin-table-row {
@@ -9265,6 +9280,8 @@ h3 {
 
 .admin-body.is-sales-view {
   min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
   background:
     radial-gradient(circle at 72% 0%, rgba(21, 94, 239, 0.18), transparent 30%),
     radial-gradient(circle at 16% 8%, rgba(25, 194, 255, 0.12), transparent 28%),
@@ -9272,106 +9289,81 @@ h3 {
 }
 
 .admin-body.is-sales-view .admin-crm-shell {
-  display: block;
-  width: 100%;
-  max-width: none;
-  margin: 0;
-  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(250px, 0.26fr) minmax(0, 1fr);
+  gap: clamp(18px, 2.4vw, 34px);
+  width: min(100%, 1780px);
+  max-width: 1780px;
+  margin: 0 auto;
+  padding: clamp(18px, 2.4vw, 34px);
 }
 
 .admin-body.is-sales-view .admin-sidebar {
   position: sticky;
-  top: 0;
-  z-index: 80;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
+  top: clamp(18px, 2.4vw, 34px);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   gap: 22px;
-  width: 100%;
-  max-height: none;
-  overflow: visible;
-  padding: 10px 18px;
-  border: 0;
-  border-bottom: 1px solid rgba(171, 196, 224, 0.14);
-  border-radius: 0;
+  width: auto;
+  max-height: calc(100vh - clamp(36px, 4.8vw, 68px));
+  overflow-y: auto;
+  padding: clamp(18px, 2vw, 28px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
   background:
-    linear-gradient(180deg, rgba(7, 19, 32, 0.96), rgba(3, 14, 26, 0.92)),
-    rgba(3, 14, 26, 0.94);
-  box-shadow: 0 16px 40px rgba(0, 8, 18, 0.32);
-  backdrop-filter: blur(18px);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.025)),
+    rgba(8, 24, 38, 0.82);
+  box-shadow: 0 22px 70px rgba(0, 8, 18, 0.28);
+  backdrop-filter: blur(16px);
 }
 
 .admin-body.is-sales-view .admin-sidebar .brand {
-  min-width: max-content;
-  gap: 10px;
-  font-size: 15px;
+  min-width: 0;
+  gap: 12px;
+  font-size: 18px;
 }
 
 .admin-body.is-sales-view .admin-sidebar .brand .brand-mark {
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
 }
 
-.admin-body.is-sales-view .admin-nav-group,
-.admin-body.is-sales-view .admin-sidebar > article {
-  display: none !important;
+.admin-body.is-sales-view .admin-nav-group {
+  display: block;
 }
 
 .admin-body.is-sales-view .admin-sales-secondary {
-  display: none !important;
+  display: flex;
 }
 
 .admin-body.is-sales-view .admin-sidebar-nav {
-  display: flex;
-  align-items: center;
-  gap: 22px;
+  display: grid;
+  gap: 8px;
   min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.admin-body.is-sales-view .admin-sidebar-nav::-webkit-scrollbar {
-  display: none;
+  overflow: visible;
 }
 
 .admin-body.is-sales-view .admin-sidebar-nav a {
-  position: relative;
   min-height: 40px;
-  padding: 0 2px;
-  border-radius: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
   color: rgba(226, 236, 248, 0.82);
-  background: transparent;
-  box-shadow: none;
+  background: rgba(255, 255, 255, 0.035);
   font-size: 14px;
   font-weight: 850;
-  white-space: nowrap;
 }
 
 .admin-body.is-sales-view .admin-sidebar-nav a:hover,
 .admin-body.is-sales-view .admin-sidebar-nav a.is-active {
   color: var(--white);
-  background: transparent;
-  box-shadow: none;
-  transform: none;
-}
-
-.admin-body.is-sales-view .admin-sidebar-nav a.is-active::after {
-  position: absolute;
-  right: 0;
-  bottom: -10px;
-  left: 0;
-  height: 3px;
-  border-radius: 999px;
-  background: #155eef;
-  content: "";
+  background: rgba(255, 255, 255, 0.085);
+  box-shadow: inset 3px 0 0 var(--blue), 0 10px 28px rgba(21, 94, 239, 0.16);
 }
 
 .admin-body.is-sales-view .admin-topbar-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  min-width: 340px;
+  display: none;
 }
 
 .admin-topbar-search {
@@ -9450,37 +9442,28 @@ h3 {
   display: block;
   width: 100%;
   max-width: none;
-  padding: 14px 14px 22px;
-}
-
-.admin-body.is-sales-view .admin-crm-main > :not(#leadfinder) {
-  display: none !important;
+  padding: 0;
+  overflow: visible;
 }
 
 .admin-body.is-sales-view #leadfinder {
   display: grid;
-  gap: 14px;
-  max-width: 1780px;
-  margin: 0 auto;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
+  gap: 18px;
+  max-width: none;
 }
 
 .admin-body.is-sales-view #leadfinder > .admin-section-heading,
-.admin-body.is-sales-view #leadfinder > .admin-flow-steps,
-.admin-body.is-sales-view #leadfinder-metrics {
-  display: none;
+.admin-body.is-sales-view #leadfinder > .admin-flow-steps {
+  display: flex;
 }
 
 .admin-body.is-sales-view .leadfinder-grid {
   display: grid;
-  grid-template-columns: minmax(0, 0.92fr) minmax(580px, 1.08fr);
+  grid-template-columns: minmax(0, 0.95fr) minmax(500px, 1.05fr);
   grid-template-areas:
     "form google"
     "detail detail";
-  gap: 14px;
+  gap: 18px;
   align-items: start;
 }
 
@@ -9726,18 +9709,40 @@ h3 {
 }
 
 @media (max-width: 1180px) {
-  .admin-body.is-sales-view .admin-sidebar {
+  .admin-body.is-sales-view .admin-crm-shell {
     grid-template-columns: 1fr;
+    padding: 16px;
   }
 
-  .admin-body.is-sales-view .admin-topbar-actions {
-    justify-content: flex-start;
-    min-width: 0;
+  .admin-body.is-sales-view .admin-sidebar {
+    position: static;
+    max-height: none;
   }
 
   .admin-body.is-sales-view .leadfinder-grid,
   .admin-body.is-sales-view .leadfinder-filters {
     grid-template-columns: 1fr;
+  }
+
+  .admin-body.is-sales-view .leadfinder-grid {
+    grid-template-areas:
+      "form"
+      "google"
+      "detail";
+  }
+
+  .admin-body.is-sales-view .leadfinder-detail-card {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "summary"
+      "note"
+      "actions"
+      "welcome"
+      "analysis";
+  }
+
+  .admin-body.is-sales-view .leadfinder-detail-card .settings-status-list {
+    margin-top: 0;
   }
 }
 
@@ -12127,6 +12132,12 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
 
   .leadfinder-detail-card {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "summary"
+      "note"
+      "actions"
+      "welcome"
+      "analysis";
   }
 
   .leadfinder-detail-card .admin-profile-form-heading,
@@ -12135,6 +12146,10 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   .leadfinder-detail-card .lead-welcome-card,
   .leadfinder-detail-card .lead-analysis-card {
     grid-column: auto;
+  }
+
+  .leadfinder-detail-card .settings-status-list {
+    margin-top: 0;
   }
 
   .google-places-card {
