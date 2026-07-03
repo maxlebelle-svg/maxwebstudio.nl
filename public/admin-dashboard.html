@@ -348,6 +348,17 @@
               </div>
               <p class="admin-form-message" id="google-places-message" role="status"></p>
               <p class="google-places-tip">Tip: Klik op “Gegevens overnemen” om adres, telefoon, e-mail en website automatisch in te vullen.</p>
+              <div class="google-place-transfer-list" id="google-places-transfer-list" aria-label="Over te nemen bedrijfsgegevens">
+                <strong>Over te nemen gegevens</strong>
+                <div>
+                  <span class="is-muted">Bedrijfsnaam</span>
+                  <span class="is-muted">Adres</span>
+                  <span class="is-muted">Telefoonnummer</span>
+                  <span class="is-muted">Website URL</span>
+                  <span class="is-muted">Plaats/regio</span>
+                  <span class="is-muted">E-mailadres niet geleverd door Google</span>
+                </div>
+              </div>
             </article>
           </div>
 
@@ -3540,6 +3551,8 @@
         function isDeveloperModeEnabled() {
           return Boolean(readStoredSettings().developerMode);
         }
+
+        window.isDeveloperModeEnabled = isDeveloperModeEnabled;
 
         async function loadDeveloperModules() {
           if (state.developerModules) return state.developerModules;
@@ -16258,6 +16271,7 @@
         googleResult: document.getElementById("google-places-result"),
         googleMap: document.getElementById("google-places-map"),
         googleMessage: document.getElementById("google-places-message"),
+        googleTransferList: document.getElementById("google-places-transfer-list"),
       };
 
       let selectedLeadFinderId = "";
@@ -16377,7 +16391,14 @@
       }
 
       function developerModeActive() {
-        return typeof window.isDeveloperModeEnabled === "function" && window.isDeveloperModeEnabled();
+        if (typeof window.isDeveloperModeEnabled === "function") {
+          return window.isDeveloperModeEnabled();
+        }
+        try {
+          return Boolean(readStoredSettings().developerMode);
+        } catch (error) {
+          return false;
+        }
       }
 
       function logGooglePlacesIssue(message, details = null) {
@@ -16446,9 +16467,12 @@
       function renderGooglePlacesEmpty(title, body) {
         if (!leadfinderElements.googleResult) return;
         leadfinderElements.googleResult.innerHTML = `
-          <strong>${escapeHtml(title)}</strong>
-          <span>${escapeHtml(body)}</span>
+          <div class="google-place-empty">
+            <strong>${escapeHtml(title)}</strong>
+            <span>${escapeHtml(body)}</span>
+          </div>
         `;
+        renderGoogleTransferList(null);
       }
 
       function searchGooglePlace() {
@@ -16492,6 +16516,7 @@
             "url",
             "rating",
             "user_ratings_total",
+            "photos",
             "geometry",
             "types",
             "business_status",
@@ -16534,21 +16559,48 @@
         const rating = place.rating ? `${place.rating.toLocaleString("nl-NL")} ★ (${place.user_ratings_total || 0})` : "Geen rating";
         const phone = place.formatted_phone_number || place.international_phone_number || "Geen telefoon bekend";
         const website = place.website || "";
+        const photoUrl = place.photos?.[0]?.getUrl ? place.photos[0].getUrl({ maxWidth: 520, maxHeight: 260 }) : "";
+        const safePhotoUrl = photoUrl.replace(/'/g, "%27");
         leadfinderElements.googleResult.innerHTML = `
+          <div class="google-place-photo" ${photoUrl ? `style="background-image: linear-gradient(180deg, rgba(5, 15, 27, 0.04), rgba(5, 15, 27, 0.72)), url('${escapeHtml(safePhotoUrl)}');"` : ""}>
+            ${photoUrl ? "" : `<span>${escapeHtml((place.name || "M").slice(0, 1))}</span>`}
+          </div>
           <div class="google-place-summary">
             <strong>${escapeHtml(place.name || "Onbekend bedrijf")}</strong>
             <span>${escapeHtml(rating)} · ${escapeHtml(category)}</span>
             <small>${escapeHtml(place.formatted_address || "Geen adres bekend")}</small>
+          </div>
+          <div class="google-place-icon-actions" aria-label="Google Maps acties">
+            ${place.url ? `<a href="${escapeHtml(place.url)}" target="_blank" rel="noopener noreferrer">Route</a>` : `<span>Route</span>`}
+            <span>Opslaan</span>
+            ${place.url ? `<button type="button" data-google-place-action="share">Delen</button>` : `<span>Delen</span>`}
+            ${website ? `<a href="${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">Website</a>` : `<span>Website</span>`}
           </div>
           <dl class="google-place-details">
             <div><dt>Telefoon</dt><dd>${escapeHtml(phone)}</dd></div>
             <div><dt>Website</dt><dd>${website ? `<a href="${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">${escapeHtml(cleanDisplayUrl(website))}</a>` : "Geen website bekend"}</dd></div>
           </dl>
           <div class="google-place-actions">
-            ${place.url ? `<a class="button secondary" href="${escapeHtml(place.url)}" target="_blank" rel="noopener noreferrer">Route</a>` : ""}
-            ${place.url ? `<button class="button secondary" type="button" data-google-place-action="share">Delen</button>` : ""}
-            ${website ? `<a class="button secondary" href="${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">Website</a>` : ""}
             <button class="button primary" type="button" data-google-place-action="takeover">Gegevens overnemen</button>
+          </div>
+        `;
+        renderGoogleTransferList(place);
+      }
+
+      function renderGoogleTransferList(place) {
+        if (!leadfinderElements.googleTransferList) return;
+        const items = [
+          ["Bedrijfsnaam", Boolean(place?.name)],
+          ["Adres", Boolean(place?.formatted_address)],
+          ["Telefoonnummer", Boolean(place?.formatted_phone_number || place?.international_phone_number)],
+          ["Website URL", Boolean(place?.website)],
+          ["Plaats/regio", Boolean(place?.formatted_address)],
+          ["E-mailadres niet geleverd door Google", false],
+        ];
+        leadfinderElements.googleTransferList.innerHTML = `
+          <strong>Over te nemen gegevens</strong>
+          <div>
+            ${items.map(([label, available]) => `<span class="${available ? "is-ready" : "is-muted"}">${available ? "✓" : "•"} ${escapeHtml(label)}</span>`).join("")}
           </div>
         `;
       }

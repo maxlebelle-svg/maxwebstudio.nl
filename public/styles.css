@@ -8520,8 +8520,46 @@ h3 {
   line-height: 1.05;
 }
 
+#leadfinder-metrics {
+  display: none;
+}
+
 .leadfinder-grid {
-  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+  grid-template-columns: minmax(360px, 1.05fr) minmax(280px, 0.7fr) minmax(360px, 0.95fr);
+  gap: 12px;
+}
+
+.leadfinder-grid .admin-card {
+  border-color: rgba(171, 196, 224, 0.16);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(37, 99, 235, 0.13), transparent 35%),
+    linear-gradient(180deg, rgba(22, 42, 61, 0.92), rgba(9, 24, 38, 0.94));
+  box-shadow: 0 22px 70px rgba(0, 8, 18, 0.28);
+}
+
+.leadfinder-grid .button.secondary,
+.leadfinder-grid a.button.secondary {
+  border: 1px solid rgba(171, 196, 224, 0.22);
+  color: rgba(248, 251, 255, 0.92);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.04)),
+    rgba(8, 24, 38, 0.76);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.leadfinder-grid .button.secondary:hover,
+.leadfinder-grid a.button.secondary:hover {
+  border-color: rgba(37, 99, 235, 0.48);
+  color: var(--white);
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.22), rgba(25, 194, 255, 0.1)),
+    rgba(8, 24, 38, 0.82);
+}
+
+.leadfinder-grid .button.secondary.danger {
+  border-color: rgba(248, 113, 113, 0.36);
+  color: #fecaca;
+  background: rgba(127, 29, 29, 0.18);
 }
 
 .leadfinder-form .admin-profile-fields,
@@ -8658,7 +8696,8 @@ h3 {
 }
 
 .google-places-card {
-  grid-column: 2;
+  grid-column: 3;
+  align-self: start;
 }
 
 .google-places-search {
@@ -8682,10 +8721,10 @@ h3 {
 
 .google-places-content {
   display: grid;
-  grid-template-columns: minmax(220px, 0.9fr) minmax(260px, 1.1fr);
+  grid-template-columns: minmax(210px, 0.95fr) minmax(230px, 1.05fr);
   gap: 0;
   overflow: hidden;
-  min-height: 300px;
+  min-height: 320px;
   border: 1px solid rgba(171, 196, 224, 0.16);
   border-radius: 8px;
   background: rgba(3, 12, 22, 0.55);
@@ -8699,8 +8738,46 @@ h3 {
   padding: 16px;
   color: rgba(255, 255, 255, 0.75);
   background:
-    linear-gradient(180deg, rgba(7, 18, 31, 0.15), rgba(7, 18, 31, 0.78)),
+    linear-gradient(180deg, rgba(7, 18, 31, 0.08), rgba(7, 18, 31, 0.86)),
     radial-gradient(circle at 12% 4%, rgba(37, 99, 235, 0.22), transparent 34%);
+}
+
+.google-place-empty {
+  display: grid;
+  gap: 8px;
+  margin: auto 0;
+}
+
+.google-place-empty span {
+  color: rgba(255, 255, 255, 0.62);
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.google-place-photo {
+  display: grid;
+  place-items: center;
+  min-height: 118px;
+  margin: -16px -16px 2px;
+  border-bottom: 1px solid rgba(171, 196, 224, 0.14);
+  background:
+    radial-gradient(circle at 38% 24%, rgba(37, 99, 235, 0.26), transparent 34%),
+    linear-gradient(135deg, rgba(25, 194, 255, 0.14), rgba(3, 12, 22, 0.9));
+  background-position: center;
+  background-size: cover;
+}
+
+.google-place-photo span {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border: 1px solid rgba(171, 196, 224, 0.24);
+  border-radius: 18px;
+  color: var(--white);
+  background: rgba(37, 99, 235, 0.22);
+  font-size: 28px;
+  font-weight: 950;
 }
 
 .google-places-result > strong,
@@ -8723,6 +8800,34 @@ h3 {
   color: rgba(255, 255, 255, 0.58);
   font-weight: 700;
   line-height: 1.4;
+}
+
+.google-place-icon-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.google-place-icon-actions a,
+.google-place-icon-actions button,
+.google-place-icon-actions span {
+  display: grid;
+  place-items: center;
+  min-height: 34px;
+  padding: 0 6px;
+  border: 1px solid rgba(37, 99, 235, 0.28);
+  border-radius: 999px;
+  color: #9fc0ff;
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(25, 194, 255, 0.08)),
+    rgba(3, 12, 22, 0.52);
+  font-size: 11px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.google-place-icon-actions button {
+  cursor: pointer;
 }
 
 .google-place-details {
@@ -8757,7 +8862,6 @@ h3 {
 
 .google-place-actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   margin-top: auto;
 }
@@ -8773,10 +8877,11 @@ h3 {
 }
 
 .google-places-map {
-  min-height: 300px;
+  min-height: 320px;
   background:
+    radial-gradient(circle at 70% 18%, rgba(25, 194, 255, 0.16), transparent 30%),
     linear-gradient(135deg, rgba(37, 99, 235, 0.14), rgba(25, 194, 255, 0.08)),
-    rgba(255, 255, 255, 0.04);
+    rgba(3, 12, 22, 0.82);
 }
 
 .google-places-tip {
@@ -8784,6 +8889,38 @@ h3 {
   color: rgba(255, 255, 255, 0.58);
   font-size: 13px;
   font-weight: 800;
+}
+
+.google-place-transfer-list {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(171, 196, 224, 0.14);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(25, 194, 255, 0.06)),
+    rgba(3, 12, 22, 0.48);
+}
+
+.google-place-transfer-list strong {
+  color: var(--white);
+  font-size: 14px;
+}
+
+.google-place-transfer-list div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+}
+
+.google-place-transfer-list span {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.google-place-transfer-list .is-ready {
+  color: #86efac;
 }
 
 .admin-profile-actions {
@@ -8802,6 +8939,16 @@ h3 {
 
 .admin-profile-actions .admin-form-message {
   grid-column: 1 / -1;
+}
+
+@media (max-width: 1280px) {
+  .leadfinder-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 0.75fr);
+  }
+
+  .google-places-card {
+    grid-column: 1 / -1;
+  }
 }
 
 .crm-auth-actions,
