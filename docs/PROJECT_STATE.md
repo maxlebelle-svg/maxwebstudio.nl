@@ -3988,6 +3988,12 @@ Leidend UI-document:
 
 - `docs/design/MAX_CRM_DESIGN_SYSTEM.md`
 
+RC1 releasegate:
+
+- `docs/deployment/RC1_EXIT_CHECKLIST.md` is leidend voor de laatste stabilisatie.
+- RC1 wordt pas `RELEASED` na groene checklist, bekende beperkingen en owner GO.
+- RC2 Website Intelligence start pas na RC1 GO of expliciete uitzondering.
+
 ## Customer Portal RC1 - Production Activation
 
 Status: `IN PROGRESS / FIRST CUSTOMER ACTIVATION`

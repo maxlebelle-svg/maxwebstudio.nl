@@ -3250,6 +3250,11 @@ Productprincipes voor deze releasefase:
 - Geen AI toevoegen als objectieve data hetzelfde probleem eerst betrouwbaarder kan oplossen.
 - Elke nieuwe module moet passen binnen het Max CRM Design System.
 
+RC1 releasegate:
+
+- `docs/deployment/RC1_EXIT_CHECKLIST.md` moet groen zijn voordat RC1 als `RELEASED` wordt gemarkeerd.
+- RC2 Website Intelligence start pas na RC1 owner GO of na expliciete uitzondering.
+
 ## Founding Customer Track - Quantumbouw
 
 Status: `ACTIVE / FIRST LIVE CUSTOMER`
