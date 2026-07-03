@@ -16530,7 +16530,69 @@
         googlePlacesMarkers = [];
       }
 
-      function searchGooglePlace() {
+      function uniqueGooglePlaceQueries(queries) {
+        const seen = new Set();
+        return queries
+          .map((query) => String(query || "").trim())
+          .filter(Boolean)
+          .filter((query) => {
+            const key = query.toLowerCase();
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+      }
+
+      function buildGooglePlaceSearchQueries(query) {
+        const normalized = String(query || "").trim();
+        const lower = normalized.toLowerCase();
+        const queries = [normalized];
+
+        if (lower.includes("noorderplassen")) {
+          queries.push(
+            normalized.includes("Almere") ? normalized : `${normalized} Almere`,
+            lower.includes("vomar") ? "Vomar Noorderplassen Almere" : "",
+            lower.includes("vomar") ? "Vomar Almere Noorderplassen" : "",
+          );
+        }
+
+        const knownAreaPlaceMap = [
+          ["leidsche rijn", "Utrecht"],
+          ["ijburg", "Amsterdam"],
+          ["ypenburg", "Den Haag"],
+          ["nesselande", "Rotterdam"],
+          ["noorderplassen", "Almere"],
+        ];
+        knownAreaPlaceMap.forEach(([area, city]) => {
+          if (lower.includes(area) && !lower.includes(city.toLowerCase())) {
+            queries.push(`${normalized} ${city}`);
+          }
+        });
+
+        queries.push(`${normalized} Nederland`);
+        return uniqueGooglePlaceQueries(queries);
+      }
+
+      function searchGooglePlacesText(query) {
+        return new Promise((resolve) => {
+          const location = new window.google.maps.LatLng(52.3676, 4.9041);
+          googlePlacesService.textSearch({
+            query,
+            location,
+            radius: 75000,
+          }, (results, status) => {
+            const normalizedResults = Array.isArray(results) ? results : [];
+            logGooglePlacesIssue("Google Places textSearch poging.", {
+              query,
+              status,
+              resultCount: normalizedResults.length,
+            });
+            resolve({ query, status, results: normalizedResults });
+          });
+        });
+      }
+
+      async function searchGooglePlace() {
         const query = String(leadfinderElements.googleQuery?.value || "").trim();
         if (!query) {
           setGooglePlacesMessage("Vul een bedrijfsnaam en plaats in.", "error");
@@ -16545,19 +16607,50 @@
         setGooglePlacesState("Zoeken", "status-planned");
         setGooglePlacesMessage("");
         renderGooglePlacesEmpty("Zoeken naar bedrijven", "Google Places zoekt nu naar passende bedrijven. Klik daarna op een marker of resultaat.");
-        googlePlacesService.textSearch({
-          query,
-          region: "nl",
-        }, (results, status) => {
-          if (status !== window.google.maps.places.PlacesServiceStatus.OK || !results?.length) {
-            logGooglePlacesIssue("Geen Google Places resultaat.", { status, query });
-            setGooglePlacesState("Geen resultaat", "status-prepared");
-            renderGooglePlacesEmpty("Geen resultaat gevonden", "Probeer bedrijfsnaam + plaats, bijvoorbeeld “Quantumbouw Bodegraven”.");
-            setGooglePlacesMessage(`Geen bedrijf gevonden voor “${query}”.`, "error");
+
+        const queries = buildGooglePlaceSearchQueries(query);
+        const attempts = [];
+        const okStatus = window.google.maps.places.PlacesServiceStatus.OK;
+        for (const candidateQuery of queries) {
+          const attempt = await searchGooglePlacesText(candidateQuery);
+          attempts.push({
+            query: candidateQuery,
+            status: attempt.status,
+            count: attempt.results.length,
+          });
+          if (attempt.status === okStatus && attempt.results.length) {
+            const detail = developerModeActive()
+              ? ` Gebruikte query: “${candidateQuery}” (${attempt.results.length} resultaten).`
+              : "";
+            renderGoogleSearchResults(attempt.results, candidateQuery);
+            if (detail) {
+              setGooglePlacesMessage(`${attempt.results.length} resultaat${attempt.results.length === 1 ? "" : "en"} gevonden.${detail}`, "success");
+            }
             return;
           }
-          renderGoogleSearchResults(results, query);
-        });
+        }
+
+        logGooglePlacesIssue("Geen Google Places resultaat na fallback queries.", { originalQuery: query, attempts });
+        const blockingAttempt = attempts.find((attempt) => [
+          window.google.maps.places.PlacesServiceStatus.REQUEST_DENIED,
+          window.google.maps.places.PlacesServiceStatus.INVALID_REQUEST,
+          window.google.maps.places.PlacesServiceStatus.OVER_QUERY_LIMIT,
+        ].includes(attempt.status));
+        if (blockingAttempt) {
+          setGooglePlacesState("Fout", "status-blocked");
+          renderGooglePlacesEmpty("Google Places gaf een fout terug", "Controleer de API key, API-restricties, quota en Places API-instellingen.");
+          const message = developerModeActive()
+            ? `Google Places fout bij “${blockingAttempt.query}”: ${blockingAttempt.status}.`
+            : "Google Places kon deze zoekopdracht niet verwerken. Controleer de configuratie.";
+          setGooglePlacesMessage(message, "error");
+          return;
+        }
+        setGooglePlacesState("Geen resultaat", "status-prepared");
+        renderGooglePlacesEmpty("Geen resultaat gevonden", "Probeer bedrijfsnaam + plaats, bijvoorbeeld “Quantumbouw Bodegraven”.");
+        const message = developerModeActive()
+          ? `Geen bedrijf gevonden voor “${query}”. Pogingen: ${attempts.map((attempt) => `${attempt.query} (${attempt.status}, ${attempt.count})`).join(" → ")}.`
+          : `Geen bedrijf gevonden voor “${query}”.`;
+        setGooglePlacesMessage(message, "error");
       }
 
       function renderGoogleSearchResults(results, query) {
