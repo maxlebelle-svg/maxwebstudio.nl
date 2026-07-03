@@ -17,9 +17,23 @@ alter table public.profiles add column if not exists website text;
 alter table public.profiles add column if not exists package text;
 alter table public.profiles add column if not exists metadata jsonb not null default '{}'::jsonb;
 
-alter table public.customers add column if not exists owner_auth_user_id uuid references auth.users(id) on delete set null;
-alter table public.leads add column if not exists owner_auth_user_id uuid references auth.users(id) on delete set null;
-alter table public.quotes add column if not exists owner_auth_user_id uuid references auth.users(id) on delete set null;
+do $$
+begin
+  if to_regclass('public.customers') is not null then
+    alter table public.customers add column if not exists owner_auth_user_id uuid references auth.users(id) on delete set null;
+    create index if not exists customers_owner_auth_user_id_idx on public.customers(owner_auth_user_id);
+  end if;
+
+  if to_regclass('public.leads') is not null then
+    alter table public.leads add column if not exists owner_auth_user_id uuid references auth.users(id) on delete set null;
+    create index if not exists leads_owner_auth_user_id_idx on public.leads(owner_auth_user_id);
+  end if;
+
+  if to_regclass('public.quotes') is not null then
+    alter table public.quotes add column if not exists owner_auth_user_id uuid references auth.users(id) on delete set null;
+    create index if not exists quotes_owner_auth_user_id_idx on public.quotes(owner_auth_user_id);
+  end if;
+end $$;
 
 update public.profiles
 set
@@ -76,9 +90,6 @@ create unique index if not exists profiles_auth_user_id_unique_idx
 
 create index if not exists profiles_role_status_idx on public.profiles(role, status);
 create index if not exists profiles_last_login_at_idx on public.profiles(last_login_at desc);
-create index if not exists customers_owner_auth_user_id_idx on public.customers(owner_auth_user_id);
-create index if not exists leads_owner_auth_user_id_idx on public.leads(owner_auth_user_id);
-create index if not exists quotes_owner_auth_user_id_idx on public.quotes(owner_auth_user_id);
 
 create or replace function public.current_profile_id()
 returns uuid
