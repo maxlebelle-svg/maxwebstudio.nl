@@ -24,11 +24,21 @@ Commerciele prioriteit:
 - nieuwe functies moeten direct bijdragen aan omzet, snelheid of schaalbaarheid.
 - features worden alleen naar voren gehaald als ze binnen 90 dagen bijdragen aan omzet, snelheid of klantervaring.
 
+Onderhoudspropositie:
+
+- Website Credits worden onderzocht als premium alternatief voor een strippenkaart;
+- Website Credits horen primair bij onderhoud, klantportaal en bestaande klanten, niet als extra keuze bovenaan de homepage;
+- mogelijke pakketten: 5 credits voor kleine wijzigingen, 10 credits voor klanten die vaker aanpassingen willen;
+- credits kunnen later onderdeel worden van Care Basic en Care Growth, bijvoorbeeld 2 of 5 credits per maand;
+- klantportaal toont later het resterende saldo en rekent kleine wijzigingsverzoeken af in credits;
+- geen automatische credit-afschrijving of publieke verkoopmodule bouwen voordat RC1 stabiel is.
+
 Releasevolgorde:
 
 - RC1 - Foundation afronden;
 - Sales Acceleration Sprint 1 - Pipeline Automation;
 - Sales Cockpit - dagelijkse werkruimte voor verkopers;
+- Website Credits - onderhoudspropositie uitwerken voor bestaande klanten;
 - RC2 - Website Intelligence;
 - RC3 - AI Sales Coach;
 - RC4 - Offerteflow.

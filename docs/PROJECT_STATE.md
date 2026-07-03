@@ -23,6 +23,13 @@ Volgende salesrichting na RC1:
 - Pipeline Automation: leadstatussen, volgende actie en waarschuwingen bij stilstaande leads;
 - Sales Cockpit: een dagelijkse werkruimte waarin een verkoper ziet wat vandaag aandacht nodig heeft en welke lead als volgende opgepakt moet worden.
 
+Onderhoudsrichting:
+
+- Website Credits worden de voorkeursterm boven strippenkaart;
+- credits zijn bedoeld voor kleine wijzigingen zoals tekst, foto's, openingstijden, teamleden, tijdelijke acties en kleine formulieraanpassingen;
+- credits worden later gekoppeld aan onderhoudspakketten en klantportaal-saldo;
+- niet prominent op de homepage zetten voordat de onderhoudspropositie en RC1-flow stabiel zijn.
+
 Leidend:
 
 - `docs/deployment/RC1_EXIT_CHECKLIST.md`
