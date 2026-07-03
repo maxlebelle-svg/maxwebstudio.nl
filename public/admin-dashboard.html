@@ -505,26 +505,36 @@
                 </div>
               </div>
 
-              <div class="admin-profile-actions">
-                <button class="button secondary" id="detail-edit" type="button" disabled>Bewerken</button>
-                <button class="button primary" id="detail-save" type="submit" disabled>Opslaan</button>
-                <button class="button secondary" id="detail-cancel" type="button" disabled>Annuleren</button>
-                <a class="button secondary is-disabled" id="detail-open-website" href="#" target="_blank" rel="noopener" aria-disabled="true">Website openen</a>
-                <a class="button secondary is-disabled" id="detail-open-portal" href="#" target="_blank" rel="noopener" aria-disabled="true">Open klantportaal</a>
-                <button class="button secondary" id="detail-copy-portal" type="button" disabled>Kopieer klantportaal-link</button>
-                <button class="button secondary" id="detail-start-project" type="button" disabled>Project starten</button>
-                <button class="button secondary" id="detail-add-file" type="button" disabled>Bestand toevoegen</button>
-                <button class="button secondary" id="detail-view-files" type="button" disabled>Bestanden bekijken</button>
-                <button class="button secondary" id="detail-create-quote" type="button" disabled>Offerte aanmaken</button>
-                <button class="button secondary" id="detail-view-quotes" type="button" disabled>Offertes bekijken</button>
-                <button class="button secondary" id="detail-create-invoice" type="button" disabled>Factuur aanmaken</button>
-                <button class="button secondary" id="detail-view-invoices" type="button" disabled>Facturen bekijken</button>
-                <button class="button secondary" id="detail-create-subscription" type="button" disabled>Abonnement aanmaken</button>
-                <button class="button secondary" id="detail-view-subscriptions" type="button" disabled>Abonnementen bekijken</button>
-                <button class="button secondary" id="detail-refresh-supabase" type="button" disabled>Ververs vanuit Supabase</button>
-                <button class="button secondary" id="detail-history" type="button" disabled>Bekijk wijzigingshistorie</button>
-                <button class="button secondary" id="detail-reactivate" type="button" disabled>Reactiveren</button>
-                <button class="button secondary danger" id="detail-archive" type="button" disabled>Archiveren</button>
+              <div class="admin-profile-actions admin-action-groups" aria-label="Klantacties">
+                <div class="admin-action-group admin-action-group-primary" aria-label="Primaire klantacties">
+                  <button class="button secondary" id="detail-edit" type="button" disabled>Bewerken</button>
+                  <button class="button primary" id="detail-save" type="submit" disabled>Opslaan</button>
+                  <button class="button secondary" id="detail-cancel" type="button" disabled>Annuleren</button>
+                </div>
+                <div class="admin-action-group admin-action-group-secondary" aria-label="Klantlinks">
+                  <a class="button secondary is-disabled" id="detail-open-website" href="#" target="_blank" rel="noopener" aria-disabled="true">Website openen</a>
+                  <a class="button secondary is-disabled" id="detail-open-portal" href="#" target="_blank" rel="noopener" aria-disabled="true">Open klantportaal</a>
+                  <button class="button secondary" id="detail-copy-portal" type="button" disabled>Kopieer klantportaal-link</button>
+                </div>
+                <div class="admin-action-group admin-action-group-secondary" aria-label="Commerciele klantacties">
+                  <button class="button secondary" id="detail-start-project" type="button" disabled>Project starten</button>
+                  <button class="button secondary" id="detail-create-quote" type="button" disabled>Offerte aanmaken</button>
+                  <button class="button secondary" id="detail-create-invoice" type="button" disabled>Factuur aanmaken</button>
+                  <button class="button secondary" id="detail-view-quotes" type="button" disabled>Offertes bekijken</button>
+                  <button class="button secondary" id="detail-view-invoices" type="button" disabled>Facturen bekijken</button>
+                </div>
+                <div class="admin-action-group admin-action-group-secondary admin-developer-only" aria-label="Klantbeheer acties">
+                  <button class="button secondary" id="detail-add-file" type="button" disabled>Bestand toevoegen</button>
+                  <button class="button secondary" id="detail-view-files" type="button" disabled>Bestanden bekijken</button>
+                  <button class="button secondary" id="detail-create-subscription" type="button" disabled>Abonnement aanmaken</button>
+                  <button class="button secondary" id="detail-view-subscriptions" type="button" disabled>Abonnementen bekijken</button>
+                  <button class="button secondary" id="detail-refresh-supabase" type="button" disabled>Ververs vanuit Supabase</button>
+                  <button class="button secondary" id="detail-history" type="button" disabled>Bekijk wijzigingshistorie</button>
+                  <button class="button secondary" id="detail-reactivate" type="button" disabled>Reactiveren</button>
+                </div>
+                <div class="admin-action-group admin-action-group-danger" aria-label="Klant archiveren">
+                  <button class="button secondary danger" id="detail-archive" type="button" disabled>Archiveren</button>
+                </div>
               </div>
               <div class="settings-status-list" id="customer-history-list" hidden></div>
               <p class="admin-form-message" id="customer-detail-message" role="status"></p>
@@ -585,32 +595,46 @@
               </div>
               <div class="settings-status-list" id="website-source-detail"></div>
               <div class="website-detail-summary" id="website-detail-summary" aria-live="polite"></div>
-              <div class="admin-profile-actions">
-                <button class="button secondary" id="website-edit" type="button" disabled>Bewerken</button>
-                <button class="button primary" id="website-save" type="submit" disabled>Website opslaan</button>
-                <button class="button secondary" id="website-cancel" type="button" disabled>Annuleren</button>
-                <button class="button secondary" id="website-refresh-supabase" type="button" disabled>Ververs vanuit Supabase</button>
-                <button class="button secondary" id="website-history" type="button" disabled>Bekijk wijzigingshistorie</button>
-                <button class="button secondary" id="website-reactivate" type="button" disabled>Reactiveren</button>
-                <button class="button secondary danger" id="website-archive" type="button" disabled>Archiveren</button>
+              <div class="admin-profile-actions admin-action-groups" aria-label="Website beheeracties">
+                <div class="admin-action-group admin-action-group-primary" aria-label="Primaire websiteacties">
+                  <button class="button secondary" id="website-edit" type="button" disabled>Bewerken</button>
+                  <button class="button primary" id="website-save" type="submit" disabled>Website opslaan</button>
+                  <button class="button secondary" id="website-cancel" type="button" disabled>Annuleren</button>
+                </div>
+                <div class="admin-action-group admin-action-group-secondary admin-developer-only" aria-label="Website developer acties">
+                  <button class="button secondary" id="website-refresh-supabase" type="button" disabled>Ververs vanuit Supabase</button>
+                  <button class="button secondary" id="website-history" type="button" disabled>Bekijk wijzigingshistorie</button>
+                  <button class="button secondary" id="website-reactivate" type="button" disabled>Reactiveren</button>
+                </div>
+                <div class="admin-action-group admin-action-group-danger" aria-label="Website archiveren">
+                  <button class="button secondary danger" id="website-archive" type="button" disabled>Archiveren</button>
+                </div>
                 <p class="admin-form-message" id="website-detail-message" role="status"></p>
               </div>
               <div class="settings-status-list" id="website-history-list" hidden></div>
-              <div class="admin-profile-actions website-quick-actions" aria-label="Website acties">
-                <a class="button secondary is-disabled" id="website-open-live" href="#" target="_blank" rel="noopener" aria-disabled="true">Open website</a>
-                <a class="button secondary is-disabled" id="website-open-staging" href="#" target="_blank" rel="noopener" aria-disabled="true">Open staging</a>
-                <a class="button secondary is-disabled" id="website-open-github" href="#" target="_blank" rel="noopener" aria-disabled="true">Open GitHub</a>
-                <a class="button secondary is-disabled" id="website-open-netlify" href="#" target="_blank" rel="noopener" aria-disabled="true">Open Netlify</a>
-                <button class="button secondary" id="website-copy-domain" type="button" disabled>Kopieer domein</button>
-                <button class="button secondary" id="website-copy-github" type="button" disabled>Kopieer GitHub URL</button>
-                <a class="button secondary is-disabled" id="website-open-portal" href="#" target="_blank" rel="noopener" aria-disabled="true">Open klantportaal</a>
-                <button class="button secondary" id="website-start-project" type="button" disabled>Project koppelen/starten</button>
-                <button class="button secondary" id="website-create-quote" type="button" disabled>Offerte aanmaken</button>
-                <button class="button secondary" id="website-view-quotes" type="button" disabled>Offertes bekijken</button>
-                <button class="button secondary" id="website-create-invoice" type="button" disabled>Factuur aanmaken</button>
-                <button class="button secondary" id="website-view-invoices" type="button" disabled>Facturen bekijken</button>
-                <button class="button secondary" id="website-create-subscription" type="button" disabled>Abonnement aanmaken</button>
-                <button class="button secondary" id="website-view-subscriptions" type="button" disabled>Abonnement bekijken</button>
+              <div class="admin-profile-actions admin-action-groups website-quick-actions" aria-label="Website acties">
+                <div class="admin-action-group admin-action-group-secondary" aria-label="Website links">
+                  <a class="button secondary is-disabled" id="website-open-live" href="#" target="_blank" rel="noopener" aria-disabled="true">Open website</a>
+                  <a class="button secondary is-disabled" id="website-open-staging" href="#" target="_blank" rel="noopener" aria-disabled="true">Open staging</a>
+                  <a class="button secondary is-disabled" id="website-open-github" href="#" target="_blank" rel="noopener" aria-disabled="true">Open GitHub</a>
+                  <a class="button secondary is-disabled" id="website-open-netlify" href="#" target="_blank" rel="noopener" aria-disabled="true">Open Netlify</a>
+                  <a class="button secondary is-disabled" id="website-open-portal" href="#" target="_blank" rel="noopener" aria-disabled="true">Open klantportaal</a>
+                </div>
+                <div class="admin-action-group admin-action-group-secondary" aria-label="Website kopieeracties">
+                  <button class="button secondary" id="website-copy-domain" type="button" disabled>Kopieer domein</button>
+                  <button class="button secondary" id="website-copy-github" type="button" disabled>Kopieer GitHub URL</button>
+                </div>
+                <div class="admin-action-group admin-action-group-secondary" aria-label="Commerciele websiteacties">
+                  <button class="button secondary" id="website-start-project" type="button" disabled>Project koppelen/starten</button>
+                  <button class="button secondary" id="website-create-quote" type="button" disabled>Offerte aanmaken</button>
+                  <button class="button secondary" id="website-create-invoice" type="button" disabled>Factuur aanmaken</button>
+                  <button class="button secondary" id="website-view-quotes" type="button" disabled>Offertes bekijken</button>
+                  <button class="button secondary" id="website-view-invoices" type="button" disabled>Facturen bekijken</button>
+                </div>
+                <div class="admin-action-group admin-action-group-secondary admin-developer-only" aria-label="Website abonnementacties">
+                  <button class="button secondary" id="website-create-subscription" type="button" disabled>Abonnement aanmaken</button>
+                  <button class="button secondary" id="website-view-subscriptions" type="button" disabled>Abonnement bekijken</button>
+                </div>
               </div>
             </form>
           </div>
@@ -676,21 +700,31 @@
               </div>
               <div class="settings-status-list" id="project-source-detail"></div>
               <div class="project-detail-summary" id="project-detail-summary" aria-live="polite"></div>
-              <div class="admin-profile-actions">
-                <button class="button secondary" id="project-edit" type="button" disabled>Bewerken</button>
-                <button class="button primary" id="project-save" type="submit" disabled>Project opslaan</button>
-                <button class="button secondary" id="project-cancel" type="button" disabled>Annuleren</button>
-                <button class="button secondary" id="project-add-file" type="button" disabled>Bestand toevoegen</button>
-                <button class="button secondary" id="project-view-files" type="button" disabled>Bestanden bekijken</button>
-                <a class="button secondary is-disabled" id="project-open-portal" href="#" target="_blank" rel="noopener" aria-disabled="true">Open klantportaal</a>
-                <button class="button secondary" id="project-create-quote" type="button" disabled>Offerte aanmaken</button>
-                <button class="button secondary" id="project-view-quotes" type="button" disabled>Offertes bekijken</button>
-                <button class="button secondary" id="project-create-invoice" type="button" disabled>Factuur aanmaken</button>
-                <button class="button secondary" id="project-view-invoices" type="button" disabled>Facturen bekijken</button>
-                <button class="button secondary" id="project-refresh-supabase" type="button" disabled>Ververs vanuit Supabase</button>
-                <button class="button secondary" id="project-history" type="button" disabled>Bekijk wijzigingshistorie</button>
-                <button class="button secondary" id="project-reactivate" type="button" disabled>Reactiveren</button>
-                <button class="button secondary danger" id="project-delete" type="button" disabled>Archiveren</button>
+              <div class="admin-profile-actions admin-action-groups" aria-label="Projectacties">
+                <div class="admin-action-group admin-action-group-primary" aria-label="Primaire projectacties">
+                  <button class="button secondary" id="project-edit" type="button" disabled>Bewerken</button>
+                  <button class="button primary" id="project-save" type="submit" disabled>Project opslaan</button>
+                  <button class="button secondary" id="project-cancel" type="button" disabled>Annuleren</button>
+                </div>
+                <div class="admin-action-group admin-action-group-secondary" aria-label="Projectlinks en bestanden">
+                  <a class="button secondary is-disabled" id="project-open-portal" href="#" target="_blank" rel="noopener" aria-disabled="true">Open klantportaal</a>
+                  <button class="button secondary" id="project-add-file" type="button" disabled>Bestand toevoegen</button>
+                  <button class="button secondary" id="project-view-files" type="button" disabled>Bestanden bekijken</button>
+                </div>
+                <div class="admin-action-group admin-action-group-secondary" aria-label="Commerciele projectacties">
+                  <button class="button secondary" id="project-create-quote" type="button" disabled>Offerte aanmaken</button>
+                  <button class="button secondary" id="project-create-invoice" type="button" disabled>Factuur aanmaken</button>
+                  <button class="button secondary" id="project-view-quotes" type="button" disabled>Offertes bekijken</button>
+                  <button class="button secondary" id="project-view-invoices" type="button" disabled>Facturen bekijken</button>
+                </div>
+                <div class="admin-action-group admin-action-group-secondary admin-developer-only" aria-label="Project developer acties">
+                  <button class="button secondary" id="project-refresh-supabase" type="button" disabled>Ververs vanuit Supabase</button>
+                  <button class="button secondary" id="project-history" type="button" disabled>Bekijk wijzigingshistorie</button>
+                  <button class="button secondary" id="project-reactivate" type="button" disabled>Reactiveren</button>
+                </div>
+                <div class="admin-action-group admin-action-group-danger" aria-label="Project archiveren">
+                  <button class="button secondary danger" id="project-delete" type="button" disabled>Archiveren</button>
+                </div>
                 <p class="admin-form-message" id="project-detail-message" role="status"></p>
               </div>
               <div class="settings-status-list" id="project-history-list" hidden></div>

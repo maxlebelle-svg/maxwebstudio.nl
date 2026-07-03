@@ -5850,7 +5850,7 @@ h3 {
 
 .website-operations-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(360px, 0.75fr);
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
   gap: 16px;
   align-items: start;
 }
@@ -5872,7 +5872,7 @@ h3 {
 
 .project-management-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(420px, 0.92fr);
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
   gap: 16px;
   align-items: start;
 }
@@ -5890,10 +5890,10 @@ h3 {
 }
 
 .project-detail-panel {
-  position: sticky;
-  top: 18px;
   align-self: start;
   height: auto;
+  max-height: none;
+  overflow: visible;
 }
 
 .file-detail-panel {
@@ -5904,10 +5904,10 @@ h3 {
 }
 
 .website-detail-panel {
-  position: sticky;
-  top: 18px;
   align-self: start;
   height: auto;
+  max-height: none;
+  overflow: visible;
 }
 
 .website-row {
@@ -5958,7 +5958,6 @@ h3 {
 }
 
 .website-quick-actions {
-  justify-content: flex-start;
   padding-top: 4px;
 }
 
@@ -6495,6 +6494,60 @@ h3 {
   flex: 1;
 }
 
+.admin-profile-actions.admin-action-groups {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: stretch;
+  justify-content: stretch;
+  gap: 10px;
+}
+
+.admin-action-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.admin-action-group + .admin-action-group,
+.admin-action-groups .admin-form-message {
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.admin-action-group .button {
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 12px;
+  line-height: 1.1;
+}
+
+.admin-action-group-primary .button {
+  flex: 1 1 112px;
+}
+
+.admin-action-group-secondary .button {
+  flex: 1 1 138px;
+}
+
+.admin-action-group-danger {
+  justify-content: flex-end;
+}
+
+.admin-action-group-danger .button {
+  flex: 0 1 150px;
+}
+
+.admin-profile-actions.admin-action-groups .admin-form-message {
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+}
+
+.admin-profile-actions.admin-action-groups.website-quick-actions {
+  grid-template-columns: 1fr;
+}
+
 .admin-onboarding-preview {
   display: grid;
   gap: 10px;
@@ -6531,7 +6584,7 @@ h3 {
 
 .admin-crm-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(340px, 32vw, 460px);
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
   gap: clamp(16px, 2vw, 24px);
   align-items: start;
 }
@@ -6541,13 +6594,11 @@ h3 {
 }
 
 .crm-detail-panel {
-  position: sticky;
-  top: 18px;
   align-self: start;
   width: 100%;
   height: auto;
   max-height: none;
-  z-index: 1;
+  overflow: visible;
 }
 
 .client-profile-table {
@@ -6558,7 +6609,7 @@ h3 {
 }
 
 .client-profile-table .crm-customer-row {
-  min-width: 820px;
+  min-width: 720px;
 }
 
 .crm-auth-panel {
@@ -9993,6 +10044,19 @@ h3 {
 }
 
 @media (max-width: 1180px) {
+  .admin-crm-grid,
+  .website-operations-grid,
+  .project-management-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .crm-detail-panel,
+  .website-detail-panel,
+  .project-detail-panel {
+    position: static;
+    max-height: none;
+  }
+
   .admin-body.is-sales-view .admin-crm-shell {
     grid-template-columns: 1fr;
     padding: 16px;
