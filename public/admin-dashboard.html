@@ -278,6 +278,14 @@
             <span>Klant actief</span>
           </div>
 
+          <div class="sales-cockpit-bar" id="sales-cockpit-bar" aria-label="Sales cockpit overzicht">
+            <article class="admin-card metric-card"><span>Nieuwe leads vandaag</span><strong id="sales-cockpit-new-leads">0</strong><small>Vandaag aangemaakt</small></article>
+            <article class="admin-card metric-card"><span>Follow-ups vandaag</span><strong id="sales-cockpit-followups">0</strong><small>Te bellen of te laat</small></article>
+            <article class="admin-card metric-card"><span>Open offertes</span><strong id="sales-cockpit-open-quotes">0</strong><small>Concept, verzonden of bekeken</small></article>
+            <article class="admin-card metric-card"><span>Verkocht vandaag</span><strong id="sales-cockpit-won-today">0</strong><small>Gewonnen leads</small></article>
+            <article class="admin-card metric-card"><span>Conversie deze week</span><strong id="sales-cockpit-conversion">0%</strong><small>Verkocht / nieuwe leads</small></article>
+          </div>
+
           <div class="admin-grid workflow-metrics" id="leadfinder-metrics" aria-live="polite"></div>
 
           <div class="leadfinder-grid">
@@ -317,6 +325,19 @@
                 </div>
                 <mark class="status-badge status-planned" id="leadfinder-detail-state">Niet geselecteerd</mark>
               </div>
+              <div class="sales-next-action" id="sales-next-action" aria-live="polite">
+                <span>Volgende stap</span>
+                <strong>Selecteer een lead</strong>
+                <button class="button primary" id="sales-next-action-button" type="button" disabled>Kies lead</button>
+              </div>
+              <div class="sales-quick-actions" aria-label="Snelle salesacties">
+                <button class="button secondary" id="sales-action-call" type="button" disabled>Bellen</button>
+                <a class="button secondary is-disabled" id="sales-action-website" href="#" target="_blank" rel="noopener" aria-disabled="true">Website openen</a>
+                <a class="button secondary is-disabled" id="sales-action-mail" href="#" aria-disabled="true">Mail</a>
+                <a class="button secondary is-disabled" id="sales-action-maps" href="#" target="_blank" rel="noopener" aria-disabled="true">Google Maps</a>
+                <button class="button secondary" id="sales-action-note" type="button" disabled>Notitie</button>
+                <button class="button secondary" id="sales-action-followup" type="button" disabled>Follow-up</button>
+              </div>
               <div class="settings-status-list" id="leadfinder-detail-list"></div>
               <label class="admin-profile-wide" for="leadfinder-detail-note">Nieuwe notitie<textarea id="leadfinder-detail-note" placeholder="Korte belnotitie of opvolgafspraak"></textarea></label>
               <div class="admin-profile-actions">
@@ -346,6 +367,15 @@
                   <summary>Extra instellingen</summary>
                   <p>Gebruik dit later voor taal, pakketdetails en onboarding-notities.</p>
                 </details>
+              </div>
+              <div class="sales-timeline-card">
+                <div class="sales-timeline-heading">
+                  <strong>Tijdlijn</strong>
+                  <span id="sales-timeline-count">0 events</span>
+                </div>
+                <div class="sales-timeline" id="sales-timeline">
+                  <div class="sales-timeline-empty">Selecteer een lead om de verkoopgeschiedenis te zien.</div>
+                </div>
               </div>
               <div class="lead-analysis-card" id="lead-website-analysis-card">
                 <div class="lead-analysis-header">
@@ -16270,6 +16300,13 @@
       import { saveLeadNoteWithWriteFallback } from "./src/services/leadNoteWriteService.js";
 
       const leadfinderElements = {
+        cockpit: {
+          newLeads: document.getElementById("sales-cockpit-new-leads"),
+          followups: document.getElementById("sales-cockpit-followups"),
+          openQuotes: document.getElementById("sales-cockpit-open-quotes"),
+          wonToday: document.getElementById("sales-cockpit-won-today"),
+          conversion: document.getElementById("sales-cockpit-conversion"),
+        },
         metrics: document.getElementById("leadfinder-metrics"),
         form: document.getElementById("leadfinder-form"),
         company: document.getElementById("leadfinder-company"),
@@ -16302,6 +16339,16 @@
         createTask: document.getElementById("leadfinder-create-task"),
         convertCustomer: document.getElementById("leadfinder-convert-customer"),
         deleteLead: document.getElementById("leadfinder-delete"),
+        nextAction: document.getElementById("sales-next-action"),
+        nextActionButton: document.getElementById("sales-next-action-button"),
+        quickCall: document.getElementById("sales-action-call"),
+        quickWebsite: document.getElementById("sales-action-website"),
+        quickMail: document.getElementById("sales-action-mail"),
+        quickMaps: document.getElementById("sales-action-maps"),
+        quickNote: document.getElementById("sales-action-note"),
+        quickFollowUp: document.getElementById("sales-action-followup"),
+        timeline: document.getElementById("sales-timeline"),
+        timelineCount: document.getElementById("sales-timeline-count"),
         analysisState: document.getElementById("lead-website-analysis-state"),
         analysisRun: document.getElementById("lead-website-analysis-run"),
         analysisResult: document.getElementById("lead-website-analysis-result"),
@@ -16981,6 +17028,168 @@
         await runLeadWebsiteAnalysis();
       }
 
+      function startOfDay(date = new Date()) {
+        const copy = new Date(date);
+        copy.setHours(0, 0, 0, 0);
+        return copy;
+      }
+
+      function isSameDay(dateValue, compareDate = new Date()) {
+        if (!dateValue) return false;
+        const date = new Date(dateValue);
+        if (Number.isNaN(date.getTime())) return false;
+        return startOfDay(date).getTime() === startOfDay(compareDate).getTime();
+      }
+
+      function daysFromToday(dateValue) {
+        if (!dateValue) return null;
+        const date = new Date(`${dateValue}T00:00:00`);
+        if (Number.isNaN(date.getTime())) return null;
+        return Math.round((startOfDay(date).getTime() - startOfDay().getTime()) / 86400000);
+      }
+
+      function isLeadWon(lead = {}) {
+        return ["won", "geconverteerd", "customer_active"].includes(lead.callStatus) || Boolean(lead.convertedCustomerId);
+      }
+
+      function isOpenQuote(quote = {}) {
+        return ["concept", "verzonden", "bekeken"].includes(String(quote.status || "").toLowerCase());
+      }
+
+      function getCurrentQuotes() {
+        if (Array.isArray(state?.quotes) && state.quotes.length) return state.quotes;
+        return typeof readStoredQuotes === "function" ? readStoredQuotes() : [];
+      }
+
+      function renderSalesCockpit(leads = getLeadfinderLeads()) {
+        const todayLeads = leads.filter((lead) => isSameDay(lead.createdAt)).length;
+        const followups = leads.filter((lead) => {
+          const days = daysFromToday(lead.followUpDate);
+          return days !== null && days <= 0 && !isLeadWon(lead) && lead.callStatus !== "lost" && lead.callStatus !== "geen_interesse";
+        }).length;
+        const wonToday = leads.filter((lead) => isLeadWon(lead) && isSameDay(lead.updatedAt)).length;
+        const weekStart = startOfDay();
+        weekStart.setDate(weekStart.getDate() - 6);
+        const weekLeads = leads.filter((lead) => {
+          const created = new Date(lead.createdAt || lead.updatedAt || "");
+          return !Number.isNaN(created.getTime()) && created >= weekStart;
+        });
+        const weekWon = weekLeads.filter(isLeadWon).length;
+        const conversion = weekLeads.length ? Math.round((weekWon / weekLeads.length) * 100) : 0;
+        const openQuotes = getCurrentQuotes().filter(isOpenQuote).length;
+        if (leadfinderElements.cockpit.newLeads) leadfinderElements.cockpit.newLeads.textContent = String(todayLeads);
+        if (leadfinderElements.cockpit.followups) leadfinderElements.cockpit.followups.textContent = String(followups);
+        if (leadfinderElements.cockpit.openQuotes) leadfinderElements.cockpit.openQuotes.textContent = String(openQuotes);
+        if (leadfinderElements.cockpit.wonToday) leadfinderElements.cockpit.wonToday.textContent = String(wonToday);
+        if (leadfinderElements.cockpit.conversion) leadfinderElements.cockpit.conversion.textContent = `${conversion}%`;
+      }
+
+      function getFollowUpBadge(lead = {}) {
+        const days = daysFromToday(lead.followUpDate);
+        if (days === null || isLeadWon(lead)) return null;
+        if (days < 0) return { label: "Te laat", className: "status-blocked" };
+        if (days === 0) return { label: "Vandaag", className: "status-active" };
+        if (days === 1) return { label: "Morgen", className: "status-warning" };
+        return null;
+      }
+
+      function getSalesNextAction(lead = {}) {
+        if (!lead?.id) return { label: "Selecteer een lead", button: "Kies lead", action: "" };
+        if (isLeadWon(lead)) return { label: "Klant aanmaken", button: "Klant aanmaken", action: "customer" };
+        if (lead.callStatus === "quote_sent") return { label: "Offerte opvolgen", button: "Follow-up plannen", action: "followup" };
+        if (lead.callStatus === "quote_ready" || lead.callStatus === "qualified" || lead.callStatus === "interesse") {
+          return { label: "Offerte maken", button: "Offerte starten", action: "quote" };
+        }
+        if (["contacted", "gebeld", "opvolgen", "voicemail", "contact_planned"].includes(lead.callStatus)) {
+          return { label: "Follow-up bellen", button: "Follow-up plannen", action: "followup" };
+        }
+        return { label: "Eerste telefoongesprek", button: "Bellen", action: "call" };
+      }
+
+      function setQuickAnchor(anchor, href = "", enabled = false) {
+        if (!anchor) return;
+        anchor.href = enabled ? href : "#";
+        anchor.setAttribute("aria-disabled", enabled ? "false" : "true");
+        anchor.classList.toggle("is-disabled", !enabled);
+      }
+
+      function renderSalesNextAction(lead) {
+        const action = getSalesNextAction(lead);
+        if (leadfinderElements.nextAction) {
+          leadfinderElements.nextAction.innerHTML = `
+            <span>Volgende stap</span>
+            <strong>${escapeHtml(action.label)}</strong>
+          `;
+          if (leadfinderElements.nextActionButton) {
+            leadfinderElements.nextAction.appendChild(leadfinderElements.nextActionButton);
+          }
+        }
+        if (leadfinderElements.nextActionButton) {
+          leadfinderElements.nextActionButton.textContent = action.button;
+          leadfinderElements.nextActionButton.dataset.salesAction = action.action;
+          leadfinderElements.nextActionButton.disabled = !lead?.id || !action.action;
+        }
+      }
+
+      function renderSalesQuickActions(lead) {
+        const hasLead = Boolean(lead?.id);
+        const phoneHref = lead?.phone ? `tel:${String(lead.phone).replace(/\s+/g, "")}` : "";
+        const mailHref = lead?.email ? `mailto:${lead.email}` : "";
+        const websiteHref = lead?.websiteUrl ? (String(lead.websiteUrl).startsWith("http") ? lead.websiteUrl : `https://${lead.websiteUrl}`) : "";
+        const mapsHref = lead?.googleMapsUrl || (lead?.companyName ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([lead.companyName, lead.region].filter(Boolean).join(" "))}` : "");
+        if (leadfinderElements.quickCall) leadfinderElements.quickCall.disabled = !hasLead || !lead?.phone;
+        setQuickAnchor(leadfinderElements.quickWebsite, websiteHref, Boolean(websiteHref));
+        setQuickAnchor(leadfinderElements.quickMail, mailHref, Boolean(mailHref));
+        setQuickAnchor(leadfinderElements.quickMaps, mapsHref, Boolean(mapsHref));
+        if (leadfinderElements.quickNote) leadfinderElements.quickNote.disabled = !hasLead;
+        if (leadfinderElements.quickFollowUp) leadfinderElements.quickFollowUp.disabled = !hasLead;
+      }
+
+      function formatTimelineTime(value) {
+        const date = new Date(value || "");
+        if (Number.isNaN(date.getTime())) return "";
+        return date.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" });
+      }
+
+      function buildLeadTimeline(lead = {}) {
+        if (!lead?.id) return [];
+        const events = [];
+        if (lead.createdAt) events.push({ at: lead.createdAt, label: "Lead aangemaakt" });
+        if (lead.websiteAnalysis?.createdAt || lead.websiteAnalysis?.analyzedAt || lead.websiteAnalysis?.checkedAt) {
+          events.push({ at: lead.websiteAnalysis.createdAt || lead.websiteAnalysis.analyzedAt || lead.websiteAnalysis.checkedAt, label: "Website gescand" });
+        } else if (lead.websiteAnalysis?.ok) {
+          events.push({ at: lead.updatedAt || lead.createdAt, label: "Website gescand" });
+        }
+        if (String(lead.notes || "").trim()) events.push({ at: lead.updatedAt || lead.createdAt, label: "Notitie toegevoegd" });
+        if (lead.followUpDate) events.push({ at: `${lead.followUpDate}T09:00:00`, label: "Follow-up gepland" });
+        if (isLeadWon(lead)) events.push({ at: lead.updatedAt || lead.createdAt, label: "Verkocht / klantactie gestart" });
+        return events
+          .filter((event) => event.at)
+          .sort((a, b) => String(b.at).localeCompare(String(a.at)))
+          .slice(0, 6);
+      }
+
+      function renderSalesTimeline(lead) {
+        const events = buildLeadTimeline(lead);
+        if (leadfinderElements.timelineCount) {
+          leadfinderElements.timelineCount.textContent = `${events.length} event${events.length === 1 ? "" : "s"}`;
+        }
+        if (!leadfinderElements.timeline) return;
+        if (!events.length) {
+          leadfinderElements.timeline.innerHTML = `<div class="sales-timeline-empty">Selecteer een lead om de verkoopgeschiedenis te zien.</div>`;
+          return;
+        }
+        leadfinderElements.timeline.innerHTML = `
+          <strong>Vandaag</strong>
+          ${events.map((event) => `
+            <div class="sales-timeline-item">
+              <time>${escapeHtml(formatTimelineTime(event.at) || "—")}</time>
+              <span>${escapeHtml(event.label)}</span>
+            </div>
+          `).join("")}
+        `;
+      }
+
       function renderLeadfinderMetrics(leads) {
         if (!leadfinderElements.metrics) return;
         const summary = getLeadFinderSummary(leads);
@@ -17030,6 +17239,7 @@
         const allLeads = getLeadfinderLeads();
         const leads = getFilteredLeadfinderLeads();
         renderLeadfinderMetrics(allLeads);
+        renderSalesCockpit(allLeads);
 
         if (!leadfinderElements.list) return;
         if (!leads.length) {
@@ -17047,25 +17257,29 @@
 
         leadfinderElements.list.innerHTML = `
           <div class="admin-table-row admin-table-head" role="row">
-            <span>Bedrijf</span><span>Branche</span><span>Regio</span><span>Website-status</span><span>Score</span><span>Leadstatus</span><span>Acties</span>
+            <span>Bedrijf</span><span>Branche</span><span>Regio</span><span>Website-status</span><span>Score</span><span>Follow-up</span><span>Leadstatus</span><span>Acties</span>
           </div>
-          ${leads.map((lead) => `
-            <div class="admin-table-row" role="row" data-leadfinder-id="${escapeHtml(lead.id)}">
-              <div class="leadfinder-meta">
-                <strong>${escapeHtml(lead.companyName || "Naamloos bedrijf")}</strong>
-                <small>${escapeHtml(lead.websiteUrl || "Geen website-url")} · ${escapeHtml(lead.source || "handmatig")}</small>
+          ${leads.map((lead) => {
+            const followUpBadge = getFollowUpBadge(lead);
+            return `
+              <div class="admin-table-row" role="row" data-leadfinder-id="${escapeHtml(lead.id)}">
+                <div class="leadfinder-meta">
+                  <strong>${escapeHtml(lead.companyName || "Naamloos bedrijf")}</strong>
+                  <small>${escapeHtml(lead.websiteUrl || "Geen website-url")} · ${escapeHtml(lead.source || "handmatig")}</small>
+                </div>
+                <span>${escapeHtml(lead.industry || "-")}</span>
+                <span>${escapeHtml(lead.region || "-")}</span>
+                <mark class="status-badge status-planned">${escapeHtml(getLeadFinderLabel(LEADFINDER_WEBSITE_STATUSES, lead.websiteStatus))}</mark>
+                <strong>${escapeHtml(lead.leadScore)}</strong>
+                ${followUpBadge ? `<mark class="status-badge ${followUpBadge.className}">${escapeHtml(followUpBadge.label)}</mark>` : `<span>${escapeHtml(lead.followUpDate || "-")}</span>`}
+                <mark class="status-badge status-active">${escapeHtml(getLeadFinderLabel(LEADFINDER_CALL_STATUSES, lead.callStatus))}</mark>
+                <div class="leadfinder-actions">
+                  <button class="button secondary" type="button" data-leadfinder-action="view">Bekijk</button>
+                  <button class="button secondary" type="button" data-leadfinder-action="task">Opvolgtaak</button>
+                </div>
               </div>
-              <span>${escapeHtml(lead.industry || "-")}</span>
-              <span>${escapeHtml(lead.region || "-")}</span>
-              <mark class="status-badge status-planned">${escapeHtml(getLeadFinderLabel(LEADFINDER_WEBSITE_STATUSES, lead.websiteStatus))}</mark>
-              <strong>${escapeHtml(lead.leadScore)}</strong>
-              <mark class="status-badge status-active">${escapeHtml(getLeadFinderLabel(LEADFINDER_CALL_STATUSES, lead.callStatus))}</mark>
-              <div class="leadfinder-actions">
-                <button class="button secondary" type="button" data-leadfinder-action="view">Bekijk</button>
-                <button class="button secondary" type="button" data-leadfinder-action="task">Opvolgtaak</button>
-              </div>
-            </div>
-          `).join("")}
+            `;
+          }).join("")}
         `;
         renderLeadfinderDetail();
       }
@@ -17107,6 +17321,9 @@
         [leadfinderElements.createTask].forEach((element) => {
           if (element) element.disabled = !hasLead;
         });
+        renderSalesNextAction(lead);
+        renderSalesQuickActions(lead);
+        renderSalesTimeline(lead);
         renderLeadWebsiteAnalysis(lead);
       }
 
@@ -17482,6 +17699,82 @@
         await reloadLeadfinderAfterLocalChange();
       }
 
+      async function markSelectedLeadStatus(status, message) {
+        const lead = selectedLeadFinderLead();
+        if (!lead) return;
+        if (!isLocalLead(lead)) {
+          setLeadfinderMessage("Deze lead komt uit de read-only data-layer. Status wijzigen blijft beschikbaar voor lokale/admin leads.", "error");
+          return;
+        }
+        const updatedLead = updateLeadFinderLeadLocally(lead.id, { callStatus: status }) || lead;
+        selectedLeadFinderId = updatedLead.id;
+        setLeadfinderMessage(message, "success");
+        await reloadLeadfinderAfterLocalChange();
+      }
+
+      function openQuoteForSelectedLead(lead) {
+        if (!lead) return;
+        openQuoteModal();
+        if (quoteFields.title) quoteFields.title.value = `Website ${lead.companyName || ""}`.trim() || "Nieuwe offerte";
+        if (quoteFields.type) quoteFields.type.value = "Website";
+        if (quoteFields.proposal) {
+          quoteFields.proposal.value = [
+            `Voorstel voor ${lead.companyName || "deze lead"}.`,
+            lead.websiteAnalysis?.ok ? `Website Scan score: ${lead.websiteAnalysis.score}/100.` : "",
+            lead.notes ? `Belcontext: ${lead.notes.slice(0, 240)}` : "",
+          ].filter(Boolean).join("\n\n");
+        }
+        if (quoteFields.notes) {
+          quoteFields.notes.value = `Aangemaakt vanuit Sales Cockpit lead ${lead.companyName || lead.id}.`;
+        }
+        setLeadfinderMessage("Offerte gestart. Koppel een klant zodra de lead klaar is voor akkoord.", "success");
+      }
+
+      async function planFollowUpForSelectedLead() {
+        const lead = selectedLeadFinderLead();
+        if (!lead) return;
+        if (!isLocalLead(lead)) {
+          setLeadfinderMessage("Deze lead komt uit de read-only data-layer. Follow-up plannen blijft beschikbaar voor lokale/admin leads.", "error");
+          return;
+        }
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const followUpDate = tomorrow.toISOString().slice(0, 10);
+        const updatedLead = updateLeadFinderLeadLocally(lead.id, {
+          followUpDate,
+          callStatus: lead.callStatus === "quote_sent" ? "quote_sent" : "opvolgen",
+        }) || lead;
+        selectedLeadFinderId = updatedLead.id;
+        setLeadfinderMessage("Follow-up voor morgen gepland.", "success");
+        await reloadLeadfinderAfterLocalChange();
+      }
+
+      async function runSalesCockpitAction(action) {
+        const lead = selectedLeadFinderLead();
+        if (!lead) return;
+        if (action === "call") {
+          if (lead.phone) window.location.href = `tel:${String(lead.phone).replace(/\s+/g, "")}`;
+          await markSelectedLeadStatus("contact_planned", "Belactie gestart. Lead staat op contact gepland.");
+          return;
+        }
+        if (action === "followup") {
+          await planFollowUpForSelectedLead();
+          return;
+        }
+        if (action === "quote") {
+          openQuoteForSelectedLead(lead);
+          if (isLocalLead(lead)) {
+            const updatedLead = updateLeadFinderLeadLocally(lead.id, { callStatus: "quote_ready" }) || lead;
+            selectedLeadFinderId = updatedLead.id;
+            await reloadLeadfinderAfterLocalChange();
+          }
+          return;
+        }
+        if (action === "customer") {
+          await convertSelectedLeadToCustomer();
+        }
+      }
+
       async function convertSelectedLeadToCustomer() {
         const lead = selectedLeadFinderLead();
         if (!lead) return;
@@ -17553,6 +17846,10 @@
         leadfinderElements.list.addEventListener("click", handleLeadfinderListClick);
         leadfinderElements.saveNote?.addEventListener("click", saveLeadfinderDetailNote);
         leadfinderElements.analysisRun?.addEventListener("click", runLeadWebsiteAnalysis);
+        leadfinderElements.nextActionButton?.addEventListener("click", () => runSalesCockpitAction(leadfinderElements.nextActionButton.dataset.salesAction || ""));
+        leadfinderElements.quickCall?.addEventListener("click", () => runSalesCockpitAction("call"));
+        leadfinderElements.quickNote?.addEventListener("click", () => leadfinderElements.detailNote?.focus());
+        leadfinderElements.quickFollowUp?.addEventListener("click", () => runSalesCockpitAction("followup"));
         leadfinderElements.createTask?.addEventListener("click", async () => {
           try {
             const result = await createWorkflowTaskForLead(selectedLeadFinderLead());

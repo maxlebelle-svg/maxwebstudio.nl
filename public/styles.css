@@ -8378,10 +8378,13 @@ h3 {
 .leadfinder-detail-card {
   grid-area: detail;
   display: grid;
-  grid-template-columns: minmax(260px, 0.8fr) minmax(320px, 1.1fr) minmax(320px, 0.9fr);
+  grid-template-columns: minmax(260px, 0.78fr) minmax(320px, 1.02fr) minmax(320px, 0.95fr);
   grid-template-areas:
-    "summary note actions"
-    "welcome analysis analysis";
+    "summary next actions"
+    "quick quick quick"
+    "note analysis analysis"
+    "timeline analysis analysis"
+    "welcome welcome welcome";
   gap: 16px;
   padding: 22px;
 }
@@ -8405,6 +8408,18 @@ h3 {
   align-self: start;
 }
 
+.sales-next-action {
+  grid-area: next;
+}
+
+.sales-quick-actions {
+  grid-area: quick;
+}
+
+.sales-timeline-card {
+  grid-area: timeline;
+}
+
 .leadfinder-detail-card .lead-welcome-card {
   grid-area: welcome;
 }
@@ -8418,7 +8433,7 @@ h3 {
 }
 
 .leadfinder-table .admin-table-row {
-  grid-template-columns: minmax(170px, 1.2fr) minmax(120px, 0.8fr) minmax(120px, 0.8fr) minmax(130px, 0.8fr) minmax(100px, 0.6fr) minmax(120px, 0.8fr) minmax(150px, auto);
+  grid-template-columns: minmax(170px, 1.16fr) minmax(110px, 0.68fr) minmax(100px, 0.64fr) minmax(120px, 0.72fr) minmax(70px, 0.42fr) minmax(100px, 0.62fr) minmax(120px, 0.72fr) minmax(140px, auto);
 }
 
 .crm-workflow-table .crm-task-meta {
@@ -8590,6 +8605,22 @@ h3 {
   display: none;
 }
 
+.sales-cockpit-bar {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.sales-cockpit-bar .metric-card {
+  min-height: auto;
+  padding: 16px;
+}
+
+.sales-cockpit-bar .metric-card strong {
+  font-size: clamp(24px, 2vw, 34px);
+  letter-spacing: 0;
+}
+
 .leadfinder-grid {
   grid-template-columns: minmax(0, 0.92fr) minmax(580px, 1.08fr);
   grid-template-areas:
@@ -8651,6 +8682,88 @@ h3 {
 
 .leadfinder-detail-card .settings-status-list {
   display: none;
+}
+
+.sales-next-action {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  padding: 14px;
+  border: 1px solid rgba(37, 99, 235, 0.24);
+  border-radius: 8px;
+  background: rgba(37, 99, 235, 0.1);
+}
+
+.sales-next-action span,
+.sales-timeline-heading span {
+  color: rgba(226, 236, 248, 0.66);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.sales-next-action strong {
+  color: var(--white);
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.sales-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.sales-quick-actions .button {
+  min-height: 40px;
+  padding: 10px 12px;
+  justify-content: center;
+}
+
+.sales-timeline-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(171, 196, 224, 0.14);
+  border-radius: 8px;
+  background: rgba(2, 14, 25, 0.36);
+}
+
+.sales-timeline-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sales-timeline {
+  display: grid;
+  gap: 10px;
+}
+
+.sales-timeline > strong {
+  color: rgba(248, 251, 255, 0.94);
+  font-size: 13px;
+}
+
+.sales-timeline-item {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  color: rgba(226, 236, 248, 0.82);
+  font-size: 13px;
+}
+
+.sales-timeline-item time {
+  color: rgba(226, 236, 248, 0.54);
+  font-weight: 900;
+}
+
+.sales-timeline-empty {
+  color: rgba(226, 236, 248, 0.64);
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .lead-analysis-card {
@@ -9732,6 +9845,14 @@ h3 {
     grid-template-columns: 1fr;
   }
 
+  .sales-cockpit-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sales-quick-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .admin-body.is-sales-view .leadfinder-grid {
     grid-template-areas:
       "form"
@@ -9743,8 +9864,11 @@ h3 {
     grid-template-columns: 1fr;
     grid-template-areas:
       "summary"
+      "next"
+      "quick"
       "note"
       "actions"
+      "timeline"
       "welcome"
       "analysis";
   }
@@ -12138,19 +12262,30 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
       "detail";
   }
 
+  .sales-cockpit-bar,
+  .sales-quick-actions {
+    grid-template-columns: 1fr;
+  }
+
   .leadfinder-detail-card {
     grid-template-columns: 1fr;
     grid-template-areas:
       "summary"
+      "next"
+      "quick"
       "note"
       "actions"
+      "timeline"
       "welcome"
       "analysis";
   }
 
   .leadfinder-detail-card .admin-profile-form-heading,
+  .leadfinder-detail-card .sales-next-action,
+  .leadfinder-detail-card .sales-quick-actions,
   .leadfinder-detail-card > label,
   .leadfinder-detail-card .admin-profile-actions,
+  .leadfinder-detail-card .sales-timeline-card,
   .leadfinder-detail-card .lead-welcome-card,
   .leadfinder-detail-card .lead-analysis-card {
     grid-column: auto;
