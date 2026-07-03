@@ -20,10 +20,20 @@ const roleOwnership = Object.freeze({
     profileRule: "Mag alle customer records beheren via server-side policies",
     productionUse: "Primair intern beheer",
   },
-  [ROLES.SALES]: {
+  [ROLES.SALES_MANAGER]: {
+    scope: "Salespartners, leads, klanten, offertes en commerciële opvolging",
+    profileRule: "Geen developer tools of betaalmutaties; mag salesoverzicht en users:view zien",
+    productionUse: "Salesleiding en teamopvolging",
+  },
+  [ROLES.SALES_PARTNER]: {
     scope: "Leads, klanten, offertes en opvolging",
     profileRule: "Geen developer tools, geen betaalmutaties",
     productionUse: "Sales en leadopvolging",
+  },
+  [ROLES.DESIGNER]: {
+    scope: "Websites, projecten en klantassets",
+    profileRule: "Geen financiële acties, settings of gebruikersbeheer",
+    productionUse: "Design/productiewerk",
   },
   [ROLES.SUPPORT]: {
     scope: "Klant-, project-, website- en factuurinzage voor support",
@@ -57,7 +67,7 @@ const pageAccess = Object.freeze([
   {
     page: "admin-dashboard",
     path: "/admin-dashboard.html",
-    requiredRoles: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.DEVELOPER, ROLES.SALES, ROLES.SUPPORT],
+    requiredRoles: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.DEVELOPER, ROLES.DESIGNER, ROLES.SALES_MANAGER, ROLES.SALES_PARTNER, ROLES.SUPPORT],
     productionGuard: "Auth vereist; rol- en permissiecheck voor modules en gevaarlijke acties.",
   },
   {
@@ -69,7 +79,7 @@ const pageAccess = Object.freeze([
   {
     page: "leadfinder/sales",
     path: "/admin-dashboard.html#leadfinder",
-    requiredRoles: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.SALES],
+    requiredRoles: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.SALES_MANAGER, ROLES.SALES_PARTNER],
     productionGuard: "Auth vereist; salesdata blijft intern en klant-onzichtbaar.",
   },
   {

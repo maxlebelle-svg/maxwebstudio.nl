@@ -89,7 +89,7 @@ function testDemoUserDemoOnly() {
 function testSalesNoDeveloperTools() {
   return {
     name: "sales sees no Developer Tools",
-    ok: !roleHasPermission(ROLES.SALES, "developerTools", "view"),
+    ok: !roleHasPermission(ROLES.SALES_PARTNER, "developerTools", "view"),
     details: "Sales heeft geen developerTools:view permissie.",
   };
 }
@@ -176,11 +176,11 @@ function testAnonymousBlockedSimulated() {
 }
 
 function testRoleNavigationSimulated() {
-  const salesDecisions = testRoleAccess(ROLES.SALES);
+  const salesDecisions = testRoleAccess(ROLES.SALES_PARTNER);
   const developerTools = salesDecisions.find((decision) => decision.pageName === "admin-developer-tools");
   return {
     name: "role navigation simulated",
-    ok: !developerTools?.allowed && !roleHasPermission(ROLES.SALES, "developerTools", "view"),
+    ok: !developerTools?.allowed && !roleHasPermission(ROLES.SALES_PARTNER, "developerTools", "view"),
     details: "Sales navigatie hoort Developer Tools niet te tonen.",
   };
 }
@@ -190,7 +190,7 @@ function testDangerousActionsBlockedSimulated() {
     name: "dangerous actions blocked simulated",
     ok: !roleHasPermission(ROLES.SUPPORT, "developerTools", "migrate")
       && !roleHasPermission(ROLES.DEVELOPER, "invoices", "mark_paid")
-      && !roleHasPermission(ROLES.SALES, "settings", "update"),
+      && !roleHasPermission(ROLES.SALES_PARTNER, "settings", "update"),
     details: "Support, developer en sales missen permissies voor gevaarlijke migratie/payment/settings-acties.",
   };
 }
@@ -244,7 +244,7 @@ export function runAccessControlSelfTest() {
     testedAt: nowIso(),
     settings: getAccessControlSettings(),
     registry: testProtectedRoutesRegistry(),
-    roles: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.DEVELOPER, ROLES.SALES, ROLES.SUPPORT, ROLES.CUSTOMER, ROLES.DEMO_USER].map((role) => ({
+    roles: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.SALES_MANAGER, ROLES.SALES_PARTNER, ROLES.DESIGNER, ROLES.DEVELOPER, ROLES.SUPPORT, ROLES.CUSTOMER, ROLES.DEMO_USER].map((role) => ({
       role,
       decisions: testRoleAccess(role),
     })),

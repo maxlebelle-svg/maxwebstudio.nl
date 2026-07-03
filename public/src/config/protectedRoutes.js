@@ -10,7 +10,7 @@ export const PROTECTED_ROUTES = Object.freeze({
   "admin-dashboard": {
     pageName: "admin-dashboard",
     path: "/admin-dashboard.html",
-    requiredRoles: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.DEVELOPER, ROLES.SALES, ROLES.SUPPORT],
+    requiredRoles: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.DEVELOPER, ROLES.DESIGNER, ROLES.SALES_MANAGER, ROLES.SALES_PARTNER, ROLES.SUPPORT],
     requiredPermissions: [{ resource: "dashboard", action: "view" }],
     allowDemo: true,
     defaultRedirect: "/login.html",
@@ -39,7 +39,7 @@ export const PROTECTED_ROUTES = Object.freeze({
   "demo-klantreis": {
     pageName: "demo-klantreis",
     path: "/demo-klantreis.html",
-    requiredRoles: [ROLES.DEMO_USER, ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.DEVELOPER, ROLES.SALES],
+    requiredRoles: [ROLES.DEMO_USER, ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.DEVELOPER, ROLES.SALES_MANAGER, ROLES.SALES_PARTNER],
     requiredPermissions: [{ resource: "demo", action: "view" }],
     allowDemo: true,
     defaultRedirect: "/login.html",
@@ -85,4 +85,3 @@ export function getProtectedRoute(pageName = "") {
 export function listProtectedRoutes() {
   return Object.values(PROTECTED_ROUTES);
 }
-

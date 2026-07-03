@@ -28,7 +28,8 @@ function roleFromRequestType(type = "") {
   const normalized = String(type || "").toLowerCase();
   if (normalized.includes("medewerker")) return ROLES.SUPPORT;
   if (normalized.includes("developer")) return ROLES.DEVELOPER;
-  if (normalized.includes("sales")) return ROLES.SALES;
+  if (normalized.includes("sales manager")) return ROLES.SALES_MANAGER;
+  if (normalized.includes("sales")) return ROLES.SALES_PARTNER;
   return ROLES.CUSTOMER;
 }
 
@@ -206,4 +207,3 @@ export const authProfileService = {
   prepareProfilesFromAccountRequests,
   readProfiles: () => readArray(STORAGE_KEYS.profiles),
 };
-

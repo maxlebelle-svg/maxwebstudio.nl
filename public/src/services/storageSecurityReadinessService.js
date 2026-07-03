@@ -76,7 +76,7 @@ const ROLE_ACCESS_MATRIX = Object.freeze([
     restrictions: "Geen klantdocumenten tenzij gekoppeld aan support/admin proces.",
   },
   {
-    role: "sales",
+    role: "sales_partner",
     canUpload: ["demo-assets"],
     canDownload: ["demo-assets", "website-assets"],
     restrictions: "Geen echte klantbestanden of finance-bestanden.",

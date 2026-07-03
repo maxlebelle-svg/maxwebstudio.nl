@@ -51,7 +51,8 @@ function createDemoUsers() {
   return [
     { id: "demo-super-admin", email: "demo-super-admin@maxwebstudio.local", name: "Demo Super Admin", role: ROLES.SUPER_ADMIN },
     { id: "demo-admin", email: "demo-admin@maxwebstudio.local", name: "Demo Admin", role: ROLES.ADMIN },
-    { id: "demo-sales", email: "demo-sales@maxwebstudio.local", name: "Demo Sales", role: ROLES.SALES },
+    { id: "demo-sales-manager", email: "demo-sales-manager@maxwebstudio.local", name: "Demo Sales Manager", role: ROLES.SALES_MANAGER },
+    { id: "demo-sales-partner", email: "demo-sales-partner@maxwebstudio.local", name: "Demo Sales Partner", role: ROLES.SALES_PARTNER },
     { id: "demo-developer", email: "demo-developer@maxwebstudio.local", name: "Demo Developer", role: ROLES.DEVELOPER },
     { id: "demo-support", email: "demo-support@maxwebstudio.local", name: "Demo Support", role: ROLES.SUPPORT },
     { id: "demo-customer", email: "demo-klant@maxwebstudio.local", name: "Demo Klant", role: ROLES.CUSTOMER, customerId },

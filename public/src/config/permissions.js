@@ -13,6 +13,7 @@ export const PERMISSIONS = Object.freeze({
   subscriptions: ["view", "create", "update", "invoice"],
   settings: ["view", "update"],
   integrations: ["view", "update"],
+  users: ["view", "update_role", "activate", "deactivate"],
   demo: ["view", "run", "reset"],
   developerTools: ["view", "validate", "migrate", "seed"],
   customerPortal: ["view_own"],
@@ -32,9 +33,18 @@ export const ROLE_PERMISSIONS = Object.freeze({
     subscriptions: ["view", "create", "update", "invoice"],
     settings: ["view", "update"],
     integrations: ["view", "update"],
+    users: ["view", "update_role", "activate", "deactivate"],
     demo: ["view", "run", "reset"],
   },
-  [ROLES.SALES]: {
+  [ROLES.SALES_MANAGER]: {
+    dashboard: ["view"],
+    leads: ["view", "create", "update", "convert"],
+    customers: ["view", "create", "update"],
+    quotes: ["view", "create", "update", "send"],
+    invoices: ["view"],
+    users: ["view"],
+  },
+  [ROLES.SALES_PARTNER]: {
     dashboard: ["view"],
     leads: ["view", "create", "update", "convert"],
     customers: ["view", "create", "update"],
@@ -50,6 +60,13 @@ export const ROLE_PERMISSIONS = Object.freeze({
     integrations: ["view"],
     demo: ["view", "run", "reset"],
     developerTools: ["view", "validate", "migrate", "seed"],
+  },
+  [ROLES.DESIGNER]: {
+    dashboard: ["view"],
+    customers: ["view"],
+    websites: ["view", "update"],
+    projects: ["view", "update"],
+    files: ["view", "create", "update"],
   },
   [ROLES.SUPPORT]: {
     dashboard: ["view"],

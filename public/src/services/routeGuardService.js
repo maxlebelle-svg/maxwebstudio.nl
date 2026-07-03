@@ -134,6 +134,9 @@ export function getAccessDecision(pageName = "", context = getAccessContext(), o
   const decision = decisionBase(route, context, { ...options, pageName });
   if (route.public) return decision;
   if (!context.session || !context.user) return applyMode(decision, "Geen actieve sessie.");
+  if (["disabled", "archived"].includes(String(context.profile?.status || "").toLowerCase())) {
+    return applyMode(decision, "Account is gedeactiveerd.");
+  }
   if (!context.allowDemo && context.isDemo) return applyMode(decision, "Demo-sessies zijn voor deze route niet toegestaan.");
   if (route.requiredRoles?.length && !route.requiredRoles.includes(context.role)) {
     return applyMode(decision, `Rol ${context.role || "onbekend"} heeft geen toegang tot ${pageName}.`);

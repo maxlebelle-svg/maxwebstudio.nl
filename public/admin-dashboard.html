@@ -46,8 +46,8 @@
           <div class="admin-topbar-user" aria-label="Ingelogde admin">
             <span class="admin-topbar-avatar">M</span>
             <span>
-              <strong>info@maxwebstudio.nl</strong>
-              <small>Admin</small>
+              <strong>max@maxwebstudio.nl</strong>
+              <small>Super Admin</small>
             </span>
           </div>
         </div>
@@ -61,7 +61,8 @@
           <div class="admin-profile-inline">
             <select id="auth-role-switcher">
               <option value="admin">Demo Admin</option>
-              <option value="sales">Demo Sales</option>
+              <option value="sales_manager">Demo Sales Manager</option>
+              <option value="sales_partner">Demo Sales Partner</option>
               <option value="developer">Demo Developer</option>
               <option value="support">Demo Support</option>
               <option value="customer">Demo Klant</option>
@@ -89,7 +90,7 @@
             <span id="admin-session-label">Log in met je Max Webstudio admin-account.</span>
           </div>
           <label for="admin-email">E-mailadres</label>
-          <input id="admin-email" type="email" autocomplete="username" value="info@maxwebstudio.nl" />
+          <input id="admin-email" type="email" autocomplete="username" value="max@maxwebstudio.nl" />
           <label for="admin-password">Wachtwoord</label>
           <input id="admin-password" type="password" autocomplete="current-password" placeholder="Wachtwoord" />
           <div class="admin-profile-inline">
@@ -1189,6 +1190,18 @@
               <div class="admin-profile-fields">
                 <label class="admin-profile-wide admin-developer-only" for="setting-data-provider-mode">Data provider mode<select id="setting-data-provider-mode" name="dataProviderMode"><option value="localStorage">localStorage</option><option value="supabase-prepared">supabase-prepared</option><option value="supabase-readonly">supabase-readonly</option><option value="supabase-write-test">supabase-write-test</option><option value="supabase-migration">supabase-migration</option></select></label>
               </div>
+            </article>
+
+            <article class="admin-card settings-card settings-card-wide" id="user-management-card">
+              <div class="settings-card-heading"><div><span>Identity & Permissions</span><strong>Gebruikersbeheer</strong></div><mark class="status-badge status-prepared">Rollenmodel</mark></div>
+              <div class="settings-alert">
+                <strong>Super Admin beheer</strong>
+                <span>Bekijk gebruikers, wijzig rollen en activeer of deactiveer accounts. Supabase-writes blijven gekoppeld aan de bestaande provider-write gates.</span>
+              </div>
+              <div class="settings-actions">
+                <button class="button secondary" id="refresh-user-management" type="button">Gebruikers laden</button>
+              </div>
+              <div class="admin-table" id="user-management-list" role="table" aria-label="Gebruikersbeheer"></div>
             </article>
 
             <div class="settings-submit-row">
@@ -2395,6 +2408,8 @@
         const settingsMessage = document.getElementById("settings-message");
         const settingsIntegrations = document.getElementById("settings-integrations");
         const settingsSystemStatus = document.getElementById("settings-system-status");
+        const refreshUserManagementButton = document.getElementById("refresh-user-management");
+        const userManagementList = document.getElementById("user-management-list");
         const demoMessage = document.getElementById("demo-message");
         const demoFlowChecklist = document.getElementById("demo-flow-checklist");
         const localStorageKeyList = document.getElementById("local-storage-key-list");
@@ -3624,7 +3639,7 @@
             ["CRM rollback", "Voorbereid", "Handmatig via backup; geen gevaarlijke Supabase deletes gebouwd"],
             ["Local fallback", "Gereed", "Provider blijft localStorage na migratie totdat handmatig omgezet"],
             ["Auth modellen", "Voorbereid", "AuthUser, Session en Permission staan klaar"],
-            ["Rollen", "Voorbereid", "super_admin, admin, sales, developer, support, customer en demo_user"],
+            ["Rollen", "Voorbereid", "super_admin, admin, sales_manager, sales_partner, designer, developer, support, customer en demo_user"],
             ["Permissions", "Voorbereid", "Centrale permissiematrix voorbereid voor navigatie en acties"],
             ["Auth provider factory", "Gereed", "Demo auth en Supabase Auth provider delen dezelfde login-service laag"],
             ["Demo auth provider", "Gereed", "Lokale demo-users, role switch en sessies blijven actief"],
@@ -5999,6 +6014,92 @@
           }
         }
 
+        async function renderUserManagement() {
+          if (!userManagementList) return;
+          userManagementList.replaceChildren();
+          try {
+            const modules = await loadDeveloperModules();
+            const profiles = modules.profileRepository.ProfileRepository.list();
+            const roles = modules.authService.ROLES;
+            const roleOptions = [
+              roles.SUPER_ADMIN,
+              roles.ADMIN,
+              roles.SALES_MANAGER,
+              roles.SALES_PARTNER,
+              roles.DESIGNER,
+              roles.DEVELOPER,
+              roles.SUPPORT,
+              roles.CUSTOMER,
+              roles.DEMO_USER,
+            ].filter(Boolean);
+            const statusOptions = ["active", "invited", "pending", "disabled", "archived"];
+            const head = document.createElement("div");
+            head.className = "admin-table-row admin-table-head";
+            ["Gebruiker", "Rol", "Status", "Laatste login", "Actie"].forEach((label) => head.append(createCell(label)));
+            userManagementList.append(head);
+            if (!profiles.length) {
+              userManagementList.append(createCell("Nog geen profielen gevonden. Bereid account requests voor of laad Supabase profiles."));
+              return;
+            }
+            profiles.forEach((profile) => {
+              const row = document.createElement("div");
+              row.className = "admin-table-row";
+              const roleSelect = document.createElement("select");
+              roleOptions.forEach((role) => {
+                const option = document.createElement("option");
+                option.value = role;
+                option.textContent = role.toUpperCase();
+                option.selected = profile.role === role;
+                roleSelect.append(option);
+              });
+              const statusSelect = document.createElement("select");
+              statusOptions.forEach((status) => {
+                const option = document.createElement("option");
+                option.value = status;
+                option.textContent = status;
+                option.selected = profile.status === status;
+                statusSelect.append(option);
+              });
+              const save = document.createElement("button");
+              save.className = "button secondary";
+              save.type = "button";
+              save.textContent = "Opslaan";
+              save.addEventListener("click", async () => {
+                const oldRole = profile.role;
+                const oldStatus = profile.status;
+                const updated = modules.profileRepository.ProfileRepository.updateProfile(profile.id, {
+                  role: roleSelect.value,
+                  status: statusSelect.value,
+                  metadata: {
+                    ...(profile.metadata || {}),
+                    roleManagedFrom: "admin-dashboard",
+                    roleManagedAt: new Date().toISOString(),
+                  },
+                });
+                modules.activityLogService.logActivity("identity", updated.id, oldRole !== updated.role ? "role_changed" : "account_status_changed", {
+                  oldRole,
+                  newRole: updated.role,
+                  oldStatus,
+                  newStatus: updated.status,
+                });
+                setSettingsMessage("Gebruiker bijgewerkt.", "success");
+                await renderUserManagement();
+              });
+              row.append(
+                createCell(profile.name || profile.email || profile.id, "strong"),
+                roleSelect,
+                statusSelect,
+                createCell(formatDate(profile.lastLoginAt || profile.updatedAt)),
+                save,
+              );
+              userManagementList.append(row);
+            });
+          } catch (error) {
+            console.error("User management could not be rendered", error);
+            userManagementList.append(createCell(error.message || "Gebruikersbeheer kon niet worden geladen."));
+          }
+        }
+
         async function switchDemoRole(role) {
           try {
             const { authService } = await loadDeveloperModules();
@@ -6126,7 +6227,7 @@
               result = { testedAt: new Date().toISOString(), roles: [{ role: "current", decisions: [modules.routeGuardService.getAccessDecision("admin-dashboard", modules.routeGuardService.getAccessContext())] }], registry: modules.accessControlTestService.testProtectedRoutesRegistry(), settings: modules.routeGuardService.getAccessControlSettings(), customerAccess: modules.accessControlTestService.testCustomerAccessScenario() };
             } else if (test === "customer") {
               result = { testedAt: new Date().toISOString(), roles: [{ role: "current", decisions: [modules.routeGuardService.requireCustomerAccess(selectedCustomer()?.id || "demo-customer", { mode: "preview", pageName: "klantportaal", allowDemo: true })] }], registry: modules.accessControlTestService.testProtectedRoutesRegistry(), settings: modules.routeGuardService.getAccessControlSettings(), customerAccess: modules.accessControlTestService.testCustomerAccessScenario() };
-            } else if (["sales", "support", "developer"].includes(test)) {
+            } else if (["sales_partner", "sales_manager", "support", "developer"].includes(test)) {
               result = { testedAt: new Date().toISOString(), roles: [{ role: test, decisions: modules.accessControlTestService.testRoleAccess(test) }], registry: modules.accessControlTestService.testProtectedRoutesRegistry(), settings: modules.routeGuardService.getAccessControlSettings(), customerAccess: modules.accessControlTestService.testCustomerAccessScenario() };
             } else {
               result = modules.accessControlTestService.runAccessControlSelfTest();
@@ -15849,6 +15950,7 @@
         [invoiceSearch, invoiceStatusFilter, invoiceTypeFilter, invoiceCustomerFilter, invoiceProjectFilter, invoiceWebsiteFilter].forEach((filter) => filter.addEventListener("input", renderInvoices));
         [requestStatusFilter, requestPriorityFilter, requestCategoryFilter].forEach((filter) => filter.addEventListener("change", renderRequests));
         settingsForm.addEventListener("submit", saveSettings);
+        refreshUserManagementButton?.addEventListener("click", renderUserManagement);
         aiWizardForm.addEventListener("submit", saveAiWizardIntake);
         aiWizardGenerate.addEventListener("click", generateAiWizardDraft);
         aiWizardReset.addEventListener("click", resetAiWizardDraft);
@@ -15864,7 +15966,7 @@
         testProfileCustomerLinkButton.addEventListener("click", testProfileCustomerLinkHandler);
         testAdminAccessButton.addEventListener("click", () => runAccessControlTestHandler("admin"));
         testCustomerPortalAccessButton.addEventListener("click", () => runAccessControlTestHandler("customer"));
-        testSalesNavigationButton.addEventListener("click", () => runAccessControlTestHandler("sales"));
+        testSalesNavigationButton.addEventListener("click", () => runAccessControlTestHandler("sales_partner"));
         testSupportNavigationButton.addEventListener("click", () => runAccessControlTestHandler("support"));
         testDeveloperNavigationButton.addEventListener("click", () => runAccessControlTestHandler("developer"));
         viewSecurityChecklistButton.addEventListener("click", showSecurityChecklistHandler);

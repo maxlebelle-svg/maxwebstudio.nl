@@ -29,7 +29,7 @@ export const RLS_READINESS_STATUS = Object.freeze({
 const roleCoverage = Object.freeze([
   { role: "super_admin", status: "volledig beheer", boundary: "alleen productieadmin" },
   { role: "admin", status: "beheer canonical platform", boundary: "geen service role in frontend" },
-  { role: "sales", status: "salesdata beperkt", boundary: "geen Developer Tools of betaalmutaties" },
+  { role: "sales_partner", status: "salesdata beperkt", boundary: "geen Developer Tools of betaalmutaties" },
   { role: "support", status: "support read/update beperkt", boundary: "geen migratie of mark-paid acties" },
   { role: "developer", status: "technical read/tools", boundary: "geen payment write actions" },
   { role: "customer", status: "eigen data", boundary: "customer_id/auth ownership verplicht" },
@@ -62,7 +62,7 @@ const rlsTestDocuments = Object.freeze([
 
 const rlsScenarioCoverage = Object.freeze([
   { scenario: "admin full access", role: "admin", covered: true, needsSupabaseTest: true },
-  { scenario: "sales limited access", role: "sales", covered: true, needsSupabaseTest: true },
+  { scenario: "sales partner limited access", role: "sales_partner", covered: true, needsSupabaseTest: true },
   { scenario: "support no payment writes", role: "support", covered: true, needsSupabaseTest: true },
   { scenario: "developer no customer payment writes", role: "developer", covered: true, needsSupabaseTest: true },
   { scenario: "customer A/B isolation", role: "customer", covered: true, needsSupabaseTest: true },

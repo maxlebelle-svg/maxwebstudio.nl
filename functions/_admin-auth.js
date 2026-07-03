@@ -1,5 +1,3 @@
-const DEFAULT_ADMIN_EMAIL = "info@maxwebstudio.nl";
-
 async function verifyAdmin(event, jsonResponse) {
   const authHeader = event.headers.authorization || event.headers.Authorization || "";
   const bearer = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
@@ -32,8 +30,8 @@ async function verifyAdmin(event, jsonResponse) {
       return unauthorized(jsonResponse);
     }
 
-    const email = String(data.email || "").trim().toLowerCase();
-    if (!isAllowedAdminEmail(email)) {
+    const profile = await fetchProfileForUser({ supabaseUrl, bearer, authUserId: data.id });
+    if (!isAllowedAdminRole(profile?.role, profile?.status)) {
       return unauthorized(jsonResponse);
     }
 
@@ -42,7 +40,9 @@ async function verifyAdmin(event, jsonResponse) {
       source: "supabase_admin_session",
       admin: {
         id: data.id,
-        email,
+        email: String(data.email || "").trim().toLowerCase(),
+        role: profile.role,
+        profileId: profile.id,
       },
     };
   } catch (error) {
@@ -51,12 +51,29 @@ async function verifyAdmin(event, jsonResponse) {
   }
 }
 
-function isAllowedAdminEmail(email) {
-  const allowed = String(process.env.ADMIN_EMAILS || DEFAULT_ADMIN_EMAIL)
-    .split(",")
-    .map((item) => item.trim().toLowerCase())
-    .filter(Boolean);
-  return allowed.includes(email);
+async function fetchProfileForUser({ supabaseUrl, bearer, authUserId }) {
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+  const apiKey = serviceRoleKey || process.env.SUPABASE_ANON_KEY || "";
+  const authorization = serviceRoleKey ? `Bearer ${serviceRoleKey}` : `Bearer ${bearer}`;
+  if (!apiKey || !authUserId) return null;
+
+  const response = await fetch(`${supabaseUrl}/rest/v1/profiles?select=id,role,status&auth_user_id=eq.${encodeURIComponent(authUserId)}&limit=1`, {
+    method: "GET",
+    headers: {
+      apikey: apiKey,
+      Authorization: authorization,
+      Accept: "application/json",
+    },
+  });
+  const rows = await response.json().catch(() => []);
+  if (!response.ok || !Array.isArray(rows)) return null;
+  return rows[0] || null;
+}
+
+function isAllowedAdminRole(role, status = "active") {
+  const normalizedRole = String(role || "").trim().toLowerCase();
+  const normalizedStatus = String(status || "active").trim().toLowerCase();
+  return normalizedStatus === "active" && ["super_admin", "admin"].includes(normalizedRole);
 }
 
 function unauthorized(jsonResponse) {
@@ -68,5 +85,5 @@ function unauthorized(jsonResponse) {
 
 module.exports = {
   verifyAdmin,
-  isAllowedAdminEmail,
+  isAllowedAdminRole,
 };
