@@ -8345,7 +8345,7 @@ h3 {
 
 .leadfinder-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(430px, 0.95fr);
+  grid-template-columns: minmax(0, 0.92fr) minmax(580px, 1.08fr);
   grid-template-areas:
     "form google"
     "detail detail";
@@ -8366,7 +8366,7 @@ h3 {
 .leadfinder-detail-card {
   grid-area: detail;
   display: grid;
-  grid-template-columns: minmax(220px, 0.72fr) minmax(280px, 1fr) minmax(260px, 0.84fr);
+  grid-template-columns: minmax(260px, 0.8fr) minmax(320px, 1.1fr) minmax(320px, 0.9fr);
   gap: 16px;
   padding: 22px;
 }
@@ -8568,7 +8568,7 @@ h3 {
 }
 
 .leadfinder-grid {
-  grid-template-columns: minmax(0, 1fr) minmax(430px, 0.95fr);
+  grid-template-columns: minmax(0, 0.92fr) minmax(580px, 1.08fr);
   grid-template-areas:
     "form google"
     "detail detail";
@@ -8754,6 +8754,8 @@ h3 {
   align-self: start;
   min-width: 0;
   overflow: hidden;
+  display: grid;
+  gap: 12px;
 }
 
 .google-places-search {
@@ -8777,10 +8779,11 @@ h3 {
 
 .google-places-content {
   display: grid;
-  grid-template-columns: minmax(210px, 0.95fr) minmax(230px, 1.05fr);
+  grid-template-columns: minmax(250px, 0.86fr) minmax(360px, 1.14fr);
+  align-items: stretch;
   gap: 0;
   overflow: hidden;
-  min-height: 320px;
+  min-height: 360px;
   border: 1px solid rgba(171, 196, 224, 0.16);
   border-radius: 8px;
   background: rgba(3, 12, 22, 0.55);
@@ -8810,6 +8813,7 @@ h3 {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-height: 360px;
   min-width: 0;
   padding: 16px;
   color: rgba(255, 255, 255, 0.75);
@@ -8953,11 +8957,17 @@ h3 {
 }
 
 .google-places-map {
-  min-height: 320px;
+  width: 100%;
+  min-height: 360px;
+  height: 100%;
   background:
     radial-gradient(circle at 70% 18%, rgba(25, 194, 255, 0.16), transparent 30%),
     linear-gradient(135deg, rgba(37, 99, 235, 0.14), rgba(25, 194, 255, 0.08)),
     rgba(3, 12, 22, 0.82);
+}
+
+.google-places-map .gm-style {
+  border-radius: 0 8px 8px 0;
 }
 
 .google-places-tip {
@@ -8990,13 +9000,38 @@ h3 {
 }
 
 .google-place-transfer-list span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   color: rgba(255, 255, 255, 0.62);
   font-size: 12px;
   font-weight: 850;
 }
 
+.google-place-transfer-list span::before {
+  content: "•";
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 5px;
+  color: rgba(203, 213, 225, 0.9);
+  background: rgba(148, 163, 184, 0.11);
+  font-size: 11px;
+  font-weight: 950;
+}
+
 .google-place-transfer-list .is-ready {
   color: #86efac;
+}
+
+.google-place-transfer-list .is-ready::before {
+  content: "✓";
+  border-color: rgba(34, 197, 94, 0.28);
+  color: #dcfce7;
+  background: rgba(34, 197, 94, 0.22);
 }
 
 .admin-profile-actions {
@@ -9019,10 +9054,11 @@ h3 {
 
 @media (max-width: 1280px) {
   .leadfinder-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(300px, 0.75fr);
+    grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
-      "form google"
-      "detail detail";
+      "form"
+      "google"
+      "detail";
   }
 }
 
@@ -9239,9 +9275,12 @@ h3 {
 
 .admin-body.is-sales-view .leadfinder-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.04fr) minmax(0, 0.64fr) minmax(0, 1.18fr);
+  grid-template-columns: minmax(0, 0.92fr) minmax(580px, 1.08fr);
+  grid-template-areas:
+    "form google"
+    "detail detail";
   gap: 14px;
-  align-items: stretch;
+  align-items: start;
 }
 
 .admin-body.is-sales-view .leadfinder-grid .admin-card {
@@ -9299,7 +9338,7 @@ h3 {
 }
 
 .admin-body.is-sales-view .leadfinder-detail-card .settings-status-list {
-  display: none;
+  display: grid;
 }
 
 .admin-body.is-sales-view .leadfinder-detail-card .admin-profile-actions {
@@ -9406,12 +9445,12 @@ h3 {
 }
 
 .admin-body.is-sales-view .lead-analysis-card {
-  display: none;
+  display: grid;
 }
 
 .admin-body.is-sales-view .google-places-card {
-  grid-column: auto;
-  align-self: stretch;
+  grid-area: google;
+  align-self: start;
   overflow: hidden;
 }
 
@@ -9425,7 +9464,7 @@ h3 {
 }
 
 .admin-body.is-sales-view .google-places-content {
-  grid-template-columns: minmax(250px, 0.9fr) minmax(330px, 1.1fr);
+  grid-template-columns: minmax(250px, 0.86fr) minmax(360px, 1.14fr);
   min-height: 360px;
   border-color: rgba(171, 196, 224, 0.14);
   background: rgba(3, 12, 22, 0.68);
@@ -9449,11 +9488,6 @@ h3 {
   background: rgba(3, 12, 22, 0.34);
 }
 
-.admin-body.is-sales-view .google-place-transfer-list span::before {
-  color: #22c55e;
-  content: "✓ ";
-}
-
 .admin-body.is-sales-view .leadfinder-filters {
   display: grid;
   grid-template-columns: 1.25fr 0.9fr 0.9fr 0.9fr 0.9fr 0.8fr;
@@ -9474,11 +9508,15 @@ h3 {
 
 @media (max-width: 1450px) {
   .admin-body.is-sales-view .leadfinder-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 0.72fr);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "form"
+      "google"
+      "detail";
   }
 
   .admin-body.is-sales-view .google-places-card {
-    grid-column: 1 / -1;
+    grid-column: auto;
   }
 
   .admin-body.is-sales-view .google-places-content {

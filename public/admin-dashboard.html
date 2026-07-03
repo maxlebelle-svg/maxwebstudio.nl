@@ -16322,7 +16322,7 @@
       const websiteAnalysisState = new Map();
       let googlePlacesMap = null;
       let googlePlacesService = null;
-      let googlePlacesMarker = null;
+      let googlePlacesMarkers = [];
       let googlePlacesPlace = null;
       let googlePlacesReady = false;
 
@@ -16432,15 +16432,23 @@
         return !lead._source || lead._source === "local";
       }
 
-      function developerModeActive() {
-        if (typeof window.isDeveloperModeEnabled === "function") {
-          return window.isDeveloperModeEnabled();
-        }
+      function isDevModeEnabled() {
         try {
-          return Boolean(readStoredSettings().developerMode);
+          if (window.maxwebstudioSettings?.developerMode !== undefined) {
+            return Boolean(window.maxwebstudioSettings.developerMode);
+          }
+          if (typeof window.isDeveloperModeEnabled === "function") {
+            return Boolean(window.isDeveloperModeEnabled());
+          }
+          const storedSettings = JSON.parse(localStorage.getItem("maxwebstudioSettings") || "{}");
+          return Boolean(storedSettings.developerMode);
         } catch (error) {
           return false;
         }
+      }
+
+      function developerModeActive() {
+        return isDevModeEnabled();
       }
 
       function logGooglePlacesIssue(message, details = null) {
@@ -16480,7 +16488,7 @@
           const response = await fetch("/.netlify/functions/google-maps-config", { headers: { Accept: "application/json" } });
           const config = await response.json().catch(() => ({}));
           if (!response.ok || !config.success || !config.googleMapsApiKey) {
-            setGooglePlacesState("Niet geconfigureerd", "status-prepared");
+            setGooglePlacesState("Niet geladen", "status-prepared");
             renderGooglePlacesEmpty("Google Maps is nog niet gekoppeld.", "Voeg VITE_GOOGLE_MAPS_API_KEY of GOOGLE_MAPS_API_KEY toe aan de omgeving.");
             setGooglePlacesMessage("Google Maps API key ontbreekt. Voeg de key toe in Netlify env.", "error");
             return;
@@ -16496,7 +16504,7 @@
           });
           googlePlacesService = new window.google.maps.places.PlacesService(googlePlacesMap);
           googlePlacesReady = true;
-          setGooglePlacesState("Klaar", "status-active");
+          setGooglePlacesState("Live", "status-active");
           setGooglePlacesMessage("");
         } catch (error) {
           logGooglePlacesIssue("Google Maps kon niet worden geladen.", error);
@@ -16517,6 +16525,11 @@
         renderGoogleTransferList(null);
       }
 
+      function clearGooglePlacesMarkers() {
+        googlePlacesMarkers.forEach((marker) => marker.setMap(null));
+        googlePlacesMarkers = [];
+      }
+
       function searchGooglePlace() {
         const query = String(leadfinderElements.googleQuery?.value || "").trim();
         if (!query) {
@@ -16527,22 +16540,55 @@
           setGooglePlacesMessage("Google Maps is nog niet klaar of niet geconfigureerd.", "error");
           return;
         }
+        googlePlacesPlace = null;
+        clearGooglePlacesMarkers();
         setGooglePlacesState("Zoeken", "status-planned");
         setGooglePlacesMessage("");
+        renderGooglePlacesEmpty("Zoeken naar bedrijven", "Google Places zoekt nu naar passende bedrijven. Klik daarna op een marker of resultaat.");
         googlePlacesService.textSearch({
           query,
           region: "nl",
-          fields: ["place_id", "name", "formatted_address", "geometry", "rating", "user_ratings_total", "types", "business_status"],
         }, (results, status) => {
           if (status !== window.google.maps.places.PlacesServiceStatus.OK || !results?.length) {
             logGooglePlacesIssue("Geen Google Places resultaat.", { status, query });
             setGooglePlacesState("Geen resultaat", "status-prepared");
             renderGooglePlacesEmpty("Geen resultaat gevonden", "Probeer bedrijfsnaam + plaats, bijvoorbeeld “Quantumbouw Bodegraven”.");
-            setGooglePlacesMessage("Geen bedrijf gevonden voor deze zoekopdracht.", "error");
+            setGooglePlacesMessage(`Geen bedrijf gevonden voor “${query}”.`, "error");
             return;
           }
-          fetchGooglePlaceDetails(results[0].place_id);
+          renderGoogleSearchResults(results, query);
         });
+      }
+
+      function renderGoogleSearchResults(results, query) {
+        if (!googlePlacesMap || !Array.isArray(results)) return;
+        clearGooglePlacesMarkers();
+        const bounds = new window.google.maps.LatLngBounds();
+        const validResults = results.filter((result) => result.place_id && result.geometry?.location);
+        validResults.forEach((result) => {
+          const marker = new window.google.maps.Marker({
+            map: googlePlacesMap,
+            position: result.geometry.location,
+            title: result.name || "Google Maps resultaat",
+          });
+          marker.addListener("click", () => fetchGooglePlaceDetails(result.place_id));
+          googlePlacesMarkers.push(marker);
+          bounds.extend(result.geometry.location);
+        });
+        if (validResults.length) {
+          googlePlacesMap.fitBounds(bounds);
+          if (validResults.length === 1) {
+            googlePlacesMap.setZoom(15);
+          }
+          setGooglePlacesState("Live", "status-active");
+          setGooglePlacesMessage(`${validResults.length} resultaat${validResults.length === 1 ? "" : "en"} gevonden. Klik op een marker of controleer het eerste resultaat.`, "success");
+          fetchGooglePlaceDetails(validResults[0].place_id);
+          return;
+        }
+        logGooglePlacesIssue("Google Places gaf resultaten zonder bruikbare locatie.", { query, results });
+        setGooglePlacesState("Geen resultaat", "status-prepared");
+        renderGooglePlacesEmpty("Geen bruikbare locatie gevonden", "Google gaf geen kaartlocatie terug. Probeer bedrijfsnaam + plaats.");
+        setGooglePlacesMessage(`Geen kaartlocatie gevonden voor “${query}”.`, "error");
       }
 
       function fetchGooglePlaceDetails(placeId) {
@@ -16551,6 +16597,7 @@
           fields: [
             "place_id",
             "name",
+            "place_id",
             "formatted_address",
             "formatted_phone_number",
             "international_phone_number",
@@ -16566,7 +16613,7 @@
         }, (place, status) => {
           if (status !== window.google.maps.places.PlacesServiceStatus.OK || !place) {
             logGooglePlacesIssue("Google Place details konden niet worden opgehaald.", { status, placeId });
-            setGooglePlacesState("Details fout", "status-blocked");
+            setGooglePlacesState("Fout", "status-blocked");
             setGooglePlacesMessage("Bedrijfsgegevens konden niet worden opgehaald.", "error");
             return;
           }
@@ -16588,11 +16635,21 @@
         if (!googlePlacesMap || !location) return;
         googlePlacesMap.setCenter(location);
         googlePlacesMap.setZoom(15);
-        if (!googlePlacesMarker) {
-          googlePlacesMarker = new window.google.maps.Marker({ map: googlePlacesMap });
+        const markerAlreadyExists = googlePlacesMarkers.some((marker) => {
+          const position = marker.getPosition?.();
+          return position?.equals ? position.equals(location) : false;
+        });
+        if (!markerAlreadyExists) {
+          const marker = new window.google.maps.Marker({
+            map: googlePlacesMap,
+            position: location,
+            title: place.name || "Gevonden bedrijf",
+          });
+          if (place.place_id) {
+            marker.addListener("click", () => fetchGooglePlaceDetails(place.place_id));
+          }
+          googlePlacesMarkers.push(marker);
         }
-        googlePlacesMarker.setPosition(location);
-        googlePlacesMarker.setTitle(place.name || "Gevonden bedrijf");
       }
 
       function renderGooglePlace(place) {
@@ -16642,7 +16699,7 @@
         leadfinderElements.googleTransferList.innerHTML = `
           <strong>Over te nemen gegevens</strong>
           <div>
-            ${items.map(([label, available]) => `<span class="${available ? "is-ready" : "is-muted"}">${available ? "✓" : "•"} ${escapeHtml(label)}</span>`).join("")}
+            ${items.map(([label, available]) => `<span class="${available ? "is-ready" : "is-muted"}">${escapeHtml(label)}</span>`).join("")}
           </div>
         `;
       }
