@@ -8944,22 +8944,22 @@ h3 {
   --demo-panel: rgba(8, 23, 38, 0.86);
   --demo-panel-strong: rgba(10, 29, 48, 0.92);
   --demo-line: rgba(148, 163, 184, 0.2);
-  --demo-line-strong: rgba(37, 99, 235, 0.48);
+  --demo-line-strong: rgba(21, 94, 239, 0.42);
   --demo-text: #f8fbff;
   --demo-muted: rgba(226, 236, 248, 0.66);
-  --demo-blue: #1565ff;
+  --demo-blue: #155eef;
   --demo-cyan: #19c2ff;
-  --demo-purple: #6d35e8;
-  --demo-green: #00df86;
+  --demo-purple: #6236d9;
+  --demo-green: #2bd982;
 }
 
 #demo-klantreis .demo-card,
 #demo-klantreis .demo-journey-steps-card {
   border-color: var(--demo-line);
   background:
-    radial-gradient(circle at 12% 0%, rgba(37, 99, 235, 0.14), transparent 34%),
-    linear-gradient(180deg, rgba(13, 32, 52, 0.94), rgba(5, 18, 31, 0.94));
-  box-shadow: 0 22px 70px rgba(0, 8, 18, 0.3);
+    radial-gradient(circle at 12% 0%, rgba(21, 94, 239, 0.1), transparent 34%),
+    linear-gradient(180deg, rgba(18, 36, 55, 0.92), rgba(8, 24, 38, 0.94));
+  box-shadow: 0 20px 58px rgba(0, 8, 18, 0.24);
 }
 
 #demo-klantreis .demo-journey-steps-card {
@@ -9048,13 +9048,13 @@ h3 {
 }
 
 #demo-klantreis .demo-journey-step.is-current {
-  border-color: rgba(37, 99, 235, 0.82);
-  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.2), 0 22px 54px rgba(21, 101, 255, 0.22);
+  border-color: rgba(21, 94, 239, 0.68);
+  box-shadow: 0 0 0 1px rgba(21, 94, 239, 0.16), 0 18px 42px rgba(21, 94, 239, 0.16);
 }
 
 #demo-klantreis .demo-journey-step.is-current .demo-step-number,
 #demo-klantreis .demo-journey-step.is-current .demo-step-pill {
-  background: linear-gradient(135deg, var(--demo-blue), var(--demo-cyan));
+  background: linear-gradient(135deg, var(--demo-blue), #2478ff);
 }
 
 #demo-klantreis .demo-journey-step.is-done .demo-step-number,
@@ -9064,7 +9064,9 @@ h3 {
 }
 
 #demo-klantreis .demo-journey-grid {
-  grid-template-columns: minmax(0, 1fr) minmax(420px, 0.46fr);
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
+  gap: 24px;
+  align-items: start;
 }
 
 #demo-klantreis .admin-profile-form-heading {
@@ -9221,9 +9223,12 @@ h3 {
 }
 
 #demo-klantreis .demo-status-card {
-  display: grid;
-  gap: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
   padding: 18px;
+  overflow: hidden;
 }
 
 #demo-klantreis .settings-status-list {
@@ -9233,10 +9238,10 @@ h3 {
 
 #demo-klantreis .demo-kv-row {
   display: grid;
-  grid-template-columns: minmax(120px, 0.46fr) minmax(0, 1fr);
+  grid-template-columns: minmax(96px, 0.42fr) minmax(0, 1fr);
   gap: 12px;
   align-items: start;
-  padding: 8px 0;
+  padding: 7px 0;
   border-bottom: 1px solid rgba(148, 163, 184, 0.12);
 }
 
@@ -9245,17 +9250,18 @@ h3 {
 }
 
 #demo-klantreis .demo-kv-row strong {
-  color: rgba(248, 251, 255, 0.9);
-  font-size: 13px;
+  color: rgba(226, 236, 248, 0.66);
+  font-size: 11px;
   line-height: 1.25;
+  text-transform: uppercase;
 }
 
 #demo-klantreis .demo-kv-row span {
   min-width: 0;
   overflow: hidden;
-  color: rgba(226, 236, 248, 0.72);
-  font-size: 13px;
-  font-weight: 750;
+  color: rgba(248, 251, 255, 0.86);
+  font-size: 12px;
+  font-weight: 800;
   line-height: 1.35;
   text-align: right;
   text-overflow: ellipsis;
@@ -9264,10 +9270,20 @@ h3 {
 
 #demo-klantreis .factory-card,
 #demo-klantreis .customer-timeline {
+  grid-area: auto;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
   border-color: rgba(148, 163, 184, 0.18);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018)),
     rgba(2, 14, 25, 0.5);
+}
+
+#demo-klantreis .demo-briefing-field {
+  grid-column: auto;
+  width: 100%;
+  min-width: 0;
 }
 
 #demo-klantreis .sales-timeline-heading strong {
@@ -9342,13 +9358,18 @@ h3 {
 
 #demo-klantreis .demo-preview-actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
 #demo-klantreis .demo-preview-actions .button {
   justify-content: center;
   min-width: 0;
+  white-space: normal;
+}
+
+#demo-klantreis .demo-preview-actions .button:last-child {
+  grid-column: 1 / -1;
 }
 
 @media (max-width: 1180px) {
