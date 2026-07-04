@@ -17541,7 +17541,7 @@
         LEADFINDER_CALL_STATUSES,
         LEADFINDER_SCORE_BUCKETS,
         LEADFINDER_WEBSITE_STATUSES,
-        deleteLeadFinderLeadLocally,
+        deleteLeadFromLocalSources,
         ensureLeadFinderDemoData,
         getLeadFinderLabel,
         getLeadFinderSummary,
@@ -17716,6 +17716,7 @@
             counts: result.counts || {},
             fallbackUsed: Boolean(result.fallbackUsed),
             error: result.error || "",
+            warning: result.warning || "",
             refreshedAt: result.refreshedAt || new Date().toISOString(),
             dataLayer: "supabase-data-layer-mvp",
           };
@@ -17779,6 +17780,11 @@
       function isLocalLead(lead = {}) {
         if (!lead || typeof lead !== "object") return false;
         return !lead._source || ["local", "local-leads", "homepage-aanvraag"].includes(lead._source);
+      }
+
+      function canDeleteLead(lead = {}) {
+        if (!lead?.id) return false;
+        return isLocalLead(lead);
       }
 
       function isDevModeEnabled() {
@@ -18819,10 +18825,21 @@
         updateLeadfinderQuickFilterBar(leads.length);
 
         if (!leadfinderElements.list) return;
+        const sourceWarning = leadfinderSourceStatus?.warning || "";
+        const warningHtml = sourceWarning ? `
+          <article class="admin-card request-card request-state-card leadfinder-source-warning">
+            <div>
+              <strong>Gedeelde leadbron nog niet actief</strong>
+              <span>Leads van andere medewerkers verschijnen pas zodra de productie-leadbron is uitgerold. Deze lijst gebruikt nu bestaande fallbackbronnen.</span>
+            </div>
+            <mark class="status-badge status-warning">Fallback</mark>
+          </article>
+        ` : "";
         if (!leads.length) {
           const sourceError = leadfinderSourceStatus?.error || "";
           const emptyText = activeLeadfinderQuickFilter ? "Geen leads gevonden voor dit filter." : "Voeg een prospect toe of pas je filters aan.";
           leadfinderElements.list.innerHTML = `
+            ${warningHtml}
             <article class="admin-card request-card request-state-card">
               <div>
                 <strong>${escapeHtml(sourceError ? "Leads konden niet volledig worden geladen" : "Geen leads gevonden")}</strong>
@@ -18836,6 +18853,7 @@
         }
 
         leadfinderElements.list.innerHTML = `
+          ${warningHtml}
           <div class="admin-table-row admin-table-head" role="row">
             <span>Bedrijf</span><span>Contact</span><span>Telefoon</span><span>Website</span><span>Status</span><span>Medewerker</span><span>Aangemaakt</span><span>Update</span><span>Acties</span>
           </div>
@@ -18866,6 +18884,7 @@
                 <div class="leadfinder-actions">
                   <button class="button secondary" type="button" data-leadfinder-action="view">Bekijk</button>
                   <button class="button secondary" type="button" data-leadfinder-action="task">Opvolgtaak</button>
+                  <button class="button secondary danger" type="button" data-leadfinder-action="delete"${canDeleteLead(lead) ? "" : " disabled"}>Verwijder</button>
                 </div>
               </div>
             `;
@@ -19291,6 +19310,9 @@
           } catch (error) {
             setLeadfinderMessage(error.message || "Opvolgtaak kon niet worden aangemaakt.", "error");
           }
+        } else if (button.dataset.leadfinderAction === "delete") {
+          await deleteLeadfinderLead(lead);
+          return;
         } else if (button.dataset.leadfinderAction === "view") {
           setLeadfinderMessage("Lead geselecteerd", "success");
         }
@@ -19417,17 +19439,27 @@
         await reloadLeadfinderAfterLocalChange();
       }
 
-      async function deleteSelectedLead() {
-        const lead = selectedLeadFinderLead();
-        if (!lead || !window.confirm("Deze Leadfinder lead verwijderen?")) return;
-        if (!isLocalLead(lead)) {
-          setLeadfinderMessage("Deze lead komt uit de read-only data-layer. Verwijderen blijft local/write-mode voor later.", "error");
+      async function deleteLeadfinderLead(lead) {
+        if (!lead) return;
+        if (!canDeleteLead(lead)) {
+          setLeadfinderMessage("Deze lead komt uit een gedeelde/read-only bron. Verwijderen is pas beschikbaar zodra de production leadbron write/delete ondersteunt.", "error");
           return;
         }
-        deleteLeadFinderLeadLocally(lead.id);
-        selectedLeadFinderId = "";
+        if (!window.confirm(`Lead ${lead.companyName || lead.contactName || lead.id} verwijderen?`)) return;
+        const result = deleteLeadFromLocalSources(lead);
+        if (!result.deleted) {
+          setLeadfinderMessage("Lead kon niet in de lokale fallbackbronnen worden gevonden.", "error");
+          return;
+        }
+        if (selectedLeadFinderId === lead.id) selectedLeadFinderId = "";
         setLeadfinderMessage("Lead verwijderd.", "success");
         await reloadLeadfinderAfterLocalChange();
+      }
+
+      async function deleteSelectedLead() {
+        const lead = selectedLeadFinderLead();
+        if (!lead) return;
+        await deleteLeadfinderLead(lead);
       }
 
       async function initLeadfinder() {

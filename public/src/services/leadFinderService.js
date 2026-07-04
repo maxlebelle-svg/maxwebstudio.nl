@@ -194,6 +194,35 @@ export function deleteLeadFinderLeadLocally(leadId) {
   return remaining;
 }
 
+export function deleteLeadFromLocalSources(lead = {}) {
+  const leadId = sanitizeString(lead.id);
+  const email = sanitizeString(lead.email).toLowerCase();
+  const phone = sanitizeString(lead.phone).replace(/[^\d+]/g, "");
+  const companyName = sanitizeString(lead.companyName || lead.company || lead.businessName).toLowerCase();
+  const matchesLead = (item = {}) => {
+    const itemId = sanitizeString(item.id);
+    const itemEmail = sanitizeString(item.email).toLowerCase();
+    const itemPhone = sanitizeString(item.phone).replace(/[^\d+]/g, "");
+    const itemCompany = sanitizeString(item.companyName || item.company || item.businessName || item.packageInterest).toLowerCase();
+    return (leadId && itemId === leadId)
+      || (email && itemEmail === email)
+      || (phone && itemPhone === phone)
+      || (companyName && itemCompany === companyName);
+  };
+  const sources = [STORAGE_KEYS.leadFinderLeads, STORAGE_KEYS.leads, STORAGE_KEYS.leadRequests];
+  const result = sources.reduce((summary, key) => {
+    const before = readJson(key);
+    const after = before.filter((item) => !matchesLead(item));
+    if (after.length !== before.length) {
+      writeJson(key, after);
+      summary.deleted += before.length - after.length;
+      summary.sources.push(key);
+    }
+    return summary;
+  }, { deleted: 0, sources: [] });
+  return result;
+}
+
 export function getLeadFinderSummary(leads = readLeadFinderLeads()) {
   return leads.reduce((summary, lead) => {
     summary.total += 1;

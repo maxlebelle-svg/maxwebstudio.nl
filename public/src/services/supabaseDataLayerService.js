@@ -163,7 +163,7 @@ function mapLead(row = {}, source = "local") {
     convertedAt: String(firstValue(row.convertedAt, row.converted_at)),
     _source: source,
     _supabaseId: source === "supabase" ? String(row.id || "") : "",
-    _localId: source === "local" ? String(row.id || "") : String(firstValue(row.external_id, meta.localStorageId)),
+    _localId: source !== "supabase" ? String(row.id || "") : String(firstValue(row.external_id, meta.localStorageId)),
   };
 }
 
