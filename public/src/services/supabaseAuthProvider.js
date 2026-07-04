@@ -92,7 +92,8 @@ function readRecoveryParamsFromUrl() {
   const accessToken = hash.get("access_token") || search.get("access_token") || "";
   const refreshToken = hash.get("refresh_token") || search.get("refresh_token") || "";
   const type = hash.get("type") || search.get("type") || "";
-  if (!accessToken || type !== "recovery") return null;
+  const allowedSessionTypes = new Set(["invite", "recovery"]);
+  if (!accessToken || !allowedSessionTypes.has(type)) return null;
   const expiresIn = Number(hash.get("expires_in") || search.get("expires_in") || 3600);
   const expiresAt = Number(hash.get("expires_at") || search.get("expires_at")) || Math.floor(Date.now() / 1000) + expiresIn;
   return {
@@ -102,7 +103,8 @@ function readRecoveryParamsFromUrl() {
     expires_in: expiresIn,
     expires_at: expiresAt,
     user: null,
-    recovery: true,
+    recovery: type === "recovery",
+    invite: type === "invite",
   };
 }
 
