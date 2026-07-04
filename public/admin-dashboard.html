@@ -461,6 +461,17 @@
 
           <div class="admin-grid workflow-metrics" id="demo-journey-metrics" aria-live="polite"></div>
 
+          <article class="admin-card demo-journey-steps-card" aria-labelledby="demo-journey-steps-title">
+            <div class="admin-profile-form-heading">
+              <div>
+                <strong id="demo-journey-steps-title">Stappen voor medewerkers</strong>
+                <span>Volg deze volgorde om van lead naar interne website-preview te gaan.</span>
+              </div>
+              <mark class="status-badge status-prepared" id="demo-journey-next-step">Stap 1</mark>
+            </div>
+            <div class="demo-journey-steps" id="demo-journey-steps"></div>
+          </article>
+
           <div class="admin-crm-grid">
             <form class="admin-card admin-profile-form" id="demo-journey-form">
               <div class="admin-profile-form-heading">
@@ -20221,6 +20232,15 @@
           "Website afronden",
           "Livegang voorbereiden",
         ];
+        const employeeSteps = [
+          { number: 1, label: "Selecteer een lead", description: "Kies de lead waarvoor je een demo-preview wilt maken.", key: "lead" },
+          { number: 2, label: "Vul klantwensen in", description: "Controleer contactgegevens, website, wensen en interne notities.", key: "wishes" },
+          { number: 3, label: "Sla demo-aanvraag op", description: "Bewaar de aanvraag centraal voordat je verdergaat.", key: "saved" },
+          { number: 4, label: "Genereer briefing", description: "Maak een duidelijke briefing voor de Website Factory.", key: "briefing" },
+          { number: 5, label: "Genereer preview", description: "Laat de Factory een interne preview en ZIP bouwen.", key: "preview" },
+          { number: 6, label: "Controleer preview intern", description: "Open de preview, download de ZIP en controleer kwaliteit.", key: "review" },
+          { number: 7, label: "Plan/verstuur klantopvolging", description: "Plan de opvolging of zet de klantmail klaar.", key: "followup" },
+        ];
         const elements = {};
         let leads = [];
         let journey = null;
@@ -20248,6 +20268,8 @@
             notes: document.getElementById("demo-journey-notes"),
             briefing: document.getElementById("demo-journey-briefing"),
             message: document.getElementById("demo-journey-message"),
+            steps: document.getElementById("demo-journey-steps"),
+            nextStep: document.getElementById("demo-journey-next-step"),
             state: document.getElementById("demo-journey-state"),
             summary: document.getElementById("demo-journey-summary"),
             details: document.getElementById("demo-journey-details"),
@@ -20680,6 +20702,49 @@
           `).join("");
         }
 
+        function demoStepStates() {
+          const leadSelected = Boolean(elements.lead?.value);
+          const hasWishes = Boolean(elements.business?.value || elements.contact?.value || elements.email?.value || elements.notes?.value);
+          const saved = Boolean(journey?.id);
+          const briefingReady = Boolean(elements.briefing?.value || journey?.generatedBriefing);
+          const previewReady = Boolean(journey?.previewUrl);
+          const followupReady = Boolean(journey?.followUpAt || currentTemplate?.subject || journey?.lastEmailStatus);
+          const done = {
+            lead: leadSelected,
+            wishes: hasWishes,
+            saved,
+            briefing: briefingReady,
+            preview: previewReady,
+            review: previewReady,
+            followup: followupReady,
+          };
+          const next = employeeSteps.find((step) => !done[step.key]) || employeeSteps[employeeSteps.length - 1];
+          return { done, next };
+        }
+
+        function renderEmployeeSteps() {
+          if (!elements.steps) return;
+          const { done, next } = demoStepStates();
+          elements.steps.innerHTML = employeeSteps.map((step) => {
+            const state = done[step.key] ? "klaar" : step.key === next.key ? "bezig" : "nog te doen";
+            const className = done[step.key] ? "is-done" : step.key === next.key ? "is-current" : "";
+            return `
+              <article class="demo-journey-step ${className}">
+                <span>${step.number}</span>
+                <div>
+                  <strong>${escapeHtml(step.label)}</strong>
+                  <small>${escapeHtml(step.description)}</small>
+                </div>
+                <mark>${escapeHtml(state)}</mark>
+              </article>
+            `;
+          }).join("");
+          if (elements.nextStep) {
+            elements.nextStep.textContent = done[next.key] ? "Klaar" : `Stap ${next.number}`;
+            elements.nextStep.className = `status-badge ${done[next.key] ? "status-active" : "status-prepared"}`;
+          }
+        }
+
         function buildStatusLabel(status = "") {
           return ({
             queued: "In wachtrij",
@@ -20731,6 +20796,9 @@
           if (elements.buildDiagnostics) {
             const diagnostics = developerModeActive()
               ? {
+                template: latest?.generatedPackage?.meta?.template || activeVersion?.generatedPackage?.meta?.template || "",
+                templateSections: latest?.generatedPackage?.meta?.templateSections || activeVersion?.generatedPackage?.meta?.templateSections || [],
+                warnings: latest?.generatedPackage?.meta?.warnings || activeVersion?.generatedPackage?.meta?.warnings || [],
                 latestJob: latest,
                 activeVersion,
                 qualityReport: latest?.qualityReport || activeVersion?.qualityReport || null,
@@ -20814,6 +20882,7 @@
           setActionLink(elements.downloadZip, journey?.previewUrl ? previewZipUrl(journey.previewUrl) : "", "Genereer eerst een preview");
           setActionLink(elements.openPortal, journey?.customerId ? `/klantportaal.html?customerId=${encodeURIComponent(journey.customerId)}#projectstatus` : "");
           renderMetrics();
+          renderEmployeeSteps();
           renderBuildStatus();
           renderTimeline();
         }

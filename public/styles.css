@@ -8830,6 +8830,116 @@ h3 {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.demo-journey-steps-card {
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+}
+
+.demo-journey-steps {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.demo-journey-step {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 10px;
+  min-width: 0;
+  min-height: 176px;
+  padding: 14px;
+  border: 1px solid rgba(171, 196, 224, 0.15);
+  border-radius: 8px;
+  background: rgba(2, 14, 25, 0.34);
+}
+
+.demo-journey-step > span {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(171, 196, 224, 0.24);
+  border-radius: 999px;
+  color: rgba(248, 251, 255, 0.88);
+  background: rgba(255, 255, 255, 0.06);
+  font-weight: 900;
+}
+
+.demo-journey-step strong,
+.demo-journey-step small {
+  display: block;
+}
+
+.demo-journey-step strong {
+  color: rgba(248, 251, 255, 0.96);
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.demo-journey-step small {
+  margin-top: 6px;
+  color: rgba(226, 236, 248, 0.64);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.demo-journey-step mark {
+  width: fit-content;
+  min-height: 28px;
+  padding: 6px 9px;
+  border: 1px solid rgba(171, 196, 224, 0.18);
+  border-radius: 999px;
+  color: rgba(226, 236, 248, 0.72);
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.demo-journey-step.is-current {
+  border-color: rgba(37, 99, 235, 0.58);
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.22), rgba(25, 194, 255, 0.1)),
+    rgba(2, 14, 25, 0.42);
+  box-shadow: 0 20px 48px rgba(37, 99, 235, 0.12);
+}
+
+.demo-journey-step.is-current > span,
+.demo-journey-step.is-current mark {
+  color: #f8fbff;
+  border-color: rgba(37, 99, 235, 0.5);
+  background: rgba(37, 99, 235, 0.26);
+}
+
+.demo-journey-step.is-done {
+  border-color: rgba(52, 211, 153, 0.34);
+  background: rgba(20, 83, 45, 0.16);
+}
+
+.demo-journey-step.is-done > span,
+.demo-journey-step.is-done mark {
+  color: #d1fae5;
+  border-color: rgba(52, 211, 153, 0.42);
+  background: rgba(16, 185, 129, 0.18);
+}
+
+@media (max-width: 1180px) {
+  .demo-journey-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .demo-journey-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .demo-journey-step {
+    min-height: 0;
+  }
+}
+
 .crm-workflow-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.55fr);

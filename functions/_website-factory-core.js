@@ -12,13 +12,18 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
   const combinedBriefing = cleanText(briefing || journey.generatedBriefing || journey.generated_briefing || internalNotes);
   const industry = extractField(combinedBriefing, ["Branche/regio", "Branche"]) || inferIndustry(combinedBriefing, businessName);
   const services = extractServices(combinedBriefing, industry);
+  const benefits = inferBenefits(industry);
+  const processSteps = inferProcessSteps(industry);
   const cta = inferCta(combinedBriefing);
   const colors = inferColors(industry);
   const style = inferStyle(combinedBriefing);
-  const pages = ["Home", "Diensten", "Projecten", "Over ons", "Contact"];
+  const inputSignals = [combinedBriefing, websiteUrl, email, phone].filter((value) => cleanText(value).length > 12).length;
+  const lowInputWarning = inputSignals < 2;
+  const templateSections = ["header", "hero", "diensten", "voordelen", "werkwijze", "reviews", "contact", "footer"];
+  const pages = ["Home", "Diensten", "Voordelen", "Werkwijze", "Reviews", "Contact"];
   const title = `${businessName} - professionele website-preview`;
-  const description = `${businessName} helpt klanten met ${services.slice(0, 2).join(" en ")}. Bekijk de eerste website-preview.`;
-  const html = renderHtml({ businessName, contactName, email, phone, websiteUrl, industry, services, cta, colors, style, title, description });
+  const description = `${businessName} helpt klanten met ${services.slice(0, 2).join(" en ")}. Een heldere preview met vertrouwen, structuur en een directe route naar contact.`;
+  const html = renderHtml({ businessName, contactName, email, phone, websiteUrl, industry, services, benefits, processSteps, cta, colors, style, title, description, lowInputWarning });
   const css = renderCss(colors);
   const script = renderScript();
   const briefingJson = {
@@ -31,6 +36,12 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     style,
     colors,
     services,
+    benefits,
+    processSteps,
+    template: "premium-service-homepage-v1",
+    templateSections,
+    lowInputWarning,
+    warnings: lowInputWarning ? ["Weinig klantinput beschikbaar; neutrale professionele standaardtekst gebruikt."] : [],
     customerWishes: combinedBriefing,
     desiredPages: pages,
     ctaPreference: cta,
@@ -38,8 +49,13 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
   };
   const assetsMap = {
     logo: "text-brand",
-    hero: "css-generated-layout",
-    icons: ["services", "trust", "contact"],
+    hero: {
+      type: "css-visual-placeholder",
+      promptReady: true,
+      subject: `${businessName} ${industry}`,
+    },
+    sectionVisuals: ["hero-dashboard-card", "service-cards", "trust-stat-cards"],
+    futureImageSlots: ["hero", "service-detail", "review-background"],
   };
   const readme = [
     `# ${businessName} preview V${version}`,
@@ -53,6 +69,9 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     "- assets-map.json",
     "- briefing.json",
     "- README.md",
+    "",
+    "Template: premium-service-homepage-v1",
+    lowInputWarning ? "Let op: weinig klantinput beschikbaar; de preview gebruikt neutrale standaardtekst." : "Inputniveau: voldoende voor branchegerichte eerste preview.",
     "",
     "Controleer de preview intern voordat deze naar de klant gaat.",
   ].join("\n");
@@ -80,23 +99,34 @@ function runQualityCheck({ generatedPackage = {}, journey = {} }) {
   const script = fileContent(files, "script.js");
   const businessName = cleanText(generatedPackage.businessName || journey.businessName || journey.business_name);
   const services = generatedPackage.meta?.services || [];
+  const sectionCount = (html.match(/<section\b/gi) || []).length;
+  const serviceCardCount = (html.match(/class="[^"]*service-card/gi) || []).length;
+  const benefitCount = (html.match(/class="[^"]*benefit-card/gi) || []).length;
   const checks = [
     check("Hero aanwezig", /<header[\s\S]*class="[^"]*hero/i.test(html) || /<section[\s\S]*class="[^"]*hero/i.test(html), 10),
+    check("Hero visual aanwezig", /class="[^"]*hero-visual/i.test(html) && /class="[^"]*visual-card/i.test(html), 10),
     check("CTA aanwezig", /class="[^"]*button/i.test(html) && /(contact|advies|afspraak|kennismaking|offerte)/i.test(html), 10),
     check("Dienstensectie aanwezig", /id="diensten"|Diensten|Onze aanpak/i.test(html), 10),
+    check("Minimaal vijf secties", sectionCount >= 5, 10),
+    check("Minimaal drie diensten", serviceCardCount >= 3, 8),
+    check("Minimaal drie voordelen", benefitCount >= 3, 8),
+    check("Werkwijze aanwezig", /id="werkwijze"|Zo werkt|Werkwijze/i.test(html), 8),
+    check("Reviews of vertrouwen aanwezig", /id="reviews"|review|vertrouwen/i.test(html), 8),
     check("Contactsectie aanwezig", /id="contact"|mailto:|tel:/i.test(html), 10),
     check("Footer aanwezig", /<footer/i.test(html), 8),
     check("Meta title aanwezig", /<title>[^<]{8,}<\/title>/i.test(html), 7),
     check("Meta description aanwezig", /<meta\s+name="description"\s+content="[^"]{20,}"/i.test(html), 7),
     check("Responsive viewport aanwezig", /<meta\s+name="viewport"/i.test(html), 7),
     check("Geen lorem ipsum", !/lorem ipsum|dolor sit amet/i.test(html), 8),
-    check("Geen placeholders", !/\[placeholder\]|\{\{|\}\}|TODO/i.test(html), 8),
+    check("Geen lege placeholders", !/\[placeholder\]|\{\{|\}\}|TODO|Preview wordt voorbereid/i.test(html), 8),
+    check("Geen interne AI-termen", !/\bAI\b|Codex/i.test(html), 8),
     check("Bedrijfsnaam aanwezig", businessName && html.toLowerCase().includes(businessName.toLowerCase()), 7),
     check("CTA niet leeg", />\s*(Plan|Vraag|Neem|Bel|Start|Bekijk)[^<]+</i.test(html), 4),
     check("HTML basis klopt", /<!doctype html>/i.test(html) && /<\/html>/i.test(html) && /<\/body>/i.test(html), 6),
     check("Script statisch veilig", script ? !/document\.write|eval\(|fetch\(/i.test(script) : true, 4),
     check("Branche of diensten aanwezig", services.some((service) => html.toLowerCase().includes(String(service).toLowerCase())) || /branche|diensten/i.test(html), 8),
-    check("CSS aanwezig", css.length > 500, 6),
+    check("Geen kale preview", css.length > 1800 && html.length > 4500, 10),
+    check("CSS aanwezig", css.length > 1200, 6),
   ];
   const maxScore = checks.reduce((sum, item) => sum + item.weight, 0);
   const earned = checks.reduce((sum, item) => sum + (item.passed ? item.weight : 0), 0);
@@ -240,8 +270,25 @@ function inferStyle(text = "") {
   return "premium en conversiegericht";
 }
 
-function renderHtml({ businessName, contactName, email, phone, websiteUrl, industry, services, cta, colors, style, title, description }) {
-  const serviceCards = services.map((service) => `<article><span>${escapeHtml(service)}</span><p>${escapeHtml(serviceText(service, industry))}</p></article>`).join("");
+function renderHtml({ businessName, contactName, email, phone, websiteUrl, industry, services, benefits, processSteps, cta, colors, style, title, description, lowInputWarning }) {
+  const serviceCards = services.map((service, index) => `
+        <article class="service-card">
+          <span class="card-index">${String(index + 1).padStart(2, "0")}</span>
+          <h3>${escapeHtml(service)}</h3>
+          <p>${escapeHtml(serviceText(service, industry))}</p>
+        </article>`).join("");
+  const benefitCards = benefits.map((benefit) => `
+        <article class="benefit-card">
+          <strong>${escapeHtml(benefit.title)}</strong>
+          <p>${escapeHtml(benefit.text)}</p>
+        </article>`).join("");
+  const processCards = processSteps.map((step, index) => `
+        <article class="process-card">
+          <span>${index + 1}</span>
+          <div><strong>${escapeHtml(step.title)}</strong><p>${escapeHtml(step.text)}</p></div>
+        </article>`).join("");
+  const contactLine = [email ? `E-mail: ${email}` : "", phone ? `Telefoon: ${phone}` : ""].filter(Boolean).join(" | ");
+  const websiteLine = websiteUrl ? `Huidige website: ${websiteUrl}` : "Website-informatie kan later worden aangevuld.";
   return `<!doctype html>
 <html lang="nl">
   <head>
@@ -253,29 +300,110 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, indus
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body style="--brand:${escapeHtml(colors.brand)};--accent:${escapeHtml(colors.accent)};--ink:${escapeHtml(colors.ink)};--soft:${escapeHtml(colors.soft)}">
-    <header class="hero">
-      <nav><strong>${escapeHtml(businessName)}</strong><a href="#contact">Contact</a></nav>
-      <section class="hero-content">
-        <span>${escapeHtml(style)}</span>
-        <h1>${escapeHtml(businessName)} maakt kiezen makkelijk.</h1>
-        <p>${escapeHtml(description)}</p>
-        <div class="hero-actions"><a class="button" href="#contact">${escapeHtml(cta)}</a><a class="button secondary" href="#diensten">Bekijk diensten</a></div>
-      </section>
+    <header class="site-header">
+      <a class="brand" href="#top">${escapeHtml(businessName)}</a>
+      <nav aria-label="Hoofdnavigatie">
+        <a href="#diensten">Diensten</a>
+        <a href="#werkwijze">Werkwijze</a>
+        <a href="#reviews">Reviews</a>
+        <a href="#contact">Contact</a>
+      </nav>
     </header>
-    <main>
-      <section class="trust"><strong>Website-preview voor ${escapeHtml(industry)}</strong><p>Deze eerste versie combineert vertrouwen, duidelijke informatie en een directe route naar contact.</p></section>
-      <section class="services" id="diensten"><div><span>Diensten</span><h2>Waar ${escapeHtml(businessName)} klanten mee helpt</h2></div><div class="service-grid">${serviceCards}</div></section>
-      <section class="split"><div><span>Aanpak</span><h2>Rustig, helder en gericht op aanvragen.</h2></div><p>Bezoekers zien direct wie u bent, wat u aanbiedt en hoe ze de volgende stap zetten. De structuur is klaar om later uit te breiden met projecten, reviews en veelgestelde vragen.</p></section>
-      <section class="contact" id="contact"><div><span>Contact</span><h2>${escapeHtml(cta)}</h2><p>${escapeHtml(contactName)} kan deze preview intern beoordelen en klantfeedback verwerken.</p><p>${email ? `E-mail: ${escapeHtml(email)}` : ""}${phone ? ` · Telefoon: ${escapeHtml(phone)}` : ""}</p><p>${websiteUrl ? `Huidige website: ${escapeHtml(websiteUrl)}` : ""}</p></div><a class="button" href="${email ? `mailto:${escapeHtml(email)}` : "#"}">${escapeHtml(cta)}</a></section>
+    <main id="top">
+      <section class="hero section-band">
+        <div class="hero-copy">
+          <span class="eyebrow">${escapeHtml(style)} voor ${escapeHtml(industry)}</span>
+          <h1>${escapeHtml(businessName)} presenteert helder wat klanten direct willen weten.</h1>
+          <p>${escapeHtml(description)}</p>
+          <div class="hero-actions">
+            <a class="button" href="#contact">${escapeHtml(cta)}</a>
+            <a class="button secondary" href="#diensten">Bekijk aanbod</a>
+          </div>
+          <div class="hero-proof">
+            <span><strong>3</strong> duidelijke diensten</span>
+            <span><strong>24/7</strong> online vindbaar</span>
+            <span><strong>1</strong> helder contactmoment</span>
+          </div>
+        </div>
+        <aside class="hero-visual" aria-label="Visuele preview">
+          <div class="visual-card visual-card-main">
+            <span>Homepage preview</span>
+            <strong>${escapeHtml(businessName)}</strong>
+            <p>${escapeHtml(services.slice(0, 2).join(" | "))}</p>
+          </div>
+          <div class="visual-card visual-card-floating">
+            <span>Contact klaar</span>
+            <strong>${escapeHtml(cta)}</strong>
+          </div>
+          <div class="visual-grid">
+            <i></i><i></i><i></i><i></i>
+          </div>
+        </aside>
+      </section>
+
+      <section class="trust-strip section-band" aria-label="Vertrouwen">
+        <div><strong>Professionele uitstraling</strong><span>Rustige structuur en moderne typografie</span></div>
+        <div><strong>Snel naar contact</strong><span>CTA's en contactblok staan duidelijk in beeld</span></div>
+        <div><strong>Branchegericht</strong><span>Tekst en accenten sluiten aan op ${escapeHtml(industry)}</span></div>
+      </section>
+
+      <section class="section-band section-heading" id="diensten">
+        <span class="eyebrow">Diensten</span>
+        <h2>Een aanbod dat bezoekers snel begrijpen.</h2>
+        <p>Deze eerste homepage maakt duidelijk waarvoor klanten bij ${escapeHtml(businessName)} terechtkunnen en welke vervolgstap logisch is.</p>
+        <div class="service-grid">${serviceCards}</div>
+      </section>
+
+      <section class="section-band benefits-section">
+        <div>
+          <span class="eyebrow">Voordelen</span>
+          <h2>Waarom klanten vertrouwen krijgen.</h2>
+          <p>De pagina legt de nadruk op duidelijkheid, betrouwbaarheid en een laagdrempelige route naar contact.</p>
+        </div>
+        <div class="benefit-grid">${benefitCards}</div>
+      </section>
+
+      <section class="section-band process-section" id="werkwijze">
+        <span class="eyebrow">Werkwijze</span>
+        <h2>Van eerste vraag naar duidelijke afspraak.</h2>
+        <div class="process-grid">${processCards}</div>
+      </section>
+
+      <section class="section-band reviews-section" id="reviews">
+        <div>
+          <span class="eyebrow">Vertrouwen</span>
+          <h2>Gericht op een sterke eerste indruk.</h2>
+        </div>
+        <article class="review-card">
+          <strong>"Duidelijk, professioneel en makkelijk om contact op te nemen."</strong>
+          <p>Voorbeeldreview voor de eerste preview. Vervang deze later door echte klantreacties of projectcases.</p>
+        </article>
+        <article class="review-card">
+          <strong>"De belangrijkste informatie staat meteen goed op volgorde."</strong>
+          <p>Deze sectie is klaar om uit te breiden met reviews, keurmerken of afgeronde projecten.</p>
+        </article>
+      </section>
+
+      <section class="contact-section section-band" id="contact">
+        <div>
+          <span class="eyebrow">Contact</span>
+          <h2>${escapeHtml(cta)}</h2>
+          <p>${escapeHtml(contactName)} kan deze preview intern controleren en daarna aanvullen met klantfeedback.</p>
+          <p>${escapeHtml(contactLine || "Contactgegevens kunnen later worden aangevuld.")}</p>
+          <p>${escapeHtml(websiteLine)}</p>
+        </div>
+        <a class="button" href="${email ? `mailto:${escapeHtml(email)}` : "#"}">${escapeHtml(cta)}</a>
+      </section>
+      ${lowInputWarning ? '<section class="section-band preview-note"><strong>Interne notitie</strong><p>Er was weinig klantinput beschikbaar. Deze preview gebruikt daarom neutrale professionele standaardtekst die later makkelijk kan worden aangescherpt.</p></section>' : ""}
     </main>
-    <footer><strong>${escapeHtml(businessName)}</strong><span>Eerste website-preview</span></footer>
+    <footer class="site-footer"><strong>${escapeHtml(businessName)}</strong><span>Eerste website-preview</span></footer>
     <script src="script.js"></script>
   </body>
 </html>`;
 }
 
 function renderCss() {
-  return `:root{color-scheme:light;--paper:#fff;--line:#dde6f1;--muted:#607086}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--soft);color:var(--ink)}a{color:inherit}.hero{min-height:78vh;background:linear-gradient(180deg,#fff 0%,var(--soft) 100%);border-bottom:1px solid var(--line)}nav{display:flex;justify-content:space-between;gap:24px;align-items:center;padding:24px clamp(20px,5vw,76px)}nav strong{font-size:1.08rem}nav a{text-decoration:none;font-weight:800}.hero-content{padding:clamp(42px,9vw,118px) clamp(20px,5vw,76px);max-width:960px}.hero span,main span,footer span{display:inline-flex;color:var(--brand);font-weight:900;text-transform:uppercase;font-size:.78rem;letter-spacing:.08em}h1{font-size:clamp(2.6rem,7vw,6rem);line-height:.94;margin:16px 0 22px;max-width:880px}h2{font-size:clamp(1.8rem,4vw,3.2rem);line-height:1.04;margin:10px 0 12px}p{font-size:1.08rem;line-height:1.72;color:var(--muted);max-width:720px}.button{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:13px 18px;border-radius:8px;background:var(--brand);color:#fff;text-decoration:none;font-weight:900}.button.secondary{background:transparent;color:var(--ink);border:1px solid var(--line)}.hero-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}main{width:min(1120px,calc(100% - 40px));margin:0 auto;padding:44px 0 74px}.trust,.services,.split,.contact{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:clamp(22px,4vw,34px);margin-bottom:18px}.services{display:grid;gap:24px}.service-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.service-grid article{border:1px solid var(--line);border-radius:8px;padding:20px;background:#fff}.split,.contact{display:grid;grid-template-columns:.9fr 1.1fr;gap:28px;align-items:center}footer{display:flex;justify-content:space-between;gap:20px;padding:26px clamp(20px,5vw,76px);border-top:1px solid var(--line);background:#fff}@media(max-width:780px){.service-grid,.split,.contact{grid-template-columns:1fr}.hero-actions{display:grid}nav,footer{align-items:flex-start;flex-direction:column}}`;
+  return `:root{color-scheme:light;--paper:#fff;--line:#dbe5ef;--muted:#5f6f84;--shadow:0 24px 70px rgba(15,23,42,.11)}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,Arial,sans-serif;background:linear-gradient(180deg,#fff,var(--soft));color:var(--ink)}a{color:inherit}.site-header{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:18px clamp(20px,5vw,76px);border-bottom:1px solid rgba(219,229,239,.86);background:rgba(255,255,255,.88);backdrop-filter:blur(18px)}.brand{font-weight:900;text-decoration:none}.site-header nav{display:flex;gap:18px;align-items:center}.site-header nav a{text-decoration:none;color:var(--muted);font-size:14px;font-weight:850}.section-band{width:min(1160px,calc(100% - 40px));margin:0 auto}.hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(360px,.95fr);gap:clamp(28px,5vw,64px);align-items:center;min-height:calc(100vh - 78px);padding:clamp(56px,8vw,110px) 0}.eyebrow{display:inline-flex;align-items:center;min-height:30px;padding:0 11px;border:1px solid color-mix(in srgb,var(--brand) 24%,transparent);border-radius:999px;color:var(--brand);background:color-mix(in srgb,var(--brand) 8%,#fff);font-size:12px;font-weight:900;text-transform:uppercase}h1,h2,h3,p{letter-spacing:0}h1{max-width:820px;margin:18px 0 22px;font-size:clamp(42px,7vw,86px);line-height:.94}h2{max-width:760px;margin:12px 0 14px;font-size:clamp(30px,4.5vw,56px);line-height:1}h3{margin:0 0 10px;font-size:22px;line-height:1.14}p{max-width:720px;color:var(--muted);font-size:18px;line-height:1.72}.button{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:13px 18px;border-radius:8px;background:var(--brand);color:#fff;text-decoration:none;font-weight:900;box-shadow:0 14px 34px color-mix(in srgb,var(--brand) 24%,transparent)}.button.secondary{border:1px solid var(--line);color:var(--ink);background:#fff;box-shadow:none}.hero-actions,.hero-proof{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}.hero-proof span{display:grid;gap:2px;min-width:132px;padding:14px 16px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.74);color:var(--muted);font-size:13px;font-weight:850}.hero-proof strong{color:var(--ink);font-size:24px}.hero-visual{position:relative;min-height:520px;border:1px solid var(--line);border-radius:8px;background:radial-gradient(circle at 72% 16%,color-mix(in srgb,var(--accent) 26%,transparent),transparent 34%),linear-gradient(145deg,#fff,color-mix(in srgb,var(--brand) 9%,#fff));box-shadow:var(--shadow);overflow:hidden}.hero-visual::before{content:"";position:absolute;inset:36px;border:1px solid color-mix(in srgb,var(--brand) 16%,transparent);border-radius:8px;background:linear-gradient(135deg,color-mix(in srgb,var(--brand) 14%,transparent),transparent)}.visual-card{position:absolute;display:grid;gap:8px;border:1px solid rgba(255,255,255,.72);border-radius:8px;background:rgba(255,255,255,.86);box-shadow:0 20px 52px rgba(15,23,42,.12);backdrop-filter:blur(14px)}.visual-card span{color:var(--brand);font-size:12px;font-weight:900;text-transform:uppercase}.visual-card-main{left:44px;right:44px;top:70px;padding:28px}.visual-card-main strong{font-size:34px;line-height:1}.visual-card-main p{margin:0;font-size:15px}.visual-card-floating{right:28px;bottom:66px;width:min(260px,58%);padding:22px}.visual-grid{position:absolute;left:44px;right:44px;bottom:178px;display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.visual-grid i{height:72px;border-radius:8px;background:linear-gradient(135deg,color-mix(in srgb,var(--brand) 16%,#fff),#fff);border:1px solid rgba(255,255,255,.7)}.trust-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}.trust-strip div,.service-card,.benefit-card,.process-card,.review-card,.contact-section,.preview-note{border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.86);box-shadow:0 14px 40px rgba(15,23,42,.06)}.trust-strip div{display:grid;gap:6px;padding:20px}.trust-strip strong{font-size:16px}.trust-strip span{color:var(--muted);font-size:14px;font-weight:750}.section-heading,.benefits-section,.process-section,.reviews-section,.contact-section,.preview-note{padding:clamp(34px,5vw,58px) 0}.service-grid,.benefit-grid,.process-grid{display:grid;gap:16px}.service-grid{grid-template-columns:repeat(3,1fr);margin-top:26px}.service-card,.benefit-card{padding:24px}.card-index{display:inline-flex;margin-bottom:26px;color:var(--brand);font-size:13px;font-weight:950}.benefits-section{display:grid;grid-template-columns:.85fr 1.15fr;gap:28px;align-items:start}.benefit-grid{grid-template-columns:repeat(2,1fr)}.benefit-card strong{font-size:19px}.process-grid{grid-template-columns:repeat(3,1fr);margin-top:24px}.process-card{display:flex;gap:16px;padding:22px}.process-card span{display:grid;place-items:center;width:38px;height:38px;flex:0 0 auto;border-radius:999px;color:#fff;background:var(--brand);font-weight:900}.process-card p,.benefit-card p,.service-card p,.review-card p{margin:0;font-size:15px}.reviews-section{display:grid;grid-template-columns:.9fr 1fr 1fr;gap:16px;align-items:stretch}.review-card{padding:24px}.review-card strong{display:block;margin-bottom:14px;font-size:22px;line-height:1.2}.contact-section{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;margin-bottom:34px;padding:34px}.contact-section p{margin:0 0 10px}.preview-note{padding:20px 24px;margin-bottom:34px}.preview-note p{margin:8px 0 0;font-size:14px}.site-footer{display:flex;justify-content:space-between;gap:20px;padding:26px clamp(20px,5vw,76px);border-top:1px solid var(--line);background:#fff;color:var(--muted);font-weight:850}.site-footer strong{color:var(--ink)}@media(max-width:900px){.site-header,.site-header nav,.site-footer{align-items:flex-start;flex-direction:column}.hero,.benefits-section,.reviews-section,.contact-section{grid-template-columns:1fr}.hero{min-height:0}.hero-visual{min-height:420px}.trust-strip,.service-grid,.benefit-grid,.process-grid{grid-template-columns:1fr}.contact-section .button{width:100%}}`;
 }
 
 function renderScript() {
@@ -284,6 +412,48 @@ function renderScript() {
 
 function serviceText(service, industry) {
   return `${service} voor ${industry}, helder uitgelegd en gekoppeld aan een duidelijke vervolgstap.`;
+}
+
+function inferBenefits(industry = "") {
+  const normalized = industry.toLowerCase();
+  if (/bouw|renovatie|installatie/.test(normalized)) {
+    return [
+      { title: "Duidelijke afspraken", text: "Bezoekers zien direct hoe het traject wordt opgepakt en wat ze kunnen verwachten." },
+      { title: "Vertrouwen in vakwerk", text: "De opbouw geeft ruimte aan projecten, garanties en praktische informatie." },
+      { title: "Snel contact", text: "Telefoon en aanvraagmomenten staan logisch verspreid over de pagina." },
+      { title: "Professionele indruk", text: "Rustige vormgeving helpt om kwaliteit en betrouwbaarheid uit te stralen." },
+    ];
+  }
+  if (/horeca/.test(normalized)) {
+    return [
+      { title: "Sfeer snel voelbaar", text: "De preview geeft ruimte aan menu, reserveren en een warme eerste indruk." },
+      { title: "Reserveren centraal", text: "Bezoekers worden subtiel naar de belangrijkste actie geleid." },
+      { title: "Aanbod overzichtelijk", text: "Diensten en arrangementen zijn makkelijk scanbaar." },
+      { title: "Mobiel sterk", text: "De structuur werkt goed voor bezoekers die onderweg zoeken." },
+    ];
+  }
+  return [
+    { title: "Heldere positionering", text: "Bezoekers begrijpen snel wat het bedrijf doet en voor wie." },
+    { title: "Meer vertrouwen", text: "Voordelen, werkwijze en reviews ondersteunen de eerste indruk." },
+    { title: "Betere conversie", text: "Elke sectie stuurt rustig richting contact of afspraak." },
+    { title: "Uitbreidbaar ontwerp", text: "De preview is klaar voor echte beelden, cases en klantreviews." },
+  ];
+}
+
+function inferProcessSteps(industry = "") {
+  const normalized = industry.toLowerCase();
+  if (/horeca/.test(normalized)) {
+    return [
+      { title: "Bekijk het aanbod", text: "Gasten zien snel wat er mogelijk is." },
+      { title: "Neem contact op", text: "Reserveren of aanvragen kan zonder zoeken." },
+      { title: "Ontvang bevestiging", text: "De volgende stap is duidelijk en laagdrempelig." },
+    ];
+  }
+  return [
+    { title: "Vraag of wens bespreken", text: "De bezoeker legt kort uit waar hij hulp bij zoekt." },
+    { title: "Advies of voorstel ontvangen", text: "Het bedrijf reageert met een passende aanpak." },
+    { title: "Samen plannen", text: "Daarna worden timing, inhoud en vervolgstappen afgestemd." },
+  ];
 }
 
 function cleanText(value = "") {
