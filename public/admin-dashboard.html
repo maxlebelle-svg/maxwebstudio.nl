@@ -2637,6 +2637,7 @@
         const inviteUserResetLink = document.getElementById("invite-user-reset-link");
         const inviteUserOpenButtons = document.querySelectorAll(".admin-user-management-action");
         const refreshUserManagementButton = document.getElementById("refresh-user-management");
+        const userManagementCard = document.getElementById("user-management-card");
         const userManagementList = document.getElementById("user-management-list");
         const demoMessage = document.getElementById("demo-message");
         const demoFlowChecklist = document.getElementById("demo-flow-checklist");
@@ -5475,7 +5476,7 @@
             const userManagementAllowed = modules.authService.hasPermission("users", "view");
             const settingsSection = document.getElementById("instellingen");
             if (settingsSection) settingsSection.hidden = !settingsAllowed;
-            if (userManagementCard) userManagementCard.hidden = !userManagementAllowed;
+            userManagementCard?.toggleAttribute("hidden", !userManagementAllowed);
             const canInviteUsers = modules.authService.hasPermission("users", "activate") || modules.authService.hasPermission("users", "update_role");
             inviteUserOpenButtons.forEach((button) => {
               button.hidden = !canInviteUsers;
