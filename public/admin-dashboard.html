@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=20260704-admin-prod-hotfix" />
+    <link rel="stylesheet" href="styles.css?v=20260704-admin-session-hotfix" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
   <body class="admin-body">
@@ -1882,7 +1882,7 @@
       })();
 
       (async () => {
-        const adminAssetVersion = "20260704-admin-prod-hotfix";
+        const adminAssetVersion = "20260704-admin-session-hotfix";
         const versionedModule = (path) => `${path}?v=${adminAssetVersion}`;
         const crmEndpoint = "/.netlify/functions/admin-client-profiles";
         const adminSupabaseDataEndpoint = "/.netlify/functions/admin-supabase-data";
@@ -1896,10 +1896,12 @@
         const subscriptionRetryEndpoint = "/.netlify/functions/admin-subscription-retry";
         const invoiceEmailEndpoint = "/.netlify/functions/admin-invoice-email";
         const authConfigEndpoint = "/.netlify/functions/client-auth-config";
+        const accountProfileEndpoint = "/.netlify/functions/account-profile";
         const listEndpoint = "/.netlify/functions/list-change-requests";
         const updateEndpoint = "/.netlify/functions/update-change-request-status";
         const adminTokenStorageKey = "mws_admin_token";
         const adminSessionStorageKey = "mws_admin_supabase_session";
+        const accessProfilesStorageKey = "maxwebstudioProfiles";
         const crmCustomersStorageKey = "maxwebstudioCrmCustomers";
         const leadFinderStorageKey = "maxwebstudioLeadFinderLeads";
         const managedSitesStorageKey = "maxwebstudioManagedSites";
@@ -2116,6 +2118,7 @@
         const state = {
           adminToken: sessionStorage.getItem(adminTokenStorageKey) || "",
           adminSession: null,
+          adminSessionRestoreComplete: false,
           customers: [],
           profiles: [],
           authUsers: [],
@@ -5487,6 +5490,10 @@
 
         async function applyAccessControl() {
           try {
+            if (!state.adminSessionRestoreComplete && !state.adminSession?.accessToken) {
+              adminAccessControlText.textContent = "Access control wacht op adminsessie...";
+              return;
+            }
             const modules = await loadDeveloperModules();
             const context = modules.routeGuardService.getAccessContext();
             const decision = modules.routeGuardService.requireAuth({ pageName: "admin-dashboard", mode: context.mode, allowDemo: true });
@@ -10043,6 +10050,26 @@
           }
         }
 
+        function readStoredArray(key) {
+          try {
+            const value = JSON.parse(localStorage.getItem(key) || "[]");
+            return Array.isArray(value) ? value : [];
+          } catch {
+            return [];
+          }
+        }
+
+        function writeStoredArray(key, rows) {
+          localStorage.setItem(key, JSON.stringify(Array.isArray(rows) ? rows : []));
+        }
+
+        function upsertStoredRow(key, row, matcher) {
+          const rows = readStoredArray(key);
+          const nextRows = rows.filter((item) => !matcher(item));
+          nextRows.unshift(row);
+          writeStoredArray(key, nextRows);
+        }
+
         function storeAdminSession(session) {
           localStorage.setItem(adminSessionStorageKey, JSON.stringify(session));
           state.adminSession = session;
@@ -10055,6 +10082,7 @@
           state.adminSession = null;
           state.adminToken = "";
           sessionStorage.removeItem(adminTokenStorageKey);
+          localStorage.removeItem(currentSessionStorageKey);
           if (adminTokenInput) adminTokenInput.value = "";
         }
 
@@ -10072,6 +10100,95 @@
           adminEmailInput.disabled = loggedIn;
           adminPasswordInput.disabled = loggedIn;
           adminLoadButton.disabled = !loggedIn && !state.adminToken;
+        }
+
+        async function fetchAccountProfile(accessToken) {
+          let response;
+          try {
+            response = await fetch(accountProfileEndpoint, {
+              headers: {
+                Accept: "application/json",
+                Authorization: `Bearer ${accessToken}`,
+              },
+            });
+          } catch (error) {
+            throw new Error(describeFetchError(error, "Admin profielcontrole", accountProfileEndpoint));
+          }
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || !data.success || !data.profile?.role) {
+            throw new Error(data.error || `Admin profielcontrole is mislukt (${accountProfileEndpoint}, status ${response.status}).`);
+          }
+          return data;
+        }
+
+        async function syncAdminAccessSession(session) {
+          if (!session?.accessToken) throw new Error("Admin sessie ontbreekt.");
+          const data = await fetchAccountProfile(session.accessToken);
+          const authUser = data.user || {};
+          const profile = data.profile || {};
+          const authUserId = authUser.id || profile.authUserId || session.userId;
+          const email = String(authUser.email || profile.email || session.email || "").toLowerCase();
+          const role = String(profile.role || "").toLowerCase();
+          const status = String(profile.status || "active").toLowerCase();
+          if (!authUserId || !email || !role) {
+            throw new Error("Admin profielcontrole mist gebruiker, e-mail of rol.");
+          }
+          if (["disabled", "archived"].includes(status)) {
+            throw new Error("Account is gedeactiveerd.");
+          }
+
+          const now = new Date().toISOString();
+          const accessUser = {
+            id: authUserId,
+            authUserId,
+            email,
+            name: profile.name || email,
+            role,
+            status,
+            isDemo: false,
+            updatedAt: now,
+          };
+          const accessProfile = {
+            id: profile.id || `profile-${authUserId}`,
+            authUserId,
+            email,
+            name: profile.name || email,
+            role,
+            status,
+            customerId: profile.customerId || "",
+            environment: "production",
+            isDemoUser: false,
+            lastLoginAt: now,
+            updatedAt: now,
+            metadata: {
+              source: "admin-supabase-session",
+              syncedAt: now,
+            },
+          };
+          const accessSession = {
+            id: `admin-session-${authUserId}`,
+            userId: authUserId,
+            role,
+            environment: "production",
+            isDemo: false,
+            provider: "supabase-admin",
+            customerId: profile.customerId || "",
+            startedAt: session.startedAt || now,
+            expiresAt: new Date(Number(session.expiresAt || Date.now() + 3600000)).toISOString(),
+          };
+
+          upsertStoredRow(authUsersStorageKey, accessUser, (item) => item.id === authUserId || String(item.email || "").toLowerCase() === email);
+          upsertStoredRow(accessProfilesStorageKey, accessProfile, (item) => item.authUserId === authUserId || String(item.email || "").toLowerCase() === email);
+          localStorage.setItem(currentSessionStorageKey, JSON.stringify(accessSession));
+          state.adminSession = {
+            ...session,
+            email,
+            userId: authUserId,
+            role,
+            profileId: accessProfile.id,
+          };
+          localStorage.setItem(adminSessionStorageKey, JSON.stringify(state.adminSession));
+          return { user: accessUser, profile: accessProfile, session: accessSession };
         }
 
         async function fetchAdminAuthConfig() {
@@ -10124,8 +10241,11 @@
               refreshToken: data.refresh_token || "",
               email: String(data.user.email || email).toLowerCase(),
               userId: data.user.id || "",
+              startedAt: new Date().toISOString(),
               expiresAt: Date.now() + Number(data.expires_in || 3600) * 1000,
             });
+            await syncAdminAccessSession(state.adminSession);
+            state.adminSessionRestoreComplete = true;
             adminPasswordInput.value = "";
             updateAdminSessionUi();
             await applyAccessControl();
@@ -10133,6 +10253,7 @@
             await loadCRMData(true);
           } catch (error) {
             clearAdminSession();
+            state.adminSessionRestoreComplete = true;
             updateAdminSessionUi();
             setAdminAccessMessage(error.message || "Admin login is niet gelukt.", "error");
           } finally {
@@ -10180,13 +10301,25 @@
           if (!session) {
             clearAdminSession();
             updateAdminSessionUi();
+            state.adminSessionRestoreComplete = true;
             return false;
           }
-          state.adminSession = session;
-          state.adminToken = session.accessToken;
-          updateAdminSessionUi();
-          setAdminAccessMessage(`Ingelogd als ${session.email}.`, "success");
-          return true;
+          try {
+            state.adminSession = session;
+            state.adminToken = session.accessToken;
+            await syncAdminAccessSession(session);
+            updateAdminSessionUi();
+            setAdminAccessMessage(`Ingelogd als ${state.adminSession.email}.`, "success");
+            return true;
+          } catch (error) {
+            console.error("Admin session restore failed", error);
+            clearAdminSession();
+            updateAdminSessionUi();
+            setAdminAccessMessage(error.message || "Admin sessie kon niet worden hersteld.", "error");
+            return false;
+          } finally {
+            state.adminSessionRestoreComplete = true;
+          }
         }
 
         async function logoutAdminSession() {
@@ -17013,8 +17146,8 @@
         getCanonicalCrmRelationships,
         getCrmWorkflowSummary,
         readCrmTasks,
-      } from "./src/services/crmWorkflowService.js?v=20260704-admin-prod-hotfix";
-      import { saveCrmTaskWithWriteFallback } from "./src/services/crmTaskWriteService.js?v=20260704-admin-prod-hotfix";
+      } from "./src/services/crmWorkflowService.js?v=20260704-admin-session-hotfix";
+      import { saveCrmTaskWithWriteFallback } from "./src/services/crmTaskWriteService.js?v=20260704-admin-session-hotfix";
 
       const workflowStorageKeys = {
         customers: ["maxwebstudioCrmCustomers", "maxwebstudioCustomers"],
@@ -17326,10 +17459,10 @@
         readLeadFinderLeads,
         saveLeadFinderLeadLocally,
         updateLeadFinderLeadLocally,
-      } from "./src/services/leadFinderService.js?v=20260704-admin-prod-hotfix";
-      import { readSupabaseDataLayerModule } from "./src/services/supabaseDataLayerService.js?v=20260704-admin-prod-hotfix";
-      import { saveCrmTaskWithWriteFallback } from "./src/services/crmTaskWriteService.js?v=20260704-admin-prod-hotfix";
-      import { saveLeadNoteWithWriteFallback } from "./src/services/leadNoteWriteService.js?v=20260704-admin-prod-hotfix";
+      } from "./src/services/leadFinderService.js?v=20260704-admin-session-hotfix";
+      import { readSupabaseDataLayerModule } from "./src/services/supabaseDataLayerService.js?v=20260704-admin-session-hotfix";
+      import { saveCrmTaskWithWriteFallback } from "./src/services/crmTaskWriteService.js?v=20260704-admin-session-hotfix";
+      import { saveLeadNoteWithWriteFallback } from "./src/services/leadNoteWriteService.js?v=20260704-admin-session-hotfix";
 
       const leadfinderElements = {
         cockpit: {
@@ -18928,7 +19061,7 @@
         getAiAdminAssistantContextOptions,
         getAiAdminAssistantReadiness,
         listAiAdminAssistantDrafts,
-      } from "./src/services/aiAdminAssistantService.js?v=20260704-admin-prod-hotfix";
+      } from "./src/services/aiAdminAssistantService.js?v=20260704-admin-session-hotfix";
 
       const aiAdminElements = {
         form: document.getElementById("ai-admin-assistant-form"),
