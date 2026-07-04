@@ -2436,6 +2436,7 @@
         const employeeInviteModal = document.getElementById("employee-invite-modal");
         const employeeInviteForm = document.getElementById("employee-invite-form");
         const employeeInviteMessage = document.getElementById("employee-invite-message");
+        const employeeInviteSubmit = document.getElementById("employee-invite-submit");
         const subscriptionForm = document.getElementById("subscription-form");
         const quoteForm = document.getElementById("quote-form");
         const invoiceForm = document.getElementById("invoice-form");
@@ -6406,6 +6407,21 @@
           employeeInviteMessage.className = `admin-form-message ${type}`.trim();
         }
 
+        function setInviteSubmitting(form, submitButton, submitting, labels = {}) {
+          if (submitButton) {
+            submitButton.disabled = submitting;
+            submitButton.textContent = submitting
+              ? labels.submitting || "Uitnodiging versturen..."
+              : labels.idle || "Uitnodiging versturen";
+          }
+          if (!form) return;
+          [...form.elements].forEach((element) => {
+            if (element instanceof HTMLInputElement || element instanceof HTMLSelectElement || element instanceof HTMLButtonElement) {
+              element.disabled = submitting;
+            }
+          });
+        }
+
         function getAdminBearerToken() {
           if (typeof getAdminBearer === "function") {
             const bearer = getAdminBearer();
@@ -6426,6 +6442,8 @@
           const form = options.form || inviteUserForm;
           const messageHandler = options.messageHandler || setInviteUserMessage;
           const successHandler = options.onSuccess || renderUserManagement;
+          const submitButton = options.submitButton || form?.querySelector("button[type='submit']");
+          const submitLabels = options.submitLabels || {};
           if (!form) return;
           const data = options.data || Object.fromEntries(new FormData(form).entries());
           const token = getAdminBearerToken();
@@ -6434,6 +6452,7 @@
             return;
           }
           messageHandler(action === "send_password_reset" ? "Setup-link wordt verstuurd..." : "Uitnodiging wordt verstuurd...");
+          setInviteSubmitting(form, submitButton, true, submitLabels);
           const inviteEndpoint = "/.netlify/functions/admin-invite-user";
           let response;
           try {
@@ -6446,15 +6465,18 @@
               },
               body: JSON.stringify({ ...data, action }),
             });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result.success) {
+              throw new Error(result.error || `Uitnodiging kon niet worden verstuurd (${inviteEndpoint}, status ${response.status}).`);
+            }
+            messageHandler(result.message || "Gebruiker is bijgewerkt.", "success");
+            await successHandler?.();
           } catch (error) {
+            if (response) throw error;
             throw new Error(describeFetchError(error, "Invite-flow", inviteEndpoint));
+          } finally {
+            setInviteSubmitting(form, submitButton, false, submitLabels);
           }
-          const result = await response.json().catch(() => ({}));
-          if (!response.ok || !result.success) {
-            throw new Error(result.error || `Uitnodiging kon niet worden verstuurd (${inviteEndpoint}, status ${response.status}).`);
-          }
-          messageHandler(result.message || "Gebruiker is bijgewerkt.", "success");
-          await successHandler?.();
         }
 
         function openInviteUserForm() {
@@ -16943,7 +16965,13 @@
         });
         inviteUserResetLink?.addEventListener("click", async () => {
           try {
-            await submitInviteUser("send_password_reset");
+            await submitInviteUser("send_password_reset", {
+              submitButton: inviteUserResetLink,
+              submitLabels: {
+                submitting: "Setup-link versturen...",
+                idle: "Password reset/setup link versturen",
+              },
+            });
           } catch (error) {
             console.error("Password setup link failed", error);
             setInviteUserMessage(error.message || "Setup-link kon niet worden verstuurd.", "error");
@@ -16959,6 +16987,7 @@
               form: employeeInviteForm,
               data: employeeInvitePayload(),
               messageHandler: setEmployeeInviteMessage,
+              submitButton: employeeInviteSubmit,
               onSuccess: async () => {
                 await renderUserManagement();
                 if (inviteUserForm) {
