@@ -6077,6 +6077,14 @@ h3 {
   grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
   gap: 16px;
   align-items: start;
+  isolation: isolate;
+  overflow: visible;
+}
+
+.website-table {
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
 }
 
 .website-stats-grid {
@@ -6128,7 +6136,10 @@ h3 {
 }
 
 .website-detail-panel {
+  position: relative;
+  z-index: 0;
   align-self: start;
+  min-width: 0;
   height: auto;
   max-height: none;
   overflow: visible;
@@ -6146,6 +6157,7 @@ h3 {
     minmax(120px, 0.8fr)
     minmax(120px, 0.8fr)
     minmax(240px, 1.35fr);
+  min-width: 1180px;
 }
 
 .website-detail-summary {
