@@ -491,7 +491,7 @@
                 <label for="demo-journey-status">Demo status<select id="demo-journey-status"></select></label>
                 <label for="demo-journey-followup">Opvolgdatum<input id="demo-journey-followup" type="datetime-local" /></label>
                 <label for="demo-journey-assigned">Verantwoordelijke<input id="demo-journey-assigned" type="text" placeholder="Naam of e-mail medewerker" /></label>
-                <label for="demo-journey-preview">Preview URL<input id="demo-journey-preview" type="url" placeholder="https://preview..." /></label>
+                <label for="demo-journey-preview">Preview URL<input id="demo-journey-preview" type="text" placeholder="Wordt automatisch gevuld" readonly /></label>
                 <label class="admin-profile-wide" for="demo-journey-feedback">Klantfeedback<textarea id="demo-journey-feedback" rows="4"></textarea></label>
                 <label class="admin-profile-wide" for="demo-journey-notes">Interne notities<textarea id="demo-journey-notes" rows="4"></textarea></label>
               </div>
@@ -546,6 +546,7 @@
               <div class="admin-profile-actions demo-preview-actions">
                 <button class="button secondary is-disabled" id="demo-journey-open-preview" type="button" aria-disabled="true">Preview openen</button>
                 <button class="button secondary is-disabled" id="demo-journey-download-zip" type="button" aria-disabled="true">ZIP downloaden</button>
+                <button class="button secondary is-disabled" id="demo-journey-copy-preview-link" type="button" aria-disabled="true">Link kopiëren</button>
                 <button class="button secondary is-disabled" id="demo-journey-open-portal" type="button" aria-disabled="true">Klantportaal openen</button>
               </div>
             </article>
@@ -20282,6 +20283,7 @@
             timelineCount: document.getElementById("demo-journey-timeline-count"),
             openPreview: document.getElementById("demo-journey-open-preview"),
             openPortal: document.getElementById("demo-journey-open-portal"),
+            copyPreviewLink: document.getElementById("demo-journey-copy-preview-link"),
             save: document.getElementById("demo-journey-save"),
             generateBriefing: document.getElementById("demo-journey-generate-briefing"),
             generatePreview: document.getElementById("demo-journey-generate-preview"),
@@ -20440,15 +20442,24 @@
           return value ? new Date(value).toISOString() : "";
         }
 
+        function absolutePreviewUrl(url = "") {
+          const value = String(url || "").trim();
+          if (!value) return "";
+          if (value.startsWith("/")) return `${window.location.origin}${value}`;
+          return value;
+        }
+
         function previewZipUrl(url = "") {
-          if (!url) return "";
-          return `${url}${url.includes("?") ? "&" : "?"}format=zip`;
+          const absoluteUrl = absolutePreviewUrl(url);
+          if (!absoluteUrl) return "";
+          return `${absoluteUrl}${absoluteUrl.includes("?") ? "&" : "?"}format=zip`;
         }
 
         function setActionLink(link, url = "", unavailableMessage = "Genereer eerst een preview") {
           if (!link) return;
-          const enabled = Boolean(url);
-          link.dataset.url = enabled ? url : "";
+          const absoluteUrl = absolutePreviewUrl(url);
+          const enabled = Boolean(absoluteUrl);
+          link.dataset.url = enabled ? absoluteUrl : "";
           link.dataset.unavailableMessage = enabled ? "" : unavailableMessage;
           link.classList.toggle("is-disabled", !enabled);
           link.setAttribute("aria-disabled", enabled ? "false" : "true");
@@ -20513,6 +20524,7 @@
           }
           const data = await apiRequest(`${endpoint}?leadId=${encodeURIComponent(leadId)}`);
           journey = data.journey || null;
+          if (journey?.previewUrl) journey.previewUrl = absolutePreviewUrl(journey.previewUrl);
           events = Array.isArray(data.events) ? data.events : [];
           buildHistory = data.buildHistory || { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
           renderJourney();
@@ -20535,6 +20547,7 @@
         }
 
         function collectPayload(extra = {}) {
+          const previewUrl = absolutePreviewUrl(elements.preview?.value || journey?.previewUrl || "");
           return {
             id: journey?.id || "",
             leadId: elements.lead?.value || "",
@@ -20545,7 +20558,7 @@
             websiteUrl: elements.website?.value || "",
             demoStatus: elements.status?.value || "aanvraag_ontvangen",
             generatedBriefing: elements.briefing?.value || "",
-            previewUrl: elements.preview?.value || "",
+            previewUrl,
             feedback: elements.feedback?.value || "",
             internalNotes: elements.notes?.value || "",
             followUpAt: fromDatetimeLocal(elements.followup?.value || ""),
@@ -20654,7 +20667,7 @@
             const data = await apiRequest(endpoint, "POST", collectPayload({ action: "generate_preview", generatedBriefing: elements.briefing.value }));
             lastFactoryResponse = data;
             journey = data.demoJourney || data.journey || journey || null;
-            const previewUrl = data.preview?.url || data.buildJob?.previewUrl || data.buildStatus?.previewUrl || journey?.previewUrl || "";
+            const previewUrl = absolutePreviewUrl(data.preview?.url || data.buildJob?.previewUrl || data.buildStatus?.previewUrl || journey?.previewUrl || "");
             if (journey && previewUrl && !journey.previewUrl) journey.previewUrl = previewUrl;
             if (journey && data.buildStatus?.previewToken && !journey.previewToken) journey.previewToken = data.buildStatus.previewToken;
             if (journey && previewUrl) journey.demoStatus = journey.demoStatus || "interne_preview_klaar";
@@ -20765,6 +20778,7 @@
           const latest = buildHistory.latestJob || (buildHistory.jobs || [])[0] || null;
           const activeVersion = buildHistory.activeVersion || (buildHistory.previewVersions || [])[0] || null;
           const previewUrl = journey?.previewUrl || latest?.previewUrl || activeVersion?.previewUrl || "";
+          const absoluteUrl = absolutePreviewUrl(previewUrl);
           const previewToken = journey?.previewToken || latest?.previewToken || activeVersion?.previewToken || "";
           if (elements.buildState) {
             elements.buildState.textContent = latest ? buildStatusLabel(latest.status) : buildHistory.setupRequired ? "Setup nodig" : "Geen build";
@@ -20780,7 +20794,7 @@
               ["Preview score", Number.isFinite(Number(score)) ? `${score}/100` : "-"],
               ["Preview versie", activeVersion?.version ? `V${activeVersion.version}` : latest?.previewVersion ? `V${latest.previewVersion}` : "-"],
               ["Laatste buildtijd", latest?.finishedAt || latest?.updatedAt ? formatDate(latest.finishedAt || latest.updatedAt) : "-"],
-              ["Melding", latest?.errorMessage || buildHistory.warning || (previewUrl ? "Klaar voor interne controle." : "Genereer eerst een preview")],
+              ["Melding", latest?.errorMessage || buildHistory.warning || (absoluteUrl ? "Klaar voor interne controle." : "Genereer eerst een preview")],
             ].map(([label, value]) => `<div class="demo-kv-row"><strong>${escapeHtml(label)}</strong><span title="${escapeHtml(value)}">${escapeHtml(value)}</span></div>`).join("");
           }
           if (elements.buildHistory) {
@@ -20812,7 +20826,7 @@
                 previewVersion: activeVersion?.version || latest?.previewVersion || "",
                 previewScore: latest?.previewScore ?? activeVersion?.previewScore ?? null,
                 previewToken,
-                previewUrl,
+                previewUrl: absoluteUrl,
                 lastFactoryResponse,
                 buildError: latest?.errorMessage || "",
               }
@@ -20847,6 +20861,7 @@
         function renderJourney() {
           const lead = selectedLead();
           if (journey) {
+            if (journey.previewUrl) journey.previewUrl = absolutePreviewUrl(journey.previewUrl);
             elements.business.value = journey.businessName || "";
             elements.contact.value = journey.contactName || "";
             elements.email.value = journey.email || "";
@@ -20885,6 +20900,7 @@
           ].map(([label, value]) => `<div class="demo-kv-row"><strong>${escapeHtml(label)}</strong><span title="${escapeHtml(value)}">${escapeHtml(value)}</span></div>`).join("");
           setActionLink(elements.openPreview, journey?.previewUrl || "", "Genereer eerst een preview");
           setActionLink(elements.downloadZip, journey?.previewUrl ? previewZipUrl(journey.previewUrl) : "", "Genereer eerst een preview");
+          setActionLink(elements.copyPreviewLink, journey?.previewUrl || "", "Genereer eerst een preview");
           setActionLink(elements.openPortal, journey?.customerId ? `/klantportaal.html?customerId=${encodeURIComponent(journey.customerId)}#projectstatus` : "");
           renderMetrics();
           renderEmployeeSteps();
@@ -20928,6 +20944,16 @@
           });
           elements.openPreview?.addEventListener("click", (event) => openActionUrl(event, elements.openPreview, "Genereer eerst een preview."));
           elements.downloadZip?.addEventListener("click", (event) => openActionUrl(event, elements.downloadZip, "Genereer eerst een previewpakket."));
+          elements.copyPreviewLink?.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const url = elements.copyPreviewLink?.dataset?.url || "";
+            if (!url || elements.copyPreviewLink?.getAttribute("aria-disabled") === "true") {
+              setMessage(elements.message, "Genereer eerst een preview.", "warning");
+              return;
+            }
+            copyText(url, elements.message);
+          });
           elements.openPortal?.addEventListener("click", (event) => openActionUrl(event, elements.openPortal, "Er is nog geen klantportaal gekoppeld."));
           elements.generateEmail?.addEventListener("click", (event) => {
             event.preventDefault();
