@@ -153,12 +153,12 @@
         </section>
 
         <section class="admin-grid admin-metrics" aria-label="CRM overzicht">
-          <article class="admin-card metric-card"><span>Leads</span><strong id="metric-total-leads">0</strong><small>Open aanvragen</small></article>
-          <article class="admin-card metric-card"><span>Klanten</span><strong id="metric-total-customers">-</strong><small id="metric-total-customers-label">Klantprofielen</small></article>
-          <article class="admin-card metric-card"><span>Lopende projecten</span><strong id="metric-active-projects">0</strong><small>Niet afgerond</small></article>
-          <article class="admin-card metric-card"><span>Actieve websites</span><strong id="metric-live-websites">-</strong><small>Online/live</small></article>
-          <article class="admin-card metric-card"><span>Open offertes</span><strong id="metric-open-quotes">0</strong><small>Concept, verzonden of bekeken</small></article>
-          <article class="admin-card metric-card"><span>Open facturen</span><strong id="metric-open-invoices-local">0</strong><small>Concept, verzonden of verlopen</small></article>
+          <article class="admin-card metric-card dashboard-summary-card" role="button" tabindex="0" data-dashboard-summary="leads" aria-label="Open leads bekijken"><span>Leads</span><strong id="metric-total-leads">0</strong><small>Open aanvragen</small></article>
+          <article class="admin-card metric-card dashboard-summary-card" role="button" tabindex="0" data-dashboard-summary="customers" aria-label="Klanten bekijken"><span>Klanten</span><strong id="metric-total-customers">-</strong><small id="metric-total-customers-label">Klantprofielen</small></article>
+          <article class="admin-card metric-card dashboard-summary-card" role="button" tabindex="0" data-dashboard-summary="projects" aria-label="Lopende projecten bekijken"><span>Lopende projecten</span><strong id="metric-active-projects">0</strong><small>Niet afgerond</small></article>
+          <article class="admin-card metric-card dashboard-summary-card" role="button" tabindex="0" data-dashboard-summary="websites" aria-label="Actieve websites bekijken"><span>Actieve websites</span><strong id="metric-live-websites">-</strong><small>Online/live</small></article>
+          <article class="admin-card metric-card dashboard-summary-card" role="button" tabindex="0" data-dashboard-summary="quotes" aria-label="Open offertes bekijken"><span>Open offertes</span><strong id="metric-open-quotes">0</strong><small>Concept, verzonden of bekeken</small></article>
+          <article class="admin-card metric-card dashboard-summary-card" role="button" tabindex="0" data-dashboard-summary="invoices" aria-label="Open facturen bekijken"><span>Open facturen</span><strong id="metric-open-invoices-local">0</strong><small>Concept, verzonden of verlopen</small></article>
           <article class="admin-card metric-card admin-developer-only"><span>Betaald bedrag</span><strong id="metric-paid-amount">€ 0</strong><small>Facturen betaald</small></article>
           <article class="admin-card metric-card admin-developer-only"><span>Te factureren abonnementen</span><strong id="metric-subscriptions-due">0</strong><small>Verlopen / vandaag / 7 dagen</small></article>
           <article class="admin-card metric-card admin-developer-only"><span>Recurring omzet</span><strong id="metric-recurring-revenue">€ 0,00</strong><small id="metric-recurring-label">MRR / ARR / actief</small></article>
@@ -464,6 +464,10 @@
             <label for="customer-package-filter">Pakket<select id="customer-package-filter"><option value="">Alle pakketten</option><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option><option value="One Page Website">One Page Website</option></select></label>
           </div>
           <div class="admin-grid compact-admin-grid" id="customer-source-summary" aria-live="polite"></div>
+          <div class="active-filter-bar" id="customer-active-filter" hidden>
+            <strong>Alle klanten</strong>
+            <button class="button secondary" id="customer-clear-quick-filter" type="button">Alle klanten tonen</button>
+          </div>
 
           <div class="admin-crm-grid">
             <div class="admin-table client-profile-table" id="customer-list" role="table" aria-label="Klanten" aria-live="polite">
@@ -573,6 +577,10 @@
             <label for="website-care-filter">Onderhoudspakket<select id="website-care-filter"><option value="">Alle onderhoudspakketten</option><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option><option value="Geen">Geen</option></select></label>
           </div>
           <div class="admin-grid compact-admin-grid" id="website-source-summary" aria-live="polite"></div>
+          <div class="active-filter-bar" id="website-active-filter" hidden>
+            <strong>Alle websites</strong>
+            <button class="button secondary" id="website-clear-quick-filter" type="button">Alle websites tonen</button>
+          </div>
           <div class="website-operations-grid">
             <div class="admin-table website-table" id="website-list" role="table" aria-label="Websites" aria-live="polite"></div>
             <form class="admin-card admin-profile-form website-detail-panel" id="website-detail-form" hidden>
@@ -679,6 +687,10 @@
             <label for="project-data-mode">Project data mode<select id="project-data-mode"><option value="local">Local</option><option value="supabase-read">Supabase read</option><option value="hybrid">Hybrid</option></select></label>
           </div>
           <div class="admin-grid compact-admin-grid" id="project-source-summary" aria-live="polite"></div>
+          <div class="active-filter-bar" id="project-active-filter" hidden>
+            <strong>Alle projecten</strong>
+            <button class="button secondary" id="project-clear-quick-filter" type="button">Alle projecten tonen</button>
+          </div>
           <div class="project-management-grid">
             <div class="admin-table project-table" id="project-list" role="table" aria-label="Projecten" aria-live="polite"></div>
             <form class="admin-card admin-profile-form project-detail-panel" id="project-detail-form">
@@ -923,6 +935,10 @@
               <label for="invoice-customer-filter">Klant<select id="invoice-customer-filter"><option value="">Alle klanten</option></select></label>
               <label for="invoice-project-filter">Project<select id="invoice-project-filter"><option value="">Alle projecten</option></select></label>
               <label for="invoice-website-filter">Website<select id="invoice-website-filter"><option value="">Alle websites</option></select></label>
+            </div>
+            <div class="active-filter-bar" id="invoice-active-filter" hidden>
+              <strong>Alle facturen</strong>
+              <button class="button secondary" id="invoice-clear-quick-filter" type="button">Alle facturen tonen</button>
             </div>
             <div class="admin-table billing-table" id="invoice-list" role="table" aria-label="Facturen" aria-live="polite"></div>
           </section>
@@ -2192,12 +2208,13 @@
         const liveWebsitesMetric = document.getElementById("metric-live-websites");
         const activeProjectsMetric = document.getElementById("metric-active-projects");
         const openQuotesMetric = document.getElementById("metric-open-quotes");
-        const openInvoicesLocalMetric = document.getElementById("metric-open-invoices-local");
-        const paidAmountMetric = document.getElementById("metric-paid-amount");
+                const openInvoicesLocalMetric = document.getElementById("metric-open-invoices-local");
+                const paidAmountMetric = document.getElementById("metric-paid-amount");
         const subscriptionsDueMetric = document.getElementById("metric-subscriptions-due");
         const recurringRevenueMetric = document.getElementById("metric-recurring-revenue");
         const recurringRevenueLabel = document.getElementById("metric-recurring-label");
-        const demoStatusMetric = document.getElementById("metric-demo-status");
+                const demoStatusMetric = document.getElementById("metric-demo-status");
+                const dashboardSummaryCards = [...document.querySelectorAll("[data-dashboard-summary]")];
         const biPeriodFilter = document.getElementById("bi-period-filter");
         const biActionList = document.getElementById("bi-action-list");
         const biKpis = {
@@ -2227,11 +2244,15 @@
           subscriptionStatusTotal: document.getElementById("chart-subscription-status-total"),
         };
         const customerList = document.getElementById("customer-list");
-        const customerDataModeSelect = document.getElementById("customer-data-mode");
-        const customerSourceSummary = document.getElementById("customer-source-summary");
-        const customerSourceDetail = document.getElementById("customer-source-detail");
+                const customerDataModeSelect = document.getElementById("customer-data-mode");
+                const customerSourceSummary = document.getElementById("customer-source-summary");
+                const customerActiveFilter = document.getElementById("customer-active-filter");
+                const customerClearQuickFilter = document.getElementById("customer-clear-quick-filter");
+                const customerSourceDetail = document.getElementById("customer-source-detail");
         const websiteDataModeSelect = document.getElementById("website-data-mode");
-        const websiteSourceSummary = document.getElementById("website-source-summary");
+                const websiteSourceSummary = document.getElementById("website-source-summary");
+                const websiteActiveFilter = document.getElementById("website-active-filter");
+                const websiteClearQuickFilter = document.getElementById("website-clear-quick-filter");
         const websiteSourceDetail = document.getElementById("website-source-detail");
         const websiteList = document.getElementById("website-list");
         const websiteDetailForm = document.getElementById("website-detail-form");
@@ -2294,8 +2315,10 @@
         };
         const projectList = document.getElementById("project-list");
         const projectDetailForm = document.getElementById("project-detail-form");
-        const projectDataModeSelect = document.getElementById("project-data-mode");
-        const projectSourceSummary = document.getElementById("project-source-summary");
+                const projectDataModeSelect = document.getElementById("project-data-mode");
+                const projectSourceSummary = document.getElementById("project-source-summary");
+                const projectActiveFilter = document.getElementById("project-active-filter");
+                const projectClearQuickFilter = document.getElementById("project-clear-quick-filter");
         const projectSourceDetail = document.getElementById("project-source-detail");
         const quoteDataModeSelect = document.getElementById("quote-data-mode");
         const quoteSourceSummary = document.getElementById("quote-source-summary");
@@ -2579,11 +2602,13 @@
         const invoiceSourceDetail = document.getElementById("invoice-source-detail");
         const invoiceHistoryList = document.getElementById("invoice-history-list");
         const invoiceSearch = document.getElementById("invoice-search");
-        const invoiceStatusFilter = document.getElementById("invoice-status-filter");
+                const invoiceStatusFilter = document.getElementById("invoice-status-filter");
         const invoiceTypeFilter = document.getElementById("invoice-type-filter");
         const invoiceCustomerFilter = document.getElementById("invoice-customer-filter");
         const invoiceProjectFilter = document.getElementById("invoice-project-filter");
-        const invoiceWebsiteFilter = document.getElementById("invoice-website-filter");
+                const invoiceWebsiteFilter = document.getElementById("invoice-website-filter");
+                const invoiceActiveFilter = document.getElementById("invoice-active-filter");
+                const invoiceClearQuickFilter = document.getElementById("invoice-clear-quick-filter");
         const invoiceStats = {
           total: document.getElementById("invoice-stat-total"),
           open: document.getElementById("invoice-stat-open"),
@@ -2591,7 +2616,11 @@
           expired: document.getElementById("invoice-stat-expired"),
           count: document.getElementById("invoice-stat-count"),
         };
-        let currentInvoiceLines = [];
+                let currentInvoiceLines = [];
+                let customerQuickFilter = null;
+                let websiteQuickFilter = null;
+                let projectQuickFilter = null;
+                let invoiceQuickFilter = null;
         const customerSearch = document.getElementById("customer-search");
         const customerStatusFilter = document.getElementById("customer-status-filter");
         const customerPackageFilter = document.getElementById("customer-package-filter");
@@ -10506,9 +10535,9 @@
           return state.healthWebsites.find((website) => website.id === id);
         }
 
-        function updateMetrics() {
+                function updateMetrics() {
           const liveWebsites = state.websites.filter((website) => ["online", "live", "active"].includes(normalize(website.status))).length;
-          const activeProjects = state.projects.filter((project) => !["live", "onderhoud", "gepauzeerd"].includes(statusKey(project.status))).length;
+                  const activeProjects = state.projects.filter((project) => !["live", "onderhoud", "gepauzeerd", "gearchiveerd", "afgerond", "completed", "done"].includes(statusKey(project.status))).length;
           const openQuotes = state.quotes.filter((quote) => ["concept", "verzonden", "bekeken"].includes(normalizeQuoteStatus(quote.status))).length;
           const openInvoices = state.invoices.filter((invoice) => ["concept", "verzonden", "verlopen"].includes(normalizeInvoiceStatus(invoice.status))).length;
           const paidAmount = state.invoices
@@ -10536,8 +10565,63 @@
           websiteStats.online.textContent = String(liveWebsites);
           websiteStats.development.textContent = String(state.websites.filter((website) => website.status === "development").length);
           websiteStats.maintenance.textContent = String(state.websites.filter((website) => website.status === "maintenance").length);
-          renderProjectStats();
-        }
+                  renderProjectStats();
+                }
+
+                function handleDashboardSummaryAction(type) {
+                  if (type === "leads") {
+                    window.location.hash = "leadfinder";
+                    window.dispatchEvent(new CustomEvent("maxwebstudio:leadQuickFilter", {
+                      detail: { type: "open_leads", title: "Open leads" },
+                    }));
+                    return;
+                  }
+                  if (type === "customers") {
+                    window.location.hash = "klanten";
+                    applyCustomerQuickFilter({ type: "all_customers", title: "Alle klanten" });
+                    return;
+                  }
+                  if (type === "projects") {
+                    window.location.hash = "projecten";
+                    applyProjectQuickFilter({ type: "active_projects", title: "Lopende projecten" });
+                    return;
+                  }
+                  if (type === "websites") {
+                    window.location.hash = "websites";
+                    applyWebsiteQuickFilter({ type: "active_websites", title: "Actieve websites" });
+                    return;
+                  }
+                  if (type === "quotes") {
+                    window.location.hash = "offertes";
+                    applyQuoteQuickFilter({
+                      type: "open_quotes",
+                      title: "Open offertes",
+                      statuses: ["concept", "verzonden", "bekeken", "open"],
+                    });
+                    return;
+                  }
+                  if (type === "invoices") {
+                    window.location.hash = "facturen";
+                    applyInvoiceQuickFilter({
+                      type: "open_invoices",
+                      title: "Open facturen",
+                      statuses: ["concept", "verzonden", "verlopen", "open"],
+                    });
+                  }
+                }
+
+                function handleDashboardSummaryClick(event) {
+                  const card = event.target.closest("[data-dashboard-summary]");
+                  if (!card) return;
+                  handleDashboardSummaryAction(card.dataset.dashboardSummary || "");
+                }
+
+                function handleDashboardSummaryKeydown(event) {
+                  const card = event.target.closest("[data-dashboard-summary]");
+                  if (!card || !["Enter", " "].includes(event.key)) return;
+                  event.preventDefault();
+                  handleDashboardSummaryAction(card.dataset.dashboardSummary || "");
+                }
 
         async function loadDashboardMetrics(showLoading = false) {
           if (!getAdminBearer()) return;
@@ -10661,16 +10745,57 @@
           });
         }
 
-        function customerMatchesFilters(customer) {
-          const search = normalize(customerSearch.value);
-          const status = customerStatusFilter.value;
-          const selectedPackage = customerPackageFilter.value;
-          const searchable = normalize([customer.name, customer.company, customer.email, customer.website].join(" "));
+                function customerMatchesFilters(customer) {
+                  const search = normalize(customerSearch.value);
+                  const status = customerStatusFilter.value;
+                  const selectedPackage = customerPackageFilter.value;
+                  const searchable = normalize([customer.name, customer.company, customer.email, customer.website].join(" "));
 
-          return (!search || searchable.includes(search))
-            && (!status || customer.status === status)
-            && (!selectedPackage || customer.package === selectedPackage);
-        }
+                  return (!search || searchable.includes(search))
+                    && customerMatchesQuickFilter(customer)
+                    && (!status || customer.status === status)
+                    && (!selectedPackage || customer.package === selectedPackage);
+                }
+
+                function updateActiveFilterBar(bar, quickFilter, count = 0, fallbackTitle = "Gefilterd overzicht") {
+                  if (!bar) return;
+                  if (!quickFilter) {
+                    bar.hidden = true;
+                    return;
+                  }
+                  const titleElement = bar.querySelector("strong");
+                  if (titleElement) titleElement.textContent = `${quickFilter.title || fallbackTitle} (${count})`;
+                  bar.hidden = false;
+                }
+
+                function resetFilters(filters = []) {
+                  filters.forEach((filter) => {
+                    if (filter) filter.value = "";
+                  });
+                }
+
+                function customerMatchesQuickFilter(customer = {}) {
+                  if (!customerQuickFilter?.type) return true;
+                  if (customerQuickFilter.type === "all_customers") return true;
+                  return true;
+                }
+
+                function applyCustomerQuickFilter(detail = {}) {
+                  customerQuickFilter = {
+                    type: detail.type || "all_customers",
+                    title: detail.title || "Alle klanten",
+                  };
+                  resetFilters([customerSearch, customerStatusFilter, customerPackageFilter]);
+                  renderCustomers();
+                  window.focusAdminPanel?.(customerActiveFilter || customerList);
+                }
+
+                function clearCustomerQuickFilter() {
+                  customerQuickFilter = null;
+                  resetFilters([customerSearch, customerStatusFilter, customerPackageFilter]);
+                  renderCustomers();
+                  window.focusAdminPanel?.(customerList);
+                }
 
         function renderCustomerSourceSummary() {
           customerSourceSummary.replaceChildren();
@@ -10768,20 +10893,21 @@
           });
         }
 
-        function renderCustomers() {
-          const customers = state.customers.filter(customerMatchesFilters);
-          customerList.replaceChildren();
-          renderCustomerSourceSummary();
+                function renderCustomers() {
+                  const customers = state.customers.filter(customerMatchesFilters);
+                  customerList.replaceChildren();
+                  renderCustomerSourceSummary();
+                  updateActiveFilterBar(customerActiveFilter, customerQuickFilter, customers.length, "Klanten");
 
-          if (!state.customers.length) {
-            renderState(customerList, "Nog geen klanten", "Maak je eerste klant aan om het CRM te vullen.", "Leeg", "status-planned", { label: "Nieuwe klant", primary: true, onClick: openNewCustomerModal });
-            return;
-          }
+                  if (!state.customers.length) {
+                    renderState(customerList, "Nog geen klanten", "Maak je eerste klant aan om het CRM te vullen.", "Leeg", "status-planned", { label: "Nieuwe klant", primary: true, onClick: openNewCustomerModal });
+                    return;
+                  }
 
-          if (!customers.length) {
-            renderState(customerList, "Geen klanten gevonden", "Pas de zoekopdracht of filters aan.", "Geen match", "status-warning");
-            return;
-          }
+                  if (!customers.length) {
+                    renderState(customerList, "Geen klanten gevonden", customerQuickFilter ? "Geen klanten gevonden voor dit filter." : "Pas de zoekopdracht of filters aan.", "Geen match", "status-warning");
+                    return;
+                  }
 
           const head = document.createElement("div");
           head.className = "admin-table-row admin-table-head crm-customer-row";
@@ -12036,20 +12162,45 @@
           }
         }
 
-        function filteredWebsites() {
-          const query = normalize(websiteSearch.value);
-          const status = websiteStatusFilter.value;
-          const hosting = websiteHostingFilter.value;
-          const care = websiteCareFilter.value;
-          return state.websites.filter((website) => {
-            const searchable = normalize([website.domain, website.customerCompany, website.customerName, website.name, website.liveUrl].join(" "));
-            const matchesQuery = !query || searchable.includes(query);
-            const matchesStatus = !status || website.status === status;
-            const matchesHosting = !hosting || website.hostingPackage === hosting;
-            const matchesCare = !care || website.carePackage === care;
-            return matchesQuery && matchesStatus && matchesHosting && matchesCare;
-          });
-        }
+                function filteredWebsites() {
+                  const query = normalize(websiteSearch.value);
+                  const status = websiteStatusFilter.value;
+                  const hosting = websiteHostingFilter.value;
+                  const care = websiteCareFilter.value;
+                  return state.websites.filter((website) => {
+                    const searchable = normalize([website.domain, website.customerCompany, website.customerName, website.name, website.liveUrl].join(" "));
+                    const matchesQuery = !query || searchable.includes(query);
+                    const matchesStatus = !status || website.status === status;
+                    const matchesHosting = !hosting || website.hostingPackage === hosting;
+                    const matchesCare = !care || website.carePackage === care;
+                    return matchesQuery && matchesStatus && matchesHosting && matchesCare && websiteMatchesQuickFilter(website);
+                  });
+                }
+
+                function websiteMatchesQuickFilter(website = {}) {
+                  if (!websiteQuickFilter?.type) return true;
+                  if (websiteQuickFilter.type === "active_websites") {
+                    return ["online", "live", "active", "actief"].includes(normalize(website.status));
+                  }
+                  return true;
+                }
+
+                function applyWebsiteQuickFilter(detail = {}) {
+                  websiteQuickFilter = {
+                    type: detail.type || "active_websites",
+                    title: detail.title || "Actieve websites",
+                  };
+                  resetFilters([websiteSearch, websiteStatusFilter, websiteHostingFilter, websiteCareFilter]);
+                  renderWebsites();
+                  window.focusAdminPanel?.(websiteActiveFilter || websiteList);
+                }
+
+                function clearWebsiteQuickFilter() {
+                  websiteQuickFilter = null;
+                  resetFilters([websiteSearch, websiteStatusFilter, websiteHostingFilter, websiteCareFilter]);
+                  renderWebsites();
+                  window.focusAdminPanel?.(websiteList);
+                }
 
         function copyText(value, successMessage, messageHandler = setWebsiteMessage) {
           if (!value) {
@@ -12069,21 +12220,22 @@
           messageHandler(successMessage, "success");
         }
 
-        function renderWebsites() {
-          const websites = filteredWebsites();
-          websiteList.replaceChildren();
-          renderWebsiteSourceSummary();
-          populateWebsiteProfileOptions();
+                function renderWebsites() {
+                  const websites = filteredWebsites();
+                  websiteList.replaceChildren();
+                  renderWebsiteSourceSummary();
+                  populateWebsiteProfileOptions();
+                  updateActiveFilterBar(websiteActiveFilter, websiteQuickFilter, websites.length, "Websites");
 
           if (!state.websites.length) {
             renderState(websiteList, "Nog geen websites", "Maak de eerste website aan en koppel deze aan een klant.", "Leeg", "status-planned", { label: "Website aanmaken", primary: true, onClick: resetWebsiteForm });
             return;
           }
 
-          if (!websites.length) {
-            renderState(websiteList, "Geen websites gevonden", "Pas je zoekopdracht of filters aan.", "Geen match");
-            return;
-          }
+                  if (!websites.length) {
+                    renderState(websiteList, "Geen websites gevonden", websiteQuickFilter ? "Geen websites gevonden voor dit filter." : "Pas je zoekopdracht of filters aan.", "Geen match");
+                    return;
+                  }
 
           const head = document.createElement("div");
           head.className = "admin-table-row admin-table-head website-row";
@@ -12691,31 +12843,60 @@
           }
         }
 
-        function renderProjectStats() {
-          const activeStatuses = new Set(["nieuw", "onboarding", "in_ontwerp", "in_ontwikkeling", "feedback", "testen"]);
+                function renderProjectStats() {
+                  const activeStatuses = new Set(["nieuw", "onboarding", "in_ontwerp", "in_ontwikkeling", "feedback", "testen"]);
           const active = state.projects.filter((project) => activeStatuses.has(project.status)).length;
           const average = state.projects.length ? Math.round(state.projects.reduce((sum, project) => sum + Number(project.progress || 0), 0) / state.projects.length) : 0;
           projectStats.active.textContent = String(active);
           projectStats.onboarding.textContent = String(state.projects.filter((project) => project.status === "onboarding").length);
           projectStats.feedback.textContent = String(state.projects.filter((project) => project.status === "feedback").length);
           projectStats.ready.textContent = String(state.projects.filter((project) => project.status === "testen").length);
-          projectStats.progress.textContent = `${average}%`;
-        }
+                  projectStats.progress.textContent = `${average}%`;
+                }
 
-        function renderProjects() {
-          projectList.replaceChildren();
-          populateProjectOptions();
-          renderProjectStats();
-          renderProjectSourceSummary();
-          if (!state.projects.length) {
-            renderState(projectList, "Nog geen projecten", "Start een project vanuit een klant, website of met de knop Nieuw project.", "Leeg", "status-planned", { label: "Project aanmaken", primary: true, onClick: () => resetProjectForm() });
-            return;
-          }
-          const head = document.createElement("div");
+                function projectMatchesQuickFilter(project = {}) {
+                  if (!projectQuickFilter?.type) return true;
+                  if (projectQuickFilter.type === "active_projects") {
+                    return !["live", "onderhoud", "gepauzeerd", "gearchiveerd", "afgerond", "completed", "done"].includes(statusKey(project.status));
+                  }
+                  return true;
+                }
+
+                function applyProjectQuickFilter(detail = {}) {
+                  projectQuickFilter = {
+                    type: detail.type || "active_projects",
+                    title: detail.title || "Lopende projecten",
+                  };
+                  renderProjects();
+                  window.focusAdminPanel?.(projectActiveFilter || projectList);
+                }
+
+                function clearProjectQuickFilter() {
+                  projectQuickFilter = null;
+                  renderProjects();
+                  window.focusAdminPanel?.(projectList);
+                }
+
+                function renderProjects() {
+                  const projects = state.projects.filter(projectMatchesQuickFilter);
+                  projectList.replaceChildren();
+                  populateProjectOptions();
+                  renderProjectStats();
+                  renderProjectSourceSummary();
+                  updateActiveFilterBar(projectActiveFilter, projectQuickFilter, projects.length, "Projecten");
+                  if (!state.projects.length) {
+                    renderState(projectList, "Nog geen projecten", "Start een project vanuit een klant, website of met de knop Nieuw project.", "Leeg", "status-planned", { label: "Project aanmaken", primary: true, onClick: () => resetProjectForm() });
+                    return;
+                  }
+                  if (!projects.length) {
+                    renderState(projectList, "Geen projecten gevonden", projectQuickFilter ? "Geen projecten gevonden voor dit filter." : "Pas je filters aan.", "Geen match", "status-warning");
+                    return;
+                  }
+                  const head = document.createElement("div");
           head.className = "admin-table-row admin-table-head project-row";
           ["Project", "Klant", "Website", "Status", "Fase", "Voortgang", "Deadline", "Actie"].forEach((label) => head.append(createCell(label)));
           projectList.append(head);
-          state.projects.forEach((project) => {
+                  projects.forEach((project) => {
             const row = document.createElement("div");
             row.className = "admin-table-row project-row";
             const progress = document.createElement("span");
@@ -14190,18 +14371,49 @@
           invoicePreset.value = "";
         }
 
-        function filteredInvoices() {
-          const query = normalize(invoiceSearch.value);
-          return state.invoices.filter((invoice) => {
-            const searchable = normalize([invoice.invoiceNumber, invoice.customerName, invoice.customerCompany, invoice.projectName, invoice.websiteName, invoice.websiteDomain, invoice.type].join(" "));
-            return (!query || searchable.includes(query))
-              && (!invoiceStatusFilter.value || invoice.status === invoiceStatusFilter.value)
-              && (!invoiceTypeFilter.value || invoice.type === invoiceTypeFilter.value)
-              && (!invoiceCustomerFilter.value || invoice.profileId === invoiceCustomerFilter.value)
-              && (!invoiceProjectFilter.value || invoice.projectId === invoiceProjectFilter.value)
-              && (!invoiceWebsiteFilter.value || invoice.websiteId === invoiceWebsiteFilter.value);
-          });
-        }
+                function filteredInvoices() {
+                  const query = normalize(invoiceSearch.value);
+                  return state.invoices.filter((invoice) => {
+                    const searchable = normalize([invoice.invoiceNumber, invoice.customerName, invoice.customerCompany, invoice.projectName, invoice.websiteName, invoice.websiteDomain, invoice.type].join(" "));
+                    return (!query || searchable.includes(query))
+                      && invoiceMatchesQuickFilter(invoice)
+                      && (!invoiceStatusFilter.value || invoice.status === invoiceStatusFilter.value)
+                      && (!invoiceTypeFilter.value || invoice.type === invoiceTypeFilter.value)
+                      && (!invoiceCustomerFilter.value || invoice.profileId === invoiceCustomerFilter.value)
+                      && (!invoiceProjectFilter.value || invoice.projectId === invoiceProjectFilter.value)
+                      && (!invoiceWebsiteFilter.value || invoice.websiteId === invoiceWebsiteFilter.value);
+                  });
+                }
+
+                function invoiceMatchesQuickFilter(invoice = {}) {
+                  if (!invoiceQuickFilter?.type) return true;
+                  if (invoiceQuickFilter.type === "open_invoices") {
+                    return (invoiceQuickFilter.statuses || []).includes(normalizeInvoiceStatus(invoice.status));
+                  }
+                  return true;
+                }
+
+                function updateInvoiceQuickFilterBar(count = 0) {
+                  updateActiveFilterBar(invoiceActiveFilter, invoiceQuickFilter, count, "Facturen");
+                }
+
+                function applyInvoiceQuickFilter(detail = {}) {
+                  invoiceQuickFilter = {
+                    type: detail.type || "open_invoices",
+                    title: detail.title || "Open facturen",
+                    statuses: Array.isArray(detail.statuses) ? detail.statuses : ["concept", "verzonden", "verlopen", "open"],
+                  };
+                  resetFilters([invoiceSearch, invoiceStatusFilter, invoiceTypeFilter, invoiceCustomerFilter, invoiceProjectFilter, invoiceWebsiteFilter]);
+                  renderInvoices();
+                  window.focusAdminPanel?.(invoiceActiveFilter || invoiceList);
+                }
+
+                function clearInvoiceQuickFilter() {
+                  invoiceQuickFilter = null;
+                  resetFilters([invoiceSearch, invoiceStatusFilter, invoiceTypeFilter, invoiceCustomerFilter, invoiceProjectFilter, invoiceWebsiteFilter]);
+                  renderInvoices();
+                  window.focusAdminPanel?.(invoiceList);
+                }
 
         function renderInvoiceStats() {
           const invoices = filteredInvoices();
@@ -14433,20 +14645,22 @@
           });
         }
 
-        function renderInvoices() {
-          invoiceList.replaceChildren();
-          populateInvoiceOptions();
-          renderInvoiceStats();
-          renderInvoiceSourceSummary();
-          if (!state.invoices.length) {
-            renderState(invoiceList, "Geen facturen", "Maak de eerste factuur voor een klant.", "Leeg", "status-planned", { label: "Factuur aanmaken", primary: true, onClick: () => openInvoiceModal() });
-            return;
-          }
-          const invoices = filteredInvoices();
-          if (!invoices.length) {
-            renderState(invoiceList, "Geen facturen gevonden", "Pas je zoekopdracht of filters aan.", "Geen match");
-            return;
-          }
+                function renderInvoices() {
+                  invoiceList.replaceChildren();
+                  populateInvoiceOptions();
+                  renderInvoiceStats();
+                  renderInvoiceSourceSummary();
+                  if (!state.invoices.length) {
+                    updateInvoiceQuickFilterBar(0);
+                    renderState(invoiceList, "Geen facturen", "Maak de eerste factuur voor een klant.", "Leeg", "status-planned", { label: "Factuur aanmaken", primary: true, onClick: () => openInvoiceModal() });
+                    return;
+                  }
+                  const invoices = filteredInvoices();
+                  updateInvoiceQuickFilterBar(invoices.length);
+                  if (!invoices.length) {
+                    renderState(invoiceList, "Geen facturen gevonden", invoiceQuickFilter ? "Geen facturen gevonden voor dit filter." : "Pas je zoekopdracht of filters aan.", "Geen match");
+                    return;
+                  }
           const head = document.createElement("div");
           head.className = "admin-table-row admin-table-head invoice-row";
           ["Factuurnummer", "Klant", "Type", "Status", "Bron", "Datum", "Vervaldatum", "Totaal", "Acties"].forEach((label) => head.append(createCell(label)));
@@ -17006,12 +17220,20 @@
         quoteDataModeSelect.addEventListener("change", changeQuoteDataModeHandler);
         invoiceDataModeSelect.addEventListener("change", changeInvoiceDataModeHandler);
         subscriptionDataModeSelect.addEventListener("change", changeSubscriptionDataModeHandler);
-        [customerSearch, customerStatusFilter, customerPackageFilter].forEach((filter) => filter.addEventListener("input", renderCustomers));
-        [fileSearch, fileCategoryFilter, fileStatusFilter, fileCustomerFilter, fileProjectFilter].forEach((filter) => filter.addEventListener("input", renderFiles));
-        [quoteSearch, quoteStatusFilter, quoteTypeFilter, quoteCustomerFilter, quoteProjectFilter, quoteWebsiteFilter].forEach((filter) => filter.addEventListener("input", renderQuotes));
-        quoteClearQuickFilter?.addEventListener("click", clearQuoteQuickFilter);
-        window.addEventListener("maxwebstudio:quoteQuickFilter", (event) => applyQuoteQuickFilter(event.detail || {}));
-        [invoiceSearch, invoiceStatusFilter, invoiceTypeFilter, invoiceCustomerFilter, invoiceProjectFilter, invoiceWebsiteFilter].forEach((filter) => filter.addEventListener("input", renderInvoices));
+                [customerSearch, customerStatusFilter, customerPackageFilter].forEach((filter) => filter.addEventListener("input", renderCustomers));
+                dashboardSummaryCards.forEach((card) => {
+                  card.addEventListener("click", handleDashboardSummaryClick);
+                  card.addEventListener("keydown", handleDashboardSummaryKeydown);
+                });
+                customerClearQuickFilter?.addEventListener("click", clearCustomerQuickFilter);
+                websiteClearQuickFilter?.addEventListener("click", clearWebsiteQuickFilter);
+                projectClearQuickFilter?.addEventListener("click", clearProjectQuickFilter);
+                [fileSearch, fileCategoryFilter, fileStatusFilter, fileCustomerFilter, fileProjectFilter].forEach((filter) => filter.addEventListener("input", renderFiles));
+                [quoteSearch, quoteStatusFilter, quoteTypeFilter, quoteCustomerFilter, quoteProjectFilter, quoteWebsiteFilter].forEach((filter) => filter.addEventListener("input", renderQuotes));
+                quoteClearQuickFilter?.addEventListener("click", clearQuoteQuickFilter);
+                window.addEventListener("maxwebstudio:quoteQuickFilter", (event) => applyQuoteQuickFilter(event.detail || {}));
+                [invoiceSearch, invoiceStatusFilter, invoiceTypeFilter, invoiceCustomerFilter, invoiceProjectFilter, invoiceWebsiteFilter].forEach((filter) => filter.addEventListener("input", renderInvoices));
+                invoiceClearQuickFilter?.addEventListener("click", clearInvoiceQuickFilter);
         [requestStatusFilter, requestPriorityFilter, requestCategoryFilter].forEach((filter) => filter.addEventListener("change", renderRequests));
         settingsForm.addEventListener("submit", saveSettings);
         inviteUserForm?.addEventListener("submit", async (event) => {
@@ -17762,26 +17984,26 @@
         return data;
       }
 
-	      async function syncQueuedLeads() {
-	        const queue = readLeadOfflineQueue();
-	        if (!queue.length) return { synced: 0 };
-	        const remaining = [];
-	        let synced = 0;
-	        for (const item of queue) {
-	          try {
-	            if (item.action === "create") {
-	              await leadApiRequest("POST", item.payload);
-	              synced += 1;
-	            } else if (item.action === "update") {
-	              await leadApiRequest("PATCH", item.payload);
-	              synced += 1;
-	            } else if (item.action === "delete") {
-	              await leadApiRequest("DELETE", { id: item.payload?.id }, { id: item.payload?.id });
-	              synced += 1;
-	            } else {
-	              remaining.push(item);
-	            }
-	          } catch (error) {
+              async function syncQueuedLeads() {
+                const queue = readLeadOfflineQueue();
+                if (!queue.length) return { synced: 0 };
+                const remaining = [];
+                let synced = 0;
+                for (const item of queue) {
+                  try {
+                    if (item.action === "create") {
+                      await leadApiRequest("POST", item.payload);
+                      synced += 1;
+                    } else if (item.action === "update") {
+                      await leadApiRequest("PATCH", item.payload);
+                      synced += 1;
+                    } else if (item.action === "delete") {
+                      await leadApiRequest("DELETE", { id: item.payload?.id }, { id: item.payload?.id });
+                      synced += 1;
+                    } else {
+                      remaining.push(item);
+                    }
+                  } catch (error) {
             remaining.push(item);
           }
         }
@@ -17804,16 +18026,16 @@
             refreshedAt: result.refreshedAt || new Date().toISOString(),
             dataLayer: "supabase-production-leads",
           };
-	          localStorage.setItem("maxwebstudioLastLeadfinderSourceStatus", JSON.stringify(leadfinderSourceStatus));
-	          const queueResult = await syncQueuedLeads();
-	          if (queueResult.synced) {
-	            const refreshed = await leadApiRequest("GET");
-	            leadfinderDataLayerLeads = Array.isArray(refreshed.records) ? refreshed.records : leadfinderDataLayerLeads;
-	            leadfinderSourceStatus.counts = refreshed.counts || leadfinderSourceStatus.counts;
-	            leadfinderSourceStatus.refreshedAt = refreshed.refreshedAt || new Date().toISOString();
-	            localStorage.setItem("maxwebstudioLastLeadfinderSourceStatus", JSON.stringify(leadfinderSourceStatus));
-	          }
-	          logLeadfinderDiagnostic("Leadfinder data-layer geladen", {
+                  localStorage.setItem("maxwebstudioLastLeadfinderSourceStatus", JSON.stringify(leadfinderSourceStatus));
+                  const queueResult = await syncQueuedLeads();
+                  if (queueResult.synced) {
+                    const refreshed = await leadApiRequest("GET");
+                    leadfinderDataLayerLeads = Array.isArray(refreshed.records) ? refreshed.records : leadfinderDataLayerLeads;
+                    leadfinderSourceStatus.counts = refreshed.counts || leadfinderSourceStatus.counts;
+                    leadfinderSourceStatus.refreshedAt = refreshed.refreshedAt || new Date().toISOString();
+                    localStorage.setItem("maxwebstudioLastLeadfinderSourceStatus", JSON.stringify(leadfinderSourceStatus));
+                  }
+                  logLeadfinderDiagnostic("Leadfinder data-layer geladen", {
             mode: leadfinderSourceStatus.mode,
             counts: leadfinderSourceStatus.counts,
             fallbackUsed: leadfinderSourceStatus.fallbackUsed,
@@ -18830,9 +19052,12 @@
 
       function leadMatchesQuickFilter(lead = {}, filter = activeLeadfinderQuickFilter) {
         if (!filter?.type) return true;
-        if (filter.type === "new_today") {
-          return isSameDay(lead.createdAt) && isOpenLeadStatus(lead);
-        }
+                if (filter.type === "new_today") {
+                  return isSameDay(lead.createdAt) && isOpenLeadStatus(lead);
+                }
+                if (filter.type === "open_leads") {
+                  return isOpenLeadStatus(lead);
+                }
         if (filter.type === "followups_today") {
           const days = daysFromToday(lead.followUpDate);
           return days !== null && days <= 0 && isOpenLeadStatus(lead);
@@ -18911,15 +19136,19 @@
         return getLeadfinderLeads().find((lead) => lead.id === selectedLeadFinderId) || null;
       }
 
-      function renderLeadfinderList() {
-        const allLeads = getLeadfinderLeads();
-        const leads = getFilteredLeadfinderLeads();
-        renderLeadfinderMetrics(allLeads);
-        renderSalesCockpit(allLeads);
-        populateLeadfinderOwnerFilter(allLeads);
-        updateLeadfinderQuickFilterBar(leads.length);
+              function renderLeadfinderList() {
+                const allLeads = getLeadfinderLeads();
+                const leads = getFilteredLeadfinderLeads();
+                renderLeadfinderMetrics(allLeads);
+                renderSalesCockpit(allLeads);
+                populateLeadfinderOwnerFilter(allLeads);
+                updateLeadfinderQuickFilterBar(leads.length);
+                const dashboardLeadMetric = document.getElementById("metric-total-leads");
+                if (dashboardLeadMetric && !activeLeadfinderQuickFilter) {
+                  dashboardLeadMetric.textContent = String(allLeads.filter(isOpenLeadStatus).length);
+                }
 
-        if (!leadfinderElements.list) return;
+                if (!leadfinderElements.list) return;
         const sourceWarning = leadfinderSourceStatus?.warning || "";
         const warningHtml = sourceWarning ? `
           <article class="admin-card request-card request-state-card leadfinder-source-warning">
@@ -19022,11 +19251,11 @@
             <div><strong>Geen lead geselecteerd</strong><span>Klik op Bekijk in de lijst.</span></div>
           `;
         }
-	        if (leadfinderElements.detailCallStatus) leadfinderElements.detailCallStatus.value = lead?.callStatus || "";
-	        if (leadfinderElements.saveNote) leadfinderElements.saveNote.disabled = !hasLead;
-	        if (leadfinderElements.convertCustomer) leadfinderElements.convertCustomer.disabled = !hasLead;
-	        if (leadfinderElements.deleteLead) leadfinderElements.deleteLead.disabled = !hasLead || !canDeleteLead(lead);
-	        if (leadfinderElements.detailCallStatus) leadfinderElements.detailCallStatus.disabled = !hasLead;
+                if (leadfinderElements.detailCallStatus) leadfinderElements.detailCallStatus.value = lead?.callStatus || "";
+                if (leadfinderElements.saveNote) leadfinderElements.saveNote.disabled = !hasLead;
+                if (leadfinderElements.convertCustomer) leadfinderElements.convertCustomer.disabled = !hasLead;
+                if (leadfinderElements.deleteLead) leadfinderElements.deleteLead.disabled = !hasLead || !canDeleteLead(lead);
+                if (leadfinderElements.detailCallStatus) leadfinderElements.detailCallStatus.disabled = !hasLead;
         [leadfinderElements.createTask].forEach((element) => {
           if (element) element.disabled = !hasLead;
         });
@@ -19256,27 +19485,27 @@
           }
           websiteAnalysisState.set(target.key, analysis);
           if (lead?.id) websiteAnalysisState.set(lead.id, analysis);
-	          if (analysis.ok && lead?.id) {
-	            const analysisNote = buildWebsiteAnalysisNote(analysis);
-	            const updates = {
-	              websiteAnalysis: analysis,
-	              notes: [lead.notes, analysisNote].filter(Boolean).join("\n\n"),
-	              leadScore: Math.max(Number(lead.leadScore || 0), Number(analysis.score || 0)),
-	            };
-	            if (isProductionLead(lead)) {
-	              await leadApiRequest("PATCH", { id: lead.id, ...updates }, { id: lead.id });
-	              selectedLeadFinderId = lead.id;
-	              websiteAnalysisState.set(lead.id, analysis);
-	              await reloadLeadfinderAfterLocalChange();
-	            } else {
-	              const updatedLead = updateLeadFinderLeadLocally(lead.id, updates) || lead;
-	              selectedLeadFinderId = updatedLead.id;
-	              websiteAnalysisState.set(updatedLead.id, analysis);
-	              await reloadLeadfinderAfterLocalChange();
-	            }
-	          } else {
-	            renderLeadWebsiteAnalysis(lead);
-	          }
+                  if (analysis.ok && lead?.id) {
+                    const analysisNote = buildWebsiteAnalysisNote(analysis);
+                    const updates = {
+                      websiteAnalysis: analysis,
+                      notes: [lead.notes, analysisNote].filter(Boolean).join("\n\n"),
+                      leadScore: Math.max(Number(lead.leadScore || 0), Number(analysis.score || 0)),
+                    };
+                    if (isProductionLead(lead)) {
+                      await leadApiRequest("PATCH", { id: lead.id, ...updates }, { id: lead.id });
+                      selectedLeadFinderId = lead.id;
+                      websiteAnalysisState.set(lead.id, analysis);
+                      await reloadLeadfinderAfterLocalChange();
+                    } else {
+                      const updatedLead = updateLeadFinderLeadLocally(lead.id, updates) || lead;
+                      selectedLeadFinderId = updatedLead.id;
+                      websiteAnalysisState.set(updatedLead.id, analysis);
+                      await reloadLeadfinderAfterLocalChange();
+                    }
+                  } else {
+                    renderLeadWebsiteAnalysis(lead);
+                  }
           if (!lead && analysis.ok) {
             const analysisNote = buildWebsiteAnalysisNote(analysis);
             const currentNotes = String(leadfinderElements.notes?.value || "").trim();
@@ -19335,8 +19564,8 @@
         });
       }
 
-	      function buildLeadPayloadFromForm(ownerContext) {
-	        return {
+              function buildLeadPayloadFromForm(ownerContext) {
+                return {
           companyName: leadfinderElements.company?.value.trim() || "",
           industry: leadfinderElements.industry?.value || "",
           region: leadfinderElements.region?.value || "",
@@ -19365,39 +19594,39 @@
             createdByRole: ownerContext.role,
             createdByEmail: ownerContext.email,
           },
-	        };
-	      }
+                };
+              }
 
-	      function isProductionLead(lead = {}) {
-	        return lead?._source === "supabase" || Boolean(lead?._supabaseId);
-	      }
+              function isProductionLead(lead = {}) {
+                return lead?._source === "supabase" || Boolean(lead?._supabaseId);
+              }
 
-	      async function updateLeadfinderLead(lead, updates = {}, successMessage = "Lead bijgewerkt.") {
-	        if (!lead?.id) throw new Error("Lead ontbreekt.");
-	        if (isProductionLead(lead)) {
-	          try {
-	            const result = await leadApiRequest("PATCH", { id: lead.id, ...updates }, { id: lead.id });
-	            selectedLeadFinderId = result.lead?.id || lead.id;
-	            setLeadfinderMessage(successMessage, "success");
-	            await reloadLeadfinderAfterLocalChange();
-	            return result.lead || lead;
-	          } catch (error) {
-	            queueLeadOffline("update", { id: lead.id, ...updates });
-	            setLeadfinderMessage("Wijziging tijdelijk offline bewaard. Zodra de verbinding terug is, synchroniseert het dashboard automatisch.", "warning");
-	            return lead;
-	          }
-	        }
-	        const updatedLead = updateLeadFinderLeadLocally(lead.id, updates) || lead;
-	        selectedLeadFinderId = updatedLead.id;
-	        setLeadfinderMessage(successMessage, "success");
-	        await reloadLeadfinderAfterLocalChange();
-	        return updatedLead;
-	      }
+              async function updateLeadfinderLead(lead, updates = {}, successMessage = "Lead bijgewerkt.") {
+                if (!lead?.id) throw new Error("Lead ontbreekt.");
+                if (isProductionLead(lead)) {
+                  try {
+                    const result = await leadApiRequest("PATCH", { id: lead.id, ...updates }, { id: lead.id });
+                    selectedLeadFinderId = result.lead?.id || lead.id;
+                    setLeadfinderMessage(successMessage, "success");
+                    await reloadLeadfinderAfterLocalChange();
+                    return result.lead || lead;
+                  } catch (error) {
+                    queueLeadOffline("update", { id: lead.id, ...updates });
+                    setLeadfinderMessage("Wijziging tijdelijk offline bewaard. Zodra de verbinding terug is, synchroniseert het dashboard automatisch.", "warning");
+                    return lead;
+                  }
+                }
+                const updatedLead = updateLeadFinderLeadLocally(lead.id, updates) || lead;
+                selectedLeadFinderId = updatedLead.id;
+                setLeadfinderMessage(successMessage, "success");
+                await reloadLeadfinderAfterLocalChange();
+                return updatedLead;
+              }
 
-	      async function reloadLeadfinderAfterLocalChange() {
-	        await loadLeadfinderDataLayer();
-	        renderLeadfinderList();
-	      }
+              async function reloadLeadfinderAfterLocalChange() {
+                await loadLeadfinderDataLayer();
+                renderLeadfinderList();
+              }
 
       async function handleLeadfinderSubmit(event) {
         event.preventDefault();
@@ -19420,31 +19649,31 @@
           setLeadfinderMessage("Lead niet opgeslagen. Controleer eerst de bestaande lead.", "error");
           return;
         }
-	        const ownerContext = getLeadfinderUserContext();
-	        const payload = buildLeadPayloadFromForm(ownerContext);
-	        try {
-	          const result = await leadApiRequest("POST", payload);
-	          selectedLeadFinderId = result.lead?.id || "";
-	          resetLeadfinderForm();
-	          setLeadfinderMessage("Lead opgeslagen in de centrale CRM-database.", "success");
-	          await reloadLeadfinderAfterLocalChange();
-	        } catch (error) {
-	          const localLead = saveLeadFinderLeadLocally({
-	            ...payload,
-	            source: "offline-cache",
-	            metadata: {
-	              ...(payload.metadata || {}),
-	              offlineSyncPending: true,
-	              offlineSyncError: error.message || "Lead API niet bereikbaar",
-	            },
-	          });
-	          queueLeadOffline("create", payload);
-	          selectedLeadFinderId = localLead.id;
-	          resetLeadfinderForm();
-	          setLeadfinderMessage("Lead tijdelijk offline opgeslagen. Zodra Supabase bereikbaar is, synchroniseert het dashboard automatisch.", "warning");
-	          await reloadLeadfinderAfterLocalChange();
-	        }
-	      }
+                const ownerContext = getLeadfinderUserContext();
+                const payload = buildLeadPayloadFromForm(ownerContext);
+                try {
+                  const result = await leadApiRequest("POST", payload);
+                  selectedLeadFinderId = result.lead?.id || "";
+                  resetLeadfinderForm();
+                  setLeadfinderMessage("Lead opgeslagen in de centrale CRM-database.", "success");
+                  await reloadLeadfinderAfterLocalChange();
+                } catch (error) {
+                  const localLead = saveLeadFinderLeadLocally({
+                    ...payload,
+                    source: "offline-cache",
+                    metadata: {
+                      ...(payload.metadata || {}),
+                      offlineSyncPending: true,
+                      offlineSyncError: error.message || "Lead API niet bereikbaar",
+                    },
+                  });
+                  queueLeadOffline("create", payload);
+                  selectedLeadFinderId = localLead.id;
+                  resetLeadfinderForm();
+                  setLeadfinderMessage("Lead tijdelijk offline opgeslagen. Zodra Supabase bereikbaar is, synchroniseert het dashboard automatisch.", "warning");
+                  await reloadLeadfinderAfterLocalChange();
+                }
+              }
 
       async function handleLeadfinderListClick(event) {
         const button = event.target.closest("[data-leadfinder-action]");
@@ -19473,25 +19702,25 @@
         }
       }
 
-	      async function saveLeadfinderDetailNote() {
-	        const lead = selectedLeadFinderLead();
-	        if (!lead) return;
-	        const note = String(leadfinderElements.detailNote?.value || "").trim();
-	        const callStatus = leadfinderElements.detailCallStatus?.value || lead.callStatus;
-	        const notes = [lead.notes, note].filter(Boolean).join("\n\n");
-	        try {
-	          await updateLeadfinderLead(lead, { notes, callStatus }, "Leadnotitie opgeslagen.");
-	        } catch (error) {
-	          setLeadfinderMessage(error.message || "Leadnotitie kon niet worden opgeslagen.", "error");
-	          return;
-	        }
-	        if (leadfinderElements.detailNote) leadfinderElements.detailNote.value = "";
-	      }
+              async function saveLeadfinderDetailNote() {
+                const lead = selectedLeadFinderLead();
+                if (!lead) return;
+                const note = String(leadfinderElements.detailNote?.value || "").trim();
+                const callStatus = leadfinderElements.detailCallStatus?.value || lead.callStatus;
+                const notes = [lead.notes, note].filter(Boolean).join("\n\n");
+                try {
+                  await updateLeadfinderLead(lead, { notes, callStatus }, "Leadnotitie opgeslagen.");
+                } catch (error) {
+                  setLeadfinderMessage(error.message || "Leadnotitie kon niet worden opgeslagen.", "error");
+                  return;
+                }
+                if (leadfinderElements.detailNote) leadfinderElements.detailNote.value = "";
+              }
 
-	      async function markSelectedLeadStatus(status, message) {
-	        const lead = selectedLeadFinderLead();
-	        if (!lead) return;
-	        await updateLeadfinderLead(lead, { callStatus: status }, message);
+              async function markSelectedLeadStatus(status, message) {
+                const lead = selectedLeadFinderLead();
+                if (!lead) return;
+                await updateLeadfinderLead(lead, { callStatus: status }, message);
       }
 
       function openQuoteForSelectedLead(lead) {
@@ -19512,16 +19741,16 @@
         setLeadfinderMessage("Offerte gestart. Koppel een klant zodra de lead klaar is voor akkoord.", "success");
       }
 
-	      async function planFollowUpForSelectedLead() {
-	        const lead = selectedLeadFinderLead();
-	        if (!lead) return;
-	        const tomorrow = new Date();
-	        tomorrow.setDate(tomorrow.getDate() + 1);
-	        const followUpDate = tomorrow.toISOString().slice(0, 10);
-	        await updateLeadfinderLead(lead, {
-	          followUpDate,
-	          callStatus: lead.callStatus === "quote_sent" ? "quote_sent" : "opvolgen",
-	        }, "Follow-up voor morgen gepland.");
+              async function planFollowUpForSelectedLead() {
+                const lead = selectedLeadFinderLead();
+                if (!lead) return;
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const followUpDate = tomorrow.toISOString().slice(0, 10);
+                await updateLeadfinderLead(lead, {
+                  followUpDate,
+                  callStatus: lead.callStatus === "quote_sent" ? "quote_sent" : "opvolgen",
+                }, "Follow-up voor morgen gepland.");
       }
 
       async function runSalesCockpitAction(action) {
@@ -19536,57 +19765,57 @@
           await planFollowUpForSelectedLead();
           return;
         }
-	        if (action === "quote") {
-	          openQuoteForSelectedLead(lead);
-	          await updateLeadfinderLead(lead, { callStatus: "quote_ready" }, "Offerte gestart. Lead staat klaar voor offerte.");
-	          return;
-	        }
+                if (action === "quote") {
+                  openQuoteForSelectedLead(lead);
+                  await updateLeadfinderLead(lead, { callStatus: "quote_ready" }, "Offerte gestart. Lead staat klaar voor offerte.");
+                  return;
+                }
         if (action === "customer") {
           await convertSelectedLeadToCustomer();
         }
       }
 
-	      async function convertSelectedLeadToCustomer() {
-	        const lead = selectedLeadFinderLead();
-	        if (!lead) return;
-	        const updatedLead = await updateLeadfinderLead(lead, {
-	          callStatus: lead.callStatus === "customer_active" ? "customer_active" : "won",
-	          notes: [
-	            lead.notes,
-	            `[${new Date().toLocaleDateString("nl-NL")}] Lead geopend in omzetten-naar-klant wizard.`,
-	          ].filter(Boolean).join("\n"),
-	        }, "Lead gemarkeerd als verkocht.");
-	        selectedLeadFinderId = updatedLead.id;
-	        if (typeof window.openLeadToCustomerWizard === "function") {
-	          window.openLeadToCustomerWizard(updatedLead);
-	          setLeadfinderMessage("Lead gemarkeerd als verkocht. Controleer de gegevens in de klantwizard.", "success");
-	        } else {
-	          setLeadfinderMessage("Klantwizard kon niet worden geopend. Herlaad het admin dashboard.", "error");
-	        }
-	      }
+              async function convertSelectedLeadToCustomer() {
+                const lead = selectedLeadFinderLead();
+                if (!lead) return;
+                const updatedLead = await updateLeadfinderLead(lead, {
+                  callStatus: lead.callStatus === "customer_active" ? "customer_active" : "won",
+                  notes: [
+                    lead.notes,
+                    `[${new Date().toLocaleDateString("nl-NL")}] Lead geopend in omzetten-naar-klant wizard.`,
+                  ].filter(Boolean).join("\n"),
+                }, "Lead gemarkeerd als verkocht.");
+                selectedLeadFinderId = updatedLead.id;
+                if (typeof window.openLeadToCustomerWizard === "function") {
+                  window.openLeadToCustomerWizard(updatedLead);
+                  setLeadfinderMessage("Lead gemarkeerd als verkocht. Controleer de gegevens in de klantwizard.", "success");
+                } else {
+                  setLeadfinderMessage("Klantwizard kon niet worden geopend. Herlaad het admin dashboard.", "error");
+                }
+              }
 
-	      async function deleteLeadfinderLead(lead) {
-	        if (!lead) return;
-	        if (!canDeleteLead(lead)) {
-	          setLeadfinderMessage("Deze lead kan niet worden verwijderd.", "error");
-	          return;
-	        }
-	        if (!window.confirm(`Lead ${lead.companyName || lead.contactName || lead.id} verwijderen?`)) return;
-	        if (isProductionLead(lead)) {
-	          try {
-	            await leadApiRequest("DELETE", { id: lead.id }, { id: lead.id });
-	            if (selectedLeadFinderId === lead.id) selectedLeadFinderId = "";
-	            setLeadfinderMessage("Lead centraal verwijderd.", "success");
-	            await reloadLeadfinderAfterLocalChange();
-	          } catch (error) {
-	            queueLeadOffline("delete", { id: lead.id });
-	            setLeadfinderMessage("Verwijdering tijdelijk offline bewaard. Zodra de verbinding terug is, synchroniseert het dashboard automatisch.", "warning");
-	          }
-	          return;
-	        }
-	        const result = deleteLeadFromLocalSources(lead);
-	        if (!result.deleted) {
-	          setLeadfinderMessage("Lead kon niet in de lokale fallbackbronnen worden gevonden.", "error");
+              async function deleteLeadfinderLead(lead) {
+                if (!lead) return;
+                if (!canDeleteLead(lead)) {
+                  setLeadfinderMessage("Deze lead kan niet worden verwijderd.", "error");
+                  return;
+                }
+                if (!window.confirm(`Lead ${lead.companyName || lead.contactName || lead.id} verwijderen?`)) return;
+                if (isProductionLead(lead)) {
+                  try {
+                    await leadApiRequest("DELETE", { id: lead.id }, { id: lead.id });
+                    if (selectedLeadFinderId === lead.id) selectedLeadFinderId = "";
+                    setLeadfinderMessage("Lead centraal verwijderd.", "success");
+                    await reloadLeadfinderAfterLocalChange();
+                  } catch (error) {
+                    queueLeadOffline("delete", { id: lead.id });
+                    setLeadfinderMessage("Verwijdering tijdelijk offline bewaard. Zodra de verbinding terug is, synchroniseert het dashboard automatisch.", "warning");
+                  }
+                  return;
+                }
+                const result = deleteLeadFromLocalSources(lead);
+                if (!result.deleted) {
+                  setLeadfinderMessage("Lead kon niet in de lokale fallbackbronnen worden gevonden.", "error");
           return;
         }
         if (selectedLeadFinderId === lead.id) selectedLeadFinderId = "";
@@ -19622,10 +19851,13 @@
           element?.addEventListener("input", renderLeadfinderList);
           element?.addEventListener("change", renderLeadfinderList);
         });
-        leadfinderElements.cockpitBar?.addEventListener("click", handleSalesKpiClick);
-        leadfinderElements.cockpitBar?.addEventListener("keydown", handleSalesKpiKeydown);
-        leadfinderElements.clearQuickFilter?.addEventListener("click", clearLeadfinderQuickFilter);
-        leadfinderElements.list.addEventListener("click", handleLeadfinderListClick);
+                leadfinderElements.cockpitBar?.addEventListener("click", handleSalesKpiClick);
+                leadfinderElements.cockpitBar?.addEventListener("keydown", handleSalesKpiKeydown);
+                leadfinderElements.clearQuickFilter?.addEventListener("click", clearLeadfinderQuickFilter);
+                window.addEventListener("maxwebstudio:leadQuickFilter", (event) => {
+                  applyLeadfinderQuickFilter(event.detail?.type || "open_leads", event.detail?.title || "Open leads");
+                });
+                leadfinderElements.list.addEventListener("click", handleLeadfinderListClick);
         leadfinderElements.saveNote?.addEventListener("click", saveLeadfinderDetailNote);
         leadfinderElements.analysisRun?.addEventListener("click", runLeadWebsiteAnalysis);
         leadfinderElements.nextActionButton?.addEventListener("click", () => runSalesCockpitAction(leadfinderElements.nextActionButton.dataset.salesAction || ""));
