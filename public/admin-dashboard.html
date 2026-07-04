@@ -1693,6 +1693,67 @@
     </div>
 
     <script>
+      (() => {
+        const toastTypes = new Set(["success", "info", "warning", "error"]);
+        const toastIcons = {
+          success: "✓",
+          info: "i",
+          warning: "!",
+          error: "×",
+        };
+
+        function toastType(type = "info") {
+          if (type === "attention") return "warning";
+          return toastTypes.has(type) ? type : "info";
+        }
+
+        function ensureToastRegion() {
+          let region = document.querySelector("[data-toast-region]");
+          if (region) return region;
+          region = document.createElement("div");
+          region.className = "toast-region";
+          region.dataset.toastRegion = "true";
+          region.setAttribute("aria-live", "polite");
+          region.setAttribute("aria-atomic", "false");
+          document.body.append(region);
+          return region;
+        }
+
+        window.showToast = function showToast(message, type = "info", options = {}) {
+          const text = String(message || "").trim();
+          if (!text) return null;
+          const normalizedType = toastType(type);
+          const region = ensureToastRegion();
+          const toast = document.createElement("div");
+          const duration = Number(options.duration || 3000);
+          toast.className = `toast toast-${normalizedType}`;
+          toast.setAttribute("role", normalizedType === "error" ? "alert" : "status");
+          toast.innerHTML = `
+            <span class="toast-icon" aria-hidden="true">${toastIcons[normalizedType]}</span>
+            <span class="toast-message"></span>
+          `;
+          toast.querySelector(".toast-message").textContent = text;
+          region.append(toast);
+          const close = () => {
+            toast.classList.add("is-leaving");
+            window.setTimeout(() => toast.remove(), 220);
+          };
+          window.setTimeout(close, duration);
+          return toast;
+        };
+
+        window.focusAdminPanel = function focusAdminPanel(target, options = {}) {
+          const element = typeof target === "string" ? document.querySelector(target) : target;
+          if (!element) return;
+          element.scrollIntoView({ behavior: "smooth", block: options.block || "start" });
+          element.classList.remove("admin-panel-focus");
+          window.requestAnimationFrame(() => {
+            element.classList.add("admin-panel-focus");
+            window.setTimeout(() => element.classList.remove("admin-panel-focus"), options.duration || 1200);
+          });
+        };
+      })();
+
       (async () => {
         const crmEndpoint = "/.netlify/functions/admin-client-profiles";
         const adminSupabaseDataEndpoint = "/.netlify/functions/admin-supabase-data";
@@ -2774,9 +2835,16 @@
           return "status-planned";
         }
 
+        function notifyUser(text, type = "info") {
+          const message = String(text || "").trim();
+          if (!message || !["success", "info", "warning", "error", "attention"].includes(type)) return;
+          window.showToast?.(message, type === "attention" ? "warning" : type);
+        }
+
         function setSettingsMessage(text, type = "success") {
           settingsMessage.textContent = text;
           settingsMessage.dataset.type = type;
+          notifyUser(text, type);
         }
 
         function setCheckboxGroup(name, values) {
@@ -2869,6 +2937,7 @@
         function setDemoMessage(text, type = "success") {
           demoMessage.textContent = text;
           demoMessage.dataset.type = type;
+          notifyUser(text, type);
         }
 
         function parseLocalStorageValue(key) {
@@ -9668,6 +9737,7 @@
         function setAdminAccessMessage(text, type = "") {
           adminAccessMessage.textContent = text;
           adminAccessMessage.className = `admin-form-message ${type}`.trim();
+          notifyUser(text, type);
         }
 
         function setAdminOperationalMessage(text, type = "") {
@@ -9890,26 +9960,31 @@
         function setDetailMessage(text, type = "") {
           detailMessage.textContent = text;
           detailMessage.className = `admin-form-message ${type}`.trim();
+          notifyUser(text, type);
         }
 
         function setNewCustomerMessage(text, type = "") {
           newCustomerMessage.textContent = text;
           newCustomerMessage.className = `admin-form-message ${type}`.trim();
+          notifyUser(text, type);
         }
 
         function setWebsiteMessage(text, type = "") {
           websiteDetailMessage.textContent = text;
           websiteDetailMessage.className = `admin-form-message ${type}`.trim();
+          notifyUser(text, type);
         }
 
         function setHealthMessage(text, type = "") {
           websiteHealthMessage.textContent = text;
           websiteHealthMessage.className = `admin-form-message ${type}`.trim();
+          notifyUser(text, type);
         }
 
         function setBillingMessage(target, text, type = "") {
           target.textContent = text;
           target.className = `admin-form-message ${type}`.trim();
+          notifyUser(text, type);
         }
 
         function renderState(target, title, text, badgeText = "Leeg", badgeClass = "status-planned", action = null) {
@@ -10260,7 +10335,11 @@
             action.className = "button secondary";
             action.type = "button";
             action.textContent = "Bekijk";
-            action.addEventListener("click", () => selectCustomer(customer.id));
+            action.addEventListener("click", () => {
+              selectCustomer(customer.id);
+              window.focusAdminPanel?.(document.querySelector(".crm-detail-panel"));
+              notifyUser("Klant geopend", "success");
+            });
             row.append(
               nameCell,
               createCell(customer.company),
@@ -11518,7 +11597,11 @@
             edit.className = "button secondary";
             edit.type = "button";
             edit.textContent = "Bewerken";
-            edit.addEventListener("click", () => selectWebsite(website.id));
+            edit.addEventListener("click", () => {
+              selectWebsite(website.id);
+              window.focusAdminPanel?.(document.querySelector(".website-detail-panel"));
+              notifyUser("Website geopend", "success");
+            });
             actions.append(openWebsite, openGithub, openNetlify, copyDomain, edit);
             const websiteCell = document.createElement("span");
             const websiteTitle = document.createElement("strong");
@@ -11964,6 +12047,7 @@
         function setProjectMessage(text, type = "") {
           projectDetailMessage.textContent = text;
           projectDetailMessage.className = `admin-form-message ${type}`.trim();
+          notifyUser(text, type);
         }
 
         function enableProjectFields(enabled) {
@@ -14967,6 +15051,7 @@
         function setFileMessage(text, type = "") {
           fileDetailMessage.textContent = text;
           fileDetailMessage.className = `admin-form-message ${type}`.trim();
+          notifyUser(text, type);
         }
 
         function enableFileFields(enabled) {
@@ -15578,6 +15663,7 @@
           if (!leadCustomerMessage) return;
           leadCustomerMessage.textContent = text;
           leadCustomerMessage.className = `admin-form-message ${type}`.trim();
+          notifyUser(text, type);
         }
 
         function normalizeCustomerLookupValue(value = "") {
@@ -16694,6 +16780,7 @@
         if (!workflowElements.message) return;
         workflowElements.message.textContent = text;
         workflowElements.message.className = `admin-form-message ${type}`;
+        if (text && ["success", "info", "warning", "error"].includes(type)) window.showToast?.(text, type);
       }
 
       function resetTaskForm() {
@@ -16884,12 +16971,14 @@
         if (!leadfinderElements.message) return;
         leadfinderElements.message.textContent = message;
         leadfinderElements.message.className = `admin-form-message ${type}`;
+        if (message && ["success", "info", "warning", "error"].includes(type)) window.showToast?.(message, type);
       }
 
       function setGooglePlacesMessage(message, type = "success") {
         if (!leadfinderElements.googleMessage) return;
         leadfinderElements.googleMessage.textContent = message;
         leadfinderElements.googleMessage.className = `admin-form-message ${type}`;
+        if (message && ["success", "info", "warning", "error"].includes(type)) window.showToast?.(message, type);
       }
 
       function setGooglePlacesState(label, statusClass = "status-prepared") {
@@ -16908,6 +16997,7 @@
         if (!leadfinderElements.analysisMessage) return;
         leadfinderElements.analysisMessage.textContent = message;
         leadfinderElements.analysisMessage.className = `admin-form-message ${type}`;
+        if (message && ["success", "info", "warning", "error"].includes(type)) window.showToast?.(message, type);
       }
 
       function getFriendlyWebsiteAnalysisReason(details = "") {
@@ -18170,8 +18260,13 @@
           } catch (error) {
             setLeadfinderMessage(error.message || "Opvolgtaak kon niet worden aangemaakt.", "error");
           }
+        } else if (button.dataset.leadfinderAction === "view") {
+          setLeadfinderMessage("Lead geselecteerd", "success");
         }
         renderLeadfinderList();
+        if (button.dataset.leadfinderAction === "view") {
+          window.focusAdminPanel?.(document.querySelector(".leadfinder-detail-card"));
+        }
       }
 
       async function saveLeadfinderDetailNote() {
@@ -18401,6 +18496,7 @@
         if (!aiAdminElements.message) return;
         aiAdminElements.message.textContent = message;
         aiAdminElements.message.className = `admin-form-message ${type}`;
+        if (message && ["success", "info", "warning", "error"].includes(type)) window.showToast?.(message, type);
       }
 
       function renderAiAdminReadiness() {

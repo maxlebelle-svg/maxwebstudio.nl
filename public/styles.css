@@ -137,6 +137,134 @@ a {
   box-shadow: 0 14px 32px rgba(6, 18, 31, 0.1);
 }
 
+.button:active {
+  transform: translateY(0) scale(0.98);
+  filter: brightness(0.94);
+}
+
+.toast-region {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 9999;
+  display: grid;
+  gap: 10px;
+  width: min(360px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.toast {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  color: var(--white);
+  background: rgba(7, 18, 34, 0.94);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
+  animation: toastIn 220ms ease both;
+  pointer-events: auto;
+  backdrop-filter: blur(12px);
+}
+
+.toast.is-leaving {
+  animation: toastOut 220ms ease both;
+}
+
+.toast-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.toast-message {
+  min-width: 0;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.toast-success .toast-icon {
+  color: #062114;
+  background: #7ee3a8;
+}
+
+.toast-info .toast-icon {
+  color: #06121f;
+  background: var(--cyan);
+}
+
+.toast-warning .toast-icon {
+  color: #2b1b00;
+  background: #ffd166;
+}
+
+.toast-error .toast-icon {
+  color: var(--white);
+  background: #ef476f;
+}
+
+.admin-panel-focus {
+  animation: adminPanelFocus 1200ms ease both;
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translate3d(18px, -8px, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes toastOut {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translate3d(18px, -8px, 0);
+  }
+}
+
+@keyframes adminPanelFocus {
+  0% {
+    box-shadow: 0 0 0 0 rgba(25, 194, 255, 0), 0 24px 70px rgba(0, 0, 0, 0.18);
+  }
+
+  18% {
+    box-shadow: 0 0 0 4px rgba(25, 194, 255, 0.36), 0 24px 70px rgba(0, 0, 0, 0.18);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(25, 194, 255, 0), 0 24px 70px rgba(0, 0, 0, 0.18);
+  }
+}
+
+@media (max-width: 640px) {
+  .toast-region {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+  }
+}
+
 .contact-actions {
   display: flex;
   flex-wrap: wrap;
