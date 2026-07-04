@@ -10666,6 +10666,64 @@ h3 {
   display: flex;
 }
 
+.admin-body.is-sales-view #leadfinder > .admin-section-heading {
+  order: 0;
+  align-items: center;
+  padding: 26px;
+  border: 1px solid rgba(171, 196, 224, 0.13);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 14% 10%, rgba(37, 99, 235, 0.18), transparent 34%),
+    linear-gradient(180deg, rgba(13, 35, 55, 0.82), rgba(5, 18, 31, 0.92));
+  box-shadow: 0 20px 70px rgba(0, 8, 18, 0.28);
+}
+
+.admin-body.is-sales-view #leadfinder > .admin-section-heading h2 {
+  margin: 0;
+  font-size: clamp(32px, 4vw, 52px);
+  letter-spacing: 0;
+}
+
+.sales-cockpit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.sales-cockpit-actions .button {
+  min-height: 48px;
+  border-radius: 8px;
+}
+
+.admin-body.is-sales-view #leadfinder > .admin-flow-steps {
+  order: 4;
+}
+
+.admin-body.is-sales-view #leadfinder > .sales-cockpit-bar {
+  order: 5;
+}
+
+.admin-body.is-sales-view #leadfinder > #leadfinder-metrics {
+  order: 6;
+}
+
+.admin-body.is-sales-view #leadfinder > .leadfinder-grid {
+  order: 7;
+}
+
+.admin-body.is-sales-view #leadfinder > .leadfinder-filters {
+  order: 1;
+}
+
+.admin-body.is-sales-view #leadfinder > .active-filter-bar {
+  order: 2;
+}
+
+.admin-body.is-sales-view #leadfinder > #leadfinder-list {
+  order: 3;
+}
+
 .admin-body.is-sales-view .leadfinder-grid {
   display: grid;
   grid-template-columns: minmax(0, 0.95fr) minmax(500px, 1.05fr);
@@ -10883,11 +10941,11 @@ h3 {
 
 .admin-body.is-sales-view .leadfinder-filters {
   display: grid;
-  grid-template-columns: 1.25fr 0.9fr 0.9fr 0.9fr 0.9fr 0.8fr;
-  gap: 14px;
+  grid-template-columns: minmax(220px, 1.45fr) repeat(6, minmax(130px, 0.72fr));
+  gap: 12px;
   align-items: end;
-  padding: 16px;
-  border: 1px solid rgba(171, 196, 224, 0.1);
+  padding: 18px;
+  border: 1px solid rgba(171, 196, 224, 0.13);
   border-radius: 8px;
   background:
     linear-gradient(180deg, rgba(13, 35, 55, 0.72), rgba(5, 18, 31, 0.86)),
@@ -10896,10 +10954,282 @@ h3 {
 }
 
 .admin-body.is-sales-view .leadfinder-table {
-  display: none;
+  display: grid;
+  gap: 16px;
+}
+
+.lead-card-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 4px 4px;
+  color: rgba(226, 236, 248, 0.72);
+}
+
+.lead-card-toolbar strong {
+  color: rgba(248, 251, 255, 0.92);
+  font-size: 18px;
+  letter-spacing: 0;
+}
+
+.lead-card {
+  display: grid;
+  grid-template-columns: minmax(360px, 1.55fr) minmax(150px, 0.55fr) minmax(220px, 0.72fr) minmax(310px, 0.9fr);
+  gap: 22px;
+  align-items: center;
+  min-width: 0;
+  padding: 26px;
+  border: 1px solid rgba(171, 196, 224, 0.13);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 9% 12%, rgba(37, 99, 235, 0.14), transparent 28%),
+    linear-gradient(180deg, rgba(13, 35, 55, 0.76), rgba(4, 15, 27, 0.94));
+  box-shadow: 0 22px 70px rgba(0, 8, 18, 0.25);
+  transition: border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.lead-card:hover,
+.lead-card.is-selected {
+  border-color: rgba(43, 113, 255, 0.42);
+  box-shadow: 0 26px 86px rgba(0, 8, 18, 0.34);
+}
+
+.lead-card:hover {
+  transform: translateY(-1px);
+}
+
+.lead-card-main {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 20px;
+  min-width: 0;
+}
+
+.lead-avatar {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.22), transparent 32%),
+    linear-gradient(135deg, #2563eb, #22c55e);
+  color: #f8fbff;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0;
+  box-shadow: 0 18px 38px rgba(0, 8, 18, 0.28);
+}
+
+.lead-identity {
+  min-width: 0;
+}
+
+.lead-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.lead-title-row h3 {
+  margin: 0;
+  color: #f8fbff;
+  font-size: clamp(22px, 2vw, 30px);
+  line-height: 1.12;
+  letter-spacing: 0;
+}
+
+.lead-meta-line,
+.lead-owner-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  margin-top: 10px;
+  color: rgba(226, 236, 248, 0.72);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.lead-meta-line span,
+.lead-owner-row span {
+  min-width: 0;
+}
+
+.lead-contact-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, max-content));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.lead-contact-grid a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 230px;
+  min-height: 38px;
+  padding: 9px 12px;
+  overflow: hidden;
+  border: 1px solid rgba(171, 196, 224, 0.13);
+  border-radius: 8px;
+  color: rgba(226, 236, 248, 0.78);
+  background: rgba(3, 12, 22, 0.36);
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lead-contact-grid a[aria-disabled="true"],
+.lead-icon-button.is-disabled {
+  pointer-events: none;
+  opacity: 0.48;
+}
+
+.lead-score-panel {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: rgba(226, 236, 248, 0.68);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.lead-score-ring {
+  display: grid;
+  place-items: center;
+  width: 78px;
+  height: 78px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, rgba(5, 18, 31, 0.98) 58%, transparent 60%),
+    conic-gradient(var(--score-color) var(--score), rgba(171, 196, 224, 0.14) 0);
+  color: #f8fbff;
+  box-shadow: inset 0 0 0 1px rgba(171, 196, 224, 0.08), 0 18px 36px rgba(0, 8, 18, 0.24);
+}
+
+.lead-score-ring strong {
+  font-size: 23px;
+  letter-spacing: 0;
+}
+
+.lead-score-ring.is-high,
+.lead-interest.is-high {
+  --score-color: #22c55e;
+}
+
+.lead-score-ring.is-medium,
+.lead-interest.is-medium {
+  --score-color: #f59e0b;
+}
+
+.lead-score-ring.is-low,
+.lead-interest.is-low {
+  --score-color: #ef4444;
+}
+
+.lead-interest {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  color: color-mix(in srgb, var(--score-color) 82%, #f8fbff);
+}
+
+.lead-interest i {
+  display: block;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--score-color), color-mix(in srgb, var(--score-color) 34%, transparent));
+}
+
+.lead-card-status {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 18px;
+  min-width: 0;
+  color: rgba(226, 236, 248, 0.72);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.lead-card-status > span,
+.lead-card-status > strong {
+  grid-column: 1 / -1;
+}
+
+.lead-card-status > strong {
+  color: #f8fbff;
+  font-size: 16px;
+  letter-spacing: 0;
+}
+
+.lead-card-status small {
+  display: block;
+  margin-bottom: 5px;
+  color: rgba(226, 236, 248, 0.54);
+}
+
+.lead-card-status b {
+  color: rgba(248, 251, 255, 0.88);
+  font-weight: 850;
+}
+
+.lead-card-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.lead-icon-button {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  min-height: 64px;
+  padding: 10px;
+  border: 1px solid rgba(171, 196, 224, 0.14);
+  border-radius: 8px;
+  color: rgba(248, 251, 255, 0.9);
+  background: rgba(3, 12, 22, 0.34);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 850;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.lead-icon-button:hover,
+.lead-icon-button:focus-visible {
+  border-color: rgba(43, 113, 255, 0.55);
+  background: rgba(37, 99, 235, 0.14);
+}
+
+.lead-view-button {
+  grid-column: span 2;
+  grid-template-columns: auto auto;
+  min-height: 56px;
+}
+
+.lead-icon-button.danger {
+  color: rgba(248, 251, 255, 0.7);
+}
 }
 
 @media (max-width: 1450px) {
+  .lead-card {
+    grid-template-columns: minmax(320px, 1.35fr) minmax(140px, 0.5fr) minmax(260px, 0.85fr);
+  }
+
+  .lead-card-actions {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
   .admin-body.is-sales-view .leadfinder-grid {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
@@ -10946,6 +11276,30 @@ h3 {
     grid-template-columns: 1fr;
   }
 
+  .admin-body.is-sales-view #leadfinder > .admin-section-heading,
+  .sales-cockpit-actions {
+    justify-content: flex-start;
+  }
+
+  .lead-card {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .lead-score-panel {
+    justify-items: start;
+    grid-template-columns: auto minmax(120px, 1fr);
+  }
+
+  .lead-score-panel > span,
+  .lead-score-panel > small {
+    grid-column: 1 / -1;
+  }
+
+  .lead-card-status {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .sales-cockpit-bar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -10976,6 +11330,34 @@ h3 {
 
   .admin-body.is-sales-view .leadfinder-detail-card .settings-status-list {
     margin-top: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .lead-card-main {
+    grid-template-columns: 1fr;
+  }
+
+  .lead-avatar {
+    width: 58px;
+    height: 58px;
+    font-size: 18px;
+  }
+
+  .lead-contact-grid,
+  .lead-card-actions,
+  .lead-card-status {
+    grid-template-columns: 1fr;
+  }
+
+  .lead-view-button {
+    grid-column: auto;
+  }
+
+  .lead-card-toolbar,
+  .sales-cockpit-actions {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 
