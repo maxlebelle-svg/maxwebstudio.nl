@@ -16940,6 +16940,44 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
 
 .admin-body #demo-klantreis .workflow-metrics .metric-card {
   min-height: 148px;
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  overflow: hidden;
+}
+
+.admin-body #demo-klantreis .workflow-metrics .metric-card span {
+  color: rgba(226, 235, 247, 0.72);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.admin-body #demo-klantreis .workflow-metrics .metric-card strong {
+  max-width: 100%;
+  color: #f8fbff;
+  font-size: clamp(26px, 2.25vw, 40px);
+  font-weight: 780;
+  letter-spacing: -0.01em;
+  line-height: 1.06;
+  text-wrap: balance;
+}
+
+.admin-body #demo-klantreis .workflow-metrics .metric-card small {
+  color: rgba(190, 204, 222, 0.78);
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.25;
+}
+
+.admin-body #demo-klantreis .workflow-metrics .metric-card::after {
+  width: 96px;
+  height: 34px;
+  opacity: 0.42;
 }
 
 .admin-body #demo-klantreis .demo-journey-steps-card {

@@ -1,3 +1,5 @@
+import { resolveDemoImageAsset } from "./demoImageAssets.js";
+
 export const DEMO_SITE_STATUS = Object.freeze({
   PREPARED: "prepared",
   PLANNED: "planned",
@@ -54,6 +56,16 @@ function createPlannedDemoSite({
     previewSubtitle,
     showcaseLabel,
     ctaLabel: "Bekijk demo",
+  };
+}
+
+function withResolvedDemoImages(demoSite) {
+  const heroImage = resolveDemoImageAsset(demoSite);
+  return {
+    ...demoSite,
+    demoImage: heroImage,
+    desktopThumbnail: demoSite.desktopThumbnail || heroImage.src,
+    mobileThumbnail: demoSite.mobileThumbnail || heroImage.src,
   };
 }
 
@@ -375,7 +387,7 @@ export const demoSites = Object.freeze([
     previewTitle: "Een warme eerste indruk voor ouders.",
     previewSubtitle: "Gepland als vriendelijke kinderopvang-demo met aanmeldflow.",
   }),
-]);
+].map(withResolvedDemoImages));
 
 export function listDemoSites() {
   return [...demoSites];
