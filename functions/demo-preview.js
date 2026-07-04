@@ -49,10 +49,8 @@ exports.handler = async (event) => {
   }
 
   const file = previewPackage.files.find((item) => item.path === filePath) || previewPackage.files.find((item) => item.path === "index.html") || previewPackage.files[0];
-  const content = file?.path === "index.html"
-    ? String(file?.content || "")
-      .replace('href="styles.css"', `href="/.netlify/functions/demo-preview?id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}&file=styles.css"`)
-      .replace('src="script.js"', `src="/.netlify/functions/demo-preview?id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}&file=script.js"`)
+  const content = file?.path?.endsWith(".html")
+    ? rewritePreviewHtml(file?.content || "", id, token)
     : file?.content || "";
   return response(200, content || "<!doctype html><title>Preview</title><p>Previewpakket is leeg.</p>", {
     "Content-Type": contentTypeFor(file?.path),
@@ -74,6 +72,14 @@ function normalizePackage(value, row = {}) {
       { path: "briefing.txt", content: briefing },
     ],
   };
+}
+
+function rewritePreviewHtml(html = "", id = "", token = "") {
+  const assetUrl = (file) => `/.netlify/functions/demo-preview?id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}&file=${encodeURIComponent(file)}`;
+  return String(html || "")
+    .replaceAll('href="styles.css"', `href="${assetUrl("styles.css")}"`)
+    .replaceAll('src="script.js"', `src="${assetUrl("script.js")}"`)
+    .replace(/href="([^"#?]+\.html)"/g, (_match, file) => `href="${assetUrl(file)}"`);
 }
 
 async function supabaseFetch(url, options) {

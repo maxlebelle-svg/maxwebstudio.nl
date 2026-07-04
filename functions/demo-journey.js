@@ -285,7 +285,8 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     }
     if (!journeyId) return jsonResponse(500, { success: false, error: "Demo-klantreis kon niet worden voorbereid voor preview." });
 
-    const buildResult = await runBuildJob({ supabaseUrl, serviceRoleKey, admin }, { demoJourneyId: journeyId, generatedBriefing: briefing });
+    const packageType = cleanText(payload.packageType || payload.package_type || sourceJourney.packageType);
+    const buildResult = await runBuildJob({ supabaseUrl, serviceRoleKey, admin }, { demoJourneyId: journeyId, generatedBriefing: briefing, packageType });
     const journey = buildResult.journey || mapJourney(await readJourneyById({ supabaseUrl, serviceRoleKey, id: journeyId }));
     const events = await readEvents({ supabaseUrl, serviceRoleKey, journeyId });
     const buildHistory = await readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, journeyId });
@@ -302,6 +303,7 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
         url: buildResult.job?.previewUrl || journey.previewUrl,
         zipUrl: buildResult.job?.previewUrl ? appendQueryParam(buildResult.job.previewUrl, "format", "zip") : "",
         files: Object.values(buildResult.job?.generatedPackage?.files || []).map((file) => ({ path: file.path, bytes: Buffer.byteLength(file.content || "", "utf8") })),
+        package: buildResult.job?.generatedPackage?.meta || null,
       },
     });
   }

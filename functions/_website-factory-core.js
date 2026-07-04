@@ -1,6 +1,32 @@
 const crypto = require("crypto");
 
 const BUILD_STATUSES = new Set(["queued", "briefing", "building", "quality_check", "deploying", "completed", "quality_failed", "failed"]);
+const PACKAGE_RULES = {
+  starter: {
+    label: "Starter Website",
+    price: 495,
+    template: "starter-one-page-v1",
+    pages: ["index.html"],
+    sections: ["hero", "over-ons", "diensten", "waarom", "cta", "contact", "footer"],
+    navigation: "scroll",
+  },
+  professional: {
+    label: "Professional Website",
+    price: 995,
+    template: "professional-multi-page-v1",
+    pages: ["index.html", "over-ons.html", "diensten.html", "contact.html"],
+    sections: ["hero", "diensten", "voordelen", "werkwijze", "cta", "contact", "footer"],
+    navigation: "multi-page",
+  },
+  premium: {
+    label: "Premium Website",
+    price: 1750,
+    template: "premium-growth-site-v1",
+    pages: ["index.html", "over-ons.html", "diensten.html", "projecten.html", "reviews.html", "contact.html", "offerte.html"],
+    sections: ["hero", "diensten", "voordelen", "werkwijze", "projecten", "reviews", "offerte", "contact", "footer"],
+    navigation: "premium-multi-page",
+  },
+};
 
 function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
   const businessName = cleanText(journey.businessName || journey.business_name) || "Demo bedrijf";
@@ -17,13 +43,15 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
   const cta = inferCta(combinedBriefing);
   const colors = inferColors(industry);
   const style = inferStyle(combinedBriefing);
+  const packageType = normalizePackageType(journey.packageType || journey.package_type || journey.package || journey.packageName || journey.package_name || extractField(combinedBriefing, ["Websitepakket", "Pakket"]));
+  const packageRules = PACKAGE_RULES[packageType];
   const inputSignals = [combinedBriefing, websiteUrl, email, phone].filter((value) => cleanText(value).length > 12).length;
   const lowInputWarning = inputSignals < 2;
-  const templateSections = ["header", "hero", "diensten", "voordelen", "werkwijze", "reviews", "contact", "footer"];
-  const pages = ["Home", "Diensten", "Voordelen", "Werkwijze", "Reviews", "Contact"];
+  const templateSections = packageRules.sections;
+  const pages = packageRules.pages;
   const title = `${businessName} - professionele website-preview`;
   const description = `${businessName} helpt klanten met ${services.slice(0, 2).join(" en ")}. Een heldere preview met vertrouwen, structuur en een directe route naar contact.`;
-  const html = renderHtml({ businessName, contactName, email, phone, websiteUrl, industry, services, benefits, processSteps, cta, colors, style, title, description, lowInputWarning });
+  const html = renderHtml({ businessName, contactName, email, phone, websiteUrl, industry, services, benefits, processSteps, cta, colors, style, title, description, lowInputWarning, packageType, packageRules });
   const css = renderCss(colors);
   const script = renderScript();
   const briefingJson = {
@@ -38,7 +66,14 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     services,
     benefits,
     processSteps,
-    template: "premium-service-homepage-v1",
+    packageType,
+    packageLabel: packageRules.label,
+    packagePrice: packageRules.price,
+    packageRules,
+    generatedPages: pages,
+    generatedSections: templateSections,
+    template: packageRules.template,
+    templateUsed: packageRules.template,
     templateSections,
     lowInputWarning,
     warnings: lowInputWarning ? ["Weinig klantinput beschikbaar; neutrale professionele standaardtekst gebruikt."] : [],
@@ -57,6 +92,13 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     sectionVisuals: ["hero-dashboard-card", "service-cards", "trust-stat-cards"],
     futureImageSlots: ["hero", "service-detail", "review-background"],
   };
+  const contentFiles = [
+    { path: "index.html", content: html },
+    ...pages.filter((page) => page !== "index.html").map((page) => ({
+      path: page,
+      content: renderSubPage({ page, businessName, email, phone, industry, services, benefits, processSteps, cta, colors, packageRules }),
+    })),
+  ];
   const readme = [
     `# ${businessName} preview V${version}`,
     "",
@@ -70,7 +112,9 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     "- briefing.json",
     "- README.md",
     "",
-    "Template: premium-service-homepage-v1",
+    `Pakket: ${packageRules.label} (€${packageRules.price})`,
+    `Template: ${packageRules.template}`,
+    `Pagina's: ${pages.join(", ")}`,
     lowInputWarning ? "Let op: weinig klantinput beschikbaar; de preview gebruikt neutrale standaardtekst." : "Inputniveau: voldoende voor branchegerichte eerste preview.",
     "",
     "Controleer de preview intern voordat deze naar de klant gaat.",
@@ -80,8 +124,9 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     version,
     generatedAt: new Date().toISOString(),
     businessName,
+    packageType,
     files: [
-      { path: "index.html", content: html },
+      ...contentFiles,
       { path: "styles.css", content: css },
       { path: "script.js", content: script },
       { path: "assets-map.json", content: JSON.stringify(assetsMap, null, 2) },
@@ -99,15 +144,18 @@ function runQualityCheck({ generatedPackage = {}, journey = {} }) {
   const script = fileContent(files, "script.js");
   const businessName = cleanText(generatedPackage.businessName || journey.businessName || journey.business_name);
   const services = generatedPackage.meta?.services || [];
+  const packageRules = generatedPackage.meta?.packageRules || PACKAGE_RULES[generatedPackage.meta?.packageType] || PACKAGE_RULES.starter;
   const sectionCount = (html.match(/<section\b/gi) || []).length;
   const serviceCardCount = (html.match(/class="[^"]*service-card/gi) || []).length;
   const benefitCount = (html.match(/class="[^"]*benefit-card/gi) || []).length;
+  const htmlPageCount = files.filter((file) => file.path.endsWith(".html")).length;
   const checks = [
     check("Hero aanwezig", /<header[\s\S]*class="[^"]*hero/i.test(html) || /<section[\s\S]*class="[^"]*hero/i.test(html), 10),
     check("Hero visual aanwezig", /class="[^"]*hero-visual/i.test(html) && /class="[^"]*visual-card/i.test(html), 10),
     check("CTA aanwezig", /class="[^"]*button/i.test(html) && /(contact|advies|afspraak|kennismaking|offerte)/i.test(html), 10),
     check("Dienstensectie aanwezig", /id="diensten"|Diensten|Onze aanpak/i.test(html), 10),
     check("Minimaal vijf secties", sectionCount >= 5, 10),
+    check("Pakket pagina-aantal klopt", htmlPageCount >= packageRules.pages.length, 12),
     check("Minimaal drie diensten", serviceCardCount >= 3, 8),
     check("Minimaal drie voordelen", benefitCount >= 3, 8),
     check("Werkwijze aanwezig", /id="werkwijze"|Zo werkt|Werkwijze/i.test(html), 8),
@@ -270,7 +318,33 @@ function inferStyle(text = "") {
   return "premium en conversiegericht";
 }
 
-function renderHtml({ businessName, contactName, email, phone, websiteUrl, industry, services, benefits, processSteps, cta, colors, style, title, description, lowInputWarning }) {
+function normalizePackageType(value = "") {
+  const text = cleanText(value).toLowerCase();
+  if (/premium|1750|uitgebreid|growth|enterprise/.test(text)) return "premium";
+  if (/professional|professioneel|995|plus|business|multi/.test(text)) return "professional";
+  return "starter";
+}
+
+function navigationLinks(packageRules = PACKAGE_RULES.starter) {
+  if (packageRules.navigation === "scroll") {
+    return [
+      { href: "#diensten", label: "Diensten" },
+      { href: "#contact", label: "Contact" },
+    ];
+  }
+  const links = [
+    { href: "index.html", label: "Home" },
+    { href: "over-ons.html", label: "Over ons" },
+    { href: "diensten.html", label: "Diensten" },
+  ];
+  if (packageRules.pages.includes("projecten.html")) links.push({ href: "projecten.html", label: "Projecten" });
+  if (packageRules.pages.includes("reviews.html")) links.push({ href: "reviews.html", label: "Reviews" });
+  if (packageRules.pages.includes("offerte.html")) links.push({ href: "offerte.html", label: "Offerte" });
+  links.push({ href: "contact.html", label: "Contact" });
+  return links;
+}
+
+function renderHtml({ businessName, contactName, email, phone, websiteUrl, industry, services, benefits, processSteps, cta, colors, style, title, description, lowInputWarning, packageRules }) {
   const serviceCards = services.map((service, index) => `
         <article class="service-card">
           <span class="card-index">${String(index + 1).padStart(2, "0")}</span>
@@ -289,6 +363,23 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, indus
         </article>`).join("");
   const contactLine = [email ? `E-mail: ${email}` : "", phone ? `Telefoon: ${phone}` : ""].filter(Boolean).join(" | ");
   const websiteLine = websiteUrl ? `Huidige website: ${websiteUrl}` : "Website-informatie kan later worden aangevuld.";
+  const navLinks = navigationLinks(packageRules).map((item) => `<a href="${escapeHtml(item.href)}">${escapeHtml(item.label)}</a>`).join("");
+  const premiumSections = packageRules.pages.length >= 7 ? `
+      <section class="section-band project-section" id="projecten">
+        <span class="eyebrow">Projecten</span>
+        <h2>Ruimte voor cases, resultaten en vertrouwen.</h2>
+        <div class="service-grid">
+          <article class="service-card"><span class="card-index">01</span><h3>Uitgelicht project</h3><p>Toon een afgeronde opdracht met duidelijke voor/na-context.</p></article>
+          <article class="service-card"><span class="card-index">02</span><h3>Resultaatgericht</h3><p>Leg uit wat de klant bereikt en waarom dat vertrouwen geeft.</p></article>
+          <article class="service-card"><span class="card-index">03</span><h3>Volgende stap</h3><p>Leid bezoekers naar advies, offerte of contact.</p></article>
+        </div>
+      </section>
+      <section class="section-band offer-section" id="offerte">
+        <span class="eyebrow">Offerte</span>
+        <h2>Een duidelijke aanvraagroute voor serieuze klanten.</h2>
+        <p>Deze premium preview bevat extra conversieblokken voor offerteaanvragen, cases en bewijsvoering.</p>
+      </section>` : "";
+  const professionalNote = packageRules.pages.length >= 4 ? `<p class="package-note">${escapeHtml(packageRules.label)} bevat aparte SEO-pagina's voor aanbod, over ons en contact.</p>` : `<p class="package-note">${escapeHtml(packageRules.label)} is opgezet als snelle one-page preview met scrollnavigatie.</p>`;
   return `<!doctype html>
 <html lang="nl">
   <head>
@@ -303,10 +394,7 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, indus
     <header class="site-header">
       <a class="brand" href="#top">${escapeHtml(businessName)}</a>
       <nav aria-label="Hoofdnavigatie">
-        <a href="#diensten">Diensten</a>
-        <a href="#werkwijze">Werkwijze</a>
-        <a href="#reviews">Reviews</a>
-        <a href="#contact">Contact</a>
+        ${navLinks}
       </nav>
     </header>
     <main id="top">
@@ -315,6 +403,7 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, indus
           <span class="eyebrow">${escapeHtml(style)} voor ${escapeHtml(industry)}</span>
           <h1>${escapeHtml(businessName)} presenteert helder wat klanten direct willen weten.</h1>
           <p>${escapeHtml(description)}</p>
+          ${professionalNote}
           <div class="hero-actions">
             <a class="button" href="#contact">${escapeHtml(cta)}</a>
             <a class="button secondary" href="#diensten">Bekijk aanbod</a>
@@ -383,6 +472,7 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, indus
           <p>Deze sectie is klaar om uit te breiden met reviews, keurmerken of afgeronde projecten.</p>
         </article>
       </section>
+      ${premiumSections}
 
       <section class="contact-section section-band" id="contact">
         <div>
@@ -400,6 +490,27 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, indus
     <script src="script.js"></script>
   </body>
 </html>`;
+}
+
+function renderSubPage({ page, businessName, email, phone, industry, services, benefits, processSteps, cta, colors, packageRules }) {
+  const titleMap = {
+    "over-ons.html": "Over ons",
+    "diensten.html": "Diensten",
+    "projecten.html": "Projecten",
+    "reviews.html": "Reviews",
+    "contact.html": "Contact",
+    "offerte.html": "Offerte aanvragen",
+  };
+  const title = titleMap[page] || "Pagina";
+  const body = page === "diensten.html"
+    ? services.map((service) => `<article class="service-card"><h3>${escapeHtml(service)}</h3><p>${escapeHtml(serviceText(service, industry))}</p></article>`).join("")
+    : page === "reviews.html"
+      ? benefits.map((benefit) => `<article class="review-card"><strong>${escapeHtml(benefit.title)}</strong><p>${escapeHtml(benefit.text)}</p></article>`).join("")
+      : page === "projecten.html"
+        ? processSteps.map((step) => `<article class="service-card"><h3>${escapeHtml(step.title)}</h3><p>${escapeHtml(step.text)}</p></article>`).join("")
+        : `<article class="service-card"><h3>${escapeHtml(title)}</h3><p>${escapeHtml(businessName)} presenteert hier extra informatie passend bij ${escapeHtml(packageRules.label)}.</p></article>`;
+  const contact = [email ? `E-mail: ${email}` : "", phone ? `Telefoon: ${phone}` : ""].filter(Boolean).join(" | ");
+  return `<!doctype html><html lang="nl"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="robots" content="noindex,nofollow" /><title>${escapeHtml(title)} - ${escapeHtml(businessName)}</title><link rel="stylesheet" href="styles.css" /></head><body style="--brand:${escapeHtml(colors.brand)};--accent:${escapeHtml(colors.accent)};--ink:${escapeHtml(colors.ink)};--soft:${escapeHtml(colors.soft)}"><header class="site-header"><a class="brand" href="index.html">${escapeHtml(businessName)}</a><nav>${navigationLinks(packageRules).map((item) => `<a href="${escapeHtml(item.href)}">${escapeHtml(item.label)}</a>`).join("")}</nav></header><main><section class="section-band section-heading"><span class="eyebrow">${escapeHtml(packageRules.label)}</span><h1>${escapeHtml(title)}</h1><p>Deze pagina is onderdeel van de ${escapeHtml(packageRules.label)} preview en geeft meer diepte dan een one-page opzet.</p><div class="service-grid">${body}</div></section><section class="contact-section section-band"><div><span class="eyebrow">Contact</span><h2>${escapeHtml(cta)}</h2><p>${escapeHtml(contact || "Contactgegevens kunnen later worden aangevuld.")}</p></div><a class="button" href="${email ? `mailto:${escapeHtml(email)}` : "#"}">${escapeHtml(cta)}</a></section></main><footer class="site-footer"><strong>${escapeHtml(businessName)}</strong><span>${escapeHtml(packageRules.label)}</span></footer><script src="script.js"></script></body></html>`;
 }
 
 function renderCss() {

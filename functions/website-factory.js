@@ -103,7 +103,13 @@ async function getBuildHistoryResponse(context, payload) {
 async function generatePackageResponse(context, payload) {
   const journey = payload.journey || await readJourney(context, payload.demoJourneyId || payload.demo_journey_id);
   if (!journey) return jsonResponse(404, { success: false, error: "Demo-klantreis niet gevonden." });
-  const generatedPackage = buildWebsitePackage({ journey: mapJourney(journey), briefing: payload.briefing || journey.generated_briefing, version: Number(payload.version || 1) });
+  const mappedJourney = payload.journey ? { ...mapJourney(journey), ...journey } : mapJourney(journey);
+  const packageType = cleanText(payload.packageType || payload.package_type || mappedJourney.packageType);
+  const generatedPackage = buildWebsitePackage({
+    journey: { ...mappedJourney, packageType },
+    briefing: payload.briefing || journey.generated_briefing,
+    version: Number(payload.version || 1),
+  });
   return jsonResponse(200, { success: true, generatedPackage });
 }
 
@@ -181,7 +187,8 @@ async function runBuildJob(context, payload = {}) {
 
   const buildingLogs = buildLogs(logs, { step: "building", message: "Website package wordt gegenereerd." });
   await patchBuildJob(context, job.id, { status: "building", current_step: "generate_website_package", progress: 45, build_logs: buildingLogs });
-  const generatedPackage = buildWebsitePackage({ journey, briefing, version: job.previewVersion });
+  const packageType = cleanText(payload.packageType || payload.package_type || journey.packageType);
+  const generatedPackage = buildWebsitePackage({ journey: { ...journey, packageType }, briefing, version: job.previewVersion });
 
   const qualityLogs = buildLogs(buildingLogs, { step: "quality_check", message: "Quality checker gestart." });
   await patchBuildJob(context, job.id, { status: "quality_check", current_step: "run_quality_check", progress: 70, generated_package: generatedPackage, build_logs: qualityLogs });
@@ -224,6 +231,7 @@ async function runBuildJob(context, payload = {}) {
     previewScore: qualityReport.score,
     qualityReport,
     generatedPackage,
+    packageType: generatedPackage.packageType,
     createdBy: context.admin.id,
   });
   const completedRows = await patchBuildJob(context, job.id, {
@@ -242,6 +250,7 @@ async function runBuildJob(context, payload = {}) {
     previewUrl,
     previewToken: token,
     generatedPackage,
+    packageType: generatedPackage.packageType,
     status: "interne_preview_klaar",
   });
   await createJourneyEvent(context, {

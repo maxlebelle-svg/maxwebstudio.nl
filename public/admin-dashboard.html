@@ -488,6 +488,7 @@
                 <label for="demo-journey-email">E-mail<input id="demo-journey-email" type="email" /></label>
                 <label for="demo-journey-phone">Telefoon<input id="demo-journey-phone" type="tel" /></label>
                 <label class="admin-profile-wide" for="demo-journey-website">Website URL<input id="demo-journey-website" type="url" placeholder="https://..." /></label>
+                <label for="demo-journey-package">Websitepakket<select id="demo-journey-package"></select></label>
                 <label for="demo-journey-status">Demo status<select id="demo-journey-status"></select></label>
                 <label for="demo-journey-followup">Opvolgdatum<input id="demo-journey-followup" type="datetime-local" /></label>
                 <label for="demo-journey-assigned">Verantwoordelijke<input id="demo-journey-assigned" type="text" placeholder="Naam of e-mail medewerker" /></label>
@@ -503,6 +504,8 @@
                 </div>
                 <div class="admin-action-group admin-action-group-secondary">
                   <button class="button secondary" id="demo-journey-copy-briefing" type="button">Briefing kopiëren</button>
+                  <button class="button secondary" id="demo-journey-upgrade-professional" type="button">Upgrade naar Professional</button>
+                  <button class="button secondary" id="demo-journey-upgrade-premium" type="button">Upgrade naar Premium</button>
                   <button class="button secondary" id="demo-journey-refresh" type="button">Opnieuw laden</button>
                 </div>
               </div>
@@ -20224,6 +20227,11 @@
           ["finalizing", "Definitieve versie bijna klaar"],
           ["call_reminder", "Belafspraak reminder"],
         ];
+        const websitePackages = [
+          ["starter", "Starter Website (€495)"],
+          ["professional", "Professional Website (€995)"],
+          ["premium", "Premium Website (€1750)"],
+        ];
         const customerSteps = [
           "Aanvraag ontvangen",
           "Project ingepland",
@@ -20261,6 +20269,7 @@
             email: document.getElementById("demo-journey-email"),
             phone: document.getElementById("demo-journey-phone"),
             website: document.getElementById("demo-journey-website"),
+            package: document.getElementById("demo-journey-package"),
             status: document.getElementById("demo-journey-status"),
             followup: document.getElementById("demo-journey-followup"),
             assigned: document.getElementById("demo-journey-assigned"),
@@ -20288,6 +20297,8 @@
             generateBriefing: document.getElementById("demo-journey-generate-briefing"),
             generatePreview: document.getElementById("demo-journey-generate-preview"),
             copyBriefing: document.getElementById("demo-journey-copy-briefing"),
+            upgradeProfessional: document.getElementById("demo-journey-upgrade-professional"),
+            upgradePremium: document.getElementById("demo-journey-upgrade-premium"),
             refresh: document.getElementById("demo-journey-refresh"),
             emailType: document.getElementById("demo-journey-email-type"),
             emailSubject: document.getElementById("demo-journey-email-subject"),
@@ -20424,6 +20435,39 @@
           return statuses.find(([status]) => status === value)?.[1] || "Geen demo";
         }
 
+        function packageTypeFromValue(value = "") {
+          const text = String(value || "").toLowerCase();
+          if (/premium|1750|uitgebreid|growth|enterprise/.test(text)) return "premium";
+          if (/professional|professioneel|995|plus|business|multi/.test(text)) return "professional";
+          return "starter";
+        }
+
+        function packageLabel(value = "") {
+          const type = packageTypeFromValue(value || "starter");
+          return websitePackages.find(([packageType]) => packageType === type)?.[1] || "Starter Website (€495)";
+        }
+
+        function latestPackageMeta() {
+          return buildHistory.latestJob?.generatedPackage?.meta
+            || buildHistory.activeVersion?.generatedPackage?.meta
+            || journey?.previewPackage?.meta
+            || {};
+        }
+
+        function currentPackageType() {
+          const meta = latestPackageMeta();
+          const lead = selectedLead();
+          return packageTypeFromValue(
+            elements.package?.value
+            || meta.packageType
+            || lead?.packageType
+            || lead?.package_type
+            || lead?.package
+            || lead?.packageName
+            || lead?.package_name
+          );
+        }
+
         function formatDate(value = "") {
           if (!value) return "-";
           const date = new Date(value);
@@ -20542,6 +20586,7 @@
             elements.email.value = lead.email || "";
             elements.phone.value = lead.phone || "";
             elements.website.value = lead.websiteUrl || "";
+            elements.package.value = packageTypeFromValue(lead.packageType || lead.package_type || lead.package || lead.packageName || lead.package_name);
             elements.assigned.value = lead.assignedUserEmail || lead.salesPartnerEmail || lead.assignedTo || "";
           }
         }
@@ -20556,6 +20601,7 @@
             email: elements.email?.value || "",
             phone: elements.phone?.value || "",
             websiteUrl: elements.website?.value || "",
+            packageType: currentPackageType(),
             demoStatus: elements.status?.value || "aanvraag_ontvangen",
             generatedBriefing: elements.briefing?.value || "",
             previewUrl,
@@ -20578,6 +20624,7 @@
             ``,
             `Klant: ${business}`,
             `Contactpersoon: ${contact}`,
+            `Websitepakket: ${packageLabel(currentPackageType())}`,
             `E-mail: ${elements.email?.value || lead?.email || "-"}`,
             `Telefoon: ${elements.phone?.value || lead?.phone || "-"}`,
             `Website/huidige URL: ${website}`,
@@ -20657,14 +20704,15 @@
           }
         }
 
-        async function generatePreview() {
+        async function generatePreview(packageType = currentPackageType()) {
           if (!elements.briefing?.value) {
             elements.briefing.value = buildBriefing();
           }
+          if (elements.package) elements.package.value = packageTypeFromValue(packageType);
           elements.generatePreview.disabled = true;
-          setMessage(elements.message, "Interne preview voorbereiden...", "info");
+          setMessage(elements.message, `${packageLabel(packageType)} preview voorbereiden...`, "info");
           try {
-            const data = await apiRequest(endpoint, "POST", collectPayload({ action: "generate_preview", generatedBriefing: elements.briefing.value }));
+            const data = await apiRequest(endpoint, "POST", collectPayload({ action: "generate_preview", generatedBriefing: elements.briefing.value, packageType }));
             lastFactoryResponse = data;
             journey = data.demoJourney || data.journey || journey || null;
             const previewUrl = absolutePreviewUrl(data.preview?.url || data.buildJob?.previewUrl || data.buildStatus?.previewUrl || journey?.previewUrl || "");
@@ -20780,6 +20828,9 @@
           const previewUrl = journey?.previewUrl || latest?.previewUrl || activeVersion?.previewUrl || "";
           const absoluteUrl = absolutePreviewUrl(previewUrl);
           const previewToken = journey?.previewToken || latest?.previewToken || activeVersion?.previewToken || "";
+          const packageMeta = latest?.generatedPackage?.meta || activeVersion?.generatedPackage?.meta || latestPackageMeta();
+          const generatedPages = Array.isArray(packageMeta.generatedPages) ? packageMeta.generatedPages : [];
+          const generatedSections = Array.isArray(packageMeta.generatedSections || packageMeta.templateSections) ? (packageMeta.generatedSections || packageMeta.templateSections) : [];
           if (elements.buildState) {
             elements.buildState.textContent = latest ? buildStatusLabel(latest.status) : buildHistory.setupRequired ? "Setup nodig" : "Geen build";
           }
@@ -20790,6 +20841,10 @@
             const score = latest?.previewScore ?? activeVersion?.previewScore;
             elements.buildDetails.innerHTML = [
               ["Website Factory", latest ? buildStatusLabel(latest.status) : buildHistory.setupRequired ? "Setup nodig" : "Geen build"],
+              ["Websitepakket", packageMeta.packageLabel || packageLabel(currentPackageType())],
+              ["Aantal pagina's", generatedPages.length ? String(generatedPages.length) : "-"],
+              ["Aantal secties", generatedSections.length ? String(generatedSections.length) : "-"],
+              ["Template", packageMeta.templateUsed || packageMeta.template || "-"],
               ["Voortgang", latest ? `${latest.progress || 0}%` : "-"],
               ["Preview score", Number.isFinite(Number(score)) ? `${score}/100` : "-"],
               ["Preview versie", activeVersion?.version ? `V${activeVersion.version}` : latest?.previewVersion ? `V${latest.previewVersion}` : "-"],
@@ -20814,6 +20869,10 @@
             const diagnostics = developerModeActive()
               ? {
                 template: latest?.generatedPackage?.meta?.template || activeVersion?.generatedPackage?.meta?.template || "",
+                packageType: packageMeta.packageType || currentPackageType(),
+                packageRules: packageMeta.packageRules || {},
+                generatedPages,
+                generatedSections,
                 templateSections: latest?.generatedPackage?.meta?.templateSections || activeVersion?.generatedPackage?.meta?.templateSections || [],
                 warnings: latest?.generatedPackage?.meta?.warnings || activeVersion?.generatedPackage?.meta?.warnings || [],
                 latestJob: latest,
@@ -20867,6 +20926,7 @@
             elements.email.value = journey.email || "";
             elements.phone.value = journey.phone || "";
             elements.website.value = journey.websiteUrl || "";
+            elements.package.value = packageTypeFromValue(journey.previewPackage?.meta?.packageType || latestPackageMeta().packageType || elements.package?.value);
             elements.status.value = journey.demoStatus || "geen_demo";
             elements.followup.value = datetimeLocal(journey.followUpAt);
             elements.assigned.value = journey.assignedTo || "";
@@ -20876,6 +20936,7 @@
             elements.briefing.value = journey.generatedBriefing || "";
           } else {
             elements.status.value = "aanvraag_ontvangen";
+            elements.package.value = packageTypeFromValue(lead?.packageType || lead?.package_type || lead?.package || lead?.packageName || lead?.package_name);
             elements.followup.value = "";
             elements.preview.value = "";
             elements.feedback.value = "";
@@ -20892,6 +20953,7 @@
             : "Nog geen centrale demo-klantreis voor deze lead.";
           elements.details.innerHTML = [
             ["Lead", lead?.companyName || journey?.businessName || "-"],
+            ["Websitepakket", latestPackageMeta().packageLabel || packageLabel(currentPackageType())],
             ["Preview URL", journey?.previewUrl || "Genereer eerst een preview"],
             ["Laatste mail", journey?.lastEmailStatus || "-"],
             ["Laatste maildatum", formatDate(journey?.lastEmailSentAt)],
@@ -20911,6 +20973,7 @@
         function wireEvents() {
           fillSelect(elements.status, statuses);
           fillSelect(elements.emailType, templates);
+          fillSelect(elements.package, websitePackages);
           elements.form?.addEventListener("submit", saveJourney);
           elements.lead?.addEventListener("change", async () => {
             journey = null;
@@ -20934,6 +20997,16 @@
             event.preventDefault();
             event.stopPropagation();
             copyText(elements.briefing?.value || "", elements.message);
+          });
+          elements.upgradeProfessional?.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            generatePreview("professional");
+          });
+          elements.upgradePremium?.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            generatePreview("premium");
           });
           elements.refresh?.addEventListener("click", async (event) => {
             event.preventDefault();
