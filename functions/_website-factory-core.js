@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const { resolveDemoImageAsset } = require("./_demo-image-assets");
 
 const BUILD_STATUSES = new Set(["queued", "briefing", "building", "quality_check", "deploying", "completed", "quality_failed", "failed"]);
 const PACKAGE_RULES = {
@@ -45,13 +46,14 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
   const style = inferStyle(combinedBriefing);
   const packageType = normalizePackageType(journey.packageType || journey.package_type || journey.package || journey.packageName || journey.package_name || extractField(combinedBriefing, ["Websitepakket", "Pakket"]));
   const packageRules = PACKAGE_RULES[packageType];
+  const heroImage = resolveDemoImageAsset({ businessName, industry, services, briefing: combinedBriefing });
   const inputSignals = [combinedBriefing, websiteUrl, email, phone].filter((value) => cleanText(value).length > 12).length;
   const lowInputWarning = inputSignals < 2;
   const templateSections = packageRules.sections;
   const pages = packageRules.pages;
   const title = `${businessName} - professionele website-preview`;
   const description = `${businessName} helpt klanten met ${services.slice(0, 2).join(" en ")}. Een heldere preview met vertrouwen, structuur en een directe route naar contact.`;
-  const html = renderHtml({ businessName, contactName, email, phone, websiteUrl, industry, services, benefits, processSteps, cta, colors, style, title, description, lowInputWarning, packageType, packageRules });
+  const html = renderHtml({ businessName, contactName, email, phone, websiteUrl, industry, services, benefits, processSteps, cta, colors, style, title, description, lowInputWarning, packageType, packageRules, heroImage });
   const css = renderCss(colors);
   const script = renderScript();
   const briefingJson = {
@@ -70,6 +72,7 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     packageLabel: packageRules.label,
     packagePrice: packageRules.price,
     packageRules,
+    heroImage,
     generatedPages: pages,
     generatedSections: templateSections,
     template: packageRules.template,
@@ -85,12 +88,15 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
   const assetsMap = {
     logo: "text-brand",
     hero: {
-      type: "css-visual-placeholder",
+      type: "demo-image-library",
       promptReady: true,
+      slug: heroImage.slug,
+      src: heroImage.src,
+      alt: heroImage.alt,
       subject: `${businessName} ${industry}`,
     },
-    sectionVisuals: ["hero-dashboard-card", "service-cards", "trust-stat-cards"],
-    futureImageSlots: ["hero", "service-detail", "review-background"],
+    sectionVisuals: ["hero-image", "service-cards", "trust-stat-cards"],
+    futureImageSlots: ["service-detail", "review-background"],
   };
   const contentFiles = [
     { path: "index.html", content: html },
@@ -280,6 +286,20 @@ function extractServices(text = "", industry = "") {
   const normalized = `${text} ${industry}`.toLowerCase();
   if (/bouw|timmer|renovatie|aannemer/.test(normalized)) return ["Renovatie", "Maatwerk", "Projectbegeleiding"];
   if (/restaurant|horeca|cafe|catering/.test(normalized)) return ["Menu", "Reserveren", "Catering"];
+  if (/sportschool|fitness|personal trainer/.test(normalized)) return ["Proefles", "Rooster", "Membership"];
+  if (/advocaat|advocatuur|juridisch|jurist/.test(normalized)) return ["Arbeidsrecht", "Ondernemingsrecht", "Intake"];
+  if (/autobedrijf|garage|automotive|occasion|apk/.test(normalized)) return ["Occasions", "APK", "Onderhoud"];
+  if (/tandarts|mondzorg/.test(normalized)) return ["Controle", "Preventie", "Esthetiek"];
+  if (/elektricien|elektra|groepenkast/.test(normalized)) return ["Storingen", "Groepenkast", "Laadpaal"];
+  if (/loodgieter|lekkage|sanitair|cv/.test(normalized)) return ["Lekkage", "CV", "Sanitair"];
+  if (/hovenier|tuin|groen/.test(normalized)) return ["Tuinontwerp", "Aanleg", "Onderhoud"];
+  if (/schoonmaak|vve|oplevering/.test(normalized)) return ["Kantoor", "VvE", "Oplevering"];
+  if (/verhuis|transport|opslag/.test(normalized)) return ["Particulier", "Zakelijk", "Opslag"];
+  if (/dierenarts|dierenzorg|kliniek/.test(normalized)) return ["Consult", "Vaccinatie", "Spoed"];
+  if (/hotel|b&b|hospitality|kamer/.test(normalized)) return ["Kamers", "Arrangementen", "Boeken"];
+  if (/financieel|hypotheek|accountant|belasting/.test(normalized)) return ["Hypotheek", "Financieel plan", "Belasting"];
+  if (/fysiotherapie|fysiotherapeut|revalidatie/.test(normalized)) return ["Sport", "Revalidatie", "Pijnklachten"];
+  if (/kinderopvang|bso|peuteropvang/.test(normalized)) return ["Dagopvang", "BSO", "Rondleiding"];
   if (/kapper|salon|beauty/.test(normalized)) return ["Behandelingen", "Afspraak maken", "Stylingadvies"];
   if (/installatie|elektra|loodgieter/.test(normalized)) return ["Installatie", "Onderhoud", "Spoedservice"];
   if (/coach|advies|consult/.test(normalized)) return ["Coaching", "Strategie", "Trajecten"];
@@ -290,6 +310,20 @@ function inferIndustry(text = "", businessName = "") {
   const normalized = `${text} ${businessName}`.toLowerCase();
   if (/bouw|timmer|renovatie|aannemer/.test(normalized)) return "bouw en renovatie";
   if (/restaurant|horeca|cafe/.test(normalized)) return "horeca";
+  if (/sportschool|fitness|personal trainer/.test(normalized)) return "fitness";
+  if (/advocaat|advocatuur|juridisch|jurist/.test(normalized)) return "advocatuur";
+  if (/autobedrijf|garage|automotive|occasion|apk/.test(normalized)) return "automotive";
+  if (/tandarts|mondzorg/.test(normalized)) return "tandarts";
+  if (/elektricien|elektra|groepenkast/.test(normalized)) return "elektricien";
+  if (/loodgieter|lekkage|sanitair|cv/.test(normalized)) return "loodgieter";
+  if (/hovenier|tuin|groen/.test(normalized)) return "hovenier";
+  if (/schoonmaak|vve|oplevering/.test(normalized)) return "schoonmaak";
+  if (/verhuis|transport|opslag/.test(normalized)) return "verhuisbedrijf";
+  if (/dierenarts|dierenzorg|kliniek/.test(normalized)) return "dierenarts";
+  if (/hotel|b&b|hospitality|kamer/.test(normalized)) return "hotel";
+  if (/financieel|hypotheek|accountant|belasting/.test(normalized)) return "financieel advies";
+  if (/fysiotherapie|fysiotherapeut|revalidatie/.test(normalized)) return "fysiotherapie";
+  if (/kinderopvang|bso|peuteropvang/.test(normalized)) return "kinderopvang";
   if (/kapper|salon|beauty/.test(normalized)) return "beauty en verzorging";
   if (/installatie|elektra|loodgieter/.test(normalized)) return "installatie en onderhoud";
   if (/coach|advies|consult/.test(normalized)) return "advies en coaching";
@@ -344,7 +378,7 @@ function navigationLinks(packageRules = PACKAGE_RULES.starter) {
   return links;
 }
 
-function renderHtml({ businessName, contactName, email, phone, websiteUrl, industry, services, benefits, processSteps, cta, colors, style, title, description, lowInputWarning, packageRules }) {
+function renderHtml({ businessName, contactName, email, phone, websiteUrl, industry, services, benefits, processSteps, cta, colors, style, title, description, lowInputWarning, packageRules, heroImage }) {
   const serviceCards = services.map((service, index) => `
         <article class="service-card">
           <span class="card-index">${String(index + 1).padStart(2, "0")}</span>
@@ -415,6 +449,7 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, indus
           </div>
         </div>
         <aside class="hero-visual" aria-label="Visuele preview">
+          <img class="hero-photo" src="${escapeHtml(heroImage.src)}" alt="${escapeHtml(heroImage.alt)}" />
           <div class="visual-card visual-card-main">
             <span>Homepage preview</span>
             <strong>${escapeHtml(businessName)}</strong>
@@ -514,7 +549,7 @@ function renderSubPage({ page, businessName, email, phone, industry, services, b
 }
 
 function renderCss() {
-  return `:root{color-scheme:light;--paper:#fff;--line:#dbe5ef;--muted:#5f6f84;--shadow:0 24px 70px rgba(15,23,42,.11)}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,Arial,sans-serif;background:linear-gradient(180deg,#fff,var(--soft));color:var(--ink)}a{color:inherit}.site-header{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:18px clamp(20px,5vw,76px);border-bottom:1px solid rgba(219,229,239,.86);background:rgba(255,255,255,.88);backdrop-filter:blur(18px)}.brand{font-weight:900;text-decoration:none}.site-header nav{display:flex;gap:18px;align-items:center}.site-header nav a{text-decoration:none;color:var(--muted);font-size:14px;font-weight:850}.section-band{width:min(1160px,calc(100% - 40px));margin:0 auto}.hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(360px,.95fr);gap:clamp(28px,5vw,64px);align-items:center;min-height:calc(100vh - 78px);padding:clamp(56px,8vw,110px) 0}.eyebrow{display:inline-flex;align-items:center;min-height:30px;padding:0 11px;border:1px solid color-mix(in srgb,var(--brand) 24%,transparent);border-radius:999px;color:var(--brand);background:color-mix(in srgb,var(--brand) 8%,#fff);font-size:12px;font-weight:900;text-transform:uppercase}h1,h2,h3,p{letter-spacing:0}h1{max-width:820px;margin:18px 0 22px;font-size:clamp(42px,7vw,86px);line-height:.94}h2{max-width:760px;margin:12px 0 14px;font-size:clamp(30px,4.5vw,56px);line-height:1}h3{margin:0 0 10px;font-size:22px;line-height:1.14}p{max-width:720px;color:var(--muted);font-size:18px;line-height:1.72}.button{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:13px 18px;border-radius:8px;background:var(--brand);color:#fff;text-decoration:none;font-weight:900;box-shadow:0 14px 34px color-mix(in srgb,var(--brand) 24%,transparent)}.button.secondary{border:1px solid var(--line);color:var(--ink);background:#fff;box-shadow:none}.hero-actions,.hero-proof{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}.hero-proof span{display:grid;gap:2px;min-width:132px;padding:14px 16px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.74);color:var(--muted);font-size:13px;font-weight:850}.hero-proof strong{color:var(--ink);font-size:24px}.hero-visual{position:relative;min-height:520px;border:1px solid var(--line);border-radius:8px;background:radial-gradient(circle at 72% 16%,color-mix(in srgb,var(--accent) 26%,transparent),transparent 34%),linear-gradient(145deg,#fff,color-mix(in srgb,var(--brand) 9%,#fff));box-shadow:var(--shadow);overflow:hidden}.hero-visual::before{content:"";position:absolute;inset:36px;border:1px solid color-mix(in srgb,var(--brand) 16%,transparent);border-radius:8px;background:linear-gradient(135deg,color-mix(in srgb,var(--brand) 14%,transparent),transparent)}.visual-card{position:absolute;display:grid;gap:8px;border:1px solid rgba(255,255,255,.72);border-radius:8px;background:rgba(255,255,255,.86);box-shadow:0 20px 52px rgba(15,23,42,.12);backdrop-filter:blur(14px)}.visual-card span{color:var(--brand);font-size:12px;font-weight:900;text-transform:uppercase}.visual-card-main{left:44px;right:44px;top:70px;padding:28px}.visual-card-main strong{font-size:34px;line-height:1}.visual-card-main p{margin:0;font-size:15px}.visual-card-floating{right:28px;bottom:66px;width:min(260px,58%);padding:22px}.visual-grid{position:absolute;left:44px;right:44px;bottom:178px;display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.visual-grid i{height:72px;border-radius:8px;background:linear-gradient(135deg,color-mix(in srgb,var(--brand) 16%,#fff),#fff);border:1px solid rgba(255,255,255,.7)}.trust-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}.trust-strip div,.service-card,.benefit-card,.process-card,.review-card,.contact-section,.preview-note{border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.86);box-shadow:0 14px 40px rgba(15,23,42,.06)}.trust-strip div{display:grid;gap:6px;padding:20px}.trust-strip strong{font-size:16px}.trust-strip span{color:var(--muted);font-size:14px;font-weight:750}.section-heading,.benefits-section,.process-section,.reviews-section,.contact-section,.preview-note{padding:clamp(34px,5vw,58px) 0}.service-grid,.benefit-grid,.process-grid{display:grid;gap:16px}.service-grid{grid-template-columns:repeat(3,1fr);margin-top:26px}.service-card,.benefit-card{padding:24px}.card-index{display:inline-flex;margin-bottom:26px;color:var(--brand);font-size:13px;font-weight:950}.benefits-section{display:grid;grid-template-columns:.85fr 1.15fr;gap:28px;align-items:start}.benefit-grid{grid-template-columns:repeat(2,1fr)}.benefit-card strong{font-size:19px}.process-grid{grid-template-columns:repeat(3,1fr);margin-top:24px}.process-card{display:flex;gap:16px;padding:22px}.process-card span{display:grid;place-items:center;width:38px;height:38px;flex:0 0 auto;border-radius:999px;color:#fff;background:var(--brand);font-weight:900}.process-card p,.benefit-card p,.service-card p,.review-card p{margin:0;font-size:15px}.reviews-section{display:grid;grid-template-columns:.9fr 1fr 1fr;gap:16px;align-items:stretch}.review-card{padding:24px}.review-card strong{display:block;margin-bottom:14px;font-size:22px;line-height:1.2}.contact-section{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;margin-bottom:34px;padding:34px}.contact-section p{margin:0 0 10px}.preview-note{padding:20px 24px;margin-bottom:34px}.preview-note p{margin:8px 0 0;font-size:14px}.site-footer{display:flex;justify-content:space-between;gap:20px;padding:26px clamp(20px,5vw,76px);border-top:1px solid var(--line);background:#fff;color:var(--muted);font-weight:850}.site-footer strong{color:var(--ink)}@media(max-width:900px){.site-header,.site-header nav,.site-footer{align-items:flex-start;flex-direction:column}.hero,.benefits-section,.reviews-section,.contact-section{grid-template-columns:1fr}.hero{min-height:0}.hero-visual{min-height:420px}.trust-strip,.service-grid,.benefit-grid,.process-grid{grid-template-columns:1fr}.contact-section .button{width:100%}}`;
+  return `:root{color-scheme:light;--paper:#fff;--line:#dbe5ef;--muted:#5f6f84;--shadow:0 24px 70px rgba(15,23,42,.11)}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,Arial,sans-serif;background:linear-gradient(180deg,#fff,var(--soft));color:var(--ink)}a{color:inherit}.site-header{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:18px clamp(20px,5vw,76px);border-bottom:1px solid rgba(219,229,239,.86);background:rgba(255,255,255,.88);backdrop-filter:blur(18px)}.brand{font-weight:900;text-decoration:none}.site-header nav{display:flex;gap:18px;align-items:center}.site-header nav a{text-decoration:none;color:var(--muted);font-size:14px;font-weight:850}.section-band{width:min(1160px,calc(100% - 40px));margin:0 auto}.hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(360px,.95fr);gap:clamp(28px,5vw,64px);align-items:center;min-height:calc(100vh - 78px);padding:clamp(56px,8vw,110px) 0}.eyebrow{display:inline-flex;align-items:center;min-height:30px;padding:0 11px;border:1px solid color-mix(in srgb,var(--brand) 24%,transparent);border-radius:999px;color:var(--brand);background:color-mix(in srgb,var(--brand) 8%,#fff);font-size:12px;font-weight:900;text-transform:uppercase}h1,h2,h3,p{letter-spacing:0}h1{max-width:820px;margin:18px 0 22px;font-size:clamp(42px,7vw,86px);line-height:.94}h2{max-width:760px;margin:12px 0 14px;font-size:clamp(30px,4.5vw,56px);line-height:1}h3{margin:0 0 10px;font-size:22px;line-height:1.14}p{max-width:720px;color:var(--muted);font-size:18px;line-height:1.72}.button{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:13px 18px;border-radius:8px;background:var(--brand);color:#fff;text-decoration:none;font-weight:900;box-shadow:0 14px 34px color-mix(in srgb,var(--brand) 24%,transparent)}.button.secondary{border:1px solid var(--line);color:var(--ink);background:#fff;box-shadow:none}.hero-actions,.hero-proof{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}.hero-proof span{display:grid;gap:2px;min-width:132px;padding:14px 16px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.74);color:var(--muted);font-size:13px;font-weight:850}.hero-proof strong{color:var(--ink);font-size:24px}.hero-visual{position:relative;min-height:520px;border:1px solid var(--line);border-radius:8px;background:#0f172a;box-shadow:var(--shadow);overflow:hidden}.hero-visual::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(135deg,rgba(15,23,42,.56),rgba(15,23,42,.08) 48%,rgba(255,255,255,.18))}.hero-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.visual-card{position:absolute;z-index:2;display:grid;gap:8px;border:1px solid rgba(255,255,255,.72);border-radius:8px;background:rgba(255,255,255,.86);box-shadow:0 20px 52px rgba(15,23,42,.12);backdrop-filter:blur(14px)}.visual-card span{color:var(--brand);font-size:12px;font-weight:900;text-transform:uppercase}.visual-card-main{left:44px;right:44px;top:70px;padding:28px}.visual-card-main strong{font-size:34px;line-height:1}.visual-card-main p{margin:0;font-size:15px}.visual-card-floating{right:28px;bottom:66px;width:min(260px,58%);padding:22px}.visual-grid{position:absolute;z-index:2;left:44px;right:44px;bottom:178px;display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.visual-grid i{height:72px;border-radius:8px;background:rgba(255,255,255,.3);border:1px solid rgba(255,255,255,.5);backdrop-filter:blur(8px)}.trust-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}.trust-strip div,.service-card,.benefit-card,.process-card,.review-card,.contact-section,.preview-note{border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.86);box-shadow:0 14px 40px rgba(15,23,42,.06)}.trust-strip div{display:grid;gap:6px;padding:20px}.trust-strip strong{font-size:16px}.trust-strip span{color:var(--muted);font-size:14px;font-weight:750}.section-heading,.benefits-section,.process-section,.reviews-section,.contact-section,.preview-note{padding:clamp(34px,5vw,58px) 0}.service-grid,.benefit-grid,.process-grid{display:grid;gap:16px}.service-grid{grid-template-columns:repeat(3,1fr);margin-top:26px}.service-card,.benefit-card{padding:24px}.card-index{display:inline-flex;margin-bottom:26px;color:var(--brand);font-size:13px;font-weight:950}.benefits-section{display:grid;grid-template-columns:.85fr 1.15fr;gap:28px;align-items:start}.benefit-grid{grid-template-columns:repeat(2,1fr)}.benefit-card strong{font-size:19px}.process-grid{grid-template-columns:repeat(3,1fr);margin-top:24px}.process-card{display:flex;gap:16px;padding:22px}.process-card span{display:grid;place-items:center;width:38px;height:38px;flex:0 0 auto;border-radius:999px;color:#fff;background:var(--brand);font-weight:900}.process-card p,.benefit-card p,.service-card p,.review-card p{margin:0;font-size:15px}.reviews-section{display:grid;grid-template-columns:.9fr 1fr 1fr;gap:16px;align-items:stretch}.review-card{padding:24px}.review-card strong{display:block;margin-bottom:14px;font-size:22px;line-height:1.2}.contact-section{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;margin-bottom:34px;padding:34px}.contact-section p{margin:0 0 10px}.preview-note{padding:20px 24px;margin-bottom:34px}.preview-note p{margin:8px 0 0;font-size:14px}.site-footer{display:flex;justify-content:space-between;gap:20px;padding:26px clamp(20px,5vw,76px);border-top:1px solid var(--line);background:#fff;color:var(--muted);font-weight:850}.site-footer strong{color:var(--ink)}@media(max-width:900px){.site-header,.site-header nav,.site-footer{align-items:flex-start;flex-direction:column}.hero,.benefits-section,.reviews-section,.contact-section{grid-template-columns:1fr}.hero{min-height:0}.hero-visual{min-height:420px}.trust-strip,.service-grid,.benefit-grid,.process-grid{grid-template-columns:1fr}.contact-section .button{width:100%}}`;
 }
 
 function renderScript() {
