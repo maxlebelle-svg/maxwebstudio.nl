@@ -300,7 +300,7 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
       buildHistory,
       preview: {
         url: buildResult.job?.previewUrl || journey.previewUrl,
-        zipUrl: buildResult.job?.previewUrl ? `${buildResult.job.previewUrl}&format=zip` : "",
+        zipUrl: buildResult.job?.previewUrl ? appendQueryParam(buildResult.job.previewUrl, "format", "zip") : "",
         files: Object.values(buildResult.job?.generatedPackage?.files || []).map((file) => ({ path: file.path, bytes: Buffer.byteLength(file.content || "", "utf8") })),
       },
     });
@@ -737,6 +737,12 @@ function normalizeRole(value = "") {
 
 function cleanText(value = "") {
   return String(value || "").trim();
+}
+
+function appendQueryParam(url = "", key = "", value = "") {
+  const cleanUrl = cleanText(url);
+  if (!cleanUrl || !key) return cleanUrl;
+  return `${cleanUrl}${cleanUrl.includes("?") ? "&" : "?"}${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
 }
 
 function escapeHtml(value = "") {

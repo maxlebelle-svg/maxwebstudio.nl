@@ -20226,6 +20226,7 @@
         let journey = null;
         let events = [];
         let buildHistory = { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
+        let lastFactoryResponse = null;
         let currentTemplate = null;
 
         function initElements() {
@@ -20417,13 +20418,20 @@
           return value ? new Date(value).toISOString() : "";
         }
 
-        function setActionLink(link, url = "") {
+        function previewZipUrl(url = "") {
+          if (!url) return "";
+          return `${url}${url.includes("?") ? "&" : "?"}format=zip`;
+        }
+
+        function setActionLink(link, url = "", unavailableMessage = "Genereer eerst een preview") {
           if (!link) return;
           const enabled = Boolean(url);
           link.dataset.url = enabled ? url : "";
+          link.dataset.unavailableMessage = enabled ? "" : unavailableMessage;
           link.classList.toggle("is-disabled", !enabled);
           link.setAttribute("aria-disabled", enabled ? "false" : "true");
-          if ("disabled" in link) link.disabled = !enabled;
+          link.title = enabled ? "" : unavailableMessage;
+          if ("disabled" in link) link.disabled = false;
         }
 
         function openActionUrl(event, target, fallbackMessage = "Deze actie is nog niet beschikbaar.") {
@@ -20431,10 +20439,27 @@
           event?.stopPropagation();
           const url = target?.dataset?.url || "";
           if (!url || target?.getAttribute("aria-disabled") === "true") {
-            setMessage(elements.message, fallbackMessage, "warning");
+            setMessage(elements.message, target?.dataset?.unavailableMessage || fallbackMessage, "warning");
             return;
           }
           window.open(url, "_blank", "noopener");
+        }
+
+        function buildHistoryFromResponse(data = {}) {
+          const history = data.buildHistory || buildHistory || {};
+          const jobs = Array.isArray(history.jobs) ? [...history.jobs] : [];
+          const previewVersions = Array.isArray(history.previewVersions) ? [...history.previewVersions] : [];
+          const responseJob = data.buildJob || data.buildStatus || null;
+          const responseVersion = data.previewVersion || null;
+          if (responseJob?.id && !jobs.some((job) => job.id === responseJob.id)) jobs.unshift(responseJob);
+          if (responseVersion?.id && !previewVersions.some((version) => version.id === responseVersion.id)) previewVersions.unshift(responseVersion);
+          return {
+            ...history,
+            jobs,
+            previewVersions,
+            latestJob: history.latestJob || responseJob || jobs[0] || null,
+            activeVersion: history.activeVersion || responseVersion || previewVersions.find((version) => version.isActive) || previewVersions[0] || null,
+          };
         }
 
         async function loadLeads() {
@@ -20605,9 +20630,14 @@
           setMessage(elements.message, "Interne preview voorbereiden...", "info");
           try {
             const data = await apiRequest(endpoint, "POST", collectPayload({ action: "generate_preview", generatedBriefing: elements.briefing.value }));
-            journey = data.journey || null;
+            lastFactoryResponse = data;
+            journey = data.demoJourney || data.journey || journey || null;
+            const previewUrl = data.preview?.url || data.buildJob?.previewUrl || data.buildStatus?.previewUrl || journey?.previewUrl || "";
+            if (journey && previewUrl && !journey.previewUrl) journey.previewUrl = previewUrl;
+            if (journey && data.buildStatus?.previewToken && !journey.previewToken) journey.previewToken = data.buildStatus.previewToken;
+            if (journey && previewUrl) journey.demoStatus = journey.demoStatus || "interne_preview_klaar";
             events = Array.isArray(data.events) ? data.events : [];
-            buildHistory = data.buildHistory || buildHistory;
+            buildHistory = buildHistoryFromResponse(data);
             if (journey?.previewUrl) elements.preview.value = journey.previewUrl;
             if (journey?.demoStatus) elements.status.value = journey.demoStatus;
             renderJourney();
@@ -20666,6 +20696,8 @@
         function renderBuildStatus() {
           const latest = buildHistory.latestJob || (buildHistory.jobs || [])[0] || null;
           const activeVersion = buildHistory.activeVersion || (buildHistory.previewVersions || [])[0] || null;
+          const previewUrl = journey?.previewUrl || latest?.previewUrl || activeVersion?.previewUrl || "";
+          const previewToken = journey?.previewToken || latest?.previewToken || activeVersion?.previewToken || "";
           if (elements.buildState) {
             elements.buildState.textContent = latest ? buildStatusLabel(latest.status) : buildHistory.setupRequired ? "Setup nodig" : "Geen build";
           }
@@ -20675,12 +20707,12 @@
           if (elements.buildDetails) {
             const score = latest?.previewScore ?? activeVersion?.previewScore;
             elements.buildDetails.innerHTML = [
-              ["Laatste build", latest ? buildStatusLabel(latest.status) : "-"],
+              ["Website Factory", latest ? buildStatusLabel(latest.status) : buildHistory.setupRequired ? "Setup nodig" : "Geen build"],
               ["Voortgang", latest ? `${latest.progress || 0}%` : "-"],
               ["Preview score", Number.isFinite(Number(score)) ? `${score}/100` : "-"],
               ["Preview versie", activeVersion?.version ? `V${activeVersion.version}` : latest?.previewVersion ? `V${latest.previewVersion}` : "-"],
               ["Laatste buildtijd", latest?.finishedAt || latest?.updatedAt ? formatDate(latest.finishedAt || latest.updatedAt) : "-"],
-              ["Melding", latest?.errorMessage || buildHistory.warning || (latest?.status === "completed" ? "Klaar voor interne controle." : "-")],
+              ["Melding", latest?.errorMessage || buildHistory.warning || (previewUrl ? "Klaar voor interne controle." : "Genereer eerst een preview")],
             ].map(([label, value]) => `<div><strong>${escapeHtml(label)}</strong><span>${escapeHtml(value)}</span></div>`).join("");
           }
           if (elements.buildHistory) {
@@ -20704,7 +20736,14 @@
                 qualityReport: latest?.qualityReport || activeVersion?.qualityReport || null,
                 buildLogs: latest?.buildLogs || [],
                 generatedFiles: latest?.generatedPackage?.files?.map((file) => file.path) || activeVersion?.generatedPackage?.files?.map((file) => file.path) || [],
-                previewToken: latest?.previewToken || activeVersion?.previewToken || "",
+                buildJobId: latest?.id || "",
+                previewVersionId: activeVersion?.id || "",
+                previewVersion: activeVersion?.version || latest?.previewVersion || "",
+                previewScore: latest?.previewScore ?? activeVersion?.previewScore ?? null,
+                previewToken,
+                previewUrl,
+                lastFactoryResponse,
+                buildError: latest?.errorMessage || "",
               }
               : { message: "Developer Mode uitgeschakeld." };
             elements.buildDiagnostics.textContent = JSON.stringify(diagnostics, null, 2);
@@ -20765,14 +20804,14 @@
             : "Nog geen centrale demo-klantreis voor deze lead.";
           elements.details.innerHTML = [
             ["Lead", lead?.companyName || journey?.businessName || "-"],
-            ["Preview URL", journey?.previewUrl || "-"],
+            ["Preview URL", journey?.previewUrl || "Genereer eerst een preview"],
             ["Laatste mail", journey?.lastEmailStatus || "-"],
             ["Laatste maildatum", formatDate(journey?.lastEmailSentAt)],
             ["Volgende mail", journey?.nextEmailType || "-"],
             ["Verantwoordelijke", journey?.assignedTo || "-"],
           ].map(([label, value]) => `<div><strong>${escapeHtml(label)}</strong><span>${escapeHtml(value)}</span></div>`).join("");
-          setActionLink(elements.openPreview, journey?.previewUrl || "");
-          setActionLink(elements.downloadZip, journey?.previewUrl ? `${journey.previewUrl}&format=zip` : "");
+          setActionLink(elements.openPreview, journey?.previewUrl || "", "Genereer eerst een preview");
+          setActionLink(elements.downloadZip, journey?.previewUrl ? previewZipUrl(journey.previewUrl) : "", "Genereer eerst een preview");
           setActionLink(elements.openPortal, journey?.customerId ? `/klantportaal.html?customerId=${encodeURIComponent(journey.customerId)}#projectstatus` : "");
           renderMetrics();
           renderBuildStatus();
