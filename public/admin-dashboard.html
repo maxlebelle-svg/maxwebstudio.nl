@@ -1701,10 +1701,16 @@
           warning: "!",
           error: "×",
         };
+        const activeToasts = new Map();
+        const duplicateWindowMs = 900;
 
         function toastType(type = "info") {
           if (type === "attention") return "warning";
           return toastTypes.has(type) ? type : "info";
+        }
+
+        function toastKey(message, type) {
+          return `${type}::${message}`;
         }
 
         function ensureToastRegion() {
@@ -1719,27 +1725,104 @@
           return region;
         }
 
+        function scheduleToastClose(toast, duration) {
+          window.clearTimeout(toast._closeTimer);
+          toast.style.setProperty("--toast-duration", `${duration}ms`);
+          toast.classList.remove("is-progress-reset");
+          void toast.offsetWidth;
+          toast.classList.add("is-progress-reset");
+          toast._closeTimer = window.setTimeout(() => toast._controller.close(), duration);
+        }
+
+        function applyToastContent(toast, message, type, options = {}) {
+          const normalizedType = toastType(type);
+          const text = String(message || "").trim();
+          toast.className = `toast toast-${normalizedType}${options.loading ? " is-loading" : ""}${options.persistent ? " is-persistent" : ""}`;
+          toast.dataset.toastType = normalizedType;
+          toast.dataset.toastMessage = text;
+          toast.setAttribute("role", normalizedType === "error" ? "alert" : "status");
+          toast.setAttribute("aria-live", normalizedType === "error" ? "assertive" : "polite");
+          toast.querySelector(".toast-icon").textContent = options.loading ? "" : toastIcons[normalizedType];
+          toast.querySelector(".toast-message").textContent = text;
+          const action = toast.querySelector(".toast-action");
+          action.hidden = !(options.actionLabel && typeof options.onAction === "function");
+          action.textContent = "";
+          action.onclick = null;
+          if (!action.hidden) {
+            action.textContent = String(options.actionLabel || "");
+            action.onclick = () => {
+              options.onAction();
+              toast._controller.close();
+            };
+          }
+        }
+
+        function createToastElement() {
+          const toast = document.createElement("div");
+          const icon = document.createElement("span");
+          const message = document.createElement("span");
+          const action = document.createElement("button");
+          const progress = document.createElement("span");
+          icon.className = "toast-icon";
+          icon.setAttribute("aria-hidden", "true");
+          message.className = "toast-message";
+          action.className = "toast-action";
+          action.type = "button";
+          action.hidden = true;
+          progress.className = "toast-progress";
+          progress.setAttribute("aria-hidden", "true");
+          toast.append(icon, message, action, progress);
+          return toast;
+        }
+
         window.showToast = function showToast(message, type = "info", options = {}) {
           const text = String(message || "").trim();
           if (!text) return null;
           const normalizedType = toastType(type);
+          const key = toastKey(text, normalizedType);
+          const now = Date.now();
+          const existing = activeToasts.get(key);
+          if (existing && existing.toast?.isConnected && now - existing.createdAt < duplicateWindowMs) {
+            existing.createdAt = now;
+            existing.controller.update(text, normalizedType, options);
+            return existing.controller;
+          }
+          if (existing && !existing.toast?.isConnected) activeToasts.delete(key);
+
           const region = ensureToastRegion();
-          const toast = document.createElement("div");
-          const duration = Number(options.duration || 3000);
-          toast.className = `toast toast-${normalizedType}`;
-          toast.setAttribute("role", normalizedType === "error" ? "alert" : "status");
-          toast.innerHTML = `
-            <span class="toast-icon" aria-hidden="true">${toastIcons[normalizedType]}</span>
-            <span class="toast-message"></span>
-          `;
-          toast.querySelector(".toast-message").textContent = text;
-          region.append(toast);
-          const close = () => {
-            toast.classList.add("is-leaving");
-            window.setTimeout(() => toast.remove(), 220);
+          const toast = createToastElement();
+          const controller = {
+            update(nextMessage = text, nextType = normalizedType, nextOptions = {}) {
+              const nextText = String(nextMessage || "").trim();
+              const nextNormalizedType = toastType(nextType);
+              const previousKey = toast._toastKey;
+              const nextKey = toastKey(nextText, nextNormalizedType);
+              if (previousKey && previousKey !== nextKey) activeToasts.delete(previousKey);
+              toast._toastKey = nextKey;
+              activeToasts.set(nextKey, { controller, toast, createdAt: Date.now() });
+              applyToastContent(toast, nextText, nextNormalizedType, nextOptions);
+              if (nextOptions.persistent) {
+                window.clearTimeout(toast._closeTimer);
+                toast.classList.add("is-persistent");
+                return controller;
+              }
+              scheduleToastClose(toast, Number(nextOptions.duration || 3000));
+              return controller;
+            },
+            close() {
+              window.clearTimeout(toast._closeTimer);
+              activeToasts.delete(toast._toastKey);
+              toast.classList.add("is-leaving");
+              window.setTimeout(() => toast.remove(), 220);
+            },
           };
-          window.setTimeout(close, duration);
-          return toast;
+          toast._controller = controller;
+          toast._toastKey = key;
+          applyToastContent(toast, text, normalizedType, options);
+          region.append(toast);
+          activeToasts.set(key, { controller, toast, createdAt: now });
+          if (!options.persistent) scheduleToastClose(toast, Number(options.duration || 3000));
+          return controller;
         };
 
         window.focusAdminPanel = function focusAdminPanel(target, options = {}) {
@@ -9957,10 +10040,10 @@
           loadCRMData(true);
         }
 
-        function setDetailMessage(text, type = "") {
+        function setDetailMessage(text, type = "", options = {}) {
           detailMessage.textContent = text;
           detailMessage.className = `admin-form-message ${type}`.trim();
-          notifyUser(text, type);
+          if (options.toast !== false) notifyUser(text, type);
         }
 
         function setNewCustomerMessage(text, type = "") {
@@ -10338,7 +10421,10 @@
             action.addEventListener("click", () => {
               selectCustomer(customer.id);
               window.focusAdminPanel?.(document.querySelector(".crm-detail-panel"));
-              notifyUser("Klant geopend", "success");
+              window.showToast?.("Klant geopend", "success", {
+                actionLabel: "Detail",
+                onAction: () => window.focusAdminPanel?.(document.querySelector(".crm-detail-panel")),
+              });
             });
             row.append(
               nameCell,
@@ -10655,16 +10741,24 @@
           detailPreparePortalInvite.disabled = true;
           detailPreparePortalInvite.textContent = "Voorbereiden...";
           setDetailMessage("", "");
+          const inviteToast = window.showToast?.("Portaaluitnodiging voorbereiden...", "info", { persistent: true, loading: true });
           try {
             const customer = selectedCustomer();
-            if (!customer) return;
+            if (!customer) {
+              inviteToast?.update("Selecteer eerst een klant.", "error", { duration: 4000 });
+              return;
+            }
             const profile = saveCustomerLocally({ ...currentDetailPayload(), portalStatus: "uitnodiging_klaar" });
             await loadCRMData(false);
             state.selectedCustomerId = profile.id || customer.id;
             selectCustomer(state.selectedCustomerId);
-            setDetailMessage("Portaal uitnodiging staat klaar. Er is geen wachtwoord aangemaakt of opgeslagen.", "success");
+            const message = "Portaal uitnodiging staat klaar. Er is geen wachtwoord aangemaakt of opgeslagen.";
+            inviteToast?.update(message, "success", { duration: 3000 });
+            setDetailMessage(message, "success", { toast: false });
           } catch (error) {
-            setDetailMessage(error.message || "Portaal uitnodiging kon niet worden voorbereid.", "error");
+            const message = error.message || "Portaal uitnodiging kon niet worden voorbereid.";
+            inviteToast?.update(message, "error", { duration: 4000 });
+            setDetailMessage(message, "error", { toast: false });
           } finally {
             detailPreparePortalInvite.textContent = "Portaal uitnodiging maken";
             detailPreparePortalInvite.disabled = isSupabaseManagedCustomer(selectedCustomer()) || !detailFields.email.value;
@@ -10681,6 +10775,7 @@
           detailSendWelcomeMail.disabled = true;
           detailSendWelcomeMail.textContent = "Versturen...";
           setDetailMessage("", "");
+          const mailToast = window.showToast?.("Welkomstmail verzenden...", "info", { persistent: true, loading: true });
           try {
             const token = getAdminBearer();
             if (!token) throw new Error("Log eerst in als admin.");
@@ -10699,9 +10794,13 @@
             await loadCRMData(false);
             state.selectedCustomerId = profile.id || customer.id;
             selectCustomer(state.selectedCustomerId);
-            setDetailMessage(data.email?.sent ? "Welkomstmail verzonden via Resend." : (data.email?.warning || "Welkomstmail preview klaargezet. Geen wachtwoorden gelogd of opgeslagen."), "success");
+            const message = data.email?.sent ? "Welkomstmail verzonden via Resend." : (data.email?.warning || "Welkomstmail preview klaargezet. Geen wachtwoorden gelogd of opgeslagen.");
+            mailToast?.update(message, "success", { duration: 3000 });
+            setDetailMessage(message, "success", { toast: false });
           } catch (error) {
-            setDetailMessage(error.message || "Welkomstmail kon niet worden verstuurd.", "error");
+            const message = error.message || "Welkomstmail kon niet worden verstuurd.";
+            mailToast?.update(message, "error", { duration: 4000 });
+            setDetailMessage(message, "error", { toast: false });
           } finally {
             detailSendWelcomeMail.textContent = "Welkomstmail sturen";
             detailSendWelcomeMail.disabled = isSupabaseManagedCustomer(selectedCustomer()) || !detailFields.email.value;
@@ -11197,6 +11296,10 @@
             state.selectedWebsiteId = website.id;
             if (state.selectedWebsiteId) selectWebsite(state.selectedWebsiteId);
             setWebsiteMessage("Website opgeslagen.", "success");
+            window.showToast?.("Website opgeslagen.", "success", {
+              actionLabel: "Detail",
+              onAction: () => window.focusAdminPanel?.(document.querySelector(".website-detail-panel")),
+            });
             setAdminAccessMessage(isSupabaseManagedWebsite(currentWebsite || website) ? "Website operationele velden gecontroleerd opgeslagen via Sprint 2C write-gate." : "Website opgeslagen in lokale website-opslag.", "success");
           } catch (error) {
             const message = error.code === "WEBSITE_CONFLICT"
@@ -11600,7 +11703,10 @@
             edit.addEventListener("click", () => {
               selectWebsite(website.id);
               window.focusAdminPanel?.(document.querySelector(".website-detail-panel"));
-              notifyUser("Website geopend", "success");
+              window.showToast?.("Website geopend", "success", {
+                actionLabel: "Detail",
+                onAction: () => window.focusAdminPanel?.(document.querySelector(".website-detail-panel")),
+              });
             });
             actions.append(openWebsite, openGithub, openNetlify, copyDomain, edit);
             const websiteCell = document.createElement("span");
@@ -14515,6 +14621,10 @@
             state.selectedQuoteId = quote.id;
             openQuoteModal(quote.id);
             setBillingMessage(quoteMessage, "Offerte opgeslagen.", "success");
+            window.showToast?.("Offerte opgeslagen.", "success", {
+              actionLabel: "Openen",
+              onAction: () => openQuoteModal(quote.id),
+            });
           } catch (error) {
             setBillingMessage(quoteMessage, error.message || "Offerte kon niet worden opgeslagen.", "error");
           } finally {
@@ -16974,11 +17084,11 @@
         if (message && ["success", "info", "warning", "error"].includes(type)) window.showToast?.(message, type);
       }
 
-      function setGooglePlacesMessage(message, type = "success") {
+      function setGooglePlacesMessage(message, type = "success", options = {}) {
         if (!leadfinderElements.googleMessage) return;
         leadfinderElements.googleMessage.textContent = message;
         leadfinderElements.googleMessage.className = `admin-form-message ${type}`;
-        if (message && ["success", "info", "warning", "error"].includes(type)) window.showToast?.(message, type);
+        if (options.toast !== false && message && ["success", "info", "warning", "error"].includes(type)) window.showToast?.(message, type);
       }
 
       function setGooglePlacesState(label, statusClass = "status-prepared") {
@@ -16993,11 +17103,11 @@
         leadfinderElements.analysisState.className = `status-badge ${statusClass}`;
       }
 
-      function setLeadAnalysisMessage(message, type = "success") {
+      function setLeadAnalysisMessage(message, type = "success", options = {}) {
         if (!leadfinderElements.analysisMessage) return;
         leadfinderElements.analysisMessage.textContent = message;
         leadfinderElements.analysisMessage.className = `admin-form-message ${type}`;
-        if (message && ["success", "info", "warning", "error"].includes(type)) window.showToast?.(message, type);
+        if (options.toast !== false && message && ["success", "info", "warning", "error"].includes(type)) window.showToast?.(message, type);
       }
 
       function getFriendlyWebsiteAnalysisReason(details = "") {
@@ -17527,7 +17637,7 @@
         const place = googlePlacesPlace;
         if (!place) {
           setGooglePlacesMessage("Zoek eerst een bedrijf op.", "error");
-          return;
+          return { message: "Zoek eerst een bedrijf op.", type: "error" };
         }
         const candidateValues = [
           [leadfinderElements.company, place.name],
@@ -17560,11 +17670,15 @@
           leadfinderElements.websiteStatus.value = place.website ? "onbekend" : "geen_website";
         }
         const duplicate = findDuplicateLeadForGooglePlace(place);
+        const result = duplicate
+          ? { message: `Gegevens overgenomen, maar let op: mogelijk bestaat deze lead al als ${duplicate.companyName}.`, type: "error" }
+          : { message: "Gegevens overgenomen in het leadformulier. E-mail blijft leeg als Google die niet levert.", type: "success" };
         if (duplicate) {
-          setGooglePlacesMessage(`Gegevens overgenomen, maar let op: mogelijk bestaat deze lead al als ${duplicate.companyName}.`, "error");
+          setGooglePlacesMessage(result.message, result.type, { toast: false });
         } else {
-          setGooglePlacesMessage("Gegevens overgenomen in het leadformulier. E-mail blijft leeg als Google die niet levert.", "success");
+          setGooglePlacesMessage(result.message, result.type, { toast: false });
         }
+        return result;
       }
 
       async function handleGooglePlaceResultClick(event) {
@@ -17576,7 +17690,9 @@
         const action = event.target.closest("[data-google-place-action]")?.dataset.googlePlaceAction;
         if (!action) return;
         if (action === "takeover") {
-          takeoverGooglePlace();
+          const takeoverToast = window.showToast?.("Google Maps-resultaat overnemen...", "info", { persistent: true, loading: true });
+          const result = takeoverGooglePlace();
+          takeoverToast?.update(result?.message || "Google Maps-resultaat overgenomen.", result?.type || "success", { duration: result?.type === "error" ? 4000 : 3000 });
         }
         if (action === "analyze") {
           analyzeGooglePlaceWebsite();
@@ -18110,10 +18226,11 @@
         }
 
         setLeadAnalysisState("Analyseren", "status-planned");
-        setLeadAnalysisMessage("Website wordt geanalyseerd…", "success");
+        const analysisToast = window.showToast?.("Website wordt geanalyseerd...", "info", { persistent: true, loading: true });
+        setLeadAnalysisMessage("Website wordt geanalyseerd...", "success", { toast: false });
         if (leadfinderElements.analysisRun) leadfinderElements.analysisRun.disabled = true;
         if (leadfinderElements.analysisResult) {
-          leadfinderElements.analysisResult.innerHTML = "<p>Website wordt geanalyseerd…</p>";
+          leadfinderElements.analysisResult.innerHTML = "<p>Website wordt geanalyseerd...</p>";
         }
 
         try {
@@ -18150,10 +18267,10 @@
             if (leadfinderElements.score) leadfinderElements.score.value = String(Math.max(Number(leadfinderElements.score.value || 0), Number(analysis.score || 0)));
             renderLeadWebsiteAnalysis(null);
           }
-          setLeadAnalysisMessage(
-            analysis.ok ? "Analyse afgerond. Gebruik de verkoopkansen als belhaakje." : getFriendlyWebsiteAnalysisReason(analysis.details || analysis.error),
-            analysis.ok ? "success" : "error"
-          );
+          const message = analysis.ok ? "Analyse afgerond. Gebruik de verkoopkansen als belhaakje." : getFriendlyWebsiteAnalysisReason(analysis.details || analysis.error);
+          const type = analysis.ok ? "success" : "error";
+          analysisToast?.update(message, type, { duration: type === "success" ? 3000 : 4000 });
+          setLeadAnalysisMessage(message, type, { toast: false });
         } catch (error) {
           const rawMessage = error?.message || "De analyse kon niet worden uitgevoerd.";
           if (developerModeActive()) {
@@ -18167,7 +18284,9 @@
           websiteAnalysisState.set(target.key, failed);
           if (lead?.id) websiteAnalysisState.set(lead.id, failed);
           renderLeadWebsiteAnalysis(lead);
-          setLeadAnalysisMessage(getFriendlyWebsiteAnalysisReason(rawMessage), "error");
+          const message = getFriendlyWebsiteAnalysisReason(rawMessage);
+          analysisToast?.update(message, "error", { duration: 4000 });
+          setLeadAnalysisMessage(message, "error", { toast: false });
         } finally {
           if (leadfinderElements.analysisRun) leadfinderElements.analysisRun.disabled = !getLeadWebsiteScanTarget().url;
         }
@@ -18492,11 +18611,11 @@
         });
       }
 
-      function setAiAdminMessage(message, type = "success") {
+      function setAiAdminMessage(message, type = "success", options = {}) {
         if (!aiAdminElements.message) return;
         aiAdminElements.message.textContent = message;
         aiAdminElements.message.className = `admin-form-message ${type}`;
-        if (message && ["success", "info", "warning", "error"].includes(type)) window.showToast?.(message, type);
+        if (options.toast !== false && message && ["success", "info", "warning", "error"].includes(type)) window.showToast?.(message, type);
       }
 
       function renderAiAdminReadiness() {
@@ -18557,13 +18676,22 @@
           setAiAdminMessage("Kies eerst een AI-actie.", "error");
           return;
         }
-        const preview = generateAndSaveAiAdminAssistantPreview({
-          actionId,
-          targetId: aiAdminElements.context?.value || "",
-        });
-        renderAiAdminOutput(preview);
-        renderAiAdminReadiness();
-        setAiAdminMessage("Lokale AI-preview gemaakt zonder externe call.", "success");
+        const aiToast = window.showToast?.("AI-preview maken...", "info", { persistent: true, loading: true });
+        try {
+          const preview = generateAndSaveAiAdminAssistantPreview({
+            actionId,
+            targetId: aiAdminElements.context?.value || "",
+          });
+          renderAiAdminOutput(preview);
+          renderAiAdminReadiness();
+          const message = "Lokale AI-preview gemaakt zonder externe call.";
+          aiToast?.update(message, "success", { duration: 3000 });
+          setAiAdminMessage(message, "success", { toast: false });
+        } catch (error) {
+          const message = error.message || "AI-preview kon niet worden gemaakt.";
+          aiToast?.update(message, "error", { duration: 4000 });
+          setAiAdminMessage(message, "error", { toast: false });
+        }
       }
 
       function initAiAdminAssistant() {

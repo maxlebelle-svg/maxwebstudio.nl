@@ -154,12 +154,16 @@ a {
 }
 
 .toast {
+  --toast-accent: var(--cyan);
+  --toast-duration: 3000ms;
+  position: relative;
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr);
+  grid-template-columns: 28px minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   min-height: 56px;
-  padding: 12px 14px;
+  overflow: hidden;
+  padding: 12px 14px 15px;
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 8px;
   color: var(--white);
@@ -194,9 +198,59 @@ a {
   line-height: 1.35;
 }
 
+.toast-action {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.08);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.toast-action:hover,
+.toast-action:focus-visible {
+  border-color: var(--toast-accent);
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--toast-accent) 28%, transparent);
+}
+
+.toast-progress {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: var(--toast-accent);
+  transform-origin: left center;
+}
+
+.toast:not(.is-persistent).is-progress-reset .toast-progress {
+  animation: toastProgress var(--toast-duration) linear forwards;
+}
+
+.toast.is-persistent .toast-progress {
+  opacity: 0.55;
+  transform: scaleX(1);
+}
+
+.toast.is-loading .toast-icon {
+  border: 3px solid rgba(255, 255, 255, 0.25);
+  border-top-color: var(--toast-accent);
+  background: transparent;
+  animation: toastSpin 800ms linear infinite;
+}
+
 .toast-success .toast-icon {
   color: #062114;
   background: #7ee3a8;
+}
+
+.toast-success {
+  --toast-accent: #7ee3a8;
 }
 
 .toast-info .toast-icon {
@@ -204,14 +258,26 @@ a {
   background: var(--cyan);
 }
 
+.toast-info {
+  --toast-accent: var(--cyan);
+}
+
 .toast-warning .toast-icon {
   color: #2b1b00;
   background: #ffd166;
 }
 
+.toast-warning {
+  --toast-accent: #ffd166;
+}
+
 .toast-error .toast-icon {
   color: var(--white);
   background: #ef476f;
+}
+
+.toast-error {
+  --toast-accent: #ef476f;
 }
 
 .admin-panel-focus {
@@ -242,6 +308,22 @@ a {
   }
 }
 
+@keyframes toastProgress {
+  from {
+    transform: scaleX(1);
+  }
+
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes toastSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @keyframes adminPanelFocus {
   0% {
     box-shadow: 0 0 0 0 rgba(25, 194, 255, 0), 0 24px 70px rgba(0, 0, 0, 0.18);
@@ -253,6 +335,20 @@ a {
 
   100% {
     box-shadow: 0 0 0 0 rgba(25, 194, 255, 0), 0 24px 70px rgba(0, 0, 0, 0.18);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast,
+  .toast.is-leaving,
+  .toast:not(.is-persistent).is-progress-reset .toast-progress,
+  .toast.is-loading .toast-icon,
+  .admin-panel-focus {
+    animation: none;
+  }
+
+  .toast-progress {
+    transform: scaleX(1);
   }
 }
 
