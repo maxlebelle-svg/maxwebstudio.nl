@@ -17768,7 +17768,6 @@
         getLeadFinderLabel,
         getLeadFinderSummary,
         readLeadFinderLeads,
-        saveLeadFinderLeadLocally,
         updateLeadFinderLeadLocally,
       } from "./src/services/leadFinderService.js?v=20260704-admin-session-hotfix";
       import { readSupabaseDataLayerModule } from "./src/services/supabaseDataLayerService.js?v=20260704-admin-session-hotfix";
@@ -18012,7 +18011,7 @@
         return { synced, remaining: remaining.length };
       }
 
-      async function loadLeadfinderDataLayer() {
+      async function loadLeadfinderDataLayer(options = {}) {
         renderLeadfinderState("Leads laden", "De sales pipeline wordt opgehaald.", "loading");
         try {
           const result = await leadApiRequest("GET");
@@ -18026,41 +18025,64 @@
             refreshedAt: result.refreshedAt || new Date().toISOString(),
             dataLayer: "supabase-production-leads",
           };
-                  localStorage.setItem("maxwebstudioLastLeadfinderSourceStatus", JSON.stringify(leadfinderSourceStatus));
-                  const queueResult = await syncQueuedLeads();
-                  if (queueResult.synced) {
-                    const refreshed = await leadApiRequest("GET");
-                    leadfinderDataLayerLeads = Array.isArray(refreshed.records) ? refreshed.records : leadfinderDataLayerLeads;
-                    leadfinderSourceStatus.counts = refreshed.counts || leadfinderSourceStatus.counts;
-                    leadfinderSourceStatus.refreshedAt = refreshed.refreshedAt || new Date().toISOString();
-                    localStorage.setItem("maxwebstudioLastLeadfinderSourceStatus", JSON.stringify(leadfinderSourceStatus));
-                  }
-                  logLeadfinderDiagnostic("Leadfinder data-layer geladen", {
+          localStorage.setItem("maxwebstudioLastLeadfinderSourceStatus", JSON.stringify(leadfinderSourceStatus));
+          if (options.syncOfflineQueue) {
+            const queueResult = await syncQueuedLeads();
+            if (queueResult.synced) {
+              const refreshed = await leadApiRequest("GET");
+              leadfinderDataLayerLeads = Array.isArray(refreshed.records) ? refreshed.records : leadfinderDataLayerLeads;
+              leadfinderSourceStatus.counts = refreshed.counts || leadfinderSourceStatus.counts;
+              leadfinderSourceStatus.refreshedAt = refreshed.refreshedAt || new Date().toISOString();
+              localStorage.setItem("maxwebstudioLastLeadfinderSourceStatus", JSON.stringify(leadfinderSourceStatus));
+            }
+          }
+          logLeadfinderDiagnostic("Leadfinder data-layer geladen", {
             mode: leadfinderSourceStatus.mode,
             counts: leadfinderSourceStatus.counts,
             fallbackUsed: leadfinderSourceStatus.fallbackUsed,
             error: leadfinderSourceStatus.error,
           });
         } catch (error) {
-          const fallback = await readSupabaseDataLayerModule("leads", { mode: "local" });
-          leadfinderDataLayerLeads = Array.isArray(fallback.records) ? fallback.records : readLeadFinderLeads();
+          const developerFallbackActive = developerModeActive();
+          let fallbackRecords = [];
+          if (developerFallbackActive) {
+            const fallback = await readSupabaseDataLayerModule("leads", { mode: "local" });
+            fallbackRecords = Array.isArray(fallback.records) ? fallback.records : readLeadFinderLeads();
+          }
+          leadfinderDataLayerLeads = developerFallbackActive ? fallbackRecords : [];
           leadfinderSourceStatus = {
-            mode: "local",
-            counts: { local: leadfinderDataLayerLeads.length, supabase: 0, hybrid: leadfinderDataLayerLeads.length },
-            fallbackUsed: true,
-            error: "",
-            warning: error.setupRequired
-              ? "Production leads tabel ontbreekt nog. Nieuwe leads worden tijdelijk offline gebufferd tot Supabase actief is."
-              : error.message || "Leadfinder data-layer kon niet worden gelezen.",
+            mode: developerFallbackActive ? "local-dev-fallback" : "supabase-production",
+            counts: { local: developerFallbackActive ? leadfinderDataLayerLeads.length : 0, supabase: 0, hybrid: leadfinderDataLayerLeads.length },
+            fallbackUsed: developerFallbackActive,
+            error: error.message || "Leadfinder data-layer kon niet centraal worden gelezen.",
+            warning: developerFallbackActive
+              ? "Developer Mode toont lokale fallbackdata. Production schrijft niet naar localStorage als Supabase faalt."
+              : "Centrale leads konden niet worden geladen. Er wordt geen lokale fallback getoond in productie.",
             refreshedAt: new Date().toISOString(),
-            dataLayer: "offline-fallback-after-production-leads-error",
+            dataLayer: developerFallbackActive ? "developer-local-fallback-after-production-leads-error" : "supabase-production-leads-error",
           };
           localStorage.setItem("maxwebstudioLastLeadfinderSourceStatus", JSON.stringify(leadfinderSourceStatus));
-          logLeadfinderDiagnostic("Leadfinder data-layer fallback actief", {
+          logLeadfinderDiagnostic("Leadfinder data-layer centraal laden mislukt", {
             error: error.message,
             counts: leadfinderSourceStatus.counts,
+            fallbackUsed: leadfinderSourceStatus.fallbackUsed,
           });
         }
+      }
+
+      async function refreshLeads(options = {}) {
+        const keepSelection = options.keepSelection !== false;
+        const previousSelection = selectedLeadFinderId;
+        await loadLeadfinderDataLayer({ syncOfflineQueue: Boolean(options.syncOfflineQueue) });
+        if (keepSelection && previousSelection && getLeadfinderLeads().some((lead) => lead.id === previousSelection)) {
+          selectedLeadFinderId = previousSelection;
+        } else if (!keepSelection) {
+          selectedLeadFinderId = "";
+        } else if (previousSelection && !getLeadfinderLeads().some((lead) => lead.id === previousSelection)) {
+          selectedLeadFinderId = "";
+        }
+        renderLeadfinderList();
+        return getLeadfinderLeads();
       }
 
       function getLeadfinderLeads() {
@@ -18683,12 +18705,40 @@
         return true;
       }
 
-      function takeoverGooglePlace() {
+      function buildGooglePlaceLeadUpdates(place = {}) {
+        const details = [
+          place.url ? `Google Maps: ${place.url}` : "",
+          place.place_id ? `Google Place ID: ${place.place_id}` : "",
+          place.formatted_address ? `Adres: ${place.formatted_address}` : "",
+          place.rating ? `Rating: ${place.rating} (${place.user_ratings_total || 0} reviews)` : "",
+          place.business_status ? `Status: ${place.business_status}` : "",
+        ].filter(Boolean).join("\n");
+        const lead = selectedLeadFinderLead();
+        const currentNotes = String(lead?.notes || "").trim();
+        const notes = details && currentNotes && !currentNotes.includes(place.url || details)
+          ? [currentNotes, details].join("\n\n")
+          : currentNotes || details || "";
+        return {
+          companyName: place.name || "",
+          region: extractCityFromAddress(place.formatted_address) || leadfinderElements.googleQuery?.value || "",
+          phone: place.formatted_phone_number || place.international_phone_number || "",
+          websiteUrl: place.website || "",
+          websiteStatus: place.website ? "onbekend" : "geen_website",
+          source: "Google Maps",
+          notes,
+          googlePlaceId: place.place_id || "",
+          googleMapsUrl: place.url || "",
+        };
+      }
+
+      async function takeoverGooglePlace() {
         const place = googlePlacesPlace;
         if (!place) {
           setGooglePlacesMessage("Zoek eerst een bedrijf op.", "error");
           return { message: "Zoek eerst een bedrijf op.", type: "error" };
         }
+        const selectedLead = selectedLeadFinderLead();
+        const updates = buildGooglePlaceLeadUpdates(place);
         const candidateValues = [
           [leadfinderElements.company, place.name],
           [leadfinderElements.region, extractCityFromAddress(place.formatted_address) || leadfinderElements.googleQuery?.value],
@@ -18719,6 +18769,17 @@
         if (leadfinderElements.websiteStatus && (!leadfinderElements.websiteStatus.value || leadfinderElements.websiteStatus.value === "onbekend")) {
           leadfinderElements.websiteStatus.value = place.website ? "onbekend" : "geen_website";
         }
+        if (selectedLead?.id) {
+          try {
+            await updateLeadfinderLead(selectedLeadFinderLead() || selectedLead, updates, "Gegevens overgenomen en lead centraal bijgewerkt.");
+            setGooglePlacesMessage("Gegevens overgenomen en direct opgeslagen bij de geselecteerde lead.", "success", { toast: false });
+            return { message: "Gegevens overgenomen en direct opgeslagen.", type: "success" };
+          } catch (error) {
+            const message = error.message || "Gegevens konden niet centraal worden opgeslagen.";
+            setGooglePlacesMessage(message, "error", { toast: false });
+            return { message, type: "error" };
+          }
+        }
         const duplicate = findDuplicateLeadForGooglePlace(place);
         const result = duplicate
           ? { message: `Gegevens overgenomen, maar let op: mogelijk bestaat deze lead al als ${duplicate.companyName}.`, type: "error" }
@@ -18741,7 +18802,7 @@
         if (!action) return;
         if (action === "takeover") {
           const takeoverToast = window.showToast?.("Google Maps-resultaat overnemen...", "info", { persistent: true, loading: true });
-          const result = takeoverGooglePlace();
+          const result = await takeoverGooglePlace();
           takeoverToast?.update(result?.message || "Google Maps-resultaat overgenomen.", result?.type || "success", { duration: result?.type === "error" ? 4000 : 3000 });
         }
         if (action === "analyze") {
@@ -19496,12 +19557,12 @@
                       await leadApiRequest("PATCH", { id: lead.id, ...updates }, { id: lead.id });
                       selectedLeadFinderId = lead.id;
                       websiteAnalysisState.set(lead.id, analysis);
-                      await reloadLeadfinderAfterLocalChange();
+                      await refreshLeads({ keepSelection: true });
                     } else {
                       const updatedLead = updateLeadFinderLeadLocally(lead.id, updates) || lead;
                       selectedLeadFinderId = updatedLead.id;
                       websiteAnalysisState.set(updatedLead.id, analysis);
-                      await reloadLeadfinderAfterLocalChange();
+                      await refreshLeads({ keepSelection: true });
                     }
                   } else {
                     renderLeadWebsiteAnalysis(lead);
@@ -19601,32 +19662,26 @@
                 return lead?._source === "supabase" || Boolean(lead?._supabaseId);
               }
 
-              async function updateLeadfinderLead(lead, updates = {}, successMessage = "Lead bijgewerkt.") {
-                if (!lead?.id) throw new Error("Lead ontbreekt.");
-                if (isProductionLead(lead)) {
-                  try {
-                    const result = await leadApiRequest("PATCH", { id: lead.id, ...updates }, { id: lead.id });
-                    selectedLeadFinderId = result.lead?.id || lead.id;
-                    setLeadfinderMessage(successMessage, "success");
-                    await reloadLeadfinderAfterLocalChange();
-                    return result.lead || lead;
-                  } catch (error) {
-                    queueLeadOffline("update", { id: lead.id, ...updates });
-                    setLeadfinderMessage("Wijziging tijdelijk offline bewaard. Zodra de verbinding terug is, synchroniseert het dashboard automatisch.", "warning");
-                    return lead;
-                  }
-                }
-                const updatedLead = updateLeadFinderLeadLocally(lead.id, updates) || lead;
-                selectedLeadFinderId = updatedLead.id;
-                setLeadfinderMessage(successMessage, "success");
-                await reloadLeadfinderAfterLocalChange();
-                return updatedLead;
-              }
+      async function updateLeadfinderLead(lead, updates = {}, successMessage = "Lead bijgewerkt.") {
+        if (!lead?.id) throw new Error("Lead ontbreekt.");
+        if (isProductionLead(lead)) {
+          const result = await leadApiRequest("PATCH", { id: lead.id, ...updates }, { id: lead.id });
+          selectedLeadFinderId = result.lead?.id || lead.id;
+          logLeadfinderDiagnostic("Lead centraal bijgewerkt", { id: lead.id, response: result });
+          setLeadfinderMessage(successMessage, "success");
+          await refreshLeads({ keepSelection: true });
+          return result.lead || selectedLeadFinderLead() || lead;
+        }
+        const updatedLead = updateLeadFinderLeadLocally(lead.id, updates) || lead;
+        selectedLeadFinderId = updatedLead.id;
+        setLeadfinderMessage(successMessage, "success");
+        await refreshLeads({ keepSelection: true });
+        return updatedLead;
+      }
 
-              async function reloadLeadfinderAfterLocalChange() {
-                await loadLeadfinderDataLayer();
-                renderLeadfinderList();
-              }
+      async function reloadLeadfinderAfterLocalChange(options = {}) {
+        await refreshLeads({ keepSelection: options.keepSelection !== false });
+      }
 
       async function handleLeadfinderSubmit(event) {
         event.preventDefault();
@@ -19649,31 +19704,20 @@
           setLeadfinderMessage("Lead niet opgeslagen. Controleer eerst de bestaande lead.", "error");
           return;
         }
-                const ownerContext = getLeadfinderUserContext();
-                const payload = buildLeadPayloadFromForm(ownerContext);
-                try {
-                  const result = await leadApiRequest("POST", payload);
-                  selectedLeadFinderId = result.lead?.id || "";
-                  resetLeadfinderForm();
-                  setLeadfinderMessage("Lead opgeslagen in de centrale CRM-database.", "success");
-                  await reloadLeadfinderAfterLocalChange();
-                } catch (error) {
-                  const localLead = saveLeadFinderLeadLocally({
-                    ...payload,
-                    source: "offline-cache",
-                    metadata: {
-                      ...(payload.metadata || {}),
-                      offlineSyncPending: true,
-                      offlineSyncError: error.message || "Lead API niet bereikbaar",
-                    },
-                  });
-                  queueLeadOffline("create", payload);
-                  selectedLeadFinderId = localLead.id;
-                  resetLeadfinderForm();
-                  setLeadfinderMessage("Lead tijdelijk offline opgeslagen. Zodra Supabase bereikbaar is, synchroniseert het dashboard automatisch.", "warning");
-                  await reloadLeadfinderAfterLocalChange();
-                }
-              }
+        const ownerContext = getLeadfinderUserContext();
+        const payload = buildLeadPayloadFromForm(ownerContext);
+        try {
+          const result = await leadApiRequest("POST", payload);
+          logLeadfinderDiagnostic("Lead create-response admin-leads", { payload, response: result });
+          selectedLeadFinderId = result.lead?.id || "";
+          resetLeadfinderForm();
+          setLeadfinderMessage("Lead centraal opgeslagen", "success");
+          await refreshLeads({ keepSelection: true });
+        } catch (error) {
+          logLeadfinderDiagnostic("Lead create failed", { payload, error: error.message, diagnostics: error.diagnostics });
+          setLeadfinderMessage(error.message || "Lead kon niet centraal worden opgeslagen.", "error");
+        }
+      }
 
       async function handleLeadfinderListClick(event) {
         const button = event.target.closest("[data-leadfinder-action]");
@@ -19801,18 +19845,18 @@
                   return;
                 }
                 if (!window.confirm(`Lead ${lead.companyName || lead.contactName || lead.id} verwijderen?`)) return;
-                if (isProductionLead(lead)) {
-                  try {
-                    await leadApiRequest("DELETE", { id: lead.id }, { id: lead.id });
-                    if (selectedLeadFinderId === lead.id) selectedLeadFinderId = "";
-                    setLeadfinderMessage("Lead centraal verwijderd.", "success");
-                    await reloadLeadfinderAfterLocalChange();
-                  } catch (error) {
-                    queueLeadOffline("delete", { id: lead.id });
-                    setLeadfinderMessage("Verwijdering tijdelijk offline bewaard. Zodra de verbinding terug is, synchroniseert het dashboard automatisch.", "warning");
-                  }
-                  return;
-                }
+        if (isProductionLead(lead)) {
+          try {
+            await leadApiRequest("DELETE", { id: lead.id }, { id: lead.id });
+            if (selectedLeadFinderId === lead.id) selectedLeadFinderId = "";
+            logLeadfinderDiagnostic("Lead centraal verwijderd", { id: lead.id });
+            setLeadfinderMessage("Lead centraal verwijderd.", "success");
+            await refreshLeads({ keepSelection: false });
+          } catch (error) {
+            setLeadfinderMessage(error.message || "Lead kon niet centraal worden verwijderd.", "error");
+          }
+          return;
+        }
                 const result = deleteLeadFromLocalSources(lead);
                 if (!result.deleted) {
                   setLeadfinderMessage("Lead kon niet in de lokale fallbackbronnen worden gevonden.", "error");
@@ -19820,7 +19864,7 @@
         }
         if (selectedLeadFinderId === lead.id) selectedLeadFinderId = "";
         setLeadfinderMessage("Lead verwijderd.", "success");
-        await reloadLeadfinderAfterLocalChange();
+        await refreshLeads({ keepSelection: false });
       }
 
       async function deleteSelectedLead() {

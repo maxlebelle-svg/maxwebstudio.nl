@@ -70,31 +70,65 @@ exports.handler = async (event) => {
 };
 
 async function readLeads({ supabaseUrl, serviceRoleKey, admin }) {
-  const params = new URLSearchParams({
-    select: "id,company_name,contact_name,email,phone,website,status,owner_id,created_by,assigned_to,notes,is_demo,environment,metadata,created_at,updated_at",
-    order: "updated_at.desc.nullslast",
-    limit: "500",
-  });
-  if (!managerRoles.has(normalizeRole(admin.role))) {
-    params.set("or", `(owner_id.eq.${admin.id},created_by.eq.${admin.id},assigned_to.eq.${admin.id})`);
-  }
-  const rows = await supabaseFetch(`${supabaseUrl}/rest/v1/leads?${params.toString()}`, {
-    method: "GET",
-    headers: restHeaders(serviceRoleKey),
-  });
+  const rows = await readLeadRows({ supabaseUrl, serviceRoleKey });
+  const records = rows.map(mapLead).filter((lead) => isLeadVisibleForAdmin(lead, admin));
   return jsonResponse(200, {
     success: true,
     mode: "supabase-production",
-    records: rows.map(mapLead),
-    counts: { supabase: rows.length, hybrid: rows.length, local: 0 },
+    records,
+    counts: { supabase: records.length, hybrid: records.length, local: 0 },
     refreshedAt: new Date().toISOString(),
   });
 }
 
 async function createLead({ event, supabaseUrl, serviceRoleKey, admin }) {
   const payload = parsePayload(event.body);
-  const record = leadPayload(payload, admin, { create: true });
-  const rows = await supabaseFetch(`${supabaseUrl}/rest/v1/leads`, {
+  const attempts = [
+    () => insertLeadRecord({ supabaseUrl, serviceRoleKey, record: leadPayload(payload, admin, { create: true }) }),
+    () => insertLeadRecord({ supabaseUrl, serviceRoleKey, record: legacyLeadPayload(payload, admin, { create: true, extended: true }) }),
+    () => insertLeadRecord({ supabaseUrl, serviceRoleKey, record: legacyLeadPayload(payload, admin, { create: true, extended: false }) }),
+    () => insertLeadRecord({ supabaseUrl, serviceRoleKey, record: legacyLeadPayload(payload, admin, { create: true, extended: false, ownerColumn: false }) }),
+  ];
+  const rows = await trySchemaAttempts(attempts);
+  const lead = mapLead(rows[0] || {});
+  return jsonResponse(200, {
+    success: true,
+    lead,
+    created: true,
+    diagnostics: {
+      module: "leads",
+      resolvedRole: admin.role,
+      status: admin.status,
+      reason: "lead_inserted",
+      leadId: lead.id,
+    },
+  });
+}
+
+async function updateLead({ event, supabaseUrl, serviceRoleKey, admin }) {
+  const payload = parsePayload(event.body);
+  const id = cleanText(payload.id || event.queryStringParameters?.id);
+  if (!id) return jsonResponse(400, { success: false, error: "Lead id ontbreekt." });
+  const existingLead = await assertCanMutateLead({ supabaseUrl, serviceRoleKey, admin, id });
+  const modernRecord = leadPayload(payload, admin, { update: true });
+  if (modernRecord.metadata) {
+    modernRecord.metadata = {
+      ...(existingLead.metadata && typeof existingLead.metadata === "object" ? existingLead.metadata : {}),
+      ...modernRecord.metadata,
+    };
+  }
+  const attempts = [
+    () => updateLeadRecord({ supabaseUrl, serviceRoleKey, id, record: modernRecord }),
+    () => updateLeadRecord({ supabaseUrl, serviceRoleKey, id, record: legacyLeadPayload(payload, admin, { update: true, extended: true, existingLead }) }),
+    () => updateLeadRecord({ supabaseUrl, serviceRoleKey, id, record: legacyLeadPayload(payload, admin, { update: true, extended: false, existingLead }) }),
+    () => updateLeadRecord({ supabaseUrl, serviceRoleKey, id, record: legacyLeadPayload(payload, admin, { update: true, extended: false, ownerColumn: false, existingLead }) }),
+  ];
+  const rows = await trySchemaAttempts(attempts);
+  return jsonResponse(200, { success: true, lead: mapLead(rows[0] || { id, ...modernRecord }), updated: true });
+}
+
+async function insertLeadRecord({ supabaseUrl, serviceRoleKey, record }) {
+  return supabaseFetch(`${supabaseUrl}/rest/v1/leads`, {
     method: "POST",
     headers: {
       ...restHeaders(serviceRoleKey),
@@ -103,22 +137,10 @@ async function createLead({ event, supabaseUrl, serviceRoleKey, admin }) {
     },
     body: JSON.stringify(record),
   });
-  return jsonResponse(200, { success: true, lead: mapLead(rows[0] || record), created: true });
 }
 
-async function updateLead({ event, supabaseUrl, serviceRoleKey, admin }) {
-  const payload = parsePayload(event.body);
-  const id = cleanText(payload.id || event.queryStringParameters?.id);
-  if (!id) return jsonResponse(400, { success: false, error: "Lead id ontbreekt." });
-  const existingLead = await assertCanMutateLead({ supabaseUrl, serviceRoleKey, admin, id });
-  const record = leadPayload(payload, admin, { update: true });
-  if (record.metadata) {
-    record.metadata = {
-      ...(existingLead.metadata && typeof existingLead.metadata === "object" ? existingLead.metadata : {}),
-      ...record.metadata,
-    };
-  }
-  const rows = await supabaseFetch(`${supabaseUrl}/rest/v1/leads?id=eq.${encodeURIComponent(id)}`, {
+async function updateLeadRecord({ supabaseUrl, serviceRoleKey, id, record }) {
+  return supabaseFetch(`${supabaseUrl}/rest/v1/leads?id=eq.${encodeURIComponent(id)}`, {
     method: "PATCH",
     headers: {
       ...restHeaders(serviceRoleKey),
@@ -127,7 +149,6 @@ async function updateLead({ event, supabaseUrl, serviceRoleKey, admin }) {
     },
     body: JSON.stringify(record),
   });
-  return jsonResponse(200, { success: true, lead: mapLead(rows[0] || { id, ...record }), updated: true });
 }
 
 async function deleteLead({ event, supabaseUrl, serviceRoleKey, admin }) {
@@ -145,22 +166,15 @@ async function deleteLead({ event, supabaseUrl, serviceRoleKey, admin }) {
 }
 
 async function assertCanMutateLead({ supabaseUrl, serviceRoleKey, admin, id }) {
-  const params = new URLSearchParams({
-    select: "id,owner_id,created_by,assigned_to,metadata",
-    id: `eq.${id}`,
-    limit: "1",
-  });
-  const rows = await supabaseFetch(`${supabaseUrl}/rest/v1/leads?${params.toString()}`, {
-    method: "GET",
-    headers: restHeaders(serviceRoleKey),
-  });
+  const rows = await readLeadRows({ supabaseUrl, serviceRoleKey, id });
   const lead = rows[0];
   if (!lead) {
     const error = new Error("Lead niet gevonden.");
     error.status = 404;
     throw error;
   }
-  if (!managerRoles.has(normalizeRole(admin.role)) && ![lead.owner_id, lead.created_by, lead.assigned_to].map(cleanText).includes(admin.id)) {
+  const normalizedLead = mapLead(lead);
+  if (!managerRoles.has(normalizeRole(admin.role)) && !leadOwnerTokens(normalizedLead).includes(admin.id)) {
     const error = new Error("Je mag deze lead niet wijzigen.");
     error.status = 403;
     throw error;
@@ -168,9 +182,48 @@ async function assertCanMutateLead({ supabaseUrl, serviceRoleKey, admin, id }) {
   return lead;
 }
 
+async function readLeadRows({ supabaseUrl, serviceRoleKey, id = "" }) {
+  const selects = [
+    "id,company_name,contact_name,email,phone,website,status,owner_id,created_by,assigned_to,notes,is_demo,environment,metadata,created_at,updated_at",
+    "id,company,name,email,phone,source,interest,status,converted_customer_id,message,is_demo,environment,metadata,created_at,updated_at,owner_auth_user_id,branch,region,website_url,website_status,lead_score,call_status,follow_up_date,notes",
+    "id,company,name,email,phone,source,interest,status,converted_customer_id,message,is_demo,environment,metadata,created_at,updated_at,owner_auth_user_id",
+    "id,company,name,email,phone,source,interest,status,converted_customer_id,message,is_demo,environment,metadata,created_at,updated_at",
+  ];
+  const attempts = selects.map((select) => () => {
+    const params = new URLSearchParams({
+      select,
+      order: "updated_at.desc.nullslast",
+      limit: id ? "1" : "500",
+    });
+    if (id) params.set("id", `eq.${id}`);
+    return supabaseFetch(`${supabaseUrl}/rest/v1/leads?${params.toString()}`, {
+      method: "GET",
+      headers: restHeaders(serviceRoleKey),
+    });
+  });
+  return trySchemaAttempts(attempts);
+}
+
+async function trySchemaAttempts(attempts = []) {
+  let lastError = null;
+  for (const attempt of attempts) {
+    try {
+      return await attempt();
+    } catch (error) {
+      lastError = error;
+      if (!isMissingColumnError(error) && !isStatusConstraintError(error)) throw error;
+    }
+  }
+  throw lastError || new Error("Lead schema kon niet worden bepaald.");
+}
+
 function leadPayload(payload = {}, admin = {}, options = {}) {
   const now = new Date().toISOString();
   const hasStatus = Object.prototype.hasOwnProperty.call(payload, "status") || Object.prototype.hasOwnProperty.call(payload, "callStatus");
+  const hasSource = Object.prototype.hasOwnProperty.call(payload, "source");
+  const hasWebsiteStatus = Object.prototype.hasOwnProperty.call(payload, "websiteStatus") || Object.prototype.hasOwnProperty.call(payload, "website_status");
+  const hasLeadScore = Object.prototype.hasOwnProperty.call(payload, "leadScore") || Object.prototype.hasOwnProperty.call(payload, "score") || Object.prototype.hasOwnProperty.call(payload, "lead_score");
+  const hasFollowUpDate = Object.prototype.hasOwnProperty.call(payload, "followUpDate") || Object.prototype.hasOwnProperty.call(payload, "follow_up_date");
   const status = cleanText(hasStatus ? (payload.status || payload.callStatus) : "nieuw").toLowerCase();
   if (status && !allowedStatuses.has(status)) {
     const error = new Error("Ongeldige leadstatus.");
@@ -213,18 +266,111 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
   }
   if (options.update) {
     const hasAssignment = ["assignedTo", "assigned_to", "ownerAuthUserId", "owner_id"].some((key) => Object.prototype.hasOwnProperty.call(payload, key));
-    const hasSource = Object.prototype.hasOwnProperty.call(payload, "source");
     Object.keys(record).forEach((key) => {
       if (record[key] === "" && !["email", "phone", "website", "notes"].includes(key)) delete record[key];
     });
     if (!hasStatus) delete record.status;
     if (!hasAssignment) delete record.assigned_to;
     if (!hasSource) delete record.metadata.source;
+    if (!hasWebsiteStatus) delete record.metadata.websiteStatus;
+    if (!hasLeadScore) delete record.metadata.leadScore;
+    if (!hasFollowUpDate) delete record.metadata.followUpDate;
     Object.keys(record.metadata || {}).forEach((key) => {
       if (record.metadata[key] === "" || record.metadata[key] === undefined || Number.isNaN(record.metadata[key])) delete record.metadata[key];
     });
   }
   if (options.create && !record.company_name && !record.contact_name && !record.email) {
+    const error = new Error("Vul minimaal een bedrijfsnaam, contactpersoon of e-mailadres in.");
+    error.status = 400;
+    throw error;
+  }
+  return record;
+}
+
+function legacyLeadPayload(payload = {}, admin = {}, options = {}) {
+  const now = new Date().toISOString();
+  const existingMeta = options.existingLead?.metadata && typeof options.existingLead.metadata === "object" ? options.existingLead.metadata : {};
+  const hasStatus = Object.prototype.hasOwnProperty.call(payload, "status") || Object.prototype.hasOwnProperty.call(payload, "callStatus");
+  const hasSource = Object.prototype.hasOwnProperty.call(payload, "source");
+  const hasWebsiteStatus = Object.prototype.hasOwnProperty.call(payload, "websiteStatus") || Object.prototype.hasOwnProperty.call(payload, "website_status");
+  const hasLeadScore = Object.prototype.hasOwnProperty.call(payload, "leadScore") || Object.prototype.hasOwnProperty.call(payload, "score") || Object.prototype.hasOwnProperty.call(payload, "lead_score");
+  const hasFollowUpDate = Object.prototype.hasOwnProperty.call(payload, "followUpDate") || Object.prototype.hasOwnProperty.call(payload, "follow_up_date");
+  const meta = {
+    ...existingMeta,
+    ...(payload.metadata && typeof payload.metadata === "object" ? payload.metadata : {}),
+    ownerAuthUserId: cleanText(payload.ownerAuthUserId || payload.owner_id || options.existingLead?.ownerAuthUserId || existingMeta.ownerAuthUserId || admin.id) || admin.id,
+    createdBy: cleanText(payload.createdBy || payload.created_by || options.existingLead?.createdBy || existingMeta.createdBy || admin.id) || admin.id,
+    createdByEmail: cleanText(payload.createdByEmail || options.existingLead?.createdByEmail || existingMeta.createdByEmail || admin.email),
+    createdByName: cleanText(payload.createdByName || options.existingLead?.createdByName || existingMeta.createdByName || admin.email),
+    assignedTo: cleanText(payload.assignedTo || payload.assigned_to || payload.ownerAuthUserId || options.existingLead?.assignedTo || existingMeta.assignedTo || admin.id) || admin.id,
+    source: cleanText(payload.source || "admin-dashboard-leadfinder"),
+    websiteStatus: cleanText(payload.websiteStatus),
+    leadScore: Number(payload.leadScore || payload.score || 60),
+    googlePlaceId: cleanText(payload.googlePlaceId),
+    googleMapsUrl: cleanText(payload.googleMapsUrl),
+    updatedBy: admin.id,
+    updatedByEmail: admin.email,
+  };
+  if (payload.websiteAnalysis && typeof payload.websiteAnalysis === "object") meta.websiteAnalysis = payload.websiteAnalysis;
+
+  const record = {
+    company: cleanText(payload.companyName || payload.company_name || payload.company || payload.businessName),
+    name: cleanText(payload.contactName || payload.contact_name || payload.name || payload.contact),
+    email: cleanText(payload.email).toLowerCase(),
+    phone: cleanText(payload.phone),
+    source: cleanText(payload.source || "admin-dashboard-leadfinder"),
+    interest: cleanText(payload.interest || payload.websiteUrl || payload.website),
+    status: legacyDbStatus(payload.status || payload.callStatus || "nieuw"),
+    message: cleanText(payload.notes || payload.message),
+    metadata: meta,
+    is_demo: false,
+    environment: "production",
+    updated_at: now,
+  };
+  if (options.ownerColumn !== false) {
+    record.owner_auth_user_id = cleanText(payload.ownerAuthUserId || payload.owner_id || admin.id) || admin.id;
+  }
+  if (options.extended) {
+    record.branch = cleanText(payload.industry || payload.branch);
+    record.region = cleanText(payload.region);
+    record.website_url = cleanText(payload.websiteUrl || payload.website);
+    record.website_status = cleanText(payload.websiteStatus || "unknown");
+    record.lead_score = Number(payload.leadScore || payload.score || 60);
+    record.call_status = normalizeLeadStatus(payload.callStatus || payload.status || "nieuw");
+    record.follow_up_date = cleanText(payload.followUpDate);
+    record.notes = cleanText(payload.notes || payload.message);
+  }
+  if (options.create) record.created_at = now;
+  if (options.update) {
+    const allowedEmpty = new Set(["email", "phone", "interest", "message", "notes", "website_url"]);
+    Object.keys(record).forEach((key) => {
+      if (record[key] === "" && !allowedEmpty.has(key)) delete record[key];
+    });
+    if (!hasStatus) {
+      delete record.status;
+      delete record.call_status;
+    }
+    if (!hasSource) {
+      delete record.source;
+      delete record.metadata.source;
+    }
+    if (!hasWebsiteStatus) {
+      delete record.website_status;
+      delete record.metadata.websiteStatus;
+    }
+    if (!hasLeadScore) {
+      delete record.lead_score;
+      delete record.metadata.leadScore;
+    }
+    if (!hasFollowUpDate) {
+      delete record.follow_up_date;
+      delete record.metadata.followUpDate;
+    }
+    Object.keys(record.metadata || {}).forEach((key) => {
+      if (record.metadata[key] === "" || record.metadata[key] === undefined || Number.isNaN(record.metadata[key])) delete record.metadata[key];
+    });
+  }
+  if (options.create && !record.company && !record.name && !record.email) {
     const error = new Error("Vul minimaal een bedrijfsnaam, contactpersoon of e-mailadres in.");
     error.status = 400;
     throw error;
@@ -259,29 +405,29 @@ function mapLead(row = {}) {
   const meta = row.metadata && typeof row.metadata === "object" ? row.metadata : {};
   return {
     id: cleanText(row.id),
-    companyName: cleanText(row.company_name),
-    contactName: cleanText(row.contact_name),
+    companyName: cleanText(row.company_name || row.company),
+    contactName: cleanText(row.contact_name || row.name),
     email: cleanText(row.email),
     phone: cleanText(row.phone),
-    websiteUrl: cleanText(row.website),
-    callStatus: normalizeLeadStatus(row.status),
-    status: normalizeLeadStatus(row.status),
-    source: cleanText(meta.source || "supabase-production"),
-    notes: cleanText(row.notes),
-    ownerAuthUserId: cleanText(row.owner_id),
+    websiteUrl: cleanText(row.website || row.website_url || row.interest || meta.websiteUrl || meta.website),
+    callStatus: normalizeLeadStatus(row.call_status || row.status),
+    status: normalizeLeadStatus(row.call_status || row.status),
+    source: cleanText(row.source || meta.source || "supabase-production"),
+    notes: cleanText(row.notes || row.message),
+    ownerAuthUserId: cleanText(row.owner_id || row.owner_auth_user_id || meta.ownerAuthUserId || meta.owner_auth_user_id),
     assignedUserName: cleanText(meta.assignedUserName),
     assignedUserEmail: cleanText(meta.assignedUserEmail),
     salesPartnerEmail: cleanText(meta.salesPartnerEmail || meta.createdByEmail),
     salesPartnerName: cleanText(meta.salesPartnerName || meta.createdByName),
-    createdBy: cleanText(row.created_by),
+    createdBy: cleanText(row.created_by || meta.createdBy || row.owner_auth_user_id),
     createdByEmail: cleanText(meta.createdByEmail),
     createdByName: cleanText(meta.createdByName),
-    assignedTo: cleanText(row.assigned_to),
-    industry: cleanText(meta.industry),
-    region: cleanText(meta.region),
-    websiteStatus: cleanText(meta.websiteStatus || "onbekend"),
-    leadScore: Number(meta.leadScore || 60),
-    followUpDate: cleanText(meta.followUpDate),
+    assignedTo: cleanText(row.assigned_to || meta.assignedTo || meta.assigned_to),
+    industry: cleanText(row.branch || meta.industry),
+    region: cleanText(row.region || meta.region),
+    websiteStatus: cleanText(row.website_status || meta.websiteStatus || "onbekend"),
+    leadScore: Number(row.lead_score || meta.leadScore || 60),
+    followUpDate: cleanText(row.follow_up_date || meta.followUpDate),
     googlePlaceId: cleanText(meta.googlePlaceId),
     googleMapsUrl: cleanText(meta.googleMapsUrl),
     isDemo: Boolean(row.is_demo),
@@ -297,7 +443,39 @@ function mapLead(row = {}) {
 function normalizeLeadStatus(value) {
   const status = cleanText(value).toLowerCase();
   if (status === "new") return "nieuw";
+  if (status === "follow_up") return "opvolgen";
+  if (status === "converted") return "geconverteerd";
+  if (status === "qualified") return "interesse";
   return status || "nieuw";
+}
+
+function legacyDbStatus(value) {
+  const status = normalizeLeadStatus(value);
+  if (status === "nieuw") return "new";
+  if (["opvolgen", "contact_planned", "voicemail"].includes(status)) return "follow_up";
+  if (["gebeld", "contacted"].includes(status)) return "contacted";
+  if (["interesse", "qualified", "quote_ready", "quote_sent"].includes(status)) return "qualified";
+  if (["won", "customer_active", "geconverteerd"].includes(status)) return "converted";
+  if (["lost", "geen_interesse"].includes(status)) return "lost";
+  if (status === "archived" || status === "gearchiveerd") return "archived";
+  return "new";
+}
+
+function leadOwnerTokens(lead = {}) {
+  return [
+    lead.ownerAuthUserId,
+    lead.createdBy,
+    lead.assignedTo,
+    lead.metadata?.ownerAuthUserId,
+    lead.metadata?.createdBy,
+    lead.metadata?.assignedTo,
+  ].map(cleanText).filter(Boolean);
+}
+
+function isLeadVisibleForAdmin(lead = {}, admin = {}) {
+  if (managerRoles.has(normalizeRole(admin.role))) return true;
+  if (normalizeRole(admin.role) !== "sales_partner") return false;
+  return leadOwnerTokens(lead).includes(admin.id);
 }
 
 function parsePayload(body, silent = false) {
@@ -329,6 +507,20 @@ function isMissingTableError(error = {}) {
     || text.includes("schema cache")
     || text.includes("could not find the table")
     || text.includes("public.leads");
+}
+
+function isMissingColumnError(error = {}) {
+  const text = [error.message, error.details, error.code].map((value) => cleanText(value).toLowerCase()).join(" ");
+  return error.status === 400
+    && (text.includes("42703")
+      || text.includes("pgrst204")
+      || text.includes("column")
+      || text.includes("could not find"));
+}
+
+function isStatusConstraintError(error = {}) {
+  const text = [error.message, error.details, error.code].map((value) => cleanText(value).toLowerCase()).join(" ");
+  return text.includes("23514") || text.includes("leads_status_check") || text.includes("violates check constraint");
 }
 
 function normalizeRole(role) {
