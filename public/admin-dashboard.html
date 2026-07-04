@@ -120,11 +120,25 @@
           <div>
             <p class="section-kicker">Admin CRM</p>
             <h1>Max Web Studio Backoffice</h1>
-            <p>Beheer klanten, websites, onderhoud en wijzigingsverzoeken vanuit één centrale omgeving.</p>
+            <p>Beheer klanten, websites, offertes, projecten en automatiseringen vanuit één centrale omgeving.</p>
           </div>
-          <div class="admin-hero-actions">
+          <div class="admin-hero-panel" aria-label="Dashboard kerncijfers">
+            <article>
+              <span>Nieuwe leads</span>
+              <strong id="hero-kpi-leads">-</strong>
+              <small>Open aanvragen</small>
+            </article>
+            <article>
+              <span>Actieve klanten</span>
+              <strong id="hero-kpi-customers">-</strong>
+              <small>Klantprofielen</small>
+            </article>
+            <article>
+              <span>Conversie</span>
+              <strong id="hero-kpi-conversion">-</strong>
+              <small>Deze week</small>
+            </article>
             <button class="button primary" id="open-new-customer" type="button">Nieuwe klant</button>
-            <span class="admin-preview-badge">CRM basis</span>
           </div>
         </section>
 
@@ -137,14 +151,14 @@
             <span class="status-badge status-active">Werkmodus</span>
           </div>
           <div class="settings-actions admin-action-strip">
-            <a class="button secondary" href="#leadfinder">Nieuwe lead</a>
-            <button class="button primary" id="open-new-customer-quick" type="button">Nieuwe klant</button>
-            <a class="button secondary" href="#leadfinder">Open leads</a>
-            <a class="button secondary" href="#klanten">Actieve klanten</a>
-            <a class="button secondary" href="#projecten">Lopende projecten</a>
-            <a class="button secondary" href="#offertes">Open offertes</a>
-            <a class="button secondary" href="#facturen">Open facturen</a>
-            <button class="button secondary admin-user-management-action" id="invite-user-quick" type="button" hidden>Werknemer uitnodigen</button>
+            <a class="button secondary admin-action-card" href="#leadfinder"><span aria-hidden="true">+</span><strong>Nieuwe lead</strong></a>
+            <button class="button primary admin-action-card" id="open-new-customer-quick" type="button"><span aria-hidden="true">◎</span><strong>Nieuwe klant</strong></button>
+            <a class="button secondary admin-action-card" href="#leadfinder"><span aria-hidden="true">↗</span><strong>Open leads</strong></a>
+            <a class="button secondary admin-action-card" href="#klanten"><span aria-hidden="true">●</span><strong>Actieve klanten</strong></a>
+            <a class="button secondary admin-action-card" href="#projecten"><span aria-hidden="true">□</span><strong>Lopende projecten</strong></a>
+            <a class="button secondary admin-action-card" href="#offertes"><span aria-hidden="true">§</span><strong>Open offertes</strong></a>
+            <a class="button secondary admin-action-card" href="#facturen"><span aria-hidden="true">€</span><strong>Open facturen</strong></a>
+            <button class="button secondary admin-action-card admin-user-management-action" id="invite-user-quick" type="button" hidden><span aria-hidden="true">+</span><strong>Werknemer uitnodigen</strong></button>
           </div>
         </section>
 
@@ -154,14 +168,14 @@
         </section>
 
         <section class="admin-grid admin-metrics" aria-label="CRM overzicht">
-          <article class="admin-card metric-card dashboard-summary-card" role="button" tabindex="0" data-dashboard-summary="leads" aria-label="Open leads bekijken"><span>Leads</span><strong id="metric-total-leads">0</strong><small>Open aanvragen</small></article>
-          <article class="admin-card metric-card dashboard-summary-card" role="button" tabindex="0" data-dashboard-summary="customers" aria-label="Klanten bekijken"><span>Klanten</span><strong id="metric-total-customers">-</strong><small id="metric-total-customers-label">Klantprofielen</small></article>
-          <article class="admin-card metric-card dashboard-summary-card" role="button" tabindex="0" data-dashboard-summary="projects" aria-label="Lopende projecten bekijken"><span>Lopende projecten</span><strong id="metric-active-projects">0</strong><small>Niet afgerond</small></article>
-          <article class="admin-card metric-card dashboard-summary-card" role="button" tabindex="0" data-dashboard-summary="websites" aria-label="Actieve websites bekijken"><span>Actieve websites</span><strong id="metric-live-websites">-</strong><small>Online/live</small></article>
-          <article class="admin-card metric-card dashboard-summary-card" role="button" tabindex="0" data-dashboard-summary="quotes" aria-label="Open offertes bekijken"><span>Open offertes</span><strong id="metric-open-quotes">0</strong><small>Concept, verzonden of bekeken</small></article>
-          <article class="admin-card metric-card dashboard-summary-card" role="button" tabindex="0" data-dashboard-summary="invoices" aria-label="Open facturen bekijken"><span>Open facturen</span><strong id="metric-open-invoices-local">0</strong><small>Concept, verzonden of verlopen</small></article>
-          <article class="admin-card metric-card admin-developer-only"><span>Betaald bedrag</span><strong id="metric-paid-amount">€ 0</strong><small>Facturen betaald</small></article>
-          <article class="admin-card metric-card admin-developer-only"><span>Te factureren abonnementen</span><strong id="metric-subscriptions-due">0</strong><small>Verlopen / vandaag / 7 dagen</small></article>
+          <article class="admin-card metric-card dashboard-summary-card" role="button" tabindex="0" data-dashboard-summary="leads" aria-label="Open leads bekijken"><span><i aria-hidden="true">↗</i>Leads</span><strong id="metric-total-leads">0</strong><small>Open aanvragen</small></article>
+          <article class="admin-card metric-card dashboard-summary-card" role="button" tabindex="0" data-dashboard-summary="customers" aria-label="Klanten bekijken"><span><i aria-hidden="true">●</i>Klanten</span><strong id="metric-total-customers">-</strong><small id="metric-total-customers-label">Klantprofielen</small></article>
+          <article class="admin-card metric-card dashboard-summary-card" role="button" tabindex="0" data-dashboard-summary="projects" aria-label="Lopende projecten bekijken"><span><i aria-hidden="true">□</i>Projecten</span><strong id="metric-active-projects">0</strong><small>Niet afgerond</small></article>
+          <article class="admin-card metric-card dashboard-summary-card" role="button" tabindex="0" data-dashboard-summary="websites" aria-label="Actieve websites bekijken"><span><i aria-hidden="true">◎</i>Websites</span><strong id="metric-live-websites">-</strong><small>Online/live</small></article>
+          <article class="admin-card metric-card dashboard-summary-card" role="button" tabindex="0" data-dashboard-summary="quotes" aria-label="Open offertes bekijken"><span><i aria-hidden="true">§</i>Offertes</span><strong id="metric-open-quotes">0</strong><small>Concept, verzonden of bekeken</small></article>
+          <article class="admin-card metric-card dashboard-summary-card" role="button" tabindex="0" data-dashboard-summary="invoices" aria-label="Open facturen bekijken"><span><i aria-hidden="true">€</i>Facturen</span><strong id="metric-open-invoices-local">0</strong><small>Concept, verzonden of verlopen</small></article>
+          <article class="admin-card metric-card admin-developer-only"><span><i aria-hidden="true">€</i>Betaald bedrag</span><strong id="metric-paid-amount">€ 0</strong><small>Facturen betaald</small></article>
+          <article class="admin-card metric-card admin-developer-only"><span><i aria-hidden="true">↻</i>Te factureren</span><strong id="metric-subscriptions-due">0</strong><small>Verlopen / vandaag / 7 dagen</small></article>
           <article class="admin-card metric-card admin-developer-only"><span>Recurring omzet</span><strong id="metric-recurring-revenue">€ 0,00</strong><small id="metric-recurring-label">MRR / ARR / actief</small></article>
           <article class="admin-card metric-card admin-developer-only"><span>Demo-modus</span><strong id="metric-demo-status">Actief</strong><small>Lokale opslag actief</small></article>
         </section>
@@ -20296,6 +20310,33 @@
       }
 
       initAiAdminAssistant();
+    </script>
+    <script>
+      (() => {
+        function textFrom(id, fallback = "-") {
+          return document.getElementById(id)?.textContent?.trim() || fallback;
+        }
+
+        function syncHeroKpis() {
+          const leads = document.getElementById("hero-kpi-leads");
+          const customers = document.getElementById("hero-kpi-customers");
+          const conversion = document.getElementById("hero-kpi-conversion");
+          if (leads) leads.textContent = textFrom("metric-total-leads");
+          if (customers) customers.textContent = textFrom("metric-total-customers");
+          if (conversion) conversion.textContent = textFrom("sales-cockpit-conversion");
+        }
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", syncHeroKpis);
+        } else {
+          syncHeroKpis();
+        }
+        const observer = new MutationObserver(syncHeroKpis);
+        ["metric-total-leads", "metric-total-customers", "sales-cockpit-conversion"].forEach((id) => {
+          const element = document.getElementById(id);
+          if (element) observer.observe(element, { childList: true, characterData: true, subtree: true });
+        });
+      })();
     </script>
     <script>
       (() => {
