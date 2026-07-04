@@ -5685,12 +5685,19 @@ h3 {
 
 .admin-body {
   min-height: 100vh;
+  max-width: 100%;
   overflow-x: hidden;
   color: var(--mws-text);
   background:
     radial-gradient(circle at 82% 0%, rgba(21, 94, 239, 0.18), transparent 30%),
     radial-gradient(circle at 12% 8%, rgba(25, 194, 255, 0.1), transparent 28%),
     linear-gradient(180deg, var(--mws-bg) 0%, #061a2a 54%, var(--mws-bg-deep) 100%);
+}
+
+.admin-body *,
+.admin-body *::before,
+.admin-body *::after {
+  min-width: 0;
 }
 
 .admin-shell {
@@ -5708,12 +5715,14 @@ h3 {
   width: min(100%, 1780px);
   margin: 0 auto;
   padding: clamp(18px, 2.4vw, 34px);
+  max-width: 100%;
 }
 
 .admin-crm-main {
   display: grid;
   gap: clamp(22px, 3vw, 34px);
   min-width: 0;
+  max-width: 100%;
 }
 
 .admin-page-topbar {
@@ -6169,6 +6178,73 @@ h3 {
   transform: translateY(-2px);
 }
 
+.staff-command-center {
+  background:
+    radial-gradient(circle at 88% 12%, rgba(43, 217, 130, 0.12), transparent 30%),
+    radial-gradient(circle at 12% 0%, rgba(37, 99, 235, 0.14), transparent 34%),
+    linear-gradient(180deg, rgba(13, 35, 55, 0.74), rgba(5, 18, 31, 0.92));
+}
+
+.staff-command-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.staff-command-card {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 10px 12px;
+  align-items: start;
+  min-height: 150px;
+  padding: 18px;
+  border: 1px solid var(--mws-border);
+  border-radius: var(--mws-radius);
+  color: var(--mws-text);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.052), rgba(255, 255, 255, 0.02)),
+    rgba(2, 14, 25, 0.58);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.staff-command-card:hover,
+.staff-command-card:focus-visible {
+  border-color: rgba(96, 165, 250, 0.5);
+  box-shadow: 0 18px 46px rgba(0, 8, 18, 0.24);
+  outline: none;
+  transform: translateY(-2px);
+}
+
+.staff-command-card span {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(96, 165, 250, 0.32);
+  border-radius: 999px;
+  color: #bfdbfe;
+  background: rgba(37, 99, 235, 0.16);
+  font-weight: 950;
+}
+
+.staff-command-card strong,
+.staff-command-card small {
+  grid-column: 2;
+}
+
+.staff-command-card strong {
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.staff-command-card small {
+  color: var(--mws-muted);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.5;
+}
+
 .metric-card,
 .detail-card,
 .health-card {
@@ -6357,6 +6433,8 @@ h3 {
   gap: 18px;
   padding: clamp(20px, 3vw, 30px);
   color: var(--white);
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .admin-section-heading {
@@ -6381,6 +6459,10 @@ h3 {
 .admin-table {
   display: grid;
   gap: 8px;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
 }
 
 .admin-table-row {
@@ -6687,7 +6769,7 @@ h3 {
 
 .project-task-form {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 110px 140px auto;
+  grid-template-columns: minmax(0, 1fr) minmax(96px, 0.32fr) minmax(120px, 0.38fr) minmax(120px, auto);
   gap: 8px;
 }
 
@@ -10096,6 +10178,72 @@ h3 {
   gap: 12px;
 }
 
+.admin-body:not(.is-admin-logged-in) #admin-login-card {
+  border-color: rgba(96, 165, 250, 0.32);
+  background:
+    radial-gradient(circle at 90% 8%, rgba(37, 99, 235, 0.18), transparent 34%),
+    linear-gradient(180deg, rgba(13, 35, 55, 0.86), rgba(5, 18, 31, 0.96));
+  box-shadow: 0 24px 70px rgba(0, 8, 18, 0.34);
+}
+
+.admin-body:not(.is-admin-logged-in) #admin-login-card::after {
+  content: "Na het inloggen worden live leads, klanten, previews en facturen geladen.";
+  display: block;
+  padding-top: 10px;
+  border-top: 1px solid rgba(171, 196, 224, 0.12);
+  color: rgba(226, 236, 248, 0.68);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.admin-body:not(.is-admin-logged-in) .admin-page-actions .button,
+.admin-body:not(.is-admin-logged-in) .admin-hero-panel .button,
+.admin-body:not(.is-admin-logged-in) .admin-action-strip .button {
+  opacity: 0.58;
+}
+
+.admin-body:not(.is-admin-logged-in) .admin-metrics .dashboard-summary-card strong,
+.admin-body:not(.is-admin-logged-in) .admin-hero-panel strong {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1em;
+  color: rgba(226, 236, 248, 0.84);
+  font-size: clamp(22px, 2.8vw, 34px);
+}
+
+.admin-body:not(.is-admin-logged-in) .admin-metrics .dashboard-summary-card strong::after,
+.admin-body:not(.is-admin-logged-in) .admin-hero-panel strong::after {
+  content: "Login nodig";
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.admin-body:not(.is-admin-logged-in) .admin-metrics .dashboard-summary-card strong,
+.admin-body:not(.is-admin-logged-in) .admin-hero-panel strong {
+  font-size: 0;
+}
+
+#admin-access-control-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(245, 158, 11, 0.22);
+  border-radius: var(--mws-radius);
+  color: #fde68a;
+  background: rgba(245, 158, 11, 0.08);
+}
+
+#admin-access-control-banner strong,
+#admin-access-control-banner span {
+  display: inline-flex;
+  line-height: 1.3;
+}
+
 #admin-access-message:empty {
   display: none;
 }
@@ -10256,7 +10404,7 @@ h3 {
 }
 
 .leadfinder-grid {
-  grid-template-columns: minmax(0, 0.92fr) minmax(580px, 1.08fr);
+  grid-template-columns: minmax(0, 0.92fr) minmax(min(100%, 520px), 1.08fr);
   grid-template-areas:
     "form google"
     "detail detail";
@@ -11800,6 +11948,10 @@ h3 {
     grid-template-columns: 1fr;
   }
 
+  .staff-command-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .admin-page-topbar {
     align-items: stretch;
     flex-direction: column;
@@ -11948,6 +12100,16 @@ h3 {
   .sales-cockpit-actions {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .staff-command-grid,
+  .staff-command-card {
+    grid-template-columns: 1fr;
+  }
+
+  .staff-command-card strong,
+  .staff-command-card small {
+    grid-column: 1;
   }
 }
 

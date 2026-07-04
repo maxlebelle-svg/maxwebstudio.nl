@@ -174,6 +174,39 @@
           </div>
         </section>
 
+        <section class="admin-section staff-command-center" aria-label="Startpunt voor medewerkers">
+          <div class="admin-section-heading">
+            <div>
+              <p class="section-kicker">Start hier</p>
+              <h2>De snelste route van lead naar klant</h2>
+              <p class="admin-section-intro">Volg deze werkvolgorde tijdens een verkoopdag. Alles wat medewerkers nodig hebben staat in dezelfde volgorde als het gesprek met de klant.</p>
+            </div>
+            <span class="status-badge status-prepared">Personeelsflow</span>
+          </div>
+          <div class="staff-command-grid">
+            <a class="staff-command-card" href="#leadfinder">
+              <span>1</span>
+              <strong>Sales openen</strong>
+              <small>Zoek, registreer of beoordeel een lead en leg de volgende actie vast.</small>
+            </a>
+            <a class="staff-command-card" href="#demo-klantreis">
+              <span>2</span>
+              <strong>Website Factory starten</strong>
+              <small>Maak briefing, preview, ZIP en projectruimte vanuit dezelfde lead.</small>
+            </a>
+            <a class="staff-command-card" href="#klanten">
+              <span>3</span>
+              <strong>Klant opvolgen</strong>
+              <small>Controleer klantprofiel, portaalstatus, offerte en facturen.</small>
+            </a>
+            <a class="staff-command-card" href="#projecten">
+              <span>4</span>
+              <strong>Project afronden</strong>
+              <small>Werk taken, feedback en livegang af zonder te zoeken.</small>
+            </a>
+          </div>
+        </section>
+
         <section class="portal-message admin-developer-only" id="admin-access-control-banner" role="note">
           <strong>Access control</strong>
           <span id="admin-access-control-text">Soft access-control laden...</span>
@@ -2412,6 +2445,7 @@
         const accessControlMode = document.getElementById("access-control-mode");
         const accessModeReset = document.getElementById("access-mode-reset");
         const adminAccessControlText = document.getElementById("admin-access-control-text");
+        const adminPageSearch = document.getElementById("admin-page-search");
         const adminNavLinks = [...document.querySelectorAll(".admin-sidebar-nav a")];
         const adminLoadButton = document.getElementById("admin-load");
         const adminAccessMessage = document.getElementById("admin-access-message");
@@ -17206,6 +17240,24 @@
           }
         }
 
+        function runAdminPageSearch() {
+          const query = String(adminPageSearch?.value || "").trim();
+          if (!query) return;
+          const leadSearch = document.getElementById("leadfinder-search");
+          const customerSearch = document.getElementById("customer-search");
+          if (leadSearch) {
+            leadSearch.value = query;
+            leadSearch.dispatchEvent(new Event("input", { bubbles: true }));
+          }
+          if (customerSearch) {
+            customerSearch.value = query;
+            customerSearch.dispatchEvent(new Event("input", { bubbles: true }));
+          }
+          window.location.hash = "leadfinder";
+          window.focusAdminPanel?.(leadSearch || document.getElementById("leadfinder"));
+          window.showToast?.(`Zoeken naar "${query}" in Sales.`, "info");
+        }
+
         document.getElementById("open-new-customer").addEventListener("click", openNewCustomerModal);
         document.getElementById("open-new-customer-topbar").addEventListener("click", openNewCustomerModal);
         document.getElementById("open-new-customer-quick").addEventListener("click", openNewCustomerModal);
@@ -17220,6 +17272,9 @@
         adminLoginButton.addEventListener("click", loginAdminSession);
         adminPasswordInput.addEventListener("keydown", (event) => {
           if (event.key === "Enter") loginAdminSession();
+        });
+        adminPageSearch?.addEventListener("keydown", (event) => {
+          if (event.key === "Enter") runAdminPageSearch();
         });
         adminForgotPasswordButton.addEventListener("click", requestAdminPasswordReset);
         adminSessionLogoutButton.addEventListener("click", logoutAdminSession);
