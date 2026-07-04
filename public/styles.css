@@ -16222,6 +16222,365 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   }
 }
 
+/* Unified premium admin theme pass
+   Keeps the first two screens as the visual source of truth and pulls the
+   older operational modules into the same Max CRM SaaS system. */
+.admin-body {
+  --admin-page-card:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.052), rgba(255, 255, 255, 0.018)),
+    rgba(6, 22, 36, 0.78);
+  --admin-page-card-strong:
+    radial-gradient(circle at 14% 0%, rgba(21, 94, 239, 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(13, 35, 55, 0.78), rgba(5, 18, 31, 0.92));
+  --admin-page-field:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.012)),
+    rgba(2, 14, 25, 0.66);
+  --admin-page-line: rgba(171, 196, 224, 0.14);
+}
+
+.admin-body .admin-crm-main {
+  gap: clamp(22px, 2.6vw, 34px);
+}
+
+.admin-body .admin-section:not(.admin-hero) {
+  padding: clamp(24px, 3vw, 36px);
+  border: 1px solid var(--admin-page-line);
+  border-radius: var(--mws-radius);
+  background: var(--admin-page-card-strong);
+  box-shadow: var(--mws-shadow);
+}
+
+.admin-body .admin-section:not(.admin-hero)::before,
+.admin-body .admin-section:not(.admin-hero)::after {
+  pointer-events: none;
+}
+
+.admin-body .admin-section-heading {
+  align-items: flex-start;
+  margin-bottom: 2px;
+}
+
+.admin-body .admin-section-heading h2,
+.admin-body .admin-health-panel h3 {
+  color: #f8fbff;
+  font-size: clamp(34px, 3.35vw, 56px);
+  line-height: 0.98;
+  letter-spacing: 0;
+}
+
+.admin-body .admin-section-heading .section-kicker,
+.admin-body .section-kicker {
+  color: var(--cyan);
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-body .admin-section-intro,
+.admin-body .admin-section-heading p:not(.section-kicker) {
+  color: rgba(226, 236, 248, 0.72);
+}
+
+.admin-body .admin-card:not(.dashboard-summary-card):not(.admin-action-card),
+.admin-body .admin-table-row,
+.admin-body .request-card,
+.admin-body .lead-card,
+.admin-body .lead-icon-button,
+.admin-body .crm-auth-panel,
+.admin-body .lead-welcome-card,
+.admin-body .lead-analysis-card,
+.admin-body .sales-timeline-card,
+.admin-body .project-progress-card,
+.admin-body .project-check-item,
+.admin-body .project-task-item,
+.admin-body .project-timeline-item,
+.admin-body .invoice-line-editor,
+.admin-body .invoice-totals-card span,
+.admin-body .website-health-metrics > span,
+.admin-body .settings-card,
+.admin-body .settings-alert,
+.admin-body .settings-submit-row,
+.admin-body .website-summary-card,
+.admin-body .project-work-card {
+  border: 1px solid var(--admin-page-line);
+  border-radius: var(--mws-radius);
+  background: var(--admin-page-card);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+
+.admin-body .metric-card,
+.admin-body .detail-card,
+.admin-body .health-card,
+.admin-body .sales-kpi-card {
+  min-height: 126px;
+  border-color: var(--admin-page-line);
+  background:
+    radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--metric-accent, #3b82f6) 10%, transparent), transparent 36%),
+    var(--admin-page-card);
+}
+
+.admin-body .detail-card strong,
+.admin-body .health-card strong,
+.admin-body .sales-kpi-card strong {
+  color: #f8fbff;
+  font-size: clamp(28px, 2.5vw, 40px);
+  line-height: 1;
+}
+
+.admin-body .detail-card span,
+.admin-body .health-card span,
+.admin-body .sales-kpi-card span,
+.admin-body .settings-status-list strong,
+.admin-body .admin-profile-form-heading strong {
+  color: rgba(248, 251, 255, 0.92);
+}
+
+.admin-body .admin-filters,
+.admin-body .leadfinder-filters,
+.admin-body .crm-filters,
+.admin-body .website-filters,
+.admin-body .invoice-filters,
+.admin-body .source-mode-filters {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--admin-page-line);
+  border-radius: var(--mws-radius);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.012)),
+    rgba(2, 14, 25, 0.5);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.admin-body .crm-filters,
+.admin-body .website-filters {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.admin-body label {
+  color: rgba(226, 236, 248, 0.68);
+  font-weight: 900;
+}
+
+.admin-body input:not([type="checkbox"]):not([type="radio"]),
+.admin-body select,
+.admin-body textarea,
+.admin-body .project-task-form input,
+.admin-body .project-task-form select,
+.admin-body .invoice-line-row input,
+.admin-body .admin-table-row select,
+.admin-body .settings-card input:not([type="checkbox"]),
+.admin-body .settings-card textarea,
+.admin-body .settings-card select {
+  width: 100%;
+  border: 1px solid rgba(171, 196, 224, 0.16);
+  color: #f8fbff;
+  background: var(--admin-page-field);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.035),
+    0 0 0 0 rgba(37, 99, 235, 0);
+}
+
+.admin-body input:not([type="checkbox"]):not([type="radio"]):focus,
+.admin-body select:focus,
+.admin-body textarea:focus,
+.admin-body .project-task-form input:focus,
+.admin-body .project-task-form select:focus,
+.admin-body .invoice-line-row input:focus,
+.admin-body .admin-table-row select:focus,
+.admin-body .settings-card input:not([type="checkbox"]):focus,
+.admin-body .settings-card textarea:focus,
+.admin-body .settings-card select:focus {
+  border-color: rgba(96, 165, 250, 0.58);
+  outline: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.045),
+    0 0 0 4px rgba(37, 99, 235, 0.14);
+}
+
+.admin-body input::placeholder,
+.admin-body textarea::placeholder {
+  color: rgba(226, 236, 248, 0.42);
+}
+
+.admin-body option {
+  color: #06121f;
+}
+
+.admin-body .admin-crm-grid,
+.admin-body .website-operations-grid,
+.admin-body .project-management-grid,
+.admin-body .file-management-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
+  gap: 24px;
+  align-items: start;
+}
+
+.admin-body .admin-table,
+.admin-body .website-table,
+.admin-body .project-table,
+.admin-body .invoice-table,
+.admin-body .client-profile-table {
+  min-width: 0;
+  border-radius: var(--mws-radius);
+}
+
+.admin-body .admin-table-row {
+  color: rgba(226, 236, 248, 0.72);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.014)),
+    rgba(2, 14, 25, 0.54);
+}
+
+.admin-body .admin-table-head {
+  border-color: transparent;
+  color: rgba(226, 236, 248, 0.52);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.admin-body .crm-detail-panel,
+.admin-body .website-detail-panel,
+.admin-body .project-detail-panel,
+.admin-body .file-detail-panel {
+  position: sticky;
+  top: 20px;
+  align-self: start;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.admin-body .admin-profile-fields {
+  gap: 14px;
+}
+
+.admin-body .admin-profile-actions,
+.admin-body .settings-actions {
+  gap: 10px;
+}
+
+.admin-body .admin-action-group {
+  gap: 10px;
+}
+
+.admin-body .admin-action-group .button,
+.admin-body .settings-actions .button,
+.admin-body .admin-profile-actions .button {
+  min-height: 44px;
+  white-space: normal;
+}
+
+.admin-body .status-badge,
+.admin-body .admin-preview-badge {
+  min-height: 30px;
+  border-radius: 999px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.admin-body .settings-status-list div,
+.admin-body .demo-kv-row,
+.admin-body .website-summary-card span {
+  border-color: rgba(171, 196, 224, 0.12);
+}
+
+.admin-body #klanten,
+.admin-body #websites,
+.admin-body #projecten,
+.admin-body #offertes,
+.admin-body #facturen,
+.admin-body #instellingen {
+  scroll-margin-top: 22px;
+}
+
+.admin-body #klanten,
+.admin-body #websites,
+.admin-body #projecten,
+.admin-body #offertes,
+.admin-body #facturen,
+.admin-body #instellingen,
+.admin-body #demo-klantreis {
+  overflow: hidden;
+}
+
+.admin-body #demo-klantreis {
+  background: var(--admin-page-card-strong);
+}
+
+.admin-body #demo-klantreis .website-factory-workspace,
+.admin-body #demo-klantreis .factory-workspace-hero,
+.admin-body #demo-klantreis .factory-preview-stage,
+.admin-body #demo-klantreis .demo-journey-steps-card,
+.admin-body #demo-klantreis .demo-card,
+.admin-body #demo-klantreis .factory-card,
+.admin-body #demo-klantreis .customer-timeline,
+.admin-body #demo-klantreis .project-workspace-card,
+.admin-body #demo-klantreis .demo-briefing-field {
+  border-color: var(--admin-page-line);
+  background: var(--admin-page-card);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+
+.admin-body #demo-klantreis .factory-workspace-hero h3 {
+  font-size: clamp(42px, 4.2vw, 72px);
+  line-height: 0.96;
+}
+
+.admin-body #demo-klantreis .factory-preview-browser,
+.admin-body #demo-klantreis .factory-preview-frame-shell {
+  border-color: rgba(171, 196, 224, 0.15);
+  background: rgba(2, 14, 25, 0.72);
+}
+
+.admin-body #offertes,
+.admin-body #facturen {
+  align-self: start;
+}
+
+.admin-body #offertes + #facturen {
+  margin-top: 0;
+}
+
+.admin-body #instellingen .settings-grid {
+  gap: 24px;
+}
+
+.admin-body #instellingen .settings-card {
+  padding: clamp(20px, 2vw, 28px);
+}
+
+@media (max-width: 1180px) {
+  .admin-body .admin-crm-grid,
+  .admin-body .website-operations-grid,
+  .admin-body .project-management-grid,
+  .admin-body .file-management-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-body .crm-detail-panel,
+  .admin-body .website-detail-panel,
+  .admin-body .project-detail-panel,
+  .admin-body .file-detail-panel {
+    position: static;
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-body .admin-section:not(.admin-hero) {
+    padding: 18px;
+  }
+
+  .admin-body .admin-section-heading {
+    display: grid;
+  }
+
+  .admin-body .admin-section-heading h2,
+  .admin-body .admin-health-panel h3 {
+    font-size: clamp(30px, 10vw, 44px);
+  }
+}
+
 @media print {
   body {
     color: #06121f;
