@@ -518,9 +518,9 @@
               </div>
               <label class="admin-profile-wide" for="demo-journey-briefing">Codex briefing<textarea id="demo-journey-briefing" rows="8" readonly></textarea></label>
               <div class="admin-profile-actions">
-                <a class="button secondary is-disabled" id="demo-journey-open-preview" href="#" target="_blank" rel="noopener" aria-disabled="true">Preview openen</a>
-                <a class="button secondary is-disabled" id="demo-journey-download-zip" href="#" target="_blank" rel="noopener" aria-disabled="true">ZIP downloaden</a>
-                <a class="button secondary is-disabled" id="demo-journey-open-portal" href="#" target="_blank" rel="noopener" aria-disabled="true">Klantportaal openen</a>
+                <button class="button secondary is-disabled" id="demo-journey-open-preview" type="button" aria-disabled="true">Preview openen</button>
+                <button class="button secondary is-disabled" id="demo-journey-download-zip" type="button" aria-disabled="true">ZIP downloaden</button>
+                <button class="button secondary is-disabled" id="demo-journey-open-portal" type="button" aria-disabled="true">Klantportaal openen</button>
               </div>
             </article>
           </div>
@@ -20339,9 +20339,21 @@
         function setActionLink(link, url = "") {
           if (!link) return;
           const enabled = Boolean(url);
-          link.href = enabled ? url : "#";
+          link.dataset.url = enabled ? url : "";
           link.classList.toggle("is-disabled", !enabled);
           link.setAttribute("aria-disabled", enabled ? "false" : "true");
+          if ("disabled" in link) link.disabled = !enabled;
+        }
+
+        function openActionUrl(event, target, fallbackMessage = "Deze actie is nog niet beschikbaar.") {
+          event?.preventDefault();
+          event?.stopPropagation();
+          const url = target?.dataset?.url || "";
+          if (!url || target?.getAttribute("aria-disabled") === "true") {
+            setMessage(elements.message, fallbackMessage, "warning");
+            return;
+          }
+          window.open(url, "_blank", "noopener");
         }
 
         async function loadLeads() {
@@ -20631,21 +20643,48 @@
             fillFromLead(selectedLead());
             await loadJourney().catch((error) => setMessage(elements.message, error.message, "error"));
           });
-          elements.generateBriefing?.addEventListener("click", () => {
+          elements.generateBriefing?.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
             elements.briefing.value = buildBriefing();
             elements.status.value = "briefing_klaar";
             setMessage(elements.message, "Briefing gegenereerd. Sla op om deze centraal te bewaren.", "success");
           });
-          elements.generatePreview?.addEventListener("click", generatePreview);
-          elements.copyBriefing?.addEventListener("click", () => copyText(elements.briefing?.value || "", elements.message));
-          elements.refresh?.addEventListener("click", async () => {
+          elements.generatePreview?.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            generatePreview();
+          });
+          elements.copyBriefing?.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            copyText(elements.briefing?.value || "", elements.message);
+          });
+          elements.refresh?.addEventListener("click", async (event) => {
+            event.preventDefault();
+            event.stopPropagation();
             await loadLeads();
             await loadJourney();
             setMessage(elements.message, "Demo klantreis opnieuw geladen.", "success");
           });
-          elements.generateEmail?.addEventListener("click", generateEmail);
-          elements.copyEmail?.addEventListener("click", () => copyText([elements.emailSubject?.value, "", elements.emailBody?.value].join("\n"), elements.emailMessage));
-          elements.sendEmail?.addEventListener("click", sendPreparedEmail);
+          elements.openPreview?.addEventListener("click", (event) => openActionUrl(event, elements.openPreview, "Genereer eerst een preview."));
+          elements.downloadZip?.addEventListener("click", (event) => openActionUrl(event, elements.downloadZip, "Genereer eerst een previewpakket."));
+          elements.openPortal?.addEventListener("click", (event) => openActionUrl(event, elements.openPortal, "Er is nog geen klantportaal gekoppeld."));
+          elements.generateEmail?.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            generateEmail();
+          });
+          elements.copyEmail?.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            copyText([elements.emailSubject?.value, "", elements.emailBody?.value].join("\n"), elements.emailMessage);
+          });
+          elements.sendEmail?.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            sendPreparedEmail();
+          });
         }
 
         async function init() {
