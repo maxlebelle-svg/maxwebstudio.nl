@@ -6,6 +6,7 @@ const MODULES = Object.freeze({
     select: "id,company_name,company,email,phone,website,website_url,status,source,notes,created_at,updated_at",
     order: "updated_at.desc.nullslast",
     optional: true,
+    salesReadable: true,
     map: mapLead,
   },
   customers: {
@@ -13,6 +14,7 @@ const MODULES = Object.freeze({
     select: "id,auth_user_id,profile_id,name,company,email,phone,website,package,status,portal_status,customer_since,notes,is_demo,environment,metadata,created_at,updated_at",
     order: "updated_at.desc.nullslast",
     optional: false,
+    salesReadable: true,
     map: mapCustomer,
   },
   websites: {
@@ -20,6 +22,7 @@ const MODULES = Object.freeze({
     select: "id,customer_id,profile_id,name,domain,live_url,staging_url,status,hosting_status,ssl_status,hosting_package,care_package,last_deploy_at,last_checked_at,notes,is_demo,environment,metadata,created_at,updated_at",
     order: "updated_at.desc.nullslast",
     optional: false,
+    salesReadable: true,
     map: mapWebsite,
   },
   projects: {
@@ -27,6 +30,7 @@ const MODULES = Object.freeze({
     select: "id,customer_id,website_id,name,type,status,phase,progress,notes,is_demo,environment,metadata,created_at,updated_at",
     order: "updated_at.desc.nullslast",
     optional: false,
+    salesReadable: true,
     map: mapProject,
   },
   change_requests: {
@@ -55,6 +59,7 @@ const MODULES = Object.freeze({
     select: "id,customer_id,website_id,project_id,quote_number,title,description,amount,currency,status,valid_until,accepted_at,created_at,updated_at,metadata",
     order: "updated_at.desc.nullslast",
     optional: true,
+    salesReadable: true,
     map: mapQuote,
   },
   invoices: {
@@ -62,6 +67,7 @@ const MODULES = Object.freeze({
     select: "id,customer_id,website_id,project_id,invoice_number,title,description,amount,currency,status,due_date,paid_at,pdf_file_path,mollie_checkout_url,created_at,updated_at,metadata",
     order: "updated_at.desc.nullslast",
     optional: true,
+    salesReadable: true,
     map: mapInvoice,
   },
   subscriptions: {
@@ -69,6 +75,7 @@ const MODULES = Object.freeze({
     select: "id,customer_id,website_id,project_id,title,plan,package_name,amount,currency,status,start_date,next_invoice_date,created_at,updated_at,metadata",
     order: "updated_at.desc.nullslast",
     optional: true,
+    salesReadable: true,
     map: mapSubscription,
   },
 });
@@ -78,23 +85,44 @@ exports.handler = async (event) => {
     return jsonResponse(405, { success: false, error: "Alleen GET-verzoeken zijn toegestaan." });
   }
 
-  const adminCheck = await verifyAdmin(event, jsonResponse);
+  const moduleName = cleanText(event.queryStringParameters?.module);
+  const definition = MODULES[moduleName];
+  if (!definition) {
+    return jsonResponse(400, { success: false, error: "Onbekende admin data module." });
+  }
+
+  const allowedRoles = definition.salesReadable
+    ? ["super_admin", "admin", "sales_manager", "sales_partner"]
+    : ["super_admin", "admin"];
+  const adminCheck = await verifyAdmin(event, jsonResponse, {
+    module: moduleName,
+    action: "read",
+    allowedRoles,
+    allowedStatuses: ["active", "invited"],
+  });
   if (!adminCheck.success) return adminCheck.response;
 
   const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !serviceRoleKey) {
     console.error("Admin Supabase data missing server configuration", {
+      module: moduleName,
+      role: adminCheck.admin?.role || "",
+      status: adminCheck.admin?.status || "",
+      reason: "missing_server_configuration",
       hasSupabaseUrl: Boolean(supabaseUrl),
       hasServiceRoleKey: Boolean(serviceRoleKey),
     });
-    return jsonResponse(500, { success: false, error: "Admin-data kon niet veilig worden geladen." });
-  }
-
-  const moduleName = cleanText(event.queryStringParameters?.module);
-  const definition = MODULES[moduleName];
-  if (!definition) {
-    return jsonResponse(400, { success: false, error: "Onbekende admin data module." });
+    return jsonResponse(500, {
+      success: false,
+      error: "Admin-data kon niet veilig worden geladen.",
+      diagnostics: {
+        module: moduleName,
+        resolvedRole: adminCheck.admin?.role || "",
+        status: adminCheck.admin?.status || "",
+        reason: "missing_server_configuration",
+      },
+    });
   }
 
   try {
@@ -104,6 +132,12 @@ exports.handler = async (event) => {
       success: true,
       module: moduleName,
       mode: "supabase-read",
+      diagnostics: {
+        module: moduleName,
+        resolvedRole: adminCheck.admin?.role || "",
+        status: adminCheck.admin?.status || "",
+        reason: "authorized",
+      },
       records,
       counts: { local: 0, supabase: records.length, hybrid: records.length },
       fallbackUsed: false,
@@ -115,6 +149,12 @@ exports.handler = async (event) => {
         success: true,
         module: moduleName,
         mode: "supabase-read",
+        diagnostics: {
+          module: moduleName,
+          resolvedRole: adminCheck.admin?.role || "",
+          status: adminCheck.admin?.status || "",
+          reason: "optional_missing_table",
+        },
         records: [],
         counts: { local: 0, supabase: 0, hybrid: 0 },
         fallbackUsed: false,
@@ -126,12 +166,20 @@ exports.handler = async (event) => {
     console.error("Admin Supabase data read failed", {
       module: moduleName,
       table: definition.table,
+      role: adminCheck.admin?.role || "",
+      profileStatus: adminCheck.admin?.status || "",
       status: error.status || 500,
       message: error.message,
     });
     return jsonResponse(error.status || 500, {
       success: false,
       error: error.status ? error.message : "Admin-data kon niet veilig worden geladen.",
+      diagnostics: {
+        module: moduleName,
+        resolvedRole: adminCheck.admin?.role || "",
+        status: adminCheck.admin?.status || "",
+        reason: error.status ? "supabase_read_failed" : "server_read_failed",
+      },
     });
   }
 };

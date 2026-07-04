@@ -1,20 +1,30 @@
-async function verifyAdmin(event, jsonResponse) {
+async function verifyAdmin(event, jsonResponse, options = {}) {
+  const allowedRoles = Array.isArray(options.allowedRoles) && options.allowedRoles.length
+    ? options.allowedRoles.map((role) => String(role || "").trim().toLowerCase()).filter(Boolean)
+    : ["super_admin", "admin"];
+  const allowedStatuses = Array.isArray(options.allowedStatuses) && options.allowedStatuses.length
+    ? options.allowedStatuses.map((status) => String(status || "").trim().toLowerCase()).filter(Boolean)
+    : ["active"];
+  const diagnostics = {
+    module: String(options.module || "").trim(),
+    action: String(options.action || "admin"),
+  };
   const authHeader = event.headers.authorization || event.headers.Authorization || "";
   const bearer = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
   const legacyToken = process.env.ADMIN_TOKEN || "";
 
-  if (legacyToken && bearer && bearer === legacyToken) {
+  if (!options.disableLegacyToken && legacyToken && bearer && bearer === legacyToken) {
     return { success: true, source: "legacy_admin_token" };
   }
 
   if (!bearer) {
-    return unauthorized(jsonResponse);
+    return unauthorized(jsonResponse, { ...diagnostics, reason: "missing_bearer" });
   }
 
   const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
   const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || "";
   if (!supabaseUrl || !supabaseAnonKey) {
-    return unauthorized(jsonResponse);
+    return unauthorized(jsonResponse, { ...diagnostics, reason: "missing_supabase_auth_config" });
   }
 
   try {
@@ -27,12 +37,17 @@ async function verifyAdmin(event, jsonResponse) {
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || !data?.id) {
-      return unauthorized(jsonResponse);
+      return unauthorized(jsonResponse, { ...diagnostics, reason: "invalid_supabase_session", status: response.status || 401 });
     }
 
     const profile = await fetchProfileForUser({ supabaseUrl, bearer, authUserId: data.id });
-    if (!isAllowedAdminRole(profile?.role, profile?.status)) {
-      return unauthorized(jsonResponse);
+    if (!isAllowedRole(profile?.role, profile?.status, { allowedRoles, allowedStatuses })) {
+      return unauthorized(jsonResponse, {
+        ...diagnostics,
+        resolvedRole: String(profile?.role || "").trim().toLowerCase(),
+        profileStatus: String(profile?.status || "").trim().toLowerCase(),
+        reason: "role_or_status_not_allowed",
+      });
     }
 
     return {
@@ -42,12 +57,13 @@ async function verifyAdmin(event, jsonResponse) {
         id: data.id,
         email: String(data.email || "").trim().toLowerCase(),
         role: profile.role,
+        status: profile.status,
         profileId: profile.id,
       },
     };
   } catch (error) {
-    console.error("Admin auth verification failed", { message: error.message });
-    return unauthorized(jsonResponse);
+    console.error("Admin auth verification failed", { message: error.message, module: diagnostics.module, action: diagnostics.action });
+    return unauthorized(jsonResponse, { ...diagnostics, reason: "auth_verification_exception" });
   }
 }
 
@@ -71,19 +87,38 @@ async function fetchProfileForUser({ supabaseUrl, bearer, authUserId }) {
 }
 
 function isAllowedAdminRole(role, status = "active") {
-  const normalizedRole = String(role || "").trim().toLowerCase();
-  const normalizedStatus = String(status || "active").trim().toLowerCase();
-  return normalizedStatus === "active" && ["super_admin", "admin"].includes(normalizedRole);
+  return isAllowedRole(role, status, { allowedRoles: ["super_admin", "admin"], allowedStatuses: ["active"] });
 }
 
-function unauthorized(jsonResponse) {
+function isAllowedRole(role, status = "active", options = {}) {
+  const normalizedRole = String(role || "").trim().toLowerCase();
+  const normalizedStatus = String(status || "active").trim().toLowerCase();
+  const allowedRoles = Array.isArray(options.allowedRoles) && options.allowedRoles.length ? options.allowedRoles : ["super_admin", "admin"];
+  const allowedStatuses = Array.isArray(options.allowedStatuses) && options.allowedStatuses.length ? options.allowedStatuses : ["active"];
+  return allowedStatuses.includes(normalizedStatus) && allowedRoles.includes(normalizedRole);
+}
+
+function unauthorized(jsonResponse, details = {}) {
+  const debug = {
+    module: details.module || "",
+    action: details.action || "",
+    resolvedRole: details.resolvedRole || "",
+    status: details.profileStatus || details.status || "",
+    reason: details.reason || "unauthorized",
+  };
+  console.warn("Admin auth rejected", debug);
   return {
     success: false,
-    response: jsonResponse(401, { success: false, error: "Niet geautoriseerd." }),
+    response: jsonResponse(401, {
+      success: false,
+      error: "Niet geautoriseerd.",
+      diagnostics: debug,
+    }),
   };
 }
 
 module.exports = {
   verifyAdmin,
   isAllowedAdminRole,
+  isAllowedRole,
 };
