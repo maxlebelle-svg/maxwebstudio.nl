@@ -72,6 +72,7 @@ exports.handler = async (event) => {
       setupLinkSent,
       customMailSent,
       mailWarning,
+      activationRedirectTo: inviteRedirectTo(),
       message: setupLinkSent
         ? customMailSent
           ? "Professionele Max Webstudio uitnodiging is verstuurd."
@@ -101,6 +102,19 @@ function inviteRedirectTo() {
   const configured = cleanText(process.env.SUPABASE_INVITE_REDIRECT_TO || process.env.EMPLOYEE_INVITE_REDIRECT_URL);
   if (configured && !configured.includes("localhost") && !configured.includes("127.0.0.1")) return configured;
   return productionActivationUrl;
+}
+
+function forceInviteRedirect(actionLink = "") {
+  const cleanLink = cleanText(actionLink);
+  if (!cleanLink) return "";
+
+  try {
+    const url = new URL(cleanLink);
+    url.searchParams.set("redirect_to", inviteRedirectTo());
+    return url.toString();
+  } catch {
+    return cleanLink;
+  }
 }
 
 function validateInvitePayload(payload = {}) {
@@ -164,8 +178,9 @@ async function generateEmployeeSetupLink(supabaseUrl, serviceRoleKey, input, typ
         redirect_to: inviteRedirectTo(),
       }),
     });
+    const rawActionLink = cleanText(data.action_link || data.actionLink || data.properties?.action_link || data.properties?.actionLink);
     return {
-      actionLink: cleanText(data.action_link || data.actionLink || data.properties?.action_link || data.properties?.actionLink),
+      actionLink: forceInviteRedirect(rawActionLink),
       authUser: data.user || data.properties?.user || null,
     };
   } catch (error) {
@@ -175,6 +190,7 @@ async function generateEmployeeSetupLink(supabaseUrl, serviceRoleKey, input, typ
 }
 
 async function sendEmployeeInviteMail(input, actionLink) {
+  const safeActionLink = forceInviteRedirect(actionLink);
   const firstName = cleanText(input.name).split(/\s+/)[0] || "daar";
   const roleLabel = input.role === "sales_partner" ? "Sales Partner" : input.role.replace(/_/g, " ");
   const subject = "Welkom bij Max Webstudio";
@@ -185,14 +201,14 @@ async function sendEmployeeInviteMail(input, actionLink) {
     "",
     `Je bent uitgenodigd als ${roleLabel}. Via onderstaande link activeer je je account en kies je je wachtwoord.`,
     "",
-    `Account activeren: ${actionLink}`,
+    `Account activeren: ${safeActionLink}`,
     "",
     input.role === "sales_partner" ? "Na activatie kom je direct in jouw Sales Dashboard." : "Na activatie kom je direct in jouw dashboard.",
     "",
     "Groet,",
     "Max Webstudio",
   ].join("\n");
-  const html = buildEmployeeInviteHtml({ firstName, roleLabel, actionLink, isSalesPartner: input.role === "sales_partner" });
+  const html = buildEmployeeInviteHtml({ firstName, roleLabel, actionLink: safeActionLink, isSalesPartner: input.role === "sales_partner" });
   return sendEmail({
     to: input.email,
     from: cleanText(process.env.EMPLOYEE_INVITE_FROM_EMAIL) || cleanText(process.env.FROM_EMAIL) || undefined,
@@ -206,6 +222,7 @@ function buildEmployeeInviteHtml({ firstName, roleLabel, actionLink, isSalesPart
   const safeName = escapeHtml(firstName);
   const safeRole = escapeHtml(roleLabel);
   const safeLink = escapeHtml(actionLink);
+  const logoUrl = "https://maxwebstudio.nl/max-webstudio-logo-mollie-512.png";
   return `<!doctype html>
 <html lang="nl">
   <body style="margin:0;background:#07121f;font-family:Inter,Arial,sans-serif;color:#102033;">
@@ -215,8 +232,17 @@ function buildEmployeeInviteHtml({ firstName, roleLabel, actionLink, isSalesPart
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;background:#ffffff;border-radius:18px;overflow:hidden;">
             <tr>
               <td style="padding:28px 30px;background:#0f2742;color:#ffffff;">
-                <div style="font-size:13px;text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:#83e6c6;">Max Webstudio</div>
-                <h1 style="margin:10px 0 0;font-size:28px;line-height:1.15;">Welkom bij Max Webstudio</h1>
+                <table role="presentation" cellspacing="0" cellpadding="0" style="width:100%;">
+                  <tr>
+                    <td style="width:58px;vertical-align:middle;">
+                      <img src="${logoUrl}" width="48" height="48" alt="Max Webstudio logo" style="display:block;border:0;border-radius:12px;background:#06121f;">
+                    </td>
+                    <td style="vertical-align:middle;">
+                      <div style="font-size:13px;text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:#83e6c6;">Max Webstudio</div>
+                      <h1 style="margin:8px 0 0;font-size:28px;line-height:1.15;">Welkom bij Max Webstudio</h1>
+                    </td>
+                  </tr>
+                </table>
               </td>
             </tr>
             <tr>
