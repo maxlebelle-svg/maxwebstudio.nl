@@ -450,7 +450,8 @@
             `;
           }).join("");
 
-          const previewAvailable = Boolean(journey.previewUrl) && journey.demoStatus === "preview_verstuurd";
+          const previewVisibleStatuses = new Set(["preview_verstuurd", "feedback_ontvangen", "aanpassingen_bezig", "definitieve_versie_klaar"]);
+          const previewAvailable = Boolean(journey.previewUrl) && previewVisibleStatuses.has(journey.demoStatus);
           demoJourneyActions.innerHTML = previewAvailable
             ? `<a class="button primary" href="${externalUrl(journey.previewUrl)}" target="_blank" rel="noopener">Preview bekijken</a>`
             : `<span class="portal-message">De previewlink verschijnt zodra de eerste versie klaarstaat.</span>`;

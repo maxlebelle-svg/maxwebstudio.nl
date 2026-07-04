@@ -509,6 +509,21 @@
               <div class="settings-status-list" id="demo-journey-details"></div>
               <div class="sales-timeline-card">
                 <div class="sales-timeline-heading">
+                  <strong>Website Factory</strong>
+                  <span id="demo-journey-build-state">Geen build</span>
+                </div>
+                <div class="settings-status-list" id="demo-journey-build-details"></div>
+                <div class="portal-progress" aria-label="Build voortgang"><span id="demo-journey-build-progress" style="width: 0%"></span></div>
+                <div class="sales-timeline" id="demo-journey-build-history">
+                  <div class="sales-timeline-empty">Nog geen build history.</div>
+                </div>
+                <details class="admin-developer-only">
+                  <summary>Factory diagnostics</summary>
+                  <pre id="demo-journey-build-diagnostics"></pre>
+                </details>
+              </div>
+              <div class="sales-timeline-card">
+                <div class="sales-timeline-heading">
                   <strong>Klanttijdlijn</strong>
                   <span id="demo-journey-timeline-count">0 stappen</span>
                 </div>
@@ -20210,6 +20225,7 @@
         let leads = [];
         let journey = null;
         let events = [];
+        let buildHistory = { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
         let currentTemplate = null;
 
         function initElements() {
@@ -20234,6 +20250,11 @@
             state: document.getElementById("demo-journey-state"),
             summary: document.getElementById("demo-journey-summary"),
             details: document.getElementById("demo-journey-details"),
+            buildState: document.getElementById("demo-journey-build-state"),
+            buildDetails: document.getElementById("demo-journey-build-details"),
+            buildProgress: document.getElementById("demo-journey-build-progress"),
+            buildHistory: document.getElementById("demo-journey-build-history"),
+            buildDiagnostics: document.getElementById("demo-journey-build-diagnostics"),
             timeline: document.getElementById("demo-journey-timeline"),
             timelineCount: document.getElementById("demo-journey-timeline-count"),
             openPreview: document.getElementById("demo-journey-open-preview"),
@@ -20277,6 +20298,15 @@
             }
           }
           return "";
+        }
+
+        function developerModeActive() {
+          try {
+            const settings = JSON.parse(localStorage.getItem("maxwebstudioSettings") || "{}");
+            return Boolean(settings.developerMode);
+          } catch {
+            return false;
+          }
         }
 
         async function apiRequest(url, method = "GET", payload = null) {
@@ -20386,6 +20416,7 @@
           const data = await apiRequest(`${endpoint}?leadId=${encodeURIComponent(leadId)}`);
           journey = data.journey || null;
           events = Array.isArray(data.events) ? data.events : [];
+          buildHistory = data.buildHistory || { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
           renderJourney();
         }
 
@@ -20524,6 +20555,7 @@
             const data = await apiRequest(endpoint, "POST", collectPayload({ action: "generate_preview", generatedBriefing: elements.briefing.value }));
             journey = data.journey || null;
             events = Array.isArray(data.events) ? data.events : [];
+            buildHistory = data.buildHistory || buildHistory;
             if (journey?.previewUrl) elements.preview.value = journey.previewUrl;
             if (journey?.demoStatus) elements.status.value = journey.demoStatus;
             renderJourney();
@@ -20564,6 +20596,67 @@
               <small>${escapeHtml(helper)}</small>
             </article>
           `).join("");
+        }
+
+        function buildStatusLabel(status = "") {
+          return ({
+            queued: "In wachtrij",
+            briefing: "Briefing verwerken",
+            building: "Website bouwen",
+            quality_check: "Controle uitvoeren",
+            deploying: "Preview opslaan",
+            completed: "Preview klaar",
+            quality_failed: "Aandacht nodig",
+            failed: "Mislukt",
+          })[status] || "Geen build";
+        }
+
+        function renderBuildStatus() {
+          const latest = buildHistory.latestJob || (buildHistory.jobs || [])[0] || null;
+          const activeVersion = buildHistory.activeVersion || (buildHistory.previewVersions || [])[0] || null;
+          if (elements.buildState) {
+            elements.buildState.textContent = latest ? buildStatusLabel(latest.status) : buildHistory.setupRequired ? "Setup nodig" : "Geen build";
+          }
+          if (elements.buildProgress) {
+            elements.buildProgress.style.width = `${Math.max(0, Math.min(100, Number(latest?.progress || 0)))}%`;
+          }
+          if (elements.buildDetails) {
+            const score = latest?.previewScore ?? activeVersion?.previewScore;
+            elements.buildDetails.innerHTML = [
+              ["Laatste build", latest ? buildStatusLabel(latest.status) : "-"],
+              ["Voortgang", latest ? `${latest.progress || 0}%` : "-"],
+              ["Preview score", Number.isFinite(Number(score)) ? `${score}/100` : "-"],
+              ["Preview versie", activeVersion?.version ? `V${activeVersion.version}` : latest?.previewVersion ? `V${latest.previewVersion}` : "-"],
+              ["Laatste buildtijd", latest?.finishedAt || latest?.updatedAt ? formatDate(latest.finishedAt || latest.updatedAt) : "-"],
+              ["Melding", latest?.errorMessage || buildHistory.warning || (latest?.status === "completed" ? "Klaar voor interne controle." : "-")],
+            ].map(([label, value]) => `<div><strong>${escapeHtml(label)}</strong><span>${escapeHtml(value)}</span></div>`).join("");
+          }
+          if (elements.buildHistory) {
+            const jobs = buildHistory.jobs || [];
+            elements.buildHistory.innerHTML = jobs.length ? jobs.slice(0, 6).map((job) => `
+              <div class="sales-timeline-item">
+                <span class="sales-timeline-dot ${job.status === "completed" ? "is-active" : ""}"></span>
+                <div>
+                  <strong>${escapeHtml(`Preview V${job.previewVersion || "-"} - ${buildStatusLabel(job.status)}`)}</strong>
+                  <small>${escapeHtml(`Score ${Number.isFinite(Number(job.previewScore)) ? job.previewScore : "-"} / 100 · ${job.currentStep || "build"}`)}</small>
+                  <small>${escapeHtml(formatDate(job.finishedAt || job.updatedAt || job.createdAt))}</small>
+                </div>
+              </div>
+            `).join("") : `<div class="sales-timeline-empty">${buildHistory.setupRequired ? escapeHtml(buildHistory.warning) : "Nog geen build history."}</div>`;
+          }
+          if (elements.buildDiagnostics) {
+            const diagnostics = developerModeActive()
+              ? {
+                latestJob: latest,
+                activeVersion,
+                qualityReport: latest?.qualityReport || activeVersion?.qualityReport || null,
+                buildLogs: latest?.buildLogs || [],
+                generatedFiles: latest?.generatedPackage?.files?.map((file) => file.path) || activeVersion?.generatedPackage?.files?.map((file) => file.path) || [],
+                previewToken: latest?.previewToken || activeVersion?.previewToken || "",
+              }
+              : { message: "Developer Mode uitgeschakeld." };
+            elements.buildDiagnostics.textContent = JSON.stringify(diagnostics, null, 2);
+          }
         }
 
         function renderTimeline() {
@@ -20630,6 +20723,7 @@
           setActionLink(elements.downloadZip, journey?.previewUrl ? `${journey.previewUrl}&format=zip` : "");
           setActionLink(elements.openPortal, journey?.customerId ? `/klantportaal.html?customerId=${encodeURIComponent(journey.customerId)}#projectstatus` : "");
           renderMetrics();
+          renderBuildStatus();
           renderTimeline();
         }
 

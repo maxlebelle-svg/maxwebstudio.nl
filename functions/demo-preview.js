@@ -50,7 +50,9 @@ exports.handler = async (event) => {
 
   const file = previewPackage.files.find((item) => item.path === filePath) || previewPackage.files.find((item) => item.path === "index.html") || previewPackage.files[0];
   const content = file?.path === "index.html"
-    ? String(file?.content || "").replace('href="styles.css"', `href="/.netlify/functions/demo-preview?id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}&file=styles.css"`)
+    ? String(file?.content || "")
+      .replace('href="styles.css"', `href="/.netlify/functions/demo-preview?id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}&file=styles.css"`)
+      .replace('src="script.js"', `src="/.netlify/functions/demo-preview?id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}&file=script.js"`)
     : file?.content || "";
   return response(200, content || "<!doctype html><title>Preview</title><p>Previewpakket is leeg.</p>", {
     "Content-Type": contentTypeFor(file?.path),
@@ -200,6 +202,8 @@ function safeFilename(value = "") {
 
 function contentTypeFor(path = "") {
   if (path.endsWith(".css")) return "text/css; charset=utf-8";
+  if (path.endsWith(".js")) return "application/javascript; charset=utf-8";
+  if (path.endsWith(".json")) return "application/json; charset=utf-8";
   if (path.endsWith(".txt") || path.endsWith(".md")) return "text/plain; charset=utf-8";
   return "text/html; charset=utf-8";
 }
