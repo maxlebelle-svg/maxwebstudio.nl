@@ -17551,7 +17551,6 @@
       } from "./src/services/leadFinderService.js?v=20260704-admin-session-hotfix";
       import { readSupabaseDataLayerModule } from "./src/services/supabaseDataLayerService.js?v=20260704-admin-session-hotfix";
       import { saveCrmTaskWithWriteFallback } from "./src/services/crmTaskWriteService.js?v=20260704-admin-session-hotfix";
-      import { saveLeadNoteWithWriteFallback } from "./src/services/leadNoteWriteService.js?v=20260704-admin-session-hotfix";
 
       const leadfinderElements = {
         cockpit: {
@@ -17625,6 +17624,8 @@
       let leadfinderDataLayerLeads = [];
       let leadfinderSourceStatus = null;
       let activeLeadfinderQuickFilter = null;
+      const productionLeadsEndpoint = "/.netlify/functions/admin-leads";
+      const leadOfflineQueueKey = "maxwebstudioLeadOfflineQueue";
       const websiteAnalysisState = new Map();
       let googlePlacesMap = null;
       let googlePlacesService = null;
@@ -17706,41 +17707,135 @@
           || "hybrid";
       }
 
+      function getLeadApiBearer() {
+        const adminSession = readLeadfinderJson("mws_admin_supabase_session", {}) || {};
+        if (adminSession.accessToken) return adminSession.accessToken;
+        const currentSession = readLeadfinderJson("maxwebstudioCurrentSession", {}) || {};
+        if (currentSession.accessToken) return currentSession.accessToken;
+        const supabaseSession = readLeadfinderJson("maxwebstudioSupabaseAuthSession", {}) || {};
+        return supabaseSession.access_token || "";
+      }
+
+      function readLeadOfflineQueue() {
+        const queue = readLeadfinderJson(leadOfflineQueueKey, []) || [];
+        return Array.isArray(queue) ? queue : [];
+      }
+
+      function writeLeadOfflineQueue(queue = []) {
+        localStorage.setItem(leadOfflineQueueKey, JSON.stringify(queue));
+      }
+
+      function queueLeadOffline(action, payload = {}) {
+        const queue = readLeadOfflineQueue();
+        queue.push({
+          id: `offline-lead-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          action,
+          payload,
+          queuedAt: new Date().toISOString(),
+        });
+        writeLeadOfflineQueue(queue);
+      }
+
+      async function leadApiRequest(method = "GET", payload = null, options = {}) {
+        const token = getLeadApiBearer();
+        if (!token) throw new Error("Adminsessie ontbreekt. Log opnieuw in om leads te synchroniseren.");
+        const url = options.id
+          ? `${productionLeadsEndpoint}?id=${encodeURIComponent(options.id)}`
+          : productionLeadsEndpoint;
+        const response = await fetch(url, {
+          method,
+          headers: {
+            Accept: "application/json",
+            ...(payload ? { "Content-Type": "application/json" } : {}),
+            Authorization: `Bearer ${token}`,
+          },
+          body: payload ? JSON.stringify(payload) : undefined,
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.success === false) {
+          const error = new Error(data.error || "Lead API gaf geen geldige response.");
+          error.status = response.status;
+          error.setupRequired = Boolean(data.setupRequired);
+          error.diagnostics = data.diagnostics || {};
+          throw error;
+        }
+        return data;
+      }
+
+	      async function syncQueuedLeads() {
+	        const queue = readLeadOfflineQueue();
+	        if (!queue.length) return { synced: 0 };
+	        const remaining = [];
+	        let synced = 0;
+	        for (const item of queue) {
+	          try {
+	            if (item.action === "create") {
+	              await leadApiRequest("POST", item.payload);
+	              synced += 1;
+	            } else if (item.action === "update") {
+	              await leadApiRequest("PATCH", item.payload);
+	              synced += 1;
+	            } else if (item.action === "delete") {
+	              await leadApiRequest("DELETE", { id: item.payload?.id }, { id: item.payload?.id });
+	              synced += 1;
+	            } else {
+	              remaining.push(item);
+	            }
+	          } catch (error) {
+            remaining.push(item);
+          }
+        }
+        writeLeadOfflineQueue(remaining);
+        if (synced) setLeadfinderMessage(`${synced} offline lead${synced === 1 ? "" : "s"} gesynchroniseerd.`, "success");
+        return { synced, remaining: remaining.length };
+      }
+
       async function loadLeadfinderDataLayer() {
         renderLeadfinderState("Leads laden", "De sales pipeline wordt opgehaald.", "loading");
         try {
-          const result = await readSupabaseDataLayerModule("leads", { mode: currentLeadfinderDataMode() });
+          const result = await leadApiRequest("GET");
           leadfinderDataLayerLeads = Array.isArray(result.records) ? result.records : [];
           leadfinderSourceStatus = {
-            mode: result.mode,
+            mode: result.mode || "supabase-production",
             counts: result.counts || {},
-            fallbackUsed: Boolean(result.fallbackUsed),
+            fallbackUsed: false,
             error: result.error || "",
             warning: result.warning || "",
             refreshedAt: result.refreshedAt || new Date().toISOString(),
-            dataLayer: "supabase-data-layer-mvp",
+            dataLayer: "supabase-production-leads",
           };
-          localStorage.setItem("maxwebstudioLastLeadfinderSourceStatus", JSON.stringify(leadfinderSourceStatus));
-          logLeadfinderDiagnostic("Leadfinder data-layer geladen", {
+	          localStorage.setItem("maxwebstudioLastLeadfinderSourceStatus", JSON.stringify(leadfinderSourceStatus));
+	          const queueResult = await syncQueuedLeads();
+	          if (queueResult.synced) {
+	            const refreshed = await leadApiRequest("GET");
+	            leadfinderDataLayerLeads = Array.isArray(refreshed.records) ? refreshed.records : leadfinderDataLayerLeads;
+	            leadfinderSourceStatus.counts = refreshed.counts || leadfinderSourceStatus.counts;
+	            leadfinderSourceStatus.refreshedAt = refreshed.refreshedAt || new Date().toISOString();
+	            localStorage.setItem("maxwebstudioLastLeadfinderSourceStatus", JSON.stringify(leadfinderSourceStatus));
+	          }
+	          logLeadfinderDiagnostic("Leadfinder data-layer geladen", {
             mode: leadfinderSourceStatus.mode,
             counts: leadfinderSourceStatus.counts,
             fallbackUsed: leadfinderSourceStatus.fallbackUsed,
             error: leadfinderSourceStatus.error,
           });
         } catch (error) {
-          leadfinderDataLayerLeads = readLeadFinderLeads();
+          const fallback = await readSupabaseDataLayerModule("leads", { mode: "local" });
+          leadfinderDataLayerLeads = Array.isArray(fallback.records) ? fallback.records : readLeadFinderLeads();
           leadfinderSourceStatus = {
             mode: "local",
             counts: { local: leadfinderDataLayerLeads.length, supabase: 0, hybrid: leadfinderDataLayerLeads.length },
             fallbackUsed: true,
-            error: error.message || "Leadfinder data-layer kon niet worden gelezen.",
-            warning: "",
+            error: "",
+            warning: error.setupRequired
+              ? "Production leads tabel ontbreekt nog. Nieuwe leads worden tijdelijk offline gebufferd tot Supabase actief is."
+              : error.message || "Leadfinder data-layer kon niet worden gelezen.",
             refreshedAt: new Date().toISOString(),
-            dataLayer: "local-fallback-after-data-layer-error",
+            dataLayer: "offline-fallback-after-production-leads-error",
           };
           localStorage.setItem("maxwebstudioLastLeadfinderSourceStatus", JSON.stringify(leadfinderSourceStatus));
           logLeadfinderDiagnostic("Leadfinder data-layer fallback actief", {
-            error: leadfinderSourceStatus.error,
+            error: error.message,
             counts: leadfinderSourceStatus.counts,
           });
         }
@@ -17784,7 +17879,7 @@
 
       function canDeleteLead(lead = {}) {
         if (!lead?.id) return false;
-        return isLocalLead(lead);
+        return true;
       }
 
       function isDevModeEnabled() {
@@ -18927,11 +19022,11 @@
             <div><strong>Geen lead geselecteerd</strong><span>Klik op Bekijk in de lijst.</span></div>
           `;
         }
-        if (leadfinderElements.detailCallStatus) leadfinderElements.detailCallStatus.value = lead?.callStatus || "";
-        if (leadfinderElements.saveNote) leadfinderElements.saveNote.disabled = !hasLead;
-        [leadfinderElements.convertCustomer, leadfinderElements.deleteLead, leadfinderElements.detailCallStatus].forEach((element) => {
-          if (element) element.disabled = !hasLead || !isLocalLead(lead);
-        });
+	        if (leadfinderElements.detailCallStatus) leadfinderElements.detailCallStatus.value = lead?.callStatus || "";
+	        if (leadfinderElements.saveNote) leadfinderElements.saveNote.disabled = !hasLead;
+	        if (leadfinderElements.convertCustomer) leadfinderElements.convertCustomer.disabled = !hasLead;
+	        if (leadfinderElements.deleteLead) leadfinderElements.deleteLead.disabled = !hasLead || !canDeleteLead(lead);
+	        if (leadfinderElements.detailCallStatus) leadfinderElements.detailCallStatus.disabled = !hasLead;
         [leadfinderElements.createTask].forEach((element) => {
           if (element) element.disabled = !hasLead;
         });
@@ -19161,19 +19256,27 @@
           }
           websiteAnalysisState.set(target.key, analysis);
           if (lead?.id) websiteAnalysisState.set(lead.id, analysis);
-          if (analysis.ok && isLocalLead(lead)) {
-            const analysisNote = buildWebsiteAnalysisNote(analysis);
-            const updatedLead = updateLeadFinderLeadLocally(lead.id, {
-              websiteAnalysis: analysis,
-              notes: [lead.notes, analysisNote].filter(Boolean).join("\n\n"),
-              leadScore: Math.max(Number(lead.leadScore || 0), Number(analysis.score || 0)),
-            }) || lead;
-            selectedLeadFinderId = updatedLead.id;
-            websiteAnalysisState.set(updatedLead.id, analysis);
-            await reloadLeadfinderAfterLocalChange();
-          } else {
-            renderLeadWebsiteAnalysis(lead);
-          }
+	          if (analysis.ok && lead?.id) {
+	            const analysisNote = buildWebsiteAnalysisNote(analysis);
+	            const updates = {
+	              websiteAnalysis: analysis,
+	              notes: [lead.notes, analysisNote].filter(Boolean).join("\n\n"),
+	              leadScore: Math.max(Number(lead.leadScore || 0), Number(analysis.score || 0)),
+	            };
+	            if (isProductionLead(lead)) {
+	              await leadApiRequest("PATCH", { id: lead.id, ...updates }, { id: lead.id });
+	              selectedLeadFinderId = lead.id;
+	              websiteAnalysisState.set(lead.id, analysis);
+	              await reloadLeadfinderAfterLocalChange();
+	            } else {
+	              const updatedLead = updateLeadFinderLeadLocally(lead.id, updates) || lead;
+	              selectedLeadFinderId = updatedLead.id;
+	              websiteAnalysisState.set(updatedLead.id, analysis);
+	              await reloadLeadfinderAfterLocalChange();
+	            }
+	          } else {
+	            renderLeadWebsiteAnalysis(lead);
+	          }
           if (!lead && analysis.ok) {
             const analysisNote = buildWebsiteAnalysisNote(analysis);
             const currentNotes = String(leadfinderElements.notes?.value || "").trim();
@@ -19232,10 +19335,69 @@
         });
       }
 
-      async function reloadLeadfinderAfterLocalChange() {
-        await loadLeadfinderDataLayer();
-        renderLeadfinderList();
-      }
+	      function buildLeadPayloadFromForm(ownerContext) {
+	        return {
+          companyName: leadfinderElements.company?.value.trim() || "",
+          industry: leadfinderElements.industry?.value || "",
+          region: leadfinderElements.region?.value || "",
+          phone: leadfinderElements.phone?.value || "",
+          email: leadfinderElements.email?.value || "",
+          websiteUrl: leadfinderElements.website?.value || "",
+          websiteStatus: leadfinderElements.websiteStatus?.value || "onbekend",
+          leadScore: leadfinderElements.score?.value || 70,
+          callStatus: leadfinderElements.callStatus?.value || "nieuw",
+          followUpDate: leadfinderElements.followUp?.value || "",
+          source: leadfinderElements.source?.value || "handmatig",
+          notes: leadfinderElements.notes?.value || "",
+          googlePlaceId: leadfinderElements.form?.dataset.googlePlaceId || "",
+          googleMapsUrl: leadfinderElements.form?.dataset.googleMapsUrl || "",
+          ownerAuthUserId: ownerContext.userId,
+          ownerProfileId: ownerContext.profileId,
+          ownerEmail: ownerContext.email,
+          ownerName: ownerContext.name,
+          salesPartnerEmail: ownerContext.role === "sales_partner" ? ownerContext.email : "",
+          salesPartnerName: ownerContext.role === "sales_partner" ? ownerContext.name : "",
+          createdBy: ownerContext.userId,
+          createdByEmail: ownerContext.email,
+          createdByName: ownerContext.name,
+          metadata: {
+            createdFrom: "admin-dashboard-leadfinder",
+            createdByRole: ownerContext.role,
+            createdByEmail: ownerContext.email,
+          },
+	        };
+	      }
+
+	      function isProductionLead(lead = {}) {
+	        return lead?._source === "supabase" || Boolean(lead?._supabaseId);
+	      }
+
+	      async function updateLeadfinderLead(lead, updates = {}, successMessage = "Lead bijgewerkt.") {
+	        if (!lead?.id) throw new Error("Lead ontbreekt.");
+	        if (isProductionLead(lead)) {
+	          try {
+	            const result = await leadApiRequest("PATCH", { id: lead.id, ...updates }, { id: lead.id });
+	            selectedLeadFinderId = result.lead?.id || lead.id;
+	            setLeadfinderMessage(successMessage, "success");
+	            await reloadLeadfinderAfterLocalChange();
+	            return result.lead || lead;
+	          } catch (error) {
+	            queueLeadOffline("update", { id: lead.id, ...updates });
+	            setLeadfinderMessage("Wijziging tijdelijk offline bewaard. Zodra de verbinding terug is, synchroniseert het dashboard automatisch.", "warning");
+	            return lead;
+	          }
+	        }
+	        const updatedLead = updateLeadFinderLeadLocally(lead.id, updates) || lead;
+	        selectedLeadFinderId = updatedLead.id;
+	        setLeadfinderMessage(successMessage, "success");
+	        await reloadLeadfinderAfterLocalChange();
+	        return updatedLead;
+	      }
+
+	      async function reloadLeadfinderAfterLocalChange() {
+	        await loadLeadfinderDataLayer();
+	        renderLeadfinderList();
+	      }
 
       async function handleLeadfinderSubmit(event) {
         event.preventDefault();
@@ -19258,42 +19420,31 @@
           setLeadfinderMessage("Lead niet opgeslagen. Controleer eerst de bestaande lead.", "error");
           return;
         }
-        const ownerContext = getLeadfinderUserContext();
-        const lead = saveLeadFinderLeadLocally({
-          companyName,
-          industry: leadfinderElements.industry?.value || "",
-          region: leadfinderElements.region?.value || "",
-          phone,
-          email: leadfinderElements.email?.value || "",
-          websiteUrl,
-          websiteStatus: leadfinderElements.websiteStatus?.value || "onbekend",
-          leadScore: leadfinderElements.score?.value || 70,
-          callStatus: leadfinderElements.callStatus?.value || "nieuw",
-          followUpDate: leadfinderElements.followUp?.value || "",
-          source: leadfinderElements.source?.value || "handmatig",
-          notes: leadfinderElements.notes?.value || "",
-          googlePlaceId,
-          googleMapsUrl,
-          ownerAuthUserId: ownerContext.userId,
-          ownerProfileId: ownerContext.profileId,
-          ownerEmail: ownerContext.email,
-          ownerName: ownerContext.name,
-          salesPartnerEmail: ownerContext.role === "sales_partner" ? ownerContext.email : "",
-          salesPartnerName: ownerContext.role === "sales_partner" ? ownerContext.name : "",
-          createdBy: ownerContext.userId,
-          createdByEmail: ownerContext.email,
-          createdByName: ownerContext.name,
-          metadata: {
-            createdFrom: "admin-dashboard-leadfinder",
-            createdByRole: ownerContext.role,
-            createdByEmail: ownerContext.email,
-          },
-        });
-        selectedLeadFinderId = lead.id;
-        resetLeadfinderForm();
-        setLeadfinderMessage("Lead opgeslagen in de lokale sales pipeline.", "success");
-        await reloadLeadfinderAfterLocalChange();
-      }
+	        const ownerContext = getLeadfinderUserContext();
+	        const payload = buildLeadPayloadFromForm(ownerContext);
+	        try {
+	          const result = await leadApiRequest("POST", payload);
+	          selectedLeadFinderId = result.lead?.id || "";
+	          resetLeadfinderForm();
+	          setLeadfinderMessage("Lead opgeslagen in de centrale CRM-database.", "success");
+	          await reloadLeadfinderAfterLocalChange();
+	        } catch (error) {
+	          const localLead = saveLeadFinderLeadLocally({
+	            ...payload,
+	            source: "offline-cache",
+	            metadata: {
+	              ...(payload.metadata || {}),
+	              offlineSyncPending: true,
+	              offlineSyncError: error.message || "Lead API niet bereikbaar",
+	            },
+	          });
+	          queueLeadOffline("create", payload);
+	          selectedLeadFinderId = localLead.id;
+	          resetLeadfinderForm();
+	          setLeadfinderMessage("Lead tijdelijk offline opgeslagen. Zodra Supabase bereikbaar is, synchroniseert het dashboard automatisch.", "warning");
+	          await reloadLeadfinderAfterLocalChange();
+	        }
+	      }
 
       async function handleLeadfinderListClick(event) {
         const button = event.target.closest("[data-leadfinder-action]");
@@ -19322,34 +19473,25 @@
         }
       }
 
-      async function saveLeadfinderDetailNote() {
-        const lead = selectedLeadFinderLead();
-        if (!lead) return;
-        const note = String(leadfinderElements.detailNote?.value || "").trim();
-        const callStatus = isLocalLead(lead) ? leadfinderElements.detailCallStatus?.value || lead.callStatus : lead.callStatus;
-        try {
-          const result = await saveLeadNoteWithWriteFallback(lead, note, { callStatus });
-          selectedLeadFinderId = result.lead?.id || lead.id;
-          setLeadfinderMessage(result.fallbackUsed ? "Leadnotitie lokaal opgeslagen." : "Leadnotitie via Supabase staging opgeslagen en lokaal gespiegeld.", "success");
-        } catch (error) {
-          setLeadfinderMessage(error.message || "Leadnotitie kon niet worden opgeslagen.", "error");
-          return;
-        }
-        if (leadfinderElements.detailNote) leadfinderElements.detailNote.value = "";
-        await reloadLeadfinderAfterLocalChange();
-      }
+	      async function saveLeadfinderDetailNote() {
+	        const lead = selectedLeadFinderLead();
+	        if (!lead) return;
+	        const note = String(leadfinderElements.detailNote?.value || "").trim();
+	        const callStatus = leadfinderElements.detailCallStatus?.value || lead.callStatus;
+	        const notes = [lead.notes, note].filter(Boolean).join("\n\n");
+	        try {
+	          await updateLeadfinderLead(lead, { notes, callStatus }, "Leadnotitie opgeslagen.");
+	        } catch (error) {
+	          setLeadfinderMessage(error.message || "Leadnotitie kon niet worden opgeslagen.", "error");
+	          return;
+	        }
+	        if (leadfinderElements.detailNote) leadfinderElements.detailNote.value = "";
+	      }
 
-      async function markSelectedLeadStatus(status, message) {
-        const lead = selectedLeadFinderLead();
-        if (!lead) return;
-        if (!isLocalLead(lead)) {
-          setLeadfinderMessage("Deze lead komt uit de read-only data-layer. Status wijzigen blijft beschikbaar voor lokale/admin leads.", "error");
-          return;
-        }
-        const updatedLead = updateLeadFinderLeadLocally(lead.id, { callStatus: status }) || lead;
-        selectedLeadFinderId = updatedLead.id;
-        setLeadfinderMessage(message, "success");
-        await reloadLeadfinderAfterLocalChange();
+	      async function markSelectedLeadStatus(status, message) {
+	        const lead = selectedLeadFinderLead();
+	        if (!lead) return;
+	        await updateLeadfinderLead(lead, { callStatus: status }, message);
       }
 
       function openQuoteForSelectedLead(lead) {
@@ -19370,23 +19512,16 @@
         setLeadfinderMessage("Offerte gestart. Koppel een klant zodra de lead klaar is voor akkoord.", "success");
       }
 
-      async function planFollowUpForSelectedLead() {
-        const lead = selectedLeadFinderLead();
-        if (!lead) return;
-        if (!isLocalLead(lead)) {
-          setLeadfinderMessage("Deze lead komt uit de read-only data-layer. Follow-up plannen blijft beschikbaar voor lokale/admin leads.", "error");
-          return;
-        }
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const followUpDate = tomorrow.toISOString().slice(0, 10);
-        const updatedLead = updateLeadFinderLeadLocally(lead.id, {
-          followUpDate,
-          callStatus: lead.callStatus === "quote_sent" ? "quote_sent" : "opvolgen",
-        }) || lead;
-        selectedLeadFinderId = updatedLead.id;
-        setLeadfinderMessage("Follow-up voor morgen gepland.", "success");
-        await reloadLeadfinderAfterLocalChange();
+	      async function planFollowUpForSelectedLead() {
+	        const lead = selectedLeadFinderLead();
+	        if (!lead) return;
+	        const tomorrow = new Date();
+	        tomorrow.setDate(tomorrow.getDate() + 1);
+	        const followUpDate = tomorrow.toISOString().slice(0, 10);
+	        await updateLeadfinderLead(lead, {
+	          followUpDate,
+	          callStatus: lead.callStatus === "quote_sent" ? "quote_sent" : "opvolgen",
+	        }, "Follow-up voor morgen gepland.");
       }
 
       async function runSalesCockpitAction(action) {
@@ -19401,54 +19536,57 @@
           await planFollowUpForSelectedLead();
           return;
         }
-        if (action === "quote") {
-          openQuoteForSelectedLead(lead);
-          if (isLocalLead(lead)) {
-            const updatedLead = updateLeadFinderLeadLocally(lead.id, { callStatus: "quote_ready" }) || lead;
-            selectedLeadFinderId = updatedLead.id;
-            await reloadLeadfinderAfterLocalChange();
-          }
-          return;
-        }
+	        if (action === "quote") {
+	          openQuoteForSelectedLead(lead);
+	          await updateLeadfinderLead(lead, { callStatus: "quote_ready" }, "Offerte gestart. Lead staat klaar voor offerte.");
+	          return;
+	        }
         if (action === "customer") {
           await convertSelectedLeadToCustomer();
         }
       }
 
-      async function convertSelectedLeadToCustomer() {
-        const lead = selectedLeadFinderLead();
-        if (!lead) return;
-        if (!isLocalLead(lead)) {
-          setLeadfinderMessage("Deze lead komt uit de read-only data-layer. Omzetten naar klant blijft veilig beschikbaar voor lokale/admin leads.", "error");
-          return;
-        }
-        const updatedLead = updateLeadFinderLeadLocally(lead.id, {
-          callStatus: lead.callStatus === "customer_active" ? "customer_active" : "won",
-          notes: [
-            lead.notes,
-            `[${new Date().toLocaleDateString("nl-NL")}] Lead geopend in omzetten-naar-klant wizard.`,
-          ].filter(Boolean).join("\n"),
-        }) || lead;
-        selectedLeadFinderId = updatedLead.id;
-        if (typeof window.openLeadToCustomerWizard === "function") {
-          window.openLeadToCustomerWizard(updatedLead);
-          setLeadfinderMessage("Lead gemarkeerd als verkocht. Controleer de gegevens in de klantwizard.", "success");
-        } else {
-          setLeadfinderMessage("Klantwizard kon niet worden geopend. Herlaad het admin dashboard.", "error");
-        }
-        await reloadLeadfinderAfterLocalChange();
-      }
+	      async function convertSelectedLeadToCustomer() {
+	        const lead = selectedLeadFinderLead();
+	        if (!lead) return;
+	        const updatedLead = await updateLeadfinderLead(lead, {
+	          callStatus: lead.callStatus === "customer_active" ? "customer_active" : "won",
+	          notes: [
+	            lead.notes,
+	            `[${new Date().toLocaleDateString("nl-NL")}] Lead geopend in omzetten-naar-klant wizard.`,
+	          ].filter(Boolean).join("\n"),
+	        }, "Lead gemarkeerd als verkocht.");
+	        selectedLeadFinderId = updatedLead.id;
+	        if (typeof window.openLeadToCustomerWizard === "function") {
+	          window.openLeadToCustomerWizard(updatedLead);
+	          setLeadfinderMessage("Lead gemarkeerd als verkocht. Controleer de gegevens in de klantwizard.", "success");
+	        } else {
+	          setLeadfinderMessage("Klantwizard kon niet worden geopend. Herlaad het admin dashboard.", "error");
+	        }
+	      }
 
-      async function deleteLeadfinderLead(lead) {
-        if (!lead) return;
-        if (!canDeleteLead(lead)) {
-          setLeadfinderMessage("Deze lead komt uit een gedeelde/read-only bron. Verwijderen is pas beschikbaar zodra de production leadbron write/delete ondersteunt.", "error");
-          return;
-        }
-        if (!window.confirm(`Lead ${lead.companyName || lead.contactName || lead.id} verwijderen?`)) return;
-        const result = deleteLeadFromLocalSources(lead);
-        if (!result.deleted) {
-          setLeadfinderMessage("Lead kon niet in de lokale fallbackbronnen worden gevonden.", "error");
+	      async function deleteLeadfinderLead(lead) {
+	        if (!lead) return;
+	        if (!canDeleteLead(lead)) {
+	          setLeadfinderMessage("Deze lead kan niet worden verwijderd.", "error");
+	          return;
+	        }
+	        if (!window.confirm(`Lead ${lead.companyName || lead.contactName || lead.id} verwijderen?`)) return;
+	        if (isProductionLead(lead)) {
+	          try {
+	            await leadApiRequest("DELETE", { id: lead.id }, { id: lead.id });
+	            if (selectedLeadFinderId === lead.id) selectedLeadFinderId = "";
+	            setLeadfinderMessage("Lead centraal verwijderd.", "success");
+	            await reloadLeadfinderAfterLocalChange();
+	          } catch (error) {
+	            queueLeadOffline("delete", { id: lead.id });
+	            setLeadfinderMessage("Verwijdering tijdelijk offline bewaard. Zodra de verbinding terug is, synchroniseert het dashboard automatisch.", "warning");
+	          }
+	          return;
+	        }
+	        const result = deleteLeadFromLocalSources(lead);
+	        if (!result.deleted) {
+	          setLeadfinderMessage("Lead kon niet in de lokale fallbackbronnen worden gevonden.", "error");
           return;
         }
         if (selectedLeadFinderId === lead.id) selectedLeadFinderId = "";
