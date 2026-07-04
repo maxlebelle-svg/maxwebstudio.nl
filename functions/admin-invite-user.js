@@ -1,8 +1,10 @@
 const { verifyAdmin } = require("./_admin-auth");
+const { sendEmail } = require("./email");
 
 const allowedRoles = new Set(["super_admin", "admin", "sales_manager", "sales_partner", "developer", "designer", "support", "customer"]);
 const allowedStatuses = new Set(["invited", "active", "disabled", "archived"]);
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const productionActivationUrl = "https://maxwebstudio.nl/account-activeren";
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
@@ -25,7 +27,15 @@ exports.handler = async (event) => {
     if (!input.success) return jsonResponse(400, input);
 
     const existingUser = await findAuthUserByEmail(supabaseUrl, serviceRoleKey, input.email);
-    const authUser = existingUser || await inviteAuthUser(supabaseUrl, serviceRoleKey, input);
+    let authUser = existingUser;
+    let setupLink = { actionLink: "", authUser: null };
+    if (existingUser || action === "send_password_reset") {
+      setupLink = await generateEmployeeSetupLink(supabaseUrl, serviceRoleKey, input, "recovery");
+    } else {
+      setupLink = await generateEmployeeSetupLink(supabaseUrl, serviceRoleKey, input, "invite");
+      authUser = setupLink.authUser || null;
+    }
+    if (!authUser) authUser = await inviteAuthUser(supabaseUrl, serviceRoleKey, input);
     const profile = await upsertProfile(supabaseUrl, serviceRoleKey, {
       ...input,
       authUserId: authUser.id,
@@ -33,10 +43,24 @@ exports.handler = async (event) => {
       inviteSentAt: existingUser ? null : new Date().toISOString(),
     });
 
-    let setupLinkSent = !existingUser;
-    if (existingUser && action === "send_password_reset") {
-      await sendPasswordReset(supabaseUrl, serviceRoleKey, input.email);
-      setupLinkSent = true;
+    let setupLinkSent = false;
+    let customMailSent = false;
+    let mailWarning = "";
+    if (!existingUser || action === "send_password_reset" || action === "invite") {
+      if (setupLink.actionLink) {
+        const mailResult = await sendEmployeeInviteMail(input, setupLink.actionLink);
+        customMailSent = Boolean(mailResult.sent);
+        mailWarning = cleanText(mailResult.warning);
+      }
+      if (customMailSent) {
+        setupLinkSent = true;
+      } else if (existingUser || action === "send_password_reset") {
+        await sendPasswordReset(supabaseUrl, serviceRoleKey, input.email);
+        setupLinkSent = true;
+      } else {
+        await sendPasswordReset(supabaseUrl, serviceRoleKey, input.email);
+        setupLinkSent = true;
+      }
     }
 
     return jsonResponse(200, {
@@ -46,8 +70,12 @@ exports.handler = async (event) => {
       profile: normalizeProfile(profile),
       createdAuthUser: !existingUser,
       setupLinkSent,
+      customMailSent,
+      mailWarning,
       message: setupLinkSent
-        ? "Uitnodiging/setup-link is verstuurd."
+        ? customMailSent
+          ? "Professionele Max Webstudio uitnodiging is verstuurd."
+          : "Uitnodiging/setup-link is verstuurd via Supabase fallback."
         : "Bestaande gebruiker is bijgewerkt. Gebruik de resetlink-actie als wachtwoord setup nodig is.",
     });
   } catch (error) {
@@ -67,6 +95,12 @@ function parsePayload(body) {
     error.status = 400;
     throw error;
   }
+}
+
+function inviteRedirectTo() {
+  const configured = cleanText(process.env.SUPABASE_INVITE_REDIRECT_TO || process.env.EMPLOYEE_INVITE_REDIRECT_URL);
+  if (configured && !configured.includes("localhost") && !configured.includes("127.0.0.1")) return configured;
+  return productionActivationUrl;
 }
 
 function validateInvitePayload(payload = {}) {
@@ -94,9 +128,7 @@ async function findAuthUserByEmail(supabaseUrl, serviceRoleKey, email) {
 }
 
 async function inviteAuthUser(supabaseUrl, serviceRoleKey, input) {
-  const redirectTo = process.env.SUPABASE_INVITE_REDIRECT_TO || process.env.URL
-    ? `${String(process.env.SUPABASE_INVITE_REDIRECT_TO || process.env.URL).replace(/\/$/, "")}/login.html?type=recovery`
-    : "";
+  const redirectTo = inviteRedirectTo();
   const inviteUrl = new URL(`${supabaseUrl}/auth/v1/invite`);
   if (redirectTo) inviteUrl.searchParams.set("redirect_to", redirectTo);
   return supabaseFetch(inviteUrl.toString(), {
@@ -110,9 +142,7 @@ async function inviteAuthUser(supabaseUrl, serviceRoleKey, input) {
 }
 
 async function sendPasswordReset(supabaseUrl, serviceRoleKey, email) {
-  const redirectTo = process.env.SUPABASE_INVITE_REDIRECT_TO || process.env.URL
-    ? `${String(process.env.SUPABASE_INVITE_REDIRECT_TO || process.env.URL).replace(/\/$/, "")}/login.html?type=recovery`
-    : "";
+  const redirectTo = inviteRedirectTo();
   const recoverUrl = new URL(`${supabaseUrl}/auth/v1/recover`);
   if (redirectTo) recoverUrl.searchParams.set("redirect_to", redirectTo);
   await supabaseFetch(recoverUrl.toString(), {
@@ -120,6 +150,90 @@ async function sendPasswordReset(supabaseUrl, serviceRoleKey, email) {
     headers: authAdminHeaders(serviceRoleKey),
     body: JSON.stringify({ email }),
   });
+}
+
+async function generateEmployeeSetupLink(supabaseUrl, serviceRoleKey, input, type = "invite") {
+  try {
+    const data = await supabaseFetch(`${supabaseUrl}/auth/v1/admin/generate_link`, {
+      method: "POST",
+      headers: authAdminHeaders(serviceRoleKey),
+      body: JSON.stringify({
+        type,
+        email: input.email,
+        data: { name: input.name, role: input.role },
+        redirect_to: inviteRedirectTo(),
+      }),
+    });
+    return {
+      actionLink: cleanText(data.action_link || data.actionLink || data.properties?.action_link || data.properties?.actionLink),
+      authUser: data.user || data.properties?.user || null,
+    };
+  } catch (error) {
+    console.error("Employee setup link generation failed", { message: error.message, status: error.status });
+    return { actionLink: "", authUser: null };
+  }
+}
+
+async function sendEmployeeInviteMail(input, actionLink) {
+  const firstName = cleanText(input.name).split(/\s+/)[0] || "daar";
+  const roleLabel = input.role === "sales_partner" ? "Sales Partner" : input.role.replace(/_/g, " ");
+  const subject = "Welkom bij Max Webstudio";
+  const text = [
+    `Hoi ${firstName},`,
+    "",
+    "Welkom bij Max Webstudio.",
+    "",
+    `Je bent uitgenodigd als ${roleLabel}. Via onderstaande link activeer je je account en kies je je wachtwoord.`,
+    "",
+    `Account activeren: ${actionLink}`,
+    "",
+    input.role === "sales_partner" ? "Na activatie kom je direct in jouw Sales Dashboard." : "Na activatie kom je direct in jouw dashboard.",
+    "",
+    "Groet,",
+    "Max Webstudio",
+  ].join("\n");
+  const html = buildEmployeeInviteHtml({ firstName, roleLabel, actionLink, isSalesPartner: input.role === "sales_partner" });
+  return sendEmail({
+    to: input.email,
+    from: cleanText(process.env.EMPLOYEE_INVITE_FROM_EMAIL) || cleanText(process.env.FROM_EMAIL) || undefined,
+    subject,
+    html,
+    text,
+  });
+}
+
+function buildEmployeeInviteHtml({ firstName, roleLabel, actionLink, isSalesPartner }) {
+  const safeName = escapeHtml(firstName);
+  const safeRole = escapeHtml(roleLabel);
+  const safeLink = escapeHtml(actionLink);
+  return `<!doctype html>
+<html lang="nl">
+  <body style="margin:0;background:#07121f;font-family:Inter,Arial,sans-serif;color:#102033;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#07121f;padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;background:#ffffff;border-radius:18px;overflow:hidden;">
+            <tr>
+              <td style="padding:28px 30px;background:#0f2742;color:#ffffff;">
+                <div style="font-size:13px;text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:#83e6c6;">Max Webstudio</div>
+                <h1 style="margin:10px 0 0;font-size:28px;line-height:1.15;">Welkom bij Max Webstudio</h1>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:30px;">
+                <p style="margin:0 0 16px;font-size:16px;line-height:1.65;">Hoi ${safeName},</p>
+                <p style="margin:0 0 16px;font-size:16px;line-height:1.65;">Je bent uitgenodigd als <strong>${safeRole}</strong>. Via onderstaande knop activeer je je account en kies je je wachtwoord.</p>
+                <p style="margin:0 0 24px;font-size:16px;line-height:1.65;">${isSalesPartner ? "Na activatie kom je direct in jouw Sales Dashboard." : "Na activatie kom je direct in jouw dashboard."}</p>
+                <a href="${safeLink}" style="display:inline-block;background:#28d39a;color:#07121f;text-decoration:none;font-weight:900;padding:14px 20px;border-radius:10px;">Account activeren</a>
+                <p style="margin:24px 0 0;font-size:13px;line-height:1.55;color:#5b6b7c;">Werkt de knop niet? Kopieer deze link:<br><a href="${safeLink}" style="color:#0f6f92;">${safeLink}</a></p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
 }
 
 async function upsertProfile(supabaseUrl, serviceRoleKey, input) {
@@ -204,6 +318,15 @@ function normalizeProfile(row = {}) {
 
 function cleanText(value) {
   return String(value || "").trim();
+}
+
+function escapeHtml(value) {
+  return cleanText(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function jsonResponse(statusCode, body) {

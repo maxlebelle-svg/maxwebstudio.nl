@@ -4,6 +4,11 @@
 [functions]
   directory = "functions"
 
+[[redirects]]
+  from = "/account-activeren"
+  to = "/account-activeren.html"
+  status = 200
+
 [[headers]]
   for = "/*"
   [headers.values]
@@ -23,6 +28,11 @@
 
 [[headers]]
   for = "/admin-dashboard.html"
+  [headers.values]
+    Cache-Control = "no-store, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/account-activeren.html"
   [headers.values]
     Cache-Control = "no-store, max-age=0, must-revalidate"
 

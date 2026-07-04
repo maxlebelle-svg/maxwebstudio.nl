@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Account activeren | Max Webstudio</title>
+    <meta name="description" content="Activeer je Max Webstudio account en kies je wachtwoord." />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=20260704-activation-flow" />
+  </head>
+  <body class="portal-body">
+    <main class="portal-auth-shell">
+      <section class="portal-auth-card">
+        <a class="brand" href="index.html" aria-label="Max Webstudio home">
+          <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true"><rect x="6" y="6" width="68" height="68" rx="18"></rect><path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path><path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path></svg>
+          <span>Max Webstudio</span>
+        </a>
+        <div>
+          <p class="section-kicker">Account activeren</p>
+          <h1 id="activation-title">Welkom bij Max Webstudio.</h1>
+          <p>Kies je wachtwoord. Daarna kom je direct in je dashboard.</p>
+        </div>
+
+        <div class="portal-login-status-card" role="status" aria-live="polite">
+          <span>Activatie</span>
+          <strong id="activation-status-title">Link controleren</strong>
+          <p id="activation-status">We controleren je beveiligde uitnodigingslink.</p>
+        </div>
+
+        <form class="portal-login-form" id="activation-form" hidden>
+          <label for="activation-password">Wachtwoord<input id="activation-password" name="password" type="password" autocomplete="new-password" minlength="10" required /></label>
+          <label for="activation-confirm-password">Wachtwoord bevestigen<input id="activation-confirm-password" name="confirmPassword" type="password" autocomplete="new-password" minlength="10" required /></label>
+          <button class="button primary" id="activation-submit" type="submit">Account activeren</button>
+        </form>
+
+        <p class="portal-message" id="activation-message" role="status" aria-live="polite"></p>
+      </section>
+      <aside class="portal-auth-aside">
+        <p class="section-kicker">Sales onboarding</p>
+        <h2>Welkom bij Max Webstudio Sales</h2>
+        <ul>
+          <li>Stap 1: Bekijk je leads.</li>
+          <li>Stap 2: Gebruik Google Maps Lead Generator.</li>
+          <li>Stap 3: Registreer elke belpoging.</li>
+          <li>Stap 4: Maak je eerste offerte.</li>
+        </ul>
+      </aside>
+    </main>
+
+    <script type="module">
+      import { consumeRecoverySessionFromUrl, updatePassword } from "./src/services/supabaseAuthProvider.js?v=20260704-activation-flow";
+
+      const form = document.getElementById("activation-form");
+      const message = document.getElementById("activation-message");
+      const statusTitle = document.getElementById("activation-status-title");
+      const statusText = document.getElementById("activation-status");
+      const title = document.getElementById("activation-title");
+      const submit = document.getElementById("activation-submit");
+      const supabaseSessionKey = "maxwebstudioSupabaseAuthSession";
+      const adminSessionKey = "mws_admin_supabase_session";
+      const accessSessionKey = "maxwebstudioCurrentSession";
+      const authUsersKey = "maxwebstudioAuthUsers";
+      const profilesKey = "maxwebstudioProfiles";
+
+      function setMessage(text, type = "") {
+        message.textContent = text;
+        message.className = `portal-message ${type}`.trim();
+      }
+
+      function readJson(key, fallback = null) {
+        try {
+          return JSON.parse(localStorage.getItem(key) || "null") ?? fallback;
+        } catch {
+          return fallback;
+        }
+      }
+
+      function readArray(key) {
+        const value = readJson(key, []);
+        return Array.isArray(value) ? value : [];
+      }
+
+      function upsertRow(key, row, matcher) {
+        const rows = readArray(key);
+        localStorage.setItem(key, JSON.stringify([row, ...rows.filter((item) => !matcher(item))]));
+      }
+
+      async function fetchAccountProfile(accessToken) {
+        let response;
+        try {
+          response = await fetch("/.netlify/functions/account-profile", {
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${accessToken}`,
+            },
+            cache: "no-store",
+          });
+        } catch {
+          throw new Error("Profielcontrole kon de server niet bereiken. Probeer het opnieuw.");
+        }
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success || !data.profile?.role) {
+          throw new Error(data.error || "Account bestaat, maar profiel/rol ontbreekt. Vraag een beheerder om toegang te activeren.");
+        }
+        return data;
+      }
+
+      function storeDashboardSessions(session, account) {
+        const profile = account.profile || {};
+        const user = account.user || {};
+        const authUserId = user.id || profile.authUserId;
+        const email = String(user.email || profile.email || "").toLowerCase();
+        const role = String(profile.role || "").toLowerCase();
+        const now = new Date().toISOString();
+        const expiresAtMs = session.expires_at ? Number(session.expires_at) * 1000 : Date.now() + Number(session.expires_in || 3600) * 1000;
+        const adminSession = {
+          accessToken: session.access_token,
+          refreshToken: session.refresh_token || "",
+          email,
+          userId: authUserId,
+          role,
+          profileId: profile.id || "",
+          startedAt: now,
+          expiresAt: expiresAtMs,
+        };
+        const accessSession = {
+          id: `supabase-${authUserId}`,
+          userId: authUserId,
+          role,
+          provider: "supabase",
+          environment: "production",
+          isDemo: false,
+          customerId: profile.customerId || "",
+          startedAt: now,
+          expiresAt: new Date(expiresAtMs).toISOString(),
+        };
+        const authUser = {
+          id: authUserId,
+          authUserId,
+          email,
+          name: profile.name || email,
+          role,
+          status: profile.status || "active",
+          isDemo: false,
+          updatedAt: now,
+        };
+        const profileRecord = {
+          id: profile.id || `profile-${authUserId}`,
+          authUserId,
+          email,
+          name: profile.name || email,
+          role,
+          status: profile.status || "active",
+          customerId: profile.customerId || "",
+          environment: "production",
+          isDemoUser: false,
+          lastLoginAt: now,
+          updatedAt: now,
+        };
+        localStorage.setItem(adminSessionKey, JSON.stringify(adminSession));
+        localStorage.setItem(accessSessionKey, JSON.stringify(accessSession));
+        localStorage.setItem("maxwebstudioAuthProvider", "supabase-prepared");
+        localStorage.setItem("maxwebstudioAuthMode", "supabase-prepared");
+        upsertRow(authUsersKey, authUser, (item) => item.id === authUserId || String(item.email || "").toLowerCase() === email);
+        upsertRow(profilesKey, profileRecord, (item) => item.authUserId === authUserId || String(item.email || "").toLowerCase() === email);
+      }
+
+      function dashboardUrlForRole(role) {
+        return ["sales_partner", "sales_manager"].includes(role)
+          ? "/admin-dashboard.html#leadfinder"
+          : "/admin-dashboard.html";
+      }
+
+      async function initializeActivation() {
+        try {
+          const result = await consumeRecoverySessionFromUrl();
+          if (!result.success) {
+            throw new Error("Deze activatielink is verlopen of niet compleet. Vraag een nieuwe uitnodiging aan.");
+          }
+          statusTitle.textContent = "Link gecontroleerd";
+          statusText.textContent = "Kies nu je wachtwoord om je account te activeren.";
+          form.hidden = false;
+          setMessage("Kies een wachtwoord van minimaal 10 tekens.", "success");
+        } catch (error) {
+          statusTitle.textContent = "Link niet geldig";
+          statusText.textContent = "Deze link kan niet worden gebruikt.";
+          setMessage(error.message || "Deze activatielink is verlopen of ongeldig.", "error");
+        }
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const data = Object.fromEntries(new FormData(form).entries());
+        if (String(data.password || "").length < 10) {
+          setMessage("Kies een wachtwoord van minimaal 10 tekens.", "error");
+          return;
+        }
+        if (data.password !== data.confirmPassword) {
+          setMessage("De wachtwoorden komen nog niet overeen.", "error");
+          return;
+        }
+        submit.disabled = true;
+        submit.textContent = "Account activeren...";
+        setMessage("Je account wordt geactiveerd...", "");
+        try {
+          await updatePassword(data.password);
+          const session = readJson(supabaseSessionKey, null);
+          if (!session?.access_token) throw new Error("Sessie ontbreekt na wachtwoord instellen. Log opnieuw in.");
+          const account = await fetchAccountProfile(session.access_token);
+          storeDashboardSessions(session, account);
+          const profile = account.profile || {};
+          const firstName = String(profile.name || account.user?.email || "").split(/\s+/)[0] || "welkom";
+          title.textContent = `Welkom ${firstName}`;
+          statusTitle.textContent = "Account geactiveerd";
+          statusText.textContent = "Je wordt doorgestuurd naar je dashboard.";
+          setMessage("Je account is geactiveerd. Je dashboard wordt geopend.", "success");
+          window.setTimeout(() => {
+            window.location.assign(dashboardUrlForRole(profile.role));
+          }, 700);
+        } catch (error) {
+          setMessage(error.message || "Account activeren is niet gelukt. Vraag een nieuwe link aan.", "error");
+          submit.disabled = false;
+          submit.textContent = "Account activeren";
+        }
+      });
+
+      initializeActivation();
+    </script>
+  </body>
+</html>

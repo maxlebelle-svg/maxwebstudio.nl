@@ -34,7 +34,7 @@ exports.handler = async (event) => {
         "Accept-Profile": "public",
       },
     });
-    const profile = Array.isArray(rows) ? rows[0] : null;
+    let profile = Array.isArray(rows) ? rows[0] : null;
 
     if (!profile?.id || !profile.role) {
       return jsonResponse(403, {
@@ -42,6 +42,31 @@ exports.handler = async (event) => {
         code: "PROFILE_ROLE_MISSING",
         error: "Account bestaat, maar profiel/rol ontbreekt. Vraag een beheerder om toegang te activeren.",
       });
+    }
+
+    if (cleanText(profile.status).toLowerCase() === "invited") {
+      const updatedRows = await supabaseFetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(profile.id)}`, {
+        method: "PATCH",
+        headers: {
+          apikey: serviceRoleKey,
+          Authorization: `Bearer ${serviceRoleKey}`,
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          "Accept-Profile": "public",
+          "Content-Profile": "public",
+          Prefer: "return=representation",
+        },
+        body: JSON.stringify({
+          status: "active",
+          last_login_at: new Date().toISOString(),
+          metadata: {
+            ...(profile.metadata || {}),
+            activatedAt: new Date().toISOString(),
+            activatedVia: "account-profile",
+          },
+        }),
+      });
+      profile = Array.isArray(updatedRows) && updatedRows[0] ? updatedRows[0] : { ...profile, status: "active" };
     }
 
     return jsonResponse(200, {
