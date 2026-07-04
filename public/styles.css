@@ -16646,6 +16646,46 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   border-radius: var(--mws-radius);
 }
 
+/* Sidebar must stay identical on every anchor/category. */
+.admin-body .admin-sidebar-nav,
+.admin-body.is-sales-view .admin-sidebar-nav {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-body .admin-sidebar-nav a,
+.admin-body.is-sales-view .admin-sidebar-nav a {
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  width: 100%;
+  padding: 0 22px;
+  border: 1px solid rgba(171, 196, 224, 0.035);
+  border-radius: 8px;
+  color: rgba(226, 236, 248, 0.78);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.038), rgba(255, 255, 255, 0.012)),
+    rgba(255, 255, 255, 0.032);
+  font-size: clamp(15px, 0.95vw, 18px);
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: none;
+  transform: none;
+}
+
+.admin-body .admin-sidebar-nav a:hover,
+.admin-body .admin-sidebar-nav a.is-active,
+.admin-body.is-sales-view .admin-sidebar-nav a:hover,
+.admin-body.is-sales-view .admin-sidebar-nav a.is-active {
+  color: #f8fbff;
+  border-color: rgba(96, 165, 250, 0.14);
+  background:
+    linear-gradient(90deg, rgba(37, 99, 235, 0.28), rgba(255, 255, 255, 0.065)),
+    rgba(255, 255, 255, 0.055);
+  box-shadow: inset 4px 0 0 var(--blue), 0 18px 44px rgba(21, 94, 239, 0.2);
+  transform: none;
+}
+
 @media (max-width: 1180px) {
   .admin-body .admin-crm-grid,
   .admin-body .website-operations-grid,
