@@ -27,13 +27,13 @@
         <nav class="admin-sidebar-nav">
           <span class="admin-nav-group">Werkruimte</span>
           <a href="#dashboard">Dashboard</a>
-          <a href="#leadfinder">Leads</a>
-          <a href="#demo-klantreis">Demo klantreis</a>
+          <a href="#leadfinder">Sales</a>
+          <a href="#demo-klantreis">Website Factory</a>
           <a href="#klanten">Klanten</a>
           <a class="admin-sales-secondary" href="#websites">Websites</a>
+          <a href="#projecten">Projecten</a>
           <a href="#offertes">Offertes</a>
           <a href="#facturen">Facturen</a>
-          <a href="#projecten">Projecten</a>
           <a class="admin-developer-only" href="#onderhoud">Abonnementen</a>
           <a class="admin-sales-secondary" href="#instellingen">Instellingen</a>
           <a class="admin-developer-only" href="#demo-omgeving">Developer Mode</a>
@@ -470,11 +470,47 @@
         <section class="admin-section" id="demo-klantreis">
           <div class="admin-section-heading">
             <div>
-              <p class="section-kicker">Demo klantreis</p>
-              <h2>Website-preview professioneel opvolgen</h2>
-              <p class="admin-section-intro">Zet per lead een demo-aanvraag, briefing, status, previewlink en klantvriendelijke mail klaar.</p>
+              <p class="section-kicker">Website Factory</p>
+              <h2>Van lead naar preview naar verkoop</h2>
+              <p class="admin-section-intro">Een centrale werkplek voor Demo Journey, build queue, projectruimte, preview history en klantopvolging.</p>
             </div>
-            <span class="admin-preview-badge">Sales workflow</span>
+            <span class="admin-preview-badge">Productiewerkstation</span>
+          </div>
+
+          <div class="website-factory-workspace" aria-label="Website Factory Workspace">
+            <article class="admin-card factory-workspace-hero">
+              <div>
+                <p class="section-kicker">Website Factory Workspace</p>
+                <h3>Lead, briefing, preview, ZIP en klantcontrole in één flow.</h3>
+                <p>Sales ziet direct wat de volgende stap is, welke preview actief is en of het project klaarstaat voor interne controle.</p>
+              </div>
+              <div class="factory-flow-track" aria-label="Website Factory flow">
+                <span>Lead</span>
+                <span>Briefing</span>
+                <span>Preview</span>
+                <span>ZIP</span>
+                <span>Klant</span>
+              </div>
+            </article>
+            <article class="admin-card factory-preview-stage">
+              <div class="sales-timeline-heading">
+                <strong>Live preview</strong>
+                <span id="demo-journey-preview-stage-state">Nog geen preview</span>
+              </div>
+              <div class="factory-preview-browser">
+                <div class="factory-preview-toolbar" aria-hidden="true">
+                  <span></span><span></span><span></span>
+                  <strong id="demo-journey-preview-stage-url">Preview verschijnt hier na generatie</strong>
+                </div>
+                <div class="factory-preview-frame-shell">
+                  <div class="factory-preview-empty" id="demo-journey-preview-empty">
+                    <strong>Genereer een preview om de website hier te controleren.</strong>
+                    <span>Dezelfde preview blijft ook beschikbaar via Preview openen, ZIP downloaden en Link kopiëren.</span>
+                  </div>
+                  <iframe id="demo-journey-preview-frame" title="Website Factory live preview" loading="lazy" hidden></iframe>
+                </div>
+              </div>
+            </article>
           </div>
 
           <div class="admin-grid workflow-metrics" id="demo-journey-metrics" aria-live="polite"></div>
@@ -20434,6 +20470,10 @@
             workspaceZip: document.getElementById("demo-journey-workspace-zip"),
             workspaceCopy: document.getElementById("demo-journey-workspace-copy"),
             workspaceFolder: document.getElementById("demo-journey-workspace-folder"),
+            previewStageState: document.getElementById("demo-journey-preview-stage-state"),
+            previewStageUrl: document.getElementById("demo-journey-preview-stage-url"),
+            previewFrame: document.getElementById("demo-journey-preview-frame"),
+            previewEmpty: document.getElementById("demo-journey-preview-empty"),
             timeline: document.getElementById("demo-journey-timeline"),
             timelineCount: document.getElementById("demo-journey-timeline-count"),
             openPreview: document.getElementById("demo-journey-open-preview"),
@@ -21077,6 +21117,29 @@
           setActionLink(elements.workspaceFolder, projectWorkspace?.driveFolderUrl || "", "Cloud projectmap nog niet gekoppeld");
         }
 
+        function renderPreviewStage() {
+          const latest = buildHistory.latestJob || (buildHistory.jobs || [])[0] || null;
+          const activeVersion = buildHistory.activeVersion || (buildHistory.previewVersions || [])[0] || null;
+          const previewUrl = absolutePreviewUrl(journey?.previewUrl || latest?.previewUrl || activeVersion?.previewUrl || "");
+          const ready = Boolean(previewUrl);
+          if (elements.previewStageState) {
+            elements.previewStageState.textContent = ready ? "Preview klaar" : "Nog geen preview";
+            elements.previewStageState.className = ready ? "status-badge status-active" : "status-badge status-planned";
+          }
+          if (elements.previewStageUrl) {
+            elements.previewStageUrl.textContent = ready ? previewUrl : "Preview verschijnt hier na generatie";
+            elements.previewStageUrl.title = ready ? previewUrl : "";
+          }
+          if (elements.previewEmpty) elements.previewEmpty.hidden = ready;
+          if (elements.previewFrame) {
+            elements.previewFrame.hidden = !ready;
+            if (ready && elements.previewFrame.src !== previewUrl) {
+              elements.previewFrame.src = previewUrl;
+            }
+            if (!ready) elements.previewFrame.removeAttribute("src");
+          }
+        }
+
         function renderTimeline() {
           if (!elements.timeline) return;
           const visibleEvents = events.filter((event) => event.visibleToCustomer);
@@ -21151,6 +21214,7 @@
           renderEmployeeSteps();
           renderBuildStatus();
           renderProjectWorkspace();
+          renderPreviewStage();
           renderTimeline();
         }
 
