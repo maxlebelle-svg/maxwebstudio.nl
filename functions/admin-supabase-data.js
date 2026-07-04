@@ -3,7 +3,8 @@ const { verifyAdmin } = require("./_admin-auth");
 const MODULES = Object.freeze({
   leads: {
     table: "leads",
-    select: "id,company_name,company,email,phone,website,website_url,status,source,notes,created_at,updated_at",
+    select: "id,company_name,company,name,email,phone,website,website_url,status,source,notes,owner_auth_user_id,converted_customer_id,is_demo,environment,metadata,created_at,updated_at",
+    legacySelect: "id,company_name,company,email,phone,website,website_url,status,source,notes,created_at,updated_at",
     order: "updated_at.desc.nullslast",
     optional: true,
     salesReadable: true,
@@ -190,10 +191,23 @@ async function fetchRows(supabaseUrl, serviceRoleKey, definition) {
     limit: "300",
   });
   if (definition.order) params.set("order", definition.order);
-  return supabaseFetch(`${supabaseUrl}/rest/v1/${definition.table}?${params.toString()}`, {
-    method: "GET",
-    headers: restHeaders(serviceRoleKey),
-  });
+  try {
+    return await supabaseFetch(`${supabaseUrl}/rest/v1/${definition.table}?${params.toString()}`, {
+      method: "GET",
+      headers: restHeaders(serviceRoleKey),
+    });
+  } catch (error) {
+    if (!definition.legacySelect || !isMissingColumnError(error)) throw error;
+    const fallbackParams = new URLSearchParams({
+      select: definition.legacySelect,
+      limit: "300",
+    });
+    if (definition.order) fallbackParams.set("order", definition.order);
+    return supabaseFetch(`${supabaseUrl}/rest/v1/${definition.table}?${fallbackParams.toString()}`, {
+      method: "GET",
+      headers: restHeaders(serviceRoleKey),
+    });
+  }
 }
 
 async function supabaseFetch(url, options) {
@@ -235,6 +249,16 @@ function isMissingTableError(error = {}) {
     || message.includes("does not exist");
 }
 
+function isMissingColumnError(error = {}) {
+  const message = cleanText(error.message).toLowerCase();
+  const details = cleanText(error.details).toLowerCase();
+  return error.code === "42703"
+    || error.code === "PGRST204"
+    || message.includes("could not find")
+    || message.includes("column")
+    || details.includes("column");
+}
+
 function metadata(row = {}) {
   return row.metadata && typeof row.metadata === "object" ? row.metadata : {};
 }
@@ -261,9 +285,11 @@ function statusToDutch(value, fallback = "actief") {
 }
 
 function mapLead(row = {}) {
+  const meta = metadata(row);
   return {
     id: cleanText(row.id),
     companyName: cleanText(row.company_name || row.company),
+    contactName: cleanText(row.name || meta.contactName || meta.contact_name || meta.contactPerson),
     email: cleanText(row.email),
     phone: cleanText(row.phone),
     websiteUrl: cleanText(row.website_url || row.website),
@@ -271,6 +297,21 @@ function mapLead(row = {}) {
     callStatus: statusToDutch(row.status, "nieuw"),
     notes: cleanText(row.notes),
     source: cleanText(row.source || "supabase"),
+    ownerAuthUserId: cleanText(row.owner_auth_user_id || meta.ownerAuthUserId || meta.owner_auth_user_id || meta.createdBy),
+    ownerProfileId: cleanText(row.owner_profile_id || meta.ownerProfileId || meta.owner_profile_id),
+    ownerEmail: cleanText(row.owner_email || meta.ownerEmail || meta.owner_email || meta.createdByEmail),
+    ownerName: cleanText(row.owner_name || meta.ownerName || meta.owner_name || meta.createdByName),
+    assignedUserEmail: cleanText(row.assigned_user_email || meta.assignedUserEmail || meta.assigned_user_email),
+    assignedUserName: cleanText(row.assigned_user_name || meta.assignedUserName || meta.assigned_user_name),
+    salesPartnerEmail: cleanText(row.sales_partner_email || meta.salesPartnerEmail || meta.sales_partner_email),
+    salesPartnerName: cleanText(row.sales_partner_name || meta.salesPartnerName || meta.sales_partner_name),
+    createdBy: cleanText(row.created_by || meta.createdBy || meta.created_by),
+    createdByEmail: cleanText(row.created_by_email || meta.createdByEmail || meta.created_by_email),
+    createdByName: cleanText(row.created_by_name || meta.createdByName || meta.created_by_name),
+    convertedCustomerId: cleanText(row.converted_customer_id),
+    isDemo: Boolean(row.is_demo || meta.isDemo),
+    environment: cleanText(row.environment || meta.environment || "production"),
+    metadata: meta,
     createdAt: cleanText(row.created_at),
     updatedAt: cleanText(row.updated_at),
     _source: "supabase",

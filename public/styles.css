@@ -8901,7 +8901,7 @@ h3 {
 }
 
 .leadfinder-table .admin-table-row {
-  grid-template-columns: minmax(170px, 1.16fr) minmax(110px, 0.68fr) minmax(100px, 0.64fr) minmax(120px, 0.72fr) minmax(70px, 0.42fr) minmax(100px, 0.62fr) minmax(120px, 0.72fr) minmax(140px, auto);
+  grid-template-columns: minmax(170px, 1.15fr) minmax(135px, 0.9fr) minmax(105px, 0.65fr) minmax(150px, 1fr) minmax(115px, 0.75fr) minmax(130px, 0.85fr) minmax(92px, 0.55fr) minmax(92px, 0.55fr) minmax(140px, auto);
 }
 
 .crm-workflow-table .crm-task-meta {

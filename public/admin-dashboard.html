@@ -431,9 +431,10 @@
           </div>
 
           <div class="admin-filters leadfinder-filters" aria-label="Leadfinder filteren">
-            <label for="leadfinder-search">Zoeken<input id="leadfinder-search" type="search" placeholder="Bedrijf, branche, regio, notitie of website" /></label>
+            <label for="leadfinder-search">Zoeken<input id="leadfinder-search" type="search" placeholder="Bedrijf, contactpersoon, telefoon, e-mail of website" /></label>
             <label for="leadfinder-filter-website-status">Website-status<select id="leadfinder-filter-website-status"><option value="">Alle statussen</option></select></label>
             <label for="leadfinder-filter-call-status">Leadstatus<select id="leadfinder-filter-call-status"><option value="">Alle leadstatussen</option></select></label>
+            <label for="leadfinder-filter-owner">Medewerker<select id="leadfinder-filter-owner"><option value="">Alle medewerkers</option></select></label>
             <label for="leadfinder-filter-industry">Branche<input id="leadfinder-filter-industry" type="search" placeholder="Bijv. bouw" /></label>
             <label for="leadfinder-filter-region">Regio<input id="leadfinder-filter-region" type="search" placeholder="Bijv. Breda" /></label>
             <label for="leadfinder-filter-score">Score<select id="leadfinder-filter-score"><option value="">Alle scores</option></select></label>
@@ -17520,6 +17521,7 @@
         search: document.getElementById("leadfinder-search"),
         filterWebsiteStatus: document.getElementById("leadfinder-filter-website-status"),
         filterCallStatus: document.getElementById("leadfinder-filter-call-status"),
+        filterOwner: document.getElementById("leadfinder-filter-owner"),
         filterIndustry: document.getElementById("leadfinder-filter-industry"),
         filterRegion: document.getElementById("leadfinder-filter-region"),
         filterScore: document.getElementById("leadfinder-filter-score"),
@@ -17642,6 +17644,7 @@
       }
 
       async function loadLeadfinderDataLayer() {
+        renderLeadfinderState("Leads laden", "De sales pipeline wordt opgehaald.", "loading");
         try {
           const result = await readSupabaseDataLayerModule("leads", { mode: currentLeadfinderDataMode() });
           leadfinderDataLayerLeads = Array.isArray(result.records) ? result.records : [];
@@ -17654,6 +17657,12 @@
             dataLayer: "supabase-data-layer-mvp",
           };
           localStorage.setItem("maxwebstudioLastLeadfinderSourceStatus", JSON.stringify(leadfinderSourceStatus));
+          logLeadfinderDiagnostic("Leadfinder data-layer geladen", {
+            mode: leadfinderSourceStatus.mode,
+            counts: leadfinderSourceStatus.counts,
+            fallbackUsed: leadfinderSourceStatus.fallbackUsed,
+            error: leadfinderSourceStatus.error,
+          });
         } catch (error) {
           leadfinderDataLayerLeads = readLeadFinderLeads();
           leadfinderSourceStatus = {
@@ -17665,13 +17674,27 @@
             dataLayer: "local-fallback-after-data-layer-error",
           };
           localStorage.setItem("maxwebstudioLastLeadfinderSourceStatus", JSON.stringify(leadfinderSourceStatus));
+          logLeadfinderDiagnostic("Leadfinder data-layer fallback actief", {
+            error: leadfinderSourceStatus.error,
+            counts: leadfinderSourceStatus.counts,
+          });
         }
       }
 
       function getLeadfinderLeads() {
         const leads = leadfinderSourceStatus ? leadfinderDataLayerLeads : readLeadFinderLeads();
-        if (developerModeActive()) return leads;
-        return leads.filter((lead) => !isDemoLeadfinderLead(lead));
+        const context = getLeadfinderUserContext();
+        const productionLeads = developerModeActive() ? leads : leads.filter((lead) => !isDemoLeadfinderLead(lead));
+        const visibleLeads = productionLeads.filter((lead) => isLeadVisibleForCurrentUser(lead, context));
+        logLeadfinderDiagnostic("Leadfinder zichtbaarheid toegepast", {
+          role: context.role,
+          user: context.email || context.userId,
+          total: leads.length,
+          withoutDemo: productionLeads.length,
+          visible: visibleLeads.length,
+          canSeeAll: canLeadfinderRoleSeeAll(context.role),
+        });
+        return visibleLeads;
       }
 
       function isDemoLeadfinderLead(lead = {}) {
@@ -17708,6 +17731,130 @@
 
       function developerModeActive() {
         return isDevModeEnabled();
+      }
+
+      function readLeadfinderJson(key, fallback = null) {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(key) || "null");
+          return parsed ?? fallback;
+        } catch {
+          return fallback;
+        }
+      }
+
+      function getLeadfinderUserContext() {
+        const adminSession = readLeadfinderJson("mws_admin_supabase_session", {}) || {};
+        const currentSession = readLeadfinderJson("maxwebstudioCurrentSession", {}) || {};
+        const profiles = readLeadfinderJson("maxwebstudioProfiles", []) || [];
+        const userId = String(adminSession.userId || currentSession.userId || currentSession.authUserId || "").trim();
+        const email = String(adminSession.email || currentSession.email || "").trim().toLowerCase();
+        const profile = Array.isArray(profiles)
+          ? profiles.find((item) => {
+            const profileUserId = String(item.authUserId || item.auth_user_id || item.userId || "").trim();
+            const profileEmail = String(item.email || "").trim().toLowerCase();
+            return (userId && profileUserId === userId) || (email && profileEmail === email);
+          }) || {}
+          : {};
+        return {
+          userId,
+          profileId: String(adminSession.profileId || currentSession.profileId || profile.id || "").trim(),
+          email: email || String(profile.email || "").trim().toLowerCase(),
+          name: String(adminSession.name || currentSession.name || profile.name || email || "").trim(),
+          role: String(adminSession.role || currentSession.role || profile.role || "").trim().toLowerCase(),
+        };
+      }
+
+      function canLeadfinderRoleSeeAll(role = getLeadfinderUserContext().role) {
+        return ["super_admin", "admin", "sales_manager"].includes(String(role || "").toLowerCase());
+      }
+
+      function getLeadOwnerTokens(lead = {}) {
+        return [
+          lead.ownerAuthUserId,
+          lead.ownerProfileId,
+          lead.ownerEmail,
+          lead.assignedUserEmail,
+          lead.salesPartnerEmail,
+          lead.createdBy,
+          lead.createdByEmail,
+          lead.metadata?.ownerAuthUserId,
+          lead.metadata?.ownerEmail,
+          lead.metadata?.createdByEmail,
+        ].map((value) => String(value || "").trim().toLowerCase()).filter(Boolean);
+      }
+
+      function getLeadOwnerValue(lead = {}) {
+        return String(
+          lead.ownerEmail
+          || lead.assignedUserEmail
+          || lead.salesPartnerEmail
+          || lead.createdByEmail
+          || lead.ownerAuthUserId
+          || lead.createdBy
+          || lead.ownerName
+          || lead.assignedUserName
+          || lead.salesPartnerName
+          || lead.createdByName
+          || "onbekend"
+        ).trim().toLowerCase();
+      }
+
+      function getLeadOwnerLabel(lead = {}) {
+        return String(
+          lead.ownerName
+          || lead.assignedUserName
+          || lead.salesPartnerName
+          || lead.createdByName
+          || lead.ownerEmail
+          || lead.assignedUserEmail
+          || lead.salesPartnerEmail
+          || lead.createdByEmail
+          || lead.ownerAuthUserId
+          || lead.createdBy
+          || "Onbekend"
+        ).trim();
+      }
+
+      function leadHasOwnershipData(lead = {}) {
+        return getLeadOwnerTokens(lead).length > 0 || getLeadOwnerLabel(lead) !== "Onbekend";
+      }
+
+      function isLeadVisibleForCurrentUser(lead = {}, context = getLeadfinderUserContext()) {
+        if (canLeadfinderRoleSeeAll(context.role)) return true;
+        if (context.role !== "sales_partner") return true;
+        const userTokens = [context.userId, context.profileId, context.email]
+          .map((value) => String(value || "").trim().toLowerCase())
+          .filter(Boolean);
+        const ownerTokens = getLeadOwnerTokens(lead);
+        if (ownerTokens.some((token) => userTokens.includes(token))) return true;
+        return isLocalLead(lead) && !leadHasOwnershipData(lead);
+      }
+
+      function formatLeadDate(value) {
+        const text = String(value || "").trim();
+        if (!text) return "-";
+        const date = new Date(text);
+        if (Number.isNaN(date.getTime())) return text;
+        return date.toLocaleDateString("nl-NL", { day: "2-digit", month: "2-digit", year: "numeric" });
+      }
+
+      function renderLeadfinderState(title, body, type = "") {
+        if (!leadfinderElements.list) return;
+        const statusClass = type === "error" ? "status-danger" : type === "loading" ? "status-prepared" : "status-planned";
+        leadfinderElements.list.innerHTML = `
+          <article class="admin-card request-card request-state-card">
+            <div>
+              <strong>${escapeHtml(title)}</strong>
+              <span>${escapeHtml(body)}</span>
+            </div>
+            ${type ? `<mark class="status-badge ${statusClass}">${escapeHtml(type === "loading" ? "Laden" : type)}</mark>` : ""}
+          </article>
+        `;
+      }
+
+      function logLeadfinderDiagnostic(message, details = {}) {
+        if (!developerModeActive()) return;
+        console.info(message, details);
       }
 
       function logGooglePlacesIssue(message, details = null) {
@@ -18423,19 +18570,48 @@
         `).join("");
       }
 
+      function populateLeadfinderOwnerFilter(leads = getLeadfinderLeads()) {
+        const select = leadfinderElements.filterOwner;
+        if (!select) return;
+        const selected = select.value;
+        const owners = new Map();
+        leads.forEach((lead) => {
+          const value = getLeadOwnerValue(lead);
+          const label = getLeadOwnerLabel(lead);
+          if (!value) return;
+          owners.set(value, label || value);
+        });
+        const sorted = [...owners.entries()].sort((a, b) => a[1].localeCompare(b[1], "nl"));
+        select.innerHTML = `<option value="">Alle medewerkers</option>${sorted.map(([value, label]) => `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`).join("")}`;
+        select.value = owners.has(selected) ? selected : "";
+      }
+
       function getFilteredLeadfinderLeads() {
         const query = String(leadfinderElements.search?.value || "").trim().toLowerCase();
         const websiteStatus = leadfinderElements.filterWebsiteStatus?.value || "";
         const callStatus = leadfinderElements.filterCallStatus?.value || "";
+        const owner = String(leadfinderElements.filterOwner?.value || "").trim().toLowerCase();
         const industry = String(leadfinderElements.filterIndustry?.value || "").trim().toLowerCase();
         const region = String(leadfinderElements.filterRegion?.value || "").trim().toLowerCase();
         const minScore = Number(leadfinderElements.filterScore?.value || 0);
 
         return getLeadfinderLeads().filter((lead) => {
-          const haystack = [lead.companyName, lead.industry, lead.region, lead.phone, lead.email, lead.websiteUrl, lead.notes, lead.source].join(" ").toLowerCase();
+          const haystack = [
+            lead.companyName,
+            lead.contactName,
+            lead.industry,
+            lead.region,
+            lead.phone,
+            lead.email,
+            lead.websiteUrl,
+            lead.notes,
+            lead.source,
+            getLeadOwnerLabel(lead),
+          ].join(" ").toLowerCase();
           return (!query || haystack.includes(query))
             && (!websiteStatus || lead.websiteStatus === websiteStatus)
             && (!callStatus || lead.callStatus === callStatus)
+            && (!owner || getLeadOwnerValue(lead) === owner)
             && (!industry || String(lead.industry).toLowerCase().includes(industry))
             && (!region || String(lead.region).toLowerCase().includes(region))
             && (!minScore || lead.leadScore >= minScore);
@@ -18451,15 +18627,18 @@
         const leads = getFilteredLeadfinderLeads();
         renderLeadfinderMetrics(allLeads);
         renderSalesCockpit(allLeads);
+        populateLeadfinderOwnerFilter(allLeads);
 
         if (!leadfinderElements.list) return;
         if (!leads.length) {
+          const sourceError = leadfinderSourceStatus?.error || "";
           leadfinderElements.list.innerHTML = `
             <article class="admin-card request-card request-state-card">
               <div>
-                <strong>Geen leadfinder resultaten</strong>
-                <span>Voeg een prospect toe of pas je filters aan.</span>
+                <strong>${escapeHtml(sourceError ? "Leads konden niet volledig worden geladen" : "Geen leads gevonden")}</strong>
+                <span>${escapeHtml(sourceError || "Voeg een prospect toe of pas je filters aan.")}</span>
               </div>
+              ${sourceError ? `<mark class="status-badge status-danger">Error</mark>` : ""}
             </article>
           `;
           renderLeadfinderDetail();
@@ -18468,7 +18647,7 @@
 
         leadfinderElements.list.innerHTML = `
           <div class="admin-table-row admin-table-head" role="row">
-            <span>Bedrijf</span><span>Branche</span><span>Regio</span><span>Website-status</span><span>Score</span><span>Follow-up</span><span>Leadstatus</span><span>Acties</span>
+            <span>Bedrijf</span><span>Contact</span><span>Telefoon</span><span>Website</span><span>Status</span><span>Medewerker</span><span>Aangemaakt</span><span>Update</span><span>Acties</span>
           </div>
           ${leads.map((lead) => {
             const followUpBadge = getFollowUpBadge(lead);
@@ -18476,14 +18655,24 @@
               <div class="admin-table-row" role="row" data-leadfinder-id="${escapeHtml(lead.id)}">
                 <div class="leadfinder-meta">
                   <strong>${escapeHtml(lead.companyName || "Naamloos bedrijf")}</strong>
-                  <small>${escapeHtml(lead.websiteUrl || "Geen website-url")} · ${escapeHtml(lead.source || "handmatig")}</small>
+                  <small>${escapeHtml(lead.industry || "Branche onbekend")} · ${escapeHtml(lead.region || "Regio onbekend")}</small>
                 </div>
-                <span>${escapeHtml(lead.industry || "-")}</span>
-                <span>${escapeHtml(lead.region || "-")}</span>
-                <mark class="status-badge status-planned">${escapeHtml(getLeadFinderLabel(LEADFINDER_WEBSITE_STATUSES, lead.websiteStatus))}</mark>
-                <strong>${escapeHtml(lead.leadScore)}</strong>
-                ${followUpBadge ? `<mark class="status-badge ${followUpBadge.className}">${escapeHtml(followUpBadge.label)}</mark>` : `<span>${escapeHtml(lead.followUpDate || "-")}</span>`}
-                <mark class="status-badge status-active">${escapeHtml(getLeadFinderLabel(LEADFINDER_CALL_STATUSES, lead.callStatus))}</mark>
+                <div class="leadfinder-meta">
+                  <strong>${escapeHtml(lead.contactName || "-")}</strong>
+                  <small>${escapeHtml(lead.email || "Geen e-mail")}</small>
+                </div>
+                <span>${escapeHtml(lead.phone || "-")}</span>
+                <div class="leadfinder-meta">
+                  <strong>${escapeHtml(lead.websiteUrl || "-")}</strong>
+                  <small>${escapeHtml(getLeadFinderLabel(LEADFINDER_WEBSITE_STATUSES, lead.websiteStatus))} · score ${escapeHtml(lead.leadScore)}</small>
+                </div>
+                <div class="leadfinder-meta">
+                  <mark class="status-badge status-active">${escapeHtml(getLeadFinderLabel(LEADFINDER_CALL_STATUSES, lead.callStatus))}</mark>
+                  <small>${followUpBadge ? escapeHtml(followUpBadge.label) : escapeHtml(lead.followUpDate || "Geen follow-up")}</small>
+                </div>
+                <span>${escapeHtml(getLeadOwnerLabel(lead))}</span>
+                <span>${escapeHtml(formatLeadDate(lead.createdAt))}</span>
+                <span>${escapeHtml(formatLeadDate(lead.updatedAt))}</span>
                 <div class="leadfinder-actions">
                   <button class="button secondary" type="button" data-leadfinder-action="view">Bekijk</button>
                   <button class="button secondary" type="button" data-leadfinder-action="task">Opvolgtaak</button>
@@ -18507,6 +18696,7 @@
         if (leadfinderElements.detailList) {
           leadfinderElements.detailList.innerHTML = hasLead ? [
             ["Bedrijf", lead.companyName],
+            ["Contactpersoon", lead.contactName || "-"],
             ["Branche", lead.industry || "-"],
             ["Regio", lead.region || "-"],
             ["Telefoon", lead.phone || "-"],
@@ -18516,6 +18706,10 @@
             ["Leadscore", `${lead.leadScore}/100`],
             ["Leadstatus", getLeadFinderLabel(LEADFINDER_CALL_STATUSES, lead.callStatus)],
             ["Opvolgdatum", lead.followUpDate || "-"],
+            ["Aangemaakt door", lead.createdByName || lead.createdByEmail || lead.createdBy || getLeadOwnerLabel(lead)],
+            ["Eigenaar / medewerker", getLeadOwnerLabel(lead)],
+            ["Aangemaakt op", formatLeadDate(lead.createdAt)],
+            ["Laatste update", formatLeadDate(lead.updatedAt)],
             ["Google Maps", lead.googleMapsUrl || lead.googlePlaceId || "-"],
             ["Notities", lead.notes || "-"],
             ["Klantstatus", lead.convertedCustomerId ? "Klant actief" : "Nog geen klant"],
@@ -18855,6 +19049,7 @@
           setLeadfinderMessage("Lead niet opgeslagen. Controleer eerst de bestaande lead.", "error");
           return;
         }
+        const ownerContext = getLeadfinderUserContext();
         const lead = saveLeadFinderLeadLocally({
           companyName,
           industry: leadfinderElements.industry?.value || "",
@@ -18870,6 +19065,20 @@
           notes: leadfinderElements.notes?.value || "",
           googlePlaceId,
           googleMapsUrl,
+          ownerAuthUserId: ownerContext.userId,
+          ownerProfileId: ownerContext.profileId,
+          ownerEmail: ownerContext.email,
+          ownerName: ownerContext.name,
+          salesPartnerEmail: ownerContext.role === "sales_partner" ? ownerContext.email : "",
+          salesPartnerName: ownerContext.role === "sales_partner" ? ownerContext.name : "",
+          createdBy: ownerContext.userId,
+          createdByEmail: ownerContext.email,
+          createdByName: ownerContext.name,
+          metadata: {
+            createdFrom: "admin-dashboard-leadfinder",
+            createdByRole: ownerContext.role,
+            createdByEmail: ownerContext.email,
+          },
         });
         selectedLeadFinderId = lead.id;
         resetLeadfinderForm();
@@ -19041,6 +19250,7 @@
         fillSelect(leadfinderElements.detailCallStatus, LEADFINDER_CALL_STATUSES, "Leadstatus");
         ensureLeadFinderDemoData();
         await loadLeadfinderDataLayer();
+        populateLeadfinderOwnerFilter();
         renderLeadfinderList();
 
         leadfinderElements.form.addEventListener("submit", handleLeadfinderSubmit);
@@ -19048,7 +19258,7 @@
           resetLeadfinderForm();
           setLeadfinderMessage("Formulier leeggemaakt.", "success");
         });
-        [leadfinderElements.search, leadfinderElements.filterWebsiteStatus, leadfinderElements.filterCallStatus, leadfinderElements.filterIndustry, leadfinderElements.filterRegion, leadfinderElements.filterScore].forEach((element) => {
+        [leadfinderElements.search, leadfinderElements.filterWebsiteStatus, leadfinderElements.filterCallStatus, leadfinderElements.filterOwner, leadfinderElements.filterIndustry, leadfinderElements.filterRegion, leadfinderElements.filterScore].forEach((element) => {
           element?.addEventListener("input", renderLeadfinderList);
           element?.addEventListener("change", renderLeadfinderList);
         });

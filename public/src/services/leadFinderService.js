@@ -76,9 +76,11 @@ export function normalizeLeadFinderLead(lead = {}) {
   const createdAt = sanitizeString(lead.createdAt) || nowIso();
   const websiteStatus = WEBSITE_STATUS_VALUES.has(lead.websiteStatus) ? lead.websiteStatus : "onbekend";
   const callStatus = CALL_STATUS_VALUES.has(lead.callStatus) ? lead.callStatus : "nieuw";
+  const metadata = lead.metadata && typeof lead.metadata === "object" ? lead.metadata : {};
   return {
     id: sanitizeString(lead.id) || createId(),
     companyName: sanitizeString(lead.companyName || lead.company || lead.businessName),
+    contactName: sanitizeString(lead.contactName || lead.contact || lead.contactPerson || lead.contact_person || lead.person || lead.name),
     industry: sanitizeString(lead.industry || lead.branche),
     region: sanitizeString(lead.region || lead.city || lead.plaats),
     phone: sanitizeString(lead.phone),
@@ -94,6 +96,20 @@ export function normalizeLeadFinderLead(lead = {}) {
     googleMapsUrl: sanitizeString(lead.googleMapsUrl || lead.google_maps_url || lead.mapsUrl),
     websiteAnalysis: lead.websiteAnalysis && typeof lead.websiteAnalysis === "object" ? lead.websiteAnalysis : null,
     convertedCustomerId: sanitizeString(lead.convertedCustomerId),
+    ownerAuthUserId: sanitizeString(lead.ownerAuthUserId || lead.owner_auth_user_id || lead.assignedAuthUserId || lead.assigned_auth_user_id || metadata.ownerAuthUserId || metadata.owner_auth_user_id),
+    ownerProfileId: sanitizeString(lead.ownerProfileId || lead.owner_profile_id || lead.assignedProfileId || lead.assigned_profile_id || metadata.ownerProfileId || metadata.owner_profile_id),
+    ownerEmail: sanitizeString(lead.ownerEmail || lead.owner_email || metadata.ownerEmail || metadata.owner_email),
+    ownerName: sanitizeString(lead.ownerName || lead.owner_name || metadata.ownerName || metadata.owner_name),
+    assignedUserEmail: sanitizeString(lead.assignedUserEmail || lead.assigned_user_email || metadata.assignedUserEmail || metadata.assigned_user_email),
+    assignedUserName: sanitizeString(lead.assignedUserName || lead.assigned_user_name || metadata.assignedUserName || metadata.assigned_user_name),
+    salesPartnerEmail: sanitizeString(lead.salesPartnerEmail || lead.sales_partner_email || metadata.salesPartnerEmail || metadata.sales_partner_email),
+    salesPartnerName: sanitizeString(lead.salesPartnerName || lead.sales_partner_name || metadata.salesPartnerName || metadata.sales_partner_name),
+    createdBy: sanitizeString(lead.createdBy || lead.created_by || lead.created_by_auth_user_id || metadata.createdBy || metadata.created_by),
+    createdByEmail: sanitizeString(lead.createdByEmail || lead.created_by_email || metadata.createdByEmail || metadata.created_by_email),
+    createdByName: sanitizeString(lead.createdByName || lead.created_by_name || metadata.createdByName || metadata.created_by_name),
+    metadata,
+    isDemo: Boolean(lead.isDemo || lead.is_demo || metadata.isDemo),
+    environment: sanitizeString(lead.environment || metadata.environment),
     createdAt,
     updatedAt: sanitizeString(lead.updatedAt) || createdAt,
   };
