@@ -472,8 +472,8 @@
             <div class="demo-journey-steps" id="demo-journey-steps"></div>
           </article>
 
-          <div class="admin-crm-grid">
-            <form class="admin-card admin-profile-form" id="demo-journey-form">
+          <div class="admin-crm-grid demo-journey-grid">
+            <form class="admin-card admin-profile-form demo-card demo-request-card" id="demo-journey-form">
               <div class="admin-profile-form-heading">
                 <div>
                   <strong>Demo-aanvraag</strong>
@@ -509,7 +509,7 @@
               <p class="admin-form-message" id="demo-journey-message" role="status"></p>
             </form>
 
-            <article class="admin-card crm-detail-panel">
+            <article class="admin-card crm-detail-panel demo-card demo-status-card">
               <div class="admin-profile-form-heading">
                 <div>
                   <strong>Statuskaart</strong>
@@ -518,7 +518,7 @@
                 <mark class="status-badge status-planned" id="demo-journey-state">Geen demo</mark>
               </div>
               <div class="settings-status-list" id="demo-journey-details"></div>
-              <div class="sales-timeline-card">
+              <div class="sales-timeline-card factory-card">
                 <div class="sales-timeline-heading">
                   <strong>Website Factory</strong>
                   <span id="demo-journey-build-state">Geen build</span>
@@ -533,7 +533,7 @@
                   <pre id="demo-journey-build-diagnostics"></pre>
                 </details>
               </div>
-              <div class="sales-timeline-card">
+              <div class="sales-timeline-card customer-timeline">
                 <div class="sales-timeline-heading">
                   <strong>Klanttijdlijn</strong>
                   <span id="demo-journey-timeline-count">0 stappen</span>
@@ -542,8 +542,8 @@
                   <div class="sales-timeline-empty">Nog geen klanttijdlijn.</div>
                 </div>
               </div>
-              <label class="admin-profile-wide" for="demo-journey-briefing">Codex briefing<textarea id="demo-journey-briefing" rows="8" readonly></textarea></label>
-              <div class="admin-profile-actions">
+              <label class="admin-profile-wide demo-briefing-field" for="demo-journey-briefing">Codex briefing<textarea id="demo-journey-briefing" rows="8" readonly></textarea></label>
+              <div class="admin-profile-actions demo-preview-actions">
                 <button class="button secondary is-disabled" id="demo-journey-open-preview" type="button" aria-disabled="true">Preview openen</button>
                 <button class="button secondary is-disabled" id="demo-journey-download-zip" type="button" aria-disabled="true">ZIP downloaden</button>
                 <button class="button secondary is-disabled" id="demo-journey-open-portal" type="button" aria-disabled="true">Klantportaal openen</button>
@@ -20233,13 +20233,13 @@
           "Livegang voorbereiden",
         ];
         const employeeSteps = [
-          { number: 1, label: "Selecteer een lead", description: "Kies de lead waarvoor je een demo-preview wilt maken.", key: "lead" },
-          { number: 2, label: "Vul klantwensen in", description: "Controleer contactgegevens, website, wensen en interne notities.", key: "wishes" },
-          { number: 3, label: "Sla demo-aanvraag op", description: "Bewaar de aanvraag centraal voordat je verdergaat.", key: "saved" },
-          { number: 4, label: "Genereer briefing", description: "Maak een duidelijke briefing voor de Website Factory.", key: "briefing" },
-          { number: 5, label: "Genereer preview", description: "Laat de Factory een interne preview en ZIP bouwen.", key: "preview" },
-          { number: 6, label: "Controleer preview intern", description: "Open de preview, download de ZIP en controleer kwaliteit.", key: "review" },
-          { number: 7, label: "Plan/verstuur klantopvolging", description: "Plan de opvolging of zet de klantmail klaar.", key: "followup" },
+          { number: 1, label: "Selecteer lead", description: "Kies de juiste lead.", key: "lead" },
+          { number: 2, label: "Vul aanvraag in", description: "Controleer wensen en contact.", key: "wishes" },
+          { number: 3, label: "Sla demo op", description: "Bewaar de aanvraag centraal.", key: "saved" },
+          { number: 4, label: "Genereer briefing", description: "Maak de Factory-briefing.", key: "briefing" },
+          { number: 5, label: "Genereer preview", description: "Bouw preview en ZIP.", key: "preview" },
+          { number: 6, label: "Controleer intern", description: "Open en controleer preview.", key: "review" },
+          { number: 7, label: "Stuur naar klant", description: "Plan of verstuur opvolging.", key: "followup" },
         ];
         const elements = {};
         let leads = [];
@@ -20726,16 +20726,19 @@
           if (!elements.steps) return;
           const { done, next } = demoStepStates();
           elements.steps.innerHTML = employeeSteps.map((step) => {
-            const state = done[step.key] ? "klaar" : step.key === next.key ? "bezig" : "nog te doen";
+            const state = done[step.key] ? "Klaar" : step.key === next.key ? "Bezig" : "Nog te doen";
             const className = done[step.key] ? "is-done" : step.key === next.key ? "is-current" : "";
             return `
               <article class="demo-journey-step ${className}">
-                <span>${step.number}</span>
+                <div class="demo-step-top">
+                  <span class="demo-step-number">${step.number}</span>
+                  <span class="demo-step-icon" aria-hidden="true"></span>
+                </div>
                 <div>
                   <strong>${escapeHtml(step.label)}</strong>
                   <small>${escapeHtml(step.description)}</small>
                 </div>
-                <mark>${escapeHtml(state)}</mark>
+                <mark class="demo-step-pill">${escapeHtml(state)}</mark>
               </article>
             `;
           }).join("");
@@ -20778,12 +20781,12 @@
               ["Preview versie", activeVersion?.version ? `V${activeVersion.version}` : latest?.previewVersion ? `V${latest.previewVersion}` : "-"],
               ["Laatste buildtijd", latest?.finishedAt || latest?.updatedAt ? formatDate(latest.finishedAt || latest.updatedAt) : "-"],
               ["Melding", latest?.errorMessage || buildHistory.warning || (previewUrl ? "Klaar voor interne controle." : "Genereer eerst een preview")],
-            ].map(([label, value]) => `<div><strong>${escapeHtml(label)}</strong><span>${escapeHtml(value)}</span></div>`).join("");
+            ].map(([label, value]) => `<div class="demo-kv-row"><strong>${escapeHtml(label)}</strong><span title="${escapeHtml(value)}">${escapeHtml(value)}</span></div>`).join("");
           }
           if (elements.buildHistory) {
             const jobs = buildHistory.jobs || [];
             elements.buildHistory.innerHTML = jobs.length ? jobs.slice(0, 6).map((job) => `
-              <div class="sales-timeline-item">
+              <div class="sales-timeline-item factory-history-item">
                 <span class="sales-timeline-dot ${job.status === "completed" ? "is-active" : ""}"></span>
                 <div>
                   <strong>${escapeHtml(`Preview V${job.previewVersion || "-"} - ${buildStatusLabel(job.status)}`)}</strong>
@@ -20822,16 +20825,18 @@
           if (!elements.timeline) return;
           const visibleEvents = events.filter((event) => event.visibleToCustomer);
           const completedTitles = new Set(visibleEvents.map((event) => event.title));
-          elements.timelineCount.textContent = `${visibleEvents.length} stap${visibleEvents.length === 1 ? "" : "pen"}`;
+          const activeCount = journey?.id ? Math.max(1, visibleEvents.length) : 0;
+          elements.timelineCount.textContent = `${activeCount} stap${activeCount === 1 ? "" : "pen"} actief`;
           elements.timeline.innerHTML = customerSteps.map((step) => {
+            const index = customerSteps.indexOf(step) + 1;
             const event = visibleEvents.find((item) => item.title === step);
             const done = Boolean(event) || completedTitles.has(step);
             return `
-              <div class="sales-timeline-item">
-                <span class="sales-timeline-dot ${done ? "is-active" : ""}"></span>
+              <div class="sales-timeline-item customer-timeline-item ${done ? "is-done" : ""}">
+                <span class="sales-timeline-dot ${done ? "is-active" : ""}">${index}</span>
                 <div>
                   <strong>${escapeHtml(step)}</strong>
-                  <small>${escapeHtml(event?.description || (done ? "Afgerond" : "Nog niet zichtbaar voor klant"))}</small>
+                  <small>${escapeHtml(done ? "Klaar" : "Nog niet zichtbaar voor klant")}</small>
                   <small>${escapeHtml(event?.createdAt ? formatDate(event.createdAt) : "")}</small>
                 </div>
               </div>
@@ -20877,7 +20882,7 @@
             ["Laatste maildatum", formatDate(journey?.lastEmailSentAt)],
             ["Volgende mail", journey?.nextEmailType || "-"],
             ["Verantwoordelijke", journey?.assignedTo || "-"],
-          ].map(([label, value]) => `<div><strong>${escapeHtml(label)}</strong><span>${escapeHtml(value)}</span></div>`).join("");
+          ].map(([label, value]) => `<div class="demo-kv-row"><strong>${escapeHtml(label)}</strong><span title="${escapeHtml(value)}">${escapeHtml(value)}</span></div>`).join("");
           setActionLink(elements.openPreview, journey?.previewUrl || "", "Genereer eerst een preview");
           setActionLink(elements.downloadZip, journey?.previewUrl ? previewZipUrl(journey.previewUrl) : "", "Genereer eerst een preview");
           setActionLink(elements.openPortal, journey?.customerId ? `/klantportaal.html?customerId=${encodeURIComponent(journey.customerId)}#projectstatus` : "");
