@@ -191,6 +191,15 @@ function metadata(row = {}) {
   return row.metadata && typeof row.metadata === "object" ? row.metadata : {};
 }
 
+function portalStatusToDutch(value, fallback = "niet_actief") {
+  const status = cleanText(value).toLowerCase();
+  if (status === "active") return "actief";
+  if (status === "invited") return "uitgenodigd";
+  if (status === "prepared" || status === "pending_invitation") return "uitnodiging_klaar";
+  if (status === "none" || status === "inactive" || status === "niet actief") return "niet_actief";
+  return status || fallback;
+}
+
 function statusToDutch(value, fallback = "actief") {
   const status = cleanText(value).toLowerCase();
   if (status === "active") return "actief";
@@ -233,7 +242,7 @@ function mapCustomer(row = {}) {
     website: cleanText(row.website),
     package: cleanText(row.package || row.package_name),
     status: statusToDutch(row.status),
-    portalStatus: cleanText(row.portal_status || meta.portalAccessStatus || "pending_invitation"),
+    portalStatus: portalStatusToDutch(row.portal_status || meta.portalAccessStatus || "niet_actief"),
     customerSince: cleanText(row.customer_since || row.created_at),
     isDemo: Boolean(row.is_demo),
     environment: cleanText(row.environment || "production"),

@@ -345,7 +345,7 @@
                 <select id="leadfinder-detail-call-status" aria-label="Leadstatus wijzigen"></select>
                 <button class="button secondary" id="leadfinder-save-note" type="button" disabled>Notitie opslaan</button>
                 <button class="button secondary" id="leadfinder-create-task" type="button" disabled>Maak opvolgtaak</button>
-                <button class="button secondary" id="leadfinder-convert-customer" type="button" disabled>Maak klant aan</button>
+                <button class="button secondary" id="leadfinder-convert-customer" type="button" disabled>Omzetten naar klant</button>
                 <button class="button secondary danger" id="leadfinder-delete" type="button" disabled>Verwijderen</button>
               </div>
               <div class="lead-welcome-card">
@@ -488,7 +488,7 @@
                 <label for="detail-website">Website<input id="detail-website" type="url" disabled /></label>
                 <label for="detail-package">Onderhoudspakket<select id="detail-package" disabled><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option><option value="One Page Website">One Page Website</option></select></label>
                 <label for="detail-status">Status<select id="detail-status" disabled><option value="actief">Actief</option><option value="onboarding">Onboarding</option><option value="pauze">Pauze</option><option value="gearchiveerd">Gearchiveerd</option></select></label>
-                <label for="detail-portal-status">Portal-status<select id="detail-portal-status" disabled><option value="geen_login">Geen login</option><option value="uitgenodigd">Uitgenodigd</option><option value="actief">Actief</option><option value="geblokkeerd">Geblokkeerd</option></select></label>
+                <label for="detail-portal-status">Portal-status<select id="detail-portal-status" disabled><option value="niet_actief">Niet actief</option><option value="uitnodiging_klaar">Uitnodiging klaar</option><option value="uitgenodigd">Uitgenodigd</option><option value="actief">Actief</option></select></label>
                 <label for="detail-customer-since">Klant sinds<input id="detail-customer-since" type="date" disabled /></label>
                 <label class="admin-profile-wide" for="detail-notes">Notities admin-only<textarea id="detail-notes" disabled placeholder="Interne notities, niet zichtbaar in het klantenportaal"></textarea></label>
               </div>
@@ -497,12 +497,13 @@
               <div class="crm-auth-panel">
                 <div>
                   <span>Auth-status</span>
-                  <mark class="status-badge status-planned" id="detail-auth-status">Geen login</mark>
+                  <mark class="status-badge status-planned" id="detail-auth-status">Niet actief</mark>
                 </div>
                 <div class="crm-auth-actions">
                   <button class="button secondary" id="detail-link-login" type="button" disabled>Login koppelen</button>
                   <button class="button secondary" id="detail-reset-password" type="button" disabled>Wachtwoord reset versturen</button>
-                  <button class="button secondary" id="detail-send-invite" type="button" disabled>Uitnodiging versturen</button>
+                  <button class="button secondary" id="detail-prepare-portal-invite" type="button" disabled>Portaal uitnodiging maken</button>
+                  <button class="button secondary" id="detail-send-welcome-mail" type="button" disabled>Welkomstmail sturen</button>
                 </div>
               </div>
 
@@ -1459,6 +1460,45 @@
       </section>
     </div>
 
+
+
+    <div class="admin-modal" id="lead-customer-modal" role="dialog" aria-modal="true" aria-labelledby="lead-customer-modal-title" hidden>
+      <div class="admin-modal-backdrop" data-modal-close></div>
+      <section class="admin-card admin-modal-panel">
+        <div class="admin-modal-header">
+          <div>
+            <p class="section-kicker">Sales naar klant</p>
+            <h2 id="lead-customer-modal-title">Lead omzetten naar klant</h2>
+          </div>
+          <button class="button secondary" type="button" data-modal-close>Sluiten</button>
+        </div>
+        <form class="admin-profile-form" id="lead-customer-form">
+          <input id="lead-customer-lead-id" type="hidden" />
+          <div class="admin-profile-fields">
+            <label for="lead-customer-company">Bedrijfsnaam<input id="lead-customer-company" type="text" required /></label>
+            <label for="lead-customer-contact">Contactpersoon<input id="lead-customer-contact" type="text" required /></label>
+            <label for="lead-customer-email">E-mail<input id="lead-customer-email" type="email" /></label>
+            <label for="lead-customer-phone">Telefoon<input id="lead-customer-phone" type="tel" /></label>
+            <label for="lead-customer-website">Website<input id="lead-customer-website" type="text" required /></label>
+            <label for="lead-customer-address">Adres<input id="lead-customer-address" type="text" /></label>
+            <label for="lead-customer-industry">Branche<input id="lead-customer-industry" type="text" /></label>
+            <label for="lead-customer-region">Regio<input id="lead-customer-region" type="text" /></label>
+            <label for="lead-customer-package">Onderhoudspakket<select id="lead-customer-package" required><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option></select></label>
+            <label for="lead-customer-status">Klantstatus<select id="lead-customer-status" required><option value="actief">Actief</option><option value="onboarding">Onboarding</option></select></label>
+            <label for="lead-customer-portal-status">Portaalstatus<select id="lead-customer-portal-status" required><option value="niet_actief">Niet actief</option><option value="uitnodiging_klaar">Uitnodiging klaar</option><option value="uitgenodigd">Uitgenodigd</option><option value="actief">Actief</option></select></label>
+            <label class="admin-profile-wide" for="lead-customer-notes">Interne notities<textarea id="lead-customer-notes" placeholder="Wordt niet zichtbaar in het klantportaal"></textarea></label>
+          </div>
+          <div class="settings-status-list" id="lead-customer-duplicate-list" hidden></div>
+          <div class="admin-profile-actions">
+            <button class="button primary" id="lead-customer-save" type="submit">Klant aanmaken</button>
+            <button class="button secondary" id="lead-customer-link-existing" type="button" hidden>Koppelen aan bestaande klant</button>
+            <button class="button secondary" type="button" data-modal-close>Annuleren</button>
+            <p class="admin-form-message" id="lead-customer-message" role="status"></p>
+          </div>
+        </form>
+      </section>
+    </div>
+
     <div class="admin-modal" id="change-request-modal" role="dialog" aria-modal="true" aria-labelledby="change-request-modal-title" hidden>
       <div class="admin-modal-backdrop" data-modal-close></div>
       <section class="admin-card admin-modal-panel">
@@ -2382,7 +2422,8 @@
         const detailAuthStatus = document.getElementById("detail-auth-status");
         const detailLinkLogin = document.getElementById("detail-link-login");
         const detailResetPassword = document.getElementById("detail-reset-password");
-        const detailSendInvite = document.getElementById("detail-send-invite");
+        const detailPreparePortalInvite = document.getElementById("detail-prepare-portal-invite");
+        const detailSendWelcomeMail = document.getElementById("detail-send-welcome-mail");
         const detailArchive = document.getElementById("detail-archive");
         const customerHistoryList = document.getElementById("customer-history-list");
         const newCustomerModal = document.getElementById("new-customer-modal");
@@ -2394,6 +2435,28 @@
         const newCustomerMailSubject = document.getElementById("new-customer-mail-subject");
         const newCustomerMailBody = document.getElementById("new-customer-mail-body");
         const newSendWelcomeEmail = document.getElementById("new-send-welcome-email");
+        const leadCustomerModal = document.getElementById("lead-customer-modal");
+        const leadCustomerForm = document.getElementById("lead-customer-form");
+        const leadCustomerSave = document.getElementById("lead-customer-save");
+        const leadCustomerLinkExisting = document.getElementById("lead-customer-link-existing");
+        const leadCustomerDuplicateList = document.getElementById("lead-customer-duplicate-list");
+        const leadCustomerMessage = document.getElementById("lead-customer-message");
+        const leadCustomerFields = {
+          leadId: document.getElementById("lead-customer-lead-id"),
+          company: document.getElementById("lead-customer-company"),
+          contact: document.getElementById("lead-customer-contact"),
+          email: document.getElementById("lead-customer-email"),
+          phone: document.getElementById("lead-customer-phone"),
+          website: document.getElementById("lead-customer-website"),
+          address: document.getElementById("lead-customer-address"),
+          industry: document.getElementById("lead-customer-industry"),
+          region: document.getElementById("lead-customer-region"),
+          package: document.getElementById("lead-customer-package"),
+          status: document.getElementById("lead-customer-status"),
+          portalStatus: document.getElementById("lead-customer-portal-status"),
+          notes: document.getElementById("lead-customer-notes"),
+        };
+        let leadCustomerWizardContext = null;
         const requestList = document.getElementById("change-request-list");
         const requestStatusFilter = document.getElementById("filter-status");
         const requestPriorityFilter = document.getElementById("filter-priority");
@@ -8251,7 +8314,7 @@
 
         function normalizeStoredCustomer(customer = {}) {
           const createdAt = customer.createdAt || new Date().toISOString();
-          const portalStatus = customer.portalStatus || (customer.authStatus === "login actief" ? "actief" : "geen_login");
+          const portalStatus = customer.portalStatus || (customer.authStatus === "login actief" ? "actief" : "niet_actief");
           return {
             id: customer.id || createCrmId(),
             authUserId: customer.authUserId || "",
@@ -8268,7 +8331,8 @@
             updatedAt: customer.updatedAt || createdAt,
             notes: String(customer.notes || "").trim(),
             portalStatus,
-            authStatus: portalStatus === "actief" ? "login actief" : "geen login",
+            authStatus: portalStatus === "actief" ? "login actief" : "niet actief",
+            createdFromLeadId: customer.createdFromLeadId || customer.created_from_lead_id || "",
             isDemo: Boolean(customer.isDemo),
             demoScenarioId: customer.demoScenarioId || "",
             supabaseCustomerId: customer.supabaseCustomerId || customer._supabaseCustomerId || "",
@@ -10223,7 +10287,7 @@
           detailFields.website.value = customer.website || "";
           detailFields.package.value = customer.package || "Basis";
           detailFields.status.value = customer.status || "actief";
-          detailFields.portalStatus.value = customer.portalStatus || "geen_login";
+          detailFields.portalStatus.value = customer.portalStatus || "niet_actief";
           detailFields.customerSince.value = toDateInput(customer.customerSince || customer.createdAt);
           detailFields.notes.value = customer.notes || "";
           renderCustomerSourceDetail(customer);
@@ -10266,12 +10330,14 @@
             .sort((a, b) => String(b.invoiceDate || b.createdAt).localeCompare(String(a.invoiceDate || a.createdAt)))[0];
           detailSubtitle.textContent = `${customer.company || customer.name || "Klantprofiel"} - ${linkedProfiles.length} auth profile${linkedProfiles.length === 1 ? "" : "s"} - ${customerFileCount} bestand${customerFileCount === 1 ? "" : "en"} - ${customerQuotes.length} offerte${customerQuotes.length === 1 ? "" : "s"} (${openQuotes} open, ${acceptedQuotes} geaccepteerd, ${rejectedQuotes} afgewezen) - ${customerInvoices.length} factuur${customerInvoices.length === 1 ? "" : "en"} (${openInvoices} open, ${paidInvoices} betaald) - ${customerSubscriptions.length} abonnement${customerSubscriptions.length === 1 ? "" : "en"} - MRR klant ${money(customerMrr)}${nextCustomerInvoice ? ` - volgende factuur ${formatDate(nextCustomerInvoice.nextInvoiceDate)}` : ""}${lastCustomerInvoice ? ` - laatste factuur ${lastCustomerInvoice.invoiceNumber}` : ""}`;
           const hasLogin = customer.portalStatus === "actief" || customer.authStatus === "login actief";
-          const authLabel = customer.portalStatus === "uitgenodigd" ? "Uitgenodigd" : hasLogin ? "Login actief" : customer.portalStatus === "geblokkeerd" ? "Geblokkeerd" : "Geen login";
+          const authLabel = customer.portalStatus === "uitgenodigd" ? "Uitgenodigd" : customer.portalStatus === "uitnodiging_klaar" ? "Uitnodiging klaar" : hasLogin ? "Login actief" : "Niet actief";
           detailAuthStatus.textContent = authLabel;
           detailAuthStatus.className = `status-badge ${hasLogin ? "status-active" : "status-planned"}`;
-          detailLinkLogin.disabled = supabaseManaged || hasLogin || !detailFields.email.value || customer.portalStatus === "geblokkeerd";
+          detailLinkLogin.disabled = supabaseManaged || hasLogin || !detailFields.email.value || false;
           detailResetPassword.disabled = supabaseManaged || !hasLogin || !detailFields.email.value;
-          detailSendInvite.disabled = supabaseManaged || !detailFields.email.value;
+          detailPreparePortalInvite.disabled = supabaseManaged || !detailFields.email.value;
+          detailSendWelcomeMail.disabled = supabaseManaged || !detailFields.email.value;
+          detailSendWelcomeMail.title = detailFields.email.value ? "" : "Vul eerst een e-mailadres in.";
           setDetailMessage(supabaseManaged ? "Supabase customer write readiness wordt gecontroleerd..." : "", supabaseManaged ? "success" : "");
           detailOpenWebsite.href = customer.website || "#";
           detailOpenWebsite.classList.toggle("is-disabled", !customer.website);
@@ -10506,18 +10572,60 @@
           }
         }
 
-        async function sendInviteFromDetail() {
-          detailSendInvite.disabled = true;
-          detailSendInvite.textContent = "Versturen...";
+        async function preparePortalInviteFromDetail() {
+          detailPreparePortalInvite.disabled = true;
+          detailPreparePortalInvite.textContent = "Voorbereiden...";
           setDetailMessage("", "");
           try {
-            const data = await runCustomerAction("send_invite", currentDetailPayload());
-            setDetailMessage(data.warning || "Uitnodiging geregistreerd.", data.warning ? "success" : "success");
+            const customer = selectedCustomer();
+            if (!customer) return;
+            const profile = saveCustomerLocally({ ...currentDetailPayload(), portalStatus: "uitnodiging_klaar" });
+            await loadCRMData(false);
+            state.selectedCustomerId = profile.id || customer.id;
+            selectCustomer(state.selectedCustomerId);
+            setDetailMessage("Portaal uitnodiging staat klaar. Er is geen wachtwoord aangemaakt of opgeslagen.", "success");
           } catch (error) {
-            setDetailMessage(error.message || "Uitnodiging kon niet worden verstuurd.", "error");
+            setDetailMessage(error.message || "Portaal uitnodiging kon niet worden voorbereid.", "error");
           } finally {
-            detailSendInvite.textContent = "Uitnodiging versturen";
-            detailSendInvite.disabled = isSupabaseManagedCustomer(selectedCustomer()) || !detailFields.email.value;
+            detailPreparePortalInvite.textContent = "Portaal uitnodiging maken";
+            detailPreparePortalInvite.disabled = isSupabaseManagedCustomer(selectedCustomer()) || !detailFields.email.value;
+          }
+        }
+
+        async function sendWelcomeMailFromDetail() {
+          const customer = selectedCustomer();
+          if (!customer) return;
+          if (!detailFields.email.value) {
+            setDetailMessage("Vul eerst een e-mailadres in voordat je een welkomstmail stuurt.", "error");
+            return;
+          }
+          detailSendWelcomeMail.disabled = true;
+          detailSendWelcomeMail.textContent = "Versturen...";
+          setDetailMessage("", "");
+          try {
+            const token = getAdminBearer();
+            if (!token) throw new Error("Log eerst in als admin.");
+            const response = await fetch("/.netlify/functions/admin-customer-welcome-email", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify(currentDetailPayload({ customerId: customer.id })),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data.success) throw new Error(data.error || "Welkomstmail kon niet worden verzonden.");
+            const profile = saveCustomerLocally({ ...customer, portalStatus: data.email?.sent ? "uitgenodigd" : "uitnodiging_klaar" });
+            await loadCRMData(false);
+            state.selectedCustomerId = profile.id || customer.id;
+            selectCustomer(state.selectedCustomerId);
+            setDetailMessage(data.email?.sent ? "Welkomstmail verzonden via Resend." : (data.email?.warning || "Welkomstmail preview klaargezet. Geen wachtwoorden gelogd of opgeslagen."), "success");
+          } catch (error) {
+            setDetailMessage(error.message || "Welkomstmail kon niet worden verstuurd.", "error");
+          } finally {
+            detailSendWelcomeMail.textContent = "Welkomstmail sturen";
+            detailSendWelcomeMail.disabled = isSupabaseManagedCustomer(selectedCustomer()) || !detailFields.email.value;
           }
         }
 
@@ -15459,10 +15567,243 @@
           targetModal.hidden = true;
           document.body.classList.remove("admin-modal-open");
           if (targetModal === requestModal) state.selectedRequestId = "";
+          if (targetModal === leadCustomerModal) leadCustomerWizardContext = null;
           if (targetModal === subscriptionModal) state.selectedSubscriptionId = "";
           if (targetModal === invoiceModal) state.selectedInvoiceId = "";
           if (targetModal === quoteModal) state.selectedQuoteId = "";
         }
+
+
+        function setLeadCustomerMessage(text, type = "") {
+          if (!leadCustomerMessage) return;
+          leadCustomerMessage.textContent = text;
+          leadCustomerMessage.className = `admin-form-message ${type}`.trim();
+        }
+
+        function normalizeCustomerLookupValue(value = "") {
+          return String(value || "")
+            .trim()
+            .toLowerCase()
+            .replace(/^https?:\/\//, "")
+            .replace(/^www\./, "")
+            .replace(/\/.*$/, "")
+            .replace(/\s+/g, " ");
+        }
+
+        function collectLeadCustomerPayload() {
+          return {
+            leadId: leadCustomerFields.leadId?.value || leadCustomerWizardContext?.lead?.id || "",
+            company: leadCustomerFields.company?.value || "",
+            name: leadCustomerFields.contact?.value || "",
+            email: String(leadCustomerFields.email?.value || "").trim().toLowerCase(),
+            phone: leadCustomerFields.phone?.value || "",
+            website: leadCustomerFields.website?.value || "",
+            address: leadCustomerFields.address?.value || "",
+            industry: leadCustomerFields.industry?.value || "",
+            region: leadCustomerFields.region?.value || "",
+            package: leadCustomerFields.package?.value || "Basis",
+            status: leadCustomerFields.status?.value || "actief",
+            portalStatus: leadCustomerFields.portalStatus?.value || "niet_actief",
+            notes: leadCustomerFields.notes?.value || "",
+          };
+        }
+
+        function findCustomerDuplicates(payload = {}) {
+          const websiteKey = normalizeCustomerLookupValue(payload.website);
+          const emailKey = normalizeCustomerLookupValue(payload.email);
+          const companyKey = normalizeCustomerLookupValue(payload.company);
+          return state.customers.filter((customer) => {
+            const customerWebsite = normalizeCustomerLookupValue(customer.website);
+            const customerEmail = normalizeCustomerLookupValue(customer.email || customer.authEmail);
+            const customerCompany = normalizeCustomerLookupValue(customer.company || customer.name);
+            return (websiteKey && customerWebsite && websiteKey === customerWebsite)
+              || (emailKey && customerEmail && emailKey === customerEmail)
+              || (companyKey && customerCompany && companyKey === customerCompany);
+          });
+        }
+
+        function renderLeadCustomerDuplicates(duplicates = []) {
+          if (!leadCustomerDuplicateList || !leadCustomerLinkExisting) return;
+          leadCustomerWizardContext = { ...(leadCustomerWizardContext || {}), duplicates };
+          if (!duplicates.length) {
+            leadCustomerDuplicateList.hidden = true;
+            leadCustomerDuplicateList.replaceChildren();
+            leadCustomerLinkExisting.hidden = true;
+            return;
+          }
+          leadCustomerDuplicateList.hidden = false;
+          leadCustomerLinkExisting.hidden = false;
+          leadCustomerDuplicateList.innerHTML = duplicates.map((customer) => `
+            <div>
+              <span>Dubbele klant gevonden</span>
+              <strong>${escapeHtml(customer.company || customer.name || "Onbekende klant")}</strong>
+              <span>${escapeHtml([customer.email, customer.website].filter(Boolean).join(" · ") || "Geen e-mail/website")}</span>
+            </div>
+          `).join("");
+        }
+
+        function refreshLeadCustomerDuplicateWarning() {
+          renderLeadCustomerDuplicates(findCustomerDuplicates(collectLeadCustomerPayload()));
+        }
+
+        function updateLeadReferenceToCustomer(leadId, customerId) {
+          if (!leadId || !customerId) return;
+          try {
+            const leads = JSON.parse(localStorage.getItem(leadFinderStorageKey) || "[]");
+            if (!Array.isArray(leads)) return;
+            const now = new Date().toISOString();
+            const next = leads.map((lead) => lead?.id === leadId ? {
+              ...lead,
+              callStatus: "customer_active",
+              convertedCustomerId: customerId,
+              customerId,
+              updatedAt: now,
+              notes: [
+                lead.notes,
+                `[${new Date().toLocaleDateString("nl-NL")}] Omgezet naar klant: ${customerId}.`,
+              ].filter(Boolean).join("\n"),
+            } : lead);
+            localStorage.setItem(leadFinderStorageKey, JSON.stringify(next));
+          } catch (error) {
+            console.warn("Lead kon niet lokaal aan klant gekoppeld worden.", error);
+          }
+        }
+
+        function ensureCustomerWebsiteRecord(customer) {
+          if (!customer?.website) return null;
+          const domain = normalizeCustomerLookupValue(customer.website);
+          const existing = readStoredWebsites().find((website) => {
+            const sameCustomer = website.profileId === customer.id || website.customerId === customer.id;
+            const sameDomain = normalizeCustomerLookupValue(website.domain || website.liveUrl || website.name) === domain;
+            return sameCustomer || (domain && sameDomain);
+          });
+          const now = new Date().toISOString();
+          const website = {
+            ...(existing || {}),
+            id: existing?.id || createCrmId(),
+            profileId: customer.id,
+            customerId: customer.id,
+            customerName: customer.name,
+            customerCompany: customer.company,
+            customerEmail: customer.email,
+            name: customer.company || customer.website,
+            domain,
+            liveUrl: domain ? `https://${domain}` : customer.website,
+            status: existing?.status || "online",
+            hostingPackage: customer.package,
+            carePackage: customer.package,
+            updatedAt: now,
+            createdAt: existing?.createdAt || now,
+            metadata: {
+              ...(existing?.metadata || {}),
+              createdFromLeadId: customer.createdFromLeadId || "",
+              linkedBy: "lead-to-customer-onboarding",
+            },
+          };
+          const websites = readStoredWebsites().filter((item) => item.id !== website.id);
+          writeStoredWebsites([website, ...websites]);
+          return website;
+        }
+
+        async function createCustomerFromLeadWizard(event) {
+          event.preventDefault();
+          const payload = collectLeadCustomerPayload();
+          const validationError = validateCustomerPayload(payload);
+          if (validationError) {
+            setLeadCustomerMessage(validationError, "error");
+            return;
+          }
+          if (!payload.website) {
+            setLeadCustomerMessage("Vul een website in om de klant goed te kunnen koppelen.", "error");
+            return;
+          }
+          const duplicates = findCustomerDuplicates(payload);
+          if (duplicates.length && !leadCustomerWizardContext?.duplicateConfirmed) {
+            renderLeadCustomerDuplicates(duplicates);
+            setLeadCustomerMessage("Er bestaat mogelijk al een klant met dezelfde website, e-mail of bedrijfsnaam. Koppel aan bestaande klant of annuleer.", "error");
+            return;
+          }
+          leadCustomerSave.disabled = true;
+          leadCustomerSave.textContent = "Aanmaken...";
+          try {
+            const notes = [
+              payload.notes,
+              payload.address ? `Adres: ${payload.address}` : "",
+              payload.industry ? `Branche: ${payload.industry}` : "",
+              payload.region ? `Regio: ${payload.region}` : "",
+              payload.leadId ? `Aangemaakt vanuit lead: ${payload.leadId}` : "",
+            ].filter(Boolean).join("\n");
+            const customer = saveCustomerLocally({
+              name: payload.name,
+              company: payload.company,
+              email: payload.email,
+              phone: payload.phone,
+              website: payload.website,
+              package: payload.package,
+              status: payload.status,
+              portalStatus: payload.portalStatus,
+              notes,
+              createdFromLeadId: payload.leadId,
+            });
+            ensureCustomerWebsiteRecord(customer);
+            updateLeadReferenceToCustomer(payload.leadId, customer.id);
+            await loadCRMData(false);
+            state.selectedCustomerId = customer.id;
+            renderCustomers();
+            selectCustomer(customer.id);
+            if (customerSearch) customerSearch.value = payload.company;
+            document.getElementById("klanten")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            closeModal(leadCustomerModal);
+            setAdminAccessMessage("Klant aangemaakt. Klantdetail is geopend.", "success");
+          } catch (error) {
+            setLeadCustomerMessage(error.message || "Klant kon niet worden aangemaakt.", "error");
+          } finally {
+            leadCustomerSave.disabled = false;
+            leadCustomerSave.textContent = "Klant aanmaken";
+          }
+        }
+
+        async function linkLeadToExistingCustomer() {
+          const duplicates = leadCustomerWizardContext?.duplicates || findCustomerDuplicates(collectLeadCustomerPayload());
+          const customer = duplicates[0];
+          if (!customer) {
+            setLeadCustomerMessage("Geen bestaande klant gevonden om te koppelen.", "error");
+            return;
+          }
+          const leadId = collectLeadCustomerPayload().leadId;
+          updateLeadReferenceToCustomer(leadId, customer.id);
+          await loadCRMData(false);
+          state.selectedCustomerId = customer.id;
+          selectCustomer(customer.id);
+          closeModal(leadCustomerModal);
+          setAdminAccessMessage("Lead gekoppeld aan bestaande klant.", "success");
+          document.getElementById("klanten")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+
+        function openLeadToCustomerWizard(lead = {}) {
+          if (!leadCustomerModal || !leadCustomerForm) return;
+          leadCustomerForm.reset();
+          leadCustomerWizardContext = { lead, duplicateConfirmed: false, duplicates: [] };
+          const domain = String(lead.websiteUrl || lead.website || "").replace(/^https?:\/\//i, "").replace(/^www\./i, "").replace(/\/.*$/, "");
+          if (leadCustomerFields.leadId) leadCustomerFields.leadId.value = lead.id || "";
+          if (leadCustomerFields.company) leadCustomerFields.company.value = lead.companyName || lead.company || "";
+          if (leadCustomerFields.contact) leadCustomerFields.contact.value = lead.contactName || lead.name || lead.companyName || "";
+          if (leadCustomerFields.email) leadCustomerFields.email.value = lead.email || "";
+          if (leadCustomerFields.phone) leadCustomerFields.phone.value = lead.phone || "";
+          if (leadCustomerFields.website) leadCustomerFields.website.value = domain;
+          if (leadCustomerFields.address) leadCustomerFields.address.value = lead.address || "";
+          if (leadCustomerFields.industry) leadCustomerFields.industry.value = lead.industry || "";
+          if (leadCustomerFields.region) leadCustomerFields.region.value = lead.region || "";
+          if (leadCustomerFields.package) leadCustomerFields.package.value = "Plus";
+          if (leadCustomerFields.status) leadCustomerFields.status.value = "actief";
+          if (leadCustomerFields.portalStatus) leadCustomerFields.portalStatus.value = "uitnodiging_klaar";
+          if (leadCustomerFields.notes) leadCustomerFields.notes.value = lead.notes || "";
+          refreshLeadCustomerDuplicateWarning();
+          setLeadCustomerMessage("Controleer de gegevens. Ontbrekende velden kun je hier aanvullen voordat de klant wordt aangemaakt.", "success");
+          leadCustomerModal.hidden = false;
+          document.body.classList.add("admin-modal-open");
+        }
+        window.openLeadToCustomerWizard = openLeadToCustomerWizard;
 
         function openNewCustomerModal(prefill = {}) {
           newCustomerForm.reset();
@@ -15823,7 +16164,8 @@
         websiteQuickActions.viewSubscriptions.addEventListener("click", viewSubscriptionsForWebsite);
         detailLinkLogin.addEventListener("click", linkLogin);
         detailResetPassword.addEventListener("click", sendPasswordReset);
-        detailSendInvite.addEventListener("click", sendInviteFromDetail);
+        detailPreparePortalInvite.addEventListener("click", preparePortalInviteFromDetail);
+        detailSendWelcomeMail.addEventListener("click", sendWelcomeMailFromDetail);
         detailEdit.addEventListener("click", enableCustomerEditing);
         detailCancel.addEventListener("click", cancelCustomerEditing);
         detailRefreshSupabase.addEventListener("click", refreshSelectedCustomerFromSupabase);
@@ -15938,6 +16280,12 @@
           fileFields.customer.value = selectedCustomerId;
         });
         newCustomerForm.addEventListener("submit", createCustomer);
+        leadCustomerForm?.addEventListener("submit", createCustomerFromLeadWizard);
+        leadCustomerLinkExisting?.addEventListener("click", linkLeadToExistingCustomer);
+        Object.values(leadCustomerFields).forEach((field) => {
+          if (field && field.tagName !== "INPUT") return;
+          field?.addEventListener("input", refreshLeadCustomerDuplicateWarning);
+        });
         newSendInvite.addEventListener("click", sendInviteFromNewCustomer);
         customerDataModeSelect.addEventListener("change", changeCustomerDataModeHandler);
         websiteDataModeSelect.addEventListener("change", changeWebsiteDataModeHandler);
@@ -16084,7 +16432,7 @@
         });
         document.addEventListener("keydown", (event) => {
           if (event.key !== "Escape") return;
-          [newCustomerModal, requestModal, subscriptionModal, quoteModal, invoiceModal].forEach((targetModal) => {
+          [newCustomerModal, leadCustomerModal, requestModal, subscriptionModal, quoteModal, invoiceModal].forEach((targetModal) => {
             if (!targetModal.hidden) closeModal(targetModal);
           });
         });
@@ -17239,7 +17587,7 @@
 
       function getSalesNextAction(lead = {}) {
         if (!lead?.id) return { label: "Selecteer een lead", button: "Kies lead", action: "" };
-        if (isLeadWon(lead)) return { label: "Klant aanmaken", button: "Klant aanmaken", action: "customer" };
+        if (isLeadWon(lead)) return { label: "Omzetten naar klant", button: "Omzetten naar klant", action: "customer" };
         if (lead.callStatus === "quote_sent") return { label: "Offerte opvolgen", button: "Follow-up plannen", action: "followup" };
         if (lead.callStatus === "quote_ready" || lead.callStatus === "qualified" || lead.callStatus === "interesse") {
           return { label: "Offerte maken", button: "Offerte starten", action: "quote" };
@@ -17923,33 +18271,23 @@
         const lead = selectedLeadFinderLead();
         if (!lead) return;
         if (!isLocalLead(lead)) {
-          setLeadfinderMessage("Deze lead komt uit de read-only data-layer. Klant aanmaken blijft alleen beschikbaar voor lokale/admin leads.", "error");
-          return;
-        }
-        if (!lead.email) {
-          setLeadfinderMessage("Vul eerst een e-mailadres in voordat je de klantwizard start.", "error");
+          setLeadfinderMessage("Deze lead komt uit de read-only data-layer. Omzetten naar klant blijft veilig beschikbaar voor lokale/admin leads.", "error");
           return;
         }
         const updatedLead = updateLeadFinderLeadLocally(lead.id, {
           callStatus: lead.callStatus === "customer_active" ? "customer_active" : "won",
           notes: [
             lead.notes,
-            `[${new Date().toLocaleDateString("nl-NL")}] Klaargezet voor klant-aanmaak wizard.`,
+            `[${new Date().toLocaleDateString("nl-NL")}] Lead geopend in omzetten-naar-klant wizard.`,
           ].filter(Boolean).join("\n"),
         }) || lead;
         selectedLeadFinderId = updatedLead.id;
-        const domain = String(updatedLead.websiteUrl || "").replace(/^https?:\/\//i, "").replace(/\/.*$/, "");
-        window.openNewCustomerModal?.({
-          name: updatedLead.companyName,
-          company: updatedLead.companyName,
-          email: updatedLead.email,
-          phone: updatedLead.phone,
-          website: domain,
-          package: "Plus",
-          projectName: updatedLead.companyName ? `Website ${updatedLead.companyName}` : "",
-          message: "Leadgegevens zijn ingevuld. Controleer de gegevens en klik daarna pas op Klantportaal klaarzetten.",
-        });
-        setLeadfinderMessage("Lead gemarkeerd als verkocht en klantwizard ingevuld. Provisioning start pas nadat je de wizard opslaat.", "success");
+        if (typeof window.openLeadToCustomerWizard === "function") {
+          window.openLeadToCustomerWizard(updatedLead);
+          setLeadfinderMessage("Lead gemarkeerd als verkocht. Controleer de gegevens in de klantwizard.", "success");
+        } else {
+          setLeadfinderMessage("Klantwizard kon niet worden geopend. Herlaad het admin dashboard.", "error");
+        }
         await reloadLeadfinderAfterLocalChange();
       }
 

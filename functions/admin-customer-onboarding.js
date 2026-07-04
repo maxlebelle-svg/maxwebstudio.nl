@@ -177,7 +177,7 @@ exports.handler = async (event) => {
         customer: pickRecord(customer),
         website: pickRecord(website),
         project: pickRecord(project),
-        portalStatus: "active",
+        portalStatus: portalStatus.database,
         passwordSetup: {
           status: passwordSetup.status,
           redirectTo: passwordSetup.redirectTo,
@@ -244,13 +244,13 @@ function getRecordEnvironment() {
 function getPortalStatus(input = {}) {
   if (input.sendWelcomeEmail) {
     return {
-      database: "invited",
+      database: "uitgenodigd",
       access: "invited",
     };
   }
 
   return {
-    database: "prepared",
+    database: "uitnodiging_klaar",
     access: "pending_invitation",
   };
 }
