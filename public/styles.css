@@ -16686,6 +16686,64 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   transform: none;
 }
 
+/* Fixed sidebar sizing across Dashboard, Sales, Klanten and every later module. */
+.admin-body {
+  --admin-sidebar-width: 288px;
+}
+
+.admin-body .admin-crm-shell,
+.admin-body.is-sales-view .admin-crm-shell {
+  grid-template-columns: var(--admin-sidebar-width) minmax(0, 1fr);
+}
+
+.admin-body .admin-sidebar,
+.admin-body.is-sales-view .admin-sidebar {
+  width: var(--admin-sidebar-width);
+  min-width: var(--admin-sidebar-width);
+  max-width: var(--admin-sidebar-width);
+  padding: 24px;
+  gap: 22px;
+  border-radius: var(--mws-radius);
+}
+
+.admin-body .admin-sidebar .brand,
+.admin-body.is-sales-view .admin-sidebar .brand {
+  min-height: 54px;
+  padding: 8px 8px 18px;
+  gap: 12px;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.admin-body .admin-sidebar .brand .brand-mark,
+.admin-body.is-sales-view .admin-sidebar .brand .brand-mark {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+}
+
+.admin-body .admin-nav-group,
+.admin-body.is-sales-view .admin-nav-group {
+  margin: 14px 0 2px;
+  padding: 0 12px;
+  font-size: 11px;
+}
+
+.admin-body .admin-token-card,
+.admin-body.is-sales-view .admin-token-card,
+.admin-body #admin-login-card,
+.admin-body.is-sales-view #admin-login-card {
+  width: 100%;
+  padding: 18px;
+}
+
+.admin-body #admin-login-card .admin-profile-inline,
+.admin-body.is-sales-view #admin-login-card .admin-profile-inline {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
 @media (max-width: 1180px) {
   .admin-body .admin-crm-grid,
   .admin-body .website-operations-grid,
@@ -16699,6 +16757,18 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   .admin-body .project-detail-panel,
   .admin-body .file-detail-panel {
     position: static;
+  }
+
+  .admin-body .admin-crm-shell,
+  .admin-body.is-sales-view .admin-crm-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-body .admin-sidebar,
+  .admin-body.is-sales-view .admin-sidebar {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
   }
 }
 
