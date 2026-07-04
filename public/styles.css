@@ -16550,6 +16550,102 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   padding: clamp(20px, 2vw, 28px);
 }
 
+/* Keep Dashboard, Sales and Klanten visually continuous. */
+.admin-body.is-sales-view {
+  background:
+    radial-gradient(circle at 82% 0%, rgba(21, 94, 239, 0.18), transparent 30%),
+    radial-gradient(circle at 12% 8%, rgba(25, 194, 255, 0.1), transparent 28%),
+    linear-gradient(180deg, var(--mws-bg) 0%, #061a2a 54%, var(--mws-bg-deep) 100%);
+}
+
+.admin-body.is-sales-view .admin-crm-shell {
+  grid-template-columns: minmax(250px, 0.22fr) minmax(0, 1fr);
+  gap: clamp(18px, 2.4vw, 34px);
+  width: min(100%, 1780px);
+  max-width: 100%;
+  padding: clamp(18px, 2.4vw, 34px);
+}
+
+.admin-body.is-sales-view .admin-crm-main {
+  display: grid;
+  gap: clamp(22px, 2.6vw, 34px);
+  max-width: 100%;
+}
+
+.admin-body.is-sales-view .admin-sidebar {
+  width: auto;
+  padding: clamp(18px, 2vw, 28px);
+  border-color: var(--mws-border);
+  border-radius: var(--mws-radius);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.025)),
+    rgba(8, 24, 38, 0.82);
+  box-shadow: var(--mws-shadow);
+}
+
+.admin-body.is-sales-view .admin-sidebar-nav a {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.72);
+  background: transparent;
+  font-size: inherit;
+  font-weight: 800;
+}
+
+.admin-body.is-sales-view .admin-sidebar-nav a:hover,
+.admin-body.is-sales-view .admin-sidebar-nav a.is-active {
+  color: var(--white);
+  background:
+    linear-gradient(90deg, rgba(37, 99, 235, 0.22), rgba(255, 255, 255, 0.04)),
+    rgba(255, 255, 255, 0.06);
+  box-shadow: inset 3px 0 0 var(--blue), 0 14px 34px rgba(21, 94, 239, 0.2);
+}
+
+.admin-body.is-sales-view #leadfinder {
+  max-width: 100%;
+  padding: clamp(24px, 3vw, 36px);
+  border: 1px solid var(--admin-page-line);
+  border-radius: var(--mws-radius);
+  background: var(--admin-page-card-strong);
+  box-shadow: var(--mws-shadow);
+}
+
+.admin-body.is-sales-view #leadfinder > .admin-section-heading {
+  align-items: flex-start;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.admin-body.is-sales-view #leadfinder > .admin-section-heading h2 {
+  font-size: clamp(34px, 3.35vw, 56px);
+  line-height: 0.98;
+}
+
+.admin-body.is-sales-view .leadfinder-filters,
+.admin-body.is-sales-view .leadfinder-grid .admin-card,
+.admin-body.is-sales-view .lead-card {
+  border-radius: var(--mws-radius);
+  border-color: var(--admin-page-line);
+  background: var(--admin-page-card);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+
+.admin-body.is-sales-view .lead-card:hover,
+.admin-body.is-sales-view .lead-card.is-selected {
+  border-color: rgba(96, 165, 250, 0.42);
+  box-shadow: 0 20px 56px rgba(0, 8, 18, 0.26);
+}
+
+.admin-body.is-sales-view .sales-kpi-card,
+.admin-body #klanten .request-state-card,
+.admin-body #klanten .crm-detail-panel {
+  border-radius: var(--mws-radius);
+}
+
 @media (max-width: 1180px) {
   .admin-body .admin-crm-grid,
   .admin-body .website-operations-grid,
