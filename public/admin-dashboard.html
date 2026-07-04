@@ -8782,8 +8782,8 @@
             }
             setCustomerContactFieldsOnly(state.customerWriteReadiness.allowed);
             detailSave.disabled = !state.customerWriteReadiness.allowed;
-            detailArchive.disabled = true;
-            detailReactivate.disabled = true;
+            detailArchive.disabled = customer.status === "gearchiveerd";
+            detailReactivate.disabled = customer.status !== "gearchiveerd";
             renderCustomerSourceDetail(customer, state.customerWriteReadiness);
             if (!state.customerWriteReadiness.allowed) {
               setDetailMessage(`Supabase customer contact write geblokkeerd: ${state.customerWriteReadiness.reason}`, "error");
@@ -10165,6 +10165,30 @@
           return state.customers.find((customer) => customer.id === state.selectedCustomerId);
         }
 
+        function reportUnavailableAction(message, messageHandler = setAdminAccessMessage) {
+          const text = message || "Deze actie is nu niet beschikbaar.";
+          console.warn("Admin action unavailable", { message: text, selectedCustomerId: state.selectedCustomerId });
+          if (typeof messageHandler === "function") messageHandler(text, "error");
+          else notifyUser(text, "error");
+        }
+
+        async function postJsonWithAdminAuth(url, payload, fallbackError = "Adminactie kon niet worden uitgevoerd.") {
+          const token = getAdminBearer();
+          if (!token) throw new Error("Log eerst in als admin.");
+          const response = await fetch(url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(payload),
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || !data.success) throw new Error(data.error || fallbackError);
+          return data;
+        }
+
         function selectedWebsite() {
           return state.websites.find((website) => website.id === state.selectedWebsiteId);
         }
@@ -10535,7 +10559,7 @@
             field.disabled = supabaseManaged;
           });
           detailSave.disabled = supabaseManaged;
-          detailArchive.disabled = supabaseManaged || customer.status === "gearchiveerd";
+          detailArchive.disabled = customer.status === "gearchiveerd";
           detailState.textContent = "Geselecteerd";
           detailState.className = `status-badge ${customerStatusClass(customer.status)}`;
           const customerFileCount = state.files.filter((file) => file.customerId === customer.id).length;
@@ -10571,11 +10595,13 @@
           const authLabel = customer.portalStatus === "uitgenodigd" ? "Uitgenodigd" : customer.portalStatus === "uitnodiging_klaar" ? "Uitnodiging klaar" : hasLogin ? "Login actief" : "Niet actief";
           detailAuthStatus.textContent = authLabel;
           detailAuthStatus.className = `status-badge ${hasLogin ? "status-active" : "status-planned"}`;
-          detailLinkLogin.disabled = supabaseManaged || hasLogin || !detailFields.email.value || false;
-          detailResetPassword.disabled = supabaseManaged || !hasLogin || !detailFields.email.value;
-          detailPreparePortalInvite.disabled = supabaseManaged || !detailFields.email.value;
-          detailSendWelcomeMail.disabled = supabaseManaged || !detailFields.email.value;
-          detailSendWelcomeMail.title = detailFields.email.value ? "" : "Vul eerst een e-mailadres in.";
+          detailLinkLogin.disabled = hasLogin;
+          detailResetPassword.disabled = false;
+          detailPreparePortalInvite.disabled = false;
+          detailSendWelcomeMail.disabled = false;
+          [detailLinkLogin, detailResetPassword, detailPreparePortalInvite, detailSendWelcomeMail].forEach((button) => {
+            button.title = detailFields.email.value ? "" : "Vul eerst een e-mailadres in.";
+          });
           setDetailMessage(supabaseManaged ? "Supabase customer write readiness wordt gecontroleerd..." : "", supabaseManaged ? "success" : "");
           detailOpenWebsite.href = customer.website || "#";
           detailOpenWebsite.classList.toggle("is-disabled", !customer.website);
@@ -10722,6 +10748,15 @@
           const action = payload.action || "save_customer";
 
           if (action === "send_invite") {
+            if (getAdminBearer()) {
+              const data = await postJsonWithAdminAuth(crmEndpoint, {
+                action: "send_invite",
+                email: payload.email,
+              }, "Portaaluitnodiging kon niet worden verstuurd.");
+              const customer = payload.id ? state.customers.find((item) => item.id === payload.id) : state.customers.find((item) => item.email === String(payload.email || "").toLowerCase());
+              const profile = customer ? saveCustomerLocally({ ...customer, portalStatus: "uitgenodigd" }) : null;
+              return { ...data, profile, warning: data.warning || "Supabase Auth uitnodiging verstuurd of voorbereid." };
+            }
             const customer = payload.id ? state.customers.find((item) => item.id === payload.id) : state.customers.find((item) => item.email === String(payload.email || "").toLowerCase());
             if (!payload.email && !customer?.email) throw new Error("Vul eerst een geldig e-mailadres in.");
             if (customer) {
@@ -10733,7 +10768,11 @@
 
           if (action === "send_password_reset") {
             if (!payload.email) throw new Error("Vul eerst een geldig e-mailadres in.");
-            return { success: true, warning: "Demo-reset geregistreerd. Echte Auth-mail volgt in Fase 8.4." };
+            if (!getAdminBearer()) throw new Error("Log eerst in als admin om een resetlink te versturen.");
+            return postJsonWithAdminAuth(crmEndpoint, {
+              action: "send_password_reset",
+              email: payload.email,
+            }, "Wachtwoord reset kon niet worden verstuurd.");
           }
 
           if (action === "link_login") {
@@ -10777,7 +10816,30 @@
 
         async function linkLogin() {
           const customer = selectedCustomer();
-          if (!customer) return;
+          if (!customer) {
+            reportUnavailableAction("Selecteer eerst een klant.", setDetailMessage);
+            return;
+          }
+          if (!detailFields.email.value) {
+            reportUnavailableAction("Vul eerst een e-mailadres in.", setDetailMessage);
+            return;
+          }
+          if (isSupabaseManagedCustomer(customer)) {
+            try {
+              const data = await postJsonWithAdminAuth(crmEndpoint, {
+                action: "check_auth_user",
+                email: detailFields.email.value,
+              }, "Login kon niet worden gecontroleerd.");
+              if (!data.authUser?.id) {
+                reportUnavailableAction("Geen Supabase Auth gebruiker gevonden. Gebruik eerst Portaal uitnodiging maken.", setDetailMessage);
+                return;
+              }
+              setDetailMessage("Supabase Auth gebruiker gevonden en gekoppeld via profile/auth_user_id.", "success");
+            } catch (error) {
+              setDetailMessage(error.message || "Login kon niet worden gecontroleerd.", "error");
+            }
+            return;
+          }
           detailLinkLogin.disabled = true;
           detailLinkLogin.textContent = "Koppelen...";
           setDetailMessage("", "");
@@ -10791,7 +10853,7 @@
           } finally {
             detailLinkLogin.textContent = "Login koppelen";
             const refreshed = selectedCustomer();
-            detailLinkLogin.disabled = isSupabaseManagedCustomer(refreshed) || refreshed?.authStatus === "login actief" || !detailFields.email.value;
+            detailLinkLogin.disabled = refreshed?.authStatus === "login actief";
           }
         }
 
@@ -10806,7 +10868,7 @@
             setDetailMessage(error.message || "Wachtwoord reset kon niet worden verstuurd.", "error");
           } finally {
             detailResetPassword.textContent = "Wachtwoord reset versturen";
-            detailResetPassword.disabled = isSupabaseManagedCustomer(selectedCustomer()) || selectedCustomer()?.authStatus !== "login actief" || !detailFields.email.value;
+            detailResetPassword.disabled = false;
           }
         }
 
@@ -10821,11 +10883,12 @@
               inviteToast?.update("Selecteer eerst een klant.", "error", { duration: 4000 });
               return;
             }
-            const profile = saveCustomerLocally({ ...currentDetailPayload(), portalStatus: "uitnodiging_klaar" });
+            const data = await runCustomerAction("send_invite", currentDetailPayload({ email: detailFields.email.value }));
+            const profile = data.profile || { id: customer.id };
             await loadCRMData(false);
             state.selectedCustomerId = profile.id || customer.id;
             selectCustomer(state.selectedCustomerId);
-            const message = "Portaal uitnodiging staat klaar. Er is geen wachtwoord aangemaakt of opgeslagen.";
+            const message = data.warning || "Portaal uitnodiging staat klaar. Er is geen wachtwoord aangemaakt of opgeslagen.";
             inviteToast?.update(message, "success", { duration: 3000 });
             setDetailMessage(message, "success", { toast: false });
           } catch (error) {
@@ -10834,7 +10897,7 @@
             setDetailMessage(message, "error", { toast: false });
           } finally {
             detailPreparePortalInvite.textContent = "Portaal uitnodiging maken";
-            detailPreparePortalInvite.disabled = isSupabaseManagedCustomer(selectedCustomer()) || !detailFields.email.value;
+            detailPreparePortalInvite.disabled = false;
           }
         }
 
@@ -10876,13 +10939,16 @@
             setDetailMessage(message, "error", { toast: false });
           } finally {
             detailSendWelcomeMail.textContent = "Welkomstmail sturen";
-            detailSendWelcomeMail.disabled = isSupabaseManagedCustomer(selectedCustomer()) || !detailFields.email.value;
+            detailSendWelcomeMail.disabled = false;
           }
         }
 
         async function archiveCustomer() {
           const customer = selectedCustomer();
-          if (!customer) return;
+          if (!customer) {
+            reportUnavailableAction("Selecteer eerst een klant om te archiveren.", setDetailMessage);
+            return;
+          }
           const confirmed = window.confirm("Weet je zeker dat je deze klant wilt archiveren?");
           if (!confirmed) return;
           if (isSupabaseManagedCustomer(customer) && !window.confirm("Supabase-klant archiveren is een soft delete. Bevestig dat je geen hard delete uitvoert.")) return;
@@ -10919,7 +10985,10 @@
 
         async function reactivateCustomer() {
           const customer = selectedCustomer();
-          if (!customer) return;
+          if (!customer) {
+            reportUnavailableAction("Selecteer eerst een klant om te reactiveren.", setDetailMessage);
+            return;
+          }
           if (!window.confirm("Deze klant opnieuw activeren?")) return;
           detailReactivate.disabled = true;
           detailReactivate.textContent = "Reactiveren...";
@@ -11689,7 +11758,10 @@
         }
 
         function copyText(value, successMessage, messageHandler = setWebsiteMessage) {
-          if (!value) return;
+          if (!value) {
+            reportUnavailableAction("Er is geen link of waarde beschikbaar om te kopiëren.", messageHandler);
+            return;
+          }
           if (navigator.clipboard?.writeText) {
             navigator.clipboard.writeText(value).then(() => messageHandler(successMessage, "success")).catch(() => messageHandler("Kopieren is niet gelukt.", "error"));
             return;
@@ -12789,7 +12861,10 @@
 
         function startProjectFromCustomer() {
           const customer = selectedCustomer();
-          if (!customer) return;
+          if (!customer) {
+            reportUnavailableAction("Selecteer eerst een klant om een project te starten.", setDetailMessage);
+            return;
+          }
           const firstWebsite = state.websites.find((website) => website.profileId === customer.id);
           resetProjectForm({
             customerId: customer.id,
@@ -12803,7 +12878,10 @@
 
         function startProjectFromWebsite() {
           const website = selectedWebsite();
-          if (!website) return;
+          if (!website) {
+            reportUnavailableAction("Selecteer eerst een website om een project te starten.", setWebsiteMessage);
+            return;
+          }
           resetProjectForm({
             customerId: website.profileId,
             websiteId: website.id,
@@ -15505,7 +15583,10 @@
 
         function createQuoteFromCustomer() {
           const customer = selectedCustomer();
-          if (!customer) return;
+          if (!customer) {
+            reportUnavailableAction("Selecteer eerst een klant om een offerte te maken.", setDetailMessage);
+            return;
+          }
           openQuoteModal();
           quoteFields.profile.value = customer.id;
           populateQuoteOptions(customer.id);
@@ -15514,7 +15595,10 @@
 
         function createQuoteFromWebsite() {
           const website = selectedWebsite();
-          if (!website) return;
+          if (!website) {
+            reportUnavailableAction("Selecteer eerst een website om een offerte te maken.", setWebsiteMessage);
+            return;
+          }
           openQuoteModal();
           quoteFields.profile.value = website.profileId || "";
           populateQuoteOptions(website.profileId || "");
@@ -15535,7 +15619,10 @@
 
         function viewQuotesForCustomer() {
           const customer = selectedCustomer();
-          if (!customer) return;
+          if (!customer) {
+            reportUnavailableAction("Selecteer eerst een klant om offertes te bekijken.", setDetailMessage);
+            return;
+          }
           quoteCustomerFilter.value = customer.id;
           quoteProjectFilter.value = "";
           quoteWebsiteFilter.value = "";
@@ -15545,7 +15632,10 @@
 
         function viewQuotesForWebsite() {
           const website = selectedWebsite();
-          if (!website) return;
+          if (!website) {
+            reportUnavailableAction("Selecteer eerst een website om offertes te bekijken.", setWebsiteMessage);
+            return;
+          }
           quoteCustomerFilter.value = "";
           quoteProjectFilter.value = "";
           quoteWebsiteFilter.value = website.id;
@@ -15622,7 +15712,10 @@
 
         function createInvoiceFromCustomer() {
           const customer = selectedCustomer();
-          if (!customer) return;
+          if (!customer) {
+            reportUnavailableAction("Selecteer eerst een klant om een factuur te maken.", setDetailMessage);
+            return;
+          }
           openInvoiceModal();
           invoiceFields.profile.value = customer.id;
           populateInvoiceOptions(customer.id);
@@ -15631,7 +15724,10 @@
 
         function createInvoiceFromWebsite() {
           const website = selectedWebsite();
-          if (!website) return;
+          if (!website) {
+            reportUnavailableAction("Selecteer eerst een website om een factuur te maken.", setWebsiteMessage);
+            return;
+          }
           openInvoiceModal();
           invoiceFields.profile.value = website.profileId || "";
           populateInvoiceOptions(website.profileId || "");
@@ -15691,7 +15787,10 @@
 
         function viewInvoicesForCustomer() {
           const customer = selectedCustomer();
-          if (!customer) return;
+          if (!customer) {
+            reportUnavailableAction("Selecteer eerst een klant om facturen te bekijken.", setDetailMessage);
+            return;
+          }
           invoiceCustomerFilter.value = customer.id;
           invoiceProjectFilter.value = "";
           invoiceWebsiteFilter.value = "";
@@ -15701,7 +15800,10 @@
 
         function viewInvoicesForWebsite() {
           const website = selectedWebsite();
-          if (!website) return;
+          if (!website) {
+            reportUnavailableAction("Selecteer eerst een website om facturen te bekijken.", setWebsiteMessage);
+            return;
+          }
           invoiceCustomerFilter.value = "";
           invoiceProjectFilter.value = "";
           invoiceWebsiteFilter.value = website.id;
@@ -16413,7 +16515,11 @@
         [websiteSearch, websiteStatusFilter, websiteHostingFilter, websiteCareFilter].forEach((filter) => filter.addEventListener("input", renderWebsites));
         [websiteQuickActions.live, websiteQuickActions.staging, websiteQuickActions.github, websiteQuickActions.netlify, websiteQuickActions.portal, detailOpenPortal, projectOpenPortal].forEach((link) => {
           link.addEventListener("click", (event) => {
-            if (event.currentTarget.getAttribute("aria-disabled") === "true") event.preventDefault();
+            if (event.currentTarget.getAttribute("aria-disabled") === "true") {
+              event.preventDefault();
+              const messageTarget = link === detailOpenPortal ? setDetailMessage : link === projectOpenPortal ? setProjectMessage : setWebsiteMessage;
+              reportUnavailableAction("Deze link is nog niet beschikbaar voor het geselecteerde item.", messageTarget);
+            }
           });
         });
         websiteQuickActions.copyDomain.addEventListener("click", () => {
@@ -16711,7 +16817,10 @@
         }
         requestStatusSave.addEventListener("click", saveRequestStatus);
         detailOpenWebsite.addEventListener("click", (event) => {
-          if (event.currentTarget.getAttribute("aria-disabled") === "true") event.preventDefault();
+          if (event.currentTarget.getAttribute("aria-disabled") === "true") {
+            event.preventDefault();
+            reportUnavailableAction("Er is nog geen website-URL beschikbaar voor deze klant.", setDetailMessage);
+          }
         });
         document.querySelectorAll("[data-modal-close]").forEach((button) => {
           button.addEventListener("click", () => closeModal(button.closest(".admin-modal")));
