@@ -41,6 +41,7 @@
         <a href="#vandaag">Vandaag</a>
         <a href="#mijn-website">Mijn website</a>
         <a href="#projectstatus">Project</a>
+        <a href="#website-preview">Preview</a>
         <a href="#wijzigingen">Wijzigingen</a>
         <a href="#berichten">Berichten</a>
         <a href="#facturen">Facturen</a>
@@ -122,6 +123,28 @@
       <section class="admin-section" id="projectstatus">
         <div class="admin-section-heading"><div><p class="section-kicker">Projecten</p><h2>Projectstatus</h2></div></div>
         <div class="portal-card-grid" id="portal-projects" aria-live="polite"></div>
+      </section>
+
+      <section class="admin-section" id="website-preview">
+        <div class="admin-section-heading"><div><p class="section-kicker">Website-preview</p><h2>Uw projecttijdlijn</h2></div></div>
+        <article class="admin-card customer-portal-card" id="portal-demo-journey" aria-live="polite">
+          <div class="portal-form-heading">
+            <div>
+              <strong>Projectvoortgang</strong>
+              <span id="portal-demo-journey-summary">Uw projecttijdlijn wordt geladen.</span>
+            </div>
+            <mark class="status-badge status-prepared" id="portal-demo-journey-state">Laden</mark>
+          </div>
+          <div class="portal-status-timeline" id="portal-demo-journey-timeline"></div>
+          <div class="portal-actions" id="portal-demo-journey-actions"></div>
+          <form class="admin-form portal-message-form" id="portal-demo-feedback-form" hidden>
+            <label class="admin-profile-wide" for="portal-demo-feedback">Uw feedback<textarea id="portal-demo-feedback" rows="4" maxlength="2500" placeholder="Geef uw opmerkingen, wensen of correcties door."></textarea></label>
+            <div class="portal-actions">
+              <button class="button primary" id="portal-demo-feedback-submit" type="submit">Feedback versturen</button>
+              <span class="form-helper" id="portal-demo-feedback-status" role="status" aria-live="polite"></span>
+            </div>
+          </form>
+        </article>
       </section>
 
       <section class="admin-section" id="wijzigingen">
@@ -255,6 +278,15 @@
         const financeSummary = document.getElementById("portal-finance-summary");
         const subscriptionList = document.getElementById("portal-subscriptions");
         const projectList = document.getElementById("portal-projects");
+        const demoJourneyCard = document.getElementById("portal-demo-journey");
+        const demoJourneySummary = document.getElementById("portal-demo-journey-summary");
+        const demoJourneyState = document.getElementById("portal-demo-journey-state");
+        const demoJourneyTimeline = document.getElementById("portal-demo-journey-timeline");
+        const demoJourneyActions = document.getElementById("portal-demo-journey-actions");
+        const demoFeedbackForm = document.getElementById("portal-demo-feedback-form");
+        const demoFeedbackField = document.getElementById("portal-demo-feedback");
+        const demoFeedbackSubmit = document.getElementById("portal-demo-feedback-submit");
+        const demoFeedbackStatus = document.getElementById("portal-demo-feedback-status");
         const changeRequestList = document.getElementById("portal-change-requests");
         const changeGuidance = document.getElementById("portal-change-guidance");
         const changeRequestForm = document.getElementById("portal-change-request-form");
@@ -322,6 +354,123 @@
           if (/^https?:\/\//i.test(url) || url.startsWith("/")) return url;
           return `https://${url}`;
         };
+        const demoJourneySteps = [
+          "Aanvraag ontvangen",
+          "Project ingepland",
+          "Eerste ontwerp wordt voorbereid",
+          "Preview klaar",
+          "Feedback verwerken",
+          "Website afronden",
+          "Livegang voorbereiden",
+        ];
+
+        function getPortalBearer() {
+          const supabaseSession = supabaseSessionResult?.session;
+          if (supabaseSession?.access_token) return supabaseSession.access_token;
+          try {
+            const stored = JSON.parse(localStorage.getItem("maxwebstudioSupabaseAuthSession") || "null");
+            return stored?.access_token || stored?.session?.access_token || "";
+          } catch {
+            return "";
+          }
+        }
+
+        function statusLabel(value = "") {
+          return String(value || "").replace(/[_-]+/g, " ");
+        }
+
+        function setDemoFeedbackStatus(message = "", type = "") {
+          if (!demoFeedbackStatus) return;
+          demoFeedbackStatus.textContent = message;
+          demoFeedbackStatus.className = `form-helper ${type}`.trim();
+        }
+
+        async function demoJourneyRequest(method = "GET", payload = null) {
+          const token = getPortalBearer();
+          if (!token) throw new Error("Log in om uw previewtijdlijn te bekijken.");
+          const response = await fetch("/.netlify/functions/demo-journey?scope=customer", {
+            method,
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${token}`,
+              ...(payload ? { "Content-Type": "application/json" } : {}),
+            },
+            body: payload ? JSON.stringify(payload) : undefined,
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || data.success === false) throw new Error(data.error || "Projecttijdlijn kon niet worden geladen.");
+          return data;
+        }
+
+        function readLocalDemoJourney() {
+          try {
+            const journeys = JSON.parse(localStorage.getItem("maxwebstudioDemoJourneys") || "[]");
+            return Array.isArray(journeys) ? journeys.find((item) => item.customerId === customerId) || null : null;
+          } catch {
+            return null;
+          }
+        }
+
+        function renderDemoJourney({ journey = null, events = [], source = "portal" } = {}) {
+          if (!demoJourneyCard) return;
+          const visibleEvents = Array.isArray(events) ? events.filter((event) => event.visibleToCustomer !== false) : [];
+          const eventByTitle = new Map(visibleEvents.map((event) => [event.title, event]));
+          if (!journey) {
+            demoJourneySummary.textContent = "Er staat nog geen website-preview klaar voor dit klantprofiel.";
+            demoJourneyState.textContent = "Nog niet gestart";
+            demoJourneyState.className = "status-badge status-prepared";
+            demoJourneyTimeline.innerHTML = demoJourneySteps.map((step, index) => `
+              <div class="portal-timeline-detail">
+                <span class="portal-dot"></span>
+                <div><strong>${step}</strong><small>${index === 0 ? "Zodra uw aanvraag is ingepland ziet u hier de voortgang." : "Nog niet gestart"}</small></div>
+              </div>
+            `).join("");
+            demoJourneyActions.innerHTML = "";
+            demoFeedbackForm.hidden = true;
+            return;
+          }
+
+          demoJourneySummary.textContent = source === "local"
+            ? "Demo-preview uit lokale demo klantreis."
+            : "Uw previewplanning en voortgang staan hieronder.";
+          demoJourneyState.textContent = statusLabel(journey.demoStatus || "in voorbereiding");
+          demoJourneyState.className = "status-badge status-active";
+          demoJourneyTimeline.innerHTML = demoJourneySteps.map((step) => {
+            const event = eventByTitle.get(step);
+            const done = Boolean(event);
+            return `
+              <div class="portal-timeline-detail">
+                <span class="portal-dot ${done ? "is-active" : ""}"></span>
+                <div>
+                  <strong>${step}</strong>
+                  <small>${event?.description || (done ? "Afgerond" : "Wordt later bijgewerkt")}</small>
+                  <small>${event?.createdAt ? formatDate(event.createdAt) : ""}</small>
+                </div>
+              </div>
+            `;
+          }).join("");
+
+          const previewAvailable = Boolean(journey.previewUrl) && journey.demoStatus === "preview_verstuurd";
+          demoJourneyActions.innerHTML = previewAvailable
+            ? `<a class="button primary" href="${externalUrl(journey.previewUrl)}" target="_blank" rel="noopener">Preview bekijken</a>`
+            : `<span class="portal-message">De previewlink verschijnt zodra de eerste versie klaarstaat.</span>`;
+          demoFeedbackForm.hidden = !previewAvailable;
+          demoFeedbackField.value = journey.feedback || "";
+        }
+
+        async function loadDemoJourney() {
+          try {
+            const data = await demoJourneyRequest("GET");
+            renderDemoJourney({ journey: data.journey, events: data.events });
+          } catch (error) {
+            const localJourney = readLocalDemoJourney();
+            if (localJourney) {
+              renderDemoJourney({ journey: localJourney, events: localJourney.events || [], source: "local" });
+              return;
+            }
+            renderDemoJourney();
+          }
+        }
 
         function readCurrentSession() {
           try {
@@ -1405,7 +1554,28 @@
           }
         });
 
+        demoFeedbackForm.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          const feedback = String(demoFeedbackField.value || "").trim();
+          if (!feedback) {
+            setDemoFeedbackStatus("Vul uw feedback in.", "error");
+            return;
+          }
+          demoFeedbackSubmit.disabled = true;
+          setDemoFeedbackStatus("Feedback versturen...");
+          try {
+            const data = await demoJourneyRequest("POST", { feedback });
+            renderDemoJourney({ journey: data.journey, events: data.events });
+            setDemoFeedbackStatus("Uw feedback is ontvangen.", "success");
+          } catch (error) {
+            setDemoFeedbackStatus(error.message || "Feedback kon niet worden verstuurd.", "error");
+          } finally {
+            demoFeedbackSubmit.disabled = false;
+          }
+        });
+
         renderFinanceExperience({ quotes, invoices });
+        await loadDemoJourney();
 
         if (!subscriptions.length) subscriptionList.append(createEmpty("Geen onderhoudsabonnementen", "Er is nog geen onderhoudsplan gekoppeld aan dit klantprofiel."));
         subscriptions.forEach((subscription) => {

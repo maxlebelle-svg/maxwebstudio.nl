@@ -28,6 +28,7 @@
           <span class="admin-nav-group">Werkruimte</span>
           <a href="#dashboard">Dashboard</a>
           <a href="#leadfinder">Leads</a>
+          <a href="#demo-klantreis">Demo klantreis</a>
           <a href="#klanten">Klanten</a>
           <a class="admin-sales-secondary" href="#websites">Websites</a>
           <a href="#offertes">Offertes</a>
@@ -446,6 +447,106 @@
           </div>
 
           <div class="admin-table leadfinder-table" id="leadfinder-list" role="table" aria-label="Leadfinder bedrijven" aria-live="polite"></div>
+        </section>
+
+        <section class="admin-section" id="demo-klantreis">
+          <div class="admin-section-heading">
+            <div>
+              <p class="section-kicker">Demo klantreis</p>
+              <h2>Website-preview professioneel opvolgen</h2>
+              <p class="admin-section-intro">Zet per lead een demo-aanvraag, briefing, status, previewlink en klantvriendelijke mail klaar.</p>
+            </div>
+            <span class="admin-preview-badge">Sales workflow</span>
+          </div>
+
+          <div class="admin-grid workflow-metrics" id="demo-journey-metrics" aria-live="polite"></div>
+
+          <div class="admin-crm-grid">
+            <form class="admin-card admin-profile-form" id="demo-journey-form">
+              <div class="admin-profile-form-heading">
+                <div>
+                  <strong>Demo-aanvraag</strong>
+                  <span>Kies een lead of vul de gegevens handmatig aan.</span>
+                </div>
+                <mark class="status-badge status-prepared" id="demo-journey-source">Niet geladen</mark>
+              </div>
+              <div class="admin-profile-fields">
+                <label class="admin-profile-wide" for="demo-journey-lead">Lead<select id="demo-journey-lead"></select></label>
+                <label for="demo-journey-business">Bedrijfsnaam<input id="demo-journey-business" type="text" /></label>
+                <label for="demo-journey-contact">Contactpersoon<input id="demo-journey-contact" type="text" /></label>
+                <label for="demo-journey-email">E-mail<input id="demo-journey-email" type="email" /></label>
+                <label for="demo-journey-phone">Telefoon<input id="demo-journey-phone" type="tel" /></label>
+                <label class="admin-profile-wide" for="demo-journey-website">Website URL<input id="demo-journey-website" type="url" placeholder="https://..." /></label>
+                <label for="demo-journey-status">Demo status<select id="demo-journey-status"></select></label>
+                <label for="demo-journey-followup">Opvolgdatum<input id="demo-journey-followup" type="datetime-local" /></label>
+                <label for="demo-journey-assigned">Verantwoordelijke<input id="demo-journey-assigned" type="text" placeholder="Naam of e-mail medewerker" /></label>
+                <label for="demo-journey-preview">Preview URL<input id="demo-journey-preview" type="url" placeholder="https://preview..." /></label>
+                <label class="admin-profile-wide" for="demo-journey-feedback">Klantfeedback<textarea id="demo-journey-feedback" rows="4"></textarea></label>
+                <label class="admin-profile-wide" for="demo-journey-notes">Interne notities<textarea id="demo-journey-notes" rows="4"></textarea></label>
+              </div>
+              <div class="admin-profile-actions admin-action-groups">
+                <div class="admin-action-group admin-action-group-primary">
+                  <button class="button primary" id="demo-journey-save" type="submit">Demo-aanvraag opslaan</button>
+                  <button class="button secondary" id="demo-journey-generate-briefing" type="button">Briefing genereren</button>
+                </div>
+                <div class="admin-action-group admin-action-group-secondary">
+                  <button class="button secondary" id="demo-journey-copy-briefing" type="button">Briefing kopiëren</button>
+                  <button class="button secondary" id="demo-journey-refresh" type="button">Opnieuw laden</button>
+                </div>
+              </div>
+              <p class="admin-form-message" id="demo-journey-message" role="status"></p>
+            </form>
+
+            <article class="admin-card crm-detail-panel">
+              <div class="admin-profile-form-heading">
+                <div>
+                  <strong>Statuskaart</strong>
+                  <span id="demo-journey-summary">Selecteer een lead om de demo-klantreis te beheren.</span>
+                </div>
+                <mark class="status-badge status-planned" id="demo-journey-state">Geen demo</mark>
+              </div>
+              <div class="settings-status-list" id="demo-journey-details"></div>
+              <div class="sales-timeline-card">
+                <div class="sales-timeline-heading">
+                  <strong>Klanttijdlijn</strong>
+                  <span id="demo-journey-timeline-count">0 stappen</span>
+                </div>
+                <div class="sales-timeline" id="demo-journey-timeline">
+                  <div class="sales-timeline-empty">Nog geen klanttijdlijn.</div>
+                </div>
+              </div>
+              <label class="admin-profile-wide" for="demo-journey-briefing">Codex briefing<textarea id="demo-journey-briefing" rows="8" readonly></textarea></label>
+              <div class="admin-profile-actions">
+                <a class="button secondary is-disabled" id="demo-journey-open-preview" href="#" target="_blank" rel="noopener" aria-disabled="true">Preview openen</a>
+                <a class="button secondary is-disabled" id="demo-journey-open-portal" href="#" target="_blank" rel="noopener" aria-disabled="true">Klantportaal openen</a>
+              </div>
+            </article>
+          </div>
+
+          <section class="admin-card admin-profile-form" aria-labelledby="demo-journey-mail-title">
+            <div class="admin-profile-form-heading">
+              <div>
+                <strong id="demo-journey-mail-title">E-mailflow</strong>
+                <span>Genereer professionele klantmails. Versturen gebruikt alleen de bestaande mailconfiguratie.</span>
+              </div>
+              <mark class="status-badge status-prepared" id="demo-journey-mail-state">Template klaarzetten</mark>
+            </div>
+            <div class="admin-profile-fields">
+              <label for="demo-journey-email-type">Template<select id="demo-journey-email-type"></select></label>
+              <label for="demo-journey-email-subject">Onderwerp<input id="demo-journey-email-subject" type="text" readonly /></label>
+              <label class="admin-profile-wide" for="demo-journey-email-body">Mailtekst<textarea id="demo-journey-email-body" rows="8" readonly></textarea></label>
+            </div>
+            <div class="admin-profile-actions admin-action-groups">
+              <div class="admin-action-group admin-action-group-primary">
+                <button class="button primary" id="demo-journey-generate-email" type="button">Mail klaarzetten</button>
+                <button class="button secondary" id="demo-journey-copy-email" type="button">Kopieer mail</button>
+              </div>
+              <div class="admin-action-group admin-action-group-secondary">
+                <button class="button secondary" id="demo-journey-send-email" type="button">Mail versturen</button>
+              </div>
+            </div>
+            <p class="admin-form-message" id="demo-journey-email-message" role="status"></p>
+          </section>
         </section>
 
         <section class="admin-section" id="klanten">
@@ -20066,6 +20167,474 @@
       }
 
       initAiAdminAssistant();
+    </script>
+    <script>
+      (() => {
+        const endpoint = "/.netlify/functions/demo-journey";
+        const leadsEndpoint = "/.netlify/functions/admin-leads";
+        const statuses = [
+          ["geen_demo", "Geen demo"],
+          ["aanvraag_ontvangen", "Aanvraag ontvangen"],
+          ["briefing_klaar", "Briefing klaar"],
+          ["intern_in_productie", "Intern in productie"],
+          ["interne_preview_klaar", "Interne preview klaar"],
+          ["preview_ingepland_voor_klant", "Preview ingepland voor klant"],
+          ["preview_verstuurd", "Preview verstuurd"],
+          ["feedback_ontvangen", "Feedback ontvangen"],
+          ["aanpassingen_bezig", "Aanpassingen bezig"],
+          ["definitieve_versie_klaar", "Definitieve versie klaar"],
+          ["belafspraak_gepland", "Belafspraak gepland"],
+          ["verkocht", "Verkocht"],
+          ["afgewezen", "Afgewezen"],
+        ];
+        const templates = [
+          ["day0_received", "Dag 0 - Aanvraag ontvangen"],
+          ["day1_planned", "Dag 1 - Project ingepland"],
+          ["preview_ready", "Dag 2/3 - Preview klaar"],
+          ["feedback_received", "Feedback ontvangen"],
+          ["finalizing", "Definitieve versie bijna klaar"],
+          ["call_reminder", "Belafspraak reminder"],
+        ];
+        const customerSteps = [
+          "Aanvraag ontvangen",
+          "Project ingepland",
+          "Eerste ontwerp wordt voorbereid",
+          "Preview klaar",
+          "Feedback verwerken",
+          "Website afronden",
+          "Livegang voorbereiden",
+        ];
+        const elements = {};
+        let leads = [];
+        let journey = null;
+        let events = [];
+        let currentTemplate = null;
+
+        function initElements() {
+          Object.assign(elements, {
+            metrics: document.getElementById("demo-journey-metrics"),
+            source: document.getElementById("demo-journey-source"),
+            form: document.getElementById("demo-journey-form"),
+            lead: document.getElementById("demo-journey-lead"),
+            business: document.getElementById("demo-journey-business"),
+            contact: document.getElementById("demo-journey-contact"),
+            email: document.getElementById("demo-journey-email"),
+            phone: document.getElementById("demo-journey-phone"),
+            website: document.getElementById("demo-journey-website"),
+            status: document.getElementById("demo-journey-status"),
+            followup: document.getElementById("demo-journey-followup"),
+            assigned: document.getElementById("demo-journey-assigned"),
+            preview: document.getElementById("demo-journey-preview"),
+            feedback: document.getElementById("demo-journey-feedback"),
+            notes: document.getElementById("demo-journey-notes"),
+            briefing: document.getElementById("demo-journey-briefing"),
+            message: document.getElementById("demo-journey-message"),
+            state: document.getElementById("demo-journey-state"),
+            summary: document.getElementById("demo-journey-summary"),
+            details: document.getElementById("demo-journey-details"),
+            timeline: document.getElementById("demo-journey-timeline"),
+            timelineCount: document.getElementById("demo-journey-timeline-count"),
+            openPreview: document.getElementById("demo-journey-open-preview"),
+            openPortal: document.getElementById("demo-journey-open-portal"),
+            save: document.getElementById("demo-journey-save"),
+            generateBriefing: document.getElementById("demo-journey-generate-briefing"),
+            copyBriefing: document.getElementById("demo-journey-copy-briefing"),
+            refresh: document.getElementById("demo-journey-refresh"),
+            emailType: document.getElementById("demo-journey-email-type"),
+            emailSubject: document.getElementById("demo-journey-email-subject"),
+            emailBody: document.getElementById("demo-journey-email-body"),
+            emailState: document.getElementById("demo-journey-mail-state"),
+            emailMessage: document.getElementById("demo-journey-email-message"),
+            generateEmail: document.getElementById("demo-journey-generate-email"),
+            copyEmail: document.getElementById("demo-journey-copy-email"),
+            sendEmail: document.getElementById("demo-journey-send-email"),
+          });
+        }
+
+        function escapeHtml(value) {
+          return String(value || "").replace(/[&<>"']/g, (character) => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#039;",
+          })[character]);
+        }
+
+        function getBearer() {
+          const keys = ["mws_admin_supabase_session", "maxwebstudioCurrentSession", "maxwebstudioSupabaseAuthSession"];
+          for (const key of keys) {
+            try {
+              const value = JSON.parse(localStorage.getItem(key) || "null");
+              const token = value?.accessToken || value?.access_token || value?.session?.access_token;
+              if (token) return token;
+            } catch {
+              // Try next storage key.
+            }
+          }
+          return "";
+        }
+
+        async function apiRequest(url, method = "GET", payload = null) {
+          const token = getBearer();
+          if (!token) throw new Error("Adminsessie ontbreekt. Log opnieuw in om demo klantreizen te beheren.");
+          const response = await fetch(url, {
+            method,
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${token}`,
+              ...(payload ? { "Content-Type": "application/json" } : {}),
+            },
+            body: payload ? JSON.stringify(payload) : undefined,
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || data.success === false) throw new Error(data.error || "Demo klantreis kon niet worden verwerkt.");
+          return data;
+        }
+
+        function setMessage(target, message, type = "success") {
+          if (!target) return;
+          target.textContent = message;
+          target.className = `admin-form-message ${type}`;
+          if (message && ["success", "info", "warning", "error"].includes(type)) window.showToast?.(message, type);
+        }
+
+        function fillSelect(select, options, placeholder = "") {
+          if (!select) return;
+          select.innerHTML = placeholder ? `<option value="">${escapeHtml(placeholder)}</option>` : "";
+          options.forEach(([value, label]) => {
+            const option = document.createElement("option");
+            option.value = value;
+            option.textContent = label;
+            select.append(option);
+          });
+        }
+
+        function statusLabel(value = "") {
+          return statuses.find(([status]) => status === value)?.[1] || "Geen demo";
+        }
+
+        function formatDate(value = "") {
+          if (!value) return "-";
+          const date = new Date(value);
+          return Number.isNaN(date.getTime()) ? value : date.toLocaleString("nl-NL");
+        }
+
+        function datetimeLocal(value = "") {
+          if (!value) return "";
+          const date = new Date(value);
+          if (Number.isNaN(date.getTime())) return "";
+          const offset = date.getTimezoneOffset() * 60000;
+          return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+        }
+
+        function fromDatetimeLocal(value = "") {
+          return value ? new Date(value).toISOString() : "";
+        }
+
+        function setActionLink(link, url = "") {
+          if (!link) return;
+          const enabled = Boolean(url);
+          link.href = enabled ? url : "#";
+          link.classList.toggle("is-disabled", !enabled);
+          link.setAttribute("aria-disabled", enabled ? "false" : "true");
+        }
+
+        async function loadLeads() {
+          try {
+            const data = await apiRequest(leadsEndpoint);
+            leads = Array.isArray(data.records) ? data.records : [];
+            if (elements.source) {
+              elements.source.textContent = "Centrale bron";
+              elements.source.className = "status-badge status-active";
+            }
+          } catch (error) {
+            leads = [];
+            if (elements.source) {
+              elements.source.textContent = "Niet geladen";
+              elements.source.className = "status-badge status-warning";
+            }
+            setMessage(elements.message, error.message, "warning");
+          }
+          fillSelect(elements.lead, leads.map((lead) => [lead.id, `${lead.companyName || "Naamloos bedrijf"} - ${lead.contactName || lead.email || "geen contact"}`]), "Kies een lead");
+        }
+
+        async function loadJourney() {
+          const leadId = elements.lead?.value || "";
+          if (!leadId) {
+            journey = null;
+            events = [];
+            renderJourney();
+            return;
+          }
+          const data = await apiRequest(`${endpoint}?leadId=${encodeURIComponent(leadId)}`);
+          journey = data.journey || null;
+          events = Array.isArray(data.events) ? data.events : [];
+          renderJourney();
+        }
+
+        function selectedLead() {
+          return leads.find((lead) => lead.id === elements.lead?.value) || null;
+        }
+
+        function fillFromLead(lead) {
+          if (!lead) return;
+          if (!journey) {
+            elements.business.value = lead.companyName || "";
+            elements.contact.value = lead.contactName || "";
+            elements.email.value = lead.email || "";
+            elements.phone.value = lead.phone || "";
+            elements.website.value = lead.websiteUrl || "";
+            elements.assigned.value = lead.assignedUserEmail || lead.salesPartnerEmail || lead.assignedTo || "";
+          }
+        }
+
+        function collectPayload(extra = {}) {
+          return {
+            id: journey?.id || "",
+            leadId: elements.lead?.value || "",
+            businessName: elements.business?.value || "",
+            contactName: elements.contact?.value || "",
+            email: elements.email?.value || "",
+            phone: elements.phone?.value || "",
+            websiteUrl: elements.website?.value || "",
+            demoStatus: elements.status?.value || "aanvraag_ontvangen",
+            generatedBriefing: elements.briefing?.value || "",
+            previewUrl: elements.preview?.value || "",
+            feedback: elements.feedback?.value || "",
+            internalNotes: elements.notes?.value || "",
+            followUpAt: fromDatetimeLocal(elements.followup?.value || ""),
+            assignedTo: elements.assigned?.value || "",
+            ...extra,
+          };
+        }
+
+        function buildBriefing() {
+          const lead = selectedLead();
+          const business = elements.business?.value || lead?.companyName || "Onbekend bedrijf";
+          const contact = elements.contact?.value || lead?.contactName || "Onbekende contactpersoon";
+          const website = elements.website?.value || lead?.websiteUrl || "Nog geen website ingevuld";
+          const notes = [lead?.notes, elements.notes?.value].filter(Boolean).join("\n\n");
+          return [
+            `Codex briefing - demo website preview`,
+            ``,
+            `Klant: ${business}`,
+            `Contactpersoon: ${contact}`,
+            `E-mail: ${elements.email?.value || lead?.email || "-"}`,
+            `Telefoon: ${elements.phone?.value || lead?.phone || "-"}`,
+            `Website/huidige URL: ${website}`,
+            `Branche/regio: ${lead?.industry || "-"} / ${lead?.region || "-"}`,
+            ``,
+            `Doel`,
+            `Maak een professionele eerste website-preview die vertrouwen opbouwt, duidelijke contactmogelijkheden toont en aansluit op het gesprek met de klant.`,
+            ``,
+            `Klantvriendelijke presentatie`,
+            `Noem dit een eerste ontwerp of preview. Vermijd technische details en noem geen AI in klantgerichte teksten.`,
+            ``,
+            `Belangrijke aandachtspunten`,
+            notes || "Nog geen aanvullende wensen vastgelegd.",
+            ``,
+            `Gewenste output`,
+            `Een interne demo-preview met duidelijke homepage, diensten/aanbod, contactblok, call-to-action en ruimte voor klantfeedback.`,
+          ].join("\n");
+        }
+
+        async function saveJourney(event) {
+          event?.preventDefault();
+          elements.save.disabled = true;
+          setMessage(elements.message, "Demo-klantreis opslaan...", "info");
+          try {
+            const data = await apiRequest(endpoint, journey?.id ? "PATCH" : "POST", collectPayload());
+            journey = data.journey || null;
+            events = Array.isArray(data.events) ? data.events : [];
+            if (data.template) fillEmailTemplate(data.template);
+            renderJourney();
+            setMessage(elements.message, "Demo-klantreis opgeslagen.", "success");
+          } catch (error) {
+            setMessage(elements.message, error.message, "error");
+          } finally {
+            elements.save.disabled = false;
+          }
+        }
+
+        function fillEmailTemplate(template = {}) {
+          currentTemplate = template;
+          if (elements.emailType) elements.emailType.value = template.type || elements.emailType.value || "day0_received";
+          if (elements.emailSubject) elements.emailSubject.value = template.subject || "";
+          if (elements.emailBody) elements.emailBody.value = template.body || "";
+          if (elements.emailState) {
+            elements.emailState.textContent = template.subject ? "Klaar" : "Template klaarzetten";
+            elements.emailState.className = `status-badge ${template.subject ? "status-active" : "status-prepared"}`;
+          }
+        }
+
+        async function generateEmail() {
+          setMessage(elements.emailMessage, "Mailtemplate klaarzetten...", "info");
+          try {
+            const data = await apiRequest(endpoint, "POST", collectPayload({ action: "generate_email", emailType: elements.emailType?.value || "" }));
+            fillEmailTemplate(data.template || {});
+            setMessage(elements.emailMessage, "Mailtemplate staat klaar.", "success");
+          } catch (error) {
+            setMessage(elements.emailMessage, error.message, "error");
+          }
+        }
+
+        async function sendPreparedEmail() {
+          if (!journey?.id) {
+            setMessage(elements.emailMessage, "Sla eerst de demo-klantreis op.", "warning");
+            return;
+          }
+          elements.sendEmail.disabled = true;
+          setMessage(elements.emailMessage, "Mail versturen...", "info");
+          try {
+            const data = await apiRequest(endpoint, "POST", collectPayload({ action: "send_email", emailType: elements.emailType?.value || "" }));
+            fillEmailTemplate(data.template || currentTemplate || {});
+            setMessage(elements.emailMessage, data.sent ? "Mail is verzonden." : data.warning || "Mail kon niet worden verzonden.", data.sent ? "success" : "warning");
+            await loadJourney();
+          } catch (error) {
+            setMessage(elements.emailMessage, error.message, "error");
+          } finally {
+            elements.sendEmail.disabled = false;
+          }
+        }
+
+        async function copyText(value = "", target = elements.message) {
+          if (!value) {
+            setMessage(target, "Er is nog geen tekst om te kopiëren.", "warning");
+            return;
+          }
+          try {
+            await navigator.clipboard.writeText(value);
+            setMessage(target, "Tekst gekopieerd.", "success");
+          } catch {
+            setMessage(target, "Kopiëren lukte niet automatisch. Selecteer de tekst handmatig.", "warning");
+          }
+        }
+
+        function renderMetrics() {
+          if (!elements.metrics) return;
+          const status = journey?.demoStatus || "geen_demo";
+          elements.metrics.innerHTML = [
+            ["Status", statusLabel(status), "Demo voortgang"],
+            ["Preview", journey?.previewUrl ? "Klaar" : "Nog leeg", "Preview URL"],
+            ["Feedback", journey?.feedback ? "Ontvangen" : "Nog geen", "Klantreactie"],
+            ["Opvolging", journey?.followUpAt ? formatDate(journey.followUpAt) : "Nog plannen", "Volgende stap"],
+          ].map(([label, value, helper]) => `
+            <article class="admin-card metric-card">
+              <span>${escapeHtml(label)}</span>
+              <strong>${escapeHtml(value)}</strong>
+              <small>${escapeHtml(helper)}</small>
+            </article>
+          `).join("");
+        }
+
+        function renderTimeline() {
+          if (!elements.timeline) return;
+          const visibleEvents = events.filter((event) => event.visibleToCustomer);
+          const completedTitles = new Set(visibleEvents.map((event) => event.title));
+          elements.timelineCount.textContent = `${visibleEvents.length} stap${visibleEvents.length === 1 ? "" : "pen"}`;
+          elements.timeline.innerHTML = customerSteps.map((step) => {
+            const event = visibleEvents.find((item) => item.title === step);
+            const done = Boolean(event) || completedTitles.has(step);
+            return `
+              <div class="sales-timeline-item">
+                <span class="sales-timeline-dot ${done ? "is-active" : ""}"></span>
+                <div>
+                  <strong>${escapeHtml(step)}</strong>
+                  <small>${escapeHtml(event?.description || (done ? "Afgerond" : "Nog niet zichtbaar voor klant"))}</small>
+                  <small>${escapeHtml(event?.createdAt ? formatDate(event.createdAt) : "")}</small>
+                </div>
+              </div>
+            `;
+          }).join("");
+        }
+
+        function renderJourney() {
+          const lead = selectedLead();
+          if (journey) {
+            elements.business.value = journey.businessName || "";
+            elements.contact.value = journey.contactName || "";
+            elements.email.value = journey.email || "";
+            elements.phone.value = journey.phone || "";
+            elements.website.value = journey.websiteUrl || "";
+            elements.status.value = journey.demoStatus || "geen_demo";
+            elements.followup.value = datetimeLocal(journey.followUpAt);
+            elements.assigned.value = journey.assignedTo || "";
+            elements.preview.value = journey.previewUrl || "";
+            elements.feedback.value = journey.feedback || "";
+            elements.notes.value = journey.internalNotes || "";
+            elements.briefing.value = journey.generatedBriefing || "";
+          } else {
+            elements.status.value = "aanvraag_ontvangen";
+            elements.followup.value = "";
+            elements.preview.value = "";
+            elements.feedback.value = "";
+            elements.notes.value = "";
+            elements.briefing.value = "";
+            fillFromLead(lead);
+          }
+
+          const status = journey?.demoStatus || "geen_demo";
+          elements.state.textContent = statusLabel(status);
+          elements.state.className = `status-badge ${status === "afgewezen" ? "status-blocked" : journey ? "status-active" : "status-planned"}`;
+          elements.summary.textContent = journey
+            ? `${journey.businessName || "Demo"} - laatst bijgewerkt ${formatDate(journey.updatedAt)}`
+            : "Nog geen centrale demo-klantreis voor deze lead.";
+          elements.details.innerHTML = [
+            ["Lead", lead?.companyName || journey?.businessName || "-"],
+            ["Preview URL", journey?.previewUrl || "-"],
+            ["Laatste mail", journey?.lastEmailStatus || "-"],
+            ["Laatste maildatum", formatDate(journey?.lastEmailSentAt)],
+            ["Volgende mail", journey?.nextEmailType || "-"],
+            ["Verantwoordelijke", journey?.assignedTo || "-"],
+          ].map(([label, value]) => `<div><strong>${escapeHtml(label)}</strong><span>${escapeHtml(value)}</span></div>`).join("");
+          setActionLink(elements.openPreview, journey?.previewUrl || "");
+          setActionLink(elements.openPortal, journey?.customerId ? `/klantportaal.html?customerId=${encodeURIComponent(journey.customerId)}#projectstatus` : "");
+          renderMetrics();
+          renderTimeline();
+        }
+
+        function wireEvents() {
+          fillSelect(elements.status, statuses);
+          fillSelect(elements.emailType, templates);
+          elements.form?.addEventListener("submit", saveJourney);
+          elements.lead?.addEventListener("change", async () => {
+            journey = null;
+            events = [];
+            fillFromLead(selectedLead());
+            await loadJourney().catch((error) => setMessage(elements.message, error.message, "error"));
+          });
+          elements.generateBriefing?.addEventListener("click", () => {
+            elements.briefing.value = buildBriefing();
+            elements.status.value = "briefing_klaar";
+            setMessage(elements.message, "Briefing gegenereerd. Sla op om deze centraal te bewaren.", "success");
+          });
+          elements.copyBriefing?.addEventListener("click", () => copyText(elements.briefing?.value || "", elements.message));
+          elements.refresh?.addEventListener("click", async () => {
+            await loadLeads();
+            await loadJourney();
+            setMessage(elements.message, "Demo klantreis opnieuw geladen.", "success");
+          });
+          elements.generateEmail?.addEventListener("click", generateEmail);
+          elements.copyEmail?.addEventListener("click", () => copyText([elements.emailSubject?.value, "", elements.emailBody?.value].join("\n"), elements.emailMessage));
+          elements.sendEmail?.addEventListener("click", sendPreparedEmail);
+        }
+
+        async function init() {
+          initElements();
+          if (!elements.form) return;
+          wireEvents();
+          renderJourney();
+          await loadLeads();
+          renderMetrics();
+        }
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", init);
+        } else {
+          init();
+        }
+      })();
     </script>
   </body>
 </html>
