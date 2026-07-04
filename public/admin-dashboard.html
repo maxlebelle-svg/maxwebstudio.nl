@@ -281,11 +281,11 @@
           </div>
 
           <div class="sales-cockpit-bar" id="sales-cockpit-bar" aria-label="Sales cockpit overzicht">
-            <article class="admin-card metric-card"><span>Nieuwe leads vandaag</span><strong id="sales-cockpit-new-leads">0</strong><small>Vandaag aangemaakt</small></article>
-            <article class="admin-card metric-card"><span>Follow-ups vandaag</span><strong id="sales-cockpit-followups">0</strong><small>Te bellen of te laat</small></article>
-            <article class="admin-card metric-card"><span>Open offertes</span><strong id="sales-cockpit-open-quotes">0</strong><small>Concept, verzonden of bekeken</small></article>
-            <article class="admin-card metric-card"><span>Verkocht vandaag</span><strong id="sales-cockpit-won-today">0</strong><small>Gewonnen leads</small></article>
-            <article class="admin-card metric-card"><span>Conversie deze week</span><strong id="sales-cockpit-conversion">0%</strong><small>Verkocht / nieuwe leads</small></article>
+            <article class="admin-card metric-card sales-kpi-card" role="button" tabindex="0" data-sales-kpi="new_today" aria-label="Nieuwe leads vandaag bekijken"><span>Nieuwe leads vandaag</span><strong id="sales-cockpit-new-leads">0</strong><small>Vandaag aangemaakt</small></article>
+            <article class="admin-card metric-card sales-kpi-card" role="button" tabindex="0" data-sales-kpi="followups_today" aria-label="Follow-ups vandaag bekijken"><span>Follow-ups vandaag</span><strong id="sales-cockpit-followups">0</strong><small>Te bellen of te laat</small></article>
+            <article class="admin-card metric-card sales-kpi-card" role="button" tabindex="0" data-sales-kpi="open_quotes" aria-label="Open offertes bekijken"><span>Open offertes</span><strong id="sales-cockpit-open-quotes">0</strong><small>Concept, verzonden of bekeken</small></article>
+            <article class="admin-card metric-card sales-kpi-card" role="button" tabindex="0" data-sales-kpi="won_today" aria-label="Verkochte leads van vandaag bekijken"><span>Verkocht vandaag</span><strong id="sales-cockpit-won-today">0</strong><small>Gewonnen leads</small></article>
+            <article class="admin-card metric-card sales-kpi-card" role="button" tabindex="0" data-sales-kpi="conversion_week" aria-label="Conversie van deze week bekijken"><span>Conversie deze week</span><strong id="sales-cockpit-conversion">0%</strong><small>Verkocht / nieuwe leads</small></article>
           </div>
 
           <div class="admin-grid workflow-metrics" id="leadfinder-metrics" aria-live="polite"></div>
@@ -438,6 +438,11 @@
             <label for="leadfinder-filter-industry">Branche<input id="leadfinder-filter-industry" type="search" placeholder="Bijv. bouw" /></label>
             <label for="leadfinder-filter-region">Regio<input id="leadfinder-filter-region" type="search" placeholder="Bijv. Breda" /></label>
             <label for="leadfinder-filter-score">Score<select id="leadfinder-filter-score"><option value="">Alle scores</option></select></label>
+          </div>
+
+          <div class="active-filter-bar" id="leadfinder-active-filter" hidden>
+            <strong>Alle leads</strong>
+            <button class="button secondary" id="leadfinder-clear-quick-filter" type="button">Alle leads tonen</button>
           </div>
 
           <div class="admin-table leadfinder-table" id="leadfinder-list" role="table" aria-label="Leadfinder bedrijven" aria-live="polite"></div>
@@ -887,6 +892,10 @@
               <label for="quote-customer-filter">Klant<select id="quote-customer-filter"><option value="">Alle klanten</option></select></label>
               <label for="quote-project-filter">Project<select id="quote-project-filter"><option value="">Alle projecten</option></select></label>
               <label for="quote-website-filter">Website<select id="quote-website-filter"><option value="">Alle websites</option></select></label>
+            </div>
+            <div class="active-filter-bar" id="quote-active-filter" hidden>
+              <strong>Alle offertes</strong>
+              <button class="button secondary" id="quote-clear-quick-filter" type="button">Alle offertes tonen</button>
             </div>
             <div class="admin-table billing-table" id="quote-list" role="table" aria-label="Offertes" aria-live="polite"></div>
           </section>
@@ -2517,6 +2526,8 @@
         const quoteCustomerFilter = document.getElementById("quote-customer-filter");
         const quoteProjectFilter = document.getElementById("quote-project-filter");
         const quoteWebsiteFilter = document.getElementById("quote-website-filter");
+        const quoteActiveFilter = document.getElementById("quote-active-filter");
+        const quoteClearQuickFilter = document.getElementById("quote-clear-quick-filter");
         const quoteStats = {
           total: document.getElementById("quote-stat-total"),
           open: document.getElementById("quote-stat-open"),
@@ -2526,6 +2537,7 @@
           count: document.getElementById("quote-stat-count"),
         };
         let currentQuoteLines = [];
+        let quoteQuickFilter = null;
         const invoiceClearPdf = document.getElementById("invoice-clear-pdf");
         const invoiceFields = {
           id: document.getElementById("invoice-id"),
@@ -13832,11 +13844,53 @@
           quotePreset.value = "";
         }
 
+        function quoteMatchesQuickFilter(quote = {}) {
+          if (!quoteQuickFilter?.type) return true;
+          if (quoteQuickFilter.type === "open_quotes") {
+            return (quoteQuickFilter.statuses || []).includes(String(quote.status || "").toLowerCase());
+          }
+          return true;
+        }
+
+        function updateQuoteQuickFilterBar(count = 0) {
+          if (!quoteActiveFilter) return;
+          if (!quoteQuickFilter) {
+            quoteActiveFilter.hidden = true;
+            return;
+          }
+          const titleElement = quoteActiveFilter.querySelector("strong");
+          if (titleElement) titleElement.textContent = `${quoteQuickFilter.title || "Gefilterde offertes"} (${count})`;
+          quoteActiveFilter.hidden = false;
+        }
+
+        function applyQuoteQuickFilter(detail = {}) {
+          quoteQuickFilter = {
+            type: detail.type || "open_quotes",
+            title: detail.title || "Open offertes",
+            statuses: Array.isArray(detail.statuses) ? detail.statuses : ["concept", "verzonden", "bekeken", "open"],
+          };
+          [quoteSearch, quoteStatusFilter, quoteTypeFilter, quoteCustomerFilter, quoteProjectFilter, quoteWebsiteFilter].forEach((filter) => {
+            if (filter) filter.value = "";
+          });
+          renderQuotes();
+          window.focusAdminPanel?.(quoteActiveFilter || quoteList);
+        }
+
+        function clearQuoteQuickFilter() {
+          quoteQuickFilter = null;
+          [quoteSearch, quoteStatusFilter, quoteTypeFilter, quoteCustomerFilter, quoteProjectFilter, quoteWebsiteFilter].forEach((filter) => {
+            if (filter) filter.value = "";
+          });
+          renderQuotes();
+          window.focusAdminPanel?.(quoteList);
+        }
+
         function filteredQuotes() {
           const query = normalize(quoteSearch.value);
           return state.quotes.filter((quote) => {
             const searchable = normalize([quote.quoteNumber, quote.customerName, quote.customerCompany, quote.projectName, quote.websiteName, quote.websiteDomain, quote.type].join(" "));
             return (!query || searchable.includes(query))
+              && quoteMatchesQuickFilter(quote)
               && (!quoteStatusFilter.value || quote.status === quoteStatusFilter.value)
               && (!quoteTypeFilter.value || quote.type === quoteTypeFilter.value)
               && (!quoteCustomerFilter.value || quote.profileId === quoteCustomerFilter.value)
@@ -13850,7 +13904,7 @@
           const total = quotes.reduce((sum, quote) => sum + Number(quote.total || 0), 0);
           const acceptedQuotes = quotes.filter((quote) => quote.status === "geaccepteerd");
           const accepted = acceptedQuotes.reduce((sum, quote) => sum + Number(quote.total || 0), 0);
-          const open = quotes.filter((quote) => ["concept", "verzonden", "bekeken"].includes(quote.status)).reduce((sum, quote) => sum + Number(quote.total || 0), 0);
+          const open = quotes.filter((quote) => ["concept", "verzonden", "bekeken", "open"].includes(quote.status)).reduce((sum, quote) => sum + Number(quote.total || 0), 0);
           const rejectedCount = quotes.filter((quote) => ["afgewezen", "verlopen"].includes(quote.status)).length;
           const decided = quotes.filter((quote) => ["geaccepteerd", "afgewezen"].includes(quote.status)).length;
           const conversion = decided ? Math.round((acceptedQuotes.length / decided) * 100) : 0;
@@ -14292,12 +14346,14 @@
           renderQuoteStats();
           renderQuoteSourceSummary();
           if (!state.quotes.length) {
+            updateQuoteQuickFilterBar(0);
             renderState(quoteList, "Geen offertes", "Maak de eerste offerte voor een klant.", "Leeg", "status-planned", { label: "Offerte aanmaken", primary: true, onClick: () => openQuoteModal() });
             return;
           }
           const quotes = filteredQuotes();
+          updateQuoteQuickFilterBar(quotes.length);
           if (!quotes.length) {
-            renderState(quoteList, "Geen offertes gevonden", "Pas je zoekopdracht of filters aan.", "Geen match");
+            renderState(quoteList, "Geen offertes gevonden", quoteQuickFilter ? "Geen offertes gevonden voor dit filter." : "Pas je zoekopdracht of filters aan.", "Geen match");
             return;
           }
           const head = document.createElement("div");
@@ -16952,6 +17008,8 @@
         [customerSearch, customerStatusFilter, customerPackageFilter].forEach((filter) => filter.addEventListener("input", renderCustomers));
         [fileSearch, fileCategoryFilter, fileStatusFilter, fileCustomerFilter, fileProjectFilter].forEach((filter) => filter.addEventListener("input", renderFiles));
         [quoteSearch, quoteStatusFilter, quoteTypeFilter, quoteCustomerFilter, quoteProjectFilter, quoteWebsiteFilter].forEach((filter) => filter.addEventListener("input", renderQuotes));
+        quoteClearQuickFilter?.addEventListener("click", clearQuoteQuickFilter);
+        window.addEventListener("maxwebstudio:quoteQuickFilter", (event) => applyQuoteQuickFilter(event.detail || {}));
         [invoiceSearch, invoiceStatusFilter, invoiceTypeFilter, invoiceCustomerFilter, invoiceProjectFilter, invoiceWebsiteFilter].forEach((filter) => filter.addEventListener("input", renderInvoices));
         [requestStatusFilter, requestPriorityFilter, requestCategoryFilter].forEach((filter) => filter.addEventListener("change", renderRequests));
         settingsForm.addEventListener("submit", saveSettings);
@@ -17502,6 +17560,7 @@
           wonToday: document.getElementById("sales-cockpit-won-today"),
           conversion: document.getElementById("sales-cockpit-conversion"),
         },
+        cockpitBar: document.getElementById("sales-cockpit-bar"),
         metrics: document.getElementById("leadfinder-metrics"),
         form: document.getElementById("leadfinder-form"),
         company: document.getElementById("leadfinder-company"),
@@ -17525,6 +17584,8 @@
         filterIndustry: document.getElementById("leadfinder-filter-industry"),
         filterRegion: document.getElementById("leadfinder-filter-region"),
         filterScore: document.getElementById("leadfinder-filter-score"),
+        activeFilter: document.getElementById("leadfinder-active-filter"),
+        clearQuickFilter: document.getElementById("leadfinder-clear-quick-filter"),
         list: document.getElementById("leadfinder-list"),
         detailSubtitle: document.getElementById("leadfinder-detail-subtitle"),
         detailState: document.getElementById("leadfinder-detail-state"),
@@ -17562,6 +17623,7 @@
       let selectedLeadFinderId = "";
       let leadfinderDataLayerLeads = [];
       let leadfinderSourceStatus = null;
+      let activeLeadfinderQuickFilter = null;
       const websiteAnalysisState = new Map();
       let googlePlacesMap = null;
       let googlePlacesService = null;
@@ -18391,6 +18453,20 @@
         return startOfDay(date).getTime() === startOfDay(compareDate).getTime();
       }
 
+      function startOfWeek(date = new Date()) {
+        const copy = startOfDay(date);
+        const day = copy.getDay() || 7;
+        copy.setDate(copy.getDate() - day + 1);
+        return copy;
+      }
+
+      function isInCurrentWeek(dateValue) {
+        if (!dateValue) return false;
+        const date = new Date(dateValue);
+        if (Number.isNaN(date.getTime())) return false;
+        return date >= startOfWeek() && date <= new Date();
+      }
+
       function daysFromToday(dateValue) {
         if (!dateValue) return null;
         const date = new Date(`${dateValue}T00:00:00`);
@@ -18402,8 +18478,12 @@
         return ["won", "geconverteerd", "customer_active"].includes(lead.callStatus) || Boolean(lead.convertedCustomerId);
       }
 
+      function isOpenLeadStatus(lead = {}) {
+        return !isLeadWon(lead) && !["lost", "geen_interesse"].includes(String(lead.callStatus || "").toLowerCase());
+      }
+
       function isOpenQuote(quote = {}) {
-        return ["concept", "verzonden", "bekeken"].includes(String(quote.status || "").toLowerCase());
+        return ["concept", "verzonden", "bekeken", "open"].includes(String(quote.status || "").toLowerCase());
       }
 
       function readSalesCockpitQuotes() {
@@ -18440,6 +18520,48 @@
         if (leadfinderElements.cockpit.openQuotes) leadfinderElements.cockpit.openQuotes.textContent = String(openQuotes);
         if (leadfinderElements.cockpit.wonToday) leadfinderElements.cockpit.wonToday.textContent = String(wonToday);
         if (leadfinderElements.cockpit.conversion) leadfinderElements.cockpit.conversion.textContent = `${conversion}%`;
+      }
+
+      function handleSalesKpiAction(type) {
+        if (type === "new_today") {
+          applyLeadfinderQuickFilter("new_today", "Nieuwe leads vandaag");
+          return;
+        }
+        if (type === "followups_today") {
+          applyLeadfinderQuickFilter("followups_today", "Follow-ups vandaag");
+          return;
+        }
+        if (type === "won_today") {
+          applyLeadfinderQuickFilter("won_today", "Verkocht vandaag");
+          return;
+        }
+        if (type === "conversion_week") {
+          applyLeadfinderQuickFilter("conversion_week", "Conversie deze week");
+          return;
+        }
+        if (type === "open_quotes") {
+          window.location.hash = "offertes";
+          window.dispatchEvent(new CustomEvent("maxwebstudio:quoteQuickFilter", {
+            detail: {
+              type: "open_quotes",
+              title: "Open offertes",
+              statuses: ["concept", "verzonden", "bekeken", "open"],
+            },
+          }));
+        }
+      }
+
+      function handleSalesKpiClick(event) {
+        const card = event.target.closest("[data-sales-kpi]");
+        if (!card) return;
+        handleSalesKpiAction(card.dataset.salesKpi || "");
+      }
+
+      function handleSalesKpiKeydown(event) {
+        const card = event.target.closest("[data-sales-kpi]");
+        if (!card || !["Enter", " "].includes(event.key)) return;
+        event.preventDefault();
+        handleSalesKpiAction(card.dataset.salesKpi || "");
       }
 
       function getFollowUpBadge(lead = {}) {
@@ -18586,6 +18708,66 @@
         select.value = owners.has(selected) ? selected : "";
       }
 
+      function clearManualLeadfinderFilters() {
+        [
+          leadfinderElements.search,
+          leadfinderElements.filterWebsiteStatus,
+          leadfinderElements.filterCallStatus,
+          leadfinderElements.filterOwner,
+          leadfinderElements.filterIndustry,
+          leadfinderElements.filterRegion,
+          leadfinderElements.filterScore,
+        ].forEach((element) => {
+          if (element) element.value = "";
+        });
+      }
+
+      function leadMatchesQuickFilter(lead = {}, filter = activeLeadfinderQuickFilter) {
+        if (!filter?.type) return true;
+        if (filter.type === "new_today") {
+          return isSameDay(lead.createdAt) && isOpenLeadStatus(lead);
+        }
+        if (filter.type === "followups_today") {
+          const days = daysFromToday(lead.followUpDate);
+          return days !== null && days <= 0 && isOpenLeadStatus(lead);
+        }
+        if (filter.type === "won_today") {
+          return isLeadWon(lead) && isSameDay(lead.updatedAt);
+        }
+        if (filter.type === "conversion_week") {
+          return isInCurrentWeek(lead.createdAt) || (isLeadWon(lead) && isInCurrentWeek(lead.updatedAt));
+        }
+        return true;
+      }
+
+      function updateLeadfinderQuickFilterBar(count = 0) {
+        const bar = leadfinderElements.activeFilter;
+        if (!bar) return;
+        if (!activeLeadfinderQuickFilter) {
+          bar.hidden = true;
+          return;
+        }
+        const title = activeLeadfinderQuickFilter.title || "Gefilterde leads";
+        const titleElement = bar.querySelector("strong");
+        if (titleElement) titleElement.textContent = `${title} (${count})`;
+        bar.hidden = false;
+      }
+
+      function applyLeadfinderQuickFilter(type, title) {
+        clearManualLeadfinderFilters();
+        activeLeadfinderQuickFilter = { type, title };
+        window.location.hash = "leadfinder";
+        renderLeadfinderList();
+        window.focusAdminPanel?.(leadfinderElements.activeFilter || leadfinderElements.list);
+      }
+
+      function clearLeadfinderQuickFilter() {
+        activeLeadfinderQuickFilter = null;
+        clearManualLeadfinderFilters();
+        renderLeadfinderList();
+        window.focusAdminPanel?.(leadfinderElements.list);
+      }
+
       function getFilteredLeadfinderLeads() {
         const query = String(leadfinderElements.search?.value || "").trim().toLowerCase();
         const websiteStatus = leadfinderElements.filterWebsiteStatus?.value || "";
@@ -18609,6 +18791,7 @@
             getLeadOwnerLabel(lead),
           ].join(" ").toLowerCase();
           return (!query || haystack.includes(query))
+            && leadMatchesQuickFilter(lead)
             && (!websiteStatus || lead.websiteStatus === websiteStatus)
             && (!callStatus || lead.callStatus === callStatus)
             && (!owner || getLeadOwnerValue(lead) === owner)
@@ -18628,15 +18811,17 @@
         renderLeadfinderMetrics(allLeads);
         renderSalesCockpit(allLeads);
         populateLeadfinderOwnerFilter(allLeads);
+        updateLeadfinderQuickFilterBar(leads.length);
 
         if (!leadfinderElements.list) return;
         if (!leads.length) {
           const sourceError = leadfinderSourceStatus?.error || "";
+          const emptyText = activeLeadfinderQuickFilter ? "Geen leads gevonden voor dit filter." : "Voeg een prospect toe of pas je filters aan.";
           leadfinderElements.list.innerHTML = `
             <article class="admin-card request-card request-state-card">
               <div>
                 <strong>${escapeHtml(sourceError ? "Leads konden niet volledig worden geladen" : "Geen leads gevonden")}</strong>
-                <span>${escapeHtml(sourceError || "Voeg een prospect toe of pas je filters aan.")}</span>
+                <span>${escapeHtml(sourceError || emptyText)}</span>
               </div>
               ${sourceError ? `<mark class="status-badge status-danger">Error</mark>` : ""}
             </article>
@@ -19262,6 +19447,9 @@
           element?.addEventListener("input", renderLeadfinderList);
           element?.addEventListener("change", renderLeadfinderList);
         });
+        leadfinderElements.cockpitBar?.addEventListener("click", handleSalesKpiClick);
+        leadfinderElements.cockpitBar?.addEventListener("keydown", handleSalesKpiKeydown);
+        leadfinderElements.clearQuickFilter?.addEventListener("click", clearLeadfinderQuickFilter);
         leadfinderElements.list.addEventListener("click", handleLeadfinderListClick);
         leadfinderElements.saveNote?.addEventListener("click", saveLeadfinderDetailNote);
         leadfinderElements.analysisRun?.addEventListener("click", runLeadWebsiteAnalysis);
