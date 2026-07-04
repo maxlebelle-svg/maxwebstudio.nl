@@ -215,6 +215,11 @@ export function showAccessWarning(message = "Deze pagina gebruikt soft access-co
   return warning;
 }
 
+export function clearAccessWarning() {
+  if (typeof document === "undefined") return;
+  document.querySelector("[data-route-guard-warning]")?.remove();
+}
+
 function enforceDecision(decision = {}, options = {}) {
   logAccessDecision(decision);
   if (!decision.allowed) {
@@ -222,6 +227,8 @@ function enforceDecision(decision = {}, options = {}) {
     if (decision.enforced && decision.redirectTo && typeof window !== "undefined") {
       window.location.href = decision.redirectTo;
     }
+  } else {
+    clearAccessWarning();
   }
   return decision;
 }

@@ -16,6 +16,15 @@ export const PROTECTED_ROUTES = Object.freeze({
     defaultRedirect: "/login.html",
     hardReady: true,
   },
+  "admin-leadfinder": {
+    pageName: "admin-leadfinder",
+    path: "/admin-dashboard.html#leadfinder",
+    requiredRoles: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.SALES_MANAGER, ROLES.SALES_PARTNER],
+    requiredPermissions: [{ resource: "leads", action: "view" }],
+    allowDemo: true,
+    defaultRedirect: "/admin-dashboard.html#leadfinder",
+    hardReady: true,
+  },
   klantportaal: {
     pageName: "klantportaal",
     path: "/klantportaal.html",
