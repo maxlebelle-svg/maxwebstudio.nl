@@ -46,19 +46,24 @@ async function handler(event) {
     return jsonResponse(400, { success: false, error: "Onbekende Website Factory actie." });
   } catch (error) {
     const missing = isMissingFactoryTableError(error);
+    const developerMode = isDeveloperRequest(event);
     console.error("Website Factory API failed", {
       status: error.status || 500,
       code: error.code || "",
       message: error.message,
+      details: error.details || "",
+      hint: error.hint || "",
     });
-    return jsonResponse(missing ? 503 : error.status || 500, {
-      success: false,
-      error: missing
-        ? "Website Factory tabellen ontbreken nog. Rol migration 019_ai_website_factory_v1 uit."
-        : error.message || "Website Factory kon niet worden verwerkt.",
+    return jsonResponse(missing ? 503 : error.status || 500, errorResponse({
+      error,
+      developerMode,
+      module: "website_factory",
+      reason: missing ? "missing_website_factory_tables" : "website_factory_failed",
+      fallbackMessage: missing
+        ? "Website Factory tabellen ontbreken nog. Rol migration 019_ai_website_factory_v1 uit op de actieve Supabase database."
+        : "Website Factory kon niet worden verwerkt.",
       setupRequired: missing,
-      diagnostics: { module: "website_factory", reason: missing ? "missing_website_factory_tables" : "website_factory_failed" },
-    });
+    }));
   }
 }
 
@@ -383,6 +388,7 @@ async function supabaseFetch(url, options) {
     error.status = response.status;
     error.code = data?.code || "";
     error.details = data?.details || "";
+    error.hint = data?.hint || "";
     throw error;
   }
   return Array.isArray(data) ? data : [];
@@ -449,6 +455,34 @@ function jsonResponse(statusCode, body) {
     },
     body: statusCode === 204 ? "" : JSON.stringify(body),
   };
+}
+
+function errorResponse({ error = {}, developerMode = false, module = "", reason = "", fallbackMessage = "", setupRequired = false } = {}) {
+  const message = error.message || fallbackMessage || "Aanvraag kon niet worden verwerkt.";
+  const body = {
+    success: false,
+    error: developerMode ? message : fallbackMessage || message,
+    userMessage: setupRequired
+      ? fallbackMessage
+      : "De Website Factory kon de aanvraag niet verwerken. Zet Developer Mode aan voor technische details of controleer de serverlogs.",
+    code: error.code || "",
+    details: developerMode ? cleanText(error.details) : "",
+    hint: developerMode ? cleanText(error.hint) : "",
+    setupRequired: Boolean(setupRequired),
+    diagnostics: {
+      module,
+      reason,
+      status: error.status || 500,
+      code: error.code || "",
+    },
+  };
+  if (developerMode && error.stack) body.stack = error.stack;
+  return body;
+}
+
+function isDeveloperRequest(event = {}) {
+  const headers = event.headers || {};
+  return String(headers["x-mws-developer-mode"] || headers["X-MWS-Developer-Mode"] || "").toLowerCase() === "true";
 }
 
 function cleanText(value = "") {

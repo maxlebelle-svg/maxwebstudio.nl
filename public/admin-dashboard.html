@@ -20312,17 +20312,44 @@
         async function apiRequest(url, method = "GET", payload = null) {
           const token = getBearer();
           if (!token) throw new Error("Adminsessie ontbreekt. Log opnieuw in om demo klantreizen te beheren.");
+          const developerMode = developerModeActive();
           const response = await fetch(url, {
             method,
             headers: {
               Accept: "application/json",
               Authorization: `Bearer ${token}`,
+              "X-MWS-Developer-Mode": developerMode ? "true" : "false",
               ...(payload ? { "Content-Type": "application/json" } : {}),
             },
             body: payload ? JSON.stringify(payload) : undefined,
           });
-          const data = await response.json().catch(() => ({}));
-          if (!response.ok || data.success === false) throw new Error(data.error || "Demo klantreis kon niet worden verwerkt.");
+          const responseBody = await response.text();
+          let data = {};
+          try {
+            data = responseBody ? JSON.parse(responseBody) : {};
+          } catch {
+            data = { rawBody: responseBody };
+          }
+          if (!response.ok || data.success === false) {
+            const diagnostics = {
+              functionName: url.includes("website-factory") ? "website-factory" : url.includes("demo-journey") ? "demo-journey" : "unknown",
+              requestUrl: url,
+              requestPayload: payload || null,
+              httpStatus: response.status,
+              responseBody,
+              parsedJson: data,
+            };
+            console.error("Demo Journey API request failed", diagnostics);
+            const detail = [
+              data.error || "Demo klantreis kon niet worden verwerkt.",
+              data.details ? `Details: ${data.details}` : "",
+              data.hint ? `Hint: ${data.hint}` : "",
+              data.diagnostics?.reason ? `Reden: ${data.diagnostics.reason}` : "",
+            ].filter(Boolean).join("\n");
+            const error = new Error(developerMode ? `Backendfout (${response.status})\n${detail}` : data.userMessage || data.error || "Demo klantreis kon niet worden opgeslagen. Probeer opnieuw of vraag een beheerder om Developer Mode te controleren.");
+            error.diagnostics = diagnostics;
+            throw error;
+          }
           return data;
         }
 
@@ -20492,8 +20519,9 @@
           setMessage(elements.message, "Demo-klantreis opslaan...", "info");
           try {
             const data = await apiRequest(endpoint, journey?.id ? "PATCH" : "POST", collectPayload());
-            journey = data.journey || null;
+            journey = data.demoJourney || data.journey || null;
             events = Array.isArray(data.events) ? data.events : [];
+            buildHistory = data.buildHistory || buildHistory;
             if (data.template) fillEmailTemplate(data.template);
             renderJourney();
             setMessage(elements.message, "Demo-klantreis opgeslagen.", "success");

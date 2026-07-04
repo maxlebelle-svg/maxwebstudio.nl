@@ -61,21 +61,29 @@ exports.handler = async (event) => {
     return jsonResponse(405, { success: false, error: "Methode niet toegestaan voor demo klantreis." });
   } catch (error) {
     const missing = isMissingTableError(error);
+    const missingFactory = isMissingFactoryTableError(error);
+    const developerMode = isDeveloperRequest(event);
     console.error("Demo journey API failed", {
       method: event.httpMethod,
       role: adminCheck.admin?.role || "",
       status: error.status || 500,
       code: error.code || "",
       message: error.message,
+      details: error.details || "",
+      hint: error.hint || "",
     });
-    return jsonResponse(missing ? 503 : error.status || 500, {
-      success: false,
-      error: missing
-        ? "Demo klantreis tabellen ontbreken nog. Rol de migration voor demo_journeys uit."
-        : error.message || "Demo klantreis kon niet worden verwerkt.",
-      setupRequired: missing,
-      diagnostics: { module: "demo_journey", reason: missing ? "missing_demo_journeys_table" : "demo_journey_api_failed" },
-    });
+    return jsonResponse(missing || missingFactory ? 503 : error.status || 500, errorResponse({
+      error,
+      developerMode,
+      module: "demo_journey",
+      reason: missing ? "missing_demo_journeys_table" : missingFactory ? "missing_website_factory_tables" : "demo_journey_api_failed",
+      fallbackMessage: missing
+        ? "Demo klantreis tabellen ontbreken nog. Rol migration 018_demo_journey_workflow uit op de actieve Supabase database."
+        : missingFactory
+          ? "Website Factory tabellen ontbreken nog. Rol migration 019_ai_website_factory_v1 uit op de actieve Supabase database."
+          : "Demo klantreis kon niet worden verwerkt.",
+      setupRequired: missing || missingFactory,
+    }));
   }
 };
 
@@ -201,7 +209,7 @@ async function readAdminJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
   const selected = journeys[0] || null;
   const events = selected ? await readEvents({ supabaseUrl, serviceRoleKey, journeyId: selected.id }) : [];
   const factoryHistory = selected ? await readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, journeyId: selected.id }) : { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
-  return jsonResponse(200, { success: true, journey: selected, records: journeys, events, templates: emailTemplates(), buildHistory: factoryHistory });
+  return jsonResponse(200, { success: true, journey: selected, demoJourney: selected, records: journeys, events, templates: emailTemplates(), buildHistory: factoryHistory, buildStatus: factoryHistory.latestJob || null });
 }
 
 async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
@@ -278,8 +286,10 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     return jsonResponse(200, {
       success: true,
       journey,
+      demoJourney: journey,
       events,
       buildJob: buildResult.job,
+      buildStatus: buildResult.job || null,
       previewVersion: buildResult.previewVersion,
       buildHistory,
       preview: {
@@ -297,7 +307,8 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
   const journey = mapJourney(rows[0] || {});
   await createStatusEvents({ supabaseUrl, serviceRoleKey, journey, current: current ? mapJourney(current) : null, admin });
   const events = await readEvents({ supabaseUrl, serviceRoleKey, journeyId: journey.id });
-  return jsonResponse(200, { success: true, journey, events, template: buildEmailTemplate(journey.demoStatus, journey) });
+  const buildHistory = journey?.id ? await readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, journeyId: journey.id }) : { latestJob: null };
+  return jsonResponse(200, { success: true, journey, demoJourney: journey, events, template: buildEmailTemplate(journey.demoStatus, journey), buildHistory, buildStatus: buildHistory.latestJob || null });
 }
 
 function journeyPayload(payload = {}, admin = {}, options = {}) {
@@ -616,6 +627,7 @@ async function supabaseFetch(url, options) {
     error.status = response.status;
     error.code = data?.code || "";
     error.details = data?.details || "";
+    error.hint = data?.hint || "";
     throw error;
   }
   return Array.isArray(data) ? data : [];
@@ -652,6 +664,34 @@ function jsonResponse(statusCode, body) {
     },
     body: statusCode === 204 ? "" : JSON.stringify(body),
   };
+}
+
+function errorResponse({ error = {}, developerMode = false, module = "", reason = "", fallbackMessage = "", setupRequired = false } = {}) {
+  const message = error.message || fallbackMessage || "Aanvraag kon niet worden verwerkt.";
+  const body = {
+    success: false,
+    error: developerMode ? message : fallbackMessage || message,
+    userMessage: setupRequired
+      ? fallbackMessage
+      : "De demo-klantreis kon niet worden opgeslagen. Zet Developer Mode aan voor technische details of controleer de serverlogs.",
+    code: error.code || "",
+    details: developerMode ? cleanText(error.details) : "",
+    hint: developerMode ? cleanText(error.hint) : "",
+    setupRequired: Boolean(setupRequired),
+    diagnostics: {
+      module,
+      reason,
+      status: error.status || 500,
+      code: error.code || "",
+    },
+  };
+  if (developerMode && error.stack) body.stack = error.stack;
+  return body;
+}
+
+function isDeveloperRequest(event = {}) {
+  const headers = event.headers || {};
+  return String(headers["x-mws-developer-mode"] || headers["X-MWS-Developer-Mode"] || "").toLowerCase() === "true";
 }
 
 function textToHtml(value = "") {
