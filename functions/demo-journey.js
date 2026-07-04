@@ -1,5 +1,6 @@
 const { verifyAdmin } = require("./_admin-auth");
 const { sendEmail } = require("./email");
+const crypto = require("crypto");
 
 const staffRoles = ["super_admin", "admin", "sales_manager", "sales_partner"];
 const managerRoles = new Set(["super_admin", "admin", "sales_manager"]);
@@ -238,6 +239,64 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     return jsonResponse(result.sent ? 200 : 503, { success: result.sent, sent: result.sent, warning: result.warning || "", template });
   }
 
+  if (action === "generate_preview") {
+    const sourceJourney = current ? mapJourney(current) : mapJourney({
+      id: payload.id,
+      lead_id: payload.leadId,
+      customer_id: payload.customerId,
+      business_name: payload.businessName,
+      contact_name: payload.contactName,
+      email: payload.email,
+      phone: payload.phone,
+      website_url: payload.websiteUrl,
+      demo_status: payload.demoStatus,
+      generated_briefing: payload.generatedBriefing,
+      preview_url: payload.previewUrl,
+      feedback: payload.feedback,
+      internal_notes: payload.internalNotes,
+      follow_up_at: payload.followUpAt,
+      assigned_to: payload.assignedTo,
+      created_by: admin.id,
+      updated_by: admin.id,
+    });
+    const briefing = cleanText(payload.generatedBriefing || sourceJourney.generatedBriefing);
+    if (!briefing) return jsonResponse(400, { success: false, error: "Genereer of vul eerst een briefing in." });
+
+    let journeyId = cleanText(sourceJourney.id);
+    if (!journeyId) {
+      const created = await insertJourney({ supabaseUrl, serviceRoleKey, record: journeyPayload({ ...payload, demoStatus: "briefing_klaar", generatedBriefing: briefing }, admin, { create: true }) });
+      journeyId = cleanText(created[0]?.id);
+    }
+    if (!journeyId) return jsonResponse(500, { success: false, error: "Demo-klantreis kon niet worden voorbereid voor preview." });
+
+    const previewToken = crypto.randomBytes(18).toString("hex");
+    const previewPackage = buildPreviewPackage({ ...sourceJourney, id: journeyId, generatedBriefing: briefing });
+    const previewUrl = `/.netlify/functions/demo-preview?id=${encodeURIComponent(journeyId)}&token=${encodeURIComponent(previewToken)}`;
+    const updatedRows = await updatePreviewJourney({ supabaseUrl, serviceRoleKey, id: journeyId, record: {
+      generated_briefing: briefing,
+      preview_url: previewUrl,
+      preview_token: previewToken,
+      preview_package: previewPackage,
+      preview_generated_at: new Date().toISOString(),
+      demo_status: "interne_preview_klaar",
+      updated_by: admin.id,
+      updated_at: new Date().toISOString(),
+    } });
+    const journey = mapJourney(updatedRows[0] || { ...sourceJourney, id: journeyId, preview_url: previewUrl, demo_status: "interne_preview_klaar", generated_briefing: briefing });
+    await createEvent({ supabaseUrl, serviceRoleKey, journeyId, type: "preview", title: "Preview klaar", description: "De interne preview is voorbereid en staat klaar voor controle.", visible: false, createdBy: admin.id });
+    const events = await readEvents({ supabaseUrl, serviceRoleKey, journeyId });
+    return jsonResponse(200, {
+      success: true,
+      journey,
+      events,
+      preview: {
+        url: previewUrl,
+        zipUrl: `${previewUrl}&format=zip`,
+        files: previewPackage.files.map((file) => ({ path: file.path, bytes: Buffer.byteLength(file.content || "", "utf8") })),
+      },
+    });
+  }
+
   const record = journeyPayload(payload, admin, { create: !payload.id });
   const rows = payload.id
     ? await patchJourney({ supabaseUrl, serviceRoleKey, id: payload.id, record })
@@ -305,6 +364,16 @@ async function patchJourney({ supabaseUrl, serviceRoleKey, id, record }) {
     headers: { ...restHeaders(serviceRoleKey), Prefer: "return=representation", "Content-Type": "application/json" },
     body: JSON.stringify(record),
   });
+}
+
+async function updatePreviewJourney({ supabaseUrl, serviceRoleKey, id, record }) {
+  try {
+    return await patchJourney({ supabaseUrl, serviceRoleKey, id, record });
+  } catch (error) {
+    if (!isMissingColumnError(error)) throw error;
+    const { preview_token, preview_package, preview_generated_at, ...fallbackRecord } = record;
+    return patchJourney({ supabaseUrl, serviceRoleKey, id, record: fallbackRecord });
+  }
 }
 
 async function readJourneyById({ supabaseUrl, serviceRoleKey, id }) {
@@ -467,6 +536,102 @@ function sanitizeCustomerJourney(journey = {}) {
   };
 }
 
+function buildPreviewPackage(journey = {}) {
+  const business = cleanText(journey.businessName) || "Demo bedrijf";
+  const contact = cleanText(journey.contactName) || "Contactpersoon";
+  const briefing = cleanText(journey.generatedBriefing);
+  const website = cleanText(journey.websiteUrl);
+  const title = `${business} website-preview`;
+  const summary = extractBriefingSection(briefing, "Doel") || "Een professionele website-preview die vertrouwen opbouwt en aanvragen stimuleert.";
+  const notes = extractBriefingSection(briefing, "Belangrijke aandachtspunten") || briefing.slice(0, 500);
+  const html = previewHtml({ title, business, contact, website, summary, notes });
+  const css = previewCss();
+  const readme = [
+    `# ${title}`,
+    ``,
+    `Dit pakket is automatisch voorbereid vanuit de demo-briefing in het salesportaal.`,
+    ``,
+    `## Bestanden`,
+    `- index.html: interne previewpagina`,
+    `- styles.css: styling voor de preview`,
+    `- briefing.txt: oorspronkelijke briefinginput`,
+    ``,
+    `## Status`,
+    `Interne preview klaar. Controleer de inhoud voordat de preview naar de klant gaat.`,
+  ].join("\n");
+  return {
+    version: 1,
+    generatedAt: new Date().toISOString(),
+    businessName: business,
+    files: [
+      { path: "index.html", content: html },
+      { path: "styles.css", content: css },
+      { path: "briefing.txt", content: briefing },
+      { path: "README.md", content: readme },
+    ],
+  };
+}
+
+function extractBriefingSection(text = "", heading = "") {
+  const lines = String(text || "").split(/\r?\n/);
+  const index = lines.findIndex((line) => cleanText(line).toLowerCase() === cleanText(heading).toLowerCase());
+  if (index === -1) return "";
+  const collected = [];
+  for (let i = index + 1; i < lines.length; i += 1) {
+    const line = lines[i];
+    if (line && !line.startsWith(" ") && /^[A-ZÀ-ÿ][A-Za-zÀ-ÿ\s/-]{2,}$/.test(line.trim()) && collected.length) break;
+    if (line.trim()) collected.push(line.trim());
+  }
+  return collected.join(" ");
+}
+
+function previewHtml({ title, business, contact, website, summary, notes }) {
+  return `<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>${escapeHtml(title)}</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <nav><strong>${escapeHtml(business)}</strong><a href="#contact">Contact</a></nav>
+      <section>
+        <span>Eerste website-preview</span>
+        <h1>${escapeHtml(business)} online sterker zichtbaar.</h1>
+        <p>${escapeHtml(summary)}</p>
+        <a class="button" href="#contact">Plan een kennismaking</a>
+      </section>
+    </header>
+    <main>
+      <section class="grid">
+        <article><strong>Duidelijke diensten</strong><p>Een rustige structuur waarmee bezoekers snel begrijpen wat u aanbiedt.</p></article>
+        <article><strong>Vertrouwen opbouwen</strong><p>Ruimte voor projecten, klantverhalen, keurmerken en lokale herkenbaarheid.</p></article>
+        <article><strong>Meer aanvragen</strong><p>Heldere contactmomenten met telefoon, formulier en directe call-to-action.</p></article>
+      </section>
+      <section class="panel">
+        <span>Briefingnotities</span>
+        <p>${escapeHtml(notes)}</p>
+      </section>
+      <section class="contact" id="contact">
+        <div>
+          <span>Contact</span>
+          <h2>Bespreek de preview met ${escapeHtml(contact)}.</h2>
+          <p>${website ? `Huidige website: ${escapeHtml(website)}` : "Websitegegevens worden nog aangevuld."}</p>
+        </div>
+        <a class="button secondary" href="mailto:${escapeHtml(String(contact).includes("@") ? contact : "")}">Feedback doorgeven</a>
+      </section>
+    </main>
+  </body>
+</html>`;
+}
+
+function previewCss() {
+  return `:root{color-scheme:light;--ink:#132238;--muted:#5c697a;--line:#d9e2ef;--brand:#1d7c68;--accent:#f1b84b;--paper:#ffffff;--soft:#f5f7fb}*{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--soft);color:var(--ink)}a{color:inherit}nav{display:flex;justify-content:space-between;gap:24px;align-items:center;padding:24px clamp(20px,5vw,72px)}.hero{min-height:72vh;background:linear-gradient(180deg,#ffffff 0%,#eaf3f0 100%);border-bottom:1px solid var(--line)}.hero section{max-width:860px;padding:clamp(40px,9vw,110px) clamp(20px,5vw,72px)}span{display:inline-block;color:var(--brand);font-weight:800;text-transform:uppercase;font-size:.78rem;letter-spacing:.08em}h1{font-size:clamp(2.4rem,7vw,5.8rem);line-height:.96;margin:16px 0 20px;max-width:820px}h2{font-size:clamp(1.8rem,4vw,3rem);margin:10px 0 12px}p{font-size:1.08rem;line-height:1.7;color:var(--muted);max-width:720px}.button{display:inline-flex;align-items:center;justify-content:center;margin-top:16px;padding:13px 18px;border-radius:8px;background:var(--brand);color:#fff;text-decoration:none;font-weight:800}.button.secondary{background:var(--ink)}main{width:min(1120px,calc(100% - 40px));margin:0 auto;padding:42px 0 72px}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.grid article,.panel,.contact{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:24px}.grid strong{font-size:1.1rem}.panel,.contact{margin-top:18px}.contact{display:flex;justify-content:space-between;gap:24px;align-items:center}@media(max-width:760px){.grid{grid-template-columns:1fr}.contact{display:block}nav{align-items:flex-start}}`;
+}
+
 function mapJourney(row = {}) {
   return {
     id: cleanText(row.id),
@@ -480,6 +645,8 @@ function mapJourney(row = {}) {
     demoStatus: normalizeStatus(row.demo_status || "geen_demo"),
     generatedBriefing: cleanText(row.generated_briefing),
     previewUrl: cleanText(row.preview_url),
+    previewPackage: row.preview_package && typeof row.preview_package === "object" ? row.preview_package : null,
+    previewGeneratedAt: cleanText(row.preview_generated_at),
     feedback: cleanText(row.feedback),
     internalNotes: cleanText(row.internal_notes),
     followUpAt: cleanText(row.follow_up_at),
@@ -618,4 +785,13 @@ function isMissingTableError(error = {}) {
     || text.includes("could not find the table")
     || text.includes("demo_journeys")
     || text.includes("demo_journey_events");
+}
+
+function isMissingColumnError(error = {}) {
+  const text = [error.message, error.details, error.code].map((value) => cleanText(value).toLowerCase()).join(" ");
+  return error.status === 400
+    && (text.includes("42703")
+      || text.includes("pgrst204")
+      || text.includes("column")
+      || text.includes("could not find"));
 }

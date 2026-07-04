@@ -488,6 +488,7 @@
                 <div class="admin-action-group admin-action-group-primary">
                   <button class="button primary" id="demo-journey-save" type="submit">Demo-aanvraag opslaan</button>
                   <button class="button secondary" id="demo-journey-generate-briefing" type="button">Briefing genereren</button>
+                  <button class="button secondary" id="demo-journey-generate-preview" type="button">Preview genereren</button>
                 </div>
                 <div class="admin-action-group admin-action-group-secondary">
                   <button class="button secondary" id="demo-journey-copy-briefing" type="button">Briefing kopiëren</button>
@@ -518,6 +519,7 @@
               <label class="admin-profile-wide" for="demo-journey-briefing">Codex briefing<textarea id="demo-journey-briefing" rows="8" readonly></textarea></label>
               <div class="admin-profile-actions">
                 <a class="button secondary is-disabled" id="demo-journey-open-preview" href="#" target="_blank" rel="noopener" aria-disabled="true">Preview openen</a>
+                <a class="button secondary is-disabled" id="demo-journey-download-zip" href="#" target="_blank" rel="noopener" aria-disabled="true">ZIP downloaden</a>
                 <a class="button secondary is-disabled" id="demo-journey-open-portal" href="#" target="_blank" rel="noopener" aria-disabled="true">Klantportaal openen</a>
               </div>
             </article>
@@ -20238,6 +20240,7 @@
             openPortal: document.getElementById("demo-journey-open-portal"),
             save: document.getElementById("demo-journey-save"),
             generateBriefing: document.getElementById("demo-journey-generate-briefing"),
+            generatePreview: document.getElementById("demo-journey-generate-preview"),
             copyBriefing: document.getElementById("demo-journey-copy-briefing"),
             refresh: document.getElementById("demo-journey-refresh"),
             emailType: document.getElementById("demo-journey-email-type"),
@@ -20248,6 +20251,7 @@
             generateEmail: document.getElementById("demo-journey-generate-email"),
             copyEmail: document.getElementById("demo-journey-copy-email"),
             sendEmail: document.getElementById("demo-journey-send-email"),
+            downloadZip: document.getElementById("demo-journey-download-zip"),
           });
         }
 
@@ -20498,6 +20502,28 @@
           }
         }
 
+        async function generatePreview() {
+          if (!elements.briefing?.value) {
+            elements.briefing.value = buildBriefing();
+          }
+          elements.generatePreview.disabled = true;
+          setMessage(elements.message, "Interne preview voorbereiden...", "info");
+          try {
+            const data = await apiRequest(endpoint, "POST", collectPayload({ action: "generate_preview", generatedBriefing: elements.briefing.value }));
+            journey = data.journey || null;
+            events = Array.isArray(data.events) ? data.events : [];
+            if (journey?.previewUrl) elements.preview.value = journey.previewUrl;
+            if (journey?.demoStatus) elements.status.value = journey.demoStatus;
+            renderJourney();
+            const fileCount = Array.isArray(data.preview?.files) ? data.preview.files.length : 0;
+            setMessage(elements.message, `Interne preview klaar${fileCount ? ` met ${fileCount} bestanden in ZIP` : ""}.`, "success");
+          } catch (error) {
+            setMessage(elements.message, error.message, "error");
+          } finally {
+            elements.generatePreview.disabled = false;
+          }
+        }
+
         async function copyText(value = "", target = elements.message) {
           if (!value) {
             setMessage(target, "Er is nog geen tekst om te kopiëren.", "warning");
@@ -20589,6 +20615,7 @@
             ["Verantwoordelijke", journey?.assignedTo || "-"],
           ].map(([label, value]) => `<div><strong>${escapeHtml(label)}</strong><span>${escapeHtml(value)}</span></div>`).join("");
           setActionLink(elements.openPreview, journey?.previewUrl || "");
+          setActionLink(elements.downloadZip, journey?.previewUrl ? `${journey.previewUrl}&format=zip` : "");
           setActionLink(elements.openPortal, journey?.customerId ? `/klantportaal.html?customerId=${encodeURIComponent(journey.customerId)}#projectstatus` : "");
           renderMetrics();
           renderTimeline();
@@ -20609,6 +20636,7 @@
             elements.status.value = "briefing_klaar";
             setMessage(elements.message, "Briefing gegenereerd. Sla op om deze centraal te bewaren.", "success");
           });
+          elements.generatePreview?.addEventListener("click", generatePreview);
           elements.copyBriefing?.addEventListener("click", () => copyText(elements.briefing?.value || "", elements.message));
           elements.refresh?.addEventListener("click", async () => {
             await loadLeads();

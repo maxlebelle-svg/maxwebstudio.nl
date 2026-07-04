@@ -15,6 +15,9 @@ create table if not exists public.demo_journeys (
   demo_status text not null default 'geen_demo',
   generated_briefing text,
   preview_url text,
+  preview_token text null,
+  preview_package jsonb not null default '{}'::jsonb,
+  preview_generated_at timestamptz null,
   feedback text,
   internal_notes text,
   follow_up_at timestamptz null,
@@ -61,6 +64,7 @@ create index if not exists demo_journeys_lead_id_idx on public.demo_journeys(lea
 create index if not exists demo_journeys_customer_id_idx on public.demo_journeys(customer_id);
 create index if not exists demo_journeys_status_idx on public.demo_journeys(demo_status);
 create index if not exists demo_journeys_follow_up_at_idx on public.demo_journeys(follow_up_at);
+create index if not exists demo_journeys_preview_token_idx on public.demo_journeys(preview_token);
 create index if not exists demo_journey_events_journey_idx on public.demo_journey_events(demo_journey_id, created_at);
 create index if not exists demo_journey_events_customer_visible_idx on public.demo_journey_events(demo_journey_id, visible_to_customer, created_at);
 
