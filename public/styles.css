@@ -17011,6 +17011,26 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   content: "□";
 }
 
+.admin-body .lead-preview-button {
+  border-color: rgba(96, 165, 250, 0.32);
+  color: #f8fbff;
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.28), rgba(25, 194, 255, 0.12)),
+    rgba(2, 14, 25, 0.5);
+}
+
+.admin-body .lead-preview-button span {
+  color: #93c5fd;
+}
+
+.admin-body .lead-preview-button:hover,
+.admin-body .lead-preview-button:focus-visible {
+  border-color: rgba(96, 165, 250, 0.6);
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.38), rgba(25, 194, 255, 0.16)),
+    rgba(2, 14, 25, 0.6);
+}
+
 @media (max-width: 1180px) {
   .admin-body .admin-crm-grid,
   .admin-body .website-operations-grid,

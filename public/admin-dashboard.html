@@ -19633,6 +19633,7 @@
 
                 <div class="lead-card-actions">
                   <button class="lead-icon-button lead-view-button" type="button" data-leadfinder-action="view" aria-label="Lead bekijken"><span aria-hidden="true">◉</span><strong>Bekijken</strong></button>
+                  <button class="lead-icon-button lead-preview-button" type="button" data-leadfinder-action="preview" aria-label="Maak preview voor lead"><span aria-hidden="true">▣</span><strong>Maak preview</strong></button>
                   <button class="lead-icon-button" type="button" data-leadfinder-action="task" aria-label="Opvolgtaak maken"><span aria-hidden="true">□</span><strong>Opvolgtaak</strong></button>
                   <button class="lead-icon-button" type="button" data-leadfinder-action="note" aria-label="Notitie toevoegen"><span aria-hidden="true">✎</span><strong>Notitie</strong></button>
                   <a class="lead-icon-button ${phoneHref ? "" : "is-disabled"}" href="${escapeHtml(phoneHref || "#")}" aria-disabled="${phoneHref ? "false" : "true"}" aria-label="Lead bellen"><span aria-hidden="true">☎</span><strong>Call</strong></a>
@@ -20091,6 +20092,8 @@
       async function handleLeadfinderListClick(event) {
         const button = event.target.closest("[data-leadfinder-action]");
         if (!button) return;
+        event.preventDefault();
+        event.stopPropagation();
         const row = button.closest("[data-leadfinder-id]");
         const leadId = row?.dataset.leadfinderId;
         const lead = getLeadfinderLeads().find((item) => item.id === leadId);
@@ -20108,6 +20111,14 @@
           window.focusAdminPanel?.(leadfinderElements.detailNote || document.querySelector(".leadfinder-detail-card"));
           leadfinderElements.detailNote?.focus();
           setLeadfinderMessage("Lead geselecteerd. Voeg je notitie toe in Leaddetail.", "success");
+          return;
+        } else if (button.dataset.leadfinderAction === "preview") {
+          renderLeadfinderList();
+          window.location.hash = "demo-klantreis";
+          window.dispatchEvent(new CustomEvent("maxwebstudio:lead-preview-request", { detail: { lead } }));
+          window.focusAdminPanel?.(document.getElementById("demo-klantreis"), { block: "start", duration: 1600 });
+          window.showToast?.(`Website Factory geopend voor ${lead.companyName || "deze lead"}.`, "success");
+          setLeadfinderMessage("Lead naar Website Factory gestuurd.", "success");
           return;
         } else if (button.dataset.leadfinderAction === "delete") {
           await deleteLeadfinderLead(lead);
@@ -20880,16 +20891,36 @@
           return leads.find((lead) => lead.id === elements.lead?.value) || null;
         }
 
+        function upsertLeadOption(lead = {}) {
+          if (!lead?.id) return;
+          const index = leads.findIndex((item) => item.id === lead.id);
+          if (index >= 0) {
+            leads[index] = { ...leads[index], ...lead };
+          } else {
+            leads.unshift(lead);
+          }
+          fillSelect(elements.lead, leads.map((item) => [item.id, `${item.companyName || "Naamloos bedrijf"} - ${item.contactName || item.email || "geen contact"}`]), "Kies een lead");
+        }
+
         function fillFromLead(lead) {
           if (!lead) return;
           if (!journey) {
             elements.business.value = lead.companyName || "";
-            elements.contact.value = lead.contactName || "";
+            elements.contact.value = lead.contactName || lead.contact || "Onbekende contactpersoon";
             elements.email.value = lead.email || "";
             elements.phone.value = lead.phone || "";
             elements.website.value = lead.websiteUrl || "";
             elements.package.value = packageTypeFromValue(lead.packageType || lead.package_type || lead.package || lead.packageName || lead.package_name);
             elements.assigned.value = lead.assignedUserEmail || lead.salesPartnerEmail || lead.assignedTo || "";
+            const contextLines = [
+              lead.industry ? `Branche: ${lead.industry}` : "",
+              lead.region ? `Regio: ${lead.region}` : "",
+              lead.address ? `Adres: ${lead.address}` : "",
+              lead.source ? `Bron: ${lead.source}` : "",
+            ].filter(Boolean);
+            if (elements.notes && !elements.notes.value && contextLines.length) {
+              elements.notes.value = contextLines.join("\n");
+            }
           }
         }
 
@@ -21342,10 +21373,41 @@
           renderTimeline();
         }
 
+        async function openLeadPreviewWorkflow(event) {
+          const lead = event?.detail?.lead || {};
+          if (!lead.id || !elements.lead) return;
+          upsertLeadOption(lead);
+          elements.lead.value = lead.id;
+          journey = null;
+          events = [];
+          buildHistory = { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
+          projectWorkspace = null;
+          fillFromLead(lead);
+          renderJourney();
+          window.location.hash = "demo-klantreis";
+          window.focusAdminPanel?.(document.getElementById("demo-klantreis"), { block: "start", duration: 1600 });
+          try {
+            await loadJourney();
+            if (journey?.id) {
+              setMessage(elements.message, "Bestaande demo-klantreis geladen.", "success");
+            } else {
+              setMessage(elements.message, "Leadgegevens ingevuld. Vul de wensen aan en sla de demo-aanvraag op.", "success");
+            }
+          } catch (error) {
+            setMessage(elements.message, error.message || "Leadgegevens ingevuld, maar bestaande demo kon niet worden gecontroleerd.", "warning");
+          }
+          const focusTarget = elements.notes || elements.business || elements.form;
+          window.setTimeout(() => {
+            window.focusAdminPanel?.(elements.form, { block: "start", duration: 1200 });
+            focusTarget?.focus?.({ preventScroll: true });
+          }, 380);
+        }
+
         function wireEvents() {
           fillSelect(elements.status, statuses);
           fillSelect(elements.emailType, templates);
           fillSelect(elements.package, websitePackages);
+          window.addEventListener("maxwebstudio:lead-preview-request", openLeadPreviewWorkflow);
           elements.form?.addEventListener("submit", saveJourney);
           elements.lead?.addEventListener("change", async () => {
             journey = null;
