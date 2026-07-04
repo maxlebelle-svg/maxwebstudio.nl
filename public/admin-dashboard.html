@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=20260704-admin-prod-hotfix" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
   <body class="admin-body">
@@ -1882,6 +1882,8 @@
       })();
 
       (async () => {
+        const adminAssetVersion = "20260704-admin-prod-hotfix";
+        const versionedModule = (path) => `${path}?v=${adminAssetVersion}`;
         const crmEndpoint = "/.netlify/functions/admin-client-profiles";
         const adminSupabaseDataEndpoint = "/.netlify/functions/admin-supabase-data";
         const customerOnboardingEndpoint = "/.netlify/functions/admin-customer-onboarding";
@@ -3939,57 +3941,57 @@
         async function loadDeveloperModules() {
           if (state.developerModules) return state.developerModules;
           state.developerModules = {
-            environment: await import("./src/config/environment.js"),
-            providerFactory: await import("./src/providers/providerFactory.js"),
-            customerRepository: await import("./src/repositories/CustomerRepository.js"),
-            websiteRepository: await import("./src/repositories/WebsiteRepository.js"),
-            projectRepository: await import("./src/repositories/ProjectRepository.js"),
-            quoteRepository: await import("./src/repositories/QuoteRepository.js"),
-            invoiceRepository: await import("./src/repositories/InvoiceRepository.js"),
-            subscriptionRepository: await import("./src/repositories/SubscriptionRepository.js"),
-            profileRepository: await import("./src/repositories/ProfileRepository.js"),
-            providerStatusService: await import("./src/services/providerStatusService.js"),
-            supabaseReadinessService: await import("./src/services/supabaseReadinessService.js"),
-            supabaseWriteTestService: await import("./src/services/supabaseWriteTestService.js"),
-            migrationService: await import("./src/services/migrationService.js"),
-            customerMigrationService: await import("./src/services/customerMigrationService.js"),
-            websiteMigrationService: await import("./src/services/websiteMigrationService.js"),
-            projectMigrationService: await import("./src/services/projectMigrationService.js"),
-            quoteMigrationService: await import("./src/services/quoteMigrationService.js"),
-            invoiceMigrationService: await import("./src/services/invoiceMigrationService.js"),
-            subscriptionMigrationService: await import("./src/services/subscriptionMigrationService.js"),
-            projectStatusWriteService: await import("./src/services/projectStatusWriteService.js"),
-            customerContactWriteService: await import("./src/services/customerContactWriteService.js"),
-            websiteOperationalWriteService: await import("./src/services/websiteOperationalWriteService.js"),
-            dataValidationService: await import("./src/services/dataValidationService.js"),
-            clientPortalDataService: await import("./src/services/clientPortalDataService.js"),
-            clientPortalTestService: await import("./src/services/clientPortalTestService.js"),
-            activityLogService: await import("./src/services/activityLogService.js"),
-            auditObservabilityService: await import("./src/services/auditObservabilityService.js"),
-            authService: await import("./src/services/authService.js"),
-            authReadinessService: await import("./src/services/authReadinessService.js"),
-            authProfileService: await import("./src/services/authProfileService.js"),
-            routeGuardService: await import("./src/services/routeGuardService.js"),
-            accessControlTestService: await import("./src/services/accessControlTestService.js"),
-            securityReadinessService: await import("./src/services/securityReadinessService.js"),
-            deploymentReadinessService: await import("./src/services/deploymentReadinessService.js"),
-            deploymentBlockerService: await import("./src/services/deploymentBlockerService.js"),
-            testEnvironmentService: await import("./src/services/testEnvironmentService.js"),
-            stagingReadinessService: await import("./src/services/stagingReadinessService.js"),
-            storageSecurityReadinessService: await import("./src/services/storageSecurityReadinessService.js"),
-            releaseGovernanceReadinessService: await import("./src/services/releaseGovernanceReadinessService.js"),
-            monitoringBackupReadinessService: await import("./src/services/monitoringBackupReadinessService.js"),
-            releaseDecisionService: await import("./src/services/releaseDecisionService.js"),
-            aiWebsiteWizardService: await import("./src/services/aiWebsiteWizardService.js"),
-            aiAdminAssistantService: await import("./src/services/aiAdminAssistantService.js"),
-            supabaseDataLayerService: await import("./src/services/supabaseDataLayerService.js"),
+            environment: await import(versionedModule("./src/config/environment.js")),
+            providerFactory: await import(versionedModule("./src/providers/providerFactory.js")),
+            customerRepository: await import(versionedModule("./src/repositories/CustomerRepository.js")),
+            websiteRepository: await import(versionedModule("./src/repositories/WebsiteRepository.js")),
+            projectRepository: await import(versionedModule("./src/repositories/ProjectRepository.js")),
+            quoteRepository: await import(versionedModule("./src/repositories/QuoteRepository.js")),
+            invoiceRepository: await import(versionedModule("./src/repositories/InvoiceRepository.js")),
+            subscriptionRepository: await import(versionedModule("./src/repositories/SubscriptionRepository.js")),
+            profileRepository: await import(versionedModule("./src/repositories/ProfileRepository.js")),
+            providerStatusService: await import(versionedModule("./src/services/providerStatusService.js")),
+            supabaseReadinessService: await import(versionedModule("./src/services/supabaseReadinessService.js")),
+            supabaseWriteTestService: await import(versionedModule("./src/services/supabaseWriteTestService.js")),
+            migrationService: await import(versionedModule("./src/services/migrationService.js")),
+            customerMigrationService: await import(versionedModule("./src/services/customerMigrationService.js")),
+            websiteMigrationService: await import(versionedModule("./src/services/websiteMigrationService.js")),
+            projectMigrationService: await import(versionedModule("./src/services/projectMigrationService.js")),
+            quoteMigrationService: await import(versionedModule("./src/services/quoteMigrationService.js")),
+            invoiceMigrationService: await import(versionedModule("./src/services/invoiceMigrationService.js")),
+            subscriptionMigrationService: await import(versionedModule("./src/services/subscriptionMigrationService.js")),
+            projectStatusWriteService: await import(versionedModule("./src/services/projectStatusWriteService.js")),
+            customerContactWriteService: await import(versionedModule("./src/services/customerContactWriteService.js")),
+            websiteOperationalWriteService: await import(versionedModule("./src/services/websiteOperationalWriteService.js")),
+            dataValidationService: await import(versionedModule("./src/services/dataValidationService.js")),
+            clientPortalDataService: await import(versionedModule("./src/services/clientPortalDataService.js")),
+            clientPortalTestService: await import(versionedModule("./src/services/clientPortalTestService.js")),
+            activityLogService: await import(versionedModule("./src/services/activityLogService.js")),
+            auditObservabilityService: await import(versionedModule("./src/services/auditObservabilityService.js")),
+            authService: await import(versionedModule("./src/services/authService.js")),
+            authReadinessService: await import(versionedModule("./src/services/authReadinessService.js")),
+            authProfileService: await import(versionedModule("./src/services/authProfileService.js")),
+            routeGuardService: await import(versionedModule("./src/services/routeGuardService.js")),
+            accessControlTestService: await import(versionedModule("./src/services/accessControlTestService.js")),
+            securityReadinessService: await import(versionedModule("./src/services/securityReadinessService.js")),
+            deploymentReadinessService: await import(versionedModule("./src/services/deploymentReadinessService.js")),
+            deploymentBlockerService: await import(versionedModule("./src/services/deploymentBlockerService.js")),
+            testEnvironmentService: await import(versionedModule("./src/services/testEnvironmentService.js")),
+            stagingReadinessService: await import(versionedModule("./src/services/stagingReadinessService.js")),
+            storageSecurityReadinessService: await import(versionedModule("./src/services/storageSecurityReadinessService.js")),
+            releaseGovernanceReadinessService: await import(versionedModule("./src/services/releaseGovernanceReadinessService.js")),
+            monitoringBackupReadinessService: await import(versionedModule("./src/services/monitoringBackupReadinessService.js")),
+            releaseDecisionService: await import(versionedModule("./src/services/releaseDecisionService.js")),
+            aiWebsiteWizardService: await import(versionedModule("./src/services/aiWebsiteWizardService.js")),
+            aiAdminAssistantService: await import(versionedModule("./src/services/aiAdminAssistantService.js")),
+            supabaseDataLayerService: await import(versionedModule("./src/services/supabaseDataLayerService.js")),
           };
           return state.developerModules;
         }
 
         async function loadAiWizardService() {
           if (state.aiWizardService) return state.aiWizardService;
-          const serviceModule = await import("./src/services/aiWebsiteWizardService.js");
+          const serviceModule = await import(versionedModule("./src/services/aiWebsiteWizardService.js"));
           state.aiWizardService = serviceModule.aiWebsiteWizardService || serviceModule;
           return state.aiWizardService;
         }
@@ -6425,18 +6427,24 @@
             return;
           }
           messageHandler(action === "send_password_reset" ? "Setup-link wordt verstuurd..." : "Uitnodiging wordt verstuurd...");
-          const response = await fetch("/.netlify/functions/admin-invite-user", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ ...data, action }),
-          });
+          const inviteEndpoint = "/.netlify/functions/admin-invite-user";
+          let response;
+          try {
+            response = await fetch(inviteEndpoint, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ ...data, action }),
+            });
+          } catch (error) {
+            throw new Error(describeFetchError(error, "Invite-flow", inviteEndpoint));
+          }
           const result = await response.json().catch(() => ({}));
           if (!response.ok || !result.success) {
-            throw new Error(result.error || "Uitnodiging kon niet worden verstuurd.");
+            throw new Error(result.error || `Uitnodiging kon niet worden verstuurd (${inviteEndpoint}, status ${response.status}).`);
           }
           messageHandler(result.message || "Gebruiker is bijgewerkt.", "success");
           await successHandler?.();
@@ -6996,7 +7004,7 @@
             const tableCheck = await supabaseReadinessService.checkCustomersTable();
             let rows = [];
             if (tableCheck.success) {
-              const { supabaseProvider } = await import("./src/providers/supabaseProvider.js");
+              const { supabaseProvider } = await import(versionedModule("./src/providers/supabaseProvider.js"));
               rows = await supabaseProvider.getAll("customers", { limit: 10 });
             }
             activityLogService.logActivity("developer_tools", "supabase", "read_supabase_customers", {
@@ -8771,7 +8779,7 @@
               dataLayer: "admin-supabase-data",
             };
           }
-          const { readSupabaseDataLayerModule } = await import("./src/services/supabaseDataLayerService.js");
+          const { readSupabaseDataLayerModule } = await import(versionedModule("./src/services/supabaseDataLayerService.js"));
           const result = await readSupabaseDataLayerModule(moduleName, { mode });
           return {
             mode: result.mode || mode,
@@ -9989,6 +9997,11 @@
           setAdminAccessMessage(text, type);
         }
 
+        function describeFetchError(error, context, endpoint) {
+          const detail = error?.message || "Onbekende netwerkfout";
+          return `${context} kon ${endpoint} niet bereiken: ${detail}`;
+        }
+
         function renderAdminLockedState() {
           state.customers = [];
           state.profiles = [];
@@ -10062,10 +10075,15 @@
         }
 
         async function fetchAdminAuthConfig() {
-          const response = await fetch(authConfigEndpoint, { headers: { Accept: "application/json" } });
+          let response;
+          try {
+            response = await fetch(authConfigEndpoint, { headers: { Accept: "application/json" } });
+          } catch (error) {
+            throw new Error(describeFetchError(error, "Admin login-configuratie", authConfigEndpoint));
+          }
           const data = await response.json().catch(() => ({}));
           if (!response.ok || !data.success || !data.supabaseUrl || !data.supabaseAnonKey) {
-            throw new Error(data.error || "Admin login-configuratie is niet beschikbaar.");
+            throw new Error(data.error || `Admin login-configuratie is niet beschikbaar (${authConfigEndpoint}, status ${response.status}).`);
           }
           return data;
         }
@@ -10082,18 +10100,24 @@
           setAdminAccessMessage("Admin sessie controleren...", "");
           try {
             const config = await fetchAdminAuthConfig();
-            const response = await fetch(`${config.supabaseUrl.replace(/\/$/, "")}/auth/v1/token?grant_type=password`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Accept: "application/json",
-                apikey: config.supabaseAnonKey,
-              },
-              body: JSON.stringify({ email, password }),
-            });
+            const loginEndpoint = `${config.supabaseUrl.replace(/\/$/, "")}/auth/v1/token?grant_type=password`;
+            let response;
+            try {
+              response = await fetch(loginEndpoint, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Accept: "application/json",
+                  apikey: config.supabaseAnonKey,
+                },
+                body: JSON.stringify({ email, password }),
+              });
+            } catch (error) {
+              throw new Error(describeFetchError(error, "Supabase admin-login", loginEndpoint));
+            }
             const data = await response.json().catch(() => ({}));
             if (!response.ok || !data.access_token || !data.user?.email) {
-              throw new Error(data.error_description || data.msg || data.error || "Inloggen is niet gelukt.");
+              throw new Error(data.error_description || data.msg || data.error || `Inloggen is niet gelukt (Supabase Auth status ${response.status}).`);
             }
             storeAdminSession({
               accessToken: data.access_token,
@@ -10104,6 +10128,7 @@
             });
             adminPasswordInput.value = "";
             updateAdminSessionUi();
+            await applyAccessControl();
             setAdminAccessMessage(`Ingelogd als ${state.adminSession.email}.`, "success");
             await loadCRMData(true);
           } catch (error) {
@@ -10180,6 +10205,7 @@
           } finally {
             clearAdminSession();
             updateAdminSessionUi();
+            await applyAccessControl();
             setAdminAccessMessage("Uitgelogd.", "success");
           }
         }
@@ -10260,17 +10286,22 @@
         async function postJsonWithAdminAuth(url, payload, fallbackError = "Adminactie kon niet worden uitgevoerd.") {
           const token = getAdminBearer();
           if (!token) throw new Error("Log eerst in als admin.");
-          const response = await fetch(url, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(payload),
-          });
+          let response;
+          try {
+            response = await fetch(url, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify(payload),
+            });
+          } catch (error) {
+            throw new Error(describeFetchError(error, "Adminactie", url));
+          }
           const data = await response.json().catch(() => ({}));
-          if (!response.ok || !data.success) throw new Error(data.error || fallbackError);
+          if (!response.ok || !data.success) throw new Error(data.error || `${fallbackError} (${url}, status ${response.status})`);
           return data;
         }
 
@@ -16965,8 +16996,8 @@
         renderSystemStatus();
         renderAiWizardUi();
         syncActiveNav();
-        applyAccessControl();
         await restoreAdminSession();
+        await applyAccessControl();
         loadChangeRequests();
         loadCRMData(false);
       })();
@@ -16982,8 +17013,8 @@
         getCanonicalCrmRelationships,
         getCrmWorkflowSummary,
         readCrmTasks,
-      } from "./src/services/crmWorkflowService.js";
-      import { saveCrmTaskWithWriteFallback } from "./src/services/crmTaskWriteService.js";
+      } from "./src/services/crmWorkflowService.js?v=20260704-admin-prod-hotfix";
+      import { saveCrmTaskWithWriteFallback } from "./src/services/crmTaskWriteService.js?v=20260704-admin-prod-hotfix";
 
       const workflowStorageKeys = {
         customers: ["maxwebstudioCrmCustomers", "maxwebstudioCustomers"],
@@ -17295,10 +17326,10 @@
         readLeadFinderLeads,
         saveLeadFinderLeadLocally,
         updateLeadFinderLeadLocally,
-      } from "./src/services/leadFinderService.js";
-      import { readSupabaseDataLayerModule } from "./src/services/supabaseDataLayerService.js";
-      import { saveCrmTaskWithWriteFallback } from "./src/services/crmTaskWriteService.js";
-      import { saveLeadNoteWithWriteFallback } from "./src/services/leadNoteWriteService.js";
+      } from "./src/services/leadFinderService.js?v=20260704-admin-prod-hotfix";
+      import { readSupabaseDataLayerModule } from "./src/services/supabaseDataLayerService.js?v=20260704-admin-prod-hotfix";
+      import { saveCrmTaskWithWriteFallback } from "./src/services/crmTaskWriteService.js?v=20260704-admin-prod-hotfix";
+      import { saveLeadNoteWithWriteFallback } from "./src/services/leadNoteWriteService.js?v=20260704-admin-prod-hotfix";
 
       const leadfinderElements = {
         cockpit: {
@@ -18897,7 +18928,7 @@
         getAiAdminAssistantContextOptions,
         getAiAdminAssistantReadiness,
         listAiAdminAssistantDrafts,
-      } from "./src/services/aiAdminAssistantService.js";
+      } from "./src/services/aiAdminAssistantService.js?v=20260704-admin-prod-hotfix";
 
       const aiAdminElements = {
         form: document.getElementById("ai-admin-assistant-form"),
