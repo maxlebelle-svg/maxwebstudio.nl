@@ -9368,6 +9368,14 @@ h3 {
   white-space: normal;
 }
 
+#demo-klantreis .admin-muted-note {
+  margin: 10px 0 14px;
+  color: rgba(226, 236, 248, 0.62);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.5;
+}
+
 @media (max-width: 1180px) {
   #demo-klantreis .demo-journey-grid {
     grid-template-columns: 1fr;

@@ -1,5 +1,6 @@
 const { verifyAdmin } = require("./_admin-auth");
 const { sendEmail } = require("./email");
+const { readProjectWorkspace, upsertProjectWorkspace, zipFilenameFor } = require("./_project-workspace");
 const { getBuildHistory, runBuildJob } = require("./website-factory");
 
 const staffRoles = ["super_admin", "admin", "sales_manager", "sales_partner"];
@@ -215,7 +216,8 @@ async function readAdminJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
   const selected = journeys[0] || null;
   const events = selected ? await readEvents({ supabaseUrl, serviceRoleKey, journeyId: selected.id }) : [];
   const factoryHistory = selected ? await readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, journeyId: selected.id }) : { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
-  return jsonResponse(200, { success: true, journey: selected, demoJourney: selected, records: journeys, events, templates: emailTemplates(), buildHistory: factoryHistory, buildStatus: factoryHistory.latestJob || null });
+  const projectWorkspace = selected ? await readProjectWorkspace({ supabaseUrl, serviceRoleKey, admin }, { demoJourneyId: selected.id }) : null;
+  return jsonResponse(200, { success: true, journey: selected, demoJourney: selected, records: journeys, events, templates: emailTemplates(), buildHistory: factoryHistory, buildStatus: factoryHistory.latestJob || null, projectWorkspace });
 }
 
 async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
@@ -288,6 +290,14 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     const packageType = cleanText(payload.packageType || payload.package_type || sourceJourney.packageType);
     const buildResult = await runBuildJob({ supabaseUrl, serviceRoleKey, admin }, { demoJourneyId: journeyId, generatedBriefing: briefing, packageType });
     const journey = buildResult.journey || mapJourney(await readJourneyById({ supabaseUrl, serviceRoleKey, id: journeyId }));
+    const previewVersionNumber = buildResult.previewVersion?.version || buildResult.job?.previewVersion || 1;
+    const latestZipFilename = zipFilenameFor({ businessName: journey.businessName, websiteUrl: journey.websiteUrl, version: previewVersionNumber });
+    const projectWorkspace = await upsertProjectWorkspace({ supabaseUrl, serviceRoleKey, admin }, workspacePayload(journey, {
+      latestPreviewUrl: buildResult.job?.previewUrl || journey.previewUrl,
+      latestPreviewVersion: previewVersionNumber,
+      latestZipFilename,
+      updatedBy: admin.id,
+    }));
     const events = await readEvents({ supabaseUrl, serviceRoleKey, journeyId });
     const buildHistory = await readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, journeyId });
     return jsonResponse(200, {
@@ -299,6 +309,7 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
       buildStatus: buildResult.job || null,
       previewVersion: buildResult.previewVersion,
       buildHistory,
+      projectWorkspace,
       preview: {
         url: buildResult.job?.previewUrl || journey.previewUrl,
         zipUrl: buildResult.job?.previewUrl ? appendQueryParam(buildResult.job.previewUrl, "format", "zip") : "",
@@ -313,10 +324,24 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     ? await patchJourney({ supabaseUrl, serviceRoleKey, id: payload.id, record })
     : await insertJourney({ supabaseUrl, serviceRoleKey, record });
   const journey = mapJourney(rows[0] || {});
+  const projectWorkspace = await upsertProjectWorkspace({ supabaseUrl, serviceRoleKey, admin }, workspacePayload(journey, { updatedBy: admin.id, createdBy: admin.id }));
   await createStatusEvents({ supabaseUrl, serviceRoleKey, journey, current: current ? mapJourney(current) : null, admin });
   const events = await readEvents({ supabaseUrl, serviceRoleKey, journeyId: journey.id });
   const buildHistory = journey?.id ? await readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, journeyId: journey.id }) : { latestJob: null };
-  return jsonResponse(200, { success: true, journey, demoJourney: journey, events, template: buildEmailTemplate(journey.demoStatus, journey), buildHistory, buildStatus: buildHistory.latestJob || null });
+  return jsonResponse(200, { success: true, journey, demoJourney: journey, events, template: buildEmailTemplate(journey.demoStatus, journey), buildHistory, buildStatus: buildHistory.latestJob || null, projectWorkspace });
+}
+
+function workspacePayload(journey = {}, extra = {}) {
+  return {
+    leadId: journey.leadId,
+    customerId: journey.customerId,
+    demoJourneyId: journey.id,
+    businessName: journey.businessName,
+    websiteUrl: journey.websiteUrl,
+    latestPreviewUrl: journey.previewUrl,
+    latestPreviewVersion: journey.previewPackage?.version || journey.previewPackage?.meta?.version || null,
+    ...extra,
+  };
 }
 
 function journeyPayload(payload = {}, admin = {}, options = {}) {

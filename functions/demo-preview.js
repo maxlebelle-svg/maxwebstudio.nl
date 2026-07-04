@@ -1,4 +1,5 @@
 const { verifyAdmin } = require("./_admin-auth");
+const { upsertProjectWorkspace, zipFilenameFor } = require("./_project-workspace");
 
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return response(204, "", {});
@@ -34,14 +35,34 @@ exports.handler = async (event) => {
 
   const previewPackage = normalizePackage(row.preview_package, row);
   if (format === "zip") {
-    const zip = createZip(previewPackage.files);
+    const previewVersion = previewPackage.version || previewPackage.meta?.version || 1;
+    const filename = zipFilenameFor({ businessName: row.business_name || previewPackage.businessName, websiteUrl: row.website_url, version: previewVersion });
+    const previewUrl = absolutePreviewUrl(row.preview_url || previewUrlForRequest(event, id, token), event);
+    const files = prepareZipFiles(previewPackage.files, {
+      businessName: row.business_name || previewPackage.businessName,
+      previewVersion,
+      generatedAt: previewPackage.generatedAt,
+      packageLabel: previewPackage.meta?.packageLabel || "",
+      previewUrl,
+    });
+    await upsertProjectWorkspace({ supabaseUrl, serviceRoleKey, admin: {} }, {
+      leadId: row.lead_id,
+      customerId: row.customer_id,
+      demoJourneyId: row.id,
+      businessName: row.business_name || previewPackage.businessName,
+      websiteUrl: row.website_url,
+      latestZipFilename: filename,
+      latestPreviewUrl: row.preview_url || previewUrl,
+      latestPreviewVersion: previewVersion,
+    });
+    const zip = createZip(files);
     return {
       statusCode: 200,
       isBase64Encoded: true,
       headers: {
         ...corsHeaders(),
         "Content-Type": "application/zip",
-        "Content-Disposition": `attachment; filename="${safeFilename(previewPackage.businessName || "demo-preview")}.zip"`,
+        "Content-Disposition": `attachment; filename="${filename}"`,
         "Cache-Control": "no-store",
       },
       body: zip.toString("base64"),
@@ -80,6 +101,45 @@ function rewritePreviewHtml(html = "", id = "", token = "") {
     .replaceAll('href="styles.css"', `href="${assetUrl("styles.css")}"`)
     .replaceAll('src="script.js"', `src="${assetUrl("script.js")}"`)
     .replace(/href="([^"#?]+\.html)"/g, (_match, file) => `href="${assetUrl(file)}"`);
+}
+
+function prepareZipFiles(files = [], meta = {}) {
+  const existing = Array.isArray(files) ? files : [];
+  const hasReadme = existing.some((file) => file.path === "README.md");
+  const readme = [
+    `# ${cleanText(meta.businessName) || "Demo preview"} preview V${Math.max(1, Number(meta.previewVersion || 1))}`,
+    "",
+    "Interne website-preview voorbereid door de Website Factory.",
+    "",
+    `Bedrijfsnaam: ${cleanText(meta.businessName) || "-"}`,
+    `Preview versie: V${Math.max(1, Number(meta.previewVersion || 1))}`,
+    `Gegenereerd op: ${cleanText(meta.generatedAt) || "-"}`,
+    `Pakket: ${cleanText(meta.packageLabel) || "-"}`,
+    `Preview URL: ${cleanText(meta.previewUrl) || "-"}`,
+    "",
+    "Controleer de preview intern voordat deze naar de klant gaat.",
+  ].join("\n");
+  const filesWithReadme = hasReadme
+    ? existing.map((file) => file.path === "README.md" ? { ...file, content: readme } : file)
+    : [{ path: "README.md", content: readme }, ...existing];
+  const preferredOrder = ["README.md", "briefing.json", "index.html", "over-ons.html", "diensten.html", "projecten.html", "reviews.html", "contact.html", "offerte.html", "styles.css", "script.js", "assets-map.json"];
+  return [...filesWithReadme].sort((a, b) => {
+    const left = preferredOrder.indexOf(a.path);
+    const right = preferredOrder.indexOf(b.path);
+    return (left === -1 ? 999 : left) - (right === -1 ? 999 : right);
+  });
+}
+
+function previewUrlForRequest(event, id, token) {
+  return `/.netlify/functions/demo-preview?id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}`;
+}
+
+function absolutePreviewUrl(url = "", event = {}) {
+  const value = cleanText(url);
+  if (!value || /^https?:\/\//i.test(value)) return value;
+  const host = event.headers?.host || event.headers?.Host || "";
+  const proto = event.headers?.["x-forwarded-proto"] || event.headers?.["X-Forwarded-Proto"] || "https";
+  return host ? `${proto}://${host}${value.startsWith("/") ? value : `/${value}`}` : value;
 }
 
 async function supabaseFetch(url, options) {
@@ -200,10 +260,6 @@ function corsHeaders() {
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Allow-Methods": "GET, OPTIONS",
   };
-}
-
-function safeFilename(value = "") {
-  return cleanText(value).toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "") || "demo-preview";
 }
 
 function contentTypeFor(path = "") {

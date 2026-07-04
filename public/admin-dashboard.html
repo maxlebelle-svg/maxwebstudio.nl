@@ -536,6 +536,20 @@
                   <pre id="demo-journey-build-diagnostics"></pre>
                 </details>
               </div>
+              <div class="sales-timeline-card project-workspace-card">
+                <div class="sales-timeline-heading">
+                  <strong>Projectruimte</strong>
+                  <span id="demo-journey-workspace-state">Nog niet gekoppeld</span>
+                </div>
+                <div class="settings-status-list" id="demo-journey-workspace-details"></div>
+                <p class="admin-muted-note" id="demo-journey-workspace-note">Cloud projectmap nog niet gekoppeld.</p>
+                <div class="admin-profile-actions demo-preview-actions">
+                  <button class="button secondary is-disabled" id="demo-journey-workspace-preview" type="button" aria-disabled="true">Preview openen</button>
+                  <button class="button secondary is-disabled" id="demo-journey-workspace-zip" type="button" aria-disabled="true">ZIP downloaden</button>
+                  <button class="button secondary is-disabled" id="demo-journey-workspace-copy" type="button" aria-disabled="true">Link kopiëren</button>
+                  <button class="button secondary is-disabled" id="demo-journey-workspace-folder" type="button" aria-disabled="true">Projectmap openen</button>
+                </div>
+              </div>
               <div class="sales-timeline-card customer-timeline">
                 <div class="sales-timeline-heading">
                   <strong>Klanttijdlijn</strong>
@@ -20255,6 +20269,7 @@
         let journey = null;
         let events = [];
         let buildHistory = { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
+        let projectWorkspace = null;
         let lastFactoryResponse = null;
         let currentTemplate = null;
 
@@ -20288,6 +20303,13 @@
             buildProgress: document.getElementById("demo-journey-build-progress"),
             buildHistory: document.getElementById("demo-journey-build-history"),
             buildDiagnostics: document.getElementById("demo-journey-build-diagnostics"),
+            workspaceState: document.getElementById("demo-journey-workspace-state"),
+            workspaceDetails: document.getElementById("demo-journey-workspace-details"),
+            workspaceNote: document.getElementById("demo-journey-workspace-note"),
+            workspacePreview: document.getElementById("demo-journey-workspace-preview"),
+            workspaceZip: document.getElementById("demo-journey-workspace-zip"),
+            workspaceCopy: document.getElementById("demo-journey-workspace-copy"),
+            workspaceFolder: document.getElementById("demo-journey-workspace-folder"),
             timeline: document.getElementById("demo-journey-timeline"),
             timelineCount: document.getElementById("demo-journey-timeline-count"),
             openPreview: document.getElementById("demo-journey-open-preview"),
@@ -20563,6 +20585,7 @@
           if (!leadId) {
             journey = null;
             events = [];
+            projectWorkspace = null;
             renderJourney();
             return;
           }
@@ -20571,6 +20594,7 @@
           if (journey?.previewUrl) journey.previewUrl = absolutePreviewUrl(journey.previewUrl);
           events = Array.isArray(data.events) ? data.events : [];
           buildHistory = data.buildHistory || { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
+          projectWorkspace = data.projectWorkspace || null;
           renderJourney();
         }
 
@@ -20653,6 +20677,7 @@
             journey = data.demoJourney || data.journey || null;
             events = Array.isArray(data.events) ? data.events : [];
             buildHistory = data.buildHistory || buildHistory;
+            projectWorkspace = data.projectWorkspace || projectWorkspace;
             if (data.template) fillEmailTemplate(data.template);
             renderJourney();
             setMessage(elements.message, "Demo-klantreis opgeslagen.", "success");
@@ -20721,6 +20746,7 @@
             if (journey && previewUrl) journey.demoStatus = journey.demoStatus || "interne_preview_klaar";
             events = Array.isArray(data.events) ? data.events : [];
             buildHistory = buildHistoryFromResponse(data);
+            projectWorkspace = data.projectWorkspace || projectWorkspace;
             if (journey?.previewUrl) elements.preview.value = journey.previewUrl;
             if (journey?.demoStatus) elements.status.value = journey.demoStatus;
             renderJourney();
@@ -20894,6 +20920,39 @@
           }
         }
 
+        function renderProjectWorkspace() {
+          if (!elements.workspaceDetails) return;
+          const latest = buildHistory.latestJob || (buildHistory.jobs || [])[0] || null;
+          const activeVersion = buildHistory.activeVersion || (buildHistory.previewVersions || [])[0] || null;
+          const previewUrl = absolutePreviewUrl(projectWorkspace?.latestPreviewUrl || journey?.previewUrl || latest?.previewUrl || activeVersion?.previewUrl || "");
+          const version = projectWorkspace?.latestPreviewVersion || activeVersion?.version || latest?.previewVersion || "";
+          const zipUrl = previewUrl ? previewZipUrl(previewUrl) : "";
+          const fallbackZipSlug = String(journey?.businessName || selectedLead()?.companyName || "demo-preview").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+          const zipName = projectWorkspace?.latestZipFilename || (version ? `${fallbackZipSlug}-preview-v${version}.zip` : "-");
+          const hasWorkspace = Boolean(projectWorkspace?.workspaceSlug);
+          if (elements.workspaceState) {
+            elements.workspaceState.textContent = hasWorkspace ? "Gekoppeld" : "Nog niet gekoppeld";
+            elements.workspaceState.className = `status-badge ${hasWorkspace ? "status-active" : "status-prepared"}`;
+          }
+          elements.workspaceDetails.innerHTML = [
+            ["Projectnaam", projectWorkspace?.workspaceTitle || journey?.businessName || selectedLead()?.companyName || "-"],
+            ["Workspace slug", projectWorkspace?.workspaceSlug || "-"],
+            ["Laatste ZIP-bestand", zipName],
+            ["Laatste preview versie", version ? `V${version}` : "-"],
+            ["Laatste preview URL", previewUrl || "Genereer eerst een preview"],
+            ["Opslagpad", projectWorkspace?.storagePath || "-"],
+          ].map(([label, value]) => `<div class="demo-kv-row"><strong>${escapeHtml(label)}</strong><span title="${escapeHtml(value)}">${escapeHtml(value)}</span></div>`).join("");
+          if (elements.workspaceNote) {
+            elements.workspaceNote.textContent = projectWorkspace?.driveFolderUrl
+              ? "Cloud projectmap gekoppeld."
+              : "Cloud projectmap nog niet gekoppeld.";
+          }
+          setActionLink(elements.workspacePreview, previewUrl, "Genereer eerst een preview");
+          setActionLink(elements.workspaceZip, zipUrl, "Genereer eerst een previewpakket");
+          setActionLink(elements.workspaceCopy, previewUrl, "Genereer eerst een preview");
+          setActionLink(elements.workspaceFolder, projectWorkspace?.driveFolderUrl || "", "Cloud projectmap nog niet gekoppeld");
+        }
+
         function renderTimeline() {
           if (!elements.timeline) return;
           const visibleEvents = events.filter((event) => event.visibleToCustomer);
@@ -20967,6 +21026,7 @@
           renderMetrics();
           renderEmployeeSteps();
           renderBuildStatus();
+          renderProjectWorkspace();
           renderTimeline();
         }
 
@@ -20978,6 +21038,7 @@
           elements.lead?.addEventListener("change", async () => {
             journey = null;
             events = [];
+            projectWorkspace = null;
             fillFromLead(selectedLead());
             await loadJourney().catch((error) => setMessage(elements.message, error.message, "error"));
           });
@@ -21028,6 +21089,19 @@
             copyText(url, elements.message);
           });
           elements.openPortal?.addEventListener("click", (event) => openActionUrl(event, elements.openPortal, "Er is nog geen klantportaal gekoppeld."));
+          elements.workspacePreview?.addEventListener("click", (event) => openActionUrl(event, elements.workspacePreview, "Genereer eerst een preview."));
+          elements.workspaceZip?.addEventListener("click", (event) => openActionUrl(event, elements.workspaceZip, "Genereer eerst een previewpakket."));
+          elements.workspaceCopy?.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const url = elements.workspaceCopy?.dataset?.url || "";
+            if (!url || elements.workspaceCopy?.getAttribute("aria-disabled") === "true") {
+              setMessage(elements.message, "Genereer eerst een preview.", "warning");
+              return;
+            }
+            copyText(url, elements.message);
+          });
+          elements.workspaceFolder?.addEventListener("click", (event) => openActionUrl(event, elements.workspaceFolder, "Cloud projectmap nog niet gekoppeld."));
           elements.generateEmail?.addEventListener("click", (event) => {
             event.preventDefault();
             event.stopPropagation();

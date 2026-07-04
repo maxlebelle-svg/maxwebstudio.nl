@@ -1,4 +1,5 @@
 const { verifyAdmin } = require("./_admin-auth");
+const { upsertProjectWorkspace, zipFilenameFor } = require("./_project-workspace");
 const {
   buildLogs,
   buildWebsitePackage,
@@ -252,6 +253,23 @@ async function runBuildJob(context, payload = {}) {
     generatedPackage,
     packageType: generatedPackage.packageType,
     status: "interne_preview_klaar",
+  });
+  const latestZipFilename = zipFilenameFor({
+    businessName: updatedJourney.businessName || journey.businessName,
+    websiteUrl: updatedJourney.websiteUrl || journey.websiteUrl,
+    version: job.previewVersion,
+  });
+  await upsertProjectWorkspace(context, {
+    leadId: updatedJourney.leadId || journey.leadId,
+    customerId: updatedJourney.customerId || journey.customerId,
+    demoJourneyId: updatedJourney.id || journey.id,
+    businessName: updatedJourney.businessName || journey.businessName,
+    websiteUrl: updatedJourney.websiteUrl || journey.websiteUrl,
+    latestPreviewUrl: previewUrl,
+    latestPreviewVersion: job.previewVersion,
+    latestZipFilename,
+    updatedBy: context.admin.id,
+    createdBy: context.admin.id,
   });
   await createJourneyEvent(context, {
     demoJourneyId: journey.id,
