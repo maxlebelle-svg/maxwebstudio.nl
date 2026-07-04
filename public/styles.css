@@ -6145,7 +6145,7 @@ h3 {
     minmax(80px, 0.58fr)
     minmax(120px, 0.8fr)
     minmax(120px, 0.8fr)
-    minmax(150px, 1fr);
+    minmax(240px, 1.35fr);
 }
 
 .website-detail-summary {
@@ -6475,6 +6475,20 @@ h3 {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.website-row .website-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+  width: 100%;
+}
+
+.website-row .website-actions .button {
+  width: 100%;
+  min-width: 0;
+  white-space: normal;
 }
 
 .admin-health-panel {

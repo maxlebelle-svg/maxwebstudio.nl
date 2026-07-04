@@ -6351,6 +6351,10 @@
         }
 
         function getAdminBearerToken() {
+          if (typeof getAdminBearer === "function") {
+            const bearer = getAdminBearer();
+            if (bearer) return bearer;
+          }
           try {
             const session = JSON.parse(localStorage.getItem("maxwebstudioCurrentSession") || "null");
             if (session?.accessToken) return session.accessToken;
@@ -6367,7 +6371,7 @@
           const data = Object.fromEntries(new FormData(inviteUserForm).entries());
           const token = getAdminBearerToken();
           if (!token) {
-            setInviteUserMessage("Log in als super_admin/admin met Supabase Auth om uitnodigingen te versturen.", "error");
+            setInviteUserMessage("Log in als super_admin/admin om uitnodigingen te versturen.", "error");
             return;
           }
           setInviteUserMessage(action === "send_password_reset" ? "Setup-link wordt verstuurd..." : "Uitnodiging wordt verstuurd...");
