@@ -16744,6 +16744,268 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   gap: 10px;
 }
 
+/* Website Factory Enterprise Workspace v2 */
+.admin-body #demo-klantreis {
+  gap: 24px;
+}
+
+.admin-body #demo-klantreis .factory-command-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.62fr);
+  align-items: end;
+  gap: 24px;
+}
+
+.admin-body #demo-klantreis .factory-command-heading h2 {
+  font-size: clamp(42px, 4.8vw, 76px);
+}
+
+.admin-body #demo-klantreis .factory-live-status {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-body #demo-klantreis .factory-live-status span {
+  display: grid;
+  gap: 6px;
+  min-height: 92px;
+  padding: 14px;
+  border: 1px solid var(--admin-page-line);
+  border-radius: var(--mws-radius);
+  background: var(--admin-page-card);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+
+.admin-body #demo-klantreis .factory-live-status strong {
+  color: #f8fbff;
+  font-size: 32px;
+  line-height: 1;
+}
+
+.admin-body #demo-klantreis .factory-live-status small {
+  color: rgba(226, 236, 248, 0.64);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.admin-body #demo-klantreis .website-factory-workspace {
+  grid-template-columns: minmax(420px, 0.82fr) minmax(0, 1.18fr);
+  gap: 24px;
+}
+
+.admin-body #demo-klantreis .factory-workspace-hero,
+.admin-body #demo-klantreis .factory-preview-stage {
+  border-radius: var(--mws-radius);
+  background:
+    radial-gradient(circle at 14% 0%, rgba(21, 94, 239, 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(13, 35, 55, 0.78), rgba(5, 18, 31, 0.92));
+  box-shadow: var(--mws-shadow);
+}
+
+.admin-body #demo-klantreis .factory-workspace-hero {
+  min-height: 520px;
+}
+
+.admin-body #demo-klantreis .factory-workspace-hero h3 {
+  max-width: 560px;
+  font-size: clamp(34px, 3.45vw, 58px);
+  line-height: 0.98;
+}
+
+.admin-body #demo-klantreis .factory-command-flow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-body #demo-klantreis .factory-command-flow span {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 4px 10px;
+  align-items: center;
+  min-height: 72px;
+  padding: 12px;
+  border: 1px solid rgba(171, 196, 224, 0.13);
+  border-radius: 8px;
+  color: rgba(226, 236, 248, 0.72);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.014)),
+    rgba(2, 14, 25, 0.48);
+}
+
+.admin-body #demo-klantreis .factory-command-flow span.is-active {
+  border-color: rgba(96, 165, 250, 0.46);
+  background:
+    linear-gradient(90deg, rgba(37, 99, 235, 0.2), rgba(255, 255, 255, 0.035)),
+    rgba(2, 14, 25, 0.58);
+  box-shadow: 0 18px 44px rgba(21, 94, 239, 0.16);
+}
+
+.admin-body #demo-klantreis .factory-command-flow b {
+  display: grid;
+  grid-row: 1 / span 2;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  border-radius: 999px;
+  color: #bfdbfe;
+  background: rgba(37, 99, 235, 0.16);
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.admin-body #demo-klantreis .factory-command-flow strong {
+  color: #f8fbff;
+  font-size: 13px;
+  line-height: 1.1;
+}
+
+.admin-body #demo-klantreis .factory-command-flow small {
+  color: rgba(226, 236, 248, 0.56);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.admin-body #demo-klantreis .factory-preview-stage {
+  min-height: 520px;
+}
+
+.admin-body #demo-klantreis .factory-preview-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-body #demo-klantreis .factory-preview-controls button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(171, 196, 224, 0.14);
+  border-radius: 8px;
+  color: rgba(226, 236, 248, 0.78);
+  background: rgba(2, 14, 25, 0.54);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.admin-body #demo-klantreis .factory-preview-controls button.is-active {
+  border-color: rgba(96, 165, 250, 0.42);
+  color: #f8fbff;
+  background: rgba(37, 99, 235, 0.18);
+}
+
+.admin-body #demo-klantreis .factory-preview-browser {
+  flex: 1;
+  border-radius: var(--mws-radius);
+}
+
+.admin-body #demo-klantreis .factory-preview-frame-shell,
+.admin-body #demo-klantreis .factory-preview-frame-shell iframe {
+  min-height: 430px;
+  height: 430px;
+}
+
+.admin-body #demo-klantreis .factory-preview-frame-shell {
+  place-items: stretch center;
+  padding: 0;
+}
+
+.admin-body #demo-klantreis .factory-preview-frame-shell[data-preview-mode="tablet"],
+.admin-body #demo-klantreis .factory-preview-frame-shell[data-preview-mode="mobile"] {
+  padding: 18px;
+}
+
+.admin-body #demo-klantreis .factory-preview-frame-shell[data-preview-mode="tablet"] iframe {
+  max-width: 760px;
+  border: 1px solid rgba(171, 196, 224, 0.16);
+  border-radius: 14px;
+}
+
+.admin-body #demo-klantreis .factory-preview-frame-shell[data-preview-mode="mobile"] iframe {
+  max-width: 390px;
+  border: 1px solid rgba(171, 196, 224, 0.16);
+  border-radius: 24px;
+}
+
+.admin-body #demo-klantreis .workflow-metrics {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.admin-body #demo-klantreis .workflow-metrics .metric-card {
+  min-height: 148px;
+}
+
+.admin-body #demo-klantreis .demo-journey-steps-card {
+  padding: 18px;
+}
+
+.admin-body #demo-klantreis .demo-journey-steps {
+  grid-template-columns: repeat(7, minmax(150px, 1fr));
+}
+
+.admin-body #demo-klantreis .demo-journey-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(390px, 440px);
+}
+
+.admin-body #demo-klantreis .demo-request-card,
+.admin-body #demo-klantreis .demo-status-card,
+.admin-body #demo-klantreis [aria-labelledby="demo-journey-mail-title"] {
+  padding: 22px;
+  border-radius: var(--mws-radius);
+}
+
+.admin-body #demo-klantreis .demo-status-card {
+  gap: 14px;
+}
+
+.admin-body #demo-klantreis .factory-card,
+.admin-body #demo-klantreis .project-workspace-card,
+.admin-body #demo-klantreis .customer-timeline,
+.admin-body #demo-klantreis .demo-briefing-field {
+  padding: 16px;
+  border: 1px solid var(--admin-page-line);
+  border-radius: var(--mws-radius);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.014)),
+    rgba(2, 14, 25, 0.52);
+}
+
+.admin-body #demo-klantreis .demo-briefing-field {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-body #demo-klantreis .demo-briefing-field::before {
+  content: "AI briefing";
+  color: #f8fbff;
+  font-size: 15px;
+  font-weight: 900;
+  text-transform: none;
+}
+
+.admin-body #demo-klantreis .demo-preview-actions .button::before {
+  content: "↗";
+  margin-right: 6px;
+  color: rgba(96, 165, 250, 0.9);
+}
+
+.admin-body #demo-klantreis #demo-journey-download-zip::before,
+.admin-body #demo-klantreis #demo-journey-workspace-zip::before {
+  content: "↓";
+}
+
+.admin-body #demo-klantreis #demo-journey-copy-preview-link::before,
+.admin-body #demo-klantreis #demo-journey-workspace-copy::before {
+  content: "⛓";
+}
+
+.admin-body #demo-klantreis #demo-journey-open-portal::before,
+.admin-body #demo-klantreis #demo-journey-workspace-folder::before {
+  content: "□";
+}
+
 @media (max-width: 1180px) {
   .admin-body .admin-crm-grid,
   .admin-body .website-operations-grid,
@@ -16770,6 +17032,16 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
     min-width: 0;
     max-width: none;
   }
+
+  .admin-body #demo-klantreis .factory-command-heading,
+  .admin-body #demo-klantreis .website-factory-workspace,
+  .admin-body #demo-klantreis .demo-journey-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-body #demo-klantreis .workflow-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 760px) {
@@ -16784,6 +17056,17 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   .admin-body .admin-section-heading h2,
   .admin-body .admin-health-panel h3 {
     font-size: clamp(30px, 10vw, 44px);
+  }
+
+  .admin-body #demo-klantreis .factory-live-status,
+  .admin-body #demo-klantreis .factory-command-flow,
+  .admin-body #demo-klantreis .workflow-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-body #demo-klantreis .factory-workspace-hero,
+  .admin-body #demo-klantreis .factory-preview-stage {
+    min-height: 0;
   }
 }
 

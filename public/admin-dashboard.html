@@ -512,34 +512,48 @@
         </section>
 
         <section class="admin-section" id="demo-klantreis">
-          <div class="admin-section-heading">
+          <div class="admin-section-heading factory-command-heading">
             <div>
               <p class="section-kicker">Website Factory</p>
-              <h2>Van lead naar preview naar verkoop</h2>
-              <p class="admin-section-intro">Een centrale werkplek voor Demo Journey, build queue, projectruimte, preview history en klantopvolging.</p>
+              <h2>Website Factory</h2>
+              <p class="admin-section-intro">Van lead tot live website in één volledig geautomatiseerde workflow.</p>
             </div>
-            <span class="admin-preview-badge">Productiewerkstation</span>
+            <div class="factory-live-status" aria-label="Website Factory live status">
+              <span><strong id="factory-live-builds">0</strong><small>Active builds</small></span>
+              <span><strong id="factory-live-previews">0</strong><small>Previews klaar</small></span>
+              <span><strong id="factory-live-feedback">0</strong><small>Open feedback</small></span>
+              <span><strong id="factory-live-ready">0</strong><small>Klaar voor live</small></span>
+            </div>
           </div>
 
           <div class="website-factory-workspace" aria-label="Website Factory Workspace">
             <article class="admin-card factory-workspace-hero">
               <div>
-                <p class="section-kicker">Website Factory Workspace</p>
-                <h3>Lead, briefing, preview, ZIP en klantcontrole in één flow.</h3>
-                <p>Sales ziet direct wat de volgende stap is, welke preview actief is en of het project klaarstaat voor interne controle.</p>
+                <p class="section-kicker">AI Operating Center</p>
+                <h3>Commandocentrum voor demo, build, preview en livegang.</h3>
+                <p>Sales ziet direct welke stap actief is, welke preview klaarstaat en wat de volgende actie richting klant is.</p>
               </div>
-              <div class="factory-flow-track" aria-label="Website Factory flow">
-                <span>Lead</span>
-                <span>Briefing</span>
-                <span>Preview</span>
-                <span>ZIP</span>
-                <span>Klant</span>
+              <div class="factory-command-flow" aria-label="Website Factory flow">
+                <span class="is-active"><b>1</b><strong>Lead</strong><small>Geselecteerd</small></span>
+                <span><b>2</b><strong>Demo</strong><small>Opslaan</small></span>
+                <span><b>3</b><strong>AI Briefing</strong><small>Analyse</small></span>
+                <span><b>4</b><strong>Build</strong><small>Website</small></span>
+                <span><b>5</b><strong>Quality</strong><small>Check</small></span>
+                <span><b>6</b><strong>Preview</strong><small>Intern</small></span>
+                <span><b>7</b><strong>Feedback</strong><small>Klant</small></span>
+                <span><b>8</b><strong>Live</strong><small>Publiceren</small></span>
               </div>
             </article>
             <article class="admin-card factory-preview-stage">
               <div class="sales-timeline-heading">
                 <strong>Live preview</strong>
                 <span id="demo-journey-preview-stage-state">Nog geen preview</span>
+              </div>
+              <div class="factory-preview-controls" aria-label="Preview controls">
+                <button class="is-active" type="button" data-preview-mode="desktop">Desktop</button>
+                <button type="button" data-preview-mode="tablet">Tablet</button>
+                <button type="button" data-preview-mode="mobile">Mobiel</button>
+                <button type="button" id="demo-journey-preview-refresh" aria-label="Preview vernieuwen">↻</button>
               </div>
               <div class="factory-preview-browser">
                 <div class="factory-preview-toolbar" aria-hidden="true">
@@ -20529,6 +20543,10 @@
         function initElements() {
           Object.assign(elements, {
             metrics: document.getElementById("demo-journey-metrics"),
+            liveBuilds: document.getElementById("factory-live-builds"),
+            livePreviews: document.getElementById("factory-live-previews"),
+            liveFeedback: document.getElementById("factory-live-feedback"),
+            liveReady: document.getElementById("factory-live-ready"),
             source: document.getElementById("demo-journey-source"),
             form: document.getElementById("demo-journey-form"),
             lead: document.getElementById("demo-journey-lead"),
@@ -20566,6 +20584,9 @@
             previewStageState: document.getElementById("demo-journey-preview-stage-state"),
             previewStageUrl: document.getElementById("demo-journey-preview-stage-url"),
             previewFrame: document.getElementById("demo-journey-preview-frame"),
+            previewShell: document.querySelector("#demo-klantreis .factory-preview-frame-shell"),
+            previewControls: document.querySelector("#demo-klantreis .factory-preview-controls"),
+            previewRefresh: document.getElementById("demo-journey-preview-refresh"),
             previewEmpty: document.getElementById("demo-journey-preview-empty"),
             timeline: document.getElementById("demo-journey-timeline"),
             timelineCount: document.getElementById("demo-journey-timeline-count"),
@@ -21030,6 +21051,16 @@
         }
 
         function renderMetrics() {
+          const jobs = Array.isArray(buildHistory.jobs) ? buildHistory.jobs : [];
+          const versions = Array.isArray(buildHistory.previewVersions) ? buildHistory.previewVersions : [];
+          const activeBuilds = jobs.filter((job) => !["completed", "failed", "quality_failed"].includes(job.status)).length;
+          const readyPreviews = versions.filter((version) => version.previewUrl || version.isActive).length || (journey?.previewUrl ? 1 : 0);
+          const openFeedback = journey?.feedback ? 1 : 0;
+          const readyForLive = journey?.demoStatus === "interne_preview_klaar" || journey?.previewUrl ? 1 : 0;
+          if (elements.liveBuilds) elements.liveBuilds.textContent = String(activeBuilds);
+          if (elements.livePreviews) elements.livePreviews.textContent = String(readyPreviews);
+          if (elements.liveFeedback) elements.liveFeedback.textContent = String(openFeedback);
+          if (elements.liveReady) elements.liveReady.textContent = String(readyForLive);
           if (!elements.metrics) return;
           const status = journey?.demoStatus || "geen_demo";
           elements.metrics.innerHTML = [
@@ -21334,6 +21365,26 @@
             event.preventDefault();
             event.stopPropagation();
             generatePreview();
+          });
+          elements.previewControls?.addEventListener("click", (event) => {
+            const button = event.target.closest("[data-preview-mode]");
+            if (!button) return;
+            event.preventDefault();
+            event.stopPropagation();
+            const mode = button.dataset.previewMode || "desktop";
+            elements.previewControls.querySelectorAll("[data-preview-mode]").forEach((control) => {
+              control.classList.toggle("is-active", control === button);
+            });
+            elements.previewShell?.setAttribute("data-preview-mode", mode);
+          });
+          elements.previewRefresh?.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (!elements.previewFrame || elements.previewFrame.hidden || !elements.previewFrame.src) {
+              setMessage(elements.message, "Genereer eerst een preview.", "warning");
+              return;
+            }
+            elements.previewFrame.src = elements.previewFrame.src;
           });
           elements.copyBriefing?.addEventListener("click", (event) => {
             event.preventDefault();
