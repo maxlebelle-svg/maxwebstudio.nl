@@ -8,7 +8,7 @@ import { ProjectRepository } from "../repositories/ProjectRepository.js";
 import { QuoteRepository } from "../repositories/QuoteRepository.js";
 import { InvoiceRepository } from "../repositories/InvoiceRepository.js";
 import { SubscriptionRepository } from "../repositories/SubscriptionRepository.js";
-import { normalizeLeadFinderLead, readLeadFinderLeads } from "./leadFinderService.js";
+import { normalizeLeadFinderLead, readAllLocalLeadSources } from "./leadFinderService.js";
 import { normalizeCrmTask, readCrmTasks } from "./crmWorkflowService.js";
 
 const MVP_MODULES = Object.freeze([
@@ -51,6 +51,7 @@ function moduleResult(module, result = {}, recordsKey) {
     duplicateMerges: result.duplicateMerges || [],
     fallbackUsed: Boolean(result.fallbackUsed),
     error: result.error || "",
+    warning: result.warning || "",
     refreshedAt: result.refreshedAt || new Date().toISOString(),
   };
 }
@@ -102,6 +103,20 @@ function mapWebsiteStatus(value) {
   return status || "onbekend";
 }
 
+function isMissingSupabaseTableError(error = {}) {
+  const text = [
+    error.message,
+    error.details,
+    error.hint,
+    error.code,
+  ].map((value) => String(value || "").toLowerCase()).join(" ");
+  return text.includes("public.leads")
+    || text.includes("schema cache")
+    || text.includes("could not find the table")
+    || text.includes("pgrst205")
+    || text.includes("42p01");
+}
+
 function mapLead(row = {}, source = "local") {
   const meta = row.metadata && typeof row.metadata === "object" ? row.metadata : {};
   const normalized = normalizeLeadFinderLead({
@@ -148,12 +163,12 @@ function mapLead(row = {}, source = "local") {
     convertedAt: String(firstValue(row.convertedAt, row.converted_at)),
     _source: source,
     _supabaseId: source === "supabase" ? String(row.id || "") : "",
-    _localId: source === "local" ? String(row.id || "") : String(firstValue(row.external_id, row.metadata?.localStorageId)),
+    _localId: source === "local" ? String(row.id || "") : String(firstValue(row.external_id, meta.localStorageId)),
   };
 }
 
 async function readLeadModule(mode) {
-  const local = readLeadFinderLeads().map((lead) => mapLead(lead, "local"));
+  const local = readAllLocalLeadSources().map((lead) => mapLead(lead, lead._source || "local"));
   if (mode === CUSTOMER_DATA_MODES.LOCAL) {
     return moduleResult("leads", {
       mode: CUSTOMER_DATA_MODES.LOCAL,
@@ -172,13 +187,15 @@ async function readLeadModule(mode) {
       fallbackUsed: false,
     }, "records");
   } catch (error) {
-    if (mode === CUSTOMER_DATA_MODES.HYBRID) {
+    const missingLeadsTable = isMissingSupabaseTableError(error);
+    if (mode === CUSTOMER_DATA_MODES.HYBRID || missingLeadsTable) {
       return moduleResult("leads", {
         mode: CUSTOMER_DATA_MODES.LOCAL,
         records: local,
         counts: { local: local.length, supabase: 0, hybrid: local.length },
         fallbackUsed: true,
-        error: error.message || "Leads konden niet uit Supabase worden gelezen.",
+        error: missingLeadsTable ? "" : error.message || "Leads konden niet uit Supabase worden gelezen.",
+        warning: missingLeadsTable ? "Productie heeft nog geen public.leads tabel. Leads worden tijdelijk uit bestaande lokale leadbronnen gelezen." : "",
       }, "records");
     }
     return moduleResult("leads", {

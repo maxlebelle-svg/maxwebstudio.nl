@@ -119,6 +119,46 @@ export function readLeadFinderLeads() {
   return readJson(STORAGE_KEYS.leadFinderLeads).map(normalizeLeadFinderLead);
 }
 
+function normalizeStoredLeadRecord(lead = {}, source = "local") {
+  const normalized = normalizeLeadFinderLead({
+    ...lead,
+    companyName: lead.companyName || lead.company || lead.businessName || lead.packageInterest,
+    contactName: lead.contactName || lead.name || lead.contact,
+    websiteUrl: lead.websiteUrl || lead.website,
+    notes: lead.notes || lead.message || lead.packageInterest || "",
+    source: lead.source || source,
+    callStatus: lead.callStatus || lead.status || "nieuw",
+    websiteStatus: lead.websiteStatus || (lead.website || lead.websiteUrl ? "onbekend" : "geen_website"),
+    leadScore: lead.leadScore || lead.score || 60,
+  });
+  return {
+    ...normalized,
+    _source: source,
+  };
+}
+
+function uniqueLeadsByKey(leads = []) {
+  const seen = new Set();
+  return leads.filter((lead) => {
+    const key = [
+      lead.id,
+      lead.email && `email:${lead.email.toLowerCase()}`,
+      lead.phone && `phone:${lead.phone.replace(/[^\d+]/g, "")}`,
+      lead.companyName && `company:${lead.companyName.toLowerCase()}`,
+    ].filter(Boolean)[0];
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+export function readAllLocalLeadSources() {
+  const leadfinder = readLeadFinderLeads().map((lead) => ({ ...lead, _source: lead._source || "local" }));
+  const leads = readJson(STORAGE_KEYS.leads).map((lead) => normalizeStoredLeadRecord(lead, "local-leads"));
+  const requests = readJson(STORAGE_KEYS.leadRequests).map((lead) => normalizeStoredLeadRecord(lead, "homepage-aanvraag"));
+  return uniqueLeadsByKey([...leadfinder, ...leads, ...requests]).sort((a, b) => String(b.updatedAt || b.createdAt).localeCompare(String(a.updatedAt || a.createdAt)));
+}
+
 export function writeLeadFinderLeads(leads = []) {
   const normalized = leads.map(normalizeLeadFinderLead).sort((a, b) => {
     if (b.leadScore !== a.leadScore) return b.leadScore - a.leadScore;

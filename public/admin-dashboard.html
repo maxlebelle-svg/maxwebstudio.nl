@@ -8830,6 +8830,7 @@
             duplicateMerges: result.duplicateMerges || [],
             fallbackUsed: Boolean(result.fallbackUsed),
             error: result.error || "",
+            warning: result.warning || "",
             refreshedAt: result.refreshedAt || new Date().toISOString(),
             dataLayer: "supabase-data-layer-mvp",
           };
@@ -17732,6 +17733,7 @@
             counts: { local: leadfinderDataLayerLeads.length, supabase: 0, hybrid: leadfinderDataLayerLeads.length },
             fallbackUsed: true,
             error: error.message || "Leadfinder data-layer kon niet worden gelezen.",
+            warning: "",
             refreshedAt: new Date().toISOString(),
             dataLayer: "local-fallback-after-data-layer-error",
           };
@@ -17765,7 +17767,10 @@
         const id = String(lead.id || "").toLowerCase();
         const email = String(lead.email || "").toLowerCase();
         const website = String(lead.websiteUrl || "").toLowerCase();
-        return source.includes("demo")
+        const environment = String(lead.environment || lead.metadata?.environment || "").toLowerCase();
+        return Boolean(lead.isDemo || lead.is_demo || lead.metadata?.isDemo)
+          || environment === "demo"
+          || source.includes("demo")
           || id.includes("demo")
           || email.endsWith(".example")
           || website.includes(".example");
@@ -17773,7 +17778,7 @@
 
       function isLocalLead(lead = {}) {
         if (!lead || typeof lead !== "object") return false;
-        return !lead._source || lead._source === "local";
+        return !lead._source || ["local", "local-leads", "homepage-aanvraag"].includes(lead._source);
       }
 
       function isDevModeEnabled() {

@@ -158,7 +158,7 @@ exports.handler = async (event) => {
         },
         records: [],
         counts: { local: 0, supabase: 0, hybrid: 0 },
-        fallbackUsed: false,
+        fallbackUsed: true,
         warning: `${definition.table} is nog niet uitgerold in productie.`,
         refreshedAt: new Date().toISOString(),
       });
@@ -197,6 +197,7 @@ async function fetchRows(supabaseUrl, serviceRoleKey, definition) {
       headers: restHeaders(serviceRoleKey),
     });
   } catch (error) {
+    if (isMissingTableError(error)) throw error;
     if (!definition.legacySelect || !isMissingColumnError(error)) throw error;
     const fallbackParams = new URLSearchParams({
       select: definition.legacySelect,
@@ -242,10 +243,13 @@ function restHeaders(serviceRoleKey) {
 
 function isMissingTableError(error = {}) {
   const message = cleanText(error.message).toLowerCase();
+  const details = cleanText(error.details).toLowerCase();
   return error.status === 404
     || error.code === "42P01"
     || error.code === "PGRST205"
     || message.includes("could not find the table")
+    || message.includes("schema cache")
+    || details.includes("schema cache")
     || message.includes("does not exist");
 }
 
