@@ -116,6 +116,18 @@
       </aside>
 
       <div class="admin-crm-main">
+        <header class="admin-page-topbar" aria-label="Admin snel zoeken">
+          <label class="admin-page-search" for="admin-page-search">
+            <span class="sr-only">Zoeken</span>
+            <input id="admin-page-search" type="search" placeholder="Zoek naar leads, klanten, facturen..." />
+            <kbd>⌘ K</kbd>
+          </label>
+          <div class="admin-page-actions">
+            <button class="admin-icon-button" type="button" aria-label="Meldingen">⌕</button>
+            <button class="button primary" id="open-new-customer-topbar" type="button">Nieuwe klant</button>
+          </div>
+        </header>
+
         <section class="admin-hero" id="dashboard">
           <div>
             <p class="section-kicker">Admin CRM</p>
@@ -17195,6 +17207,7 @@
         }
 
         document.getElementById("open-new-customer").addEventListener("click", openNewCustomerModal);
+        document.getElementById("open-new-customer-topbar").addEventListener("click", openNewCustomerModal);
         document.getElementById("open-new-customer-quick").addEventListener("click", openNewCustomerModal);
         document.getElementById("open-new-customer-secondary").addEventListener("click", openNewCustomerModal);
         document.getElementById("new-managed-website").addEventListener("click", resetWebsiteForm);
