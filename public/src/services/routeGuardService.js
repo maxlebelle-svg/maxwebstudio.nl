@@ -56,6 +56,7 @@ export function resetAccessControlMode() {
 
 export function getDefaultRedirectForRole(role) {
   if (role === ROLES.CUSTOMER) return "/klantportaal.html";
+  if (role === ROLES.SALES_PARTNER || role === ROLES.SALES_MANAGER) return "/admin-dashboard.html#wijzigingsverzoeken";
   if (role === ROLES.DEMO_USER) return "/demo-klantreis.html";
   return "/admin-dashboard.html";
 }

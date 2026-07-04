@@ -1199,6 +1199,19 @@
                 <strong>Super Admin beheer</strong>
                 <span>Bekijk gebruikers, wijzig rollen en activeer of deactiveer accounts. Supabase-writes blijven gekoppeld aan de bestaande provider-write gates.</span>
               </div>
+              <form class="admin-profile-form" id="invite-user-form">
+                <div class="admin-profile-fields">
+                  <label for="invite-user-name">Naam<input id="invite-user-name" name="name" type="text" value="Lisanne" autocomplete="name" required /></label>
+                  <label for="invite-user-email">E-mail<input id="invite-user-email" name="email" type="email" value="lisanne@maxwebstudio.nl" autocomplete="email" required /></label>
+                  <label for="invite-user-role">Rol<select id="invite-user-role" name="role"><option value="sales_partner" selected>Sales Partner</option><option value="sales_manager">Sales Manager</option><option value="support">Support</option><option value="admin">Admin</option></select></label>
+                  <label for="invite-user-status">Status<select id="invite-user-status" name="status"><option value="invited" selected>Invited</option><option value="active">Active</option><option value="disabled">Disabled</option><option value="archived">Archived</option></select></label>
+                </div>
+                <div class="admin-profile-actions">
+                  <button class="button primary" id="invite-user-submit" type="submit">Uitnodiging versturen</button>
+                  <button class="button secondary" id="invite-user-reset-link" type="button">Password reset/setup link versturen</button>
+                </div>
+                <p class="admin-form-message" id="invite-user-message" role="status" aria-live="polite"></p>
+              </form>
               <div class="settings-actions">
                 <button class="button secondary" id="refresh-user-management" type="button">Gebruikers laden</button>
               </div>
@@ -2615,6 +2628,9 @@
         const settingsMessage = document.getElementById("settings-message");
         const settingsIntegrations = document.getElementById("settings-integrations");
         const settingsSystemStatus = document.getElementById("settings-system-status");
+        const inviteUserForm = document.getElementById("invite-user-form");
+        const inviteUserMessage = document.getElementById("invite-user-message");
+        const inviteUserResetLink = document.getElementById("invite-user-reset-link");
         const refreshUserManagementButton = document.getElementById("refresh-user-management");
         const userManagementList = document.getElementById("user-management-list");
         const demoMessage = document.getElementById("demo-message");
@@ -5450,6 +5466,19 @@
             });
             const developerAllowed = modules.routeGuardService.canShowDeveloperTools();
             const migrationAllowed = modules.routeGuardService.canShowMigrationTools();
+            const settingsAllowed = modules.authService.hasPermission("settings", "view");
+            const userManagementAllowed = modules.authService.hasPermission("users", "view");
+            const settingsSection = document.getElementById("instellingen");
+            if (settingsSection) settingsSection.hidden = !settingsAllowed;
+            if (userManagementCard) userManagementCard.hidden = !userManagementAllowed;
+            if (inviteUserForm) {
+              const canInviteUsers = modules.authService.hasPermission("users", "activate") || modules.authService.hasPermission("users", "update_role");
+              [...inviteUserForm.elements].forEach((element) => {
+                if (element instanceof HTMLInputElement || element instanceof HTMLSelectElement || element instanceof HTMLButtonElement) {
+                  element.disabled = !canInviteUsers;
+                }
+              });
+            }
             developerToolsCard.hidden = !isDeveloperModeEnabled() || !developerAllowed;
             let blockedActionCount = 0;
             document.querySelectorAll("[id*='migration'], #start-customer-live-migration, #run-supabase-write-test, #create-supabase-test-customer, #update-supabase-test-customer, #delete-supabase-test-customer").forEach((button) => {
@@ -6313,6 +6342,50 @@
             console.error("User management could not be rendered", error);
             userManagementList.append(createCell(error.message || "Gebruikersbeheer kon niet worden geladen."));
           }
+        }
+
+        function setInviteUserMessage(message, type = "") {
+          if (!inviteUserMessage) return;
+          inviteUserMessage.textContent = message;
+          inviteUserMessage.className = `admin-form-message ${type}`.trim();
+        }
+
+        function getAdminBearerToken() {
+          try {
+            const session = JSON.parse(localStorage.getItem("maxwebstudioCurrentSession") || "null");
+            if (session?.accessToken) return session.accessToken;
+          } catch {}
+          try {
+            const supabaseSession = JSON.parse(localStorage.getItem("maxwebstudioSupabaseAuthSession") || "null");
+            if (supabaseSession?.access_token) return supabaseSession.access_token;
+          } catch {}
+          return "";
+        }
+
+        async function submitInviteUser(action = "invite") {
+          if (!inviteUserForm) return;
+          const data = Object.fromEntries(new FormData(inviteUserForm).entries());
+          const token = getAdminBearerToken();
+          if (!token) {
+            setInviteUserMessage("Log in als super_admin/admin met Supabase Auth om uitnodigingen te versturen.", "error");
+            return;
+          }
+          setInviteUserMessage(action === "send_password_reset" ? "Setup-link wordt verstuurd..." : "Uitnodiging wordt verstuurd...");
+          const response = await fetch("/.netlify/functions/admin-invite-user", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ ...data, action }),
+          });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok || !result.success) {
+            throw new Error(result.error || "Uitnodiging kon niet worden verstuurd.");
+          }
+          setInviteUserMessage(result.message || "Gebruiker is bijgewerkt.", "success");
+          await renderUserManagement();
         }
 
         async function switchDemoRole(role) {
@@ -16494,6 +16567,23 @@
         [invoiceSearch, invoiceStatusFilter, invoiceTypeFilter, invoiceCustomerFilter, invoiceProjectFilter, invoiceWebsiteFilter].forEach((filter) => filter.addEventListener("input", renderInvoices));
         [requestStatusFilter, requestPriorityFilter, requestCategoryFilter].forEach((filter) => filter.addEventListener("change", renderRequests));
         settingsForm.addEventListener("submit", saveSettings);
+        inviteUserForm?.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          try {
+            await submitInviteUser("invite");
+          } catch (error) {
+            console.error("Invite user failed", error);
+            setInviteUserMessage(error.message || "Uitnodiging kon niet worden verstuurd.", "error");
+          }
+        });
+        inviteUserResetLink?.addEventListener("click", async () => {
+          try {
+            await submitInviteUser("send_password_reset");
+          } catch (error) {
+            console.error("Password setup link failed", error);
+            setInviteUserMessage(error.message || "Setup-link kon niet worden verstuurd.", "error");
+          }
+        });
         refreshUserManagementButton?.addEventListener("click", renderUserManagement);
         aiWizardForm.addEventListener("submit", saveAiWizardIntake);
         aiWizardGenerate.addEventListener("click", generateAiWizardDraft);

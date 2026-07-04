@@ -234,6 +234,85 @@
           return "Resetlink aanvragen is niet gelukt. Controleer het e-mailadres of probeer het later opnieuw.";
         }
 
+        function getStoredSupabaseSession() {
+          try {
+            return JSON.parse(localStorage.getItem("maxwebstudioSupabaseAuthSession") || "null");
+          } catch {
+            return null;
+          }
+        }
+
+        async function fetchAccountProfile(accessToken) {
+          const response = await fetch("/.netlify/functions/account-profile", {
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${accessToken}`,
+            },
+            cache: "no-store",
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || !data.success) {
+            const error = new Error(data.error || "Profiel kon niet worden gecontroleerd.");
+            error.code = data.code || "";
+            throw error;
+          }
+          return data;
+        }
+
+        function storeRealSession(session, account) {
+          const profile = account.profile || {};
+          const user = account.user || session.user || {};
+          const now = new Date().toISOString();
+          const currentSession = {
+            id: session.access_token ? `supabase-${session.access_token.slice(0, 12)}` : `supabase-${Date.now()}`,
+            userId: user.id || profile.authUserId,
+            role: profile.role,
+            roleLabel: profile.role,
+            provider: "supabase",
+            accessToken: session.access_token,
+            customerId: profile.customerId || "",
+            startedAt: now,
+            expiresAt: session.expires_at ? new Date(session.expires_at * 1000).toISOString() : "",
+          };
+          const authUser = {
+            id: currentSession.userId,
+            authUserId: currentSession.userId,
+            email: user.email || profile.email,
+            name: profile.name || user.email || "",
+            role: profile.role,
+            status: profile.status,
+            isDemo: false,
+            updatedAt: now,
+          };
+          const storedUsers = JSON.parse(localStorage.getItem("maxwebstudioAuthUsers") || "[]");
+          const users = [
+            authUser,
+            ...storedUsers.filter((item) => String(item.id) !== String(authUser.id) && String(item.email || "").toLowerCase() !== String(authUser.email || "").toLowerCase()),
+          ];
+          const storedProfiles = JSON.parse(localStorage.getItem("maxwebstudioProfiles") || "[]");
+          const profileRecord = {
+            id: profile.id,
+            authUserId: currentSession.userId,
+            email: authUser.email,
+            name: authUser.name,
+            role: profile.role,
+            status: profile.status,
+            customerId: profile.customerId || "",
+            environment: "production",
+            isDemoUser: false,
+            updatedAt: now,
+          };
+          const profiles = [
+            profileRecord,
+            ...storedProfiles.filter((item) => String(item.id) !== String(profileRecord.id) && String(item.email || "").toLowerCase() !== String(profileRecord.email || "").toLowerCase()),
+          ];
+          localStorage.setItem("maxwebstudioCurrentSession", JSON.stringify(currentSession));
+          localStorage.setItem("maxwebstudioAuthUsers", JSON.stringify(users));
+          localStorage.setItem("maxwebstudioProfiles", JSON.stringify(profiles));
+          localStorage.setItem("maxwebstudioAuthProvider", "supabase-prepared");
+          localStorage.setItem("maxwebstudioAuthMode", "supabase-prepared");
+        }
+
         function activatePanel(name) {
           panels.forEach((panel) => {
             const active = panel.dataset.authPanel === name;
@@ -326,9 +405,14 @@
           setMessage("Echte login wordt gecontroleerd...");
           try {
             const auth = await loadAuth();
-            await auth.signInWithEmail(data.email, data.password);
+            const result = await auth.signInWithEmail(data.email, data.password);
+            const session = result.session || getStoredSupabaseSession();
+            if (!session?.access_token) throw new Error("Login gelukt, maar sessie-token ontbreekt.");
+            const account = await fetchAccountProfile(session.access_token);
+            storeRealSession(session, account);
+            const redirect = auth.getLoginRedirectForRole(account.profile.role, account.profile.customerId);
             setMessage("Login gelukt.", "success");
-            window.location.href = "/klantportaal.html";
+            window.location.href = redirect;
           } catch (error) {
             const debug = error?.supabaseAuth || {};
             console.info("Supabase login failed", {
@@ -339,9 +423,11 @@
               host: debug.host || "",
               keyType: debug.keyType || "",
             });
-            setMessage(isDeveloperModeEnabled()
-              ? getDeveloperLoginErrorMessage(error)
-              : getSafeLoginErrorMessage(error), "error");
+            setMessage(error?.code === "PROFILE_ROLE_MISSING"
+              ? "Account bestaat, maar profiel/rol ontbreekt. Vraag een beheerder om toegang te activeren."
+              : isDeveloperModeEnabled()
+                ? getDeveloperLoginErrorMessage(error)
+                : getSafeLoginErrorMessage(error), "error");
           }
         });
 
