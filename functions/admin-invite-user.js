@@ -1,5 +1,6 @@
 const { verifyAdmin } = require("./_admin-auth");
 const { sendEmail } = require("./email");
+const crypto = require("crypto");
 
 const allowedRoles = new Set(["super_admin", "admin", "sales_manager", "sales_partner", "developer", "designer", "support", "customer"]);
 const allowedStatuses = new Set(["invited", "active", "disabled", "archived"]);
@@ -35,7 +36,13 @@ exports.handler = async (event) => {
       setupLink = await generateEmployeeSetupLink(supabaseUrl, serviceRoleKey, input, "invite");
       authUser = setupLink.authUser || null;
     }
-    if (!authUser) authUser = await inviteAuthUser(supabaseUrl, serviceRoleKey, input);
+    if (!authUser) {
+      authUser = await findAuthUserByEmail(supabaseUrl, serviceRoleKey, input.email);
+    }
+    if (!authUser) {
+      authUser = await createAuthUserSilently(supabaseUrl, serviceRoleKey, input);
+      setupLink = await generateEmployeeSetupLink(supabaseUrl, serviceRoleKey, input, "recovery");
+    }
     const profile = await upsertProfile(supabaseUrl, serviceRoleKey, {
       ...input,
       authUserId: authUser.id,
@@ -54,12 +61,10 @@ exports.handler = async (event) => {
       }
       if (customMailSent) {
         setupLinkSent = true;
-      } else if (existingUser || action === "send_password_reset") {
-        await sendPasswordReset(supabaseUrl, serviceRoleKey, input.email);
-        setupLinkSent = true;
+      } else if (setupLink.actionLink) {
+        mailWarning = mailWarning || "Setup-link is aangemaakt, maar de Max Webstudio mail kon niet worden verstuurd.";
       } else {
-        await sendPasswordReset(supabaseUrl, serviceRoleKey, input.email);
-        setupLinkSent = true;
+        mailWarning = mailWarning || "Setup-link kon niet worden aangemaakt. Er is geen Supabase standaardmail verstuurd om localhost-links te voorkomen.";
       }
     }
 
@@ -76,7 +81,7 @@ exports.handler = async (event) => {
       message: setupLinkSent
         ? customMailSent
           ? "Professionele Max Webstudio uitnodiging is verstuurd."
-          : "Uitnodiging/setup-link is verstuurd via Supabase fallback."
+          : "Setup-link is aangemaakt, maar mail verzenden is niet gelukt. Probeer opnieuw."
         : "Bestaande gebruiker is bijgewerkt. Gebruik de resetlink-actie als wachtwoord setup nodig is.",
     });
   } catch (error) {
@@ -141,28 +146,16 @@ async function findAuthUserByEmail(supabaseUrl, serviceRoleKey, email) {
   return users.find((user) => cleanText(user.email).toLowerCase() === email) || null;
 }
 
-async function inviteAuthUser(supabaseUrl, serviceRoleKey, input) {
-  const redirectTo = inviteRedirectTo();
-  const inviteUrl = new URL(`${supabaseUrl}/auth/v1/invite`);
-  if (redirectTo) inviteUrl.searchParams.set("redirect_to", redirectTo);
-  return supabaseFetch(inviteUrl.toString(), {
+async function createAuthUserSilently(supabaseUrl, serviceRoleKey, input) {
+  return supabaseFetch(`${supabaseUrl}/auth/v1/admin/users`, {
     method: "POST",
     headers: authAdminHeaders(serviceRoleKey),
     body: JSON.stringify({
       email: input.email,
-      data: { name: input.name, role: input.role },
+      password: crypto.randomBytes(24).toString("base64url"),
+      email_confirm: true,
+      user_metadata: { name: input.name, role: input.role },
     }),
-  });
-}
-
-async function sendPasswordReset(supabaseUrl, serviceRoleKey, email) {
-  const redirectTo = inviteRedirectTo();
-  const recoverUrl = new URL(`${supabaseUrl}/auth/v1/recover`);
-  if (redirectTo) recoverUrl.searchParams.set("redirect_to", redirectTo);
-  await supabaseFetch(recoverUrl.toString(), {
-    method: "POST",
-    headers: authAdminHeaders(serviceRoleKey),
-    body: JSON.stringify({ email }),
   });
 }
 
