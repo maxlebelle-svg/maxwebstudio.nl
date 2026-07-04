@@ -6997,6 +6997,10 @@ h3 {
   padding: clamp(20px, 3vw, 30px);
 }
 
+.admin-modal-panel-compact {
+  width: min(100%, 620px);
+}
+
 .admin-modal-header {
   display: flex;
   align-items: flex-start;

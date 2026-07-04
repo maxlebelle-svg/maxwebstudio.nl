@@ -72,6 +72,7 @@ function parsePayload(body) {
 function validateInvitePayload(payload = {}) {
   const name = cleanText(payload.name || payload.naam);
   const email = cleanText(payload.email).toLowerCase();
+  const phone = cleanText(payload.phone || payload.telephone || payload.telefoon);
   const role = cleanText(payload.role || "sales_partner").toLowerCase();
   const status = cleanText(payload.status || "invited").toLowerCase();
 
@@ -80,7 +81,7 @@ function validateInvitePayload(payload = {}) {
   if (!allowedRoles.has(role)) return { success: false, error: "Kies een geldige rol." };
   if (!allowedStatuses.has(status)) return { success: false, error: "Kies een geldige status." };
 
-  return { success: true, name, email, role, status };
+  return { success: true, name, email, phone, role, status };
 }
 
 async function findAuthUserByEmail(supabaseUrl, serviceRoleKey, email) {
@@ -133,6 +134,7 @@ async function upsertProfile(supabaseUrl, serviceRoleKey, input) {
     metadata: {
       inviteFlow: "admin-invite-user",
       inviteSentAt: input.inviteSentAt,
+      phone: input.phone || null,
     },
     updated_at: new Date().toISOString(),
   };
