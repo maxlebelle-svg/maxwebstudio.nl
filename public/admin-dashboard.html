@@ -20331,22 +20331,46 @@
             data = { rawBody: responseBody };
           }
           if (!response.ok || data.success === false) {
+            const normalizedError = data.error && typeof data.error === "object" ? data.error : {};
             const diagnostics = {
               functionName: url.includes("website-factory") ? "website-factory" : url.includes("demo-journey") ? "demo-journey" : "unknown",
-              requestUrl: url,
-              requestPayload: payload || null,
-              httpStatus: response.status,
-              responseBody,
-              parsedJson: data,
+              status: response.status,
+              statusText: response.statusText,
+              url,
+              payload: payload || null,
+              responseText: responseBody,
+              responseJson: data,
+              error: data.error || "",
+              diagnostics: data.diagnostics || {},
+              details: data.details || normalizedError.details || "",
+              hint: data.hint || normalizedError.hint || "",
+              code: data.code || normalizedError.code || data.diagnostics?.code || "",
+              stack: data.stack || normalizedError.stack || "",
             };
             console.error("Demo Journey API request failed", diagnostics);
+            if (developerMode) {
+              console.dir(diagnostics);
+              console.table({
+                functionName: diagnostics.functionName,
+                status: diagnostics.status,
+                statusText: diagnostics.statusText,
+                code: diagnostics.code,
+                reason: diagnostics.diagnostics?.reason || "",
+                url: diagnostics.url,
+              });
+            }
+            const errorMessage = typeof data.error === "string"
+              ? data.error
+              : data.error?.message || "Demo klantreis kon niet worden verwerkt.";
             const detail = [
-              data.error || "Demo klantreis kon niet worden verwerkt.",
+              errorMessage,
               data.details ? `Details: ${data.details}` : "",
               data.hint ? `Hint: ${data.hint}` : "",
+              diagnostics.code ? `Code: ${diagnostics.code}` : "",
               data.diagnostics?.reason ? `Reden: ${data.diagnostics.reason}` : "",
+              data.stack ? `Stack: ${data.stack}` : "",
             ].filter(Boolean).join("\n");
-            const error = new Error(developerMode ? `Backendfout (${response.status})\n${detail}` : data.userMessage || data.error || "Demo klantreis kon niet worden opgeslagen. Probeer opnieuw of vraag een beheerder om Developer Mode te controleren.");
+            const error = new Error(developerMode ? `Backendfout (${response.status})\n${detail}` : data.userMessage || errorMessage || "Demo klantreis kon niet worden opgeslagen. Probeer opnieuw of vraag een beheerder om Developer Mode te controleren.");
             error.diagnostics = diagnostics;
             throw error;
           }

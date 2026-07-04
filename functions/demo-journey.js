@@ -65,12 +65,18 @@ exports.handler = async (event) => {
     const developerMode = isDeveloperRequest(event);
     console.error("Demo journey API failed", {
       method: event.httpMethod,
+      path: event.path || "",
+      query: event.queryStringParameters || {},
       role: adminCheck.admin?.role || "",
       status: error.status || 500,
       code: error.code || "",
       message: error.message,
       details: error.details || "",
       hint: error.hint || "",
+      url: error.url || "",
+      responseText: error.responseText || "",
+      responseJson: error.responseJson || null,
+      stack: error.stack || "",
     });
     return jsonResponse(missing || missingFactory ? 503 : error.status || 500, errorResponse({
       error,
@@ -619,6 +625,9 @@ async function supabaseFetch(url, options) {
     } catch {
       const error = new Error("Supabase gaf geen geldige JSON-response terug.");
       error.status = response.status || 500;
+      error.url = url;
+      error.method = options?.method || "GET";
+      error.responseText = text;
       throw error;
     }
   }
@@ -628,6 +637,11 @@ async function supabaseFetch(url, options) {
     error.code = data?.code || "";
     error.details = data?.details || "";
     error.hint = data?.hint || "";
+    error.url = url;
+    error.method = options?.method || "GET";
+    error.responseText = text;
+    error.responseJson = data;
+    error.requestBody = options?.body || "";
     throw error;
   }
   return Array.isArray(data) ? data : [];
@@ -683,6 +697,11 @@ function errorResponse({ error = {}, developerMode = false, module = "", reason 
       reason,
       status: error.status || 500,
       code: error.code || "",
+      method: error.method || "",
+      url: developerMode ? cleanText(error.url) : "",
+      responseText: developerMode ? cleanText(error.responseText) : "",
+      responseJson: developerMode ? error.responseJson || null : null,
+      requestBody: developerMode ? cleanText(error.requestBody) : "",
     },
   };
   if (developerMode && error.stack) body.stack = error.stack;
