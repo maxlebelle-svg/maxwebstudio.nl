@@ -2116,15 +2116,25 @@
       (() => {
         const pageByFile = {
           "admin-dashboard.html": "dashboard",
+          "admin-dashboard": "dashboard",
           "admin-sales.html": "sales",
+          "admin-sales": "sales",
           "admin-website-factory.html": "website-factory",
+          "admin-website-factory": "website-factory",
           "admin-klanten.html": "klanten",
+          "admin-klanten": "klanten",
           "admin-websites.html": "websites",
+          "admin-websites": "websites",
           "admin-projecten.html": "projecten",
+          "admin-projecten": "projecten",
           "admin-offertes.html": "offertes",
+          "admin-offertes": "offertes",
           "admin-facturen.html": "facturen",
+          "admin-facturen": "facturen",
           "admin-email-studio.html": "email-studio",
+          "admin-email-studio": "email-studio",
           "admin-instellingen.html": "instellingen",
+          "admin-instellingen": "instellingen",
         };
         const sectionGroups = {
           dashboard: ["dashboard", "admin-access-control-banner", "admin-metrics", "bi-dashboard-section"],
@@ -2625,7 +2635,7 @@
           { type: "group", label: "System" },
           { href: "admin-instellingen.html", page: "instellingen", accessId: "instellingen", label: "Instellingen", className: "admin-sales-secondary", alwaysVisible: true },
           { href: "#onderhoud", accessId: "onderhoud", label: "Abonnementen", className: "admin-developer-only" },
-          { href: "#demo-omgeving", accessId: "demo-omgeving", label: "Developer Mode", className: "admin-developer-only" },
+          { href: "admin-instellingen.html#demo-omgeving", accessId: "demo-omgeving", label: "Developer Mode", className: "admin-developer-only" },
         ];
         let adminNavLinks = [];
         renderAdminSidebarNavigation();
@@ -5984,8 +5994,11 @@
             const migrationAllowed = modules.routeGuardService.canShowMigrationTools();
             const settingsAllowed = modules.authService.hasPermission("settings", "view");
             const userManagementAllowed = modules.authService.hasPermission("users", "view");
+            const isSettingsPage = window.maxwebstudioAdminPage?.page === "instellingen";
             const settingsSection = document.getElementById("instellingen");
-            if (settingsSection) settingsSection.hidden = !settingsAllowed;
+            if (settingsSection) settingsSection.hidden = !isSettingsPage || !settingsAllowed;
+            const demoEnvironmentSection = document.getElementById("demo-omgeving");
+            if (demoEnvironmentSection) demoEnvironmentSection.hidden = !isSettingsPage || !developerAllowed;
             userManagementCard?.toggleAttribute("hidden", !userManagementAllowed);
             const currentRole = String(context.role || "").toLowerCase();
             const canInviteUsers = ["super_admin", "admin"].includes(currentRole)
