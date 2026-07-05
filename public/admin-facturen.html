@@ -5540,6 +5540,15 @@
             ["Laatste refresh", status.refreshedAt ? formatDate(status.refreshedAt) : "-"],
             ["Error", status.error || "-"],
           ]);
+          const saveDiagnostics = state.lastInvoiceSaveDiagnostics || {};
+          appendDeveloperCard("Invoice API save diagnostics", [
+            ["Selected customer id", saveDiagnostics.selectedCustomerId || "-"],
+            ["Endpoint", saveDiagnostics.endpoint || billingEndpoint],
+            ["Response status", saveDiagnostics.status ? String(saveDiagnostics.status) : "-"],
+            ["Invoice id", saveDiagnostics.invoiceId || "-"],
+            ["Error", saveDiagnostics.error || "-"],
+            ["Saved at", saveDiagnostics.savedAt ? formatDate(saveDiagnostics.savedAt) : "-"],
+          ]);
         }
 
         function renderInvoiceSupabaseReadiness(modules) {
@@ -9512,6 +9521,33 @@
 
         async function loadInvoicesByDataMode() {
           const mode = currentInvoiceDataMode();
+          if (mode === "supabase-read") {
+            const token = getResolvedAdminBearer();
+            if (!token) throw new Error("Log in als admin om facturen te laden.");
+            const response = await fetch(billingEndpoint, {
+              headers: {
+                Accept: "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data.success) throw new Error(data.error || "Facturen konden niet worden geladen.");
+            const invoices = Array.isArray(data.invoices)
+              ? data.invoices.map((invoice) => ({ ...normalizeInvoice(invoice), _source: "supabase", _supabaseInvoiceId: invoice.id }))
+              : [];
+            state.invoiceSourceStatus = {
+              mode,
+              counts: { supabase: invoices.length, local: 0, hybrid: invoices.length },
+              duplicateMerges: [],
+              fallbackUsed: false,
+              error: "",
+              refreshedAt: new Date().toISOString(),
+              dataLayer: "admin-billing",
+              endpoint: billingEndpoint,
+            };
+            localStorage.setItem("maxwebstudioLastInvoiceSourceStatus", JSON.stringify(state.invoiceSourceStatus));
+            return invoices;
+          }
           const result = await readAdminDataLayerModule("invoices", mode);
           state.invoiceSourceStatus = {
             mode: result.mode,
@@ -15207,16 +15243,26 @@
         }
 
         async function postBilling(payload) {
+          const token = getResolvedAdminBearer();
+          if (!token) throw new Error("Log eerst in als admin om billing te beheren.");
           const response = await fetch(billingEndpoint, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               Accept: "application/json",
-              Authorization: `Bearer ${getAdminBearer()}`,
+              Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify(payload),
           });
           const data = await response.json().catch(() => ({}));
+          state.lastInvoiceSaveDiagnostics = {
+            selectedCustomerId: payload.profileId || payload.customerId || "",
+            endpoint: billingEndpoint,
+            status: response.status,
+            invoiceId: data.invoice?.id || "",
+            error: response.ok && data.success ? "" : data.error || "Billingactie kon niet worden uitgevoerd.",
+            savedAt: new Date().toISOString(),
+          };
           if (!response.ok || !data.success) throw new Error(data.error || "Billingactie kon niet worden uitgevoerd.");
           return data;
         }
@@ -15696,9 +15742,17 @@
 
           try {
             const existingInvoice = invoiceById(invoiceFields.id.value);
+            const selectedCustomerId = invoiceFields.profile.value || state.selectedCustomerId || existingInvoice?.profileId || existingInvoice?.customerId || "";
+            const customer = customerById(selectedCustomerId) || state.customers.find((item) => customerSupabaseId(item) === selectedCustomerId) || null;
+            if (!selectedCustomerId) throw new Error("Selecteer eerst een klant voor deze factuur.");
+            if (!customer && !existingInvoice) throw new Error("Geselecteerde centrale klant kon niet worden gevonden.");
+            const totals = calculateInvoiceTotals(currentInvoiceLines);
             const payload = {
               id: invoiceFields.id.value,
-              profileId: invoiceFields.profile.value,
+              profileId: selectedCustomerId,
+              customerId: selectedCustomerId,
+              customerName: customer?.name || existingInvoice?.customerName || "",
+              customerCompany: customer?.company || customer?.name || existingInvoice?.customerCompany || "",
               websiteId: invoiceFields.website.value,
               projectId: invoiceFields.project.value,
               invoiceNumber: invoiceFields.number.value,
@@ -15711,31 +15765,29 @@
               paymentLink: invoiceFields.paymentLink.value,
               pdfFilePath: invoiceFields.pdf.value,
               notes: invoiceFields.notes.value,
+              subtotal: totals.subtotal,
+              vat: totals.vat,
+              total: totals.total,
+              amount: totals.total,
               lines: currentInvoiceLines,
             };
-            const shouldUseRepository = currentInvoiceDataMode() !== "local" || isSupabaseManagedInvoice(existingInvoice || {});
-            const invoice = shouldUseRepository
-              ? await (async () => {
-                const repo = await getInvoiceRepositoryModule();
-                if (existingInvoice) {
-                  return repo.updateInvoice(existingInvoice.id, payload, {
-                    oldInvoice: existingInvoice,
-                    target: currentInvoiceDataMode() === "local" ? "local" : isSupabaseManagedInvoice(existingInvoice) ? "supabase" : "local",
-                    mode: currentInvoiceDataMode(),
-                    baseUpdatedAt: existingInvoice.updatedAt,
-                  });
-                }
-                return repo.createInvoice(payload, {
-                  target: currentInvoiceDataMode() === "local" ? "local" : "supabase",
-                  mode: currentInvoiceDataMode(),
-                });
-              })()
-              : saveInvoiceLocally(payload);
+            const result = await postBilling({ action: "save_invoice", ...payload });
+            const invoice = normalizeInvoice(result.invoice || payload);
             await loadCRMData(false);
             state.selectedInvoiceId = invoice.id;
             openInvoiceModal(invoice.id);
-            setBillingMessage(invoiceMessage, "Factuur opgeslagen.", "success");
+            setBillingMessage(invoiceMessage, "Factuur centraal opgeslagen.", "success");
+            window.showToast?.("Factuur centraal opgeslagen.", "success", {
+              description: `${invoice.invoiceNumber || "Factuur"} is opgeslagen via de billing API.`,
+            });
           } catch (error) {
+            state.lastInvoiceSaveDiagnostics = {
+              ...(state.lastInvoiceSaveDiagnostics || {}),
+              selectedCustomerId: invoiceFields.profile.value || state.selectedCustomerId || "",
+              endpoint: billingEndpoint,
+              error: error.message || "Factuur kon niet worden opgeslagen.",
+              savedAt: new Date().toISOString(),
+            };
             setBillingMessage(invoiceMessage, error.message || "Factuur kon niet worden opgeslagen.", "error");
           } finally {
             invoiceSave.disabled = false;
@@ -15972,36 +16024,12 @@
             if (!existingInvoice) throw new Error("Factuur niet gevonden.");
             let invoice;
             if (isSupabaseManagedInvoice(existingInvoice)) {
-              const repo = await getInvoiceRepositoryModule();
-              if (status === "betaald") {
-                invoice = await repo.markInvoicePaid(existingInvoice.id, {
-                  invoice: existingInvoice,
-                  target: "supabase",
-                  mode: currentInvoiceDataMode(),
-                  baseUpdatedAt: existingInvoice.updatedAt,
-                });
-              } else if (status === "verzonden") {
-                invoice = await repo.markInvoiceSent(existingInvoice.id, {
-                  invoice: existingInvoice,
-                  target: "supabase",
-                  mode: currentInvoiceDataMode(),
-                  baseUpdatedAt: existingInvoice.updatedAt,
-                });
-              } else if (status === "verlopen") {
-                invoice = await repo.markInvoiceExpired(existingInvoice.id, {
-                  invoice: existingInvoice,
-                  target: "supabase",
-                  mode: currentInvoiceDataMode(),
-                  baseUpdatedAt: existingInvoice.updatedAt,
-                });
-              } else {
-                invoice = await repo.updateInvoice(existingInvoice.id, { ...existingInvoice, status, paymentStatus: status }, {
-                  oldInvoice: existingInvoice,
-                  target: "supabase",
-                  mode: currentInvoiceDataMode(),
-                  baseUpdatedAt: existingInvoice.updatedAt,
-                });
-              }
+              const result = await postBilling({
+                action: "set_invoice_status",
+                id: existingInvoice._supabaseInvoiceId || existingInvoice.supabaseInvoiceId || existingInvoice.id,
+                status,
+              });
+              invoice = normalizeInvoice({ ...result.invoice, _source: "supabase", _supabaseInvoiceId: result.invoice?.id });
             } else {
               invoice = updateInvoiceStatusLocally(id, status);
             }

@@ -1,5 +1,6 @@
 const { verifyAdmin } = require("./_admin-auth");
 const PROFILE_FIELDS = ["id", "auth_user_id", "name", "company", "email", "package"].join(",");
+const CUSTOMER_FIELDS = ["id", "auth_user_id", "profile_id", "name", "company", "email", "package"].join(",");
 const SUBSCRIPTION_FIELDS = [
   "id",
   "profile_id",
@@ -188,12 +189,13 @@ exports.handler = async (event) => {
     }
 
     if (event.httpMethod === "GET") {
-      const [profiles, subscriptions, invoices] = await Promise.all([
+      const [profiles, customers, subscriptions, invoices] = await Promise.all([
         fetchProfiles(supabaseUrl, serviceRoleKey),
+        fetchCustomers(supabaseUrl, serviceRoleKey),
         fetchSubscriptions(supabaseUrl, serviceRoleKey),
         fetchInvoices(supabaseUrl, serviceRoleKey),
       ]);
-      const normalizedProfiles = profiles.map(normalizeProfile);
+      const normalizedProfiles = mergeBillingProfiles(profiles.map(normalizeProfile), customers.map(normalizeCustomer));
 
       return jsonResponse(200, {
         success: true,
@@ -204,10 +206,14 @@ exports.handler = async (event) => {
 
     const payload = parsePayload(event.body);
     const action = cleanText(payload.action || "");
-    const profiles = (await fetchProfiles(supabaseUrl, serviceRoleKey)).map(normalizeProfile);
+    const [profiles, customers] = await Promise.all([
+      fetchProfiles(supabaseUrl, serviceRoleKey),
+      fetchCustomers(supabaseUrl, serviceRoleKey),
+    ]);
+    const billingProfiles = mergeBillingProfiles(profiles.map(normalizeProfile), customers.map(normalizeCustomer));
 
     if (action === "save_subscription") {
-      const subscription = validateSubscriptionPayload(payload, profiles);
+      const subscription = validateSubscriptionPayload(payload, billingProfiles);
       const savedSubscription = await upsertSubscription(supabaseUrl, serviceRoleKey, subscription);
       return jsonResponse(200, { success: true, subscription: normalizeSubscription(savedSubscription) });
     }
@@ -224,7 +230,7 @@ exports.handler = async (event) => {
     }
 
     if (action === "save_invoice") {
-      const invoice = validateInvoicePayload(payload, profiles);
+      const invoice = validateInvoicePayload(payload, billingProfiles);
       const savedInvoice = await upsertInvoice(supabaseUrl, serviceRoleKey, invoice);
       return jsonResponse(200, { success: true, invoice: normalizeInvoice(savedInvoice) });
     }
@@ -277,6 +283,26 @@ async function fetchProfiles(supabaseUrl, serviceRoleKey) {
       method: "GET",
       headers: restHeaders(serviceRoleKey),
     });
+  }
+}
+
+async function fetchCustomers(supabaseUrl, serviceRoleKey) {
+  try {
+    return await supabaseFetch(`${supabaseUrl}/rest/v1/customers?select=${CUSTOMER_FIELDS}&order=company.asc.nullslast`, {
+      method: "GET",
+      headers: restHeaders(serviceRoleKey),
+    });
+  } catch (error) {
+    if (!isSchemaColumnError(error)) throw error;
+    try {
+      return await supabaseFetch(`${supabaseUrl}/rest/v1/customers?select=id,auth_user_id,profile_id,name,company_name,email,package&order=name.asc.nullslast`, {
+        method: "GET",
+        headers: restHeaders(serviceRoleKey),
+      });
+    } catch (fallbackError) {
+      if (!isSchemaColumnError(fallbackError)) throw fallbackError;
+      return [];
+    }
   }
 }
 
@@ -354,12 +380,14 @@ function validateSubscriptionPayload(payload, profiles) {
 
 function validateInvoicePayload(payload, profiles) {
   const id = cleanText(payload.id);
-  const profile = profileById(payload.profileId, profiles);
+  const profile = profileById(payload.profileId || payload.customerId, profiles);
   const status = normalizeInvoiceStatus(payload.status || "draft");
 
   if (id && !uuidPattern.test(id)) throwValidation("Kies een geldige factuur.");
-  if (!profile) throwValidation("Koppel de factuur aan een geldige klant.");
+  if (!profile) throwValidation("Koppel de factuur aan een centrale klant.");
   if (!allowedInvoiceStatuses.has(status)) throwValidation("Kies een geldige factuurstatus.");
+  const amount = nullableAmount(payload.amount ?? payload.total);
+  const invoiceContext = buildInvoiceContext(payload, profile, amount);
 
   return {
     id,
@@ -367,13 +395,13 @@ function validateInvoicePayload(payload, profiles) {
     customer_auth_user_id: profile.authUserId || null,
     invoice_number: cleanText(payload.invoiceNumber),
     title: cleanText(payload.title || "Factuur"),
-    amount: nullableAmount(payload.amount),
+    amount,
     status,
     due_date: cleanText(payload.dueDate) || null,
     paid_at: status === "paid" ? cleanText(payload.paidAt) || new Date().toISOString() : cleanText(payload.paidAt) || null,
     pdf_file_path: normalizeInvoicePdfPath(payload.pdfFilePath),
     mollie_payment_id: cleanText(payload.molliePaymentId) || null,
-    notes: cleanText(payload.notes),
+    notes: invoiceContext.notes,
     updated_at: new Date().toISOString(),
   };
 }
@@ -389,7 +417,11 @@ function normalizeSubscriptionStatus(value) {
 
 function profileById(id, profiles) {
   const profileId = cleanText(id);
-  return profiles.find((profile) => profile.id === profileId) || null;
+  return profiles.find((profile) =>
+    profile.id === profileId
+    || profile.customerId === profileId
+    || profile.profileId === profileId
+  ) || null;
 }
 
 async function upsertSubscription(supabaseUrl, serviceRoleKey, subscription) {
@@ -459,12 +491,39 @@ function enrichInvoices(invoices, profiles) {
 function normalizeProfile(row) {
   return {
     id: cleanText(row.id),
+    profileId: cleanText(row.id),
+    customerId: cleanText(row.customer_id),
     authUserId: cleanText(row.auth_user_id),
     name: cleanText(row.name),
     company: cleanText(row.company),
     email: cleanText(row.email),
     package: cleanText(row.package),
   };
+}
+
+function normalizeCustomer(row) {
+  return {
+    id: cleanText(row.profile_id || row.id),
+    profileId: cleanText(row.profile_id),
+    customerId: cleanText(row.id),
+    authUserId: cleanText(row.auth_user_id),
+    name: cleanText(row.name),
+    company: cleanText(row.company || row.company_name),
+    email: cleanText(row.email),
+    package: cleanText(row.package),
+  };
+}
+
+function mergeBillingProfiles(profiles = [], customers = []) {
+  const merged = [];
+  const seen = new Set();
+  [...profiles, ...customers].forEach((profile) => {
+    const keys = [profile.id, profile.profileId, profile.customerId].filter(Boolean);
+    if (keys.some((key) => seen.has(key))) return;
+    keys.forEach((key) => seen.add(key));
+    merged.push(profile);
+  });
+  return merged;
 }
 
 function normalizeSubscription(row) {
@@ -516,13 +575,23 @@ function normalizeSubscription(row) {
 }
 
 function normalizeInvoice(row) {
+  const amount = normalizeNullableNumber(row.amount);
+  const storedContext = parseInvoiceContextFromNotes(row.notes);
+  const contextTotals = calculateInvoiceTotals(storedContext.lines || []);
+  const total = storedContext.total || amount || contextTotals.total;
+  const vat = storedContext.vat || contextTotals.vat;
+  const subtotal = storedContext.subtotal || (total ? roundCurrency(total - vat) : contextTotals.subtotal);
   return {
     id: cleanText(row.id),
     profileId: cleanText(row.profile_id),
+    customerId: cleanText(row.profile_id),
     customerAuthUserId: cleanText(row.customer_auth_user_id),
     invoiceNumber: cleanText(row.invoice_number),
     title: cleanText(row.title),
-    amount: normalizeNullableNumber(row.amount),
+    amount: total,
+    subtotal,
+    vat,
+    total,
     status: normalizeInvoiceStatus(row.status || "draft"),
     dueDate: cleanText(row.due_date),
     paidAt: cleanText(row.paid_at),
@@ -537,10 +606,88 @@ function normalizeInvoice(row) {
     paidEmailSentAt: cleanText(row.paid_email_sent_at),
     expiredEmailSentAt: cleanText(row.expired_email_sent_at),
     emailLastError: cleanText(row.email_last_error),
-    notes: cleanText(row.notes),
+    notes: stripInvoiceContextFromNotes(row.notes),
+    lines: storedContext.lines || [],
     createdAt: cleanText(row.created_at),
     updatedAt: cleanText(row.updated_at),
   };
+}
+
+function buildInvoiceContext(payload, profile, amount) {
+  const lines = normalizeInvoiceLines(payload.lines);
+  const totals = calculateInvoiceTotals(lines);
+  const subtotal = nullableAmount(payload.subtotal ?? totals.subtotal) || 0;
+  const vat = nullableAmount(payload.vat ?? payload.vatAmount ?? totals.vat) || 0;
+  const total = nullableAmount(payload.total ?? amount ?? totals.total) || 0;
+  const context = {
+    customerId: profile.customerId || profile.id,
+    customerName: cleanText(payload.customerName || profile.name),
+    customerCompany: cleanText(payload.customerCompany || profile.company),
+    lines,
+    subtotal,
+    vat,
+    total,
+    invoiceDate: cleanText(payload.invoiceDate),
+    type: cleanText(payload.type),
+  };
+  const notes = [
+    cleanText(payload.notes),
+    `\n---\nFactuurregels: ${JSON.stringify(context)}`,
+  ].filter(Boolean).join("\n");
+  return { ...context, notes };
+}
+
+function normalizeInvoiceLines(lines = []) {
+  if (!Array.isArray(lines)) return [];
+  return lines.map((line) => {
+    const quantity = Number(line.quantity || 1);
+    const unitPrice = Number(line.unitPrice ?? line.unit_price ?? 0);
+    const vatRate = Number(line.vatRate ?? line.vat_rate ?? 21);
+    const subtotal = roundCurrency(Number.isFinite(quantity) && Number.isFinite(unitPrice) ? quantity * unitPrice : 0);
+    const vat = roundCurrency(subtotal * (Number.isFinite(vatRate) ? vatRate : 0) / 100);
+    return {
+      description: cleanText(line.description),
+      quantity: Number.isFinite(quantity) ? quantity : 1,
+      unitPrice: Number.isFinite(unitPrice) ? unitPrice : 0,
+      vatRate: Number.isFinite(vatRate) ? vatRate : 21,
+      subtotal,
+      vat,
+      total: roundCurrency(subtotal + vat),
+    };
+  }).filter((line) => line.description);
+}
+
+function calculateInvoiceTotals(lines = []) {
+  return lines.reduce((totals, line) => ({
+    subtotal: roundCurrency(totals.subtotal + (Number(line.subtotal) || 0)),
+    vat: roundCurrency(totals.vat + (Number(line.vat) || 0)),
+    total: roundCurrency(totals.total + (Number(line.total) || 0)),
+  }), { subtotal: 0, vat: 0, total: 0 });
+}
+
+function parseInvoiceContextFromNotes(notes = "") {
+  const marker = "Factuurregels:";
+  const text = cleanText(notes);
+  const index = text.lastIndexOf(marker);
+  if (index < 0) return {};
+  try {
+    const parsed = JSON.parse(text.slice(index + marker.length).trim());
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (error) {
+    return {};
+  }
+}
+
+function stripInvoiceContextFromNotes(notes = "") {
+  const marker = "\n---\nFactuurregels:";
+  const text = cleanText(notes);
+  const index = text.lastIndexOf(marker);
+  return index >= 0 ? text.slice(0, index).trim() : text;
+}
+
+function roundCurrency(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.round((number + Number.EPSILON) * 100) / 100 : 0;
 }
 
 function validateUuid(id, message) {
@@ -569,6 +716,12 @@ function normalizeInvoicePdfPath(value) {
 
 function normalizeInvoiceStatus(value) {
   const status = cleanText(value).toLowerCase();
+  if (status === "concept") return "draft";
+  if (status === "verzonden") return "sent";
+  if (status === "betaald") return "paid";
+  if (status === "verlopen") return "expired";
+  if (status === "geannuleerd") return "canceled";
+  if (status === "mislukt") return "failed";
   if (status === "overdue") return "expired";
   if (status === "cancelled") return "canceled";
   return status || "draft";
