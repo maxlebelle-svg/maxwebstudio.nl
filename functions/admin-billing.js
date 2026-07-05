@@ -354,7 +354,7 @@ async function fetchInvoices(supabaseUrl, serviceRoleKey) {
 
 function validateSubscriptionPayload(payload, profiles) {
   const id = cleanText(payload.id);
-  const profile = profileById(payload.profileId, profiles);
+  const profile = profileByPayload(payload, profiles);
   const billingCycle = cleanText(payload.billingCycle || "monthly").toLowerCase();
   const status = normalizeSubscriptionStatus(payload.status || "active");
 
@@ -380,7 +380,7 @@ function validateSubscriptionPayload(payload, profiles) {
 
 function validateInvoicePayload(payload, profiles) {
   const id = cleanText(payload.id);
-  const profile = profileById(payload.profileId || payload.customerId, profiles);
+  const profile = profileByPayload(payload, profiles);
   const status = normalizeInvoiceStatus(payload.status || "draft");
 
   if (id && !uuidPattern.test(id)) throwValidation("Kies een geldige factuur.");
@@ -415,12 +415,29 @@ function normalizeSubscriptionStatus(value) {
   return status;
 }
 
-function profileById(id, profiles) {
-  const profileId = cleanText(id);
+function profileByPayload(payload = {}, profiles = []) {
+  const candidates = [
+    payload.profileId,
+    payload.profile_id,
+    payload.customerProfileId,
+    payload.profileRecordId,
+    payload.customerId,
+    payload.customer_id,
+    payload.supabaseCustomerId,
+    payload._supabaseCustomerId,
+    payload.supabase_customer_id,
+  ].map(cleanText).filter(Boolean);
+  return profileByAnyId(candidates, profiles);
+}
+
+function profileByAnyId(ids = [], profiles = []) {
+  const candidates = Array.isArray(ids) ? ids : [ids];
+  const identitySet = new Set(candidates.map(cleanText).filter(Boolean));
+  if (!identitySet.size) return null;
   return profiles.find((profile) =>
-    profile.id === profileId
-    || profile.customerId === profileId
-    || profile.profileId === profileId
+    [profile.id, profile.customerId, profile.profileId, profile.authUserId]
+      .map(cleanText)
+      .some((value) => identitySet.has(value))
   ) || null;
 }
 
@@ -516,14 +533,32 @@ function normalizeCustomer(row) {
 
 function mergeBillingProfiles(profiles = [], customers = []) {
   const merged = [];
-  const seen = new Set();
+  const byKey = new Map();
   [...profiles, ...customers].forEach((profile) => {
-    const keys = [profile.id, profile.profileId, profile.customerId].filter(Boolean);
-    if (keys.some((key) => seen.has(key))) return;
-    keys.forEach((key) => seen.add(key));
-    merged.push(profile);
+    const keys = billingProfileKeys(profile);
+    const existing = keys.map((key) => byKey.get(key)).find(Boolean);
+    if (existing) {
+      mergeBillingProfile(existing, profile);
+      billingProfileKeys(existing).forEach((key) => byKey.set(key, existing));
+      return;
+    }
+    const next = { ...profile };
+    merged.push(next);
+    keys.forEach((key) => byKey.set(key, next));
   });
   return merged;
+}
+
+function billingProfileKeys(profile = {}) {
+  return [profile.id, profile.profileId, profile.customerId, profile.authUserId]
+    .map(cleanText)
+    .filter(Boolean);
+}
+
+function mergeBillingProfile(target, source = {}) {
+  ["id", "profileId", "customerId", "authUserId", "name", "company", "email", "package"].forEach((field) => {
+    if (!target[field] && source[field]) target[field] = source[field];
+  });
 }
 
 function normalizeSubscription(row) {

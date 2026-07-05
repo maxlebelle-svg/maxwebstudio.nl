@@ -348,7 +348,7 @@
           const invoiceTotals = totals(invoiceLines);
           const invoice = { id: invoiceId, invoiceNumber: `INV-DEMO-${demoJourneyId.slice(-6)}`, profileId: quote.profileId, customerId: quote.profileId, websiteId: quote.websiteId, projectId: quote.projectId, customerName: quote.customerName, customerCompany: quote.customerCompany, customerEmail: quote.customerEmail, customerPhone: quote.customerPhone, websiteName: quote.websiteName, websiteDomain: quote.websiteDomain, projectName: quote.projectName, sourceQuoteId: quote.id, sourceQuoteNumber: quote.quoteNumber, type: "Aanbetaling", title: `Aanbetaling ${pkg.label}`, status: "verzonden", invoiceDate: today(0), dueDate: today(14), lines: invoiceLines, subtotal: invoiceTotals.subtotal, vat: invoiceTotals.vat, total: invoiceTotals.total, amount: invoiceTotals.total, paymentLink: `/betalen.html?invoiceId=${invoiceId}`, mollieCheckoutUrl: `/betalen.html?invoiceId=${invoiceId}`, notes: "Aangemaakt vanuit demo klantreis.", ...demoMeta() };
           upsert(keys.invoices, invoice);
-          createEmail("factuur_klaar", "Je demo-factuur staat klaar", quote.customerEmail || "", `Factuur ${invoice.invoiceNumber} staat klaar met demo-betaallink.`, quote.profileId);
+          createEmail("factuur_klaar", "Je demo-factuur staat klaar", quote.customerEmail || "", `Factuur ${invoice.invoiceNumber} staat klaar met voorbeeld-betaalverzoek.`, quote.profileId);
           message.textContent = "Aanbetalingsfactuur aangemaakt. Open de betaallink om demo-betaling te markeren.";
           renderJourney();
         }

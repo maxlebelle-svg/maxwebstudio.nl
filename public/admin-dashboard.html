@@ -1996,7 +1996,7 @@
             <label for="invoice-date">Factuurdatum<input id="invoice-date" type="date" /></label>
             <label for="invoice-due">Vervaldatum<input id="invoice-due" type="date" /></label>
             <label for="invoice-paid-at">Betaaldatum<input id="invoice-paid-at" type="datetime-local" /></label>
-            <label class="admin-profile-wide" for="invoice-payment-link">Demo-betaallink<input id="invoice-payment-link" type="text" placeholder="/betalen.html?invoiceId=..." /></label>
+            <input id="invoice-payment-link" type="hidden" />
             <label class="admin-profile-wide" for="invoice-pdf">PDF pad<input id="invoice-pdf" type="text" placeholder="2026/klant/factuur-2026-001.pdf" /><small>Upload de PDF handmatig naar de private Supabase bucket invoice-pdfs en vul hier alleen het objectpad in.</small></label>
             <label class="admin-profile-wide" for="invoice-notes">Notities<textarea id="invoice-notes"></textarea></label>
           </div>
@@ -2355,7 +2355,7 @@
           { key: projectsStorageKey, label: "Projecten", description: "Onboarding en projectmanagement" },
           { key: filesStorageKey, label: "Bestanden", description: "Bestandsregistratie en links" },
           { key: quotesStorageKey, label: "Offertes", description: "Offertes en demo-offertelinks" },
-          { key: invoicesStorageKey, label: "Facturen", description: "Facturen en demo-betaallinks" },
+          { key: invoicesStorageKey, label: "Facturen", description: "Facturen en betaalverzoeken" },
           { key: subscriptionsStorageKey, label: "Abonnementen", description: "Onderhoudsabonnementen en recurring billing" },
           { key: crmTasksStorageKey, label: "CRM workflow", description: "Interne opvolgacties en taken" },
           { key: settingsStorageKey, label: "Instellingen", description: "Bedrijfs-, factuur- en integratie-instellingen" },
@@ -3735,7 +3735,7 @@
             dueDate: demoToday(14),
             paymentLink: invoicePaymentUrl(demoInvoiceId),
             lines: [{ description: "Aanbetaling Business Website", quantity: 1, unitPrice: 300, vatRate: 21 }],
-            notes: "Demo factuur met werkende demo-betaallink.",
+            notes: "Demo factuur met voorbeeld-betaalverzoek.",
             isDemo: true,
             demoScenarioId,
             createdAt: now,
