@@ -18350,6 +18350,7 @@
       const SALES_EMPLOYEE_FILTER_FALLBACKS = [
         { value: "max@maxwebstudio.nl", label: "Max Le Belle", aliases: ["max le belle"] },
         { value: "lisanne@maxwebstudio.nl", label: "Lisanne", aliases: ["lisanne", "lisanne post"] },
+        { value: "renzo@maxwebstudio.nl", label: "Renzo", aliases: ["renzo"] },
       ];
       const SALES_EMPLOYEE_FILTER_ROLES = new Set(["super_admin", "admin", "sales_manager", "sales_partner", "support", "designer", "developer"]);
       let leadfinderEmployeeFilterTokenMap = new Map();
@@ -18672,6 +18673,10 @@
         return String(value || "").trim().toLowerCase();
       }
 
+      function firstEmployeeField(...values) {
+        return values.map((value) => String(value || "").trim()).find(Boolean) || "";
+      }
+
       function addEmployeeFilterOption(options, candidate = {}) {
         const label = String(candidate.label || candidate.name || candidate.email || candidate.value || "").trim();
         const email = normalizeEmployeeFilterToken(candidate.email || (String(candidate.value || "").includes("@") ? candidate.value : ""));
@@ -18748,17 +18753,41 @@
       }
 
       function getLeadOwnerTokens(lead = {}) {
+        const meta = lead.metadata && typeof lead.metadata === "object" ? lead.metadata : {};
         return [
           lead.ownerAuthUserId,
           lead.ownerProfileId,
           lead.ownerEmail,
+          lead.medewerkerEmail,
+          lead.medewerker_email,
+          lead.employeeEmail,
+          lead.employee_email,
+          lead.assignedToEmail,
+          lead.assigned_to_email,
           lead.assignedUserEmail,
           lead.salesPartnerEmail,
+          lead.userEmail,
+          lead.user_email,
           lead.createdBy,
           lead.createdByEmail,
-          lead.metadata?.ownerAuthUserId,
-          lead.metadata?.ownerEmail,
-          lead.metadata?.createdByEmail,
+          meta.ownerAuthUserId,
+          meta.owner_auth_user_id,
+          meta.ownerEmail,
+          meta.owner_email,
+          meta.medewerkerEmail,
+          meta.medewerker_email,
+          meta.employeeEmail,
+          meta.employee_email,
+          meta.assignedToEmail,
+          meta.assigned_to_email,
+          meta.assignedUserEmail,
+          meta.assigned_user_email,
+          meta.salesPartnerEmail,
+          meta.sales_partner_email,
+          meta.userEmail,
+          meta.user_email,
+          meta.createdByEmail,
+          meta.created_by_email,
         ].map((value) => String(value || "").trim().toLowerCase()).filter(Boolean);
       }
 
@@ -18773,64 +18802,102 @@
       }
 
       function getLeadOwnerValue(lead = {}) {
-        return String(
-          lead.ownerEmail
-          || lead.assignedUserEmail
-          || lead.salesPartnerEmail
-          || lead.createdByEmail
-          || lead.ownerAuthUserId
-          || lead.createdBy
-          || lead.ownerName
-          || lead.assignedUserName
-          || lead.salesPartnerName
-          || lead.createdByName
-          || "onbekend"
-        ).trim().toLowerCase();
+        return normalizeLeadOwner(lead).normalizedKey;
       }
 
       function getLeadOwnerLabel(lead = {}) {
-        return String(
-          lead.ownerName
-          || lead.assignedUserName
-          || lead.salesPartnerName
-          || lead.createdByName
-          || lead.ownerEmail
-          || lead.assignedUserEmail
-          || lead.salesPartnerEmail
-          || lead.createdByEmail
-          || lead.ownerAuthUserId
-          || lead.createdBy
-          || "Onbekend"
-        ).trim();
+        return normalizeLeadOwner(lead).displayName || "Onbekend";
       }
 
-      function getLeadOwnerFilterValues(lead = {}) {
-        return new Set([
-          getLeadOwnerValue(lead),
-          getLeadOwnerLabel(lead),
-          ...getLeadOwnerTokens(lead),
-          lead.ownerName,
-          lead.assignedUserName,
-          lead.salesPartnerName,
-          lead.createdByName,
+      function normalizeLeadOwner(lead = {}) {
+        const meta = lead.metadata && typeof lead.metadata === "object" ? lead.metadata : {};
+        const email = firstEmployeeField(
           lead.ownerEmail,
+          lead.medewerkerEmail,
+          lead.medewerker_email,
+          lead.employeeEmail,
+          lead.employee_email,
+          lead.assignedToEmail,
+          lead.assigned_to_email,
           lead.assignedUserEmail,
           lead.salesPartnerEmail,
+          lead.userEmail,
+          lead.user_email,
           lead.createdByEmail,
+          meta.ownerEmail,
+          meta.owner_email,
+          meta.medewerkerEmail,
+          meta.medewerker_email,
+          meta.employeeEmail,
+          meta.employee_email,
+          meta.assignedToEmail,
+          meta.assigned_to_email,
+          meta.assignedUserEmail,
+          meta.assigned_user_email,
+          meta.salesPartnerEmail,
+          meta.sales_partner_email,
+          meta.userEmail,
+          meta.user_email,
+          meta.createdByEmail,
+          meta.created_by_email
+        ).toLowerCase();
+        const displayName = firstEmployeeField(
+          lead.ownerName,
+          lead.medewerker,
+          lead.employee,
+          lead.assignedToName,
+          lead.assigned_to_name,
+          lead.assignedUserName,
+          lead.salesPartnerName,
+          lead.userName,
+          lead.user_name,
+          lead.createdByName,
+          meta.ownerName,
+          meta.owner_name,
+          meta.medewerker,
+          meta.employee,
+          meta.assignedToName,
+          meta.assigned_to_name,
+          meta.assignedUserName,
+          meta.assigned_user_name,
+          meta.salesPartnerName,
+          meta.sales_partner_name,
+          meta.userName,
+          meta.user_name,
+          meta.createdByName,
+          meta.created_by_name,
+          email
+        );
+        const id = firstEmployeeField(
           lead.ownerAuthUserId,
           lead.ownerProfileId,
           lead.assignedTo,
           lead.createdBy,
-          lead.metadata?.ownerName,
-          lead.metadata?.assignedUserName,
-          lead.metadata?.salesPartnerName,
-          lead.metadata?.createdByName,
-          lead.metadata?.ownerEmail,
-          lead.metadata?.assignedUserEmail,
-          lead.metadata?.salesPartnerEmail,
-          lead.metadata?.createdByEmail,
-          lead.metadata?.assignedTo,
+          meta.ownerAuthUserId,
+          meta.owner_auth_user_id,
+          meta.ownerProfileId,
+          meta.owner_profile_id,
+          meta.assignedTo,
+          meta.assigned_to,
+          meta.createdBy,
+          meta.created_by
+        );
+        const tokens = new Set([
+          email,
+          displayName,
+          id,
+          ...getLeadOwnerTokens(lead),
         ].map(normalizeEmployeeFilterToken).filter(Boolean));
+        return {
+          displayName,
+          email,
+          normalizedKey: normalizeEmployeeFilterToken(email || displayName || id),
+          tokens,
+        };
+      }
+
+      function getLeadOwnerFilterValues(lead = {}) {
+        return normalizeLeadOwner(lead).tokens;
       }
 
       function getEmployeeFilterTokens(value) {
@@ -18846,10 +18913,10 @@
       function isLeadVisibleForCurrentUser(lead = {}, context = getLeadfinderUserContext()) {
         if (canLeadfinderRoleSeeAll(context.role)) return true;
         if (context.role !== "sales_partner") return true;
-        const userTokens = [context.userId, context.profileId, context.email]
+        const userTokens = [context.userId, context.profileId, context.email, context.name]
           .map((value) => String(value || "").trim().toLowerCase())
           .filter(Boolean);
-        const ownerTokens = getLeadOwnerTokens(lead);
+        const ownerTokens = [...getLeadOwnerFilterValues(lead)];
         if (ownerTokens.some((token) => userTokens.includes(token))) return true;
         return isLocalLead(lead) && !leadHasOwnershipData(lead);
       }
@@ -19703,11 +19770,21 @@
           });
         });
         const sorted = [...owners.values()].sort((a, b) => a.label.localeCompare(b.label, "nl"));
-        leadfinderEmployeeFilterTokenMap = new Map(sorted.map((option) => [option.value, option]));
+        leadfinderEmployeeFilterTokenMap = new Map();
+        sorted.forEach((option) => {
+          leadfinderEmployeeFilterTokenMap.set(option.value, option);
+          option.tokens.forEach((token) => leadfinderEmployeeFilterTokenMap.set(token, option));
+        });
         select.innerHTML = `<option value="">Alle medewerkers</option>${sorted.map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`).join("")}`;
         const selectedTokens = getEmployeeFilterTokens(selected);
         const matchingOption = sorted.find((option) => option.value === selected || selectedTokens.some((token) => option.tokens.has(token)));
         select.value = matchingOption?.value || "";
+        logLeadfinderDiagnostic("Leadfinder medewerkers gedetecteerd", {
+          detectedEmployees: sorted.map((option) => ({ value: option.value, label: option.label })),
+          selectedEmployeeFilter: select.value || "Alle medewerkers",
+          totalLeadsLoaded: leads.length,
+          source: leadfinderSourceStatus?.dataLayer || "local",
+        });
       }
 
       function clearManualLeadfinderFilters() {
@@ -19814,6 +19891,7 @@
           totalLeadsBeforeFrontendFilters: baseLeads.length,
           totalLeadsAfterFilters: filteredLeads.length,
           uniqueLeadOwnerEmails: uniqueLeadOwnerEmails(baseLeads),
+          detectedEmployees: [...leadfinderEmployeeFilterTokenMap.values()].filter((option, index, all) => all.findIndex((item) => item.value === option.value) === index).map((option) => option.label),
           dataSource: leadfinderSourceStatus?.dataLayer || "local",
           filters: { query, websiteStatus, callStatus, owner, industry, region, minScore, quickFilter: activeLeadfinderQuickFilter?.type || "" },
         });
@@ -20323,6 +20401,8 @@
       }
 
               function buildLeadPayloadFromForm(ownerContext) {
+                const ownerEmail = ownerContext.email || "";
+                const ownerName = ownerContext.name || ownerEmail || "";
                 return {
           companyName: leadfinderElements.company?.value.trim() || "",
           industry: leadfinderElements.industry?.value || "",
@@ -20340,17 +20420,35 @@
           googleMapsUrl: leadfinderElements.form?.dataset.googleMapsUrl || "",
           ownerAuthUserId: ownerContext.userId,
           ownerProfileId: ownerContext.profileId,
-          ownerEmail: ownerContext.email,
-          ownerName: ownerContext.name,
-          salesPartnerEmail: ownerContext.role === "sales_partner" ? ownerContext.email : "",
-          salesPartnerName: ownerContext.role === "sales_partner" ? ownerContext.name : "",
+          ownerEmail,
+          ownerName,
+          medewerker: ownerName,
+          medewerkerEmail: ownerEmail,
+          employee: ownerName,
+          employeeEmail: ownerEmail,
+          assignedUserEmail: ownerEmail,
+          assignedUserName: ownerName,
+          assignedToEmail: ownerEmail,
+          assignedToName: ownerName,
+          userEmail: ownerEmail,
+          userName: ownerName,
+          salesPartnerEmail: ownerContext.role === "sales_partner" ? ownerEmail : "",
+          salesPartnerName: ownerContext.role === "sales_partner" ? ownerName : "",
           createdBy: ownerContext.userId,
-          createdByEmail: ownerContext.email,
-          createdByName: ownerContext.name,
+          createdByEmail: ownerEmail,
+          createdByName: ownerName,
           metadata: {
             createdFrom: "admin-dashboard-leadfinder",
             createdByRole: ownerContext.role,
-            createdByEmail: ownerContext.email,
+            createdByEmail: ownerEmail,
+            medewerker: ownerName,
+            medewerkerEmail: ownerEmail,
+            employee: ownerName,
+            employeeEmail: ownerEmail,
+            assignedToEmail: ownerEmail,
+            assignedToName: ownerName,
+            userEmail: ownerEmail,
+            userName: ownerName,
           },
                 };
               }
