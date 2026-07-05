@@ -10640,6 +10640,12 @@
           return state.adminSession?.accessToken || state.adminToken || "";
         }
 
+        function getResolvedAdminBearer() {
+          const bearer = getAdminBearer();
+          if (bearer) return bearer;
+          return getAdminBearerToken();
+        }
+
         function updateAdminSessionUi() {
           const email = state.adminSession?.email || "";
           const loggedIn = Boolean(email && state.adminSession?.accessToken);
