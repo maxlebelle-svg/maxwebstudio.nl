@@ -18346,6 +18346,13 @@
       let googlePlacesResults = [];
       let googlePlacesPlace = null;
       let googlePlacesReady = false;
+      // TODO: replace this small Sales fallback with live user/team management once profiles are loaded server-side on this page.
+      const SALES_EMPLOYEE_FILTER_FALLBACKS = [
+        { value: "max@maxwebstudio.nl", label: "Max Le Belle", aliases: ["max le belle"] },
+        { value: "lisanne@maxwebstudio.nl", label: "Lisanne", aliases: ["lisanne", "lisanne post"] },
+      ];
+      const SALES_EMPLOYEE_FILTER_ROLES = new Set(["super_admin", "admin", "sales_manager", "sales_partner", "support", "designer", "developer"]);
+      let leadfinderEmployeeFilterTokenMap = new Map();
 
       function escapeHtml(value) {
         return String(value || "").replace(/[&<>"']/g, (character) => ({
@@ -18661,6 +18668,59 @@
         }
       }
 
+      function normalizeEmployeeFilterToken(value) {
+        return String(value || "").trim().toLowerCase();
+      }
+
+      function addEmployeeFilterOption(options, candidate = {}) {
+        const label = String(candidate.label || candidate.name || candidate.email || candidate.value || "").trim();
+        const email = normalizeEmployeeFilterToken(candidate.email || (String(candidate.value || "").includes("@") ? candidate.value : ""));
+        const value = normalizeEmployeeFilterToken(email || candidate.value || label);
+        if (!value) return;
+        const tokens = new Set([
+          value,
+          email,
+          normalizeEmployeeFilterToken(candidate.id),
+          normalizeEmployeeFilterToken(candidate.authUserId || candidate.auth_user_id || candidate.userId),
+          normalizeEmployeeFilterToken(candidate.profileId || candidate.id),
+          normalizeEmployeeFilterToken(candidate.name),
+          normalizeEmployeeFilterToken(label),
+          ...(Array.isArray(candidate.aliases) ? candidate.aliases.map(normalizeEmployeeFilterToken) : []),
+        ].filter(Boolean));
+        const existing = options.get(value) || [...options.values()].find((option) => [...tokens].some((token) => option.tokens.has(token)));
+        if (existing) {
+          tokens.forEach((token) => existing.tokens.add(token));
+          if ((!existing.label || existing.label === existing.value) && label) existing.label = label;
+          return;
+        }
+        options.set(value, {
+          value,
+          label: label || value,
+          tokens,
+        });
+      }
+
+      function readKnownSalesEmployees() {
+        const profiles = readLeadfinderJson("maxwebstudioProfiles", []) || [];
+        const profileEmployees = Array.isArray(profiles)
+          ? profiles
+            .filter((profile) => {
+              const role = normalizeEmployeeFilterToken(profile.role);
+              const status = normalizeEmployeeFilterToken(profile.status);
+              return SALES_EMPLOYEE_FILTER_ROLES.has(role) && !["disabled", "archived", "gearchiveerd"].includes(status);
+            })
+            .map((profile) => ({
+              id: profile.id,
+              authUserId: profile.authUserId || profile.auth_user_id || profile.userId,
+              email: profile.email,
+              name: profile.name,
+              label: profile.name || profile.email,
+              value: profile.email || profile.authUserId || profile.auth_user_id || profile.id || profile.name,
+            }))
+          : [];
+        return [...SALES_EMPLOYEE_FILTER_FALLBACKS, ...profileEmployees];
+      }
+
       function getLeadfinderUserContext() {
         const adminSession = readLeadfinderJson("mws_admin_supabase_session", {}) || {};
         const currentSession = readLeadfinderJson("maxwebstudioCurrentSession", {}) || {};
@@ -18742,6 +18802,41 @@
           || lead.createdBy
           || "Onbekend"
         ).trim();
+      }
+
+      function getLeadOwnerFilterValues(lead = {}) {
+        return new Set([
+          getLeadOwnerValue(lead),
+          getLeadOwnerLabel(lead),
+          ...getLeadOwnerTokens(lead),
+          lead.ownerName,
+          lead.assignedUserName,
+          lead.salesPartnerName,
+          lead.createdByName,
+          lead.ownerEmail,
+          lead.assignedUserEmail,
+          lead.salesPartnerEmail,
+          lead.createdByEmail,
+          lead.ownerAuthUserId,
+          lead.ownerProfileId,
+          lead.assignedTo,
+          lead.createdBy,
+          lead.metadata?.ownerName,
+          lead.metadata?.assignedUserName,
+          lead.metadata?.salesPartnerName,
+          lead.metadata?.createdByName,
+          lead.metadata?.ownerEmail,
+          lead.metadata?.assignedUserEmail,
+          lead.metadata?.salesPartnerEmail,
+          lead.metadata?.createdByEmail,
+          lead.metadata?.assignedTo,
+        ].map(normalizeEmployeeFilterToken).filter(Boolean));
+      }
+
+      function getEmployeeFilterTokens(value) {
+        const normalized = normalizeEmployeeFilterToken(value);
+        const option = leadfinderEmployeeFilterTokenMap.get(normalized);
+        return option ? [...option.tokens] : [normalized].filter(Boolean);
       }
 
       function leadHasOwnershipData(lead = {}) {
@@ -19596,15 +19691,23 @@
         if (!select) return;
         const selected = select.value;
         const owners = new Map();
+        readKnownSalesEmployees().forEach((employee) => addEmployeeFilterOption(owners, employee));
         leads.forEach((lead) => {
           const value = getLeadOwnerValue(lead);
           const label = getLeadOwnerLabel(lead);
           if (!value) return;
-          owners.set(value, label || value);
+          addEmployeeFilterOption(owners, {
+            value,
+            label: label || value,
+            aliases: [...getLeadOwnerFilterValues(lead)],
+          });
         });
-        const sorted = [...owners.entries()].sort((a, b) => a[1].localeCompare(b[1], "nl"));
-        select.innerHTML = `<option value="">Alle medewerkers</option>${sorted.map(([value, label]) => `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`).join("")}`;
-        select.value = owners.has(selected) ? selected : "";
+        const sorted = [...owners.values()].sort((a, b) => a.label.localeCompare(b.label, "nl"));
+        leadfinderEmployeeFilterTokenMap = new Map(sorted.map((option) => [option.value, option]));
+        select.innerHTML = `<option value="">Alle medewerkers</option>${sorted.map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`).join("")}`;
+        const selectedTokens = getEmployeeFilterTokens(selected);
+        const matchingOption = sorted.find((option) => option.value === selected || selectedTokens.some((token) => option.tokens.has(token)));
+        select.value = matchingOption?.value || "";
       }
 
       function clearManualLeadfinderFilters() {
@@ -19696,7 +19799,7 @@
             && leadMatchesQuickFilter(lead)
             && (!websiteStatus || lead.websiteStatus === websiteStatus)
             && (!callStatus || lead.callStatus === callStatus)
-            && (!owner || getLeadOwnerValue(lead) === owner)
+            && (!owner || getEmployeeFilterTokens(owner).some((token) => getLeadOwnerFilterValues(lead).has(token)))
             && (!industry || String(lead.industry).toLowerCase().includes(industry))
             && (!region || String(lead.region).toLowerCase().includes(region))
             && (!minScore || lead.leadScore >= minScore);
