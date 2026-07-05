@@ -27,7 +27,8 @@ const SUBSCRIPTION_FIELDS = [
   "failed_payment_count",
 ].join(",");
 const QUOTE_FIELDS = "id,customer_id,website_id,project_id,quote_number,title,amount,currency,status,accepted_at,created_at,updated_at";
-const INVOICE_FIELDS = "id,customer_id,website_id,project_id,invoice_number,title,amount,currency,status,due_date,paid_at,created_at,updated_at";
+const BILLING_INVOICE_FIELDS = "id,profile_id,customer_auth_user_id,invoice_number,title,amount,status,due_date,paid_at,mollie_payment_id,mollie_payment_status,created_at,updated_at";
+const INVOICE_FIELDS = "id,customer_id,website_id,project_id,invoice_number,title,subtotal,vat,total,status,due_date,paid_at,payment_link,created_at,updated_at";
 
 exports.handler = async (event) => {
   try {
@@ -57,7 +58,7 @@ exports.handler = async (event) => {
       fetchRows(supabaseUrl, serviceRoleKey, "projects", PROJECT_FIELDS, "updated_at.desc", 1000),
       fetchRows(supabaseUrl, serviceRoleKey, "quotes", QUOTE_FIELDS, "updated_at.desc", 1000),
       fetchRows(supabaseUrl, serviceRoleKey, "customer_subscriptions", SUBSCRIPTION_FIELDS, "updated_at.desc", 1000),
-      fetchRows(supabaseUrl, serviceRoleKey, "invoices", INVOICE_FIELDS, "created_at.desc", 1000),
+      fetchInvoices(supabaseUrl, serviceRoleKey),
     ]);
 
     const metrics = buildMetrics({ customers, leads, websites, projects, quotes, subscriptions, invoices, period, range });
@@ -91,9 +92,9 @@ function buildMetrics({ customers, leads, websites, projects, quotes, subscripti
 
   const activeSubscriptions = subscriptions.filter(isActiveSubscription);
   const periodInvoices = invoices.filter((invoice) => inRange(invoice.paid_at || invoice.created_at || invoice.updated_at, range));
-  const periodPaidInvoices = periodInvoices.filter((invoice) => normalize(invoice.status) === "paid");
+  const periodPaidInvoices = periodInvoices.filter(isPaidInvoice);
   const openInvoices = invoices.filter((invoice) => ["concept", "draft", "sent", "verzonden", "open", "pending", "verlopen", "overdue"].includes(normalize(invoice.status)));
-  const paidInvoices = invoices.filter((invoice) => normalize(invoice.status) === "paid");
+  const paidInvoices = invoices.filter(isPaidInvoice);
   const expiredInvoices = invoices.filter((invoice) => normalize(invoice.status) === "expired" || normalize(invoice.status) === "overdue");
   const openLeads = leads.filter(isOpenLead);
   const soldLeads = leads.filter(isSoldLead);
@@ -322,6 +323,46 @@ async function fetchRows(supabaseUrl, serviceRoleKey, table, fields, order, limi
   return Array.isArray(data) ? data : [];
 }
 
+async function fetchInvoices(supabaseUrl, serviceRoleKey) {
+  const [billingInvoices, centralInvoices] = await Promise.all([
+    fetchRows(supabaseUrl, serviceRoleKey, "customer_invoices", BILLING_INVOICE_FIELDS, "created_at.desc.nullslast", 1000),
+    fetchRows(supabaseUrl, serviceRoleKey, "invoices", INVOICE_FIELDS, "created_at.desc.nullslast", 1000),
+  ]);
+  return mergeInvoices([
+    ...billingInvoices.map((invoice) => normalizeBillingInvoice(invoice)),
+    ...centralInvoices.map((invoice) => normalizeCentralInvoice(invoice)),
+  ]);
+}
+
+function mergeInvoices(invoices) {
+  const result = [];
+  const seen = new Set();
+  invoices.forEach((invoice) => {
+    const key = cleanText(invoice.id) || cleanText(invoice.invoice_number).toLowerCase();
+    if (key && seen.has(key)) return;
+    if (key) seen.add(key);
+    result.push(invoice);
+  });
+  return result;
+}
+
+function normalizeBillingInvoice(invoice) {
+  return {
+    ...invoice,
+    customer_id: cleanText(invoice.customer_id || invoice.profile_id),
+    amount: amount(invoice.amount),
+    revenue_source: "customer_invoices",
+  };
+}
+
+function normalizeCentralInvoice(invoice) {
+  return {
+    ...invoice,
+    amount: invoiceAmount(invoice),
+    revenue_source: "invoices",
+  };
+}
+
 function periodRange(period) {
   if (period === "all") return null;
   const now = new Date();
@@ -378,7 +419,20 @@ function monthlyValue(subscription) {
 }
 
 function sumAmounts(rows) {
-  return rows.reduce((sum, row) => sum + amount(row.amount), 0);
+  return rows.reduce((sum, row) => sum + invoiceAmount(row), 0);
+}
+
+function invoiceAmount(invoice = {}) {
+  const directAmount = amount(invoice.amount);
+  if (directAmount) return directAmount;
+  const total = amount(invoice.total);
+  if (total) return total;
+  return amount(invoice.subtotal) + amount(invoice.vat);
+}
+
+function isPaidInvoice(invoice = {}) {
+  return ["paid", "betaald"].includes(normalize(invoice.status))
+    || ["paid", "betaald"].includes(normalize(invoice.mollie_payment_status));
 }
 
 function amount(value) {
