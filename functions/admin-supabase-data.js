@@ -129,24 +129,49 @@ exports.handler = async (event) => {
 
   try {
     if (event.httpMethod === "POST") {
-      if (moduleName !== "customers") {
-        return jsonResponse(405, { success: false, error: "Schrijven is alleen beschikbaar voor centrale customers." });
-      }
       const payload = parsePayload(event.body);
-      const saved = await saveCustomerRecord(supabaseUrl, serviceRoleKey, payload.customer || payload);
-      return jsonResponse(200, {
-        success: true,
-        module: moduleName,
-        mode: "supabase-write",
-        diagnostics: {
+      if (moduleName === "customers") {
+        const saved = await saveCustomerRecord(supabaseUrl, serviceRoleKey, payload.customer || payload);
+        const customer = mapCustomer(saved);
+        return jsonResponse(200, {
+          success: true,
           module: moduleName,
-          resolvedRole: adminCheck.admin?.role || "",
-          status: adminCheck.admin?.status || "",
-          reason: "authorized",
-        },
-        customer: mapCustomer(saved),
-        record: mapCustomer(saved),
-        refreshedAt: new Date().toISOString(),
+          mode: "supabase-write",
+          diagnostics: {
+            module: moduleName,
+            resolvedRole: adminCheck.admin?.role || "",
+            status: adminCheck.admin?.status || "",
+            reason: "authorized",
+          },
+          customer,
+          record: customer,
+          refreshedAt: new Date().toISOString(),
+        });
+      }
+      if (moduleName === "websites") {
+        const saved = await saveWebsiteRecord(supabaseUrl, serviceRoleKey, payload.website || payload);
+        const website = mapWebsite(saved);
+        return jsonResponse(200, {
+          success: true,
+          module: moduleName,
+          mode: "supabase-write",
+          diagnostics: {
+            module: moduleName,
+            resolvedRole: adminCheck.admin?.role || "",
+            status: adminCheck.admin?.status || "",
+            reason: "authorized",
+            endpoint: "admin-supabase-data?module=websites",
+            customerId: website.customerId,
+            websiteId: website.id,
+          },
+          website,
+          record: website,
+          refreshedAt: new Date().toISOString(),
+        });
+      }
+      return jsonResponse(405, {
+        success: false,
+        error: "Schrijven is nog niet beschikbaar voor deze centrale module.",
       });
     }
 
@@ -295,6 +320,67 @@ function customerWriteRecord(input = {}) {
   };
 }
 
+function normalizeWebsiteWriteStatus(value = "") {
+  const status = cleanText(value).toLowerCase();
+  if (status === "offline" || status === "archived" || status === "gearchiveerd") return "offline";
+  if (status === "maintenance" || status === "onderhoud") return "maintenance";
+  if (status === "concept" || status === "draft") return "draft";
+  if (status === "staging") return "staging";
+  return status || "online";
+}
+
+function normalizeDomain(value = "") {
+  return cleanText(value)
+    .replace(/^https?:\/\//i, "")
+    .replace(/^www\./i, "")
+    .replace(/\/.*$/, "")
+    .toLowerCase();
+}
+
+function normalizeUrl(value = "") {
+  const url = cleanText(value);
+  if (!url) return null;
+  return /^https?:\/\//i.test(url) ? url : `https://${url}`;
+}
+
+function websiteWriteRecord(input = {}) {
+  const customerId = cleanText(input.customerId || input.customer_id || input.profileId || input.profile_id);
+  const domain = normalizeDomain(input.domain || input.website || input.liveUrl);
+  const liveUrl = normalizeUrl(input.liveUrl || input.live_url || domain);
+  const name = cleanText(input.name || input.title || domain);
+  if (!customerId) throw Object.assign(new Error("Selecteer eerst een centrale klant voor deze website."), { status: 400 });
+  if (!name && !domain) throw Object.assign(new Error("Vul een websitenaam of domein in."), { status: 400 });
+  return {
+    customer_id: customerId,
+    profile_id: cleanText(input.profileId || input.profile_id || customerId) || null,
+    name: name || domain,
+    domain: domain || null,
+    live_url: liveUrl,
+    staging_url: normalizeUrl(input.stagingUrl || input.staging_url) || null,
+    status: normalizeWebsiteWriteStatus(input.status),
+    hosting_status: cleanText(input.hostingStatus || input.hosting_status) || null,
+    ssl_status: cleanText(input.sslStatus || input.ssl_status) || null,
+    hosting_package: cleanText(input.hostingPackage || input.hosting_package) || null,
+    care_package: cleanText(input.carePackage || input.care_package || input.package) || null,
+    last_deploy_at: cleanText(input.lastDeployAt || input.last_deploy_at) || null,
+    last_checked_at: cleanText(input.lastUpdateAt || input.lastCheckedAt || input.last_checked_at) || null,
+    notes: cleanText(input.notes) || null,
+    is_demo: Boolean(input.isDemo),
+    environment: cleanText(input.environment) || "production",
+    metadata: {
+      ...(input.metadata && typeof input.metadata === "object" ? input.metadata : {}),
+      githubRepoUrl: cleanText(input.githubRepoUrl || input.github_repo_url),
+      githubBranch: cleanText(input.githubBranch || input.github_branch || "main"),
+      netlifyProjectName: cleanText(input.netlifyProjectName || input.netlify_project_name),
+      netlifySiteId: cleanText(input.netlifySiteId || input.netlify_site_id),
+      openTasks: Number.isFinite(Number(input.openTasks)) ? Math.max(0, Number(input.openTasks)) : 0,
+      source: cleanText(input.source) || "admin_website_center",
+      lastWebsiteWriteContext: "admin_crm_website_center",
+    },
+    updated_at: new Date().toISOString(),
+  };
+}
+
 async function saveCustomerRecord(supabaseUrl, serviceRoleKey, input = {}) {
   const id = cleanText(input.id || input._supabaseCustomerId || input.supabaseCustomerId);
   const record = customerWriteRecord(input);
@@ -321,6 +407,40 @@ async function saveCustomerRecord(supabaseUrl, serviceRoleKey, input = {}) {
   }
   if (!response.ok) {
     const error = new Error(data?.message || data?.error || "Customer kon niet centraal worden opgeslagen.");
+    error.status = response.status;
+    error.code = data?.code || "";
+    error.details = data?.details || "";
+    throw error;
+  }
+  return Array.isArray(data) ? data[0] || {} : data || {};
+}
+
+async function saveWebsiteRecord(supabaseUrl, serviceRoleKey, input = {}) {
+  const id = cleanText(input.id || input._supabaseWebsiteId || input.supabaseWebsiteId);
+  const record = websiteWriteRecord(input);
+  const url = id
+    ? `${supabaseUrl}/rest/v1/websites?id=eq.${encodeURIComponent(id)}`
+    : `${supabaseUrl}/rest/v1/websites`;
+  const response = await fetch(url, {
+    method: id ? "PATCH" : "POST",
+    headers: {
+      ...restHeaders(serviceRoleKey),
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify(record),
+  });
+  const text = await response.text();
+  let data = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error("Supabase gaf geen geldige JSON-response terug.");
+    }
+  }
+  if (!response.ok) {
+    const error = new Error(data?.message || data?.error || "Website kon niet centraal worden opgeslagen.");
     error.status = response.status;
     error.code = data?.code || "";
     error.details = data?.details || "";
@@ -467,6 +587,7 @@ function mapCustomer(row = {}) {
 }
 
 function mapWebsite(row = {}) {
+  const meta = metadata(row);
   return {
     id: cleanText(row.id),
     customerId: cleanText(row.customer_id),
@@ -475,17 +596,23 @@ function mapWebsite(row = {}) {
     domain: cleanText(row.domain),
     liveUrl: cleanText(row.live_url),
     stagingUrl: cleanText(row.staging_url),
+    githubRepoUrl: cleanText(row.github_repo_url || meta.githubRepoUrl || meta.github_repo_url),
+    githubBranch: cleanText(row.github_branch || meta.githubBranch || meta.github_branch || "main"),
+    netlifyProjectName: cleanText(row.netlify_project_name || meta.netlifyProjectName || meta.netlify_project_name),
+    netlifySiteId: cleanText(row.netlify_site_id || meta.netlifySiteId || meta.netlify_site_id),
     status: cleanText(row.status || "online"),
     hostingStatus: cleanText(row.hosting_status),
     sslStatus: cleanText(row.ssl_status),
     hostingPackage: cleanText(row.hosting_package),
     carePackage: cleanText(row.care_package),
     lastDeployAt: cleanText(row.last_deploy_at),
+    lastUpdateAt: cleanText(row.last_checked_at || row.updated_at),
     lastCheckedAt: cleanText(row.last_checked_at),
+    openTasks: Number.isFinite(Number(meta.openTasks)) ? Math.max(0, Number(meta.openTasks)) : 0,
     notes: cleanText(row.notes),
     isDemo: Boolean(row.is_demo),
     environment: cleanText(row.environment || "production"),
-    metadata: metadata(row),
+    metadata: meta,
     createdAt: cleanText(row.created_at),
     updatedAt: cleanText(row.updated_at),
     _source: "supabase",
