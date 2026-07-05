@@ -1,0 +1,1032 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Website QA Scanner | Max Webstudio</title>
+    <meta name="description" content="Interne QA scanner van Max Webstudio voor websitecontrole voor oplevering." />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=20260705-qa-scanner" />
+    <style>
+    /* Website QA Scanner */
+    .qa-scanner-body .admin-crm-main {
+      gap: 24px;
+    }
+    
+    .qa-scanner-hero {
+      align-items: stretch;
+    }
+    
+    .qa-scan-card {
+      display: grid;
+      align-content: center;
+      gap: 14px;
+      min-width: min(100%, 460px);
+      padding: clamp(20px, 2.4vw, 30px);
+      border: 1px solid rgba(171, 196, 224, 0.16);
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.082), rgba(255, 255, 255, 0.036)),
+        rgba(5, 18, 32, 0.72);
+      box-shadow: 0 24px 70px rgba(0, 8, 18, 0.3);
+    }
+    
+    .qa-scan-card label {
+      color: #f8fbff;
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    
+    .qa-url-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+    }
+    
+    .qa-url-row input {
+      min-height: 54px;
+      width: 100%;
+      border: 1px solid rgba(171, 196, 224, 0.16);
+      border-radius: 8px;
+      color: #f8fbff;
+      background: rgba(7, 18, 30, 0.82);
+      font: 800 15px/1 Inter, system-ui, sans-serif;
+    }
+    
+    .qa-url-row input::placeholder {
+      color: rgba(226, 236, 248, 0.46);
+    }
+    
+    .qa-scan-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    
+    .qa-scan-meta span {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 0 10px;
+      border: 1px solid rgba(171, 196, 224, 0.14);
+      border-radius: 8px;
+      color: rgba(226, 236, 248, 0.78);
+      background: rgba(255, 255, 255, 0.045);
+      font-size: 12px;
+      font-weight: 900;
+    }
+    
+    .qa-loading-panel,
+    .qa-empty-state,
+    .qa-report-shell,
+    .qa-checklist-panel,
+    .qa-recommendations-panel {
+      border: 1px solid var(--admin-page-line, rgba(171, 196, 224, 0.14));
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.052), rgba(255, 255, 255, 0.022)),
+        rgba(8, 20, 34, 0.76);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+    }
+    
+    .qa-loading-panel {
+      display: grid;
+      justify-items: center;
+      gap: 10px;
+      padding: 28px;
+      color: #f8fbff;
+      text-align: center;
+    }
+    
+    .qa-loading-panel[hidden],
+    .qa-empty-state[hidden],
+    .qa-report-shell[hidden],
+    .qa-toast[hidden] {
+      display: none;
+    }
+    
+    .qa-loading-panel small,
+    .qa-empty-state p,
+    .qa-report-url,
+    #qa-report-url {
+      color: rgba(226, 236, 248, 0.68);
+    }
+    
+    .qa-loading-spinner {
+      width: 34px;
+      height: 34px;
+      border: 3px solid rgba(96, 165, 250, 0.22);
+      border-top-color: #60a5fa;
+      border-radius: 50%;
+      animation: qa-spin 840ms linear infinite;
+    }
+    
+    .qa-empty-state {
+      padding: clamp(22px, 3vw, 38px);
+    }
+    
+    .qa-empty-state h2 {
+      max-width: 720px;
+      margin: 0 0 10px;
+      color: #f8fbff;
+      font-size: clamp(28px, 3vw, 46px);
+      line-height: 1;
+    }
+    
+    .qa-empty-state p:last-child {
+      max-width: 760px;
+      margin: 0;
+    }
+    
+    .qa-report-shell {
+      display: grid;
+      gap: 22px;
+      padding: clamp(18px, 2.6vw, 30px);
+    }
+    
+    .qa-report-topline {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: center;
+    }
+    
+    .qa-report-topline h2 {
+      margin: 0 0 8px;
+      color: #f8fbff;
+      font-size: clamp(30px, 3.4vw, 54px);
+      line-height: 0.98;
+    }
+    
+    .qa-score-card {
+      display: grid;
+      justify-items: center;
+      gap: 10px;
+      min-width: 156px;
+      padding: 18px;
+      border: 1px solid rgba(96, 165, 250, 0.18);
+      border-radius: 8px;
+      background: rgba(9, 24, 39, 0.78);
+    }
+    
+    .qa-score-ring {
+      --qa-score: 0deg;
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 118px;
+      height: 118px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at center, #0a1624 0 58%, transparent 60%),
+        conic-gradient(#22c55e var(--qa-score), rgba(148, 163, 184, 0.18) 0deg);
+    }
+    
+    .qa-score-ring strong {
+      color: #f8fbff;
+      font-size: 34px;
+      line-height: 1;
+    }
+    
+    .qa-score-ring span {
+      margin-top: 42px;
+      color: rgba(226, 236, 248, 0.62);
+      font-size: 12px;
+      font-weight: 900;
+      position: absolute;
+    }
+    
+    .qa-score-card small {
+      color: rgba(226, 236, 248, 0.78);
+      font-weight: 900;
+    }
+    
+    .qa-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    
+    .qa-category-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+    
+    .qa-category-card,
+    .qa-checklist-group {
+      display: grid;
+      gap: 12px;
+      min-width: 0;
+      padding: 18px;
+      border: 1px solid rgba(171, 196, 224, 0.13);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.035);
+    }
+    
+    .qa-category-card {
+      border-top: 3px solid rgba(148, 163, 184, 0.48);
+    }
+    
+    .qa-category-good {
+      border-top-color: #22c55e;
+    }
+    
+    .qa-category-warning {
+      border-top-color: #f59e0b;
+    }
+    
+    .qa-category-critical {
+      border-top-color: #ef4444;
+    }
+    
+    .qa-category-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    
+    .qa-category-card h3,
+    .qa-checklist-group h3 {
+      margin: 0;
+      color: #f8fbff;
+      font-size: 18px;
+      line-height: 1.15;
+    }
+    
+    .qa-category-card p {
+      margin: 0;
+      color: rgba(226, 236, 248, 0.72);
+      line-height: 1.55;
+    }
+    
+    .qa-category-card small {
+      color: rgba(226, 236, 248, 0.52);
+      font-weight: 900;
+    }
+    
+    .qa-status-badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 0 9px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 8px;
+      color: #e2ecf8;
+      background: rgba(148, 163, 184, 0.12);
+      font-size: 11px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    
+    .qa-status-good {
+      color: #bbf7d0;
+      border-color: rgba(34, 197, 94, 0.28);
+      background: rgba(34, 197, 94, 0.12);
+    }
+    
+    .qa-status-warning {
+      color: #fde68a;
+      border-color: rgba(245, 158, 11, 0.32);
+      background: rgba(245, 158, 11, 0.12);
+    }
+    
+    .qa-status-critical {
+      color: #fecaca;
+      border-color: rgba(239, 68, 68, 0.36);
+      background: rgba(239, 68, 68, 0.13);
+    }
+    
+    .qa-status-untested {
+      color: #cbd5e1;
+      border-color: rgba(148, 163, 184, 0.22);
+      background: rgba(148, 163, 184, 0.12);
+    }
+    
+    .qa-checklist-panel,
+    .qa-recommendations-panel {
+      display: grid;
+      gap: 18px;
+      padding: clamp(18px, 2vw, 24px);
+    }
+    
+    .qa-checklist-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+    
+    .qa-checklist-group ul,
+    .qa-recommendation-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    
+    .qa-checklist-group li {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      min-height: 34px;
+      color: rgba(226, 236, 248, 0.82);
+      font-weight: 750;
+    }
+    
+    .qa-check-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    
+    .qa-check-dot.qa-status-good {
+      background: #22c55e;
+    }
+    
+    .qa-check-dot.qa-status-warning {
+      background: #f59e0b;
+    }
+    
+    .qa-check-dot.qa-status-critical {
+      background: #ef4444;
+    }
+    
+    .qa-check-dot.qa-status-untested {
+      background: #94a3b8;
+    }
+    
+    .qa-recommendation-list li {
+      position: relative;
+      min-height: 46px;
+      padding: 13px 16px 13px 42px;
+      border: 1px solid rgba(245, 158, 11, 0.18);
+      border-radius: 8px;
+      color: rgba(255, 251, 235, 0.9);
+      background: rgba(245, 158, 11, 0.08);
+      font-weight: 850;
+    }
+    
+    .qa-recommendation-list li::before {
+      content: "!";
+      position: absolute;
+      top: 13px;
+      left: 16px;
+      display: grid;
+      place-items: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      color: #111827;
+      background: #fbbf24;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    
+    .qa-toast {
+      position: fixed;
+      right: clamp(16px, 3vw, 32px);
+      bottom: clamp(16px, 3vw, 32px);
+      z-index: 50;
+      max-width: min(360px, calc(100vw - 32px));
+      padding: 14px 16px;
+      border: 1px solid rgba(96, 165, 250, 0.24);
+      border-radius: 8px;
+      color: #f8fbff;
+      background: rgba(8, 20, 34, 0.94);
+      box-shadow: 0 18px 50px rgba(0, 8, 18, 0.34);
+      font-weight: 900;
+    }
+    
+    @keyframes qa-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    
+    @media (max-width: 1100px) {
+      .qa-url-row,
+      .qa-report-topline,
+      .qa-category-grid,
+      .qa-checklist-grid {
+        grid-template-columns: 1fr;
+      }
+    
+      .qa-score-card {
+        justify-items: start;
+      }
+    }
+    
+    @media (max-width: 680px) {
+      .qa-scanner-hero {
+        padding: 20px;
+      }
+    
+      .qa-url-row .button,
+      .qa-actions .button {
+        width: 100%;
+      }
+    
+      .qa-checklist-group li {
+        grid-template-columns: auto minmax(0, 1fr);
+      }
+    
+      .qa-checklist-group li .qa-status-badge {
+        grid-column: 2;
+        justify-self: start;
+      }
+    }
+    
+    </style>
+  </head>
+  <body class="admin-body qa-scanner-body">
+    <main class="admin-crm-shell">
+      <aside class="admin-sidebar" aria-label="Admin modules">
+        <a class="brand" href="admin-dashboard.html">
+          <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true">
+            <rect x="6" y="6" width="68" height="68" rx="18"></rect>
+            <path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path>
+            <path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path>
+          </svg>
+          <span>Max CRM</span>
+        </a>
+        <nav class="admin-sidebar-nav">
+          <span class="admin-nav-group">Main</span>
+          <a href="admin-dashboard.html">Dashboard</a>
+          <span class="admin-nav-group">Sales</span>
+          <a href="admin-sales.html">Leads</a>
+          <span class="admin-nav-group">Production</span>
+          <a href="admin-website-factory.html">Website Factory</a>
+          <a href="admin-ai-content-library.html">AI Content Library</a>
+          <a href="admin-brand-center.html">Brand Center</a>
+          <a class="is-active" href="admin-website-qa-scanner.html">QA Scanner</a>
+          <span class="admin-nav-group">Customers</span>
+          <a href="admin-klanten.html">Klanten</a>
+          <a href="admin-websites.html">Websites</a>
+          <a href="admin-projecten.html">Projecten</a>
+          <span class="admin-nav-group">Administration</span>
+          <a href="admin-offertes.html">Offertes</a>
+          <a href="admin-facturen.html">Facturen</a>
+          <span class="admin-nav-group">System</span>
+          <a href="admin-instellingen.html">Instellingen</a>
+        </nav>
+      </aside>
+
+      <div class="admin-crm-main">
+        <header class="admin-page-topbar" aria-label="Admin snel zoeken">
+          <label class="admin-page-search" for="qa-page-search">
+            <span class="sr-only">Zoeken</span>
+            <input id="qa-page-search" type="search" placeholder="Zoek in QA rapporten..." />
+            <kbd>QA</kbd>
+          </label>
+          <div class="admin-page-actions">
+            <a class="button secondary" href="admin-websites.html">Websites</a>
+            <a class="button primary" href="admin-website-factory.html">Website Factory</a>
+          </div>
+        </header>
+
+        <section class="admin-hero qa-scanner-hero">
+          <div class="admin-hero-copy">
+            <p class="section-kicker">Website QA Scanner</p>
+            <h1>Controleer of een klantwebsite verkoopklaar is.</h1>
+            <p>Scan de belangrijkste opleverpunten voor mobiel, desktop, SEO, toegankelijkheid, contentstructuur en performance voordat een site live of naar de klant gaat.</p>
+          </div>
+          <form class="qa-scan-card" id="qa-scan-form" novalidate>
+            <label for="qa-url-input">Website URL</label>
+            <div class="qa-url-row">
+              <input id="qa-url-input" name="websiteUrl" type="url" inputmode="url" autocomplete="url" placeholder="https://voorbeeld.nl" />
+              <button class="button primary" id="qa-start-button" type="submit">Start QA scan</button>
+            </div>
+            <p class="admin-form-message" id="qa-form-message" role="status"></p>
+            <div class="qa-scan-meta" aria-label="Scan voorbereiding">
+              <span>Mockscan actief</span>
+              <span>Lighthouse voorbereid</span>
+              <span>Geen live flows gekoppeld</span>
+            </div>
+          </form>
+        </section>
+
+        <section class="qa-loading-panel" id="qa-loading-panel" hidden aria-live="polite">
+          <span class="qa-loading-spinner" aria-hidden="true"></span>
+          <strong>QA scan wordt voorbereid...</strong>
+          <small>Mobiel, desktop, content en technische signalen worden samengevat.</small>
+        </section>
+
+        <section class="qa-empty-state" id="qa-empty-state">
+          <p class="section-kicker">Nog geen rapport</p>
+          <h2>Vul een URL in om de Website Quality Score te genereren.</h2>
+          <p>De huidige versie gebruikt demo-data, maar de code is opgezet zodat Lighthouse-resultaten later rechtstreeks in dezelfde rapportstructuur passen.</p>
+        </section>
+
+        <section class="qa-report-shell" id="qa-report-shell" hidden aria-label="Website QA rapport">
+          <div class="qa-report-topline">
+            <div>
+              <p class="section-kicker">QA Dashboard</p>
+              <h2 id="qa-report-title">Website Quality Report</h2>
+              <p id="qa-report-url"></p>
+            </div>
+            <div class="qa-score-card" aria-label="Website Quality Score">
+              <div class="qa-score-ring" id="qa-score-ring">
+                <strong id="qa-score-value">0</strong>
+                <span>/100</span>
+              </div>
+              <small id="qa-score-label">Niet getest</small>
+            </div>
+          </div>
+
+          <div class="qa-actions" aria-label="Rapport acties">
+            <button class="button secondary" id="qa-copy-report" type="button">Kopieer rapport</button>
+            <button class="button secondary" id="qa-download-json" type="button">Download rapport als JSON</button>
+            <button class="button primary" id="qa-mark-reviewed" type="button">Markeer als gecontroleerd</button>
+          </div>
+
+          <div class="qa-category-grid" id="qa-category-grid" aria-label="QA scorekaarten"></div>
+
+          <section class="qa-checklist-panel" aria-label="QA checklist">
+            <div class="admin-section-heading">
+              <div>
+                <p class="section-kicker">Checklist</p>
+                <h2>Opleverpunten per onderdeel</h2>
+              </div>
+            </div>
+            <div class="qa-checklist-grid" id="qa-checklist-grid"></div>
+          </section>
+
+          <section class="qa-recommendations-panel" aria-label="Aanbevolen verbeteringen">
+            <div class="admin-section-heading">
+              <div>
+                <p class="section-kicker">Actiepunten</p>
+                <h2>Aanbevolen verbeteringen</h2>
+              </div>
+              <span class="status-badge status-prepared" id="qa-reviewed-badge" hidden>Gecontroleerd</span>
+            </div>
+            <ul class="qa-recommendation-list" id="qa-recommendation-list"></ul>
+          </section>
+        </section>
+      </div>
+    </main>
+
+    <div class="qa-toast" id="qa-toast" role="status" aria-live="polite" hidden></div>
+
+    <script>
+      (() => {
+        "use strict";
+
+        const QA_STATUSES = {
+          good: "Goed",
+          warning: "Let op",
+          critical: "Kritiek",
+          untested: "Niet getest"
+        };
+
+        const state = {
+          currentResult: null,
+          isReviewed: false
+        };
+
+        const elements = {
+          form: document.getElementById("qa-scan-form"),
+          input: document.getElementById("qa-url-input"),
+          startButton: document.getElementById("qa-start-button"),
+          message: document.getElementById("qa-form-message"),
+          loadingPanel: document.getElementById("qa-loading-panel"),
+          emptyState: document.getElementById("qa-empty-state"),
+          reportShell: document.getElementById("qa-report-shell"),
+          reportTitle: document.getElementById("qa-report-title"),
+          reportUrl: document.getElementById("qa-report-url"),
+          scoreRing: document.getElementById("qa-score-ring"),
+          scoreValue: document.getElementById("qa-score-value"),
+          scoreLabel: document.getElementById("qa-score-label"),
+          categoryGrid: document.getElementById("qa-category-grid"),
+          checklistGrid: document.getElementById("qa-checklist-grid"),
+          recommendationList: document.getElementById("qa-recommendation-list"),
+          copyButton: document.getElementById("qa-copy-report"),
+          downloadButton: document.getElementById("qa-download-json"),
+          reviewedButton: document.getElementById("qa-mark-reviewed"),
+          reviewedBadge: document.getElementById("qa-reviewed-badge"),
+          toast: document.getElementById("qa-toast")
+        };
+
+        function normalizeUrl(value) {
+          const trimmedValue = value.trim();
+          if (!trimmedValue) return "";
+          return /^https?:\/\//i.test(trimmedValue) ? trimmedValue : `https://${trimmedValue}`;
+        }
+
+        function validateWebsiteUrl(value) {
+          const normalizedUrl = normalizeUrl(value);
+          if (!normalizedUrl) return { isValid: false, message: "Vul eerst een website-URL in." };
+
+          try {
+            const parsedUrl = new URL(normalizedUrl);
+            const hasValidProtocol = parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:";
+            const hasDomain = parsedUrl.hostname.includes(".") && parsedUrl.hostname.length >= 4;
+            if (!hasValidProtocol || !hasDomain) {
+              return { isValid: false, message: "Gebruik een geldige URL, bijvoorbeeld https://voorbeeld.nl." };
+            }
+            return { isValid: true, url: parsedUrl.href };
+          } catch (error) {
+            return { isValid: false, message: "Gebruik een geldige URL, bijvoorbeeld https://voorbeeld.nl." };
+          }
+        }
+
+        function setMessage(text, type = "info") {
+          elements.message.textContent = text;
+          elements.message.className = `admin-form-message ${type}`;
+        }
+
+        function setLoading(isLoading) {
+          elements.loadingPanel.hidden = !isLoading;
+          elements.startButton.disabled = isLoading;
+          elements.startButton.textContent = isLoading ? "Scannen..." : "Start QA scan";
+        }
+
+        function showToast(message) {
+          elements.toast.textContent = message;
+          elements.toast.hidden = false;
+          window.clearTimeout(showToast.timeoutId);
+          showToast.timeoutId = window.setTimeout(() => {
+            elements.toast.hidden = true;
+          }, 2800);
+        }
+
+        function createChecklistItem(label, status) {
+          return { label, status };
+        }
+
+        function collectQAChecks(rawResult) {
+          return rawResult.categories.map((category) => ({
+            ...category,
+            checks: category.checks.map((check) => createChecklistItem(check.label, check.status))
+          }));
+        }
+
+        function calculateQAScore(categories) {
+          const weights = { good: 100, warning: 62, critical: 24, untested: 48 };
+          const totalWeight = categories.reduce((total, category) => total + (category.weight || 1), 0);
+          const weightedScore = categories.reduce((total, category) => {
+            return total + (weights[category.status] || 0) * (category.weight || 1);
+          }, 0);
+          return Math.round(weightedScore / Math.max(totalWeight, 1));
+        }
+
+        function createMockQAResult(websiteUrl) {
+          const categories = [
+            {
+              id: "mobile",
+              label: "Mobiel",
+              status: "good",
+              weight: 1.2,
+              summary: "Responsive gedrag is stabiel op gangbare mobiele schermen.",
+              checks: [
+                createChecklistItem("Website werkt goed op mobiel", "good"),
+                createChecklistItem("CTA-knoppen zijn zichtbaar", "good"),
+                createChecklistItem("Navigatie werkt op mobiel", "good")
+              ]
+            },
+            {
+              id: "desktop",
+              label: "Desktop",
+              status: "good",
+              weight: 1,
+              summary: "Desktop layout oogt consistent en verkoopklaar.",
+              checks: [
+                createChecklistItem("Navigatie werkt op desktop", "good"),
+                createChecklistItem("Belangrijke content staat boven de vouw", "good")
+              ]
+            },
+            {
+              id: "contrast",
+              label: "Contrast",
+              status: "warning",
+              weight: 1,
+              summary: "Een opvallende knop verdient extra contrastcontrole.",
+              checks: [
+                createChecklistItem("Tekst is goed leesbaar", "good"),
+                createChecklistItem("Contrast is voldoende", "warning"),
+                createChecklistItem("Hero-knop blijft leesbaar", "warning")
+              ]
+            },
+            {
+              id: "speed",
+              label: "Snelheid",
+              status: "warning",
+              weight: 1.1,
+              summary: "De pagina voelt goed, maar media-optimalisatie kan scherper.",
+              checks: [
+                createChecklistItem("Pagina laadt snel genoeg", "warning"),
+                createChecklistItem("Afbeeldingen zijn niet onnodig zwaar", "warning")
+              ]
+            },
+            {
+              id: "seo",
+              label: "SEO",
+              status: "good",
+              weight: 1,
+              summary: "Basis SEO-signalen zijn aanwezig.",
+              checks: [
+                createChecklistItem("Meta title aanwezig", "good"),
+                createChecklistItem("Meta description aanwezig", "good"),
+                createChecklistItem("Pagina heeft een duidelijke indexeerbare structuur", "good")
+              ]
+            },
+            {
+              id: "accessibility",
+              label: "Toegankelijkheid",
+              status: "warning",
+              weight: 1,
+              summary: "De basis staat, maar labels en contrast moeten bij oplevering worden nagelopen.",
+              checks: [
+                createChecklistItem("Formulieren hebben herkenbare labels", "good"),
+                createChecklistItem("Focus states zijn zichtbaar", "warning")
+              ]
+            },
+            {
+              id: "links",
+              label: "Links",
+              status: "good",
+              weight: 0.9,
+              summary: "Geen demo-indicatie van kapotte links.",
+              checks: [
+                createChecklistItem("Geen kapotte links", "good"),
+                createChecklistItem("Belangrijke CTA-links werken", "good")
+              ]
+            },
+            {
+              id: "images",
+              label: "Afbeeldingen",
+              status: "warning",
+              weight: 0.9,
+              summary: "Enkele afbeeldingen kunnen kleiner worden opgeslagen.",
+              checks: [
+                createChecklistItem("Afbeeldingen zijn niet onnodig zwaar", "warning"),
+                createChecklistItem("Afbeeldingen hebben duidelijke verhoudingen", "good")
+              ]
+            },
+            {
+              id: "headings",
+              label: "Headings",
+              status: "critical",
+              weight: 1,
+              summary: "Controleer of er precies één H1 en een logische headingstructuur is.",
+              checks: [
+                createChecklistItem("Er is precies één H1", "critical"),
+                createChecklistItem("Heading-structuur loopt logisch op", "warning")
+              ]
+            },
+            {
+              id: "alt-text",
+              label: "Alt teksten",
+              status: "critical",
+              weight: 1,
+              summary: "Drie afbeeldingen missen vermoedelijk beschrijvende alt tekst.",
+              checks: [
+                createChecklistItem("Alle afbeeldingen hebben alt tekst", "critical"),
+                createChecklistItem("Decoratieve afbeeldingen zijn correct gemarkeerd", "warning")
+              ]
+            },
+            {
+              id: "performance",
+              label: "Performance",
+              status: "warning",
+              weight: 1.2,
+              summary: "Performance is acceptabel, met ruimte voor asset-optimalisatie.",
+              checks: [
+                createChecklistItem("Core performance indicatoren zijn acceptabel", "warning"),
+                createChecklistItem("Scripts blokkeren de eerste render niet onnodig", "good")
+              ]
+            }
+          ];
+
+          const normalizedCategories = collectQAChecks({ categories });
+
+          return {
+            scannedUrl: websiteUrl,
+            scannedAt: new Date().toISOString(),
+            source: "mock",
+            qualityScore: calculateQAScore(normalizedCategories),
+            categories: normalizedCategories,
+            recommendations: [
+              "Voeg alt tekst toe aan 3 afbeeldingen",
+              "Controleer contrast op de hero-knop",
+              "Verklein grote afbeeldingen",
+              "Controleer heading-structuur"
+            ]
+          };
+        }
+
+        async function futureLighthouseAdapter(websiteUrl) {
+          // Later: roep hier een server-side Lighthouse/API endpoint aan.
+          // Verwachte output: hetzelfde result-shape als createMockQAResult(),
+          // zodat renderQAReport(), calculateQAScore() en exportacties niet wijzigen.
+          return createMockQAResult(websiteUrl);
+        }
+
+        function createStatusBadge(status) {
+          const badge = document.createElement("span");
+          badge.className = `qa-status-badge qa-status-${status}`;
+          badge.textContent = QA_STATUSES[status] || QA_STATUSES.untested;
+          return badge;
+        }
+
+        function clearNode(node) {
+          while (node.firstChild) {
+            node.removeChild(node.firstChild);
+          }
+        }
+
+        function renderCategoryCard(category) {
+          const card = document.createElement("article");
+          card.className = `qa-category-card qa-category-${category.status}`;
+
+          const header = document.createElement("div");
+          header.className = "qa-category-header";
+
+          const title = document.createElement("h3");
+          title.textContent = category.label;
+
+          header.append(title, createStatusBadge(category.status));
+
+          const summary = document.createElement("p");
+          summary.textContent = category.summary;
+
+          const meta = document.createElement("small");
+          meta.textContent = `${category.checks.length} checks`;
+
+          card.append(header, summary, meta);
+          return card;
+        }
+
+        function renderChecklistGroup(category) {
+          const group = document.createElement("article");
+          group.className = "qa-checklist-group";
+
+          const title = document.createElement("h3");
+          title.textContent = category.label;
+
+          const list = document.createElement("ul");
+          category.checks.forEach((check) => {
+            const item = document.createElement("li");
+            const dot = document.createElement("span");
+            dot.className = `qa-check-dot qa-status-${check.status}`;
+            dot.setAttribute("aria-hidden", "true");
+            const text = document.createElement("span");
+            text.textContent = check.label;
+            const badge = createStatusBadge(check.status);
+            item.append(dot, text, badge);
+            list.appendChild(item);
+          });
+
+          group.append(title, list);
+          return group;
+        }
+
+        function renderRecommendations(recommendations) {
+          clearNode(elements.recommendationList);
+          recommendations.forEach((recommendation) => {
+            const item = document.createElement("li");
+            item.textContent = recommendation;
+            elements.recommendationList.appendChild(item);
+          });
+        }
+
+        function getScoreLabel(score) {
+          if (score >= 85) return "Goed";
+          if (score >= 65) return "Let op";
+          return "Kritiek";
+        }
+
+        function renderQAReport(result) {
+          state.currentResult = result;
+          state.isReviewed = false;
+
+          elements.emptyState.hidden = true;
+          elements.reportShell.hidden = false;
+          elements.reviewedBadge.hidden = true;
+          elements.reviewedButton.disabled = false;
+          elements.reviewedButton.textContent = "Markeer als gecontroleerd";
+          elements.reportTitle.textContent = "Website Quality Report";
+          elements.reportUrl.textContent = result.scannedUrl;
+          elements.scoreValue.textContent = String(result.qualityScore);
+          elements.scoreLabel.textContent = getScoreLabel(result.qualityScore);
+          elements.scoreRing.style.setProperty("--qa-score", `${result.qualityScore * 3.6}deg`);
+
+          clearNode(elements.categoryGrid);
+          result.categories.forEach((category) => {
+            elements.categoryGrid.appendChild(renderCategoryCard(category));
+          });
+
+          clearNode(elements.checklistGrid);
+          result.categories.forEach((category) => {
+            elements.checklistGrid.appendChild(renderChecklistGroup(category));
+          });
+
+          renderRecommendations(result.recommendations);
+        }
+
+        function buildReportText(result) {
+          const lines = [
+            "Website QA Rapport",
+            `URL: ${result.scannedUrl}`,
+            `Score: ${result.qualityScore}/100`,
+            `Scan: ${new Date(result.scannedAt).toLocaleString("nl-NL")}`,
+            "",
+            "Status per onderdeel:"
+          ];
+
+          result.categories.forEach((category) => {
+            lines.push(`- ${category.label}: ${QA_STATUSES[category.status] || QA_STATUSES.untested}`);
+          });
+
+          lines.push("", "Aanbevolen verbeteringen:");
+          result.recommendations.forEach((recommendation) => {
+            lines.push(`- ${recommendation}`);
+          });
+
+          return lines.join("\n");
+        }
+
+        async function copyReport() {
+          if (!state.currentResult) return;
+          const reportText = buildReportText(state.currentResult);
+          try {
+            if (navigator.clipboard?.writeText) {
+              await navigator.clipboard.writeText(reportText);
+            } else {
+              const textarea = document.createElement("textarea");
+              textarea.value = reportText;
+              textarea.setAttribute("readonly", "");
+              textarea.style.position = "fixed";
+              textarea.style.opacity = "0";
+              document.body.appendChild(textarea);
+              textarea.select();
+              document.execCommand("copy");
+              textarea.remove();
+            }
+            showToast("Rapport gekopieerd.");
+          } catch (error) {
+            showToast("Kopieren is niet gelukt.");
+          }
+        }
+
+        function downloadReportJson() {
+          if (!state.currentResult) return;
+          const blob = new Blob([JSON.stringify(state.currentResult, null, 2)], { type: "application/json" });
+          const downloadUrl = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          const host = new URL(state.currentResult.scannedUrl).hostname.replace(/[^a-z0-9.-]/gi, "-");
+          link.href = downloadUrl;
+          link.download = `website-qa-report-${host}.json`;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(downloadUrl);
+          showToast("JSON rapport gedownload.");
+        }
+
+        function markAsReviewed() {
+          if (!state.currentResult) return;
+          state.isReviewed = true;
+          elements.reviewedBadge.hidden = false;
+          elements.reviewedButton.disabled = true;
+          elements.reviewedButton.textContent = "Gecontroleerd";
+          showToast("Website gemarkeerd als gecontroleerd.");
+        }
+
+        async function handleScanSubmit(event) {
+          event.preventDefault();
+          const validation = validateWebsiteUrl(elements.input.value);
+          if (!validation.isValid) {
+            setMessage(validation.message, "error");
+            elements.input.focus();
+            return;
+          }
+
+          setMessage("", "info");
+          setLoading(true);
+          elements.reportShell.hidden = true;
+
+          window.setTimeout(async () => {
+            const result = await futureLighthouseAdapter(validation.url);
+            renderQAReport(result);
+            setLoading(false);
+            showToast("QA rapport staat klaar.");
+          }, 850);
+        }
+
+        elements.form.addEventListener("submit", handleScanSubmit);
+        elements.copyButton.addEventListener("click", copyReport);
+        elements.downloadButton.addEventListener("click", downloadReportJson);
+        elements.reviewedButton.addEventListener("click", markAsReviewed);
+      })();
+    </script>
+  </body>
+</html>
