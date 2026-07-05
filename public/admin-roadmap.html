@@ -1,0 +1,876 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Roadmap / Takenbord | Max CRM</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=20260705-roadmap" />
+    <style>
+      .roadmap-shell {
+        gap: 22px;
+      }
+
+      .roadmap-hero {
+        align-items: flex-start;
+      }
+
+      .roadmap-hero-actions,
+      .roadmap-toolbar,
+      .roadmap-meta-row,
+      .roadmap-card-footer,
+      .roadmap-card-badges,
+      .roadmap-dialog-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .roadmap-hero-actions {
+        justify-content: flex-end;
+      }
+
+      .roadmap-notice {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        min-height: 30px;
+        padding: 7px 11px;
+        border: 1px solid rgba(56, 189, 248, 0.28);
+        border-radius: 999px;
+        color: #bae6fd;
+        background: rgba(12, 74, 110, 0.28);
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .roadmap-summary {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .roadmap-summary-card {
+        min-height: 104px;
+        padding: 18px;
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        border-radius: 8px;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025)),
+          rgba(15, 23, 42, 0.72);
+        box-shadow: 0 18px 46px rgba(2, 8, 23, 0.22);
+      }
+
+      .roadmap-summary-card span,
+      .roadmap-card small,
+      .roadmap-card-meta span,
+      .roadmap-column-count,
+      .roadmap-empty,
+      .roadmap-dialog-meta {
+        color: rgba(226, 236, 248, 0.64);
+        font-size: 12px;
+        font-weight: 800;
+        line-height: 1.45;
+      }
+
+      .roadmap-summary-card strong {
+        display: block;
+        margin-top: 10px;
+        color: #f8fbff;
+        font-size: 28px;
+        line-height: 1;
+      }
+
+      .roadmap-toolbar-card {
+        padding: 18px;
+      }
+
+      .roadmap-toolbar {
+        display: grid;
+        grid-template-columns: minmax(240px, 1fr) 180px 190px auto;
+        align-items: end;
+      }
+
+      .roadmap-field {
+        display: grid;
+        gap: 7px;
+      }
+
+      .roadmap-field label {
+        color: rgba(226, 236, 248, 0.66);
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .roadmap-field input,
+      .roadmap-field select,
+      .roadmap-field textarea {
+        width: 100%;
+        min-height: 44px;
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        border-radius: 8px;
+        color: #f8fbff;
+        background: rgba(15, 23, 42, 0.76);
+      }
+
+      .roadmap-field textarea {
+        min-height: 92px;
+        resize: vertical;
+      }
+
+      .roadmap-board-wrap {
+        overflow-x: auto;
+        padding-bottom: 8px;
+      }
+
+      .roadmap-board {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(265px, 1fr));
+        gap: 14px;
+        min-width: 1380px;
+      }
+
+      .roadmap-column {
+        display: grid;
+        align-content: start;
+        gap: 12px;
+        min-height: 560px;
+        padding: 14px;
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        border-radius: 8px;
+        background: rgba(15, 23, 42, 0.52);
+      }
+
+      .roadmap-column-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-height: 34px;
+      }
+
+      .roadmap-column-header h2 {
+        margin: 0;
+        color: #f8fbff;
+        font-size: 15px;
+      }
+
+      .roadmap-column-count {
+        min-width: 30px;
+        padding: 5px 8px;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 999px;
+        text-align: center;
+        background: rgba(2, 8, 23, 0.38);
+      }
+
+      .roadmap-card {
+        display: grid;
+        gap: 12px;
+        width: 100%;
+        padding: 15px;
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        border-left: 4px solid rgba(56, 189, 248, 0.74);
+        border-radius: 8px;
+        color: inherit;
+        text-align: left;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.062), rgba(255, 255, 255, 0.018)),
+          rgba(15, 23, 42, 0.82);
+        box-shadow: 0 14px 34px rgba(2, 8, 23, 0.24);
+        cursor: pointer;
+      }
+
+      .roadmap-card:hover,
+      .roadmap-card:focus-visible {
+        border-color: rgba(96, 165, 250, 0.44);
+        outline: none;
+        transform: translateY(-1px);
+      }
+
+      .roadmap-card[data-priority="Laag"] {
+        border-left-color: #22c55e;
+      }
+
+      .roadmap-card[data-priority="Normaal"] {
+        border-left-color: #38bdf8;
+      }
+
+      .roadmap-card[data-priority="Hoog"] {
+        border-left-color: #f59e0b;
+      }
+
+      .roadmap-card[data-priority="Kritiek"] {
+        border-left-color: #f43f5e;
+      }
+
+      .roadmap-card-title {
+        display: grid;
+        gap: 5px;
+      }
+
+      .roadmap-card-title strong {
+        color: #f8fbff;
+        font-size: 15px;
+        line-height: 1.3;
+      }
+
+      .roadmap-card p {
+        margin: 0;
+        color: rgba(226, 236, 248, 0.72);
+        font-size: 13px;
+        line-height: 1.55;
+      }
+
+      .roadmap-badge {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        min-height: 26px;
+        padding: 5px 9px;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 999px;
+        color: rgba(226, 236, 248, 0.82);
+        background: rgba(2, 8, 23, 0.32);
+        font-size: 11px;
+        font-weight: 900;
+      }
+
+      .roadmap-badge[data-tone="green"] {
+        border-color: rgba(34, 197, 94, 0.34);
+        color: #bbf7d0;
+        background: rgba(22, 101, 52, 0.24);
+      }
+
+      .roadmap-badge[data-tone="blue"] {
+        border-color: rgba(56, 189, 248, 0.34);
+        color: #bae6fd;
+        background: rgba(12, 74, 110, 0.25);
+      }
+
+      .roadmap-badge[data-tone="amber"] {
+        border-color: rgba(245, 158, 11, 0.36);
+        color: #fde68a;
+        background: rgba(146, 64, 14, 0.25);
+      }
+
+      .roadmap-badge[data-tone="red"] {
+        border-color: rgba(244, 63, 94, 0.38);
+        color: #fecdd3;
+        background: rgba(136, 19, 55, 0.25);
+      }
+
+      .roadmap-card-meta {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 9px;
+      }
+
+      .roadmap-card-meta span {
+        display: grid;
+        gap: 3px;
+      }
+
+      .roadmap-card-meta strong {
+        color: rgba(248, 251, 255, 0.92);
+        font-size: 12px;
+      }
+
+      .roadmap-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        display: grid;
+        justify-items: end;
+        background: rgba(2, 8, 23, 0.68);
+        backdrop-filter: blur(10px);
+      }
+
+      .roadmap-modal[hidden] {
+        display: none;
+      }
+
+      .roadmap-panel {
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        gap: 16px;
+        width: min(520px, 100%);
+        min-height: 100%;
+        padding: 22px;
+        border-left: 1px solid rgba(148, 163, 184, 0.18);
+        background:
+          linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(2, 8, 23, 0.98)),
+          #0f172a;
+        box-shadow: -26px 0 70px rgba(2, 8, 23, 0.36);
+      }
+
+      .roadmap-panel-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 14px;
+      }
+
+      .roadmap-panel-header h2 {
+        margin: 0;
+        color: #f8fbff;
+        font-size: 24px;
+      }
+
+      .roadmap-panel-body {
+        display: grid;
+        align-content: start;
+        gap: 16px;
+        overflow-y: auto;
+        padding-right: 2px;
+      }
+
+      .roadmap-detail-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .roadmap-detail-item {
+        display: grid;
+        gap: 5px;
+        padding: 12px;
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        border-radius: 8px;
+        background: rgba(15, 23, 42, 0.58);
+      }
+
+      .roadmap-detail-item span {
+        color: rgba(226, 236, 248, 0.58);
+        font-size: 11px;
+        font-weight: 900;
+      }
+
+      .roadmap-detail-item strong {
+        color: #f8fbff;
+        font-size: 13px;
+      }
+
+      .roadmap-empty {
+        min-height: 86px;
+        padding: 18px 8px;
+        border: 1px dashed rgba(148, 163, 184, 0.22);
+        border-radius: 8px;
+        text-align: center;
+      }
+
+      @media (max-width: 1080px) {
+        .roadmap-summary {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .roadmap-toolbar {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .roadmap-summary,
+        .roadmap-toolbar,
+        .roadmap-detail-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .roadmap-hero-actions {
+          justify-content: flex-start;
+        }
+
+        .roadmap-board {
+          min-width: 1320px;
+        }
+
+        .roadmap-panel {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body class="admin-body">
+    <main class="admin-crm-shell">
+      <aside class="admin-sidebar" aria-label="Admin modules">
+        <a class="brand" href="admin-dashboard.html">
+          <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true">
+            <rect x="6" y="6" width="68" height="68" rx="18"></rect>
+            <path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path>
+            <path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path>
+          </svg>
+          <span>Max CRM</span>
+        </a>
+        <nav class="admin-sidebar-nav">
+          <span class="admin-nav-group">Main</span>
+          <a href="admin-dashboard.html">Dashboard</a>
+          <span class="admin-nav-group">Sales</span>
+          <a href="admin-sales.html">Leads</a>
+          <span class="admin-nav-group">Production</span>
+          <a href="admin-website-factory.html">Website Factory</a>
+          <a href="admin-ai-content-library.html">AI Content Library</a>
+          <a href="admin-assets.html">Asset Manager</a>
+          <a href="admin-seo-studio.html">SEO Studio</a>
+          <a href="admin-social-media-studio.html">Social Media Studio</a>
+          <a href="admin-brand-center.html">Brand Center</a>
+          <a href="admin-domain-center.html">Domein Center</a>
+          <a class="is-active" href="admin-roadmap.html">Roadmap / Takenbord</a>
+          <span class="admin-nav-group">Customers</span>
+          <a href="admin-klanten.html">Klanten</a>
+          <a href="admin-websites.html">Websites</a>
+          <a href="admin-projecten.html">Projecten</a>
+          <span class="admin-nav-group">Administration</span>
+          <a href="admin-offertes.html">Offertes</a>
+          <a href="admin-facturen.html">Facturen</a>
+          <a href="admin-email-studio.html">E-mail Studio</a>
+          <span class="admin-nav-group">System</span>
+          <a href="admin-instellingen.html">Instellingen</a>
+        </nav>
+      </aside>
+
+      <div class="admin-crm-main workflow-module-shell roadmap-shell">
+        <header class="admin-page-topbar" aria-label="Admin snel zoeken">
+          <label class="admin-page-search" for="admin-page-search">
+            <span class="sr-only">Zoeken</span>
+            <input id="admin-page-search" type="search" placeholder="Zoek in planning..." />
+            <kbd>⌘ K</kbd>
+          </label>
+          <div class="admin-page-actions">
+            <button class="admin-icon-button" type="button" aria-label="Meldingen">⌕</button>
+            <button class="button primary" id="topbar-new-task" type="button">Nieuwe taak</button>
+          </div>
+        </header>
+
+        <section class="admin-section admin-hero roadmap-hero">
+          <div class="admin-hero-copy">
+            <p class="section-kicker">Interne planning</p>
+            <h1>Roadmap / Takenbord</h1>
+            <p>Compact kanbanoverzicht voor ideeën, prioriteiten en productiewerk binnen Max Webstudio.</p>
+          </div>
+          <div class="roadmap-hero-actions">
+            <span class="roadmap-notice">Interne demo-planning - nog niet gekoppeld</span>
+            <button class="button primary" id="hero-new-task" type="button">Nieuwe taak</button>
+          </div>
+        </section>
+
+        <section class="roadmap-summary" id="roadmap-summary" aria-label="Roadmap samenvatting"></section>
+
+        <section class="admin-card roadmap-toolbar-card" aria-label="Roadmap filters">
+          <div class="roadmap-toolbar">
+            <div class="roadmap-field">
+              <label for="roadmap-search">Zoeken</label>
+              <input id="roadmap-search" type="search" placeholder="Zoek op titel, label of omschrijving..." autocomplete="off" />
+            </div>
+            <div class="roadmap-field">
+              <label for="roadmap-priority-filter">Prioriteit</label>
+              <select id="roadmap-priority-filter">
+                <option value="all">Alle prioriteiten</option>
+              </select>
+            </div>
+            <div class="roadmap-field">
+              <label for="roadmap-label-filter">Label</label>
+              <select id="roadmap-label-filter">
+                <option value="all">Alle labels</option>
+              </select>
+            </div>
+            <button class="button secondary" id="roadmap-reset-filters" type="button">Filters wissen</button>
+          </div>
+        </section>
+
+        <section class="roadmap-board-wrap" aria-label="Kanban bord">
+          <div class="roadmap-board" id="roadmap-board"></div>
+        </section>
+      </div>
+    </main>
+
+    <div class="roadmap-modal" id="roadmap-modal" hidden>
+      <section class="roadmap-panel" role="dialog" aria-modal="true" aria-labelledby="roadmap-modal-title">
+        <header class="roadmap-panel-header">
+          <div>
+            <p class="section-kicker" id="roadmap-modal-kicker">Taakdetails</p>
+            <h2 id="roadmap-modal-title">Taak</h2>
+            <p class="roadmap-dialog-meta" id="roadmap-modal-subtitle"></p>
+          </div>
+          <button class="admin-icon-button" id="roadmap-modal-close" type="button" aria-label="Sluiten">×</button>
+        </header>
+        <div class="roadmap-panel-body" id="roadmap-modal-body"></div>
+        <footer class="roadmap-dialog-actions">
+          <button class="button secondary" id="roadmap-modal-cancel" type="button">Sluiten</button>
+          <button class="button primary" id="roadmap-modal-save" type="button">Demo-taak toevoegen</button>
+        </footer>
+      </section>
+    </div>
+
+    <script>
+      (() => {
+        const columns = ["Ideeën", "Te doen", "Bezig", "Wachten", "Klaar"];
+        const priorities = ["Laag", "Normaal", "Hoog", "Kritiek"];
+        const labelTones = {
+          Sales: "green",
+          Website: "blue",
+          AI: "amber",
+          Klantportaal: "blue",
+          Admin: "red",
+        };
+        const priorityTones = {
+          Laag: "green",
+          Normaal: "blue",
+          Hoog: "amber",
+          Kritiek: "red",
+        };
+        const tasks = [
+          {
+            id: "website-factory",
+            title: "Website Factory verbeteren",
+            description: "Flow aanscherpen voor plan, preview, ZIP en overdracht naar productie.",
+            priority: "Hoog",
+            label: "Website",
+            status: "Bezig",
+            deadline: "Placeholder: sprint 2",
+            owner: "Placeholder: Max",
+          },
+          {
+            id: "ai-content-library",
+            title: "AI Content Library vullen",
+            description: "Demo prompts, sectorcontent en herbruikbare templates klaarzetten.",
+            priority: "Normaal",
+            label: "AI",
+            status: "Te doen",
+            deadline: "Placeholder: juli",
+            owner: "Placeholder: Content",
+          },
+          {
+            id: "brand-centre",
+            title: "Brand Centre voorbereiden",
+            description: "Merkassets, kleursets en exports logisch ordenen voor interne productie.",
+            priority: "Normaal",
+            label: "Admin",
+            status: "Ideeën",
+            deadline: "Placeholder: later",
+            owner: "Placeholder: Design",
+          },
+          {
+            id: "customer-onboarding",
+            title: "Klant Onboarding bouwen",
+            description: "Intake, activatie en eerste klanttaken verbinden in een eenvoudige ervaring.",
+            priority: "Kritiek",
+            label: "Klantportaal",
+            status: "Bezig",
+            deadline: "Placeholder: deze maand",
+            owner: "Placeholder: Product",
+          },
+          {
+            id: "domain-center-ui",
+            title: "Domein Center UI",
+            description: "Domeinen, DNS, SSL en e-mailinstellingen visueel bundelen.",
+            priority: "Hoog",
+            label: "Admin",
+            status: "Klaar",
+            deadline: "Placeholder: afgerond",
+            owner: "Placeholder: Max",
+          },
+          {
+            id: "website-qa-scanner",
+            title: "Website QA Scanner",
+            description: "Checklist voor performance, SEO, content en opleverkwaliteit ontwerpen.",
+            priority: "Hoog",
+            label: "Website",
+            status: "Wachten",
+            deadline: "Placeholder: review",
+            owner: "Placeholder: QA",
+          },
+          {
+            id: "seo-studio",
+            title: "SEO Studio",
+            description: "Keywordoverzicht, metadata en verbeterpunten per klantwebsite samenbrengen.",
+            priority: "Normaal",
+            label: "Sales",
+            status: "Te doen",
+            deadline: "Placeholder: Q3",
+            owner: "Placeholder: Marketing",
+          },
+          {
+            id: "email-studio",
+            title: "E-mail Studio",
+            description: "Templates en klantmails centraliseren voor verkoop en nazorg.",
+            priority: "Laag",
+            label: "Admin",
+            status: "Ideeën",
+            deadline: "Placeholder: backlog",
+            owner: "Placeholder: Support",
+          },
+        ];
+
+        const board = document.getElementById("roadmap-board");
+        const summary = document.getElementById("roadmap-summary");
+        const searchInput = document.getElementById("roadmap-search");
+        const adminSearchInput = document.getElementById("admin-page-search");
+        const priorityFilter = document.getElementById("roadmap-priority-filter");
+        const labelFilter = document.getElementById("roadmap-label-filter");
+        const resetFiltersButton = document.getElementById("roadmap-reset-filters");
+        const modal = document.getElementById("roadmap-modal");
+        const modalTitle = document.getElementById("roadmap-modal-title");
+        const modalKicker = document.getElementById("roadmap-modal-kicker");
+        const modalSubtitle = document.getElementById("roadmap-modal-subtitle");
+        const modalBody = document.getElementById("roadmap-modal-body");
+        const modalSave = document.getElementById("roadmap-modal-save");
+        let modalMode = "detail";
+
+        function appendTextElement(parent, tagName, text, className) {
+          const element = document.createElement(tagName);
+          if (className) element.className = className;
+          element.textContent = text;
+          parent.append(element);
+          return element;
+        }
+
+        function createBadge(text, tone) {
+          const badge = document.createElement("span");
+          badge.className = "roadmap-badge";
+          badge.dataset.tone = tone || "blue";
+          badge.textContent = text;
+          return badge;
+        }
+
+        function getFilteredTasks() {
+          const query = searchInput.value.trim().toLowerCase();
+          const selectedPriority = priorityFilter.value;
+          const selectedLabel = labelFilter.value;
+          return tasks.filter((task) => {
+            const matchesQuery = !query || [task.title, task.description, task.label, task.status, task.owner].join(" ").toLowerCase().includes(query);
+            const matchesPriority = selectedPriority === "all" || task.priority === selectedPriority;
+            const matchesLabel = selectedLabel === "all" || task.label === selectedLabel;
+            return matchesQuery && matchesPriority && matchesLabel;
+          });
+        }
+
+        function renderSummary() {
+          summary.replaceChildren();
+          const openTasks = tasks.filter((task) => task.status !== "Klaar").length;
+          const criticalTasks = tasks.filter((task) => task.priority === "Kritiek").length;
+          const waitingTasks = tasks.filter((task) => task.status === "Wachten").length;
+          const readyTasks = tasks.filter((task) => task.status === "Klaar").length;
+          [
+            ["Open taken", String(openTasks), "Nog in planning"],
+            ["Kritiek", String(criticalTasks), "Hoogste aandacht"],
+            ["Wachten", String(waitingTasks), "Geblokkeerd of afhankelijk"],
+            ["Klaar", String(readyTasks), "Afgerond in demo"],
+          ].forEach(([label, value, helper]) => {
+            const card = document.createElement("article");
+            card.className = "roadmap-summary-card";
+            appendTextElement(card, "span", label);
+            appendTextElement(card, "strong", value);
+            appendTextElement(card, "span", helper);
+            summary.append(card);
+          });
+        }
+
+        function renderBoard() {
+          board.replaceChildren();
+          const filteredTasks = getFilteredTasks();
+          columns.forEach((columnName) => {
+            const column = document.createElement("section");
+            column.className = "roadmap-column";
+            column.setAttribute("aria-label", columnName);
+
+            const header = document.createElement("header");
+            header.className = "roadmap-column-header";
+            appendTextElement(header, "h2", columnName);
+            appendTextElement(header, "span", String(filteredTasks.filter((task) => task.status === columnName).length), "roadmap-column-count");
+            column.append(header);
+
+            const columnTasks = filteredTasks.filter((task) => task.status === columnName);
+            if (!columnTasks.length) {
+              appendTextElement(column, "p", "Geen taken met deze filters.", "roadmap-empty");
+            }
+
+            columnTasks.forEach((task) => {
+              const card = document.createElement("button");
+              card.className = "roadmap-card";
+              card.type = "button";
+              card.dataset.taskId = task.id;
+              card.dataset.priority = task.priority;
+
+              const titleWrap = document.createElement("div");
+              titleWrap.className = "roadmap-card-title";
+              appendTextElement(titleWrap, "strong", task.title);
+              appendTextElement(titleWrap, "small", task.status);
+              card.append(titleWrap);
+              appendTextElement(card, "p", task.description);
+
+              const badges = document.createElement("div");
+              badges.className = "roadmap-card-badges";
+              badges.append(createBadge(task.priority, priorityTones[task.priority]), createBadge(task.label, labelTones[task.label]));
+              card.append(badges);
+
+              const meta = document.createElement("div");
+              meta.className = "roadmap-card-meta";
+              [
+                ["Deadline", task.deadline],
+                ["Verantwoordelijke", task.owner],
+              ].forEach(([label, value]) => {
+                const item = document.createElement("span");
+                appendTextElement(item, "span", label);
+                appendTextElement(item, "strong", value);
+                meta.append(item);
+              });
+              card.append(meta);
+
+              card.addEventListener("click", () => openTaskDetail(task));
+              column.append(card);
+            });
+            board.append(column);
+          });
+        }
+
+        function renderDetailRows(rows) {
+          const grid = document.createElement("div");
+          grid.className = "roadmap-detail-grid";
+          rows.forEach(([label, value]) => {
+            const item = document.createElement("div");
+            item.className = "roadmap-detail-item";
+            appendTextElement(item, "span", label);
+            appendTextElement(item, "strong", value);
+            grid.append(item);
+          });
+          return grid;
+        }
+
+        function openTaskDetail(task) {
+          modalMode = "detail";
+          modalKicker.textContent = "Taakdetails";
+          modalTitle.textContent = task.title;
+          modalSubtitle.textContent = "Interne demo-planning - nog niet gekoppeld.";
+          modalSave.hidden = true;
+          modalBody.replaceChildren();
+          appendTextElement(modalBody, "p", task.description, "roadmap-dialog-meta");
+          const badges = document.createElement("div");
+          badges.className = "roadmap-card-badges";
+          badges.append(createBadge(task.priority, priorityTones[task.priority]), createBadge(task.label, labelTones[task.label]), createBadge(task.status, "blue"));
+          modalBody.append(badges);
+          modalBody.append(
+            renderDetailRows([
+              ["Status", task.status],
+              ["Deadline", task.deadline],
+              ["Verantwoordelijke", task.owner],
+              ["Label", task.label],
+            ])
+          );
+          modal.hidden = false;
+        }
+
+        function createFormField(id, label, type, value, options) {
+          const wrapper = document.createElement("div");
+          wrapper.className = "roadmap-field";
+          const inputLabel = appendTextElement(wrapper, "label", label);
+          inputLabel.setAttribute("for", id);
+          const field = options ? document.createElement("select") : document.createElement(type === "textarea" ? "textarea" : "input");
+          field.id = id;
+          if (!options && type !== "textarea") field.type = type;
+          if (options) {
+            options.forEach((optionValue) => {
+              const option = document.createElement("option");
+              option.value = optionValue;
+              option.textContent = optionValue;
+              field.append(option);
+            });
+          }
+          field.value = value || "";
+          wrapper.append(field);
+          return wrapper;
+        }
+
+        function openNewTaskPanel() {
+          modalMode = "new";
+          modalKicker.textContent = "Nieuwe taak";
+          modalTitle.textContent = "Demo-taak toevoegen";
+          modalSubtitle.textContent = "Deze taak wordt alleen tijdelijk aan deze pagina toegevoegd.";
+          modalSave.hidden = false;
+          modalBody.replaceChildren();
+          modalBody.append(
+            createFormField("new-task-title", "Titel", "text", ""),
+            createFormField("new-task-description", "Korte omschrijving", "textarea", ""),
+            createFormField("new-task-priority", "Prioriteit", "select", "Normaal", priorities),
+            createFormField("new-task-label", "Label", "select", "Admin", Object.keys(labelTones)),
+            createFormField("new-task-status", "Status", "select", "Ideeën", columns),
+            createFormField("new-task-deadline", "Deadline placeholder", "text", "Placeholder: nader te bepalen"),
+            createFormField("new-task-owner", "Verantwoordelijke placeholder", "text", "Placeholder: team")
+          );
+          modal.hidden = false;
+          document.getElementById("new-task-title").focus();
+        }
+
+        function addDemoTask() {
+          if (modalMode !== "new") return;
+          const title = document.getElementById("new-task-title").value.trim() || "Nieuwe demo-taak";
+          const description = document.getElementById("new-task-description").value.trim() || "Nog te verfijnen demo-omschrijving.";
+          tasks.unshift({
+            id: `demo-task-${Date.now()}`,
+            title,
+            description,
+            priority: document.getElementById("new-task-priority").value,
+            label: document.getElementById("new-task-label").value,
+            status: document.getElementById("new-task-status").value,
+            deadline: document.getElementById("new-task-deadline").value.trim() || "Placeholder: nader te bepalen",
+            owner: document.getElementById("new-task-owner").value.trim() || "Placeholder: team",
+          });
+          closeModal();
+          renderSummary();
+          renderBoard();
+        }
+
+        function closeModal() {
+          modal.hidden = true;
+        }
+
+        function syncSearch(value) {
+          searchInput.value = value;
+          adminSearchInput.value = value;
+          renderBoard();
+        }
+
+        priorities.forEach((priority) => {
+          const option = document.createElement("option");
+          option.value = priority;
+          option.textContent = priority;
+          priorityFilter.append(option);
+        });
+        Object.keys(labelTones).forEach((label) => {
+          const option = document.createElement("option");
+          option.value = label;
+          option.textContent = label;
+          labelFilter.append(option);
+        });
+
+        searchInput.addEventListener("input", () => syncSearch(searchInput.value));
+        adminSearchInput.addEventListener("input", () => syncSearch(adminSearchInput.value));
+        priorityFilter.addEventListener("change", renderBoard);
+        labelFilter.addEventListener("change", renderBoard);
+        resetFiltersButton.addEventListener("click", () => {
+          priorityFilter.value = "all";
+          labelFilter.value = "all";
+          syncSearch("");
+        });
+        document.getElementById("hero-new-task").addEventListener("click", openNewTaskPanel);
+        document.getElementById("topbar-new-task").addEventListener("click", openNewTaskPanel);
+        document.getElementById("roadmap-modal-close").addEventListener("click", closeModal);
+        document.getElementById("roadmap-modal-cancel").addEventListener("click", closeModal);
+        modalSave.addEventListener("click", addDemoTask);
+        modal.addEventListener("click", (event) => {
+          if (event.target === modal) closeModal();
+        });
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape" && !modal.hidden) closeModal();
+        });
+
+        renderSummary();
+        renderBoard();
+      })();
+    </script>
+  </body>
+</html>
