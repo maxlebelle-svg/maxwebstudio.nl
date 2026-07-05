@@ -72,6 +72,8 @@ exports.handler = async (event) => {
   const file = previewPackage.files.find((item) => item.path === filePath) || previewPackage.files.find((item) => item.path === "index.html") || previewPackage.files[0];
   const content = file?.path?.endsWith(".html")
     ? rewritePreviewHtml(file?.content || "", id, token)
+    : file?.path?.endsWith(".css")
+      ? rewritePreviewAssetReferences(file?.content || "", id, token)
     : file?.content || "";
   return response(200, content || "<!doctype html><title>Preview</title><p>Previewpakket is leeg.</p>", {
     "Content-Type": contentTypeFor(file?.path),
@@ -97,15 +99,23 @@ function normalizePackage(value, row = {}) {
 
 function rewritePreviewHtml(html = "", id = "", token = "") {
   const assetUrl = (file) => `/.netlify/functions/demo-preview?id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}&file=${encodeURIComponent(file)}`;
-  return String(html || "")
+  return rewritePreviewAssetReferences(String(html || ""), id, token)
     .replaceAll('href="styles.css"', `href="${assetUrl("styles.css")}"`)
     .replaceAll('src="script.js"', `src="${assetUrl("script.js")}"`)
     .replace(/href="([^"#?]+\.html)"/g, (_match, file) => `href="${assetUrl(file)}"`);
 }
 
+function rewritePreviewAssetReferences(content = "", id = "", token = "") {
+  const assetUrl = (file) => `/.netlify/functions/demo-preview?id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}&file=${encodeURIComponent(file)}`;
+  return String(content || "")
+    .replace(/(src|href)="(assets\/[^"]+)"/g, (_match, attribute, file) => `${attribute}="${assetUrl(file)}"`)
+    .replace(/url\(["']?(assets\/[^"')]+)["']?\)/g, (_match, file) => `url("${assetUrl(file)}")`);
+}
+
 function prepareZipFiles(files = [], meta = {}) {
   const existing = Array.isArray(files) ? files : [];
   const hasReadme = existing.some((file) => file.path === "README.md");
+  const projectSlug = slugifyZipFolder(meta.businessName || "website-preview");
   const readme = [
     `# ${cleanText(meta.businessName) || "Demo preview"} preview V${Math.max(1, Number(meta.previewVersion || 1))}`,
     "",
@@ -118,16 +128,69 @@ function prepareZipFiles(files = [], meta = {}) {
     `Preview URL: ${cleanText(meta.previewUrl) || "-"}`,
     "",
     "Controleer de preview intern voordat deze naar de klant gaat.",
+    "",
+    "## Publicatie",
+    "- Rootbestanden zijn bedoeld voor preview en overdracht.",
+    "- live-upload/ bevat dezelfde publicatieklare sitebestanden.",
+    `- ${projectSlug}-live/ is een klantmap met dezelfde inhoud voor archief of handmatige upload.`,
+    "- Er wordt niets automatisch live gezet. Publiceer pas na menselijke controle.",
+  ].join("\n");
+  const checklist = [
+    `# Publicatiechecklist - ${cleanText(meta.businessName) || "Demo preview"}`,
+    "",
+    "Gebruik deze map pas nadat de preview is gecontroleerd.",
+    "",
+    "- [ ] Bedrijfsnaam klopt",
+    "- [ ] Contactgegevens kloppen",
+    "- [ ] Teksten passen bij de branche",
+    "- [ ] Afbeeldingen/visuals zijn akkoord",
+    "- [ ] Mobiel en desktop gecontroleerd",
+    "- [ ] Formulier/mailto gecontroleerd",
+    "- [ ] Sitemap, robots en .htaccess aanwezig",
+    "",
+    "Daarna kan de inhoud van live-upload/ handmatig naar hosting worden geplaatst.",
   ].join("\n");
   const filesWithReadme = hasReadme
     ? existing.map((file) => file.path === "README.md" ? { ...file, content: readme } : file)
     : [{ path: "README.md", content: readme }, ...existing];
-  const preferredOrder = ["README.md", "briefing.json", "index.html", "over-ons.html", "diensten.html", "projecten.html", "reviews.html", "contact.html", "offerte.html", "styles.css", "script.js", "assets-map.json"];
-  return [...filesWithReadme].sort((a, b) => {
+  const deployable = filesWithReadme.filter((file) => isDeployableSiteFile(file.path));
+  const duplicates = deployable.flatMap((file) => [
+    { path: `live-upload/${file.path}`, content: file.content },
+    { path: `${projectSlug}-live/${file.path}`, content: file.content },
+  ]);
+  const allFiles = [
+    ...filesWithReadme,
+    { path: "DEPLOYMENT_CHECKLIST.md", content: checklist },
+    ...duplicates,
+  ];
+  const uniqueFiles = Array.from(new Map(allFiles.map((file) => [file.path, file])).values());
+  const preferredOrder = ["README.md", "DEPLOYMENT_CHECKLIST.md", "briefing.json", "index.html", "over-ons.html", "diensten.html", "projecten.html", "reviews.html", "contact.html", "offerte.html", "styles.css", "script.js", "sitemap.xml", "robots.txt", ".htaccess", "assets-map.json"];
+  return uniqueFiles.sort((a, b) => {
     const left = preferredOrder.indexOf(a.path);
     const right = preferredOrder.indexOf(b.path);
-    return (left === -1 ? 999 : left) - (right === -1 ? 999 : right);
+    const order = (left === -1 ? 999 : left) - (right === -1 ? 999 : right);
+    return order || a.path.localeCompare(b.path);
   });
+}
+
+function isDeployableSiteFile(path = "") {
+  return path.startsWith("assets/")
+    || path.endsWith(".html")
+    || path.endsWith(".css")
+    || path.endsWith(".js")
+    || path.endsWith(".xml")
+    || path.endsWith(".txt")
+    || path === ".htaccess";
+}
+
+function slugifyZipFolder(value = "") {
+  return cleanText(value)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48) || "website-preview";
 }
 
 function previewUrlForRequest(event, id, token) {
@@ -266,6 +329,8 @@ function contentTypeFor(path = "") {
   if (path.endsWith(".css")) return "text/css; charset=utf-8";
   if (path.endsWith(".js")) return "application/javascript; charset=utf-8";
   if (path.endsWith(".json")) return "application/json; charset=utf-8";
+  if (path.endsWith(".svg")) return "image/svg+xml; charset=utf-8";
+  if (path.endsWith(".xml")) return "application/xml; charset=utf-8";
   if (path.endsWith(".txt") || path.endsWith(".md")) return "text/plain; charset=utf-8";
   return "text/html; charset=utf-8";
 }

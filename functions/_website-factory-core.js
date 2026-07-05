@@ -151,11 +151,17 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
   const lowInputWarning = inputSignals < 2;
   const templateSections = packageRules.sections;
   const pages = packageRules.pages;
+  const siteUrl = normalizeSiteUrl(websiteUrl, businessName);
+  const projectSlug = slugifySite(businessName || websiteUrl || "website-preview");
   const title = `${businessName} - ${industryProfile.label}`;
   const description = `${businessName} presenteert ${industryProfile.label.toLowerCase()} met een premium uitstraling, duidelijke actieknoppen en een route naar contact.`;
-  const html = renderHtml({ businessName, contactName, email, phone, websiteUrl, industry, industryProfile, services, benefits, processSteps, cta, colors, style, title, description, lowInputWarning, packageType, packageRules, heroImage });
+  const siteAssets = buildSiteAssets({ businessName, industryProfile, services, colors, heroImage, projectSlug });
+  const html = renderHtml({ businessName, contactName, email, phone, websiteUrl, siteUrl, industry, industryProfile, services, benefits, processSteps, cta, colors, style, title, description, lowInputWarning, packageType, packageRules, heroImage, siteAssets });
   const css = renderCss(colors);
-  const script = renderScript();
+  const script = renderScript({ businessName, email, services });
+  const sitemap = renderSitemap({ siteUrl, pages });
+  const robots = renderRobots({ siteUrl });
+  const htaccess = renderHtaccess();
   const briefingJson = {
     businessName,
     contactName,
@@ -165,6 +171,8 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     industry,
     industryProfile: industryProfile.key,
     industryProfileLabel: industryProfile.label,
+    projectSlug,
+    siteUrl,
     style,
     colors,
     services,
@@ -175,6 +183,7 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     packagePrice: packageRules.price,
     packageRules,
     heroImage,
+    localAssets: siteAssets.map(({ path, kind, service }) => ({ path, kind, service })),
     generatedPages: pages,
     generatedSections: templateSections,
     template: packageRules.template,
@@ -189,21 +198,21 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     version,
   };
   const assetsMap = {
-    logo: "text-brand",
+    logo: siteAssets.find((asset) => asset.kind === "logo")?.path || "text-brand",
     palette: colors,
     industryProfile: industryProfile.key,
     hero: {
-      type: "demo-image-library",
+      type: "generated-local-asset",
       promptReady: true,
       slug: heroImage.slug,
-      src: heroImage.src,
+      src: "assets/hero.svg",
       alt: heroImage.alt,
       subject: `${businessName} ${industry}`,
     },
-    serviceVisuals: services.map((service) => ({
+    serviceVisuals: services.map((service, index) => ({
       service,
-      type: "demo-image-library",
-      src: heroImage.src,
+      type: "generated-local-asset",
+      src: siteAssets.find((asset) => asset.service === service)?.path || `assets/service-${index + 1}.svg`,
       alt: `${service} door ${businessName}`,
     })),
     sectionVisuals: [
@@ -219,7 +228,7 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     { path: "index.html", content: html },
     ...pages.filter((page) => page !== "index.html").map((page) => ({
       path: page,
-      content: renderSubPage({ page, businessName, contactName, email, phone, websiteUrl, industry, industryProfile, services, benefits, processSteps, cta, colors, packageRules, heroImage }),
+      content: renderSubPage({ page, businessName, contactName, email, phone, websiteUrl, siteUrl, industry, industryProfile, services, benefits, processSteps, cta, colors, packageRules, heroImage, siteAssets }),
     })),
   ];
   const readme = [
@@ -253,6 +262,10 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
       ...contentFiles,
       { path: "styles.css", content: css },
       { path: "script.js", content: script },
+      { path: "sitemap.xml", content: sitemap },
+      { path: "robots.txt", content: robots },
+      { path: ".htaccess", content: htaccess },
+      ...siteAssets.map(({ path, content }) => ({ path, content })),
       { path: "assets-map.json", content: JSON.stringify(assetsMap, null, 2) },
       { path: "briefing.json", content: JSON.stringify(briefingJson, null, 2) },
       { path: "README.md", content: readme },
@@ -273,6 +286,8 @@ function runQualityCheck({ generatedPackage = {}, journey = {} }) {
   const serviceCardCount = (html.match(/class="[^"]*service-card/gi) || []).length;
   const benefitCount = (html.match(/class="[^"]*benefit-card/gi) || []).length;
   const htmlPageCount = files.filter((file) => file.path.endsWith(".html")).length;
+  const assetCount = files.filter((file) => file.path.startsWith("assets/")).length;
+  const hasFile = (path) => files.some((file) => file.path === path);
   const checks = [
     check("Hero aanwezig", /<header[\s\S]*class="[^"]*hero/i.test(html) || /<section[\s\S]*class="[^"]*hero/i.test(html), 10),
     check("Hero visual aanwezig", /class="[^"]*hero/i.test(html) && /<img[^>]+src=/i.test(html), 12),
@@ -300,6 +315,11 @@ function runQualityCheck({ generatedPackage = {}, journey = {} }) {
     check("Branche of diensten aanwezig", services.some((service) => html.toLowerCase().includes(String(service).toLowerCase())) || /branche|diensten/i.test(html), 8),
     check("Geen kale preview", css.length > 3500 && html.length > 6000, 10),
     check("CSS aanwezig", css.length > 1200, 6),
+    check("Lokale assets aanwezig", assetCount >= 4 && hasFile("assets/hero.svg") && hasFile("assets/logo.svg"), 10),
+    check("SEO pakket aanwezig", hasFile("sitemap.xml") && hasFile("robots.txt") && hasFile(".htaccess"), 8),
+    check("Favicon en social preview aanwezig", hasFile("assets/favicon.svg") && hasFile("assets/og-image.svg"), 7),
+    check("Aanvraagformulier werkt zonder backend", /requestForm/.test(script) && /mailto:/.test(script), 6),
+    check("Geen automatische live upload", !/ftp|sftp|netlify\s+deploy|fetch\(|XMLHttpRequest|PUT|POST/i.test(script), 10),
   ];
   const maxScore = checks.reduce((sum, item) => sum + item.weight, 0);
   const earned = checks.reduce((sum, item) => sum + (item.passed ? item.weight : 0), 0);
@@ -506,6 +526,107 @@ function normalizePackageType(value = "") {
   return "starter";
 }
 
+function slugifySite(value = "") {
+  return cleanText(value)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48) || "website-preview";
+}
+
+function normalizeSiteUrl(websiteUrl = "", businessName = "") {
+  const value = cleanText(websiteUrl);
+  if (/^https?:\/\//i.test(value)) return value.replace(/\/$/, "");
+  if (value && /^[a-z0-9.-]+\.[a-z]{2,}/i.test(value)) return `https://${value}`.replace(/\/$/, "");
+  return `https://${slugifySite(businessName)}.nl`;
+}
+
+function assetPath(siteAssets = [], kind = "", fallback = "") {
+  return siteAssets.find((asset) => asset.kind === kind)?.path || fallback;
+}
+
+function serviceAssetPath(siteAssets = [], service = "", fallback = "assets/hero.svg") {
+  return siteAssets.find((asset) => asset.kind === "service" && asset.service === service)?.path || fallback;
+}
+
+function buildSiteAssets({ businessName, industryProfile, services, colors, heroImage, projectSlug }) {
+  const palette = {
+    ink: colors.ink || "#111827",
+    brand: colors.brand || "#24382f",
+    accent: colors.accent || "#c99a45",
+    soft: colors.soft || "#f3efe8",
+    dark: colors.dark || colors.brand || "#1f332a",
+  };
+  const serviceAssets = services.slice(0, 6).map((service, index) => ({
+    path: `assets/service-${index + 1}-${slugifySite(service)}.svg`,
+    kind: "service",
+    service,
+    content: renderVisualSvg({
+      title: service,
+      subtitle: industryProfile.label,
+      colors: palette,
+      variant: index + 1,
+    }),
+  }));
+  return [
+    { path: "assets/logo.svg", kind: "logo", content: renderLogoSvg({ businessName, colors: palette }) },
+    { path: "assets/favicon.svg", kind: "favicon", content: renderFaviconSvg({ businessName, colors: palette }) },
+    { path: "assets/og-image.svg", kind: "og", content: renderOgSvg({ businessName, industryProfile, colors: palette }) },
+    {
+      path: "assets/hero.svg",
+      kind: "hero",
+      sourceSlug: heroImage.slug,
+      content: renderVisualSvg({
+        title: industryProfile.hero || businessName,
+        subtitle: businessName,
+        colors: palette,
+        variant: 0,
+        wide: true,
+      }),
+    },
+    ...serviceAssets,
+  ];
+}
+
+function renderLogoSvg({ businessName, colors }) {
+  const initials = cleanText(businessName).split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "MW";
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="${escapeHtml(businessName)} logo"><defs><linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop stop-color="${escapeHtml(colors.accent)}"/><stop offset="1" stop-color="${escapeHtml(colors.brand)}"/></linearGradient></defs><rect width="240" height="240" rx="18" fill="url(#g)"/><path d="M34 190V50h38l48 66 48-66h38v140h-38V109l-41 55h-14l-41-55v81z" fill="#fff"/></svg>`;
+}
+
+function renderFaviconSvg({ businessName, colors }) {
+  const initial = (cleanText(businessName)[0] || "M").toUpperCase();
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="${escapeHtml(colors.brand)}"/><text x="32" y="42" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="34" font-weight="900" fill="${escapeHtml(colors.accent)}">${escapeHtml(initial)}</text></svg>`;
+}
+
+function renderOgSvg({ businessName, industryProfile, colors }) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630"><defs><linearGradient id="bg" x1="0" x2="1"><stop stop-color="${escapeHtml(colors.dark)}"/><stop offset="1" stop-color="${escapeHtml(colors.brand)}"/></linearGradient></defs><rect width="1200" height="630" fill="url(#bg)"/><circle cx="1030" cy="110" r="240" fill="${escapeHtml(colors.accent)}" opacity=".2"/><text x="80" y="205" fill="${escapeHtml(colors.accent)}" font-family="Inter,Arial,sans-serif" font-size="34" font-weight="900" letter-spacing="5">${escapeHtml(industryProfile.label.toUpperCase())}</text><text x="80" y="340" fill="#fff" font-family="Inter,Arial,sans-serif" font-size="86" font-weight="900">${escapeHtml(businessName)}</text><text x="80" y="430" fill="rgba(255,255,255,.78)" font-family="Inter,Arial,sans-serif" font-size="42" font-weight="700">${escapeHtml(industryProfile.hero)}</text></svg>`;
+}
+
+function renderVisualSvg({ title, subtitle, colors, variant = 0, wide = false }) {
+  const width = wide ? 1600 : 900;
+  const height = wide ? 1100 : 700;
+  const shapes = [
+    `<rect x="${width * 0.48}" y="${height * 0.26}" width="${width * 0.38}" height="${height * 0.46}" fill="rgba(255,255,255,.17)"/><rect x="${width * 0.56}" y="${height * 0.36}" width="${width * 0.24}" height="${height * 0.26}" fill="rgba(0,0,0,.18)"/>`,
+    `<circle cx="${width * 0.72}" cy="${height * 0.35}" r="${height * 0.22}" fill="rgba(255,255,255,.16)"/><rect x="${width * 0.2}" y="${height * 0.48}" width="${width * 0.58}" height="${height * 0.18}" fill="rgba(0,0,0,.18)"/>`,
+    `<path d="M${width * 0.1} ${height * 0.68} L${width * 0.36} ${height * 0.36} L${width * 0.62} ${height * 0.68} Z" fill="rgba(255,255,255,.18)"/><path d="M${width * 0.42} ${height * 0.68} L${width * 0.68} ${height * 0.32} L${width * 0.92} ${height * 0.68} Z" fill="rgba(0,0,0,.14)"/>`,
+  ][variant % 3];
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(title)}"><defs><linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop stop-color="${escapeHtml(colors.dark)}"/><stop offset=".55" stop-color="${escapeHtml(colors.brand)}"/><stop offset="1" stop-color="${escapeHtml(colors.accent)}"/></linearGradient><radialGradient id="glow" cx="78%" cy="22%" r="55%"><stop stop-color="#fff" stop-opacity=".28"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="${width}" height="${height}" fill="url(#bg)"/><rect width="${width}" height="${height}" fill="url(#glow)"/><g opacity=".9">${shapes}</g><path d="M0 ${height * 0.82} C ${width * 0.25} ${height * 0.7}, ${width * 0.48} ${height}, ${width} ${height * 0.78} L ${width} ${height} L0 ${height}Z" fill="rgba(0,0,0,.25)"/><text x="${width * 0.075}" y="${height * 0.68}" fill="rgba(255,255,255,.76)" font-family="Inter,Arial,sans-serif" font-size="${wide ? 42 : 34}" font-weight="800">${escapeHtml(subtitle)}</text><text x="${width * 0.075}" y="${height * 0.76}" fill="#fff" font-family="Inter,Arial,sans-serif" font-size="${wide ? 72 : 56}" font-weight="950">${escapeHtml(title).slice(0, 42)}</text></svg>`;
+}
+
+function renderSitemap({ siteUrl, pages }) {
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${pages.map((page) => `  <url><loc>${escapeHtml(siteUrl)}/${page === "index.html" ? "" : page}</loc></url>`).join("\n")}\n</urlset>\n`;
+}
+
+function renderRobots({ siteUrl }) {
+  return `User-agent: *\nAllow: /\nSitemap: ${siteUrl}/sitemap.xml\n`;
+}
+
+function renderHtaccess() {
+  return `Options -Indexes\n<IfModule mod_rewrite.c>\nRewriteEngine On\nRewriteCond %{HTTPS} !=on\nRewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]\n</IfModule>\n<IfModule mod_headers.c>\nHeader set X-Content-Type-Options "nosniff"\nHeader set Referrer-Policy "strict-origin-when-cross-origin"\n</IfModule>\n`;
+}
+
 function navigationLinks(packageRules = PACKAGE_RULES.starter) {
   if (packageRules.navigation === "scroll") {
     return [
@@ -525,18 +646,23 @@ function navigationLinks(packageRules = PACKAGE_RULES.starter) {
   return links;
 }
 
-function renderHtml({ businessName, contactName, email, phone, websiteUrl, industry, industryProfile, services, benefits, processSteps, cta, colors, style, title, description, lowInputWarning, packageRules, heroImage }) {
+function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteUrl, industry, industryProfile, services, benefits, processSteps, cta, colors, style, title, description, lowInputWarning, packageRules, heroImage, siteAssets }) {
   const profile = industryProfile || resolveIndustryProfile({ industry, businessName });
   const navLinks = navigationLinks(packageRules).map((item) => `<a href="${escapeHtml(item.href)}">${escapeHtml(item.label)}</a>`).join("");
   const phoneHref = phone ? `tel:${phone.replace(/[^+\d]/g, "")}` : "#contact";
   const emailHref = email ? `mailto:${escapeHtml(email)}` : "#contact";
   const cityLine = extractLocationText(industry) || "uw regio";
+  const logoAsset = assetPath(siteAssets, "logo", "");
+  const faviconAsset = assetPath(siteAssets, "favicon", "");
+  const ogAsset = assetPath(siteAssets, "og", "");
+  const heroAsset = assetPath(siteAssets, "hero", heroImage.src);
   const serviceTiles = services.slice(0, packageRules.pages.length >= 7 ? 6 : 5).map((service, index) => `
-        <article class="project-tile service-card" style="--tile-image:url('${escapeHtml(heroImage.src)}')">
+        <a class="project-tile service-card" href="#portfolio" data-service="${escapeHtml(service)}">
+          <img src="${escapeHtml(serviceAssetPath(siteAssets, service, heroAsset))}" alt="${escapeHtml(service)} door ${escapeHtml(businessName)}" loading="lazy" />
           <span>${String(index + 1).padStart(2, "0")}</span>
           <h3>${escapeHtml(service)}</h3>
           <p>${escapeHtml(serviceText(service, profile))}</p>
-        </article>`).join("");
+        </a>`).join("");
   const benefitCards = benefits.map((benefit) => `
         <article class="benefit-card">
           <strong>${escapeHtml(benefit.title)}</strong>
@@ -559,7 +685,7 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, indus
           <p>De premium preview is voorbereid op projectcases, voor-na beelden en resultaatgerichte verhalen.</p>
         </div>
         <div class="gallery-grid">
-          ${services.slice(0, 4).map((service) => `<article style="--tile-image:url('${escapeHtml(heroImage.src)}')"><strong>${escapeHtml(service)}</strong></article>`).join("")}
+          ${services.slice(0, 4).map((service) => `<article><img src="${escapeHtml(serviceAssetPath(siteAssets, service, heroAsset))}" alt="${escapeHtml(service)}" loading="lazy" /><strong>${escapeHtml(service)}</strong></article>`).join("")}
         </div>
       </section>
       <section class="section-band premium-offer" id="offerte">
@@ -575,11 +701,31 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, indus
     <meta name="robots" content="noindex, nofollow" />
     <title>${escapeHtml(title)}</title>
     <meta name="description" content="${escapeHtml(description)}" />
+    <meta name="theme-color" content="${escapeHtml(colors.brand)}" />
+    <link rel="canonical" href="${escapeHtml(siteUrl)}" />
+    ${faviconAsset ? `<link rel="icon" href="${escapeHtml(faviconAsset)}" type="image/svg+xml" />` : ""}
+    ${logoAsset ? `<link rel="preload" href="${escapeHtml(logoAsset)}" as="image" />` : ""}
+    <link rel="preload" href="${escapeHtml(heroAsset)}" as="image" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="${escapeHtml(title)}" />
+    <meta property="og:description" content="${escapeHtml(description)}" />
+    <meta property="og:url" content="${escapeHtml(siteUrl)}" />
+    ${ogAsset ? `<meta property="og:image" content="${escapeHtml(siteUrl)}/${escapeHtml(ogAsset)}" />` : ""}
     <link rel="stylesheet" href="styles.css" />
+    <script type="application/ld+json">${JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "LocalBusiness",
+      name: businessName,
+      url: siteUrl,
+      telephone: phone || undefined,
+      email: email || undefined,
+      contactPoint: contactName ? { "@type": "ContactPoint", name: contactName, contactType: "customer service" } : undefined,
+      areaServed: cityLine,
+    }).replace(/</g, "\\u003c")}</script>
   </head>
-  <body style="--brand:${escapeHtml(colors.brand)};--accent:${escapeHtml(colors.accent)};--ink:${escapeHtml(colors.ink)};--soft:${escapeHtml(colors.soft)};--dark:${escapeHtml(colors.dark || colors.ink)};--hero-image:url('${escapeHtml(heroImage.src)}')">
+  <body style="--brand:${escapeHtml(colors.brand)};--accent:${escapeHtml(colors.accent)};--ink:${escapeHtml(colors.ink)};--soft:${escapeHtml(colors.soft)};--dark:${escapeHtml(colors.dark || colors.ink)}">
     <header class="site-header">
-      <a class="brand" href="#top">${escapeHtml(businessName)}</a>
+      <a class="brand" href="#top">${logoAsset ? `<img src="${escapeHtml(logoAsset)}" alt="${escapeHtml(businessName)} logo" />` : ""}<span>${escapeHtml(businessName)}</span></a>
       <nav aria-label="Hoofdnavigatie">
         ${navLinks}
       </nav>
@@ -588,7 +734,7 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, indus
     </header>
     <main id="top">
       <section class="hero">
-        <img src="${escapeHtml(heroImage.src)}" alt="${escapeHtml(heroImage.alt)}" />
+        <img src="${escapeHtml(heroAsset)}" alt="${escapeHtml(heroImage.alt)}" />
         <div class="hero-shade"></div>
         <div class="hero-copy">
           <span class="eyebrow">${escapeHtml(profile.eyebrow || style)}</span>
@@ -616,6 +762,15 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, indus
         <span class="eyebrow">Waarmee kunnen we helpen?</span>
         <h2>Kies uw project en bekijk verschillende oplossingen.</h2>
         <div class="service-grid">${serviceTiles}</div>
+      </section>
+
+      <section class="portfolio-panel section-band" id="portfolio" hidden>
+        <div>
+          <span class="eyebrow">Projectbeeld</span>
+          <h2 id="portfolioTitle">Bekijk de aanpak per dienst.</h2>
+          <p id="portfolioCopy">Kies hierboven een dienst om een passende projectpresentatie te tonen.</p>
+        </div>
+        <div class="portfolio-gallery" id="portfolioGallery"></div>
       </section>
 
       <section class="section-band benefits-section">
@@ -662,7 +817,7 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, indus
             <span>${escapeHtml(websiteLine)}</span>
           </div>
         </div>
-        <form class="preview-form" action="${emailHref}" method="get">
+        <form class="preview-form" id="requestForm" action="${emailHref}" method="get">
           <label>Naam<input name="naam" placeholder="Uw naam" /></label>
           <label>Telefoonnummer<input name="telefoon" placeholder="Bijv. 06 12345678" /></label>
           <label>E-mailadres<input name="email" placeholder="uw@email.nl" /></label>
@@ -680,7 +835,7 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, indus
 </html>`;
 }
 
-function renderSubPage({ page, businessName, contactName, email, phone, websiteUrl, industry, industryProfile, services, benefits, processSteps, cta, colors, packageRules, heroImage }) {
+function renderSubPage({ page, businessName, contactName, email, phone, websiteUrl, siteUrl, industry, industryProfile, services, benefits, processSteps, cta, colors, packageRules, heroImage, siteAssets }) {
   const titleMap = {
     "over-ons.html": "Over ons",
     "diensten.html": "Diensten",
@@ -691,23 +846,74 @@ function renderSubPage({ page, businessName, contactName, email, phone, websiteU
   };
   const title = titleMap[page] || "Pagina";
   const profile = industryProfile || resolveIndustryProfile({ industry, businessName });
+  const logoAsset = assetPath(siteAssets, "logo", "");
+  const faviconAsset = assetPath(siteAssets, "favicon", "");
+  const heroAsset = assetPath(siteAssets, "hero", heroImage.src);
   const body = page === "diensten.html"
-    ? services.map((service) => `<article class="service-card"><h3>${escapeHtml(service)}</h3><p>${escapeHtml(serviceText(service, profile))}</p></article>`).join("")
+    ? services.map((service) => `<article class="service-card"><img src="${escapeHtml(serviceAssetPath(siteAssets, service, heroAsset))}" alt="${escapeHtml(service)}" loading="lazy" /><h3>${escapeHtml(service)}</h3><p>${escapeHtml(serviceText(service, profile))}</p></article>`).join("")
     : page === "reviews.html"
       ? benefits.map((benefit) => `<article class="review-card"><strong>${escapeHtml(benefit.title)}</strong><p>${escapeHtml(benefit.text)}</p></article>`).join("")
       : page === "projecten.html"
         ? processSteps.map((step) => `<article class="service-card"><h3>${escapeHtml(step.title)}</h3><p>${escapeHtml(step.text)}</p></article>`).join("")
         : `<article class="service-card"><h3>${escapeHtml(title)}</h3><p>${escapeHtml(businessName)} presenteert hier extra informatie passend bij ${escapeHtml(packageRules.label)}.</p></article>`;
   const contact = [email ? `E-mail: ${email}` : "", phone ? `Telefoon: ${phone}` : ""].filter(Boolean).join(" | ");
-  return `<!doctype html><html lang="nl"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="robots" content="noindex,nofollow" /><title>${escapeHtml(title)} - ${escapeHtml(businessName)}</title><link rel="stylesheet" href="styles.css" /></head><body style="--brand:${escapeHtml(colors.brand)};--accent:${escapeHtml(colors.accent)};--ink:${escapeHtml(colors.ink)};--soft:${escapeHtml(colors.soft)};--dark:${escapeHtml(colors.dark || colors.ink)};--hero-image:url('${escapeHtml(heroImage.src)}')"><header class="site-header"><a class="brand" href="index.html">${escapeHtml(businessName)}</a><nav>${navigationLinks(packageRules).map((item) => `<a href="${escapeHtml(item.href)}">${escapeHtml(item.label)}</a>`).join("")}</nav><a class="nav-cta" href="contact.html">${escapeHtml(cta)}</a></header><main><section class="sub-hero"><img src="${escapeHtml(heroImage.src)}" alt="${escapeHtml(heroImage.alt)}" /><div><span class="eyebrow">${escapeHtml(packageRules.label)}</span><h1>${escapeHtml(title)}</h1><p>${escapeHtml(profile.intro)} ${escapeHtml(contactName)} kan deze pagina later aanvullen met echte cases, foto's en klantreacties.</p></div></section><section class="section-band section-heading"><div class="service-grid">${body}</div></section><section class="contact-section section-band"><div><span class="eyebrow">Contact</span><h2>${escapeHtml(cta)}</h2><p>${escapeHtml(contact || "Contactgegevens kunnen later worden aangevuld.")}</p><p>${escapeHtml(websiteUrl || "Website-informatie kan later worden aangevuld.")}</p></div><a class="button" href="${email ? `mailto:${escapeHtml(email)}` : "#"}">${escapeHtml(cta)}</a></section></main><footer class="site-footer"><strong>${escapeHtml(businessName)}</strong><span>${escapeHtml(packageRules.label)}</span></footer><script src="script.js"></script></body></html>`;
+  return `<!doctype html><html lang="nl"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="robots" content="noindex,nofollow" /><title>${escapeHtml(title)} - ${escapeHtml(businessName)}</title><meta name="description" content="${escapeHtml(title)} van ${escapeHtml(businessName)}." /><link rel="canonical" href="${escapeHtml(siteUrl)}/${escapeHtml(page)}" />${faviconAsset ? `<link rel="icon" href="${escapeHtml(faviconAsset)}" type="image/svg+xml" />` : ""}<link rel="stylesheet" href="styles.css" /></head><body style="--brand:${escapeHtml(colors.brand)};--accent:${escapeHtml(colors.accent)};--ink:${escapeHtml(colors.ink)};--soft:${escapeHtml(colors.soft)};--dark:${escapeHtml(colors.dark || colors.ink)}"><header class="site-header"><a class="brand" href="index.html">${logoAsset ? `<img src="${escapeHtml(logoAsset)}" alt="${escapeHtml(businessName)} logo" />` : ""}<span>${escapeHtml(businessName)}</span></a><nav>${navigationLinks(packageRules).map((item) => `<a href="${escapeHtml(item.href)}">${escapeHtml(item.label)}</a>`).join("")}</nav><a class="nav-cta" href="contact.html">${escapeHtml(cta)}</a></header><main><section class="sub-hero"><img src="${escapeHtml(heroAsset)}" alt="${escapeHtml(heroImage.alt)}" /><div><span class="eyebrow">${escapeHtml(packageRules.label)}</span><h1>${escapeHtml(title)}</h1><p>${escapeHtml(profile.intro)} ${escapeHtml(contactName)} kan deze pagina later aanvullen met echte cases, foto's en klantreacties.</p></div></section><section class="section-band section-heading"><div class="service-grid">${body}</div></section><section class="contact-section section-band"><div><span class="eyebrow">Contact</span><h2>${escapeHtml(cta)}</h2><p>${escapeHtml(contact || "Contactgegevens kunnen later worden aangevuld.")}</p><p>${escapeHtml(websiteUrl || "Website-informatie kan later worden aangevuld.")}</p></div><a class="button" href="${email ? `mailto:${escapeHtml(email)}` : "#"}">${escapeHtml(cta)}</a></section></main><footer class="site-footer"><strong>${escapeHtml(businessName)}</strong><span>${escapeHtml(packageRules.label)}</span></footer><script src="script.js"></script></body></html>`;
 }
 
 function renderCss() {
-  return `:root{color-scheme:light;--paper:#f5f1ea;--line:rgba(17,24,39,.14);--muted:#5f6673;--shadow:0 30px 90px rgba(17,24,39,.18)}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--paper);color:var(--ink)}a{color:inherit}.site-header{position:sticky;top:0;z-index:20;display:grid;grid-template-columns:auto 1fr auto auto;gap:28px;align-items:center;padding:20px clamp(22px,4vw,64px);color:#fff;background:linear-gradient(180deg,rgba(17,24,20,.84),rgba(17,24,20,.68));backdrop-filter:blur(18px)}.brand{text-decoration:none;font-size:20px;font-weight:900}.site-header nav{display:flex;justify-content:center;gap:28px}.site-header nav a,.nav-phone{text-decoration:none;font-size:15px;font-weight:850;color:rgba(255,255,255,.86)}.nav-cta{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 20px;border-radius:3px;background:var(--accent);color:#fff;text-decoration:none;font-weight:950}.section-band{width:min(1160px,calc(100% - 44px));margin:0 auto}.hero{position:relative;display:grid;align-items:center;min-height:calc(100vh - 86px);padding:clamp(64px,8vw,120px) clamp(22px,4vw,84px);overflow:hidden;color:#fff;background:#111}.hero>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.hero-shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.76),rgba(0,0,0,.42) 45%,rgba(0,0,0,.16)),linear-gradient(0deg,rgba(0,0,0,.38),rgba(0,0,0,.08))}.hero-copy{position:relative;z-index:1;max-width:860px}.eyebrow{display:block;margin-bottom:20px;color:var(--accent);font-size:13px;font-weight:950;letter-spacing:.06em;text-transform:uppercase}h1,h2,h3,p{letter-spacing:0}h1{max-width:920px;margin:0 0 24px;font-size:clamp(48px,7.4vw,104px);line-height:.94;font-weight:950}h2{max-width:850px;margin:0 0 22px;font-size:clamp(34px,5vw,66px);line-height:1;font-weight:950}h3{margin:0 0 10px;font-size:clamp(22px,2vw,30px);line-height:1.08}.hero p{max-width:760px;color:rgba(255,255,255,.88);font-size:clamp(19px,2vw,24px);line-height:1.6}.button{display:inline-flex;align-items:center;justify-content:center;min-height:54px;padding:15px 24px;border:1px solid transparent;border-radius:3px;background:var(--accent);color:#fff;text-decoration:none;font-weight:950;box-shadow:0 18px 42px color-mix(in srgb,var(--accent) 32%,transparent)}.button.secondary{border-color:rgba(255,255,255,.42);background:rgba(255,255,255,.08);box-shadow:none}.hero-actions,.hero-proof{display:flex;flex-wrap:wrap;gap:14px;margin-top:32px}.hero-proof{margin-top:54px}.hero-proof span{min-width:180px;padding:18px 22px;border-left:1px solid rgba(255,255,255,.28);background:rgba(17,24,39,.42);font-size:15px;font-weight:850;color:rgba(255,255,255,.78)}.hero-proof strong{display:block;color:#fff;font-size:28px}.contact-bar{position:relative;z-index:4;display:grid;grid-template-columns:repeat(3,1fr);width:min(1040px,calc(100% - 44px));margin:-44px auto 80px;background:rgba(255,255,255,.94);box-shadow:var(--shadow)}.contact-bar a{display:grid;gap:5px;min-height:96px;padding:26px 32px;text-decoration:none;border-right:1px solid var(--line)}.contact-bar a:nth-child(2){background:var(--accent);color:#fff}.contact-bar strong{font-size:22px}.contact-bar span{color:var(--muted);font-weight:800}.contact-bar a:nth-child(2) span{color:rgba(255,255,255,.88)}.services-section,.benefits-section,.reviews-section,.gallery-section,.premium-offer,.contact-section,.preview-note,.section-heading{padding:clamp(64px,7vw,110px) 0}.services-section h2{max-width:900px}.service-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:34px}.project-tile{position:relative;min-height:250px;display:flex;flex-direction:column;justify-content:flex-end;padding:20px;overflow:hidden;color:#fff;background-image:linear-gradient(0deg,rgba(0,0,0,.72),rgba(0,0,0,.08)),var(--tile-image);background-size:cover;background-position:center}.project-tile span{color:var(--accent);font-weight:950}.project-tile p{margin:0;color:rgba(255,255,255,.82);font-size:14px;line-height:1.5}.benefits-section{display:grid;grid-template-columns:.85fr 1.15fr;gap:44px}.benefits-section p,.contact-section p,.section-heading p,.premium-offer p{color:var(--muted);font-size:19px;line-height:1.7}.benefit-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}.benefit-card,.review-card,.preview-note,.company-card,.service-card:not(.project-tile){border:1px solid var(--line);background:#fff;box-shadow:0 22px 60px rgba(17,24,39,.07)}.benefit-card{padding:28px}.benefit-card strong{display:block;font-size:24px;margin-bottom:8px}.benefit-card p,.review-card p{margin:0;color:var(--muted);font-size:16px;line-height:1.65}.process-section{padding:clamp(76px,8vw,120px) 0;background:var(--dark);color:#fff}.process-section h2{color:#fff}.process-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:34px}.process-card{min-height:250px;padding:28px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.055)}.process-card span{display:block;margin-bottom:54px;color:var(--accent);font-weight:950}.process-card p{color:rgba(255,255,255,.72);font-size:16px;line-height:1.7}.reviews-section{display:grid;grid-template-columns:.8fr 1fr 1fr;gap:22px}.review-card{padding:32px}.review-card strong{display:block;font-size:26px;line-height:1.15;margin-bottom:22px}.gallery-section{display:grid;grid-template-columns:.75fr 1.25fr;gap:34px}.gallery-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}.gallery-grid article{min-height:220px;display:flex;align-items:flex-end;padding:22px;color:#fff;background-image:linear-gradient(0deg,rgba(0,0,0,.68),rgba(0,0,0,.06)),var(--tile-image);background-size:cover;background-position:center}.gallery-grid strong{font-size:26px}.premium-offer{border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.contact-section{display:grid;grid-template-columns:.88fr 1.12fr;gap:58px;align-items:start}.company-card{display:grid;gap:8px;margin-top:28px;padding:26px;border-top:5px solid var(--accent)}.company-card strong{font-size:32px}.preview-form{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;padding:34px;background:#fff;box-shadow:var(--shadow)}label{display:grid;gap:8px;font-weight:900}.wide{grid-column:1/-1}input,select,textarea{width:100%;min-height:54px;border:1px solid var(--line);background:var(--paper);padding:0 16px;font:inherit;font-weight:750;color:var(--ink)}textarea{min-height:150px;padding-top:14px;resize:vertical}button{min-height:56px;border:0;background:var(--accent);color:#fff;font:inherit;font-weight:950}.preview-form button,.preview-form small{grid-column:1/-1}.preview-form small{color:var(--muted)}.preview-note{padding:24px;margin-bottom:44px}.site-footer{display:flex;justify-content:space-between;gap:20px;padding:34px clamp(22px,4vw,64px);background:var(--dark);color:rgba(255,255,255,.72);font-weight:850}.site-footer strong{color:#fff}.sub-hero{position:relative;min-height:52vh;display:grid;align-items:end;padding:clamp(70px,8vw,120px) clamp(22px,5vw,86px);color:#fff;overflow:hidden;background:#111}.sub-hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.sub-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.72),rgba(0,0,0,.18))}.sub-hero>div{position:relative;z-index:1}.section-heading .service-grid{grid-template-columns:repeat(3,1fr)}.section-heading .service-card{padding:28px}@media(max-width:1100px){.service-grid{grid-template-columns:repeat(2,1fr)}.process-grid{grid-template-columns:repeat(2,1fr)}.site-header{grid-template-columns:1fr auto}.site-header nav,.nav-phone{display:none}}@media(max-width:760px){.hero{min-height:72vh}.contact-bar,.benefits-section,.reviews-section,.gallery-section,.contact-section{grid-template-columns:1fr}.service-grid,.benefit-grid,.process-grid,.gallery-grid,.section-heading .service-grid,.preview-form{grid-template-columns:1fr}.contact-bar{margin:0 auto 50px}.hero-proof span{width:100%}h1{font-size:clamp(42px,15vw,68px)}}`;
+  return `:root{color-scheme:light;--paper:#f5f1ea;--line:rgba(17,24,39,.14);--muted:#5f6673;--shadow:0 30px 90px rgba(17,24,39,.18)}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--paper);color:var(--ink)}a{color:inherit}.site-header{position:sticky;top:0;z-index:20;display:grid;grid-template-columns:auto 1fr auto auto;gap:28px;align-items:center;padding:20px clamp(22px,4vw,64px);color:#fff;background:linear-gradient(180deg,rgba(17,24,20,.84),rgba(17,24,20,.68));backdrop-filter:blur(18px)}.brand{display:flex;align-items:center;gap:14px;text-decoration:none;font-size:20px;font-weight:900}.brand img{width:54px;height:54px;object-fit:contain}.site-header nav{display:flex;justify-content:center;gap:28px}.site-header nav a,.nav-phone{text-decoration:none;font-size:15px;font-weight:850;color:rgba(255,255,255,.86)}.nav-cta{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 20px;border-radius:3px;background:var(--accent);color:#fff;text-decoration:none;font-weight:950}.section-band{width:min(1160px,calc(100% - 44px));margin:0 auto}.hero{position:relative;display:grid;align-items:center;min-height:calc(100vh - 86px);padding:clamp(64px,8vw,120px) clamp(22px,4vw,84px);overflow:hidden;color:#fff;background:#111}.hero>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.hero-shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.76),rgba(0,0,0,.42) 45%,rgba(0,0,0,.16)),linear-gradient(0deg,rgba(0,0,0,.38),rgba(0,0,0,.08))}.hero-copy{position:relative;z-index:1;max-width:860px}.eyebrow{display:block;margin-bottom:20px;color:var(--accent);font-size:13px;font-weight:950;letter-spacing:.06em;text-transform:uppercase}h1,h2,h3,p{letter-spacing:0}h1{max-width:920px;margin:0 0 24px;font-size:clamp(48px,7.4vw,104px);line-height:.94;font-weight:950}h2{max-width:850px;margin:0 0 22px;font-size:clamp(34px,5vw,66px);line-height:1;font-weight:950}h3{margin:0 0 10px;font-size:clamp(22px,2vw,30px);line-height:1.08}.hero p{max-width:760px;color:rgba(255,255,255,.88);font-size:clamp(19px,2vw,24px);line-height:1.6}.button{display:inline-flex;align-items:center;justify-content:center;min-height:54px;padding:15px 24px;border:1px solid transparent;border-radius:3px;background:var(--accent);color:#fff;text-decoration:none;font-weight:950;box-shadow:0 18px 42px color-mix(in srgb,var(--accent) 32%,transparent)}.button.secondary{border-color:rgba(255,255,255,.42);background:rgba(255,255,255,.08);box-shadow:none}.hero-actions,.hero-proof{display:flex;flex-wrap:wrap;gap:14px;margin-top:32px}.hero-proof{margin-top:54px}.hero-proof span{min-width:180px;padding:18px 22px;border-left:1px solid rgba(255,255,255,.28);background:rgba(17,24,39,.42);font-size:15px;font-weight:850;color:rgba(255,255,255,.78)}.hero-proof strong{display:block;color:#fff;font-size:28px}.contact-bar{position:relative;z-index:4;display:grid;grid-template-columns:repeat(3,1fr);width:min(1040px,calc(100% - 44px));margin:-44px auto 80px;background:rgba(255,255,255,.94);box-shadow:var(--shadow)}.contact-bar a{display:grid;gap:5px;min-height:96px;padding:26px 32px;text-decoration:none;border-right:1px solid var(--line)}.contact-bar a:nth-child(2){background:var(--accent);color:#fff}.contact-bar strong{font-size:22px}.contact-bar span{color:var(--muted);font-weight:800}.contact-bar a:nth-child(2) span{color:rgba(255,255,255,.88)}.services-section,.benefits-section,.reviews-section,.gallery-section,.premium-offer,.contact-section,.preview-note,.section-heading,.portfolio-panel{padding:clamp(64px,7vw,110px) 0}.services-section h2{max-width:900px}.service-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:34px}.project-tile{position:relative;min-height:250px;display:flex;flex-direction:column;justify-content:flex-end;padding:20px;overflow:hidden;color:#fff;text-decoration:none;background:#111}.project-tile::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.74),rgba(0,0,0,.08))}.project-tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .35s ease}.project-tile:hover img{transform:scale(1.045)}.project-tile span,.project-tile h3,.project-tile p{position:relative;z-index:1}.project-tile span{color:var(--accent);font-weight:950}.project-tile p{margin:0;color:rgba(255,255,255,.82);font-size:14px;line-height:1.5}.portfolio-panel{display:grid;grid-template-columns:.72fr 1.28fr;gap:28px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.portfolio-panel[hidden]{display:none}.portfolio-gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.portfolio-item{position:relative;min-height:210px;overflow:hidden;color:#fff;background:#111}.portfolio-item img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.portfolio-item strong{position:absolute;left:18px;right:18px;bottom:18px;z-index:1;font-size:20px}.portfolio-item::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.68),transparent)}.benefits-section{display:grid;grid-template-columns:.85fr 1.15fr;gap:44px}.benefits-section p,.contact-section p,.section-heading p,.premium-offer p,.portfolio-panel p{color:var(--muted);font-size:19px;line-height:1.7}.benefit-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}.benefit-card,.review-card,.preview-note,.company-card,.service-card:not(.project-tile){border:1px solid var(--line);background:#fff;box-shadow:0 22px 60px rgba(17,24,39,.07)}.benefit-card{padding:28px}.benefit-card strong{display:block;font-size:24px;margin-bottom:8px}.benefit-card p,.review-card p{margin:0;color:var(--muted);font-size:16px;line-height:1.65}.process-section{padding:clamp(76px,8vw,120px) 0;background:var(--dark);color:#fff}.process-section h2{color:#fff}.process-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:34px}.process-card{min-height:250px;padding:28px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.055)}.process-card span{display:block;margin-bottom:54px;color:var(--accent);font-weight:950}.process-card p{color:rgba(255,255,255,.72);font-size:16px;line-height:1.7}.reviews-section{display:grid;grid-template-columns:.8fr 1fr 1fr;gap:22px}.review-card{padding:32px}.review-card strong{display:block;font-size:26px;line-height:1.15;margin-bottom:22px}.gallery-section{display:grid;grid-template-columns:.75fr 1.25fr;gap:34px}.gallery-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}.gallery-grid article{position:relative;min-height:220px;display:flex;align-items:flex-end;padding:22px;overflow:hidden;color:#fff;background:#111}.gallery-grid article::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.68),rgba(0,0,0,.06))}.gallery-grid img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.gallery-grid strong{position:relative;z-index:1;font-size:26px}.premium-offer{border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.contact-section{display:grid;grid-template-columns:.88fr 1.12fr;gap:58px;align-items:start}.company-card{display:grid;gap:8px;margin-top:28px;padding:26px;border-top:5px solid var(--accent)}.company-card strong{font-size:32px}.preview-form{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;padding:34px;background:#fff;box-shadow:var(--shadow)}label{display:grid;gap:8px;font-weight:900}.wide{grid-column:1/-1}input,select,textarea{width:100%;min-height:54px;border:1px solid var(--line);background:var(--paper);padding:0 16px;font:inherit;font-weight:750;color:var(--ink)}textarea{min-height:150px;padding-top:14px;resize:vertical}button{min-height:56px;border:0;background:var(--accent);color:#fff;font:inherit;font-weight:950}.preview-form button,.preview-form small{grid-column:1/-1}.preview-form small{color:var(--muted)}.preview-note{padding:24px;margin-bottom:44px}.site-footer{display:flex;justify-content:space-between;gap:20px;padding:34px clamp(22px,4vw,64px);background:var(--dark);color:rgba(255,255,255,.72);font-weight:850}.site-footer strong{color:#fff}.sub-hero{position:relative;min-height:52vh;display:grid;align-items:end;padding:clamp(70px,8vw,120px) clamp(22px,5vw,86px);color:#fff;overflow:hidden;background:#111}.sub-hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.sub-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.72),rgba(0,0,0,.18))}.sub-hero>div{position:relative;z-index:1}.section-heading .service-grid{grid-template-columns:repeat(3,1fr)}.section-heading .service-card{padding:28px}.section-heading .service-card img{width:100%;height:190px;object-fit:cover;margin:-28px -28px 24px;width:calc(100% + 56px)}@media(max-width:1100px){.service-grid{grid-template-columns:repeat(2,1fr)}.process-grid{grid-template-columns:repeat(2,1fr)}.site-header{grid-template-columns:1fr auto}.site-header nav,.nav-phone{display:none}.portfolio-panel{grid-template-columns:1fr}.portfolio-gallery{grid-template-columns:repeat(2,1fr)}}@media(max-width:760px){.hero{min-height:72vh}.contact-bar,.benefits-section,.reviews-section,.gallery-section,.contact-section{grid-template-columns:1fr}.service-grid,.benefit-grid,.process-grid,.gallery-grid,.section-heading .service-grid,.preview-form,.portfolio-gallery{grid-template-columns:1fr}.contact-bar{margin:0 auto 50px}.hero-proof span{width:100%}h1{font-size:clamp(42px,15vw,68px)}}`;
 }
 
-function renderScript() {
-  return `document.documentElement.classList.add("preview-ready");`;
+function renderScript({ businessName, email, services }) {
+  const portfolio = Object.fromEntries(services.slice(0, 6).map((service, index) => [service, {
+    title: `${service} helder in beeld`,
+    copy: `${service} krijgt een eigen visuele presentatie, korte uitleg en een directe route naar aanvraag of contact.`,
+    images: [
+      `assets/service-${index + 1}-${slugifySite(service)}.svg`,
+      "assets/hero.svg",
+      "assets/og-image.svg",
+    ],
+  }]));
+  return `document.documentElement.classList.add("preview-ready");
+const portfolioData = ${JSON.stringify(portfolio)};
+const portfolioPanel = document.getElementById("portfolio");
+const portfolioTitle = document.getElementById("portfolioTitle");
+const portfolioCopy = document.getElementById("portfolioCopy");
+const portfolioGallery = document.getElementById("portfolioGallery");
+document.querySelectorAll("[data-service]").forEach((card) => {
+  card.addEventListener("click", (event) => {
+    event.preventDefault();
+    const service = card.getAttribute("data-service");
+    const data = portfolioData[service];
+    if (!data || !portfolioPanel || !portfolioGallery) return;
+    portfolioTitle.textContent = data.title;
+    portfolioCopy.textContent = data.copy;
+    portfolioGallery.innerHTML = data.images.map((src, index) => '<article class="portfolio-item"><img src="' + src + '" alt="' + service + ' voorbeeld ' + (index + 1) + '"><strong>' + service + '</strong></article>').join("");
+    portfolioPanel.hidden = false;
+    portfolioPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+    const projectSelect = document.querySelector('select[name="project"]');
+    if (projectSelect) projectSelect.value = service;
+  });
+});
+const form = document.getElementById("requestForm");
+if (form) {
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const data = new FormData(form);
+    const subject = "Aanvraag via ${escapeJs(businessName)}";
+    const body = [
+      "Naam: " + (data.get("naam") || ""),
+      "Telefoon: " + (data.get("telefoon") || ""),
+      "E-mail: " + (data.get("email") || ""),
+      "Contactmoment: " + (data.get("contactmoment") || ""),
+      "Project: " + (data.get("project") || ""),
+      "",
+      "Bericht:",
+      data.get("bericht") || ""
+    ].join("\\n");
+    window.location.href = "mailto:${escapeJs(email || "")}?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+  });
+}`;
 }
 
 function serviceText(service, profile = {}) {
@@ -775,6 +981,10 @@ function escapeHtml(value = "") {
     '"': "&quot;",
     "'": "&#039;",
   })[character]);
+}
+
+function escapeJs(value = "") {
+  return String(value || "").replace(/[\\`$]/g, (character) => `\\${character}`).replace(/\r?\n/g, "\\n");
 }
 
 module.exports = {
