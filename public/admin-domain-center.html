@@ -1,0 +1,921 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Domein Center | Max CRM</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=20260705-domain-center" />
+    <style>
+      .domain-center-shell {
+        gap: 22px;
+      }
+
+      .domain-center-workspace,
+      .domain-center-stack,
+      .domain-center-panel-body {
+        display: grid;
+        gap: 18px;
+      }
+
+      .domain-center-summary {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .domain-center-card {
+        position: relative;
+        overflow: hidden;
+        min-height: 126px;
+        padding: 20px;
+        border: 1px solid rgba(148, 163, 184, 0.17);
+        border-radius: 8px;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025)),
+          rgba(15, 23, 42, 0.72);
+        box-shadow: 0 18px 46px rgba(2, 8, 23, 0.24);
+      }
+
+      .domain-center-card::before {
+        content: "";
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 4px;
+        background: var(--blue);
+      }
+
+      .domain-center-card:nth-child(2)::before {
+        background: #f59e0b;
+      }
+
+      .domain-center-card:nth-child(3)::before {
+        background: #22c55e;
+      }
+
+      .domain-center-card:nth-child(4)::before {
+        background: #a78bfa;
+      }
+
+      .domain-center-card span,
+      .domain-center-meta,
+      .domain-center-muted,
+      .domain-center-step small {
+        color: rgba(226, 236, 248, 0.66);
+        font-size: 12px;
+        font-weight: 800;
+        line-height: 1.4;
+      }
+
+      .domain-center-card strong {
+        display: block;
+        margin-top: 12px;
+        color: #f8fbff;
+        font-size: 34px;
+        line-height: 1;
+      }
+
+      .domain-center-card small {
+        display: block;
+        margin-top: 12px;
+        color: rgba(226, 236, 248, 0.54);
+        font-size: 12px;
+        font-weight: 750;
+      }
+
+      .domain-center-search-card,
+      .domain-center-table-card,
+      .domain-center-detail-card {
+        padding: 22px;
+      }
+
+      .domain-center-search-row {
+        display: grid;
+        grid-template-columns: minmax(240px, 1fr) auto auto auto;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .domain-center-search-row input {
+        width: 100%;
+        min-height: 46px;
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        border-radius: 8px;
+        color: #f8fbff;
+        background: rgba(15, 23, 42, 0.76);
+      }
+
+      .domain-center-status-strip {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 16px;
+      }
+
+      .domain-status,
+      .domain-pill {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        min-height: 28px;
+        padding: 6px 10px;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 999px;
+        color: rgba(226, 236, 248, 0.82);
+        background: rgba(15, 23, 42, 0.72);
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .domain-status[data-tone="success"],
+      .domain-pill[data-tone="success"] {
+        border-color: rgba(34, 197, 94, 0.34);
+        color: #bbf7d0;
+        background: rgba(22, 101, 52, 0.28);
+      }
+
+      .domain-status[data-tone="warning"],
+      .domain-pill[data-tone="warning"] {
+        border-color: rgba(245, 158, 11, 0.36);
+        color: #fde68a;
+        background: rgba(146, 64, 14, 0.28);
+      }
+
+      .domain-status[data-tone="info"],
+      .domain-pill[data-tone="info"] {
+        border-color: rgba(56, 189, 248, 0.34);
+        color: #bae6fd;
+        background: rgba(12, 74, 110, 0.28);
+      }
+
+      .domain-status[data-tone="neutral"],
+      .domain-pill[data-tone="neutral"] {
+        border-color: rgba(167, 139, 250, 0.34);
+        color: #ddd6fe;
+        background: rgba(91, 33, 182, 0.22);
+      }
+
+      .domain-center-result {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 58px;
+        margin-top: 16px;
+        padding: 14px;
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        border-radius: 8px;
+        background: rgba(15, 23, 42, 0.56);
+      }
+
+      .domain-center-table-wrap {
+        overflow-x: auto;
+      }
+
+      .domain-center-table {
+        min-width: 960px;
+      }
+
+      .domain-center-row {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr 0.82fr 0.82fr 0.62fr 0.78fr 1.35fr;
+        gap: 12px;
+        align-items: center;
+        padding: 13px 0;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+      }
+
+      .domain-center-row:last-child {
+        border-bottom: 0;
+      }
+
+      .domain-center-head {
+        color: rgba(226, 236, 248, 0.56);
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .domain-center-row strong {
+        color: #f8fbff;
+        font-size: 14px;
+      }
+
+      .domain-center-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .domain-center-actions .button {
+        min-height: 32px;
+        padding: 7px 10px;
+        font-size: 12px;
+      }
+
+      .domain-center-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 80;
+        display: grid;
+        place-items: center;
+        padding: 22px;
+        background: rgba(2, 8, 23, 0.72);
+        backdrop-filter: blur(14px);
+      }
+
+      .domain-center-dialog {
+        width: min(1120px, 100%);
+        max-height: min(780px, calc(100vh - 44px));
+        overflow: hidden;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 8px;
+        background:
+          linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(8, 13, 28, 0.98)),
+          #0f172a;
+        box-shadow: 0 34px 90px rgba(2, 8, 23, 0.56);
+      }
+
+      .domain-center-dialog-head {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        justify-content: space-between;
+        padding: 22px;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+      }
+
+      .domain-center-dialog-head h2 {
+        margin: 4px 0 8px;
+        color: #f8fbff;
+      }
+
+      .domain-center-tabs {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding: 14px 22px 0;
+      }
+
+      .domain-center-tab {
+        flex: 0 0 auto;
+        min-height: 38px;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 8px;
+        color: rgba(226, 236, 248, 0.74);
+        background: rgba(15, 23, 42, 0.74);
+        font-weight: 900;
+        cursor: pointer;
+      }
+
+      .domain-center-tab.is-active {
+        border-color: rgba(96, 165, 250, 0.48);
+        color: #f8fbff;
+        background: rgba(37, 99, 235, 0.26);
+      }
+
+      .domain-center-panel {
+        max-height: calc(100vh - 260px);
+        overflow-y: auto;
+        padding: 22px;
+      }
+
+      .domain-center-grid-2,
+      .domain-record-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .domain-center-fact,
+      .domain-record-card,
+      .domain-center-step {
+        min-width: 0;
+        padding: 16px;
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        border-radius: 8px;
+        background: rgba(15, 23, 42, 0.56);
+      }
+
+      .domain-center-fact span,
+      .domain-record-card span {
+        display: block;
+        color: rgba(226, 236, 248, 0.58);
+        font-size: 12px;
+        font-weight: 850;
+      }
+
+      .domain-center-fact strong,
+      .domain-record-card strong {
+        display: block;
+        margin-top: 8px;
+        overflow-wrap: anywhere;
+        color: #f8fbff;
+        font-size: 15px;
+      }
+
+      .domain-record-value {
+        margin-top: 8px;
+        overflow-wrap: anywhere;
+        color: rgba(226, 236, 248, 0.72);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .domain-center-steps {
+        display: grid;
+        gap: 10px;
+      }
+
+      .domain-center-step {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .domain-center-step-mark {
+        display: grid;
+        place-items: center;
+        width: 30px;
+        height: 30px;
+        border-radius: 999px;
+        color: #ecfeff;
+        background: rgba(37, 99, 235, 0.58);
+        font-weight: 900;
+      }
+
+      .domain-center-step.is-done .domain-center-step-mark {
+        background: #16a34a;
+      }
+
+      .domain-center-step strong {
+        color: #f8fbff;
+      }
+
+      @media (max-width: 1180px) {
+        .domain-center-summary,
+        .domain-center-grid-2,
+        .domain-record-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .domain-center-search-row {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .domain-center-search-row input {
+          grid-column: 1 / -1;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .domain-center-summary,
+        .domain-center-grid-2,
+        .domain-record-grid,
+        .domain-center-search-row {
+          grid-template-columns: 1fr;
+        }
+
+        .domain-center-dialog-head,
+        .domain-center-result {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .domain-center-modal {
+          padding: 10px;
+        }
+
+        .domain-center-dialog {
+          max-height: calc(100vh - 20px);
+        }
+
+        .domain-center-panel {
+          max-height: calc(100vh - 270px);
+          padding: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body class="admin-body">
+    <main class="admin-crm-shell">
+      <aside class="admin-sidebar" aria-label="Admin modules">
+        <a class="brand" href="admin-dashboard.html">
+          <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true">
+            <rect x="6" y="6" width="68" height="68" rx="18"></rect>
+            <path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path>
+            <path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path>
+          </svg>
+          <span>Max CRM</span>
+        </a>
+        <nav class="admin-sidebar-nav">
+          <span class="admin-nav-group">Main</span>
+          <a href="admin-dashboard.html">Dashboard</a>
+          <span class="admin-nav-group">Sales</span>
+          <a href="admin-sales.html">Leads</a>
+          <span class="admin-nav-group">Production</span>
+          <a href="admin-website-factory.html">Website Factory</a>
+          <a href="admin-ai-content-library.html">AI Content Library</a>
+          <a href="admin-seo-studio.html">SEO Studio</a>
+          <a href="admin-social-media-studio.html">Social Media Studio</a>
+          <a href="admin-brand-center.html">Brand Center</a>
+          <a class="is-active" href="admin-domain-center.html">Domein Center</a>
+          <span class="admin-nav-group">Customers</span>
+          <a href="admin-klanten.html">Klanten</a>
+          <a href="admin-websites.html">Websites</a>
+          <a href="admin-projecten.html">Projecten</a>
+          <span class="admin-nav-group">Administration</span>
+          <a href="admin-offertes.html">Offertes</a>
+          <a href="admin-facturen.html">Facturen</a>
+          <a href="admin-email-studio.html">E-mail Studio</a>
+          <span class="admin-nav-group">System</span>
+          <a href="admin-instellingen.html">Instellingen</a>
+        </nav>
+      </aside>
+
+      <div class="admin-crm-main workflow-module-shell domain-center-shell">
+        <header class="admin-section admin-hero">
+          <div>
+            <p class="section-kicker">Production</p>
+            <h1>Domein Center</h1>
+            <p>Beheer straks domeinen, DNS, SSL, e-mail en verhuizingen vanuit een centrale klantomgeving.</p>
+          </div>
+          <span class="workflow-module-label">Frontend-only - demo data</span>
+        </header>
+
+        <section class="domain-center-workspace" aria-label="Domein Center workspace">
+          <div class="domain-center-summary" id="domain-summary"></div>
+
+          <article class="admin-card domain-center-search-card">
+            <div class="admin-section-heading">
+              <div>
+                <p class="section-kicker">Zoeken en toevoegen</p>
+                <h2>Domein zoeken</h2>
+              </div>
+              <span class="domain-pill" data-tone="info">Mock controle</span>
+            </div>
+            <div class="domain-center-search-row">
+              <input id="domain-search-input" type="search" placeholder="Zoek domeinnaam..." autocomplete="off" />
+              <button class="button primary" id="domain-check-button" type="button">Domein controleren</button>
+              <button class="button secondary" id="domain-transfer-button" type="button">Domein verhuizen</button>
+              <button class="button secondary" id="domain-register-button" type="button">Nieuw domein registreren</button>
+            </div>
+            <div class="domain-center-status-strip" aria-label="Demo statussen">
+              <span class="domain-status" data-tone="success">beschikbaar</span>
+              <span class="domain-status" data-tone="warning">bezet</span>
+              <span class="domain-status" data-tone="info">verhuisbaar</span>
+              <span class="domain-status" data-tone="neutral">actief bij klant</span>
+            </div>
+            <div class="domain-center-result" id="domain-search-result" role="status" aria-live="polite">
+              <span class="domain-center-muted">Vul een domeinnaam in om een demo-status te tonen.</span>
+            </div>
+          </article>
+
+          <article class="admin-card domain-center-table-card">
+            <div class="admin-section-heading">
+              <div>
+                <p class="section-kicker">Portfolio</p>
+                <h2>Domeinen</h2>
+              </div>
+              <span class="domain-pill" data-tone="success">Veilige mock data</span>
+            </div>
+            <div class="domain-center-table-wrap">
+              <div class="domain-center-table" id="domain-table" role="table" aria-label="Domeinen tabel"></div>
+            </div>
+          </article>
+        </section>
+      </div>
+    </main>
+
+    <div class="domain-center-modal" id="domain-detail-modal" hidden>
+      <section class="domain-center-dialog" role="dialog" aria-modal="true" aria-labelledby="domain-detail-title">
+        <header class="domain-center-dialog-head">
+          <div>
+            <p class="section-kicker">Domeinbeheer</p>
+            <h2 id="domain-detail-title">Domein</h2>
+            <p class="domain-center-meta" id="domain-detail-subtitle">Demo-overzicht</p>
+          </div>
+          <button class="button secondary" id="domain-detail-close" type="button">Sluiten</button>
+        </header>
+        <div class="domain-center-tabs" role="tablist" aria-label="Domein detail tabs">
+          <button class="domain-center-tab is-active" type="button" data-tab="overview">Overzicht</button>
+          <button class="domain-center-tab" type="button" data-tab="dns">DNS records</button>
+          <button class="domain-center-tab" type="button" data-tab="ssl">SSL certificaat</button>
+          <button class="domain-center-tab" type="button" data-tab="email">E-mail instellingen</button>
+          <button class="domain-center-tab" type="button" data-tab="transfer">Verhuizing</button>
+        </div>
+        <div class="domain-center-panel" id="domain-detail-panel"></div>
+      </section>
+    </div>
+
+    <script>
+      (() => {
+        "use strict";
+
+        const demoDomains = [
+          {
+            id: "mws-main",
+            domainName: "maxwebstudio.nl",
+            customer: "Max Webstudio",
+            status: "actief bij klant",
+            statusTone: "neutral",
+            expiresAt: "2027-03-18",
+            ssl: "Actief",
+            email: "Microsoft 365",
+            registrar: "Provider demo",
+            nameservers: ["ns1.demo-dns.local", "ns2.demo-dns.local"],
+            sslIssuer: "Let's Encrypt",
+            sslExpiresAt: "2026-10-12",
+            sslAutoRenew: "Actief",
+            emailProvider: "Microsoft 365",
+            mxStatus: "Correct",
+            dnsRecords: [
+              ["A", "@", "198.51.100.24"],
+              ["CNAME", "www", "maxwebstudio.nl"],
+              ["MX", "@", "10 maxwebstudio-nl.mail.protection.outlook.com"],
+              ["TXT/SPF", "@", "v=spf1 include:spf.protection.outlook.com -all"],
+              ["DKIM", "selector1._domainkey", "selector1-maxwebstudio-nl._domainkey.demo.local"],
+              ["DMARC", "_dmarc", "v=DMARC1; p=quarantine; rua=mailto:dmarc@maxwebstudio.nl"]
+            ],
+            transferSteps: [true, true, true, true, true]
+          },
+          {
+            id: "atelier-noord",
+            domainName: "ateliernoord-demo.nl",
+            customer: "Atelier Noord",
+            status: "actief bij klant",
+            statusTone: "neutral",
+            expiresAt: "2026-08-21",
+            ssl: "Actief",
+            email: "Google Workspace",
+            registrar: "Provider demo",
+            nameservers: ["ns1.demo-dns.local", "ns2.demo-dns.local"],
+            sslIssuer: "Google Trust Services",
+            sslExpiresAt: "2026-09-30",
+            sslAutoRenew: "Actief",
+            emailProvider: "Google Workspace",
+            mxStatus: "Correct",
+            dnsRecords: [
+              ["A", "@", "203.0.113.18"],
+              ["CNAME", "www", "ateliernoord-demo.nl"],
+              ["MX", "@", "1 aspmx.l.google.com"],
+              ["TXT/SPF", "@", "v=spf1 include:_spf.google.com -all"],
+              ["DKIM", "google._domainkey", "v=DKIM1; k=rsa; p=demo-public-key"],
+              ["DMARC", "_dmarc", "v=DMARC1; p=none; rua=mailto:dmarc@ateliernoord-demo.nl"]
+            ],
+            transferSteps: [true, true, true, true, false]
+          },
+          {
+            id: "bouwhelden",
+            domainName: "bouwhelden-demo.nl",
+            customer: "Bouwhelden BV",
+            status: "verhuisbaar",
+            statusTone: "info",
+            expiresAt: "2026-07-28",
+            ssl: "Niet actief",
+            email: "Anders",
+            registrar: "Extern",
+            nameservers: ["ns1.externe-provider.local", "ns2.externe-provider.local"],
+            sslIssuer: "Niet beschikbaar",
+            sslExpiresAt: "-",
+            sslAutoRenew: "Niet actief",
+            emailProvider: "Anders",
+            mxStatus: "Controle nodig",
+            dnsRecords: [
+              ["A", "@", "192.0.2.51"],
+              ["CNAME", "www", "bouwhelden-demo.nl"],
+              ["MX", "@", "10 mail.bouwhelden-demo.nl"],
+              ["TXT/SPF", "@", "v=spf1 mx -all"],
+              ["DKIM", "mail._domainkey", "Nog niet ingesteld"],
+              ["DMARC", "_dmarc", "v=DMARC1; p=none"]
+            ],
+            transferSteps: [true, true, false, false, false]
+          },
+          {
+            id: "studio-lumen",
+            domainName: "studiolumen-demo.com",
+            customer: "Studio Lumen",
+            status: "beschikbaar",
+            statusTone: "success",
+            expiresAt: "Nog niet geregistreerd",
+            ssl: "Niet actief",
+            email: "Niet gekoppeld",
+            registrar: "Nog niet gekoppeld",
+            nameservers: ["Nog niet ingesteld"],
+            sslIssuer: "Niet beschikbaar",
+            sslExpiresAt: "-",
+            sslAutoRenew: "Niet actief",
+            emailProvider: "Niet gekoppeld",
+            mxStatus: "Niet ingesteld",
+            dnsRecords: [
+              ["A", "@", "Nog niet ingesteld"],
+              ["CNAME", "www", "Nog niet ingesteld"],
+              ["MX", "@", "Nog niet ingesteld"],
+              ["TXT/SPF", "@", "Nog niet ingesteld"],
+              ["DKIM", "default._domainkey", "Nog niet ingesteld"],
+              ["DMARC", "_dmarc", "Nog niet ingesteld"]
+            ],
+            transferSteps: [false, false, false, false, false]
+          }
+        ];
+
+        const transferStepLabels = [
+          "Verhuiscode ontvangen",
+          "Domeintransfer gestart",
+          "DNS gecontroleerd",
+          "SSL geactiveerd",
+          "E-mail gekoppeld"
+        ];
+
+        const summaryElement = document.getElementById("domain-summary");
+        const tableElement = document.getElementById("domain-table");
+        const searchInput = document.getElementById("domain-search-input");
+        const searchResult = document.getElementById("domain-search-result");
+        const modal = document.getElementById("domain-detail-modal");
+        const detailTitle = document.getElementById("domain-detail-title");
+        const detailSubtitle = document.getElementById("domain-detail-subtitle");
+        const detailPanel = document.getElementById("domain-detail-panel");
+        const tabs = Array.from(document.querySelectorAll(".domain-center-tab"));
+        let activeDomain = demoDomains[0];
+        let activeTab = "overview";
+
+        function escapeHtml(value) {
+          return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#039;"
+          })[character]);
+        }
+
+        function formatDate(value) {
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value))) return value;
+          return new Intl.DateTimeFormat("nl-NL", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(`${value}T12:00:00`));
+        }
+
+        function renderSummary() {
+          const soonThreshold = new Date("2026-09-01T00:00:00");
+          const expiringSoon = demoDomains.filter((domain) => {
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(domain.expiresAt)) return false;
+            return new Date(`${domain.expiresAt}T12:00:00`) <= soonThreshold;
+          }).length;
+          const metrics = [
+            ["Actieve domeinen", demoDomains.filter((domain) => domain.status === "actief bij klant").length, "Domeinen met klantstatus actief"],
+            ["Verlopen binnenkort", expiringSoon, "Binnen demo-venster tot september"],
+            ["SSL actief", demoDomains.filter((domain) => domain.ssl === "Actief").length, "Certificaat zichtbaar als actief"],
+            ["E-mail gekoppeld", demoDomains.filter((domain) => !["Niet gekoppeld", "Niet ingesteld"].includes(domain.email)).length, "Provider of MX bekend"]
+          ];
+          summaryElement.innerHTML = metrics.map(([label, value, note]) => `
+            <article class="domain-center-card">
+              <span>${escapeHtml(label)}</span>
+              <strong>${escapeHtml(value)}</strong>
+              <small>${escapeHtml(note)}</small>
+            </article>
+          `).join("");
+        }
+
+        function renderTable() {
+          tableElement.innerHTML = `
+            <div class="domain-center-row domain-center-head" role="row">
+              <span>Domeinnaam</span>
+              <span>Klant</span>
+              <span>Status</span>
+              <span>Verloopt op</span>
+              <span>SSL</span>
+              <span>E-mail</span>
+              <span>Acties</span>
+            </div>
+            ${demoDomains.map((domain) => `
+              <div class="domain-center-row" role="row">
+                <strong>${escapeHtml(domain.domainName)}</strong>
+                <span class="domain-center-muted">${escapeHtml(domain.customer)}</span>
+                <span><span class="domain-status" data-tone="${escapeHtml(domain.statusTone)}">${escapeHtml(domain.status)}</span></span>
+                <span class="domain-center-muted">${escapeHtml(formatDate(domain.expiresAt))}</span>
+                <span class="domain-center-muted">${escapeHtml(domain.ssl)}</span>
+                <span class="domain-center-muted">${escapeHtml(domain.email)}</span>
+                <span class="domain-center-actions">
+                  <button class="button secondary" type="button" data-action="dns" data-domain-id="${escapeHtml(domain.id)}">DNS bekijken</button>
+                  <button class="button secondary" type="button" data-action="ssl" data-domain-id="${escapeHtml(domain.id)}">SSL bekijken</button>
+                  <button class="button secondary" type="button" data-action="email" data-domain-id="${escapeHtml(domain.id)}">E-mail koppelen</button>
+                  <button class="button primary" type="button" data-action="overview" data-domain-id="${escapeHtml(domain.id)}">Beheer openen</button>
+                </span>
+              </div>
+            `).join("")}
+          `;
+        }
+
+        function renderSearchResult(status, tone, message) {
+          searchResult.innerHTML = `
+            <div>
+              <span class="domain-status" data-tone="${escapeHtml(tone)}">${escapeHtml(status)}</span>
+              <strong>${escapeHtml(message)}</strong>
+            </div>
+            <span class="domain-center-muted">Demoresultaat - er is geen externe domeinprovider aangeroepen.</span>
+          `;
+        }
+
+        function normalizedSearchDomain() {
+          return String(searchInput.value || "").trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
+        }
+
+        function checkDomainAvailability() {
+          const query = normalizedSearchDomain() || "voorbeeld-demo.nl";
+          const existing = demoDomains.find((domain) => domain.domainName.toLowerCase() === query);
+          if (existing) {
+            renderSearchResult(existing.status, existing.statusTone, `${query} staat al in het demo-overzicht.`);
+            return existing;
+          }
+          const statuses = [
+            ["beschikbaar", "success", `${query} lijkt beschikbaar in deze demo.`],
+            ["bezet", "warning", `${query} is bezet volgens mock data.`],
+            ["verhuisbaar", "info", `${query} kan als demo-verhuizing worden voorbereid.`],
+            ["actief bij klant", "neutral", `${query} lijkt al actief bij een klant.`]
+          ];
+          const index = query.length % statuses.length;
+          renderSearchResult(statuses[index][0], statuses[index][1], statuses[index][2]);
+          return { domainName: query, status: statuses[index][0] };
+        }
+
+        function startDomainTransfer() {
+          const result = checkDomainAvailability();
+          renderSearchResult("verhuisbaar", "info", `${result.domainName} is klaargezet als mock-verhuizing.`);
+          return result;
+        }
+
+        function fetchDnsRecords(domainId) {
+          return demoDomains.find((domain) => domain.id === domainId)?.dnsRecords || [];
+        }
+
+        function checkSslStatus(domainId) {
+          return demoDomains.find((domain) => domain.id === domainId)?.ssl || "Niet actief";
+        }
+
+        function connectEmailProvider(domainId) {
+          return demoDomains.find((domain) => domain.id === domainId)?.emailProvider || "Niet gekoppeld";
+        }
+
+        function openDomainDetail(domainId, tab = "overview") {
+          activeDomain = demoDomains.find((domain) => domain.id === domainId) || demoDomains[0];
+          activeTab = tab;
+          detailTitle.textContent = activeDomain.domainName;
+          detailSubtitle.textContent = `${activeDomain.customer} - ${activeDomain.registrar}`;
+          tabs.forEach((button) => button.classList.toggle("is-active", button.dataset.tab === activeTab));
+          renderDetailPanel();
+          modal.hidden = false;
+          document.body.classList.add("admin-modal-open");
+        }
+
+        function closeDomainDetail() {
+          modal.hidden = true;
+          document.body.classList.remove("admin-modal-open");
+        }
+
+        function renderFacts(facts) {
+          return `<div class="domain-center-grid-2">${facts.map(([label, value]) => `
+            <div class="domain-center-fact">
+              <span>${escapeHtml(label)}</span>
+              <strong>${escapeHtml(value)}</strong>
+            </div>
+          `).join("")}</div>`;
+        }
+
+        function renderDnsPanel() {
+          const records = fetchDnsRecords(activeDomain.id);
+          return `
+            <div class="domain-center-panel-body">
+              <p class="domain-center-muted">Alle records zijn alleen-lezen demo records. Wijzigingen worden later via providerkoppelingen toegevoegd.</p>
+              <div class="domain-record-grid">
+                ${records.map(([type, name, value]) => `
+                  <article class="domain-record-card">
+                    <span>${escapeHtml(type)}</span>
+                    <strong>${escapeHtml(name)}</strong>
+                    <div class="domain-record-value">${escapeHtml(value)}</div>
+                  </article>
+                `).join("")}
+              </div>
+            </div>
+          `;
+        }
+
+        function renderDetailPanel() {
+          if (activeTab === "dns") {
+            detailPanel.innerHTML = renderDnsPanel();
+            return;
+          }
+          if (activeTab === "ssl") {
+            detailPanel.innerHTML = `
+              <div class="domain-center-panel-body">
+                ${renderFacts([
+                  ["SSL status", checkSslStatus(activeDomain.id)],
+                  ["Uitgever", activeDomain.sslIssuer],
+                  ["Verloopt op", formatDate(activeDomain.sslExpiresAt)],
+                  ["Auto-renew status", activeDomain.sslAutoRenew]
+                ])}
+                <button class="button primary" type="button" data-mock-action="ssl">SSL opnieuw controleren</button>
+              </div>
+            `;
+            return;
+          }
+          if (activeTab === "email") {
+            detailPanel.innerHTML = `
+              <div class="domain-center-panel-body">
+                ${renderFacts([
+                  ["Provider", connectEmailProvider(activeDomain.id)],
+                  ["MX status", activeDomain.mxStatus],
+                  ["SPF status", activeDomain.dnsRecords.some((record) => record[0] === "TXT/SPF" && !record[2].includes("Nog niet")) ? "Aanwezig" : "Niet ingesteld"],
+                  ["DKIM status", activeDomain.dnsRecords.some((record) => record[0] === "DKIM" && !record[2].includes("Nog niet")) ? "Aanwezig" : "Niet ingesteld"],
+                  ["DMARC status", activeDomain.dnsRecords.some((record) => record[0] === "DMARC" && !record[2].includes("Nog niet")) ? "Aanwezig" : "Niet ingesteld"]
+                ])}
+                <button class="button primary" type="button" data-mock-action="email">E-mail koppelen</button>
+              </div>
+            `;
+            return;
+          }
+          if (activeTab === "transfer") {
+            detailPanel.innerHTML = `
+              <div class="domain-center-steps">
+                ${transferStepLabels.map((label, index) => `
+                  <div class="domain-center-step ${activeDomain.transferSteps[index] ? "is-done" : ""}">
+                    <span class="domain-center-step-mark">${activeDomain.transferSteps[index] ? "✓" : index + 1}</span>
+                    <div>
+                      <strong>${escapeHtml(label)}</strong>
+                      <small>${activeDomain.transferSteps[index] ? "Afgerond in demo-flow" : "Nog open in demo-flow"}</small>
+                    </div>
+                    <span class="domain-pill" data-tone="${activeDomain.transferSteps[index] ? "success" : "warning"}">${activeDomain.transferSteps[index] ? "Klaar" : "Open"}</span>
+                  </div>
+                `).join("")}
+              </div>
+            `;
+            return;
+          }
+          detailPanel.innerHTML = `
+            <div class="domain-center-panel-body">
+              ${renderFacts([
+                ["Domeinnaam", activeDomain.domainName],
+                ["Klant", activeDomain.customer],
+                ["Status", activeDomain.status],
+                ["Verloopt op", formatDate(activeDomain.expiresAt)],
+                ["Registrar", activeDomain.registrar],
+                ["Nameservers", activeDomain.nameservers.join(", ")],
+                ["SSL", activeDomain.ssl],
+                ["E-mail", activeDomain.email]
+              ])}
+            </div>
+          `;
+        }
+
+        tableElement.addEventListener("click", (event) => {
+          const button = event.target.closest("button[data-action]");
+          if (!button) return;
+          const actionMap = { dns: "dns", ssl: "ssl", email: "email", overview: "overview" };
+          openDomainDetail(button.dataset.domainId, actionMap[button.dataset.action] || "overview");
+        });
+
+        tabs.forEach((button) => {
+          button.addEventListener("click", () => {
+            activeTab = button.dataset.tab;
+            tabs.forEach((tab) => tab.classList.toggle("is-active", tab === button));
+            renderDetailPanel();
+          });
+        });
+
+        document.getElementById("domain-check-button").addEventListener("click", checkDomainAvailability);
+        document.getElementById("domain-transfer-button").addEventListener("click", startDomainTransfer);
+        document.getElementById("domain-register-button").addEventListener("click", () => {
+          const result = checkDomainAvailability();
+          renderSearchResult("beschikbaar", "success", `${result.domainName} is als mock-registratie voorbereid.`);
+        });
+        document.getElementById("domain-detail-close").addEventListener("click", closeDomainDetail);
+        modal.addEventListener("click", (event) => {
+          if (event.target === modal) closeDomainDetail();
+        });
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape" && !modal.hidden) closeDomainDetail();
+        });
+        detailPanel.addEventListener("click", (event) => {
+          const button = event.target.closest("[data-mock-action]");
+          if (!button) return;
+          const label = button.dataset.mockAction === "ssl" ? "SSL opnieuw gecontroleerd" : "E-mail koppeling voorbereid";
+          button.textContent = label;
+        });
+
+        window.checkDomainAvailability = checkDomainAvailability;
+        window.startDomainTransfer = startDomainTransfer;
+        window.fetchDnsRecords = fetchDnsRecords;
+        window.checkSslStatus = checkSslStatus;
+        window.connectEmailProvider = connectEmailProvider;
+
+        renderSummary();
+        renderTable();
+      })();
+    </script>
+  </body>
+</html>
