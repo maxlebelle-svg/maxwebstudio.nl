@@ -18801,6 +18801,17 @@
         return [...owners].sort();
       }
 
+      function getLeadOwnerBreakdown(leads = []) {
+        const counts = new Map();
+        leads.forEach((lead) => {
+          const label = getLeadOwnerLabel(lead);
+          counts.set(label, (counts.get(label) || 0) + 1);
+        });
+        return [...counts.entries()]
+          .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "nl"))
+          .map(([label, count]) => ({ label, count }));
+      }
+
       function getLeadOwnerValue(lead = {}) {
         return normalizeLeadOwner(lead).normalizedKey;
       }
@@ -19940,13 +19951,13 @@
               function renderLeadfinderList() {
                 const allLeads = getLeadfinderLeads();
                 const leads = getFilteredLeadfinderLeads();
-                renderLeadfinderMetrics(allLeads);
-                renderSalesCockpit(allLeads);
+                renderLeadfinderMetrics(leads);
+                renderSalesCockpit(leads);
                 populateLeadfinderOwnerFilter(allLeads);
                 updateLeadfinderQuickFilterBar(leads.length);
                 const dashboardLeadMetric = document.getElementById("metric-total-leads");
                 if (dashboardLeadMetric && !activeLeadfinderQuickFilter) {
-                  dashboardLeadMetric.textContent = String(allLeads.filter(isOpenLeadStatus).length);
+                  dashboardLeadMetric.textContent = String(leads.filter(isOpenLeadStatus).length);
                 }
 
                 if (!leadfinderElements.list) return;
@@ -19962,7 +19973,19 @@
         ` : "";
         if (!leads.length) {
           const sourceError = leadfinderSourceStatus?.error || "";
-          const emptyText = activeLeadfinderQuickFilter ? "Geen leads gevonden voor dit filter." : "Voeg een prospect toe of pas je filters aan.";
+          const ownerFilterValue = leadfinderElements.filterOwner?.value || "";
+          const ownerFilterLabel = ownerFilterValue
+            ? leadfinderElements.filterOwner?.selectedOptions?.[0]?.textContent || ownerFilterValue
+            : "";
+          const ownerBreakdown = getLeadOwnerBreakdown(allLeads);
+          const ownerSummary = ownerBreakdown.length
+            ? ` Centrale bron bevat nu: ${ownerBreakdown.map((item) => `${item.label}: ${item.count}`).join(", ")}.`
+            : "";
+          const emptyText = ownerFilterValue
+            ? `Geen centrale leads gevonden voor ${ownerFilterLabel}.${ownerSummary}`
+            : activeLeadfinderQuickFilter
+              ? `Geen leads gevonden voor dit filter.${ownerSummary}`
+              : `Voeg een prospect toe of pas je filters aan.${ownerSummary}`;
           leadfinderElements.list.innerHTML = `
             ${warningHtml}
             <article class="admin-card request-card request-state-card">
