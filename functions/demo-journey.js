@@ -223,7 +223,7 @@ async function readAdminJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
 async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
   const payload = parsePayload(event.body);
   const action = cleanText(payload.action);
-  const current = payload.id ? (await readJourneyById({ supabaseUrl, serviceRoleKey, id: payload.id })) : null;
+  const current = await resolveExistingJourney({ supabaseUrl, serviceRoleKey, payload });
   if (current && !canAdminMutateJourney(mapJourney(current), admin)) {
     const error = new Error("Je mag deze demo-klantreis niet wijzigen.");
     error.status = 403;
@@ -284,6 +284,13 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     if (!journeyId) {
       const created = await insertJourney({ supabaseUrl, serviceRoleKey, record: journeyPayload({ ...payload, demoStatus: "briefing_klaar", generatedBriefing: briefing }, admin, { create: true }) });
       journeyId = cleanText(created[0]?.id);
+    } else {
+      await patchJourney({
+        supabaseUrl,
+        serviceRoleKey,
+        id: journeyId,
+        record: journeyPayload({ ...payload, id: journeyId, demoStatus: sourceJourney.demoStatus || "briefing_klaar", generatedBriefing: briefing }, admin, { create: false }),
+      });
     }
     if (!journeyId) return jsonResponse(500, { success: false, error: "Demo-klantreis kon niet worden voorbereid voor preview." });
 
@@ -319,16 +326,17 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     });
   }
 
-  const record = journeyPayload(payload, admin, { create: !payload.id });
-  const rows = payload.id
-    ? await patchJourney({ supabaseUrl, serviceRoleKey, id: payload.id, record })
+  const targetId = cleanText(current?.id || payload.id || payload.demoJourneyId || payload.demo_journey_id);
+  const record = journeyPayload(payload, admin, { create: !targetId });
+  const rows = targetId
+    ? await patchJourney({ supabaseUrl, serviceRoleKey, id: targetId, record })
     : await insertJourney({ supabaseUrl, serviceRoleKey, record });
   const journey = mapJourney(rows[0] || {});
   const projectWorkspace = await upsertProjectWorkspace({ supabaseUrl, serviceRoleKey, admin }, workspacePayload(journey, { updatedBy: admin.id, createdBy: admin.id }));
   await createStatusEvents({ supabaseUrl, serviceRoleKey, journey, current: current ? mapJourney(current) : null, admin });
   const events = await readEvents({ supabaseUrl, serviceRoleKey, journeyId: journey.id });
   const buildHistory = journey?.id ? await readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, journeyId: journey.id }) : { latestJob: null };
-  return jsonResponse(200, { success: true, journey, demoJourney: journey, events, template: buildEmailTemplate(journey.demoStatus, journey), buildHistory, buildStatus: buildHistory.latestJob || null, projectWorkspace });
+  return jsonResponse(200, { success: true, journey, demoJourney: journey, reusedExisting: Boolean(targetId && !payload.id), events, template: buildEmailTemplate(journey.demoStatus, journey), buildHistory, buildStatus: buildHistory.latestJob || null, projectWorkspace });
 }
 
 function workspacePayload(journey = {}, extra = {}) {
@@ -413,8 +421,27 @@ async function updatePreviewJourney({ supabaseUrl, serviceRoleKey, id, record })
   }
 }
 
+async function resolveExistingJourney({ supabaseUrl, serviceRoleKey, payload = {} }) {
+  const explicitId = cleanText(payload.id || payload.demoJourneyId || payload.demo_journey_id);
+  if (explicitId) {
+    const byId = await readJourneyById({ supabaseUrl, serviceRoleKey, id: explicitId });
+    if (byId) return byId;
+  }
+  const leadId = cleanText(payload.leadId || payload.lead_id);
+  if (!leadId) return null;
+  return readJourneyByLeadId({ supabaseUrl, serviceRoleKey, leadId });
+}
+
 async function readJourneyById({ supabaseUrl, serviceRoleKey, id }) {
   const rows = await supabaseFetch(`${supabaseUrl}/rest/v1/demo_journeys?select=*&id=eq.${encodeURIComponent(id)}&limit=1`, {
+    method: "GET",
+    headers: restHeaders(serviceRoleKey),
+  });
+  return rows[0] || null;
+}
+
+async function readJourneyByLeadId({ supabaseUrl, serviceRoleKey, leadId }) {
+  const rows = await supabaseFetch(`${supabaseUrl}/rest/v1/demo_journeys?select=*&lead_id=eq.${encodeURIComponent(leadId)}&order=updated_at.desc.nullslast&limit=1`, {
     method: "GET",
     headers: restHeaders(serviceRoleKey),
   });

@@ -186,9 +186,19 @@ async function runBuildJob(context, payload = {}) {
     return failBuild(context, job, "Briefing ontbreekt voor websitegeneratie.", logs);
   }
 
-  const buildingLogs = buildLogs(logs, { step: "building", message: "Website package wordt gegenereerd." });
-  await patchBuildJob(context, job.id, { status: "building", current_step: "generate_website_package", progress: 45, build_logs: buildingLogs });
   const packageType = cleanText(payload.packageType || payload.package_type || journey.packageType);
+  const previousPackage = cleanText(journey.previewPackage?.meta?.packageType || journey.previewPackage?.packageType || journey.previewPackage?.meta?.packageId || "");
+  const packageChanged = Boolean(previousPackage && packageType && previousPackage !== packageType);
+  const buildingLogs = buildLogs(logs, {
+    step: "building",
+    message: packageChanged
+      ? `Website package wordt opnieuw gegenereerd: ${previousPackage} naar ${packageType}.`
+      : "Website package wordt gegenereerd.",
+    previousPackage,
+    newPackage: packageType,
+    previewVersion: job.previewVersion,
+  });
+  await patchBuildJob(context, job.id, { status: "building", current_step: "generate_website_package", progress: 45, build_logs: buildingLogs });
   const generatedPackage = buildWebsitePackage({ journey: { ...journey, packageType }, briefing, version: job.previewVersion });
 
   const qualityLogs = buildLogs(buildingLogs, { step: "quality_check", message: "Quality checker gestart." });
@@ -243,7 +253,13 @@ async function runBuildJob(context, payload = {}) {
     preview_token: token,
     preview_score: qualityReport.score,
     finished_at: new Date().toISOString(),
-    build_logs: buildLogs(qualityLogs, { step: "completed", message: `Preview V${job.previewVersion} klaar met score ${qualityReport.score}.` }),
+    build_logs: buildLogs(qualityLogs, {
+      step: "completed",
+      message: `Preview V${job.previewVersion} klaar met score ${qualityReport.score}.`,
+      previousPackage,
+      newPackage: generatedPackage.packageType,
+      previewVersion: job.previewVersion,
+    }),
   });
   const updatedJourney = await updateDemoJourneyPreview(context, {
     demoJourneyId: journey.id,
@@ -449,6 +465,8 @@ function mapJourney(row = {}) {
     demoStatus: cleanText(row.demo_status),
     generatedBriefing: cleanText(row.generated_briefing),
     previewUrl: cleanText(row.preview_url),
+    previewPackage: row.preview_package && typeof row.preview_package === "object" ? row.preview_package : null,
+    packageType: cleanText(row.preview_package?.meta?.packageType || row.preview_package?.packageType || ""),
     internalNotes: cleanText(row.internal_notes),
     assignedTo: cleanText(row.assigned_to),
     createdBy: cleanText(row.created_by),

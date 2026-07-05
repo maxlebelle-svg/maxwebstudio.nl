@@ -18142,6 +18142,7 @@
       };
 
       let selectedLeadFinderId = "";
+      let leadPreviewRequestId = "";
       let leadfinderDataLayerLeads = [];
       let leadfinderSourceStatus = null;
       let activeLeadfinderQuickFilter = null;
@@ -20113,12 +20114,19 @@
           setLeadfinderMessage("Lead geselecteerd. Voeg je notitie toe in Leaddetail.", "success");
           return;
         } else if (button.dataset.leadfinderAction === "preview") {
+          if (leadPreviewRequestId === lead.id) return;
+          leadPreviewRequestId = lead.id;
+          button.disabled = true;
+          button.setAttribute("aria-busy", "true");
           renderLeadfinderList();
           window.location.hash = "demo-klantreis";
           window.dispatchEvent(new CustomEvent("maxwebstudio:lead-preview-request", { detail: { lead } }));
           window.focusAdminPanel?.(document.getElementById("demo-klantreis"), { block: "start", duration: 1600 });
           window.showToast?.(`Website Factory geopend voor ${lead.companyName || "deze lead"}.`, "success");
           setLeadfinderMessage("Lead naar Website Factory gestuurd.", "success");
+          window.setTimeout(() => {
+            leadPreviewRequestId = "";
+          }, 1200);
           return;
         } else if (button.dataset.leadfinderAction === "delete") {
           await deleteLeadfinderLead(lead);
@@ -20550,6 +20558,7 @@
         let projectWorkspace = null;
         let lastFactoryResponse = null;
         let currentTemplate = null;
+        const journeyLocks = new Set();
 
         function initElements() {
           Object.assign(elements, {
@@ -20693,6 +20702,9 @@
               hint: data.hint || normalizedError.hint || "",
               code: data.code || normalizedError.code || data.diagnostics?.code || "",
               stack: data.stack || normalizedError.stack || "",
+              demoJourneyId: payload?.demoJourneyId || payload?.demo_journey_id || payload?.id || "",
+              leadId: payload?.leadId || payload?.lead_id || "",
+              packageType: payload?.packageType || payload?.package_type || "",
             };
             console.error("Demo Journey API request failed", diagnostics);
             if (developerMode) {
@@ -20729,6 +20741,25 @@
           target.textContent = message;
           target.className = `admin-form-message ${type}`;
           if (message && ["success", "info", "warning", "error"].includes(type)) window.showToast?.(message, type);
+        }
+
+        function setDemoActionBusy(isBusy, buttons = []) {
+          buttons.filter(Boolean).forEach((button) => {
+            button.disabled = Boolean(isBusy);
+            button.toggleAttribute("aria-busy", Boolean(isBusy));
+          });
+        }
+
+        async function withJourneyLock(key, buttons, task) {
+          if (journeyLocks.has(key)) return null;
+          journeyLocks.add(key);
+          setDemoActionBusy(true, buttons);
+          try {
+            return await task();
+          } finally {
+            journeyLocks.delete(key);
+            setDemoActionBusy(false, buttons);
+          }
         }
 
         function fillSelect(select, options, placeholder = "") {
@@ -20979,22 +21010,21 @@
 
         async function saveJourney(event) {
           event?.preventDefault();
-          elements.save.disabled = true;
-          setMessage(elements.message, "Demo-klantreis opslaan...", "info");
-          try {
-            const data = await apiRequest(endpoint, journey?.id ? "PATCH" : "POST", collectPayload());
-            journey = data.demoJourney || data.journey || null;
-            events = Array.isArray(data.events) ? data.events : [];
-            buildHistory = data.buildHistory || buildHistory;
-            projectWorkspace = data.projectWorkspace || projectWorkspace;
-            if (data.template) fillEmailTemplate(data.template);
-            renderJourney();
-            setMessage(elements.message, "Demo-klantreis opgeslagen.", "success");
-          } catch (error) {
-            setMessage(elements.message, error.message, "error");
-          } finally {
-            elements.save.disabled = false;
-          }
+          await withJourneyLock("demo-write", [elements.save, elements.generatePreview, elements.upgradeProfessional, elements.upgradePremium], async () => {
+            setMessage(elements.message, "Demo-klantreis opslaan...", "info");
+            try {
+              const data = await apiRequest(endpoint, journey?.id ? "PATCH" : "POST", collectPayload());
+              journey = data.demoJourney || data.journey || null;
+              events = Array.isArray(data.events) ? data.events : [];
+              buildHistory = data.buildHistory || buildHistory;
+              projectWorkspace = data.projectWorkspace || projectWorkspace;
+              if (data.template) fillEmailTemplate(data.template);
+              renderJourney();
+              setMessage(elements.message, data.reusedExisting ? "Bestaande demo-klantreis bijgewerkt." : "Demo-klantreis opgeslagen.", "success");
+            } catch (error) {
+              setMessage(elements.message, error.message, "error");
+            }
+          });
         }
 
         function fillEmailTemplate(template = {}) {
@@ -21039,33 +21069,40 @@
         }
 
         async function generatePreview(packageType = currentPackageType()) {
-          if (!elements.briefing?.value) {
-            elements.briefing.value = buildBriefing();
-          }
-          if (elements.package) elements.package.value = packageTypeFromValue(packageType);
-          elements.generatePreview.disabled = true;
-          setMessage(elements.message, `${packageLabel(packageType)} preview voorbereiden...`, "info");
-          try {
-            const data = await apiRequest(endpoint, "POST", collectPayload({ action: "generate_preview", generatedBriefing: elements.briefing.value, packageType }));
-            lastFactoryResponse = data;
-            journey = data.demoJourney || data.journey || journey || null;
-            const previewUrl = absolutePreviewUrl(data.preview?.url || data.buildJob?.previewUrl || data.buildStatus?.previewUrl || journey?.previewUrl || "");
-            if (journey && previewUrl && !journey.previewUrl) journey.previewUrl = previewUrl;
-            if (journey && data.buildStatus?.previewToken && !journey.previewToken) journey.previewToken = data.buildStatus.previewToken;
-            if (journey && previewUrl) journey.demoStatus = journey.demoStatus || "interne_preview_klaar";
-            events = Array.isArray(data.events) ? data.events : [];
-            buildHistory = buildHistoryFromResponse(data);
-            projectWorkspace = data.projectWorkspace || projectWorkspace;
-            if (journey?.previewUrl) elements.preview.value = journey.previewUrl;
-            if (journey?.demoStatus) elements.status.value = journey.demoStatus;
-            renderJourney();
-            const fileCount = Array.isArray(data.preview?.files) ? data.preview.files.length : 0;
-            setMessage(elements.message, `Interne preview klaar${fileCount ? ` met ${fileCount} bestanden in ZIP` : ""}.`, "success");
-          } catch (error) {
-            setMessage(elements.message, error.message, "error");
-          } finally {
-            elements.generatePreview.disabled = false;
-          }
+          const normalizedPackage = packageTypeFromValue(packageType);
+          await withJourneyLock("demo-write", [elements.save, elements.generatePreview, elements.upgradeProfessional, elements.upgradePremium], async () => {
+            if (!elements.briefing?.value) {
+              elements.briefing.value = buildBriefing();
+            }
+            if (elements.package) elements.package.value = normalizedPackage;
+            setMessage(elements.message, `${packageLabel(normalizedPackage)} preview voorbereiden...`, "info");
+            try {
+              const payload = collectPayload({
+                action: "generate_preview",
+                generatedBriefing: elements.briefing.value,
+                packageType: normalizedPackage,
+                demoJourneyId: journey?.id || "",
+              });
+              const data = await apiRequest(endpoint, "POST", payload);
+              lastFactoryResponse = data;
+              journey = data.demoJourney || data.journey || journey || null;
+              const previewUrl = absolutePreviewUrl(data.preview?.url || data.buildJob?.previewUrl || data.buildStatus?.previewUrl || journey?.previewUrl || "");
+              if (journey && previewUrl && !journey.previewUrl) journey.previewUrl = previewUrl;
+              if (journey && data.buildStatus?.previewToken && !journey.previewToken) journey.previewToken = data.buildStatus.previewToken;
+              if (journey && previewUrl) journey.demoStatus = journey.demoStatus || "interne_preview_klaar";
+              events = Array.isArray(data.events) ? data.events : [];
+              buildHistory = buildHistoryFromResponse(data);
+              projectWorkspace = data.projectWorkspace || projectWorkspace;
+              if (journey?.previewUrl) elements.preview.value = journey.previewUrl;
+              if (journey?.demoStatus) elements.status.value = journey.demoStatus;
+              renderJourney();
+              const fileCount = Array.isArray(data.preview?.files) ? data.preview.files.length : 0;
+              const version = data.previewVersion?.version || data.buildJob?.previewVersion || data.buildStatus?.previewVersion || "";
+              setMessage(elements.message, `Interne preview${version ? ` V${version}` : ""} klaar${fileCount ? ` met ${fileCount} bestanden in ZIP` : ""}.`, "success");
+            } catch (error) {
+              setMessage(elements.message, error.message, "error");
+            }
+          });
         }
 
         async function copyText(value = "", target = elements.message) {
@@ -21395,31 +21432,33 @@
         async function openLeadPreviewWorkflow(event) {
           const lead = event?.detail?.lead || {};
           if (!lead.id || !elements.lead) return;
-          upsertLeadOption(lead);
-          elements.lead.value = lead.id;
-          journey = null;
-          events = [];
-          buildHistory = { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
-          projectWorkspace = null;
-          fillFromLead(lead);
-          renderJourney();
-          window.location.hash = "demo-klantreis";
-          window.focusAdminPanel?.(document.getElementById("demo-klantreis"), { block: "start", duration: 1600 });
-          try {
-            await loadJourney();
-            if (journey?.id) {
-              setMessage(elements.message, "Bestaande demo-klantreis geladen.", "success");
-            } else {
-              setMessage(elements.message, "Leadgegevens ingevuld. Vul de wensen aan en sla de demo-aanvraag op.", "success");
+          await withJourneyLock(`lead-preview:${lead.id}`, [elements.generatePreview, elements.save], async () => {
+            upsertLeadOption(lead);
+            elements.lead.value = lead.id;
+            journey = null;
+            events = [];
+            buildHistory = { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
+            projectWorkspace = null;
+            fillFromLead(lead);
+            renderJourney();
+            window.location.hash = "demo-klantreis";
+            window.focusAdminPanel?.(document.getElementById("demo-klantreis"), { block: "start", duration: 1600 });
+            try {
+              await loadJourney();
+              if (journey?.id) {
+                setMessage(elements.message, "Bestaande demo-klantreis geladen.", "success");
+              } else {
+                setMessage(elements.message, "Leadgegevens ingevuld. Vul de wensen aan en sla de demo-aanvraag op.", "success");
+              }
+            } catch (error) {
+              setMessage(elements.message, error.message || "Leadgegevens ingevuld, maar bestaande demo kon niet worden gecontroleerd.", "warning");
             }
-          } catch (error) {
-            setMessage(elements.message, error.message || "Leadgegevens ingevuld, maar bestaande demo kon niet worden gecontroleerd.", "warning");
-          }
-          const focusTarget = elements.notes || elements.business || elements.form;
-          window.setTimeout(() => {
-            window.focusAdminPanel?.(elements.form, { block: "start", duration: 1200 });
-            focusTarget?.focus?.({ preventScroll: true });
-          }, 380);
+            const focusTarget = elements.notes || elements.business || elements.form;
+            window.setTimeout(() => {
+              window.focusAdminPanel?.(elements.form, { block: "start", duration: 1200 });
+              focusTarget?.focus?.({ preventScroll: true });
+            }, 380);
+          });
         }
 
         function wireEvents() {
