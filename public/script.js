@@ -1,3 +1,149 @@
+const portfolioTrustContent = {
+  featuredCase: {
+    client: "Quantumbouw.nl",
+    category: "Bouwbedrijf",
+    status: "Website live",
+    description: "Professionele bedrijfswebsite ontworpen en gebouwd met focus op snelheid, vertrouwen en leadgeneratie.",
+    websiteUrl: "https://quantumbouw.nl",
+    projectUrl: "portfolio/bouw.html",
+  },
+  customerCases: [
+    {
+      client: "Quantumbouw.nl",
+      category: "Bouwbedrijf",
+      status: "Website live",
+      description: "Professionele bedrijfswebsite ontworpen en gebouwd met focus op snelheid, vertrouwen en leadgeneratie.",
+      websiteUrl: "https://quantumbouw.nl",
+      projectUrl: "portfolio/bouw.html",
+    },
+  ],
+  statistics: [
+    {
+      label: "Eerste website live",
+      value: "Quantumbouw.nl",
+      detail: "Klantcase gepubliceerd",
+    },
+    {
+      label: "Gemiddelde oplevering",
+      value: "5 werkdagen",
+      detail: "Van intake tot livegang",
+    },
+    {
+      label: "Persoonlijk contact",
+      value: "1 vast aanspreekpunt",
+      detail: "Direct schakelen met Max",
+    },
+    {
+      label: "Branches voorbereid",
+      value: "20+",
+      detail: "Demo's en sectorflows",
+    },
+  ],
+  benefits: [
+    {
+      eyebrow: "Snelheid",
+      title: "Razendsnelle oplevering",
+      description: "Wij bouwen de meeste websites binnen enkele werkdagen, zonder in te leveren op uitstraling of structuur.",
+    },
+    {
+      eyebrow: "Maatwerk",
+      title: "Volledig afgestemd",
+      description: "Geen standaard template, maar een website die past bij jouw bedrijf, doelgroep en manier van werken.",
+    },
+    {
+      eyebrow: "Begeleiding",
+      title: "Eén aanspreekpunt",
+      description: "Direct contact met dezelfde specialist tijdens strategie, ontwerp, bouw, livegang en onderhoud.",
+    },
+  ],
+};
+
+function renderPortfolioTrustSection() {
+  const statisticsTarget = document.querySelector("[data-trust-statistics]");
+  const featuredCaseTarget = document.querySelector("[data-featured-case]");
+  const benefitsTarget = document.querySelector("[data-trust-benefits]");
+
+  if (!statisticsTarget || !featuredCaseTarget || !benefitsTarget) {
+    return;
+  }
+
+  const { statistics, benefits, customerCases } = portfolioTrustContent;
+  const featuredCase = portfolioTrustContent.featuredCase || customerCases[0];
+
+  if (!featuredCase) {
+    return;
+  }
+
+  statisticsTarget.innerHTML = statistics
+    .map(
+      (statistic) => `
+        <article class="proof-metric-card reveal-on-scroll">
+          <span class="proof-metric-label">${statistic.label}</span>
+          <strong>${statistic.value}</strong>
+          <small>${statistic.detail}</small>
+        </article>
+      `,
+    )
+    .join("");
+
+  featuredCaseTarget.innerHTML = `
+    <article class="featured-case-card reveal-on-scroll">
+      <div class="featured-case-visual" aria-hidden="true">
+        <div class="featured-case-browser">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <div class="featured-case-preview">
+          <div></div>
+          <div></div>
+          <div></div>
+        </div>
+      </div>
+      <div class="featured-case-content">
+        <span class="featured-case-status">${featuredCase.status}</span>
+        <h3>${featuredCase.client}</h3>
+        <dl class="featured-case-meta">
+          <div>
+            <dt>Client</dt>
+            <dd>${featuredCase.client}</dd>
+          </div>
+          <div>
+            <dt>Category</dt>
+            <dd>${featuredCase.category}</dd>
+          </div>
+          <div>
+            <dt>Status</dt>
+            <dd>${featuredCase.status}</dd>
+          </div>
+        </dl>
+        <p>${featuredCase.description}</p>
+        <div class="featured-case-actions">
+          <a class="button primary" href="${featuredCase.websiteUrl}" target="_blank" rel="noopener">Bekijk website</a>
+          <a class="button secondary" href="${featuredCase.projectUrl}">Bekijk project</a>
+        </div>
+      </div>
+    </article>
+  `;
+
+  benefitsTarget.innerHTML = benefits
+    .map(
+      (benefit, index) => `
+        <article class="trust-benefit-card reveal-on-scroll">
+          <span class="trust-benefit-index">${String(index + 1).padStart(2, "0")}</span>
+          <div>
+            <p>${benefit.eyebrow}</p>
+            <h4>${benefit.title}</h4>
+            <span>${benefit.description}</span>
+          </div>
+        </article>
+      `,
+    )
+    .join("");
+}
+
+renderPortfolioTrustSection();
+
 const packageSelect = document.querySelector("#package-select");
 const carePackageSelect = document.querySelector("#care-package-select");
 const packageLinks = document.querySelectorAll("[data-package]");
