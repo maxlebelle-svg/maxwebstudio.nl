@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Social Media Studio | Max CRM</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=20260705-workflow-modules" />
+    <style>
+      .social-studio-workspace {
+        display: grid;
+        gap: 22px;
+      }
+
+      .social-studio-platforms {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .social-studio-platform {
+        display: grid;
+        gap: 8px;
+        min-height: 98px;
+        padding: 16px;
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        border-radius: 8px;
+        color: rgba(226, 236, 248, 0.78);
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.018)),
+          rgba(15, 23, 42, 0.72);
+        cursor: pointer;
+        text-align: left;
+        transition: border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+      }
+
+      .social-studio-platform:hover,
+      .social-studio-platform:focus-visible {
+        border-color: rgba(96, 165, 250, 0.42);
+        transform: translateY(-1px);
+      }
+
+      .social-studio-platform.is-active {
+        border-color: rgba(96, 165, 250, 0.56);
+        color: #f8fbff;
+        background:
+          radial-gradient(circle at 18% 0%, rgba(37, 99, 235, 0.26), transparent 42%),
+          linear-gradient(135deg, rgba(37, 99, 235, 0.26), rgba(15, 23, 42, 0.8));
+        box-shadow: inset 3px 0 0 var(--blue), 0 18px 48px rgba(21, 94, 239, 0.18);
+      }
+
+      .social-studio-platform strong {
+        color: inherit;
+        font-size: 15px;
+        line-height: 1.15;
+      }
+
+      .social-studio-platform span {
+        color: rgba(226, 236, 248, 0.62);
+        font-size: 12px;
+        font-weight: 800;
+        line-height: 1.35;
+      }
+
+      .social-studio-grid {
+        display: grid;
+        grid-template-columns: minmax(360px, 0.95fr) minmax(360px, 0.75fr);
+        gap: 22px;
+        align-items: start;
+      }
+
+      .social-studio-form,
+      .social-studio-preview-shell,
+      .social-studio-variants {
+        display: grid;
+        gap: 16px;
+        padding: 22px;
+      }
+
+      .social-studio-form label {
+        display: grid;
+        gap: 8px;
+        color: rgba(226, 236, 248, 0.76);
+        font-size: 13px;
+        font-weight: 850;
+      }
+
+      .social-studio-form input,
+      .social-studio-form select,
+      .social-studio-form textarea {
+        width: 100%;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 8px;
+        color: #f8fbff;
+        background: rgba(15, 23, 42, 0.76);
+      }
+
+      .social-studio-form textarea {
+        min-height: 156px;
+        resize: vertical;
+      }
+
+      .social-studio-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .social-studio-message {
+        min-height: 22px;
+      }
+
+      .social-studio-preview-card {
+        overflow: hidden;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 8px;
+        background: rgba(248, 251, 255, 0.96);
+        color: #0f172a;
+        box-shadow: 0 24px 70px rgba(2, 8, 23, 0.36);
+      }
+
+      .social-studio-preview-card[data-platform="instagram"] {
+        max-width: 440px;
+        margin: 0 auto;
+      }
+
+      .social-studio-preview-card[data-platform="linkedin"],
+      .social-studio-preview-card[data-platform="google"] {
+        background: #ffffff;
+      }
+
+      .social-studio-preview-card[data-platform="ad"] {
+        background: #f8fafc;
+      }
+
+      .social-preview-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px;
+      }
+
+      .social-preview-avatar {
+        display: grid;
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 999px;
+        color: #eff6ff;
+        background: linear-gradient(135deg, #1d4ed8, #06b6d4);
+        font-weight: 900;
+      }
+
+      .social-preview-meta {
+        display: grid;
+        gap: 3px;
+        min-width: 0;
+      }
+
+      .social-preview-meta strong,
+      .social-preview-meta span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .social-preview-meta strong {
+        color: #0f172a;
+        font-size: 14px;
+      }
+
+      .social-preview-meta span {
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .social-preview-visual {
+        display: grid;
+        place-items: center;
+        min-height: 240px;
+        margin: 0 16px;
+        border-radius: 8px;
+        color: rgba(248, 251, 255, 0.86);
+        background:
+          radial-gradient(circle at 24% 20%, rgba(34, 211, 238, 0.7), transparent 28%),
+          radial-gradient(circle at 72% 34%, rgba(37, 99, 235, 0.72), transparent 34%),
+          linear-gradient(135deg, #020617, #0f766e 48%, #1d4ed8);
+        font-size: 13px;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .social-studio-preview-card[data-platform="instagram"] .social-preview-visual {
+        aspect-ratio: 1 / 1;
+        min-height: 0;
+      }
+
+      .social-studio-preview-card[data-platform="linkedin"] .social-preview-visual {
+        min-height: 210px;
+        background:
+          radial-gradient(circle at 75% 22%, rgba(14, 165, 233, 0.6), transparent 30%),
+          linear-gradient(135deg, #0f172a, #1d4ed8);
+      }
+
+      .social-studio-preview-card[data-platform="google"] .social-preview-visual {
+        min-height: 180px;
+        background:
+          radial-gradient(circle at 72% 28%, rgba(34, 197, 94, 0.62), transparent 32%),
+          linear-gradient(135deg, #0f172a, #0f766e);
+      }
+
+      .social-studio-preview-card[data-platform="ad"] .social-preview-visual {
+        min-height: 190px;
+        background:
+          radial-gradient(circle at 18% 18%, rgba(250, 204, 21, 0.62), transparent 30%),
+          linear-gradient(135deg, #111827, #2563eb);
+      }
+
+      .social-preview-body {
+        display: grid;
+        gap: 10px;
+        padding: 16px;
+      }
+
+      .social-preview-title {
+        margin: 0;
+        color: #0f172a;
+        font-size: 18px;
+        line-height: 1.22;
+      }
+
+      .social-preview-text,
+      .social-preview-hashtags,
+      .social-preview-link {
+        margin: 0;
+        color: #334155;
+        font-size: 14px;
+        line-height: 1.55;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+
+      .social-preview-hashtags {
+        color: #2563eb;
+        font-weight: 750;
+      }
+
+      .social-preview-link {
+        color: #64748b;
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .social-preview-footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 16px 16px;
+        border-top: 1px solid rgba(15, 23, 42, 0.08);
+      }
+
+      .social-preview-cta {
+        min-height: 34px;
+        padding: 0 14px;
+        border: 1px solid rgba(37, 99, 235, 0.22);
+        border-radius: 8px;
+        color: #1d4ed8;
+        background: rgba(37, 99, 235, 0.08);
+        font-size: 13px;
+        font-weight: 900;
+      }
+
+      .social-preview-tone {
+        align-self: center;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .social-studio-variant-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .social-studio-variant {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+        padding: 14px;
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        border-radius: 8px;
+        background: rgba(15, 23, 42, 0.62);
+      }
+
+      .social-studio-variant strong {
+        display: block;
+        color: #f8fbff;
+        font-size: 15px;
+        line-height: 1.25;
+      }
+
+      .social-studio-variant span,
+      .social-studio-variant small {
+        display: block;
+        margin-top: 5px;
+        color: rgba(226, 236, 248, 0.66);
+        font-size: 12px;
+        font-weight: 750;
+        line-height: 1.35;
+      }
+
+      .social-studio-empty {
+        padding: 18px;
+        border: 1px dashed rgba(148, 163, 184, 0.24);
+        border-radius: 8px;
+        color: rgba(226, 236, 248, 0.72);
+        background: rgba(15, 23, 42, 0.42);
+      }
+
+      @media (max-width: 1180px) {
+        .social-studio-platforms,
+        .social-studio-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .social-studio-form,
+        .social-studio-preview-shell,
+        .social-studio-variants {
+          padding: 18px;
+        }
+
+        .social-studio-variant {
+          grid-template-columns: 1fr;
+        }
+
+        .social-preview-footer {
+          display: grid;
+        }
+      }
+    </style>
+  </head>
+  <body class="admin-body">
+    <main class="admin-crm-shell">
+      <aside class="admin-sidebar" aria-label="Admin modules">
+        <a class="brand" href="admin-dashboard.html">
+          <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true">
+            <rect x="6" y="6" width="68" height="68" rx="18"></rect>
+            <path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path>
+            <path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path>
+          </svg>
+          <span>Max CRM</span>
+        </a>
+        <nav class="admin-sidebar-nav">
+          <span class="admin-nav-group">Main</span>
+          <a href="admin-dashboard.html">Dashboard</a>
+          <span class="admin-nav-group">Sales</span>
+          <a href="admin-sales.html">Leads</a>
+          <span class="admin-nav-group">Production</span>
+          <a href="admin-website-factory.html">Website Factory</a>
+          <a href="admin-ai-content-library.html">AI Content Library</a>
+          <a href="admin-seo-studio.html">SEO Studio</a>
+          <a class="is-active" href="admin-social-media-studio.html">Social Media Studio</a>
+          <a href="admin-brand-center.html">Brand Center</a>
+          <a href="admin-domain-center.html">Domein Center</a>
+          <span class="admin-nav-group">Customers</span>
+          <a href="admin-klanten.html">Klanten</a>
+          <a href="admin-websites.html">Websites</a>
+          <a href="admin-projecten.html">Projecten</a>
+          <span class="admin-nav-group">Administration</span>
+          <a href="admin-offertes.html">Offertes</a>
+          <a href="admin-facturen.html">Facturen</a>
+          <span class="admin-nav-group">System</span>
+          <a href="admin-instellingen.html">Instellingen</a>
+        </nav>
+      </aside>
+
+      <div class="admin-crm-main workflow-module-shell">
+        <header class="admin-section admin-hero">
+          <div>
+            <p class="section-kicker">Production</p>
+            <h1>Social Media Studio</h1>
+            <p>Maak posts, captions en advertenties voor klanten vanuit één editor.</p>
+          </div>
+          <span class="workflow-module-label">Lokale editor - publicatie later gekoppeld</span>
+        </header>
+
+        <section class="social-studio-workspace" aria-label="Social Media Studio workspace">
+          <div class="social-studio-platforms" role="tablist" aria-label="Platform kiezen">
+            <button class="social-studio-platform is-active" type="button" role="tab" aria-selected="true" data-platform="facebook">
+              <strong>Facebook</strong>
+              <span>Nieuws, acties en lokale updates</span>
+            </button>
+            <button class="social-studio-platform" type="button" role="tab" aria-selected="false" data-platform="instagram">
+              <strong>Instagram</strong>
+              <span>Visual-first posts met hashtags</span>
+            </button>
+            <button class="social-studio-platform" type="button" role="tab" aria-selected="false" data-platform="linkedin">
+              <strong>LinkedIn</strong>
+              <span>Zakelijke updates en expertise</span>
+            </button>
+            <button class="social-studio-platform" type="button" role="tab" aria-selected="false" data-platform="google">
+              <strong>Google Bedrijfspost</strong>
+              <span>Lokale zichtbaarheid en aanbiedingen</span>
+            </button>
+            <button class="social-studio-platform" type="button" role="tab" aria-selected="false" data-platform="ad">
+              <strong>Advertentie</strong>
+              <span>Campagnecopy met duidelijke CTA</span>
+            </button>
+          </div>
+
+          <div class="social-studio-grid">
+            <form class="admin-card social-studio-form" id="social-studio-form">
+              <label for="social-title">Titel/onderwerp<input id="social-title" name="title" autocomplete="off" placeholder="Bijv. Zomeractie voor nieuwe klanten" /></label>
+              <label for="social-caption">Caption/tekst<textarea id="social-caption" name="caption" placeholder="Schrijf hier de posttekst..."></textarea></label>
+              <label for="social-cta">Call-to-action<input id="social-cta" name="cta" autocomplete="off" placeholder="Plan een kennismaking" /></label>
+              <label for="social-link">Link<input id="social-link" name="link" type="url" autocomplete="off" placeholder="https://maxwebstudio.nl" /></label>
+              <label for="social-hashtags">Hashtags<input id="social-hashtags" name="hashtags" autocomplete="off" placeholder="#website #marketing #lokaal" /></label>
+              <label for="social-tone">Tone of voice<select id="social-tone" name="tone">
+                <option>Professioneel</option>
+                <option>Enthousiast</option>
+                <option>Luxe</option>
+                <option>Direct verkoopgericht</option>
+                <option>Vriendelijk lokaal</option>
+              </select></label>
+              <div class="social-studio-actions">
+                <button class="button primary" type="button" id="save-draft">Concept opslaan</button>
+                <button class="button secondary" type="button" id="save-variant">Variant opslaan</button>
+                <button class="button secondary" type="button" id="copy-text">Kopieer tekst</button>
+                <button class="button secondary" type="button" id="reset-editor">Reset editor</button>
+                <button class="button secondary" type="button" id="publish-social-post">Publiceren</button>
+              </div>
+              <p class="admin-form-message social-studio-message" id="social-studio-message" role="status" aria-live="polite"></p>
+            </form>
+
+            <aside class="admin-card social-studio-preview-shell" aria-label="Live preview">
+              <div class="admin-section-heading">
+                <div>
+                  <p class="section-kicker">Live preview</p>
+                  <h2 id="preview-heading">Facebook post</h2>
+                </div>
+              </div>
+
+              <article class="social-studio-preview-card" id="social-preview-card" data-platform="facebook">
+                <div class="social-preview-header">
+                  <div class="social-preview-avatar" aria-hidden="true">MW</div>
+                  <div class="social-preview-meta">
+                    <strong id="preview-client">Klantnaam placeholder</strong>
+                    <span><span id="preview-platform">Facebook</span> · <span id="preview-date"></span></span>
+                  </div>
+                </div>
+                <div class="social-preview-visual" id="preview-visual">Visual placeholder</div>
+                <div class="social-preview-body">
+                  <h3 class="social-preview-title" id="preview-title">Titel of onderwerp verschijnt hier</h3>
+                  <p class="social-preview-text" id="preview-caption">Je caption wordt live bijgewerkt terwijl je typt.</p>
+                  <p class="social-preview-hashtags" id="preview-hashtags">#maxwebstudio #content</p>
+                  <p class="social-preview-link" id="preview-link">maxwebstudio.nl</p>
+                </div>
+                <div class="social-preview-footer">
+                  <span class="social-preview-tone" id="preview-tone">Professioneel</span>
+                  <span class="social-preview-cta" id="preview-cta">Meer informatie</span>
+                </div>
+              </article>
+            </aside>
+          </div>
+
+          <section class="admin-card social-studio-variants" aria-labelledby="variants-heading">
+            <div class="admin-section-heading">
+              <div>
+                <p class="section-kicker">Contentvarianten</p>
+                <h2 id="variants-heading">Opgeslagen varianten</h2>
+              </div>
+            </div>
+            <div class="social-studio-variant-list" id="variant-list" aria-live="polite"></div>
+          </section>
+        </section>
+      </div>
+    </main>
+    <script src="src/social-media-studio.js?v=20260705-social-media-studio"></script>
+  </body>
+</html>
