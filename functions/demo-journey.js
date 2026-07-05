@@ -65,6 +65,13 @@ exports.handler = async (event) => {
     const missingFactory = isMissingFactoryTableError(error);
     const developerMode = isDeveloperRequest(event);
     console.error("Demo journey API failed", {
+      module: error.module || "demo_journey",
+      reason: error.reason || "",
+      phase: error.phase || "",
+      action: error.action || "",
+      demoJourneyId: error.demoJourneyId || "",
+      leadId: error.leadId || "",
+      packageType: error.packageType || "",
       method: event.httpMethod,
       path: event.path || "",
       query: event.queryStringParameters || {},
@@ -79,16 +86,20 @@ exports.handler = async (event) => {
       responseJson: error.responseJson || null,
       stack: error.stack || "",
     });
+    const responseModule = error.module || "demo_journey";
+    const responseReason = error.reason || (missing ? "missing_demo_journeys_table" : missingFactory ? "missing_website_factory_tables" : "demo_journey_api_failed");
     return jsonResponse(missing || missingFactory ? 503 : error.status || 500, errorResponse({
       error,
       developerMode,
-      module: "demo_journey",
-      reason: missing ? "missing_demo_journeys_table" : missingFactory ? "missing_website_factory_tables" : "demo_journey_api_failed",
+      module: responseModule,
+      reason: responseReason,
       fallbackMessage: missing
         ? "Demo klantreis tabellen ontbreken nog. Rol migration 018_demo_journey_workflow uit op de actieve Supabase database."
         : missingFactory
           ? "Website Factory tabellen ontbreken nog. Rol migration 019_ai_website_factory_v1 uit op de actieve Supabase database."
-          : "Demo klantreis kon niet worden verwerkt.",
+          : responseModule === "website_factory"
+            ? "Website Factory kon de preview niet bouwen."
+            : "Demo klantreis kon niet worden verwerkt.",
       setupRequired: missing || missingFactory,
     }));
   }
@@ -350,7 +361,19 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     });
     if (!journeyId) return jsonResponse(500, { success: false, error: "Demo-klantreis kon niet worden voorbereid voor preview." });
 
-    const buildResult = await runBuildJob({ supabaseUrl, serviceRoleKey, admin }, { demoJourneyId: journeyId, generatedBriefing: briefing, packageType });
+    let buildResult;
+    try {
+      buildResult = await runBuildJob({ supabaseUrl, serviceRoleKey, admin }, { demoJourneyId: journeyId, generatedBriefing: briefing, packageType });
+    } catch (error) {
+      error.module = "website_factory";
+      error.reason = isMissingFactoryTableError(error) ? "missing_website_factory_tables" : "website_factory_build_failed";
+      error.phase = error.phase || "run_build_job";
+      error.action = action;
+      error.demoJourneyId = journeyId;
+      error.leadId = cleanText(payload.leadId || payload.lead_id || sourceJourney.leadId);
+      error.packageType = packageType;
+      throw error;
+    }
     const journey = buildResult.journey || mapJourney(await readJourneyById({ supabaseUrl, serviceRoleKey, id: journeyId }));
     const previewVersionNumber = buildResult.previewVersion?.version || buildResult.job?.previewVersion || 1;
     const latestZipFilename = zipFilenameFor({ businessName: journey.businessName, websiteUrl: journey.websiteUrl, version: previewVersionNumber });
@@ -864,6 +887,11 @@ function errorResponse({ error = {}, developerMode = false, module = "", reason 
     diagnostics: {
       module,
       reason,
+      phase: error.phase || "",
+      action: error.action || "",
+      demoJourneyId: cleanText(error.demoJourneyId),
+      leadId: cleanText(error.leadId),
+      packageType: cleanText(error.packageType),
       status: error.status || 500,
       code: error.code || "",
       method: error.method || "",

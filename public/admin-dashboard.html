@@ -20850,6 +20850,18 @@
           }
         }
 
+        function apiFailureLabel(url = "", payload = {}, data = {}) {
+          const module = String(data?.diagnostics?.module || "").toLowerCase();
+          const reason = String(data?.diagnostics?.reason || "").toLowerCase();
+          const action = String(payload?.action || "").toLowerCase();
+          if (url.includes("demo-preview") || action.includes("zip") || reason.includes("zip")) return "ZIP generation failed";
+          if (module === "website_factory" || reason.includes("website_factory") || reason.includes("factory")) return "Website Factory build failed";
+          if (action === "generate_preview") return "Preview generation failed";
+          if (url.includes("website-factory")) return "Website Factory request failed";
+          if (url.includes("demo-journey")) return "Demo Journey request failed";
+          return "Admin API request failed";
+        }
+
         async function apiRequest(url, method = "GET", payload = null) {
           const token = getBearer();
           if (!token) throw new Error("Adminsessie ontbreekt. Log opnieuw in om demo klantreizen te beheren.");
@@ -20873,8 +20885,11 @@
           }
           if (!response.ok || data.success === false) {
             const normalizedError = data.error && typeof data.error === "object" ? data.error : {};
+            const failureLabel = apiFailureLabel(url, payload || {}, data);
             const diagnostics = {
-              functionName: url.includes("website-factory") ? "website-factory" : url.includes("demo-journey") ? "demo-journey" : "unknown",
+              label: failureLabel,
+              functionName: url.includes("demo-preview") ? "demo-preview" : url.includes("website-factory") ? "website-factory" : url.includes("demo-journey") ? "demo-journey" : "unknown",
+              endpoint: url,
               status: response.status,
               statusText: response.statusText,
               url,
@@ -20895,11 +20910,13 @@
               previousPackage: payload?.previousPackage || payload?.previous_package || "",
               newPackage: payload?.newPackage || payload?.new_package || "",
             };
-            console.error("Demo Journey API request failed", diagnostics);
+            console.error(failureLabel, diagnostics);
             if (developerMode) {
               console.dir(diagnostics);
               console.table({
+                label: diagnostics.label,
                 functionName: diagnostics.functionName,
+                endpoint: diagnostics.endpoint,
                 action: diagnostics.action,
                 status: diagnostics.status,
                 statusText: diagnostics.statusText,
@@ -20908,6 +20925,7 @@
                 leadId: diagnostics.leadId,
                 packageType: diagnostics.packageType,
                 workflowStep: diagnostics.workflowStep,
+                phase: diagnostics.diagnostics?.phase || "",
                 reason: diagnostics.diagnostics?.reason || "",
                 url: diagnostics.url,
               });
@@ -20925,6 +20943,7 @@
             ].filter(Boolean).join("\n");
             const error = new Error(developerMode ? `Backendfout (${response.status})\n${detail}` : data.userMessage || errorMessage || "Demo klantreis kon niet worden opgeslagen. Probeer opnieuw of vraag een beheerder om Developer Mode te controleren.");
             error.diagnostics = diagnostics;
+            error.label = failureLabel;
             throw error;
           }
           return data;

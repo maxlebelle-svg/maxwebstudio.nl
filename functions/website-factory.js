@@ -49,6 +49,13 @@ async function handler(event) {
     const missing = isMissingFactoryTableError(error);
     const developerMode = isDeveloperRequest(event);
     console.error("Website Factory API failed", {
+      module: error.module || "website_factory",
+      reason: error.reason || "",
+      phase: error.phase || "",
+      action: error.action || "",
+      demoJourneyId: error.demoJourneyId || "",
+      leadId: error.leadId || "",
+      packageType: error.packageType || "",
       method: event.httpMethod,
       path: event.path || "",
       query: event.queryStringParameters || {},
@@ -166,135 +173,160 @@ async function createBuildJob(context, payload = {}) {
 }
 
 async function runBuildJob(context, payload = {}) {
-  const existingJob = cleanText(payload.jobId || payload.job_id) ? await readBuildJobById(context, payload.jobId || payload.job_id) : null;
-  const setup = existingJob
-    ? { job: normalizeBuildJob(existingJob), journey: mapJourney(await readJourney(context, existingJob.demo_journey_id)) }
-    : await createBuildJob(context, payload);
-  const job = setup.job;
-  const journey = setup.journey;
-  if (!journey?.id) {
-    const error = new Error("Demo-klantreis voor build job ontbreekt.");
-    error.status = 404;
-    throw error;
-  }
-  assertCanSeeJourney({ id: journey.id, created_by: journey.createdBy, assigned_to: journey.assignedTo, updated_by: journey.updatedBy }, context.admin);
-  const logs = buildLogs(job.buildLogs, { step: "briefing", message: "Briefing gevalideerd." });
-  await patchBuildJob(context, job.id, { status: "briefing", current_step: "briefing", progress: 20, build_logs: logs });
+  let phase = "create_build_job";
+  let job = null;
+  let journey = null;
+  try {
+    const existingJob = cleanText(payload.jobId || payload.job_id) ? await readBuildJobById(context, payload.jobId || payload.job_id) : null;
+    const setup = existingJob
+      ? { job: normalizeBuildJob(existingJob), journey: mapJourney(await readJourney(context, existingJob.demo_journey_id)) }
+      : await createBuildJob(context, payload);
+    job = setup.job;
+    journey = setup.journey;
+    phase = "validate_journey";
+    if (!journey?.id) {
+      const error = new Error("Demo-klantreis voor build job ontbreekt.");
+      error.status = 404;
+      throw error;
+    }
+    assertCanSeeJourney({ id: journey.id, created_by: journey.createdBy, assigned_to: journey.assignedTo, updated_by: journey.updatedBy }, context.admin);
+    const logs = buildLogs(job.buildLogs, { step: "briefing", message: "Briefing gevalideerd." });
+    phase = "patch_build_job_briefing";
+    await patchBuildJob(context, job.id, { status: "briefing", current_step: "briefing", progress: 20, build_logs: logs });
 
-  const briefing = cleanText(payload.generatedBriefing || payload.generated_briefing || journey.generatedBriefing);
-  if (!briefing) {
-    return failBuild(context, job, "Briefing ontbreekt voor websitegeneratie.", logs);
-  }
+    const briefing = cleanText(payload.generatedBriefing || payload.generated_briefing || journey.generatedBriefing);
+    if (!briefing) {
+      return failBuild(context, job, "Briefing ontbreekt voor websitegeneratie.", logs);
+    }
 
-  const packageType = normalizePackageType(payload.packageType || payload.package_type || journey.packageType);
-  const previousPackage = normalizePackageType(journey.previewPackage?.meta?.packageType || journey.previewPackage?.packageType || journey.previewPackage?.meta?.packageId || "");
-  const packageChanged = Boolean(previousPackage && packageType && previousPackage !== packageType);
-  const buildingLogs = buildLogs(logs, {
-    step: "building",
-    message: packageChanged
-      ? `Website package wordt opnieuw gegenereerd: ${previousPackage} naar ${packageType}.`
-      : "Website package wordt gegenereerd.",
-    previousPackage,
-    newPackage: packageType,
-    previewVersion: job.previewVersion,
-  });
-  await patchBuildJob(context, job.id, { status: "building", current_step: "generate_website_package", progress: 45, build_logs: buildingLogs });
-  const generatedPackage = buildWebsitePackage({ journey: { ...journey, packageType }, briefing, version: job.previewVersion });
+    const packageType = normalizePackageType(payload.packageType || payload.package_type || journey.packageType);
+    const previousPackage = normalizePackageType(journey.previewPackage?.meta?.packageType || journey.previewPackage?.packageType || journey.previewPackage?.meta?.packageId || "");
+    const packageChanged = Boolean(previousPackage && packageType && previousPackage !== packageType);
+    const buildingLogs = buildLogs(logs, {
+      step: "building",
+      message: packageChanged
+        ? `Website package wordt opnieuw gegenereerd: ${previousPackage} naar ${packageType}.`
+        : "Website package wordt gegenereerd.",
+      previousPackage,
+      newPackage: packageType,
+      previewVersion: job.previewVersion,
+    });
+    phase = "patch_build_job_building";
+    await patchBuildJob(context, job.id, { status: "building", current_step: "generate_website_package", progress: 45, build_logs: buildingLogs });
+    phase = "generate_website_package";
+    const generatedPackage = buildWebsitePackage({ journey: { ...journey, packageType }, briefing, version: job.previewVersion });
 
-  const qualityLogs = buildLogs(buildingLogs, { step: "quality_check", message: "Quality checker gestart." });
-  await patchBuildJob(context, job.id, { status: "quality_check", current_step: "run_quality_check", progress: 70, generated_package: generatedPackage, build_logs: qualityLogs });
-  const qualityReport = runQualityCheck({ generatedPackage, journey });
-  if (!qualityReport.passed) {
-    const failed = await patchBuildJob(context, job.id, {
-      status: "quality_failed",
-      current_step: "quality_check",
-      progress: 85,
+    const qualityLogs = buildLogs(buildingLogs, { step: "quality_check", message: "Quality checker gestart." });
+    phase = "patch_build_job_quality_check";
+    await patchBuildJob(context, job.id, { status: "quality_check", current_step: "run_quality_check", progress: 70, generated_package: generatedPackage, build_logs: qualityLogs });
+    phase = "run_quality_check";
+    const qualityReport = runQualityCheck({ generatedPackage, journey });
+    if (!qualityReport.passed) {
+      const failed = await patchBuildJob(context, job.id, {
+        status: "quality_failed",
+        current_step: "quality_check",
+        progress: 85,
+        preview_score: qualityReport.score,
+        quality_report: qualityReport,
+        generated_package: generatedPackage,
+        error_message: qualityReport.summary,
+        finished_at: new Date().toISOString(),
+        build_logs: buildLogs(qualityLogs, { step: "quality_failed", message: qualityReport.summary }),
+      });
+      return { job: normalizeBuildJob(failed[0] || {}), journey, previewVersion: null };
+    }
+
+    const token = makePreviewToken();
+    const previewUrl = previewUrlFor({ journeyId: journey.id, token });
+    phase = "patch_build_job_deploying";
+    await patchBuildJob(context, job.id, {
+      status: "deploying",
+      current_step: "create_preview_version",
+      progress: 90,
+      preview_url: previewUrl,
+      preview_token: token,
       preview_score: qualityReport.score,
       quality_report: qualityReport,
       generated_package: generatedPackage,
-      error_message: qualityReport.summary,
-      finished_at: new Date().toISOString(),
-      build_logs: buildLogs(qualityLogs, { step: "quality_failed", message: qualityReport.summary }),
+      build_logs: buildLogs(qualityLogs, { step: "deploying", message: "Interne previewversie wordt opgeslagen." }),
     });
-    return { job: normalizeBuildJob(failed[0] || {}), journey, previewVersion: null };
+
+    phase = "create_preview_version";
+    const previewVersion = await createPreviewVersion(context, {
+      demoJourneyId: journey.id,
+      buildJobId: job.id,
+      version: job.previewVersion,
+      previewUrl,
+      previewToken: token,
+      previewScore: qualityReport.score,
+      qualityReport,
+      generatedPackage,
+      packageType: generatedPackage.packageType,
+      createdBy: context.admin.id,
+    });
+    phase = "patch_build_job_completed";
+    const completedRows = await patchBuildJob(context, job.id, {
+      status: "completed",
+      current_step: "completed",
+      progress: 100,
+      preview_url: previewUrl,
+      preview_token: token,
+      preview_score: qualityReport.score,
+      finished_at: new Date().toISOString(),
+      build_logs: buildLogs(qualityLogs, {
+        step: "completed",
+        message: `Preview V${job.previewVersion} klaar met score ${qualityReport.score}.`,
+        previousPackage,
+        newPackage: generatedPackage.packageType,
+        previewVersion: job.previewVersion,
+      }),
+    });
+    phase = "update_demo_journey_preview";
+    const updatedJourney = await updateDemoJourneyPreview(context, {
+      demoJourneyId: journey.id,
+      generatedBriefing: briefing,
+      previewUrl,
+      previewToken: token,
+      generatedPackage,
+      packageType: generatedPackage.packageType,
+      status: "interne_preview_klaar",
+    });
+    const latestZipFilename = zipFilenameFor({
+      businessName: updatedJourney.businessName || journey.businessName,
+      websiteUrl: updatedJourney.websiteUrl || journey.websiteUrl,
+      version: job.previewVersion,
+    });
+    phase = "upsert_project_workspace";
+    await upsertProjectWorkspace(context, {
+      leadId: updatedJourney.leadId || journey.leadId,
+      customerId: updatedJourney.customerId || journey.customerId,
+      demoJourneyId: updatedJourney.id || journey.id,
+      businessName: updatedJourney.businessName || journey.businessName,
+      websiteUrl: updatedJourney.websiteUrl || journey.websiteUrl,
+      latestPreviewUrl: previewUrl,
+      latestPreviewVersion: job.previewVersion,
+      latestZipFilename,
+      updatedBy: context.admin.id,
+      createdBy: context.admin.id,
+    });
+    phase = "create_preview_event";
+    await createJourneyEvent(context, {
+      demoJourneyId: journey.id,
+      type: "preview",
+      title: "Preview klaar",
+      description: `Interne preview V${job.previewVersion} staat klaar voor controle.`,
+      visible: false,
+    });
+    return { job: normalizeBuildJob(completedRows[0] || {}), journey: updatedJourney, previewVersion };
+  } catch (error) {
+    error.module = "website_factory";
+    error.reason = isMissingFactoryTableError(error) ? "missing_website_factory_tables" : "website_factory_build_failed";
+    error.phase = error.phase || phase;
+    error.demoJourneyId = error.demoJourneyId || journey?.id || cleanText(payload.demoJourneyId || payload.demo_journey_id);
+    error.leadId = error.leadId || journey?.leadId || cleanText(payload.leadId || payload.lead_id);
+    error.packageType = error.packageType || normalizePackageType(payload.packageType || payload.package_type || journey?.packageType);
+    throw error;
   }
-
-  const token = makePreviewToken();
-  const previewUrl = previewUrlFor({ journeyId: journey.id, token });
-  await patchBuildJob(context, job.id, {
-    status: "deploying",
-    current_step: "create_preview_version",
-    progress: 90,
-    preview_url: previewUrl,
-    preview_token: token,
-    preview_score: qualityReport.score,
-    quality_report: qualityReport,
-    generated_package: generatedPackage,
-    build_logs: buildLogs(qualityLogs, { step: "deploying", message: "Interne previewversie wordt opgeslagen." }),
-  });
-
-  const previewVersion = await createPreviewVersion(context, {
-    demoJourneyId: journey.id,
-    buildJobId: job.id,
-    version: job.previewVersion,
-    previewUrl,
-    previewToken: token,
-    previewScore: qualityReport.score,
-    qualityReport,
-    generatedPackage,
-    packageType: generatedPackage.packageType,
-    createdBy: context.admin.id,
-  });
-  const completedRows = await patchBuildJob(context, job.id, {
-    status: "completed",
-    current_step: "completed",
-    progress: 100,
-    preview_url: previewUrl,
-    preview_token: token,
-    preview_score: qualityReport.score,
-    finished_at: new Date().toISOString(),
-    build_logs: buildLogs(qualityLogs, {
-      step: "completed",
-      message: `Preview V${job.previewVersion} klaar met score ${qualityReport.score}.`,
-      previousPackage,
-      newPackage: generatedPackage.packageType,
-      previewVersion: job.previewVersion,
-    }),
-  });
-  const updatedJourney = await updateDemoJourneyPreview(context, {
-    demoJourneyId: journey.id,
-    generatedBriefing: briefing,
-    previewUrl,
-    previewToken: token,
-    generatedPackage,
-    packageType: generatedPackage.packageType,
-    status: "interne_preview_klaar",
-  });
-  const latestZipFilename = zipFilenameFor({
-    businessName: updatedJourney.businessName || journey.businessName,
-    websiteUrl: updatedJourney.websiteUrl || journey.websiteUrl,
-    version: job.previewVersion,
-  });
-  await upsertProjectWorkspace(context, {
-    leadId: updatedJourney.leadId || journey.leadId,
-    customerId: updatedJourney.customerId || journey.customerId,
-    demoJourneyId: updatedJourney.id || journey.id,
-    businessName: updatedJourney.businessName || journey.businessName,
-    websiteUrl: updatedJourney.websiteUrl || journey.websiteUrl,
-    latestPreviewUrl: previewUrl,
-    latestPreviewVersion: job.previewVersion,
-    latestZipFilename,
-    updatedBy: context.admin.id,
-    createdBy: context.admin.id,
-  });
-  await createJourneyEvent(context, {
-    demoJourneyId: journey.id,
-    type: "preview",
-    title: "Preview klaar",
-    description: `Interne preview V${job.previewVersion} staat klaar voor controle.`,
-    visible: false,
-  });
-  return { job: normalizeBuildJob(completedRows[0] || {}), journey: updatedJourney, previewVersion };
 }
 
 async function failBuild(context, job, message, logs = []) {
@@ -532,6 +564,11 @@ function errorResponse({ error = {}, developerMode = false, module = "", reason 
     diagnostics: {
       module,
       reason,
+      phase: error.phase || "",
+      action: error.action || "",
+      demoJourneyId: cleanText(error.demoJourneyId),
+      leadId: cleanText(error.leadId),
+      packageType: cleanText(error.packageType),
       status: error.status || 500,
       code: error.code || "",
       method: error.method || "",
