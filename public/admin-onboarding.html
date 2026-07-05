@@ -1,0 +1,661 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Klant Onboarding | Max Webstudio</title>
+    <meta name="description" content="Interne onboardingchecklist voor Max Webstudio klanten en projecten." />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=20260704-admin-session-hotfix" />
+  </head>
+  <body class="admin-body admin-onboarding-page">
+    <main class="admin-crm-shell">
+      <aside class="admin-sidebar" aria-label="Admin modules">
+        <a class="brand" href="admin-dashboard.html">
+          <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true">
+            <rect x="6" y="6" width="68" height="68" rx="18"></rect>
+            <path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path>
+            <path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path>
+          </svg>
+          <span>Max CRM</span>
+        </a>
+        <nav class="admin-sidebar-nav">
+          <span class="admin-nav-group">Main</span>
+          <a href="admin-dashboard.html">Dashboard</a>
+          <span class="admin-nav-group">Sales</span>
+          <a href="admin-sales.html">Leads</a>
+          <span class="admin-nav-group">Production</span>
+          <a href="admin-website-factory.html">Website Factory</a>
+          <a href="admin-ai-content-library.html">AI Content Library</a>
+          <a href="admin-assets.html">Asset Manager</a>
+          <a href="admin-seo-studio.html">SEO Studio</a>
+          <a href="admin-social-media-studio.html">Social Media Studio</a>
+          <a href="admin-brand-center.html">Brand Center</a>
+          <a href="admin-domain-center.html">Domein Center</a>
+          <a class="is-active" href="admin-onboarding.html" aria-current="page">Klant Onboarding</a>
+          <span class="admin-nav-group">Customers</span>
+          <a href="admin-klanten.html">Klanten</a>
+          <a class="admin-sales-secondary" href="admin-websites.html">Websites</a>
+          <a href="admin-projecten.html">Projecten</a>
+          <span class="admin-nav-group">Administration</span>
+          <a href="admin-offertes.html">Offertes</a>
+          <a href="admin-facturen.html">Facturen</a>
+          <a href="admin-email-studio.html">E-mail Studio</a>
+          <span class="admin-nav-group">System</span>
+          <a class="admin-sales-secondary" href="admin-instellingen.html">Instellingen</a>
+        </nav>
+        <div class="admin-topbar-actions" aria-label="Admin snelmenu">
+          <label class="admin-topbar-search" for="admin-global-search">
+            <span class="sr-only">Zoeken</span>
+            <input id="admin-global-search" type="search" placeholder="Zoeken..." />
+          </label>
+          <button class="admin-icon-button" type="button" aria-label="Meldingen">⌕</button>
+          <div class="admin-topbar-user" aria-label="Ingelogde admin">
+            <span class="admin-topbar-avatar">M</span>
+            <span>
+              <strong>max@maxwebstudio.nl</strong>
+              <small>Super Admin</small>
+            </span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="admin-crm-main">
+        <header class="admin-page-topbar" aria-label="Onboarding snel zoeken">
+          <label class="admin-page-search" for="admin-page-search">
+            <span class="sr-only">Zoeken</span>
+            <input id="admin-page-search" type="search" placeholder="Zoek op klantnaam..." />
+            <kbd>⌘ K</kbd>
+          </label>
+          <div class="admin-page-actions">
+            <button class="button secondary" id="copy-customer-questions-top" type="button">Kopieer klantvragen</button>
+            <button class="button primary" id="new-onboarding-top" type="button">Nieuwe onboarding</button>
+          </div>
+        </header>
+
+        <section class="admin-hero onboarding-hero" aria-label="Klant onboarding introductie">
+          <div class="admin-hero-copy">
+            <p class="section-kicker">Production workflow</p>
+            <h1>Klant Onboarding</h1>
+            <p>Begeleid iedere nieuwe klant van verkoop tot oplevering.</p>
+          </div>
+          <div class="onboarding-hero-progress" aria-label="Gemiddelde onboarding voortgang">
+            <span>Gemiddelde voortgang</span>
+            <strong id="hero-average-progress">0%</strong>
+            <div class="onboarding-progress-track" aria-hidden="true">
+              <span id="hero-average-progress-bar"></span>
+            </div>
+          </div>
+        </section>
+
+        <section class="admin-grid admin-metrics onboarding-metrics" aria-label="Onboarding statistieken">
+          <article class="admin-card metric-card dashboard-summary-card metric-blue">
+            <span><i aria-hidden="true">◎</i>Actieve onboardings</span>
+            <strong id="metric-active-onboardings">0</strong>
+            <small>Open klanttrajecten</small>
+          </article>
+          <article class="admin-card metric-card dashboard-summary-card metric-green">
+            <span><i aria-hidden="true">✓</i>Klaar voor oplevering</span>
+            <strong id="metric-ready-delivery">0</strong>
+            <small>Laatste check nodig</small>
+          </article>
+          <article class="admin-card metric-card dashboard-summary-card metric-orange">
+            <span><i aria-hidden="true">!</i>Mist klantinformatie</span>
+            <strong id="metric-missing-info">0</strong>
+            <small>Open vragen</small>
+          </article>
+          <article class="admin-card metric-card dashboard-summary-card metric-cyan">
+            <span><i aria-hidden="true">%</i>Gemiddelde voortgang</span>
+            <strong id="metric-average-progress">0%</strong>
+            <small>Alle onboardings</small>
+          </article>
+        </section>
+
+        <section class="onboarding-workspace" aria-label="Onboarding dashboard">
+          <aside class="admin-card onboarding-list-panel" aria-label="Klant/project lijst">
+            <div class="onboarding-panel-heading">
+              <div>
+                <p class="section-kicker">Klanten</p>
+                <h2>Projectlijst</h2>
+              </div>
+              <button class="button secondary" id="new-onboarding-list" type="button">Nieuw</button>
+            </div>
+            <div class="onboarding-filters">
+              <label for="onboarding-search">
+                <span class="sr-only">Zoeken op klantnaam</span>
+                <input id="onboarding-search" type="search" placeholder="Zoek klant of project" />
+              </label>
+              <label for="onboarding-status-filter">
+                <span class="sr-only">Filter op status</span>
+                <select id="onboarding-status-filter">
+                  <option value="all">Alle statussen</option>
+                  <option value="Niet gestart">Niet gestart</option>
+                  <option value="In behandeling">In behandeling</option>
+                  <option value="Bijna klaar">Bijna klaar</option>
+                  <option value="Klaar voor oplevering">Klaar voor oplevering</option>
+                </select>
+              </label>
+            </div>
+            <div class="onboarding-list" id="onboarding-list"></div>
+          </aside>
+
+          <section class="admin-card onboarding-detail-panel" aria-label="Detail checklist">
+            <div class="onboarding-detail-empty" id="onboarding-empty-state" hidden>
+              <p class="section-kicker">Geen selectie</p>
+              <h2>Kies een klant om de onboarding te beheren.</h2>
+              <p>Gebruik de lijst links of start direct een nieuwe onboarding.</p>
+            </div>
+            <div id="onboarding-detail">
+              <div class="onboarding-detail-header">
+                <div>
+                  <p class="section-kicker" id="selected-project-label">Project</p>
+                  <h2 id="selected-customer-name">-</h2>
+                  <p id="selected-customer-meta">-</p>
+                </div>
+                <span class="status-badge" id="selected-status-badge">Niet gestart</span>
+              </div>
+              <div class="onboarding-detail-progress">
+                <div>
+                  <span>Voortgang</span>
+                  <strong id="selected-progress-label">0%</strong>
+                </div>
+                <div class="onboarding-progress-track" aria-hidden="true">
+                  <span id="selected-progress-bar"></span>
+                </div>
+              </div>
+              <div class="onboarding-actions" aria-label="Onboarding acties">
+                <button class="button primary" id="mark-ready-button" type="button">Markeer klaar voor oplevering</button>
+                <button class="button secondary" id="copy-customer-questions" type="button">Kopieer klantvragen</button>
+              </div>
+              <div class="onboarding-checklist" id="onboarding-checklist"></div>
+            </div>
+          </section>
+        </section>
+      </div>
+    </main>
+
+    <script>
+      (() => {
+        const storageKey = "maxwebstudioCustomerOnboardings";
+        const legacyCustomerKeys = ["maxwebstudioCustomers", "mws_customers", "customers", "crmCustomers"];
+        const legacyLeadKeys = ["maxwebstudioLeads", "mws_leads", "leads", "crmLeads"];
+        const legacyProjectKeys = ["maxwebstudioProjects", "mws_projects", "projects", "crmProjects"];
+        const checklistTemplate = [
+          { id: "logo", label: "Logo" },
+          { id: "huisstijl", label: "Huisstijl" },
+          { id: "domein", label: "Domein" },
+          { id: "hosting", label: "Hosting" },
+          { id: "teksten", label: "Teksten" },
+          { id: "fotos", label: "Foto's" },
+          { id: "contactgegevens", label: "Contactgegevens" },
+          { id: "openingstijden", label: "Openingstijden" },
+          { id: "google_maps", label: "Google Maps" },
+          { id: "socials", label: "Socials" },
+          { id: "oplevering", label: "Oplevering" },
+        ];
+        const statuses = ["Open", "Bezig", "Klaar"];
+        const state = {
+          onboardings: [],
+          selectedId: "",
+          query: "",
+          statusFilter: "all",
+        };
+        const elements = {
+          globalSearch: document.getElementById("admin-global-search"),
+          pageSearch: document.getElementById("admin-page-search"),
+          search: document.getElementById("onboarding-search"),
+          statusFilter: document.getElementById("onboarding-status-filter"),
+          list: document.getElementById("onboarding-list"),
+          detail: document.getElementById("onboarding-detail"),
+          empty: document.getElementById("onboarding-empty-state"),
+          checklist: document.getElementById("onboarding-checklist"),
+          selectedProjectLabel: document.getElementById("selected-project-label"),
+          selectedCustomerName: document.getElementById("selected-customer-name"),
+          selectedCustomerMeta: document.getElementById("selected-customer-meta"),
+          selectedStatusBadge: document.getElementById("selected-status-badge"),
+          selectedProgressLabel: document.getElementById("selected-progress-label"),
+          selectedProgressBar: document.getElementById("selected-progress-bar"),
+          heroAverageProgress: document.getElementById("hero-average-progress"),
+          heroAverageProgressBar: document.getElementById("hero-average-progress-bar"),
+          activeMetric: document.getElementById("metric-active-onboardings"),
+          readyMetric: document.getElementById("metric-ready-delivery"),
+          missingMetric: document.getElementById("metric-missing-info"),
+          averageMetric: document.getElementById("metric-average-progress"),
+          markReady: document.getElementById("mark-ready-button"),
+          copyQuestions: document.getElementById("copy-customer-questions"),
+          copyQuestionsTop: document.getElementById("copy-customer-questions-top"),
+          newTop: document.getElementById("new-onboarding-top"),
+          newList: document.getElementById("new-onboarding-list"),
+        };
+
+        function readJson(key, fallback) {
+          try {
+            const parsed = JSON.parse(localStorage.getItem(key) || "null");
+            return parsed ?? fallback;
+          } catch {
+            return fallback;
+          }
+        }
+
+        function writeJson(key, value) {
+          localStorage.setItem(key, JSON.stringify(value));
+        }
+
+        function nowIso() {
+          return new Date().toISOString();
+        }
+
+        function formatDate(value) {
+          if (!value) return "Nog niet aangepast";
+          return new Intl.DateTimeFormat("nl-NL", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(value));
+        }
+
+        function escapeHtml(value) {
+          return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#039;",
+          }[char]));
+        }
+
+        function normalizeSourceList(keys) {
+          return keys.flatMap((key) => {
+            const value = readJson(key, []);
+            if (Array.isArray(value)) return value;
+            if (Array.isArray(value?.items)) return value.items;
+            if (Array.isArray(value?.data)) return value.data;
+            return [];
+          });
+        }
+
+        function makeChecklist(seed = {}) {
+          return checklistTemplate.map((item, index) => ({
+            ...item,
+            status: seed[item.id]?.status || (index < 2 ? "Bezig" : "Open"),
+            note: seed[item.id]?.note || "",
+            updatedAt: seed[item.id]?.updatedAt || nowIso(),
+          }));
+        }
+
+        function createOnboarding(input = {}) {
+          const createdAt = input.createdAt || nowIso();
+          return {
+            id: input.id || `onboarding-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+            customerId: input.customerId || "",
+            projectId: input.projectId || "",
+            customerName: input.customerName || "Nieuwe klant",
+            projectName: input.projectName || "Website project",
+            contactName: input.contactName || "",
+            email: input.email || "",
+            source: input.source || "manual",
+            createdAt,
+            updatedAt: input.updatedAt || createdAt,
+            checklist: Array.isArray(input.checklist) ? normalizeChecklist(input.checklist) : makeChecklist(input.checklistSeed),
+          };
+        }
+
+        function normalizeChecklist(items) {
+          const map = new Map(items.map((item) => [item.id, item]));
+          return checklistTemplate.map((item) => {
+            const stored = map.get(item.id) || {};
+            return {
+              ...item,
+              status: statuses.includes(stored.status) ? stored.status : "Open",
+              note: stored.note || "",
+              updatedAt: stored.updatedAt || nowIso(),
+            };
+          });
+        }
+
+        function demoData() {
+          return [
+            createOnboarding({
+              id: "demo-bloom-bakkerij",
+              customerName: "Bloom Bakkerij",
+              projectName: "Nieuwe website + lokale vindbaarheid",
+              contactName: "Sanne de Vries",
+              email: "sanne@bloombakkerij.nl",
+              source: "demo",
+              checklistSeed: {
+                logo: { status: "Klaar", note: "Vectorlogo ontvangen." },
+                huisstijl: { status: "Klaar", note: "Kleuren en lettertypes verwerkt." },
+                domein: { status: "Bezig", note: "Verhuiscode opgevraagd." },
+                teksten: { status: "Bezig", note: "Homepagecopy staat klaar voor review." },
+              },
+            }),
+            createOnboarding({
+              id: "demo-nova-installatie",
+              customerName: "Nova Installatie",
+              projectName: "Leadgeneratie website",
+              contactName: "Mark Jansen",
+              email: "mark@novainstallatie.nl",
+              source: "demo",
+              checklistSeed: {
+                logo: { status: "Klaar", note: "Logo uit huidige website gehaald." },
+                contactgegevens: { status: "Klaar", note: "Telefoon en servicegebied bevestigd." },
+                google_maps: { status: "Bezig", note: "Bedrijfsprofiel link ontbreekt nog." },
+              },
+            }),
+            createOnboarding({
+              id: "demo-studio-liva",
+              customerName: "Studio Liva",
+              projectName: "Portfolio website",
+              contactName: "Liva van Dijk",
+              email: "hello@studioliva.nl",
+              source: "demo",
+              checklistSeed: {
+                logo: { status: "Klaar", note: "Brandkit ontvangen." },
+                huisstijl: { status: "Klaar", note: "Moodboard akkoord." },
+                domein: { status: "Klaar", note: "Domein staat klaar." },
+                hosting: { status: "Klaar", note: "Hostingpakket ingericht." },
+                teksten: { status: "Klaar", note: "Alle paginacopy compleet." },
+                fotos: { status: "Bezig", note: "Selectie galerij volgt." },
+                contactgegevens: { status: "Klaar", note: "Contactblok bevestigd." },
+                openingstijden: { status: "Klaar", note: "Niet van toepassing." },
+                google_maps: { status: "Klaar", note: "Locatie toegevoegd." },
+                socials: { status: "Klaar", note: "Instagram en LinkedIn toegevoegd." },
+              },
+            }),
+          ];
+        }
+
+        function seedFromExistingData() {
+          const customers = normalizeSourceList(legacyCustomerKeys);
+          const leads = normalizeSourceList(legacyLeadKeys);
+          const projects = normalizeSourceList(legacyProjectKeys);
+          const sourceItems = [...customers, ...projects, ...leads].slice(0, 8);
+          const mapped = sourceItems.map((item, index) => createOnboarding({
+            id: `source-${item.id || item.customerId || item.projectId || index}`,
+            customerId: item.customerId || item.id || "",
+            projectId: item.projectId || "",
+            customerName: item.companyName || item.customerName || item.name || item.title || `Klant ${index + 1}`,
+            projectName: item.projectName || item.websiteName || item.title || "Website project",
+            contactName: item.contactName || item.contact || "",
+            email: item.email || item.contactEmail || "",
+            source: "localStorage",
+            checklistSeed: {
+              logo: { status: item.logoUrl || item.logo ? "Klaar" : "Open" },
+              domein: { status: item.domain || item.websiteUrl ? "Bezig" : "Open" },
+              contactgegevens: { status: item.email || item.phone || item.phoneNumber ? "Klaar" : "Open" },
+            },
+          }));
+          return mapped.length ? mapped : demoData();
+        }
+
+        function loadOnboardings() {
+          const stored = readJson(storageKey, null);
+          state.onboardings = Array.isArray(stored) && stored.length ? stored.map(createOnboarding) : seedFromExistingData();
+          if (!Array.isArray(stored) || !stored.length) saveOnboardings(false);
+          state.selectedId = state.onboardings[0]?.id || "";
+        }
+
+        function saveOnboardings(showFeedback = true) {
+          writeJson(storageKey, state.onboardings);
+          if (showFeedback) notify("Onboarding opgeslagen.", "success");
+        }
+
+        function progressOf(onboarding) {
+          const done = onboarding.checklist.filter((item) => item.status === "Klaar").length;
+          return Math.round((done / checklistTemplate.length) * 100);
+        }
+
+        function badgeFor(onboarding) {
+          const progress = progressOf(onboarding);
+          if (progress >= 100) return "Klaar voor oplevering";
+          if (progress >= 75) return "Bijna klaar";
+          if (onboarding.checklist.some((item) => item.status !== "Open")) return "In behandeling";
+          return "Niet gestart";
+        }
+
+        function badgeClass(status) {
+          return {
+            "Niet gestart": "status-prepared",
+            "In behandeling": "status-warning",
+            "Bijna klaar": "status-active",
+            "Klaar voor oplevering": "status-success",
+          }[status] || "status-prepared";
+        }
+
+        function selectedOnboarding() {
+          return state.onboardings.find((item) => item.id === state.selectedId) || state.onboardings[0] || null;
+        }
+
+        function filteredOnboardings() {
+          const query = state.query.trim().toLowerCase();
+          return state.onboardings.filter((item) => {
+            const matchesQuery = !query || [item.customerName, item.projectName, item.contactName, item.email].some((value) => String(value || "").toLowerCase().includes(query));
+            const matchesStatus = state.statusFilter === "all" || badgeFor(item) === state.statusFilter;
+            return matchesQuery && matchesStatus;
+          });
+        }
+
+        function renderMetrics() {
+          const total = state.onboardings.length;
+          const progressValues = state.onboardings.map(progressOf);
+          const average = total ? Math.round(progressValues.reduce((sum, value) => sum + value, 0) / total) : 0;
+          const ready = state.onboardings.filter((item) => badgeFor(item) === "Klaar voor oplevering").length;
+          const missing = state.onboardings.filter((item) => item.checklist.some((step) => step.status !== "Klaar")).length;
+          elements.activeMetric.textContent = String(state.onboardings.filter((item) => progressOf(item) < 100).length);
+          elements.readyMetric.textContent = String(ready);
+          elements.missingMetric.textContent = String(missing);
+          elements.averageMetric.textContent = `${average}%`;
+          elements.heroAverageProgress.textContent = `${average}%`;
+          elements.heroAverageProgressBar.style.width = `${average}%`;
+        }
+
+        function renderList() {
+          const items = filteredOnboardings();
+          elements.list.innerHTML = items.length ? items.map((item) => {
+            const progress = progressOf(item);
+            const badge = badgeFor(item);
+            return `
+              <button class="onboarding-list-item ${item.id === state.selectedId ? "is-active" : ""}" type="button" data-id="${escapeHtml(item.id)}">
+                <span class="onboarding-list-top">
+                  <strong>${escapeHtml(item.customerName)}</strong>
+                  <span class="status-badge ${badgeClass(badge)}">${escapeHtml(badge)}</span>
+                </span>
+                <span>${escapeHtml(item.projectName)}</span>
+                <span class="onboarding-progress-track" aria-hidden="true"><span style="width: ${progress}%"></span></span>
+                <small>${progress}% compleet · aangepast ${escapeHtml(formatDate(item.updatedAt))}</small>
+              </button>
+            `;
+          }).join("") : `<div class="onboarding-empty-list">Geen onboardings gevonden.</div>`;
+        }
+
+        function renderDetail() {
+          const onboarding = selectedOnboarding();
+          elements.empty.hidden = Boolean(onboarding);
+          elements.detail.hidden = !onboarding;
+          if (!onboarding) return;
+          const progress = progressOf(onboarding);
+          const badge = badgeFor(onboarding);
+          elements.selectedProjectLabel.textContent = onboarding.projectName || "Project";
+          elements.selectedCustomerName.textContent = onboarding.customerName;
+          elements.selectedCustomerMeta.textContent = [onboarding.contactName, onboarding.email].filter(Boolean).join(" · ") || "Geen contactpersoon vastgelegd";
+          elements.selectedStatusBadge.textContent = badge;
+          elements.selectedStatusBadge.className = `status-badge ${badgeClass(badge)}`;
+          elements.selectedProgressLabel.textContent = `${progress}%`;
+          elements.selectedProgressBar.style.width = `${progress}%`;
+          elements.checklist.innerHTML = onboarding.checklist.map((step) => `
+            <article class="onboarding-check-card" data-step-id="${escapeHtml(step.id)}">
+              <div class="onboarding-check-header">
+                <div>
+                  <strong>${escapeHtml(step.label)}</strong>
+                  <small>Laatst aangepast: ${escapeHtml(formatDate(step.updatedAt))}</small>
+                </div>
+                <select aria-label="Status voor ${escapeHtml(step.label)}" data-field="status">
+                  ${statuses.map((status) => `<option value="${status}" ${step.status === status ? "selected" : ""}>${status}</option>`).join("")}
+                </select>
+              </div>
+              <textarea data-field="note" rows="2" placeholder="Korte notitie voor ${escapeHtml(step.label)}">${escapeHtml(step.note)}</textarea>
+            </article>
+          `).join("");
+        }
+
+        function render() {
+          renderMetrics();
+          renderList();
+          renderDetail();
+        }
+
+        function updateStep(stepId, field, value, renderAfterSave = true) {
+          const onboarding = selectedOnboarding();
+          if (!onboarding) return;
+          const step = onboarding.checklist.find((item) => item.id === stepId);
+          if (!step) return;
+          step[field] = value;
+          step.updatedAt = nowIso();
+          onboarding.updatedAt = step.updatedAt;
+          saveOnboardings(false);
+          if (renderAfterSave) render();
+        }
+
+        function addOnboarding() {
+          const nextNumber = state.onboardings.length + 1;
+          const onboarding = createOnboarding({
+            customerName: `Nieuwe klant ${nextNumber}`,
+            projectName: "Website onboarding",
+            source: "manual",
+            checklistSeed: checklistTemplate.reduce((seed, item) => {
+              seed[item.id] = { status: "Open", note: "" };
+              return seed;
+            }, {}),
+          });
+          state.onboardings.unshift(onboarding);
+          state.selectedId = onboarding.id;
+          saveOnboardings();
+          render();
+        }
+
+        function markReady() {
+          const onboarding = selectedOnboarding();
+          if (!onboarding) return;
+          const timestamp = nowIso();
+          onboarding.checklist = onboarding.checklist.map((step) => ({
+            ...step,
+            status: "Klaar",
+            updatedAt: timestamp,
+          }));
+          onboarding.updatedAt = timestamp;
+          saveOnboardings();
+          render();
+          notify(`${onboarding.customerName} is klaar voor oplevering.`, "success");
+        }
+
+        function missingQuestions(onboarding) {
+          const missing = onboarding.checklist.filter((step) => step.status !== "Klaar");
+          const lines = missing.map((step) => `- ${step.label}${step.note ? `: ${step.note}` : ""}`);
+          return [
+            `Hoi ${onboarding.contactName || onboarding.customerName},`,
+            "",
+            `We zijn bezig met de onboarding van ${onboarding.projectName || "jullie website"}. Om goed door te kunnen pakken hebben we nog het volgende nodig:`,
+            "",
+            lines.length ? lines.join("\n") : "- Alles is compleet. We plannen de oplevering in.",
+            "",
+            "Kun je dit naar ons toesturen of kort bevestigen wat niet van toepassing is?",
+            "",
+            "Dank je wel!",
+            "Max Webstudio",
+          ].join("\n");
+        }
+
+        async function copyQuestions() {
+          const onboarding = selectedOnboarding();
+          if (!onboarding) return;
+          const text = missingQuestions(onboarding);
+          try {
+            if (!navigator.clipboard?.writeText) throw new Error("Clipboard API niet beschikbaar");
+            await navigator.clipboard.writeText(text);
+            notify("Klantvragen gekopieerd.", "success");
+          } catch {
+            const helper = document.createElement("textarea");
+            helper.value = text;
+            helper.className = "onboarding-copy-fallback";
+            helper.setAttribute("aria-label", "Klantvragen om te kopieren");
+            document.body.append(helper);
+            helper.select();
+            const copied = document.execCommand("copy");
+            if (copied) {
+              helper.remove();
+              notify("Klantvragen gekopieerd.", "success");
+            } else {
+              notify("Tekst geselecteerd. Kopieer deze handmatig.", "warning");
+            }
+          }
+        }
+
+        function notify(message, type = "info") {
+          if (typeof window.showToast === "function") {
+            window.showToast(message, type);
+            return;
+          }
+          let region = document.querySelector("[data-toast-region]");
+          if (!region) {
+            region = document.createElement("div");
+            region.className = "toast-region";
+            region.dataset.toastRegion = "true";
+            document.body.append(region);
+          }
+          const toast = document.createElement("div");
+          toast.className = `toast toast-${type}`;
+          toast.setAttribute("role", type === "error" ? "alert" : "status");
+          toast.innerHTML = `<span class="toast-icon">${type === "success" ? "✓" : "i"}</span><span class="toast-message">${escapeHtml(message)}</span><button class="toast-action" type="button" aria-label="Sluiten">×</button><span class="toast-progress"></span>`;
+          toast.querySelector("button").addEventListener("click", () => toast.remove());
+          region.append(toast);
+          window.setTimeout(() => toast.remove(), 3000);
+        }
+
+        function bindEvents() {
+          [elements.search, elements.pageSearch, elements.globalSearch].forEach((input) => {
+            input?.addEventListener("input", (event) => {
+              state.query = event.target.value;
+              elements.search.value = state.query;
+              elements.pageSearch.value = state.query;
+              if (elements.globalSearch) elements.globalSearch.value = state.query;
+              renderList();
+            });
+          });
+          elements.statusFilter.addEventListener("change", (event) => {
+            state.statusFilter = event.target.value;
+            renderList();
+          });
+          elements.list.addEventListener("click", (event) => {
+            const item = event.target.closest("[data-id]");
+            if (!item) return;
+            state.selectedId = item.dataset.id;
+            render();
+          });
+          elements.checklist.addEventListener("change", (event) => {
+            const card = event.target.closest("[data-step-id]");
+            if (!card || event.target.dataset.field !== "status") return;
+            updateStep(card.dataset.stepId, "status", event.target.value);
+          });
+          elements.checklist.addEventListener("input", (event) => {
+            const card = event.target.closest("[data-step-id]");
+            if (!card || event.target.dataset.field !== "note") return;
+            updateStep(card.dataset.stepId, "note", event.target.value, false);
+          });
+          [elements.newTop, elements.newList].forEach((button) => button.addEventListener("click", addOnboarding));
+          [elements.copyQuestions, elements.copyQuestionsTop].forEach((button) => button.addEventListener("click", copyQuestions));
+          elements.markReady.addEventListener("click", markReady);
+          window.addEventListener("keydown", (event) => {
+            if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+              event.preventDefault();
+              elements.pageSearch.focus();
+            }
+          });
+        }
+
+        loadOnboardings();
+        bindEvents();
+        render();
+      })();
+    </script>
+  </body>
+</html>
