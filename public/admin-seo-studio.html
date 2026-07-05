@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>SEO Studio | Max CRM</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=20260705-seo-studio" />
+  </head>
+  <body class="admin-body">
+    <main class="admin-crm-shell">
+      <aside class="admin-sidebar" aria-label="Admin modules">
+        <a class="brand" href="admin-dashboard.html">
+          <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true">
+            <rect x="6" y="6" width="68" height="68" rx="18"></rect>
+            <path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path>
+            <path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path>
+          </svg>
+          <span>Max CRM</span>
+        </a>
+        <nav class="admin-sidebar-nav">
+          <span class="admin-nav-group">Main</span>
+          <a href="admin-dashboard.html">Dashboard</a>
+          <span class="admin-nav-group">Sales</span>
+          <a href="admin-sales.html">Leads</a>
+          <span class="admin-nav-group">Production</span>
+          <a href="admin-website-factory.html">Website Factory</a>
+          <a href="admin-ai-content-library.html">AI Content Library</a>
+          <a class="is-active" href="admin-seo-studio.html">SEO Studio</a>
+          <a href="admin-social-media-studio.html">Social Media Studio</a>
+          <a href="admin-brand-center.html">Brand Center</a>
+          <a href="admin-domain-center.html">Domein Center</a>
+          <span class="admin-nav-group">Customers</span>
+          <a href="admin-klanten.html">Klanten</a>
+          <a href="admin-websites.html">Websites</a>
+          <a href="admin-projecten.html">Projecten</a>
+          <span class="admin-nav-group">Administration</span>
+          <a href="admin-offertes.html">Offertes</a>
+          <a href="admin-facturen.html">Facturen</a>
+          <span class="admin-nav-group">System</span>
+          <a href="admin-instellingen.html">Instellingen</a>
+        </nav>
+      </aside>
+
+      <div class="admin-crm-main workflow-module-shell seo-studio-shell">
+        <header class="admin-section admin-hero seo-studio-hero">
+          <div>
+            <p class="section-kicker">Production</p>
+            <h1>SEO Studio</h1>
+            <p>Optimaliseer klantpagina's voor Google. AI-koppeling volgt later.</p>
+          </div>
+          <span class="workflow-module-label">SEO Studio - conceptmodus</span>
+        </header>
+
+        <section class="seo-studio-toolbar" aria-label="SEO Studio project acties">
+          <label>
+            <span>Selecteer klantwebsite</span>
+            <select id="seo-client-site">
+              <option value="">Selecteer klantwebsite</option>
+              <option value="installatiebedrijf-demo">Installatiebedrijf demo</option>
+              <option value="bouwbedrijf-demo">Bouwbedrijf demo</option>
+              <option value="restaurant-demo">Restaurant demo</option>
+            </select>
+          </label>
+          <div class="seo-studio-actions">
+            <button class="button primary" id="seo-save-draft" type="button">Opslaan concept</button>
+            <button class="button secondary" type="button" disabled>AI genereren <span>Binnenkort</span></button>
+            <button class="button secondary" id="seo-export" type="button">Exporteren</button>
+          </div>
+          <p class="admin-form-message" id="seo-status-message" role="status"></p>
+        </section>
+
+        <section class="seo-studio-overview" aria-label="SEO Studio overzicht">
+          <article class="admin-card seo-score-card">
+            <div>
+              <p class="section-kicker">Pagina score</p>
+              <h2><span id="seo-score-value">0</span>/100</h2>
+              <p id="seo-score-label">Ontbreekt</p>
+            </div>
+            <div class="seo-score-ring" aria-hidden="true"><span id="seo-score-ring-value">0</span></div>
+          </article>
+          <article class="admin-card seo-google-preview">
+            <p class="section-kicker">Google preview</p>
+            <div class="seo-search-result">
+              <span id="seo-preview-url">maxwebstudio.nl/klantpagina</span>
+              <strong id="seo-preview-title">SEO title verschijnt hier</strong>
+              <p id="seo-preview-description">Meta description verschijnt hier zodra je tekst invult.</p>
+            </div>
+          </article>
+        </section>
+
+        <section class="seo-studio-workspace" aria-label="SEO Studio workspace">
+          <div class="seo-studio-tabs" role="tablist" aria-label="SEO Studio onderdelen">
+            <button class="seo-studio-tab is-active" type="button" data-tab="keywords">Keywords</button>
+            <button class="seo-studio-tab" type="button" data-tab="metadata">Metadata</button>
+            <button class="seo-studio-tab" type="button" data-tab="faq">FAQ</button>
+            <button class="seo-studio-tab" type="button" data-tab="schema">Schema.org</button>
+            <button class="seo-studio-tab" type="button" data-tab="score">Score</button>
+          </div>
+
+          <section class="seo-studio-panel" data-panel="keywords">
+            <article class="admin-card seo-studio-card">
+              <div class="seo-card-heading">
+                <div>
+                  <p class="section-kicker">Keywords</p>
+                  <h2>Zoekwoorden</h2>
+                </div>
+                <span class="seo-badge">Frontend-only</span>
+              </div>
+              <div class="seo-form-grid">
+                <label>Hoofdzoekwoord<input id="seo-main-keyword" type="text" placeholder="bijv. website laten maken Amsterdam" /></label>
+                <label>Zoekintentie<select id="seo-keyword-intent">
+                  <option>Informatief</option>
+                  <option>Commercieel</option>
+                  <option>Lokaal</option>
+                  <option>Transactioneel</option>
+                </select></label>
+                <label>Extra zoekwoord<input id="seo-extra-keyword" type="text" placeholder="bijv. betaalbare website bouwer" /></label>
+                <label>Prioriteit<select id="seo-keyword-priority">
+                  <option>Hoog</option>
+                  <option>Middel</option>
+                  <option>Laag</option>
+                </select></label>
+              </div>
+              <button class="button secondary" id="seo-add-keyword" type="button">Keyword toevoegen</button>
+              <div class="seo-table" aria-live="polite">
+                <div class="seo-table-row seo-table-head">
+                  <span>Keyword</span>
+                  <span>Intentie</span>
+                  <span>Prioriteit</span>
+                  <span>Status</span>
+                </div>
+                <div id="seo-keyword-list"></div>
+              </div>
+            </article>
+          </section>
+
+          <section class="seo-studio-panel" data-panel="metadata" hidden>
+            <div class="seo-two-column">
+              <article class="admin-card seo-studio-card">
+                <div class="seo-card-heading">
+                  <div>
+                    <p class="section-kicker">Meta Titles</p>
+                    <h2>SEO title</h2>
+                  </div>
+                  <span class="seo-badge" id="seo-title-status">Ontbreekt</span>
+                </div>
+                <label class="seo-editor-label">Editor<input id="seo-title" maxlength="90" type="text" placeholder="Sterke SEO title voor de klantpagina" /></label>
+                <div class="seo-counter"><span id="seo-title-count">0</span> tekens</div>
+              </article>
+              <article class="admin-card seo-studio-card">
+                <div class="seo-card-heading">
+                  <div>
+                    <p class="section-kicker">Meta Descriptions</p>
+                    <h2>Meta description</h2>
+                  </div>
+                  <span class="seo-badge" id="seo-description-status">Ontbreekt</span>
+                </div>
+                <label class="seo-editor-label">Editor<textarea id="seo-description" rows="6" maxlength="220" placeholder="Beschrijf helder wat de pagina biedt en waarom iemand moet klikken."></textarea></label>
+                <div class="seo-counter"><span id="seo-description-count">0</span> tekens</div>
+              </article>
+            </div>
+          </section>
+
+          <section class="seo-studio-panel" data-panel="faq" hidden>
+            <article class="admin-card seo-studio-card">
+              <div class="seo-card-heading">
+                <div>
+                  <p class="section-kicker">FAQ</p>
+                  <h2>FAQ builder</h2>
+                </div>
+                <span class="seo-badge">AI later</span>
+              </div>
+              <div class="seo-form-grid">
+                <label>Vraag<input id="seo-faq-question" type="text" placeholder="Welke vraag stelt de bezoeker?" /></label>
+                <label>Antwoord<textarea id="seo-faq-answer" rows="4" placeholder="Kort, duidelijk antwoord voor de pagina."></textarea></label>
+              </div>
+              <button class="button secondary" id="seo-add-faq" type="button">FAQ toevoegen</button>
+              <div class="seo-faq-list" id="seo-faq-list" aria-live="polite"></div>
+            </article>
+          </section>
+
+          <section class="seo-studio-panel" data-panel="schema" hidden>
+            <div class="seo-two-column">
+              <article class="admin-card seo-studio-card">
+                <div class="seo-card-heading">
+                  <div>
+                    <p class="section-kicker">Schema.org</p>
+                    <h2>Structured data</h2>
+                  </div>
+                  <span class="seo-badge">Geen publicatie</span>
+                </div>
+                <label class="seo-editor-label">Type<select id="seo-schema-type">
+                  <option value="">Kies schema type</option>
+                  <option>LocalBusiness</option>
+                  <option>Organization</option>
+                  <option>FAQPage</option>
+                  <option>WebPage</option>
+                  <option>Service</option>
+                </select></label>
+                <button class="button secondary" id="seo-prepare-schema" type="button">Schema voorbereiden</button>
+              </article>
+              <article class="admin-card seo-studio-card">
+                <p class="section-kicker">JSON-LD preview</p>
+                <pre class="seo-schema-preview" id="seo-schema-preview"></pre>
+              </article>
+            </div>
+          </section>
+
+          <section class="seo-studio-panel" data-panel="score" hidden>
+            <article class="admin-card seo-studio-card">
+              <div class="seo-card-heading">
+                <div>
+                  <p class="section-kicker">Checks</p>
+                  <h2>Pagina score</h2>
+                </div>
+                <span class="seo-badge" id="seo-score-summary">Ontbreekt</span>
+              </div>
+              <div class="seo-check-list" id="seo-check-list"></div>
+            </article>
+          </section>
+        </section>
+      </div>
+    </main>
+    <script type="module" src="src/seo-studio.js?v=20260705-seo-studio"></script>
+  </body>
+</html>
