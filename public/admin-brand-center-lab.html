@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Brand Center Lab | Max Webstudio</title>
+    <meta name="description" content="Geisoleerde Brand Center Lab sandbox voor Max Webstudio." />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css?v=20260705-brand-center-lab" />
+    <script src="src/brand-center-lab.js" defer></script>
+  </head>
+  <body class="admin-body brand-lab-body">
+    <main class="brand-lab-shell">
+      <aside class="brand-lab-sidebar" aria-label="Brand Center Lab navigatie">
+        <a class="brand-lab-back" href="/admin-dashboard.html">Terug naar admin</a>
+        <div class="brand-lab-brand">
+          <span class="brand-lab-mark">BC</span>
+          <div>
+            <strong>Brand Center Lab</strong>
+            <small>Sandbox module</small>
+          </div>
+        </div>
+        <nav class="brand-lab-nav">
+          <a href="#overview">Overview</a>
+          <a href="#brand-profile">Brand Profile</a>
+          <a href="#logos">Logos</a>
+          <a href="#images">Images</a>
+          <a href="#content">Content</a>
+          <a href="#pages">Pages</a>
+          <a href="#export">Export</a>
+        </nav>
+        <div class="brand-lab-note">
+          <strong>Lab only</strong>
+          <span>Mock data en localStorage. Niet verbonden met productie.</span>
+        </div>
+      </aside>
+
+      <div class="brand-lab-main">
+        <header class="brand-lab-hero">
+          <div>
+            <span class="brand-lab-badge">Brand Center Lab — not connected to production</span>
+            <h1>Merkfundering voor toekomstige websites.</h1>
+            <p>Leg logo's, beelden, contentblokken en pagina's vast als veilig testpakket voordat dit later richting Website Factory gaat.</p>
+          </div>
+          <div class="brand-lab-score-card" aria-label="Readiness score">
+            <span>Readiness</span>
+            <strong id="brand-lab-score">0%</strong>
+            <div class="brand-lab-progress"><span id="brand-lab-progress-bar"></span></div>
+          </div>
+        </header>
+
+        <section class="brand-lab-section" id="overview">
+          <div class="brand-lab-section-heading">
+            <div>
+              <p class="section-kicker">Overview</p>
+              <h2>Readiness checklist</h2>
+            </div>
+            <span class="brand-lab-pill" id="brand-lab-save-state">Draft niet opgeslagen</span>
+          </div>
+          <div class="brand-lab-checklist" id="brand-lab-checklist"></div>
+        </section>
+
+        <section class="brand-lab-section" id="brand-profile">
+          <div class="brand-lab-section-heading">
+            <div>
+              <p class="section-kicker">Brand Profile</p>
+              <h2>Merkprofiel</h2>
+            </div>
+          </div>
+          <form class="brand-lab-form brand-lab-profile-grid" id="brand-profile-form">
+            <label>Business name<input name="businessName" type="text" maxlength="100" /></label>
+            <label>Industry<input name="industry" type="text" maxlength="100" /></label>
+            <label>Target audience<input name="targetAudience" type="text" maxlength="180" /></label>
+            <label>Tone of voice<input name="toneOfVoice" type="text" maxlength="140" /></label>
+            <label>Main offer<input name="mainOffer" type="text" maxlength="180" /></label>
+            <label>USP<input name="usp" type="text" maxlength="180" /></label>
+            <label>Primary color<input name="primaryColor" type="text" maxlength="40" placeholder="#155eef" /></label>
+            <label>Secondary color<input name="secondaryColor" type="text" maxlength="40" placeholder="#19c2ff" /></label>
+            <label>Font preference<input name="fontPreference" type="text" maxlength="100" /></label>
+            <label class="brand-lab-span-2">Notes<textarea name="notes" rows="4" maxlength="600"></textarea></label>
+            <div class="brand-lab-form-actions brand-lab-span-2">
+              <button class="button primary" type="submit">Brand Profile opslaan</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="brand-lab-section" id="logos">
+          <div class="brand-lab-section-heading">
+            <div>
+              <p class="section-kicker">Logo Library</p>
+              <h2>Logo assets</h2>
+            </div>
+          </div>
+          <form class="brand-lab-form brand-lab-record-form" data-library-form="logos">
+            <input name="id" type="hidden" />
+            <label>Asset name<input name="assetName" type="text" maxlength="120" required /></label>
+            <label>Type<select name="type"><option>logo</option><option>favicon</option><option>icon</option><option>wordmark</option></select></label>
+            <label>Format<select name="format"><option>SVG</option><option>PNG</option><option>JPG</option><option>WEBP</option></select></label>
+            <label>Status<select name="status"><option>draft</option><option>selected</option><option>approved</option></select></label>
+            <label>Preview URL<input name="previewUrl" type="url" maxlength="500" /></label>
+            <label>Prompt used<input name="promptUsed" type="text" maxlength="300" /></label>
+            <label class="brand-lab-span-2">Notes<textarea name="notes" rows="3" maxlength="600"></textarea></label>
+            <div class="brand-lab-form-actions brand-lab-span-2">
+              <button class="button primary" type="submit">Logo asset opslaan</button>
+              <button class="button secondary" type="reset">Nieuw record</button>
+            </div>
+          </form>
+          <div class="brand-lab-table-wrap"><table><thead><tr><th>Asset</th><th>Type</th><th>Format</th><th>Status</th><th>Preview</th><th>Acties</th></tr></thead><tbody data-library-table="logos"></tbody></table></div>
+          <p class="brand-lab-empty" data-library-empty="logos">Nog geen logo assets.</p>
+        </section>
+
+        <section class="brand-lab-section" id="images">
+          <div class="brand-lab-section-heading">
+            <div>
+              <p class="section-kicker">Image Library</p>
+              <h2>Beeldassets</h2>
+            </div>
+          </div>
+          <form class="brand-lab-form brand-lab-record-form" data-library-form="images">
+            <input name="id" type="hidden" />
+            <label>Asset name<input name="assetName" type="text" maxlength="120" required /></label>
+            <label>Category<select name="category"><option>hero</option><option>team</option><option>project</option><option>service</option><option>background</option><option>social</option><option>other</option></select></label>
+            <label>Tags<input name="tags" type="text" maxlength="180" placeholder="premium, lokaal, warm" /></label>
+            <label>Preview URL<input name="previewUrl" type="url" maxlength="500" /></label>
+            <label>Prompt used<input name="promptUsed" type="text" maxlength="300" /></label>
+            <label>Status<select name="status"><option>draft</option><option>selected</option><option>approved</option></select></label>
+            <label class="brand-lab-span-2">Notes<textarea name="notes" rows="3" maxlength="600"></textarea></label>
+            <div class="brand-lab-form-actions brand-lab-span-2">
+              <button class="button primary" type="submit">Image asset opslaan</button>
+              <button class="button secondary" type="reset">Nieuw record</button>
+            </div>
+          </form>
+          <div class="brand-lab-table-wrap"><table><thead><tr><th>Asset</th><th>Category</th><th>Tags</th><th>Status</th><th>Preview</th><th>Acties</th></tr></thead><tbody data-library-table="images"></tbody></table></div>
+          <p class="brand-lab-empty" data-library-empty="images">Nog geen image assets.</p>
+        </section>
+
+        <section class="brand-lab-section" id="content">
+          <div class="brand-lab-section-heading">
+            <div>
+              <p class="section-kicker">Content Library</p>
+              <h2>Contentblokken</h2>
+            </div>
+          </div>
+          <form class="brand-lab-form brand-lab-record-form" data-library-form="contentBlocks">
+            <input name="id" type="hidden" />
+            <label>Title<input name="title" type="text" maxlength="140" required /></label>
+            <label>Content type<select name="contentType"><option>homepage hero</option><option>about</option><option>service</option><option>CTA</option><option>SEO</option><option>social post</option><option>email</option><option>FAQ</option><option>other</option></select></label>
+            <label>Page connection<input name="pageConnection" type="text" maxlength="120" /></label>
+            <label>Version name<input name="versionName" type="text" maxlength="120" /></label>
+            <label>Status<select name="status"><option>draft</option><option>selected</option><option>approved</option></select></label>
+            <label class="brand-lab-span-2">Text content<textarea name="textContent" rows="5" maxlength="1400"></textarea></label>
+            <div class="brand-lab-form-actions brand-lab-span-2">
+              <button class="button primary" type="submit">Contentblok opslaan</button>
+              <button class="button secondary" type="reset">Nieuw record</button>
+            </div>
+          </form>
+          <div class="brand-lab-table-wrap"><table><thead><tr><th>Titel</th><th>Type</th><th>Pagina</th><th>Versie</th><th>Status</th><th>Acties</th></tr></thead><tbody data-library-table="contentBlocks"></tbody></table></div>
+          <p class="brand-lab-empty" data-library-empty="contentBlocks">Nog geen contentblokken.</p>
+        </section>
+
+        <section class="brand-lab-section" id="pages">
+          <div class="brand-lab-section-heading">
+            <div>
+              <p class="section-kicker">Page Library</p>
+              <h2>Geplande pagina's</h2>
+            </div>
+          </div>
+          <form class="brand-lab-form brand-lab-record-form" data-library-form="pages">
+            <input name="id" type="hidden" />
+            <label>Page name<input name="pageName" type="text" maxlength="140" required /></label>
+            <label>Slug<input name="slug" type="text" maxlength="140" placeholder="/contact" /></label>
+            <label>Purpose<input name="purpose" type="text" maxlength="240" /></label>
+            <label>SEO title<input name="seoTitle" type="text" maxlength="160" /></label>
+            <label class="brand-lab-span-2">Meta description<textarea name="metaDescription" rows="3" maxlength="320"></textarea></label>
+            <label>Connected content blocks<input name="connectedContentBlocks" type="text" maxlength="240" /></label>
+            <label>Connected image assets<input name="connectedImageAssets" type="text" maxlength="240" /></label>
+            <label>Status<select name="status"><option>planned</option><option>ready</option><option>approved</option></select></label>
+            <div class="brand-lab-form-actions brand-lab-span-2">
+              <button class="button primary" type="submit">Pagina opslaan</button>
+              <button class="button secondary" type="reset">Nieuw record</button>
+            </div>
+          </form>
+          <div class="brand-lab-table-wrap"><table><thead><tr><th>Pagina</th><th>Slug</th><th>SEO</th><th>Meta</th><th>Status</th><th>Acties</th></tr></thead><tbody data-library-table="pages"></tbody></table></div>
+          <p class="brand-lab-empty" data-library-empty="pages">Nog geen pagina's gepland.</p>
+        </section>
+
+        <section class="brand-lab-section" id="export">
+          <div class="brand-lab-section-heading">
+            <div>
+              <p class="section-kicker">Export</p>
+              <h2>Brand Package JSON</h2>
+            </div>
+          </div>
+          <div class="brand-lab-export-panel">
+            <p>Download een lokaal JSON-pakket voor latere Website Factory-koppeling. Deze knop schrijft niets naar Supabase en past geen websites aan.</p>
+            <div class="brand-lab-form-actions">
+              <button class="button primary" id="brand-lab-export" type="button">Export Brand Package JSON</button>
+              <button class="button danger" id="brand-lab-clear" type="button">Lab draft wissen</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>
