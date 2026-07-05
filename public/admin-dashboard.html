@@ -20644,12 +20644,12 @@
         ];
         const employeeSteps = [
           { number: 1, label: "Selecteer lead", description: "Kies de juiste lead.", key: "lead" },
-          { number: 2, label: "Vul aanvraag in", description: "Controleer wensen en contact.", key: "wishes" },
+          { number: 2, label: "Vul intake in", description: "Leg klantwensen en eisen vast.", key: "intake" },
           { number: 3, label: "Sla demo op", description: "Bewaar de aanvraag centraal.", key: "saved" },
           { number: 4, label: "Maak websiteplan", description: "Maak het plan voor de preview.", key: "briefing" },
-          { number: 5, label: "Genereer preview", description: "Bouw preview en ZIP.", key: "preview" },
-          { number: 6, label: "Controleer intern", description: "Open en controleer preview.", key: "review" },
-          { number: 7, label: "Stuur naar klant", description: "Plan of verstuur opvolging.", key: "followup" },
+          { number: 5, label: "Maak preview", description: "Bouw preview en ZIP.", key: "preview" },
+          { number: 6, label: "Interne controle", description: "Controleer en keur de preview.", key: "review" },
+          { number: 7, label: "Klant opvolgen", description: "Plan of verstuur opvolging.", key: "followup" },
         ];
         const elements = {};
         let leads = [];
@@ -21790,18 +21790,19 @@
 
         function demoStepStates() {
           const leadSelected = Boolean(elements.lead?.value);
-          const hasWishes = Boolean(elements.business?.value || elements.contact?.value || elements.email?.value || elements.notes?.value);
+          const intakeComplete = collectIntake().complete;
           const saved = Boolean(journey?.id);
           const briefingReady = Boolean(elements.briefing?.value || journey?.generatedBriefing);
           const previewReady = Boolean(journey?.previewUrl);
-          const followupReady = Boolean(journey?.followUpAt || currentTemplate?.subject || journey?.lastEmailStatus);
+          const reviewReady = Boolean(journey?.previewApprovedAt);
+          const followupReady = Boolean(currentTemplate?.subject || journey?.lastEmailStatus || journey?.followUpAt);
           const done = {
             lead: leadSelected,
-            wishes: hasWishes,
+            intake: intakeComplete,
             saved,
             briefing: briefingReady,
             preview: previewReady,
-            review: previewReady,
+            review: reviewReady,
             followup: followupReady,
           };
           const next = employeeSteps.find((step) => !done[step.key]) || employeeSteps[employeeSteps.length - 1];
