@@ -178,7 +178,6 @@
               <a class="button secondary admin-action-card accent-purple" href="admin-projecten.html"><span aria-hidden="true">□</span><strong>Lopende projecten</strong></a>
               <a class="button secondary admin-action-card accent-orange" href="admin-offertes.html"><span aria-hidden="true">§</span><strong>Open offertes</strong></a>
               <a class="button secondary admin-action-card accent-green" href="admin-facturen.html"><span aria-hidden="true">€</span><strong>Open facturen</strong></a>
-              <button class="button secondary admin-action-card admin-user-management-action accent-blue" id="invite-user-quick" type="button" hidden><span aria-hidden="true">+</span><strong>Werknemer uitnodigen</strong></button>
             </div>
           </div>
         </section>
@@ -1444,8 +1443,8 @@
         <section class="admin-section settings-section" id="instellingen">
           <div class="admin-section-heading">
             <div>
-              <p class="section-kicker">Instellingen</p>
-              <h2>Integraties & professionele instellingen</h2>
+              <p class="section-kicker">Beheercentrum</p>
+              <h2>Instellingen</h2>
             </div>
             <span class="status-badge status-prepared">Demo-modus</span>
           </div>
@@ -1456,7 +1455,7 @@
 
           <form class="settings-grid" id="settings-form">
             <article class="admin-card settings-card">
-              <div class="settings-card-heading"><div><span>Bedrijfsgegevens</span><strong>Max Webstudio profiel</strong></div><mark class="status-badge status-active">Actief</mark></div>
+              <div class="settings-card-heading"><div><span>Bedrijfsprofiel</span><strong>Logo, contact en bedrijfsgegevens</strong></div><mark class="status-badge status-active">Actief</mark></div>
               <div class="admin-profile-fields">
                 <label for="setting-company-name">Bedrijfsnaam<input id="setting-company-name" name="companyName" type="text" /></label>
                 <label for="setting-trade-name">Handelsnaam<input id="setting-trade-name" name="tradeName" type="text" /></label>
@@ -1476,7 +1475,7 @@
             </article>
 
             <article class="admin-card settings-card">
-              <div class="settings-card-heading"><div><span>Factuurinstellingen</span><strong>Nummering & standaardteksten</strong></div><mark class="status-badge status-prepared">Voorbereid</mark></div>
+              <div class="settings-card-heading"><div><span>Facturatie</span><strong>Nummering, BTW en betaalvoorwaarden</strong></div><mark class="status-badge status-prepared">Voorbereid</mark></div>
               <div class="admin-profile-fields">
                 <label for="setting-invoice-prefix">Factuurnummer prefix<input id="setting-invoice-prefix" name="invoicePrefix" type="text" /></label>
                 <label for="setting-quote-prefix">Offertenummer prefix<input id="setting-quote-prefix" name="quotePrefix" type="text" /></label>
@@ -1492,7 +1491,7 @@
             </article>
 
             <article class="admin-card settings-card">
-              <div class="settings-card-heading"><div><span>Betaalinstellingen</span><strong>Mollie voorbereiding</strong></div><mark class="status-badge status-prepared">Demo voorbereid</mark></div>
+              <div class="settings-card-heading"><div><span>Betalingen</span><strong>Mollie, testmodus en betaalmethodes</strong></div><mark class="status-badge status-prepared">Demo voorbereid</mark></div>
               <div class="settings-status-list">
                 <div><span>Mollie status</span><mark class="status-badge status-prepared">Demo voorbereid</mark></div>
                 <div><span>Betalingen</span><mark class="status-badge status-warning">Nog geen echte betalingen actief</mark></div>
@@ -1511,7 +1510,7 @@
             </article>
 
             <article class="admin-card settings-card">
-              <div class="settings-card-heading"><div><span>E-mailinstellingen</span><strong>Resend & templates</strong></div><mark class="status-badge status-prepared">Demo voorbereid</mark></div>
+              <div class="settings-card-heading"><div><span>E-mail</span><strong>Resend, templates en afzenders</strong></div><mark class="status-badge status-prepared">Demo voorbereid</mark></div>
               <div class="admin-profile-fields">
                 <label for="setting-sender-name">Afzendernaam<input id="setting-sender-name" name="senderName" type="text" /></label>
                 <label for="setting-sender-email">Afzender e-mailadres<input id="setting-sender-email" name="senderEmail" type="email" /></label>
@@ -1528,7 +1527,7 @@
             </article>
 
             <article class="admin-card settings-card settings-card-wide admin-developer-only" id="integraties">
-              <div class="settings-card-heading"><div><span>Integraties</span><strong>Koppelingenoverzicht</strong></div><mark class="status-badge status-planned">API later</mark></div>
+              <div class="settings-card-heading"><div><span>Integraties</span><strong>Supabase, Google Maps, OpenAI, Netlify en API-statussen</strong></div><mark class="status-badge status-planned">API later</mark></div>
               <div class="integration-grid" id="settings-integrations"></div>
             </article>
 
@@ -1546,8 +1545,22 @@
               <label class="settings-wide-label" for="setting-portal-welcome">Primaire klantportaaltekst<textarea id="setting-portal-welcome" name="portalWelcomeText"></textarea></label>
             </article>
 
+            <article class="admin-card settings-card settings-card-wide">
+              <div class="settings-card-heading"><div><span>Website Factory</span><strong>Packages, bibliotheken, kwaliteit en defaults</strong></div><mark class="status-badge status-prepared">Voorbereid</mark></div>
+              <div class="settings-status-list">
+                <div><span>Package instellingen</span><mark class="status-badge status-prepared">Website Factory</mark></div>
+                <div><span>Branchebibliotheek</span><mark class="status-badge status-prepared">Beschikbaar</mark></div>
+                <div><span>Afbeeldingenbibliotheek</span><mark class="status-badge status-prepared">Beschikbaar</mark></div>
+                <div><span>Quality instellingen</span><mark class="status-badge status-prepared">Voorbereid</mark></div>
+                <div><span>Website Factory defaults</span><mark class="status-badge status-prepared">Actief</mark></div>
+              </div>
+              <div class="settings-actions">
+                <a class="button secondary" href="admin-website-factory.html">Open Website Factory</a>
+              </div>
+            </article>
+
             <article class="admin-card settings-card">
-              <div class="settings-card-heading"><div><span>Systeemstatus</span><strong>Dashboardstatus</strong></div><mark class="status-badge status-prepared">Overzicht</mark></div>
+              <div class="settings-card-heading"><div><span>Developer</span><strong>Developer Mode, database, diagnostiek en build info</strong></div><mark class="status-badge status-prepared">Overzicht</mark></div>
               <div class="settings-status-list" id="settings-system-status"></div>
               <div class="settings-checkbox-grid">
                 <label><input id="setting-developer-mode" name="developerMode" type="checkbox" /> Developer Mode</label>
@@ -1558,7 +1571,7 @@
             </article>
 
             <article class="admin-card settings-card settings-card-wide" id="user-management-card">
-              <div class="settings-card-heading"><div><span>Identity & Permissions</span><strong>Gebruikersbeheer</strong></div><mark class="status-badge status-prepared">Rollenmodel</mark></div>
+              <div class="settings-card-heading"><div><span>Gebruikersbeheer</span><strong>Uitnodigen, rollen, rechten, reset en activeren</strong></div><mark class="status-badge status-prepared">Rollenmodel</mark></div>
               <div class="settings-actions">
                 <button class="button primary admin-user-management-action" id="invite-user-open" type="button" hidden>Werknemer uitnodigen</button>
               </div>
