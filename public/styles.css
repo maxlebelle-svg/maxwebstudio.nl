@@ -4549,6 +4549,7 @@ h3 {
 
 .proof-metrics article {
   display: grid;
+  align-content: space-between;
   gap: 8px;
   min-height: 150px;
   padding: 26px;
@@ -4569,9 +4570,10 @@ h3 {
 
 .proof-metrics strong {
   color: var(--ink);
-  font-size: clamp(32px, 4vw, 52px);
-  line-height: 0.95;
+  font-size: clamp(30px, 3.35vw, 50px);
+  line-height: 1;
   letter-spacing: 0;
+  overflow-wrap: anywhere;
 }
 
 .proof-metrics span {
