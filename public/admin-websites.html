@@ -14730,6 +14730,80 @@
           setAdminAccessMessage("Klant-aanmaak wizard gevuld vanuit geaccepteerde offerte. Provisioning start pas na bevestiging.", "success");
         }
 
+        function invoiceCreateWebsiteOptionValue() {
+          return "__create_customer_website__";
+        }
+
+        function customerWebsiteDomain(customer = {}) {
+          const candidates = [
+            customer.website,
+            customer.domain,
+            customer.websiteUrl,
+            customer.metadata?.website,
+            customer.metadata?.domain,
+            customer.metadata?.websiteUrl,
+            customer.company,
+            customer.name,
+          ];
+          const value = candidates.find((item) => /\.[a-z]{2,}/i.test(String(item || "")));
+          return cleanDomain(value || "");
+        }
+
+        function customerHasLinkedWebsite(customerId = "") {
+          return state.websites.some((website) => websiteBelongsToCustomer(website, customerId));
+        }
+
+        function maybeAddCreateWebsiteOption(selectedCustomerId = "") {
+          const customer = customerByAnyId(selectedCustomerId);
+          const domain = customerWebsiteDomain(customer || {});
+          if (!customer || !domain || customerHasLinkedWebsite(selectedCustomerId)) return;
+          const option = document.createElement("option");
+          option.value = invoiceCreateWebsiteOptionValue();
+          option.textContent = `${domain} centraal koppelen`;
+          invoiceFields.website.append(option);
+        }
+
+        async function createInvoiceWebsiteFromCustomer() {
+          const selectedCustomerId = invoiceFields.profile.value || state.selectedCustomerId || "";
+          const customer = customerByAnyId(selectedCustomerId);
+          const domain = customerWebsiteDomain(customer || {});
+          if (!customer) throw new Error("Selecteer eerst de klant waarvoor je de website wilt koppelen.");
+          if (!domain) throw new Error("Deze klant heeft nog geen domein op het klantprofiel.");
+          setBillingMessage(invoiceMessage, `${domain} wordt centraal gekoppeld...`, "success");
+          const website = await saveWebsiteCentrally({
+            id: "",
+            profileId: customer.id,
+            customerId: customerSupabaseId(customer),
+            name: domain,
+            domain,
+            liveUrl: `https://${domain}`,
+            status: "online",
+            hostingPackage: "",
+            carePackage: customer.package || "",
+            sslStatus: "unknown",
+            notes: "Gekoppeld vanuit factuurbeheer.",
+          });
+          await loadCRMData(false);
+          populateInvoiceOptions(customer.id);
+          invoiceFields.profile.value = customer.id;
+          invoiceFields.website.value = website.id;
+          setBillingMessage(invoiceMessage, `${domain} is gekoppeld aan deze klant.`, "success");
+          window.showToast?.(`${domain} gekoppeld.`, "success");
+          return website;
+        }
+
+        async function handleInvoiceWebsiteChange() {
+          if (invoiceFields.website.value !== invoiceCreateWebsiteOptionValue()) return;
+          invoiceFields.website.disabled = true;
+          try {
+            await createInvoiceWebsiteFromCustomer();
+          } catch (error) {
+            invoiceFields.website.value = "";
+            setBillingMessage(invoiceMessage, error.message || "Website kon niet worden gekoppeld.", "error");
+          } finally {
+            invoiceFields.website.disabled = false;
+          }
+        }
         function populateInvoiceOptions(selectedCustomerId = "") {
           const selectedProfileValue = invoiceFields.profile.value;
           const selectedWebsiteValue = invoiceFields.website.value;
@@ -14772,6 +14846,7 @@
               select.append(option);
             });
           });
+          maybeAddCreateWebsiteOption(selectedCustomerId);
           invoiceFields.website.value = selectedWebsiteValue;
           invoiceWebsiteFilter.value = websiteFilterValue;
 
@@ -15752,6 +15827,7 @@
 
           try {
             const existingInvoice = invoiceById(invoiceFields.id.value);
+            if (invoiceFields.website.value === invoiceCreateWebsiteOptionValue()) await createInvoiceWebsiteFromCustomer();
             const payload = {
               id: invoiceFields.id.value,
               profileId: invoiceFields.profile.value,
@@ -17729,6 +17805,7 @@
           populateInvoiceOptions(selectedCustomerId);
           invoiceFields.profile.value = selectedCustomerId;
         });
+        invoiceFields.website.addEventListener("change", handleInvoiceWebsiteChange);
         invoiceFields.paymentLink.addEventListener("input", () => updatePaymentLinkActions(invoiceById(state.selectedInvoiceId)));
         invoiceMarkSent.addEventListener("click", () => state.selectedInvoiceId && setInvoiceStatus(state.selectedInvoiceId, "verzonden", invoiceMarkSent));
         invoiceMarkPaid.addEventListener("click", () => state.selectedInvoiceId && setInvoiceStatus(state.selectedInvoiceId, "betaald", invoiceMarkPaid));
