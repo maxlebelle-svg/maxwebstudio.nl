@@ -345,6 +345,8 @@ function normalizeUrl(value = "") {
 
 function websiteWriteRecord(input = {}) {
   const customerId = cleanText(input.customerId || input.customer_id || input.profileId || input.profile_id);
+  const explicitProfileId = cleanText(input.profileRecordId || input.customerProfileId || input.profile_id || input.profileId);
+  const profileId = explicitProfileId && explicitProfileId !== customerId ? explicitProfileId : "";
   const domain = normalizeDomain(input.domain || input.website || input.liveUrl);
   const liveUrl = normalizeUrl(input.liveUrl || input.live_url || domain);
   const name = cleanText(input.name || input.title || domain);
@@ -352,7 +354,7 @@ function websiteWriteRecord(input = {}) {
   if (!name && !domain) throw Object.assign(new Error("Vul een websitenaam of domein in."), { status: 400 });
   return {
     customer_id: customerId,
-    profile_id: cleanText(input.profileId || input.profile_id || customerId) || null,
+    profile_id: profileId || null,
     name: name || domain,
     domain: domain || null,
     live_url: liveUrl,

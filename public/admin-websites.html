@@ -12339,7 +12339,7 @@
               ...payload,
               id: currentWebsite && isSupabaseManagedWebsite(currentWebsite) ? currentWebsite._supabaseWebsiteId || currentWebsite.id : "",
               customerId: centralCustomerId,
-              profileId: linkedCustomer?.profileId || centralCustomerId,
+              profileId: linkedCustomer?.profileId || "",
               metadata: {
                 ...(currentWebsite?.metadata || {}),
                 localCustomerId: linkedCustomer?.id || payload.profileId || "",
@@ -14778,7 +14778,7 @@
           setBillingMessage(invoiceMessage, `${domain} wordt centraal gekoppeld...`, "success");
           const website = await saveWebsiteCentrally({
             id: "",
-            profileId: customer.id,
+            profileId: customer.profileId || "",
             customerId: customerSupabaseId(customer),
             name: domain,
             domain,
