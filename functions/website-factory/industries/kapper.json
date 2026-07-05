@@ -1,0 +1,78 @@
+{
+  "id": "kapper",
+  "name": "Kapper & Salon",
+  "tone": "stijlvol, persoonlijk, verzorgd en modern",
+  "colorHints": [
+    "mauve",
+    "champagne",
+    "zwart",
+    "warm wit"
+  ],
+  "heroAngles": [
+    "Een verzorgde uitstraling begint bij het eerste bezoek online.",
+    "Een salonwebsite die stijl en vertrouwen direct laat voelen."
+  ],
+  "trustSignals": [
+    "Makkelijk afspraak maken",
+    "Heldere behandelingen",
+    "Persoonlijk advies",
+    "Verzorgde uitstraling"
+  ],
+  "ctaExamples": [
+    "Maak een afspraak",
+    "Bekijk behandelingen",
+    "Plan uw behandeling"
+  ],
+  "assetKeywords": [
+    "kapper",
+    "salon",
+    "styling",
+    "behandeling",
+    "haar"
+  ],
+  "key": "beauty",
+  "label": "Beauty en verzorging",
+  "aliases": [
+    "kapper",
+    "salon",
+    "beauty",
+    "schoonheid",
+    "wellness",
+    "barber"
+  ],
+  "palette": {
+    "ink": "#211822",
+    "brand": "#8b5e6f",
+    "accent": "#d9b38c",
+    "soft": "#faf5f4",
+    "dark": "#2c2028"
+  },
+  "copy": {
+    "eyebrow": "Salon, behandeling en styling",
+    "hero": "Een verzorgde uitstraling begint bij het eerste bezoek online.",
+    "intro": "Voor klanten die snel sfeer, behandelingen en een makkelijke afspraakknop willen zien.",
+    "cta": "Afspraak maken",
+    "secondaryCta": "Bekijk behandelingen"
+  },
+  "services": [
+    "Behandelingen",
+    "Stylingadvies",
+    "Afspraak maken",
+    "Arrangementen",
+    "Verzorging"
+  ],
+  "preferredComponents": [
+    "hero",
+    "services",
+    "prices",
+    "reviews",
+    "booking",
+    "contact"
+  ],
+  "assetSlots": [
+    "hero-salon",
+    "behandeling",
+    "styling",
+    "interieur"
+  ]
+}

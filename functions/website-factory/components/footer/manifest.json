@@ -1,0 +1,7 @@
+{
+  "key": "footer",
+  "label": "Footer",
+  "purpose": "Sluit af met merk, pakket, contact en navigatie.",
+  "inputs": ["businessName", "packageLabel", "navigation"],
+  "packages": ["starter", "business", "professional", "premium"]
+}

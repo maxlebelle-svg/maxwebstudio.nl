@@ -1,0 +1,7 @@
+{
+  "key": "faq",
+  "label": "FAQ",
+  "purpose": "Beantwoordt koopbezwaren en praktische vragen voordat de bezoeker contact opneemt.",
+  "inputs": ["questions", "industryProfile", "packageManifest"],
+  "packages": ["business", "professional", "premium"]
+}

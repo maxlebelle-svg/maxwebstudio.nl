@@ -20520,9 +20520,9 @@
           ["call_reminder", "Belafspraak reminder"],
         ];
         const websitePackages = [
-          ["starter", "Starter Website (€495)"],
-          ["professional", "Professional Website (€995)"],
-          ["premium", "Premium Website (€1750)"],
+          ["starter", "Starter Site (€495)"],
+          ["professional", "Business Website (€995)"],
+          ["premium", "Premium Growth (€1750)"],
         ];
         const customerSteps = [
           "Aanvraag ontvangen",
@@ -21187,8 +21187,10 @@
             elements.buildDetails.innerHTML = [
               ["Website Factory", latest ? buildStatusLabel(latest.status) : buildHistory.setupRequired ? "Setup nodig" : "Geen build"],
               ["Websitepakket", packageMeta.packageLabel || packageLabel(currentPackageType())],
+              ["Brancheprofiel", packageMeta.industryName || packageMeta.industryProfileLabel || "-"],
               ["Aantal pagina's", generatedPages.length ? String(generatedPages.length) : "-"],
               ["Aantal secties", generatedSections.length ? String(generatedSections.length) : "-"],
+              ["SEO niveau", packageMeta.resolvedRules?.seo || packageMeta.packageManifest?.seo || "-"],
               ["Template", packageMeta.templateUsed || packageMeta.template || "-"],
               ["Voortgang", latest ? `${latest.progress || 0}%` : "-"],
               ["Preview score", Number.isFinite(Number(score)) ? `${score}/100` : "-"],
@@ -21215,6 +21217,23 @@
               ? {
                 template: latest?.generatedPackage?.meta?.template || activeVersion?.generatedPackage?.meta?.template || "",
                 packageType: packageMeta.packageType || currentPackageType(),
+                resolvedPackage: {
+                  id: packageMeta.packageId || packageMeta.packageManifest?.id || "",
+                  name: packageMeta.packageName || packageMeta.packageManifest?.name || "",
+                  positioning: packageMeta.packagePositioning || packageMeta.packageManifest?.positioning || "",
+                  source: packageMeta.manifestSources?.packageManifest || "",
+                },
+                resolvedIndustry: {
+                  id: packageMeta.industryId || packageMeta.industryManifest?.id || "",
+                  name: packageMeta.industryName || packageMeta.industryManifest?.name || "",
+                  tone: packageMeta.industryManifest?.tone || "",
+                  source: packageMeta.manifestSources?.industryManifest || "",
+                },
+                resolvedPages: packageMeta.resolvedRules?.pages || generatedPages,
+                resolvedComponents: packageMeta.resolvedComponents || packageMeta.packageManifest?.components || {},
+                assetRequirements: packageMeta.assetRequirements || packageMeta.packageManifest?.assets || {},
+                seoLevel: packageMeta.resolvedRules?.seo || packageMeta.packageManifest?.seo || "",
+                animationLevel: packageMeta.resolvedRules?.animations || packageMeta.packageManifest?.animations || "",
                 packageRules: packageMeta.packageRules || {},
                 generatedPages,
                 generatedSections,

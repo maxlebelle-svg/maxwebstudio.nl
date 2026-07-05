@@ -1,0 +1,37 @@
+{
+  "id": "business",
+  "key": "business",
+  "aliases": ["professional", "professioneel", "plus"],
+  "name": "Business Website",
+  "label": "Business Website",
+  "price": 995,
+  "positioning": "Meer vertrouwen en meer aanvragen.",
+  "template": "business-multi-page-v1",
+  "navigation": "multi-page",
+  "pageIds": ["home", "over-ons", "diensten", "portfolio", "contact"],
+  "pages": ["index.html", "over-ons.html", "diensten.html", "projecten.html", "contact.html"],
+  "sections": ["hero", "services", "portfolio", "benefits", "reviews", "faq", "cta", "contact", "footer"],
+  "components": {
+    "hero": true,
+    "services": true,
+    "about": true,
+    "benefits": true,
+    "portfolio": true,
+    "reviews": true,
+    "faq": true,
+    "team": false,
+    "blog": false,
+    "leadMagnet": false,
+    "floatingWhatsapp": true,
+    "contact": true,
+    "footer": true
+  },
+  "animations": "medium",
+  "seo": "advanced",
+  "assets": {
+    "heroImages": 1,
+    "serviceImages": 4,
+    "galleryImages": 6
+  },
+  "performance": "advanced"
+}

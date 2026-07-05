@@ -1,0 +1,83 @@
+{
+  "id": "bouw",
+  "name": "Bouw & Renovatie",
+  "tone": "betrouwbaar, vakbekwaam, premium en concreet",
+  "colorHints": [
+    "navy",
+    "warm goud",
+    "beige",
+    "donkergroen"
+  ],
+  "heroAngles": [
+    "Woningverbetering met de uitstraling van topklasse bouw.",
+    "Van verbouwing tot afwerking: strak geregeld van begin tot eind."
+  ],
+  "trustSignals": [
+    "Vast aanspreekpunt",
+    "Heldere planning",
+    "Net werk",
+    "Kwaliteitsmaterialen"
+  ],
+  "ctaExamples": [
+    "Plan een vrijblijvende aanvraag",
+    "Bespreek uw project",
+    "Vraag advies aan"
+  ],
+  "assetKeywords": [
+    "renovatie",
+    "aanbouw",
+    "dakkapel",
+    "badkamer",
+    "kozijnen"
+  ],
+  "key": "construction",
+  "label": "Bouw en renovatie",
+  "aliases": [
+    "bouw",
+    "timmer",
+    "renovatie",
+    "aannemer",
+    "dak",
+    "badkamer",
+    "kozijn",
+    "dakopbouw",
+    "aanbouw"
+  ],
+  "palette": {
+    "ink": "#111510",
+    "brand": "#24382f",
+    "accent": "#c99a45",
+    "soft": "#f3efe8",
+    "dark": "#1f332a"
+  },
+  "copy": {
+    "eyebrow": "Timmerwerk, verbouw en renovatie",
+    "hero": "Woningverbetering met de uitstraling van topklasse bouw.",
+    "intro": "Voor huiseigenaren die strak vakwerk, duidelijke afspraken en een woning willen die meer waard voelt.",
+    "cta": "Offerte aanvragen",
+    "secondaryCta": "Bel direct"
+  },
+  "services": [
+    "Badkamers",
+    "Dakkapellen",
+    "Dakopbouw",
+    "Aanbouw",
+    "Kunststof kozijnen"
+  ],
+  "preferredComponents": [
+    "hero",
+    "services",
+    "portfolio",
+    "process",
+    "reviews",
+    "contact"
+  ],
+  "assetSlots": [
+    "hero-renovatie",
+    "badkamer",
+    "dakkapel",
+    "dakopbouw",
+    "aanbouw",
+    "kozijnen"
+  ]
+}

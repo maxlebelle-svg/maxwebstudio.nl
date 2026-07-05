@@ -1,0 +1,7 @@
+{
+  "key": "gallery",
+  "label": "Portfolio Gallery",
+  "purpose": "Toont projectvoorbeelden, cases of sfeerbeelden per branche.",
+  "inputs": ["services", "assetSlots", "projectImages"],
+  "packages": ["business", "professional", "premium"]
+}

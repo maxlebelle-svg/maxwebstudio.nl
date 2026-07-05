@@ -1,0 +1,76 @@
+{
+  "id": "hovenier",
+  "name": "Hovenier",
+  "tone": "natuurlijk, verzorgd, betrouwbaar en inspirerend",
+  "colorHints": [
+    "diepgroen",
+    "mosgroen",
+    "zand",
+    "warm goud"
+  ],
+  "heroAngles": [
+    "Buitenruimte die voelt als verlengstuk van uw woning.",
+    "Van tuinidee naar buitenruimte die elk seizoen klopt."
+  ],
+  "trustSignals": [
+    "Duidelijk tuinplan",
+    "Vakkundige aanleg",
+    "Onderhoud mogelijk",
+    "Sterke beplantingskeuze"
+  ],
+  "ctaExamples": [
+    "Vraag een tuinplan aan",
+    "Plan een tuinadvies",
+    "Bespreek uw buitenruimte"
+  ],
+  "assetKeywords": [
+    "tuin",
+    "terras",
+    "beplanting",
+    "buitenruimte",
+    "hovenier"
+  ],
+  "key": "garden",
+  "label": "Tuin en buitenruimte",
+  "aliases": [
+    "hovenier",
+    "tuin",
+    "tuinaanleg",
+    "groen",
+    "buitenruimte"
+  ],
+  "palette": {
+    "ink": "#17231b",
+    "brand": "#2f5d45",
+    "accent": "#d4a24a",
+    "soft": "#f2f4ed",
+    "dark": "#243b2d"
+  },
+  "copy": {
+    "eyebrow": "Tuinontwerp, aanleg en onderhoud",
+    "hero": "Buitenruimte die voelt als verlengstuk van uw woning.",
+    "intro": "Voor klanten die een tuin willen die klopt in ontwerp, aanleg en onderhoud.",
+    "cta": "Tuinplan aanvragen",
+    "secondaryCta": "Bekijk mogelijkheden"
+  },
+  "services": [
+    "Tuinontwerp",
+    "Aanleg",
+    "Onderhoud",
+    "Bestrating",
+    "Beplanting"
+  ],
+  "preferredComponents": [
+    "hero",
+    "services",
+    "portfolio",
+    "process",
+    "contact"
+  ],
+  "assetSlots": [
+    "hero-tuin",
+    "beplanting",
+    "terras",
+    "buitenruimte"
+  ]
+}

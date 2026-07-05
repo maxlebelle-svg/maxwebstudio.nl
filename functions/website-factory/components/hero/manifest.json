@@ -1,0 +1,7 @@
+{
+  "key": "hero",
+  "label": "Premium Hero",
+  "purpose": "Eerste indruk met sterke brancheclaim, beeld, bewijs en primaire CTA.",
+  "inputs": ["businessName", "industry", "cta", "heroAsset", "proofPoints"],
+  "packages": ["starter", "business", "professional", "premium"]
+}

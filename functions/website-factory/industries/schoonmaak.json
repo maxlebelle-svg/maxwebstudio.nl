@@ -1,0 +1,33 @@
+{
+  "id": "schoonmaak",
+  "key": "cleaning",
+  "name": "Schoonmaakbedrijf",
+  "label": "Schoonmaak en facility",
+  "aliases": ["schoonmaak", "cleaning", "reiniging", "vve", "kantoor", "oplevering"],
+  "tone": "fris, betrouwbaar, zakelijk en praktisch",
+  "colorHints": ["helder blauw", "mintgroen", "wit", "donker navy"],
+  "palette": {
+    "ink": "#102033",
+    "brand": "#1e6f91",
+    "accent": "#25c6a0",
+    "soft": "#f3f8fa",
+    "dark": "#123245"
+  },
+  "copy": {
+    "eyebrow": "Zakelijke schoonmaak en onderhoud",
+    "hero": "Een frisse indruk, structureel professioneel geregeld.",
+    "intro": "Voor bedrijven en VvE's die willen dat schoonmaak betrouwbaar, zichtbaar en controleerbaar is.",
+    "cta": "Schoonmaakofferte aanvragen",
+    "secondaryCta": "Bel direct"
+  },
+  "heroAngles": [
+    "Een frisse indruk, structureel professioneel geregeld.",
+    "Schoonmaak die betrouwbaar voelt voordat het eerste gesprek begint."
+  ],
+  "services": ["Kantoorschoonmaak", "VvE onderhoud", "Oplevering", "Glasbewassing", "Periodiek onderhoud"],
+  "trustSignals": ["Vaste planning", "Controleerbare kwaliteit", "Representatieve medewerkers", "Heldere afspraken"],
+  "ctaExamples": ["Vraag een schoonmaakofferte aan", "Plan een kennismaking", "Bespreek uw locatie"],
+  "assetKeywords": ["schoonmaak", "kantoor", "glasbewassing", "facility", "oplevering"],
+  "preferredComponents": ["hero", "services", "process", "trust", "contact"],
+  "assetSlots": ["hero-schoonmaak", "kantoor", "glasbewassing", "team"]
+}

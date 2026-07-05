@@ -1,0 +1,74 @@
+{
+  "id": "local",
+  "name": "Lokale specialist",
+  "tone": "helder, betrouwbaar, professioneel en laagdrempelig",
+  "colorHints": [
+    "blauw",
+    "cyaan",
+    "wit",
+    "donker navy"
+  ],
+  "heroAngles": [
+    "Een lokale specialist die online direct professioneel overkomt.",
+    "Maak direct duidelijk wat u doet en waarom klanten u kunnen vertrouwen."
+  ],
+  "trustSignals": [
+    "Duidelijke uitleg",
+    "Snelle contactroute",
+    "Professionele presentatie",
+    "Lokale herkenbaarheid"
+  ],
+  "ctaExamples": [
+    "Plan een kennismaking",
+    "Neem contact op",
+    "Bekijk diensten"
+  ],
+  "assetKeywords": [
+    "service",
+    "bedrijf",
+    "team",
+    "werk",
+    "contact"
+  ],
+  "key": "local",
+  "label": "Lokale specialist",
+  "aliases": [
+    "dienst",
+    "service",
+    "bedrijf"
+  ],
+  "palette": {
+    "ink": "#132238",
+    "brand": "#2563eb",
+    "accent": "#14b8a6",
+    "soft": "#f6f8fb",
+    "dark": "#102033"
+  },
+  "copy": {
+    "eyebrow": "Service, vertrouwen en contact",
+    "hero": "Een lokale specialist die online direct professioneel overkomt.",
+    "intro": "Voor bezoekers die snel willen begrijpen wat u doet, waarom ze u kunnen vertrouwen en hoe ze contact opnemen.",
+    "cta": "Plan een kennismaking",
+    "secondaryCta": "Bekijk diensten"
+  },
+  "services": [
+    "Advies",
+    "Uitvoering",
+    "Service",
+    "Onderhoud",
+    "Contact"
+  ],
+  "preferredComponents": [
+    "hero",
+    "services",
+    "benefits",
+    "process",
+    "contact"
+  ],
+  "assetSlots": [
+    "hero-service",
+    "team",
+    "werk",
+    "contact"
+  ]
+}

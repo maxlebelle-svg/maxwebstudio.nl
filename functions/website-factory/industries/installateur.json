@@ -1,0 +1,79 @@
+{
+  "id": "installateur",
+  "name": "Installateur",
+  "tone": "technisch, betrouwbaar, snel en deskundig",
+  "colorHints": [
+    "technisch blauw",
+    "cyaan",
+    "wit",
+    "donker navy"
+  ],
+  "heroAngles": [
+    "Techniek die veilig werkt en klaar is voor morgen.",
+    "Installatie en onderhoud duidelijk geregeld vanaf de eerste klik."
+  ],
+  "trustSignals": [
+    "Gecertificeerde aanpak",
+    "Snelle service",
+    "Veilige installatie",
+    "Duidelijke planning"
+  ],
+  "ctaExamples": [
+    "Plan service",
+    "Bel een specialist",
+    "Vraag installatieadvies aan"
+  ],
+  "assetKeywords": [
+    "installatie",
+    "warmtepomp",
+    "zonnepanelen",
+    "laadpaal",
+    "techniek"
+  ],
+  "key": "installation",
+  "label": "Installatie en techniek",
+  "aliases": [
+    "installatie",
+    "elektra",
+    "elektricien",
+    "loodgieter",
+    "warmtepomp",
+    "zonnepanelen",
+    "cv",
+    "laadpaal"
+  ],
+  "palette": {
+    "ink": "#0d1f2f",
+    "brand": "#0f4c81",
+    "accent": "#16b8d9",
+    "soft": "#eef7fb",
+    "dark": "#102b3d"
+  },
+  "copy": {
+    "eyebrow": "Installatie, service en onderhoud",
+    "hero": "Techniek die veilig werkt en klaar is voor morgen.",
+    "intro": "Voor klanten die snel duidelijkheid willen over installatie, onderhoud, storing of verduurzaming.",
+    "cta": "Plan service",
+    "secondaryCta": "Bel een specialist"
+  },
+  "services": [
+    "Storingen",
+    "Onderhoud",
+    "Verduurzaming",
+    "Laadpalen",
+    "Installatie"
+  ],
+  "preferredComponents": [
+    "hero",
+    "services",
+    "emergency",
+    "process",
+    "contact"
+  ],
+  "assetSlots": [
+    "hero-techniek",
+    "installatie",
+    "onderhoud",
+    "laadpaal"
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "id": "makelaar",
+  "name": "Makelaar & Vastgoed",
+  "tone": "vertrouwd, deskundig, premium en resultaatgericht",
+  "colorHints": [
+    "navy",
+    "goud",
+    "wit",
+    "steen"
+  ],
+  "heroAngles": [
+    "Een premium vastgoedpresentatie die vertrouwen en actie oproept.",
+    "Woningen professioneel presenteren en sneller de juiste afspraak maken."
+  ],
+  "trustSignals": [
+    "Lokale marktkennis",
+    "Heldere waardebepaling",
+    "Professionele presentatie",
+    "Sterke begeleiding"
+  ],
+  "ctaExamples": [
+    "Plan een waardebepaling",
+    "Bespreek uw woning",
+    "Bekijk aanbod"
+  ],
+  "assetKeywords": [
+    "vastgoed",
+    "woning",
+    "interieur",
+    "gevel",
+    "taxatie"
+  ],
+  "key": "real-estate",
+  "label": "Makelaar en vastgoed",
+  "aliases": [
+    "makelaar",
+    "vastgoed",
+    "woning",
+    "taxatie",
+    "verkoop",
+    "aankoop"
+  ],
+  "palette": {
+    "ink": "#101827",
+    "brand": "#173b57",
+    "accent": "#c9a35d",
+    "soft": "#f4f6f8",
+    "dark": "#102033"
+  },
+  "copy": {
+    "eyebrow": "Vastgoed, verkoop en aankoop",
+    "hero": "Een premium vastgoedpresentatie die vertrouwen en actie oproept.",
+    "intro": "Voor woningzoekers en verkopers die snel expertise, aanbod en contactmogelijkheden willen zien.",
+    "cta": "Plan een waardebepaling",
+    "secondaryCta": "Bekijk aanbod"
+  },
+  "services": [
+    "Woningverkoop",
+    "Aankoopbegeleiding",
+    "Taxatie",
+    "Verhuur",
+    "Nieuwbouw"
+  ],
+  "preferredComponents": [
+    "hero",
+    "listings",
+    "reviews",
+    "valuation",
+    "contact"
+  ],
+  "assetSlots": [
+    "hero-vastgoed",
+    "woning",
+    "interieur",
+    "straatbeeld"
+  ]
+}

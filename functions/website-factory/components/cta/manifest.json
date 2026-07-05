@@ -1,0 +1,7 @@
+{
+  "key": "cta",
+  "label": "Conversion CTA",
+  "purpose": "Stuurt bezoekers naar bellen, afspraak, offerte of contactformulier.",
+  "inputs": ["cta", "phone", "email", "contactPreference"],
+  "packages": ["starter", "business", "professional", "premium"]
+}

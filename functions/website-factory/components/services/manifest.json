@@ -1,0 +1,7 @@
+{
+  "key": "services",
+  "label": "Service Cards",
+  "purpose": "Maakt het aanbod scanbaar met beeld, korte uitleg en klik naar projectdetail.",
+  "inputs": ["services", "industryProfile", "serviceAssets"],
+  "packages": ["starter", "business", "professional", "premium"]
+}

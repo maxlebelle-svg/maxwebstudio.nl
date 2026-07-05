@@ -1,0 +1,36 @@
+{
+  "id": "starter",
+  "key": "starter",
+  "name": "Starter Site",
+  "label": "Starter Site",
+  "price": 495,
+  "positioning": "Snel professioneel online.",
+  "template": "starter-one-page-v1",
+  "navigation": "scroll",
+  "pageIds": ["home"],
+  "pages": ["index.html"],
+  "sections": ["hero", "services", "benefits", "cta", "contact", "footer"],
+  "components": {
+    "hero": true,
+    "services": true,
+    "about": true,
+    "benefits": true,
+    "portfolio": false,
+    "reviews": false,
+    "faq": false,
+    "team": false,
+    "blog": false,
+    "leadMagnet": false,
+    "floatingWhatsapp": false,
+    "contact": true,
+    "footer": true
+  },
+  "animations": "basic",
+  "seo": "basic",
+  "assets": {
+    "heroImages": 1,
+    "serviceImages": 0,
+    "galleryImages": 0
+  },
+  "performance": "standard"
+}

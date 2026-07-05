@@ -1,0 +1,38 @@
+{
+  "id": "premium",
+  "key": "premium",
+  "name": "Premium Growth",
+  "label": "Premium Growth",
+  "price": 1750,
+  "positioning": "Website als verkoopmachine.",
+  "template": "premium-growth-site-v1",
+  "navigation": "premium-multi-page",
+  "pageIds": ["home", "over-ons", "diensten", "portfolio", "reviews", "team", "contact"],
+  "pages": ["index.html", "over-ons.html", "diensten.html", "projecten.html", "reviews.html", "team.html", "contact.html", "offerte.html"],
+  "sections": ["hero", "services", "portfolio", "cases", "reviews", "team", "faq", "lead-magnet", "offerte", "contact", "footer"],
+  "components": {
+    "hero": true,
+    "services": true,
+    "about": true,
+    "benefits": true,
+    "portfolio": true,
+    "cases": true,
+    "reviews": true,
+    "faq": true,
+    "team": true,
+    "blog": true,
+    "leadMagnet": true,
+    "floatingWhatsapp": true,
+    "contact": true,
+    "footer": true
+  },
+  "animations": "premium",
+  "seo": "premium",
+  "assets": {
+    "heroImages": 1,
+    "serviceImages": 6,
+    "galleryImages": 10
+  },
+  "schema": true,
+  "performance": "maximum"
+}

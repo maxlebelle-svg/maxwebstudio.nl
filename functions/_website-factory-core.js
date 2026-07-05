@@ -1,5 +1,9 @@
 const crypto = require("crypto");
 const { resolveDemoImageAsset } = require("./_demo-image-assets");
+const { loadWebsiteFactoryManifests } = require("./_website-factory-manifests");
+const { resolveFactoryConfig } = require("./website-factory/config-resolver");
+
+const WEBSITE_FACTORY_MANIFESTS = loadWebsiteFactoryManifests();
 
 const BUILD_STATUSES = new Set(["queued", "briefing", "building", "quality_check", "deploying", "completed", "quality_failed", "failed"]);
 const PACKAGE_RULES = {
@@ -145,7 +149,8 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
   const colors = inferColors(industry, industryProfile);
   const style = inferStyle(combinedBriefing);
   const packageType = normalizePackageType(journey.packageType || journey.package_type || journey.package || journey.packageName || journey.package_name || extractField(combinedBriefing, ["Websitepakket", "Pakket"]));
-  const packageRules = PACKAGE_RULES[packageType];
+  const factoryConfig = resolveFactoryConfig({ packageType, industry: `${industry} ${combinedBriefing} ${businessName}` });
+  const packageRules = resolvePackageRules(factoryConfig.package.id || packageType);
   const heroImage = resolveDemoImageAsset({ businessName, industry, services, briefing: combinedBriefing });
   const inputSignals = [combinedBriefing, websiteUrl, email, phone].filter((value) => cleanText(value).length > 12).length;
   const lowInputWarning = inputSignals < 2;
@@ -178,9 +183,21 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     services,
     benefits,
     processSteps,
+    factoryConfig,
     packageType,
+    packageId: factoryConfig.package.id,
+    packageName: factoryConfig.package.name,
+    packagePositioning: factoryConfig.package.positioning,
     packageLabel: packageRules.label,
     packagePrice: packageRules.price,
+    packageManifest: factoryConfig.package,
+    industryId: factoryConfig.industry.id,
+    industryName: factoryConfig.industry.name,
+    industryManifest: factoryConfig.industry,
+    resolvedRules: factoryConfig.rules,
+    resolvedComponents: factoryConfig.components,
+    assetRequirements: factoryConfig.assets,
+    manifestSources: factoryConfig.sources,
     packageRules,
     heroImage,
     localAssets: siteAssets.map(({ path, kind, service }) => ({ path, kind, service })),
@@ -201,6 +218,26 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     logo: siteAssets.find((asset) => asset.kind === "logo")?.path || "text-brand",
     palette: colors,
     industryProfile: industryProfile.key,
+    package: {
+      id: factoryConfig.package.id,
+      name: factoryConfig.package.name,
+      positioning: factoryConfig.package.positioning,
+      price: factoryConfig.package.price,
+      seo: factoryConfig.rules.seo,
+      animations: factoryConfig.rules.animations,
+      pages: factoryConfig.pages,
+      components: factoryConfig.components,
+      source: factoryConfig.sources.packageManifest,
+    },
+    industry: {
+      id: factoryConfig.industry.id,
+      name: factoryConfig.industry.name,
+      tone: factoryConfig.industry.tone,
+      colorHints: factoryConfig.industry.colorHints,
+      trustSignals: factoryConfig.industry.trustSignals,
+      assetKeywords: factoryConfig.industry.assetKeywords,
+      source: factoryConfig.sources.industryManifest,
+    },
     hero: {
       type: "generated-local-asset",
       promptReady: true,
@@ -245,9 +282,14 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     "- README.md",
     "",
     `Pakket: ${packageRules.label} (€${packageRules.price})`,
+    `Positionering: ${factoryConfig.package.positioning || "-"}`,
     `Template: ${packageRules.template}`,
     `Pagina's: ${pages.join(", ")}`,
     `Brancheprofiel: ${industryProfile.label}`,
+    `Resolved package: ${factoryConfig.package.id}`,
+    `Resolved industry: ${factoryConfig.industry.id}`,
+    `SEO niveau: ${factoryConfig.rules.seo}`,
+    `Animaties: ${factoryConfig.rules.animations}`,
     lowInputWarning ? "Let op: weinig klantinput beschikbaar; de preview gebruikt premium branchecopy en veilige demo-assets." : "Inputniveau: voldoende voor branchegerichte eerste preview.",
     "",
     "Controleer de preview intern voordat deze naar de klant gaat.",
@@ -281,7 +323,9 @@ function runQualityCheck({ generatedPackage = {}, journey = {} }) {
   const script = fileContent(files, "script.js");
   const businessName = cleanText(generatedPackage.businessName || journey.businessName || journey.business_name);
   const services = generatedPackage.meta?.services || [];
-  const packageRules = generatedPackage.meta?.packageRules || PACKAGE_RULES[generatedPackage.meta?.packageType] || PACKAGE_RULES.starter;
+  const packageRules = generatedPackage.meta?.packageRules || resolvePackageRules(generatedPackage.meta?.packageType);
+  const packageId = generatedPackage.meta?.packageId || generatedPackage.meta?.packageManifest?.id || generatedPackage.meta?.packageType || "starter";
+  const industryId = generatedPackage.meta?.industryId || generatedPackage.meta?.industryManifest?.id || generatedPackage.meta?.industryProfile || "local";
   const sectionCount = (html.match(/<section\b/gi) || []).length;
   const serviceCardCount = (html.match(/class="[^"]*service-card/gi) || []).length;
   const benefitCount = (html.match(/class="[^"]*benefit-card/gi) || []).length;
@@ -330,6 +374,49 @@ function runQualityCheck({ generatedPackage = {}, journey = {} }) {
     status: score >= 70 ? "completed" : "quality_failed",
     summary: score >= 70 ? "Preview klaar voor interne controle." : "Preview heeft aandacht nodig voordat deze klantklaar is.",
     checks,
+    packageId,
+    industryId,
+    packageChecks: buildPackageChecks({ packageId, generatedPackage, html, files }),
+    industryChecks: buildIndustryChecks({ industryId, generatedPackage, html }),
+  };
+}
+
+function buildPackageChecks({ packageId, generatedPackage, html, files }) {
+  const components = generatedPackage.meta?.resolvedComponents || generatedPackage.meta?.packageManifest?.components || {};
+  const hasFile = (path) => files.some((file) => file.path === path);
+  const assetCount = files.filter((file) => file.path.startsWith("assets/")).length;
+  const isBusiness = /business|professional/.test(packageId);
+  const isPremium = /premium/.test(packageId);
+  return {
+    packageId,
+    hero: /class="[^"]*hero/i.test(html),
+    services: /class="[^"]*service-card/i.test(html),
+    contact: /id="contact"|mailto:|tel:/i.test(html),
+    cta: /class="[^"]*button/i.test(html),
+    portfolioExpected: Boolean(components.portfolio),
+    portfolioReady: !components.portfolio || /id="portfolio"|gallery|projecten/i.test(html),
+    reviewsExpected: Boolean(components.reviews),
+    reviewsReady: !components.reviews || /review|vertrouwen/i.test(html),
+    faqExpected: Boolean(components.faq),
+    faqPrepared: !components.faq || isBusiness || isPremium,
+    premiumGrowthPrepared: !isPremium || Boolean(components.leadMagnet || components.blog || components.landingPages),
+    assetRequirementReady: assetCount >= Number(generatedPackage.meta?.assetRequirements?.heroImages || 1),
+    seoFilesReady: hasFile("sitemap.xml") && hasFile("robots.txt") && hasFile(".htaccess"),
+  };
+}
+
+function buildIndustryChecks({ industryId, generatedPackage, html }) {
+  const industry = generatedPackage.meta?.industryManifest || {};
+  const services = industry.services || generatedPackage.meta?.services || [];
+  return {
+    industryId,
+    branchNamePresent: Boolean(industry.name || industry.label),
+    toneConfigured: Boolean(industry.tone || industry.copy?.intro),
+    paletteConfigured: Boolean(industry.palette || industry.colors),
+    servicesConfigured: services.length >= 3,
+    servicesRendered: services.some((service) => html.toLowerCase().includes(String(service).toLowerCase())),
+    trustSignalsConfigured: Array.isArray(industry.trustSignals) && industry.trustSignals.length > 0,
+    assetKeywordsConfigured: Array.isArray(industry.assetKeywords) && industry.assetKeywords.length > 0,
   };
 }
 
@@ -471,13 +558,13 @@ function inferIndustry(text = "", businessName = "") {
 
 function resolveIndustryProfile({ industry = "", briefing = "", businessName = "" } = {}) {
   const text = `${industry} ${briefing} ${businessName}`.toLowerCase();
-  const scored = INDUSTRY_PROFILES
+  const scored = [...WEBSITE_FACTORY_MANIFESTS.industries, ...INDUSTRY_PROFILES]
     .map((item) => ({
       profile: item,
       score: item.keywords.reduce((sum, keyword) => sum + (text.includes(keyword.toLowerCase()) ? 1 : 0), 0),
     }))
     .sort((left, right) => right.score - left.score);
-  return scored[0]?.score > 0 ? scored[0].profile : INDUSTRY_PROFILES.find((item) => item.key === "local");
+  return scored[0]?.score > 0 ? scored[0].profile : WEBSITE_FACTORY_MANIFESTS.industries.find((item) => item.key === "local") || INDUSTRY_PROFILES.find((item) => item.key === "local");
 }
 
 function mergeUnique(...groups) {
@@ -522,8 +609,16 @@ function inferStyle(text = "") {
 function normalizePackageType(value = "") {
   const text = cleanText(value).toLowerCase();
   if (/premium|1750|uitgebreid|growth|enterprise/.test(text)) return "premium";
-  if (/professional|professioneel|995|plus|business|multi/.test(text)) return "professional";
+  if (/business|995|professional|professioneel|plus|multi/.test(text)) return "professional";
   return "starter";
+}
+
+function resolvePackageRules(packageType = "starter") {
+  const key = cleanText(packageType) || "starter";
+  return WEBSITE_FACTORY_MANIFESTS.packages[key]
+    || (key === "business" ? WEBSITE_FACTORY_MANIFESTS.packages.professional : null)
+    || PACKAGE_RULES[key]
+    || PACKAGE_RULES.starter;
 }
 
 function slugifySite(value = "") {

@@ -1,0 +1,78 @@
+{
+  "id": "restaurant",
+  "name": "Restaurant & Horeca",
+  "tone": "sfeervol, gastvrij, smakelijk en direct boekbaar",
+  "colorHints": [
+    "warm bruin",
+    "koper",
+    "crème",
+    "diep rood"
+  ],
+  "heroAngles": [
+    "Een eerste indruk die direct zin geeft om te reserveren.",
+    "Laat gasten sfeer proeven voordat ze binnenstappen."
+  ],
+  "trustSignals": [
+    "Sfeervolle presentatie",
+    "Direct reserveren",
+    "Menu duidelijk zichtbaar",
+    "Gastvrije uitstraling"
+  ],
+  "ctaExamples": [
+    "Reserveer direct",
+    "Bekijk het menu",
+    "Plan uw tafel"
+  ],
+  "assetKeywords": [
+    "restaurant",
+    "gerecht",
+    "interieur",
+    "tafel",
+    "reserveren"
+  ],
+  "key": "hospitality",
+  "label": "Horeca en hospitality",
+  "aliases": [
+    "restaurant",
+    "horeca",
+    "cafe",
+    "hotel",
+    "b&b",
+    "reserveren"
+  ],
+  "palette": {
+    "ink": "#201a17",
+    "brand": "#6f3429",
+    "accent": "#d6a458",
+    "soft": "#fbf5ec",
+    "dark": "#261b15"
+  },
+  "copy": {
+    "eyebrow": "Sfeer, reserveren en gastvrijheid",
+    "hero": "Een eerste indruk die direct zin geeft om te reserveren.",
+    "intro": "Voor gasten die sfeer willen voelen, aanbod willen bekijken en makkelijk willen boeken.",
+    "cta": "Reserveer direct",
+    "secondaryCta": "Bekijk aanbod"
+  },
+  "services": [
+    "Menu",
+    "Reserveren",
+    "Arrangementen",
+    "Private dining",
+    "Contact"
+  ],
+  "preferredComponents": [
+    "hero",
+    "menu",
+    "gallery",
+    "reviews",
+    "booking",
+    "contact"
+  ],
+  "assetSlots": [
+    "hero-restaurant",
+    "interieur",
+    "gerecht",
+    "reserveren"
+  ]
+}

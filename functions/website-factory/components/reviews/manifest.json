@@ -1,0 +1,7 @@
+{
+  "key": "reviews",
+  "label": "Reviews en vertrouwen",
+  "purpose": "Verhoogt vertrouwen met reviewblokken, keurmerken of bewijsvoering.",
+  "inputs": ["reviews", "benefits", "industryProfile"],
+  "packages": ["business", "professional", "premium"]
+}

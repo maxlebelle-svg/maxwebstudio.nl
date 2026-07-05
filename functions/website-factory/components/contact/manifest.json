@@ -1,0 +1,7 @@
+{
+  "key": "contact",
+  "label": "Contact Form",
+  "purpose": "Laagdrempelige aanvraag via formulier/mailto en duidelijke bedrijfsgegevens.",
+  "inputs": ["businessName", "contactName", "phone", "email", "services"],
+  "packages": ["starter", "business", "professional", "premium"]
+}

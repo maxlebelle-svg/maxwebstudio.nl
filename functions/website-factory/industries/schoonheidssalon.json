@@ -1,0 +1,33 @@
+{
+  "id": "schoonheidssalon",
+  "key": "beauty",
+  "name": "Schoonheidssalon",
+  "label": "Beauty en verzorging",
+  "aliases": ["schoonheid", "schoonheidssalon", "beauty", "salon", "wellness", "behandeling"],
+  "tone": "warm, stijlvol, verzorgd en uitnodigend",
+  "colorHints": ["zacht roze", "champagne", "warm wit", "diep mauve"],
+  "palette": {
+    "ink": "#211822",
+    "brand": "#8b5e6f",
+    "accent": "#d9b38c",
+    "soft": "#faf5f4",
+    "dark": "#2c2028"
+  },
+  "copy": {
+    "eyebrow": "Behandelingen, ontspanning en verzorging",
+    "hero": "Een salonpresentatie die rust, vertrouwen en stijl uitstraalt.",
+    "intro": "Voor klanten die snel behandelingen willen bekijken en makkelijk een afspraak willen maken.",
+    "cta": "Plan een behandeling",
+    "secondaryCta": "Bekijk behandelingen"
+  },
+  "heroAngles": [
+    "Een salonpresentatie die rust, vertrouwen en stijl uitstraalt.",
+    "Verzorging begint bij een eerste indruk die klopt."
+  ],
+  "services": ["Gezichtsbehandeling", "Huidadvies", "Massage", "Arrangementen", "Verzorging"],
+  "trustSignals": ["Persoonlijke aandacht", "Rustige salonervaring", "Duidelijke behandelingen", "Makkelijk afspraak maken"],
+  "ctaExamples": ["Plan een behandeling", "Maak een afspraak", "Bekijk behandelingen"],
+  "assetKeywords": ["salon", "beauty", "gezichtsbehandeling", "wellness", "verzorging"],
+  "preferredComponents": ["hero", "services", "reviews", "booking", "contact"],
+  "assetSlots": ["hero-salon", "behandeling", "interieur", "producten"]
+}
