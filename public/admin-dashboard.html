@@ -20912,6 +20912,7 @@
             };
             console.error(failureLabel, diagnostics);
             if (developerMode) {
+              console.error(`${failureLabel} full diagnostics:\n${JSON.stringify(diagnostics, null, 2)}`);
               console.dir(diagnostics);
               console.table({
                 label: diagnostics.label,
@@ -20951,9 +20952,54 @@
 
         function setMessage(target, message, type = "success") {
           if (!target) return;
+          clearDeveloperErrorDetails(target);
           target.textContent = message;
           target.className = `admin-form-message ${type}`;
           if (message && ["success", "info", "warning", "error"].includes(type)) window.showToast?.(message, type);
+        }
+
+        function clearDeveloperErrorDetails(target) {
+          const details = target?.parentElement?.querySelector?.(`[data-error-details-for="${target.id}"]`);
+          if (details) details.remove();
+        }
+
+        function showDeveloperErrorDetails(target, error) {
+          if (!target || !developerModeActive()) return;
+          clearDeveloperErrorDetails(target);
+          const diagnostics = error?.diagnostics || {};
+          const responseJson = diagnostics.responseJson || {};
+          const fullDetails = {
+            label: error?.label || diagnostics.label || "",
+            message: error?.message || "",
+            status: diagnostics.status || responseJson.diagnostics?.status || "",
+            statusText: diagnostics.statusText || "",
+            code: diagnostics.code || responseJson.code || responseJson.diagnostics?.code || "",
+            backendMessage: responseJson.message || responseJson.error || "",
+            details: diagnostics.details || responseJson.details || responseJson.diagnostics?.details || "",
+            hint: diagnostics.hint || responseJson.hint || "",
+            module: responseJson.module || responseJson.diagnostics?.module || diagnostics.diagnostics?.module || "",
+            phase: responseJson.phase || responseJson.diagnostics?.phase || diagnostics.diagnostics?.phase || "",
+            reason: responseJson.reason || responseJson.diagnostics?.reason || diagnostics.diagnostics?.reason || "",
+            stack: diagnostics.stack || responseJson.stack || "",
+            demoJourneyId: diagnostics.demoJourneyId || responseJson.diagnostics?.demoJourneyId || "",
+            leadId: diagnostics.leadId || responseJson.diagnostics?.leadId || "",
+            packageType: diagnostics.packageType || responseJson.diagnostics?.packageType || "",
+            workflowStep: diagnostics.workflowStep || "",
+            endpoint: diagnostics.endpoint || diagnostics.url || "",
+            payload: diagnostics.payload || null,
+            responseText: diagnostics.responseText || "",
+            responseJson,
+          };
+          const wrapper = document.createElement("details");
+          wrapper.className = "admin-dev-error-details";
+          wrapper.dataset.errorDetailsFor = target.id;
+          wrapper.open = true;
+          const summary = document.createElement("summary");
+          summary.textContent = "Developer details";
+          const pre = document.createElement("pre");
+          pre.textContent = JSON.stringify(fullDetails, null, 2);
+          wrapper.append(summary, pre);
+          target.insertAdjacentElement("afterend", wrapper);
         }
 
         function setDemoActionBusy(isBusy, buttons = []) {
@@ -21661,6 +21707,7 @@
                 ? error.message
                 : "Preview maken is niet gelukt. Probeer opnieuw of vraag Max om controle.";
               setMessage(elements.message, message, "error");
+              showDeveloperErrorDetails(elements.message, error);
             }
           });
         }

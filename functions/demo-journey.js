@@ -876,6 +876,10 @@ function errorResponse({ error = {}, developerMode = false, module = "", reason 
   const message = error.message || fallbackMessage || "Aanvraag kon niet worden verwerkt.";
   const body = {
     success: false,
+    module,
+    phase: error.phase || "",
+    reason,
+    message,
     error: developerMode ? message : fallbackMessage || message,
     userMessage: setupRequired
       ? fallbackMessage

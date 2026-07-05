@@ -7766,6 +7766,34 @@ h3 {
   color: #ffbd5a;
 }
 
+.admin-dev-error-details {
+  margin: 10px 0 0;
+  border: 1px solid rgba(255, 189, 90, 0.28);
+  border-radius: 12px;
+  background: rgba(7, 18, 32, 0.88);
+  color: rgba(255, 255, 255, 0.84);
+  overflow: hidden;
+}
+
+.admin-dev-error-details summary {
+  cursor: pointer;
+  padding: 10px 12px;
+  color: #ffbd5a;
+  font-weight: 900;
+}
+
+.admin-dev-error-details pre {
+  max-height: 360px;
+  margin: 0;
+  padding: 12px;
+  overflow: auto;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
 .portal-body {
   min-height: 100vh;
   background:
