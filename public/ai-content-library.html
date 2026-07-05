@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>AI Content Library | Max Webstudio</title>
+    <meta name="description" content="Losse demo-omgeving voor digitale merkassets van Max Webstudio." />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <style>
+      :root {
+        --ink: #07121f;
+        --muted: #627083;
+        --line: #dce5ee;
+        --paper: #f5f8fb;
+        --white: #ffffff;
+        --blue: #155eef;
+        --cyan: #19c2ff;
+        --green: #2bd982;
+        --gold: #d7b46a;
+        --radius: 8px;
+        --shadow: 0 22px 60px rgba(7, 18, 31, 0.14);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: linear-gradient(180deg, #eef5fb 0%, #f8fafc 42%, #edf4f1 100%);
+      }
+
+      a {
+        color: inherit;
+      }
+
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+
+      .module-shell {
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: minmax(230px, 280px) minmax(0, 1fr);
+      }
+
+      .module-sidebar {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        padding: 24px;
+        color: #f8fbff;
+        background: #06121f;
+      }
+
+      .brand-lockup,
+      .module-nav,
+      .sidebar-note {
+        display: grid;
+        gap: 10px;
+      }
+
+      .brand-lockup strong {
+        font-size: 19px;
+      }
+
+      .brand-lockup span,
+      .sidebar-note span {
+        color: rgba(248, 251, 255, 0.68);
+        line-height: 1.5;
+      }
+
+      .module-nav a,
+      .back-link {
+        min-height: 42px;
+        display: flex;
+        align-items: center;
+        border-radius: var(--radius);
+        text-decoration: none;
+        font-weight: 800;
+      }
+
+      .module-nav a {
+        padding: 0 12px;
+        color: rgba(248, 251, 255, 0.76);
+      }
+
+      .module-nav a:hover,
+      .module-nav a:focus-visible {
+        color: #ffffff;
+        outline: none;
+        background: rgba(25, 194, 255, 0.12);
+      }
+
+      .back-link {
+        justify-content: center;
+        border: 1px solid rgba(248, 251, 255, 0.18);
+      }
+
+      .sidebar-note {
+        margin-top: auto;
+        padding: 14px;
+        border: 1px solid rgba(43, 217, 130, 0.28);
+        border-radius: var(--radius);
+        background: rgba(43, 217, 130, 0.09);
+      }
+
+      .module-main {
+        display: grid;
+        gap: 24px;
+        min-width: 0;
+        padding: clamp(20px, 3vw, 38px);
+      }
+
+      .hero,
+      .toolbar,
+      .asset-card,
+      .architecture-panel {
+        border: 1px solid rgba(7, 18, 31, 0.08);
+        border-radius: var(--radius);
+        background: rgba(255, 255, 255, 0.86);
+        box-shadow: var(--shadow);
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(240px, 360px);
+        gap: 24px;
+        align-items: end;
+        padding: clamp(26px, 4vw, 52px);
+      }
+
+      .kicker,
+      .label {
+        margin: 0;
+        color: var(--blue);
+        font-size: 12px;
+        font-weight: 950;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        max-width: 920px;
+        margin-bottom: 16px;
+        font-size: clamp(38px, 5vw, 70px);
+        line-height: 1;
+        letter-spacing: 0;
+      }
+
+      .hero p {
+        max-width: 760px;
+        margin-bottom: 0;
+        color: var(--muted);
+        font-size: 18px;
+        line-height: 1.65;
+      }
+
+      .hero-panel {
+        display: grid;
+        gap: 14px;
+        padding: 20px;
+        border-radius: var(--radius);
+        color: #f8fbff;
+        background: linear-gradient(135deg, #07121f, #12395f);
+      }
+
+      .hero-panel strong {
+        font-size: 38px;
+        line-height: 1;
+      }
+
+      .hero-panel span {
+        color: rgba(248, 251, 255, 0.72);
+      }
+
+      .actions,
+      .filters,
+      .card-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .toolbar {
+        display: grid;
+        gap: 16px;
+        padding: 18px;
+      }
+
+      .filters {
+        align-items: center;
+      }
+
+      .search {
+        flex: 1 1 260px;
+      }
+
+      .search input,
+      .filters select {
+        width: 100%;
+        min-height: 44px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 0 12px;
+        background: var(--white);
+      }
+
+      .filters select {
+        flex: 0 1 220px;
+      }
+
+      .button {
+        min-height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 0;
+        border-radius: var(--radius);
+        padding: 0 14px;
+        cursor: pointer;
+        font-weight: 900;
+        text-decoration: none;
+      }
+
+      .button.primary {
+        color: #ffffff;
+        background: var(--blue);
+      }
+
+      .button.secondary {
+        color: var(--ink);
+        background: #e8eef5;
+      }
+
+      .button.ghost {
+        border: 1px solid var(--line);
+        color: var(--ink);
+        background: var(--white);
+      }
+
+      .section-heading {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: end;
+      }
+
+      .section-heading h2 {
+        margin-bottom: 0;
+        font-size: clamp(24px, 3vw, 36px);
+      }
+
+      .asset-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 16px;
+      }
+
+      .asset-card {
+        display: grid;
+        gap: 14px;
+        min-height: 260px;
+        padding: 18px;
+      }
+
+      .asset-visual {
+        min-height: 98px;
+        border-radius: var(--radius);
+        background:
+          linear-gradient(135deg, rgba(21, 94, 239, 0.18), rgba(43, 217, 130, 0.16)),
+          repeating-linear-gradient(45deg, #ffffff, #ffffff 10px, #eef3f8 10px, #eef3f8 20px);
+      }
+
+      .asset-card h3 {
+        margin-bottom: 0;
+        font-size: 18px;
+      }
+
+      .asset-card p {
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .status-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .status {
+        min-height: 28px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 0 10px;
+        font-size: 12px;
+        font-weight: 950;
+      }
+
+      .status.approved {
+        color: #065f46;
+        background: rgba(43, 217, 130, 0.18);
+      }
+
+      .status.draft {
+        color: #7c4a03;
+        background: rgba(215, 180, 106, 0.24);
+      }
+
+      .status.used {
+        color: #0b3fb8;
+        background: rgba(21, 94, 239, 0.12);
+      }
+
+      .category-strip {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .category-pill {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 8px 11px;
+        color: var(--muted);
+        background: rgba(255, 255, 255, 0.72);
+        font-weight: 850;
+      }
+
+      .architecture-panel {
+        display: grid;
+        gap: 14px;
+        padding: 20px;
+      }
+
+      .architecture-panel code {
+        display: block;
+        overflow: auto;
+        border-radius: var(--radius);
+        padding: 16px;
+        color: #f8fbff;
+        background: #07121f;
+        line-height: 1.6;
+      }
+
+      .toast {
+        position: fixed;
+        right: 18px;
+        bottom: 18px;
+        z-index: 10;
+        max-width: min(420px, calc(100vw - 36px));
+        border-radius: var(--radius);
+        padding: 14px 16px;
+        color: #ffffff;
+        background: #07121f;
+        box-shadow: var(--shadow);
+        opacity: 0;
+        transform: translateY(12px);
+        transition:
+          opacity 180ms ease,
+          transform 180ms ease;
+      }
+
+      .toast.is-visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      @media (max-width: 920px) {
+        .module-shell,
+        .hero {
+          grid-template-columns: 1fr;
+        }
+
+        .module-sidebar {
+          position: static;
+          height: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="module-shell">
+      <aside class="module-sidebar" aria-label="AI Content Library navigatie">
+        <a class="back-link" href="admin-dashboard.html">Terug naar admin</a>
+        <div class="brand-lockup">
+          <strong>AI Content Library</strong>
+          <span>Creatieve bibliotheek voor digitale merkassets.</span>
+        </div>
+        <nav class="module-nav">
+          <a href="#assets">Assets</a>
+          <a href="#categories">Categorieen</a>
+          <a href="#architecture">Architectuur</a>
+          <a href="brand-print-center.html">Brand & Print Center</a>
+        </nav>
+        <div class="sidebar-note">
+          <strong>Losse module</strong>
+          <span>Deze module is los gebouwd zodat we hem later veilig kunnen koppelen aan het klantportaal.</span>
+        </div>
+      </aside>
+
+      <div class="module-main">
+        <header class="hero">
+          <div>
+            <p class="kicker">Digitale content</p>
+            <h1>AI Content Library</h1>
+            <p>Maak en bewaar alle digitale merkassets van je bedrijf op één plek.</p>
+          </div>
+          <div class="hero-panel" aria-label="Demo status">
+            <span>Demo assets</span>
+            <strong id="asset-count">10</strong>
+            <span>Alle acties tonen nu alleen demo-toasts en schrijven niets naar productie.</span>
+          </div>
+        </header>
+
+        <section class="toolbar" aria-label="Asset filters">
+          <div class="actions">
+            <button class="button primary" type="button" data-demo-action="Nieuw logo maken">Nieuw logo maken</button>
+            <button class="button primary" type="button" data-demo-action="Nieuwe afbeelding maken">Nieuwe afbeelding maken</button>
+            <button class="button primary" type="button" data-demo-action="Nieuwe tekst maken">Nieuwe tekst maken</button>
+          </div>
+          <div class="filters">
+            <label class="search">
+              <span class="label">Zoeken</span>
+              <input id="asset-search" type="search" placeholder="Zoek op naam, categorie of status" />
+            </label>
+            <select id="asset-filter" aria-label="Filter assets">
+              <option value="all">Alle categorieen</option>
+              <option value="logo">Logo's</option>
+              <option value="images">AI stock afbeeldingen</option>
+              <option value="copy">Teksten en campagnes</option>
+              <option value="colors">Kleurpaletten</option>
+              <option value="fonts">Lettertypes</option>
+              <option value="icons">Iconen</option>
+              <option value="brandGuidelines">Merkrichtlijnen</option>
+            </select>
+          </div>
+        </section>
+
+        <section id="categories" aria-label="Bibliotheek secties">
+          <div class="section-heading">
+            <div>
+              <p class="kicker">Secties</p>
+              <h2>Creatieve bibliotheek</h2>
+            </div>
+          </div>
+          <div class="category-strip" id="category-strip"></div>
+        </section>
+
+        <section id="assets" aria-label="Asset cards">
+          <div class="section-heading">
+            <div>
+              <p class="kicker">Assets</p>
+              <h2>Demo library</h2>
+            </div>
+          </div>
+          <div class="asset-grid" id="asset-grid"></div>
+        </section>
+
+        <section class="architecture-panel" id="architecture">
+          <div>
+            <p class="kicker">Architectuur</p>
+            <h2>Output voor later</h2>
+          </div>
+          <p>De AI Content Library blijft de creatieve bron. Later kan deze output veilig als basis worden gebruikt door Website Factory of Brand & Print Center.</p>
+          <code>brandAssets = {
+  logo,
+  colors,
+  fonts,
+  images,
+  copy,
+  slogans,
+  brandGuidelines
+}</code>
+        </section>
+      </div>
+    </main>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script type="module">
+      import { listAssets } from "./src/brand-assets-adapter.js";
+
+      const categories = [
+        "Logo's",
+        "AI stock afbeeldingen",
+        "Website teksten",
+        "Blogs/SEO-pagina's",
+        "Social media posts",
+        "E-mailhandtekeningen",
+        "Kleurpaletten",
+        "Lettertypes",
+        "Iconen",
+        "Merkrichtlijnen",
+      ];
+      const grid = document.querySelector("#asset-grid");
+      const search = document.querySelector("#asset-search");
+      const filter = document.querySelector("#asset-filter");
+      const toast = document.querySelector("#toast");
+      let assets = [];
+
+      function showToast(message) {
+        toast.textContent = `${message} - demoactie, nog geen productieflow.`;
+        toast.classList.add("is-visible");
+        window.setTimeout(() => toast.classList.remove("is-visible"), 2600);
+      }
+
+      function statusClass(status) {
+        return status === "Goedgekeurd" ? "approved" : "draft";
+      }
+
+      function renderCategories() {
+        document.querySelector("#category-strip").innerHTML = categories.map((category) => `<span class="category-pill">${category}</span>`).join("");
+      }
+
+      function renderAssets() {
+        const query = search.value.trim().toLowerCase();
+        const selectedType = filter.value;
+        const visibleAssets = assets.filter((asset) => {
+          const haystack = `${asset.title} ${asset.category} ${asset.status} ${asset.usage} ${asset.description}`.toLowerCase();
+          const matchesSearch = !query || haystack.includes(query);
+          const matchesType = selectedType === "all" || asset.type === selectedType;
+          return matchesSearch && matchesType;
+        });
+
+        document.querySelector("#asset-count").textContent = String(assets.length);
+        grid.innerHTML = visibleAssets
+          .map(
+            (asset) => `
+              <article class="asset-card">
+                <div class="asset-visual" aria-hidden="true"></div>
+                <div>
+                  <p class="kicker">${asset.category}</p>
+                  <h3>${asset.title}</h3>
+                </div>
+                <p>${asset.description}</p>
+                <div class="status-row">
+                  <span class="status ${statusClass(asset.status)}">${asset.status}</span>
+                  <span class="status used">${asset.usage}</span>
+                </div>
+                <div class="card-actions">
+                  <button class="button ghost" type="button" data-demo-action="Asset bekijken">Asset bekijken</button>
+                  <button class="button secondary" type="button" data-demo-action="Later gebruiken in Brand & Print Center">Later gebruiken in Brand & Print Center</button>
+                </div>
+              </article>
+            `,
+          )
+          .join("");
+      }
+
+      document.addEventListener("click", (event) => {
+        const actionButton = event.target.closest("[data-demo-action]");
+        if (actionButton) {
+          showToast(actionButton.dataset.demoAction);
+        }
+      });
+
+      search.addEventListener("input", renderAssets);
+      filter.addEventListener("change", renderAssets);
+
+      const response = await listAssets("all");
+      assets = response.assets;
+      renderCategories();
+      renderAssets();
+    </script>
+  </body>
+</html>
