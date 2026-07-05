@@ -5815,7 +5815,7 @@ h3 {
   gap: 22px;
   align-self: start;
   max-height: calc(100vh - clamp(36px, 4.8vw, 68px));
-  overflow: auto;
+  overflow: hidden;
   padding: clamp(18px, 2vw, 28px);
   border: 1px solid var(--mws-border);
   border-radius: var(--mws-radius);
@@ -5827,6 +5827,7 @@ h3 {
 }
 
 .admin-sidebar .brand {
+  flex: 0 0 auto;
   color: var(--white);
   gap: 12px;
   padding: 8px 8px 18px;
@@ -5835,6 +5836,22 @@ h3 {
 .admin-sidebar-nav {
   display: grid;
   gap: 6px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 2px;
+  scrollbar-width: thin;
+}
+
+.admin-sidebar-nav a[href="#demo-klantreis"] {
+  display: flex !important;
+  visibility: visible !important;
+}
+
+.admin-sidebar .admin-token-card,
+.admin-sidebar .admin-topbar-actions {
+  flex: 0 0 auto;
 }
 
 .admin-nav-group {

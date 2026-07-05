@@ -2505,7 +2505,22 @@
         const accessModeReset = document.getElementById("access-mode-reset");
         const adminAccessControlText = document.getElementById("admin-access-control-text");
         const adminPageSearch = document.getElementById("admin-page-search");
-        const adminNavLinks = [...document.querySelectorAll(".admin-sidebar-nav a")];
+        const adminSidebarNav = document.querySelector(".admin-sidebar-nav");
+        const adminSidebarNavItems = [
+          { href: "#dashboard", label: "Dashboard" },
+          { href: "#leadfinder", label: "Sales" },
+          { href: "#demo-klantreis", label: "Website Factory" },
+          { href: "#klanten", label: "Klanten" },
+          { href: "#websites", label: "Websites", className: "admin-sales-secondary" },
+          { href: "#projecten", label: "Projecten" },
+          { href: "#offertes", label: "Offertes" },
+          { href: "#facturen", label: "Facturen" },
+          { href: "#onderhoud", label: "Abonnementen", className: "admin-developer-only" },
+          { href: "#instellingen", label: "Instellingen", className: "admin-sales-secondary" },
+          { href: "#demo-omgeving", label: "Developer Mode", className: "admin-developer-only" },
+        ];
+        let adminNavLinks = [];
+        renderAdminSidebarNavigation();
         const adminLoadButton = document.getElementById("admin-load");
         const adminAccessMessage = document.getElementById("admin-access-message");
         const totalCustomersMetric = document.getElementById("metric-total-customers");
@@ -8981,11 +8996,32 @@
           }
         }
 
+        function renderAdminSidebarNavigation() {
+          if (!adminSidebarNav) return;
+          const currentHash = window.location.hash || "#dashboard";
+          adminSidebarNav.innerHTML = [
+            `<span class="admin-nav-group">Werkruimte</span>`,
+            ...adminSidebarNavItems.map((item) => `
+              <a href="${item.href}" class="${[item.className || "", item.href === currentHash ? "is-active" : ""].filter(Boolean).join(" ")}" data-admin-nav="${item.href.slice(1)}">${item.label}</a>
+            `),
+          ].join("");
+          adminNavLinks = [...adminSidebarNav.querySelectorAll("a")];
+        }
+
+        function ensureAdminSidebarNavigation() {
+          const factoryLink = adminSidebarNav?.querySelector('a[href="#demo-klantreis"]');
+          const linkCount = adminSidebarNav?.querySelectorAll("a").length || 0;
+          if (!factoryLink || linkCount < adminSidebarNavItems.length) {
+            renderAdminSidebarNavigation();
+          }
+        }
+
         function syncSalesViewState(id = window.location.hash.replace("#", "") || "dashboard") {
           document.body.classList.toggle("is-sales-view", id === "leadfinder");
         }
 
         function syncActiveNav(id = window.location.hash.replace("#", "") || "dashboard") {
+          ensureAdminSidebarNavigation();
           adminNavLinks.forEach((link) => {
             link.classList.toggle("is-active", link.getAttribute("href") === `#${id}`);
           });
