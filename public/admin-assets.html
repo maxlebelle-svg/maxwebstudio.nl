@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Asset Manager | Max CRM</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=20260705-asset-manager" />
+  </head>
+  <body class="admin-body">
+    <main class="admin-crm-shell">
+      <aside class="admin-sidebar" aria-label="Admin modules">
+        <a class="brand" href="admin-dashboard.html">
+          <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true">
+            <rect x="6" y="6" width="68" height="68" rx="18"></rect>
+            <path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path>
+            <path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path>
+          </svg>
+          <span>Max CRM</span>
+        </a>
+        <nav class="admin-sidebar-nav">
+          <span class="admin-nav-group">Main</span>
+          <a href="admin-dashboard.html">Dashboard</a>
+          <span class="admin-nav-group">Sales</span>
+          <a href="admin-sales.html">Leads</a>
+          <span class="admin-nav-group">Production</span>
+          <a href="admin-website-factory.html">Website Factory</a>
+          <a href="admin-ai-content-library.html">AI Content Library</a>
+          <a class="is-active" href="admin-assets.html">Asset Manager</a>
+          <a href="admin-seo-studio.html">SEO Studio</a>
+          <a href="admin-social-media-studio.html">Social Media Studio</a>
+          <a href="admin-brand-center.html">Brand Center</a>
+          <a href="admin-domain-center.html">Domein Center</a>
+          <a href="admin-roadmap.html">Roadmap / Takenbord</a>
+          <span class="admin-nav-group">Customers</span>
+          <a href="admin-klanten.html">Klanten</a>
+          <a href="admin-websites.html">Websites</a>
+          <a href="admin-projecten.html">Projecten</a>
+          <span class="admin-nav-group">Administration</span>
+          <a href="admin-offertes.html">Offertes</a>
+          <a href="admin-facturen.html">Facturen</a>
+          <a href="admin-email-studio.html">E-mail Studio</a>
+          <span class="admin-nav-group">System</span>
+          <a href="admin-instellingen.html">Instellingen</a>
+        </nav>
+      </aside>
+
+      <div class="admin-crm-main asset-manager-shell">
+        <header class="admin-section admin-hero asset-manager-hero">
+          <div>
+            <p class="section-kicker">Production</p>
+            <h1>Asset Manager</h1>
+            <p>Beheer logo's, foto's, video's, documenten en downloads op één plek.</p>
+          </div>
+          <div class="asset-hero-actions">
+            <button class="button secondary" id="create-folder-button" type="button">Nieuwe map</button>
+            <button class="button primary" id="open-upload-modal" type="button">Asset uploaden</button>
+          </div>
+        </header>
+
+        <section class="asset-stats-grid" id="asset-stats" aria-label="Asset statistieken"></section>
+
+        <section class="admin-card asset-filter-card" aria-label="Asset filters">
+          <label class="asset-search-field" for="asset-search">
+            <span class="sr-only">Zoeken</span>
+            <input id="asset-search" type="search" placeholder="Zoek op bestandsnaam, klant, project of tag" />
+          </label>
+          <label>Type<select id="asset-type-filter"></select></label>
+          <label>Klant<select id="asset-client-filter"></select></label>
+          <label>Project<select id="asset-project-filter"></select></label>
+          <label>Status<select id="asset-status-filter"></select></label>
+        </section>
+
+        <section class="asset-workspace" aria-label="Asset Manager werkruimte">
+          <aside class="admin-card asset-library-panel">
+            <div class="asset-panel-heading">
+              <span>Bibliotheek</span>
+              <strong>Mappen</strong>
+            </div>
+            <div class="asset-folder-list" id="asset-folders"></div>
+          </aside>
+
+          <section class="asset-results-panel" aria-label="Assets">
+            <div class="asset-panel-topline">
+              <div>
+                <span id="asset-result-count">0 assets</span>
+                <strong>Bestanden</strong>
+              </div>
+              <span class="status-badge status-prepared">Mock data</span>
+            </div>
+            <div class="asset-grid" id="asset-grid"></div>
+          </section>
+
+          <aside class="admin-card asset-detail-panel" id="asset-detail" aria-live="polite"></aside>
+        </section>
+
+        <section class="admin-section asset-own-library" aria-label="Eigen bibliotheek">
+          <div class="admin-section-heading">
+            <div>
+              <p class="section-kicker">Max Webstudio</p>
+              <h2>Eigen bibliotheek</h2>
+              <p class="admin-section-intro">Interne assets voor templates, demo's, sales en algemene downloads.</p>
+            </div>
+          </div>
+          <div class="asset-own-grid" id="own-library"></div>
+        </section>
+      </div>
+    </main>
+
+    <dialog class="asset-upload-modal" id="asset-upload-dialog" aria-labelledby="asset-upload-title">
+      <form class="asset-upload-form" id="asset-upload-form" method="dialog">
+        <div class="asset-modal-header">
+          <div>
+            <p class="section-kicker">Nieuwe asset</p>
+            <h2 id="asset-upload-title">Asset uploaden</h2>
+          </div>
+          <button class="admin-icon-button" id="close-upload-modal" type="button" aria-label="Sluiten">x</button>
+        </div>
+        <div class="asset-dropzone" id="asset-dropzone">
+          <strong>Sleep bestand hierheen</strong>
+          <span>of selecteer een bestand uit je computer</span>
+          <input id="asset-file-input" name="file" type="file" />
+        </div>
+        <div class="asset-upload-grid">
+          <label>Asset naam<input name="name" required placeholder="bijv. klant-logo-main.svg" /></label>
+          <label>Type<select name="type" required></select></label>
+          <label>Klant koppelen<select name="client" required></select></label>
+          <label>Project koppelen<select name="project" required></select></label>
+          <label class="asset-span-2">Tags<input name="tags" placeholder="logo, website, campagne" /></label>
+          <label class="asset-span-2">Beschrijving<textarea name="description" rows="4"></textarea></label>
+        </div>
+        <div class="asset-checkbox-list">
+          <label><input name="portal" type="checkbox" /> Beschikbaar voor klantportaal</label>
+          <label><input name="factory" type="checkbox" /> Gebruikbaar in Website Factory</label>
+          <label><input name="ai" type="checkbox" /> Gebruikbaar in AI Content Library</label>
+        </div>
+        <div class="asset-modal-actions">
+          <button class="button secondary" id="cancel-upload-modal" type="button">Annuleren</button>
+          <button class="button primary" type="submit">Opslaan</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script>
+      (() => {
+        "use strict";
+
+        // TODO: Supabase Storage upload koppelen aan deze upload-flow.
+        // TODO: Asset metadata tabel toevoegen voor klant, project, tags, status en rechten.
+        // TODO: Klantportaal downloads koppelen aan portal-beschikbaarheid.
+        // TODO: Website Factory asset picker laten lezen uit deze bibliotheek.
+        // TODO: AI Content Library koppeling toevoegen voor herbruikbare beelden en documenten.
+        // TODO: Brand Centre drukwerk koppeling maken voor print-assets en huisstijlbestanden.
+
+        const typeOptions = ["Alles", "Logo", "SVG", "PDF", "Foto", "Video", "Download"];
+        const statusOptions = ["Alles", "Actief", "Concept", "Gearchiveerd"];
+        const folders = ["Alle bestanden", "Logo's", "Huisstijl", "Website foto's", "Project downloads", "Video's", "Documenten", "Social media", "Drukwerk", "Archief"];
+        const ownLibrary = ["Max Webstudio logo's", "Templates", "Stock foto's", "Demo-afbeeldingen", "Sales documenten", "Offertebijlagen", "Algemene downloads"];
+
+        let selectedFolder = "Alle bestanden";
+        let selectedAssetId = "asset-1";
+        let assets = [
+          { id: "asset-1", name: "quantumbouw-logo-main.svg", type: "Logo", client: "Quantum Bouw", project: "Corporate website", size: "184 KB", modified: "2026-07-02", tags: ["logo", "primary", "svg"], status: "Actief", dimensions: "1200 x 420", description: "Primair logo voor website, offerte en klantportaal.", category: "Logo's", url: "/assets/quantumbouw-logo-main.svg" },
+          { id: "asset-2", name: "restaurant-luna-logo-dark.png", type: "Logo", client: "Restaurant Luna", project: "Brand refresh", size: "312 KB", modified: "2026-06-28", tags: ["logo", "dark"], status: "Actief", dimensions: "1600 x 600", description: "Donkere logovariant voor menukaarten en social visuals.", category: "Logo's", url: "/assets/restaurant-luna-logo-dark.png" },
+          { id: "asset-3", name: "tandarts-icons-service-set.svg", type: "SVG", client: "Tandartspraktijk Nova", project: "Website icons", size: "96 KB", modified: "2026-06-25", tags: ["icons", "service"], status: "Concept", dimensions: "24 x 24 grid", description: "Pictogrammenset voor dienstenpagina's.", category: "Huisstijl", url: "/assets/tandarts-icons-service-set.svg" },
+          { id: "asset-4", name: "maxwebstudio-pattern-grid.svg", type: "SVG", client: "Max Webstudio", project: "Eigen bibliotheek", size: "42 KB", modified: "2026-06-20", tags: ["pattern", "internal"], status: "Actief", dimensions: "1440 x 900", description: "Subtiel patroon voor interne presentaties.", category: "Huisstijl", url: "/assets/maxwebstudio-pattern-grid.svg" },
+          { id: "asset-5", name: "maxwebstudio-brandkit.pdf", type: "PDF", client: "Max Webstudio", project: "Brand Center", size: "3.8 MB", modified: "2026-07-01", tags: ["brandkit", "pdf"], status: "Actief", dimensions: "-", description: "Overzicht van logo, kleuren, typografie en merkregels.", category: "Documenten", url: "/downloads/maxwebstudio-brandkit.pdf" },
+          { id: "asset-6", name: "offerte-template.pdf", type: "PDF", client: "Max Webstudio", project: "Sales documenten", size: "1.2 MB", modified: "2026-06-18", tags: ["offerte", "template"], status: "Actief", dimensions: "-", description: "Standaard offertebijlage voor nieuwe websites.", category: "Documenten", url: "/downloads/offerte-template.pdf" },
+          { id: "asset-7", name: "restaurant-homepage-hero.jpg", type: "Foto", client: "Restaurant Luna", project: "Homepage", size: "2.4 MB", modified: "2026-06-30", tags: ["hero", "food", "homepage"], status: "Actief", dimensions: "2400 x 1400", description: "Hero-foto voor homepage en campagnevariant.", category: "Website foto's", url: "/images/restaurant-homepage-hero.jpg" },
+          { id: "asset-8", name: "bouwbedrijf-team-bus.jpg", type: "Foto", client: "Quantum Bouw", project: "Over ons", size: "4.1 MB", modified: "2026-06-22", tags: ["team", "bouw", "website"], status: "Actief", dimensions: "3000 x 2000", description: "Teamfoto met werkbus voor over-ons sectie.", category: "Website foto's", url: "/images/bouwbedrijf-team-bus.jpg" },
+          { id: "asset-9", name: "coach-social-portrait.jpg", type: "Foto", client: "Coachpraktijk Flow", project: "Social media kit", size: "1.6 MB", modified: "2026-06-14", tags: ["portrait", "social"], status: "Concept", dimensions: "1600 x 1600", description: "Vierkante portretfoto voor social templates.", category: "Social media", url: "/images/coach-social-portrait.jpg" },
+          { id: "asset-10", name: "website-demo-video.mp4", type: "Video", client: "Max Webstudio", project: "Demo klantreis", size: "18.7 MB", modified: "2026-07-03", tags: ["demo", "video"], status: "Actief", dimensions: "1920 x 1080", description: "Korte demo van website-preview en klantportaal.", category: "Video's", url: "/video/website-demo-video.mp4" },
+          { id: "asset-11", name: "client-onboarding-checklist.zip", type: "Download", client: "Max Webstudio", project: "Klant onboarding", size: "640 KB", modified: "2026-06-19", tags: ["onboarding", "download"], status: "Actief", dimensions: "-", description: "Downloadpakket met checklist en voorbeeldteksten.", category: "Project downloads", url: "/downloads/client-onboarding-checklist.zip" },
+          { id: "asset-12", name: "seo-starter-pack-download.zip", type: "Download", client: "Studio Kapsalon", project: "SEO Studio", size: "2.1 MB", modified: "2026-06-12", tags: ["seo", "starter-pack"], status: "Gearchiveerd", dimensions: "-", description: "Oude SEO downloadbundel voor projectarchief.", category: "Archief", url: "/downloads/seo-starter-pack-download.zip" }
+        ];
+
+        const elements = {
+          stats: document.getElementById("asset-stats"),
+          grid: document.getElementById("asset-grid"),
+          detail: document.getElementById("asset-detail"),
+          folders: document.getElementById("asset-folders"),
+          ownLibrary: document.getElementById("own-library"),
+          count: document.getElementById("asset-result-count"),
+          search: document.getElementById("asset-search"),
+          typeFilter: document.getElementById("asset-type-filter"),
+          clientFilter: document.getElementById("asset-client-filter"),
+          projectFilter: document.getElementById("asset-project-filter"),
+          statusFilter: document.getElementById("asset-status-filter"),
+          dialog: document.getElementById("asset-upload-dialog"),
+          form: document.getElementById("asset-upload-form"),
+          fileInput: document.getElementById("asset-file-input"),
+          dropzone: document.getElementById("asset-dropzone")
+        };
+
+        const createNode = (tag, className, text) => {
+          const node = document.createElement(tag);
+          if (className) node.className = className;
+          if (text !== undefined) node.textContent = text;
+          return node;
+        };
+
+        const unique = (items) => ["Alles", ...Array.from(new Set(items)).sort((a, b) => a.localeCompare(b, "nl"))];
+
+        function fillSelect(select, options) {
+          select.replaceChildren();
+          options.forEach((option) => {
+            const element = document.createElement("option");
+            element.value = option;
+            element.textContent = option;
+            select.append(element);
+          });
+        }
+
+        function assetMatchesFolder(asset) {
+          if (selectedFolder === "Alle bestanden") return true;
+          return asset.category === selectedFolder;
+        }
+
+        function getFilteredAssets() {
+          const query = elements.search.value.trim().toLowerCase();
+          return assets.filter((asset) => {
+            const haystack = [asset.name, asset.client, asset.project, ...asset.tags].join(" ").toLowerCase();
+            const matchesQuery = !query || haystack.includes(query);
+            const matchesType = elements.typeFilter.value === "Alles" || asset.type === elements.typeFilter.value;
+            const matchesClient = elements.clientFilter.value === "Alles" || asset.client === elements.clientFilter.value;
+            const matchesProject = elements.projectFilter.value === "Alles" || asset.project === elements.projectFilter.value;
+            const matchesStatus = elements.statusFilter.value === "Alles" || asset.status === elements.statusFilter.value;
+            return matchesQuery && matchesType && matchesClient && matchesProject && matchesStatus && assetMatchesFolder(asset);
+          });
+        }
+
+        function typeIcon(type) {
+          return { Logo: "M", SVG: "SVG", PDF: "PDF", Foto: "IMG", Video: "VID", Download: "ZIP" }[type] || "FILE";
+        }
+
+        function renderStats() {
+          const stats = [
+            ["Totaal assets", assets.length],
+            ["Logo's", assets.filter((asset) => asset.type === "Logo").length],
+            ["Foto's", assets.filter((asset) => asset.type === "Foto").length],
+            ["PDF/documenten", assets.filter((asset) => asset.type === "PDF").length],
+            ["Video's", assets.filter((asset) => asset.type === "Video").length],
+            ["Downloads", assets.filter((asset) => asset.type === "Download").length]
+          ];
+          elements.stats.replaceChildren(...stats.map(([label, value]) => {
+            const card = createNode("article", "admin-card asset-stat-card");
+            card.append(createNode("span", "", label), createNode("strong", "", String(value)));
+            return card;
+          }));
+        }
+
+        function renderFolders() {
+          elements.folders.replaceChildren(...folders.map((folder) => {
+            const button = createNode("button", `asset-folder-button${folder === selectedFolder ? " is-active" : ""}`);
+            button.type = "button";
+            button.dataset.folder = folder;
+            button.append(createNode("span", "", folder), createNode("small", "", String(folder === "Alle bestanden" ? assets.length : assets.filter((asset) => asset.category === folder).length)));
+            return button;
+          }));
+        }
+
+        function renderGrid() {
+          const filteredAssets = getFilteredAssets();
+          elements.count.textContent = `${filteredAssets.length} assets`;
+          if (!filteredAssets.some((asset) => asset.id === selectedAssetId)) selectedAssetId = filteredAssets[0]?.id || assets[0]?.id;
+          elements.grid.replaceChildren(...filteredAssets.map((asset) => {
+            const card = createNode("button", `asset-card${asset.id === selectedAssetId ? " is-selected" : ""}`);
+            card.type = "button";
+            card.dataset.assetId = asset.id;
+            const preview = createNode("div", `asset-preview asset-preview-${asset.type.toLowerCase()}`, typeIcon(asset.type));
+            const title = createNode("strong", "asset-card-title", asset.name);
+            const meta = createNode("span", "asset-card-meta", `${asset.client} - ${asset.project}`);
+            const details = createNode("span", "asset-card-size", `${asset.size} - ${asset.modified}`);
+            const badge = createNode("span", "asset-type-badge", asset.type);
+            const tagRow = createNode("div", "asset-tag-row");
+            asset.tags.forEach((tag) => tagRow.append(createNode("span", "asset-tag", tag)));
+            const status = createNode("span", `status-badge ${asset.status === "Actief" ? "status-active" : asset.status === "Concept" ? "status-prepared" : "status-archived"}`, asset.status);
+            card.append(preview, badge, title, meta, details, tagRow, status);
+            return card;
+          }));
+          renderDetail();
+        }
+
+        function renderDetail() {
+          const asset = assets.find((item) => item.id === selectedAssetId);
+          elements.detail.replaceChildren();
+          if (!asset) {
+            elements.detail.append(createNode("strong", "", "Geen asset geselecteerd"));
+            return;
+          }
+          const preview = createNode("div", `asset-detail-preview asset-preview-${asset.type.toLowerCase()}`, typeIcon(asset.type));
+          const title = createNode("h2", "", asset.name);
+          const rows = [
+            ["Type", asset.type],
+            ["Klant", asset.client],
+            ["Project", asset.project],
+            ["Grootte", asset.size],
+            ["Afmetingen", asset.dimensions],
+            ["Laatst gewijzigd", asset.modified],
+            ["Status", asset.status]
+          ];
+          const list = createNode("dl", "asset-detail-list");
+          rows.forEach(([label, value]) => {
+            list.append(createNode("dt", "", label), createNode("dd", "", value));
+          });
+          const tags = createNode("div", "asset-tag-row");
+          asset.tags.forEach((tag) => tags.append(createNode("span", "asset-tag", tag)));
+          const note = createNode("p", "asset-detail-note", asset.description);
+          const actions = createNode("div", "asset-detail-actions");
+          ["Download", "Kopieer URL", "Vervang bestand", "Archiveer"].forEach((label) => {
+            const button = createNode("button", label === "Archiveer" ? "button secondary danger" : "button secondary", label);
+            button.type = "button";
+            button.dataset.detailAction = label;
+            actions.append(button);
+          });
+          elements.detail.append(preview, title, list, tags, note, actions);
+        }
+
+        function renderOwnLibrary() {
+          elements.ownLibrary.replaceChildren(...ownLibrary.map((item) => {
+            const card = createNode("article", "admin-card asset-own-card");
+            card.append(createNode("strong", "", item), createNode("span", "", "Interne Max Webstudio assets"));
+            return card;
+          }));
+        }
+
+        function renderFilters() {
+          const current = {
+            client: elements.clientFilter.value || "Alles",
+            project: elements.projectFilter.value || "Alles"
+          };
+          fillSelect(elements.typeFilter, typeOptions);
+          fillSelect(elements.statusFilter, statusOptions);
+          fillSelect(elements.clientFilter, unique(assets.map((asset) => asset.client)));
+          fillSelect(elements.projectFilter, unique(assets.map((asset) => asset.project)));
+          elements.clientFilter.value = unique(assets.map((asset) => asset.client)).includes(current.client) ? current.client : "Alles";
+          elements.projectFilter.value = unique(assets.map((asset) => asset.project)).includes(current.project) ? current.project : "Alles";
+        }
+
+        function notify(message, type = "success") {
+          if (typeof window.showToast === "function") {
+            window.showToast(message, type);
+            return;
+          }
+          const toast = createNode("div", `asset-toast asset-toast-${type}`, message);
+          document.body.append(toast);
+          window.setTimeout(() => toast.remove(), 3000);
+        }
+
+        function openUploadModal() {
+          if (typeof elements.dialog.showModal === "function") {
+            elements.dialog.showModal();
+          } else {
+            elements.dialog.setAttribute("open", "");
+          }
+        }
+
+        function closeUploadModal() {
+          elements.form.reset();
+          elements.dialog.close?.();
+          elements.dialog.removeAttribute("open");
+        }
+
+        function handleUploadSubmit(event) {
+          event.preventDefault();
+          const data = new FormData(elements.form);
+          const file = data.get("file");
+          const type = data.get("type") || "Download";
+          const name = data.get("name") || file?.name || "nieuwe-asset.pdf";
+          const asset = {
+            id: `asset-${Date.now()}`,
+            name: String(name),
+            type: String(type),
+            client: String(data.get("client") || "Max Webstudio"),
+            project: String(data.get("project") || "Eigen bibliotheek"),
+            size: file?.size ? `${Math.max(1, Math.round(file.size / 1024))} KB` : "128 KB",
+            modified: new Date().toISOString().slice(0, 10),
+            tags: String(data.get("tags") || "nieuw").split(",").map((tag) => tag.trim()).filter(Boolean),
+            status: "Concept",
+            dimensions: type === "Foto" || type === "Video" ? "Nog te detecteren" : "-",
+            description: String(data.get("description") || "Nieuwe mock asset uit de upload-flow."),
+            category: type === "Foto" ? "Website foto's" : type === "Video" ? "Video's" : type === "PDF" ? "Documenten" : type === "Logo" || type === "SVG" ? "Logo's" : "Project downloads",
+            url: `/mock-assets/${String(name).replace(/\s+/g, "-").toLowerCase()}`
+          };
+          assets = [asset, ...assets];
+          selectedAssetId = asset.id;
+          selectedFolder = "Alle bestanden";
+          renderAll();
+          closeUploadModal();
+          notify("Mock asset toegevoegd. Uploadkoppeling volgt later.", "success");
+        }
+
+        function renderAll() {
+          renderStats();
+          renderFilters();
+          renderFolders();
+          renderGrid();
+          renderOwnLibrary();
+        }
+
+        document.getElementById("open-upload-modal").addEventListener("click", openUploadModal);
+        document.getElementById("create-folder-button").addEventListener("click", () => notify("Nieuwe map UI staat klaar voor latere opslag.", "info"));
+        document.getElementById("close-upload-modal").addEventListener("click", closeUploadModal);
+        document.getElementById("cancel-upload-modal").addEventListener("click", closeUploadModal);
+        elements.form.addEventListener("submit", handleUploadSubmit);
+        [elements.search, elements.typeFilter, elements.clientFilter, elements.projectFilter, elements.statusFilter].forEach((control) => {
+          control.addEventListener("input", renderGrid);
+          control.addEventListener("change", renderGrid);
+        });
+        elements.folders.addEventListener("click", (event) => {
+          const button = event.target.closest("[data-folder]");
+          if (!button) return;
+          selectedFolder = button.dataset.folder;
+          renderFolders();
+          renderGrid();
+        });
+        elements.grid.addEventListener("click", (event) => {
+          const card = event.target.closest("[data-asset-id]");
+          if (!card) return;
+          selectedAssetId = card.dataset.assetId;
+          renderGrid();
+        });
+        elements.detail.addEventListener("click", async (event) => {
+          const button = event.target.closest("[data-detail-action]");
+          if (!button) return;
+          const asset = assets.find((item) => item.id === selectedAssetId);
+          if (!asset) return;
+          if (button.dataset.detailAction === "Kopieer URL") {
+            try {
+              await navigator.clipboard.writeText(asset.url);
+              notify("Asset URL gekopieerd.", "success");
+            } catch {
+              notify("Kopiëren is niet beschikbaar in deze browser.", "warning");
+            }
+            return;
+          }
+          if (button.dataset.detailAction === "Archiveer") {
+            asset.status = "Gearchiveerd";
+            renderAll();
+            notify("Asset gearchiveerd in mock data.", "success");
+            return;
+          }
+          notify(`${button.dataset.detailAction} is voorbereid voor de echte opslagkoppeling.`, "info");
+        });
+        elements.dropzone?.addEventListener?.("dragover", (event) => event.preventDefault());
+
+        fillSelect(elements.form.elements.type, typeOptions.filter((option) => option !== "Alles"));
+        fillSelect(elements.form.elements.client, unique(assets.map((asset) => asset.client)).filter((option) => option !== "Alles"));
+        fillSelect(elements.form.elements.project, unique(assets.map((asset) => asset.project)).filter((option) => option !== "Alles"));
+        renderAll();
+      })();
+    </script>
+  </body>
+</html>
