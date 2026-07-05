@@ -1,42 +1,61 @@
-const DEMO_IMAGE_BASE = "/assets/demo-images";
+const DEMO_IMAGE_BASE = "/assets/demo-images/library";
+const DEMO_IMAGE_ROLES = Object.freeze(["hero", "service", "team", "project", "contact"]);
 
-const demoImageAssets = Object.freeze([
-  asset("installatie", "Moderne duurzame installatie met zonnepanelen en energieoplossingen", ["installatie", "verduurzaming", "zonnepanelen", "warmtepomp", "airco", "laadpaal", "thuisbatterij"], "demo-hero-installatie.jpg"),
-  asset("bouw", "Professioneel bouwproject met vakwerk en moderne materialen", ["bouw", "bouwbedrijf", "aannemer", "renovatie", "timmer", "nieuwbouw", "aanbouw"], "demo-hero-bouw.jpg"),
-  asset("horeca", "Sfeervol restaurantinterieur voor horeca websites", ["horeca", "restaurant", "lunchroom", "eetcafe", "menu", "reserveren"], "demo-hero-horeca.jpg"),
-  asset("fitness", "Moderne fitnessstudio met professionele trainingsruimte", ["fitness", "sportschool", "personal trainer", "proefles", "rooster", "membership"], "industries/demo-hero-fitness.png"),
-  asset("advocaat", "Zakelijke juridische bespreking in een modern advocatenkantoor", ["advocaat", "advocatuur", "juridisch", "jurist", "recht", "intake"], "industries/demo-hero-advocaat.png"),
-  asset("automotive", "Premium automotive showroom voor autobedrijf websites", ["automotive", "autobedrijf", "garage", "showroom", "occasions", "apk", "onderhoud"], "demo-hero-automotive.jpg"),
-  asset("kapsalon", "Stijlvolle kapsalon met warme salonuitstraling", ["kapsalon", "kapper", "barber", "barbershop", "knippen", "kleuren", "styling"], "demo-hero-kapsalon.jpg"),
-  asset("tandarts", "Rustige zorgomgeving voor tandarts en praktijk websites", ["tandarts", "mondzorg", "zorg", "controle", "preventie", "esthetiek", "spoed"], "demo-hero-zorg.jpg"),
-  asset("elektricien", "Elektricien bij een moderne meterkast in een nette woning", ["elektricien", "elektra", "groepenkast", "storing", "storingen", "laadpaal"], "industries/demo-hero-elektricien.png"),
-  asset("loodgieter", "Loodgieter werkt aan schoon sanitair en leidingwerk", ["loodgieter", "lekkage", "cv", "sanitair", "leiding", "onderhoud"], "industries/demo-hero-loodgieter.png"),
-  asset("hovenier", "Aangelegde tuin met groenontwerp en professioneel hovenierswerk", ["hovenier", "tuin", "tuinaanleg", "tuinontwerp", "groen", "onderhoud"], "industries/demo-hero-hovenier.png"),
-  asset("schoonmaak", "Professionele schoonmaak in een lichte zakelijke kantooromgeving", ["schoonmaak", "schoonmaakbedrijf", "kantoor", "vve", "oplevering", "contracten"], "industries/demo-hero-schoonmaak.png"),
-  asset("verhuisbedrijf", "Verhuisteam bij een bestelwagen in een nette woonstraat", ["verhuisbedrijf", "verhuizen", "transport", "opslag", "planning", "logistiek"], "industries/demo-hero-verhuisbedrijf.png"),
-  asset("dierenarts", "Dierenarts onderzoekt een huisdier in een moderne praktijkruimte", ["dierenarts", "dierenzorg", "kliniek", "consult", "vaccinatie", "huisdieren"], "industries/demo-hero-dierenarts.png"),
-  asset("schoonheidssalon", "Luxe schoonheidssalon met ontspannen wellness behandeling", ["schoonheidssalon", "beauty", "wellness", "facials", "massage", "huidverbetering"], "industries/demo-hero-schoonheidssalon.png"),
-  asset("vastgoed", "Premium vastgoedpresentatie voor makelaar websites", ["vastgoed", "makelaar", "woning", "taxatie", "waardebepaling", "bezichtiging"], "demo-hero-vastgoed.jpg"),
-  asset("hotel", "Boutique hotelkamer met warme hospitality uitstraling", ["hotel", "b&b", "bed and breakfast", "hospitality", "kamers", "boeken", "verblijf"], "industries/demo-hero-hotel.png"),
-  asset("financieel-adviseur", "Financieel adviesgesprek in een professioneel kantoor", ["financieel", "financieel advies", "hypotheek", "accountant", "belasting", "advies"], "industries/demo-hero-financieel-adviseur.png"),
-  asset("fysiotherapie", "Fysiotherapeut begeleidt een herstelgerichte oefening in de praktijk", ["fysiotherapie", "fysiotherapeut", "revalidatie", "herstel", "sportzorg", "pijnklachten"], "industries/demo-hero-fysiotherapie.png"),
-  asset("kinderopvang", "Warme kinderopvangruimte met begeleide activiteit", ["kinderopvang", "bso", "peuteropvang", "opvang", "rondleiding", "aanmelden"], "industries/demo-hero-kinderopvang.png"),
-  asset("coaching", "Professionele coaching setting voor adviseur of consultant websites", ["coaching", "coach", "consultant", "advies", "training"], "demo-hero-coaching.jpg"),
-  asset("ecommerce", "Moderne e-commerce productpresentatie voor webshops", ["ecommerce", "webshop", "winkel", "producten", "online verkoop"], "demo-hero-ecommerce.jpg"),
+const roleLabels = Object.freeze({
+  hero: "hero",
+  service: "diensten",
+  team: "team en werkwijze",
+  project: "project of resultaat",
+  contact: "contact en aanvraag",
+});
+
+const demoImageGroups = Object.freeze([
+  group("installatiebedrijf", "Installatiebedrijf", ["installatiebedrijf-demo"], ["installatie", "verduurzaming", "zonnepanelen", "warmtepomp", "airco", "laadpaal", "thuisbatterij"]),
+  group("bouwbedrijf", "Bouwbedrijf", ["bouwbedrijf-demo"], ["bouw", "bouwbedrijf", "aannemer", "renovatie", "timmer", "nieuwbouw", "aanbouw"]),
+  group("restaurant", "Restaurant", ["restaurant-demo"], ["horeca", "restaurant", "lunchroom", "eetcafe", "menu", "reserveren"]),
+  group("sportschool", "Sportschool", ["sportschool-demo"], ["fitness", "sportschool", "personal trainer", "proefles", "rooster", "membership"]),
+  group("advocaat", "Advocaat", ["advocaat-demo"], ["advocaat", "advocatuur", "juridisch", "jurist", "recht", "intake"]),
+  group("autobedrijf", "Autobedrijf", ["autobedrijf-demo"], ["automotive", "autobedrijf", "garage", "showroom", "occasions", "apk", "onderhoud"]),
+  group("kapsalon", "Kapsalon", ["kapsalon-demo"], ["kapsalon", "kapper", "barber", "barbershop", "knippen", "kleuren", "styling"]),
+  group("tandarts", "Tandarts", ["tandarts-demo"], ["tandarts", "mondzorg", "zorg", "controle", "preventie", "esthetiek", "spoed"]),
+  group("elektricien", "Elektricien", ["elektricien-demo"], ["elektricien", "elektra", "groepenkast", "storing", "storingen", "laadpaal"]),
+  group("loodgieter", "Loodgieter", ["loodgieter-demo"], ["loodgieter", "lekkage", "cv", "sanitair", "leiding", "onderhoud"]),
+  group("hovenier", "Hovenier", ["hovenier-demo"], ["hovenier", "tuin", "tuinaanleg", "tuinontwerp", "groen", "onderhoud"]),
+  group("schoonmaakbedrijf", "Schoonmaakbedrijf", ["schoonmaakbedrijf-demo"], ["schoonmaak", "schoonmaakbedrijf", "kantoor", "vve", "oplevering", "contracten"]),
+  group("verhuisbedrijf", "Verhuisbedrijf", ["verhuisbedrijf-demo"], ["verhuisbedrijf", "verhuizen", "transport", "opslag", "planning", "logistiek"]),
+  group("dierenarts", "Dierenarts", ["dierenarts-demo"], ["dierenarts", "dierenzorg", "kliniek", "consult", "vaccinatie", "huisdieren"]),
+  group("schoonheidssalon", "Schoonheidssalon", ["schoonheidssalon-demo"], ["schoonheidssalon", "beauty", "wellness", "facials", "massage", "huidverbetering"]),
+  group("makelaar", "Makelaar", ["makelaar-demo"], ["vastgoed", "makelaar", "woning", "taxatie", "waardebepaling", "bezichtiging"]),
+  group("hotel", "Hotel", ["hotel-demo"], ["hotel", "b&b", "bed and breakfast", "hospitality", "kamers", "boeken", "verblijf"]),
+  group("financieel-adviseur", "Financieel adviseur", ["financieel-adviseur-demo"], ["financieel", "financieel advies", "hypotheek", "accountant", "belasting", "advies"]),
+  group("fysiotherapie", "Fysiotherapie", ["fysiotherapie-demo"], ["fysiotherapie", "fysiotherapeut", "revalidatie", "herstel", "sportzorg", "pijnklachten"]),
+  group("kinderopvang", "Kinderopvang", ["kinderopvang-demo"], ["kinderopvang", "bso", "peuteropvang", "opvang", "rondleiding", "aanmelden"]),
 ]);
 
-function asset(slug, alt, keywords, filename) {
+function group(slug, label, demoSiteIds, keywords) {
+  const assets = Object.fromEntries(DEMO_IMAGE_ROLES.map((role) => [role, asset(slug, label, role)]));
   return Object.freeze({
     slug,
-    type: "hero",
-    src: `${DEMO_IMAGE_BASE}/${filename}`,
-    alt,
+    label,
+    demoSiteIds: Object.freeze(demoSiteIds),
     keywords: Object.freeze(keywords),
+    assets: Object.freeze(assets),
   });
 }
 
-function resolveDemoImageAsset(input = {}) {
-  const text = [
+function asset(groupSlug, groupLabel, role) {
+  return Object.freeze({
+    slug: `${groupSlug}-${role}`,
+    groupSlug,
+    role,
+    type: role,
+    src: `${DEMO_IMAGE_BASE}/${groupSlug}/${role}.png`,
+    alt: `${groupLabel} ${roleLabels[role]} afbeelding voor demo website`,
+  });
+}
+
+function textForMatch(input = {}) {
+  return [
     input.id,
     input.name,
     input.businessName,
@@ -49,16 +68,37 @@ function resolveDemoImageAsset(input = {}) {
     ...(input.services || []),
     ...(input.tags || []),
   ].filter(Boolean).join(" ").toLowerCase();
-  const scored = demoImageAssets
-    .map((item) => ({
-      asset: item,
-      score: item.keywords.reduce((total, keyword) => total + (text.includes(keyword.toLowerCase()) ? 1 : 0), 0),
-    }))
+}
+
+function scoreGroup(groupItem, input = {}) {
+  const text = textForMatch(input);
+  const id = String(input.id || "").toLowerCase();
+  const idScore = groupItem.demoSiteIds.some((demoSiteId) => demoSiteId.toLowerCase() === id) ? 100 : 0;
+  const slugScore = text.includes(groupItem.slug) ? 10 : 0;
+  const keywordScore = groupItem.keywords.reduce((total, keyword) => total + (text.includes(keyword.toLowerCase()) ? 1 : 0), 0);
+  return idScore + slugScore + keywordScore;
+}
+
+function resolveDemoImageGroup(input = {}) {
+  const scored = demoImageGroups
+    .map((groupItem) => ({ groupItem, score: scoreGroup(groupItem, input) }))
     .sort((left, right) => right.score - left.score);
-  return scored[0]?.score > 0 ? scored[0].asset : demoImageAssets[0];
+  return scored[0]?.score > 0 ? scored[0].groupItem : demoImageGroups[0];
+}
+
+function resolveDemoImageAssetSet(input = {}) {
+  return resolveDemoImageGroup(input).assets;
+}
+
+function resolveDemoImageAsset(input = {}, role = "hero") {
+  const assets = resolveDemoImageAssetSet(input);
+  return assets[role] || assets.hero;
 }
 
 module.exports = {
-  demoImageAssets,
+  DEMO_IMAGE_ROLES,
+  demoImageGroups,
   resolveDemoImageAsset,
+  resolveDemoImageAssetSet,
+  resolveDemoImageGroup,
 };

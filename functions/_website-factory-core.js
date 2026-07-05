@@ -1,5 +1,5 @@
 const crypto = require("crypto");
-const { resolveDemoImageAsset } = require("./_demo-image-assets");
+const { resolveDemoImageAsset, resolveDemoImageAssetSet } = require("./_demo-image-assets");
 const { loadWebsiteFactoryManifests } = require("./_website-factory-manifests");
 const { resolveFactoryConfig } = require("./website-factory/config-resolver");
 
@@ -159,7 +159,8 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
   const packageType = normalizePackageType(journey.packageType || journey.package_type || journey.package || journey.packageName || journey.package_name || extractField(combinedBriefing, ["Websitepakket", "Pakket"]));
   const factoryConfig = resolveFactoryConfig({ packageType, industry: `${industry} ${combinedBriefing} ${businessName}` });
   const packageRules = resolvePackageRules(factoryConfig.package.id || packageType);
-  const heroImage = resolveDemoImageAsset({ businessName, industry, services, briefing: combinedBriefing });
+  const demoImageAssets = resolveDemoImageAssetSet({ businessName, industry, services, briefing: combinedBriefing });
+  const heroImage = demoImageAssets.hero || resolveDemoImageAsset({ businessName, industry, services, briefing: combinedBriefing });
   const inputSignals = [combinedBriefing, websiteUrl, email, phone].filter((value) => cleanText(value).length > 12).length;
   const lowInputWarning = inputSignals < 2;
   const templateSections = packageRules.sections;
@@ -168,7 +169,7 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
   const projectSlug = slugifySite(businessName || websiteUrl || "website-preview");
   const title = `${businessName} - ${industryProfile.label}`;
   const description = `${businessName} presenteert ${industryProfile.label.toLowerCase()} met een premium uitstraling, duidelijke actieknoppen en een route naar contact.`;
-  const siteAssets = buildSiteAssets({ businessName, industryProfile, services, colors, heroImage, projectSlug });
+  const siteAssets = buildSiteAssets({ businessName, industryProfile, services, colors, heroImage, demoImageAssets, projectSlug });
   const html = renderHtml({ businessName, contactName, email, phone, websiteUrl, siteUrl, industry, industryProfile, services, benefits, processSteps, cta, colors, style, title, description, lowInputWarning, packageType, packageRules, heroImage, siteAssets });
   const css = renderCss(colors);
   const script = renderScript({ businessName, email, services });
@@ -208,6 +209,7 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     manifestSources: factoryConfig.sources,
     packageRules,
     heroImage,
+    demoImageAssets,
     localAssets: siteAssets.map(({ path, kind, service }) => ({ path, kind, service })),
     generatedPages: pages,
     generatedSections: templateSections,
@@ -247,17 +249,18 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
       source: factoryConfig.sources.industryManifest,
     },
     hero: {
-      type: "generated-local-asset",
+      type: "demo-image-library",
       promptReady: true,
       slug: heroImage.slug,
-      src: "assets/hero.svg",
+      src: heroImage.src,
       alt: heroImage.alt,
       subject: `${businessName} ${industry}`,
     },
+    roleImages: demoImageAssets,
     serviceVisuals: services.map((service, index) => ({
       service,
-      type: "generated-local-asset",
-      src: siteAssets.find((asset) => asset.service === service)?.path || `assets/service-${index + 1}.svg`,
+      type: "demo-image-library",
+      src: siteAssets.find((asset) => asset.service === service)?.path || demoImageAssets.service?.src || heroImage.src,
       alt: `${service} door ${businessName}`,
     })),
     sectionVisuals: [
@@ -315,7 +318,7 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
       { path: "sitemap.xml", content: sitemap },
       { path: "robots.txt", content: robots },
       { path: ".htaccess", content: htaccess },
-      ...siteAssets.map(({ path, content }) => ({ path, content })),
+      ...siteAssets.filter((asset) => asset.content).map(({ path, content }) => ({ path, content })),
       { path: "assets-map.json", content: JSON.stringify(assetsMap, null, 2) },
       { path: "briefing.json", content: JSON.stringify(briefingJson, null, 2) },
       { path: "README.md", content: readme },
@@ -654,7 +657,7 @@ function serviceAssetPath(siteAssets = [], service = "", fallback = "assets/hero
   return siteAssets.find((asset) => asset.kind === "service" && asset.service === service)?.path || fallback;
 }
 
-function buildSiteAssets({ businessName, industryProfile, services, colors, heroImage, projectSlug }) {
+function buildSiteAssets({ businessName, industryProfile, services, colors, heroImage, demoImageAssets = {}, projectSlug }) {
   const palette = {
     ink: colors.ink || "#111827",
     brand: colors.brand || "#24382f",
@@ -662,33 +665,27 @@ function buildSiteAssets({ businessName, industryProfile, services, colors, hero
     soft: colors.soft || "#f3efe8",
     dark: colors.dark || colors.brand || "#1f332a",
   };
+  const serviceImageRoles = ["service", "project", "team", "contact"];
   const serviceAssets = services.slice(0, 6).map((service, index) => ({
-    path: `assets/service-${index + 1}-${slugifySite(service)}.svg`,
+    path: (demoImageAssets[serviceImageRoles[index % serviceImageRoles.length]] || demoImageAssets.service || heroImage).src,
     kind: "service",
     service,
-    content: renderVisualSvg({
-      title: service,
-      subtitle: industryProfile.label,
-      colors: palette,
-      variant: index + 1,
-    }),
+    sourceSlug: (demoImageAssets[serviceImageRoles[index % serviceImageRoles.length]] || demoImageAssets.service || heroImage).slug,
   }));
   return [
     { path: "assets/logo.svg", kind: "logo", content: renderLogoSvg({ businessName, colors: palette }) },
     { path: "assets/favicon.svg", kind: "favicon", content: renderFaviconSvg({ businessName, colors: palette }) },
     { path: "assets/og-image.svg", kind: "og", content: renderOgSvg({ businessName, industryProfile, colors: palette }) },
     {
-      path: "assets/hero.svg",
+      path: heroImage.src,
       kind: "hero",
       sourceSlug: heroImage.slug,
-      content: renderVisualSvg({
-        title: industryProfile.hero || businessName,
-        subtitle: businessName,
-        colors: palette,
-        variant: 0,
-        wide: true,
-      }),
     },
+    ...["service", "team", "project", "contact"].map((role) => ({
+      path: (demoImageAssets[role] || heroImage).src,
+      kind: role,
+      sourceSlug: (demoImageAssets[role] || heroImage).slug,
+    })),
     ...serviceAssets,
   ];
 }

@@ -64,8 +64,8 @@ function withResolvedDemoImages(demoSite) {
   return {
     ...demoSite,
     demoImage: heroImage,
-    desktopThumbnail: demoSite.desktopThumbnail || heroImage.src,
-    mobileThumbnail: demoSite.mobileThumbnail || heroImage.src,
+    desktopThumbnail: heroImage.src,
+    mobileThumbnail: heroImage.src,
   };
 }
 
