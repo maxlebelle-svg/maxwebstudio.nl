@@ -14787,6 +14787,28 @@
           return state.websites.some((website) => websiteBelongsToCustomer(website, customerId));
         }
 
+        function resolveInvoiceCustomer(existingInvoice = null) {
+          const directId = invoiceFields.profile.value || state.selectedCustomerId || existingInvoice?.profileId || existingInvoice?.customerId || "";
+          const selectedWebsite = state.websites.find((website) => website.id === invoiceFields.website.value) || null;
+          const selectedProject = state.projects.find((project) => project.id === invoiceFields.project.value) || null;
+          const candidates = [
+            directId,
+            selectedProject?.customerId,
+            selectedProject?.profileId,
+            selectedWebsite?.customerId,
+            selectedWebsite?.profileId,
+            selectedWebsite?.metadata?.localCustomerId,
+            selectedWebsite?.metadata?.customerId,
+          ].map((value) => String(value || "").trim()).filter(Boolean);
+          const customer = candidates.map((id) => customerByAnyId(id)).find(Boolean) || null;
+          const id = customer?.id || candidates[0] || "";
+          if (id) {
+            const hasOption = Array.from(invoiceFields.profile.options || []).some((option) => option.value === id);
+            if (hasOption) invoiceFields.profile.value = id;
+          }
+          return { id, customer, selectedWebsite, selectedProject };
+        }
+
         function maybeAddCreateWebsiteOption(selectedCustomerId = "") {
           const customer = customerByAnyId(selectedCustomerId);
           const domain = customerWebsiteDomain(customer || {});
@@ -15871,8 +15893,9 @@
 
           try {
             const existingInvoice = invoiceById(invoiceFields.id.value);
-            const selectedCustomerId = invoiceFields.profile.value || state.selectedCustomerId || existingInvoice?.profileId || existingInvoice?.customerId || "";
-            const customer = customerById(selectedCustomerId) || state.customers.find((item) => customerSupabaseId(item) === selectedCustomerId) || null;
+            const resolvedCustomer = resolveInvoiceCustomer(existingInvoice);
+            const selectedCustomerId = resolvedCustomer.id;
+            const customer = resolvedCustomer.customer;
             if (!selectedCustomerId) throw new Error("Selecteer eerst een klant voor deze factuur.");
             if (!customer && !existingInvoice) throw new Error("Geselecteerde centrale klant kon niet worden gevonden.");
             if (invoiceFields.website.value === invoiceCreateWebsiteOptionValue()) await createInvoiceWebsiteFromCustomer();
