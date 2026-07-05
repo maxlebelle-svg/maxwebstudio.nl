@@ -2574,17 +2574,17 @@
         const adminPageSearch = document.getElementById("admin-page-search");
         const adminSidebarNav = document.querySelector(".admin-sidebar-nav");
         const adminSidebarNavItems = [
-          { href: "admin-dashboard.html", page: "dashboard", label: "Dashboard" },
-          { href: "admin-sales.html", page: "sales", label: "Sales" },
-          { href: "admin-website-factory.html", page: "website-factory", label: "Website Factory" },
-          { href: "admin-klanten.html", page: "klanten", label: "Klanten" },
-          { href: "admin-websites.html", page: "websites", label: "Websites", className: "admin-sales-secondary" },
-          { href: "admin-projecten.html", page: "projecten", label: "Projecten" },
-          { href: "admin-offertes.html", page: "offertes", label: "Offertes" },
-          { href: "admin-facturen.html", page: "facturen", label: "Facturen" },
-          { href: "#onderhoud", label: "Abonnementen", className: "admin-developer-only" },
-          { href: "admin-instellingen.html", page: "instellingen", label: "Instellingen", className: "admin-sales-secondary" },
-          { href: "#demo-omgeving", label: "Developer Mode", className: "admin-developer-only" },
+          { href: "admin-dashboard.html", page: "dashboard", accessId: "dashboard", label: "Dashboard" },
+          { href: "admin-sales.html", page: "sales", accessId: "leadfinder", label: "Sales" },
+          { href: "admin-website-factory.html", page: "website-factory", accessId: "leadfinder", label: "Website Factory" },
+          { href: "admin-klanten.html", page: "klanten", accessId: "klanten", label: "Klanten" },
+          { href: "admin-websites.html", page: "websites", accessId: "websites", label: "Websites", className: "admin-sales-secondary" },
+          { href: "admin-projecten.html", page: "projecten", accessId: "projecten", label: "Projecten" },
+          { href: "admin-offertes.html", page: "offertes", accessId: "offertes", label: "Offertes" },
+          { href: "admin-facturen.html", page: "facturen", accessId: "facturen", label: "Facturen" },
+          { href: "#onderhoud", accessId: "onderhoud", label: "Abonnementen", className: "admin-developer-only" },
+          { href: "admin-instellingen.html", page: "instellingen", accessId: "instellingen", label: "Instellingen", className: "admin-sales-secondary" },
+          { href: "#demo-omgeving", accessId: "demo-omgeving", label: "Developer Mode", className: "admin-developer-only" },
         ];
         let adminNavLinks = [];
         renderAdminSidebarNavigation();
@@ -5931,16 +5931,13 @@
             const context = modules.routeGuardService.getAccessContext();
             const decision = modules.routeGuardService.requireAuth({ pageName: "admin-dashboard", mode: context.mode, allowDemo: true });
             const visibleItems = modules.authService.getVisibleNavigationItems().map((item) => item.id);
-            let filteredNavigationCount = 0;
             if (accessControlMode.value !== context.mode) accessControlMode.value = context.mode;
             adminAccessControlText.textContent = `${context.mode.toUpperCase()} mode - rol: ${context.role || "geen sessie"} - ${decision.allowed ? "admin voorbereid" : decision.reason}`;
-            adminNavLinks.forEach((link) => {
-              const id = link.getAttribute("href")?.replace("#", "");
-              const alwaysVisible = id === "dashboard";
-              const visible = alwaysVisible || visibleItems.includes(id);
-              if (!visible) filteredNavigationCount += 1;
-              link.hidden = !visible;
-              link.setAttribute("aria-hidden", visible ? "false" : "true");
+            const filteredNavigationCount = renderAdminSidebarNavigation({
+              source: "applyAccessControl",
+              role: context.role,
+              status: decision.allowed ? "allowed" : "blocked",
+              visibleItemIds: visibleItems,
             });
             const developerAllowed = modules.routeGuardService.canShowDeveloperTools();
             const migrationAllowed = modules.routeGuardService.canShowMigrationTools();
@@ -9063,23 +9060,39 @@
           }
         }
 
-        function renderAdminSidebarNavigation() {
+        function renderAdminSidebarNavigation(options = {}) {
           if (!adminSidebarNav) return;
           const currentPage = window.maxwebstudioAdminPage?.page || "dashboard";
+          const visibleItemIds = Array.isArray(options.visibleItemIds) ? new Set(options.visibleItemIds) : null;
+          const visibleItems = visibleItemIds
+            ? adminSidebarNavItems.filter((item) => item.accessId === "dashboard" || visibleItemIds.has(item.accessId))
+            : adminSidebarNavItems;
           adminSidebarNav.innerHTML = [
             `<span class="admin-nav-group">Werkruimte</span>`,
-            ...adminSidebarNavItems.map((item) => `
+            ...visibleItems.map((item) => `
               <a href="${item.href}" class="${[item.className || "", item.page === currentPage ? "is-active" : ""].filter(Boolean).join(" ")}" data-admin-nav="${item.page || item.href.replace("#", "")}">${item.label}</a>
             `),
           ].join("");
           adminNavLinks = [...adminSidebarNav.querySelectorAll("a")];
+          const filteredCount = adminSidebarNavItems.length - visibleItems.length;
+          if (isDeveloperModeEnabled()) {
+            console.info("Admin sidebar rendered", {
+              source: options.source || "initial",
+              role: options.role || state.adminSession?.role || "",
+              status: options.status || (state.adminSessionRestoreComplete ? "restored" : "loading"),
+              page: currentPage,
+              visibleItems: visibleItems.map((item) => item.page || item.accessId || item.href),
+              filteredCount,
+            });
+          }
+          return filteredCount;
         }
 
         function ensureAdminSidebarNavigation() {
           const factoryLink = adminSidebarNav?.querySelector('a[href="admin-website-factory.html"]');
           const linkCount = adminSidebarNav?.querySelectorAll("a").length || 0;
-          if (!factoryLink || linkCount < adminSidebarNavItems.length) {
-            renderAdminSidebarNavigation();
+          if (linkCount === 0 || (!factoryLink && !state.adminSessionRestoreComplete)) {
+            renderAdminSidebarNavigation({ source: "ensureAdminSidebarNavigation" });
           }
         }
 
