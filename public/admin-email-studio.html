@@ -1,0 +1,784 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>E-mail Studio | Max CRM</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=20260705-workflow-modules" />
+    <style>
+      .email-studio-shell {
+        display: grid;
+        gap: 22px;
+      }
+
+      .email-studio-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .email-studio-toolbar > div {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .email-studio-grid {
+        display: grid;
+        grid-template-columns: minmax(280px, 0.82fr) minmax(420px, 1.18fr);
+        gap: 22px;
+        align-items: start;
+      }
+
+      .email-template-list,
+      .email-editor-card,
+      .email-preview-card,
+      .email-variable-card {
+        display: grid;
+        gap: 16px;
+        padding: 22px;
+      }
+
+      .email-template-list-body {
+        display: grid;
+        gap: 12px;
+      }
+
+      .email-template-card {
+        display: grid;
+        gap: 12px;
+        padding: 16px;
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        border-radius: 8px;
+        color: rgba(226, 236, 248, 0.8);
+        background: rgba(15, 23, 42, 0.58);
+        cursor: pointer;
+        text-align: left;
+        transition: border-color 180ms ease, transform 180ms ease, background 180ms ease;
+      }
+
+      .email-template-card:hover,
+      .email-template-card:focus-visible {
+        border-color: rgba(96, 165, 250, 0.42);
+        transform: translateY(-1px);
+      }
+
+      .email-template-card.is-active {
+        border-color: rgba(96, 165, 250, 0.62);
+        background:
+          linear-gradient(135deg, rgba(37, 99, 235, 0.2), rgba(15, 23, 42, 0.72)),
+          rgba(15, 23, 42, 0.74);
+        box-shadow: inset 3px 0 0 var(--blue);
+      }
+
+      .email-template-card h3,
+      .email-preview-card h3 {
+        margin: 0;
+        color: #f8fbff;
+        font-size: 16px;
+        line-height: 1.25;
+      }
+
+      .email-template-card p,
+      .email-preview-card p {
+        margin: 0;
+      }
+
+      .email-template-meta,
+      .email-template-actions,
+      .email-editor-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .email-template-meta {
+        justify-content: space-between;
+      }
+
+      .email-template-description,
+      .email-updated-note,
+      .email-variable-help {
+        color: rgba(226, 236, 248, 0.62);
+        font-size: 13px;
+        font-weight: 650;
+        line-height: 1.5;
+      }
+
+      .email-template-actions .button {
+        min-height: 34px;
+        padding: 8px 12px;
+      }
+
+      .email-editor-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(240px, 0.52fr);
+        gap: 18px;
+        align-items: start;
+      }
+
+      .email-editor-fields {
+        display: grid;
+        gap: 14px;
+      }
+
+      .email-field {
+        display: grid;
+        gap: 8px;
+        color: rgba(226, 236, 248, 0.76);
+        font-size: 13px;
+        font-weight: 850;
+      }
+
+      .email-field input,
+      .email-field textarea {
+        width: 100%;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 8px;
+        color: #f8fbff;
+        background: rgba(15, 23, 42, 0.76);
+      }
+
+      .email-field textarea {
+        min-height: 260px;
+        resize: vertical;
+        line-height: 1.6;
+      }
+
+      .email-body-shell {
+        overflow: hidden;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 8px;
+        background: rgba(15, 23, 42, 0.76);
+      }
+
+      .email-editor-chrome {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+        padding: 10px;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+        background: rgba(2, 6, 23, 0.24);
+      }
+
+      .email-editor-chip {
+        display: inline-grid;
+        place-items: center;
+        min-width: 32px;
+        height: 30px;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 7px;
+        color: rgba(226, 236, 248, 0.78);
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .email-body-shell textarea {
+        min-height: 310px;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+      }
+
+      .email-variable-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .email-variable-button {
+        border: 1px solid rgba(96, 165, 250, 0.26);
+        border-radius: 8px;
+        color: rgba(226, 236, 248, 0.84);
+        background: rgba(37, 99, 235, 0.13);
+        font: inherit;
+        font-size: 12px;
+        font-weight: 850;
+        padding: 8px 10px;
+        cursor: pointer;
+      }
+
+      .email-variable-button:hover,
+      .email-variable-button:focus-visible {
+        border-color: rgba(96, 165, 250, 0.48);
+        color: #f8fbff;
+      }
+
+      .email-message {
+        min-height: 22px;
+      }
+
+      .email-preview-frame {
+        overflow: hidden;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 8px;
+        background: #f8fafc;
+        color: #0f172a;
+        box-shadow: 0 24px 70px rgba(2, 8, 23, 0.28);
+      }
+
+      .email-preview-meta {
+        display: grid;
+        gap: 8px;
+        padding: 18px;
+        border-bottom: 1px solid #e2e8f0;
+        background: #ffffff;
+      }
+
+      .email-preview-meta span {
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .email-preview-meta strong {
+        color: #0f172a;
+        font-size: 18px;
+        line-height: 1.3;
+      }
+
+      .email-preview-preheader {
+        color: #475569;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .email-preview-body {
+        padding: 26px;
+        color: #1e293b;
+        font-size: 15px;
+        line-height: 1.7;
+        white-space: pre-wrap;
+      }
+
+      .email-studio-empty {
+        padding: 18px;
+        border: 1px dashed rgba(148, 163, 184, 0.24);
+        border-radius: 8px;
+        color: rgba(226, 236, 248, 0.64);
+        font-weight: 750;
+      }
+
+      @media (max-width: 1180px) {
+        .email-studio-grid,
+        .email-editor-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .email-template-meta,
+        .email-studio-toolbar,
+        .email-editor-actions {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .email-template-actions .button,
+        .email-editor-actions .button,
+        .email-studio-toolbar .button {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body class="admin-body">
+    <main class="admin-crm-shell">
+      <aside class="admin-sidebar" aria-label="Admin modules">
+        <a class="brand" href="admin-dashboard.html">
+          <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true">
+            <rect x="6" y="6" width="68" height="68" rx="18"></rect>
+            <path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path>
+            <path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path>
+          </svg>
+          <span>Max CRM</span>
+        </a>
+        <nav class="admin-sidebar-nav">
+          <span class="admin-nav-group">Main</span>
+          <a href="admin-dashboard.html">Dashboard</a>
+          <span class="admin-nav-group">Sales</span>
+          <a href="admin-sales.html">Leads</a>
+          <span class="admin-nav-group">Production</span>
+          <a href="admin-website-factory.html">Website Factory</a>
+          <a href="admin-ai-content-library.html">AI Content Library</a>
+          <a href="admin-seo-studio.html">SEO Studio</a>
+          <a href="admin-social-media-studio.html">Social Media Studio</a>
+          <a href="admin-brand-center.html">Brand Center</a>
+          <a href="admin-domain-center.html">Domein Center</a>
+          <span class="admin-nav-group">Customers</span>
+          <a href="admin-klanten.html">Klanten</a>
+          <a href="admin-websites.html">Websites</a>
+          <a href="admin-projecten.html">Projecten</a>
+          <span class="admin-nav-group">Administration</span>
+          <a href="admin-offertes.html">Offertes</a>
+          <a href="admin-facturen.html">Facturen</a>
+          <a class="is-active" href="admin-email-studio.html">E-mail Studio</a>
+          <span class="admin-nav-group">System</span>
+          <a href="admin-instellingen.html">Instellingen</a>
+        </nav>
+      </aside>
+
+      <div class="admin-crm-main workflow-module-shell">
+        <header class="admin-page-topbar" aria-label="Admin snel zoeken">
+          <label class="admin-page-search" for="admin-page-search">
+            <span class="sr-only">Zoeken</span>
+            <input id="admin-page-search" type="search" placeholder="Zoek templates..." />
+            <kbd>⌘ K</kbd>
+          </label>
+          <div class="admin-page-actions">
+            <button class="admin-icon-button" type="button" aria-label="Meldingen">⌕</button>
+            <button class="button secondary" id="reset-templates-top" type="button">Reset templates</button>
+          </div>
+        </header>
+
+        <header class="admin-section admin-hero">
+          <div>
+            <p class="section-kicker">Administration</p>
+            <h1>E-mail Studio</h1>
+            <p>Beheer klantgerichte e-mailtemplates voor sales, onboarding, facturatie en support.</p>
+          </div>
+          <span class="workflow-module-label">Lokale template-editor - verzending later gekoppeld</span>
+        </header>
+
+        <section class="email-studio-shell" aria-label="E-mail Studio workspace">
+          <div class="email-studio-toolbar">
+            <div>
+              <span class="status-badge status-prepared" id="template-count">5 templates</span>
+              <span class="status-badge status-active" id="active-count">0 actief</span>
+            </div>
+            <div>
+              <button class="button secondary" id="duplicate-template" type="button">Dupliceer template</button>
+              <button class="button secondary" id="toggle-status" type="button">Markeer als actief</button>
+              <button class="button primary" id="save-template" type="button">Opslaan</button>
+            </div>
+          </div>
+
+          <div class="email-studio-grid">
+            <section class="admin-card email-template-list" aria-labelledby="template-list-heading">
+              <div class="admin-section-heading">
+                <div>
+                  <p class="section-kicker">Templates</p>
+                  <h2 id="template-list-heading">Vaste e-mailflows</h2>
+                </div>
+              </div>
+              <div class="email-template-list-body" id="template-list"></div>
+            </section>
+
+            <section class="email-editor-grid" aria-label="Template editor en preview">
+              <article class="admin-card email-editor-card">
+                <div class="admin-section-heading">
+                  <div>
+                    <p class="section-kicker">Editor</p>
+                    <h2 id="editor-heading">Template bewerken</h2>
+                  </div>
+                  <span class="status-badge" id="editor-status">Concept</span>
+                </div>
+
+                <div class="email-editor-fields">
+                  <label class="email-field" for="template-name">Template naam
+                    <input id="template-name" autocomplete="off" />
+                  </label>
+                  <label class="email-field" for="template-subject">Onderwerp
+                    <input id="template-subject" autocomplete="off" />
+                  </label>
+                  <label class="email-field" for="template-preheader">Preheader
+                    <input id="template-preheader" autocomplete="off" />
+                  </label>
+                  <label class="email-field" for="template-body">E-mail body
+                    <span class="email-body-shell">
+                      <span class="email-editor-chrome" aria-hidden="true">
+                        <span class="email-editor-chip">B</span>
+                        <span class="email-editor-chip">I</span>
+                        <span class="email-editor-chip">H1</span>
+                        <span class="email-editor-chip">AI</span>
+                        <span class="email-editor-chip">Link</span>
+                      </span>
+                      <textarea id="template-body" placeholder="Schrijf hier de e-mailtekst..."></textarea>
+                    </span>
+                  </label>
+                </div>
+
+                <div class="email-editor-actions">
+                  <button class="button primary" id="save-template-bottom" type="button">Opslaan</button>
+                  <button class="button secondary" id="preview-template" type="button">Preview</button>
+                  <button class="button secondary" id="reset-templates" type="button">Reset templates</button>
+                </div>
+                <p class="admin-form-message email-message" id="email-message" role="status" aria-live="polite"></p>
+              </article>
+
+              <aside class="admin-card email-variable-card" aria-labelledby="variables-heading">
+                <div>
+                  <p class="section-kicker">Variabelen</p>
+                  <h2 id="variables-heading">Beschikbaar</h2>
+                </div>
+                <p class="email-variable-help">Klik om de variabele in de body te plaatsen. Als er geen cursor actief is wordt de code onderaan toegevoegd.</p>
+                <div class="email-variable-list" id="variable-list"></div>
+              </aside>
+
+              <aside class="admin-card email-preview-card" aria-labelledby="preview-heading">
+                <div class="admin-section-heading">
+                  <div>
+                    <p class="section-kicker">Preview</p>
+                    <h2 id="preview-heading">Voorbeeld met klantdata</h2>
+                  </div>
+                </div>
+                <div class="email-preview-frame">
+                  <div class="email-preview-meta">
+                    <span>Onderwerp</span>
+                    <strong id="preview-subject"></strong>
+                    <p class="email-preview-preheader" id="preview-preheader"></p>
+                  </div>
+                  <div class="email-preview-body" id="preview-body"></div>
+                </div>
+              </aside>
+            </section>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script>
+      (() => {
+        const storageKey = "maxwebstudioEmailStudioTemplates";
+        const variables = [
+          "{{klant_naam}}",
+          "{{bedrijf_naam}}",
+          "{{website_url}}",
+          "{{offerte_nummer}}",
+          "{{factuur_nummer}}",
+          "{{login_url}}",
+          "{{tijdelijke_wachtwoord}}",
+          "{{contactpersoon}}",
+          "{{pakket_naam}}",
+        ];
+        const previewData = {
+          klant_naam: "Michel",
+          bedrijf_naam: "Quantumbouw",
+          website_url: "https://quantumbouw.nl",
+          offerte_nummer: "OFF-2026-001",
+          factuur_nummer: "FAC-2026-001",
+          login_url: "https://maxwebstudio.nl/login",
+          tijdelijke_wachtwoord: "Tijdelijk123!",
+          contactpersoon: "Max",
+          pakket_naam: "Professioneel",
+        };
+        const defaultTemplates = [
+          {
+            id: "welkomstmail",
+            name: "Welkomstmail",
+            description: "Startmail voor nieuwe klanten na akkoord.",
+            type: "Onboarding",
+            status: "Actief",
+            updatedAt: "2026-07-05",
+            subject: "Welkom bij Max Webstudio, {{klant_naam}}",
+            preheader: "We starten met jullie website en portaal.",
+            body: "Hallo {{klant_naam}},\n\nWelkom bij Max Webstudio. Fijn dat we voor {{bedrijf_naam}} aan de slag mogen.\n\nDe komende periode starten we met de voorbereiding van jullie website en het klantportaal. We verzamelen de belangrijkste gegevens, stemmen de planning af en houden je stap voor stap op de hoogte.\n\nJe vaste contactpersoon is {{contactpersoon}}. Heb je alvast vragen of input, reageer dan gerust op deze mail.\n\nMet vriendelijke groet,\nMax Webstudio",
+          },
+          {
+            id: "offerte",
+            name: "Offerte",
+            description: "Bericht dat een offerte klaarstaat.",
+            type: "Sales",
+            status: "Concept",
+            updatedAt: "2026-07-05",
+            subject: "Je offerte {{offerte_nummer}} staat klaar",
+            preheader: "Bekijk de offerte voor {{bedrijf_naam}} wanneer het jou uitkomt.",
+            body: "Hallo {{klant_naam}},\n\nDe offerte voor {{bedrijf_naam}} staat klaar. Je kunt offerte {{offerte_nummer}} rustig bekijken en beoordelen.\n\nIn de offerte vind je de voorgestelde aanpak, het pakket {{pakket_naam}} en de vervolgstappen. Als alles akkoord is, kunnen we daarna direct de planning voorbereiden.\n\nHeb je vragen of wil je iets laten aanpassen? Laat het ons weten, dan denken we met je mee.\n\nMet vriendelijke groet,\nMax Webstudio",
+          },
+          {
+            id: "factuur",
+            name: "Factuur",
+            description: "Bericht dat een factuur klaarstaat.",
+            type: "Administratie",
+            status: "Concept",
+            updatedAt: "2026-07-05",
+            subject: "Factuur {{factuur_nummer}} staat klaar",
+            preheader: "De factuur voor {{bedrijf_naam}} is beschikbaar.",
+            body: "Hallo {{klant_naam}},\n\nFactuur {{factuur_nummer}} voor {{bedrijf_naam}} staat klaar.\n\nJe kunt de factuur bekijken en voldoen via het klantportaal. Controleer de gegevens gerust even; als er iets niet klopt, horen we dat graag.\n\nDank je wel voor het vertrouwen in Max Webstudio.\n\nMet vriendelijke groet,\nMax Webstudio",
+          },
+          {
+            id: "website-live",
+            name: "Website live",
+            description: "Livegangbericht met link naar de website.",
+            type: "Project",
+            status: "Actief",
+            updatedAt: "2026-07-05",
+            subject: "De website van {{bedrijf_naam}} staat live",
+            preheader: "Gefeliciteerd, jullie nieuwe website is gepubliceerd.",
+            body: "Hallo {{klant_naam}},\n\nGefeliciteerd: de nieuwe website van {{bedrijf_naam}} staat live.\n\nJe kunt de website bekijken via {{website_url}}. We controleren de livegang nog op de belangrijkste punten en blijven beschikbaar voor vragen, kleine correcties of vervolgstappen.\n\nVeel plezier met jullie nieuwe online visitekaartje.\n\nMet vriendelijke groet,\nMax Webstudio",
+          },
+          {
+            id: "wachtwoord-reset",
+            name: "Wachtwoord reset",
+            description: "Tijdelijk wachtwoord voor portaaltoegang.",
+            type: "Support",
+            status: "Concept",
+            updatedAt: "2026-07-05",
+            subject: "Nieuw tijdelijk wachtwoord voor je Max Webstudio portaal",
+            preheader: "Log in en wijzig je wachtwoord na binnenkomst.",
+            body: "Hallo {{klant_naam}},\n\nWe hebben een tijdelijk wachtwoord voor je klaargezet.\n\nLogin: {{login_url}}\nTijdelijk wachtwoord: {{tijdelijke_wachtwoord}}\n\nLog in met dit tijdelijke wachtwoord en wijzig het daarna naar een eigen veilig wachtwoord. Deel dit wachtwoord niet met anderen.\n\nMet vriendelijke groet,\nMax Webstudio",
+          },
+        ];
+
+        const elements = {
+          list: document.getElementById("template-list"),
+          variableList: document.getElementById("variable-list"),
+          name: document.getElementById("template-name"),
+          subject: document.getElementById("template-subject"),
+          preheader: document.getElementById("template-preheader"),
+          body: document.getElementById("template-body"),
+          previewSubject: document.getElementById("preview-subject"),
+          previewPreheader: document.getElementById("preview-preheader"),
+          previewBody: document.getElementById("preview-body"),
+          editorHeading: document.getElementById("editor-heading"),
+          editorStatus: document.getElementById("editor-status"),
+          message: document.getElementById("email-message"),
+          count: document.getElementById("template-count"),
+          activeCount: document.getElementById("active-count"),
+          toggleStatus: document.getElementById("toggle-status"),
+          search: document.getElementById("admin-page-search"),
+        };
+        let templates = loadTemplates();
+        let activeId = templates[0]?.id || "";
+
+        function loadTemplates() {
+          try {
+            const stored = JSON.parse(localStorage.getItem(storageKey) || "null");
+            return Array.isArray(stored) && stored.length ? stored : cloneDefaults();
+          } catch (error) {
+            return cloneDefaults();
+          }
+        }
+
+        function cloneDefaults() {
+          return defaultTemplates.map((template) => ({ ...template }));
+        }
+
+        function persistTemplates() {
+          localStorage.setItem(storageKey, JSON.stringify(templates));
+        }
+
+        function today() {
+          return new Date().toISOString().slice(0, 10);
+        }
+
+        function escapeHtml(value) {
+          return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#039;",
+          })[char]);
+        }
+
+        function renderWithData(value) {
+          return String(value || "").replace(/\{\{([^}]+)\}\}/g, (match, key) => {
+            const cleanKey = key.trim();
+            return Object.prototype.hasOwnProperty.call(previewData, cleanKey) ? previewData[cleanKey] : match;
+          });
+        }
+
+        function setMessage(text, type = "") {
+          elements.message.textContent = text;
+          elements.message.className = `admin-form-message email-message ${type}`.trim();
+        }
+
+        function activeTemplate() {
+          return templates.find((template) => template.id === activeId) || templates[0];
+        }
+
+        function readEditorIntoTemplate() {
+          const template = activeTemplate();
+          if (!template) return null;
+          template.name = elements.name.value.trim() || "Naamloze template";
+          template.subject = elements.subject.value.trim();
+          template.preheader = elements.preheader.value.trim();
+          template.body = elements.body.value;
+          template.updatedAt = today();
+          return template;
+        }
+
+        function renderTemplateList() {
+          const query = String(elements.search?.value || "").trim().toLowerCase();
+          const visibleTemplates = templates.filter((template) => {
+            return [template.name, template.description, template.type, template.status].some((value) => String(value || "").toLowerCase().includes(query));
+          });
+          elements.count.textContent = `${templates.length} templates`;
+          elements.activeCount.textContent = `${templates.filter((template) => template.status === "Actief").length} actief`;
+          if (!visibleTemplates.length) {
+            elements.list.innerHTML = '<div class="email-studio-empty">Geen templates gevonden.</div>';
+            return;
+          }
+          elements.list.innerHTML = visibleTemplates.map((template) => `
+            <article class="email-template-card ${template.id === activeId ? "is-active" : ""}" tabindex="0" data-template-id="${escapeHtml(template.id)}">
+              <div class="email-template-meta">
+                <span class="status-badge">${escapeHtml(template.type)}</span>
+                <span class="status-badge ${template.status === "Actief" ? "status-active" : "status-prepared"}">${escapeHtml(template.status)}</span>
+              </div>
+              <div>
+                <h3>${escapeHtml(template.name)}</h3>
+                <p class="email-template-description">${escapeHtml(template.description)}</p>
+              </div>
+              <span class="email-updated-note">Laatst aangepast: ${escapeHtml(template.updatedAt)}</span>
+              <div class="email-template-actions">
+                <button class="button secondary" type="button" data-action="edit" data-template-id="${escapeHtml(template.id)}">Bewerken</button>
+                <button class="button secondary" type="button" data-action="preview" data-template-id="${escapeHtml(template.id)}">Preview</button>
+              </div>
+            </article>
+          `).join("");
+        }
+
+        function renderEditor() {
+          const template = activeTemplate();
+          if (!template) return;
+          elements.name.value = template.name || "";
+          elements.subject.value = template.subject || "";
+          elements.preheader.value = template.preheader || "";
+          elements.body.value = template.body || "";
+          elements.editorHeading.textContent = `${template.name} bewerken`;
+          elements.editorStatus.textContent = template.status || "Concept";
+          elements.editorStatus.className = `status-badge ${template.status === "Actief" ? "status-active" : "status-prepared"}`;
+          elements.toggleStatus.textContent = template.status === "Actief" ? "Markeer als concept" : "Markeer als actief";
+          renderPreview();
+        }
+
+        function renderPreview() {
+          elements.previewSubject.textContent = renderWithData(elements.subject.value);
+          elements.previewPreheader.textContent = renderWithData(elements.preheader.value);
+          elements.previewBody.textContent = renderWithData(elements.body.value);
+        }
+
+        function saveTemplate() {
+          const template = readEditorIntoTemplate();
+          if (!template) return;
+          persistTemplates();
+          renderTemplateList();
+          renderEditor();
+          setMessage(`${template.name} opgeslagen.`, "success");
+        }
+
+        function selectTemplate(id, action = "edit") {
+          readEditorIntoTemplate();
+          activeId = id;
+          renderTemplateList();
+          renderEditor();
+          setMessage(action === "preview" ? "Preview bijgewerkt met voorbeelddata." : "Template geopend.", action === "preview" ? "success" : "");
+          if (action === "preview") {
+            document.getElementById("preview-heading")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }
+        }
+
+        function duplicateTemplate() {
+          const source = readEditorIntoTemplate();
+          if (!source) return;
+          const copy = {
+            ...source,
+            id: `${source.id}-kopie-${Date.now()}`,
+            name: `${source.name} kopie`,
+            status: "Concept",
+            updatedAt: today(),
+          };
+          templates = [copy, ...templates];
+          activeId = copy.id;
+          persistTemplates();
+          renderTemplateList();
+          renderEditor();
+          setMessage("Template gedupliceerd als concept.", "success");
+        }
+
+        function toggleStatus() {
+          const template = readEditorIntoTemplate();
+          if (!template) return;
+          template.status = template.status === "Actief" ? "Concept" : "Actief";
+          template.updatedAt = today();
+          persistTemplates();
+          renderTemplateList();
+          renderEditor();
+          setMessage(`Status gewijzigd naar ${template.status}.`, "success");
+        }
+
+        function resetTemplates() {
+          templates = cloneDefaults();
+          activeId = templates[0].id;
+          persistTemplates();
+          renderTemplateList();
+          renderEditor();
+          setMessage("Standaardtemplates teruggezet.", "success");
+        }
+
+        async function insertVariable(variable) {
+          const textarea = elements.body;
+          const start = textarea.selectionStart ?? textarea.value.length;
+          const end = textarea.selectionEnd ?? textarea.value.length;
+          textarea.value = `${textarea.value.slice(0, start)}${variable}${textarea.value.slice(end)}`;
+          textarea.focus();
+          const cursor = start + variable.length;
+          textarea.setSelectionRange(cursor, cursor);
+          renderPreview();
+          try {
+            await navigator.clipboard?.writeText(variable);
+            setMessage(`${variable} ingevoegd en gekopieerd.`, "success");
+          } catch (error) {
+            setMessage(`${variable} ingevoegd.`, "success");
+          }
+        }
+
+        function renderVariables() {
+          elements.variableList.innerHTML = variables.map((variable) => `<button class="email-variable-button" type="button" data-variable="${escapeHtml(variable)}">${escapeHtml(variable)}</button>`).join("");
+        }
+
+        elements.list.addEventListener("click", (event) => {
+          const button = event.target.closest("[data-template-id]");
+          if (!button) return;
+          selectTemplate(button.dataset.templateId, button.dataset.action || "edit");
+        });
+        elements.list.addEventListener("keydown", (event) => {
+          if (!["Enter", " "].includes(event.key)) return;
+          const card = event.target.closest(".email-template-card");
+          if (!card) return;
+          event.preventDefault();
+          selectTemplate(card.dataset.templateId);
+        });
+        elements.variableList.addEventListener("click", (event) => {
+          const button = event.target.closest("[data-variable]");
+          if (button) insertVariable(button.dataset.variable);
+        });
+        [elements.name, elements.subject, elements.preheader, elements.body].forEach((field) => {
+          field.addEventListener("input", () => {
+            renderPreview();
+            if (field === elements.name) elements.editorHeading.textContent = `${field.value || "Template"} bewerken`;
+          });
+        });
+        elements.search?.addEventListener("input", renderTemplateList);
+        document.getElementById("save-template").addEventListener("click", saveTemplate);
+        document.getElementById("save-template-bottom").addEventListener("click", saveTemplate);
+        document.getElementById("preview-template").addEventListener("click", () => {
+          readEditorIntoTemplate();
+          renderTemplateList();
+          renderPreview();
+          setMessage("Preview bijgewerkt met voorbeelddata.", "success");
+        });
+        document.getElementById("duplicate-template").addEventListener("click", duplicateTemplate);
+        document.getElementById("toggle-status").addEventListener("click", toggleStatus);
+        document.getElementById("reset-templates").addEventListener("click", resetTemplates);
+        document.getElementById("reset-templates-top").addEventListener("click", resetTemplates);
+
+        renderVariables();
+        renderTemplateList();
+        renderEditor();
+      })();
+    </script>
+  </body>
+</html>
