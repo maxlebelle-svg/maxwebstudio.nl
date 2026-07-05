@@ -1,5 +1,16 @@
 const DEMO_IMAGE_BASE = "assets/demo-images/library";
-const DEMO_IMAGE_ROLES = Object.freeze(["hero", "service", "team", "project", "contact"]);
+const DEMO_IMAGE_ROLES = Object.freeze([
+  "hero",
+  "service",
+  "team",
+  "project",
+  "contact",
+  "service-alt",
+  "project-alt",
+  "detail",
+  "review",
+  "background",
+]);
 
 const roleLabels = Object.freeze({
   hero: "hero",
@@ -7,6 +18,11 @@ const roleLabels = Object.freeze({
   team: "team en werkwijze",
   project: "project of resultaat",
   contact: "contact en aanvraag",
+  "service-alt": "extra dienst",
+  "project-alt": "extra project",
+  detail: "detail",
+  review: "review en vertrouwen",
+  background: "achtergrond",
 });
 
 const branchImageGroups = Object.freeze([

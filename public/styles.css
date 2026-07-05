@@ -18321,7 +18321,6 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   font-weight: 750;
 }
 
-
 /* Website Factory Enterprise Workspace v2 */
 .admin-body #demo-klantreis {
   gap: 24px;
@@ -18752,7 +18751,6 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
     min-height: 0;
   }
 }
-
 @media print {
   body {
     color: #06121f;

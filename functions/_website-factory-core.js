@@ -665,7 +665,7 @@ function buildSiteAssets({ businessName, industryProfile, services, colors, hero
     soft: colors.soft || "#f3efe8",
     dark: colors.dark || colors.brand || "#1f332a",
   };
-  const serviceImageRoles = ["service", "project", "team", "contact"];
+  const serviceImageRoles = ["service", "service-alt", "project", "project-alt", "detail", "team", "contact", "review"];
   const serviceAssets = services.slice(0, 6).map((service, index) => ({
     path: (demoImageAssets[serviceImageRoles[index % serviceImageRoles.length]] || demoImageAssets.service || heroImage).src,
     kind: "service",
@@ -681,7 +681,7 @@ function buildSiteAssets({ businessName, industryProfile, services, colors, hero
       kind: "hero",
       sourceSlug: heroImage.slug,
     },
-    ...["service", "team", "project", "contact"].map((role) => ({
+    ...["service", "team", "project", "contact", "service-alt", "project-alt", "detail", "review", "background"].map((role) => ({
       path: (demoImageAssets[role] || heroImage).src,
       kind: role,
       sourceSlug: (demoImageAssets[role] || heroImage).slug,
