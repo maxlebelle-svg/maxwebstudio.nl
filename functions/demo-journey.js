@@ -230,13 +230,59 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     throw error;
   }
 
+  if (action === "approve_preview" || action === "approve_delivery") {
+    if (normalizeRole(admin.role) !== "super_admin") {
+      return jsonResponse(403, { success: false, error: "Alleen Super Admin kan preview of oplevering goedkeuren." });
+    }
+    if (!current?.id) return jsonResponse(400, { success: false, error: "Sla eerst de demo-klantreis op voordat je goedkeurt." });
+    const approvedAt = new Date().toISOString();
+    const previewPackage = current.preview_package && typeof current.preview_package === "object" ? current.preview_package : {};
+    const approvals = {
+      ...(previewPackage.approvals || {}),
+      approvalStatus: action === "approve_delivery" ? "delivery_approved" : "preview_approved",
+    };
+    if (action === "approve_preview") {
+      approvals.previewApprovedBy = admin.id;
+      approvals.previewApprovedAt = approvedAt;
+    } else {
+      approvals.deliveryApprovedBy = admin.id;
+      approvals.deliveryApprovedAt = approvedAt;
+    }
+    const record = action === "approve_preview"
+      ? {
+        approval_status: "preview_approved",
+        preview_approved_by: admin.id,
+        preview_approved_at: approvedAt,
+        preview_package: { ...previewPackage, approvals },
+        updated_by: admin.id,
+        updated_at: approvedAt,
+      }
+      : {
+        approval_status: "delivery_approved",
+        delivery_approved_by: admin.id,
+        delivery_approved_at: approvedAt,
+        preview_package: { ...previewPackage, approvals },
+        updated_by: admin.id,
+        updated_at: approvedAt,
+      };
+    const rows = await patchJourneySafe({ supabaseUrl, serviceRoleKey, id: current.id, record });
+    await createEvent({ supabaseUrl, serviceRoleKey, journeyId: current.id, type: "approval", title: action === "approve_preview" ? "Preview goedgekeurd" : "Oplevering goedgekeurd", description: "Super Admin heeft deze stap vrijgegeven.", visible: false, createdBy: admin.id });
+    const journey = mapJourney(rows[0] || await readJourneyById({ supabaseUrl, serviceRoleKey, id: current.id }));
+    const events = await readEvents({ supabaseUrl, serviceRoleKey, journeyId: current.id });
+    return jsonResponse(200, { success: true, journey, demoJourney: journey, events });
+  }
+
   if (action === "generate_email") {
     const template = buildEmailTemplate(payload.emailType || payload.demoStatus || current?.demo_status, current ? mapJourney(current) : payload);
+    const approvalError = emailApprovalError(template.type, current ? mapJourney(current) : payload);
+    if (approvalError) return jsonResponse(403, { success: false, error: approvalError, template });
     return jsonResponse(200, { success: true, template });
   }
 
   if (action === "send_email") {
     const template = buildEmailTemplate(payload.emailType || payload.demoStatus || current?.demo_status, current ? mapJourney(current) : payload);
+    const approvalError = emailApprovalError(template.type, current ? mapJourney(current) : payload);
+    if (approvalError) return jsonResponse(403, { success: false, error: approvalError, template });
     if (!template.to) return jsonResponse(400, { success: false, error: "E-mailadres ontbreekt voor deze demo-klantreis." });
     const result = await sendEmail({
       to: template.to,
@@ -245,7 +291,7 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
       html: textToHtml(template.body),
     });
     if (current?.id) {
-      await patchJourney({ supabaseUrl, serviceRoleKey, id: current.id, record: {
+      await patchJourneySafe({ supabaseUrl, serviceRoleKey, id: current.id, record: {
         last_email_status: result.sent ? `sent:${template.type}` : result.warning || "email_not_sent",
         last_email_sent_at: result.sent ? new Date().toISOString() : null,
         next_email_type: nextEmailType(template.type),
@@ -282,10 +328,10 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
 
     let journeyId = cleanText(sourceJourney.id);
     if (!journeyId) {
-      const created = await insertJourney({ supabaseUrl, serviceRoleKey, record: journeyPayload({ ...payload, demoStatus: "briefing_klaar", generatedBriefing: briefing }, admin, { create: true }) });
+      const created = await insertJourneySafe({ supabaseUrl, serviceRoleKey, record: journeyPayload({ ...payload, demoStatus: "briefing_klaar", generatedBriefing: briefing }, admin, { create: true }) });
       journeyId = cleanText(created[0]?.id);
     } else {
-      await patchJourney({
+      await patchJourneySafe({
         supabaseUrl,
         serviceRoleKey,
         id: journeyId,
@@ -329,8 +375,8 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
   const targetId = cleanText(current?.id || payload.id || payload.demoJourneyId || payload.demo_journey_id);
   const record = journeyPayload(payload, admin, { create: !targetId });
   const rows = targetId
-    ? await patchJourney({ supabaseUrl, serviceRoleKey, id: targetId, record })
-    : await insertJourney({ supabaseUrl, serviceRoleKey, record });
+    ? await patchJourneySafe({ supabaseUrl, serviceRoleKey, id: targetId, record })
+    : await insertJourneySafe({ supabaseUrl, serviceRoleKey, record });
   const journey = mapJourney(rows[0] || {});
   const projectWorkspace = await upsertProjectWorkspace({ supabaseUrl, serviceRoleKey, admin }, workspacePayload(journey, { updatedBy: admin.id, createdBy: admin.id }));
   await createStatusEvents({ supabaseUrl, serviceRoleKey, journey, current: current ? mapJourney(current) : null, admin });
@@ -377,9 +423,15 @@ function journeyPayload(payload = {}, admin = {}, options = {}) {
     assigned_to: cleanText(payload.assignedTo || payload.assigned_to || admin.id) || null,
     email_flow_enabled: Boolean(payload.emailFlowEnabled || payload.email_flow_enabled),
     next_email_type: cleanText(payload.nextEmailType || payload.next_email_type) || nextEmailType(status),
+    intake_json: normalizeJson(payload.intake || payload.intake_json),
+    intake_summary: cleanText(payload.intakeSummary || payload.intake_summary),
+    intake_completeness: clampNumber(payload.intakeCompleteness || payload.intake_completeness, 0, 100),
+    asset_metadata: normalizeJson(payload.assetMetadata || payload.asset_metadata, []),
     updated_by: admin.id,
     updated_at: now,
   };
+  const approvalStatus = cleanText(payload.approvalStatus || payload.approval_status);
+  if (approvalStatus) record.approval_status = approvalStatus;
   if (options.create) {
     record.created_by = admin.id;
     record.created_at = now;
@@ -403,12 +455,46 @@ async function insertJourney({ supabaseUrl, serviceRoleKey, record }) {
   });
 }
 
+async function insertJourneySafe({ supabaseUrl, serviceRoleKey, record }) {
+  try {
+    return await insertJourney({ supabaseUrl, serviceRoleKey, record });
+  } catch (error) {
+    if (!isMissingColumnError(error)) throw error;
+    return insertJourney({ supabaseUrl, serviceRoleKey, record: stripDraftJourneyColumns(record) });
+  }
+}
+
 async function patchJourney({ supabaseUrl, serviceRoleKey, id, record }) {
   return supabaseFetch(`${supabaseUrl}/rest/v1/demo_journeys?id=eq.${encodeURIComponent(id)}`, {
     method: "PATCH",
     headers: { ...restHeaders(serviceRoleKey), Prefer: "return=representation", "Content-Type": "application/json" },
     body: JSON.stringify(record),
   });
+}
+
+async function patchJourneySafe({ supabaseUrl, serviceRoleKey, id, record }) {
+  try {
+    return await patchJourney({ supabaseUrl, serviceRoleKey, id, record });
+  } catch (error) {
+    if (!isMissingColumnError(error)) throw error;
+    return patchJourney({ supabaseUrl, serviceRoleKey, id, record: stripDraftJourneyColumns(record) });
+  }
+}
+
+function stripDraftJourneyColumns(record = {}) {
+  const {
+    intake_json,
+    intake_summary,
+    intake_completeness,
+    asset_metadata,
+    approval_status,
+    preview_approved_by,
+    preview_approved_at,
+    delivery_approved_by,
+    delivery_approved_at,
+    ...fallback
+  } = record;
+  return fallback;
 }
 
 async function updatePreviewJourney({ supabaseUrl, serviceRoleKey, id, record }) {
@@ -513,31 +599,26 @@ function buildEmailTemplate(typeOrStatus = "", journey = {}) {
   const name = cleanText(journey.contactName || journey.contact_name || "u");
   const business = cleanText(journey.businessName || journey.business_name || "uw bedrijf");
   const preview = cleanText(journey.previewUrl || journey.preview_url);
-  const followUp = cleanText(journey.followUpAt || journey.follow_up_at);
   const templates = {
-    day0_received: {
-      subject: "We zijn gestart met uw website-preview",
-      body: `Beste ${name},\n\nBedankt voor het prettige gesprek en uw aanvraag voor ${business}. We hebben de besproken wensen ontvangen en ons projectteam gaat hiermee aan de slag.\n\nU ontvangt de komende dagen korte updates over de voortgang. Zo weet u precies waar we staan en wanneer de eerste preview klaarstaat.\n\nMet vriendelijke groet,\nMax Webstudio`,
+    day1_received: {
+      subject: "Uw website-aanvraag is ontvangen",
+      body: `Beste ${name},\n\nBedankt voor uw aanvraag voor ${business}. We hebben de belangrijkste wensen vastgelegd en controleren intern welke structuur, uitstraling en contactroute het beste past.\n\nU ontvangt de komende dagen korte updates. Zo blijft duidelijk wat er klaarstaat en welke vervolgstap logisch is.\n\nMet vriendelijke groet,\nMax Webstudio`,
     },
-    day1_planned: {
-      subject: "Uw website-preview is ingepland",
-      body: `Beste ${name},\n\nUw website-preview is ingepland. De informatie uit het gesprek is verwerkt en de eerste opzet wordt voorbereid.\n\nWe controleren de belangrijkste onderdelen zoals uitstraling, structuur, contactmogelijkheden en de eerste inhoudelijke richting.\n\nMet vriendelijke groet,\nMax Webstudio`,
+    day2_concept: {
+      subject: "Uw eerste websiteconcept wordt voorbereid",
+      body: `Beste ${name},\n\nWe zijn bezig met het concept voor ${business}. Daarbij letten we op een duidelijke eerste indruk, heldere diensten, vertrouwen en een eenvoudige route naar contact.\n\nZodra de interne controle klaar is, zetten we de preview voor u klaar.\n\nMet vriendelijke groet,\nMax Webstudio`,
     },
-    preview_ready: {
+    day3_preview_ready: {
       subject: "Uw eerste website-preview staat klaar",
-      body: `Beste ${name},\n\nUw eerste website-preview staat klaar. U kunt de preview bekijken via:\n${preview || "[previewlink]"}\n\nGeef gerust uw opmerkingen, wensen en correcties door. Dan verwerken wij deze in de volgende ronde.\n\nMet vriendelijke groet,\nMax Webstudio`,
+      body: `Beste ${name},\n\nUw eerste website-preview staat klaar. U kunt de preview bekijken via:\n${preview || "[previewlink]"}\n\nGeef gerust uw opmerkingen, wensen en correcties door. Dan verwerken wij deze rustig in de volgende ronde.\n\nMet vriendelijke groet,\nMax Webstudio`,
     },
-    feedback_received: {
-      subject: "Uw feedback is ontvangen",
-      body: `Beste ${name},\n\nBedankt voor uw feedback op de website-preview. We hebben uw opmerkingen ontvangen en verwerken deze zorgvuldig in de volgende versie.\n\nZodra de aanpassingen klaarstaan, nemen we opnieuw contact met u op.\n\nMet vriendelijke groet,\nMax Webstudio`,
+    day4_feedback_refinement: {
+      subject: "We verwerken de laatste punten van uw website",
+      body: `Beste ${name},\n\nWe controleren de preview en verwerken waar nodig de laatste punten. De focus ligt op inhoud, contactgegevens, uitstraling en een nette afronding.\n\nAls er nog iets ontbreekt, kunt u dat gerust aan ons doorgeven.\n\nMet vriendelijke groet,\nMax Webstudio`,
     },
-    finalizing: {
-      subject: "We leggen de laatste hand aan uw website",
-      body: `Beste ${name},\n\nWe zijn bezig met de afronding van uw website. De laatste onderdelen worden gecontroleerd en voorbereid voor de laatste bespreking.\n\nDaarna stemmen we samen de vervolgstappen richting livegang af.\n\nMet vriendelijke groet,\nMax Webstudio`,
-    },
-    call_reminder: {
-      subject: "Onze afspraak over uw website",
-      body: `Beste ${name},\n\nGraag herinneren we u aan onze afspraak over uw website${followUp ? ` op ${formatDutchDate(followUp)}` : ""}.\n\nTijdens dit moment lopen we de preview, feedback en vervolgstappen rustig met u door.\n\nMet vriendelijke groet,\nMax Webstudio`,
+    day5_delivery_ready: {
+      subject: "Uw website staat klaar voor de laatste controle",
+      body: `Beste ${name},\n\nDe website voor ${business} staat klaar voor de laatste controle. We lopen graag samen de laatste details door voordat we de vervolgstap richting oplevering of livegang nemen.\n\nPreview:\n${preview || "[previewlink]"}\n\nMet vriendelijke groet,\nMax Webstudio`,
     },
   };
   return { type, to: cleanText(journey.email).toLowerCase(), ...templates[type] };
@@ -545,30 +626,39 @@ function buildEmailTemplate(typeOrStatus = "", journey = {}) {
 
 function emailTemplates() {
   return [
-    ["day0_received", "Dag 0 - Aanvraag ontvangen"],
-    ["day1_planned", "Dag 1 - Project ingepland"],
-    ["preview_ready", "Dag 2/3 - Preview klaar"],
-    ["feedback_received", "Feedback ontvangen"],
-    ["finalizing", "Definitieve versie bijna klaar"],
-    ["call_reminder", "Belafspraak reminder"],
+    ["day1_received", "Dag 1 - Aanvraag ontvangen"],
+    ["day2_concept", "Dag 2 - Concept in voorbereiding"],
+    ["day3_preview_ready", "Dag 3 - Preview klaar"],
+    ["day4_feedback_refinement", "Dag 4 - Feedback en verfijning"],
+    ["day5_delivery_ready", "Dag 5 - Oplevering klaar"],
   ].map(([type, label]) => ({ type, label }));
 }
 
 function emailTypeFor(value = "") {
   const key = normalizeStatus(value);
-  if (["day0_received", "aanvraag_ontvangen", "geen_demo"].includes(key)) return "day0_received";
-  if (["day1_planned", "briefing_klaar", "intern_in_productie", "interne_preview_klaar", "preview_ingepland_voor_klant"].includes(key)) return "day1_planned";
-  if (["preview_ready", "preview_verstuurd"].includes(key)) return "preview_ready";
-  if (["feedback_received", "feedback_ontvangen", "aanpassingen_bezig"].includes(key)) return "feedback_received";
-  if (["finalizing", "definitieve_versie_klaar", "verkocht"].includes(key)) return "finalizing";
-  if (["call_reminder", "belafspraak_gepland"].includes(key)) return "call_reminder";
-  return key && emailTemplates().some((item) => item.type === key) ? key : "day0_received";
+  if (["day0_received", "day1_received", "aanvraag_ontvangen", "geen_demo"].includes(key)) return "day1_received";
+  if (["day1_planned", "day2_concept", "briefing_klaar", "intern_in_productie"].includes(key)) return "day2_concept";
+  if (["preview_ready", "day3_preview_ready", "interne_preview_klaar", "preview_ingepland_voor_klant", "preview_verstuurd"].includes(key)) return "day3_preview_ready";
+  if (["feedback_received", "day4_feedback_refinement", "feedback_ontvangen", "aanpassingen_bezig"].includes(key)) return "day4_feedback_refinement";
+  if (["finalizing", "day5_delivery_ready", "definitieve_versie_klaar", "belafspraak_gepland", "verkocht"].includes(key)) return "day5_delivery_ready";
+  return key && emailTemplates().some((item) => item.type === key) ? key : "day1_received";
 }
 
 function nextEmailType(type = "") {
-  const order = ["day0_received", "day1_planned", "preview_ready", "feedback_received", "finalizing", "call_reminder"];
+  const order = ["day1_received", "day2_concept", "day3_preview_ready", "day4_feedback_refinement", "day5_delivery_ready"];
   const index = order.indexOf(emailTypeFor(type));
   return order[index + 1] || "";
+}
+
+function emailApprovalError(type = "", journey = {}) {
+  const emailType = emailTypeFor(type);
+  if (emailType === "day3_preview_ready" && !journey.previewApprovedAt && !journey.preview_approved_at) {
+    return "Dag 3 previewmail vereist eerst Super Admin goedkeuring.";
+  }
+  if (emailType === "day5_delivery_ready" && !journey.deliveryApprovedAt && !journey.delivery_approved_at) {
+    return "Dag 5 oplevermail vereist eerst Super Admin goedkeuring.";
+  }
+  return "";
 }
 
 function customerTimelineStep(status = "") {
@@ -618,6 +708,8 @@ function sanitizeCustomerJourney(journey = {}) {
 }
 
 function mapJourney(row = {}) {
+  const previewPackage = row.preview_package && typeof row.preview_package === "object" ? row.preview_package : null;
+  const approvals = previewPackage?.approvals || {};
   return {
     id: cleanText(row.id),
     leadId: cleanText(row.lead_id),
@@ -630,8 +722,17 @@ function mapJourney(row = {}) {
     demoStatus: normalizeStatus(row.demo_status || "geen_demo"),
     generatedBriefing: cleanText(row.generated_briefing),
     previewUrl: cleanText(row.preview_url),
-    previewPackage: row.preview_package && typeof row.preview_package === "object" ? row.preview_package : null,
+    previewPackage,
     previewGeneratedAt: cleanText(row.preview_generated_at),
+    intake: normalizeJson(row.intake_json || previewPackage?.intake || {}, {}),
+    intakeSummary: cleanText(row.intake_summary || previewPackage?.intakeSummary),
+    intakeCompleteness: clampNumber(row.intake_completeness ?? previewPackage?.intakeCompleteness ?? 0, 0, 100),
+    assetMetadata: normalizeJson(row.asset_metadata || previewPackage?.assetMetadata || [], []),
+    approvalStatus: cleanText(row.approval_status || approvals.approvalStatus || "pending"),
+    previewApprovedBy: cleanText(row.preview_approved_by || approvals.previewApprovedBy),
+    previewApprovedAt: cleanText(row.preview_approved_at || approvals.previewApprovedAt),
+    deliveryApprovedBy: cleanText(row.delivery_approved_by || approvals.deliveryApprovedBy),
+    deliveryApprovedAt: cleanText(row.delivery_approved_at || approvals.deliveryApprovedAt),
     feedback: cleanText(row.feedback),
     internalNotes: cleanText(row.internal_notes),
     followUpAt: cleanText(row.follow_up_at),
@@ -791,6 +892,22 @@ function normalizeRole(value = "") {
 
 function cleanText(value = "") {
   return String(value || "").trim();
+}
+
+function normalizeJson(value, fallback = {}) {
+  if (value === null || value === undefined || value === "") return fallback;
+  if (typeof value === "object") return value;
+  try {
+    return JSON.parse(String(value));
+  } catch {
+    return fallback;
+  }
+}
+
+function clampNumber(value, min, max) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return min;
+  return Math.max(min, Math.min(max, number));
 }
 
 function appendQueryParam(url = "", key = "", value = "") {

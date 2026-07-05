@@ -573,6 +573,17 @@
 
           <div class="admin-grid workflow-metrics" id="demo-journey-metrics" aria-live="polite"></div>
 
+          <article class="admin-card demo-super-admin-card" id="demo-super-admin-control" aria-labelledby="demo-super-admin-title">
+            <div class="sales-timeline-heading">
+              <div>
+                <strong id="demo-super-admin-title">Super Admin Control Center</strong>
+                <span>Controlepunten voor intake, preview, mail en oplevering.</span>
+              </div>
+              <mark class="status-badge status-prepared" id="demo-super-admin-state">Controle</mark>
+            </div>
+            <div class="demo-super-admin-grid" id="demo-super-admin-grid"></div>
+          </article>
+
           <article class="admin-card demo-journey-steps-card" aria-labelledby="demo-journey-steps-title">
             <div class="admin-profile-form-heading">
               <div>
@@ -608,6 +619,28 @@
                 <label class="admin-profile-wide" for="demo-journey-feedback">Klantfeedback<textarea id="demo-journey-feedback" rows="4"></textarea></label>
                 <label class="admin-profile-wide" for="demo-journey-notes">Interne notities<textarea id="demo-journey-notes" rows="4"></textarea></label>
               </div>
+              <section class="demo-intake-card" id="demo-journey-intake" aria-labelledby="demo-intake-title">
+                <div class="sales-timeline-heading">
+                  <div>
+                    <strong id="demo-intake-title">Klantintake</strong>
+                    <span>Leg de commerciële eisen vast voordat briefing, preview en klantmail klaarstaan.</span>
+                  </div>
+                  <mark class="status-badge status-planned" id="demo-intake-state">Onvolledig</mark>
+                </div>
+                <div class="demo-intake-progress" aria-label="Intake voortgang"><span id="demo-intake-progress-bar" style="width: 0%"></span></div>
+                <p class="admin-muted-note" id="demo-intake-progress">Intake compleet: 0/14 verplichte punten.</p>
+                <div class="demo-intake-fields" id="demo-intake-fields"></div>
+                <div class="demo-intake-upload-grid">
+                  <label for="demo-intake-logo-upload">Logo bestanden<input id="demo-intake-logo-upload" type="file" multiple accept=".svg,.png,.jpg,.jpeg,.webp,.pdf" /></label>
+                  <label for="demo-intake-photo-upload">Foto bestanden<input id="demo-intake-photo-upload" type="file" multiple accept=".png,.jpg,.jpeg,.webp,.pdf" /></label>
+                </div>
+                <div class="demo-intake-assets" id="demo-intake-assets"></div>
+                <article class="demo-intake-summary" aria-labelledby="demo-intake-summary-title">
+                  <strong id="demo-intake-summary-title">Klantwensen & eisen</strong>
+                  <div id="demo-intake-summary"></div>
+                  <pre id="demo-intake-debug" hidden></pre>
+                </article>
+              </section>
               <div class="admin-profile-actions admin-action-groups">
                 <div class="admin-action-group admin-action-group-primary">
                   <button class="button primary" id="demo-journey-save" type="submit">Demo-aanvraag opslaan</button>
@@ -672,6 +705,19 @@
                 </div>
               </div>
               <label class="admin-profile-wide demo-briefing-field" for="demo-journey-briefing">Codex briefing<textarea id="demo-journey-briefing" rows="8" readonly></textarea></label>
+              <article class="demo-approval-card" aria-labelledby="demo-approval-title">
+                <div class="sales-timeline-heading">
+                  <div>
+                    <strong id="demo-approval-title">Super Admin goedkeuring</strong>
+                    <span id="demo-approval-summary">Preview en oplevering wachten op controle.</span>
+                  </div>
+                  <mark class="status-badge status-prepared" id="demo-approval-state">Wacht op controle</mark>
+                </div>
+                <div class="demo-action-grid">
+                  <button class="button secondary" id="demo-journey-approve-preview" type="button">Preview goedkeuren</button>
+                  <button class="button secondary" id="demo-journey-approve-delivery" type="button">Oplevering goedkeuren</button>
+                </div>
+              </article>
               <div class="admin-profile-actions demo-preview-actions">
                 <button class="button secondary is-disabled" id="demo-journey-open-preview" type="button" aria-disabled="true">Preview openen</button>
                 <button class="button secondary is-disabled" id="demo-journey-download-zip" type="button" aria-disabled="true">ZIP downloaden</button>
@@ -20520,12 +20566,11 @@
           ["afgewezen", "Afgewezen"],
         ];
         const templates = [
-          ["day0_received", "Dag 0 - Aanvraag ontvangen"],
-          ["day1_planned", "Dag 1 - Project ingepland"],
-          ["preview_ready", "Dag 2/3 - Preview klaar"],
-          ["feedback_received", "Feedback ontvangen"],
-          ["finalizing", "Definitieve versie bijna klaar"],
-          ["call_reminder", "Belafspraak reminder"],
+          ["day1_received", "Dag 1 - Aanvraag ontvangen"],
+          ["day2_concept", "Dag 2 - Concept in voorbereiding"],
+          ["day3_preview_ready", "Dag 3 - Preview klaar"],
+          ["day4_feedback_refinement", "Dag 4 - Feedback en verfijning"],
+          ["day5_delivery_ready", "Dag 5 - Oplevering klaar"],
         ];
         const websitePackages = [
           ["starter", "Starter Site (€495)"],
@@ -20558,7 +20603,29 @@
         let projectWorkspace = null;
         let lastFactoryResponse = null;
         let currentTemplate = null;
+        let journeyRecords = [];
+        let intakeState = {};
+        let intakeAssets = [];
         const journeyLocks = new Set();
+        const intakeQuestions = [
+          { key: "branch", label: "Branche", helper: "Kies het brancheprofiel voor teksten, beelden en componenten.", required: true, type: "single", options: [["bouw", "Bouw / renovatie"], ["installateur", "Installateur"], ["hovenier", "Hovenier"], ["restaurant", "Restaurant"], ["kapper", "Kapper"], ["makelaar", "Makelaar"], ["zakelijk", "Zakelijke dienstverlening"]] },
+          { key: "goal", label: "Hoofddoel website", required: true, type: "single", options: [["leads", "Meer aanvragen"], ["trust", "Meer vertrouwen"], ["portfolio", "Werk tonen"], ["recruitment", "Personeel werven"]] },
+          { key: "package", label: "Websitepakket", required: true, type: "single", options: websitePackages },
+          { key: "style", label: "Gewenste uitstraling", required: true, type: "multi", options: [["premium", "Premium"], ["modern", "Modern"], ["rustig", "Rustig"], ["lokaal", "Lokaal"], ["luxe", "Luxe"], ["direct", "Direct"]] },
+          { key: "cta", label: "Belangrijkste CTA", required: true, type: "single", options: [["call", "Bel direct"], ["quote", "Offerte aanvragen"], ["appointment", "Afspraak plannen"], ["contact", "Contact opnemen"], ["whatsapp", "WhatsApp"]] },
+          { key: "services", label: "Diensten / aanbod", required: true, type: "multi", wide: true, options: [["renovatie", "Renovatie"], ["maatwerk", "Maatwerk"], ["onderhoud", "Onderhoud"], ["advies", "Advies"], ["spoed", "Spoedservice"], ["projecten", "Projecten"]] },
+          { key: "area", label: "Werkgebied", required: true, type: "single", options: [["local", "Lokaal"], ["regional", "Regionaal"], ["national", "Landelijk"]] },
+          { key: "audience", label: "Doelgroep", required: true, type: "single", options: [["particulier", "Particulieren"], ["zakelijk", "Zakelijk"], ["beide", "Beide"], ["premium", "Premium klanten"]] },
+          { key: "existingWebsite", label: "Bestaande website", required: true, type: "single", options: [["none", "Geen website"], ["outdated", "Verouderd"], ["active", "Actief"], ["unknown", "Onbekend"]] },
+          { key: "logoStatus", label: "Logo status", required: true, type: "single", options: [["available", "Logo beschikbaar"], ["needed", "Logo nodig"], ["refresh", "Opfrissen"], ["unknown", "Onbekend"]] },
+          { key: "photoStatus", label: "Foto status", required: true, type: "single", options: [["available", "Eigen foto's"], ["needed", "Beelden nodig"], ["stock", "Stock/placeholder"], ["unknown", "Onbekend"]] },
+          { key: "followUp", label: "Opvolging", required: true, type: "single", options: [["today", "Vandaag"], ["tomorrow", "Morgen"], ["three_days", "Binnen 3 dagen"], ["manual", "Handmatig plannen"]] },
+          { key: "leadTemperature", label: "Lead temperatuur", required: true, type: "single", options: [["hot", "Warm"], ["medium", "Gemiddeld"], ["cold", "Koud"], ["unknown", "Onbekend"]] },
+          { key: "mustHaves", label: "Wat mag niet ontbreken?", required: true, type: "multi", wide: true, options: [["phone", "Telefoon duidelijk"], ["contact_form", "Contactformulier"], ["reviews", "Reviews"], ["projects", "Projecten"], ["service_area", "Werkgebied"], ["pricing", "Pakket/prijsindicatie"]] },
+          { key: "colors", label: "Kleurvoorkeur", type: "multi", options: [["blue", "Blauw"], ["green", "Groen"], ["gold", "Goud"], ["black", "Zwart"], ["neutral", "Neutraal"], ["brand", "Huisstijl volgen"]] },
+          { key: "exampleWebsites", label: "Voorbeeldsites", type: "text", wide: true, placeholder: "Plak links of beschrijf stijlen die de klant mooi vindt." },
+          { key: "internalRemark", label: "Interne intake-notitie", type: "text", wide: true, placeholder: "Commerciële context, bezwaren, budget, timing of afspraken." },
+        ];
 
         function initElements() {
           Object.assign(elements, {
@@ -20629,6 +20696,21 @@
             copyEmail: document.getElementById("demo-journey-copy-email"),
             sendEmail: document.getElementById("demo-journey-send-email"),
             downloadZip: document.getElementById("demo-journey-download-zip"),
+            intakeFields: document.getElementById("demo-intake-fields"),
+            intakeState: document.getElementById("demo-intake-state"),
+            intakeProgress: document.getElementById("demo-intake-progress"),
+            intakeProgressBar: document.getElementById("demo-intake-progress-bar"),
+            intakeSummary: document.getElementById("demo-intake-summary"),
+            intakeDebug: document.getElementById("demo-intake-debug"),
+            intakeAssets: document.getElementById("demo-intake-assets"),
+            intakeLogoUpload: document.getElementById("demo-intake-logo-upload"),
+            intakePhotoUpload: document.getElementById("demo-intake-photo-upload"),
+            superAdminState: document.getElementById("demo-super-admin-state"),
+            superAdminGrid: document.getElementById("demo-super-admin-grid"),
+            approvalState: document.getElementById("demo-approval-state"),
+            approvalSummary: document.getElementById("demo-approval-summary"),
+            approvePreview: document.getElementById("demo-journey-approve-preview"),
+            approveDelivery: document.getElementById("demo-journey-approve-delivery"),
           });
         }
 
@@ -20773,6 +20855,273 @@
           });
         }
 
+        function currentAdminRole() {
+          const keys = ["mws_admin_profile", "maxwebstudioAdminProfile", "maxwebstudioCurrentSession", "mws_admin_supabase_session"];
+          let userId = "";
+          let email = "";
+          for (const key of keys) {
+            try {
+              const value = JSON.parse(localStorage.getItem(key) || "null");
+              const role = value?.role || value?.profile?.role || value?.user?.role || value?.admin?.role || "";
+              if (role) return String(role).toLowerCase();
+              userId = userId || value?.userId || value?.authUserId || value?.session?.user?.id || "";
+              email = email || value?.email || value?.session?.user?.email || "";
+            } catch {
+              // Try next key.
+            }
+          }
+          try {
+            const profiles = JSON.parse(localStorage.getItem("maxwebstudioProfiles") || "[]");
+            const match = Array.isArray(profiles)
+              ? profiles.find((profile) => {
+                const profileUserId = String(profile.authUserId || profile.auth_user_id || profile.userId || "").trim();
+                const profileEmail = String(profile.email || "").trim().toLowerCase();
+                return (userId && profileUserId === String(userId)) || (email && profileEmail === String(email).toLowerCase());
+              })
+              : null;
+            if (match?.role) return String(match.role).toLowerCase();
+          } catch {
+            // Unknown role means non-super-admin UI.
+          }
+          return "";
+        }
+
+        function isSuperAdmin() {
+          return currentAdminRole() === "super_admin";
+        }
+
+        function intakeStorageKey() {
+          return `maxwebstudioDemoIntake:${elements.lead?.value || journey?.leadId || "manual"}`;
+        }
+
+        function normalizeIntakeValue(value) {
+          if (Array.isArray(value)) return value.filter(Boolean);
+          return String(value || "").trim();
+        }
+
+        function intakeLabel(question, value) {
+          const values = Array.isArray(value) ? value : [value];
+          return values.map((item) => question.options?.find(([option]) => option === item)?.[1] || item).filter(Boolean).join(", ");
+        }
+
+        function prefillIntakeFromLead(lead = {}) {
+          if (!lead) return;
+          if (lead.industry && !intakeState.branch) intakeState.branch = String(lead.industry).toLowerCase().includes("bouw") ? "bouw" : "";
+          if (lead.region && !intakeState.regionText) intakeState.regionText = lead.region;
+          if (!intakeState.package) intakeState.package = packageTypeFromValue(lead.packageType || lead.package_type || elements.package?.value);
+          if (!intakeState.leadTemperature && lead.leadScore) intakeState.leadTemperature = Number(lead.leadScore) >= 80 ? "hot" : Number(lead.leadScore) >= 60 ? "medium" : "cold";
+        }
+
+        function renderIntakeFields() {
+          if (!elements.intakeFields) return;
+          elements.intakeFields.innerHTML = intakeQuestions.map((question) => {
+            const value = normalizeIntakeValue(intakeState[question.key]);
+            const required = question.required ? `<span class="status-badge status-planned">Verplicht</span>` : "";
+            if (question.type === "text") {
+              return `
+                <label class="demo-intake-question ${question.wide ? "is-wide" : ""}" for="demo-intake-${question.key}">
+                  <strong>${escapeHtml(question.label)} ${required}</strong>
+                  ${question.helper ? `<small>${escapeHtml(question.helper)}</small>` : ""}
+                  <textarea id="demo-intake-${question.key}" data-intake-key="${escapeHtml(question.key)}" rows="3" placeholder="${escapeHtml(question.placeholder || "")}">${escapeHtml(value)}</textarea>
+                </label>
+              `;
+            }
+            const type = question.type === "multi" ? "checkbox" : "radio";
+            const selected = Array.isArray(value) ? value : [value];
+            return `
+              <fieldset class="demo-intake-question ${question.wide ? "is-wide" : ""}">
+                <strong>${escapeHtml(question.label)} ${required}</strong>
+                ${question.helper ? `<small>${escapeHtml(question.helper)}</small>` : ""}
+                <div class="demo-chip-grid">
+                  ${(question.options || []).map(([option, label]) => `
+                    <label class="demo-chip">
+                      <input type="${type}" name="demo-intake-${escapeHtml(question.key)}" data-intake-key="${escapeHtml(question.key)}" value="${escapeHtml(option)}" ${selected.includes(option) ? "checked" : ""} />
+                      <span>${escapeHtml(label)}</span>
+                    </label>
+                  `).join("")}
+                </div>
+              </fieldset>
+            `;
+          }).join("");
+        }
+
+        function collectIntake() {
+          const required = intakeQuestions.filter((question) => question.required);
+          const missing = required.filter((question) => {
+            const value = normalizeIntakeValue(intakeState[question.key]);
+            return Array.isArray(value) ? !value.length : !value;
+          });
+          const completed = required.length - missing.length;
+          const percent = required.length ? Math.round((completed / required.length) * 100) : 100;
+          const answers = {};
+          intakeQuestions.forEach((question) => {
+            const value = normalizeIntakeValue(intakeState[question.key]);
+            if (Array.isArray(value) ? value.length : value) answers[question.key] = value;
+          });
+          return {
+            answers,
+            assets: intakeAssets,
+            requiredTotal: required.length,
+            completed,
+            percent,
+            complete: missing.length === 0,
+            missing: missing.map((question) => question.label),
+          };
+        }
+
+        function intakeSummaryLines() {
+          const intake = collectIntake();
+          return intakeQuestions.map((question) => {
+            const value = normalizeIntakeValue(intake.answers[question.key]);
+            if (Array.isArray(value) ? !value.length : !value) return null;
+            return [question.label, question.type === "text" ? value : intakeLabel(question, value)];
+          }).filter(Boolean);
+        }
+
+        function buildIntakeBriefingSection() {
+          const lines = intakeSummaryLines();
+          return [
+            "Klantintake - wensen en eisen",
+            ...lines.map(([label, value]) => `- ${label}: ${Array.isArray(value) ? value.join(", ") : value}`),
+            intakeAssets.length ? `- Uploadmetadata: ${intakeAssets.map((asset) => `${asset.kind}: ${asset.name}`).join(", ")}` : "",
+          ].filter(Boolean).join("\n");
+        }
+
+        function renderIntake() {
+          const intake = collectIntake();
+          if (elements.intakeState) {
+            elements.intakeState.textContent = intake.complete ? "Klaar voor preview" : "Onvolledig";
+            elements.intakeState.className = `status-badge ${intake.complete ? "status-active" : "status-planned"}`;
+          }
+          if (elements.intakeProgress) {
+            elements.intakeProgress.textContent = `Intake compleet: ${intake.completed}/${intake.requiredTotal} verplichte punten${intake.complete ? "." : `. Mist: ${intake.missing.slice(0, 4).join(", ")}${intake.missing.length > 4 ? "..." : ""}`}`;
+          }
+          if (elements.intakeProgressBar) elements.intakeProgressBar.style.width = `${intake.percent}%`;
+          if (elements.intakeSummary) {
+            const rows = intakeSummaryLines();
+            elements.intakeSummary.innerHTML = rows.length
+              ? `<div class="demo-intake-summary-grid">${rows.map(([label, value]) => `<div><strong>${escapeHtml(label)}</strong>${escapeHtml(value)}</div>`).join("")}</div>`
+              : `<p class="admin-muted-note">Nog geen klantwensen vastgelegd.</p>`;
+          }
+          if (elements.intakeAssets) {
+            elements.intakeAssets.innerHTML = intakeAssets.length ? intakeAssets.map((asset) => `
+              <div class="demo-intake-asset"><span>${escapeHtml(asset.kind)} · ${escapeHtml(asset.type || "bestand")}</span><strong title="${escapeHtml(asset.name)}">${escapeHtml(asset.name)}</strong><small>${escapeHtml(asset.sizeLabel)} · metadata bewaard</small></div>
+            `).join("") : "";
+          }
+          if (elements.intakeDebug) {
+            elements.intakeDebug.hidden = !developerModeActive();
+            elements.intakeDebug.textContent = JSON.stringify({ intake: intake.answers, assets: intake.assets, complete: intake.complete, missing: intake.missing }, null, 2);
+          }
+          renderSuperAdminCenter();
+        }
+
+        function saveIntakeLocally() {
+          try {
+            localStorage.setItem(intakeStorageKey(), JSON.stringify({ intakeState, intakeAssets, updatedAt: new Date().toISOString() }));
+          } catch {
+            // Local fallback is best effort.
+          }
+        }
+
+        function loadIntakeLocally() {
+          try {
+            const data = JSON.parse(localStorage.getItem(intakeStorageKey()) || "null");
+            if (data?.intakeState) intakeState = { ...data.intakeState };
+            if (Array.isArray(data?.intakeAssets)) intakeAssets = data.intakeAssets;
+          } catch {
+            intakeState = {};
+            intakeAssets = [];
+          }
+        }
+
+        function validateIntakeOrWarn(target = elements.message) {
+          const intake = collectIntake();
+          if (intake.complete) return true;
+          setMessage(target, `Maak eerst de klantintake compleet. Mist: ${intake.missing.join(", ")}.`, "warning");
+          return false;
+        }
+
+        function handleIntakeInput(event) {
+          const field = event.target.closest("[data-intake-key]");
+          if (!field) return;
+          const key = field.dataset.intakeKey;
+          const question = intakeQuestions.find((item) => item.key === key);
+          if (!question) return;
+          if (question.type === "multi") {
+            intakeState[key] = Array.from(elements.intakeFields.querySelectorAll("[data-intake-key]:checked")).filter((input) => input.dataset.intakeKey === key).map((input) => input.value);
+          } else {
+            intakeState[key] = field.type === "radio" ? field.value : field.value.trim();
+          }
+          if (key === "package" && elements.package) elements.package.value = packageTypeFromValue(intakeState.package);
+          saveIntakeLocally();
+          renderIntake();
+        }
+
+        function handleAssetInput(event, kind) {
+          const files = Array.from(event.target.files || []);
+          const accepted = files.filter((file) => file.size <= 10 * 1024 * 1024).map((file) => ({
+            kind,
+            name: file.name,
+            type: file.type || "onbekend",
+            size: file.size,
+            sizeLabel: `${Math.max(1, Math.round(file.size / 1024))} KB`,
+            status: "metadata_only",
+            leadId: elements.lead?.value || "",
+            demoJourneyId: journey?.id || "",
+            workspace: projectWorkspace?.workspaceSlug || "",
+          }));
+          intakeAssets = [...intakeAssets.filter((asset) => asset.kind !== kind), ...accepted];
+          saveIntakeLocally();
+          renderIntake();
+          if (files.some((file) => file.size > 10 * 1024 * 1024)) setMessage(elements.message, "Een bestand is groter dan 10MB en is overgeslagen.", "warning");
+        }
+
+        function renderSuperAdminCenter() {
+          if (!elements.superAdminGrid) return;
+          const intake = collectIntake();
+          const approval = journey?.approvalStatus || "pending";
+          const tiles = [
+            ["Intake incompleet", intake.complete ? "0" : String(intake.missing.length)],
+            ["Preview goedkeuring", journey?.previewApprovedAt ? "OK" : journey?.previewUrl ? "Wacht" : "Geen"],
+            ["Oplevering", journey?.deliveryApprovedAt ? "OK" : "Wacht"],
+            ["Mail vandaag", currentTemplate?.subject ? "1" : "0"],
+            ["Build errors", buildHistory.latestJob?.status === "failed" || buildHistory.latestJob?.status === "quality_failed" ? "1" : "0"],
+            ["Warm lead", intake.answers?.leadTemperature === "hot" ? "Ja" : "Nee"],
+          ];
+          if (elements.superAdminState) {
+            elements.superAdminState.textContent = isSuperAdmin() ? "Super admin" : "Alleen controle";
+            elements.superAdminState.className = `status-badge ${isSuperAdmin() ? "status-active" : "status-prepared"}`;
+          }
+          elements.superAdminGrid.innerHTML = tiles.map(([label, value]) => `<div class="demo-super-admin-tile"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><small>${escapeHtml(approval)}</small></div>`).join("");
+        }
+
+        function renderApprovalState() {
+          const previewApproved = Boolean(journey?.previewApprovedAt);
+          const deliveryApproved = Boolean(journey?.deliveryApprovedAt);
+          if (elements.approvalState) {
+            elements.approvalState.textContent = deliveryApproved ? "Oplevering goedgekeurd" : previewApproved ? "Preview goedgekeurd" : "Wacht op controle";
+            elements.approvalState.className = `status-badge ${previewApproved || deliveryApproved ? "status-active" : "status-prepared"}`;
+          }
+          if (elements.approvalSummary) {
+            elements.approvalSummary.textContent = previewApproved
+              ? `Preview goedgekeurd${journey.previewApprovedAt ? ` op ${formatDate(journey.previewApprovedAt)}` : ""}.`
+              : "Dag 3-previewmail en dag 5-oplevermail vereisen Super Admin goedkeuring.";
+          }
+          [elements.approvePreview, elements.approveDelivery].forEach((button) => {
+            if (!button) return;
+            button.disabled = !isSuperAdmin() || !journey?.id;
+            button.classList.toggle("is-disabled", button.disabled);
+            button.setAttribute("aria-disabled", button.disabled ? "true" : "false");
+          });
+        }
+
+        function emailRequiresApproval(type = elements.emailType?.value || "") {
+          const normalized = String(type || "");
+          if (normalized === "day3_preview_ready") return !journey?.previewApprovedAt;
+          if (normalized === "day5_delivery_ready") return !journey?.deliveryApprovedAt;
+          return false;
+        }
+
         function statusLabel(value = "") {
           return statuses.find(([status]) => status === value)?.[1] || "Geen demo";
         }
@@ -20911,10 +21260,16 @@
           }
           const data = await apiRequest(`${endpoint}?leadId=${encodeURIComponent(leadId)}`);
           journey = data.journey || null;
+          journeyRecords = Array.isArray(data.records) ? data.records : journeyRecords;
           if (journey?.previewUrl) journey.previewUrl = absolutePreviewUrl(journey.previewUrl);
           events = Array.isArray(data.events) ? data.events : [];
           buildHistory = data.buildHistory || { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
           projectWorkspace = data.projectWorkspace || null;
+          loadIntakeLocally();
+          if (journey?.intake && typeof journey.intake === "object") intakeState = { ...intakeState, ...journey.intake };
+          if (Array.isArray(journey?.assetMetadata)) intakeAssets = journey.assetMetadata;
+          prefillIntakeFromLead(selectedLead());
+          renderIntakeFields();
           renderJourney();
         }
 
@@ -20952,11 +21307,15 @@
             if (elements.notes && !elements.notes.value && contextLines.length) {
               elements.notes.value = contextLines.join("\n");
             }
+            prefillIntakeFromLead(lead);
+            renderIntakeFields();
+            renderIntake();
           }
         }
 
         function collectPayload(extra = {}) {
           const previewUrl = absolutePreviewUrl(elements.preview?.value || journey?.previewUrl || "");
+          const intake = collectIntake();
           return {
             id: journey?.id || "",
             leadId: elements.lead?.value || "",
@@ -20973,6 +21332,10 @@
             internalNotes: elements.notes?.value || "",
             followUpAt: fromDatetimeLocal(elements.followup?.value || ""),
             assignedTo: elements.assigned?.value || "",
+            intake: intake.answers,
+            intakeSummary: buildIntakeBriefingSection(),
+            intakeCompleteness: intake.percent,
+            assetMetadata: intake.assets,
             ...extra,
           };
         }
@@ -20983,6 +21346,7 @@
           const contact = elements.contact?.value || lead?.contactName || "Onbekende contactpersoon";
           const website = elements.website?.value || lead?.websiteUrl || "Nog geen website ingevuld";
           const notes = [lead?.notes, elements.notes?.value].filter(Boolean).join("\n\n");
+          const intakeBriefing = buildIntakeBriefingSection();
           return [
             `Codex briefing - demo website preview`,
             ``,
@@ -20993,6 +21357,8 @@
             `Telefoon: ${elements.phone?.value || lead?.phone || "-"}`,
             `Website/huidige URL: ${website}`,
             `Branche/regio: ${lead?.industry || "-"} / ${lead?.region || "-"}`,
+            ``,
+            intakeBriefing,
             ``,
             `Doel`,
             `Maak een professionele eerste website-preview die vertrouwen opbouwt, duidelijke contactmogelijkheden toont en aansluit op het gesprek met de klant.`,
@@ -21010,6 +21376,7 @@
 
         async function saveJourney(event) {
           event?.preventDefault();
+          if (!validateIntakeOrWarn(elements.message)) return;
           await withJourneyLock("demo-write", [elements.save, elements.generatePreview, elements.upgradeProfessional, elements.upgradePremium], async () => {
             setMessage(elements.message, "Demo-klantreis opslaan...", "info");
             try {
@@ -21029,7 +21396,7 @@
 
         function fillEmailTemplate(template = {}) {
           currentTemplate = template;
-          if (elements.emailType) elements.emailType.value = template.type || elements.emailType.value || "day0_received";
+          if (elements.emailType) elements.emailType.value = template.type || elements.emailType.value || "day1_received";
           if (elements.emailSubject) elements.emailSubject.value = template.subject || "";
           if (elements.emailBody) elements.emailBody.value = template.body || "";
           if (elements.emailState) {
@@ -21039,6 +21406,10 @@
         }
 
         async function generateEmail() {
+          if (emailRequiresApproval(elements.emailType?.value || "")) {
+            setMessage(elements.emailMessage, "Deze mail mag pas klaarstaan na Super Admin goedkeuring.", "warning");
+            return;
+          }
           setMessage(elements.emailMessage, "Mailtemplate klaarzetten...", "info");
           try {
             const data = await apiRequest(endpoint, "POST", collectPayload({ action: "generate_email", emailType: elements.emailType?.value || "" }));
@@ -21052,6 +21423,10 @@
         async function sendPreparedEmail() {
           if (!journey?.id) {
             setMessage(elements.emailMessage, "Sla eerst de demo-klantreis op.", "warning");
+            return;
+          }
+          if (emailRequiresApproval(elements.emailType?.value || "")) {
+            setMessage(elements.emailMessage, "Deze mail mag pas worden verstuurd na Super Admin goedkeuring.", "warning");
             return;
           }
           elements.sendEmail.disabled = true;
@@ -21070,6 +21445,7 @@
 
         async function generatePreview(packageType = currentPackageType()) {
           const normalizedPackage = packageTypeFromValue(packageType);
+          if (!validateIntakeOrWarn(elements.message)) return;
           await withJourneyLock("demo-write", [elements.save, elements.generatePreview, elements.upgradeProfessional, elements.upgradePremium], async () => {
             if (!elements.briefing?.value) {
               elements.briefing.value = buildBriefing();
@@ -21384,6 +21760,7 @@
             elements.phone.value = journey.phone || "";
             elements.website.value = journey.websiteUrl || "";
             elements.package.value = packageTypeFromValue(journey.previewPackage?.meta?.packageType || latestPackageMeta().packageType || elements.package?.value);
+            if (!intakeState.package) intakeState.package = elements.package.value || "starter";
             elements.status.value = journey.demoStatus || "geen_demo";
             elements.followup.value = datetimeLocal(journey.followUpAt);
             elements.assigned.value = journey.assignedTo || "";
@@ -21394,6 +21771,7 @@
           } else {
             elements.status.value = "aanvraag_ontvangen";
             elements.package.value = packageTypeFromValue(lead?.packageType || lead?.package_type || lead?.package || lead?.packageName || lead?.package_name);
+            if (!intakeState.package) intakeState.package = elements.package.value || "starter";
             elements.followup.value = "";
             elements.preview.value = "";
             elements.feedback.value = "";
@@ -21403,6 +21781,9 @@
           }
 
           const status = journey?.demoStatus || "geen_demo";
+          renderIntakeFields();
+          renderIntake();
+          renderApprovalState();
           elements.state.textContent = statusLabel(status);
           elements.state.className = `status-badge ${status === "afgewezen" ? "status-blocked" : journey ? "status-active" : "status-planned"}`;
           elements.summary.textContent = journey
@@ -21415,6 +21796,7 @@
             ["Laatste mail", journey?.lastEmailStatus || "-"],
             ["Laatste maildatum", formatDate(journey?.lastEmailSentAt)],
             ["Volgende mail", journey?.nextEmailType || "-"],
+            ["Approval", journey?.approvalStatus || "pending"],
             ["Verantwoordelijke", journey?.assignedTo || "-"],
           ].map(([label, value]) => `<div class="demo-kv-row"><strong>${escapeHtml(label)}</strong><span title="${escapeHtml(value)}">${escapeHtml(value)}</span></div>`).join("");
           setActionLink(elements.openPreview, journey?.previewUrl || "", "Genereer eerst een preview");
@@ -21440,6 +21822,9 @@
             buildHistory = { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
             projectWorkspace = null;
             fillFromLead(lead);
+            prefillIntakeFromLead(lead);
+            renderIntakeFields();
+            renderIntake();
             renderJourney();
             window.location.hash = "demo-klantreis";
             window.focusAdminPanel?.(document.getElementById("demo-klantreis"), { block: "start", duration: 1600 });
@@ -21461,22 +21846,63 @@
           });
         }
 
+        async function approveJourney(kind) {
+          if (!journey?.id) {
+            setMessage(elements.message, "Sla eerst de demo-klantreis op.", "warning");
+            return;
+          }
+          if (!isSuperAdmin()) {
+            setMessage(elements.message, "Alleen Super Admin kan deze stap goedkeuren.", "warning");
+            return;
+          }
+          const action = kind === "delivery" ? "approve_delivery" : "approve_preview";
+          const label = kind === "delivery" ? "Oplevering" : "Preview";
+          await withJourneyLock(`approval:${kind}`, [elements.approvePreview, elements.approveDelivery], async () => {
+            setMessage(elements.message, `${label} goedkeuren...`, "info");
+            try {
+              const data = await apiRequest(endpoint, "POST", collectPayload({ action, demoJourneyId: journey.id }));
+              journey = data.demoJourney || data.journey || journey;
+              events = Array.isArray(data.events) ? data.events : events;
+              renderJourney();
+              setMessage(elements.message, `${label} is goedgekeurd.`, "success");
+            } catch (error) {
+              setMessage(elements.message, error.message, "error");
+            }
+          });
+        }
+
         function wireEvents() {
           fillSelect(elements.status, statuses);
           fillSelect(elements.emailType, templates);
           fillSelect(elements.package, websitePackages);
+          renderIntakeFields();
+          renderIntake();
           window.addEventListener("maxwebstudio:lead-preview-request", openLeadPreviewWorkflow);
           elements.form?.addEventListener("submit", saveJourney);
+          elements.intakeFields?.addEventListener("input", handleIntakeInput);
+          elements.intakeFields?.addEventListener("change", handleIntakeInput);
+          elements.intakeLogoUpload?.addEventListener("change", (event) => handleAssetInput(event, "logo"));
+          elements.intakePhotoUpload?.addEventListener("change", (event) => handleAssetInput(event, "foto"));
+          elements.package?.addEventListener("change", () => {
+            intakeState.package = packageTypeFromValue(elements.package.value);
+            saveIntakeLocally();
+            renderIntakeFields();
+            renderIntake();
+          });
           elements.lead?.addEventListener("change", async () => {
             journey = null;
             events = [];
             projectWorkspace = null;
+            intakeState = {};
+            intakeAssets = [];
+            loadIntakeLocally();
             fillFromLead(selectedLead());
             await loadJourney().catch((error) => setMessage(elements.message, error.message, "error"));
           });
           elements.generateBriefing?.addEventListener("click", (event) => {
             event.preventDefault();
             event.stopPropagation();
+            if (!validateIntakeOrWarn(elements.message)) return;
             elements.briefing.value = buildBriefing();
             elements.status.value = "briefing_klaar";
             setMessage(elements.message, "Briefing gegenereerd. Sla op om deze centraal te bewaren.", "success");
@@ -21554,6 +21980,16 @@
             copyText(url, elements.message);
           });
           elements.workspaceFolder?.addEventListener("click", (event) => openActionUrl(event, elements.workspaceFolder, "Cloud projectmap nog niet gekoppeld."));
+          elements.approvePreview?.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            approveJourney("preview");
+          });
+          elements.approveDelivery?.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            approveJourney("delivery");
+          });
           elements.generateEmail?.addEventListener("click", (event) => {
             event.preventDefault();
             event.stopPropagation();
