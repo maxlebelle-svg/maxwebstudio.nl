@@ -23,6 +23,14 @@ const PACKAGE_RULES = {
     sections: ["hero", "diensten", "voordelen", "werkwijze", "cta", "contact", "footer"],
     navigation: "multi-page",
   },
+  business: {
+    label: "Business Website",
+    price: 995,
+    template: "business-multi-page-v1",
+    pages: ["index.html", "over-ons.html", "diensten.html", "contact.html"],
+    sections: ["hero", "diensten", "voordelen", "werkwijze", "cta", "contact", "footer"],
+    navigation: "multi-page",
+  },
   premium: {
     label: "Premium Website",
     price: 1750,
@@ -609,14 +617,14 @@ function inferStyle(text = "") {
 function normalizePackageType(value = "") {
   const text = cleanText(value).toLowerCase();
   if (/premium|1750|uitgebreid|growth|enterprise/.test(text)) return "premium";
-  if (/business|995|professional|professioneel|plus|multi/.test(text)) return "professional";
+  if (/business|995|professional|professioneel|plus|multi/.test(text)) return "business";
   return "starter";
 }
 
 function resolvePackageRules(packageType = "starter") {
   const key = cleanText(packageType) || "starter";
   return WEBSITE_FACTORY_MANIFESTS.packages[key]
-    || (key === "business" ? WEBSITE_FACTORY_MANIFESTS.packages.professional : null)
+    || (key === "professional" ? WEBSITE_FACTORY_MANIFESTS.packages.business : null)
     || PACKAGE_RULES[key]
     || PACKAGE_RULES.starter;
 }

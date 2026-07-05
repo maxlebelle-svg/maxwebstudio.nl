@@ -328,30 +328,26 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     if (!briefing) return jsonResponse(400, { success: false, error: "Maak of vul eerst een websiteplan in." });
 
     let journeyId = cleanText(sourceJourney.id);
-    if (!journeyId && packageType !== "starter") {
+    if (!journeyId) {
       return jsonResponse(400, {
         success: false,
-        error: "Maak eerst de demo-aanvraag aan voordat u een Business- of Premium-preview genereert.",
+        error: "Sla eerst de demo-aanvraag op.",
+        userMessage: "Sla eerst de demo-aanvraag op.",
         diagnostics: {
           action,
           packageType,
           leadId: cleanText(payload.leadId || payload.lead_id),
           demoJourneyId: "",
-          reason: "package_upgrade_requires_existing_demo_journey",
+          reason: "preview_requires_existing_demo_journey",
         },
       });
     }
-    if (!journeyId) {
-      const created = await insertJourneySafe({ supabaseUrl, serviceRoleKey, record: journeyPayload({ ...payload, demoStatus: "briefing_klaar", generatedBriefing: briefing }, admin, { create: true }) });
-      journeyId = cleanText(created[0]?.id);
-    } else {
-      await patchJourneySafe({
-        supabaseUrl,
-        serviceRoleKey,
-        id: journeyId,
-        record: journeyPayload({ ...payload, id: journeyId, demoStatus: sourceJourney.demoStatus || "briefing_klaar", generatedBriefing: briefing }, admin, { create: false }),
-      });
-    }
+    await patchJourneySafe({
+      supabaseUrl,
+      serviceRoleKey,
+      id: journeyId,
+      record: journeyPayload({ ...payload, id: journeyId, demoStatus: sourceJourney.demoStatus || "briefing_klaar", generatedBriefing: briefing }, admin, { create: false }),
+    });
     if (!journeyId) return jsonResponse(500, { success: false, error: "Demo-klantreis kon niet worden voorbereid voor preview." });
 
     const buildResult = await runBuildJob({ supabaseUrl, serviceRoleKey, admin }, { demoJourneyId: journeyId, generatedBriefing: briefing, packageType });
@@ -907,7 +903,7 @@ function normalizeStatus(value = "") {
 function normalizePackageType(value = "") {
   const text = cleanText(value).toLowerCase();
   if (/premium|1750|growth|enterprise/.test(text)) return "premium";
-  if (/professional|professioneel|business|995|plus|multi/.test(text)) return "professional";
+  if (/professional|professioneel|business|995|plus|multi/.test(text)) return "business";
   return "starter";
 }
 

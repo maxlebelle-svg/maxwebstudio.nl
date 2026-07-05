@@ -105,7 +105,7 @@ async function generatePackageResponse(context, payload) {
   const journey = payload.journey || await readJourney(context, payload.demoJourneyId || payload.demo_journey_id);
   if (!journey) return jsonResponse(404, { success: false, error: "Demo-klantreis niet gevonden." });
   const mappedJourney = payload.journey ? { ...mapJourney(journey), ...journey } : mapJourney(journey);
-  const packageType = cleanText(payload.packageType || payload.package_type || mappedJourney.packageType);
+  const packageType = normalizePackageType(payload.packageType || payload.package_type || mappedJourney.packageType);
   const generatedPackage = buildWebsitePackage({
     journey: { ...mappedJourney, packageType },
     briefing: payload.briefing || journey.generated_briefing,
@@ -186,8 +186,8 @@ async function runBuildJob(context, payload = {}) {
     return failBuild(context, job, "Briefing ontbreekt voor websitegeneratie.", logs);
   }
 
-  const packageType = cleanText(payload.packageType || payload.package_type || journey.packageType);
-  const previousPackage = cleanText(journey.previewPackage?.meta?.packageType || journey.previewPackage?.packageType || journey.previewPackage?.meta?.packageId || "");
+  const packageType = normalizePackageType(payload.packageType || payload.package_type || journey.packageType);
+  const previousPackage = normalizePackageType(journey.previewPackage?.meta?.packageType || journey.previewPackage?.packageType || journey.previewPackage?.meta?.packageId || "");
   const packageChanged = Boolean(previousPackage && packageType && previousPackage !== packageType);
   const buildingLogs = buildLogs(logs, {
     step: "building",
@@ -548,6 +548,13 @@ function errorResponse({ error = {}, developerMode = false, module = "", reason 
 function isDeveloperRequest(event = {}) {
   const headers = event.headers || {};
   return String(headers["x-mws-developer-mode"] || headers["X-MWS-Developer-Mode"] || "").toLowerCase() === "true";
+}
+
+function normalizePackageType(value = "") {
+  const text = cleanText(value).toLowerCase();
+  if (/premium|1750|uitgebreid|growth|enterprise/.test(text)) return "premium";
+  if (/business|995|professional|professioneel|plus|multi/.test(text)) return "business";
+  return "starter";
 }
 
 function cleanText(value = "") {

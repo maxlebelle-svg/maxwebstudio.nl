@@ -20671,7 +20671,7 @@
         ];
         const websitePackages = [
           ["starter", "Starter Site (€495)"],
-          ["professional", "Business Website (€995)"],
+          ["business", "Business Website (€995)"],
           ["premium", "Premium Growth (€1750)"],
         ];
         const customerSteps = [
@@ -20890,6 +20890,8 @@
               demoJourneyId: payload?.demoJourneyId || payload?.demo_journey_id || payload?.id || "",
               leadId: payload?.leadId || payload?.lead_id || "",
               packageType: payload?.packageType || payload?.package_type || "",
+              workflowStep: payload?.workflowStep || payload?.workflow_step || "",
+              action: payload?.action || "",
               previousPackage: payload?.previousPackage || payload?.previous_package || "",
               newPackage: payload?.newPackage || payload?.new_package || "",
             };
@@ -20898,9 +20900,14 @@
               console.dir(diagnostics);
               console.table({
                 functionName: diagnostics.functionName,
+                action: diagnostics.action,
                 status: diagnostics.status,
                 statusText: diagnostics.statusText,
                 code: diagnostics.code,
+                demoJourneyId: diagnostics.demoJourneyId,
+                leadId: diagnostics.leadId,
+                packageType: diagnostics.packageType,
+                workflowStep: diagnostics.workflowStep,
                 reason: diagnostics.diagnostics?.reason || "",
                 url: diagnostics.url,
               });
@@ -21255,7 +21262,7 @@
         function packageTypeFromValue(value = "") {
           const text = String(value || "").toLowerCase();
           if (/premium|1750|uitgebreid|growth|enterprise/.test(text)) return "premium";
-          if (/professional|professioneel|995|plus|business|multi/.test(text)) return "professional";
+          if (/professional|professioneel|995|plus|business|multi/.test(text)) return "business";
           return "starter";
         }
 
@@ -21587,14 +21594,14 @@
         async function generatePreview(packageType = currentPackageType()) {
           const normalizedPackage = packageTypeFromValue(packageType);
           if (!validateIntakeOrWarn(elements.message)) return;
-          if (normalizedPackage !== "starter" && !journey?.id) {
-            setMessage(elements.message, "Maak eerst de demo-aanvraag aan voordat u een Business- of Premium-preview genereert.", "warning");
+          if (!journey?.id) {
+            setMessage(elements.message, "Sla eerst de demo-aanvraag op.", "warning");
             return;
           }
           const previousPackage = currentPackageType();
           const lockKey = normalizedPackage === "premium"
             ? "generate_premium_preview"
-            : normalizedPackage === "professional"
+            : normalizedPackage === "business"
               ? "generate_business_preview"
               : "generate_preview";
           await withJourneyLock(lockKey, [elements.save, elements.generatePreview, elements.upgradeProfessional, elements.upgradePremium, elements.nextStepPrimary], async () => {
@@ -21611,6 +21618,7 @@
                 previousPackage,
                 newPackage: normalizedPackage,
                 demoJourneyId: journey?.id || "",
+                workflowStep: "preview",
               });
               const data = await apiRequest(endpoint, "POST", payload);
               lastFactoryResponse = data;
@@ -21630,7 +21638,10 @@
               const baseMessage = nextStepMessage(lockKey);
               setMessage(elements.message, `${baseMessage}${version ? ` Versie: V${version}.` : ""}${fileCount ? ` ZIP bevat ${fileCount} bestanden.` : ""}`, "success");
             } catch (error) {
-              setMessage(elements.message, error.message, "error");
+              const message = developerModeActive()
+                ? error.message
+                : "Preview maken is niet gelukt. Probeer opnieuw of vraag Max om controle.";
+              setMessage(elements.message, message, "error");
             }
           });
         }
@@ -22257,7 +22268,7 @@
           elements.upgradeProfessional?.addEventListener("click", (event) => {
             event.preventDefault();
             event.stopPropagation();
-            generatePreview("professional");
+            generatePreview("business");
           });
           elements.upgradePremium?.addEventListener("click", (event) => {
             event.preventDefault();
