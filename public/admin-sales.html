@@ -395,79 +395,113 @@
             </form>
 
             <article class="admin-card leadfinder-detail-card" id="leadfinder-detail">
-              <div class="admin-profile-form-heading">
-                <div>
-                  <strong>Leaddetail</strong>
-                  <span id="leadfinder-detail-subtitle">Selecteer een lead om opvolging te beheren.</span>
-                </div>
-                <mark class="status-badge status-planned" id="leadfinder-detail-state">Niet geselecteerd</mark>
-              </div>
-              <div class="sales-next-action" id="sales-next-action" aria-live="polite">
-                <span>Volgende stap</span>
-                <strong>Selecteer een lead</strong>
-                <button class="button primary" id="sales-next-action-button" type="button" disabled>Kies lead</button>
-              </div>
-              <div class="sales-quick-actions" aria-label="Snelle salesacties">
-                <button class="button secondary" id="sales-action-call" type="button" disabled>Bellen</button>
-                <a class="button secondary is-disabled" id="sales-action-website" href="#" target="_blank" rel="noopener" aria-disabled="true">Website openen</a>
-                <a class="button secondary is-disabled" id="sales-action-mail" href="#" aria-disabled="true">Mail</a>
-                <a class="button secondary is-disabled" id="sales-action-maps" href="#" target="_blank" rel="noopener" aria-disabled="true">Google Maps</a>
-                <button class="button secondary" id="sales-action-note" type="button" disabled>Notitie</button>
-                <button class="button secondary" id="sales-action-followup" type="button" disabled>Follow-up</button>
-              </div>
-              <div class="settings-status-list" id="leadfinder-detail-list"></div>
-              <label class="admin-profile-wide" for="leadfinder-detail-note">Nieuwe notitie<textarea id="leadfinder-detail-note" placeholder="Korte belnotitie of opvolgafspraak"></textarea></label>
-              <div class="admin-profile-actions">
-                <select id="leadfinder-detail-call-status" aria-label="Leadstatus wijzigen"></select>
-                <button class="button secondary" id="leadfinder-save-note" type="button" disabled>Notitie opslaan</button>
-                <button class="button secondary" id="leadfinder-create-task" type="button" disabled>Maak opvolgtaak</button>
-                <button class="button secondary" id="leadfinder-convert-customer" type="button" disabled>Omzetten naar klant</button>
-                <button class="button secondary danger" id="leadfinder-delete" type="button" disabled>Verwijderen</button>
-              </div>
-              <div class="lead-welcome-card">
-                <div class="lead-welcome-heading">
-                  <span aria-hidden="true">✉</span>
+              <section class="sales-detail-panel sales-lead-summary-card" aria-label="Lead samenvatting">
+                <div class="sales-detail-card-heading">
                   <div>
-                    <strong>Welkomstmail naar klant</strong>
-                    <mark>Aanbevolen</mark>
+                    <span>Lead summary</span>
+                    <strong id="sales-lead-summary-title">Geen lead geselecteerd</strong>
+                    <small id="leadfinder-detail-subtitle">Selecteer een lead om opvolging te beheren.</small>
+                  </div>
+                  <mark class="status-badge status-planned" id="leadfinder-detail-state">Niet geselecteerd</mark>
+                </div>
+                <div class="settings-status-list sales-detail-compact-list" id="leadfinder-detail-list"></div>
+              </section>
+
+              <section class="sales-detail-panel sales-workflow-card" aria-label="Sales workflow">
+                <div class="sales-detail-card-heading">
+                  <div>
+                    <span>Workflow</span>
+                    <strong>Sales opvolging</strong>
                   </div>
                 </div>
-                <p>Stuur de welkomstmail pas wanneer de klant officieel is verkocht en je hem wilt uitnodigen voor het klantportaal.</p>
-                <label class="lead-welcome-toggle" for="leadfinder-send-welcome-mail">
-                  <input id="leadfinder-send-welcome-mail" type="checkbox" />
-                  <span>
-                    <strong>Welkomstmail direct versturen</strong>
-                    <small>De klant ontvangt inloggegevens en onboarding informatie.</small>
-                  </span>
+                <label class="sales-status-control" for="leadfinder-detail-call-status">
+                  <span>Huidige status</span>
+                  <select id="leadfinder-detail-call-status" aria-label="Leadstatus wijzigen"></select>
                 </label>
-                <details class="lead-extra-settings">
-                  <summary>Extra instellingen</summary>
-                  <p>Gebruik dit later voor taal, pakketdetails en onboarding-notities.</p>
-                </details>
-              </div>
-              <div class="sales-timeline-card">
-                <div class="sales-timeline-heading">
-                  <strong>Tijdlijn</strong>
-                  <span id="sales-timeline-count">0 events</span>
+                <div class="sales-next-action" id="sales-next-action" aria-live="polite">
+                  <span>Volgende stap</span>
+                  <strong>Selecteer een lead</strong>
+                  <button class="button primary" id="sales-next-action-button" type="button" disabled>Kies lead</button>
                 </div>
-                <div class="sales-timeline" id="sales-timeline">
-                  <div class="sales-timeline-empty">Selecteer een lead om de verkoopgeschiedenis te zien.</div>
-                </div>
-              </div>
-              <div class="lead-analysis-card" id="lead-website-analysis-card">
-                <div class="lead-analysis-header">
-                  <div>
-                    <strong>Website-analyse</strong>
-                    <span>Handmatige scan voor verkoopkansen. Geen AI, geen bulk scan.</span>
+                <div class="sales-timeline-card">
+                  <div class="sales-timeline-heading">
+                    <strong>Tijdlijn</strong>
+                    <span id="sales-timeline-count">0 events</span>
                   </div>
+                  <div class="sales-timeline" id="sales-timeline">
+                    <div class="sales-timeline-empty">Selecteer een lead om de verkoopgeschiedenis te zien.</div>
+                  </div>
+                </div>
+                <label class="sales-note-control" for="leadfinder-detail-note">
+                  <span>Nieuwe notitie</span>
+                  <textarea id="leadfinder-detail-note" placeholder="Korte belnotitie of opvolgafspraak"></textarea>
+                </label>
+                <div class="sales-workflow-actions">
+                  <button class="button secondary" id="leadfinder-save-note" type="button" disabled>Notitie opslaan</button>
+                  <button class="button secondary" id="leadfinder-create-task" type="button" disabled>Maak opvolgtaak</button>
+                  <button class="button secondary" id="leadfinder-convert-customer" type="button" disabled>Omzetten naar klant</button>
+                </div>
+              </section>
+
+              <section class="sales-detail-panel sales-contact-actions-card" aria-label="Contact en acties">
+                <div class="sales-detail-card-heading">
+                  <div>
+                    <span>Contact</span>
+                    <strong>Acties</strong>
+                  </div>
+                </div>
+                <div class="sales-contact-list" id="sales-lead-contact-list"></div>
+                <div class="sales-quick-actions" aria-label="Snelle salesacties">
+                  <button class="button secondary" id="sales-action-call" type="button" disabled>Bellen</button>
+                  <a class="button secondary is-disabled" id="sales-action-website" href="#" target="_blank" rel="noopener" aria-disabled="true">Website openen</a>
+                  <a class="button secondary is-disabled" id="sales-action-mail" href="#" aria-disabled="true">Mail</a>
+                  <a class="button secondary is-disabled" id="sales-action-maps" href="#" target="_blank" rel="noopener" aria-disabled="true">Google Maps</a>
+                  <button class="button secondary" id="sales-action-note" type="button" disabled>Notitie</button>
+                  <button class="button secondary" id="sales-action-followup" type="button" disabled>Follow-up</button>
+                </div>
+                <button class="button secondary danger sales-delete-lead-button" id="leadfinder-delete" type="button" disabled>Verwijderen</button>
+              </section>
+
+              <details class="lead-analysis-card sales-detail-wide-card" id="lead-website-analysis-card">
+                <summary>
+                  <span>
+                    <strong>Website-analyse</strong>
+                    <small>Handmatige scan voor verkoopkansen</small>
+                  </span>
                   <mark class="status-badge status-prepared" id="lead-website-analysis-state">Niet uitgevoerd</mark>
+                </summary>
+                <div class="lead-analysis-panel">
+                  <button class="button primary" id="lead-website-analysis-run" type="button" disabled>Website analyseren</button>
+                  <div class="lead-analysis-result" id="lead-website-analysis-result">
+                    Selecteer een lead met website om een homepage-analyse uit te voeren.
+                  </div>
+                  <p class="admin-form-message" id="lead-website-analysis-message" role="status"></p>
                 </div>
-                <button class="button primary" id="lead-website-analysis-run" type="button" disabled>Website analyseren</button>
-                <div class="lead-analysis-result" id="lead-website-analysis-result">
-                  Selecteer een lead met website om een homepage-analyse uit te voeren.
+              </details>
+
+              <details class="lead-welcome-card sales-detail-wide-card">
+                <summary>
+                  <span>
+                    <strong>Welkomstmail / klant onboarding</strong>
+                    <small>Voor lead-to-customer conversie</small>
+                  </span>
+                  <mark>Aanbevolen</mark>
+                </summary>
+                <div class="lead-welcome-panel">
+                  <p>Stuur de welkomstmail pas wanneer de klant officieel is verkocht en je hem wilt uitnodigen voor het klantportaal.</p>
+                  <label class="lead-welcome-toggle" for="leadfinder-send-welcome-mail">
+                    <input id="leadfinder-send-welcome-mail" type="checkbox" />
+                    <span>
+                      <strong>Welkomstmail direct versturen</strong>
+                      <small>De klant ontvangt inloggegevens en onboarding informatie.</small>
+                    </span>
+                  </label>
+                  <details class="lead-extra-settings">
+                    <summary>Extra instellingen</summary>
+                    <p>Gebruik dit later voor taal, pakketdetails en onboarding-notities.</p>
+                  </details>
                 </div>
-                <p class="admin-form-message" id="lead-website-analysis-message" role="status"></p>
-              </div>
+              </details>
             </article>
 
             <article class="admin-card google-places-card" id="google-places-panel">
@@ -18325,9 +18359,11 @@
         activeFilter: document.getElementById("leadfinder-active-filter"),
         clearQuickFilter: document.getElementById("leadfinder-clear-quick-filter"),
         list: document.getElementById("leadfinder-list"),
+        detailTitle: document.getElementById("sales-lead-summary-title"),
         detailSubtitle: document.getElementById("leadfinder-detail-subtitle"),
         detailState: document.getElementById("leadfinder-detail-state"),
         detailList: document.getElementById("leadfinder-detail-list"),
+        contactList: document.getElementById("sales-lead-contact-list"),
         detailNote: document.getElementById("leadfinder-detail-note"),
         detailCallStatus: document.getElementById("leadfinder-detail-call-status"),
         saveNote: document.getElementById("leadfinder-save-note"),
@@ -20410,36 +20446,41 @@
       function renderLeadfinderDetail() {
         const lead = selectedLeadFinderLead();
         const hasLead = Boolean(lead);
+        if (leadfinderElements.detailTitle) {
+          leadfinderElements.detailTitle.textContent = hasLead ? lead.companyName || "Naam onbekend" : "Geen lead geselecteerd";
+        }
         if (leadfinderElements.detailSubtitle) {
-          leadfinderElements.detailSubtitle.textContent = hasLead ? `${lead.companyName} · ${lead.industry || "branche onbekend"}` : "Selecteer een lead om opvolging te beheren.";
+          leadfinderElements.detailSubtitle.textContent = hasLead ? [lead.contactName || "Geen contactpersoon", lead.industry || "Branche onbekend"].join(" · ") : "Selecteer een lead om opvolging te beheren.";
         }
         if (leadfinderElements.detailState) {
           leadfinderElements.detailState.textContent = hasLead ? getLeadFinderLabel(LEADFINDER_CALL_STATUSES, lead.callStatus) : "Niet geselecteerd";
         }
         if (leadfinderElements.detailList) {
-          leadfinderElements.detailList.innerHTML = hasLead ? [
-            ["Bedrijf", lead.companyName],
+          renderLeadDetailRows(leadfinderElements.detailList, hasLead ? [
+            ["Bedrijf", lead.companyName || "-"],
             ["Contactpersoon", lead.contactName || "-"],
             ["Branche", lead.industry || "-"],
             ["Regio", lead.region || "-"],
+            ["Score", `${lead.leadScore || 0}/100`],
+            ["Eigenaar", getLeadOwnerLabel(lead)],
+            ["Aangemaakt", formatLeadDate(lead.createdAt)],
+            ["Laatste update", formatLeadDate(lead.updatedAt)],
+            ["Website-status", getLeadFinderLabel(LEADFINDER_WEBSITE_STATUSES, lead.websiteStatus)],
+            ["Opvolgdatum", lead.followUpDate || "-"],
+            ["Aangemaakt door", lead.createdByName || lead.createdByEmail || lead.createdBy || "-"],
+            ["Klantstatus", lead.convertedCustomerId ? "Klant actief" : "Nog geen klant"],
+            ["Bron", lead.source || lead._source || leadfinderSourceStatus?.mode || "central"],
+            ["Notities", lead.notes || "-"],
+          ] : [["Geen lead geselecteerd", "Klik op Bekijken in de lijst."]]);
+        }
+        if (leadfinderElements.contactList) {
+          renderLeadDetailRows(leadfinderElements.contactList, hasLead ? [
             ["Telefoon", lead.phone || "-"],
             ["E-mail", lead.email || "-"],
             ["Website", lead.websiteUrl || "Geen website"],
-            ["Website-status", getLeadFinderLabel(LEADFINDER_WEBSITE_STATUSES, lead.websiteStatus)],
-            ["Leadscore", `${lead.leadScore}/100`],
-            ["Leadstatus", getLeadFinderLabel(LEADFINDER_CALL_STATUSES, lead.callStatus)],
-            ["Opvolgdatum", lead.followUpDate || "-"],
-            ["Aangemaakt door", lead.createdByName || lead.createdByEmail || lead.createdBy || getLeadOwnerLabel(lead)],
-            ["Eigenaar / medewerker", getLeadOwnerLabel(lead)],
-            ["Aangemaakt op", formatLeadDate(lead.createdAt)],
-            ["Laatste update", formatLeadDate(lead.updatedAt)],
             ["Google Maps", lead.googleMapsUrl || lead.googlePlaceId || "-"],
-            ["Notities", lead.notes || "-"],
-            ["Klantstatus", lead.convertedCustomerId ? "Klant actief" : "Nog geen klant"],
-            ["Bron", lead._source || leadfinderSourceStatus?.mode || "local"],
-          ].map(([label, value]) => `<div><strong>${escapeHtml(label)}</strong><span>${escapeHtml(value)}</span></div>`).join("") : `
-            <div><strong>Geen lead geselecteerd</strong><span>Klik op Bekijk in de lijst.</span></div>
-          `;
+            ["Adres", lead.address || lead.formattedAddress || lead.googleAddress || "-"],
+          ] : [["Contact", "Selecteer een lead."]]);
         }
                 if (leadfinderElements.detailCallStatus) leadfinderElements.detailCallStatus.value = lead?.callStatus || "";
                 if (leadfinderElements.saveNote) leadfinderElements.saveNote.disabled = !hasLead;
@@ -20453,6 +20494,19 @@
         renderSalesQuickActions(lead);
         renderSalesTimeline(lead);
         renderLeadWebsiteAnalysis(lead);
+      }
+
+      function renderLeadDetailRows(target, rows) {
+        target.replaceChildren();
+        rows.forEach(([label, value]) => {
+          const row = document.createElement("div");
+          const labelElement = document.createElement("strong");
+          const valueElement = document.createElement("span");
+          labelElement.textContent = label;
+          valueElement.textContent = value || "-";
+          row.append(labelElement, valueElement);
+          target.append(row);
+        });
       }
 
       function getLeadWebsiteScanTarget() {

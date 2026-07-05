@@ -13448,6 +13448,314 @@ h3 {
 }
 }
 
+.admin-body.is-sales-view .leadfinder-detail-card {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.9fr) minmax(320px, 1.15fr) minmax(260px, 0.95fr);
+  grid-template-areas:
+    "summary workflow contact"
+    "analysis analysis analysis"
+    "welcome welcome welcome";
+  gap: 14px;
+  align-items: start;
+  padding: 18px;
+}
+
+.admin-body.is-sales-view .sales-detail-panel,
+.admin-body.is-sales-view .sales-detail-wide-card {
+  min-width: 0;
+  border: 1px solid rgba(171, 196, 224, 0.14);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 16% 0%, rgba(37, 99, 235, 0.14), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.022)),
+    rgba(3, 14, 26, 0.58);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
+}
+
+.admin-body.is-sales-view .sales-detail-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.admin-body.is-sales-view .sales-lead-summary-card {
+  grid-area: summary;
+}
+
+.admin-body.is-sales-view .sales-workflow-card {
+  grid-area: workflow;
+}
+
+.admin-body.is-sales-view .sales-contact-actions-card {
+  grid-area: contact;
+}
+
+.admin-body.is-sales-view .leadfinder-detail-card .lead-analysis-card {
+  grid-area: analysis;
+}
+
+.admin-body.is-sales-view .leadfinder-detail-card .lead-welcome-card {
+  grid-area: welcome;
+}
+
+.admin-body.is-sales-view .sales-detail-card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(171, 196, 224, 0.1);
+}
+
+.admin-body.is-sales-view .sales-detail-card-heading > div {
+  min-width: 0;
+}
+
+.admin-body.is-sales-view .sales-detail-card-heading span,
+.admin-body.is-sales-view .sales-status-control span,
+.admin-body.is-sales-view .sales-note-control span {
+  display: block;
+  margin-bottom: 5px;
+  color: rgba(147, 197, 253, 0.82);
+  font-size: 10px;
+  font-weight: 950;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.admin-body.is-sales-view .sales-detail-card-heading strong {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  color: #f8fbff;
+  font-size: clamp(18px, 1.45vw, 24px);
+  line-height: 1.12;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-body.is-sales-view .sales-detail-card-heading small {
+  display: block;
+  max-width: 100%;
+  margin-top: 4px;
+  overflow: hidden;
+  color: rgba(226, 236, 248, 0.62);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-body.is-sales-view .leadfinder-detail-card .settings-status-list,
+.admin-body.is-sales-view .sales-contact-list {
+  display: grid;
+  grid-area: auto;
+  gap: 0;
+  margin-top: 0;
+}
+
+.admin-body.is-sales-view .leadfinder-detail-card .settings-status-list div,
+.admin-body.is-sales-view .sales-contact-list div {
+  display: grid;
+  grid-template-columns: minmax(88px, 0.42fr) minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  min-width: 0;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.075);
+}
+
+.admin-body.is-sales-view .leadfinder-detail-card .settings-status-list div:last-child,
+.admin-body.is-sales-view .sales-contact-list div:last-child {
+  border-bottom: 0;
+}
+
+.admin-body.is-sales-view .leadfinder-detail-card .settings-status-list strong,
+.admin-body.is-sales-view .sales-contact-list strong {
+  color: rgba(226, 236, 248, 0.48);
+  font-size: 10px;
+  font-weight: 950;
+  line-height: 1.25;
+  text-transform: uppercase;
+  overflow-wrap: normal;
+}
+
+.admin-body.is-sales-view .leadfinder-detail-card .settings-status-list span,
+.admin-body.is-sales-view .sales-contact-list span {
+  min-width: 0;
+  overflow: hidden;
+  color: rgba(248, 251, 255, 0.88);
+  font-size: 13px;
+  font-weight: 780;
+  line-height: 1.35;
+  overflow-wrap: break-word;
+  text-overflow: ellipsis;
+}
+
+.admin-body.is-sales-view .sales-contact-list span {
+  white-space: nowrap;
+}
+
+.admin-body.is-sales-view .sales-detail-compact-list div:last-child span {
+  display: -webkit-box;
+  overflow: hidden;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.admin-body.is-sales-view .sales-workflow-card .sales-next-action,
+.admin-body.is-sales-view .sales-contact-actions-card .sales-quick-actions,
+.admin-body.is-sales-view .sales-workflow-card .sales-timeline-card {
+  grid-area: auto;
+}
+
+.admin-body.is-sales-view .sales-status-control,
+.admin-body.is-sales-view .sales-note-control {
+  display: grid;
+  gap: 6px;
+  color: rgba(248, 251, 255, 0.86);
+}
+
+.admin-body.is-sales-view .sales-workflow-card textarea {
+  min-height: 82px;
+  resize: vertical;
+}
+
+.admin-body.is-sales-view .sales-workflow-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.admin-body.is-sales-view .sales-workflow-actions .button,
+.admin-body.is-sales-view .sales-contact-actions-card .sales-quick-actions .button {
+  min-width: 0;
+  min-height: 38px;
+  padding: 9px 10px;
+  overflow: hidden;
+  justify-content: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-body.is-sales-view .sales-contact-actions-card .sales-quick-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-body.is-sales-view .sales-delete-lead-button {
+  justify-self: start;
+  margin-top: 4px;
+  border-color: rgba(248, 113, 113, 0.22);
+  color: rgba(254, 202, 202, 0.78);
+  background: rgba(127, 29, 29, 0.1);
+}
+
+.admin-body.is-sales-view .sales-workflow-card .sales-timeline-card {
+  max-height: 190px;
+  overflow: auto;
+}
+
+.admin-body.is-sales-view .sales-detail-wide-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.admin-body.is-sales-view .sales-detail-wide-card > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 58px;
+  padding: 14px 16px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.admin-body.is-sales-view .sales-detail-wide-card > summary::-webkit-details-marker {
+  display: none;
+}
+
+.admin-body.is-sales-view .sales-detail-wide-card > summary::after {
+  content: "+";
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(171, 196, 224, 0.16);
+  border-radius: 999px;
+  color: rgba(248, 251, 255, 0.84);
+  font-weight: 900;
+}
+
+.admin-body.is-sales-view .sales-detail-wide-card[open] > summary::after {
+  content: "-";
+}
+
+.admin-body.is-sales-view .sales-detail-wide-card > summary span {
+  min-width: 0;
+}
+
+.admin-body.is-sales-view .sales-detail-wide-card > summary strong {
+  display: block;
+  color: #f8fbff;
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.admin-body.is-sales-view .sales-detail-wide-card > summary small {
+  display: block;
+  margin-top: 3px;
+  color: rgba(226, 236, 248, 0.58);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.admin-body.is-sales-view .lead-analysis-panel,
+.admin-body.is-sales-view .lead-welcome-panel {
+  display: grid;
+  gap: 14px;
+  padding: 0 16px 16px;
+}
+
+@media (max-width: 1180px) {
+  .admin-body.is-sales-view .leadfinder-detail-card {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "summary"
+      "workflow"
+      "contact"
+      "analysis"
+      "welcome";
+  }
+
+  .admin-body.is-sales-view .sales-workflow-actions,
+  .admin-body.is-sales-view .sales-contact-actions-card .sales-quick-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .admin-body.is-sales-view .leadfinder-detail-card {
+    padding: 14px;
+  }
+
+  .admin-body.is-sales-view .leadfinder-detail-card .settings-status-list div,
+  .admin-body.is-sales-view .sales-contact-list div,
+  .admin-body.is-sales-view .sales-workflow-actions,
+  .admin-body.is-sales-view .sales-contact-actions-card .sales-quick-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-body.is-sales-view .sales-detail-card-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
 @media (max-width: 1450px) {
   .lead-card {
     grid-template-columns: minmax(320px, 1.35fr) minmax(140px, 0.5fr) minmax(260px, 0.85fr);
@@ -13584,13 +13892,10 @@ h3 {
     grid-template-columns: 1fr;
     grid-template-areas:
       "summary"
-      "next"
-      "quick"
-      "note"
-      "actions"
-      "timeline"
-      "welcome"
-      "analysis";
+      "workflow"
+      "contact"
+      "analysis"
+      "welcome";
   }
 
   .admin-body.is-sales-view .leadfinder-detail-card .settings-status-list {
@@ -16040,13 +16345,10 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
     grid-template-columns: 1fr;
     grid-template-areas:
       "summary"
-      "next"
-      "quick"
-      "note"
-      "actions"
-      "timeline"
-      "welcome"
-      "analysis";
+      "workflow"
+      "contact"
+      "analysis"
+      "welcome";
   }
 
   .leadfinder-detail-card .admin-profile-form-heading,
@@ -16055,6 +16357,7 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   .leadfinder-detail-card > label,
   .leadfinder-detail-card .admin-profile-actions,
   .leadfinder-detail-card .sales-timeline-card,
+  .leadfinder-detail-card .sales-detail-panel,
   .leadfinder-detail-card .lead-welcome-card,
   .leadfinder-detail-card .lead-analysis-card {
     grid-column: auto;
@@ -19553,5 +19856,55 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   .why-card,
   .why-icon {
     transition: none;
+  }
+}
+
+/* Final Sales workspace override: keep selected lead detail compact and horizontal. */
+.admin-body.is-sales-view .leadfinder-detail-card {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.9fr) minmax(320px, 1.15fr) minmax(260px, 0.95fr);
+  grid-template-areas:
+    "summary workflow contact"
+    "analysis analysis analysis"
+    "welcome welcome welcome";
+  gap: 14px;
+  align-items: start;
+}
+
+.admin-body.is-sales-view .sales-lead-summary-card {
+  grid-area: summary;
+}
+
+.admin-body.is-sales-view .sales-workflow-card {
+  grid-area: workflow;
+}
+
+.admin-body.is-sales-view .sales-contact-actions-card {
+  grid-area: contact;
+}
+
+.admin-body.is-sales-view .leadfinder-detail-card .lead-analysis-card {
+  grid-area: analysis;
+}
+
+.admin-body.is-sales-view .leadfinder-detail-card .lead-welcome-card {
+  grid-area: welcome;
+}
+
+.admin-body.is-sales-view .sales-workflow-card .sales-next-action,
+.admin-body.is-sales-view .sales-contact-actions-card .sales-quick-actions,
+.admin-body.is-sales-view .sales-workflow-card .sales-timeline-card {
+  grid-area: auto;
+}
+
+@media (max-width: 1180px) {
+  .admin-body.is-sales-view .leadfinder-detail-card {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "summary"
+      "workflow"
+      "contact"
+      "analysis"
+      "welcome";
   }
 }
