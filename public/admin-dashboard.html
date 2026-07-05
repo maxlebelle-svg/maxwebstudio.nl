@@ -18247,6 +18247,7 @@
       let leadPreviewRequestId = "";
       let leadfinderDataLayerLeads = [];
       let leadfinderSourceStatus = null;
+      let leadfinderLastDiagnostics = null;
       let activeLeadfinderQuickFilter = null;
       const productionLeadsEndpoint = "/.netlify/functions/admin-leads";
       const leadOfflineQueueKey = "maxwebstudioLeadOfflineQueue";
@@ -18372,6 +18373,7 @@
             Accept: "application/json",
             ...(payload ? { "Content-Type": "application/json" } : {}),
             Authorization: `Bearer ${token}`,
+            "X-MWS-Developer-Mode": developerModeActive() ? "true" : "false",
           },
           body: payload ? JSON.stringify(payload) : undefined,
         });
@@ -18419,6 +18421,7 @@
         try {
           const result = await leadApiRequest("GET");
           leadfinderDataLayerLeads = Array.isArray(result.records) ? result.records : [];
+          leadfinderLastDiagnostics = result.diagnostics || null;
           leadfinderSourceStatus = {
             mode: result.mode || "supabase-production",
             counts: result.counts || {},
@@ -18427,6 +18430,7 @@
             warning: result.warning || "",
             refreshedAt: result.refreshedAt || new Date().toISOString(),
             dataLayer: "supabase-production-leads",
+            diagnostics: leadfinderLastDiagnostics,
           };
           localStorage.setItem("maxwebstudioLastLeadfinderSourceStatus", JSON.stringify(leadfinderSourceStatus));
           if (options.syncOfflineQueue) {
@@ -18434,8 +18438,10 @@
             if (queueResult.synced) {
               const refreshed = await leadApiRequest("GET");
               leadfinderDataLayerLeads = Array.isArray(refreshed.records) ? refreshed.records : leadfinderDataLayerLeads;
+              leadfinderLastDiagnostics = refreshed.diagnostics || leadfinderLastDiagnostics;
               leadfinderSourceStatus.counts = refreshed.counts || leadfinderSourceStatus.counts;
               leadfinderSourceStatus.refreshedAt = refreshed.refreshedAt || new Date().toISOString();
+              leadfinderSourceStatus.diagnostics = leadfinderLastDiagnostics;
               localStorage.setItem("maxwebstudioLastLeadfinderSourceStatus", JSON.stringify(leadfinderSourceStatus));
             }
           }
@@ -18444,6 +18450,7 @@
             counts: leadfinderSourceStatus.counts,
             fallbackUsed: leadfinderSourceStatus.fallbackUsed,
             error: leadfinderSourceStatus.error,
+            diagnostics: leadfinderLastDiagnostics,
           });
         } catch (error) {
           const developerFallbackActive = developerModeActive();
@@ -18453,6 +18460,7 @@
             fallbackRecords = Array.isArray(fallback.records) ? fallback.records : readLeadFinderLeads();
           }
           leadfinderDataLayerLeads = developerFallbackActive ? fallbackRecords : [];
+          leadfinderLastDiagnostics = error.diagnostics || null;
           leadfinderSourceStatus = {
             mode: developerFallbackActive ? "local-dev-fallback" : "supabase-production",
             counts: { local: developerFallbackActive ? leadfinderDataLayerLeads.length : 0, supabase: 0, hybrid: leadfinderDataLayerLeads.length },
@@ -18463,6 +18471,7 @@
               : "Centrale leads konden niet worden geladen. Er wordt geen lokale fallback getoond in productie.",
             refreshedAt: new Date().toISOString(),
             dataLayer: developerFallbackActive ? "developer-local-fallback-after-production-leads-error" : "supabase-production-leads-error",
+            diagnostics: leadfinderLastDiagnostics,
           };
           localStorage.setItem("maxwebstudioLastLeadfinderSourceStatus", JSON.stringify(leadfinderSourceStatus));
           logLeadfinderDiagnostic("Leadfinder data-layer centraal laden mislukt", {
@@ -18494,11 +18503,18 @@
         const productionLeads = developerModeActive() ? leads : leads.filter((lead) => !isDemoLeadfinderLead(lead));
         const visibleLeads = productionLeads.filter((lead) => isLeadVisibleForCurrentUser(lead, context));
         logLeadfinderDiagnostic("Leadfinder zichtbaarheid toegepast", {
-          role: context.role,
-          user: context.email || context.userId,
-          total: leads.length,
-          withoutDemo: productionLeads.length,
-          visible: visibleLeads.length,
+          currentUserEmail: context.email,
+          currentUserId: context.userId,
+          resolvedRole: context.role,
+          activeEmployeeFilter: leadfinderElements.filterOwner?.value || "Alle medewerkers",
+          totalLeadsFetched: leadfinderSourceStatus?.counts?.beforeRoleFilter ?? leadfinderLastDiagnostics?.totalLeadsFetched ?? leads.length,
+          totalLeadsAfterBackendRoleFilter: leadfinderSourceStatus?.counts?.afterRoleFilter ?? leadfinderLastDiagnostics?.totalLeadsAfterRoleFilter ?? leads.length,
+          totalLeadsWithoutDemo: productionLeads.length,
+          totalLeadsVisibleForCurrentUser: visibleLeads.length,
+          totalLeadsAfterFilters: "rendered in frontend filter diagnostic",
+          uniqueLeadOwnerEmails: uniqueLeadOwnerEmails(productionLeads),
+          dataSource: leadfinderSourceStatus?.dataLayer || "local",
+          backendDiagnostics: leadfinderLastDiagnostics,
           canSeeAll: canLeadfinderRoleSeeAll(context.role),
         });
         return visibleLeads;
@@ -18596,6 +18612,16 @@
           lead.metadata?.ownerEmail,
           lead.metadata?.createdByEmail,
         ].map((value) => String(value || "").trim().toLowerCase()).filter(Boolean);
+      }
+
+      function uniqueLeadOwnerEmails(leads = []) {
+        const owners = new Set();
+        leads.forEach((lead) => {
+          getLeadOwnerTokens(lead).forEach((token) => {
+            if (token.includes("@")) owners.add(token);
+          });
+        });
+        return [...owners].sort();
       }
 
       function getLeadOwnerValue(lead = {}) {
@@ -19572,7 +19598,8 @@
         const region = String(leadfinderElements.filterRegion?.value || "").trim().toLowerCase();
         const minScore = Number(leadfinderElements.filterScore?.value || 0);
 
-        return getLeadfinderLeads().filter((lead) => {
+        const baseLeads = getLeadfinderLeads();
+        const filteredLeads = baseLeads.filter((lead) => {
           const haystack = [
             lead.companyName,
             lead.contactName,
@@ -19594,6 +19621,20 @@
             && (!region || String(lead.region).toLowerCase().includes(region))
             && (!minScore || lead.leadScore >= minScore);
         });
+        const context = getLeadfinderUserContext();
+        logLeadfinderDiagnostic("Leadfinder frontend filters toegepast", {
+          currentUserEmail: context.email,
+          resolvedRole: context.role,
+          activeEmployeeFilter: owner || "Alle medewerkers",
+          totalLeadsFetched: leadfinderSourceStatus?.counts?.beforeRoleFilter ?? leadfinderLastDiagnostics?.totalLeadsFetched ?? leadfinderDataLayerLeads.length,
+          totalLeadsAfterBackendRoleFilter: leadfinderSourceStatus?.counts?.afterRoleFilter ?? leadfinderLastDiagnostics?.totalLeadsAfterRoleFilter ?? leadfinderDataLayerLeads.length,
+          totalLeadsBeforeFrontendFilters: baseLeads.length,
+          totalLeadsAfterFilters: filteredLeads.length,
+          uniqueLeadOwnerEmails: uniqueLeadOwnerEmails(baseLeads),
+          dataSource: leadfinderSourceStatus?.dataLayer || "local",
+          filters: { query, websiteStatus, callStatus, owner, industry, region, minScore, quickFilter: activeLeadfinderQuickFilter?.type || "" },
+        });
+        return filteredLeads;
       }
 
       function selectedLeadFinderLead() {

@@ -71,14 +71,34 @@ exports.handler = async (event) => {
 
 async function readLeads({ supabaseUrl, serviceRoleKey, admin }) {
   const rows = await readLeadRows({ supabaseUrl, serviceRoleKey });
-  const records = rows.map(mapLead).filter((lead) => isLeadVisibleForAdmin(lead, admin));
+  const mappedRows = rows.map(mapLead).filter((lead) => !isDemoLead(lead));
+  const records = mappedRows.filter((lead) => isLeadVisibleForAdmin(lead, admin));
+  const diagnostics = buildLeadReadDiagnostics({ rows: mappedRows, records, admin });
+  if (managerRoles.has(normalizeRole(admin.role))) {
+    console.info("Admin leads read: manager received all visible production leads", diagnostics);
+  }
   return jsonResponse(200, {
     success: true,
     mode: "supabase-production",
     records,
-    counts: { supabase: records.length, hybrid: records.length, local: 0 },
+    counts: { supabase: records.length, hybrid: records.length, local: 0, beforeRoleFilter: mappedRows.length, afterRoleFilter: records.length },
+    diagnostics,
     refreshedAt: new Date().toISOString(),
   });
+}
+
+function isDemoLead(lead = {}) {
+  const source = cleanText(lead.source || lead._source).toLowerCase();
+  const environment = cleanText(lead.environment || lead.metadata?.environment).toLowerCase();
+  const id = cleanText(lead.id).toLowerCase();
+  const email = cleanText(lead.email).toLowerCase();
+  const website = cleanText(lead.websiteUrl).toLowerCase();
+  return Boolean(lead.isDemo || lead.is_demo || lead.metadata?.isDemo)
+    || environment === "demo"
+    || source.includes("demo")
+    || id.includes("demo")
+    || email.endsWith(".example")
+    || website.includes(".example");
 }
 
 async function createLead({ event, supabaseUrl, serviceRoleKey, admin }) {
@@ -184,6 +204,7 @@ async function assertCanMutateLead({ supabaseUrl, serviceRoleKey, admin, id }) {
 
 async function readLeadRows({ supabaseUrl, serviceRoleKey, id = "" }) {
   const selects = [
+    "id,company_name,contact_name,email,phone,website,status,owner_id,owner_profile_id,owner_email,owner_name,created_by,created_by_email,created_by_name,assigned_to,assigned_user_email,assigned_user_name,sales_partner_email,sales_partner_name,notes,is_demo,environment,metadata,created_at,updated_at",
     "id,company_name,contact_name,email,phone,website,status,owner_id,created_by,assigned_to,notes,is_demo,environment,metadata,created_at,updated_at",
     "id,company,name,email,phone,source,interest,status,converted_customer_id,message,is_demo,environment,metadata,created_at,updated_at,owner_auth_user_id,branch,region,website_url,website_status,lead_score,call_status,follow_up_date,notes",
     "id,company,name,email,phone,source,interest,status,converted_customer_id,message,is_demo,environment,metadata,created_at,updated_at,owner_auth_user_id",
@@ -250,6 +271,14 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
       googlePlaceId: cleanText(payload.googlePlaceId),
       googleMapsUrl: cleanText(payload.googleMapsUrl),
       websiteAnalysis: payload.websiteAnalysis && typeof payload.websiteAnalysis === "object" ? payload.websiteAnalysis : undefined,
+      ownerAuthUserId: cleanText(payload.ownerAuthUserId || payload.owner_id || admin.id) || admin.id,
+      ownerProfileId: cleanText(payload.ownerProfileId || payload.owner_profile_id),
+      ownerEmail: cleanText(payload.ownerEmail || payload.owner_email || payload.createdByEmail || admin.email).toLowerCase(),
+      ownerName: cleanText(payload.ownerName || payload.owner_name || payload.createdByName || admin.email),
+      assignedUserEmail: cleanText(payload.assignedUserEmail || payload.assigned_user_email || payload.ownerEmail || admin.email).toLowerCase(),
+      assignedUserName: cleanText(payload.assignedUserName || payload.assigned_user_name || payload.ownerName || admin.email),
+      salesPartnerEmail: cleanText(payload.salesPartnerEmail || payload.sales_partner_email),
+      salesPartnerName: cleanText(payload.salesPartnerName || payload.sales_partner_name),
       updatedBy: admin.id,
       updatedByEmail: admin.email,
     },
@@ -299,10 +328,15 @@ function legacyLeadPayload(payload = {}, admin = {}, options = {}) {
     ...existingMeta,
     ...(payload.metadata && typeof payload.metadata === "object" ? payload.metadata : {}),
     ownerAuthUserId: cleanText(payload.ownerAuthUserId || payload.owner_id || options.existingLead?.ownerAuthUserId || existingMeta.ownerAuthUserId || admin.id) || admin.id,
+    ownerProfileId: cleanText(payload.ownerProfileId || payload.owner_profile_id || options.existingLead?.ownerProfileId || existingMeta.ownerProfileId),
+    ownerEmail: cleanText(payload.ownerEmail || payload.owner_email || options.existingLead?.ownerEmail || existingMeta.ownerEmail || payload.createdByEmail || admin.email).toLowerCase(),
+    ownerName: cleanText(payload.ownerName || payload.owner_name || options.existingLead?.ownerName || existingMeta.ownerName || payload.createdByName || admin.email),
     createdBy: cleanText(payload.createdBy || payload.created_by || options.existingLead?.createdBy || existingMeta.createdBy || admin.id) || admin.id,
     createdByEmail: cleanText(payload.createdByEmail || options.existingLead?.createdByEmail || existingMeta.createdByEmail || admin.email),
     createdByName: cleanText(payload.createdByName || options.existingLead?.createdByName || existingMeta.createdByName || admin.email),
     assignedTo: cleanText(payload.assignedTo || payload.assigned_to || payload.ownerAuthUserId || options.existingLead?.assignedTo || existingMeta.assignedTo || admin.id) || admin.id,
+    assignedUserEmail: cleanText(payload.assignedUserEmail || payload.assigned_user_email || options.existingLead?.assignedUserEmail || existingMeta.assignedUserEmail || payload.ownerEmail || admin.email).toLowerCase(),
+    assignedUserName: cleanText(payload.assignedUserName || payload.assigned_user_name || options.existingLead?.assignedUserName || existingMeta.assignedUserName || payload.ownerName || admin.email),
     source: cleanText(payload.source || "admin-dashboard-leadfinder"),
     websiteStatus: cleanText(payload.websiteStatus),
     leadScore: Number(payload.leadScore || payload.score || 60),
@@ -415,13 +449,16 @@ function mapLead(row = {}) {
     source: cleanText(row.source || meta.source || "supabase-production"),
     notes: cleanText(row.notes || row.message),
     ownerAuthUserId: cleanText(row.owner_id || row.owner_auth_user_id || meta.ownerAuthUserId || meta.owner_auth_user_id),
-    assignedUserName: cleanText(meta.assignedUserName),
-    assignedUserEmail: cleanText(meta.assignedUserEmail),
-    salesPartnerEmail: cleanText(meta.salesPartnerEmail || meta.createdByEmail),
-    salesPartnerName: cleanText(meta.salesPartnerName || meta.createdByName),
+    ownerProfileId: cleanText(row.owner_profile_id || meta.ownerProfileId || meta.owner_profile_id),
+    ownerEmail: cleanText(row.owner_email || meta.ownerEmail || meta.owner_email),
+    ownerName: cleanText(row.owner_name || meta.ownerName || meta.owner_name),
+    assignedUserName: cleanText(row.assigned_user_name || meta.assignedUserName || meta.assigned_user_name),
+    assignedUserEmail: cleanText(row.assigned_user_email || meta.assignedUserEmail || meta.assigned_user_email),
+    salesPartnerEmail: cleanText(row.sales_partner_email || meta.salesPartnerEmail || meta.sales_partner_email || meta.createdByEmail),
+    salesPartnerName: cleanText(row.sales_partner_name || meta.salesPartnerName || meta.sales_partner_name || meta.createdByName),
     createdBy: cleanText(row.created_by || meta.createdBy || row.owner_auth_user_id),
-    createdByEmail: cleanText(meta.createdByEmail),
-    createdByName: cleanText(meta.createdByName),
+    createdByEmail: cleanText(row.created_by_email || meta.createdByEmail || meta.created_by_email),
+    createdByName: cleanText(row.created_by_name || meta.createdByName || meta.created_by_name),
     assignedTo: cleanText(row.assigned_to || meta.assignedTo || meta.assigned_to),
     industry: cleanText(row.branch || meta.industry),
     region: cleanText(row.region || meta.region),
@@ -464,18 +501,47 @@ function legacyDbStatus(value) {
 function leadOwnerTokens(lead = {}) {
   return [
     lead.ownerAuthUserId,
+    lead.ownerEmail,
     lead.createdBy,
+    lead.createdByEmail,
     lead.assignedTo,
+    lead.assignedUserEmail,
+    lead.salesPartnerEmail,
     lead.metadata?.ownerAuthUserId,
+    lead.metadata?.ownerEmail,
     lead.metadata?.createdBy,
+    lead.metadata?.createdByEmail,
     lead.metadata?.assignedTo,
-  ].map(cleanText).filter(Boolean);
+    lead.metadata?.assignedUserEmail,
+    lead.metadata?.salesPartnerEmail,
+  ].map((value) => cleanText(value).toLowerCase()).filter(Boolean);
 }
 
 function isLeadVisibleForAdmin(lead = {}, admin = {}) {
   if (managerRoles.has(normalizeRole(admin.role))) return true;
   if (normalizeRole(admin.role) !== "sales_partner") return false;
-  return leadOwnerTokens(lead).includes(admin.id);
+  const adminTokens = [admin.id, admin.profileId, admin.email].map((value) => cleanText(value).toLowerCase()).filter(Boolean);
+  return leadOwnerTokens(lead).some((token) => adminTokens.includes(token));
+}
+
+function buildLeadReadDiagnostics({ rows = [], records = [], admin = {} }) {
+  const owners = new Set();
+  rows.forEach((lead) => {
+    leadOwnerTokens(lead).forEach((token) => {
+      if (token.includes("@")) owners.add(token.toLowerCase());
+    });
+  });
+  return {
+    module: "leads",
+    dataSource: "Supabase",
+    currentUserEmail: cleanText(admin.email).toLowerCase(),
+    currentUserId: cleanText(admin.id),
+    resolvedRole: normalizeRole(admin.role),
+    managerAccess: managerRoles.has(normalizeRole(admin.role)),
+    totalLeadsFetched: rows.length,
+    totalLeadsAfterRoleFilter: records.length,
+    uniqueLeadOwnerEmails: [...owners].sort(),
+  };
 }
 
 function parsePayload(body, silent = false) {
