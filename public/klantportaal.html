@@ -464,7 +464,7 @@
             const data = await demoJourneyRequest("GET");
             renderDemoJourney({ journey: data.journey, events: data.events });
           } catch (error) {
-            const localJourney = readLocalDemoJourney();
+            const localJourney = isDeveloperModeEnabled() ? readLocalDemoJourney() : null;
             if (localJourney) {
               renderDemoJourney({ journey: localJourney, events: localJourney.events || [], source: "local" });
               return;
