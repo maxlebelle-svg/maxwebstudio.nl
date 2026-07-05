@@ -13,6 +13,7 @@ const MODULES = Object.freeze({
   customers: {
     table: "customers",
     select: "id,auth_user_id,profile_id,name,company,email,phone,website,package,status,portal_status,customer_since,notes,is_demo,environment,metadata,created_at,updated_at",
+    legacySelect: "id,auth_user_id,profile_id,name,company_name,email,phone,website,package,status,portal_status,customer_since,notes,is_demo,environment,metadata,created_at,updated_at",
     order: "updated_at.desc.nullslast",
     optional: false,
     salesReadable: true,
@@ -82,8 +83,8 @@ const MODULES = Object.freeze({
 });
 
 exports.handler = async (event) => {
-  if (event.httpMethod !== "GET") {
-    return jsonResponse(405, { success: false, error: "Alleen GET-verzoeken zijn toegestaan." });
+  if (!["GET", "POST"].includes(event.httpMethod)) {
+    return jsonResponse(405, { success: false, error: "Alleen GET- en POST-verzoeken zijn toegestaan." });
   }
 
   const moduleName = cleanText(event.queryStringParameters?.module);
@@ -97,8 +98,8 @@ exports.handler = async (event) => {
     : ["super_admin", "admin"];
   const adminCheck = await verifyAdmin(event, jsonResponse, {
     module: moduleName,
-    action: "read",
-    allowedRoles,
+    action: event.httpMethod === "POST" ? "write" : "read",
+    allowedRoles: event.httpMethod === "POST" ? ["super_admin", "admin"] : allowedRoles,
     allowedStatuses: ["active", "invited"],
   });
   if (!adminCheck.success) return adminCheck.response;
@@ -127,6 +128,28 @@ exports.handler = async (event) => {
   }
 
   try {
+    if (event.httpMethod === "POST") {
+      if (moduleName !== "customers") {
+        return jsonResponse(405, { success: false, error: "Schrijven is alleen beschikbaar voor centrale customers." });
+      }
+      const payload = parsePayload(event.body);
+      const saved = await saveCustomerRecord(supabaseUrl, serviceRoleKey, payload.customer || payload);
+      return jsonResponse(200, {
+        success: true,
+        module: moduleName,
+        mode: "supabase-write",
+        diagnostics: {
+          module: moduleName,
+          resolvedRole: adminCheck.admin?.role || "",
+          status: adminCheck.admin?.status || "",
+          reason: "authorized",
+        },
+        customer: mapCustomer(saved),
+        record: mapCustomer(saved),
+        refreshedAt: new Date().toISOString(),
+      });
+    }
+
     const rows = await fetchRows(supabaseUrl, serviceRoleKey, definition);
     const records = rows.map(definition.map).filter((record) => record.id);
     return jsonResponse(200, {
@@ -209,6 +232,101 @@ async function fetchRows(supabaseUrl, serviceRoleKey, definition) {
       headers: restHeaders(serviceRoleKey),
     });
   }
+}
+
+function parsePayload(body) {
+  try {
+    return JSON.parse(body || "{}");
+  } catch {
+    const error = new Error("Ongeldige JSON body.");
+    error.status = 400;
+    throw error;
+  }
+}
+
+function normalizeCustomerWriteStatus(value = "") {
+  const status = cleanText(value).toLowerCase();
+  if (status === "actief" || status === "active") return "active";
+  if (status === "onboarding") return "onboarding";
+  if (status === "pauze" || status === "paused") return "paused";
+  if (status === "gearchiveerd" || status === "archived") return "archived";
+  return "active";
+}
+
+function normalizeCustomerWritePortalStatus(value = "") {
+  const status = cleanText(value).toLowerCase();
+  if (status === "actief" || status === "active") return "active";
+  if (status === "uitgenodigd" || status === "invited") return "invited";
+  if (status === "uitnodiging_klaar" || status === "prepared" || status === "pending_invitation") return "prepared";
+  if (status === "niet_actief" || status === "disabled" || status === "inactive") return "disabled";
+  return "prepared";
+}
+
+function customerWriteRecord(input = {}) {
+  const name = cleanText(input.name);
+  const company = cleanText(input.company || input.companyName);
+  const email = cleanText(input.email).toLowerCase();
+  if (!name) throw Object.assign(new Error("Vul een klantnaam in."), { status: 400 });
+  if (!company) throw Object.assign(new Error("Vul een bedrijfsnaam in."), { status: 400 });
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw Object.assign(new Error("Vul een geldig e-mailadres in."), { status: 400 });
+  }
+  return {
+    auth_user_id: cleanText(input.authUserId) || null,
+    profile_id: cleanText(input.profileId) || null,
+    name,
+    company,
+    email: email || null,
+    phone: cleanText(input.phone) || null,
+    website: cleanText(input.website || input.domain) || null,
+    package: cleanText(input.package || input.packageName) || "Basis",
+    status: normalizeCustomerWriteStatus(input.status),
+    portal_status: normalizeCustomerWritePortalStatus(input.portalStatus),
+    customer_since: cleanText(input.customerSince) || null,
+    notes: cleanText(input.notes) || null,
+    is_demo: Boolean(input.isDemo),
+    environment: cleanText(input.environment) || "production",
+    metadata: {
+      ...(input.metadata && typeof input.metadata === "object" ? input.metadata : {}),
+      lastCustomerWriteContext: "admin_crm_customer_center",
+      createdFromLeadId: cleanText(input.createdFromLeadId || input.leadId || input.metadata?.createdFromLeadId),
+    },
+    updated_at: new Date().toISOString(),
+  };
+}
+
+async function saveCustomerRecord(supabaseUrl, serviceRoleKey, input = {}) {
+  const id = cleanText(input.id || input._supabaseCustomerId || input.supabaseCustomerId);
+  const record = customerWriteRecord(input);
+  const url = id
+    ? `${supabaseUrl}/rest/v1/customers?id=eq.${encodeURIComponent(id)}`
+    : `${supabaseUrl}/rest/v1/customers`;
+  const response = await fetch(url, {
+    method: id ? "PATCH" : "POST",
+    headers: {
+      ...restHeaders(serviceRoleKey),
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify(record),
+  });
+  const text = await response.text();
+  let data = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error("Supabase gaf geen geldige JSON-response terug.");
+    }
+  }
+  if (!response.ok) {
+    const error = new Error(data?.message || data?.error || "Customer kon niet centraal worden opgeslagen.");
+    error.status = response.status;
+    error.code = data?.code || "";
+    error.details = data?.details || "";
+    throw error;
+  }
+  return Array.isArray(data) ? data[0] || {} : data || {};
 }
 
 async function supabaseFetch(url, options) {

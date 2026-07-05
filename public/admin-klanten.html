@@ -809,7 +809,7 @@
           <div class="admin-crm-grid">
             <div class="admin-table client-profile-table" id="customer-list" role="table" aria-label="Klanten" aria-live="polite">
               <div class="admin-table-row admin-table-head crm-customer-row" role="row">
-                <span>Naam</span><span>Bedrijf</span><span>Website</span><span>Pakket</span><span>Status</span><span>Aangemaakt op</span><span>Actie</span>
+                <span>Naam</span><span>Bedrijf</span><span>E-mail</span><span>Telefoon</span><span>Website</span><span>Pakket</span><span>Status</span><span>Portal</span><span>Aangemaakt</span><span>Actie</span>
               </div>
               <article class="admin-card request-card request-state-card">
                 <div>
@@ -9223,7 +9223,8 @@
         }
 
         function currentCustomerDataMode() {
-          return customerDataModeSelect.value || readStoredSettings().customerDataMode || localStorage.getItem("maxwebstudioCustomerDataMode") || "supabase-read";
+          const mode = customerDataModeSelect.value || readStoredSettings().customerDataMode || localStorage.getItem("maxwebstudioCustomerDataMode") || "supabase-read";
+          return mode === "local" || mode === "hybrid" ? "supabase-read" : mode;
         }
 
         function currentWebsiteDataMode() {
@@ -9249,6 +9250,10 @@
         async function getCustomerRepositoryModule() {
           const modules = await loadDeveloperModules();
           return modules.customerRepository;
+        }
+
+        async function getAdminCrmDataModule() {
+          return import(versionedModule("./src/admin-crm-data.js"));
         }
 
         async function getWebsiteRepositoryModule() {
@@ -9278,8 +9283,29 @@
 
         async function readAdminDataLayerModule(moduleName, mode) {
           if (mode === "supabase-read") {
-            const token = getAdminBearer();
+            const token = getResolvedAdminBearer();
             if (!token) throw new Error("Log in als admin om Supabase-data te lezen.");
+            if (moduleName === "customers") {
+              const crmData = await getAdminCrmDataModule();
+              const result = await crmData.loadCustomers({
+                getAuthToken: getResolvedAdminBearer,
+                customerEndpoint: adminSupabaseDataEndpoint,
+              });
+              return {
+                mode: result.mode || mode,
+                records: result.records,
+                counts: result.counts || {},
+                duplicateMerges: [],
+                fallbackUsed: false,
+                error: result.error || "",
+                warning: result.warning || "",
+                refreshedAt: result.refreshedAt || new Date().toISOString(),
+                dataLayer: result.dataLayer,
+                endpoint: result.endpoint,
+                authenticated: result.authenticated,
+                diagnostics: result.diagnostics || {},
+              };
+            }
             const response = await fetch(`${adminSupabaseDataEndpoint}?module=${encodeURIComponent(moduleName)}`, {
               headers: {
                 Accept: "application/json",
@@ -9397,15 +9423,21 @@
               detailReactivate.disabled = customer.status !== "gearchiveerd";
               return;
             }
-            setCustomerContactFieldsOnly(state.customerWriteReadiness.allowed);
-            detailSave.disabled = !state.customerWriteReadiness.allowed;
+            const centralWriteAllowed = Boolean(getResolvedAdminBearer());
+            state.customerWriteReadiness = {
+              ...state.customerWriteReadiness,
+              allowed: centralWriteAllowed,
+              reason: centralWriteAllowed ? "Centrale customer API beschikbaar voor adminsessie." : "Adminsessie ontbreekt.",
+            };
+            setCustomerFieldsDisabled(!centralWriteAllowed);
+            detailSave.disabled = !centralWriteAllowed;
             detailArchive.disabled = customer.status === "gearchiveerd";
             detailReactivate.disabled = customer.status !== "gearchiveerd";
             renderCustomerSourceDetail(customer, state.customerWriteReadiness);
-            if (!state.customerWriteReadiness.allowed) {
-              setDetailMessage(`Supabase customer contact write geblokkeerd: ${state.customerWriteReadiness.reason}`, "error");
+            if (!centralWriteAllowed) {
+              setDetailMessage(`Centrale customer write geblokkeerd: ${state.customerWriteReadiness.reason}`, "error");
             } else if (!detailMessage.textContent) {
-              setDetailMessage("Supabase customer contact write is gecontroleerd beschikbaar voor naam, e-mail, telefoon en notities.", "success");
+              setDetailMessage("Centrale customer write is beschikbaar voor dit klantprofiel.", "success");
             }
           } catch (error) {
             setCustomerFieldsDisabled(true);
@@ -9429,6 +9461,9 @@
             error: result.error,
             refreshedAt: result.refreshedAt,
             dataLayer: result.dataLayer,
+            endpoint: result.endpoint || `${adminSupabaseDataEndpoint}?module=customers`,
+            authenticated: Boolean(result.authenticated || getResolvedAdminBearer()),
+            diagnostics: result.diagnostics || {},
           };
           localStorage.setItem("maxwebstudioLastCustomerSourceStatus", JSON.stringify({
             mode: result.mode,
@@ -9437,6 +9472,9 @@
             error: result.error,
             refreshedAt: result.refreshedAt,
             dataLayer: result.dataLayer,
+            endpoint: state.customerSourceStatus.endpoint,
+            authenticated: state.customerSourceStatus.authenticated,
+            diagnostics: state.customerSourceStatus.diagnostics,
           }));
           return result.records.map(normalizeStoredCustomer);
         }
@@ -10609,6 +10647,12 @@
           return state.adminSession?.accessToken || state.adminToken || "";
         }
 
+        function getResolvedAdminBearer() {
+          const bearer = getAdminBearer();
+          if (bearer) return bearer;
+          return getAdminBearerToken();
+        }
+
         function updateAdminSessionUi() {
           const email = state.adminSession?.email || "";
           const loggedIn = Boolean(email && state.adminSession?.accessToken);
@@ -10936,7 +10980,7 @@
         }
 
         async function postJsonWithAdminAuth(url, payload, fallbackError = "Adminactie kon niet worden uitgevoerd.") {
-          const token = getAdminBearer();
+          const token = getResolvedAdminBearer();
           if (!token) throw new Error("Log eerst in als admin.");
           let response;
           try {
@@ -11277,13 +11321,17 @@
           [
             ["Mode", mode],
             ["Actieve bron", status.fallbackUsed ? "Local fallback" : mode === "hybrid" ? "Hybrid" : mode === "supabase-read" ? "Supabase" : "Local"],
+            ["Authenticatie", status.authenticated ? "Authenticated" : "Geen geldige sessie"],
+            ["API endpoint", status.endpoint || `${adminSupabaseDataEndpoint}?module=customers`],
             ["Local customers", String(counts.local ?? state.customers.length ?? 0)],
             ["Supabase customers", String(counts.supabase ?? 0)],
             ["Hybrid merged", String(counts.hybrid ?? state.customers.length ?? 0)],
+            ["Customers geladen", String(state.customers.length)],
             ["Demo customers", String(counts.demo ?? 0)],
             ["Niet gemigreerd local", String(counts.unmigratedLocal ?? 0)],
             ["Merge duplicates", String(counts.duplicateMerges ?? 0)],
             ["Data layer", status.dataLayer || "repository/local"],
+            ["Backend auth", status.diagnostics?.reason || "-"],
             ["Laatste refresh", status.refreshedAt ? formatDate(status.refreshedAt) : "-"],
           ].forEach(([label, value]) => {
             const card = document.createElement("article");
@@ -11383,7 +11431,7 @@
 
           const head = document.createElement("div");
           head.className = "admin-table-row admin-table-head crm-customer-row";
-          ["Naam", "Bedrijf", "Website", "Pakket", "Status", "Klant sinds", "Actie"].forEach((label) => head.append(createCell(label)));
+          ["Naam", "Bedrijf", "E-mail", "Telefoon", "Website", "Pakket", "Status", "Portal", "Aangemaakt", "Actie"].forEach((label) => head.append(createCell(label)));
           customerList.append(head);
 
           customers.forEach((customer) => {
@@ -11409,9 +11457,12 @@
             row.append(
               nameCell,
               createCell(customer.company),
+              createCell(customer.email || "-"),
+              createCell(customer.phone || "-"),
               createCell(customer.website || "Nog niet ingesteld"),
               createCell(customer.package || "-"),
               createBadge(customerStatusLabels[customer.status] || customer.status, customerStatusClass(customer.status)),
+              createBadge(customer.portalStatus || "niet_actief", customer.portalStatus === "actief" ? "status-active" : customer.portalStatus === "uitgenodigd" ? "status-prepared" : "status-planned"),
               createCell(formatDate(customer.customerSince || customer.createdAt)),
               action
             );
@@ -11530,17 +11581,21 @@
               notes: detailFields.notes.value,
             };
             let profile = null;
-            const repo = await getCustomerRepositoryModule();
             if (isSupabaseManagedCustomer(customer)) {
-              if (!state.developerModules?.customerContactWriteService) await loadDeveloperModules();
-              const contactResult = await state.developerModules.customerContactWriteService.saveCustomerContactWithWriteFallback(customer, {
-                name: payload.name,
-                email: payload.email,
-                phone: payload.phone,
-                notes: payload.notes,
+              const crmData = await getAdminCrmDataModule();
+              profile = await crmData.saveCustomer({
+                ...customer,
+                ...payload,
+                id: customerSupabaseId(customer),
+                profileId: customer.profileId,
+                environment: customer.environment || "production",
+                metadata: customer.metadata || {},
+              }, {
+                getAuthToken: getResolvedAdminBearer,
+                customerEndpoint: adminSupabaseDataEndpoint,
               });
-              profile = contactResult.customer;
             } else {
+              const repo = await getCustomerRepositoryModule();
               profile = await repo.updateCustomer(customer.id, payload, {
                 oldCustomer: customer,
                 target: "local",
@@ -11550,8 +11605,8 @@
             await loadCRMData(false);
             state.selectedCustomerId = profile?.id || customer.id;
             selectCustomer(state.selectedCustomerId);
-            setDetailMessage(isSupabaseManagedCustomer(customer) ? "Klantcontactgegevens opgeslagen." : "Klantprofiel opgeslagen.", "success");
-            setAdminAccessMessage(isSupabaseManagedCustomer(customer) ? "Klantcontactgegevens gecontroleerd opgeslagen via Sprint 2B." : "Klantprofiel opgeslagen in lokale CRM-opslag.", "success");
+            setDetailMessage(isSupabaseManagedCustomer(customer) ? "Klant centraal opgeslagen." : "Klantprofiel opgeslagen.", "success");
+            setAdminAccessMessage(isSupabaseManagedCustomer(customer) ? "Klantprofiel opgeslagen in centrale CRM." : "Klantprofiel opgeslagen in lokale CRM-opslag.", "success");
           } catch (error) {
             const message = error.code === "CUSTOMER_CONFLICT"
               ? "Supabase heeft een nieuwere versie. Ververs klantgegevens voordat je opslaat."
@@ -11582,24 +11637,15 @@
               sendWelcomeEmail: Boolean(newSendWelcomeEmail?.checked),
             };
 
-            const token = getAdminBearer();
-            if (!token) throw new Error("Log eerst in als admin.");
-
-            const response = await fetch(customerOnboardingEndpoint, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Accept: "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify(payload),
+            const crmData = await getAdminCrmDataModule();
+            const data = await crmData.createCustomer(payload, {
+              getAuthToken: getResolvedAdminBearer,
+              onboardingEndpoint: customerOnboardingEndpoint,
             });
-            const data = await response.json().catch(() => ({}));
-            if (!response.ok || !data.success) throw new Error(data.error || "Klant kon niet worden klaargezet.");
 
             await loadCRMData(false);
             renderNewCustomerMailPreview(data.mailPreview);
-            state.selectedCustomerId = data.onboarding?.profile?.id || "";
+            state.selectedCustomerId = data.customer?.id || data.onboarding?.customer?.id || "";
             if (state.selectedCustomerId) selectCustomer(state.selectedCustomerId);
             const emailStatus = data.email?.sent
               ? " Welkomstmail is via Resend verzonden."
@@ -11637,7 +11683,16 @@
                 email: payload.email,
               }, "Portaaluitnodiging kon niet worden verstuurd.");
               const customer = payload.id ? state.customers.find((item) => item.id === payload.id) : state.customers.find((item) => item.email === String(payload.email || "").toLowerCase());
-              const profile = customer ? saveCustomerLocally({ ...customer, portalStatus: "uitgenodigd" }) : null;
+              let profile = null;
+              if (customer && isSupabaseManagedCustomer(customer)) {
+                const crmData = await getAdminCrmDataModule();
+                profile = await crmData.saveCustomer({ ...customer, id: customerSupabaseId(customer), portalStatus: "uitgenodigd" }, {
+                  getAuthToken: getResolvedAdminBearer,
+                  customerEndpoint: adminSupabaseDataEndpoint,
+                });
+              } else {
+                profile = customer ? saveCustomerLocally({ ...customer, portalStatus: "uitgenodigd" }) : null;
+              }
               return { ...data, profile, warning: data.warning || "Supabase Auth uitnodiging verstuurd of voorbereid." };
             }
             const customer = payload.id ? state.customers.find((item) => item.id === payload.id) : state.customers.find((item) => item.email === String(payload.email || "").toLowerCase());
@@ -11809,7 +11864,16 @@
             });
             const data = await response.json().catch(() => ({}));
             if (!response.ok || !data.success) throw new Error(data.error || "Welkomstmail kon niet worden verzonden.");
-            const profile = saveCustomerLocally({ ...customer, portalStatus: data.email?.sent ? "uitgenodigd" : "uitnodiging_klaar" });
+            let profile = null;
+            if (isSupabaseManagedCustomer(customer)) {
+              const crmData = await getAdminCrmDataModule();
+              profile = await crmData.saveCustomer({ ...customer, id: customerSupabaseId(customer), portalStatus: data.email?.sent ? "uitgenodigd" : "uitnodiging_klaar" }, {
+                getAuthToken: getResolvedAdminBearer,
+                customerEndpoint: adminSupabaseDataEndpoint,
+              });
+            } else {
+              profile = saveCustomerLocally({ ...customer, portalStatus: data.email?.sent ? "uitgenodigd" : "uitnodiging_klaar" });
+            }
             await loadCRMData(false);
             state.selectedCustomerId = profile.id || customer.id;
             selectCustomer(state.selectedCustomerId);
@@ -17129,21 +17193,28 @@
               payload.region ? `Regio: ${payload.region}` : "",
               payload.leadId ? `Aangemaakt vanuit lead: ${payload.leadId}` : "",
             ].filter(Boolean).join("\n");
-            const customer = saveCustomerLocally({
+            const crmData = await getAdminCrmDataModule();
+            const created = await crmData.createCustomer({
               name: payload.name,
               company: payload.company,
               email: payload.email,
               phone: payload.phone,
+              domain: payload.website,
               website: payload.website,
               package: payload.package,
-              status: payload.status,
-              portalStatus: payload.portalStatus,
-              notes,
+              projectName: `Website project ${payload.company}`,
+              leadId: payload.leadId,
               createdFromLeadId: payload.leadId,
+              notes,
+              sendWelcomeEmail: payload.portalStatus === "uitgenodigd",
+            }, {
+              getAuthToken: getResolvedAdminBearer,
+              onboardingEndpoint: customerOnboardingEndpoint,
             });
-            ensureCustomerWebsiteRecord(customer);
-            updateLeadReferenceToCustomer(payload.leadId, customer.id);
             await loadCRMData(false);
+            const customer = state.customers.find((item) => item.id === created.customer?.id)
+              || state.customers.find((item) => item.email === String(payload.email || "").toLowerCase())
+              || created.customer;
             state.selectedCustomerId = customer.id;
             renderCustomers();
             selectCustomer(customer.id);
@@ -17253,7 +17324,7 @@
         }
 
         async function loadCRMData(showLoading = true) {
-          const token = getAdminBearer();
+          const token = getResolvedAdminBearer();
           if (!token) {
             renderAdminLockedState();
             updateAdminSessionUi();
@@ -17303,7 +17374,7 @@
             populateQuoteOptions();
             renderDemoEnvironment();
             await loadChangeRequests();
-            if (getAdminBearer()) {
+            if (getResolvedAdminBearer()) {
               await loadDashboardMetrics(false);
               await loadWebsiteHealth(false);
             }
@@ -17406,6 +17477,10 @@
               fallbackUsed: false,
               error: error.message || "CRM-klanten konden niet worden geladen.",
               refreshedAt: new Date().toISOString(),
+              dataLayer: "admin-supabase-data",
+              endpoint: `${adminSupabaseDataEndpoint}?module=customers`,
+              authenticated: Boolean(getResolvedAdminBearer()),
+              diagnostics: error.diagnostics || {},
             };
             state.websiteSourceStatus = {
               mode: currentWebsiteDataMode(),
@@ -17442,7 +17517,7 @@
               error: error.message || "CRM/subscription data kon niet worden geladen.",
               refreshedAt: new Date().toISOString(),
             };
-            renderState(customerList, "CRM-klanten konden niet worden geladen", "Supabase-read kon geen klanten laden. Zet de customer data mode terug naar local of controleer de Supabase configuratie.", "Fout", "status-attention", { label: "Terug naar local", primary: true, onClick: () => setCustomerDataMode("local", { source: "supabase_read_error" }) });
+            renderState(customerList, "CRM-klanten konden niet worden geladen", "De centrale CRM-bron kon geen klanten laden. Controleer de adminsessie en Supabase configuratie in Developer Mode.", "Fout", "status-attention");
             renderCustomerSourceSummary();
             renderWebsiteSourceSummary();
             renderProjectSourceSummary();
@@ -17457,13 +17532,14 @@
         }
 
         async function loadChangeRequests() {
-          if (!getAdminBearer()) {
+          const token = getResolvedAdminBearer();
+          if (!token) {
             renderState(requestList, "Admin login nodig", "Log in als admin om wijzigingsverzoeken te bekijken.", "Beveiligd", "status-warning");
             return;
           }
           renderState(requestList, "Wijzigingsverzoeken laden...", "De nieuwste aanvragen worden opgehaald.", "Laden", "status-prepared");
           try {
-            const response = await fetch(listEndpoint, { headers: { Accept: "application/json", Authorization: `Bearer ${getAdminBearer()}` } });
+            const response = await fetch(listEndpoint, { headers: { Accept: "application/json", Authorization: `Bearer ${token}` } });
             const data = await response.json().catch(() => ({}));
             if (!response.ok || !data.success) throw new Error(data.error || "Ophalen mislukt.");
             state.requests = Array.isArray(data.changeRequests) ? data.changeRequests : [];

@@ -30,9 +30,10 @@ function nowIso() {
 }
 
 function crmCustomerDataMode() {
-  return readJson(STORAGE_KEYS.settings, {})?.customerDataMode
+  const mode = readJson(STORAGE_KEYS.settings, {})?.customerDataMode
     || localStorage.getItem(STORAGE_KEYS.customerDataMode)
-    || CUSTOMER_DATA_MODES.LOCAL;
+    || CUSTOMER_DATA_MODES.SUPABASE_READ;
+  return [CUSTOMER_DATA_MODES.LOCAL, CUSTOMER_DATA_MODES.HYBRID].includes(mode) ? CUSTOMER_DATA_MODES.SUPABASE_READ : mode;
 }
 
 function isSupabaseCustomer(customer = {}) {

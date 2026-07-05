@@ -68,6 +68,7 @@ exports.handler = async (event) => {
           authAction: authUser.action,
           sourceEnvironment: recordEnvironment,
           portalAccessStatus: portalStatus.access,
+          createdFromLeadId: input.leadId || "",
           emailStatus,
         },
         updated_at: new Date().toISOString(),
@@ -97,6 +98,7 @@ exports.handler = async (event) => {
           createdBy: "admin-customer-create-wizard",
           sourceEnvironment: recordEnvironment,
           portalAccessStatus: portalStatus.access,
+          createdFromLeadId: input.leadId || "",
           emailStatus,
           billingStatus: input.sendWelcomeEmail ? "pending_customer_activation" : "internal_record_only",
           incassoMandate: "missing",
@@ -129,6 +131,7 @@ exports.handler = async (event) => {
           createdBy: "admin-customer-create-wizard",
           sourceEnvironment: recordEnvironment,
           portalAccessStatus: portalStatus.access,
+          createdFromLeadId: input.leadId || "",
           emailStatus,
         },
         updated_at: new Date().toISOString(),
@@ -157,6 +160,7 @@ exports.handler = async (event) => {
           createdBy: "admin-customer-create-wizard",
           sourceEnvironment: recordEnvironment,
           portalAccessStatus: portalStatus.access,
+          createdFromLeadId: input.leadId || "",
           emailStatus,
         },
         updated_at: new Date().toISOString(),
@@ -168,6 +172,9 @@ exports.handler = async (event) => {
     const email = input.sendWelcomeEmail
       ? await sendWelcomeEmailMessage(input, mailPreview)
       : { requested: false, sent: false, warning: "Welkomstmail is alleen als concept voorbereid." };
+    if (input.leadId) {
+      await linkLeadToCustomer(supabaseUrl, serviceRoleKey, input.leadId, customer.id);
+    }
 
     return jsonResponse(200, {
       success: true,
@@ -222,6 +229,7 @@ function validatePayload(payload) {
     package: cleanText(payload.package) || "Basis",
     domain: cleanDomain(payload.domain || payload.website),
     projectName: cleanText(payload.projectName),
+    leadId: cleanText(payload.leadId || payload.createdFromLeadId),
     sendWelcomeEmail: Boolean(payload.sendWelcomeEmail || payload.sendEmail || payload.sendInvite),
   };
 
@@ -245,15 +253,41 @@ function getRecordEnvironment() {
 function getPortalStatus(input = {}) {
   if (input.sendWelcomeEmail) {
     return {
-      database: "uitgenodigd",
+      database: "invited",
       access: "invited",
     };
   }
 
   return {
-    database: "uitnodiging_klaar",
+    database: "prepared",
     access: "pending_invitation",
   };
+}
+
+async function linkLeadToCustomer(supabaseUrl, serviceRoleKey, leadId, customerId) {
+  if (!leadId || !customerId) return null;
+  try {
+    const rows = await supabaseFetch(
+      `${supabaseUrl}/rest/v1/leads?id=eq.${encodeURIComponent(leadId)}`,
+      {
+        method: "PATCH",
+        headers: {
+          ...restHeaders(serviceRoleKey),
+          "Content-Type": "application/json",
+          Prefer: "return=representation",
+        },
+        body: JSON.stringify({
+          customer_id: customerId,
+          status: "converted",
+          updated_at: new Date().toISOString(),
+        }),
+      }
+    );
+    return Array.isArray(rows) ? rows[0] || null : rows;
+  } catch (error) {
+    console.error("Lead could not be linked to customer", { leadId, customerId, message: error.message });
+    return null;
+  }
 }
 
 async function ensureAuthUser(supabaseUrl, serviceRoleKey, input) {
