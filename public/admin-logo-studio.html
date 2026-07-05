@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Logo Studio | Max Webstudio</title>
+    <meta name="description" content="Losstaande Logo Studio voor Max Webstudio sales en admin." />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="src/logo-studio.css" />
+    <script src="src/logo-studio.js" defer></script>
+  </head>
+  <body>
+    <div class="studio-shell">
+      <header class="studio-header">
+        <a class="studio-back-link" href="/admin-dashboard.html">Terug naar admin</a>
+        <div>
+          <p class="studio-kicker">Max Webstudio</p>
+          <h1>Logo Studio</h1>
+          <p>Maak snel drie professionele logo-concepten voor een klantbriefing.</p>
+        </div>
+      </header>
+
+      <div class="studio-toast" id="studio-toast" role="status" aria-live="polite" hidden></div>
+
+      <main class="studio-layout">
+        <section class="studio-panel studio-briefing" aria-labelledby="briefing-title">
+          <div class="panel-heading">
+            <p class="studio-kicker">Briefing</p>
+            <h2 id="briefing-title">Klantinput</h2>
+          </div>
+
+          <form id="logo-studio-form" novalidate>
+            <label for="company-name">Bedrijfsnaam</label>
+            <input id="company-name" name="companyName" type="text" autocomplete="organization" maxlength="80" required />
+
+            <label for="industry">Branche</label>
+            <input id="industry" name="industry" type="text" maxlength="90" placeholder="Bijv. bouw, coaching, horeca" />
+
+            <label for="slogan">Slogan optioneel</label>
+            <input id="slogan" name="slogan" type="text" maxlength="100" />
+
+            <label for="audience">Doelgroep</label>
+            <textarea id="audience" name="audience" rows="4" maxlength="240" placeholder="Wie moet het logo direct aanspreken?"></textarea>
+
+            <label for="style-choice">Stijlkeuze</label>
+            <select id="style-choice" name="styleChoice">
+              <option value="premium">Premium</option>
+              <option value="modern">Modern</option>
+              <option value="speels">Speels</option>
+              <option value="minimalistisch">Minimalistisch</option>
+              <option value="zakelijk">Zakelijk</option>
+            </select>
+
+            <label for="color-choice">Kleurvoorkeur</label>
+            <select id="color-choice" name="colorChoice">
+              <option value="automatisch">Automatisch</option>
+              <option value="donker-premium">Donker premium</option>
+              <option value="blauw-vertrouwen">Blauw vertrouwen</option>
+              <option value="groen-groei">Groen groei</option>
+              <option value="goud-luxe">Goud luxe</option>
+              <option value="rood-energie">Rood energie</option>
+            </select>
+
+            <p class="studio-error" id="form-error" role="alert"></p>
+
+            <div class="form-actions">
+              <button class="studio-button primary" type="submit">Maak logo concepten</button>
+              <button class="studio-button secondary" id="regenerate-concepts" type="button">Concepten opnieuw maken</button>
+              <button class="studio-button ghost" id="clear-draft" type="button">Draft wissen</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="studio-panel studio-output" aria-labelledby="output-title">
+          <div class="output-top">
+            <div>
+              <p class="studio-kicker">Output</p>
+              <h2 id="output-title">Logo-concepten</h2>
+            </div>
+            <span class="draft-indicator" id="draft-indicator">Geen draft</span>
+          </div>
+
+          <div class="empty-state" id="empty-state">
+            <strong>Klaar voor de eerste richting.</strong>
+            <span>Vul links de briefing in en maak drie logo-concepten.</span>
+          </div>
+
+          <div class="concept-grid" id="concept-grid" aria-live="polite"></div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
