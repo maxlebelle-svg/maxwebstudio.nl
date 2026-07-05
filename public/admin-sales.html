@@ -515,6 +515,23 @@
             <label for="leadfinder-filter-score">Score<select id="leadfinder-filter-score"><option value="">Alle scores</option></select></label>
           </div>
 
+          <section class="admin-card admin-developer-only" id="legacy-lead-import-panel" aria-labelledby="legacy-lead-import-title">
+            <div class="admin-profile-form-heading">
+              <div>
+                <strong id="legacy-lead-import-title">Legacy lead import</strong>
+                <span>Scan lokale browserleads, exporteer een backup en importeer geselecteerde leads veilig naar de centrale CRM.</span>
+              </div>
+              <mark class="status-badge status-prepared" id="legacy-lead-import-state">Niet gescand</mark>
+            </div>
+            <div class="admin-profile-actions admin-action-groups">
+              <button class="button secondary" id="legacy-lead-scan" type="button">Scan local browser leads</button>
+              <button class="button secondary" id="legacy-lead-export" type="button" disabled>Export local leads JSON</button>
+              <button class="button primary" id="legacy-lead-import-selected" type="button" disabled>Import selected to central leads</button>
+            </div>
+            <p class="admin-form-message" id="legacy-lead-import-message" role="status" aria-live="polite"></p>
+            <div class="admin-table leadfinder-table" id="legacy-lead-import-preview" role="table" aria-label="Legacy lead import preview"></div>
+          </section>
+
           <div class="active-filter-bar" id="leadfinder-active-filter" hidden>
             <strong>Alle leads</strong>
             <button class="button secondary" id="leadfinder-clear-quick-filter" type="button">Alle leads tonen</button>
@@ -18257,6 +18274,7 @@
         ensureLeadFinderDemoData,
         getLeadFinderLabel,
         getLeadFinderSummary,
+        normalizeLeadFinderLead,
         readLeadFinderLeads,
         updateLeadFinderLeadLocally,
       } from "./src/services/leadFinderService.js?v=20260704-admin-session-hotfix";
@@ -18295,6 +18313,15 @@
         filterIndustry: document.getElementById("leadfinder-filter-industry"),
         filterRegion: document.getElementById("leadfinder-filter-region"),
         filterScore: document.getElementById("leadfinder-filter-score"),
+        legacyImport: {
+          panel: document.getElementById("legacy-lead-import-panel"),
+          state: document.getElementById("legacy-lead-import-state"),
+          scan: document.getElementById("legacy-lead-scan"),
+          export: document.getElementById("legacy-lead-export"),
+          importSelected: document.getElementById("legacy-lead-import-selected"),
+          message: document.getElementById("legacy-lead-import-message"),
+          preview: document.getElementById("legacy-lead-import-preview"),
+        },
         activeFilter: document.getElementById("leadfinder-active-filter"),
         clearQuickFilter: document.getElementById("leadfinder-clear-quick-filter"),
         list: document.getElementById("leadfinder-list"),
@@ -18352,8 +18379,17 @@
         { value: "lisanne@maxwebstudio.nl", label: "Lisanne", aliases: ["lisanne", "lisanne post"] },
         { value: "renzo@maxwebstudio.nl", label: "Renzo", aliases: ["renzo"] },
       ];
+      const LEGACY_LEAD_IMPORT_KEYS = [
+        "maxwebstudioLeads",
+        "maxwebstudioSalesLeads",
+        "maxwebstudioLeadFinderLeads",
+        "maxwebstudioLeadfinderLeads",
+        "maxwebstudioCRMLeads",
+        "maxwebstudioLeadRequests",
+      ];
       const SALES_EMPLOYEE_FILTER_ROLES = new Set(["super_admin", "admin", "sales_manager", "sales_partner", "support", "designer", "developer"]);
       let leadfinderEmployeeFilterTokenMap = new Map();
+      let legacyLeadImportRows = [];
 
       function escapeHtml(value) {
         return String(value || "").replace(/[&<>"']/g, (character) => ({
@@ -19913,6 +19949,301 @@
         return getLeadfinderLeads().find((lead) => lead.id === selectedLeadFinderId) || null;
       }
 
+      function setLegacyLeadImportMessage(message, type = "success") {
+        const target = leadfinderElements.legacyImport?.message;
+        if (!target) return;
+        target.textContent = message;
+        target.className = `admin-form-message ${type}`;
+        if (message && ["success", "info", "warning", "error"].includes(type)) window.showToast?.(message, type);
+      }
+
+      function setLegacyLeadImportState(label, statusClass = "status-prepared") {
+        const target = leadfinderElements.legacyImport?.state;
+        if (!target) return;
+        target.textContent = label;
+        target.className = `status-badge ${statusClass}`;
+      }
+
+      function readLegacyLeadStorageValue(key) {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(key) || "null");
+          if (Array.isArray(parsed)) return parsed;
+          if (parsed && typeof parsed === "object") return Object.values(parsed).filter((item) => item && typeof item === "object");
+          return [];
+        } catch (error) {
+          logLeadfinderDiagnostic("Legacy lead storage kon niet worden gelezen", { key, error: error.message });
+          return [];
+        }
+      }
+
+      function employeeOptionsForImport() {
+        const options = new Map();
+        readKnownSalesEmployees().forEach((employee) => addEmployeeFilterOption(options, employee));
+        return [...options.values()].sort((a, b) => a.label.localeCompare(b.label, "nl"));
+      }
+
+      function findImportEmployee(value = "") {
+        const token = normalizeEmployeeFilterToken(value);
+        return employeeOptionsForImport().find((employee) => employee.value === token || employee.tokens.has(token)) || null;
+      }
+
+      function duplicateScoreForLead(candidate = {}, central = {}) {
+        let score = 0;
+        const candidateEmail = normalizeEmployeeFilterToken(candidate.email);
+        const centralEmail = normalizeEmployeeFilterToken(central.email);
+        const candidatePhone = normalizeComparablePhone(candidate.phone);
+        const centralPhone = normalizeComparablePhone(central.phone);
+        const candidateWebsite = normalizeComparableUrl(candidate.websiteUrl);
+        const centralWebsite = normalizeComparableUrl(central.websiteUrl);
+        const candidateCompany = normalizeEmployeeFilterToken(candidate.companyName);
+        const centralCompany = normalizeEmployeeFilterToken(central.companyName);
+        if (candidateEmail && centralEmail && candidateEmail === centralEmail) score += 5;
+        if (candidatePhone && centralPhone && candidatePhone === centralPhone) score += 4;
+        if (candidateWebsite && centralWebsite && candidateWebsite === centralWebsite) score += 4;
+        if (candidateCompany && centralCompany && candidateCompany === centralCompany) score += 2;
+        return score;
+      }
+
+      function detectLegacyLeadDuplicate(lead = {}, centralLeads = getLeadfinderLeads()) {
+        const matches = centralLeads
+          .map((central) => ({ central, score: duplicateScoreForLead(lead, central) }))
+          .filter((match) => match.score > 0)
+          .sort((a, b) => b.score - a.score);
+        const best = matches[0] || null;
+        return {
+          score: best?.score || 0,
+          isProbableDuplicate: Boolean(best && best.score >= 4),
+          label: best ? `${best.central.companyName || "Bestaande lead"} (${best.score})` : "Nieuw",
+          matchId: best?.central.id || "",
+        };
+      }
+
+      function normalizeLegacyLeadForImport(raw = {}, sourceKey = "", sourceIndex = 0) {
+        const normalized = normalizeLeadFinderLead({
+          ...raw,
+          companyName: raw.companyName || raw.company || raw.businessName || raw.packageInterest,
+          contactName: raw.contactName || raw.contact || raw.name || raw.contactPerson,
+          websiteUrl: raw.websiteUrl || raw.website,
+          notes: raw.notes || raw.message || raw.packageInterest || "",
+          callStatus: raw.callStatus || raw.status || "nieuw",
+          source: raw.source || sourceKey,
+          metadata: {
+            ...(raw.metadata && typeof raw.metadata === "object" ? raw.metadata : {}),
+            legacySourceKey: sourceKey,
+            legacySourceIndex: sourceIndex,
+          },
+        });
+        const owner = normalizeLeadOwner({ ...raw, ...normalized, metadata: normalized.metadata });
+        return {
+          id: `${sourceKey}:${sourceIndex}:${normalized.id}`,
+          sourceKey,
+          sourceIndex,
+          raw,
+          lead: normalized,
+          owner,
+          selectedOwner: owner.normalizedKey || "",
+          duplicate: detectLegacyLeadDuplicate(normalized),
+        };
+      }
+
+      function scanLegacyLeadImports() {
+        const centralLeads = getLeadfinderLeads();
+        const rows = [];
+        const keysFound = [];
+        LEGACY_LEAD_IMPORT_KEYS.forEach((key) => {
+          const records = readLegacyLeadStorageValue(key);
+          if (records.length) keysFound.push(key);
+          records.forEach((record, index) => {
+            const row = normalizeLegacyLeadForImport(record, key, index);
+            row.duplicate = detectLegacyLeadDuplicate(row.lead, centralLeads);
+            rows.push(row);
+          });
+        });
+        const unique = [];
+        const seen = new Set();
+        rows.forEach((row) => {
+          const key = [
+            row.lead.email && `email:${normalizeEmployeeFilterToken(row.lead.email)}`,
+            row.lead.phone && `phone:${normalizeComparablePhone(row.lead.phone)}`,
+            row.lead.websiteUrl && `website:${normalizeComparableUrl(row.lead.websiteUrl)}`,
+            row.lead.companyName && `company:${normalizeEmployeeFilterToken(row.lead.companyName)}`,
+            row.id,
+          ].filter(Boolean)[0];
+          if (key && seen.has(key)) return;
+          if (key) seen.add(key);
+          unique.push(row);
+        });
+        legacyLeadImportRows = unique;
+        renderLegacyLeadImportPreview();
+        setLegacyLeadImportState(unique.length ? `${unique.length} gevonden` : "Geen lokale leads", unique.length ? "status-warning" : "status-prepared");
+        setLegacyLeadImportMessage(unique.length ? `${unique.length} lokale lead(s) gevonden. Controleer de preview en exporteer eerst een backup.` : "Geen lokale legacy leads gevonden in deze browser.", unique.length ? "warning" : "success");
+        logLeadfinderDiagnostic("Legacy lead import scan", {
+          localStorageKeysFound: keysFound,
+          localLeadsDetected: unique.length,
+          centralLeadsLoaded: centralLeads.length,
+          duplicateMatches: unique.filter((row) => row.duplicate.isProbableDuplicate).length,
+        });
+      }
+
+      function legacyImportOwnerSelect(row) {
+        const options = employeeOptionsForImport();
+        const current = findImportEmployee(row.selectedOwner || row.owner.normalizedKey);
+        return `
+          <select data-legacy-import-owner="${escapeHtml(row.id)}" aria-label="Medewerker voor import">
+            <option value="">Onbekend</option>
+            ${options.map((option) => `<option value="${escapeHtml(option.value)}" ${current?.value === option.value ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
+          </select>
+        `;
+      }
+
+      function renderLegacyLeadImportPreview() {
+        const preview = leadfinderElements.legacyImport?.preview;
+        if (!preview) return;
+        const exportButton = leadfinderElements.legacyImport?.export;
+        const importButton = leadfinderElements.legacyImport?.importSelected;
+        if (exportButton) exportButton.disabled = !legacyLeadImportRows.length;
+        if (importButton) importButton.disabled = !legacyLeadImportRows.some((row) => !row.duplicate.isProbableDuplicate);
+        if (!legacyLeadImportRows.length) {
+          preview.innerHTML = `
+            <article class="admin-card request-card request-state-card">
+              <div><strong>Nog geen legacy leads gescand</strong><span>Klik op Scan local browser leads om deze browser te controleren.</span></div>
+            </article>
+          `;
+          return;
+        }
+        preview.innerHTML = `
+          <div class="admin-table-row admin-table-head" role="row">
+            <span>Import</span><span>Bedrijf</span><span>Contact</span><span>Telefoon</span><span>E-mail</span><span>Website</span><span>Status</span><span>Medewerker</span><span>Aangemaakt</span><span>Bron</span><span>Duplicate</span>
+          </div>
+          ${legacyLeadImportRows.map((row) => `
+            <div class="admin-table-row" role="row" data-legacy-import-row="${escapeHtml(row.id)}">
+              <span><input type="checkbox" data-legacy-import-check="${escapeHtml(row.id)}" ${row.duplicate.isProbableDuplicate ? "" : "checked"} /></span>
+              <span>${escapeHtml(row.lead.companyName || "-")}</span>
+              <span>${escapeHtml(row.lead.contactName || "-")}</span>
+              <span>${escapeHtml(row.lead.phone || "-")}</span>
+              <span>${escapeHtml(row.lead.email || "-")}</span>
+              <span>${escapeHtml(row.lead.websiteUrl || "-")}</span>
+              <span>${escapeHtml(getLeadFinderLabel(LEADFINDER_CALL_STATUSES, row.lead.callStatus))}</span>
+              <span>${legacyImportOwnerSelect(row)}</span>
+              <span>${escapeHtml(formatLeadDate(row.lead.createdAt))}</span>
+              <span>${escapeHtml(row.sourceKey)}</span>
+              <span><mark class="status-badge ${row.duplicate.isProbableDuplicate ? "status-warning" : "status-active"}">${escapeHtml(row.duplicate.isProbableDuplicate ? `Mogelijk dubbel: ${row.duplicate.label}` : "Nieuw")}</mark></span>
+            </div>
+          `).join("")}
+        `;
+      }
+
+      function updateLegacyImportActions() {
+        const checkedCount = leadfinderElements.legacyImport?.preview?.querySelectorAll("[data-legacy-import-check]:checked").length || 0;
+        if (leadfinderElements.legacyImport?.importSelected) {
+          leadfinderElements.legacyImport.importSelected.disabled = checkedCount === 0;
+        }
+      }
+
+      function updateLegacyImportOwner(rowId, ownerValue) {
+        const row = legacyLeadImportRows.find((item) => item.id === rowId);
+        if (!row) return;
+        row.selectedOwner = ownerValue;
+      }
+
+      function legacyLeadImportPayload(row) {
+        const selectedOwner = findImportEmployee(row.selectedOwner || row.owner.normalizedKey);
+        const ownerEmail = selectedOwner?.value?.includes("@") ? selectedOwner.value : row.owner.email;
+        const ownerName = selectedOwner?.label || row.owner.displayName || ownerEmail || "";
+        return {
+          ...row.lead,
+          ownerEmail,
+          ownerName,
+          medewerker: ownerName,
+          medewerkerEmail: ownerEmail,
+          employee: ownerName,
+          employeeEmail: ownerEmail,
+          assignedUserEmail: ownerEmail,
+          assignedUserName: ownerName,
+          assignedToEmail: ownerEmail,
+          assignedToName: ownerName,
+          userEmail: ownerEmail,
+          userName: ownerName,
+          source: row.lead.source || `legacy-${row.sourceKey}`,
+          metadata: {
+            ...(row.lead.metadata || {}),
+            legacyImported: true,
+            legacySourceKey: row.sourceKey,
+            legacySourceIndex: row.sourceIndex,
+            medewerker: ownerName,
+            medewerkerEmail: ownerEmail,
+            employee: ownerName,
+            employeeEmail: ownerEmail,
+            assignedToEmail: ownerEmail,
+            assignedToName: ownerName,
+          },
+        };
+      }
+
+      function exportLegacyLeadImports() {
+        if (!legacyLeadImportRows.length) {
+          setLegacyLeadImportMessage("Scan eerst lokale leads voordat je exporteert.", "error");
+          return;
+        }
+        const payload = {
+          exportedAt: new Date().toISOString(),
+          source: "admin-sales legacy lead import preview",
+          rows: legacyLeadImportRows.map((row) => ({
+            sourceKey: row.sourceKey,
+            sourceIndex: row.sourceIndex,
+            lead: row.lead,
+            owner: row.owner,
+            duplicate: row.duplicate,
+            raw: row.raw,
+          })),
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `maxwebstudio-legacy-leads-${new Date().toISOString().slice(0, 10)}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+        setLegacyLeadImportMessage("Legacy leads JSON geëxporteerd.", "success");
+      }
+
+      async function importSelectedLegacyLeads() {
+        const checkedIds = Array.from(leadfinderElements.legacyImport?.preview?.querySelectorAll("[data-legacy-import-check]:checked") || []).map((input) => input.dataset.legacyImportCheck);
+        const rows = legacyLeadImportRows.filter((row) => checkedIds.includes(row.id));
+        if (!rows.length) {
+          setLegacyLeadImportMessage("Selecteer minimaal één lead om centraal te importeren.", "error");
+          return;
+        }
+        if (!window.confirm(`${rows.length} geselecteerde legacy lead(s) importeren naar de centrale CRM? Lokale data wordt niet verwijderd.`)) return;
+        let imported = 0;
+        let skipped = 0;
+        const errors = [];
+        for (const row of rows) {
+          row.duplicate = detectLegacyLeadDuplicate(row.lead, getLeadfinderLeads());
+          if (row.duplicate.isProbableDuplicate && !window.confirm(`${row.lead.companyName || "Deze lead"} lijkt al centraal te bestaan als ${row.duplicate.label}. Toch importeren?`)) {
+            skipped += 1;
+            continue;
+          }
+          try {
+            const result = await leadApiRequest("POST", legacyLeadImportPayload(row));
+            imported += 1;
+            logLeadfinderDiagnostic("Legacy lead centraal geïmporteerd", { row: row.id, response: result });
+          } catch (error) {
+            errors.push({ row: row.id, message: error.message });
+          }
+        }
+        await refreshLeads({ keepSelection: false });
+        scanLegacyLeadImports();
+        const message = `${imported} lead(s) geïmporteerd, ${skipped} overgeslagen${errors.length ? `, ${errors.length} fout(en)` : ""}.`;
+        setLegacyLeadImportMessage(message, errors.length ? "warning" : "success");
+        logLeadfinderDiagnostic("Legacy lead import resultaat", {
+          importedCount: imported,
+          skippedCount: skipped,
+          errors,
+          centralLeadsLoaded: getLeadfinderLeads().length,
+        });
+      }
+
       function leadInitials(lead = {}) {
         const source = String(lead.companyName || lead.contactName || "Lead").trim();
         const words = source.split(/\s+/).filter(Boolean);
@@ -20759,6 +21090,14 @@
                   leadfinderElements.search?.focus();
                 });
                 leadfinderElements.clearQuickFilter?.addEventListener("click", clearLeadfinderQuickFilter);
+                leadfinderElements.legacyImport?.scan?.addEventListener("click", scanLegacyLeadImports);
+                leadfinderElements.legacyImport?.export?.addEventListener("click", exportLegacyLeadImports);
+                leadfinderElements.legacyImport?.importSelected?.addEventListener("click", importSelectedLegacyLeads);
+                leadfinderElements.legacyImport?.preview?.addEventListener("change", (event) => {
+                  const ownerSelect = event.target.closest("[data-legacy-import-owner]");
+                  if (ownerSelect) updateLegacyImportOwner(ownerSelect.dataset.legacyImportOwner, ownerSelect.value);
+                  if (event.target.closest("[data-legacy-import-check]")) updateLegacyImportActions();
+                });
                 window.addEventListener("maxwebstudio:leadQuickFilter", (event) => {
                   applyLeadfinderQuickFilter(event.detail?.type || "open_leads", event.detail?.title || "Open leads");
                 });
