@@ -2016,15 +2016,15 @@
           </div>
           <div class="settings-status-list admin-profile-wide" id="invoice-source-detail"></div>
           <div class="settings-status-list admin-profile-wide" id="invoice-history-list" hidden></div>
-          <div class="admin-profile-actions">
+          <div class="admin-profile-actions invoice-action-bar">
             <button class="button primary" id="invoice-save" type="submit">Factuur opslaan</button>
-            <button class="button secondary" id="invoice-mark-sent" type="button">Zet op verzonden</button>
-            <button class="button secondary" id="invoice-mark-paid" type="button">Markeer betaald</button>
+            <a class="button secondary is-disabled" id="invoice-open-view" href="#" target="_blank" rel="noopener" aria-disabled="true">Bekijken</a>
+            <button class="button secondary" id="invoice-send-email" type="button">Verstuur factuur</button>
             <button class="button secondary" id="invoice-demo-payment" type="button">Maak betaallink</button>
-            <a class="button secondary is-disabled" id="invoice-open-view" href="#" target="_blank" rel="noopener" aria-disabled="true">Open factuurpagina</a>
+            <a class="button secondary is-disabled" id="invoice-open-payment" href="#" target="_blank" rel="noopener" aria-disabled="true">Open betaallink</a>
+            <button class="button secondary" id="invoice-mark-paid" type="button">Markeer betaald</button>
+            <button class="button secondary" id="invoice-mark-sent" type="button">Zet op verzonden</button>
             <button class="button secondary" id="invoice-copy-view" type="button">Kopieer factuurlink</button>
-            <button class="button secondary" id="invoice-send-email" type="button">Factuur mailen</button>
-            <a class="button secondary is-disabled" id="invoice-open-payment" href="#" target="_blank" rel="noopener" aria-disabled="true">Open betaalpagina</a>
             <button class="button secondary" id="invoice-open-quote" type="button">Open offerte</button>
             <button class="button secondary" id="invoice-open-subscription" type="button">Open abonnement</button>
             <button class="button secondary" id="invoice-refresh-supabase" type="button">Ververs uit Supabase</button>
@@ -10274,6 +10274,18 @@
           return status || "concept";
         }
 
+        function isInvoicePaid(invoice = {}) {
+          return normalizeInvoiceStatus(invoice.status || invoice.paymentStatus || invoice.molliePaymentStatus) === "betaald";
+        }
+
+        function isInvoiceClosed(invoice = {}) {
+          return ["geannuleerd", "gearchiveerd"].includes(normalizeInvoiceStatus(invoice.status || invoice.paymentStatus || invoice.molliePaymentStatus));
+        }
+
+        function invoicePaymentLink(invoice = {}) {
+          return invoice?.mollieCheckoutUrl || invoice?.mollie_checkout_url || invoice?.paymentLink || "";
+        }
+
         function calculateInvoiceTotals(lines = []) {
           return lines.reduce((totals, line) => {
             const quantity = Number(line.quantity || 0);
@@ -15090,11 +15102,23 @@
         }
 
         function updatePaymentLinkActions(invoice) {
-          const link = invoiceFields.paymentLink.value || invoice?.paymentLink || "";
+          const paid = isInvoicePaid(invoice || { status: invoiceFields.status.value });
+          const closed = isInvoiceClosed(invoice || { status: invoiceFields.status.value });
+          const link = invoiceFields.paymentLink.value || invoicePaymentLink(invoice) || "";
           invoiceOpenPayment.href = link || "#";
-          invoiceOpenPayment.classList.toggle("is-disabled", !link);
-          invoiceOpenPayment.toggleAttribute("aria-disabled", !link);
-          invoiceCopyPayment.disabled = !link;
+          invoiceOpenPayment.hidden = paid || closed || !link;
+          invoiceOpenPayment.classList.toggle("is-disabled", !link || paid || closed);
+          invoiceOpenPayment.toggleAttribute("aria-disabled", !link || paid || closed);
+          invoiceDemoPayment.hidden = paid || closed || Boolean(link);
+          invoiceDemoPayment.disabled = paid || closed;
+          invoiceCopyPayment.hidden = paid || closed || !link;
+          invoiceCopyPayment.disabled = paid || closed || !link;
+          invoiceMarkPaid.hidden = paid || closed;
+          invoiceMarkPaid.disabled = paid || closed;
+          invoiceMarkSent.hidden = closed;
+          invoiceMarkSent.disabled = ["verzonden", "betaald", "geannuleerd", "gearchiveerd"].includes(normalizeInvoiceStatus(invoice?.status || invoiceFields.status.value));
+          invoiceSendEmail.hidden = closed;
+          invoiceSendEmail.disabled = closed || !state.selectedInvoiceId;
         }
 
         function updateInvoiceViewActions(invoice) {
@@ -15319,7 +15343,7 @@
                   }
                   const invoices = filteredInvoices();
                   updateInvoiceQuickFilterBar(invoices.length);
-                  if (!invoices.length) {
+          if (!invoices.length) {
                     renderState(invoiceList, "Geen facturen gevonden", invoiceQuickFilter ? "Geen facturen gevonden voor dit filter." : "Pas je zoekopdracht of filters aan.", "Geen match");
                     return;
                   }
@@ -15328,10 +15352,13 @@
           ["Factuurnummer", "Klant", "Type", "Status", "Bron", "Datum", "Vervaldatum", "Totaal", "Acties"].forEach((label) => head.append(createCell(label)));
           invoiceList.append(head);
           invoices.forEach((invoice) => {
+            const paid = isInvoicePaid(invoice);
+            const closed = isInvoiceClosed(invoice);
+            const paymentLink = invoicePaymentLink(invoice);
             const row = document.createElement("div");
             row.className = "admin-table-row invoice-row";
             const actions = document.createElement("span");
-            actions.className = "website-actions";
+            actions.className = "website-actions invoice-row-actions";
             const edit = document.createElement("button");
             edit.className = "button secondary";
             edit.type = "button";
@@ -15341,45 +15368,45 @@
             markPaid.className = "button secondary";
             markPaid.type = "button";
             markPaid.textContent = "Markeer betaald";
-            markPaid.disabled = invoice.status === "betaald";
+            markPaid.hidden = paid || closed;
+            markPaid.disabled = paid || closed;
             markPaid.addEventListener("click", () => setInvoiceStatus(invoice.id, "betaald", markPaid));
             const markSent = document.createElement("button");
             markSent.className = "button secondary";
             markSent.type = "button";
-            markSent.textContent = "Zet op verzonden";
-            markSent.disabled = invoice.status === "verzonden" || invoice.status === "betaald";
+            markSent.textContent = "Verstuur factuur";
+            markSent.hidden = closed;
+            markSent.disabled = ["verzonden", "betaald", "geannuleerd", "gearchiveerd"].includes(normalizeInvoiceStatus(invoice.status));
             markSent.addEventListener("click", () => setInvoiceStatus(invoice.id, "verzonden", markSent));
             const payment = document.createElement("button");
             payment.className = "button secondary";
             payment.type = "button";
-            payment.textContent = "Maak betaallink";
-            payment.addEventListener("click", () => createMolliePayment(invoice.id, payment));
+            payment.textContent = paymentLink ? "Open betaallink" : "Maak betaallink";
+            if (paymentLink) {
+              payment.addEventListener("click", () => window.open(paymentLink, "_blank", "noopener"));
+            } else {
+              payment.addEventListener("click", () => createMolliePayment(invoice.id, payment));
+            }
+            payment.hidden = paid || closed;
             const viewInvoice = document.createElement("a");
             viewInvoice.className = "button secondary";
             viewInvoice.href = invoiceViewUrl(invoice.id);
             viewInvoice.target = "_blank";
             viewInvoice.rel = "noopener";
-            viewInvoice.textContent = "Open factuur";
+            viewInvoice.textContent = "Bekijken";
             const sendEmail = document.createElement("button");
             sendEmail.className = "button secondary";
             sendEmail.type = "button";
-            sendEmail.textContent = "Factuur mailen";
+            sendEmail.textContent = "Verstuur factuur";
+            sendEmail.hidden = closed;
+            sendEmail.disabled = closed;
             sendEmail.addEventListener("click", () => sendInvoiceMailOrPreview(invoice.id, "invoice_sent", sendEmail));
             const cancel = document.createElement("button");
             cancel.className = "button secondary danger";
             cancel.type = "button";
             cancel.textContent = "Annuleer";
             cancel.addEventListener("click", () => cancelInvoice(invoice.id));
-            actions.append(edit, viewInvoice, sendEmail, markPaid, markSent, payment);
-            if (invoice.paymentLink) {
-              const checkout = document.createElement("a");
-              checkout.className = "button secondary";
-              checkout.href = invoice.paymentLink;
-              checkout.target = "_blank";
-              checkout.rel = "noopener";
-              checkout.textContent = "Open betaalpagina";
-              actions.append(checkout);
-            }
+            actions.append(edit, sendEmail, payment, markPaid, markSent);
             actions.append(cancel);
             row.append(
               createCell(invoice.invoiceNumber),
@@ -15646,13 +15673,21 @@
           state.invoiceWriteReadiness = readiness;
           renderInvoiceSourceDetail(invoice || null, readiness);
           invoiceHistoryList.hidden = true;
+          const invoicePaid = isInvoicePaid(invoice || { status: invoiceFields.status.value });
+          const invoiceClosed = isInvoiceClosed(invoice || { status: invoiceFields.status.value });
+          const modalPaymentLink = invoicePaymentLink(invoice || {}) || invoiceFields.paymentLink.value;
           invoiceRefreshSupabase.disabled = !invoice || !isSupabaseManagedInvoice(invoice);
           invoiceHistory.disabled = !invoice;
           invoiceReactivate.disabled = !invoice || invoice.status !== "gearchiveerd";
           invoiceCancel.disabled = invoice?.status === "gearchiveerd";
-          invoiceMarkSent.disabled = invoice?.status === "verzonden" || invoice?.status === "betaald" || invoice?.status === "gearchiveerd";
-          invoiceMarkPaid.disabled = invoice?.status === "betaald" || invoice?.status === "gearchiveerd";
-          invoiceSendEmail.disabled = !invoice || invoice?.status === "gearchiveerd";
+          invoiceMarkSent.hidden = invoiceClosed;
+          invoiceMarkSent.disabled = ["verzonden", "betaald", "geannuleerd", "gearchiveerd"].includes(normalizeInvoiceStatus(invoice?.status || invoiceFields.status.value));
+          invoiceMarkPaid.hidden = invoicePaid || invoiceClosed;
+          invoiceMarkPaid.disabled = invoicePaid || invoiceClosed;
+          invoiceOpenPayment.hidden = invoicePaid || invoiceClosed || !modalPaymentLink;
+          invoiceDemoPayment.hidden = invoicePaid || invoiceClosed || Boolean(modalPaymentLink);
+          invoiceSendEmail.hidden = invoiceClosed;
+          invoiceSendEmail.disabled = !invoice || invoiceClosed;
           setBillingMessage(invoiceMessage, "", "");
           invoiceModal.hidden = false;
           document.body.classList.add("admin-modal-open");
@@ -17862,6 +17897,7 @@
         });
         invoiceFields.website.addEventListener("change", handleInvoiceWebsiteChange);
         invoiceFields.paymentLink.addEventListener("input", () => updatePaymentLinkActions(invoiceById(state.selectedInvoiceId)));
+        invoiceFields.status.addEventListener("change", () => updatePaymentLinkActions(invoiceById(state.selectedInvoiceId) || { status: invoiceFields.status.value }));
         invoiceMarkSent.addEventListener("click", () => state.selectedInvoiceId && setInvoiceStatus(state.selectedInvoiceId, "verzonden", invoiceMarkSent));
         invoiceMarkPaid.addEventListener("click", () => state.selectedInvoiceId && setInvoiceStatus(state.selectedInvoiceId, "betaald", invoiceMarkPaid));
         invoiceDemoPayment.addEventListener("click", () => state.selectedInvoiceId && createMolliePayment(state.selectedInvoiceId, invoiceDemoPayment));

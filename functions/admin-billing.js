@@ -703,6 +703,7 @@ function buildInvoiceContext(payload, profile, amount) {
     invoiceDate: cleanText(payload.invoiceDate),
     type: cleanText(payload.type),
   };
+  // TODO: move invoice line context to a dedicated invoice_items table once the production schema supports it.
   const notes = [
     cleanText(payload.notes),
     `\n---\nFactuurregels: ${JSON.stringify(context)}`,

@@ -60,13 +60,20 @@
         const statusLabels = {
           concept: "Concept",
           verzonden: "Openstaand",
+          sent: "Openstaand",
           open: "Openstaand",
           verlopen: "Verlopen",
+          expired: "Verlopen",
           betaald: "Betaald",
           paid: "Betaald",
           geannuleerd: "Geannuleerd",
+          canceled: "Geannuleerd",
+          cancelled: "Geannuleerd",
           gearchiveerd: "Gearchiveerd",
         };
+        const paidStatuses = new Set(["betaald", "paid"]);
+        const closedStatuses = new Set(["geannuleerd", "canceled", "cancelled", "gearchiveerd", "archived"]);
+        const technicalNoteMarker = "Factuurregels:";
 
         function readInvoices() {
           try {
@@ -101,9 +108,79 @@
           return row;
         }
 
+        function parseStoredInvoiceContext(notes = "") {
+          const text = String(notes || "");
+          const index = text.lastIndexOf(technicalNoteMarker);
+          if (index < 0) return {};
+          try {
+            const parsed = JSON.parse(text.slice(index + technicalNoteMarker.length).trim());
+            return parsed && typeof parsed === "object" ? parsed : {};
+          } catch (error) {
+            return {};
+          }
+        }
+
+        function publicNotes(notes = "") {
+          const text = String(notes || "").trim();
+          const markerIndex = text.lastIndexOf(`\n---\n${technicalNoteMarker}`);
+          if (markerIndex >= 0) return text.slice(0, markerIndex).trim();
+          const inlineIndex = text.lastIndexOf(technicalNoteMarker);
+          if (inlineIndex >= 0) return text.slice(0, inlineIndex).replace(/[-\s]+$/g, "").trim();
+          return text;
+        }
+
+        function safeLines(invoice = {}, context = {}) {
+          const source = Array.isArray(invoice.lines) && invoice.lines.length
+            ? invoice.lines
+            : Array.isArray(context.lines) && context.lines.length
+              ? context.lines
+              : [];
+          const lines = source.map((line) => {
+            const quantity = Number(line.quantity || 1);
+            const unitPrice = Number(line.unitPrice ?? line.unit_price ?? line.price ?? 0);
+            const vatRate = Number(line.vatRate ?? line.vat_rate ?? line.vatPercentage ?? line.vat_percentage ?? 21);
+            const subtotal = Number(line.subtotal ?? line.lineSubtotal ?? quantity * unitPrice);
+            const vat = Number(line.vat ?? line.lineVat ?? subtotal * (vatRate / 100));
+            return {
+              description: String(line.description || line.name || line.title || "").trim(),
+              quantity: Number.isFinite(quantity) ? quantity : 1,
+              unitPrice: Number.isFinite(unitPrice) ? unitPrice : 0,
+              vatRate: Number.isFinite(vatRate) ? vatRate : 21,
+              subtotal: Number.isFinite(subtotal) ? subtotal : 0,
+              vat: Number.isFinite(vat) ? vat : 0,
+            };
+          }).filter((line) => line.description);
+          if (lines.length) return lines;
+          return [{
+            description: invoice.title || "Factuurregel",
+            quantity: 1,
+            unitPrice: Number(invoice.amount || invoice.total || 0),
+            vatRate: 0,
+            subtotal: Number(invoice.amount || invoice.total || 0),
+            vat: 0,
+          }];
+        }
+
+        function invoiceTotals(invoice = {}, lines = [], context = {}) {
+          const calculated = lines.reduce((totals, line) => {
+            totals.subtotal += Number(line.subtotal ?? line.quantity * line.unitPrice) || 0;
+            totals.vat += Number(line.vat ?? 0) || 0;
+            return totals;
+          }, { subtotal: 0, vat: 0 });
+          calculated.total = calculated.subtotal + calculated.vat;
+          const subtotal = Number(invoice.subtotal ?? context.subtotal ?? calculated.subtotal);
+          const vat = Number(invoice.vat ?? invoice.vatAmount ?? context.vat ?? calculated.vat);
+          const total = Number(invoice.total ?? invoice.amount ?? context.total ?? subtotal + vat);
+          return {
+            subtotal: Number.isFinite(subtotal) ? subtotal : calculated.subtotal,
+            vat: Number.isFinite(vat) ? vat : calculated.vat,
+            total: Number.isFinite(total) ? total : calculated.total,
+          };
+        }
+
         function invoiceStatus(invoice) {
           const normalized = String(invoice.status || invoice.paymentStatus || "open").toLowerCase();
-          const isOverdue = invoice.dueDate && !["betaald", "paid", "geannuleerd"].includes(normalized) && new Date(invoice.dueDate) < new Date();
+          const isOverdue = invoice.dueDate && !["betaald", "paid", "geannuleerd", "canceled", "cancelled"].includes(normalized) && new Date(invoice.dueDate) < new Date();
           if (isOverdue) return "verlopen";
           return normalized;
         }
@@ -122,12 +199,14 @@
             return;
           }
 
+          const context = parseStoredInvoiceContext(invoice.notes);
           const status = invoiceStatus(invoice);
           const statusLabel = statusLabels[status] || statusLabels[invoice.status] || invoice.status || "Openstaand";
-          const lines = Array.isArray(invoice.lines) && invoice.lines.length ? invoice.lines : [{ description: invoice.title || "Factuurregel", quantity: 1, unitPrice: invoice.amount || invoice.total || 0, vatRate: 21 }];
-          const subtotal = Number(invoice.subtotal || lines.reduce((sum, line) => sum + Number(line.quantity || 1) * Number(line.unitPrice || 0), 0));
-          const vat = Number(invoice.vat || lines.reduce((sum, line) => sum + (Number(line.quantity || 1) * Number(line.unitPrice || 0) * Number(line.vatRate || 0)) / 100, 0));
-          const total = Number(invoice.total || invoice.amount || subtotal + vat);
+          const lines = safeLines(invoice, context);
+          const { subtotal, vat, total } = invoiceTotals(invoice, lines, context);
+          const cleanNotes = publicNotes(invoice.notes);
+          const isPaid = paidStatuses.has(status);
+          const isClosed = closedStatuses.has(status);
 
           title.textContent = invoice.invoiceNumber || "Factuur";
           subtitle.textContent = `${invoice.customerCompany || invoice.customerName || "Klant"} - ${statusLabel}`;
@@ -139,7 +218,7 @@
           const statusBadge = createText("span", `invoice-status-badge invoice-status-${status}`, statusLabel);
           header.append(headingGroup, statusBadge);
 
-          const intro = createText("p", "summary-note", invoice.notes || "Hieronder vind je het overzicht van deze factuur. Je kunt deze pagina printen of opslaan als PDF.");
+          const intro = createText("p", "summary-note", cleanNotes || "Hieronder vind je het overzicht van deze factuur. Je kunt deze pagina printen of opslaan als PDF.");
 
           const meta = document.createElement("dl");
           meta.className = "summary-lines invoice-document-meta";
@@ -147,10 +226,10 @@
             createRow("Klant", invoice.customerCompany || invoice.customerName || "-"),
             createRow("E-mail", invoice.customerEmail || "-"),
             createRow("Website", invoice.websiteDomain || invoice.websiteName || "-"),
-            createRow("Project", invoice.projectName || invoice.type || "-"),
-            createRow("Factuurdatum", formatDate(invoice.invoiceDate || invoice.createdAt)),
+            createRow("Project/type", invoice.projectName || context.type || invoice.type || "-"),
+            createRow("Factuurdatum", formatDate(invoice.invoiceDate || context.invoiceDate || invoice.createdAt)),
             createRow("Vervaldatum", formatDate(invoice.dueDate)),
-            createRow("Betaald op", formatDate(invoice.paidAt)),
+            ...(isPaid ? [createRow("Betaald op", formatDate(invoice.paidAt))] : []),
             createRow("Status", statusLabel)
           );
 
@@ -164,9 +243,11 @@
             const quantity = Number(line.quantity || 1);
             const unitPrice = Number(line.unitPrice || line.price || 0);
             const vatRate = Number(line.vatRate || 0);
-            const lineTotal = quantity * unitPrice;
             const row = document.createElement("div");
             row.className = "invoice-line-row";
+            const subtotal = Number(line.subtotal ?? quantity * unitPrice);
+            const vat = Number(line.vat ?? subtotal * (vatRate / 100));
+            const lineTotal = subtotal + vat;
             row.append(
               createText("span", "", line.description || invoice.title || "Factuurregel"),
               createText("span", "", String(quantity)),
@@ -184,7 +265,7 @@
           const actions = document.createElement("div");
           actions.className = "invoice-document-actions";
           const paymentLink = invoice.mollieCheckoutUrl || invoice.mollie_checkout_url || invoice.paymentLink || "";
-          if (paymentLink && !["betaald", "paid"].includes(status)) {
+          if (paymentLink && !isPaid && !isClosed) {
             const pay = document.createElement("a");
             pay.className = "button primary";
             pay.href = paymentLink;
@@ -193,7 +274,7 @@
             actions.append(pay);
           }
           const print = document.createElement("button");
-          print.className = paymentLink && !["betaald", "paid"].includes(status) ? "button secondary" : "button primary";
+          print.className = paymentLink && !isPaid && !isClosed ? "button secondary" : "button primary";
           print.type = "button";
           print.textContent = "Print / opslaan als PDF";
           print.addEventListener("click", () => window.print());
@@ -203,9 +284,11 @@
           portal.textContent = "Terug naar klantportaal";
           actions.append(print, portal);
 
-          const noteText = ["betaald", "paid"].includes(status)
+          const noteText = isPaid
             ? "Deze factuur staat als betaald geregistreerd."
-            : paymentLink
+            : isClosed
+              ? "Deze factuur is gesloten. Neem contact op als je hierover vragen hebt."
+              : paymentLink
               ? "Je kunt deze factuur veilig betalen via de betaalknop. Na betaling werken we de status automatisch bij."
               : "Er staat nog geen betaallink klaar. Neem contact op als je direct wilt betalen of vragen hebt over deze factuur.";
           const note = createText("p", "admin-form-message", noteText);

@@ -424,6 +424,7 @@ export function mapLocalInvoiceToSupabase(invoice = {}) {
 
 function buildProductionInvoiceNotes(invoice = {}, context = {}) {
   const normalized = normalizeInvoice(invoice);
+  // TODO: move invoice line context to a dedicated invoice_items table once the production schema supports it.
   const storedContext = {
     ...(normalized.metadata || {}),
     localStorageId: normalized.id,
