@@ -28,7 +28,6 @@ const SUBSCRIPTION_FIELDS = [
 ].join(",");
 const QUOTE_FIELDS = "id,customer_id,website_id,project_id,quote_number,title,amount,currency,status,accepted_at,created_at,updated_at";
 const BILLING_INVOICE_FIELDS = "id,profile_id,customer_auth_user_id,invoice_number,title,amount,status,due_date,paid_at,mollie_payment_id,mollie_payment_status,created_at,updated_at";
-const INVOICE_FIELDS = "id,customer_id,website_id,project_id,invoice_number,title,subtotal,vat,total,status,due_date,paid_at,payment_link,created_at,updated_at";
 
 exports.handler = async (event) => {
   try {
@@ -324,14 +323,8 @@ async function fetchRows(supabaseUrl, serviceRoleKey, table, fields, order, limi
 }
 
 async function fetchInvoices(supabaseUrl, serviceRoleKey) {
-  const [billingInvoices, centralInvoices] = await Promise.all([
-    fetchRows(supabaseUrl, serviceRoleKey, "customer_invoices", BILLING_INVOICE_FIELDS, "created_at.desc.nullslast", 1000),
-    fetchRows(supabaseUrl, serviceRoleKey, "invoices", INVOICE_FIELDS, "created_at.desc.nullslast", 1000),
-  ]);
-  return mergeInvoices([
-    ...billingInvoices.map((invoice) => normalizeBillingInvoice(invoice)),
-    ...centralInvoices.map((invoice) => normalizeCentralInvoice(invoice)),
-  ]);
+  const billingInvoices = await fetchRows(supabaseUrl, serviceRoleKey, "customer_invoices", BILLING_INVOICE_FIELDS, "created_at.desc.nullslast", 1000);
+  return mergeInvoices(billingInvoices.map((invoice) => normalizeBillingInvoice(invoice)));
 }
 
 function mergeInvoices(invoices) {
@@ -352,14 +345,6 @@ function normalizeBillingInvoice(invoice) {
     customer_id: cleanText(invoice.customer_id || invoice.profile_id),
     amount: amount(invoice.amount),
     revenue_source: "customer_invoices",
-  };
-}
-
-function normalizeCentralInvoice(invoice) {
-  return {
-    ...invoice,
-    amount: invoiceAmount(invoice),
-    revenue_source: "invoices",
   };
 }
 

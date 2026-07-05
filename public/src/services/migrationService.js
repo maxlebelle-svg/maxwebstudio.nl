@@ -24,7 +24,7 @@ export function getSupabaseTableMapping() {
     { module: "files", table: "files", keys: [STORAGE_KEYS.files], relation: "customer_id/project_id/website_id", status: "prepared" },
     { module: "quotes", table: "quotes", keys: [STORAGE_KEYS.quotes], relation: "customer_id -> customers.id", status: "prepared" },
     { module: "quoteLines", table: "quote_lines", keys: [STORAGE_KEYS.quotes], relation: "quote_id -> quotes.id; split from quote.lines[]", status: "prepared" },
-    { module: "invoices", table: "invoices", keys: [STORAGE_KEYS.invoices], relation: "customer_id/source_quote_id/subscription_id", status: "prepared" },
+    { module: "invoices", table: "customer_invoices", keys: [STORAGE_KEYS.invoices], relation: "profile_id -> customers.id", status: "prepared" },
     { module: "invoiceLines", table: "invoice_lines", keys: [STORAGE_KEYS.invoices], relation: "invoice_id -> invoices.id; split from invoice.lines[]", status: "prepared" },
     { module: "subscriptions", table: "subscriptions", keys: [STORAGE_KEYS.subscriptions], relation: "customer_id/website_id/last_invoice_id", status: "prepared" },
     { module: "settings", table: "settings", keys: [STORAGE_KEYS.settings], relation: "workspace_key = default", status: "prepared" },

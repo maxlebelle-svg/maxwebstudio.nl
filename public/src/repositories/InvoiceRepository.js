@@ -124,10 +124,8 @@ export function listLocalInvoices() {
 }
 
 export async function listSupabaseInvoices() {
-  const [rows, lineRows] = await Promise.all([
-    supabaseProvider.getAll("invoices", { limit: 100 }),
-    supabaseProvider.getAll("invoice_lines", { limit: 100 }),
-  ]);
+  const rows = await supabaseProvider.getAll("customer_invoices", { limit: 100 });
+  const lineRows = [];
   const linesByInvoiceId = new Map();
   lineRows.forEach((line) => {
     const invoiceId = line.invoice_id || "";
@@ -276,13 +274,19 @@ function localSubscriptionsById() {
 
 export function resolveInvoiceCustomerLink(invoice = {}) {
   const normalized = normalizeInvoice(invoice);
-  if (normalized.supabaseCustomerId) return { status: "linked", supabaseCustomerId: normalized.supabaseCustomerId, source: "invoice" };
+  if (normalized.supabaseCustomerId) return { status: "linked", supabaseCustomerId: normalized.supabaseCustomerId, profileId: normalized.supabaseCustomerId, source: "invoice" };
   const customer = localCustomersById().get(normalized.profileId || normalized.customerId);
-  if (!normalized.profileId && !normalized.customerId) return { status: "missing_customer", message: "Factuur mist customerId." };
+  if (!normalized.profileId && !normalized.customerId) return { status: "missing_customer", message: "Koppel de factuur aan een centrale klant." };
   if (!customer) return { status: "customer_not_found", message: "Lokale klant niet gevonden." };
-  const supabaseCustomerId = customer.supabaseCustomerId || customer._supabaseCustomerId || customer.id;
-  if (supabaseCustomerId && (customer._source === "supabase" || customer._source === "hybrid" || customer.supabaseCustomerId)) {
-    return { status: "linked", supabaseCustomerId, source: customer._source || "local_with_supabase_id" };
+  const supabaseCustomerId = customer.profileId || customer.supabaseCustomerId || customer._supabaseCustomerId || customer.id;
+  if (supabaseCustomerId && (customer._source === "supabase" || customer._source === "hybrid" || customer.profileId || customer.supabaseCustomerId)) {
+    return {
+      status: "linked",
+      supabaseCustomerId,
+      profileId: supabaseCustomerId,
+      customerAuthUserId: customer.authUserId || "",
+      source: customer._source || "local_with_supabase_id",
+    };
   }
   return { status: "waiting_customer_migration", localCustomerId: customer.id, message: "Wacht op customer migratie." };
 }
@@ -380,45 +384,36 @@ export function mapLocalInvoiceToSupabase(invoice = {}) {
   const quoteLink = resolveInvoiceQuoteLink(normalized);
   const subscriptionLink = resolveInvoiceSubscriptionLink(normalized);
   const totals = calculateInvoiceTotals(normalized.lines);
+  const profileId = customerLink.profileId || customerLink.supabaseCustomerId || normalized.supabaseCustomerId || normalized.profileId || normalized.customerId || null;
   return {
     invoice: {
-      external_id: normalized.id,
+      id: normalized.supabaseInvoiceId || normalized._supabaseInvoiceId || undefined,
+      profile_id: profileId,
+      customer_auth_user_id: customerLink.customerAuthUserId || normalized.customerAuthUserId || null,
       invoice_number: normalized.invoiceNumber,
-      customer_id: customerLink.supabaseCustomerId || null,
-      website_id: websiteLink.supabaseWebsiteId || null,
-      project_id: projectLink.supabaseProjectId || null,
-      quote_id: quoteLink.supabaseQuoteId || null,
-      subscription_id: subscriptionLink.supabaseSubscriptionId || null,
-      type: normalized.type,
       title: normalized.title,
       status: supabaseInvoiceStatus(normalized.status),
-      payment_status: supabasePaymentStatus(normalized.paymentStatus),
-      invoice_date: normalized.invoiceDate || null,
       due_date: normalized.dueDate || null,
       paid_at: normalized.paidAt || null,
-      subtotal_amount: totals.subtotal,
-      vat_amount: totals.vat,
-      total_amount: totals.total,
-      payment_link: normalized.paymentLink || "",
-      demo_payment_link: normalized.demoPaymentLink || "",
-      mollie_payment_id: normalized.molliePaymentId || "",
-      pdf_file_path: normalized.pdfFilePath || "",
-      internal_notes: normalized.internalNotes || normalized.notes || "",
-      source_quote_number: normalized.sourceQuoteNumber || "",
-      is_demo: normalized.isDemo,
-      is_demo_journey: normalized.isDemoJourney,
-      environment: normalized.environment,
-      metadata: {
-        ...(normalized.metadata || {}),
-        localStorageId: normalized.id,
-        localCustomerId: normalized.profileId || normalized.customerId || "",
-        localWebsiteId: normalized.websiteId || "",
-        localProjectId: normalized.projectId || "",
-        localQuoteId: normalized.sourceQuoteId || "",
-        localSubscriptionId: normalized.subscriptionId || "",
-        demoScenarioId: normalized.demoScenarioId || "",
-        demoJourneyId: normalized.demoJourneyId || "",
-      },
+      amount: totals.total || normalized.total || normalized.amount || 0,
+      pdf_file_path: normalized.pdfFilePath || null,
+      mollie_payment_id: normalized.molliePaymentId || null,
+      mollie_checkout_url: normalized.mollieCheckoutUrl || normalized.paymentLink || null,
+      mollie_payment_status: supabasePaymentStatus(normalized.paymentStatus),
+      notes: buildProductionInvoiceNotes(normalized, {
+        customerId: normalized.profileId || normalized.customerId || "",
+        websiteId: normalized.websiteId || "",
+        projectId: normalized.projectId || "",
+        sourceQuoteId: normalized.sourceQuoteId || "",
+        subscriptionId: normalized.subscriptionId || "",
+        websiteSupabaseId: websiteLink.supabaseWebsiteId || "",
+        projectSupabaseId: projectLink.supabaseProjectId || "",
+        quoteSupabaseId: quoteLink.supabaseQuoteId || "",
+        subscriptionSupabaseId: subscriptionLink.supabaseSubscriptionId || "",
+        subtotal: totals.subtotal,
+        vat: totals.vat,
+        total: totals.total,
+      }),
       created_at: normalized.createdAt,
       updated_at: normalized.updatedAt || nowIso(),
     },
@@ -427,45 +422,107 @@ export function mapLocalInvoiceToSupabase(invoice = {}) {
   };
 }
 
+function buildProductionInvoiceNotes(invoice = {}, context = {}) {
+  const normalized = normalizeInvoice(invoice);
+  const storedContext = {
+    ...(normalized.metadata || {}),
+    localStorageId: normalized.id,
+    localCustomerId: context.customerId || "",
+    localWebsiteId: context.websiteId || "",
+    localProjectId: context.projectId || "",
+    localQuoteId: context.sourceQuoteId || "",
+    localSubscriptionId: context.subscriptionId || "",
+    websiteSupabaseId: context.websiteSupabaseId || "",
+    projectSupabaseId: context.projectSupabaseId || "",
+    quoteSupabaseId: context.quoteSupabaseId || "",
+    subscriptionSupabaseId: context.subscriptionSupabaseId || "",
+    sourceQuoteNumber: normalized.sourceQuoteNumber || "",
+    isDemo: normalized.isDemo,
+    isDemoJourney: normalized.isDemoJourney,
+    environment: normalized.environment,
+    demoScenarioId: normalized.demoScenarioId || "",
+    demoJourneyId: normalized.demoJourneyId || "",
+    invoiceDate: normalized.invoiceDate || "",
+    type: normalized.type || "",
+    lines: normalized.lines || [],
+    subtotal: context.subtotal || normalized.subtotal || 0,
+    vat: context.vat || normalized.vat || 0,
+    total: context.total || normalized.total || 0,
+  };
+  return [
+    normalized.internalNotes || normalized.notes || "",
+    `\n---\nFactuurregels: ${JSON.stringify(storedContext)}`,
+  ].filter(Boolean).join("\n");
+}
+
+function parseProductionInvoiceContext(notes = "") {
+  const marker = "Factuurregels:";
+  const text = String(notes || "").trim();
+  const index = text.lastIndexOf(marker);
+  if (index < 0) return {};
+  try {
+    const parsed = JSON.parse(text.slice(index + marker.length).trim());
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function stripProductionInvoiceContext(notes = "") {
+  const marker = "\n---\nFactuurregels:";
+  const text = String(notes || "").trim();
+  const index = text.lastIndexOf(marker);
+  return index >= 0 ? text.slice(0, index).trim() : text;
+}
+
 export function mapSupabaseInvoiceToLocal(row = {}, lineRows = []) {
-  const lines = lineRows.map(mapSupabaseInvoiceLineToLocal);
+  const storedContext = parseProductionInvoiceContext(row.notes);
+  const lines = lineRows.length
+    ? lineRows.map(mapSupabaseInvoiceLineToLocal)
+    : (storedContext.lines || []).map((line, index) => normalizeInvoiceLine(line, index));
   return normalizeInvoice({
-    id: row.external_id || row.id,
-    externalId: row.external_id || "",
+    id: storedContext.localStorageId || row.id,
+    externalId: storedContext.localStorageId || "",
     supabaseInvoiceId: row.id,
     invoiceNumber: row.invoice_number,
-    profileId: row.metadata?.localCustomerId || row.customer_id || "",
-    supabaseCustomerId: row.customer_id || "",
-    websiteId: row.metadata?.localWebsiteId || row.website_id || "",
-    supabaseWebsiteId: row.website_id || "",
-    projectId: row.metadata?.localProjectId || row.project_id || "",
-    supabaseProjectId: row.project_id || "",
-    sourceQuoteId: row.metadata?.localQuoteId || row.quote_id || "",
-    supabaseQuoteId: row.quote_id || "",
-    subscriptionId: row.metadata?.localSubscriptionId || row.subscription_id || "",
-    supabaseSubscriptionId: row.subscription_id || "",
-    type: row.type,
+    profileId: row.profile_id || storedContext.localCustomerId || "",
+    customerId: row.profile_id || storedContext.localCustomerId || "",
+    customerAuthUserId: row.customer_auth_user_id || "",
+    supabaseCustomerId: row.profile_id || "",
+    websiteId: storedContext.localWebsiteId || "",
+    supabaseWebsiteId: storedContext.websiteSupabaseId || "",
+    projectId: storedContext.localProjectId || "",
+    supabaseProjectId: storedContext.projectSupabaseId || "",
+    sourceQuoteId: storedContext.localQuoteId || "",
+    supabaseQuoteId: storedContext.quoteSupabaseId || "",
+    subscriptionId: storedContext.localSubscriptionId || "",
+    supabaseSubscriptionId: storedContext.subscriptionSupabaseId || "",
+    type: storedContext.type,
     title: row.title,
     status: row.status,
-    paymentStatus: row.payment_status,
-    invoiceDate: row.invoice_date,
+    paymentStatus: row.mollie_payment_status || row.status,
+    invoiceDate: storedContext.invoiceDate || row.created_at?.slice?.(0, 10),
     dueDate: row.due_date,
     paidAt: row.paid_at,
     lines,
-    subtotal: row.subtotal_amount,
-    vatAmount: row.vat_amount,
-    total: row.total_amount,
-    paymentLink: row.payment_link,
-    demoPaymentLink: row.demo_payment_link,
+    subtotal: storedContext.subtotal,
+    vatAmount: storedContext.vat,
+    total: storedContext.total || row.amount,
+    amount: row.amount,
+    paymentLink: row.mollie_checkout_url,
+    mollieCheckoutUrl: row.mollie_checkout_url,
     molliePaymentId: row.mollie_payment_id,
+    molliePaymentStatus: row.mollie_payment_status,
+    molliePaymentCreatedAt: row.mollie_payment_created_at,
+    molliePaymentExpiresAt: row.mollie_payment_expires_at,
     pdfFilePath: row.pdf_file_path,
-    notes: row.internal_notes,
-    internalNotes: row.internal_notes,
-    sourceQuoteNumber: row.source_quote_number,
-    isDemo: row.is_demo,
-    isDemoJourney: row.is_demo_journey,
-    environment: row.environment,
-    metadata: row.metadata || {},
+    notes: stripProductionInvoiceContext(row.notes),
+    internalNotes: stripProductionInvoiceContext(row.notes),
+    sourceQuoteNumber: storedContext.sourceQuoteNumber,
+    isDemo: storedContext.isDemo,
+    isDemoJourney: storedContext.isDemoJourney,
+    environment: storedContext.environment || "production",
+    metadata: storedContext,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   });

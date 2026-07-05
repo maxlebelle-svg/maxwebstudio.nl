@@ -30,7 +30,7 @@ function isQuoteLinesTable(table) {
 }
 
 function isInvoicesTable(table) {
-  return table === "invoices" || table === "maxwebstudioInvoices";
+  return table === "invoices" || table === "customer_invoices" || table === "maxwebstudioInvoices";
 }
 
 function isInvoiceLinesTable(table) {
@@ -87,7 +87,7 @@ function normalizedTable(table) {
   if (isProjectsTable(table)) return "projects";
   if (isQuotesTable(table)) return "quotes";
   if (isQuoteLinesTable(table)) return "quote_lines";
-  if (isInvoicesTable(table)) return "invoices";
+  if (isInvoicesTable(table)) return "customer_invoices";
   if (isInvoiceLinesTable(table)) return "invoice_lines";
   if (isSubscriptionsTable(table)) return "subscriptions";
   if (isFilesTable(table)) return "files";
@@ -279,7 +279,66 @@ async function getInvoiceWriteClient(context = {}) {
 }
 
 function assertInvoiceWriteTable(table) {
-  if (!isInvoicesTable(table)) throw new Error("Invoice writes ondersteunen alleen de invoices tabel.");
+  if (!isInvoicesTable(table)) throw new Error("Invoice writes ondersteunen alleen de customer_invoices tabel.");
+}
+
+function cleanInvoiceText(value) {
+  return String(value || "").trim();
+}
+
+function nullableInvoiceValue(value) {
+  const clean = cleanInvoiceText(value);
+  return clean || null;
+}
+
+function nullableInvoiceAmount(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function invoiceLinesFromNotes(notes = "") {
+  const marker = "Factuurregels:";
+  const text = cleanInvoiceText(notes);
+  const index = text.lastIndexOf(marker);
+  if (index < 0) return [];
+  try {
+    const parsed = JSON.parse(text.slice(index + marker.length).trim());
+    return Array.isArray(parsed?.lines) ? parsed.lines : [];
+  } catch {
+    return [];
+  }
+}
+
+function appendInvoiceContextToNotes(notes = "", lines = []) {
+  const cleanNotes = cleanInvoiceText(notes);
+  if (!Array.isArray(lines) || !lines.length) return cleanNotes;
+  const context = { lines };
+  return [cleanNotes, `\n---\nFactuurregels: ${JSON.stringify(context)}`].filter(Boolean).join("\n");
+}
+
+function normalizeCustomerInvoiceRecord(record = {}, lines = null) {
+  const profileId = cleanInvoiceText(record.profile_id || record.customer_id || record.profileId || record.customerId);
+  if (!profileId) throw new Error("Koppel de factuur aan een centrale klant.");
+  const invoiceLines = Array.isArray(lines) ? lines : [];
+  return {
+    profile_id: profileId,
+    customer_auth_user_id: nullableInvoiceValue(record.customer_auth_user_id || record.customerAuthUserId),
+    invoice_number: cleanInvoiceText(record.invoice_number || record.invoiceNumber),
+    title: cleanInvoiceText(record.title || record.invoice_number || record.invoiceNumber || "Factuur"),
+    amount: nullableInvoiceAmount(record.amount ?? record.total ?? record.total_amount),
+    status: cleanInvoiceText(record.status || "draft"),
+    due_date: nullableInvoiceValue(record.due_date || record.dueDate),
+    paid_at: nullableInvoiceValue(record.paid_at || record.paidAt),
+    pdf_file_path: nullableInvoiceValue(record.pdf_file_path || record.pdfFilePath),
+    mollie_payment_id: nullableInvoiceValue(record.mollie_payment_id || record.molliePaymentId),
+    mollie_checkout_url: nullableInvoiceValue(record.mollie_checkout_url || record.mollieCheckoutUrl || record.payment_link || record.paymentLink),
+    mollie_payment_status: nullableInvoiceValue(record.mollie_payment_status || record.molliePaymentStatus || record.payment_status || record.paymentStatus),
+    mollie_payment_created_at: nullableInvoiceValue(record.mollie_payment_created_at || record.molliePaymentCreatedAt),
+    mollie_payment_expires_at: nullableInvoiceValue(record.mollie_payment_expires_at || record.molliePaymentExpiresAt),
+    notes: appendInvoiceContextToNotes(record.notes || record.internal_notes, invoiceLines),
+    updated_at: record.updated_at || new Date().toISOString(),
+  };
 }
 
 async function getSubscriptionWriteClient(context = {}) {
@@ -424,6 +483,7 @@ export const supabaseProvider = {
       return [];
     }
     const normalized = normalizedTable(table);
+    if (isInvoicesTable(table)) console.info("Supabase invoice read", { table: normalized });
     const client = await getReadClient(normalized);
     const limit = Math.min(Number(options.limit || 10), 100);
     const { data, error } = await client.from(normalized).select("*").limit(limit);
@@ -799,69 +859,36 @@ export const supabaseProvider = {
   },
 
   async createInvoice(record = {}, lines = [], context = {}) {
-    assertInvoiceWriteTable("invoices");
+    assertInvoiceWriteTable("customer_invoices");
     const client = await getInvoiceWriteClient(context);
     const payload = {
-      ...record,
-      updated_at: record.updated_at || new Date().toISOString(),
+      ...normalizeCustomerInvoiceRecord(record, lines),
       created_at: record.created_at || new Date().toISOString(),
     };
-    const { data, error } = await client.from("invoices").insert(payload).select("*").single();
+    if (record.id) payload.id = record.id;
+    console.info("Supabase invoice write", {
+      table: "customer_invoices",
+      normalizedProfileId: payload.profile_id,
+    });
+    const { data, error } = await client.from("customer_invoices").insert(payload).select("*").single();
     if (error) throw new Error(error.message || "Factuur aanmaken in Supabase is mislukt.");
-    let savedLines = [];
-    if (Array.isArray(lines) && lines.length) {
-      const linePayload = lines.map((line, index) => {
-        const payloadLine = {
-          ...line,
-          invoice_id: data.id,
-          sort_order: line.sort_order ?? index,
-          updated_at: line.updated_at || new Date().toISOString(),
-          created_at: line.created_at || new Date().toISOString(),
-        };
-        if (!payloadLine.id) delete payloadLine.id;
-        return payloadLine;
-      });
-      const { data: lineData, error: lineError } = await client.from("invoice_lines").insert(linePayload).select("*");
-      if (lineError) throw new Error(lineError.message || "Factuurregels opslaan in Supabase is mislukt.");
-      savedLines = Array.isArray(lineData) ? lineData : [];
-    }
-    return { success: true, table: "invoices", action: "create_invoice", data, lines: savedLines };
+    return { success: true, table: "customer_invoices", action: "create_invoice", data, lines: invoiceLinesFromNotes(data.notes) };
   },
 
   async updateInvoice(id, updates = {}, lines = null, context = {}) {
-    assertInvoiceWriteTable("invoices");
+    assertInvoiceWriteTable("customer_invoices");
     const client = await getInvoiceWriteClient(context);
-    const payload = {
-      ...updates,
-      updated_at: updates.updated_at || new Date().toISOString(),
-    };
-    const { data, error } = await client.from("invoices").update(payload).eq("id", id).select("*").single();
+    const { data: existing, error: readError } = await client.from("customer_invoices").select("*").eq("id", id).maybeSingle();
+    if (readError) throw new Error(readError.message || "Factuur lezen voor update is mislukt.");
+    const payload = normalizeCustomerInvoiceRecord({ ...(existing || {}), ...updates }, lines);
+    console.info("Supabase invoice update", {
+      table: "customer_invoices",
+      invoiceId: id,
+      normalizedProfileId: payload.profile_id,
+    });
+    const { data, error } = await client.from("customer_invoices").update(payload).eq("id", id).select("*").single();
     if (error) throw new Error(error.message || "Factuur bijwerken in Supabase is mislukt.");
-    let savedLines = [];
-    if (Array.isArray(lines)) {
-      const linePayload = lines.map((line, index) => {
-        const linePayload = {
-          ...line,
-          invoice_id: id,
-          sort_order: line.sort_order ?? index,
-          updated_at: line.updated_at || new Date().toISOString(),
-        };
-        if (!linePayload.id) delete linePayload.id;
-        return {
-          ...linePayload,
-          created_at: line.created_at || new Date().toISOString(),
-        };
-      });
-      if (linePayload.length) {
-        const { data: lineData, error: lineError } = await client
-          .from("invoice_lines")
-          .upsert(linePayload, { onConflict: "invoice_id,external_id" })
-          .select("*");
-        if (lineError) throw new Error(lineError.message || "Factuurregels bijwerken in Supabase is mislukt.");
-        savedLines = Array.isArray(lineData) ? lineData : [];
-      }
-    }
-    return { success: true, table: "invoices", action: "update_invoice", data, lines: savedLines };
+    return { success: true, table: "customer_invoices", action: "update_invoice", data, lines: invoiceLinesFromNotes(data.notes) };
   },
 
   async archiveInvoice(id, context = {}) {

@@ -4354,7 +4354,7 @@
             ["Project live bulk migration", "Nog niet actief", "Bulk migratie blijft geblokkeerd; alleen individuele test/create/update flows"],
             ["Project customer linkage", "Actief gecontroleerd", "Projecten vereisen een Supabase customer ID tenzij expliciet testcontext"],
             ["Project website linkage", "Actief gecontroleerd", "Projecten met website vereisen een Supabase website ID"],
-            ["Invoice Supabase mapping", "Voorbereid", "InvoiceRepository kan lokale facturen naar invoices + invoice_lines mappen"],
+            ["Invoice Supabase mapping", "Voorbereid", "InvoiceRepository kan lokale facturen naar customer_invoices mappen"],
             ["Invoice lines mapping", "Voorbereid", "Factuurregels worden apart voorbereid voor invoice_lines met totalen en btw"],
             ["Invoice read", "Voorbereid/actief", "Facturatie kan facturen read-only uit Supabase laden"],
             ["Invoice hybrid mode", "Actief", "Facturatie combineert Supabase, ongemigreerde local en demo facturen"],
@@ -5605,13 +5605,11 @@
           preview.rows.slice(0, 12).forEach((item) => {
             appendDeveloperCard(`Factuur mapping ${item.invoiceNumber || item.localId || "factuur"}`, [
               ["localStorage id", item.localId || "-"],
-              ["Supabase tabellen", "invoices + invoice_lines"],
+              ["Supabase tabellen", "customer_invoices"],
               ["title", item.payload?.invoice?.title || item.title || "-"],
-              ["customer_id", item.payload?.invoice?.customer_id || "-"],
-              ["website_id", item.payload?.invoice?.website_id || "-"],
-              ["project_id", item.payload?.invoice?.project_id || "-"],
-              ["quote_id", item.payload?.invoice?.quote_id || "-"],
-              ["subscription_id", item.payload?.invoice?.subscription_id || "-"],
+              ["profile_id", item.payload?.invoice?.profile_id || "-"],
+              ["customer_auth_user_id", item.payload?.invoice?.customer_auth_user_id || "-"],
+              ["mollie_checkout_url", item.payload?.invoice?.mollie_checkout_url || "-"],
               ["regels", String(item.lineCount || item.payload?.lines?.length || 0)],
               ["totaal", money(item.total || item.payload?.invoice?.total_amount || 0)],
               ["ready", item.ready ? "Ja" : "Nee"],
@@ -8706,8 +8704,8 @@
                   payload: {
                     invoice: {
                       invoice_number: invoice.invoiceNumber,
-                      customer_id: invoice.supabaseCustomerId || invoice.customerId || "-",
-                      total_amount: invoice.total,
+                      profile_id: invoice.supabaseCustomerId || invoice.profileId || invoice.customerId || "-",
+                      amount: invoice.total,
                     },
                     lines: invoice.lines || [],
                   },

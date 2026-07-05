@@ -50,17 +50,38 @@
         </nav>
       </aside>
 
-      <div class="admin-crm-main workflow-module-shell">
-        <header class="admin-section admin-hero">
+      <div class="admin-crm-main workflow-module-shell ai-content-shell">
+        <header class="admin-section admin-hero ai-content-hero">
           <div>
             <p class="section-kicker">Production</p>
             <h1>AI Content Library</h1>
             <p>Website teksten, SEO, pagina's, AI beeldreferenties en herbruikbare contentblokken.</p>
           </div>
-          <span class="workflow-module-label">AI Content Library - nog niet gekoppeld aan productie</span>
+          <aside class="ai-content-hero-panel" aria-label="AI Content Library status">
+            <span class="workflow-module-label">Lokale workspace</span>
+            <strong id="ai-content-hero-readiness">0% klaar</strong>
+            <p>Bereid contentpakketten voor zonder live productie, CRM of publicatie-API's te raken.</p>
+          </aside>
         </header>
 
         <section class="ai-content-workspace" aria-label="AI Content Library workspace">
+          <section class="admin-card ai-content-toolbar" aria-label="AI Content Library acties">
+            <label class="ai-content-search" for="ai-content-search">
+              <span class="sr-only">Zoeken</span>
+              <input id="ai-content-search" type="search" placeholder="Zoek in titels, pagina's, keywords, notities of beelden" />
+            </label>
+            <label>Status<select id="ai-content-status-filter"></select></label>
+            <label>Type<select id="ai-content-type-filter"></select></label>
+            <div class="ai-content-toolbar-actions">
+              <button class="button secondary" id="load-sample-package" type="button">Voorbeeldpakket laden</button>
+              <button class="button secondary" id="import-content-package" type="button">Import JSON</button>
+              <button class="button primary" id="export-content-package-top" type="button">Exporteren</button>
+              <button class="button secondary" id="clear-content-package" type="button">Alles wissen</button>
+            </div>
+            <input id="content-package-file" type="file" accept="application/json,.json" hidden />
+            <p class="admin-form-message ai-content-message" id="ai-content-message" role="status" aria-live="polite"></p>
+          </section>
+
           <div class="ai-content-tabs" role="tablist" aria-label="AI Content Library onderdelen">
             <button class="ai-content-tab is-active" type="button" data-tab="overview">Overview</button>
             <button class="ai-content-tab" type="button" data-tab="content">Content</button>
@@ -72,6 +93,26 @@
 
           <section class="ai-content-panel" data-panel="overview">
             <div class="ai-content-metrics" id="ai-content-metrics"></div>
+            <div class="ai-content-overview-grid">
+              <article class="admin-card ai-content-overview-card">
+                <div class="admin-section-heading">
+                  <div>
+                    <p class="section-kicker">Workflow</p>
+                    <h2>Volgende stappen</h2>
+                  </div>
+                </div>
+                <div class="ai-content-checklist" id="ai-content-checklist"></div>
+              </article>
+              <article class="admin-card ai-content-overview-card">
+                <div class="admin-section-heading">
+                  <div>
+                    <p class="section-kicker">Workspace</p>
+                    <h2>Laatste items</h2>
+                  </div>
+                </div>
+                <div class="ai-content-recent-list" id="ai-content-recent-list"></div>
+              </article>
+            </div>
           </section>
 
           <section class="ai-content-panel" data-panel="content" hidden>
@@ -89,6 +130,7 @@
                 <div class="ai-content-actions ai-content-span-2">
                   <button class="button primary" type="submit">Save content block</button>
                   <button class="button secondary" type="button" data-reset-form="content-block-form">Clear</button>
+                  <button class="button secondary" type="button" id="copy-content-block">Copy text</button>
                 </div>
               </form>
             </article>
@@ -111,6 +153,7 @@
                 <div class="ai-content-actions ai-content-span-2">
                   <button class="button primary" type="submit">Save page</button>
                   <button class="button secondary" type="button" data-reset-form="page-form">Clear</button>
+                  <button class="button secondary" type="button" id="create-page-seo">Maak SEO record</button>
                 </div>
               </form>
             </article>
@@ -141,7 +184,11 @@
           <section class="ai-content-panel" data-panel="images" hidden>
             <article class="admin-card">
               <h2>Stock Image Picker</h2>
-              <label class="ai-content-form">Branch<select id="branch-selector"></select></label>
+              <div class="ai-content-image-controls">
+                <label>Branch<select id="branch-selector"></select></label>
+                <button class="button secondary" id="clear-selected-images" type="button">Selectie wissen</button>
+              </div>
+              <div class="ai-content-selected-images" id="selected-image-list"></div>
             </article>
             <div class="ai-content-image-grid" id="image-grid"></div>
           </section>
@@ -150,7 +197,11 @@
             <article class="ai-content-export-box">
               <h2>Export Content Package JSON</h2>
               <p>Download het lokale pakket voor latere beoordeling. Dit schrijft niets naar productie.</p>
-              <button class="button primary" id="export-content-package" type="button">Export Content Package JSON</button>
+              <div class="ai-content-actions">
+                <button class="button primary" id="export-content-package" type="button">Download JSON</button>
+                <button class="button secondary" id="copy-content-package" type="button">Kopieer JSON</button>
+              </div>
+              <pre class="ai-content-json-preview" id="content-package-preview"></pre>
             </article>
           </section>
         </section>

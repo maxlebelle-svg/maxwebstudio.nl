@@ -18,8 +18,8 @@
  * @property {number} vatAmount
  * @property {number} total
  *
- * Supabase tables: invoices + invoice_lines
- * Migratie: Fase 12.6 gebruikt invoice_lines voor regels en houdt localStorage
+ * Supabase table: customer_invoices
+ * Migratie: production gebruikt customer_invoices en bewaart regelcontext in notes.
  * als fallback totdat provider switch en live migratie expliciet worden goedgekeurd.
  */
-export const invoiceModel = { table: "invoices", linesTable: "invoice_lines", primaryKey: "id" };
+export const invoiceModel = { table: "customer_invoices", linesTable: "", primaryKey: "id" };

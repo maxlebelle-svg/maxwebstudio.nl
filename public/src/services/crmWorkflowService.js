@@ -186,7 +186,7 @@ export function getCanonicalCrmRelationships() {
     { table: "websites", source: STORAGE_KEYS.managedSites, readiness: "hybrid voorbereid", note: "Websitebeheer gekoppeld aan customerId." },
     { table: "projects", source: STORAGE_KEYS.projects, readiness: "hybrid voorbereid", note: "Projecten koppelen customerId en optioneel websiteId." },
     { table: "quotes + quote_lines", source: STORAGE_KEYS.quotes, readiness: "hybrid voorbereid", note: "Offertes blijven lokaal/demo totdat Supabase-write live mag." },
-    { table: "invoices + invoice_lines", source: STORAGE_KEYS.invoices, readiness: "hybrid voorbereid", note: "Facturen en demo-betaalflow zonder live Mollie-writes." },
+    { table: "customer_invoices", source: STORAGE_KEYS.invoices, readiness: "hybrid voorbereid", note: "Facturen en demo-betaalflow zonder live Mollie-writes." },
     { table: "subscriptions", source: STORAGE_KEYS.subscriptions, readiness: "hybrid voorbereid", note: "Onderhoud en MRR, nog zonder live incasso." },
     { table: "files", source: STORAGE_KEYS.files, readiness: "metadata voorbereid", note: "Bestandsregistratie; echte storage volgt apart." },
     { table: "change_requests", source: STORAGE_KEYS.changeRequests, readiness: "supporting canonical", note: "Klantveilig zichtbaar, later server-side gekoppeld." },

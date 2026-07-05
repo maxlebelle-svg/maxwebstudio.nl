@@ -73,6 +73,10 @@
           <label>Klant<select id="asset-client-filter"></select></label>
           <label>Project<select id="asset-project-filter"></select></label>
           <label>Status<select id="asset-status-filter"></select></label>
+          <div class="asset-filter-actions">
+            <button class="button secondary" id="reset-asset-filters" type="button">Filters wissen</button>
+            <button class="button secondary" id="export-asset-json" type="button">JSON export</button>
+          </div>
         </section>
 
         <section class="asset-workspace" aria-label="Asset Manager werkruimte">
@@ -124,12 +128,15 @@
           <strong>Sleep bestand hierheen</strong>
           <span>of selecteer een bestand uit je computer</span>
           <input id="asset-file-input" name="file" type="file" />
+          <small id="asset-file-summary">Nog geen bestand geselecteerd</small>
         </div>
         <div class="asset-upload-grid">
           <label>Asset naam<input name="name" required placeholder="bijv. klant-logo-main.svg" /></label>
           <label>Type<select name="type" required></select></label>
           <label>Klant koppelen<select name="client" required></select></label>
           <label>Project koppelen<select name="project" required></select></label>
+          <label>Status<select name="status" required></select></label>
+          <label>Categorie<select name="category" required></select></label>
           <label class="asset-span-2">Tags<input name="tags" placeholder="logo, website, campagne" /></label>
           <label class="asset-span-2">Beschrijving<textarea name="description" rows="4"></textarea></label>
         </div>
@@ -145,6 +152,25 @@
       </form>
     </dialog>
 
+    <dialog class="asset-upload-modal asset-folder-modal" id="asset-folder-dialog" aria-labelledby="asset-folder-title">
+      <form class="asset-upload-form" id="asset-folder-form" method="dialog">
+        <div class="asset-modal-header">
+          <div>
+            <p class="section-kicker">Bibliotheek</p>
+            <h2 id="asset-folder-title">Nieuwe map</h2>
+          </div>
+          <button class="admin-icon-button" id="close-folder-modal" type="button" aria-label="Sluiten">x</button>
+        </div>
+        <div class="asset-upload-grid">
+          <label class="asset-span-2">Mapnaam<input name="folderName" required placeholder="Bijv. Campagne assets" /></label>
+        </div>
+        <div class="asset-modal-actions">
+          <button class="button secondary" id="cancel-folder-modal" type="button">Annuleren</button>
+          <button class="button primary" type="submit">Map opslaan</button>
+        </div>
+      </form>
+    </dialog>
+
     <script>
       (() => {
         "use strict";
@@ -156,14 +182,23 @@
         // TODO: AI Content Library koppeling toevoegen voor herbruikbare beelden en documenten.
         // TODO: Brand Centre drukwerk koppeling maken voor print-assets en huisstijlbestanden.
 
+        const storageKey = "maxwebstudio.assetManager.v1";
         const typeOptions = ["Alles", "Logo", "SVG", "PDF", "Foto", "Video", "Download"];
+        const assetTypeOptions = typeOptions.filter((option) => option !== "Alles");
         const statusOptions = ["Alles", "Actief", "Concept", "Gearchiveerd"];
-        const folders = ["Alle bestanden", "Logo's", "Huisstijl", "Website foto's", "Project downloads", "Video's", "Documenten", "Social media", "Drukwerk", "Archief"];
-        const ownLibrary = ["Max Webstudio logo's", "Templates", "Stock foto's", "Demo-afbeeldingen", "Sales documenten", "Offertebijlagen", "Algemene downloads"];
+        const assetStatusOptions = statusOptions.filter((option) => option !== "Alles");
+        const baseFolders = ["Alle bestanden", "Logo's", "Huisstijl", "Website foto's", "Project downloads", "Video's", "Documenten", "Social media", "Drukwerk", "Archief"];
+        const ownLibrary = [
+          { title: "Max Webstudio logo's", query: "Max Webstudio logo" },
+          { title: "Templates", query: "template" },
+          { title: "Stock foto's", query: "foto" },
+          { title: "Demo-afbeeldingen", query: "demo" },
+          { title: "Sales documenten", query: "sales offerte" },
+          { title: "Offertebijlagen", query: "offerte" },
+          { title: "Algemene downloads", query: "download" }
+        ];
 
-        let selectedFolder = "Alle bestanden";
-        let selectedAssetId = "asset-1";
-        let assets = [
+        const defaultAssets = [
           { id: "asset-1", name: "quantumbouw-logo-main.svg", type: "Logo", client: "Quantum Bouw", project: "Corporate website", size: "184 KB", modified: "2026-07-02", tags: ["logo", "primary", "svg"], status: "Actief", dimensions: "1200 x 420", description: "Primair logo voor website, offerte en klantportaal.", category: "Logo's", url: "/assets/quantumbouw-logo-main.svg" },
           { id: "asset-2", name: "restaurant-luna-logo-dark.png", type: "Logo", client: "Restaurant Luna", project: "Brand refresh", size: "312 KB", modified: "2026-06-28", tags: ["logo", "dark"], status: "Actief", dimensions: "1600 x 600", description: "Donkere logovariant voor menukaarten en social visuals.", category: "Logo's", url: "/assets/restaurant-luna-logo-dark.png" },
           { id: "asset-3", name: "tandarts-icons-service-set.svg", type: "SVG", client: "Tandartspraktijk Nova", project: "Website icons", size: "96 KB", modified: "2026-06-25", tags: ["icons", "service"], status: "Concept", dimensions: "24 x 24 grid", description: "Pictogrammenset voor dienstenpagina's.", category: "Huisstijl", url: "/assets/tandarts-icons-service-set.svg" },
@@ -177,6 +212,12 @@
           { id: "asset-11", name: "client-onboarding-checklist.zip", type: "Download", client: "Max Webstudio", project: "Klant onboarding", size: "640 KB", modified: "2026-06-19", tags: ["onboarding", "download"], status: "Actief", dimensions: "-", description: "Downloadpakket met checklist en voorbeeldteksten.", category: "Project downloads", url: "/downloads/client-onboarding-checklist.zip" },
           { id: "asset-12", name: "seo-starter-pack-download.zip", type: "Download", client: "Studio Kapsalon", project: "SEO Studio", size: "2.1 MB", modified: "2026-06-12", tags: ["seo", "starter-pack"], status: "Gearchiveerd", dimensions: "-", description: "Oude SEO downloadbundel voor projectarchief.", category: "Archief", url: "/downloads/seo-starter-pack-download.zip" }
         ];
+
+        let pendingDroppedFile = null;
+        let selectedFolder = "Alle bestanden";
+        let selectedAssetId = "asset-1";
+        let customFolders = [];
+        let assets = defaultAssets.map((asset) => ({ ...asset, portal: true, factory: true, ai: asset.type !== "Video" }));
 
         const elements = {
           stats: document.getElementById("asset-stats"),
@@ -192,9 +233,18 @@
           statusFilter: document.getElementById("asset-status-filter"),
           dialog: document.getElementById("asset-upload-dialog"),
           form: document.getElementById("asset-upload-form"),
+          folderDialog: document.getElementById("asset-folder-dialog"),
+          folderForm: document.getElementById("asset-folder-form"),
           fileInput: document.getElementById("asset-file-input"),
-          dropzone: document.getElementById("asset-dropzone")
+          dropzone: document.getElementById("asset-dropzone"),
+          fileSummary: document.getElementById("asset-file-summary")
         };
+
+        const replaceInput = document.createElement("input");
+        replaceInput.type = "file";
+        replaceInput.hidden = true;
+        replaceInput.setAttribute("aria-hidden", "true");
+        document.body.append(replaceInput);
 
         const createNode = (tag, className, text) => {
           const node = document.createElement(tag);
@@ -203,7 +253,30 @@
           return node;
         };
 
-        const unique = (items) => ["Alles", ...Array.from(new Set(items)).sort((a, b) => a.localeCompare(b, "nl"))];
+        const unique = (items) => ["Alles", ...Array.from(new Set(items.filter(Boolean)))].sort((a, b) => a.localeCompare(b, "nl"));
+        const folders = () => [...baseFolders, ...customFolders.filter((folder) => !baseFolders.includes(folder))];
+        const formatDate = () => new Date().toISOString().slice(0, 10);
+        const formatSize = (file) => {
+          if (!file?.size) return "128 KB";
+          if (file.size >= 1024 * 1024) return `${(file.size / 1024 / 1024).toFixed(1)} MB`;
+          return `${Math.max(1, Math.round(file.size / 1024))} KB`;
+        };
+
+        function loadState() {
+          try {
+            const stored = JSON.parse(localStorage.getItem(storageKey) || "{}");
+            if (Array.isArray(stored.assets) && stored.assets.length) assets = stored.assets;
+            if (Array.isArray(stored.customFolders)) customFolders = stored.customFolders;
+            if (stored.selectedAssetId) selectedAssetId = stored.selectedAssetId;
+            if (stored.selectedFolder) selectedFolder = stored.selectedFolder;
+          } catch {
+            localStorage.removeItem(storageKey);
+          }
+        }
+
+        function saveState() {
+          localStorage.setItem(storageKey, JSON.stringify({ assets, customFolders, selectedAssetId, selectedFolder }));
+        }
 
         function fillSelect(select, options) {
           select.replaceChildren();
@@ -213,6 +286,24 @@
             element.textContent = option;
             select.append(element);
           });
+        }
+
+        function inferTypeFromName(name = "") {
+          const extension = name.split(".").pop().toLowerCase();
+          if (extension === "svg") return "SVG";
+          if (extension === "pdf") return "PDF";
+          if (["jpg", "jpeg", "png", "webp", "avif"].includes(extension)) return "Foto";
+          if (["mp4", "mov", "webm"].includes(extension)) return "Video";
+          if (["zip", "rar", "docx", "xlsx", "pptx"].includes(extension)) return "Download";
+          return "Download";
+        }
+
+        function categoryForType(type) {
+          if (type === "Foto") return "Website foto's";
+          if (type === "Video") return "Video's";
+          if (type === "PDF") return "Documenten";
+          if (type === "Logo" || type === "SVG") return "Logo's";
+          return "Project downloads";
         }
 
         function assetMatchesFolder(asset) {
@@ -254,7 +345,7 @@
         }
 
         function renderFolders() {
-          elements.folders.replaceChildren(...folders.map((folder) => {
+          elements.folders.replaceChildren(...folders().map((folder) => {
             const button = createNode("button", `asset-folder-button${folder === selectedFolder ? " is-active" : ""}`);
             button.type = "button";
             button.dataset.folder = folder;
@@ -267,6 +358,13 @@
           const filteredAssets = getFilteredAssets();
           elements.count.textContent = `${filteredAssets.length} assets`;
           if (!filteredAssets.some((asset) => asset.id === selectedAssetId)) selectedAssetId = filteredAssets[0]?.id || assets[0]?.id;
+          if (!filteredAssets.length) {
+            const empty = createNode("article", "admin-card asset-empty-state");
+            empty.append(createNode("strong", "", "Geen assets gevonden"), createNode("span", "", "Pas je filters aan of upload een nieuw bestand."));
+            elements.grid.replaceChildren(empty);
+            renderDetail();
+            return;
+          }
           elements.grid.replaceChildren(...filteredAssets.map((asset) => {
             const card = createNode("button", `asset-card${asset.id === selectedAssetId ? " is-selected" : ""}`);
             card.type = "button";
@@ -293,7 +391,7 @@
             return;
           }
           const preview = createNode("div", `asset-detail-preview asset-preview-${asset.type.toLowerCase()}`, typeIcon(asset.type));
-          const title = createNode("h2", "", asset.name);
+          const title = createNode("h2", "asset-detail-title", asset.name);
           const rows = [
             ["Type", asset.type],
             ["Klant", asset.client],
@@ -301,7 +399,10 @@
             ["Grootte", asset.size],
             ["Afmetingen", asset.dimensions],
             ["Laatst gewijzigd", asset.modified],
-            ["Status", asset.status]
+            ["Status", asset.status],
+            ["Klantportaal", asset.portal ? "Beschikbaar" : "Niet beschikbaar"],
+            ["Website Factory", asset.factory ? "Beschikbaar" : "Niet beschikbaar"],
+            ["AI Library", asset.ai ? "Beschikbaar" : "Niet beschikbaar"]
           ];
           const list = createNode("dl", "asset-detail-list");
           rows.forEach(([label, value]) => {
@@ -311,7 +412,7 @@
           asset.tags.forEach((tag) => tags.append(createNode("span", "asset-tag", tag)));
           const note = createNode("p", "asset-detail-note", asset.description);
           const actions = createNode("div", "asset-detail-actions");
-          ["Download", "Kopieer URL", "Vervang bestand", "Archiveer"].forEach((label) => {
+          ["Download", "Kopieer URL", "Vervang bestand", asset.status === "Gearchiveerd" ? "Herstel" : "Archiveer"].forEach((label) => {
             const button = createNode("button", label === "Archiveer" ? "button secondary danger" : "button secondary", label);
             button.type = "button";
             button.dataset.detailAction = label;
@@ -322,23 +423,29 @@
 
         function renderOwnLibrary() {
           elements.ownLibrary.replaceChildren(...ownLibrary.map((item) => {
-            const card = createNode("article", "admin-card asset-own-card");
-            card.append(createNode("strong", "", item), createNode("span", "", "Interne Max Webstudio assets"));
+            const card = createNode("button", "admin-card asset-own-card");
+            card.type = "button";
+            card.dataset.libraryQuery = item.query;
+            card.append(createNode("strong", "", item.title), createNode("span", "", "Open in de assetzoeker"));
             return card;
           }));
         }
 
         function renderFilters() {
           const current = {
+            type: elements.typeFilter.value || "Alles",
             client: elements.clientFilter.value || "Alles",
-            project: elements.projectFilter.value || "Alles"
+            project: elements.projectFilter.value || "Alles",
+            status: elements.statusFilter.value || "Alles"
           };
           fillSelect(elements.typeFilter, typeOptions);
           fillSelect(elements.statusFilter, statusOptions);
           fillSelect(elements.clientFilter, unique(assets.map((asset) => asset.client)));
           fillSelect(elements.projectFilter, unique(assets.map((asset) => asset.project)));
+          elements.typeFilter.value = typeOptions.includes(current.type) ? current.type : "Alles";
           elements.clientFilter.value = unique(assets.map((asset) => asset.client)).includes(current.client) ? current.client : "Alles";
           elements.projectFilter.value = unique(assets.map((asset) => asset.project)).includes(current.project) ? current.project : "Alles";
+          elements.statusFilter.value = statusOptions.includes(current.status) ? current.status : "Alles";
         }
 
         function notify(message, type = "success") {
@@ -361,14 +468,26 @@
 
         function closeUploadModal() {
           elements.form.reset();
+          pendingDroppedFile = null;
+          elements.fileSummary.textContent = "Nog geen bestand geselecteerd";
+          elements.dropzone.classList.remove("is-dragging");
           elements.dialog.close?.();
           elements.dialog.removeAttribute("open");
+        }
+
+        function syncUploadFile(file) {
+          if (!file) return;
+          const type = inferTypeFromName(file.name);
+          elements.form.elements.name.value = file.name;
+          elements.form.elements.type.value = type;
+          elements.form.elements.category.value = categoryForType(type);
+          elements.fileSummary.textContent = `${file.name} - ${formatSize(file)}`;
         }
 
         function handleUploadSubmit(event) {
           event.preventDefault();
           const data = new FormData(elements.form);
-          const file = data.get("file");
+          const file = pendingDroppedFile || data.get("file");
           const type = data.get("type") || "Download";
           const name = data.get("name") || file?.name || "nieuwe-asset.pdf";
           const asset = {
@@ -377,21 +496,105 @@
             type: String(type),
             client: String(data.get("client") || "Max Webstudio"),
             project: String(data.get("project") || "Eigen bibliotheek"),
-            size: file?.size ? `${Math.max(1, Math.round(file.size / 1024))} KB` : "128 KB",
-            modified: new Date().toISOString().slice(0, 10),
+            size: formatSize(file),
+            modified: formatDate(),
             tags: String(data.get("tags") || "nieuw").split(",").map((tag) => tag.trim()).filter(Boolean),
-            status: "Concept",
+            status: String(data.get("status") || "Concept"),
             dimensions: type === "Foto" || type === "Video" ? "Nog te detecteren" : "-",
             description: String(data.get("description") || "Nieuwe mock asset uit de upload-flow."),
-            category: type === "Foto" ? "Website foto's" : type === "Video" ? "Video's" : type === "PDF" ? "Documenten" : type === "Logo" || type === "SVG" ? "Logo's" : "Project downloads",
-            url: `/mock-assets/${String(name).replace(/\s+/g, "-").toLowerCase()}`
+            category: String(data.get("category") || categoryForType(type)),
+            url: `/mock-assets/${String(name).replace(/\s+/g, "-").toLowerCase()}`,
+            portal: Boolean(data.get("portal")),
+            factory: Boolean(data.get("factory")),
+            ai: Boolean(data.get("ai"))
           };
           assets = [asset, ...assets];
           selectedAssetId = asset.id;
           selectedFolder = "Alle bestanden";
+          saveState();
           renderAll();
           closeUploadModal();
-          notify("Mock asset toegevoegd. Uploadkoppeling volgt later.", "success");
+          notify("Asset toegevoegd aan de lokale bibliotheek.", "success");
+        }
+
+        function exportJson() {
+          const blob = new Blob([JSON.stringify({ assets, customFolders }, null, 2)], { type: "application/json" });
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(blob);
+          link.download = `maxwebstudio-assets-${formatDate()}.json`;
+          document.body.append(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(link.href);
+          notify("Assetbibliotheek geexporteerd.", "success");
+        }
+
+        function downloadAsset(asset) {
+          const blob = new Blob([JSON.stringify(asset, null, 2)], { type: "application/json" });
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(blob);
+          link.download = `${asset.name}.metadata.json`;
+          document.body.append(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(link.href);
+        }
+
+        function openFolderModal() {
+          if (typeof elements.folderDialog.showModal === "function") {
+            elements.folderDialog.showModal();
+          } else {
+            elements.folderDialog.setAttribute("open", "");
+          }
+          elements.folderForm.elements.folderName.focus();
+        }
+
+        function closeFolderModal() {
+          elements.folderForm.reset();
+          elements.folderDialog.close?.();
+          elements.folderDialog.removeAttribute("open");
+        }
+
+        function createFolder(event) {
+          event.preventDefault();
+          const name = String(new FormData(elements.folderForm).get("folderName") || "").trim();
+          if (!name) return;
+          if (folders().includes(name)) {
+            notify("Deze map bestaat al.", "warning");
+            return;
+          }
+          customFolders = [...customFolders, name];
+          selectedFolder = name;
+          saveState();
+          renderAll();
+          closeFolderModal();
+          notify("Nieuwe map aangemaakt.", "success");
+        }
+
+        function resetFilters() {
+          elements.search.value = "";
+          elements.typeFilter.value = "Alles";
+          elements.clientFilter.value = "Alles";
+          elements.projectFilter.value = "Alles";
+          elements.statusFilter.value = "Alles";
+          selectedFolder = "Alle bestanden";
+          saveState();
+          renderAll();
+        }
+
+        function replaceSelectedAsset(file) {
+          const asset = assets.find((item) => item.id === selectedAssetId);
+          if (!asset || !file) return;
+          asset.name = file.name;
+          asset.type = inferTypeFromName(file.name);
+          asset.size = formatSize(file);
+          asset.modified = formatDate();
+          asset.status = "Concept";
+          asset.category = categoryForType(asset.type);
+          asset.url = `/mock-assets/${file.name.replace(/\s+/g, "-").toLowerCase()}`;
+          saveState();
+          renderAll();
+          notify("Bestand vervangen in de lokale bibliotheek.", "success");
         }
 
         function renderAll() {
@@ -400,13 +603,28 @@
           renderFolders();
           renderGrid();
           renderOwnLibrary();
+          fillSelect(elements.form.elements.type, assetTypeOptions);
+          fillSelect(elements.form.elements.status, assetStatusOptions);
+          fillSelect(elements.form.elements.category, folders().filter((folder) => folder !== "Alle bestanden"));
+          fillSelect(elements.form.elements.client, unique(assets.map((asset) => asset.client)).filter((option) => option !== "Alles"));
+          fillSelect(elements.form.elements.project, unique(assets.map((asset) => asset.project)).filter((option) => option !== "Alles"));
         }
 
+        loadState();
         document.getElementById("open-upload-modal").addEventListener("click", openUploadModal);
-        document.getElementById("create-folder-button").addEventListener("click", () => notify("Nieuwe map UI staat klaar voor latere opslag.", "info"));
+        document.getElementById("create-folder-button").addEventListener("click", openFolderModal);
+        document.getElementById("close-folder-modal").addEventListener("click", closeFolderModal);
+        document.getElementById("cancel-folder-modal").addEventListener("click", closeFolderModal);
+        elements.folderForm.addEventListener("submit", createFolder);
+        document.getElementById("reset-asset-filters").addEventListener("click", resetFilters);
+        document.getElementById("export-asset-json").addEventListener("click", exportJson);
         document.getElementById("close-upload-modal").addEventListener("click", closeUploadModal);
         document.getElementById("cancel-upload-modal").addEventListener("click", closeUploadModal);
         elements.form.addEventListener("submit", handleUploadSubmit);
+        elements.fileInput.addEventListener("change", () => {
+          pendingDroppedFile = null;
+          syncUploadFile(elements.fileInput.files?.[0]);
+        });
         [elements.search, elements.typeFilter, elements.clientFilter, elements.projectFilter, elements.statusFilter].forEach((control) => {
           control.addEventListener("input", renderGrid);
           control.addEventListener("change", renderGrid);
@@ -415,6 +633,7 @@
           const button = event.target.closest("[data-folder]");
           if (!button) return;
           selectedFolder = button.dataset.folder;
+          saveState();
           renderFolders();
           renderGrid();
         });
@@ -422,6 +641,14 @@
           const card = event.target.closest("[data-asset-id]");
           if (!card) return;
           selectedAssetId = card.dataset.assetId;
+          saveState();
+          renderGrid();
+        });
+        elements.ownLibrary.addEventListener("click", (event) => {
+          const card = event.target.closest("[data-library-query]");
+          if (!card) return;
+          resetFilters();
+          elements.search.value = card.dataset.libraryQuery;
           renderGrid();
         });
         elements.detail.addEventListener("click", async (event) => {
@@ -438,19 +665,37 @@
             }
             return;
           }
-          if (button.dataset.detailAction === "Archiveer") {
-            asset.status = "Gearchiveerd";
+          if (button.dataset.detailAction === "Download") {
+            downloadAsset(asset);
+            notify("Metadata-download gestart.", "success");
+            return;
+          }
+          if (button.dataset.detailAction === "Vervang bestand") {
+            replaceInput.click();
+            return;
+          }
+          if (button.dataset.detailAction === "Archiveer" || button.dataset.detailAction === "Herstel") {
+            asset.status = button.dataset.detailAction === "Archiveer" ? "Gearchiveerd" : "Actief";
+            asset.modified = formatDate();
+            saveState();
             renderAll();
-            notify("Asset gearchiveerd in mock data.", "success");
+            notify(button.dataset.detailAction === "Archiveer" ? "Asset gearchiveerd." : "Asset hersteld.", "success");
             return;
           }
           notify(`${button.dataset.detailAction} is voorbereid voor de echte opslagkoppeling.`, "info");
         });
-        elements.dropzone?.addEventListener?.("dragover", (event) => event.preventDefault());
-
-        fillSelect(elements.form.elements.type, typeOptions.filter((option) => option !== "Alles"));
-        fillSelect(elements.form.elements.client, unique(assets.map((asset) => asset.client)).filter((option) => option !== "Alles"));
-        fillSelect(elements.form.elements.project, unique(assets.map((asset) => asset.project)).filter((option) => option !== "Alles"));
+        replaceInput.addEventListener("change", () => replaceSelectedAsset(replaceInput.files?.[0]));
+        elements.dropzone.addEventListener("dragover", (event) => {
+          event.preventDefault();
+          elements.dropzone.classList.add("is-dragging");
+        });
+        elements.dropzone.addEventListener("dragleave", () => elements.dropzone.classList.remove("is-dragging"));
+        elements.dropzone.addEventListener("drop", (event) => {
+          event.preventDefault();
+          elements.dropzone.classList.remove("is-dragging");
+          pendingDroppedFile = event.dataTransfer?.files?.[0] || null;
+          syncUploadFile(pendingDroppedFile);
+        });
         renderAll();
       })();
     </script>

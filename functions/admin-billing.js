@@ -231,6 +231,11 @@ exports.handler = async (event) => {
 
     if (action === "save_invoice") {
       const invoice = validateInvoicePayload(payload, billingProfiles);
+      console.info("Admin billing invoice write", {
+        table: "customer_invoices",
+        normalizedProfileId: invoice.profile_id,
+        customerAuthUserId: invoice.customer_auth_user_id || "",
+      });
       const savedInvoice = await upsertInvoice(supabaseUrl, serviceRoleKey, invoice);
       return jsonResponse(200, { success: true, invoice: normalizeInvoice(savedInvoice) });
     }
@@ -239,6 +244,11 @@ exports.handler = async (event) => {
       const id = validateUuid(payload.id, "Kies een geldige factuur.");
       const status = normalizeInvoiceStatus(payload.status);
       if (!allowedInvoiceStatuses.has(status)) return jsonResponse(400, { success: false, error: "Kies een geldige factuurstatus." });
+      console.info("Admin billing invoice status update", {
+        table: "customer_invoices",
+        invoiceId: id,
+        status,
+      });
       const savedInvoice = await patchRecord(supabaseUrl, serviceRoleKey, "customer_invoices", id, {
         status,
         paid_at: status === "paid" ? new Date().toISOString() : null,
@@ -279,7 +289,7 @@ async function fetchProfiles(supabaseUrl, serviceRoleKey) {
     });
   } catch (error) {
     if (!isSchemaColumnError(error)) throw error;
-    return supabaseFetch(`${supabaseUrl}/rest/v1/profiles?select=id,auth_user_id,name,company,package&order=company.asc.nullslast`, {
+    return supabaseFetch(`${supabaseUrl}/rest/v1/profiles?select=id,auth_user_id,name&order=name.asc.nullslast`, {
       method: "GET",
       headers: restHeaders(serviceRoleKey),
     });
@@ -338,6 +348,7 @@ async function fetchSubscriptions(supabaseUrl, serviceRoleKey) {
 }
 
 async function fetchInvoices(supabaseUrl, serviceRoleKey) {
+  console.info("Admin billing invoice read", { table: "customer_invoices" });
   try {
     return await supabaseFetch(`${supabaseUrl}/rest/v1/customer_invoices?select=${INVOICE_FIELDS}&order=created_at.desc.nullslast&limit=300`, {
       method: "GET",
@@ -389,7 +400,7 @@ function validateInvoicePayload(payload, profiles) {
   const amount = nullableAmount(payload.amount ?? payload.total);
   const invoiceContext = buildInvoiceContext(payload, profile, amount);
 
-  return {
+  const record = {
     id,
     profile_id: profile.id,
     customer_auth_user_id: profile.authUserId || null,
@@ -400,10 +411,20 @@ function validateInvoicePayload(payload, profiles) {
     due_date: cleanText(payload.dueDate) || null,
     paid_at: status === "paid" ? cleanText(payload.paidAt) || new Date().toISOString() : cleanText(payload.paidAt) || null,
     pdf_file_path: normalizeInvoicePdfPath(payload.pdfFilePath),
-    mollie_payment_id: cleanText(payload.molliePaymentId) || null,
     notes: invoiceContext.notes,
     updated_at: new Date().toISOString(),
   };
+  if (hasPayloadValue(payload, "molliePaymentId")) record.mollie_payment_id = cleanText(payload.molliePaymentId) || null;
+  if (hasPayloadValue(payload, "mollie_payment_id")) record.mollie_payment_id = cleanText(payload.mollie_payment_id) || null;
+  if (hasPayloadValue(payload, "mollieCheckoutUrl")) record.mollie_checkout_url = cleanText(payload.mollieCheckoutUrl) || null;
+  if (hasPayloadValue(payload, "mollie_checkout_url")) record.mollie_checkout_url = cleanText(payload.mollie_checkout_url) || null;
+  if (hasPayloadValue(payload, "molliePaymentStatus")) record.mollie_payment_status = cleanText(payload.molliePaymentStatus) || null;
+  if (hasPayloadValue(payload, "mollie_payment_status")) record.mollie_payment_status = cleanText(payload.mollie_payment_status) || null;
+  if (hasPayloadValue(payload, "molliePaymentCreatedAt")) record.mollie_payment_created_at = cleanText(payload.molliePaymentCreatedAt) || null;
+  if (hasPayloadValue(payload, "mollie_payment_created_at")) record.mollie_payment_created_at = cleanText(payload.mollie_payment_created_at) || null;
+  if (hasPayloadValue(payload, "molliePaymentExpiresAt")) record.mollie_payment_expires_at = cleanText(payload.molliePaymentExpiresAt) || null;
+  if (hasPayloadValue(payload, "mollie_payment_expires_at")) record.mollie_payment_expires_at = cleanText(payload.mollie_payment_expires_at) || null;
+  return record;
 }
 
 function normalizeSubscriptionStatus(value) {
@@ -427,7 +448,20 @@ function profileByPayload(payload = {}, profiles = []) {
     payload._supabaseCustomerId,
     payload.supabase_customer_id,
   ].map(cleanText).filter(Boolean);
-  return profileByAnyId(candidates, profiles);
+  const profile = profileByAnyId(candidates, profiles);
+  if (profile) return profile;
+  const profileId = candidates.find((candidate) => uuidPattern.test(candidate));
+  if (!profileId) return null;
+  return {
+    id: profileId,
+    profileId,
+    customerId: cleanText(payload.customerId || payload.customer_id),
+    authUserId: cleanText(payload.customerAuthUserId || payload.customer_auth_user_id || payload.authUserId || payload.auth_user_id),
+    name: cleanText(payload.customerName),
+    company: cleanText(payload.customerCompany),
+    email: cleanText(payload.customerEmail),
+    package: "",
+  };
 }
 
 function profileByAnyId(ids = [], profiles = []) {
@@ -450,6 +484,10 @@ async function upsertSubscription(supabaseUrl, serviceRoleKey, subscription) {
 async function upsertInvoice(supabaseUrl, serviceRoleKey, invoice) {
   const record = { ...invoice };
   if (!record.id) delete record.id;
+  console.info("Admin billing invoice upsert target", {
+    table: "customer_invoices",
+    normalizedProfileId: record.profile_id,
+  });
   return upsertRecord(supabaseUrl, serviceRoleKey, "customer_invoices", record);
 }
 
@@ -670,6 +708,10 @@ function buildInvoiceContext(payload, profile, amount) {
     `\n---\nFactuurregels: ${JSON.stringify(context)}`,
   ].filter(Boolean).join("\n");
   return { ...context, notes };
+}
+
+function hasPayloadValue(payload = {}, key = "") {
+  return Object.prototype.hasOwnProperty.call(payload, key) && payload[key] !== undefined;
 }
 
 function normalizeInvoiceLines(lines = []) {
