@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Brand Center | Max CRM</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=20260705-workflow-modules" />
+  </head>
+  <body class="admin-body">
+    <main class="admin-crm-shell">
+      <aside class="admin-sidebar" aria-label="Admin modules">
+        <a class="brand" href="admin-dashboard.html">
+          <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true">
+            <rect x="6" y="6" width="68" height="68" rx="18"></rect>
+            <path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path>
+            <path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path>
+          </svg>
+          <span>Max CRM</span>
+        </a>
+        <nav class="admin-sidebar-nav">
+          <span class="admin-nav-group">Main</span>
+          <a href="admin-dashboard.html">Dashboard</a>
+          <span class="admin-nav-group">Sales</span>
+          <a href="admin-sales.html">Leads</a>
+          <span class="admin-nav-group">Production</span>
+          <a href="admin-website-factory.html">Website Factory</a>
+          <a href="admin-ai-content-library.html">AI Content Library</a>
+          <a class="is-active" href="admin-brand-center.html">Brand Center</a>
+          <span class="admin-nav-group">Customers</span>
+          <a href="admin-klanten.html">Klanten</a>
+          <a href="admin-websites.html">Websites</a>
+          <a href="admin-projecten.html">Projecten</a>
+          <span class="admin-nav-group">Administration</span>
+          <a href="admin-offertes.html">Offertes</a>
+          <a href="admin-facturen.html">Facturen</a>
+          <span class="admin-nav-group">System</span>
+          <a href="admin-instellingen.html">Instellingen</a>
+        </nav>
+      </aside>
+
+      <div class="admin-crm-main workflow-module-shell">
+        <header class="admin-section admin-hero">
+          <div>
+            <p class="section-kicker">Production</p>
+            <h1>Brand Center</h1>
+            <p>Logo's, huisstijl, kleuren, typografie, merkregels en print-assets als lokaal werkpakket.</p>
+          </div>
+          <span class="workflow-module-label">Brand Center - nog niet gekoppeld aan productie</span>
+        </header>
+
+        <section class="brand-center-workspace" aria-label="Brand Center workspace">
+          <div class="brand-center-tabs" role="tablist" aria-label="Brand Center onderdelen">
+            <button class="brand-center-tab is-active" type="button" data-tab="overview">Overview</button>
+            <button class="brand-center-tab" type="button" data-tab="profile">Brand Profile</button>
+            <button class="brand-center-tab" type="button" data-tab="logos">Logos</button>
+            <button class="brand-center-tab" type="button" data-tab="kit">Brand Kit</button>
+            <button class="brand-center-tab" type="button" data-tab="print">Print Assets</button>
+            <button class="brand-center-tab" type="button" data-tab="export">Export</button>
+          </div>
+
+          <section class="brand-center-panel" data-panel="overview">
+            <div class="brand-center-metrics" id="brand-center-metrics"></div>
+          </section>
+
+          <section class="brand-center-panel" data-panel="profile" hidden>
+            <article class="admin-card">
+              <h2>Brand Profile</h2>
+              <form class="brand-center-form" id="brand-profile-form">
+                <label>Business name<input name="businessName" /></label>
+                <label>Industry<input name="industry" /></label>
+                <label>Target audience<input name="targetAudience" /></label>
+                <label>Tone of voice<input name="toneOfVoice" /></label>
+                <label>Main offer<input name="mainOffer" /></label>
+                <label>USP<input name="usp" /></label>
+                <label>Primary color<input name="primaryColor" type="color" value="#2563eb" /></label>
+                <label>Secondary color<input name="secondaryColor" type="color" value="#0f172a" /></label>
+                <label>Accent color<input name="accentColor" type="color" value="#22c55e" /></label>
+                <label>Font preference<input name="fontPreference" /></label>
+                <label class="brand-center-span-2">Notes<textarea name="notes" rows="4"></textarea></label>
+                <div class="brand-center-actions brand-center-span-2">
+                  <button class="button primary" type="submit">Save brand profile</button>
+                </div>
+              </form>
+            </article>
+          </section>
+
+          <section class="brand-center-panel" data-panel="logos" hidden>
+            <article class="admin-card">
+              <h2>Logo Library</h2>
+              <form class="brand-center-form" id="logo-form">
+                <input type="hidden" name="id" />
+                <label>Asset name<input name="assetName" required /></label>
+                <label>Logo type<select name="logoType" required></select></label>
+                <label>Format<select name="format" required></select></label>
+                <label>Status<select name="status" required></select></label>
+                <label class="brand-center-span-2">Preview URL<input name="previewUrl" type="url" /></label>
+                <label class="brand-center-span-2">Prompt used<textarea name="promptUsed" rows="3"></textarea></label>
+                <label class="brand-center-span-2">Notes<textarea name="notes" rows="3"></textarea></label>
+                <div class="brand-center-actions brand-center-span-2">
+                  <button class="button primary" type="submit">Save logo asset</button>
+                  <button class="button secondary" type="button" data-reset-form="logo-form">Clear</button>
+                </div>
+              </form>
+            </article>
+            <div class="brand-center-table" id="logo-list"></div>
+          </section>
+
+          <section class="brand-center-panel" data-panel="kit" hidden>
+            <article class="admin-card">
+              <h2>Brand Kit</h2>
+              <form class="brand-center-form" id="brand-kit-form">
+                <label class="brand-center-span-2">Colors<textarea name="colors" rows="3"></textarea></label>
+                <label class="brand-center-span-2">Fonts<textarea name="fonts" rows="3"></textarea></label>
+                <label>Button style<input name="buttonStyle" /></label>
+                <label>Image style<input name="imageStyle" /></label>
+                <label class="brand-center-span-2">Tone rules<textarea name="toneRules" rows="3"></textarea></label>
+                <label class="brand-center-span-2">Do's<textarea name="dos" rows="3"></textarea></label>
+                <label class="brand-center-span-2">Don'ts<textarea name="donts" rows="3"></textarea></label>
+                <div class="brand-center-actions brand-center-span-2">
+                  <button class="button primary" type="submit">Save brand kit</button>
+                </div>
+              </form>
+            </article>
+          </section>
+
+          <section class="brand-center-panel" data-panel="print" hidden>
+            <article class="admin-card">
+              <h2>Print Assets</h2>
+              <form class="brand-center-form" id="print-form">
+                <input type="hidden" name="id" />
+                <label>Asset name<input name="assetName" required /></label>
+                <label>Print type<select name="printType" required></select></label>
+                <label>Size or format<input name="sizeOrFormat" /></label>
+                <label>Status<select name="status" required></select></label>
+                <label class="brand-center-span-2">Preview URL<input name="previewUrl" type="url" /></label>
+                <label class="brand-center-span-2">Supplier notes<textarea name="supplierNotes" rows="3"></textarea></label>
+                <div class="brand-center-actions brand-center-span-2">
+                  <button class="button primary" type="submit">Save print asset</button>
+                  <button class="button secondary" type="button" data-reset-form="print-form">Clear</button>
+                </div>
+              </form>
+            </article>
+            <div class="brand-center-table" id="print-list"></div>
+          </section>
+
+          <section class="brand-center-panel" data-panel="export" hidden>
+            <article class="brand-center-export-box">
+              <h2>Export Brand Package JSON</h2>
+              <p>Download het lokale merkpakket voor latere beoordeling. Dit schrijft niets naar productie.</p>
+              <button class="button primary" id="export-brand-package" type="button">Export Brand Package JSON</button>
+            </article>
+          </section>
+        </section>
+      </div>
+    </main>
+    <script src="src/brand-center.js?v=20260705-workflow-modules"></script>
+  </body>
+</html>

@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>AI Content Library | Max CRM</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=20260705-workflow-modules" />
+  </head>
+  <body class="admin-body">
+    <main class="admin-crm-shell">
+      <aside class="admin-sidebar" aria-label="Admin modules">
+        <a class="brand" href="admin-dashboard.html">
+          <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true">
+            <rect x="6" y="6" width="68" height="68" rx="18"></rect>
+            <path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path>
+            <path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path>
+          </svg>
+          <span>Max CRM</span>
+        </a>
+        <nav class="admin-sidebar-nav">
+          <span class="admin-nav-group">Main</span>
+          <a href="admin-dashboard.html">Dashboard</a>
+          <span class="admin-nav-group">Sales</span>
+          <a href="admin-sales.html">Leads</a>
+          <span class="admin-nav-group">Production</span>
+          <a href="admin-website-factory.html">Website Factory</a>
+          <a class="is-active" href="admin-ai-content-library.html">AI Content Library</a>
+          <a href="admin-brand-center.html">Brand Center</a>
+          <span class="admin-nav-group">Customers</span>
+          <a href="admin-klanten.html">Klanten</a>
+          <a href="admin-websites.html">Websites</a>
+          <a href="admin-projecten.html">Projecten</a>
+          <span class="admin-nav-group">Administration</span>
+          <a href="admin-offertes.html">Offertes</a>
+          <a href="admin-facturen.html">Facturen</a>
+          <span class="admin-nav-group">System</span>
+          <a href="admin-instellingen.html">Instellingen</a>
+        </nav>
+      </aside>
+
+      <div class="admin-crm-main workflow-module-shell">
+        <header class="admin-section admin-hero">
+          <div>
+            <p class="section-kicker">Production</p>
+            <h1>AI Content Library</h1>
+            <p>Website teksten, SEO, pagina's, AI beeldreferenties en herbruikbare contentblokken.</p>
+          </div>
+          <span class="workflow-module-label">AI Content Library - nog niet gekoppeld aan productie</span>
+        </header>
+
+        <section class="ai-content-workspace" aria-label="AI Content Library workspace">
+          <div class="ai-content-tabs" role="tablist" aria-label="AI Content Library onderdelen">
+            <button class="ai-content-tab is-active" type="button" data-tab="overview">Overview</button>
+            <button class="ai-content-tab" type="button" data-tab="content">Content</button>
+            <button class="ai-content-tab" type="button" data-tab="pages">Pages</button>
+            <button class="ai-content-tab" type="button" data-tab="seo">SEO</button>
+            <button class="ai-content-tab" type="button" data-tab="images">Images</button>
+            <button class="ai-content-tab" type="button" data-tab="export">Export</button>
+          </div>
+
+          <section class="ai-content-panel" data-panel="overview">
+            <div class="ai-content-metrics" id="ai-content-metrics"></div>
+          </section>
+
+          <section class="ai-content-panel" data-panel="content" hidden>
+            <article class="admin-card">
+              <h2>Content Blocks</h2>
+              <form class="ai-content-form" id="content-block-form">
+                <input type="hidden" name="id" />
+                <label>Title<input name="title" required /></label>
+                <label>Content type<select name="contentType" required></select></label>
+                <label>Connected page<input name="connectedPage" /></label>
+                <label>Version name<input name="versionName" /></label>
+                <label>Status<select name="status" required></select></label>
+                <label class="ai-content-span-2">Text content<textarea name="textContent" rows="6"></textarea></label>
+                <label class="ai-content-span-2">Notes<textarea name="notes" rows="3"></textarea></label>
+                <div class="ai-content-actions ai-content-span-2">
+                  <button class="button primary" type="submit">Save content block</button>
+                  <button class="button secondary" type="button" data-reset-form="content-block-form">Clear</button>
+                </div>
+              </form>
+            </article>
+            <div class="ai-content-table" id="content-block-list"></div>
+          </section>
+
+          <section class="ai-content-panel" data-panel="pages" hidden>
+            <article class="admin-card">
+              <h2>Page Library</h2>
+              <form class="ai-content-form" id="page-form">
+                <input type="hidden" name="id" />
+                <label>Page name<input name="pageName" required /></label>
+                <label>Slug<input name="slug" required /></label>
+                <label class="ai-content-span-2">Purpose<textarea name="purpose" rows="3"></textarea></label>
+                <label>SEO title<input name="seoTitle" /></label>
+                <label>Connected image role<input name="connectedImageRole" /></label>
+                <label class="ai-content-span-2">Meta description<textarea name="metaDescription" rows="3"></textarea></label>
+                <label class="ai-content-span-2">Connected content blocks<input name="connectedContentBlocks" placeholder="Komma-gescheiden titels of IDs" /></label>
+                <label>Status<select name="status" required></select></label>
+                <div class="ai-content-actions ai-content-span-2">
+                  <button class="button primary" type="submit">Save page</button>
+                  <button class="button secondary" type="button" data-reset-form="page-form">Clear</button>
+                </div>
+              </form>
+            </article>
+            <div class="ai-content-table" id="page-list"></div>
+          </section>
+
+          <section class="ai-content-panel" data-panel="seo" hidden>
+            <article class="admin-card">
+              <h2>SEO Library</h2>
+              <form class="ai-content-form" id="seo-form">
+                <input type="hidden" name="id" />
+                <label>Page<input name="page" required /></label>
+                <label>Focus keyword<input name="focusKeyword" /></label>
+                <label>SEO title<input name="seoTitle" /></label>
+                <label>Status<select name="status" required></select></label>
+                <label class="ai-content-span-2">Meta description<textarea name="metaDescription" rows="3"></textarea></label>
+                <label class="ai-content-span-2">Secondary keywords<input name="secondaryKeywords" /></label>
+                <label class="ai-content-span-2">Search intent<textarea name="searchIntent" rows="3"></textarea></label>
+                <div class="ai-content-actions ai-content-span-2">
+                  <button class="button primary" type="submit">Save SEO record</button>
+                  <button class="button secondary" type="button" data-reset-form="seo-form">Clear</button>
+                </div>
+              </form>
+            </article>
+            <div class="ai-content-table" id="seo-list"></div>
+          </section>
+
+          <section class="ai-content-panel" data-panel="images" hidden>
+            <article class="admin-card">
+              <h2>Stock Image Picker</h2>
+              <label class="ai-content-form">Branch<select id="branch-selector"></select></label>
+            </article>
+            <div class="ai-content-image-grid" id="image-grid"></div>
+          </section>
+
+          <section class="ai-content-panel" data-panel="export" hidden>
+            <article class="ai-content-export-box">
+              <h2>Export Content Package JSON</h2>
+              <p>Download het lokale pakket voor latere beoordeling. Dit schrijft niets naar productie.</p>
+              <button class="button primary" id="export-content-package" type="button">Export Content Package JSON</button>
+            </article>
+          </section>
+        </section>
+      </div>
+    </main>
+    <script type="module" src="src/ai-content-library.js?v=20260705-workflow-modules"></script>
+  </body>
+</html>

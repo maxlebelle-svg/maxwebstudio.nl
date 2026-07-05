@@ -25,18 +25,23 @@
           <span>Max CRM</span>
         </a>
         <nav class="admin-sidebar-nav">
-          <span class="admin-nav-group">Werkruimte</span>
+          <span class="admin-nav-group">Main</span>
           <a href="admin-dashboard.html">Dashboard</a>
-          <a href="admin-sales.html">Sales</a>
+          <span class="admin-nav-group">Sales</span>
+          <a href="admin-sales.html">Leads</a>
+          <span class="admin-nav-group">Production</span>
           <a href="admin-website-factory.html">Website Factory</a>
+          <a href="admin-ai-content-library.html">AI Content Library</a>
+          <a href="admin-brand-center.html">Brand Center</a>
+          <span class="admin-nav-group">Customers</span>
           <a href="admin-klanten.html">Klanten</a>
           <a class="admin-sales-secondary" href="admin-websites.html">Websites</a>
           <a href="admin-projecten.html">Projecten</a>
+          <span class="admin-nav-group">Administration</span>
           <a href="admin-offertes.html">Offertes</a>
           <a href="admin-facturen.html">Facturen</a>
-          <a class="admin-developer-only" href="#onderhoud">Abonnementen</a>
+          <span class="admin-nav-group">System</span>
           <a class="admin-sales-secondary" href="admin-instellingen.html">Instellingen</a>
-          <a class="admin-developer-only" href="#demo-omgeving">Developer Mode</a>
         </nav>
         <div class="admin-topbar-actions" aria-label="Admin snelmenu">
           <label class="admin-topbar-search" for="admin-global-search">
@@ -2574,16 +2579,24 @@
         const adminPageSearch = document.getElementById("admin-page-search");
         const adminSidebarNav = document.querySelector(".admin-sidebar-nav");
         const adminSidebarNavItems = [
-          { href: "admin-dashboard.html", page: "dashboard", accessId: "dashboard", label: "Dashboard" },
-          { href: "admin-sales.html", page: "sales", accessId: "leadfinder", label: "Sales" },
-          { href: "admin-website-factory.html", page: "website-factory", accessId: "leadfinder", label: "Website Factory" },
-          { href: "admin-klanten.html", page: "klanten", accessId: "klanten", label: "Klanten" },
-          { href: "admin-websites.html", page: "websites", accessId: "websites", label: "Websites", className: "admin-sales-secondary" },
-          { href: "admin-projecten.html", page: "projecten", accessId: "projecten", label: "Projecten" },
-          { href: "admin-offertes.html", page: "offertes", accessId: "offertes", label: "Offertes" },
-          { href: "admin-facturen.html", page: "facturen", accessId: "facturen", label: "Facturen" },
+          { type: "group", label: "Main" },
+          { href: "admin-dashboard.html", page: "dashboard", accessId: "dashboard", label: "Dashboard", alwaysVisible: true },
+          { type: "group", label: "Sales" },
+          { href: "admin-sales.html", page: "sales", accessId: "leadfinder", label: "Leads", alwaysVisible: true },
+          { type: "group", label: "Production" },
+          { href: "admin-website-factory.html", page: "website-factory", accessId: "leadfinder", label: "Website Factory", alwaysVisible: true },
+          { href: "admin-ai-content-library.html", page: "ai-content-library", accessId: "ai-content-library", label: "AI Content Library", alwaysVisible: true },
+          { href: "admin-brand-center.html", page: "brand-center", accessId: "brand-center", label: "Brand Center", alwaysVisible: true },
+          { type: "group", label: "Customers" },
+          { href: "admin-klanten.html", page: "klanten", accessId: "klanten", label: "Klanten", alwaysVisible: true },
+          { href: "admin-websites.html", page: "websites", accessId: "websites", label: "Websites", className: "admin-sales-secondary", alwaysVisible: true },
+          { href: "admin-projecten.html", page: "projecten", accessId: "projecten", label: "Projecten", alwaysVisible: true },
+          { type: "group", label: "Administration" },
+          { href: "admin-offertes.html", page: "offertes", accessId: "offertes", label: "Offertes", alwaysVisible: true },
+          { href: "admin-facturen.html", page: "facturen", accessId: "facturen", label: "Facturen", alwaysVisible: true },
+          { type: "group", label: "System" },
+          { href: "admin-instellingen.html", page: "instellingen", accessId: "instellingen", label: "Instellingen", className: "admin-sales-secondary", alwaysVisible: true },
           { href: "#onderhoud", accessId: "onderhoud", label: "Abonnementen", className: "admin-developer-only" },
-          { href: "admin-instellingen.html", page: "instellingen", accessId: "instellingen", label: "Instellingen", className: "admin-sales-secondary" },
           { href: "#demo-omgeving", accessId: "demo-omgeving", label: "Developer Mode", className: "admin-developer-only" },
         ];
         let adminNavLinks = [];
@@ -9065,14 +9078,14 @@
           const currentPage = window.maxwebstudioAdminPage?.page || "dashboard";
           const visibleItemIds = Array.isArray(options.visibleItemIds) ? new Set(options.visibleItemIds) : null;
           const visibleItems = visibleItemIds
-            ? adminSidebarNavItems.filter((item) => item.accessId === "dashboard" || visibleItemIds.has(item.accessId))
+            ? adminSidebarNavItems.filter((item) => item.type === "group" || item.alwaysVisible || item.accessId === "dashboard" || visibleItemIds.has(item.accessId))
             : adminSidebarNavItems;
-          adminSidebarNav.innerHTML = [
-            `<span class="admin-nav-group">Werkruimte</span>`,
-            ...visibleItems.map((item) => `
+          adminSidebarNav.innerHTML = visibleItems.map((item) => {
+            if (item.type === "group") return `<span class="admin-nav-group">${item.label}</span>`;
+            return `
               <a href="${item.href}" class="${[item.className || "", item.page === currentPage ? "is-active" : ""].filter(Boolean).join(" ")}" data-admin-nav="${item.page || item.href.replace("#", "")}">${item.label}</a>
-            `),
-          ].join("");
+            `;
+          }).join("");
           adminNavLinks = [...adminSidebarNav.querySelectorAll("a")];
           const filteredCount = adminSidebarNavItems.length - visibleItems.length;
           if (isDeveloperModeEnabled()) {

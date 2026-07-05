@@ -17560,6 +17560,196 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   gap: 10px;
 }
 
+.admin-body .workflow-module-shell {
+  display: grid;
+  gap: 24px;
+  padding: 26px;
+}
+
+.ai-content-workspace,
+.brand-center-workspace {
+  display: grid;
+  gap: 22px;
+}
+
+.ai-content-tabs,
+.brand-center-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.72);
+}
+
+.ai-content-tab,
+.brand-center-tab {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 8px;
+  color: rgba(226, 236, 248, 0.78);
+  background: rgba(255, 255, 255, 0.04);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.ai-content-tab.is-active,
+.brand-center-tab.is-active {
+  color: #f8fbff;
+  border-color: rgba(96, 165, 250, 0.36);
+  background: linear-gradient(90deg, rgba(37, 99, 235, 0.36), rgba(255, 255, 255, 0.08));
+}
+
+.ai-content-panel,
+.brand-center-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.ai-content-panel[hidden],
+.brand-center-panel[hidden] {
+  display: none;
+}
+
+.ai-content-metrics,
+.brand-center-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.ai-content-form,
+.brand-center-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.ai-content-form label,
+.brand-center-form label {
+  display: grid;
+  gap: 7px;
+  color: rgba(226, 236, 248, 0.76);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.ai-content-form input,
+.ai-content-form select,
+.ai-content-form textarea,
+.brand-center-form input,
+.brand-center-form select,
+.brand-center-form textarea {
+  width: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 8px;
+  color: #f8fbff;
+  background: rgba(15, 23, 42, 0.76);
+}
+
+.ai-content-span-2,
+.brand-center-span-2 {
+  grid-column: 1 / -1;
+}
+
+.ai-content-actions,
+.brand-center-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.ai-content-table,
+.brand-center-table {
+  display: grid;
+  gap: 10px;
+}
+
+.ai-content-row,
+.brand-center-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 1.2fr) minmax(120px, 0.8fr) minmax(120px, 0.8fr) minmax(190px, auto);
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.62);
+}
+
+.ai-content-row strong,
+.brand-center-row strong {
+  color: #f8fbff;
+}
+
+.ai-content-row small,
+.brand-center-row small {
+  display: block;
+  margin-top: 4px;
+}
+
+.ai-content-image-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.ai-content-image-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.66);
+}
+
+.ai-content-image-card.is-selected {
+  border-color: rgba(34, 197, 94, 0.56);
+  box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.22);
+}
+
+.ai-content-image-card img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 8px;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.ai-content-export-box,
+.brand-center-export-box {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid rgba(96, 165, 250, 0.2);
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(15, 23, 42, 0.76));
+}
+
+.workflow-module-label {
+  display: inline-flex;
+  width: fit-content;
+  padding: 8px 12px;
+  border: 1px solid rgba(250, 204, 21, 0.28);
+  border-radius: 8px;
+  color: #fde68a;
+  background: rgba(113, 63, 18, 0.24);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.workflow-empty-state {
+  padding: 18px;
+  border: 1px dashed rgba(148, 163, 184, 0.24);
+  border-radius: 8px;
+  color: rgba(226, 236, 248, 0.72);
+  background: rgba(15, 23, 42, 0.42);
+}
+
 /* Website Factory Enterprise Workspace v2 */
 .admin-body #demo-klantreis {
   gap: 24px;
@@ -17924,6 +18114,20 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
 }
 
 @media (max-width: 760px) {
+  .admin-body .workflow-module-shell {
+    padding: 16px;
+  }
+
+  .ai-content-metrics,
+  .brand-center-metrics,
+  .ai-content-form,
+  .brand-center-form,
+  .ai-content-row,
+  .brand-center-row,
+  .ai-content-image-grid {
+    grid-template-columns: 1fr;
+  }
+
   .admin-body .admin-section:not(.admin-hero) {
     padding: 18px;
   }
