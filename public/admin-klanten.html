@@ -11120,6 +11120,14 @@
           biKpis.cancellations.textContent = String(metrics.subscriptions?.canceled ?? 0);
           biKpis.pauses.textContent = String(metrics.subscriptions?.paused ?? 0);
           biKpis.paymentIssues.textContent = String((metrics.subscriptions?.highRisk ?? 0) + (metrics.subscriptions?.attention ?? 0));
+          if (totalLeadsMetric) totalLeadsMetric.textContent = String(metrics.leads?.open ?? metrics.leads?.total ?? 0);
+          if (totalCustomersMetric) totalCustomersMetric.textContent = String(metrics.customers?.total ?? 0);
+          if (totalCustomersLabel) totalCustomersLabel.textContent = (metrics.customers?.total ?? 0) === 1 ? "Klantprofiel" : "Klantprofielen";
+          if (activeProjectsMetric) activeProjectsMetric.textContent = String(metrics.projects?.active ?? 0);
+          if (liveWebsitesMetric) liveWebsitesMetric.textContent = String(metrics.websites?.active ?? metrics.customers?.withWebsite ?? 0);
+          if (openQuotesMetric) openQuotesMetric.textContent = String(metrics.finance?.openQuotes ?? 0);
+          if (openInvoicesLocalMetric) openInvoicesLocalMetric.textContent = String(metrics.finance?.openInvoices ?? 0);
+          if (conversionRateMetric) conversionRateMetric.textContent = `${metrics.leads?.conversionRate ?? 0}%`;
 
           renderBarChart(biCharts.revenue, metrics.charts?.revenueByMonth || [], { moneyValues: true });
           renderBarChart(biCharts.subscriptions, metrics.charts?.subscriptionGrowth || []);
@@ -17374,6 +17382,15 @@
               setAdminAccessMessage(`Supabase customers konden niet worden gelezen: ${sourceStatus.error}`, "error");
             } else {
               setAdminOperationalMessage(`CRM geladen via customer mode ${sourceStatus.mode || "local"}, website mode ${websiteSourceStatus.mode || "local"}, project mode ${projectSourceStatus.mode || "local"}, quote mode ${quoteSourceStatus.mode || "local"}, invoice mode ${invoiceSourceStatus.mode || "local"}, subscription mode ${subscriptionSourceStatus.mode || "local"} en files mode ${fileSourceStatus.mode || "local"}.`, "success");
+            }
+            if (isDeveloperModeEnabled()) {
+              console.info("CRM centrale databronnen geladen", {
+                customers: { source: sourceStatus.dataLayer || "unknown", count: state.customers.length, status: sourceStatus },
+                websites: { source: websiteSourceStatus.dataLayer || "unknown", count: state.websites.length, status: websiteSourceStatus },
+                projects: { source: projectSourceStatus.dataLayer || "unknown", count: state.projects.length, status: projectSourceStatus },
+                quotes: { source: quoteSourceStatus.dataLayer || "unknown", count: state.quotes.length, status: quoteSourceStatus },
+                invoices: { source: invoiceSourceStatus.dataLayer || "unknown", count: state.invoices.length, status: invoiceSourceStatus },
+              });
             }
           } catch (error) {
             setAdminAccessMessage(error.message || "CRM-klanten konden niet worden geladen.", "error");

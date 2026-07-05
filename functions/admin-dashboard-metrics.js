@@ -1,6 +1,8 @@
 const { verifyAdmin } = require("./_admin-auth");
-const PROFILE_FIELDS = "id,auth_user_id,name,company,email,website,status,package,created_at";
-const WEBSITE_FIELDS = "id,profile_id,customer_auth_user_id,name,domain,live_url,status,hosting_status,ssl_status,created_at,updated_at";
+const CUSTOMER_FIELDS = "id,auth_user_id,profile_id,name,company,email,website,status,portal_status,package,customer_since,is_demo,environment,created_at,updated_at";
+const LEAD_FIELDS = "id,company_name,email,status,created_at,updated_at";
+const WEBSITE_FIELDS = "id,customer_id,profile_id,name,domain,live_url,status,hosting_status,ssl_status,created_at,updated_at";
+const PROJECT_FIELDS = "id,customer_id,website_id,name,type,status,phase,progress,created_at,updated_at";
 const SUBSCRIPTION_FIELDS = [
   "id",
   "profile_id",
@@ -24,8 +26,8 @@ const SUBSCRIPTION_FIELDS = [
   "last_failed_payment_at",
   "failed_payment_count",
 ].join(",");
-const INVOICE_FIELDS = "id,profile_id,customer_auth_user_id,invoice_number,title,amount,status,due_date,paid_at,created_at,updated_at";
-const REQUEST_FIELDS = "id,auth_user_id,company_name,email,title,status,priority,created_at";
+const QUOTE_FIELDS = "id,customer_id,website_id,project_id,quote_number,title,amount,currency,status,accepted_at,created_at,updated_at";
+const INVOICE_FIELDS = "id,customer_id,website_id,project_id,invoice_number,title,amount,currency,status,due_date,paid_at,created_at,updated_at";
 
 exports.handler = async (event) => {
   try {
@@ -48,15 +50,17 @@ exports.handler = async (event) => {
 
     const period = normalizePeriod(new URLSearchParams(event.queryStringParameters || {}).get("period"));
     const range = periodRange(period);
-    const [profiles, websites, subscriptions, invoices, requests] = await Promise.all([
-      fetchRows(supabaseUrl, serviceRoleKey, "profiles", PROFILE_FIELDS, "created_at.desc", 1000),
-      fetchRows(supabaseUrl, serviceRoleKey, "customer_websites", WEBSITE_FIELDS, "updated_at.desc", 1000),
+    const [customers, leads, websites, projects, quotes, subscriptions, invoices] = await Promise.all([
+      fetchRows(supabaseUrl, serviceRoleKey, "customers", CUSTOMER_FIELDS, "updated_at.desc", 1000),
+      fetchRows(supabaseUrl, serviceRoleKey, "leads", LEAD_FIELDS, "updated_at.desc", 1000),
+      fetchRows(supabaseUrl, serviceRoleKey, "websites", WEBSITE_FIELDS, "updated_at.desc", 1000),
+      fetchRows(supabaseUrl, serviceRoleKey, "projects", PROJECT_FIELDS, "updated_at.desc", 1000),
+      fetchRows(supabaseUrl, serviceRoleKey, "quotes", QUOTE_FIELDS, "updated_at.desc", 1000),
       fetchRows(supabaseUrl, serviceRoleKey, "customer_subscriptions", SUBSCRIPTION_FIELDS, "updated_at.desc", 1000),
-      fetchRows(supabaseUrl, serviceRoleKey, "customer_invoices", INVOICE_FIELDS, "created_at.desc", 1000),
-      fetchRows(supabaseUrl, serviceRoleKey, "change_requests", REQUEST_FIELDS, "created_at.desc", 1000),
+      fetchRows(supabaseUrl, serviceRoleKey, "invoices", INVOICE_FIELDS, "created_at.desc", 1000),
     ]);
 
-    const metrics = buildMetrics({ profiles, websites, subscriptions, invoices, requests, period, range });
+    const metrics = buildMetrics({ customers, leads, websites, projects, quotes, subscriptions, invoices, period, range });
     return jsonResponse(200, {
       success: true,
       period,
@@ -75,23 +79,29 @@ exports.handler = async (event) => {
   }
 };
 
-function buildMetrics({ profiles, websites, subscriptions, invoices, requests, period, range }) {
-  const profileMap = new Map(profiles.map((profile) => [cleanText(profile.id), profile]));
-  const websitesByProfile = new Map();
+function buildMetrics({ customers, leads, websites, projects, quotes, subscriptions, invoices, period, range }) {
+  const customerMap = new Map(customers.map((customer) => [cleanText(customer.id), customer]));
+  const websitesByCustomer = new Map();
   websites.forEach((website) => {
-    const profileId = cleanText(website.profile_id);
-    if (!profileId) return;
-    if (!websitesByProfile.has(profileId)) websitesByProfile.set(profileId, []);
-    websitesByProfile.get(profileId).push(website);
+    const customerId = cleanText(website.customer_id || website.profile_id);
+    if (!customerId) return;
+    if (!websitesByCustomer.has(customerId)) websitesByCustomer.set(customerId, []);
+    websitesByCustomer.get(customerId).push(website);
   });
 
   const activeSubscriptions = subscriptions.filter(isActiveSubscription);
   const periodInvoices = invoices.filter((invoice) => inRange(invoice.paid_at || invoice.created_at || invoice.updated_at, range));
   const periodPaidInvoices = periodInvoices.filter((invoice) => normalize(invoice.status) === "paid");
-  const openInvoices = invoices.filter((invoice) => ["draft", "sent", "open", "pending"].includes(normalize(invoice.status)));
+  const openInvoices = invoices.filter((invoice) => ["concept", "draft", "sent", "verzonden", "open", "pending", "verlopen", "overdue"].includes(normalize(invoice.status)));
   const paidInvoices = invoices.filter((invoice) => normalize(invoice.status) === "paid");
   const expiredInvoices = invoices.filter((invoice) => normalize(invoice.status) === "expired" || normalize(invoice.status) === "overdue");
-  const openRequests = requests.filter((request) => !["afgerond", "completed", "done", "gereed"].includes(normalize(request.status)));
+  const openLeads = leads.filter(isOpenLead);
+  const soldLeads = leads.filter(isSoldLead);
+  const periodLeads = leads.filter((lead) => inRange(lead.created_at || lead.updated_at, range));
+  const periodSoldLeads = leads.filter((lead) => isSoldLead(lead) && inRange(lead.updated_at || lead.created_at, range));
+  const activeProjects = projects.filter(isActiveProject);
+  const liveWebsites = websites.filter(isLiveWebsite);
+  const openQuotes = quotes.filter((quote) => ["concept", "draft", "sent", "verzonden", "bekeken", "viewed", "open", "pending"].includes(normalize(quote.status)));
   const retryNeeded = subscriptions.filter((subscription) => ["payment failed", "retry needed", "action required"].includes(normalize(subscription.retry_status)));
   const waitingMandates = subscriptions.filter((subscription) => cleanText(subscription.mandate_checkout_url) && normalize(subscription.mandate_status) !== "valid");
   const highRiskSubscriptions = subscriptions.filter((subscription) => normalize(subscription.subscription_risk_level) === "high");
@@ -117,18 +127,35 @@ function buildMetrics({ profiles, websites, subscriptions, invoices, requests, p
       openInvoices: openInvoices.length,
       paidInvoices: paidInvoices.length,
       expiredInvoices: expiredInvoices.length,
+      openQuotes: openQuotes.length,
       openValue: sumAmounts(openInvoices),
       paidRevenue: sumAmounts(periodPaidInvoices),
       totalPaidRevenue: sumAmounts(paidInvoices),
     },
     customers: {
-      total: profiles.length,
-      active: profiles.filter((profile) => normalize(profile.status || "actief") === "actief").length,
-      withoutWebsite: profiles.filter((profile) => !hasWebsite(profile, websitesByProfile)).length,
-      withWebsite: profiles.filter((profile) => hasWebsite(profile, websitesByProfile)).length,
+      total: customers.length,
+      active: customers.filter(isActiveCustomer).length,
+      withoutWebsite: customers.filter((customer) => !hasWebsite(customer, websitesByCustomer)).length,
+      withWebsite: customers.filter((customer) => hasWebsite(customer, websitesByCustomer)).length,
+    },
+    leads: {
+      total: leads.length,
+      open: openLeads.length,
+      period: periodLeads.length,
+      sold: soldLeads.length,
+      soldInPeriod: periodSoldLeads.length,
+      conversionRate: periodLeads.length ? Math.round((periodSoldLeads.length / periodLeads.length) * 100) : 0,
+    },
+    websites: {
+      total: websites.length,
+      active: liveWebsites.length,
+    },
+    projects: {
+      total: projects.length,
+      active: activeProjects.length,
     },
     operations: {
-      openChangeRequests: openRequests.length,
+      openChangeRequests: openLeads.length,
       retryActionsNeeded: retryNeeded.length,
       waitingMandates: waitingMandates.length,
     },
@@ -138,11 +165,11 @@ function buildMetrics({ profiles, websites, subscriptions, invoices, requests, p
       invoiceStatusDistribution: distribution(invoices, "status"),
       subscriptionStatusDistribution: subscriptionDistribution(subscriptions),
     },
-    actionItems: actionItems({ invoices, subscriptions, profiles: profileMap, requests: openRequests }),
+    actionItems: actionItems({ invoices, subscriptions, customers: customerMap, leads: openLeads }),
   };
 }
 
-function actionItems({ invoices, subscriptions, profiles, requests }) {
+function actionItems({ invoices, subscriptions, customers, leads }) {
   const items = [];
   invoices
     .filter((invoice) => ["expired", "overdue"].includes(normalize(invoice.status)))
@@ -151,8 +178,8 @@ function actionItems({ invoices, subscriptions, profiles, requests }) {
       type: "invoice_expired",
       label: "Verlopen factuur",
       title: cleanText(invoice.invoice_number || invoice.title) || "Factuur",
-      customer: customerLabel(profiles.get(cleanText(invoice.profile_id))),
-      profileId: cleanText(invoice.profile_id),
+      customer: customerLabel(customers.get(cleanText(invoice.customer_id || invoice.profile_id))),
+      profileId: cleanText(invoice.customer_id || invoice.profile_id),
       severity: "attention",
       date: cleanText(invoice.due_date || invoice.updated_at || invoice.created_at),
     }));
@@ -164,8 +191,8 @@ function actionItems({ invoices, subscriptions, profiles, requests }) {
       type: "retry_needed",
       label: "Mislukte incasso",
       title: cleanText(subscription.package_name) || "Onderhoudsabonnement",
-      customer: customerLabel(profiles.get(cleanText(subscription.profile_id))),
-      profileId: cleanText(subscription.profile_id),
+      customer: customerLabel(customers.get(cleanText(subscription.customer_id || subscription.profile_id))),
+      profileId: cleanText(subscription.customer_id || subscription.profile_id),
       severity: normalize(subscription.subscription_risk_level) === "high" ? "high" : "attention",
       date: cleanText(subscription.last_failed_payment_at || subscription.retry_next_action_at || subscription.updated_at),
     }));
@@ -177,8 +204,8 @@ function actionItems({ invoices, subscriptions, profiles, requests }) {
       type: "mandate_waiting",
       label: "Mandate wacht",
       title: cleanText(subscription.package_name) || "Onderhoudsabonnement",
-      customer: customerLabel(profiles.get(cleanText(subscription.profile_id))),
-      profileId: cleanText(subscription.profile_id),
+      customer: customerLabel(customers.get(cleanText(subscription.customer_id || subscription.profile_id))),
+      profileId: cleanText(subscription.customer_id || subscription.profile_id),
       severity: "planned",
       date: cleanText(subscription.updated_at || subscription.created_at),
     }));
@@ -190,23 +217,22 @@ function actionItems({ invoices, subscriptions, profiles, requests }) {
       type: "high_risk",
       label: "Hoog risico",
       title: cleanText(subscription.package_name) || "Onderhoudsabonnement",
-      customer: customerLabel(profiles.get(cleanText(subscription.profile_id))),
-      profileId: cleanText(subscription.profile_id),
+      customer: customerLabel(customers.get(cleanText(subscription.customer_id || subscription.profile_id))),
+      profileId: cleanText(subscription.customer_id || subscription.profile_id),
       severity: "high",
       date: cleanText(subscription.last_failed_payment_at || subscription.updated_at),
     }));
 
-  requests
-    .filter((request) => normalize(request.priority) === "hoog")
+  leads
     .slice(0, 6)
-    .forEach((request) => items.push({
-      type: "change_request",
-      label: "Hoog wijzigingsverzoek",
-      title: cleanText(request.title) || "Wijzigingsverzoek",
-      customer: cleanText(request.company_name || request.email) || "Klant",
+    .forEach((lead) => items.push({
+      type: "lead_open",
+      label: "Open lead",
+      title: cleanText(lead.company_name || lead.email) || "Lead",
+      customer: cleanText(lead.company_name || lead.email) || "Lead",
       profileId: "",
-      severity: "attention",
-      date: cleanText(request.created_at),
+      severity: "planned",
+      date: cleanText(lead.updated_at || lead.created_at),
     }));
 
   return items
@@ -320,6 +346,27 @@ function isActiveSubscription(subscription) {
   const localStatus = normalize(subscription.status);
   const mollieStatus = normalize(subscription.mollie_subscription_status);
   return localStatus === "active" || mollieStatus === "active";
+}
+
+function isActiveCustomer(customer) {
+  const status = normalize(customer.status || "actief");
+  return !["archived", "gearchiveerd", "disabled", "inactive"].includes(status);
+}
+
+function isLiveWebsite(website) {
+  return ["online", "live", "active", "actief"].includes(normalize(website.status));
+}
+
+function isActiveProject(project) {
+  return !["live", "completed", "done", "afgerond", "onderhoud", "maintenance", "gepauzeerd", "paused", "gearchiveerd", "archived"].includes(normalize(project.status));
+}
+
+function isOpenLead(lead) {
+  return !["won", "verkocht", "customer active", "customer_active", "lost", "geen interesse", "gearchiveerd", "archived", "converted", "geconverteerd"].includes(normalize(lead.status));
+}
+
+function isSoldLead(lead) {
+  return ["won", "verkocht", "customer active", "customer_active", "converted", "geconverteerd"].includes(normalize(lead.status));
 }
 
 function monthlyValue(subscription) {

@@ -274,6 +274,15 @@
           });
         }
 
+        function developerModeActive() {
+          try {
+            const settings = JSON.parse(localStorage.getItem("maxwebstudioSettings") || "{}");
+            return Boolean(settings.developerMode);
+          } catch {
+            return false;
+          }
+        }
+
         function makeChecklist(seed = {}) {
           return checklistTemplate.map((item, index) => ({
             ...item,
@@ -385,7 +394,7 @@
               contactgegevens: { status: item.email || item.phone || item.phoneNumber ? "Klaar" : "Open" },
             },
           }));
-          return mapped.length ? mapped : demoData();
+          return mapped.length ? mapped : (developerModeActive() ? demoData() : []);
         }
 
         function loadOnboardings() {

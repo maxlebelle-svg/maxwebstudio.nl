@@ -238,7 +238,8 @@ function getRecordEnvironment() {
   const environment = cleanText(process.env.APP_ENVIRONMENT || process.env.APP_ENV).toLowerCase();
   if (environment === "production") return "production";
   if (environment === "demo") return "demo";
-  return "test";
+  if (environment === "test" || environment === "development") return "test";
+  return "production";
 }
 
 function getPortalStatus(input = {}) {
