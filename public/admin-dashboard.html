@@ -189,7 +189,7 @@
             <a class="staff-command-card" href="#demo-klantreis">
               <span>2</span>
               <strong>Website Factory starten</strong>
-              <small>Maak briefing, preview, ZIP en projectruimte vanuit dezelfde lead.</small>
+              <small>Maak websiteplan, preview, ZIP en projectruimte vanuit dezelfde lead.</small>
             </a>
             <a class="staff-command-card" href="#klanten">
               <span>3</span>
@@ -531,12 +531,12 @@
               <div>
                 <p class="section-kicker">AI Operating Center</p>
                 <h3>Build previews vanuit één strak werkstation.</h3>
-                <p>Volg demo, briefing, buildstatus, preview en klantactie zonder te zoeken.</p>
+                <p>Volg demo, websiteplan, buildstatus, preview en klantactie zonder te zoeken.</p>
               </div>
               <div class="factory-command-flow" aria-label="Website Factory flow">
                 <span class="is-active"><b>1</b><strong>Lead</strong><small>Geselecteerd</small></span>
                 <span><b>2</b><strong>Demo</strong><small>Opslaan</small></span>
-                <span><b>3</b><strong>AI Briefing</strong><small>Analyse</small></span>
+                <span><b>3</b><strong>Websiteplan</strong><small>Analyse</small></span>
                 <span><b>4</b><strong>Build</strong><small>Website</small></span>
                 <span><b>5</b><strong>Quality</strong><small>Check</small></span>
                 <span><b>6</b><strong>Preview</strong><small>Intern</small></span>
@@ -572,6 +572,21 @@
           </div>
 
           <div class="admin-grid workflow-metrics" id="demo-journey-metrics" aria-live="polite"></div>
+
+          <article class="admin-card demo-next-step-card" id="demo-next-step-card" aria-labelledby="demo-next-step-title">
+            <div class="sales-timeline-heading">
+              <div>
+                <strong id="demo-next-step-title">Volgende stap</strong>
+                <span id="demo-next-step-copy">Kies een lead om de Website Factory te starten.</span>
+              </div>
+              <mark class="status-badge status-prepared" id="demo-next-step-state">Start</mark>
+            </div>
+            <div class="demo-next-step-actions">
+              <button class="button primary" id="demo-next-step-primary" type="button">Lead selecteren</button>
+              <button class="button secondary" id="demo-next-step-secondary" type="button" hidden>Preview openen</button>
+            </div>
+            <div class="demo-workflow-status" id="demo-workflow-status" aria-label="Website Factory workflow status"></div>
+          </article>
 
           <article class="admin-card demo-super-admin-card" id="demo-super-admin-control" aria-labelledby="demo-super-admin-title">
             <div class="sales-timeline-heading">
@@ -622,8 +637,8 @@
               <section class="demo-intake-card" id="demo-journey-intake" aria-labelledby="demo-intake-title">
                 <div class="sales-timeline-heading">
                   <div>
-                    <strong id="demo-intake-title">Klantintake</strong>
-                    <span>Leg de commerciële eisen vast voordat briefing, preview en klantmail klaarstaan.</span>
+                  <strong id="demo-intake-title">Klantintake</strong>
+                    <span>Leg de commerciële eisen vast voordat websiteplan, preview en klantmail klaarstaan.</span>
                   </div>
                   <mark class="status-badge status-planned" id="demo-intake-state">Onvolledig</mark>
                 </div>
@@ -644,14 +659,19 @@
               <div class="admin-profile-actions admin-action-groups">
                 <div class="admin-action-group admin-action-group-primary">
                   <button class="button primary" id="demo-journey-save" type="submit">Demo-aanvraag opslaan</button>
-                  <button class="button secondary" id="demo-journey-generate-briefing" type="button">Briefing genereren</button>
+                  <button class="button secondary" id="demo-journey-generate-briefing" type="button">Websiteplan maken</button>
                   <button class="button secondary" id="demo-journey-generate-preview" type="button">Preview genereren</button>
                 </div>
                 <div class="admin-action-group admin-action-group-secondary">
-                  <button class="button secondary" id="demo-journey-copy-briefing" type="button">Briefing kopiëren</button>
-                  <button class="button secondary" id="demo-journey-upgrade-professional" type="button">Upgrade naar Professional</button>
-                  <button class="button secondary" id="demo-journey-upgrade-premium" type="button">Upgrade naar Premium</button>
-                  <button class="button secondary" id="demo-journey-refresh" type="button">Opnieuw laden</button>
+                  <button class="button secondary" id="demo-journey-upgrade-professional" type="button">Genereer Business-preview</button>
+                  <button class="button secondary" id="demo-journey-upgrade-premium" type="button">Genereer Premium-preview</button>
+                  <details class="demo-more-options">
+                    <summary>Meer opties</summary>
+                    <div>
+                      <button class="button secondary" id="demo-journey-copy-briefing" type="button">Websiteplan kopiëren</button>
+                      <button class="button secondary" id="demo-journey-refresh" type="button">Opnieuw laden</button>
+                    </div>
+                  </details>
                 </div>
               </div>
               <p class="admin-form-message" id="demo-journey-message" role="status"></p>
@@ -704,7 +724,7 @@
                   <div class="sales-timeline-empty">Nog geen klanttijdlijn.</div>
                 </div>
               </div>
-              <label class="admin-profile-wide demo-briefing-field" for="demo-journey-briefing">Codex briefing<textarea id="demo-journey-briefing" rows="8" readonly></textarea></label>
+              <label class="admin-profile-wide demo-briefing-field" for="demo-journey-briefing">Websiteplan<textarea id="demo-journey-briefing" rows="8" readonly></textarea></label>
               <article class="demo-approval-card" aria-labelledby="demo-approval-title">
                 <div class="sales-timeline-heading">
                   <div>
@@ -20589,7 +20609,7 @@
         const statuses = [
           ["geen_demo", "Geen demo"],
           ["aanvraag_ontvangen", "Aanvraag ontvangen"],
-          ["briefing_klaar", "Briefing klaar"],
+          ["briefing_klaar", "Websiteplan klaar"],
           ["intern_in_productie", "Intern in productie"],
           ["interne_preview_klaar", "Interne preview klaar"],
           ["preview_ingepland_voor_klant", "Preview ingepland voor klant"],
@@ -20626,7 +20646,7 @@
           { number: 1, label: "Selecteer lead", description: "Kies de juiste lead.", key: "lead" },
           { number: 2, label: "Vul aanvraag in", description: "Controleer wensen en contact.", key: "wishes" },
           { number: 3, label: "Sla demo op", description: "Bewaar de aanvraag centraal.", key: "saved" },
-          { number: 4, label: "Genereer briefing", description: "Maak de Factory-briefing.", key: "briefing" },
+          { number: 4, label: "Maak websiteplan", description: "Maak het plan voor de preview.", key: "briefing" },
           { number: 5, label: "Genereer preview", description: "Bouw preview en ZIP.", key: "preview" },
           { number: 6, label: "Controleer intern", description: "Open en controleer preview.", key: "review" },
           { number: 7, label: "Stuur naar klant", description: "Plan of verstuur opvolging.", key: "followup" },
@@ -20689,6 +20709,12 @@
             message: document.getElementById("demo-journey-message"),
             steps: document.getElementById("demo-journey-steps"),
             nextStep: document.getElementById("demo-journey-next-step"),
+            nextStepCard: document.getElementById("demo-next-step-card"),
+            nextStepState: document.getElementById("demo-next-step-state"),
+            nextStepCopy: document.getElementById("demo-next-step-copy"),
+            nextStepPrimary: document.getElementById("demo-next-step-primary"),
+            nextStepSecondary: document.getElementById("demo-next-step-secondary"),
+            workflowStatus: document.getElementById("demo-workflow-status"),
             state: document.getElementById("demo-journey-state"),
             summary: document.getElementById("demo-journey-summary"),
             details: document.getElementById("demo-journey-details"),
@@ -20823,6 +20849,8 @@
               demoJourneyId: payload?.demoJourneyId || payload?.demo_journey_id || payload?.id || "",
               leadId: payload?.leadId || payload?.lead_id || "",
               packageType: payload?.packageType || payload?.package_type || "",
+              previousPackage: payload?.previousPackage || payload?.previous_package || "",
+              newPackage: payload?.newPackage || payload?.new_package || "",
             };
             console.error("Demo Journey API request failed", diagnostics);
             if (developerMode) {
@@ -20878,6 +20906,27 @@
             journeyLocks.delete(key);
             setDemoActionBusy(false, buttons);
           }
+        }
+
+        function planReady() {
+          return Boolean(elements.briefing?.value || journey?.generatedBriefing);
+        }
+
+        function previewReady() {
+          return Boolean(journey?.previewUrl);
+        }
+
+        function nextStepMessage(action = "") {
+          return ({
+            save_demo: "Demo-aanvraag opgeslagen. Volgende stap: Websiteplan maken.",
+            generate_plan: "Websiteplan gemaakt. Volgende stap: Website-preview maken.",
+            generate_preview: "Preview klaar. Controleer de preview en wacht op Super Admin-goedkeuring.",
+            generate_business_preview: "Business-preview klaar. Controleer V2 in de build history.",
+            generate_premium_preview: "Premium-preview klaar. Controleer de nieuwe versie in de build history.",
+            approve_preview: "Preview goedgekeurd. Dag 3-mail kan nu naar de klant.",
+            approve_delivery: "Oplevering goedgekeurd. Dag 5-mail kan nu naar de klant.",
+            prepare_email: "Mail staat klaar. Controleer de tekst en verstuur wanneer alles klopt.",
+          })[action] || "";
         }
 
         function fillSelect(select, options, placeholder = "") {
@@ -21384,7 +21433,7 @@
           const notes = [lead?.notes, elements.notes?.value].filter(Boolean).join("\n\n");
           const intakeBriefing = buildIntakeBriefingSection();
           return [
-            `Codex briefing - demo website preview`,
+            `Websiteplan - demo website preview`,
             ``,
             `Klant: ${business}`,
             `Contactpersoon: ${contact}`,
@@ -21410,11 +21459,24 @@
           ].join("\n");
         }
 
+        async function makeWebsitePlan() {
+          if (!validateIntakeOrWarn(elements.message)) return false;
+          return withJourneyLock("generate_plan", [elements.generateBriefing, elements.nextStepPrimary], async () => {
+            elements.briefing.value = buildBriefing();
+            elements.status.value = "briefing_klaar";
+            renderMetrics();
+            renderGuidedWorkflow();
+            renderEmployeeSteps();
+            setMessage(elements.message, journey?.id ? nextStepMessage("generate_plan") : "Websiteplan gemaakt. Sla de demo-aanvraag op om dit centraal te bewaren.", "success");
+            return true;
+          });
+        }
+
         async function saveJourney(event) {
           event?.preventDefault();
           if (!validateIntakeOrWarn(elements.message)) return;
-          await withJourneyLock("demo-write", [elements.save, elements.generatePreview, elements.upgradeProfessional, elements.upgradePremium], async () => {
-            setMessage(elements.message, "Demo-klantreis opslaan...", "info");
+          await withJourneyLock("save_demo", [elements.save, elements.generatePreview, elements.upgradeProfessional, elements.upgradePremium, elements.nextStepPrimary], async () => {
+            setMessage(elements.message, "Demo-aanvraag opslaan...", "info");
             try {
               const data = await apiRequest(endpoint, journey?.id ? "PATCH" : "POST", collectPayload());
               journey = data.demoJourney || data.journey || null;
@@ -21423,7 +21485,7 @@
               projectWorkspace = data.projectWorkspace || projectWorkspace;
               if (data.template) fillEmailTemplate(data.template);
               renderJourney();
-              setMessage(elements.message, data.reusedExisting ? "Bestaande demo-klantreis bijgewerkt." : "Demo-klantreis opgeslagen.", "success");
+              setMessage(elements.message, data.reusedExisting ? "Bestaande demo-aanvraag bijgewerkt. Volgende stap: Websiteplan maken." : nextStepMessage("save_demo"), "success");
             } catch (error) {
               setMessage(elements.message, error.message, "error");
             }
@@ -21446,14 +21508,16 @@
             setMessage(elements.emailMessage, "Deze mail mag pas klaarstaan na Super Admin goedkeuring.", "warning");
             return;
           }
-          setMessage(elements.emailMessage, "Mailtemplate klaarzetten...", "info");
-          try {
-            const data = await apiRequest(endpoint, "POST", collectPayload({ action: "generate_email", emailType: elements.emailType?.value || "" }));
-            fillEmailTemplate(data.template || {});
-            setMessage(elements.emailMessage, "Mailtemplate staat klaar.", "success");
-          } catch (error) {
-            setMessage(elements.emailMessage, error.message, "error");
-          }
+          await withJourneyLock("prepare_email", [elements.generateEmail, elements.nextStepPrimary], async () => {
+            setMessage(elements.emailMessage, "Mail klaarzetten...", "info");
+            try {
+              const data = await apiRequest(endpoint, "POST", collectPayload({ action: "generate_email", emailType: elements.emailType?.value || "" }));
+              fillEmailTemplate(data.template || {});
+              setMessage(elements.emailMessage, nextStepMessage("prepare_email"), "success");
+            } catch (error) {
+              setMessage(elements.emailMessage, error.message, "error");
+            }
+          });
         }
 
         async function sendPreparedEmail() {
@@ -21482,7 +21546,17 @@
         async function generatePreview(packageType = currentPackageType()) {
           const normalizedPackage = packageTypeFromValue(packageType);
           if (!validateIntakeOrWarn(elements.message)) return;
-          await withJourneyLock("demo-write", [elements.save, elements.generatePreview, elements.upgradeProfessional, elements.upgradePremium], async () => {
+          if (normalizedPackage !== "starter" && !journey?.id) {
+            setMessage(elements.message, "Maak eerst de demo-aanvraag aan voordat u een Business- of Premium-preview genereert.", "warning");
+            return;
+          }
+          const previousPackage = currentPackageType();
+          const lockKey = normalizedPackage === "premium"
+            ? "generate_premium_preview"
+            : normalizedPackage === "professional"
+              ? "generate_business_preview"
+              : "generate_preview";
+          await withJourneyLock(lockKey, [elements.save, elements.generatePreview, elements.upgradeProfessional, elements.upgradePremium, elements.nextStepPrimary], async () => {
             if (!elements.briefing?.value) {
               elements.briefing.value = buildBriefing();
             }
@@ -21493,6 +21567,8 @@
                 action: "generate_preview",
                 generatedBriefing: elements.briefing.value,
                 packageType: normalizedPackage,
+                previousPackage,
+                newPackage: normalizedPackage,
                 demoJourneyId: journey?.id || "",
               });
               const data = await apiRequest(endpoint, "POST", payload);
@@ -21510,7 +21586,8 @@
               renderJourney();
               const fileCount = Array.isArray(data.preview?.files) ? data.preview.files.length : 0;
               const version = data.previewVersion?.version || data.buildJob?.previewVersion || data.buildStatus?.previewVersion || "";
-              setMessage(elements.message, `Interne preview${version ? ` V${version}` : ""} klaar${fileCount ? ` met ${fileCount} bestanden in ZIP` : ""}.`, "success");
+              const baseMessage = nextStepMessage(lockKey);
+              setMessage(elements.message, `${baseMessage}${version ? ` Versie: V${version}.` : ""}${fileCount ? ` ZIP bevat ${fileCount} bestanden.` : ""}`, "success");
             } catch (error) {
               setMessage(elements.message, error.message, "error");
             }
@@ -21527,6 +21604,160 @@
             setMessage(target, "Tekst gekopieerd.", "success");
           } catch {
             setMessage(target, "Kopiëren lukte niet automatisch. Selecteer de tekst handmatig.", "warning");
+          }
+        }
+
+        function getGuidedWorkflowState() {
+          const intake = collectIntake();
+          const saved = Boolean(journey?.id);
+          const hasPlan = planReady();
+          const hasPreview = previewReady();
+          const previewApproved = Boolean(journey?.previewApprovedAt);
+          const deliveryApproved = Boolean(journey?.deliveryApprovedAt);
+          if (!intake.complete) {
+            return {
+              key: "intake",
+              label: "Intake aanvullen",
+              copy: "Maak de klantintake compleet zodat de Website Factory genoeg input heeft voor een sterke preview.",
+              primary: "Intake aanvullen",
+              action: "focus_intake",
+              secondary: "",
+            };
+          }
+          if (!saved) {
+            return {
+              key: "demo",
+              label: "Demo opslaan",
+              copy: "De intake is compleet. Sla nu de demo-aanvraag centraal op.",
+              primary: "Demo-aanvraag opslaan",
+              action: "save_demo",
+              secondary: "",
+            };
+          }
+          if (!hasPlan) {
+            return {
+              key: "plan",
+              label: "Websiteplan maken",
+              copy: "Maak het websiteplan zodat de preview inhoudelijk klopt met pakket, branche en klantwensen.",
+              primary: "Websiteplan maken",
+              action: "generate_plan",
+              secondary: "",
+            };
+          }
+          if (!hasPreview) {
+            return {
+              key: "preview",
+              label: "Preview genereren",
+              copy: "Het websiteplan is klaar. Genereer nu de interne website-preview en het ZIP-pakket.",
+              primary: "Preview genereren",
+              action: "generate_preview",
+              secondary: "",
+            };
+          }
+          if (!previewApproved) {
+            return {
+              key: "approval",
+              label: "Interne controle",
+              copy: isSuperAdmin() ? "Controleer de preview en keur hem goed voor de dag 3-mail." : "Preview is klaar. Wacht op Super Admin-goedkeuring voordat de klantmail eruit gaat.",
+              primary: isSuperAdmin() ? "Preview goedkeuren" : "Preview openen",
+              action: isSuperAdmin() ? "approve_preview" : "open_preview",
+              secondary: "ZIP downloaden",
+              secondaryAction: "download_zip",
+            };
+          }
+          const day3Ready = currentTemplate?.type === "day3_preview_ready" || journey?.lastEmailStatus?.includes("day3_preview_ready");
+          if (!day3Ready) {
+            return {
+              key: "customer-mail",
+              label: "Dag 3-mail klaarzetten",
+              copy: "De preview is goedgekeurd. Zet de dag 3-mail klaar voor verzending naar de klant.",
+              primary: "Dag 3-mail klaarzetten",
+              action: "prepare_day3_email",
+              secondary: "Preview openen",
+              secondaryAction: "open_preview",
+            };
+          }
+          if (!deliveryApproved) {
+            return {
+              key: "delivery",
+              label: "Oplevering controleren",
+              copy: isSuperAdmin() ? "Controleer de oplevering en keur hem goed voor de dag 5-mail." : "Wacht op Super Admin-goedkeuring voor de oplevermail.",
+              primary: isSuperAdmin() ? "Oplevering goedkeuren" : "Preview openen",
+              action: isSuperAdmin() ? "approve_delivery" : "open_preview",
+              secondary: "ZIP downloaden",
+              secondaryAction: "download_zip",
+            };
+          }
+          return {
+            key: "done",
+            label: "Klant opvolgen",
+            copy: "De preview en oplevering zijn goedgekeurd. Zet de dag 5-mail klaar of volg de klant persoonlijk op.",
+            primary: "Dag 5-mail klaarzetten",
+            action: "prepare_day5_email",
+            secondary: "Link kopiëren",
+            secondaryAction: "copy_preview",
+          };
+        }
+
+        function renderGuidedWorkflow() {
+          const state = getGuidedWorkflowState();
+          if (elements.nextStepState) {
+            elements.nextStepState.textContent = state.label;
+            elements.nextStepState.className = `status-badge ${state.key === "done" ? "status-active" : state.key === "approval" || state.key === "delivery" ? "status-prepared" : "status-planned"}`;
+          }
+          if (elements.nextStepCopy) elements.nextStepCopy.textContent = state.copy;
+          if (elements.nextStepPrimary) {
+            elements.nextStepPrimary.textContent = state.primary;
+            elements.nextStepPrimary.dataset.action = state.action;
+          }
+          if (elements.nextStepSecondary) {
+            elements.nextStepSecondary.hidden = !state.secondary;
+            elements.nextStepSecondary.textContent = state.secondary || "";
+            elements.nextStepSecondary.dataset.action = state.secondaryAction || "";
+          }
+          if (!elements.workflowStatus) return;
+          const intake = collectIntake();
+          const statuses = [
+            ["Intake", intake.complete],
+            ["Demo", Boolean(journey?.id)],
+            ["Websiteplan", planReady()],
+            ["Preview", previewReady()],
+            ["Super Admin", Boolean(journey?.previewApprovedAt)],
+            ["Klantmail", Boolean(currentTemplate?.subject || journey?.lastEmailStatus)],
+            ["Oplevering", Boolean(journey?.deliveryApprovedAt)],
+          ];
+          const currentIndex = statuses.findIndex(([, done]) => !done);
+          elements.workflowStatus.innerHTML = statuses.map(([label, done], index) => {
+            const active = index === currentIndex || (currentIndex === -1 && index === statuses.length - 1);
+            return `
+              <span class="demo-workflow-step ${done ? "is-done" : ""} ${active ? "is-current" : ""}">
+                <b>${index + 1}</b>
+                <strong>${escapeHtml(label)}</strong>
+              </span>
+            `;
+          }).join("");
+        }
+
+        async function runGuidedAction(action = "") {
+          if (action === "focus_intake") {
+            document.getElementById("demo-journey-intake")?.scrollIntoView({ behavior: "smooth", block: "center" });
+            setMessage(elements.message, "Vul eerst de klantintake aan. Daarna kan de demo-aanvraag worden opgeslagen.", "info");
+            return;
+          }
+          if (action === "save_demo") return saveJourney();
+          if (action === "generate_plan") return makeWebsitePlan();
+          if (action === "generate_preview") return generatePreview();
+          if (action === "open_preview") return openActionUrl(null, elements.openPreview, "Genereer eerst een preview.");
+          if (action === "download_zip") return openActionUrl(null, elements.downloadZip, "Genereer eerst een previewpakket.");
+          if (action === "copy_preview") {
+            const url = elements.copyPreviewLink?.dataset?.url || "";
+            return copyText(url, elements.message);
+          }
+          if (action === "approve_preview") return approveJourney("preview");
+          if (action === "approve_delivery") return approveJourney("delivery");
+          if (action === "prepare_day3_email" || action === "prepare_day5_email") {
+            if (elements.emailType) elements.emailType.value = action === "prepare_day3_email" ? "day3_preview_ready" : "day5_delivery_ready";
+            return generateEmail();
           }
         }
 
@@ -21606,7 +21837,7 @@
         function buildStatusLabel(status = "") {
           return ({
             queued: "In wachtrij",
-            briefing: "Briefing verwerken",
+            briefing: "Websiteplan verwerken",
             building: "Website bouwen",
             quality_check: "Controle uitvoeren",
             deploying: "Preview opslaan",
@@ -21840,6 +22071,7 @@
           setActionLink(elements.copyPreviewLink, journey?.previewUrl || "", "Genereer eerst een preview");
           setActionLink(elements.openPortal, journey?.customerId ? `/klantportaal.html?customerId=${encodeURIComponent(journey.customerId)}#projectstatus` : "");
           renderMetrics();
+          renderGuidedWorkflow();
           renderEmployeeSteps();
           renderBuildStatus();
           renderProjectWorkspace();
@@ -21893,14 +22125,14 @@
           }
           const action = kind === "delivery" ? "approve_delivery" : "approve_preview";
           const label = kind === "delivery" ? "Oplevering" : "Preview";
-          await withJourneyLock(`approval:${kind}`, [elements.approvePreview, elements.approveDelivery], async () => {
+          await withJourneyLock(action, [elements.approvePreview, elements.approveDelivery, elements.nextStepPrimary], async () => {
             setMessage(elements.message, `${label} goedkeuren...`, "info");
             try {
               const data = await apiRequest(endpoint, "POST", collectPayload({ action, demoJourneyId: journey.id }));
               journey = data.demoJourney || data.journey || journey;
               events = Array.isArray(data.events) ? data.events : events;
               renderJourney();
-              setMessage(elements.message, `${label} is goedgekeurd.`, "success");
+              setMessage(elements.message, nextStepMessage(action), "success");
             } catch (error) {
               setMessage(elements.message, error.message, "error");
             }
@@ -21938,10 +22170,7 @@
           elements.generateBriefing?.addEventListener("click", (event) => {
             event.preventDefault();
             event.stopPropagation();
-            if (!validateIntakeOrWarn(elements.message)) return;
-            elements.briefing.value = buildBriefing();
-            elements.status.value = "briefing_klaar";
-            setMessage(elements.message, "Briefing gegenereerd. Sla op om deze centraal te bewaren.", "success");
+            makeWebsitePlan();
           });
           elements.generatePreview?.addEventListener("click", (event) => {
             event.preventDefault();
@@ -21972,6 +22201,16 @@
             event.preventDefault();
             event.stopPropagation();
             copyText(elements.briefing?.value || "", elements.message);
+          });
+          elements.nextStepPrimary?.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            runGuidedAction(elements.nextStepPrimary?.dataset?.action || "");
+          });
+          elements.nextStepSecondary?.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            runGuidedAction(elements.nextStepSecondary?.dataset?.action || "");
           });
           elements.upgradeProfessional?.addEventListener("click", (event) => {
             event.preventDefault();

@@ -304,6 +304,7 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
   }
 
   if (action === "generate_preview") {
+    const packageType = normalizePackageType(payload.packageType || payload.package_type || current?.preview_package?.meta?.packageType || current?.preview_package?.packageType);
     const sourceJourney = current ? mapJourney(current) : mapJourney({
       id: payload.id,
       lead_id: payload.leadId,
@@ -324,9 +325,22 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
       updated_by: admin.id,
     });
     const briefing = cleanText(payload.generatedBriefing || sourceJourney.generatedBriefing);
-    if (!briefing) return jsonResponse(400, { success: false, error: "Genereer of vul eerst een briefing in." });
+    if (!briefing) return jsonResponse(400, { success: false, error: "Maak of vul eerst een websiteplan in." });
 
     let journeyId = cleanText(sourceJourney.id);
+    if (!journeyId && packageType !== "starter") {
+      return jsonResponse(400, {
+        success: false,
+        error: "Maak eerst de demo-aanvraag aan voordat u een Business- of Premium-preview genereert.",
+        diagnostics: {
+          action,
+          packageType,
+          leadId: cleanText(payload.leadId || payload.lead_id),
+          demoJourneyId: "",
+          reason: "package_upgrade_requires_existing_demo_journey",
+        },
+      });
+    }
     if (!journeyId) {
       const created = await insertJourneySafe({ supabaseUrl, serviceRoleKey, record: journeyPayload({ ...payload, demoStatus: "briefing_klaar", generatedBriefing: briefing }, admin, { create: true }) });
       journeyId = cleanText(created[0]?.id);
@@ -340,7 +354,6 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     }
     if (!journeyId) return jsonResponse(500, { success: false, error: "Demo-klantreis kon niet worden voorbereid voor preview." });
 
-    const packageType = cleanText(payload.packageType || payload.package_type || sourceJourney.packageType);
     const buildResult = await runBuildJob({ supabaseUrl, serviceRoleKey, admin }, { demoJourneyId: journeyId, generatedBriefing: briefing, packageType });
     const journey = buildResult.journey || mapJourney(await readJourneyById({ supabaseUrl, serviceRoleKey, id: journeyId }));
     const previewVersionNumber = buildResult.previewVersion?.version || buildResult.job?.previewVersion || 1;
@@ -368,6 +381,11 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
         zipUrl: buildResult.job?.previewUrl ? appendQueryParam(buildResult.job.previewUrl, "format", "zip") : "",
         files: Object.values(buildResult.job?.generatedPackage?.files || []).map((file) => ({ path: file.path, bytes: Buffer.byteLength(file.content || "", "utf8") })),
         package: buildResult.job?.generatedPackage?.meta || null,
+      },
+      packageUpgrade: {
+        previousPackage: normalizePackageType(payload.previousPackage || payload.previous_package || sourceJourney.previewPackage?.meta?.packageType || ""),
+        newPackage: packageType,
+        demoJourneyId: journeyId,
       },
     });
   }
@@ -884,6 +902,13 @@ function statusLabel(status = "") {
 
 function normalizeStatus(value = "") {
   return cleanText(value).toLowerCase().replace(/[\s-]+/g, "_");
+}
+
+function normalizePackageType(value = "") {
+  const text = cleanText(value).toLowerCase();
+  if (/premium|1750|growth|enterprise/.test(text)) return "premium";
+  if (/professional|professioneel|business|995|plus|multi/.test(text)) return "professional";
+  return "starter";
 }
 
 function normalizeRole(value = "") {
