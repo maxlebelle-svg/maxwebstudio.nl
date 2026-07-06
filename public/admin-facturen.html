@@ -2033,6 +2033,7 @@
             <button class="button secondary" id="invoice-copy-payment" type="button">Kopieer betaalverzoek</button>
             <button class="button secondary" id="invoice-clear-pdf" type="button">PDF-pad verwijderen</button>
             <button class="button secondary danger" id="invoice-cancel" type="button">Archiveer/annuleer</button>
+            <button class="button secondary danger" id="invoice-delete" type="button" hidden>Definitief verwijderen</button>
             <p class="admin-form-message" id="invoice-source-message" role="status"></p>
             <p class="admin-form-message" id="invoice-message" role="status"></p>
           </div>
@@ -2571,6 +2572,7 @@
           quoteWriteReadiness: null,
           invoiceSourceStatus: null,
           invoiceWriteReadiness: null,
+          invoiceSaveInProgress: false,
           subscriptionSourceStatus: null,
           subscriptionWriteReadiness: null,
           fileSourceStatus: null,
@@ -3026,6 +3028,7 @@
         const invoiceReactivate = document.getElementById("invoice-reactivate");
         const invoiceCopyPayment = document.getElementById("invoice-copy-payment");
         const invoiceCancel = document.getElementById("invoice-cancel");
+        const invoiceDelete = document.getElementById("invoice-delete");
         const invoiceSourceMessage = document.getElementById("invoice-source-message");
         const invoiceSourceDetail = document.getElementById("invoice-source-detail");
         const invoiceHistoryList = document.getElementById("invoice-history-list");
@@ -11024,6 +11027,10 @@
           return state.customers.find((customer) => customer.id === state.selectedCustomerId);
         }
 
+        function isCurrentAdminSuperAdmin() {
+          return normalize(state.adminSession?.role || readStoredAdminSession()?.role) === "super admin";
+        }
+
         function reportUnavailableAction(message, messageHandler = setAdminAccessMessage) {
           const text = message || "Deze actie is nu niet beschikbaar.";
           console.warn("Admin action unavailable", { message: text, selectedCustomerId: state.selectedCustomerId });
@@ -11107,7 +11114,9 @@
           openQuotesMetric.textContent = String(openQuotes);
           openInvoicesLocalMetric.textContent = String(openInvoices);
           paidAmountMetric.textContent = money(paidAmount);
-          revenueMonthMetric.textContent = state.dashboardMetrics?.finance?.paidRevenue != null ? money(state.dashboardMetrics.finance.paidRevenue) : "-";
+          const dashboardPaidRevenue = Number(state.dashboardMetrics?.finance?.paidRevenue ?? NaN);
+          const visibleRevenue = Number.isFinite(dashboardPaidRevenue) && (dashboardPaidRevenue > 0 || paidAmount === 0) ? dashboardPaidRevenue : paidAmount;
+          revenueMonthMetric.textContent = money(visibleRevenue);
           conversionRateMetric.textContent = document.getElementById("sales-cockpit-conversion")?.textContent?.trim() || "0%";
           subscriptionsDueMetric.textContent = `${dueBuckets.overdue} / ${dueBuckets.today} / ${dueBuckets.week}`;
           recurringRevenueMetric.textContent = money(mrrEx);
@@ -11222,7 +11231,13 @@
           renderBarChart(biCharts.invoices, metrics.charts?.invoiceStatusDistribution || []);
           renderBarChart(biCharts.subscriptionStatus, metrics.charts?.subscriptionStatusDistribution || []);
           biCharts.revenueTotal.textContent = money((metrics.charts?.revenueByMonth || []).reduce((sum, item) => sum + Number(item.value || 0), 0));
-          if (revenueMonthMetric) revenueMonthMetric.textContent = money(metrics.finance?.paidRevenue ?? 0);
+          if (revenueMonthMetric) {
+            const loadedPaidRevenue = state.invoices
+              .filter((invoice) => normalizeInvoiceStatus(invoice.status) === "betaald")
+              .reduce((sum, invoice) => sum + Number(invoice.total || invoice.amount || 0), 0);
+            const dashboardPaidRevenue = Number(metrics.finance?.paidRevenue ?? 0);
+            revenueMonthMetric.textContent = money(dashboardPaidRevenue > 0 || loadedPaidRevenue === 0 ? dashboardPaidRevenue : loadedPaidRevenue);
+          }
           biCharts.subscriptionTotal.textContent = String((metrics.charts?.subscriptionGrowth || []).at(-1)?.value || 0);
           biCharts.invoiceTotal.textContent = String((metrics.charts?.invoiceStatusDistribution || []).reduce((sum, item) => sum + Number(item.value || 0), 0));
           biCharts.subscriptionStatusTotal.textContent = String((metrics.charts?.subscriptionStatusDistribution || []).reduce((sum, item) => sum + Number(item.value || 0), 0));
@@ -15406,8 +15421,14 @@
             cancel.type = "button";
             cancel.textContent = "Annuleer";
             cancel.addEventListener("click", () => cancelInvoice(invoice.id));
+            const remove = document.createElement("button");
+            remove.className = "button secondary danger";
+            remove.type = "button";
+            remove.textContent = "Verwijder";
+            remove.hidden = !isCurrentAdminSuperAdmin();
+            remove.addEventListener("click", () => deleteInvoicePermanently(invoice.id, remove));
             actions.append(edit, sendEmail, payment, markPaid, markSent);
-            actions.append(cancel);
+            actions.append(cancel, remove);
             row.append(
               createCell(invoice.invoiceNumber),
               createCell(invoice.customerCompany || invoice.customerName || "Geen klant", "strong"),
@@ -15429,6 +15450,16 @@
           renderSubscriptions();
           renderInvoices();
           if (showLoading) setAdminAccessMessage("Onderhoudsabonnementen geladen uit lokale opslag.", "success");
+        }
+
+        async function refreshBillingView(options = {}) {
+          await loadBilling(false);
+          updateMetrics();
+          if (options.refreshDashboard !== false && getAdminBearer()) {
+            loadDashboardMetrics(false).catch((error) => {
+              console.warn("Dashboardmetrics konden niet direct worden ververst", error);
+            });
+          }
         }
 
         async function postBilling(payload) {
@@ -15680,6 +15711,8 @@
           invoiceHistory.disabled = !invoice;
           invoiceReactivate.disabled = !invoice || invoice.status !== "gearchiveerd";
           invoiceCancel.disabled = invoice?.status === "gearchiveerd";
+          invoiceDelete.hidden = !isCurrentAdminSuperAdmin();
+          invoiceDelete.disabled = !invoice || !isSupabaseManagedInvoice(invoice);
           invoiceMarkSent.hidden = invoiceClosed;
           invoiceMarkSent.disabled = ["verzonden", "betaald", "geannuleerd", "gearchiveerd"].includes(normalizeInvoiceStatus(invoice?.status || invoiceFields.status.value));
           invoiceMarkPaid.hidden = invoicePaid || invoiceClosed;
@@ -15933,6 +15966,8 @@
 
         async function saveInvoice(event) {
           event.preventDefault();
+          if (state.invoiceSaveInProgress) return;
+          state.invoiceSaveInProgress = true;
           invoiceSave.disabled = true;
           invoiceSave.textContent = "Opslaan...";
           setBillingMessage(invoiceMessage, "", "");
@@ -15974,13 +16009,21 @@
               amount: totals.total,
               lines: currentInvoiceLines,
             };
+            const existingByNumber = !payload.id && state.invoices.find((invoice) =>
+              String(invoice.invoiceNumber || "").trim().toLowerCase() === String(payload.invoiceNumber || "").trim().toLowerCase()
+              && String(invoice.profileId || invoice.customerId || "").trim() === String(payload.profileId || payload.customerId || "").trim()
+            );
+            if (existingByNumber?.id && isSupabaseManagedInvoice(existingByNumber)) {
+              payload.id = existingByNumber._supabaseInvoiceId || existingByNumber.supabaseInvoiceId || existingByNumber.id;
+            }
             const result = await postBilling({ action: "save_invoice", ...payload });
             const invoice = normalizeInvoice(result.invoice || payload);
-            await loadCRMData(false);
+            await refreshBillingView();
             state.selectedInvoiceId = invoice.id;
             openInvoiceModal(invoice.id);
-            setBillingMessage(invoiceMessage, "Factuur centraal opgeslagen.", "success");
-            window.showToast?.("Factuur centraal opgeslagen.", "success", {
+            const savedMessage = existingByNumber ? "Bestaande factuur centraal bijgewerkt." : "Factuur centraal opgeslagen.";
+            setBillingMessage(invoiceMessage, savedMessage, "success");
+            window.showToast?.(savedMessage, "success", {
               description: `${invoice.invoiceNumber || "Factuur"} is opgeslagen via de billing API.`,
             });
           } catch (error) {
@@ -15993,6 +16036,7 @@
             };
             setBillingMessage(invoiceMessage, error.message || "Factuur kon niet worden opgeslagen.", "error");
           } finally {
+            state.invoiceSaveInProgress = false;
             invoiceSave.disabled = false;
             invoiceSave.textContent = "Factuur opslaan";
           }
@@ -16236,7 +16280,7 @@
             } else {
               invoice = updateInvoiceStatusLocally(id, status);
             }
-            await loadCRMData(false);
+            await refreshBillingView();
             if (state.selectedInvoiceId === id) openInvoiceModal(invoice.id);
           } catch (error) {
             window.alert(error.message || "Factuurstatus kon niet worden bijgewerkt.");
@@ -16301,7 +16345,7 @@
               });
               const data = await response.json().catch(() => ({}));
               if (!response.ok || !data.success) throw new Error(data.error || "Mollie betaallink kon niet worden aangemaakt.");
-              await loadCRMData(false);
+              await refreshBillingView();
               if (state.selectedInvoiceId === id) openInvoiceModal(id);
               const modeLabel = data.testMode ? "Mollie testmodus" : "Mollie";
               setAdminAccessMessage(data.warning || `${modeLabel}-betaallink aangemaakt voor deze factuur.`, data.warning ? "" : "success");
@@ -16312,7 +16356,7 @@
               paymentLink: invoice.paymentLink || invoicePaymentUrl(invoice.id),
               status: invoice.status === "concept" ? "verzonden" : invoice.status,
             });
-            await loadCRMData(false);
+            await refreshBillingView();
             if (state.selectedInvoiceId === id) openInvoiceModal(saved.id);
             setAdminAccessMessage("Demo-betaalverzoek staat klaar. Geen echte Mollie-betaling aangemaakt voor lokale/demo-facturen.", "success");
           } catch (error) {
@@ -16337,8 +16381,50 @@
               baseUpdatedAt: existingInvoice.updatedAt,
             })
             : updateInvoiceStatusLocally(id, "geannuleerd");
-          await loadCRMData(false);
+          await refreshBillingView();
           if (state.selectedInvoiceId === id) openInvoiceModal(invoice.id);
+        }
+
+        async function deleteInvoicePermanently(id = state.selectedInvoiceId, button = null) {
+          if (!id) return;
+          if (!isCurrentAdminSuperAdmin()) {
+            setBillingMessage(invoiceMessage, "Alleen super admin mag facturen definitief verwijderen.", "error");
+            return;
+          }
+          const invoice = invoiceById(id);
+          if (!invoice) return;
+          if (!isSupabaseManagedInvoice(invoice)) {
+            setBillingMessage(invoiceMessage, "Deze factuur staat niet centraal en kan hier niet definitief uit Supabase worden verwijderd.", "error");
+            return;
+          }
+          const label = invoice.invoiceNumber || "deze factuur";
+          if (!window.confirm(`${label} definitief verwijderen? Dit kan niet ongedaan worden gemaakt.`)) return;
+          const originalText = button?.textContent || "";
+          if (button) {
+            button.disabled = true;
+            button.textContent = "Verwijderen...";
+          }
+          try {
+            await postBilling({
+              action: "delete_invoice",
+              id: invoice._supabaseInvoiceId || invoice.supabaseInvoiceId || invoice.id,
+            });
+            if (state.selectedInvoiceId === id) {
+              state.selectedInvoiceId = "";
+              invoiceModal.hidden = true;
+              document.body.classList.remove("admin-modal-open");
+            }
+            await refreshBillingView();
+            setBillingMessage(invoiceMessage, "Factuur definitief verwijderd.", "success");
+            window.showToast?.("Factuur definitief verwijderd.", "success");
+          } catch (error) {
+            setBillingMessage(invoiceMessage, error.message || "Factuur kon niet worden verwijderd.", "error");
+          } finally {
+            if (button) {
+              button.disabled = false;
+              button.textContent = originalText;
+            }
+          }
         }
 
         async function reactivateSelectedInvoice() {
@@ -17500,12 +17586,27 @@
             state.customers = await loadCustomersByDataMode();
             state.profiles = state.customers;
             state.authUsers = [];
-            state.websites = await loadWebsitesByDataMode();
-            state.projects = await loadProjectsByDataMode();
-            state.files = await loadFilesByDataMode();
-            state.quotes = await loadQuotesByDataMode();
-            state.invoices = await loadInvoicesByDataMode();
-            state.subscriptions = await loadSubscriptionsByDataMode();
+            const [
+              websites,
+              projects,
+              files,
+              quotes,
+              invoices,
+              subscriptions,
+            ] = await Promise.all([
+              loadWebsitesByDataMode(),
+              loadProjectsByDataMode(),
+              loadFilesByDataMode(),
+              loadQuotesByDataMode(),
+              loadInvoicesByDataMode(),
+              loadSubscriptionsByDataMode(),
+            ]);
+            state.websites = websites;
+            state.projects = projects;
+            state.files = files;
+            state.quotes = quotes;
+            state.invoices = invoices;
+            state.subscriptions = subscriptions;
             renderCustomers();
             renderWebsites();
             renderProjects();
@@ -17525,10 +17626,10 @@
             populateFileOptions();
             populateQuoteOptions();
             renderDemoEnvironment();
-            await loadChangeRequests();
+            loadChangeRequests().catch((error) => console.warn("Wijzigingsverzoeken konden niet op de achtergrond laden", error));
             if (getAdminBearer()) {
-              await loadDashboardMetrics(false);
-              await loadWebsiteHealth(false);
+              loadDashboardMetrics(false).catch((error) => console.warn("Dashboardmetrics konden niet op de achtergrond laden", error));
+              loadWebsiteHealth(false).catch((error) => console.warn("Website health kon niet op de achtergrond laden", error));
             }
             const sourceStatus = state.customerSourceStatus || {};
             const websiteSourceStatus = state.websiteSourceStatus || {};
@@ -17925,6 +18026,7 @@
           if (link) copyText(link, "Betaalverzoek gekopieerd.", (text, type) => setBillingMessage(invoiceMessage, text, type));
         });
         invoiceCancel.addEventListener("click", () => state.selectedInvoiceId && cancelInvoice(state.selectedInvoiceId));
+        invoiceDelete?.addEventListener("click", () => state.selectedInvoiceId && deleteInvoicePermanently(state.selectedInvoiceId, invoiceDelete));
         fileFields.customer.addEventListener("change", () => {
           const selectedCustomerId = fileFields.customer.value;
           populateFileOptions(selectedCustomerId);

@@ -236,6 +236,18 @@ exports.handler = async (event) => {
         normalizedProfileId: invoice.profile_id,
         customerAuthUserId: invoice.customer_auth_user_id || "",
       });
+      if (!invoice.id) {
+        const existingInvoice = await findExistingInvoice(supabaseUrl, serviceRoleKey, invoice);
+        if (existingInvoice?.id) {
+          invoice.id = existingInvoice.id;
+          console.info("Admin billing invoice duplicate guarded by invoice number", {
+            table: "customer_invoices",
+            invoiceId: invoice.id,
+            invoiceNumber: invoice.invoice_number,
+            profileId: invoice.profile_id,
+          });
+        }
+      }
       const savedInvoice = await upsertInvoice(supabaseUrl, serviceRoleKey, invoice);
       return jsonResponse(200, { success: true, invoice: normalizeInvoice(savedInvoice) });
     }
@@ -255,6 +267,21 @@ exports.handler = async (event) => {
         updated_at: new Date().toISOString(),
       });
       return jsonResponse(200, { success: true, invoice: normalizeInvoice(savedInvoice) });
+    }
+
+    if (action === "delete_invoice") {
+      const id = validateUuid(payload.id, "Kies een geldige factuur.");
+      const role = cleanText(adminCheck.admin?.role).toLowerCase();
+      if (role !== "super_admin") {
+        return jsonResponse(403, { success: false, error: "Alleen super admin mag facturen definitief verwijderen." });
+      }
+      console.info("Admin billing invoice hard delete", {
+        table: "customer_invoices",
+        invoiceId: id,
+        role,
+      });
+      await deleteRecord(supabaseUrl, serviceRoleKey, "customer_invoices", id);
+      return jsonResponse(200, { success: true, deleted: true, id });
     }
 
     return jsonResponse(400, { success: false, error: "Onbekende billing-actie." });
@@ -360,6 +387,38 @@ async function fetchInvoices(supabaseUrl, serviceRoleKey) {
       method: "GET",
       headers: restHeaders(serviceRoleKey),
     });
+  }
+}
+
+async function findExistingInvoice(supabaseUrl, serviceRoleKey, invoice = {}) {
+  const invoiceNumber = cleanText(invoice.invoice_number);
+  const profileId = cleanText(invoice.profile_id);
+  if (!invoiceNumber || !profileId) return null;
+  const params = new URLSearchParams({
+    select: INVOICE_FIELDS,
+    invoice_number: `eq.${invoiceNumber}`,
+    profile_id: `eq.${profileId}`,
+    limit: "1",
+  });
+  try {
+    const data = await supabaseFetch(`${supabaseUrl}/rest/v1/customer_invoices?${params.toString()}`, {
+      method: "GET",
+      headers: restHeaders(serviceRoleKey),
+    });
+    return Array.isArray(data) ? data[0] || null : null;
+  } catch (error) {
+    if (!isSchemaColumnError(error)) throw error;
+    const legacyParams = new URLSearchParams({
+      select: LEGACY_INVOICE_FIELDS,
+      invoice_number: `eq.${invoiceNumber}`,
+      profile_id: `eq.${profileId}`,
+      limit: "1",
+    });
+    const data = await supabaseFetch(`${supabaseUrl}/rest/v1/customer_invoices?${legacyParams.toString()}`, {
+      method: "GET",
+      headers: restHeaders(serviceRoleKey),
+    });
+    return Array.isArray(data) ? data[0] || null : null;
   }
 }
 
@@ -521,6 +580,16 @@ async function patchRecord(supabaseUrl, serviceRoleKey, table, id, patch) {
   const saved = Array.isArray(data) ? data[0] : data;
   if (!saved) throw new Error("Supabase returned no record after update.");
   return saved;
+}
+
+async function deleteRecord(supabaseUrl, serviceRoleKey, table, id) {
+  await supabaseFetch(`${supabaseUrl}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    headers: {
+      ...restHeaders(serviceRoleKey),
+      Prefer: "return=minimal",
+    },
+  });
 }
 
 function enrichSubscriptions(subscriptions, profiles) {

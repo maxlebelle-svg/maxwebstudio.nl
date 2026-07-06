@@ -11030,7 +11030,9 @@
           openQuotesMetric.textContent = String(openQuotes);
           openInvoicesLocalMetric.textContent = String(openInvoices);
           paidAmountMetric.textContent = money(paidAmount);
-          revenueMonthMetric.textContent = state.dashboardMetrics?.finance?.paidRevenue != null ? money(state.dashboardMetrics.finance.paidRevenue) : "-";
+          const dashboardPaidRevenue = Number(state.dashboardMetrics?.finance?.paidRevenue ?? NaN);
+          const visibleRevenue = Number.isFinite(dashboardPaidRevenue) && (dashboardPaidRevenue > 0 || paidAmount === 0) ? dashboardPaidRevenue : paidAmount;
+          revenueMonthMetric.textContent = money(visibleRevenue);
           conversionRateMetric.textContent = document.getElementById("sales-cockpit-conversion")?.textContent?.trim() || "0%";
           subscriptionsDueMetric.textContent = `${dueBuckets.overdue} / ${dueBuckets.today} / ${dueBuckets.week}`;
           recurringRevenueMetric.textContent = money(mrrEx);
@@ -11153,7 +11155,13 @@
           renderBarChart(biCharts.invoices, metrics.charts?.invoiceStatusDistribution || []);
           renderBarChart(biCharts.subscriptionStatus, metrics.charts?.subscriptionStatusDistribution || []);
           biCharts.revenueTotal.textContent = money((metrics.charts?.revenueByMonth || []).reduce((sum, item) => sum + Number(item.value || 0), 0));
-          if (revenueMonthMetric) revenueMonthMetric.textContent = money(metrics.finance?.paidRevenue ?? 0);
+          if (revenueMonthMetric) {
+            const loadedPaidRevenue = state.invoices
+              .filter((invoice) => normalizeInvoiceStatus(invoice.status) === "betaald")
+              .reduce((sum, invoice) => sum + Number(invoice.total || invoice.amount || 0), 0);
+            const dashboardPaidRevenue = Number(metrics.finance?.paidRevenue ?? 0);
+            revenueMonthMetric.textContent = money(dashboardPaidRevenue > 0 || loadedPaidRevenue === 0 ? dashboardPaidRevenue : loadedPaidRevenue);
+          }
           biCharts.subscriptionTotal.textContent = String((metrics.charts?.subscriptionGrowth || []).at(-1)?.value || 0);
           biCharts.invoiceTotal.textContent = String((metrics.charts?.invoiceStatusDistribution || []).reduce((sum, item) => sum + Number(item.value || 0), 0));
           biCharts.subscriptionStatusTotal.textContent = String((metrics.charts?.subscriptionStatusDistribution || []).reduce((sum, item) => sum + Number(item.value || 0), 0));
@@ -17305,12 +17313,27 @@
             state.customers = await loadCustomersByDataMode();
             state.profiles = state.customers;
             state.authUsers = [];
-            state.websites = await loadWebsitesByDataMode();
-            state.projects = await loadProjectsByDataMode();
-            state.files = await loadFilesByDataMode();
-            state.quotes = await loadQuotesByDataMode();
-            state.invoices = await loadInvoicesByDataMode();
-            state.subscriptions = await loadSubscriptionsByDataMode();
+            const [
+              websites,
+              projects,
+              files,
+              quotes,
+              invoices,
+              subscriptions,
+            ] = await Promise.all([
+              loadWebsitesByDataMode(),
+              loadProjectsByDataMode(),
+              loadFilesByDataMode(),
+              loadQuotesByDataMode(),
+              loadInvoicesByDataMode(),
+              loadSubscriptionsByDataMode(),
+            ]);
+            state.websites = websites;
+            state.projects = projects;
+            state.files = files;
+            state.quotes = quotes;
+            state.invoices = invoices;
+            state.subscriptions = subscriptions;
             renderCustomers();
             renderWebsites();
             renderProjects();
@@ -17330,10 +17353,10 @@
             populateFileOptions();
             populateQuoteOptions();
             renderDemoEnvironment();
-            await loadChangeRequests();
+            loadChangeRequests().catch((error) => console.warn("Wijzigingsverzoeken konden niet op de achtergrond laden", error));
             if (getAdminBearer()) {
-              await loadDashboardMetrics(false);
-              await loadWebsiteHealth(false);
+              loadDashboardMetrics(false).catch((error) => console.warn("Dashboardmetrics konden niet op de achtergrond laden", error));
+              loadWebsiteHealth(false).catch((error) => console.warn("Website health kon niet op de achtergrond laden", error));
             }
             const sourceStatus = state.customerSourceStatus || {};
             const websiteSourceStatus = state.websiteSourceStatus || {};
