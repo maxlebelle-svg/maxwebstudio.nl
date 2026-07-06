@@ -18432,8 +18432,10 @@
       const leadOfflineQueueKey = "maxwebstudioLeadOfflineQueue";
       const websiteAnalysisStorageKey = "maxwebstudioLeadWebsiteAnalyses";
       const leadNotesStorageKey = "maxwebstudioLeadNotes";
+      const leadNoteDraftStorageKey = "maxwebstudioLeadNoteDrafts";
       const websiteAnalysisState = new Map();
       const leadNotesState = new Map();
+      const leadNoteDraftState = new Map();
       let googlePlacesMap = null;
       let googlePlacesService = null;
       let googlePlacesMarkers = [];
@@ -18619,6 +18621,47 @@
         leadNotesState.set(id, record);
         stored[id] = record;
         writeStoredLeadNotes(stored);
+      }
+
+      function readStoredLeadNoteDrafts() {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(leadNoteDraftStorageKey) || "{}");
+          return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+        } catch (error) {
+          console.warn("Conceptnotities konden niet worden gelezen", error);
+          return {};
+        }
+      }
+
+      function writeStoredLeadNoteDrafts(records = {}) {
+        localStorage.setItem(leadNoteDraftStorageKey, JSON.stringify(records));
+      }
+
+      function hydrateLeadNoteDraftState() {
+        Object.entries(readStoredLeadNoteDrafts()).forEach(([leadId, record]) => {
+          if (leadId && record && typeof record === "object") leadNoteDraftState.set(leadId, record);
+        });
+      }
+
+      function rememberLeadNoteDraft(leadId = "", note = "") {
+        const id = String(leadId || "").trim();
+        if (!id) return;
+        const stored = readStoredLeadNoteDrafts();
+        const value = String(note || "").trim();
+        if (!value) {
+          leadNoteDraftState.delete(id);
+          delete stored[id];
+          writeStoredLeadNoteDrafts(stored);
+          return;
+        }
+        const record = { note: value, savedAt: new Date().toISOString() };
+        leadNoteDraftState.set(id, record);
+        stored[id] = record;
+        writeStoredLeadNoteDrafts(stored);
+      }
+
+      function getLeadNoteDraft(lead = {}) {
+        return lead?.id ? leadNoteDraftState.get(lead.id)?.note || "" : "";
       }
 
       function queueLeadOffline(action, payload = {}) {
@@ -20587,7 +20630,11 @@
             ["Adres", lead.address || lead.formattedAddress || lead.googleAddress || "-"],
           ] : [["Contact", "Selecteer een lead."]]);
         }
-                if (leadfinderElements.detailCallStatus) leadfinderElements.detailCallStatus.value = lead?.callStatus || "";
+        if (leadfinderElements.detailCallStatus) leadfinderElements.detailCallStatus.value = lead?.callStatus || "";
+        if (leadfinderElements.detailNote) {
+          const draft = hasLead ? getLeadNoteDraft(lead) : "";
+          if (document.activeElement !== leadfinderElements.detailNote) leadfinderElements.detailNote.value = draft;
+        }
                 if (leadfinderElements.saveNote) leadfinderElements.saveNote.disabled = !hasLead;
                 if (leadfinderElements.convertCustomer) leadfinderElements.convertCustomer.disabled = !hasLead;
                 if (leadfinderElements.deleteLead) leadfinderElements.deleteLead.disabled = !hasLead || !canDeleteLead(lead);
@@ -21117,13 +21164,21 @@
                   setLeadfinderMessage(error.message || "Leadnotitie kon niet worden opgeslagen.", "error");
                   return;
                 }
+                rememberLeadNoteDraft(lead.id, "");
                 if (leadfinderElements.detailNote) leadfinderElements.detailNote.value = "";
               }
 
               async function markSelectedLeadStatus(status, message) {
                 const lead = selectedLeadFinderLead();
                 if (!lead) return;
-                await updateLeadfinderLead(lead, { callStatus: status }, message);
+                const draftNote = String(leadfinderElements.detailNote?.value || getLeadNoteDraft(lead) || "").trim();
+                const updates = { callStatus: status };
+                if (draftNote) updates.notes = [getLeadNotes(lead), draftNote].filter(Boolean).join("\n\n");
+                await updateLeadfinderLead(lead, updates, message);
+                if (draftNote) {
+                  rememberLeadNoteDraft(lead.id, "");
+                  if (leadfinderElements.detailNote) leadfinderElements.detailNote.value = "";
+                }
       }
 
       function openQuoteForSelectedLead(lead) {
@@ -21150,10 +21205,17 @@
                 const tomorrow = new Date();
                 tomorrow.setDate(tomorrow.getDate() + 1);
                 const followUpDate = tomorrow.toISOString().slice(0, 10);
-                await updateLeadfinderLead(lead, {
+                const draftNote = String(leadfinderElements.detailNote?.value || getLeadNoteDraft(lead) || "").trim();
+                const updates = {
                   followUpDate,
                   callStatus: lead.callStatus === "quote_sent" ? "quote_sent" : "opvolgen",
-                }, "Follow-up voor morgen gepland.");
+                };
+                if (draftNote) updates.notes = [getLeadNotes(lead), draftNote].filter(Boolean).join("\n\n");
+                await updateLeadfinderLead(lead, updates, "Follow-up voor morgen gepland.");
+                if (draftNote) {
+                  rememberLeadNoteDraft(lead.id, "");
+                  if (leadfinderElements.detailNote) leadfinderElements.detailNote.value = "";
+                }
       }
 
       async function runSalesCockpitAction(action) {
@@ -21184,10 +21246,12 @@
                 const updatedLead = await updateLeadfinderLead(lead, {
                   callStatus: lead.callStatus === "customer_active" ? "customer_active" : "won",
                   notes: [
-                    lead.notes,
+                    getLeadNotes(lead),
+                    String(leadfinderElements.detailNote?.value || getLeadNoteDraft(lead) || "").trim(),
                     `[${new Date().toLocaleDateString("nl-NL")}] Lead geopend in omzetten-naar-klant wizard.`,
                   ].filter(Boolean).join("\n"),
                 }, "Lead gemarkeerd als verkocht.");
+                rememberLeadNoteDraft(lead.id, "");
                 selectedLeadFinderId = updatedLead.id;
                 if (typeof window.openLeadToCustomerWizard === "function") {
                   window.openLeadToCustomerWizard(updatedLead);
@@ -21242,6 +21306,7 @@
         fillSelect(leadfinderElements.detailCallStatus, LEADFINDER_CALL_STATUSES, "Leadstatus");
         hydrateWebsiteAnalysisState();
         hydrateLeadNotesState();
+        hydrateLeadNoteDraftState();
         ensureLeadFinderDemoData();
         await loadLeadfinderDataLayer();
         populateLeadfinderOwnerFilter();
@@ -21291,7 +21356,12 @@
                 window.addEventListener("maxwebstudio:leadQuickFilter", (event) => {
                   applyLeadfinderQuickFilter(event.detail?.type || "open_leads", event.detail?.title || "Open leads");
                 });
-                leadfinderElements.list.addEventListener("click", handleLeadfinderListClick);
+        leadfinderElements.list.addEventListener("click", handleLeadfinderListClick);
+        leadfinderElements.detailNote?.addEventListener("input", () => {
+          const lead = selectedLeadFinderLead();
+          if (!lead) return;
+          rememberLeadNoteDraft(lead.id, leadfinderElements.detailNote.value);
+        });
         leadfinderElements.saveNote?.addEventListener("click", saveLeadfinderDetailNote);
         leadfinderElements.analysisRun?.addEventListener("click", runLeadWebsiteAnalysis);
         leadfinderElements.nextActionButton?.addEventListener("click", () => runSalesCockpitAction(leadfinderElements.nextActionButton.dataset.salesAction || ""));
