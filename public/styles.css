@@ -20879,6 +20879,10 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   line-height: 1.45;
 }
 
+.admin-body.is-sales-view .sales-intake-control textarea {
+  min-height: 360px;
+}
+
 .admin-body.is-sales-view .sales-workflow-actions {
   grid-template-columns: 1fr;
   gap: 10px;

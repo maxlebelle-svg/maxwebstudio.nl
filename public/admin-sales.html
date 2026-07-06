@@ -465,13 +465,17 @@
                     <div class="sales-timeline-empty">Selecteer een lead om de verkoopgeschiedenis te zien.</div>
                   </div>
                 </div>
+                <label class="sales-note-control sales-intake-control" for="leadfinder-detail-intake">
+                  <span>Vragenlijst / belscript</span>
+                  <textarea id="leadfinder-detail-intake" placeholder="Zet de vragenlijst klaar en vul de antwoorden tijdens het gesprek in."></textarea>
+                </label>
                 <label class="sales-note-control" for="leadfinder-detail-note">
-                  <span>Nieuwe notitie</span>
+                  <span>Vrije notitie</span>
                   <textarea id="leadfinder-detail-note" placeholder="Korte belnotitie of opvolgafspraak"></textarea>
                 </label>
                 <p class="admin-form-message" id="leadfinder-note-sync-message" role="status"></p>
                 <div class="sales-workflow-actions">
-                  <button class="button secondary" id="leadfinder-insert-intake" type="button" disabled>Vragenlijst invoegen</button>
+                  <button class="button secondary" id="leadfinder-insert-intake" type="button" disabled>Vragenlijst klaarzetten</button>
                   <button class="button secondary" id="leadfinder-save-note" type="button" disabled>Notitie opslaan</button>
                   <button class="button secondary" id="leadfinder-sync-note" type="button" disabled>Opnieuw synchroniseren</button>
                   <button class="button secondary" id="leadfinder-create-task" type="button" disabled>Maak opvolgtaak</button>
@@ -19422,6 +19426,7 @@
         ownerAssignmentSave: document.getElementById("sales-lead-owner-save"),
         ownerAssignmentMessage: document.getElementById("sales-lead-owner-message"),
         contactList: document.getElementById("sales-lead-contact-list"),
+        detailIntake: document.getElementById("leadfinder-detail-intake"),
         detailNote: document.getElementById("leadfinder-detail-note"),
         detailCallStatus: document.getElementById("leadfinder-detail-call-status"),
         noteSyncState: document.getElementById("leadfinder-note-sync-state"),
@@ -21296,8 +21301,10 @@
       function readLeadIntakeField(notes = "", labels = []) {
         const text = String(notes || "");
         for (const label of labels) {
-          const pattern = new RegExp(`(?:^|\\n)\\s*${label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*:\\s*([^\\n]+)`, "i");
-          const match = text.match(pattern);
+          const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          const sameLinePattern = new RegExp(`(?:^|\\n)\\s*${escapedLabel}\\s*:\\s*([^\\n]+)`, "i");
+          const answerLinePattern = new RegExp(`${escapedLabel}[^\\n]*\\n\\s*Antwoord\\s*:\\s*([^\\n]+)`, "i");
+          const match = text.match(sameLinePattern) || text.match(answerLinePattern);
           if (match?.[1]) {
             const value = match[1].replace(/^(antwoord|ja|nee|onbekend)\s*:\s*/i, "").trim();
             if (value && !/^[-_]+$/.test(value)) return value;
@@ -21309,35 +21316,42 @@
       function leadWhatsappNotes(lead = {}) {
         const savedNotes = getLeadNotes(lead);
         const isSelectedLead = lead?.id && lead.id === selectedLeadFinderId;
-        const activeDraft = isSelectedLead ? String(leadfinderElements.detailNote?.value || getLeadNoteDraft(lead) || "").trim() : "";
+        const activeDraft = isSelectedLead
+          ? composeLeadSalesNotes(leadfinderElements.detailIntake?.value || "", leadfinderElements.detailNote?.value || "") || getLeadNoteDraft(lead)
+          : "";
         return [savedNotes, activeDraft].filter(Boolean).join("\n\n");
       }
 
       function leadWhatsappContext(lead = {}) {
         const notes = leadWhatsappNotes(lead);
         const analysis = lead.websiteAnalysis && typeof lead.websiteAnalysis === "object" ? lead.websiteAnalysis : {};
-        const bedrijf = cleanWhatsappSentence(lead.companyName || readLeadIntakeField(notes, ["Bedrijfsnaam", "Praktijknaam"]), "jullie bedrijf");
-        const contact = cleanWhatsappSentence(lead.contactName || readLeadIntakeField(notes, ["Contactpersoon"]), "");
+        const bedrijf = cleanWhatsappSentence(lead.companyName || readLeadIntakeField(notes, ["Bedrijfsnaam", "Praktijknaam", "Kun je kort vertellen wat jullie precies doen"]), "jullie bedrijf");
+        const contact = cleanWhatsappSentence(lead.contactName || readLeadIntakeField(notes, ["Contactpersoon", "Wat is je naam"]), "");
         const wens = cleanWhatsappSentence(readLeadIntakeField(notes, [
           "Belangrijkste wens",
           "Wat willen ze verbeteren",
           "Wat wil de klant verbeteren",
+          "Als je één ding mocht verbeteren",
+          "Gaat het voor jou vooral om",
           "Wens",
         ]), "de online uitstraling duidelijker en sterker neer te zetten");
         const pijnpunt = cleanWhatsappSentence(readLeadIntakeField(notes, [
           "Grootste probleem",
           "Wat werkt er nu niet goed",
+          "dat mag wel beter",
           "Pijnpunt",
           "Belangrijkste kans",
         ]), analysis.summary || analysis.primaryIssue || "er kansen liggen om de website professioneler en overtuigender te maken");
         const doelgroep = cleanWhatsappSentence(readLeadIntakeField(notes, [
           "Doelgroep",
           "Wie is hun ideale klant/doelgroep",
+          "Wat voor klanten willen jullie vooral aantrekken",
           "Ideale klant",
         ]), "");
         const vervolgstap = cleanWhatsappSentence(readLeadIntakeField(notes, [
           "Vervolgstap",
           "Wat is de afgesproken vervolgstap",
+          "Als de demo goed voelt",
           "Volgende stap",
         ]), "een korte vrijblijvende demo/preview maken");
         const websiteStatus = getLeadFinderLabel(LEADFINDER_WEBSITE_STATUSES, lead.websiteStatus) || lead.websiteStatus || "nog niet helemaal duidelijk";
@@ -21403,57 +21417,140 @@
       function leadIntakeChecklist(lead = {}) {
         const bedrijf = lead.companyName || "";
         const contact = lead.contactName || "";
-        const website = lead.websiteUrl || "";
         return [
-          "CONTACTGEGEVENS",
-          `Contactpersoon: ${contact}`,
-          "Functie/contactrol:",
+          "START VAN HET GESPREK",
+          "",
+          "Hoi, je spreekt met [naam medewerker] van Max Web Studio.",
+          "",
+          "Ik bel je heel kort. Ik ben al 8 jaar professioneel website designer en ik heb de afgelopen tijd bedrijven hier in de buurt bekeken. Jouw bedrijf viel me op, omdat ik denk dat er online nog kansen liggen op het gebied van uitstraling, vertrouwen en vindbaarheid.",
+          "",
+          "Ik zal meteen eerlijk met de deur in huis vallen: ik wil vrijblijvend een website-preview voor je maken.",
+          "",
+          "Helemaal compleet genoeg om rustig te bekijken. Vind je het niks? Dan is dat helemaal prima en betaal je niets. Vind je het wel interessant, dan kunnen we hem voor je afmaken voor een kleine vergoeding van €495,- exclusief btw.",
+          "",
+          "Klinkt best aardig toch?",
+          "",
+          "Mag ik je heel kort een paar vragen stellen, zodat ik weet wat voor jou belangrijk is om in die preview terug te laten komen?",
+          "",
+          "CONTACT",
+          "",
+          "1. Spreek ik met de juiste contactpersoon hiervoor?",
+          "Antwoord:",
+          "",
+          "2. Wat is je naam?",
+          `Antwoord: ${contact}`,
+          "",
+          "3. Ben jij degene die hierover beslist, of kijkt iemand anders daarin mee?",
+          "Antwoord:",
           "",
           "BEDRIJF",
-          `Bedrijfsnaam: ${bedrijf}`,
-          "Wat voor bedrijf/praktijk is het:",
-          "Welke diensten bieden ze aan:",
-          "Doelgroep:",
+          "",
+          "4. Kun je kort vertellen wat jullie precies doen?",
+          `Antwoord: ${bedrijf}`,
+          "",
+          "5. Welke diensten, behandelingen of producten zijn voor jullie het belangrijkst?",
+          "Antwoord:",
+          "",
+          "6. Wat voor klanten willen jullie vooral aantrekken?",
+          "Antwoord:",
           "",
           "HUIDIGE SITUATIE",
-          `Website URL: ${website}`,
-          "Hebben ze al een website: Ja / Nee / Onbekend",
-          "Zijn ze tevreden met hun huidige website:",
-          "Wat werkt er nu niet goed:",
+          "",
+          "7. Hebben jullie op dit moment al een complete website?",
+          "Antwoord: Ja / Nee / Onbekend",
+          "",
+          "8. Als je eerlijk bent, ben je tevreden met hoe jullie nu online overkomen?",
+          "Antwoord:",
+          "",
+          "9. Is er iets aan de huidige website of online uitstraling waarvan je denkt: dat mag wel beter?",
+          "Antwoord:",
           "",
           "WENSEN",
-          "Belangrijkste wens:",
-          "Wat willen ze verbeteren:",
-          "Zijn er specifieke pagina's of functies nodig:",
+          "",
+          "10. Als je één ding mocht verbeteren aan jullie website of online presentatie, wat zou dat zijn?",
+          "Antwoord:",
+          "",
+          "11. Gaat het voor jou vooral om een mooiere uitstraling, beter gevonden worden, meer aanvragen, duidelijkere informatie, of iets anders?",
+          "Antwoord:",
+          "",
+          "12. Zijn er bepaalde diensten, behandelingen, producten of voordelen die duidelijker naar voren mogen komen?",
+          "Antwoord:",
           "",
           "DEMO/PREVIEW",
-          "Wat moeten we in de vrijblijvende demo laten zien:",
-          "Welke uitstraling past bij het bedrijf:",
-          "Voorbeelden van websites die ze mooi vinden:",
+          "",
+          "13. Als wij vrijblijvend een korte demo/preview maken, wat zou je daar dan graag in terugzien?",
+          "Antwoord:",
+          "",
+          "14. Wil je dat de demo vooral modern en strak voelt, warm en persoonlijk, luxe, rustig, of juist praktisch en duidelijk?",
+          "Antwoord:",
+          "",
+          "15. Zijn er websites, kleuren of stijlen die je mooi vindt?",
+          "Antwoord:",
           "",
           "PLANNING",
-          "Wanneer willen ze starten:",
-          "Is er al budget besproken:",
           "",
-          "OPVOLGING",
-          "Gesprekstype: Telefoongesprek / Voicemail / Geen gehoor",
-          "Vervolgstap:",
-          "Wanneer opnieuw contact opnemen:",
+          "16. Zou je er blij van worden als je website, uitstraling of vindbaarheid beter wordt dan nu?",
+          "Antwoord:",
           "",
-          "EXTRA NOTITIES",
+          "17. Als de demo goed voelt en je denkt: ja, dit past bij ons, zou het dan logisch zijn om daarna samen verder te kijken?",
+          "Antwoord:",
+          "",
+          "AFSLUITING",
+          "",
+          "Top, dank je wel. Dat is duidelijk.",
+          "",
+          `Op basis hiervan kan ik vrijblijvend een korte preview maken, zodat je gewoon rustig kunt zien wat er mogelijk is voor ${bedrijf || "[bedrijfsnaam]"}. Je zit nergens aan vast.`,
+          "",
+          "Ik stuur je zo nog even een WhatsApp-berichtje ter bevestiging. Dan kun je daar makkelijk op reageren als je nog iets wilt aanvullen.",
           "",
         ].join("\n");
       }
 
+      const LEAD_INTAKE_SECTION_LABEL = "VRAGENLIJST / BELSCRIPT";
+      const LEAD_FREE_NOTE_SECTION_LABEL = "VRIJE NOTITIES";
+
+      function splitLeadSalesNotes(notes = "") {
+        const text = String(notes || "").trim();
+        if (!text) return { intake: "", free: "" };
+        const intakePattern = new RegExp(`(?:^|\\n)--- ${LEAD_INTAKE_SECTION_LABEL} ---\\n([\\s\\S]*?)(?:\\n--- ${LEAD_FREE_NOTE_SECTION_LABEL} ---\\n|$)`, "i");
+        const intakeMatch = text.match(intakePattern);
+        if (intakeMatch) {
+          const freeStart = text.toUpperCase().indexOf(`--- ${LEAD_FREE_NOTE_SECTION_LABEL} ---`);
+          return {
+            intake: String(intakeMatch[1] || "").trim(),
+            free: freeStart >= 0 ? text.slice(freeStart + `--- ${LEAD_FREE_NOTE_SECTION_LABEL} ---`.length).trim() : "",
+          };
+        }
+        if (/START VAN HET GESPREK|CONTACT\s*\n|DEMO\/PREVIEW/i.test(text)) return { intake: text, free: "" };
+        return { intake: "", free: text };
+      }
+
+      function composeLeadSalesNotes(intake = "", free = "") {
+        const cleanIntake = String(intake || "").trim();
+        const cleanFree = String(free || "").trim();
+        if (!cleanIntake) return cleanFree;
+        return [
+          `--- ${LEAD_INTAKE_SECTION_LABEL} ---`,
+          cleanIntake,
+          `--- ${LEAD_FREE_NOTE_SECTION_LABEL} ---`,
+          cleanFree,
+        ].join("\n").trim();
+      }
+
+      function rememberLeadSalesDraft(lead = {}) {
+        if (!lead?.id) return;
+        rememberLeadNoteDraft(lead.id, composeLeadSalesNotes(leadfinderElements.detailIntake?.value || "", leadfinderElements.detailNote?.value || ""));
+      }
+
       function insertLeadIntakeChecklist() {
         const lead = selectedLeadFinderLead();
-        if (!lead || !leadfinderElements.detailNote) return;
-        const current = String(leadfinderElements.detailNote.value || "").trim();
-        const checklist = leadIntakeChecklist(lead);
-        leadfinderElements.detailNote.value = [current, checklist].filter(Boolean).join("\n\n");
-        rememberLeadNoteDraft(lead.id, leadfinderElements.detailNote.value);
+        if (!lead || !leadfinderElements.detailIntake) return;
+        const current = String(leadfinderElements.detailIntake.value || "").trim();
+        if (current && !window.confirm("Er staat al een vragenlijst. Wil je die vervangen door de nieuwste versie?")) return;
+        leadfinderElements.detailIntake.value = leadIntakeChecklist(lead);
+        rememberLeadSalesDraft(lead);
         setNoteSyncStatus("local", "Vragenlijst staat klaar. Vul hem in en kies daarna Notitie opslaan.");
-        leadfinderElements.detailNote.focus();
+        leadfinderElements.detailIntake.focus();
       }
 
       function defaultCallbackDateTime() {
@@ -22388,9 +22485,15 @@
           ] : [["Contact", "Selecteer een lead."]]);
         }
         if (leadfinderElements.detailCallStatus) leadfinderElements.detailCallStatus.value = lead?.callStatus || "";
+        const savedSalesNotes = hasLead ? splitLeadSalesNotes(getLeadNotes(lead)) : { intake: "", free: "" };
+        const draftSalesNotes = hasLead ? splitLeadSalesNotes(getLeadNoteDraft(lead)) : { intake: "", free: "" };
+        if (leadfinderElements.detailIntake) {
+          const intakeDraft = draftSalesNotes.intake || savedSalesNotes.intake || "";
+          if (document.activeElement !== leadfinderElements.detailIntake) leadfinderElements.detailIntake.value = intakeDraft;
+        }
         if (leadfinderElements.detailNote) {
-          const draft = hasLead ? getLeadNoteDraft(lead) : "";
-          if (document.activeElement !== leadfinderElements.detailNote) leadfinderElements.detailNote.value = draft;
+          const freeDraft = draftSalesNotes.free || (!draftSalesNotes.intake ? getLeadNoteDraft(lead) : "") || savedSalesNotes.free || "";
+          if (document.activeElement !== leadfinderElements.detailNote) leadfinderElements.detailNote.value = freeDraft;
         }
         renderLeadNoteSyncStatus(lead);
         if (leadfinderElements.insertIntake) leadfinderElements.insertIntake.disabled = !hasLead;
@@ -23065,21 +23168,22 @@
         }
       }
 
-              async function saveLeadfinderDetailNote() {
-                const lead = selectedLeadFinderLead();
-                if (!lead) return;
-                const note = String(leadfinderElements.detailNote?.value || "").trim();
-                const callStatus = leadfinderElements.detailCallStatus?.value || lead.callStatus;
-                const notes = [getLeadNotes(lead), note].filter(Boolean).join("\n\n");
-                try {
-                  await updateLeadfinderLead(lead, { notes, callStatus }, "Leadnotitie opgeslagen.");
-                } catch (error) {
-                  setLeadfinderMessage(error.message || "Leadnotitie kon niet worden opgeslagen.", "error");
-                  return;
-                }
-                rememberLeadNoteDraft(lead.id, "");
-                if (leadfinderElements.detailNote) leadfinderElements.detailNote.value = "";
-              }
+      async function saveLeadfinderDetailNote() {
+        const lead = selectedLeadFinderLead();
+        if (!lead) return;
+        const note = composeLeadSalesNotes(leadfinderElements.detailIntake?.value || "", leadfinderElements.detailNote?.value || "");
+        const callStatus = leadfinderElements.detailCallStatus?.value || lead.callStatus;
+        const notes = note || getLeadNotes(lead);
+        try {
+          await updateLeadfinderLead(lead, { notes, callStatus }, "Leadnotitie opgeslagen.");
+        } catch (error) {
+          setLeadfinderMessage(error.message || "Leadnotitie kon niet worden opgeslagen.", "error");
+          return;
+        }
+        rememberLeadNoteDraft(lead.id, "");
+        if (leadfinderElements.detailIntake) leadfinderElements.detailIntake.value = "";
+        if (leadfinderElements.detailNote) leadfinderElements.detailNote.value = "";
+      }
 
               async function markSelectedLeadStatus(status, message) {
                 const lead = selectedLeadFinderLead();
@@ -23389,12 +23493,14 @@
             renderLeadfinderDetail();
           });
         });
-        leadfinderElements.detailNote?.addEventListener("input", () => {
+        const rememberSalesNoteInput = () => {
           const lead = selectedLeadFinderLead();
           if (!lead) return;
-          rememberLeadNoteDraft(lead.id, leadfinderElements.detailNote.value);
+          rememberLeadSalesDraft(lead);
           setNoteSyncStatus("local", "Concept staat alleen op deze computer totdat je Notitie opslaan kiest.");
-        });
+        };
+        leadfinderElements.detailIntake?.addEventListener("input", rememberSalesNoteInput);
+        leadfinderElements.detailNote?.addEventListener("input", rememberSalesNoteInput);
         leadfinderElements.saveNote?.addEventListener("click", saveLeadfinderDetailNote);
         leadfinderElements.insertIntake?.addEventListener("click", insertLeadIntakeChecklist);
         leadfinderElements.whatsappTemplate?.addEventListener("change", () => {
