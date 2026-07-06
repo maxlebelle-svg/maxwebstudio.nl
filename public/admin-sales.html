@@ -21298,14 +21298,22 @@
 
       async function handleLeadfinderListClick(event) {
         const button = event.target.closest("[data-leadfinder-action]");
-        if (!button) return;
+        if (!button && event.target.closest("a")) return;
+        const row = event.target.closest("[data-leadfinder-id]");
+        if (!row) return;
         event.preventDefault();
         event.stopPropagation();
-        const row = button.closest("[data-leadfinder-id]");
         const leadId = row?.dataset.leadfinderId;
         const lead = getLeadfinderLeads().find((item) => item.id === leadId);
         if (!lead) return;
         selectedLeadFinderId = lead.id;
+        if (!button) {
+          activeSalesDetailTab = "overview";
+          setLeadfinderMessage("Lead geselecteerd", "success");
+          renderLeadfinderList();
+          window.focusAdminPanel?.(document.querySelector(".leadfinder-detail-card"));
+          return;
+        }
         if (button.dataset.leadfinderAction === "task") {
           try {
             const result = await createWorkflowTaskForLead(lead);
@@ -21376,6 +21384,14 @@
                   if (leadfinderElements.detailNote) leadfinderElements.detailNote.value = "";
                 }
       }
+
+              async function updateSelectedLeadStatusFromControl() {
+                const lead = selectedLeadFinderLead();
+                if (!lead || !leadfinderElements.detailCallStatus) return;
+                const nextStatus = leadfinderElements.detailCallStatus.value || lead.callStatus;
+                if (!nextStatus || nextStatus === lead.callStatus) return;
+                await markSelectedLeadStatus(nextStatus, "Leadstatus opgeslagen.");
+              }
 
       function openQuoteForSelectedLead(lead) {
         if (!lead) return;
@@ -21612,6 +21628,7 @@
           setNoteSyncStatus("local", "Concept staat alleen op deze computer totdat je Notitie opslaan kiest.");
         });
         leadfinderElements.saveNote?.addEventListener("click", saveLeadfinderDetailNote);
+        leadfinderElements.detailCallStatus?.addEventListener("change", updateSelectedLeadStatusFromControl);
         leadfinderElements.syncNote?.addEventListener("click", () => retrySelectedLeadSync("notes"));
         leadfinderElements.analysisRun?.addEventListener("click", runLeadWebsiteAnalysis);
         leadfinderElements.analysisSync?.addEventListener("click", () => retrySelectedLeadSync("analysis"));
