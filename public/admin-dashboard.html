@@ -2562,6 +2562,10 @@
           dashboardInvoicePaidRevenue: 0,
           dashboardInvoicePaidCount: 0,
           dashboardInvoiceOpenCount: 0,
+          dashboardCustomerCount: 0,
+          dashboardProjectCount: 0,
+          dashboardWebsiteCount: 0,
+          dashboardInvoiceCount: 0,
           developerModules: null,
           customerSourceStatus: null,
           customerWriteReadiness: null,
@@ -11044,12 +11048,16 @@
           const averageSubscriptionValue = activeSubscriptions.length ? mrrEx / activeSubscriptions.length : 0;
 
           totalLeadsMetric.textContent = String(openLeadCount);
-          totalCustomersMetric.textContent = String(state.customers.length);
-          totalCustomersLabel.textContent = state.customers.length === 1 ? "Klantprofiel" : "Klantprofielen";
-          activeProjectsMetric.textContent = String(activeProjects);
-          liveWebsitesMetric.textContent = String(liveWebsites);
+          const customerCount = Math.max(state.customers.length, Number(state.dashboardCustomerCount || 0));
+          const projectCount = Math.max(state.projects.length, Number(state.dashboardProjectCount || 0), activeProjects);
+          const websiteCount = Math.max(state.websites.length, Number(state.dashboardWebsiteCount || 0), liveWebsites);
+          const invoiceCount = Math.max(state.invoices.length, Number(state.dashboardInvoiceCount || 0), openInvoices);
+          totalCustomersMetric.textContent = String(customerCount);
+          totalCustomersLabel.textContent = customerCount === 1 ? "Klantprofiel" : "Klantprofielen";
+          activeProjectsMetric.textContent = String(projectCount);
+          liveWebsitesMetric.textContent = String(websiteCount);
           openQuotesMetric.textContent = String(openQuotes);
-          openInvoicesLocalMetric.textContent = String(openInvoices);
+          openInvoicesLocalMetric.textContent = String(invoiceCount);
           const invoicePaidRevenue = Math.max(paidAmount, Number(state.dashboardInvoicePaidRevenue || 0));
           paidAmountMetric.textContent = money(invoicePaidRevenue);
           const dashboardPaidRevenue = Number(state.dashboardMetrics?.finance?.paidRevenue ?? NaN);
@@ -11160,8 +11168,12 @@
           setText(paidAmountMetric, money(visibleRevenue));
           setText(biKpis.mrr, money(metrics.finance?.mrr));
           setText(biKpis.arr, money(metrics.finance?.arr));
-          setText(biKpis.activeCustomers, String(metrics.customers?.active ?? 0));
-          setText(biKpis.websites, `${metrics.customers?.withWebsite ?? 0}/${metrics.customers?.total ?? 0}`);
+          const customerCount = Math.max(Number(state.dashboardCustomerCount || 0), Number(metrics.customers?.total ?? 0));
+          const projectCount = Math.max(Number(state.dashboardProjectCount || 0), Number(metrics.projects?.active ?? 0));
+          const websiteCount = Math.max(Number(state.dashboardWebsiteCount || 0), Number(metrics.websites?.active ?? metrics.customers?.withWebsite ?? 0));
+          const invoiceCount = Math.max(Number(state.dashboardInvoiceCount || 0), Number(metrics.finance?.paidInvoices ?? 0), Number(metrics.finance?.openInvoices ?? 0));
+          setText(biKpis.activeCustomers, String(metrics.customers?.active ?? customerCount));
+          setText(biKpis.websites, `${websiteCount}/${customerCount}`);
           setText(biKpis.activeSubscriptions, String(metrics.subscriptions?.active ?? 0));
           setText(biKpis.highRisk, String(metrics.subscriptions?.highRisk ?? 0));
           setText(biKpis.openInvoices, String(metrics.finance?.openInvoices ?? 0));
@@ -11173,12 +11185,12 @@
           setText(biKpis.pauses, String(metrics.subscriptions?.paused ?? 0));
           setText(biKpis.paymentIssues, String((metrics.subscriptions?.highRisk ?? 0) + (metrics.subscriptions?.attention ?? 0)));
           setText(totalLeadsMetric, String(metrics.leads?.open ?? metrics.leads?.total ?? 0));
-          setText(totalCustomersMetric, String(metrics.customers?.total ?? 0));
-          setText(totalCustomersLabel, (metrics.customers?.total ?? 0) === 1 ? "Klantprofiel" : "Klantprofielen");
-          setText(activeProjectsMetric, String(metrics.projects?.active ?? 0));
-          setText(liveWebsitesMetric, String(metrics.websites?.active ?? metrics.customers?.withWebsite ?? 0));
+          setText(totalCustomersMetric, String(customerCount));
+          setText(totalCustomersLabel, customerCount === 1 ? "Klantprofiel" : "Klantprofielen");
+          setText(activeProjectsMetric, String(projectCount));
+          setText(liveWebsitesMetric, String(websiteCount));
           setText(openQuotesMetric, String(metrics.finance?.openQuotes ?? 0));
-          setText(openInvoicesLocalMetric, String(metrics.finance?.openInvoices ?? 0));
+          setText(openInvoicesLocalMetric, String(invoiceCount));
           setText(conversionRateMetric, `${metrics.leads?.conversionRate ?? 0}%`);
 
           if (biCharts.revenue) renderBarChart(biCharts.revenue, metrics.charts?.revenueByMonth || [], { moneyValues: true });
@@ -11206,6 +11218,7 @@
           const paidInvoices = state.invoices.filter((invoice) => normalizeInvoiceStatus(invoice.status) === "betaald");
           const paidRevenue = paidInvoices.reduce((sum, invoice) => sum + Number(invoice.total || invoice.amount || 0), 0);
           const openInvoices = state.invoices.filter((invoice) => ["concept", "verzonden", "verlopen", "open"].includes(normalizeInvoiceStatus(invoice.status))).length;
+          state.dashboardInvoiceCount = state.invoices.length;
           if (paidRevenue > 0) {
             state.dashboardInvoicePaidRevenue = paidRevenue;
             state.dashboardInvoicePaidCount = paidInvoices.length;
@@ -11215,9 +11228,21 @@
           }
           const paidCount = state.dashboardInvoicePaidCount || paidInvoices.length;
           const openCount = state.dashboardInvoiceOpenCount || openInvoices;
-          if (openInvoicesLocalMetric) openInvoicesLocalMetric.textContent = String(openCount);
+          if (openInvoicesLocalMetric) openInvoicesLocalMetric.textContent = String(state.dashboardInvoiceCount || state.invoices.length);
           if (biKpis.paidInvoices) biKpis.paidInvoices.textContent = String(paidCount);
           if (biKpis.openInvoices) biKpis.openInvoices.textContent = String(openCount);
+        }
+
+        function applyDashboardEntityCountFallback() {
+          state.dashboardCustomerCount = state.customers.length;
+          state.dashboardProjectCount = state.projects.length;
+          state.dashboardWebsiteCount = state.websites.length;
+          state.dashboardInvoiceCount = state.invoices.length;
+          if (totalCustomersMetric) totalCustomersMetric.textContent = String(state.dashboardCustomerCount);
+          if (totalCustomersLabel) totalCustomersLabel.textContent = state.dashboardCustomerCount === 1 ? "Klantprofiel" : "Klantprofielen";
+          if (activeProjectsMetric) activeProjectsMetric.textContent = String(state.dashboardProjectCount);
+          if (liveWebsitesMetric) liveWebsitesMetric.textContent = String(state.dashboardWebsiteCount);
+          if (openInvoicesLocalMetric) openInvoicesLocalMetric.textContent = String(state.dashboardInvoiceCount);
         }
 
         function renderBarChart(target, items, options = {}) {
@@ -17352,7 +17377,18 @@
           if (showLoading) setAdminAccessMessage("Dashboard laden...", "");
           try {
             await loadDashboardMetrics(showLoading);
-            state.invoices = await loadInvoicesByDataMode();
+            const [customers, websites, projects, invoices] = await Promise.all([
+              loadCustomersByDataMode(),
+              loadWebsitesByDataMode(),
+              loadProjectsByDataMode(),
+              loadInvoicesByDataMode(),
+            ]);
+            state.customers = customers;
+            state.profiles = customers;
+            state.websites = websites;
+            state.projects = projects;
+            state.invoices = invoices;
+            applyDashboardEntityCountFallback();
             applyDashboardInvoiceRevenueFallback();
             if (showLoading) setAdminOperationalMessage("Dashboard snel geladen via centrale metrics.", "success");
           } finally {
