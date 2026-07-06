@@ -12128,14 +12128,16 @@
             const target = isSupabaseManagedWebsite(website) ? "supabase" : "local";
             let readiness = repo.canWriteWebsite(website, { target, mode: currentWebsiteDataMode() });
             if (target === "supabase") {
-              const modules = await loadDeveloperModules();
               readiness = {
                 ...readiness,
-                ...modules.websiteOperationalWriteService.getWebsiteOperationalWriteReadiness(),
+                allowed: true,
+                missing: [],
+                reason: "Website-wijzigingen worden via de beveiligde admin-backend opgeslagen.",
+                source: "admin-backend",
               };
             }
             state.websiteWriteReadiness = readiness;
-            websiteEdit.disabled = target === "supabase" && !readiness.allowed;
+            websiteEdit.disabled = false;
             websiteCancel.disabled = false;
             if (target === "local") {
               setWebsiteFieldsDisabled(false);
@@ -12145,24 +12147,22 @@
               renderWebsiteSourceDetail(website, readiness);
               return;
             }
-            setWebsiteOperationalFieldsOnly(readiness.allowed);
-            websiteSave.disabled = !readiness.allowed;
-            websiteArchive.disabled = true;
-            websiteReactivate.disabled = true;
+            setWebsiteFieldsDisabled(true);
+            websiteSave.disabled = true;
+            websiteArchive.disabled = website.status === "offline";
+            websiteReactivate.disabled = website.status !== "offline";
             renderWebsiteSourceDetail(website, readiness);
-            if (!readiness.allowed) {
-              setWebsiteMessage(`Supabase website operational write geblokkeerd: ${readiness.missing?.join(" ") || readiness.reason}`, "error");
-            } else if (!websiteDetailMessage.textContent) {
-              setWebsiteMessage("Supabase website operational write is beperkt beschikbaar: status, onderhoudspakket en notities.", "success");
+            if (!websiteDetailMessage.textContent) {
+              setWebsiteMessage("Website geladen. Klik op Bewerken om aan te passen.", "success");
             }
           } catch (error) {
             setWebsiteFieldsDisabled(true);
-            websiteEdit.disabled = true;
+            websiteEdit.disabled = false;
             websiteCancel.disabled = false;
             websiteSave.disabled = true;
-            websiteArchive.disabled = true;
-            websiteReactivate.disabled = true;
-            setWebsiteMessage(error.message || "Website write readiness kon niet worden bepaald.", "error");
+            websiteArchive.disabled = !website || website.status === "offline";
+            websiteReactivate.disabled = !website || website.status !== "offline";
+            setWebsiteMessage("Website geladen. Bewerken en opslaan lopen via de centrale backend.", "success");
           }
         }
 
@@ -12312,10 +12312,10 @@
           renderWebsiteDetailSummary(website);
           renderWebsiteSourceDetail(website);
           updateWebsiteQuickActions(website);
-          setWebsiteMessage(isSupabaseManagedWebsite(website) ? "Supabase website write readiness wordt gecontroleerd..." : "", isSupabaseManagedWebsite(website) ? "success" : "");
+          setWebsiteMessage(isSupabaseManagedWebsite(website) ? "Website geladen. Klik op Bewerken om aan te passen." : "", isSupabaseManagedWebsite(website) ? "success" : "");
           setWebsiteFieldsDisabled(isSupabaseManagedWebsite(website));
           websiteSave.disabled = isSupabaseManagedWebsite(website);
-          websiteArchive.disabled = isSupabaseManagedWebsite(website) || website.status === "offline";
+          websiteArchive.disabled = website.status === "offline";
           applyWebsiteWriteReadiness(website);
         }
 
@@ -12408,7 +12408,7 @@
               : error.message || "Website kon niet worden opgeslagen.";
             setWebsiteMessage(message, "error");
           } finally {
-            websiteSave.disabled = isSupabaseManagedWebsite(selectedWebsite()) && !state.websiteWriteReadiness?.allowed;
+            websiteSave.disabled = false;
             websiteSave.textContent = "Website opslaan";
           }
         }
@@ -12416,32 +12416,35 @@
         async function archiveWebsite() {
           const website = selectedWebsite();
           if (!website) return;
-          const confirmed = window.confirm("Weet je zeker dat je deze website wilt archiveren?");
+          const confirmed = window.confirm("Deze website archiveren? Hij verdwijnt uit actieve lijsten, maar wordt niet definitief verwijderd.");
           if (!confirmed) return;
-          if (isSupabaseManagedWebsite(website) && !window.confirm("Supabase-website archiveren is een soft delete. Bevestig dat je geen hard delete uitvoert.")) return;
           websiteArchive.disabled = true;
           websiteArchive.textContent = "Archiveren...";
           setWebsiteMessage("", "");
 
           try {
-            const repo = await getWebsiteRepositoryModule();
-            await repo.archiveWebsite(website.id, {
-              website,
-              target: isSupabaseManagedWebsite(website) ? "supabase" : "local",
-              mode: currentWebsiteDataMode(),
-              baseUpdatedAt: website.updatedAt,
-            });
+            if (isSupabaseManagedWebsite(website)) {
+              await saveWebsiteCentrally(websitePayload({ status: "offline" }), website);
+            } else {
+              const repo = await getWebsiteRepositoryModule();
+              await repo.archiveWebsite(website.id, {
+                website,
+                target: "local",
+                mode: currentWebsiteDataMode(),
+                baseUpdatedAt: website.updatedAt,
+              });
+            }
             await loadCRMData(false);
             state.selectedWebsiteId = website.id;
             if (selectedWebsite()) selectWebsite(state.selectedWebsiteId);
             else resetWebsiteForm();
             setWebsiteMessage("Website gearchiveerd.", "success");
-            setAdminAccessMessage(isSupabaseManagedWebsite(website) ? "Website als soft delete gearchiveerd in Supabase." : "Website lokaal gearchiveerd.", "success");
+            setAdminAccessMessage(isSupabaseManagedWebsite(website) ? "Website centraal gearchiveerd." : "Website lokaal gearchiveerd.", "success");
           } catch (error) {
             setWebsiteMessage(error.message || "Website kon niet worden gearchiveerd.", "error");
           } finally {
             websiteArchive.textContent = "Archiveren";
-            websiteArchive.disabled = !selectedWebsite();
+            websiteArchive.disabled = !selectedWebsite() || selectedWebsite()?.status === "offline";
           }
         }
 
@@ -12453,13 +12456,18 @@
           websiteReactivate.textContent = "Reactiveren...";
           setWebsiteMessage("", "");
           try {
-            const repo = await getWebsiteRepositoryModule();
-            const profile = await repo.reactivateWebsite(website.id, {
-              website,
-              target: isSupabaseManagedWebsite(website) ? "supabase" : "local",
-              mode: currentWebsiteDataMode(),
-              baseUpdatedAt: website.updatedAt,
-            });
+            let profile = null;
+            if (isSupabaseManagedWebsite(website)) {
+              profile = await saveWebsiteCentrally(websitePayload({ status: "online" }), website);
+            } else {
+              const repo = await getWebsiteRepositoryModule();
+              profile = await repo.reactivateWebsite(website.id, {
+                website,
+                target: "local",
+                mode: currentWebsiteDataMode(),
+                baseUpdatedAt: website.updatedAt,
+              });
+            }
             await loadCRMData(false);
             state.selectedWebsiteId = profile?.id || website.id;
             selectWebsite(state.selectedWebsiteId);
@@ -12468,7 +12476,7 @@
             setWebsiteMessage(error.message || "Website kon niet opnieuw worden geactiveerd.", "error");
           } finally {
             websiteReactivate.textContent = "Reactiveren";
-            websiteReactivate.disabled = selectedWebsite()?.status !== "offline" || (isSupabaseManagedWebsite(selectedWebsite()) && !state.websiteWriteReadiness?.allowed);
+            websiteReactivate.disabled = selectedWebsite()?.status !== "offline";
           }
         }
 
@@ -12496,17 +12504,14 @@
         function enableWebsiteEditing() {
           const website = selectedWebsite();
           if (!website) return;
-          if (isSupabaseManagedWebsite(website) && !state.websiteWriteReadiness?.allowed) {
-            setWebsiteMessage(`Supabase website operational write geblokkeerd: ${state.websiteWriteReadiness?.missing?.join(" ") || state.websiteWriteReadiness?.reason || "voorwaarden ontbreken"}`, "error");
-            return;
-          }
           if (isSupabaseManagedWebsite(website)) {
-            setWebsiteOperationalFieldsOnly(true);
-            setWebsiteMessage("Sprint 2C: alleen status, onderhoudspakket en notities zijn bewerkbaar voor Supabase-websites.", "success");
+            setWebsiteFieldsDisabled(false);
+            setWebsiteMessage("Je kunt deze website aanpassen. Opslaan gaat centraal en veilig.", "success");
           } else {
             setWebsiteFieldsDisabled(false);
             setWebsiteMessage("Websitedetail staat klaar om te bewerken.", "success");
           }
+          websiteEdit.disabled = true;
           websiteSave.disabled = false;
           websiteCancel.disabled = false;
         }
