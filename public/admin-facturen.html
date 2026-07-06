@@ -2561,6 +2561,9 @@
           selectedQuoteId: "",
           selectedRequestId: "",
           dashboardMetrics: null,
+          dashboardInvoicePaidRevenue: 0,
+          dashboardInvoicePaidCount: 0,
+          dashboardInvoiceOpenCount: 0,
           developerModules: null,
           customerSourceStatus: null,
           customerWriteReadiness: null,
@@ -11131,9 +11134,10 @@
           liveWebsitesMetric.textContent = String(liveWebsites);
           openQuotesMetric.textContent = String(openQuotes);
           openInvoicesLocalMetric.textContent = String(openInvoices);
-          paidAmountMetric.textContent = money(paidAmount);
+          const invoicePaidRevenue = Math.max(paidAmount, Number(state.dashboardInvoicePaidRevenue || 0));
+          paidAmountMetric.textContent = money(invoicePaidRevenue);
           const dashboardPaidRevenue = Number(state.dashboardMetrics?.finance?.paidRevenue ?? NaN);
-          const visibleRevenue = Number.isFinite(dashboardPaidRevenue) && (dashboardPaidRevenue > 0 || paidAmount === 0) ? dashboardPaidRevenue : paidAmount;
+          const visibleRevenue = invoicePaidRevenue > 0 ? invoicePaidRevenue : Number.isFinite(dashboardPaidRevenue) ? dashboardPaidRevenue : paidAmount;
           revenueMonthMetric.textContent = money(visibleRevenue);
           conversionRateMetric.textContent = document.getElementById("sales-cockpit-conversion")?.textContent?.trim() || "0%";
           subscriptionsDueMetric.textContent = `${dueBuckets.overdue} / ${dueBuckets.today} / ${dueBuckets.week}`;
@@ -11234,7 +11238,8 @@
           };
           const monthRevenue = Number(metrics.finance?.paidRevenue ?? 0);
           const totalRevenue = Number(metrics.finance?.totalPaidRevenue ?? 0);
-          const visibleRevenue = monthRevenue > 0 ? monthRevenue : totalRevenue;
+          const invoiceRevenue = Number(state.dashboardInvoicePaidRevenue || 0);
+          const visibleRevenue = invoiceRevenue > 0 ? invoiceRevenue : monthRevenue > 0 ? monthRevenue : totalRevenue;
           setText(revenueMonthMetric, money(visibleRevenue));
           setText(paidAmountMetric, money(visibleRevenue));
           setText(biKpis.mrr, money(metrics.finance?.mrr));
@@ -11278,12 +11283,17 @@
           const paidRevenue = paidInvoices.reduce((sum, invoice) => sum + Number(invoice.total || invoice.amount || 0), 0);
           const openInvoices = state.invoices.filter((invoice) => ["concept", "verzonden", "verlopen", "open"].includes(normalizeInvoiceStatus(invoice.status))).length;
           if (paidRevenue > 0) {
+            state.dashboardInvoicePaidRevenue = paidRevenue;
+            state.dashboardInvoicePaidCount = paidInvoices.length;
+            state.dashboardInvoiceOpenCount = openInvoices;
             if (revenueMonthMetric) revenueMonthMetric.textContent = money(paidRevenue);
             if (paidAmountMetric) paidAmountMetric.textContent = money(paidRevenue);
           }
-          if (openInvoicesLocalMetric) openInvoicesLocalMetric.textContent = String(openInvoices);
-          if (biKpis.paidInvoices) biKpis.paidInvoices.textContent = String(paidInvoices.length);
-          if (biKpis.openInvoices) biKpis.openInvoices.textContent = String(openInvoices);
+          const paidCount = state.dashboardInvoicePaidCount || paidInvoices.length;
+          const openCount = state.dashboardInvoiceOpenCount || openInvoices;
+          if (openInvoicesLocalMetric) openInvoicesLocalMetric.textContent = String(openCount);
+          if (biKpis.paidInvoices) biKpis.paidInvoices.textContent = String(paidCount);
+          if (biKpis.openInvoices) biKpis.openInvoices.textContent = String(openCount);
         }
 
         function renderBarChart(target, items, options = {}) {
