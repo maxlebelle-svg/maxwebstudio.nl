@@ -6454,6 +6454,31 @@ h3 {
   font-weight: 900;
 }
 
+.website-package-change-card {
+  margin-top: 18px;
+  background: rgba(12, 30, 48, 0.72);
+  border-color: rgba(39, 199, 255, 0.18);
+}
+
+.website-mail-preview {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.website-mail-preview strong {
+  color: #f8fbff;
+  font-size: 0.95rem;
+}
+
+.website-mail-preview iframe {
+  width: 100%;
+  min-height: 520px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 8px;
+  background: #061626;
+}
+
 .form-note {
   margin: 0;
   font-size: 13px;

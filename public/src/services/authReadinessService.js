@@ -78,7 +78,7 @@ const pageAccess = Object.freeze([
   },
   {
     page: "leadfinder/sales",
-    path: "/admin-dashboard.html#leadfinder",
+    path: "/admin-sales.html",
     requiredRoles: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.SALES_MANAGER, ROLES.SALES_PARTNER],
     productionGuard: "Auth vereist; salesdata blijft intern en klant-onzichtbaar.",
   },

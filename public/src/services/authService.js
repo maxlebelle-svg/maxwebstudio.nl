@@ -99,7 +99,7 @@ export function getLoginRedirectForRole(role, customerId = "") {
   if (role === ROLES.CUSTOMER) {
     return customerId ? `/klantportaal.html?customerId=${encodeURIComponent(customerId)}` : "/klantportaal.html";
   }
-  if (role === ROLES.SALES_PARTNER || role === ROLES.SALES_MANAGER) return "/admin-dashboard.html#leadfinder";
+  if (role === ROLES.SALES_PARTNER || role === ROLES.SALES_MANAGER) return "/admin-sales.html";
   if (role === ROLES.DEMO_USER) return "/demo-klantreis.html";
   return "/admin-dashboard.html";
 }

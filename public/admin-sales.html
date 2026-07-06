@@ -131,24 +131,24 @@
         <header class="admin-page-topbar" aria-label="Admin snel zoeken">
           <label class="admin-page-search" for="admin-page-search">
             <span class="sr-only">Zoeken</span>
-            <input id="admin-page-search" type="search" placeholder="Zoek naar leads, klanten, facturen..." />
+            <input id="admin-page-search" type="search" placeholder="Zoek in jouw leads, klanten en offertes..." />
             <kbd>⌘ K</kbd>
           </label>
           <div class="admin-page-actions">
             <button class="admin-icon-button" type="button" aria-label="Meldingen">⌕</button>
-            <button class="button primary" id="open-new-customer-topbar" type="button">Nieuwe klant</button>
+            <button class="button primary" id="open-new-customer-topbar" type="button">Nieuwe lead</button>
           </div>
         </header>
 
         <section class="admin-hero" id="dashboard">
           <div class="admin-hero-copy">
-            <p class="section-kicker">Admin CRM</p>
-            <h1>Max Web Studio Backoffice</h1>
-            <p>Beheer klanten, websites, offertes, projecten en automatiseringen vanuit één centrale omgeving.</p>
+            <p class="section-kicker">Sales dashboard</p>
+            <h1>Mijn Sales Dashboard</h1>
+            <p>Volg jouw leads, opvolgingen, offertes en conversie vanuit één overzichtelijke werkplek.</p>
           </div>
           <div class="admin-hero-panel" aria-label="Dashboard kerncijfers">
             <article class="hero-kpi-card">
-              <span>Leads deze maand</span>
+              <span>Mijn open leads</span>
               <strong id="hero-kpi-leads">-</strong>
               <small>Huidige stand</small>
               <svg class="hero-sparkline" viewBox="0 0 120 42" aria-hidden="true" focusable="false">
@@ -156,9 +156,9 @@
               </svg>
             </article>
             <article class="hero-kpi-card hero-conversion-card">
-              <span>Conversie ratio</span>
+              <span>Mijn conversie</span>
               <strong id="hero-kpi-conversion">-</strong>
-              <small>Verkocht / nieuwe leads</small>
+              <small>Deze week</small>
               <svg class="hero-donut" viewBox="0 0 80 80" aria-label="Conversie ratio visual" role="img">
                 <circle class="hero-donut-track" cx="40" cy="40" r="29"></circle>
                 <circle class="hero-donut-value" id="hero-conversion-ring" cx="40" cy="40" r="29"></circle>
@@ -172,10 +172,9 @@
             </div>
             <div class="settings-actions admin-action-strip">
               <a class="button secondary admin-action-card accent-blue" href="admin-sales.html#leadfinder-form"><span aria-hidden="true">+</span><strong>Nieuwe lead</strong></a>
-              <button class="button primary admin-action-card accent-cyan" id="open-new-customer-quick" type="button"><span aria-hidden="true">◎</span><strong>Nieuwe klant</strong></button>
-              <a class="button secondary admin-action-card accent-blue" href="admin-sales.html"><span aria-hidden="true">↗</span><strong>Open leads</strong></a>
+              <button class="button primary admin-action-card accent-cyan" id="open-new-customer-quick" type="button"><span aria-hidden="true">◎</span><strong>Lead opvolgen</strong></button>
+              <a class="button secondary admin-action-card accent-blue" href="#leadfinder-list"><span aria-hidden="true">↗</span><strong>Mijn leads</strong></a>
               <a class="button secondary admin-action-card accent-green" href="admin-klanten.html"><span aria-hidden="true">●</span><strong>Actieve klanten</strong></a>
-              <a class="button secondary admin-action-card accent-purple" href="admin-projecten.html"><span aria-hidden="true">□</span><strong>Lopende projecten</strong></a>
               <a class="button secondary admin-action-card accent-orange" href="admin-offertes.html"><span aria-hidden="true">§</span><strong>Open offertes</strong></a>
               <a class="button secondary admin-action-card accent-green" href="admin-facturen.html"><span aria-hidden="true">€</span><strong>Open facturen</strong></a>
               <button class="button secondary admin-action-card admin-user-management-action accent-blue" id="invite-user-quick" type="button" hidden><span aria-hidden="true">+</span><strong>Werknemer uitnodigen</strong></button>
@@ -222,14 +221,14 @@
         </section>
 
         <section class="admin-grid admin-metrics" aria-label="CRM overzicht">
-          <article class="admin-card metric-card dashboard-summary-card metric-blue" role="button" tabindex="0" data-dashboard-summary="leads" aria-label="Open leads bekijken"><span><i aria-hidden="true">↗</i>Leads</span><strong id="metric-total-leads">0</strong><small>Huidige stand</small><svg class="metric-sparkline" viewBox="0 0 120 36" aria-hidden="true"><polyline points="4,28 22,22 40,26 58,14 76,18 96,9 116,5"></polyline></svg></article>
-          <article class="admin-card metric-card dashboard-summary-card metric-green" role="button" tabindex="0" data-dashboard-summary="customers" aria-label="Klanten bekijken"><span><i aria-hidden="true">●</i>Klanten</span><strong id="metric-total-customers">-</strong><small id="metric-total-customers-label">Huidige stand</small><svg class="metric-sparkline" viewBox="0 0 120 36" aria-hidden="true"><polyline points="4,30 22,28 40,20 58,24 76,13 96,16 116,6"></polyline></svg></article>
-          <article class="admin-card metric-card dashboard-summary-card metric-purple" role="button" tabindex="0" data-dashboard-summary="projects" aria-label="Lopende projecten bekijken"><span><i aria-hidden="true">□</i>Projecten</span><strong id="metric-active-projects">0</strong><small>Huidige stand</small><svg class="metric-sparkline" viewBox="0 0 120 36" aria-hidden="true"><polyline points="4,31 22,25 40,27 58,17 76,22 96,12 116,7"></polyline></svg></article>
-          <article class="admin-card metric-card dashboard-summary-card metric-cyan" role="button" tabindex="0" data-dashboard-summary="websites" aria-label="Actieve websites bekijken"><span><i aria-hidden="true">◎</i>Websites</span><strong id="metric-live-websites">-</strong><small>Huidige stand</small><svg class="metric-sparkline" viewBox="0 0 120 36" aria-hidden="true"><polyline points="4,26 22,19 40,23 58,14 76,18 96,10 116,8"></polyline></svg></article>
-          <article class="admin-card metric-card dashboard-summary-card metric-orange" role="button" tabindex="0" data-dashboard-summary="quotes" aria-label="Open offertes bekijken"><span><i aria-hidden="true">§</i>Offertes</span><strong id="metric-open-quotes">0</strong><small>Huidige stand</small><svg class="metric-sparkline" viewBox="0 0 120 36" aria-hidden="true"><polyline points="4,29 22,25 40,18 58,21 76,15 96,17 116,7"></polyline></svg></article>
-          <article class="admin-card metric-card dashboard-summary-card metric-green" role="button" tabindex="0" data-dashboard-summary="invoices" aria-label="Open facturen bekijken"><span><i aria-hidden="true">€</i>Facturen</span><strong id="metric-open-invoices-local">0</strong><small>Huidige stand</small><svg class="metric-sparkline" viewBox="0 0 120 36" aria-hidden="true"><polyline points="4,30 22,23 40,26 58,15 76,20 96,13 116,6"></polyline></svg></article>
-          <article class="admin-card metric-card dashboard-summary-card metric-purple" role="button" tabindex="0" data-dashboard-summary="revenue" aria-label="Omzet bekijken"><span><i aria-hidden="true">€</i>Omzet</span><strong id="metric-revenue-month">-</strong><small>Huidige stand</small><svg class="metric-sparkline" viewBox="0 0 120 36" aria-hidden="true"><polyline points="4,31 22,24 40,28 58,18 76,20 96,12 116,6"></polyline></svg></article>
-          <article class="admin-card metric-card dashboard-summary-card metric-blue" role="button" tabindex="0" data-dashboard-summary="conversion" aria-label="Conversie bekijken"><span><i aria-hidden="true">%</i>Conversie</span><strong id="metric-conversion-rate">0%</strong><small>Verkocht / nieuwe leads</small><svg class="metric-sparkline" viewBox="0 0 120 36" aria-hidden="true"><polyline points="4,28 22,26 40,23 58,20 76,16 96,14 116,9"></polyline></svg></article>
+          <article class="admin-card metric-card dashboard-summary-card metric-blue" role="button" tabindex="0" data-dashboard-summary="leads" aria-label="Mijn open leads bekijken"><span><i aria-hidden="true">↗</i>Mijn leads</span><strong id="metric-total-leads">0</strong><small>Open opvolging</small><svg class="metric-sparkline" viewBox="0 0 120 36" aria-hidden="true"><polyline points="4,28 22,22 40,26 58,14 76,18 96,9 116,5"></polyline></svg></article>
+          <article class="admin-card metric-card dashboard-summary-card metric-green" role="button" tabindex="0" data-dashboard-summary="customers" aria-label="Mijn klanten bekijken"><span><i aria-hidden="true">●</i>Klanten</span><strong id="metric-total-customers">-</strong><small id="metric-total-customers-label">Uit salesflow</small><svg class="metric-sparkline" viewBox="0 0 120 36" aria-hidden="true"><polyline points="4,30 22,28 40,20 58,24 76,13 96,16 116,6"></polyline></svg></article>
+          <article class="admin-card metric-card dashboard-summary-card metric-purple" role="button" tabindex="0" data-dashboard-summary="projects" aria-label="Lopende projecten bekijken" hidden><span><i aria-hidden="true">□</i>Projecten</span><strong id="metric-active-projects">0</strong><small>Huidige stand</small><svg class="metric-sparkline" viewBox="0 0 120 36" aria-hidden="true"><polyline points="4,31 22,25 40,27 58,17 76,22 96,12 116,7"></polyline></svg></article>
+          <article class="admin-card metric-card dashboard-summary-card metric-cyan" role="button" tabindex="0" data-dashboard-summary="websites" aria-label="Actieve websites bekijken" hidden><span><i aria-hidden="true">◎</i>Websites</span><strong id="metric-live-websites">-</strong><small>Huidige stand</small><svg class="metric-sparkline" viewBox="0 0 120 36" aria-hidden="true"><polyline points="4,26 22,19 40,23 58,14 76,18 96,10 116,8"></polyline></svg></article>
+          <article class="admin-card metric-card dashboard-summary-card metric-orange" role="button" tabindex="0" data-dashboard-summary="quotes" aria-label="Mijn open offertes bekijken"><span><i aria-hidden="true">§</i>Offertes</span><strong id="metric-open-quotes">0</strong><small>Open saleskansen</small><svg class="metric-sparkline" viewBox="0 0 120 36" aria-hidden="true"><polyline points="4,29 22,25 40,18 58,21 76,15 96,17 116,7"></polyline></svg></article>
+          <article class="admin-card metric-card dashboard-summary-card metric-green" role="button" tabindex="0" data-dashboard-summary="invoices" aria-label="Facturen bekijken"><span><i aria-hidden="true">€</i>Facturen</span><strong id="metric-open-invoices-local">0</strong><small>Alleen inzage</small><svg class="metric-sparkline" viewBox="0 0 120 36" aria-hidden="true"><polyline points="4,30 22,23 40,26 58,15 76,20 96,13 116,6"></polyline></svg></article>
+          <article class="admin-card metric-card dashboard-summary-card metric-purple" role="button" tabindex="0" data-dashboard-summary="revenue" aria-label="Omzet bekijken"><span><i aria-hidden="true">€</i>Omzet</span><strong id="metric-revenue-month">-</strong><small>Gewonnen omzet</small><svg class="metric-sparkline" viewBox="0 0 120 36" aria-hidden="true"><polyline points="4,31 22,24 40,28 58,18 76,20 96,12 116,6"></polyline></svg></article>
+          <article class="admin-card metric-card dashboard-summary-card metric-blue" role="button" tabindex="0" data-dashboard-summary="conversion" aria-label="Mijn conversie bekijken"><span><i aria-hidden="true">%</i>Conversie</span><strong id="metric-conversion-rate">0%</strong><small>Deze week</small><svg class="metric-sparkline" viewBox="0 0 120 36" aria-hidden="true"><polyline points="4,28 22,26 40,23 58,20 76,16 96,14 116,9"></polyline></svg></article>
           <article class="admin-card metric-card admin-developer-only"><span><i aria-hidden="true">€</i>Betaald bedrag</span><strong id="metric-paid-amount">€ 0</strong><small>Facturen betaald</small></article>
           <article class="admin-card metric-card admin-developer-only"><span><i aria-hidden="true">↻</i>Te factureren</span><strong id="metric-subscriptions-due">0</strong><small>Verlopen / vandaag / 7 dagen</small></article>
           <article class="admin-card metric-card admin-developer-only"><span>Recurring omzet</span><strong id="metric-recurring-revenue">€ 0,00</strong><small id="metric-recurring-label">MRR / ARR / actief</small></article>
@@ -2176,7 +2175,7 @@
         };
         const sectionGroups = {
           dashboard: ["dashboard", "admin-access-control-banner", "admin-metrics", "bi-dashboard-section"],
-          sales: ["leadfinder"],
+          sales: ["dashboard", "admin-metrics", "leadfinder"],
           "website-factory": ["demo-klantreis"],
           klanten: ["klanten"],
           websites: ["websites"],
@@ -9155,9 +9154,15 @@
         function renderAdminSidebarNavigation(options = {}) {
           if (!adminSidebarNav) return;
           const currentPage = window.maxwebstudioAdminPage?.page || "dashboard";
-          const visibleItemIds = Array.isArray(options.visibleItemIds) ? new Set(options.visibleItemIds) : null;
+          const adminRolesWithFullNavigation = new Set(["super_admin", "admin"]);
+          const keepAlwaysVisible = adminRolesWithFullNavigation.has(String(options.role || state.adminSession?.role || "").toLowerCase());
+          const visibleItemIds = Array.isArray(options.visibleItemIds)
+            ? new Set(options.visibleItemIds)
+            : currentPage === "sales"
+              ? new Set(["dashboard", "leadfinder", "klanten", "offertes", "facturen"])
+              : null;
           const visibleItems = visibleItemIds
-            ? adminSidebarNavItems.filter((item) => item.type === "group" || item.alwaysVisible || item.accessId === "dashboard" || visibleItemIds.has(item.accessId))
+            ? adminSidebarNavItems.filter((item) => item.type === "group" || (keepAlwaysVisible && item.alwaysVisible) || item.accessId === "dashboard" || visibleItemIds.has(item.accessId))
             : adminSidebarNavItems;
           adminSidebarNav.innerHTML = visibleItems.map((item) => {
             if (item.type === "group") return `<span class="admin-nav-group">${item.label}</span>`;
@@ -17543,9 +17548,19 @@
           window.showToast?.(`Zoeken naar "${query}" in Sales.`, "info");
         }
 
+        function focusSalesLeadForm() {
+          window.focusAdminPanel?.(document.getElementById("leadfinder-form") || document.getElementById("leadfinder"));
+          document.getElementById("leadfinder-company")?.focus({ preventScroll: true });
+        }
+
+        function focusSalesLeadDetail() {
+          window.focusAdminPanel?.(document.getElementById("leadfinder-detail") || document.getElementById("leadfinder"));
+        }
+
+        const isSalesPage = window.maxwebstudioAdminPage?.page === "sales";
         document.getElementById("open-new-customer")?.addEventListener("click", openNewCustomerModal);
-        document.getElementById("open-new-customer-topbar").addEventListener("click", openNewCustomerModal);
-        document.getElementById("open-new-customer-quick").addEventListener("click", openNewCustomerModal);
+        document.getElementById("open-new-customer-topbar").addEventListener("click", isSalesPage ? focusSalesLeadForm : openNewCustomerModal);
+        document.getElementById("open-new-customer-quick").addEventListener("click", isSalesPage ? focusSalesLeadDetail : openNewCustomerModal);
         document.getElementById("open-new-customer-secondary").addEventListener("click", openNewCustomerModal);
         document.getElementById("new-managed-website").addEventListener("click", resetWebsiteForm);
         document.getElementById("new-project").addEventListener("click", () => resetProjectForm());

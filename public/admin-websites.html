@@ -949,6 +949,34 @@
               </div>
               <div class="settings-status-list" id="website-source-detail"></div>
               <div class="website-detail-summary" id="website-detail-summary" aria-live="polite"></div>
+              <section class="admin-card website-package-change-card" aria-label="Pakketwijziging plannen">
+                <div class="admin-profile-form-heading">
+                  <div>
+                    <strong>Pakketwijziging</strong>
+                    <span>Wijzig hosting en onderhoud direct of plan de wijziging vanaf een datum.</span>
+                  </div>
+                  <mark class="status-badge status-prepared" id="website-package-change-state">Geen wijziging</mark>
+                </div>
+                <div class="admin-profile-fields">
+                  <label for="website-package-new-hosting">Nieuw hostingpakket<select id="website-package-new-hosting" disabled><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option><option value="Maatwerk">Maatwerk</option><option value="Geen">Geen hosting</option></select></label>
+                  <label for="website-package-new-care">Nieuw onderhoudspakket<select id="website-package-new-care" disabled><option value="Geen">Geen onderhoud</option><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option></select></label>
+                  <label for="website-package-timing">Ingang<select id="website-package-timing" disabled><option value="now">Direct toepassen</option><option value="scheduled">Inplannen vanaf datum</option></select></label>
+                  <label for="website-package-effective-date">Vanaf datum<input id="website-package-effective-date" type="date" disabled /></label>
+                  <label class="admin-profile-wide" for="website-package-note">Notitie voor klantmail<textarea id="website-package-note" disabled placeholder="Bijv. zoals besproken zetten we het onderhoudspakket per volgende maand om."></textarea></label>
+                  <label class="admin-profile-wide checkbox-row" for="website-package-send-email"><input id="website-package-send-email" type="checkbox" checked disabled /> Klantmail verzenden na opslaan</label>
+                </div>
+                <div class="admin-profile-actions admin-action-groups">
+                  <div class="admin-action-group admin-action-group-primary">
+                    <button class="button secondary" id="website-package-preview" type="button" disabled>Voorbeeldmail maken</button>
+                    <button class="button primary" id="website-package-save-send" type="button" disabled>Wijziging opslaan</button>
+                  </div>
+                  <p class="admin-form-message" id="website-package-message" role="status"></p>
+                </div>
+                <div class="website-mail-preview" id="website-package-mail-preview" hidden>
+                  <strong id="website-package-mail-subject">Voorbeeldmail</strong>
+                  <iframe id="website-package-mail-frame" title="Voorbeeldmail pakketwijziging"></iframe>
+                </div>
+              </section>
               <div class="admin-profile-actions admin-action-groups" aria-label="Website beheeracties">
                 <div class="admin-action-group admin-action-group-primary" aria-label="Primaire websiteacties">
                   <button class="button secondary" id="website-edit" type="button" disabled>Bewerken</button>
@@ -2559,6 +2587,7 @@
           selectedInvoiceId: "",
           selectedQuoteId: "",
           selectedRequestId: "",
+          websitePackageMailPreview: null,
           dashboardMetrics: null,
           developerModules: null,
           customerSourceStatus: null,
@@ -2715,6 +2744,21 @@
         const websiteDetailMessage = document.getElementById("website-detail-message");
         const websiteDetailSummary = document.getElementById("website-detail-summary");
         const websiteHistoryList = document.getElementById("website-history-list");
+        const websitePackageFields = {
+          hosting: document.getElementById("website-package-new-hosting"),
+          care: document.getElementById("website-package-new-care"),
+          timing: document.getElementById("website-package-timing"),
+          effectiveDate: document.getElementById("website-package-effective-date"),
+          note: document.getElementById("website-package-note"),
+          sendEmail: document.getElementById("website-package-send-email"),
+        };
+        const websitePackageState = document.getElementById("website-package-change-state");
+        const websitePackagePreview = document.getElementById("website-package-preview");
+        const websitePackageSaveSend = document.getElementById("website-package-save-send");
+        const websitePackageMessage = document.getElementById("website-package-message");
+        const websitePackageMailPreview = document.getElementById("website-package-mail-preview");
+        const websitePackageMailSubject = document.getElementById("website-package-mail-subject");
+        const websitePackageMailFrame = document.getElementById("website-package-mail-frame");
         const websiteSearch = document.getElementById("website-search");
         const websiteStatusFilter = document.getElementById("website-status-filter");
         const websiteHostingFilter = document.getElementById("website-hosting-filter");
@@ -10944,6 +10988,12 @@
           notifyUser(text, type);
         }
 
+        function setWebsitePackageMessage(text, type = "") {
+          websitePackageMessage.textContent = text;
+          websitePackageMessage.className = `admin-form-message ${type}`.trim();
+          notifyUser(text, type);
+        }
+
         function setHealthMessage(text, type = "") {
           websiteHealthMessage.textContent = text;
           websiteHealthMessage.className = `admin-form-message ${type}`.trim();
@@ -11009,6 +11059,190 @@
 
         function selectedWebsite() {
           return state.websites.find((website) => website.id === state.selectedWebsiteId);
+        }
+
+        function selectedWebsiteCustomer(website = selectedWebsite()) {
+          if (!website) return null;
+          return customerByAnyId(website.customerId || website.profileId || website.customerProfileId)
+            || state.customers.find((customer) => customer.website && cleanDomain(customer.website) === cleanDomain(website.domain))
+            || null;
+        }
+
+        function setWebsitePackageControlsEnabled(enabled) {
+          Object.values(websitePackageFields).forEach((field) => {
+            if (field) field.disabled = !enabled;
+          });
+          websitePackageFields.effectiveDate.disabled = !enabled || websitePackageFields.timing.value !== "scheduled";
+          websitePackagePreview.disabled = !enabled;
+          websitePackageSaveSend.disabled = !enabled;
+        }
+
+        function resetWebsitePackageChange(website = null) {
+          state.websitePackageMailPreview = null;
+          const today = new Date().toISOString().slice(0, 10);
+          websitePackageFields.hosting.value = website?.hostingPackage || "Basis";
+          websitePackageFields.care.value = website?.carePackage || "Basis";
+          websitePackageFields.timing.value = "now";
+          websitePackageFields.effectiveDate.value = today;
+          websitePackageFields.effectiveDate.disabled = true;
+          websitePackageFields.note.value = "";
+          websitePackageFields.sendEmail.checked = true;
+          websitePackageMailPreview.hidden = true;
+          websitePackageMailSubject.textContent = "Voorbeeldmail";
+          websitePackageMailFrame.removeAttribute("srcdoc");
+          websitePackageState.textContent = website ? packageChangeStateLabel(website) : "Geen wijziging";
+          websitePackageState.className = `status-badge ${website?.metadata?.plannedPackageChanges?.length ? "status-warning" : "status-prepared"}`;
+          setWebsitePackageMessage("", "");
+          setWebsitePackageControlsEnabled(Boolean(website));
+        }
+
+        function packageChangeStateLabel(website = {}) {
+          const planned = Array.isArray(website.metadata?.plannedPackageChanges) ? website.metadata.plannedPackageChanges : [];
+          const active = planned.filter((item) => item.status === "gepland");
+          if (!active.length) return "Geen planning";
+          const next = active.sort((a, b) => String(a.effectiveDate || "").localeCompare(String(b.effectiveDate || "")))[0];
+          return `Gepland vanaf ${formatDate(next.effectiveDate)}`;
+        }
+
+        function websitePackageChangeSignature(change = {}) {
+          return [
+            change.websiteId,
+            change.newHostingPackage,
+            change.newCarePackage,
+            change.timing,
+            change.effectiveDate,
+            change.note,
+            change.customerEmail,
+          ].join("|");
+        }
+
+        function websitePackageChangeDraft() {
+          const website = selectedWebsite();
+          if (!website) throw new Error("Selecteer eerst een website.");
+          const customer = selectedWebsiteCustomer(website);
+          const timing = websitePackageFields.timing.value || "now";
+          const effectiveDate = timing === "scheduled" ? websitePackageFields.effectiveDate.value : new Date().toISOString().slice(0, 10);
+          const change = {
+            id: createCrmId(),
+            websiteId: website.id,
+            websiteName: website.name || website.domain,
+            websiteDomain: website.domain,
+            customerId: website.customerId || website.profileId || "",
+            customerName: customer?.name || website.customerName || customer?.company || "klant",
+            customerCompany: customer?.company || website.customerCompany || website.customerName || customer?.name || "klant",
+            customerEmail: customer?.email || website.customerEmail || "",
+            currentHostingPackage: website.hostingPackage || "Basis",
+            newHostingPackage: websitePackageFields.hosting.value || "Basis",
+            currentCarePackage: website.carePackage || "Basis",
+            newCarePackage: websitePackageFields.care.value || "Basis",
+            timing,
+            effectiveDate,
+            note: websitePackageFields.note.value.trim(),
+            status: timing === "scheduled" ? "gepland" : "actief",
+            createdAt: new Date().toISOString(),
+          };
+          if (change.timing === "scheduled" && !change.effectiveDate) throw new Error("Kies een ingangsdatum.");
+          if (websitePackageFields.sendEmail.checked && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(change.customerEmail)) {
+            throw new Error("Deze klant heeft nog geen geldig e-mailadres.");
+          }
+          if (change.currentHostingPackage === change.newHostingPackage && change.currentCarePackage === change.newCarePackage) {
+            throw new Error("Kies eerst een ander hosting- of onderhoudspakket.");
+          }
+          return change;
+        }
+
+        function renderWebsitePackageMailPreview(mailPreview = {}) {
+          websitePackageMailSubject.textContent = mailPreview.subject || "Voorbeeldmail";
+          websitePackageMailFrame.srcdoc = mailPreview.html || `<pre>${escapeHtml(mailPreview.text || "")}</pre>`;
+          websitePackageMailPreview.hidden = false;
+        }
+
+        async function requestWebsitePackageEmail(action, change) {
+          return postJsonWithAdminAuth("/.netlify/functions/admin-website-package-email", {
+            action,
+            ...change,
+          }, "Pakketmail kon niet worden voorbereid.");
+        }
+
+        async function previewWebsitePackageChangeEmail() {
+          try {
+            const change = websitePackageChangeDraft();
+            const response = await requestWebsitePackageEmail("preview", change);
+            state.websitePackageMailPreview = {
+              signature: websitePackageChangeSignature(change),
+              change,
+              mailPreview: response.mailPreview,
+            };
+            renderWebsitePackageMailPreview(response.mailPreview);
+            setWebsitePackageMessage("Voorbeeldmail staat klaar. Controleer hem voordat je verzendt.", "success");
+          } catch (error) {
+            setWebsitePackageMessage(error.message || "Voorbeeldmail kon niet worden gemaakt.", "error");
+          }
+        }
+
+        async function saveWebsitePackageChange() {
+          const website = selectedWebsite();
+          if (!website) return;
+          let change;
+          try {
+            change = websitePackageChangeDraft();
+            if (websitePackageFields.sendEmail.checked && state.websitePackageMailPreview?.signature !== websitePackageChangeSignature(change)) {
+              setWebsitePackageMessage("Maak eerst de voorbeeldmail voor deze wijziging.", "error");
+              return;
+            }
+          } catch (error) {
+            setWebsitePackageMessage(error.message || "Pakketwijziging is niet compleet.", "error");
+            return;
+          }
+
+          websitePackageSaveSend.disabled = true;
+          websitePackageSaveSend.textContent = websitePackageFields.sendEmail.checked ? "Opslaan + mailen..." : "Opslaan...";
+          setWebsitePackageMessage("", "");
+
+          try {
+            const metadata = { ...(website.metadata || {}) };
+            const packageChangeLog = Array.isArray(metadata.packageChangeLog) ? metadata.packageChangeLog.slice(0, 25) : [];
+            const plannedPackageChanges = Array.isArray(metadata.plannedPackageChanges) ? metadata.plannedPackageChanges.slice(0, 25) : [];
+            const payload = websitePayload({
+              metadata: {
+                ...metadata,
+                packageChangeLog: [change, ...packageChangeLog],
+                plannedPackageChanges: change.timing === "scheduled" ? [change, ...plannedPackageChanges] : plannedPackageChanges,
+              },
+            });
+            if (change.timing === "now") {
+              payload.hostingPackage = change.newHostingPackage;
+              payload.carePackage = change.newCarePackage;
+            } else {
+              payload.hostingPackage = website.hostingPackage;
+              payload.carePackage = website.carePackage;
+            }
+            const savedWebsite = isSupabaseManagedWebsite(website)
+              ? await saveWebsiteCentrally(payload, website)
+              : await saveWebsitePackageChangeLocally(website, payload);
+            if (websitePackageFields.sendEmail.checked) {
+              await requestWebsitePackageEmail("send", change);
+            }
+            await loadCRMData(false);
+            state.selectedWebsiteId = savedWebsite?.id || website.id;
+            selectWebsite(state.selectedWebsiteId);
+            setWebsitePackageMessage(websitePackageFields.sendEmail.checked ? "Wijziging opgeslagen en klantmail verzonden." : "Wijziging opgeslagen.", "success");
+            window.showToast?.(websitePackageFields.sendEmail.checked ? "Pakketwijziging opgeslagen en klantmail verzonden." : "Pakketwijziging opgeslagen.", "success");
+          } catch (error) {
+            setWebsitePackageMessage(error.message || "Pakketwijziging kon niet worden opgeslagen.", "error");
+          } finally {
+            websitePackageSaveSend.textContent = "Wijziging opslaan";
+            websitePackageSaveSend.disabled = !selectedWebsite();
+          }
+        }
+
+        async function saveWebsitePackageChangeLocally(website, payload) {
+          const repo = await getWebsiteRepositoryModule();
+          return repo.updateWebsite(website.id, payload, {
+            oldWebsite: website,
+            target: "local",
+            mode: currentWebsiteDataMode(),
+          });
         }
 
         function isSupabaseManagedCustomer(customer = {}) {
@@ -12184,6 +12418,7 @@
           renderWebsiteDetailSummary(null);
           renderWebsiteSourceDetail(null);
           updateWebsiteQuickActions(null);
+          resetWebsitePackageChange(null);
           setWebsiteMessage("", "");
           enableWebsiteFields(true);
         }
@@ -12312,6 +12547,7 @@
           renderWebsiteDetailSummary(website);
           renderWebsiteSourceDetail(website);
           updateWebsiteQuickActions(website);
+          resetWebsitePackageChange(website);
           setWebsiteMessage(isSupabaseManagedWebsite(website) ? "Website geladen. Klik op Bewerken om aan te passen." : "", isSupabaseManagedWebsite(website) ? "success" : "");
           setWebsiteFieldsDisabled(isSupabaseManagedWebsite(website));
           websiteSave.disabled = isSupabaseManagedWebsite(website);
@@ -12355,6 +12591,7 @@
               profileId: linkedCustomer?.profileId || "",
               metadata: {
                 ...(currentWebsite?.metadata || {}),
+                ...(payload.metadata || {}),
                 localCustomerId: linkedCustomer?.id || payload.profileId || "",
                 customerCompany: linkedCustomer?.company || "",
                 customerName: linkedCustomer?.name || "",
@@ -17743,6 +17980,19 @@
         websiteCancel.addEventListener("click", cancelWebsiteEditing);
         websiteRefreshSupabase.addEventListener("click", refreshSelectedWebsiteFromSupabase);
         websiteHistory.addEventListener("click", toggleWebsiteHistory);
+        websitePackageFields.timing.addEventListener("change", () => {
+          websitePackageFields.effectiveDate.disabled = websitePackageFields.timing.value !== "scheduled";
+          state.websitePackageMailPreview = null;
+          websitePackageMailPreview.hidden = true;
+        });
+        [websitePackageFields.hosting, websitePackageFields.care, websitePackageFields.effectiveDate, websitePackageFields.note, websitePackageFields.sendEmail].forEach((field) => {
+          field.addEventListener("input", () => {
+            state.websitePackageMailPreview = null;
+            websitePackageMailPreview.hidden = true;
+          });
+        });
+        websitePackagePreview.addEventListener("click", previewWebsitePackageChangeEmail);
+        websitePackageSaveSend.addEventListener("click", saveWebsitePackageChange);
         [subscriptionSearch, subscriptionStatusFilter, subscriptionPlanFilter, subscriptionCustomerFilter, subscriptionWebsiteFilter, subscriptionFrequencyFilter].forEach((filter) => filter.addEventListener("input", renderSubscriptions));
         [websiteSearch, websiteStatusFilter, websiteHostingFilter, websiteCareFilter].forEach((filter) => filter.addEventListener("input", renderWebsites));
         [websiteQuickActions.live, websiteQuickActions.staging, websiteQuickActions.github, websiteQuickActions.netlify, websiteQuickActions.portal, detailOpenPortal, projectOpenPortal].forEach((link) => {

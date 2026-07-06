@@ -18,11 +18,11 @@ export const PROTECTED_ROUTES = Object.freeze({
   },
   "admin-leadfinder": {
     pageName: "admin-leadfinder",
-    path: "/admin-dashboard.html#leadfinder",
+    path: "/admin-sales.html",
     requiredRoles: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.SALES_MANAGER, ROLES.SALES_PARTNER],
     requiredPermissions: [{ resource: "leads", action: "view" }],
     allowDemo: true,
-    defaultRedirect: "/admin-dashboard.html#leadfinder",
+    defaultRedirect: "/admin-sales.html",
     hardReady: true,
   },
   klantportaal: {
