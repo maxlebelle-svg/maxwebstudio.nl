@@ -29,6 +29,7 @@
           <a href="admin-dashboard.html">Dashboard</a>
           <span class="admin-nav-group">Sales</span>
           <a href="admin-sales.html">Leads</a>
+          <a href="#sales-agenda">Agenda</a>
           <span class="admin-nav-group">Production</span>
           <a href="admin-website-factory.html">Website Factory</a>
           <a href="admin-ai-content-library.html">AI Content Library</a>
@@ -514,7 +515,7 @@
                 </div>
               </details>
 
-              <details class="lead-welcome-card sales-detail-wide-card">
+              <details class="lead-welcome-card sales-detail-wide-card" id="lead-agenda-planner-card">
                 <summary>
                   <span>
                     <strong>Welkomstmail / klant onboarding</strong>
@@ -628,6 +629,36 @@
           </div>
 
           <div class="admin-table leadfinder-table" id="leadfinder-list" role="list" aria-label="Leadfinder bedrijven" aria-live="polite"></div>
+        </section>
+
+        <section class="admin-section sales-agenda-section" id="sales-agenda">
+          <div class="admin-section-heading factory-command-heading">
+            <div>
+              <p class="section-kicker">Sales agenda</p>
+              <h2>Agenda</h2>
+              <p class="admin-section-intro">Alle geplande follow-ups, terugbelverzoeken en lead-afspraken op een vaste plek.</p>
+            </div>
+            <div class="factory-live-status" aria-label="Sales agenda status">
+              <span><strong id="sales-agenda-today">0</strong><small>Vandaag</small></span>
+              <span><strong id="sales-agenda-week">0</strong><small>Deze week</small></span>
+              <span><strong id="sales-agenda-overdue">0</strong><small>Te laat</small></span>
+            </div>
+          </div>
+
+          <div class="admin-card sales-agenda-toolbar">
+            <label for="sales-agenda-date">Dag<input id="sales-agenda-date" type="date" /></label>
+            <label for="sales-agenda-status">Status<select id="sales-agenda-status">
+              <option value="">Alle afspraken</option>
+              <option value="open">Open</option>
+              <option value="nieuw">Nieuw</option>
+              <option value="in_behandeling">In behandeling</option>
+              <option value="afgerond">Afgerond</option>
+              <option value="gearchiveerd">Gearchiveerd</option>
+            </select></label>
+            <label for="sales-agenda-search">Zoeken<input id="sales-agenda-search" type="search" placeholder="Lead, medewerker of notitie" /></label>
+          </div>
+
+          <div class="sales-agenda-list" id="sales-agenda-list" aria-live="polite"></div>
         </section>
 
         <section class="admin-section" id="demo-klantreis">
@@ -2708,6 +2739,7 @@
           { href: "admin-dashboard.html", page: "dashboard", accessId: "dashboard", label: "Dashboard", alwaysVisible: true },
           { type: "group", label: "Sales" },
           { href: "admin-sales.html", page: "sales", accessId: "leadfinder", label: "Leads", alwaysVisible: true },
+          { href: "#sales-agenda", page: "sales-agenda", accessId: "sales-agenda", label: "Agenda", alwaysVisible: true },
           { type: "group", label: "Production" },
           { href: "admin-website-factory.html", page: "website-factory", accessId: "leadfinder", label: "Website Factory", alwaysVisible: true },
           { href: "admin-ai-content-library.html", page: "ai-content-library", accessId: "ai-content-library", label: "AI Content Library", alwaysVisible: true },
@@ -9216,7 +9248,7 @@
           const visibleItemIds = Array.isArray(options.visibleItemIds)
             ? new Set(options.visibleItemIds)
             : currentPage === "sales"
-              ? new Set(["dashboard", "leadfinder", "klanten", "offertes", "facturen"])
+              ? new Set(["dashboard", "leadfinder", "sales-agenda", "klanten", "offertes", "facturen"])
               : null;
           const visibleItems = visibleItemIds
             ? adminSidebarNavItems.filter((item) => item.type === "group" || (keepAlwaysVisible && item.alwaysVisible) || item.accessId === "dashboard" || visibleItemIds.has(item.accessId))
@@ -9250,11 +9282,16 @@
           }
         }
 
-        function syncSalesViewState(id = window.maxwebstudioAdminPage?.page || "dashboard") {
-          document.body.classList.toggle("is-sales-view", id === "sales");
+        function getActiveAdminNavId(fallback = window.maxwebstudioAdminPage?.page || "dashboard") {
+          const hashId = window.location.hash ? window.location.hash.slice(1) : "";
+          return hashId && document.getElementById(hashId) ? hashId : fallback;
         }
 
-        function syncActiveNav(id = window.maxwebstudioAdminPage?.page || "dashboard") {
+        function syncSalesViewState(id = getActiveAdminNavId()) {
+          document.body.classList.toggle("is-sales-view", id === "sales" || id === "sales-agenda");
+        }
+
+        function syncActiveNav(id = getActiveAdminNavId()) {
           ensureAdminSidebarNavigation();
           adminNavLinks.forEach((link) => {
             link.classList.toggle("is-active", link.dataset.adminNav === id);
@@ -18120,6 +18157,17 @@
         list: document.getElementById("crm-task-list"),
       };
 
+      const agendaElements = {
+        section: document.getElementById("sales-agenda"),
+        today: document.getElementById("sales-agenda-today"),
+        week: document.getElementById("sales-agenda-week"),
+        overdue: document.getElementById("sales-agenda-overdue"),
+        date: document.getElementById("sales-agenda-date"),
+        status: document.getElementById("sales-agenda-status"),
+        search: document.getElementById("sales-agenda-search"),
+        list: document.getElementById("sales-agenda-list"),
+      };
+
       const statusLabels = Object.fromEntries(CRM_TASK_STATUSES.map((item) => [item.value, item.label]));
       const priorityLabels = Object.fromEntries(CRM_TASK_PRIORITIES.map((item) => [item.value, item.label]));
       const typeLabels = Object.fromEntries(CRM_TASK_TYPES.map((item) => [item.value, item.label]));
@@ -18249,6 +18297,151 @@
         return "Algemene opvolging";
       }
 
+      function readWorkflowObject(key) {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(key) || "null");
+          return parsed && typeof parsed === "object" ? parsed : {};
+        } catch (error) {
+          return {};
+        }
+      }
+
+      function getAgendaUserContext() {
+        const adminSession = readWorkflowObject("mws_admin_supabase_session");
+        const currentSession = readWorkflowObject("maxwebstudioCurrentSession");
+        const profile = readWorkflowObject("mws_admin_profile");
+        const email = String(adminSession.email || currentSession.email || profile.email || "").trim().toLowerCase();
+        return {
+          email,
+          userId: String(adminSession.userId || currentSession.userId || currentSession.authUserId || profile.authUserId || "").trim(),
+          name: String(adminSession.name || currentSession.name || profile.name || email || "").trim(),
+          role: String(adminSession.role || currentSession.role || profile.role || "").trim().toLowerCase(),
+        };
+      }
+
+      function isAgendaTask(task = {}) {
+        return task.type === "lead" && Boolean(task.dueDate) && (
+          Boolean(task.leadId)
+          || /terugbel|agenda|follow-up|opvolg/i.test(`${task.title || ""} ${task.notes || ""}`)
+        );
+      }
+
+      function userCanSeeAgendaTask(task = {}) {
+        const context = getAgendaUserContext();
+        if (["super_admin", "admin", "sales_manager"].includes(context.role)) return true;
+        const taskOwnerTokens = [
+          task.ownerEmail,
+          task.assignedToEmail,
+          task.ownerAuthUserId,
+          task.ownerName,
+          task.assignedToName,
+        ].map((value) => String(value || "").trim().toLowerCase()).filter(Boolean);
+        if (!taskOwnerTokens.length) return true;
+        return [context.email, context.userId, context.name].some((value) => value && taskOwnerTokens.includes(String(value).toLowerCase()));
+      }
+
+      function getAgendaTaskDateTime(task = {}) {
+        const dueAt = String(task.dueAt || "").trim();
+        if (dueAt) {
+          const parsed = new Date(dueAt);
+          if (!Number.isNaN(parsed.getTime())) return parsed;
+        }
+        const date = task.dueDate || "";
+        const time = task.dueTime || "09:00";
+        const parsed = new Date(`${date}T${time}`);
+        return Number.isNaN(parsed.getTime()) ? new Date(`${date}T09:00`) : parsed;
+      }
+
+      function formatAgendaDateTime(task = {}) {
+        const date = getAgendaTaskDateTime(task);
+        if (Number.isNaN(date.getTime())) return task.dueDate || "Geen datum";
+        return date.toLocaleString("nl-NL", {
+          weekday: "short",
+          day: "2-digit",
+          month: "short",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      }
+
+      function openAgendaLead(task = {}) {
+        if (!task.leadId) return;
+        window.location.href = `admin-sales.html?leadId=${encodeURIComponent(task.leadId)}#leadfinder-detail`;
+      }
+
+      function getFilteredAgendaTasks() {
+        const query = String(agendaElements.search?.value || "").trim().toLowerCase();
+        const status = agendaElements.status?.value || "";
+        const date = agendaElements.date?.value || "";
+        return readCrmTasks()
+          .filter(isAgendaTask)
+          .filter(userCanSeeAgendaTask)
+          .filter((task) => {
+            const haystack = [
+              task.title,
+              task.notes,
+              task.ownerName,
+              task.ownerEmail,
+              task.assignedToName,
+              task.assignedToEmail,
+              task.dueDate,
+              task.dueTime,
+            ].join(" ").toLowerCase();
+            return (!query || haystack.includes(query))
+              && (!status || task.status === status)
+              && (!date || task.dueDate === date);
+          })
+          .sort((a, b) => getAgendaTaskDateTime(a) - getAgendaTaskDateTime(b));
+      }
+
+      function renderSalesAgenda() {
+        if (!agendaElements.list) return;
+        const allAgendaTasks = readCrmTasks().filter(isAgendaTask).filter(userCanSeeAgendaTask);
+        const todayIso = new Date().toISOString().slice(0, 10);
+        const weekLimit = new Date();
+        weekLimit.setDate(weekLimit.getDate() + 7);
+        const weekIso = weekLimit.toISOString().slice(0, 10);
+        const openTasks = allAgendaTasks.filter((task) => !["afgerond", "gearchiveerd"].includes(task.status));
+        if (agendaElements.today) agendaElements.today.textContent = String(openTasks.filter((task) => task.dueDate === todayIso).length);
+        if (agendaElements.week) agendaElements.week.textContent = String(openTasks.filter((task) => task.dueDate >= todayIso && task.dueDate <= weekIso).length);
+        if (agendaElements.overdue) agendaElements.overdue.textContent = String(openTasks.filter((task) => task.dueDate && task.dueDate < todayIso).length);
+
+        const tasks = getFilteredAgendaTasks();
+        if (!tasks.length) {
+          agendaElements.list.innerHTML = `
+            <article class="admin-card sales-agenda-empty">
+              <strong>Geen agenda-afspraken gevonden</strong>
+              <span>Plan een follow-up vanuit een lead, dan verschijnt die hier automatisch.</span>
+            </article>
+          `;
+          return;
+        }
+
+        agendaElements.list.innerHTML = tasks.map((task) => `
+          <article class="admin-card sales-agenda-card" data-agenda-task-id="${escapeHtml(task.id)}">
+            <div class="sales-agenda-time">
+              <strong>${escapeHtml(formatAgendaDateTime(task))}</strong>
+              <span>${escapeHtml(task.ownerName || task.assignedToName || task.ownerEmail || "Medewerker")}</span>
+            </div>
+            <div class="sales-agenda-content">
+              <div>
+                <strong>${escapeHtml(task.title)}</strong>
+                <span>${escapeHtml(task.notes || "Geen extra notitie")}</span>
+              </div>
+              <div class="sales-agenda-badges">
+                <mark class="status-badge status-planned">${escapeHtml(statusLabels[task.status] || task.status)}</mark>
+                <mark class="status-badge status-active">${escapeHtml(priorityLabels[task.priority] || task.priority)}</mark>
+              </div>
+            </div>
+            <div class="sales-agenda-actions">
+              ${task.leadId ? `<button class="button secondary" type="button" data-agenda-action="open-lead">Open lead</button>` : ""}
+              <button class="button secondary" type="button" data-agenda-action="complete">Afronden</button>
+              <button class="button secondary" type="button" data-agenda-action="archive">Archiveren</button>
+            </div>
+          </article>
+        `).join("");
+      }
+
       function getFilteredTasks() {
         const query = String(workflowElements.search?.value || "").trim().toLowerCase();
         const status = workflowElements.filterStatus?.value || "";
@@ -18346,6 +18539,7 @@
           resetTaskForm();
           setMessage(result.fallbackUsed ? "Opvolgactie lokaal opgeslagen. Supabase write-gate staat uit of viel terug." : "Opvolgactie opgeslagen via Supabase staging en lokaal gespiegeld.", "success");
           renderTaskList();
+          renderSalesAgenda();
         } catch (error) {
           setMessage(error.message || "Opvolgactie kon niet worden opgeslagen.", "error");
         }
@@ -18362,13 +18556,36 @@
         if (action === "archive") archiveCrmTaskLocally(taskId);
         if (action === "delete" && window.confirm("Deze workflowtaak verwijderen?")) deleteCrmTaskLocally(taskId);
         renderTaskList();
+        renderSalesAgenda();
+      }
+
+      function handleAgendaAction(event) {
+        const button = event.target.closest("[data-agenda-action]");
+        if (!button) return;
+        const card = button.closest("[data-agenda-task-id]");
+        const taskId = card?.dataset.agendaTaskId;
+        const task = readCrmTasks().find((item) => item.id === taskId);
+        if (!task) return;
+        const action = button.dataset.agendaAction;
+        if (action === "open-lead") {
+          openAgendaLead(task);
+          return;
+        }
+        if (action === "complete") completeCrmTaskLocally(task.id);
+        if (action === "archive") archiveCrmTaskLocally(task.id);
+        renderTaskList();
+        renderSalesAgenda();
       }
 
       function initCrmWorkflow() {
-        if (!workflowElements.form || !workflowElements.list) return;
+        if (!workflowElements.form || !workflowElements.list) {
+          renderSalesAgenda();
+          return;
+        }
         fillStaticSelects();
         fillRelationshipSelects();
         renderTaskList();
+        renderSalesAgenda();
 
         workflowElements.form.addEventListener("submit", handleTaskSubmit);
         workflowElements.reset?.addEventListener("click", () => {
@@ -18380,6 +18597,15 @@
           element?.addEventListener("change", renderTaskList);
         });
         workflowElements.list.addEventListener("click", handleTaskAction);
+        [agendaElements.date, agendaElements.status, agendaElements.search].forEach((element) => {
+          element?.addEventListener("input", renderSalesAgenda);
+          element?.addEventListener("change", renderSalesAgenda);
+        });
+        agendaElements.list?.addEventListener("click", handleAgendaAction);
+        window.addEventListener("maxwebstudio:sales-agenda-updated", () => {
+          renderTaskList();
+          renderSalesAgenda();
+        });
       }
 
       initCrmWorkflow();
@@ -18462,6 +18688,7 @@
         createTask: document.getElementById("leadfinder-create-task"),
         convertCustomer: document.getElementById("leadfinder-convert-customer"),
         whatsappMessage: document.getElementById("leadfinder-whatsapp-message"),
+        agendaPlanner: document.getElementById("lead-agenda-planner-card"),
         callbackAt: document.getElementById("leadfinder-callback-at"),
         callbackRequest: document.getElementById("leadfinder-callback-request"),
         planAgenda: document.getElementById("leadfinder-plan-agenda"),
@@ -21340,6 +21567,7 @@
 
       async function createWorkflowTaskForLead(lead) {
         if (!lead) return null;
+        const ownerContext = getLeadfinderUserContext();
         return saveCrmTaskWithWriteFallback({
           title: `Lead opvolgen: ${lead.companyName}`,
           type: "lead",
@@ -21347,6 +21575,11 @@
           priority: lead.leadScore >= 80 ? "hoog" : "normaal",
           dueDate: lead.followUpDate || "",
           leadId: lead.id,
+          ownerAuthUserId: ownerContext.userId,
+          ownerEmail: lead.ownerEmail || lead.assignedToEmail || ownerContext.email,
+          ownerName: lead.ownerName || lead.assignedToName || ownerContext.name,
+          assignedToEmail: lead.assignedToEmail || lead.ownerEmail || ownerContext.email,
+          assignedToName: lead.assignedToName || lead.ownerName || ownerContext.name,
           notes: `Sales lead (${lead.industry || "branche onbekend"}, ${lead.region || "regio onbekend"}). Leadstatus: ${getLeadFinderLabel(LEADFINDER_CALL_STATUSES, lead.callStatus)}. Website-status: ${getLeadFinderLabel(LEADFINDER_WEBSITE_STATUSES, lead.websiteStatus)}. ${getLeadNotes(lead)}`.trim(),
         });
       }
@@ -21356,6 +21589,8 @@
         if (!lead) return;
         const callbackAt = leadfinderElements.callbackAt?.value || defaultCallbackDateTime();
         const followUpDate = dateFromDateTimeLocal(callbackAt);
+        const followUpTime = callbackAt.includes("T") ? callbackAt.split("T")[1] : "";
+        const ownerContext = getLeadfinderUserContext();
         if (!followUpDate) {
           setLeadAgendaMessage("Kies eerst een terugbelmoment.", "error");
           return;
@@ -21370,7 +21605,14 @@
             status: "open",
             priority: kind === "request" ? "hoog" : "normaal",
             dueDate: followUpDate,
+            dueTime: followUpTime,
+            dueAt: callbackAt,
             leadId: lead.id,
+            ownerAuthUserId: ownerContext.userId,
+            ownerEmail: lead.ownerEmail || lead.assignedToEmail || ownerContext.email,
+            ownerName: lead.ownerName || lead.assignedToName || ownerContext.name,
+            assignedToEmail: lead.assignedToEmail || lead.ownerEmail || ownerContext.email,
+            assignedToName: lead.assignedToName || lead.ownerName || ownerContext.name,
             notes: [
               kind === "request" ? "Terugbelverzoek vanuit sales lead detail." : "Interne agenda-afspraak vanuit sales lead detail.",
               `Gepland moment: ${callbackAt.replace("T", " ")}`,
@@ -21384,6 +21626,7 @@
             callStatus: lead.callStatus === "quote_sent" ? "quote_sent" : "opvolgen",
           }, kind === "request" ? "Terugbelverzoek ingepland." : "Interne agenda-afspraak opgeslagen.");
           setLeadAgendaMessage(result?.fallbackUsed ? "Lokaal in de interne agenda gezet. Centrale synchronisatie volgt." : "Opgeslagen in de interne agenda.", result?.fallbackUsed ? "warning" : "success");
+          window.dispatchEvent(new CustomEvent("maxwebstudio:sales-agenda-updated"));
         } catch (error) {
           setLeadAgendaMessage(error.message || "Agenda-afspraak kon niet worden opgeslagen.", "error");
         }
@@ -21637,6 +21880,23 @@
         setLeadfinderMessage("Offerte gestart. Koppel een klant zodra de lead klaar is voor akkoord.", "success");
       }
 
+              function openLeadFollowUpPlanner() {
+                const lead = selectedLeadFinderLead();
+                if (!lead) return;
+                activeSalesDetailTab = "actions";
+                renderLeadfinderDetail(lead);
+                if (leadfinderElements.agendaPlanner) leadfinderElements.agendaPlanner.open = true;
+                if (leadfinderElements.callbackAt && !leadfinderElements.callbackAt.value) {
+                  leadfinderElements.callbackAt.value = defaultCallbackDateTime(lead);
+                }
+                setLeadAgendaMessage("Kies een dag en tijd en klik daarna op Plan in interne agenda.", "success");
+                window.setTimeout(() => {
+                  const target = leadfinderElements.callbackAt || leadfinderElements.agendaPlanner;
+                  window.focusAdminPanel?.(leadfinderElements.agendaPlanner || target);
+                  target?.focus?.();
+                }, 60);
+              }
+
               async function planFollowUpForSelectedLead() {
                 const lead = selectedLeadFinderLead();
                 if (!lead) return;
@@ -21665,7 +21925,7 @@
           return;
         }
         if (action === "followup") {
-          await planFollowUpForSelectedLead();
+          openLeadFollowUpPlanner();
           return;
         }
                 if (action === "quote") {
