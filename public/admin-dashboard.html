@@ -11197,6 +11197,19 @@
           renderActionItems(metrics.actionItems || []);
         }
 
+        function applyDashboardInvoiceRevenueFallback() {
+          const paidInvoices = state.invoices.filter((invoice) => normalizeInvoiceStatus(invoice.status) === "betaald");
+          const paidRevenue = paidInvoices.reduce((sum, invoice) => sum + Number(invoice.total || invoice.amount || 0), 0);
+          const openInvoices = state.invoices.filter((invoice) => ["concept", "verzonden", "verlopen", "open"].includes(normalizeInvoiceStatus(invoice.status))).length;
+          if (paidRevenue > 0) {
+            if (revenueMonthMetric) revenueMonthMetric.textContent = money(paidRevenue);
+            if (paidAmountMetric) paidAmountMetric.textContent = money(paidRevenue);
+          }
+          if (openInvoicesLocalMetric) openInvoicesLocalMetric.textContent = String(openInvoices);
+          if (biKpis.paidInvoices) biKpis.paidInvoices.textContent = String(paidInvoices.length);
+          if (biKpis.openInvoices) biKpis.openInvoices.textContent = String(openInvoices);
+        }
+
         function renderBarChart(target, items, options = {}) {
           target.replaceChildren();
           if (!items.length) {
@@ -17329,6 +17342,8 @@
           if (showLoading) setAdminAccessMessage("Dashboard laden...", "");
           try {
             await loadDashboardMetrics(showLoading);
+            state.invoices = await loadInvoicesByDataMode();
+            applyDashboardInvoiceRevenueFallback();
             if (showLoading) setAdminOperationalMessage("Dashboard snel geladen via centrale metrics.", "success");
           } finally {
             adminLoadButton.disabled = false;
