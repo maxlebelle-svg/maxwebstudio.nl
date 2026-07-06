@@ -18413,6 +18413,26 @@
         });
       }
 
+      function getAgendaEventDisplay(task = {}) {
+        const rawTitle = String(task.title || "").trim();
+        const time = String(task.dueTime || "").slice(0, 5) || formatAgendaDateTime(task).slice(-5);
+        const isCallback = /terugbel/i.test(rawTitle);
+        const isFollowUp = /follow-up|agenda afspraak|opvolg/i.test(rawTitle);
+        const ownerLabel = task.ownerName || task.assignedToName || (task.ownerEmail ? String(task.ownerEmail).split("@")[0] : "") || "Interne afspraak";
+        const cleanTitle = rawTitle
+          .replace(/^Agenda afspraak:\s*/i, "")
+          .replace(/\s+terugbellen$/i, "")
+          .replace(/^Follow-up:\s*/i, "")
+          .replace(/^Terugbelverzoek:\s*/i, "")
+          .trim();
+        const isGenericAgenda = /^agenda$/i.test(cleanTitle);
+        return {
+          time,
+          title: isCallback ? "Terugbelmoment" : (isFollowUp || isGenericAgenda) ? "Follow-up" : cleanTitle || "Interne afspraak",
+          subtitle: (isCallback || isFollowUp || isGenericAgenda) && cleanTitle && !isGenericAgenda ? cleanTitle : ownerLabel,
+        };
+      }
+
       function openAgendaLead(task = {}) {
         if (!task.leadId) return;
         window.location.href = `admin-sales.html?leadId=${encodeURIComponent(task.leadId)}#leadfinder-detail`;
@@ -18496,11 +18516,13 @@
             const minutes = Number.isNaN(taskDate.getTime()) ? 120 : ((taskDate.getHours() - 8) * 60) + taskDate.getMinutes();
             const top = Math.max(0, Math.min(600, minutes));
             const duration = String(task.title || "").toLowerCase().includes("terugbel") ? 45 : 60;
+            const display = getAgendaEventDisplay(task);
             const eventClass = task.priority === "hoog" ? "is-high" : task.type === "lead" ? "is-lead" : "is-internal";
             return `
               <button class="sales-calendar-event ${eventClass}" type="button" data-agenda-task-id="${escapeHtml(task.id)}" style="top: ${top}px; height: ${Math.max(42, duration)}px; left: ${8 + (index % 2) * 8}px; right: ${8 + (index % 2) * 8}px;">
-                <strong>${escapeHtml(String(task.dueTime || "").slice(0, 5) || formatAgendaDateTime(task).slice(-5))} · ${escapeHtml(task.title)}</strong>
-                <span>${escapeHtml(task.ownerName || task.assignedToName || task.ownerEmail || "Interne afspraak")}</span>
+                <small>${escapeHtml(display.time)}</small>
+                <strong>${escapeHtml(display.title)}</strong>
+                <span>${escapeHtml(display.subtitle)}</span>
               </button>
             `;
           }).join("");

@@ -20616,6 +20616,8 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
 }
 
 .admin-body.is-sales-view .sales-recent-activity-item {
+  appearance: none;
+  -webkit-appearance: none;
   display: grid;
   gap: 3px;
   width: 100%;
@@ -20624,9 +20626,16 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   border: 1px solid rgba(147, 197, 253, 0.12);
   border-radius: 8px;
   background: rgba(15, 32, 52, 0.76);
-  color: inherit;
+  color: #f8fbff;
   text-align: left;
   cursor: pointer;
+}
+
+.admin-body.is-sales-view .sales-recent-activity-item:hover {
+  border-color: rgba(59, 130, 246, 0.52);
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(14, 165, 233, 0.08)),
+    rgba(15, 32, 52, 0.88);
 }
 
 .admin-body.is-sales-view .sales-recent-activity-item span,
@@ -20664,7 +20673,14 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   min-width: 0;
 }
 
+.admin-body.is-sales-view .leadfinder-detail-card button,
+.admin-body.is-sales-view .sales-recent-activity-card button {
+  font-family: inherit;
+}
+
 .admin-body.is-sales-view .sales-detail-tab {
+  appearance: none;
+  -webkit-appearance: none;
   min-width: 0;
   min-height: 42px;
   padding: 10px 12px;
@@ -21122,29 +21138,45 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   position: absolute;
   z-index: 2;
   display: grid;
-  gap: 5px;
+  align-content: start;
+  gap: 3px;
   min-width: 0;
-  padding: 8px 10px;
-  border: 1px solid rgba(37, 99, 235, 0.26);
+  padding: 8px 9px;
+  border: 1px solid rgba(96, 165, 250, 0.52);
   border-radius: 7px;
   background: linear-gradient(180deg, #dbeafe, #eff6ff);
   color: #0f172a;
   cursor: pointer;
   text-align: left;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.13);
   overflow: hidden;
 }
 
+.sales-calendar-event:hover {
+  border-color: rgba(37, 99, 235, 0.78);
+  box-shadow: 0 16px 34px rgba(37, 99, 235, 0.2);
+  transform: translateY(-1px);
+}
+
 .sales-calendar-event.is-high {
-  border-color: rgba(244, 63, 94, 0.36);
-  background: linear-gradient(180deg, #ffe4e6, #fff1f2);
+  border-color: rgba(244, 114, 182, 0.5);
+  background: linear-gradient(180deg, #fce7f3, #fff1f2);
+  box-shadow: 0 12px 28px rgba(244, 114, 182, 0.16);
+}
+
+.sales-calendar-event.is-lead {
+  border-color: rgba(74, 222, 128, 0.48);
+  background: linear-gradient(180deg, #dcfce7, #f0fdf4);
+  box-shadow: 0 12px 28px rgba(22, 163, 74, 0.13);
 }
 
 .sales-calendar-event.is-internal {
-  border-color: rgba(245, 158, 11, 0.36);
+  border-color: rgba(245, 158, 11, 0.5);
   background: linear-gradient(180deg, #fef3c7, #fffbeb);
+  box-shadow: 0 12px 28px rgba(217, 119, 6, 0.13);
 }
 
+.sales-calendar-event small,
 .sales-calendar-event strong,
 .sales-calendar-event span {
   display: block;
@@ -21153,16 +21185,23 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   text-overflow: ellipsis;
 }
 
+.sales-calendar-event small {
+  color: #1e40af;
+  font-size: 10px;
+  font-weight: 950;
+  line-height: 1;
+}
+
 .sales-calendar-event strong {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.22;
   color: #0f172a;
 }
 
 .sales-calendar-event span {
-  color: #334155;
+  color: #475569;
   font-size: 10px;
-  font-weight: 750;
+  font-weight: 800;
   line-height: 1.2;
 }
 
