@@ -11145,48 +11145,55 @@
         function renderBusinessDashboard() {
           const metrics = state.dashboardMetrics;
           if (!metrics) return;
-          biKpis.mrr.textContent = money(metrics.finance?.mrr);
-          biKpis.arr.textContent = money(metrics.finance?.arr);
-          biKpis.activeCustomers.textContent = String(metrics.customers?.active ?? 0);
-          biKpis.websites.textContent = `${metrics.customers?.withWebsite ?? 0}/${metrics.customers?.total ?? 0}`;
-          biKpis.activeSubscriptions.textContent = String(metrics.subscriptions?.active ?? 0);
-          biKpis.highRisk.textContent = String(metrics.subscriptions?.highRisk ?? 0);
-          biKpis.openInvoices.textContent = String(metrics.finance?.openInvoices ?? 0);
-          biKpis.paidInvoices.textContent = String(metrics.finance?.paidInvoices ?? 0);
-          biKpis.waitingMandates.textContent = String(metrics.subscriptions?.waitingMandate ?? 0);
-          biKpis.retryNeeded.textContent = String(metrics.operations?.retryActionsNeeded ?? 0);
-          biKpis.openRequests.textContent = String(metrics.operations?.openChangeRequests ?? 0);
-          biKpis.cancellations.textContent = String(metrics.subscriptions?.canceled ?? 0);
-          biKpis.pauses.textContent = String(metrics.subscriptions?.paused ?? 0);
-          biKpis.paymentIssues.textContent = String((metrics.subscriptions?.highRisk ?? 0) + (metrics.subscriptions?.attention ?? 0));
-          if (totalLeadsMetric) totalLeadsMetric.textContent = String(metrics.leads?.open ?? metrics.leads?.total ?? 0);
-          if (totalCustomersMetric) totalCustomersMetric.textContent = String(metrics.customers?.total ?? 0);
-          if (totalCustomersLabel) totalCustomersLabel.textContent = (metrics.customers?.total ?? 0) === 1 ? "Klantprofiel" : "Klantprofielen";
-          if (activeProjectsMetric) activeProjectsMetric.textContent = String(metrics.projects?.active ?? 0);
-          if (liveWebsitesMetric) liveWebsitesMetric.textContent = String(metrics.websites?.active ?? metrics.customers?.withWebsite ?? 0);
-          if (openQuotesMetric) openQuotesMetric.textContent = String(metrics.finance?.openQuotes ?? 0);
-          if (openInvoicesLocalMetric) openInvoicesLocalMetric.textContent = String(metrics.finance?.openInvoices ?? 0);
-          if (conversionRateMetric) conversionRateMetric.textContent = `${metrics.leads?.conversionRate ?? 0}%`;
+          const setText = (target, value) => {
+            if (target) target.textContent = value;
+          };
+          const monthRevenue = Number(metrics.finance?.paidRevenue ?? 0);
+          const totalRevenue = Number(metrics.finance?.totalPaidRevenue ?? 0);
+          const visibleRevenue = monthRevenue > 0 ? monthRevenue : totalRevenue;
+          setText(revenueMonthMetric, money(visibleRevenue));
+          setText(paidAmountMetric, money(visibleRevenue));
+          setText(biKpis.mrr, money(metrics.finance?.mrr));
+          setText(biKpis.arr, money(metrics.finance?.arr));
+          setText(biKpis.activeCustomers, String(metrics.customers?.active ?? 0));
+          setText(biKpis.websites, `${metrics.customers?.withWebsite ?? 0}/${metrics.customers?.total ?? 0}`);
+          setText(biKpis.activeSubscriptions, String(metrics.subscriptions?.active ?? 0));
+          setText(biKpis.highRisk, String(metrics.subscriptions?.highRisk ?? 0));
+          setText(biKpis.openInvoices, String(metrics.finance?.openInvoices ?? 0));
+          setText(biKpis.paidInvoices, String(metrics.finance?.paidInvoices ?? 0));
+          setText(biKpis.waitingMandates, String(metrics.subscriptions?.waitingMandate ?? 0));
+          setText(biKpis.retryNeeded, String(metrics.operations?.retryActionsNeeded ?? 0));
+          setText(biKpis.openRequests, String(metrics.operations?.openChangeRequests ?? 0));
+          setText(biKpis.cancellations, String(metrics.subscriptions?.canceled ?? 0));
+          setText(biKpis.pauses, String(metrics.subscriptions?.paused ?? 0));
+          setText(biKpis.paymentIssues, String((metrics.subscriptions?.highRisk ?? 0) + (metrics.subscriptions?.attention ?? 0)));
+          setText(totalLeadsMetric, String(metrics.leads?.open ?? metrics.leads?.total ?? 0));
+          setText(totalCustomersMetric, String(metrics.customers?.total ?? 0));
+          setText(totalCustomersLabel, (metrics.customers?.total ?? 0) === 1 ? "Klantprofiel" : "Klantprofielen");
+          setText(activeProjectsMetric, String(metrics.projects?.active ?? 0));
+          setText(liveWebsitesMetric, String(metrics.websites?.active ?? metrics.customers?.withWebsite ?? 0));
+          setText(openQuotesMetric, String(metrics.finance?.openQuotes ?? 0));
+          setText(openInvoicesLocalMetric, String(metrics.finance?.openInvoices ?? 0));
+          setText(conversionRateMetric, `${metrics.leads?.conversionRate ?? 0}%`);
 
-          renderBarChart(biCharts.revenue, metrics.charts?.revenueByMonth || [], { moneyValues: true });
-          renderBarChart(biCharts.subscriptions, metrics.charts?.subscriptionGrowth || []);
-          renderBarChart(biCharts.invoices, metrics.charts?.invoiceStatusDistribution || []);
-          renderBarChart(biCharts.subscriptionStatus, metrics.charts?.subscriptionStatusDistribution || []);
-          biCharts.revenueTotal.textContent = money((metrics.charts?.revenueByMonth || []).reduce((sum, item) => sum + Number(item.value || 0), 0));
+          if (biCharts.revenue) renderBarChart(biCharts.revenue, metrics.charts?.revenueByMonth || [], { moneyValues: true });
+          if (biCharts.subscriptions) renderBarChart(biCharts.subscriptions, metrics.charts?.subscriptionGrowth || []);
+          if (biCharts.invoices) renderBarChart(biCharts.invoices, metrics.charts?.invoiceStatusDistribution || []);
+          if (biCharts.subscriptionStatus) renderBarChart(biCharts.subscriptionStatus, metrics.charts?.subscriptionStatusDistribution || []);
+          setText(biCharts.revenueTotal, money((metrics.charts?.revenueByMonth || []).reduce((sum, item) => sum + Number(item.value || 0), 0)));
           if (revenueMonthMetric) {
             const loadedPaidRevenue = state.invoices
               .filter((invoice) => normalizeInvoiceStatus(invoice.status) === "betaald")
               .reduce((sum, invoice) => sum + Number(invoice.total || invoice.amount || 0), 0);
-            const dashboardPaidRevenue = Number(metrics.finance?.paidRevenue ?? 0);
+            const dashboardPaidRevenue = visibleRevenue;
             revenueMonthMetric.textContent = money(dashboardPaidRevenue > 0 || loadedPaidRevenue === 0 ? dashboardPaidRevenue : loadedPaidRevenue);
           }
-          if (paidAmountMetric) paidAmountMetric.textContent = money(metrics.finance?.paidRevenue ?? 0);
-          if (subscriptionsDueMetric) subscriptionsDueMetric.textContent = `${metrics.finance?.expiredInvoices ?? 0} verlopen`;
-          if (recurringRevenueMetric) recurringRevenueMetric.textContent = money(metrics.finance?.mrr ?? 0);
-          if (recurringRevenueLabel) recurringRevenueLabel.textContent = `${money(metrics.finance?.arr ?? 0)} ARR - ${metrics.subscriptions?.active ?? 0} actief`;
-          biCharts.subscriptionTotal.textContent = String((metrics.charts?.subscriptionGrowth || []).at(-1)?.value || 0);
-          biCharts.invoiceTotal.textContent = String((metrics.charts?.invoiceStatusDistribution || []).reduce((sum, item) => sum + Number(item.value || 0), 0));
-          biCharts.subscriptionStatusTotal.textContent = String((metrics.charts?.subscriptionStatusDistribution || []).reduce((sum, item) => sum + Number(item.value || 0), 0));
+          setText(subscriptionsDueMetric, `${metrics.finance?.expiredInvoices ?? 0} verlopen`);
+          setText(recurringRevenueMetric, money(metrics.finance?.mrr ?? 0));
+          setText(recurringRevenueLabel, `${money(metrics.finance?.arr ?? 0)} ARR - ${metrics.subscriptions?.active ?? 0} actief`);
+          setText(biCharts.subscriptionTotal, String((metrics.charts?.subscriptionGrowth || []).at(-1)?.value || 0));
+          setText(biCharts.invoiceTotal, String((metrics.charts?.invoiceStatusDistribution || []).reduce((sum, item) => sum + Number(item.value || 0), 0)));
+          setText(biCharts.subscriptionStatusTotal, String((metrics.charts?.subscriptionStatusDistribution || []).reduce((sum, item) => sum + Number(item.value || 0), 0)));
           renderActionItems(metrics.actionItems || []);
         }
 
