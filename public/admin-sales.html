@@ -29,7 +29,7 @@
           <a href="admin-dashboard.html">Dashboard</a>
           <span class="admin-nav-group">Sales</span>
           <a href="admin-sales.html">Leads</a>
-          <a href="#sales-agenda">Agenda</a>
+          <a href="admin-sales.html#sales-agenda">Agenda</a>
           <span class="admin-nav-group">Production</span>
           <a href="admin-website-factory.html">Website Factory</a>
           <a href="admin-ai-content-library.html">AI Content Library</a>
@@ -2312,7 +2312,8 @@
         };
         const sectionGroups = {
           dashboard: ["dashboard", "admin-access-control-banner", "admin-metrics", "bi-dashboard-section"],
-          sales: ["dashboard", "admin-metrics", "leadfinder", "sales-agenda"],
+          sales: ["dashboard", "admin-metrics", "leadfinder"],
+          "sales-agenda": ["sales-agenda"],
           "website-factory": ["demo-klantreis"],
           klanten: ["klanten"],
           websites: ["websites"],
@@ -2322,26 +2323,38 @@
           instellingen: ["instellingen", "demo-omgeving"],
         };
         const fileName = (window.location.pathname.split("/").filter(Boolean).pop() || "admin-dashboard.html").toLowerCase();
-        const page = pageByFile[fileName] || "dashboard";
-        const visible = new Set(sectionGroups[page] || sectionGroups.dashboard);
-        document.body.dataset.adminPage = page;
-        document.body.classList.toggle("is-sales-view", page === "sales");
-        document.body.classList.toggle("is-admin-subpage", page !== "dashboard");
-        document.querySelectorAll(".admin-crm-main > .admin-section, .admin-crm-main > .admin-hero, .admin-crm-main > .admin-grid.admin-metrics, .admin-crm-main > .portal-message").forEach((section) => {
-          const key = section.id || [...section.classList].find((className) => visible.has(className)) || "";
-          section.hidden = !visible.has(key);
-        });
-        document.querySelectorAll(".admin-two-column > .admin-section").forEach((section) => {
-          section.hidden = !visible.has(section.id);
-        });
-        document.querySelectorAll(".admin-two-column").forEach((group) => {
-          group.hidden = ![...group.children].some((child) => !child.hidden);
-        });
-        window.maxwebstudioAdminPage = {
-          page,
-          visibleSections: [...visible],
-          leadId: new URLSearchParams(window.location.search).get("leadId") || "",
-        };
+
+        function getAdminPageFromLocation() {
+          const basePage = pageByFile[fileName] || "dashboard";
+          return basePage === "sales" && window.location.hash === "#sales-agenda" ? "sales-agenda" : basePage;
+        }
+
+        function applyAdminPageVisibility() {
+          const page = getAdminPageFromLocation();
+          const visible = new Set(sectionGroups[page] || sectionGroups.dashboard);
+          document.body.dataset.adminPage = page;
+          document.body.classList.toggle("is-sales-view", page === "sales" || page === "sales-agenda");
+          document.body.classList.toggle("is-admin-subpage", page !== "dashboard");
+          document.querySelectorAll(".admin-crm-main > .admin-section, .admin-crm-main > .admin-hero, .admin-crm-main > .admin-grid.admin-metrics, .admin-crm-main > .portal-message").forEach((section) => {
+            const key = section.id || [...section.classList].find((className) => visible.has(className)) || "";
+            section.hidden = !visible.has(key);
+          });
+          document.querySelectorAll(".admin-two-column > .admin-section").forEach((section) => {
+            section.hidden = !visible.has(section.id);
+          });
+          document.querySelectorAll(".admin-two-column").forEach((group) => {
+            group.hidden = ![...group.children].some((child) => !child.hidden);
+          });
+          window.maxwebstudioAdminPage = {
+            page,
+            visibleSections: [...visible],
+            leadId: new URLSearchParams(window.location.search).get("leadId") || "",
+          };
+          window.dispatchEvent(new CustomEvent("maxwebstudio:admin-page-visible", { detail: { page, visibleSections: [...visible] } }));
+        }
+
+        applyAdminPageVisibility();
+        window.addEventListener("hashchange", applyAdminPageVisibility);
       })();
     </script>
     <script>
@@ -9296,7 +9309,7 @@
           const keepAlwaysVisible = adminRolesWithFullNavigation.has(String(options.role || state.adminSession?.role || "").toLowerCase());
           const visibleItemIds = Array.isArray(options.visibleItemIds)
             ? new Set(options.visibleItemIds)
-            : currentPage === "sales"
+            : currentPage === "sales" || currentPage === "sales-agenda"
               ? new Set(["dashboard", "leadfinder", "sales-agenda", "klanten", "offertes", "facturen"])
               : null;
           const visibleItems = visibleItemIds
@@ -9333,6 +9346,7 @@
 
         function getActiveAdminNavId(fallback = window.maxwebstudioAdminPage?.page || "dashboard") {
           const hashId = window.location.hash ? window.location.hash.slice(1) : "";
+          if (hashId === "sales-agenda") return "sales-agenda";
           return hashId && document.getElementById(hashId) ? hashId : fallback;
         }
 
@@ -9342,8 +9356,9 @@
 
         function syncActiveNav(id = getActiveAdminNavId()) {
           ensureAdminSidebarNavigation();
+          const currentPage = window.maxwebstudioAdminPage?.page || id;
           adminNavLinks.forEach((link) => {
-            link.classList.toggle("is-active", link.dataset.adminNav === id);
+            link.classList.toggle("is-active", link.dataset.adminNav === id || link.dataset.adminNav === currentPage);
           });
           syncSalesViewState(id);
         }
