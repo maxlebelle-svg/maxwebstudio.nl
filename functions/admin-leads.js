@@ -3,6 +3,11 @@ const { verifyAdmin } = require("./_admin-auth");
 const staffRoles = ["super_admin", "admin", "sales_manager", "sales_partner"];
 const managerRoles = new Set(["super_admin", "admin", "sales_manager"]);
 const allowedStatuses = new Set([
+  "lead",
+  "bellen",
+  "offerte",
+  "verkocht",
+  "klant_actief",
   "nieuw",
   "new",
   "contact_planned",
@@ -499,11 +504,16 @@ function normalizeLeadStatus(value) {
   if (status === "follow_up") return "opvolgen";
   if (status === "converted") return "geconverteerd";
   if (status === "qualified") return "interesse";
+  if (status === "customer-active") return "klant_actief";
   return status || "nieuw";
 }
 
 function legacyDbStatus(value) {
   const status = normalizeLeadStatus(value);
+  if (status === "lead") return "new";
+  if (status === "bellen") return "follow_up";
+  if (status === "offerte") return "qualified";
+  if (status === "verkocht" || status === "klant_actief") return "converted";
   if (status === "nieuw") return "new";
   if (["opvolgen", "contact_planned", "voicemail"].includes(status)) return "follow_up";
   if (["gebeld", "contacted"].includes(status)) return "contacted";

@@ -11856,7 +11856,7 @@ h3 {
   gap: 8px;
 }
 
-.admin-flow-steps span {
+.admin-flow-steps button {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -11868,8 +11868,38 @@ h3 {
   background:
     linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(25, 194, 255, 0.08)),
     rgba(255, 255, 255, 0.05);
+  font: inherit;
   font-weight: 900;
   text-align: center;
+  cursor: pointer;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease, background 0.18s ease;
+}
+
+.admin-flow-steps button:hover:not(:disabled),
+.admin-flow-steps button:focus-visible {
+  border-color: rgba(96, 165, 250, 0.72);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.admin-flow-steps button.is-active {
+  border-color: rgba(49, 196, 141, 0.82);
+  color: #ffffff;
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.36), rgba(49, 196, 141, 0.22)),
+    rgba(15, 39, 65, 0.92);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 12px 32px rgba(37, 99, 235, 0.22);
+}
+
+.admin-flow-steps button:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
+.admin-flow-steps button.is-loading {
+  border-color: rgba(96, 165, 250, 0.86);
+  opacity: 1;
 }
 
 .admin-profile-form input,
@@ -12965,6 +12995,10 @@ h3 {
 
 .admin-body.is-sales-view #leadfinder > .admin-flow-steps {
   order: 4;
+}
+
+.admin-body.is-sales-view #leadfinder > .admin-flow-steps button {
+  flex: 1 1 140px;
 }
 
 .admin-body.is-sales-view #leadfinder > .sales-cockpit-bar {

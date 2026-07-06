@@ -10373,6 +10373,13 @@
           return `/klantportaal.html?${query.toString()}`;
         }
 
+        function customerWebsiteUrl(customer = {}) {
+          const value = String(customer.website || customer.websiteUrl || customer.domain || "").trim();
+          if (!value) return "";
+          if (/^https?:\/\//i.test(value)) return value;
+          return `https://${value.replace(/^\/+/, "")}`;
+        }
+
         function normalizeInvoice(invoice = {}) {
           const now = new Date().toISOString();
           const createdAt = invoice.createdAt || now;
@@ -11587,14 +11594,22 @@
               return [];
             }
           })();
-          const customerQuotes = state.quotes.filter((quote) => quote.profileId === customer.id);
+          const acceptedCustomerIds = customerIdentitySet(customer);
+          const belongsToCustomer = (record = {}) => [
+            record.profileId,
+            record.customerId,
+            record.supabaseCustomerId,
+            record._supabaseCustomerId,
+            record.customerAuthUserId,
+          ].some((value) => acceptedCustomerIds.has(String(value || "").trim()));
+          const customerQuotes = state.quotes.filter(belongsToCustomer);
           const openQuotes = customerQuotes.filter((quote) => ["concept", "verzonden", "bekeken"].includes(quote.status)).length;
           const acceptedQuotes = customerQuotes.filter((quote) => quote.status === "geaccepteerd").length;
           const rejectedQuotes = customerQuotes.filter((quote) => quote.status === "afgewezen").length;
-          const customerInvoices = state.invoices.filter((invoice) => invoice.profileId === customer.id);
+          const customerInvoices = state.invoices.filter(belongsToCustomer);
           const openInvoices = customerInvoices.filter((invoice) => !["betaald", "geannuleerd"].includes(invoice.status)).length;
           const paidInvoices = customerInvoices.filter((invoice) => invoice.status === "betaald").length;
-          const customerSubscriptions = state.subscriptions.filter((subscription) => subscription.profileId === customer.id);
+          const customerSubscriptions = state.subscriptions.filter(belongsToCustomer);
           const activeSubscription = customerSubscriptions.find((subscription) => subscription.status === "actief");
           const activeSubscriptions = customerSubscriptions.filter((subscription) => subscription.status === "actief");
           const customerMrr = activeSubscriptions.reduce((sum, subscription) => sum + subscriptionMonthlyAmount(subscription, false), 0);
@@ -11617,9 +11632,10 @@
             button.title = detailFields.email.value ? "" : "Vul eerst een e-mailadres in.";
           });
           setDetailMessage(supabaseManaged ? "Supabase customer write readiness wordt gecontroleerd..." : "", supabaseManaged ? "success" : "");
-          detailOpenWebsite.href = customer.website || "#";
-          detailOpenWebsite.classList.toggle("is-disabled", !customer.website);
-          detailOpenWebsite.toggleAttribute("aria-disabled", !customer.website);
+          const websiteUrl = customerWebsiteUrl(customer);
+          detailOpenWebsite.href = websiteUrl || "#";
+          detailOpenWebsite.classList.toggle("is-disabled", !websiteUrl);
+          detailOpenWebsite.toggleAttribute("aria-disabled", !websiteUrl);
           detailOpenPortal.href = customerPortalUrl(customer);
           detailOpenPortal.classList.remove("is-disabled");
           detailOpenPortal.toggleAttribute("aria-disabled", false);

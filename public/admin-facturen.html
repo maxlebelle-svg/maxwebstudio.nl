@@ -348,11 +348,11 @@
           </div>
 
           <div class="admin-flow-steps" aria-label="Salesflow">
-            <span>Lead</span>
-            <span>Bellen</span>
-            <span>Offerte</span>
-            <span>Verkocht</span>
-            <span>Klant actief</span>
+            <button type="button" data-crm-status="lead" aria-pressed="false">Lead</button>
+            <button type="button" data-crm-status="bellen" aria-pressed="false">Bellen</button>
+            <button type="button" data-crm-status="offerte" aria-pressed="false">Offerte</button>
+            <button type="button" data-crm-status="verkocht" aria-pressed="false">Verkocht</button>
+            <button type="button" data-crm-status="klant_actief" aria-pressed="false">Klant actief</button>
           </div>
 
           <div class="sales-cockpit-bar" id="sales-cockpit-bar" aria-label="Sales cockpit overzicht">
@@ -18562,7 +18562,16 @@
         googleMap: document.getElementById("google-places-map"),
         googleMessage: document.getElementById("google-places-message"),
         googleTransferList: document.getElementById("google-places-transfer-list"),
+        crmStatusButtons: Array.from(document.querySelectorAll("[data-crm-status]")),
       };
+
+      const CRM_STATUS_STAGES = Object.freeze([
+        { value: "lead", label: "Lead", aliases: ["lead", "nieuw", "new"] },
+        { value: "bellen", label: "Bellen", aliases: ["bellen", "te_bellen", "contact_planned", "contacted", "gebeld", "voicemail", "opvolgen"] },
+        { value: "offerte", label: "Offerte", aliases: ["offerte", "qualified", "interesse", "quote_ready", "quote_sent"] },
+        { value: "verkocht", label: "Verkocht", aliases: ["verkocht", "won", "geconverteerd"] },
+        { value: "klant_actief", label: "Klant actief", aliases: ["klant_actief", "customer_active"] },
+      ]);
 
       let selectedLeadFinderId = "";
       let leadPreviewRequestId = "";
@@ -18570,6 +18579,7 @@
       let leadfinderSourceStatus = null;
       let leadfinderLastDiagnostics = null;
       let activeLeadfinderQuickFilter = null;
+      let leadStatusSaveInProgress = "";
       const productionLeadsEndpoint = "/.netlify/functions/admin-leads";
       const leadOfflineQueueKey = "maxwebstudioLeadOfflineQueue";
       const websiteAnalysisState = new Map();
@@ -19614,7 +19624,7 @@
       }
 
       function isLeadWon(lead = {}) {
-        return ["won", "geconverteerd", "customer_active"].includes(lead.callStatus) || Boolean(lead.convertedCustomerId);
+        return ["won", "geconverteerd", "customer_active", "verkocht", "klant_actief"].includes(lead.callStatus) || Boolean(lead.convertedCustomerId);
       }
 
       function isOpenLeadStatus(lead = {}) {
@@ -19708,11 +19718,11 @@
       function getSalesNextAction(lead = {}) {
         if (!lead?.id) return { label: "Selecteer een lead", button: "Kies lead", action: "" };
         if (isLeadWon(lead)) return { label: "Omzetten naar klant", button: "Omzetten naar klant", action: "customer" };
-        if (lead.callStatus === "quote_sent") return { label: "Offerte opvolgen", button: "Follow-up plannen", action: "followup" };
+        if (["quote_sent", "offerte"].includes(lead.callStatus)) return { label: "Offerte opvolgen", button: "Follow-up plannen", action: "followup" };
         if (lead.callStatus === "quote_ready" || lead.callStatus === "qualified" || lead.callStatus === "interesse") {
           return { label: "Offerte maken", button: "Offerte starten", action: "quote" };
         }
-        if (["contacted", "gebeld", "opvolgen", "voicemail", "contact_planned"].includes(lead.callStatus)) {
+        if (["contacted", "gebeld", "opvolgen", "voicemail", "contact_planned", "bellen"].includes(lead.callStatus)) {
           return { label: "Follow-up bellen", button: "Follow-up plannen", action: "followup" };
         }
         return { label: "Eerste telefoongesprek", button: "Bellen", action: "call" };
@@ -19954,6 +19964,63 @@
         return getLeadfinderLeads().find((lead) => lead.id === selectedLeadFinderId) || null;
       }
 
+      function crmStageForLeadStatus(status = "") {
+        const normalized = String(status || "").trim().toLowerCase();
+        const match = CRM_STATUS_STAGES.find((stage) => stage.aliases.includes(normalized));
+        return match?.value || "";
+      }
+
+      function crmStatusLabel(status = "") {
+        const match = CRM_STATUS_STAGES.find((stage) => stage.value === status);
+        return match?.label || "Status";
+      }
+
+      function renderCrmStatusSelector() {
+        const lead = selectedLeadFinderLead();
+        const activeStage = crmStageForLeadStatus(lead?.callStatus);
+        leadfinderElements.crmStatusButtons.forEach((button) => {
+          const status = button.dataset.crmStatus || "";
+          const isActive = Boolean(activeStage && activeStage === status);
+          const isSaving = leadStatusSaveInProgress === status;
+          button.classList.toggle("is-active", isActive);
+          button.classList.toggle("is-loading", isSaving);
+          button.setAttribute("aria-pressed", isActive ? "true" : "false");
+          button.disabled = Boolean(leadStatusSaveInProgress);
+          if (button.dataset.defaultLabel === undefined) button.dataset.defaultLabel = button.textContent || crmStatusLabel(status);
+          button.textContent = isSaving ? "Opslaan..." : button.dataset.defaultLabel;
+        });
+      }
+
+      async function handleCrmStatusClick(event) {
+        const button = event.target.closest("[data-crm-status]");
+        if (!button) return;
+        const status = button.dataset.crmStatus || "";
+        const lead = selectedLeadFinderLead();
+        if (!lead?.id) {
+          setLeadfinderMessage("Selecteer eerst een lead of klant.", "error");
+          return;
+        }
+        if (!isProductionLead(lead)) {
+          setLeadfinderMessage("Deze lead staat nog niet in de centrale CRM-bron. Sla de lead eerst centraal op.", "error");
+          return;
+        }
+        if (!status || leadStatusSaveInProgress) return;
+        if (crmStageForLeadStatus(lead.callStatus) === status) {
+          setLeadfinderMessage(`${crmStatusLabel(status)} is al actief.`, "info");
+          return;
+        }
+        leadStatusSaveInProgress = status;
+        renderCrmStatusSelector();
+        try {
+          await updateLeadfinderLead(lead, { callStatus: status }, `Status opgeslagen: ${crmStatusLabel(status)}.`);
+        } catch (error) {
+          setLeadfinderMessage(error.message || "Status kon niet worden opgeslagen.", "error");
+        } finally {
+          leadStatusSaveInProgress = "";
+          renderLeadfinderList();
+        }
+      }
+
       function leadInitials(lead = {}) {
         const source = String(lead.companyName || lead.contactName || "Lead").trim();
         const words = source.split(/\s+/).filter(Boolean);
@@ -19977,8 +20044,9 @@
 
       function leadStatusPillClass(status = "") {
         const key = String(status || "").toLowerCase();
-        if (["won", "geconverteerd", "customer_active"].includes(key)) return "status-active";
-        if (["quote_ready", "quote_sent", "demo", "interesse", "qualified"].includes(key)) return "status-planned";
+        if (["won", "geconverteerd", "customer_active", "verkocht", "klant_actief"].includes(key)) return "status-active";
+        if (["quote_ready", "quote_sent", "demo", "interesse", "qualified", "offerte"].includes(key)) return "status-planned";
+        if (["lead", "bellen"].includes(key)) return "status-prepared";
         if (["lost", "geen_interesse"].includes(key)) return "status-blocked";
         return "status-prepared";
       }
@@ -20151,6 +20219,7 @@
         renderSalesQuickActions(lead);
         renderSalesTimeline(lead);
         renderLeadWebsiteAnalysis(lead);
+        renderCrmStatusSelector();
       }
 
       function getLeadWebsiteScanTarget() {
@@ -20768,6 +20837,9 @@
                   leadfinderElements.search?.focus();
                 });
                 leadfinderElements.clearQuickFilter?.addEventListener("click", clearLeadfinderQuickFilter);
+                leadfinderElements.crmStatusButtons.forEach((button) => {
+                  button.addEventListener("click", handleCrmStatusClick);
+                });
                 window.addEventListener("maxwebstudio:leadQuickFilter", (event) => {
                   applyLeadfinderQuickFilter(event.detail?.type || "open_leads", event.detail?.title || "Open leads");
                 });

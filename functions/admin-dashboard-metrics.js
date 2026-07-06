@@ -244,7 +244,7 @@ function revenueByMonth(invoices, range, period) {
   const months = monthBuckets(range, period);
   const values = new Map(months.map((month) => [month.key, { label: month.label, value: 0 }]));
   invoices.forEach((invoice) => {
-    if (normalize(invoice.status) !== "paid") return;
+    if (!isPaidInvoice(invoice)) return;
     const paidAt = invoice.paid_at || invoice.updated_at || invoice.created_at;
     if (!inRange(paidAt, range)) return;
     const key = monthKey(paidAt);
