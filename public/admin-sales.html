@@ -18660,26 +18660,44 @@
         if (agendaElements.overdue) agendaElements.overdue.textContent = String(openTasks.filter((task) => task.dueDate && task.dueDate < todayIso).length);
         renderAgendaCalendar(allAgendaTasks);
 
-        const tasks = getFilteredAgendaTasks();
+        const tasks = getFilteredAgendaTasks().filter((task) => task.dueDate === selectedAgendaDate);
+        const selectedDateLabel = new Date(`${selectedAgendaDate}T00:00:00`).toLocaleDateString("nl-NL", {
+          weekday: "long",
+          day: "2-digit",
+          month: "long",
+        });
         if (!tasks.length) {
           agendaElements.list.innerHTML = `
-            <article class="admin-card sales-agenda-empty">
-              <strong>Geen agenda-afspraken gevonden</strong>
-              <span>Plan een follow-up vanuit een lead, dan verschijnt die hier automatisch.</span>
+            <article class="admin-card sales-agenda-empty sales-agenda-day-summary">
+              <div>
+                <strong>Dagoverzicht</strong>
+                <span>${escapeHtml(selectedDateLabel)} · geen afspraken gepland</span>
+              </div>
+              <button class="button secondary" type="button" data-agenda-action="add-manual">Afspraak toevoegen</button>
             </article>
           `;
           return;
         }
 
-        agendaElements.list.innerHTML = tasks.map((task) => `
-          <article class="admin-card sales-agenda-card" data-agenda-task-id="${escapeHtml(task.id)}">
+        agendaElements.list.innerHTML = `
+          <div class="sales-agenda-list-heading">
+            <div>
+              <strong>Dagoverzicht</strong>
+              <span>${escapeHtml(selectedDateLabel)} · ${tasks.length} afspraak${tasks.length === 1 ? "" : "en"}</span>
+            </div>
+          </div>
+          ${tasks.map((task) => {
+            const display = getAgendaEventDisplay(task);
+            const isDone = task.status === "afgerond";
+            return `
+          <article class="admin-card sales-agenda-card ${isDone ? "is-completed" : ""}" data-agenda-task-id="${escapeHtml(task.id)}">
             <div class="sales-agenda-time">
-              <strong>${escapeHtml(formatAgendaDateTime(task))}</strong>
+              <strong>${escapeHtml(display.time)}</strong>
               <span>${escapeHtml(task.ownerName || task.assignedToName || task.ownerEmail || "Medewerker")}</span>
             </div>
             <div class="sales-agenda-content">
               <div>
-                <strong>${escapeHtml(task.title)}</strong>
+                <strong>${escapeHtml(display.title)}</strong>
                 <span>${escapeHtml(task.notes || "Geen extra notitie")}</span>
               </div>
               <div class="sales-agenda-badges">
@@ -18689,11 +18707,13 @@
             </div>
             <div class="sales-agenda-actions">
               ${task.leadId ? `<button class="button secondary" type="button" data-agenda-action="open-lead">Open lead</button>` : ""}
-              <button class="button secondary" type="button" data-agenda-action="complete">Afronden</button>
+              <button class="button secondary" type="button" data-agenda-action="complete" ${isDone ? "disabled" : ""}>${isDone ? "Afgerond" : "Afronden"}</button>
               <button class="button secondary" type="button" data-agenda-action="archive">Archiveren</button>
             </div>
           </article>
-        `).join("");
+            `;
+          }).join("")}
+        `;
       }
 
       function getFilteredTasks() {
@@ -18814,6 +18834,15 @@
       }
 
       function handleAgendaAction(event) {
+        const manualButton = event.target.closest('[data-agenda-action="add-manual"]');
+        if (manualButton) {
+          pendingAgendaLead = null;
+          agendaPlannerOpen = true;
+          if (agendaElements.plannerTitle) agendaElements.plannerTitle.value = "";
+          renderSalesAgenda();
+          window.setTimeout(() => agendaElements.plannerTitle?.focus(), 60);
+          return;
+        }
         const eventButton = event.target.closest(".sales-calendar-event[data-agenda-task-id]");
         if (eventButton) {
           const task = readCrmTasks().find((item) => item.id === eventButton.dataset.agendaTaskId);
@@ -18844,10 +18873,12 @@
           openAgendaLead(task);
           return;
         }
+        const scrollY = window.scrollY;
         if (action === "complete") completeCrmTaskLocally(task.id);
         if (action === "archive") archiveCrmTaskLocally(task.id);
         renderTaskList();
         renderSalesAgenda();
+        window.requestAnimationFrame(() => window.scrollTo({ top: scrollY, left: 0, behavior: "auto" }));
       }
 
       function initCrmWorkflow() {
