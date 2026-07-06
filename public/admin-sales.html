@@ -21325,10 +21325,11 @@
       function leadWhatsappContext(lead = {}) {
         const notes = leadWhatsappNotes(lead);
         const analysis = lead.websiteAnalysis && typeof lead.websiteAnalysis === "object" ? lead.websiteAnalysis : {};
-        const bedrijf = cleanWhatsappSentence(lead.companyName || readLeadIntakeField(notes, ["Bedrijfsnaam", "Praktijknaam", "Kun je kort vertellen wat jullie precies doen"]), "jullie bedrijf");
-        const contact = cleanWhatsappSentence(lead.contactName || readLeadIntakeField(notes, ["Contactpersoon", "Wat is je naam"]), "");
+        const bedrijf = cleanWhatsappSentence(lead.companyName || readLeadIntakeField(notes, ["Bedrijfsnaam", "Bedrijf", "Praktijknaam", "Kun je kort vertellen wat jullie precies doen"]), "jullie bedrijf");
+        const contact = cleanWhatsappSentence(lead.contactName || readLeadIntakeField(notes, ["Contactpersoon", "Naam klant", "Wat is je naam"]), "");
         const wens = cleanWhatsappSentence(readLeadIntakeField(notes, [
           "Belangrijkste wens",
+          "Website wens",
           "Wat willen ze verbeteren",
           "Wat wil de klant verbeteren",
           "Als je één ding mocht verbeteren",
@@ -21337,6 +21338,8 @@
         ]), "de online uitstraling duidelijker en sterker neer te zetten");
         const pijnpunt = cleanWhatsappSentence(readLeadIntakeField(notes, [
           "Grootste probleem",
+          "Grootste verbeterpunt",
+          "Gemiste kans",
           "Wat werkt er nu niet goed",
           "dat mag wel beter",
           "Pijnpunt",
@@ -21344,18 +21347,31 @@
         ]), analysis.summary || analysis.primaryIssue || "er kansen liggen om de website professioneler en overtuigender te maken");
         const doelgroep = cleanWhatsappSentence(readLeadIntakeField(notes, [
           "Doelgroep",
+          "Gewenste klanten",
           "Wie is hun ideale klant/doelgroep",
           "Wat voor klanten willen jullie vooral aantrekken",
           "Ideale klant",
         ]), "");
+        const demoFocus = cleanWhatsappSentence(readLeadIntakeField(notes, [
+          "Demo focus",
+          "Preview focus",
+          "Wat moet de demo laten zien",
+          "Als wij vrijblijvend een korte demo/preview maken",
+        ]), "");
+        const stijl = cleanWhatsappSentence(readLeadIntakeField(notes, [
+          "Gewenste stijl",
+          "Website stijl",
+          "Wil je dat de demo vooral",
+        ]), "");
         const vervolgstap = cleanWhatsappSentence(readLeadIntakeField(notes, [
           "Vervolgstap",
+          "Logische volgende stap",
           "Wat is de afgesproken vervolgstap",
           "Als de demo goed voelt",
           "Volgende stap",
         ]), "een korte vrijblijvende demo/preview maken");
         const websiteStatus = getLeadFinderLabel(LEADFINDER_WEBSITE_STATUSES, lead.websiteStatus) || lead.websiteStatus || "nog niet helemaal duidelijk";
-        return { bedrijf, contact, wens, pijnpunt, doelgroep, vervolgstap, websiteStatus };
+        return { bedrijf, contact, wens, pijnpunt, doelgroep, demoFocus, stijl, vervolgstap, websiteStatus };
       }
 
       function selectedWhatsappTemplate() {
@@ -21388,7 +21404,7 @@
           "",
           `Zoals besproken kan ik voor ${context.bedrijf} vrijblijvend een korte demo/preview klaarzetten. Dan zie je meteen hoe jullie website of online presentatie sterker kan worden, zonder dat je ergens aan vastzit.`,
           "",
-          `Ik nam vooral mee dat jullie willen kijken naar ${context.wens}${context.doelgroep ? ` voor ${context.doelgroep}` : ""}. Daar kan ik in de demo direct rekening mee houden.`,
+          `Ik nam vooral mee dat jullie willen kijken naar ${context.wens}${context.doelgroep ? ` voor ${context.doelgroep}` : ""}. ${context.demoFocus ? `In de demo neem ik vooral ${context.demoFocus} mee.` : "Daar kan ik in de demo direct rekening mee houden."}${context.stijl ? ` Qua uitstraling houd ik rekening met ${context.stijl}.` : ""}`,
           "",
           `De volgende stap is wat mij betreft simpel: ${context.vervolgstap}. Zal ik die preview voor jullie voorbereiden?`,
           "",
@@ -21502,6 +21518,22 @@
           `Op basis hiervan kan ik vrijblijvend een korte preview maken, zodat je gewoon rustig kunt zien wat er mogelijk is voor ${bedrijf || "[bedrijfsnaam]"}. Je zit nergens aan vast.`,
           "",
           "Ik stuur je zo nog even een WhatsApp-berichtje ter bevestiging. Dan kun je daar makkelijk op reageren als je nog iets wilt aanvullen.",
+          "",
+          "SYSTEEMWOORDEN VOOR WHATSAPP",
+          "",
+          `Contactpersoon: ${contact}`,
+          "Beslisser:",
+          `Bedrijf: ${bedrijf}`,
+          "Belangrijkste diensten:",
+          "Gewenste klanten:",
+          "Heeft complete website:",
+          "Tevreden online uitstraling:",
+          "Grootste verbeterpunt:",
+          "Website wens:",
+          "Demo focus:",
+          "Gewenste stijl:",
+          "Timing:",
+          "Logische volgende stap:",
           "",
         ].join("\n");
       }
