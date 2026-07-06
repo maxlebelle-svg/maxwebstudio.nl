@@ -20434,3 +20434,154 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
       "welcome";
   }
 }
+
+/* Sales portal readability pass: prevent dense analysis text from overlapping. */
+.admin-body.is-sales-view .admin-crm-shell {
+  align-items: start;
+}
+
+.admin-body.is-sales-view .admin-sidebar {
+  scrollbar-color: rgba(147, 197, 253, 0.34) rgba(3, 14, 26, 0.22);
+  scrollbar-width: thin;
+}
+
+.admin-body.is-sales-view .admin-sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.admin-body.is-sales-view .admin-sidebar::-webkit-scrollbar-track {
+  background: rgba(3, 14, 26, 0.22);
+  border-radius: 999px;
+}
+
+.admin-body.is-sales-view .admin-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(147, 197, 253, 0.34);
+  border-radius: 999px;
+}
+
+.admin-body.is-sales-view .lead-analysis-result,
+.admin-body.is-sales-view .lead-analysis-result * {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.admin-body.is-sales-view .lead-analysis-panel {
+  padding-top: 4px;
+}
+
+.admin-body.is-sales-view .lead-analysis-summary {
+  grid-template-columns: minmax(180px, auto) minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+}
+
+.admin-body.is-sales-view .lead-analysis-score {
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.admin-body.is-sales-view .lead-analysis-score strong {
+  font-size: clamp(34px, 4vw, 56px);
+  white-space: nowrap;
+}
+
+.admin-body.is-sales-view .lead-analysis-meta {
+  display: grid;
+  gap: 8px;
+  line-height: 1.35;
+}
+
+.admin-body.is-sales-view .lead-analysis-meta span,
+.admin-body.is-sales-view .lead-analysis-meta a {
+  max-width: 100%;
+}
+
+.admin-body.is-sales-view .lead-analysis-check-groups {
+  grid-template-columns: repeat(2, minmax(320px, 1fr));
+  gap: 14px;
+}
+
+.admin-body.is-sales-view .lead-analysis-check-group {
+  padding: 16px;
+}
+
+.admin-body.is-sales-view .lead-analysis-check-group > strong {
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.admin-body.is-sales-view .lead-analysis-check-group > div {
+  gap: 10px;
+}
+
+.admin-body.is-sales-view .lead-analysis-check-group > div > span {
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.admin-body.is-sales-view .lead-analysis-check-group b {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+}
+
+.admin-body.is-sales-view .lead-analysis-check-group span span {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.admin-body.is-sales-view .lead-analysis-check-group small {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.admin-body.is-sales-view .lead-analysis-columns {
+  grid-template-columns: repeat(2, minmax(280px, 1fr));
+}
+
+.admin-body.is-sales-view .lead-analysis-columns li {
+  line-height: 1.45;
+}
+
+@media (max-width: 980px) {
+  .admin-body.is-sales-view .lead-analysis-summary,
+  .admin-body.is-sales-view .lead-analysis-check-groups,
+  .admin-body.is-sales-view .lead-analysis-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Sales note area: keep textarea and actions readable in the narrow workflow column. */
+.admin-body.is-sales-view .sales-workflow-card {
+  gap: 14px;
+}
+
+.admin-body.is-sales-view .sales-note-control {
+  min-width: 0;
+}
+
+.admin-body.is-sales-view .sales-note-control textarea {
+  width: 100%;
+  min-height: 112px;
+  box-sizing: border-box;
+  line-height: 1.45;
+}
+
+.admin-body.is-sales-view .sales-workflow-actions {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.admin-body.is-sales-view .sales-workflow-actions .button {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  white-space: normal;
+  line-height: 1.25;
+}

@@ -18430,7 +18430,10 @@
       let activeLeadfinderQuickFilter = null;
       const productionLeadsEndpoint = "/.netlify/functions/admin-leads";
       const leadOfflineQueueKey = "maxwebstudioLeadOfflineQueue";
+      const websiteAnalysisStorageKey = "maxwebstudioLeadWebsiteAnalyses";
+      const leadNotesStorageKey = "maxwebstudioLeadNotes";
       const websiteAnalysisState = new Map();
+      const leadNotesState = new Map();
       let googlePlacesMap = null;
       let googlePlacesService = null;
       let googlePlacesMarkers = [];
@@ -18544,6 +18547,78 @@
 
       function writeLeadOfflineQueue(queue = []) {
         localStorage.setItem(leadOfflineQueueKey, JSON.stringify(queue));
+      }
+
+      function readStoredWebsiteAnalyses() {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(websiteAnalysisStorageKey) || "{}");
+          return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+        } catch (error) {
+          console.warn("Website analyses konden niet worden gelezen", error);
+          return {};
+        }
+      }
+
+      function writeStoredWebsiteAnalyses(records = {}) {
+        localStorage.setItem(websiteAnalysisStorageKey, JSON.stringify(records));
+      }
+
+      function rememberWebsiteAnalysis(keys = [], analysis = null) {
+        if (!analysis) return;
+        const normalizedKeys = [...new Set(keys.filter(Boolean).map((key) => String(key).trim()).filter(Boolean))];
+        if (!normalizedKeys.length) return;
+        const stored = readStoredWebsiteAnalyses();
+        const record = {
+          ...analysis,
+          savedAt: analysis.savedAt || new Date().toISOString(),
+          analyzedAt: analysis.analyzedAt || analysis.checkedAt || new Date().toISOString(),
+        };
+        normalizedKeys.forEach((key) => {
+          websiteAnalysisState.set(key, record);
+          stored[key] = record;
+        });
+        writeStoredWebsiteAnalyses(stored);
+      }
+
+      function hydrateWebsiteAnalysisState() {
+        Object.entries(readStoredWebsiteAnalyses()).forEach(([key, analysis]) => {
+          if (key && analysis && typeof analysis === "object") websiteAnalysisState.set(key, analysis);
+        });
+      }
+
+      function readStoredLeadNotes() {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(leadNotesStorageKey) || "{}");
+          return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+        } catch (error) {
+          console.warn("Leadnotities konden niet worden gelezen", error);
+          return {};
+        }
+      }
+
+      function writeStoredLeadNotes(records = {}) {
+        localStorage.setItem(leadNotesStorageKey, JSON.stringify(records));
+      }
+
+      function hydrateLeadNotesState() {
+        Object.entries(readStoredLeadNotes()).forEach(([leadId, record]) => {
+          if (leadId && record && typeof record === "object") leadNotesState.set(leadId, record);
+        });
+      }
+
+      function getLeadNotes(lead = {}) {
+        const stored = lead?.id ? leadNotesState.get(lead.id) : null;
+        return String(stored?.notes || lead?.notes || "").trim();
+      }
+
+      function rememberLeadNotes(leadId = "", notes = "") {
+        const id = String(leadId || "").trim();
+        if (!id) return;
+        const record = { notes: String(notes || "").trim(), savedAt: new Date().toISOString() };
+        const stored = readStoredLeadNotes();
+        leadNotesState.set(id, record);
+        stored[id] = record;
+        writeStoredLeadNotes(stored);
       }
 
       function queueLeadOffline(action, payload = {}) {
@@ -19806,13 +19881,15 @@
       function buildLeadTimeline(lead = {}) {
         if (!lead?.id) return [];
         const events = [];
+        const storedAnalysis = websiteAnalysisState.get(lead.id);
+        const leadAnalysis = lead.websiteAnalysis || lead.metadata?.websiteAnalysis || storedAnalysis;
         if (lead.createdAt) events.push({ at: lead.createdAt, label: "Lead aangemaakt" });
-        if (lead.websiteAnalysis?.createdAt || lead.websiteAnalysis?.analyzedAt || lead.websiteAnalysis?.checkedAt) {
-          events.push({ at: lead.websiteAnalysis.createdAt || lead.websiteAnalysis.analyzedAt || lead.websiteAnalysis.checkedAt, label: "Website gescand" });
-        } else if (lead.websiteAnalysis?.ok) {
+        if (leadAnalysis?.createdAt || leadAnalysis?.analyzedAt || leadAnalysis?.checkedAt || leadAnalysis?.savedAt) {
+          events.push({ at: leadAnalysis.createdAt || leadAnalysis.analyzedAt || leadAnalysis.checkedAt || leadAnalysis.savedAt, label: "Website gescand" });
+        } else if (leadAnalysis?.ok) {
           events.push({ at: lead.updatedAt || lead.createdAt, label: "Website gescand" });
         }
-        if (String(lead.notes || "").trim()) events.push({ at: lead.updatedAt || lead.createdAt, label: "Notitie toegevoegd" });
+        if (getLeadNotes(lead)) events.push({ at: leadNotesState.get(lead.id)?.savedAt || lead.updatedAt || lead.createdAt, label: "Notitie toegevoegd" });
         if (lead.followUpDate) events.push({ at: `${lead.followUpDate}T09:00:00`, label: "Follow-up gepland" });
         if (isLeadWon(lead)) events.push({ at: lead.updatedAt || lead.createdAt, label: "Verkocht / klantactie gestart" });
         return events
@@ -20498,7 +20575,7 @@
             ["Aangemaakt door", lead.createdByName || lead.createdByEmail || lead.createdBy || "-"],
             ["Klantstatus", lead.convertedCustomerId ? "Klant actief" : "Nog geen klant"],
             ["Bron", lead.source || lead._source || leadfinderSourceStatus?.mode || "central"],
-            ["Notities", lead.notes || "-"],
+            ["Notities", getLeadNotes(lead) || "-"],
           ] : [["Geen lead geselecteerd", "Klik op Bekijken in de lijst."]]);
         }
         if (leadfinderElements.contactList) {
@@ -20542,11 +20619,13 @@
         const formWebsite = String(leadfinderElements.website?.value || "").trim();
         const googleWebsite = String(googlePlacesPlace?.website || "").trim();
         const url = String(lead?.websiteUrl || formWebsite || googleWebsite || "").trim();
-        const key = lead?.id || (url ? `draft:${normalizeComparableUrl(url) || url}` : "");
+        const normalizedUrl = normalizeComparableUrl(url) || url;
+        const key = lead?.id || (url ? `draft:${normalizedUrl}` : "");
         return {
           lead,
           url,
           key,
+          urlKey: url ? `url:${normalizedUrl}` : "",
           label: lead?.companyName || String(leadfinderElements.company?.value || googlePlacesPlace?.name || "Nieuwe lead").trim(),
         };
       }
@@ -20555,8 +20634,17 @@
         if (!target?.key) return null;
         return websiteAnalysisState.get(target.key)
           || (lead && websiteAnalysisState.get(lead.id))
+          || (target.urlKey && websiteAnalysisState.get(target.urlKey))
           || lead?.websiteAnalysis
+          || lead?.metadata?.websiteAnalysis
           || null;
+      }
+
+      function getDraftWebsiteAnalysisForForm() {
+        const url = String(leadfinderElements.website?.value || googlePlacesPlace?.website || "").trim();
+        if (!url) return null;
+        const normalizedUrl = normalizeComparableUrl(url) || url;
+        return websiteAnalysisState.get(`draft:${normalizedUrl}`) || websiteAnalysisState.get(`url:${normalizedUrl}`) || null;
       }
 
       function renderLeadWebsiteAnalysis(lead) {
@@ -20755,8 +20843,7 @@
           if (!response.ok || !analysis) {
             throw new Error(analysis?.details || analysis?.error || "Website analyse kon niet worden uitgevoerd.");
           }
-          websiteAnalysisState.set(target.key, analysis);
-          if (lead?.id) websiteAnalysisState.set(lead.id, analysis);
+          rememberWebsiteAnalysis([target.key, target.urlKey, lead?.id], analysis);
                   if (analysis.ok && lead?.id) {
                     const analysisNote = buildWebsiteAnalysisNote(analysis);
                     const updates = {
@@ -20765,14 +20852,20 @@
                       leadScore: Math.max(Number(lead.leadScore || 0), Number(analysis.score || 0)),
                     };
                     if (isProductionLead(lead)) {
-                      await leadApiRequest("PATCH", { id: lead.id, ...updates }, { id: lead.id });
                       selectedLeadFinderId = lead.id;
-                      websiteAnalysisState.set(lead.id, analysis);
-                      await refreshLeads({ keepSelection: true });
+                      rememberWebsiteAnalysis([lead.id, target.key, target.urlKey], analysis);
+                      try {
+                        await leadApiRequest("PATCH", { id: lead.id, ...updates }, { id: lead.id });
+                        await refreshLeads({ keepSelection: true });
+                      } catch (syncError) {
+                        queueLeadOffline("update", { id: lead.id, ...updates });
+                        renderLeadWebsiteAnalysis(lead);
+                        if (developerModeActive()) console.warn("Website analyse lokaal opgeslagen; centrale sync volgt later", syncError);
+                      }
                     } else {
                       const updatedLead = updateLeadFinderLeadLocally(lead.id, updates) || lead;
                       selectedLeadFinderId = updatedLead.id;
-                      websiteAnalysisState.set(updatedLead.id, analysis);
+                      rememberWebsiteAnalysis([updatedLead.id, target.key, target.urlKey], analysis);
                       await refreshLeads({ keepSelection: true });
                     }
                   } else {
@@ -20801,8 +20894,7 @@
             error: "Website niet bereikbaar",
             details: rawMessage,
           };
-          websiteAnalysisState.set(target.key, failed);
-          if (lead?.id) websiteAnalysisState.set(lead.id, failed);
+          rememberWebsiteAnalysis([target.key, target.urlKey, lead?.id], failed);
           renderLeadWebsiteAnalysis(lead);
           const message = getFriendlyWebsiteAnalysisReason(rawMessage);
           analysisToast?.update(message, "error", { duration: 4000 });
@@ -20832,13 +20924,14 @@
           priority: lead.leadScore >= 80 ? "hoog" : "normaal",
           dueDate: lead.followUpDate || "",
           leadId: lead.id,
-          notes: `Sales lead (${lead.industry || "branche onbekend"}, ${lead.region || "regio onbekend"}). Leadstatus: ${getLeadFinderLabel(LEADFINDER_CALL_STATUSES, lead.callStatus)}. Website-status: ${getLeadFinderLabel(LEADFINDER_WEBSITE_STATUSES, lead.websiteStatus)}. ${lead.notes || ""}`.trim(),
+          notes: `Sales lead (${lead.industry || "branche onbekend"}, ${lead.region || "regio onbekend"}). Leadstatus: ${getLeadFinderLabel(LEADFINDER_CALL_STATUSES, lead.callStatus)}. Website-status: ${getLeadFinderLabel(LEADFINDER_WEBSITE_STATUSES, lead.websiteStatus)}. ${getLeadNotes(lead)}`.trim(),
         });
       }
 
               function buildLeadPayloadFromForm(ownerContext) {
                 const ownerEmail = ownerContext.email || "";
                 const ownerName = ownerContext.name || ownerEmail || "";
+                const websiteAnalysis = getDraftWebsiteAnalysisForForm();
                 return {
           companyName: leadfinderElements.company?.value.trim() || "",
           industry: leadfinderElements.industry?.value || "",
@@ -20873,10 +20966,12 @@
           createdBy: ownerContext.userId,
           createdByEmail: ownerEmail,
           createdByName: ownerName,
+          websiteAnalysis: websiteAnalysis || undefined,
           metadata: {
             createdFrom: "admin-dashboard-leadfinder",
             createdByRole: ownerContext.role,
             createdByEmail: ownerEmail,
+            websiteAnalysis: websiteAnalysis || undefined,
             medewerker: ownerName,
             medewerkerEmail: ownerEmail,
             employee: ownerName,
@@ -20895,13 +20990,24 @@
 
       async function updateLeadfinderLead(lead, updates = {}, successMessage = "Lead bijgewerkt.") {
         if (!lead?.id) throw new Error("Lead ontbreekt.");
+        if (Object.prototype.hasOwnProperty.call(updates, "notes")) {
+          rememberLeadNotes(lead.id, updates.notes);
+        }
         if (isProductionLead(lead)) {
-          const result = await leadApiRequest("PATCH", { id: lead.id, ...updates }, { id: lead.id });
-          selectedLeadFinderId = result.lead?.id || lead.id;
-          logLeadfinderDiagnostic("Lead centraal bijgewerkt", { id: lead.id, response: result });
-          setLeadfinderMessage(successMessage, "success");
-          await refreshLeads({ keepSelection: true });
-          return result.lead || selectedLeadFinderLead() || lead;
+          try {
+            const result = await leadApiRequest("PATCH", { id: lead.id, ...updates }, { id: lead.id });
+            selectedLeadFinderId = result.lead?.id || lead.id;
+            logLeadfinderDiagnostic("Lead centraal bijgewerkt", { id: lead.id, response: result });
+            setLeadfinderMessage(successMessage, "success");
+            await refreshLeads({ keepSelection: true });
+            return result.lead || selectedLeadFinderLead() || { ...lead, ...updates };
+          } catch (error) {
+            queueLeadOffline("update", { id: lead.id, ...updates });
+            selectedLeadFinderId = lead.id;
+            setLeadfinderMessage("Lokaal opgeslagen. Centrale synchronisatie volgt zodra de leadbron beschikbaar is.", "warning");
+            renderLeadfinderList();
+            return { ...lead, ...updates };
+          }
         }
         const updatedLead = updateLeadFinderLeadLocally(lead.id, updates) || lead;
         selectedLeadFinderId = updatedLead.id;
@@ -21004,7 +21110,7 @@
                 if (!lead) return;
                 const note = String(leadfinderElements.detailNote?.value || "").trim();
                 const callStatus = leadfinderElements.detailCallStatus?.value || lead.callStatus;
-                const notes = [lead.notes, note].filter(Boolean).join("\n\n");
+                const notes = [getLeadNotes(lead), note].filter(Boolean).join("\n\n");
                 try {
                   await updateLeadfinderLead(lead, { notes, callStatus }, "Leadnotitie opgeslagen.");
                 } catch (error) {
@@ -21134,6 +21240,8 @@
         fillSelect(leadfinderElements.filterCallStatus, LEADFINDER_CALL_STATUSES, "Alle leadstatussen");
         fillSelect(leadfinderElements.filterScore, LEADFINDER_SCORE_BUCKETS, "Alle scores");
         fillSelect(leadfinderElements.detailCallStatus, LEADFINDER_CALL_STATUSES, "Leadstatus");
+        hydrateWebsiteAnalysisState();
+        hydrateLeadNotesState();
         ensureLeadFinderDemoData();
         await loadLeadfinderDataLayer();
         populateLeadfinderOwnerFilter();
