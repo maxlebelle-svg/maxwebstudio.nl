@@ -20651,6 +20651,7 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
 .admin-body.is-sales-view .leadfinder-detail-card {
   grid-template-columns: 1fr;
   grid-template-areas:
+    "toolbar"
     "tabs"
     "summary";
 }
@@ -20707,9 +20708,84 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   display: block;
 }
 
+.admin-body.is-sales-view #leadfinder:not(.is-lead-detail-open) .leadfinder-detail-card {
+  display: none;
+}
+
+.admin-body.is-sales-view #leadfinder.is-lead-detail-open > .admin-flow-steps,
+.admin-body.is-sales-view #leadfinder.is-lead-detail-open > .sales-cockpit-bar,
+.admin-body.is-sales-view #leadfinder.is-lead-detail-open > #leadfinder-metrics,
+.admin-body.is-sales-view #leadfinder.is-lead-detail-open > .leadfinder-filters,
+.admin-body.is-sales-view #leadfinder.is-lead-detail-open > .active-filter-bar,
+.admin-body.is-sales-view #leadfinder.is-lead-detail-open > #leadfinder-list,
+.admin-body.is-sales-view #leadfinder.is-lead-detail-open .leadfinder-form,
+.admin-body.is-sales-view #leadfinder.is-lead-detail-open .sales-recent-activity-card,
+.admin-body.is-sales-view #leadfinder.is-lead-detail-open .google-places-card,
+.admin-body.is-sales-view #leadfinder.is-lead-detail-open #legacy-lead-import-panel {
+  display: none;
+}
+
+.admin-body.is-sales-view #leadfinder.is-lead-detail-open .leadfinder-grid {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "detail";
+}
+
+.admin-body.is-sales-view #leadfinder.is-lead-detail-open .leadfinder-detail-card {
+  grid-area: detail;
+}
+
+.admin-body.is-sales-view .sales-lead-detail-toolbar {
+  grid-area: toolbar;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-width: 0;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(147, 197, 253, 0.12);
+}
+
+.admin-body.is-sales-view .sales-lead-detail-toolbar > div {
+  min-width: 0;
+  text-align: right;
+}
+
+.admin-body.is-sales-view .sales-lead-detail-toolbar span {
+  display: block;
+  color: rgba(147, 197, 253, 0.82);
+  font-size: 10px;
+  font-weight: 950;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.admin-body.is-sales-view .sales-lead-detail-toolbar strong {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  color: #f8fbff;
+  font-size: clamp(18px, 2vw, 28px);
+  line-height: 1.12;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-body.is-sales-view #leadfinder.is-lead-detail-open .sales-detail-tabs {
+  margin-top: 2px;
+}
+
 @media (max-width: 980px) {
   .admin-body.is-sales-view .sales-recent-activity-grid,
   .admin-body.is-sales-view .sales-detail-tabs {
     grid-template-columns: 1fr;
+  }
+
+  .admin-body.is-sales-view .sales-lead-detail-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-body.is-sales-view .sales-lead-detail-toolbar > div {
+    text-align: left;
   }
 }

@@ -407,6 +407,14 @@
             </article>
 
             <article class="admin-card leadfinder-detail-card" id="leadfinder-detail">
+              <div class="sales-lead-detail-toolbar">
+                <button class="button secondary" id="leadfinder-back-to-list" type="button">Terug naar alle leads</button>
+                <div>
+                  <span>Lead detail</span>
+                  <strong id="leadfinder-detail-page-title">Selecteer een lead</strong>
+                </div>
+              </div>
+
               <nav class="sales-detail-tabs" aria-label="Lead details">
                 <button class="sales-detail-tab is-active" type="button" data-sales-detail-tab="overview">Overzicht</button>
                 <button class="sales-detail-tab" type="button" data-sales-detail-tab="notes">Notities</button>
@@ -18415,6 +18423,10 @@
         activeFilter: document.getElementById("leadfinder-active-filter"),
         clearQuickFilter: document.getElementById("leadfinder-clear-quick-filter"),
         list: document.getElementById("leadfinder-list"),
+        section: document.getElementById("leadfinder"),
+        detail: document.getElementById("leadfinder-detail"),
+        detailPageTitle: document.getElementById("leadfinder-detail-page-title"),
+        backToList: document.getElementById("leadfinder-back-to-list"),
         detailTitle: document.getElementById("sales-lead-summary-title"),
         detailSubtitle: document.getElementById("leadfinder-detail-subtitle"),
         detailState: document.getElementById("leadfinder-detail-state"),
@@ -20274,6 +20286,66 @@
         return getLeadfinderLeads().find((lead) => lead.id === selectedLeadFinderId) || null;
       }
 
+      function setLeadfinderDetailMode(open = Boolean(selectedLeadFinderId)) {
+        leadfinderElements.section?.classList.toggle("is-lead-detail-open", Boolean(open));
+      }
+
+      function updateLeadfinderUrlForSelection(leadId = "", options = {}) {
+        const method = options.replace ? "replaceState" : "pushState";
+        if (!window.history?.[method]) return;
+        const url = new URL(window.location.href);
+        if (leadId) {
+          url.searchParams.set("leadId", leadId);
+          url.hash = "leadfinder-detail";
+        } else {
+          url.searchParams.delete("leadId");
+          if (url.hash === "#leadfinder-detail") url.hash = "leadfinder-list";
+        }
+        window.history[method]({}, "", url);
+      }
+
+      function openLeadfinderDetail(leadOrId, options = {}) {
+        const leadId = typeof leadOrId === "string" ? leadOrId : leadOrId?.id;
+        const lead = getLeadfinderLeads().find((item) => item.id === leadId);
+        if (!lead) {
+          setLeadfinderMessage("Deze lead staat niet meer in de huidige lijst.", "warning");
+          return;
+        }
+        selectedLeadFinderId = lead.id;
+        activeSalesDetailTab = options.tab || "overview";
+        setLeadfinderDetailMode(true);
+        if (options.updateUrl !== false) updateLeadfinderUrlForSelection(lead.id, { replace: Boolean(options.replaceUrl) });
+        renderLeadfinderList();
+        window.focusAdminPanel?.(leadfinderElements.detail || document.querySelector(".leadfinder-detail-card"), { block: "start" });
+      }
+
+      function closeLeadfinderDetail(options = {}) {
+        selectedLeadFinderId = "";
+        activeSalesDetailTab = "overview";
+        setLeadfinderDetailMode(false);
+        if (options.updateUrl !== false) updateLeadfinderUrlForSelection("", { replace: Boolean(options.replaceUrl) });
+        renderLeadfinderList();
+        window.focusAdminPanel?.(leadfinderElements.list || document.getElementById("leadfinder-list"), { block: "start" });
+      }
+
+      function restoreLeadfinderDetailFromUrl(options = {}) {
+        const leadId = new URLSearchParams(window.location.search).get("leadId") || "";
+        if (!leadId) {
+          setLeadfinderDetailMode(false);
+          return false;
+        }
+        const lead = getLeadfinderLeads().find((item) => item.id === leadId);
+        if (!lead) {
+          setLeadfinderDetailMode(false);
+          return false;
+        }
+        selectedLeadFinderId = lead.id;
+        activeSalesDetailTab = options.tab || activeSalesDetailTab || "overview";
+        setLeadfinderDetailMode(true);
+        renderLeadfinderDetail();
+        return true;
+      }
+
       function setLegacyLeadImportMessage(message, type = "success") {
         const target = leadfinderElements.legacyImport?.message;
         if (!target) return;
@@ -20739,7 +20811,11 @@
       function renderLeadfinderDetail() {
         const lead = selectedLeadFinderLead();
         const hasLead = Boolean(lead);
+        setLeadfinderDetailMode(hasLead);
         renderSalesDetailTabs();
+        if (leadfinderElements.detailPageTitle) {
+          leadfinderElements.detailPageTitle.textContent = hasLead ? lead.companyName || lead.contactName || "Lead detail" : "Selecteer een lead";
+        }
         if (leadfinderElements.detailTitle) {
           leadfinderElements.detailTitle.textContent = hasLead ? lead.companyName || "Naam onbekend" : "Geen lead geselecteerd";
         }
@@ -21308,10 +21384,8 @@
         if (!lead) return;
         selectedLeadFinderId = lead.id;
         if (!button) {
-          activeSalesDetailTab = "overview";
           setLeadfinderMessage("Lead geselecteerd", "success");
-          renderLeadfinderList();
-          window.focusAdminPanel?.(document.querySelector(".leadfinder-detail-card"));
+          openLeadfinderDetail(lead, { tab: "overview" });
           return;
         }
         if (button.dataset.leadfinderAction === "task") {
@@ -21322,8 +21396,7 @@
             setLeadfinderMessage(error.message || "Opvolgtaak kon niet worden aangemaakt.", "error");
           }
         } else if (button.dataset.leadfinderAction === "note") {
-          renderLeadfinderList();
-          window.focusAdminPanel?.(leadfinderElements.detailNote || document.querySelector(".leadfinder-detail-card"));
+          openLeadfinderDetail(lead, { tab: "notes" });
           leadfinderElements.detailNote?.focus();
           setLeadfinderMessage("Lead geselecteerd. Voeg je notitie toe in Leaddetail.", "success");
           return;
@@ -21349,6 +21422,8 @@
           return;
         } else if (button.dataset.leadfinderAction === "view") {
           setLeadfinderMessage("Lead geselecteerd", "success");
+          openLeadfinderDetail(lead, { tab: "overview" });
+          return;
         }
         renderLeadfinderList();
         if (button.dataset.leadfinderAction === "view") {
@@ -21522,6 +21597,7 @@
           try {
             await leadApiRequest("DELETE", { id: lead.id }, { id: lead.id });
             if (selectedLeadFinderId === lead.id) selectedLeadFinderId = "";
+            updateLeadfinderUrlForSelection("", { replace: true });
             logLeadfinderDiagnostic("Lead centraal verwijderd", { id: lead.id });
             setLeadfinderMessage("Lead centraal verwijderd.", "success");
             await refreshLeads({ keepSelection: false });
@@ -21536,6 +21612,7 @@
           return;
         }
         if (selectedLeadFinderId === lead.id) selectedLeadFinderId = "";
+        updateLeadfinderUrlForSelection("", { replace: true });
         setLeadfinderMessage("Lead verwijderd.", "success");
         await refreshLeads({ keepSelection: false });
       }
@@ -21579,6 +21656,7 @@
             sessionStorage.removeItem("maxwebstudioPendingLeadQuickFilter");
           }
         }
+        restoreLeadfinderDetailFromUrl({ tab: "overview" });
 
         leadfinderElements.form.addEventListener("submit", handleLeadfinderSubmit);
         leadfinderElements.reset?.addEventListener("click", () => {
@@ -21591,7 +21669,11 @@
         });
                 leadfinderElements.cockpitBar?.addEventListener("click", handleSalesKpiClick);
                 leadfinderElements.cockpitBar?.addEventListener("keydown", handleSalesKpiKeydown);
+                leadfinderElements.section?.querySelector('a[href="#leadfinder-form"]')?.addEventListener("click", () => {
+                  closeLeadfinderDetail({ replaceUrl: true });
+                });
                 document.getElementById("leadfinder-focus-search")?.addEventListener("click", () => {
+                  if (selectedLeadFinderId) closeLeadfinderDetail({ replaceUrl: true });
                   leadfinderElements.search?.focus();
                 });
                 leadfinderElements.clearQuickFilter?.addEventListener("click", clearLeadfinderQuickFilter);
@@ -21607,13 +21689,16 @@
                   applyLeadfinderQuickFilter(event.detail?.type || "open_leads", event.detail?.title || "Open leads");
                 });
         leadfinderElements.list.addEventListener("click", handleLeadfinderListClick);
+        leadfinderElements.backToList?.addEventListener("click", () => closeLeadfinderDetail());
+        window.addEventListener("popstate", () => {
+          if (!restoreLeadfinderDetailFromUrl({ tab: activeSalesDetailTab })) {
+            closeLeadfinderDetail({ updateUrl: false });
+          }
+        });
         leadfinderElements.recentActivityGrid?.addEventListener("click", (event) => {
           const button = event.target.closest("[data-recent-lead-id]");
           if (!button?.dataset.recentLeadId) return;
-          selectedLeadFinderId = button.dataset.recentLeadId;
-          activeSalesDetailTab = "overview";
-          renderLeadfinderList();
-          window.focusAdminPanel?.(document.querySelector(".leadfinder-detail-card"));
+          openLeadfinderDetail(button.dataset.recentLeadId, { tab: "overview" });
         });
         document.querySelectorAll("[data-sales-detail-tab]").forEach((button) => {
           button.addEventListener("click", () => {
