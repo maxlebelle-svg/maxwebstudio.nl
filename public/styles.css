@@ -20780,6 +20780,7 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
 }
 
 .admin-body.is-sales-view #leadfinder.is-lead-detail-open > .admin-flow-steps,
+.admin-body.is-sales-view #leadfinder.is-lead-detail-open > .admin-section-heading,
 .admin-body.is-sales-view #leadfinder.is-lead-detail-open > .sales-cockpit-bar,
 .admin-body.is-sales-view #leadfinder.is-lead-detail-open > #leadfinder-metrics,
 .admin-body.is-sales-view #leadfinder.is-lead-detail-open > .leadfinder-filters,

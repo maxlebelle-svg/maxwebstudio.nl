@@ -18483,7 +18483,12 @@
 
       function openAgendaLead(task = {}) {
         if (!task.leadId) return;
-        window.location.href = `admin-sales.html?leadId=${encodeURIComponent(task.leadId)}#leadfinder-detail`;
+        const url = new URL("admin-sales.html", window.location.href);
+        url.searchParams.set("leadId", task.leadId);
+        url.searchParams.set("tab", "notes");
+        if (task.id) url.searchParams.set("agendaTaskId", task.id);
+        url.hash = "leadfinder-detail";
+        window.location.href = url.toString();
       }
 
       function startOfAgendaWeek(date = new Date()) {
@@ -18771,7 +18776,17 @@
           resetAgendaPlannerFields();
           if (pendingAgendaLead?.id) {
             window.dispatchEvent(new CustomEvent("maxwebstudio:sales-agenda-planned", {
-              detail: { leadId: pendingAgendaLead.id, followUpDate: selectedAgendaDate, dueAt, kind },
+              detail: {
+                leadId: pendingAgendaLead.id,
+                followUpDate: selectedAgendaDate,
+                dueAt,
+                dueEndAt,
+                startTime: selectedAgendaTime,
+                endTime,
+                title,
+                kind,
+                notes: manualNotes,
+              },
             }));
           }
           window.dispatchEvent(new CustomEvent("maxwebstudio:sales-agenda-updated"));
@@ -21178,9 +21193,11 @@
         const url = new URL(window.location.href);
         if (leadId) {
           url.searchParams.set("leadId", leadId);
+          if (options.tab) url.searchParams.set("tab", options.tab);
           url.hash = "leadfinder-detail";
         } else {
           url.searchParams.delete("leadId");
+          url.searchParams.delete("tab");
           if (url.hash === "#leadfinder-detail") url.hash = "leadfinder-list";
         }
         window.history[method]({}, "", url);
@@ -21196,7 +21213,7 @@
         selectedLeadFinderId = lead.id;
         activeSalesDetailTab = options.tab || "overview";
         setLeadfinderDetailMode(true);
-        if (options.updateUrl !== false) updateLeadfinderUrlForSelection(lead.id, { replace: Boolean(options.replaceUrl) });
+        if (options.updateUrl !== false) updateLeadfinderUrlForSelection(lead.id, { replace: Boolean(options.replaceUrl), tab: activeSalesDetailTab });
         renderLeadfinderList();
         window.focusAdminPanel?.(leadfinderElements.detail || document.querySelector(".leadfinder-detail-card"), { block: "start" });
       }
@@ -21230,6 +21247,7 @@
           return false;
         }
         const leadId = new URLSearchParams(window.location.search).get("leadId") || "";
+        const requestedTab = new URLSearchParams(window.location.search).get("tab") || "";
         if (!leadId) {
           setLeadfinderDetailMode(false);
           return false;
@@ -21240,7 +21258,7 @@
           return false;
         }
         selectedLeadFinderId = lead.id;
-        activeSalesDetailTab = options.tab || activeSalesDetailTab || "overview";
+        activeSalesDetailTab = options.tab || requestedTab || activeSalesDetailTab || "overview";
         setLeadfinderDetailMode(true);
         renderLeadfinderDetail();
         return true;
@@ -22764,12 +22782,34 @@
         window.addEventListener("maxwebstudio:sales-agenda-planned", async (event) => {
           const leadId = event.detail?.leadId || "";
           const followUpDate = event.detail?.followUpDate || "";
+          const startTime = event.detail?.startTime || String(event.detail?.dueAt || "").split("T")[1] || "10:00";
+          const endTime = event.detail?.endTime || String(event.detail?.dueEndAt || "").split("T")[1] || "";
+          const appointmentTitle = event.detail?.title || "Agenda-afspraak";
+          const appointmentKind = ({
+            agenda: "Follow-up",
+            request: "Terugbelverzoek",
+            meeting: "Klantmeeting",
+            internal: "Intern overleg",
+          })[event.detail?.kind || "agenda"] || "Afspraak";
+          const appointmentNote = String(event.detail?.notes || "").trim();
           const lead = getLeadfinderLeads().find((item) => item.id === leadId);
           if (!lead || !followUpDate) return;
+          const appointmentDate = new Date(`${followUpDate}T${startTime || "10:00"}`);
+          const appointmentDateLabel = Number.isNaN(appointmentDate.getTime())
+            ? followUpDate
+            : appointmentDate.toLocaleDateString("nl-NL", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
+          const appointmentLine = [
+            `[${new Date().toLocaleDateString("nl-NL")}] Agenda-afspraak gepland`,
+            `Type: ${appointmentKind}`,
+            `Titel: ${appointmentTitle}`,
+            `Moment: ${appointmentDateLabel} ${String(startTime).slice(0, 5)}${endTime ? ` - ${String(endTime).slice(0, 5)}` : ""}`,
+            appointmentNote ? `Notitie: ${appointmentNote}` : "",
+          ].filter(Boolean).join("\n");
           try {
             await updateLeadfinderLead(lead, {
               followUpDate,
               callStatus: lead.callStatus === "quote_sent" ? "quote_sent" : "opvolgen",
+              notes: [getLeadNotes(lead), appointmentLine].filter(Boolean).join("\n\n"),
             }, "Follow-up gekoppeld aan deze lead.");
           } catch (error) {
             setLeadfinderMessage(error.message || "Agenda staat gepland, maar de lead kon niet worden bijgewerkt.", "warning");
