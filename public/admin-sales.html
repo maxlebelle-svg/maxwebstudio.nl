@@ -135,6 +135,12 @@
             <input id="admin-page-search" type="search" placeholder="Zoek in jouw leads, klanten en offertes..." />
             <kbd>⌘ K</kbd>
           </label>
+          <label class="sales-owner-switcher" id="sales-owner-switcher" for="sales-owner-view" hidden>
+            <span>Dashboard van</span>
+            <select id="sales-owner-view" aria-label="Dashboard per verkoper bekijken">
+              <option value="">Alle verkopers</option>
+            </select>
+          </label>
           <div class="admin-page-actions">
             <button class="admin-icon-button" type="button" aria-label="Meldingen">⌕</button>
             <button class="button primary" id="open-new-customer-topbar" type="button">Nieuwe lead</button>
@@ -18996,6 +19002,8 @@
         reset: document.getElementById("leadfinder-reset"),
         message: document.getElementById("leadfinder-message"),
         search: document.getElementById("leadfinder-search"),
+        ownerSwitcher: document.getElementById("sales-owner-switcher"),
+        ownerView: document.getElementById("sales-owner-view"),
         filterWebsiteStatus: document.getElementById("leadfinder-filter-website-status"),
         filterCallStatus: document.getElementById("leadfinder-filter-call-status"),
         filterOwner: document.getElementById("leadfinder-filter-owner"),
@@ -19669,6 +19677,10 @@
 
       function canLeadfinderRoleSeeAll(role = getLeadfinderUserContext().role) {
         return ["super_admin", "admin", "sales_manager"].includes(String(role || "").toLowerCase());
+      }
+
+      function canUseSalesOwnerDashboardSwitch(role = getLeadfinderUserContext().role) {
+        return ["super_admin", "admin"].includes(String(role || "").toLowerCase());
       }
 
       function getLeadOwnerTokens(lead = {}) {
@@ -20805,8 +20817,15 @@
 
       function populateLeadfinderOwnerFilter(leads = getLeadfinderLeads()) {
         const select = leadfinderElements.filterOwner;
-        if (!select) return;
-        const selected = select.value;
+        const dashboardSelect = leadfinderElements.ownerView;
+        if (!select && !dashboardSelect) return;
+        const canSwitchDashboard = canUseSalesOwnerDashboardSwitch();
+        if (leadfinderElements.ownerSwitcher) {
+          leadfinderElements.ownerSwitcher.hidden = !canSwitchDashboard;
+        }
+        const selected = canSwitchDashboard
+          ? dashboardSelect?.value || select?.value || ""
+          : select?.value || "";
         const owners = new Map();
         readKnownSalesEmployees().forEach((employee) => addEmployeeFilterOption(owners, employee));
         leads.forEach((lead) => {
@@ -20825,21 +20844,41 @@
           leadfinderEmployeeFilterTokenMap.set(option.value, option);
           option.tokens.forEach((token) => leadfinderEmployeeFilterTokenMap.set(token, option));
         });
-        select.innerHTML = `<option value="">Alle medewerkers</option>${sorted.map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`).join("")}`;
+        const optionsHtml = sorted.map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`).join("");
         const selectedTokens = getEmployeeFilterTokens(selected);
         const matchingOption = sorted.find((option) => option.value === selected || selectedTokens.some((token) => option.tokens.has(token)));
-        select.value = matchingOption?.value || "";
+        const selectedValue = matchingOption?.value || "";
+        if (select) {
+          select.innerHTML = `<option value="">Alle medewerkers</option>${optionsHtml}`;
+          select.value = selectedValue;
+        }
+        if (dashboardSelect) {
+          dashboardSelect.innerHTML = `<option value="">Alle verkopers</option>${optionsHtml}`;
+          dashboardSelect.value = canSwitchDashboard ? selectedValue : "";
+        }
         logLeadfinderDiagnostic("Leadfinder medewerkers gedetecteerd", {
           detectedEmployees: sorted.map((option) => ({ value: option.value, label: option.label })),
-          selectedEmployeeFilter: select.value || "Alle medewerkers",
+          selectedEmployeeFilter: selectedValue || "Alle medewerkers",
           totalLeadsLoaded: leads.length,
           source: leadfinderSourceStatus?.dataLayer || "local",
         });
       }
 
+      function syncLeadfinderOwnerDashboardFilter(sourceElement) {
+        const selectedValue = sourceElement?.value || "";
+        if (leadfinderElements.filterOwner && leadfinderElements.filterOwner !== sourceElement) {
+          leadfinderElements.filterOwner.value = selectedValue;
+        }
+        if (leadfinderElements.ownerView && leadfinderElements.ownerView !== sourceElement) {
+          leadfinderElements.ownerView.value = selectedValue;
+        }
+        renderLeadfinderList();
+      }
+
       function clearManualLeadfinderFilters() {
         [
           leadfinderElements.search,
+          leadfinderElements.ownerView,
           leadfinderElements.filterWebsiteStatus,
           leadfinderElements.filterCallStatus,
           leadfinderElements.filterOwner,
@@ -22463,9 +22502,12 @@
           resetLeadfinderForm();
           setLeadfinderMessage("Formulier leeggemaakt.", "success");
         });
-        [leadfinderElements.search, leadfinderElements.filterWebsiteStatus, leadfinderElements.filterCallStatus, leadfinderElements.filterOwner, leadfinderElements.filterIndustry, leadfinderElements.filterRegion, leadfinderElements.filterScore].forEach((element) => {
+        [leadfinderElements.search, leadfinderElements.filterWebsiteStatus, leadfinderElements.filterCallStatus, leadfinderElements.filterIndustry, leadfinderElements.filterRegion, leadfinderElements.filterScore].forEach((element) => {
           element?.addEventListener("input", renderLeadfinderList);
           element?.addEventListener("change", renderLeadfinderList);
+        });
+        [leadfinderElements.ownerView, leadfinderElements.filterOwner].forEach((element) => {
+          element?.addEventListener("change", () => syncLeadfinderOwnerDashboardFilter(element));
         });
         leadfinderElements.website?.addEventListener("input", () => {
           setManualScoreFromAnalysis(getDraftWebsiteAnalysisForForm());
