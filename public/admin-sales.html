@@ -667,6 +667,7 @@
               <div class="sales-calendar-controls">
                 <button class="button secondary" id="sales-agenda-prev-week" type="button">Vorige week</button>
                 <button class="button secondary" id="sales-agenda-next-week" type="button">Volgende week</button>
+                <button class="button primary" id="sales-agenda-add" type="button">Afspraak toevoegen</button>
               </div>
             </div>
             <div class="sales-calendar-grid" id="sales-agenda-calendar" aria-label="Sales weekagenda"></div>
@@ -676,6 +677,7 @@
                 <strong id="sales-agenda-planner-lead">Geen lead geselecteerd</strong>
                 <span id="sales-agenda-planner-time">Kies een dag en tijd.</span>
               </div>
+              <label for="sales-agenda-planner-title">Titel<input id="sales-agenda-planner-title" type="text" placeholder="Bijv. Follow-up, klantmeeting of intern overleg" /></label>
               <div class="sales-calendar-planner-actions">
                 <button class="button secondary" id="sales-agenda-plan-request" type="button">Terugbelverzoek</button>
                 <button class="button primary" id="sales-agenda-plan-followup" type="button">Plan follow-up</button>
@@ -2289,7 +2291,7 @@
         };
         const sectionGroups = {
           dashboard: ["dashboard", "admin-access-control-banner", "admin-metrics", "bi-dashboard-section"],
-          sales: ["dashboard", "admin-metrics", "leadfinder"],
+          sales: ["dashboard", "admin-metrics", "leadfinder", "sales-agenda"],
           "website-factory": ["demo-klantreis"],
           klanten: ["klanten"],
           websites: ["websites"],
@@ -18194,11 +18196,13 @@
         selectedLabel: document.getElementById("sales-agenda-selected-label"),
         previousWeek: document.getElementById("sales-agenda-prev-week"),
         nextWeek: document.getElementById("sales-agenda-next-week"),
+        add: document.getElementById("sales-agenda-add"),
         calendar: document.getElementById("sales-agenda-calendar"),
         timeline: document.getElementById("sales-agenda-timeline"),
         planner: document.getElementById("sales-agenda-planner"),
         plannerLead: document.getElementById("sales-agenda-planner-lead"),
         plannerTime: document.getElementById("sales-agenda-planner-time"),
+        plannerTitle: document.getElementById("sales-agenda-planner-title"),
         plannerRequest: document.getElementById("sales-agenda-plan-request"),
         plannerFollowup: document.getElementById("sales-agenda-plan-followup"),
         message: document.getElementById("sales-agenda-message"),
@@ -18209,6 +18213,7 @@
       let selectedAgendaDate = toLocalIsoDate(new Date());
       let selectedAgendaTime = "10:00";
       let pendingAgendaLead = null;
+      let agendaPlannerOpen = false;
 
       const statusLabels = Object.fromEntries(CRM_TASK_STATUSES.map((item) => [item.value, item.label]));
       const priorityLabels = Object.fromEntries(CRM_TASK_PRIORITIES.map((item) => [item.value, item.label]));
@@ -18362,7 +18367,9 @@
       }
 
       function isAgendaTask(task = {}) {
-        return task.type === "lead" && Boolean(task.dueDate) && (
+        if (!task.dueDate) return false;
+        if (task.source === "sales_agenda") return true;
+        return task.type === "lead" && (
           Boolean(task.leadId)
           || /terugbel|agenda|follow-up|opvolg/i.test(`${task.title || ""} ${task.notes || ""}`)
         );
@@ -18449,24 +18456,29 @@
         if (agendaElements.plannerLead) {
           agendaElements.plannerLead.textContent = pendingAgendaLead?.name
             ? `Follow-up voor ${pendingAgendaLead.name}`
-            : "Selecteer een lead via Follow-up plannen";
+            : "Nieuwe interne afspraak";
         }
         if (agendaElements.plannerTime) {
           agendaElements.plannerTime.textContent = selectedAgendaDate && selectedAgendaTime
             ? `Gekozen moment: ${selectedAgendaDate} om ${selectedAgendaTime}`
             : "Kies een dag en tijd.";
         }
-        if (agendaElements.planner) agendaElements.planner.hidden = !pendingAgendaLead;
+        if (agendaElements.plannerTitle && pendingAgendaLead?.name && !agendaElements.plannerTitle.value) {
+          agendaElements.plannerTitle.value = `Follow-up: ${pendingAgendaLead.name}`;
+        }
+        if (agendaElements.planner) agendaElements.planner.hidden = !agendaPlannerOpen;
       }
 
       function renderAgendaCalendar(allAgendaTasks = []) {
         if (!agendaElements.calendar || !agendaElements.timeline) return;
         const days = getAgendaWeekDays();
-        agendaElements.calendar.innerHTML = days.map((date) => {
+        const hours = Array.from({ length: 11 }, (_, index) => 8 + index);
+        const todayIso = toLocalIsoDate(new Date());
+        const dayHeaders = days.map((date) => {
           const iso = toLocalIsoDate(date);
           const dayTasks = allAgendaTasks.filter((task) => task.dueDate === iso && !["afgerond", "gearchiveerd"].includes(task.status));
           const isSelected = iso === selectedAgendaDate;
-          const isToday = iso === toLocalIsoDate(new Date());
+          const isToday = iso === todayIso;
           return `
             <button class="sales-calendar-day ${isSelected ? "is-selected" : ""} ${isToday ? "is-today" : ""}" type="button" data-agenda-date="${escapeHtml(iso)}">
               <span>${escapeHtml(date.toLocaleDateString("nl-NL", { weekday: "short" }))}</span>
@@ -18475,6 +18487,45 @@
             </button>
           `;
         }).join("");
+        const boardDays = days.map((date) => {
+          const iso = toLocalIsoDate(date);
+          const dayTasks = allAgendaTasks.filter((task) => task.dueDate === iso && !["gearchiveerd"].includes(task.status));
+          const isToday = iso === todayIso;
+          const events = dayTasks.map((task, index) => {
+            const taskDate = getAgendaTaskDateTime(task);
+            const minutes = Number.isNaN(taskDate.getTime()) ? 120 : ((taskDate.getHours() - 8) * 60) + taskDate.getMinutes();
+            const top = Math.max(0, Math.min(600, minutes));
+            const duration = String(task.title || "").toLowerCase().includes("terugbel") ? 45 : 60;
+            const eventClass = task.priority === "hoog" ? "is-high" : task.type === "lead" ? "is-lead" : "is-internal";
+            return `
+              <button class="sales-calendar-event ${eventClass}" type="button" data-agenda-task-id="${escapeHtml(task.id)}" style="top: ${top}px; height: ${Math.max(42, duration)}px; left: ${8 + (index % 2) * 8}px; right: ${8 + (index % 2) * 8}px;">
+                <strong>${escapeHtml(String(task.dueTime || "").slice(0, 5) || formatAgendaDateTime(task).slice(-5))} · ${escapeHtml(task.title)}</strong>
+                <span>${escapeHtml(task.ownerName || task.assignedToName || task.ownerEmail || "Interne afspraak")}</span>
+              </button>
+            `;
+          }).join("");
+          return `
+            <div class="sales-calendar-board-day ${isToday ? "is-today" : ""}" data-agenda-date="${escapeHtml(iso)}">
+              ${events}
+            </div>
+          `;
+        }).join("");
+        agendaElements.calendar.innerHTML = `
+          <div class="sales-calendar-board">
+            <div class="sales-calendar-board-head">
+              <span></span>
+              ${dayHeaders}
+            </div>
+            <div class="sales-calendar-board-body">
+              <div class="sales-calendar-hours">
+                ${hours.map((hour) => `<span>${String(hour).padStart(2, "0")}:00</span>`).join("")}
+              </div>
+              <div class="sales-calendar-days">
+                ${boardDays}
+              </div>
+            </div>
+          </div>
+        `;
 
         const selectedTasks = allAgendaTasks.filter((task) => task.dueDate === selectedAgendaDate);
         const slots = [];
@@ -18498,43 +18549,51 @@
       }
 
       async function saveAgendaPlannerFollowup(kind = "agenda") {
-        if (!pendingAgendaLead?.id) {
-          setAgendaMessage("Open eerst een lead en klik op Follow-up plannen.", "error");
-          return;
-        }
         if (!selectedAgendaDate || !selectedAgendaTime) {
           setAgendaMessage("Kies eerst een dag en tijdslot.", "error");
           return;
         }
         const dueAt = `${selectedAgendaDate}T${selectedAgendaTime}`;
-        const title = kind === "request"
-          ? `Terugbelverzoek: ${pendingAgendaLead.name}`
-          : `Follow-up: ${pendingAgendaLead.name}`;
+        const context = getAgendaUserContext();
+        const manualTitle = String(agendaElements.plannerTitle?.value || "").trim();
+        if (!pendingAgendaLead?.id && !manualTitle) {
+          setAgendaMessage("Geef de afspraak eerst een titel.", "error");
+          agendaElements.plannerTitle?.focus();
+          return;
+        }
+        const title = pendingAgendaLead?.name
+          ? kind === "request" ? `Terugbelverzoek: ${pendingAgendaLead.name}` : `Follow-up: ${pendingAgendaLead.name}`
+          : manualTitle;
         try {
           const result = await saveCrmTaskWithWriteFallback({
             title,
-            type: "lead",
+            type: pendingAgendaLead?.id ? "lead" : "general",
             status: "open",
             priority: kind === "request" ? "hoog" : "normaal",
             dueDate: selectedAgendaDate,
             dueTime: selectedAgendaTime,
             dueAt,
-            leadId: pendingAgendaLead.id,
-            ownerAuthUserId: pendingAgendaLead.ownerAuthUserId,
-            ownerEmail: pendingAgendaLead.ownerEmail,
-            ownerName: pendingAgendaLead.ownerName,
-            assignedToEmail: pendingAgendaLead.assignedToEmail || pendingAgendaLead.ownerEmail,
-            assignedToName: pendingAgendaLead.assignedToName || pendingAgendaLead.ownerName,
+            leadId: pendingAgendaLead?.id || "",
+            ownerAuthUserId: pendingAgendaLead?.ownerAuthUserId || context.userId,
+            ownerEmail: pendingAgendaLead?.ownerEmail || context.email,
+            ownerName: pendingAgendaLead?.ownerName || context.name,
+            assignedToEmail: pendingAgendaLead?.assignedToEmail || pendingAgendaLead?.ownerEmail || context.email,
+            assignedToName: pendingAgendaLead?.assignedToName || pendingAgendaLead?.ownerName || context.name,
+            source: "sales_agenda",
             notes: [
-              kind === "request" ? "Terugbelverzoek vanuit de sales agenda." : "Follow-up gepland vanuit de sales agenda.",
+              pendingAgendaLead?.id
+                ? kind === "request" ? "Terugbelverzoek vanuit de sales agenda." : "Follow-up gepland vanuit de sales agenda."
+                : "Interne afspraak vanuit de sales agenda.",
               `Gepland moment: ${dueAt.replace("T", " ")}`,
-              pendingAgendaLead.phone ? `Telefoon: ${pendingAgendaLead.phone}` : "",
+              pendingAgendaLead?.phone ? `Telefoon: ${pendingAgendaLead.phone}` : "",
             ].filter(Boolean).join("\n"),
           });
           setAgendaMessage(result?.fallbackUsed ? "Lokaal gepland. Centrale synchronisatie volgt." : "Agenda-afspraak opgeslagen.", result?.fallbackUsed ? "warning" : "success");
-          window.dispatchEvent(new CustomEvent("maxwebstudio:sales-agenda-planned", {
-            detail: { leadId: pendingAgendaLead.id, followUpDate: selectedAgendaDate, dueAt, kind },
-          }));
+          if (pendingAgendaLead?.id) {
+            window.dispatchEvent(new CustomEvent("maxwebstudio:sales-agenda-planned", {
+              detail: { leadId: pendingAgendaLead.id, followUpDate: selectedAgendaDate, dueAt, kind },
+            }));
+          }
           window.dispatchEvent(new CustomEvent("maxwebstudio:sales-agenda-updated"));
         } catch (error) {
           setAgendaMessage(error.message || "Agenda-afspraak kon niet worden opgeslagen.", "error");
@@ -18733,6 +18792,12 @@
       }
 
       function handleAgendaAction(event) {
+        const eventButton = event.target.closest(".sales-calendar-event[data-agenda-task-id]");
+        if (eventButton) {
+          const task = readCrmTasks().find((item) => item.id === eventButton.dataset.agendaTaskId);
+          if (task?.leadId) openAgendaLead(task);
+          return;
+        }
         const dayButton = event.target.closest("[data-agenda-date]");
         if (dayButton) {
           selectedAgendaDate = dayButton.dataset.agendaDate || selectedAgendaDate;
@@ -18806,6 +18871,13 @@
           agendaWeekStart.setDate(agendaWeekStart.getDate() + 7);
           renderSalesAgenda();
         });
+        agendaElements.add?.addEventListener("click", () => {
+          pendingAgendaLead = null;
+          agendaPlannerOpen = true;
+          if (agendaElements.plannerTitle) agendaElements.plannerTitle.value = "";
+          renderSalesAgenda();
+          window.setTimeout(() => agendaElements.plannerTitle?.focus(), 60);
+        });
         agendaElements.plannerRequest?.addEventListener("click", () => saveAgendaPlannerFollowup("request"));
         agendaElements.plannerFollowup?.addEventListener("click", () => saveAgendaPlannerFollowup("agenda"));
         window.addEventListener("maxwebstudio:sales-agenda-updated", () => {
@@ -18814,8 +18886,10 @@
         });
         window.addEventListener("maxwebstudio:sales-agenda-open-planner", (event) => {
           pendingAgendaLead = event.detail?.lead || null;
+          agendaPlannerOpen = true;
           selectedAgendaDate = event.detail?.date || selectedAgendaDate;
           selectedAgendaTime = event.detail?.time || selectedAgendaTime;
+          if (agendaElements.plannerTitle) agendaElements.plannerTitle.value = pendingAgendaLead?.name ? `Follow-up: ${pendingAgendaLead.name}` : "";
           if (agendaElements.date) agendaElements.date.value = selectedAgendaDate;
           agendaWeekStart = startOfAgendaWeek(new Date(`${selectedAgendaDate}T00:00:00`));
           window.location.hash = "sales-agenda";
@@ -20867,7 +20941,25 @@
         window.focusAdminPanel?.(leadfinderElements.list || document.getElementById("leadfinder-list"), { block: "start" });
       }
 
+      function openSalesAgendaOverviewFromNavigation() {
+        if (window.location.hash !== "#sales-agenda") return;
+        selectedLeadFinderId = "";
+        activeSalesDetailTab = "overview";
+        setLeadfinderDetailMode(false);
+        const url = new URL(window.location.href);
+        url.searchParams.delete("leadId");
+        url.hash = "sales-agenda";
+        window.history.replaceState({}, "", url);
+        renderLeadfinderList();
+        window.setTimeout(() => window.focusAdminPanel?.(document.getElementById("sales-agenda"), { block: "start" }), 80);
+      }
+
       function restoreLeadfinderDetailFromUrl(options = {}) {
+        if (window.location.hash === "#sales-agenda") {
+          selectedLeadFinderId = "";
+          setLeadfinderDetailMode(false);
+          return false;
+        }
         const leadId = new URLSearchParams(window.location.search).get("leadId") || "";
         if (!leadId) {
           setLeadfinderDetailMode(false);
@@ -22353,6 +22445,8 @@
             closeLeadfinderDetail({ updateUrl: false });
           }
         });
+        window.addEventListener("hashchange", openSalesAgendaOverviewFromNavigation);
+        openSalesAgendaOverviewFromNavigation();
         leadfinderElements.recentActivityGrid?.addEventListener("click", (event) => {
           const button = event.target.closest("[data-recent-lead-id]");
           if (!button?.dataset.recentLeadId) return;
