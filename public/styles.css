@@ -13436,6 +13436,73 @@ h3 {
   min-width: 0;
 }
 
+.lead-owner-admin {
+  display: grid;
+  grid-template-columns: minmax(190px, 1fr) minmax(92px, auto);
+  gap: 10px;
+  align-items: end;
+  max-width: 430px;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid rgba(59, 130, 246, 0.22);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.16), rgba(34, 197, 94, 0.05)),
+    rgba(3, 12, 22, 0.38);
+}
+
+.lead-owner-admin label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.lead-owner-admin label span {
+  color: rgba(147, 197, 253, 0.84);
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.lead-owner-admin select {
+  width: 100%;
+  min-height: 38px;
+  min-width: 0;
+  border: 1px solid rgba(171, 196, 224, 0.16);
+  border-radius: 8px;
+  background: rgba(2, 14, 25, 0.88);
+  color: #f8fbff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.lead-owner-save-button {
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid rgba(96, 165, 250, 0.42);
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.94), rgba(14, 165, 233, 0.84));
+  color: #f8fbff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.lead-owner-save-button:hover,
+.lead-owner-save-button:focus-visible {
+  border-color: rgba(147, 197, 253, 0.72);
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.22);
+}
+
+@media (max-width: 720px) {
+  .lead-owner-admin {
+    grid-template-columns: 1fr;
+  }
+}
+
 .lead-contact-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, max-content));

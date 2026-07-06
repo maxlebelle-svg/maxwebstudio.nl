@@ -20057,6 +20057,10 @@
         return ["super_admin", "admin"].includes(String(role || "").toLowerCase());
       }
 
+      function canManageLeadOwnerAssignments(role = getLeadfinderUserContext().role) {
+        return String(role || "").toLowerCase() === "super_admin";
+      }
+
       function getLeadOwnerTokens(lead = {}) {
         const meta = lead.metadata && typeof lead.metadata === "object" ? lead.metadata : {};
         return [
@@ -20298,7 +20302,7 @@
       }
 
       function renderLeadOwnerAssignment(lead) {
-        const canAssign = getLeadfinderUserContext().role === "super_admin";
+        const canAssign = canManageLeadOwnerAssignments();
         if (leadfinderElements.ownerAssignment) leadfinderElements.ownerAssignment.hidden = !canAssign;
         if (!canAssign || !leadfinderElements.ownerAssignmentSelect) return;
         const options = uniqueSalesEmployeeOptions();
@@ -20310,17 +20314,15 @@
         setLeadOwnerAssignmentMessage(lead?.id ? "" : "Selecteer eerst een lead.", "");
       }
 
-      async function saveSelectedLeadOwnerAssignment() {
-        const lead = selectedLeadFinderLead();
-        const selectedValue = leadfinderElements.ownerAssignmentSelect?.value || "";
+      async function saveLeadOwnerAssignmentForLead(lead, selectedValue, messageSetter = setLeadOwnerAssignmentMessage) {
         const employee = employeeOptionFromValue(selectedValue);
         if (!lead || !employee) {
-          setLeadOwnerAssignmentMessage("Kies eerst een medewerker.", "error");
+          messageSetter("Kies eerst een medewerker.", "error");
           return;
         }
         const updates = buildLeadOwnerAssignmentUpdates(employee);
         if (!updates) {
-          setLeadOwnerAssignmentMessage("Deze medewerker kon niet worden gelezen.", "error");
+          messageSetter("Deze medewerker kon niet worden gelezen.", "error");
           return;
         }
         const previousLabel = getLeadOwnerLabel(lead);
@@ -20334,10 +20336,18 @@
         ].filter(Boolean).join("\n\n");
         try {
           await updateLeadfinderLead(lead, updates, `Lead toegewezen aan ${employee.label}.`);
-          setLeadOwnerAssignmentMessage(`Opgeslagen op naam van ${employee.label}.`, "success");
+          messageSetter(`Opgeslagen op naam van ${employee.label}.`, "success");
         } catch (error) {
-          setLeadOwnerAssignmentMessage(error.message || "Medewerker kon niet worden opgeslagen.", "error");
+          messageSetter(error.message || "Medewerker kon niet worden opgeslagen.", "error");
         }
+      }
+
+      async function saveSelectedLeadOwnerAssignment() {
+        await saveLeadOwnerAssignmentForLead(
+          selectedLeadFinderLead(),
+          leadfinderElements.ownerAssignmentSelect?.value || "",
+          setLeadOwnerAssignmentMessage
+        );
       }
 
       function leadHasOwnershipData(lead = {}) {
@@ -22066,6 +22076,9 @@
             <span>Sorteer op: laatste update</span>
           </div>
           ${leads.map((lead) => {
+            const canAssignOwner = canManageLeadOwnerAssignments();
+            const ownerOptions = canAssignOwner ? uniqueSalesEmployeeOptions() : [];
+            const currentOwnerValue = employeeOptionFromValue(getLeadOwnerValue(lead))?.value || getLeadOwnerValue(lead);
             const followUpBadge = getFollowUpBadge(lead);
             const score = Math.max(0, Math.min(100, Number(lead.leadScore || 0)));
             const ringStyle = `--score:${score * 3.6}deg`;
@@ -22095,6 +22108,18 @@
                       <span>Medewerker: ${escapeHtml(getLeadOwnerLabel(lead))}</span>
                       <span>Laatst bijgewerkt: ${escapeHtml(formatLeadDate(lead.updatedAt))}</span>
                     </div>
+                    ${canAssignOwner ? `
+                      <div class="lead-owner-admin" data-lead-owner-card>
+                        <label>
+                          <span>Medewerker wijzigen</span>
+                          <select data-lead-owner-card-select aria-label="Medewerker voor ${escapeHtml(lead.companyName || "deze lead")}">
+                            <option value="">Kies medewerker</option>
+                            ${ownerOptions.map((option) => `<option value="${escapeHtml(option.value)}"${option.value === currentOwnerValue ? " selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
+                          </select>
+                        </label>
+                        <button class="lead-owner-save-button" type="button" data-leadfinder-action="save-owner" aria-label="Medewerker opslaan voor ${escapeHtml(lead.companyName || "deze lead")}">Opslaan</button>
+                      </div>
+                    ` : ""}
                   </div>
                 </div>
 
@@ -22786,6 +22811,10 @@
       }
 
       async function handleLeadfinderListClick(event) {
+        if (event.target.closest("[data-lead-owner-card-select]")) {
+          event.stopPropagation();
+          return;
+        }
         const button = event.target.closest("[data-leadfinder-action]");
         if (!button && event.target.closest("a")) return;
         const row = event.target.closest("[data-leadfinder-id]");
@@ -22832,6 +22861,18 @@
           return;
         } else if (button.dataset.leadfinderAction === "archive") {
           await updateLeadfinderLead(lead, { callStatus: "archived" }, "Lead gearchiveerd. Je vindt hem terug via recente acties of het statusfilter.");
+          return;
+        } else if (button.dataset.leadfinderAction === "save-owner") {
+          if (!canManageLeadOwnerAssignments()) {
+            setLeadfinderMessage("Alleen super admin kan leads opnieuw toewijzen.", "error");
+            return;
+          }
+          const selectedValue = row.querySelector("[data-lead-owner-card-select]")?.value || "";
+          button.disabled = true;
+          button.setAttribute("aria-busy", "true");
+          await saveLeadOwnerAssignmentForLead(lead, selectedValue, setLeadfinderMessage);
+          button.disabled = false;
+          button.removeAttribute("aria-busy");
           return;
         } else if (button.dataset.leadfinderAction === "view") {
           setLeadfinderMessage("Lead geselecteerd", "success");
