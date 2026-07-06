@@ -10968,6 +10968,10 @@
           else notifyUser(text, "error");
         }
 
+        function currentAdminPage() {
+          return window.maxwebstudioAdminPage?.page || "dashboard";
+        }
+
         async function postJsonWithAdminAuth(url, payload, fallbackError = "Adminactie kon niet worden uitgevoerd.") {
           const token = getAdminBearer();
           if (!token) throw new Error("Log eerst in als admin.");
@@ -11176,6 +11180,10 @@
             const dashboardPaidRevenue = Number(metrics.finance?.paidRevenue ?? 0);
             revenueMonthMetric.textContent = money(dashboardPaidRevenue > 0 || loadedPaidRevenue === 0 ? dashboardPaidRevenue : loadedPaidRevenue);
           }
+          if (paidAmountMetric) paidAmountMetric.textContent = money(metrics.finance?.paidRevenue ?? 0);
+          if (subscriptionsDueMetric) subscriptionsDueMetric.textContent = `${metrics.finance?.expiredInvoices ?? 0} verlopen`;
+          if (recurringRevenueMetric) recurringRevenueMetric.textContent = money(metrics.finance?.mrr ?? 0);
+          if (recurringRevenueLabel) recurringRevenueLabel.textContent = `${money(metrics.finance?.arr ?? 0)} ARR - ${metrics.subscriptions?.active ?? 0} actief`;
           biCharts.subscriptionTotal.textContent = String((metrics.charts?.subscriptionGrowth || []).at(-1)?.value || 0);
           biCharts.invoiceTotal.textContent = String((metrics.charts?.invoiceStatusDistribution || []).reduce((sum, item) => sum + Number(item.value || 0), 0));
           biCharts.subscriptionStatusTotal.textContent = String((metrics.charts?.subscriptionStatusDistribution || []).reduce((sum, item) => sum + Number(item.value || 0), 0));
@@ -17302,7 +17310,70 @@
           }
         }
 
-        async function loadCRMData(showLoading = true) {
+        async function loadDashboardPageData(showLoading = false) {
+          if (!getAdminBearer()) {
+            renderAdminLockedState();
+            updateAdminSessionUi();
+            setAdminAccessMessage("Log in als admin om dashboarddata te laden.", "error");
+            return;
+          }
+          adminLoadButton.disabled = true;
+          adminLoadButton.textContent = "Laden...";
+          if (showLoading) setAdminAccessMessage("Dashboard laden...", "");
+          try {
+            await loadDashboardMetrics(showLoading);
+            if (showLoading) setAdminOperationalMessage("Dashboard snel geladen via centrale metrics.", "success");
+          } finally {
+            adminLoadButton.disabled = false;
+            adminLoadButton.textContent = "Laden";
+            updateAdminSessionUi();
+          }
+        }
+
+        async function loadInvoicePageData(showLoading = false) {
+          const token = getAdminBearer();
+          if (!token) {
+            renderAdminLockedState();
+            updateAdminSessionUi();
+            setAdminAccessMessage("Log in als admin om facturen te laden.", "error");
+            return;
+          }
+
+          state.adminToken = token;
+          if (!state.adminSession && token) sessionStorage.setItem(adminTokenStorageKey, token);
+          adminLoadButton.disabled = true;
+          adminLoadButton.textContent = "Laden...";
+          if (showLoading) setAdminAccessMessage("Facturen laden...", "");
+
+          try {
+            customerDataModeSelect.value = currentCustomerDataMode();
+            invoiceDataModeSelect.value = currentInvoiceDataMode();
+            const [customers, invoices] = await Promise.all([
+              loadCustomersByDataMode(),
+              loadInvoicesByDataMode(),
+            ]);
+            state.customers = customers;
+            state.profiles = customers;
+            state.invoices = invoices;
+            renderInvoices();
+            populateInvoiceOptions();
+            loadDashboardMetrics(false).catch((error) => console.warn("Dashboardmetrics konden niet op de achtergrond laden", error));
+            if (showLoading) setAdminOperationalMessage("Facturen snel geladen.", "success");
+          } catch (error) {
+            setAdminAccessMessage(error.message || "Facturen konden niet worden geladen.", "error");
+            renderState(invoiceList, "Facturen konden niet worden geladen", error.message || "Controleer de verbinding en probeer opnieuw.", "Fout", "status-attention");
+          } finally {
+            adminLoadButton.disabled = false;
+            adminLoadButton.textContent = "Laden";
+            updateAdminSessionUi();
+          }
+        }
+
+        async function loadCRMData(showLoading = true, options = {}) {
+          const page = currentAdminPage();
+          if (options.scope !== "full" && page === "dashboard") return loadDashboardPageData(showLoading);
+          if (options.scope !== "full" && page === "facturen") return loadInvoicePageData(showLoading);
+
           const token = getAdminBearer();
           if (!token) {
             renderAdminLockedState();
@@ -18014,7 +18085,14 @@
         syncActiveNav();
         await restoreAdminSession();
         await applyAccessControl();
-        loadChangeRequests();
+        const bootPage = currentAdminPage();
+        if (["dashboard", "facturen"].includes(bootPage)) {
+          window.setTimeout(() => {
+            loadChangeRequests().catch((error) => console.warn("Wijzigingsverzoeken konden niet op de achtergrond laden", error));
+          }, 1500);
+        } else {
+          loadChangeRequests();
+        }
         loadCRMData(false);
       })();
     </script>
