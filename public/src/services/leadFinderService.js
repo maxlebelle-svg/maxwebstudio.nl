@@ -83,6 +83,12 @@ export function normalizeLeadFinderLead(lead = {}) {
   const websiteStatus = WEBSITE_STATUS_VALUES.has(lead.websiteStatus) ? lead.websiteStatus : "onbekend";
   const callStatus = CALL_STATUS_VALUES.has(lead.callStatus) ? lead.callStatus : "nieuw";
   const metadata = lead.metadata && typeof lead.metadata === "object" ? lead.metadata : {};
+  const websiteAnalysis = lead.websiteAnalysis && typeof lead.websiteAnalysis === "object"
+    ? lead.websiteAnalysis
+    : metadata.websiteAnalysis && typeof metadata.websiteAnalysis === "object"
+      ? metadata.websiteAnalysis
+      : null;
+  const analysisScore = websiteAnalysis?.ok && Number.isFinite(Number(websiteAnalysis.score)) ? websiteAnalysis.score : null;
   return {
     id: sanitizeString(lead.id) || createId(),
     companyName: sanitizeString(lead.companyName || lead.company || lead.businessName),
@@ -93,14 +99,14 @@ export function normalizeLeadFinderLead(lead = {}) {
     email: sanitizeString(lead.email),
     websiteUrl: sanitizeString(lead.websiteUrl || lead.website),
     websiteStatus,
-    leadScore: sanitizeScore(lead.leadScore || lead.score),
+    leadScore: sanitizeScore(analysisScore ?? lead.leadScore ?? lead.score),
     callStatus,
     followUpDate: sanitizeString(lead.followUpDate),
     notes: sanitizeString(lead.notes),
     source: sanitizeString(lead.source) || "handmatig",
     googlePlaceId: sanitizeString(lead.googlePlaceId || lead.google_place_id || lead.placeId),
     googleMapsUrl: sanitizeString(lead.googleMapsUrl || lead.google_maps_url || lead.mapsUrl),
-    websiteAnalysis: lead.websiteAnalysis && typeof lead.websiteAnalysis === "object" ? lead.websiteAnalysis : null,
+    websiteAnalysis,
     convertedCustomerId: sanitizeString(lead.convertedCustomerId),
     ownerAuthUserId: sanitizeString(lead.ownerAuthUserId || lead.owner_auth_user_id || lead.assignedAuthUserId || lead.assigned_auth_user_id || metadata.ownerAuthUserId || metadata.owner_auth_user_id),
     ownerProfileId: sanitizeString(lead.ownerProfileId || lead.owner_profile_id || lead.assignedProfileId || lead.assigned_profile_id || metadata.ownerProfileId || metadata.owner_profile_id),

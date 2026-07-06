@@ -250,6 +250,7 @@ async function trySchemaAttempts(attempts = []) {
 
 function leadPayload(payload = {}, admin = {}, options = {}) {
   const now = new Date().toISOString();
+  const analysisScore = websiteAnalysisScore(payload.websiteAnalysis || payload.metadata?.websiteAnalysis);
   const hasStatus = Object.prototype.hasOwnProperty.call(payload, "status") || Object.prototype.hasOwnProperty.call(payload, "callStatus");
   const hasSource = Object.prototype.hasOwnProperty.call(payload, "source");
   const hasWebsiteStatus = Object.prototype.hasOwnProperty.call(payload, "websiteStatus") || Object.prototype.hasOwnProperty.call(payload, "website_status");
@@ -276,7 +277,7 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
       region: cleanText(payload.region),
       industry: cleanText(payload.industry),
       websiteStatus: cleanText(payload.websiteStatus),
-      leadScore: Number(payload.leadScore || payload.score || 60),
+      leadScore: analysisScore ?? Number(payload.leadScore || payload.score || 60),
       followUpDate: cleanText(payload.followUpDate),
       googlePlaceId: cleanText(payload.googlePlaceId),
       googleMapsUrl: cleanText(payload.googleMapsUrl),
@@ -337,6 +338,7 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
 function legacyLeadPayload(payload = {}, admin = {}, options = {}) {
   const now = new Date().toISOString();
   const existingMeta = options.existingLead?.metadata && typeof options.existingLead.metadata === "object" ? options.existingLead.metadata : {};
+  const analysisScore = websiteAnalysisScore(payload.websiteAnalysis || payload.metadata?.websiteAnalysis);
   const hasStatus = Object.prototype.hasOwnProperty.call(payload, "status") || Object.prototype.hasOwnProperty.call(payload, "callStatus");
   const hasSource = Object.prototype.hasOwnProperty.call(payload, "source");
   const hasWebsiteStatus = Object.prototype.hasOwnProperty.call(payload, "websiteStatus") || Object.prototype.hasOwnProperty.call(payload, "website_status");
@@ -365,7 +367,7 @@ function legacyLeadPayload(payload = {}, admin = {}, options = {}) {
     userName: cleanText(payload.userName || payload.user_name || options.existingLead?.ownerName || existingMeta.userName || payload.ownerName || admin.email),
     source: cleanText(payload.source || "admin-dashboard-leadfinder"),
     websiteStatus: cleanText(payload.websiteStatus),
-    leadScore: Number(payload.leadScore || payload.score || 60),
+    leadScore: analysisScore ?? Number(payload.leadScore || payload.score || 60),
     googlePlaceId: cleanText(payload.googlePlaceId),
     googleMapsUrl: cleanText(payload.googleMapsUrl),
     updatedBy: admin.id,
@@ -395,7 +397,7 @@ function legacyLeadPayload(payload = {}, admin = {}, options = {}) {
     record.region = cleanText(payload.region);
     record.website_url = cleanText(payload.websiteUrl || payload.website);
     record.website_status = cleanText(payload.websiteStatus || "unknown");
-    record.lead_score = Number(payload.leadScore || payload.score || 60);
+    record.lead_score = analysisScore ?? Number(payload.leadScore || payload.score || 60);
     record.call_status = normalizeLeadStatus(payload.callStatus || payload.status || "nieuw");
     record.follow_up_date = cleanText(payload.followUpDate);
     record.notes = cleanText(payload.notes || payload.message);
@@ -463,6 +465,7 @@ async function supabaseFetch(url, options) {
 
 function mapLead(row = {}) {
   const meta = row.metadata && typeof row.metadata === "object" ? row.metadata : {};
+  const analysisScore = websiteAnalysisScore(meta.websiteAnalysis);
   return {
     id: cleanText(row.id),
     companyName: cleanText(row.company_name || row.company),
@@ -489,7 +492,7 @@ function mapLead(row = {}) {
     industry: cleanText(row.branch || meta.industry),
     region: cleanText(row.region || meta.region),
     websiteStatus: cleanText(row.website_status || meta.websiteStatus || "onbekend"),
-    leadScore: Number(row.lead_score || meta.leadScore || 60),
+    leadScore: analysisScore ?? Number(row.lead_score || meta.leadScore || 60),
     followUpDate: cleanText(row.follow_up_date || meta.followUpDate),
     googlePlaceId: cleanText(meta.googlePlaceId),
     googleMapsUrl: cleanText(meta.googleMapsUrl),
@@ -634,6 +637,13 @@ function isStatusConstraintError(error = {}) {
 
 function normalizeRole(role) {
   return cleanText(role).toLowerCase();
+}
+
+function websiteAnalysisScore(analysis = null) {
+  if (!analysis || typeof analysis !== "object" || !analysis.ok) return null;
+  const score = Number(analysis.score);
+  if (!Number.isFinite(score)) return null;
+  return Math.max(0, Math.min(100, Math.round(score)));
 }
 
 function cleanText(value) {

@@ -20953,6 +20953,26 @@
         return websiteAnalysisState.get(`draft:${normalizedUrl}`) || websiteAnalysisState.get(`url:${normalizedUrl}`) || null;
       }
 
+      function analysisScoreValue(analysis = null) {
+        if (!analysis?.ok) return null;
+        const score = Number(analysis.score);
+        if (!Number.isFinite(score)) return null;
+        return Math.max(0, Math.min(100, Math.round(score)));
+      }
+
+      function setManualScoreFromAnalysis(analysis = null) {
+        const score = analysisScoreValue(analysis);
+        if (!leadfinderElements.score) return;
+        if (score === null) {
+          leadfinderElements.score.readOnly = false;
+          leadfinderElements.score.title = "";
+          return;
+        }
+        leadfinderElements.score.value = String(score);
+        leadfinderElements.score.readOnly = true;
+        leadfinderElements.score.title = "Deze score komt uit de website-analyse en is leidend.";
+      }
+
       function renderLeadWebsiteAnalysis(lead) {
         const target = getLeadWebsiteScanTarget();
         const result = getWebsiteAnalysisResult(target, lead);
@@ -21155,10 +21175,11 @@
                   if (analysis.ok && lead?.id) {
                     setAnalysisSyncStatus("syncing");
                     const analysisNote = buildWebsiteAnalysisNote(analysis);
+                    const exactAnalysisScore = analysisScoreValue(analysis);
                     const updates = {
                       websiteAnalysis: analysis,
                       notes: [lead.notes, analysisNote].filter(Boolean).join("\n\n"),
-                      leadScore: Math.max(Number(lead.leadScore || 0), Number(analysis.score || 0)),
+                      leadScore: exactAnalysisScore ?? Number(lead.leadScore || 60),
                     };
                     if (isProductionLead(lead)) {
                       selectedLeadFinderId = lead.id;
@@ -21188,7 +21209,7 @@
             if (leadfinderElements.notes && analysisNote && !currentNotes.includes(analysis.finalUrl || analysis.inputUrl || target.url)) {
               leadfinderElements.notes.value = [currentNotes, analysisNote].filter(Boolean).join("\n\n");
             }
-            if (leadfinderElements.score) leadfinderElements.score.value = String(Math.max(Number(leadfinderElements.score.value || 0), Number(analysis.score || 0)));
+            setManualScoreFromAnalysis(analysis);
             renderLeadWebsiteAnalysis(null);
           }
           const message = analysis.ok ? "Analyse afgerond. Gebruik de verkoopkansen als belhaakje." : getFriendlyWebsiteAnalysisReason(analysis.details || analysis.error);
@@ -21219,7 +21240,11 @@
         leadfinderElements.form?.reset();
         if (leadfinderElements.websiteStatus) leadfinderElements.websiteStatus.value = "onbekend";
         if (leadfinderElements.callStatus) leadfinderElements.callStatus.value = "nieuw";
-        if (leadfinderElements.score) leadfinderElements.score.value = "70";
+        if (leadfinderElements.score) {
+          leadfinderElements.score.value = "70";
+          leadfinderElements.score.readOnly = false;
+          leadfinderElements.score.title = "";
+        }
         if (leadfinderElements.form) {
           leadfinderElements.form.dataset.googlePlaceId = "";
           leadfinderElements.form.dataset.googleMapsUrl = "";
@@ -21243,6 +21268,7 @@
                 const ownerEmail = ownerContext.email || "";
                 const ownerName = ownerContext.name || ownerEmail || "";
                 const websiteAnalysis = getDraftWebsiteAnalysisForForm();
+                const analysisScore = analysisScoreValue(websiteAnalysis);
                 return {
           companyName: leadfinderElements.company?.value.trim() || "",
           industry: leadfinderElements.industry?.value || "",
@@ -21251,7 +21277,7 @@
           email: leadfinderElements.email?.value || "",
           websiteUrl: leadfinderElements.website?.value || "",
           websiteStatus: leadfinderElements.websiteStatus?.value || "onbekend",
-          leadScore: leadfinderElements.score?.value || 70,
+          leadScore: analysisScore ?? Number(leadfinderElements.score?.value || 70),
           callStatus: leadfinderElements.callStatus?.value || "nieuw",
           followUpDate: leadfinderElements.followUp?.value || "",
           source: leadfinderElements.source?.value || "handmatig",
@@ -21666,6 +21692,9 @@
         [leadfinderElements.search, leadfinderElements.filterWebsiteStatus, leadfinderElements.filterCallStatus, leadfinderElements.filterOwner, leadfinderElements.filterIndustry, leadfinderElements.filterRegion, leadfinderElements.filterScore].forEach((element) => {
           element?.addEventListener("input", renderLeadfinderList);
           element?.addEventListener("change", renderLeadfinderList);
+        });
+        leadfinderElements.website?.addEventListener("input", () => {
+          setManualScoreFromAnalysis(getDraftWebsiteAnalysisForForm());
         });
                 leadfinderElements.cockpitBar?.addEventListener("click", handleSalesKpiClick);
                 leadfinderElements.cockpitBar?.addEventListener("keydown", handleSalesKpiKeydown);
