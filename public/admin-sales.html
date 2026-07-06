@@ -393,11 +393,31 @@
               </div>
             </form>
 
+            <article class="admin-card sales-recent-activity-card" id="sales-recent-activity-card">
+              <div class="admin-profile-form-heading">
+                <div>
+                  <span>Mijn laatste acties</span>
+                  <strong>Vandaag bijgewerkt</strong>
+                </div>
+                <mark class="status-badge status-prepared" id="sales-recent-activity-count">0 acties</mark>
+              </div>
+              <div class="sales-recent-activity-grid" id="sales-recent-activity-grid">
+                <div class="sales-timeline-empty">Nog geen acties vandaag.</div>
+              </div>
+            </article>
+
             <article class="admin-card leadfinder-detail-card" id="leadfinder-detail">
-              <section class="sales-detail-panel sales-lead-summary-card" aria-label="Lead samenvatting">
+              <nav class="sales-detail-tabs" aria-label="Lead details">
+                <button class="sales-detail-tab is-active" type="button" data-sales-detail-tab="overview">Overzicht</button>
+                <button class="sales-detail-tab" type="button" data-sales-detail-tab="notes">Notities</button>
+                <button class="sales-detail-tab" type="button" data-sales-detail-tab="analysis">Website-analyse</button>
+                <button class="sales-detail-tab" type="button" data-sales-detail-tab="actions">Acties</button>
+              </nav>
+
+              <section class="sales-detail-panel sales-lead-summary-card" data-sales-detail-panel="overview" aria-label="Lead samenvatting">
                 <div class="sales-detail-card-heading">
                   <div>
-                    <span>Lead summary</span>
+                    <span>Lead overzicht</span>
                     <strong id="sales-lead-summary-title">Geen lead geselecteerd</strong>
                     <small id="leadfinder-detail-subtitle">Selecteer een lead om opvolging te beheren.</small>
                   </div>
@@ -406,12 +426,13 @@
                 <div class="settings-status-list sales-detail-compact-list" id="leadfinder-detail-list"></div>
               </section>
 
-              <section class="sales-detail-panel sales-workflow-card" aria-label="Sales workflow">
+              <section class="sales-detail-panel sales-workflow-card" data-sales-detail-panel="notes" aria-label="Notities en opvolging">
                 <div class="sales-detail-card-heading">
                   <div>
-                    <span>Workflow</span>
-                    <strong>Sales opvolging</strong>
+                    <span>Notities</span>
+                    <strong>Belnotities en opvolging</strong>
                   </div>
+                  <mark class="status-badge status-prepared" id="leadfinder-note-sync-state">Nog niet opgeslagen</mark>
                 </div>
                 <label class="sales-status-control" for="leadfinder-detail-call-status">
                   <span>Huidige status</span>
@@ -425,7 +446,7 @@
                 <div class="sales-timeline-card">
                   <div class="sales-timeline-heading">
                     <strong>Tijdlijn</strong>
-                    <span id="sales-timeline-count">0 events</span>
+                    <span id="sales-timeline-count">0 gebeurtenissen</span>
                   </div>
                   <div class="sales-timeline" id="sales-timeline">
                     <div class="sales-timeline-empty">Selecteer een lead om de verkoopgeschiedenis te zien.</div>
@@ -435,14 +456,16 @@
                   <span>Nieuwe notitie</span>
                   <textarea id="leadfinder-detail-note" placeholder="Korte belnotitie of opvolgafspraak"></textarea>
                 </label>
+                <p class="admin-form-message" id="leadfinder-note-sync-message" role="status"></p>
                 <div class="sales-workflow-actions">
                   <button class="button secondary" id="leadfinder-save-note" type="button" disabled>Notitie opslaan</button>
+                  <button class="button secondary" id="leadfinder-sync-note" type="button" disabled>Opnieuw synchroniseren</button>
                   <button class="button secondary" id="leadfinder-create-task" type="button" disabled>Maak opvolgtaak</button>
                   <button class="button secondary" id="leadfinder-convert-customer" type="button" disabled>Omzetten naar klant</button>
                 </div>
               </section>
 
-              <section class="sales-detail-panel sales-contact-actions-card" aria-label="Contact en acties">
+              <section class="sales-detail-panel sales-contact-actions-card" data-sales-detail-panel="actions" aria-label="Contact en acties">
                 <div class="sales-detail-card-heading">
                   <div>
                     <span>Contact</span>
@@ -452,16 +475,20 @@
                 <div class="sales-contact-list" id="sales-lead-contact-list"></div>
                 <div class="sales-quick-actions" aria-label="Snelle salesacties">
                   <button class="button secondary" id="sales-action-call" type="button" disabled>Bellen</button>
-                  <a class="button secondary is-disabled" id="sales-action-website" href="#" target="_blank" rel="noopener" aria-disabled="true">Website openen</a>
-                  <a class="button secondary is-disabled" id="sales-action-mail" href="#" aria-disabled="true">Mail</a>
+                  <a class="button secondary is-disabled" id="sales-action-website" href="#" target="_blank" rel="noopener" aria-disabled="true">Website bekijken</a>
+                  <a class="button secondary is-disabled" id="sales-action-mail" href="#" aria-disabled="true">Mail sturen</a>
                   <a class="button secondary is-disabled" id="sales-action-maps" href="#" target="_blank" rel="noopener" aria-disabled="true">Google Maps</a>
-                  <button class="button secondary" id="sales-action-note" type="button" disabled>Notitie</button>
-                  <button class="button secondary" id="sales-action-followup" type="button" disabled>Follow-up</button>
+                  <button class="button secondary" id="sales-action-note" type="button" disabled>Notitie opslaan</button>
+                  <button class="button secondary" id="sales-action-followup" type="button" disabled>Follow-up plannen</button>
                 </div>
-                <button class="button secondary danger sales-delete-lead-button" id="leadfinder-delete" type="button" disabled>Verwijderen</button>
+                <div class="sales-workflow-actions sales-safe-lead-actions">
+                  <button class="button secondary" id="leadfinder-archive" type="button" disabled>Archiveren</button>
+                  <button class="button secondary" id="leadfinder-not-interesting" type="button" disabled>Niet interessant</button>
+                  <button class="button secondary danger sales-delete-lead-button" id="leadfinder-delete" type="button" disabled>Definitief verwijderen</button>
+                </div>
               </section>
 
-              <details class="lead-analysis-card sales-detail-wide-card" id="lead-website-analysis-card">
+              <details class="lead-analysis-card sales-detail-wide-card" id="lead-website-analysis-card" data-sales-detail-panel="analysis" open>
                 <summary>
                   <span>
                     <strong>Website-analyse</strong>
@@ -471,6 +498,7 @@
                 </summary>
                 <div class="lead-analysis-panel">
                   <button class="button primary" id="lead-website-analysis-run" type="button" disabled>Website analyseren</button>
+                  <button class="button secondary" id="lead-website-analysis-sync" type="button" disabled>Opnieuw synchroniseren</button>
                   <div class="lead-analysis-result" id="lead-website-analysis-result">
                     Selecteer een lead met website om een homepage-analyse uit te voeren.
                   </div>
@@ -18394,9 +18422,14 @@
         contactList: document.getElementById("sales-lead-contact-list"),
         detailNote: document.getElementById("leadfinder-detail-note"),
         detailCallStatus: document.getElementById("leadfinder-detail-call-status"),
+        noteSyncState: document.getElementById("leadfinder-note-sync-state"),
+        noteSyncMessage: document.getElementById("leadfinder-note-sync-message"),
+        syncNote: document.getElementById("leadfinder-sync-note"),
         saveNote: document.getElementById("leadfinder-save-note"),
         createTask: document.getElementById("leadfinder-create-task"),
         convertCustomer: document.getElementById("leadfinder-convert-customer"),
+        archiveLead: document.getElementById("leadfinder-archive"),
+        notInterestingLead: document.getElementById("leadfinder-not-interesting"),
         deleteLead: document.getElementById("leadfinder-delete"),
         nextAction: document.getElementById("sales-next-action"),
         nextActionButton: document.getElementById("sales-next-action-button"),
@@ -18410,8 +18443,11 @@
         timelineCount: document.getElementById("sales-timeline-count"),
         analysisState: document.getElementById("lead-website-analysis-state"),
         analysisRun: document.getElementById("lead-website-analysis-run"),
+        analysisSync: document.getElementById("lead-website-analysis-sync"),
         analysisResult: document.getElementById("lead-website-analysis-result"),
         analysisMessage: document.getElementById("lead-website-analysis-message"),
+        recentActivityGrid: document.getElementById("sales-recent-activity-grid"),
+        recentActivityCount: document.getElementById("sales-recent-activity-count"),
         googlePanel: document.getElementById("google-places-panel"),
         googleState: document.getElementById("google-places-state"),
         googleQuery: document.getElementById("google-places-query"),
@@ -18423,6 +18459,7 @@
       };
 
       let selectedLeadFinderId = "";
+      let activeSalesDetailTab = "overview";
       let leadPreviewRequestId = "";
       let leadfinderDataLayerLeads = [];
       let leadfinderSourceStatus = null;
@@ -18549,6 +18586,53 @@
 
       function writeLeadOfflineQueue(queue = []) {
         localStorage.setItem(leadOfflineQueueKey, JSON.stringify(queue));
+      }
+
+      function queuedLeadItems(leadId = "", kind = "") {
+        if (!leadId) return [];
+        return readLeadOfflineQueue().filter((item) => {
+          const payload = item.payload || {};
+          if (String(payload.id || "") !== String(leadId)) return false;
+          if (kind === "notes") return Object.prototype.hasOwnProperty.call(payload, "notes");
+          if (kind === "analysis") return Boolean(payload.websiteAnalysis);
+          return true;
+        });
+      }
+
+      function hasQueuedLeadSync(leadId = "", kind = "") {
+        return queuedLeadItems(leadId, kind).length > 0;
+      }
+
+      function setNoteSyncStatus(status = "idle", message = "") {
+        const states = {
+          idle: ["Nog niet opgeslagen", "status-prepared", ""],
+          syncing: ["Synchroniseren...", "status-planned", "Notitie wordt centraal opgeslagen."],
+          saved: ["Opgeslagen", "status-active", "Notitie is centraal opgeslagen. Max en managers kunnen deze zien."],
+          local: ["Nog lokaal opgeslagen", "status-warning", "Notitie staat tijdelijk alleen op deze computer. Max kan deze nog niet zien."],
+          failed: ["Synchronisatie mislukt", "status-blocked", "Notitie kon nog niet centraal worden opgeslagen. Probeer opnieuw te synchroniseren."],
+        };
+        const [label, className, fallbackMessage] = states[status] || states.idle;
+        if (leadfinderElements.noteSyncState) {
+          leadfinderElements.noteSyncState.textContent = label;
+          leadfinderElements.noteSyncState.className = `status-badge ${className}`;
+        }
+        if (leadfinderElements.noteSyncMessage) {
+          leadfinderElements.noteSyncMessage.textContent = message || fallbackMessage;
+          leadfinderElements.noteSyncMessage.className = `admin-form-message ${status === "failed" ? "error" : status === "local" ? "warning" : status === "saved" ? "success" : ""}`;
+        }
+      }
+
+      function setAnalysisSyncStatus(status = "idle", message = "") {
+        const states = {
+          idle: ["Niet uitgevoerd", "status-prepared", ""],
+          syncing: ["Synchroniseren...", "status-planned", "Analyse wordt centraal opgeslagen."],
+          saved: ["Analyse opgeslagen bij deze lead", "status-active", "Analyse is centraal gekoppeld aan deze lead."],
+          local: ["Nog lokaal opgeslagen", "status-warning", "Analyse staat tijdelijk alleen op deze computer. Max kan deze nog niet zien."],
+          failed: ["Synchronisatie mislukt", "status-blocked", "Analyse kon nog niet centraal worden opgeslagen. Probeer opnieuw te synchroniseren."],
+        };
+        const [label, className, fallbackMessage] = states[status] || states.idle;
+        setLeadAnalysisState(label, className);
+        setLeadAnalysisMessage(message || fallbackMessage, status === "failed" ? "error" : status === "local" ? "warning" : status === "saved" ? "success" : "success", { toast: false });
       }
 
       function readStoredWebsiteAnalyses() {
@@ -18856,7 +18940,15 @@
 
       function canDeleteLead(lead = {}) {
         if (!lead?.id) return false;
-        return true;
+        return getLeadfinderUserContext().role === "super_admin";
+      }
+
+      function canArchiveLead(lead = {}) {
+        return Boolean(lead?.id) && !["archived", "gearchiveerd"].includes(String(lead.callStatus || "").toLowerCase());
+      }
+
+      function canMarkLeadNotInteresting(lead = {}) {
+        return Boolean(lead?.id) && !["lost", "geen_interesse"].includes(String(lead.callStatus || "").toLowerCase());
       }
 
       function isDevModeEnabled() {
@@ -19883,6 +19975,14 @@
         anchor.classList.toggle("is-disabled", !enabled);
       }
 
+      function setActionAvailability(element, enabled, reason = "") {
+        if (!element) return;
+        if ("disabled" in element) element.disabled = !enabled;
+        element.classList.toggle("is-disabled", !enabled && element.tagName === "A");
+        element.setAttribute("aria-disabled", enabled ? "false" : "true");
+        element.title = enabled ? "" : reason;
+      }
+
       function renderSalesNextAction(lead) {
         const action = getSalesNextAction(lead);
         if (leadfinderElements.nextAction) {
@@ -19906,13 +20006,17 @@
         const phoneHref = lead?.phone ? `tel:${String(lead.phone).replace(/\s+/g, "")}` : "";
         const mailHref = lead?.email ? `mailto:${lead.email}` : "";
         const websiteHref = lead?.websiteUrl ? (String(lead.websiteUrl).startsWith("http") ? lead.websiteUrl : `https://${lead.websiteUrl}`) : "";
-        const mapsHref = lead?.googleMapsUrl || (lead?.companyName ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([lead.companyName, lead.region].filter(Boolean).join(" "))}` : "");
-        if (leadfinderElements.quickCall) leadfinderElements.quickCall.disabled = !hasLead || !lead?.phone;
+        const mapsQuery = [lead?.address || lead?.formattedAddress || lead?.googleAddress, lead?.companyName, lead?.region].filter(Boolean).join(" ");
+        const mapsHref = lead?.googleMapsUrl || (mapsQuery ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery)}` : "");
+        setActionAvailability(leadfinderElements.quickCall, hasLead && Boolean(lead?.phone), hasLead ? "Geen telefoonnummer bekend" : "Selecteer eerst een lead");
         setQuickAnchor(leadfinderElements.quickWebsite, websiteHref, Boolean(websiteHref));
+        if (leadfinderElements.quickWebsite) leadfinderElements.quickWebsite.title = websiteHref ? "" : "Geen website bekend";
         setQuickAnchor(leadfinderElements.quickMail, mailHref, Boolean(mailHref));
+        if (leadfinderElements.quickMail) leadfinderElements.quickMail.title = mailHref ? "" : "Geen e-mailadres bekend";
         setQuickAnchor(leadfinderElements.quickMaps, mapsHref, Boolean(mapsHref));
-        if (leadfinderElements.quickNote) leadfinderElements.quickNote.disabled = !hasLead;
-        if (leadfinderElements.quickFollowUp) leadfinderElements.quickFollowUp.disabled = !hasLead;
+        if (leadfinderElements.quickMaps) leadfinderElements.quickMaps.title = mapsHref ? "" : "Geen adres bekend";
+        setActionAvailability(leadfinderElements.quickNote, hasLead, "Selecteer eerst een lead");
+        setActionAvailability(leadfinderElements.quickFollowUp, hasLead, "Selecteer eerst een lead");
       }
 
       function formatTimelineTime(value) {
@@ -19944,7 +20048,7 @@
       function renderSalesTimeline(lead) {
         const events = buildLeadTimeline(lead);
         if (leadfinderElements.timelineCount) {
-          leadfinderElements.timelineCount.textContent = `${events.length} event${events.length === 1 ? "" : "s"}`;
+          leadfinderElements.timelineCount.textContent = `${events.length} gebeurtenis${events.length === 1 ? "" : "sen"}`;
         }
         if (!leadfinderElements.timeline) return;
         if (!events.length) {
@@ -19960,6 +20064,43 @@
             </div>
           `).join("")}
         `;
+      }
+
+      function renderRecentSalesActivity() {
+        if (!leadfinderElements.recentActivityGrid) return;
+        const today = new Date().toISOString().slice(0, 10);
+        const leads = getLeadfinderLeads();
+        const calledToday = leads
+          .filter((lead) => String(lead.updatedAt || lead.createdAt || "").slice(0, 10) === today && ["contact_planned", "contacted", "gebeld", "voicemail", "opvolgen"].includes(String(lead.callStatus || "")))
+          .slice(0, 4);
+        const recentlyUpdated = [...leads]
+          .filter((lead) => lead.updatedAt || lead.createdAt)
+          .sort((a, b) => String(b.updatedAt || b.createdAt).localeCompare(String(a.updatedAt || a.createdAt)))
+          .slice(0, 4);
+        const queued = readLeadOfflineQueue()
+          .filter((item) => item.payload?.id)
+          .slice(-4)
+          .reverse();
+        const groups = [
+          ["Vandaag gebeld", calledToday, (lead) => getLeadFinderLabel(LEADFINDER_CALL_STATUSES, lead.callStatus)],
+          ["Recent bijgewerkt", recentlyUpdated, (lead) => formatLeadDate(lead.updatedAt || lead.createdAt)],
+          ["Mijn laatste acties", queued.map((item) => getLeadfinderLeads().find((lead) => lead.id === item.payload.id) || { id: item.payload.id, companyName: item.payload.companyName || "Lead in synchronisatie", callStatus: item.payload.callStatus, updatedAt: item.queuedAt }), () => "Wacht op centrale opslag"],
+        ];
+        const total = calledToday.length + recentlyUpdated.length + queued.length;
+        if (leadfinderElements.recentActivityCount) {
+          leadfinderElements.recentActivityCount.textContent = `${total} actie${total === 1 ? "" : "s"}`;
+        }
+        leadfinderElements.recentActivityGrid.innerHTML = groups.map(([title, rows, meta]) => `
+          <section class="sales-recent-activity-column">
+            <strong>${escapeHtml(title)}</strong>
+            ${rows.length ? rows.map((lead) => `
+              <button class="sales-recent-activity-item" type="button" data-recent-lead-id="${escapeHtml(lead.id || "")}">
+                <span>${escapeHtml(lead.companyName || lead.contactName || lead.id || "Lead")}</span>
+                <small>${escapeHtml(meta(lead) || "-")}</small>
+              </button>
+            `).join("") : `<p class="sales-timeline-empty">Nog niets gevonden.</p>`}
+          </section>
+        `).join("");
       }
 
       function renderLeadfinderMetrics(leads) {
@@ -20454,6 +20595,7 @@
         if (["won", "geconverteerd", "customer_active"].includes(key)) return "status-active";
         if (["quote_ready", "quote_sent", "demo", "interesse", "qualified"].includes(key)) return "status-planned";
         if (["lost", "geen_interesse"].includes(key)) return "status-blocked";
+        if (["archived", "gearchiveerd"].includes(key)) return "status-attention";
         return "status-prepared";
       }
 
@@ -20468,6 +20610,7 @@
                 const leads = getFilteredLeadfinderLeads();
                 renderLeadfinderMetrics(leads);
                 renderSalesCockpit(leads);
+                renderRecentSalesActivity();
                 populateLeadfinderOwnerFilter(allLeads);
                 updateLeadfinderQuickFilterBar(leads.length);
                 const dashboardLeadMetric = document.getElementById("metric-total-leads");
@@ -20483,7 +20626,7 @@
               <strong>Gedeelde leadbron nog niet actief</strong>
               <span>Leads van andere medewerkers verschijnen pas zodra de productie-leadbron is uitgerold. Deze lijst gebruikt nu bestaande fallbackbronnen.</span>
             </div>
-            <mark class="status-badge status-warning">Fallback</mark>
+            <mark class="status-badge status-warning">Noodbron</mark>
           </article>
         ` : "";
         if (!leads.length) {
@@ -20508,7 +20651,7 @@
                 <strong>${escapeHtml(sourceError ? "Leads konden niet volledig worden geladen" : "Geen leads gevonden")}</strong>
                 <span>${escapeHtml(sourceError || emptyText)}</span>
               </div>
-              ${sourceError ? `<mark class="status-badge status-danger">Error</mark>` : ""}
+              ${sourceError ? `<mark class="status-badge status-danger">Fout</mark>` : ""}
             </article>
           `;
           renderLeadfinderDetail();
@@ -20579,10 +20722,12 @@
                   <button class="lead-icon-button lead-preview-button" type="button" data-leadfinder-action="preview" aria-label="Maak preview voor lead"><span aria-hidden="true">▣</span><strong>Maak preview</strong></button>
                   <button class="lead-icon-button" type="button" data-leadfinder-action="task" aria-label="Opvolgtaak maken"><span aria-hidden="true">□</span><strong>Opvolgtaak</strong></button>
                   <button class="lead-icon-button" type="button" data-leadfinder-action="note" aria-label="Notitie toevoegen"><span aria-hidden="true">✎</span><strong>Notitie</strong></button>
-                  <a class="lead-icon-button ${phoneHref ? "" : "is-disabled"}" href="${escapeHtml(phoneHref || "#")}" aria-disabled="${phoneHref ? "false" : "true"}" aria-label="Lead bellen"><span aria-hidden="true">☎</span><strong>Call</strong></a>
-                  <a class="lead-icon-button ${mailHref ? "" : "is-disabled"}" href="${escapeHtml(mailHref || "#")}" aria-disabled="${mailHref ? "false" : "true"}" aria-label="Lead mailen"><span aria-hidden="true">@</span><strong>E-mail</strong></a>
-                  <a class="lead-icon-button ${mapsUrl ? "" : "is-disabled"}" href="${escapeHtml(mapsUrl || "#")}" target="_blank" rel="noopener" aria-disabled="${mapsUrl ? "false" : "true"}" aria-label="Lead op kaart bekijken"><span aria-hidden="true">⌖</span><strong>Maps</strong></a>
-                  <button class="lead-icon-button danger" type="button" data-leadfinder-action="delete" aria-label="Lead verwijderen"${canDeleteLead(lead) ? "" : " disabled"}><span aria-hidden="true">⋯</span><strong>Meer</strong></button>
+                  <a class="lead-icon-button ${phoneHref ? "" : "is-disabled"}" href="${escapeHtml(phoneHref || "#")}" aria-disabled="${phoneHref ? "false" : "true"}" aria-label="${phoneHref ? "Lead bellen" : "Geen telefoonnummer bekend"}" title="${phoneHref ? "" : "Geen telefoonnummer bekend"}"><span aria-hidden="true">☎</span><strong>Bellen</strong></a>
+                  <a class="lead-icon-button ${mailHref ? "" : "is-disabled"}" href="${escapeHtml(mailHref || "#")}" aria-disabled="${mailHref ? "false" : "true"}" aria-label="${mailHref ? "Mail sturen" : "Geen e-mailadres bekend"}" title="${mailHref ? "" : "Geen e-mailadres bekend"}"><span aria-hidden="true">@</span><strong>Mail</strong></a>
+                  <a class="lead-icon-button ${mapsUrl ? "" : "is-disabled"}" href="${escapeHtml(mapsUrl || "#")}" target="_blank" rel="noopener" aria-disabled="${mapsUrl ? "false" : "true"}" aria-label="${mapsUrl ? "Google Maps openen" : "Geen adres bekend"}" title="${mapsUrl ? "" : "Geen adres bekend"}"><span aria-hidden="true">⌖</span><strong>Google Maps</strong></a>
+                  ${canDeleteLead(lead)
+                    ? `<button class="lead-icon-button danger" type="button" data-leadfinder-action="delete" aria-label="Lead definitief verwijderen"><span aria-hidden="true">×</span><strong>Verwijderen</strong></button>`
+                    : `<button class="lead-icon-button" type="button" data-leadfinder-action="archive" aria-label="Lead archiveren"${canArchiveLead(lead) ? "" : " disabled"}><span aria-hidden="true">↧</span><strong>Archiveren</strong></button>`}
                 </div>
               </article>
             `;
@@ -20594,6 +20739,7 @@
       function renderLeadfinderDetail() {
         const lead = selectedLeadFinderLead();
         const hasLead = Boolean(lead);
+        renderSalesDetailTabs();
         if (leadfinderElements.detailTitle) {
           leadfinderElements.detailTitle.textContent = hasLead ? lead.companyName || "Naam onbekend" : "Geen lead geselecteerd";
         }
@@ -20635,10 +20781,18 @@
           const draft = hasLead ? getLeadNoteDraft(lead) : "";
           if (document.activeElement !== leadfinderElements.detailNote) leadfinderElements.detailNote.value = draft;
         }
-                if (leadfinderElements.saveNote) leadfinderElements.saveNote.disabled = !hasLead;
-                if (leadfinderElements.convertCustomer) leadfinderElements.convertCustomer.disabled = !hasLead;
-                if (leadfinderElements.deleteLead) leadfinderElements.deleteLead.disabled = !hasLead || !canDeleteLead(lead);
-                if (leadfinderElements.detailCallStatus) leadfinderElements.detailCallStatus.disabled = !hasLead;
+        renderLeadNoteSyncStatus(lead);
+        if (leadfinderElements.saveNote) leadfinderElements.saveNote.disabled = !hasLead;
+        if (leadfinderElements.syncNote) leadfinderElements.syncNote.disabled = !hasLead || !hasQueuedLeadSync(lead.id, "notes");
+        if (leadfinderElements.convertCustomer) leadfinderElements.convertCustomer.disabled = !hasLead;
+        if (leadfinderElements.archiveLead) leadfinderElements.archiveLead.disabled = !hasLead || !canArchiveLead(lead);
+        if (leadfinderElements.notInterestingLead) leadfinderElements.notInterestingLead.disabled = !hasLead || !canMarkLeadNotInteresting(lead);
+        if (leadfinderElements.deleteLead) {
+          const canHardDelete = hasLead && canDeleteLead(lead);
+          leadfinderElements.deleteLead.hidden = !canHardDelete;
+          leadfinderElements.deleteLead.disabled = !canHardDelete;
+        }
+        if (leadfinderElements.detailCallStatus) leadfinderElements.detailCallStatus.disabled = !hasLead;
         [leadfinderElements.createTask].forEach((element) => {
           if (element) element.disabled = !hasLead;
         });
@@ -20646,6 +20800,35 @@
         renderSalesQuickActions(lead);
         renderSalesTimeline(lead);
         renderLeadWebsiteAnalysis(lead);
+      }
+
+      function renderSalesDetailTabs() {
+        document.querySelectorAll("[data-sales-detail-tab]").forEach((button) => {
+          const active = button.dataset.salesDetailTab === activeSalesDetailTab;
+          button.classList.toggle("is-active", active);
+          button.setAttribute("aria-selected", active ? "true" : "false");
+        });
+        document.querySelectorAll("[data-sales-detail-panel]").forEach((panel) => {
+          const active = panel.dataset.salesDetailPanel === activeSalesDetailTab;
+          panel.hidden = !active;
+          if (active && panel.tagName === "DETAILS") panel.open = true;
+        });
+      }
+
+      function renderLeadNoteSyncStatus(lead) {
+        if (!lead?.id) {
+          setNoteSyncStatus("idle", "Selecteer een lead om notities op te slaan.");
+          return;
+        }
+        if (hasQueuedLeadSync(lead.id, "notes")) {
+          setNoteSyncStatus("local");
+          return;
+        }
+        if (getLeadNotes(lead)) {
+          setNoteSyncStatus("saved");
+          return;
+        }
+        setNoteSyncStatus("idle", "Nog geen notitie opgeslagen voor deze lead.");
       }
 
       function renderLeadDetailRows(target, rows) {
@@ -20698,26 +20881,28 @@
         const target = getLeadWebsiteScanTarget();
         const result = getWebsiteAnalysisResult(target, lead);
         const canRun = Boolean(target.url);
+        const hasPendingAnalysisSync = Boolean(lead?.id && hasQueuedLeadSync(lead.id, "analysis"));
+        if (leadfinderElements.analysisSync) {
+          leadfinderElements.analysisSync.disabled = !lead?.id || !hasPendingAnalysisSync;
+        }
         if (leadfinderElements.analysisRun) {
           leadfinderElements.analysisRun.disabled = !canRun;
           leadfinderElements.analysisRun.textContent = result ? "Analyse opnieuw uitvoeren" : "Website analyseren";
         }
         if (!canRun) {
-          setLeadAnalysisState("Niet uitgevoerd", "status-prepared");
+          setAnalysisSyncStatus("idle", "");
           if (leadfinderElements.analysisResult) {
             leadfinderElements.analysisResult.textContent = "Selecteer een lead met website of neem eerst een website over via Google Maps.";
           }
-          setLeadAnalysisMessage("");
           return;
         }
         if (!result) {
-          setLeadAnalysisState("Niet uitgevoerd", "status-prepared");
+          setAnalysisSyncStatus("idle", "");
           if (leadfinderElements.analysisResult) {
             leadfinderElements.analysisResult.innerHTML = `
               <p>Scan de homepage handmatig voordat je belt. De analyse gebruikt geen AI, geen bulk scan en kijkt alleen naar de homepage.</p>
             `;
           }
-          setLeadAnalysisMessage("");
           return;
         }
         if (!result.ok) {
@@ -20738,7 +20923,7 @@
           return;
         }
 
-        setLeadAnalysisState(`${result.score}/100`, result.score >= 75 ? "status-active" : result.score >= 50 ? "status-planned" : "status-blocked");
+        setAnalysisSyncStatus(hasPendingAnalysisSync ? "local" : "saved");
         if (leadfinderElements.analysisResult) {
           leadfinderElements.analysisResult.innerHTML = renderWebsiteAnalysisHtml(result, target);
         }
@@ -20892,6 +21077,7 @@
           }
           rememberWebsiteAnalysis([target.key, target.urlKey, lead?.id], analysis);
                   if (analysis.ok && lead?.id) {
+                    setAnalysisSyncStatus("syncing");
                     const analysisNote = buildWebsiteAnalysisNote(analysis);
                     const updates = {
                       websiteAnalysis: analysis,
@@ -20903,9 +21089,11 @@
                       rememberWebsiteAnalysis([lead.id, target.key, target.urlKey], analysis);
                       try {
                         await leadApiRequest("PATCH", { id: lead.id, ...updates }, { id: lead.id });
+                        setAnalysisSyncStatus("saved");
                         await refreshLeads({ keepSelection: true });
                       } catch (syncError) {
                         queueLeadOffline("update", { id: lead.id, ...updates });
+                        setAnalysisSyncStatus("local");
                         renderLeadWebsiteAnalysis(lead);
                         if (developerModeActive()) console.warn("Website analyse lokaal opgeslagen; centrale sync volgt later", syncError);
                       }
@@ -21037,20 +21225,24 @@
 
       async function updateLeadfinderLead(lead, updates = {}, successMessage = "Lead bijgewerkt.") {
         if (!lead?.id) throw new Error("Lead ontbreekt.");
+        const updatesNotes = Object.prototype.hasOwnProperty.call(updates, "notes");
         if (Object.prototype.hasOwnProperty.call(updates, "notes")) {
           rememberLeadNotes(lead.id, updates.notes);
+          setNoteSyncStatus("syncing");
         }
         if (isProductionLead(lead)) {
           try {
             const result = await leadApiRequest("PATCH", { id: lead.id, ...updates }, { id: lead.id });
             selectedLeadFinderId = result.lead?.id || lead.id;
             logLeadfinderDiagnostic("Lead centraal bijgewerkt", { id: lead.id, response: result });
+            if (updatesNotes) setNoteSyncStatus("saved");
             setLeadfinderMessage(successMessage, "success");
             await refreshLeads({ keepSelection: true });
             return result.lead || selectedLeadFinderLead() || { ...lead, ...updates };
           } catch (error) {
             queueLeadOffline("update", { id: lead.id, ...updates });
             selectedLeadFinderId = lead.id;
+            if (updatesNotes) setNoteSyncStatus("local");
             setLeadfinderMessage("Lokaal opgeslagen. Centrale synchronisatie volgt zodra de leadbron beschikbaar is.", "warning");
             renderLeadfinderList();
             return { ...lead, ...updates };
@@ -21058,6 +21250,7 @@
         }
         const updatedLead = updateLeadFinderLeadLocally(lead.id, updates) || lead;
         selectedLeadFinderId = updatedLead.id;
+        if (updatesNotes) setNoteSyncStatus("local", "Lokaal opgeslagen in deze omgeving. Centrale opslag blijft leidend in productie.");
         setLeadfinderMessage(successMessage, "success");
         await refreshLeads({ keepSelection: true });
         return updatedLead;
@@ -21142,6 +21335,9 @@
           return;
         } else if (button.dataset.leadfinderAction === "delete") {
           await deleteLeadfinderLead(lead);
+          return;
+        } else if (button.dataset.leadfinderAction === "archive") {
+          await updateLeadfinderLead(lead, { callStatus: "archived" }, "Lead gearchiveerd. Je vindt hem terug via recente acties of het statusfilter.");
           return;
         } else if (button.dataset.leadfinderAction === "view") {
           setLeadfinderMessage("Lead geselecteerd", "success");
@@ -21261,10 +21457,48 @@
                 }
               }
 
+              async function archiveSelectedLead() {
+                const lead = selectedLeadFinderLead();
+                if (!lead || !canArchiveLead(lead)) return;
+                await updateLeadfinderLead(lead, { callStatus: "archived" }, "Lead gearchiveerd. Je vindt hem terug via recente acties of het statusfilter.");
+              }
+
+              async function markSelectedLeadNotInteresting() {
+                const lead = selectedLeadFinderLead();
+                if (!lead || !canMarkLeadNotInteresting(lead)) return;
+                const draftNote = String(leadfinderElements.detailNote?.value || getLeadNoteDraft(lead) || "").trim();
+                const updates = { callStatus: "geen_interesse" };
+                if (draftNote) updates.notes = [getLeadNotes(lead), draftNote].filter(Boolean).join("\n\n");
+                await updateLeadfinderLead(lead, updates, "Lead op Niet interessant gezet.");
+                if (draftNote) {
+                  rememberLeadNoteDraft(lead.id, "");
+                  if (leadfinderElements.detailNote) leadfinderElements.detailNote.value = "";
+                }
+              }
+
+              async function retrySelectedLeadSync(kind = "") {
+                const lead = selectedLeadFinderLead();
+                if (!lead) return;
+                if (kind === "notes") setNoteSyncStatus("syncing");
+                if (kind === "analysis") setAnalysisSyncStatus("syncing");
+                try {
+                  const result = await syncQueuedLeads();
+                  await refreshLeads({ keepSelection: true });
+                  const stillQueued = hasQueuedLeadSync(lead.id, kind);
+                  if (kind === "notes") setNoteSyncStatus(stillQueued ? "failed" : "saved");
+                  if (kind === "analysis") setAnalysisSyncStatus(stillQueued ? "failed" : "saved");
+                  setLeadfinderMessage(result.synced ? "Synchronisatie opnieuw uitgevoerd." : "Er stond niets klaar om te synchroniseren.", result.synced ? "success" : "warning");
+                } catch (error) {
+                  if (kind === "notes") setNoteSyncStatus("failed");
+                  if (kind === "analysis") setAnalysisSyncStatus("failed");
+                  setLeadfinderMessage(error.message || "Synchronisatie mislukt.", "error");
+                }
+              }
+
               async function deleteLeadfinderLead(lead) {
                 if (!lead) return;
                 if (!canDeleteLead(lead)) {
-                  setLeadfinderMessage("Deze lead kan niet worden verwijderd.", "error");
+                  setLeadfinderMessage("Alleen super admin mag definitief verwijderen. Gebruik Archiveren of Niet interessant.", "error");
                   return;
                 }
                 if (!window.confirm(`Lead ${lead.companyName || lead.contactName || lead.id} verwijderen?`)) return;
@@ -21357,16 +21591,37 @@
                   applyLeadfinderQuickFilter(event.detail?.type || "open_leads", event.detail?.title || "Open leads");
                 });
         leadfinderElements.list.addEventListener("click", handleLeadfinderListClick);
+        leadfinderElements.recentActivityGrid?.addEventListener("click", (event) => {
+          const button = event.target.closest("[data-recent-lead-id]");
+          if (!button?.dataset.recentLeadId) return;
+          selectedLeadFinderId = button.dataset.recentLeadId;
+          activeSalesDetailTab = "overview";
+          renderLeadfinderList();
+          window.focusAdminPanel?.(document.querySelector(".leadfinder-detail-card"));
+        });
+        document.querySelectorAll("[data-sales-detail-tab]").forEach((button) => {
+          button.addEventListener("click", () => {
+            activeSalesDetailTab = button.dataset.salesDetailTab || "overview";
+            renderLeadfinderDetail();
+          });
+        });
         leadfinderElements.detailNote?.addEventListener("input", () => {
           const lead = selectedLeadFinderLead();
           if (!lead) return;
           rememberLeadNoteDraft(lead.id, leadfinderElements.detailNote.value);
+          setNoteSyncStatus("local", "Concept staat alleen op deze computer totdat je Notitie opslaan kiest.");
         });
         leadfinderElements.saveNote?.addEventListener("click", saveLeadfinderDetailNote);
+        leadfinderElements.syncNote?.addEventListener("click", () => retrySelectedLeadSync("notes"));
         leadfinderElements.analysisRun?.addEventListener("click", runLeadWebsiteAnalysis);
+        leadfinderElements.analysisSync?.addEventListener("click", () => retrySelectedLeadSync("analysis"));
         leadfinderElements.nextActionButton?.addEventListener("click", () => runSalesCockpitAction(leadfinderElements.nextActionButton.dataset.salesAction || ""));
         leadfinderElements.quickCall?.addEventListener("click", () => runSalesCockpitAction("call"));
-        leadfinderElements.quickNote?.addEventListener("click", () => leadfinderElements.detailNote?.focus());
+        leadfinderElements.quickNote?.addEventListener("click", () => {
+          activeSalesDetailTab = "notes";
+          renderLeadfinderDetail();
+          leadfinderElements.detailNote?.focus();
+        });
         leadfinderElements.quickFollowUp?.addEventListener("click", () => runSalesCockpitAction("followup"));
         leadfinderElements.createTask?.addEventListener("click", async () => {
           try {
@@ -21378,6 +21633,8 @@
           renderLeadfinderList();
         });
         leadfinderElements.convertCustomer?.addEventListener("click", convertSelectedLeadToCustomer);
+        leadfinderElements.archiveLead?.addEventListener("click", archiveSelectedLead);
+        leadfinderElements.notInterestingLead?.addEventListener("click", markSelectedLeadNotInteresting);
         leadfinderElements.deleteLead?.addEventListener("click", deleteSelectedLead);
         leadfinderElements.googleSearch?.addEventListener("click", searchGooglePlace);
         leadfinderElements.googleQuery?.addEventListener("keydown", (event) => {

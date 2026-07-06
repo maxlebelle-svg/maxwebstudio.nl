@@ -30,6 +30,7 @@ export const LEADFINDER_CALL_STATUSES = Object.freeze([
   { value: "interesse", label: "Interesse" },
   { value: "opvolgen", label: "Opvolgen" },
   { value: "geen_interesse", label: "Geen interesse" },
+  { value: "archived", label: "Gearchiveerd" },
   { value: "geconverteerd", label: "Geconverteerd" },
 ]);
 

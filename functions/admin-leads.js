@@ -24,6 +24,8 @@ const allowedStatuses = new Set([
   "interesse",
   "opvolgen",
   "geen_interesse",
+  "archived",
+  "gearchiveerd",
   "geconverteerd",
 ]);
 
@@ -177,6 +179,9 @@ async function updateLeadRecord({ supabaseUrl, serviceRoleKey, id, record }) {
 }
 
 async function deleteLead({ event, supabaseUrl, serviceRoleKey, admin }) {
+  if (normalizeRole(admin.role) !== "super_admin") {
+    return jsonResponse(403, { success: false, error: "Alleen super admin mag leads definitief verwijderen. Archiveer de lead of zet hem op Niet interessant." });
+  }
   const id = cleanText(event.queryStringParameters?.id || parsePayload(event.body, true).id);
   if (!id) return jsonResponse(400, { success: false, error: "Lead id ontbreekt." });
   await assertCanMutateLead({ supabaseUrl, serviceRoleKey, admin, id });
