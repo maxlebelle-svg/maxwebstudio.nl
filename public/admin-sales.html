@@ -658,6 +658,32 @@
             <label for="sales-agenda-search">Zoeken<input id="sales-agenda-search" type="search" placeholder="Lead, medewerker of notitie" /></label>
           </div>
 
+          <div class="admin-card sales-calendar-panel">
+            <div class="sales-calendar-header">
+              <div>
+                <strong>Weekagenda</strong>
+                <span id="sales-agenda-selected-label">Kies een dag en daarna een tijdslot.</span>
+              </div>
+              <div class="sales-calendar-controls">
+                <button class="button secondary" id="sales-agenda-prev-week" type="button">Vorige week</button>
+                <button class="button secondary" id="sales-agenda-next-week" type="button">Volgende week</button>
+              </div>
+            </div>
+            <div class="sales-calendar-grid" id="sales-agenda-calendar" aria-label="Sales weekagenda"></div>
+            <div class="sales-calendar-timeline" id="sales-agenda-timeline" aria-label="Tijdslijn voor gekozen dag"></div>
+            <div class="sales-calendar-planner" id="sales-agenda-planner" hidden>
+              <div>
+                <strong id="sales-agenda-planner-lead">Geen lead geselecteerd</strong>
+                <span id="sales-agenda-planner-time">Kies een dag en tijd.</span>
+              </div>
+              <div class="sales-calendar-planner-actions">
+                <button class="button secondary" id="sales-agenda-plan-request" type="button">Terugbelverzoek</button>
+                <button class="button primary" id="sales-agenda-plan-followup" type="button">Plan follow-up</button>
+              </div>
+              <p class="admin-form-message" id="sales-agenda-message" role="status"></p>
+            </div>
+          </div>
+
           <div class="sales-agenda-list" id="sales-agenda-list" aria-live="polite"></div>
         </section>
 
@@ -18165,8 +18191,24 @@
         date: document.getElementById("sales-agenda-date"),
         status: document.getElementById("sales-agenda-status"),
         search: document.getElementById("sales-agenda-search"),
+        selectedLabel: document.getElementById("sales-agenda-selected-label"),
+        previousWeek: document.getElementById("sales-agenda-prev-week"),
+        nextWeek: document.getElementById("sales-agenda-next-week"),
+        calendar: document.getElementById("sales-agenda-calendar"),
+        timeline: document.getElementById("sales-agenda-timeline"),
+        planner: document.getElementById("sales-agenda-planner"),
+        plannerLead: document.getElementById("sales-agenda-planner-lead"),
+        plannerTime: document.getElementById("sales-agenda-planner-time"),
+        plannerRequest: document.getElementById("sales-agenda-plan-request"),
+        plannerFollowup: document.getElementById("sales-agenda-plan-followup"),
+        message: document.getElementById("sales-agenda-message"),
         list: document.getElementById("sales-agenda-list"),
       };
+
+      let agendaWeekStart = startOfAgendaWeek(new Date());
+      let selectedAgendaDate = toLocalIsoDate(new Date());
+      let selectedAgendaTime = "10:00";
+      let pendingAgendaLead = null;
 
       const statusLabels = Object.fromEntries(CRM_TASK_STATUSES.map((item) => [item.value, item.label]));
       const priorityLabels = Object.fromEntries(CRM_TASK_PRIORITIES.map((item) => [item.value, item.label]));
@@ -18369,6 +18411,136 @@
         window.location.href = `admin-sales.html?leadId=${encodeURIComponent(task.leadId)}#leadfinder-detail`;
       }
 
+      function startOfAgendaWeek(date = new Date()) {
+        const copy = new Date(date);
+        copy.setHours(0, 0, 0, 0);
+        const day = copy.getDay() || 7;
+        copy.setDate(copy.getDate() - day + 1);
+        return copy;
+      }
+
+      function toLocalIsoDate(date = new Date()) {
+        const offset = date.getTimezoneOffset() * 60000;
+        return new Date(date.getTime() - offset).toISOString().slice(0, 10);
+      }
+
+      function getAgendaWeekDays() {
+        return Array.from({ length: 7 }, (_, index) => {
+          const date = new Date(agendaWeekStart);
+          date.setDate(agendaWeekStart.getDate() + index);
+          return date;
+        });
+      }
+
+      function setAgendaMessage(message = "", type = "success") {
+        if (!agendaElements.message) return;
+        agendaElements.message.textContent = message;
+        agendaElements.message.className = `admin-form-message ${type}`;
+        if (message && ["success", "warning", "error"].includes(type)) window.showToast?.(message, type);
+      }
+
+      function updateAgendaPlannerSummary() {
+        if (agendaElements.selectedLabel) {
+          const selectedDate = new Date(`${selectedAgendaDate}T${selectedAgendaTime || "10:00"}`);
+          agendaElements.selectedLabel.textContent = Number.isNaN(selectedDate.getTime())
+            ? "Kies een dag en daarna een tijdslot."
+            : selectedDate.toLocaleString("nl-NL", { weekday: "long", day: "2-digit", month: "long", hour: "2-digit", minute: "2-digit" });
+        }
+        if (agendaElements.plannerLead) {
+          agendaElements.plannerLead.textContent = pendingAgendaLead?.name
+            ? `Follow-up voor ${pendingAgendaLead.name}`
+            : "Selecteer een lead via Follow-up plannen";
+        }
+        if (agendaElements.plannerTime) {
+          agendaElements.plannerTime.textContent = selectedAgendaDate && selectedAgendaTime
+            ? `Gekozen moment: ${selectedAgendaDate} om ${selectedAgendaTime}`
+            : "Kies een dag en tijd.";
+        }
+        if (agendaElements.planner) agendaElements.planner.hidden = !pendingAgendaLead;
+      }
+
+      function renderAgendaCalendar(allAgendaTasks = []) {
+        if (!agendaElements.calendar || !agendaElements.timeline) return;
+        const days = getAgendaWeekDays();
+        agendaElements.calendar.innerHTML = days.map((date) => {
+          const iso = toLocalIsoDate(date);
+          const dayTasks = allAgendaTasks.filter((task) => task.dueDate === iso && !["afgerond", "gearchiveerd"].includes(task.status));
+          const isSelected = iso === selectedAgendaDate;
+          const isToday = iso === toLocalIsoDate(new Date());
+          return `
+            <button class="sales-calendar-day ${isSelected ? "is-selected" : ""} ${isToday ? "is-today" : ""}" type="button" data-agenda-date="${escapeHtml(iso)}">
+              <span>${escapeHtml(date.toLocaleDateString("nl-NL", { weekday: "short" }))}</span>
+              <strong>${escapeHtml(date.toLocaleDateString("nl-NL", { day: "2-digit", month: "short" }))}</strong>
+              <small>${dayTasks.length ? `${dayTasks.length} gepland` : "Vrij"}</small>
+            </button>
+          `;
+        }).join("");
+
+        const selectedTasks = allAgendaTasks.filter((task) => task.dueDate === selectedAgendaDate);
+        const slots = [];
+        for (let hour = 8; hour <= 17; hour += 1) {
+          ["00", "30"].forEach((minute) => {
+            if (hour === 17 && minute === "30") return;
+            slots.push(`${String(hour).padStart(2, "0")}:${minute}`);
+          });
+        }
+        agendaElements.timeline.innerHTML = slots.map((time) => {
+          const slotTasks = selectedTasks.filter((task) => String(task.dueTime || "").slice(0, 5) === time);
+          const isSelected = selectedAgendaTime === time;
+          return `
+            <button class="sales-calendar-slot ${isSelected ? "is-selected" : ""}" type="button" data-agenda-time="${escapeHtml(time)}">
+              <strong>${escapeHtml(time)}</strong>
+              <span>${slotTasks.length ? slotTasks.map((task) => escapeHtml(task.title)).join("<br>") : "Beschikbaar"}</span>
+            </button>
+          `;
+        }).join("");
+        updateAgendaPlannerSummary();
+      }
+
+      async function saveAgendaPlannerFollowup(kind = "agenda") {
+        if (!pendingAgendaLead?.id) {
+          setAgendaMessage("Open eerst een lead en klik op Follow-up plannen.", "error");
+          return;
+        }
+        if (!selectedAgendaDate || !selectedAgendaTime) {
+          setAgendaMessage("Kies eerst een dag en tijdslot.", "error");
+          return;
+        }
+        const dueAt = `${selectedAgendaDate}T${selectedAgendaTime}`;
+        const title = kind === "request"
+          ? `Terugbelverzoek: ${pendingAgendaLead.name}`
+          : `Follow-up: ${pendingAgendaLead.name}`;
+        try {
+          const result = await saveCrmTaskWithWriteFallback({
+            title,
+            type: "lead",
+            status: "open",
+            priority: kind === "request" ? "hoog" : "normaal",
+            dueDate: selectedAgendaDate,
+            dueTime: selectedAgendaTime,
+            dueAt,
+            leadId: pendingAgendaLead.id,
+            ownerAuthUserId: pendingAgendaLead.ownerAuthUserId,
+            ownerEmail: pendingAgendaLead.ownerEmail,
+            ownerName: pendingAgendaLead.ownerName,
+            assignedToEmail: pendingAgendaLead.assignedToEmail || pendingAgendaLead.ownerEmail,
+            assignedToName: pendingAgendaLead.assignedToName || pendingAgendaLead.ownerName,
+            notes: [
+              kind === "request" ? "Terugbelverzoek vanuit de sales agenda." : "Follow-up gepland vanuit de sales agenda.",
+              `Gepland moment: ${dueAt.replace("T", " ")}`,
+              pendingAgendaLead.phone ? `Telefoon: ${pendingAgendaLead.phone}` : "",
+            ].filter(Boolean).join("\n"),
+          });
+          setAgendaMessage(result?.fallbackUsed ? "Lokaal gepland. Centrale synchronisatie volgt." : "Agenda-afspraak opgeslagen.", result?.fallbackUsed ? "warning" : "success");
+          window.dispatchEvent(new CustomEvent("maxwebstudio:sales-agenda-planned", {
+            detail: { leadId: pendingAgendaLead.id, followUpDate: selectedAgendaDate, dueAt, kind },
+          }));
+          window.dispatchEvent(new CustomEvent("maxwebstudio:sales-agenda-updated"));
+        } catch (error) {
+          setAgendaMessage(error.message || "Agenda-afspraak kon niet worden opgeslagen.", "error");
+        }
+      }
+
       function getFilteredAgendaTasks() {
         const query = String(agendaElements.search?.value || "").trim().toLowerCase();
         const status = agendaElements.status?.value || "";
@@ -18397,7 +18569,7 @@
       function renderSalesAgenda() {
         if (!agendaElements.list) return;
         const allAgendaTasks = readCrmTasks().filter(isAgendaTask).filter(userCanSeeAgendaTask);
-        const todayIso = new Date().toISOString().slice(0, 10);
+        const todayIso = toLocalIsoDate(new Date());
         const weekLimit = new Date();
         weekLimit.setDate(weekLimit.getDate() + 7);
         const weekIso = weekLimit.toISOString().slice(0, 10);
@@ -18405,6 +18577,7 @@
         if (agendaElements.today) agendaElements.today.textContent = String(openTasks.filter((task) => task.dueDate === todayIso).length);
         if (agendaElements.week) agendaElements.week.textContent = String(openTasks.filter((task) => task.dueDate >= todayIso && task.dueDate <= weekIso).length);
         if (agendaElements.overdue) agendaElements.overdue.textContent = String(openTasks.filter((task) => task.dueDate && task.dueDate < todayIso).length);
+        renderAgendaCalendar(allAgendaTasks);
 
         const tasks = getFilteredAgendaTasks();
         if (!tasks.length) {
@@ -18560,6 +18733,19 @@
       }
 
       function handleAgendaAction(event) {
+        const dayButton = event.target.closest("[data-agenda-date]");
+        if (dayButton) {
+          selectedAgendaDate = dayButton.dataset.agendaDate || selectedAgendaDate;
+          if (agendaElements.date) agendaElements.date.value = selectedAgendaDate;
+          renderSalesAgenda();
+          return;
+        }
+        const timeButton = event.target.closest("[data-agenda-time]");
+        if (timeButton) {
+          selectedAgendaTime = timeButton.dataset.agendaTime || selectedAgendaTime;
+          renderSalesAgenda();
+          return;
+        }
         const button = event.target.closest("[data-agenda-action]");
         if (!button) return;
         const card = button.closest("[data-agenda-task-id]");
@@ -18587,6 +18773,7 @@
         renderTaskList();
         renderSalesAgenda();
 
+        if (agendaElements.date && !agendaElements.date.value) agendaElements.date.value = selectedAgendaDate;
         workflowElements.form.addEventListener("submit", handleTaskSubmit);
         workflowElements.reset?.addEventListener("click", () => {
           resetTaskForm();
@@ -18601,10 +18788,40 @@
           element?.addEventListener("input", renderSalesAgenda);
           element?.addEventListener("change", renderSalesAgenda);
         });
+        agendaElements.date?.addEventListener("change", () => {
+          if (agendaElements.date.value) {
+            selectedAgendaDate = agendaElements.date.value;
+            agendaWeekStart = startOfAgendaWeek(new Date(`${selectedAgendaDate}T00:00:00`));
+          }
+          renderSalesAgenda();
+        });
         agendaElements.list?.addEventListener("click", handleAgendaAction);
+        agendaElements.calendar?.addEventListener("click", handleAgendaAction);
+        agendaElements.timeline?.addEventListener("click", handleAgendaAction);
+        agendaElements.previousWeek?.addEventListener("click", () => {
+          agendaWeekStart.setDate(agendaWeekStart.getDate() - 7);
+          renderSalesAgenda();
+        });
+        agendaElements.nextWeek?.addEventListener("click", () => {
+          agendaWeekStart.setDate(agendaWeekStart.getDate() + 7);
+          renderSalesAgenda();
+        });
+        agendaElements.plannerRequest?.addEventListener("click", () => saveAgendaPlannerFollowup("request"));
+        agendaElements.plannerFollowup?.addEventListener("click", () => saveAgendaPlannerFollowup("agenda"));
         window.addEventListener("maxwebstudio:sales-agenda-updated", () => {
           renderTaskList();
           renderSalesAgenda();
+        });
+        window.addEventListener("maxwebstudio:sales-agenda-open-planner", (event) => {
+          pendingAgendaLead = event.detail?.lead || null;
+          selectedAgendaDate = event.detail?.date || selectedAgendaDate;
+          selectedAgendaTime = event.detail?.time || selectedAgendaTime;
+          if (agendaElements.date) agendaElements.date.value = selectedAgendaDate;
+          agendaWeekStart = startOfAgendaWeek(new Date(`${selectedAgendaDate}T00:00:00`));
+          window.location.hash = "sales-agenda";
+          renderSalesAgenda();
+          window.setTimeout(() => window.focusAdminPanel?.(agendaElements.section), 60);
+          setAgendaMessage("Kies een dag en tijdslot en plan daarna de follow-up.", "success");
         });
       }
 
@@ -20292,6 +20509,14 @@
         return digits;
       }
 
+      function leadWhatsappPhone(lead = {}) {
+        const directPhone = lead.phone || lead.telephone || lead.telefoon || lead.mobile || lead.mobilePhone || lead.phoneNumber || "";
+        const normalizedDirect = whatsappPhoneNumber(directPhone);
+        if (normalizedDirect) return normalizedDirect;
+        const notesPhone = String(getLeadNotes(lead) || "").match(/(?:\+|00)?\d[\d\s().-]{7,}\d/);
+        return notesPhone ? whatsappPhoneNumber(notesPhone[0]) : "";
+      }
+
       function leadWhatsappMessage(lead = {}) {
         const name = lead.contactName || lead.companyName || "";
         return [
@@ -20305,12 +20530,12 @@
       function renderLeadWhatsappAction(lead) {
         const button = leadfinderElements.whatsappMessage;
         if (!button) return;
-        const phone = whatsappPhoneNumber(lead?.phone);
+        const phone = leadWhatsappPhone(lead);
         const enabled = Boolean(lead?.id && phone);
         button.href = enabled ? `https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(leadWhatsappMessage(lead))}` : "#";
         button.classList.toggle("is-disabled", !enabled);
         button.setAttribute("aria-disabled", enabled ? "false" : "true");
-        button.title = enabled ? "" : "Geen telefoonnummer bekend";
+        button.title = enabled ? `Open WhatsApp voor ${phone}` : "Geen telefoonnummer bekend bij deze lead";
       }
 
       function defaultCallbackDateTime() {
@@ -21883,6 +22108,7 @@
               function openLeadFollowUpPlanner() {
                 const lead = selectedLeadFinderLead();
                 if (!lead) return;
+                const ownerContext = getLeadfinderUserContext();
                 activeSalesDetailTab = "actions";
                 renderLeadfinderDetail(lead);
                 if (leadfinderElements.agendaPlanner) leadfinderElements.agendaPlanner.open = true;
@@ -21890,11 +22116,27 @@
                   leadfinderElements.callbackAt.value = defaultCallbackDateTime(lead);
                 }
                 setLeadAgendaMessage("Kies een dag en tijd en klik daarna op Plan in interne agenda.", "success");
+                const callbackAt = leadfinderElements.callbackAt?.value || defaultCallbackDateTime();
+                window.dispatchEvent(new CustomEvent("maxwebstudio:sales-agenda-open-planner", {
+                  detail: {
+                    date: dateFromDateTimeLocal(callbackAt),
+                    time: callbackAt.includes("T") ? callbackAt.split("T")[1] : "10:00",
+                    lead: {
+                      id: lead.id,
+                      name: lead.companyName || lead.contactName || "deze lead",
+                      phone: lead.phone || lead.telefoon || lead.mobile || "",
+                      ownerAuthUserId: ownerContext.userId,
+                      ownerEmail: lead.ownerEmail || lead.assignedToEmail || ownerContext.email,
+                      ownerName: lead.ownerName || lead.assignedToName || ownerContext.name,
+                      assignedToEmail: lead.assignedToEmail || lead.ownerEmail || ownerContext.email,
+                      assignedToName: lead.assignedToName || lead.ownerName || ownerContext.name,
+                    },
+                  },
+                }));
                 window.setTimeout(() => {
-                  const target = leadfinderElements.callbackAt || leadfinderElements.agendaPlanner;
-                  window.focusAdminPanel?.(leadfinderElements.agendaPlanner || target);
-                  target?.focus?.();
-                }, 60);
+                  const agendaSection = document.getElementById("sales-agenda");
+                  window.focusAdminPanel?.(agendaSection || leadfinderElements.agendaPlanner);
+                }, 80);
               }
 
               async function planFollowUpForSelectedLead() {
@@ -22151,6 +22393,20 @@
         leadfinderElements.convertCustomer?.addEventListener("click", convertSelectedLeadToCustomer);
         leadfinderElements.callbackRequest?.addEventListener("click", () => planLeadCallbackAgenda("request"));
         leadfinderElements.planAgenda?.addEventListener("click", () => planLeadCallbackAgenda("agenda"));
+        window.addEventListener("maxwebstudio:sales-agenda-planned", async (event) => {
+          const leadId = event.detail?.leadId || "";
+          const followUpDate = event.detail?.followUpDate || "";
+          const lead = getLeadfinderLeads().find((item) => item.id === leadId);
+          if (!lead || !followUpDate) return;
+          try {
+            await updateLeadfinderLead(lead, {
+              followUpDate,
+              callStatus: lead.callStatus === "quote_sent" ? "quote_sent" : "opvolgen",
+            }, "Follow-up gekoppeld aan deze lead.");
+          } catch (error) {
+            setLeadfinderMessage(error.message || "Agenda staat gepland, maar de lead kon niet worden bijgewerkt.", "warning");
+          }
+        });
         leadfinderElements.archiveLead?.addEventListener("click", archiveSelectedLead);
         leadfinderElements.notInterestingLead?.addEventListener("click", markSelectedLeadNotInteresting);
         leadfinderElements.deleteLead?.addEventListener("click", deleteSelectedLead);

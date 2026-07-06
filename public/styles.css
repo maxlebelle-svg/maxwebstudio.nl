@@ -20912,6 +20912,168 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   gap: 12px;
 }
 
+.sales-calendar-panel {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.sales-calendar-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sales-calendar-header strong,
+.sales-calendar-header span {
+  display: block;
+}
+
+.sales-calendar-header strong {
+  color: #f8fbff;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.sales-calendar-header span {
+  margin-top: 4px;
+  color: rgba(226, 236, 248, 0.66);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.sales-calendar-controls,
+.sales-calendar-planner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.sales-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.sales-calendar-day,
+.sales-calendar-slot {
+  min-width: 0;
+  border: 1px solid rgba(147, 197, 253, 0.16);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(20, 37, 57, 0.9), rgba(8, 22, 36, 0.92)),
+    rgba(8, 22, 36, 0.85);
+  color: #f8fbff;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.sales-calendar-day {
+  display: grid;
+  gap: 6px;
+  min-height: 108px;
+  padding: 13px;
+}
+
+.sales-calendar-day:hover,
+.sales-calendar-slot:hover,
+.sales-calendar-day.is-selected,
+.sales-calendar-slot.is-selected {
+  border-color: rgba(59, 130, 246, 0.75);
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.28), 0 12px 32px rgba(37, 99, 235, 0.18);
+  transform: translateY(-1px);
+}
+
+.sales-calendar-day.is-today {
+  border-color: rgba(34, 197, 94, 0.44);
+}
+
+.sales-calendar-day span,
+.sales-calendar-day small,
+.sales-calendar-slot span {
+  color: rgba(226, 236, 248, 0.64);
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.3;
+}
+
+.sales-calendar-day span {
+  text-transform: uppercase;
+}
+
+.sales-calendar-day strong {
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+.sales-calendar-timeline {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.sales-calendar-slot {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  padding: 10px 12px;
+}
+
+.sales-calendar-slot strong {
+  color: #93c5fd;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.sales-calendar-slot span {
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.sales-calendar-planner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px;
+  border: 1px solid rgba(34, 197, 94, 0.24);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(34, 197, 94, 0.12), rgba(37, 99, 235, 0.1)),
+    rgba(3, 14, 26, 0.42);
+}
+
+.sales-calendar-planner[hidden] {
+  display: none;
+}
+
+.sales-calendar-planner > div:first-child {
+  min-width: 0;
+}
+
+.sales-calendar-planner strong,
+.sales-calendar-planner span {
+  display: block;
+}
+
+.sales-calendar-planner strong {
+  color: #f8fbff;
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.sales-calendar-planner span {
+  margin-top: 4px;
+  color: rgba(226, 236, 248, 0.66);
+  font-size: 12px;
+  font-weight: 750;
+}
+
 .sales-agenda-card {
   display: grid;
   grid-template-columns: minmax(160px, 0.65fr) minmax(0, 1.8fr) minmax(240px, auto);
@@ -21002,8 +21164,16 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   .admin-body.is-sales-view .sales-recent-activity-grid,
   .admin-body.is-sales-view .sales-detail-tabs,
   .sales-agenda-toolbar,
+  .sales-calendar-grid,
+  .sales-calendar-timeline,
   .sales-agenda-card {
     grid-template-columns: 1fr;
+  }
+
+  .sales-calendar-header,
+  .sales-calendar-planner {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .admin-body.is-sales-view .sales-lead-detail-toolbar {
