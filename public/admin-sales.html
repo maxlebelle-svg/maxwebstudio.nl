@@ -19692,8 +19692,11 @@
       async function refreshLeads(options = {}) {
         const keepSelection = options.keepSelection !== false;
         const previousSelection = selectedLeadFinderId;
+        const urlLeadId = new URLSearchParams(window.location.search).get("leadId") || "";
         await loadLeadfinderDataLayer({ syncOfflineQueue: Boolean(options.syncOfflineQueue) });
-        if (keepSelection && previousSelection && getLeadfinderLeads().some((lead) => lead.id === previousSelection)) {
+        if (keepSelection && urlLeadId && getLeadfinderLeads().some((lead) => lead.id === urlLeadId)) {
+          selectedLeadFinderId = urlLeadId;
+        } else if (keepSelection && previousSelection && getLeadfinderLeads().some((lead) => lead.id === previousSelection)) {
           selectedLeadFinderId = previousSelection;
         } else if (!keepSelection) {
           selectedLeadFinderId = "";
@@ -21185,6 +21188,7 @@
 
       function setLeadfinderDetailMode(open = Boolean(selectedLeadFinderId)) {
         leadfinderElements.section?.classList.toggle("is-lead-detail-open", Boolean(open));
+        document.body.classList.toggle("is-lead-profile-open", Boolean(open));
       }
 
       function updateLeadfinderUrlForSelection(leadId = "", options = {}) {
@@ -21252,13 +21256,14 @@
           setLeadfinderDetailMode(false);
           return false;
         }
+        setLeadfinderDetailMode(true);
         const lead = getLeadfinderLeads().find((item) => item.id === leadId);
         if (!lead) {
-          setLeadfinderDetailMode(false);
+          selectedLeadFinderId = leadId;
           return false;
         }
         selectedLeadFinderId = lead.id;
-        activeSalesDetailTab = options.tab || requestedTab || activeSalesDetailTab || "overview";
+        activeSalesDetailTab = requestedTab || options.tab || activeSalesDetailTab || "overview";
         setLeadfinderDetailMode(true);
         renderLeadfinderDetail();
         return true;
@@ -22690,7 +22695,7 @@
             sessionStorage.removeItem("maxwebstudioPendingLeadQuickFilter");
           }
         }
-        restoreLeadfinderDetailFromUrl({ tab: "overview" });
+        restoreLeadfinderDetailFromUrl();
 
         leadfinderElements.form.addEventListener("submit", handleLeadfinderSubmit);
         leadfinderElements.reset?.addEventListener("click", () => {

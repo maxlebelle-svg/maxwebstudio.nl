@@ -20789,16 +20789,29 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
 .admin-body.is-sales-view #leadfinder.is-lead-detail-open .leadfinder-form,
 .admin-body.is-sales-view #leadfinder.is-lead-detail-open .sales-recent-activity-card,
 .admin-body.is-sales-view #leadfinder.is-lead-detail-open .google-places-card,
-.admin-body.is-sales-view #leadfinder.is-lead-detail-open #legacy-lead-import-panel {
+.admin-body.is-sales-view #leadfinder.is-lead-detail-open #legacy-lead-import-panel,
+.admin-body.is-sales-view.is-lead-profile-open #leadfinder > .admin-flow-steps,
+.admin-body.is-sales-view.is-lead-profile-open #leadfinder > .admin-section-heading,
+.admin-body.is-sales-view.is-lead-profile-open #leadfinder > .sales-cockpit-bar,
+.admin-body.is-sales-view.is-lead-profile-open #leadfinder > #leadfinder-metrics,
+.admin-body.is-sales-view.is-lead-profile-open #leadfinder > .leadfinder-filters,
+.admin-body.is-sales-view.is-lead-profile-open #leadfinder > .active-filter-bar,
+.admin-body.is-sales-view.is-lead-profile-open #leadfinder > #leadfinder-list,
+.admin-body.is-sales-view.is-lead-profile-open #leadfinder .leadfinder-form,
+.admin-body.is-sales-view.is-lead-profile-open #leadfinder .sales-recent-activity-card,
+.admin-body.is-sales-view.is-lead-profile-open #leadfinder .google-places-card,
+.admin-body.is-sales-view.is-lead-profile-open #leadfinder #legacy-lead-import-panel {
   display: none;
 }
 
-.admin-body.is-sales-view #leadfinder.is-lead-detail-open .leadfinder-grid {
+.admin-body.is-sales-view #leadfinder.is-lead-detail-open .leadfinder-grid,
+.admin-body.is-sales-view.is-lead-profile-open #leadfinder .leadfinder-grid {
   grid-template-columns: minmax(0, 1fr);
   grid-template-areas: "detail";
 }
 
-.admin-body.is-sales-view #leadfinder.is-lead-detail-open .leadfinder-detail-card {
+.admin-body.is-sales-view #leadfinder.is-lead-detail-open .leadfinder-detail-card,
+.admin-body.is-sales-view.is-lead-profile-open #leadfinder .leadfinder-detail-card {
   grid-area: detail;
 }
 
