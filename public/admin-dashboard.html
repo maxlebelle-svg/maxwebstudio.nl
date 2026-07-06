@@ -10232,6 +10232,20 @@
           };
         }
 
+        function fallbackInvoiceLineFromAmount(invoice = {}) {
+          const total = Number(invoice.total ?? invoice.amount ?? invoice.totalAmount ?? invoice.total_amount ?? 0);
+          const explicitVat = Number(invoice.vat ?? invoice.vatAmount ?? invoice.vat_amount ?? 0);
+          const explicitSubtotal = Number(invoice.subtotal ?? invoice.subtotalExVat ?? invoice.subtotal_ex_vat ?? 0);
+          const subtotal = explicitSubtotal || (explicitVat ? Math.max(total - explicitVat, 0) : total);
+          const vatRate = subtotal > 0 && explicitVat > 0 ? (explicitVat / subtotal) * 100 : 0;
+          return normalizeInvoiceLine({
+            description: invoice.title || invoice.type || "Factuurregel",
+            quantity: 1,
+            unitPrice: subtotal,
+            vatRate,
+          });
+        }
+
         function nextInvoiceNumber() {
           const settings = readStoredSettings();
           const prefix = String(settings.invoicePrefix || defaultSettings.invoicePrefix || "INV").trim() || "INV";
@@ -10285,7 +10299,7 @@
           const project = projectById(projectId);
           const lines = Array.isArray(invoice.lines) && invoice.lines.length
             ? invoice.lines.map(normalizeInvoiceLine).filter((line) => line.description)
-            : [normalizeInvoiceLine({ description: invoice.title || "Factuurregel", quantity: 1, unitPrice: invoice.amount || 0, vatRate: 21 })];
+            : [fallbackInvoiceLineFromAmount(invoice)];
           const totals = calculateInvoiceTotals(lines);
           const id = invoice.id || createCrmId();
           return {
