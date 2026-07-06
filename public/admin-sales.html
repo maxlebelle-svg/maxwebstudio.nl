@@ -688,6 +688,10 @@
                   <button class="admin-icon-button" id="sales-agenda-planner-close" type="button" aria-label="Popup sluiten">×</button>
                 </div>
                 <label for="sales-agenda-planner-title">Titel<input id="sales-agenda-planner-title" type="text" placeholder="Bijv. Follow-up, klantmeeting of intern overleg" /></label>
+                <div class="sales-agenda-time-fields">
+                  <label for="sales-agenda-planner-start">Starttijd<input id="sales-agenda-planner-start" type="time" step="1800" /></label>
+                  <label for="sales-agenda-planner-end">Eindtijd<input id="sales-agenda-planner-end" type="time" step="1800" /></label>
+                </div>
                 <label for="sales-agenda-planner-kind">Type afspraak<select id="sales-agenda-planner-kind">
                   <option value="agenda">Follow-up</option>
                   <option value="request">Terugbelverzoek</option>
@@ -18222,6 +18226,8 @@
         plannerLead: document.getElementById("sales-agenda-planner-lead"),
         plannerTime: document.getElementById("sales-agenda-planner-time"),
         plannerTitle: document.getElementById("sales-agenda-planner-title"),
+        plannerStart: document.getElementById("sales-agenda-planner-start"),
+        plannerEnd: document.getElementById("sales-agenda-planner-end"),
         plannerKind: document.getElementById("sales-agenda-planner-kind"),
         plannerNotes: document.getElementById("sales-agenda-planner-notes"),
         plannerRequest: document.getElementById("sales-agenda-plan-request"),
@@ -18235,6 +18241,10 @@
       let selectedAgendaTime = "10:00";
       let pendingAgendaLead = null;
       let agendaPlannerOpen = false;
+      const AGENDA_START_HOUR = 8;
+      const AGENDA_END_HOUR = 18;
+      const AGENDA_SLOT_MINUTES = 30;
+      const AGENDA_SLOT_HEIGHT = 34;
 
       const statusLabels = Object.fromEntries(CRM_TASK_STATUSES.map((item) => [item.value, item.label]));
       const priorityLabels = Object.fromEntries(CRM_TASK_PRIORITIES.map((item) => [item.value, item.label]));
@@ -18436,7 +18446,9 @@
 
       function getAgendaEventDisplay(task = {}) {
         const rawTitle = String(task.title || "").trim();
-        const time = String(task.dueTime || "").slice(0, 5) || formatAgendaDateTime(task).slice(-5);
+        const startTime = String(task.dueTime || "").slice(0, 5) || formatAgendaDateTime(task).slice(-5);
+        const endTime = String(task.dueEndTime || task.endTime || "").slice(0, 5);
+        const time = endTime ? `${startTime} - ${endTime}` : startTime;
         const isCallback = /terugbel/i.test(rawTitle);
         const isFollowUp = /follow-up|agenda afspraak|opvolg/i.test(rawTitle);
         const ownerLabel = task.ownerName || task.assignedToName || (task.ownerEmail ? String(task.ownerEmail).split("@")[0] : "") || "Interne afspraak";
@@ -18496,10 +18508,44 @@
         }[kind] || "Afspraak";
       }
 
+      function timeToMinutes(time = "") {
+        const [hour, minute] = String(time || "").split(":").map((part) => Number.parseInt(part, 10));
+        if (!Number.isFinite(hour) || !Number.isFinite(minute)) return AGENDA_START_HOUR * 60;
+        return hour * 60 + minute;
+      }
+
+      function minutesToTime(totalMinutes = AGENDA_START_HOUR * 60) {
+        const minutes = Math.max(0, Math.min(23 * 60 + 59, Number(totalMinutes) || 0));
+        const hour = Math.floor(minutes / 60);
+        const minute = minutes % 60;
+        return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+      }
+
+      function addMinutesToTime(time = selectedAgendaTime, minutes = AGENDA_SLOT_MINUTES) {
+        return minutesToTime(timeToMinutes(time) + minutes);
+      }
+
+      function getAgendaSlotTimes() {
+        const slots = [];
+        for (let minutes = AGENDA_START_HOUR * 60; minutes < AGENDA_END_HOUR * 60; minutes += AGENDA_SLOT_MINUTES) {
+          slots.push(minutesToTime(minutes));
+        }
+        return slots;
+      }
+
+      function getAgendaTaskDurationMinutes(task = {}) {
+        const start = timeToMinutes(String(task.dueTime || "").slice(0, 5));
+        const endTime = String(task.dueEndTime || task.endTime || "").slice(0, 5);
+        const end = endTime ? timeToMinutes(endTime) : start + (String(task.title || "").toLowerCase().includes("terugbel") ? 30 : 60);
+        return Math.max(AGENDA_SLOT_MINUTES, Math.min(240, end - start));
+      }
+
       function resetAgendaPlannerFields({ keepLeadTitle = false } = {}) {
         if (agendaElements.plannerTitle) {
           agendaElements.plannerTitle.value = keepLeadTitle && pendingAgendaLead?.name ? `Follow-up: ${pendingAgendaLead.name}` : "";
         }
+        if (agendaElements.plannerStart) agendaElements.plannerStart.value = selectedAgendaTime || "10:00";
+        if (agendaElements.plannerEnd) agendaElements.plannerEnd.value = addMinutesToTime(selectedAgendaTime || "10:00", AGENDA_SLOT_MINUTES);
         if (agendaElements.plannerKind) agendaElements.plannerKind.value = "agenda";
         if (agendaElements.plannerNotes) agendaElements.plannerNotes.value = "";
         setAgendaMessage("");
@@ -18511,6 +18557,8 @@
         pendingAgendaLead = lead || null;
         agendaPlannerOpen = true;
         if (agendaElements.date) agendaElements.date.value = selectedAgendaDate;
+        if (agendaElements.plannerStart) agendaElements.plannerStart.value = selectedAgendaTime;
+        if (agendaElements.plannerEnd) agendaElements.plannerEnd.value = addMinutesToTime(selectedAgendaTime, AGENDA_SLOT_MINUTES);
         if (reset) resetAgendaPlannerFields({ keepLeadTitle: Boolean(pendingAgendaLead?.name) });
         renderSalesAgenda();
         window.setTimeout(() => agendaElements.plannerTitle?.focus(), 60);
@@ -18521,14 +18569,14 @@
         renderSalesAgenda();
       }
 
-      function getAgendaTimeFromBoardClick(event, dayElement) {
-        const rect = dayElement.getBoundingClientRect();
-        const offsetY = Math.max(0, Math.min(rect.height, event.clientY - rect.top));
-        const minutesFromStart = Math.round(offsetY / 30) * 30;
-        const cappedMinutes = Math.max(0, Math.min(9 * 60, minutesFromStart));
-        const hour = 8 + Math.floor(cappedMinutes / 60);
-        const minute = cappedMinutes % 60;
-        return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+      function syncAgendaTimeInputs() {
+        const start = agendaElements.plannerStart?.value || selectedAgendaTime || "10:00";
+        const end = agendaElements.plannerEnd?.value || addMinutesToTime(start, AGENDA_SLOT_MINUTES);
+        selectedAgendaTime = start;
+        if (agendaElements.plannerEnd && timeToMinutes(end) <= timeToMinutes(start)) {
+          agendaElements.plannerEnd.value = addMinutesToTime(start, AGENDA_SLOT_MINUTES);
+        }
+        updateAgendaPlannerSummary();
       }
 
       function updateAgendaPlannerSummary() {
@@ -18544,8 +18592,10 @@
             : "Nieuwe interne afspraak";
         }
         if (agendaElements.plannerTime) {
+          const start = agendaElements.plannerStart?.value || selectedAgendaTime;
+          const end = agendaElements.plannerEnd?.value || addMinutesToTime(start, AGENDA_SLOT_MINUTES);
           agendaElements.plannerTime.textContent = selectedAgendaDate && selectedAgendaTime
-            ? `Gekozen moment: ${selectedAgendaDate} om ${selectedAgendaTime}`
+            ? `Gekozen moment: ${selectedAgendaDate} van ${start} tot ${end}`
             : "Kies een dag en tijd.";
         }
         if (agendaElements.plannerTitle && pendingAgendaLead?.name && !agendaElements.plannerTitle.value) {
@@ -18557,7 +18607,8 @@
       function renderAgendaCalendar(allAgendaTasks = []) {
         if (!agendaElements.calendar || !agendaElements.timeline) return;
         const days = getAgendaWeekDays();
-        const hours = Array.from({ length: 11 }, (_, index) => 8 + index);
+        const hours = Array.from({ length: AGENDA_END_HOUR - AGENDA_START_HOUR + 1 }, (_, index) => AGENDA_START_HOUR + index);
+        const slots = getAgendaSlotTimes();
         const todayIso = toLocalIsoDate(new Date());
         const dayHeaders = days.map((date) => {
           const iso = toLocalIsoDate(date);
@@ -18576,11 +18627,19 @@
           const iso = toLocalIsoDate(date);
           const dayTasks = allAgendaTasks.filter((task) => task.dueDate === iso && !["gearchiveerd"].includes(task.status));
           const isToday = iso === todayIso;
+          const daySlots = slots.map((time) => {
+            const isSelected = iso === selectedAgendaDate && time === selectedAgendaTime;
+            return `
+              <button class="sales-calendar-board-slot ${isSelected ? "is-selected" : ""}" type="button" data-agenda-slot="true" data-agenda-date="${escapeHtml(iso)}" data-agenda-time="${escapeHtml(time)}" aria-label="${escapeHtml(`${iso} om ${time}`)}">
+                <span>${escapeHtml(time)}</span>
+              </button>
+            `;
+          }).join("");
           const events = dayTasks.map((task, index) => {
             const taskDate = getAgendaTaskDateTime(task);
-            const minutes = Number.isNaN(taskDate.getTime()) ? 120 : ((taskDate.getHours() - 8) * 60) + taskDate.getMinutes();
-            const top = Math.max(0, Math.min(600, minutes));
-            const duration = String(task.title || "").toLowerCase().includes("terugbel") ? 45 : 60;
+            const minutes = Number.isNaN(taskDate.getTime()) ? 120 : ((taskDate.getHours() - AGENDA_START_HOUR) * 60) + taskDate.getMinutes();
+            const top = Math.max(0, Math.min((AGENDA_END_HOUR - AGENDA_START_HOUR) * 60, minutes)) / AGENDA_SLOT_MINUTES * AGENDA_SLOT_HEIGHT;
+            const duration = getAgendaTaskDurationMinutes(task) / AGENDA_SLOT_MINUTES * AGENDA_SLOT_HEIGHT;
             const display = getAgendaEventDisplay(task);
             const eventText = `${task.title || ""} ${task.notes || ""}`.toLowerCase();
             const eventClass = task.priority === "hoog" || eventText.includes("terugbel")
@@ -18602,6 +18661,9 @@
           }).join("");
           return `
             <div class="sales-calendar-board-day ${isToday ? "is-today" : ""}" data-agenda-date="${escapeHtml(iso)}">
+              <div class="sales-calendar-board-slots">
+                ${daySlots}
+              </div>
               ${events}
             </div>
           `;
@@ -18624,13 +18686,6 @@
         `;
 
         const selectedTasks = allAgendaTasks.filter((task) => task.dueDate === selectedAgendaDate);
-        const slots = [];
-        for (let hour = 8; hour <= 17; hour += 1) {
-          ["00", "30"].forEach((minute) => {
-            if (hour === 17 && minute === "30") return;
-            slots.push(`${String(hour).padStart(2, "0")}:${minute}`);
-          });
-        }
         agendaElements.timeline.innerHTML = slots.map((time) => {
           const slotTasks = selectedTasks.filter((task) => String(task.dueTime || "").slice(0, 5) === time);
           const isSelected = selectedAgendaTime === time;
@@ -18645,11 +18700,19 @@
       }
 
       async function saveAgendaPlannerFollowup(kind = agendaElements.plannerKind?.value || "agenda") {
+        selectedAgendaTime = agendaElements.plannerStart?.value || selectedAgendaTime;
         if (!selectedAgendaDate || !selectedAgendaTime) {
           setAgendaMessage("Kies eerst een dag en tijdslot.", "error");
           return;
         }
+        const endTime = agendaElements.plannerEnd?.value || addMinutesToTime(selectedAgendaTime, AGENDA_SLOT_MINUTES);
+        if (timeToMinutes(endTime) <= timeToMinutes(selectedAgendaTime)) {
+          setAgendaMessage("Kies een eindtijd na de starttijd.", "error");
+          agendaElements.plannerEnd?.focus();
+          return;
+        }
         const dueAt = `${selectedAgendaDate}T${selectedAgendaTime}`;
+        const dueEndAt = `${selectedAgendaDate}T${endTime}`;
         const context = getAgendaUserContext();
         const manualTitle = String(agendaElements.plannerTitle?.value || "").trim();
         const manualNotes = String(agendaElements.plannerNotes?.value || "").trim();
@@ -18669,7 +18732,9 @@
             priority: kind === "request" ? "hoog" : "normaal",
             dueDate: selectedAgendaDate,
             dueTime: selectedAgendaTime,
+            dueEndTime: endTime,
             dueAt,
+            dueEndAt,
             leadId: pendingAgendaLead?.id || "",
             ownerAuthUserId: pendingAgendaLead?.ownerAuthUserId || context.userId,
             ownerEmail: pendingAgendaLead?.ownerEmail || context.email,
@@ -18681,7 +18746,7 @@
               pendingAgendaLead?.id
                 ? kind === "request" ? "Terugbelverzoek vanuit de sales agenda." : `${getAgendaKindLabel(kind)} gepland vanuit de sales agenda.`
                 : `${getAgendaKindLabel(kind)} vanuit de sales agenda.`,
-              `Gepland moment: ${dueAt.replace("T", " ")}`,
+              `Gepland moment: ${dueAt.replace("T", " ")} - ${endTime}`,
               manualNotes,
               pendingAgendaLead?.phone ? `Telefoon: ${pendingAgendaLead.phone}` : "",
             ].filter(Boolean).join("\n"),
@@ -18923,14 +18988,21 @@
           if (task?.leadId) openAgendaLead(task);
           return;
         }
-        const boardDay = event.target.closest(".sales-calendar-board-day[data-agenda-date]");
-        if (boardDay) {
+        const boardSlot = event.target.closest(".sales-calendar-board-slot[data-agenda-slot]");
+        if (boardSlot) {
           openAgendaPlanner({
-            date: boardDay.dataset.agendaDate || selectedAgendaDate,
-            time: getAgendaTimeFromBoardClick(event, boardDay),
+            date: boardSlot.dataset.agendaDate || selectedAgendaDate,
+            time: boardSlot.dataset.agendaTime || selectedAgendaTime,
             lead: null,
             reset: true,
           });
+          return;
+        }
+        const boardDay = event.target.closest(".sales-calendar-board-day[data-agenda-date]");
+        if (boardDay) {
+          selectedAgendaDate = boardDay.dataset.agendaDate || selectedAgendaDate;
+          if (agendaElements.date) agendaElements.date.value = selectedAgendaDate;
+          renderSalesAgenda();
           return;
         }
         const dayButton = event.target.closest("[data-agenda-date]");
@@ -19015,6 +19087,10 @@
           if (event.target === agendaElements.planner) closeAgendaPlanner();
         });
         agendaElements.plannerClose?.addEventListener("click", closeAgendaPlanner);
+        [agendaElements.plannerStart, agendaElements.plannerEnd].forEach((element) => {
+          element?.addEventListener("input", syncAgendaTimeInputs);
+          element?.addEventListener("change", syncAgendaTimeInputs);
+        });
         agendaElements.plannerRequest?.addEventListener("click", () => {
           if (agendaElements.plannerKind) agendaElements.plannerKind.value = "request";
           saveAgendaPlannerFollowup("request");
