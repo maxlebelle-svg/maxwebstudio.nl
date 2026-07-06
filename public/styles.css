@@ -20774,6 +20774,111 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   margin-top: 2px;
 }
 
+.admin-body.is-sales-view #leadfinder.is-lead-detail-open .sales-lead-detail-toolbar,
+.admin-body.is-sales-view #leadfinder.is-lead-detail-open .sales-detail-tabs,
+.admin-body.is-sales-view #leadfinder.is-lead-detail-open .leadfinder-detail-card [data-sales-detail-panel],
+.admin-body.is-sales-view #leadfinder.is-lead-detail-open .leadfinder-detail-card .lead-welcome-card {
+  width: 100%;
+  max-width: none;
+  grid-column: 1 / -1;
+}
+
+.admin-body.is-sales-view #leadfinder.is-lead-detail-open .leadfinder-detail-card {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: stretch;
+}
+
+.lead-whatsapp-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 46px;
+  border-color: rgba(37, 211, 102, 0.38) !important;
+  background:
+    linear-gradient(135deg, rgba(37, 211, 102, 0.18), rgba(18, 140, 126, 0.1)),
+    rgba(3, 14, 26, 0.42) !important;
+  color: #eafff2 !important;
+  text-decoration: none;
+}
+
+.lead-whatsapp-button.is-disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.lead-whatsapp-logo {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+}
+
+.lead-whatsapp-logo svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+
+.lead-callback-agenda {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid rgba(147, 197, 253, 0.14);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(37, 99, 235, 0.14), transparent 38%),
+    rgba(3, 14, 26, 0.36);
+}
+
+.lead-callback-agenda > div:first-child strong,
+.lead-callback-agenda > div:first-child span {
+  display: block;
+}
+
+.lead-callback-agenda > div:first-child strong {
+  color: #f8fbff;
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.lead-callback-agenda > div:first-child span {
+  margin-top: 3px;
+  color: rgba(226, 236, 248, 0.62);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.lead-callback-agenda label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: rgba(147, 197, 253, 0.82);
+  font-size: 10px;
+  font-weight: 950;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.lead-callback-agenda input {
+  width: 100%;
+  min-width: 0;
+}
+
+.lead-callback-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.lead-callback-actions .button {
+  min-height: 44px;
+  white-space: normal;
+}
+
 @media (max-width: 980px) {
   .admin-body.is-sales-view .sales-recent-activity-grid,
   .admin-body.is-sales-view .sales-detail-tabs {
@@ -20787,5 +20892,9 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
 
   .admin-body.is-sales-view .sales-lead-detail-toolbar > div {
     text-align: left;
+  }
+
+  .lead-callback-actions {
+    grid-template-columns: 1fr;
   }
 }

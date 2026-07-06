@@ -531,6 +531,27 @@
                       <small>De klant ontvangt inloggegevens en onboarding informatie.</small>
                     </span>
                   </label>
+                  <a class="button secondary lead-whatsapp-button is-disabled" id="leadfinder-whatsapp-message" href="#" target="_blank" rel="noopener" aria-disabled="true">
+                    <span class="lead-whatsapp-logo" aria-hidden="true">
+                      <svg viewBox="0 0 32 32" focusable="false">
+                        <path d="M16 3.2A12.7 12.7 0 0 0 5.1 22.4L3.7 28.8l6.5-1.7A12.7 12.7 0 1 0 16 3.2Z" fill="#25D366"/>
+                        <path d="M22.9 19.2c-.4-.2-2.2-1.1-2.5-1.2-.3-.1-.6-.2-.8.2-.2.4-.9 1.2-1.1 1.4-.2.2-.4.3-.8.1-.4-.2-1.5-.6-2.9-1.8-1.1-1-1.8-2.1-2-2.5-.2-.4 0-.6.2-.8.2-.2.4-.4.6-.7.2-.2.2-.4.4-.6.1-.2.1-.5 0-.7-.1-.2-.8-1.9-1.1-2.6-.3-.7-.6-.6-.8-.6h-.7c-.2 0-.7.1-1 .5-.3.4-1.3 1.3-1.3 3.1 0 1.8 1.3 3.6 1.5 3.9.2.2 2.6 4 6.3 5.6.9.4 1.6.6 2.1.8.9.3 1.7.3 2.4.2.7-.1 2.2-.9 2.5-1.8.3-.9.3-1.6.2-1.8-.1-.2-.4-.3-.8-.5Z" fill="#fff"/>
+                      </svg>
+                    </span>
+                    <span>Stuur WhatsApp bericht</span>
+                  </a>
+                  <div class="lead-callback-agenda">
+                    <div>
+                      <strong>Interne agenda</strong>
+                      <span>Plan een terugbelmoment voor de medewerker die deze lead opvolgt.</span>
+                    </div>
+                    <label for="leadfinder-callback-at">Terugbelmoment<input id="leadfinder-callback-at" type="datetime-local" /></label>
+                    <div class="lead-callback-actions">
+                      <button class="button secondary" id="leadfinder-callback-request" type="button" disabled>Terugbelverzoek</button>
+                      <button class="button primary" id="leadfinder-plan-agenda" type="button" disabled>Plan in interne agenda</button>
+                    </div>
+                    <p class="admin-form-message" id="leadfinder-agenda-message" role="status"></p>
+                  </div>
                   <details class="lead-extra-settings">
                     <summary>Extra instellingen</summary>
                     <p>Gebruik dit later voor taal, pakketdetails en onboarding-notities.</p>
@@ -18440,6 +18461,11 @@
         saveNote: document.getElementById("leadfinder-save-note"),
         createTask: document.getElementById("leadfinder-create-task"),
         convertCustomer: document.getElementById("leadfinder-convert-customer"),
+        whatsappMessage: document.getElementById("leadfinder-whatsapp-message"),
+        callbackAt: document.getElementById("leadfinder-callback-at"),
+        callbackRequest: document.getElementById("leadfinder-callback-request"),
+        planAgenda: document.getElementById("leadfinder-plan-agenda"),
+        agendaMessage: document.getElementById("leadfinder-agenda-message"),
         archiveLead: document.getElementById("leadfinder-archive"),
         notInterestingLead: document.getElementById("leadfinder-not-interesting"),
         deleteLead: document.getElementById("leadfinder-delete"),
@@ -20031,6 +20057,65 @@
         setActionAvailability(leadfinderElements.quickFollowUp, hasLead, "Selecteer eerst een lead");
       }
 
+      function whatsappPhoneNumber(phone = "") {
+        const digits = String(phone || "").replace(/\D+/g, "");
+        if (!digits) return "";
+        if (digits.startsWith("00")) return digits.slice(2);
+        if (digits.startsWith("0")) return `31${digits.slice(1)}`;
+        return digits;
+      }
+
+      function leadWhatsappMessage(lead = {}) {
+        const name = lead.contactName || lead.companyName || "";
+        return [
+          `Hoi${name ? ` ${name}` : ""},`,
+          "",
+          "Met Max Webstudio. Ik heb je website bekeken en zie een paar concrete verbeterkansen.",
+          "Zal ik je kort laten zien wat we kunnen verbeteren?",
+        ].join("\n");
+      }
+
+      function renderLeadWhatsappAction(lead) {
+        const button = leadfinderElements.whatsappMessage;
+        if (!button) return;
+        const phone = whatsappPhoneNumber(lead?.phone);
+        const enabled = Boolean(lead?.id && phone);
+        button.href = enabled ? `https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(leadWhatsappMessage(lead))}` : "#";
+        button.classList.toggle("is-disabled", !enabled);
+        button.setAttribute("aria-disabled", enabled ? "false" : "true");
+        button.title = enabled ? "" : "Geen telefoonnummer bekend";
+      }
+
+      function defaultCallbackDateTime() {
+        const date = new Date();
+        date.setDate(date.getDate() + 1);
+        date.setHours(10, 0, 0, 0);
+        const offset = date.getTimezoneOffset() * 60000;
+        return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+      }
+
+      function dateFromDateTimeLocal(value = "") {
+        return String(value || "").slice(0, 10);
+      }
+
+      function setLeadAgendaMessage(message = "", type = "success") {
+        if (!leadfinderElements.agendaMessage) return;
+        leadfinderElements.agendaMessage.textContent = message;
+        leadfinderElements.agendaMessage.className = `admin-form-message ${type}`;
+        if (message && ["success", "warning", "error"].includes(type)) window.showToast?.(message, type);
+      }
+
+      function renderLeadAgendaActions(lead) {
+        const hasLead = Boolean(lead?.id);
+        if (leadfinderElements.callbackAt && hasLead && !leadfinderElements.callbackAt.value) {
+          leadfinderElements.callbackAt.value = lead.followUpDate ? `${lead.followUpDate}T10:00` : defaultCallbackDateTime();
+        }
+        if (leadfinderElements.callbackAt && !hasLead) leadfinderElements.callbackAt.value = "";
+        if (leadfinderElements.callbackRequest) leadfinderElements.callbackRequest.disabled = !hasLead;
+        if (leadfinderElements.planAgenda) leadfinderElements.planAgenda.disabled = !hasLead;
+        if (!hasLead) setLeadAgendaMessage("Selecteer een lead om een terugbelmoment te plannen.", "");
+      }
+
       function formatTimelineTime(value) {
         const date = new Date(value || "");
         if (Number.isNaN(date.getTime())) return "";
@@ -20876,6 +20961,8 @@
         renderSalesQuickActions(lead);
         renderSalesTimeline(lead);
         renderLeadWebsiteAnalysis(lead);
+        renderLeadWhatsappAction(lead);
+        renderLeadAgendaActions(lead);
       }
 
       function renderSalesDetailTabs() {
@@ -21262,6 +21349,44 @@
           leadId: lead.id,
           notes: `Sales lead (${lead.industry || "branche onbekend"}, ${lead.region || "regio onbekend"}). Leadstatus: ${getLeadFinderLabel(LEADFINDER_CALL_STATUSES, lead.callStatus)}. Website-status: ${getLeadFinderLabel(LEADFINDER_WEBSITE_STATUSES, lead.websiteStatus)}. ${getLeadNotes(lead)}`.trim(),
         });
+      }
+
+      async function planLeadCallbackAgenda(kind = "agenda") {
+        const lead = selectedLeadFinderLead();
+        if (!lead) return;
+        const callbackAt = leadfinderElements.callbackAt?.value || defaultCallbackDateTime();
+        const followUpDate = dateFromDateTimeLocal(callbackAt);
+        if (!followUpDate) {
+          setLeadAgendaMessage("Kies eerst een terugbelmoment.", "error");
+          return;
+        }
+        const title = kind === "request"
+          ? `Terugbelverzoek: ${lead.companyName || lead.contactName || "lead"}`
+          : `Agenda afspraak: ${lead.companyName || lead.contactName || "lead"} terugbellen`;
+        try {
+          const result = await saveCrmTaskWithWriteFallback({
+            title,
+            type: "lead",
+            status: "open",
+            priority: kind === "request" ? "hoog" : "normaal",
+            dueDate: followUpDate,
+            leadId: lead.id,
+            notes: [
+              kind === "request" ? "Terugbelverzoek vanuit sales lead detail." : "Interne agenda-afspraak vanuit sales lead detail.",
+              `Gepland moment: ${callbackAt.replace("T", " ")}`,
+              `Lead: ${lead.companyName || lead.contactName || lead.id}`,
+              lead.phone ? `Telefoon: ${lead.phone}` : "",
+              getLeadNotes(lead) ? `Context: ${getLeadNotes(lead).slice(0, 320)}` : "",
+            ].filter(Boolean).join("\n"),
+          });
+          await updateLeadfinderLead(lead, {
+            followUpDate,
+            callStatus: lead.callStatus === "quote_sent" ? "quote_sent" : "opvolgen",
+          }, kind === "request" ? "Terugbelverzoek ingepland." : "Interne agenda-afspraak opgeslagen.");
+          setLeadAgendaMessage(result?.fallbackUsed ? "Lokaal in de interne agenda gezet. Centrale synchronisatie volgt." : "Opgeslagen in de interne agenda.", result?.fallbackUsed ? "warning" : "success");
+        } catch (error) {
+          setLeadAgendaMessage(error.message || "Agenda-afspraak kon niet worden opgeslagen.", "error");
+        }
       }
 
               function buildLeadPayloadFromForm(ownerContext) {
@@ -21764,6 +21889,8 @@
           renderLeadfinderList();
         });
         leadfinderElements.convertCustomer?.addEventListener("click", convertSelectedLeadToCustomer);
+        leadfinderElements.callbackRequest?.addEventListener("click", () => planLeadCallbackAgenda("request"));
+        leadfinderElements.planAgenda?.addEventListener("click", () => planLeadCallbackAgenda("agenda"));
         leadfinderElements.archiveLead?.addEventListener("click", archiveSelectedLead);
         leadfinderElements.notInterestingLead?.addEventListener("click", markSelectedLeadNotInteresting);
         leadfinderElements.deleteLead?.addEventListener("click", deleteSelectedLead);
