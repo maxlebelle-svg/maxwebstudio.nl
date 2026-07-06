@@ -400,19 +400,6 @@
               </div>
             </form>
 
-            <article class="admin-card sales-recent-activity-card" id="sales-recent-activity-card">
-              <div class="admin-profile-form-heading">
-                <div>
-                  <span>Mijn laatste acties</span>
-                  <strong>Vandaag bijgewerkt</strong>
-                </div>
-                <mark class="status-badge status-prepared" id="sales-recent-activity-count">0 acties</mark>
-              </div>
-              <div class="sales-recent-activity-grid" id="sales-recent-activity-grid">
-                <div class="sales-timeline-empty">Nog geen acties vandaag.</div>
-              </div>
-            </article>
-
             <article class="admin-card leadfinder-detail-card" id="leadfinder-detail">
               <div class="sales-lead-detail-toolbar">
                 <button class="button secondary" id="leadfinder-back-to-list" type="button">Terug naar alle leads</button>
@@ -439,6 +426,15 @@
                   <mark class="status-badge status-planned" id="leadfinder-detail-state">Niet geselecteerd</mark>
                 </div>
                 <div class="settings-status-list sales-detail-compact-list" id="leadfinder-detail-list"></div>
+                <div class="sales-lead-business-preview" id="sales-lead-business-preview" aria-label="Google Maps bedrijfskaart"></div>
+                <div class="sales-lead-owner-assignment" id="sales-lead-owner-assignment" hidden>
+                  <label for="sales-lead-owner-select">
+                    <span>Lead toewijzen aan</span>
+                    <select id="sales-lead-owner-select"></select>
+                  </label>
+                  <button class="button primary" id="sales-lead-owner-save" type="button">Medewerker opslaan</button>
+                  <p class="admin-form-message" id="sales-lead-owner-message" role="status"></p>
+                </div>
               </section>
 
               <section class="sales-detail-panel sales-workflow-card" data-sales-detail-panel="notes" aria-label="Notities en opvolging">
@@ -645,6 +641,7 @@
               <p class="admin-section-intro">Alle geplande follow-ups, terugbelverzoeken en lead-afspraken op een vaste plek.</p>
             </div>
             <div class="factory-live-status" aria-label="Sales agenda status">
+              <span class="sales-agenda-sync-state" id="sales-agenda-microsoft-status"><strong>Lokaal</strong><small>Outlook</small></span>
               <span><strong id="sales-agenda-today">0</strong><small>Vandaag</small></span>
               <span><strong id="sales-agenda-week">0</strong><small>Deze week</small></span>
               <span><strong id="sales-agenda-overdue">0</strong><small>Te laat</small></span>
@@ -18186,6 +18183,11 @@
         readCrmTasks,
       } from "./src/services/crmWorkflowService.js?v=20260704-admin-session-hotfix";
       import { saveCrmTaskWithWriteFallback } from "./src/services/crmTaskWriteService.js?v=20260704-admin-session-hotfix";
+      import {
+        createMicrosoftCalendarEvent,
+        getMicrosoftCalendarStatus,
+        listMicrosoftCalendarEvents,
+      } from "./src/services/microsoftCalendarService.js?v=20260706-outlook-calendar";
 
       const workflowStorageKeys = {
         customers: ["maxwebstudioCrmCustomers", "maxwebstudioCustomers"],
@@ -18223,6 +18225,7 @@
 
       const agendaElements = {
         section: document.getElementById("sales-agenda"),
+        microsoftStatus: document.getElementById("sales-agenda-microsoft-status"),
         today: document.getElementById("sales-agenda-today"),
         week: document.getElementById("sales-agenda-week"),
         overdue: document.getElementById("sales-agenda-overdue"),
@@ -18256,6 +18259,13 @@
       let selectedAgendaTime = "10:00";
       let pendingAgendaLead = null;
       let agendaPlannerOpen = false;
+      let microsoftAgendaState = {
+        configured: false,
+        loading: false,
+        events: [],
+        message: "Microsoft agenda nog niet gekoppeld.",
+        syncedAt: "",
+      };
       const AGENDA_START_HOUR = 8;
       const AGENDA_END_HOUR = 18;
       const AGENDA_SLOT_MINUTES = 30;
@@ -18414,6 +18424,7 @@
 
       function isAgendaTask(task = {}) {
         if (!task.dueDate) return false;
+        if (task.source === "microsoft_calendar") return true;
         if (task.source === "sales_agenda") return true;
         return task.type === "lead" && (
           Boolean(task.leadId)
@@ -18504,6 +18515,21 @@
         return new Date(date.getTime() - offset).toISOString().slice(0, 10);
       }
 
+      function toAgendaDateTime(date = new Date(), time = "00:00") {
+        return `${toLocalIsoDate(date)}T${time}`;
+      }
+
+      function getAgendaWeekRange() {
+        const start = new Date(agendaWeekStart);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(start);
+        end.setDate(start.getDate() + 7);
+        return {
+          start: toAgendaDateTime(start, "00:00:00"),
+          end: toAgendaDateTime(end, "00:00:00"),
+        };
+      }
+
       function getAgendaWeekDays() {
         return Array.from({ length: 7 }, (_, index) => {
           const date = new Date(agendaWeekStart);
@@ -18517,6 +18543,111 @@
         agendaElements.message.textContent = message;
         agendaElements.message.className = `admin-form-message ${type}`;
         if (message && ["success", "warning", "error"].includes(type)) window.showToast?.(message, type);
+      }
+
+      function updateMicrosoftAgendaStatus() {
+        if (!agendaElements.microsoftStatus) return;
+        const label = microsoftAgendaState.loading
+          ? "Synchroniseren"
+          : microsoftAgendaState.configured
+            ? "Outlook"
+            : "Lokaal";
+        const caption = microsoftAgendaState.loading
+          ? "agenda"
+          : microsoftAgendaState.configured
+            ? `${microsoftAgendaState.events.length} events`
+            : "fallback";
+        agendaElements.microsoftStatus.classList.toggle("is-synced", Boolean(microsoftAgendaState.configured));
+        agendaElements.microsoftStatus.classList.toggle("is-loading", Boolean(microsoftAgendaState.loading));
+        agendaElements.microsoftStatus.classList.toggle("is-local", !microsoftAgendaState.configured && !microsoftAgendaState.loading);
+        agendaElements.microsoftStatus.title = microsoftAgendaState.message || "";
+        agendaElements.microsoftStatus.innerHTML = `<strong>${escapeHtml(label)}</strong><small>${escapeHtml(caption)}</small>`;
+      }
+
+      function normalizeMicrosoftCalendarEvent(event = {}) {
+        const start = new Date(event.startDateTime || "");
+        const end = new Date(event.endDateTime || "");
+        const dueDate = Number.isNaN(start.getTime()) ? "" : toLocalIsoDate(start);
+        const dueTime = Number.isNaN(start.getTime()) ? "" : start.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", hour12: false });
+        const dueEndTime = Number.isNaN(end.getTime()) ? "" : end.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", hour12: false });
+        return {
+          id: `microsoft-${event.id || event.microsoftEventId || `${dueDate}-${dueTime}`}`,
+          microsoftEventId: event.microsoftEventId || event.id || "",
+          title: event.title || "Outlook afspraak",
+          type: event.leadId ? "lead" : "general",
+          status: event.status || "open",
+          priority: "normaal",
+          dueDate,
+          dueTime,
+          dueEndTime,
+          dueAt: dueDate && dueTime ? `${dueDate}T${dueTime}` : "",
+          dueEndAt: dueDate && dueEndTime ? `${dueDate}T${dueEndTime}` : "",
+          leadId: event.leadId || "",
+          ownerEmail: event.userEmail || "",
+          ownerName: "Outlook",
+          assignedToEmail: event.userEmail || "",
+          assignedToName: "Outlook",
+          notes: event.notes || "Afspraak uit Microsoft agenda.",
+          source: "microsoft_calendar",
+          webLink: event.webLink || "",
+          updatedAt: event.updatedAt || "",
+        };
+      }
+
+      function getMicrosoftAgendaTasks() {
+        return (microsoftAgendaState.events || []).map(normalizeMicrosoftCalendarEvent).filter(isAgendaTask).filter(userCanSeeAgendaTask);
+      }
+
+      function getAllAgendaTasks() {
+        const localTasks = readCrmTasks().filter(isAgendaTask).filter(userCanSeeAgendaTask);
+        const microsoftTasks = getMicrosoftAgendaTasks();
+        const seen = new Set();
+        return [...localTasks, ...microsoftTasks].filter((task) => {
+          const key = task.microsoftEventId ? `microsoft:${task.microsoftEventId}` : `local:${task.id}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      }
+
+      function findAgendaTask(taskId = "") {
+        return getAllAgendaTasks().find((task) => task.id === taskId) || null;
+      }
+
+      async function refreshMicrosoftCalendarEvents({ silent = true } = {}) {
+        const context = getAgendaUserContext();
+        microsoftAgendaState.loading = true;
+        updateMicrosoftAgendaStatus();
+        try {
+          const status = await getMicrosoftCalendarStatus();
+          microsoftAgendaState.configured = Boolean(status.configured);
+          microsoftAgendaState.message = status.message || "";
+          if (!status.configured) {
+            microsoftAgendaState.events = [];
+            microsoftAgendaState.loading = false;
+            updateMicrosoftAgendaStatus();
+            renderSalesAgenda();
+            return;
+          }
+          const range = getAgendaWeekRange();
+          const data = await listMicrosoftCalendarEvents({
+            start: range.start,
+            end: range.end,
+            userEmail: context.email,
+          });
+          microsoftAgendaState.events = Array.isArray(data.events) ? data.events.map((event) => ({ ...event, userEmail: data.userEmail || context.email })) : [];
+          microsoftAgendaState.syncedAt = data.syncedAt || new Date().toISOString();
+          microsoftAgendaState.message = "Microsoft agenda is gesynchroniseerd.";
+          if (!silent) setAgendaMessage("Microsoft agenda gesynchroniseerd.", "success");
+        } catch (error) {
+          microsoftAgendaState.events = [];
+          microsoftAgendaState.message = error.message || "Microsoft agenda kon niet worden geladen.";
+          if (!silent) setAgendaMessage(microsoftAgendaState.message, "warning");
+        } finally {
+          microsoftAgendaState.loading = false;
+          updateMicrosoftAgendaStatus();
+          renderSalesAgenda();
+        }
       }
 
       function getAgendaKindLabel(kind = "agenda") {
@@ -18745,6 +18876,14 @@
           ? kind === "request" ? `Terugbelverzoek: ${pendingAgendaLead.name}` : `Follow-up: ${pendingAgendaLead.name}`
           : getAgendaKindLabel(kind));
         try {
+          const notes = [
+            pendingAgendaLead?.id
+              ? kind === "request" ? "Terugbelverzoek vanuit de sales agenda." : `${getAgendaKindLabel(kind)} gepland vanuit de sales agenda.`
+              : `${getAgendaKindLabel(kind)} vanuit de sales agenda.`,
+            `Gepland moment: ${dueAt.replace("T", " ")} - ${endTime}`,
+            manualNotes,
+            pendingAgendaLead?.phone ? `Telefoon: ${pendingAgendaLead.phone}` : "",
+          ].filter(Boolean).join("\n");
           const result = await saveCrmTaskWithWriteFallback({
             title,
             type: pendingAgendaLead?.id ? "lead" : "general",
@@ -18762,16 +18901,39 @@
             assignedToEmail: pendingAgendaLead?.assignedToEmail || pendingAgendaLead?.ownerEmail || context.email,
             assignedToName: pendingAgendaLead?.assignedToName || pendingAgendaLead?.ownerName || context.name,
             source: "sales_agenda",
-            notes: [
-              pendingAgendaLead?.id
-                ? kind === "request" ? "Terugbelverzoek vanuit de sales agenda." : `${getAgendaKindLabel(kind)} gepland vanuit de sales agenda.`
-                : `${getAgendaKindLabel(kind)} vanuit de sales agenda.`,
-              `Gepland moment: ${dueAt.replace("T", " ")} - ${endTime}`,
-              manualNotes,
-              pendingAgendaLead?.phone ? `Telefoon: ${pendingAgendaLead.phone}` : "",
-            ].filter(Boolean).join("\n"),
+            notes,
           });
-          setAgendaMessage(result?.fallbackUsed ? "Lokaal gepland. Centrale synchronisatie volgt." : "Agenda-afspraak opgeslagen.", result?.fallbackUsed ? "warning" : "success");
+          let microsoftSynced = false;
+          if (microsoftAgendaState.configured) {
+            try {
+              await createMicrosoftCalendarEvent({
+                title,
+                startDateTime: `${selectedAgendaDate}T${selectedAgendaTime}:00`,
+                endDateTime: `${selectedAgendaDate}T${endTime}:00`,
+                leadId: pendingAgendaLead?.id || "",
+                leadName: pendingAgendaLead?.name || "",
+                phone: pendingAgendaLead?.phone || "",
+                ownerEmail: pendingAgendaLead?.ownerEmail || context.email,
+                assignedToEmail: pendingAgendaLead?.assignedToEmail || pendingAgendaLead?.ownerEmail || context.email,
+                userEmail: pendingAgendaLead?.assignedToEmail || pendingAgendaLead?.ownerEmail || context.email,
+                source: "Max CRM sales agenda",
+                notes,
+              });
+              microsoftSynced = true;
+              refreshMicrosoftCalendarEvents({ silent: true });
+            } catch (error) {
+              microsoftAgendaState.message = error.message || "Outlook synchronisatie mislukt.";
+              updateMicrosoftAgendaStatus();
+            }
+          }
+          const savedMessage = microsoftSynced
+            ? "Afspraak opgeslagen in Max CRM en Outlook."
+            : microsoftAgendaState.configured
+              ? "Afspraak lokaal opgeslagen. Outlook synchronisatie mislukt."
+              : result?.fallbackUsed
+                ? "Lokaal gepland. Microsoft agenda is nog niet gekoppeld."
+                : "Agenda-afspraak opgeslagen. Microsoft agenda is nog niet gekoppeld.";
+          setAgendaMessage(savedMessage, microsoftSynced || !result?.fallbackUsed ? "success" : "warning");
           agendaPlannerOpen = false;
           resetAgendaPlannerFields();
           if (pendingAgendaLead?.id) {
@@ -18799,9 +18961,7 @@
         const query = String(agendaElements.search?.value || "").trim().toLowerCase();
         const status = agendaElements.status?.value || "";
         const date = agendaElements.date?.value || "";
-        return readCrmTasks()
-          .filter(isAgendaTask)
-          .filter(userCanSeeAgendaTask)
+        return getAllAgendaTasks()
           .filter((task) => {
             const haystack = [
               task.title,
@@ -18822,7 +18982,8 @@
 
       function renderSalesAgenda() {
         if (!agendaElements.list) return;
-        const allAgendaTasks = readCrmTasks().filter(isAgendaTask).filter(userCanSeeAgendaTask);
+        updateMicrosoftAgendaStatus();
+        const allAgendaTasks = getAllAgendaTasks();
         const todayIso = toLocalIsoDate(new Date());
         const weekLimit = new Date();
         weekLimit.setDate(weekLimit.getDate() + 7);
@@ -18862,6 +19023,7 @@
           ${tasks.map((task) => {
             const display = getAgendaEventDisplay(task);
             const isDone = task.status === "afgerond";
+            const isMicrosoftEvent = task.source === "microsoft_calendar";
             return `
           <article class="admin-card sales-agenda-card ${isDone ? "is-completed" : ""}" data-agenda-task-id="${escapeHtml(task.id)}">
             <div class="sales-agenda-time">
@@ -18876,12 +19038,14 @@
               <div class="sales-agenda-badges">
                 <mark class="status-badge status-planned">${escapeHtml(statusLabels[task.status] || task.status)}</mark>
                 <mark class="status-badge status-active">${escapeHtml(priorityLabels[task.priority] || task.priority)}</mark>
+                ${isMicrosoftEvent ? `<mark class="status-badge status-synced">Outlook</mark>` : ""}
               </div>
             </div>
             <div class="sales-agenda-actions">
               ${task.leadId ? `<button class="button secondary" type="button" data-agenda-action="open-lead">Open lead</button>` : ""}
-              <button class="button secondary" type="button" data-agenda-action="complete" ${isDone ? "disabled" : ""}>${isDone ? "Afgerond" : "Afronden"}</button>
-              <button class="button secondary" type="button" data-agenda-action="archive">Archiveren</button>
+              ${task.webLink ? `<button class="button secondary" type="button" data-agenda-action="open-outlook">Open in Outlook</button>` : ""}
+              ${isMicrosoftEvent ? "" : `<button class="button secondary" type="button" data-agenda-action="complete" ${isDone ? "disabled" : ""}>${isDone ? "Afgerond" : "Afronden"}</button>`}
+              ${isMicrosoftEvent ? "" : `<button class="button secondary" type="button" data-agenda-action="archive">Archiveren</button>`}
             </div>
           </article>
             `;
@@ -19014,8 +19178,12 @@
         }
         const eventButton = event.target.closest(".sales-calendar-event[data-agenda-task-id]");
         if (eventButton) {
-          const task = readCrmTasks().find((item) => item.id === eventButton.dataset.agendaTaskId);
-          if (task?.leadId) openAgendaLead(task);
+          const task = findAgendaTask(eventButton.dataset.agendaTaskId);
+          if (task?.leadId) {
+            openAgendaLead(task);
+          } else if (task?.webLink) {
+            window.open(task.webLink, "_blank", "noopener");
+          }
           return;
         }
         const boardSlot = event.target.closest(".sales-calendar-board-slot[data-agenda-slot]");
@@ -19052,13 +19220,18 @@
         if (!button) return;
         const card = button.closest("[data-agenda-task-id]");
         const taskId = card?.dataset.agendaTaskId;
-        const task = readCrmTasks().find((item) => item.id === taskId);
+        const task = findAgendaTask(taskId);
         if (!task) return;
         const action = button.dataset.agendaAction;
         if (action === "open-lead") {
           openAgendaLead(task);
           return;
         }
+        if (action === "open-outlook" && task.webLink) {
+          window.open(task.webLink, "_blank", "noopener");
+          return;
+        }
+        if (task.source === "microsoft_calendar") return;
         const scrollY = window.scrollY;
         if (action === "complete") completeCrmTaskLocally(task.id);
         if (action === "archive") archiveCrmTaskLocally(task.id);
@@ -19097,18 +19270,18 @@
             selectedAgendaDate = agendaElements.date.value;
             agendaWeekStart = startOfAgendaWeek(new Date(`${selectedAgendaDate}T00:00:00`));
           }
-          renderSalesAgenda();
+          refreshMicrosoftCalendarEvents({ silent: true });
         });
         agendaElements.list?.addEventListener("click", handleAgendaAction);
         agendaElements.calendar?.addEventListener("click", handleAgendaAction);
         agendaElements.timeline?.addEventListener("click", handleAgendaAction);
         agendaElements.previousWeek?.addEventListener("click", () => {
           agendaWeekStart.setDate(agendaWeekStart.getDate() - 7);
-          renderSalesAgenda();
+          refreshMicrosoftCalendarEvents({ silent: true });
         });
         agendaElements.nextWeek?.addEventListener("click", () => {
           agendaWeekStart.setDate(agendaWeekStart.getDate() + 7);
-          renderSalesAgenda();
+          refreshMicrosoftCalendarEvents({ silent: true });
         });
         agendaElements.add?.addEventListener("click", () => {
           openAgendaPlanner({ lead: null, reset: true });
@@ -19148,6 +19321,7 @@
           window.setTimeout(() => window.focusAdminPanel?.(agendaElements.section), 60);
           setAgendaMessage("Kies een dag en tijdslot en plan daarna de follow-up.", "success");
         });
+        refreshMicrosoftCalendarEvents({ silent: true });
       }
 
       initCrmWorkflow();
@@ -19222,6 +19396,11 @@
         detailSubtitle: document.getElementById("leadfinder-detail-subtitle"),
         detailState: document.getElementById("leadfinder-detail-state"),
         detailList: document.getElementById("leadfinder-detail-list"),
+        businessPreview: document.getElementById("sales-lead-business-preview"),
+        ownerAssignment: document.getElementById("sales-lead-owner-assignment"),
+        ownerAssignmentSelect: document.getElementById("sales-lead-owner-select"),
+        ownerAssignmentSave: document.getElementById("sales-lead-owner-save"),
+        ownerAssignmentMessage: document.getElementById("sales-lead-owner-message"),
         contactList: document.getElementById("sales-lead-contact-list"),
         detailNote: document.getElementById("leadfinder-detail-note"),
         detailCallStatus: document.getElementById("leadfinder-detail-call-status"),
@@ -20043,6 +20222,124 @@
         return option ? [...option.tokens] : [normalized].filter(Boolean);
       }
 
+      function uniqueSalesEmployeeOptions() {
+        const options = new Map();
+        readKnownSalesEmployees().forEach((employee) => addEmployeeFilterOption(options, employee));
+        getLeadfinderLeads().forEach((lead) => {
+          const value = getLeadOwnerValue(lead);
+          if (!value) return;
+          addEmployeeFilterOption(options, {
+            value,
+            label: getLeadOwnerLabel(lead),
+            aliases: [...getLeadOwnerFilterValues(lead)],
+          });
+        });
+        return [...options.values()].sort((a, b) => a.label.localeCompare(b.label, "nl"));
+      }
+
+      function employeeOptionFromValue(value = "") {
+        const normalized = normalizeEmployeeFilterToken(value);
+        if (!normalized) return null;
+        const direct = leadfinderEmployeeFilterTokenMap.get(normalized);
+        if (direct) return direct;
+        return uniqueSalesEmployeeOptions().find((option) => option.value === normalized || option.tokens.has(normalized)) || null;
+      }
+
+      function buildLeadOwnerAssignmentUpdates(employee) {
+        if (!employee?.value) return null;
+        const email = normalizeEmployeeFilterToken(employee.email || (employee.value.includes("@") ? employee.value : ""));
+        const name = String(employee.label || employee.name || employee.value || "").trim();
+        const authUserId = String(employee.authUserId || employee.auth_user_id || "").trim();
+        const profileId = String(employee.profileId || employee.id || "").trim();
+        return {
+          ownerAuthUserId: authUserId || undefined,
+          ownerProfileId: profileId || undefined,
+          ownerEmail: email,
+          ownerName: name,
+          medewerker: name,
+          medewerkerEmail: email,
+          employee: name,
+          employeeEmail: email,
+          assignedTo: authUserId || employee.value,
+          assignedUserEmail: email,
+          assignedUserName: name,
+          assignedToEmail: email,
+          assignedToName: name,
+          userEmail: email,
+          userName: name,
+          salesPartnerEmail: email,
+          salesPartnerName: name,
+          metadata: {
+            medewerker: name,
+            medewerkerEmail: email,
+            employee: name,
+            employeeEmail: email,
+            assignedTo: authUserId || employee.value,
+            assignedUserEmail: email,
+            assignedUserName: name,
+            assignedToEmail: email,
+            assignedToName: name,
+            ownerAuthUserId: authUserId || undefined,
+            ownerProfileId: profileId || undefined,
+            ownerEmail: email,
+            ownerName: name,
+            userEmail: email,
+            userName: name,
+            reassignedBy: getLeadfinderUserContext().email || getLeadfinderUserContext().userId || "super_admin",
+            reassignedAt: new Date().toISOString(),
+          },
+        };
+      }
+
+      function setLeadOwnerAssignmentMessage(message = "", type = "success") {
+        if (!leadfinderElements.ownerAssignmentMessage) return;
+        leadfinderElements.ownerAssignmentMessage.textContent = message;
+        leadfinderElements.ownerAssignmentMessage.className = `admin-form-message ${type}`;
+      }
+
+      function renderLeadOwnerAssignment(lead) {
+        const canAssign = getLeadfinderUserContext().role === "super_admin";
+        if (leadfinderElements.ownerAssignment) leadfinderElements.ownerAssignment.hidden = !canAssign;
+        if (!canAssign || !leadfinderElements.ownerAssignmentSelect) return;
+        const options = uniqueSalesEmployeeOptions();
+        leadfinderElements.ownerAssignmentSelect.innerHTML = options
+          .map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`)
+          .join("");
+        leadfinderElements.ownerAssignmentSelect.value = lead?.id ? employeeOptionFromValue(getLeadOwnerValue(lead))?.value || "" : "";
+        if (leadfinderElements.ownerAssignmentSave) leadfinderElements.ownerAssignmentSave.disabled = !lead?.id;
+        setLeadOwnerAssignmentMessage(lead?.id ? "" : "Selecteer eerst een lead.", "");
+      }
+
+      async function saveSelectedLeadOwnerAssignment() {
+        const lead = selectedLeadFinderLead();
+        const selectedValue = leadfinderElements.ownerAssignmentSelect?.value || "";
+        const employee = employeeOptionFromValue(selectedValue);
+        if (!lead || !employee) {
+          setLeadOwnerAssignmentMessage("Kies eerst een medewerker.", "error");
+          return;
+        }
+        const updates = buildLeadOwnerAssignmentUpdates(employee);
+        if (!updates) {
+          setLeadOwnerAssignmentMessage("Deze medewerker kon niet worden gelezen.", "error");
+          return;
+        }
+        const previousLabel = getLeadOwnerLabel(lead);
+        updates.metadata = {
+          ...(lead.metadata && typeof lead.metadata === "object" ? lead.metadata : {}),
+          ...(updates.metadata && typeof updates.metadata === "object" ? updates.metadata : {}),
+        };
+        updates.notes = [
+          getLeadNotes(lead),
+          `[${new Date().toLocaleDateString("nl-NL")}] Lead toegewezen aan ${employee.label}${previousLabel && previousLabel !== employee.label ? `, hiervoor ${previousLabel}` : ""}.`,
+        ].filter(Boolean).join("\n\n");
+        try {
+          await updateLeadfinderLead(lead, updates, `Lead toegewezen aan ${employee.label}.`);
+          setLeadOwnerAssignmentMessage(`Opgeslagen op naam van ${employee.label}.`, "success");
+        } catch (error) {
+          setLeadOwnerAssignmentMessage(error.message || "Medewerker kon niet worden opgeslagen.", "error");
+        }
+      }
+
       function leadHasOwnershipData(lead = {}) {
         return getLeadOwnerTokens(lead).length > 0 || getLeadOwnerLabel(lead) !== "Onbekend";
       }
@@ -20444,6 +20741,86 @@
           </div>
         `;
         renderGoogleTransferList(place);
+        renderLeadBusinessPreview(selectedLeadFinderLead());
+      }
+
+      function googlePhotoUrlFromPlace(place = {}, width = 760, height = 320) {
+        return place?.photos?.[0]?.getUrl ? place.photos[0].getUrl({ maxWidth: width, maxHeight: height }) : "";
+      }
+
+      function placeMatchesLead(place = {}, lead = {}) {
+        if (!place || !lead) return false;
+        const placeId = String(place.place_id || "").trim();
+        if (placeId && placeId === String(lead.googlePlaceId || lead.google_place_id || "").trim()) return true;
+        const placeWebsite = normalizeComparableUrl(place.website);
+        const leadWebsite = normalizeComparableUrl(lead.websiteUrl);
+        if (placeWebsite && leadWebsite && placeWebsite === leadWebsite) return true;
+        const placeName = String(place.name || "").trim().toLowerCase();
+        const leadName = String(lead.companyName || "").trim().toLowerCase();
+        return Boolean(placeName && leadName && placeName === leadName);
+      }
+
+      function leadGoogleBusinessData(lead = {}) {
+        const meta = lead?.metadata && typeof lead.metadata === "object" ? lead.metadata : {};
+        const place = placeMatchesLead(googlePlacesPlace, lead) ? googlePlacesPlace : null;
+        const rating = place?.rating || meta.googleRating || meta.rating || "";
+        const ratingTotal = place?.user_ratings_total || meta.googleRatingTotal || meta.userRatingsTotal || "";
+        const types = place?.types || meta.googleTypes || meta.types || [];
+        const category = Array.isArray(types) && types[0] ? readablePlaceType(types[0]) : (meta.googleCategory || lead.industry || "Bedrijf");
+        const address = place?.formatted_address || meta.googleAddress || meta.formattedAddress || meta.address || lead.address || lead.formattedAddress || lead.googleAddress || lead.region || "";
+        const phone = place?.formatted_phone_number || place?.international_phone_number || lead.phone || "";
+        const website = place?.website || lead.websiteUrl || "";
+        const mapsUrl = place?.url || lead.googleMapsUrl || meta.googleMapsUrl || (lead.companyName ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([lead.companyName, lead.region].filter(Boolean).join(" "))}` : "");
+        return {
+          name: place?.name || lead.companyName || "Geen lead geselecteerd",
+          category,
+          address,
+          phone,
+          website,
+          mapsUrl,
+          rating,
+          ratingTotal,
+          photoUrl: googlePhotoUrlFromPlace(place) || meta.googlePhotoUrl || meta.photoUrl || "",
+        };
+      }
+
+      function renderLeadBusinessPreview(lead) {
+        const target = leadfinderElements.businessPreview;
+        if (!target) return;
+        if (!lead?.id) {
+          target.innerHTML = `
+            <div class="sales-business-empty">
+              <strong>Google Maps bedrijfskaart</strong>
+              <span>Selecteer een lead om bedrijfsgegevens, route en contactinformatie te zien.</span>
+            </div>
+          `;
+          return;
+        }
+        const data = leadGoogleBusinessData(lead);
+        const websiteHref = normalizeExternalUrl(data.website);
+        const ratingLabel = data.rating ? `${Number(data.rating).toLocaleString("nl-NL")} (${data.ratingTotal || 0})` : "Geen rating";
+        const safePhotoUrl = String(data.photoUrl || "").replace(/'/g, "%27");
+        target.innerHTML = `
+          <article class="sales-google-business-card">
+            <div class="sales-google-business-photo" ${safePhotoUrl ? `style="background-image: linear-gradient(180deg, rgba(2, 10, 20, 0.02), rgba(2, 10, 20, 0.74)), url('${escapeHtml(safePhotoUrl)}');"` : ""}>
+              ${safePhotoUrl ? "" : `<span>${escapeHtml(leadInitials(lead))}</span>`}
+            </div>
+            <div class="sales-google-business-body">
+              <strong>${escapeHtml(data.name)}</strong>
+              <span>${escapeHtml(ratingLabel)} · ${escapeHtml(data.category)}</span>
+              <small>${escapeHtml(data.address || "Adres nog niet bekend")}</small>
+              <div class="sales-google-business-actions">
+                ${data.mapsUrl ? `<a href="${escapeHtml(data.mapsUrl)}" target="_blank" rel="noopener">Route</a>` : `<span>Route</span>`}
+                <button type="button" data-sales-business-action="copy">Delen</button>
+                ${websiteHref ? `<a href="${escapeHtml(websiteHref)}" target="_blank" rel="noopener">Website</a>` : `<span>Website</span>`}
+              </div>
+              <dl>
+                <div><dt>Telefoon</dt><dd>${escapeHtml(data.phone || "Geen telefoon bekend")}</dd></div>
+                <div><dt>Website</dt><dd>${websiteHref ? `<a href="${escapeHtml(websiteHref)}" target="_blank" rel="noopener">${escapeHtml(cleanDisplayUrl(websiteHref))}</a>` : "Geen website bekend"}</dd></div>
+              </dl>
+            </div>
+          </article>
+        `;
       }
 
       function renderGoogleTransferList(place) {
@@ -20522,6 +20899,8 @@
       }
 
       function buildGooglePlaceLeadUpdates(place = {}) {
+        const photoUrl = googlePhotoUrlFromPlace(place);
+        const category = place.types?.[0] ? readablePlaceType(place.types[0]) : "";
         const details = [
           place.url ? `Google Maps: ${place.url}` : "",
           place.place_id ? `Google Place ID: ${place.place_id}` : "",
@@ -20530,6 +20909,7 @@
           place.business_status ? `Status: ${place.business_status}` : "",
         ].filter(Boolean).join("\n");
         const lead = selectedLeadFinderLead();
+        const existingMeta = lead?.metadata && typeof lead.metadata === "object" ? lead.metadata : {};
         const currentNotes = String(lead?.notes || "").trim();
         const notes = details && currentNotes && !currentNotes.includes(place.url || details)
           ? [currentNotes, details].join("\n\n")
@@ -20544,6 +20924,20 @@
           notes,
           googlePlaceId: place.place_id || "",
           googleMapsUrl: place.url || "",
+          metadata: {
+            ...existingMeta,
+            googlePlaceId: place.place_id || "",
+            googleMapsUrl: place.url || "",
+            googleAddress: place.formatted_address || "",
+            formattedAddress: place.formatted_address || "",
+            address: place.formatted_address || "",
+            googleRating: place.rating || "",
+            googleRatingTotal: place.user_ratings_total || "",
+            googleCategory: category,
+            googleTypes: Array.isArray(place.types) ? place.types : [],
+            googlePhotoUrl: photoUrl,
+            businessStatus: place.business_status || "",
+          },
         };
       }
 
@@ -21066,6 +21460,18 @@
         }
         if (leadfinderElements.ownerView && leadfinderElements.ownerView !== sourceElement) {
           leadfinderElements.ownerView.value = selectedValue;
+        }
+        if (sourceElement === leadfinderElements.ownerView && canUseSalesOwnerDashboardSwitch()) {
+          const url = new URL(window.location.href);
+          if (selectedValue) {
+            url.searchParams.set("owner", selectedValue);
+            url.hash = "leadfinder-list";
+          } else {
+            url.searchParams.delete("owner");
+          }
+          window.history.pushState({}, "", url);
+          const selectedLabel = sourceElement.selectedOptions?.[0]?.textContent || "alle verkopers";
+          setLeadfinderMessage(selectedValue ? `Dashboard geopend voor ${selectedLabel}.` : "Dashboard geopend voor alle verkopers.", "success");
         }
         renderLeadfinderList();
       }
@@ -21766,6 +22172,8 @@
             ["Notities", getLeadNotes(lead) || "-"],
           ] : [["Geen lead geselecteerd", "Klik op Bekijken in de lijst."]]);
         }
+        renderLeadBusinessPreview(lead);
+        renderLeadOwnerAssignment(lead);
         if (leadfinderElements.contactList) {
           renderLeadDetailRows(leadfinderElements.contactList, hasLead ? [
             ["Telefoon", lead.phone || "-"],
@@ -22676,6 +23084,13 @@
         ensureLeadFinderDemoData();
         await loadLeadfinderDataLayer();
         populateLeadfinderOwnerFilter();
+        const requestedOwner = new URLSearchParams(window.location.search).get("owner") || "";
+        if (requestedOwner && canUseSalesOwnerDashboardSwitch()) {
+          const option = employeeOptionFromValue(requestedOwner);
+          const ownerValue = option?.value || requestedOwner;
+          if (leadfinderElements.filterOwner) leadfinderElements.filterOwner.value = ownerValue;
+          if (leadfinderElements.ownerView) leadfinderElements.ownerView.value = ownerValue;
+        }
         renderLeadfinderList();
         if (window.maxwebstudioAdminPage?.page === "sales") {
           const pendingSearch = sessionStorage.getItem("maxwebstudioPendingSalesSearch") || "";
@@ -22761,6 +23176,20 @@
         });
         leadfinderElements.saveNote?.addEventListener("click", saveLeadfinderDetailNote);
         leadfinderElements.detailCallStatus?.addEventListener("change", updateSelectedLeadStatusFromControl);
+        leadfinderElements.ownerAssignmentSave?.addEventListener("click", saveSelectedLeadOwnerAssignment);
+        leadfinderElements.businessPreview?.addEventListener("click", async (event) => {
+          const action = event.target.closest("[data-sales-business-action]")?.dataset.salesBusinessAction;
+          if (action !== "copy") return;
+          const lead = selectedLeadFinderLead();
+          const mapsUrl = leadGoogleBusinessData(lead).mapsUrl;
+          if (!mapsUrl) return;
+          try {
+            await navigator.clipboard.writeText(mapsUrl);
+            setLeadfinderMessage("Google Maps link gekopieerd.", "success");
+          } catch (error) {
+            setLeadfinderMessage("Kopiëren lukte niet. Open Route om de Maps-link te bekijken.", "error");
+          }
+        });
         leadfinderElements.syncNote?.addEventListener("click", () => retrySelectedLeadSync("notes"));
         leadfinderElements.analysisRun?.addEventListener("click", runLeadWebsiteAnalysis);
         leadfinderElements.analysisSync?.addEventListener("click", () => retrySelectedLeadSync("analysis"));
