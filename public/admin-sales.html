@@ -20510,6 +20510,7 @@
       }
 
       function leadWhatsappPhone(lead = {}) {
+        lead = lead || {};
         const directPhone = lead.phone || lead.telephone || lead.telefoon || lead.mobile || lead.mobilePhone || lead.phoneNumber || "";
         const normalizedDirect = whatsappPhoneNumber(directPhone);
         if (normalizedDirect) return normalizedDirect;
@@ -20518,6 +20519,7 @@
       }
 
       function leadWhatsappMessage(lead = {}) {
+        lead = lead || {};
         const name = lead.contactName || lead.companyName || "";
         return [
           `Hoi${name ? ` ${name}` : ""},`,
