@@ -317,6 +317,58 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     return jsonResponse(result.sent ? 200 : 503, { success: result.sent, sent: result.sent, warning: result.warning || "", template });
   }
 
+  if (action === "send_upsell_proposal") {
+    if (!current?.id) return jsonResponse(400, { success: false, error: "Demo-site niet gevonden." });
+    const journey = mapJourney(current);
+    const to = cleanText(journey.email).toLowerCase();
+    if (!to) return jsonResponse(400, { success: false, error: "E-mailadres ontbreekt voor deze klant." });
+    const updatedAt = new Date().toISOString();
+    const previewPackage = current.preview_package && typeof current.preview_package === "object" ? current.preview_package : {};
+    const savedDemoSite = previewPackage.savedDemoSite || previewPackage.saved_demo_site || {};
+    const existingWorkflow = savedDemoSite.workflow && typeof savedDemoSite.workflow === "object" ? savedDemoSite.workflow : {};
+    const workflow = sanitizeDemoSiteWorkflow({
+      ...existingWorkflow,
+      ...(payload.workflow && typeof payload.workflow === "object" ? payload.workflow : {}),
+      upsellStatus: "sent",
+      upsellSentAt: updatedAt,
+      updatedAt,
+      updatedBy: admin.id,
+    });
+    if (!workflow.upsellItems.length) return jsonResponse(400, { success: false, error: "Selecteer minimaal één meerwerkoptie." });
+    const template = buildUpsellProposalEmail({ journey, savedDemoSite, workflow });
+    const result = await sendEmail({
+      to,
+      subject: template.subject,
+      text: template.text,
+      html: template.html,
+    });
+    const nextWorkflow = sanitizeDemoSiteWorkflow({
+      ...workflow,
+      upsellStatus: result.sent ? "sent" : "send_failed",
+      upsellSentAt: result.sent ? updatedAt : existingWorkflow.upsellSentAt,
+      upsellLastError: result.warning || "",
+      updatedAt,
+      updatedBy: admin.id,
+    });
+    const nextSavedDemoSite = {
+      ...savedDemoSite,
+      workflow: nextWorkflow,
+      updatedAt,
+    };
+    const record = {
+      preview_package: {
+        ...previewPackage,
+        savedDemoSite: nextSavedDemoSite,
+      },
+      updated_by: admin.id,
+      updated_at: updatedAt,
+    };
+    const rows = await patchJourneySafe({ supabaseUrl, serviceRoleKey, id: current.id, record });
+    await createEvent({ supabaseUrl, serviceRoleKey, journeyId: current.id, type: "upsell_proposal", title: result.sent ? "Meerwerkvoorstel verzonden" : "Meerwerkvoorstel niet verzonden", description: template.subject, visible: false, createdBy: admin.id });
+    const responseJourney = sanitizeAdminJourney(mapJourney(rows[0] || await readJourneyById({ supabaseUrl, serviceRoleKey, id: current.id })));
+    return jsonResponse(result.sent ? 200 : 503, { success: result.sent, sent: result.sent, warning: result.warning || "", journey: responseJourney, demoJourney: responseJourney, workflow: nextWorkflow, template });
+  }
+
   if (action === "update_demo_site_workflow") {
     if (!current?.id) return jsonResponse(400, { success: false, error: "Demo-site niet gevonden." });
     const updatedAt = new Date().toISOString();
@@ -820,6 +872,82 @@ function buildEmailTemplate(typeOrStatus = "", journey = {}) {
   return { type, to: cleanText(journey.email).toLowerCase(), ...templates[type] };
 }
 
+function buildUpsellProposalEmail({ journey = {}, savedDemoSite = {}, workflow = {} }) {
+  const business = cleanText(savedDemoSite.businessName || journey.businessName || journey.business_name || "uw website");
+  const name = cleanContactName(journey.contactName || journey.contact_name);
+  const greeting = name ? `Hoi ${name},` : "Hoi,";
+  const items = Array.isArray(workflow.upsellItems) ? workflow.upsellItems : [];
+  const startDate = formatLongDate(workflow.upsellStartDate);
+  const once = formatEuro(workflow.upsellOneTimeTotal || 0);
+  const monthly = formatEuro(workflow.upsellMonthlyTotal || 0);
+  const rows = items.map((item) => `
+    <tr>
+      <td style="padding:14px 0;border-bottom:1px solid #e5e7eb;">
+        <strong style="display:block;color:#07111f;font-size:16px;">${escapeHtml(item.label)}</strong>
+        <span style="display:block;color:#64748b;font-size:13px;margin-top:4px;">${escapeHtml(item.category || "Meerwerk")}</span>
+      </td>
+      <td align="right" style="padding:14px 0;border-bottom:1px solid #e5e7eb;color:#2563eb;font-weight:800;white-space:nowrap;">${escapeHtml(item.price)}</td>
+    </tr>
+  `).join("");
+  const subject = `Meerwerkvoorstel voor ${business}`;
+  const text = `${greeting}
+
+We hebben een aanvullend voorstel klaargezet voor ${business}.
+
+Geselecteerde diensten:
+${items.map((item) => `- ${item.label}: ${item.price}`).join("\n")}
+
+Startdatum: ${startDate}
+Eenmalig: ${once} ex. btw
+Maandelijks: ${monthly} / maand ex. btw
+
+Wilt u akkoord geven of nog iets aanpassen? Reageer gerust op deze mail.
+
+Met vriendelijke groet,
+Max Webstudio`;
+  const html = `<!doctype html>
+<html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;background:#f1f5f9;font-family:Inter,Arial,sans-serif;color:#0f172a;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f1f5f9;padding:28px 14px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:680px;background:#ffffff;border-radius:18px;overflow:hidden;border:1px solid #dbe4ef;">
+        <tr>
+          <td style="background:#061527;padding:28px 32px;color:#ffffff;">
+            <table role="presentation" width="100%"><tr>
+              <td><div style="font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:#22d3ee;font-weight:900;">MaxWebstudio</div><h1 style="margin:10px 0 0;font-size:30px;line-height:1.08;">Meerwerk voorstel</h1></td>
+              <td align="right"><div style="display:inline-grid;place-items:center;width:46px;height:46px;border-radius:12px;background:#1d4ed8;color:#fff;font-weight:950;font-size:24px;">M</div></td>
+            </tr></table>
+          </td>
+        </tr>
+        <tr><td style="padding:30px 32px;">
+          <p style="margin:0 0 14px;font-size:16px;">${escapeHtml(greeting)}</p>
+          <p style="margin:0 0 20px;color:#475569;font-size:16px;line-height:1.6;">We hebben de volgende extra diensten klaargezet voor <strong>${escapeHtml(business)}</strong>. Als u akkoord bent, kunnen we starten vanaf <strong>${escapeHtml(startDate)}</strong>.</p>
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0">${rows}</table>
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:22px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;">
+            <tr><td style="padding:18px 20px;color:#64748b;font-weight:800;">Startdatum</td><td align="right" style="padding:18px 20px;font-weight:900;">${escapeHtml(startDate)}</td></tr>
+            <tr><td style="padding:0 20px 18px;color:#64748b;font-weight:800;">Eenmalig</td><td align="right" style="padding:0 20px 18px;font-weight:900;">${escapeHtml(once)} ex. btw</td></tr>
+            <tr><td style="padding:0 20px 18px;color:#64748b;font-weight:800;">Maandelijks</td><td align="right" style="padding:0 20px 18px;color:#0f766e;font-weight:950;">${escapeHtml(monthly)} / maand ex. btw</td></tr>
+          </table>
+          <p style="margin:24px 0 0;color:#475569;font-size:15px;line-height:1.6;">Wilt u akkoord geven of nog iets aanpassen? Reageer gerust op deze mail, dan zetten we de vervolgstap klaar.</p>
+        </td></tr>
+        <tr><td style="padding:22px 32px;background:#f8fafc;color:#64748b;font-size:13px;font-weight:800;">MaxWebstudio.nl</td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+  return { subject, text, html };
+}
+
+function formatEuro(value = 0) {
+  return new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(Number(value || 0));
+}
+
+function formatLongDate(value = "") {
+  const date = new Date(`${cleanText(value)}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return "in overleg";
+  return date.toLocaleDateString("nl-NL", { day: "2-digit", month: "long", year: "numeric" });
+}
+
 function emailTemplates() {
   return [
     ["day1_received", "Dag 1 - Aanvraag ontvangen"],
@@ -1298,7 +1426,10 @@ function sanitizeDemoSiteWorkflow(workflow = {}) {
     upsellItems: sanitizeUpsellItems(workflow.upsellItems || workflow.upsell_items),
     upsellOneTimeTotal: Math.max(0, Number(workflow.upsellOneTimeTotal || workflow.upsell_one_time_total || 0)),
     upsellMonthlyTotal: Math.max(0, Number(workflow.upsellMonthlyTotal || workflow.upsell_monthly_total || 0)),
+    upsellStartDate: cleanText(workflow.upsellStartDate || workflow.upsell_start_date),
     upsellPreparedAt: cleanText(workflow.upsellPreparedAt || workflow.upsell_prepared_at),
+    upsellSentAt: cleanText(workflow.upsellSentAt || workflow.upsell_sent_at),
+    upsellLastError: cleanText(workflow.upsellLastError || workflow.upsell_last_error).slice(0, 240),
     updatedAt: cleanText(workflow.updatedAt || workflow.updated_at),
     updatedBy: cleanText(workflow.updatedBy || workflow.updated_by),
   };
