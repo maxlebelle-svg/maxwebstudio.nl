@@ -11,9 +11,103 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css?v=20260705-workflow-modules" />
     <style>
+      .social-studio-shell {
+        min-width: 0;
+      }
+
+      .social-studio-hero {
+        grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
+        align-items: center;
+      }
+
+      .social-studio-hero-panel {
+        display: grid;
+        gap: 12px;
+        align-self: stretch;
+        padding: 18px;
+        border: 1px solid rgba(96, 165, 250, 0.2);
+        border-radius: 8px;
+        background:
+          radial-gradient(circle at 18% 0%, rgba(34, 211, 238, 0.12), transparent 32%),
+          linear-gradient(180deg, rgba(15, 23, 42, 0.74), rgba(2, 14, 25, 0.78));
+      }
+
+      .social-studio-hero-panel strong {
+        color: #f8fbff;
+        font-size: clamp(34px, 3vw, 54px);
+        line-height: 1;
+      }
+
+      .social-studio-hero-panel p {
+        margin: 0;
+        color: rgba(226, 236, 248, 0.72);
+        font-weight: 750;
+        line-height: 1.5;
+      }
+
       .social-studio-workspace {
         display: grid;
         gap: 22px;
+      }
+
+      .social-studio-toolbar,
+      .social-studio-form,
+      .social-studio-preview-shell,
+      .social-studio-templates,
+      .social-studio-variants {
+        display: grid;
+        gap: 16px;
+        padding: 22px;
+      }
+
+      .social-studio-toolbar {
+        grid-template-columns: repeat(4, minmax(160px, 1fr));
+        align-items: end;
+      }
+
+      .social-studio-toolbar-actions,
+      .social-studio-actions,
+      .social-studio-template-list,
+      .social-studio-variant-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .social-studio-toolbar-actions,
+      .social-studio-variant-toolbar {
+        grid-column: 1 / -1;
+      }
+
+      .social-studio-toolbar label,
+      .social-studio-form label,
+      .social-studio-variant-toolbar label {
+        display: grid;
+        gap: 8px;
+        color: rgba(226, 236, 248, 0.76);
+        font-size: 13px;
+        font-weight: 850;
+      }
+
+      .social-studio-toolbar input,
+      .social-studio-toolbar select,
+      .social-studio-form input,
+      .social-studio-form select,
+      .social-studio-form textarea,
+      .social-studio-variant-toolbar input,
+      .social-studio-variant-toolbar select {
+        width: 100%;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 8px;
+        color: #f8fbff;
+        background: rgba(15, 23, 42, 0.76);
+      }
+
+      .social-studio-message {
+        grid-column: 1 / -1;
+        min-height: 22px;
+        margin: 0;
       }
 
       .social-studio-platforms {
@@ -68,51 +162,27 @@
 
       .social-studio-grid {
         display: grid;
-        grid-template-columns: minmax(360px, 0.95fr) minmax(360px, 0.75fr);
+        grid-template-columns: minmax(360px, 0.95fr) minmax(360px, 0.78fr);
         gap: 22px;
         align-items: start;
       }
 
-      .social-studio-form,
-      .social-studio-preview-shell,
-      .social-studio-variants {
-        display: grid;
-        gap: 16px;
-        padding: 22px;
-      }
-
-      .social-studio-form label {
-        display: grid;
-        gap: 8px;
-        color: rgba(226, 236, 248, 0.76);
-        font-size: 13px;
-        font-weight: 850;
-      }
-
-      .social-studio-form input,
-      .social-studio-form select,
       .social-studio-form textarea {
-        width: 100%;
-        border: 1px solid rgba(148, 163, 184, 0.2);
-        border-radius: 8px;
-        color: #f8fbff;
-        background: rgba(15, 23, 42, 0.76);
-      }
-
-      .social-studio-form textarea {
-        min-height: 156px;
+        min-height: 174px;
         resize: vertical;
       }
 
-      .social-studio-actions {
+      .social-studio-field-meta {
         display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        color: rgba(226, 236, 248, 0.54);
+        font-size: 12px;
+        font-weight: 750;
       }
 
-      .social-studio-message {
-        min-height: 22px;
+      .social-studio-template-list button {
+        min-height: 42px;
       }
 
       .social-studio-preview-card {
@@ -194,6 +264,7 @@
         font-size: 13px;
         font-weight: 900;
         letter-spacing: 0.08em;
+        text-align: center;
         text-transform: uppercase;
       }
 
@@ -284,6 +355,55 @@
         font-weight: 800;
       }
 
+      .social-studio-checks {
+        display: grid;
+        gap: 10px;
+      }
+
+      .social-studio-check {
+        display: grid;
+        grid-template-columns: 24px minmax(0, 1fr);
+        gap: 8px;
+        align-items: center;
+        padding: 10px;
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        border-radius: 8px;
+        background: rgba(15, 23, 42, 0.54);
+      }
+
+      .social-studio-check::before {
+        content: "";
+        display: grid;
+        place-items: center;
+        width: 22px;
+        height: 22px;
+        border: 1px solid rgba(148, 163, 184, 0.24);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      .social-studio-check.is-done::before {
+        content: "✓";
+        color: #dcfce7;
+        border-color: rgba(34, 197, 94, 0.42);
+        background: rgba(34, 197, 94, 0.16);
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .social-studio-check strong {
+        color: #f8fbff;
+        font-size: 13px;
+      }
+
+      .social-studio-check span {
+        display: block;
+        margin-top: 3px;
+        color: rgba(226, 236, 248, 0.62);
+        font-size: 12px;
+        font-weight: 750;
+      }
+
       .social-studio-variant-list {
         display: grid;
         gap: 10px;
@@ -326,6 +446,8 @@
       }
 
       @media (max-width: 1180px) {
+        .social-studio-hero,
+        .social-studio-toolbar,
         .social-studio-platforms,
         .social-studio-grid {
           grid-template-columns: 1fr;
@@ -333,8 +455,10 @@
       }
 
       @media (max-width: 760px) {
+        .social-studio-toolbar,
         .social-studio-form,
         .social-studio-preview-shell,
+        .social-studio-templates,
         .social-studio-variants {
           padding: 18px;
         }
@@ -388,17 +512,50 @@
         </nav>
       </aside>
 
-      <div class="admin-crm-main workflow-module-shell">
-        <header class="admin-section admin-hero">
+      <div class="admin-crm-main workflow-module-shell social-studio-shell">
+        <header class="admin-section admin-hero social-studio-hero">
           <div>
             <p class="section-kicker">Production</p>
             <h1>Social Media Studio</h1>
             <p>Maak posts, captions en advertenties voor klanten vanuit één editor.</p>
           </div>
-          <span class="workflow-module-label">Lokale editor - publicatie later gekoppeld</span>
+          <aside class="social-studio-hero-panel" aria-label="Social Media Studio status">
+            <span class="workflow-module-label">Lokale studio - geen publicatie API</span>
+            <strong id="social-hero-count">0 varianten</strong>
+            <p id="social-hero-detail">Concepten, varianten en exports blijven lokaal bewaard in deze browser.</p>
+          </aside>
         </header>
 
         <section class="social-studio-workspace" aria-label="Social Media Studio workspace">
+          <section class="admin-card social-studio-toolbar" aria-label="Campagnecontext">
+            <label for="social-client">Klantnaam<input id="social-client" autocomplete="organization" placeholder="Klantnaam placeholder" /></label>
+            <label for="social-campaign">Campagne<input id="social-campaign" autocomplete="off" placeholder="Bijv. zomeractie, nieuwe website, reviewcampagne" /></label>
+            <label for="social-goal">Doel<select id="social-goal">
+              <option>Meer aanvragen</option>
+              <option>Naamsbekendheid</option>
+              <option>Websitebezoek</option>
+              <option>Reviews en vertrouwen</option>
+              <option>Vacature / personeel</option>
+            </select></label>
+            <label for="social-date">Publicatiedatum<input id="social-date" type="date" /></label>
+            <label for="social-visual-format">Visual format<select id="social-visual-format">
+              <option value="square">Vierkant 1:1</option>
+              <option value="portrait">Staand 4:5</option>
+              <option value="landscape">Liggend 1.91:1</option>
+              <option value="story">Story 9:16</option>
+            </select></label>
+            <label for="variant-search">Zoek varianten<input id="variant-search" type="search" placeholder="Zoek op titel, tekst, platform of klant" /></label>
+            <label for="variant-platform-filter">Variantfilter<select id="variant-platform-filter"></select></label>
+            <div class="social-studio-toolbar-actions">
+              <button class="button secondary" id="load-sample-social" type="button">Voorbeeld laden</button>
+              <button class="button secondary" id="import-social-json" type="button">Import JSON</button>
+              <button class="button secondary" id="export-social-json" type="button">Export JSON</button>
+              <button class="button secondary" id="clear-social-storage" type="button">Alles wissen</button>
+            </div>
+            <input id="social-json-file" type="file" accept="application/json,.json" hidden />
+            <p class="admin-form-message social-studio-message" id="social-studio-message" role="status" aria-live="polite"></p>
+          </section>
+
           <div class="social-studio-platforms" role="tablist" aria-label="Platform kiezen">
             <button class="social-studio-platform is-active" type="button" role="tab" aria-selected="true" data-platform="facebook">
               <strong>Facebook</strong>
@@ -422,13 +579,37 @@
             </button>
           </div>
 
+          <section class="admin-card social-studio-templates" aria-label="Snelle templates">
+            <div class="admin-section-heading">
+              <div>
+                <p class="section-kicker">Templates</p>
+                <h2>Snelle start</h2>
+              </div>
+            </div>
+            <div class="social-studio-template-list">
+              <button class="button secondary" type="button" data-template="promotion">Actie / aanbieding</button>
+              <button class="button secondary" type="button" data-template="case">Klantcase</button>
+              <button class="button secondary" type="button" data-template="review">Review post</button>
+              <button class="button secondary" type="button" data-template="local">Lokale update</button>
+              <button class="button secondary" type="button" data-template="vacancy">Vacature</button>
+            </div>
+          </section>
+
           <div class="social-studio-grid">
             <form class="admin-card social-studio-form" id="social-studio-form">
               <label for="social-title">Titel/onderwerp<input id="social-title" name="title" autocomplete="off" placeholder="Bijv. Zomeractie voor nieuwe klanten" /></label>
               <label for="social-caption">Caption/tekst<textarea id="social-caption" name="caption" placeholder="Schrijf hier de posttekst..."></textarea></label>
+              <div class="social-studio-field-meta">
+                <span id="caption-counter">0 tekens</span>
+                <span id="caption-guidance">Past ruim binnen het platform.</span>
+              </div>
               <label for="social-cta">Call-to-action<input id="social-cta" name="cta" autocomplete="off" placeholder="Plan een kennismaking" /></label>
               <label for="social-link">Link<input id="social-link" name="link" type="url" autocomplete="off" placeholder="https://maxwebstudio.nl" /></label>
               <label for="social-hashtags">Hashtags<input id="social-hashtags" name="hashtags" autocomplete="off" placeholder="#website #marketing #lokaal" /></label>
+              <div class="social-studio-field-meta">
+                <span id="hashtag-counter">0 hashtags</span>
+                <span id="platform-rule">Platformcheck actief.</span>
+              </div>
               <label for="social-tone">Tone of voice<select id="social-tone" name="tone">
                 <option>Professioneel</option>
                 <option>Enthousiast</option>
@@ -441,28 +622,28 @@
                 <button class="button secondary" type="button" id="save-variant">Variant opslaan</button>
                 <button class="button secondary" type="button" id="copy-text">Kopieer tekst</button>
                 <button class="button secondary" type="button" id="reset-editor">Reset editor</button>
+                <button class="button secondary" type="button" id="generate-social-content">AI concept later</button>
                 <button class="button secondary" type="button" id="publish-social-post">Publiceren</button>
               </div>
-              <p class="admin-form-message social-studio-message" id="social-studio-message" role="status" aria-live="polite"></p>
             </form>
 
             <aside class="admin-card social-studio-preview-shell" aria-label="Live preview">
               <div class="admin-section-heading">
                 <div>
                   <p class="section-kicker">Live preview</p>
-                  <h2 id="preview-heading">Facebook post</h2>
+                  <h2 id="preview-heading">Facebook preview</h2>
                 </div>
               </div>
 
               <article class="social-studio-preview-card" id="social-preview-card" data-platform="facebook">
                 <div class="social-preview-header">
-                  <div class="social-preview-avatar" aria-hidden="true">MW</div>
+                  <div class="social-preview-avatar" aria-hidden="true" id="preview-avatar">MW</div>
                   <div class="social-preview-meta">
                     <strong id="preview-client">Klantnaam placeholder</strong>
                     <span><span id="preview-platform">Facebook</span> · <span id="preview-date"></span></span>
                   </div>
                 </div>
-                <div class="social-preview-visual" id="preview-visual">Visual placeholder</div>
+                <div class="social-preview-visual" id="preview-visual">Vierkant 1:1 visual placeholder</div>
                 <div class="social-preview-body">
                   <h3 class="social-preview-title" id="preview-title">Titel of onderwerp verschijnt hier</h3>
                   <p class="social-preview-text" id="preview-caption">Je caption wordt live bijgewerkt terwijl je typt.</p>
@@ -474,6 +655,8 @@
                   <span class="social-preview-cta" id="preview-cta">Meer informatie</span>
                 </div>
               </article>
+
+              <div class="social-studio-checks" id="platform-checks" aria-live="polite"></div>
             </aside>
           </div>
 
@@ -484,11 +667,15 @@
                 <h2 id="variants-heading">Opgeslagen varianten</h2>
               </div>
             </div>
+            <div class="social-studio-variant-toolbar">
+              <button class="button secondary" id="copy-all-variants" type="button">Alle teksten kopiëren</button>
+              <button class="button secondary" id="download-selected-platform" type="button">Platform export</button>
+            </div>
             <div class="social-studio-variant-list" id="variant-list" aria-live="polite"></div>
           </section>
         </section>
       </div>
     </main>
-    <script src="src/social-media-studio.js?v=20260705-social-media-studio"></script>
+    <script src="src/social-media-studio.js?v=20260707-social-media-studio"></script>
   </body>
 </html>

@@ -70,6 +70,10 @@
               <option value="restaurant-demo">Restaurant demo</option>
             </select>
           </label>
+          <label>
+            <span>Pagina URL</span>
+            <input id="seo-target-url" type="url" placeholder="https://klant.nl/dienst" />
+          </label>
           <div class="seo-studio-actions">
             <button class="button primary" id="seo-save-draft" type="button">Opslaan concept</button>
             <button class="button secondary" type="button" disabled>AI genereren <span>Binnenkort</span></button>
@@ -95,18 +99,55 @@
               <p id="seo-preview-description">Meta description verschijnt hier zodra je tekst invult.</p>
             </div>
           </article>
+          <article class="admin-card seo-premium-card">
+            <p class="section-kicker">Premium pipeline</p>
+            <div class="seo-premium-steps">
+              <span><strong>Content brief</strong><small>Klant, doelgroep, pagina en CTA</small></span>
+              <span><strong>AI generatie</strong><small>Titels, meta, FAQ en schema</small></span>
+              <span><strong>Publicatie</strong><small>CMS-sync en meetdata</small></span>
+            </div>
+          </article>
         </section>
 
         <section class="seo-studio-workspace" aria-label="SEO Studio workspace">
           <div class="seo-studio-tabs" role="tablist" aria-label="SEO Studio onderdelen">
-            <button class="seo-studio-tab is-active" type="button" data-tab="keywords">Keywords</button>
+            <button class="seo-studio-tab is-active" type="button" data-tab="brief">Page Brief</button>
+            <button class="seo-studio-tab" type="button" data-tab="keywords">Keywords</button>
             <button class="seo-studio-tab" type="button" data-tab="metadata">Metadata</button>
             <button class="seo-studio-tab" type="button" data-tab="faq">FAQ</button>
             <button class="seo-studio-tab" type="button" data-tab="schema">Schema.org</button>
             <button class="seo-studio-tab" type="button" data-tab="score">Score</button>
+            <button class="seo-studio-tab" type="button" data-tab="roadmap">Roadmap</button>
           </div>
 
-          <section class="seo-studio-panel" data-panel="keywords">
+          <section class="seo-studio-panel" data-panel="brief">
+            <article class="admin-card seo-studio-card">
+              <div class="seo-card-heading">
+                <div>
+                  <p class="section-kicker">Page Brief</p>
+                  <h2>Pagina context</h2>
+                </div>
+                <span class="seo-badge">Strategie</span>
+              </div>
+              <div class="seo-form-grid">
+                <label>Pagina type<select id="seo-page-type">
+                  <option value="">Kies pagina type</option>
+                  <option>Homepagina</option>
+                  <option>Dienstpagina</option>
+                  <option>Lokale landingspagina</option>
+                  <option>Blog / kennisbank</option>
+                  <option>Contact / conversiepagina</option>
+                </select></label>
+                <label>Pagina doel<input id="seo-page-goal" type="text" placeholder="bijv. meer offerteaanvragen voor dakrenovatie" /></label>
+                <label>Doelgroep<input id="seo-audience" type="text" placeholder="bijv. huiseigenaren in Noord-Holland" /></label>
+                <label>Primaire CTA<input id="seo-cta" type="text" placeholder="bijv. Vraag een gratis inspectie aan" /></label>
+                <label class="seo-span-2">H1 voorstel<input id="seo-h1" type="text" placeholder="bijv. Website laten maken voor lokale ondernemers" /></label>
+                <label class="seo-span-2">Content brief<textarea id="seo-content-brief" rows="5" placeholder="Belangrijkste invalshoek, bewijs, bezwaren en interne links."></textarea></label>
+              </div>
+            </article>
+          </section>
+
+          <section class="seo-studio-panel" data-panel="keywords" hidden>
             <article class="admin-card seo-studio-card">
               <div class="seo-card-heading">
                 <div>
@@ -226,6 +267,41 @@
               </div>
               <div class="seo-check-list" id="seo-check-list"></div>
             </article>
+          </section>
+
+          <section class="seo-studio-panel" data-panel="roadmap" hidden>
+            <div class="seo-two-column">
+              <article class="admin-card seo-studio-card">
+                <div class="seo-card-heading">
+                  <div>
+                    <p class="section-kicker">Straks</p>
+                    <h2>Wat SEO Studio kan worden</h2>
+                  </div>
+                  <span class="seo-badge is-warning">Nog niet gekoppeld</span>
+                </div>
+                <div class="seo-roadmap-list">
+                  <span><strong>AI SEO generatie</strong><small>Brief naar keywordclusters, titels, descriptions, FAQ, schema en content-outline.</small></span>
+                  <span><strong>Website analyse</strong><small>Pagina ophalen, headings lezen, ontbrekende metadata vinden en technische checks tonen.</small></span>
+                  <span><strong>Publicatieflow</strong><small>Concepten doorzetten naar Website Factory, CMS of klantwebsite na review.</small></span>
+                  <span><strong>Performance feedback</strong><small>Search Console, Analytics en rankingdata terughalen naar de scorekaart.</small></span>
+                </div>
+              </article>
+              <article class="admin-card seo-studio-card">
+                <div class="seo-card-heading">
+                  <div>
+                    <p class="section-kicker">Nodig</p>
+                    <h2>Premium basis</h2>
+                  </div>
+                  <span class="seo-badge">Setup</span>
+                </div>
+                <div class="seo-roadmap-list">
+                  <span><strong>Klantwebsite-koppeling</strong><small>Per klant een siteprofiel met URL, CMS-type, pagina's, sitemap en publicatierechten.</small></span>
+                  <span><strong>AI service laag</strong><small>Veilige serverfunctie met prompts, guardrails, logging, retries en kostenlimieten.</small></span>
+                  <span><strong>SEO databronnen</strong><small>Search Console, Analytics, sitemap crawl, keyworddata en optioneel SERP/competitor API.</small></span>
+                  <span><strong>Review workflow</strong><small>Concept, goedkeuring, changelog, rollback en publicatie-status per klantpagina.</small></span>
+                </div>
+              </article>
+            </div>
           </section>
         </section>
       </div>

@@ -2,6 +2,13 @@ const STORAGE_KEY = "maxwebstudio.seoStudioDraft.v1";
 
 const initialState = {
   clientSite: "",
+  targetUrl: "",
+  pageType: "",
+  pageGoal: "",
+  audience: "",
+  h1: "",
+  cta: "",
+  contentBrief: "",
   mainKeyword: "",
   keywords: [],
   seoTitle: "",
@@ -15,11 +22,18 @@ const state = loadState();
 
 const nodes = {
   clientSite: document.getElementById("seo-client-site"),
+  targetUrl: document.getElementById("seo-target-url"),
   saveDraft: document.getElementById("seo-save-draft"),
   exportDraft: document.getElementById("seo-export"),
   statusMessage: document.getElementById("seo-status-message"),
   tabs: [...document.querySelectorAll(".seo-studio-tab")],
   panels: [...document.querySelectorAll(".seo-studio-panel")],
+  pageType: document.getElementById("seo-page-type"),
+  pageGoal: document.getElementById("seo-page-goal"),
+  audience: document.getElementById("seo-audience"),
+  h1: document.getElementById("seo-h1"),
+  cta: document.getElementById("seo-cta"),
+  contentBrief: document.getElementById("seo-content-brief"),
   mainKeyword: document.getElementById("seo-main-keyword"),
   keywordIntent: document.getElementById("seo-keyword-intent"),
   extraKeyword: document.getElementById("seo-extra-keyword"),
@@ -94,10 +108,25 @@ function getStatusClass(status) {
 
 function syncInputs() {
   nodes.clientSite.value = state.clientSite;
+  nodes.targetUrl.value = state.targetUrl;
+  nodes.pageType.value = state.pageType;
+  nodes.pageGoal.value = state.pageGoal;
+  nodes.audience.value = state.audience;
+  nodes.h1.value = state.h1;
+  nodes.cta.value = state.cta;
+  nodes.contentBrief.value = state.contentBrief;
   nodes.mainKeyword.value = state.mainKeyword;
   nodes.seoTitle.value = state.seoTitle;
   nodes.metaDescription.value = state.metaDescription;
   nodes.schemaType.value = state.schemaType;
+}
+
+function bindStateInput(node, key, eventName = "input") {
+  node.addEventListener(eventName, () => {
+    state[key] = node.value;
+    saveState();
+    render();
+  });
 }
 
 function renderKeywords() {
@@ -177,8 +206,11 @@ function getSchemaPreview() {
     "@type": schemaType,
     name: state.seoTitle || "Klantpagina titel",
     description: state.metaDescription || "Meta description placeholder",
-    url: state.clientSite ? `https://maxwebstudio.nl/${state.clientSite}` : "https://maxwebstudio.nl/klantpagina",
+    url: state.targetUrl || (state.clientSite ? `https://maxwebstudio.nl/${state.clientSite}` : "https://maxwebstudio.nl/klantpagina"),
   };
+
+  if (state.h1) base.headline = state.h1;
+  if (state.audience) base.audience = state.audience;
 
   if (schemaType === "FAQPage") {
     base.mainEntity = state.faqs.map((faq) => ({
@@ -218,16 +250,28 @@ function renderMetadata() {
 
   updateText(nodes.previewTitle, state.seoTitle || "SEO title verschijnt hier");
   updateText(nodes.previewDescription, state.metaDescription || "Meta description verschijnt hier zodra je tekst invult.");
-  updateText(nodes.previewUrl, state.clientSite ? `maxwebstudio.nl/${state.clientSite}` : "maxwebstudio.nl/klantpagina");
+  updateText(nodes.previewUrl, formatPreviewUrl());
+}
+
+function formatPreviewUrl() {
+  if (state.targetUrl.trim()) {
+    return state.targetUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  }
+  return state.clientSite ? `maxwebstudio.nl/${state.clientSite}` : "maxwebstudio.nl/klantpagina";
 }
 
 function getChecks() {
   return [
+    { label: "Klantwebsite geselecteerd", passed: Boolean(state.clientSite) },
+    { label: "Pagina URL ingevuld", passed: Boolean(state.targetUrl.trim()) },
+    { label: "Pagina doel duidelijk", passed: Boolean(state.pageGoal.trim()) },
+    { label: "H1 voorstel aanwezig", passed: Boolean(state.h1.trim()) },
     { label: "Hoofdzoekwoord ingevuld", passed: Boolean(state.mainKeyword.trim()) },
     { label: "Meta title aanwezig", passed: Boolean(state.seoTitle.trim()) },
     { label: "Meta description aanwezig", passed: Boolean(state.metaDescription.trim()) },
     { label: "FAQ aanwezig", passed: state.faqs.length > 0 },
     { label: "Schema gekozen", passed: Boolean(state.schemaType) },
+    { label: "CTA ingevuld", passed: Boolean(state.cta.trim()) },
   ];
 }
 
@@ -326,35 +370,18 @@ nodes.tabs.forEach((tab) => {
   });
 });
 
-nodes.clientSite.addEventListener("change", () => {
-  state.clientSite = nodes.clientSite.value;
-  saveState();
-  render();
-});
-
-nodes.mainKeyword.addEventListener("input", () => {
-  state.mainKeyword = nodes.mainKeyword.value;
-  saveState();
-  render();
-});
-
-nodes.seoTitle.addEventListener("input", () => {
-  state.seoTitle = nodes.seoTitle.value;
-  saveState();
-  render();
-});
-
-nodes.metaDescription.addEventListener("input", () => {
-  state.metaDescription = nodes.metaDescription.value;
-  saveState();
-  render();
-});
-
-nodes.schemaType.addEventListener("change", () => {
-  state.schemaType = nodes.schemaType.value;
-  saveState();
-  render();
-});
+bindStateInput(nodes.clientSite, "clientSite", "change");
+bindStateInput(nodes.targetUrl, "targetUrl");
+bindStateInput(nodes.pageType, "pageType", "change");
+bindStateInput(nodes.pageGoal, "pageGoal");
+bindStateInput(nodes.audience, "audience");
+bindStateInput(nodes.h1, "h1");
+bindStateInput(nodes.cta, "cta");
+bindStateInput(nodes.contentBrief, "contentBrief");
+bindStateInput(nodes.mainKeyword, "mainKeyword");
+bindStateInput(nodes.seoTitle, "seoTitle");
+bindStateInput(nodes.metaDescription, "metaDescription");
+bindStateInput(nodes.schemaType, "schemaType", "change");
 
 nodes.addKeyword.addEventListener("click", addKeyword);
 nodes.addFaq.addEventListener("click", addFaq);

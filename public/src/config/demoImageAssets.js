@@ -32,6 +32,11 @@ const branchImageGroups = Object.freeze([
   group("sportschool", "Sportschool", ["sportschool-demo"], ["fitness", "sportschool", "personal trainer", "proefles", "rooster", "membership"]),
   group("advocaat", "Advocaat", ["advocaat-demo"], ["advocaat", "advocatuur", "juridisch", "jurist", "recht", "intake"]),
   group("autobedrijf", "Autobedrijf", ["autobedrijf-demo"], ["automotive", "autobedrijf", "garage", "showroom", "occasions", "apk", "onderhoud"]),
+  customGroup("rijschool", "Rijschool en scooterles", ["rijschool-demo"], ["rijschool", "verkeersschool", "rijles", "autorijles", "scooter", "scooterrijbewijs", "bromfiets", "examengarantie", "praktijkexamen", "theorie", "cbr"], {
+    hero: customAsset("rijschool", "Rijschool en scooterles", "hero", "autorijles-hero.png", "Rijschool autorijles hero afbeelding voor demo website"),
+    service: customAsset("rijschool", "Rijschool en scooterles", "service", "motorles-hero.png", "Rijschool motorles afbeelding voor pakketten en diensten"),
+    project: customAsset("rijschool", "Rijschool en scooterles", "project", "scooterles-hero.png", "Rijschool scooterles afbeelding voor campagne of projectblok"),
+  }),
   group("kapsalon", "Kapsalon", ["kapsalon-demo"], ["kapsalon", "kapper", "barber", "barbershop", "knippen", "kleuren", "styling"]),
   group("tandarts", "Tandarts", ["tandarts-demo"], ["tandarts", "mondzorg", "zorg", "controle", "preventie", "esthetiek", "spoed"]),
   group("elektricien", "Elektricien", ["elektricien-demo"], ["elektricien", "elektra", "groepenkast", "storing", "storingen", "laadpaal"]),
@@ -59,6 +64,16 @@ function group(slug, label, demoSiteIds, keywords) {
   });
 }
 
+function customGroup(slug, label, demoSiteIds, keywords, assets) {
+  return Object.freeze({
+    slug,
+    label,
+    demoSiteIds: Object.freeze(demoSiteIds),
+    keywords: Object.freeze(keywords),
+    assets: Object.freeze(assets),
+  });
+}
+
 function asset(groupSlug, groupLabel, role) {
   return Object.freeze({
     slug: `${groupSlug}-${role}`,
@@ -67,6 +82,17 @@ function asset(groupSlug, groupLabel, role) {
     type: role,
     src: `${DEMO_IMAGE_BASE}/${groupSlug}/${role}.png`,
     alt: `${groupLabel} ${roleLabels[role]} afbeelding voor demo website`,
+  });
+}
+
+function customAsset(groupSlug, groupLabel, role, filename, alt) {
+  return Object.freeze({
+    slug: `${groupSlug}-${role}`,
+    groupSlug,
+    role,
+    type: role,
+    src: `${DEMO_IMAGE_BASE}/${groupSlug}/${filename}`,
+    alt: alt || `${groupLabel} ${roleLabels[role] || role} afbeelding voor demo website`,
   });
 }
 

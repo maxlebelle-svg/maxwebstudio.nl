@@ -83,7 +83,7 @@ function init() {
   fillSelect(elements.pageForm.elements.status, pageStatuses);
   fillSelect(elements.seoForm.elements.status, textStatuses);
   fillSelect(elements.statusFilter, allStatuses);
-  fillSelect(elements.typeFilter, ["Alles", ...contentTypes, "page", "image"]);
+  fillSelect(elements.typeFilter, ["Alles", ...contentTypes, "page", "SEO", "image"]);
   fillBranchSelector();
   bindRecordForm(elements.blockForm, "contentBlocks", readContentBlockForm, "Content block opgeslagen.");
   bindRecordForm(elements.pageForm, "pages", readPageForm, "Pagina opgeslagen.");
@@ -708,17 +708,31 @@ function clearPackage() {
 }
 
 function loadSamplePackage() {
+  Object.assign(state, createDefaultPackage(state.selectedBranch || "installatiebedrijf"));
+  touchState("Voorbeeldpakket geladen.");
+}
+
+function createDefaultPackage(preferredBranch = "installatiebedrijf") {
   const timestamp = new Date().toISOString();
-  state.contentBlocks = [
+  const group = imageGroups.find((item) => item.slug === preferredBranch) || imageGroups[0];
+  const selectedRoles = ["hero", "service", "team", "project", "contact", "detail", "review", "background"];
+  const selectedImages = Object.fromEntries(selectedRoles.map((role) => {
+    const asset = group.assets[role];
+    if (!asset) return null;
+    return [role, { role, branch: group.slug, src: asset.src, alt: asset.alt }];
+  }).filter(Boolean));
+
+  return {
+    contentBlocks: [
     {
       id: createId("block"),
-      title: "Homepage hero - conversiegericht",
+      title: "Homepage hero - premium lokaal bedrijf",
       contentType: "homepage hero",
       connectedPage: "Home",
-      versionName: "v1 sales",
-      textContent: "Laat je website meer aanvragen opleveren. Max Webstudio bouwt snelle, premium websites voor lokale ondernemers die online serieus willen groeien.",
+      versionName: "v2 conversie",
+      textContent: "Een professionele website die vertrouwen wekt en aanvragen oplevert. Max Webstudio combineert strategie, design, teksten, SEO en onderhoud in één helder traject voor lokale ondernemers.",
       status: "approved",
-      notes: "Sterke eerste variant voor salesdemo.",
+      notes: "Hoofdvariant voor demo's en salesgesprekken.",
       createdAt: timestamp,
       updatedAt: timestamp,
     },
@@ -729,8 +743,92 @@ function loadSamplePackage() {
       connectedPage: "Diensten",
       versionName: "v1",
       textContent: "Van strategie en design tot techniek en onderhoud: alles wordt voorbereid om bezoekers sneller richting contact te brengen.",
-      status: "selected",
+      status: "approved",
       notes: "Te gebruiken op dienstenpagina.",
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    },
+    {
+      id: createId("block"),
+      title: "USP blok - waarom Max Webstudio",
+      contentType: "USP",
+      connectedPage: "Home",
+      versionName: "v1 trust",
+      textContent: "Eén aanspreekpunt, duidelijke planning, sterke visuals en een website die later makkelijk uitgebreid kan worden met SEO, content en klantportaalfuncties.",
+      status: "selected",
+      notes: "Geschikt voor homepage of offerte.",
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    },
+    {
+      id: createId("block"),
+      title: "About blok - persoonlijke aanpak",
+      contentType: "about",
+      connectedPage: "Over ons",
+      versionName: "v1 warm",
+      textContent: "We bouwen websites alsof ze iedere dag door echte klanten beoordeeld worden: helder, snel, rustig vormgegeven en afgestemd op hoe mensen zoeken, vergelijken en contact opnemen.",
+      status: "selected",
+      notes: "Kan per branche persoonlijker gemaakt worden.",
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    },
+    {
+      id: createId("block"),
+      title: "CTA blok - gratis website scan",
+      contentType: "CTA",
+      connectedPage: "Contact",
+      versionName: "v1 lead",
+      textContent: "Wil je weten waar je huidige website aanvragen laat liggen? Vraag een gratis websitescan aan en ontvang concrete verbeterpunten voor vindbaarheid, uitstraling en conversie.",
+      status: "approved",
+      notes: "Primaire lead CTA.",
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    },
+    {
+      id: createId("block"),
+      title: "SEO intro - website laten maken",
+      contentType: "SEO",
+      connectedPage: "Website laten maken",
+      versionName: "v1 longform",
+      textContent: "Een website laten maken draait niet alleen om een mooi ontwerp. Je wilt een site die snel laadt, vertrouwen geeft, logisch is opgebouwd en gevonden wordt door klanten die klaar zijn om contact op te nemen.",
+      status: "approved",
+      notes: "Basis voor SEO-landingspagina.",
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    },
+    {
+      id: createId("block"),
+      title: "Blog outline - betere lokale vindbaarheid",
+      contentType: "blog",
+      connectedPage: "Blog",
+      versionName: "v1 outline",
+      textContent: "Onderwerpen: Google bedrijfsprofiel, lokale zoekwoorden, duidelijke dienstenpagina's, reviews, snelheid, interne links en meetbare contactmomenten.",
+      status: "draft",
+      notes: "Nog uitwerken naar artikel.",
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    },
+    {
+      id: createId("block"),
+      title: "Social post - nieuwe website live",
+      contentType: "social post",
+      connectedPage: "Social",
+      versionName: "LinkedIn",
+      textContent: "Onze nieuwe website staat live. Strakker, sneller en duidelijker voor iedereen die online wil zien wat we doen, hoe we werken en hoe je direct contact opneemt.",
+      status: "selected",
+      notes: "Aanpassen per klant/branche.",
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    },
+    {
+      id: createId("block"),
+      title: "E-mail follow-up - na intake",
+      contentType: "email",
+      connectedPage: "Sales follow-up",
+      versionName: "v1",
+      textContent: "Bedankt voor het prettige gesprek. Ik heb de belangrijkste wensen samengevat en werk de volgende stap uit: een duidelijke websitestructuur, passende contentblokken en een voorstel voor planning.",
+      status: "selected",
+      notes: "Voor klantopvolging na intake.",
       createdAt: timestamp,
       updatedAt: timestamp,
     },
@@ -746,8 +844,20 @@ function loadSamplePackage() {
       createdAt: timestamp,
       updatedAt: timestamp,
     },
-  ];
-  state.pages = [
+    {
+      id: createId("block"),
+      title: "Rijschool template - pakkettenblok",
+      contentType: "service",
+      connectedPage: "Rijlessen",
+      versionName: "branche template",
+      textContent: "Van proefles tot examenvoorbereiding: toon pakketten, slagingsgerichte begeleiding, flexibele lestijden en de mogelijkheid om eenvoudig een intake of proefles aan te vragen.",
+      status: "draft",
+      notes: "Voor toekomstige rijschoolbeelden en demo-sites.",
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    },
+  ],
+    pages: [
     {
       id: createId("page"),
       pageName: "Home",
@@ -755,7 +865,7 @@ function loadSamplePackage() {
       purpose: "Heldere eerste indruk, vertrouwen opbouwen en bezoekers naar aanvraag sturen.",
       seoTitle: "Website laten maken voor lokale ondernemers | Max Webstudio",
       metaDescription: "Laat een snelle, professionele website maken die vertrouwen wekt en meer aanvragen oplevert.",
-      connectedContentBlocks: "Homepage hero - conversiegericht, Serviceblok - website laten maken",
+      connectedContentBlocks: "Homepage hero - premium lokaal bedrijf, Serviceblok - website laten maken",
       connectedImageRole: "hero",
       status: "approved",
       createdAt: timestamp,
@@ -774,8 +884,73 @@ function loadSamplePackage() {
       createdAt: timestamp,
       updatedAt: timestamp,
     },
-  ];
-  state.seoRecords = [
+    {
+      id: createId("page"),
+      pageName: "Website laten maken",
+      slug: "website-laten-maken",
+      purpose: "SEO-landingspagina voor ondernemers die actief zoeken naar een nieuwe website.",
+      seoTitle: "Website laten maken die aanvragen oplevert | Max Webstudio",
+      metaDescription: "Laat een professionele website maken met sterke teksten, snelle techniek en een duidelijke route naar contact.",
+      connectedContentBlocks: "SEO intro - website laten maken, CTA blok - gratis website scan",
+      connectedImageRole: "detail",
+      status: "approved",
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    },
+    {
+      id: createId("page"),
+      pageName: "Over ons",
+      slug: "over-ons",
+      purpose: "Vertrouwen opbouwen met werkwijze, persoonlijke aanpak en kwaliteitssignalen.",
+      seoTitle: "Over Max Webstudio | Strategie, design en onderhoud",
+      metaDescription: "Leer hoe Max Webstudio websites bouwt voor ondernemers die professioneel online willen groeien.",
+      connectedContentBlocks: "About blok - persoonlijke aanpak, USP blok - waarom Max Webstudio",
+      connectedImageRole: "team",
+      status: "ready",
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    },
+    {
+      id: createId("page"),
+      pageName: "Portfolio",
+      slug: "portfolio",
+      purpose: "Cases en voorbeeldbranches tonen voor vertrouwen en herkenning.",
+      seoTitle: "Website voorbeelden en branches | Max Webstudio",
+      metaDescription: "Bekijk voorbeelden van websites en branches waarvoor Max Webstudio content, design en structuur voorbereidt.",
+      connectedContentBlocks: "USP blok - waarom Max Webstudio",
+      connectedImageRole: "project",
+      status: "ready",
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    },
+    {
+      id: createId("page"),
+      pageName: "Contact",
+      slug: "contact",
+      purpose: "Bezoekers laten bellen, mailen of een intake aanvragen.",
+      seoTitle: "Contact met Max Webstudio | Vraag je websitescan aan",
+      metaDescription: "Neem contact op met Max Webstudio voor een professionele website, SEO-content of een gratis websitescan.",
+      connectedContentBlocks: "CTA blok - gratis website scan, E-mail follow-up - na intake",
+      connectedImageRole: "contact",
+      status: "approved",
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    },
+    {
+      id: createId("page"),
+      pageName: "Rijschool demo",
+      slug: "rijschool-website-laten-maken",
+      purpose: "Voorbereide branchepagina voor rijscholen zodra de beeldset beschikbaar is.",
+      seoTitle: "Website laten maken voor rijscholen | Max Webstudio",
+      metaDescription: "Laat een rijschoolwebsite maken met pakketten, proeflesaanvragen, lokale SEO en duidelijke contactmomenten.",
+      connectedContentBlocks: "Rijschool template - pakkettenblok",
+      connectedImageRole: "hero",
+      status: "planned",
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    },
+  ],
+    seoRecords: [
     {
       id: createId("seo"),
       page: "Home",
@@ -788,13 +963,84 @@ function loadSamplePackage() {
       createdAt: timestamp,
       updatedAt: timestamp,
     },
-  ];
-  const group = imageGroups.find((item) => item.slug === state.selectedBranch) || imageGroups[0];
-  state.selectedImages = Object.fromEntries(["hero", "service", "contact"].map((role) => {
-    const asset = group.assets[role];
-    return [role, { role, branch: group.slug, src: asset.src, alt: asset.alt }];
-  }));
-  touchState("Voorbeeldpakket geladen.");
+    {
+      id: createId("seo"),
+      page: "Diensten",
+      seoTitle: "Webdesign, SEO en onderhoud voor ondernemers | Max Webstudio",
+      metaDescription: "Alles voor een professionele website: strategie, design, technische bouw, SEO-content en onderhoud.",
+      focusKeyword: "webdesign en onderhoud",
+      secondaryKeywords: "website onderhoud, SEO teksten, professionele website",
+      searchIntent: "Commercieel vergelijkend",
+      status: "approved",
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    },
+    {
+      id: createId("seo"),
+      page: "Website laten maken",
+      seoTitle: "Website laten maken die klanten overtuigt | Max Webstudio",
+      metaDescription: "Laat een snelle website maken met professionele uitstraling, sterke content en een duidelijke conversieroute.",
+      focusKeyword: "website laten maken",
+      secondaryKeywords: "professionele website laten maken, website bureau, website laten bouwen",
+      searchIntent: "Commercieel",
+      status: "approved",
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    },
+    {
+      id: createId("seo"),
+      page: "Over ons",
+      seoTitle: "Over Max Webstudio | Websites voor lokale ondernemers",
+      metaDescription: "Maak kennis met de aanpak van Max Webstudio: rustig proces, sterke content en websites die klaar zijn om te groeien.",
+      focusKeyword: "webdesign bureau",
+      secondaryKeywords: "Max Webstudio, website partner, lokale ondernemers",
+      searchIntent: "Vertrouwen en oriëntatie",
+      status: "selected",
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    },
+    {
+      id: createId("seo"),
+      page: "Portfolio",
+      seoTitle: "Website voorbeelden voor verschillende branches | Max Webstudio",
+      metaDescription: "Bekijk hoe Max Webstudio websitestructuren, content en beelden voorbereidt voor uiteenlopende lokale branches.",
+      focusKeyword: "website voorbeelden",
+      secondaryKeywords: "portfolio webdesign, branche websites, demo websites",
+      searchIntent: "Oriëntatie",
+      status: "selected",
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    },
+    {
+      id: createId("seo"),
+      page: "Contact",
+      seoTitle: "Website scan aanvragen | Contact met Max Webstudio",
+      metaDescription: "Vraag een gratis websitescan aan of bespreek je nieuwe website met Max Webstudio.",
+      focusKeyword: "website scan aanvragen",
+      secondaryKeywords: "contact webdesign bureau, website advies, nieuwe website offerte",
+      searchIntent: "Actiegericht",
+      status: "approved",
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    },
+    {
+      id: createId("seo"),
+      page: "Rijschool demo",
+      seoTitle: "Website laten maken voor rijscholen | Proefles en lokale SEO",
+      metaDescription: "Een rijschoolwebsite met duidelijke pakketten, proeflesaanvragen, lokale vindbaarheid en professionele uitstraling.",
+      focusKeyword: "website laten maken rijschool",
+      secondaryKeywords: "rijschool website, proefles aanvragen, rijschool SEO",
+      searchIntent: "Branchegericht commercieel",
+      status: "draft",
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    },
+  ],
+    selectedBranch: group.slug,
+    selectedImageFolder: group.slug,
+    selectedImages,
+    updatedAt: timestamp,
+  };
 }
 
 function importPackage(event) {
@@ -942,7 +1188,7 @@ function normalizeSlug(value) {
 function loadState() {
   try {
     const parsed = JSON.parse(localStorage.getItem(storageKey) || "{}");
-    return {
+    const stateFromStorage = {
       contentBlocks: Array.isArray(parsed.contentBlocks) ? parsed.contentBlocks : [],
       pages: Array.isArray(parsed.pages) ? parsed.pages : [],
       seoRecords: Array.isArray(parsed.seoRecords) ? parsed.seoRecords : [],
@@ -951,9 +1197,11 @@ function loadState() {
       selectedImages: parsed.selectedImages && typeof parsed.selectedImages === "object" ? parsed.selectedImages : {},
       updatedAt: parsed.updatedAt || null,
     };
+    const hasWorkspaceData = stateFromStorage.contentBlocks.length || stateFromStorage.pages.length || stateFromStorage.seoRecords.length || Object.keys(stateFromStorage.selectedImages).length;
+    return hasWorkspaceData ? stateFromStorage : createDefaultPackage(stateFromStorage.selectedBranch);
   } catch (error) {
     console.warn("AI Content Library storage kon niet worden gelezen.", error);
-    return { contentBlocks: [], pages: [], seoRecords: [], selectedBranch: "installatiebedrijf", selectedImageFolder: "installatiebedrijf", selectedImages: {}, updatedAt: null };
+    return createDefaultPackage("installatiebedrijf");
   }
 }
 

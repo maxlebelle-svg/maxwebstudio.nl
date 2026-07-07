@@ -2,8 +2,11 @@
   "use strict";
 
   const storageKeys = {
-    draft: "mws_social_media_studio_draft",
-    variants: "mws_social_media_studio_variants",
+    draft: "mws_social_media_studio_draft_v2",
+    variants: "mws_social_media_studio_variants_v2",
+    context: "mws_social_media_studio_context_v2",
+    legacyDraft: "mws_social_media_studio_draft",
+    legacyVariants: "mws_social_media_studio_variants",
   };
 
   const platformLabels = {
@@ -14,47 +17,105 @@
     ad: "Advertentie",
   };
 
+  const platformRules = {
+    facebook: { max: 63206, ideal: 280, hashtagMin: 0, hashtagMax: 5, visual: "Liggend of vierkant" },
+    instagram: { max: 2200, ideal: 180, hashtagMin: 3, hashtagMax: 12, visual: "Vierkant of staand" },
+    linkedin: { max: 3000, ideal: 420, hashtagMin: 1, hashtagMax: 5, visual: "Liggend of vierkant" },
+    google: { max: 1500, ideal: 300, hashtagMin: 0, hashtagMax: 3, visual: "Liggend of vierkant" },
+    ad: { max: 500, ideal: 140, hashtagMin: 0, hashtagMax: 2, visual: "Campagnevisual" },
+  };
+
   const platformFallbacks = {
     facebook: {
       title: "Nieuwe update voor onze klanten",
-      caption: "Deel een korte update, actie of klantverhaal dat past bij Facebook.",
+      caption: "We hebben iets nieuws klaarstaan voor ondernemers die online sterker zichtbaar willen zijn.",
       cta: "Bekijk de update",
       hashtags: "#facebook #lokaal #maxwebstudio",
     },
     instagram: {
       title: "Visual campagne",
-      caption: "Schrijf een compacte caption die past bij een sterke visual.",
+      caption: "Een sterke uitstraling begint bij een website en merkverhaal dat direct klopt.",
       cta: "Ontdek meer",
       hashtags: "#instagram #content #branding",
     },
     linkedin: {
       title: "Zakelijke update",
-      caption: "Deel expertise, resultaat of een professionele klantcase.",
+      caption: "Een goede website is geen online visitekaartje meer, maar een commerciële basis voor groei.",
       cta: "Plan een gesprek",
       hashtags: "#linkedin #expertise #groei",
     },
     google: {
       title: "Lokale bedrijfspost",
-      caption: "Vertel kort wat klanten nu kunnen doen of aanvragen.",
+      caption: "Op zoek naar een professionele website die lokaal vertrouwen wekt en meer aanvragen oplevert?",
       cta: "Bel vandaag",
       hashtags: "#googlebedrijf #lokaal",
     },
     ad: {
       title: "Advertentiecampagne",
-      caption: "Schrijf een heldere advertentietekst met probleem, belofte en actie.",
+      caption: "Meer aanvragen uit je website? Laat Max Webstudio een snelle, professionele site bouwen.",
       cta: "Vraag offerte aan",
       hashtags: "#advertentie #campagne",
     },
   };
 
+  const templateContent = {
+    promotion: {
+      title: "Tijdelijke actie voor nieuwe klanten",
+      caption: "Wil je deze maand meer aanvragen uit je website halen? We helpen lokale ondernemers met een professionele website die snel laadt, vertrouwen wekt en bezoekers richting contact stuurt.",
+      cta: "Plan een gratis kennismaking",
+      hashtags: "#website #actie #ondernemen",
+    },
+    case: {
+      title: "Nieuwe klantcase live",
+      caption: "Voor een lokale ondernemer hebben we een frisse website voorbereid met een duidelijke structuur, sterke call-to-actions en een uitstraling die past bij het bedrijf.",
+      cta: "Bekijk de case",
+      hashtags: "#webdesign #klantcase #groei",
+    },
+    review: {
+      title: "Klant aan het woord",
+      caption: "Mooi om te zien hoe een heldere website direct rust geeft in de presentatie van een bedrijf. Dit soort feedback laat zien waarom strategie en design samen horen.",
+      cta: "Lees meer ervaringen",
+      hashtags: "#review #vertrouwen #maxwebstudio",
+    },
+    local: {
+      title: "Lokale ondernemers update",
+      caption: "Ook lokaal begint vertrouwen vaak online. Met een professionele website maak je meteen duidelijk wie je bent, wat je doet en waarom klanten voor jou kiezen.",
+      cta: "Ontdek de mogelijkheden",
+      hashtags: "#lokaal #ondernemer #website",
+    },
+    vacancy: {
+      title: "Nieuwe collega gezocht",
+      caption: "Groei vraagt om goede mensen. Zet je vacature krachtig neer met een duidelijke landingspagina, sterke boodschap en campagne die past bij je doelgroep.",
+      cta: "Bekijk de vacature",
+      hashtags: "#vacature #team #werkenbij",
+    },
+  };
+
+  const visualFormatLabels = {
+    square: "Vierkant 1:1",
+    portrait: "Staand 4:5",
+    landscape: "Liggend 1.91:1",
+    story: "Story 9:16",
+  };
+
   const state = {
     platform: "facebook",
     variants: [],
+    variantQuery: "",
+    variantFilter: "all",
   };
 
   const elements = {
-    form: document.getElementById("social-studio-form"),
     platformButtons: Array.from(document.querySelectorAll(".social-studio-platform[data-platform]")),
+    templateButtons: Array.from(document.querySelectorAll("[data-template]")),
+    client: document.getElementById("social-client"),
+    campaign: document.getElementById("social-campaign"),
+    goal: document.getElementById("social-goal"),
+    date: document.getElementById("social-date"),
+    visualFormat: document.getElementById("social-visual-format"),
+    variantSearch: document.getElementById("variant-search"),
+    variantFilter: document.getElementById("variant-platform-filter"),
+    jsonFile: document.getElementById("social-json-file"),
     title: document.getElementById("social-title"),
     caption: document.getElementById("social-caption"),
     cta: document.getElementById("social-cta"),
@@ -62,22 +123,39 @@
     hashtags: document.getElementById("social-hashtags"),
     tone: document.getElementById("social-tone"),
     message: document.getElementById("social-studio-message"),
+    heroCount: document.getElementById("social-hero-count"),
+    heroDetail: document.getElementById("social-hero-detail"),
+    captionCounter: document.getElementById("caption-counter"),
+    captionGuidance: document.getElementById("caption-guidance"),
+    hashtagCounter: document.getElementById("hashtag-counter"),
+    platformRule: document.getElementById("platform-rule"),
     previewCard: document.getElementById("social-preview-card"),
     previewHeading: document.getElementById("preview-heading"),
+    previewAvatar: document.getElementById("preview-avatar"),
+    previewClient: document.getElementById("preview-client"),
     previewPlatform: document.getElementById("preview-platform"),
     previewDate: document.getElementById("preview-date"),
+    previewVisual: document.getElementById("preview-visual"),
     previewTitle: document.getElementById("preview-title"),
     previewCaption: document.getElementById("preview-caption"),
     previewCta: document.getElementById("preview-cta"),
     previewLink: document.getElementById("preview-link"),
     previewHashtags: document.getElementById("preview-hashtags"),
     previewTone: document.getElementById("preview-tone"),
+    platformChecks: document.getElementById("platform-checks"),
     variantList: document.getElementById("variant-list"),
     saveDraft: document.getElementById("save-draft"),
     saveVariant: document.getElementById("save-variant"),
     copyText: document.getElementById("copy-text"),
     resetEditor: document.getElementById("reset-editor"),
+    generateButton: document.getElementById("generate-social-content"),
     publishButton: document.getElementById("publish-social-post"),
+    sampleButton: document.getElementById("load-sample-social"),
+    importButton: document.getElementById("import-social-json"),
+    exportButton: document.getElementById("export-social-json"),
+    clearButton: document.getElementById("clear-social-storage"),
+    copyAllButton: document.getElementById("copy-all-variants"),
+    platformExportButton: document.getElementById("download-selected-platform"),
   };
 
   function readJson(key, fallback) {
@@ -101,6 +179,27 @@
     }
   }
 
+  function fillPlatformFilter() {
+    elements.variantFilter.replaceChildren();
+    const options = [["all", "Alle platformen"], ...Object.entries(platformLabels)];
+    options.forEach(([value, label]) => {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = label;
+      elements.variantFilter.append(option);
+    });
+  }
+
+  function getContext() {
+    return {
+      client: elements.client.value.trim(),
+      campaign: elements.campaign.value.trim(),
+      goal: elements.goal.value,
+      date: elements.date.value,
+      visualFormat: elements.visualFormat.value,
+    };
+  }
+
   function getCurrentContent() {
     return {
       platform: state.platform,
@@ -110,11 +209,17 @@
       link: elements.link.value.trim(),
       hashtags: elements.hashtags.value.trim(),
       tone: elements.tone.value,
+      ...getContext(),
     };
   }
 
   function setFormContent(content) {
-    state.platform = content.platform && platformLabels[content.platform] ? content.platform : "facebook";
+    state.platform = content.platform && platformLabels[content.platform] ? content.platform : state.platform;
+    elements.client.value = content.client || elements.client.value || "";
+    elements.campaign.value = content.campaign || elements.campaign.value || "";
+    if (content.goal) elements.goal.value = content.goal;
+    elements.date.value = content.date || elements.date.value || defaultDate();
+    if (content.visualFormat) elements.visualFormat.value = content.visualFormat;
     elements.title.value = content.title || "";
     elements.caption.value = content.caption || "";
     elements.cta.value = content.cta || "";
@@ -122,15 +227,28 @@
     elements.hashtags.value = content.hashtags || "";
     elements.tone.value = content.tone || "Professioneel";
     updatePlatformButtons();
-    updatePreview();
+    updateAll();
+  }
+
+  function saveContext() {
+    writeJson(storageKeys.context, getContext());
+  }
+
+  function setContext(context) {
+    elements.client.value = context.client || "";
+    elements.campaign.value = context.campaign || "";
+    elements.goal.value = context.goal || "Meer aanvragen";
+    elements.date.value = context.date || defaultDate();
+    elements.visualFormat.value = context.visualFormat || "square";
+  }
+
+  function defaultDate() {
+    return new Date().toISOString().slice(0, 10);
   }
 
   function formatDate(value) {
-    return new Intl.DateTimeFormat("nl-NL", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    }).format(value);
+    if (!value) return new Intl.DateTimeFormat("nl-NL", { day: "2-digit", month: "short", year: "numeric" }).format(new Date());
+    return new Intl.DateTimeFormat("nl-NL", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(`${value}T12:00:00`));
   }
 
   function setMessage(text, type) {
@@ -146,28 +264,90 @@
     });
   }
 
+  function updateAll() {
+    updatePreview();
+    updateCounters();
+    renderChecks();
+    renderVariants();
+    updateHero();
+    saveContext();
+  }
+
   function updatePreview() {
     const content = getCurrentContent();
     const fallback = platformFallbacks[state.platform];
     const label = platformLabels[state.platform];
+    const client = content.client || "Klantnaam placeholder";
+    const link = content.link || "maxwebstudio.nl";
 
     elements.previewCard.dataset.platform = state.platform;
     elements.previewHeading.textContent = `${label} preview`;
     elements.previewPlatform.textContent = label;
-    elements.previewDate.textContent = formatDate(new Date());
+    elements.previewClient.textContent = client;
+    elements.previewAvatar.textContent = initials(client);
+    elements.previewDate.textContent = formatDate(content.date);
+    elements.previewVisual.textContent = `${visualFormatLabels[content.visualFormat] || "Visual"} placeholder`;
     elements.previewTitle.textContent = content.title || fallback.title;
     elements.previewCaption.textContent = content.caption || fallback.caption;
     elements.previewCta.textContent = content.cta || fallback.cta;
-    elements.previewLink.textContent = content.link || "maxwebstudio.nl";
+    elements.previewLink.textContent = cleanDisplayLink(link);
     elements.previewHashtags.textContent = content.hashtags || fallback.hashtags;
     elements.previewTone.textContent = content.tone || "Professioneel";
   }
 
-  function buildCopyText() {
+  function updateCounters() {
+    const captionLength = elements.caption.value.trim().length;
+    const hashtagCount = getHashtags(elements.hashtags.value).length;
+    const rule = platformRules[state.platform];
+    elements.captionCounter.textContent = `${captionLength} tekens`;
+    elements.hashtagCounter.textContent = `${hashtagCount} hashtags`;
+    elements.platformRule.textContent = `${platformLabels[state.platform]}: ideaal rond ${rule.ideal} tekens, max ${rule.max}.`;
+    elements.captionGuidance.textContent = captionLength > rule.max
+      ? "Te lang voor dit platform."
+      : captionLength > rule.ideal
+        ? "Kan korter voor sneller scannen."
+        : "Past ruim binnen het platform.";
+  }
+
+  function renderChecks() {
     const content = getCurrentContent();
-    const fallback = platformFallbacks[state.platform];
+    const rule = platformRules[state.platform];
+    const hashtagCount = getHashtags(content.hashtags).length;
+    const checks = [
+      ["Titel aanwezig", !!content.title, "Geeft intern en in exports duidelijke context."],
+      ["Caption gevuld", !!content.caption, "De hoofdtekst is nodig voordat je kunt publiceren."],
+      ["CTA aanwezig", !!content.cta, "Elke post moet een heldere vervolgstap hebben."],
+      ["Lengte passend", content.caption.length <= rule.max, `Maximaal ${rule.max} tekens voor ${platformLabels[state.platform]}.`],
+      ["Hashtags passend", hashtagCount >= rule.hashtagMin && hashtagCount <= rule.hashtagMax, `Aanbevolen: ${rule.hashtagMin}-${rule.hashtagMax} hashtags.`],
+      ["Link of actie", !!content.link || !!content.cta, "Nodig voor campagneposts en advertenties."],
+      ["Visual format", !!content.visualFormat, `${rule.visual} werkt het best.`],
+    ];
+    elements.platformChecks.replaceChildren(...checks.map(([title, done, detail]) => {
+      const item = document.createElement("article");
+      item.className = `social-studio-check${done ? " is-done" : ""}`;
+      const copy = document.createElement("div");
+      const strong = document.createElement("strong");
+      const span = document.createElement("span");
+      strong.textContent = title;
+      span.textContent = detail;
+      copy.append(strong, span);
+      item.append(copy);
+      return item;
+    }));
+  }
+
+  function updateHero() {
+    const filteredCount = filteredVariants().length;
+    elements.heroCount.textContent = `${state.variants.length} ${state.variants.length === 1 ? "variant" : "varianten"}`;
+    elements.heroDetail.textContent = `${filteredCount} zichtbaar met huidige filters. Laatst bijgewerkt: ${formatDate(new Date().toISOString().slice(0, 10))}.`;
+  }
+
+  function buildCopyText(content = getCurrentContent()) {
+    const fallback = platformFallbacks[content.platform || state.platform];
     const parts = [
-      platformLabels[state.platform],
+      platformLabels[content.platform || state.platform],
+      content.client ? `Klant: ${content.client}` : "",
+      content.campaign ? `Campagne: ${content.campaign}` : "",
       content.title || fallback.title,
       content.caption || fallback.caption,
       content.cta ? `CTA: ${content.cta}` : `CTA: ${fallback.cta}`,
@@ -184,13 +364,14 @@
       updatedAt: new Date().toISOString(),
     });
     setMessage(saved ? "Concept lokaal opgeslagen." : "Concept kon niet lokaal worden opgeslagen.", saved ? "success" : "error");
+    updateHero();
   }
 
   function saveVariant() {
     const content = getCurrentContent();
     const fallback = platformFallbacks[state.platform];
     const variant = {
-      id: `variant-${Date.now()}`,
+      id: `variant-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       platform: content.platform,
       title: content.title || fallback.title,
       caption: content.caption || fallback.caption,
@@ -198,17 +379,253 @@
       link: content.link,
       hashtags: content.hashtags || fallback.hashtags,
       tone: content.tone,
+      client: content.client,
+      campaign: content.campaign,
+      goal: content.goal,
+      date: content.date,
+      visualFormat: content.visualFormat,
       createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
-    state.variants = [variant, ...state.variants].slice(0, 50);
+    state.variants = [variant, ...state.variants].slice(0, 100);
     const saved = writeJson(storageKeys.variants, state.variants);
     renderVariants();
+    updateHero();
     setMessage(saved ? "Variant opgeslagen." : "Variant kon niet lokaal worden opgeslagen.", saved ? "success" : "error");
   }
 
   async function copyText() {
-    const text = buildCopyText();
+    await copyToClipboard(buildCopyText(), "Tekst gekopieerd naar klembord.");
+  }
+
+  function resetEditor() {
+    setFormContent({ platform: state.platform, tone: "Professioneel", date: elements.date.value, visualFormat: elements.visualFormat.value });
+    localStorage.removeItem(storageKeys.draft);
+    setMessage("Editor gereset.", "success");
+  }
+
+  function removeVariant(id) {
+    state.variants = state.variants.filter((variant) => variant.id !== id);
+    writeJson(storageKeys.variants, state.variants);
+    renderVariants();
+    updateHero();
+    setMessage("Variant verwijderd.", "success");
+  }
+
+  function duplicateVariant(variant) {
+    const copy = {
+      ...variant,
+      id: `variant-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      title: `${variant.title || "Variant"} copy`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    state.variants.unshift(copy);
+    writeJson(storageKeys.variants, state.variants);
+    renderVariants();
+    updateHero();
+    setMessage("Variant gedupliceerd.", "success");
+  }
+
+  function loadVariant(variant) {
+    setFormContent(variant);
+    setMessage("Variant geladen in editor.", "success");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function createVariantCard(variant) {
+    const card = document.createElement("article");
+    card.className = "social-studio-variant";
+
+    const content = document.createElement("div");
+    const title = document.createElement("strong");
+    const meta = document.createElement("span");
+    const caption = document.createElement("small");
+
+    title.textContent = variant.title || "Naamloze variant";
+    meta.textContent = `${platformLabels[variant.platform] || "Platform"} · ${variant.client || "Geen klant"} · ${formatDate(variant.date || variant.createdAt)} · ${variant.cta || "Geen CTA"}`;
+    caption.textContent = variant.caption || "Geen tekst opgeslagen.";
+
+    content.append(title, meta, caption);
+
+    const actions = document.createElement("div");
+    actions.className = "social-studio-actions";
+    actions.append(
+      actionButton("Laden", () => loadVariant(variant), "primary"),
+      actionButton("Kopieer", () => copyToClipboard(buildCopyText(variant), "Variant gekopieerd."), "secondary"),
+      actionButton("Dupliceer", () => duplicateVariant(variant), "secondary"),
+      actionButton("Verwijderen", () => removeVariant(variant.id), "secondary"),
+    );
+
+    card.append(content, actions);
+    return card;
+  }
+
+  function actionButton(label, handler, variant) {
+    const button = document.createElement("button");
+    button.className = `button ${variant}`;
+    button.type = "button";
+    button.textContent = label;
+    button.addEventListener("click", handler);
+    return button;
+  }
+
+  function filteredVariants() {
+    return state.variants.filter((variant) => {
+      const matchesPlatform = state.variantFilter === "all" || variant.platform === state.variantFilter;
+      const query = state.variantQuery.trim().toLowerCase();
+      const haystack = JSON.stringify(variant).toLowerCase();
+      return matchesPlatform && (!query || haystack.includes(query));
+    });
+  }
+
+  function renderVariants() {
+    const variants = filteredVariants();
+    elements.variantList.textContent = "";
+
+    if (!variants.length) {
+      const empty = document.createElement("p");
+      empty.className = "social-studio-empty";
+      empty.textContent = state.variants.length
+        ? "Geen varianten gevonden met deze filters."
+        : "Nog geen varianten opgeslagen. Bewaar een variant of laad het voorbeeldpakket.";
+      elements.variantList.append(empty);
+      return;
+    }
+
+    variants.forEach((variant) => {
+      elements.variantList.append(createVariantCard(variant));
+    });
+  }
+
+  function applyTemplate(templateKey) {
+    const template = templateContent[templateKey];
+    if (!template) return;
+    elements.title.value = template.title;
+    elements.caption.value = template.caption;
+    elements.cta.value = template.cta;
+    elements.hashtags.value = template.hashtags;
+    if (!elements.link.value) elements.link.value = "https://maxwebstudio.nl";
+    updateAll();
+    setMessage("Template geladen. Pas hem nu aan voor de klant.", "success");
+  }
+
+  function loadSample() {
+    setContext({
+      client: "Demo Klant",
+      campaign: "Nieuwe website campagne",
+      goal: "Meer aanvragen",
+      date: defaultDate(),
+      visualFormat: "square",
+    });
+    state.platform = "instagram";
+    setFormContent({
+      platform: "instagram",
+      title: "Nieuwe website live",
+      caption: "Een sterke eerste indruk maakt verschil. Voor Demo Klant staat er nu een frisse website klaar die sneller duidelijk maakt wat ze doen, waarom klanten voor hen kiezen en hoe je direct contact opneemt.",
+      cta: "Bekijk de website",
+      link: "https://maxwebstudio.nl",
+      hashtags: "#webdesign #lokaleondernemer #branding #maxwebstudio",
+      tone: "Enthousiast",
+      client: "Demo Klant",
+      campaign: "Nieuwe website campagne",
+      goal: "Meer aanvragen",
+      date: defaultDate(),
+      visualFormat: "square",
+    });
+    saveVariant();
+    setMessage("Voorbeeld geladen en als variant opgeslagen.", "success");
+  }
+
+  function exportPayload(variants = state.variants) {
+    return {
+      context: getContext(),
+      currentDraft: getCurrentContent(),
+      variants,
+      exportedAt: new Date().toISOString(),
+      note: "Lokale Social Media Studio export. Nog niet gekoppeld aan publicatie-API's.",
+    };
+  }
+
+  function exportJson(variants = state.variants, filename = "maxwebstudio-social-media-studio.json") {
+    const blob = new Blob([JSON.stringify(exportPayload(variants), null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    setMessage("JSON export gestart.", "success");
+  }
+
+  function importJson(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+      try {
+        const parsed = JSON.parse(String(reader.result || "{}"));
+        if (parsed.context) setContext(parsed.context);
+        if (parsed.currentDraft) setFormContent(parsed.currentDraft);
+        if (Array.isArray(parsed.variants)) {
+          state.variants = parsed.variants.filter((variant) => variant && variant.platform);
+          writeJson(storageKeys.variants, state.variants);
+        }
+        renderVariants();
+        updateHero();
+        setMessage("JSON import geladen.", "success");
+      } catch (error) {
+        console.warn("Social Media Studio import mislukt.", error);
+        setMessage("JSON import kon niet worden gelezen.", "error");
+      } finally {
+        event.target.value = "";
+      }
+    });
+    reader.readAsText(file);
+  }
+
+  async function copyAllVariants() {
+    const variants = filteredVariants();
+    if (!variants.length) {
+      setMessage("Geen varianten om te kopiëren.", "error");
+      return;
+    }
+    await copyToClipboard(variants.map((variant) => buildCopyText(variant)).join("\n\n---\n\n"), "Alle zichtbare varianten gekopieerd.");
+  }
+
+  function clearStorage() {
+    const confirmed = window.confirm("Weet je zeker dat je alle Social Media Studio concepten en varianten wilt wissen?");
+    if (!confirmed) return;
+    state.variants = [];
+    localStorage.removeItem(storageKeys.draft);
+    localStorage.removeItem(storageKeys.variants);
+    localStorage.removeItem(storageKeys.context);
+    renderVariants();
+    updateHero();
+    setMessage("Lokale Social Media Studio opslag gewist.", "success");
+  }
+
+  function generateSocialContent() {
+    // Future hook: send editor context to a Netlify Function that calls OpenAI.
+    // Future hook: enrich the prompt with customer, brand, tone and campaign data from Supabase.
+    setMessage("AI-generatie wordt later gekoppeld.", "success");
+    return getCurrentContent();
+  }
+
+  function publishSocialPost() {
+    // Future hook: validate approval status and send payload to Facebook, Instagram, LinkedIn, Google or ad APIs.
+    // Future hook: write publication state and audit metadata back to Supabase.
+    setMessage("Publiceren wordt later gekoppeld.", "success");
+  }
+
+  async function copyToClipboard(text, successMessage) {
+    if (!text) {
+      setMessage("Geen tekst om te kopiëren.", "error");
+      return;
+    }
     try {
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(text);
@@ -223,78 +640,26 @@
         document.execCommand("copy");
         textarea.remove();
       }
-      setMessage("Tekst gekopieerd naar klembord.", "success");
+      setMessage(successMessage, "success");
     } catch (error) {
       console.warn("Kopiëren is mislukt.", error);
       setMessage("Kopiëren is niet gelukt. Selecteer de tekst handmatig.", "error");
     }
   }
 
-  function resetEditor() {
-    setFormContent({ platform: state.platform, tone: "Professioneel" });
-    localStorage.removeItem(storageKeys.draft);
-    setMessage("Editor gereset.", "success");
+  function getHashtags(value) {
+    return String(value || "").split(/\s+/).filter((part) => part.startsWith("#") && part.length > 1);
   }
 
-  function removeVariant(id) {
-    state.variants = state.variants.filter((variant) => variant.id !== id);
-    writeJson(storageKeys.variants, state.variants);
-    renderVariants();
-    setMessage("Variant verwijderd.", "success");
+  function cleanDisplayLink(value) {
+    return String(value || "")
+      .replace(/^https?:\/\//, "")
+      .replace(/\/$/, "");
   }
 
-  function createVariantCard(variant) {
-    const card = document.createElement("article");
-    card.className = "social-studio-variant";
-
-    const content = document.createElement("div");
-    const title = document.createElement("strong");
-    const meta = document.createElement("span");
-    const caption = document.createElement("small");
-
-    title.textContent = variant.title || "Naamloze variant";
-    meta.textContent = `${platformLabels[variant.platform] || "Platform"} · ${formatDate(new Date(variant.createdAt || Date.now()))} · ${variant.cta || "Geen CTA"}`;
-    caption.textContent = variant.caption || "Geen tekst opgeslagen.";
-
-    content.append(title, meta, caption);
-
-    const button = document.createElement("button");
-    button.className = "button secondary";
-    button.type = "button";
-    button.textContent = "Verwijderen";
-    button.addEventListener("click", () => removeVariant(variant.id));
-
-    card.append(content, button);
-    return card;
-  }
-
-  function renderVariants() {
-    elements.variantList.textContent = "";
-
-    if (!state.variants.length) {
-      const empty = document.createElement("p");
-      empty.className = "social-studio-empty";
-      empty.textContent = "Nog geen varianten opgeslagen. Bewaar een variant om hem hier terug te zien.";
-      elements.variantList.append(empty);
-      return;
-    }
-
-    state.variants.forEach((variant) => {
-      elements.variantList.append(createVariantCard(variant));
-    });
-  }
-
-  function generateSocialContent() {
-    // Future hook: send editor context to a Netlify Function that calls OpenAI.
-    // Future hook: enrich the prompt with customer/brand data loaded from Supabase.
-    setMessage("AI-generatie wordt later gekoppeld.", "success");
-    return getCurrentContent();
-  }
-
-  function publishSocialPost() {
-    // Future hook: validate approval status and send payload to platform publication APIs.
-    // Future hook: write publication state and audit metadata back to Supabase.
-    setMessage("Publiceren wordt later gekoppeld.", "success");
+  function initials(value) {
+    const words = String(value || "Max Webstudio").trim().split(/\s+/).filter(Boolean);
+    return words.slice(0, 2).map((word) => word[0]?.toUpperCase()).join("") || "MW";
   }
 
   function bindEvents() {
@@ -302,33 +667,63 @@
       button.addEventListener("click", () => {
         state.platform = button.dataset.platform;
         updatePlatformButtons();
-        updatePreview();
+        updateAll();
       });
     });
 
-    [elements.title, elements.caption, elements.cta, elements.link, elements.hashtags, elements.tone].forEach((field) => {
-      field.addEventListener("input", updatePreview);
-      field.addEventListener("change", updatePreview);
+    elements.templateButtons.forEach((button) => {
+      button.addEventListener("click", () => applyTemplate(button.dataset.template));
+    });
+
+    [elements.client, elements.campaign, elements.goal, elements.date, elements.visualFormat, elements.title, elements.caption, elements.cta, elements.link, elements.hashtags, elements.tone].forEach((field) => {
+      field.addEventListener("input", updateAll);
+      field.addEventListener("change", updateAll);
+    });
+
+    elements.variantSearch.addEventListener("input", () => {
+      state.variantQuery = elements.variantSearch.value;
+      renderVariants();
+      updateHero();
+    });
+    elements.variantFilter.addEventListener("change", () => {
+      state.variantFilter = elements.variantFilter.value;
+      renderVariants();
+      updateHero();
     });
 
     elements.saveDraft.addEventListener("click", saveDraft);
     elements.saveVariant.addEventListener("click", saveVariant);
     elements.copyText.addEventListener("click", copyText);
     elements.resetEditor.addEventListener("click", resetEditor);
+    elements.generateButton.addEventListener("click", generateSocialContent);
     elements.publishButton.addEventListener("click", publishSocialPost);
+    elements.sampleButton.addEventListener("click", loadSample);
+    elements.importButton.addEventListener("click", () => elements.jsonFile.click());
+    elements.jsonFile.addEventListener("change", importJson);
+    elements.exportButton.addEventListener("click", () => exportJson());
+    elements.clearButton.addEventListener("click", clearStorage);
+    elements.copyAllButton.addEventListener("click", copyAllVariants);
+    elements.platformExportButton.addEventListener("click", () => {
+      const variants = filteredVariants();
+      exportJson(variants, `maxwebstudio-${state.variantFilter === "all" ? "social" : state.variantFilter}-varianten.json`);
+    });
   }
 
   function init() {
-    state.variants = readJson(storageKeys.variants, []);
-    const draft = readJson(storageKeys.draft, null);
+    fillPlatformFilter();
+    const legacyVariants = readJson(storageKeys.legacyVariants, []);
+    state.variants = readJson(storageKeys.variants, Array.isArray(legacyVariants) ? legacyVariants : []);
+    const context = readJson(storageKeys.context, {});
+    setContext({ ...context, date: context.date || defaultDate() });
+    const draft = readJson(storageKeys.draft, readJson(storageKeys.legacyDraft, null));
     if (draft) {
       setFormContent(draft);
     } else {
-      updatePlatformButtons();
-      updatePreview();
+      updateAll();
     }
-    renderVariants();
     bindEvents();
+    renderVariants();
+    updateHero();
   }
 
   window.generateSocialContent = generateSocialContent;
