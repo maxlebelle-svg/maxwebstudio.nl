@@ -230,7 +230,9 @@ async function readAdminJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
   const events = selected ? await readEvents({ supabaseUrl, serviceRoleKey, journeyId: selected.id }) : [];
   const factoryHistory = selected ? await readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, journeyId: selected.id }) : { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
   const projectWorkspace = selected ? await readProjectWorkspace({ supabaseUrl, serviceRoleKey, admin }, { demoJourneyId: selected.id }) : null;
-  return jsonResponse(200, { success: true, journey: selected, demoJourney: selected, records: journeys, events, templates: emailTemplates(), buildHistory: factoryHistory, buildStatus: factoryHistory.latestJob || null, projectWorkspace });
+  const responseJourneys = journeys.map(sanitizeAdminJourney);
+  const responseSelected = responseJourneys[0] || null;
+  return jsonResponse(200, { success: true, journey: responseSelected, demoJourney: responseSelected, records: responseJourneys, events, templates: emailTemplates(), buildHistory: factoryHistory, buildStatus: factoryHistory.latestJob || null, projectWorkspace });
 }
 
 async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
@@ -282,7 +284,8 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     await createEvent({ supabaseUrl, serviceRoleKey, journeyId: current.id, type: "approval", title: action === "approve_preview" ? "Preview goedgekeurd" : "Oplevering goedgekeurd", description: "Super Admin heeft deze stap vrijgegeven.", visible: false, createdBy: admin.id });
     const journey = mapJourney(rows[0] || await readJourneyById({ supabaseUrl, serviceRoleKey, id: current.id }));
     const events = await readEvents({ supabaseUrl, serviceRoleKey, journeyId: current.id });
-    return jsonResponse(200, { success: true, journey, demoJourney: journey, events });
+    const responseJourney = sanitizeAdminJourney(journey);
+    return jsonResponse(200, { success: true, journey: responseJourney, demoJourney: responseJourney, events });
   }
 
   if (action === "generate_email") {
@@ -351,7 +354,8 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     const journey = mapJourney(rows[0] || await readJourneyById({ supabaseUrl, serviceRoleKey, id: current.id }));
     const events = await readEvents({ supabaseUrl, serviceRoleKey, journeyId: current.id });
     const buildHistory = await readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, journeyId: current.id });
-    return jsonResponse(200, { success: true, journey, demoJourney: journey, events, buildHistory, buildStatus: buildHistory.latestJob || null, manualPreview });
+    const responseJourney = sanitizeAdminJourney(journey);
+    return jsonResponse(200, { success: true, journey: responseJourney, demoJourney: responseJourney, events, buildHistory, buildStatus: buildHistory.latestJob || null, manualPreview: sanitizeManualPreviewMeta(manualPreview) });
   }
 
   if (action === "save_demo_site") {
@@ -418,7 +422,8 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     });
     const events = await readEvents({ supabaseUrl, serviceRoleKey, journeyId: current.id });
     const buildHistory = await readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, journeyId: current.id });
-    return jsonResponse(200, { success: true, journey, demoJourney: journey, events, buildHistory, buildStatus: buildHistory.latestJob || null, projectWorkspace, savedDemoSite });
+    const responseJourney = sanitizeAdminJourney(journey);
+    return jsonResponse(200, { success: true, journey: responseJourney, demoJourney: responseJourney, events, buildHistory, buildStatus: buildHistory.latestJob || null, projectWorkspace, savedDemoSite });
   }
 
   if (action === "generate_preview") {
@@ -501,10 +506,11 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     }));
     const events = await readEvents({ supabaseUrl, serviceRoleKey, journeyId });
     const buildHistory = await readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, journeyId });
+    const responseJourney = sanitizeAdminJourney(journey);
     return jsonResponse(200, {
       success: true,
-      journey,
-      demoJourney: journey,
+      journey: responseJourney,
+      demoJourney: responseJourney,
       events,
       buildJob: buildResult.job,
       buildStatus: buildResult.job || null,
@@ -535,7 +541,8 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
   await createStatusEvents({ supabaseUrl, serviceRoleKey, journey, current: current ? mapJourney(current) : null, admin });
   const events = await readEvents({ supabaseUrl, serviceRoleKey, journeyId: journey.id });
   const buildHistory = journey?.id ? await readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, journeyId: journey.id }) : { latestJob: null };
-  return jsonResponse(200, { success: true, journey, demoJourney: journey, reusedExisting: Boolean(targetId && !payload.id), events, template: buildEmailTemplate(journey.demoStatus, journey), buildHistory, buildStatus: buildHistory.latestJob || null, projectWorkspace });
+  const responseJourney = sanitizeAdminJourney(journey);
+  return jsonResponse(200, { success: true, journey: responseJourney, demoJourney: responseJourney, reusedExisting: Boolean(targetId && !payload.id), events, template: buildEmailTemplate(journey.demoStatus, journey), buildHistory, buildStatus: buildHistory.latestJob || null, projectWorkspace });
 }
 
 function workspacePayload(journey = {}, extra = {}) {
@@ -901,6 +908,52 @@ function mapJourney(row = {}) {
     updatedBy: cleanText(row.updated_by),
     createdAt: cleanText(row.created_at),
     updatedAt: cleanText(row.updated_at),
+  };
+}
+
+function sanitizeAdminJourney(journey = null) {
+  if (!journey) return null;
+  return {
+    ...journey,
+    previewPackage: sanitizePreviewPackageForResponse(journey.previewPackage),
+  };
+}
+
+function sanitizePreviewPackageForResponse(previewPackage = null) {
+  if (!previewPackage || typeof previewPackage !== "object") return previewPackage || null;
+  const sanitized = { ...previewPackage };
+  if (sanitized.manualPreview) sanitized.manualPreview = sanitizeManualPreviewMeta(sanitized.manualPreview);
+  if (sanitized.manual_preview) sanitized.manual_preview = sanitizeManualPreviewMeta(sanitized.manual_preview);
+  if (Array.isArray(sanitized.files)) sanitized.files = sanitized.files.map(sanitizePreviewFileMeta);
+  if (sanitized.savedDemoSite) sanitized.savedDemoSite = sanitizeSavedDemoSiteMeta(sanitized.savedDemoSite);
+  if (sanitized.saved_demo_site) sanitized.saved_demo_site = sanitizeSavedDemoSiteMeta(sanitized.saved_demo_site);
+  return sanitized;
+}
+
+function sanitizeManualPreviewMeta(manualPreview = null) {
+  if (!manualPreview || typeof manualPreview !== "object") return manualPreview || null;
+  return {
+    ...manualPreview,
+    files: Array.isArray(manualPreview.files) ? manualPreview.files.map(sanitizePreviewFileMeta) : [],
+  };
+}
+
+function sanitizePreviewFileMeta(file = {}) {
+  return {
+    path: cleanText(file.path),
+    mime: cleanText(file.mime || contentTypeForPreviewPath(file.path)),
+    size: Math.max(0, Number(file.size || 0)),
+    encoding: cleanText(file.encoding || "base64").toLowerCase(),
+    hasContent: Boolean(file.content),
+  };
+}
+
+function sanitizeSavedDemoSiteMeta(savedDemoSite = null) {
+  if (!savedDemoSite || typeof savedDemoSite !== "object") return savedDemoSite || null;
+  const thumbnailUrl = cleanText(savedDemoSite.thumbnailUrl);
+  return {
+    ...savedDemoSite,
+    thumbnailUrl: thumbnailUrl.startsWith("data:") ? "" : thumbnailUrl,
   };
 }
 
