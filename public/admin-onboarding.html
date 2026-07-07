@@ -74,6 +74,7 @@
           </label>
           <div class="admin-page-actions">
             <button class="button secondary" id="copy-customer-questions-top" type="button">Kopieer klantvragen</button>
+            <button class="button secondary" id="start-website-factory-top" type="button">Website Factory</button>
             <button class="button primary" id="new-onboarding-top" type="button">Nieuwe onboarding</button>
           </div>
         </header>
@@ -114,6 +115,84 @@
             <strong id="metric-average-progress">0%</strong>
             <small>Alle onboardings</small>
           </article>
+        </section>
+
+        <section class="admin-card onboarding-command-card" aria-label="Nieuwe klant onboarding starten">
+          <div class="onboarding-panel-heading">
+            <div>
+              <p class="section-kicker">Nieuwe klant</p>
+              <h2>Klant klaarzetten</h2>
+              <p>Maak direct een interne onboarding aan en zet desgewenst het klantportaal klaar.</p>
+            </div>
+            <span class="status-badge status-prepared" id="onboarding-save-state">Lokaal klaar</span>
+          </div>
+          <form class="onboarding-create-form" id="onboarding-create-form">
+            <label>
+              <span>Bedrijfsnaam</span>
+              <input id="onboarding-company" name="company" type="text" placeholder="Bijv. Cinta Styling" autocomplete="organization" />
+            </label>
+            <label>
+              <span>Contactpersoon</span>
+              <input id="onboarding-contact" name="name" type="text" placeholder="Naam contactpersoon" autocomplete="name" />
+            </label>
+            <label>
+              <span>E-mailadres</span>
+              <input id="onboarding-email" name="email" type="email" placeholder="naam@bedrijf.nl" autocomplete="email" />
+            </label>
+            <label>
+              <span>Telefoon</span>
+              <input id="onboarding-phone" name="phone" type="tel" placeholder="06..." autocomplete="tel" />
+            </label>
+            <label>
+              <span>Website / domein</span>
+              <input id="onboarding-domain" name="domain" type="text" placeholder="bedrijf.nl" autocomplete="url" />
+            </label>
+            <label>
+              <span>Pakket</span>
+              <select id="onboarding-package" name="package">
+                <option>Basis</option>
+                <option>Plus</option>
+                <option>Premium</option>
+                <option>One Page Website</option>
+                <option>Starter Care</option>
+                <option>Hosting Basis</option>
+                <option>Maatwerk</option>
+              </select>
+            </label>
+            <label>
+              <span>Projectnaam</span>
+              <input id="onboarding-project" name="projectName" type="text" placeholder="Website onboarding" />
+            </label>
+            <label>
+              <span>Deadline</span>
+              <input id="onboarding-deadline" name="deadline" type="date" />
+            </label>
+            <label>
+              <span>Verantwoordelijke</span>
+              <input id="onboarding-owner" name="ownerName" type="text" placeholder="Medewerker" />
+            </label>
+            <label>
+              <span>Prioriteit</span>
+              <select id="onboarding-priority" name="priority">
+                <option value="normaal">Normaal</option>
+                <option value="hoog">Hoog</option>
+                <option value="spoed">Spoed</option>
+              </select>
+            </label>
+            <label class="onboarding-form-wide">
+              <span>Interne notitie</span>
+              <textarea id="onboarding-notes" name="notes" rows="3" placeholder="Belangrijke afspraken, pakket, aandachtspunten..."></textarea>
+            </label>
+            <label class="onboarding-toggle-row">
+              <input id="onboarding-send-welcome" name="sendWelcomeEmail" type="checkbox" />
+              <span>Welkomstmail / klantportaal activatie versturen</span>
+            </label>
+            <div class="onboarding-form-actions">
+              <button class="button primary" id="create-onboarding-submit" type="submit">Onboarding aanmaken</button>
+              <button class="button secondary" id="prepare-portal-button" type="button">Klantportaal klaarzetten</button>
+            </div>
+          </form>
+          <p class="admin-form-message" id="onboarding-form-message" role="status"></p>
         </section>
 
         <section class="onboarding-workspace" aria-label="Onboarding dashboard">
@@ -168,10 +247,14 @@
                   <span id="selected-progress-bar"></span>
                 </div>
               </div>
+              <div class="onboarding-detail-grid" id="onboarding-detail-grid"></div>
               <div class="onboarding-actions" aria-label="Onboarding acties">
                 <button class="button primary" id="mark-ready-button" type="button">Markeer klaar voor oplevering</button>
                 <button class="button secondary" id="copy-customer-questions" type="button">Kopieer klantvragen</button>
+                <button class="button secondary" id="start-website-factory" type="button">Start Website Factory</button>
+                <button class="button secondary" id="prepare-selected-portal" type="button">Klantportaal klaarzetten</button>
               </div>
+              <div class="onboarding-next-panel" id="onboarding-next-panel"></div>
               <div class="onboarding-checklist" id="onboarding-checklist"></div>
             </div>
           </section>
@@ -182,21 +265,25 @@
     <script>
       (() => {
         const storageKey = "maxwebstudioCustomerOnboardings";
+        const onboardingEndpoint = "/.netlify/functions/admin-customer-onboarding";
         const legacyCustomerKeys = ["maxwebstudioCustomers", "mws_customers", "customers", "crmCustomers"];
         const legacyLeadKeys = ["maxwebstudioLeads", "mws_leads", "leads", "crmLeads"];
         const legacyProjectKeys = ["maxwebstudioProjects", "mws_projects", "projects", "crmProjects"];
         const checklistTemplate = [
-          { id: "logo", label: "Logo" },
-          { id: "huisstijl", label: "Huisstijl" },
-          { id: "domein", label: "Domein" },
-          { id: "hosting", label: "Hosting" },
-          { id: "teksten", label: "Teksten" },
-          { id: "fotos", label: "Foto's" },
-          { id: "contactgegevens", label: "Contactgegevens" },
-          { id: "openingstijden", label: "Openingstijden" },
-          { id: "google_maps", label: "Google Maps" },
-          { id: "socials", label: "Socials" },
-          { id: "oplevering", label: "Oplevering" },
+          { id: "contactgegevens", label: "Contactgegevens", group: "Basis", question: "Kun je het juiste telefoonnummer, e-mailadres en contactpersoon bevestigen?" },
+          { id: "pakket", label: "Pakket en scope", group: "Sales", question: "Kun je bevestigen welk pakket en welke extra afspraken definitief zijn?" },
+          { id: "portal", label: "Klantportaal", group: "Portal", question: "Wil je het klantportaal activeren met dit e-mailadres?" },
+          { id: "logo", label: "Logo", group: "Assets", question: "Kun je het logo sturen, liefst als SVG, PNG of PDF?" },
+          { id: "huisstijl", label: "Huisstijl", group: "Assets", question: "Welke kleuren, lettertypes of bestaande huisstijl moeten we volgen?" },
+          { id: "domein", label: "Domein en DNS", group: "Techniek", question: "Waar staat het domein geregistreerd en hebben jullie toegang tot DNS/verhuiscode?" },
+          { id: "hosting", label: "Hosting", group: "Techniek", question: "Moeten wij hosting regelen of bestaat er al hosting?" },
+          { id: "teksten", label: "Teksten", group: "Content", question: "Welke teksten, diensten en pagina-inhoud moeten op de website komen?" },
+          { id: "fotos", label: "Foto's en media", group: "Content", question: "Kun je foto's van werk, team, locatie of producten toesturen?" },
+          { id: "openingstijden", label: "Openingstijden", group: "Content", question: "Wat zijn de actuele openingstijden of bereikbaarheid?" },
+          { id: "google_maps", label: "Google Maps en reviews", group: "Vertrouwen", question: "Kun je de Google Bedrijfsprofiel-link bevestigen en mogen we reviews gebruiken?" },
+          { id: "socials", label: "Socials", group: "Vertrouwen", question: "Welke social media kanalen moeten we linken?" },
+          { id: "preview", label: "Preview akkoord", group: "Oplevering", question: "Wie geeft akkoord op de preview?" },
+          { id: "oplevering", label: "Oplevering", group: "Oplevering", question: "Wanneer mogen we livegang of oplevering plannen?" },
         ];
         const statuses = ["Open", "Bezig", "Klaar"];
         const state = {
@@ -229,8 +316,30 @@
           markReady: document.getElementById("mark-ready-button"),
           copyQuestions: document.getElementById("copy-customer-questions"),
           copyQuestionsTop: document.getElementById("copy-customer-questions-top"),
+          startFactory: document.getElementById("start-website-factory"),
+          startFactoryTop: document.getElementById("start-website-factory-top"),
+          prepareSelectedPortal: document.getElementById("prepare-selected-portal"),
           newTop: document.getElementById("new-onboarding-top"),
           newList: document.getElementById("new-onboarding-list"),
+          saveState: document.getElementById("onboarding-save-state"),
+          createForm: document.getElementById("onboarding-create-form"),
+          formMessage: document.getElementById("onboarding-form-message"),
+          createSubmit: document.getElementById("create-onboarding-submit"),
+          preparePortal: document.getElementById("prepare-portal-button"),
+          detailGrid: document.getElementById("onboarding-detail-grid"),
+          nextPanel: document.getElementById("onboarding-next-panel"),
+          company: document.getElementById("onboarding-company"),
+          contact: document.getElementById("onboarding-contact"),
+          email: document.getElementById("onboarding-email"),
+          phone: document.getElementById("onboarding-phone"),
+          domain: document.getElementById("onboarding-domain"),
+          package: document.getElementById("onboarding-package"),
+          project: document.getElementById("onboarding-project"),
+          deadline: document.getElementById("onboarding-deadline"),
+          owner: document.getElementById("onboarding-owner"),
+          priority: document.getElementById("onboarding-priority"),
+          notes: document.getElementById("onboarding-notes"),
+          sendWelcome: document.getElementById("onboarding-send-welcome"),
         };
 
         function readJson(key, fallback) {
@@ -250,9 +359,39 @@
           return new Date().toISOString();
         }
 
+        function todayIso() {
+          return new Date().toISOString().slice(0, 10);
+        }
+
         function formatDate(value) {
           if (!value) return "Nog niet aangepast";
           return new Intl.DateTimeFormat("nl-NL", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(value));
+        }
+
+        function cleanText(value) {
+          return String(value || "").trim();
+        }
+
+        function normalizeDomain(value = "") {
+          return cleanText(value).replace(/^https?:\/\//i, "").replace(/^www\./i, "").replace(/\/.*$/, "");
+        }
+
+        function setFormMessage(message = "", type = "info") {
+          if (!elements.formMessage) return;
+          elements.formMessage.textContent = message;
+          elements.formMessage.className = `admin-form-message ${type ? `is-${type}` : ""}`;
+        }
+
+        function setSaveState(label, className = "status-prepared") {
+          if (!elements.saveState) return;
+          elements.saveState.textContent = label;
+          elements.saveState.className = `status-badge ${className}`;
+        }
+
+        function statusWeight(status = "Open") {
+          if (status === "Klaar") return 1;
+          if (status === "Bezig") return 0.5;
+          return 0;
         }
 
         function escapeHtml(value) {
@@ -293,20 +432,47 @@
           }));
         }
 
+        function checklistSeedFromOnboarding(input = {}) {
+          return {
+            contactgegevens: { status: input.email || input.phone ? "Klaar" : "Open", note: [input.email, input.phone].filter(Boolean).join(" · ") },
+            pakket: { status: input.package ? "Klaar" : "Bezig", note: input.package || "" },
+            portal: { status: input.portalStatus === "invited" || input.portalStatus === "active" ? "Klaar" : input.portalStatus === "prepared" ? "Bezig" : "Open", note: portalLabel(input.portalStatus) },
+            domein: { status: input.domain || input.website ? "Bezig" : "Open", note: input.domain || input.website || "" },
+            hosting: { status: input.package && /hosting|care|basis|plus|premium/i.test(input.package) ? "Bezig" : "Open", note: input.package || "" },
+          };
+        }
+
         function createOnboarding(input = {}) {
           const createdAt = input.createdAt || nowIso();
+          const checklistSeed = {
+            ...checklistSeedFromOnboarding(input),
+            ...(input.checklistSeed || {}),
+          };
           return {
             id: input.id || `onboarding-${Date.now()}-${Math.random().toString(16).slice(2)}`,
             customerId: input.customerId || "",
             projectId: input.projectId || "",
+            websiteId: input.websiteId || "",
+            leadId: input.leadId || "",
             customerName: input.customerName || "Nieuwe klant",
             projectName: input.projectName || "Website project",
             contactName: input.contactName || "",
             email: input.email || "",
+            phone: input.phone || "",
+            domain: normalizeDomain(input.domain || input.website || input.websiteUrl || ""),
+            package: input.package || "Basis",
+            ownerName: input.ownerName || "",
+            priority: input.priority || "normaal",
+            deadline: input.deadline || "",
+            portalStatus: input.portalStatus || "niet_actief",
+            portalAccessStatus: input.portalAccessStatus || "",
+            notes: input.notes || "",
+            mailPreview: input.mailPreview || null,
             source: input.source || "manual",
             createdAt,
             updatedAt: input.updatedAt || createdAt,
-            checklist: Array.isArray(input.checklist) ? normalizeChecklist(input.checklist) : makeChecklist(input.checklistSeed),
+            timeline: Array.isArray(input.timeline) ? input.timeline : [{ at: createdAt, label: "Onboarding aangemaakt", type: "created" }],
+            checklist: Array.isArray(input.checklist) ? normalizeChecklist(input.checklist) : makeChecklist(checklistSeed),
           };
         }
 
@@ -411,8 +577,8 @@
         }
 
         function progressOf(onboarding) {
-          const done = onboarding.checklist.filter((item) => item.status === "Klaar").length;
-          return Math.round((done / checklistTemplate.length) * 100);
+          const score = onboarding.checklist.reduce((sum, item) => sum + statusWeight(item.status), 0);
+          return Math.round((score / checklistTemplate.length) * 100);
         }
 
         function badgeFor(onboarding) {
@@ -430,6 +596,41 @@
             "Bijna klaar": "status-active",
             "Klaar voor oplevering": "status-success",
           }[status] || "status-prepared";
+        }
+
+        function priorityClass(priority = "") {
+          if (priority === "spoed") return "status-blocked";
+          if (priority === "hoog") return "status-warning";
+          return "status-prepared";
+        }
+
+        function portalLabel(status = "") {
+          return {
+            niet_actief: "Niet actief",
+            prepared: "Voorbereid",
+            invited: "Uitgenodigd",
+            active: "Actief",
+            disabled: "Uitgeschakeld",
+          }[status] || status || "Niet actief";
+        }
+
+        function nextActions(onboarding) {
+          if (!onboarding) return [];
+          const missing = onboarding.checklist.filter((step) => step.status !== "Klaar");
+          const portalMissing = !["prepared", "invited", "active"].includes(onboarding.portalStatus);
+          return [
+            portalMissing ? "Klantportaal klaarzetten of uitnodiging voorbereiden." : "",
+            missing.length ? `${missing.length} onboardingpunt(en) afronden: ${missing.slice(0, 3).map((step) => step.label).join(", ")}.` : "",
+            progressOf(onboarding) >= 70 ? "Website Factory kan alvast worden gestart met de bekende klantdata." : "",
+            onboarding.deadline ? `Deadline bewaken: ${formatDate(onboarding.deadline)}.` : "Deadline of gewenste livegang vastleggen.",
+          ].filter(Boolean);
+        }
+
+        function appendTimeline(onboarding, label, type = "update") {
+          if (!onboarding) return;
+          onboarding.timeline = Array.isArray(onboarding.timeline) ? onboarding.timeline : [];
+          onboarding.timeline.unshift({ at: nowIso(), label, type });
+          onboarding.timeline = onboarding.timeline.slice(0, 12);
         }
 
         function selectedOnboarding() {
@@ -471,6 +672,7 @@
                   <span class="status-badge ${badgeClass(badge)}">${escapeHtml(badge)}</span>
                 </span>
                 <span>${escapeHtml(item.projectName)}</span>
+                <span>${escapeHtml([item.package, portalLabel(item.portalStatus), item.ownerName].filter(Boolean).join(" · "))}</span>
                 <span class="onboarding-progress-track" aria-hidden="true"><span style="width: ${progress}%"></span></span>
                 <small>${progress}% compleet · aangepast ${escapeHtml(formatDate(item.updatedAt))}</small>
               </button>
@@ -492,12 +694,43 @@
           elements.selectedStatusBadge.className = `status-badge ${badgeClass(badge)}`;
           elements.selectedProgressLabel.textContent = `${progress}%`;
           elements.selectedProgressBar.style.width = `${progress}%`;
+          if (elements.detailGrid) {
+            const detailRows = [
+              ["Contact", [onboarding.contactName, onboarding.email, onboarding.phone].filter(Boolean).join(" · ") || "Nog niet compleet"],
+              ["Website", onboarding.domain || "Nog niet ingevuld"],
+              ["Pakket", onboarding.package || "-"],
+              ["Klantportaal", portalLabel(onboarding.portalStatus)],
+              ["Verantwoordelijke", onboarding.ownerName || "Nog niet toegewezen"],
+              ["Deadline", onboarding.deadline ? formatDate(onboarding.deadline) : "Nog niet gepland"],
+              ["Prioriteit", onboarding.priority || "normaal"],
+              ["Bron", onboarding.source || "manual"],
+            ];
+            elements.detailGrid.innerHTML = detailRows.map(([label, value]) => `
+              <div>
+                <span>${escapeHtml(label)}</span>
+                <strong>${escapeHtml(value)}</strong>
+              </div>
+            `).join("");
+          }
+          if (elements.nextPanel) {
+            const actions = nextActions(onboarding);
+            elements.nextPanel.innerHTML = `
+              <div>
+                <p class="section-kicker">Volgende stappen</p>
+                <h3>${actions.length ? "Wat moet nu gebeuren" : "Onboarding compleet"}</h3>
+              </div>
+              <ul>
+                ${(actions.length ? actions : ["Klaar voor oplevering of livegang."]).map((action) => `<li>${escapeHtml(action)}</li>`).join("")}
+              </ul>
+              ${onboarding.notes ? `<p>${escapeHtml(onboarding.notes)}</p>` : ""}
+            `;
+          }
           elements.checklist.innerHTML = onboarding.checklist.map((step) => `
             <article class="onboarding-check-card" data-step-id="${escapeHtml(step.id)}">
               <div class="onboarding-check-header">
                 <div>
                   <strong>${escapeHtml(step.label)}</strong>
-                  <small>Laatst aangepast: ${escapeHtml(formatDate(step.updatedAt))}</small>
+                  <small>${escapeHtml(step.group || "Onboarding")} · Laatst aangepast: ${escapeHtml(formatDate(step.updatedAt))}</small>
                 </div>
                 <select aria-label="Status voor ${escapeHtml(step.label)}" data-field="status">
                   ${statuses.map((status) => `<option value="${status}" ${step.status === status ? "selected" : ""}>${status}</option>`).join("")}
@@ -526,12 +759,152 @@
           if (renderAfterSave) render();
         }
 
+        function collectFormPayload() {
+          return {
+            company: cleanText(elements.company?.value),
+            customerName: cleanText(elements.company?.value),
+            name: cleanText(elements.contact?.value),
+            contactName: cleanText(elements.contact?.value),
+            email: cleanText(elements.email?.value).toLowerCase(),
+            phone: cleanText(elements.phone?.value),
+            domain: normalizeDomain(elements.domain?.value),
+            package: elements.package?.value || "Basis",
+            projectName: cleanText(elements.project?.value) || "Website onboarding",
+            deadline: elements.deadline?.value || "",
+            ownerName: cleanText(elements.owner?.value),
+            priority: elements.priority?.value || "normaal",
+            notes: cleanText(elements.notes?.value),
+            sendWelcomeEmail: Boolean(elements.sendWelcome?.checked),
+          };
+        }
+
+        function validateFormPayload(payload = {}) {
+          if (!payload.company) return "Vul een bedrijfsnaam in.";
+          if (!payload.name) return "Vul een contactpersoon in.";
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email || "")) return "Vul een geldig e-mailadres in.";
+          if (!payload.domain) return "Vul een website of domein in.";
+          return "";
+        }
+
+        function upsertOnboardingFromPayload(payload = {}, extra = {}) {
+          const existing = payload.id ? state.onboardings.find((item) => item.id === payload.id) : null;
+          const onboarding = createOnboarding({
+            ...(existing || {}),
+            ...payload,
+            ...extra,
+            customerName: payload.company || payload.customerName || existing?.customerName,
+            contactName: payload.name || payload.contactName || existing?.contactName,
+            domain: payload.domain || existing?.domain,
+            source: extra.source || existing?.source || "manual",
+            updatedAt: nowIso(),
+          });
+          if (existing) {
+            Object.assign(existing, onboarding);
+            appendTimeline(existing, "Onboarding bijgewerkt");
+            state.selectedId = existing.id;
+            return existing;
+          }
+          state.onboardings.unshift(onboarding);
+          state.selectedId = onboarding.id;
+          return onboarding;
+        }
+
+        async function createPortalForOnboarding(onboarding, options = {}) {
+          if (!onboarding) return null;
+          const payload = {
+            name: onboarding.contactName || onboarding.customerName,
+            company: onboarding.customerName,
+            email: onboarding.email,
+            phone: onboarding.phone,
+            domain: onboarding.domain,
+            package: onboarding.package || "Basis",
+            projectName: onboarding.projectName || "Website onboarding",
+            leadId: onboarding.leadId || "",
+            sendWelcomeEmail: options.sendWelcomeEmail ?? false,
+          };
+          const validation = validateFormPayload({ ...payload, customerName: payload.company });
+          if (validation) throw new Error(validation);
+          const response = await fetch(onboardingEndpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(payload),
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || !data.success) throw new Error(data.error || "Klantportaal kon niet worden klaargezet.");
+          return data;
+        }
+
+        async function createOnboardingFromForm(event, createPortal = false) {
+          event?.preventDefault();
+          const payload = collectFormPayload();
+          const validation = validateFormPayload(payload);
+          if (validation) {
+            setFormMessage(validation, "error");
+            return;
+          }
+          const onboarding = upsertOnboardingFromPayload(payload, {
+            source: createPortal ? "portal_wizard" : "manual",
+            portalStatus: createPortal ? "prepared" : "niet_actief",
+          });
+          appendTimeline(onboarding, "Onboarding handmatig aangemaakt");
+          saveOnboardings(false);
+          render();
+          setFormMessage("Onboarding lokaal aangemaakt.", "success");
+          if (!createPortal) {
+            elements.createForm?.reset();
+            return;
+          }
+          await preparePortal(onboarding, payload.sendWelcomeEmail);
+          elements.createForm?.reset();
+        }
+
+        async function preparePortal(onboarding = selectedOnboarding(), sendWelcomeEmail = false) {
+          if (!onboarding) return;
+          setFormMessage("Klantportaal wordt klaargezet...", "info");
+          setSaveState("Portal bezig", "status-warning");
+          [elements.preparePortal, elements.prepareSelectedPortal].forEach((button) => { if (button) button.disabled = true; });
+          try {
+            const data = await createPortalForOnboarding(onboarding, { sendWelcomeEmail });
+            const result = data.onboarding || {};
+            onboarding.customerId = result.customer?.id || onboarding.customerId;
+            onboarding.projectId = result.project?.id || onboarding.projectId;
+            onboarding.websiteId = result.website?.id || onboarding.websiteId;
+            onboarding.portalStatus = result.portalStatus || (sendWelcomeEmail ? "invited" : "prepared");
+            onboarding.portalAccessStatus = result.portalStatus || onboarding.portalAccessStatus;
+            onboarding.mailPreview = data.mailPreview || onboarding.mailPreview || null;
+            onboarding.updatedAt = nowIso();
+            const portalStep = onboarding.checklist.find((step) => step.id === "portal");
+            if (portalStep) {
+              portalStep.status = sendWelcomeEmail ? "Klaar" : "Bezig";
+              portalStep.note = sendWelcomeEmail ? "Klant uitgenodigd voor het portaal." : "Klantportaal voorbereid. Uitnodiging kan later.";
+              portalStep.updatedAt = onboarding.updatedAt;
+            }
+            appendTimeline(onboarding, sendWelcomeEmail ? "Klantportaal voorbereid en uitnodiging aangevraagd" : "Klantportaal voorbereid");
+            saveOnboardings(false);
+            render();
+            setFormMessage(data.note || "Klantportaal klaargezet.", "success");
+            setSaveState("Portal klaar", "status-active");
+            notify("Klantportaal klaargezet.", "success");
+          } catch (error) {
+            appendTimeline(onboarding, `Portal niet gelukt: ${error.message}`, "warning");
+            saveOnboardings(false);
+            render();
+            setFormMessage(`${error.message} De onboarding blijft lokaal bewaard.`, "error");
+            setSaveState("Lokaal bewaard", "status-warning");
+          } finally {
+            [elements.preparePortal, elements.prepareSelectedPortal].forEach((button) => { if (button) button.disabled = false; });
+          }
+        }
+
         function addOnboarding() {
           const nextNumber = state.onboardings.length + 1;
           const onboarding = createOnboarding({
             customerName: `Nieuwe klant ${nextNumber}`,
             projectName: "Website onboarding",
             source: "manual",
+            deadline: "",
+            priority: "normaal",
             checklistSeed: checklistTemplate.reduce((seed, item) => {
               seed[item.id] = { status: "Open", note: "" };
               return seed;
@@ -541,6 +914,8 @@
           state.selectedId = onboarding.id;
           saveOnboardings();
           render();
+          if (elements.company) elements.company.value = onboarding.customerName;
+          if (elements.project) elements.project.value = onboarding.projectName;
         }
 
         function markReady() {
@@ -553,6 +928,7 @@
             updatedAt: timestamp,
           }));
           onboarding.updatedAt = timestamp;
+          appendTimeline(onboarding, "Gemarkeerd als klaar voor oplevering", "ready");
           saveOnboardings();
           render();
           notify(`${onboarding.customerName} is klaar voor oplevering.`, "success");
@@ -560,7 +936,7 @@
 
         function missingQuestions(onboarding) {
           const missing = onboarding.checklist.filter((step) => step.status !== "Klaar");
-          const lines = missing.map((step) => `- ${step.label}${step.note ? `: ${step.note}` : ""}`);
+          const lines = missing.map((step) => `- ${step.question || step.label}${step.note ? `\n  Context: ${step.note}` : ""}`);
           return [
             `Hoi ${onboarding.contactName || onboarding.customerName},`,
             "",
@@ -573,6 +949,46 @@
             "Dank je wel!",
             "Max Webstudio",
           ].join("\n");
+        }
+
+        function startWebsiteFactory() {
+          const onboarding = selectedOnboarding();
+          if (!onboarding) return;
+          const pendingLead = {
+            id: onboarding.leadId || onboarding.customerId || onboarding.id,
+            companyName: onboarding.customerName,
+            contactName: onboarding.contactName,
+            email: onboarding.email,
+            phone: onboarding.phone,
+            websiteUrl: onboarding.domain,
+            packageType: onboarding.package,
+            region: "",
+            source: "Klant Onboarding",
+            customerId: onboarding.customerId,
+            projectId: onboarding.projectId,
+            demoFactoryIntake: {
+              package: onboarding.package,
+              followUp: onboarding.deadline ? "planned" : "today",
+              mustHaves: onboarding.checklist.filter((step) => step.status !== "Open").map((step) => step.id),
+              internalRemark: [
+                onboarding.notes,
+                `Onboarding voortgang: ${progressOf(onboarding)}%`,
+                `Portalstatus: ${portalLabel(onboarding.portalStatus)}`,
+                onboarding.deadline ? `Deadline: ${onboarding.deadline}` : "",
+              ].filter(Boolean).join("\n"),
+            },
+            notes: [
+              onboarding.notes,
+              `Klant onboarding: ${progressOf(onboarding)}% compleet.`,
+              nextActions(onboarding).join("\n"),
+            ].filter(Boolean).join("\n\n"),
+          };
+          sessionStorage.setItem("maxwebstudioPendingPreviewLead", JSON.stringify(pendingLead));
+          appendTimeline(onboarding, "Website Factory gestart vanuit onboarding", "factory");
+          onboarding.updatedAt = nowIso();
+          saveOnboardings(false);
+          notify("Website Factory wordt geopend met deze klantdata.", "success");
+          window.location.href = `admin-website-factory.html?leadId=${encodeURIComponent(pendingLead.id)}`;
         }
 
         async function copyQuestions() {
@@ -651,9 +1067,16 @@
             if (!card || event.target.dataset.field !== "note") return;
             updateStep(card.dataset.stepId, "note", event.target.value, false);
           });
-          [elements.newTop, elements.newList].forEach((button) => button.addEventListener("click", addOnboarding));
-          [elements.copyQuestions, elements.copyQuestionsTop].forEach((button) => button.addEventListener("click", copyQuestions));
-          elements.markReady.addEventListener("click", markReady);
+          [elements.newTop, elements.newList].forEach((button) => button.addEventListener("click", () => {
+            addOnboarding();
+            elements.createForm?.scrollIntoView({ behavior: "smooth", block: "center" });
+          }));
+          [elements.copyQuestions, elements.copyQuestionsTop].forEach((button) => button?.addEventListener("click", copyQuestions));
+          elements.markReady?.addEventListener("click", markReady);
+          [elements.startFactory, elements.startFactoryTop].forEach((button) => button?.addEventListener("click", startWebsiteFactory));
+          elements.createForm?.addEventListener("submit", (event) => createOnboardingFromForm(event, false));
+          elements.preparePortal?.addEventListener("click", (event) => createOnboardingFromForm(event, true));
+          elements.prepareSelectedPortal?.addEventListener("click", () => preparePortal(selectedOnboarding(), false));
           window.addEventListener("keydown", (event) => {
             if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
               event.preventDefault();

@@ -320,6 +320,7 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     if (!previewUrl) return jsonResponse(400, { success: false, error: "Genereer eerst een preview voordat je de demo-site opslaat." });
     const currentJourney = mapJourney(current);
     const previewPackage = current.preview_package && typeof current.preview_package === "object" ? current.preview_package : {};
+    const thumbnail = buildSavedDemoThumbnail({ journey: currentJourney, previewPackage, previewUrl, savedAt });
     const savedDemoSite = {
       saved: true,
       savedAt,
@@ -330,6 +331,9 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
       businessName: cleanText(payload.businessName || payload.business_name || currentJourney.businessName),
       previewUrl,
       previewVersion: previewPackage.version || previewPackage.meta?.version || null,
+      thumbnailUrl: thumbnail.thumbnailUrl,
+      thumbnailGeneratedAt: thumbnail.thumbnailGeneratedAt,
+      thumbnailKind: thumbnail.thumbnailKind,
       offerReady: true,
     };
     const record = {
@@ -1006,6 +1010,102 @@ function formatDutchDate(value = "") {
 
 function statusLabel(status = "") {
   return normalizeStatus(status).split("_").map((part) => part ? `${part.charAt(0).toUpperCase()}${part.slice(1)}` : "").join(" ");
+}
+
+function buildSavedDemoThumbnail({ journey = {}, previewPackage = {}, previewUrl = "", savedAt = "" } = {}) {
+  const files = Array.isArray(previewPackage.files) ? previewPackage.files : [];
+  const indexHtml = files.find((file) => file.path === "index.html")?.content || "";
+  const meta = previewPackage.meta || {};
+  const businessName = cleanText(journey.businessName || meta.businessName || textFromHtml(indexHtml, /<title[^>]*>([\s\S]*?)<\/title>/i) || "Demo-site");
+  const heroTitle = cleanText(textFromHtml(indexHtml, /<h1[^>]*>([\s\S]*?)<\/h1>/i) || meta.title || "Professionele demo-site");
+  const heroText = cleanText(textFromHtml(indexHtml, /<p[^>]*>([\s\S]*?)<\/p>/i) || "Preview opgeslagen en gekoppeld aan de lead.");
+  const packageLabel = cleanText(meta.packageName || meta.packageType || previewPackage.packageType || "Website demo");
+  const initials = businessName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0))
+    .join("")
+    .toUpperCase() || "MW";
+  const heroLines = wrapTextForSvg(heroTitle, 32, 2);
+  const bodyLines = wrapTextForSvg(heroText, 44, 2);
+  const accent = cleanText(meta.colors?.accent || "#22c55e");
+  const brand = cleanText(meta.colors?.brand || "#0f766e");
+  const dark = cleanText(meta.colors?.dark || "#0f172a");
+  const savedDate = savedAt ? statusLabelDate(savedAt) : "";
+  const urlText = cleanText(previewUrl).replace(/^https?:\/\//i, "").slice(0, 62);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" role="img" aria-label="${escapeHtml(`Miniatuur ${businessName}`)}">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop stop-color="${escapeHtml(dark)}"/><stop offset=".64" stop-color="${escapeHtml(brand)}"/><stop offset="1" stop-color="${escapeHtml(accent)}"/></linearGradient>
+    <linearGradient id="paper" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#fffaf2"/><stop offset="1" stop-color="#f3efe7"/></linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#020617" flood-opacity=".24"/></filter>
+  </defs>
+  <rect width="960" height="600" rx="34" fill="#061525"/>
+  <rect x="32" y="32" width="896" height="536" rx="28" fill="url(#paper)" filter="url(#shadow)"/>
+  <rect x="32" y="32" width="896" height="158" rx="28" fill="url(#bg)"/>
+  <rect x="32" y="142" width="896" height="48" fill="url(#bg)"/>
+  <rect x="78" y="74" width="72" height="72" rx="14" fill="${escapeHtml(accent)}"/>
+  <text x="114" y="123" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="38" font-weight="950" fill="#ffffff">${escapeHtml(initials)}</text>
+  <text x="178" y="104" font-family="Inter,Arial,sans-serif" font-size="32" font-weight="900" fill="#ffffff">${escapeHtml(truncateText(businessName, 34))}</text>
+  <text x="178" y="140" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="800" fill="rgba(255,255,255,.72)">${escapeHtml(truncateText(packageLabel, 42))}</text>
+  <rect x="705" y="78" width="165" height="52" rx="10" fill="${escapeHtml(accent)}"/>
+  <text x="788" y="112" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="20" font-weight="900" fill="#ffffff">Preview</text>
+  <text x="76" y="250" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="950" letter-spacing="3" fill="${escapeHtml(accent)}">OPGESLAGEN DEMO</text>
+  ${heroLines.map((line, index) => `<text x="76" y="${315 + (index * 54)}" font-family="Inter,Arial,sans-serif" font-size="46" font-weight="950" fill="#102033">${escapeHtml(line)}</text>`).join("")}
+  ${bodyLines.map((line, index) => `<text x="76" y="${440 + (index * 34)}" font-family="Inter,Arial,sans-serif" font-size="26" font-weight="700" fill="#5d6675">${escapeHtml(line)}</text>`).join("")}
+  <rect x="640" y="255" width="222" height="168" rx="18" fill="#ffffff" stroke="#d9dee8" stroke-width="2"/>
+  <rect x="666" y="282" width="170" height="16" rx="8" fill="${escapeHtml(accent)}" opacity=".88"/>
+  <rect x="666" y="322" width="122" height="14" rx="7" fill="#cbd5e1"/>
+  <rect x="666" y="354" width="150" height="14" rx="7" fill="#d7dde7"/>
+  <rect x="666" y="390" width="86" height="22" rx="8" fill="${escapeHtml(brand)}" opacity=".84"/>
+  <text x="76" y="535" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="850" fill="#657184">${escapeHtml(truncateText(urlText, 72))}</text>
+  <text x="862" y="535" text-anchor="end" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="900" fill="#657184">${escapeHtml(savedDate)}</text>
+</svg>`;
+  return {
+    thumbnailUrl: `data:image/svg+xml;base64,${Buffer.from(svg, "utf8").toString("base64")}`,
+    thumbnailGeneratedAt: savedAt || new Date().toISOString(),
+    thumbnailKind: "saved_preview_snapshot",
+  };
+}
+
+function statusLabelDate(value = "") {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("nl-NL", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function textFromHtml(html = "", pattern) {
+  const match = String(html || "").match(pattern);
+  return cleanText(String(match?.[1] || "")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " "));
+}
+
+function truncateText(value = "", maxLength = 60) {
+  const text = cleanText(value);
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, Math.max(0, maxLength - 1)).trim()}…`;
+}
+
+function wrapTextForSvg(value = "", maxCharacters = 34, maxLines = 2) {
+  const words = cleanText(value).split(/\s+/).filter(Boolean);
+  const lines = [];
+  let line = "";
+  words.forEach((word) => {
+    const next = line ? `${line} ${word}` : word;
+    if (next.length > maxCharacters && line) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = next;
+    }
+  });
+  if (line) lines.push(line);
+  const visible = lines.slice(0, maxLines);
+  if (lines.length > maxLines && visible.length) visible[visible.length - 1] = truncateText(visible[visible.length - 1], maxCharacters);
+  return visible.length ? visible : ["Professionele demo-site"];
 }
 
 function normalizeStatus(value = "") {

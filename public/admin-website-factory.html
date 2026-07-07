@@ -21748,6 +21748,12 @@
           return pack.savedDemoSite || pack.saved_demo_site || pack.meta?.savedDemoSite || null;
         }
 
+        function savedDemoThumbnail(sourceJourney = journey) {
+          const pack = sourceJourney?.previewPackage || {};
+          const savedDemo = savedDemoSiteMeta(sourceJourney) || {};
+          return savedDemo.thumbnailUrl || savedDemo.thumbnail_url || savedDemo.thumbnail || pack.thumbnailUrl || pack.thumbnail_url || pack.meta?.thumbnailUrl || "";
+        }
+
         function isDemoSiteSaved(sourceJourney = journey) {
           const savedDemo = savedDemoSiteMeta(sourceJourney);
           return Boolean(savedDemo?.saved && (savedDemo.previewUrl || sourceJourney?.previewUrl));
@@ -22674,12 +22680,16 @@
           }
           elements.savedDemoList.innerHTML = savedItems.map((item) => {
             const savedDemo = savedDemoSiteMeta(item) || {};
+            const thumbnail = savedDemoThumbnail(item);
             const previewUrl = absolutePreviewUrl(savedDemo.previewUrl || item.previewUrl || "");
             const leadText = savedDemo.leadId || item.leadId ? "Lead gekoppeld" : "Nog geen lead-koppeling";
             const customerText = savedDemo.customerId || item.customerId ? "Klant gekoppeld" : "Nog leadfase";
             const savedAt = formatDate(savedDemo.savedAt || item.updatedAt);
             return `
               <article class="saved-demo-site-item">
+                <span class="saved-demo-site-thumb" aria-hidden="true">
+                  ${thumbnail ? `<img src="${escapeHtml(thumbnail)}" alt="" loading="lazy" />` : `<span>${escapeHtml((savedDemo.businessName || item.businessName || "D").slice(0, 1).toUpperCase())}</span>`}
+                </span>
                 <div>
                   <strong>${escapeHtml(savedDemo.businessName || item.businessName || "Demo-site")}</strong>
                   <span>${escapeHtml([leadText, customerText, savedAt].filter(Boolean).join(" · "))}</span>

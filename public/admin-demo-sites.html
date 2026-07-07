@@ -21668,6 +21668,12 @@
           return pack.savedDemoSite || pack.saved_demo_site || pack.meta?.savedDemoSite || null;
         }
 
+        function savedDemoThumbnail(sourceJourney = journey) {
+          const pack = sourceJourney?.previewPackage || {};
+          const savedDemo = savedDemoSiteMeta(sourceJourney) || {};
+          return savedDemo.thumbnailUrl || savedDemo.thumbnail_url || savedDemo.thumbnail || pack.thumbnailUrl || pack.thumbnail_url || pack.meta?.thumbnailUrl || "";
+        }
+
         function isDemoSiteSaved(sourceJourney = journey) {
           const savedDemo = savedDemoSiteMeta(sourceJourney);
           return Boolean(savedDemo?.saved && (savedDemo.previewUrl || sourceJourney?.previewUrl));
@@ -22577,12 +22583,16 @@
           }
           elements.savedDemoList.innerHTML = savedItems.map((item) => {
             const savedDemo = savedDemoSiteMeta(item) || {};
+            const thumbnail = savedDemoThumbnail(item);
             const previewUrl = absolutePreviewUrl(savedDemo.previewUrl || item.previewUrl || "");
             const leadText = savedDemo.leadId || item.leadId ? "Lead gekoppeld" : "Nog geen lead-koppeling";
             const customerText = savedDemo.customerId || item.customerId ? "Klant gekoppeld" : "Nog leadfase";
             const savedAt = formatDate(savedDemo.savedAt || item.updatedAt);
             return `
               <article class="saved-demo-site-item">
+                <span class="saved-demo-site-thumb" aria-hidden="true">
+                  ${thumbnail ? `<img src="${escapeHtml(thumbnail)}" alt="" loading="lazy" />` : `<span>${escapeHtml((savedDemo.businessName || item.businessName || "D").slice(0, 1).toUpperCase())}</span>`}
+                </span>
                 <div>
                   <strong>${escapeHtml(savedDemo.businessName || item.businessName || "Demo-site")}</strong>
                   <span>${escapeHtml([leadText, customerText, savedAt].filter(Boolean).join(" · "))}</span>
@@ -22991,6 +23001,12 @@
           return record.savedDemoSite || pack.savedDemoSite || pack.saved_demo_site || pack.meta?.savedDemoSite || null;
         }
 
+        function savedDemoThumbnail(record = {}) {
+          const pack = record.previewPackage || {};
+          const savedDemo = savedDemoSiteMeta(record) || {};
+          return savedDemo.thumbnailUrl || savedDemo.thumbnail_url || savedDemo.thumbnail || pack.thumbnailUrl || pack.thumbnail_url || pack.meta?.thumbnailUrl || "";
+        }
+
         function isSavedDemoSite(record = {}) {
           const savedDemo = savedDemoSiteMeta(record);
           return Boolean(savedDemo?.saved && (savedDemo.previewUrl || record.previewUrl));
@@ -23013,25 +23029,33 @@
           list.innerHTML = demos.length ? demos.map((record) => {
             const savedDemo = savedDemoSiteMeta(record) || {};
             const preview = absoluteUrl(savedDemo.previewUrl || record.previewUrl);
+            const thumbnail = savedDemoThumbnail(record);
             const factoryHref = `admin-website-factory.html${record.leadId ? `?leadId=${encodeURIComponent(record.leadId)}` : record.id ? `?journeyId=${encodeURIComponent(record.id)}` : ""}`;
             const customerText = savedDemo.customerId || record.customerId ? "Klant gekoppeld" : "Nog leadfase";
             const offerText = savedDemo.offerReady ? "Klaar voor offerte" : "Nog niet klaar voor offerte";
             return `
               <article class="saved-demo-site-card demo-library-card">
-                <div>
-                  <strong>${escapeHtml(savedDemo.businessName || record.businessName || "Naamloze demo")}</strong>
-                  <span>${escapeHtml([record.contactName, record.email, customerText].filter(Boolean).join(" · ") || "Geen contactgegevens")}</span>
-                </div>
-                <div class="settings-status-list">
-                  <div><strong>Status</strong><span>${escapeHtml(record.demoStatus || "-")}</span></div>
-                  <div><strong>Opgeslagen</strong><span>${escapeHtml(formatDate(savedDemo.savedAt || record.updatedAt || record.createdAt))}</span></div>
-                  <div><strong>Offerte</strong><span>${escapeHtml(offerText)}</span></div>
-                  <div><strong>Preview</strong><span title="${escapeHtml(preview)}">${escapeHtml(preview || "-")}</span></div>
-                </div>
-                <div class="admin-profile-actions demo-preview-actions">
-                  <a class="button primary" href="${escapeHtml(preview || "#")}" target="_blank" rel="noopener" aria-disabled="${preview ? "false" : "true"}">Preview openen</a>
-                  <a class="button secondary" href="${escapeHtml(zipUrl(preview) || "#")}" target="_blank" rel="noopener" aria-disabled="${preview ? "false" : "true"}">ZIP downloaden</a>
-                  <a class="button secondary" href="${escapeHtml(factoryHref)}">Open in Factory</a>
+                <a class="demo-library-thumbnail" href="${escapeHtml(preview || factoryHref)}" target="${preview ? "_blank" : "_self"}" rel="noopener" aria-label="Preview openen">
+                  ${thumbnail
+                    ? `<img src="${escapeHtml(thumbnail)}" alt="${escapeHtml(`Miniatuur van ${savedDemo.businessName || record.businessName || "demo-site"}`)}" loading="lazy" />`
+                    : `<span class="demo-library-thumbnail-placeholder"><strong>Miniatuur volgt</strong><small>Sla deze demo-site opnieuw op voor een previewbeeld.</small></span>`}
+                </a>
+                <div class="demo-library-card-content">
+                  <div class="demo-library-card-heading">
+                    <strong>${escapeHtml(savedDemo.businessName || record.businessName || "Naamloze demo")}</strong>
+                    <span>${escapeHtml([record.contactName, record.email, customerText].filter(Boolean).join(" · ") || "Geen contactgegevens")}</span>
+                  </div>
+                  <div class="settings-status-list">
+                    <div><strong>Status</strong><span>${escapeHtml(record.demoStatus || "-")}</span></div>
+                    <div><strong>Opgeslagen</strong><span>${escapeHtml(formatDate(savedDemo.savedAt || record.updatedAt || record.createdAt))}</span></div>
+                    <div><strong>Offerte</strong><span>${escapeHtml(offerText)}</span></div>
+                    <div><strong>Preview</strong><span title="${escapeHtml(preview)}">${escapeHtml(preview || "-")}</span></div>
+                  </div>
+                  <div class="admin-profile-actions demo-preview-actions">
+                    <a class="button primary" href="${escapeHtml(preview || "#")}" target="_blank" rel="noopener" aria-disabled="${preview ? "false" : "true"}">Preview openen</a>
+                    <a class="button secondary" href="${escapeHtml(zipUrl(preview) || "#")}" target="_blank" rel="noopener" aria-disabled="${preview ? "false" : "true"}">ZIP downloaden</a>
+                    <a class="button secondary" href="${escapeHtml(factoryHref)}">Open in Factory</a>
+                  </div>
                 </div>
               </article>
             `;
