@@ -19723,6 +19723,57 @@
         return String(stored?.notes || lead?.notes || "").trim();
       }
 
+      function isScriptLikeLeadValue(value = "") {
+        const text = String(value || "").trim();
+        if (!text) return false;
+        return /vragenlijst|belscript|start van het gesprek|ben jij degene|hoi,? je spreekt|ik ben al|jouw bedrijf viel/i.test(text);
+      }
+
+      function displayLeadContactName(lead = {}) {
+        const candidates = [
+          lead.contactName,
+          lead.contact,
+          lead.contactPerson,
+          lead.contact_person,
+          lead.name,
+          readLeadIntakeField(getLeadNotes(lead), ["Contactpersoon", "Naam contactpersoon", "Beslisser"]),
+        ];
+        const value = candidates.map((item) => String(item || "").trim()).find((item) => item && !isScriptLikeLeadValue(item));
+        return value || "Nog niet bekend";
+      }
+
+      function displayLeadFullAddress(lead = {}) {
+        const meta = lead?.metadata && typeof lead.metadata === "object" ? lead.metadata : {};
+        const notes = getLeadNotes(lead);
+        const candidates = [
+          lead.formattedAddress,
+          lead.googleAddress,
+          lead.address,
+          meta.formattedAddress,
+          meta.googleAddress,
+          meta.address,
+          readLeadIntakeField(notes, ["Adres", "Bezoekadres", "Vestigingsadres"]),
+        ];
+        const value = candidates.map((item) => String(item || "").trim()).find(Boolean);
+        if (value) return value;
+        return lead.region ? `${lead.region} (volledig adres nog aanvullen)` : "Nog niet bekend";
+      }
+
+      function displayLeadOverviewNotes(lead = {}) {
+        const notes = getLeadNotes(lead);
+        if (!notes) return "Nog geen bruikbare notitie vastgelegd.";
+        const ignored = /vragenlijst|belscript|start van het gesprek|contactgegevens|functie\/contactrol|extra notities|hoi,? je spreekt|ik ben al/i;
+        const usefulPrefixes = /^(Website-analyse|Verkoopkansen|Adres|Google Maps|Rating|Status|Vervolgstap|Belangrijkste wens|Wat willen ze verbeteren|Wanneer opnieuw contact opnemen|Gesprekstype|Notitie|Context):/i;
+        const lines = notes
+          .split(/\n+/)
+          .map((line) => line.replace(/^[-•]\s*/, "").trim())
+          .filter(Boolean)
+          .filter((line) => !ignored.test(line))
+          .filter((line) => usefulPrefixes.test(line) || (line.length >= 24 && !line.endsWith(":")));
+        const summary = lines.slice(0, 4).join(" · ");
+        return summary || "Belscript/vragenlijst staat klaar, maar er is nog geen ingevulde klantcontext opgeslagen.";
+      }
+
       function rememberLeadNotes(leadId = "", notes = "") {
         const id = String(leadId || "").trim();
         if (!id) return;
@@ -22502,7 +22553,7 @@
           leadfinderElements.detailTitle.textContent = hasLead ? lead.companyName || "Naam onbekend" : "Geen lead geselecteerd";
         }
         if (leadfinderElements.detailSubtitle) {
-          leadfinderElements.detailSubtitle.textContent = hasLead ? [lead.contactName || "Geen contactpersoon", lead.industry || "Branche onbekend"].join(" · ") : "Selecteer een lead om opvolging te beheren.";
+          leadfinderElements.detailSubtitle.textContent = hasLead ? [displayLeadContactName(lead), lead.industry || "Branche onbekend"].join(" · ") : "Selecteer een lead om opvolging te beheren.";
         }
         if (leadfinderElements.detailState) {
           leadfinderElements.detailState.textContent = hasLead ? getLeadFinderLabel(LEADFINDER_CALL_STATUSES, lead.callStatus) : "Niet geselecteerd";
@@ -22510,9 +22561,10 @@
         if (leadfinderElements.detailList) {
           renderLeadDetailRows(leadfinderElements.detailList, hasLead ? [
             ["Bedrijf", lead.companyName || "-"],
-            ["Contactpersoon", lead.contactName || "-"],
+            ["Contactpersoon", displayLeadContactName(lead)],
             ["Branche", lead.industry || "-"],
-            ["Regio", lead.region || "-"],
+            ["Adres", displayLeadFullAddress(lead)],
+            ["Plaats/regio", lead.region || "-"],
             ["Score", `${lead.leadScore || 0}/100`],
             ["Eigenaar", getLeadOwnerLabel(lead)],
             ["Aangemaakt", formatLeadDate(lead.createdAt)],
@@ -22522,7 +22574,7 @@
             ["Aangemaakt door", lead.createdByName || lead.createdByEmail || lead.createdBy || "-"],
             ["Klantstatus", lead.convertedCustomerId ? "Klant actief" : "Nog geen klant"],
             ["Bron", lead.source || lead._source || leadfinderSourceStatus?.mode || "central"],
-            ["Notities", getLeadNotes(lead) || "-"],
+            ["Notitie-overzicht", displayLeadOverviewNotes(lead)],
           ] : [["Geen lead geselecteerd", "Klik op Bekijken in de lijst."]]);
         }
         renderLeadBusinessPreview(lead);
@@ -22533,7 +22585,7 @@
             ["E-mail", lead.email || "-"],
             ["Website", lead.websiteUrl || "Geen website"],
             ["Google Maps", lead.googleMapsUrl || lead.googlePlaceId || "-"],
-            ["Adres", lead.address || lead.formattedAddress || lead.googleAddress || "-"],
+            ["Adres", displayLeadFullAddress(lead)],
           ] : [["Contact", "Selecteer een lead."]]);
         }
         if (leadfinderElements.detailCallStatus) leadfinderElements.detailCallStatus.value = lead?.callStatus || "";
