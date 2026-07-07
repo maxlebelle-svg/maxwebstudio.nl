@@ -6,6 +6,32 @@ const textStatuses = ["draft", "selected", "approved"];
 const pageStatuses = ["planned", "ready", "approved"];
 const imageRoles = ["hero", "service", "team", "project", "contact", "service-alt", "project-alt", "detail", "review", "background"];
 const allStatuses = ["Alles", ...new Set([...textStatuses, ...pageStatuses])];
+const imageRoleLabels = {
+  hero: "Hero beeld",
+  service: "Dienstfoto",
+  team: "Team en werkwijze",
+  project: "Projectfoto",
+  contact: "Contactbeeld",
+  "service-alt": "Extra dienst",
+  "project-alt": "Extra project",
+  detail: "Detailfoto",
+  review: "Review beeld",
+  background: "Achtergrond",
+};
+const imageFolderLabels = {
+  bouwbedrijf: "Bouwbedrijven",
+  kapsalon: "Kappers en kapsalons",
+  installatiebedrijf: "Installatiebedrijven",
+  schoonheidssalon: "Schoonheidssalons",
+  schoonmaakbedrijf: "Schoonmaakbedrijven",
+  autobedrijf: "Autobedrijven",
+};
+const downloadSizes = [
+  { key: "original", label: "Origineel", width: null },
+  { key: "small", label: "Klein", width: 640 },
+  { key: "medium", label: "Middel", width: 1280 },
+  { key: "large", label: "Groot", width: 1920 },
+];
 
 const imageGroups = listDemoImageGroups();
 const state = loadState();
@@ -38,6 +64,8 @@ const elements = {
   seoForm: document.getElementById("seo-form"),
   seoList: document.getElementById("seo-list"),
   branchSelector: document.getElementById("branch-selector"),
+  imageFolderList: document.getElementById("image-folder-list"),
+  imageFolderSummary: document.getElementById("image-folder-summary"),
   selectedImageList: document.getElementById("selected-image-list"),
   clearImagesButton: document.getElementById("clear-selected-images"),
   imageGrid: document.getElementById("image-grid"),
@@ -86,7 +114,8 @@ function bindEvents() {
   });
   elements.branchSelector.addEventListener("change", () => {
     state.selectedBranch = elements.branchSelector.value;
-    touchState("Beeldbranche bijgewerkt.");
+    state.selectedImageFolder = elements.branchSelector.value;
+    touchState("Afbeelding map bijgewerkt.");
   });
 
   elements.loadSampleButton.addEventListener("click", loadSamplePackage);
@@ -133,11 +162,15 @@ function fillBranchSelector() {
   fillSelect(elements.branchSelector, imageGroups.map((group) => group.slug));
   [...elements.branchSelector.options].forEach((option) => {
     const group = imageGroups.find((item) => item.slug === option.value);
-    option.textContent = group?.label || option.value;
+    option.textContent = imageFolderName(group) || option.value;
   });
   if (!imageGroups.some((group) => group.slug === state.selectedBranch)) {
     state.selectedBranch = imageGroups[0]?.slug || "";
   }
+  if (!imageGroups.some((group) => group.slug === state.selectedImageFolder)) {
+    state.selectedImageFolder = state.selectedBranch || imageGroups[0]?.slug || "";
+  }
+  state.selectedBranch = state.selectedImageFolder || state.selectedBranch;
   elements.branchSelector.value = state.selectedBranch;
 }
 
@@ -240,6 +273,7 @@ function render() {
     remove: (record) => removeRecord("seoRecords", record.id),
   });
   renderSelectedImages();
+  renderImageFolders();
   renderImages();
   elements.packagePreview.textContent = JSON.stringify(packagePayload, null, 2);
 }
@@ -382,27 +416,71 @@ function renderSelectedImages() {
   }));
 }
 
+function renderImageFolders() {
+  const query = filters.query;
+  const folders = imageGroups.map((group) => {
+    const assets = imageAssetsForGroup(group);
+    const visibleAssets = filterImageAssets(assets, group, query);
+    return { group, assets, visibleAssets };
+  });
+
+  elements.imageFolderList.replaceChildren(...folders.map(({ group, assets, visibleAssets }) => {
+    const button = document.createElement("button");
+    button.className = `ai-content-folder-button${state.selectedImageFolder === group.slug ? " is-active" : ""}`;
+    button.type = "button";
+    button.addEventListener("click", () => {
+      state.selectedImageFolder = group.slug;
+      state.selectedBranch = group.slug;
+      touchState(`${imageFolderName(group)} geopend.`);
+    });
+
+    const copy = document.createElement("span");
+    const title = document.createElement("strong");
+    const meta = document.createElement("small");
+    title.textContent = imageFolderName(group);
+    meta.textContent = query ? `${visibleAssets.length} van ${assets.length} foto's` : `${assets.length} foto's`;
+    copy.append(title, meta);
+
+    const count = document.createElement("b");
+    count.textContent = String(visibleAssets.length);
+    button.append(copy, count);
+    return button;
+  }));
+}
+
 function renderImages() {
-  const group = imageGroups.find((item) => item.slug === state.selectedBranch) || imageGroups[0];
+  const group = imageGroups.find((item) => item.slug === state.selectedImageFolder) || imageGroups.find((item) => item.slug === state.selectedBranch) || imageGroups[0];
   if (!group) {
+    elements.imageFolderSummary.replaceChildren();
     elements.imageGrid.replaceChildren();
     return;
   }
+  state.selectedImageFolder = group.slug;
+  state.selectedBranch = group.slug;
   elements.branchSelector.value = group.slug;
-  elements.imageGrid.replaceChildren(...imageRoles.map((role) => {
-    const asset = group.assets[role];
-    if (!asset) return emptyState(`${role} ontbreekt.`);
+
+  const assets = filterImageAssets(imageAssetsForGroup(group), group, filters.query);
+  renderImageFolderSummary(group, assets);
+
+  if (!assets.length) {
+    elements.imageGrid.replaceChildren(emptyState("Geen afbeeldingen gevonden in deze map met de huidige zoekterm."));
+    return;
+  }
+
+  elements.imageGrid.replaceChildren(...assets.map((asset) => {
+    const role = asset.role;
     const selected = state.selectedImages[role]?.src === asset.src;
     const card = document.createElement("article");
     card.className = `ai-content-image-card${selected ? " is-selected" : ""}`;
     const img = document.createElement("img");
     img.src = asset.src;
     img.alt = asset.alt;
+    img.loading = "lazy";
     const title = document.createElement("strong");
-    title.textContent = role;
+    title.textContent = imageRoleLabels[role] || role;
     const meta = document.createElement("small");
-    meta.textContent = group.label;
-    const button = actionButton(selected ? "Selected" : "Use image", () => {
+    meta.textContent = `${imageFolderName(group)} · ${asset.type || role}`;
+    const button = actionButton(selected ? "Geselecteerd" : "Gebruik beeld", () => {
       state.selectedImages[role] = {
         role,
         branch: group.slug,
@@ -411,9 +489,133 @@ function renderImages() {
       };
       touchState("Beeld geselecteerd.");
     }, selected ? "primary" : "secondary");
-    card.append(img, title, meta, button);
+    const downloads = document.createElement("div");
+    downloads.className = "ai-content-downloads";
+    downloadSizes.forEach((size) => {
+      downloads.append(actionButton(size.label, () => downloadImageVariant(asset, group, size), "secondary"));
+    });
+    card.append(img, title, meta, button, downloads);
     return card;
   }));
+}
+
+function renderImageFolderSummary(group, assets) {
+  const summary = document.createElement("article");
+  summary.className = "admin-card ai-content-folder-summary-card";
+  const copy = document.createElement("div");
+  const kicker = document.createElement("p");
+  kicker.className = "section-kicker";
+  kicker.textContent = "Geselecteerde map";
+  const title = document.createElement("h2");
+  title.textContent = imageFolderName(group);
+  const detail = document.createElement("p");
+  detail.textContent = `${assets.length} afbeeldingen beschikbaar voor website hero's, diensten, projecten, contact en achtergronden.`;
+  copy.append(kicker, title, detail);
+
+  const actions = document.createElement("div");
+  actions.className = "ai-content-folder-actions";
+  actions.append(
+    actionButton("Download map-index", () => downloadJson(buildImageFolderPayload(group), `maxwebstudio-${group.slug}-afbeeldingen.json`), "secondary"),
+  );
+  summary.append(copy, actions);
+  elements.imageFolderSummary.replaceChildren(summary);
+}
+
+function imageAssetsForGroup(group) {
+  return imageRoles.map((role) => group.assets[role]).filter(Boolean);
+}
+
+function filterImageAssets(assets, group, query) {
+  if (!query) return assets;
+  return assets.filter((asset) => [
+    imageFolderName(group),
+    group.label,
+    group.slug,
+    asset.role,
+    imageRoleLabels[asset.role],
+    asset.type,
+    asset.alt,
+    ...(group.keywords || []),
+  ].filter(Boolean).join(" ").toLowerCase().includes(query));
+}
+
+function imageFolderName(group) {
+  if (!group) return "";
+  return imageFolderLabels[group.slug] || group.label || group.slug;
+}
+
+function buildImageFolderPayload(group) {
+  return {
+    folder: group.slug,
+    label: imageFolderName(group),
+    keywords: group.keywords || [],
+    images: imageAssetsForGroup(group).map((asset) => ({
+      role: asset.role,
+      label: imageRoleLabels[asset.role] || asset.role,
+      src: asset.src,
+      alt: asset.alt,
+      downloads: downloadSizes.map((size) => ({
+        size: size.key,
+        label: size.label,
+        width: size.width || "original",
+      })),
+    })),
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+async function downloadImageVariant(asset, group, size) {
+  const filename = imageDownloadFilename(asset, group, size);
+  if (!size.width) {
+    downloadFile(asset.src, filename);
+    setMessage("Originele afbeelding downloaden gestart.", "success");
+    return;
+  }
+
+  try {
+    const image = await loadImage(asset.src);
+    const scale = Math.min(size.width / image.naturalWidth, 1);
+    const width = Math.max(1, Math.round(image.naturalWidth * scale));
+    const height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    context.drawImage(image, 0, 0, width, height);
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png", 0.92));
+    if (!blob) throw new Error("Canvas export gaf geen bestand terug.");
+    const url = URL.createObjectURL(blob);
+    downloadFile(url, filename);
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    setMessage(`${size.label} afbeelding downloaden gestart.`, "success");
+  } catch (error) {
+    console.warn("Afbeelding downloaden mislukt.", error);
+    downloadFile(asset.src, filename);
+    setMessage("Download gestart met het originele bestand.", "success");
+  }
+}
+
+function imageDownloadFilename(asset, group, size) {
+  const extension = size.width ? "png" : (asset.src.split(".").pop() || "png").split("?")[0];
+  return `maxwebstudio-${group.slug}-${asset.role}-${size.key}.${extension}`;
+}
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = src;
+  });
+}
+
+function downloadFile(url, filename) {
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
 }
 
 function filteredRecords(records, collectionName) {
@@ -606,8 +808,10 @@ function importPackage(event) {
       state.pages = Array.isArray(parsed.pages) ? parsed.pages : [];
       state.seoRecords = Array.isArray(parsed.seoRecords) ? parsed.seoRecords : [];
       state.selectedBranch = parsed.selectedBranch || state.selectedBranch;
+      state.selectedImageFolder = parsed.selectedImageFolder || parsed.selectedBranch || state.selectedImageFolder;
       state.selectedImages = parsed.selectedImages && typeof parsed.selectedImages === "object" ? parsed.selectedImages : {};
-      elements.branchSelector.value = state.selectedBranch;
+      state.selectedBranch = state.selectedImageFolder;
+      elements.branchSelector.value = state.selectedImageFolder;
       touchState("Contentpakket geïmporteerd.");
     } catch (error) {
       console.warn("Import mislukt.", error);
@@ -648,7 +852,9 @@ function buildPackagePayload() {
     pages: state.pages,
     seoRecords: state.seoRecords,
     selectedBranch: state.selectedBranch,
+    selectedImageFolder: state.selectedImageFolder,
     selectedImages: state.selectedImages,
+    imageFolders: imageGroups.map(buildImageFolderPayload),
     readinessScore: calculateReadiness(),
     updatedAt: state.updatedAt || null,
     generatedAt: new Date().toISOString(),
@@ -741,12 +947,13 @@ function loadState() {
       pages: Array.isArray(parsed.pages) ? parsed.pages : [],
       seoRecords: Array.isArray(parsed.seoRecords) ? parsed.seoRecords : [],
       selectedBranch: parsed.selectedBranch || "installatiebedrijf",
+      selectedImageFolder: parsed.selectedImageFolder || parsed.selectedBranch || "installatiebedrijf",
       selectedImages: parsed.selectedImages && typeof parsed.selectedImages === "object" ? parsed.selectedImages : {},
       updatedAt: parsed.updatedAt || null,
     };
   } catch (error) {
     console.warn("AI Content Library storage kon niet worden gelezen.", error);
-    return { contentBlocks: [], pages: [], seoRecords: [], selectedBranch: "installatiebedrijf", selectedImages: {}, updatedAt: null };
+    return { contentBlocks: [], pages: [], seoRecords: [], selectedBranch: "installatiebedrijf", selectedImageFolder: "installatiebedrijf", selectedImages: {}, updatedAt: null };
   }
 }
 

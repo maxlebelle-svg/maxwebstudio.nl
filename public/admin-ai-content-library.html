@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=20260705-workflow-modules" />
+    <link rel="stylesheet" href="styles.css?v=20260707-image-library" />
   </head>
   <body class="admin-body">
     <main class="admin-crm-shell">
@@ -183,14 +183,28 @@
 
           <section class="ai-content-panel" data-panel="images" hidden>
             <article class="admin-card">
-              <h2>Stock Image Picker</h2>
+              <h2>Afbeeldingenbibliotheek</h2>
               <div class="ai-content-image-controls">
-                <label>Branch<select id="branch-selector"></select></label>
+                <label>Categorie map<select id="branch-selector"></select></label>
                 <button class="button secondary" id="clear-selected-images" type="button">Selectie wissen</button>
               </div>
               <div class="ai-content-selected-images" id="selected-image-list"></div>
             </article>
-            <div class="ai-content-image-grid" id="image-grid"></div>
+            <div class="ai-content-library-layout">
+              <aside class="admin-card ai-content-folder-panel" aria-label="Afbeelding mappen">
+                <div class="admin-section-heading">
+                  <div>
+                    <p class="section-kicker">Mappen</p>
+                    <h2>Categorieën</h2>
+                  </div>
+                </div>
+                <div class="ai-content-folder-list" id="image-folder-list"></div>
+              </aside>
+              <section class="ai-content-folder-content" aria-label="Afbeeldingen in geselecteerde map">
+                <div class="ai-content-folder-summary" id="image-folder-summary"></div>
+                <div class="ai-content-image-grid" id="image-grid"></div>
+              </section>
+            </div>
           </section>
 
           <section class="ai-content-panel" data-panel="export" hidden>
@@ -207,6 +221,6 @@
         </section>
       </div>
     </main>
-    <script type="module" src="src/ai-content-library.js?v=20260705-workflow-modules"></script>
+    <script type="module" src="src/ai-content-library.js?v=20260707-image-library"></script>
   </body>
 </html>
