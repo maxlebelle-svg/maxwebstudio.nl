@@ -875,6 +875,16 @@ function jsonResponse(statusCode, body) {
 
 function errorResponse({ error = {}, developerMode = false, module = "", reason = "", fallbackMessage = "", setupRequired = false } = {}) {
   const message = error.message || fallbackMessage || "Aanvraag kon niet worden verwerkt.";
+  const isPreviewAction = cleanText(error.action) === "generate_preview" || module === "website_factory";
+  const previewDetails = [
+    error.phase ? `Fase: ${error.phase}` : "",
+    reason ? `Reden: ${reason}` : "",
+    error.code ? `Code: ${error.code}` : "",
+  ].filter(Boolean).join(" · ");
+  const previewUserMessage = [
+    fallbackMessage || "Preview maken is niet gelukt.",
+    previewDetails,
+  ].filter(Boolean).join("\n");
   const body = {
     success: false,
     module,
@@ -884,7 +894,9 @@ function errorResponse({ error = {}, developerMode = false, module = "", reason 
     error: developerMode ? message : fallbackMessage || message,
     userMessage: setupRequired
       ? fallbackMessage
-      : "De demo-klantreis kon niet worden opgeslagen. Zet Developer Mode aan voor technische details of controleer de serverlogs.",
+      : isPreviewAction
+        ? previewUserMessage
+        : "De demo-klantreis kon niet worden opgeslagen. Zet Developer Mode aan voor technische details of controleer de serverlogs.",
     code: error.code || "",
     details: developerMode ? cleanText(error.details) : "",
     hint: developerMode ? cleanText(error.hint) : "",

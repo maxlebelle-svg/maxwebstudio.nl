@@ -21996,12 +21996,26 @@
               renderJourney();
               const fileCount = Array.isArray(data.preview?.files) ? data.preview.files.length : 0;
               const version = data.previewVersion?.version || data.buildJob?.previewVersion || data.buildStatus?.previewVersion || "";
+              const buildStatus = data.buildJob?.status || data.buildStatus?.status || "";
+              if (["quality_failed", "failed"].includes(buildStatus)) {
+                const buildMessage = data.buildJob?.errorMessage || data.buildStatus?.errorMessage || data.buildJob?.qualityReport?.summary || data.buildStatus?.qualityReport?.summary || "Previewbuild vraagt aandacht. Controleer de builddetails rechts.";
+                setMessage(elements.message, `${buildMessage}${version ? ` Versie: V${version}.` : ""}`, "warning");
+                return;
+              }
               const baseMessage = nextStepMessage(lockKey);
               setMessage(elements.message, `${baseMessage}${version ? ` Versie: V${version}.` : ""}${fileCount ? ` ZIP bevat ${fileCount} bestanden.` : ""}`, "success");
             } catch (error) {
-              const message = developerModeActive()
-                ? error.message
-                : "Preview maken is niet gelukt. Probeer opnieuw of vraag Max om controle.";
+              const diagnostics = error?.diagnostics || {};
+              const responseJson = diagnostics.responseJson || {};
+              const technicalHint = [
+                responseJson.phase || responseJson.diagnostics?.phase ? `Fase: ${responseJson.phase || responseJson.diagnostics?.phase}` : "",
+                responseJson.reason || responseJson.diagnostics?.reason ? `Reden: ${responseJson.reason || responseJson.diagnostics?.reason}` : "",
+                diagnostics.code || responseJson.code || responseJson.diagnostics?.code ? `Code: ${diagnostics.code || responseJson.code || responseJson.diagnostics?.code}` : "",
+              ].filter(Boolean).join(" · ");
+              const message = [
+                error.message || "Preview maken is niet gelukt.",
+                technicalHint,
+              ].filter(Boolean).join("\n");
               setMessage(elements.message, message, "error");
               showDeveloperErrorDetails(elements.message, error);
             }
