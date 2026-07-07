@@ -21053,7 +21053,7 @@
               previousPackage: payload?.previousPackage || payload?.previous_package || "",
               newPackage: payload?.newPackage || payload?.new_package || "",
             };
-            console.error(failureLabel, diagnostics);
+            console.error(`${failureLabel}\n${formatApiDiagnostics(diagnostics)}`);
             if (developerMode) {
               console.error(`${failureLabel} full diagnostics:\n${JSON.stringify(diagnostics, null, 2)}`);
               console.dir(diagnostics);
@@ -21091,6 +21091,27 @@
             throw error;
           }
           return data;
+        }
+
+        function formatApiDiagnostics(diagnostics = {}) {
+          const responseJson = diagnostics.responseJson || {};
+          const nested = diagnostics.diagnostics || responseJson.diagnostics || {};
+          const lines = [
+            `Status: ${diagnostics.status || "-"} ${diagnostics.statusText || ""}`.trim(),
+            `Endpoint: ${diagnostics.endpoint || diagnostics.url || "-"}`,
+            diagnostics.action ? `Actie: ${diagnostics.action}` : "",
+            diagnostics.demoJourneyId ? `Demo journey: ${diagnostics.demoJourneyId}` : "",
+            diagnostics.leadId ? `Lead: ${diagnostics.leadId}` : "",
+            diagnostics.packageType ? `Pakket: ${diagnostics.packageType}` : "",
+            diagnostics.code || responseJson.code || nested.code ? `Code: ${diagnostics.code || responseJson.code || nested.code}` : "",
+            responseJson.phase || nested.phase ? `Fase: ${responseJson.phase || nested.phase}` : "",
+            responseJson.reason || nested.reason ? `Reden: ${responseJson.reason || nested.reason}` : "",
+            diagnostics.error || responseJson.error ? `Fout: ${typeof (diagnostics.error || responseJson.error) === "string" ? diagnostics.error || responseJson.error : JSON.stringify(diagnostics.error || responseJson.error)}` : "",
+            diagnostics.details || responseJson.details ? `Details: ${diagnostics.details || responseJson.details}` : "",
+            diagnostics.hint || responseJson.hint ? `Hint: ${diagnostics.hint || responseJson.hint}` : "",
+            diagnostics.responseText ? `Response: ${diagnostics.responseText}` : "",
+          ];
+          return lines.filter(Boolean).join("\n");
         }
 
         function setMessage(target, message, type = "success") {
