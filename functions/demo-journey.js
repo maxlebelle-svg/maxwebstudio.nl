@@ -5,6 +5,7 @@ const { getBuildHistory, runBuildJob } = require("./website-factory");
 
 const staffRoles = ["super_admin", "admin", "sales_manager", "sales_partner"];
 const managerRoles = new Set(["super_admin", "admin", "sales_manager"]);
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
 const demoStatuses = [
   "geen_demo",
   "aanvraag_ontvangen",
@@ -212,9 +213,9 @@ async function saveCustomerFeedback(event) {
 
 async function readAdminJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
   const params = event.queryStringParameters || {};
-  const leadId = cleanText(params.leadId || params.lead_id);
+  const leadId = cleanUuid(params.leadId || params.lead_id);
   const id = cleanText(params.id);
-  const customerId = cleanText(params.customerId || params.customer_id);
+  const customerId = cleanUuid(params.customerId || params.customer_id);
   const query = new URLSearchParams({ select: "*", order: "updated_at.desc.nullslast", limit: "25" });
   if (id) query.set("id", `eq.${id}`);
   if (leadId) query.set("lead_id", `eq.${leadId}`);
@@ -318,8 +319,8 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     const packageType = normalizePackageType(payload.packageType || payload.package_type || current?.preview_package?.meta?.packageType || current?.preview_package?.packageType);
     const sourceJourney = current ? mapJourney(current) : mapJourney({
       id: payload.id,
-      lead_id: payload.leadId,
-      customer_id: payload.customerId,
+      lead_id: cleanUuid(payload.leadId || payload.lead_id),
+      customer_id: cleanUuid(payload.customerId || payload.customer_id),
       business_name: payload.businessName,
       contact_name: payload.contactName,
       email: payload.email,
@@ -347,7 +348,7 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
         diagnostics: {
           action,
           packageType,
-          leadId: cleanText(payload.leadId || payload.lead_id),
+          leadId: cleanUuid(payload.leadId || payload.lead_id),
           demoJourneyId: "",
           reason: "preview_requires_existing_demo_journey",
         },
@@ -370,7 +371,7 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
       error.phase = error.phase || "run_build_job";
       error.action = action;
       error.demoJourneyId = journeyId;
-      error.leadId = cleanText(payload.leadId || payload.lead_id || sourceJourney.leadId);
+      error.leadId = cleanUuid(payload.leadId || payload.lead_id || sourceJourney.leadId);
       error.packageType = packageType;
       throw error;
     }
@@ -444,8 +445,8 @@ function journeyPayload(payload = {}, admin = {}, options = {}) {
     throw error;
   }
   const record = {
-    lead_id: cleanText(payload.leadId || payload.lead_id) || null,
-    customer_id: cleanText(payload.customerId || payload.customer_id) || null,
+    lead_id: cleanUuid(payload.leadId || payload.lead_id) || null,
+    customer_id: cleanUuid(payload.customerId || payload.customer_id) || null,
     business_name: cleanText(payload.businessName || payload.business_name || payload.companyName || payload.company),
     contact_name: cleanText(payload.contactName || payload.contact_name || payload.name),
     email: cleanText(payload.email).toLowerCase(),
@@ -550,7 +551,7 @@ async function resolveExistingJourney({ supabaseUrl, serviceRoleKey, payload = {
     const byId = await readJourneyById({ supabaseUrl, serviceRoleKey, id: explicitId });
     if (byId) return byId;
   }
-  const leadId = cleanText(payload.leadId || payload.lead_id);
+  const leadId = cleanUuid(payload.leadId || payload.lead_id);
   if (!leadId) return null;
   return readJourneyByLeadId({ supabaseUrl, serviceRoleKey, leadId });
 }
@@ -945,6 +946,11 @@ function normalizeRole(value = "") {
 
 function cleanText(value = "") {
   return String(value || "").trim();
+}
+
+function cleanUuid(value = "") {
+  const text = cleanText(value);
+  return uuidPattern.test(text) ? text : "";
 }
 
 function normalizeJson(value, fallback = {}) {

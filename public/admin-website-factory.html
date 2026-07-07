@@ -20801,6 +20801,8 @@
           { number: 6, label: "Interne controle", description: "Controleer en keur de preview.", key: "review" },
           { number: 7, label: "Klant opvolgen", description: "Plan of verstuur opvolging.", key: "followup" },
         ];
+        const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        const localLeadJourneyLinkKey = "maxwebstudioLocalLeadDemoJourneyLinks";
         const elements = {};
         let leads = [];
         let journey = null;
@@ -20948,6 +20950,43 @@
             }
           }
           return "";
+        }
+
+        function isUuid(value = "") {
+          return uuidPattern.test(String(value || "").trim());
+        }
+
+        function backendLeadId(leadId = elements.lead?.value || "") {
+          const value = String(leadId || "").trim();
+          return isUuid(value) ? value : "";
+        }
+
+        function localLeadJourneyLinks() {
+          try {
+            const links = JSON.parse(localStorage.getItem(localLeadJourneyLinkKey) || "{}");
+            return links && typeof links === "object" && !Array.isArray(links) ? links : {};
+          } catch {
+            return {};
+          }
+        }
+
+        function linkedJourneyIdForLocalLead(leadId = "") {
+          const value = String(leadId || "").trim();
+          if (!value || isUuid(value)) return "";
+          return localLeadJourneyLinks()[value] || "";
+        }
+
+        function rememberLocalLeadJourneyLink(leadId = "", journeyId = "") {
+          const localLeadId = String(leadId || "").trim();
+          const linkedJourneyId = String(journeyId || "").trim();
+          if (!localLeadId || isUuid(localLeadId) || !isUuid(linkedJourneyId)) return;
+          try {
+            const links = localLeadJourneyLinks();
+            links[localLeadId] = linkedJourneyId;
+            localStorage.setItem(localLeadJourneyLinkKey, JSON.stringify(links));
+          } catch {
+            // Local browser linking is best effort.
+          }
         }
 
         function developerModeActive() {
@@ -21655,7 +21694,23 @@
             renderJourney();
             return;
           }
-          const data = await apiRequest(`${endpoint}?leadId=${encodeURIComponent(leadId)}`);
+          const centralLeadId = backendLeadId(leadId);
+          const linkedJourneyId = centralLeadId ? "" : linkedJourneyIdForLocalLead(leadId);
+          if (!centralLeadId && !linkedJourneyId) {
+            journey = null;
+            events = [];
+            buildHistory = { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
+            projectWorkspace = null;
+            loadIntakeLocally();
+            prefillIntakeFromLead(selectedLead());
+            renderIntakeFields();
+            renderJourney();
+            return;
+          }
+          const query = linkedJourneyId
+            ? `id=${encodeURIComponent(linkedJourneyId)}`
+            : `leadId=${encodeURIComponent(centralLeadId)}`;
+          const data = await apiRequest(`${endpoint}?${query}`);
           journey = data.journey || null;
           journeyRecords = Array.isArray(data.records) ? data.records : journeyRecords;
           if (journey?.previewUrl) journey.previewUrl = absolutePreviewUrl(journey.previewUrl);
@@ -21743,9 +21798,17 @@
         function collectPayload(extra = {}) {
           const previewUrl = absolutePreviewUrl(elements.preview?.value || journey?.previewUrl || "");
           const intake = collectIntake();
+          const selectedLeadId = elements.lead?.value || "";
+          const centralLeadId = backendLeadId(selectedLeadId);
+          const localLeadLine = selectedLeadId && !centralLeadId ? `Lokale lead-koppeling: ${selectedLeadId}` : "";
+          const currentNotes = elements.notes?.value || "";
+          const internalNotes = [
+            currentNotes,
+            localLeadLine && !currentNotes.includes(localLeadLine) ? localLeadLine : "",
+          ].filter(Boolean).join("\n");
           return {
             id: journey?.id || "",
-            leadId: elements.lead?.value || "",
+            leadId: centralLeadId,
             businessName: elements.business?.value || "",
             contactName: elements.contact?.value || "",
             email: elements.email?.value || "",
@@ -21756,7 +21819,7 @@
             generatedBriefing: elements.briefing?.value || "",
             previewUrl,
             feedback: elements.feedback?.value || "",
-            internalNotes: elements.notes?.value || "",
+            internalNotes,
             followUpAt: fromDatetimeLocal(elements.followup?.value || ""),
             assignedTo: elements.assigned?.value || "",
             intake: intake.answers,
@@ -21825,6 +21888,7 @@
             try {
               const data = await apiRequest(endpoint, journey?.id ? "PATCH" : "POST", collectPayload());
               journey = data.demoJourney || data.journey || null;
+              rememberLocalLeadJourneyLink(elements.lead?.value || "", journey?.id || "");
               events = Array.isArray(data.events) ? data.events : [];
               buildHistory = data.buildHistory || buildHistory;
               projectWorkspace = data.projectWorkspace || projectWorkspace;
