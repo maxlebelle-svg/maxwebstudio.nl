@@ -12432,6 +12432,20 @@ h3 {
   background: rgba(255, 255, 255, 0.045);
 }
 
+.lead-analysis-priority-columns > div {
+  border-color: rgba(37, 99, 235, 0.22);
+}
+
+.lead-analysis-priority-columns .is-positive {
+  border-color: rgba(34, 197, 94, 0.24);
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.12), rgba(255, 255, 255, 0.035));
+}
+
+.lead-analysis-priority-columns .is-negative {
+  border-color: rgba(245, 158, 11, 0.26);
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(255, 255, 255, 0.035));
+}
+
 .lead-analysis-columns strong {
   color: var(--white);
 }

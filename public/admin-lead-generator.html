@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=20260704-admin-session-hotfix" />
+    <link rel="stylesheet" href="styles.css?v=20260707-lead-generator-fallback" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
   <body class="admin-body">
@@ -19356,6 +19356,7 @@
         getLeadFinderSummary,
         normalizeLeadFinderLead,
         readLeadFinderLeads,
+        saveLeadFinderLeadLocally,
         updateLeadFinderLeadLocally,
       } from "./src/services/leadFinderService.js?v=20260704-admin-session-hotfix";
       import { readSupabaseDataLayerModule } from "./src/services/supabaseDataLayerService.js?v=20260704-admin-session-hotfix";
@@ -19784,12 +19785,25 @@
           },
           body: payload ? JSON.stringify(payload) : undefined,
         });
-        const data = await response.json().catch(() => ({}));
+        const responseText = await response.text();
+        let data = {};
+        try {
+          data = responseText ? JSON.parse(responseText) : {};
+        } catch (parseError) {
+          data = {
+            success: false,
+            error: response.ok
+              ? "Lead API gaf geen geldige JSON-response."
+              : `Lead API gaf geen geldige response (${response.status}).`,
+            details: responseText.slice(0, 240),
+          };
+        }
         if (!response.ok || data.success === false) {
-          const error = new Error(data.error || "Lead API gaf geen geldige response.");
+          const error = new Error(data.error || data.message || `Lead API gaf geen geldige response (${response.status}).`);
           error.status = response.status;
           error.setupRequired = Boolean(data.setupRequired);
           error.diagnostics = data.diagnostics || {};
+          error.details = data.details || "";
           throw error;
         }
         return data;
@@ -22595,12 +22609,37 @@
         `;
       }
 
+      function buildWebsiteStrengths(checks) {
+        const items = [];
+        if (checks.usesHttps) items.push("De website opent veilig via HTTPS.");
+        if (checks.hasAcceptableResponse) items.push("De homepage reageert snel genoeg voor eerste bezoekers.");
+        if (checks.hasTitle) items.push("Er is een SEO titel aanwezig.");
+        if (checks.hasMetaDescription) items.push("Er is een meta description aanwezig voor Google.");
+        if (checks.hasH1) items.push("De pagina heeft een hoofdboodschap via een H1-kop.");
+        if (checks.hasCtaSignal) items.push("Er zijn signalen voor een call-to-action aanwezig.");
+        if (checks.hasContactFormSignal) items.push("Contact opnemen lijkt mogelijk via formulier of contactsectie.");
+        if (checks.hasTelLink || checks.hasMailtoLink) items.push("Telefoon of e-mail is direct klikbaar.");
+        if (checks.hasMobileResponsiveSignal) items.push("Er zijn signalen dat de website mobiel bruikbaar is.");
+        if (checks.hasPrivacySignal && checks.hasCookieSignal) items.push("Privacy- en cookie-informatie lijkt aanwezig.");
+        if (checks.hasFacebook || checks.hasInstagram || checks.hasLinkedIn || checks.hasYouTube) items.push("Er zijn social kanalen zichtbaar.");
+        return items.length ? items.slice(0, 6) : ["De website is bereikbaar; controleer visueel of uitstraling en conversie overtuigend genoeg zijn."];
+      }
+
+      function renderAnalysisList(items = []) {
+        return items.length
+          ? items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")
+          : "<li>Geen duidelijke punten gevonden.</li>";
+      }
+
       function renderWebsiteAnalysisHtml(result, target) {
         const checks = result.checks || {};
         const responseTime = Number(result.responseTimeMs || checks.responseTimeMs || 0);
         const pageSize = Number(result.pageSizeBytes || checks.pageSizeBytes || 0);
         const responseWarning = responseTime > 1800 && responseTime <= 3500;
         const sizeWarning = pageSize > 1.2 * 1024 * 1024 && pageSize <= 2.2 * 1024 * 1024;
+        const strengths = result.strengths || result.strongPoints || buildWebsiteStrengths(checks);
+        const improvements = result.improvements || result.weakPoints || [];
+        const opportunities = result.salesOpportunities || [];
         const groups = [
           renderWebsiteCheckGroup("Bereikbaarheid", [
             renderWebsiteCheck("Website bereikbaar", checks.websiteReachable),
@@ -22657,15 +22696,25 @@
               <a href="${escapeHtml(result.finalUrl || target.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(result.finalUrl || target.url)}</a>
             </div>
           </div>
+          <div class="lead-analysis-columns lead-analysis-priority-columns">
+            <div class="is-positive">
+              <strong>Pluspunten</strong>
+              <ul>${renderAnalysisList(strengths)}</ul>
+            </div>
+            <div class="is-negative">
+              <strong>Minpunten / verbeterpunten</strong>
+              <ul>${renderAnalysisList(improvements)}</ul>
+            </div>
+          </div>
           <div class="lead-analysis-check-groups">${groups.join("")}</div>
           <div class="lead-analysis-columns">
             <div>
-              <strong>Verbeterpunten</strong>
-              <ul>${(result.improvements || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+              <strong>Verkoopkansen</strong>
+              <ul>${renderAnalysisList(opportunities)}</ul>
             </div>
             <div>
-              <strong>Verkoopkansen</strong>
-              <ul>${(result.salesOpportunities || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+              <strong>Belhaakjes</strong>
+              <ul>${renderAnalysisList(opportunities.slice(0, 3).map((item) => `Vraag of ${item.toLowerCase()}`))}</ul>
             </div>
           </div>
           <p class="lead-analysis-disclaimer">Deze scan is objectief, handmatig gestart en gebruikt geen AI.</p>
@@ -22985,7 +23034,38 @@
           await refreshLeads({ keepSelection: true });
         } catch (error) {
           logLeadfinderDiagnostic("Lead create failed", { payload, error: error.message, diagnostics: error.diagnostics });
-          setLeadfinderMessage(error.message || "Lead kon niet centraal worden opgeslagen.", "error");
+          const localLead = saveLeadFinderLeadLocally({
+            ...payload,
+            id: `leadfinder-local-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+            _source: "local",
+            environment: "production",
+            metadata: {
+              ...(payload.metadata && typeof payload.metadata === "object" ? payload.metadata : {}),
+              centralSyncPending: true,
+              centralSyncError: error.message || "Lead API gaf geen geldige response.",
+            },
+          });
+          queueLeadOffline("create", payload);
+          selectedLeadFinderId = localLead.id;
+          if (leadfinderSourceStatus) {
+            leadfinderDataLayerLeads = [
+              { ...localLead, _source: "local", metadata: { ...(localLead.metadata || {}), centralSyncPending: true } },
+              ...leadfinderDataLayerLeads.filter((lead) => lead.id !== localLead.id),
+            ];
+            leadfinderSourceStatus = {
+              ...leadfinderSourceStatus,
+              fallbackUsed: true,
+              warning: "Nieuwe lead lokaal opgeslagen. Centrale synchronisatie volgt zodra de Lead API beschikbaar is.",
+              counts: {
+                ...(leadfinderSourceStatus.counts || {}),
+                local: Number(leadfinderSourceStatus.counts?.local || 0) + 1,
+                hybrid: Number(leadfinderSourceStatus.counts?.hybrid || leadfinderDataLayerLeads.length),
+              },
+            };
+          }
+          resetLeadfinderForm();
+          renderLeadfinderList();
+          setLeadfinderMessage("Lokaal opgeslagen en klaargezet voor centrale synchronisatie.", "warning");
         }
       }
 
