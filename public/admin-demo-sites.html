@@ -23335,6 +23335,11 @@
             const savedAt = formatDate(savedDemo.savedAt || record.updatedAt || record.createdAt);
             const currentHandlingStatus = handlingStatus(record);
             const chips = workflowChips(record);
+            const utilityLinks = [
+              `<a href="${escapeHtml(preview || "#")}" target="_blank" rel="noopener" aria-disabled="${preview ? "false" : "true"}">Preview</a>`,
+              `<a href="${escapeHtml(zipUrl(preview) || "#")}" target="_blank" rel="noopener" aria-disabled="${preview ? "false" : "true"}">ZIP</a>`,
+              `<a href="${escapeHtml(factoryHref)}">Factory</a>`,
+            ].join("");
             return `
               <article class="saved-demo-site-card demo-library-card">
                 <div class="demo-library-thumbnail">
@@ -23371,11 +23376,7 @@
                   <div class="demo-library-preview-url" title="${escapeHtml(preview)}">
                     <span>Previewlink</span>
                     <strong>${escapeHtml(preview || "-")}</strong>
-                    <div class="demo-library-utility-links">
-                      <a href="${escapeHtml(preview || "#")}" target="_blank" rel="noopener" aria-disabled="${preview ? "false" : "true"}">Preview</a>
-                      <a href="${escapeHtml(zipUrl(preview) || "#")}" target="_blank" rel="noopener" aria-disabled="${preview ? "false" : "true"}">ZIP</a>
-                      <a href="${escapeHtml(factoryHref)}">Factory</a>
-                    </div>
+                    <div class="demo-library-utility-links">${utilityLinks}</div>
                   </div>
                   <div class="demo-library-next-actions">
                     <div class="demo-library-action-header">
@@ -23383,7 +23384,7 @@
                         <span>Afhandeling</span>
                         <strong>${escapeHtml(handlingLabel(currentHandlingStatus))}</strong>
                       </div>
-                      ${chips.length ? `<div class="demo-library-workflow-chips">${chips.map((chip) => `<span>${escapeHtml(chip)}</span>`).join("")}</div>` : ""}
+                      <div class="demo-library-workflow-chips">${chips.length ? chips.map((chip) => `<span>${escapeHtml(chip)}</span>`).join("") : `<span>Geen open taken</span>`}</div>
                     </div>
                     <div class="admin-profile-actions demo-workflow-actions">
                       ${actionButtonsHtml(record, preview, factoryHref)}

@@ -15044,10 +15044,10 @@ h3 {
 
 .demo-library-card {
   display: grid;
-  grid-template-columns: minmax(340px, 480px) minmax(0, 1fr);
-  gap: 18px;
+  grid-template-columns: minmax(280px, 36%) minmax(0, 1fr);
+  gap: 20px;
   align-items: center;
-  padding: 18px;
+  padding: 20px;
   overflow: hidden;
   border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 8px;
@@ -15062,7 +15062,7 @@ h3 {
   width: 100%;
   min-width: 0;
   min-height: 0;
-  max-height: 280px;
+  max-height: 230px;
   overflow: hidden;
   border: 1px solid rgba(147, 197, 253, 0.22);
   border-radius: 8px;
@@ -15087,7 +15087,7 @@ h3 {
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 34px;
+  height: 30px;
   min-width: 0;
   padding: 0 12px;
   border-bottom: 1px solid rgba(148, 163, 184, 0.18);
@@ -15116,7 +15116,7 @@ h3 {
 
 .demo-library-preview-frame {
   position: absolute;
-  inset: 34px 0 0;
+  inset: 30px 0 0;
   overflow: hidden;
   background: #f8fafc;
 }
@@ -15172,15 +15172,15 @@ h3 {
 }
 
 .demo-library-card-content {
-  gap: 10px;
+  gap: 9px;
   align-content: center;
 }
 
 .demo-library-compact-head {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
-  gap: 14px;
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 250px);
+  gap: 16px;
+  align-items: center;
   min-width: 0;
 }
 
@@ -15203,7 +15203,7 @@ h3 {
 
 .demo-library-compact-head label {
   display: grid;
-  gap: 6px;
+  gap: 5px;
   min-width: 0;
 }
 
@@ -15217,7 +15217,8 @@ h3 {
 
 .demo-library-compact-head select {
   width: 100%;
-  min-height: 40px;
+  min-height: 38px;
+  padding: 8px 12px;
   border-color: rgba(96, 165, 250, 0.22);
   background: rgba(2, 6, 23, 0.42);
   color: rgba(248, 250, 252, 0.92);
@@ -15226,30 +15227,37 @@ h3 {
 
 .demo-library-card-heading strong {
   color: var(--admin-text);
-  font-size: clamp(22px, 2.1vw, 34px);
-  line-height: 1.12;
+  overflow: hidden;
+  font-size: clamp(24px, 2vw, 32px);
+  line-height: 1.08;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .demo-library-card-heading > span:not(.demo-library-eyebrow) {
   color: var(--admin-muted);
-  font-size: 15px;
+  overflow: hidden;
+  font-size: 13px;
   font-weight: 800;
-  line-height: 1.35;
-  overflow-wrap: anywhere;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .demo-library-status-strip {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: nowrap;
   gap: 8px;
   min-width: 0;
+  overflow: hidden;
 }
 
 .demo-library-status-strip span {
+  flex: 1 1 0;
   min-width: 0;
-  min-height: 34px;
+  min-height: 32px;
   overflow: hidden;
-  padding: 9px 10px;
+  padding: 8px 10px;
   border: 1px solid rgba(148, 163, 184, 0.13);
   border-radius: 8px;
   background: rgba(15, 23, 42, 0.34);
@@ -15335,10 +15343,10 @@ h3 {
 .demo-library-preview-url {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
   min-width: 0;
-  padding: 9px 10px;
+  padding: 8px 10px;
   border: 1px solid rgba(148, 163, 184, 0.12);
   border-radius: 8px;
   background: rgba(2, 6, 23, 0.26);
@@ -15349,7 +15357,7 @@ h3 {
   overflow: hidden;
   color: rgba(203, 213, 225, 0.74);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
   line-height: 1.2;
   text-overflow: ellipsis;
@@ -15359,7 +15367,7 @@ h3 {
 .demo-library-utility-links {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   min-width: 0;
 }
 
@@ -15390,9 +15398,9 @@ h3 {
 
 .demo-library-next-actions {
   display: grid;
-  gap: 10px;
+  gap: 9px;
   min-width: 0;
-  padding: 12px;
+  padding: 10px;
   border: 1px solid rgba(20, 184, 166, 0.16);
   border-radius: 8px;
   background:
@@ -15401,9 +15409,9 @@ h3 {
 }
 
 .demo-library-action-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(180px, 0.8fr) minmax(0, 1.2fr);
   align-items: center;
-  justify-content: space-between;
   gap: 10px;
   min-width: 0;
 }
@@ -15424,9 +15432,12 @@ h3 {
 
 .demo-library-action-header strong {
   color: rgba(248, 250, 252, 0.96);
+  overflow: hidden;
   font-size: 16px;
   font-weight: 900;
   line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .demo-library-action-header label {
@@ -15453,29 +15464,35 @@ h3 {
 .demo-library-workflow-chips span {
   display: inline-flex;
   min-height: 24px;
+  max-width: 100%;
   align-items: center;
   padding: 5px 8px;
   border: 1px solid rgba(45, 212, 191, 0.2);
   border-radius: 999px;
   background: rgba(20, 184, 166, 0.1);
   color: rgba(204, 251, 241, 0.92);
+  overflow: hidden;
   font-size: 11px;
   font-weight: 900;
   line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .demo-library-card .demo-workflow-actions {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
+  gap: 7px;
 }
 
 .demo-library-card .demo-workflow-actions .button {
   min-width: 0;
-  min-height: 40px;
-  padding-inline: 10px;
+  min-height: 38px;
+  padding: 8px 9px;
   overflow: hidden;
   justify-content: center;
+  font-size: 13px;
+  line-height: 1.05;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -24120,7 +24137,34 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
     grid-template-columns: 1fr;
   }
 
-  .secure-preview-site {
+.secure-preview-site {
     min-height: auto;
   }
+}
+
+.admin-body .demo-library-card .demo-workflow-actions {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.admin-body .demo-library-card .demo-workflow-actions .button,
+.admin-body .demo-library-card .demo-workflow-actions a.button {
+  min-width: 0;
+  min-height: 38px;
+  padding: 8px 9px;
+  overflow: hidden;
+  justify-content: center;
+  font-size: 13px;
+  line-height: 1.05;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-body .demo-library-card .demo-preview-actions .button,
+.admin-body .demo-library-card .demo-preview-actions a.button {
+  min-height: 38px;
+  font-size: 13px;
+  white-space: nowrap;
 }
