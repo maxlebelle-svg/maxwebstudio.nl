@@ -248,6 +248,7 @@
                 </div>
               </div>
               <div class="onboarding-detail-grid" id="onboarding-detail-grid"></div>
+              <div class="onboarding-related-panel" id="onboarding-related-panel"></div>
               <div class="onboarding-actions" aria-label="Onboarding acties">
                 <button class="button primary" id="mark-ready-button" type="button">Markeer klaar voor oplevering</button>
                 <button class="button secondary" id="copy-customer-questions" type="button">Kopieer klantvragen</button>
@@ -291,6 +292,8 @@
           selectedId: "",
           query: "",
           statusFilter: "all",
+          dataStatus: "loading",
+          dataMessage: "",
         };
         const elements = {
           globalSearch: document.getElementById("admin-global-search"),
@@ -327,6 +330,7 @@
           createSubmit: document.getElementById("create-onboarding-submit"),
           preparePortal: document.getElementById("prepare-portal-button"),
           detailGrid: document.getElementById("onboarding-detail-grid"),
+          relatedPanel: document.getElementById("onboarding-related-panel"),
           nextPanel: document.getElementById("onboarding-next-panel"),
           company: document.getElementById("onboarding-company"),
           contact: document.getElementById("onboarding-contact"),
@@ -386,6 +390,46 @@
           if (!elements.saveState) return;
           elements.saveState.textContent = label;
           elements.saveState.className = `status-badge ${className}`;
+        }
+
+        function readAdminSession() {
+          try {
+            return JSON.parse(localStorage.getItem("mws_admin_supabase_session") || "{}") || {};
+          } catch {
+            return {};
+          }
+        }
+
+        function getAdminBearer() {
+          const session = readAdminSession();
+          return cleanText(session.accessToken || session.access_token || session.token || sessionStorage.getItem("mws_admin_token") || sessionStorage.getItem("mwsAdminToken") || "");
+        }
+
+        async function fetchAdminModule(moduleName) {
+          const token = getAdminBearer();
+          if (!token) {
+            const error = new Error("Log in als admin om echte klanten te laden.");
+            error.code = "AUTH_MISSING";
+            throw error;
+          }
+          const response = await fetch(`/.netlify/functions/admin-supabase-data?module=${encodeURIComponent(moduleName)}`, {
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || data.success === false) throw new Error(data.error || `${moduleName} konden niet worden geladen.`);
+          return Array.isArray(data.records) ? data.records : [];
+        }
+
+        function normalizePortalStatus(value = "") {
+          const status = cleanText(value).toLowerCase();
+          if (["active", "actief"].includes(status)) return "active";
+          if (["invited", "uitgenodigd"].includes(status)) return "invited";
+          if (["prepared", "pending_invitation", "uitnodiging_klaar", "voorbereid"].includes(status)) return "prepared";
+          if (["disabled", "uitgeschakeld"].includes(status)) return "disabled";
+          return "niet_actief";
         }
 
         function statusWeight(status = "Open") {
@@ -459,15 +503,20 @@
             contactName: input.contactName || "",
             email: input.email || "",
             phone: input.phone || "",
-            domain: normalizeDomain(input.domain || input.website || input.websiteUrl || ""),
+            domain: normalizeDomain(input.domain || (typeof input.website === "string" ? input.website : "") || input.websiteUrl || ""),
             package: input.package || "Basis",
             ownerName: input.ownerName || "",
             priority: input.priority || "normaal",
             deadline: input.deadline || "",
-            portalStatus: input.portalStatus || "niet_actief",
+            portalStatus: normalizePortalStatus(input.portalStatus || "niet_actief"),
             portalAccessStatus: input.portalAccessStatus || "",
             notes: input.notes || "",
             mailPreview: input.mailPreview || null,
+            websiteRecord: input.websiteRecord || null,
+            websiteRecords: Array.isArray(input.websiteRecords) ? input.websiteRecords : [],
+            projectRecord: input.projectRecord || null,
+            projectRecords: Array.isArray(input.projectRecords) ? input.projectRecords : [],
+            customerRecord: input.customerRecord || null,
             source: input.source || "manual",
             createdAt,
             updatedAt: input.updatedAt || createdAt,
@@ -564,10 +613,110 @@
           return mapped.length ? mapped : (developerModeActive() ? demoData() : []);
         }
 
-        function loadOnboardings() {
+        function customerIdentitySet(customer = {}) {
+          return new Set([
+            customer.id,
+            customer.customerId,
+            customer.profileId,
+            customer.authUserId,
+            customer._supabaseCustomerId,
+          ].map((value) => cleanText(value)).filter(Boolean));
+        }
+
+        function recordBelongsToCustomer(record = {}, customer = {}) {
+          const accepted = customerIdentitySet(customer);
+          return [
+            record.customerId,
+            record.profileId,
+            record.authUserId,
+            record.customer_id,
+            record.profile_id,
+            record.metadata?.customerId,
+            record.metadata?.profileId,
+          ].some((value) => accepted.has(cleanText(value)));
+        }
+
+        function storedOnboardingForCustomer(stored = [], customer = {}) {
+          const accepted = customerIdentitySet(customer);
+          return stored.find((item) => [
+            item.customerId,
+            item.id,
+            item.email,
+          ].some((value) => accepted.has(cleanText(value))) || cleanText(item.email).toLowerCase() === cleanText(customer.email).toLowerCase()) || null;
+        }
+
+        function onboardingFromCentralCustomer(customer = {}, websites = [], projects = [], stored = []) {
+          const existing = storedOnboardingForCustomer(stored, customer);
+          const relatedWebsites = websites.filter((website) => recordBelongsToCustomer(website, customer));
+          const primaryWebsite = relatedWebsites[0] || null;
+          const relatedProjects = projects.filter((project) => recordBelongsToCustomer(project, customer));
+          const primaryProject = relatedProjects.find((project) => primaryWebsite && project.websiteId === primaryWebsite.id) || relatedProjects[0] || null;
+          return createOnboarding({
+            ...(existing || {}),
+            id: existing?.id || `customer-${customer.id}`,
+            customerId: customer.id || existing?.customerId || "",
+            projectId: primaryProject?.id || existing?.projectId || "",
+            websiteId: primaryWebsite?.id || existing?.websiteId || "",
+            customerName: customer.company || customer.name || existing?.customerName || "Klant",
+            projectName: primaryProject?.name || existing?.projectName || (primaryWebsite?.name ? `Website ${primaryWebsite.name}` : "Website onboarding"),
+            contactName: customer.name || existing?.contactName || "",
+            email: customer.email || existing?.email || "",
+            phone: customer.phone || existing?.phone || "",
+            domain: primaryWebsite?.domain || primaryWebsite?.liveUrl || customer.website || existing?.domain || "",
+            package: customer.package || primaryWebsite?.carePackage || primaryWebsite?.hostingPackage || existing?.package || "Basis",
+            portalStatus: customer.portalStatus || existing?.portalStatus || "niet_actief",
+            notes: existing?.notes || customer.notes || "",
+            source: "central_customers",
+            createdAt: existing?.createdAt || customer.createdAt || nowIso(),
+            updatedAt: existing?.updatedAt || customer.updatedAt || primaryWebsite?.updatedAt || primaryProject?.updatedAt || nowIso(),
+            checklist: existing?.checklist,
+            timeline: existing?.timeline,
+            customerRecord: customer,
+            websiteRecord: primaryWebsite,
+            websiteRecords: relatedWebsites,
+            projectRecord: primaryProject,
+            projectRecords: relatedProjects,
+          });
+        }
+
+        async function loadCentralOnboardings(stored = []) {
+          setSaveState("Klanten laden", "status-warning");
+          state.dataStatus = "loading";
+          state.dataMessage = "Centrale klantdata laden...";
+          render();
+          const customers = await fetchAdminModule("customers");
+          const [websites, projects] = await Promise.all([
+            fetchAdminModule("websites").catch(() => []),
+            fetchAdminModule("projects").catch(() => []),
+          ]);
+          const central = customers.map((customer) => onboardingFromCentralCustomer(customer, websites, projects, stored));
+          const centralIds = new Set(central.flatMap((item) => [item.customerId, item.email].map((value) => cleanText(value).toLowerCase()).filter(Boolean)));
+          const manual = stored.filter((item) => !centralIds.has(cleanText(item.customerId).toLowerCase()) && !centralIds.has(cleanText(item.email).toLowerCase()) && item.source !== "demo");
+          state.dataStatus = "central";
+          state.dataMessage = `${central.length} centrale klant(en) geladen.`;
+          setSaveState("Echte klanten", "status-active");
+          return [...central, ...manual];
+        }
+
+        async function loadOnboardings() {
           const stored = readJson(storageKey, null);
-          state.onboardings = Array.isArray(stored) && stored.length ? stored.map(createOnboarding) : seedFromExistingData();
-          if (!Array.isArray(stored) || !stored.length) saveOnboardings(false);
+          const storedOnboardings = Array.isArray(stored) && stored.length
+            ? stored.map(createOnboarding).filter((item) => developerModeActive() || item.source !== "demo")
+            : [];
+          try {
+            state.onboardings = await loadCentralOnboardings(storedOnboardings);
+            if (!state.onboardings.length) {
+              state.dataStatus = "empty";
+              state.dataMessage = "Geen centrale klanten gevonden.";
+            }
+          } catch (error) {
+            state.dataStatus = "local";
+            state.dataMessage = error.message || "Centrale klanten konden niet worden geladen.";
+            state.onboardings = storedOnboardings.length ? storedOnboardings : seedFromExistingData().filter((item) => item.source !== "demo" || developerModeActive());
+            setSaveState(state.onboardings.length ? "Lokale fallback" : "Login nodig", state.onboardings.length ? "status-warning" : "status-blocked");
+            if (!state.onboardings.length) setFormMessage(state.dataMessage, "error");
+          }
+          saveOnboardings(false);
           state.selectedId = state.onboardings[0]?.id || "";
         }
 
@@ -610,6 +759,9 @@
             prepared: "Voorbereid",
             invited: "Uitgenodigd",
             active: "Actief",
+            uitnodiging_klaar: "Voorbereid",
+            uitgenodigd: "Uitgenodigd",
+            actief: "Actief",
             disabled: "Uitgeschakeld",
           }[status] || status || "Niet actief";
         }
@@ -635,6 +787,22 @@
 
         function selectedOnboarding() {
           return state.onboardings.find((item) => item.id === state.selectedId) || state.onboardings[0] || null;
+        }
+
+        function populateFormFromOnboarding(onboarding = selectedOnboarding()) {
+          if (!onboarding) return;
+          if (elements.company) elements.company.value = onboarding.customerName || "";
+          if (elements.contact) elements.contact.value = onboarding.contactName || "";
+          if (elements.email) elements.email.value = onboarding.email || "";
+          if (elements.phone) elements.phone.value = onboarding.phone || "";
+          if (elements.domain) elements.domain.value = onboarding.domain || "";
+          if (elements.package) elements.package.value = onboarding.package || "Basis";
+          if (elements.project) elements.project.value = onboarding.projectName || "Website onboarding";
+          if (elements.deadline) elements.deadline.value = onboarding.deadline || "";
+          if (elements.owner) elements.owner.value = onboarding.ownerName || "";
+          if (elements.priority) elements.priority.value = onboarding.priority || "normaal";
+          if (elements.notes) elements.notes.value = onboarding.notes || "";
+          if (elements.sendWelcome) elements.sendWelcome.checked = onboarding.portalStatus === "invited";
         }
 
         function filteredOnboardings() {
@@ -677,7 +845,57 @@
                 <small>${progress}% compleet · aangepast ${escapeHtml(formatDate(item.updatedAt))}</small>
               </button>
             `;
-          }).join("") : `<div class="onboarding-empty-list">Geen onboardings gevonden.</div>`;
+          }).join("") : `<div class="onboarding-empty-list">${escapeHtml(state.dataMessage || "Geen onboardings gevonden.")}</div>`;
+        }
+
+        function renderRelatedPanel(onboarding) {
+          if (!elements.relatedPanel) return;
+          const websites = onboarding.websiteRecords?.length ? onboarding.websiteRecords : onboarding.websiteRecord ? [onboarding.websiteRecord] : [];
+          const projects = onboarding.projectRecords?.length ? onboarding.projectRecords : onboarding.projectRecord ? [onboarding.projectRecord] : [];
+          const websiteCards = websites.length ? websites.map((website) => `
+            <article>
+              <span>Website</span>
+              <strong>${escapeHtml(website.name || website.domain || "Website")}</strong>
+              <dl>
+                <div><dt>Domein</dt><dd>${escapeHtml(website.domain || onboarding.domain || "-")}</dd></div>
+                <div><dt>Live URL</dt><dd>${website.liveUrl ? `<a href="${escapeHtml(website.liveUrl)}" target="_blank" rel="noopener">${escapeHtml(website.liveUrl)}</a>` : "-"}</dd></div>
+                <div><dt>Status</dt><dd>${escapeHtml(website.status || "-")}</dd></div>
+                <div><dt>Hosting</dt><dd>${escapeHtml(website.hostingStatus || website.hostingPackage || "-")}</dd></div>
+                <div><dt>SSL</dt><dd>${escapeHtml(website.sslStatus || "-")}</dd></div>
+                <div><dt>Laatst gecheckt</dt><dd>${escapeHtml(formatDate(website.lastCheckedAt || website.lastUpdateAt || website.updatedAt))}</dd></div>
+              </dl>
+            </article>
+          `).join("") : `
+            <article>
+              <span>Website</span>
+              <strong>${escapeHtml(onboarding.domain || "Nog geen website gekoppeld")}</strong>
+              <dl>
+                <div><dt>Domein</dt><dd>${escapeHtml(onboarding.domain || "Nog niet ingevuld")}</dd></div>
+                <div><dt>Status</dt><dd>Nog geen centraal website-record</dd></div>
+              </dl>
+            </article>
+          `;
+          const projectCards = projects.length ? projects.map((project) => `
+            <article>
+              <span>Project</span>
+              <strong>${escapeHtml(project.name || onboarding.projectName || "Project")}</strong>
+              <dl>
+                <div><dt>Status</dt><dd>${escapeHtml(project.status || "-")}</dd></div>
+                <div><dt>Fase</dt><dd>${escapeHtml(project.phase || "-")}</dd></div>
+                <div><dt>Voortgang</dt><dd>${escapeHtml(project.progress ? `${project.progress}%` : "-")}</dd></div>
+                <div><dt>Laatst aangepast</dt><dd>${escapeHtml(formatDate(project.updatedAt))}</dd></div>
+              </dl>
+            </article>
+          `).join("") : `
+            <article>
+              <span>Project</span>
+              <strong>${escapeHtml(onboarding.projectName || "Nog geen project gekoppeld")}</strong>
+              <dl>
+                <div><dt>Status</dt><dd>Onboarding lokaal</dd></div>
+              </dl>
+            </article>
+          `;
+          elements.relatedPanel.innerHTML = `${websiteCards}${projectCards}`;
         }
 
         function renderDetail() {
@@ -725,6 +943,7 @@
               ${onboarding.notes ? `<p>${escapeHtml(onboarding.notes)}</p>` : ""}
             `;
           }
+          renderRelatedPanel(onboarding);
           elements.checklist.innerHTML = onboarding.checklist.map((step) => `
             <article class="onboarding-check-card" data-step-id="${escapeHtml(step.id)}">
               <div class="onboarding-check-header">
@@ -826,7 +1045,11 @@
           if (validation) throw new Error(validation);
           const response = await fetch(onboardingEndpoint, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+              ...(getAdminBearer() ? { Authorization: `Bearer ${getAdminBearer()}` } : {}),
+            },
             credentials: "include",
             body: JSON.stringify(payload),
           });
@@ -1055,6 +1278,7 @@
             const item = event.target.closest("[data-id]");
             if (!item) return;
             state.selectedId = item.dataset.id;
+            populateFormFromOnboarding();
             render();
           });
           elements.checklist.addEventListener("change", (event) => {
@@ -1067,7 +1291,7 @@
             if (!card || event.target.dataset.field !== "note") return;
             updateStep(card.dataset.stepId, "note", event.target.value, false);
           });
-          [elements.newTop, elements.newList].forEach((button) => button.addEventListener("click", () => {
+          [elements.newTop, elements.newList].forEach((button) => button?.addEventListener("click", () => {
             addOnboarding();
             elements.createForm?.scrollIntoView({ behavior: "smooth", block: "center" });
           }));
@@ -1085,9 +1309,14 @@
           });
         }
 
-        loadOnboardings();
-        bindEvents();
-        render();
+        async function init() {
+          bindEvents();
+          await loadOnboardings();
+          populateFormFromOnboarding();
+          render();
+        }
+
+        init();
       })();
     </script>
   </body>
