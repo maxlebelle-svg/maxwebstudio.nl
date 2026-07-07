@@ -714,6 +714,23 @@ function serviceAssetPath(siteAssets = [], service = "", fallback = "assets/hero
   return siteAssets.find((asset) => asset.kind === "service" && asset.service === service)?.path || fallback;
 }
 
+function serviceSpecificDemoAsset({ service = "", industryProfile = {}, demoImageAssets = {}, heroImage = {} } = {}) {
+  const profileKey = String(industryProfile.key || industryProfile.id || industryProfile.label || "").toLowerCase();
+  const serviceText = String(service || "").toLowerCase();
+  if (/rijschool|driving-school/.test(profileKey)) {
+    const source = (fileName, slug) => ({
+      src: `/assets/demo-images/library/rijschool/${fileName}`,
+      slug: `rijschool-${slug}`,
+    });
+    if (/scooter|bromfiets/.test(serviceText)) return source("scooterles-kruispunt.png", "scooterles");
+    if (/auto|rijles/.test(serviceText)) return source("auto-interieur-les.png", "autorijles");
+    if (/theorie/.test(serviceText)) return source("theorieles.png", "theorie");
+    if (/examen|garantie|cbr/.test(serviceText)) return source("geslaagd-moment.png", "examengarantie");
+    if (/praktijk|begeleiding|instruct/.test(serviceText)) return source("instructeur-briefing.png", "instructeur");
+  }
+  return demoImageAssets.service || heroImage;
+}
+
 function buildSiteAssets({ businessName, industryProfile, services, colors, heroImage, demoImageAssets = {}, projectSlug }) {
   const palette = {
     ink: colors.ink || "#111827",
@@ -723,12 +740,16 @@ function buildSiteAssets({ businessName, industryProfile, services, colors, hero
     dark: colors.dark || colors.brand || "#1f332a",
   };
   const serviceImageRoles = ["service", "service-alt", "project", "project-alt", "detail", "team", "contact", "review"];
-  const serviceAssets = services.slice(0, 6).map((service, index) => ({
-    path: (demoImageAssets[serviceImageRoles[index % serviceImageRoles.length]] || demoImageAssets.service || heroImage).src,
-    kind: "service",
-    service,
-    sourceSlug: (demoImageAssets[serviceImageRoles[index % serviceImageRoles.length]] || demoImageAssets.service || heroImage).slug,
-  }));
+  const serviceAssets = services.slice(0, 6).map((service, index) => {
+    const fallbackAsset = demoImageAssets[serviceImageRoles[index % serviceImageRoles.length]] || demoImageAssets.service || heroImage;
+    const selectedAsset = serviceSpecificDemoAsset({ service, industryProfile, demoImageAssets, heroImage }) || fallbackAsset;
+    return {
+      path: selectedAsset.src || fallbackAsset.src,
+      kind: "service",
+      service,
+      sourceSlug: selectedAsset.slug || fallbackAsset.slug,
+    };
+  });
   return [
     { path: "assets/logo.svg", kind: "logo", content: renderLogoSvg({ businessName, colors: palette }) },
     { path: "assets/favicon.svg", kind: "favicon", content: renderFaviconSvg({ businessName, colors: palette }) },
