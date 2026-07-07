@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=20260707-demo-sites-library" />
+    <link rel="stylesheet" href="styles.css?v=20260707-demo-sites-premium" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
   <body class="admin-body">
@@ -23002,6 +23002,26 @@
           return "preview";
         }
 
+        function statusLabel(value = "") {
+          const labels = {
+            geen_demo: "Nog niet gestart",
+            aanvraag_ontvangen: "Aanvraag ontvangen",
+            briefing_klaar: "Briefing klaar",
+            intern_in_productie: "In productie",
+            interne_preview_klaar: "Interne preview klaar",
+            preview_ingepland_voor_klant: "Preview ingepland",
+            preview_verstuurd: "Preview verstuurd",
+            feedback_ontvangen: "Feedback ontvangen",
+            aanpassingen_bezig: "Aanpassingen bezig",
+            definitieve_versie_klaar: "Definitieve versie klaar",
+            belafspraak_gepland: "Belafspraak gepland",
+            verkocht: "Verkocht",
+            afgewezen: "Afgewezen",
+          };
+          const key = String(value || "").trim();
+          return labels[key] || key.replace(/_/g, " ") || "-";
+        }
+
         function savedDemoSiteMeta(record = {}) {
           const pack = record.previewPackage || {};
           return record.savedDemoSite || pack.savedDemoSite || pack.saved_demo_site || pack.meta?.savedDemoSite || null;
@@ -23040,7 +23060,9 @@
             const demoName = savedDemo.businessName || record.businessName || "demo-site";
             const factoryHref = `admin-website-factory.html${record.leadId ? `?leadId=${encodeURIComponent(record.leadId)}` : record.id ? `?journeyId=${encodeURIComponent(record.id)}` : ""}`;
             const customerText = savedDemo.customerId || record.customerId ? "Klant gekoppeld" : "Nog leadfase";
-            const offerText = savedDemo.offerReady ? "Klaar voor offerte" : "Nog niet klaar voor offerte";
+            const sourceText = previewSource === "manual" ? "Handmatige ZIP" : "Website Factory";
+            const offerText = savedDemo.offerReady ? "Offerteklaar" : "Nog in review";
+            const savedAt = formatDate(savedDemo.savedAt || record.updatedAt || record.createdAt);
             return `
               <article class="saved-demo-site-card demo-library-card">
                 <div class="demo-library-thumbnail">
@@ -23053,15 +23075,22 @@
                 </div>
                 <div class="demo-library-card-content">
                   <div class="demo-library-card-heading">
+                    <span class="demo-library-eyebrow">Review-ready preview</span>
                     <strong>${escapeHtml(savedDemo.businessName || record.businessName || "Naamloze demo")}</strong>
                     <span>${escapeHtml([record.contactName, record.email, customerText].filter(Boolean).join(" · ") || "Geen contactgegevens")}</span>
                   </div>
-                  <div class="settings-status-list">
-                    <div><strong>Status</strong><span>${escapeHtml(record.demoStatus || "-")}</span></div>
-                    <div><strong>Definitieve bron</strong><span>${escapeHtml(previewSource === "manual" ? "Handmatige ZIP" : "Website Factory")}</span></div>
-                    <div><strong>Opgeslagen</strong><span>${escapeHtml(formatDate(savedDemo.savedAt || record.updatedAt || record.createdAt))}</span></div>
-                    <div><strong>Offerte</strong><span>${escapeHtml(offerText)}</span></div>
-                    <div><strong>Preview</strong><span title="${escapeHtml(preview)}">${escapeHtml(preview || "-")}</span></div>
+                  <div class="demo-library-summary">
+                    <span class="demo-library-status-pill">${escapeHtml(statusLabel(record.demoStatus))}</span>
+                    <p>Definitieve demo staat klaar voor commerciële opvolging, met previewlink en downloadpakket op dezelfde plek.</p>
+                  </div>
+                  <div class="demo-library-meta-grid">
+                    <div><span>Bron</span><strong>${escapeHtml(sourceText)}</strong></div>
+                    <div><span>Opgeslagen</span><strong>${escapeHtml(savedAt)}</strong></div>
+                    <div><span>Volgende stap</span><strong>${escapeHtml(offerText)}</strong></div>
+                  </div>
+                  <div class="demo-library-preview-url" title="${escapeHtml(preview)}">
+                    <span>Previewlink</span>
+                    <strong>${escapeHtml(preview || "-")}</strong>
                   </div>
                   <div class="admin-profile-actions demo-preview-actions">
                     <a class="button primary" href="${escapeHtml(preview || "#")}" target="_blank" rel="noopener" aria-disabled="${preview ? "false" : "true"}">Preview openen</a>
