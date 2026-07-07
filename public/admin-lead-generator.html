@@ -2810,7 +2810,7 @@
           { type: "group", label: "Main" },
           { href: "admin-dashboard.html", page: "dashboard", accessId: "dashboard", label: "Dashboard", alwaysVisible: true },
           { type: "group", label: "Sales" },
-          { href: "#sales-agenda", page: "sales-agenda", accessId: "sales-agenda", label: "Agenda", alwaysVisible: true },
+          { href: "admin-sales.html#sales-agenda", page: "sales-agenda", accessId: "sales-agenda", label: "Agenda", alwaysVisible: true },
           { href: "admin-lead-generator.html", page: "lead-generator", accessId: "lead-generator", label: "Lead Generator", alwaysVisible: true },
           { href: "admin-sales.html", page: "sales", accessId: "leadfinder", label: "Leads", alwaysVisible: true },
           { type: "group", label: "Production" },
@@ -9359,6 +9359,13 @@
           const hashId = window.location.hash ? window.location.hash.slice(1) : "";
           if (hashId === "sales-agenda") return "sales-agenda";
           return hashId && document.getElementById(hashId) ? hashId : fallback;
+        }
+
+        function getAdminNavIdFromHref(href = "") {
+          const normalizedHref = String(href || "");
+          const hashId = normalizedHref.includes("#") ? normalizedHref.split("#").pop() : "";
+          if (hashId === "sales-agenda") return "sales-agenda";
+          return hashId || normalizedHref.replace(/^.*\//, "").replace(/\.html$/, "") || getActiveAdminNavId();
         }
 
         function syncSalesViewState(id = getActiveAdminNavId()) {
@@ -18140,7 +18147,7 @@
           button.addEventListener("click", () => setSettingsMessage(button.dataset.settingsDemo, "success"));
         });
         adminNavLinks.forEach((link) => {
-          link.addEventListener("click", () => syncActiveNav(link.getAttribute("href").slice(1)));
+          link.addEventListener("click", () => syncActiveNav(getAdminNavIdFromHref(link.getAttribute("href"))));
         });
         window.addEventListener("hashchange", () => syncActiveNav());
         syncSalesViewState();

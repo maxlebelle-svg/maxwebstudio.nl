@@ -13363,12 +13363,15 @@ h3 {
   color: rgba(248, 251, 255, 0.92);
   font-size: 18px;
   letter-spacing: 0;
+  min-width: 0;
 }
 
 .lead-card-sort-control {
   display: inline-flex;
   align-items: center;
+  flex: 0 0 auto;
   gap: 10px;
+  max-width: 100%;
   color: rgba(226, 236, 248, 0.72);
   font-size: 13px;
   font-weight: 850;
@@ -13376,7 +13379,14 @@ h3 {
   white-space: nowrap;
 }
 
-.lead-card-sort-control select {
+.lead-card-sort-control span {
+  flex: 0 0 auto;
+}
+
+.admin-body .lead-card-sort-control select {
+  flex: 0 1 220px;
+  width: 220px;
+  max-width: min(52vw, 240px);
   min-width: 190px;
   min-height: 38px;
   padding: 0 38px 0 14px;
@@ -13388,9 +13398,10 @@ h3 {
     rgba(5, 18, 31, 0.94);
   font: inherit;
   outline: none;
+  box-sizing: border-box;
 }
 
-.lead-card-sort-control select:focus-visible {
+.admin-body .lead-card-sort-control select:focus-visible {
   border-color: rgba(72, 148, 255, 0.82);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.28);
 }
@@ -14390,12 +14401,16 @@ h3 {
   }
 
   .lead-card-sort-control {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
     justify-content: space-between;
+    align-items: center;
     white-space: normal;
   }
 
-  .lead-card-sort-control select {
-    width: min(100%, 260px);
+  .admin-body .lead-card-sort-control select {
+    width: 100%;
+    max-width: none;
     min-width: 0;
   }
 
