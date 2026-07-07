@@ -187,6 +187,7 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     currentWebsite,
     briefing: combinedBriefing,
     services,
+    industryProfile,
   });
   const benefits = inferBenefits(industry, industryProfile);
   const processSteps = inferProcessSteps(industry, industryProfile);
@@ -209,7 +210,7 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
   const siteAssets = buildSiteAssets({ businessName, industryProfile, services, colors, heroImage, demoImageAssets, projectSlug });
   const html = renderHtml({ businessName, contactName, email, phone, websiteUrl, siteUrl, industry, industryProfile, services, pricingPackages, benefits, processSteps, cta, colors, style, title, description, lowInputWarning, packageType, packageRules, heroImage, siteAssets, currentWebsite });
   const css = renderCss(colors);
-  const script = renderScript({ businessName, email, services });
+  const script = renderScript({ businessName, email, services, industryProfile });
   const sitemap = renderSitemap({ siteUrl, pages });
   const robots = renderRobots({ siteUrl });
   const htaccess = renderHtaccess();
@@ -392,7 +393,7 @@ function normalizeCurrentWebsiteSnapshot(value = null) {
   };
 }
 
-function extractPricingPackages({ currentWebsite = {}, briefing = "", services = [] } = {}) {
+function extractPricingPackages({ currentWebsite = {}, briefing = "", services = [], industryProfile = null } = {}) {
   const fromWebsite = Array.isArray(currentWebsite.pricingItems)
     ? currentWebsite.pricingItems.map((item) => normalizePricingPackage({ ...item, source: "current_website_scan" })).filter(Boolean)
     : [];
@@ -401,12 +402,37 @@ function extractPricingPackages({ currentWebsite = {}, briefing = "", services =
   return [...fromWebsite, ...fromBriefing].filter((item) => {
     const normalized = normalizePricingPackage(item, services);
     if (!normalized) return false;
+    if (!isTrustedPricingForIndustry(normalized, industryProfile)) return false;
     const key = `${normalized.name}|${normalized.price}`.toLowerCase();
     if (seen.has(key)) return false;
     seen.add(key);
     Object.assign(item, normalized);
     return true;
   }).slice(0, 6);
+}
+
+function isTrustedPricingForIndustry(item = {}, industryProfile = null) {
+  const text = `${item.name || ""} ${item.description || ""} ${item.sourceText || ""}`.toLowerCase();
+  const internalWebsiteSignals = [
+    "websitepakket",
+    "starter site",
+    "business site",
+    "premium website",
+    "website bouwen",
+    "website laten maken",
+    "demo focus",
+    "preview",
+    "cta voorkeur",
+    "klinkt best aardig",
+    "helemaal compleet",
+    "vind je het niks",
+    "kleine vergoeding",
+    "max webstudio",
+  ];
+  if (internalWebsiteSignals.some((signal) => text.includes(signal))) return false;
+  if (!isDrivingSchoolProfile(industryProfile)) return true;
+  const drivingSignals = ["rijles", "rijlessen", "rijschool", "verkeersschool", "scooter", "bromfiets", "auto", "autorijles", "theorie", "examen", "cbr", "proefles", "lespakket", "les"];
+  return drivingSignals.some((signal) => text.includes(signal));
 }
 
 function normalizePricingPackage(item = {}, services = []) {
@@ -885,10 +911,114 @@ function renderHtaccess() {
   return `Options -Indexes\n<IfModule mod_rewrite.c>\nRewriteEngine On\nRewriteCond %{HTTPS} !=on\nRewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]\n</IfModule>\n<IfModule mod_headers.c>\nHeader set X-Content-Type-Options "nosniff"\nHeader set Referrer-Policy "strict-origin-when-cross-origin"\n</IfModule>\n`;
 }
 
-function navigationLinks(packageRules = PACKAGE_RULES.starter) {
+function isDrivingSchoolProfile(profile = {}) {
+  const text = `${profile?.key || ""} ${profile?.label || ""}`.toLowerCase();
+  return text.includes("driving-school") || text.includes("rijschool") || text.includes("scooterles");
+}
+
+function demoCopyForIndustry(profile = {}, packageRules = PACKAGE_RULES.starter) {
+  const defaults = {
+    quickActionTitle: "Afspraak inplannen",
+    quickActionText: "Stuur meteen een verzoek",
+    contactActionTitle: "Contactformulier",
+    contactActionText: "Vertel kort wat u wilt laten maken",
+    servicesEyebrow: "Waarmee kunnen we helpen?",
+    servicesTitle: "Kies uw project en bekijk verschillende oplossingen.",
+    pricingEyebrow: "Pakketten & prijzen",
+    pricingTitle: "Herkenbare prijzen direct meegenomen uit de huidige situatie.",
+    pricingText: "Deze bedragen zijn voorbereid op basis van de bestaande website of intake. Controleer ze voor publicatie, zodat de nieuwe website precies aansluit op het actuele aanbod.",
+    portfolioEyebrow: "Projectbeeld",
+    portfolioTitle: "Bekijk de aanpak per dienst.",
+    portfolioCopy: "Kies hierboven een dienst om een passende projectpresentatie te tonen.",
+    benefitsEyebrow: "Voordelen",
+    benefitsTitle: "Waarom klanten vertrouwen krijgen.",
+    benefitsText: "De pagina legt de nadruk op duidelijkheid, betrouwbaarheid en een laagdrempelige route naar contact.",
+    sourceEyebrow: "Bestaande website verbeterd",
+    sourceTitle: "Herkenbare inhoud, sterker gepresenteerd.",
+    sourceText: "Deze preview gebruikt de bestaande website als vertrekpunt en zet teksten, contactmomenten en beelden om naar een duidelijkere verkooproute.",
+    premiumEyebrow: "Projecten",
+    premiumTitle: "Bewijs dat kwaliteit meteen zichtbaar maakt.",
+    premiumText: "De premium preview is voorbereid op projectcases, voor-na beelden en resultaatgerichte verhalen.",
+    offerEyebrow: "Offerte",
+    offerTitle: "Een aanvraagroute die voelt als een professioneel verkoopgesprek.",
+    offerText: "Extra conversieblokken, projectbewijs en vertrouwen zorgen dat de bezoeker sneller de stap naar contact zet.",
+    processEyebrow: "Zo werkt het",
+    processTitle: "Van eerste idee naar een resultaat dat klaar voelt.",
+    reviewsEyebrow: "Vertrouwen",
+    reviewsTitle: "Gericht op een sterke eerste indruk.",
+    reviewOneTitle: "\"Duidelijk, professioneel en makkelijk om contact op te nemen.\"",
+    reviewOneText: "Klanten zien direct waar ze aan toe zijn en kunnen zonder zoeken de volgende stap zetten.",
+    reviewTwoTitle: "\"De belangrijkste informatie staat meteen goed op volgorde.\"",
+    reviewTwoText: "De combinatie van beeld, diensten en contactmomenten geeft vertrouwen vanaf de eerste klik.",
+    contactEyebrow: "Vrijblijvende aanvraag",
+    contactTitle: "Maak het makkelijk: vertel wat u wilt en ontvang snel reactie.",
+    projectLabel: "Project",
+    messageLabel: "Wat wilt u laten doen?",
+    messagePlaceholder: "Vertel kort wat u wilt laten maken, wanneer u wilt starten en waar het project is.",
+    subPageEyebrow: packageRules.label,
+    subPageText: "presenteert hier extra informatie passend bij de gekozen website.",
+    subPageIntro: "kan deze pagina later aanvullen met echte cases, foto's en klantreacties.",
+    footerLabel: packageRules.label,
+  };
+  if (!isDrivingSchoolProfile(profile)) return defaults;
+  return {
+    ...defaults,
+    quickActionTitle: "Proefles plannen",
+    quickActionText: "Kies een passend moment",
+    contactActionTitle: "Pakketadvies",
+    contactActionText: "Vraag welke opleiding past",
+    servicesEyebrow: "Rijlessen en pakketten",
+    servicesTitle: "Kies je rijlespakket en bekijk de opties.",
+    pricingEyebrow: "Lespakketten & prijzen",
+    pricingTitle: "Lesprijzen en pakketten helder naast elkaar.",
+    pricingText: "Gebruik alleen prijzen die bij de rijschool horen: scooter, auto, theorie, proefles of examengarantie. Controleer deze bedragen voor publicatie met het actuele aanbod.",
+    portfolioEyebrow: "Opleiding per onderdeel",
+    portfolioTitle: "Bekijk de aanpak per rijlespakket.",
+    portfolioCopy: "Kies een lespakket om beeld, uitleg en vervolgstap te zien.",
+    benefitsEyebrow: "Waarom deze rijschool",
+    benefitsTitle: "Waarom leerlingen met vertrouwen starten.",
+    benefitsText: "De pagina maakt duidelijk welke opleiding past, hoe de begeleiding werkt en hoe je snel een proefles plant.",
+    sourceEyebrow: "Bestaande rijschoolwebsite verbeterd",
+    sourceTitle: "Rijschoolinformatie sterker gepresenteerd.",
+    sourceText: "Deze preview gebruikt de bestaande rijschoolwebsite als vertrekpunt en zet lessen, pakketten, exameninformatie en contactmomenten duidelijker neer.",
+    premiumEyebrow: "Rijschool in beeld",
+    premiumTitle: "Laat lessen, voertuigen en begeleiding direct vertrouwen geven.",
+    premiumText: "De premium preview is voorbereid op lespakketten, leerlingervaringen, voertuigen en duidelijke examenroutes.",
+    offerEyebrow: "Proefles aanvragen",
+    offerTitle: "Een aanvraagroute die voelt als een heldere intake voor rijles.",
+    offerText: "Leerlingen kiezen snel hun opleiding, laten gegevens achter en weten wat de volgende stap is.",
+    processEyebrow: "Zo werkt rijles",
+    processTitle: "Van proefles naar examen met duidelijke stappen.",
+    reviewsEyebrow: "Vertrouwen",
+    reviewsTitle: "Een eerste indruk die leerlingen geruststelt.",
+    reviewOneTitle: "\"Ik zie meteen welke opleiding bij mij past.\"",
+    reviewOneText: "Pakketten, proefles en exameninformatie staan duidelijk bij elkaar.",
+    reviewTwoTitle: "\"Contact opnemen voelt makkelijk en laagdrempelig.\"",
+    reviewTwoText: "De route naar proefles, WhatsApp of bellen blijft zichtbaar zonder te zoeken.",
+    contactEyebrow: "Proefles of rijlespakket",
+    contactTitle: "Plan een proefles of vraag welk pakket bij je past.",
+    projectLabel: "Rijlespakket",
+    messageLabel: "Waar wil je mee starten?",
+    messagePlaceholder: "Vertel kort of je scooter, auto, theorie of examengarantie zoekt en wanneer je wilt starten.",
+    subPageEyebrow: "Rijschoolinformatie",
+    subPageText: "presenteert hier extra informatie over rijlessen, pakketten, proeflessen en examenbegeleiding.",
+    subPageIntro: "kan deze pagina later aanvullen met echte lespakketten, slagingsinformatie, foto's en leerlingreviews.",
+    footerLabel: "Rijlessen, proeflessen en examenbegeleiding",
+  };
+}
+
+function navigationLinks(packageRules = PACKAGE_RULES.starter, profile = {}) {
   if (packageRules.navigation === "scroll") {
+    if (isDrivingSchoolProfile(profile)) {
+      return [
+        { href: "#diensten", label: "Rijlessen" },
+        { href: "#werkwijze", label: "Werkwijze" },
+        { href: "#contact", label: "Proefles" },
+      ];
+    }
     return [
       { href: "#diensten", label: "Diensten" },
+      { href: "#werkwijze", label: "Werkwijze" },
       { href: "#contact", label: "Contact" },
     ];
   }
@@ -906,7 +1036,8 @@ function navigationLinks(packageRules = PACKAGE_RULES.starter) {
 
 function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteUrl, industry, industryProfile, services, pricingPackages = [], benefits, processSteps, cta, colors, style, title, description, lowInputWarning, packageRules, heroImage, siteAssets, currentWebsite = {} }) {
   const profile = industryProfile || resolveIndustryProfile({ industry, businessName });
-  const navLinks = navigationLinks(packageRules).map((item) => `<a href="${escapeHtml(item.href)}">${escapeHtml(item.label)}</a>`).join("");
+  const demoCopy = demoCopyForIndustry(profile, packageRules);
+  const navLinks = navigationLinks(packageRules, profile).map((item) => `<a href="${escapeHtml(item.href)}">${escapeHtml(item.label)}</a>`).join("");
   const phoneHref = phone ? `tel:${phone.replace(/[^+\d]/g, "")}` : "#contact";
   const emailHref = email ? `mailto:${escapeHtml(email)}` : "#contact";
   const cityLine = extractLocationText(industry) || "uw regio";
@@ -931,9 +1062,9 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
   const pricingSection = pricingPackages.length ? `
       <section class="section-band pricing-section" id="prijzen">
         <div>
-          <span class="eyebrow">Pakketten & prijzen</span>
-          <h2>Herkenbare prijzen direct meegenomen uit de huidige situatie.</h2>
-          <p>Deze bedragen zijn voorbereid op basis van de bestaande website of intake. Controleer ze voor publicatie, zodat de nieuwe website precies aansluit op het actuele aanbod.</p>
+          <span class="eyebrow">${escapeHtml(demoCopy.pricingEyebrow)}</span>
+          <h2>${escapeHtml(demoCopy.pricingTitle)}</h2>
+          <p>${escapeHtml(demoCopy.pricingText)}</p>
         </div>
         <div class="pricing-card-grid">${pricingCards}</div>
       </section>` : "";
@@ -961,9 +1092,9 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
   const sourceWebsiteSection = sourceHighlights.length || sourceImages.length ? `
       <section class="section-band source-website-section" id="bestaande-website">
         <div>
-          <span class="eyebrow">Bestaande website verbeterd</span>
-          <h2>Herkenbare inhoud, sterker gepresenteerd.</h2>
-          <p>Deze preview gebruikt de bestaande website als vertrekpunt en zet teksten, contactmomenten en beelden om naar een duidelijkere verkooproute.</p>
+          <span class="eyebrow">${escapeHtml(demoCopy.sourceEyebrow)}</span>
+          <h2>${escapeHtml(demoCopy.sourceTitle)}</h2>
+          <p>${escapeHtml(demoCopy.sourceText)}</p>
         </div>
         ${sourceHighlights.length ? `<ul class="source-highlights">${sourceHighlights.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : ""}
         ${sourceImages.length ? `<div class="source-image-strip">${sourceImages.map((url, index) => `<img src="${escapeHtml(url)}" alt="${escapeHtml(`${businessName} bestaand beeld ${index + 1}`)}" loading="lazy" referrerpolicy="no-referrer" />`).join("")}</div>` : ""}
@@ -971,18 +1102,18 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
   const premiumSections = packageRules.pages.length >= 7 ? `
       <section class="section-band gallery-section" id="projecten">
         <div>
-          <span class="eyebrow">Projecten</span>
-          <h2>Bewijs dat kwaliteit meteen zichtbaar maakt.</h2>
-          <p>De premium preview is voorbereid op projectcases, voor-na beelden en resultaatgerichte verhalen.</p>
+          <span class="eyebrow">${escapeHtml(demoCopy.premiumEyebrow)}</span>
+          <h2>${escapeHtml(demoCopy.premiumTitle)}</h2>
+          <p>${escapeHtml(demoCopy.premiumText)}</p>
         </div>
         <div class="gallery-grid">
           ${services.slice(0, 4).map((service) => `<article><img src="${escapeHtml(serviceAssetPath(siteAssets, service, heroAsset))}" alt="${escapeHtml(service)}" loading="lazy" /><strong>${escapeHtml(service)}</strong></article>`).join("")}
         </div>
       </section>
       <section class="section-band premium-offer" id="offerte">
-        <span class="eyebrow">Offerte</span>
-        <h2>Een aanvraagroute die voelt als een professioneel verkoopgesprek.</h2>
-        <p>Extra conversieblokken, projectbewijs en vertrouwen zorgen dat de bezoeker sneller de stap naar contact zet.</p>
+        <span class="eyebrow">${escapeHtml(demoCopy.offerEyebrow)}</span>
+        <h2>${escapeHtml(demoCopy.offerTitle)}</h2>
+        <p>${escapeHtml(demoCopy.offerText)}</p>
       </section>` : "";
   return `<!doctype html>
 <html lang="nl">
@@ -1045,31 +1176,31 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
 
       <section class="contact-bar" aria-label="Snelle contactacties">
         <a href="${escapeHtml(phoneHref)}"><strong>Direct bellen</strong><span>${escapeHtml(phone || "Telefoon toevoegen")}</span></a>
-        <a href="#contact"><strong>Afspraak inplannen</strong><span>Stuur meteen een verzoek</span></a>
-        <a href="#contact"><strong>Contactformulier</strong><span>Vertel kort wat u wilt laten maken</span></a>
+        <a href="#contact"><strong>${escapeHtml(demoCopy.quickActionTitle)}</strong><span>${escapeHtml(demoCopy.quickActionText)}</span></a>
+        <a href="#contact"><strong>${escapeHtml(demoCopy.contactActionTitle)}</strong><span>${escapeHtml(demoCopy.contactActionText)}</span></a>
       </section>
 
       <section class="section-band services-section" id="diensten">
-        <span class="eyebrow">Waarmee kunnen we helpen?</span>
-        <h2>Kies uw project en bekijk verschillende oplossingen.</h2>
+        <span class="eyebrow">${escapeHtml(demoCopy.servicesEyebrow)}</span>
+        <h2>${escapeHtml(demoCopy.servicesTitle)}</h2>
         <div class="service-grid">${serviceTiles}</div>
       </section>
       ${pricingSection}
 
       <section class="portfolio-panel section-band" id="portfolio" hidden>
         <div>
-          <span class="eyebrow">Projectbeeld</span>
-          <h2 id="portfolioTitle">Bekijk de aanpak per dienst.</h2>
-          <p id="portfolioCopy">Kies hierboven een dienst om een passende projectpresentatie te tonen.</p>
+          <span class="eyebrow">${escapeHtml(demoCopy.portfolioEyebrow)}</span>
+          <h2 id="portfolioTitle">${escapeHtml(demoCopy.portfolioTitle)}</h2>
+          <p id="portfolioCopy">${escapeHtml(demoCopy.portfolioCopy)}</p>
         </div>
         <div class="portfolio-gallery" id="portfolioGallery"></div>
       </section>
 
       <section class="section-band benefits-section">
         <div>
-          <span class="eyebrow">Voordelen</span>
-          <h2>Waarom klanten vertrouwen krijgen.</h2>
-          <p>De pagina legt de nadruk op duidelijkheid, betrouwbaarheid en een laagdrempelige route naar contact.</p>
+          <span class="eyebrow">${escapeHtml(demoCopy.benefitsEyebrow)}</span>
+          <h2>${escapeHtml(demoCopy.benefitsTitle)}</h2>
+          <p>${escapeHtml(demoCopy.benefitsText)}</p>
         </div>
         <div class="benefit-grid">${benefitCards}</div>
       </section>
@@ -1077,32 +1208,32 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
 
       <section class="process-section" id="werkwijze">
         <div class="section-band">
-        <span class="eyebrow">Zo werkt het</span>
-        <h2>Van eerste idee naar een resultaat dat klaar voelt.</h2>
+        <span class="eyebrow">${escapeHtml(demoCopy.processEyebrow)}</span>
+        <h2>${escapeHtml(demoCopy.processTitle)}</h2>
         <div class="process-grid">${processCards}</div>
         </div>
       </section>
 
       <section class="section-band reviews-section" id="reviews">
         <div>
-          <span class="eyebrow">Vertrouwen</span>
-          <h2>Gericht op een sterke eerste indruk.</h2>
+          <span class="eyebrow">${escapeHtml(demoCopy.reviewsEyebrow)}</span>
+          <h2>${escapeHtml(demoCopy.reviewsTitle)}</h2>
         </div>
         <article class="review-card">
-          <strong>"Duidelijk, professioneel en makkelijk om contact op te nemen."</strong>
-          <p>Klanten zien direct waar ze aan toe zijn en kunnen zonder zoeken de volgende stap zetten.</p>
+          <strong>${escapeHtml(demoCopy.reviewOneTitle)}</strong>
+          <p>${escapeHtml(demoCopy.reviewOneText)}</p>
         </article>
         <article class="review-card">
-          <strong>"De belangrijkste informatie staat meteen goed op volgorde."</strong>
-          <p>De combinatie van beeld, diensten en contactmomenten geeft vertrouwen vanaf de eerste klik.</p>
+          <strong>${escapeHtml(demoCopy.reviewTwoTitle)}</strong>
+          <p>${escapeHtml(demoCopy.reviewTwoText)}</p>
         </article>
       </section>
       ${premiumSections}
 
       <section class="contact-section section-band" id="contact">
         <div>
-          <span class="eyebrow">Vrijblijvende aanvraag</span>
-          <h2>Maak het makkelijk: vertel wat u wilt en ontvang snel reactie.</h2>
+          <span class="eyebrow">${escapeHtml(demoCopy.contactEyebrow)}</span>
+          <h2>${escapeHtml(demoCopy.contactTitle)}</h2>
           <p>Liever direct contact? ${escapeHtml(contactLine || "Voeg telefoon en e-mail toe voor directe contactopties.")}</p>
           <div class="company-card">
             <strong>${escapeHtml(businessName)}</strong>
@@ -1115,14 +1246,14 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
           <label>Telefoonnummer<input name="telefoon" placeholder="Bijv. 06 12345678" /></label>
           <label>E-mailadres<input name="email" placeholder="uw@email.nl" /></label>
           <label>Gewenst contactmoment<input name="contactmoment" placeholder="Bijv. morgenmiddag" /></label>
-          <label class="wide">Project<select name="project">${services.slice(0, 5).map((service) => `<option>${escapeHtml(service)}</option>`).join("")}</select></label>
-          <label class="wide">Wat wilt u laten doen?<textarea name="bericht" placeholder="Vertel kort wat u wilt laten maken, wanneer u wilt starten en waar het project is."></textarea></label>
+          <label class="wide">${escapeHtml(demoCopy.projectLabel)}<select name="project">${services.slice(0, 5).map((service) => `<option>${escapeHtml(service)}</option>`).join("")}</select></label>
+          <label class="wide">${escapeHtml(demoCopy.messageLabel)}<textarea name="bericht" placeholder="${escapeHtml(demoCopy.messagePlaceholder)}"></textarea></label>
           <button type="submit">${escapeHtml(cta)}</button>
           <small>Na klikken opent uw mailprogramma met de aanvraag klaar om te versturen.</small>
         </form>
       </section>
     </main>
-    <footer class="site-footer"><strong>${escapeHtml(businessName)}</strong><span>${escapeHtml(packageRules.label)}</span></footer>
+    <footer class="site-footer"><div><strong>${escapeHtml(businessName)}</strong><span>${escapeHtml(demoCopy.footerLabel)}</span></div><nav>${navLinks}</nav></footer>
     <script src="script.js"></script>
   </body>
 </html>`;
@@ -1139,6 +1270,7 @@ function renderSubPage({ page, businessName, contactName, email, phone, websiteU
   };
   const title = titleMap[page] || "Pagina";
   const profile = industryProfile || resolveIndustryProfile({ industry, businessName });
+  const demoCopy = demoCopyForIndustry(profile, packageRules);
   const logoAsset = assetPath(siteAssets, "logo", "");
   const faviconAsset = assetPath(siteAssets, "favicon", "");
   const heroAsset = assetPath(siteAssets, "hero", heroImage.src);
@@ -1150,20 +1282,24 @@ function renderSubPage({ page, businessName, contactName, email, phone, websiteU
       ? benefits.map((benefit) => `<article class="review-card"><strong>${escapeHtml(benefit.title)}</strong><p>${escapeHtml(benefit.text)}</p></article>`).join("")
       : page === "projecten.html"
         ? processSteps.map((step) => `<article class="service-card"><h3>${escapeHtml(step.title)}</h3><p>${escapeHtml(step.text)}</p></article>`).join("")
-        : `<article class="service-card"><h3>${escapeHtml(title)}</h3><p>${escapeHtml(businessName)} presenteert hier extra informatie passend bij ${escapeHtml(packageRules.label)}.</p></article>`;
+        : `<article class="service-card"><h3>${escapeHtml(title)}</h3><p>${escapeHtml(businessName)} ${escapeHtml(demoCopy.subPageText)}</p></article>`;
   const contact = [email ? `E-mail: ${email}` : "", phone ? `Telefoon: ${phone}` : ""].filter(Boolean).join(" | ");
-  return `<!doctype html><html lang="nl"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="robots" content="noindex,nofollow" /><title>${escapeHtml(title)} - ${escapeHtml(businessName)}</title><meta name="description" content="${escapeHtml(title)} van ${escapeHtml(businessName)}." /><link rel="canonical" href="${escapeHtml(siteUrl)}/${escapeHtml(page)}" />${faviconAsset ? `<link rel="icon" href="${escapeHtml(faviconAsset)}" type="image/svg+xml" />` : ""}<link rel="stylesheet" href="styles.css" /></head><body style="--brand:${escapeHtml(colors.brand)};--accent:${escapeHtml(colors.accent)};--ink:${escapeHtml(colors.ink)};--soft:${escapeHtml(colors.soft)};--dark:${escapeHtml(colors.dark || colors.ink)}"><header class="site-header"><a class="brand" href="index.html">${logoAsset ? `<img src="${escapeHtml(logoAsset)}" alt="${escapeHtml(businessName)} logo" />` : ""}<span>${escapeHtml(businessName)}</span></a><nav>${navigationLinks(packageRules).map((item) => `<a href="${escapeHtml(item.href)}">${escapeHtml(item.label)}</a>`).join("")}</nav><a class="nav-cta" href="contact.html">${escapeHtml(cta)}</a></header><main><section class="sub-hero"><img src="${escapeHtml(heroAsset)}" alt="${escapeHtml(heroImage.alt)}" /><div><span class="eyebrow">${escapeHtml(packageRules.label)}</span><h1>${escapeHtml(title)}</h1><p>${escapeHtml(profile.intro)} ${escapeHtml(contactName)} kan deze pagina later aanvullen met echte cases, foto's en klantreacties.</p></div></section><section class="section-band section-heading"><div class="service-grid">${body}</div></section><section class="contact-section section-band"><div><span class="eyebrow">Contact</span><h2>${escapeHtml(cta)}</h2><p>${escapeHtml(contact || "Contactgegevens kunnen later worden aangevuld.")}</p><p>${escapeHtml(websiteUrl || "Website-informatie kan later worden aangevuld.")}</p></div><a class="button" href="${email ? `mailto:${escapeHtml(email)}` : "#"}">${escapeHtml(cta)}</a></section></main><footer class="site-footer"><strong>${escapeHtml(businessName)}</strong><span>${escapeHtml(packageRules.label)}</span></footer><script src="script.js"></script></body></html>`;
+  const navLinks = navigationLinks(packageRules, profile).map((item) => `<a href="${escapeHtml(item.href)}">${escapeHtml(item.label)}</a>`).join("");
+  return `<!doctype html><html lang="nl"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="robots" content="noindex,nofollow" /><title>${escapeHtml(title)} - ${escapeHtml(businessName)}</title><meta name="description" content="${escapeHtml(title)} van ${escapeHtml(businessName)}." /><link rel="canonical" href="${escapeHtml(siteUrl)}/${escapeHtml(page)}" />${faviconAsset ? `<link rel="icon" href="${escapeHtml(faviconAsset)}" type="image/svg+xml" />` : ""}<link rel="stylesheet" href="styles.css" /></head><body style="--brand:${escapeHtml(colors.brand)};--accent:${escapeHtml(colors.accent)};--ink:${escapeHtml(colors.ink)};--soft:${escapeHtml(colors.soft)};--dark:${escapeHtml(colors.dark || colors.ink)}"><header class="site-header"><a class="brand" href="index.html">${logoAsset ? `<img src="${escapeHtml(logoAsset)}" alt="${escapeHtml(businessName)} logo" />` : ""}<span>${escapeHtml(businessName)}</span></a><nav>${navLinks}</nav><a class="nav-cta" href="contact.html">${escapeHtml(cta)}</a></header><main><section class="sub-hero"><img src="${escapeHtml(heroAsset)}" alt="${escapeHtml(heroImage.alt)}" /><div><span class="eyebrow">${escapeHtml(demoCopy.subPageEyebrow)}</span><h1>${escapeHtml(title)}</h1><p>${escapeHtml(profile.intro)} ${escapeHtml(contactName)} ${escapeHtml(demoCopy.subPageIntro)}</p></div></section><section class="section-band section-heading"><div class="service-grid">${body}</div></section><section class="contact-section section-band"><div><span class="eyebrow">${escapeHtml(demoCopy.contactEyebrow)}</span><h2>${escapeHtml(cta)}</h2><p>${escapeHtml(contact || "Contactgegevens kunnen later worden aangevuld.")}</p><p>${escapeHtml(websiteUrl || "Website-informatie kan later worden aangevuld.")}</p></div><a class="button" href="${email ? `mailto:${escapeHtml(email)}` : "#"}">${escapeHtml(cta)}</a></section></main><footer class="site-footer"><div><strong>${escapeHtml(businessName)}</strong><span>${escapeHtml(demoCopy.footerLabel)}</span></div><nav>${navLinks}</nav></footer><script src="script.js"></script></body></html>`;
 }
 
 function renderCss() {
-  const css = `:root{color-scheme:light;--paper:#f5f1ea;--line:rgba(17,24,39,.14);--muted:#5f6673;--shadow:0 30px 90px rgba(17,24,39,.18)}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--paper);color:var(--ink)}a{color:inherit}.site-header{position:sticky;top:0;z-index:20;display:grid;grid-template-columns:auto 1fr auto auto;gap:28px;align-items:center;padding:20px clamp(22px,4vw,64px);color:#fff;background:linear-gradient(180deg,rgba(17,24,20,.84),rgba(17,24,20,.68));backdrop-filter:blur(18px)}.brand{display:flex;align-items:center;gap:14px;text-decoration:none;font-size:20px;font-weight:900}.brand img{width:54px;height:54px;object-fit:contain}.site-header nav{display:flex;justify-content:center;gap:28px}.site-header nav a,.nav-phone{text-decoration:none;font-size:15px;font-weight:850;color:rgba(255,255,255,.86)}.nav-cta{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 20px;border-radius:3px;background:var(--accent);color:#fff;text-decoration:none;font-weight:950}.section-band{width:min(1160px,calc(100% - 44px));margin:0 auto}.hero{position:relative;display:grid;align-items:center;min-height:calc(100vh - 86px);padding:clamp(64px,8vw,120px) clamp(22px,4vw,84px);overflow:hidden;color:#fff;background:#111}.hero>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.hero-shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.76),rgba(0,0,0,.42) 45%,rgba(0,0,0,.16)),linear-gradient(0deg,rgba(0,0,0,.38),rgba(0,0,0,.08))}.hero-copy{position:relative;z-index:1;max-width:860px}.eyebrow{display:block;margin-bottom:20px;color:var(--accent);font-size:13px;font-weight:950;letter-spacing:.06em;text-transform:uppercase}h1,h2,h3,p{letter-spacing:0}h1{max-width:920px;margin:0 0 24px;font-size:clamp(48px,7.4vw,104px);line-height:.94;font-weight:950}h2{max-width:850px;margin:0 0 22px;font-size:clamp(34px,5vw,66px);line-height:1;font-weight:950}h3{margin:0 0 10px;font-size:clamp(22px,2vw,30px);line-height:1.08}.hero p{max-width:760px;color:rgba(255,255,255,.88);font-size:clamp(19px,2vw,24px);line-height:1.6}.button{display:inline-flex;align-items:center;justify-content:center;min-height:54px;padding:15px 24px;border:1px solid transparent;border-radius:3px;background:var(--accent);color:#fff;text-decoration:none;font-weight:950;box-shadow:0 18px 42px color-mix(in srgb,var(--accent) 32%,transparent)}.button.secondary{border-color:rgba(255,255,255,.42);background:rgba(255,255,255,.08);box-shadow:none}.hero-actions,.hero-proof{display:flex;flex-wrap:wrap;gap:14px;margin-top:32px}.hero-proof{margin-top:54px}.hero-proof span{min-width:180px;padding:18px 22px;border-left:1px solid rgba(255,255,255,.28);background:rgba(17,24,39,.42);font-size:15px;font-weight:850;color:rgba(255,255,255,.78)}.hero-proof strong{display:block;color:#fff;font-size:28px}.contact-bar{position:relative;z-index:4;display:grid;grid-template-columns:repeat(3,1fr);width:min(1040px,calc(100% - 44px));margin:-44px auto 80px;background:rgba(255,255,255,.94);box-shadow:var(--shadow)}.contact-bar a{display:grid;gap:5px;min-height:96px;padding:26px 32px;text-decoration:none;border-right:1px solid var(--line)}.contact-bar a:nth-child(2){background:var(--accent);color:#fff}.contact-bar strong{font-size:22px}.contact-bar span{color:var(--muted);font-weight:800}.contact-bar a:nth-child(2) span{color:rgba(255,255,255,.88)}.services-section,.pricing-section,.benefits-section,.reviews-section,.gallery-section,.premium-offer,.contact-section,.preview-note,.section-heading,.portfolio-panel{padding:clamp(64px,7vw,110px) 0}.services-section h2{max-width:900px}.service-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:34px}.project-tile{position:relative;min-height:250px;display:flex;flex-direction:column;justify-content:flex-end;padding:20px;overflow:hidden;color:#fff;text-decoration:none;background:#111}.project-tile::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.74),rgba(0,0,0,.08))}.project-tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .35s ease}.project-tile:hover img{transform:scale(1.045)}.project-tile span,.project-tile h3,.project-tile p{position:relative;z-index:1}.project-tile span{color:var(--accent);font-weight:950}.project-tile p{margin:0;color:rgba(255,255,255,.82);font-size:14px;line-height:1.5}.pricing-section{display:grid;grid-template-columns:.78fr 1.22fr;gap:38px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.pricing-card-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}.pricing-card{display:grid;gap:12px;padding:26px;border:1px solid var(--line);background:#fff;box-shadow:0 22px 60px rgba(17,24,39,.07)}.pricing-card span{color:var(--accent);font-size:12px;font-weight:950;text-transform:uppercase;letter-spacing:.06em}.pricing-card strong{font-size:clamp(34px,4vw,54px);line-height:1;color:var(--ink)}.pricing-card p{margin:0;color:var(--muted);font-size:16px;line-height:1.65}.portfolio-panel{display:grid;grid-template-columns:.72fr 1.28fr;gap:28px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.portfolio-panel[hidden]{display:none}.portfolio-gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.portfolio-item{position:relative;min-height:210px;overflow:hidden;color:#fff;background:#111}.portfolio-item img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.portfolio-item strong{position:absolute;left:18px;right:18px;bottom:18px;z-index:1;font-size:20px}.portfolio-item::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.68),transparent)}.benefits-section{display:grid;grid-template-columns:.85fr 1.15fr;gap:44px}.benefits-section p,.contact-section p,.section-heading p,.premium-offer p,.portfolio-panel p,.pricing-section p{color:var(--muted);font-size:19px;line-height:1.7}.benefit-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}.benefit-card,.review-card,.preview-note,.company-card,.service-card:not(.project-tile){border:1px solid var(--line);background:#fff;box-shadow:0 22px 60px rgba(17,24,39,.07)}.benefit-card{padding:28px}.benefit-card strong{display:block;font-size:24px;margin-bottom:8px}.benefit-card p,.review-card p{margin:0;color:var(--muted);font-size:16px;line-height:1.65}.source-website-section{display:grid;grid-template-columns:.8fr 1.2fr;gap:28px;padding:clamp(64px,7vw,110px) 0;border-top:1px solid var(--line)}.source-highlights{margin:0;padding:0;list-style:none;display:grid;gap:12px}.source-highlights li{padding:18px 20px;background:#fff;border-left:4px solid var(--accent);box-shadow:0 16px 40px rgba(17,24,39,.06);font-weight:800;line-height:1.5}.source-image-strip{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.source-image-strip img{width:100%;height:260px;object-fit:cover;background:#111}.process-section{padding:clamp(76px,8vw,120px) 0;background:var(--dark);color:#fff}.process-section h2{color:#fff}.process-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:34px}.process-card{min-height:250px;padding:28px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.055)}.process-card span{display:block;margin-bottom:54px;color:var(--accent);font-weight:950}.process-card p{color:rgba(255,255,255,.72);font-size:16px;line-height:1.7}.reviews-section{display:grid;grid-template-columns:.8fr 1fr 1fr;gap:22px}.review-card{padding:32px}.review-card strong{display:block;font-size:26px;line-height:1.15;margin-bottom:22px}.gallery-section{display:grid;grid-template-columns:.75fr 1.25fr;gap:34px}.gallery-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}.gallery-grid article{position:relative;min-height:220px;display:flex;align-items:flex-end;padding:22px;overflow:hidden;color:#fff;background:#111}.gallery-grid article::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.68),rgba(0,0,0,.06))}.gallery-grid img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.gallery-grid strong{position:relative;z-index:1;font-size:26px}.premium-offer{border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.contact-section{display:grid;grid-template-columns:.88fr 1.12fr;gap:58px;align-items:start}.company-card{display:grid;gap:8px;margin-top:28px;padding:26px;border-top:5px solid var(--accent)}.company-card strong{font-size:32px}.preview-form{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;padding:34px;background:#fff;box-shadow:var(--shadow)}label{display:grid;gap:8px;font-weight:900}.wide{grid-column:1/-1}input,select,textarea{width:100%;min-height:54px;border:1px solid var(--line);background:var(--paper);padding:0 16px;font:inherit;font-weight:750;color:var(--ink)}textarea{min-height:150px;padding-top:14px;resize:vertical}button{min-height:56px;border:0;background:var(--accent);color:#fff;font:inherit;font-weight:950}.preview-form button,.preview-form small{grid-column:1/-1}.preview-form small{color:var(--muted)}.preview-note{padding:24px;margin-bottom:44px}.site-footer{display:flex;justify-content:space-between;gap:20px;padding:34px clamp(22px,4vw,64px);background:var(--dark);color:rgba(255,255,255,.72);font-weight:850}.site-footer strong{color:#fff}.sub-hero{position:relative;min-height:52vh;display:grid;align-items:end;padding:clamp(70px,8vw,120px) clamp(22px,5vw,86px);color:#fff;overflow:hidden;background:#111}.sub-hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.sub-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.72),rgba(0,0,0,.18))}.sub-hero>div{position:relative;z-index:1}.section-heading .service-grid{grid-template-columns:repeat(3,1fr)}.section-heading .service-card,.section-heading .pricing-card{padding:28px}.section-heading .service-card img{width:100%;height:190px;object-fit:cover;margin:-28px -28px 24px;width:calc(100% + 56px)}@media(max-width:1100px){.service-grid,.pricing-card-grid{grid-template-columns:repeat(2,1fr)}.process-grid{grid-template-columns:repeat(2,1fr)}.site-header{grid-template-columns:1fr auto}.site-header nav,.nav-phone{display:none}.portfolio-panel,.pricing-section{grid-template-columns:1fr}.portfolio-gallery{grid-template-columns:repeat(2,1fr)}}@media(max-width:760px){.hero{min-height:72vh}.contact-bar,.benefits-section,.reviews-section,.gallery-section,.contact-section,.source-website-section{grid-template-columns:1fr}.service-grid,.pricing-card-grid,.benefit-grid,.process-grid,.gallery-grid,.section-heading .service-grid,.preview-form,.portfolio-gallery,.source-image-strip{grid-template-columns:1fr}.contact-bar{margin:0 auto 50px}.hero-proof span{width:100%}h1{font-size:clamp(42px,15vw,68px)}}`;
+  const css = `:root{color-scheme:light;--paper:#f5f1ea;--line:rgba(17,24,39,.14);--muted:#5f6673;--shadow:0 30px 90px rgba(17,24,39,.18)}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--paper);color:var(--ink)}a{color:inherit}.site-header{position:sticky;top:0;z-index:20;display:grid;grid-template-columns:auto 1fr auto auto;gap:28px;align-items:center;padding:20px clamp(22px,4vw,64px);color:#fff;background:linear-gradient(180deg,rgba(17,24,20,.84),rgba(17,24,20,.68));backdrop-filter:blur(18px)}.brand{display:flex;align-items:center;gap:14px;text-decoration:none;font-size:20px;font-weight:900}.brand img{width:54px;height:54px;object-fit:contain}.site-header nav{display:flex;justify-content:center;flex-wrap:wrap;gap:12px 22px}.site-header nav a,.nav-phone{text-decoration:none;font-size:15px;font-weight:850;color:rgba(255,255,255,.86)}.nav-cta{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 20px;border-radius:3px;background:var(--accent);color:#fff;text-decoration:none;font-weight:950}.section-band{width:min(1160px,calc(100% - 44px));margin:0 auto}.hero{position:relative;display:grid;align-items:center;min-height:calc(100vh - 86px);padding:clamp(64px,8vw,120px) clamp(22px,4vw,84px);overflow:hidden;color:#fff;background:#111}.hero>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.hero-shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.76),rgba(0,0,0,.42) 45%,rgba(0,0,0,.16)),linear-gradient(0deg,rgba(0,0,0,.38),rgba(0,0,0,.08))}.hero-copy{position:relative;z-index:1;max-width:860px}.eyebrow{display:block;margin-bottom:20px;color:var(--accent);font-size:13px;font-weight:950;letter-spacing:.06em;text-transform:uppercase}h1,h2,h3,p{letter-spacing:0}h1{max-width:920px;margin:0 0 24px;font-size:clamp(48px,7.4vw,104px);line-height:.94;font-weight:950}h2{max-width:850px;margin:0 0 22px;font-size:clamp(34px,5vw,66px);line-height:1;font-weight:950}h3{margin:0 0 10px;font-size:clamp(22px,2vw,30px);line-height:1.08}.hero p{max-width:760px;color:rgba(255,255,255,.88);font-size:clamp(19px,2vw,24px);line-height:1.6}.button{display:inline-flex;align-items:center;justify-content:center;min-height:54px;padding:15px 24px;border:1px solid transparent;border-radius:3px;background:var(--accent);color:#fff;text-decoration:none;font-weight:950;box-shadow:0 18px 42px color-mix(in srgb,var(--accent) 32%,transparent)}.button.secondary{border-color:rgba(255,255,255,.42);background:rgba(255,255,255,.08);box-shadow:none}.hero-actions,.hero-proof{display:flex;flex-wrap:wrap;gap:14px;margin-top:32px}.hero-proof{margin-top:54px}.hero-proof span{min-width:180px;padding:18px 22px;border-left:1px solid rgba(255,255,255,.28);background:rgba(17,24,39,.42);font-size:15px;font-weight:850;color:rgba(255,255,255,.78)}.hero-proof strong{display:block;color:#fff;font-size:28px}.contact-bar{position:relative;z-index:4;display:grid;grid-template-columns:repeat(3,1fr);width:min(1040px,calc(100% - 44px));margin:-44px auto 80px;background:rgba(255,255,255,.94);box-shadow:var(--shadow)}.contact-bar a{display:grid;gap:5px;min-height:96px;padding:26px 32px;text-decoration:none;border-right:1px solid var(--line)}.contact-bar a:nth-child(2){background:var(--accent);color:#fff}.contact-bar strong{font-size:22px}.contact-bar span{color:var(--muted);font-weight:800}.contact-bar a:nth-child(2) span{color:rgba(255,255,255,.88)}.services-section,.pricing-section,.benefits-section,.reviews-section,.gallery-section,.premium-offer,.contact-section,.preview-note,.section-heading,.portfolio-panel{padding:clamp(64px,7vw,110px) 0}.services-section h2{max-width:900px}.service-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:34px}.project-tile{position:relative;min-height:250px;display:flex;flex-direction:column;justify-content:flex-end;padding:20px;overflow:hidden;color:#fff;text-decoration:none;background:#111}.project-tile::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.74),rgba(0,0,0,.08))}.project-tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .35s ease}.project-tile:hover img{transform:scale(1.045)}.project-tile span,.project-tile h3,.project-tile p{position:relative;z-index:1}.project-tile span{color:var(--accent);font-weight:950}.project-tile p{margin:0;color:rgba(255,255,255,.82);font-size:14px;line-height:1.5}.pricing-section{display:grid;grid-template-columns:.78fr 1.22fr;gap:38px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.pricing-card-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}.pricing-card{display:grid;gap:12px;padding:26px;border:1px solid var(--line);background:#fff;box-shadow:0 22px 60px rgba(17,24,39,.07)}.pricing-card span{color:var(--accent);font-size:12px;font-weight:950;text-transform:uppercase;letter-spacing:.06em}.pricing-card strong{font-size:clamp(34px,4vw,54px);line-height:1;color:var(--ink)}.pricing-card p{margin:0;color:var(--muted);font-size:16px;line-height:1.65}.portfolio-panel{display:grid;grid-template-columns:.72fr 1.28fr;gap:28px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.portfolio-panel[hidden]{display:none}.portfolio-gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.portfolio-item{position:relative;min-height:210px;overflow:hidden;color:#fff;background:#111}.portfolio-item img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.portfolio-item strong{position:absolute;left:18px;right:18px;bottom:18px;z-index:1;font-size:20px}.portfolio-item::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.68),transparent)}.benefits-section{display:grid;grid-template-columns:.85fr 1.15fr;gap:44px}.benefits-section p,.contact-section p,.section-heading p,.premium-offer p,.portfolio-panel p,.pricing-section p{color:var(--muted);font-size:19px;line-height:1.7}.benefit-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}.benefit-card,.review-card,.preview-note,.company-card,.service-card:not(.project-tile){border:1px solid var(--line);background:#fff;box-shadow:0 22px 60px rgba(17,24,39,.07)}.benefit-card{padding:28px}.benefit-card strong{display:block;font-size:24px;margin-bottom:8px}.benefit-card p,.review-card p{margin:0;color:var(--muted);font-size:16px;line-height:1.65}.source-website-section{display:grid;grid-template-columns:.8fr 1.2fr;gap:28px;padding:clamp(64px,7vw,110px) 0;border-top:1px solid var(--line)}.source-highlights{margin:0;padding:0;list-style:none;display:grid;gap:12px}.source-highlights li{padding:18px 20px;background:#fff;border-left:4px solid var(--accent);box-shadow:0 16px 40px rgba(17,24,39,.06);font-weight:800;line-height:1.5}.source-image-strip{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.source-image-strip img{width:100%;height:260px;object-fit:cover;background:#111}.process-section{padding:clamp(76px,8vw,120px) 0;background:var(--dark);color:#fff}.process-section h2{color:#fff}.process-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:34px}.process-card{min-height:250px;padding:28px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.055)}.process-card span{display:block;margin-bottom:54px;color:var(--accent);font-weight:950}.process-card p{color:rgba(255,255,255,.72);font-size:16px;line-height:1.7}.reviews-section{display:grid;grid-template-columns:.8fr 1fr 1fr;gap:22px}.review-card{padding:32px}.review-card strong{display:block;font-size:26px;line-height:1.15;margin-bottom:22px}.gallery-section{display:grid;grid-template-columns:.75fr 1.25fr;gap:34px}.gallery-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}.gallery-grid article{position:relative;min-height:220px;display:flex;align-items:flex-end;padding:22px;overflow:hidden;color:#fff;background:#111}.gallery-grid article::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.68),rgba(0,0,0,.06))}.gallery-grid img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.gallery-grid strong{position:relative;z-index:1;font-size:26px}.premium-offer{border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.contact-section{display:grid;grid-template-columns:.88fr 1.12fr;gap:58px;align-items:start}.company-card{display:grid;gap:8px;margin-top:28px;padding:26px;border-top:5px solid var(--accent)}.company-card strong{font-size:32px}.preview-form{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;padding:34px;background:#fff;box-shadow:var(--shadow)}label{display:grid;gap:8px;font-weight:900}.wide{grid-column:1/-1}input,select,textarea{width:100%;min-height:54px;border:1px solid var(--line);background:var(--paper);padding:0 16px;font:inherit;font-weight:750;color:var(--ink)}textarea{min-height:150px;padding-top:14px;resize:vertical}button{min-height:56px;border:0;background:var(--accent);color:#fff;font:inherit;font-weight:950}.preview-form button,.preview-form small{grid-column:1/-1}.preview-form small{color:var(--muted)}.preview-note{padding:24px;margin-bottom:44px}.site-footer{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding:34px clamp(22px,4vw,64px);background:var(--dark);color:rgba(255,255,255,.72);font-weight:850}.site-footer div{display:grid;gap:6px}.site-footer strong{color:#fff}.site-footer nav{display:flex;flex-wrap:wrap;gap:12px 18px}.site-footer nav a{color:rgba(255,255,255,.74);text-decoration:none}.sub-hero{position:relative;min-height:52vh;display:grid;align-items:end;padding:clamp(70px,8vw,120px) clamp(22px,5vw,86px);color:#fff;overflow:hidden;background:#111}.sub-hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.sub-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.72),rgba(0,0,0,.18))}.sub-hero>div{position:relative;z-index:1}.section-heading .service-grid{grid-template-columns:repeat(3,1fr)}.section-heading .service-card,.section-heading .pricing-card{padding:28px}.section-heading .service-card img{width:100%;height:190px;object-fit:cover;margin:-28px -28px 24px;width:calc(100% + 56px)}@media(max-width:1100px){.service-grid,.pricing-card-grid{grid-template-columns:repeat(2,1fr)}.process-grid{grid-template-columns:repeat(2,1fr)}.site-header{grid-template-columns:1fr auto}.site-header nav{grid-column:1/-1;justify-content:flex-start}.nav-phone{display:none}.portfolio-panel,.pricing-section{grid-template-columns:1fr}.portfolio-gallery{grid-template-columns:repeat(2,1fr)}}@media(max-width:760px){.hero{min-height:72vh}.contact-bar,.benefits-section,.reviews-section,.gallery-section,.contact-section,.source-website-section{grid-template-columns:1fr}.service-grid,.pricing-card-grid,.benefit-grid,.process-grid,.gallery-grid,.section-heading .service-grid,.preview-form,.portfolio-gallery,.source-image-strip{grid-template-columns:1fr}.site-header nav{overflow-x:auto;flex-wrap:nowrap;justify-content:flex-start;padding-bottom:2px}.contact-bar{margin:0 auto 50px}.hero-proof span{width:100%}.site-footer{display:grid}h1{font-size:clamp(42px,15vw,68px)}}`;
   return css;
 }
 
-function renderScript({ businessName, email, services }) {
+function renderScript({ businessName, email, services, industryProfile = null }) {
+  const portfolioCopy = isDrivingSchoolProfile(industryProfile)
+    ? (service) => `${service} krijgt eigen uitleg, passend beeld en een directe route naar proefles of pakketadvies.`
+    : (service) => `${service} krijgt een eigen visuele presentatie, korte uitleg en een directe route naar aanvraag of contact.`;
   const portfolio = Object.fromEntries(services.slice(0, 6).map((service, index) => [service, {
     title: `${service} helder in beeld`,
-    copy: `${service} krijgt een eigen visuele presentatie, korte uitleg en een directe route naar aanvraag of contact.`,
+    copy: portfolioCopy(service),
     images: [
       `assets/service-${index + 1}-${slugifySite(service)}.svg`,
       "assets/hero.svg",
