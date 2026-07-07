@@ -2,6 +2,7 @@ const { verifyAdmin } = require("./_admin-auth");
 const { sendEmail } = require("./email");
 const { readProjectWorkspace, upsertProjectWorkspace, zipFilenameFor } = require("./_project-workspace");
 const { getBuildHistory, runBuildJob } = require("./website-factory");
+const crypto = require("crypto");
 
 const staffRoles = ["super_admin", "admin", "sales_manager", "sales_partner"];
 const managerRoles = new Set(["super_admin", "admin", "sales_manager"]);
@@ -313,14 +314,57 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     return jsonResponse(result.sent ? 200 : 503, { success: result.sent, sent: result.sent, warning: result.warning || "", template });
   }
 
+  if (action === "upload_manual_zip") {
+    if (!current?.id) return jsonResponse(400, { success: false, error: "Sla eerst de demo-aanvraag op voordat je een ZIP uploadt." });
+    const uploadedAt = new Date().toISOString();
+    const previewPackage = current.preview_package && typeof current.preview_package === "object" ? current.preview_package : {};
+    const files = sanitizeManualPreviewFiles(payload.files || []);
+    if (!files.length) return jsonResponse(400, { success: false, error: "ZIP bevat geen bruikbare websitebestanden." });
+    if (!files.some((file) => file.path.endsWith("index.html"))) return jsonResponse(400, { success: false, error: "ZIP moet een index.html bevatten." });
+    const previewToken = cleanText(current.preview_token) || crypto.randomBytes(16).toString("hex");
+    const previewUrl = cleanText(current.preview_url) || previewUrlForJourney(current.id, previewToken);
+    const manualPreview = {
+      source: "manual_zip",
+      fileName: cleanText(payload.fileName || payload.file_name || "handmatige-demo.zip"),
+      uploadedAt,
+      uploadedBy: admin.id,
+      entryPath: cleanText(payload.entryPath || payload.entry_path || "index.html"),
+      fileCount: files.length,
+      totalBytes: files.reduce((sum, file) => sum + Number(file.size || 0), 0),
+      files,
+    };
+    const record = {
+      preview_url: previewUrl,
+      preview_token: previewToken,
+      preview_package: {
+        ...previewPackage,
+        manualPreview,
+        activePreviewSource: "manual",
+      },
+      preview_generated_at: current.preview_generated_at || uploadedAt,
+      demo_status: current.demo_status === "geen_demo" ? "interne_preview_klaar" : current.demo_status,
+      updated_by: admin.id,
+      updated_at: uploadedAt,
+    };
+    const rows = await patchJourneySafe({ supabaseUrl, serviceRoleKey, id: current.id, record });
+    await createEvent({ supabaseUrl, serviceRoleKey, journeyId: current.id, type: "manual_zip", title: "Handmatige ZIP geüpload", description: manualPreview.fileName, visible: false, createdBy: admin.id });
+    const journey = mapJourney(rows[0] || await readJourneyById({ supabaseUrl, serviceRoleKey, id: current.id }));
+    const events = await readEvents({ supabaseUrl, serviceRoleKey, journeyId: current.id });
+    const buildHistory = await readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, journeyId: current.id });
+    return jsonResponse(200, { success: true, journey, demoJourney: journey, events, buildHistory, buildStatus: buildHistory.latestJob || null, manualPreview });
+  }
+
   if (action === "save_demo_site") {
     if (!current?.id) return jsonResponse(400, { success: false, error: "Sla eerst de demo-aanvraag op." });
     const savedAt = new Date().toISOString();
+    const previewPackage = current.preview_package && typeof current.preview_package === "object" ? current.preview_package : {};
+    const requestedSource = normalizePreviewSource(payload.previewSource || payload.preview_source || previewPackage.activePreviewSource);
+    const activePreviewSource = requestedSource === "manual" && previewPackage.manualPreview?.files?.length ? "manual" : "factory";
     const previewUrl = cleanText(payload.previewUrl || payload.preview_url || current.preview_url);
     if (!previewUrl) return jsonResponse(400, { success: false, error: "Genereer eerst een preview voordat je de demo-site opslaat." });
     const currentJourney = mapJourney(current);
-    const previewPackage = current.preview_package && typeof current.preview_package === "object" ? current.preview_package : {};
-    const thumbnail = buildSavedDemoThumbnail({ journey: currentJourney, previewPackage, previewUrl, savedAt });
+    const thumbnailPackage = activePreviewSource === "manual" ? { ...previewPackage, files: previewPackage.manualPreview?.files || [] } : previewPackage;
+    const thumbnail = buildSavedDemoThumbnail({ journey: currentJourney, previewPackage: thumbnailPackage, previewUrl, savedAt });
     const savedDemoSite = {
       saved: true,
       savedAt,
@@ -331,6 +375,8 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
       businessName: cleanText(payload.businessName || payload.business_name || currentJourney.businessName),
       previewUrl,
       previewVersion: previewPackage.version || previewPackage.meta?.version || null,
+      previewSource: activePreviewSource,
+      manualZipFileName: activePreviewSource === "manual" ? cleanText(previewPackage.manualPreview?.fileName) : "",
       thumbnailUrl: thumbnail.thumbnailUrl,
       thumbnailGeneratedAt: thumbnail.thumbnailGeneratedAt,
       thumbnailKind: thumbnail.thumbnailKind,
@@ -341,6 +387,7 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
       demo_status: currentJourney.demoStatus === "geen_demo" ? "interne_preview_klaar" : currentJourney.demoStatus,
       preview_package: {
         ...previewPackage,
+        activePreviewSource,
         savedDemoSite,
         linkedRecords: {
           ...(previewPackage.linkedRecords || {}),
@@ -1014,7 +1061,8 @@ function statusLabel(status = "") {
 
 function buildSavedDemoThumbnail({ journey = {}, previewPackage = {}, previewUrl = "", savedAt = "" } = {}) {
   const files = Array.isArray(previewPackage.files) ? previewPackage.files : [];
-  const indexHtml = files.find((file) => file.path === "index.html")?.content || "";
+  const indexFile = files.find((file) => file.path === "index.html") || files.find((file) => cleanText(file.path).endsWith("/index.html")) || {};
+  const indexHtml = indexFile.encoding === "base64" ? Buffer.from(indexFile.content || "", "base64").toString("utf8") : indexFile.content || "";
   const meta = previewPackage.meta || {};
   const businessName = cleanText(journey.businessName || meta.businessName || textFromHtml(indexHtml, /<title[^>]*>([\s\S]*?)<\/title>/i) || "Demo-site");
   const heroTitle = cleanText(textFromHtml(indexHtml, /<h1[^>]*>([\s\S]*?)<\/h1>/i) || meta.title || "Professionele demo-site");
@@ -1135,6 +1183,63 @@ function cleanContactName(value = "") {
   const looksLikeScript = /\b(ben jij|beslist|degene die|kijkt iemand|hierover|daarin mee|wat is je naam|contactpersoon)\b/.test(lower);
   const tooLongForName = text.length > 60 || text.split(/\s+/).length > 6;
   return looksLikeQuestion || looksLikeScript || tooLongForName ? "" : text;
+}
+
+function normalizePreviewSource(value = "") {
+  const text = cleanText(value).toLowerCase();
+  return text === "manual" || text === "manual_zip" || text === "handmatig" ? "manual" : "factory";
+}
+
+function sanitizeManualPreviewFiles(files = []) {
+  const input = Array.isArray(files) ? files : [];
+  const allowed = [];
+  let totalBytes = 0;
+  const maxFiles = 80;
+  const maxTotalBytes = 8 * 1024 * 1024;
+  for (const file of input) {
+    if (allowed.length >= maxFiles) break;
+    const path = cleanPreviewFilePath(file?.path);
+    const content = cleanText(file?.content);
+    const encoding = cleanText(file?.encoding || "base64").toLowerCase();
+    const size = Math.max(0, Number(file?.size || 0));
+    if (!path || !content || encoding !== "base64") continue;
+    totalBytes += size;
+    if (totalBytes > maxTotalBytes) break;
+    allowed.push({
+      path,
+      content,
+      encoding: "base64",
+      mime: cleanText(file?.mime || contentTypeForPreviewPath(path)),
+      size,
+    });
+  }
+  return allowed;
+}
+
+function cleanPreviewFilePath(value = "") {
+  const path = cleanText(value).replace(/\\/g, "/").replace(/^\/+/, "");
+  if (!path || path.endsWith("/") || path.includes("..") || path.startsWith("__MACOSX/")) return "";
+  if (!/\.(html|css|js|json|txt|xml|svg|png|jpe?g|webp|gif|ico|woff2?|ttf)$/i.test(path)) return "";
+  return path;
+}
+
+function contentTypeForPreviewPath(path = "") {
+  const lower = cleanText(path).toLowerCase();
+  if (lower.endsWith(".html")) return "text/html; charset=utf-8";
+  if (lower.endsWith(".css")) return "text/css; charset=utf-8";
+  if (lower.endsWith(".js")) return "application/javascript; charset=utf-8";
+  if (lower.endsWith(".json")) return "application/json; charset=utf-8";
+  if (lower.endsWith(".svg")) return "image/svg+xml";
+  if (lower.endsWith(".png")) return "image/png";
+  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+  if (lower.endsWith(".webp")) return "image/webp";
+  if (lower.endsWith(".gif")) return "image/gif";
+  if (lower.endsWith(".ico")) return "image/x-icon";
+  return "text/plain; charset=utf-8";
+}
+
+function previewUrlForJourney(id = "", token = "") {
+  return `/.netlify/functions/demo-preview?id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}`;
 }
 
 function cleanUuid(value = "") {

@@ -12,6 +12,7 @@ exports.handler = async (event) => {
   const id = cleanText(event.queryStringParameters?.id);
   const token = cleanText(event.queryStringParameters?.token);
   const format = cleanText(event.queryStringParameters?.format).toLowerCase();
+  const source = cleanText(event.queryStringParameters?.source).toLowerCase();
   const filePath = cleanText(event.queryStringParameters?.file) || "index.html";
   if (!id) return response(400, "Preview id ontbreekt.", { "Content-Type": "text/plain; charset=utf-8" });
 
@@ -33,7 +34,7 @@ exports.handler = async (event) => {
     if (!adminCheck.success) return response(403, "Previewlink is niet geldig.", { "Content-Type": "text/plain; charset=utf-8" });
   }
 
-  const previewPackage = normalizePackage(row.preview_package, row);
+  const previewPackage = normalizePackage(row.preview_package, row, source);
   if (format === "zip") {
     const previewVersion = previewPackage.version || previewPackage.meta?.version || 1;
     const filename = zipFilenameFor({ businessName: row.business_name || previewPackage.businessName, websiteUrl: row.website_url, version: previewVersion });
@@ -69,19 +70,41 @@ exports.handler = async (event) => {
     };
   }
 
-  const file = previewPackage.files.find((item) => item.path === filePath) || previewPackage.files.find((item) => item.path === "index.html") || previewPackage.files[0];
+  const file = previewPackage.files.find((item) => item.path === filePath) || previewPackage.files.find((item) => item.path.endsWith("index.html")) || previewPackage.files[0];
+  if (file?.encoding === "base64" && !isTextPreviewFile(file.path)) {
+    return {
+      statusCode: 200,
+      isBase64Encoded: true,
+      headers: { ...corsHeaders(), "Content-Type": contentTypeFor(file.path), "Cache-Control": "no-store" },
+      body: file.content || "",
+    };
+  }
+  const fileContent = file?.encoding === "base64" ? Buffer.from(file.content || "", "base64").toString("utf8") : file?.content || "";
   const content = file?.path?.endsWith(".html")
-    ? rewritePreviewHtml(file?.content || "", id, token)
+    ? rewritePreviewHtml(fileContent, id, token, source)
     : file?.path?.endsWith(".css")
-      ? rewritePreviewAssetReferences(file?.content || "", id, token)
-    : file?.content || "";
+      ? rewritePreviewAssetReferences(fileContent, id, token, source)
+    : fileContent;
   return response(200, content || "<!doctype html><title>Preview</title><p>Previewpakket is leeg.</p>", {
     "Content-Type": contentTypeFor(file?.path),
     "Cache-Control": "no-store",
   });
 };
 
-function normalizePackage(value, row = {}) {
+function normalizePackage(value, row = {}, requestedSource = "") {
+  const useManual = requestedSource === "manual" || (!requestedSource && value?.activePreviewSource === "manual");
+  if (value && typeof value === "object" && useManual && Array.isArray(value.manualPreview?.files) && value.manualPreview.files.length) {
+    return {
+      ...value,
+      files: value.manualPreview.files,
+      version: value.version || value.meta?.version || "manual",
+      meta: {
+        ...(value.meta || {}),
+        previewSource: "manual",
+        manualZipFileName: value.manualPreview.fileName || "",
+      },
+    };
+  }
   if (value && typeof value === "object" && Array.isArray(value.files) && value.files.length) return value;
   const businessName = cleanText(row.business_name) || "Demo preview";
   const briefing = cleanText(row.generated_briefing);
@@ -97,16 +120,17 @@ function normalizePackage(value, row = {}) {
   };
 }
 
-function rewritePreviewHtml(html = "", id = "", token = "") {
-  const assetUrl = (file) => `/.netlify/functions/demo-preview?id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}&file=${encodeURIComponent(file)}`;
-  return rewritePreviewAssetReferences(String(html || ""), id, token)
+function rewritePreviewHtml(html = "", id = "", token = "", source = "") {
+  const assetUrl = (file) => `/.netlify/functions/demo-preview?id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}&source=${encodeURIComponent(source)}&file=${encodeURIComponent(file)}`;
+  return rewritePreviewAssetReferences(String(html || ""), id, token, source)
     .replaceAll('href="styles.css"', `href="${assetUrl("styles.css")}"`)
     .replaceAll('src="script.js"', `src="${assetUrl("script.js")}"`)
+    .replace(/(src|href)="(?!https?:|mailto:|tel:|#|\/)([^"#?]+\.(css|js|json|svg|png|jpe?g|webp|gif|ico|woff2?|ttf))"/gi, (_match, attribute, file) => `${attribute}="${assetUrl(file)}"`)
     .replace(/href="([^"#?]+\.html)"/g, (_match, file) => `href="${assetUrl(file)}"`);
 }
 
-function rewritePreviewAssetReferences(content = "", id = "", token = "") {
-  const assetUrl = (file) => `/.netlify/functions/demo-preview?id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}&file=${encodeURIComponent(file)}`;
+function rewritePreviewAssetReferences(content = "", id = "", token = "", source = "") {
+  const assetUrl = (file) => `/.netlify/functions/demo-preview?id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}&source=${encodeURIComponent(source)}&file=${encodeURIComponent(file)}`;
   return String(content || "")
     .replace(/(src|href)="(assets\/[^"]+)"/g, (_match, attribute, file) => `${attribute}="${assetUrl(file)}"`)
     .replace(/url\(["']?(assets\/[^"')]+)["']?\)/g, (_match, file) => `url("${assetUrl(file)}")`);
@@ -155,8 +179,8 @@ function prepareZipFiles(files = [], meta = {}) {
     : [{ path: "README.md", content: readme }, ...existing];
   const deployable = filesWithReadme.filter((file) => isDeployableSiteFile(file.path));
   const duplicates = deployable.flatMap((file) => [
-    { path: `live-upload/${file.path}`, content: file.content },
-    { path: `${projectSlug}-live/${file.path}`, content: file.content },
+    { path: `live-upload/${file.path}`, content: file.content, encoding: file.encoding },
+    { path: `${projectSlug}-live/${file.path}`, content: file.content, encoding: file.encoding },
   ]);
   const allFiles = [
     ...filesWithReadme,
@@ -230,7 +254,7 @@ function createZip(files = []) {
   let offset = 0;
   files.forEach((file) => {
     const name = Buffer.from(file.path, "utf8");
-    const content = Buffer.from(file.content || "", "utf8");
+    const content = file.encoding === "base64" ? Buffer.from(file.content || "", "base64") : Buffer.from(file.content || "", "utf8");
     const crc = crc32(content);
     const localHeader = Buffer.alloc(30);
     localHeader.writeUInt32LE(0x04034b50, 0);
@@ -326,13 +350,26 @@ function corsHeaders() {
 }
 
 function contentTypeFor(path = "") {
-  if (path.endsWith(".css")) return "text/css; charset=utf-8";
-  if (path.endsWith(".js")) return "application/javascript; charset=utf-8";
-  if (path.endsWith(".json")) return "application/json; charset=utf-8";
-  if (path.endsWith(".svg")) return "image/svg+xml; charset=utf-8";
-  if (path.endsWith(".xml")) return "application/xml; charset=utf-8";
-  if (path.endsWith(".txt") || path.endsWith(".md")) return "text/plain; charset=utf-8";
+  const lower = cleanText(path).toLowerCase();
+  if (lower.endsWith(".css")) return "text/css; charset=utf-8";
+  if (lower.endsWith(".js")) return "application/javascript; charset=utf-8";
+  if (lower.endsWith(".json")) return "application/json; charset=utf-8";
+  if (lower.endsWith(".svg")) return "image/svg+xml; charset=utf-8";
+  if (lower.endsWith(".xml")) return "application/xml; charset=utf-8";
+  if (lower.endsWith(".png")) return "image/png";
+  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+  if (lower.endsWith(".webp")) return "image/webp";
+  if (lower.endsWith(".gif")) return "image/gif";
+  if (lower.endsWith(".ico")) return "image/x-icon";
+  if (lower.endsWith(".woff")) return "font/woff";
+  if (lower.endsWith(".woff2")) return "font/woff2";
+  if (lower.endsWith(".ttf")) return "font/ttf";
+  if (lower.endsWith(".txt") || lower.endsWith(".md")) return "text/plain; charset=utf-8";
   return "text/html; charset=utf-8";
+}
+
+function isTextPreviewFile(path = "") {
+  return /\.(html|css|js|json|xml|txt|md|svg)$/i.test(cleanText(path));
 }
 
 function cleanText(value = "") {

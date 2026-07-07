@@ -22983,6 +22983,12 @@
           return `${value}${value.includes("?") ? "&" : "?"}format=zip`;
         }
 
+        function sourceUrl(url = "", source = "") {
+          const value = absoluteUrl(url);
+          if (!value || !source) return value;
+          return `${value}${value.includes("?") ? "&" : "?"}source=${encodeURIComponent(source)}`;
+        }
+
         function formatDate(value = "") {
           if (!value) return "-";
           const date = new Date(value);
@@ -23028,7 +23034,8 @@
           if (!list) return;
           list.innerHTML = demos.length ? demos.map((record) => {
             const savedDemo = savedDemoSiteMeta(record) || {};
-            const preview = absoluteUrl(savedDemo.previewUrl || record.previewUrl);
+            const previewSource = savedDemo.previewSource || record.previewPackage?.activePreviewSource || "";
+            const preview = sourceUrl(savedDemo.previewUrl || record.previewUrl, previewSource);
             const thumbnail = savedDemoThumbnail(record);
             const factoryHref = `admin-website-factory.html${record.leadId ? `?leadId=${encodeURIComponent(record.leadId)}` : record.id ? `?journeyId=${encodeURIComponent(record.id)}` : ""}`;
             const customerText = savedDemo.customerId || record.customerId ? "Klant gekoppeld" : "Nog leadfase";
@@ -23047,6 +23054,7 @@
                   </div>
                   <div class="settings-status-list">
                     <div><strong>Status</strong><span>${escapeHtml(record.demoStatus || "-")}</span></div>
+                    <div><strong>Definitieve bron</strong><span>${escapeHtml(previewSource === "manual" ? "Handmatige ZIP" : "Website Factory")}</span></div>
                     <div><strong>Opgeslagen</strong><span>${escapeHtml(formatDate(savedDemo.savedAt || record.updatedAt || record.createdAt))}</span></div>
                     <div><strong>Offerte</strong><span>${escapeHtml(offerText)}</span></div>
                     <div><strong>Preview</strong><span title="${escapeHtml(preview)}">${escapeHtml(preview || "-")}</span></div>

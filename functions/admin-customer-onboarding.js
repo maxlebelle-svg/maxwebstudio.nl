@@ -45,6 +45,7 @@ exports.handler = async (event) => {
     const isDemoRecord = recordEnvironment !== "production";
     const portalStatus = getPortalStatus(input);
     const emailStatus = input.sendWelcomeEmail ? "send_requested" : "draft_only";
+    const ownerMetadata = buildOwnerMetadata(input);
     const authUser = await ensureAuthUser(supabaseUrl, serviceRoleKey, input);
     const profile = await upsertByLookup({
       supabaseUrl,
@@ -70,6 +71,7 @@ exports.handler = async (event) => {
           portalAccessStatus: portalStatus.access,
           createdFromLeadId: input.leadId || "",
           emailStatus,
+          ...ownerMetadata,
         },
         updated_at: new Date().toISOString(),
       },
@@ -102,6 +104,7 @@ exports.handler = async (event) => {
           emailStatus,
           billingStatus: input.sendWelcomeEmail ? "pending_customer_activation" : "internal_record_only",
           incassoMandate: "missing",
+          ...ownerMetadata,
         },
         updated_at: new Date().toISOString(),
       },
@@ -133,6 +136,7 @@ exports.handler = async (event) => {
           portalAccessStatus: portalStatus.access,
           createdFromLeadId: input.leadId || "",
           emailStatus,
+          ...ownerMetadata,
         },
         updated_at: new Date().toISOString(),
       },
@@ -162,6 +166,7 @@ exports.handler = async (event) => {
           portalAccessStatus: portalStatus.access,
           createdFromLeadId: input.leadId || "",
           emailStatus,
+          ...ownerMetadata,
         },
         updated_at: new Date().toISOString(),
       },
@@ -230,6 +235,10 @@ function validatePayload(payload) {
     domain: cleanDomain(payload.domain || payload.website),
     projectName: cleanText(payload.projectName),
     leadId: cleanText(payload.leadId || payload.createdFromLeadId),
+    ownerName: cleanText(payload.ownerName || payload.assignedToName || payload.medewerker),
+    ownerEmail: cleanText(payload.ownerEmail || payload.assignedToEmail || payload.medewerkerEmail).toLowerCase(),
+    ownerAuthUserId: cleanText(payload.ownerAuthUserId || payload.assignedTo),
+    ownerProfileId: cleanText(payload.ownerProfileId || payload.ownerId),
     sendWelcomeEmail: Boolean(payload.sendWelcomeEmail || payload.sendEmail || payload.sendInvite),
   };
 
@@ -240,6 +249,24 @@ function validatePayload(payload) {
   if (!value.domain) return { success: false, error: "Vul een website of domein in." };
 
   return { success: true, value };
+}
+
+function buildOwnerMetadata(input = {}) {
+  const ownerName = cleanText(input.ownerName || input.assignedToName);
+  const ownerEmail = cleanText(input.ownerEmail || input.assignedToEmail).toLowerCase();
+  const ownerAuthUserId = cleanText(input.ownerAuthUserId || input.assignedTo);
+  const ownerProfileId = cleanText(input.ownerProfileId);
+  return {
+    ownerName,
+    ownerEmail,
+    ownerAuthUserId,
+    ownerProfileId,
+    assignedTo: ownerAuthUserId || ownerEmail,
+    assignedToName: ownerName,
+    assignedToEmail: ownerEmail,
+    medewerker: ownerName,
+    medewerkerEmail: ownerEmail,
+  };
 }
 
 function getRecordEnvironment() {

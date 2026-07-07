@@ -169,7 +169,9 @@
             </label>
             <label>
               <span>Verantwoordelijke</span>
-              <input id="onboarding-owner" name="ownerName" type="text" placeholder="Medewerker" />
+              <select id="onboarding-owner" name="ownerEmail">
+                <option value="">Medewerker laden...</option>
+              </select>
             </label>
             <label>
               <span>Prioriteit</span>
@@ -190,6 +192,16 @@
             <div class="onboarding-form-actions">
               <button class="button primary" id="create-onboarding-submit" type="submit">Onboarding aanmaken</button>
               <button class="button secondary" id="prepare-portal-button" type="button">Klantportaal klaarzetten</button>
+            </div>
+            <div class="onboarding-action-help">
+              <div>
+                <strong>Onboarding aanmaken</strong>
+                <span>Maakt een intern project aan met checklist, klantgegevens en gekozen medewerker.</span>
+              </div>
+              <div>
+                <strong>Klantportaal klaarzetten</strong>
+                <span>Maakt direct de klant, website en portalvoorbereiding aan met dezelfde verantwoordelijke.</span>
+              </div>
             </div>
           </form>
           <p class="admin-form-message" id="onboarding-form-message" role="status"></p>
@@ -270,6 +282,12 @@
         const legacyCustomerKeys = ["maxwebstudioCustomers", "mws_customers", "customers", "crmCustomers"];
         const legacyLeadKeys = ["maxwebstudioLeads", "mws_leads", "leads", "crmLeads"];
         const legacyProjectKeys = ["maxwebstudioProjects", "mws_projects", "projects", "crmProjects"];
+        const employeeRoleKeys = new Set(["super_admin", "admin", "sales_manager", "sales_partner", "support", "designer", "developer"]);
+        const employeeFallbacks = [
+          { value: "max@maxwebstudio.nl", email: "max@maxwebstudio.nl", label: "Max Le Belle", name: "Max Le Belle", aliases: ["max le belle"] },
+          { value: "lisanne@maxwebstudio.nl", email: "lisanne@maxwebstudio.nl", label: "Lisanne Post", name: "Lisanne Post", aliases: ["lisanne", "lisanne post"] },
+          { value: "renzo@maxwebstudio.nl", email: "renzo@maxwebstudio.nl", label: "Renzo", name: "Renzo", aliases: ["renzo"] },
+        ];
         const checklistTemplate = [
           { id: "contactgegevens", label: "Contactgegevens", group: "Basis", question: "Kun je het juiste telefoonnummer, e-mailadres en contactpersoon bevestigen?" },
           { id: "pakket", label: "Pakket en scope", group: "Sales", question: "Kun je bevestigen welk pakket en welke extra afspraken definitief zijn?" },
@@ -294,6 +312,8 @@
           statusFilter: "all",
           dataStatus: "loading",
           dataMessage: "",
+          employees: [],
+          profileEmployees: [],
         };
         const elements = {
           globalSearch: document.getElementById("admin-global-search"),
@@ -398,6 +418,118 @@
           } catch {
             return {};
           }
+        }
+
+        function normalizeEmployeeToken(value) {
+          return cleanText(value).toLowerCase();
+        }
+
+        function employeeLabel(employee = {}) {
+          const name = cleanText(employee.name || employee.label || employee.displayName);
+          const email = normalizeEmployeeToken(employee.email || (String(employee.value || "").includes("@") ? employee.value : ""));
+          return name && email && normalizeEmployeeToken(name) !== email ? `${name} (${email})` : name || email || cleanText(employee.value);
+        }
+
+        function normalizeEmployeeOption(candidate = {}) {
+          const email = normalizeEmployeeToken(candidate.email || candidate.userEmail || candidate.ownerEmail || candidate.medewerkerEmail || candidate.assignedToEmail || (String(candidate.value || "").includes("@") ? candidate.value : ""));
+          const authUserId = cleanText(candidate.authUserId || candidate.auth_user_id || candidate.userId || candidate.ownerAuthUserId);
+          const profileId = cleanText(candidate.profileId || candidate.profile_id || candidate.id || candidate.ownerProfileId);
+          const name = cleanText(candidate.name || candidate.label || candidate.displayName || candidate.fullName || candidate.ownerName || candidate.medewerker || candidate.assignedToName || email);
+          const value = normalizeEmployeeToken(email || candidate.value || authUserId || profileId || name);
+          if (!value) return null;
+          const aliases = Array.isArray(candidate.aliases) ? candidate.aliases : [];
+          const tokens = new Set([
+            value,
+            email,
+            authUserId,
+            profileId,
+            name,
+            ...aliases,
+          ].map(normalizeEmployeeToken).filter(Boolean));
+          return {
+            value,
+            email,
+            name: name || email || value,
+            label: employeeLabel({ ...candidate, name, email, value }),
+            authUserId,
+            profileId,
+            role: normalizeEmployeeToken(candidate.role),
+            tokens,
+          };
+        }
+
+        function mergeEmployeeOption(map, candidate) {
+          const option = normalizeEmployeeOption(candidate);
+          if (!option) return;
+          const existing = map.get(option.value) || [...map.values()].find((item) => [...option.tokens].some((token) => item.tokens.has(token)));
+          if (existing) {
+            option.tokens.forEach((token) => existing.tokens.add(token));
+            existing.email = existing.email || option.email;
+            existing.authUserId = existing.authUserId || option.authUserId;
+            existing.profileId = existing.profileId || option.profileId;
+            if ((!existing.name || existing.name === existing.email) && option.name) existing.name = option.name;
+            existing.label = employeeLabel(existing);
+            return;
+          }
+          map.set(option.value, option);
+        }
+
+        function readKnownEmployees() {
+          const map = new Map();
+          employeeFallbacks.forEach((employee) => mergeEmployeeOption(map, employee));
+          const profiles = readJson("maxwebstudioProfiles", []);
+          const profileSources = [
+            ...(Array.isArray(profiles) ? profiles : []),
+            ...(Array.isArray(state.profileEmployees) ? state.profileEmployees : []),
+          ];
+          if (profileSources.length) {
+            profileSources.forEach((profile) => {
+              const role = normalizeEmployeeToken(profile.role);
+              const status = normalizeEmployeeToken(profile.status);
+              if (!employeeRoleKeys.has(role) || ["disabled", "archived", "gearchiveerd"].includes(status)) return;
+              mergeEmployeeOption(map, {
+                id: profile.id,
+                profileId: profile.id,
+                authUserId: profile.authUserId || profile.auth_user_id || profile.userId,
+                email: profile.email,
+                name: profile.name,
+                role,
+              });
+            });
+          }
+          state.onboardings.forEach((onboarding) => {
+            if (!onboarding.ownerName && !onboarding.ownerEmail && !onboarding.ownerId && !onboarding.ownerProfileId) return;
+            mergeEmployeeOption(map, {
+              name: onboarding.ownerName,
+              email: onboarding.ownerEmail,
+              authUserId: onboarding.ownerAuthUserId,
+              profileId: onboarding.ownerProfileId || onboarding.ownerId,
+              value: onboarding.ownerEmail || onboarding.ownerAuthUserId || onboarding.ownerProfileId || onboarding.ownerName,
+            });
+          });
+          return [...map.values()].sort((a, b) => a.label.localeCompare(b.label, "nl"));
+        }
+
+        function renderEmployeeOptions(selected = "") {
+          if (!elements.owner) return;
+          const previous = normalizeEmployeeToken(selected || elements.owner.value);
+          state.employees = readKnownEmployees();
+          elements.owner.innerHTML = [
+            `<option value="">Kies medewerker</option>`,
+            ...state.employees.map((employee) => `<option value="${escapeHtml(employee.value)}">${escapeHtml(employee.label)}</option>`),
+          ].join("");
+          const selectedOption = findEmployeeOption(previous);
+          elements.owner.value = selectedOption?.value || "";
+        }
+
+        function findEmployeeOption(value = "") {
+          const token = normalizeEmployeeToken(value);
+          if (!token) return null;
+          return state.employees.find((employee) => employee.value === token || employee.tokens.has(token)) || null;
+        }
+
+        function selectedEmployeeFromForm() {
+          return findEmployeeOption(elements.owner?.value || "");
         }
 
         function getAdminBearer() {
@@ -506,6 +638,9 @@
             domain: normalizeDomain(input.domain || (typeof input.website === "string" ? input.website : "") || input.websiteUrl || ""),
             package: input.package || "Basis",
             ownerName: input.ownerName || "",
+            ownerEmail: normalizeEmployeeToken(input.ownerEmail || input.assignedToEmail || input.medewerkerEmail || ""),
+            ownerAuthUserId: cleanText(input.ownerAuthUserId || input.assignedTo || input.assignedUserId || ""),
+            ownerProfileId: cleanText(input.ownerProfileId || input.ownerId || input.profileId || ""),
             priority: input.priority || "normaal",
             deadline: input.deadline || "",
             portalStatus: normalizePortalStatus(input.portalStatus || "niet_actief"),
@@ -664,6 +799,10 @@
             phone: customer.phone || existing?.phone || "",
             domain: primaryWebsite?.domain || primaryWebsite?.liveUrl || customer.website || existing?.domain || "",
             package: customer.package || primaryWebsite?.carePackage || primaryWebsite?.hostingPackage || existing?.package || "Basis",
+            ownerName: existing?.ownerName || customer.metadata?.ownerName || customer.metadata?.assignedToName || primaryProject?.metadata?.ownerName || primaryProject?.metadata?.assignedToName || "",
+            ownerEmail: existing?.ownerEmail || customer.metadata?.ownerEmail || customer.metadata?.assignedToEmail || primaryProject?.metadata?.ownerEmail || primaryProject?.metadata?.assignedToEmail || "",
+            ownerAuthUserId: existing?.ownerAuthUserId || customer.metadata?.ownerAuthUserId || customer.metadata?.assignedTo || primaryProject?.metadata?.ownerAuthUserId || primaryProject?.metadata?.assignedTo || "",
+            ownerProfileId: existing?.ownerProfileId || customer.metadata?.ownerProfileId || primaryProject?.metadata?.ownerProfileId || "",
             portalStatus: customer.portalStatus || existing?.portalStatus || "niet_actief",
             notes: existing?.notes || customer.notes || "",
             source: "central_customers",
@@ -689,6 +828,8 @@
             fetchAdminModule("websites").catch(() => []),
             fetchAdminModule("projects").catch(() => []),
           ]);
+          state.profileEmployees = await fetchAdminModule("profiles").catch(() => []);
+          if (state.profileEmployees.length) writeJson("maxwebstudioProfiles", state.profileEmployees);
           const central = customers.map((customer) => onboardingFromCentralCustomer(customer, websites, projects, stored));
           const centralIds = new Set(central.flatMap((item) => [item.customerId, item.email].map((value) => cleanText(value).toLowerCase()).filter(Boolean)));
           const manual = stored.filter((item) => !centralIds.has(cleanText(item.customerId).toLowerCase()) && !centralIds.has(cleanText(item.email).toLowerCase()) && item.source !== "demo");
@@ -799,7 +940,7 @@
           if (elements.package) elements.package.value = onboarding.package || "Basis";
           if (elements.project) elements.project.value = onboarding.projectName || "Website onboarding";
           if (elements.deadline) elements.deadline.value = onboarding.deadline || "";
-          if (elements.owner) elements.owner.value = onboarding.ownerName || "";
+          renderEmployeeOptions(onboarding.ownerEmail || onboarding.ownerAuthUserId || onboarding.ownerProfileId || onboarding.ownerName || "");
           if (elements.priority) elements.priority.value = onboarding.priority || "normaal";
           if (elements.notes) elements.notes.value = onboarding.notes || "";
           if (elements.sendWelcome) elements.sendWelcome.checked = onboarding.portalStatus === "invited";
@@ -961,6 +1102,7 @@
         }
 
         function render() {
+          renderEmployeeOptions();
           renderMetrics();
           renderList();
           renderDetail();
@@ -979,6 +1121,7 @@
         }
 
         function collectFormPayload() {
+          const employee = selectedEmployeeFromForm();
           return {
             company: cleanText(elements.company?.value),
             customerName: cleanText(elements.company?.value),
@@ -990,7 +1133,16 @@
             package: elements.package?.value || "Basis",
             projectName: cleanText(elements.project?.value) || "Website onboarding",
             deadline: elements.deadline?.value || "",
-            ownerName: cleanText(elements.owner?.value),
+            ownerName: employee?.name || "",
+            ownerEmail: employee?.email || "",
+            ownerAuthUserId: employee?.authUserId || "",
+            ownerProfileId: employee?.profileId || "",
+            ownerId: employee?.profileId || employee?.authUserId || "",
+            assignedTo: employee?.authUserId || employee?.email || "",
+            assignedToName: employee?.name || "",
+            assignedToEmail: employee?.email || "",
+            medewerker: employee?.name || "",
+            medewerkerEmail: employee?.email || "",
             priority: elements.priority?.value || "normaal",
             notes: cleanText(elements.notes?.value),
             sendWelcomeEmail: Boolean(elements.sendWelcome?.checked),
@@ -1039,6 +1191,13 @@
             package: onboarding.package || "Basis",
             projectName: onboarding.projectName || "Website onboarding",
             leadId: onboarding.leadId || "",
+            ownerName: onboarding.ownerName || "",
+            ownerEmail: onboarding.ownerEmail || "",
+            ownerAuthUserId: onboarding.ownerAuthUserId || "",
+            ownerProfileId: onboarding.ownerProfileId || "",
+            assignedTo: onboarding.ownerAuthUserId || onboarding.ownerEmail || "",
+            assignedToName: onboarding.ownerName || "",
+            assignedToEmail: onboarding.ownerEmail || "",
             sendWelcomeEmail: options.sendWelcomeEmail ?? false,
           };
           const validation = validateFormPayload({ ...payload, customerName: payload.company });
@@ -1189,6 +1348,15 @@
             source: "Klant Onboarding",
             customerId: onboarding.customerId,
             projectId: onboarding.projectId,
+            ownerName: onboarding.ownerName || "",
+            ownerEmail: onboarding.ownerEmail || "",
+            ownerAuthUserId: onboarding.ownerAuthUserId || "",
+            ownerProfileId: onboarding.ownerProfileId || "",
+            assignedTo: onboarding.ownerAuthUserId || onboarding.ownerEmail || "",
+            assignedToName: onboarding.ownerName || "",
+            assignedToEmail: onboarding.ownerEmail || "",
+            medewerker: onboarding.ownerName || "",
+            medewerkerEmail: onboarding.ownerEmail || "",
             demoFactoryIntake: {
               package: onboarding.package,
               followUp: onboarding.deadline ? "planned" : "today",

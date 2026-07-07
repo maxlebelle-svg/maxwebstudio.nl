@@ -948,6 +948,41 @@ a {
   gap: 10px;
 }
 
+.onboarding-action-help {
+  grid-column: span 2;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: -2px;
+}
+
+.onboarding-action-help div {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(171, 196, 224, 0.14);
+  border-radius: 8px;
+  background: rgba(2, 14, 25, 0.26);
+}
+
+.onboarding-action-help strong,
+.onboarding-action-help span {
+  display: block;
+}
+
+.onboarding-action-help strong {
+  margin-bottom: 3px;
+  color: var(--white);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.onboarding-action-help span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .onboarding-list-panel,
 .onboarding-detail-panel {
   display: grid;
@@ -1332,13 +1367,18 @@ a {
 
   .onboarding-form-wide,
   .onboarding-toggle-row,
-  .onboarding-form-actions {
+  .onboarding-form-actions,
+  .onboarding-action-help {
     grid-column: auto;
   }
 
   .onboarding-form-actions {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .onboarding-action-help {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -15090,6 +15130,45 @@ h3 {
 
 .demo-library-card .demo-preview-actions {
   align-self: end;
+}
+
+.factory-preview-source-switch {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 14px;
+  color: var(--admin-muted);
+  font-weight: 800;
+}
+
+.factory-preview-source-switch span {
+  margin-right: 4px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.factory-preview-source-switch button {
+  min-height: 34px;
+  padding: 8px 14px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.72);
+  color: var(--admin-muted);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.factory-preview-source-switch button.is-active {
+  border-color: rgba(37, 99, 235, 0.68);
+  background: rgba(37, 99, 235, 0.28);
+  color: var(--admin-text);
+}
+
+.factory-preview-source-switch button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
 }
 
 @media (max-width: 980px) {

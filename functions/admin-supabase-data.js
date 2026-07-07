@@ -35,6 +35,15 @@ const MODULES = Object.freeze({
     salesReadable: true,
     map: mapProject,
   },
+  profiles: {
+    table: "profiles",
+    select: "id,auth_user_id,name,email,role,status,metadata,created_at,updated_at",
+    legacySelect: "id,auth_user_id,name,email,role,status,created_at,updated_at",
+    order: "name.asc.nullslast",
+    optional: true,
+    salesReadable: false,
+    map: mapProfile,
+  },
   change_requests: {
     table: "change_requests",
     select: "id,customer_id,auth_user_id,website_id,project_id,name,company,email,phone,title,description,priority,status,metadata,created_at,updated_at",
@@ -642,6 +651,22 @@ function mapProject(row = {}) {
     updatedAt: cleanText(row.updated_at),
     _source: "supabase",
     _supabaseProjectId: cleanText(row.id),
+  };
+}
+
+function mapProfile(row = {}) {
+  const meta = metadata(row);
+  return {
+    id: cleanText(row.id),
+    authUserId: cleanText(row.auth_user_id),
+    name: cleanText(row.name || meta.name || meta.displayName),
+    email: cleanText(row.email || meta.email).toLowerCase(),
+    role: cleanText(row.role || meta.role),
+    status: cleanText(row.status || meta.status || "active").toLowerCase(),
+    metadata: meta,
+    createdAt: cleanText(row.created_at),
+    updatedAt: cleanText(row.updated_at),
+    _source: "supabase",
   };
 }
 

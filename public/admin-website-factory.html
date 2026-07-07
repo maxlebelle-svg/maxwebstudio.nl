@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=20260704-admin-session-hotfix" />
+    <link rel="stylesheet" href="styles.css?v=20260707-manual-zip-preview" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
   <body class="admin-body">
@@ -563,6 +563,13 @@
                 <button type="button" data-preview-mode="mobile">Mobiel</button>
                 <button type="button" id="demo-journey-preview-refresh" aria-label="Preview vernieuwen">↻</button>
                 <button type="button" id="demo-journey-save-demo-site">Demo-site opslaan</button>
+                <button type="button" id="demo-journey-upload-manual-zip">ZIP uploaden</button>
+                <input id="demo-journey-manual-zip-input" type="file" accept=".zip,application/zip" hidden />
+              </div>
+              <div class="factory-preview-source-switch" aria-label="Definitieve previewbron">
+                <span>Definitieve versie</span>
+                <button class="is-active" type="button" data-preview-source="factory">Factory</button>
+                <button type="button" data-preview-source="manual" disabled>Handmatige ZIP</button>
               </div>
               <div class="factory-preview-browser">
                 <div class="factory-preview-toolbar" aria-hidden="true">
@@ -20867,6 +20874,8 @@
         let journeyRecords = [];
         let intakeState = {};
         let intakeAssets = [];
+        let previewSource = "factory";
+        let manualPreview = null;
         const journeyLocks = new Set();
         const intakeQuestions = [
           { key: "branch", label: "Branche", helper: "Kies het brancheprofiel voor teksten, beelden en componenten.", required: true, type: "single", options: [["rijschool", "Rijschool / scooterles"], ["installatiebedrijf", "Installatie & verduurzaming"], ["bouwbedrijf", "Bouwbedrijf"], ["horeca", "Horeca / restaurant"], ["fitness", "Sportschool / personal trainer"], ["juridisch", "Advocaat / juridisch"], ["automotive", "Autobedrijf / garage"], ["kapsalon", "Kapsalon / barber"], ["tandarts", "Tandarts / mondzorg"], ["elektricien", "Elektricien"], ["loodgieter", "Loodgieter"], ["hovenier", "Hovenier"], ["schoonmaakbedrijf", "Schoonmaakbedrijf"], ["verhuisbedrijf", "Verhuisbedrijf"], ["dierenarts", "Dierenarts"], ["schoonheidssalon", "Schoonheidssalon / wellness"], ["makelaar", "Makelaar / vastgoed"], ["hotel", "Hotel / B&B"], ["financieel_adviseur", "Financieel adviseur"], ["fysiotherapie", "Fysiotherapie"], ["kinderopvang", "Kinderopvang"], ["zakelijk", "Zakelijke dienstverlening"]] },
@@ -20945,6 +20954,9 @@
             previewControls: document.querySelector("#demo-klantreis .factory-preview-controls"),
             previewRefresh: document.getElementById("demo-journey-preview-refresh"),
             saveDemoSite: document.getElementById("demo-journey-save-demo-site"),
+            uploadManualZip: document.getElementById("demo-journey-upload-manual-zip"),
+            manualZipInput: document.getElementById("demo-journey-manual-zip-input"),
+            previewSourceControls: document.querySelectorAll("[data-preview-source]"),
             previewEmpty: document.getElementById("demo-journey-preview-empty"),
             timeline: document.getElementById("demo-journey-timeline"),
             timelineCount: document.getElementById("demo-journey-timeline-count"),
@@ -21748,6 +21760,34 @@
           return pack.savedDemoSite || pack.saved_demo_site || pack.meta?.savedDemoSite || null;
         }
 
+        function manualPreviewMeta(sourceJourney = journey) {
+          const pack = sourceJourney?.previewPackage || {};
+          return manualPreview || pack.manualPreview || pack.manual_preview || null;
+        }
+
+        function activePreviewSource(sourceJourney = journey) {
+          const source = String(previewSource || sourceJourney?.previewPackage?.activePreviewSource || "").toLowerCase();
+          return source === "manual" && manualPreviewMeta(sourceJourney)?.files?.length ? "manual" : "factory";
+        }
+
+        function factoryPreviewUrl() {
+          const latest = buildHistory.latestJob || (buildHistory.jobs || [])[0] || null;
+          const activeVersion = buildHistory.activeVersion || (buildHistory.previewVersions || [])[0] || null;
+          return absolutePreviewUrl(journey?.previewUrl || latest?.previewUrl || activeVersion?.previewUrl || "");
+        }
+
+        function activePreviewUrl() {
+          const url = factoryPreviewUrl();
+          if (!url) return "";
+          const source = activePreviewSource();
+          return appendQueryParam(url, "source", source);
+        }
+
+        function syncPreviewSourceFromJourney() {
+          manualPreview = manualPreviewMeta(journey);
+          previewSource = activePreviewSource(journey);
+        }
+
         function savedDemoThumbnail(sourceJourney = journey) {
           const pack = sourceJourney?.previewPackage || {};
           const savedDemo = savedDemoSiteMeta(sourceJourney) || {};
@@ -21873,6 +21913,8 @@
             journey = null;
             events = [];
             projectWorkspace = null;
+            manualPreview = null;
+            previewSource = "factory";
             renderJourney();
             return;
           }
@@ -21883,6 +21925,8 @@
             events = [];
             buildHistory = { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
             projectWorkspace = null;
+            manualPreview = null;
+            previewSource = "factory";
             loadIntakeLocally();
             prefillIntakeFromLead(selectedLead());
             renderIntakeFields();
@@ -21896,6 +21940,7 @@
           journey = data.journey || null;
           journeyRecords = Array.isArray(data.records) ? data.records : journeyRecords;
           if (journey?.previewUrl) journey.previewUrl = absolutePreviewUrl(journey.previewUrl);
+          syncPreviewSourceFromJourney();
           events = Array.isArray(data.events) ? data.events : [];
           buildHistory = data.buildHistory || { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
           projectWorkspace = data.projectWorkspace || null;
@@ -21990,7 +22035,8 @@
         }
 
         function collectPayload(extra = {}) {
-          const previewUrl = absolutePreviewUrl(elements.preview?.value || journey?.previewUrl || "");
+          const selectedSource = activePreviewSource();
+          const previewUrl = factoryPreviewUrl() || absolutePreviewUrl(elements.preview?.value || journey?.previewUrl || "");
           const intake = collectIntake();
           const lead = selectedLead();
           const selectedLeadId = elements.lead?.value || "";
@@ -22181,6 +22227,7 @@
               if (journey && previewUrl && !journey.previewUrl) journey.previewUrl = previewUrl;
               if (journey && data.buildStatus?.previewToken && !journey.previewToken) journey.previewToken = data.buildStatus.previewToken;
               if (journey && previewUrl) journey.demoStatus = journey.demoStatus || "interne_preview_klaar";
+              previewSource = "factory";
               events = Array.isArray(data.events) ? data.events : [];
               buildHistory = buildHistoryFromResponse(data);
               projectWorkspace = data.projectWorkspace || projectWorkspace;
@@ -22232,9 +22279,11 @@
                 action: "save_demo_site",
                 demoJourneyId: journey.id,
                 previewUrl,
+                previewSource: selectedSource,
               }));
               journey = data.demoJourney || data.journey || journey;
               if (journey?.previewUrl) journey.previewUrl = absolutePreviewUrl(journey.previewUrl);
+              syncPreviewSourceFromJourney();
               events = Array.isArray(data.events) ? data.events : events;
               buildHistory = data.buildHistory || buildHistory;
               projectWorkspace = data.projectWorkspace || projectWorkspace;
@@ -22244,6 +22293,163 @@
               setMessage(elements.message, error.message, "error");
             }
           });
+        }
+
+        async function uploadManualZipFile(file) {
+          if (!journey?.id) {
+            setMessage(elements.message, "Sla eerst de demo-aanvraag op voordat je een ZIP uploadt.", "warning");
+            return;
+          }
+          if (!file) return;
+          if (!/\.zip$/i.test(file.name || "")) {
+            setMessage(elements.message, "Kies een .zip bestand.", "warning");
+            return;
+          }
+          await withJourneyLock("upload_manual_zip", [elements.uploadManualZip, elements.saveDemoSite], async () => {
+            setMessage(elements.message, "Handmatige ZIP uitlezen...", "info");
+            try {
+              const parsed = await parseWebsiteZip(file);
+              if (!parsed.files.some((item) => item.path.endsWith("index.html"))) {
+                throw new Error("ZIP moet een index.html bevatten.");
+              }
+              setMessage(elements.message, "Handmatige ZIP opslaan bij deze demo...", "info");
+              const data = await apiRequest(endpoint, "POST", collectPayload({
+                action: "upload_manual_zip",
+                demoJourneyId: journey.id,
+                fileName: file.name,
+                entryPath: parsed.entryPath,
+                files: parsed.files,
+              }));
+              journey = data.demoJourney || data.journey || journey;
+              if (journey?.previewUrl) journey.previewUrl = absolutePreviewUrl(journey.previewUrl);
+              manualPreview = data.manualPreview || manualPreviewMeta(journey);
+              previewSource = "manual";
+              events = Array.isArray(data.events) ? data.events : events;
+              buildHistory = data.buildHistory || buildHistory;
+              renderJourney();
+              setMessage(elements.message, "Handmatige ZIP staat klaar als previewbron. Kies Factory of Handmatige ZIP als definitieve versie.", "success");
+            } catch (error) {
+              setMessage(elements.message, error.message || "ZIP kon niet worden verwerkt.", "error");
+            } finally {
+              if (elements.manualZipInput) elements.manualZipInput.value = "";
+            }
+          });
+        }
+
+        async function parseWebsiteZip(file) {
+          const buffer = await file.arrayBuffer();
+          const view = new DataView(buffer);
+          const files = [];
+          const entries = readZipCentralDirectory(buffer, view);
+          for (const entry of entries) {
+            if (files.length >= 80) break;
+            const path = cleanZipPath(entry.path);
+            if (!path) continue;
+            const localOffset = entry.localOffset;
+            if (localOffset + 30 > buffer.byteLength || view.getUint32(localOffset, true) !== 0x04034b50) continue;
+            const localNameLength = view.getUint16(localOffset + 26, true);
+            const localExtraLength = view.getUint16(localOffset + 28, true);
+            const dataStart = localOffset + 30 + localNameLength + localExtraLength;
+            const dataEnd = dataStart + entry.compressedSize;
+            if (dataEnd > buffer.byteLength) continue;
+            if (files.length >= 80) break;
+            const compressed = buffer.slice(dataStart, dataEnd);
+            const bytes = entry.method === 0
+              ? new Uint8Array(compressed)
+              : entry.method === 8
+                ? await inflateRaw(compressed)
+                : null;
+            if (!bytes) continue;
+            files.push({
+              path,
+              content: uint8ToBase64(bytes),
+              encoding: "base64",
+              mime: mimeForZipPath(path),
+              size: entry.uncompressedSize || bytes.byteLength,
+            });
+          }
+          const totalBytes = files.reduce((sum, item) => sum + Number(item.size || 0), 0);
+          if (totalBytes > 8 * 1024 * 1024) throw new Error("ZIP is te groot. Gebruik maximaal 8MB aan uitgepakte bestanden.");
+          normalizeZipRoot(files);
+          return {
+            files,
+            entryPath: files.find((item) => item.path === "index.html")?.path || files.find((item) => item.path.endsWith("/index.html"))?.path || "index.html",
+          };
+        }
+
+        function readZipCentralDirectory(buffer, view) {
+          const decoder = new TextDecoder();
+          const minOffset = Math.max(0, buffer.byteLength - 65557);
+          let eocd = -1;
+          for (let offset = buffer.byteLength - 22; offset >= minOffset; offset -= 1) {
+            if (view.getUint32(offset, true) === 0x06054b50) {
+              eocd = offset;
+              break;
+            }
+          }
+          if (eocd < 0) throw new Error("ZIP-index niet gevonden. Controleer of dit een geldig ZIP-bestand is.");
+          const entryCount = view.getUint16(eocd + 10, true);
+          let offset = view.getUint32(eocd + 16, true);
+          const entries = [];
+          for (let index = 0; index < entryCount && offset + 46 <= buffer.byteLength; index += 1) {
+            if (view.getUint32(offset, true) !== 0x02014b50) break;
+            const method = view.getUint16(offset + 10, true);
+            const compressedSize = view.getUint32(offset + 20, true);
+            const uncompressedSize = view.getUint32(offset + 24, true);
+            const nameLength = view.getUint16(offset + 28, true);
+            const extraLength = view.getUint16(offset + 30, true);
+            const commentLength = view.getUint16(offset + 32, true);
+            const localOffset = view.getUint32(offset + 42, true);
+            const path = decoder.decode(new Uint8Array(buffer, offset + 46, nameLength));
+            entries.push({ path, method, compressedSize, uncompressedSize, localOffset });
+            offset += 46 + nameLength + extraLength + commentLength;
+          }
+          return entries;
+        }
+
+        function normalizeZipRoot(files = []) {
+          const index = files.find((item) => item.path === "index.html") || files.find((item) => item.path.endsWith("/index.html"));
+          if (!index || index.path === "index.html") return;
+          const root = index.path.slice(0, -("index.html".length));
+          if (!root || !files.every((item) => item.path.startsWith(root))) return;
+          files.forEach((item) => {
+            item.path = item.path.slice(root.length);
+          });
+        }
+
+        function cleanZipPath(value = "") {
+          const path = String(value || "").replace(/\\/g, "/").replace(/^\/+/, "");
+          if (!path || path.endsWith("/") || path.includes("..") || path.startsWith("__MACOSX/")) return "";
+          if (!/\.(html|css|js|json|txt|xml|svg|png|jpe?g|webp|gif|ico|woff2?|ttf)$/i.test(path)) return "";
+          return path;
+        }
+
+        async function inflateRaw(buffer) {
+          if (!("DecompressionStream" in window)) throw new Error("Deze browser kan ZIP-bestanden niet lokaal uitpakken. Gebruik Chrome of upload een ongecomprimeerde ZIP.");
+          const stream = new Blob([buffer]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+          return new Uint8Array(await new Response(stream).arrayBuffer());
+        }
+
+        function uint8ToBase64(bytes) {
+          let binary = "";
+          const chunk = 0x8000;
+          for (let index = 0; index < bytes.length; index += chunk) {
+            binary += String.fromCharCode(...bytes.subarray(index, index + chunk));
+          }
+          return btoa(binary);
+        }
+
+        function mimeForZipPath(path = "") {
+          const lower = path.toLowerCase();
+          if (lower.endsWith(".html")) return "text/html; charset=utf-8";
+          if (lower.endsWith(".css")) return "text/css; charset=utf-8";
+          if (lower.endsWith(".js")) return "application/javascript; charset=utf-8";
+          if (lower.endsWith(".svg")) return "image/svg+xml";
+          if (lower.endsWith(".png")) return "image/png";
+          if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+          if (lower.endsWith(".webp")) return "image/webp";
+          if (lower.endsWith(".gif")) return "image/gif";
+          return "application/octet-stream";
         }
 
         async function copyText(value = "", target = elements.message) {
@@ -22634,13 +22840,26 @@
         }
 
         function renderPreviewStage() {
-          const latest = buildHistory.latestJob || (buildHistory.jobs || [])[0] || null;
-          const activeVersion = buildHistory.activeVersion || (buildHistory.previewVersions || [])[0] || null;
-          const previewUrl = absolutePreviewUrl(journey?.previewUrl || latest?.previewUrl || activeVersion?.previewUrl || "");
+          const source = activePreviewSource();
+          const hasManual = Boolean(manualPreviewMeta()?.files?.length);
+          const previewUrl = activePreviewUrl();
           const ready = Boolean(previewUrl);
           const saved = isDemoSiteSaved();
+          elements.previewSourceControls?.forEach((button) => {
+            const isManualButton = button.dataset.previewSource === "manual";
+            const active = button.dataset.previewSource === source;
+            button.classList.toggle("is-active", active);
+            button.disabled = isManualButton && !hasManual;
+            button.setAttribute("aria-pressed", active ? "true" : "false");
+            button.title = isManualButton && !hasManual ? "Upload eerst een ZIP-bestand" : "";
+          });
+          if (elements.uploadManualZip) {
+            elements.uploadManualZip.disabled = !journey?.id;
+            elements.uploadManualZip.title = journey?.id ? "Upload optioneel een handmatige ZIP als previewbron" : "Sla eerst de demo-aanvraag op";
+          }
           if (elements.previewStageState) {
-            elements.previewStageState.textContent = saved ? "Demo-site opgeslagen" : ready ? "Preview klaar" : "Nog geen preview";
+            const sourceLabel = source === "manual" ? "Handmatige ZIP" : "Factory";
+            elements.previewStageState.textContent = saved ? `Opgeslagen: ${sourceLabel}` : ready ? `${sourceLabel} preview` : "Nog geen preview";
             elements.previewStageState.className = saved || ready ? "status-badge status-active" : "status-badge status-planned";
           }
           if (elements.saveDemoSite) {
@@ -22768,16 +22987,18 @@
             ["Demo-site", isDemoSiteSaved() ? "Opgeslagen en gekoppeld" : "Nog niet opgeslagen"],
             ["Klantkoppeling", journey?.customerId ? "Klant gekoppeld" : "Nog leadfase"],
             ["Offertefase", isDemoSiteSaved() ? "Klaar om traject/offerte te starten" : "Sla eerst de demo-site op"],
-            ["Preview URL", journey?.previewUrl || "Genereer eerst een preview"],
+            ["Previewbron", activePreviewSource() === "manual" ? "Handmatige ZIP" : "Website Factory"],
+            ["Preview URL", activePreviewUrl() || "Genereer eerst een preview"],
             ["Laatste mail", journey?.lastEmailStatus || "-"],
             ["Laatste maildatum", formatDate(journey?.lastEmailSentAt)],
             ["Volgende mail", journey?.nextEmailType || "-"],
             ["Approval", journey?.approvalStatus || "pending"],
             ["Verantwoordelijke", journey?.assignedTo || "-"],
           ].map(([label, value]) => `<div class="demo-kv-row"><strong>${escapeHtml(label)}</strong><span title="${escapeHtml(value)}">${escapeHtml(value)}</span></div>`).join("");
-          setActionLink(elements.openPreview, journey?.previewUrl || "", "Genereer eerst een preview");
-          setActionLink(elements.downloadZip, journey?.previewUrl ? previewZipUrl(journey.previewUrl) : "", "Genereer eerst een preview");
-          setActionLink(elements.copyPreviewLink, journey?.previewUrl || "", "Genereer eerst een preview");
+          const currentPreviewUrl = activePreviewUrl();
+          setActionLink(elements.openPreview, currentPreviewUrl || "", "Genereer eerst een preview");
+          setActionLink(elements.downloadZip, currentPreviewUrl ? previewZipUrl(currentPreviewUrl) : "", "Genereer eerst een preview");
+          setActionLink(elements.copyPreviewLink, currentPreviewUrl || "", "Genereer eerst een preview");
           setActionLink(elements.openPortal, journey?.customerId ? `/klantportaal.html?customerId=${encodeURIComponent(journey.customerId)}#projectstatus` : "");
           renderMetrics();
           renderGuidedWorkflow();
@@ -22934,6 +23155,28 @@
             event.preventDefault();
             event.stopPropagation();
             saveDemoSite();
+          });
+          elements.uploadManualZip?.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            elements.manualZipInput?.click();
+          });
+          elements.manualZipInput?.addEventListener("change", (event) => {
+            uploadManualZipFile(event.target.files?.[0] || null);
+          });
+          elements.previewSourceControls?.forEach((button) => {
+            button.addEventListener("click", (event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              const source = button.dataset.previewSource || "factory";
+              if (source === "manual" && !manualPreviewMeta()?.files?.length) {
+                setMessage(elements.message, "Upload eerst een handmatige ZIP.", "warning");
+                return;
+              }
+              previewSource = source;
+              renderPreviewStage();
+              setMessage(elements.message, source === "manual" ? "Handmatige ZIP geselecteerd als previewbron." : "Factory-preview geselecteerd als previewbron.", "success");
+            });
           });
           elements.savedDemoList?.addEventListener("click", (event) => {
             const button = event.target.closest("[data-saved-demo-preview]");
