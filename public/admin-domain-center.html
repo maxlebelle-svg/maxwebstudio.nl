@@ -449,9 +449,9 @@
           <div>
             <p class="section-kicker">Production</p>
             <h1>Domein Center</h1>
-            <p>Beheer straks domeinen, DNS, SSL, e-mail en verhuizingen vanuit een centrale klantomgeving.</p>
+            <p>Beheer domeinen, DNS, SSL, e-mail en verhuizingen vanuit de centrale klantomgeving.</p>
           </div>
-          <span class="workflow-module-label">Frontend-only - demo data</span>
+          <span class="workflow-module-label" id="domain-source-label">Productiebron laden</span>
         </header>
 
         <section class="domain-center-workspace" aria-label="Domein Center workspace">
@@ -463,7 +463,7 @@
                 <p class="section-kicker">Zoeken en toevoegen</p>
                 <h2>Domein zoeken</h2>
               </div>
-              <span class="domain-pill" data-tone="info">Mock controle</span>
+              <span class="domain-pill" data-tone="info" id="domain-check-source">Live CRM controle</span>
             </div>
             <div class="domain-center-search-row">
               <input id="domain-search-input" type="search" placeholder="Zoek domeinnaam..." autocomplete="off" />
@@ -471,14 +471,14 @@
               <button class="button secondary" id="domain-transfer-button" type="button">Domein verhuizen</button>
               <button class="button secondary" id="domain-register-button" type="button">Nieuw domein registreren</button>
             </div>
-            <div class="domain-center-status-strip" aria-label="Demo statussen">
+            <div class="domain-center-status-strip" aria-label="Domein statussen">
               <span class="domain-status" data-tone="success">beschikbaar</span>
               <span class="domain-status" data-tone="warning">bezet</span>
               <span class="domain-status" data-tone="info">verhuisbaar</span>
               <span class="domain-status" data-tone="neutral">actief bij klant</span>
             </div>
             <div class="domain-center-result" id="domain-search-result" role="status" aria-live="polite">
-              <span class="domain-center-muted">Vul een domeinnaam in om een demo-status te tonen.</span>
+              <span class="domain-center-muted">Vul een domeinnaam in om CRM, DNS, SSL en e-mail te controleren.</span>
             </div>
           </article>
 
@@ -488,7 +488,7 @@
                 <p class="section-kicker">Portfolio</p>
                 <h2>Domeinen</h2>
               </div>
-              <span class="domain-pill" data-tone="success">Veilige mock data</span>
+              <span class="domain-pill" data-tone="info" id="domain-table-source">CRM laden</span>
             </div>
             <div class="domain-center-table-wrap">
               <div class="domain-center-table" id="domain-table" role="table" aria-label="Domeinen tabel"></div>
@@ -504,7 +504,7 @@
           <div>
             <p class="section-kicker">Domeinbeheer</p>
             <h2 id="domain-detail-title">Domein</h2>
-            <p class="domain-center-meta" id="domain-detail-subtitle">Demo-overzicht</p>
+            <p class="domain-center-meta" id="domain-detail-subtitle">Productie-overzicht</p>
           </div>
           <button class="button secondary" id="domain-detail-close" type="button">Sluiten</button>
         </header>
@@ -523,113 +523,7 @@
       (() => {
         "use strict";
 
-        const demoDomains = [
-          {
-            id: "mws-main",
-            domainName: "maxwebstudio.nl",
-            customer: "Max Webstudio",
-            status: "actief bij klant",
-            statusTone: "neutral",
-            expiresAt: "2027-03-18",
-            ssl: "Actief",
-            email: "Microsoft 365",
-            registrar: "Provider demo",
-            nameservers: ["ns1.demo-dns.local", "ns2.demo-dns.local"],
-            sslIssuer: "Let's Encrypt",
-            sslExpiresAt: "2026-10-12",
-            sslAutoRenew: "Actief",
-            emailProvider: "Microsoft 365",
-            mxStatus: "Correct",
-            dnsRecords: [
-              ["A", "@", "198.51.100.24"],
-              ["CNAME", "www", "maxwebstudio.nl"],
-              ["MX", "@", "10 maxwebstudio-nl.mail.protection.outlook.com"],
-              ["TXT/SPF", "@", "v=spf1 include:spf.protection.outlook.com -all"],
-              ["DKIM", "selector1._domainkey", "selector1-maxwebstudio-nl._domainkey.demo.local"],
-              ["DMARC", "_dmarc", "v=DMARC1; p=quarantine; rua=mailto:dmarc@maxwebstudio.nl"]
-            ],
-            transferSteps: [true, true, true, true, true]
-          },
-          {
-            id: "atelier-noord",
-            domainName: "ateliernoord-demo.nl",
-            customer: "Atelier Noord",
-            status: "actief bij klant",
-            statusTone: "neutral",
-            expiresAt: "2026-08-21",
-            ssl: "Actief",
-            email: "Google Workspace",
-            registrar: "Provider demo",
-            nameservers: ["ns1.demo-dns.local", "ns2.demo-dns.local"],
-            sslIssuer: "Google Trust Services",
-            sslExpiresAt: "2026-09-30",
-            sslAutoRenew: "Actief",
-            emailProvider: "Google Workspace",
-            mxStatus: "Correct",
-            dnsRecords: [
-              ["A", "@", "203.0.113.18"],
-              ["CNAME", "www", "ateliernoord-demo.nl"],
-              ["MX", "@", "1 aspmx.l.google.com"],
-              ["TXT/SPF", "@", "v=spf1 include:_spf.google.com -all"],
-              ["DKIM", "google._domainkey", "v=DKIM1; k=rsa; p=demo-public-key"],
-              ["DMARC", "_dmarc", "v=DMARC1; p=none; rua=mailto:dmarc@ateliernoord-demo.nl"]
-            ],
-            transferSteps: [true, true, true, true, false]
-          },
-          {
-            id: "bouwhelden",
-            domainName: "bouwhelden-demo.nl",
-            customer: "Bouwhelden BV",
-            status: "verhuisbaar",
-            statusTone: "info",
-            expiresAt: "2026-07-28",
-            ssl: "Niet actief",
-            email: "Anders",
-            registrar: "Extern",
-            nameservers: ["ns1.externe-provider.local", "ns2.externe-provider.local"],
-            sslIssuer: "Niet beschikbaar",
-            sslExpiresAt: "-",
-            sslAutoRenew: "Niet actief",
-            emailProvider: "Anders",
-            mxStatus: "Controle nodig",
-            dnsRecords: [
-              ["A", "@", "192.0.2.51"],
-              ["CNAME", "www", "bouwhelden-demo.nl"],
-              ["MX", "@", "10 mail.bouwhelden-demo.nl"],
-              ["TXT/SPF", "@", "v=spf1 mx -all"],
-              ["DKIM", "mail._domainkey", "Nog niet ingesteld"],
-              ["DMARC", "_dmarc", "v=DMARC1; p=none"]
-            ],
-            transferSteps: [true, true, false, false, false]
-          },
-          {
-            id: "studio-lumen",
-            domainName: "studiolumen-demo.com",
-            customer: "Studio Lumen",
-            status: "beschikbaar",
-            statusTone: "success",
-            expiresAt: "Nog niet geregistreerd",
-            ssl: "Niet actief",
-            email: "Niet gekoppeld",
-            registrar: "Nog niet gekoppeld",
-            nameservers: ["Nog niet ingesteld"],
-            sslIssuer: "Niet beschikbaar",
-            sslExpiresAt: "-",
-            sslAutoRenew: "Niet actief",
-            emailProvider: "Niet gekoppeld",
-            mxStatus: "Niet ingesteld",
-            dnsRecords: [
-              ["A", "@", "Nog niet ingesteld"],
-              ["CNAME", "www", "Nog niet ingesteld"],
-              ["MX", "@", "Nog niet ingesteld"],
-              ["TXT/SPF", "@", "Nog niet ingesteld"],
-              ["DKIM", "default._domainkey", "Nog niet ingesteld"],
-              ["DMARC", "_dmarc", "Nog niet ingesteld"]
-            ],
-            transferSteps: [false, false, false, false, false]
-          }
-        ];
-
+        const domainEndpoint = "/.netlify/functions/admin-domain-center";
         const transferStepLabels = [
           "Verhuiscode ontvangen",
           "Domeintransfer gestart",
@@ -646,8 +540,16 @@
         const detailTitle = document.getElementById("domain-detail-title");
         const detailSubtitle = document.getElementById("domain-detail-subtitle");
         const detailPanel = document.getElementById("domain-detail-panel");
+        const sourceLabel = document.getElementById("domain-source-label");
+        const tableSource = document.getElementById("domain-table-source");
         const tabs = Array.from(document.querySelectorAll(".domain-center-tab"));
-        let activeDomain = demoDomains[0];
+        const state = {
+          domains: [],
+          metrics: [],
+          loading: true,
+          error: "",
+        };
+        let activeDomain = null;
         let activeTab = "overview";
 
         function escapeHtml(value) {
@@ -665,19 +567,57 @@
           return new Intl.DateTimeFormat("nl-NL", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(`${value}T12:00:00`));
         }
 
+        function readAdminSession() {
+          try {
+            return JSON.parse(localStorage.getItem("mws_admin_supabase_session") || "{}") || {};
+          } catch {
+            return {};
+          }
+        }
+
+        function getAdminBearer() {
+          const session = readAdminSession();
+          return String(session.accessToken || session.access_token || session.token || sessionStorage.getItem("mws_admin_token") || sessionStorage.getItem("mwsAdminToken") || "").trim();
+        }
+
+        async function fetchDomainCenter(options = {}) {
+          const token = getAdminBearer();
+          if (!token) throw new Error("Log in als admin om domeinen te laden.");
+          const response = await fetch(domainEndpoint, {
+            method: options.domain ? "POST" : "GET",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            credentials: "include",
+            body: options.domain ? JSON.stringify({ domain: options.domain }) : undefined,
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || data.success === false) throw new Error(data.error || "Domein Center kon niet laden.");
+          return data;
+        }
+
+        function normalizeDomain(value = "") {
+          return String(value || "").trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0].split("?")[0].replace(/:\d+$/, "");
+        }
+
+        function setSourceState(label, tone = "info") {
+          if (sourceLabel) sourceLabel.textContent = label;
+          if (tableSource) {
+            tableSource.textContent = label;
+            tableSource.dataset.tone = tone;
+          }
+        }
+
         function renderSummary() {
-          const soonThreshold = new Date("2026-09-01T00:00:00");
-          const expiringSoon = demoDomains.filter((domain) => {
-            if (!/^\d{4}-\d{2}-\d{2}$/.test(domain.expiresAt)) return false;
-            return new Date(`${domain.expiresAt}T12:00:00`) <= soonThreshold;
-          }).length;
-          const metrics = [
-            ["Actieve domeinen", demoDomains.filter((domain) => domain.status === "actief bij klant").length, "Domeinen met klantstatus actief"],
-            ["Verlopen binnenkort", expiringSoon, "Binnen demo-venster tot september"],
-            ["SSL actief", demoDomains.filter((domain) => domain.ssl === "Actief").length, "Certificaat zichtbaar als actief"],
-            ["E-mail gekoppeld", demoDomains.filter((domain) => !["Niet gekoppeld", "Niet ingesteld"].includes(domain.email)).length, "Provider of MX bekend"]
+          const metrics = state.metrics.length ? state.metrics : [
+            { label: "Actieve domeinen", value: state.domains.filter((domain) => domain.status === "actief bij klant").length, note: "Uit CRM websites en klanten" },
+            { label: "Verlopen binnenkort", value: 0, note: "Nog geen verloopdata bekend" },
+            { label: "SSL actief", value: state.domains.filter((domain) => domain.ssl === "Actief").length, note: "Opgeslagen of gecontroleerd" },
+            { label: "E-mail gekoppeld", value: state.domains.filter((domain) => !["Niet gekoppeld", "Niet ingesteld", "Onbekend"].includes(domain.email)).length, note: "Provider of MX bekend" },
           ];
-          summaryElement.innerHTML = metrics.map(([label, value, note]) => `
+          summaryElement.innerHTML = metrics.map(({ label, value, note }) => `
             <article class="domain-center-card">
               <span>${escapeHtml(label)}</span>
               <strong>${escapeHtml(value)}</strong>
@@ -687,6 +627,14 @@
         }
 
         function renderTable() {
+          if (state.loading) {
+            tableElement.innerHTML = `<div class="domain-center-result"><span class="domain-center-muted">Domeinen laden uit CRM...</span></div>`;
+            return;
+          }
+          if (state.error) {
+            tableElement.innerHTML = `<div class="domain-center-result"><span class="domain-status" data-tone="warning">niet geladen</span><strong>${escapeHtml(state.error)}</strong></div>`;
+            return;
+          }
           tableElement.innerHTML = `
             <div class="domain-center-row domain-center-head" role="row">
               <span>Domeinnaam</span>
@@ -697,7 +645,7 @@
               <span>E-mail</span>
               <span>Acties</span>
             </div>
-            ${demoDomains.map((domain) => `
+            ${state.domains.length ? state.domains.map((domain) => `
               <div class="domain-center-row" role="row">
                 <strong>${escapeHtml(domain.domainName)}</strong>
                 <span class="domain-center-muted">${escapeHtml(domain.customer)}</span>
@@ -712,62 +660,67 @@
                   <button class="button primary" type="button" data-action="overview" data-domain-id="${escapeHtml(domain.id)}">Beheer openen</button>
                 </span>
               </div>
-            `).join("")}
+            `).join("") : `<div class="domain-center-row"><strong>Geen domeinen gevonden</strong><span class="domain-center-muted">Vul klanten, leads of websites met domein in.</span><span></span><span></span><span></span><span></span><span></span></div>`}
           `;
         }
 
-        function renderSearchResult(status, tone, message) {
+        function renderSearchResult(status, tone, message, note = "Controle via CRM en serverfunctie.") {
           searchResult.innerHTML = `
             <div>
               <span class="domain-status" data-tone="${escapeHtml(tone)}">${escapeHtml(status)}</span>
               <strong>${escapeHtml(message)}</strong>
             </div>
-            <span class="domain-center-muted">Demoresultaat - er is geen externe domeinprovider aangeroepen.</span>
+            <span class="domain-center-muted">${escapeHtml(note)}</span>
           `;
         }
 
         function normalizedSearchDomain() {
-          return String(searchInput.value || "").trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
+          return normalizeDomain(searchInput.value || "");
         }
 
-        function checkDomainAvailability() {
-          const query = normalizedSearchDomain() || "voorbeeld-demo.nl";
-          const existing = demoDomains.find((domain) => domain.domainName.toLowerCase() === query);
-          if (existing) {
-            renderSearchResult(existing.status, existing.statusTone, `${query} staat al in het demo-overzicht.`);
-            return existing;
+        async function checkDomainAvailability() {
+          const query = normalizedSearchDomain();
+          if (!query) {
+            renderSearchResult("invoer nodig", "warning", "Vul eerst een domeinnaam in.");
+            return null;
           }
-          const statuses = [
-            ["beschikbaar", "success", `${query} lijkt beschikbaar in deze demo.`],
-            ["bezet", "warning", `${query} is bezet volgens mock data.`],
-            ["verhuisbaar", "info", `${query} kan als demo-verhuizing worden voorbereid.`],
-            ["actief bij klant", "neutral", `${query} lijkt al actief bij een klant.`]
-          ];
-          const index = query.length % statuses.length;
-          renderSearchResult(statuses[index][0], statuses[index][1], statuses[index][2]);
-          return { domainName: query, status: statuses[index][0] };
+          renderSearchResult("controleren", "info", `${query} wordt gecontroleerd...`, "CRM, DNS, SSL en MX worden opgehaald.");
+          try {
+            const data = await fetchDomainCenter({ domain: query });
+            if (data.existing) {
+              upsertCheckedDomain(data.existing, data.check);
+              renderTable();
+            }
+            renderSearchResult(data.result?.status || "controle klaar", data.result?.tone || "info", data.result?.message || `${query} gecontroleerd.`, data.existing ? "Deze staat al in het CRM." : "Niet gekoppeld in CRM; DNS-resultaat staat hierboven.");
+            return data.existing || { domainName: query, status: data.result?.status || "controle klaar" };
+          } catch (error) {
+            renderSearchResult("fout", "warning", error.message || "Domein kon niet gecontroleerd worden.");
+            return null;
+          }
         }
 
-        function startDomainTransfer() {
-          const result = checkDomainAvailability();
-          renderSearchResult("verhuisbaar", "info", `${result.domainName} is klaargezet als mock-verhuizing.`);
+        async function startDomainTransfer() {
+          const result = await checkDomainAvailability();
+          if (!result) return null;
+          renderSearchResult("verhuizing voorbereiden", "info", `${result.domainName} kan nu aan een klant/project worden gekoppeld.`, "Volgende stap: verhuiscode, DNS-plan en e-mailimpact vastleggen.");
           return result;
         }
 
         function fetchDnsRecords(domainId) {
-          return demoDomains.find((domain) => domain.id === domainId)?.dnsRecords || [];
+          return state.domains.find((domain) => domain.id === domainId)?.dnsRecords || [];
         }
 
         function checkSslStatus(domainId) {
-          return demoDomains.find((domain) => domain.id === domainId)?.ssl || "Niet actief";
+          return state.domains.find((domain) => domain.id === domainId)?.ssl || "Niet actief";
         }
 
         function connectEmailProvider(domainId) {
-          return demoDomains.find((domain) => domain.id === domainId)?.emailProvider || "Niet gekoppeld";
+          return state.domains.find((domain) => domain.id === domainId)?.emailProvider || state.domains.find((domain) => domain.id === domainId)?.email || "Niet gekoppeld";
         }
 
         function openDomainDetail(domainId, tab = "overview") {
-          activeDomain = demoDomains.find((domain) => domain.id === domainId) || demoDomains[0];
+          activeDomain = state.domains.find((domain) => domain.id === domainId) || state.domains[0] || null;
+          if (!activeDomain) return;
           activeTab = tab;
           detailTitle.textContent = activeDomain.domainName;
           detailSubtitle.textContent = `${activeDomain.customer} - ${activeDomain.registrar}`;
@@ -795,15 +748,15 @@
           const records = fetchDnsRecords(activeDomain.id);
           return `
             <div class="domain-center-panel-body">
-              <p class="domain-center-muted">Alle records zijn alleen-lezen demo records. Wijzigingen worden later via providerkoppelingen toegevoegd.</p>
+              <p class="domain-center-muted">DNS records zijn alleen-lezen. Gebruik dit als controlelijst voor Netlify, e-mail en providerinstellingen.</p>
               <div class="domain-record-grid">
-                ${records.map(([type, name, value]) => `
+                ${records.length ? records.map(([type, name, value]) => `
                   <article class="domain-record-card">
                     <span>${escapeHtml(type)}</span>
                     <strong>${escapeHtml(name)}</strong>
                     <div class="domain-record-value">${escapeHtml(value)}</div>
                   </article>
-                `).join("")}
+                `).join("") : `<article class="domain-record-card"><span>DNS</span><strong>Nog niet gecontroleerd</strong><div class="domain-record-value">Gebruik Domein controleren om live records op te halen.</div></article>`}
               </div>
             </div>
           `;
@@ -819,11 +772,11 @@
               <div class="domain-center-panel-body">
                 ${renderFacts([
                   ["SSL status", checkSslStatus(activeDomain.id)],
-                  ["Uitgever", activeDomain.sslIssuer],
-                  ["Verloopt op", formatDate(activeDomain.sslExpiresAt)],
-                  ["Auto-renew status", activeDomain.sslAutoRenew]
+                  ["Uitgever", activeDomain.sslIssuer || "Onbekend"],
+                  ["Verloopt op", formatDate(activeDomain.sslExpiresAt || "Onbekend")],
+                  ["Auto-renew status", activeDomain.sslAutoRenew || "Onbekend"]
                 ])}
-                <button class="button primary" type="button" data-mock-action="ssl">SSL opnieuw controleren</button>
+                <button class="button primary" type="button" data-live-action="refresh">DNS/SSL opnieuw controleren</button>
               </div>
             `;
             return;
@@ -833,12 +786,12 @@
               <div class="domain-center-panel-body">
                 ${renderFacts([
                   ["Provider", connectEmailProvider(activeDomain.id)],
-                  ["MX status", activeDomain.mxStatus],
-                  ["SPF status", activeDomain.dnsRecords.some((record) => record[0] === "TXT/SPF" && !record[2].includes("Nog niet")) ? "Aanwezig" : "Niet ingesteld"],
-                  ["DKIM status", activeDomain.dnsRecords.some((record) => record[0] === "DKIM" && !record[2].includes("Nog niet")) ? "Aanwezig" : "Niet ingesteld"],
-                  ["DMARC status", activeDomain.dnsRecords.some((record) => record[0] === "DMARC" && !record[2].includes("Nog niet")) ? "Aanwezig" : "Niet ingesteld"]
+                  ["MX status", activeDomain.mxStatus || "Onbekend"],
+                  ["SPF status", activeDomain.dnsRecords?.some((record) => String(record[0]).includes("TXT") && String(record[2]).includes("spf1")) ? "Aanwezig" : "Niet ingesteld"],
+                  ["DKIM status", activeDomain.dnsRecords?.some((record) => String(record[1]).includes("_domainkey")) ? "Aanwezig" : "Niet ingesteld"],
+                  ["DMARC status", activeDomain.dnsRecords?.some((record) => String(record[1]).includes("_dmarc")) ? "Aanwezig" : "Niet ingesteld"]
                 ])}
-                <button class="button primary" type="button" data-mock-action="email">E-mail koppelen</button>
+                <button class="button primary" type="button" data-live-action="refresh">MX opnieuw controleren</button>
               </div>
             `;
             return;
@@ -851,7 +804,7 @@
                     <span class="domain-center-step-mark">${activeDomain.transferSteps[index] ? "✓" : index + 1}</span>
                     <div>
                       <strong>${escapeHtml(label)}</strong>
-                      <small>${activeDomain.transferSteps[index] ? "Afgerond in demo-flow" : "Nog open in demo-flow"}</small>
+                      <small>${activeDomain.transferSteps[index] ? "Afgerond of bekend in CRM" : "Nog open of onbekend"}</small>
                     </div>
                     <span class="domain-pill" data-tone="${activeDomain.transferSteps[index] ? "success" : "warning"}">${activeDomain.transferSteps[index] ? "Klaar" : "Open"}</span>
                   </div>
@@ -868,12 +821,63 @@
                 ["Status", activeDomain.status],
                 ["Verloopt op", formatDate(activeDomain.expiresAt)],
                 ["Registrar", activeDomain.registrar],
-                ["Nameservers", activeDomain.nameservers.join(", ")],
+                ["Eigenaar", activeDomain.domainOwner || "Onbekend"],
+                ["Nameservers", activeDomain.nameservers?.length ? activeDomain.nameservers.join(", ") : "Onbekend"],
+                ["Netlify", activeDomain.netlifyProjectName || activeDomain.netlifySiteId || "Niet gekoppeld"],
                 ["SSL", activeDomain.ssl],
-                ["E-mail", activeDomain.email]
+                ["E-mail", activeDomain.email],
+                ["Bron", (activeDomain.sources || [activeDomain.source]).join(", ")]
               ])}
             </div>
           `;
+        }
+
+        function upsertCheckedDomain(domain, check = {}) {
+          const merged = { ...domain, ...check, dnsRecords: check.dnsRecords?.length ? check.dnsRecords : domain.dnsRecords, nameservers: check.nameservers?.length ? check.nameservers : domain.nameservers };
+          const index = state.domains.findIndex((item) => item.id === domain.id || item.domainName === domain.domainName);
+          if (index >= 0) state.domains[index] = merged;
+          else state.domains.unshift(merged);
+          activeDomain = activeDomain?.domainName === merged.domainName ? merged : activeDomain;
+        }
+
+        async function refreshActiveDomain(button) {
+          if (!activeDomain?.domainName) return;
+          button.textContent = "Controleren...";
+          button.disabled = true;
+          try {
+            const data = await fetchDomainCenter({ domain: activeDomain.domainName });
+            upsertCheckedDomain(data.existing || activeDomain, data.check || {});
+            renderDetailPanel();
+            renderTable();
+          } catch (error) {
+            button.textContent = error.message || "Controle mislukt";
+          } finally {
+            button.disabled = false;
+          }
+        }
+
+        async function loadDomainCenter() {
+          state.loading = true;
+          renderSummary();
+          renderTable();
+          setSourceState("CRM laden", "info");
+          try {
+            const data = await fetchDomainCenter();
+            state.domains = Array.isArray(data.records) ? data.records : [];
+            state.metrics = Array.isArray(data.metrics) ? data.metrics : [];
+            state.error = "";
+            setSourceState(state.domains.length ? "Live CRM data" : "Geen domeinen", state.domains.length ? "success" : "warning");
+            if (state.domains.some((domain) => domain.domainName.includes("quantumbouw"))) {
+              renderSearchResult("gevonden", "success", "Quantumbouw staat in Domain Center.", "Gevonden via CRM domein/website/lead data.");
+            }
+          } catch (error) {
+            state.error = error.message || "Domeinen konden niet laden.";
+            setSourceState("Login of bron nodig", "warning");
+          } finally {
+            state.loading = false;
+            renderSummary();
+            renderTable();
+          }
         }
 
         tableElement.addEventListener("click", (event) => {
@@ -894,8 +898,9 @@
         document.getElementById("domain-check-button").addEventListener("click", checkDomainAvailability);
         document.getElementById("domain-transfer-button").addEventListener("click", startDomainTransfer);
         document.getElementById("domain-register-button").addEventListener("click", () => {
-          const result = checkDomainAvailability();
-          renderSearchResult("beschikbaar", "success", `${result.domainName} is als mock-registratie voorbereid.`);
+          const query = normalizedSearchDomain();
+          if (!query) renderSearchResult("invoer nodig", "warning", "Vul eerst een domeinnaam in.");
+          else renderSearchResult("registratie voorbereiden", "info", `${query} kan worden voorbereid als nieuwe domeinregistratie.`, "Volgende stap: provider/API-koppeling of handmatige registratie vastleggen.");
         });
         document.getElementById("domain-detail-close").addEventListener("click", closeDomainDetail);
         modal.addEventListener("click", (event) => {
@@ -905,10 +910,9 @@
           if (event.key === "Escape" && !modal.hidden) closeDomainDetail();
         });
         detailPanel.addEventListener("click", (event) => {
-          const button = event.target.closest("[data-mock-action]");
+          const button = event.target.closest("[data-live-action]");
           if (!button) return;
-          const label = button.dataset.mockAction === "ssl" ? "SSL opnieuw gecontroleerd" : "E-mail koppeling voorbereid";
-          button.textContent = label;
+          refreshActiveDomain(button);
         });
 
         window.checkDomainAvailability = checkDomainAvailability;
@@ -917,8 +921,7 @@
         window.checkSslStatus = checkSslStatus;
         window.connectEmailProvider = connectEmailProvider;
 
-        renderSummary();
-        renderTable();
+        loadDomainCenter();
       })();
     </script>
   </body>

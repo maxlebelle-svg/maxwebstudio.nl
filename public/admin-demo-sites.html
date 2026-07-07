@@ -23037,16 +23037,20 @@
             const previewSource = savedDemo.previewSource || record.previewPackage?.activePreviewSource || "";
             const preview = sourceUrl(savedDemo.previewUrl || record.previewUrl, previewSource);
             const thumbnail = savedDemoThumbnail(record);
+            const demoName = savedDemo.businessName || record.businessName || "demo-site";
             const factoryHref = `admin-website-factory.html${record.leadId ? `?leadId=${encodeURIComponent(record.leadId)}` : record.id ? `?journeyId=${encodeURIComponent(record.id)}` : ""}`;
             const customerText = savedDemo.customerId || record.customerId ? "Klant gekoppeld" : "Nog leadfase";
             const offerText = savedDemo.offerReady ? "Klaar voor offerte" : "Nog niet klaar voor offerte";
             return `
               <article class="saved-demo-site-card demo-library-card">
-                <a class="demo-library-thumbnail" href="${escapeHtml(preview || factoryHref)}" target="${preview ? "_blank" : "_self"}" rel="noopener" aria-label="Preview openen">
-                  ${thumbnail
-                    ? `<img src="${escapeHtml(thumbnail)}" alt="${escapeHtml(`Miniatuur van ${savedDemo.businessName || record.businessName || "demo-site"}`)}" loading="lazy" />`
-                    : `<span class="demo-library-thumbnail-placeholder"><strong>Miniatuur volgt</strong><small>Sla deze demo-site opnieuw op voor een previewbeeld.</small></span>`}
-                </a>
+                <div class="demo-library-thumbnail">
+                  <a class="demo-library-thumbnail-link" href="${escapeHtml(preview || factoryHref)}" target="${preview ? "_blank" : "_self"}" rel="noopener" aria-label="${escapeHtml(`Preview openen van ${demoName}`)}"></a>
+                  ${preview
+                    ? `<div class="demo-library-browser-bar" aria-hidden="true"><span></span><span></span><span></span><small>Live demo-preview</small></div><div class="demo-library-preview-frame" aria-hidden="true"><iframe src="${escapeHtml(preview)}" title="${escapeHtml(`Miniatuur van ${demoName}`)}" loading="lazy" tabindex="-1"></iframe></div>`
+                    : thumbnail
+                      ? `<img src="${escapeHtml(thumbnail)}" alt="${escapeHtml(`Miniatuur van ${demoName}`)}" loading="lazy" />`
+                      : `<span class="demo-library-thumbnail-placeholder"><strong>Miniatuur volgt</strong><small>Sla deze demo-site opnieuw op voor een previewbeeld.</small></span>`}
+                </div>
                 <div class="demo-library-card-content">
                   <div class="demo-library-card-heading">
                     <strong>${escapeHtml(savedDemo.businessName || record.businessName || "Naamloze demo")}</strong>
