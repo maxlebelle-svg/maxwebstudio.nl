@@ -154,21 +154,17 @@ async function createBuildJob(context, payload = {}) {
   const history = await getBuildHistory(context, { demoJourneyId });
   const previewVersion = nextPreviewVersion(history.previewVersions, history.jobs);
   const now = new Date().toISOString();
-  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_build_jobs`, {
-    method: "POST",
-    headers: { ...restHeaders(context.serviceRoleKey), Prefer: "return=representation", "Content-Type": "application/json" },
-    body: JSON.stringify({
-      demo_journey_id: demoJourneyId,
-      lead_id: cleanUuid(journey.lead_id) || null,
-      customer_id: cleanUuid(journey.customer_id) || null,
-      status: "queued",
-      current_step: "queued",
-      progress: 5,
-      preview_version: previewVersion,
-      build_logs: buildLogs({ step: "queued", message: `Preview V${previewVersion} build job aangemaakt.`, at: now }),
-      created_by: context.admin.id,
-      started_at: now,
-    }),
+  const rows = await insertBuildJob(context, {
+    demo_journey_id: demoJourneyId,
+    lead_id: cleanUuid(journey.lead_id) || null,
+    customer_id: cleanUuid(journey.customer_id) || null,
+    status: "queued",
+    current_step: "queued",
+    progress: 5,
+    preview_version: previewVersion,
+    build_logs: buildLogs({ step: "queued", message: `Preview V${previewVersion} build job aangemaakt.`, at: now }),
+    created_by: context.admin.id,
+    started_at: now,
   });
   return { job: normalizeBuildJob(rows[0] || {}), journey: mapJourney(journey) };
 }
@@ -362,26 +358,26 @@ async function createPreviewVersion(context, payload = {}) {
     error.status = 400;
     throw error;
   }
-  await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_preview_versions?demo_journey_id=eq.${encodeURIComponent(demoJourneyId)}`, {
-    method: "PATCH",
-    headers: { ...restHeaders(context.serviceRoleKey), Prefer: "return=minimal", "Content-Type": "application/json" },
-    body: JSON.stringify({ is_active: false }),
-  });
-  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_preview_versions`, {
-    method: "POST",
-    headers: { ...restHeaders(context.serviceRoleKey), Prefer: "return=representation", "Content-Type": "application/json" },
-    body: JSON.stringify({
-      demo_journey_id: demoJourneyId,
-      build_job_id: cleanText(payload.buildJobId || payload.build_job_id) || null,
-      version: Number(payload.version || 1),
-      preview_url: cleanText(payload.previewUrl || payload.preview_url),
-      preview_token: cleanText(payload.previewToken || payload.preview_token),
-      preview_score: Number(payload.previewScore || payload.preview_score || 0),
-      quality_report: payload.qualityReport || payload.quality_report || {},
-      generated_package: payload.generatedPackage || payload.generated_package || {},
-      is_active: true,
-      created_by: cleanText(payload.createdBy || payload.created_by || context.admin.id),
-    }),
+  try {
+    await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_preview_versions?demo_journey_id=eq.${encodeURIComponent(demoJourneyId)}`, {
+      method: "PATCH",
+      headers: { ...restHeaders(context.serviceRoleKey), Prefer: "return=minimal", "Content-Type": "application/json" },
+      body: JSON.stringify({ is_active: false }),
+    });
+  } catch (error) {
+    if (!isMissingColumnError(error)) throw error;
+  }
+  const rows = await insertPreviewVersion(context, {
+    demo_journey_id: demoJourneyId,
+    build_job_id: cleanText(payload.buildJobId || payload.build_job_id) || null,
+    version: Number(payload.version || 1),
+    preview_url: cleanText(payload.previewUrl || payload.preview_url),
+    preview_token: cleanText(payload.previewToken || payload.preview_token),
+    preview_score: Number(payload.previewScore || payload.preview_score || 0),
+    quality_report: payload.qualityReport || payload.quality_report || {},
+    generated_package: payload.generatedPackage || payload.generated_package || {},
+    is_active: true,
+    created_by: cleanText(payload.createdBy || payload.created_by || context.admin.id),
   });
   return normalizePreviewVersion(rows[0] || {});
 }
@@ -445,12 +441,61 @@ async function readPreviewVersions(context, demoJourneyId) {
 }
 
 async function patchBuildJob(context, id, record) {
-  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_build_jobs?id=eq.${encodeURIComponent(id)}`, {
+  try {
+    return await patchBuildJobRecord(context, id, record);
+  } catch (error) {
+    if (!isMissingColumnError(error)) throw error;
+    const fallbackRecord = stripFactoryOptionalColumns(record, ["status", "current_step", "progress", "preview_version", "preview_url"]);
+    if (!Object.keys(fallbackRecord).length) throw error;
+    return patchBuildJobRecord(context, id, fallbackRecord);
+  }
+}
+
+async function insertBuildJob(context, record) {
+  try {
+    return await insertBuildJobRecord(context, record);
+  } catch (error) {
+    if (!isMissingColumnError(error)) throw error;
+    return insertBuildJobRecord(context, stripFactoryOptionalColumns(record, ["demo_journey_id", "status", "current_step", "progress", "preview_version"]));
+  }
+}
+
+async function insertPreviewVersion(context, record) {
+  try {
+    return await insertPreviewVersionRecord(context, record);
+  } catch (error) {
+    if (!isMissingColumnError(error)) throw error;
+    return insertPreviewVersionRecord(context, stripFactoryOptionalColumns(record, ["demo_journey_id", "version", "preview_url"]));
+  }
+}
+
+function patchBuildJobRecord(context, id, record) {
+  return supabaseFetch(`${context.supabaseUrl}/rest/v1/website_build_jobs?id=eq.${encodeURIComponent(id)}`, {
     method: "PATCH",
     headers: { ...restHeaders(context.serviceRoleKey), Prefer: "return=representation", "Content-Type": "application/json" },
     body: JSON.stringify(record),
   });
-  return rows;
+}
+
+function insertBuildJobRecord(context, record) {
+  return supabaseFetch(`${context.supabaseUrl}/rest/v1/website_build_jobs`, {
+    method: "POST",
+    headers: { ...restHeaders(context.serviceRoleKey), Prefer: "return=representation", "Content-Type": "application/json" },
+    body: JSON.stringify(record),
+  });
+}
+
+function insertPreviewVersionRecord(context, record) {
+  return supabaseFetch(`${context.supabaseUrl}/rest/v1/website_preview_versions`, {
+    method: "POST",
+    headers: { ...restHeaders(context.serviceRoleKey), Prefer: "return=representation", "Content-Type": "application/json" },
+    body: JSON.stringify(record),
+  });
+}
+
+function stripFactoryOptionalColumns(record = {}, keepKeys = []) {
+  const keep = new Set(keepKeys);
+  return Object.fromEntries(Object.entries(record).filter(([key]) => keep.has(key)));
 }
 
 async function createJourneyEvent(context, payload = {}) {

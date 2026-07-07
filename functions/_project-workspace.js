@@ -50,10 +50,11 @@ async function upsertProjectWorkspace(context = {}, payload = {}) {
         workspace_slug: cleanText(existing.workspace_slug) || baseSlug,
         storage_path: cleanText(existing.storage_path) || `projects/${cleanText(existing.workspace_slug) || baseSlug}/`,
       };
-      const rows = await supabaseFetch(`${supabaseUrl}/rest/v1/project_workspaces?id=eq.${encodeURIComponent(existing.id)}`, {
+      const rows = await writeWorkspaceRecord({
+        url: `${supabaseUrl}/rest/v1/project_workspaces?id=eq.${encodeURIComponent(existing.id)}`,
         method: "PATCH",
-        headers: { ...restHeaders(serviceRoleKey), Prefer: "return=representation", "Content-Type": "application/json" },
-        body: JSON.stringify(record),
+        serviceRoleKey,
+        record,
       });
       return normalizeProjectWorkspace(rows[0] || existing);
     }
@@ -68,10 +69,11 @@ async function upsertProjectWorkspace(context = {}, payload = {}) {
         created_at: now,
       };
       try {
-        const rows = await supabaseFetch(`${supabaseUrl}/rest/v1/project_workspaces`, {
+        const rows = await writeWorkspaceRecord({
+          url: `${supabaseUrl}/rest/v1/project_workspaces`,
           method: "POST",
-          headers: { ...restHeaders(serviceRoleKey), Prefer: "return=representation", "Content-Type": "application/json" },
-          body: JSON.stringify(record),
+          serviceRoleKey,
+          record,
         });
         return normalizeProjectWorkspace(rows[0] || {});
       } catch (error) {
@@ -82,6 +84,23 @@ async function upsertProjectWorkspace(context = {}, payload = {}) {
   } catch (error) {
     if (isMissingWorkspaceTableError(error)) return null;
     throw error;
+  }
+}
+
+async function writeWorkspaceRecord({ url, method, serviceRoleKey, record }) {
+  try {
+    return await supabaseFetch(url, {
+      method,
+      headers: { ...restHeaders(serviceRoleKey), Prefer: "return=representation", "Content-Type": "application/json" },
+      body: JSON.stringify(record),
+    });
+  } catch (error) {
+    if (!isMissingColumnError(error)) throw error;
+    return supabaseFetch(url, {
+      method,
+      headers: { ...restHeaders(serviceRoleKey), Prefer: "return=representation", "Content-Type": "application/json" },
+      body: JSON.stringify(stripWorkspaceOptionalColumns(record)),
+    });
   }
 }
 
@@ -199,8 +218,18 @@ function isMissingWorkspaceTableError(error = {}) {
   return error.code === "42P01" || message.includes("project_workspaces") && (message.includes("does not exist") || message.includes("schema cache"));
 }
 
+function isMissingColumnError(error = {}) {
+  const text = `${error.message || ""} ${error.details || ""} ${error.hint || ""}`.toLowerCase();
+  return error.code === "42703" || error.code === "PGRST204" || text.includes("schema cache") || text.includes("column");
+}
+
 function isUniqueConflict(error = {}) {
   return error.code === "23505" || /duplicate key|unique constraint/i.test(`${error.message || ""} ${error.details || ""}`);
+}
+
+function stripWorkspaceOptionalColumns(record = {}) {
+  const keep = new Set(["demo_journey_id", "business_name", "website_url", "workspace_slug", "workspace_title", "storage_provider", "storage_path"]);
+  return Object.fromEntries(Object.entries(record).filter(([key]) => keep.has(key)));
 }
 
 function cleanText(value = "") {
