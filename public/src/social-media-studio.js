@@ -91,6 +91,86 @@
     },
   };
 
+  const moreWorkOffers = [
+    {
+      id: "care-basic",
+      title: "Care Basic",
+      price: "€19,95 / maand",
+      platform: "google",
+      goal: "Reviews en vertrouwen",
+      cta: "Kies Care Basic",
+      hashtags: "#onderhoud #hosting #website",
+      copy: "Houd je website veilig, snel en online met Care Basic. Voor €19,95 per maand regelen wij hosting, SSL, back-ups, technische monitoring en de controle of alles blijft werken.",
+      note: "Onderhoud, hosting en technische rust voor klanten na livegang.",
+    },
+    {
+      id: "logo",
+      title: "Logo ontwerpen",
+      price: "vanaf €350 eenmalig",
+      platform: "instagram",
+      goal: "Naamsbekendheid",
+      cta: "Vraag een logo aan",
+      hashtags: "#logo #branding #huisstijl",
+      copy: "Een professionele website werkt sterker met een herkenbare uitstraling. We ontwerpen een helder basislogo met bestanden voor je website, socials en drukwerk.",
+      note: "Handig voor klanten zonder sterk logo of herkenbare huisstijl.",
+    },
+    {
+      id: "google-business",
+      title: "Google Bedrijf instellen",
+      price: "€195 eenmalig",
+      platform: "google",
+      goal: "Websitebezoek",
+      cta: "Laat Google Bedrijf instellen",
+      hashtags: "#googlebedrijf #lokaal #vindbaarheid",
+      copy: "Beter lokaal zichtbaar worden? We richten je Google Bedrijfsprofiel professioneel in met diensten, foto's, openingstijden en de eerste optimalisatie.",
+      note: "Voor lokale bedrijven die beter gevonden willen worden.",
+    },
+    {
+      id: "meta-ads",
+      title: "Meta advertenties",
+      price: "€350 setup + €249 / maand",
+      platform: "ad",
+      goal: "Meer aanvragen",
+      cta: "Start Meta advertenties",
+      hashtags: "#facebookads #instagramads #campagne",
+      copy: "Bereik nieuwe klanten via Facebook en Instagram. We zetten de campagne klaar, schrijven de advertentieteksten en optimaliseren maandelijks op aanvragen.",
+      note: "Voor Facebook- en Instagram-campagnes rond acties of aanvragen.",
+    },
+    {
+      id: "google-ads",
+      title: "Google Ads",
+      price: "€450 setup + €299 / maand",
+      platform: "ad",
+      goal: "Meer aanvragen",
+      cta: "Start Google Ads",
+      hashtags: "#googleads #leads #groei",
+      copy: "Wil je gevonden worden op het moment dat klanten zoeken? We zetten Google Ads campagnes op voor offerte-aanvragen, telefoontjes en websitebezoek.",
+      note: "Voor zoekcampagnes met commerciële intentie.",
+    },
+    {
+      id: "automation",
+      title: "Automatisering",
+      price: "vanaf €395 eenmalig",
+      platform: "linkedin",
+      goal: "Meer aanvragen",
+      cta: "Automatiseer mijn opvolging",
+      hashtags: "#automatisering #crm #opvolging",
+      copy: "Bespaar tijd met slimme automatisering voor formulieren, opvolgmails en CRM-koppelingen. Zo raakt een aanvraag minder snel kwijt.",
+      note: "Voor formulieren, opvolgmails en CRM-processen.",
+    },
+    {
+      id: "social-media",
+      title: "Social media",
+      price: "vanaf €299 / maand",
+      platform: "instagram",
+      goal: "Naamsbekendheid",
+      cta: "Plan social media content",
+      hashtags: "#socialmedia #content #zichtbaarheid",
+      copy: "Blijf zichtbaar na livegang met social media content. We helpen met posts, planning en een eenvoudige contentkalender die past bij je bedrijf.",
+      note: "Voor klanten die na de website actief zichtbaar willen blijven.",
+    },
+  ];
+
   const visualFormatLabels = {
     square: "Vierkant 1:1",
     portrait: "Staand 4:5",
@@ -156,6 +236,9 @@
     clearButton: document.getElementById("clear-social-storage"),
     copyAllButton: document.getElementById("copy-all-variants"),
     platformExportButton: document.getElementById("download-selected-platform"),
+    moreWorkList: document.getElementById("social-morework-list"),
+    moreWorkSummary: document.getElementById("social-morework-summary"),
+    copyMoreWorkOffer: document.getElementById("copy-morework-offer"),
   };
 
   function readJson(key, fallback) {
@@ -511,6 +594,47 @@
     setMessage("Template geladen. Pas hem nu aan voor de klant.", "success");
   }
 
+  function renderMoreWorkOffers() {
+    if (!elements.moreWorkList) return;
+    elements.moreWorkList.replaceChildren(...moreWorkOffers.map((offer) => {
+      const card = document.createElement("button");
+      card.className = "social-studio-morework-card";
+      card.type = "button";
+      card.dataset.moreworkOffer = offer.id;
+      card.innerHTML = `
+        <span>${offer.price}</span>
+        <strong>${offer.title}</strong>
+        <small>${offer.note}</small>
+      `;
+      card.addEventListener("click", () => applyMoreWorkOffer(offer.id));
+      return card;
+    }));
+  }
+
+  function applyMoreWorkOffer(offerId) {
+    const offer = moreWorkOffers.find((item) => item.id === offerId);
+    if (!offer) return;
+    state.platform = offer.platform;
+    elements.campaign.value = offer.title;
+    elements.goal.value = offer.goal;
+    elements.title.value = `${offer.title} voor ondernemers`;
+    elements.caption.value = offer.copy;
+    elements.cta.value = offer.cta;
+    elements.link.value = "https://maxwebstudio.nl#meerwerk";
+    elements.hashtags.value = offer.hashtags;
+    elements.tone.value = offer.platform === "ad" ? "Direct verkoopgericht" : "Professioneel";
+    if (elements.moreWorkSummary) {
+      elements.moreWorkSummary.textContent = `${offer.title} geselecteerd: ${offer.price}. ${offer.note}`;
+    }
+    updatePlatformButtons();
+    updateAll();
+    setMessage(`${offer.title} geladen in de editor.`, "success");
+  }
+
+  function buildMoreWorkOfferText() {
+    return moreWorkOffers.map((offer) => `${offer.title} - ${offer.price}\n${offer.note}`).join("\n\n");
+  }
+
   function loadSample() {
     setContext({
       client: "Demo Klant",
@@ -707,10 +831,14 @@
       const variants = filteredVariants();
       exportJson(variants, `maxwebstudio-${state.variantFilter === "all" ? "social" : state.variantFilter}-varianten.json`);
     });
+    if (elements.copyMoreWorkOffer) {
+      elements.copyMoreWorkOffer.addEventListener("click", () => copyToClipboard(buildMoreWorkOfferText(), "Meerwerk aanbod gekopieerd."));
+    }
   }
 
   function init() {
     fillPlatformFilter();
+    renderMoreWorkOffers();
     const legacyVariants = readJson(storageKeys.legacyVariants, []);
     state.variants = readJson(storageKeys.variants, Array.isArray(legacyVariants) ? legacyVariants : []);
     const context = readJson(storageKeys.context, {});
