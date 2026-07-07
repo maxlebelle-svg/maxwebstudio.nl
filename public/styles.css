@@ -11537,6 +11537,16 @@ h3 {
   font-size: 15px;
 }
 
+#demo-klantreis .demo-intake-card .sales-timeline-heading {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+#demo-klantreis .demo-intake-card .sales-timeline-heading > div {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
 #demo-klantreis .sales-timeline-heading span {
   min-height: 24px;
   padding: 4px 9px;
@@ -11545,6 +11555,23 @@ h3 {
   color: rgba(226, 236, 248, 0.76);
   background: rgba(148, 163, 184, 0.1);
   white-space: nowrap;
+}
+
+#demo-klantreis .demo-intake-card .sales-timeline-heading span {
+  display: inline-block;
+  max-width: 100%;
+  border-radius: 8px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+#demo-klantreis .demo-intake-card .sales-timeline-heading .status-badge {
+  flex: 0 0 auto;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: center;
+  white-space: normal;
 }
 
 #demo-klantreis #demo-journey-build-state {
@@ -11771,7 +11798,7 @@ h3 {
 
 #demo-klantreis .demo-intake-fields {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
   gap: 14px;
 }
 
@@ -11793,6 +11820,7 @@ h3 {
   color: rgba(248, 251, 255, 0.94);
   font-size: 13px;
   font-weight: 900;
+  overflow-wrap: anywhere;
 }
 
 #demo-klantreis .demo-intake-question > small {
@@ -11812,6 +11840,7 @@ h3 {
   display: inline-flex;
   align-items: center;
   gap: 7px;
+  max-width: 100%;
   min-height: 34px;
   padding: 7px 10px;
   border: 1px solid rgba(148, 163, 184, 0.2);
@@ -11820,6 +11849,9 @@ h3 {
   background: rgba(2, 14, 25, 0.48);
   font-size: 12px;
   font-weight: 850;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  white-space: normal;
   cursor: pointer;
 }
 

@@ -540,11 +540,6 @@
                   <button class="button secondary" id="leadfinder-save-note" type="button" disabled>Notitie opslaan</button>
                   <button class="button primary" id="leadfinder-make-demo-now" type="button" disabled>Maak demo site nu</button>
                 </div>
-                <div class="sales-next-action" id="sales-next-action" aria-live="polite">
-                  <span>Volgende stap</span>
-                  <strong>Selecteer een lead</strong>
-                  <button class="button primary" id="sales-next-action-button" type="button" disabled>Kies lead</button>
-                </div>
               </section>
 
               <section class="sales-detail-panel sales-contact-actions-card" data-sales-detail-panel="actions" aria-label="Contact en acties">
@@ -25448,12 +25443,26 @@
               renderJourney();
               const fileCount = Array.isArray(data.preview?.files) ? data.preview.files.length : 0;
               const version = data.previewVersion?.version || data.buildJob?.previewVersion || data.buildStatus?.previewVersion || "";
+              const buildStatus = data.buildJob?.status || data.buildStatus?.status || "";
+              if (["quality_failed", "failed"].includes(buildStatus)) {
+                const buildMessage = data.buildJob?.errorMessage || data.buildStatus?.errorMessage || data.buildJob?.qualityReport?.summary || data.buildStatus?.qualityReport?.summary || "Previewbuild vraagt aandacht. Controleer de builddetails rechts.";
+                setMessage(elements.message, `${buildMessage}${version ? ` Versie: V${version}.` : ""}`, "warning");
+                return;
+              }
               const baseMessage = nextStepMessage(lockKey);
               setMessage(elements.message, `${baseMessage}${version ? ` Versie: V${version}.` : ""}${fileCount ? ` ZIP bevat ${fileCount} bestanden.` : ""}`, "success");
             } catch (error) {
-              const message = developerModeActive()
-                ? error.message
-                : "Preview maken is niet gelukt. Probeer opnieuw of vraag Max om controle.";
+              const diagnostics = error?.diagnostics || {};
+              const responseJson = diagnostics.responseJson || {};
+              const technicalHint = [
+                responseJson.phase || responseJson.diagnostics?.phase ? `Fase: ${responseJson.phase || responseJson.diagnostics?.phase}` : "",
+                responseJson.reason || responseJson.diagnostics?.reason ? `Reden: ${responseJson.reason || responseJson.diagnostics?.reason}` : "",
+                diagnostics.code || responseJson.code || responseJson.diagnostics?.code ? `Code: ${diagnostics.code || responseJson.code || responseJson.diagnostics?.code}` : "",
+              ].filter(Boolean).join(" · ");
+              const message = [
+                error.message || "Preview maken is niet gelukt.",
+                technicalHint,
+              ].filter(Boolean).join("\n");
               setMessage(elements.message, message, "error");
               showDeveloperErrorDetails(elements.message, error);
             }
@@ -25567,14 +25576,23 @@
 
         function renderGuidedWorkflow() {
           const state = getGuidedWorkflowState();
+          const duplicatePrimaryAction = state.action === "generate_preview" && Boolean(elements.generatePreview);
+          if (elements.nextStepCard) {
+            elements.nextStepCard.hidden = duplicatePrimaryAction;
+          }
           if (elements.nextStepState) {
             elements.nextStepState.textContent = state.label;
             elements.nextStepState.className = `status-badge ${state.key === "done" ? "status-active" : state.key === "approval" || state.key === "delivery" ? "status-prepared" : "status-planned"}`;
           }
           if (elements.nextStepCopy) elements.nextStepCopy.textContent = state.copy;
           if (elements.nextStepPrimary) {
-            elements.nextStepPrimary.textContent = state.primary;
-            elements.nextStepPrimary.dataset.action = state.action;
+            elements.nextStepPrimary.hidden = duplicatePrimaryAction;
+            if (duplicatePrimaryAction) {
+              elements.nextStepPrimary.dataset.action = "";
+            } else {
+              elements.nextStepPrimary.textContent = state.primary;
+              elements.nextStepPrimary.dataset.action = state.action;
+            }
           }
           if (elements.nextStepSecondary) {
             elements.nextStepSecondary.hidden = !state.secondary;

@@ -402,11 +402,6 @@
                 </div>
                 <mark class="status-badge status-planned" id="leadfinder-detail-state">Niet geselecteerd</mark>
               </div>
-              <div class="sales-next-action" id="sales-next-action" aria-live="polite">
-                <span>Volgende stap</span>
-                <strong>Selecteer een lead</strong>
-                <button class="button primary" id="sales-next-action-button" type="button" disabled>Kies lead</button>
-              </div>
               <div class="sales-quick-actions" aria-label="Snelle salesacties">
                 <button class="button secondary" id="sales-action-call" type="button" disabled>Bellen</button>
                 <a class="button secondary is-disabled" id="sales-action-website" href="#" target="_blank" rel="noopener" aria-disabled="true">Website openen</a>
@@ -22129,14 +22124,23 @@
 
         function renderGuidedWorkflow() {
           const state = getGuidedWorkflowState();
+          const duplicatePrimaryAction = state.action === "generate_preview" && Boolean(elements.generatePreview);
+          if (elements.nextStepCard) {
+            elements.nextStepCard.hidden = duplicatePrimaryAction;
+          }
           if (elements.nextStepState) {
             elements.nextStepState.textContent = state.label;
             elements.nextStepState.className = `status-badge ${state.key === "done" ? "status-active" : state.key === "approval" || state.key === "delivery" ? "status-prepared" : "status-planned"}`;
           }
           if (elements.nextStepCopy) elements.nextStepCopy.textContent = state.copy;
           if (elements.nextStepPrimary) {
-            elements.nextStepPrimary.textContent = state.primary;
-            elements.nextStepPrimary.dataset.action = state.action;
+            elements.nextStepPrimary.hidden = duplicatePrimaryAction;
+            if (duplicatePrimaryAction) {
+              elements.nextStepPrimary.dataset.action = "";
+            } else {
+              elements.nextStepPrimary.textContent = state.primary;
+              elements.nextStepPrimary.dataset.action = state.action;
+            }
           }
           if (elements.nextStepSecondary) {
             elements.nextStepSecondary.hidden = !state.secondary;
