@@ -21812,16 +21812,17 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   z-index: 3;
   display: grid;
   align-content: start;
-  gap: 3px;
+  grid-template-rows: auto minmax(0, auto) auto;
+  gap: 2px;
   min-width: 0;
-  padding: 8px 9px;
-  border: 1px solid rgba(96, 165, 250, 0.52);
+  padding: 7px 8px;
+  border: 1px solid rgba(37, 99, 235, 0.54);
   border-radius: 7px;
-  background: linear-gradient(180deg, #dbeafe, #eff6ff);
+  background: linear-gradient(180deg, #f8fbff, #dbeafe);
   color: #0f172a;
   cursor: pointer;
   text-align: left;
-  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.13);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.16);
   overflow: hidden;
 }
 
@@ -21832,33 +21833,33 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
 }
 
 .sales-calendar-event.is-high {
-  border-color: rgba(244, 114, 182, 0.5);
-  background: linear-gradient(180deg, #fce7f3, #fff1f2);
-  box-shadow: 0 12px 28px rgba(244, 114, 182, 0.16);
+  border-color: rgba(219, 39, 119, 0.52);
+  background: linear-gradient(180deg, #fff7fb, #fce7f3);
+  box-shadow: 0 10px 22px rgba(157, 23, 77, 0.16);
 }
 
 .sales-calendar-event.is-lead {
-  border-color: rgba(74, 222, 128, 0.48);
-  background: linear-gradient(180deg, #dcfce7, #f0fdf4);
-  box-shadow: 0 12px 28px rgba(22, 163, 74, 0.13);
+  border-color: rgba(22, 163, 74, 0.52);
+  background: linear-gradient(180deg, #f7fef9, #dcfce7);
+  box-shadow: 0 10px 22px rgba(21, 128, 61, 0.14);
 }
 
 .sales-calendar-event.is-meeting {
-  border-color: rgba(56, 189, 248, 0.5);
-  background: linear-gradient(180deg, #e0f2fe, #f0f9ff);
-  box-shadow: 0 12px 28px rgba(14, 165, 233, 0.14);
+  border-color: rgba(2, 132, 199, 0.52);
+  background: linear-gradient(180deg, #f8fcff, #e0f2fe);
+  box-shadow: 0 10px 22px rgba(3, 105, 161, 0.14);
 }
 
 .sales-calendar-event.is-followup {
-  border-color: rgba(167, 139, 250, 0.5);
-  background: linear-gradient(180deg, #ede9fe, #f5f3ff);
-  box-shadow: 0 12px 28px rgba(124, 58, 237, 0.13);
+  border-color: rgba(124, 58, 237, 0.48);
+  background: linear-gradient(180deg, #fbfaff, #ede9fe);
+  box-shadow: 0 10px 22px rgba(109, 40, 217, 0.14);
 }
 
 .sales-calendar-event.is-internal {
-  border-color: rgba(245, 158, 11, 0.5);
-  background: linear-gradient(180deg, #fef3c7, #fffbeb);
-  box-shadow: 0 12px 28px rgba(217, 119, 6, 0.13);
+  border-color: rgba(217, 119, 6, 0.52);
+  background: linear-gradient(180deg, #fffdfa, #fef3c7);
+  box-shadow: 0 10px 22px rgba(180, 83, 9, 0.14);
 }
 
 .sales-calendar-event small,
@@ -21868,26 +21869,40 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sales-calendar-event small {
-  color: #1e40af;
-  font-size: 10px;
+  color: #1d4ed8;
+  font-size: 11px;
   font-weight: 950;
-  line-height: 1;
+  line-height: 1.1;
 }
 
 .sales-calendar-event strong {
+  display: -webkit-box;
+  color: #0f172a;
   font-size: 12px;
-  line-height: 1.22;
+  line-height: 1.16;
+  max-height: 2.32em;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+}
+
+.sales-calendar-event.is-high strong,
+.sales-calendar-event.is-lead strong,
+.sales-calendar-event.is-meeting strong,
+.sales-calendar-event.is-followup strong,
+.sales-calendar-event.is-internal strong {
   color: #0f172a;
 }
 
 .sales-calendar-event span {
-  color: #475569;
+  color: #334155;
   font-size: 10px;
-  font-weight: 800;
-  line-height: 1.2;
+  font-weight: 850;
+  line-height: 1.15;
 }
 
 .sales-calendar-slot {
@@ -22176,5 +22191,26 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
 
   .sales-agenda-actions .button {
     flex: 1 1 150px;
+  }
+}
+
+@media (max-width: 720px) {
+  .sales-calendar-event {
+    gap: 1px;
+    padding: 6px 7px;
+  }
+
+  .sales-calendar-event small {
+    font-size: 10px;
+  }
+
+  .sales-calendar-event strong {
+    font-size: 11px;
+    line-height: 1.12;
+    max-height: 2.24em;
+  }
+
+  .sales-calendar-event span {
+    font-size: 9px;
   }
 }
