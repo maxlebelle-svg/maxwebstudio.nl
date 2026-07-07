@@ -503,6 +503,30 @@
                   </div>
                 </div>
                 <div class="sales-contact-list" id="sales-lead-contact-list"></div>
+                <div class="sales-lead-edit-card">
+                  <div class="sales-detail-card-heading">
+                    <div>
+                      <span>Leadgegevens</span>
+                      <strong>Aanpassen of handmatig aanvullen</strong>
+                    </div>
+                  </div>
+                  <div class="sales-lead-edit-grid">
+                    <label for="lead-edit-company">Bedrijf<input id="lead-edit-company" type="text" /></label>
+                    <label for="lead-edit-contact">Contactpersoon<input id="lead-edit-contact" type="text" /></label>
+                    <label for="lead-edit-industry">Branche<input id="lead-edit-industry" type="text" /></label>
+                    <label for="lead-edit-region">Plaats/regio<input id="lead-edit-region" type="text" /></label>
+                    <label class="sales-lead-edit-wide" for="lead-edit-address">Volledig adres<input id="lead-edit-address" type="text" /></label>
+                    <label for="lead-edit-phone">Telefoon<input id="lead-edit-phone" type="tel" /></label>
+                    <label for="lead-edit-email">E-mail<input id="lead-edit-email" type="email" /></label>
+                    <label class="sales-lead-edit-wide" for="lead-edit-website">Website URL<input id="lead-edit-website" type="url" /></label>
+                    <label for="lead-edit-score">Leadscore<input id="lead-edit-score" type="number" min="0" max="100" /></label>
+                    <label for="lead-edit-status">Leadstatus<select id="lead-edit-status"></select></label>
+                  </div>
+                  <div class="sales-workflow-actions">
+                    <button class="button primary" id="lead-edit-save" type="button" disabled>Leadgegevens opslaan</button>
+                    <p class="admin-form-message" id="lead-edit-message" role="status"></p>
+                  </div>
+                </div>
                 <div class="sales-quick-actions" aria-label="Snelle salesacties">
                   <button class="button secondary" id="sales-action-call" type="button" disabled>Bellen</button>
                   <a class="button secondary is-disabled" id="sales-action-website" href="#" target="_blank" rel="noopener" aria-disabled="true">Website bekijken</a>
@@ -19434,6 +19458,18 @@
         ownerAssignmentSave: document.getElementById("sales-lead-owner-save"),
         ownerAssignmentMessage: document.getElementById("sales-lead-owner-message"),
         contactList: document.getElementById("sales-lead-contact-list"),
+        editCompany: document.getElementById("lead-edit-company"),
+        editContact: document.getElementById("lead-edit-contact"),
+        editIndustry: document.getElementById("lead-edit-industry"),
+        editRegion: document.getElementById("lead-edit-region"),
+        editAddress: document.getElementById("lead-edit-address"),
+        editPhone: document.getElementById("lead-edit-phone"),
+        editEmail: document.getElementById("lead-edit-email"),
+        editWebsite: document.getElementById("lead-edit-website"),
+        editScore: document.getElementById("lead-edit-score"),
+        editStatus: document.getElementById("lead-edit-status"),
+        editSave: document.getElementById("lead-edit-save"),
+        editMessage: document.getElementById("lead-edit-message"),
         detailNote: document.getElementById("leadfinder-detail-note"),
         detailCallStatus: document.getElementById("leadfinder-detail-call-status"),
         noteSyncState: document.getElementById("leadfinder-note-sync-state"),
@@ -21535,45 +21571,123 @@
 
       function leadIntakeChecklist(lead = {}) {
         const bedrijf = lead.companyName || "";
-        const contact = lead.contactName || "";
+        const contact = displayLeadContactName(lead) === "Nog niet bekend" ? "" : displayLeadContactName(lead);
         const website = lead.websiteUrl || "";
         return [
-          "CONTACTGEGEVENS",
-          `Contactpersoon: ${contact}`,
-          "Functie/contactrol:",
+          "BELGESPREK / LEADKWALIFICATIE",
           "",
-          "BEDRIJF",
+          "1. OPENING",
+          "Intro: Hoi, je spreekt met [naam] van Max Web Studio. Bel ik gelegen?",
+          "Antwoord:",
+          "- Ja, kan kort praten",
+          "- Nu niet, later terugbellen",
+          "- Geen interesse",
+          "",
+          "Als nu niet uitkomt:",
+          "Terugbelmoment:",
+          "Wie vraag ik dan naar:",
+          "",
+          "2. CONTACTGEGEVENS",
+          `Contactpersoon: ${contact}`,
+          "Rol/beslisser:",
+          "- Eigenaar / beslisser",
+          "- Medewerker, overlegt intern",
+          "- Marketing / administratie",
+          "- Onbekend",
+          "Beste telefoonnummer:",
+          "E-mail voor preview/offerte:",
+          "",
+          "3. BEDRIJF",
           `Bedrijfsnaam: ${bedrijf}`,
+          `Website URL: ${website}`,
           "Wat voor bedrijf/praktijk is het:",
           "Welke diensten bieden ze aan:",
           "Doelgroep:",
+          "Werkgebied:",
           "",
-          "HUIDIGE SITUATIE",
-          `Website URL: ${website}`,
-          "Hebben ze al een website: Ja / Nee / Onbekend",
-          "Zijn ze tevreden met hun huidige website:",
-          "Wat werkt er nu niet goed:",
+          "4. HUIDIGE WEBSITE",
+          "Hebben ze al een website:",
+          "- Ja",
+          "- Nee",
+          "- Alleen social media / Google profiel",
+          "- Onbekend",
+          "Tevreden met huidige website:",
+          "- Ja",
+          "- Redelijk, maar kan beter",
+          "- Nee, verouderd",
+          "- Website levert te weinig aanvragen op",
+          "- Website is traag / slecht mobiel",
+          "Grootste probleem:",
+          "- Weinig aanvragen",
+          "- Design ziet er oud uit",
+          "- Slecht vindbaar",
+          "- Moeilijk zelf aan te passen",
+          "- Geen duidelijke diensten/contact",
+          "- Anders:",
           "",
-          "WENSEN",
+          "5. WENSEN",
           "Belangrijkste wens:",
+          "- Meer aanvragen",
+          "- Professionelere uitstraling",
+          "- Beter gevonden worden",
+          "- Diensten duidelijker tonen",
+          "- Portfolio/projecten tonen",
+          "- Sneller/mobielvriendelijker",
+          "- Anders:",
           "Wat willen ze verbeteren:",
           "Zijn er specifieke pagina's of functies nodig:",
+          "- Home",
+          "- Over ons",
+          "- Diensten",
+          "- Projecten/portfolio",
+          "- Reviews",
+          "- Contact/offerteformulier",
+          "- WhatsApp knop",
+          "- Agenda/afspraak plannen",
           "",
-          "DEMO/PREVIEW",
+          "6. BUDGET EN TIMING",
+          "Wanneer willen ze starten:",
+          "- Zo snel mogelijk",
+          "- Binnen 1 maand",
+          "- Binnen 3 maanden",
+          "- Later / oriënterend",
+          "Budgetindicatie besproken:",
+          "- Starter past",
+          "- Business past",
+          "- Premium/groei interessant",
+          "- Nog niet besproken",
+          "",
+          "7. BEZWAREN / ANTWOORD",
+          "Bezwaar:",
+          "- Geen tijd",
+          "- Geen budget",
+          "- We hebben al iemand",
+          "- Stuur maar info",
+          "- Geen interesse",
+          "Antwoord/notitie:",
+          "",
+          "8. DEMO/PREVIEW",
           "Wat moeten we in de vrijblijvende demo laten zien:",
           "Welke uitstraling past bij het bedrijf:",
+          "- Modern",
+          "- Rustig/professioneel",
+          "- Premium/luxe",
+          "- Lokaal/toegankelijk",
+          "- Strak/zakelijk",
           "Voorbeelden van websites die ze mooi vinden:",
           "",
-          "PLANNING",
-          "Wanneer willen ze starten:",
-          "Is er al budget besproken:",
-          "",
-          "OPVOLGING",
+          "9. OPVOLGING",
           "Gesprekstype: Telefoongesprek / Voicemail / Geen gehoor",
           "Vervolgstap:",
+          "- Demo/preview maken",
+          "- Website-analyse sturen",
+          "- Offerte voorbereiden",
+          "- Terugbellen",
+          "- Niet interessant",
           "Wanneer opnieuw contact opnemen:",
+          "Samenvatting voor Max:",
           "",
-          "EXTRA NOTITIES",
+          "10. EXTRA NOTITIES",
           "",
         ].join("\n");
       }
@@ -22579,6 +22693,7 @@
         }
         renderLeadBusinessPreview(lead);
         renderLeadOwnerAssignment(lead);
+        renderLeadEditForm(lead);
         if (leadfinderElements.contactList) {
           renderLeadDetailRows(leadfinderElements.contactList, hasLead ? [
             ["Telefoon", lead.phone || "-"],
@@ -22644,6 +22759,82 @@
           return;
         }
         setNoteSyncStatus("idle", "Nog geen notitie opgeslagen voor deze lead.");
+      }
+
+      function setLeadEditMessage(message = "", type = "success") {
+        if (!leadfinderElements.editMessage) return;
+        leadfinderElements.editMessage.textContent = message;
+        leadfinderElements.editMessage.className = `admin-form-message ${type}`;
+      }
+
+      function renderLeadEditForm(lead) {
+        const hasLead = Boolean(lead?.id);
+        const fields = [
+          leadfinderElements.editCompany,
+          leadfinderElements.editContact,
+          leadfinderElements.editIndustry,
+          leadfinderElements.editRegion,
+          leadfinderElements.editAddress,
+          leadfinderElements.editPhone,
+          leadfinderElements.editEmail,
+          leadfinderElements.editWebsite,
+          leadfinderElements.editScore,
+          leadfinderElements.editStatus,
+        ].filter(Boolean);
+        fields.forEach((field) => {
+          field.disabled = !hasLead;
+        });
+        if (leadfinderElements.editSave) leadfinderElements.editSave.disabled = !hasLead;
+        if (!hasLead) {
+          fields.forEach((field) => { field.value = ""; });
+          setLeadEditMessage("Selecteer een lead om gegevens aan te passen.", "info");
+          return;
+        }
+        if (leadfinderElements.editCompany) leadfinderElements.editCompany.value = lead.companyName || "";
+        if (leadfinderElements.editContact) leadfinderElements.editContact.value = displayLeadContactName(lead) === "Nog niet bekend" ? "" : displayLeadContactName(lead);
+        if (leadfinderElements.editIndustry) leadfinderElements.editIndustry.value = lead.industry || "";
+        if (leadfinderElements.editRegion) leadfinderElements.editRegion.value = lead.region || "";
+        if (leadfinderElements.editAddress) leadfinderElements.editAddress.value = displayLeadFullAddress(lead).includes("nog aanvullen") ? "" : displayLeadFullAddress(lead);
+        if (leadfinderElements.editPhone) leadfinderElements.editPhone.value = lead.phone || "";
+        if (leadfinderElements.editEmail) leadfinderElements.editEmail.value = lead.email || "";
+        if (leadfinderElements.editWebsite) leadfinderElements.editWebsite.value = lead.websiteUrl || "";
+        if (leadfinderElements.editScore) leadfinderElements.editScore.value = Number.isFinite(Number(lead.leadScore)) ? String(lead.leadScore) : "70";
+        if (leadfinderElements.editStatus) leadfinderElements.editStatus.value = lead.callStatus || "nieuw";
+        setLeadEditMessage("", "success");
+      }
+
+      async function saveLeadEditForm() {
+        const lead = selectedLeadFinderLead();
+        if (!lead?.id) {
+          setLeadEditMessage("Selecteer eerst een lead.", "error");
+          return;
+        }
+        const address = String(leadfinderElements.editAddress?.value || "").trim();
+        const existingMeta = lead.metadata && typeof lead.metadata === "object" ? lead.metadata : {};
+        const updates = {
+          companyName: leadfinderElements.editCompany?.value || "",
+          contactName: leadfinderElements.editContact?.value || "",
+          industry: leadfinderElements.editIndustry?.value || "",
+          region: leadfinderElements.editRegion?.value || "",
+          phone: leadfinderElements.editPhone?.value || "",
+          email: leadfinderElements.editEmail?.value || "",
+          websiteUrl: leadfinderElements.editWebsite?.value || "",
+          leadScore: Number(leadfinderElements.editScore?.value || lead.leadScore || 70),
+          callStatus: leadfinderElements.editStatus?.value || lead.callStatus || "nieuw",
+          metadata: {
+            ...existingMeta,
+            address,
+            formattedAddress: address || existingMeta.formattedAddress || existingMeta.googleAddress || "",
+            googleAddress: address || existingMeta.googleAddress || "",
+          },
+        };
+        try {
+          setLeadEditMessage("Leadgegevens opslaan...", "info");
+          await updateLeadfinderLead(lead, updates, "Leadgegevens opgeslagen.");
+          setLeadEditMessage("Leadgegevens opgeslagen.", "success");
+        } catch (error) {
+          setLeadEditMessage(error.message || "Leadgegevens konden niet worden opgeslagen.", "error");
+        }
       }
 
       function renderLeadDetailRows(target, rows) {
@@ -23579,6 +23770,7 @@
         fillSelect(leadfinderElements.filterCallStatus, LEADFINDER_CALL_STATUSES, "Alle leadstatussen");
         fillSelect(leadfinderElements.filterScore, LEADFINDER_SCORE_BUCKETS, "Alle scores");
         fillSelect(leadfinderElements.detailCallStatus, LEADFINDER_CALL_STATUSES, "Leadstatus");
+        fillSelect(leadfinderElements.editStatus, LEADFINDER_CALL_STATUSES, "Leadstatus", "nieuw");
         hydrateWebsiteAnalysisState();
         hydrateLeadNotesState();
         hydrateLeadNoteDraftState();
@@ -23685,6 +23877,7 @@
         });
         leadfinderElements.detailCallStatus?.addEventListener("change", updateSelectedLeadStatusFromControl);
         leadfinderElements.ownerAssignmentSave?.addEventListener("click", saveSelectedLeadOwnerAssignment);
+        leadfinderElements.editSave?.addEventListener("click", saveLeadEditForm);
         leadfinderElements.businessPreview?.addEventListener("click", async (event) => {
           const action = event.target.closest("[data-sales-business-action]")?.dataset.salesBusinessAction;
           if (action !== "copy") return;
