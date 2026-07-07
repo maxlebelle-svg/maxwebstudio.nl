@@ -19481,6 +19481,10 @@
       let leadfinderSourceStatus = null;
       let leadfinderLastDiagnostics = null;
       let activeLeadfinderQuickFilter = null;
+      const leadfinderSortStorageKey = "maxwebstudioLeadfinderSortMode";
+      const leadfinderSortModes = ["newest", "oldest", "updated_desc", "score_desc", "score_asc", "name_asc"];
+      let leadfinderSortMode = localStorage.getItem(leadfinderSortStorageKey) || "newest";
+      if (!leadfinderSortModes.includes(leadfinderSortMode)) leadfinderSortMode = "newest";
       const productionLeadsEndpoint = "/.netlify/functions/admin-leads";
       const leadOfflineQueueKey = "maxwebstudioLeadOfflineQueue";
       const websiteAnalysisStorageKey = "maxwebstudioLeadWebsiteAnalyses";
@@ -21912,6 +21916,68 @@
         window.focusAdminPanel?.(leadfinderElements.list);
       }
 
+      function leadSortDateValue(lead = {}, mode = "newest") {
+        const value = mode === "updated_desc"
+          ? lead.updatedAt || lead.createdAt
+          : lead.createdAt || lead.updatedAt;
+        const time = new Date(value || 0).getTime();
+        return Number.isFinite(time) ? time : 0;
+      }
+
+      function leadSortLabel(mode = leadfinderSortMode) {
+        return ({
+          newest: "Nieuwste eerst",
+          oldest: "Oudste eerst",
+          updated_desc: "Laatste update eerst",
+          score_desc: "Hoogste score eerst",
+          score_asc: "Laagste score eerst",
+          name_asc: "Bedrijfsnaam A-Z",
+        })[mode] || "Nieuwste eerst";
+      }
+
+      function renderLeadSortOptions() {
+        return leadfinderSortModes
+          .map((mode) => `<option value="${escapeHtml(mode)}"${leadfinderSortMode === mode ? " selected" : ""}>${escapeHtml(leadSortLabel(mode))}</option>`)
+          .join("");
+      }
+
+      function sortLeadfinderLeads(leads = []) {
+        const sorted = [...leads];
+        sorted.sort((left, right) => {
+          if (leadfinderSortMode === "oldest") {
+            return leadSortDateValue(left, "oldest") - leadSortDateValue(right, "oldest")
+              || String(left.companyName || "").localeCompare(String(right.companyName || ""), "nl");
+          }
+          if (leadfinderSortMode === "updated_desc") {
+            return leadSortDateValue(right, "updated_desc") - leadSortDateValue(left, "updated_desc")
+              || String(right.createdAt || "").localeCompare(String(left.createdAt || ""));
+          }
+          if (leadfinderSortMode === "score_desc") {
+            return Number(right.leadScore || 0) - Number(left.leadScore || 0)
+              || leadSortDateValue(right) - leadSortDateValue(left);
+          }
+          if (leadfinderSortMode === "score_asc") {
+            return Number(left.leadScore || 0) - Number(right.leadScore || 0)
+              || leadSortDateValue(right) - leadSortDateValue(left);
+          }
+          if (leadfinderSortMode === "name_asc") {
+            return String(left.companyName || "").localeCompare(String(right.companyName || ""), "nl")
+              || leadSortDateValue(right) - leadSortDateValue(left);
+          }
+          return leadSortDateValue(right) - leadSortDateValue(left)
+            || String(right.updatedAt || "").localeCompare(String(left.updatedAt || ""));
+        });
+        return sorted;
+      }
+
+      function handleLeadfinderListChange(event) {
+        const sortSelect = event.target.closest("[data-leadfinder-sort]");
+        if (!sortSelect) return;
+        leadfinderSortMode = leadfinderSortModes.includes(sortSelect.value) ? sortSelect.value : "newest";
+        localStorage.setItem(leadfinderSortStorageKey, leadfinderSortMode);
+        renderLeadfinderList();
+      }
+
       function getFilteredLeadfinderLeads() {
         const query = String(leadfinderElements.search?.value || "").trim().toLowerCase();
         const websiteStatus = leadfinderElements.filterWebsiteStatus?.value || "";
@@ -21958,7 +22024,7 @@
           dataSource: leadfinderSourceStatus?.dataLayer || "local",
           filters: { query, websiteStatus, callStatus, owner, industry, region, minScore, quickFilter: activeLeadfinderQuickFilter?.type || "" },
         });
-        return filteredLeads;
+        return sortLeadfinderLeads(filteredLeads);
       }
 
       function selectedLeadFinderLead() {
@@ -22436,7 +22502,12 @@
           ${warningHtml}
           <div class="lead-card-toolbar">
             <strong>${escapeHtml(leads.length)} lead${leads.length === 1 ? "" : "s"} gevonden</strong>
-            <span>Sorteer op: laatste update</span>
+            <label class="lead-card-sort-control">
+              <span>Sorteer op</span>
+              <select data-leadfinder-sort aria-label="Leads sorteren">
+                ${renderLeadSortOptions()}
+              </select>
+            </label>
           </div>
           ${leads.map((lead) => {
             const canAssignOwner = canManageLeadOwnerAssignments();
@@ -23562,6 +23633,7 @@
                   applyLeadfinderQuickFilter(event.detail?.type || "open_leads", event.detail?.title || "Open leads");
                 });
         leadfinderElements.list.addEventListener("click", handleLeadfinderListClick);
+        leadfinderElements.list.addEventListener("change", handleLeadfinderListChange);
         leadfinderElements.backToList?.addEventListener("click", () => closeLeadfinderDetail());
         window.addEventListener("popstate", () => {
           if (!restoreLeadfinderDetailFromUrl({ tab: activeSalesDetailTab })) {

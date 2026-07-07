@@ -13365,6 +13365,36 @@ h3 {
   letter-spacing: 0;
 }
 
+.lead-card-sort-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(226, 236, 248, 0.72);
+  font-size: 13px;
+  font-weight: 850;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.lead-card-sort-control select {
+  min-width: 190px;
+  min-height: 38px;
+  padding: 0 38px 0 14px;
+  border: 1px solid rgba(140, 170, 210, 0.24);
+  border-radius: 8px;
+  color: rgba(248, 251, 255, 0.94);
+  background:
+    linear-gradient(180deg, rgba(15, 35, 54, 0.96), rgba(5, 18, 31, 0.96)),
+    rgba(5, 18, 31, 0.94);
+  font: inherit;
+  outline: none;
+}
+
+.lead-card-sort-control select:focus-visible {
+  border-color: rgba(72, 148, 255, 0.82);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.28);
+}
+
 .lead-card {
   display: grid;
   grid-template-columns: minmax(360px, 1.55fr) minmax(150px, 0.55fr) minmax(220px, 0.72fr) minmax(310px, 0.9fr);
@@ -14357,6 +14387,16 @@ h3 {
   .sales-cockpit-actions {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .lead-card-sort-control {
+    justify-content: space-between;
+    white-space: normal;
+  }
+
+  .lead-card-sort-control select {
+    width: min(100%, 260px);
+    min-width: 0;
   }
 
   .staff-command-grid,
