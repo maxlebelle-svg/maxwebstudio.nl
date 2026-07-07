@@ -1,3 +1,5 @@
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
+
 function workspaceSlugFor({ businessName = "", websiteUrl = "" } = {}) {
   const source = cleanText(businessName) || hostnameFor(websiteUrl) || "demo-project";
   return safeSlug(source) || "demo-project";
@@ -24,8 +26,8 @@ async function upsertProjectWorkspace(context = {}, payload = {}) {
   const latestPreviewUrl = cleanText(payload.latestPreviewUrl || payload.latest_preview_url);
   const latestPreviewVersion = numericOrNull(payload.latestPreviewVersion || payload.latest_preview_version);
   const baseRecord = {
-    lead_id: cleanText(payload.leadId || payload.lead_id) || null,
-    customer_id: cleanText(payload.customerId || payload.customer_id) || null,
+    lead_id: cleanUuid(payload.leadId || payload.lead_id) || null,
+    customer_id: cleanUuid(payload.customerId || payload.customer_id) || null,
     demo_journey_id: demoJourneyId,
     business_name: cleanText(payload.businessName || payload.business_name),
     website_url: cleanText(payload.websiteUrl || payload.website_url),
@@ -203,6 +205,11 @@ function isUniqueConflict(error = {}) {
 
 function cleanText(value = "") {
   return String(value || "").trim();
+}
+
+function cleanUuid(value = "") {
+  const text = cleanText(value);
+  return uuidPattern.test(text) ? text : "";
 }
 
 module.exports = {

@@ -14,6 +14,7 @@ const {
 
 const staffRoles = ["super_admin", "admin", "sales_manager", "sales_partner"];
 const managerRoles = new Set(["super_admin", "admin", "sales_manager"]);
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
 
 async function handler(event) {
   if (event.httpMethod === "OPTIONS") return jsonResponse(204, {});
@@ -158,8 +159,8 @@ async function createBuildJob(context, payload = {}) {
     headers: { ...restHeaders(context.serviceRoleKey), Prefer: "return=representation", "Content-Type": "application/json" },
     body: JSON.stringify({
       demo_journey_id: demoJourneyId,
-      lead_id: journey.lead_id || null,
-      customer_id: journey.customer_id || null,
+      lead_id: cleanUuid(journey.lead_id) || null,
+      customer_id: cleanUuid(journey.customer_id) || null,
       status: "queued",
       current_step: "queued",
       progress: 5,
@@ -344,7 +345,7 @@ async function failBuild(context, job, message, logs = []) {
 async function getBuildHistory(context, { demoJourneyId = "", leadId = "" } = {}) {
   const query = new URLSearchParams({ select: "*", order: "created_at.desc", limit: "25" });
   if (demoJourneyId) query.set("demo_journey_id", `eq.${demoJourneyId}`);
-  if (leadId) query.set("lead_id", `eq.${leadId}`);
+  if (leadId && cleanUuid(leadId)) query.set("lead_id", `eq.${cleanUuid(leadId)}`);
   const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_build_jobs?${query.toString()}`, {
     method: "GET",
     headers: restHeaders(context.serviceRoleKey),
@@ -387,21 +388,36 @@ async function createPreviewVersion(context, payload = {}) {
 
 async function updateDemoJourneyPreview(context, payload = {}) {
   const demoJourneyId = cleanText(payload.demoJourneyId || payload.demo_journey_id);
-  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/demo_journeys?id=eq.${encodeURIComponent(demoJourneyId)}`, {
+  const record = {
+    generated_briefing: cleanText(payload.generatedBriefing || payload.generated_briefing),
+    preview_url: cleanText(payload.previewUrl || payload.preview_url),
+    preview_token: cleanText(payload.previewToken || payload.preview_token),
+    preview_package: payload.generatedPackage || payload.generated_package || {},
+    preview_generated_at: new Date().toISOString(),
+    demo_status: cleanText(payload.status || "interne_preview_klaar"),
+    updated_by: context.admin.id,
+    updated_at: new Date().toISOString(),
+  };
+  const rows = await patchDemoJourneyPreview(context, demoJourneyId, record);
+  return mapJourney(rows[0] || {});
+}
+
+async function patchDemoJourneyPreview(context, demoJourneyId, record = {}) {
+  try {
+    return await patchDemoJourneyPreviewRecord(context, demoJourneyId, record);
+  } catch (error) {
+    if (!isMissingColumnError(error)) throw error;
+    const { preview_token, preview_package, preview_generated_at, ...fallbackRecord } = record;
+    return patchDemoJourneyPreviewRecord(context, demoJourneyId, fallbackRecord);
+  }
+}
+
+async function patchDemoJourneyPreviewRecord(context, demoJourneyId, record = {}) {
+  return supabaseFetch(`${context.supabaseUrl}/rest/v1/demo_journeys?id=eq.${encodeURIComponent(demoJourneyId)}`, {
     method: "PATCH",
     headers: { ...restHeaders(context.serviceRoleKey), Prefer: "return=representation", "Content-Type": "application/json" },
-    body: JSON.stringify({
-      generated_briefing: cleanText(payload.generatedBriefing || payload.generated_briefing),
-      preview_url: cleanText(payload.previewUrl || payload.preview_url),
-      preview_token: cleanText(payload.previewToken || payload.preview_token),
-      preview_package: payload.generatedPackage || payload.generated_package || {},
-      preview_generated_at: new Date().toISOString(),
-      demo_status: cleanText(payload.status || "interne_preview_klaar"),
-      updated_by: context.admin.id,
-      updated_at: new Date().toISOString(),
-    }),
+    body: JSON.stringify(record),
   });
-  return mapJourney(rows[0] || {});
 }
 
 async function readJourney(context, id) {
@@ -602,6 +618,11 @@ function cleanText(value = "") {
   return String(value || "").trim();
 }
 
+function cleanUuid(value = "") {
+  const text = cleanText(value);
+  return uuidPattern.test(text) ? text : "";
+}
+
 function isMissingFactoryTableError(error = {}) {
   const text = [error.message, error.details, error.code].map((value) => cleanText(value).toLowerCase()).join(" ");
   return error.status === 404
@@ -610,6 +631,11 @@ function isMissingFactoryTableError(error = {}) {
     || text.includes("schema cache")
     || text.includes("website_build_jobs")
     || text.includes("website_preview_versions");
+}
+
+function isMissingColumnError(error = {}) {
+  const text = [error.message, error.details, error.hint, error.code].map((value) => cleanText(value).toLowerCase()).join(" ");
+  return error.code === "42703" || error.code === "PGRST204" || text.includes("schema cache") || text.includes("column");
 }
 
 module.exports = {
