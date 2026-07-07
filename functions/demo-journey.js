@@ -286,8 +286,6 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
 
   if (action === "generate_email") {
     const template = buildEmailTemplate(payload.emailType || payload.demoStatus || current?.demo_status, current ? mapJourney(current) : payload);
-    const approvalError = emailApprovalError(template.type, current ? mapJourney(current) : payload);
-    if (approvalError) return jsonResponse(403, { success: false, error: approvalError, template });
     return jsonResponse(200, { success: true, template });
   }
 
@@ -642,26 +640,27 @@ function buildEmailTemplate(typeOrStatus = "", journey = {}) {
   const name = cleanText(journey.contactName || journey.contact_name || "u");
   const business = cleanText(journey.businessName || journey.business_name || "uw bedrijf");
   const preview = cleanText(journey.previewUrl || journey.preview_url);
+  const previewLink = preview || "[previewlink]";
   const templates = {
     day1_received: {
       subject: "Uw website-aanvraag is ontvangen",
-      body: `Beste ${name},\n\nBedankt voor uw aanvraag voor ${business}. We hebben de belangrijkste wensen vastgelegd en controleren intern welke structuur, uitstraling en contactroute het beste past.\n\nU ontvangt de komende dagen korte updates. Zo blijft duidelijk wat er klaarstaat en welke vervolgstap logisch is.\n\nMet vriendelijke groet,\nMax Webstudio`,
+      body: `Beste ${name},\n\nBedankt voor uw aanvraag voor ${business}. We hebben uw gegevens ontvangen en zetten de eerste wensen om naar een helder websiteplan.\n\nVandaag controleren we vooral de basis: doelgroep, aanbod, gewenste uitstraling en de belangrijkste route naar contact. U hoeft nu niets extra's te doen.\n\nVoorbeeld: als u vooral meer offerteaanvragen wilt ontvangen, zorgen we dat de preview daar zichtbaar op stuurt.\n\nMorgen ontvangt u een korte update zodra het concept in voorbereiding is.\n\nMet vriendelijke groet,\nMax Webstudio`,
     },
     day2_concept: {
       subject: "Uw eerste websiteconcept wordt voorbereid",
-      body: `Beste ${name},\n\nWe zijn bezig met het concept voor ${business}. Daarbij letten we op een duidelijke eerste indruk, heldere diensten, vertrouwen en een eenvoudige route naar contact.\n\nZodra de interne controle klaar is, zetten we de preview voor u klaar.\n\nMet vriendelijke groet,\nMax Webstudio`,
+      body: `Beste ${name},\n\nWe zijn bezig met het eerste concept voor ${business}. We werken de structuur uit en letten op een sterke eerste indruk, duidelijke diensten, vertrouwen en een eenvoudige route naar contact.\n\nU hoeft nog niets te beoordelen. Deze stap is bedoeld om intern een goede basis neer te zetten voordat u meekijkt.\n\nVoorbeeld: we bepalen alvast welke onderdelen bovenaan moeten staan, zoals diensten, recensies, werkgebied of een duidelijke belknop.\n\nZodra de preview klaarstaat, ontvangt u de link om rustig mee te kijken.\n\nMet vriendelijke groet,\nMax Webstudio`,
     },
     day3_preview_ready: {
       subject: "Uw eerste website-preview staat klaar",
-      body: `Beste ${name},\n\nUw eerste website-preview staat klaar. U kunt de preview bekijken via:\n${preview || "[previewlink]"}\n\nGeef gerust uw opmerkingen, wensen en correcties door. Dan verwerken wij deze rustig in de volgende ronde.\n\nMet vriendelijke groet,\nMax Webstudio`,
+      body: `Beste ${name},\n\nUw eerste website-preview staat klaar. U kunt de preview hier bekijken:\n${previewLink}\n\nBekijk de preview gerust rustig en geef uw opmerkingen, wensen of correcties door. Het hoeft nog niet perfect te zijn; deze ronde is juist bedoeld om uw feedback goed mee te nemen.\n\nVoorbeeld: u kunt reageren met "de tekst bij diensten mag korter", "de foto's mogen persoonlijker" of "de contactknop mag duidelijker".\n\nNa uw reactie verwerken wij de feedback in de volgende versie.\n\nMet vriendelijke groet,\nMax Webstudio`,
     },
     day4_feedback_refinement: {
-      subject: "We verwerken de laatste punten van uw website",
-      body: `Beste ${name},\n\nWe controleren de preview en verwerken waar nodig de laatste punten. De focus ligt op inhoud, contactgegevens, uitstraling en een nette afronding.\n\nAls er nog iets ontbreekt, kunt u dat gerust aan ons doorgeven.\n\nMet vriendelijke groet,\nMax Webstudio`,
+      subject: "We verwerken uw feedback in de website",
+      body: `Beste ${name},\n\nWe zijn bezig met het verwerken van de feedback voor ${business}. Daarbij controleren we de teksten, contactgegevens, uitstraling, knoppen en de logische volgorde van de pagina.\n\nAls u nog een laatste punt ziet, kunt u dat vandaag nog doorgeven. Dan nemen we het mee voordat we de oplevering afronden.\n\nVoorbeeld: denk aan openingstijden, telefoonnummer, werkgebied, een dienst die ontbreekt of een zin die net anders moet.\n\nDaarna maken we de website klaar voor de laatste controle.\n\nMet vriendelijke groet,\nMax Webstudio`,
     },
     day5_delivery_ready: {
       subject: "Uw website staat klaar voor de laatste controle",
-      body: `Beste ${name},\n\nDe website voor ${business} staat klaar voor de laatste controle. We lopen graag samen de laatste details door voordat we de vervolgstap richting oplevering of livegang nemen.\n\nPreview:\n${preview || "[previewlink]"}\n\nMet vriendelijke groet,\nMax Webstudio`,
+      body: `Beste ${name},\n\nDe website voor ${business} staat klaar voor de laatste controle. U kunt de laatste versie hier bekijken:\n${previewLink}\n\nControleer vooral of de inhoud klopt en of bezoekers makkelijk contact kunnen opnemen. Als alles akkoord is, plannen we de vervolgstap richting oplevering of livegang.\n\nVoorbeeld: bevestig gerust met "akkoord voor livegang" of stuur nog een laatste punt zoals "pas het mobiele nummer nog aan".\n\nNa uw akkoord ronden wij de oplevering netjes af.\n\nMet vriendelijke groet,\nMax Webstudio`,
     },
   };
   return { type, to: cleanText(journey.email).toLowerCase(), ...templates[type] };

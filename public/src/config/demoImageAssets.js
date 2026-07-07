@@ -46,6 +46,18 @@ const branchImageGroups = Object.freeze([
   group("verhuisbedrijf", "Verhuisbedrijf", ["verhuisbedrijf-demo"], ["verhuisbedrijf", "verhuizen", "transport", "opslag", "planning", "logistiek"]),
   group("dierenarts", "Dierenarts", ["dierenarts-demo"], ["dierenarts", "dierenzorg", "kliniek", "consult", "vaccinatie", "huisdieren"]),
   group("schoonheidssalon", "Schoonheidssalon", ["schoonheidssalon-demo"], ["schoonheidssalon", "beauty", "wellness", "facials", "massage", "huidverbetering"]),
+  customGroup("holistisch", "Holistische praktijk", ["holistisch-demo"], ["holistisch", "spiritueel", "zweverig", "healing", "healer", "energie", "energetisch", "ademwerk", "bewustzijn", "rituelen", "ceremonie"], {
+    hero: customAsset("holistisch", "Holistische praktijk", "hero", "hero.png", "Holistische praktijk hero afbeelding voor demo website", "schoonheidssalon"),
+    service: customAsset("holistisch", "Holistische praktijk", "service", "service.png", "Holistische praktijk diensten afbeelding voor demo website", "schoonheidssalon"),
+    team: customAsset("holistisch", "Holistische praktijk", "team", "team.png", "Holistische praktijk team en werkwijze afbeelding voor demo website", "schoonheidssalon"),
+    project: customAsset("holistisch", "Holistische praktijk", "project", "project.png", "Holistische praktijk sessie afbeelding voor demo website", "schoonheidssalon"),
+    contact: customAsset("holistisch", "Holistische praktijk", "contact", "contact.png", "Holistische praktijk contact afbeelding voor demo website", "schoonheidssalon"),
+    "service-alt": customAsset("holistisch", "Holistische praktijk", "service-alt", "service-alt.png", "Holistische praktijk extra dienst afbeelding voor demo website", "schoonheidssalon"),
+    "project-alt": customAsset("holistisch", "Holistische praktijk", "project-alt", "project-alt.png", "Holistische praktijk extra sessie afbeelding voor demo website", "schoonheidssalon"),
+    detail: customAsset("holistisch", "Holistische praktijk", "detail", "detail.png", "Holistische praktijk detail afbeelding voor demo website", "schoonheidssalon"),
+    review: customAsset("holistisch", "Holistische praktijk", "review", "review.png", "Holistische praktijk review en vertrouwen afbeelding voor demo website", "schoonheidssalon"),
+    background: customAsset("holistisch", "Holistische praktijk", "background", "background.png", "Holistische praktijk achtergrond afbeelding voor demo website", "schoonheidssalon"),
+  }),
   group("makelaar", "Makelaar", ["makelaar-demo"], ["vastgoed", "makelaar", "woning", "taxatie", "waardebepaling", "bezichtiging"]),
   group("hotel", "Hotel", ["hotel-demo"], ["hotel", "b&b", "bed and breakfast", "hospitality", "kamers", "boeken", "verblijf"]),
   group("financieel-adviseur", "Financieel adviseur", ["financieel-adviseur-demo"], ["financieel", "financieel advies", "hypotheek", "accountant", "belasting", "advies"]),
@@ -85,13 +97,13 @@ function asset(groupSlug, groupLabel, role) {
   });
 }
 
-function customAsset(groupSlug, groupLabel, role, filename, alt) {
+function customAsset(groupSlug, groupLabel, role, filename, alt, sourceGroupSlug = groupSlug) {
   return Object.freeze({
     slug: `${groupSlug}-${role}`,
     groupSlug,
     role,
     type: role,
-    src: `${DEMO_IMAGE_BASE}/${groupSlug}/${filename}`,
+    src: `${DEMO_IMAGE_BASE}/${sourceGroupSlug}/${filename}`,
     alt: alt || `${groupLabel} ${roleLabels[role] || role} afbeelding voor demo website`,
   });
 }

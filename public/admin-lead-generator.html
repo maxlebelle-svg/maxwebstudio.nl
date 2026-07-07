@@ -22596,6 +22596,22 @@
                       <a href="${escapeHtml(mailHref || "#")}" aria-disabled="${mailHref ? "false" : "true"}"><span aria-hidden="true">@</span><small>E-mail</small><strong>${escapeHtml(lead.email || "Geen e-mail")}</strong></a>
                       <a href="${escapeHtml(websiteUrl || "#")}" target="_blank" rel="noopener" aria-disabled="${websiteUrl ? "false" : "true"}"><span aria-hidden="true">↗</span><small>Website</small><strong>${escapeHtml(lead.websiteUrl || "Geen website")}</strong></a>
                     </div>
+                    <div class="lead-card-inline-edit" data-lead-card-contact-edit>
+                      <strong>Ontbrekende gegevens aanvullen</strong>
+                      <label>
+                        <span>Telefoonnummer</span>
+                        <input type="tel" value="${escapeHtml(lead.phone || "")}" data-lead-card-field="phone" placeholder="Bijv. 06 12345678" autocomplete="tel">
+                      </label>
+                      <label>
+                        <span>E-mailadres</span>
+                        <input type="email" value="${escapeHtml(lead.email || "")}" data-lead-card-field="email" placeholder="naam@bedrijf.nl" autocomplete="email">
+                      </label>
+                      <label>
+                        <span>Website</span>
+                        <input type="url" value="${escapeHtml(lead.websiteUrl || "")}" data-lead-card-field="websiteUrl" placeholder="https://..." autocomplete="url">
+                      </label>
+                      <button class="lead-card-inline-save" type="button" data-leadfinder-action="save-card-contact" aria-label="Contactgegevens opslaan voor ${escapeHtml(lead.companyName || "deze lead")}">Gegevens opslaan</button>
+                    </div>
                     <div class="lead-owner-row">
                       <span>Medewerker: ${escapeHtml(getLeadOwnerLabel(lead))}</span>
                       <span>Laatst bijgewerkt: ${escapeHtml(formatLeadDate(lead.updatedAt))}</span>
@@ -23010,6 +23026,12 @@
           : "<li>Geen duidelijke punten gevonden.</li>";
       }
 
+      function renderPricingAnalysisList(items = []) {
+        return items.length
+          ? items.slice(0, 6).map((item) => `<li><strong>${escapeHtml(item.name || "Pakket")}</strong> ${escapeHtml(item.price || "")}<small>${escapeHtml(item.description || item.sourceText || "Controleer bedrag voor publicatie.")}</small></li>`).join("")
+          : "<li>Geen prijsregels gevonden op de homepage.</li>";
+      }
+
       function renderWebsiteAnalysisHtml(result, target) {
         const checks = result.checks || {};
         const responseTime = Number(result.responseTimeMs || checks.responseTimeMs || 0);
@@ -23019,6 +23041,7 @@
         const strengths = result.strengths || result.strongPoints || buildWebsiteStrengths(checks);
         const improvements = result.improvements || result.weakPoints || [];
         const opportunities = result.salesOpportunities || [];
+        const pricingItems = Array.isArray(result.currentWebsite?.pricingItems) ? result.currentWebsite.pricingItems : [];
         const groups = [
           renderWebsiteCheckGroup("Bereikbaarheid", [
             renderWebsiteCheck("Website bereikbaar", checks.websiteReachable),
@@ -23094,6 +23117,16 @@
             <div>
               <strong>Belhaakjes</strong>
               <ul>${renderAnalysisList(opportunities.slice(0, 3).map((item) => `Vraag of ${item.toLowerCase()}`))}</ul>
+            </div>
+          </div>
+          <div class="lead-analysis-columns">
+            <div>
+              <strong>Gevonden pakketten/prijzen</strong>
+              <ul>${renderPricingAnalysisList(pricingItems)}</ul>
+            </div>
+            <div>
+              <strong>Prijscontrole</strong>
+              <ul><li>Gebruik dit als snelle voorzet en controleer bedragen altijd voor publicatie.</li><li>Staan prijzen in een PDF, afbeelding of calculator, vul ze handmatig in bij de Website Factory intake.</li></ul>
             </div>
           </div>
           <p class="lead-analysis-disclaimer">Deze scan is objectief, handmatig gestart en gebruikt geen AI.</p>
@@ -23381,6 +23414,26 @@
         await refreshLeads({ keepSelection: options.keepSelection !== false });
       }
 
+      async function saveLeadCardContact(row, lead, button) {
+        if (!row || !lead?.id) return;
+        const readCardField = (field) => String(row.querySelector(`[data-lead-card-field="${field}"]`)?.value || "").trim();
+        const updates = {
+          phone: readCardField("phone"),
+          email: readCardField("email"),
+          websiteUrl: readCardField("websiteUrl"),
+        };
+        button.disabled = true;
+        button.setAttribute("aria-busy", "true");
+        try {
+          await updateLeadfinderLead(lead, updates, "Contactgegevens opgeslagen.");
+        } catch (error) {
+          setLeadfinderMessage(error.message || "Contactgegevens konden niet worden opgeslagen.", "error");
+        } finally {
+          button.disabled = false;
+          button.removeAttribute("aria-busy");
+        }
+      }
+
       async function handleLeadfinderSubmit(event) {
         event.preventDefault();
         const companyName = leadfinderElements.company?.value.trim();
@@ -23454,6 +23507,10 @@
           return;
         }
         const button = event.target.closest("[data-leadfinder-action]");
+        if (event.target.closest("[data-lead-card-contact-edit]") && !button) {
+          event.stopPropagation();
+          return;
+        }
         if (!button && event.target.closest("a")) return;
         const row = event.target.closest("[data-leadfinder-id]");
         if (!row) return;
@@ -23524,6 +23581,9 @@
           await saveLeadOwnerAssignmentForLead(lead, selectedValue, setLeadfinderMessage);
           button.disabled = false;
           button.removeAttribute("aria-busy");
+          return;
+        } else if (button.dataset.leadfinderAction === "save-card-contact") {
+          await saveLeadCardContact(row, lead, button);
           return;
         } else if (button.dataset.leadfinderAction === "view") {
           setLeadfinderMessage("Lead geselecteerd", "success");
@@ -24206,6 +24266,7 @@
           { key: "style", label: "Gewenste uitstraling", required: true, type: "multi", options: [["premium", "Premium"], ["modern", "Modern"], ["rustig", "Rustig"], ["lokaal", "Lokaal"], ["luxe", "Luxe"], ["direct", "Direct"]] },
           { key: "cta", label: "Belangrijkste CTA", required: true, type: "single", options: [["call", "Bel direct"], ["quote", "Offerte aanvragen"], ["appointment", "Afspraak plannen"], ["contact", "Contact opnemen"], ["whatsapp", "WhatsApp"]] },
           { key: "services", label: "Diensten / aanbod", required: true, type: "multi", wide: true, options: [["renovatie", "Renovatie"], ["maatwerk", "Maatwerk"], ["onderhoud", "Onderhoud"], ["advies", "Advies"], ["spoed", "Spoedservice"], ["projecten", "Projecten"]] },
+          { key: "productPricing", label: "Producten / pakketten / prijzen", type: "text", wide: true, placeholder: "Bijv. Starter pakket - €495, Care Basic - €19,95 per maand. Laat leeg als de website-scan dit moet vullen." },
           { key: "area", label: "Werkgebied", required: true, type: "single", options: [["local", "Lokaal"], ["regional", "Regionaal"], ["national", "Landelijk"]] },
           { key: "audience", label: "Doelgroep", required: true, type: "single", options: [["particulier", "Particulieren"], ["zakelijk", "Zakelijk"], ["beide", "Beide"], ["premium", "Premium klanten"]] },
           { key: "existingWebsite", label: "Bestaande website", required: true, type: "single", options: [["none", "Geen website"], ["outdated", "Verouderd"], ["active", "Actief"], ["unknown", "Onbekend"]] },
@@ -25054,6 +25115,7 @@
             currentWebsite.h1 ? `Bestaande H1: ${currentWebsite.h1}` : "",
             Array.isArray(currentWebsite.headings) && currentWebsite.headings.length ? `Bestaande koppen: ${currentWebsite.headings.slice(0, 5).join(" | ")}` : "",
             Array.isArray(currentWebsite.paragraphs) && currentWebsite.paragraphs.length ? `Bestaande inhoud: ${currentWebsite.paragraphs.slice(0, 3).join(" | ")}` : "",
+            Array.isArray(currentWebsite.pricingItems) && currentWebsite.pricingItems.length ? `Gevonden pakketten/prijzen: ${currentWebsite.pricingItems.slice(0, 6).map((item) => `${item.name || "Pakket"} ${item.price || ""}`.trim()).join(" | ")}` : "",
             Array.isArray(currentWebsite.imageUrls) && currentWebsite.imageUrls.length ? `Bestaande foto's/beelden: ${currentWebsite.imageUrls.slice(0, 6).join(" | ")}` : "",
           ].filter(Boolean);
           return [
@@ -25133,10 +25195,6 @@
         }
 
         async function generateEmail() {
-          if (emailRequiresApproval(elements.emailType?.value || "")) {
-            setMessage(elements.emailMessage, "Deze mail mag pas klaarstaan na Super Admin goedkeuring.", "warning");
-            return;
-          }
           await withJourneyLock("prepare_email", [elements.generateEmail, elements.nextStepPrimary], async () => {
             setMessage(elements.emailMessage, "Mail klaarzetten...", "info");
             try {
@@ -25898,6 +25956,9 @@
             event.preventDefault();
             event.stopPropagation();
             approveJourney("delivery");
+          });
+          elements.emailType?.addEventListener("change", () => {
+            generateEmail();
           });
           elements.generateEmail?.addEventListener("click", (event) => {
             event.preventDefault();

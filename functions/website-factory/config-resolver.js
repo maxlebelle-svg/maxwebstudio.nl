@@ -26,6 +26,7 @@ const INDUSTRY_ALIASES = [
   ["makelaar", /\b(makelaar|vastgoed|woning|taxatie|verkoop|aankoop)\b/i],
   ["installateur", /\b(installateur|installatie|zonnepanelen|warmtepomp|airco|elektra|loodgieter|laadpaal)\b/i],
   ["schoonheidssalon", /\b(schoonheid|beauty|schoonheidssalon|wellness|behandeling)\b/i],
+  ["holistisch", /\b(holistisch|spiritueel|zweverig|healing|healer|energie|energetisch|ademwerk|bewustzijn|ritueel|ceremonie)\b/i],
   ["schoonmaak", /\b(schoonmaak|cleaning|reiniging|vve|kantoor|oplevering)\b/i],
 ];
 

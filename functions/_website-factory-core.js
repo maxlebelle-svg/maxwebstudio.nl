@@ -183,6 +183,11 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     ...(currentWebsite.paragraphs || []),
   ].filter(Boolean).join("\n");
   const services = mergeUnique(industryProfile.services, extractServices([industrySignals, currentWebsiteText].filter(Boolean).join("\n"), industry)).slice(0, 6);
+  const pricingPackages = extractPricingPackages({
+    currentWebsite,
+    briefing: combinedBriefing,
+    services,
+  });
   const benefits = inferBenefits(industry, industryProfile);
   const processSteps = inferProcessSteps(industry, industryProfile);
   const cta = inferCta(industrySignals, industryProfile);
@@ -202,7 +207,7 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
   const title = `${businessName} - ${industryProfile.label}`;
   const description = `${businessName} presenteert ${industryProfile.label.toLowerCase()} met een premium uitstraling, duidelijke actieknoppen en een route naar contact.`;
   const siteAssets = buildSiteAssets({ businessName, industryProfile, services, colors, heroImage, demoImageAssets, projectSlug });
-  const html = renderHtml({ businessName, contactName, email, phone, websiteUrl, siteUrl, industry, industryProfile, services, benefits, processSteps, cta, colors, style, title, description, lowInputWarning, packageType, packageRules, heroImage, siteAssets, currentWebsite });
+  const html = renderHtml({ businessName, contactName, email, phone, websiteUrl, siteUrl, industry, industryProfile, services, pricingPackages, benefits, processSteps, cta, colors, style, title, description, lowInputWarning, packageType, packageRules, heroImage, siteAssets, currentWebsite });
   const css = renderCss(colors);
   const script = renderScript({ businessName, email, services });
   const sitemap = renderSitemap({ siteUrl, pages });
@@ -222,6 +227,8 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     style,
     colors,
     services,
+    pricingPackages,
+    pricingSource: pricingPackages.length ? pricingPackages[0].source || "website_scan_or_intake" : "",
     benefits,
     processSteps,
     factoryConfig,
@@ -311,7 +318,7 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     { path: "index.html", content: html },
     ...pages.filter((page) => page !== "index.html").map((page) => ({
       path: page,
-      content: renderSubPage({ page, businessName, contactName, email, phone, websiteUrl, siteUrl, industry, industryProfile, services, benefits, processSteps, cta, colors, packageRules, heroImage, siteAssets }),
+      content: renderSubPage({ page, businessName, contactName, email, phone, websiteUrl, siteUrl, industry, industryProfile, services, pricingPackages, benefits, processSteps, cta, colors, packageRules, heroImage, siteAssets }),
     })),
   ];
   const readme = [
@@ -331,6 +338,7 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     `Positionering: ${factoryConfig.package.positioning || "-"}`,
     `Template: ${packageRules.template}`,
     `Pagina's: ${pages.join(", ")}`,
+    pricingPackages.length ? `Gevonden prijzen/pakketten: ${pricingPackages.map((item) => `${item.name} ${item.price}`).join(", ")}` : "Gevonden prijzen/pakketten: geen betrouwbare prijsregels gevonden.",
     `Brancheprofiel: ${industryProfile.label}`,
     `Resolved package: ${factoryConfig.package.id}`,
     `Resolved industry: ${factoryConfig.industry.id}`,
@@ -367,6 +375,9 @@ function normalizeCurrentWebsiteSnapshot(value = null) {
   const cleanList = (items = [], limit = 8) => Array.isArray(items)
     ? items.map(cleanText).filter(Boolean).slice(0, limit)
     : [];
+  const pricingItems = Array.isArray(source.pricingItems || source.prices || source.packages)
+    ? (source.pricingItems || source.prices || source.packages).map(normalizePricingPackage).filter(Boolean).slice(0, 8)
+    : [];
   return {
     sourceUrl: cleanText(source.sourceUrl || source.finalUrl || source.url),
     title: cleanText(source.title),
@@ -374,10 +385,79 @@ function normalizeCurrentWebsiteSnapshot(value = null) {
     h1: cleanText(source.h1),
     headings: cleanList(source.headings, 10),
     paragraphs: cleanList(source.paragraphs, 8),
+    pricingItems,
     imageUrls: cleanList(source.imageUrls || source.images, 8),
     socialUrls: cleanList(source.socialUrls || source.socials, 8),
     extractedAt: cleanText(source.extractedAt),
   };
+}
+
+function extractPricingPackages({ currentWebsite = {}, briefing = "", services = [] } = {}) {
+  const fromWebsite = Array.isArray(currentWebsite.pricingItems)
+    ? currentWebsite.pricingItems.map((item) => normalizePricingPackage({ ...item, source: "current_website_scan" })).filter(Boolean)
+    : [];
+  const fromBriefing = extractPricingPackagesFromText(briefing).map((item) => ({ ...item, source: "manual_intake_or_briefing" }));
+  const seen = new Set();
+  return [...fromWebsite, ...fromBriefing].filter((item) => {
+    const normalized = normalizePricingPackage(item, services);
+    if (!normalized) return false;
+    const key = `${normalized.name}|${normalized.price}`.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    Object.assign(item, normalized);
+    return true;
+  }).slice(0, 6);
+}
+
+function normalizePricingPackage(item = {}, services = []) {
+  if (!item || typeof item !== "object") return null;
+  const serviceList = Array.isArray(services) ? services : [];
+  const rawName = cleanText(item.name || item.title || item.label);
+  const rawPrice = cleanText(item.price || item.amount || item.tariff || item.tarief);
+  const price = normalizePriceText(rawPrice || cleanText(item.sourceText || "").match(pricePattern())?.[0]);
+  if (!price) return null;
+  const serviceFallback = serviceList.find((service) => cleanText(item.sourceText || item.description || "").toLowerCase().includes(String(service).toLowerCase()));
+  const name = cleanText(rawName || serviceFallback || "Pakket").replace(/\s+/g, " ").slice(0, 70);
+  const description = cleanText(item.description || item.sourceText || "Prijs gevonden op basis van de huidige website of intake. Controleer voor publicatie.").slice(0, 170);
+  return {
+    name,
+    price,
+    description,
+    source: cleanText(item.source || "website_scan_or_intake"),
+    confidence: cleanText(item.confidence || "medium"),
+  };
+}
+
+function extractPricingPackagesFromText(text = "") {
+  const lines = String(text || "")
+    .split(/\n+/)
+    .map((line) => cleanText(line.replace(/^[-*]\s*/, "")))
+    .filter(Boolean);
+  const items = [];
+  const pattern = pricePattern();
+  lines.forEach((line, index) => {
+    if (!/(prijs|prijzen|pakket|pakketten|tarief|kosten|€|euro|eur|vanaf)/i.test(line)) return;
+    const match = line.match(pattern);
+    if (!match) return;
+    const name = cleanText(line.replace(match[0], "").replace(/^(prijzen?|pakketten?|tarieven?|kosten|productPricing|producten\/pakketten\/prijzen):\s*/i, "").replace(/[:|-]+$/g, "")) || cleanText(lines[index - 1]) || "Pakket";
+    items.push({
+      name,
+      price: normalizePriceText(match[0]),
+      description: cleanText(lines[index + 1] || line),
+      confidence: "manual",
+    });
+  });
+  return items;
+}
+
+function pricePattern() {
+  return /(?:vanaf\s*)?(?:€|\beur\b|\beuro\b)\s?\d{1,5}(?:[.,]\d{2})?(?:\s*(?:,-|p\/m|per maand|\/\s?(?:maand|mnd|uur|les|sessie|behandeling|jaar)))?|\d{1,5}(?:[.,]\d{2})?\s*(?:€|euro|eur)(?:\s*(?:p\/m|per maand|\/\s?(?:maand|mnd|uur|les|sessie|behandeling|jaar)))?/i;
+}
+
+function normalizePriceText(value = "") {
+  const price = cleanText(value).replace(/\beur\b/i, "euro");
+  if (!price || !/\d/.test(price)) return "";
+  return price.replace(/^euro\s*/i, "€").replace(/\s+/g, " ");
 }
 
 function runQualityCheck({ generatedPackage = {}, journey = {} }) {
@@ -824,7 +904,7 @@ function navigationLinks(packageRules = PACKAGE_RULES.starter) {
   return links;
 }
 
-function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteUrl, industry, industryProfile, services, benefits, processSteps, cta, colors, style, title, description, lowInputWarning, packageRules, heroImage, siteAssets, currentWebsite = {} }) {
+function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteUrl, industry, industryProfile, services, pricingPackages = [], benefits, processSteps, cta, colors, style, title, description, lowInputWarning, packageRules, heroImage, siteAssets, currentWebsite = {} }) {
   const profile = industryProfile || resolveIndustryProfile({ industry, businessName });
   const navLinks = navigationLinks(packageRules).map((item) => `<a href="${escapeHtml(item.href)}">${escapeHtml(item.label)}</a>`).join("");
   const phoneHref = phone ? `tel:${phone.replace(/[^+\d]/g, "")}` : "#contact";
@@ -841,6 +921,22 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
           <h3>${escapeHtml(service)}</h3>
           <p>${escapeHtml(serviceText(service, profile))}</p>
         </a>`).join("");
+  const pricingCards = pricingPackages.map((item) => `
+        <article class="pricing-card">
+          <span>${escapeHtml(item.confidence === "manual" ? "Aangeleverd" : "Gevonden op huidige website")}</span>
+          <h3>${escapeHtml(item.name)}</h3>
+          <strong>${escapeHtml(item.price)}</strong>
+          <p>${escapeHtml(item.description)}</p>
+        </article>`).join("");
+  const pricingSection = pricingPackages.length ? `
+      <section class="section-band pricing-section" id="prijzen">
+        <div>
+          <span class="eyebrow">Pakketten & prijzen</span>
+          <h2>Herkenbare prijzen direct meegenomen uit de huidige situatie.</h2>
+          <p>Deze bedragen zijn voorbereid op basis van de bestaande website of intake. Controleer ze voor publicatie, zodat de nieuwe website precies aansluit op het actuele aanbod.</p>
+        </div>
+        <div class="pricing-card-grid">${pricingCards}</div>
+      </section>` : "";
   const benefitCards = benefits.map((benefit) => `
         <article class="benefit-card">
           <strong>${escapeHtml(benefit.title)}</strong>
@@ -958,6 +1054,7 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
         <h2>Kies uw project en bekijk verschillende oplossingen.</h2>
         <div class="service-grid">${serviceTiles}</div>
       </section>
+      ${pricingSection}
 
       <section class="portfolio-panel section-band" id="portfolio" hidden>
         <div>
@@ -1031,7 +1128,7 @@ function renderHtml({ businessName, contactName, email, phone, websiteUrl, siteU
 </html>`;
 }
 
-function renderSubPage({ page, businessName, contactName, email, phone, websiteUrl, siteUrl, industry, industryProfile, services, benefits, processSteps, cta, colors, packageRules, heroImage, siteAssets }) {
+function renderSubPage({ page, businessName, contactName, email, phone, websiteUrl, siteUrl, industry, industryProfile, services, pricingPackages = [], benefits, processSteps, cta, colors, packageRules, heroImage, siteAssets }) {
   const titleMap = {
     "over-ons.html": "Over ons",
     "diensten.html": "Diensten",
@@ -1045,8 +1142,10 @@ function renderSubPage({ page, businessName, contactName, email, phone, websiteU
   const logoAsset = assetPath(siteAssets, "logo", "");
   const faviconAsset = assetPath(siteAssets, "favicon", "");
   const heroAsset = assetPath(siteAssets, "hero", heroImage.src);
+  const serviceBody = services.map((service) => `<article class="service-card"><img src="${escapeHtml(serviceAssetPath(siteAssets, service, heroAsset))}" alt="${escapeHtml(service)}" loading="lazy" /><h3>${escapeHtml(service)}</h3><p>${escapeHtml(serviceText(service, profile))}</p></article>`).join("");
+  const pricingBody = pricingPackages.map((item) => `<article class="pricing-card"><span>${escapeHtml(item.confidence === "manual" ? "Aangeleverd" : "Gevonden op huidige website")}</span><h3>${escapeHtml(item.name)}</h3><strong>${escapeHtml(item.price)}</strong><p>${escapeHtml(item.description)}</p></article>`).join("");
   const body = page === "diensten.html"
-    ? services.map((service) => `<article class="service-card"><img src="${escapeHtml(serviceAssetPath(siteAssets, service, heroAsset))}" alt="${escapeHtml(service)}" loading="lazy" /><h3>${escapeHtml(service)}</h3><p>${escapeHtml(serviceText(service, profile))}</p></article>`).join("")
+    ? `${serviceBody}${pricingBody}`
     : page === "reviews.html"
       ? benefits.map((benefit) => `<article class="review-card"><strong>${escapeHtml(benefit.title)}</strong><p>${escapeHtml(benefit.text)}</p></article>`).join("")
       : page === "projecten.html"
@@ -1057,7 +1156,7 @@ function renderSubPage({ page, businessName, contactName, email, phone, websiteU
 }
 
 function renderCss() {
-  const css = `:root{color-scheme:light;--paper:#f5f1ea;--line:rgba(17,24,39,.14);--muted:#5f6673;--shadow:0 30px 90px rgba(17,24,39,.18)}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--paper);color:var(--ink)}a{color:inherit}.site-header{position:sticky;top:0;z-index:20;display:grid;grid-template-columns:auto 1fr auto auto;gap:28px;align-items:center;padding:20px clamp(22px,4vw,64px);color:#fff;background:linear-gradient(180deg,rgba(17,24,20,.84),rgba(17,24,20,.68));backdrop-filter:blur(18px)}.brand{display:flex;align-items:center;gap:14px;text-decoration:none;font-size:20px;font-weight:900}.brand img{width:54px;height:54px;object-fit:contain}.site-header nav{display:flex;justify-content:center;gap:28px}.site-header nav a,.nav-phone{text-decoration:none;font-size:15px;font-weight:850;color:rgba(255,255,255,.86)}.nav-cta{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 20px;border-radius:3px;background:var(--accent);color:#fff;text-decoration:none;font-weight:950}.section-band{width:min(1160px,calc(100% - 44px));margin:0 auto}.hero{position:relative;display:grid;align-items:center;min-height:calc(100vh - 86px);padding:clamp(64px,8vw,120px) clamp(22px,4vw,84px);overflow:hidden;color:#fff;background:#111}.hero>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.hero-shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.76),rgba(0,0,0,.42) 45%,rgba(0,0,0,.16)),linear-gradient(0deg,rgba(0,0,0,.38),rgba(0,0,0,.08))}.hero-copy{position:relative;z-index:1;max-width:860px}.eyebrow{display:block;margin-bottom:20px;color:var(--accent);font-size:13px;font-weight:950;letter-spacing:.06em;text-transform:uppercase}h1,h2,h3,p{letter-spacing:0}h1{max-width:920px;margin:0 0 24px;font-size:clamp(48px,7.4vw,104px);line-height:.94;font-weight:950}h2{max-width:850px;margin:0 0 22px;font-size:clamp(34px,5vw,66px);line-height:1;font-weight:950}h3{margin:0 0 10px;font-size:clamp(22px,2vw,30px);line-height:1.08}.hero p{max-width:760px;color:rgba(255,255,255,.88);font-size:clamp(19px,2vw,24px);line-height:1.6}.button{display:inline-flex;align-items:center;justify-content:center;min-height:54px;padding:15px 24px;border:1px solid transparent;border-radius:3px;background:var(--accent);color:#fff;text-decoration:none;font-weight:950;box-shadow:0 18px 42px color-mix(in srgb,var(--accent) 32%,transparent)}.button.secondary{border-color:rgba(255,255,255,.42);background:rgba(255,255,255,.08);box-shadow:none}.hero-actions,.hero-proof{display:flex;flex-wrap:wrap;gap:14px;margin-top:32px}.hero-proof{margin-top:54px}.hero-proof span{min-width:180px;padding:18px 22px;border-left:1px solid rgba(255,255,255,.28);background:rgba(17,24,39,.42);font-size:15px;font-weight:850;color:rgba(255,255,255,.78)}.hero-proof strong{display:block;color:#fff;font-size:28px}.contact-bar{position:relative;z-index:4;display:grid;grid-template-columns:repeat(3,1fr);width:min(1040px,calc(100% - 44px));margin:-44px auto 80px;background:rgba(255,255,255,.94);box-shadow:var(--shadow)}.contact-bar a{display:grid;gap:5px;min-height:96px;padding:26px 32px;text-decoration:none;border-right:1px solid var(--line)}.contact-bar a:nth-child(2){background:var(--accent);color:#fff}.contact-bar strong{font-size:22px}.contact-bar span{color:var(--muted);font-weight:800}.contact-bar a:nth-child(2) span{color:rgba(255,255,255,.88)}.services-section,.benefits-section,.reviews-section,.gallery-section,.premium-offer,.contact-section,.preview-note,.section-heading,.portfolio-panel{padding:clamp(64px,7vw,110px) 0}.services-section h2{max-width:900px}.service-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:34px}.project-tile{position:relative;min-height:250px;display:flex;flex-direction:column;justify-content:flex-end;padding:20px;overflow:hidden;color:#fff;text-decoration:none;background:#111}.project-tile::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.74),rgba(0,0,0,.08))}.project-tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .35s ease}.project-tile:hover img{transform:scale(1.045)}.project-tile span,.project-tile h3,.project-tile p{position:relative;z-index:1}.project-tile span{color:var(--accent);font-weight:950}.project-tile p{margin:0;color:rgba(255,255,255,.82);font-size:14px;line-height:1.5}.portfolio-panel{display:grid;grid-template-columns:.72fr 1.28fr;gap:28px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.portfolio-panel[hidden]{display:none}.portfolio-gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.portfolio-item{position:relative;min-height:210px;overflow:hidden;color:#fff;background:#111}.portfolio-item img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.portfolio-item strong{position:absolute;left:18px;right:18px;bottom:18px;z-index:1;font-size:20px}.portfolio-item::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.68),transparent)}.benefits-section{display:grid;grid-template-columns:.85fr 1.15fr;gap:44px}.benefits-section p,.contact-section p,.section-heading p,.premium-offer p,.portfolio-panel p{color:var(--muted);font-size:19px;line-height:1.7}.benefit-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}.benefit-card,.review-card,.preview-note,.company-card,.service-card:not(.project-tile){border:1px solid var(--line);background:#fff;box-shadow:0 22px 60px rgba(17,24,39,.07)}.benefit-card{padding:28px}.benefit-card strong{display:block;font-size:24px;margin-bottom:8px}.benefit-card p,.review-card p{margin:0;color:var(--muted);font-size:16px;line-height:1.65}.source-website-section{display:grid;grid-template-columns:.8fr 1.2fr;gap:28px;padding:clamp(64px,7vw,110px) 0;border-top:1px solid var(--line)}.source-highlights{margin:0;padding:0;list-style:none;display:grid;gap:12px}.source-highlights li{padding:18px 20px;background:#fff;border-left:4px solid var(--accent);box-shadow:0 16px 40px rgba(17,24,39,.06);font-weight:800;line-height:1.5}.source-image-strip{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.source-image-strip img{width:100%;height:260px;object-fit:cover;background:#111}.process-section{padding:clamp(76px,8vw,120px) 0;background:var(--dark);color:#fff}.process-section h2{color:#fff}.process-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:34px}.process-card{min-height:250px;padding:28px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.055)}.process-card span{display:block;margin-bottom:54px;color:var(--accent);font-weight:950}.process-card p{color:rgba(255,255,255,.72);font-size:16px;line-height:1.7}.reviews-section{display:grid;grid-template-columns:.8fr 1fr 1fr;gap:22px}.review-card{padding:32px}.review-card strong{display:block;font-size:26px;line-height:1.15;margin-bottom:22px}.gallery-section{display:grid;grid-template-columns:.75fr 1.25fr;gap:34px}.gallery-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}.gallery-grid article{position:relative;min-height:220px;display:flex;align-items:flex-end;padding:22px;overflow:hidden;color:#fff;background:#111}.gallery-grid article::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.68),rgba(0,0,0,.06))}.gallery-grid img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.gallery-grid strong{position:relative;z-index:1;font-size:26px}.premium-offer{border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.contact-section{display:grid;grid-template-columns:.88fr 1.12fr;gap:58px;align-items:start}.company-card{display:grid;gap:8px;margin-top:28px;padding:26px;border-top:5px solid var(--accent)}.company-card strong{font-size:32px}.preview-form{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;padding:34px;background:#fff;box-shadow:var(--shadow)}label{display:grid;gap:8px;font-weight:900}.wide{grid-column:1/-1}input,select,textarea{width:100%;min-height:54px;border:1px solid var(--line);background:var(--paper);padding:0 16px;font:inherit;font-weight:750;color:var(--ink)}textarea{min-height:150px;padding-top:14px;resize:vertical}button{min-height:56px;border:0;background:var(--accent);color:#fff;font:inherit;font-weight:950}.preview-form button,.preview-form small{grid-column:1/-1}.preview-form small{color:var(--muted)}.preview-note{padding:24px;margin-bottom:44px}.site-footer{display:flex;justify-content:space-between;gap:20px;padding:34px clamp(22px,4vw,64px);background:var(--dark);color:rgba(255,255,255,.72);font-weight:850}.site-footer strong{color:#fff}.sub-hero{position:relative;min-height:52vh;display:grid;align-items:end;padding:clamp(70px,8vw,120px) clamp(22px,5vw,86px);color:#fff;overflow:hidden;background:#111}.sub-hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.sub-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.72),rgba(0,0,0,.18))}.sub-hero>div{position:relative;z-index:1}.section-heading .service-grid{grid-template-columns:repeat(3,1fr)}.section-heading .service-card{padding:28px}.section-heading .service-card img{width:100%;height:190px;object-fit:cover;margin:-28px -28px 24px;width:calc(100% + 56px)}@media(max-width:1100px){.service-grid{grid-template-columns:repeat(2,1fr)}.process-grid{grid-template-columns:repeat(2,1fr)}.site-header{grid-template-columns:1fr auto}.site-header nav,.nav-phone{display:none}.portfolio-panel{grid-template-columns:1fr}.portfolio-gallery{grid-template-columns:repeat(2,1fr)}}@media(max-width:760px){.hero{min-height:72vh}.contact-bar,.benefits-section,.reviews-section,.gallery-section,.contact-section,.source-website-section{grid-template-columns:1fr}.service-grid,.benefit-grid,.process-grid,.gallery-grid,.section-heading .service-grid,.preview-form,.portfolio-gallery,.source-image-strip{grid-template-columns:1fr}.contact-bar{margin:0 auto 50px}.hero-proof span{width:100%}h1{font-size:clamp(42px,15vw,68px)}}`;
+  const css = `:root{color-scheme:light;--paper:#f5f1ea;--line:rgba(17,24,39,.14);--muted:#5f6673;--shadow:0 30px 90px rgba(17,24,39,.18)}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--paper);color:var(--ink)}a{color:inherit}.site-header{position:sticky;top:0;z-index:20;display:grid;grid-template-columns:auto 1fr auto auto;gap:28px;align-items:center;padding:20px clamp(22px,4vw,64px);color:#fff;background:linear-gradient(180deg,rgba(17,24,20,.84),rgba(17,24,20,.68));backdrop-filter:blur(18px)}.brand{display:flex;align-items:center;gap:14px;text-decoration:none;font-size:20px;font-weight:900}.brand img{width:54px;height:54px;object-fit:contain}.site-header nav{display:flex;justify-content:center;gap:28px}.site-header nav a,.nav-phone{text-decoration:none;font-size:15px;font-weight:850;color:rgba(255,255,255,.86)}.nav-cta{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 20px;border-radius:3px;background:var(--accent);color:#fff;text-decoration:none;font-weight:950}.section-band{width:min(1160px,calc(100% - 44px));margin:0 auto}.hero{position:relative;display:grid;align-items:center;min-height:calc(100vh - 86px);padding:clamp(64px,8vw,120px) clamp(22px,4vw,84px);overflow:hidden;color:#fff;background:#111}.hero>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.hero-shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.76),rgba(0,0,0,.42) 45%,rgba(0,0,0,.16)),linear-gradient(0deg,rgba(0,0,0,.38),rgba(0,0,0,.08))}.hero-copy{position:relative;z-index:1;max-width:860px}.eyebrow{display:block;margin-bottom:20px;color:var(--accent);font-size:13px;font-weight:950;letter-spacing:.06em;text-transform:uppercase}h1,h2,h3,p{letter-spacing:0}h1{max-width:920px;margin:0 0 24px;font-size:clamp(48px,7.4vw,104px);line-height:.94;font-weight:950}h2{max-width:850px;margin:0 0 22px;font-size:clamp(34px,5vw,66px);line-height:1;font-weight:950}h3{margin:0 0 10px;font-size:clamp(22px,2vw,30px);line-height:1.08}.hero p{max-width:760px;color:rgba(255,255,255,.88);font-size:clamp(19px,2vw,24px);line-height:1.6}.button{display:inline-flex;align-items:center;justify-content:center;min-height:54px;padding:15px 24px;border:1px solid transparent;border-radius:3px;background:var(--accent);color:#fff;text-decoration:none;font-weight:950;box-shadow:0 18px 42px color-mix(in srgb,var(--accent) 32%,transparent)}.button.secondary{border-color:rgba(255,255,255,.42);background:rgba(255,255,255,.08);box-shadow:none}.hero-actions,.hero-proof{display:flex;flex-wrap:wrap;gap:14px;margin-top:32px}.hero-proof{margin-top:54px}.hero-proof span{min-width:180px;padding:18px 22px;border-left:1px solid rgba(255,255,255,.28);background:rgba(17,24,39,.42);font-size:15px;font-weight:850;color:rgba(255,255,255,.78)}.hero-proof strong{display:block;color:#fff;font-size:28px}.contact-bar{position:relative;z-index:4;display:grid;grid-template-columns:repeat(3,1fr);width:min(1040px,calc(100% - 44px));margin:-44px auto 80px;background:rgba(255,255,255,.94);box-shadow:var(--shadow)}.contact-bar a{display:grid;gap:5px;min-height:96px;padding:26px 32px;text-decoration:none;border-right:1px solid var(--line)}.contact-bar a:nth-child(2){background:var(--accent);color:#fff}.contact-bar strong{font-size:22px}.contact-bar span{color:var(--muted);font-weight:800}.contact-bar a:nth-child(2) span{color:rgba(255,255,255,.88)}.services-section,.pricing-section,.benefits-section,.reviews-section,.gallery-section,.premium-offer,.contact-section,.preview-note,.section-heading,.portfolio-panel{padding:clamp(64px,7vw,110px) 0}.services-section h2{max-width:900px}.service-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:34px}.project-tile{position:relative;min-height:250px;display:flex;flex-direction:column;justify-content:flex-end;padding:20px;overflow:hidden;color:#fff;text-decoration:none;background:#111}.project-tile::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.74),rgba(0,0,0,.08))}.project-tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .35s ease}.project-tile:hover img{transform:scale(1.045)}.project-tile span,.project-tile h3,.project-tile p{position:relative;z-index:1}.project-tile span{color:var(--accent);font-weight:950}.project-tile p{margin:0;color:rgba(255,255,255,.82);font-size:14px;line-height:1.5}.pricing-section{display:grid;grid-template-columns:.78fr 1.22fr;gap:38px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.pricing-card-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}.pricing-card{display:grid;gap:12px;padding:26px;border:1px solid var(--line);background:#fff;box-shadow:0 22px 60px rgba(17,24,39,.07)}.pricing-card span{color:var(--accent);font-size:12px;font-weight:950;text-transform:uppercase;letter-spacing:.06em}.pricing-card strong{font-size:clamp(34px,4vw,54px);line-height:1;color:var(--ink)}.pricing-card p{margin:0;color:var(--muted);font-size:16px;line-height:1.65}.portfolio-panel{display:grid;grid-template-columns:.72fr 1.28fr;gap:28px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.portfolio-panel[hidden]{display:none}.portfolio-gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.portfolio-item{position:relative;min-height:210px;overflow:hidden;color:#fff;background:#111}.portfolio-item img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.portfolio-item strong{position:absolute;left:18px;right:18px;bottom:18px;z-index:1;font-size:20px}.portfolio-item::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.68),transparent)}.benefits-section{display:grid;grid-template-columns:.85fr 1.15fr;gap:44px}.benefits-section p,.contact-section p,.section-heading p,.premium-offer p,.portfolio-panel p,.pricing-section p{color:var(--muted);font-size:19px;line-height:1.7}.benefit-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}.benefit-card,.review-card,.preview-note,.company-card,.service-card:not(.project-tile){border:1px solid var(--line);background:#fff;box-shadow:0 22px 60px rgba(17,24,39,.07)}.benefit-card{padding:28px}.benefit-card strong{display:block;font-size:24px;margin-bottom:8px}.benefit-card p,.review-card p{margin:0;color:var(--muted);font-size:16px;line-height:1.65}.source-website-section{display:grid;grid-template-columns:.8fr 1.2fr;gap:28px;padding:clamp(64px,7vw,110px) 0;border-top:1px solid var(--line)}.source-highlights{margin:0;padding:0;list-style:none;display:grid;gap:12px}.source-highlights li{padding:18px 20px;background:#fff;border-left:4px solid var(--accent);box-shadow:0 16px 40px rgba(17,24,39,.06);font-weight:800;line-height:1.5}.source-image-strip{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.source-image-strip img{width:100%;height:260px;object-fit:cover;background:#111}.process-section{padding:clamp(76px,8vw,120px) 0;background:var(--dark);color:#fff}.process-section h2{color:#fff}.process-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:34px}.process-card{min-height:250px;padding:28px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.055)}.process-card span{display:block;margin-bottom:54px;color:var(--accent);font-weight:950}.process-card p{color:rgba(255,255,255,.72);font-size:16px;line-height:1.7}.reviews-section{display:grid;grid-template-columns:.8fr 1fr 1fr;gap:22px}.review-card{padding:32px}.review-card strong{display:block;font-size:26px;line-height:1.15;margin-bottom:22px}.gallery-section{display:grid;grid-template-columns:.75fr 1.25fr;gap:34px}.gallery-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}.gallery-grid article{position:relative;min-height:220px;display:flex;align-items:flex-end;padding:22px;overflow:hidden;color:#fff;background:#111}.gallery-grid article::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.68),rgba(0,0,0,.06))}.gallery-grid img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.gallery-grid strong{position:relative;z-index:1;font-size:26px}.premium-offer{border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.contact-section{display:grid;grid-template-columns:.88fr 1.12fr;gap:58px;align-items:start}.company-card{display:grid;gap:8px;margin-top:28px;padding:26px;border-top:5px solid var(--accent)}.company-card strong{font-size:32px}.preview-form{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;padding:34px;background:#fff;box-shadow:var(--shadow)}label{display:grid;gap:8px;font-weight:900}.wide{grid-column:1/-1}input,select,textarea{width:100%;min-height:54px;border:1px solid var(--line);background:var(--paper);padding:0 16px;font:inherit;font-weight:750;color:var(--ink)}textarea{min-height:150px;padding-top:14px;resize:vertical}button{min-height:56px;border:0;background:var(--accent);color:#fff;font:inherit;font-weight:950}.preview-form button,.preview-form small{grid-column:1/-1}.preview-form small{color:var(--muted)}.preview-note{padding:24px;margin-bottom:44px}.site-footer{display:flex;justify-content:space-between;gap:20px;padding:34px clamp(22px,4vw,64px);background:var(--dark);color:rgba(255,255,255,.72);font-weight:850}.site-footer strong{color:#fff}.sub-hero{position:relative;min-height:52vh;display:grid;align-items:end;padding:clamp(70px,8vw,120px) clamp(22px,5vw,86px);color:#fff;overflow:hidden;background:#111}.sub-hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.sub-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.72),rgba(0,0,0,.18))}.sub-hero>div{position:relative;z-index:1}.section-heading .service-grid{grid-template-columns:repeat(3,1fr)}.section-heading .service-card,.section-heading .pricing-card{padding:28px}.section-heading .service-card img{width:100%;height:190px;object-fit:cover;margin:-28px -28px 24px;width:calc(100% + 56px)}@media(max-width:1100px){.service-grid,.pricing-card-grid{grid-template-columns:repeat(2,1fr)}.process-grid{grid-template-columns:repeat(2,1fr)}.site-header{grid-template-columns:1fr auto}.site-header nav,.nav-phone{display:none}.portfolio-panel,.pricing-section{grid-template-columns:1fr}.portfolio-gallery{grid-template-columns:repeat(2,1fr)}}@media(max-width:760px){.hero{min-height:72vh}.contact-bar,.benefits-section,.reviews-section,.gallery-section,.contact-section,.source-website-section{grid-template-columns:1fr}.service-grid,.pricing-card-grid,.benefit-grid,.process-grid,.gallery-grid,.section-heading .service-grid,.preview-form,.portfolio-gallery,.source-image-strip{grid-template-columns:1fr}.contact-bar{margin:0 auto 50px}.hero-proof span{width:100%}h1{font-size:clamp(42px,15vw,68px)}}`;
   return css;
 }
 

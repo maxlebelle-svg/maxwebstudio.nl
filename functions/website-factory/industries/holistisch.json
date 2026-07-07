@@ -1,0 +1,33 @@
+{
+  "id": "holistisch",
+  "key": "spiritueel",
+  "name": "Holistische praktijk",
+  "label": "Holistisch en spiritueel",
+  "aliases": ["holistisch", "spiritueel", "zweverig", "healing", "healer", "energie", "energetisch", "ademwerk", "bewustzijn", "ritueel", "ceremonie"],
+  "tone": "zacht, intuïtief, warm, rustig en licht mystiek",
+  "colorHints": ["lavendel", "saliegroen", "warm wit", "zacht goud"],
+  "palette": {
+    "ink": "#201a2b",
+    "brand": "#7c5cdb",
+    "accent": "#d8b56d",
+    "soft": "#f8f5fb",
+    "dark": "#241d34"
+  },
+  "copy": {
+    "eyebrow": "Healing, rust en bewustwording",
+    "hero": "Een zachte online plek voor groei, energie en verbinding.",
+    "intro": "Voor bezoekers die willen voelen of jouw begeleiding, sessies en werkwijze bij hen passen.",
+    "cta": "Plan een kennismaking",
+    "secondaryCta": "Bekijk sessies"
+  },
+  "heroAngles": [
+    "Een zachte online plek voor groei, energie en verbinding.",
+    "Laat bezoekers landen in rust voordat ze een sessie boeken."
+  ],
+  "services": ["Healing sessie", "Holistische coaching", "Ademwerk", "Energetische begeleiding", "Rituelen"],
+  "trustSignals": ["Veilige bedding", "Persoonlijke afstemming", "Rustige intake", "Heldere sessie-uitleg"],
+  "ctaExamples": ["Plan een kennismaking", "Boek een sessie", "Bekijk het aanbod"],
+  "assetKeywords": ["holistisch", "wellness", "healing", "meditatie", "ritueel"],
+  "preferredComponents": ["hero", "services", "reviews", "faq", "contact"],
+  "assetSlots": ["hero-rust", "sessie", "ritueel", "ruimte"]
+}

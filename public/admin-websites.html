@@ -22153,10 +22153,6 @@
         }
 
         async function generateEmail() {
-          if (emailRequiresApproval(elements.emailType?.value || "")) {
-            setMessage(elements.emailMessage, "Deze mail mag pas klaarstaan na Super Admin goedkeuring.", "warning");
-            return;
-          }
           await withJourneyLock("prepare_email", [elements.generateEmail, elements.nextStepPrimary], async () => {
             setMessage(elements.emailMessage, "Mail klaarzetten...", "info");
             try {
@@ -22918,6 +22914,9 @@
             event.preventDefault();
             event.stopPropagation();
             approveJourney("delivery");
+          });
+          elements.emailType?.addEventListener("change", () => {
+            generateEmail();
           });
           elements.generateEmail?.addEventListener("click", (event) => {
             event.preventDefault();

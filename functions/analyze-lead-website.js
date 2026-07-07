@@ -354,6 +354,7 @@ function buildCurrentWebsiteSnapshot(html, context = {}) {
   const headings = extractTagTexts(raw, /<h([1-3])[^>]*>([\s\S]*?)<\/h\1>/gi, 10);
   const paragraphs = extractTagTexts(raw, /<p[^>]*>([\s\S]*?)<\/p>/gi, 8)
     .filter((item) => item.length >= 35);
+  const pricingItems = extractPricingItems(raw);
   const imageUrls = extractImageUrls(raw, baseUrl).slice(0, 8);
   const socialUrls = extractUrls(raw, /(https?:\/\/(?:www\.)?(?:instagram|facebook|linkedin|youtube|youtu\.be|tiktok)\.com\/[^"'<\s)]+)/gi, 8);
   return {
@@ -363,10 +364,64 @@ function buildCurrentWebsiteSnapshot(html, context = {}) {
     h1: cleanExtractedText(context.h1Text),
     headings,
     paragraphs,
+    pricingItems,
     imageUrls,
     socialUrls,
     extractedAt: new Date().toISOString(),
   };
+}
+
+function extractPricingItems(html) {
+  const source = String(html || "")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<(li|p|h[1-4]|div|section|article|tr|br)\b[^>]*>/gi, "\n")
+    .replace(/<\/(li|p|h[1-4]|div|section|article|tr)>/gi, "\n");
+  const lines = stripHtml(source)
+    .split(/\n+/)
+    .map((line) => cleanExtractedText(line).slice(0, 180))
+    .filter((line) => line.length >= 5);
+  const pricePattern = /(?:vanaf\s*)?(?:€|\beur\b|\beuro\b)\s?\d{1,5}(?:[.,]\d{2})?(?:\s*(?:,-|p\/m|per maand|\/\s?(?:maand|mnd|uur|les|sessie|behandeling|jaar)))?|\d{1,5}(?:[.,]\d{2})?\s*(?:€|euro|eur)(?:\s*(?:p\/m|per maand|\/\s?(?:maand|mnd|uur|les|sessie|behandeling|jaar)))?/i;
+  const ignorePattern = /\b(kvk|btw|iban|postcode|telefoon|tel\.?|06[-\s]?\d|whatsapp|copyright|202\d|19\d{2}|cookies?)\b/i;
+  const items = [];
+  const seen = new Set();
+
+  lines.forEach((line, index) => {
+    const priceMatch = line.match(pricePattern);
+    if (!priceMatch || ignorePattern.test(line)) return;
+    const context = [lines[index - 2], lines[index - 1], line, lines[index + 1]]
+      .filter(Boolean)
+      .join(" | ");
+    const name = inferPricingName({ line, context, price: priceMatch[0] });
+    const description = inferPricingDescription({ lines, index, name, price: priceMatch[0] });
+    const key = `${name}|${priceMatch[0]}`.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    items.push({
+      name,
+      price: cleanExtractedText(priceMatch[0]),
+      description,
+      sourceText: context.slice(0, 260),
+      confidence: /pakket|prijs|tarief|vanaf|per maand|p\/m|€/.test(context.toLowerCase()) ? "medium" : "low",
+    });
+  });
+
+  return items.slice(0, 8);
+}
+
+function inferPricingName({ line, context, price }) {
+  const withoutPrice = cleanExtractedText(line.replace(price, " ").replace(/\s{2,}/g, " "));
+  const labelMatch = context.match(/(?:pakket|plan|abonnement|behandeling|dienst|les|sessie|consult|starter|basic|plus|pro|premium|gold|silver|bronze|business|growth)[^|€]{0,70}/i);
+  const candidate = withoutPrice.length >= 3 && withoutPrice.length <= 70 ? withoutPrice : cleanExtractedText(labelMatch?.[0] || "");
+  if (candidate) return titleCase(candidate.replace(/^(vanaf|prijs|tarief|kosten)\s+/i, ""));
+  return "Pakket";
+}
+
+function inferPricingDescription({ lines, index, name, price }) {
+  const candidates = [lines[index + 1], lines[index - 1]]
+    .map((line) => cleanExtractedText(line))
+    .filter((line) => line && line !== name && !line.includes(price));
+  return (candidates[0] || "Prijs gevonden op de huidige website. Controleer deze voor publicatie.").slice(0, 150);
 }
 
 function extractTagTexts(html, pattern, limit = 8) {
@@ -523,6 +578,10 @@ function decodeEntities(value) {
 
 function hasAny(text, needles) {
   return needles.some((needle) => text.includes(needle));
+}
+
+function titleCase(value = "") {
+  return cleanExtractedText(value).replace(/\b([a-zà-ÿ])/gi, (match) => match.toUpperCase());
 }
 
 function safeErrorMessage(error) {

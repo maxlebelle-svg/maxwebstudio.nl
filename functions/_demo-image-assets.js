@@ -53,6 +53,18 @@ const demoImageGroups = Object.freeze([
   group("verhuisbedrijf", "Verhuisbedrijf", ["verhuisbedrijf-demo"], ["verhuisbedrijf", "verhuizen", "transport", "opslag", "planning", "logistiek"]),
   group("dierenarts", "Dierenarts", ["dierenarts-demo"], ["dierenarts", "dierenzorg", "kliniek", "consult", "vaccinatie", "huisdieren"]),
   group("schoonheidssalon", "Schoonheidssalon", ["schoonheidssalon-demo"], ["schoonheidssalon", "beauty", "wellness", "facials", "massage", "huidverbetering"]),
+  customGroup("holistisch", "Holistische praktijk", ["holistisch-demo"], ["holistisch", "spiritueel", "zweverig", "healing", "healer", "energie", "energetisch", "ademwerk", "bewustzijn", "rituelen", "ceremonie"], {
+    hero: { fileName: "hero.png", sourceGroupSlug: "schoonheidssalon" },
+    service: { fileName: "service.png", sourceGroupSlug: "schoonheidssalon" },
+    team: { fileName: "team.png", sourceGroupSlug: "schoonheidssalon" },
+    project: { fileName: "project.png", sourceGroupSlug: "schoonheidssalon" },
+    contact: { fileName: "contact.png", sourceGroupSlug: "schoonheidssalon" },
+    "service-alt": { fileName: "service-alt.png", sourceGroupSlug: "schoonheidssalon" },
+    "project-alt": { fileName: "project-alt.png", sourceGroupSlug: "schoonheidssalon" },
+    detail: { fileName: "detail.png", sourceGroupSlug: "schoonheidssalon" },
+    review: { fileName: "review.png", sourceGroupSlug: "schoonheidssalon" },
+    background: { fileName: "background.png", sourceGroupSlug: "schoonheidssalon" },
+  }),
   group("makelaar", "Makelaar", ["makelaar-demo"], ["vastgoed", "makelaar", "woning", "taxatie", "waardebepaling", "bezichtiging"]),
   group("hotel", "Hotel", ["hotel-demo"], ["hotel", "b&b", "bed and breakfast", "hospitality", "kamers", "boeken", "verblijf"]),
   group("financieel-adviseur", "Financieel adviseur", ["financieel-adviseur-demo"], ["financieel", "financieel advies", "hypotheek", "accountant", "belasting", "advies"]),
@@ -93,13 +105,15 @@ function asset(groupSlug, groupLabel, role) {
   });
 }
 
-function customAsset(groupSlug, groupLabel, role, fileName) {
+function customAsset(groupSlug, groupLabel, role, fileConfig) {
+  const fileName = typeof fileConfig === "string" ? fileConfig : fileConfig?.fileName;
+  const sourceGroupSlug = typeof fileConfig === "string" ? groupSlug : fileConfig?.sourceGroupSlug || groupSlug;
   return Object.freeze({
     slug: `${groupSlug}-${role}`,
     groupSlug,
     role,
     type: role,
-    src: `${DEMO_IMAGE_BASE}/${groupSlug}/${fileName}`,
+    src: `${DEMO_IMAGE_BASE}/${sourceGroupSlug}/${fileName}`,
     alt: `${groupLabel} ${roleLabels[role]} afbeelding voor demo website`,
   });
 }
