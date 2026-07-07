@@ -21918,13 +21918,45 @@
         setNoteSyncStatus("local", "Keuze toegevoegd aan het belscript.");
       }
 
+      function inferDemoFactoryBranchFromLead(lead = {}, extraText = "") {
+        const text = [lead?.industry, lead?.companyName, lead?.notes, lead?.demoBriefing, extraText].filter(Boolean).join(" ").toLowerCase();
+        if (/tandarts|mondzorg|orthodont|dental/.test(text)) return "tandarts";
+        if (/fysio|fysiotherapie|revalidatie|sportzorg/.test(text)) return "fysiotherapie";
+        if (/kinderopvang|bso|peuter|opvang/.test(text)) return "kinderopvang";
+        if (/dierenarts|dierenkliniek|dierenzorg|huisdieren/.test(text)) return "dierenarts";
+        if (/elektricien|elektra|groepenkast|stroom/.test(text)) return "elektricien";
+        if (/loodgieter|lekkage|sanitair/.test(text)) return "loodgieter";
+        if (/install|zonnepanelen|thuisbatterij|warmtepomp|airco|laadpaal|verduurzaming|solar/.test(text)) return "installatiebedrijf";
+        if (/bouw|aannemer|renovatie|dak|timmer|schilder|quantum|kozijn|kozijnen|gevel/.test(text)) return "bouwbedrijf";
+        if (/hovenier|tuin|groen|tuinaanleg/.test(text)) return "hovenier";
+        if (/schoonmaak|cleaning|vve|oplevering/.test(text)) return "schoonmaakbedrijf";
+        if (/verhuis|verhuizing|transport|opslag/.test(text)) return "verhuisbedrijf";
+        if (/restaurant|cafe|café|bar|lunch|food|eetcafe|eetcafé|snackbar/.test(text)) return "horeca";
+        if (/fitness|sportschool|personal trainer|gym|yoga|pilates/.test(text)) return "fitness";
+        if (/advocaat|juridisch|jurist|recht|advocatuur/.test(text)) return "juridisch";
+        if (/auto|garage|apk|occasion|showroom|autobedrijf/.test(text)) return "automotive";
+        if (/kapper|kapsalon|barber|barbershop|haar|knippen/.test(text)) return "kapsalon";
+        if (/schoonheid|wellness|massage|huid|facial|beauty/.test(text)) return "schoonheidssalon";
+        if (/makelaar|vastgoed|woning|taxatie/.test(text)) return "makelaar";
+        if (/hotel|b&b|bed and breakfast|hospitality|kamer/.test(text)) return "hotel";
+        if (/financieel|hypotheek|accountant|belasting|advies/.test(text)) return "financieel_adviseur";
+        return "zakelijk";
+      }
+
       function leadDemoPendingPayload(lead = selectedLeadFinderLead()) {
         const notes = composeLeadSalesNotes(leadfinderElements.detailIntake?.value || "", leadfinderElements.detailNote?.value || "") || getLeadNotes(lead);
         const values = readCallScriptFieldValues();
         const styleText = values.stylePreference.toLowerCase();
         const serviceText = values.importantServices.toLowerCase();
+        const serviceChoices = [
+          serviceText.includes("renovatie") ? "renovatie" : "",
+          serviceText.includes("onderhoud") ? "onderhoud" : "",
+          serviceText.includes("advies") ? "advies" : "",
+          serviceText.includes("maatwerk") ? "maatwerk" : "",
+          "projecten",
+        ].filter(Boolean);
         const demoFactoryIntake = {
-          branch: String(lead?.industry || "").toLowerCase().includes("bouw") ? "bouw" : "",
+          branch: inferDemoFactoryBranchFromLead(lead, notes),
           goal: /aanvragen|leads|contact/i.test(notes) ? "leads" : "trust",
           package: "starter",
           style: [
@@ -21935,13 +21967,7 @@
             "direct",
           ].filter(Boolean),
           cta: /whatsapp/i.test(notes) ? "whatsapp" : /offerte/i.test(notes) ? "quote" : "contact",
-          services: [
-            serviceText.includes("renovatie") ? "renovatie" : "",
-            serviceText.includes("onderhoud") ? "onderhoud" : "",
-            serviceText.includes("advies") ? "advies" : "",
-            serviceText.includes("maatwerk") ? "maatwerk" : "",
-            "projecten",
-          ].filter(Boolean),
+          services: serviceChoices.length ? serviceChoices : ["advies", "projecten"],
           area: "local",
           audience: /zakelijk/i.test(values.targetAudience) ? "zakelijk" : /beide/i.test(values.targetAudience) ? "beide" : "particulier",
           existingWebsite: values.website || lead?.websiteUrl ? "active" : "unknown",
@@ -24426,7 +24452,7 @@
         let intakeAssets = [];
         const journeyLocks = new Set();
         const intakeQuestions = [
-          { key: "branch", label: "Branche", helper: "Kies het brancheprofiel voor teksten, beelden en componenten.", required: true, type: "single", options: [["bouw", "Bouw / renovatie"], ["installateur", "Installateur"], ["hovenier", "Hovenier"], ["restaurant", "Restaurant"], ["kapper", "Kapper"], ["makelaar", "Makelaar"], ["zakelijk", "Zakelijke dienstverlening"]] },
+          { key: "branch", label: "Branche", helper: "Kies het brancheprofiel voor teksten, beelden en componenten.", required: true, type: "single", options: [["installatiebedrijf", "Installatie & verduurzaming"], ["bouwbedrijf", "Bouwbedrijf"], ["horeca", "Horeca / restaurant"], ["fitness", "Sportschool / personal trainer"], ["juridisch", "Advocaat / juridisch"], ["automotive", "Autobedrijf / garage"], ["kapsalon", "Kapsalon / barber"], ["tandarts", "Tandarts / mondzorg"], ["elektricien", "Elektricien"], ["loodgieter", "Loodgieter"], ["hovenier", "Hovenier"], ["schoonmaakbedrijf", "Schoonmaakbedrijf"], ["verhuisbedrijf", "Verhuisbedrijf"], ["dierenarts", "Dierenarts"], ["schoonheidssalon", "Schoonheidssalon / wellness"], ["makelaar", "Makelaar / vastgoed"], ["hotel", "Hotel / B&B"], ["financieel_adviseur", "Financieel adviseur"], ["fysiotherapie", "Fysiotherapie"], ["kinderopvang", "Kinderopvang"], ["zakelijk", "Zakelijke dienstverlening"]] },
           { key: "goal", label: "Hoofddoel website", required: true, type: "single", options: [["leads", "Meer aanvragen"], ["trust", "Meer vertrouwen"], ["portfolio", "Werk tonen"], ["recruitment", "Personeel werven"]] },
           { key: "package", label: "Websitepakket", required: true, type: "single", options: websitePackages },
           { key: "style", label: "Gewenste uitstraling", required: true, type: "multi", options: [["premium", "Premium"], ["modern", "Modern"], ["rustig", "Rustig"], ["lokaal", "Lokaal"], ["luxe", "Luxe"], ["direct", "Direct"]] },
@@ -24825,7 +24851,7 @@
 
         function prefillIntakeFromLead(lead = {}) {
           if (!lead) return;
-          if (lead.industry && !intakeState.branch) intakeState.branch = String(lead.industry).toLowerCase().includes("bouw") ? "bouw" : "";
+          if ((lead.industry || lead.companyName || lead.notes) && !intakeState.branch) intakeState.branch = inferDemoFactoryBranchFromLead(lead);
           if (lead.region && !intakeState.regionText) intakeState.regionText = lead.region;
           if (!intakeState.package) intakeState.package = packageTypeFromValue(lead.packageType || lead.package_type || elements.package?.value);
           if (!intakeState.leadTemperature && lead.leadScore) intakeState.leadTemperature = Number(lead.leadScore) >= 80 ? "hot" : Number(lead.leadScore) >= 60 ? "medium" : "cold";

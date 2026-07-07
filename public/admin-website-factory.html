@@ -20814,7 +20814,7 @@
         let intakeAssets = [];
         const journeyLocks = new Set();
         const intakeQuestions = [
-          { key: "branch", label: "Branche", helper: "Kies het brancheprofiel voor teksten, beelden en componenten.", required: true, type: "single", options: [["bouw", "Bouw / renovatie"], ["installateur", "Installateur"], ["hovenier", "Hovenier"], ["restaurant", "Restaurant"], ["kapper", "Kapper"], ["makelaar", "Makelaar"], ["zakelijk", "Zakelijke dienstverlening"]] },
+          { key: "branch", label: "Branche", helper: "Kies het brancheprofiel voor teksten, beelden en componenten.", required: true, type: "single", options: [["installatiebedrijf", "Installatie & verduurzaming"], ["bouwbedrijf", "Bouwbedrijf"], ["horeca", "Horeca / restaurant"], ["fitness", "Sportschool / personal trainer"], ["juridisch", "Advocaat / juridisch"], ["automotive", "Autobedrijf / garage"], ["kapsalon", "Kapsalon / barber"], ["tandarts", "Tandarts / mondzorg"], ["elektricien", "Elektricien"], ["loodgieter", "Loodgieter"], ["hovenier", "Hovenier"], ["schoonmaakbedrijf", "Schoonmaakbedrijf"], ["verhuisbedrijf", "Verhuisbedrijf"], ["dierenarts", "Dierenarts"], ["schoonheidssalon", "Schoonheidssalon / wellness"], ["makelaar", "Makelaar / vastgoed"], ["hotel", "Hotel / B&B"], ["financieel_adviseur", "Financieel adviseur"], ["fysiotherapie", "Fysiotherapie"], ["kinderopvang", "Kinderopvang"], ["zakelijk", "Zakelijke dienstverlening"]] },
           { key: "goal", label: "Hoofddoel website", required: true, type: "single", options: [["leads", "Meer aanvragen"], ["trust", "Meer vertrouwen"], ["portfolio", "Werk tonen"], ["recruitment", "Personeel werven"]] },
           { key: "package", label: "Websitepakket", required: true, type: "single", options: websitePackages },
           { key: "style", label: "Gewenste uitstraling", required: true, type: "multi", options: [["premium", "Premium"], ["modern", "Modern"], ["rustig", "Rustig"], ["lokaal", "Lokaal"], ["luxe", "Luxe"], ["direct", "Direct"]] },
@@ -21211,12 +21211,102 @@
           return values.map((item) => question.options?.find(([option]) => option === item)?.[1] || item).filter(Boolean).join(", ");
         }
 
+        function inferBranchFromLead(lead = {}) {
+          const text = [lead.industry, lead.companyName, lead.notes, lead.demoBriefing].filter(Boolean).join(" ").toLowerCase();
+          if (/tandarts|mondzorg|orthodont|dental/.test(text)) return "tandarts";
+          if (/fysio|fysiotherapie|revalidatie|sportzorg/.test(text)) return "fysiotherapie";
+          if (/kinderopvang|bso|peuter|opvang/.test(text)) return "kinderopvang";
+          if (/dierenarts|dierenkliniek|dierenzorg|huisdieren/.test(text)) return "dierenarts";
+          if (/elektricien|elektra|groepenkast|stroom/.test(text)) return "elektricien";
+          if (/loodgieter|lekkage|sanitair/.test(text)) return "loodgieter";
+          if (/install|zonnepanelen|thuisbatterij|warmtepomp|airco|laadpaal|verduurzaming|solar/.test(text)) return "installatiebedrijf";
+          if (/bouw|aannemer|renovatie|dak|timmer|schilder|quantum|kozijn|kozijnen|gevel/.test(text)) return "bouwbedrijf";
+          if (/hovenier|tuin|groen|tuinaanleg/.test(text)) return "hovenier";
+          if (/schoonmaak|cleaning|vve|oplevering/.test(text)) return "schoonmaakbedrijf";
+          if (/verhuis|verhuizing|transport|opslag/.test(text)) return "verhuisbedrijf";
+          if (/restaurant|cafe|café|bar|lunch|food|eetcafe|eetcafé|snackbar/.test(text)) return "horeca";
+          if (/fitness|sportschool|personal trainer|gym|yoga|pilates/.test(text)) return "fitness";
+          if (/advocaat|juridisch|jurist|recht|advocatuur/.test(text)) return "juridisch";
+          if (/auto|garage|apk|occasion|showroom|autobedrijf/.test(text)) return "automotive";
+          if (/kapper|kapsalon|barber|barbershop|haar|knippen/.test(text)) return "kapsalon";
+          if (/schoonheid|wellness|massage|huid|facial|beauty/.test(text)) return "schoonheidssalon";
+          if (/makelaar|vastgoed|woning|taxatie/.test(text)) return "makelaar";
+          if (/hotel|b&b|bed and breakfast|hospitality|kamer/.test(text)) return "hotel";
+          if (/financieel|hypotheek|accountant|belasting|advies/.test(text)) return "financieel_adviseur";
+          return "zakelijk";
+        }
+
+        function ensureArrayValue(value, fallback = []) {
+          if (Array.isArray(value)) return value.filter(Boolean);
+          return value ? [value] : fallback;
+        }
+
+        function applyCallScriptIntakeToFactory(lead = {}) {
+          if (!lead) return;
+          const incoming = lead.demoFactoryIntake && typeof lead.demoFactoryIntake === "object" ? lead.demoFactoryIntake : {};
+          const text = [lead.notes, lead.demoBriefing, incoming.internalRemark, incoming.exampleWebsites].filter(Boolean).join(" ").toLowerCase();
+          const completed = {
+            branch: incoming.branch || inferBranchFromLead(lead),
+            goal: incoming.goal || (/aanvragen|leads|offerte|contact/.test(text) ? "leads" : "trust"),
+            package: incoming.package || packageTypeFromValue(lead.packageType || lead.package_type || elements.package?.value) || "starter",
+            style: ensureArrayValue(incoming.style, [
+              /luxe|premium/.test(text) ? "luxe" : "",
+              /modern|strak/.test(text) ? "modern" : "",
+              /rustig/.test(text) ? "rustig" : "",
+              /warm|persoonlijk|lokaal/.test(text) ? "lokaal" : "",
+              "direct",
+            ].filter(Boolean)),
+            cta: incoming.cta || (/whatsapp/.test(text) ? "whatsapp" : /offerte/.test(text) ? "quote" : /bel/.test(text) ? "call" : "contact"),
+            services: ensureArrayValue(incoming.services, [
+              /renovatie/.test(text) ? "renovatie" : "",
+              /onderhoud/.test(text) ? "onderhoud" : "",
+              /spoed/.test(text) ? "spoed" : "",
+              /maatwerk/.test(text) ? "maatwerk" : "",
+              /advies/.test(text) ? "advies" : "",
+              "projecten",
+            ].filter(Boolean)),
+            area: incoming.area || (lead.region ? "local" : "regional"),
+            audience: incoming.audience || (/zakelijk/.test(text) ? "zakelijk" : /beide/.test(text) ? "beide" : "particulier"),
+            existingWebsite: incoming.existingWebsite || (lead.websiteUrl ? "active" : "unknown"),
+            logoStatus: incoming.logoStatus || "unknown",
+            photoStatus: incoming.photoStatus || "needed",
+            followUp: incoming.followUp || "today",
+            leadTemperature: incoming.leadTemperature || (Number(lead.leadScore || 0) >= 70 ? "hot" : "medium"),
+            mustHaves: ensureArrayValue(incoming.mustHaves, ["phone", "contact_form", "reviews", "projects", "service_area"]),
+            colors: ensureArrayValue(incoming.colors, ["brand"]),
+            exampleWebsites: incoming.exampleWebsites || "",
+            internalRemark: [
+              incoming.internalRemark || "",
+              lead.demoBriefing ? "Overgenomen uit belscript. Gebruik deze intake als bron voor websiteplan, preview, demo-site en ZIP." : "",
+              "Output nodig: index.html, styles.css, script.js, robots.txt, sitemap.xml, assets/, live-upload/ en downloadbare ZIP.",
+            ].filter(Boolean).join("\n"),
+          };
+          intakeState = { ...intakeState, ...completed };
+          if (elements.package) elements.package.value = packageTypeFromValue(completed.package);
+        }
+
+        function hasCallScriptBriefing(lead = {}) {
+          return Boolean(
+            lead.demoFactoryIntake
+            || lead.demoBriefing
+            || lead.demoRequestSource === "sales_call_script"
+            || /DEMO BRIEFING VOOR WEBSITE FACTORY|VRAGENLIJST \/ BELSCRIPT|START VAN HET GESPREK/i.test(String(lead.notes || ""))
+          );
+        }
+
+        function factoryBriefingFromLead(lead = {}) {
+          return lead.demoBriefing || String(lead.notes || "");
+        }
+
         function prefillIntakeFromLead(lead = {}) {
           if (!lead) return;
-          if (lead.industry && !intakeState.branch) intakeState.branch = String(lead.industry).toLowerCase().includes("bouw") ? "bouw" : "";
+          if ((lead.industry || lead.companyName || lead.notes) && !intakeState.branch) intakeState.branch = inferBranchFromLead(lead);
           if (lead.region && !intakeState.regionText) intakeState.regionText = lead.region;
           if (!intakeState.package) intakeState.package = packageTypeFromValue(lead.packageType || lead.package_type || elements.package?.value);
           if (!intakeState.leadTemperature && lead.leadScore) intakeState.leadTemperature = Number(lead.leadScore) >= 80 ? "hot" : Number(lead.leadScore) >= 60 ? "medium" : "cold";
+          if (hasCallScriptBriefing(lead)) {
+            applyCallScriptIntakeToFactory(lead);
+          }
         }
 
         function renderIntakeFields() {
@@ -21595,8 +21685,23 @@
           fillSelect(elements.lead, leads.map((item) => [item.id, `${item.companyName || "Naamloos bedrijf"} - ${item.contactName || item.email || "geen contact"}`]), "Kies een lead");
         }
 
+        function pendingPreviewLeadForId(leadId = "") {
+          try {
+            const pendingLead = JSON.parse(sessionStorage.getItem("maxwebstudioPendingPreviewLead") || "null");
+            return pendingLead?.id && String(pendingLead.id) === String(leadId) ? pendingLead : null;
+          } catch {
+            return null;
+          }
+        }
+
+        function mergePendingPreviewLead(lead = {}) {
+          const pendingLead = pendingPreviewLeadForId(lead?.id);
+          return pendingLead ? { ...lead, ...pendingLead } : lead;
+        }
+
         function fillFromLead(lead) {
           if (!lead) return;
+          lead = mergePendingPreviewLead(lead);
           if (!journey) {
             elements.business.value = lead.companyName || "";
             elements.contact.value = lead.contactName || lead.contact || "Onbekende contactpersoon";
@@ -21610,9 +21715,24 @@
               lead.region ? `Regio: ${lead.region}` : "",
               lead.address ? `Adres: ${lead.address}` : "",
               lead.source ? `Bron: ${lead.source}` : "",
+              lead.demoRequestSource ? "Bron: belscript demo-aanvraag" : "",
+              lead.demoOutputRequirements?.length ? `Benodigde output: ${lead.demoOutputRequirements.join(", ")}` : "",
+              factoryBriefingFromLead(lead) && hasCallScriptBriefing(lead) ? `Belscript briefing:\n${factoryBriefingFromLead(lead)}` : "",
             ].filter(Boolean);
             if (elements.notes && !elements.notes.value && contextLines.length) {
               elements.notes.value = contextLines.join("\n");
+            }
+            if (elements.briefing && hasCallScriptBriefing(lead) && !elements.briefing.value) {
+              elements.briefing.value = [
+                factoryBriefingFromLead(lead),
+                "",
+                "WEBSITE FACTORY OUTPUT",
+                "- Maak een werkende preview/demo site.",
+                "- Lever index.html, styles.css, script.js, robots.txt en sitemap.xml.",
+                "- Gebruik een assets-map voor logo's, afbeeldingen en iconen.",
+                "- Maak een live-upload map voor publicatie.",
+                "- Maak een ZIP-download voor upload/deployment.",
+              ].join("\n");
             }
             prefillIntakeFromLead(lead);
             renderIntakeFields();
@@ -21678,6 +21798,9 @@
             ``,
             `Gewenste output`,
             `Een interne demo-preview met duidelijke homepage, diensten/aanbod, contactblok, call-to-action en ruimte voor klantfeedback.`,
+            ``,
+            `Technische output voor oplevering`,
+            `Maak dezelfde basisstructuur als onze klantdemo's: index.html, styles.css, script.js, robots.txt, sitemap.xml, assets-map, live-upload-map en een downloadbare ZIP voor Netlify/live upload.`,
           ].join("\n");
         }
 
@@ -22308,7 +22431,7 @@
         }
 
         async function openLeadPreviewWorkflow(event) {
-          const lead = event?.detail?.lead || {};
+          const lead = mergePendingPreviewLead(event?.detail?.lead || {});
           if (!lead.id || !elements.lead) return;
           await withJourneyLock(`lead-preview:${lead.id}`, [elements.generatePreview, elements.save], async () => {
             upsertLeadOption(lead);
@@ -22327,6 +22450,8 @@
               await loadJourney();
               if (journey?.id) {
                 setMessage(elements.message, "Bestaande demo-klantreis geladen.", "success");
+              } else if (hasCallScriptBriefing(lead)) {
+                setMessage(elements.message, "Belscript-intake overgenomen. Websiteplan, preview en ZIP kunnen nu direct worden gemaakt.", "success");
               } else {
                 setMessage(elements.message, "Leadgegevens ingevuld. Vul de wensen aan en sla de demo-aanvraag op.", "success");
               }
@@ -22519,15 +22644,9 @@
             ? window.maxwebstudioAdminPage.leadId
             : "";
           if (requestedLeadId) {
-            let requestedLead = leads.find((item) => String(item.id) === String(requestedLeadId));
-            if (!requestedLead) {
-              try {
-                const pendingLead = JSON.parse(sessionStorage.getItem("maxwebstudioPendingPreviewLead") || "null");
-                if (pendingLead?.id && String(pendingLead.id) === String(requestedLeadId)) requestedLead = pendingLead;
-              } catch {
-                requestedLead = null;
-              }
-            }
+            const pendingLead = pendingPreviewLeadForId(requestedLeadId);
+            let requestedLead = { ...(leads.find((item) => String(item.id) === String(requestedLeadId)) || {}), ...(pendingLead || {}) };
+            if (!requestedLead.id) requestedLead = null;
             if (requestedLead) {
               sessionStorage.removeItem("maxwebstudioPendingPreviewLead");
               await openLeadPreviewWorkflow({ detail: { lead: requestedLead } });
