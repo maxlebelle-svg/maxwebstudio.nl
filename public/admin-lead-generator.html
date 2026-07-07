@@ -19355,6 +19355,7 @@
         getLeadFinderLabel,
         getLeadFinderSummary,
         normalizeLeadFinderLead,
+        readAllLocalLeadSources,
         readLeadFinderLeads,
         saveLeadFinderLeadLocally,
         updateLeadFinderLeadLocally,
@@ -19837,20 +19838,68 @@
         return { synced, remaining: remaining.length };
       }
 
+      function leadMergeKeyParts(lead = {}) {
+        const metadata = lead.metadata && typeof lead.metadata === "object" ? lead.metadata : {};
+        const website = normalizeComparableUrl(lead.websiteUrl || lead.website || metadata.websiteUrl || metadata.website);
+        const phone = normalizeComparablePhone(lead.phone || metadata.phone);
+        const placeId = String(lead.googlePlaceId || metadata.googlePlaceId || metadata.google_place_id || "").trim().toLowerCase();
+        const companyRegion = [
+          String(lead.companyName || lead.company || lead.businessName || "").trim().toLowerCase(),
+          String(lead.region || lead.city || lead.plaats || "").trim().toLowerCase(),
+        ].filter(Boolean).join("|");
+        return [
+          lead.id ? `id:${String(lead.id).trim()}` : "",
+          placeId ? `place:${placeId}` : "",
+          website ? `website:${website}` : "",
+          phone ? `phone:${phone}` : "",
+          companyRegion ? `company:${companyRegion}` : "",
+        ].filter(Boolean);
+      }
+
+      function mergeLeadDataLayerRecords(remoteLeads = [], localLeads = readAllLocalLeadSources()) {
+        const merged = [...remoteLeads];
+        const seen = new Set(remoteLeads.flatMap(leadMergeKeyParts));
+        localLeads
+          .filter((lead) => lead && !isDemoLeadfinderLead(lead))
+          .forEach((lead) => {
+            const keys = leadMergeKeyParts(lead);
+            if (keys.some((key) => seen.has(key))) return;
+            merged.push({
+              ...lead,
+              _source: lead._source || "local",
+              metadata: {
+                ...(lead.metadata || {}),
+                centralSyncPending: lead.metadata?.centralSyncPending ?? true,
+              },
+            });
+            keys.forEach((key) => seen.add(key));
+          });
+        return merged;
+      }
+
       async function loadLeadfinderDataLayer(options = {}) {
         renderLeadfinderState("Leads laden", "De sales pipeline wordt opgehaald.", "loading");
         try {
           const result = await leadApiRequest("GET");
-          leadfinderDataLayerLeads = Array.isArray(result.records) ? result.records : [];
+          const remoteRecords = Array.isArray(result.records) ? result.records : [];
+          const localRecords = readAllLocalLeadSources();
+          leadfinderDataLayerLeads = mergeLeadDataLayerRecords(remoteRecords, localRecords);
           leadfinderLastDiagnostics = result.diagnostics || null;
           leadfinderSourceStatus = {
             mode: result.mode || "supabase-production",
-            counts: result.counts || {},
-            fallbackUsed: false,
+            counts: {
+              ...(result.counts || {}),
+              local: localRecords.length,
+              supabase: Number(result.counts?.supabase ?? remoteRecords.length),
+              hybrid: leadfinderDataLayerLeads.length,
+            },
+            fallbackUsed: localRecords.length > 0,
             error: result.error || "",
-            warning: result.warning || "",
+            warning: localRecords.length
+              ? "Lokale Lead Generator leads worden getoond tot centrale synchronisatie klaar is."
+              : result.warning || "",
             refreshedAt: result.refreshedAt || new Date().toISOString(),
-            dataLayer: "supabase-production-leads",
+            dataLayer: localRecords.length ? "supabase-production-plus-local-leads" : "supabase-production-leads",
             diagnostics: leadfinderLastDiagnostics,
           };
           localStorage.setItem("maxwebstudioLastLeadfinderSourceStatus", JSON.stringify(leadfinderSourceStatus));
@@ -19858,9 +19907,16 @@
             const queueResult = await syncQueuedLeads();
             if (queueResult.synced) {
               const refreshed = await leadApiRequest("GET");
-              leadfinderDataLayerLeads = Array.isArray(refreshed.records) ? refreshed.records : leadfinderDataLayerLeads;
+              const refreshedRemoteRecords = Array.isArray(refreshed.records) ? refreshed.records : [];
+              const refreshedLocalRecords = readAllLocalLeadSources();
+              leadfinderDataLayerLeads = mergeLeadDataLayerRecords(refreshedRemoteRecords, refreshedLocalRecords);
               leadfinderLastDiagnostics = refreshed.diagnostics || leadfinderLastDiagnostics;
-              leadfinderSourceStatus.counts = refreshed.counts || leadfinderSourceStatus.counts;
+              leadfinderSourceStatus.counts = {
+                ...(refreshed.counts || leadfinderSourceStatus.counts),
+                local: refreshedLocalRecords.length,
+                supabase: Number(refreshed.counts?.supabase ?? refreshedRemoteRecords.length),
+                hybrid: leadfinderDataLayerLeads.length,
+              };
               leadfinderSourceStatus.refreshedAt = refreshed.refreshedAt || new Date().toISOString();
               leadfinderSourceStatus.diagnostics = leadfinderLastDiagnostics;
               localStorage.setItem("maxwebstudioLastLeadfinderSourceStatus", JSON.stringify(leadfinderSourceStatus));
