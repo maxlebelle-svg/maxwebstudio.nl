@@ -1294,9 +1294,31 @@ function sanitizeDemoSiteWorkflow(workflow = {}) {
     followUpAt: cleanText(workflow.followUpAt || workflow.follow_up_at),
     followUpNote: cleanText(workflow.followUpNote || workflow.follow_up_note).slice(0, 500),
     upsellNote: cleanText(workflow.upsellNote || workflow.upsell_note).slice(0, 500),
+    upsellStatus: cleanText(workflow.upsellStatus || workflow.upsell_status).slice(0, 80),
+    upsellItems: sanitizeUpsellItems(workflow.upsellItems || workflow.upsell_items),
+    upsellOneTimeTotal: Math.max(0, Number(workflow.upsellOneTimeTotal || workflow.upsell_one_time_total || 0)),
+    upsellMonthlyTotal: Math.max(0, Number(workflow.upsellMonthlyTotal || workflow.upsell_monthly_total || 0)),
+    upsellPreparedAt: cleanText(workflow.upsellPreparedAt || workflow.upsell_prepared_at),
     updatedAt: cleanText(workflow.updatedAt || workflow.updated_at),
     updatedBy: cleanText(workflow.updatedBy || workflow.updated_by),
   };
+}
+
+function sanitizeUpsellItems(items = []) {
+  const input = Array.isArray(items) ? items : [];
+  return input.slice(0, 20).map((item) => {
+    if (typeof item === "string") {
+      return { id: cleanText(item).slice(0, 80) };
+    }
+    return {
+      id: cleanText(item?.id).slice(0, 80),
+      label: cleanText(item?.label).slice(0, 120),
+      category: cleanText(item?.category).slice(0, 80),
+      once: Math.max(0, Number(item?.once || 0)),
+      monthly: Math.max(0, Number(item?.monthly || 0)),
+      price: cleanText(item?.price).slice(0, 120),
+    };
+  }).filter((item) => item.id);
 }
 
 function normalizeHandlingStatus(value = "") {

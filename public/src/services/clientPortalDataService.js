@@ -141,7 +141,29 @@ function localFiles() {
       };
     })
     .filter((file) => !storedLocations.has(file.location));
-  return [...quantumbouwFiles, ...storedFiles];
+  const quantumbouwPackage = {
+    id: "quantumbouw-asset-package",
+    customerId: "quantumbouw.nl",
+    company: "Quantumbouw.nl",
+    website: "https://quantumbouw.nl",
+    name: "quantumbouw-klantassets.zip",
+    type: "Download",
+    category: "Project downloads",
+    location: "/assets/demo-images/library/quantumbouw/quantumbouw-klantassets.zip",
+    url: "/assets/demo-images/library/quantumbouw/quantumbouw-klantassets.zip",
+    status: "actief",
+    notes: "Downloadpakket met alle Quantumbouw.nl foto's en logo's voor drukwerk, busbestickering en hergebruik.",
+    createdAt: "2026-07-07T00:00:00.000Z",
+    updatedAt: "2026-07-07T00:00:00.000Z",
+    metadata: {
+      domain: "quantumbouw.nl",
+      client: "Quantumbouw.nl",
+      usage: "drukwerk, busbestickering, website, klantdownload",
+    },
+    _source: "local-seed",
+  };
+  const packageFiles = storedLocations.has(quantumbouwPackage.location) ? [] : [quantumbouwPackage];
+  return [...packageFiles, ...quantumbouwFiles, ...storedFiles];
 }
 
 function localChangeRequests() {

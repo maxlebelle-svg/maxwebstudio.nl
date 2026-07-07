@@ -2244,6 +2244,148 @@
       </section>
     </div>
 
+    <div class="admin-modal" id="demo-action-upsell-modal" role="dialog" aria-modal="true" aria-labelledby="demo-action-upsell-title" hidden>
+      <div class="admin-modal-backdrop" data-modal-close></div>
+      <section class="admin-card admin-modal-panel demo-action-upsell-panel">
+        <div class="admin-modal-header">
+          <div>
+            <p class="section-kicker">After sale</p>
+            <h2 id="demo-action-upsell-title">Meerwerk aanbieden</h2>
+            <p class="demo-action-modal-subtitle" id="demo-action-upsell-subtitle">Selecteer extra diensten en maak direct een voorstel.</p>
+          </div>
+          <button class="button secondary" type="button" data-modal-close>Sluiten</button>
+        </div>
+        <form id="demo-action-upsell-form">
+          <input id="demo-action-upsell-journey" type="hidden" />
+          <div class="demo-upsell-layout">
+            <div class="demo-upsell-picker">
+              <h3>Kies meerwerk</h3>
+              <div class="demo-upsell-group">
+                <span>Onderhoudspakket</span>
+                <div class="demo-upsell-options">
+                  <label class="demo-upsell-option">
+                    <input type="checkbox" name="upsell" value="care_basic" />
+                    <span class="demo-upsell-check"></span>
+                    <span class="demo-upsell-icon">B</span>
+                    <strong>Care Basic</strong>
+                    <em>€19,95 / maand</em>
+                    <small>Hosting, SSL, back-up en technische monitoring.</small>
+                  </label>
+                  <label class="demo-upsell-option">
+                    <input type="checkbox" name="upsell" value="care_plus" />
+                    <span class="demo-upsell-check"></span>
+                    <span class="demo-upsell-icon">+</span>
+                    <strong>Care Plus</strong>
+                    <em>€49 / maand</em>
+                    <small>Alles uit Basic + 15 minuten kleine wijzigingen per maand.</small>
+                  </label>
+                  <label class="demo-upsell-option">
+                    <input type="checkbox" name="upsell" value="care_growth" />
+                    <span class="demo-upsell-check"></span>
+                    <span class="demo-upsell-icon">G</span>
+                    <strong>Care Growth</strong>
+                    <em>€99 / maand</em>
+                    <small>Alles uit Plus + maandelijkse check en conversieadvies.</small>
+                  </label>
+                </div>
+              </div>
+              <div class="demo-upsell-group">
+                <span>Website pakket upgraden</span>
+                <div class="demo-upsell-options demo-upsell-options-two">
+                  <label class="demo-upsell-option">
+                    <input type="checkbox" name="upsell" value="upgrade_pro" />
+                    <span class="demo-upsell-check"></span>
+                    <span class="demo-upsell-icon">P</span>
+                    <strong>Upgrade naar Pro</strong>
+                    <em>vanaf €450 eenmalig</em>
+                    <small>Extra secties, verfijning en sterkere conversieblokken.</small>
+                  </label>
+                  <label class="demo-upsell-option">
+                    <input type="checkbox" name="upsell" value="landing_page" />
+                    <span class="demo-upsell-check"></span>
+                    <span class="demo-upsell-icon">L</span>
+                    <strong>Extra landingspagina</strong>
+                    <em>vanaf €275 eenmalig</em>
+                    <small>Gerichte pagina voor dienst, regio of campagne.</small>
+                  </label>
+                </div>
+              </div>
+              <div class="demo-upsell-group">
+                <span>Branding, marketing & groei</span>
+                <div class="demo-upsell-options demo-upsell-options-two">
+                  <label class="demo-upsell-option">
+                    <input type="checkbox" name="upsell" value="logo_design" />
+                    <span class="demo-upsell-check"></span>
+                    <span class="demo-upsell-icon">LG</span>
+                    <strong>Logo ontwerpen</strong>
+                    <em>vanaf €350 eenmalig</em>
+                    <small>Professioneel basislogo met bestanden voor web en socials.</small>
+                  </label>
+                  <label class="demo-upsell-option">
+                    <input type="checkbox" name="upsell" value="google_business" />
+                    <span class="demo-upsell-check"></span>
+                    <span class="demo-upsell-icon">GB</span>
+                    <strong>Google Bedrijf instellen</strong>
+                    <em>€195 eenmalig</em>
+                    <small>Profiel, diensten, foto’s en eerste optimalisatie.</small>
+                  </label>
+                  <label class="demo-upsell-option">
+                    <input type="checkbox" name="upsell" value="meta_ads" />
+                    <span class="demo-upsell-check"></span>
+                    <span class="demo-upsell-icon">M</span>
+                    <strong>Meta advertenties</strong>
+                    <em>€350 setup + €249 / maand</em>
+                    <small>Campagne klaarzetten en optimaliseren.</small>
+                  </label>
+                  <label class="demo-upsell-option">
+                    <input type="checkbox" name="upsell" value="google_ads" />
+                    <span class="demo-upsell-check"></span>
+                    <span class="demo-upsell-icon">A</span>
+                    <strong>Google Ads</strong>
+                    <em>€450 setup + €299 / maand</em>
+                    <small>Zoekcampagnes voor offerte-aanvragen.</small>
+                  </label>
+                  <label class="demo-upsell-option">
+                    <input type="checkbox" name="upsell" value="automation" />
+                    <span class="demo-upsell-check"></span>
+                    <span class="demo-upsell-icon">AU</span>
+                    <strong>Automatisering</strong>
+                    <em>vanaf €395 eenmalig</em>
+                    <small>Forms, opvolgmails en CRM-koppeling.</small>
+                  </label>
+                  <label class="demo-upsell-option">
+                    <input type="checkbox" name="upsell" value="social_media" />
+                    <span class="demo-upsell-check"></span>
+                    <span class="demo-upsell-icon">SM</span>
+                    <strong>Social media</strong>
+                    <em>vanaf €299 / maand</em>
+                    <small>Posts, planning en basis contentkalender.</small>
+                  </label>
+                </div>
+              </div>
+            </div>
+            <aside class="demo-upsell-summary">
+              <h3>Voorstel</h3>
+              <span id="demo-upsell-selected-count">Geselecteerd (0)</span>
+              <div class="demo-upsell-selected-list" id="demo-upsell-selected-list">
+                <p>Nog geen diensten geselecteerd.</p>
+              </div>
+              <div class="demo-upsell-totals">
+                <span>Subtotaal eenmalig<strong id="demo-upsell-once-total">€ 0,00</strong></span>
+                <span>Maandelijks beheer<strong id="demo-upsell-monthly-total">€ 0,00 / maand</strong></span>
+              </div>
+              <label for="demo-action-upsell-note">Interne notitie<textarea id="demo-action-upsell-note" maxlength="500" placeholder="Bijv. afspraken, bijzonderheden of interne opmerkingen..."></textarea></label>
+              <div class="admin-profile-actions">
+                <button class="button secondary" id="demo-action-upsell-save" type="submit">Voorstel opslaan</button>
+                <button class="button primary" id="demo-action-upsell-send" type="button">Klant voorstel sturen</button>
+              </div>
+              <p class="admin-form-message" id="demo-action-upsell-message" role="status"></p>
+            </aside>
+          </div>
+        </form>
+      </section>
+    </div>
+
     <script>
       (() => {
         const pageByFile = {
@@ -23210,6 +23352,7 @@
           if (!workflow.invoiceId && (status === "sold_external" || status === "sold_platform")) chips.push("Factuur nog nodig");
           if (!workflow.customerId && !workflow.profileId && status.startsWith("sold")) chips.push("Account nog nodig");
           if (workflow.inviteSentAt || workflow.inviteStatus === "sent") chips.push("Uitnodiging verzonden");
+          if (Array.isArray(workflow.upsellItems) && workflow.upsellItems.length) chips.push("Meerwerkvoorstel klaar");
           return chips;
         }
 
@@ -23232,6 +23375,52 @@
 
         function money(value = 0) {
           return new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(Number(value || 0));
+        }
+
+        const upsellCatalog = [
+          { id: "care_basic", label: "Care Basic", category: "Onderhoud", once: 0, monthly: 19.95, price: "€19,95 / maand" },
+          { id: "care_plus", label: "Care Plus", category: "Onderhoud", once: 0, monthly: 49, price: "€49 / maand" },
+          { id: "care_growth", label: "Care Growth", category: "Onderhoud", once: 0, monthly: 99, price: "€99 / maand" },
+          { id: "upgrade_pro", label: "Upgrade naar Pro", category: "Website", once: 450, monthly: 0, price: "vanaf €450 eenmalig" },
+          { id: "landing_page", label: "Extra landingspagina", category: "Website", once: 275, monthly: 0, price: "vanaf €275 eenmalig" },
+          { id: "logo_design", label: "Logo ontwerpen", category: "Branding", once: 350, monthly: 0, price: "vanaf €350 eenmalig" },
+          { id: "google_business", label: "Google Bedrijf instellen", category: "Marketing", once: 195, monthly: 0, price: "€195 eenmalig" },
+          { id: "meta_ads", label: "Meta advertenties", category: "Marketing", once: 350, monthly: 249, price: "€350 setup + €249 / maand" },
+          { id: "google_ads", label: "Google Ads", category: "Marketing", once: 450, monthly: 299, price: "€450 setup + €299 / maand" },
+          { id: "automation", label: "Automatisering", category: "Automatisering", once: 395, monthly: 0, price: "vanaf €395 eenmalig" },
+          { id: "social_media", label: "Social media", category: "Social media", once: 0, monthly: 299, price: "vanaf €299 / maand" },
+        ];
+
+        function selectedUpsellItems() {
+          return [...document.querySelectorAll('#demo-action-upsell-modal input[name="upsell"]:checked')]
+            .map((input) => upsellCatalog.find((item) => item.id === input.value))
+            .filter(Boolean);
+        }
+
+        function updateUpsellSummary() {
+          const selected = selectedUpsellItems();
+          const list = document.getElementById("demo-upsell-selected-list");
+          const count = document.getElementById("demo-upsell-selected-count");
+          const once = selected.reduce((total, item) => total + Number(item.once || 0), 0);
+          const monthly = selected.reduce((total, item) => total + Number(item.monthly || 0), 0);
+          if (count) count.textContent = `Geselecteerd (${selected.length})`;
+          if (list) {
+            list.innerHTML = selected.length
+              ? selected.map((item) => `
+                <div class="demo-upsell-selected-item">
+                  <span>${escapeHtml(item.label)}<small>${escapeHtml(item.category)}</small></span>
+                  <strong>${escapeHtml(item.price)}</strong>
+                </div>
+              `).join("")
+              : `<p>Nog geen diensten geselecteerd.</p>`;
+          }
+          const onceTotal = document.getElementById("demo-upsell-once-total");
+          const monthlyTotal = document.getElementById("demo-upsell-monthly-total");
+          if (onceTotal) onceTotal.textContent = money(once);
+          if (monthlyTotal) monthlyTotal.textContent = `${money(monthly)} / maand`;
+          document.querySelectorAll("#demo-action-upsell-modal .demo-upsell-option").forEach((option) => {
+            option.classList.toggle("is-selected", Boolean(option.querySelector('input[name="upsell"]')?.checked));
+          });
         }
 
         function cleanDomain(value = "") {
@@ -23609,6 +23798,48 @@
           setMessage(data.email?.sent ? "Inloggegevens/activatielink verzonden." : data.email?.warning || "Welkomstmail is voorbereid.", data.email?.sent ? "success" : "warning");
         }
 
+        function openUpsellModal(record = {}) {
+          activeActionRecord = record;
+          const savedDemo = savedDemoSiteMeta(record) || {};
+          const workflow = workflowMeta(record);
+          const selectedIds = Array.isArray(workflow.upsellItems)
+            ? workflow.upsellItems.map((item) => String(item.id || item))
+            : [];
+          const subtitle = document.getElementById("demo-action-upsell-subtitle");
+          if (subtitle) subtitle.textContent = `Selecteer extra diensten voor ${savedDemo.businessName || record.businessName || "deze klant"} en maak direct een voorstel.`;
+          document.getElementById("demo-action-upsell-journey").value = record.id || "";
+          document.querySelectorAll('#demo-action-upsell-modal input[name="upsell"]').forEach((input) => {
+            input.checked = selectedIds.includes(input.value);
+          });
+          document.getElementById("demo-action-upsell-note").value = workflow.upsellNote || "";
+          setModalMessage(document.getElementById("demo-action-upsell-message"), "");
+          updateUpsellSummary();
+          openModal(document.getElementById("demo-action-upsell-modal"));
+        }
+
+        async function saveUpsellProposal({ send = false } = {}) {
+          if (!activeActionRecord) return;
+          const messageEl = document.getElementById("demo-action-upsell-message");
+          const selected = selectedUpsellItems();
+          const note = document.getElementById("demo-action-upsell-note")?.value || "";
+          const once = selected.reduce((total, item) => total + Number(item.once || 0), 0);
+          const monthly = selected.reduce((total, item) => total + Number(item.monthly || 0), 0);
+          if (!selected.length) {
+            setModalMessage(messageEl, "Selecteer minimaal één meerwerkoptie.", "warning");
+            return;
+          }
+          setModalMessage(messageEl, send ? "Voorstel opslaan en klaarzetten voor klant..." : "Meerwerkvoorstel opslaan...", "info");
+          await updateWorkflow(activeActionRecord, {
+            upsellStatus: send ? "ready_to_send" : "draft",
+            upsellNote: note,
+            upsellItems: selected,
+            upsellOneTimeTotal: once,
+            upsellMonthlyTotal: monthly,
+            upsellPreparedAt: new Date().toISOString(),
+          });
+          setModalMessage(messageEl, send ? "Voorstel opgeslagen. Versturen kan nu aan de klant gekoppeld worden." : "Meerwerkvoorstel opgeslagen.", "success");
+        }
+
         function openSimpleModal(record = {}, type = "followup") {
           activeActionRecord = record;
           const modal = document.getElementById("demo-action-simple-modal");
@@ -23659,7 +23890,7 @@
             return sendInviteForRecord(record);
           }
           if (action === "followup") return openSimpleModal(record, "followup");
-          if (action === "upsell") return openSimpleModal(record, "upsell");
+          if (action === "upsell") return openUpsellModal(record);
         }
 
         async function loadDemoSites() {
@@ -23759,6 +23990,32 @@
             await saveSimpleAction();
           } catch (error) {
             setModalMessage(document.getElementById("demo-action-simple-message"), error.message || "Actie kon niet worden opgeslagen.", "error");
+          }
+        });
+        document.getElementById("demo-action-upsell-modal")?.addEventListener("change", (event) => {
+          if (event.target.matches('input[name="upsell"]')) {
+            if (event.target.value.startsWith("care_") && event.target.checked) {
+              document.querySelectorAll('#demo-action-upsell-modal input[name="upsell"][value^="care_"]').forEach((input) => {
+                if (input !== event.target) input.checked = false;
+              });
+            }
+            updateUpsellSummary();
+          }
+        });
+        document.getElementById("demo-action-upsell-form")?.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          try {
+            await saveUpsellProposal({ send: false });
+          } catch (error) {
+            setModalMessage(document.getElementById("demo-action-upsell-message"), error.message || "Meerwerkvoorstel kon niet worden opgeslagen.", "error");
+          }
+        });
+        document.getElementById("demo-action-upsell-send")?.addEventListener("click", async (event) => {
+          event.preventDefault();
+          try {
+            await saveUpsellProposal({ send: true });
+          } catch (error) {
+            setModalMessage(document.getElementById("demo-action-upsell-message"), error.message || "Meerwerkvoorstel kon niet worden klaargezet.", "error");
           }
         });
         if (document.getElementById("demo-sites-library")) loadDemoSites();
