@@ -15312,6 +15312,188 @@ h3 {
   white-space: nowrap;
 }
 
+.demo-library-next-actions {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  margin-top: 2px;
+  padding: 14px;
+  border: 1px solid rgba(20, 184, 166, 0.16);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(20, 184, 166, 0.08), rgba(37, 99, 235, 0.06)),
+    rgba(2, 14, 25, 0.34);
+}
+
+.demo-library-action-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.demo-library-action-header > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.demo-library-action-header span {
+  color: rgba(148, 163, 184, 0.88);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.demo-library-action-header strong {
+  color: rgba(248, 250, 252, 0.96);
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.demo-library-action-header label {
+  min-width: min(260px, 48%);
+}
+
+.demo-library-action-header select {
+  width: 100%;
+  min-height: 40px;
+  border-color: rgba(96, 165, 250, 0.22);
+  background: rgba(2, 6, 23, 0.42);
+  color: rgba(248, 250, 252, 0.92);
+  font-weight: 850;
+}
+
+.demo-library-workflow-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.demo-library-workflow-chips span {
+  display: inline-flex;
+  min-height: 26px;
+  align-items: center;
+  padding: 6px 9px;
+  border: 1px solid rgba(45, 212, 191, 0.2);
+  border-radius: 999px;
+  background: rgba(20, 184, 166, 0.1);
+  color: rgba(204, 251, 241, 0.92);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.demo-library-card .demo-workflow-actions {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.demo-library-card .demo-workflow-actions .button {
+  min-width: 0;
+  min-height: 42px;
+  padding-inline: 10px;
+  overflow: hidden;
+  justify-content: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.demo-action-modal-panel {
+  max-width: 920px;
+}
+
+.demo-action-invoice-preview {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 18px;
+  border: 1px solid rgba(96, 165, 250, 0.18);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.14), rgba(20, 184, 166, 0.08)),
+    rgba(2, 14, 25, 0.42);
+}
+
+.demo-action-invoice-preview div {
+  display: grid;
+  gap: 6px;
+}
+
+.demo-action-invoice-preview span,
+.demo-action-invoice-preview p {
+  margin: 0;
+  color: rgba(203, 213, 225, 0.78);
+  font-weight: 800;
+}
+
+.demo-action-invoice-preview strong {
+  color: #f8fafc;
+  font-size: clamp(24px, 3vw, 38px);
+  line-height: 1;
+}
+
+.demo-action-total-card,
+.demo-action-success-card {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.demo-action-total-card span,
+.demo-action-success-card {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.36);
+  color: rgba(148, 163, 184, 0.9);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.demo-action-total-card strong {
+  display: block;
+  margin-top: 6px;
+  color: #f8fafc;
+  font-size: 18px;
+  line-height: 1.15;
+  text-transform: none;
+}
+
+.demo-action-success-card {
+  grid-template-columns: 1fr;
+  border-color: rgba(34, 197, 94, 0.24);
+  background: rgba(34, 197, 94, 0.1);
+  color: rgba(187, 247, 208, 0.92);
+  text-transform: none;
+}
+
+.demo-action-success-card strong {
+  color: #dcfce7;
+  font-size: 16px;
+}
+
+.demo-action-success-card strong::before {
+  content: "✓";
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-right: 8px;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.22);
+  color: #bbf7d0;
+}
+
 .factory-preview-source-switch {
   display: flex;
   align-items: center;
@@ -15361,8 +15543,19 @@ h3 {
   }
 
   .demo-library-meta-grid,
-  .demo-library-card .demo-preview-actions {
+  .demo-library-card .demo-preview-actions,
+  .demo-library-card .demo-workflow-actions,
+  .demo-action-total-card {
     grid-template-columns: 1fr;
+  }
+
+  .demo-library-action-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .demo-library-action-header label {
+    min-width: 0;
   }
 }
 

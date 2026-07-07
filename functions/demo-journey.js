@@ -317,6 +317,40 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     return jsonResponse(result.sent ? 200 : 503, { success: result.sent, sent: result.sent, warning: result.warning || "", template });
   }
 
+  if (action === "update_demo_site_workflow") {
+    if (!current?.id) return jsonResponse(400, { success: false, error: "Demo-site niet gevonden." });
+    const updatedAt = new Date().toISOString();
+    const previewPackage = current.preview_package && typeof current.preview_package === "object" ? current.preview_package : {};
+    const savedDemoSite = previewPackage.savedDemoSite || previewPackage.saved_demo_site || {};
+    const existingWorkflow = savedDemoSite.workflow && typeof savedDemoSite.workflow === "object" ? savedDemoSite.workflow : {};
+    const workflow = sanitizeDemoSiteWorkflow({
+      ...existingWorkflow,
+      ...(payload.workflow && typeof payload.workflow === "object" ? payload.workflow : {}),
+      handlingStatus: payload.handlingStatus || payload.handling_status || payload.workflow?.handlingStatus || existingWorkflow.handlingStatus,
+      paymentSource: payload.paymentSource || payload.payment_source || payload.workflow?.paymentSource || existingWorkflow.paymentSource,
+      updatedAt,
+      updatedBy: admin.id,
+    });
+    const nextSavedDemoSite = {
+      ...savedDemoSite,
+      workflow,
+      updatedAt,
+    };
+    const record = {
+      preview_package: {
+        ...previewPackage,
+        savedDemoSite: nextSavedDemoSite,
+      },
+      updated_by: admin.id,
+      updated_at: updatedAt,
+    };
+    const rows = await patchJourneySafe({ supabaseUrl, serviceRoleKey, id: current.id, record });
+    await createEvent({ supabaseUrl, serviceRoleKey, journeyId: current.id, type: "demo_site_workflow", title: "Afhandelstatus bijgewerkt", description: workflow.handlingStatus || "Demo-site workflow bijgewerkt.", visible: false, createdBy: admin.id });
+    const journey = mapJourney(rows[0] || await readJourneyById({ supabaseUrl, serviceRoleKey, id: current.id }));
+    const responseJourney = sanitizeAdminJourney(journey);
+    return jsonResponse(200, { success: true, journey: responseJourney, demoJourney: responseJourney, workflow });
+  }
+
   if (action === "upload_manual_zip") {
     if (!current?.id) return jsonResponse(400, { success: false, error: "Sla eerst de demo-aanvraag op voordat je een ZIP uploadt." });
     const uploadedAt = new Date().toISOString();
@@ -1241,6 +1275,36 @@ function cleanContactName(value = "") {
 function normalizePreviewSource(value = "") {
   const text = cleanText(value).toLowerCase();
   return text === "manual" || text === "manual_zip" || text === "handmatig" ? "manual" : "factory";
+}
+
+function sanitizeDemoSiteWorkflow(workflow = {}) {
+  const handlingStatus = normalizeHandlingStatus(workflow.handlingStatus || workflow.handling_status);
+  return {
+    handlingStatus,
+    paymentSource: cleanText(workflow.paymentSource || workflow.payment_source).slice(0, 80),
+    invoiceId: cleanText(workflow.invoiceId || workflow.invoice_id),
+    invoiceNumber: cleanText(workflow.invoiceNumber || workflow.invoice_number).slice(0, 80),
+    invoiceStatus: cleanText(workflow.invoiceStatus || workflow.invoice_status).slice(0, 80),
+    customerId: cleanText(workflow.customerId || workflow.customer_id),
+    profileId: cleanText(workflow.profileId || workflow.profile_id),
+    authUserId: cleanText(workflow.authUserId || workflow.auth_user_id),
+    accountStatus: cleanText(workflow.accountStatus || workflow.account_status).slice(0, 80),
+    inviteStatus: cleanText(workflow.inviteStatus || workflow.invite_status).slice(0, 80),
+    inviteSentAt: cleanText(workflow.inviteSentAt || workflow.invite_sent_at),
+    followUpAt: cleanText(workflow.followUpAt || workflow.follow_up_at),
+    followUpNote: cleanText(workflow.followUpNote || workflow.follow_up_note).slice(0, 500),
+    upsellNote: cleanText(workflow.upsellNote || workflow.upsell_note).slice(0, 500),
+    updatedAt: cleanText(workflow.updatedAt || workflow.updated_at),
+    updatedBy: cleanText(workflow.updatedBy || workflow.updated_by),
+  };
+}
+
+function normalizeHandlingStatus(value = "") {
+  const text = cleanText(value).toLowerCase().replace(/[\s-]+/g, "_");
+  if (text === "sold_external" || text === "verkocht_buiten_platform") return "sold_external";
+  if (text === "sold_platform" || text === "verkocht_via_platform" || text === "verkocht_binnen_platform") return "sold_platform";
+  if (text === "quote" || text === "offerte" || text === "offertefase") return "quote";
+  return "demo";
 }
 
 function sanitizeManualPreviewFiles(files = []) {

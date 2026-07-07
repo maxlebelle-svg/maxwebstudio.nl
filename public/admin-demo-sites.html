@@ -2145,6 +2145,105 @@
       </section>
     </div>
 
+    <div class="admin-modal" id="demo-action-invoice-modal" role="dialog" aria-modal="true" aria-labelledby="demo-action-invoice-title" hidden>
+      <div class="admin-modal-backdrop" data-modal-close></div>
+      <section class="admin-card admin-modal-panel demo-action-modal-panel">
+        <div class="admin-modal-header">
+          <div><p class="section-kicker">Afhandeling</p><h2 id="demo-action-invoice-title">Factuur maken</h2></div>
+          <button class="button secondary" type="button" data-modal-close>Sluiten</button>
+        </div>
+        <form class="admin-profile-form" id="demo-action-invoice-form">
+          <input id="demo-action-invoice-journey" type="hidden" />
+          <div class="demo-action-invoice-preview">
+            <div>
+              <span>Max Webstudio</span>
+              <strong id="demo-action-invoice-preview-number">Conceptfactuur</strong>
+            </div>
+            <p id="demo-action-invoice-preview-client">Klantgegevens worden automatisch ingevuld.</p>
+          </div>
+          <div class="admin-profile-fields">
+            <label for="demo-action-invoice-number">Factuurnummer<input id="demo-action-invoice-number" type="text" required /></label>
+            <label for="demo-action-invoice-status">Status<select id="demo-action-invoice-status"><option value="paid">Betaald</option><option value="draft">Concept</option><option value="sent">Verzonden</option></select></label>
+            <label for="demo-action-invoice-company">Bedrijf<input id="demo-action-invoice-company" type="text" required /></label>
+            <label for="demo-action-invoice-name">Contactpersoon<input id="demo-action-invoice-name" type="text" required /></label>
+            <label for="demo-action-invoice-email">E-mailadres<input id="demo-action-invoice-email" type="email" required /></label>
+            <label for="demo-action-invoice-website">Website/domein<input id="demo-action-invoice-website" type="text" required /></label>
+            <label for="demo-action-invoice-title-field">Omschrijving<input id="demo-action-invoice-title-field" type="text" required /></label>
+            <label for="demo-action-invoice-amount">Bedrag ex. btw<input id="demo-action-invoice-amount" type="number" min="0" step="0.01" required /></label>
+            <label for="demo-action-invoice-vat">BTW %<input id="demo-action-invoice-vat" type="number" min="0" step="0.1" value="21" /></label>
+            <label for="demo-action-invoice-payment">Betaling<select id="demo-action-invoice-payment"><option value="Tikkie">Betaald via Tikkie</option><option value="Mollie">Betaald via Mollie</option><option value="Bank">Bankoverschrijving</option><option value="">Nog niet betaald</option></select></label>
+            <label class="admin-profile-wide" for="demo-action-invoice-notes">Interne notitie<textarea id="demo-action-invoice-notes"></textarea></label>
+          </div>
+          <div class="demo-action-total-card">
+            <span>Subtotaal<strong id="demo-action-invoice-subtotal">€ 0,00</strong></span>
+            <span>BTW<strong id="demo-action-invoice-vat-total">€ 0,00</strong></span>
+            <span>Totaal<strong id="demo-action-invoice-total">€ 0,00</strong></span>
+          </div>
+          <div class="admin-profile-actions">
+            <button class="button primary" type="submit">Factuur opslaan</button>
+            <button class="button secondary" id="demo-action-invoice-send" type="button">Opslaan en versturen</button>
+            <p class="admin-form-message" id="demo-action-invoice-message" role="status"></p>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <div class="admin-modal" id="demo-action-account-modal" role="dialog" aria-modal="true" aria-labelledby="demo-action-account-title" hidden>
+      <div class="admin-modal-backdrop" data-modal-close></div>
+      <section class="admin-card admin-modal-panel demo-action-modal-panel">
+        <div class="admin-modal-header">
+          <div><p class="section-kicker">Klantportaal</p><h2 id="demo-action-account-title">Klantaccount aanmaken</h2></div>
+          <button class="button secondary" type="button" data-modal-close>Sluiten</button>
+        </div>
+        <form class="admin-profile-form" id="demo-action-account-form">
+          <input id="demo-action-account-journey" type="hidden" />
+          <div class="admin-profile-fields">
+            <label for="demo-action-account-company">Bedrijf<input id="demo-action-account-company" type="text" required /></label>
+            <label for="demo-action-account-name">Naam<input id="demo-action-account-name" type="text" required /></label>
+            <label for="demo-action-account-email">E-mailadres<input id="demo-action-account-email" type="email" required /></label>
+            <label for="demo-action-account-phone">Telefoon<input id="demo-action-account-phone" type="tel" /></label>
+            <label for="demo-action-account-website">Website/domein<input id="demo-action-account-website" type="text" required /></label>
+            <label for="demo-action-account-package">Pakket<select id="demo-action-account-package"><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option><option value="One Page Website">One Page Website</option><option value="Maatwerk">Maatwerk</option></select></label>
+            <label class="settings-toggle admin-profile-wide"><input id="demo-action-account-send" type="checkbox" /> Verstuur direct de activatielink</label>
+          </div>
+          <div class="demo-action-success-card" hidden id="demo-action-account-success">
+            <strong>Accountflow klaar</strong>
+            <span>Klant kan via een veilige link zelf een wachtwoord instellen.</span>
+          </div>
+          <div class="admin-profile-actions">
+            <button class="button primary" type="submit">Klantaccount aanmaken</button>
+            <p class="admin-form-message" id="demo-action-account-message" role="status"></p>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <div class="admin-modal" id="demo-action-simple-modal" role="dialog" aria-modal="true" aria-labelledby="demo-action-simple-title" hidden>
+      <div class="admin-modal-backdrop" data-modal-close></div>
+      <section class="admin-card admin-modal-panel admin-modal-panel-compact">
+        <div class="admin-modal-header">
+          <div><p class="section-kicker" id="demo-action-simple-kicker">Afhandeling</p><h2 id="demo-action-simple-title">Actie uitvoeren</h2></div>
+          <button class="button secondary" type="button" data-modal-close>Sluiten</button>
+        </div>
+        <form class="admin-profile-form" id="demo-action-simple-form">
+          <input id="demo-action-simple-journey" type="hidden" />
+          <input id="demo-action-simple-type" type="hidden" />
+          <div class="admin-profile-fields">
+            <label class="admin-profile-wide" id="demo-action-simple-date-wrap" for="demo-action-simple-date">Datum<input id="demo-action-simple-date" type="datetime-local" /></label>
+            <label class="admin-profile-wide" for="demo-action-simple-note">Notitie<textarea id="demo-action-simple-note"></textarea></label>
+          </div>
+          <div class="demo-action-success-card" hidden id="demo-action-simple-success">
+            <strong>Verzonden</strong>
+            <span id="demo-action-simple-success-text">De actie is verwerkt.</span>
+          </div>
+          <div class="admin-profile-actions">
+            <button class="button primary" id="demo-action-simple-submit" type="submit">Opslaan</button>
+            <p class="admin-form-message" id="demo-action-simple-message" role="status"></p>
+          </div>
+        </form>
+      </section>
+    </div>
+
     <script>
       (() => {
         const pageByFile = {
@@ -22939,6 +23038,15 @@
         const status = document.getElementById("demo-sites-library-status");
         const refresh = document.getElementById("demo-sites-library-refresh");
         let records = [];
+        let activeActionRecord = null;
+
+        const endpoints = {
+          journey: "/.netlify/functions/demo-journey",
+          onboarding: "/.netlify/functions/admin-customer-onboarding",
+          billing: "/.netlify/functions/admin-billing",
+          invoiceEmail: "/.netlify/functions/admin-invoice-email",
+          welcomeEmail: "/.netlify/functions/admin-customer-welcome-email",
+        };
 
         function escapeHtml(value) {
           return String(value || "").replace(/[&<>"']/g, (character) => ({
@@ -23038,6 +23146,168 @@
           return Boolean(savedDemo?.saved && (savedDemo.previewUrl || record.previewUrl));
         }
 
+        function workflowMeta(record = {}) {
+          const savedDemo = savedDemoSiteMeta(record) || {};
+          return savedDemo.workflow || record.previewPackage?.workflow || {};
+        }
+
+        function handlingStatus(record = {}) {
+          const status = String(workflowMeta(record).handlingStatus || "").trim();
+          return ["demo", "quote", "sold_external", "sold_platform"].includes(status) ? status : "demo";
+        }
+
+        function handlingLabel(value = "") {
+          return ({
+            demo: "Demo site",
+            quote: "Offertefase",
+            sold_external: "Verkocht buiten platform",
+            sold_platform: "Verkocht via platform",
+          })[value] || "Demo site";
+        }
+
+        function actionConfig(status = "demo", workflow = {}) {
+          const invoiceLabel = workflow.invoiceId ? "Factuur controleren" : "Factuur maken";
+          const accountLabel = workflow.customerId || workflow.profileId ? "Klantaccount bekijken" : "Klantaccount aanmaken";
+          const inviteLabel = workflow.inviteSentAt || workflow.inviteStatus === "sent" ? "Uitnodiging opnieuw sturen" : "Uitnodiging sturen";
+          if (status === "sold_external") {
+            return [
+              { action: "invoice", label: invoiceLabel, primary: true },
+              { action: "account", label: accountLabel },
+              { action: "invite", label: inviteLabel },
+              { action: "followup", label: "Opvolging plannen" },
+              { action: "upsell", label: "Meerwerk aanbieden" },
+            ];
+          }
+          if (status === "sold_platform") {
+            return [
+              { action: "account", label: accountLabel, primary: true },
+              { action: "invoice", label: workflow.invoiceId ? "Factuur controleren" : "Factuur maken" },
+              { action: "invite", label: inviteLabel },
+              { action: "followup", label: "Opvolging plannen" },
+              { action: "upsell", label: "Meerwerk aanbieden" },
+            ];
+          }
+          if (status === "quote") {
+            return [
+              { action: "quote", label: "Offerte opstellen", primary: true },
+              { action: "followup", label: "Opvolging plannen" },
+              { action: "preview", label: "Klantpreview openen" },
+            ];
+          }
+          return [
+            { action: "preview", label: "Klantpreview openen", primary: true },
+            { action: "quote", label: "Offerte maken" },
+            { action: "followup", label: "Opvolging plannen" },
+          ];
+        }
+
+        function workflowChips(record = {}) {
+          const workflow = workflowMeta(record);
+          const status = handlingStatus(record);
+          const chips = [];
+          if (status === "sold_external") chips.push("Betaald buiten platform");
+          if (workflow.paymentSource) chips.push(`Betaald via ${workflow.paymentSource}`);
+          if (!workflow.invoiceId && (status === "sold_external" || status === "sold_platform")) chips.push("Factuur nog nodig");
+          if (!workflow.customerId && !workflow.profileId && status.startsWith("sold")) chips.push("Account nog nodig");
+          if (workflow.inviteSentAt || workflow.inviteStatus === "sent") chips.push("Uitnodiging verzonden");
+          return chips;
+        }
+
+        function actionButtonsHtml(record = {}, preview = "", factoryHref = "") {
+          const workflow = workflowMeta(record);
+          const buttons = actionConfig(handlingStatus(record), workflow);
+          return buttons.map((button) => {
+            const href = button.action === "preview" ? preview || "#" : button.action === "quote" ? `admin-offertes.html${record.customerId ? `?customerId=${encodeURIComponent(record.customerId)}` : ""}` : "#";
+            const attrs = button.action === "preview" || button.action === "quote"
+              ? `href="${escapeHtml(href)}"${button.action === "preview" ? ' target="_blank" rel="noopener"' : ""}`
+              : `href="#" data-demo-action="${escapeHtml(button.action)}" data-demo-id="${escapeHtml(record.id)}"`;
+            return `<a class="button ${button.primary ? "primary" : "secondary"}" ${attrs}>${escapeHtml(button.label)}</a>`;
+          }).join("");
+        }
+
+        function getRecordById(id = "") {
+          return records.find((record) => String(record.id) === String(id)) || null;
+        }
+
+        function money(value = 0) {
+          return new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(Number(value || 0));
+        }
+
+        function cleanDomain(value = "") {
+          const text = String(value || "").trim();
+          if (!text) return "";
+          try {
+            return new URL(/^https?:\/\//i.test(text) ? text : `https://${text}`).hostname.replace(/^www\./, "");
+          } catch {
+            return text.replace(/^https?:\/\//i, "").replace(/^www\./, "").split("/")[0];
+          }
+        }
+
+        function demoDomain(record = {}) {
+          const savedDemo = savedDemoSiteMeta(record) || {};
+          return cleanDomain(record.websiteUrl || record.website || savedDemo.websiteUrl || savedDemo.businessName || record.businessName);
+        }
+
+        function defaultInvoiceAmount(record = {}) {
+          const meta = record.previewPackage?.meta || {};
+          const packageText = [meta.packageType, meta.packageLabel, meta.packageName].join(" ").toLowerCase();
+          if (packageText.includes("premium")) return 1495;
+          if (packageText.includes("plus")) return 995;
+          return 495;
+        }
+
+        function nextInvoiceNumber() {
+          const date = new Date();
+          const year = date.getFullYear();
+          const suffix = String(Date.now()).slice(-5);
+          return `MWS-${year}-${suffix}`;
+        }
+
+        function setModalMessage(element, text, type = "success") {
+          if (!element) return;
+          element.textContent = text;
+          element.className = `admin-form-message ${type}`;
+        }
+
+        function openModal(modal) {
+          if (!modal) return;
+          modal.hidden = false;
+          document.body.classList.add("admin-modal-open");
+        }
+
+        function closeModal(modal) {
+          if (!modal) return;
+          modal.hidden = true;
+          document.body.classList.remove("admin-modal-open");
+        }
+
+        async function postJson(endpoint, payload) {
+          const token = getBearer();
+          if (!token) throw new Error("Log opnieuw in om deze actie uit te voeren.");
+          const response = await fetch(endpoint, {
+            method: "POST",
+            headers: { Accept: "application/json", "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify(payload),
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || data.success === false) throw new Error(data.error || data.warning || "Actie kon niet worden uitgevoerd.");
+          return data;
+        }
+
+        async function updateWorkflow(record = {}, patch = {}) {
+          const workflow = { ...workflowMeta(record), ...patch };
+          const data = await postJson(endpoints.journey, {
+            action: "update_demo_site_workflow",
+            demoJourneyId: record.id,
+            workflow,
+          });
+          if (data.demoJourney?.id) {
+            records = records.map((item) => String(item.id) === String(record.id) ? data.demoJourney : item);
+          }
+          render();
+          return data.workflow || workflow;
+        }
+
         function render() {
           const query = String(search?.value || "").trim().toLowerCase();
           const bucket = status?.value || "";
@@ -23063,6 +23333,8 @@
             const sourceText = previewSource === "manual" ? "Handmatige ZIP" : "Website Factory";
             const offerText = savedDemo.offerReady ? "Offerteklaar" : "Nog in review";
             const savedAt = formatDate(savedDemo.savedAt || record.updatedAt || record.createdAt);
+            const currentHandlingStatus = handlingStatus(record);
+            const chips = workflowChips(record);
             return `
               <article class="saved-demo-site-card demo-library-card">
                 <div class="demo-library-thumbnail">
@@ -23097,10 +23369,303 @@
                     <a class="button secondary" href="${escapeHtml(zipUrl(preview) || "#")}" target="_blank" rel="noopener" aria-disabled="${preview ? "false" : "true"}">ZIP downloaden</a>
                     <a class="button secondary" href="${escapeHtml(factoryHref)}">Open in Factory</a>
                   </div>
+                  <div class="demo-library-next-actions">
+                    <div class="demo-library-action-header">
+                      <div>
+                        <span>Afhandeling</span>
+                        <strong>${escapeHtml(handlingLabel(currentHandlingStatus))}</strong>
+                      </div>
+                      <label for="demo-handling-${escapeHtml(record.id)}">
+                        <span class="sr-only">Afhandelstatus</span>
+                        <select id="demo-handling-${escapeHtml(record.id)}" data-demo-handling="${escapeHtml(record.id)}">
+                          <option value="demo"${currentHandlingStatus === "demo" ? " selected" : ""}>Demo site</option>
+                          <option value="quote"${currentHandlingStatus === "quote" ? " selected" : ""}>Offertefase</option>
+                          <option value="sold_external"${currentHandlingStatus === "sold_external" ? " selected" : ""}>Verkocht buiten platform</option>
+                          <option value="sold_platform"${currentHandlingStatus === "sold_platform" ? " selected" : ""}>Verkocht via platform</option>
+                        </select>
+                      </label>
+                    </div>
+                    ${chips.length ? `<div class="demo-library-workflow-chips">${chips.map((chip) => `<span>${escapeHtml(chip)}</span>`).join("")}</div>` : ""}
+                    <div class="admin-profile-actions demo-workflow-actions">
+                      ${actionButtonsHtml(record, preview, factoryHref)}
+                    </div>
+                  </div>
                 </div>
               </article>
             `;
           }).join("") : `<div class="sales-timeline-empty">Geen opgeslagen demo-sites gevonden. Sla eerst een preview op vanuit Website Factory.</div>`;
+        }
+
+        function populateInvoiceModal(record = {}) {
+          activeActionRecord = record;
+          const savedDemo = savedDemoSiteMeta(record) || {};
+          const workflow = workflowMeta(record);
+          const amount = defaultInvoiceAmount(record);
+          const modal = document.getElementById("demo-action-invoice-modal");
+          const fields = {
+            journey: document.getElementById("demo-action-invoice-journey"),
+            number: document.getElementById("demo-action-invoice-number"),
+            status: document.getElementById("demo-action-invoice-status"),
+            company: document.getElementById("demo-action-invoice-company"),
+            name: document.getElementById("demo-action-invoice-name"),
+            email: document.getElementById("demo-action-invoice-email"),
+            website: document.getElementById("demo-action-invoice-website"),
+            title: document.getElementById("demo-action-invoice-title-field"),
+            amount: document.getElementById("demo-action-invoice-amount"),
+            vat: document.getElementById("demo-action-invoice-vat"),
+            payment: document.getElementById("demo-action-invoice-payment"),
+            notes: document.getElementById("demo-action-invoice-notes"),
+            previewNumber: document.getElementById("demo-action-invoice-preview-number"),
+            previewClient: document.getElementById("demo-action-invoice-preview-client"),
+          };
+          fields.journey.value = record.id || "";
+          fields.number.value = workflow.invoiceNumber || nextInvoiceNumber();
+          fields.status.value = handlingStatus(record) === "sold_external" ? "paid" : "draft";
+          fields.company.value = savedDemo.businessName || record.businessName || "";
+          fields.name.value = record.contactName || savedDemo.contactName || savedDemo.businessName || record.businessName || "";
+          fields.email.value = record.email || savedDemo.email || "";
+          fields.website.value = demoDomain(record);
+          fields.title.value = `Website ${savedDemo.businessName || record.businessName || ""}`.trim();
+          fields.amount.value = amount.toFixed(2);
+          fields.vat.value = "21";
+          fields.payment.value = workflow.paymentSource || (handlingStatus(record) === "sold_external" ? "Tikkie" : "");
+          fields.notes.value = workflow.invoiceId ? `Bestaande factuur: ${workflow.invoiceNumber || workflow.invoiceId}` : "Aangemaakt vanuit Demo Sites afhandeling.";
+          fields.previewNumber.textContent = fields.number.value || "Conceptfactuur";
+          fields.previewClient.textContent = `${fields.company.value || "Klant"} - ${fields.email.value || "geen e-mailadres"}`;
+          updateInvoiceTotals();
+          setModalMessage(document.getElementById("demo-action-invoice-message"), "");
+          openModal(modal);
+        }
+
+        function updateInvoiceTotals() {
+          const amount = Number(document.getElementById("demo-action-invoice-amount")?.value || 0);
+          const vatRate = Number(document.getElementById("demo-action-invoice-vat")?.value || 0);
+          const vat = amount * (vatRate / 100);
+          const total = amount + vat;
+          const number = document.getElementById("demo-action-invoice-number")?.value || "Conceptfactuur";
+          const company = document.getElementById("demo-action-invoice-company")?.value || "Klant";
+          const email = document.getElementById("demo-action-invoice-email")?.value || "geen e-mailadres";
+          const previewNumber = document.getElementById("demo-action-invoice-preview-number");
+          const previewClient = document.getElementById("demo-action-invoice-preview-client");
+          if (previewNumber) previewNumber.textContent = number;
+          if (previewClient) previewClient.textContent = `${company} - ${email}`;
+          document.getElementById("demo-action-invoice-subtotal").textContent = money(amount);
+          document.getElementById("demo-action-invoice-vat-total").textContent = money(vat);
+          document.getElementById("demo-action-invoice-total").textContent = money(total);
+        }
+
+        function invoicePayloadFromModal(profileId = "", customer = {}) {
+          const amount = Number(document.getElementById("demo-action-invoice-amount")?.value || 0);
+          const vatRate = Number(document.getElementById("demo-action-invoice-vat")?.value || 21);
+          const vat = amount * (vatRate / 100);
+          const total = amount + vat;
+          const status = document.getElementById("demo-action-invoice-status")?.value || "draft";
+          const paidAt = status === "paid" ? new Date().toISOString() : "";
+          const title = document.getElementById("demo-action-invoice-title-field")?.value || "Website";
+          return {
+            action: "save_invoice",
+            profileId,
+            customerId: profileId,
+            customerName: document.getElementById("demo-action-invoice-name")?.value || customer.name || "",
+            customerCompany: document.getElementById("demo-action-invoice-company")?.value || customer.company || "",
+            customerEmail: document.getElementById("demo-action-invoice-email")?.value || customer.email || "",
+            invoiceNumber: document.getElementById("demo-action-invoice-number")?.value || nextInvoiceNumber(),
+            title,
+            status,
+            invoiceDate: new Date().toISOString().slice(0, 10),
+            dueDate: new Date().toISOString().slice(0, 10),
+            paidAt,
+            amount: total,
+            subtotal: amount,
+            vat,
+            total,
+            type: "Website",
+            notes: [
+              document.getElementById("demo-action-invoice-notes")?.value || "",
+              document.getElementById("demo-action-invoice-payment")?.value ? `Betaalbron: ${document.getElementById("demo-action-invoice-payment").value}` : "",
+            ].filter(Boolean).join("\n"),
+            lines: [{ description: title, quantity: 1, price: amount, vatRate }],
+          };
+        }
+
+        async function ensureCustomerForRecord(record = {}, options = {}) {
+          const workflow = workflowMeta(record);
+          if (workflow.profileId || workflow.customerId) {
+            return {
+              profileId: workflow.profileId || workflow.customerId,
+              customerId: workflow.customerId || workflow.profileId,
+              authUserId: workflow.authUserId || "",
+              existing: true,
+            };
+          }
+          const savedDemo = savedDemoSiteMeta(record) || {};
+          const company = document.getElementById("demo-action-account-company")?.value || document.getElementById("demo-action-invoice-company")?.value || savedDemo.businessName || record.businessName || "";
+          const name = document.getElementById("demo-action-account-name")?.value || document.getElementById("demo-action-invoice-name")?.value || record.contactName || company;
+          const email = document.getElementById("demo-action-account-email")?.value || document.getElementById("demo-action-invoice-email")?.value || record.email || savedDemo.email || "";
+          const phone = document.getElementById("demo-action-account-phone")?.value || record.phone || "";
+          const domain = document.getElementById("demo-action-account-website")?.value || document.getElementById("demo-action-invoice-website")?.value || demoDomain(record);
+          const packageName = document.getElementById("demo-action-account-package")?.value || "Maatwerk";
+          const data = await postJson(endpoints.onboarding, {
+            name,
+            company,
+            email,
+            phone,
+            domain,
+            package: packageName,
+            projectName: `Klantportaal ${company}`,
+            leadId: record.leadId || "",
+            sendWelcomeEmail: Boolean(options.sendWelcomeEmail),
+          });
+          const profileId = data.onboarding?.profile?.id || "";
+          const customerId = data.onboarding?.customer?.id || "";
+          const authUserId = data.onboarding?.authUser?.id || "";
+          await updateWorkflow(record, {
+            customerId,
+            profileId,
+            authUserId,
+            accountStatus: data.email?.sent ? "invited" : "created",
+            inviteStatus: data.email?.sent ? "sent" : workflow.inviteStatus || "",
+            inviteSentAt: data.email?.sent ? new Date().toISOString() : workflow.inviteSentAt || "",
+          });
+          return { profileId, customerId, authUserId, onboarding: data };
+        }
+
+        async function saveInvoiceFromModal({ send = false } = {}) {
+          const messageEl = document.getElementById("demo-action-invoice-message");
+          if (!activeActionRecord) return;
+          const form = document.getElementById("demo-action-invoice-form");
+          if (form && !form.reportValidity()) return;
+          setModalMessage(messageEl, "Factuurgegevens controleren...", "info");
+          const customer = await ensureCustomerForRecord(activeActionRecord, { sendWelcomeEmail: false });
+          const profileId = customer.profileId || customer.customerId;
+          if (!profileId) throw new Error("Klantprofiel kon niet worden klaargezet voor deze factuur.");
+          setModalMessage(messageEl, "Factuur opslaan...", "info");
+          const invoicePayload = invoicePayloadFromModal(profileId, customer);
+          const data = await postJson(endpoints.billing, invoicePayload);
+          const invoice = data.invoice || {};
+          let emailSent = false;
+          if (send && invoice.id) {
+            setModalMessage(messageEl, "Factuurmail versturen...", "info");
+            await postJson(endpoints.invoiceEmail, { invoiceId: invoice.id, emailType: "invoice_sent" });
+            emailSent = true;
+          }
+          await updateWorkflow(activeActionRecord, {
+            handlingStatus: handlingStatus(activeActionRecord),
+            paymentSource: document.getElementById("demo-action-invoice-payment")?.value || "",
+            invoiceId: invoice.id || "",
+            invoiceNumber: invoice.invoiceNumber || invoicePayload.invoiceNumber,
+            invoiceStatus: invoice.status || invoicePayload.status,
+            profileId,
+            customerId: customer.customerId || "",
+            authUserId: customer.authUserId || "",
+          });
+          setModalMessage(messageEl, emailSent ? "Factuur opgeslagen en verzonden." : "Factuur opgeslagen. Controleer hem in Facturen voordat je hem verstuurt.", "success");
+        }
+
+        function populateAccountModal(record = {}) {
+          activeActionRecord = record;
+          const savedDemo = savedDemoSiteMeta(record) || {};
+          const workflow = workflowMeta(record);
+          document.getElementById("demo-action-account-journey").value = record.id || "";
+          document.getElementById("demo-action-account-company").value = savedDemo.businessName || record.businessName || "";
+          document.getElementById("demo-action-account-name").value = record.contactName || savedDemo.contactName || savedDemo.businessName || record.businessName || "";
+          document.getElementById("demo-action-account-email").value = record.email || savedDemo.email || "";
+          document.getElementById("demo-action-account-phone").value = record.phone || "";
+          document.getElementById("demo-action-account-website").value = demoDomain(record);
+          document.getElementById("demo-action-account-package").value = "Maatwerk";
+          document.getElementById("demo-action-account-send").checked = !workflow.inviteSentAt;
+          document.getElementById("demo-action-account-success").hidden = true;
+          setModalMessage(document.getElementById("demo-action-account-message"), "");
+          openModal(document.getElementById("demo-action-account-modal"));
+        }
+
+        async function saveAccountFromModal() {
+          const messageEl = document.getElementById("demo-action-account-message");
+          if (!activeActionRecord) return;
+          setModalMessage(messageEl, "Klantaccount klaarmaken...", "info");
+          const sendWelcomeEmail = Boolean(document.getElementById("demo-action-account-send")?.checked);
+          await ensureCustomerForRecord(activeActionRecord, { sendWelcomeEmail });
+          const success = document.getElementById("demo-action-account-success");
+          if (success) success.hidden = false;
+          setModalMessage(messageEl, sendWelcomeEmail ? "Klantaccount aangemaakt en activatielink verzonden." : "Klantaccount aangemaakt. Uitnodiging kan daarna apart worden verzonden.", "success");
+        }
+
+        async function sendInviteForRecord(record = {}) {
+          activeActionRecord = record;
+          const workflow = workflowMeta(record);
+          let customer = { profileId: workflow.profileId, customerId: workflow.customerId };
+          if (!customer.profileId && !customer.customerId) {
+            customer = await ensureCustomerForRecord(record, { sendWelcomeEmail: false });
+          }
+          const savedDemo = savedDemoSiteMeta(record) || {};
+          const data = await postJson(endpoints.welcomeEmail, {
+            customerId: customer.customerId || customer.profileId,
+            name: record.contactName || savedDemo.businessName || record.businessName,
+            company: savedDemo.businessName || record.businessName,
+            email: record.email || savedDemo.email,
+            website: demoDomain(record),
+            package: "Maatwerk",
+          });
+          await updateWorkflow(record, {
+            customerId: customer.customerId || "",
+            profileId: customer.profileId || "",
+            inviteStatus: data.email?.sent ? "sent" : "prepared",
+            inviteSentAt: data.email?.sent ? new Date().toISOString() : workflow.inviteSentAt || "",
+          });
+          setMessage(data.email?.sent ? "Inloggegevens/activatielink verzonden." : data.email?.warning || "Welkomstmail is voorbereid.", data.email?.sent ? "success" : "warning");
+        }
+
+        function openSimpleModal(record = {}, type = "followup") {
+          activeActionRecord = record;
+          const modal = document.getElementById("demo-action-simple-modal");
+          const title = document.getElementById("demo-action-simple-title");
+          const kicker = document.getElementById("demo-action-simple-kicker");
+          const submit = document.getElementById("demo-action-simple-submit");
+          const dateWrap = document.getElementById("demo-action-simple-date-wrap");
+          document.getElementById("demo-action-simple-journey").value = record.id || "";
+          document.getElementById("demo-action-simple-type").value = type;
+          document.getElementById("demo-action-simple-date").value = "";
+          document.getElementById("demo-action-simple-note").value = "";
+          document.getElementById("demo-action-simple-success").hidden = true;
+          if (type === "upsell") {
+            kicker.textContent = "After sale";
+            title.textContent = "Meerwerk aanbieden";
+            submit.textContent = "Meerwerknotitie opslaan";
+            dateWrap.hidden = true;
+          } else {
+            kicker.textContent = "Opvolging";
+            title.textContent = "Opvolging plannen";
+            submit.textContent = "Opvolging opslaan";
+            dateWrap.hidden = false;
+          }
+          setModalMessage(document.getElementById("demo-action-simple-message"), "");
+          openModal(modal);
+        }
+
+        async function saveSimpleAction() {
+          const type = document.getElementById("demo-action-simple-type")?.value || "followup";
+          const messageEl = document.getElementById("demo-action-simple-message");
+          if (!activeActionRecord) return;
+          const note = document.getElementById("demo-action-simple-note")?.value || "";
+          const followUpAt = document.getElementById("demo-action-simple-date")?.value || "";
+          setModalMessage(messageEl, "Actie opslaan...", "info");
+          await updateWorkflow(activeActionRecord, type === "upsell" ? { upsellNote: note } : { followUpAt, followUpNote: note });
+          document.getElementById("demo-action-simple-success").hidden = false;
+          document.getElementById("demo-action-simple-success-text").textContent = type === "upsell" ? "Meerwerkactie is opgeslagen." : "Opvolging is opgeslagen.";
+          setModalMessage(messageEl, "Actie opgeslagen.", "success");
+        }
+
+        async function handleDemoAction(action, recordId) {
+          const record = getRecordById(recordId);
+          if (!record) return;
+          if (action === "invoice") return populateInvoiceModal(record);
+          if (action === "account") return populateAccountModal(record);
+          if (action === "invite") {
+            setMessage("Uitnodiging voorbereiden...", "info");
+            return sendInviteForRecord(record);
+          }
+          if (action === "followup") return openSimpleModal(record, "followup");
+          if (action === "upsell") return openSimpleModal(record, "upsell");
         }
 
         async function loadDemoSites() {
@@ -23129,6 +23694,68 @@
         search?.addEventListener("input", render);
         status?.addEventListener("change", render);
         refresh?.addEventListener("click", loadDemoSites);
+        list?.addEventListener("change", async (event) => {
+          const select = event.target.closest("[data-demo-handling]");
+          if (!select) return;
+          const record = getRecordById(select.dataset.demoHandling);
+          if (!record) return;
+          try {
+            setMessage("Afhandelstatus opslaan...", "info");
+            await updateWorkflow(record, {
+              handlingStatus: select.value,
+              paymentSource: select.value === "sold_external" ? workflowMeta(record).paymentSource || "Tikkie" : workflowMeta(record).paymentSource || "",
+            });
+            setMessage(`Afhandelstatus bijgewerkt naar ${handlingLabel(select.value)}.`, "success");
+          } catch (error) {
+            setMessage(error.message || "Afhandelstatus kon niet worden opgeslagen.", "error");
+            render();
+          }
+        });
+        list?.addEventListener("click", async (event) => {
+          const button = event.target.closest("[data-demo-action]");
+          if (!button) return;
+          event.preventDefault();
+          try {
+            await handleDemoAction(button.dataset.demoAction, button.dataset.demoId);
+          } catch (error) {
+            setMessage(error.message || "Actie kon niet worden uitgevoerd.", "error");
+          }
+        });
+        ["demo-action-invoice-amount", "demo-action-invoice-vat", "demo-action-invoice-number", "demo-action-invoice-company", "demo-action-invoice-email"].forEach((id) => {
+          document.getElementById(id)?.addEventListener("input", updateInvoiceTotals);
+        });
+        document.getElementById("demo-action-invoice-form")?.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          try {
+            await saveInvoiceFromModal({ send: false });
+          } catch (error) {
+            setModalMessage(document.getElementById("demo-action-invoice-message"), error.message || "Factuur kon niet worden opgeslagen.", "error");
+          }
+        });
+        document.getElementById("demo-action-invoice-send")?.addEventListener("click", async (event) => {
+          event.preventDefault();
+          try {
+            await saveInvoiceFromModal({ send: true });
+          } catch (error) {
+            setModalMessage(document.getElementById("demo-action-invoice-message"), error.message || "Factuur kon niet worden verzonden.", "error");
+          }
+        });
+        document.getElementById("demo-action-account-form")?.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          try {
+            await saveAccountFromModal();
+          } catch (error) {
+            setModalMessage(document.getElementById("demo-action-account-message"), error.message || "Klantaccount kon niet worden aangemaakt.", "error");
+          }
+        });
+        document.getElementById("demo-action-simple-form")?.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          try {
+            await saveSimpleAction();
+          } catch (error) {
+            setModalMessage(document.getElementById("demo-action-simple-message"), error.message || "Actie kon niet worden opgeslagen.", "error");
+          }
+        });
         if (document.getElementById("demo-sites-library")) loadDemoSites();
       })();
     </script>
