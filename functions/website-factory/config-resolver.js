@@ -29,11 +29,95 @@ const INDUSTRY_ALIASES = [
   ["schoonmaak", /\b(schoonmaak|cleaning|reiniging|vve|kantoor|oplevering)\b/i],
 ];
 
+const FALLBACK_PACKAGES = {
+  starter: {
+    id: "starter",
+    key: "starter",
+    name: "Starter Site",
+    label: "Starter Website",
+    price: 495,
+    template: "starter-one-page-v1",
+    pages: ["index.html"],
+    pageIds: ["home"],
+    components: { hero: true, services: true, cta: true, contact: true, footer: true },
+    sections: ["hero", "diensten", "cta", "contact", "footer"],
+    navigation: "scroll",
+    seo: "basic",
+    animations: "basic",
+    assets: { heroImages: 1, serviceImages: 2 },
+    __source: "fallback:starter",
+  },
+  business: {
+    id: "business",
+    key: "business",
+    name: "Business Site",
+    label: "Business Website",
+    price: 995,
+    template: "business-multi-page-v1",
+    pages: ["index.html", "over-ons.html", "diensten.html", "projecten.html", "contact.html"],
+    pageIds: ["home", "over-ons", "diensten", "projecten", "contact"],
+    components: { hero: true, services: true, gallery: true, reviews: true, faq: true, cta: true, contact: true, footer: true },
+    sections: ["hero", "diensten", "projecten", "reviews", "faq", "cta", "contact", "footer"],
+    navigation: "multi-page",
+    seo: "local",
+    animations: "standard",
+    assets: { heroImages: 1, serviceImages: 4, projectImages: 3 },
+    __source: "fallback:business",
+  },
+  professional: {
+    id: "professional",
+    key: "professional",
+    name: "Professional Site",
+    label: "Professional Website",
+    price: 995,
+    extends: "business",
+    __source: "fallback:professional",
+  },
+  premium: {
+    id: "premium",
+    key: "premium",
+    name: "Premium Site",
+    label: "Premium Website",
+    price: 1750,
+    template: "premium-growth-site-v1",
+    pages: ["index.html", "over-ons.html", "diensten.html", "projecten.html", "reviews.html", "team.html", "contact.html", "offerte.html"],
+    pageIds: ["home", "over-ons", "diensten", "projecten", "reviews", "team", "contact", "offerte"],
+    components: { hero: true, services: true, gallery: true, reviews: true, faq: true, cta: true, contact: true, footer: true, leadMagnet: true, blog: true, landingPages: true },
+    sections: ["hero", "diensten", "projecten", "reviews", "team", "faq", "offerte", "contact", "footer"],
+    navigation: "premium-multi-page",
+    seo: "advanced",
+    animations: "premium",
+    assets: { heroImages: 2, serviceImages: 6, projectImages: 5, socialImages: 2 },
+    __source: "fallback:premium",
+  },
+};
+
+const FALLBACK_INDUSTRIES = {
+  local: {
+    id: "local",
+    key: "local",
+    name: "Lokale specialist",
+    label: "Lokale specialist",
+    aliases: ["lokaal", "service", "bedrijf"],
+    palette: { brand: "#2563eb", accent: "#14b8a6", ink: "#132238", soft: "#f6f8fb" },
+    copy: {
+      hero: "Een lokale specialist die online direct professioneel overkomt.",
+      intro: "Voor bezoekers die snel willen begrijpen wat u doet, waarom ze u kunnen vertrouwen en hoe ze contact opnemen.",
+      eyebrow: "Service, vertrouwen en contact",
+      cta: "Plan een kennismaking",
+    },
+    services: ["Advies", "Uitvoering", "Service", "Contact"],
+    trustSignals: ["Duidelijke afspraken", "Lokale service", "Snel contact"],
+    assetKeywords: ["local business", "service", "professional"],
+    __source: "fallback:local",
+  },
+};
+
 function resolvePackage(packageType = "") {
   const manifests = loadPackages();
   const normalized = normalizeKey(packageType);
   const aliasTarget = PACKAGE_ALIASES[normalized] || normalized || "starter";
-  return manifests[aliasTarget] || manifests.starter;
+  return manifests[aliasTarget] || manifests.starter || normalizePackageManifest(FALLBACK_PACKAGES.starter);
 }
 
 function resolveIndustry(industryInput = "") {
@@ -51,8 +135,8 @@ function resolveIndustry(industryInput = "") {
 }
 
 function resolveFactoryConfig({ packageType = "", industry = "", overrides = {} } = {}) {
-  const packageManifest = resolvePackage(packageType);
-  const industryManifest = resolveIndustry(industry);
+  const packageManifest = resolvePackage(packageType) || normalizePackageManifest(FALLBACK_PACKAGES.starter);
+  const industryManifest = resolveIndustry(industry) || normalizeIndustryManifest(FALLBACK_INDUSTRIES.local);
   const rules = {
     pages: toHtmlPages(packageManifest.pages || packageManifest.pageIds || ["home"]),
     pageIds: packageManifest.pageIds || toPageIds(packageManifest.pages || ["home"]),
@@ -93,7 +177,10 @@ function loadWebsiteFactoryManifests() {
 }
 
 function loadPackages() {
-  const raw = loadJsonDirectory(path.join(CONFIG_ROOT, "packages"));
+  const raw = [
+    ...Object.values(FALLBACK_PACKAGES),
+    ...loadJsonDirectory(path.join(CONFIG_ROOT, "packages")),
+  ];
   const byId = {};
   raw.forEach((manifest) => {
     const id = normalizeKey(manifest.id || manifest.key || manifest.name);
@@ -121,7 +208,10 @@ function loadPackages() {
 
 function loadIndustries() {
   const byId = {};
-  loadJsonDirectory(path.join(CONFIG_ROOT, "industries")).forEach((manifest) => {
+  [
+    ...Object.values(FALLBACK_INDUSTRIES),
+    ...loadJsonDirectory(path.join(CONFIG_ROOT, "industries")),
+  ].forEach((manifest) => {
     const id = normalizeKey(manifest.id || manifest.key || manifest.name);
     if (!id) return;
     byId[id] = normalizeIndustryManifest({ ...manifest, id });
