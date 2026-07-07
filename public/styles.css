@@ -15848,15 +15848,12 @@ h3 {
   font-weight: 950;
 }
 
-.demo-upsell-mail-logo span {
-  display: inline-grid;
-  place-items: center;
+.demo-upsell-mail-logo img {
+  display: block;
   width: 44px;
   height: 44px;
   border-radius: 10px;
-  background: #2563eb;
-  color: #fff;
-  font-size: 24px;
+  object-fit: cover;
 }
 
 .demo-upsell-client-mail header > span {

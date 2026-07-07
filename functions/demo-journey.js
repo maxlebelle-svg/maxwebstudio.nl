@@ -873,6 +873,7 @@ function buildEmailTemplate(typeOrStatus = "", journey = {}) {
 }
 
 function buildUpsellProposalEmail({ journey = {}, savedDemoSite = {}, workflow = {} }) {
+  const logoUrl = "https://maxwebstudio.nl/assets/maxwebstudio-logo-mark.png";
   const business = cleanText(savedDemoSite.businessName || journey.businessName || journey.business_name || "uw website");
   const name = cleanContactName(journey.contactName || journey.contact_name);
   const greeting = name ? `Hoi ${name},` : "Hoi,";
@@ -915,7 +916,7 @@ Max Webstudio`;
           <td style="background:#061527;padding:28px 32px;color:#ffffff;">
             <table role="presentation" width="100%"><tr>
               <td><div style="font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:#22d3ee;font-weight:900;">MaxWebstudio</div><h1 style="margin:10px 0 0;font-size:30px;line-height:1.08;">Meerwerk voorstel</h1></td>
-              <td align="right"><div style="display:inline-grid;place-items:center;width:46px;height:46px;border-radius:12px;background:#1d4ed8;color:#fff;font-weight:950;font-size:24px;">M</div></td>
+              <td align="right"><img src="${escapeHtml(logoUrl)}" width="52" height="52" alt="MaxWebstudio logo" style="display:block;border-radius:14px;border:0;outline:none;text-decoration:none;"></td>
             </tr></table>
           </td>
         </tr>
