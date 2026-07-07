@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=20260707-sales-agent-flow" />
+    <link rel="stylesheet" href="styles.css?v=20260707-sales-actions-demo" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
   <body class="admin-body">
@@ -33,6 +33,7 @@
           <a href="admin-sales.html">Leads</a>
           <span class="admin-nav-group">Production</span>
           <a href="admin-website-factory.html">Website Factory</a>
+          <a href="admin-demo-sites.html">Demo Sites</a>
           <a href="admin-ai-content-library.html">AI Content Library</a>
           <a href="admin-assets.html">Asset Manager</a>
           <a href="admin-seo-studio.html">SEO Studio</a>
@@ -551,6 +552,7 @@
                 </div>
                 <div class="sales-contact-list" id="sales-lead-contact-list"></div>
                 <div class="sales-quick-actions" aria-label="Snelle salesacties">
+                  <button class="button primary sales-action-demo-now" id="sales-action-demo-now" type="button" disabled>Maak demo site nu</button>
                   <button class="button secondary" id="sales-action-call" type="button" disabled>Bellen</button>
                   <a class="button secondary is-disabled" id="sales-action-website" href="#" target="_blank" rel="noopener" aria-disabled="true">Website bekijken</a>
                   <a class="button secondary is-disabled" id="sales-action-mail" href="#" aria-disabled="true">Mail sturen</a>
@@ -2354,6 +2356,8 @@
           "admin-lead-generator": "lead-generator",
           "admin-website-factory.html": "website-factory",
           "admin-website-factory": "website-factory",
+          "admin-demo-sites.html": "demo-sites",
+          "admin-demo-sites": "demo-sites",
           "admin-klanten.html": "klanten",
           "admin-klanten": "klanten",
           "admin-websites.html": "websites",
@@ -2375,6 +2379,7 @@
           "lead-generator": ["leadfinder"],
           "sales-agenda": ["sales-agenda"],
           "website-factory": ["demo-klantreis"],
+          "demo-sites": ["demo-sites-library"],
           klanten: ["klanten"],
           websites: ["websites"],
           projecten: ["projecten"],
@@ -2866,6 +2871,7 @@
           { href: "admin-sales.html", page: "sales", accessId: "leadfinder", label: "Leads", alwaysVisible: true },
           { type: "group", label: "Production" },
           { href: "admin-website-factory.html", page: "website-factory", accessId: "leadfinder", label: "Website Factory", alwaysVisible: true },
+          { href: "admin-demo-sites.html", page: "demo-sites", accessId: "leadfinder", label: "Demo Sites", alwaysVisible: true },
           { href: "admin-ai-content-library.html", page: "ai-content-library", accessId: "ai-content-library", label: "AI Content Library", alwaysVisible: true },
           { href: "admin-assets.html", page: "asset-manager", accessId: "asset-manager", label: "Asset Manager", alwaysVisible: true },
           { href: "admin-seo-studio.html", page: "seo-studio", accessId: "seo-studio", label: "SEO Studio", alwaysVisible: true },
@@ -19521,6 +19527,7 @@
         nextAction: document.getElementById("sales-next-action"),
         nextActionButton: document.getElementById("sales-next-action-button"),
         quickCall: document.getElementById("sales-action-call"),
+        quickDemoNow: document.getElementById("sales-action-demo-now"),
         quickWebsite: document.getElementById("sales-action-website"),
         quickMail: document.getElementById("sales-action-mail"),
         quickMaps: document.getElementById("sales-action-maps"),
@@ -21387,6 +21394,7 @@
         const websiteHref = lead?.websiteUrl ? (String(lead.websiteUrl).startsWith("http") ? lead.websiteUrl : `https://${lead.websiteUrl}`) : "";
         const mapsQuery = [lead?.address || lead?.formattedAddress || lead?.googleAddress, lead?.companyName, lead?.region].filter(Boolean).join(" ");
         const mapsHref = lead?.googleMapsUrl || (mapsQuery ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery)}` : "");
+        setActionAvailability(leadfinderElements.quickDemoNow, hasLead, "Selecteer eerst een lead");
         setActionAvailability(leadfinderElements.quickCall, hasLead && Boolean(lead?.phone), hasLead ? "Geen telefoonnummer bekend" : "Selecteer eerst een lead");
         setQuickAnchor(leadfinderElements.quickWebsite, websiteHref, Boolean(websiteHref));
         if (leadfinderElements.quickWebsite) leadfinderElements.quickWebsite.title = websiteHref ? "" : "Geen website bekend";
@@ -24141,6 +24149,7 @@
         leadfinderElements.analysisRun?.addEventListener("click", runLeadWebsiteAnalysis);
         leadfinderElements.analysisSync?.addEventListener("click", () => retrySelectedLeadSync("analysis"));
         leadfinderElements.nextActionButton?.addEventListener("click", () => runSalesCockpitAction(leadfinderElements.nextActionButton.dataset.salesAction || ""));
+        leadfinderElements.quickDemoNow?.addEventListener("click", makeDemoSiteNow);
         leadfinderElements.quickCall?.addEventListener("click", () => runSalesCockpitAction("call"));
         leadfinderElements.quickNote?.addEventListener("click", () => {
           activeSalesDetailTab = "notes";

@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=20260704-admin-session-hotfix" />
+    <link rel="stylesheet" href="styles.css?v=20260707-demo-sites-library" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
   <body class="admin-body">
@@ -519,6 +519,46 @@
           <div class="admin-table leadfinder-table" id="leadfinder-list" role="list" aria-label="Leadfinder bedrijven" aria-live="polite"></div>
         </section>
 
+        <section class="admin-section demo-sites-library-section" id="demo-sites-library">
+          <div class="admin-section-heading">
+            <div>
+              <p class="section-kicker">Demo Sites</p>
+              <h2>Demo Sites</h2>
+              <p class="admin-section-intro">Bibliotheek met alle gemaakte demo-sites. Website Factory blijft de machine; hier beheer je de opgeslagen previews.</p>
+            </div>
+            <a class="button primary" href="admin-website-factory.html">Website Factory openen</a>
+          </div>
+
+          <div class="admin-grid admin-metrics">
+            <article class="admin-card metric-card">
+              <span>Opgeslagen demo's</span>
+              <strong id="demo-sites-library-count">0</strong>
+              <small>Previews met link</small>
+            </article>
+            <article class="admin-card metric-card">
+              <span>Laatste update</span>
+              <strong id="demo-sites-library-updated">-</strong>
+              <small>Nieuwste demo</small>
+            </article>
+            <article class="admin-card metric-card">
+              <span>Bron</span>
+              <strong>Demo Journey</strong>
+              <small>Website Factory output</small>
+            </article>
+          </div>
+
+          <div class="admin-filters crm-filters" aria-label="Demo-sites filteren">
+            <label for="demo-sites-library-search">Zoeken<input id="demo-sites-library-search" type="search" placeholder="Bedrijf, contact, status of URL" /></label>
+            <label for="demo-sites-library-status">Status<select id="demo-sites-library-status"><option value="">Alle statussen</option><option value="preview">Preview klaar</option><option value="feedback">Feedback</option><option value="delivery">Oplevering</option></select></label>
+            <button class="button secondary" id="demo-sites-library-refresh" type="button">Opnieuw laden</button>
+          </div>
+
+          <p class="admin-form-message" id="demo-sites-library-message" role="status"></p>
+          <div class="saved-demo-site-list demo-sites-library-grid" id="demo-sites-library-list">
+            <div class="sales-timeline-empty">Demo-sites laden...</div>
+          </div>
+        </section>
+
         <section class="admin-section" id="demo-klantreis">
           <div class="admin-section-heading factory-command-heading">
             <div>
@@ -629,13 +669,7 @@
                 <mark class="status-badge status-prepared" id="demo-journey-source">Niet geladen</mark>
               </div>
               <div class="admin-profile-fields">
-                <label class="admin-profile-wide demo-lead-picker" for="demo-journey-lead-search">
-                  Lead
-                  <input id="demo-journey-lead-search" type="search" placeholder="Zoek op bedrijf, contact, e-mail, plaats of website" autocomplete="off" />
-                  <select id="demo-journey-lead" hidden></select>
-                  <div class="demo-lead-picker-list" id="demo-journey-lead-results" role="listbox" aria-label="Leads zoeken"></div>
-                  <small id="demo-journey-lead-count">Nieuwste leads bovenaan.</small>
-                </label>
+                <label class="admin-profile-wide" for="demo-journey-lead">Lead<select id="demo-journey-lead"></select></label>
                 <label for="demo-journey-business">Bedrijfsnaam<input id="demo-journey-business" type="text" /></label>
                 <label for="demo-journey-contact">Contactpersoon<input id="demo-journey-contact" type="text" /></label>
                 <label for="demo-journey-email">E-mail<input id="demo-journey-email" type="email" /></label>
@@ -728,6 +762,15 @@
                   <button class="button secondary is-disabled" id="demo-journey-workspace-zip" type="button" aria-disabled="true">ZIP downloaden</button>
                   <button class="button secondary is-disabled" id="demo-journey-workspace-copy" type="button" aria-disabled="true">Link kopiëren</button>
                   <button class="button secondary is-disabled" id="demo-journey-workspace-folder" type="button" aria-disabled="true">Projectmap openen</button>
+                </div>
+              </div>
+              <div class="sales-timeline-card saved-demo-sites-card">
+                <div class="sales-timeline-heading">
+                  <strong>Opgeslagen demo-sites</strong>
+                  <span id="demo-site-saved-count">0 sites</span>
+                </div>
+                <div class="saved-demo-site-list" id="demo-site-saved-list">
+                  <div class="sales-timeline-empty">Nog geen demo-site opgeslagen.</div>
                 </div>
               </div>
               <div class="sales-timeline-card customer-timeline">
@@ -19085,7 +19128,6 @@
             "url",
             "rating",
             "user_ratings_total",
-            "reviews",
             "photos",
             "geometry",
             "types",
@@ -19139,7 +19181,6 @@
         const rating = place.rating ? `${place.rating.toLocaleString("nl-NL")} ★ (${place.user_ratings_total || 0})` : "Geen rating";
         const phone = place.formatted_phone_number || place.international_phone_number || "Geen telefoon bekend";
         const website = place.website || "";
-        const reviewCount = Array.isArray(place.reviews) ? place.reviews.length : 0;
         const photoUrl = place.photos?.[0]?.getUrl ? place.photos[0].getUrl({ maxWidth: 520, maxHeight: 260 }) : "";
         const safePhotoUrl = photoUrl.replace(/'/g, "%27");
         leadfinderElements.googleResult.innerHTML = `
@@ -19160,7 +19201,6 @@
           <dl class="google-place-details">
             <div><dt>Telefoon</dt><dd>${escapeHtml(phone)}</dd></div>
             <div><dt>Website</dt><dd>${website ? `<a href="${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">${escapeHtml(cleanDisplayUrl(website))}</a>` : "Geen website bekend"}</dd></div>
-            <div><dt>Reviews</dt><dd>${reviewCount ? `${escapeHtml(reviewCount)} reviewteksten beschikbaar voor demo` : "Alleen rating beschikbaar"}</dd></div>
           </dl>
           <div class="google-place-actions">
             <button class="button primary" type="button" data-google-place-action="takeover">Gegevens overnemen</button>
@@ -19177,7 +19217,6 @@
           ["Adres", Boolean(place?.formatted_address)],
           ["Telefoonnummer", Boolean(place?.formatted_phone_number || place?.international_phone_number)],
           ["Website URL", Boolean(place?.website)],
-          ["Google reviews", Boolean(Array.isArray(place?.reviews) && place.reviews.length)],
           ["Plaats/regio", Boolean(place?.formatted_address)],
           ["E-mailadres niet geleverd door Google", false],
         ];
@@ -19246,26 +19285,7 @@
         return true;
       }
 
-      function googlePhotoUrlFromPlace(place = {}, width = 760, height = 320) {
-        return place?.photos?.[0]?.getUrl ? place.photos[0].getUrl({ maxWidth: width, maxHeight: height }) : "";
-      }
-
-      function normalizeGooglePlaceReviews(place = {}) {
-        return (Array.isArray(place.reviews) ? place.reviews : []).map((review) => ({
-          author: String(review.author_name || review.author || "Google reviewer").trim(),
-          text: String(review.text || "").trim(),
-          rating: review.rating || "",
-          relativeTime: String(review.relative_time_description || "").trim(),
-          authorUrl: String(review.author_url || "").trim(),
-          profilePhotoUrl: String(review.profile_photo_url || "").trim(),
-          source: "Google Reviews",
-        })).filter((review) => review.text).slice(0, 3);
-      }
-
       function buildGooglePlaceLeadUpdates(place = {}) {
-        const photoUrl = googlePhotoUrlFromPlace(place);
-        const googleReviews = normalizeGooglePlaceReviews(place);
-        const category = place.types?.[0] ? readablePlaceType(place.types[0]) : "";
         const details = [
           place.url ? `Google Maps: ${place.url}` : "",
           place.place_id ? `Google Place ID: ${place.place_id}` : "",
@@ -19274,7 +19294,6 @@
           place.business_status ? `Status: ${place.business_status}` : "",
         ].filter(Boolean).join("\n");
         const lead = selectedLeadFinderLead();
-        const existingMeta = lead?.metadata && typeof lead.metadata === "object" ? lead.metadata : {};
         const currentNotes = String(lead?.notes || "").trim();
         const notes = details && currentNotes && !currentNotes.includes(place.url || details)
           ? [currentNotes, details].join("\n\n")
@@ -19289,21 +19308,6 @@
           notes,
           googlePlaceId: place.place_id || "",
           googleMapsUrl: place.url || "",
-          metadata: {
-            ...existingMeta,
-            googlePlaceId: place.place_id || "",
-            googleMapsUrl: place.url || "",
-            googleAddress: place.formatted_address || "",
-            formattedAddress: place.formatted_address || "",
-            address: place.formatted_address || "",
-            googleRating: place.rating || "",
-            googleRatingTotal: place.user_ratings_total || "",
-            googleReviews,
-            googleCategory: category,
-            googleTypes: Array.isArray(place.types) ? place.types : [],
-            googlePhotoUrl: photoUrl,
-            businessStatus: place.business_status || "",
-          },
         };
       }
 
@@ -20279,7 +20283,6 @@
       }
 
               function buildLeadPayloadFromForm(ownerContext) {
-                const googleReviews = normalizeGooglePlaceReviews(googlePlacesPlace || {});
                 return {
           companyName: leadfinderElements.company?.value.trim() || "",
           industry: leadfinderElements.industry?.value || "",
@@ -20304,16 +20307,10 @@
           createdBy: ownerContext.userId,
           createdByEmail: ownerContext.email,
           createdByName: ownerContext.name,
-          googleRating: googlePlacesPlace?.rating || "",
-          googleRatingTotal: googlePlacesPlace?.user_ratings_total || "",
-          googleReviews,
           metadata: {
             createdFrom: "admin-dashboard-leadfinder",
             createdByRole: ownerContext.role,
             createdByEmail: ownerContext.email,
-            googleRating: googlePlacesPlace?.rating || "",
-            googleRatingTotal: googlePlacesPlace?.user_ratings_total || "",
-            googleReviews,
           },
                 };
               }
@@ -20898,9 +20895,6 @@
             source: document.getElementById("demo-journey-source"),
             form: document.getElementById("demo-journey-form"),
             lead: document.getElementById("demo-journey-lead"),
-            leadSearch: document.getElementById("demo-journey-lead-search"),
-            leadResults: document.getElementById("demo-journey-lead-results"),
-            leadCount: document.getElementById("demo-journey-lead-count"),
             business: document.getElementById("demo-journey-business"),
             contact: document.getElementById("demo-journey-contact"),
             email: document.getElementById("demo-journey-email"),
@@ -21280,80 +21274,6 @@
             option.textContent = label;
             select.append(option);
           });
-        }
-
-        function leadCreatedTime(lead = {}) {
-          const value = lead.createdAt || lead.created_at || lead.created || lead.insertedAt || lead.inserted_at || lead.updatedAt || lead.updated_at || "";
-          const time = Date.parse(value);
-          return Number.isNaN(time) ? 0 : time;
-        }
-
-        function sortLeadsNewestFirst(items = []) {
-          return [...items].sort((a, b) => {
-            const dateDifference = leadCreatedTime(b) - leadCreatedTime(a);
-            if (dateDifference) return dateDifference;
-            return String(b.id || "").localeCompare(String(a.id || ""));
-          });
-        }
-
-        function leadOptionLabel(lead = {}) {
-          const company = lead.companyName || lead.company_name || lead.businessName || "Naamloos bedrijf";
-          const contact = lead.contactName || lead.contact_name || lead.contact || lead.email || "geen contact";
-          return `${company} - ${contact}`;
-        }
-
-        function leadSearchText(lead = {}) {
-          return [
-            lead.companyName,
-            lead.company_name,
-            lead.businessName,
-            lead.contactName,
-            lead.contact_name,
-            lead.contact,
-            lead.email,
-            lead.phone,
-            lead.websiteUrl,
-            lead.website_url,
-            lead.region,
-            lead.address,
-            lead.industry,
-            lead.notes,
-          ].filter(Boolean).join(" ").toLowerCase();
-        }
-
-        function syncLeadSearchFromSelected() {
-          if (!elements.leadSearch) return;
-          const lead = selectedLead();
-          elements.leadSearch.value = lead ? leadOptionLabel(lead) : "";
-        }
-
-        function renderLeadPicker() {
-          const selectedId = elements.lead?.value || "";
-          fillSelect(elements.lead, leads.map((lead) => [lead.id, leadOptionLabel(lead)]), "Kies een lead");
-          if (elements.lead && selectedId) elements.lead.value = selectedId;
-          if (!elements.leadResults) return;
-          const query = String(elements.leadSearch?.value || "").trim().toLowerCase();
-          const visibleLeads = (query ? leads.filter((lead) => leadSearchText(lead).includes(query)) : leads).slice(0, 30);
-          if (elements.leadCount) {
-            const shown = visibleLeads.length;
-            const total = leads.length;
-            elements.leadCount.textContent = total
-              ? `${shown} van ${total} leads getoond - nieuwste eerst.`
-              : "Nog geen centrale leads geladen.";
-          }
-          elements.leadResults.innerHTML = visibleLeads.length
-            ? visibleLeads.map((lead) => {
-              const company = lead.companyName || lead.company_name || lead.businessName || "Naamloos bedrijf";
-              const contact = lead.contactName || lead.contact_name || lead.contact || lead.email || "Geen contactpersoon";
-              const meta = [contact, lead.region, lead.websiteUrl || lead.website_url, leadCreatedTime(lead) ? formatDate(lead.createdAt || lead.created_at || lead.updatedAt || lead.updated_at) : ""].filter(Boolean).join(" · ");
-              return `
-                <button type="button" class="demo-lead-picker-option ${String(lead.id) === String(selectedId) ? "is-selected" : ""}" data-lead-id="${escapeHtml(lead.id)}" role="option" aria-selected="${String(lead.id) === String(selectedId) ? "true" : "false"}">
-                  <strong>${escapeHtml(company)}</strong>
-                  <span>${escapeHtml(meta || "Geen extra gegevens")}</span>
-                </button>
-              `;
-            }).join("")
-            : `<div class="demo-lead-picker-empty">Geen leads gevonden. Probeer bedrijf, plaats, contactpersoon of website.</div>`;
         }
 
         function currentAdminRole() {
@@ -21839,10 +21759,9 @@
         }
 
         async function loadLeads() {
-          const selectedId = elements.lead?.value || "";
           try {
             const data = await apiRequest(leadsEndpoint);
-            leads = sortLeadsNewestFirst(Array.isArray(data.records) ? data.records : []);
+            leads = Array.isArray(data.records) ? data.records : [];
             if (elements.source) {
               elements.source.textContent = "Centrale bron";
               elements.source.className = "status-badge status-active";
@@ -21855,10 +21774,7 @@
             }
             setMessage(elements.message, error.message, "warning");
           }
-          if (elements.lead && selectedId && leads.some((lead) => String(lead.id) === String(selectedId))) {
-            elements.lead.value = selectedId;
-          }
-          renderLeadPicker();
+          fillSelect(elements.lead, leads.map((lead) => [lead.id, `${lead.companyName || "Naamloos bedrijf"} - ${lead.contactName || lead.email || "geen contact"}`]), "Kies een lead");
         }
 
         async function loadJourney() {
@@ -21913,8 +21829,7 @@
           } else {
             leads.unshift(lead);
           }
-          leads = sortLeadsNewestFirst(leads);
-          renderLeadPicker();
+          fillSelect(elements.lead, leads.map((item) => [item.id, `${item.companyName || "Naamloos bedrijf"} - ${item.contactName || item.email || "geen contact"}`]), "Kies een lead");
         }
 
         function pendingPreviewLeadForId(leadId = "") {
@@ -21972,17 +21887,6 @@
           }
         }
 
-        function googleReviewPayloadFromLead(lead = {}) {
-          const meta = lead?.metadata && typeof lead.metadata === "object" ? lead.metadata : {};
-          const reviews = Array.isArray(lead.googleReviews) ? lead.googleReviews : Array.isArray(meta.googleReviews) ? meta.googleReviews : [];
-          return {
-            googleReviews: reviews,
-            googleRating: lead.googleRating || meta.googleRating || meta.rating || "",
-            googleRatingTotal: lead.googleRatingTotal || meta.googleRatingTotal || meta.userRatingsTotal || "",
-            googleMapsUrl: lead.googleMapsUrl || meta.googleMapsUrl || "",
-          };
-        }
-
         function collectPayload(extra = {}) {
           const previewUrl = absolutePreviewUrl(elements.preview?.value || journey?.previewUrl || "");
           const intake = collectIntake();
@@ -22016,7 +21920,6 @@
             intakeSummary: buildIntakeBriefingSection(),
             intakeCompleteness: intake.percent,
             assetMetadata: intake.assets,
-            ...googleReviewPayloadFromLead(lead),
             ...extra,
           };
         }
@@ -22785,8 +22688,6 @@
           await withJourneyLock(`lead-preview:${lead.id}`, [elements.generatePreview, elements.save], async () => {
             upsertLeadOption(lead);
             elements.lead.value = lead.id;
-            syncLeadSearchFromSelected();
-            renderLeadPicker();
             journey = null;
             events = [];
             buildHistory = { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
@@ -22866,29 +22767,9 @@
             projectWorkspace = null;
             intakeState = {};
             intakeAssets = [];
-            syncLeadSearchFromSelected();
-            renderLeadPicker();
             loadIntakeLocally();
             fillFromLead(selectedLead());
             await loadJourney().catch((error) => setMessage(elements.message, error.message, "error"));
-          });
-          elements.leadSearch?.addEventListener("input", () => {
-            renderLeadPicker();
-          });
-          elements.leadSearch?.addEventListener("focus", () => {
-            elements.leadSearch.select?.();
-            renderLeadPicker();
-          });
-          elements.leadResults?.addEventListener("click", async (event) => {
-            const button = event.target.closest("[data-lead-id]");
-            if (!button) return;
-            event.preventDefault();
-            event.stopPropagation();
-            if (!elements.lead) return;
-            elements.lead.value = button.dataset.leadId || "";
-            syncLeadSearchFromSelected();
-            renderLeadPicker();
-            elements.lead.dispatchEvent(new Event("change", { bubbles: true }));
           });
           elements.generateBriefing?.addEventListener("click", (event) => {
             event.preventDefault();
@@ -22919,23 +22800,6 @@
               return;
             }
             elements.previewFrame.src = elements.previewFrame.src;
-          });
-          elements.saveDemoSite?.addEventListener("click", (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            saveDemoSite();
-          });
-          elements.savedDemoList?.addEventListener("click", (event) => {
-            const button = event.target.closest("[data-saved-demo-preview]");
-            if (!button) return;
-            event.preventDefault();
-            event.stopPropagation();
-            const url = button.dataset.savedDemoPreview || "";
-            if (!url) {
-              setMessage(elements.message, "Deze demo-site heeft nog geen previewlink.", "warning");
-              return;
-            }
-            window.open(url, "_blank", "noopener");
           });
           elements.copyBriefing?.addEventListener("click", (event) => {
             event.preventDefault();
@@ -23053,6 +22917,154 @@
         } else {
           init();
         }
+      })();
+    </script>
+    <script>
+      (() => {
+        const list = document.getElementById("demo-sites-library-list");
+        const count = document.getElementById("demo-sites-library-count");
+        const updated = document.getElementById("demo-sites-library-updated");
+        const message = document.getElementById("demo-sites-library-message");
+        const search = document.getElementById("demo-sites-library-search");
+        const status = document.getElementById("demo-sites-library-status");
+        const refresh = document.getElementById("demo-sites-library-refresh");
+        let records = [];
+
+        function escapeHtml(value) {
+          return String(value || "").replace(/[&<>"']/g, (character) => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#039;",
+          })[character]);
+        }
+
+        function getBearer() {
+          const keys = ["mws_admin_supabase_session", "maxwebstudioCurrentSession", "maxwebstudioSupabaseAuthSession"];
+          for (const key of keys) {
+            try {
+              const value = JSON.parse(localStorage.getItem(key) || "null");
+              const token = value?.accessToken || value?.access_token || value?.session?.access_token;
+              if (token) return token;
+            } catch {
+              // Try next storage key.
+            }
+          }
+          return "";
+        }
+
+        function setMessage(text, type = "success") {
+          if (!message) return;
+          message.textContent = text;
+          message.className = `admin-form-message ${type}`;
+        }
+
+        function absoluteUrl(url = "") {
+          const value = String(url || "").trim();
+          if (!value) return "";
+          if (value.startsWith("/")) return `${window.location.origin}${value}`;
+          return value;
+        }
+
+        function zipUrl(url = "") {
+          const value = absoluteUrl(url);
+          if (!value) return "";
+          return `${value}${value.includes("?") ? "&" : "?"}format=zip`;
+        }
+
+        function formatDate(value = "") {
+          if (!value) return "-";
+          const date = new Date(value);
+          return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("nl-NL", { day: "2-digit", month: "short", year: "numeric" });
+        }
+
+        function statusBucket(record = {}) {
+          const value = String(record.demoStatus || "").toLowerCase();
+          if (value.includes("feedback") || value.includes("aanpassing")) return "feedback";
+          if (value.includes("definitieve") || value.includes("verkocht") || value.includes("belafspraak")) return "delivery";
+          return "preview";
+        }
+
+        function savedDemoSiteMeta(record = {}) {
+          const pack = record.previewPackage || {};
+          return record.savedDemoSite || pack.savedDemoSite || pack.saved_demo_site || pack.meta?.savedDemoSite || null;
+        }
+
+        function isSavedDemoSite(record = {}) {
+          const savedDemo = savedDemoSiteMeta(record);
+          return Boolean(savedDemo?.saved && (savedDemo.previewUrl || record.previewUrl));
+        }
+
+        function render() {
+          const query = String(search?.value || "").trim().toLowerCase();
+          const bucket = status?.value || "";
+          const demos = records
+            .filter(isSavedDemoSite)
+            .filter((record) => !bucket || statusBucket(record) === bucket)
+            .filter((record) => {
+              if (!query) return true;
+              const savedDemo = savedDemoSiteMeta(record) || {};
+              return [record.businessName, savedDemo.businessName, record.contactName, record.demoStatus, record.previewUrl, savedDemo.previewUrl, record.email].some((value) => String(value || "").toLowerCase().includes(query));
+            });
+          if (count) count.textContent = String(demos.length);
+          if (updated) updated.textContent = demos[0] ? formatDate(demos[0].updatedAt || demos[0].createdAt) : "-";
+          if (!list) return;
+          list.innerHTML = demos.length ? demos.map((record) => {
+            const savedDemo = savedDemoSiteMeta(record) || {};
+            const preview = absoluteUrl(savedDemo.previewUrl || record.previewUrl);
+            const factoryHref = `admin-website-factory.html${record.leadId ? `?leadId=${encodeURIComponent(record.leadId)}` : record.id ? `?journeyId=${encodeURIComponent(record.id)}` : ""}`;
+            const customerText = savedDemo.customerId || record.customerId ? "Klant gekoppeld" : "Nog leadfase";
+            const offerText = savedDemo.offerReady ? "Klaar voor offerte" : "Nog niet klaar voor offerte";
+            return `
+              <article class="saved-demo-site-card demo-library-card">
+                <div>
+                  <strong>${escapeHtml(savedDemo.businessName || record.businessName || "Naamloze demo")}</strong>
+                  <span>${escapeHtml([record.contactName, record.email, customerText].filter(Boolean).join(" · ") || "Geen contactgegevens")}</span>
+                </div>
+                <div class="settings-status-list">
+                  <div><strong>Status</strong><span>${escapeHtml(record.demoStatus || "-")}</span></div>
+                  <div><strong>Opgeslagen</strong><span>${escapeHtml(formatDate(savedDemo.savedAt || record.updatedAt || record.createdAt))}</span></div>
+                  <div><strong>Offerte</strong><span>${escapeHtml(offerText)}</span></div>
+                  <div><strong>Preview</strong><span title="${escapeHtml(preview)}">${escapeHtml(preview || "-")}</span></div>
+                </div>
+                <div class="admin-profile-actions demo-preview-actions">
+                  <a class="button primary" href="${escapeHtml(preview || "#")}" target="_blank" rel="noopener" aria-disabled="${preview ? "false" : "true"}">Preview openen</a>
+                  <a class="button secondary" href="${escapeHtml(zipUrl(preview) || "#")}" target="_blank" rel="noopener" aria-disabled="${preview ? "false" : "true"}">ZIP downloaden</a>
+                  <a class="button secondary" href="${escapeHtml(factoryHref)}">Open in Factory</a>
+                </div>
+              </article>
+            `;
+          }).join("") : `<div class="sales-timeline-empty">Geen opgeslagen demo-sites gevonden. Sla eerst een preview op vanuit Website Factory.</div>`;
+        }
+
+        async function loadDemoSites() {
+          const token = getBearer();
+          if (!token) {
+            setMessage("Log opnieuw in om demo-sites te laden.", "warning");
+            if (list) list.innerHTML = `<div class="sales-timeline-empty">Adminsessie ontbreekt.</div>`;
+            return;
+          }
+          setMessage("Demo-sites laden...", "info");
+          try {
+            const response = await fetch("/.netlify/functions/demo-journey", {
+              headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data.error || "Demo-sites konden niet worden geladen.");
+            records = Array.isArray(data.records) ? data.records : [];
+            render();
+            setMessage(`${records.filter(isSavedDemoSite).length} opgeslagen demo-sites geladen.`, "success");
+          } catch (error) {
+            setMessage(error.message || "Demo-sites konden niet worden geladen.", "error");
+            if (list) list.innerHTML = `<div class="sales-timeline-empty">Laden mislukt.</div>`;
+          }
+        }
+
+        search?.addEventListener("input", render);
+        status?.addEventListener("change", render);
+        refresh?.addEventListener("click", loadDemoSites);
+        if (document.getElementById("demo-sites-library")) loadDemoSites();
       })();
     </script>
   </body>

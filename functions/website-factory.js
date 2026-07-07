@@ -115,7 +115,14 @@ async function generatePackageResponse(context, payload) {
   const mappedJourney = payload.journey ? { ...mapJourney(journey), ...journey } : mapJourney(journey);
   const packageType = normalizePackageType(payload.packageType || payload.package_type || mappedJourney.packageType);
   const generatedPackage = buildWebsitePackage({
-    journey: { ...mappedJourney, packageType },
+    journey: {
+      ...mappedJourney,
+      packageType,
+      googleReviews: payload.googleReviews || payload.google_reviews || mappedJourney.googleReviews || [],
+      googleRating: payload.googleRating || payload.google_rating || mappedJourney.googleRating || "",
+      googleRatingTotal: payload.googleRatingTotal || payload.google_rating_total || mappedJourney.googleRatingTotal || "",
+      googleMapsUrl: payload.googleMapsUrl || payload.google_maps_url || mappedJourney.googleMapsUrl || "",
+    },
     briefing: payload.briefing || journey.generated_briefing,
     version: Number(payload.version || 1),
   });
@@ -216,6 +223,10 @@ async function runBuildJob(context, payload = {}) {
         ...journey,
         packageType,
         websiteAnalysis: payload.websiteAnalysis || payload.website_analysis || null,
+        googleReviews: payload.googleReviews || payload.google_reviews || [],
+        googleRating: payload.googleRating || payload.google_rating || "",
+        googleRatingTotal: payload.googleRatingTotal || payload.google_rating_total || "",
+        googleMapsUrl: payload.googleMapsUrl || payload.google_maps_url || "",
       },
       briefing,
       version: job.previewVersion,

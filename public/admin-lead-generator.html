@@ -33,6 +33,7 @@
           <a href="admin-sales.html">Leads</a>
           <span class="admin-nav-group">Production</span>
           <a href="admin-website-factory.html">Website Factory</a>
+          <a href="admin-demo-sites.html">Demo Sites</a>
           <a href="admin-ai-content-library.html">AI Content Library</a>
           <a href="admin-assets.html">Asset Manager</a>
           <a href="admin-seo-studio.html">SEO Studio</a>
@@ -2326,6 +2327,8 @@
           "admin-lead-generator": "lead-generator",
           "admin-website-factory.html": "website-factory",
           "admin-website-factory": "website-factory",
+          "admin-demo-sites.html": "demo-sites",
+          "admin-demo-sites": "demo-sites",
           "admin-klanten.html": "klanten",
           "admin-klanten": "klanten",
           "admin-websites.html": "websites",
@@ -2347,6 +2350,7 @@
           "lead-generator": ["leadfinder"],
           "sales-agenda": ["sales-agenda"],
           "website-factory": ["demo-klantreis"],
+          "demo-sites": ["demo-sites-library"],
           klanten: ["klanten"],
           websites: ["websites"],
           projecten: ["projecten"],
@@ -2838,6 +2842,7 @@
           { href: "admin-sales.html", page: "sales", accessId: "leadfinder", label: "Leads", alwaysVisible: true },
           { type: "group", label: "Production" },
           { href: "admin-website-factory.html", page: "website-factory", accessId: "leadfinder", label: "Website Factory", alwaysVisible: true },
+          { href: "admin-demo-sites.html", page: "demo-sites", accessId: "leadfinder", label: "Demo Sites", alwaysVisible: true },
           { href: "admin-ai-content-library.html", page: "ai-content-library", accessId: "ai-content-library", label: "AI Content Library", alwaysVisible: true },
           { href: "admin-assets.html", page: "asset-manager", accessId: "asset-manager", label: "Asset Manager", alwaysVisible: true },
           { href: "admin-seo-studio.html", page: "seo-studio", accessId: "seo-studio", label: "SEO Studio", alwaysVisible: true },
@@ -20864,6 +20869,7 @@
             "url",
             "rating",
             "user_ratings_total",
+            "reviews",
             "photos",
             "geometry",
             "types",
@@ -20917,6 +20923,7 @@
         const rating = place.rating ? `${place.rating.toLocaleString("nl-NL")} ★ (${place.user_ratings_total || 0})` : "Geen rating";
         const phone = place.formatted_phone_number || place.international_phone_number || "Geen telefoon bekend";
         const website = place.website || "";
+        const reviewCount = Array.isArray(place.reviews) ? place.reviews.length : 0;
         const photoUrl = place.photos?.[0]?.getUrl ? place.photos[0].getUrl({ maxWidth: 520, maxHeight: 260 }) : "";
         const safePhotoUrl = photoUrl.replace(/'/g, "%27");
         leadfinderElements.googleResult.innerHTML = `
@@ -20937,6 +20944,7 @@
           <dl class="google-place-details">
             <div><dt>Telefoon</dt><dd>${escapeHtml(phone)}</dd></div>
             <div><dt>Website</dt><dd>${website ? `<a href="${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">${escapeHtml(cleanDisplayUrl(website))}</a>` : "Geen website bekend"}</dd></div>
+            <div><dt>Reviews</dt><dd>${reviewCount ? `${escapeHtml(reviewCount)} reviewteksten beschikbaar voor demo` : "Alleen rating beschikbaar"}</dd></div>
           </dl>
           <div class="google-place-actions">
             <button class="button primary" type="button" data-google-place-action="takeover">Gegevens overnemen</button>
@@ -20949,6 +20957,18 @@
 
       function googlePhotoUrlFromPlace(place = {}, width = 760, height = 320) {
         return place?.photos?.[0]?.getUrl ? place.photos[0].getUrl({ maxWidth: width, maxHeight: height }) : "";
+      }
+
+      function normalizeGooglePlaceReviews(place = {}) {
+        return (Array.isArray(place.reviews) ? place.reviews : []).map((review) => ({
+          author: String(review.author_name || review.author || "Google reviewer").trim(),
+          text: String(review.text || "").trim(),
+          rating: review.rating || "",
+          relativeTime: String(review.relative_time_description || "").trim(),
+          authorUrl: String(review.author_url || "").trim(),
+          profilePhotoUrl: String(review.profile_photo_url || "").trim(),
+          source: "Google Reviews",
+        })).filter((review) => review.text).slice(0, 3);
       }
 
       function placeMatchesLead(place = {}, lead = {}) {
@@ -21033,6 +21053,7 @@
           ["Adres", Boolean(place?.formatted_address)],
           ["Telefoonnummer", Boolean(place?.formatted_phone_number || place?.international_phone_number)],
           ["Website URL", Boolean(place?.website)],
+          ["Google reviews", Boolean(Array.isArray(place?.reviews) && place.reviews.length)],
           ["Plaats/regio", Boolean(place?.formatted_address)],
           ["E-mailadres niet geleverd door Google", false],
         ];
@@ -21103,6 +21124,7 @@
 
       function buildGooglePlaceLeadUpdates(place = {}) {
         const photoUrl = googlePhotoUrlFromPlace(place);
+        const googleReviews = normalizeGooglePlaceReviews(place);
         const category = place.types?.[0] ? readablePlaceType(place.types[0]) : "";
         const details = [
           place.url ? `Google Maps: ${place.url}` : "",
@@ -21136,6 +21158,7 @@
             address: place.formatted_address || "",
             googleRating: place.rating || "",
             googleRatingTotal: place.user_ratings_total || "",
+            googleReviews,
             googleCategory: category,
             googleTypes: Array.isArray(place.types) ? place.types : [],
             googlePhotoUrl: photoUrl,
@@ -23321,6 +23344,7 @@
                 const ownerName = ownerContext.name || ownerEmail || "";
                 const websiteAnalysis = getDraftWebsiteAnalysisForForm();
                 const analysisScore = analysisScoreValue(websiteAnalysis);
+                const googleReviews = normalizeGooglePlaceReviews(googlePlacesPlace || {});
                 return {
           companyName: leadfinderElements.company?.value.trim() || "",
           industry: leadfinderElements.industry?.value || "",
@@ -23355,12 +23379,18 @@
           createdBy: ownerContext.userId,
           createdByEmail: ownerEmail,
           createdByName: ownerName,
-          websiteAnalysis: websiteAnalysis || undefined,
+            websiteAnalysis: websiteAnalysis || undefined,
+            googleRating: googlePlacesPlace?.rating || "",
+            googleRatingTotal: googlePlacesPlace?.user_ratings_total || "",
+            googleReviews,
           metadata: {
             createdFrom: "admin-dashboard-leadfinder",
             createdByRole: ownerContext.role,
             createdByEmail: ownerEmail,
             websiteAnalysis: websiteAnalysis || undefined,
+            googleRating: googlePlacesPlace?.rating || "",
+            googleRatingTotal: googlePlacesPlace?.user_ratings_total || "",
+            googleReviews,
             medewerker: ownerName,
             medewerkerEmail: ownerEmail,
             employee: ownerName,
@@ -25072,9 +25102,21 @@
           }
         }
 
+        function googleReviewPayloadFromLead(lead = {}) {
+          const meta = lead?.metadata && typeof lead.metadata === "object" ? lead.metadata : {};
+          const reviews = Array.isArray(lead.googleReviews) ? lead.googleReviews : Array.isArray(meta.googleReviews) ? meta.googleReviews : [];
+          return {
+            googleReviews: reviews,
+            googleRating: lead.googleRating || meta.googleRating || meta.rating || "",
+            googleRatingTotal: lead.googleRatingTotal || meta.googleRatingTotal || meta.userRatingsTotal || "",
+            googleMapsUrl: lead.googleMapsUrl || meta.googleMapsUrl || "",
+          };
+        }
+
         function collectPayload(extra = {}) {
           const previewUrl = absolutePreviewUrl(elements.preview?.value || journey?.previewUrl || "");
           const intake = collectIntake();
+          const lead = selectedLead();
           return {
             id: journey?.id || "",
             leadId: elements.lead?.value || "",
@@ -25096,6 +25138,7 @@
             intakeCompleteness: intake.percent,
             assetMetadata: intake.assets,
             websiteAnalysis: selectedLeadWebsiteAnalysis() || undefined,
+            ...googleReviewPayloadFromLead(lead),
             ...extra,
           };
         }

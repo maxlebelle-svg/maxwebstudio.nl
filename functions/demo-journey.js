@@ -313,6 +313,63 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     return jsonResponse(result.sent ? 200 : 503, { success: result.sent, sent: result.sent, warning: result.warning || "", template });
   }
 
+  if (action === "save_demo_site") {
+    if (!current?.id) return jsonResponse(400, { success: false, error: "Sla eerst de demo-aanvraag op." });
+    const savedAt = new Date().toISOString();
+    const previewUrl = cleanText(payload.previewUrl || payload.preview_url || current.preview_url);
+    if (!previewUrl) return jsonResponse(400, { success: false, error: "Genereer eerst een preview voordat je de demo-site opslaat." });
+    const currentJourney = mapJourney(current);
+    const previewPackage = current.preview_package && typeof current.preview_package === "object" ? current.preview_package : {};
+    const savedDemoSite = {
+      saved: true,
+      savedAt,
+      savedBy: admin.id,
+      leadId: cleanUuid(payload.leadId || payload.lead_id) || currentJourney.leadId || null,
+      customerId: cleanUuid(payload.customerId || payload.customer_id) || currentJourney.customerId || null,
+      demoJourneyId: current.id,
+      businessName: cleanText(payload.businessName || payload.business_name || currentJourney.businessName),
+      previewUrl,
+      previewVersion: previewPackage.version || previewPackage.meta?.version || null,
+      offerReady: true,
+    };
+    const record = {
+      preview_url: previewUrl,
+      demo_status: currentJourney.demoStatus === "geen_demo" ? "interne_preview_klaar" : currentJourney.demoStatus,
+      preview_package: {
+        ...previewPackage,
+        savedDemoSite,
+        linkedRecords: {
+          ...(previewPackage.linkedRecords || {}),
+          leadId: savedDemoSite.leadId,
+          customerId: savedDemoSite.customerId,
+          demoJourneyId: current.id,
+        },
+      },
+      updated_by: admin.id,
+      updated_at: savedAt,
+    };
+    const rows = await patchJourneySafe({ supabaseUrl, serviceRoleKey, id: current.id, record });
+    const journey = mapJourney(rows[0] || await readJourneyById({ supabaseUrl, serviceRoleKey, id: current.id }));
+    const projectWorkspace = await upsertProjectWorkspace({ supabaseUrl, serviceRoleKey, admin }, workspacePayload(journey, {
+      latestPreviewUrl: previewUrl,
+      linkedRecords: savedDemoSite,
+      updatedBy: admin.id,
+    }));
+    await createEvent({
+      supabaseUrl,
+      serviceRoleKey,
+      journeyId: current.id,
+      type: "demo_site_saved",
+      title: "Demo-site opgeslagen",
+      description: "Preview is vast gekoppeld aan deze lead en klant.",
+      visible: false,
+      createdBy: admin.id,
+    });
+    const events = await readEvents({ supabaseUrl, serviceRoleKey, journeyId: current.id });
+    const buildHistory = await readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, journeyId: current.id });
+    return jsonResponse(200, { success: true, journey, demoJourney: journey, events, buildHistory, buildStatus: buildHistory.latestJob || null, projectWorkspace, savedDemoSite });
+  }
+
   if (action === "generate_preview") {
     const packageType = normalizePackageType(payload.packageType || payload.package_type || current?.preview_package?.meta?.packageType || current?.preview_package?.packageType);
     const sourceJourney = current ? mapJourney(current) : mapJourney({
@@ -367,6 +424,10 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
         generatedBriefing: briefing,
         packageType,
         websiteAnalysis: payload.websiteAnalysis || payload.website_analysis || null,
+        googleReviews: payload.googleReviews || payload.google_reviews || [],
+        googleRating: payload.googleRating || payload.google_rating || "",
+        googleRatingTotal: payload.googleRatingTotal || payload.google_rating_total || "",
+        googleMapsUrl: payload.googleMapsUrl || payload.google_maps_url || "",
       });
     } catch (error) {
       error.module = "website_factory";
@@ -766,6 +827,7 @@ function mapJourney(row = {}) {
     generatedBriefing: cleanText(row.generated_briefing),
     previewUrl: cleanText(row.preview_url),
     previewPackage,
+    savedDemoSite: previewPackage?.savedDemoSite || previewPackage?.saved_demo_site || null,
     previewGeneratedAt: cleanText(row.preview_generated_at),
     intake: normalizeJson(row.intake_json || previewPackage?.intake || {}, {}),
     intakeSummary: cleanText(row.intake_summary || previewPackage?.intakeSummary),
