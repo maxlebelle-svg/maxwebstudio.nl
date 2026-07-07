@@ -21897,7 +21897,8 @@
       }
 
       function inferDemoFactoryBranchFromLead(lead = {}, extraText = "") {
-        const text = [lead?.industry, lead?.companyName, lead?.notes, lead?.demoBriefing, extraText].filter(Boolean).join(" ").toLowerCase();
+        const text = [lead?.industry, lead?.companyName, lead?.websiteUrl, lead?.notes, lead?.demoBriefing, extraText].filter(Boolean).join(" ").toLowerCase();
+        if (/rijschool|verkeersschool|rijles|autorijles|scooter|scooterrijbewijs|bromfiets|examengarantie|praktijkexamen|theorie|cbr/.test(text)) return "rijschool";
         if (/tandarts|mondzorg|orthodont|dental/.test(text)) return "tandarts";
         if (/fysio|fysiotherapie|revalidatie|sportzorg/.test(text)) return "fysiotherapie";
         if (/kinderopvang|bso|peuter|opvang/.test(text)) return "kinderopvang";
@@ -21927,6 +21928,7 @@
         const styleText = values.stylePreference.toLowerCase();
         const serviceText = values.importantServices.toLowerCase();
         const serviceChoices = [
+          /rijschool|rijles|scooter|examengarantie|cbr/i.test(`${notes} ${lead?.websiteUrl || ""}`) ? "rijles" : "",
           serviceText.includes("renovatie") ? "renovatie" : "",
           serviceText.includes("onderhoud") ? "onderhoud" : "",
           serviceText.includes("advies") ? "advies" : "",
@@ -24427,7 +24429,7 @@
         let intakeAssets = [];
         const journeyLocks = new Set();
         const intakeQuestions = [
-          { key: "branch", label: "Branche", helper: "Kies het brancheprofiel voor teksten, beelden en componenten.", required: true, type: "single", options: [["installatiebedrijf", "Installatie & verduurzaming"], ["bouwbedrijf", "Bouwbedrijf"], ["horeca", "Horeca / restaurant"], ["fitness", "Sportschool / personal trainer"], ["juridisch", "Advocaat / juridisch"], ["automotive", "Autobedrijf / garage"], ["kapsalon", "Kapsalon / barber"], ["tandarts", "Tandarts / mondzorg"], ["elektricien", "Elektricien"], ["loodgieter", "Loodgieter"], ["hovenier", "Hovenier"], ["schoonmaakbedrijf", "Schoonmaakbedrijf"], ["verhuisbedrijf", "Verhuisbedrijf"], ["dierenarts", "Dierenarts"], ["schoonheidssalon", "Schoonheidssalon / wellness"], ["makelaar", "Makelaar / vastgoed"], ["hotel", "Hotel / B&B"], ["financieel_adviseur", "Financieel adviseur"], ["fysiotherapie", "Fysiotherapie"], ["kinderopvang", "Kinderopvang"], ["zakelijk", "Zakelijke dienstverlening"]] },
+          { key: "branch", label: "Branche", helper: "Kies het brancheprofiel voor teksten, beelden en componenten.", required: true, type: "single", options: [["rijschool", "Rijschool / scooterles"], ["installatiebedrijf", "Installatie & verduurzaming"], ["bouwbedrijf", "Bouwbedrijf"], ["horeca", "Horeca / restaurant"], ["fitness", "Sportschool / personal trainer"], ["juridisch", "Advocaat / juridisch"], ["automotive", "Autobedrijf / garage"], ["kapsalon", "Kapsalon / barber"], ["tandarts", "Tandarts / mondzorg"], ["elektricien", "Elektricien"], ["loodgieter", "Loodgieter"], ["hovenier", "Hovenier"], ["schoonmaakbedrijf", "Schoonmaakbedrijf"], ["verhuisbedrijf", "Verhuisbedrijf"], ["dierenarts", "Dierenarts"], ["schoonheidssalon", "Schoonheidssalon / wellness"], ["makelaar", "Makelaar / vastgoed"], ["hotel", "Hotel / B&B"], ["financieel_adviseur", "Financieel adviseur"], ["fysiotherapie", "Fysiotherapie"], ["kinderopvang", "Kinderopvang"], ["zakelijk", "Zakelijke dienstverlening"]] },
           { key: "goal", label: "Hoofddoel website", required: true, type: "single", options: [["leads", "Meer aanvragen"], ["trust", "Meer vertrouwen"], ["portfolio", "Werk tonen"], ["recruitment", "Personeel werven"]] },
           { key: "package", label: "Websitepakket", required: true, type: "single", options: websitePackages },
           { key: "style", label: "Gewenste uitstraling", required: true, type: "multi", options: [["premium", "Premium"], ["modern", "Modern"], ["rustig", "Rustig"], ["lokaal", "Lokaal"], ["luxe", "Luxe"], ["direct", "Direct"]] },

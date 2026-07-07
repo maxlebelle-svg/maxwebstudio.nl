@@ -20811,7 +20811,7 @@
         let intakeAssets = [];
         const journeyLocks = new Set();
         const intakeQuestions = [
-          { key: "branch", label: "Branche", helper: "Kies het brancheprofiel voor teksten, beelden en componenten.", required: true, type: "single", options: [["installatiebedrijf", "Installatie & verduurzaming"], ["bouwbedrijf", "Bouwbedrijf"], ["horeca", "Horeca / restaurant"], ["fitness", "Sportschool / personal trainer"], ["juridisch", "Advocaat / juridisch"], ["automotive", "Autobedrijf / garage"], ["kapsalon", "Kapsalon / barber"], ["tandarts", "Tandarts / mondzorg"], ["elektricien", "Elektricien"], ["loodgieter", "Loodgieter"], ["hovenier", "Hovenier"], ["schoonmaakbedrijf", "Schoonmaakbedrijf"], ["verhuisbedrijf", "Verhuisbedrijf"], ["dierenarts", "Dierenarts"], ["schoonheidssalon", "Schoonheidssalon / wellness"], ["makelaar", "Makelaar / vastgoed"], ["hotel", "Hotel / B&B"], ["financieel_adviseur", "Financieel adviseur"], ["fysiotherapie", "Fysiotherapie"], ["kinderopvang", "Kinderopvang"], ["zakelijk", "Zakelijke dienstverlening"]] },
+          { key: "branch", label: "Branche", helper: "Kies het brancheprofiel voor teksten, beelden en componenten.", required: true, type: "single", options: [["rijschool", "Rijschool / scooterles"], ["installatiebedrijf", "Installatie & verduurzaming"], ["bouwbedrijf", "Bouwbedrijf"], ["horeca", "Horeca / restaurant"], ["fitness", "Sportschool / personal trainer"], ["juridisch", "Advocaat / juridisch"], ["automotive", "Autobedrijf / garage"], ["kapsalon", "Kapsalon / barber"], ["tandarts", "Tandarts / mondzorg"], ["elektricien", "Elektricien"], ["loodgieter", "Loodgieter"], ["hovenier", "Hovenier"], ["schoonmaakbedrijf", "Schoonmaakbedrijf"], ["verhuisbedrijf", "Verhuisbedrijf"], ["dierenarts", "Dierenarts"], ["schoonheidssalon", "Schoonheidssalon / wellness"], ["makelaar", "Makelaar / vastgoed"], ["hotel", "Hotel / B&B"], ["financieel_adviseur", "Financieel adviseur"], ["fysiotherapie", "Fysiotherapie"], ["kinderopvang", "Kinderopvang"], ["zakelijk", "Zakelijke dienstverlening"]] },
           { key: "goal", label: "Hoofddoel website", required: true, type: "single", options: [["leads", "Meer aanvragen"], ["trust", "Meer vertrouwen"], ["portfolio", "Werk tonen"], ["recruitment", "Personeel werven"]] },
           { key: "package", label: "Websitepakket", required: true, type: "single", options: websitePackages },
           { key: "style", label: "Gewenste uitstraling", required: true, type: "multi", options: [["premium", "Premium"], ["modern", "Modern"], ["rustig", "Rustig"], ["lokaal", "Lokaal"], ["luxe", "Luxe"], ["direct", "Direct"]] },
@@ -21267,7 +21267,8 @@
         }
 
         function inferBranchFromLead(lead = {}) {
-          const text = [lead.industry, lead.companyName, lead.notes, lead.demoBriefing].filter(Boolean).join(" ").toLowerCase();
+          const text = [lead.industry, lead.companyName, lead.websiteUrl, lead.notes, lead.demoBriefing].filter(Boolean).join(" ").toLowerCase();
+          if (/rijschool|verkeersschool|rijles|autorijles|scooter|scooterrijbewijs|bromfiets|examengarantie|praktijkexamen|theorie|cbr/.test(text)) return "rijschool";
           if (/tandarts|mondzorg|orthodont|dental/.test(text)) return "tandarts";
           if (/fysio|fysiotherapie|revalidatie|sportzorg/.test(text)) return "fysiotherapie";
           if (/kinderopvang|bso|peuter|opvang/.test(text)) return "kinderopvang";
@@ -21299,7 +21300,7 @@
         function applyCallScriptIntakeToFactory(lead = {}) {
           if (!lead) return;
           const incoming = lead.demoFactoryIntake && typeof lead.demoFactoryIntake === "object" ? lead.demoFactoryIntake : {};
-          const text = [lead.notes, lead.demoBriefing, incoming.internalRemark, incoming.exampleWebsites].filter(Boolean).join(" ").toLowerCase();
+          const text = [lead.websiteUrl, lead.notes, lead.demoBriefing, incoming.internalRemark, incoming.exampleWebsites].filter(Boolean).join(" ").toLowerCase();
           const completed = {
             branch: incoming.branch || inferBranchFromLead(lead),
             goal: incoming.goal || (/aanvragen|leads|offerte|contact/.test(text) ? "leads" : "trust"),
@@ -21313,6 +21314,7 @@
             ].filter(Boolean)),
             cta: incoming.cta || (/whatsapp/.test(text) ? "whatsapp" : /offerte/.test(text) ? "quote" : /bel/.test(text) ? "call" : "contact"),
             services: ensureArrayValue(incoming.services, [
+              /rijschool|rijles|scooter|examengarantie|cbr/.test(text) ? "rijles" : "",
               /renovatie/.test(text) ? "renovatie" : "",
               /onderhoud/.test(text) ? "onderhoud" : "",
               /spoed/.test(text) ? "spoed" : "",
@@ -21350,7 +21352,12 @@
         }
 
         function factoryBriefingFromLead(lead = {}) {
-          return lead.demoBriefing || String(lead.notes || "");
+          const briefing = lead.demoBriefing || String(lead.notes || "");
+          return [
+            lead.websiteUrl ? `Website/huidige URL: ${lead.websiteUrl}` : "",
+            lead.industry ? `Branche: ${lead.industry}` : "",
+            briefing,
+          ].filter(Boolean).join("\n");
         }
 
         function prefillIntakeFromLead(lead = {}) {

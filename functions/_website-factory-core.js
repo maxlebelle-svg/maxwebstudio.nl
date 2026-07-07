@@ -64,6 +64,28 @@ const INDUSTRY_PROFILES = [
       ["Realisatie", "De uitvoering gebeurt netjes, professioneel en met oog voor de details."],
     ],
   }),
+  profile("driving-school", ["rijschool", "verkeersschool", "rijles", "autorijles", "scooter", "scooterrijbewijs", "bromfiets", "examengarantie", "praktijkexamen", "theorie", "cbr"], {
+    label: "Rijschool en scooterles",
+    colors: { ink: "#102033", brand: "#1457c8", accent: "#22c55e", soft: "#f3f8ff", dark: "#0f2238" },
+    hero: "Snel en zeker richting je rijbewijs.",
+    intro: "Voor leerlingen die helder willen weten welke lessen, pakketten en examenstappen bij hen passen.",
+    eyebrow: "Rijlessen, examen en vertrouwen",
+    cta: "Plan een proefles",
+    secondaryCta: "Bekijk pakketten",
+    services: ["Scooterrijles", "Autorijles", "Examengarantie", "Theoriebegeleiding", "Praktijkexamen"],
+    benefits: [
+      ["Duidelijke route naar examen", "Leerlingen zien direct welke stappen nodig zijn richting theorie, lessen en praktijkexamen."],
+      ["Vertrouwen voor beginners", "De pagina legt rustig uit hoe de begeleiding werkt en waarom starten laagdrempelig is."],
+      ["Pakketten goed vergelijkbaar", "Lespakketten, examengarantie en contactmomenten krijgen een logische plek."],
+      ["Snel contact", "Proefles, WhatsApp of bellen blijven zichtbaar zonder dat de pagina druk wordt."],
+    ],
+    process: [
+      ["Kies je pakket", "Bekijk welke rijlessen of scooteropleiding past bij je doel."],
+      ["Plan een proefles", "Maak laagdrempelig kennis met de instructeur en aanpak."],
+      ["Volg je lessen", "Werk stap voor stap aan verkeersinzicht, voertuigbeheersing en zekerheid."],
+      ["Richting examen", "Bereid je gericht voor op theorie, praktijk en CBR-momenten."],
+    ],
+  }),
   profile("installation", ["installatie", "elektra", "elektricien", "loodgieter", "warmtepomp", "zonnepanelen", "cv", "laadpaal"], {
     label: "Installatie en techniek",
     colors: { ink: "#0d1f2f", brand: "#0f4c81", accent: "#16b8d9", soft: "#eef7fb", dark: "#102b3d" },
@@ -148,19 +170,20 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
   const websiteUrl = cleanText(journey.websiteUrl || journey.website_url);
   const internalNotes = cleanText(journey.internalNotes || journey.internal_notes);
   const combinedBriefing = cleanText(briefing || journey.generatedBriefing || journey.generated_briefing || internalNotes);
-  const industry = extractField(combinedBriefing, ["Branche/regio", "Branche"]) || inferIndustry(combinedBriefing, businessName);
-  const industryProfile = resolveIndustryProfile({ industry, briefing: combinedBriefing, businessName });
-  const services = mergeUnique(industryProfile.services, extractServices(combinedBriefing, industry)).slice(0, 6);
+  const industrySignals = [combinedBriefing, websiteUrl, businessName].filter(Boolean).join("\n");
+  const industry = extractField(combinedBriefing, ["Branche/regio", "Branche"]) || inferIndustry(industrySignals, businessName);
+  const industryProfile = resolveIndustryProfile({ industry, briefing: industrySignals, businessName });
+  const services = mergeUnique(industryProfile.services, extractServices(industrySignals, industry)).slice(0, 6);
   const benefits = inferBenefits(industry, industryProfile);
   const processSteps = inferProcessSteps(industry, industryProfile);
-  const cta = inferCta(combinedBriefing, industryProfile);
+  const cta = inferCta(industrySignals, industryProfile);
   const colors = inferColors(industry, industryProfile);
   const style = inferStyle(combinedBriefing);
   const packageType = normalizePackageType(journey.packageType || journey.package_type || journey.package || journey.packageName || journey.package_name || extractField(combinedBriefing, ["Websitepakket", "Pakket"]));
-  const factoryConfig = resolveFactoryConfig({ packageType, industry: `${industry} ${combinedBriefing} ${businessName}` });
+  const factoryConfig = resolveFactoryConfig({ packageType, industry: `${industry} ${industrySignals} ${businessName}` });
   const packageRules = resolvePackageRules(factoryConfig.package.id || packageType);
-  const demoImageAssets = resolveDemoImageAssetSet({ businessName, industry, services, briefing: combinedBriefing });
-  const heroImage = demoImageAssets.hero || resolveDemoImageAsset({ businessName, industry, services, briefing: combinedBriefing });
+  const demoImageAssets = resolveDemoImageAssetSet({ businessName, industry, services, briefing: industrySignals });
+  const heroImage = demoImageAssets.hero || resolveDemoImageAsset({ businessName, industry, services, briefing: industrySignals });
   const inputSignals = [combinedBriefing, websiteUrl, email, phone].filter((value) => cleanText(value).length > 12).length;
   const lowInputWarning = inputSignals < 2;
   const templateSections = packageRules.sections;
@@ -521,6 +544,7 @@ function extractField(text = "", labels = []) {
 
 function extractServices(text = "", industry = "") {
   const normalized = `${text} ${industry}`.toLowerCase();
+  if (/rijschool|verkeersschool|rijles|autorijles|scooter|scooterrijbewijs|bromfiets|examengarantie|praktijkexamen|theorie|cbr/.test(normalized)) return ["Scooterrijles", "Autorijles", "Examengarantie", "Theoriebegeleiding"];
   if (/bouw|timmer|renovatie|aannemer/.test(normalized)) return ["Renovatie", "Maatwerk", "Projectbegeleiding"];
   if (/restaurant|horeca|cafe|catering/.test(normalized)) return ["Menu", "Reserveren", "Catering"];
   if (/sportschool|fitness|personal trainer/.test(normalized)) return ["Proefles", "Rooster", "Membership"];
@@ -545,6 +569,7 @@ function extractServices(text = "", industry = "") {
 
 function inferIndustry(text = "", businessName = "") {
   const normalized = `${text} ${businessName}`.toLowerCase();
+  if (/rijschool|verkeersschool|rijles|autorijles|scooter|scooterrijbewijs|bromfiets|examengarantie|praktijkexamen|theorie|cbr/.test(normalized)) return "rijschool";
   if (/bouw|timmer|renovatie|aannemer/.test(normalized)) return "bouw en renovatie";
   if (/restaurant|horeca|cafe/.test(normalized)) return "horeca";
   if (/sportschool|fitness|personal trainer/.test(normalized)) return "fitness";
@@ -596,6 +621,7 @@ function extractLocationText(value = "") {
 
 function inferCta(text = "", profile = null) {
   const normalized = text.toLowerCase();
+  if (/rijschool|rijles|scooter|scooterrijbewijs|examengarantie|proefles|cbr/.test(normalized)) return "Plan een proefles";
   if (/offerte/.test(normalized)) return "Vraag een offerte aan";
   if (/afspraak|bel/.test(normalized)) return "Plan een kennismaking";
   if (/reserver/.test(normalized)) return "Reserveer direct";
@@ -605,6 +631,7 @@ function inferCta(text = "", profile = null) {
 function inferColors(industry = "", profile = null) {
   if (profile?.colors) return profile.colors;
   const normalized = industry.toLowerCase();
+  if (/rijschool|verkeersschool|rijles|scooter/.test(normalized)) return { ink: "#102033", brand: "#1457c8", accent: "#22c55e", soft: "#f3f8ff", dark: "#0f2238" };
   if (/bouw|installatie/.test(normalized)) return { ink: "#172033", brand: "#1d7c68", accent: "#f1b84b", soft: "#f5f7fb", dark: "#20342b" };
   if (/horeca/.test(normalized)) return { ink: "#201a17", brand: "#9a3f2f", accent: "#e3b261", soft: "#fbf7f2", dark: "#271b15" };
   if (/beauty/.test(normalized)) return { ink: "#241b2f", brand: "#8a5574", accent: "#d6ad8f", soft: "#fbf7fa", dark: "#2c2028" };

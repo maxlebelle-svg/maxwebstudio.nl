@@ -31,6 +31,18 @@ const demoImageGroups = Object.freeze([
   group("restaurant", "Restaurant", ["restaurant-demo"], ["horeca", "restaurant", "lunchroom", "eetcafe", "menu", "reserveren"]),
   group("sportschool", "Sportschool", ["sportschool-demo"], ["fitness", "sportschool", "personal trainer", "proefles", "rooster", "membership"]),
   group("advocaat", "Advocaat", ["advocaat-demo"], ["advocaat", "advocatuur", "juridisch", "jurist", "recht", "intake"]),
+  customGroup("rijschool", "Rijschool", ["rijschool-demo"], ["rijschool", "verkeersschool", "rijles", "autorijles", "scooter", "scooterrijbewijs", "bromfiets", "examengarantie", "praktijkexamen", "theorie", "cbr"], {
+    hero: "scooterles-hero.png",
+    service: "autorijles-hero.png",
+    team: "motorles-hero.png",
+    project: "scooterles-hero.png",
+    contact: "autorijles-hero.png",
+    "service-alt": "motorles-hero.png",
+    "project-alt": "autorijles-hero.png",
+    detail: "scooterles-hero.png",
+    review: "motorles-hero.png",
+    background: "scooterles-hero.png",
+  }),
   group("autobedrijf", "Autobedrijf", ["autobedrijf-demo"], ["automotive", "autobedrijf", "garage", "showroom", "occasions", "apk", "onderhoud"]),
   group("kapsalon", "Kapsalon", ["kapsalon-demo"], ["kapsalon", "kapper", "barber", "barbershop", "knippen", "kleuren", "styling"]),
   group("tandarts", "Tandarts", ["tandarts-demo"], ["tandarts", "mondzorg", "zorg", "controle", "preventie", "esthetiek", "spoed"]),
@@ -59,6 +71,17 @@ function group(slug, label, demoSiteIds, keywords) {
   });
 }
 
+function customGroup(slug, label, demoSiteIds, keywords, roleFiles = {}) {
+  const assets = Object.fromEntries(DEMO_IMAGE_ROLES.map((role) => [role, customAsset(slug, label, role, roleFiles[role] || roleFiles.hero)]));
+  return Object.freeze({
+    slug,
+    label,
+    demoSiteIds: Object.freeze(demoSiteIds),
+    keywords: Object.freeze(keywords),
+    assets: Object.freeze(assets),
+  });
+}
+
 function asset(groupSlug, groupLabel, role) {
   return Object.freeze({
     slug: `${groupSlug}-${role}`,
@@ -66,6 +89,17 @@ function asset(groupSlug, groupLabel, role) {
     role,
     type: role,
     src: `${DEMO_IMAGE_BASE}/${groupSlug}/${role}.png`,
+    alt: `${groupLabel} ${roleLabels[role]} afbeelding voor demo website`,
+  });
+}
+
+function customAsset(groupSlug, groupLabel, role, fileName) {
+  return Object.freeze({
+    slug: `${groupSlug}-${role}`,
+    groupSlug,
+    role,
+    type: role,
+    src: `${DEMO_IMAGE_BASE}/${groupSlug}/${fileName}`,
     alt: `${groupLabel} ${roleLabels[role]} afbeelding voor demo website`,
   });
 }

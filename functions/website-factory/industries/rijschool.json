@@ -1,0 +1,86 @@
+{
+  "id": "rijschool",
+  "name": "Rijschool",
+  "tone": "helder, geruststellend, lokaal en resultaatgericht",
+  "colorHints": [
+    "verkeersblauw",
+    "groen",
+    "wit",
+    "donker navy"
+  ],
+  "heroAngles": [
+    "Snel en zeker richting je rijbewijs.",
+    "Rijlessen, examengarantie en duidelijke begeleiding op een plek."
+  ],
+  "trustSignals": [
+    "CBR-gericht oefenen",
+    "Duidelijke pakketten",
+    "Rustige begeleiding",
+    "Snel starten"
+  ],
+  "ctaExamples": [
+    "Plan een proefles",
+    "Bekijk pakketten",
+    "Start met rijlessen"
+  ],
+  "assetKeywords": [
+    "driving school",
+    "driving lesson",
+    "scooter lesson",
+    "driving instructor",
+    "traffic lesson"
+  ],
+  "key": "rijschool",
+  "label": "Rijschool en scooterles",
+  "aliases": [
+    "rijschool",
+    "verkeersschool",
+    "rijles",
+    "autorijles",
+    "scooter",
+    "scooterrijbewijs",
+    "bromfiets",
+    "bromfietsrijbewijs",
+    "examengarantie",
+    "praktijkexamen",
+    "theorie",
+    "theorie-examen",
+    "cbr"
+  ],
+  "palette": {
+    "ink": "#102033",
+    "brand": "#1457c8",
+    "accent": "#22c55e",
+    "soft": "#f3f8ff",
+    "dark": "#0f2238"
+  },
+  "copy": {
+    "eyebrow": "Rijlessen, examen en vertrouwen",
+    "hero": "Snel en zeker richting je rijbewijs.",
+    "intro": "Voor leerlingen die duidelijk willen weten welke lessen, pakketten en examenstappen bij hen passen.",
+    "cta": "Plan een proefles",
+    "secondaryCta": "Bekijk pakketten"
+  },
+  "services": [
+    "Scooterrijles",
+    "Autorijles",
+    "Examengarantie",
+    "Theoriebegeleiding",
+    "Praktijkexamen"
+  ],
+  "preferredComponents": [
+    "hero",
+    "services",
+    "benefits",
+    "process",
+    "faq",
+    "contact"
+  ],
+  "assetSlots": [
+    "hero-driving",
+    "instructor",
+    "scooter",
+    "lesson",
+    "contact"
+  ]
+}
