@@ -24725,6 +24725,11 @@
           return leads.find((lead) => lead.id === elements.lead?.value) || null;
         }
 
+        function selectedLeadWebsiteAnalysis() {
+          const lead = selectedLead();
+          return lead?.websiteAnalysis || lead?.metadata?.websiteAnalysis || null;
+        }
+
         function upsertLeadOption(lead = {}) {
           if (!lead?.id) return;
           const index = leads.findIndex((item) => item.id === lead.id);
@@ -24784,6 +24789,7 @@
             intakeSummary: buildIntakeBriefingSection(),
             intakeCompleteness: intake.percent,
             assetMetadata: intake.assets,
+            websiteAnalysis: selectedLeadWebsiteAnalysis() || undefined,
             ...extra,
           };
         }
@@ -24795,6 +24801,16 @@
           const website = elements.website?.value || lead?.websiteUrl || "Nog geen website ingevuld";
           const notes = [lead?.notes, elements.notes?.value].filter(Boolean).join("\n\n");
           const intakeBriefing = buildIntakeBriefingSection();
+          const websiteAnalysis = selectedLeadWebsiteAnalysis();
+          const currentWebsite = websiteAnalysis?.currentWebsite || {};
+          const currentWebsiteLines = [
+            websiteAnalysis?.ok ? `Website scan: ${websiteAnalysis.score}/100 (${websiteAnalysis.scoreLabel || "homepage scan"})` : "",
+            currentWebsite.title ? `Bestaande title: ${currentWebsite.title}` : "",
+            currentWebsite.h1 ? `Bestaande H1: ${currentWebsite.h1}` : "",
+            Array.isArray(currentWebsite.headings) && currentWebsite.headings.length ? `Bestaande koppen: ${currentWebsite.headings.slice(0, 5).join(" | ")}` : "",
+            Array.isArray(currentWebsite.paragraphs) && currentWebsite.paragraphs.length ? `Bestaande inhoud: ${currentWebsite.paragraphs.slice(0, 3).join(" | ")}` : "",
+            Array.isArray(currentWebsite.imageUrls) && currentWebsite.imageUrls.length ? `Bestaande foto's/beelden: ${currentWebsite.imageUrls.slice(0, 6).join(" | ")}` : "",
+          ].filter(Boolean);
           return [
             `Websiteplan - demo website preview`,
             ``,
@@ -24805,6 +24821,11 @@
             `Telefoon: ${elements.phone?.value || lead?.phone || "-"}`,
             `Website/huidige URL: ${website}`,
             `Branche/regio: ${lead?.industry || "-"} / ${lead?.region || "-"}`,
+            ``,
+            `Bestaande website als input`,
+            currentWebsiteLines.length
+              ? currentWebsiteLines.join("\n")
+              : `Gebruik de huidige URL als vertrekpunt. Neem herkenbare informatie, aanbod en beeldrichting mee en verbeter structuur, copy en conversie.`,
             ``,
             intakeBriefing,
             ``,

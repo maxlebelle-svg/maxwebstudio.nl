@@ -364,7 +364,12 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
 
     let buildResult;
     try {
-      buildResult = await runBuildJob({ supabaseUrl, serviceRoleKey, admin }, { demoJourneyId: journeyId, generatedBriefing: briefing, packageType });
+      buildResult = await runBuildJob({ supabaseUrl, serviceRoleKey, admin }, {
+        demoJourneyId: journeyId,
+        generatedBriefing: briefing,
+        packageType,
+        websiteAnalysis: payload.websiteAnalysis || payload.website_analysis || null,
+      });
     } catch (error) {
       error.module = "website_factory";
       error.reason = isMissingFactoryTableError(error) ? "missing_website_factory_tables" : "website_factory_build_failed";

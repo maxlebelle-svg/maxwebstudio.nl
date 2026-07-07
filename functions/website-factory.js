@@ -211,7 +211,15 @@ async function runBuildJob(context, payload = {}) {
     phase = "patch_build_job_building";
     await patchBuildJob(context, job.id, { status: "building", current_step: "generate_website_package", progress: 45, build_logs: buildingLogs });
     phase = "generate_website_package";
-    const generatedPackage = buildWebsitePackage({ journey: { ...journey, packageType }, briefing, version: job.previewVersion });
+    const generatedPackage = buildWebsitePackage({
+      journey: {
+        ...journey,
+        packageType,
+        websiteAnalysis: payload.websiteAnalysis || payload.website_analysis || null,
+      },
+      briefing,
+      version: job.previewVersion,
+    });
 
     const qualityLogs = buildLogs(buildingLogs, { step: "quality_check", message: "Quality checker gestart." });
     phase = "patch_build_job_quality_check";

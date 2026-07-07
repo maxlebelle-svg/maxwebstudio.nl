@@ -283,6 +283,13 @@ function analyzeHtml(html, context) {
     "contact",
   ]);
   const hasMobileResponsiveSignal = hasViewportMeta || hasMediaQuery || /responsive|mobile-first|mobiel/i.test(raw);
+  const currentWebsite = buildCurrentWebsiteSnapshot(raw, {
+    inputUrl: context.inputUrl,
+    finalUrl,
+    titleText,
+    metaDescriptionText,
+    h1Text,
+  });
 
   const checks = {
     websiteReachable: statusCode >= 200 && statusCode < 400,
@@ -335,9 +342,76 @@ function analyzeHtml(html, context) {
     score,
     scoreLabel: getScoreLabel(score),
     checks,
+    currentWebsite,
     improvements: buildImprovements(checks),
     salesOpportunities: buildSalesOpportunities(checks),
   };
+}
+
+function buildCurrentWebsiteSnapshot(html, context = {}) {
+  const raw = String(html || "");
+  const baseUrl = context.finalUrl || context.inputUrl || "";
+  const headings = extractTagTexts(raw, /<h([1-3])[^>]*>([\s\S]*?)<\/h\1>/gi, 10);
+  const paragraphs = extractTagTexts(raw, /<p[^>]*>([\s\S]*?)<\/p>/gi, 8)
+    .filter((item) => item.length >= 35);
+  const imageUrls = extractImageUrls(raw, baseUrl).slice(0, 8);
+  const socialUrls = extractUrls(raw, /(https?:\/\/(?:www\.)?(?:instagram|facebook|linkedin|youtube|youtu\.be|tiktok)\.com\/[^"'<\s)]+)/gi, 8);
+  return {
+    sourceUrl: baseUrl,
+    title: cleanExtractedText(context.titleText),
+    metaDescription: cleanExtractedText(context.metaDescriptionText),
+    h1: cleanExtractedText(context.h1Text),
+    headings,
+    paragraphs,
+    imageUrls,
+    socialUrls,
+    extractedAt: new Date().toISOString(),
+  };
+}
+
+function extractTagTexts(html, pattern, limit = 8) {
+  const items = [];
+  let match;
+  while ((match = pattern.exec(String(html || ""))) && items.length < limit) {
+    const text = cleanExtractedText(match[2] || match[1]);
+    if (text && !items.includes(text)) items.push(text);
+  }
+  return items;
+}
+
+function extractImageUrls(html, baseUrl = "") {
+  const urls = [];
+  const addUrl = (value) => {
+    const url = absolutizeUrl(value, baseUrl);
+    if (url && !urls.includes(url)) urls.push(url);
+  };
+  extractUrls(html, /<meta[^>]+(?:property|name)=["']og:image["'][^>]*content=["']([^"']+)["'][^>]*>/gi, 3).forEach(addUrl);
+  extractUrls(html, /<img[^>]+src=["']([^"']+)["'][^>]*>/gi, 12).forEach(addUrl);
+  extractUrls(html, /<source[^>]+srcset=["']([^"']+)["'][^>]*>/gi, 6).forEach((srcset) => {
+    const first = String(srcset || "").split(",")[0]?.trim().split(/\s+/)[0];
+    addUrl(first);
+  });
+  return urls.filter((url) => !/data:image|placeholder|blank|spacer|tracking|pixel/i.test(url));
+}
+
+function extractUrls(html, pattern, limit = 8) {
+  const items = [];
+  let match;
+  while ((match = pattern.exec(String(html || ""))) && items.length < limit) {
+    const value = cleanExtractedText(match[1]);
+    if (value && !items.includes(value)) items.push(value);
+  }
+  return items;
+}
+
+function absolutizeUrl(value = "", baseUrl = "") {
+  const raw = String(value || "").trim();
+  if (!raw || raw.startsWith("data:")) return "";
+  try {
+    return new URL(raw, baseUrl || undefined).toString();
+  } catch {
+    return /^https?:\/\//i.test(raw) ? raw : "";
+  }
 }
 
 function calculateScore(checks) {
