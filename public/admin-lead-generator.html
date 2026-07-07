@@ -548,8 +548,8 @@
                   <label class="lead-whatsapp-template-control" for="leadfinder-whatsapp-template">
                     <span>Berichttemplate</span>
                     <select id="leadfinder-whatsapp-template">
-                      <option value="call">Na telefoongesprek</option>
-                      <option value="voicemail">Na voicemail / geen gehoor</option>
+                      <option value="call">Gesproken</option>
+                      <option value="voicemail">Voicemail</option>
                     </select>
                   </label>
                   <div class="lead-callback-agenda">
@@ -2513,7 +2513,7 @@
       })();
 
       (async () => {
-        const adminAssetVersion = "20260704-admin-session-hotfix";
+        const adminAssetVersion = "20260707-sales-navigation-permissions";
         const versionedModule = (path) => `${path}?v=${adminAssetVersion}`;
         const crmEndpoint = "/.netlify/functions/admin-client-profiles";
         const adminSupabaseDataEndpoint = "/.netlify/functions/admin-supabase-data";
@@ -6181,6 +6181,11 @@
             const context = modules.routeGuardService.getAccessContext();
             const decision = modules.routeGuardService.requireAuth({ pageName: "admin-dashboard", mode: context.mode, allowDemo: true });
             const visibleItems = modules.authService.getVisibleNavigationItems().map((item) => item.id);
+            if (visibleItems.includes("leadfinder")) {
+              ["sales-agenda", "lead-generator"].forEach((itemId) => {
+                if (!visibleItems.includes(itemId)) visibleItems.push(itemId);
+              });
+            }
             if (accessControlMode.value !== context.mode) accessControlMode.value = context.mode;
             adminAccessControlText.textContent = `${context.mode.toUpperCase()} mode - rol: ${context.role || "geen sessie"} - ${decision.allowed ? "admin voorbereid" : decision.reason}`;
             const filteredNavigationCount = renderAdminSidebarNavigation({
@@ -21428,38 +21433,36 @@
         return leadfinderElements.whatsappTemplate?.value === "voicemail" ? "voicemail" : "call";
       }
 
+      function leadWhatsappSenderName(lead = {}) {
+        const ownerLabel = getLeadOwnerLabel(lead);
+        const currentUser = getLeadfinderUserContext();
+        const candidate = ownerLabel && ownerLabel !== "Onbekend" ? ownerLabel : currentUser.name;
+        const name = String(candidate || "").trim();
+        if (!name || name.includes("@")) return "Max";
+        return name;
+      }
+
       function leadWhatsappMessage(lead = {}, template = selectedWhatsappTemplate()) {
         const context = leadWhatsappContext(lead);
-        const greeting = `Hoi${context.contact ? ` ${context.contact}` : ""},`;
+        const contactName = context.contact || "daar";
+        const senderName = leadWhatsappSenderName(lead);
         if (template === "voicemail") {
           return [
-            greeting,
+            `Hoiii ${contactName}, je spreekt met ${senderName} van Max Web Studio. Ik probeerde je net te bellen, maar kreeg helaas je voicemail.`,
             "",
-            `Ik probeerde je net even te bellen namens Max Web Studio over ${context.bedrijf}.`,
+            "Ik bel ondernemers bij mij in de buurt omdat ik kort naar hun website kijk en soms direct zie waar ze kosteloos al wat meer uit kunnen halen.",
             "",
-            `We hebben kort gekeken naar jullie online uitstraling en ik denk dat we vrijblijvend een mooie demo/preview kunnen klaarzetten. Dan zie je meteen hoe ${context.bedrijf} online sterker, duidelijker en professioneler kan overkomen.`,
+            "Stuur “check” terug als je wilt dat ik gratis even met je meekijk, of “bel” als ik je later mag bellen.",
             "",
-            `Vooral rondom ${context.pijnpunt} zie ik een mooie kans. Als je wilt, kunnen we dat heel concreet laten zien in een korte preview. Daar zit natuurlijk nergens verplichting aan vast.`,
-            "",
-            "Lijkt het je leuk als ik die vrijblijvende demo voor jullie klaarzet?",
-            "",
-            "Groet,",
-            "Max Web Studio",
+            "Thanks!",
           ].join("\n");
         }
         return [
-          greeting,
+          `Hi ${contactName}, je sprak net met ${senderName} van Max Web Studio.`,
           "",
-          "Leuk dat ik je net even gesproken heb.",
+          "Zoals besproken: we kunnen je helpen met een professionele website die niet alleen mooi oogt, maar ook klanten oplevert.",
           "",
-          `Zoals besproken kan ik voor ${context.bedrijf} vrijblijvend een korte demo/preview klaarzetten. Dan zie je meteen hoe jullie website of online presentatie sterker kan worden, zonder dat je ergens aan vastzit.`,
-          "",
-          `Ik nam vooral mee dat jullie willen kijken naar ${context.wens}${context.doelgroep ? ` voor ${context.doelgroep}` : ""}. Daar kan ik in de demo direct rekening mee houden.`,
-          "",
-          `De volgende stap is wat mij betreft simpel: ${context.vervolgstap}. Zal ik die preview voor jullie voorbereiden?`,
-          "",
-          "Groet,",
-          "Max Web Studio",
+          "Stuur gerust even “ja” terug, dan pak ik ons gesprek erbij en stuur ik je de juiste vervolgstap.",
         ].join("\n");
       }
 
@@ -22473,7 +22476,7 @@
                   <button class="lead-icon-button lead-preview-button" type="button" data-leadfinder-action="preview" aria-label="Maak preview voor lead"><span aria-hidden="true">▣</span><strong>Maak preview</strong></button>
                   <button class="lead-icon-button" type="button" data-leadfinder-action="task" aria-label="Opvolgtaak maken"><span aria-hidden="true">□</span><strong>Opvolgtaak</strong></button>
                   <button class="lead-icon-button" type="button" data-leadfinder-action="note" aria-label="Notitie toevoegen"><span aria-hidden="true">✎</span><strong>Notitie</strong></button>
-                  <a class="lead-icon-button lead-card-whatsapp ${leadWhatsappHref(lead) ? "" : "is-disabled"}" href="${escapeHtml(leadWhatsappHref(lead) || "#")}" target="_blank" rel="noopener" aria-disabled="${leadWhatsappHref(lead) ? "false" : "true"}" aria-label="${leadWhatsappHref(lead) ? "WhatsApp bericht sturen" : "Geen telefoonnummer bekend"}" title="${leadWhatsappHref(lead) ? "" : "Geen telefoonnummer bekend"}">${whatsappLogoMarkup()}<strong>WhatsApp</strong></a>
+                  <button class="lead-icon-button lead-card-whatsapp ${leadWhatsappPhone(lead) ? "" : "is-disabled"}" type="button" data-leadfinder-action="whatsapp" aria-disabled="${leadWhatsappPhone(lead) ? "false" : "true"}" aria-label="${leadWhatsappPhone(lead) ? "WhatsApp flow openen" : "Geen telefoonnummer bekend"}" title="${leadWhatsappPhone(lead) ? "Kies Gesproken of Voicemail" : "Geen telefoonnummer bekend"}">${whatsappLogoMarkup()}<strong>WhatsApp</strong></button>
                   <a class="lead-icon-button ${phoneHref ? "" : "is-disabled"}" href="${escapeHtml(phoneHref || "#")}" aria-disabled="${phoneHref ? "false" : "true"}" aria-label="${phoneHref ? "Lead bellen" : "Geen telefoonnummer bekend"}" title="${phoneHref ? "" : "Geen telefoonnummer bekend"}"><span aria-hidden="true">☎</span><strong>Bellen</strong></a>
                   <a class="lead-icon-button ${mailHref ? "" : "is-disabled"}" href="${escapeHtml(mailHref || "#")}" aria-disabled="${mailHref ? "false" : "true"}" aria-label="${mailHref ? "Mail sturen" : "Geen e-mailadres bekend"}" title="${mailHref ? "" : "Geen e-mailadres bekend"}"><span aria-hidden="true">@</span><strong>Mail</strong></a>
                   <a class="lead-icon-button ${mapsUrl ? "" : "is-disabled"}" href="${escapeHtml(mapsUrl || "#")}" target="_blank" rel="noopener" aria-disabled="${mapsUrl ? "false" : "true"}" aria-label="${mapsUrl ? "Google Maps openen" : "Geen adres bekend"}" title="${mapsUrl ? "" : "Geen adres bekend"}"><span aria-hidden="true">⌖</span><strong>Google Maps</strong></a>
@@ -23234,6 +23237,19 @@
           openLeadfinderDetail(lead, { tab: "notes" });
           leadfinderElements.detailNote?.focus();
           setLeadfinderMessage("Lead geselecteerd. Voeg je notitie toe in Leaddetail.", "success");
+          return;
+        } else if (button.dataset.leadfinderAction === "whatsapp") {
+          if (!leadWhatsappPhone(lead)) {
+            setLeadfinderMessage("Geen telefoonnummer bekend bij deze lead.", "warning");
+            return;
+          }
+          openLeadfinderDetail(lead, { tab: "overview" });
+          if (leadfinderElements.agendaPlanner) leadfinderElements.agendaPlanner.open = true;
+          window.requestAnimationFrame(() => {
+            leadfinderElements.whatsappTemplate?.focus({ preventScroll: true });
+            leadfinderElements.agendaPlanner?.scrollIntoView({ behavior: "smooth", block: "center" });
+          });
+          setLeadfinderMessage("Kies Gesproken of Voicemail en klik daarna op Stuur WhatsApp bericht.", "success");
           return;
         } else if (button.dataset.leadfinderAction === "preview") {
           if (leadPreviewRequestId === lead.id) return;

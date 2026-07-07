@@ -87,6 +87,8 @@ export const ROLE_PERMISSIONS = Object.freeze({
 
 export const NAVIGATION_PERMISSIONS = Object.freeze([
   { id: "dashboard", label: "Overzicht", resource: "dashboard", action: "view" },
+  { id: "sales-agenda", label: "Agenda", resource: "leads", action: "view" },
+  { id: "lead-generator", label: "Lead Generator", resource: "leads", action: "view" },
   { id: "leadfinder", label: "Leads", resource: "leads", action: "view" },
   { id: "klanten", label: "CRM-klanten", resource: "customers", action: "view" },
   { id: "offertes", label: "Offertes", resource: "quotes", action: "view" },
