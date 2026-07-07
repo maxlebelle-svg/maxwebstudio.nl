@@ -28,6 +28,33 @@ const roleLabels = Object.freeze({
 const branchImageGroups = Object.freeze([
   group("installatiebedrijf", "Installatiebedrijf", ["installatiebedrijf-demo"], ["installatie", "verduurzaming", "zonnepanelen", "warmtepomp", "airco", "laadpaal", "thuisbatterij"]),
   group("bouwbedrijf", "Bouwbedrijf", ["bouwbedrijf-demo"], ["bouw", "bouwbedrijf", "aannemer", "renovatie", "timmer", "nieuwbouw", "aanbouw"]),
+  customGroup("quantumbouw", "Quantumbouw.nl", ["quantumbouw-production"], ["quantumbouw", "quantum bouw", "bouw", "renovatie", "aanbouw", "dakopbouw", "dakkapel", "badkamer", "kozijnen", "busbestickering"], {
+    "aanbouw-baksteen": customAsset("quantumbouw", "Quantumbouw.nl", "aanbouw-baksteen", "aanbouw-baksteen.jpg", "Quantumbouw.nl Aanbouw Baksteen klantafbeelding voor website, social media en drukwerk"),
+    "aanbouw-stuc": customAsset("quantumbouw", "Quantumbouw.nl", "aanbouw-stuc", "aanbouw-stuc.jpg", "Quantumbouw.nl Aanbouw Stuc klantafbeelding voor website, social media en drukwerk"),
+    "aanbouw-villa": customAsset("quantumbouw", "Quantumbouw.nl", "aanbouw-villa", "aanbouw-villa.jpg", "Quantumbouw.nl Aanbouw Villa klantafbeelding voor website, social media en drukwerk"),
+    "aanbouw": customAsset("quantumbouw", "Quantumbouw.nl", "aanbouw", "aanbouw.jpg", "Quantumbouw.nl Aanbouw klantafbeelding voor website, social media en drukwerk"),
+    "badkamer-donker": customAsset("quantumbouw", "Quantumbouw.nl", "badkamer-donker", "badkamer-donker.jpg", "Quantumbouw.nl Badkamer Donker klantafbeelding voor website, social media en drukwerk"),
+    "badkamer-licht": customAsset("quantumbouw", "Quantumbouw.nl", "badkamer-licht", "badkamer-licht.jpg", "Quantumbouw.nl Badkamer Licht klantafbeelding voor website, social media en drukwerk"),
+    "badkamer-natuursteen": customAsset("quantumbouw", "Quantumbouw.nl", "badkamer-natuursteen", "badkamer-natuursteen.jpg", "Quantumbouw.nl Badkamer Natuursteen klantafbeelding voor website, social media en drukwerk"),
+    "badkamer": customAsset("quantumbouw", "Quantumbouw.nl", "badkamer", "badkamer.jpg", "Quantumbouw.nl Badkamer klantafbeelding voor website, social media en drukwerk"),
+    "dakkapel-antraciet": customAsset("quantumbouw", "Quantumbouw.nl", "dakkapel-antraciet", "dakkapel-antraciet.jpg", "Quantumbouw.nl Dakkapel Antraciet klantafbeelding voor website, social media en drukwerk"),
+    "dakkapel-klassiek": customAsset("quantumbouw", "Quantumbouw.nl", "dakkapel-klassiek", "dakkapel-klassiek.jpg", "Quantumbouw.nl Dakkapel Klassiek klantafbeelding voor website, social media en drukwerk"),
+    "dakkapel-traditioneel": customAsset("quantumbouw", "Quantumbouw.nl", "dakkapel-traditioneel", "dakkapel-traditioneel.jpg", "Quantumbouw.nl Dakkapel Traditioneel klantafbeelding voor website, social media en drukwerk"),
+    "dakkapel": customAsset("quantumbouw", "Quantumbouw.nl", "dakkapel", "dakkapel.jpg", "Quantumbouw.nl Dakkapel klantafbeelding voor website, social media en drukwerk"),
+    "dakopbouw-hout": customAsset("quantumbouw", "Quantumbouw.nl", "dakopbouw-hout", "dakopbouw-hout.jpg", "Quantumbouw.nl Dakopbouw Hout klantafbeelding voor website, social media en drukwerk"),
+    "dakopbouw-licht": customAsset("quantumbouw", "Quantumbouw.nl", "dakopbouw-licht", "dakopbouw-licht.jpg", "Quantumbouw.nl Dakopbouw Licht klantafbeelding voor website, social media en drukwerk"),
+    "dakopbouw-stad": customAsset("quantumbouw", "Quantumbouw.nl", "dakopbouw-stad", "dakopbouw-stad.jpg", "Quantumbouw.nl Dakopbouw Stad klantafbeelding voor website, social media en drukwerk"),
+    "dakopbouw": customAsset("quantumbouw", "Quantumbouw.nl", "dakopbouw", "dakopbouw.jpg", "Quantumbouw.nl Dakopbouw klantafbeelding voor website, social media en drukwerk"),
+    favicon: customAsset("quantumbouw", "Quantumbouw.nl", "favicon", "favicon.png", "Quantumbouw.nl favicon voor website en herkenning"),
+    "hero-renovatie": customAsset("quantumbouw", "Quantumbouw.nl", "hero-renovatie", "hero-renovatie.jpg", "Quantumbouw.nl Hero Renovatie klantafbeelding voor website, social media en drukwerk"),
+    "kozijnen-jaren30": customAsset("quantumbouw", "Quantumbouw.nl", "kozijnen-jaren30", "kozijnen-jaren30.jpg", "Quantumbouw.nl Kozijnen Jaren30 klantafbeelding voor website, social media en drukwerk"),
+    "kozijnen-schuifpui": customAsset("quantumbouw", "Quantumbouw.nl", "kozijnen-schuifpui", "kozijnen-schuifpui.jpg", "Quantumbouw.nl Kozijnen Schuifpui klantafbeelding voor website, social media en drukwerk"),
+    "kozijnen-wit": customAsset("quantumbouw", "Quantumbouw.nl", "kozijnen-wit", "kozijnen-wit.jpg", "Quantumbouw.nl Kozijnen Wit klantafbeelding voor website, social media en drukwerk"),
+    kozijnen: customAsset("quantumbouw", "Quantumbouw.nl", "kozijnen", "kozijnen.jpg", "Quantumbouw.nl Kozijnen klantafbeelding voor website, social media en drukwerk"),
+    "og-image": customAsset("quantumbouw", "Quantumbouw.nl", "og-image", "og-image.jpg", "Quantumbouw.nl social preview afbeelding voor website en social media"),
+    "quantumbouw-logo-original": customAsset("quantumbouw", "Quantumbouw.nl", "quantumbouw-logo-original", "quantumbouw-logo-original.jpeg", "Quantumbouw.nl origineel logo voor drukwerk, busbestickering en branding"),
+    "quantumbouw-logo": customAsset("quantumbouw", "Quantumbouw.nl", "quantumbouw-logo", "quantumbouw-logo.jpg", "Quantumbouw.nl web logo voor website, social media en drukwerk"),
+  }),
   group("restaurant", "Restaurant", ["restaurant-demo"], ["horeca", "restaurant", "lunchroom", "eetcafe", "menu", "reserveren"]),
   group("sportschool", "Sportschool", ["sportschool-demo"], ["fitness", "sportschool", "personal trainer", "proefles", "rooster", "membership"]),
   group("advocaat", "Advocaat", ["advocaat-demo"], ["advocaat", "advocatuur", "juridisch", "jurist", "recht", "intake"]),
@@ -47,16 +74,16 @@ const branchImageGroups = Object.freeze([
   group("dierenarts", "Dierenarts", ["dierenarts-demo"], ["dierenarts", "dierenzorg", "kliniek", "consult", "vaccinatie", "huisdieren"]),
   group("schoonheidssalon", "Schoonheidssalon", ["schoonheidssalon-demo"], ["schoonheidssalon", "beauty", "wellness", "facials", "massage", "huidverbetering"]),
   customGroup("holistisch", "Holistische praktijk", ["holistisch-demo"], ["holistisch", "spiritueel", "zweverig", "healing", "healer", "energie", "energetisch", "ademwerk", "bewustzijn", "rituelen", "ceremonie"], {
-    hero: customAsset("holistisch", "Holistische praktijk", "hero", "hero.png", "Holistische praktijk hero afbeelding voor demo website", "schoonheidssalon"),
-    service: customAsset("holistisch", "Holistische praktijk", "service", "service.png", "Holistische praktijk diensten afbeelding voor demo website", "schoonheidssalon"),
-    team: customAsset("holistisch", "Holistische praktijk", "team", "team.png", "Holistische praktijk team en werkwijze afbeelding voor demo website", "schoonheidssalon"),
-    project: customAsset("holistisch", "Holistische praktijk", "project", "project.png", "Holistische praktijk sessie afbeelding voor demo website", "schoonheidssalon"),
-    contact: customAsset("holistisch", "Holistische praktijk", "contact", "contact.png", "Holistische praktijk contact afbeelding voor demo website", "schoonheidssalon"),
-    "service-alt": customAsset("holistisch", "Holistische praktijk", "service-alt", "service-alt.png", "Holistische praktijk extra dienst afbeelding voor demo website", "schoonheidssalon"),
-    "project-alt": customAsset("holistisch", "Holistische praktijk", "project-alt", "project-alt.png", "Holistische praktijk extra sessie afbeelding voor demo website", "schoonheidssalon"),
-    detail: customAsset("holistisch", "Holistische praktijk", "detail", "detail.png", "Holistische praktijk detail afbeelding voor demo website", "schoonheidssalon"),
-    review: customAsset("holistisch", "Holistische praktijk", "review", "review.png", "Holistische praktijk review en vertrouwen afbeelding voor demo website", "schoonheidssalon"),
-    background: customAsset("holistisch", "Holistische praktijk", "background", "background.png", "Holistische praktijk achtergrond afbeelding voor demo website", "schoonheidssalon"),
+    hero: customAsset("holistisch", "Holistische praktijk", "hero", "intake-gesprek.png", "Holistische praktijk intakegesprek afbeelding voor demo website"),
+    service: customAsset("holistisch", "Holistische praktijk", "service", "ontspanning-sessie.png", "Holistische praktijk ontspanningssessie afbeelding voor demo website"),
+    team: customAsset("holistisch", "Holistische praktijk", "team", "journaling-begeleiding.png", "Holistische praktijk begeleiding afbeelding voor demo website"),
+    project: customAsset("holistisch", "Holistische praktijk", "project", "ademwerk-groep.png", "Holistische praktijk ademwerk afbeelding voor demo website"),
+    contact: customAsset("holistisch", "Holistische praktijk", "contact", "behandelruimte.png", "Holistische praktijk behandelruimte afbeelding voor demo website"),
+    "service-alt": customAsset("holistisch", "Holistische praktijk", "service-alt", "meditatie-moment.png", "Holistische praktijk meditatie afbeelding voor demo website"),
+    "project-alt": customAsset("holistisch", "Holistische praktijk", "project-alt", "natuur-coaching.png", "Holistische praktijk natuurcoaching afbeelding voor demo website"),
+    detail: customAsset("holistisch", "Holistische praktijk", "detail", "wellness-details.png", "Holistische praktijk detail afbeelding voor demo website"),
+    review: customAsset("holistisch", "Holistische praktijk", "review", "thee-wachtruimte.png", "Holistische praktijk vertrouwen afbeelding voor demo website"),
+    background: customAsset("holistisch", "Holistische praktijk", "background", "sessie-voorbereiden.png", "Holistische praktijk achtergrond afbeelding voor demo website"),
   }),
   group("makelaar", "Makelaar", ["makelaar-demo"], ["vastgoed", "makelaar", "woning", "taxatie", "waardebepaling", "bezichtiging"]),
   group("hotel", "Hotel", ["hotel-demo"], ["hotel", "b&b", "bed and breakfast", "hospitality", "kamers", "boeken", "verblijf"]),
@@ -138,7 +165,7 @@ export function listDemoImageGroups() {
 }
 
 export function listDemoImageAssets() {
-  return branchImageGroups.flatMap((groupItem) => DEMO_IMAGE_ROLES.map((role) => groupItem.assets[role]));
+  return branchImageGroups.flatMap((groupItem) => Object.values(groupItem.assets || {}));
 }
 
 export function resolveDemoImageGroup(input = {}) {

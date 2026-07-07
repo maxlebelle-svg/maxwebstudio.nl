@@ -23216,12 +23216,13 @@
         function actionButtonsHtml(record = {}, preview = "", factoryHref = "") {
           const workflow = workflowMeta(record);
           const buttons = actionConfig(handlingStatus(record), workflow);
+          const icons = { invoice: "▧", account: "◎", invite: "✉", followup: "□", upsell: "ϟ", quote: "§", preview: "↗" };
           return buttons.map((button) => {
             const href = button.action === "preview" ? preview || "#" : button.action === "quote" ? `admin-offertes.html${record.customerId ? `?customerId=${encodeURIComponent(record.customerId)}` : ""}` : "#";
             const attrs = button.action === "preview" || button.action === "quote"
               ? `href="${escapeHtml(href)}"${button.action === "preview" ? ' target="_blank" rel="noopener"' : ""}`
               : `href="#" data-demo-action="${escapeHtml(button.action)}" data-demo-id="${escapeHtml(record.id)}"`;
-            return `<a class="button ${button.primary ? "primary" : "secondary"}" ${attrs}>${escapeHtml(button.label)}</a>`;
+            return `<a class="button ${button.primary ? "primary" : "secondary"}" ${attrs}><span class="demo-action-icon" aria-hidden="true">${escapeHtml(icons[button.action] || "•")}</span><span>${escapeHtml(button.label)}</span></a>`;
           }).join("");
         }
 
@@ -23336,9 +23337,9 @@
             const currentHandlingStatus = handlingStatus(record);
             const chips = workflowChips(record);
             const utilityLinks = [
-              `<a href="${escapeHtml(preview || "#")}" target="_blank" rel="noopener" aria-disabled="${preview ? "false" : "true"}">Preview</a>`,
-              `<a href="${escapeHtml(zipUrl(preview) || "#")}" target="_blank" rel="noopener" aria-disabled="${preview ? "false" : "true"}">ZIP</a>`,
-              `<a href="${escapeHtml(factoryHref)}">Factory</a>`,
+              `<a href="${escapeHtml(preview || "#")}" target="_blank" rel="noopener" aria-disabled="${preview ? "false" : "true"}"><span aria-hidden="true">↗</span> Preview openen</a>`,
+              `<a href="${escapeHtml(zipUrl(preview) || "#")}" target="_blank" rel="noopener" aria-disabled="${preview ? "false" : "true"}"><span aria-hidden="true">↓</span> ZIP downloaden</a>`,
+              `<a href="${escapeHtml(factoryHref)}"><span aria-hidden="true">⌘</span> Open in Factory</a>`,
             ].join("");
             return `
               <article class="saved-demo-site-card demo-library-card">
@@ -23358,7 +23359,7 @@
                       <span>${escapeHtml([record.contactName, record.email, customerText].filter(Boolean).join(" · ") || "Geen contactgegevens")}</span>
                     </div>
                     <label for="demo-handling-${escapeHtml(record.id)}">
-                      <span>Afhandelstatus</span>
+                      <span class="sr-only">Afhandelstatus</span>
                       <select id="demo-handling-${escapeHtml(record.id)}" data-demo-handling="${escapeHtml(record.id)}">
                         <option value="demo"${currentHandlingStatus === "demo" ? " selected" : ""}>Demo site</option>
                         <option value="quote"${currentHandlingStatus === "quote" ? " selected" : ""}>Offertefase</option>
@@ -23368,27 +23369,21 @@
                     </label>
                   </div>
                   <div class="demo-library-status-strip">
-                    <span>${escapeHtml(statusLabel(record.demoStatus))}</span>
-                    <span>${escapeHtml(sourceText)}</span>
-                    <span>${escapeHtml(savedAt)}</span>
-                    <span>${escapeHtml(offerText)}</span>
+                    <span data-demo-strip-icon="✓">${escapeHtml(statusLabel(record.demoStatus))}</span>
+                    <span data-demo-strip-icon="▧">${escapeHtml(sourceText)}</span>
+                    <span data-demo-strip-icon="□">${escapeHtml(savedAt)}</span>
+                    <span data-demo-strip-icon="◇">${escapeHtml(offerText)}</span>
                   </div>
                   <div class="demo-library-preview-url" title="${escapeHtml(preview)}">
-                    <span>Previewlink</span>
+                    <span aria-hidden="true">↗</span>
+                    <em>Previewlink:</em>
                     <strong>${escapeHtml(preview || "-")}</strong>
-                    <div class="demo-library-utility-links">${utilityLinks}</div>
+                    <button class="demo-library-copy-button" type="button" data-copy-preview="${escapeHtml(preview)}" aria-label="Previewlink kopiëren">⧉</button>
                   </div>
-                  <div class="demo-library-next-actions">
-                    <div class="demo-library-action-header">
-                      <div>
-                        <span>Afhandeling</span>
-                        <strong>${escapeHtml(handlingLabel(currentHandlingStatus))}</strong>
-                      </div>
-                      <div class="demo-library-workflow-chips">${chips.length ? chips.map((chip) => `<span>${escapeHtml(chip)}</span>`).join("") : `<span>Geen open taken</span>`}</div>
-                    </div>
-                    <div class="admin-profile-actions demo-workflow-actions">
-                      ${actionButtonsHtml(record, preview, factoryHref)}
-                    </div>
+                  <div class="admin-profile-actions demo-workflow-actions">
+                    ${actionButtonsHtml(record, preview, factoryHref)}
+                  </div>
+                  <div class="demo-library-utility-links">${utilityLinks}</div>
                   </div>
                 </div>
               </article>
@@ -23712,6 +23707,17 @@
           }
         });
         list?.addEventListener("click", async (event) => {
+          const copyButton = event.target.closest("[data-copy-preview]");
+          if (copyButton) {
+            event.preventDefault();
+            try {
+              await navigator.clipboard.writeText(copyButton.dataset.copyPreview || "");
+              setMessage("Previewlink gekopieerd.", "success");
+            } catch {
+              setMessage("Kopiëren lukte niet automatisch.", "warning");
+            }
+            return;
+          }
           const button = event.target.closest("[data-demo-action]");
           if (!button) return;
           event.preventDefault();

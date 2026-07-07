@@ -20,6 +20,7 @@ const imageRoleLabels = {
 };
 const imageFolderLabels = {
   bouwbedrijf: "Bouwbedrijven",
+  quantumbouw: "Quantumbouw.nl",
   kapsalon: "Kappers en kapsalons",
   installatiebedrijf: "Installatiebedrijven",
   schoonheidssalon: "Schoonheidssalons",
@@ -522,7 +523,9 @@ function renderImageFolderSummary(group, assets) {
 }
 
 function imageAssetsForGroup(group) {
-  return imageRoles.map((role) => group.assets[role]).filter(Boolean);
+  const ordered = imageRoles.map((role) => group.assets?.[role]).filter(Boolean);
+  const extra = Object.values(group.assets || {}).filter((asset) => !ordered.some((item) => item.slug === asset.slug));
+  return [...ordered, ...extra];
 }
 
 function filterImageAssets(assets, group, query) {
