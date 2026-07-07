@@ -11945,7 +11945,51 @@ h3 {
 
 #demo-klantreis .demo-approval-card {
   display: grid;
-  gap: 12px;
+  gap: 14px;
+  overflow: hidden;
+}
+
+#demo-klantreis .demo-approval-card .sales-timeline-heading {
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+}
+
+#demo-klantreis .demo-approval-card .sales-timeline-heading > div {
+  display: grid;
+  flex: 1 1 260px;
+  gap: 6px;
+  min-width: 0;
+}
+
+#demo-klantreis .demo-approval-card .sales-timeline-heading strong {
+  font-size: clamp(18px, 2vw, 24px);
+  line-height: 1.12;
+}
+
+#demo-klantreis .demo-approval-card .sales-timeline-heading span {
+  max-width: 100%;
+  color: rgba(226, 236, 248, 0.68);
+  font-size: 12px;
+  line-height: 1.45;
+  text-transform: none;
+}
+
+#demo-klantreis .demo-approval-card .status-badge {
+  flex: 0 0 auto;
+  max-width: min(100%, 260px);
+  white-space: normal;
+  text-align: center;
+  line-height: 1.2;
+}
+
+#demo-klantreis .demo-approval-card .demo-action-grid .button {
+  min-height: 58px;
+  padding: 12px 16px;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.18;
+  white-space: normal;
 }
 
 @media (max-width: 1180px) {
