@@ -24169,9 +24169,13 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   white-space: nowrap;
 }
 
+.demo-sites-library-grid {
+  container-type: inline-size;
+}
+
 .admin-body .demo-library-card {
-  grid-template-columns: minmax(420px, 0.43fr) minmax(0, 0.57fr);
-  gap: 42px;
+  grid-template-columns: minmax(400px, 0.42fr) minmax(0, 0.58fr);
+  gap: 34px;
   align-items: center;
   padding: 28px;
   border-color: rgba(148, 178, 214, 0.24);
@@ -24225,7 +24229,7 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
 
 .admin-body .demo-library-compact-head {
   grid-template-columns: minmax(0, 1fr) minmax(230px, 320px);
-  gap: 28px;
+  gap: 24px;
   align-items: start;
 }
 
@@ -24241,7 +24245,7 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
 
 .admin-body .demo-library-card-heading strong {
   margin-top: 4px;
-  font-size: clamp(32px, 3.1vw, 56px);
+  font-size: clamp(31px, 2.8vw, 52px);
   letter-spacing: 0;
   white-space: nowrap;
 }
@@ -24341,7 +24345,7 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
 }
 
 .admin-body .demo-library-card .demo-workflow-actions {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: minmax(150px, 1.12fr) repeat(4, minmax(126px, 1fr));
   gap: 14px;
   padding-bottom: 18px;
   border-bottom: 1px solid rgba(148, 178, 214, 0.2);
@@ -24357,9 +24361,18 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   min-height: 82px;
   padding: 14px 16px;
   border-radius: 8px;
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.14;
   text-align: left;
+  overflow: visible;
+  white-space: normal;
+}
+
+.admin-body .demo-library-card .demo-workflow-actions .button > span:last-child,
+.admin-body .demo-library-card .demo-workflow-actions a.button > span:last-child {
+  min-width: 0;
+  overflow: visible;
+  text-overflow: clip;
   white-space: normal;
 }
 
@@ -24368,6 +24381,7 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
 }
 
 .admin-body .demo-action-icon {
+  flex: 0 0 auto;
   display: inline-grid;
   place-items: center;
   width: 28px;
@@ -24393,6 +24407,94 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   color: #60a5fa;
   font-size: 15px;
   font-weight: 850;
+}
+
+@container (max-width: 1320px) {
+  .admin-body .demo-library-card {
+    grid-template-columns: minmax(340px, 0.45fr) minmax(0, 0.55fr);
+    gap: 24px;
+    padding: 24px;
+  }
+
+  .admin-body .demo-library-compact-head {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .admin-body .demo-library-compact-head label {
+    max-width: 100%;
+  }
+
+  .admin-body .demo-library-card-heading strong {
+    font-size: clamp(30px, 3.1vw, 42px);
+    white-space: normal;
+  }
+
+  .admin-body .demo-library-status-strip {
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .admin-body .demo-library-status-strip span {
+    flex: 1 1 calc(50% - 10px);
+    justify-content: center;
+    min-width: 0;
+  }
+
+  .admin-body .demo-library-preview-url {
+    grid-template-columns: auto minmax(0, 1fr) 42px;
+  }
+
+  .admin-body .demo-library-preview-url em {
+    display: none;
+  }
+
+  .admin-body .demo-library-card .demo-workflow-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .admin-body .demo-library-card .demo-workflow-actions .button,
+  .admin-body .demo-library-card .demo-workflow-actions a.button {
+    min-height: 76px;
+    padding: 13px 14px;
+  }
+}
+
+@container (max-width: 980px) {
+  .admin-body .demo-library-card {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-body .demo-library-thumbnail {
+    width: 100%;
+  }
+
+  .admin-body .demo-library-card-content {
+    width: 100%;
+  }
+
+  .admin-body .demo-library-card-heading strong {
+    font-size: clamp(30px, 7vw, 46px);
+  }
+
+  .admin-body .demo-library-card .demo-workflow-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (max-width: 620px) {
+  .admin-body .demo-library-card {
+    padding: 18px;
+  }
+
+  .admin-body .demo-library-status-strip span {
+    flex-basis: 100%;
+  }
+
+  .admin-body .demo-library-card .demo-workflow-actions,
+  .admin-body .demo-library-utility-links {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 1200px) {

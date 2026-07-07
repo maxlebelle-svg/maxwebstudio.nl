@@ -23167,15 +23167,15 @@
 
         function actionConfig(status = "demo", workflow = {}) {
           const invoiceLabel = workflow.invoiceId ? "Factuur controleren" : "Factuur maken";
-          const accountLabel = workflow.customerId || workflow.profileId ? "Klantaccount" : "Klantaccount";
-          const inviteLabel = workflow.inviteSentAt || workflow.inviteStatus === "sent" ? "Uitnodiging" : "Uitnodiging";
+          const accountLabel = workflow.customerId || workflow.profileId ? "Klantaccount beheren" : "Klantaccount aanmaken";
+          const inviteLabel = workflow.inviteSentAt || workflow.inviteStatus === "sent" ? "Uitnodiging bekijken" : "Uitnodiging sturen";
           if (status === "sold_external") {
             return [
               { action: "invoice", label: invoiceLabel, primary: true },
               { action: "account", label: accountLabel },
               { action: "invite", label: inviteLabel },
-              { action: "followup", label: "Opvolging" },
-              { action: "upsell", label: "Meerwerk" },
+              { action: "followup", label: "Opvolging plannen" },
+              { action: "upsell", label: "Meerwerk aanbieden" },
             ];
           }
           if (status === "sold_platform") {
@@ -23183,8 +23183,8 @@
               { action: "account", label: accountLabel, primary: true },
               { action: "invoice", label: workflow.invoiceId ? "Factuur controleren" : "Factuur maken" },
               { action: "invite", label: inviteLabel },
-              { action: "followup", label: "Opvolging" },
-              { action: "upsell", label: "Meerwerk" },
+              { action: "followup", label: "Opvolging plannen" },
+              { action: "upsell", label: "Meerwerk aanbieden" },
             ];
           }
           if (status === "quote") {
@@ -23384,7 +23384,6 @@
                     ${actionButtonsHtml(record, preview, factoryHref)}
                   </div>
                   <div class="demo-library-utility-links">${utilityLinks}</div>
-                  </div>
                 </div>
               </article>
             `;

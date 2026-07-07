@@ -22,6 +22,33 @@ const RUNNING_PROJECT_EXCLUDED = new Set(["live", "onderhoud", "maintenance", "g
 const ACTIVE_WEBSITE_STATUSES = new Set(["online", "active", "actief", "live"]);
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(["actief", "active", "wacht_op_mandate", "mandate_required"]);
 const OPEN_CHANGE_REQUEST_EXCLUDED = new Set(["afgerond", "gereed", "done", "closed", "gearchiveerd", "archived"]);
+const QUANTUMBOUW_ASSET_FILES = Object.freeze([
+  "aanbouw-baksteen.jpg",
+  "aanbouw-stuc.jpg",
+  "aanbouw-villa.jpg",
+  "aanbouw.jpg",
+  "badkamer-donker.jpg",
+  "badkamer-licht.jpg",
+  "badkamer-natuursteen.jpg",
+  "badkamer.jpg",
+  "dakkapel-antraciet.jpg",
+  "dakkapel-klassiek.jpg",
+  "dakkapel-traditioneel.jpg",
+  "dakkapel.jpg",
+  "dakopbouw-hout.jpg",
+  "dakopbouw-licht.jpg",
+  "dakopbouw-stad.jpg",
+  "dakopbouw.jpg",
+  "favicon.png",
+  "hero-renovatie.jpg",
+  "kozijnen-jaren30.jpg",
+  "kozijnen-schuifpui.jpg",
+  "kozijnen-wit.jpg",
+  "kozijnen.jpg",
+  "og-image.jpg",
+  "quantumbouw-logo-original.jpeg",
+  "quantumbouw-logo.jpg",
+]);
 
 function readJson(key, fallback = null) {
   try {
@@ -84,7 +111,37 @@ function repositoryMode(mode) {
 }
 
 function localFiles() {
-  return readArray(STORAGE_KEYS.files).map((file) => ({ ...file, _source: file._source || "local" }));
+  const storedFiles = readArray(STORAGE_KEYS.files).map((file) => ({ ...file, _source: file._source || "local" }));
+  const storedLocations = new Set(storedFiles.map((file) => file.location || file.url).filter(Boolean));
+  const quantumbouwFiles = QUANTUMBOUW_ASSET_FILES
+    .map((name, index) => {
+      const isLogo = /logo|favicon/i.test(name);
+      return {
+        id: `quantumbouw-asset-${index + 1}`,
+        customerId: "quantumbouw.nl",
+        company: "Quantumbouw.nl",
+        website: "https://quantumbouw.nl",
+        name,
+        type: isLogo ? "Logo" : "Foto",
+        category: isLogo ? "Logo en drukwerk" : "Website foto's",
+        location: `/assets/demo-images/library/quantumbouw/${name}`,
+        url: `/assets/demo-images/library/quantumbouw/${name}`,
+        status: "actief",
+        notes: isLogo
+          ? "Quantumbouw.nl logo beschikbaar voor website, drukwerk en werkbus bestickering."
+          : "Quantumbouw.nl klantfoto beschikbaar voor download en hergebruik.",
+        createdAt: "2026-07-07T00:00:00.000Z",
+        updatedAt: "2026-07-07T00:00:00.000Z",
+        metadata: {
+          domain: "quantumbouw.nl",
+          client: "Quantumbouw.nl",
+          usage: isLogo ? "website, drukwerk, busbestickering" : "website, social media, klantdownload",
+        },
+        _source: "local-seed",
+      };
+    })
+    .filter((file) => !storedLocations.has(file.location));
+  return [...quantumbouwFiles, ...storedFiles];
 }
 
 function localChangeRequests() {
@@ -250,7 +307,13 @@ function identityValues(record = {}) {
     record.metadata?.localCustomerId,
     record.metadata?.localStorageId,
     record._localCustomerId,
-  ].filter(Boolean).map(String);
+    record.company,
+    record.companyName,
+    record.website,
+    record.domain,
+    record.metadata?.domain,
+    record.metadata?.client,
+  ].filter(Boolean).map((value) => String(value).trim().toLowerCase());
 }
 
 function emailValues(record = {}) {
@@ -264,8 +327,8 @@ function emailValues(record = {}) {
 
 function customerMatches(customer = {}, ids = {}) {
   const values = identityValues(customer);
-  const localId = ids.customerId ? String(ids.customerId) : "";
-  const supabaseId = ids.supabaseCustomerId ? String(ids.supabaseCustomerId) : "";
+  const localId = ids.customerId ? String(ids.customerId).trim().toLowerCase() : "";
+  const supabaseId = ids.supabaseCustomerId ? String(ids.supabaseCustomerId).trim().toLowerCase() : "";
   if (localId && values.includes(localId)) return true;
   if (supabaseId && values.includes(supabaseId)) return true;
   return false;

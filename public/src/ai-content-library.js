@@ -524,7 +524,7 @@ function renderImageFolderSummary(group, assets) {
 
 function imageAssetsForGroup(group) {
   const ordered = imageRoles.map((role) => group.assets?.[role]).filter(Boolean);
-  const extra = Object.values(group.assets || {}).filter((asset) => !ordered.some((item) => item.slug === asset.slug));
+  const extra = Object.values(group.assets || {}).filter((asset) => !ordered.some((item) => item.slug === asset.slug || item.src === asset.src));
   return [...ordered, ...extra];
 }
 

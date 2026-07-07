@@ -29,6 +29,16 @@ const branchImageGroups = Object.freeze([
   group("installatiebedrijf", "Installatiebedrijf", ["installatiebedrijf-demo"], ["installatie", "verduurzaming", "zonnepanelen", "warmtepomp", "airco", "laadpaal", "thuisbatterij"]),
   group("bouwbedrijf", "Bouwbedrijf", ["bouwbedrijf-demo"], ["bouw", "bouwbedrijf", "aannemer", "renovatie", "timmer", "nieuwbouw", "aanbouw"]),
   customGroup("quantumbouw", "Quantumbouw.nl", ["quantumbouw-production"], ["quantumbouw", "quantum bouw", "bouw", "renovatie", "aanbouw", "dakopbouw", "dakkapel", "badkamer", "kozijnen", "busbestickering"], {
+    hero: customAsset("quantumbouw", "Quantumbouw.nl", "hero", "hero-renovatie.jpg", "Quantumbouw.nl hero afbeelding voor website, social media en drukwerk"),
+    service: customAsset("quantumbouw", "Quantumbouw.nl", "service", "aanbouw.jpg", "Quantumbouw.nl aanbouw afbeelding voor diensten en website"),
+    team: customAsset("quantumbouw", "Quantumbouw.nl", "team", "quantumbouw-logo-original.jpeg", "Quantumbouw.nl logo afbeelding voor klantprofiel en branding"),
+    project: customAsset("quantumbouw", "Quantumbouw.nl", "project", "badkamer.jpg", "Quantumbouw.nl badkamer projectafbeelding voor website en portfolio"),
+    contact: customAsset("quantumbouw", "Quantumbouw.nl", "contact", "quantumbouw-logo.jpg", "Quantumbouw.nl contact en logo afbeelding voor website en drukwerk"),
+    "service-alt": customAsset("quantumbouw", "Quantumbouw.nl", "service-alt", "dakopbouw.jpg", "Quantumbouw.nl dakopbouw afbeelding voor diensten en website"),
+    "project-alt": customAsset("quantumbouw", "Quantumbouw.nl", "project-alt", "dakkapel.jpg", "Quantumbouw.nl dakkapel projectafbeelding voor website en portfolio"),
+    detail: customAsset("quantumbouw", "Quantumbouw.nl", "detail", "kozijnen.jpg", "Quantumbouw.nl kozijnen detailafbeelding voor website en drukwerk"),
+    review: customAsset("quantumbouw", "Quantumbouw.nl", "review", "og-image.jpg", "Quantumbouw.nl social preview afbeelding voor vertrouwen en deelmomenten"),
+    background: customAsset("quantumbouw", "Quantumbouw.nl", "background", "aanbouw-baksteen.jpg", "Quantumbouw.nl achtergrondafbeelding voor website en social media"),
     "aanbouw-baksteen": customAsset("quantumbouw", "Quantumbouw.nl", "aanbouw-baksteen", "aanbouw-baksteen.jpg", "Quantumbouw.nl Aanbouw Baksteen klantafbeelding voor website, social media en drukwerk"),
     "aanbouw-stuc": customAsset("quantumbouw", "Quantumbouw.nl", "aanbouw-stuc", "aanbouw-stuc.jpg", "Quantumbouw.nl Aanbouw Stuc klantafbeelding voor website, social media en drukwerk"),
     "aanbouw-villa": customAsset("quantumbouw", "Quantumbouw.nl", "aanbouw-villa", "aanbouw-villa.jpg", "Quantumbouw.nl Aanbouw Villa klantafbeelding voor website, social media en drukwerk"),
@@ -165,7 +175,8 @@ export function listDemoImageGroups() {
 }
 
 export function listDemoImageAssets() {
-  return branchImageGroups.flatMap((groupItem) => Object.values(groupItem.assets || {}));
+  const assets = branchImageGroups.flatMap((groupItem) => Object.values(groupItem.assets || {}));
+  return assets.filter((assetItem, index) => assets.findIndex((item) => item.src === assetItem.src) === index);
 }
 
 export function resolveDemoImageGroup(input = {}) {
