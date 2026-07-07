@@ -23167,15 +23167,15 @@
 
         function actionConfig(status = "demo", workflow = {}) {
           const invoiceLabel = workflow.invoiceId ? "Factuur controleren" : "Factuur maken";
-          const accountLabel = workflow.customerId || workflow.profileId ? "Klantaccount bekijken" : "Klantaccount aanmaken";
-          const inviteLabel = workflow.inviteSentAt || workflow.inviteStatus === "sent" ? "Uitnodiging opnieuw sturen" : "Uitnodiging sturen";
+          const accountLabel = workflow.customerId || workflow.profileId ? "Klantaccount" : "Klantaccount";
+          const inviteLabel = workflow.inviteSentAt || workflow.inviteStatus === "sent" ? "Uitnodiging" : "Uitnodiging";
           if (status === "sold_external") {
             return [
               { action: "invoice", label: invoiceLabel, primary: true },
               { action: "account", label: accountLabel },
               { action: "invite", label: inviteLabel },
-              { action: "followup", label: "Opvolging plannen" },
-              { action: "upsell", label: "Meerwerk aanbieden" },
+              { action: "followup", label: "Opvolging" },
+              { action: "upsell", label: "Meerwerk" },
             ];
           }
           if (status === "sold_platform") {
@@ -23183,8 +23183,8 @@
               { action: "account", label: accountLabel, primary: true },
               { action: "invoice", label: workflow.invoiceId ? "Factuur controleren" : "Factuur maken" },
               { action: "invite", label: inviteLabel },
-              { action: "followup", label: "Opvolging plannen" },
-              { action: "upsell", label: "Meerwerk aanbieden" },
+              { action: "followup", label: "Opvolging" },
+              { action: "upsell", label: "Meerwerk" },
             ];
           }
           if (status === "quote") {
@@ -23346,28 +23346,36 @@
                       : `<span class="demo-library-thumbnail-placeholder"><strong>Miniatuur volgt</strong><small>Sla deze demo-site opnieuw op voor een previewbeeld.</small></span>`}
                 </div>
                 <div class="demo-library-card-content">
-                  <div class="demo-library-card-heading">
-                    <span class="demo-library-eyebrow">Review-ready preview</span>
-                    <strong>${escapeHtml(savedDemo.businessName || record.businessName || "Naamloze demo")}</strong>
-                    <span>${escapeHtml([record.contactName, record.email, customerText].filter(Boolean).join(" · ") || "Geen contactgegevens")}</span>
+                  <div class="demo-library-compact-head">
+                    <div class="demo-library-card-heading">
+                      <span class="demo-library-eyebrow">Review-ready</span>
+                      <strong>${escapeHtml(savedDemo.businessName || record.businessName || "Naamloze demo")}</strong>
+                      <span>${escapeHtml([record.contactName, record.email, customerText].filter(Boolean).join(" · ") || "Geen contactgegevens")}</span>
+                    </div>
+                    <label for="demo-handling-${escapeHtml(record.id)}">
+                      <span>Afhandelstatus</span>
+                      <select id="demo-handling-${escapeHtml(record.id)}" data-demo-handling="${escapeHtml(record.id)}">
+                        <option value="demo"${currentHandlingStatus === "demo" ? " selected" : ""}>Demo site</option>
+                        <option value="quote"${currentHandlingStatus === "quote" ? " selected" : ""}>Offertefase</option>
+                        <option value="sold_external"${currentHandlingStatus === "sold_external" ? " selected" : ""}>Verkocht buiten platform</option>
+                        <option value="sold_platform"${currentHandlingStatus === "sold_platform" ? " selected" : ""}>Verkocht via platform</option>
+                      </select>
+                    </label>
                   </div>
-                  <div class="demo-library-summary">
-                    <span class="demo-library-status-pill">${escapeHtml(statusLabel(record.demoStatus))}</span>
-                    <p>Definitieve demo staat klaar voor commerciële opvolging, met previewlink en downloadpakket op dezelfde plek.</p>
-                  </div>
-                  <div class="demo-library-meta-grid">
-                    <div><span>Bron</span><strong>${escapeHtml(sourceText)}</strong></div>
-                    <div><span>Opgeslagen</span><strong>${escapeHtml(savedAt)}</strong></div>
-                    <div><span>Volgende stap</span><strong>${escapeHtml(offerText)}</strong></div>
+                  <div class="demo-library-status-strip">
+                    <span>${escapeHtml(statusLabel(record.demoStatus))}</span>
+                    <span>${escapeHtml(sourceText)}</span>
+                    <span>${escapeHtml(savedAt)}</span>
+                    <span>${escapeHtml(offerText)}</span>
                   </div>
                   <div class="demo-library-preview-url" title="${escapeHtml(preview)}">
                     <span>Previewlink</span>
                     <strong>${escapeHtml(preview || "-")}</strong>
-                  </div>
-                  <div class="admin-profile-actions demo-preview-actions">
-                    <a class="button primary" href="${escapeHtml(preview || "#")}" target="_blank" rel="noopener" aria-disabled="${preview ? "false" : "true"}">Preview openen</a>
-                    <a class="button secondary" href="${escapeHtml(zipUrl(preview) || "#")}" target="_blank" rel="noopener" aria-disabled="${preview ? "false" : "true"}">ZIP downloaden</a>
-                    <a class="button secondary" href="${escapeHtml(factoryHref)}">Open in Factory</a>
+                    <div class="demo-library-utility-links">
+                      <a href="${escapeHtml(preview || "#")}" target="_blank" rel="noopener" aria-disabled="${preview ? "false" : "true"}">Preview</a>
+                      <a href="${escapeHtml(zipUrl(preview) || "#")}" target="_blank" rel="noopener" aria-disabled="${preview ? "false" : "true"}">ZIP</a>
+                      <a href="${escapeHtml(factoryHref)}">Factory</a>
+                    </div>
                   </div>
                   <div class="demo-library-next-actions">
                     <div class="demo-library-action-header">
@@ -23375,17 +23383,8 @@
                         <span>Afhandeling</span>
                         <strong>${escapeHtml(handlingLabel(currentHandlingStatus))}</strong>
                       </div>
-                      <label for="demo-handling-${escapeHtml(record.id)}">
-                        <span class="sr-only">Afhandelstatus</span>
-                        <select id="demo-handling-${escapeHtml(record.id)}" data-demo-handling="${escapeHtml(record.id)}">
-                          <option value="demo"${currentHandlingStatus === "demo" ? " selected" : ""}>Demo site</option>
-                          <option value="quote"${currentHandlingStatus === "quote" ? " selected" : ""}>Offertefase</option>
-                          <option value="sold_external"${currentHandlingStatus === "sold_external" ? " selected" : ""}>Verkocht buiten platform</option>
-                          <option value="sold_platform"${currentHandlingStatus === "sold_platform" ? " selected" : ""}>Verkocht via platform</option>
-                        </select>
-                      </label>
+                      ${chips.length ? `<div class="demo-library-workflow-chips">${chips.map((chip) => `<span>${escapeHtml(chip)}</span>`).join("")}</div>` : ""}
                     </div>
-                    ${chips.length ? `<div class="demo-library-workflow-chips">${chips.map((chip) => `<span>${escapeHtml(chip)}</span>`).join("")}</div>` : ""}
                     <div class="admin-profile-actions demo-workflow-actions">
                       ${actionButtonsHtml(record, preview, factoryHref)}
                     </div>
