@@ -21378,56 +21378,6 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   }
 }
 
-/* Final Sales workspace override: keep selected lead detail compact and horizontal. */
-.admin-body.is-sales-view .leadfinder-detail-card {
-  display: grid;
-  grid-template-columns: minmax(240px, 0.9fr) minmax(320px, 1.15fr) minmax(260px, 0.95fr);
-  grid-template-areas:
-    "summary workflow contact"
-    "analysis analysis analysis"
-    "welcome welcome welcome";
-  gap: 14px;
-  align-items: start;
-}
-
-.admin-body.is-sales-view .sales-lead-summary-card {
-  grid-area: summary;
-}
-
-.admin-body.is-sales-view .sales-workflow-card {
-  grid-area: workflow;
-}
-
-.admin-body.is-sales-view .sales-contact-actions-card {
-  grid-area: contact;
-}
-
-.admin-body.is-sales-view .leadfinder-detail-card .lead-analysis-card {
-  grid-area: analysis;
-}
-
-.admin-body.is-sales-view .leadfinder-detail-card .lead-welcome-card {
-  grid-area: welcome;
-}
-
-.admin-body.is-sales-view .sales-workflow-card .sales-next-action,
-.admin-body.is-sales-view .sales-contact-actions-card .sales-quick-actions,
-.admin-body.is-sales-view .sales-workflow-card .sales-timeline-card {
-  grid-area: auto;
-}
-
-@media (max-width: 1180px) {
-  .admin-body.is-sales-view .leadfinder-detail-card {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "summary"
-      "workflow"
-      "contact"
-      "analysis"
-      "welcome";
-  }
-}
-
 /* Sales portal readability pass: prevent dense analysis text from overlapping. */
 .admin-body.is-sales-view .admin-crm-shell {
   align-items: start;
