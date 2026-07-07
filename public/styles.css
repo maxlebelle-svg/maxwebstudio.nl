@@ -13892,21 +13892,22 @@ h3 {
 
 .lead-contact-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 18px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  margin-top: 16px;
+  max-width: 460px;
 }
 
 .lead-contact-grid a {
-  display: inline-flex;
+  display: grid;
+  grid-template-columns: 24px 76px minmax(0, 1fr);
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
   max-width: none;
   min-width: 0;
-  min-height: 38px;
+  min-height: 40px;
   padding: 9px 12px;
-  overflow: hidden;
   border: 1px solid rgba(171, 196, 224, 0.13);
   border-radius: 8px;
   color: rgba(226, 236, 248, 0.78);
@@ -13914,12 +13915,26 @@ h3 {
   font-size: 13px;
   font-weight: 800;
   text-decoration: none;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .lead-contact-grid a span {
   flex: 0 0 auto;
+  color: rgba(147, 197, 253, 0.86);
+}
+
+.lead-contact-grid a small {
+  color: rgba(148, 163, 184, 0.82);
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.lead-contact-grid a strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: rgba(248, 251, 255, 0.9);
+  font-weight: 850;
 }
 
 .lead-contact-grid a[aria-disabled="true"],

@@ -22427,9 +22427,9 @@
                       <span>${escapeHtml(lead.region || lead.address || "Adres onbekend")}</span>
                     </div>
                     <div class="lead-contact-grid">
-                      <a href="${escapeHtml(phoneHref || "#")}" aria-disabled="${phoneHref ? "false" : "true"}"><span aria-hidden="true">☎</span>${escapeHtml(lead.phone || "-")}</a>
-                      <a href="${escapeHtml(mailHref || "#")}" aria-disabled="${mailHref ? "false" : "true"}"><span aria-hidden="true">@</span>${escapeHtml(lead.email || "Geen e-mail")}</a>
-                      <a href="${escapeHtml(websiteUrl || "#")}" target="_blank" rel="noopener" aria-disabled="${websiteUrl ? "false" : "true"}"><span aria-hidden="true">↗</span>${escapeHtml(lead.websiteUrl || "Geen website")}</a>
+                      <a href="${escapeHtml(phoneHref || "#")}" aria-disabled="${phoneHref ? "false" : "true"}"><span aria-hidden="true">☎</span><small>Telefoon</small><strong>${escapeHtml(lead.phone || "-")}</strong></a>
+                      <a href="${escapeHtml(mailHref || "#")}" aria-disabled="${mailHref ? "false" : "true"}"><span aria-hidden="true">@</span><small>E-mail</small><strong>${escapeHtml(lead.email || "Geen e-mail")}</strong></a>
+                      <a href="${escapeHtml(websiteUrl || "#")}" target="_blank" rel="noopener" aria-disabled="${websiteUrl ? "false" : "true"}"><span aria-hidden="true">↗</span><small>Website</small><strong>${escapeHtml(lead.websiteUrl || "Geen website")}</strong></a>
                     </div>
                     <div class="lead-owner-row">
                       <span>Medewerker: ${escapeHtml(getLeadOwnerLabel(lead))}</span>
