@@ -21838,6 +21838,13 @@
           return value;
         }
 
+        function appendQueryParam(url = "", key = "", value = "") {
+          const cleanUrl = String(url || "").trim();
+          const cleanKey = String(key || "").trim();
+          if (!cleanUrl || !cleanKey) return cleanUrl;
+          return `${cleanUrl}${cleanUrl.includes("?") ? "&" : "?"}${encodeURIComponent(cleanKey)}=${encodeURIComponent(String(value || ""))}`;
+        }
+
         function previewZipUrl(url = "") {
           const absoluteUrl = absolutePreviewUrl(url);
           if (!absoluteUrl) return "";
@@ -22272,6 +22279,7 @@
             setMessage(elements.message, "Genereer eerst een preview voordat je de demo-site opslaat.", "warning");
             return;
           }
+          const selectedSource = activePreviewSource();
           await withJourneyLock("save_demo_site", [elements.saveDemoSite, elements.save, elements.generatePreview, elements.nextStepPrimary], async () => {
             setMessage(elements.message, "Demo-site koppelen aan deze lead/klant...", "info");
             try {
