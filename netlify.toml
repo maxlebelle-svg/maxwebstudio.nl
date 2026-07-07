@@ -9,6 +9,11 @@
   to = "/account-activeren.html"
   status = 200
 
+[[redirects]]
+  from = "/admin-assets"
+  to = "/admin-assets.html"
+  status = 200
+
 [[headers]]
   for = "/*"
   [headers.values]
@@ -33,6 +38,11 @@
 
 [[headers]]
   for = "/admin-sales.html"
+  [headers.values]
+    Cache-Control = "no-store, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/admin-assets.html"
   [headers.values]
     Cache-Control = "no-store, max-age=0, must-revalidate"
 
