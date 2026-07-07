@@ -271,6 +271,12 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
     status: status || "nieuw",
     notes: cleanText(payload.notes || payload.message),
     assigned_to: cleanText(payload.assignedTo || payload.assigned_to || payload.ownerAuthUserId || payload.owner_id || admin.id) || admin.id,
+    owner_email: cleanText(payload.ownerEmail || payload.owner_email || payload.assignedToEmail || payload.assigned_to_email || payload.assignedUserEmail || payload.assigned_user_email || payload.medewerkerEmail || payload.medewerker_email || payload.employeeEmail || payload.employee_email || payload.createdByEmail || admin.email).toLowerCase(),
+    owner_name: cleanText(payload.ownerName || payload.owner_name || payload.assignedToName || payload.assigned_to_name || payload.assignedUserName || payload.assigned_user_name || payload.medewerker || payload.employee || payload.createdByName || admin.email),
+    assigned_user_email: cleanText(payload.assignedUserEmail || payload.assigned_user_email || payload.assignedToEmail || payload.assigned_to_email || payload.medewerkerEmail || payload.medewerker_email || payload.employeeEmail || payload.employee_email || payload.ownerEmail || admin.email).toLowerCase(),
+    assigned_user_name: cleanText(payload.assignedUserName || payload.assigned_user_name || payload.assignedToName || payload.assigned_to_name || payload.medewerker || payload.employee || payload.ownerName || admin.email),
+    sales_partner_email: cleanText(payload.salesPartnerEmail || payload.sales_partner_email || payload.assignedToEmail || payload.assigned_to_email || payload.medewerkerEmail || payload.medewerker_email || payload.employeeEmail || payload.employee_email || payload.ownerEmail).toLowerCase(),
+    sales_partner_name: cleanText(payload.salesPartnerName || payload.sales_partner_name || payload.assignedToName || payload.assigned_to_name || payload.medewerker || payload.employee || payload.ownerName),
     metadata: {
       ...(payload.metadata && typeof payload.metadata === "object" ? payload.metadata : {}),
       source: cleanText(payload.source || "admin-dashboard-leadfinder"),
@@ -313,12 +319,63 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
     record.metadata.createdByName = cleanText(payload.createdByName || admin.email);
   }
   if (options.update) {
-    const hasAssignment = ["assignedTo", "assigned_to", "ownerAuthUserId", "owner_id"].some((key) => Object.prototype.hasOwnProperty.call(payload, key));
+    const hasAssignment = [
+      "assignedTo",
+      "assigned_to",
+      "assignedToEmail",
+      "assigned_to_email",
+      "assignedUserEmail",
+      "assigned_user_email",
+      "assignedUserName",
+      "assigned_user_name",
+      "ownerAuthUserId",
+      "owner_id",
+      "ownerEmail",
+      "owner_email",
+      "ownerName",
+      "owner_name",
+      "medewerker",
+      "medewerkerEmail",
+      "medewerker_email",
+      "employee",
+      "employeeEmail",
+      "employee_email",
+      "salesPartnerEmail",
+      "sales_partner_email",
+      "salesPartnerName",
+      "sales_partner_name",
+    ].some((key) => Object.prototype.hasOwnProperty.call(payload, key));
     Object.keys(record).forEach((key) => {
       if (record[key] === "" && !["email", "phone", "website", "notes"].includes(key)) delete record[key];
     });
     if (!hasStatus) delete record.status;
-    if (!hasAssignment) delete record.assigned_to;
+    if (!hasAssignment) {
+      delete record.assigned_to;
+      delete record.owner_email;
+      delete record.owner_name;
+      delete record.assigned_user_email;
+      delete record.assigned_user_name;
+      delete record.sales_partner_email;
+      delete record.sales_partner_name;
+      [
+        "ownerAuthUserId",
+        "ownerProfileId",
+        "ownerEmail",
+        "ownerName",
+        "assignedUserEmail",
+        "assignedUserName",
+        "medewerker",
+        "medewerkerEmail",
+        "employee",
+        "employeeEmail",
+        "assignedToEmail",
+        "assignedToName",
+        "userEmail",
+        "userName",
+        "salesPartnerEmail",
+        "salesPartnerName",
+      ].forEach((key) => delete record.metadata[key]);
+    }
     if (!hasSource) delete record.metadata.source;
     if (!hasWebsiteStatus) delete record.metadata.websiteStatus;
     if (!hasLeadScore) delete record.metadata.leadScore;
@@ -479,8 +536,8 @@ function mapLead(row = {}) {
     notes: cleanText(row.notes || row.message),
     ownerAuthUserId: cleanText(row.owner_id || row.owner_auth_user_id || meta.ownerAuthUserId || meta.owner_auth_user_id),
     ownerProfileId: cleanText(row.owner_profile_id || meta.ownerProfileId || meta.owner_profile_id),
-    ownerEmail: cleanText(row.owner_email || meta.ownerEmail || meta.owner_email || meta.medewerkerEmail || meta.medewerker_email || meta.employeeEmail || meta.employee_email || meta.assignedToEmail || meta.assigned_to_email || meta.userEmail || meta.user_email),
-    ownerName: cleanText(row.owner_name || meta.ownerName || meta.owner_name || meta.medewerker || meta.employee || meta.assignedToName || meta.assigned_to_name || meta.userName || meta.user_name),
+    ownerEmail: cleanText(row.assigned_user_email || meta.assignedUserEmail || meta.assigned_user_email || meta.assignedToEmail || meta.assigned_to_email || meta.medewerkerEmail || meta.medewerker_email || meta.employeeEmail || meta.employee_email || row.sales_partner_email || meta.salesPartnerEmail || meta.sales_partner_email || row.owner_email || meta.ownerEmail || meta.owner_email || meta.userEmail || meta.user_email),
+    ownerName: cleanText(row.assigned_user_name || meta.assignedUserName || meta.assigned_user_name || meta.assignedToName || meta.assigned_to_name || meta.medewerker || meta.employee || row.sales_partner_name || meta.salesPartnerName || meta.sales_partner_name || row.owner_name || meta.ownerName || meta.owner_name || meta.userName || meta.user_name),
     assignedUserName: cleanText(row.assigned_user_name || meta.assignedUserName || meta.assigned_user_name || meta.assignedToName || meta.assigned_to_name || meta.medewerker || meta.employee),
     assignedUserEmail: cleanText(row.assigned_user_email || meta.assignedUserEmail || meta.assigned_user_email || meta.assignedToEmail || meta.assigned_to_email || meta.medewerkerEmail || meta.medewerker_email || meta.employeeEmail || meta.employee_email),
     salesPartnerEmail: cleanText(row.sales_partner_email || meta.salesPartnerEmail || meta.sales_partner_email || meta.createdByEmail),
