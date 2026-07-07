@@ -23406,17 +23406,17 @@
         }
 
         const upsellCatalog = [
-          { id: "care_basic", label: "Care Basic", category: "Onderhoud", once: 0, monthly: 19.95, price: "€19,95 / maand", description: "Hosting, SSL, back-up en technische monitoring." },
-          { id: "care_plus", label: "Care Plus", category: "Onderhoud", once: 0, monthly: 49, price: "€49 / maand", description: "Alles uit Basic + 15 minuten kleine wijzigingen per maand." },
-          { id: "care_growth", label: "Care Growth", category: "Onderhoud", once: 0, monthly: 99, price: "€99 / maand", description: "Alles uit Plus + maandelijkse check en conversieadvies." },
-          { id: "upgrade_pro", label: "Upgrade naar Pro", category: "Website", once: 450, monthly: 0, price: "vanaf €450 eenmalig", description: "Extra secties, verfijning en sterkere conversieblokken." },
-          { id: "landing_page", label: "Extra landingspagina", category: "Website", once: 275, monthly: 0, price: "vanaf €275 eenmalig", description: "Gerichte pagina voor dienst, regio of campagne." },
-          { id: "logo_design", label: "Logo ontwerpen", category: "Branding", once: 350, monthly: 0, price: "vanaf €350 eenmalig", description: "Professioneel basislogo met bestanden voor web en socials." },
-          { id: "google_business", label: "Google Bedrijf instellen", category: "Marketing", once: 195, monthly: 0, price: "€195 eenmalig", description: "Profiel, diensten, foto’s en eerste optimalisatie." },
-          { id: "meta_ads", label: "Meta advertenties", category: "Marketing", once: 350, monthly: 249, price: "€350 setup + €249 / maand", description: "Campagne klaarzetten en optimaliseren." },
-          { id: "google_ads", label: "Google Ads", category: "Marketing", once: 450, monthly: 299, price: "€450 setup + €299 / maand", description: "Zoekcampagnes voor offerte-aanvragen." },
-          { id: "automation", label: "Automatisering", category: "Automatisering", once: 395, monthly: 0, price: "vanaf €395 eenmalig", description: "Forms, opvolgmails en CRM-koppeling." },
-          { id: "social_media", label: "Social media", category: "Social media", once: 0, monthly: 299, price: "vanaf €299 / maand", description: "Posts, planning en basis contentkalender." },
+          { id: "care_basic", label: "Care Basic", category: "Onderhoud", once: 0, monthly: 19.95, price: "€19,95 / maand", description: "Hosting, SSL, back-up en technische monitoring.", specs: ["Hosting en SSL-certificaat", "Dagelijkse back-ups", "Technische monitoring", "Basis updates"] },
+          { id: "care_plus", label: "Care Plus", category: "Onderhoud", once: 0, monthly: 49, price: "€49 / maand", description: "Alles uit Basic + 15 minuten kleine wijzigingen per maand.", specs: ["Alles uit Care Basic", "15 minuten kleine wijzigingen per maand", "Plugin- en veiligheidsupdates", "Maandelijkse controle"] },
+          { id: "care_growth", label: "Care Growth", category: "Onderhoud", once: 0, monthly: 99, price: "€99 / maand", description: "Alles uit Plus + maandelijkse check en conversieadvies.", specs: ["Alles uit Care Plus", "Maandelijkse websitecheck", "Conversieadvies", "Prioriteit bij kleine aanpassingen"] },
+          { id: "upgrade_pro", label: "Upgrade naar Pro", category: "Website", once: 450, monthly: 0, price: "vanaf €450 eenmalig", description: "Extra secties, verfijning en sterkere conversieblokken.", specs: ["Extra conversiesecties", "Verbeterde mobiele layout", "Sterkere CTA-blokken", "Visuele refinement"] },
+          { id: "landing_page", label: "Extra landingspagina", category: "Website", once: 275, monthly: 0, price: "vanaf €275 eenmalig", description: "Gerichte pagina voor dienst, regio of campagne.", specs: ["1 nieuwe landingspagina", "Tekststructuur voor dienst of regio", "CTA en contactblok", "Basis SEO-opbouw"] },
+          { id: "logo_design", label: "Logo ontwerpen", category: "Branding", once: 350, monthly: 0, price: "vanaf €350 eenmalig", description: "Professioneel basislogo met bestanden voor web en socials.", specs: ["Logo concept op basis van merkstijl", "Kleuren en typografie voorstel", "PNG/SVG bestanden voor web", "Social media profielformaat"] },
+          { id: "google_business", label: "Google Bedrijf instellen", category: "Marketing", once: 195, monthly: 0, price: "€195 eenmalig", description: "Profiel, diensten, foto’s en eerste optimalisatie.", specs: ["Google Bedrijfsprofiel controle", "Diensten en werkgebied invullen", "Foto’s en omschrijving optimaliseren", "Eerste vindbaarheid-check"] },
+          { id: "meta_ads", label: "Meta advertenties", category: "Marketing", once: 350, monthly: 249, price: "€350 setup + €249 / maand", description: "Campagne klaarzetten en optimaliseren.", specs: ["Campagne setup voor Facebook/Instagram", "Doelgroep en regio instellen", "Advertentieconcept en CTA", "Maandelijks beheer en optimalisatie"] },
+          { id: "google_ads", label: "Google Ads", category: "Marketing", once: 450, monthly: 299, price: "€450 setup + €299 / maand", description: "Zoekcampagnes voor offerte-aanvragen.", specs: ["Zoekwoorden en regio onderzoek", "Campagnestructuur en advertentieteksten", "Conversiegerichte landingsroute", "Maandelijks beheer en optimalisatie"] },
+          { id: "automation", label: "Automatisering", category: "Automatisering", once: 395, monthly: 0, price: "vanaf €395 eenmalig", description: "Forms, opvolgmails en CRM-koppeling.", specs: ["Slim formulier of intakeflow", "Automatische opvolgmail", "CRM-koppeling waar mogelijk", "Test en oplevering"] },
+          { id: "social_media", label: "Social media", category: "Social media", once: 0, monthly: 299, price: "vanaf €299 / maand", description: "Posts, planning en basis contentkalender.", specs: ["Contentplanning per maand", "Social posts in huisstijl", "Basis captions en hashtags", "Publicatievoorbereiding"] },
         ];
 
         function brandIconHtml(id = "") {
@@ -23930,7 +23930,11 @@
                 ${selected.map((item) => `
                   <div>
                     <span class="demo-upsell-mail-item-icon" data-upsell-icon="${escapeHtml(item.id)}">${brandIconHtml(item.id)}</span>
-                    <span><strong>${escapeHtml(item.label)}</strong><small>${escapeHtml(item.description || item.category)}</small></span>
+                    <span>
+                      <strong>${escapeHtml(item.label)}</strong>
+                      <small>${escapeHtml(item.description || item.category)}</small>
+                      <ul>${(item.specs || []).map((spec) => `<li>${escapeHtml(spec)}</li>`).join("")}</ul>
+                    </span>
                     <em>${escapeHtml(item.price)}</em>
                   </div>
                 `).join("")}

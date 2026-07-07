@@ -885,7 +885,8 @@ function buildUpsellProposalEmail({ journey = {}, savedDemoSite = {}, workflow =
     <tr>
       <td style="padding:14px 0;border-bottom:1px solid #e5e7eb;">
         <strong style="display:block;color:#07111f;font-size:16px;">${escapeHtml(item.label)}</strong>
-        <span style="display:block;color:#64748b;font-size:13px;margin-top:4px;">${escapeHtml(item.category || "Meerwerk")}</span>
+        <span style="display:block;color:#64748b;font-size:13px;margin-top:4px;">${escapeHtml(item.description || item.category || "Meerwerk")}</span>
+        ${Array.isArray(item.specs) && item.specs.length ? `<ul style="margin:10px 0 0;padding:0;list-style:none;color:#475569;font-size:13px;line-height:1.55;">${item.specs.map((spec) => `<li style="margin:3px 0;">✓ ${escapeHtml(spec)}</li>`).join("")}</ul>` : ""}
       </td>
       <td align="right" style="padding:14px 0;border-bottom:1px solid #e5e7eb;color:#2563eb;font-weight:800;white-space:nowrap;">${escapeHtml(item.price)}</td>
     </tr>
@@ -896,7 +897,7 @@ function buildUpsellProposalEmail({ journey = {}, savedDemoSite = {}, workflow =
 We hebben een aanvullend voorstel klaargezet voor ${business}.
 
 Geselecteerde diensten:
-${items.map((item) => `- ${item.label}: ${item.price}`).join("\n")}
+${items.map((item) => `- ${item.label}: ${item.price}${Array.isArray(item.specs) && item.specs.length ? `\n  ${item.specs.map((spec) => `• ${spec}`).join("\n  ")}` : ""}`).join("\n")}
 
 Startdatum: ${startDate}
 Eenmalig: ${once} ex. btw
@@ -1449,6 +1450,8 @@ function sanitizeUpsellItems(items = []) {
       once: Math.max(0, Number(item?.once || 0)),
       monthly: Math.max(0, Number(item?.monthly || 0)),
       price: cleanText(item?.price).slice(0, 120),
+      description: cleanText(item?.description).slice(0, 240),
+      specs: Array.isArray(item?.specs) ? item.specs.slice(0, 8).map((spec) => cleanText(spec).slice(0, 140)).filter(Boolean) : [],
     };
   }).filter((item) => item.id);
 }

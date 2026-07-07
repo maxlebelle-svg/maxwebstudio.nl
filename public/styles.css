@@ -15901,7 +15901,7 @@ h3 {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 12px;
-  align-items: center;
+  align-items: start;
   padding: 14px 0;
   border-bottom: 1px solid #e5e7eb;
 }
@@ -15931,6 +15931,31 @@ h3 {
   color: #64748b;
   font-size: 12px;
   line-height: 1.35;
+}
+
+.demo-upsell-mail-items ul {
+  display: grid;
+  gap: 4px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.demo-upsell-mail-items li {
+  position: relative;
+  padding-left: 18px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.demo-upsell-mail-items li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: #0f766e;
+  font-weight: 950;
 }
 
 .demo-upsell-mail-items em {
