@@ -399,6 +399,23 @@
                 <button class="button secondary" id="leadfinder-reset" type="button">Formulier leegmaken</button>
                 <p class="admin-form-message" id="leadfinder-message" role="status"></p>
               </div>
+              <details class="lead-analysis-card lead-generator-analysis-card" id="lead-website-analysis-card" open>
+                <summary>
+                  <span>
+                    <strong>Website-analyse</strong>
+                    <small>Scan eerst de huidige website voordat je deze prospect opslaat.</small>
+                  </span>
+                  <mark class="status-badge status-prepared" id="lead-website-analysis-state">Niet uitgevoerd</mark>
+                </summary>
+                <div class="lead-analysis-panel">
+                  <button class="button primary" id="lead-website-analysis-run" type="button" disabled>Website analyseren</button>
+                  <button class="button secondary" id="lead-website-analysis-sync" type="button" disabled>Opnieuw synchroniseren</button>
+                  <div class="lead-analysis-result" id="lead-website-analysis-result">
+                    Neem een website over via Google Maps of vul handmatig een website URL in.
+                  </div>
+                  <p class="admin-form-message" id="lead-website-analysis-message" role="status"></p>
+                </div>
+              </details>
             </form>
 
             <article class="admin-card leadfinder-detail-card" id="leadfinder-detail">
@@ -500,24 +517,6 @@
                   <button class="button secondary danger sales-delete-lead-button" id="leadfinder-delete" type="button" disabled>Definitief verwijderen</button>
                 </div>
               </section>
-
-              <details class="lead-analysis-card sales-detail-wide-card" id="lead-website-analysis-card" data-sales-detail-panel="analysis" open>
-                <summary>
-                  <span>
-                    <strong>Website-analyse</strong>
-                    <small>Handmatige scan voor verkoopkansen</small>
-                  </span>
-                  <mark class="status-badge status-prepared" id="lead-website-analysis-state">Niet uitgevoerd</mark>
-                </summary>
-                <div class="lead-analysis-panel">
-                  <button class="button primary" id="lead-website-analysis-run" type="button" disabled>Website analyseren</button>
-                  <button class="button secondary" id="lead-website-analysis-sync" type="button" disabled>Opnieuw synchroniseren</button>
-                  <div class="lead-analysis-result" id="lead-website-analysis-result">
-                    Selecteer een lead met website om een homepage-analyse uit te voeren.
-                  </div>
-                  <p class="admin-form-message" id="lead-website-analysis-message" role="status"></p>
-                </div>
-              </details>
 
               <details class="lead-welcome-card sales-detail-wide-card" id="lead-agenda-planner-card">
                 <summary>
@@ -23576,6 +23575,7 @@
         });
         leadfinderElements.website?.addEventListener("input", () => {
           setManualScoreFromAnalysis(getDraftWebsiteAnalysisForForm());
+          renderLeadWebsiteAnalysis(null);
         });
                 leadfinderElements.cockpitBar?.addEventListener("click", handleSalesKpiClick);
                 leadfinderElements.cockpitBar?.addEventListener("keydown", handleSalesKpiKeydown);

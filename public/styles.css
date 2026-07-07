@@ -13740,8 +13740,8 @@ h3 {
 
 .lead-card {
   display: grid;
-  grid-template-columns: minmax(360px, 1.55fr) minmax(150px, 0.55fr) minmax(220px, 0.72fr) minmax(310px, 0.9fr);
-  gap: 22px;
+  grid-template-columns: minmax(300px, 1.35fr) minmax(130px, 0.44fr) minmax(190px, 0.62fr) minmax(250px, 0.78fr);
+  gap: 18px;
   align-items: center;
   min-width: 0;
   padding: 26px;
@@ -13892,7 +13892,7 @@ h3 {
 
 .lead-contact-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, max-content));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   margin-top: 18px;
 }
@@ -13901,7 +13901,9 @@ h3 {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  max-width: 230px;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
   min-height: 38px;
   padding: 9px 12px;
   overflow: hidden;
@@ -13914,6 +13916,10 @@ h3 {
   text-decoration: none;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.lead-contact-grid a span {
+  flex: 0 0 auto;
 }
 
 .lead-contact-grid a[aria-disabled="true"],
@@ -14013,7 +14019,7 @@ h3 {
 
 .lead-card-actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -14042,7 +14048,7 @@ h3 {
 }
 
 .lead-view-button {
-  grid-column: span 2;
+  grid-column: 1 / -1;
   grid-template-columns: auto auto;
   min-height: 56px;
 }
