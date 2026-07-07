@@ -14073,6 +14073,161 @@ h3 {
   color: rgba(248, 251, 255, 0.86);
 }
 
+.admin-body.is-sales-view .sales-call-script-panel {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid rgba(96, 165, 250, 0.18);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(15, 35, 55, 0.82), rgba(5, 18, 31, 0.92)),
+    rgba(2, 14, 25, 0.78);
+}
+
+.admin-body.is-sales-view .sales-call-script-head,
+.admin-body.is-sales-view .sales-call-script-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.admin-body.is-sales-view .sales-call-script-head > div {
+  min-width: 0;
+}
+
+.admin-body.is-sales-view .sales-call-script-head span,
+.admin-body.is-sales-view .sales-call-script-block strong,
+.admin-body.is-sales-view .sales-call-choice-groups strong {
+  display: block;
+  color: rgba(56, 189, 248, 0.92);
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.admin-body.is-sales-view .sales-call-script-head strong {
+  display: block;
+  margin-top: 3px;
+  overflow: hidden;
+  color: #f8fbff;
+  font-size: 22px;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-body.is-sales-view .sales-call-contact-grid,
+.admin-body.is-sales-view .sales-call-question-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-body.is-sales-view .sales-call-contact-grid label,
+.admin-body.is-sales-view .sales-call-question-grid label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: rgba(226, 236, 248, 0.72);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.admin-body.is-sales-view .sales-call-wide {
+  grid-column: 1 / -1;
+}
+
+.admin-body.is-sales-view .sales-call-contact-grid input,
+.admin-body.is-sales-view .sales-call-question-grid textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  box-sizing: border-box;
+  border: 1px solid rgba(171, 196, 224, 0.14);
+  border-radius: 8px;
+  background: rgba(2, 14, 25, 0.78);
+  color: #f8fbff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.admin-body.is-sales-view .sales-call-question-grid textarea {
+  min-height: 74px;
+  resize: vertical;
+  line-height: 1.35;
+}
+
+.admin-body.is-sales-view .sales-call-script-block {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid rgba(52, 211, 153, 0.16);
+  border-radius: 8px;
+  background: rgba(6, 78, 59, 0.16);
+}
+
+.admin-body.is-sales-view .sales-call-script-block p {
+  margin: 0;
+  color: rgba(248, 251, 255, 0.82);
+  font-size: 13px;
+  font-weight: 720;
+  line-height: 1.5;
+}
+
+.admin-body.is-sales-view .sales-call-choice-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-body.is-sales-view .sales-call-choice-groups > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid rgba(147, 197, 253, 0.14);
+  border-radius: 8px;
+  background: rgba(15, 32, 52, 0.5);
+}
+
+.admin-body.is-sales-view .sales-call-choice-groups strong {
+  flex: 1 0 100%;
+}
+
+.admin-body.is-sales-view .sales-call-choice-groups button {
+  min-height: 32px;
+  padding: 7px 10px;
+  border: 1px solid rgba(96, 165, 250, 0.24);
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.14);
+  color: rgba(226, 236, 248, 0.9);
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.admin-body.is-sales-view .sales-call-choice-groups button:hover,
+.admin-body.is-sales-view .sales-call-choice-groups button:focus-visible {
+  border-color: rgba(96, 165, 250, 0.58);
+  background: rgba(37, 99, 235, 0.28);
+  color: #fff;
+}
+
+.admin-body.is-sales-view .sales-call-script-actions {
+  align-items: stretch;
+}
+
+.admin-body.is-sales-view .sales-call-script-actions .button {
+  flex: 1 1 0;
+}
+
 .admin-body.is-sales-view .sales-workflow-card textarea {
   min-height: 82px;
   resize: vertical;
@@ -22182,6 +22337,18 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   }
 
   .lead-callback-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-body.is-sales-view .sales-call-script-head,
+  .admin-body.is-sales-view .sales-call-script-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-body.is-sales-view .sales-call-contact-grid,
+  .admin-body.is-sales-view .sales-call-question-grid,
+  .admin-body.is-sales-view .sales-call-choice-groups {
     grid-template-columns: 1fr;
   }
 

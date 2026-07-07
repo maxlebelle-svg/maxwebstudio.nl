@@ -465,6 +465,74 @@
                     <div class="sales-timeline-empty">Selecteer een lead om de verkoopgeschiedenis te zien.</div>
                   </div>
                 </div>
+                <div class="sales-call-script-panel" id="leadfinder-call-script-panel">
+                  <div class="sales-call-script-head">
+                    <div>
+                      <span>Belmodus</span>
+                      <strong>Preview-aanbod script</strong>
+                    </div>
+                    <button class="button primary" id="leadfinder-make-demo-now" type="button" disabled>Maak demo site nu</button>
+                  </div>
+                  <div class="sales-call-contact-grid">
+                    <label>Contactpersoon<input id="leadfinder-call-contact-name" type="text" placeholder="Naam contactpersoon" /></label>
+                    <label>Rol / beslisser<input id="leadfinder-call-decision-role" type="text" placeholder="Bijv. eigenaar, manager, kijkt mee" /></label>
+                    <label>Telefoon<input id="leadfinder-call-phone" type="tel" placeholder="Telefoonnummer" /></label>
+                    <label>E-mail<input id="leadfinder-call-email" type="email" placeholder="E-mailadres" /></label>
+                    <label class="sales-call-wide">Adres<input id="leadfinder-call-address" type="text" placeholder="Straat, postcode, plaats" /></label>
+                    <label>Website<input id="leadfinder-call-website" type="url" placeholder="Website URL" /></label>
+                  </div>
+                  <div class="sales-call-script-block">
+                    <strong>Start van het gesprek</strong>
+                    <p>Hoi, je spreekt met <span data-call-employee-name>[naam medewerker]</span> van Max Web Studio. Ik bel je heel kort. Ik ben al 8 jaar professioneel website designer en ik heb bedrijven hier in de buurt bekeken. Jouw bedrijf viel me op, omdat ik denk dat er online nog kansen liggen op uitstraling, vertrouwen en vindbaarheid.</p>
+                    <p>Ik wil vrijblijvend een website-preview voor je maken. Vind je het niks? Dan betaal je niets. Vind je het interessant, dan kunnen we hem afmaken voor €495,- exclusief btw. Mag ik heel kort een paar vragen stellen?</p>
+                  </div>
+                  <div class="sales-call-question-grid" id="leadfinder-call-question-grid">
+                    <label>Wat doen jullie precies?<textarea data-call-field="companySummary" rows="2" placeholder="Korte omschrijving bedrijf"></textarea></label>
+                    <label>Belangrijkste diensten/producten<textarea data-call-field="importantServices" rows="2" placeholder="Bijv. behandelingen, producten, diensten"></textarea></label>
+                    <label>Welke klanten willen jullie aantrekken?<textarea data-call-field="targetAudience" rows="2" placeholder="Doelgroep"></textarea></label>
+                    <label>Wat mag beter aan de huidige uitstraling?<textarea data-call-field="currentProblem" rows="2" placeholder="Verbeterpunten"></textarea></label>
+                    <label>Wat moet de demo laten zien?<textarea data-call-field="demoFocus" rows="2" placeholder="Wat moet terugkomen in de preview"></textarea></label>
+                    <label>Stijl / voorbeelden<textarea data-call-field="stylePreference" rows="2" placeholder="Modern, warm, luxe, kleuren, voorbeeldsites"></textarea></label>
+                  </div>
+                  <div class="sales-call-choice-groups" id="leadfinder-call-choice-groups">
+                    <div>
+                      <strong>Contact</strong>
+                      <button type="button" data-call-choice="Beslisser: ja">Beslisser</button>
+                      <button type="button" data-call-choice="Beslisser: iemand kijkt mee">Iemand kijkt mee</button>
+                      <button type="button" data-call-choice="Vervolg: WhatsApp sturen">WhatsApp sturen</button>
+                      <button type="button" data-call-choice="Vervolg: later terugbellen">Later terugbellen</button>
+                    </div>
+                    <div>
+                      <strong>Website</strong>
+                      <button type="button" data-call-choice="Heeft complete website: ja">Heeft website</button>
+                      <button type="button" data-call-choice="Heeft complete website: nee">Geen website</button>
+                      <button type="button" data-call-choice="Website wens: mooiere uitstraling">Mooiere uitstraling</button>
+                      <button type="button" data-call-choice="Website wens: beter vindbaar">Beter vindbaar</button>
+                      <button type="button" data-call-choice="Website wens: meer aanvragen">Meer aanvragen</button>
+                      <button type="button" data-call-choice="Website wens: duidelijkere informatie">Duidelijker info</button>
+                    </div>
+                    <div>
+                      <strong>Demo stijl</strong>
+                      <button type="button" data-call-choice="Gewenste stijl: modern en strak">Modern strak</button>
+                      <button type="button" data-call-choice="Gewenste stijl: warm en persoonlijk">Warm persoonlijk</button>
+                      <button type="button" data-call-choice="Gewenste stijl: luxe">Luxe</button>
+                      <button type="button" data-call-choice="Gewenste stijl: rustig">Rustig</button>
+                      <button type="button" data-call-choice="Gewenste stijl: praktisch en duidelijk">Praktisch</button>
+                    </div>
+                    <div>
+                      <strong>Uitkomst</strong>
+                      <button type="button" data-call-choice="Demo interesse: ja, demo maken">Demo interessant</button>
+                      <button type="button" data-call-choice="Demo interesse: twijfel, eerst WhatsApp">Twijfel</button>
+                      <button type="button" data-call-choice="Demo interesse: niet interessant">Niet interessant</button>
+                      <button type="button" data-call-choice="Logische volgende stap: demo-preview voorbereiden">Preview voorbereiden</button>
+                    </div>
+                  </div>
+                  <div class="sales-call-script-actions">
+                    <button class="button secondary" id="leadfinder-fill-call-details" type="button" disabled>Contact/adres invullen</button>
+                    <button class="button secondary" id="leadfinder-build-call-script" type="button" disabled>Belscript bijwerken</button>
+                    <button class="button secondary" id="leadfinder-copy-closing" type="button" disabled>Afsluiting kopiëren</button>
+                  </div>
+                </div>
                 <label class="sales-note-control sales-intake-control" for="leadfinder-detail-intake">
                   <span>Vragenlijst / belscript</span>
                   <textarea id="leadfinder-detail-intake" placeholder="Zet de vragenlijst klaar en vul de antwoorden tijdens het gesprek in."></textarea>
@@ -19434,6 +19502,19 @@
         ownerAssignmentSave: document.getElementById("sales-lead-owner-save"),
         ownerAssignmentMessage: document.getElementById("sales-lead-owner-message"),
         contactList: document.getElementById("sales-lead-contact-list"),
+        callScriptPanel: document.getElementById("leadfinder-call-script-panel"),
+        makeDemoNow: document.getElementById("leadfinder-make-demo-now"),
+        callContactName: document.getElementById("leadfinder-call-contact-name"),
+        callDecisionRole: document.getElementById("leadfinder-call-decision-role"),
+        callPhone: document.getElementById("leadfinder-call-phone"),
+        callEmail: document.getElementById("leadfinder-call-email"),
+        callAddress: document.getElementById("leadfinder-call-address"),
+        callWebsite: document.getElementById("leadfinder-call-website"),
+        callQuestionGrid: document.getElementById("leadfinder-call-question-grid"),
+        callChoiceGroups: document.getElementById("leadfinder-call-choice-groups"),
+        fillCallDetails: document.getElementById("leadfinder-fill-call-details"),
+        buildCallScript: document.getElementById("leadfinder-build-call-script"),
+        copyClosing: document.getElementById("leadfinder-copy-closing"),
         detailIntake: document.getElementById("leadfinder-detail-intake"),
         detailNote: document.getElementById("leadfinder-detail-note"),
         detailCallStatus: document.getElementById("leadfinder-detail-call-status"),
@@ -19523,6 +19604,7 @@
       const SALES_EMPLOYEE_FILTER_ROLES = new Set(["super_admin", "admin", "sales_manager", "sales_partner", "support", "designer", "developer"]);
       let leadfinderEmployeeFilterTokenMap = new Map();
       let legacyLeadImportRows = [];
+      let activeCallScriptLeadId = "";
 
       function escapeHtml(value) {
         return String(value || "").replace(/[&<>"']/g, (character) => ({
@@ -21636,6 +21718,304 @@
         ].join("\n").trim();
       }
 
+      function leadDisplayAddress(lead = {}) {
+        return lead.address || lead.formattedAddress || lead.googleAddress || [lead.street, lead.postalCode, lead.city || lead.region].filter(Boolean).join(", ") || lead.region || "";
+      }
+
+      function callScriptFields() {
+        return {
+          companySummary: leadfinderElements.callQuestionGrid?.querySelector('[data-call-field="companySummary"]'),
+          importantServices: leadfinderElements.callQuestionGrid?.querySelector('[data-call-field="importantServices"]'),
+          targetAudience: leadfinderElements.callQuestionGrid?.querySelector('[data-call-field="targetAudience"]'),
+          currentProblem: leadfinderElements.callQuestionGrid?.querySelector('[data-call-field="currentProblem"]'),
+          demoFocus: leadfinderElements.callQuestionGrid?.querySelector('[data-call-field="demoFocus"]'),
+          stylePreference: leadfinderElements.callQuestionGrid?.querySelector('[data-call-field="stylePreference"]'),
+        };
+      }
+
+      function readCallScriptFieldValues() {
+        const fields = callScriptFields();
+        return {
+          contactName: leadfinderElements.callContactName?.value.trim() || "",
+          decisionRole: leadfinderElements.callDecisionRole?.value.trim() || "",
+          phone: leadfinderElements.callPhone?.value.trim() || "",
+          email: leadfinderElements.callEmail?.value.trim() || "",
+          address: leadfinderElements.callAddress?.value.trim() || "",
+          website: leadfinderElements.callWebsite?.value.trim() || "",
+          companySummary: fields.companySummary?.value.trim() || "",
+          importantServices: fields.importantServices?.value.trim() || "",
+          targetAudience: fields.targetAudience?.value.trim() || "",
+          currentProblem: fields.currentProblem?.value.trim() || "",
+          demoFocus: fields.demoFocus?.value.trim() || "",
+          stylePreference: fields.stylePreference?.value.trim() || "",
+        };
+      }
+
+      function setCallFieldValue(field, value = "", force = false) {
+        if (!field) return;
+        if (force || !String(field.value || "").trim()) field.value = value || "";
+      }
+
+      function fillCallScriptDetailsFromLead(lead = {}, options = {}) {
+        const force = Boolean(options.force);
+        if (!lead?.id) return;
+        const notes = [getLeadNotes(lead), leadfinderElements.detailIntake?.value || ""].filter(Boolean).join("\n\n");
+        setCallFieldValue(leadfinderElements.callContactName, lead.contactName || readLeadIntakeField(notes, ["Wat is je naam", "Contactpersoon"]), force);
+        setCallFieldValue(leadfinderElements.callDecisionRole, readLeadIntakeField(notes, ["Ben jij degene die hierover beslist", "Beslisser"]), force);
+        setCallFieldValue(leadfinderElements.callPhone, lead.phone || "", force);
+        setCallFieldValue(leadfinderElements.callEmail, lead.email || "", force);
+        setCallFieldValue(leadfinderElements.callAddress, leadDisplayAddress(lead), force);
+        setCallFieldValue(leadfinderElements.callWebsite, lead.websiteUrl || "", force);
+        const fields = callScriptFields();
+        setCallFieldValue(fields.companySummary, readLeadIntakeField(notes, ["Kun je kort vertellen wat jullie precies doen", "Bedrijf", "Bedrijfssamenvatting"]) || lead.companyName || "", force);
+        setCallFieldValue(fields.importantServices, readLeadIntakeField(notes, ["Welke diensten, behandelingen of producten", "Belangrijkste diensten"]), force);
+        setCallFieldValue(fields.targetAudience, readLeadIntakeField(notes, ["Wat voor klanten willen jullie vooral aantrekken", "Gewenste klanten", "Doelgroep"]), force);
+        setCallFieldValue(fields.currentProblem, readLeadIntakeField(notes, ["dat mag wel beter", "Grootste verbeterpunt", "Wat mag beter"]), force);
+        setCallFieldValue(fields.demoFocus, readLeadIntakeField(notes, ["Als wij vrijblijvend een korte demo/preview maken", "Demo focus", "Preview focus"]), force);
+        setCallFieldValue(fields.stylePreference, readLeadIntakeField(notes, ["Wil je dat de demo vooral", "Gewenste stijl", "Stijl"]), force);
+      }
+
+      function buildCallScriptBriefing(lead = selectedLeadFinderLead()) {
+        const values = readCallScriptFieldValues();
+        const bedrijf = lead?.companyName || values.companySummary || "[bedrijfsnaam]";
+        const contact = values.contactName || lead?.contactName || "";
+        return [
+          "START VAN HET GESPREK",
+          "",
+          "Hoi, je spreekt met [naam medewerker] van Max Web Studio.",
+          "",
+          "Ik bel je heel kort. Ik ben al 8 jaar professioneel website designer en ik heb de afgelopen tijd bedrijven hier in de buurt bekeken. Jouw bedrijf viel me op, omdat ik denk dat er online nog kansen liggen op het gebied van uitstraling, vertrouwen en vindbaarheid.",
+          "",
+          "Ik zal meteen eerlijk met de deur in huis vallen: ik wil vrijblijvend een website-preview voor je maken.",
+          "",
+          "Helemaal compleet genoeg om rustig te bekijken. Vind je het niks? Dan is dat helemaal prima en betaal je niets. Vind je het wel interessant, dan kunnen we hem voor je afmaken voor een kleine vergoeding van EUR 495,- exclusief btw.",
+          "",
+          "Klinkt best aardig toch?",
+          "",
+          "Mag ik je heel kort een paar vragen stellen, zodat ik weet wat voor jou belangrijk is om in die preview terug te laten komen?",
+          "",
+          "CONTACT / ADRES",
+          "",
+          "1. Spreek ik met de juiste contactpersoon hiervoor?",
+          "Antwoord:",
+          "",
+          "2. Wat is je naam?",
+          `Antwoord: ${contact}`,
+          "",
+          "3. Ben jij degene die hierover beslist, of kijkt iemand anders daarin mee?",
+          `Antwoord: ${values.decisionRole}`,
+          "",
+          `Telefoon: ${values.phone || lead?.phone || ""}`,
+          `E-mail: ${values.email || lead?.email || ""}`,
+          `Adres: ${values.address || leadDisplayAddress(lead)}`,
+          `Website: ${values.website || lead?.websiteUrl || ""}`,
+          "",
+          "BEDRIJF",
+          "",
+          "4. Kun je kort vertellen wat jullie precies doen?",
+          `Antwoord: ${values.companySummary || bedrijf}`,
+          "",
+          "5. Welke diensten, behandelingen of producten zijn voor jullie het belangrijkst?",
+          `Antwoord: ${values.importantServices}`,
+          "",
+          "6. Wat voor klanten willen jullie vooral aantrekken?",
+          `Antwoord: ${values.targetAudience}`,
+          "",
+          "HUIDIGE WEBSITE / ONLINE UITSTRALING",
+          "",
+          "7. Hebben jullie op dit moment al een complete website?",
+          `Antwoord: ${lead?.websiteUrl ? "Ja" : "Onbekend"}`,
+          "",
+          "8. Als je eerlijk bent, ben je tevreden met hoe jullie nu online overkomen?",
+          "Antwoord:",
+          "",
+          "9. Is er iets aan de huidige website of online uitstraling waarvan je denkt: dat mag wel beter?",
+          `Antwoord: ${values.currentProblem}`,
+          "",
+          "WENSEN",
+          "",
+          "10. Als je één ding mocht verbeteren aan jullie website of online presentatie, wat zou dat zijn?",
+          "Antwoord:",
+          "",
+          "11. Gaat het voor jou vooral om een mooiere uitstraling, beter gevonden worden, meer aanvragen, duidelijkere informatie, of iets anders?",
+          "Antwoord:",
+          "",
+          "12. Zijn er bepaalde diensten, behandelingen, producten of voordelen die duidelijker naar voren mogen komen?",
+          `Antwoord: ${values.importantServices}`,
+          "",
+          "VRIJBLIJVENDE DEMO",
+          "",
+          "13. Als wij vrijblijvend een korte demo/preview maken, wat zou je daar dan graag in terugzien?",
+          `Antwoord: ${values.demoFocus}`,
+          "",
+          "14. Wil je dat de demo vooral modern en strak voelt, warm en persoonlijk, luxe, rustig, of juist praktisch en duidelijk?",
+          `Antwoord: ${values.stylePreference}`,
+          "",
+          "15. Zijn er websites, kleuren of stijlen die je mooi vindt?",
+          `Antwoord: ${values.stylePreference}`,
+          "",
+          "TIMING",
+          "",
+          "16. Zou je er blij van worden als je website, uitstraling of vindbaarheid beter wordt dan nu?",
+          "Antwoord:",
+          "",
+          "17. Als de demo goed voelt en je denkt: ja, dit past bij ons, zou het dan logisch zijn om daarna samen verder te kijken?",
+          "Antwoord:",
+          "",
+          "AFSLUITING",
+          "",
+          "Top, dank je wel. Dat is duidelijk.",
+          "",
+          `Op basis hiervan kan ik vrijblijvend een korte preview maken, zodat je gewoon rustig kunt zien wat er mogelijk is voor ${bedrijf}. Je zit nergens aan vast.`,
+          "",
+          "Ik stuur je zo nog even een WhatsApp-berichtje ter bevestiging. Dan kun je daar makkelijk op reageren als je nog iets wilt aanvullen.",
+          "",
+          "DEMO BRIEFING VOOR WEBSITE FACTORY",
+          "",
+          `Bedrijfsnaam: ${lead?.companyName || bedrijf}`,
+          `Contactpersoon: ${contact}`,
+          `Telefoon: ${values.phone || lead?.phone || ""}`,
+          `E-mail: ${values.email || lead?.email || ""}`,
+          `Adres: ${values.address || leadDisplayAddress(lead)}`,
+          `Website URL: ${values.website || lead?.websiteUrl || ""}`,
+          `Branche: ${lead?.industry || ""}`,
+          `Regio: ${lead?.region || ""}`,
+          `Bedrijfssamenvatting: ${values.companySummary}`,
+          `Belangrijkste diensten: ${values.importantServices}`,
+          `Doelgroep: ${values.targetAudience}`,
+          `Grootste verbeterpunt: ${values.currentProblem}`,
+          `Demo focus: ${values.demoFocus}`,
+          `Gewenste stijl: ${values.stylePreference}`,
+          "Websitepakket: Starter Site EUR 495",
+          "CTA voorkeur: Contact opnemen / WhatsApp / Offerte aanvragen",
+          "Leadstatus advies: Preview aangevraagd",
+        ].join("\n");
+      }
+
+      function updateCallScriptIntake(options = {}) {
+        const lead = selectedLeadFinderLead();
+        if (!lead || !leadfinderElements.detailIntake) return "";
+        const script = buildCallScriptBriefing(lead);
+        const current = String(leadfinderElements.detailIntake.value || "").trim();
+        if (options.replace !== false || !current) {
+          leadfinderElements.detailIntake.value = script;
+        } else {
+          leadfinderElements.detailIntake.value = [current, script].filter(Boolean).join("\n\n");
+        }
+        rememberLeadSalesDraft(lead);
+        setNoteSyncStatus("local", "Belscript bijgewerkt. Kies Notitie opslaan of Maak demo site nu.");
+        return script;
+      }
+
+      function appendCallScriptChoice(choice = "") {
+        const lead = selectedLeadFinderLead();
+        if (!lead || !leadfinderElements.detailIntake) return;
+        const line = String(choice || "").trim();
+        if (!line) return;
+        const current = String(leadfinderElements.detailIntake.value || "").trim();
+        leadfinderElements.detailIntake.value = [current, line].filter(Boolean).join("\n");
+        rememberLeadSalesDraft(lead);
+        setNoteSyncStatus("local", "Keuze toegevoegd aan het belscript.");
+      }
+
+      function leadDemoPendingPayload(lead = selectedLeadFinderLead()) {
+        const notes = composeLeadSalesNotes(leadfinderElements.detailIntake?.value || "", leadfinderElements.detailNote?.value || "") || getLeadNotes(lead);
+        const values = readCallScriptFieldValues();
+        const styleText = values.stylePreference.toLowerCase();
+        const serviceText = values.importantServices.toLowerCase();
+        const demoFactoryIntake = {
+          branch: String(lead?.industry || "").toLowerCase().includes("bouw") ? "bouw" : "",
+          goal: /aanvragen|leads|contact/i.test(notes) ? "leads" : "trust",
+          package: "starter",
+          style: [
+            styleText.includes("luxe") ? "luxe" : "",
+            styleText.includes("rustig") ? "rustig" : "",
+            styleText.includes("warm") || styleText.includes("persoonlijk") ? "lokaal" : "",
+            styleText.includes("modern") || styleText.includes("strak") ? "modern" : "",
+            "direct",
+          ].filter(Boolean),
+          cta: /whatsapp/i.test(notes) ? "whatsapp" : /offerte/i.test(notes) ? "quote" : "contact",
+          services: [
+            serviceText.includes("renovatie") ? "renovatie" : "",
+            serviceText.includes("onderhoud") ? "onderhoud" : "",
+            serviceText.includes("advies") ? "advies" : "",
+            serviceText.includes("maatwerk") ? "maatwerk" : "",
+            "projecten",
+          ].filter(Boolean),
+          area: "local",
+          audience: /zakelijk/i.test(values.targetAudience) ? "zakelijk" : /beide/i.test(values.targetAudience) ? "beide" : "particulier",
+          existingWebsite: values.website || lead?.websiteUrl ? "active" : "unknown",
+          logoStatus: "unknown",
+          photoStatus: "needed",
+          followUp: "today",
+          leadTemperature: Number(lead?.leadScore || 0) >= 70 ? "hot" : "medium",
+          mustHaves: ["phone", "contact_form", "reviews", "projects", "service_area"],
+          colors: styleText.includes("zwart") ? ["black"] : styleText.includes("goud") ? ["gold"] : ["brand"],
+          exampleWebsites: values.stylePreference,
+          internalRemark: [
+            values.currentProblem ? `Verbeterpunt: ${values.currentProblem}` : "",
+            values.demoFocus ? `Demo focus: ${values.demoFocus}` : "",
+            `Output nodig: index.html, styles.css, script.js, robots.txt, sitemap.xml, assets-map, live-upload-map, preview, demo-site en ZIP-download.`,
+          ].filter(Boolean).join("\n"),
+        };
+        return {
+          ...lead,
+          contactName: values.contactName || lead?.contactName || "",
+          phone: values.phone || lead?.phone || "",
+          email: values.email || lead?.email || "",
+          address: values.address || leadDisplayAddress(lead),
+          websiteUrl: values.website || lead?.websiteUrl || "",
+          notes,
+          demoBriefing: buildCallScriptBriefing(lead),
+          demoFactoryIntake,
+          demoOutputRequirements: ["index.html", "styles.css", "script.js", "robots.txt", "sitemap.xml", "assets/", "live-upload/", "preview", "demo-site", "zip-download"],
+          demoRequestSource: "sales_call_script",
+          demoRequestedAt: new Date().toISOString(),
+        };
+      }
+
+      async function makeDemoSiteNow() {
+        const lead = selectedLeadFinderLead();
+        if (!lead) return;
+        updateCallScriptIntake({ replace: true });
+        const pendingLead = leadDemoPendingPayload(lead);
+        const updates = {
+          notes: pendingLead.notes,
+          callStatus: "interesse",
+          contactName: pendingLead.contactName,
+          phone: pendingLead.phone,
+          email: pendingLead.email,
+          websiteUrl: pendingLead.websiteUrl,
+          address: pendingLead.address,
+        };
+        try {
+          await updateLeadfinderLead(lead, updates, "Demo-aanvraag opgeslagen. Website Factory wordt geopend.");
+        } catch (error) {
+          setLeadfinderMessage(error.message || "Demo-aanvraag lokaal voorbereid. Website Factory wordt geopend.", "warning");
+        }
+        sessionStorage.setItem("maxwebstudioPendingPreviewLead", JSON.stringify({ ...pendingLead, ...updates }));
+        window.location.href = `admin-website-factory.html?leadId=${encodeURIComponent(lead.id)}`;
+      }
+
+      async function copyCallScriptClosing() {
+        const lead = selectedLeadFinderLead();
+        if (!lead) return;
+        const bedrijf = lead.companyName || "[bedrijfsnaam]";
+        const text = [
+          "Top, dank je wel. Dat is duidelijk.",
+          "",
+          `Op basis hiervan kan ik vrijblijvend een korte preview maken, zodat je gewoon rustig kunt zien wat er mogelijk is voor ${bedrijf}. Je zit nergens aan vast.`,
+          "",
+          "Ik stuur je zo nog even een WhatsApp-berichtje ter bevestiging. Dan kun je daar makkelijk op reageren als je nog iets wilt aanvullen.",
+        ].join("\n");
+        try {
+          await navigator.clipboard.writeText(text);
+          setLeadfinderMessage("Afsluiting gekopieerd.", "success");
+        } catch {
+          setLeadfinderMessage("Kopiëren lukte niet. De afsluiting staat ook in het belscript.", "warning");
+        }
+      }
+
       function rememberLeadSalesDraft(lead = {}) {
         if (!lead?.id) return;
         rememberLeadNoteDraft(lead.id, composeLeadSalesNotes(leadfinderElements.detailIntake?.value || "", leadfinderElements.detailNote?.value || ""));
@@ -22657,12 +23037,31 @@
           const intakeDraft = draftSalesNotes.intake || savedSalesNotes.intake || "";
           if (document.activeElement !== leadfinderElements.detailIntake) leadfinderElements.detailIntake.value = intakeDraft;
         }
+        if (hasLead && activeCallScriptLeadId !== lead.id) {
+          activeCallScriptLeadId = lead.id;
+          fillCallScriptDetailsFromLead(lead, { force: true });
+        }
         if (leadfinderElements.detailNote) {
           const freeDraft = draftSalesNotes.free || (!draftSalesNotes.intake ? getLeadNoteDraft(lead) : "") || savedSalesNotes.free || "";
           if (document.activeElement !== leadfinderElements.detailNote) leadfinderElements.detailNote.value = freeDraft;
         }
         renderLeadNoteSyncStatus(lead);
         if (leadfinderElements.insertIntake) leadfinderElements.insertIntake.disabled = !hasLead;
+        if (leadfinderElements.fillCallDetails) leadfinderElements.fillCallDetails.disabled = !hasLead;
+        if (leadfinderElements.buildCallScript) leadfinderElements.buildCallScript.disabled = !hasLead;
+        if (leadfinderElements.copyClosing) leadfinderElements.copyClosing.disabled = !hasLead;
+        if (leadfinderElements.makeDemoNow) leadfinderElements.makeDemoNow.disabled = !hasLead;
+        [
+          leadfinderElements.callContactName,
+          leadfinderElements.callDecisionRole,
+          leadfinderElements.callPhone,
+          leadfinderElements.callEmail,
+          leadfinderElements.callAddress,
+          leadfinderElements.callWebsite,
+          ...Object.values(callScriptFields()),
+        ].forEach((element) => {
+          if (element) element.disabled = !hasLead;
+        });
         if (leadfinderElements.saveNote) leadfinderElements.saveNote.disabled = !hasLead;
         if (leadfinderElements.syncNote) leadfinderElements.syncNote.disabled = !hasLead || !hasQueuedLeadSync(lead.id, "notes");
         if (leadfinderElements.convertCustomer) leadfinderElements.convertCustomer.disabled = !hasLead;
@@ -23668,6 +24067,35 @@
         };
         leadfinderElements.detailIntake?.addEventListener("input", rememberSalesNoteInput);
         leadfinderElements.detailNote?.addEventListener("input", rememberSalesNoteInput);
+        [
+          leadfinderElements.callContactName,
+          leadfinderElements.callDecisionRole,
+          leadfinderElements.callPhone,
+          leadfinderElements.callEmail,
+          leadfinderElements.callAddress,
+          leadfinderElements.callWebsite,
+          ...Object.values(callScriptFields()),
+        ].forEach((element) => {
+          element?.addEventListener("input", rememberSalesNoteInput);
+          element?.addEventListener("change", rememberSalesNoteInput);
+        });
+        leadfinderElements.callChoiceGroups?.addEventListener("click", (event) => {
+          const button = event.target.closest("[data-call-choice]");
+          if (!button) return;
+          appendCallScriptChoice(button.dataset.callChoice || "");
+        });
+        leadfinderElements.fillCallDetails?.addEventListener("click", () => {
+          const lead = selectedLeadFinderLead();
+          if (!lead) return;
+          fillCallScriptDetailsFromLead(lead, { force: true });
+          updateCallScriptIntake({ replace: true });
+        });
+        leadfinderElements.buildCallScript?.addEventListener("click", () => {
+          updateCallScriptIntake({ replace: true });
+          leadfinderElements.detailIntake?.focus();
+        });
+        leadfinderElements.copyClosing?.addEventListener("click", copyCallScriptClosing);
+        leadfinderElements.makeDemoNow?.addEventListener("click", makeDemoSiteNow);
         leadfinderElements.saveNote?.addEventListener("click", saveLeadfinderDetailNote);
         leadfinderElements.insertIntake?.addEventListener("click", insertLeadIntakeChecklist);
         leadfinderElements.whatsappTemplate?.addEventListener("change", () => {
@@ -24401,6 +24829,9 @@
           if (lead.region && !intakeState.regionText) intakeState.regionText = lead.region;
           if (!intakeState.package) intakeState.package = packageTypeFromValue(lead.packageType || lead.package_type || elements.package?.value);
           if (!intakeState.leadTemperature && lead.leadScore) intakeState.leadTemperature = Number(lead.leadScore) >= 80 ? "hot" : Number(lead.leadScore) >= 60 ? "medium" : "cold";
+          if (lead.demoFactoryIntake && typeof lead.demoFactoryIntake === "object") {
+            intakeState = { ...intakeState, ...lead.demoFactoryIntake };
+          }
         }
 
         function renderIntakeFields() {
@@ -24794,9 +25225,24 @@
               lead.region ? `Regio: ${lead.region}` : "",
               lead.address ? `Adres: ${lead.address}` : "",
               lead.source ? `Bron: ${lead.source}` : "",
+              lead.demoRequestSource ? "Bron: belscript demo-aanvraag" : "",
+              lead.demoOutputRequirements?.length ? `Benodigde output: ${lead.demoOutputRequirements.join(", ")}` : "",
+              lead.demoBriefing ? `Belscript briefing:\n${lead.demoBriefing}` : "",
             ].filter(Boolean);
             if (elements.notes && !elements.notes.value && contextLines.length) {
               elements.notes.value = contextLines.join("\n");
+            }
+            if (elements.briefing && lead.demoBriefing && !elements.briefing.value) {
+              elements.briefing.value = [
+                lead.demoBriefing,
+                "",
+                "WEBSITE FACTORY OUTPUT",
+                "- Maak een werkende preview/demo site.",
+                "- Lever index.html, styles.css, script.js, robots.txt en sitemap.xml.",
+                "- Gebruik een assets-map voor logo's, afbeeldingen en iconen.",
+                "- Maak een live-upload map voor publicatie.",
+                "- Maak een ZIP-download voor upload/deployment.",
+              ].join("\n");
             }
             prefillIntakeFromLead(lead);
             renderIntakeFields();
@@ -24862,6 +25308,9 @@
             ``,
             `Gewenste output`,
             `Een interne demo-preview met duidelijke homepage, diensten/aanbod, contactblok, call-to-action en ruimte voor klantfeedback.`,
+            ``,
+            `Technische output voor oplevering`,
+            `Maak dezelfde basisstructuur als onze klantdemo's: index.html, styles.css, script.js, robots.txt, sitemap.xml, assets-map, live-upload-map en een downloadbare ZIP voor Netlify/live upload.`,
           ].join("\n");
         }
 
