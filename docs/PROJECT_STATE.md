@@ -60,6 +60,7 @@ Niet doen zonder expliciete GO:
 - automatische offertegeneratie;
 - nieuwe sales portals;
 - complexe salesmanager-dashboarding.
+- de dag-3 aanbetaling en dag-5 opleverlock live activeren; voorstel staat klaar in `docs/DELIVERY_PAYMENT_LOCK_WORKFLOW.md` en SQL-draft `supabase/migration-drafts/022_delivery_payment_lock_workflow.sql`.
 
 ## Project
 

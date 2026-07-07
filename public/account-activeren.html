@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex, nofollow" />
     <title>Account activeren | Max Webstudio</title>
-    <meta name="description" content="Activeer je Max Webstudio account en kies je wachtwoord." />
+    <meta name="description" content="Activeer je Max Webstudio klantaccount en open je klantportaal." />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -20,9 +20,9 @@
           <span>Max Webstudio</span>
         </a>
         <div>
-          <p class="section-kicker">Account activeren</p>
+          <p class="section-kicker" id="activation-kicker">Account activeren</p>
           <h1 id="activation-title">Welkom bij Max Webstudio.</h1>
-          <p>Kies je wachtwoord. Daarna kom je direct in je dashboard.</p>
+          <p id="activation-intro">Kies je wachtwoord. Daarna kom je direct in je klantportaal.</p>
         </div>
 
         <div class="portal-login-status-card" role="status" aria-live="polite">
@@ -40,13 +40,13 @@
         <p class="portal-message" id="activation-message" role="status" aria-live="polite"></p>
       </section>
       <aside class="portal-auth-aside">
-        <p class="section-kicker">Sales onboarding</p>
-        <h2>Welkom bij Max Webstudio Sales</h2>
-        <ul>
-          <li>Stap 1: Bekijk je leads.</li>
-          <li>Stap 2: Gebruik Google Maps Lead Generator.</li>
-          <li>Stap 3: Registreer elke belpoging.</li>
-          <li>Stap 4: Maak je eerste offerte.</li>
+        <p class="section-kicker" id="activation-aside-kicker">Klantomgeving</p>
+        <h2 id="activation-aside-title">Je klantomgeving staat veilig voor je klaar.</h2>
+        <ul id="activation-aside-list">
+          <li>Volg vanaf dag 1 de status van je project.</li>
+          <li>Bekijk berichten, planning en acties op een plek.</li>
+          <li>Ontvang op dag 3 je beveiligde preview in hetzelfde portaal.</li>
+          <li>Log later altijd opnieuw in via het klantportaal.</li>
         </ul>
       </aside>
     </main>
@@ -56,10 +56,30 @@
 
       const form = document.getElementById("activation-form");
       const message = document.getElementById("activation-message");
+      const kicker = document.getElementById("activation-kicker");
+      const intro = document.getElementById("activation-intro");
       const statusTitle = document.getElementById("activation-status-title");
       const statusText = document.getElementById("activation-status");
       const title = document.getElementById("activation-title");
       const submit = document.getElementById("activation-submit");
+      const asideKicker = document.getElementById("activation-aside-kicker");
+      const asideTitle = document.getElementById("activation-aside-title");
+      const asideList = document.getElementById("activation-aside-list");
+      const params = new URLSearchParams(window.location.search);
+      const activationMode = String(params.get("mode") || params.get("context") || "").toLowerCase();
+      const isPreviewActivation = activationMode === "preview" || params.has("previewToken");
+      const isCustomerActivation = isPreviewActivation || ["customer", "klant", "portal", "portaal", "onboarding", "project"].includes(activationMode) || params.has("projectId") || params.has("customerId");
+      const previewContext = {
+        mode: isPreviewActivation ? "preview" : isCustomerActivation ? "customer_portal" : "dashboard",
+        projectId: params.get("projectId") || params.get("project") || "",
+        token: params.get("token") || params.get("previewToken") || "",
+        customerId: params.get("customerId") || "",
+        email: String(params.get("email") || "").trim().toLowerCase(),
+        company: params.get("company") || "",
+        projectName: params.get("projectName") || params.get("project") || "Website preview",
+        previewUrl: params.get("previewUrl") || "",
+        paymentStep: params.get("paymentStep") || "deposit",
+      };
       const supabaseSessionKey = "maxwebstudioSupabaseAuthSession";
       const adminSessionKey = "mws_admin_supabase_session";
       const accessSessionKey = "maxwebstudioCurrentSession";
@@ -69,6 +89,43 @@
       function setMessage(text, type = "") {
         message.textContent = text;
         message.className = `portal-message ${type}`.trim();
+      }
+
+      function applyActivationCopy() {
+        if (previewContext.mode === "preview") {
+          kicker.textContent = "Preview activeren";
+          title.textContent = "Je website-preview staat klaar.";
+          intro.textContent = "Maak je klantaccount aan met je e-mailadres en eigen wachtwoord. Daarna openen we direct je beveiligde preview.";
+          statusTitle.textContent = "Previewlink controleren";
+          statusText.textContent = "We controleren je beveiligde preview-uitnodiging.";
+          submit.textContent = "Preview openen";
+          asideKicker.textContent = "Dag 3 preview";
+          asideTitle.textContent = "Alles vanaf nu in je klantportaal.";
+          asideList.innerHTML = [
+            "Je account wordt gekoppeld aan je dossier en website.",
+            "Je ziet de preview, planning en akkoordknop op een plek.",
+            "Na akkoord betaal je de aanbetaling veilig via Mollie.",
+            "Vanaf nu kun je blijven inloggen via het klantportaal.",
+          ].map((item) => `<li>${item}</li>`).join("");
+          return;
+        }
+
+        if (previewContext.mode === "customer_portal") {
+          kicker.textContent = "Klantportaal activeren";
+          title.textContent = "Je projectomgeving staat klaar.";
+          intro.textContent = "Maak je klantaccount aan met je e-mailadres en eigen wachtwoord. Vanaf dag 1 kun je je project volgen.";
+          statusTitle.textContent = "Uitnodiging controleren";
+          statusText.textContent = "We controleren je beveiligde klantportaal-uitnodiging.";
+          submit.textContent = "Klantportaal openen";
+          asideKicker.textContent = "Dag 1 klantportaal";
+          asideTitle.textContent = "Je hoeft niets kwijt te raken in losse mails.";
+          asideList.innerHTML = [
+            "Je dossier wordt gekoppeld aan je e-mailadres.",
+            "Je ziet planning, status en acties in je portaal.",
+            "Op dag 3 verschijnt de beveiligde preview in hetzelfde dossier.",
+            "Betalingen en oplevering blijven gekoppeld aan dit account.",
+          ].map((item) => `<li>${item}</li>`).join("");
+        }
       }
 
       function readJson(key, fallback = null) {
@@ -167,9 +224,30 @@
         localStorage.setItem("maxwebstudioAuthMode", "supabase-prepared");
         upsertRow(authUsersKey, authUser, (item) => item.id === authUserId || String(item.email || "").toLowerCase() === email);
         upsertRow(profilesKey, profileRecord, (item) => item.authUserId === authUserId || String(item.email || "").toLowerCase() === email);
+        if (previewContext.mode === "preview" || previewContext.mode === "customer_portal") {
+          const linkedPreview = {
+            ...previewContext,
+            email,
+            authUserId,
+            profileId: profile.id || "",
+            customerId: profile.customerId || "",
+            linkedAt: now,
+            status: "account_activated",
+          };
+          localStorage.setItem("maxwebstudioActivePreviewContext", JSON.stringify(linkedPreview));
+        }
       }
 
       function dashboardUrlForRole(role) {
+        if (previewContext.mode === "preview") {
+          const previewUrl = new URL("/preview.html", window.location.origin);
+          if (previewContext.projectId) previewUrl.searchParams.set("projectId", previewContext.projectId);
+          if (previewContext.token) previewUrl.searchParams.set("token", previewContext.token);
+          previewUrl.searchParams.set("from", "activation");
+          return previewUrl.pathname + previewUrl.search;
+        }
+        if (previewContext.mode === "customer_portal") return "/klantportaal.html";
+        if (role === "customer") return "/klantportaal.html";
         return ["sales_partner", "sales_manager"].includes(role)
           ? "/admin-sales.html"
           : "/admin-dashboard.html";
@@ -177,12 +255,17 @@
 
       async function initializeActivation() {
         try {
+          applyActivationCopy();
           const result = await consumeRecoverySessionFromUrl();
           if (!result.success) {
             throw new Error("Deze activatielink is verlopen of niet compleet. Vraag een nieuwe uitnodiging aan.");
           }
           statusTitle.textContent = "Link gecontroleerd";
-          statusText.textContent = "Kies nu je wachtwoord om je account te activeren.";
+          statusText.textContent = previewContext.mode === "preview"
+            ? "Kies nu je wachtwoord. Daarna openen we je beveiligde preview."
+            : previewContext.mode === "customer_portal"
+              ? "Kies nu je wachtwoord. Daarna openen we je klantportaal."
+              : "Kies nu je wachtwoord om je account te activeren.";
           form.hidden = false;
           setMessage("Kies een wachtwoord van minimaal 10 tekens.", "success");
         } catch (error) {
@@ -216,8 +299,12 @@
           const firstName = String(profile.name || account.user?.email || "").split(/\s+/)[0] || "welkom";
           title.textContent = `Welkom ${firstName}`;
           statusTitle.textContent = "Account geactiveerd";
-          statusText.textContent = "Je wordt doorgestuurd naar je dashboard.";
-          setMessage("Je account is geactiveerd. Je dashboard wordt geopend.", "success");
+          statusText.textContent = previewContext.mode === "preview"
+            ? "Je wordt doorgestuurd naar je beveiligde preview."
+            : previewContext.mode === "customer_portal"
+              ? "Je wordt doorgestuurd naar je klantportaal."
+              : "Je wordt doorgestuurd naar je dashboard.";
+          setMessage(previewContext.mode === "preview" ? "Je account is geactiveerd. Je preview wordt geopend." : previewContext.mode === "customer_portal" ? "Je account is geactiveerd. Je klantportaal wordt geopend." : "Je account is geactiveerd. Je dashboard wordt geopend.", "success");
           window.setTimeout(() => {
             window.location.assign(dashboardUrlForRole(profile.role));
           }, 700);

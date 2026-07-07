@@ -8,6 +8,8 @@ Actuele v1-richting:
 - Nieuwe klantportaalontwikkeling gebruikt de canonical tabellen `profiles`, `customers`, `websites`, `projects`, `quotes`, `invoices`, `subscriptions`, `files`, `change_requests`, `client_portal_messages` en `client_portal_notifications`.
 - Legacy tabellen zoals `customer_websites`, `customer_invoices` en `customer_subscriptions` mogen niet opnieuw leidend worden voor nieuwe productiefeatures.
 - Echte Supabase Auth, hard route guards en productie-portalactivatie volgen pas na staging Auth-validatie, RLS/customer-isolation evidence en release approval.
+- Het voorgestelde akkoord-, aanbetaling- en opleverlock-proces staat in `docs/DELIVERY_PAYMENT_LOCK_WORKFLOW.md`. Dit is voorbereid als proposal en mag pas live na expliciete GO.
+- De klantgerichte dag-1 route is voorbereid via `public/account-activeren.html?mode=onboarding...`; de dag-3 previewroute loopt via `public/preview.html`. Live koppeling aan Supabase/Mollie blijft geblokkeerd tot GO.
 
 Dit document beschrijft de richting voor een toekomstig klantportaal. Er is momenteel nog geen volledig klantportaal gebouwd.
 

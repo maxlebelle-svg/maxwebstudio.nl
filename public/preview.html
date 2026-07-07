@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Beveiligde preview | Max Webstudio</title>
+    <meta name="description" content="Beveiligde website-preview en akkoordomgeving voor Max Webstudio klanten." />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=20260707-preview-activation" />
+  </head>
+  <body class="portal-body">
+    <main class="secure-preview-shell">
+      <header class="secure-preview-header">
+        <a class="brand" href="index.html" aria-label="Max Webstudio home">
+          <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true"><rect x="6" y="6" width="68" height="68" rx="18"></rect><path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path><path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path></svg>
+          <span>Max Webstudio</span>
+        </a>
+        <nav aria-label="Preview acties">
+          <a href="klantportaal.html">Klantportaal</a>
+          <a href="login.html">Inloggen</a>
+        </nav>
+      </header>
+
+      <section class="secure-preview-hero">
+        <div>
+          <p class="section-kicker">Beveiligde preview</p>
+          <h1 id="preview-title">Je website-preview staat klaar.</h1>
+          <p id="preview-subtitle">Bekijk de richting, geef feedback of rond de aanbetaling af zodra je akkoord bent.</p>
+          <div class="secure-preview-actions">
+            <a class="button primary" href="#preview-frame">Bekijk preview</a>
+            <a class="button secondary" href="#preview-payment">Akkoord & aanbetaling</a>
+          </div>
+        </div>
+        <aside class="secure-preview-status" aria-live="polite">
+          <span>Toegang</span>
+          <strong id="preview-access-title">Account controleren</strong>
+          <p id="preview-access-text">We controleren of deze preview aan jouw klantaccount gekoppeld is.</p>
+        </aside>
+      </section>
+
+      <section class="secure-preview-grid">
+        <article class="secure-preview-card">
+          <span>Stap 1</span>
+          <strong>Preview bekijken</strong>
+          <p>Je ziet alleen de klantpreview. Definitieve bestanden, overdracht en accountdocumenten blijven afgeschermd.</p>
+        </article>
+        <article class="secure-preview-card">
+          <span>Stap 2</span>
+          <strong>Akkoord of feedback</strong>
+          <p>Ben je tevreden met de richting? Geef akkoord. Wil je iets aanpassen, stuur dan feedback vanuit je dossier.</p>
+        </article>
+        <article class="secure-preview-card">
+          <span>Stap 3</span>
+          <strong>Aanbetaling</strong>
+          <p>Na akkoord betaal je de aanbetaling veilig via Mollie. Daarna ronden wij de oplevering af richting dag 5.</p>
+        </article>
+      </section>
+
+      <section class="secure-preview-workspace" id="preview-frame">
+        <div class="secure-preview-browser">
+          <div class="secure-preview-browser-bar">
+            <i></i><i></i><i></i>
+            <span id="preview-url-label">preview.maxwebstudio.nl/project</span>
+          </div>
+          <div class="secure-preview-site">
+            <nav><strong id="preview-company">Jouw bedrijf</strong><span>Home</span><span>Diensten</span><span>Contact</span></nav>
+            <section>
+              <p>Nieuwe website-preview</p>
+              <h2>Professioneel, snel en klaar om vertrouwen te winnen.</h2>
+              <a>Plan een kennismaking</a>
+            </section>
+            <div>
+              <article><strong>Heldere propositie</strong><small>Bezoekers zien direct waarom ze moeten kiezen.</small></article>
+              <article><strong>Mobielvriendelijk</strong><small>Ontworpen voor telefoon, tablet en desktop.</small></article>
+              <article><strong>Conversiegericht</strong><small>Met duidelijke acties voor aanvragen en contact.</small></article>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="secure-preview-decision" id="preview-payment">
+        <article class="secure-preview-card secure-preview-decision-main">
+          <span>Akkoordmoment</span>
+          <strong>Tevreden met de richting?</strong>
+          <p>Geef akkoord op de preview. Daarna zetten we de aanbetaling klaar. De definitieve opleverbestanden blijven beveiligd tot de laatste betaling op dag 5 is bevestigd.</p>
+          <div class="secure-preview-form">
+            <label><input type="checkbox" id="preview-consent" /> Ik ben akkoord met de richting van de preview.</label>
+            <textarea id="preview-feedback" rows="4" placeholder="Feedback of aandachtspunten voor dag 4, optioneel"></textarea>
+            <button class="button primary" id="preview-approve" type="button">Akkoord geven</button>
+            <p id="preview-action-message" role="status" aria-live="polite"></p>
+          </div>
+        </article>
+        <article class="secure-preview-card secure-preview-payment-card">
+          <span>Betaling</span>
+          <strong id="payment-title">Aanbetaling nog niet gestart</strong>
+          <p id="payment-text">Na akkoord opent hier de betaalstap. In productie maakt de server hiervoor een gekoppelde Mollie-betaallink aan.</p>
+          <a class="button secondary is-disabled" id="payment-link" href="#" aria-disabled="true">Betaal aanbetaling</a>
+        </article>
+      </section>
+    </main>
+
+    <script>
+      (() => {
+        const params = new URLSearchParams(window.location.search);
+        const accessTitle = document.getElementById("preview-access-title");
+        const accessText = document.getElementById("preview-access-text");
+        const title = document.getElementById("preview-title");
+        const company = document.getElementById("preview-company");
+        const urlLabel = document.getElementById("preview-url-label");
+        const consent = document.getElementById("preview-consent");
+        const feedback = document.getElementById("preview-feedback");
+        const approve = document.getElementById("preview-approve");
+        const actionMessage = document.getElementById("preview-action-message");
+        const paymentTitle = document.getElementById("payment-title");
+        const paymentText = document.getElementById("payment-text");
+        const paymentLink = document.getElementById("payment-link");
+        const sessionKey = "maxwebstudioSupabaseAuthSession";
+        const previewKey = "maxwebstudioActivePreviewContext";
+
+        function readJson(key, fallback = null) {
+          try {
+            return JSON.parse(localStorage.getItem(key) || "null") ?? fallback;
+          } catch {
+            return fallback;
+          }
+        }
+
+        function writePreviewContext(patch = {}) {
+          const current = readJson(previewKey, {});
+          const next = {
+            ...current,
+            projectId: params.get("projectId") || current.projectId || "",
+            token: params.get("token") || current.token || "",
+            projectName: params.get("projectName") || current.projectName || "Website preview",
+            company: params.get("company") || current.company || "Jouw bedrijf",
+            updatedAt: new Date().toISOString(),
+            ...patch,
+          };
+          localStorage.setItem(previewKey, JSON.stringify(next));
+          return next;
+        }
+
+        function hasSession() {
+          const session = readJson(sessionKey, null);
+          return Boolean(session?.access_token && (!session.expires_at || session.expires_at * 1000 > Date.now()));
+        }
+
+        function renderAccess() {
+          const context = writePreviewContext();
+          title.textContent = `${context.projectName || "Je website-preview"} staat klaar.`;
+          company.textContent = context.company || "Jouw bedrijf";
+          urlLabel.textContent = context.projectId ? `preview.maxwebstudio.nl/${context.projectId}` : "preview.maxwebstudio.nl/project";
+
+          if (!hasSession()) {
+            accessTitle.textContent = "Login nodig";
+            accessText.textContent = "Open de activatielink uit je mail of log in om deze preview veilig te bekijken.";
+            approve.disabled = true;
+            actionMessage.textContent = "Je moet eerst je account activeren of inloggen.";
+            return;
+          }
+
+          accessTitle.textContent = "Preview gekoppeld";
+          accessText.textContent = "Deze preview is gekoppeld aan je klantaccount. Je kunt vanaf nu ook via het klantportaal inloggen.";
+          approve.disabled = false;
+        }
+
+        approve.addEventListener("click", () => {
+          if (!consent.checked) {
+            actionMessage.textContent = "Vink eerst aan dat je akkoord bent met de richting van de preview.";
+            return;
+          }
+          const context = writePreviewContext({
+            status: "preview_approved",
+            previewApprovedAt: new Date().toISOString(),
+            feedback: feedback.value.trim(),
+            paymentStatus: "deposit_pending",
+          });
+          actionMessage.textContent = "Akkoord opgeslagen. De aanbetaling staat klaar.";
+          paymentTitle.textContent = "Aanbetaling klaar";
+          paymentText.textContent = "In de live flow opent deze knop direct de gekoppelde Mollie-betaalpagina voor dit project.";
+          paymentLink.classList.remove("is-disabled");
+          paymentLink.removeAttribute("aria-disabled");
+          paymentLink.href = context.checkoutUrl || "betalen.html";
+        });
+
+        renderAccess();
+      })();
+    </script>
+  </body>
+</html>

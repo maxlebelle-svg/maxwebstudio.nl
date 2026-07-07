@@ -413,8 +413,8 @@
 
               <nav class="sales-detail-tabs" aria-label="Lead details">
                 <button class="sales-detail-tab is-active" type="button" data-sales-detail-tab="overview">Overzicht</button>
-                <button class="sales-detail-tab" type="button" data-sales-detail-tab="notes">Notities</button>
                 <button class="sales-detail-tab" type="button" data-sales-detail-tab="analysis">Website-analyse</button>
+                <button class="sales-detail-tab" type="button" data-sales-detail-tab="notes">Belscript</button>
                 <button class="sales-detail-tab" type="button" data-sales-detail-tab="actions">Acties</button>
               </nav>
 
@@ -442,8 +442,8 @@
               <section class="sales-detail-panel sales-workflow-card" data-sales-detail-panel="notes" aria-label="Notities en opvolging">
                 <div class="sales-detail-card-heading">
                   <div>
-                    <span>Notities</span>
-                    <strong>Belnotities en opvolging</strong>
+                    <span>Belscript</span>
+                    <strong>Belnotities en demo-briefing</strong>
                   </div>
                   <mark class="status-badge status-prepared" id="leadfinder-note-sync-state">Nog niet opgeslagen</mark>
                 </div>
@@ -451,11 +451,6 @@
                   <span>Huidige status</span>
                   <select id="leadfinder-detail-call-status" aria-label="Leadstatus wijzigen"></select>
                 </label>
-                <div class="sales-next-action" id="sales-next-action" aria-live="polite">
-                  <span>Volgende stap</span>
-                  <strong>Selecteer een lead</strong>
-                  <button class="button primary" id="sales-next-action-button" type="button" disabled>Kies lead</button>
-                </div>
                 <div class="sales-timeline-card">
                   <div class="sales-timeline-heading">
                     <strong>Tijdlijn</strong>
@@ -471,7 +466,6 @@
                       <span>Belmodus</span>
                       <strong>Preview-aanbod script</strong>
                     </div>
-                    <button class="button primary" id="leadfinder-make-demo-now" type="button" disabled>Maak demo site nu</button>
                   </div>
                   <div class="sales-call-contact-grid">
                     <label>Contactpersoon<input id="leadfinder-call-contact-name" type="text" placeholder="Naam contactpersoon" /></label>
@@ -543,11 +537,13 @@
                 </label>
                 <p class="admin-form-message" id="leadfinder-note-sync-message" role="status"></p>
                 <div class="sales-workflow-actions">
-                  <button class="button secondary" id="leadfinder-insert-intake" type="button" disabled>Vragenlijst klaarzetten</button>
                   <button class="button secondary" id="leadfinder-save-note" type="button" disabled>Notitie opslaan</button>
-                  <button class="button secondary" id="leadfinder-sync-note" type="button" disabled>Opnieuw synchroniseren</button>
-                  <button class="button secondary" id="leadfinder-create-task" type="button" disabled>Maak opvolgtaak</button>
-                  <button class="button secondary" id="leadfinder-convert-customer" type="button" disabled>Omzetten naar klant</button>
+                  <button class="button primary" id="leadfinder-make-demo-now" type="button" disabled>Maak demo site nu</button>
+                </div>
+                <div class="sales-next-action" id="sales-next-action" aria-live="polite">
+                  <span>Volgende stap</span>
+                  <strong>Selecteer een lead</strong>
+                  <button class="button primary" id="sales-next-action-button" type="button" disabled>Kies lead</button>
                 </div>
               </section>
 
@@ -595,20 +591,11 @@
               <details class="lead-welcome-card sales-detail-wide-card" id="lead-agenda-planner-card">
                 <summary>
                   <span>
-                    <strong>Welkomstmail / klant onboarding</strong>
-                    <small>Voor lead-to-customer conversie</small>
+                    <strong>Interne agenda</strong>
+                    <small>Plan een terugbelmoment voor de medewerker die deze lead opvolgt.</small>
                   </span>
-                  <mark>Aanbevolen</mark>
                 </summary>
                 <div class="lead-welcome-panel">
-                  <p>Stuur de welkomstmail pas wanneer de klant officieel is verkocht en je hem wilt uitnodigen voor het klantportaal.</p>
-                  <label class="lead-welcome-toggle" for="leadfinder-send-welcome-mail">
-                    <input id="leadfinder-send-welcome-mail" type="checkbox" />
-                    <span>
-                      <strong>Welkomstmail direct versturen</strong>
-                      <small>De klant ontvangt inloggegevens en onboarding informatie.</small>
-                    </span>
-                  </label>
                   <a class="button secondary lead-whatsapp-button is-disabled" id="leadfinder-whatsapp-message" href="#" target="_blank" rel="noopener" aria-disabled="true">
                     <span class="lead-whatsapp-logo" aria-hidden="true">
                       <svg viewBox="0 0 32 32" focusable="false">
@@ -637,10 +624,6 @@
                     </div>
                     <p class="admin-form-message" id="leadfinder-agenda-message" role="status"></p>
                   </div>
-                  <details class="lead-extra-settings">
-                    <summary>Extra instellingen</summary>
-                    <p>Gebruik dit later voor taal, pakketdetails en onboarding-notities.</p>
-                  </details>
                 </div>
               </details>
             </article>
@@ -19716,8 +19699,8 @@
         const states = {
           idle: ["Nog niet opgeslagen", "status-prepared", ""],
           syncing: ["Synchroniseren...", "status-planned", "Notitie wordt centraal opgeslagen."],
-          saved: ["Opgeslagen", "status-active", "Notitie is centraal opgeslagen. Max en managers kunnen deze zien."],
-          local: ["Nog lokaal opgeslagen", "status-warning", "Notitie staat tijdelijk alleen op deze computer. Max kan deze nog niet zien."],
+          saved: ["Opgeslagen", "status-active", "Notitie is opgeslagen bij deze lead en zichtbaar voor medewerkers met toegang."],
+          local: ["Nog lokaal opgeslagen", "status-warning", "Notitie staat tijdelijk alleen op deze computer. Sla of synchroniseer om hem bij de lead te bewaren."],
           failed: ["Synchronisatie mislukt", "status-blocked", "Notitie kon nog niet centraal worden opgeslagen. Probeer opnieuw te synchroniseren."],
         };
         const [label, className, fallbackMessage] = states[status] || states.idle;
@@ -21356,7 +21339,7 @@
         if (isLeadWon(lead)) return { label: "Omzetten naar klant", button: "Omzetten naar klant", action: "customer" };
         if (lead.callStatus === "quote_sent") return { label: "Offerte opvolgen", button: "Follow-up plannen", action: "followup" };
         if (lead.callStatus === "quote_ready" || lead.callStatus === "qualified" || lead.callStatus === "interesse") {
-          return { label: "Offerte maken", button: "Offerte starten", action: "quote" };
+          return { label: "Maak demo site nu", button: "Maak demo site nu", action: "demo" };
         }
         if (["contacted", "gebeld", "opvolgen", "voicemail", "contact_planned"].includes(lead.callStatus)) {
           return { label: "Follow-up bellen", button: "Follow-up plannen", action: "followup" };
@@ -22015,7 +21998,7 @@
           address: pendingLead.address,
         };
         try {
-          await updateLeadfinderLead(lead, updates, "Demo-aanvraag opgeslagen. Website Factory wordt geopend.");
+          await updateLeadfinderLead(lead, updates, "Notities opgeslagen bij deze lead. Website Factory wordt geopend.");
         } catch (error) {
           setLeadfinderMessage(error.message || "Demo-aanvraag lokaal voorbereid. Website Factory wordt geopend.", "warning");
         }
@@ -23772,8 +23755,6 @@
           return;
         }
         rememberLeadNoteDraft(lead.id, "");
-        if (leadfinderElements.detailIntake) leadfinderElements.detailIntake.value = "";
-        if (leadfinderElements.detailNote) leadfinderElements.detailNote.value = "";
       }
 
               async function markSelectedLeadStatus(status, message) {
@@ -23880,9 +23861,8 @@
           openLeadFollowUpPlanner();
           return;
         }
-                if (action === "quote") {
-                  openQuoteForSelectedLead(lead);
-                  await updateLeadfinderLead(lead, { callStatus: "quote_ready" }, "Offerte gestart. Lead staat klaar voor offerte.");
+                if (action === "demo") {
+                  await makeDemoSiteNow();
                   return;
                 }
         if (action === "customer") {
