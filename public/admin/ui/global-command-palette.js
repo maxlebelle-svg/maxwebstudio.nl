@@ -99,10 +99,14 @@
     ["open-seo", "Open SEO Studio", "SEO projecten", "AI", "Command", "admin-seo-studio.html"],
     ["open-factory", "Open Website Factory", "Website previews genereren", "Websites", "Command", "admin-website-factory.html"],
     ["open-logo", "Open Logo Studio", "Logo generatie", "Branding", "Command", "admin-logo-studio.html"],
+    ["open-logo-studio", "Open logo studio", "Open AI Logo Studio", "Branding", "Command", "admin-logo-studio.html"],
     ["open-ai-content", "Open AI Content Library", "AI content genereren", "AI", "Command", "admin-ai-content-library.html"],
     ["open-assets", "Open Asset Manager", "Assets beheren", "Assets", "Command", "admin-assets.html"],
     ["open-domain", "Open Domein Center", "Domeinen beheren", "Websites", "Command", "admin-domain-center.html"],
     ["open-brand", "Open Brand Center", "Brand assets beheren", "Branding", "Command", "admin-brand-center.html"],
+    ["open-branding", "Open branding", "Open Branding Center", "Branding", "Command", "admin-brand-center.html"],
+    ["review-branding", "Review branding", "Bekijk branding die op review wacht", "Branding", "Command", "admin-brand-center.html"],
+    ["approve-branding", "Approve branding", "Open branding approvals", "Branding", "Command", "admin-brand-center.html"],
     ["open-settings", "Open Settings", "CRM instellingen", "Instellingen", "Command", "admin-instellingen.html"],
     ["generate-logo", "Generate logo", "Start Logo Studio", "Branding", "Command", "admin-logo-studio.html"],
     ["start-onboarding", "Start onboarding", "Open onboarding module", "Klanten", "Command", "admin-onboarding.html"],
@@ -439,6 +443,10 @@
     if (/(factuur|invoice)/.test(text)) return "new-invoice";
     if (/(offerte|quote)/.test(text)) return "new-quote";
     if (/(mail|email|e-mail)/.test(text)) return "send-email";
+    if (/(open|bekijk).*(branding|brand center|huisstijl)/.test(text)) return "open-branding";
+    if (/(review|controleer).*(branding|huisstijl|logo)/.test(text)) return "review-branding";
+    if (/(approve|goedkeur).*(branding|huisstijl|logo)/.test(text)) return "approve-branding";
+    if (/(logo studio|ai logo studio)/.test(text)) return "open-logo-studio";
     if (/(logo)/.test(text)) return "generate-logo";
     if (/(onboarding)/.test(text)) return "start-onboarding";
     if (/(run|scan|check).*(health|platform)/.test(text)) return "run-health-scan";

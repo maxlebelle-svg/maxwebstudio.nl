@@ -10881,6 +10881,15 @@
           }
         }
 
+        function readCeoStoredObject(key) {
+          try {
+            const value = JSON.parse(localStorage.getItem(key) || "{}");
+            return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+          } catch {
+            return {};
+          }
+        }
+
         function readCeoBrainCache() {
           try {
             const value = JSON.parse(localStorage.getItem("maxwebstudioMaxBrainCache") || "null");
@@ -11041,6 +11050,18 @@
           };
         }
 
+        function ceoBrandingSummary() {
+          const branding = readCeoStoredObject("maxwebstudioBrandCenter");
+          const projects = Array.isArray(branding.projects) ? branding.projects : [];
+          const logos = Array.isArray(branding.logoAssets) ? branding.logoAssets : [];
+          return {
+            logosGeneratedToday: logos.filter((item) => ceoIsSameDay(item.createdAt || item.updatedAt)).length,
+            approvalsToday: projects.filter((item) => ceoIsSameDay(item.approvedAt)).length,
+            queue: projects.filter((item) => ["generating", "generated", "customer_review"].includes(statusKey(item.status))).length,
+            withoutBranding: projects.filter((item) => ["not_started", "rejected"].includes(statusKey(item.status))).length,
+          };
+        }
+
         function ceoPlatformHealthSummary() {
           const warnings = readCeoStoredArray(activityLogStorageKey)
             .filter((item) => /health|service_warning|platform|critical|mail_warning|payment_warning|automation_warning|factory_warning|preview_warning/.test(statusKey([item.eventType, item.event_type, item.action, item.module, item.title].join(" "))) || ["system_warning", "system_error"].includes(statusKey(item.eventType || item.event_type || item.action)) || ["warning", "error"].includes(statusKey(item.severity || item.status)));
@@ -11115,6 +11136,7 @@
           const pendingDomains = Math.max(customersWithoutDomain.length, state.websites.filter((website) => ceoNeedsDomain(website)).length);
           const pendingPhones = leads.filter((lead) => ceoIsLeadOpen(lead) && !String(lead.phone || lead.telephone || "").trim()).length;
           const automation = ceoAutomationSummary();
+          const branding = ceoBrandingSummary();
           const platformHealth = ceoPlatformHealthSummary();
           return {
             leads,
@@ -11154,6 +11176,7 @@
             pendingPhones,
             unreadNotifications: ceoUnreadNotificationsCount(),
             automation,
+            branding,
             platformHealth,
           };
         }
@@ -11337,6 +11360,10 @@
             ["Automation failures", summary.automation.failed],
             ["Payments today", summary.paidToday.length],
             ["Mail health", summary.platformHealth.mailHealth],
+            ["Logo's vandaag", summary.branding.logosGeneratedToday],
+            ["Branding approvals", summary.branding.approvalsToday],
+            ["Branding wachtrij", summary.branding.queue],
+            ["Zonder branding", summary.branding.withoutBranding],
             ["Previews klaar", summary.previewsReadyNotViewed.length],
             ["Klaar voor livegang", summary.readyForLive.length],
             ["Preview conversie", `${summary.previewConversion}%`],

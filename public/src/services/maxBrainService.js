@@ -12,6 +12,7 @@ const STORAGE_KEYS = Object.freeze({
   projects: ["maxwebstudioProjects", "maxwebstudioCrmProjects"],
   assets: ["maxwebstudioFiles", "maxwebstudioBrandAssets", "maxwebstudioLogoProjects"],
   automations: ["maxwebstudioAutomationWorkflows", "maxwebstudioAutomationExecutions"],
+  branding: ["maxwebstudioBrandCenter"],
 });
 
 export function buildMaxBrainContext(query = {}, options = {}) {
@@ -247,6 +248,23 @@ function buildDailyFocus({ data, customerContexts, recommendations }) {
     .filter((item) => ["failed", "quality_failed", "critical"].includes(statusKey(item.status)) || item.severity === "error")
     .map((item) => ({ label: item.label, status: item.message || item.status }))
     .slice(0, 8);
+  const brandingRows = extractBrandingRows(data.branding);
+  const projectsWithoutBranding = brandingRows
+    .filter((item) => ["not_started", "rejected"].includes(statusKey(item.status)))
+    .map((item) => ({ label: item.companyName || item.label, status: item.status || "not_started" }))
+    .slice(0, 8);
+  const projectsWithoutLogo = brandingRows
+    .filter((item) => !item.hasLogo)
+    .map((item) => ({ label: item.companyName || item.label, status: "logo nodig" }))
+    .slice(0, 8);
+  const brandingWaitingReview = brandingRows
+    .filter((item) => statusKey(item.status) === "customer_review")
+    .map((item) => ({ label: item.companyName || item.label, status: "review nodig" }))
+    .slice(0, 8);
+  const brandingReadyForFactory = brandingRows
+    .filter((item) => statusKey(item.status) === "approved")
+    .map((item) => ({ label: item.companyName || item.label, status: "klaar voor Website Factory" }))
+    .slice(0, 8);
   const healthRows = [...data.timeline, ...data.notifications]
     .filter((item) => /health|service_warning|platform|critical|failed|webhook|upload|factory_warning|preview_warning|payment_warning|mail_warning|automation_warning/.test(statusKey([item.eventType, item.event_type, item.action, item.module, item.title, item.description, item.severity, item.status].join(" "))));
   const healthWarnings = healthRows
@@ -357,6 +375,10 @@ function buildDailyFocus({ data, customerContexts, recommendations }) {
     factoryWaiting,
     factoryBuildsActive,
     factoryFailed,
+    projectsWithoutBranding,
+    projectsWithoutLogo,
+    brandingWaitingReview,
+    brandingReadyForFactory,
     healthWarnings,
     commonFailures,
     webhookFailures,
@@ -380,6 +402,20 @@ function buildDailyFocus({ data, customerContexts, recommendations }) {
     customersWithManyUpsells,
     lowEngagementCustomers,
   };
+}
+
+function extractBrandingRows(rows = []) {
+  const states = rows
+    .map((item) => item && typeof item === "object" && !Array.isArray(item) && (Array.isArray(item.projects) || Array.isArray(item.logoAssets)) ? item : null)
+    .filter(Boolean);
+  return states.flatMap((state) => {
+    const logoAssets = Array.isArray(state.logoAssets) ? state.logoAssets : [];
+    return (state.projects || []).map((project) => ({
+      ...project,
+      label: project.companyName || project.id || "Branding",
+      hasLogo: logoAssets.some((asset) => asset.projectId === project.id),
+    }));
+  });
 }
 
 function commonFailureRows(rows = []) {

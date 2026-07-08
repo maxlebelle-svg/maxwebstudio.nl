@@ -8,7 +8,7 @@
     <meta name="description" content="Losstaande Logo Studio voor Max Webstudio sales en admin." />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="src/logo-studio.css" />
-    <script src="src/logo-studio.js" defer></script>
+    <script src="src/logo-studio.js" type="module"></script>
   </head>
   <body>
     <div class="studio-shell">
@@ -43,13 +43,20 @@
             <label for="audience">Doelgroep</label>
             <textarea id="audience" name="audience" rows="4" maxlength="240" placeholder="Wie moet het logo direct aanspreken?"></textarea>
 
+            <label for="tone-of-voice">Tone of voice</label>
+            <input id="tone-of-voice" name="toneOfVoice" type="text" maxlength="120" placeholder="Bijv. helder, warm, deskundig" />
+
             <label for="style-choice">Stijlkeuze</label>
             <select id="style-choice" name="styleChoice">
               <option value="premium">Premium</option>
               <option value="modern">Modern</option>
-              <option value="speels">Speels</option>
               <option value="minimalistisch">Minimalistisch</option>
               <option value="zakelijk">Zakelijk</option>
+              <option value="creatief">Creatief</option>
+              <option value="luxe">Luxe</option>
+              <option value="industrieel">Industrieel</option>
+              <option value="vriendelijk">Vriendelijk</option>
+              <option value="strak">Strak</option>
             </select>
 
             <label for="color-choice">Kleurvoorkeur</label>
@@ -69,6 +76,8 @@
               <button class="studio-button secondary" id="regenerate-concepts" type="button">Concepten opnieuw maken</button>
               <button class="studio-button ghost" id="clear-draft" type="button">Draft wissen</button>
             </div>
+            <label for="logo-upload">Logo uploaden</label>
+            <input id="logo-upload" name="logoUpload" type="file" accept="image/svg+xml,image/png,image/jpeg,image/webp" />
           </form>
         </section>
 
@@ -79,6 +88,10 @@
               <h2 id="output-title">Logo-concepten</h2>
             </div>
             <span class="draft-indicator" id="draft-indicator">Geen draft</span>
+          </div>
+          <div class="form-actions">
+            <button class="studio-button secondary" id="approve-branding" type="button" disabled>Branding goedkeuren</button>
+            <button class="studio-button ghost" id="link-branding-factory" type="button" disabled>Koppel aan Website Factory</button>
           </div>
 
           <div class="empty-state" id="empty-state">

@@ -1148,20 +1148,24 @@ function buildContentPlan({ factoryInput, analysis, blueprint }) {
 function buildBrandingPlan({ factoryInput, analysis }) {
   const uploads = cleanUploads(factoryInput.uploads);
   const logo = uploads.find((file) => /logo/i.test(file.name || "")) || null;
+  const branding = factoryInput.brandingMetadata || factoryInput.branding || {};
+  const brandingLogo = branding.logo || null;
   return {
-    status: "prepared",
-    logoStatus: logo ? "available" : "missing",
-    logoTask: logo ? "" : "Voorbereiden in bestaande Logo Studio",
-    primaryColor: analysis.primaryColor,
-    secondaryColor: "#f6f8fb",
-    accentColor: analysis.accentColor,
+    status: branding.metadata?.brandingStatus === "linked_to_factory" ? "linked_to_factory" : "prepared",
+    logoStatus: logo || brandingLogo ? "available" : "missing",
+    logoTask: logo || brandingLogo ? "" : "Voorbereiden in bestaande Logo Studio",
+    primaryColor: branding.primaryColor || analysis.primaryColor,
+    secondaryColor: branding.secondaryColor || "#f6f8fb",
+    accentColor: branding.accentColor || analysis.accentColor,
     backgroundColor: "#ffffff",
     cardStyle: "strak, lichte schaduw, compacte radius",
     buttonStyle: "hoog contrast, duidelijke CTA",
-    typographyDirection: analysis.fontDirection,
+    typographyDirection: branding.typography || analysis.fontDirection,
     spacingDirection: "ruim maar scanbaar",
-    iconStyle: "lijniconen, subtiel en functioneel",
+    iconStyle: branding.iconStyle || "lijniconen, subtiel en functioneel",
     visualMood: analysis.brandStyle,
+    logoAsset: brandingLogo,
+    metadata: branding.metadata || {},
   };
 }
 

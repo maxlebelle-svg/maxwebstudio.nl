@@ -82,6 +82,13 @@ const allowedEventTypes = new Set([
   "seo_scan_completed",
   "project_updated",
   "customer_portal_action",
+  "logo_requested",
+  "logo_generated",
+  "logo_selected",
+  "logo_uploaded",
+  "branding_updated",
+  "branding_approved",
+  "branding_sent_to_factory",
   "health_warning",
   "health_restored",
   "service_warning",
@@ -436,6 +443,8 @@ function moduleForEventType(eventType) {
   if (type.startsWith("service_")) return "platform_health";
   if (type.endsWith("_warning")) return "platform_health";
   if (type.startsWith("project_")) return "projects";
+  if (type.startsWith("logo_")) return "branding";
+  if (type.startsWith("branding_")) return "branding";
   if (type.startsWith("onboarding_")) return "onboarding";
   if (type.startsWith("website_")) return "website_factory";
   if (type.startsWith("domain_")) return "domain";

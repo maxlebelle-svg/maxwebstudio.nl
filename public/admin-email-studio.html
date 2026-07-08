@@ -632,6 +632,39 @@
             body: "Hallo {{klant_naam}},\n\nGefeliciteerd: de nieuwe website van {{bedrijf_naam}} staat live.\n\nJe kunt de website bekijken via {{website_url}}. We controleren de livegang nog op de belangrijkste punten en blijven beschikbaar voor vragen, kleine correcties of vervolgstappen.\n\nVeel plezier met jullie nieuwe online visitekaartje.\n\nMet vriendelijke groet,\nMax Webstudio",
           },
           {
+            id: "logo-gereed",
+            name: "Logo gereed",
+            description: "Bericht dat logo-concepten klaarstaan voor review.",
+            type: "Branding",
+            status: "Actief",
+            updatedAt: "2026-07-09",
+            subject: "Logo-concepten voor {{bedrijf_naam}} staan klaar",
+            preheader: "Bekijk de richtingen en kies je favoriet.",
+            body: "Hallo {{klant_naam}},\n\nDe logo-concepten voor {{bedrijf_naam}} staan klaar. Je kunt rustig bekijken welke richting het beste past bij jullie uitstraling.\n\nKies je favoriet of geef aan wat je graag anders ziet. Daarna verwerken we de branding in de volgende stap van je websiteproject.\n\nMet vriendelijke groet,\nMax Webstudio",
+          },
+          {
+            id: "branding-review",
+            name: "Branding wacht op review",
+            description: "Vriendelijke reminder om branding te beoordelen.",
+            type: "Branding",
+            status: "Actief",
+            updatedAt: "2026-07-09",
+            subject: "Wil je de branding voor {{bedrijf_naam}} bekijken?",
+            preheader: "Je akkoord helpt ons de website verder op te bouwen.",
+            body: "Hallo {{klant_naam}},\n\nDe branding voor {{bedrijf_naam}} wacht op je review. Controleer logo, kleuren en lettertypevoorkeur wanneer het jou uitkomt.\n\nNa akkoord koppelen we de branding aan Website Factory en gebruiken we dit als basis voor de website.\n\nMet vriendelijke groet,\nMax Webstudio",
+          },
+          {
+            id: "branding-goedgekeurd",
+            name: "Branding goedgekeurd",
+            description: "Bevestiging na akkoord op branding.",
+            type: "Branding",
+            status: "Actief",
+            updatedAt: "2026-07-09",
+            subject: "Branding voor {{bedrijf_naam}} is goedgekeurd",
+            preheader: "We verwerken de huisstijl nu in je website.",
+            body: "Hallo {{klant_naam}},\n\nDank je wel, de branding voor {{bedrijf_naam}} is goedgekeurd.\n\nWe koppelen logo, kleuren, typografie en iconstijl aan Website Factory, zodat de website in dezelfde stijl verder opgebouwd kan worden.\n\nMet vriendelijke groet,\nMax Webstudio",
+          },
+          {
             id: "wachtwoord-reset",
             name: "Wachtwoord reset",
             description: "Tijdelijk wachtwoord voor portaaltoegang.",
@@ -668,7 +701,11 @@
         function loadTemplates() {
           try {
             const stored = JSON.parse(localStorage.getItem(storageKey) || "null");
-            return Array.isArray(stored) && stored.length ? stored : cloneDefaults();
+            if (Array.isArray(stored) && stored.length) {
+              const missingDefaults = cloneDefaults().filter((template) => !stored.some((item) => item.id === template.id));
+              return [...stored, ...missingDefaults];
+            }
+            return cloneDefaults();
           } catch (error) {
             return cloneDefaults();
           }

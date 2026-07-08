@@ -22,6 +22,7 @@
         <nav class="portal-nav" aria-label="Klantportaal navigatie">
           <a href="#vandaag">Vandaag</a>
           <a href="#onboarding">Onboarding</a>
+          <a href="#branding">Branding</a>
           <a href="#mijn-website">Mijn website</a>
           <a href="#wijzigingen">Wijzigingen</a>
           <a href="#berichten">Berichten</a>
@@ -194,6 +195,33 @@
               <span class="form-helper" id="portal-onboarding-message" role="status" aria-live="polite"></span>
             </div>
           </form>
+        </article>
+      </section>
+
+      <section class="admin-section" id="branding">
+        <div class="admin-section-heading"><div><p class="section-kicker">Branding</p><h2>Je merkpakket</h2></div></div>
+        <article class="admin-card customer-portal-card">
+          <div class="portal-form-heading">
+            <div>
+              <p class="section-kicker">Logo en huisstijl</p>
+              <h3 id="portal-branding-title">Branding wordt voorbereid</h3>
+              <p id="portal-branding-summary">Zodra er logo's of kleuren klaarstaan, kun je ze hier bekijken en goedkeuren.</p>
+            </div>
+            <mark class="status-badge status-prepared" id="portal-branding-status">Voorbereid</mark>
+          </div>
+          <div class="customer-portal-kpis" aria-label="Branding status">
+            <article class="admin-card metric-card"><span>Versie</span><strong id="portal-branding-version">1</strong><small>Laatste merkrichting</small></article>
+            <article class="admin-card metric-card"><span>Laatste wijziging</span><strong id="portal-branding-updated">-</strong><small>Branding Center</small></article>
+            <article class="admin-card metric-card"><span>Website Factory</span><strong id="portal-branding-factory">Nog niet</strong><small>Koppeling</small></article>
+          </div>
+          <div class="portal-action-grid" id="portal-branding-assets"></div>
+          <div class="portal-actions">
+            <button class="button secondary" id="portal-branding-request" type="button">Logo laten maken</button>
+            <label class="button secondary" for="portal-branding-upload">Logo uploaden</label>
+            <input id="portal-branding-upload" type="file" accept="image/svg+xml,image/png,image/jpeg,image/webp" hidden />
+            <button class="button primary" id="portal-branding-approve" type="button">Branding goedkeuren</button>
+            <span class="form-helper" id="portal-branding-message" role="status" aria-live="polite"></span>
+          </div>
         </article>
       </section>
 
@@ -382,6 +410,7 @@
         const { getClientFinanceContext } = await import("./src/services/clientFinanceContextService.js");
         const { getClientNotificationContext } = await import("./src/services/clientNotificationContextService.js");
         const { ensureStagingClientPortalDemoSession } = await import("./src/services/stagingClientPortalAuthBridgeService.js");
+        const { approveBranding, loadBrandingState, registerLogoConcepts, registerUploadedLogo, upsertBrandingProject } = await import("./src/brand-assets-adapter.js");
         const { signOut: signOutSupabase, getSession: getSupabaseSession } = await import("./src/services/supabaseAuthProvider.js");
         const params = new URLSearchParams(window.location.search);
         const companySettings = getCompanySettings();
@@ -446,6 +475,17 @@
         const onboardingSave = document.getElementById("portal-onboarding-save");
         const onboardingSubmit = document.getElementById("portal-onboarding-submit");
         const onboardingGuidance = document.getElementById("portal-onboarding-guidance");
+        const brandingTitle = document.getElementById("portal-branding-title");
+        const brandingSummary = document.getElementById("portal-branding-summary");
+        const brandingStatus = document.getElementById("portal-branding-status");
+        const brandingVersion = document.getElementById("portal-branding-version");
+        const brandingUpdated = document.getElementById("portal-branding-updated");
+        const brandingFactory = document.getElementById("portal-branding-factory");
+        const brandingAssets = document.getElementById("portal-branding-assets");
+        const brandingRequest = document.getElementById("portal-branding-request");
+        const brandingUpload = document.getElementById("portal-branding-upload");
+        const brandingApprove = document.getElementById("portal-branding-approve");
+        const brandingMessage = document.getElementById("portal-branding-message");
         const websiteOverview = document.getElementById("portal-website-overview");
         const websiteGuidance = document.getElementById("portal-website-guidance");
         const websiteList = document.getElementById("portal-websites");
@@ -1588,6 +1628,63 @@
           }
         }
 
+        function brandingProjectForCustomer(customer = {}, onboarding = {}) {
+          const state = loadBrandingState();
+          const identifiers = [customer.id, customer.customerId, customer.profileId, customer.company].filter(Boolean).map(String);
+          const existing = state.projects.find((project) => identifiers.includes(String(project.customerId || "")) || identifiers.includes(String(project.id || "")) || String(project.companyName || "").toLowerCase() === String(customer.company || "").toLowerCase());
+          if (existing) return existing;
+          const answers = onboarding.answers || {};
+          return upsertBrandingProject({
+            id: customer.id || customer.customerId || customer.company,
+            customerId: customer.id || customer.customerId || "",
+            companyName: customer.company || answers.company?.companyName || customer.name || "Klant",
+            onboarding,
+            status: answers.branding?.colors || answers.branding?.lookAndFeel ? "not_started" : "not_started",
+            colors: answers.branding?.colors || "",
+            typography: answers.branding?.fontPreference || "",
+          });
+        }
+
+        function renderBrandingCenter(customer = {}, onboarding = {}) {
+          const state = loadBrandingState();
+          const project = brandingProjectForCustomer(customer, onboarding);
+          const logos = state.logoAssets.filter((asset) => asset.projectId === project.id || asset.customerId === project.customerId);
+          const approved = project.status === "approved" || project.status === "linked_to_factory";
+          brandingTitle.textContent = project.companyName ? `${project.companyName} branding` : "Je branding";
+          brandingSummary.textContent = logos.length
+            ? `${logos.length} logo${logos.length === 1 ? "" : "'s"} klaar. Controleer logo, kleuren, lettertype en iconstijl voordat we dit in je website verwerken.`
+            : "Je merkpakket wordt voorbereid op basis van je onboarding en uploads.";
+          brandingStatus.textContent = approved ? "Goedgekeurd" : project.status === "customer_review" ? "Review" : "Voorbereid";
+          brandingStatus.className = `status-badge ${approved ? "status-active" : project.status === "customer_review" ? "status-warning" : "status-prepared"}`;
+          brandingVersion.textContent = String(project.version || 1);
+          brandingUpdated.textContent = formatDate(project.updatedAt || project.createdAt);
+          brandingFactory.textContent = project.status === "linked_to_factory" ? "Gekoppeld" : "Nog niet";
+          const colors = Array.isArray(project.colors) ? project.colors : [];
+          const logo = logos.find((asset) => ["approved", "selected"].includes(asset.status)) || logos[0];
+          const rows = [
+            ["Logo", logo?.assetName || logo?.title || "Nog geen logo gekozen"],
+            ["Kleurenpalet", colors.length ? colors.join(", ") : "Uit onboarding"],
+            ["Lettertypes", project.typography || project.briefing?.fontPreference || "Wordt afgestemd"],
+            ["Iconstijl", project.iconStyle || "Lijniconen"],
+            ["Assets", logo?.variants?.length ? `${logo.variants.length} versies voorbereid` : "Wordt voorbereid"],
+          ];
+          brandingAssets.innerHTML = rows.map(([label, value]) => `<article class="admin-card metric-card"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><small>Max Webstudio</small></article>`).join("");
+          brandingApprove.disabled = !logos.length && project.status !== "customer_review";
+          brandingApprove.dataset.projectId = project.id;
+        }
+
+        function portalLogoConcepts(project = {}) {
+          const palette = Array.isArray(project.colors) && project.colors.length ? project.colors : ["#08111f", "#61d4ff", "#d7b46a", "#f7f8fb"];
+          return ["Premium", "Modern", "Minimalistisch"].map((label, index) => ({
+            id: `${project.id}-portal-logo-${index + 1}`,
+            label: `${label} concept`,
+            companyName: project.companyName,
+            status: "generated",
+            format: "SVG",
+            palette,
+          }));
+        }
+
         async function onboardingRequest(action, body = null) {
           const token = getPortalBearer();
           if (!token) throw new Error("Log in om je onboarding te gebruiken.");
@@ -1610,11 +1707,13 @@
             const data = await onboardingRequest("get");
             fillOnboardingForm(data.onboarding, customer);
             renderOnboardingState(data.onboarding);
+            renderBrandingCenter(customer, data.onboarding);
           } catch (error) {
             fillOnboardingForm({}, customer);
             onboardingStatus.textContent = "Voorbereid";
             onboardingStatus.className = "status-badge status-prepared";
             onboardingSummary.textContent = "Je kunt alvast invullen. Log opnieuw in als opslaan niet lukt.";
+            renderBrandingCenter(customer, {});
           }
         }
 
@@ -1630,6 +1729,7 @@
               confirmed: Boolean(onboardingForm.elements.confirmed?.checked),
             });
             renderOnboardingState(data.onboarding);
+            renderBrandingCenter(customer, data.onboarding);
             document.getElementById("portal-onboarding-files").value = "";
             setOnboardingMessage(action === "submit" ? "Je onboarding is ontvangen." : "Je onboarding is opgeslagen.", "success");
           } catch (error) {
@@ -2127,6 +2227,31 @@
           event.preventDefault();
           if (!onboardingForm.reportValidity()) return;
           saveOnboarding("submit");
+        });
+        brandingApprove.addEventListener("click", () => {
+          const projectId = brandingApprove.dataset.projectId;
+          if (!projectId) return;
+          approveBranding(projectId);
+          brandingMessage.textContent = "Je branding is goedgekeurd. We verwerken dit in je website.";
+          brandingMessage.className = "form-helper success";
+          renderBrandingCenter(customer, {});
+        });
+        brandingRequest.addEventListener("click", () => {
+          const project = brandingProjectForCustomer(customer, {});
+          registerLogoConcepts({ project: { ...project, status: "generating" }, concepts: portalLogoConcepts(project) });
+          brandingMessage.textContent = "We hebben logo-concepten voor je klaargezet.";
+          brandingMessage.className = "form-helper success";
+          renderBrandingCenter(customer, {});
+        });
+        brandingUpload.addEventListener("change", () => {
+          const file = brandingUpload.files?.[0];
+          if (!file) return;
+          const project = brandingProjectForCustomer(customer, {});
+          registerUploadedLogo({ name: file.name, type: file.type }, project);
+          brandingMessage.textContent = "Je logo is toegevoegd aan je merkpakket.";
+          brandingMessage.className = "form-helper success";
+          brandingUpload.value = "";
+          renderBrandingCenter(customer, {});
         });
 
         populateSelect(changeRequestWebsite, websites, (website) => website.name || website.domain || "Website");

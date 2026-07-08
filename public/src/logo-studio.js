@@ -1,14 +1,27 @@
 "use strict";
 
+import {
+  approveBranding,
+  linkBrandingToFactory,
+  registerLogoConcepts,
+  registerUploadedLogo,
+  selectLogoConcept,
+  upsertBrandingProject,
+} from "./brand-assets-adapter.js";
+
 (() => {
   const DRAFT_KEY = "maxwebstudioLogoStudioDraft";
   const SVG_NS = "http://www.w3.org/2000/svg";
   const STYLE_LABELS = {
     premium: "Premium",
     modern: "Modern",
-    speels: "Speels",
     minimalistisch: "Minimalistisch",
     zakelijk: "Zakelijk",
+    creatief: "Creatief",
+    luxe: "Luxe",
+    industrieel: "Industrieel",
+    vriendelijk: "Vriendelijk",
+    strak: "Strak",
   };
   const COLOR_PALETTES = {
     automatisch: ["#08111f", "#61d4ff", "#d7b46a", "#f7f8fb"],
@@ -27,6 +40,9 @@
   const draftIndicator = document.querySelector("#draft-indicator");
   const regenerateButton = document.querySelector("#regenerate-concepts");
   const clearDraftButton = document.querySelector("#clear-draft");
+  const uploadInput = document.querySelector("#logo-upload");
+  const approveButton = document.querySelector("#approve-branding");
+  const linkFactoryButton = document.querySelector("#link-branding-factory");
 
   let currentDraft = {
     briefing: null,
@@ -79,6 +95,7 @@
       industry: getValue("#industry"),
       slogan: getValue("#slogan"),
       audience: getValue("#audience"),
+      toneOfVoice: getValue("#tone-of-voice"),
       styleChoice: getValue("#style-choice") || "premium",
       colorChoice: getValue("#color-choice") || "automatisch",
     };
@@ -162,7 +179,16 @@
       return;
     }
 
-    draftIndicator.textContent = currentDraft.chosenConcept ? "Draft met gekozen logo" : "Draft opgeslagen";
+    const statusLabels = {
+      not_started: "Niet gestart",
+      generating: "Aan het maken",
+      generated: "Logo's gemaakt",
+      customer_review: "Klaar voor review",
+      approved: "Goedgekeurd",
+      rejected: "Afgewezen",
+      linked_to_factory: "Gekoppeld aan Website Factory",
+    };
+    draftIndicator.textContent = statusLabels[currentDraft.workflowStatus] || (currentDraft.chosenConcept ? "Draft met gekozen logo" : "Draft opgeslagen");
   }
 
   function showToast(message) {
@@ -342,8 +368,11 @@
 
   function chooseConcept(conceptId) {
     currentDraft.chosenConcept = conceptId;
+    currentDraft.workflowStatus = "customer_review";
+    if (currentDraft.projectId) selectLogoConcept(currentDraft.projectId, conceptId);
     saveDraft();
     renderConcepts();
+    updateWorkflowActions();
     showToast("Logo concept gekozen");
   }
 
@@ -360,9 +389,15 @@
       briefing,
       concepts: buildConcepts(briefing),
       chosenConcept: null,
+      projectId: projectIdForBriefing(briefing),
+      workflowStatus: "generated",
     };
+    upsertBrandingProject({ ...briefing, id: currentDraft.projectId, status: "generating" });
+    registerLogoConcepts({ project: { ...briefing, id: currentDraft.projectId, status: "generated" }, concepts: currentDraft.concepts });
+    currentDraft.workflowStatus = "customer_review";
     saveDraft();
     renderConcepts();
+    updateWorkflowActions();
   }
 
   function fillForm(briefing) {
@@ -374,6 +409,7 @@
     setValue("#industry", briefing.industry);
     setValue("#slogan", briefing.slogan);
     setValue("#audience", briefing.audience);
+    setValue("#tone-of-voice", briefing.toneOfVoice);
     setValue("#style-choice", briefing.styleChoice || "premium");
     setValue("#color-choice", briefing.colorChoice || "automatisch");
   }
@@ -391,14 +427,22 @@
         briefing: parsed.briefing || null,
         concepts: Array.isArray(parsed.concepts) ? parsed.concepts : [],
         chosenConcept: parsed.chosenConcept || null,
+        projectId: parsed.projectId || projectIdForBriefing(parsed.briefing || {}),
+        workflowStatus: parsed.workflowStatus || "not_started",
       };
       fillForm(currentDraft.briefing);
       renderConcepts();
       updateDraftIndicator();
+      updateWorkflowActions();
     } catch (error) {
       currentDraft = { briefing: null, concepts: [], chosenConcept: null };
       updateDraftIndicator();
     }
+  }
+
+  function projectIdForBriefing(briefing = {}) {
+    const base = String(briefing.companyName || "logo-studio").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    return `branding-${base || "project"}`;
   }
 
   form.addEventListener("submit", (event) => {
@@ -409,13 +453,55 @@
   regenerateButton.addEventListener("click", generateConcepts);
 
   clearDraftButton.addEventListener("click", () => {
-    currentDraft = { briefing: null, concepts: [], chosenConcept: null };
+    currentDraft = { briefing: null, concepts: [], chosenConcept: null, projectId: "", workflowStatus: "not_started" };
     form.reset();
     formError.textContent = "";
     safeStorage.remove();
     renderConcepts();
     updateDraftIndicator();
+    updateWorkflowActions();
   });
+
+  uploadInput?.addEventListener("change", () => {
+    const file = uploadInput.files?.[0];
+    const briefing = currentDraft.briefing || getBriefing();
+    const error = validateBriefing(briefing);
+    formError.textContent = error;
+    if (!file || error) return;
+    const projectId = currentDraft.projectId || projectIdForBriefing(briefing);
+    registerUploadedLogo({ name: file.name, type: file.type }, { ...briefing, id: projectId, status: "customer_review" });
+    currentDraft = { ...currentDraft, briefing, projectId, workflowStatus: "customer_review", chosenConcept: `logo-upload-${Date.now()}` };
+    saveDraft();
+    updateWorkflowActions();
+    updateDraftIndicator();
+    showToast("Logo toegevoegd aan branding");
+  });
+
+  approveButton?.addEventListener("click", () => {
+    if (!currentDraft.projectId || !currentDraft.chosenConcept) return;
+    approveBranding(currentDraft.projectId);
+    currentDraft.workflowStatus = "linked_to_factory";
+    saveDraft();
+    updateWorkflowActions();
+    updateDraftIndicator();
+    showToast("Branding goedgekeurd en gekoppeld");
+  });
+
+  linkFactoryButton?.addEventListener("click", () => {
+    if (!currentDraft.projectId) return;
+    linkBrandingToFactory(currentDraft.projectId);
+    currentDraft.workflowStatus = "linked_to_factory";
+    saveDraft();
+    updateWorkflowActions();
+    updateDraftIndicator();
+    showToast("Branding gekoppeld aan Website Factory");
+  });
+
+  function updateWorkflowActions() {
+    const canApprove = Boolean(currentDraft.projectId && currentDraft.chosenConcept);
+    if (approveButton) approveButton.disabled = !canApprove;
+    if (linkFactoryButton) linkFactoryButton.disabled = !currentDraft.projectId || !["approved", "linked_to_factory"].includes(currentDraft.workflowStatus);
+  }
 
   restoreDraft();
 })();

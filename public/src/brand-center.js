@@ -1,3 +1,5 @@
+import { approveBranding, linkBrandingToFactory, loadBrandingState, saveBrandingState } from "./brand-assets-adapter.js";
+
 const storageKey = "maxwebstudioBrandCenter";
 const logoTypes = ["logo", "favicon", "icon", "wordmark", "monogram"];
 const logoFormats = ["SVG", "PNG", "JPG", "WEBP"];
@@ -154,7 +156,7 @@ function metricCard(label, value) {
   const valueEl = document.createElement("strong");
   valueEl.textContent = String(value);
   const small = document.createElement("small");
-  small.textContent = "Lokale workspace";
+  small.textContent = "Branding workflow";
   card.append(labelEl, valueEl, small);
   return card;
 }
@@ -176,6 +178,18 @@ function renderRecords(target, records, config) {
     const actions = document.createElement("div");
     actions.className = "brand-center-actions";
     actions.append(actionButton("Edit", () => config.edit(record)), actionButton("Delete", () => config.remove(record), "secondary"));
+    if (record.projectId && config.title === "assetName") {
+      actions.append(actionButton("Approve", () => {
+        approveBranding(record.projectId);
+        Object.assign(state, loadState());
+        render();
+      }, "secondary"));
+      actions.append(actionButton("Factory", () => {
+        linkBrandingToFactory(record.projectId);
+        Object.assign(state, loadState());
+        render();
+      }, "secondary"));
+    }
     row.append(actions);
     return row;
   }));
@@ -277,21 +291,22 @@ function downloadJson(payload, filename) {
 
 function loadState() {
   try {
-    const parsed = JSON.parse(localStorage.getItem(storageKey) || "{}");
+    const parsed = loadBrandingState();
     return {
       brandProfile: parsed.brandProfile && typeof parsed.brandProfile === "object" ? parsed.brandProfile : {},
       logoAssets: Array.isArray(parsed.logoAssets) ? parsed.logoAssets : [],
       brandKit: parsed.brandKit && typeof parsed.brandKit === "object" ? parsed.brandKit : {},
       printAssets: Array.isArray(parsed.printAssets) ? parsed.printAssets : [],
+      projects: Array.isArray(parsed.projects) ? parsed.projects : [],
     };
   } catch (error) {
     console.warn("Brand Center storage kon niet worden gelezen.", error);
-    return { brandProfile: {}, logoAssets: [], brandKit: {}, printAssets: [] };
+    return { brandProfile: {}, logoAssets: [], brandKit: {}, printAssets: [], projects: [] };
   }
 }
 
 function saveState() {
-  localStorage.setItem(storageKey, JSON.stringify(state));
+  saveBrandingState(state);
 }
 
 function createId(prefix) {
