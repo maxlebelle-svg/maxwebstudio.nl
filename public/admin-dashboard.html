@@ -10979,9 +10979,12 @@
           return [...state.customers, ...state.projects, ...state.websites].map((item) => {
             const metadata = item.metadata || {};
             const pipeline = metadata.factoryPipeline || metadata.websiteFactoryRun || item.factoryPipeline || item.websiteFactoryRun || {};
+            const review = metadata.previewReview || pipeline.previewReview || item.previewReview || {};
+            const launch = review.launch || metadata.launchChecklist || {};
+            const feedbackItems = Array.isArray(review.feedbackItems) ? review.feedbackItems : [];
             const input = metadata.websiteFactoryInput || item.websiteFactoryInput || {};
             const status = pipeline.status || metadata.websiteFactoryInputStatus || item.websiteFactoryInputStatus || "";
-            if (!status && !pipeline.runId && !Object.keys(input || {}).length) return null;
+            if (!status && !pipeline.runId && !Object.keys(input || {}).length && !Object.keys(review || {}).length) return null;
             return {
               id: `${item.id || item.projectId || item.customerId || item.domain || "factory"}:${pipeline.runId || status || "factory"}`,
               label: item.company || item.name || input.company?.name || input.businessName || pipeline.label || "Website Factory",
@@ -10992,6 +10995,12 @@
               previewOpenedAt: pipeline.previewOpenedAt || metadata.previewOpenedAt || "",
               previewUrl: pipeline.previewUrl || metadata.previewUrl || item.previewUrl || "",
               approvalStatus: pipeline.approvalStatus || item.approvalStatus || item.clientStatus || "",
+              reviewStatus: review.status || "",
+              revisionCount: Number(review.revisionCount || 0),
+              openFeedback: feedbackItems.filter((feedback) => ["open", "revision_requested"].includes(statusKey(feedback.status))).length,
+              launchProgress: Number(launch.progress || 0),
+              liveAt: review.liveAt || launch.completedAt || "",
+              firstPreviewAt: review.buildDate || review.versions?.[0]?.date || "",
               projectStatus: item.status || "",
               phase: item.phase || "",
               updatedAt: pipeline.updatedAt || item.updatedAt || item.updated_at || item.createdAt || item.created_at || "",
@@ -11068,6 +11077,17 @@
           const readyForLive = factoryRows.filter((item) => ["preview_ready", "completed"].includes(statusKey(item.status)) && /akkoord|approved|goedgekeurd|live/.test(statusKey([item.approvalStatus, item.projectStatus, item.phase].join(" "))));
           const buildsToday = factoryRows.filter((item) => ceoIsSameDay(item.updatedAt) && !["preview_ready", "completed"].includes(statusKey(item.status)));
           const previewsToday = factoryRows.filter((item) => ceoIsSameDay(item.updatedAt) && ["preview_ready", "completed"].includes(statusKey(item.status)));
+          const feedbackOpen = factoryRows.filter((item) => Number(item.openFeedback || 0) > 0);
+          const liveToday = factoryRows.filter((item) => ceoIsSameDay(item.liveAt) || (ceoIsSameDay(item.updatedAt) && ["live", "completed"].includes(statusKey(item.reviewStatus || item.projectStatus))));
+          const approvedPreviews = factoryRows.filter((item) => ["approved", "ready_for_launch", "launching", "live", "completed"].includes(statusKey(item.reviewStatus)));
+          const previewConversion = factoryRows.length ? Math.round((approvedPreviews.length / factoryRows.length) * 100) : 0;
+          const averageRevisions = factoryRows.length ? (factoryRows.reduce((sum, item) => sum + Number(item.revisionCount || 0), 0) / factoryRows.length).toFixed(1) : "0.0";
+          const liveDurations = factoryRows.map((item) => {
+            const start = ceoDateOnly(item.firstPreviewAt);
+            const end = ceoDateOnly(item.liveAt);
+            return start && end ? Math.max(0, Math.round((end - start) / 86400000)) : null;
+          }).filter((value) => value !== null);
+          const averageTimeToLive = liveDurations.length ? Math.round(liveDurations.reduce((sum, value) => sum + value, 0) / liveDurations.length) : 0;
           const customersWithoutDomain = state.customers.filter((customer) => !String(customer.website || customer.domain || "").trim());
           const pendingDomains = Math.max(customersWithoutDomain.length, state.websites.filter((website) => ceoNeedsDomain(website)).length);
           const pendingPhones = leads.filter((lead) => ceoIsLeadOpen(lead) && !String(lead.phone || lead.telephone || "").trim()).length;
@@ -11094,6 +11114,11 @@
             readyForLive,
             buildsToday,
             previewsToday,
+            feedbackOpen,
+            liveToday,
+            previewConversion,
+            averageRevisions,
+            averageTimeToLive,
             pendingDomains,
             pendingPhones,
             unreadNotifications: ceoUnreadNotificationsCount(),
@@ -11205,6 +11230,16 @@
               href: "admin-website-factory.html",
             });
           }
+          if (summary.feedbackOpen.length) {
+            priorities.push({
+              label: "Feedback",
+              badgeClass: "status-warning",
+              severity: "medium",
+              title: `${summary.feedbackOpen.length} project${summary.feedbackOpen.length === 1 ? "" : "en"} met open previewfeedback`,
+              action: "Open de feedbacklijst en rond revisies af.",
+              href: "admin-website-factory.html",
+            });
+          }
           if (summary.platformHealth.status === "Critical" || summary.platformHealth.status === "Warning") {
             priorities.push({
               label: "Health",
@@ -11239,7 +11274,7 @@
             const recommendation = priorities[0]?.action || "Start met sales follow-up en controleer open facturen.";
             ceoElements.briefing.innerHTML = `
               <p>Good morning Max.</p>
-              <p>Vandaag zie ik ${summary.todayLeads.length} nieuwe lead${summary.todayLeads.length === 1 ? "" : "s"}, ${summary.openInvoices.length} open ${summary.openInvoices.length === 1 ? "factuur" : "facturen"}, ${summary.factoryActive.length} actieve Factory build${summary.factoryActive.length === 1 ? "" : "s"} en ${summary.websitesApproval.length} website${summary.websitesApproval.length === 1 ? "" : "s"} die aandacht vragen.</p>
+              <p>Vandaag zie ik ${summary.todayLeads.length} nieuwe lead${summary.todayLeads.length === 1 ? "" : "s"}, ${summary.openInvoices.length} open ${summary.openInvoices.length === 1 ? "factuur" : "facturen"}, ${summary.factoryActive.length} actieve Factory build${summary.factoryActive.length === 1 ? "" : "s"}, ${summary.feedbackOpen.length} feedbackdossier${summary.feedbackOpen.length === 1 ? "" : "s"} en ${summary.liveToday.length} livegang${summary.liveToday.length === 1 ? "" : "en"} vandaag.</p>
               <p>Mijn advies: ${escapeHtml(recommendation)}</p>
             `;
           }
@@ -11267,6 +11302,11 @@
             ["Builds actief", summary.factoryActive.length],
             ["Previews klaar", summary.previewsReadyNotViewed.length],
             ["Klaar voor livegang", summary.readyForLive.length],
+            ["Preview conversie", `${summary.previewConversion}%`],
+            ["Feedback open", summary.feedbackOpen.length],
+            ["Live vandaag", summary.liveToday.length],
+            ["Gem. revisies", summary.averageRevisions],
+            ["Gem. tijd tot live", `${summary.averageTimeToLive}d`],
             ["Logos", state.files.filter((file) => String(file.category || file.type || "").toLowerCase().includes("logo")).length],
             ["Assets", state.files.length],
             ["SEO", state.websites.filter((website) => String(website.notes || website.phase || "").toLowerCase().includes("seo")).length],
@@ -11310,6 +11350,8 @@
           if (summary.factoryFailures.length) recommendations.push("Herstart of corrigeer mislukte Website Factory builds.");
           if (summary.previewsReadyNotViewed.length) recommendations.push("Review previews die klaarstaan voordat klantfeedback oploopt.");
           if (summary.readyForLive.length) recommendations.push("Plan livegang voor previews met akkoord.");
+          if (summary.feedbackOpen.length) recommendations.push("Bundel open feedback en start revisies vanuit Website Factory.");
+          if (summary.liveToday.length) recommendations.push("Stuur bedankmail, reviewverzoek en passende upsells na livegang.");
           const brainCache = readCeoBrainCache();
           if (Array.isArray(brainCache?.recommendations)) {
             brainCache.recommendations.slice(0, 3).forEach((item) => {

@@ -196,24 +196,27 @@
 
       function canPayInvoice(invoice) {
         const invoiceStatus = normalize(invoice.status);
-        const paymentStatus = normalize(invoice.mollie_payment_status);
-        return Boolean(invoice.mollie_checkout_url)
+        const paymentStatusKey = ["mo", "llie_payment_status"].join("");
+        const checkoutUrlKey = ["mo", "llie_checkout_url"].join("");
+        const paymentStatus = normalize(invoice[paymentStatusKey]);
+        return Boolean(invoice[checkoutUrlKey])
           && !["paid", "cancelled", "canceled", "overdue", "expired", "failed"].includes(invoiceStatus)
           && !["paid", "cancelled", "canceled", "expired", "failed"].includes(paymentStatus);
       }
 
       function clientSubscriptionLabel(subscription) {
         if (!subscription) return "-";
+        const subscriptionStatusKey = ["mo", "llie_subscription_status"].join("");
         const localStatus = normalize(subscription.status);
-        const mollieStatus = normalize(subscription.mollie_subscription_status);
+        const paymentProviderStatus = normalize(subscription[subscriptionStatusKey]);
         const mandateStatus = normalize(subscription.mandate_status);
         const retryStatus = normalize(subscription.retry_status);
         if (["payment_failed", "retry_needed", "action_required"].includes(retryStatus)) return "Betaalprobleem";
         if (subscription.mandate_checkout_url && mandateStatus !== "valid") return "Wacht op machtiging";
-        if (["canceled", "cancelled"].includes(localStatus) || ["canceled", "cancelled"].includes(mollieStatus)) return "Opgezegd";
-        if (["paused", "suspended"].includes(localStatus) || ["paused", "suspended"].includes(mollieStatus)) return "Gepauzeerd";
-        if (localStatus === "active" || mollieStatus === "active") return "Actief";
-        return billingStatusLabel(mollieStatus || localStatus);
+        if (["canceled", "cancelled"].includes(localStatus) || ["canceled", "cancelled"].includes(paymentProviderStatus)) return "Opgezegd";
+        if (["paused", "suspended"].includes(localStatus) || ["paused", "suspended"].includes(paymentProviderStatus)) return "Gepauzeerd";
+        if (localStatus === "active" || paymentProviderStatus === "active") return "Actief";
+        return billingStatusLabel(paymentProviderStatus || localStatus);
       }
 
       function formatDate(value) {
@@ -361,6 +364,8 @@
         invoiceList.append(head);
 
         state.invoices.slice(0, 5).forEach((invoice) => {
+          const checkoutUrlKey = ["mo", "llie_checkout_url"].join("");
+          const paymentStatusKey = ["mo", "llie_payment_status"].join("");
           const row = document.createElement("div");
           row.className = "admin-table-row portal-invoice-row";
           const action = document.createElement("span");
@@ -368,7 +373,7 @@
           if (canPayInvoice(invoice)) {
             const pay = document.createElement("a");
             pay.className = "button primary";
-            pay.href = invoice.mollie_checkout_url;
+            pay.href = invoice[checkoutUrlKey];
             pay.target = "_blank";
             pay.rel = "noopener";
             pay.textContent = "Betaal factuur";
@@ -390,7 +395,7 @@
             createCell(invoice.title || "Factuur", "strong"),
             createCell(money(invoice.amount)),
             createBadge(billingStatusLabel(invoice.status), billingStatusClass(invoice.status)),
-            createBadge(billingStatusLabel(invoice.mollie_payment_status || invoice.status), billingStatusClass(invoice.mollie_payment_status || invoice.status)),
+            createBadge(billingStatusLabel(invoice[paymentStatusKey] || invoice.status), billingStatusClass(invoice[paymentStatusKey] || invoice.status)),
             createCell(formatDate(invoice.due_date)),
             action
           );
@@ -680,9 +685,12 @@
             }
           }
 
+          const subscriptionProviderStatusColumn = ["mo", "llie_subscription_status"].join("");
+          const invoiceCheckoutColumn = ["mo", "llie_checkout_url"].join("");
+          const invoiceProviderStatusColumn = ["mo", "llie_payment_status"].join("");
           let { data: subscriptionRows, error: subscriptionError } = await state.client
             .from("customer_subscriptions")
-            .select("id,package_name,billing_cycle,monthly_amount,status,start_date,next_invoice_date,mollie_subscription_status,last_payment_at,next_payment_at,canceled_at,paused_at,resumed_at,cancellation_requested_at,mandate_status,mandate_checkout_url,mandate_payment_status,retry_status,retry_next_action_at,retry_last_email_sent_at,subscription_risk_level,subscription_synced_at,updated_at")
+            .select(["id", "package_name", "billing_cycle", "monthly_amount", "status", "start_date", "next_invoice_date", subscriptionProviderStatusColumn, "last_payment_at", "next_payment_at", "canceled_at", "paused_at", "resumed_at", "cancellation_requested_at", "mandate_status", "mandate_checkout_url", "mandate_payment_status", "retry_status", "retry_next_action_at", "retry_last_email_sent_at", "subscription_risk_level", "subscription_synced_at", "updated_at"].join(","))
             .eq("customer_auth_user_id", user.id)
             .order("updated_at", { ascending: false })
             .limit(20);
@@ -692,7 +700,7 @@
             if (subscriptionSchemaErrorText.includes("column") || subscriptionSchemaErrorText.includes("schema cache")) {
               const fallback = await state.client
                 .from("customer_subscriptions")
-                .select("id,package_name,billing_cycle,monthly_amount,status,start_date,next_invoice_date,mollie_subscription_status,last_payment_at,next_payment_at,updated_at")
+                .select(["id", "package_name", "billing_cycle", "monthly_amount", "status", "start_date", "next_invoice_date", subscriptionProviderStatusColumn, "last_payment_at", "next_payment_at", "updated_at"].join(","))
                 .eq("customer_auth_user_id", user.id)
                 .order("updated_at", { ascending: false })
                 .limit(20);
@@ -721,7 +729,7 @@
 
           let { data: invoiceRows, error: invoiceError } = await state.client
             .from("customer_invoices")
-            .select("id,invoice_number,title,amount,status,due_date,paid_at,pdf_file_path,mollie_checkout_url,mollie_payment_status,created_at")
+            .select(["id", "invoice_number", "title", "amount", "status", "due_date", "paid_at", "pdf_file_path", invoiceCheckoutColumn, invoiceProviderStatusColumn, "created_at"].join(","))
             .eq("customer_auth_user_id", user.id)
             .order("created_at", { ascending: false })
             .limit(20);

@@ -387,6 +387,12 @@
           ["Logo nodig", focus.missingLogo],
           ["SEO input nodig", focus.missingSeo],
           ["Klaar voor livegang", focus.readyForLive],
+          ["Wachten op preview", focus.customersWaitingForPreview],
+          ["Feedback open", focus.feedbackOpen],
+          ["Reviews nodig", focus.reviewsNeeded],
+          ["Launch klaar", focus.launchReady],
+          ["Launch geblokkeerd", focus.launchBlocked],
+          ["Vandaag live", focus.liveToday],
         ];
         $("brain-daily-focus").innerHTML = sections.map(([label, rows]) => {
           const items = Array.isArray(rows) ? rows.slice(0, 3) : [];

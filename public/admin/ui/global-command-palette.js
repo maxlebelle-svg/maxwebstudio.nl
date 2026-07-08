@@ -113,6 +113,12 @@
     ["show-preview", "Show preview", "Open preview omgeving", "Websites", "Command", "preview.html"],
     ["open-blueprint", "Open blueprint", "Open Website Factory blueprint", "Websites", "Command", "admin-website-factory.html"],
     ["open-project-preview", "Open project preview", "Open projectpreview", "Projecten", "Command", "preview.html"],
+    ["open-preview", "Open preview", "Open klantpreview", "Websites", "Command", "preview.html"],
+    ["review-preview", "Review preview", "Open preview review", "Websites", "Command", "admin-website-factory.html"],
+    ["approve-preview", "Approve preview", "Preview akkoord verwerken", "Websites", "Command", "admin-website-factory.html"],
+    ["launch-website", "Launch website", "Start livegang", "Websites", "Command", "admin-website-factory.html"],
+    ["show-launch-checklist", "Show launch checklist", "Bekijk live checklist", "Websites", "Command", "admin-website-factory.html"],
+    ["show-feedback", "Show feedback", "Bekijk preview feedback", "Websites", "Command", "admin-website-factory.html"],
   ];
 
   const state = {

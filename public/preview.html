@@ -56,7 +56,7 @@
         <article class="secure-preview-card">
           <span>Stap 3</span>
           <strong>Aanbetaling</strong>
-          <p>Na akkoord betaal je de aanbetaling veilig via Mollie. Daarna ronden wij de oplevering af richting dag 5.</p>
+          <p>Na akkoord betaal je de aanbetaling veilig via de veilige betaalomgeving. Daarna ronden wij de oplevering af richting dag 5.</p>
         </article>
       </section>
 
@@ -97,7 +97,7 @@
         <article class="secure-preview-card secure-preview-payment-card">
           <span>Betaling</span>
           <strong id="payment-title">Aanbetaling nog niet gestart</strong>
-          <p id="payment-text">Na akkoord opent hier de betaalstap. In productie maakt de server hiervoor een gekoppelde Mollie-betaallink aan.</p>
+          <p id="payment-text">Na akkoord opent hier de veilige betaalstap zodra die voor uw project klaarstaat.</p>
           <a class="button secondary is-disabled" id="payment-link" href="#" aria-disabled="true">Betaal aanbetaling</a>
         </article>
       </section>
@@ -149,6 +149,11 @@
           return Boolean(session?.access_token && (!session.expires_at || session.expires_at * 1000 > Date.now()));
         }
 
+        function currentAccessToken() {
+          const session = readJson(sessionKey, null);
+          return session?.access_token || "";
+        }
+
         function renderAccess() {
           const context = writePreviewContext();
           title.textContent = `${context.projectName || "Je website-preview"} staat klaar.`;
@@ -166,25 +171,65 @@
           accessTitle.textContent = "Preview gekoppeld";
           accessText.textContent = "Deze preview is gekoppeld aan je klantaccount. Je kunt vanaf nu ook via het klantportaal inloggen.";
           approve.disabled = false;
+          markPreviewOpened();
         }
 
-        approve.addEventListener("click", () => {
+        async function markPreviewOpened() {
+          const context = readJson(previewKey, {});
+          const token = currentAccessToken();
+          const marker = `maxwebstudioPreviewOpened:${context.projectId || context.token || "active"}`;
+          if (!token || sessionStorage.getItem(marker)) return;
+          sessionStorage.setItem(marker, "1");
+          await fetch("/api/demo-journey?scope=customer", {
+            method: "POST",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ action: "preview_opened" }),
+          }).catch(() => {});
+        }
+
+        approve.addEventListener("click", async () => {
           if (!consent.checked) {
             actionMessage.textContent = "Vink eerst aan dat je akkoord bent met de richting van de preview.";
             return;
           }
+          approve.disabled = true;
+          actionMessage.textContent = "Akkoord verwerken...";
           const context = writePreviewContext({
             status: "preview_approved",
             previewApprovedAt: new Date().toISOString(),
             feedback: feedback.value.trim(),
             paymentStatus: "deposit_pending",
           });
-          actionMessage.textContent = "Akkoord opgeslagen. De aanbetaling staat klaar.";
-          paymentTitle.textContent = "Aanbetaling klaar";
-          paymentText.textContent = "In de live flow opent deze knop direct de gekoppelde Mollie-betaalpagina voor dit project.";
-          paymentLink.classList.remove("is-disabled");
-          paymentLink.removeAttribute("aria-disabled");
-          paymentLink.href = context.checkoutUrl || "betalen.html";
+          try {
+            const token = currentAccessToken();
+            if (token) {
+              const response = await fetch("/api/demo-journey?scope=customer", {
+                method: "POST",
+                headers: {
+                  Accept: "application/json",
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ action: "approve_preview", feedback: feedback.value.trim() }),
+              });
+              const data = await response.json().catch(() => ({}));
+              if (!response.ok || data.success === false) throw new Error(data.error || "Akkoord kon niet worden verwerkt.");
+            }
+            actionMessage.textContent = "Akkoord opgeslagen. We bereiden de livegang voor.";
+            paymentTitle.textContent = "Volgende stap klaar";
+            paymentText.textContent = "Open de betaalstap zodra deze voor uw project beschikbaar is.";
+            paymentLink.classList.remove("is-disabled");
+            paymentLink.removeAttribute("aria-disabled");
+            paymentLink.href = context.checkoutUrl || "betalen.html";
+          } catch (error) {
+            actionMessage.textContent = error.message || "Akkoord kon niet worden verwerkt.";
+          } finally {
+            approve.disabled = false;
+          }
         });
 
         renderAccess();

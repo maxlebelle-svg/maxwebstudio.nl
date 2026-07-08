@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Checkout configureren | Max Webstudio</title>
-    <meta name="description" content="Configureer je Max Webstudio websitepakket, onderhoudspakket en betaal veilig de aanbetaling via Mollie." />
+    <meta name="description" content="Configureer je Max Webstudio websitepakket, onderhoudspakket en betaal veilig de aanbetaling via de veilige betaalomgeving." />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -28,7 +28,7 @@
     <main>
       <section class="page-hero payment-hero">
         <p class="eyebrow">Veilig betalen</p>
-        <h1>Configureer je website en betaal veilig via Mollie.</h1>
+        <h1>Configureer je website en betaal veilig via de veilige betaalomgeving.</h1>
         <p>Kies je websitepakket, selecteer onderhoud voor na oplevering en betaal vandaag alleen de aanbetaling.</p>
       </section>
 
@@ -110,7 +110,7 @@
               <div class="payment-form-heading">
                 <p class="section-kicker">Stap 3</p>
                 <h2>Jouw gegevens</h2>
-                <p>Deze gegevens worden meegestuurd naar Mollie als metadata, zodat Max Webstudio je betaling goed kan opvolgen.</p>
+                <p>Deze gegevens worden meegestuurd mee met uw betaalgegevens, zodat Max Webstudio je betaling goed kan opvolgen.</p>
               </div>
 
               <div class="payment-fields">
@@ -167,9 +167,9 @@
             </dl>
             <p class="summary-note">Onderhoud start na oplevering. Je ontvangt hiervoor apart bevestiging.</p>
             <p class="summary-note">Restbedrag wordt later via aparte betaallink of factuur voldaan.</p>
-            <button class="button primary payment-submit" type="submit">Betaal aanbetaling via Mollie</button>
+            <button class="button primary payment-submit" type="submit">Betaal aanbetaling via de veilige betaalomgeving</button>
             <div class="payment-trust" aria-label="Betaalmethoden en zekerheid">
-              <span>Veilig betalen via Mollie</span>
+              <span>Veilig betalen via de veilige betaalomgeving</span>
               <span>iDEAL</span>
               <span>Apple Pay</span>
               <span>Visa</span>
@@ -179,7 +179,7 @@
               <span>SSL beveiligd</span>
               <span>Geen betaalgegevens opgeslagen op onze website</span>
             </div>
-            <p class="payment-trust-note">Je betaling wordt veilig verwerkt door Mollie. Je betaalgegevens worden nooit opgeslagen door Max Webstudio.</p>
+            <p class="payment-trust-note">Je betaling wordt veilig verwerkt veilig. Je betaalgegevens worden nooit opgeslagen door Max Webstudio.</p>
             <p class="payment-message" id="payment-message" role="status" aria-live="polite"></p>
             <div class="why-checkout">
               <h3>Waarom klanten voor Max Webstudio kiezen</h3>
@@ -189,7 +189,7 @@
                 <li>Geen verborgen kosten</li>
                 <li>Heldere planning</li>
                 <li>Professionele factuur</li>
-                <li>Veilig betalen via Mollie</li>
+                <li>Veilig betalen via de veilige betaalomgeving</li>
               </ul>
             </div>
           </aside>
@@ -377,7 +377,7 @@
       if (invoice) {
         document.querySelector(".payment-hero .eyebrow").textContent = "Demo factuurbetaling";
         document.querySelector(".payment-hero h1").textContent = `Betaal demo-factuur ${invoice.invoiceNumber || ""}.`;
-        document.querySelector(".payment-hero p").textContent = "Deze checkout markeert de factuur lokaal als betaald. Er wordt geen echte Mollie-betaling gestart.";
+        document.querySelector(".payment-hero p").textContent = "Deze checkout markeert de factuur lokaal als betaald. Er wordt geen echte betaling gestart.";
         document.querySelector('input[name="customerName"]').value = invoice.customerName || "";
         document.querySelector('input[name="customerEmail"]').value = invoice.customerEmail || "";
         document.querySelector('input[name="customerPhone"]').value = invoice.customerPhone || "";
@@ -453,7 +453,7 @@
         } catch (error) {
           message.textContent = error.message || "Er ging iets mis. Probeer het opnieuw.";
           submitButton.disabled = false;
-          submitButton.textContent = "Betaal aanbetaling via Mollie";
+          submitButton.textContent = "Betaal aanbetaling via de veilige betaalomgeving";
         }
       });
     </script>

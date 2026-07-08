@@ -1,6 +1,7 @@
 const { verifyAdmin } = require("./_admin-auth");
 const { upsertProjectWorkspace, zipFilenameFor } = require("./_project-workspace");
 const { createTimelineEvent } = require("./services/timelineService");
+const { sendEmail } = require("./email");
 const {
   buildLogs,
   buildWebsitePackage,
@@ -47,6 +48,9 @@ async function handler(event) {
     if (action === "create_preview_version") return createPreviewVersionResponse(context, payload);
     if (action === "update_demo_journey_preview") return updateJourneyPreviewResponse(context, payload);
     if (action === "start_onboarding_pipeline") return startOnboardingPipelineResponse(context, payload);
+    if (["update_launch_checklist", "start_revision", "complete_revision", "resolve_feedback", "start_launch", "complete_launch"].includes(action)) {
+      return previewLaunchAutomationResponse(context, payload, action);
+    }
     return jsonResponse(400, { success: false, error: "Onbekende Website Factory actie." });
   } catch (error) {
     const missing = isMissingFactoryTableError(error);
@@ -151,6 +155,98 @@ async function startOnboardingPipelineResponse(context, payload) {
   return jsonResponse(200, { success: true, ...result });
 }
 
+async function previewLaunchAutomationResponse(context, payload, action) {
+  const result = await handlePreviewLaunchAutomation(context, payload, action);
+  return jsonResponse(200, { success: true, ...result });
+}
+
+async function handlePreviewLaunchAutomation(context, payload = {}, action = "") {
+  const projectId = cleanUuid(payload.projectId || payload.project_id);
+  const customerId = cleanUuid(payload.customerId || payload.customer_id);
+  const records = await readOnboardingFactoryRecords(context, { customerId, projectId });
+  if (!records.project || !records.customer) {
+    const error = new Error("Klant of project kon niet worden gevonden voor preview/livegang.");
+    error.status = 404;
+    throw error;
+  }
+  const now = new Date().toISOString();
+  const metadata = records.project.metadata || {};
+  const currentReview = metadata.previewReview && typeof metadata.previewReview === "object" ? metadata.previewReview : metadata.factoryPipeline?.previewReview || {};
+  const launch = normalizeLaunchChecklist(currentReview.launch || metadata.launchChecklist || {});
+  const review = {
+    ...currentReview,
+    status: currentReview.status || "preview_ready",
+    updatedAt: now,
+    launch,
+  };
+  let projectPatch = { phase: "Preview gereed", progress: Math.max(Number(records.project.progress) || 0, 75) };
+  let eventType = "preview_ready";
+  let notificationTitle = "Preview gereed";
+  let notificationDescription = "De preview staat klaar voor review.";
+  let mailType = "";
+
+  if (action === "update_launch_checklist") {
+    review.launch = updateLaunchChecklist(launch, payload.checklist || payload.items || []);
+    review.status = review.launch.progress === 100 ? "ready_for_launch" : "approved";
+    projectPatch = { phase: review.launch.progress === 100 ? "Klaar voor livegang" : "Live checklist", progress: Math.max(75, review.launch.progress) };
+    eventType = review.launch.progress === 100 ? "launch_started" : "project_updated";
+    notificationTitle = review.launch.progress === 100 ? "Website klaar voor livegang" : "Live checklist bijgewerkt";
+    notificationDescription = `${review.launch.progress}% van de live checklist is afgerond.`;
+  }
+  if (action === "start_revision") {
+    review.status = "revision_in_progress";
+    review.revisionStartedAt = now;
+    review.revisionCount = Number(review.revisionCount || 0) + 1;
+    projectPatch = { status: "in_ontwikkeling", phase: "Revisie bezig", progress: 78 };
+    eventType = "revision_started";
+    notificationTitle = "Revisie gestart";
+    notificationDescription = "Het team verwerkt feedback op de preview.";
+  }
+  if (action === "complete_revision") {
+    review.status = "waiting_for_customer";
+    review.revisionCompletedAt = now;
+    projectPatch = { status: "feedback", phase: "Preview bijgewerkt", progress: 82 };
+    eventType = "revision_completed";
+    notificationTitle = "Preview bijgewerkt";
+    notificationDescription = "De revisie is afgerond en staat klaar voor klantreview.";
+    mailType = "preview_updated";
+  }
+  if (action === "resolve_feedback") {
+    review.feedbackItems = markFeedbackResolved(review.feedbackItems || [], payload.feedbackId || payload.feedback_id);
+    review.status = review.feedbackItems.some((item) => item.status === "open") ? "revision_in_progress" : "waiting_for_customer";
+    projectPatch = { phase: "Feedback verwerkt", progress: 82 };
+    eventType = "feedback_resolved";
+    notificationTitle = "Feedback opgelost";
+    notificationDescription = "Een feedbackpunt is verwerkt.";
+  }
+  if (action === "start_launch") {
+    review.status = "launching";
+    review.launch = { ...launch, status: "launching", startedAt: launch.startedAt || now, updatedAt: now };
+    projectPatch = { status: "testen", phase: "Livegang gestart", progress: 90 };
+    eventType = "launch_started";
+    notificationTitle = "Launch gestart";
+    notificationDescription = "De livegang is gestart.";
+    mailType = "launch_started";
+  }
+  if (action === "complete_launch") {
+    review.status = "live";
+    review.launch = { ...launch, status: "live", progress: 100, completedAt: now, updatedAt: now };
+    review.liveAt = now;
+    review.postLaunchUpsells = postLaunchUpsells();
+    projectPatch = { status: "live", phase: "Website live", progress: 100 };
+    eventType = "website_live";
+    notificationTitle = "Website live";
+    notificationDescription = "De website staat live en het project is afgerond.";
+    mailType = "website_live";
+  }
+
+  const updatedProject = await persistPreviewReview(context, records, review, projectPatch);
+  await factoryTimeline(records, eventType, notificationTitle, notificationDescription, eventType === "website_live" ? "success" : "info", { previewReviewStatus: review.status, launchProgress: review.launch?.progress || 0 });
+  await factoryNotification(records, notificationTitle, notificationDescription, eventType === "launch_warning" ? "warning" : "success", { notificationType: eventType, launchProgress: review.launch?.progress || 0 });
+  if (mailType) await sendPreviewLaunchMail(records, review, mailType).catch((error) => console.error("Preview launch mail skipped", { message: error.message, type: mailType }));
+  return { project: normalizeRecord(updatedProject?.[0] || records.project), previewReview: review };
+}
+
 async function startOnboardingFactoryPipeline(context, payload = {}) {
   const customerId = cleanUuid(payload.customerId || payload.customer_id);
   const projectId = cleanUuid(payload.projectId || payload.project_id);
@@ -249,7 +345,11 @@ async function startOnboardingFactoryPipeline(context, payload = {}) {
       await factoryNotification(records, "Build mislukt", "De preview vraagt aandacht in Website Factory.", "error", { runId });
     } else {
       await factoryTimeline(records, "factory_preview_ready", "Preview gereed", "De website-preview staat klaar voor interne controle.", "success", { runId, buildJobId: job.id || "", previewUrl: pipeline.previewUrl });
+      const previewReview = buildInitialPreviewReview({ pipeline, job, journey: buildResult.journey || journey });
+      await persistPreviewReview(context, records, previewReview, { status: "feedback", phase: "Wachten op klantreview", progress: 78 });
+      await factoryTimeline(records, "preview_ready", "Preview klaar voor klantreview", "De preview staat klaar om met de klant te delen.", "success", { runId, previewUrl: pipeline.previewUrl, version: previewReview.activeVersion });
       await factoryNotification(records, "Preview gereed", "De preview staat klaar voor controle.", "success", { runId, previewUrl: pipeline.previewUrl });
+      await sendPreviewLaunchMail(records, previewReview, "preview_ready").catch((error) => console.error("Preview ready mail skipped", { message: error.message }));
     }
     return { factoryRun: sanitizePipeline(pipeline), job, journey: buildResult.journey || journey, previewVersion: buildResult.previewVersion || null };
   } catch (error) {
@@ -1157,6 +1257,157 @@ async function persistFactoryPipeline(context, records, pipeline, projectPatch =
     method: "PATCH",
     headers: { ...restHeaders(context.serviceRoleKey), Prefer: "return=representation", "Content-Type": "application/json" },
     body: JSON.stringify(patch),
+  });
+}
+
+async function persistPreviewReview(context, records, review, projectPatch = {}) {
+  const metadata = {
+    ...(records.project.metadata || {}),
+    previewReview: review,
+    launchChecklist: review.launch,
+    postLaunchUpsells: review.postLaunchUpsells || records.project.metadata?.postLaunchUpsells || [],
+  };
+  records.project.metadata = metadata;
+  return supabaseFetch(`${context.supabaseUrl}/rest/v1/projects?id=eq.${encodeURIComponent(records.project.id)}`, {
+    method: "PATCH",
+    headers: { ...restHeaders(context.serviceRoleKey), Prefer: "return=representation", "Content-Type": "application/json" },
+    body: JSON.stringify({
+      metadata,
+      updated_at: new Date().toISOString(),
+      ...projectPatch,
+    }),
+  });
+}
+
+function normalizeLaunchChecklist(current = {}) {
+  const labels = ["domein gekoppeld", "DNS gecontroleerd", "SSL", "favicon", "SEO", "analytics", "formulieren", "e-mail", "mobiel", "snelheid", "privacy", "cookie", "social metadata", "redirects"];
+  const existing = Array.isArray(current.checklist) ? current.checklist : [];
+  const checklist = labels.map((label) => {
+    const found = existing.find((item) => normalizeToken(item.label || item.id) === normalizeToken(label));
+    return {
+      id: slugify(label),
+      label,
+      done: Boolean(found?.done),
+      updatedAt: cleanText(found?.updatedAt || ""),
+      note: cleanText(found?.note || ""),
+    };
+  });
+  return {
+    status: cleanText(current.status || "not_started"),
+    startedAt: cleanText(current.startedAt || ""),
+    completedAt: cleanText(current.completedAt || ""),
+    updatedAt: cleanText(current.updatedAt || ""),
+    checklist,
+    progress: launchProgress(checklist),
+    domain: current.domain || {},
+    upsells: current.upsells || postLaunchUpsells(),
+  };
+}
+
+function buildInitialPreviewReview({ pipeline = {}, job = {}, journey = {} } = {}) {
+  const now = new Date().toISOString();
+  return {
+    status: "waiting_for_customer",
+    previewStatus: "Preview Ready",
+    activeVersion: `v${Number(job.previewVersion || 1)}`,
+    version: Number(job.previewVersion || 1),
+    previewUrl: cleanText(pipeline.previewUrl || job.previewUrl || journey.previewUrl),
+    previewScore: Number(pipeline.previewScore || job.previewScore || 0),
+    buildJobId: cleanText(job.id || pipeline.buildJobId),
+    buildDate: cleanText(job.completedAt || job.completed_at || pipeline.finishedAt || now),
+    latestUpdate: now,
+    seoStatus: pipeline.seoPlan?.status || "prepared",
+    brandingStatus: pipeline.brandingPlan?.status || "prepared",
+    projectStatus: "Waiting For Customer",
+    feedbackItems: [],
+    revisionCount: 0,
+    versions: [{
+      id: `v${Number(job.previewVersion || 1)}`,
+      version: `v${Number(job.previewVersion || 1)}`,
+      date: cleanText(job.completedAt || job.completed_at || pipeline.finishedAt || now),
+      builder: "Website Factory",
+      status: "preview_ready",
+      notes: "Eerste preview klaargezet voor klantreview.",
+      previewUrl: cleanText(pipeline.previewUrl || job.previewUrl || journey.previewUrl),
+    }],
+    launch: normalizeLaunchChecklist({ status: "not_started" }),
+  };
+}
+
+function updateLaunchChecklist(current = {}, updates = []) {
+  const now = new Date().toISOString();
+  const byId = new Map((Array.isArray(updates) ? updates : []).map((item) => [normalizeToken(item.id || item.label), item]));
+  const checklist = normalizeLaunchChecklist(current).checklist.map((item) => {
+    const update = byId.get(normalizeToken(item.id)) || byId.get(normalizeToken(item.label));
+    return update ? { ...item, done: Boolean(update.done), note: cleanText(update.note || item.note), updatedAt: now } : item;
+  });
+  const progress = launchProgress(checklist);
+  return {
+    ...current,
+    checklist,
+    progress,
+    status: progress === 100 ? "ready_for_launch" : "in_progress",
+    updatedAt: now,
+  };
+}
+
+function markFeedbackResolved(items = [], feedbackId = "") {
+  const id = cleanText(feedbackId);
+  const now = new Date().toISOString();
+  return (Array.isArray(items) ? items : []).map((item, index) => {
+    if (id && item.id !== id) return item;
+    if (!id && index !== 0) return item;
+    return { ...item, status: "resolved", resolvedAt: now };
+  });
+}
+
+function launchProgress(checklist = []) {
+  const rows = Array.isArray(checklist) ? checklist : [];
+  return rows.length ? Math.round((rows.filter((item) => item.done).length / rows.length) * 100) : 0;
+}
+
+function postLaunchUpsells() {
+  return ["Google Bedrijfsprofiel", "Social Media", "Logo", "Drukwerk", "085 nummer", "AI Chatbot", "SEO pakket", "Onderhoud", "Advertenties"].map((label) => ({
+    label,
+    status: "aanbevolen",
+    source: "commercial_flow",
+  }));
+}
+
+async function sendPreviewLaunchMail(records, review, type) {
+  const to = cleanText(records.customer?.email);
+  if (!to) return null;
+  const business = cleanText(records.customer?.company || records.customer?.name || records.project?.name || "uw website");
+  const templates = {
+    preview_ready: {
+      subject: `Preview staat klaar voor ${business}`,
+      text: `Beste,\n\nDe eerste website-preview voor ${business} staat klaar. U kunt de preview bekijken en feedback geven via uw klantportaal.\n\nMet vriendelijke groet,\nMax Webstudio`,
+    },
+    preview_updated: {
+      subject: `Preview bijgewerkt voor ${business}`,
+      text: `Beste,\n\nDe preview voor ${business} is bijgewerkt. U kunt opnieuw kijken en eventueel feedback geven in uw klantportaal.\n\nMet vriendelijke groet,\nMax Webstudio`,
+    },
+    launch_started: {
+      subject: `Livegang voorbereiding gestart voor ${business}`,
+      text: `Beste,\n\nWe zijn gestart met de livegangvoorbereiding. We controleren domein, SSL, formulieren, SEO en mobiele weergave.\n\nMet vriendelijke groet,\nMax Webstudio`,
+    },
+    website_live: {
+      subject: `${business} staat live`,
+      text: `Beste,\n\nGoed nieuws: de website staat live. In het klantportaal vindt u de vervolgstappen en aanbevolen groeimogelijkheden.\n\nMet vriendelijke groet,\nMax Webstudio`,
+    },
+  };
+  const template = templates[type];
+  if (!template) return null;
+  return sendEmail({
+    to,
+    subject: template.subject,
+    text: template.text,
+    html: template.text.split("\n").map((line) => `<p>${line || "&nbsp;"}</p>`).join(""),
+    templateKey: type,
+    templateName: type.replace(/_/g, " "),
+    customerId: records.customer?.id,
+    projectId: records.project?.id,
+    metadata: { previewReviewStatus: review.status },
   });
 }
 

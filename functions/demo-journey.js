@@ -2,6 +2,7 @@ const { verifyAdmin } = require("./_admin-auth");
 const { sendEmail } = require("./email");
 const { readProjectWorkspace, upsertProjectWorkspace, zipFilenameFor } = require("./_project-workspace");
 const { getBuildHistory, runBuildJob } = require("./website-factory");
+const { createTimelineEvent } = require("./services/timelineService");
 const crypto = require("crypto");
 
 const staffRoles = ["super_admin", "admin", "sales_manager", "sales_partner"];
@@ -157,8 +158,10 @@ async function saveCustomerFeedback(event) {
   }
 
   const payload = parsePayload(event.body);
-  const feedback = cleanText(payload.feedback);
-  if (!feedback) return jsonResponse(400, { success: false, error: "Vul uw feedback in." });
+  const action = cleanText(payload.action || "feedback");
+  const feedback = cleanText(payload.feedback || payload.comment);
+  const structuredFeedback = normalizePreviewFeedback(payload);
+  if (!["approve_preview", "preview_opened"].includes(action) && !feedback && !structuredFeedback.length) return jsonResponse(400, { success: false, error: "Vul uw feedback in." });
 
   const userResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
     method: "GET",
@@ -188,28 +191,165 @@ async function saveCustomerFeedback(event) {
   });
   const current = rows[0];
   if (!current?.id) return jsonResponse(404, { success: false, error: "Demo-preview niet gevonden." });
-  const feedbackAllowedStatuses = new Set(["preview_verstuurd", "feedback_ontvangen", "aanpassingen_bezig", "definitieve_versie_klaar"]);
+  const feedbackAllowedStatuses = new Set(["interne_preview_klaar", "preview_ready", "preview_verstuurd", "feedback_ontvangen", "aanpassingen_bezig", "definitieve_versie_klaar"]);
   if (!feedbackAllowedStatuses.has(normalizeStatus(current.demo_status))) {
     return jsonResponse(400, { success: false, error: "Feedback kan worden verstuurd zodra de preview beschikbaar is." });
   }
 
-  const updatedRows = await patchJourney({
+  const previewPackage = current.preview_package && typeof current.preview_package === "object" ? current.preview_package : {};
+  const now = new Date().toISOString();
+  const review = buildPreviewReviewState({ previewPackage, payload, feedback, structuredFeedback, action, actorId: user.id, now });
+  const nextStatus = action === "approve_preview" ? "definitieve_versie_klaar" : action === "preview_opened" ? normalizeStatus(current.demo_status) : "feedback_ontvangen";
+  const record = {
+    feedback: feedback || current.feedback || "",
+    demo_status: nextStatus,
+    approval_status: action === "approve_preview" ? "customer_approved" : current.approval_status || "pending",
+    preview_approved_by: action === "approve_preview" ? user.id : current.preview_approved_by || null,
+    preview_approved_at: action === "approve_preview" ? now : current.preview_approved_at || null,
+    preview_package: {
+      ...previewPackage,
+      previewReview: action === "preview_opened" ? { ...review, previewOpenedAt: now, status: review.status || "waiting_for_customer" } : review,
+      approvals: {
+        ...(previewPackage.approvals || {}),
+        approvalStatus: action === "approve_preview" ? "customer_approved" : previewPackage.approvals?.approvalStatus || "pending",
+        customerApprovedBy: action === "approve_preview" ? user.id : previewPackage.approvals?.customerApprovedBy || "",
+        customerApprovedAt: action === "approve_preview" ? now : previewPackage.approvals?.customerApprovedAt || "",
+      },
+    },
+    updated_by: user.id,
+    updated_at: now,
+  };
+  const updatedRows = await patchJourneySafe({
     supabaseUrl,
     serviceRoleKey,
     id: current.id,
-    record: {
-      feedback,
-      demo_status: "feedback_ontvangen",
-      updated_by: user.id,
-      updated_at: new Date().toISOString(),
+    record,
+  });
+  await createEvent({
+    supabaseUrl,
+    serviceRoleKey,
+    journeyId: current.id,
+    type: action === "approve_preview" ? "preview_approved" : action === "preview_opened" ? "preview_opened" : "customer_feedback",
+    title: action === "approve_preview" ? "Preview akkoord" : action === "preview_opened" ? "Preview bekeken" : "Feedback verwerken",
+    description: action === "approve_preview" ? "Uw akkoord is ontvangen. We bereiden livegang voor." : action === "preview_opened" ? "Uw preview is geopend." : "Uw opmerkingen zijn ontvangen.",
+    visible: true,
+    createdBy: user.id,
+  });
+  const timelineEvent = action === "approve_preview" ? "preview_approved" : action === "preview_opened" ? "preview_opened" : "feedback_created";
+  const timelineTitle = action === "approve_preview" ? "Preview akkoord door klant" : action === "preview_opened" ? "Preview bekeken" : "Preview feedback ontvangen";
+  const timelineDescription = action === "approve_preview" ? "De klant heeft akkoord gegeven op de preview." : action === "preview_opened" ? "De klant heeft de preview bekeken." : "De klant heeft feedback op de preview gegeven.";
+  await createTimelineEvent({
+    eventType: timelineEvent,
+    title: timelineTitle,
+    description: timelineDescription,
+    module: "preview_review",
+    referenceType: "demo_journey",
+    referenceId: current.id,
+    customerId: cleanText(current.customer_id),
+    actorName: user.email || "Klant",
+    actorRole: "customer",
+    severity: action === "approve_preview" ? "success" : "info",
+    metadata: {
+      dedupeKey: `${action}:${current.id}:${now}`,
+      feedbackItems: structuredFeedback.length,
+      status: nextStatus,
     },
   });
-  await createEvent({ supabaseUrl, serviceRoleKey, journeyId: current.id, type: "customer_feedback", title: "Feedback verwerken", description: "Uw opmerkingen zijn ontvangen.", visible: true, createdBy: user.id });
+  await createTimelineEvent({
+    eventType: timelineEvent,
+    title: timelineTitle,
+    description: timelineDescription,
+    module: "notifications",
+    referenceType: "demo_journey",
+    referenceId: current.id,
+    customerId: cleanText(current.customer_id),
+    actorName: "Preview review",
+    actorRole: "automation",
+    severity: action === "approve_preview" ? "success" : "info",
+    isGlobal: true,
+    metadata: {
+      dedupeKey: `notification:${timelineEvent}:${current.id}:${now}`,
+      notificationType: timelineEvent,
+      status: nextStatus,
+    },
+  });
   return jsonResponse(200, {
     success: true,
     journey: sanitizeCustomerJourney(mapJourney(updatedRows[0] || current)),
     events: await readEvents({ supabaseUrl, serviceRoleKey, journeyId: current.id, customerOnly: true }),
   });
+}
+
+function normalizePreviewFeedback(payload = {}) {
+  const sections = ["Hero", "Teksten", "Foto's", "Kleuren", "Knoppen", "Contact", "SEO", "Overig"];
+  const raw = Array.isArray(payload.items) ? payload.items : Array.isArray(payload.feedbackItems) ? payload.feedbackItems : [];
+  return raw.map((item, index) => {
+    const section = cleanText(item.section || item.component || item.area || "Overig");
+    const allowedSection = sections.find((entry) => normalizeStatus(entry) === normalizeStatus(section)) || "Overig";
+    const comment = cleanText(item.comment || item.feedback || item.text).slice(0, 2500);
+    if (!comment) return null;
+    return {
+      id: cleanText(item.id) || `feedback-${Date.now()}-${index + 1}`,
+      page: cleanText(item.page || "Algemeen").slice(0, 120),
+      section: allowedSection,
+      status: ["open", "resolved", "rejected", "accepted"].includes(normalizeStatus(item.status)) ? normalizeStatus(item.status) : "open",
+      comment,
+      screenshot: cleanText(item.screenshot || item.screenshotUrl || "").slice(0, 500),
+      createdAt: new Date().toISOString(),
+      resolvedAt: "",
+    };
+  }).filter(Boolean);
+}
+
+function buildPreviewReviewState({ previewPackage = {}, payload = {}, feedback = "", structuredFeedback = [], action = "feedback", actorId = "", now = "" } = {}) {
+  const current = previewPackage.previewReview && typeof previewPackage.previewReview === "object" ? previewPackage.previewReview : {};
+  if (action === "preview_opened") {
+    return {
+      ...current,
+      status: current.status || "waiting_for_customer",
+      previewOpenedAt: now,
+      lastUpdate: now,
+    };
+  }
+  const existingItems = Array.isArray(current.feedbackItems) ? current.feedbackItems : [];
+  const nextItems = structuredFeedback.length ? [...existingItems, ...structuredFeedback] : existingItems;
+  const versions = Array.isArray(current.versions) ? current.versions : [];
+  const version = {
+    id: `v${versions.length + 1}`,
+    version: `v${versions.length + 1}`,
+    date: now,
+    builder: "Website Factory",
+    status: action === "approve_preview" ? "approved" : "feedback",
+    notes: feedback,
+    previewUrl: cleanText(payload.previewUrl || previewPackage.previewUrl || ""),
+  };
+  return {
+    ...current,
+    status: action === "approve_preview" ? "approved" : "revision_requested",
+    lastUpdate: now,
+    approvedAt: action === "approve_preview" ? now : current.approvedAt || "",
+    approvedBy: action === "approve_preview" ? actorId : current.approvedBy || "",
+    feedbackItems: nextItems,
+    versions: [...versions, version],
+    latestComment: feedback || current.latestComment || "",
+    launch: action === "approve_preview" ? buildLaunchState(current.launch, now) : current.launch || null,
+  };
+}
+
+function buildLaunchState(current = {}, now = "") {
+  const items = ["domein gekoppeld", "DNS gecontroleerd", "SSL", "favicon", "SEO", "analytics", "formulieren", "e-mail", "mobiel", "snelheid", "privacy", "cookie", "social metadata", "redirects"];
+  const checklist = Array.isArray(current?.checklist) && current.checklist.length
+    ? current.checklist
+    : items.map((label) => ({ label, done: false, updatedAt: "" }));
+  return {
+    ...(current || {}),
+    status: "ready_for_launch",
+    startedAt: current?.startedAt || now,
+    updatedAt: now,
+    checklist,
+    progress: Math.round((checklist.filter((item) => item.done).length / checklist.length) * 100),
+    upsells: ["Google Bedrijfsprofiel", "Social Media", "Logo", "Drukwerk", "085 nummer", "AI Chatbot", "SEO pakket", "Onderhoud", "Advertenties"],
+  };
 }
 
 async function readAdminJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
@@ -868,6 +1008,26 @@ function buildEmailTemplate(typeOrStatus = "", journey = {}) {
       subject: "Uw website staat klaar voor de laatste controle",
       body: `${greeting}\n\nDe website voor ${business} staat klaar voor de laatste controle. U kunt de laatste versie hier bekijken:\n${previewLink}\n\nControleer vooral of de inhoud klopt en of bezoekers makkelijk contact kunnen opnemen. Als alles akkoord is, plannen we de vervolgstap richting oplevering of livegang.\n\nVoorbeeld: bevestig gerust met "akkoord voor livegang" of stuur nog een laatste punt zoals "pas het mobiele nummer nog aan".\n\nNa uw akkoord ronden wij de oplevering netjes af.\n\nMet vriendelijke groet,\nMax Webstudio`,
     },
+    preview_updated: {
+      subject: "Uw website-preview is bijgewerkt",
+      body: `${greeting}\n\nWe hebben de preview voor ${business} bijgewerkt. U kunt de nieuwe versie hier bekijken:\n${previewLink}\n\nBekijk vooral de punten waar u feedback op gaf. Als alles klopt, kunt u akkoord geven voor livegang.\n\nMet vriendelijke groet,\nMax Webstudio`,
+    },
+    website_live: {
+      subject: "Uw website staat live",
+      body: `${greeting}\n\nGoed nieuws: de website voor ${business} staat live.\n\nWe controleren de eerste periode nog op bereikbaarheid, formulieren en belangrijke details. In uw klantportaal vindt u ook aanbevolen vervolgstappen.\n\nMet vriendelijke groet,\nMax Webstudio`,
+    },
+    thank_you: {
+      subject: "Bedankt voor de samenwerking",
+      body: `${greeting}\n\nBedankt voor het vertrouwen in Max Webstudio. We wensen u veel succes met de nieuwe website voor ${business}.\n\nAls u nog iets wilt verbeteren of uitbreiden, denken we graag mee.\n\nMet vriendelijke groet,\nMax Webstudio`,
+    },
+    review_request: {
+      subject: "Wilt u uw ervaring delen?",
+      body: `${greeting}\n\nWe hopen dat u blij bent met de nieuwe website voor ${business}. Wilt u uw ervaring met Max Webstudio delen? Uw review helpt andere ondernemers om een goede keuze te maken.\n\nAlvast bedankt.\n\nMet vriendelijke groet,\nMax Webstudio`,
+    },
+    upsell_mail: {
+      subject: "Volgende groeistappen voor uw website",
+      body: `${greeting}\n\nNu de basis voor ${business} staat, kunnen we gericht verder groeien. Denk aan SEO, onderhoud, social media, advertenties, een AI-chatbot of Google Bedrijfsprofiel optimalisatie.\n\nWe zetten graag een passend voorstel klaar.\n\nMet vriendelijke groet,\nMax Webstudio`,
+    },
   };
   return { type, to: cleanText(journey.email).toLowerCase(), ...templates[type] };
 }
@@ -957,6 +1117,11 @@ function emailTemplates() {
     ["day3_preview_ready", "Dag 3 - Preview klaar"],
     ["day4_feedback_refinement", "Dag 4 - Feedback en verfijning"],
     ["day5_delivery_ready", "Dag 5 - Oplevering klaar"],
+    ["preview_updated", "Preview bijgewerkt"],
+    ["website_live", "Website live"],
+    ["thank_you", "Bedankmail"],
+    ["review_request", "Review verzoek"],
+    ["upsell_mail", "Upsell mail"],
   ].map(([type, label]) => ({ type, label }));
 }
 
@@ -967,6 +1132,7 @@ function emailTypeFor(value = "") {
   if (["preview_ready", "day3_preview_ready", "interne_preview_klaar", "preview_ingepland_voor_klant", "preview_verstuurd"].includes(key)) return "day3_preview_ready";
   if (["feedback_received", "day4_feedback_refinement", "feedback_ontvangen", "aanpassingen_bezig"].includes(key)) return "day4_feedback_refinement";
   if (["finalizing", "day5_delivery_ready", "definitieve_versie_klaar", "belafspraak_gepland", "verkocht"].includes(key)) return "day5_delivery_ready";
+  if (["preview_updated", "website_live", "thank_you", "review_request", "upsell_mail"].includes(key)) return key;
   return key && emailTemplates().some((item) => item.type === key) ? key : "day1_received";
 }
 
@@ -1020,7 +1186,8 @@ function customerTimelineDescription(status = "") {
 }
 
 function sanitizeCustomerJourney(journey = {}) {
-  const previewVisibleStatuses = new Set(["preview_verstuurd", "feedback_ontvangen", "aanpassingen_bezig", "definitieve_versie_klaar"]);
+  const previewVisibleStatuses = new Set(["interne_preview_klaar", "preview_ready", "preview_verstuurd", "feedback_ontvangen", "aanpassingen_bezig", "definitieve_versie_klaar"]);
+  const review = journey.previewPackage?.previewReview || {};
   return {
     id: journey.id,
     businessName: journey.businessName,
@@ -1028,8 +1195,48 @@ function sanitizeCustomerJourney(journey = {}) {
     demoStatus: journey.demoStatus,
     previewUrl: previewVisibleStatuses.has(journey.demoStatus) ? journey.previewUrl : "",
     feedback: journey.feedback,
+    previewReview: sanitizePreviewReview(review),
     followUpAt: journey.followUpAt,
     updatedAt: journey.updatedAt,
+  };
+}
+
+function sanitizePreviewReview(review = {}) {
+  return {
+    status: cleanText(review.status),
+    previewStatus: cleanText(review.previewStatus),
+    activeVersion: cleanText(review.activeVersion),
+    previewUrl: cleanText(review.previewUrl),
+    buildDate: cleanText(review.buildDate),
+    latestUpdate: cleanText(review.latestUpdate || review.lastUpdate || review.updatedAt),
+    seoStatus: cleanText(review.seoStatus),
+    brandingStatus: cleanText(review.brandingStatus),
+    projectStatus: cleanText(review.projectStatus),
+    revisionCount: Number(review.revisionCount || 0),
+    feedbackItems: Array.isArray(review.feedbackItems) ? review.feedbackItems.map((item) => ({
+      id: cleanText(item.id),
+      page: cleanText(item.page),
+      section: cleanText(item.section),
+      status: cleanText(item.status),
+      comment: cleanText(item.comment),
+      screenshot: cleanText(item.screenshot),
+      createdAt: cleanText(item.createdAt),
+      resolvedAt: cleanText(item.resolvedAt),
+    })) : [],
+    versions: Array.isArray(review.versions) ? review.versions.map((item) => ({
+      version: cleanText(item.version),
+      date: cleanText(item.date),
+      builder: cleanText(item.builder),
+      status: cleanText(item.status),
+      notes: cleanText(item.notes),
+      previewUrl: cleanText(item.previewUrl),
+    })) : [],
+    launch: review.launch ? {
+      status: cleanText(review.launch.status),
+      progress: Number(review.launch.progress || 0),
+      checklist: Array.isArray(review.launch.checklist) ? review.launch.checklist.map((item) => ({ label: cleanText(item.label), done: Boolean(item.done), note: cleanText(item.note) })) : [],
+      upsells: Array.isArray(review.launch.upsells) ? review.launch.upsells.map((item) => cleanText(item.label || item)).filter(Boolean) : [],
+    } : null,
   };
 }
 

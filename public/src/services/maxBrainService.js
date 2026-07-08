@@ -267,6 +267,30 @@ function buildDailyFocus({ data, customerContexts, recommendations }) {
     .filter((item) => ["preview_ready", "completed"].includes(statusKey(item.status)) && /akkoord|approved|goedgekeurd|live/.test(statusKey([item.approvalStatus, item.projectStatus, item.phase].join(" "))))
     .map((item) => ({ label: item.label, status: "klaar voor livegang" }))
     .slice(0, 8);
+  const customersWaitingForPreview = data.factory
+    .filter((item) => ["waiting_for_customer", "preview_ready"].includes(statusKey(item.reviewStatus || item.status)))
+    .map((item) => ({ label: item.label, status: "wacht op preview review" }))
+    .slice(0, 8);
+  const feedbackOpen = data.factory
+    .filter((item) => Number(item.openFeedback || 0) > 0)
+    .map((item) => ({ label: item.label, status: `${item.openFeedback} open feedbackpunt${item.openFeedback === 1 ? "" : "en"}` }))
+    .slice(0, 8);
+  const reviewsNeeded = data.factory
+    .filter((item) => ["live", "completed"].includes(statusKey(item.reviewStatus || item.projectStatus)) && !item.reviewRequestedAt)
+    .map((item) => ({ label: item.label, status: "review verzoek klaarzetten" }))
+    .slice(0, 8);
+  const launchReady = data.factory
+    .filter((item) => Number(item.launchProgress || 0) >= 100 && !["live", "completed"].includes(statusKey(item.projectStatus)))
+    .map((item) => ({ label: item.label, status: "launch klaar" }))
+    .slice(0, 8);
+  const launchBlocked = data.factory
+    .filter((item) => ["approved", "ready_for_launch", "launching"].includes(statusKey(item.reviewStatus)) && Number(item.launchProgress || 0) < 100)
+    .map((item) => ({ label: item.label, status: `${item.launchProgress || 0}% checklist` }))
+    .slice(0, 8);
+  const liveToday = data.factory
+    .filter((item) => isToday(item.liveAt || item.updatedAt) && ["live", "completed"].includes(statusKey(item.reviewStatus || item.projectStatus)))
+    .map((item) => ({ label: item.label, status: "vandaag live" }))
+    .slice(0, 8);
   const attention = [
     ...recommendations.slice(0, 4).map((item) => ({ label: item.label, reason: item.reason || item.category || "" })),
     ...data.notifications
@@ -293,6 +317,12 @@ function buildDailyFocus({ data, customerContexts, recommendations }) {
     missingLogo,
     missingSeo,
     readyForLive,
+    customersWaitingForPreview,
+    feedbackOpen,
+    reviewsNeeded,
+    launchReady,
+    launchBlocked,
+    liveToday,
   };
 }
 
@@ -342,9 +372,12 @@ function extractFactoryRows(data = {}) {
   const metadataRows = rows.map((item) => {
     const metadata = item.metadata || {};
     const pipeline = metadata.factoryPipeline || metadata.websiteFactoryRun || item.factoryPipeline || item.websiteFactoryRun || {};
+    const review = metadata.previewReview || pipeline.previewReview || item.previewReview || {};
+    const launch = review.launch || metadata.launchChecklist || {};
+    const feedbackItems = Array.isArray(review.feedbackItems) ? review.feedbackItems : [];
     const input = metadata.websiteFactoryInput || item.websiteFactoryInput || {};
     const status = pipeline.status || metadata.websiteFactoryInputStatus || item.websiteFactoryInputStatus || "";
-    if (!status && !pipeline.runId && !Object.keys(input || {}).length) return null;
+    if (!status && !pipeline.runId && !Object.keys(input || {}).length && !Object.keys(review || {}).length) return null;
     return {
       id: `${idOf(item)}:${pipeline.runId || status || "factory"}`,
       customerId: pipeline.customerId || input.customerId || item.customerId || item.customer_id || item.id || "",
@@ -359,6 +392,12 @@ function extractFactoryRows(data = {}) {
       previewUrl: pipeline.previewUrl || metadata.previewUrl || item.previewUrl || "",
       previewOpenedAt: pipeline.previewOpenedAt || metadata.previewOpenedAt || "",
       approvalStatus: pipeline.approvalStatus || item.approvalStatus || item.clientStatus || "",
+      reviewStatus: review.status || "",
+      openFeedback: feedbackItems.filter((feedback) => ["open", "revision_requested"].includes(statusKey(feedback.status))).length,
+      revisionCount: Number(review.revisionCount || 0),
+      launchProgress: Number(launch.progress || 0),
+      liveAt: review.liveAt || launch.completedAt || "",
+      reviewRequestedAt: review.reviewRequestedAt || "",
       projectStatus: item.status || "",
       phase: item.phase || "",
       updatedAt: pipeline.updatedAt || item.updatedAt || item.updated_at || item.createdAt || item.created_at || "",
@@ -527,6 +566,13 @@ function compareNewest(a = {}, b = {}) {
 function latestDate(values = []) {
   const dates = values.map(dateValue).filter(Boolean).sort((a, b) => b - a);
   return dates[0] ? dates[0].toISOString() : "";
+}
+
+function isToday(value = "") {
+  const date = dateValue(value);
+  if (!date) return false;
+  const now = new Date();
+  return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
 }
 
 function daysSince(value) {
