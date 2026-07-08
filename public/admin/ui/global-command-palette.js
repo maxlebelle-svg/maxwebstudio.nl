@@ -13,6 +13,7 @@
     leads: ["maxwebstudioLeads", "maxwebstudioLeadRequests", "maxwebstudioLeadFinderLeads"],
     invoices: ["maxwebstudioInvoices"],
     emails: ["maxwebstudioDemoEmails", "maxwebstudioEmailTemplates", "maxwebstudioMailLogs"],
+    brainCache: "maxwebstudioMaxBrainCache",
     websites: ["maxwebstudioManagedSites", "maxwebstudioWebsites"],
     assets: ["maxwebstudioFiles", "maxwebstudioBrandAssets", "maxwebstudioLogoProjects"],
     tasks: ["maxwebstudioCrmTasks"],
@@ -43,6 +44,7 @@
     ["dashboard", "Open Dashboard", "Admin CRM overzicht", "admin-dashboard.html", "Instellingen", "Page"],
     ["notification-center", "Open Notification Center", "CRM alerts en activity feed", "admin-notification-center.html", "Notifications", "Page"],
     ["max-automations", "Open Max Automations", "No-code workflow builder", "admin-max-automations.html", "Automations", "Page"],
+    ["max-brain", "Open Max Brain", "AI context engine diagnostics", "admin-max-brain.html", "AI", "Page"],
     ["mail-center", "Open Mail Center", "Verzonden e-mails en Resend statussen", "admin-mail-center.html", "E-mails", "Page"],
     ["email-studio", "Open E-mail Studio", "Templates beheren", "admin-email-studio.html", "E-mails", "Page"],
     ["customers", "Open Klanten", "Customer CRM", "admin-klanten.html", "Klanten", "Page"],
@@ -73,6 +75,7 @@
     ["open-mail", "Open Mail Center", "Verzonden CRM-mails", "E-mails", "Command", "admin-mail-center.html"],
     ["open-notifications", "Open Notification Center", "CRM notifications", "Notifications", "Command", "admin-notification-center.html"],
     ["open-automations", "Open Max Automations", "Workflow builder en simulation runs", "Automations", "Command", "admin-max-automations.html"],
+    ["open-max-brain", "Open Max Brain", "Context engine diagnostics", "AI", "Command", "admin-max-brain.html"],
     ["open-dashboard", "Open Dashboard", "Max CRM home", "Instellingen", "Command", "admin-dashboard.html"],
     ["open-seo", "Open SEO Studio", "SEO projecten", "AI", "Command", "admin-seo-studio.html"],
     ["open-factory", "Open Website Factory", "Website previews genereren", "Websites", "Command", "admin-website-factory.html"],
@@ -378,6 +381,7 @@
     if (/(mail|email|e-mail)/.test(text)) return "send-email";
     if (/(logo)/.test(text)) return "generate-logo";
     if (/(onboarding)/.test(text)) return "start-onboarding";
+    if (/(brain|context|ai context|max brain)/.test(text)) return "open-max-brain";
     return "";
   }
 
@@ -607,13 +611,15 @@
     const notifications = readArray("maxwebstudioClientPortalNotifications").length + readArray("maxwebstudioActivityLog").length;
     const invoices = readArray("maxwebstudioInvoices").filter((invoice) => !["betaald", "paid"].includes(normalize(invoice.status || invoice.paymentStatus))).length;
     const automations = readArray("maxwebstudioAutomationWorkflows").length;
+    const brainCache = readJson(STORAGE.brainCache, null);
+    const hasBrainRecommendations = Array.isArray(brainCache?.recommendations) && brainCache.recommendations.length > 0;
     const baseIds = [
       readMergedJson(STORAGE.recents, STORAGE.legacyRecents, []).length ? "open-dashboard" : "new-customer",
       invoices ? "new-invoice" : "open-mail",
       "start-onboarding",
       "generate-logo",
       automations ? "open-automations" : "open-factory",
-      notifications ? "open-notifications" : "open-assets",
+      hasBrainRecommendations ? "open-max-brain" : notifications ? "open-notifications" : "open-assets",
     ];
     return baseIds.map((id) => COMMANDS.find(([commandId]) => commandId === id)).filter(Boolean);
   }

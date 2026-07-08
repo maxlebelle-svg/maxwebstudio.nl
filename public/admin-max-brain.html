@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Max Brain | Max CRM</title>
+    <meta name="description" content="Interne Max Brain diagnostiek voor de Max CRM context-engine." />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=20260704-admin-session-hotfix" />
+    <link rel="stylesheet" href="admin/styles/premium-design-system.css" />
+    <script src="admin/ui/shared-helpers.js"></script>
+    <style>
+      body.admin-body {
+        background:
+          radial-gradient(circle at top left, rgba(59, 130, 246, 0.18), transparent 34rem),
+          linear-gradient(135deg, #08111f 0%, #101828 54%, #111827 100%);
+      }
+
+      .brain-page {
+        display: grid;
+        gap: 1.25rem;
+        width: min(100%, 1440px);
+        margin: 0 auto;
+      }
+
+      .brain-hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 1rem;
+        align-items: end;
+        padding: clamp(1.25rem, 2vw, 2rem);
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 18px;
+        background:
+          linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.76)),
+          linear-gradient(135deg, rgba(37, 99, 235, 0.22), rgba(14, 165, 233, 0.08));
+        box-shadow: 0 24px 80px rgba(2, 6, 23, 0.32);
+      }
+
+      .brain-hero h1 {
+        margin: 0;
+        font-size: clamp(2rem, 4vw, 4.4rem);
+        line-height: 0.96;
+        letter-spacing: 0;
+        color: #f8fafc;
+      }
+
+      .brain-hero p,
+      .brain-card p,
+      .brain-muted {
+        color: #94a3b8;
+      }
+
+      .brain-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        width: fit-content;
+        padding: 0.45rem 0.7rem;
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        border-radius: 999px;
+        background: rgba(37, 99, 235, 0.12);
+        color: #bfdbfe;
+        font-size: 0.78rem;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .brain-grid {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 0.9rem;
+      }
+
+      .brain-card {
+        min-width: 0;
+        padding: 1rem;
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        border-radius: 16px;
+        background: rgba(15, 23, 42, 0.76);
+        box-shadow: 0 18px 50px rgba(2, 6, 23, 0.22);
+      }
+
+      .brain-stat {
+        display: grid;
+        gap: 0.4rem;
+      }
+
+      .brain-stat span {
+        color: #94a3b8;
+        font-size: 0.74rem;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .brain-stat strong {
+        color: #f8fafc;
+        font-size: clamp(1.6rem, 3vw, 2.4rem);
+        line-height: 1;
+      }
+
+      .brain-workspace {
+        display: grid;
+        grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+        gap: 1rem;
+      }
+
+      .brain-panel-title {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        align-items: start;
+        margin-bottom: 1rem;
+      }
+
+      .brain-panel-title h2 {
+        margin: 0;
+        color: #f8fafc;
+        font-size: clamp(1.15rem, 2vw, 1.55rem);
+      }
+
+      .brain-debug-form {
+        display: grid;
+        grid-template-columns: 150px minmax(0, 1fr) auto;
+        gap: 0.7rem;
+      }
+
+      .brain-debug-form select,
+      .brain-debug-form input {
+        width: 100%;
+        min-width: 0;
+        border: 1px solid rgba(148, 163, 184, 0.24);
+        border-radius: 12px;
+        background: rgba(15, 23, 42, 0.88);
+        color: #f8fafc;
+        padding: 0.75rem 0.85rem;
+      }
+
+      .brain-context-output {
+        max-height: 560px;
+        overflow: auto;
+        margin: 1rem 0 0;
+        padding: 1rem;
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        border-radius: 14px;
+        background: rgba(2, 6, 23, 0.46);
+        color: #dbeafe;
+        font-size: 0.78rem;
+        line-height: 1.55;
+        white-space: pre-wrap;
+      }
+
+      .brain-recommendations,
+      .brain-datasets {
+        display: grid;
+        gap: 0.65rem;
+      }
+
+      .brain-row {
+        display: grid;
+        gap: 0.2rem;
+        padding: 0.8rem;
+        border: 1px solid rgba(148, 163, 184, 0.13);
+        border-radius: 12px;
+        background: rgba(15, 23, 42, 0.58);
+      }
+
+      .brain-row strong {
+        color: #f8fafc;
+      }
+
+      .brain-row small {
+        color: #94a3b8;
+      }
+
+      .brain-api-chip {
+        display: inline-flex;
+        padding: 0.45rem 0.65rem;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.72);
+        color: #bfdbfe;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.75rem;
+      }
+
+      @media (max-width: 1100px) {
+        .brain-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .brain-workspace {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .brain-hero {
+          grid-template-columns: 1fr;
+        }
+
+        .brain-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .brain-debug-form {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 520px) {
+        .brain-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body class="admin-body">
+    <main class="admin-crm-shell">
+      <aside class="admin-sidebar" aria-label="Admin modules">
+        <a class="brand" href="admin-dashboard.html">
+          <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true">
+            <rect x="6" y="6" width="68" height="68" rx="18"></rect>
+            <path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path>
+            <path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path>
+          </svg>
+          <span>Max CRM</span>
+        </a>
+        <nav class="admin-sidebar-nav">
+          <span class="admin-nav-group">Main</span>
+          <a href="admin-dashboard.html">Dashboard</a>
+          <a href="admin-notification-center.html">Notification Center</a>
+          <a href="admin-max-automations.html">Max Automations</a>
+          <a class="is-active" href="admin-max-brain.html">Max Brain</a>
+          <span class="admin-nav-group">Sales</span>
+          <a href="admin-sales.html">Leads</a>
+          <span class="admin-nav-group">Production</span>
+          <a href="admin-website-factory.html">Website Factory</a>
+          <a href="admin-assets.html">Asset Manager</a>
+          <a href="admin-seo-studio.html">SEO Studio</a>
+          <a href="admin-logo-studio.html">Logo Studio</a>
+          <span class="admin-nav-group">Customers</span>
+          <a href="admin-klanten.html">Klanten</a>
+          <a href="admin-websites.html">Websites</a>
+          <span class="admin-nav-group">Administration</span>
+          <a href="admin-facturen.html">Facturen</a>
+          <a href="admin-email-studio.html">E-mail Studio</a>
+          <a href="admin-mail-center.html">Mail Center</a>
+          <span class="admin-nav-group">System</span>
+          <a href="admin-instellingen.html">Instellingen</a>
+        </nav>
+      </aside>
+      <section class="admin-crm-main">
+        <div class="brain-page">
+          <section class="brain-hero">
+            <div>
+              <span class="brain-status">Internal AI Context Engine</span>
+              <h1>Max Brain</h1>
+              <p>Diagnostiek voor de centrale CRM-contextlaag. Geen chatbot, wel de basis voor Max Command, CEO Mode en toekomstige AI-agents.</p>
+            </div>
+            <span class="brain-api-chip">GET /api/max-brain/context</span>
+          </section>
+
+          <section class="brain-grid" aria-label="Max Brain diagnostiek">
+            <article class="brain-card brain-stat"><span>Customers analyzed</span><strong id="brain-customers">0</strong><p>Lokale contextscan</p></article>
+            <article class="brain-card brain-stat"><span>Risks</span><strong id="brain-risks">0</strong><p>Medium en high</p></article>
+            <article class="brain-card brain-stat"><span>Recommendations</span><strong id="brain-recommendations-count">0</strong><p>Deterministische acties</p></article>
+            <article class="brain-card brain-stat"><span>Context cache</span><strong id="brain-cache">Ready</strong><p id="brain-cache-copy">Voorbereid</p></article>
+            <article class="brain-card brain-stat"><span>Events processed</span><strong id="brain-events">0</strong><p>Timeline en notifications</p></article>
+            <article class="brain-card brain-stat"><span>Automation status</span><strong id="brain-automations">0</strong><p id="brain-automations-copy">Geen workflows</p></article>
+          </section>
+
+          <section class="brain-workspace">
+            <article class="brain-card">
+              <div class="brain-panel-title">
+                <div>
+                  <h2>Context inspector</h2>
+                  <p class="brain-muted">Inspecteer een Customer, Lead, Invoice of Email contextobject.</p>
+                </div>
+              </div>
+              <form class="brain-debug-form" id="brain-debug-form">
+                <select id="brain-context-type" aria-label="Context type">
+                  <option value="customerId">Customer</option>
+                  <option value="leadId">Lead</option>
+                  <option value="invoiceId">Invoice</option>
+                  <option value="emailId">Email</option>
+                </select>
+                <input id="brain-context-id" type="text" placeholder="ID of naam, leeg = eerste beschikbare context" />
+                <button class="button primary" type="submit">Inspecteer</button>
+              </form>
+              <pre class="brain-context-output" id="brain-context-output">Context wordt geladen...</pre>
+            </article>
+
+            <article class="brain-card">
+              <div class="brain-panel-title">
+                <div>
+                  <h2>Recommendations</h2>
+                  <p class="brain-muted">Regels voor risico, opportunity en volgende actie.</p>
+                </div>
+              </div>
+              <div class="brain-recommendations" id="brain-recommendations"></div>
+              <hr class="admin-divider" />
+              <div class="brain-panel-title">
+                <div>
+                  <h2>Datasets</h2>
+                  <p class="brain-muted">Bronnen die Max Brain lokaal heeft kunnen lezen.</p>
+                </div>
+              </div>
+              <div class="brain-datasets" id="brain-datasets"></div>
+            </article>
+          </section>
+        </div>
+      </section>
+    </main>
+    <script src="admin/ui/global-command-palette.js" defer></script>
+    <script type="module">
+      import { buildMaxBrainContext, collectBrainData, getMaxBrainDiagnostics } from "./src/services/maxBrainService.js";
+
+      const diagnostics = getMaxBrainDiagnostics();
+      const data = collectBrainData();
+      const $ = (id) => document.getElementById(id);
+      const escapeHtml = window.MaxSharedUI?.escapeHtml || ((value = "") => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]));
+
+      $("brain-customers").textContent = String(diagnostics.customersAnalyzed);
+      $("brain-risks").textContent = String(diagnostics.risks.total);
+      $("brain-recommendations-count").textContent = String(diagnostics.recommendations.length);
+      $("brain-cache").textContent = diagnostics.contextCache.status === "ready" ? "Ready" : "Off";
+      $("brain-cache-copy").textContent = `${diagnostics.contextCache.contexts} contexten in cache`;
+      $("brain-events").textContent = String(diagnostics.eventsProcessed);
+      $("brain-automations").textContent = String(diagnostics.automationStatus.total);
+      $("brain-automations-copy").textContent = diagnostics.automationStatus.status;
+
+      function renderRecommendations() {
+        const rows = diagnostics.recommendations.slice(0, 8);
+        $("brain-recommendations").innerHTML = rows.length
+          ? rows.map((item) => `<div class="brain-row"><strong>${escapeHtml(item.label)}</strong><small>${escapeHtml([item.customer, item.category, item.reason].filter(Boolean).join(" · "))}</small></div>`).join("")
+          : `<div class="brain-row"><strong>Geen aanbevelingen</strong><small>Er is nog te weinig CRM-context of alles staat rustig.</small></div>`;
+      }
+
+      function renderDatasets() {
+        $("brain-datasets").innerHTML = Object.entries(diagnostics.datasets)
+          .map(([key, value]) => `<div class="brain-row"><strong>${escapeHtml(key)}</strong><small>${escapeHtml(String(value))} records</small></div>`)
+          .join("");
+      }
+
+      function firstContextQuery() {
+        const customer = data.customers[0];
+        const lead = data.leads[0];
+        const invoice = data.invoices[0];
+        if (customer) return { customerId: customer.id || customer.profileId || customer.customerId || customer.company || customer.name };
+        if (lead) return { leadId: lead.id || lead.companyName || lead.email };
+        if (invoice) return { invoiceId: invoice.id || invoice.invoiceNumber };
+        return {};
+      }
+
+      function inspectContext(query = firstContextQuery()) {
+        const context = buildMaxBrainContext(query, { data, source: "admin-diagnostics" });
+        $("brain-context-output").textContent = JSON.stringify(context, null, 2);
+      }
+
+      $("brain-debug-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const key = $("brain-context-type").value;
+        const value = $("brain-context-id").value.trim();
+        inspectContext(value ? { [key]: value, search: value } : firstContextQuery());
+      });
+
+      renderRecommendations();
+      renderDatasets();
+      inspectContext();
+    </script>
+  </body>
+</html>

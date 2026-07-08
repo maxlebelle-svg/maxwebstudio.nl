@@ -20,6 +20,11 @@
   status = 200
 
 [[redirects]]
+  from = "/admin-max-brain"
+  to = "/admin-max-brain.html"
+  status = 200
+
+[[redirects]]
   from = "/api/customer-timeline/:customerId"
   to = "/.netlify/functions/customer-timeline/:customerId"
   status = 200
@@ -27,6 +32,11 @@
 [[redirects]]
   from = "/api/global-search"
   to = "/.netlify/functions/global-search"
+  status = 200
+
+[[redirects]]
+  from = "/api/max-brain/context"
+  to = "/.netlify/functions/max-brain-context"
   status = 200
 
 [[headers]]

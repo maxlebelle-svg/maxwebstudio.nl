@@ -31,6 +31,7 @@
           <a href="admin-dashboard.html">Dashboard</a>
           <a href="admin-notification-center.html">Notification Center</a>
           <a href="admin-max-automations.html">⚡ Max Automations</a>
+          <a href="admin-max-brain.html">Max Brain</a>
           <span class="admin-nav-group">Sales</span>
           <a href="admin-sales.html">Leads</a>
           <span class="admin-nav-group">Production</span>
@@ -2712,6 +2713,7 @@
           { type: "group", label: "Main" },
           { href: "admin-dashboard.html", page: "dashboard", accessId: "dashboard", label: "Dashboard", alwaysVisible: true },
           { href: "admin-max-automations.html", page: "max-automations", accessId: "max-automations", label: "⚡ Max Automations", alwaysVisible: true },
+          { href: "admin-max-brain.html", page: "max-brain", accessId: "max-brain", label: "Max Brain", alwaysVisible: true },
           { type: "group", label: "Sales" },
           { href: "admin-sales.html", page: "sales", accessId: "leadfinder", label: "Leads", alwaysVisible: true },
           { type: "group", label: "Production" },
@@ -10870,6 +10872,15 @@
           }
         }
 
+        function readCeoBrainCache() {
+          try {
+            const value = JSON.parse(localStorage.getItem("maxwebstudioMaxBrainCache") || "null");
+            return value && typeof value === "object" ? value : null;
+          } catch {
+            return null;
+          }
+        }
+
         function ceoStartOfDay(date = new Date()) {
           const copy = new Date(date);
           copy.setHours(0, 0, 0, 0);
@@ -11155,6 +11166,13 @@
           const recommendations = buildCeoPriorities(summary).map((item) => item.action);
           if (summary.openInvoices.length) recommendations.push("Verstuur betaalherinneringen voor open facturen.");
           if (summary.onboardingProjects.length) recommendations.push("Rond onboardingblokkades af voordat productie oploopt.");
+          const brainCache = readCeoBrainCache();
+          if (Array.isArray(brainCache?.recommendations)) {
+            brainCache.recommendations.slice(0, 3).forEach((item) => {
+              if (item?.reason) recommendations.push(item.reason);
+              else if (item?.label) recommendations.push(item.label);
+            });
+          }
           ceoElements.recommendations.innerHTML = [...new Set(recommendations)].slice(0, 6).map((item) => `<span>${escapeHtml(item)}</span>`).join("");
         }
 
