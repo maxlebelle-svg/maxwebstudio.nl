@@ -393,6 +393,13 @@
           ["Launch klaar", focus.launchReady],
           ["Launch geblokkeerd", focus.launchBlocked],
           ["Vandaag live", focus.liveToday],
+          ["Hoogste groeipotentie", focus.topGrowthPotential],
+          ["Zonder reviews", focus.customersWithoutReviews],
+          ["Zonder SEO", focus.customersWithoutSeo],
+          ["Zonder branding", focus.customersWithoutBranding],
+          ["Zonder Google profiel", focus.customersWithoutGoogleProfile],
+          ["Veel upsells", focus.customersWithManyUpsells],
+          ["Laag engagement", focus.lowEngagementCustomers],
         ];
         $("brain-daily-focus").innerHTML = sections.map(([label, rows]) => {
           const items = Array.isArray(rows) ? rows.slice(0, 3) : [];

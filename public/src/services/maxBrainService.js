@@ -291,6 +291,35 @@ function buildDailyFocus({ data, customerContexts, recommendations }) {
     .filter((item) => isToday(item.liveAt || item.updatedAt) && ["live", "completed"].includes(statusKey(item.reviewStatus || item.projectStatus)))
     .map((item) => ({ label: item.label, status: "vandaag live" }))
     .slice(0, 8);
+  const topGrowthPotential = data.factory
+    .filter((item) => Number(item.growthRecommendations || 0) > 0)
+    .sort((a, b) => Number(b.growthRecommendations || 0) - Number(a.growthRecommendations || 0))
+    .map((item) => ({ label: item.label, status: `${item.growthRecommendations} groeikansen` }))
+    .slice(0, 8);
+  const customersWithoutReviews = data.factory
+    .filter((item) => (item.growthMissing || []).includes("reviews_collect"))
+    .map((item) => ({ label: item.label, status: "reviews nodig" }))
+    .slice(0, 8);
+  const customersWithoutSeo = data.factory
+    .filter((item) => (item.growthMissing || []).includes("seo_improve"))
+    .map((item) => ({ label: item.label, status: "SEO verbeteren" }))
+    .slice(0, 8);
+  const customersWithoutBranding = data.factory
+    .filter((item) => (item.growthMissing || []).includes("logo_missing"))
+    .map((item) => ({ label: item.label, status: "branding/logo nodig" }))
+    .slice(0, 8);
+  const customersWithoutGoogleProfile = data.factory
+    .filter((item) => (item.growthMissing || []).includes("google_profile_missing"))
+    .map((item) => ({ label: item.label, status: "Google profiel ontbreekt" }))
+    .slice(0, 8);
+  const customersWithManyUpsells = data.factory
+    .filter((item) => Number(item.upsellCount || 0) >= 4)
+    .map((item) => ({ label: item.label, status: `${item.upsellCount} upsells` }))
+    .slice(0, 8);
+  const lowEngagementCustomers = data.factory
+    .filter((item) => Number(item.growthScore || 100) < 45)
+    .map((item) => ({ label: item.label, status: `Health ${item.growthScore}/100` }))
+    .slice(0, 8);
   const attention = [
     ...recommendations.slice(0, 4).map((item) => ({ label: item.label, reason: item.reason || item.category || "" })),
     ...data.notifications
@@ -323,6 +352,13 @@ function buildDailyFocus({ data, customerContexts, recommendations }) {
     launchReady,
     launchBlocked,
     liveToday,
+    topGrowthPotential,
+    customersWithoutReviews,
+    customersWithoutSeo,
+    customersWithoutBranding,
+    customersWithoutGoogleProfile,
+    customersWithManyUpsells,
+    lowEngagementCustomers,
   };
 }
 
@@ -373,8 +409,11 @@ function extractFactoryRows(data = {}) {
     const metadata = item.metadata || {};
     const pipeline = metadata.factoryPipeline || metadata.websiteFactoryRun || item.factoryPipeline || item.websiteFactoryRun || {};
     const review = metadata.previewReview || pipeline.previewReview || item.previewReview || {};
+    const growth = metadata.postLaunchGrowth || review.postLaunchGrowth || item.postLaunchGrowth || {};
     const launch = review.launch || metadata.launchChecklist || {};
     const feedbackItems = Array.isArray(review.feedbackItems) ? review.feedbackItems : [];
+    const growthRecommendations = Array.isArray(growth.recommendations) ? growth.recommendations : [];
+    const growthUpsells = Array.isArray(growth.upsells) ? growth.upsells : [];
     const input = metadata.websiteFactoryInput || item.websiteFactoryInput || {};
     const status = pipeline.status || metadata.websiteFactoryInputStatus || item.websiteFactoryInputStatus || "";
     if (!status && !pipeline.runId && !Object.keys(input || {}).length && !Object.keys(review || {}).length) return null;
@@ -398,6 +437,11 @@ function extractFactoryRows(data = {}) {
       launchProgress: Number(launch.progress || 0),
       liveAt: review.liveAt || launch.completedAt || "",
       reviewRequestedAt: review.reviewRequestedAt || "",
+      growthScore: Number(growth.health?.score || 0),
+      growthHealth: growth.health?.label || "",
+      growthRecommendations: growthRecommendations.length,
+      growthMissing: growthRecommendations.map((recommendation) => recommendation.id).filter(Boolean),
+      upsellCount: growthUpsells.length,
       projectStatus: item.status || "",
       phase: item.phase || "",
       updatedAt: pipeline.updatedAt || item.updatedAt || item.updated_at || item.createdAt || item.created_at || "",

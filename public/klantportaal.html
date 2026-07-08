@@ -339,6 +339,18 @@
         <div class="portal-card-grid" id="portal-websites" aria-live="polite"></div>
       </section>
 
+      <section class="admin-section" id="growth-dashboard">
+        <div class="admin-section-heading"><div><p class="section-kicker">Groei</p><h2>Growth Dashboard</h2></div></div>
+        <article class="portal-section-ai-card portal-ai-card" id="portal-growth-guidance">
+          <span>Max zegt</span>
+          <strong>Na livegang blijf ik meekijken naar groei.</strong>
+          <p>Hier zie je in gewone taal welke kansen klaarstaan voor meer vertrouwen, vindbaarheid en aanvragen.</p>
+        </article>
+        <div class="portal-card-grid" id="portal-growth-health" aria-live="polite"></div>
+        <div class="portal-card-grid" id="portal-growth-recommendations" aria-live="polite"></div>
+        <div class="portal-card-grid" id="portal-growth-upsells" aria-live="polite"></div>
+      </section>
+
       <section class="admin-section" id="account">
         <div class="admin-section-heading"><div><p class="section-kicker">Account</p><h2>Je gegevens en toegang</h2></div></div>
         <div class="portal-card-grid" id="portal-account" aria-live="polite"></div>
@@ -437,6 +449,9 @@
         const websiteOverview = document.getElementById("portal-website-overview");
         const websiteGuidance = document.getElementById("portal-website-guidance");
         const websiteList = document.getElementById("portal-websites");
+        const growthHealth = document.getElementById("portal-growth-health");
+        const growthRecommendations = document.getElementById("portal-growth-recommendations");
+        const growthUpsells = document.getElementById("portal-growth-upsells");
         const accountList = document.getElementById("portal-account");
         const fileList = document.getElementById("portal-files");
         const readinessList = document.getElementById("portal-readiness");
@@ -730,7 +745,7 @@
           portalSourceBadge.className = "status-badge status-warning";
           portalSourceText.textContent = "Customer access guard heeft een mismatch gevonden. In deze fase tonen we daarom geen klantdata van een andere klant.";
           customerProfile.append(createEmpty("Klantdata afgeschermd", "Open je eigen klantportaal of log opnieuw in met de juiste klant."));
-          [portalHealthGrid, portalActionGrid, financeOverview, subscriptionList, projectList, websiteOverview, websiteList, fileList].forEach((target) => target.append(createEmpty("Geen data", "Deze data wordt bewust niet getoond bij een customer mismatch.")));
+          [portalHealthGrid, portalActionGrid, financeOverview, subscriptionList, projectList, websiteOverview, websiteList, growthHealth, growthRecommendations, growthUpsells, fileList].forEach((target) => target.append(createEmpty("Geen data", "Deze data wordt bewust niet getoond bij een customer mismatch.")));
           return;
         }
 
@@ -1715,6 +1730,103 @@
           websiteOverview.append(card);
         }
 
+        function buildGrowthState({ customer, websites, projects, subscriptions, files }) {
+          const website = websites[0] || {};
+          const project = projects.find((item) => ["live", "completed", "afgerond"].includes(normalize(item.status))) || projects[0] || {};
+          const metadata = project.metadata || website.metadata || {};
+          const stored = metadata.postLaunchGrowth || metadata.previewReview?.postLaunchGrowth || {};
+          const recommendations = Array.isArray(stored.recommendations) && stored.recommendations.length
+            ? stored.recommendations
+            : inferGrowthRecommendations({ customer, website, project, subscriptions, files });
+          const health = stored.health || calculatePortalGrowthHealth({ website, project, subscriptions, recommendations });
+          return {
+            onlineSince: stored.onlineSince || metadata.previewReview?.liveAt || project.completedAt || project.updatedAt || website.createdAt || website.updatedAt || "",
+            health,
+            recommendations,
+            upsells: Array.isArray(stored.upsells) && stored.upsells.length ? stored.upsells : defaultGrowthUpsells(recommendations),
+          };
+        }
+
+        function inferGrowthRecommendations({ customer = {}, website = {}, project = {}, subscriptions = [], files = [] }) {
+          const haystack = normalize([JSON.stringify(customer), JSON.stringify(website), JSON.stringify(project), JSON.stringify(files)].join(" "));
+          const has = (term) => haystack.includes(term);
+          return [
+            ["logo_missing", "Logo ontbreekt", "Een herkenbaar logo maakt je merk sterker.", "logo", !has("logo")],
+            ["social_missing", "Social media ontbreekt", "Laat updates en bewijs vaker terugkomen.", "social", !has("social") && !has("instagram") && !has("facebook")],
+            ["google_profile_missing", "Google Bedrijfsprofiel ontbreekt", "Lokale vindbaarheid kan beter met een compleet profiel.", "google", !has("google")],
+            ["seo_improve", "SEO verbeteren", "Extra zoekwoorden en landingspagina's kunnen meer aanvragen opleveren.", "seo", !has("seo")],
+            ["reviews_collect", "Reviews verzamelen", "Nieuwe reviews bouwen vertrouwen op.", "reviews", !has("review")],
+            ["backup_package", "Back-up pakket", "Een herstelplan geeft rust na livegang.", "backup", !has("backup") && !has("back-up")],
+            ["analytics_needed", "Analytics", "Meetbaar verkeer helpt om slimmer te verbeteren.", "analytics", !has("analytics")],
+            ["care_plan", "Onderhoud", "Blijf veilig en actueel met periodiek onderhoud.", "maintenance", !subscriptions.some((item) => ["actief", "active"].includes(normalize(item.status)))],
+          ].filter(([, , , , active]) => active).map(([id, title, reason, upsellId], index) => ({ id, title, reason, upsellId, priority: index < 3 ? "high" : "normal", status: "open" }));
+        }
+
+        function calculatePortalGrowthHealth({ website = {}, project = {}, subscriptions = [], recommendations = [] }) {
+          const checks = [
+            ["Website status", ["online", "live", "actief", "active"].includes(normalize(website.status || project.status))],
+            ["Onderhoud", subscriptions.some((item) => ["actief", "active"].includes(normalize(item.status))) || Boolean(website.carePackage || project.carePackage)],
+            ["Back-ups", !recommendations.some((item) => item.id === "backup_package")],
+            ["SSL", !["inactive", "niet actief", "unknown"].includes(normalize(website.sslStatus || website.ssl_status || ""))],
+            ["SEO", !recommendations.some((item) => item.id === "seo_improve")],
+            ["Google", !recommendations.some((item) => item.id === "google_profile_missing")],
+            ["Social", !recommendations.some((item) => item.id === "social_missing")],
+            ["Branding", !recommendations.some((item) => item.id === "logo_missing")],
+            ["Reviews", !recommendations.some((item) => item.id === "reviews_collect")],
+            ["Analytics", !recommendations.some((item) => item.id === "analytics_needed")],
+          ];
+          const score = Math.round((checks.filter(([, done]) => done).length / checks.length) * 100);
+          return { score, label: score >= 85 ? "Excellent" : score >= 70 ? "Good" : score >= 45 ? "Attention" : "Critical", checks };
+        }
+
+        function defaultGrowthUpsells(recommendations = []) {
+          const catalog = {
+            logo: "Logo ontwerp",
+            social: "Social media pakket",
+            google: "Google Bedrijfsprofiel",
+            seo: "SEO pakket",
+            reviews: "Review campagne",
+            backup: "Back-up pakket",
+            analytics: "Analytics",
+            maintenance: "Onderhoud",
+          };
+          return recommendations.map((item) => ({ id: item.upsellId, label: catalog[item.upsellId] || item.title, status: "aanbevolen", priority: item.priority }));
+        }
+
+        function renderGrowthDashboard({ customer, websites, projects, subscriptions, files }) {
+          if (!growthHealth || !growthRecommendations || !growthUpsells) return;
+          [growthHealth, growthRecommendations, growthUpsells].forEach((target) => target.replaceChildren());
+          const growth = buildGrowthState({ customer, websites, projects, subscriptions, files });
+          const website = websites[0] || {};
+          growthHealth.append(createInfoCard("Customer Health Score", [
+            ["Score", `${growth.health.score}/100 - ${growth.health.label}`],
+            ["Website status", friendlyWebsiteStatus(website)],
+            ["Online sinds", formatDate(growth.onlineSince)],
+            ["Onderhoud", subscriptions.some((item) => ["actief", "active"].includes(normalize(item.status))) ? "Actief" : "Nog te kiezen"],
+            ["Back-ups", growth.health.checks?.find(([label]) => label === "Back-ups")?.[1] ? "Op orde" : "Aanbevolen"],
+            ["SSL", growth.health.checks?.find(([label]) => label === "SSL")?.[1] ? "Actief" : "Controle nodig"],
+            ["SEO", growth.health.checks?.find(([label]) => label === "SEO")?.[1] ? "Op orde" : "Verbeterkans"],
+            ["Google status", growth.health.checks?.find(([label]) => label === "Google")?.[1] ? "Op orde" : "Aanbevolen"],
+            ["Social status", growth.health.checks?.find(([label]) => label === "Social")?.[1] ? "Op orde" : "Aanbevolen"],
+            ["Branding status", growth.health.checks?.find(([label]) => label === "Branding")?.[1] ? "Op orde" : "Aanbevolen"],
+          ]));
+          if (!growth.recommendations.length) growthRecommendations.append(createEmpty("Geen open aanbevelingen", "Je website staat er netjes voor."));
+          growth.recommendations.slice(0, 8).forEach((item) => {
+            growthRecommendations.append(createInfoCard(item.title, [
+              ["Status", createBadge(item.status || "open")],
+              ["Kans", item.reason],
+              ["Prioriteit", item.priority === "high" ? "Hoog" : "Normaal"],
+            ], [createActionLink("Bespreek deze kans", "#berichten")]));
+          });
+          if (!growth.upsells.length) growthUpsells.append(createEmpty("Geen nieuwe kansen", "Nieuwe groeidiensten verschijnen hier zodra ze relevant zijn."));
+          growth.upsells.slice(0, 10).forEach((item) => {
+            growthUpsells.append(createInfoCard(item.label, [
+              ["Status", createBadge(item.status || "aanbevolen")],
+              ["Type", item.source === "commercial_flow" ? "Groeidienst" : "Aanbevolen"],
+            ], [createActionLink("Interesse doorgeven", "#berichten")]));
+          });
+        }
+
         function updateTodayExperience({ customer, websites, projects, invoices, changeRequests, messages, notifications, subscriptions }) {
           const primaryWebsite = websites[0] || {};
           const primaryProject = projects[0] || {};
@@ -2173,6 +2285,7 @@
         renderMessages(customerMessages);
 
         renderMyWebsiteExperience({ websites, projects });
+        renderGrowthDashboard({ customer, websites, projects, subscriptions, files });
 
         if (!websites.length) websiteList.append(createEmpty("Geen websites", "Er is nog geen website gekoppeld aan dit klantprofiel."));
         websites.slice(1).forEach((website) => {

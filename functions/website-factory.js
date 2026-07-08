@@ -233,6 +233,7 @@ async function handlePreviewLaunchAutomation(context, payload = {}, action = "")
     review.launch = { ...launch, status: "live", progress: 100, completedAt: now, updatedAt: now };
     review.liveAt = now;
     review.postLaunchUpsells = postLaunchUpsells();
+    review.postLaunchGrowth = buildPostLaunchGrowth(records, review, now);
     projectPatch = { status: "live", phase: "Website live", progress: 100 };
     eventType = "website_live";
     notificationTitle = "Website live";
@@ -243,6 +244,7 @@ async function handlePreviewLaunchAutomation(context, payload = {}, action = "")
   const updatedProject = await persistPreviewReview(context, records, review, projectPatch);
   await factoryTimeline(records, eventType, notificationTitle, notificationDescription, eventType === "website_live" ? "success" : "info", { previewReviewStatus: review.status, launchProgress: review.launch?.progress || 0 });
   await factoryNotification(records, notificationTitle, notificationDescription, eventType === "launch_warning" ? "warning" : "success", { notificationType: eventType, launchProgress: review.launch?.progress || 0 });
+  if (action === "complete_launch") await createPostLaunchGrowthEvents(records, review);
   if (mailType) await sendPreviewLaunchMail(records, review, mailType).catch((error) => console.error("Preview launch mail skipped", { message: error.message, type: mailType }));
   return { project: normalizeRecord(updatedProject?.[0] || records.project), previewReview: review };
 }
@@ -1266,6 +1268,7 @@ async function persistPreviewReview(context, records, review, projectPatch = {})
     previewReview: review,
     launchChecklist: review.launch,
     postLaunchUpsells: review.postLaunchUpsells || records.project.metadata?.postLaunchUpsells || [],
+    postLaunchGrowth: review.postLaunchGrowth || records.project.metadata?.postLaunchGrowth || null,
   };
   records.project.metadata = metadata;
   return supabaseFetch(`${context.supabaseUrl}/rest/v1/projects?id=eq.${encodeURIComponent(records.project.id)}`, {
@@ -1367,11 +1370,125 @@ function launchProgress(checklist = []) {
 }
 
 function postLaunchUpsells() {
-  return ["Google Bedrijfsprofiel", "Social Media", "Logo", "Drukwerk", "085 nummer", "AI Chatbot", "SEO pakket", "Onderhoud", "Advertenties"].map((label) => ({
-    label,
+  return growthUpsellCatalog().map((item) => ({
+    ...item,
     status: "aanbevolen",
     source: "commercial_flow",
   }));
+}
+
+function growthUpsellCatalog() {
+  return [
+    ["logo", "Logo ontwerp"], ["branding", "Branding pakket"], ["visitekaartjes", "Visitekaartjes"],
+    ["briefpapier", "Briefpapier"], ["flyers", "Flyers"], ["brochures", "Brochures"],
+    ["social", "Social media pakket"], ["google", "Google Bedrijfsprofiel"], ["seo", "SEO pakket"],
+    ["google_ads", "Google Ads"], ["meta_ads", "Meta Ads"], ["ai_chatbot", "AI Chatbot"],
+    ["phone_085", "085-nummer"], ["telefonie", "Zakelijke telefonie"], ["email", "E-mail inrichting"],
+    ["extra_pages", "Extra pagina's"], ["extra_languages", "Extra talen"], ["photography", "Fotografie"],
+    ["video", "Video"], ["maintenance", "Onderhoud"], ["hosting", "Hosting upgrades"],
+    ["backup", "Back-up pakket"], ["security", "Security pakket"], ["analytics", "Analytics"],
+    ["heatmaps", "Heatmaps"], ["conversion", "Conversie optimalisatie"],
+  ].map(([id, label]) => ({ id, label }));
+}
+
+function buildPostLaunchGrowth(records, review, now = new Date().toISOString()) {
+  const projectMeta = records.project?.metadata || {};
+  const websiteMeta = records.website?.metadata || {};
+  const recommendations = buildGrowthRecommendations({ records, review, projectMeta, websiteMeta });
+  const health = calculateGrowthHealthScore({ records, review, recommendations, websiteMeta });
+  return {
+    status: "active",
+    onlineSince: review.liveAt || now,
+    health,
+    recommendations,
+    upsells: postLaunchUpsells().map((item) => ({
+      ...item,
+      priority: recommendations.some((recommendation) => recommendation.upsellId === item.id) ? "high" : "normal",
+    })),
+    automations: buildGrowthAutomationSchedule(now),
+    crmTasks: buildGrowthTasks(recommendations, now),
+    updatedAt: now,
+  };
+}
+
+function buildGrowthRecommendations({ records, review, projectMeta, websiteMeta }) {
+  const haystack = statusKey([JSON.stringify(projectMeta), JSON.stringify(websiteMeta), records.project?.notes, records.website?.notes].join(" "));
+  const has = (pattern) => pattern.test(haystack);
+  const rows = [
+    ["logo_missing", "Logo ontbreekt", "Een sterk logo maakt de website herkenbaarder.", "logo", !has(/logo/)],
+    ["social_missing", "Social media ontbreekt", "Social media helpt om updates en bewijs zichtbaar te maken.", "social", !has(/social|instagram|facebook|linkedin/)],
+    ["google_profile_missing", "Google Bedrijfsprofiel ontbreekt", "Een compleet bedrijfsprofiel vergroot lokale vindbaarheid.", "google", !has(/google.*profiel|google business|bedrijfsprofiel/)],
+    ["phone_085_interesting", "085-nummer interessant", "Een zakelijk nummer kan vertrouwen en bereikbaarheid versterken.", "phone_085", !has(/085|telefonie/)],
+    ["ai_chatbot_interesting", "AI-chatbot interessant", "Een chatbot kan veelgestelde vragen en leads opvangen.", "ai_chatbot", !has(/chatbot/)],
+    ["seo_improve", "SEO verbeteren", "Meer zoekwoorden en landingspagina's kunnen extra aanvragen opleveren.", "seo", !has(/seo.*pakket|seo.*actief/)],
+    ["ads_start", "Advertenties starten", "Campagnes kunnen sneller verkeer en aanvragen brengen.", "google_ads", !has(/ads|advertentie/)],
+    ["reviews_collect", "Reviews verzamelen", "Nieuwe reviews verhogen vertrouwen na livegang.", "google", !review.reviewRequestedAt],
+    ["backup_package", "Back-up pakket", "Een herstelplan geeft rust na livegang.", "backup", !has(/backup|back-up/)],
+    ["analytics_needed", "Analytics", "Meetbaar verkeer helpt om gericht te verbeteren.", "analytics", !has(/analytics|meting/)],
+  ];
+  return rows.filter(([, , , , active]) => active).map(([id, title, reason, upsellId], index) => ({
+    id,
+    title,
+    reason,
+    upsellId,
+    status: "open",
+    priority: index < 4 ? "high" : "normal",
+    createdAt: new Date().toISOString(),
+  }));
+}
+
+function calculateGrowthHealthScore({ records, review, recommendations, websiteMeta }) {
+  const launchProgress = Number(review.launch?.progress || 0);
+  const online = ["live", "online", "active", "actief"].includes(statusKey(records.project?.status || records.website?.status || review.status));
+  const checks = [
+    online,
+    launchProgress >= 100,
+    !recommendations.some((item) => item.id === "seo_improve"),
+    !recommendations.some((item) => item.id === "logo_missing"),
+    !recommendations.some((item) => item.id === "reviews_collect"),
+    !recommendations.some((item) => item.id === "google_profile_missing"),
+    !recommendations.some((item) => item.id === "social_missing"),
+    statusKey(records.customer?.package || records.project?.care_package || records.website?.care_package).includes("care") || statusKey(JSON.stringify(websiteMeta)).includes("onderhoud"),
+    !recommendations.some((item) => item.id === "analytics_needed"),
+    !recommendations.some((item) => item.id === "backup_package"),
+  ];
+  const score = Math.round((checks.filter(Boolean).length / checks.length) * 100);
+  return {
+    score,
+    label: score >= 85 ? "Excellent" : score >= 70 ? "Good" : score >= 45 ? "Attention" : "Critical",
+  };
+}
+
+function buildGrowthAutomationSchedule(start = new Date().toISOString()) {
+  const base = new Date(start);
+  const addDays = (days) => new Date(base.getTime() + days * 86400000).toISOString();
+  return [
+    [30, "Review vragen"], [60, "SEO check"], [90, "Nieuwe aanbevelingen"], [180, "Onderhoud"], [365, "Jubileummail"],
+  ].map(([days, label]) => ({ label, dueAt: addDays(days), status: "scheduled" }));
+}
+
+function buildGrowthTasks(recommendations, start = new Date().toISOString()) {
+  const due = new Date(new Date(start).getTime() + 7 * 86400000).toISOString().slice(0, 10);
+  return recommendations.slice(0, 6).map((item) => ({
+    id: `growth-${item.id}`,
+    title: item.title,
+    type: "growth",
+    status: "open",
+    priority: item.priority === "high" ? "hoog" : "normaal",
+    dueDate: due,
+    notes: item.reason,
+  }));
+}
+
+async function createPostLaunchGrowthEvents(records, review) {
+  const recommendations = review.postLaunchGrowth?.recommendations || [];
+  if (recommendations[0]) {
+    await factoryTimeline(records, "growth_recommendation_created", "Nieuwe groeikansen klaar", "Max Brain heeft post-launch groeikansen klaargezet.", "success", { recommendations: recommendations.length });
+    await factoryNotification(records, "Nieuwe groeikans", recommendations[0].title, "info", { notificationType: "growth_recommendation_created" });
+  }
+  await factoryTimeline(records, "upsell_available", "Upsells beschikbaar", "Post-launch upsells staan klaar in het klantdossier.", "info", { upsells: review.postLaunchUpsells?.length || 0 });
+  await factoryNotification(records, "Nieuwe upsell", "Er staan nieuwe groeidiensten klaar voor deze klant.", "info", { notificationType: "upsell_available" });
+  await factoryTimeline(records, "review_requested", "Review verzoek gepland", "Reviewverzoek staat klaar in de post-launch planning.", "info", {});
 }
 
 async function sendPreviewLaunchMail(records, review, type) {

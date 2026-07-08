@@ -1028,6 +1028,34 @@ function buildEmailTemplate(typeOrStatus = "", journey = {}) {
       subject: "Volgende groeistappen voor uw website",
       body: `${greeting}\n\nNu de basis voor ${business} staat, kunnen we gericht verder groeien. Denk aan SEO, onderhoud, social media, advertenties, een AI-chatbot of Google Bedrijfsprofiel optimalisatie.\n\nWe zetten graag een passend voorstel klaar.\n\nMet vriendelijke groet,\nMax Webstudio`,
     },
+    online_30_days: {
+      subject: "30 dagen online: eerste groeikansen",
+      body: `${greeting}\n\nUw website voor ${business} is nu ongeveer 30 dagen online. Dit is een goed moment om reviews, vindbaarheid en meetbare aanvragen te controleren.\n\nWe kunnen een korte groeicheck voor u klaarzetten.\n\nMet vriendelijke groet,\nMax Webstudio`,
+    },
+    online_90_days: {
+      subject: "90 dagen online: tijd voor optimalisatie",
+      body: `${greeting}\n\nNa 90 dagen is er genoeg richting om slimmer te verbeteren. Denk aan SEO, extra landingspagina's, social media en conversie-optimalisatie.\n\nWe denken graag mee over de volgende stap.\n\nMet vriendelijke groet,\nMax Webstudio`,
+    },
+    seo_report: {
+      subject: "SEO rapport voor uw website",
+      body: `${greeting}\n\nWe hebben een SEO-moment voor ${business} klaargezet. De belangrijkste kansen zitten meestal in zoekwoorden, paginatitels, lokale vindbaarheid en reviews.\n\nWilt u dat we dit verder uitwerken?\n\nMet vriendelijke groet,\nMax Webstudio`,
+    },
+    growth_opportunity: {
+      subject: "Nieuwe groeikans voor uw website",
+      body: `${greeting}\n\nWe zien een nieuwe groeikans voor ${business}. Dit kan helpen om meer vertrouwen, vindbaarheid of aanvragen uit uw website te halen.\n\nReageer gerust als u wilt dat we dit voorstel concreet maken.\n\nMet vriendelijke groet,\nMax Webstudio`,
+    },
+    new_service_available: {
+      subject: "Nieuwe dienst beschikbaar voor uw website",
+      body: `${greeting}\n\nEr is een nieuwe dienst die goed kan aansluiten bij ${business}. Denk aan onderhoud, SEO, social media, AI-chatbot, telefonie of extra pagina's.\n\nWe zetten graag een passend voorstel klaar.\n\nMet vriendelijke groet,\nMax Webstudio`,
+    },
+    upsell_campaign: {
+      subject: "Groei-campagne voorstel",
+      body: `${greeting}\n\nWe kunnen een gerichte groeicampagne voor ${business} voorbereiden. Daarmee combineren we bijvoorbeeld SEO, reviews, social posts of advertenties.\n\nWilt u dat we een voorstel maken?\n\nMet vriendelijke groet,\nMax Webstudio`,
+    },
+    anniversary_mail: {
+      subject: "Een jaar online met uw website",
+      body: `${greeting}\n\nUw website voor ${business} is alweer een mooie periode online. Dit is een sterk moment om de website, content, SEO en onderhoud opnieuw langs te lopen.\n\nWe denken graag mee over de volgende groeifase.\n\nMet vriendelijke groet,\nMax Webstudio`,
+    },
   };
   return { type, to: cleanText(journey.email).toLowerCase(), ...templates[type] };
 }
@@ -1122,6 +1150,13 @@ function emailTemplates() {
     ["thank_you", "Bedankmail"],
     ["review_request", "Review verzoek"],
     ["upsell_mail", "Upsell mail"],
+    ["online_30_days", "30 dagen online"],
+    ["online_90_days", "90 dagen online"],
+    ["seo_report", "SEO rapport"],
+    ["growth_opportunity", "Nieuwe groeikans"],
+    ["new_service_available", "Nieuwe dienst beschikbaar"],
+    ["upsell_campaign", "Upsell campagne"],
+    ["anniversary_mail", "Jubileummail"],
   ].map(([type, label]) => ({ type, label }));
 }
 
@@ -1132,7 +1167,7 @@ function emailTypeFor(value = "") {
   if (["preview_ready", "day3_preview_ready", "interne_preview_klaar", "preview_ingepland_voor_klant", "preview_verstuurd"].includes(key)) return "day3_preview_ready";
   if (["feedback_received", "day4_feedback_refinement", "feedback_ontvangen", "aanpassingen_bezig"].includes(key)) return "day4_feedback_refinement";
   if (["finalizing", "day5_delivery_ready", "definitieve_versie_klaar", "belafspraak_gepland", "verkocht"].includes(key)) return "day5_delivery_ready";
-  if (["preview_updated", "website_live", "thank_you", "review_request", "upsell_mail"].includes(key)) return key;
+  if (["preview_updated", "website_live", "thank_you", "review_request", "upsell_mail", "online_30_days", "online_90_days", "seo_report", "growth_opportunity", "new_service_available", "upsell_campaign", "anniversary_mail"].includes(key)) return key;
   return key && emailTemplates().some((item) => item.type === key) ? key : "day1_received";
 }
 

@@ -10980,8 +10980,11 @@
             const metadata = item.metadata || {};
             const pipeline = metadata.factoryPipeline || metadata.websiteFactoryRun || item.factoryPipeline || item.websiteFactoryRun || {};
             const review = metadata.previewReview || pipeline.previewReview || item.previewReview || {};
+            const growth = metadata.postLaunchGrowth || review.postLaunchGrowth || item.postLaunchGrowth || {};
             const launch = review.launch || metadata.launchChecklist || {};
             const feedbackItems = Array.isArray(review.feedbackItems) ? review.feedbackItems : [];
+            const growthRecommendations = Array.isArray(growth.recommendations) ? growth.recommendations : [];
+            const growthUpsells = Array.isArray(growth.upsells) ? growth.upsells : [];
             const input = metadata.websiteFactoryInput || item.websiteFactoryInput || {};
             const status = pipeline.status || metadata.websiteFactoryInputStatus || item.websiteFactoryInputStatus || "";
             if (!status && !pipeline.runId && !Object.keys(input || {}).length && !Object.keys(review || {}).length) return null;
@@ -11001,6 +11004,10 @@
               launchProgress: Number(launch.progress || 0),
               liveAt: review.liveAt || launch.completedAt || "",
               firstPreviewAt: review.buildDate || review.versions?.[0]?.date || "",
+              growthScore: Number(growth.health?.score || 0),
+              growthRecommendations: growthRecommendations.length,
+              upsellCount: growthUpsells.length,
+              upsellsToday: growthUpsells.filter((upsell) => ceoIsSameDay(upsell.createdAt || growth.updatedAt)).length,
               projectStatus: item.status || "",
               phase: item.phase || "",
               updatedAt: pipeline.updatedAt || item.updatedAt || item.updated_at || item.createdAt || item.created_at || "",
@@ -11088,6 +11095,19 @@
             return start && end ? Math.max(0, Math.round((end - start) / 86400000)) : null;
           }).filter((value) => value !== null);
           const averageTimeToLive = liveDurations.length ? Math.round(liveDurations.reduce((sum, value) => sum + value, 0) / liveDurations.length) : 0;
+          const activeMaintenanceContracts = state.subscriptions.filter((item) => ["actief", "active"].includes(statusKey(item.status)));
+          const mrr = activeMaintenanceContracts.reduce((sum, item) => sum + Number(item.monthlyAmount || item.monthly_amount || item.mrr || item.totalExVat || item.total || 0), 0);
+          const upsellRevenue = state.quotes
+            .filter((quote) => /upsell|groei|seo|social|onderhoud|branding|logo|ads|chatbot/i.test([quote.type, quote.title, quote.notes].join(" ")))
+            .reduce((sum, quote) => sum + Number(quote.total || quote.amount || quote.totalExVat || 0), 0);
+          const newUpsellsToday = factoryRows.reduce((sum, item) => sum + Number(item.upsellsToday || 0), 0);
+          const reviewsReceived = readCeoStoredArray(activityLogStorageKey).filter((item) => ["review_received"].includes(statusKey(item.eventType || item.event_type || item.action))).length;
+          const scoredRows = factoryRows.filter((item) => Number(item.growthScore || 0) > 0);
+          const averageHealthScore = scoredRows.length ? Math.round(scoredRows.reduce((sum, item) => sum + Number(item.growthScore || 0), 0) / scoredRows.length) : 0;
+          const topGrowthOpportunities = factoryRows
+            .filter((item) => Number(item.growthRecommendations || 0) > 0)
+            .sort((a, b) => Number(b.growthRecommendations || 0) - Number(a.growthRecommendations || 0))
+            .slice(0, 5);
           const customersWithoutDomain = state.customers.filter((customer) => !String(customer.website || customer.domain || "").trim());
           const pendingDomains = Math.max(customersWithoutDomain.length, state.websites.filter((website) => ceoNeedsDomain(website)).length);
           const pendingPhones = leads.filter((lead) => ceoIsLeadOpen(lead) && !String(lead.phone || lead.telephone || "").trim()).length;
@@ -11119,6 +11139,13 @@
             previewConversion,
             averageRevisions,
             averageTimeToLive,
+            mrr,
+            upsellRevenue,
+            newUpsellsToday,
+            reviewsReceived,
+            averageHealthScore,
+            activeMaintenanceContracts,
+            topGrowthOpportunities,
             pendingDomains,
             pendingPhones,
             unreadNotifications: ceoUnreadNotificationsCount(),
@@ -11307,6 +11334,13 @@
             ["Live vandaag", summary.liveToday.length],
             ["Gem. revisies", summary.averageRevisions],
             ["Gem. tijd tot live", `${summary.averageTimeToLive}d`],
+            ["MRR", money(summary.mrr)],
+            ["Upsell omzet", money(summary.upsellRevenue)],
+            ["Nieuwe upsells vandaag", summary.newUpsellsToday],
+            ["Reviews ontvangen", summary.reviewsReceived],
+            ["Gem. health score", summary.averageHealthScore ? `${summary.averageHealthScore}/100` : "0"],
+            ["Onderhoudscontracten", summary.activeMaintenanceContracts.length],
+            ["Top groeikansen", summary.topGrowthOpportunities.length],
             ["Logos", state.files.filter((file) => String(file.category || file.type || "").toLowerCase().includes("logo")).length],
             ["Assets", state.files.length],
             ["SEO", state.websites.filter((website) => String(website.notes || website.phase || "").toLowerCase().includes("seo")).length],
@@ -11352,6 +11386,8 @@
           if (summary.readyForLive.length) recommendations.push("Plan livegang voor previews met akkoord.");
           if (summary.feedbackOpen.length) recommendations.push("Bundel open feedback en start revisies vanuit Website Factory.");
           if (summary.liveToday.length) recommendations.push("Stuur bedankmail, reviewverzoek en passende upsells na livegang.");
+          if (summary.topGrowthOpportunities.length) recommendations.push("Open de top groeikansen en maak een concreet upsellvoorstel.");
+          if (summary.averageHealthScore && summary.averageHealthScore < 70) recommendations.push("Verhoog customer health met review, SEO en onderhoudsacties.");
           const brainCache = readCeoBrainCache();
           if (Array.isArray(brainCache?.recommendations)) {
             brainCache.recommendations.slice(0, 3).forEach((item) => {

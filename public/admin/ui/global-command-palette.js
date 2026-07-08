@@ -119,6 +119,13 @@
     ["launch-website", "Launch website", "Start livegang", "Websites", "Command", "admin-website-factory.html"],
     ["show-launch-checklist", "Show launch checklist", "Bekijk live checklist", "Websites", "Command", "admin-website-factory.html"],
     ["show-feedback", "Show feedback", "Bekijk preview feedback", "Websites", "Command", "admin-website-factory.html"],
+    ["open-growth", "Open growth", "Open Growth Dashboard", "Growth", "Command", "admin-dashboard.html#dashboard"],
+    ["show-opportunities", "Show opportunities", "Toon groeikansen", "Growth", "Command", "admin-max-brain.html"],
+    ["show-health", "Show health", "Toon customer health", "Growth", "Command", "admin-dashboard.html#dashboard"],
+    ["open-upsells", "Open upsells", "Open upsell kansen", "Growth", "Command", "admin-nieuwe-opdracht.html"],
+    ["request-review", "Request review", "Start review verzoek", "Growth", "Command", "admin-mail-center.html"],
+    ["run-seo-scan", "Run SEO scan", "Open SEO scan", "Growth", "Command", "admin-seo-studio.html"],
+    ["show-customer-score", "Show customer score", "Toon klant health score", "Growth", "Command", "admin-max-brain.html"],
   ];
 
   const state = {
