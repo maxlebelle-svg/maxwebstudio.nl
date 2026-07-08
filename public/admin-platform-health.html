@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Platform Health | Max CRM</title>
+    <meta name="description" content="Interne productie-readiness en health diagnostics voor Max CRM." />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=20260704-admin-session-hotfix" />
+    <link rel="stylesheet" href="admin/styles/premium-design-system.css" />
+    <script src="admin/ui/shared-helpers.js"></script>
+    <style>
+      body.admin-body {
+        background:
+          radial-gradient(circle at top left, rgba(14, 165, 233, 0.16), transparent 34rem),
+          linear-gradient(135deg, #08111f 0%, #101828 54%, #111827 100%);
+      }
+
+      .health-page {
+        display: grid;
+        gap: 1.25rem;
+        width: min(100%, 1440px);
+        margin: 0 auto;
+      }
+
+      .health-hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 1rem;
+        align-items: end;
+        padding: clamp(1.25rem, 2vw, 2rem);
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 18px;
+        background:
+          linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(30, 41, 59, 0.78)),
+          linear-gradient(135deg, rgba(14, 165, 233, 0.16), rgba(34, 197, 94, 0.08));
+        box-shadow: 0 24px 80px rgba(2, 6, 23, 0.32);
+      }
+
+      .health-hero h1 {
+        margin: 0;
+        color: #f8fafc;
+        font-size: clamp(2rem, 4vw, 4.2rem);
+        line-height: 0.98;
+        letter-spacing: 0;
+      }
+
+      .health-hero p,
+      .health-card p,
+      .health-muted {
+        color: #94a3b8;
+      }
+
+      .health-status {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: fit-content;
+        min-width: 132px;
+        padding: 0.6rem 0.85rem;
+        border-radius: 999px;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        background: rgba(15, 23, 42, 0.72);
+        color: #e2e8f0;
+        font-size: 0.82rem;
+        font-weight: 900;
+        text-transform: uppercase;
+      }
+
+      .health-status[data-status="Healthy"],
+      .health-chip[data-status="Healthy"] {
+        border-color: rgba(34, 197, 94, 0.34);
+        background: rgba(34, 197, 94, 0.12);
+        color: #bbf7d0;
+      }
+
+      .health-status[data-status="Warning"],
+      .health-chip[data-status="Warning"] {
+        border-color: rgba(245, 158, 11, 0.36);
+        background: rgba(245, 158, 11, 0.13);
+        color: #fde68a;
+      }
+
+      .health-status[data-status="Critical"],
+      .health-chip[data-status="Critical"] {
+        border-color: rgba(248, 113, 113, 0.36);
+        background: rgba(248, 113, 113, 0.13);
+        color: #fecaca;
+      }
+
+      .health-topline {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 0.9rem;
+      }
+
+      .health-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.42rem 0.65rem;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 999px;
+        color: #cbd5e1;
+        font-size: 0.74rem;
+        font-weight: 800;
+      }
+
+      .health-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.9rem;
+      }
+
+      .health-card {
+        min-width: 0;
+        padding: 1rem;
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        border-radius: 16px;
+        background: rgba(15, 23, 42, 0.76);
+        box-shadow: 0 18px 50px rgba(2, 6, 23, 0.22);
+      }
+
+      .health-card-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.75rem;
+      }
+
+      .health-card h2,
+      .health-card h3 {
+        margin: 0;
+        color: #f8fafc;
+        font-size: clamp(1rem, 1.6vw, 1.22rem);
+        letter-spacing: 0;
+      }
+
+      .health-card strong {
+        color: #f8fafc;
+      }
+
+      .health-latency {
+        color: #bfdbfe;
+        font-size: 0.75rem;
+        font-weight: 800;
+      }
+
+      .health-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+        gap: 1rem;
+      }
+
+      .health-list {
+        display: grid;
+        gap: 0.65rem;
+      }
+
+      .health-row {
+        display: grid;
+        gap: 0.25rem;
+        padding: 0.8rem;
+        border: 1px solid rgba(148, 163, 184, 0.13);
+        border-radius: 12px;
+        background: rgba(15, 23, 42, 0.58);
+      }
+
+      .health-row-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+      }
+
+      .health-env-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.65rem;
+      }
+
+      .health-env-item {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.75rem;
+        align-items: center;
+        min-width: 0;
+        padding: 0.75rem;
+        border: 1px solid rgba(148, 163, 184, 0.13);
+        border-radius: 12px;
+        background: rgba(15, 23, 42, 0.58);
+      }
+
+      .health-env-item span {
+        min-width: 0;
+        color: #e2e8f0;
+        font-size: 0.86rem;
+        overflow-wrap: anywhere;
+      }
+
+      .health-actions {
+        display: flex;
+        gap: 0.65rem;
+        flex-wrap: wrap;
+      }
+
+      @media (max-width: 1120px) {
+        .health-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .health-layout {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .health-hero {
+          grid-template-columns: 1fr;
+        }
+
+        .health-grid,
+        .health-env-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body class="admin-body">
+    <main class="admin-crm-shell">
+      <aside class="admin-sidebar" aria-label="Admin modules">
+        <a class="brand" href="admin-dashboard.html">
+          <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true">
+            <rect x="6" y="6" width="68" height="68" rx="18"></rect>
+            <path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path>
+            <path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path>
+          </svg>
+          <span>Max CRM</span>
+        </a>
+        <nav class="admin-sidebar-nav">
+          <span class="admin-nav-group">Main</span>
+          <a href="admin-dashboard.html">Dashboard</a>
+          <a href="admin-notification-center.html">Notification Center</a>
+          <a href="admin-max-automations.html">Max Automations</a>
+          <a href="admin-max-brain.html">Max Brain</a>
+          <span class="admin-nav-group">Sales</span>
+          <a href="admin-sales.html">Leads</a>
+          <span class="admin-nav-group">Production</span>
+          <a href="admin-website-factory.html">Website Factory</a>
+          <a href="admin-assets.html">Asset Manager</a>
+          <span class="admin-nav-group">Administration</span>
+          <a href="admin-facturen.html">Facturen</a>
+          <a href="admin-email-studio.html">E-mail Studio</a>
+          <a href="admin-mail-center.html">Mail Center</a>
+          <span class="admin-nav-group">System</span>
+          <a class="is-active" href="admin-platform-health.html">Platform Health</a>
+          <a href="admin-instellingen.html">Instellingen</a>
+        </nav>
+      </aside>
+      <section class="admin-crm-main">
+        <div class="health-page">
+          <section class="health-hero">
+            <div>
+              <div class="health-topline">
+                <span class="health-chip">Phase 2 Production Ready</span>
+                <span class="health-chip" id="health-last-checked">Laatste check laden...</span>
+              </div>
+              <h1>Platform Health</h1>
+              <p>Intern diagnosecentrum voor Supabase, Netlify Functions, e-mail, timeline, automations, Max Brain en production-readiness.</p>
+            </div>
+            <span class="health-status" id="health-overall" data-status="Warning">Checking</span>
+          </section>
+
+          <section class="health-grid" id="health-cards" aria-label="Platform health status cards"></section>
+
+          <section class="health-layout">
+            <article class="health-card">
+              <div class="health-card-header">
+                <div>
+                  <h2>Environment checklist</h2>
+                  <p>Alleen aanwezig/ontbrekend. Secretwaarden worden nooit getoond.</p>
+                </div>
+                <button class="button secondary" id="health-refresh" type="button">Ververs</button>
+              </div>
+              <div class="health-env-grid" id="health-env"></div>
+            </article>
+
+            <article class="health-card">
+              <div class="health-card-header">
+                <div>
+                  <h2>Recent errors</h2>
+                  <p>Health-signalen en configuratiewaarschuwingen zonder klantdata.</p>
+                </div>
+              </div>
+              <div class="health-list" id="health-errors"></div>
+            </article>
+          </section>
+
+          <section class="health-layout">
+            <article class="health-card">
+              <div class="health-card-header">
+                <div>
+                  <h2>Build metadata</h2>
+                  <p>Deploy-context en versie-informatie wanneer beschikbaar.</p>
+                </div>
+              </div>
+              <div class="health-list" id="health-build"></div>
+            </article>
+
+            <article class="health-card">
+              <div class="health-card-header">
+                <div>
+                  <h2>Readiness rules</h2>
+                  <p>Deterministische statusregels voor production readiness.</p>
+                </div>
+              </div>
+              <div class="health-list">
+                <div class="health-row"><strong>Healthy</strong><span class="health-muted">Alle kritieke checks slagen.</span></div>
+                <div class="health-row"><strong>Warning</strong><span class="health-muted">Niet-kritieke checks ontbreken of zijn degraded.</span></div>
+                <div class="health-row"><strong>Critical</strong><span class="health-muted">Kritieke backendconfiguratie of kern-API is niet beschikbaar.</span></div>
+              </div>
+            </article>
+          </section>
+        </div>
+      </section>
+    </main>
+    <script src="admin/ui/global-command-palette.js" defer></script>
+    <script>
+      (function initPlatformHealth() {
+        const endpoint = "/api/platform-health";
+        const fallbackChecks = [
+          { id: "supabase", label: "Supabase", status: "Warning", message: "Servercheck vereist admin API.", latencyMs: null, critical: true },
+          { id: "api", label: "API", status: "Warning", message: "Netlify Function health wordt live gecontroleerd na deploy.", latencyMs: null, critical: true },
+          { id: "email", label: "E-mail", status: "Warning", message: "Resend status vereist backendconfiguratie.", latencyMs: null, critical: false },
+          { id: "timeline", label: "Timeline", status: "Healthy", message: "Timeline UI en routes zijn aanwezig.", latencyMs: 0, critical: true },
+          { id: "notifications", label: "Notifications", status: "Healthy", message: "Notification Center route is aanwezig.", latencyMs: 0, critical: true },
+          { id: "automations", label: "Automations", status: "Healthy", message: "Lokale workflow storage kan in de browser worden gelezen.", latencyMs: 0, critical: false },
+          { id: "max-brain", label: "Max Brain", status: "Healthy", message: "Max Brain diagnosepagina en clientcache zijn beschikbaar.", latencyMs: 0, critical: false },
+          { id: "environment", label: "Environment", status: "Warning", message: "Secret-aanwezigheid is alleen via admin API zichtbaar.", latencyMs: 0, critical: true },
+        ];
+        const fallbackEnvironment = {
+          variables: [
+            { key: "SUPABASE_URL", label: "Supabase URL", present: false, critical: true },
+            { key: "SUPABASE_SERVICE_ROLE_KEY", label: "Supabase service role", present: false, critical: true },
+            { key: "SUPABASE_ANON_KEY", label: "Supabase anon key", present: false, critical: true },
+            { key: "RESEND_API_KEY", label: "Resend API key", present: false, critical: false },
+            { key: "RESEND_FROM_EMAIL", label: "Resend from email", present: false, critical: false },
+          ],
+        };
+
+        const escapeHtml = window.MaxSharedUI?.escapeHtml || ((value = "") => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]));
+        const $ = (id) => document.getElementById(id);
+
+        function readAdminBearer() {
+          try {
+            const session = JSON.parse(localStorage.getItem("maxwebstudioAdminSession") || "{}");
+            return session.accessToken || "";
+          } catch {
+            return "";
+          }
+        }
+
+        async function loadHealth() {
+          renderLoading();
+          const started = Date.now();
+          try {
+            const token = readAdminBearer();
+            const response = await fetch(endpoint, {
+              headers: {
+                Accept: "application/json",
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              },
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || data.success === false) throw new Error(data.error || "Health API niet beschikbaar.");
+            renderHealth(data);
+          } catch (error) {
+            renderHealth({
+              success: false,
+              checkedAt: new Date().toISOString(),
+              overallStatus: "Warning",
+              latencyMs: Date.now() - started,
+              checks: fallbackChecks,
+              environment: fallbackEnvironment,
+              recentErrors: [{ level: "warning", source: "platform-health", message: error.message || "Health API fallback actief.", createdAt: new Date().toISOString() }],
+              build: { context: "local/static preview", branch: "", commitRef: "", deployId: "", buildId: "", nodeEnv: "" },
+            });
+          }
+        }
+
+        function renderLoading() {
+          $("health-cards").innerHTML = fallbackChecks.map((item) => cardHtml({ ...item, status: "Warning", message: "Check wordt geladen..." })).join("");
+        }
+
+        function renderHealth(data) {
+          $("health-overall").textContent = data.overallStatus || "Warning";
+          $("health-overall").dataset.status = data.overallStatus || "Warning";
+          $("health-last-checked").textContent = `Laatste check ${formatDate(data.checkedAt)} · ${latency(data.latencyMs)}`;
+          $("health-cards").innerHTML = (data.checks || fallbackChecks).map(cardHtml).join("");
+          renderEnvironment(data.environment || fallbackEnvironment);
+          renderErrors(data.recentErrors || []);
+          renderBuild(data.build || {});
+        }
+
+        function cardHtml(item) {
+          return `
+            <article class="health-card">
+              <div class="health-card-header">
+                <h3>${escapeHtml(item.label)}</h3>
+                <span class="health-chip" data-status="${escapeHtml(item.status || "Warning")}">${escapeHtml(item.status || "Warning")}</span>
+              </div>
+              <p>${escapeHtml(item.message || "Geen detail beschikbaar.")}</p>
+              <span class="health-latency">${escapeHtml(latency(item.latencyMs))}</span>
+            </article>
+          `;
+        }
+
+        function renderEnvironment(environment) {
+          const rows = Array.isArray(environment.variables) ? environment.variables : [];
+          $("health-env").innerHTML = rows.map((item) => `
+            <div class="health-env-item">
+              <span>${escapeHtml(item.label || item.key)}</span>
+              <span class="health-chip" data-status="${item.present ? "Healthy" : item.critical ? "Critical" : "Warning"}">${item.present ? "Present" : "Missing"}</span>
+            </div>
+          `).join("");
+        }
+
+        function renderErrors(errors) {
+          $("health-errors").innerHTML = errors.length
+            ? errors.map((item) => `
+              <div class="health-row">
+                <div class="health-row-top">
+                  <strong>${escapeHtml(item.source || "system")}</strong>
+                  <span class="health-chip" data-status="${levelToStatus(item.level)}">${escapeHtml(item.level || "warning")}</span>
+                </div>
+                <span class="health-muted">${escapeHtml(item.message || "Geen detail.")}</span>
+              </div>
+            `).join("")
+            : `<div class="health-row"><strong>Geen recente fouten</strong><span class="health-muted">Health Center ziet geen waarschuwingen in deze check.</span></div>`;
+        }
+
+        function renderBuild(build) {
+          const rows = [
+            ["Context", build.context],
+            ["Branch", build.branch],
+            ["Commit", build.commitRef],
+            ["Deploy ID", build.deployId],
+            ["Build ID", build.buildId],
+            ["Node env", build.nodeEnv],
+          ];
+          $("health-build").innerHTML = rows.map(([label, value]) => `
+            <div class="health-row">
+              <div class="health-row-top"><strong>${escapeHtml(label)}</strong><span class="health-muted">${escapeHtml(value || "-")}</span></div>
+            </div>
+          `).join("");
+        }
+
+        function latency(value) {
+          return Number.isFinite(Number(value)) ? `${Math.round(Number(value))} ms` : "Latency n.v.t.";
+        }
+
+        function formatDate(value) {
+          const date = new Date(value);
+          if (Number.isNaN(date.getTime())) return "-";
+          return new Intl.DateTimeFormat("nl-NL", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(date);
+        }
+
+        function levelToStatus(level = "") {
+          const normalized = String(level || "").toLowerCase();
+          if (normalized === "critical") return "Critical";
+          if (normalized === "healthy") return "Healthy";
+          return "Warning";
+        }
+
+        $("health-refresh")?.addEventListener("click", loadHealth);
+        loadHealth();
+      })();
+    </script>
+  </body>
+</html>

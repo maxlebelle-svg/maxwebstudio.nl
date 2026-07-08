@@ -45,6 +45,7 @@
     ["notification-center", "Open Notification Center", "CRM alerts en activity feed", "admin-notification-center.html", "Notifications", "Page"],
     ["max-automations", "Open Max Automations", "No-code workflow builder", "admin-max-automations.html", "Automations", "Page"],
     ["max-brain", "Open Max Brain", "AI context engine diagnostics", "admin-max-brain.html", "AI", "Page"],
+    ["platform-health", "Open Platform Health", "System status, production monitoring en platform diagnostics", "admin-platform-health.html", "Instellingen", "Page"],
     ["mail-center", "Open Mail Center", "Verzonden e-mails en Resend statussen", "admin-mail-center.html", "E-mails", "Page"],
     ["email-studio", "Open E-mail Studio", "Templates beheren", "admin-email-studio.html", "E-mails", "Page"],
     ["customers", "Open Klanten", "Customer CRM", "admin-klanten.html", "Klanten", "Page"],
@@ -76,6 +77,7 @@
     ["open-notifications", "Open Notification Center", "CRM notifications", "Notifications", "Command", "admin-notification-center.html"],
     ["open-automations", "Open Max Automations", "Workflow builder en simulation runs", "Automations", "Command", "admin-max-automations.html"],
     ["open-max-brain", "Open Max Brain", "Context engine diagnostics", "AI", "Command", "admin-max-brain.html"],
+    ["open-platform-health", "Open Platform Health", "System status, production monitoring en diagnostics", "Instellingen", "Command", "admin-platform-health.html"],
     ["open-dashboard", "Open Dashboard", "Max CRM home", "Instellingen", "Command", "admin-dashboard.html"],
     ["open-seo", "Open SEO Studio", "SEO projecten", "AI", "Command", "admin-seo-studio.html"],
     ["open-factory", "Open Website Factory", "Website previews genereren", "Websites", "Command", "admin-website-factory.html"],
@@ -382,6 +384,7 @@
     if (/(logo)/.test(text)) return "generate-logo";
     if (/(onboarding)/.test(text)) return "start-onboarding";
     if (/(brain|context|ai context|max brain)/.test(text)) return "open-max-brain";
+    if (/(health|system|status|production|monitoring|platform)/.test(text)) return "open-platform-health";
     return "";
   }
 
