@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css?v=20260708-mail-center" />
     <link rel="stylesheet" href="admin/styles/premium-design-system.css" />
+    <script src="admin/ui/shared-helpers.js"></script>
     <style>
       .notification-shell {
         display: grid;
@@ -641,16 +642,11 @@
         }
 
         function escapeHtml(value) {
-          return String(value || "")
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#39;");
+          return window.escapeHtml(value);
         }
 
         function escapeAttribute(value) {
-          return escapeHtml(value).replace(/`/g, "&#96;");
+          return window.escapeAttribute(value);
         }
 
         eventTypes.forEach((type) => {

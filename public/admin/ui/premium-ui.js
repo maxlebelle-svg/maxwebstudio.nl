@@ -1,9 +1,15 @@
-const escapeHtml = (value = "") => String(value)
-  .replace(/&/g, "&amp;")
-  .replace(/</g, "&lt;")
-  .replace(/>/g, "&gt;")
-  .replace(/"/g, "&quot;")
-  .replace(/'/g, "&#39;");
+export const escapeHtml = (value = "") => {
+  const sharedEscapeHtml = globalThis.MaxSharedUI?.escapeHtml || globalThis.escapeHtml;
+  if (typeof sharedEscapeHtml === "function" && sharedEscapeHtml !== escapeHtml) {
+    return sharedEscapeHtml(value);
+  }
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+};
 
 const classNames = (...values) => values.flat().filter(Boolean).join(" ");
 
@@ -107,8 +113,10 @@ export const PremiumUI = {
   Tabs,
   Tag,
   TextInput,
+  escapeHtml,
 };
 
 if (typeof window !== "undefined") {
+  window.escapeHtml = window.MaxSharedUI?.escapeHtml || escapeHtml;
   window.MaxPremiumUI = PremiumUI;
 }
