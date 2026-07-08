@@ -34,8 +34,6 @@ const allowedStatuses = new Set(["pending", "sent", "failed", "delivered", "boun
 function getSupabaseConfig() {
   const supabaseUrl = cleanText(process.env.SUPABASE_URL).replace(/\/$/, "");
   const serviceRoleKey = cleanText(process.env.SUPABASE_SERVICE_ROLE_KEY);
-  const metadata = normalizeMetadata(input.metadata);
-  const attachments = Array.isArray(input.attachments) ? input.attachments : [];
   return {
     available: Boolean(supabaseUrl && serviceRoleKey),
     supabaseUrl,
@@ -153,6 +151,8 @@ async function findEmailLogByProviderMessageId(providerMessageId) {
 function normalizeLogRecord(input = {}) {
   const from = parseAddress(input.from || input.fromEmail || input.from_email);
   const to = parseAddress(Array.isArray(input.to) ? input.to[0] : input.to || input.toEmail || input.to_email);
+  const metadata = normalizeMetadata(input.metadata);
+  const attachments = Array.isArray(input.attachments) ? input.attachments : [];
   const now = new Date().toISOString();
   return {
     direction: cleanText(input.direction) || "outbound",
