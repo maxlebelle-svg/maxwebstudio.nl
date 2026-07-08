@@ -13,41 +13,53 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body class="portal-body">
-    <main class="portal-shell customer-portal-demo">
-      <header class="portal-header">
-        <div>
-          <p class="section-kicker">Max Webstudio klantportaal</p>
-          <h1 id="portal-title">Klantportaal laden...</h1>
-          <p id="portal-subtitle">Een overzicht van je websites, projecten, offertes, facturen en bestanden.</p>
+    <main class="portal-app customer-portal-demo">
+      <aside class="portal-sidebar" aria-label="Klantportaal menu">
+        <a class="portal-sidebar-brand" href="#vandaag" aria-label="Max Webstudio klantportaal">
+          <span>M</span>
+          <strong>Max Klantportaal</strong>
+        </a>
+        <nav class="portal-nav" aria-label="Klantportaal navigatie">
+          <a href="#vandaag">Vandaag</a>
+          <a href="#mijn-website">Mijn website</a>
+          <a href="#wijzigingen">Wijzigingen</a>
+          <a href="#berichten">Berichten</a>
+          <a href="#facturen">Facturen</a>
+          <a href="#account">Account</a>
+        </nav>
+        <div class="portal-sidebar-note">
+          <span>Je account</span>
+          <strong>Veilig gekoppeld</strong>
+          <p>Alleen jouw klantgegevens worden hier getoond.</p>
         </div>
-        <div class="portal-actions">
+      </aside>
+
+      <div class="portal-main">
+        <header class="portal-header">
+          <div>
+            <p class="section-kicker">Max Webstudio klantportaal</p>
+            <h1 id="portal-title">Klantportaal laden...</h1>
+            <p id="portal-subtitle">Je persoonlijke overzicht voor website, berichten, wijzigingen en facturen.</p>
+          </div>
+          <div class="portal-actions">
+            <a class="button secondary" href="#berichten">Bericht sturen</a>
+            <a class="button primary" href="#wijzigingen">Wijziging aanvragen</a>
+            <button class="button secondary" id="portal-logout" type="button" hidden>Uitloggen</button>
+          </div>
+        </header>
+
+        <section class="portal-status-strip" aria-label="Klantportaal status">
+          <section class="portal-message" id="portal-source-message" role="note">
+            <strong>Klantportaal</strong>
+            <span id="portal-source-text">Je klantomgeving wordt veilig geladen. Zonder geldige sessie tonen we geen klantgegevens.</span>
+          </section>
+          <section class="portal-message" id="portal-auth-message" role="note" hidden>
+            <strong>Toegang</strong>
+            <span id="portal-auth-text"></span>
+          </section>
           <span class="status-badge status-prepared" id="portal-source-badge">Portaal laden</span>
-          <button class="button secondary" id="portal-logout" type="button" hidden>Uitloggen</button>
           <a class="button secondary" href="index.html">Terug naar website</a>
-        </div>
-      </header>
-
-      <section class="portal-message" id="portal-source-message" role="note">
-        <strong>Klantportaal</strong>
-        <span id="portal-source-text">Je klantomgeving wordt veilig geladen. Zonder geldige sessie tonen we geen klantgegevens.</span>
-      </section>
-
-      <section class="portal-message" id="portal-auth-message" role="note" hidden>
-        <strong>Toegang</strong>
-        <span id="portal-auth-text"></span>
-      </section>
-
-      <nav class="portal-nav" aria-label="Klantportaal navigatie">
-        <a href="#vandaag">Vandaag</a>
-        <a href="#mijn-website">Mijn website</a>
-        <a href="#projectstatus">Project</a>
-        <a href="#website-preview">Preview</a>
-        <a href="#wijzigingen">Wijzigingen</a>
-        <a href="#berichten">Berichten</a>
-        <a href="#facturen">Facturen</a>
-        <a href="#account">Account</a>
-        <a href="#notificaties">Acties</a>
-      </nav>
+        </section>
 
       <section class="portal-today" id="vandaag" aria-labelledby="portal-today-title">
         <div class="portal-today-main">
@@ -241,6 +253,7 @@
         <div class="admin-section-heading"><div><p class="section-kicker">Readiness</p><h2>Voorbereid op live klantdata</h2></div></div>
         <div class="portal-card-grid" id="portal-readiness" aria-live="polite"></div>
       </section>
+      </div>
     </main>
 
     <script>
@@ -505,37 +518,27 @@
           const authReadiness = await getClientAuthReadiness();
           portalAuthMessage.hidden = false;
           if (!session) {
-            portalAuthText.textContent = developerMode
-              ? `${authReadiness.developerMessage} Auth blijft uit tot release approval groen is.`
-              : "Log in om je klantportaal te bekijken. Zonder sessie tonen we geen klantportaalgegevens.";
+            portalAuthText.textContent = "Log in om je klantportaal te bekijken. Je gegevens blijven veilig afgeschermd.";
             return;
           }
           const roleLabel = session.role === "customer" ? "klant" : session.role || "gebruiker";
           if (profileContext.profileFound) {
-            portalAuthText.textContent = developerMode
-              ? `Ingelogd met Supabase Auth. Klantprofiel gevonden via profiles/customer context. ${authReadiness.developerMessage}`
-              : "Ingelogd. Je klantprofiel is veilig gekoppeld aan dit portaal.";
+            portalAuthText.textContent = "Je bent veilig ingelogd. Alleen jouw klantgegevens worden getoond.";
             return;
           }
           if (profileContext.state === "profile_missing") {
-            portalAuthText.textContent = developerMode
-              ? `${profileContext.message} Staging/demo fallback blijft beschikbaar zolang er geen echte customer-koppeling is.`
-              : `Ingelogd als ${roleLabel}. Je account is nog niet gekoppeld aan een klantprofiel. Neem contact op met Max Webstudio.`;
+            portalAuthText.textContent = `Ingelogd als ${roleLabel}. Je klantgegevens worden voorbereid. Neem contact op met Max Webstudio als je iets mist.`;
             return;
           }
           if (profileContext.state === "error") {
-            portalAuthText.textContent = developerMode
-              ? `${profileContext.message} ${profileContext.error}`
-              : "Je klantprofiel kon nog niet veilig worden opgehaald. Probeer opnieuw in te loggen of neem contact op.";
+            portalAuthText.textContent = "Je klantprofiel kon nog niet veilig worden opgehaald. Probeer opnieuw in te loggen of neem contact op.";
             return;
           }
           if (session.customerId && customerId && String(session.customerId) !== String(customerId)) {
             portalAuthText.textContent = `Ingelogd als ${roleLabel}, maar deze sessie hoort bij een andere klant. Daarom tonen we geen data van een andere klant.`;
             return;
           }
-          portalAuthText.textContent = developerMode
-            ? `Ingelogd als ${roleLabel}. ${authReadiness.developerMessage}`
-            : `Ingelogd als ${roleLabel}. Je klantomgeving is veilig geladen.`;
+          portalAuthText.textContent = `Ingelogd als ${roleLabel}. Je klantomgeving is veilig geladen.`;
         }
 
         await renderSessionNotice();
@@ -1216,7 +1219,7 @@
           const sslActive = !sslValue || ["actief", "active", "valid", "geldig", "online"].includes(normalize(sslValue));
           const latestUpdate = latestDateLabel([...projects, ...changeRequests, ...messages, ...notifications]);
 
-          portalTodayTitle.textContent = `Goedemorgen ${customer.name || customer.company || "Max"}`;
+          portalTodayTitle.textContent = `Vandaag voor ${customer.company || customer.name || "jou"}`;
           portalTodaySubtitle.textContent = websiteOnline
             ? `Je website is online. Laatste update: ${latestUpdate}.`
             : "We houden je website klaar voor de volgende stap.";
@@ -1274,25 +1277,25 @@
         function updateSourceMessage(payload) {
           const mode = payload.mode || "local";
           const labels = {
-            demo: "Demo",
-            local: "Local",
-            "supabase-read": "Supabase",
-            hybrid: "Hybrid",
+            demo: "Preview",
+            local: "Veilig",
+            "supabase-read": "Veilig",
+            hybrid: "Veilig",
           };
           portalSourceBadge.textContent = labels[mode] || mode;
           portalSourceBadge.className = `status-badge ${mode === "hybrid" || mode === "supabase-read" ? "status-active" : "status-prepared"}`;
           if (mode === "hybrid") {
             portalSourceText.textContent = profileContext.profileFound
-              ? "Je klantprofiel is veilig gekoppeld. Alleen gegevens die bij jouw account horen worden getoond."
-              : "Dit portaal gebruikt hybrid read: Supabase waar beschikbaar en lokale demo/fallback-data waar nodig. Interne admin-data wordt gefilterd.";
+              ? "Je gegevens zijn gekoppeld. Alleen informatie die bij jouw account hoort wordt getoond."
+              : "Je portaal wordt veilig geladen. We tonen alleen klantinformatie die bij deze sessie hoort.";
           } else if (mode === "supabase-read") {
-            portalSourceText.textContent = "Je klantgegevens worden veilig geladen. Interne admin-data wordt niet getoond.";
+            portalSourceText.textContent = "Je klantgegevens worden veilig geladen.";
           } else if (mode === "demo") {
             portalSourceText.textContent = stagingBridge.active
-              ? "Dit is een staging-preview: ingelogd via Supabase Auth, gekoppeld aan veilige previewdata."
-              : "Dit is een lokale preview van het klantportaal. Echte klantgegevens worden alleen na login getoond.";
+              ? "Je bekijkt een veilige preview van het klantportaal."
+              : "Je bekijkt een preview van het klantportaal. Echte klantgegevens verschijnen alleen na login.";
           } else {
-            portalSourceText.textContent = "Dit portaal gebruikt lokale browserdata als veilige fallback. Interne admin-notities worden niet getoond.";
+            portalSourceText.textContent = "Je portaal is veilig geladen.";
           }
           if (payload.warnings?.length) {
             portalSourceText.textContent = `${portalSourceText.textContent} Waarschuwing: ${payload.warnings.join(" ")}`;
@@ -1472,8 +1475,8 @@
           return;
         }
 
-        portalTitle.textContent = `Welkom ${customer.name || customer.company || "terug"}`;
-        portalSubtitle.textContent = customer.company || customer.email || "Jouw Max Webstudio overzicht";
+        portalTitle.textContent = `Goedemorgen ${String(customer.name || customer.company || "terug").split(" ")[0]}`;
+        portalSubtitle.textContent = `${customer.company || customer.email || "Jouw website"} - rustig overzicht van wat Max Webstudio voor je regelt.`;
         metrics.quotes.textContent = String(portalMetrics.openQuotes || 0);
         metrics.invoices.textContent = String(portalMetrics.openInvoices || 0);
         metrics.invoiceTotal.textContent = `${money(portalMetrics.openInvoiceTotal || 0)} openstaand`;
