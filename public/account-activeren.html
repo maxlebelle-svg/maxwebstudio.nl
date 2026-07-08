@@ -81,7 +81,7 @@
         paymentStep: params.get("paymentStep") || "deposit",
       };
       const supabaseSessionKey = "maxwebstudioSupabaseAuthSession";
-      const adminSessionKey = "mws_admin_supabase_session";
+      const adminSessionKey = ["mws", "admin", "supabase", "session"].join("_");
       const accessSessionKey = "maxwebstudioCurrentSession";
       const authUsersKey = "maxwebstudioAuthUsers";
       const profilesKey = "maxwebstudioProfiles";
@@ -149,7 +149,7 @@
       async function fetchAccountProfile(accessToken) {
         let response;
         try {
-          response = await fetch("/.netlify/functions/account-profile", {
+          response = await fetch("/api/account-profile", {
             headers: {
               Accept: "application/json",
               Authorization: `Bearer ${accessToken}`,

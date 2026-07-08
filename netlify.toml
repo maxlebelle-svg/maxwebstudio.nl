@@ -59,6 +59,11 @@
   to = "/.netlify/functions/customer-onboarding"
   status = 200
 
+[[redirects]]
+  from = "/api/:splat"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
 [[headers]]
   for = "/*"
   [headers.values]

@@ -379,6 +379,14 @@
           ["Onboarding halverwege", focus.onboardingInProgress],
           ["Onboarding review", focus.onboardingReview],
           ["Klaar voor Website Factory", focus.websiteFactoryReady],
+          ["Factory wachtrij", focus.factoryWaiting],
+          ["Factory builds actief", focus.factoryBuildsActive],
+          ["Factory mislukt", focus.factoryFailed],
+          ["Preview klaar, nog niet bekeken", focus.previewsReadyNotViewed],
+          ["Uploads nodig", focus.missingUploads],
+          ["Logo nodig", focus.missingLogo],
+          ["SEO input nodig", focus.missingSeo],
+          ["Klaar voor livegang", focus.readyForLive],
         ];
         $("brain-daily-focus").innerHTML = sections.map(([label, rows]) => {
           const items = Array.isArray(rows) ? rows.slice(0, 3) : [];

@@ -244,7 +244,7 @@
       }
 
       async function loadSupabase() {
-        const response = await fetch("/.netlify/functions/client-auth-config", { headers: { Accept: "application/json" } });
+        const response = await fetch("/api/client-auth-config", { headers: { Accept: "application/json" } });
         const config = await response.json().catch(() => ({}));
 
         if (!response.ok || !config.success) {
@@ -543,7 +543,7 @@
         setMessage("", "");
 
         try {
-          const response = await fetch(`/.netlify/functions/client-change-request-file?changeRequestId=${encodeURIComponent(changeRequestId)}&fileIndex=${encodeURIComponent(fileIndex)}&format=json`, {
+          const response = await fetch(`/api/client-change-request-file?changeRequestId=${encodeURIComponent(changeRequestId)}&fileIndex=${encodeURIComponent(fileIndex)}&format=json`, {
             headers: {
               Accept: "application/json",
               Authorization: `Bearer ${state.session.access_token}`,
@@ -579,7 +579,7 @@
         setMessage("", "");
 
         try {
-          const response = await fetch(`/.netlify/functions/invoice-download?invoice_id=${encodeURIComponent(invoiceId)}`, {
+          const response = await fetch(`/api/invoice-download?invoice_id=${encodeURIComponent(invoiceId)}`, {
             headers: {
               Accept: "application/json",
               Authorization: `Bearer ${state.session.access_token}`,

@@ -1,5 +1,6 @@
 const { verifyAdmin } = require("./_admin-auth");
 const { upsertProjectWorkspace, zipFilenameFor } = require("./_project-workspace");
+const { createTimelineEvent } = require("./services/timelineService");
 const {
   buildLogs,
   buildWebsitePackage,
@@ -45,6 +46,7 @@ async function handler(event) {
     if (action === "run_quality_check") return qualityCheckResponse(context, payload);
     if (action === "create_preview_version") return createPreviewVersionResponse(context, payload);
     if (action === "update_demo_journey_preview") return updateJourneyPreviewResponse(context, payload);
+    if (action === "start_onboarding_pipeline") return startOnboardingPipelineResponse(context, payload);
     return jsonResponse(400, { success: false, error: "Onbekende Website Factory actie." });
   } catch (error) {
     const missing = isMissingFactoryTableError(error);
@@ -142,6 +144,124 @@ async function createPreviewVersionResponse(context, payload) {
 async function updateJourneyPreviewResponse(context, payload) {
   const journey = await updateDemoJourneyPreview(context, payload);
   return jsonResponse(200, { success: true, journey });
+}
+
+async function startOnboardingPipelineResponse(context, payload) {
+  const result = await startOnboardingFactoryPipeline(context, payload);
+  return jsonResponse(200, { success: true, ...result });
+}
+
+async function startOnboardingFactoryPipeline(context, payload = {}) {
+  const customerId = cleanUuid(payload.customerId || payload.customer_id);
+  const projectId = cleanUuid(payload.projectId || payload.project_id);
+  if (!customerId && !projectId) {
+    const error = new Error("Kies een klant of project voor de Website Factory pipeline.");
+    error.status = 400;
+    throw error;
+  }
+
+  const records = await readOnboardingFactoryRecords(context, { customerId, projectId });
+  if (!records.customer || !records.project) {
+    const error = new Error("Klant of project kon niet worden gevonden voor Website Factory.");
+    error.status = 404;
+    throw error;
+  }
+
+  const now = new Date().toISOString();
+  const factoryInput = records.project.metadata?.websiteFactoryInput || payload.factoryInput || payload.factory_input || {};
+  const onboarding = records.project.metadata?.onboarding || records.customer.metadata?.onboarding || {};
+  const runId = cleanText(payload.factoryRunId || payload.factory_run_id) || `factory-${Date.now()}`;
+  const analysis = buildFactoryAnalysis({ records, factoryInput, onboarding });
+  const blueprint = buildFactoryBlueprint({ factoryInput, analysis });
+  const contentPlan = buildContentPlan({ factoryInput, analysis, blueprint });
+  const brandingPlan = buildBrandingPlan({ factoryInput, analysis, onboarding });
+  const mediaMap = buildMediaMap({ factoryInput, onboarding });
+  const seoPlan = buildSeoPlan({ factoryInput, analysis, blueprint });
+  const missingInfo = [...new Set([...(analysis.missingCriticalInfo || []), ...(mediaMap.missing || []), ...(seoPlan.missing || [])])];
+  const journey = await ensureFactoryJourney(context, { records, factoryInput, analysis, blueprint, contentPlan, brandingPlan, mediaMap, seoPlan });
+  const startedAt = now;
+  let pipeline = {
+    id: runId,
+    status: "queued",
+    currentStep: "queued",
+    startedAt,
+    updatedAt: startedAt,
+    demoJourneyId: journey.id,
+    projectId: records.project.id,
+    customerId: records.customer.id,
+    onboardingId: onboarding.id || "",
+    steps: pipelineSteps("queued"),
+    analysis,
+    blueprint,
+    contentPlan,
+    brandingPlan,
+    mediaMap,
+    seoPlan,
+    missingInfo,
+  };
+  await persistFactoryPipeline(context, records, pipeline, { status: "in_ontwikkeling", phase: "Website Factory queued", progress: 50 });
+  await factoryTimeline(records, "factory_started", "Website Factory gestart", "De automatische Website Factory pipeline is gestart.", "info", { runId, demoJourneyId: journey.id });
+  await factoryNotification(records, "Website Factory gestart", "Nieuwe onboarding is doorgestuurd naar Website Factory.", "info", { runId });
+
+  try {
+    pipeline = advancePipeline(pipeline, "collecting_input");
+    await persistFactoryPipeline(context, records, pipeline, { phase: "Factory input verzamelen", progress: 52 });
+    await factoryTimeline(records, "factory_input_collected", "Factory input verzameld", "Klant-, project- en onboardinginput is verzameld.", "success", { runId, missingInfo });
+    if (missingInfo.length) await factoryNotification(records, "Project mist informatie", missingInfo.slice(0, 5).join(", "), "warning", { runId });
+
+    for (const [status, eventType, title] of [
+      ["generating_blueprint", "factory_analysis_completed", "AI analyse voorbereid"],
+      ["generating_content", "factory_blueprint_created", "Website blueprint gemaakt"],
+      ["applying_branding", "factory_content_prepared", "Content voorbereid"],
+      ["preparing_seo", "factory_branding_applied", "Branding toegepast"],
+      ["mapping_media", "factory_seo_prepared", "SEO voorbereid"],
+      ["building_preview", "factory_media_mapped", "Media gekoppeld"],
+    ]) {
+      pipeline = advancePipeline(pipeline, status);
+      await persistFactoryPipeline(context, records, pipeline, { phase: pipelineLabel(status), progress: pipelineProgress(status) });
+      await factoryTimeline(records, eventType, title, pipelineLabel(status), "success", { runId });
+    }
+
+    await factoryTimeline(records, "factory_preview_started", "Preview build gestart", "De bestaande Preview Builder maakt een interne preview.", "info", { runId, demoJourneyId: journey.id });
+    await factoryNotification(records, "Preview build gestart", "Website Factory bouwt de preview.", "info", { runId });
+    const buildResult = await runBuildJob(context, {
+      demoJourneyId: journey.id,
+      generatedBriefing: factoryInput.generatedBriefing || buildPipelineBriefing({ factoryInput, analysis, blueprint, contentPlan, brandingPlan, mediaMap, seoPlan }),
+      packageType: factoryInput.packageType || records.customer.package || "",
+    });
+    const job = buildResult.job || {};
+    const ready = job.status === "completed" || buildResult.previewVersion?.previewUrl || buildResult.journey?.previewUrl;
+    pipeline = advancePipeline(pipeline, ready ? "preview_ready" : "failed", {
+      buildJobId: job.id || "",
+      previewUrl: job.previewUrl || buildResult.previewVersion?.previewUrl || buildResult.journey?.previewUrl || "",
+      previewToken: job.previewToken || buildResult.previewVersion?.previewToken || "",
+      previewScore: job.previewScore || buildResult.previewVersion?.previewScore || 0,
+      finishedAt: new Date().toISOString(),
+      buildStatus: job.status || "",
+    });
+    await persistFactoryPipeline(context, records, pipeline, {
+      status: ready ? "feedback" : "in_ontwikkeling",
+      phase: ready ? "Preview gereed" : "Preview vraagt aandacht",
+      progress: ready ? 75 : 55,
+    });
+    if (!ready) {
+      await factoryTimeline(records, "factory_failed", "Website Factory vraagt aandacht", "De preview kon niet volledig worden afgerond.", "error", { runId, buildJobId: job.id || "" });
+      await factoryNotification(records, "Build mislukt", "De preview vraagt aandacht in Website Factory.", "error", { runId });
+    } else {
+      await factoryTimeline(records, "factory_preview_ready", "Preview gereed", "De website-preview staat klaar voor interne controle.", "success", { runId, buildJobId: job.id || "", previewUrl: pipeline.previewUrl });
+      await factoryNotification(records, "Preview gereed", "De preview staat klaar voor controle.", "success", { runId, previewUrl: pipeline.previewUrl });
+    }
+    return { factoryRun: sanitizePipeline(pipeline), job, journey: buildResult.journey || journey, previewVersion: buildResult.previewVersion || null };
+  } catch (error) {
+    pipeline = advancePipeline(pipeline, "failed", {
+      errorMessage: "Website Factory kon de preview niet afronden.",
+      finishedAt: new Date().toISOString(),
+    });
+    await persistFactoryPipeline(context, records, pipeline, { status: "in_ontwikkeling", phase: "Website Factory aandacht nodig", progress: 55 });
+    await factoryTimeline(records, "factory_failed", "Website Factory mislukt", "De pipeline kon niet volledig worden afgerond.", "error", { runId });
+    await factoryNotification(records, "Build mislukt", "De Website Factory pipeline vraagt aandacht.", "error", { runId });
+    throw error;
+  }
 }
 
 async function createBuildJob(context, payload = {}) {
@@ -702,9 +822,523 @@ function isMissingColumnError(error = {}) {
   return error.code === "42703" || error.code === "PGRST204" || text.includes("schema cache") || text.includes("column");
 }
 
+async function readOnboardingFactoryRecords(context, { customerId = "", projectId = "" } = {}) {
+  const project = projectId
+    ? await readProjectById(context, projectId)
+    : customerId ? await readLatestProjectByCustomer(context, customerId) : null;
+  const customer = customerId
+    ? await readCustomerById(context, customerId)
+    : project?.customer_id ? await readCustomerById(context, project.customer_id) : null;
+  const website = project?.website_id ? await readWebsiteById(context, project.website_id) : customer?.id ? await readLatestWebsiteByCustomer(context, customer.id) : null;
+  return {
+    customer: normalizeRecord(customer),
+    project: normalizeRecord(project),
+    website: normalizeRecord(website),
+  };
+}
+
+async function readProjectById(context, id) {
+  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/projects?select=*&id=eq.${encodeURIComponent(id)}&limit=1`, {
+    method: "GET",
+    headers: restHeaders(context.serviceRoleKey),
+  });
+  return rows[0] || null;
+}
+
+async function readLatestProjectByCustomer(context, customerId) {
+  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/projects?select=*&customer_id=eq.${encodeURIComponent(customerId)}&order=updated_at.desc.nullslast&limit=1`, {
+    method: "GET",
+    headers: restHeaders(context.serviceRoleKey),
+  });
+  return rows[0] || null;
+}
+
+async function readCustomerById(context, id) {
+  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/customers?select=*&id=eq.${encodeURIComponent(id)}&limit=1`, {
+    method: "GET",
+    headers: restHeaders(context.serviceRoleKey),
+  });
+  return rows[0] || null;
+}
+
+async function readWebsiteById(context, id) {
+  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/websites?select=*&id=eq.${encodeURIComponent(id)}&limit=1`, {
+    method: "GET",
+    headers: restHeaders(context.serviceRoleKey),
+  });
+  return rows[0] || null;
+}
+
+async function readLatestWebsiteByCustomer(context, customerId) {
+  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/websites?select=*&customer_id=eq.${encodeURIComponent(customerId)}&order=updated_at.desc.nullslast&limit=1`, {
+    method: "GET",
+    headers: restHeaders(context.serviceRoleKey),
+  });
+  return rows[0] || null;
+}
+
+function normalizeRecord(row) {
+  if (!row) return null;
+  return { ...row, metadata: row.metadata && typeof row.metadata === "object" ? row.metadata : {} };
+}
+
+async function ensureFactoryJourney(context, { records, factoryInput, analysis, blueprint, contentPlan, brandingPlan, mediaMap, seoPlan }) {
+  const existingId = cleanText(records.project.metadata?.factoryPipeline?.demoJourneyId || records.project.metadata?.websiteFactoryRun?.demoJourneyId || "");
+  if (existingId) {
+    const existing = await readJourney(context, existingId).catch(() => null);
+    if (existing?.id) {
+      await updateFactoryJourney(context, existing.id, { records, factoryInput, analysis, blueprint, contentPlan, brandingPlan, mediaMap, seoPlan });
+      return mapJourney({ ...existing, id: existing.id });
+    }
+  }
+  const customerJourney = await readJourneyByCustomer(context, records.customer.id);
+  if (customerJourney?.id) {
+    await updateFactoryJourney(context, customerJourney.id, { records, factoryInput, analysis, blueprint, contentPlan, brandingPlan, mediaMap, seoPlan });
+    return mapJourney(customerJourney);
+  }
+  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/demo_journeys`, {
+    method: "POST",
+    headers: { ...restHeaders(context.serviceRoleKey), Prefer: "return=representation", "Content-Type": "application/json" },
+    body: JSON.stringify(factoryJourneyRecord(context, { records, factoryInput, analysis, blueprint, contentPlan, brandingPlan, mediaMap, seoPlan })),
+  });
+  return mapJourney(rows[0] || {});
+}
+
+async function readJourneyByCustomer(context, customerId) {
+  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/demo_journeys?select=*&customer_id=eq.${encodeURIComponent(customerId)}&order=updated_at.desc.nullslast&limit=1`, {
+    method: "GET",
+    headers: restHeaders(context.serviceRoleKey),
+  });
+  return rows[0] || null;
+}
+
+async function updateFactoryJourney(context, id, bundle) {
+  return supabaseFetch(`${context.supabaseUrl}/rest/v1/demo_journeys?id=eq.${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { ...restHeaders(context.serviceRoleKey), Prefer: "return=representation", "Content-Type": "application/json" },
+    body: JSON.stringify(factoryJourneyRecord(context, bundle)),
+  });
+}
+
+function factoryJourneyRecord(context, { records, factoryInput, analysis, blueprint, contentPlan, brandingPlan, mediaMap, seoPlan }) {
+  const generatedBriefing = factoryInput.generatedBriefing || buildPipelineBriefing({ factoryInput, analysis, blueprint, contentPlan, brandingPlan, mediaMap, seoPlan });
+  return {
+    customer_id: records.customer.id,
+    business_name: factoryInput.businessName || records.customer.company || records.customer.name || "",
+    contact_name: factoryInput.contactName || records.customer.name || "",
+    email: factoryInput.email || records.customer.email || "",
+    phone: factoryInput.phone || records.customer.phone || "",
+    website_url: factoryInput.websiteUrl || records.website?.domain || records.customer.website || "",
+    demo_status: "intern_in_productie",
+    generated_briefing: generatedBriefing,
+    preview_package: {
+      source: "customer_onboarding",
+      meta: {
+        packageType: factoryInput.packageType || records.customer.package || "",
+        customerId: records.customer.id,
+        projectId: records.project.id,
+      },
+      factoryInput,
+      factoryAnalysis: analysis,
+      blueprint,
+      contentPlan,
+      brandingPlan,
+      mediaMap,
+      seoPlan,
+    },
+    internal_notes: [
+      "Automatisch gestart vanuit goedgekeurde klantonboarding.",
+      `Project: ${records.project.name || records.project.id}`,
+      `Compleetheid: ${factoryInput.completeness || 0}%`,
+    ].join("\n"),
+    assigned_to: cleanText(context.admin?.id || context.admin?.email),
+    updated_by: cleanText(context.admin?.id || context.admin?.email),
+    created_by: cleanText(context.admin?.id || context.admin?.email),
+  };
+}
+
+function buildFactoryAnalysis({ records, factoryInput, onboarding }) {
+  const branding = factoryInput.branding || {};
+  const seo = factoryInput.seo || {};
+  const services = cleanArray(factoryInput.services);
+  const pages = cleanArray(factoryInput.pages);
+  const ctas = cleanArray(factoryInput.ctas);
+  const missing = [];
+  if (!services.length) missing.push("Diensten");
+  if (!pages.length) missing.push("Pagina's");
+  if (!factoryInput.businessName) missing.push("Bedrijfsnaam");
+  if (!branding.colors) missing.push("Kleuren");
+  if (!cleanUploads(factoryInput.uploads).length) missing.push("Uploads");
+  if (!seo.keywords?.length) missing.push("SEO zoekwoorden");
+  if (!branding.logo && !cleanUploads(factoryInput.uploads).some((file) => /logo/i.test(file.name || ""))) missing.push("Logo");
+  return {
+    companyType: inferCompanyType(factoryInput, records),
+    industry: inferCompanyType(factoryInput, records),
+    audience: seo.audience || "Lokale en online klanten",
+    toneOfVoice: seo.toneOfVoice || "professioneel, helder en betrouwbaar",
+    brandStyle: branding.lookAndFeel || branding.mustHaveMustNot || "premium, rustig en conversiegericht",
+    primaryColor: firstColor(branding.colors) || "#102033",
+    accentColor: secondColor(branding.colors) || "#14b8a6",
+    fontDirection: branding.fontPreference || "moderne sans-serif",
+    keyServices: services.slice(0, 8),
+    usps: cleanArray(factoryInput.texts?.usps || onboarding.answers?.content?.usps).slice(0, 6),
+    primaryCta: ctas[0] || "Offerte aanvragen",
+    secondaryCta: ctas[1] || "Contact opnemen",
+    seoFocus: seo.keywords || [],
+    serviceArea: seo.serviceArea || "",
+    conversionGoals: ctas.length ? ctas : ["Aanvragen ontvangen", "Vertrouwen opbouwen", "Contact laagdrempelig maken"],
+    missingCriticalInfo: missing,
+    preparedAt: new Date().toISOString(),
+  };
+}
+
+function buildFactoryBlueprint({ factoryInput, analysis }) {
+  const requestedPages = cleanArray(factoryInput.pages);
+  const basePages = ["Home", "Over ons", "Diensten", "Contact", "FAQ", "Reviews", "Privacy", "Algemene voorwaarden", "404", "Bedankt"];
+  const servicePages = analysis.keyServices.slice(0, 6).map((service) => `${service}`);
+  const extraPages = requestedPages.filter((page) => !basePages.some((base) => normalizeToken(base) === normalizeToken(page)));
+  const pages = [...new Set([...basePages, ...extraPages, ...servicePages])].map((title) => blueprintPage(title, factoryInput, analysis));
+  return {
+    status: "prepared",
+    pages,
+    navigation: pages.filter((page) => ["Home", "Over ons", "Diensten", "Contact", "FAQ", "Reviews"].includes(page.title)).map((page) => ({ label: page.title, slug: page.slug })),
+    preparedAt: new Date().toISOString(),
+  };
+}
+
+function blueprintPage(title, factoryInput, analysis) {
+  const slug = title === "Home" ? "index" : slugify(title);
+  const isService = analysis.keyServices.some((service) => normalizeToken(service) === normalizeToken(title));
+  const sections = title === "Home"
+    ? ["hero", "diensten", "usp", "werkwijze", "reviews", "contact"]
+    : isService ? ["hero", "dienst-uitleg", "voordelen", "faq", "contact"] : ["hero", "content", "cta"];
+  return {
+    slug: slug === "index" ? "index.html" : `${slug}.html`,
+    title,
+    goal: isService ? `Conversie voor ${title}` : pageGoal(title),
+    sections,
+    ctas: cleanArray(factoryInput.ctas).slice(0, 3),
+    seoTitle: `${title} - ${factoryInput.businessName || "Website"}`,
+    metaDescription: metaDescriptionFor(title, factoryInput, analysis),
+    requiredMedia: mediaForPage(title, isService),
+    status: "prepared",
+  };
+}
+
+function buildContentPlan({ factoryInput, analysis, blueprint }) {
+  return {
+    status: "prepared",
+    heroHeadline: `${factoryInput.businessName || "Uw bedrijf"} helpt klanten met ${analysis.keyServices[0] || analysis.industry}.`,
+    heroSubtitle: factoryInput.texts?.about || `Professioneel, duidelijk en gericht op ${analysis.audience}.`,
+    sectionTitles: blueprint.pages.slice(0, 8).map((page) => ({ page: page.slug, title: page.title })),
+    uspBlocks: analysis.usps.length ? analysis.usps : ["Heldere afspraken", "Professionele uitvoering", "Korte lijnen"],
+    ctaTexts: [analysis.primaryCta, analysis.secondaryCta].filter(Boolean),
+    faq: factoryInput.texts?.faq || "Veelgestelde vragen worden aangevuld zodra extra input beschikbaar is.",
+    reviewPlaceholders: factoryInput.texts?.reviews ? [] : ["Reviews worden toegevoegd zodra de klant ze aanlevert."],
+    internalLinks: blueprint.pages.slice(0, 6).map((page) => page.slug),
+    openGraph: {
+      title: `${factoryInput.businessName || "Website"} - ${analysis.primaryCta}`,
+      description: metaDescriptionFor("Home", factoryInput, analysis),
+    },
+  };
+}
+
+function buildBrandingPlan({ factoryInput, analysis }) {
+  const uploads = cleanUploads(factoryInput.uploads);
+  const logo = uploads.find((file) => /logo/i.test(file.name || "")) || null;
+  return {
+    status: "prepared",
+    logoStatus: logo ? "available" : "missing",
+    logoTask: logo ? "" : "Voorbereiden in bestaande Logo Studio",
+    primaryColor: analysis.primaryColor,
+    secondaryColor: "#f6f8fb",
+    accentColor: analysis.accentColor,
+    backgroundColor: "#ffffff",
+    cardStyle: "strak, lichte schaduw, compacte radius",
+    buttonStyle: "hoog contrast, duidelijke CTA",
+    typographyDirection: analysis.fontDirection,
+    spacingDirection: "ruim maar scanbaar",
+    iconStyle: "lijniconen, subtiel en functioneel",
+    visualMood: analysis.brandStyle,
+  };
+}
+
+function buildMediaMap({ factoryInput }) {
+  const uploads = cleanUploads(factoryInput.uploads);
+  const byName = (pattern) => uploads.filter((file) => pattern.test([file.name, file.type].join(" ")));
+  return {
+    status: "prepared",
+    hero: byName(/hero|cover|foto|jpg|jpeg|png|webp/i)[0] || null,
+    about: byName(/team|over|bedrijf|locatie/i)[0] || null,
+    team: byName(/team|persoon|medewerker/i),
+    services: byName(/dienst|service|project/i),
+    gallery: uploads.filter((file) => /^image\//.test(file.type || "")),
+    reviews: byName(/review|testimonial/i),
+    certificates: byName(/certificaat|certificate|pdf/i),
+    backgrounds: byName(/background|achtergrond|cover/i),
+    missing: uploads.length ? [] : ["Uploads ontbreken"],
+  };
+}
+
+function buildSeoPlan({ factoryInput, analysis, blueprint }) {
+  const keywords = cleanArray(factoryInput.seo?.keywords);
+  const missing = [];
+  if (!keywords.length) missing.push("SEO zoekwoorden");
+  if (!factoryInput.seo?.serviceArea) missing.push("Werkgebied");
+  return {
+    status: "prepared",
+    keywords,
+    titles: blueprint.pages.map((page) => ({ slug: page.slug, title: page.seoTitle })),
+    metaDescriptions: blueprint.pages.map((page) => ({ slug: page.slug, description: page.metaDescription })),
+    headings: blueprint.pages.map((page) => ({ slug: page.slug, h1: page.title, h2: page.sections })),
+    internalLinks: blueprint.pages.slice(0, 8).map((page) => page.slug),
+    openGraph: {
+      title: `${factoryInput.businessName || "Website"} - ${analysis.primaryCta}`,
+      description: metaDescriptionFor("Home", factoryInput, analysis),
+    },
+    twitterCards: "summary_large_image",
+    schema: ["LocalBusiness", "WebSite", "FAQPage"],
+    canonical: factoryInput.websiteUrl || "",
+    robots: "index,follow na livegang; noindex tijdens preview",
+    altTextDirection: `Beschrijf dienst, locatie en merknaam ${factoryInput.businessName || ""}`.trim(),
+    missing,
+  };
+}
+
+function buildPipelineBriefing({ factoryInput, analysis, blueprint, contentPlan, brandingPlan, mediaMap, seoPlan }) {
+  const rows = [
+    ["Bedrijf", factoryInput.businessName],
+    ["Contact", [factoryInput.contactName, factoryInput.email, factoryInput.phone].filter(Boolean).join(", ")],
+    ["Branche", analysis.industry],
+    ["Doelgroep", analysis.audience],
+    ["Tone of voice", analysis.toneOfVoice],
+    ["Diensten", analysis.keyServices.join(", ")],
+    ["USP's", analysis.usps.join(", ")],
+    ["CTA", [analysis.primaryCta, analysis.secondaryCta].filter(Boolean).join(", ")],
+    ["Pagina's", blueprint.pages.map((page) => page.title).join(", ")],
+    ["Branding", `${brandingPlan.primaryColor}, ${brandingPlan.accentColor}, ${brandingPlan.visualMood}`],
+    ["Media", `Hero: ${mediaMap.hero?.name || "fallback"}, uploads: ${cleanUploads(factoryInput.uploads).length}`],
+    ["SEO", seoPlan.keywords.join(", ")],
+    ["Ontbrekend", [...analysis.missingCriticalInfo, ...mediaMap.missing, ...seoPlan.missing].join(", ")],
+    ["Onboarding briefing", factoryInput.generatedBriefing],
+  ];
+  return rows.filter(([, value]) => cleanText(value)).map(([label, value]) => `${label}: ${value}`).join("\n");
+}
+
+async function persistFactoryPipeline(context, records, pipeline, projectPatch = {}) {
+  const metadata = {
+    ...(records.project.metadata || {}),
+    factoryPipeline: pipeline,
+    websiteFactoryRun: {
+      id: pipeline.id,
+      status: pipeline.status,
+      currentStep: pipeline.currentStep,
+      demoJourneyId: pipeline.demoJourneyId,
+      buildJobId: pipeline.buildJobId || "",
+      previewUrl: pipeline.previewUrl || "",
+      previewScore: pipeline.previewScore || 0,
+      updatedAt: pipeline.updatedAt,
+    },
+    websiteFactoryAnalysis: pipeline.analysis,
+    websiteFactoryBlueprint: pipeline.blueprint,
+    websiteFactoryContentPlan: pipeline.contentPlan,
+    websiteFactoryBrandingPlan: pipeline.brandingPlan,
+    websiteFactoryMediaMap: pipeline.mediaMap,
+    websiteFactorySeoPlan: pipeline.seoPlan,
+    websiteFactoryAttention: pipeline.missingInfo || [],
+  };
+  records.project.metadata = metadata;
+  const patch = {
+    metadata,
+    updated_at: new Date().toISOString(),
+    ...projectPatch,
+  };
+  return supabaseFetch(`${context.supabaseUrl}/rest/v1/projects?id=eq.${encodeURIComponent(records.project.id)}`, {
+    method: "PATCH",
+    headers: { ...restHeaders(context.serviceRoleKey), Prefer: "return=representation", "Content-Type": "application/json" },
+    body: JSON.stringify(patch),
+  });
+}
+
+function pipelineSteps(activeStatus) {
+  const steps = ["queued", "collecting_input", "generating_blueprint", "generating_content", "applying_branding", "preparing_seo", "mapping_media", "building_preview", "preview_ready", "failed"];
+  const activeIndex = steps.indexOf(activeStatus);
+  return steps.map((status, index) => ({
+    status,
+    label: pipelineLabel(status),
+    state: status === "failed" && activeStatus !== "failed" ? "idle" : index < activeIndex ? "done" : index === activeIndex ? "active" : "idle",
+  }));
+}
+
+function advancePipeline(pipeline, status, extra = {}) {
+  return {
+    ...pipeline,
+    ...extra,
+    status,
+    currentStep: status,
+    updatedAt: new Date().toISOString(),
+    steps: pipelineSteps(status),
+  };
+}
+
+function sanitizePipeline(pipeline = {}) {
+  const { errorStack, ...safe } = pipeline;
+  return safe;
+}
+
+async function factoryTimeline(records, eventType, title, description, severity = "info", metadata = {}) {
+  try {
+    return await createTimelineEvent({
+      eventType,
+      title,
+      description,
+      module: "website_factory",
+      referenceType: "project",
+      referenceId: records.project?.id || records.customer?.id,
+      customerId: records.customer?.id,
+      actorName: "Website Factory",
+      actorRole: "automation",
+      severity,
+      metadata: {
+        dedupeKey: `${eventType}:${records.project?.id || records.customer?.id}:${metadata.runId || ""}:${Date.now()}`,
+        projectId: records.project?.id || "",
+        ...metadata,
+      },
+    });
+  } catch (error) {
+    console.error("Factory timeline event skipped", { message: error.message });
+    return null;
+  }
+}
+
+async function factoryNotification(records, title, description, severity = "info", metadata = {}) {
+  try {
+    return await createTimelineEvent({
+      eventType: severity === "error" ? "factory_failed" : "factory_started",
+      title,
+      description,
+      module: "notifications",
+      referenceType: "website_factory",
+      referenceId: records.project?.id || records.customer?.id,
+      customerId: records.customer?.id,
+      actorName: "Website Factory",
+      actorRole: "automation",
+      severity,
+      isGlobal: true,
+      metadata: {
+        dedupeKey: `factory_notification:${records.project?.id || records.customer?.id}:${title}:${Date.now()}`,
+        notificationType: "website_factory",
+        projectId: records.project?.id || "",
+        ...metadata,
+      },
+    });
+  } catch (error) {
+    console.error("Factory notification skipped", { message: error.message });
+    return null;
+  }
+}
+
+function pipelineLabel(status) {
+  return {
+    queued: "In wachtrij",
+    collecting_input: "Input verzamelen",
+    generating_blueprint: "AI analyse en blueprint",
+    generating_content: "Content voorbereiden",
+    applying_branding: "Branding toepassen",
+    preparing_seo: "SEO voorbereiden",
+    mapping_media: "Media koppelen",
+    building_preview: "Preview bouwen",
+    preview_ready: "Preview gereed",
+    failed: "Aandacht nodig",
+  }[status] || status;
+}
+
+function pipelineProgress(status) {
+  return {
+    queued: 5,
+    collecting_input: 15,
+    generating_blueprint: 25,
+    generating_content: 35,
+    applying_branding: 45,
+    preparing_seo: 55,
+    mapping_media: 65,
+    building_preview: 70,
+    preview_ready: 100,
+    failed: 55,
+  }[status] || 10;
+}
+
+function cleanArray(value) {
+  if (Array.isArray(value)) return value.map(cleanText).filter(Boolean);
+  return String(value || "").split(/\n|,/).map(cleanText).filter(Boolean);
+}
+
+function cleanUploads(value) {
+  return Array.isArray(value)
+    ? value.map((file) => ({
+      name: cleanText(file?.name || file?.fileName || file?.filename),
+      type: cleanText(file?.type || file?.mimeType || file?.mime_type),
+      storagePath: cleanText(file?.storagePath || file?.storage_path || file?.path || file?.url),
+      storageStatus: cleanText(file?.storageStatus || file?.storage_status || file?.status),
+    })).filter((file) => file.name || file.storagePath)
+    : [];
+}
+
+function inferCompanyType(factoryInput, records) {
+  const text = [factoryInput.generatedBriefing, factoryInput.businessName, records.customer.package, cleanArray(factoryInput.services).join(" ")].join(" ").toLowerCase();
+  if (/bouw|aannemer|renovatie|timmer/.test(text)) return "Bouw en renovatie";
+  if (/rijschool|rijles|cbr/.test(text)) return "Rijschool";
+  if (/installatie|elektra|loodgieter|warmtepomp/.test(text)) return "Installatie en techniek";
+  if (/hovenier|tuin/.test(text)) return "Tuin en buitenruimte";
+  if (/schoonmaak|reiniging/.test(text)) return "Schoonmaak en facility";
+  if (/kapper|salon|beauty|wellness/.test(text)) return "Beauty en verzorging";
+  if (/restaurant|horeca|hotel/.test(text)) return "Horeca en hospitality";
+  return "Lokale specialist";
+}
+
+function firstColor(value = "") {
+  return cleanText(value).split(/,|\n|;/).map(cleanText).find(Boolean);
+}
+
+function secondColor(value = "") {
+  return cleanText(value).split(/,|\n|;/).map(cleanText).filter(Boolean)[1] || "";
+}
+
+function normalizeToken(value = "") {
+  return cleanText(value).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+function slugify(value = "") {
+  return normalizeToken(value).replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "pagina";
+}
+
+function pageGoal(title = "") {
+  const key = normalizeToken(title);
+  if (key.includes("contact")) return "Contactaanvragen verzamelen";
+  if (key.includes("faq")) return "Bezwaren wegnemen";
+  if (key.includes("review")) return "Vertrouwen opbouwen";
+  if (key.includes("privacy") || key.includes("voorwaarden")) return "Juridische informatie tonen";
+  return "Bezoekers informeren en naar de volgende stap leiden";
+}
+
+function metaDescriptionFor(title, factoryInput, analysis) {
+  const business = factoryInput.businessName || "het bedrijf";
+  const service = analysis.keyServices[0] || analysis.industry || "diensten";
+  return `${title} van ${business}: ontdek ${service} met duidelijke informatie en een laagdrempelige route naar contact.`.slice(0, 156);
+}
+
+function mediaForPage(title, isService) {
+  if (title === "Home") return ["hero", "diensten", "reviews"];
+  if (title === "Over ons") return ["team", "locatie"];
+  if (isService) return ["dienstbeeld", "projectfoto"];
+  if (title === "Reviews") return ["reviewfoto", "logo"];
+  return ["optioneel beeld"];
+}
+
 module.exports = {
   handler,
   createBuildJob,
   getBuildHistory,
   runBuildJob,
+  startOnboardingFactoryPipeline,
 };

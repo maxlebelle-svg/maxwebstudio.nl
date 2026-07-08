@@ -106,6 +106,13 @@
     ["approve-onboarding", "Approve onboarding", "Open onboarding goedkeuring", "Klanten", "Command", "admin-onboarding.html"],
     ["send-onboarding-reminder", "Send onboarding reminder", "Open onboarding reminders", "Klanten", "Command", "admin-onboarding.html"],
     ["open-website-factory-input", "Open Website Factory input", "Open Website Factory met onboardinginput", "Websites", "Command", "admin-website-factory.html"],
+    ["build-website", "Build website", "Start Website Factory preview build", "Websites", "Command", "admin-website-factory.html"],
+    ["rebuild-preview", "Rebuild preview", "Maak preview opnieuw met bestaande input", "Websites", "Command", "admin-website-factory.html"],
+    ["show-factory-queue", "Show factory queue", "Bekijk actieve Website Factory wachtrij", "Websites", "Command", "admin-website-factory.html"],
+    ["show-failed-builds", "Show failed builds", "Bekijk mislukte Website Factory builds", "Websites", "Command", "admin-website-factory.html"],
+    ["show-preview", "Show preview", "Open preview omgeving", "Websites", "Command", "preview.html"],
+    ["open-blueprint", "Open blueprint", "Open Website Factory blueprint", "Websites", "Command", "admin-website-factory.html"],
+    ["open-project-preview", "Open project preview", "Open projectpreview", "Projecten", "Command", "preview.html"],
   ];
 
   const state = {

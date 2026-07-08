@@ -9,6 +9,7 @@ const STORAGE_KEYS = Object.freeze({
   notifications: ["maxwebstudioClientPortalNotifications", "maxwebstudioActivityLog"],
   timeline: ["maxwebstudioActivityLog", "maxwebstudioCustomerTimelineEvents"],
   websites: ["maxwebstudioManagedSites", "maxwebstudioWebsites"],
+  projects: ["maxwebstudioProjects", "maxwebstudioCrmProjects"],
   assets: ["maxwebstudioFiles", "maxwebstudioBrandAssets", "maxwebstudioLogoProjects"],
   automations: ["maxwebstudioAutomationWorkflows", "maxwebstudioAutomationExecutions"],
 });
@@ -116,6 +117,7 @@ export function getMaxBrainDiagnostics(options = {}) {
 export function collectBrainData() {
   const data = Object.fromEntries(Object.entries(STORAGE_KEYS).map(([key, keys]) => [key, uniqueRows(keys.flatMap(readArray))]));
   data.onboarding = extractOnboardingRows(data);
+  data.factory = extractFactoryRows(data);
   return data;
 }
 
@@ -233,6 +235,38 @@ function buildDailyFocus({ data, customerContexts, recommendations }) {
     .filter((item) => ["approved", "sent_to_website_factory"].includes(statusKey(item.status)) || item.factoryInputReady)
     .map((item) => ({ label: item.company || item.customerName || "Project", status: "klaar voor Website Factory" }))
     .slice(0, 8);
+  const factoryWaiting = data.factory
+    .filter((item) => ["queued", "collecting_input", "generating_blueprint"].includes(statusKey(item.status)))
+    .map((item) => ({ label: item.label, status: item.statusLabel || item.status }))
+    .slice(0, 8);
+  const factoryBuildsActive = data.factory
+    .filter((item) => ["generating_content", "applying_branding", "preparing_seo", "mapping_media", "building_preview"].includes(statusKey(item.status)))
+    .map((item) => ({ label: item.label, status: `${item.progress || 0}%` }))
+    .slice(0, 8);
+  const factoryFailed = data.factory
+    .filter((item) => ["failed", "quality_failed", "critical"].includes(statusKey(item.status)) || item.severity === "error")
+    .map((item) => ({ label: item.label, status: item.message || item.status }))
+    .slice(0, 8);
+  const previewsReadyNotViewed = data.factory
+    .filter((item) => ["preview_ready", "completed"].includes(statusKey(item.status)) && !item.previewOpenedAt)
+    .map((item) => ({ label: item.label, status: "preview klaar" }))
+    .slice(0, 8);
+  const missingUploads = data.factory
+    .filter((item) => (item.missingInfo || []).some((field) => /upload|media|foto|image|asset/.test(statusKey(field))))
+    .map((item) => ({ label: item.label, status: "uploads nodig" }))
+    .slice(0, 8);
+  const missingLogo = data.factory
+    .filter((item) => (item.missingInfo || []).some((field) => /logo/.test(statusKey(field))))
+    .map((item) => ({ label: item.label, status: "logo nodig" }))
+    .slice(0, 8);
+  const missingSeo = data.factory
+    .filter((item) => (item.missingInfo || []).some((field) => /seo|keyword|zoek/.test(statusKey(field))))
+    .map((item) => ({ label: item.label, status: "SEO input nodig" }))
+    .slice(0, 8);
+  const readyForLive = data.factory
+    .filter((item) => ["preview_ready", "completed"].includes(statusKey(item.status)) && /akkoord|approved|goedgekeurd|live/.test(statusKey([item.approvalStatus, item.projectStatus, item.phase].join(" "))))
+    .map((item) => ({ label: item.label, status: "klaar voor livegang" }))
+    .slice(0, 8);
   const attention = [
     ...recommendations.slice(0, 4).map((item) => ({ label: item.label, reason: item.reason || item.category || "" })),
     ...data.notifications
@@ -251,6 +285,14 @@ function buildDailyFocus({ data, customerContexts, recommendations }) {
     onboardingInProgress,
     onboardingReview,
     websiteFactoryReady,
+    factoryWaiting,
+    factoryBuildsActive,
+    factoryFailed,
+    previewsReadyNotViewed,
+    missingUploads,
+    missingLogo,
+    missingSeo,
+    readyForLive,
   };
 }
 
@@ -275,6 +317,54 @@ function extractOnboardingRows(data = {}) {
       updatedAt: onboarding.updatedAt || item.updatedAt || item.updated_at || "",
     };
   }).filter(Boolean));
+}
+
+function extractFactoryRows(data = {}) {
+  const rows = [...(data.customers || []), ...(data.websites || []), ...(data.projects || [])];
+  const timelineRows = (data.timeline || [])
+    .filter((item) => /^factory_|^preview_/.test(statusKey(item.eventType || item.event_type || item.action || item.module)))
+    .map((item) => {
+      const metadata = item.metadata || {};
+      return {
+        id: idOf(item) || `${item.referenceId || item.reference_id || ""}:${item.createdAt || item.created_at || ""}`,
+        customerId: item.customerId || item.customer_id || metadata.customerId || "",
+        projectId: item.projectId || item.project_id || item.referenceId || item.reference_id || metadata.projectId || "",
+        label: item.title || metadata.companyName || metadata.projectName || "Website Factory",
+        status: metadata.status || item.eventType || item.event_type || item.action || "",
+        statusLabel: item.title || metadata.statusLabel || "",
+        progress: Number(metadata.progress || 0),
+        missingInfo: metadata.missingInfo || [],
+        message: item.description || item.message || "",
+        severity: item.severity || "",
+        updatedAt: item.createdAt || item.created_at || item.timestamp || "",
+      };
+    });
+  const metadataRows = rows.map((item) => {
+    const metadata = item.metadata || {};
+    const pipeline = metadata.factoryPipeline || metadata.websiteFactoryRun || item.factoryPipeline || item.websiteFactoryRun || {};
+    const input = metadata.websiteFactoryInput || item.websiteFactoryInput || {};
+    const status = pipeline.status || metadata.websiteFactoryInputStatus || item.websiteFactoryInputStatus || "";
+    if (!status && !pipeline.runId && !Object.keys(input || {}).length) return null;
+    return {
+      id: `${idOf(item)}:${pipeline.runId || status || "factory"}`,
+      customerId: pipeline.customerId || input.customerId || item.customerId || item.customer_id || item.id || "",
+      projectId: pipeline.projectId || input.projectId || item.projectId || item.project_id || "",
+      label: item.company || item.name || input.company?.name || input.businessName || pipeline.label || "Website Factory",
+      status: status || "collecting_input",
+      statusLabel: pipeline.statusLabel || status || "Website Factory",
+      progress: Number(pipeline.progress || metadata.websiteFactoryProgress || 0),
+      missingInfo: pipeline.missingInfo || metadata.websiteFactoryMissingInfo || [],
+      message: pipeline.message || "",
+      severity: pipeline.severity || "",
+      previewUrl: pipeline.previewUrl || metadata.previewUrl || item.previewUrl || "",
+      previewOpenedAt: pipeline.previewOpenedAt || metadata.previewOpenedAt || "",
+      approvalStatus: pipeline.approvalStatus || item.approvalStatus || item.clientStatus || "",
+      projectStatus: item.status || "",
+      phase: item.phase || "",
+      updatedAt: pipeline.updatedAt || item.updatedAt || item.updated_at || item.createdAt || item.created_at || "",
+    };
+  }).filter(Boolean);
+  return uniqueRows([...metadataRows, ...timelineRows]);
 }
 
 function action(id, label, category, reason) {

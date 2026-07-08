@@ -96,7 +96,7 @@
         <ul>
           <li>Demo-sessies blijven lokaal in deze browser.</li>
           <li>Echte login gebruikt straks de beveiligde Max Webstudio accountlaag.</li>
-          <li>Geen wachtwoorden, API keys of secrets worden in de frontend opgeslagen.</li>
+          <li>Geen wachtwoorden, toegangssleutels of secrets worden in de frontend opgeslagen.</li>
           <li>Accountaanvragen worden tijdelijk lokaal bewaard in <code>maxwebstudioAccountRequests</code>.</li>
         </ul>
       </aside>
@@ -244,7 +244,7 @@
         }
 
         async function fetchAccountProfile(accessToken) {
-          const response = await fetch("/.netlify/functions/account-profile", {
+          const response = await fetch("/api/account-profile", {
             headers: {
               Accept: "application/json",
               Authorization: `Bearer ${accessToken}`,

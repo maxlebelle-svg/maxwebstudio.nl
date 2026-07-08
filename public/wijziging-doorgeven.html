@@ -43,7 +43,7 @@
             method="POST"
             action="bedankt-wijziging.html"
             enctype="multipart/form-data"
-            data-integration-targets="netlify-forms resend admin-dashboard client-portal"
+            data-integration-targets="forms resend admin-dashboard client-portal"
           >
             <input type="hidden" name="formType" value="change_request" />
             <label class="honeypot-field" aria-hidden="true" tabindex="-1">
@@ -291,7 +291,7 @@
         if (!window.supabase) return {};
 
         try {
-          const response = await fetch("/.netlify/functions/client-auth-config", { headers: { Accept: "application/json" } });
+          const response = await fetch("/api/client-auth-config", { headers: { Accept: "application/json" } });
           const config = await response.json().catch(() => ({}));
 
           if (!response.ok || !config.success) return {};
@@ -356,7 +356,7 @@
 
         try {
           const authHeader = await getPortalAuthHeader();
-          const response = await fetch("/.netlify/functions/submit-change-request", {
+          const response = await fetch("/api/submit-change-request", {
             method: "POST",
             headers: authHeader,
             body: formData,

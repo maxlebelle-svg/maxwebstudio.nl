@@ -10975,6 +10975,30 @@
           }).filter(Boolean);
         }
 
+        function ceoFactoryRows() {
+          return [...state.customers, ...state.projects, ...state.websites].map((item) => {
+            const metadata = item.metadata || {};
+            const pipeline = metadata.factoryPipeline || metadata.websiteFactoryRun || item.factoryPipeline || item.websiteFactoryRun || {};
+            const input = metadata.websiteFactoryInput || item.websiteFactoryInput || {};
+            const status = pipeline.status || metadata.websiteFactoryInputStatus || item.websiteFactoryInputStatus || "";
+            if (!status && !pipeline.runId && !Object.keys(input || {}).length) return null;
+            return {
+              id: `${item.id || item.projectId || item.customerId || item.domain || "factory"}:${pipeline.runId || status || "factory"}`,
+              label: item.company || item.name || input.company?.name || input.businessName || pipeline.label || "Website Factory",
+              status: status || "collecting_input",
+              progress: Number(pipeline.progress || metadata.websiteFactoryProgress || 0),
+              missingInfo: Array.isArray(pipeline.missingInfo || metadata.websiteFactoryMissingInfo) ? (pipeline.missingInfo || metadata.websiteFactoryMissingInfo) : [],
+              severity: pipeline.severity || "",
+              previewOpenedAt: pipeline.previewOpenedAt || metadata.previewOpenedAt || "",
+              previewUrl: pipeline.previewUrl || metadata.previewUrl || item.previewUrl || "",
+              approvalStatus: pipeline.approvalStatus || item.approvalStatus || item.clientStatus || "",
+              projectStatus: item.status || "",
+              phase: item.phase || "",
+              updatedAt: pipeline.updatedAt || item.updatedAt || item.updated_at || item.createdAt || item.created_at || "",
+            };
+          }).filter(Boolean).filter((item, index, rows) => rows.findIndex((row) => row.id === item.id) === index);
+        }
+
         function ceoNeedsDomain(website = {}, customer = {}) {
           const haystack = [website.domainStatus, website.domain, website.notes, customer.website, customer.notes].join(" ").toLowerCase();
           return !website.domain || ["pending", "wacht", "todo", "nog regelen", "domein nodig"].some((term) => haystack.includes(term));
@@ -11036,6 +11060,14 @@
           const onboardingRows = ceoOnboardingRows();
           const onboardingProjects = [...state.projects.filter(ceoIsOnboardingProject), ...onboardingRows].filter((item, index, rows) => rows.findIndex((row) => (row.id || row.label || row.name) === (item.id || item.label || item.name)) === index);
           const onboardingFactoryReady = onboardingRows.filter((item) => item.factoryReady);
+          const factoryRows = ceoFactoryRows();
+          const factoryQueue = factoryRows.filter((item) => ["queued", "collecting_input", "generating_blueprint"].includes(statusKey(item.status)));
+          const factoryActive = factoryRows.filter((item) => ["generating_content", "applying_branding", "preparing_seo", "mapping_media", "building_preview"].includes(statusKey(item.status)));
+          const factoryFailures = factoryRows.filter((item) => ["failed", "quality_failed"].includes(statusKey(item.status)) || item.severity === "error");
+          const previewsReadyNotViewed = factoryRows.filter((item) => ["preview_ready", "completed"].includes(statusKey(item.status)) && !item.previewOpenedAt);
+          const readyForLive = factoryRows.filter((item) => ["preview_ready", "completed"].includes(statusKey(item.status)) && /akkoord|approved|goedgekeurd|live/.test(statusKey([item.approvalStatus, item.projectStatus, item.phase].join(" "))));
+          const buildsToday = factoryRows.filter((item) => ceoIsSameDay(item.updatedAt) && !["preview_ready", "completed"].includes(statusKey(item.status)));
+          const previewsToday = factoryRows.filter((item) => ceoIsSameDay(item.updatedAt) && ["preview_ready", "completed"].includes(statusKey(item.status)));
           const customersWithoutDomain = state.customers.filter((customer) => !String(customer.website || customer.domain || "").trim());
           const pendingDomains = Math.max(customersWithoutDomain.length, state.websites.filter((website) => ceoNeedsDomain(website)).length);
           const pendingPhones = leads.filter((lead) => ceoIsLeadOpen(lead) && !String(lead.phone || lead.telephone || "").trim()).length;
@@ -11054,6 +11086,14 @@
             websitesApproval,
             onboardingProjects,
             onboardingFactoryReady,
+            factoryRows,
+            factoryQueue,
+            factoryActive,
+            factoryFailures,
+            previewsReadyNotViewed,
+            readyForLive,
+            buildsToday,
+            previewsToday,
             pendingDomains,
             pendingPhones,
             unreadNotifications: ceoUnreadNotificationsCount(),
@@ -11145,6 +11185,26 @@
               href: "admin-max-automations.html",
             });
           }
+          if (summary.factoryFailures.length) {
+            priorities.push({
+              label: "Factory",
+              badgeClass: "status-warning",
+              severity: "high",
+              title: `${summary.factoryFailures.length} Website Factory build${summary.factoryFailures.length === 1 ? "" : "s"} vragen aandacht`,
+              action: "Open Website Factory en herstel de mislukte preview-run.",
+              href: "admin-website-factory.html",
+            });
+          }
+          if (summary.previewsReadyNotViewed.length) {
+            priorities.push({
+              label: "Preview",
+              badgeClass: "status-active",
+              severity: "medium",
+              title: `${summary.previewsReadyNotViewed.length} preview${summary.previewsReadyNotViewed.length === 1 ? "" : "s"} klaar voor review`,
+              action: "Bekijk de preview en deel hem met de klant zodra hij klopt.",
+              href: "admin-website-factory.html",
+            });
+          }
           if (summary.platformHealth.status === "Critical" || summary.platformHealth.status === "Warning") {
             priorities.push({
               label: "Health",
@@ -11179,7 +11239,7 @@
             const recommendation = priorities[0]?.action || "Start met sales follow-up en controleer open facturen.";
             ceoElements.briefing.innerHTML = `
               <p>Good morning Max.</p>
-              <p>Vandaag zie ik ${summary.todayLeads.length} nieuwe lead${summary.todayLeads.length === 1 ? "" : "s"}, ${summary.openInvoices.length} open ${summary.openInvoices.length === 1 ? "factuur" : "facturen"} en ${summary.websitesApproval.length} website${summary.websitesApproval.length === 1 ? "" : "s"} die aandacht vragen.</p>
+              <p>Vandaag zie ik ${summary.todayLeads.length} nieuwe lead${summary.todayLeads.length === 1 ? "" : "s"}, ${summary.openInvoices.length} open ${summary.openInvoices.length === 1 ? "factuur" : "facturen"}, ${summary.factoryActive.length} actieve Factory build${summary.factoryActive.length === 1 ? "" : "s"} en ${summary.websitesApproval.length} website${summary.websitesApproval.length === 1 ? "" : "s"} die aandacht vragen.</p>
               <p>Mijn advies: ${escapeHtml(recommendation)}</p>
             `;
           }
@@ -11201,8 +11261,12 @@
             : `<div><span>Sales</span><strong>Geen leaddata</strong><small>Leadfinder fallback is leeg.</small></div>`;
 
           const production = [
-            ["Website Factory", state.projects.filter((project) => ["in_ontwikkeling", "in_ontwerp", "onboarding"].includes(statusKey(project.status))).length],
+            ["Website Factory", Math.max(summary.factoryRows.length, state.projects.filter((project) => ["in_ontwikkeling", "in_ontwerp", "onboarding"].includes(statusKey(project.status))).length)],
             ["Factory input klaar", summary.onboardingFactoryReady.length],
+            ["Factory wachtrij", summary.factoryQueue.length],
+            ["Builds actief", summary.factoryActive.length],
+            ["Previews klaar", summary.previewsReadyNotViewed.length],
+            ["Klaar voor livegang", summary.readyForLive.length],
             ["Logos", state.files.filter((file) => String(file.category || file.type || "").toLowerCase().includes("logo")).length],
             ["Assets", state.files.length],
             ["SEO", state.websites.filter((website) => String(website.notes || website.phase || "").toLowerCase().includes("seo")).length],
@@ -11243,6 +11307,9 @@
           if (summary.openInvoices.length) recommendations.push("Verstuur betaalherinneringen voor open facturen.");
           if (summary.onboardingProjects.length) recommendations.push("Rond onboardingblokkades af voordat productie oploopt.");
           if (summary.onboardingFactoryReady.length) recommendations.push("Zet goedgekeurde onboarding door naar Website Factory.");
+          if (summary.factoryFailures.length) recommendations.push("Herstart of corrigeer mislukte Website Factory builds.");
+          if (summary.previewsReadyNotViewed.length) recommendations.push("Review previews die klaarstaan voordat klantfeedback oploopt.");
+          if (summary.readyForLive.length) recommendations.push("Plan livegang voor previews met akkoord.");
           const brainCache = readCeoBrainCache();
           if (Array.isArray(brainCache?.recommendations)) {
             brainCache.recommendations.slice(0, 3).forEach((item) => {

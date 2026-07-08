@@ -47,7 +47,7 @@ exports.handler = async (event) => {
       const records = await loadOnboardingRecords(context, { customerId });
       if (!records.customer) return jsonResponse(404, { success: false, error: "Klant niet gevonden." });
       const result = await handleAdminAction(context, records, action, payload, adminCheck.admin);
-      return jsonResponse(200, { success: true, onboarding: sanitizeOnboarding(result.onboarding), factoryInput: result.factoryInput || null });
+      return jsonResponse(200, { success: true, onboarding: sanitizeOnboarding(result.onboarding), factoryInput: result.factoryInput || null, factoryRun: result.factoryRun || null });
     }
 
     const authUser = await getAuthUserFromRequest(context, event);
@@ -125,7 +125,36 @@ async function handleAdminAction(context, records, action, payload, admin) {
     metadata: { dedupeKey: `${eventType}:${records.customer.id}:${onboarding.updatedAt}`, status },
   });
   await createNotificationForOnboarding(records, eventType, title, description, status);
-  return { onboarding, factoryInput };
+  let factoryRun = null;
+  if (["approved", "sent_to_website_factory"].includes(status)) {
+    factoryRun = await startWebsiteFactoryPipeline(context, records, factoryInput, admin).catch((error) => {
+      console.error("Onboarding factory pipeline start failed", {
+        message: error.message,
+        customerId: records.customer.id,
+        projectId: records.project?.id || "",
+      });
+      return { failed: true, message: "Website Factory kon nog niet automatisch starten." };
+    });
+  }
+  return { onboarding, factoryInput, factoryRun };
+}
+
+async function startWebsiteFactoryPipeline(context, records, factoryInput, admin) {
+  if (!records.project?.id) return null;
+  const { startOnboardingFactoryPipeline } = require("./website-factory");
+  return startOnboardingFactoryPipeline({
+    ...context,
+    admin: {
+      id: admin?.id || admin?.authUserId || "",
+      email: admin?.email || "",
+      role: admin?.role || "admin",
+    },
+  }, {
+    customerId: records.customer.id,
+    projectId: records.project.id,
+    factoryInput,
+    factoryRunId: `factory-${records.project.id}-${Date.now()}`,
+  });
 }
 
 async function saveCustomerOnboarding(context, records, payload, authUser, action) {
