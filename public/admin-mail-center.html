@@ -115,46 +115,57 @@
         align-items: start;
       }
 
-      .mail-list-card,
-      .mail-detail-card {
+      .mail-list-card {
         display: grid;
         gap: 16px;
         padding: 22px;
       }
 
-      .mail-detail-card {
-        order: -1;
-        padding: 14px;
-      }
-
-      .mail-detail-card > .admin-section-heading {
+      .mail-selection-bar {
         display: grid;
-        grid-template-columns: 148px minmax(0, 1fr) auto;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
         gap: 14px;
-        align-items: center;
-        margin: 0;
-      }
-
-      .mail-detail-card .section-kicker {
-        display: none;
-      }
-
-      .mail-detail-card h2 {
-        margin: 0;
-        font-size: 17px;
-      }
-
-      .mail-detail-card .mail-detail-hint {
-        min-height: 48px;
-        display: flex;
-        align-items: center;
-        padding: 0 14px;
+        min-height: 88px;
+        padding: 16px 18px;
         border: 1px solid rgba(148, 163, 184, 0.14);
         border-radius: 8px;
-        color: rgba(226, 236, 248, 0.66);
-        background: rgba(15, 23, 42, 0.46);
+        background:
+          radial-gradient(circle at 8% 20%, rgba(37, 99, 235, 0.14), transparent 32%),
+          linear-gradient(180deg, rgba(13, 35, 55, 0.58), rgba(5, 18, 31, 0.78));
+      }
+
+      .mail-selection-icon {
+        display: grid;
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        color: #60a5fa;
+        background: rgba(37, 99, 235, 0.16);
+        font-size: 20px;
+      }
+
+      .mail-selection-bar strong {
+        display: block;
+        color: #f8fbff;
+        font-size: 16px;
+        line-height: 1.25;
+      }
+
+      .mail-selection-bar span:not(.mail-selection-icon) {
+        display: block;
+        margin-top: 4px;
+        color: rgba(226, 236, 248, 0.64);
         font-size: 13px;
         font-weight: 750;
+      }
+
+      .mail-list-tools {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
       }
 
       .mail-table-wrap {
@@ -184,12 +195,25 @@
       }
 
       .mail-row {
+        position: relative;
         cursor: pointer;
+        outline: none;
+        transition: background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
       }
 
-      .mail-row:hover,
+      .mail-row:hover {
+        background: rgba(37, 99, 235, 0.08);
+      }
+
+      .mail-row:focus-visible,
       .mail-row.is-active {
         background: rgba(37, 99, 235, 0.12);
+        box-shadow: inset 3px 0 0 #2563eb, 0 0 0 1px rgba(37, 99, 235, 0.18);
+      }
+
+      .mail-row.is-active {
+        background:
+          linear-gradient(90deg, rgba(37, 99, 235, 0.18), rgba(37, 99, 235, 0.06) 52%, transparent);
       }
 
       .mail-subject {
@@ -247,6 +271,16 @@
         background: rgba(245, 158, 11, 0.17);
       }
 
+      .mail-status.opened {
+        color: #dbeafe;
+        background: rgba(37, 99, 235, 0.18);
+      }
+
+      .mail-status.clicked {
+        color: #ede9fe;
+        background: rgba(124, 58, 237, 0.2);
+      }
+
       .mail-row-action {
         color: rgba(226, 236, 248, 0.58);
         font-size: 22px;
@@ -254,7 +288,7 @@
       }
 
       .mail-detail-meta {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: 1fr;
       }
 
       .mail-detail-meta div {
@@ -307,8 +341,8 @@
 
       .mail-preview-frame,
       .mail-text-preview {
-        min-height: 340px;
-        max-height: 560px;
+        min-height: min(520px, 58vh);
+        max-height: 58vh;
         overflow: auto;
         border: 1px solid rgba(148, 163, 184, 0.18);
         border-radius: 8px;
@@ -318,7 +352,7 @@
       .mail-preview-frame iframe {
         display: block;
         width: 100%;
-        min-height: 540px;
+        min-height: 620px;
         border: 0;
         background: #ffffff;
       }
@@ -371,11 +405,107 @@
         background: #155eef;
       }
 
+      .mail-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 80;
+        background: rgba(2, 6, 23, 0.2);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 200ms ease;
+      }
+
+      .mail-overlay.is-open {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .mail-slide-panel {
+        position: fixed;
+        top: 0;
+        right: 0;
+        z-index: 90;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr);
+        width: min(580px, calc(100vw - 32px));
+        height: 100vh;
+        border-left: 1px solid rgba(148, 163, 184, 0.18);
+        background:
+          radial-gradient(circle at 20% 0%, rgba(37, 99, 235, 0.12), transparent 34%),
+          linear-gradient(180deg, rgba(13, 35, 55, 0.98), rgba(5, 18, 31, 0.98));
+        box-shadow: -32px 0 72px rgba(0, 0, 0, 0.34);
+        opacity: 0;
+        pointer-events: none;
+        transform: translateX(28px);
+        transition: opacity 200ms ease, transform 200ms ease;
+      }
+
+      .mail-slide-panel.is-open {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateX(0);
+      }
+
+      .mail-slide-header {
+        display: grid;
+        gap: 16px;
+        padding: 22px;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+      }
+
+      .mail-slide-title {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 14px;
+        align-items: start;
+      }
+
+      .mail-slide-title h2 {
+        margin: 0;
+        color: #f8fbff;
+        font-size: 24px;
+        line-height: 1.15;
+        letter-spacing: 0;
+      }
+
+      .mail-slide-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .mail-slide-close {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+      }
+
+      .mail-slide-body {
+        display: grid;
+        align-content: start;
+        gap: 16px;
+        min-height: 0;
+        overflow: auto;
+        padding: 18px 22px 22px;
+      }
+
+      .mail-slide-loading {
+        padding: 18px;
+        border: 1px dashed rgba(148, 163, 184, 0.22);
+        border-radius: 8px;
+        color: rgba(226, 236, 248, 0.68);
+        font-weight: 800;
+      }
+
       @media (max-width: 1180px) {
         .mail-center-toolbar,
         .mail-workspace,
         .mail-center-hero {
           grid-template-columns: 1fr;
+        }
+
+        .mail-slide-panel {
+          width: 80vw;
         }
       }
 
@@ -383,6 +513,14 @@
         .mail-center-metrics,
         .mail-detail-meta {
           grid-template-columns: 1fr;
+        }
+
+        .mail-selection-bar {
+          grid-template-columns: 1fr;
+        }
+
+        .mail-slide-panel {
+          width: 100vw;
         }
       }
     </style>
@@ -492,13 +630,26 @@
           </div>
 
           <div class="mail-workspace">
+            <aside class="mail-selection-bar" aria-live="polite">
+              <span class="mail-selection-icon" aria-hidden="true">✉</span>
+              <div>
+                <strong id="mail-selection-title">Geen e-mail geselecteerd</strong>
+                <span id="mail-selection-copy">Selecteer een e-mail uit de lijst om de inhoud, HTML, metadata en verzendinformatie te bekijken.</span>
+              </div>
+              <button class="button secondary" id="mail-open-selected" type="button" disabled>Open detail</button>
+            </aside>
+
             <section class="admin-card mail-list-card" aria-labelledby="mail-list-heading">
               <div class="admin-section-heading">
                 <div>
                   <p class="section-kicker">Overzicht</p>
                   <h2 id="mail-list-heading">E-mailgeschiedenis</h2>
                 </div>
-                <button class="button secondary" id="mail-refresh" type="button">Ververs</button>
+                <div class="mail-list-tools">
+                  <span class="mail-muted" id="mail-sync-state">Nog niet gesynchroniseerd</span>
+                  <button class="button secondary" id="mail-refresh" type="button">Refresh</button>
+                  <button class="button primary" type="button" disabled>Nieuw verzenden</button>
+                </div>
               </div>
               <p class="admin-form-message" id="mail-message" role="status" aria-live="polite"></p>
               <div class="mail-table-wrap">
@@ -525,33 +676,43 @@
                 </div>
               </div>
             </section>
-
-            <aside class="admin-card mail-detail-card" aria-labelledby="mail-detail-heading">
-              <div class="admin-section-heading">
-                <div>
-                  <p class="section-kicker">Detail</p>
-                  <h2 id="mail-detail-heading">Selecteer een mail</h2>
-                </div>
-                <div class="mail-detail-hint" id="mail-detail-hint">Kies een mail uit het overzicht om de details te bekijken</div>
-                <button class="button secondary" id="mail-retry" type="button" disabled>Opnieuw versturen</button>
-              </div>
-              <div id="mail-detail-empty" class="mail-empty">Kies een mail uit het overzicht.</div>
-              <div id="mail-detail" hidden>
-                <div class="mail-detail-meta" id="mail-detail-meta"></div>
-                <div class="mail-preview-tabs" role="tablist" aria-label="Mail preview">
-                  <button class="is-active" type="button" data-tab="html">HTML</button>
-                  <button type="button" data-tab="text">Tekst</button>
-                  <button type="button" data-tab="metadata">Metadata</button>
-                </div>
-                <div class="mail-preview-frame" id="mail-html-panel"><iframe id="mail-html-frame" title="HTML e-mail preview" sandbox=""></iframe></div>
-                <pre class="mail-text-preview" id="mail-text-panel" hidden></pre>
-                <pre class="mail-text-preview" id="mail-metadata-panel" hidden></pre>
-              </div>
-            </aside>
           </div>
         </section>
       </div>
     </main>
+
+    <div class="mail-overlay" id="mail-overlay" hidden></div>
+    <aside class="mail-slide-panel" id="mail-slide-panel" aria-labelledby="mail-detail-heading" aria-modal="true" role="dialog" hidden>
+      <header class="mail-slide-header">
+        <div class="mail-slide-title">
+          <div>
+            <p class="section-kicker">Mail detail</p>
+            <h2 id="mail-detail-heading">Maildetail laden...</h2>
+          </div>
+          <button class="button secondary mail-slide-close" id="mail-close-panel" type="button" aria-label="Sluit detailpaneel">×</button>
+        </div>
+        <div class="mail-slide-actions">
+          <span class="mail-status" id="mail-detail-status">pending</span>
+          <button class="button secondary" id="mail-retry" type="button" disabled>Opnieuw versturen</button>
+          <button class="button secondary" id="mail-open-html" type="button" disabled>Open in HTML</button>
+          <button class="button secondary" type="button" disabled>Download EML</button>
+        </div>
+      </header>
+      <div class="mail-slide-body">
+        <div id="mail-detail-empty" class="mail-slide-loading">Selecteer een mail om detailinformatie te laden.</div>
+        <div id="mail-detail" hidden>
+          <div class="mail-detail-meta" id="mail-detail-meta"></div>
+          <div class="mail-preview-tabs" role="tablist" aria-label="Mail preview">
+            <button class="is-active" type="button" data-tab="html">HTML</button>
+            <button type="button" data-tab="text">Tekst</button>
+            <button type="button" data-tab="metadata">Metadata</button>
+          </div>
+          <div class="mail-preview-frame" id="mail-html-panel"><iframe id="mail-html-frame" title="HTML e-mail preview" sandbox=""></iframe></div>
+          <pre class="mail-text-preview" id="mail-text-panel" hidden></pre>
+          <pre class="mail-text-preview" id="mail-metadata-panel" hidden></pre>
+        </div>
+      </div>
+    </aside>
 
     <script>
       (() => {
@@ -563,6 +724,8 @@
           selectedId: "",
           selectedDetail: null,
           activeTab: "html",
+          panelOpen: false,
+          lastLoadedAt: null,
         };
 
         const elements = {
@@ -571,16 +734,24 @@
           globalSearch: document.getElementById("mail-global-search"),
           search: document.getElementById("mail-search"),
           reset: document.getElementById("mail-reset"),
+          selectionTitle: document.getElementById("mail-selection-title"),
+          selectionCopy: document.getElementById("mail-selection-copy"),
+          openSelected: document.getElementById("mail-open-selected"),
           tableBody: document.getElementById("mail-table-body"),
           resultsSummary: document.getElementById("mail-results-summary"),
+          syncState: document.getElementById("mail-sync-state"),
           message: document.getElementById("mail-message"),
           refresh: document.getElementById("mail-refresh"),
           refreshIcon: document.getElementById("mail-refresh-icon"),
           retry: document.getElementById("mail-retry"),
+          overlay: document.getElementById("mail-overlay"),
+          panel: document.getElementById("mail-slide-panel"),
+          closePanel: document.getElementById("mail-close-panel"),
+          openHtml: document.getElementById("mail-open-html"),
           detail: document.getElementById("mail-detail"),
           detailEmpty: document.getElementById("mail-detail-empty"),
           detailHeading: document.getElementById("mail-detail-heading"),
-          detailHint: document.getElementById("mail-detail-hint"),
+          detailStatus: document.getElementById("mail-detail-status"),
           detailMeta: document.getElementById("mail-detail-meta"),
           htmlFrame: document.getElementById("mail-html-frame"),
           htmlPanel: document.getElementById("mail-html-panel"),
@@ -634,13 +805,18 @@
           try {
             const data = await apiRequest(`${endpoint}?${buildQuery()}`);
             state.logs = Array.isArray(data.emailLogs) ? data.emailLogs : [];
+            state.lastLoadedAt = new Date();
             renderLogs();
             renderMetrics();
+            renderSyncState();
+            updateSelectionBar();
             setMessage(state.logs.length ? `${state.logs.length} mails geladen.` : "Geen mails gevonden.", state.logs.length ? "success" : "warning");
           } catch (error) {
             state.logs = [];
             renderLogs();
             renderMetrics();
+            renderSyncState();
+            updateSelectionBar();
             setMessage(error.message || "Mailgeschiedenis kon niet worden geladen.", "error");
           }
         }
@@ -652,12 +828,12 @@
             return;
           }
           elements.resultsSummary.textContent = `Toont 1 tot ${state.logs.length} van de ${state.logs.length} resultaten`;
-          elements.tableBody.innerHTML = state.logs.map((log) => `
-            <tr class="mail-row ${log.id === state.selectedId ? "is-active" : ""}" data-id="${escapeAttribute(log.id)}">
+          elements.tableBody.innerHTML = state.logs.map((log, index) => `
+            <tr class="mail-row ${log.id === state.selectedId ? "is-active" : ""}" data-id="${escapeAttribute(log.id)}" tabindex="0" aria-selected="${log.id === state.selectedId ? "true" : "false"}" data-index="${index}">
               <td><strong>${escapeHtml(formatDateTime(log.createdAt))}</strong><div class="mail-muted">${escapeHtml(relativeAge(log.createdAt))}</div></td>
               <td><span class="mail-subject">${escapeHtml(log.toName || log.toEmail || "-")}</span><div class="mail-muted">${escapeHtml(log.toEmail || "-")}</div></td>
               <td><div class="mail-subject">${escapeHtml(log.subject || "-")}</div><div class="mail-muted">${escapeHtml(log.providerMessageId || "Geen provider id")}</div></td>
-              <td><span class="mail-status ${escapeAttribute(log.status)}">${escapeHtml(log.status || "-")}</span></td>
+              <td><span class="mail-status ${statusKey(log.status)}">${escapeHtml(log.status || "-")}</span></td>
               <td><strong>${escapeHtml(log.templateName || log.templateKey || "-")}</strong><div class="mail-muted">${escapeHtml(log.templateKey || "")}</div></td>
               <td class="mail-row-action">›</td>
             </tr>
@@ -667,14 +843,43 @@
         function renderMetrics() {
           const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
           elements.metricTotal.textContent = state.logs.length;
-          elements.metricSent.textContent = state.logs.filter((log) => ["sent", "delivered", "opened", "clicked"].includes(log.status)).length;
-          elements.metricFailed.textContent = state.logs.filter((log) => ["failed", "bounced", "complained"].includes(log.status)).length;
+          elements.metricSent.textContent = state.logs.filter((log) => ["sent", "delivered", "opened", "clicked"].includes(statusKey(log.status))).length;
+          elements.metricFailed.textContent = state.logs.filter((log) => ["failed", "bounced", "complained"].includes(statusKey(log.status))).length;
           elements.metricDay.textContent = state.logs.filter((log) => new Date(log.createdAt).getTime() >= dayAgo).length;
         }
 
-        async function selectLog(id) {
+        function renderSyncState() {
+          elements.syncState.textContent = state.lastLoadedAt ? `Automatisch vernieuwd: ${relativeAge(state.lastLoadedAt)}` : "Nog niet gesynchroniseerd";
+        }
+
+        function selectedSummary() {
+          return state.logs.find((log) => log.id === state.selectedId) || null;
+        }
+
+        function updateSelectionBar() {
+          const log = selectedSummary();
+          if (!log) {
+            elements.selectionTitle.textContent = "Geen e-mail geselecteerd";
+            elements.selectionCopy.textContent = "Selecteer een e-mail uit de lijst om de inhoud, HTML, metadata en verzendinformatie te bekijken.";
+            elements.openSelected.disabled = true;
+            return;
+          }
+          elements.selectionTitle.textContent = log.subject || "E-mail geselecteerd";
+          elements.selectionCopy.textContent = `${log.toEmail || "Onbekende ontvanger"} · ${log.templateName || log.templateKey || "Geen template"} · ${formatDateTime(log.createdAt)}`;
+          elements.openSelected.disabled = false;
+        }
+
+        function selectSummary(id) {
           state.selectedId = id;
+          state.selectedDetail = state.selectedDetail?.id === id ? state.selectedDetail : null;
           renderLogs();
+          updateSelectionBar();
+        }
+
+        async function openLog(id = state.selectedId) {
+          if (!id) return;
+          selectSummary(id);
+          openPanel();
           setDetailLoading();
           try {
             const data = await apiRequest(`${endpoint}?id=${encodeURIComponent(id)}`);
@@ -686,11 +891,14 @@
         }
 
         function setDetailLoading() {
+          elements.detailHeading.textContent = "Maildetail laden...";
+          elements.detailStatus.textContent = "laden";
+          elements.detailStatus.className = "mail-status pending";
           elements.detailEmpty.hidden = false;
           elements.detailEmpty.textContent = "Maildetail laden...";
           elements.detail.hidden = true;
-          elements.detailHint.textContent = "Maildetail laden...";
           elements.retry.disabled = true;
+          elements.openHtml.disabled = true;
         }
 
         function renderDetail() {
@@ -699,13 +907,18 @@
           elements.detailEmpty.hidden = true;
           elements.detail.hidden = false;
           elements.retry.disabled = false;
+          elements.openHtml.disabled = !log.htmlBody;
           elements.detailHeading.textContent = log.subject || "Maildetail";
-          elements.detailHint.textContent = `${log.toEmail || "Onbekende ontvanger"} · ${formatDateTime(log.createdAt)}`;
+          elements.detailStatus.textContent = log.status || "-";
+          elements.detailStatus.className = `mail-status ${statusKey(log.status)}`;
           elements.detailMeta.innerHTML = [
-            ["Ontvanger", log.toEmail],
             ["Van", [log.fromName, log.fromEmail].filter(Boolean).join(" <") + (log.fromName && log.fromEmail ? ">" : "")],
+            ["Aan", log.toEmail],
+            ["CC", Array.isArray(log.cc) ? log.cc.join(", ") : log.cc || "-"],
+            ["BCC", Array.isArray(log.bcc) ? log.bcc.join(", ") : log.bcc || "-"],
             ["Status", log.status],
             ["Template", log.templateName || log.templateKey],
+            ["Datum", formatDateTime(log.createdAt)],
             ["Resend ID", log.providerMessageId],
             ["Foutmelding", log.errorMessage || "-"],
             ["Klant", log.customerId || "-"],
@@ -717,6 +930,50 @@
           elements.textPanel.textContent = log.textBody || "Geen tekstversie opgeslagen.";
           elements.metadataPanel.textContent = JSON.stringify(log.metadata || {}, null, 2);
           showTab(state.activeTab);
+        }
+
+        function openPanel() {
+          state.panelOpen = true;
+          elements.overlay.hidden = false;
+          elements.panel.hidden = false;
+          requestAnimationFrame(() => {
+            elements.overlay.classList.add("is-open");
+            elements.panel.classList.add("is-open");
+            elements.closePanel.focus({ preventScroll: true });
+          });
+        }
+
+        function closePanel() {
+          state.panelOpen = false;
+          elements.overlay.classList.remove("is-open");
+          elements.panel.classList.remove("is-open");
+          window.setTimeout(() => {
+            if (state.panelOpen) return;
+            elements.overlay.hidden = true;
+            elements.panel.hidden = true;
+          }, 210);
+        }
+
+        function openHtmlPreviewWindow() {
+          const html = state.selectedDetail?.htmlBody || "";
+          if (!html) return;
+          const preview = window.open("", "_blank", "noopener,noreferrer");
+          if (!preview) return;
+          preview.document.open();
+          preview.document.write(html);
+          preview.document.close();
+        }
+
+        function moveSelection(direction) {
+          if (!state.logs.length) return;
+          const currentIndex = Math.max(0, state.logs.findIndex((log) => log.id === state.selectedId));
+          const nextIndex = Math.max(0, Math.min(state.logs.length - 1, currentIndex + direction));
+          const next = state.logs[nextIndex];
+          if (!next) return;
+          selectSummary(next.id);
+          [...elements.tableBody.querySelectorAll(".mail-row")]
+            .find((row) => row.dataset.id === next.id)
+            ?.focus({ preventScroll: true });
         }
 
         async function retrySelected() {
@@ -794,6 +1051,10 @@
           return escapeHtml(value).replace(/`/g, "&#96;");
         }
 
+        function statusKey(value) {
+          return String(value || "").trim().toLowerCase().replace(/[^a-z0-9_-]+/g, "-");
+        }
+
         elements.filters.addEventListener("submit", (event) => {
           event.preventDefault();
           loadLogs();
@@ -803,12 +1064,15 @@
           elements.globalSearch.value = "";
           state.selectedId = "";
           state.selectedDetail = null;
-          elements.detailHeading.textContent = "Selecteer een mail";
-          elements.detailHint.textContent = "Kies een mail uit het overzicht om de details te bekijken";
+          closePanel();
+          elements.detailHeading.textContent = "Maildetail laden...";
+          elements.detailStatus.textContent = "pending";
+          elements.detailStatus.className = "mail-status pending";
           elements.detail.hidden = true;
           elements.detailEmpty.hidden = false;
-          elements.detailEmpty.textContent = "Kies een mail uit het overzicht.";
+          elements.detailEmpty.textContent = "Selecteer een mail om detailinformatie te laden.";
           elements.retry.disabled = true;
+          elements.openHtml.disabled = true;
           loadLogs();
         });
         elements.globalSearch.addEventListener("input", () => {
@@ -823,14 +1087,55 @@
         elements.refresh.addEventListener("click", loadLogs);
         elements.refreshIcon.addEventListener("click", loadLogs);
         elements.retry.addEventListener("click", retrySelected);
+        elements.overlay.addEventListener("click", closePanel);
+        elements.closePanel.addEventListener("click", closePanel);
+        elements.openSelected.addEventListener("click", () => openLog());
+        elements.openHtml.addEventListener("click", openHtmlPreviewWindow);
         elements.tableBody.addEventListener("click", (event) => {
           const row = event.target.closest(".mail-row");
-          if (row?.dataset.id) selectLog(row.dataset.id);
+          if (row?.dataset.id) openLog(row.dataset.id);
+        });
+        elements.tableBody.addEventListener("keydown", (event) => {
+          const row = event.target.closest(".mail-row");
+          if (!row?.dataset.id) return;
+          if (event.key === "Enter") {
+            event.preventDefault();
+            event.stopPropagation();
+            openLog(row.dataset.id);
+          } else if (event.key === "ArrowDown") {
+            event.preventDefault();
+            event.stopPropagation();
+            selectSummary(row.dataset.id);
+            moveSelection(1);
+          } else if (event.key === "ArrowUp") {
+            event.preventDefault();
+            event.stopPropagation();
+            selectSummary(row.dataset.id);
+            moveSelection(-1);
+          }
+        });
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape" && state.panelOpen) {
+            event.preventDefault();
+            closePanel();
+            return;
+          }
+          const tagName = event.target?.tagName?.toLowerCase();
+          if (["input", "select", "textarea", "button"].includes(tagName)) return;
+          if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault();
+            moveSelection(event.key === "ArrowDown" ? 1 : -1);
+            if (state.panelOpen) openLog(state.selectedId);
+          } else if (event.key === "Enter" && state.selectedId) {
+            event.preventDefault();
+            openLog(state.selectedId);
+          }
         });
         document.querySelectorAll(".mail-preview-tabs button").forEach((button) => {
           button.addEventListener("click", () => showTab(button.dataset.tab));
         });
 
+        window.setInterval(renderSyncState, 30000);
         loadLogs();
       })();
     </script>
