@@ -33,6 +33,8 @@ const allowedEventTypes = new Set([
   "lead_updated",
   "customer_created",
   "customer_updated",
+  "order_created",
+  "terms_accepted",
   "email_sent",
   "email_delivered",
   "email_opened",

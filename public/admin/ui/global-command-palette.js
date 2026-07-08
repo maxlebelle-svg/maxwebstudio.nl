@@ -45,6 +45,7 @@
   const PAGE_RESULTS = [
     ["dashboard", "Open Dashboard", "Admin CRM overzicht", "admin-dashboard.html", "Instellingen", "Page"],
     ["notification-center", "Open Notification Center", "CRM alerts en activity feed", "admin-notification-center.html", "Notifications", "Page"],
+    ["commercial-order", "Open Nieuwe Opdracht", "Order, voorwaarden, betaling en projectstart", "admin-nieuwe-opdracht.html", "Facturen", "Page"],
     ["max-automations", "Open Max Automations", "No-code workflow builder", "admin-max-automations.html", "Automations", "Page"],
     ["max-brain", "Open Max Brain", "AI context engine diagnostics", "admin-max-brain.html", "AI", "Page"],
     ["platform-health", "Open Platform Health", "System status, production monitoring en platform diagnostics", "admin-platform-health.html", "Instellingen", "Page"],
@@ -73,6 +74,7 @@
     ["new-customer", "Nieuwe klant", "Maak een nieuw klantprofiel aan", "Klanten", "Command", "admin-klanten.html", "#open-new-customer-secondary"],
     ["new-lead", "Nieuwe lead", "Open lead generator", "Leads", "Command", "admin-sales.html", "#leadfinder-focus-search"],
     ["new-invoice", "Nieuwe factuur", "Maak een factuur aan", "Facturen", "Command", "admin-facturen.html", "#new-invoice"],
+    ["new-commercial-order", "Nieuwe opdracht", "Start order naar contract, betaling en project", "Facturen", "Command", "admin-nieuwe-opdracht.html"],
     ["new-quote", "Nieuwe offerte", "Maak een offerte aan", "Facturen", "Command", "admin-offertes.html", "#new-quote"],
     ["send-email", "Verzend e-mail", "Open Mail Center", "E-mails", "Command", "admin-mail-center.html", "#mail-refresh"],
     ["open-mail", "Open Mail Center", "Verzonden CRM-mails", "E-mails", "Command", "admin-mail-center.html"],
@@ -403,6 +405,7 @@
     if (/(zoek|search).*(project)/.test(text)) return "search-project";
     if (/(klant|customer)/.test(text)) return "new-customer";
     if (/(lead)/.test(text)) return "new-lead";
+    if (/(opdracht|order|contract)/.test(text)) return "new-commercial-order";
     if (/(factuur|invoice)/.test(text)) return "new-invoice";
     if (/(offerte|quote)/.test(text)) return "new-quote";
     if (/(mail|email|e-mail)/.test(text)) return "send-email";

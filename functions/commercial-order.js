@@ -1,0 +1,422 @@
+const crypto = require("crypto");
+const { verifyAdmin } = require("./_admin-auth");
+const { sendEmail } = require("./email");
+const { getCompanySettings } = require("./company-settings");
+const { createTimelineEvent } = require("./services/timelineService");
+
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
+const TERMS_VERSION = "algemene-voorwaarden-2026-07";
+const PACKAGE_CATALOG = {
+  starter: { label: "Starter Website", price: 950 },
+  business: { label: "Business Website", price: 1750 },
+  premium: { label: "Premium Website", price: 2950 },
+  maatwerk: { label: "Maatwerk Website", price: 4500 },
+};
+const OPTION_CATALOG = {
+  seo: { label: "SEO basispakket", price: 350 },
+  copy: { label: "Copywriting", price: 450 },
+  logo: { label: "Logo opfrissen", price: 300 },
+  rush: { label: "Spoedoplevering", price: 600 },
+  maintenance: { label: "Onderhoud eerste maand", price: 95 },
+};
+
+exports.handler = async (event) => {
+  try {
+    if (event.httpMethod !== "POST") {
+      return jsonResponse(405, { success: false, error: "Alleen POST-verzoeken zijn toegestaan." });
+    }
+
+    const adminCheck = await verifyAdmin(event, jsonResponse, {
+      module: "commercial_order",
+      action: "create",
+      allowedRoles: ["super_admin", "admin", "sales_manager", "sales_partner"],
+    });
+    if (!adminCheck.success) return adminCheck.response;
+
+    const config = readConfig();
+    if (!config.success) return config.response;
+
+    const input = validatePayload(parsePayload(event.body), event);
+    const profile = await ensureCommercialProfile(config, input);
+    const customer = await ensureCommercialCustomer(config, input, profile);
+    const totals = calculateTotals(input);
+    const invoice = await createOrderInvoice(config, input, profile, customer, totals, adminCheck.admin);
+    const payment = await createMolliePayment(config, invoice, input, totals);
+    const checkoutUrl = payment?._links?.checkout?.href || "";
+    if (!payment.id || !checkoutUrl) return jsonResponse(502, { success: false, error: "Betaalverzoek kon niet worden aangemaakt." });
+
+    const updatedInvoice = await patchRecord(config, "customer_invoices", invoice.id, {
+      mollie_payment_id: payment.id,
+      mollie_checkout_url: checkoutUrl,
+      mollie_payment_status: cleanText(payment.status || "open"),
+      mollie_payment_created_at: cleanText(payment.createdAt) || new Date().toISOString(),
+      mollie_payment_expires_at: cleanText(payment.expiresAt) || null,
+      status: "sent",
+      updated_at: new Date().toISOString(),
+    });
+
+    await safeTimeline({
+      eventType: "order_created",
+      title: "Nieuwe opdracht aangemaakt",
+      description: `${input.company} koos ${input.packageLabel} en ${input.paymentChoice === "full" ? "100%" : "50% aanbetaling"}.`,
+      module: "commercial",
+      referenceType: "invoice",
+      referenceId: updatedInvoice.id,
+      invoiceId: updatedInvoice.id,
+      customerId: customer.id,
+      actorName: adminCheck.admin?.email || "Max CRM",
+      actorRole: adminCheck.admin?.role || "sales",
+      icon: "€",
+      severity: "success",
+      metadata: {
+        dedupeKey: `commercial_order_created:${updatedInvoice.id}`,
+        orderId: input.orderId,
+        paymentId: payment.id,
+        termsVersion: TERMS_VERSION,
+      },
+    });
+    await safeTimeline({
+      eventType: "terms_accepted",
+      title: "Algemene voorwaarden geaccepteerd",
+      description: `${input.name} accepteerde versie ${TERMS_VERSION}.`,
+      module: "commercial",
+      referenceType: "invoice",
+      referenceId: updatedInvoice.id,
+      invoiceId: updatedInvoice.id,
+      customerId: customer.id,
+      actorName: input.name,
+      actorRole: "customer",
+      icon: "✓",
+      severity: "success",
+      metadata: {
+        dedupeKey: `terms_accepted:${updatedInvoice.id}:${input.termsAcceptedAt}`,
+        acceptedAt: input.termsAcceptedAt,
+        ipAddress: input.ipAddress,
+        termsVersion: TERMS_VERSION,
+      },
+    });
+
+    return jsonResponse(200, {
+      success: true,
+      checkoutUrl,
+      paymentId: payment.id,
+      invoice: normalizeInvoice(updatedInvoice),
+      customer: pick(customer),
+      totals,
+      terms: {
+        acceptedAt: input.termsAcceptedAt,
+        version: TERMS_VERSION,
+      },
+    });
+  } catch (error) {
+    console.error("Commercial order error", { message: error.message, statusCode: error.statusCode || error.status || 500 });
+    return jsonResponse(error.statusCode || error.status || 500, {
+      success: false,
+      error: error.statusCode ? error.message : "Nieuwe opdracht kon niet worden verwerkt.",
+    });
+  }
+};
+
+function readConfig() {
+  const mollieMode = cleanText(process.env.MOLLIE_MODE || "test").toLowerCase();
+  const configuredTestKey = process.env.MOLLIE_TEST_API_KEY;
+  const configuredDefaultKey = process.env.MOLLIE_API_KEY;
+  const mollieApiKey = mollieMode === "test" ? (configuredTestKey || configuredDefaultKey) : configuredDefaultKey;
+  const siteUrl = (process.env.SITE_URL || getCompanySettings().websiteUrl || "").replace(/\/$/, "");
+  const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const testMode = cleanText(mollieApiKey).startsWith("test_");
+  if (!mollieApiKey || !siteUrl || !supabaseUrl || !serviceRoleKey) {
+    return { success: false, response: jsonResponse(500, { success: false, error: "Nieuwe opdracht kan nog niet worden afgerekend." }) };
+  }
+  if ((mollieMode !== "test" || !testMode) && cleanText(process.env.MOLLIE_ALLOW_LIVE_PAYMENTS).toLowerCase() !== "true") {
+    return { success: false, response: jsonResponse(403, { success: false, error: "Betalingen staan nog in testmodus." }) };
+  }
+  return { success: true, mollieApiKey, siteUrl, supabaseUrl, serviceRoleKey, mollieMode, testMode };
+}
+
+function validatePayload(payload = {}, event = {}) {
+  const packageKey = cleanText(payload.packageKey || payload.package || "business").toLowerCase();
+  const packageConfig = PACKAGE_CATALOG[packageKey] || PACKAGE_CATALOG.business;
+  const selectedOptions = Array.isArray(payload.options) ? payload.options.map(cleanText).filter(Boolean) : [];
+  const paymentChoice = cleanText(payload.paymentChoice || payload.payment_choice || "deposit").toLowerCase() === "full" ? "full" : "deposit";
+  const value = {
+    orderId: cleanText(payload.orderId) || `order_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`,
+    name: cleanText(payload.name),
+    company: cleanText(payload.company),
+    email: cleanText(payload.email).toLowerCase(),
+    phone: cleanText(payload.phone),
+    domain: cleanDomain(payload.domain || payload.website),
+    packageKey,
+    packageLabel: cleanText(payload.packageLabel) || packageConfig.label,
+    packagePrice: amount(payload.packagePrice ?? packageConfig.price),
+    options: selectedOptions,
+    customOptions: Array.isArray(payload.customOptions) ? payload.customOptions : [],
+    discount: amount(payload.discount),
+    paymentChoice,
+    termsAccepted: Boolean(payload.termsAccepted || payload.terms_accepted),
+    termsAcceptedAt: cleanText(payload.termsAcceptedAt) || new Date().toISOString(),
+    ipAddress: cleanText(payload.ipAddress || header(event, "x-nf-client-connection-ip") || header(event, "client-ip") || header(event, "x-forwarded-for")).split(",")[0],
+    notes: cleanText(payload.notes),
+  };
+  if (!value.name) throwValidation("Vul een klantnaam in.");
+  if (!value.company) throwValidation("Vul een bedrijfsnaam in.");
+  if (!emailPattern.test(value.email)) throwValidation("Vul een geldig e-mailadres in.");
+  if (!value.termsAccepted) throwValidation("Accepteer de algemene voorwaarden voordat je doorgaat.");
+  return value;
+}
+
+function calculateTotals(input) {
+  const optionRows = [
+    ...input.options.map((key) => OPTION_CATALOG[key]).filter(Boolean),
+    ...input.customOptions.map((item) => ({ label: cleanText(item.label || item.name), price: amount(item.price) })).filter((item) => item.label),
+  ];
+  const subtotal = round(input.packagePrice + optionRows.reduce((sum, item) => sum + amount(item.price), 0) - input.discount);
+  const vat = round(subtotal * 0.21);
+  const total = round(subtotal + vat);
+  const paymentAmount = input.paymentChoice === "full" ? total : round(total * 0.5);
+  return {
+    packagePrice: input.packagePrice,
+    options: optionRows,
+    discount: input.discount,
+    subtotal,
+    vat,
+    total,
+    paymentAmount,
+    remainingAmount: round(total - paymentAmount),
+    vatRate: 21,
+  };
+}
+
+async function ensureCommercialProfile(config, input) {
+  const existing = await fetchSingle(config, "profiles", "id,auth_user_id,name,company,email,phone,website,package,status,metadata", `email=eq.${encodeURIComponent(input.email)}`);
+  const metadata = { ...(existing?.metadata || {}), commercialOrderStatus: "payment_pending", latestCommercialOrderId: input.orderId };
+  const record = {
+    id: existing?.id || undefined,
+    auth_user_id: existing?.auth_user_id || null,
+    name: input.name,
+    company: input.company,
+    email: input.email,
+    phone: input.phone,
+    website: input.domain,
+    package: input.packageLabel,
+    role: "customer",
+    status: "prospect",
+    metadata,
+    updated_at: new Date().toISOString(),
+  };
+  return upsertRecord(config, "profiles", record);
+}
+
+async function ensureCommercialCustomer(config, input, profile) {
+  const filter = profile?.id
+    ? `profile_id=eq.${encodeURIComponent(profile.id)}`
+    : `email=eq.${encodeURIComponent(input.email)}`;
+  const existing = await fetchSingle(config, "customers", "id,profile_id,auth_user_id,name,company,email,phone,website,package,status,portal_status,metadata", filter);
+  const metadata = { ...(existing?.metadata || {}), commercialOrderStatus: "payment_pending", latestCommercialOrderId: input.orderId };
+  return upsertRecord(config, "customers", {
+    id: existing?.id || undefined,
+    profile_id: profile.id,
+    auth_user_id: existing?.auth_user_id || profile.auth_user_id || null,
+    name: input.name,
+    company: input.company,
+    email: input.email,
+    phone: input.phone,
+    website: input.domain,
+    package: input.packageLabel,
+    status: "order_pending",
+    portal_status: "prepared",
+    metadata,
+    updated_at: new Date().toISOString(),
+  });
+}
+
+async function createOrderInvoice(config, input, profile, customer, totals, admin = {}) {
+  const invoiceNumber = `OPD-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
+  const lines = [
+    { description: input.packageLabel, quantity: 1, unitPrice: input.packagePrice, vatRate: 21 },
+    ...totals.options.map((item) => ({ description: item.label, quantity: 1, unitPrice: item.price, vatRate: 21 })),
+  ];
+  if (input.discount) lines.push({ description: "Korting", quantity: 1, unitPrice: -input.discount, vatRate: 21 });
+  const context = {
+    source: "commercial_order",
+    orderId: input.orderId,
+    customerId: customer.id,
+    customerName: input.name,
+    customerCompany: input.company,
+    packageKey: input.packageKey,
+    packageLabel: input.packageLabel,
+    paymentChoice: input.paymentChoice,
+    terms: {
+      acceptedAt: input.termsAcceptedAt,
+      ipAddress: input.ipAddress,
+      version: TERMS_VERSION,
+    },
+    lines,
+    subtotal: totals.subtotal,
+    vat: totals.vat,
+    total: totals.total,
+    remainingAmount: totals.remainingAmount,
+    createdBy: admin.email || "",
+  };
+  const notes = [
+    input.notes,
+    `\n---\nFactuurregels: ${JSON.stringify(context)}`,
+  ].filter(Boolean).join("\n");
+  return upsertRecord(config, "customer_invoices", {
+    profile_id: profile.id,
+    customer_auth_user_id: profile.auth_user_id || null,
+    invoice_number: invoiceNumber,
+    title: input.paymentChoice === "full" ? "Opdrachtbevestiging website" : "Aanbetaling opdrachtbevestiging website",
+    amount: totals.paymentAmount,
+    status: "draft",
+    due_date: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
+    notes,
+    updated_at: new Date().toISOString(),
+  });
+}
+
+async function createMolliePayment(config, invoice, input, totals) {
+  const response = await fetch("https://api.mollie.com/v2/payments", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.mollieApiKey}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      amount: { currency: "EUR", value: totals.paymentAmount.toFixed(2) },
+      description: `${invoice.invoice_number} - ${input.company}`.slice(0, 255),
+      redirectUrl: `${config.siteUrl}/factuur.html?supabaseInvoiceId=${encodeURIComponent(invoice.id)}`,
+      webhookUrl: `${config.siteUrl}/.netlify/functions/mollie-webhook`,
+      metadata: {
+        source: "commercial_order",
+        orderId: input.orderId,
+        invoiceId: invoice.id,
+        invoiceNumber: invoice.invoice_number,
+        paymentChoice: input.paymentChoice,
+        termsVersion: TERMS_VERSION,
+      },
+    }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    console.error("Commercial order Mollie payment failed", { status: response.status, title: data.title, detail: data.detail });
+    const error = new Error(data.detail || data.title || "Betaling kon niet worden aangemaakt.");
+    error.statusCode = response.status >= 400 && response.status < 500 ? 400 : 502;
+    throw error;
+  }
+  return data;
+}
+
+async function fetchSingle(config, table, fields, filter) {
+  const rows = await supabaseFetch(config, `/rest/v1/${table}?select=${encodeURIComponent(fields)}&${filter}&limit=1`, { method: "GET" });
+  return Array.isArray(rows) ? rows[0] || null : rows;
+}
+
+async function upsertRecord(config, table, record) {
+  const payload = { ...record };
+  if (!payload.id) delete payload.id;
+  const rows = await supabaseFetch(config, `/rest/v1/${table}?on_conflict=id`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Content-Profile": "public", Prefer: "resolution=merge-duplicates,return=representation" },
+    body: JSON.stringify(payload),
+  });
+  const saved = Array.isArray(rows) ? rows[0] : rows;
+  if (!saved) throw new Error(`${table} kon niet worden opgeslagen.`);
+  return saved;
+}
+
+async function patchRecord(config, table, id, patch) {
+  const rows = await supabaseFetch(config, `/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", "Content-Profile": "public", Prefer: "return=representation" },
+    body: JSON.stringify(patch),
+  });
+  return Array.isArray(rows) ? rows[0] || null : rows;
+}
+
+async function supabaseFetch(config, path, options = {}) {
+  const response = await fetch(`${config.supabaseUrl}${path}`, {
+    ...options,
+    headers: { ...restHeaders(config.serviceRoleKey), ...(options.headers || {}) },
+  });
+  const text = await response.text();
+  const data = text ? JSON.parse(text) : null;
+  if (!response.ok) {
+    const error = new Error(data?.message || data?.error || "Platformdata kon niet worden opgeslagen.");
+    error.statusCode = response.status >= 400 && response.status < 500 ? 400 : 502;
+    throw error;
+  }
+  return data;
+}
+
+async function safeTimeline(input) {
+  try {
+    return await createTimelineEvent(input);
+  } catch (error) {
+    console.error("Commercial order timeline failed", { message: error.message });
+    return null;
+  }
+}
+
+function normalizeInvoice(row = {}) {
+  return {
+    id: cleanText(row.id),
+    invoiceNumber: cleanText(row.invoice_number),
+    title: cleanText(row.title),
+    amount: Number(row.amount) || 0,
+    status: cleanText(row.status),
+    molliePaymentId: cleanText(row.mollie_payment_id),
+    mollieCheckoutUrl: cleanText(row.mollie_checkout_url),
+  };
+}
+
+function restHeaders(serviceRoleKey) {
+  return { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}`, Accept: "application/json", "Accept-Profile": "public" };
+}
+
+function header(event, name) {
+  const headers = event.headers || {};
+  return headers[name] || headers[name.toLowerCase()] || headers[name.toUpperCase()] || "";
+}
+
+function cleanDomain(value = "") {
+  return cleanText(value).replace(/^https?:\/\//i, "").replace(/^www\./i, "").replace(/\/.*$/, "").toLowerCase();
+}
+
+function amount(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function round(value) {
+  return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
+}
+
+function throwValidation(message) {
+  const error = new Error(message);
+  error.statusCode = 400;
+  throw error;
+}
+
+function pick(record = {}) {
+  return { id: cleanText(record.id), name: cleanText(record.name), company: cleanText(record.company), email: cleanText(record.email) };
+}
+
+function cleanText(value) {
+  return String(value || "").trim();
+}
+
+function parsePayload(body) {
+  try {
+    return JSON.parse(body || "{}");
+  } catch {
+    throwValidation("Ongeldige aanvraag.");
+  }
+}
+
+function jsonResponse(statusCode, body) {
+  return { statusCode, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" }, body: JSON.stringify(body) };
+}

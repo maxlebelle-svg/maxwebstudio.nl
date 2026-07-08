@@ -1,4 +1,5 @@
 const { getMollieApiKey } = require("./mollie-products");
+const crypto = require("crypto");
 const { sendEmail } = require("./email");
 const { getCompanySettings, getMailtoLink } = require("./company-settings");
 const { createTimelineEvent } = require("./services/timelineService");
@@ -154,6 +155,9 @@ async function updateInvoicePaymentIfPresent(payment) {
 
   await patchInvoice(supabaseUrl, serviceRoleKey, invoice.id, patch);
   await safeCreateTimeline(paymentTimelineEvent(invoice, payment, mappedStatus));
+  if (payment.status === "paid") {
+    await finalizeCommercialOrderIfNeeded(supabaseUrl, serviceRoleKey, invoice, payment);
+  }
   console.log("Invoice payment status updated", {
     paymentId: payment.id,
     invoiceId: invoice.id,
@@ -536,7 +540,7 @@ async function fetchInvoiceByPaymentId(supabaseUrl, serviceRoleKey, paymentId) {
     supabaseUrl,
     serviceRoleKey,
     paymentId,
-    "id,profile_id,invoice_number,title,amount,status,paid_at,pdf_file_path,paid_email_sent_at,email_last_error"
+    "id,profile_id,customer_auth_user_id,invoice_number,title,amount,status,paid_at,pdf_file_path,paid_email_sent_at,email_last_error,notes,mollie_payment_id"
   );
   if (invoice !== false) return invoice;
 
@@ -544,7 +548,7 @@ async function fetchInvoiceByPaymentId(supabaseUrl, serviceRoleKey, paymentId) {
     supabaseUrl,
     serviceRoleKey,
     paymentId,
-    "id,profile_id,invoice_number,title,amount,status,paid_at,pdf_file_path"
+    "id,profile_id,customer_auth_user_id,invoice_number,title,amount,status,paid_at,pdf_file_path,notes,mollie_payment_id"
   );
 }
 
@@ -718,6 +722,356 @@ async function sendSubscriptionRetryEmailIfNeeded(supabaseUrl, serviceRoleKey, s
       message: error.message,
     });
   }
+}
+
+async function finalizeCommercialOrderIfNeeded(supabaseUrl, serviceRoleKey, invoice = {}, payment = {}) {
+  const context = parseInvoiceContext(invoice.notes);
+  if (cleanText(context.source) !== "commercial_order") return null;
+
+  try {
+    const profile = await ensurePaidCommercialProfile(supabaseUrl, serviceRoleKey, invoice, context);
+    const customer = await ensurePaidCommercialCustomer(supabaseUrl, serviceRoleKey, profile, context);
+    const website = await ensurePaidCommercialWebsite(supabaseUrl, serviceRoleKey, customer, profile, context);
+    const project = await ensurePaidCommercialProject(supabaseUrl, serviceRoleKey, customer, website, context);
+    await patchInvoice(supabaseUrl, serviceRoleKey, invoice.id, {
+      customer_auth_user_id: profile.auth_user_id || invoice.customer_auth_user_id || null,
+      notes: mergeInvoiceContext(invoice.notes, {
+        ...context,
+        customerId: customer.id,
+        websiteId: website.id,
+        projectId: project.id,
+        portalStatus: "invited",
+        commercialOrderCompletedAt: new Date().toISOString(),
+      }),
+    });
+    await safeCreateTimeline({
+      eventType: "customer_portal_action",
+      title: "Klantportaal geactiveerd",
+      description: `${context.customerCompany || context.customerName || "Klant"} is klaargezet na betaling.`,
+      module: "customer_portal",
+      referenceType: "customer",
+      referenceId: customer.id,
+      customerId: customer.id,
+      invoiceId: invoice.id,
+      actorName: "Max CRM",
+      actorRole: "automation",
+      icon: "✓",
+      severity: "success",
+      metadata: {
+        dedupeKey: `commercial_order_portal:${invoice.id}`,
+        orderId: context.orderId || "",
+        projectId: project.id,
+      },
+    });
+    await safeCreateTimeline({
+      eventType: "project_updated",
+      title: "Project automatisch gestart",
+      description: `${project.name || "Project"} staat in onboarding.`,
+      module: "projects",
+      referenceType: "project",
+      referenceId: project.id,
+      customerId: customer.id,
+      invoiceId: invoice.id,
+      actorName: "Max Automations",
+      actorRole: "automation",
+      icon: "→",
+      severity: "success",
+      metadata: {
+        dedupeKey: `commercial_order_project:${invoice.id}:${project.id}`,
+        orderId: context.orderId || "",
+        paymentId: cleanText(payment.id),
+      },
+    });
+    await sendCommercialWelcomeEmail(supabaseUrl, serviceRoleKey, profile, customer, project, context);
+    return { profile, customer, website, project };
+  } catch (error) {
+    console.error("Commercial order finalization failed", { invoiceId: invoice.id, message: error.message, status: error.status || 0 });
+    await safeCreateTimeline({
+      eventType: "automation_failed",
+      title: "Nieuwe opdracht vraagt aandacht",
+      description: "Betaling is ontvangen, maar automatische projectstart kon niet volledig worden afgerond.",
+      module: "automation",
+      referenceType: "invoice",
+      referenceId: invoice.id,
+      invoiceId: invoice.id,
+      actorName: "Max Automations",
+      actorRole: "automation",
+      icon: "!",
+      severity: "error",
+      metadata: {
+        dedupeKey: `commercial_order_finalization_failed:${invoice.id}`,
+        orderId: context.orderId || "",
+      },
+    });
+    return null;
+  }
+}
+
+async function ensurePaidCommercialProfile(supabaseUrl, serviceRoleKey, invoice, context) {
+  let profile = await fetchRecord(supabaseUrl, serviceRoleKey, "profiles", "id,auth_user_id,name,company,email,phone,website,package,status,metadata", `id=eq.${encodeURIComponent(invoice.profile_id)}`);
+  const email = cleanEmail(profile?.email || context.customerEmail || context.email);
+  if (!profile && email) {
+    profile = await fetchRecord(supabaseUrl, serviceRoleKey, "profiles", "id,auth_user_id,name,company,email,phone,website,package,status,metadata", `email=eq.${encodeURIComponent(email)}`);
+  }
+  const authUser = await ensureCommercialAuthUser(supabaseUrl, serviceRoleKey, {
+    email,
+    name: profile?.name || context.customerName,
+    company: profile?.company || context.customerCompany,
+  });
+  return upsertCommercialRecord(supabaseUrl, serviceRoleKey, "profiles", {
+    id: profile?.id || invoice.profile_id || undefined,
+    auth_user_id: authUser?.id || profile?.auth_user_id || null,
+    name: profile?.name || context.customerName || context.customerCompany || "",
+    company: profile?.company || context.customerCompany || "",
+    email,
+    package: context.packageLabel || profile?.package || "",
+    role: "customer",
+    status: "active",
+    metadata: {
+      ...(profile?.metadata || {}),
+      commercialOrderStatus: "paid",
+      latestCommercialOrderId: context.orderId || "",
+      portalAccessStatus: "invited",
+      authAction: authUser?.action || "skipped",
+    },
+    updated_at: new Date().toISOString(),
+  });
+}
+
+async function ensurePaidCommercialCustomer(supabaseUrl, serviceRoleKey, profile, context) {
+  const existing = await fetchRecord(supabaseUrl, serviceRoleKey, "customers", "id,profile_id,auth_user_id,name,company,email,phone,website,package,status,portal_status,metadata", `profile_id=eq.${encodeURIComponent(profile.id)}`);
+  return upsertCommercialRecord(supabaseUrl, serviceRoleKey, "customers", {
+    id: existing?.id || undefined,
+    profile_id: profile.id,
+    auth_user_id: profile.auth_user_id || existing?.auth_user_id || null,
+    name: existing?.name || profile.name || context.customerName || "",
+    company: existing?.company || profile.company || context.customerCompany || "",
+    email: existing?.email || profile.email || "",
+    website: existing?.website || cleanDomain(context.domain || profile.website || ""),
+    package: context.packageLabel || existing?.package || profile.package || "",
+    status: "active",
+    portal_status: "invited",
+    customer_since: new Date().toISOString().slice(0, 10),
+    metadata: {
+      ...(existing?.metadata || {}),
+      commercialOrderStatus: "paid",
+      latestCommercialOrderId: context.orderId || "",
+      portalAccessStatus: "invited",
+    },
+    updated_at: new Date().toISOString(),
+  });
+}
+
+async function ensurePaidCommercialWebsite(supabaseUrl, serviceRoleKey, customer, profile, context) {
+  const domain = cleanDomain(context.domain || customer.website || profile.website || "");
+  const existing = domain
+    ? await fetchRecord(supabaseUrl, serviceRoleKey, "websites", "id,customer_id,profile_id,name,domain,live_url,status,metadata", `customer_id=eq.${encodeURIComponent(customer.id)}&domain=eq.${encodeURIComponent(domain)}`)
+    : null;
+  return upsertCommercialRecord(supabaseUrl, serviceRoleKey, "websites", {
+    id: existing?.id || undefined,
+    customer_id: customer.id,
+    profile_id: profile.id,
+    name: customer.company || customer.name || "Nieuwe website",
+    domain,
+    live_url: domain ? `https://${domain}` : "",
+    status: "onboarding",
+    hosting_package: context.packageLabel || "",
+    care_package: context.packageLabel || "",
+    ssl_status: "unknown",
+    hosting_status: "unknown",
+    uptime_status: "unknown",
+    dns_status: "unknown",
+    metadata: {
+      ...(existing?.metadata || {}),
+      commercialOrderStatus: "paid",
+      latestCommercialOrderId: context.orderId || "",
+    },
+    updated_at: new Date().toISOString(),
+  });
+}
+
+async function ensurePaidCommercialProject(supabaseUrl, serviceRoleKey, customer, website, context) {
+  const existing = await fetchRecord(supabaseUrl, serviceRoleKey, "projects", "id,customer_id,website_id,name,type,status,phase,progress,metadata", `customer_id=eq.${encodeURIComponent(customer.id)}&website_id=eq.${encodeURIComponent(website.id)}`);
+  return upsertCommercialRecord(supabaseUrl, serviceRoleKey, "projects", {
+    id: existing?.id || undefined,
+    customer_id: customer.id,
+    website_id: website.id,
+    name: existing?.name || `Website project ${customer.company || customer.name || ""}`.trim(),
+    type: "website_delivery",
+    status: "onboarding",
+    phase: "Intake gestart",
+    progress: Math.max(Number(existing?.progress) || 0, 15),
+    checklist: existing?.checklist || [],
+    tasks: existing?.tasks || [],
+    timeline: existing?.timeline || [],
+    metadata: {
+      ...(existing?.metadata || {}),
+      commercialOrderStatus: "paid",
+      latestCommercialOrderId: context.orderId || "",
+      packageLabel: context.packageLabel || "",
+      paymentChoice: context.paymentChoice || "",
+      remainingAmount: context.remainingAmount || 0,
+    },
+    updated_at: new Date().toISOString(),
+  });
+}
+
+async function sendCommercialWelcomeEmail(supabaseUrl, serviceRoleKey, profile, customer, project, context) {
+  if (!cleanEmail(profile.email)) return null;
+  const companySettings = getCompanySettings();
+  const passwordSetup = await createCommercialPasswordSetupLink(supabaseUrl, serviceRoleKey, profile.email);
+  const portalUrl = passwordSetup.actionLink || absoluteUrl(`/login.html?email=${encodeURIComponent(profile.email)}`);
+  const text = [
+    `Hallo ${profile.name || customer.name || "daar"},`,
+    "",
+    `Bedankt voor je opdracht voor ${customer.company || "je bedrijf"}. Je betaling is ontvangen en we hebben je project gestart.`,
+    `Pakket: ${context.packageLabel || customer.package || "Website"}.`,
+    "",
+    "De volgende stap is je onboarding. Je klantportaal staat klaar zodra je je wachtwoord instelt.",
+    portalUrl,
+    "",
+    "Met vriendelijke groet,",
+    companySettings.companyName,
+  ].join("\n");
+  const result = await sendEmail({
+    to: profile.email,
+    bcc: cleanEmail(process.env.ADMIN_EMAIL) || undefined,
+    subject: "Welkom bij Max Webstudio - je project is gestart",
+    text,
+    html: renderEmailHtml("Je project is gestart", text, portalUrl),
+    customerId: customer.id,
+    projectId: project.id,
+    templateKey: "commercial_order_welcome",
+    templateName: "Nieuwe opdracht welkom",
+    triggeredBy: "commercial_order_webhook",
+  });
+  return result;
+}
+
+async function createCommercialPasswordSetupLink(supabaseUrl, serviceRoleKey, email) {
+  try {
+    const response = await fetch(`${supabaseUrl}/auth/v1/admin/generate_link`, {
+      method: "POST",
+      headers: {
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        type: "recovery",
+        email,
+        redirect_to: absoluteUrl("/login.html"),
+      }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) return { status: "manual_required", actionLink: "" };
+    return {
+      status: data?.action_link || data?.properties?.action_link ? "generated" : "manual_required",
+      actionLink: cleanText(data?.action_link || data?.properties?.action_link),
+    };
+  } catch {
+    return { status: "manual_required", actionLink: "" };
+  }
+}
+
+async function ensureCommercialAuthUser(supabaseUrl, serviceRoleKey, input = {}) {
+  const email = cleanEmail(input.email);
+  if (!email) return null;
+  const existing = await findCommercialAuthUser(supabaseUrl, serviceRoleKey, email);
+  if (existing?.id) return { id: existing.id, action: "existing" };
+  const response = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
+    method: "POST",
+    headers: {
+      apikey: serviceRoleKey,
+      Authorization: `Bearer ${serviceRoleKey}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      email,
+      password: crypto.randomBytes(24).toString("base64url"),
+      email_confirm: true,
+      user_metadata: {
+        name: cleanText(input.name),
+        company: cleanText(input.company),
+        createdBy: "commercial_order_webhook",
+      },
+    }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    console.error("Commercial order auth user create failed", { status: response.status, message: data.message || data.error || "" });
+    return null;
+  }
+  return data?.id ? { id: data.id, action: "created" } : null;
+}
+
+async function findCommercialAuthUser(supabaseUrl, serviceRoleKey, email) {
+  const response = await fetch(`${supabaseUrl}/auth/v1/admin/users?per_page=200&page=1`, {
+    method: "GET",
+    headers: {
+      apikey: serviceRoleKey,
+      Authorization: `Bearer ${serviceRoleKey}`,
+      Accept: "application/json",
+    },
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) return null;
+  return (Array.isArray(data.users) ? data.users : []).find((user) => cleanEmail(user.email) === email) || null;
+}
+
+async function fetchRecord(supabaseUrl, serviceRoleKey, table, fields, filter) {
+  const response = await fetch(`${supabaseUrl}/rest/v1/${table}?select=${encodeURIComponent(fields)}&${filter}&limit=1`, {
+    method: "GET",
+    headers: restHeaders(serviceRoleKey),
+  });
+  const data = await response.json().catch(() => []);
+  if (!response.ok) return null;
+  return Array.isArray(data) ? data[0] || null : data;
+}
+
+async function upsertCommercialRecord(supabaseUrl, serviceRoleKey, table, record) {
+  const payload = { ...record };
+  if (!payload.id) delete payload.id;
+  const response = await fetch(`${supabaseUrl}/rest/v1/${table}?on_conflict=id`, {
+    method: "POST",
+    headers: {
+      ...restHeaders(serviceRoleKey),
+      "Content-Type": "application/json",
+      "Content-Profile": "public",
+      Prefer: "resolution=merge-duplicates,return=representation",
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json().catch(() => []);
+  if (!response.ok) {
+    const error = new Error(data.message || data.error || `${table} kon niet worden opgeslagen.`);
+    error.status = response.status;
+    throw error;
+  }
+  return Array.isArray(data) ? data[0] || null : data;
+}
+
+function parseInvoiceContext(notes = "") {
+  const marker = "Factuurregels:";
+  const text = cleanText(notes);
+  const index = text.lastIndexOf(marker);
+  if (index < 0) return {};
+  try {
+    const parsed = JSON.parse(text.slice(index + marker.length).trim());
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function mergeInvoiceContext(notes = "", context = {}) {
+  const marker = "\n---\nFactuurregels:";
+  const text = cleanText(notes);
+  const index = text.lastIndexOf(marker);
+  const cleanNotes = index >= 0 ? text.slice(0, index).trim() : text;
+  return [cleanNotes, `\n---\nFactuurregels: ${JSON.stringify(context)}`].filter(Boolean).join("\n");
 }
 
 async function fetchInvoiceProfile(supabaseUrl, serviceRoleKey, profileId) {
@@ -917,6 +1271,10 @@ function subscriptionDescription(subscription) {
 function cleanEmail(value) {
   const email = cleanText(value).toLowerCase();
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : "";
+}
+
+function cleanDomain(value = "") {
+  return cleanText(value).replace(/^https?:\/\//i, "").replace(/^www\./i, "").replace(/\/.*$/, "").toLowerCase();
 }
 
 function cleanText(value) {

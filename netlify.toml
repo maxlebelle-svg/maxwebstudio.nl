@@ -30,6 +30,11 @@
   status = 200
 
 [[redirects]]
+  from = "/admin-nieuwe-opdracht"
+  to = "/admin-nieuwe-opdracht.html"
+  status = 200
+
+[[redirects]]
   from = "/api/customer-timeline/:customerId"
   to = "/.netlify/functions/customer-timeline/:customerId"
   status = 200

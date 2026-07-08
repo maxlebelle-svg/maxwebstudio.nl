@@ -103,6 +103,15 @@ export const PROTECTED_ROUTES = Object.freeze({
     defaultRedirect: "/admin-dashboard.html",
     hardReady: true,
   },
+  "admin-nieuwe-opdracht": {
+    pageName: "admin-nieuwe-opdracht",
+    path: "/admin-nieuwe-opdracht.html",
+    requiredRoles: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.SALES_MANAGER, ROLES.SALES_PARTNER],
+    requiredPermissions: [{ resource: "quotes", action: "create" }],
+    allowDemo: true,
+    defaultRedirect: "/admin-dashboard.html",
+    hardReady: true,
+  },
 });
 
 export function getProtectedRoute(pageName = "") {

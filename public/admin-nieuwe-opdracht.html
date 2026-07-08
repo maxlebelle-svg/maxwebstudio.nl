@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Nieuwe Opdracht | Max CRM</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=20260708-commercial-order" />
+    <link rel="stylesheet" href="admin/styles/premium-design-system.css" />
+    <script src="admin/ui/shared-helpers.js"></script>
+    <style>
+      .order-shell {
+        display: grid;
+        gap: 16px;
+      }
+
+      .order-hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 18px;
+        align-items: end;
+        min-height: 148px;
+        padding: 24px;
+      }
+
+      .order-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+        gap: 16px;
+        align-items: start;
+      }
+
+      .order-form,
+      .order-summary,
+      .order-panel {
+        display: grid;
+        gap: 14px;
+        min-width: 0;
+      }
+
+      .order-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .order-field {
+        display: grid;
+        gap: 7px;
+        color: var(--mws-color-muted);
+        font-size: 12px;
+        font-weight: 850;
+      }
+
+      .order-field input,
+      .order-field select,
+      .order-field textarea {
+        width: 100%;
+        min-height: 42px;
+        border: 1px solid var(--mws-color-line);
+        border-radius: var(--mws-radius-sm);
+        color: var(--mws-color-text);
+        background: var(--mws-gradient-field);
+        font: inherit;
+      }
+
+      .order-field textarea {
+        min-height: 92px;
+        resize: vertical;
+      }
+
+      .order-option-grid,
+      .order-payment-grid,
+      .order-method-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .order-choice {
+        display: grid;
+        gap: 6px;
+        min-height: 72px;
+        border: 1px solid var(--mws-color-line);
+        border-radius: var(--mws-radius-sm);
+        padding: 12px;
+        background: rgba(2, 14, 25, 0.42);
+        color: var(--mws-color-text);
+        cursor: pointer;
+      }
+
+      .order-choice span,
+      .order-total-row span,
+      .order-muted {
+        color: var(--mws-color-muted);
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      .order-choice strong,
+      .order-total-row strong {
+        color: var(--mws-color-text);
+      }
+
+      .order-choice input {
+        width: 18px;
+        height: 18px;
+      }
+
+      .order-total-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .order-total-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--mws-color-line);
+      }
+
+      .order-total-row.is-total strong {
+        font-size: 28px;
+      }
+
+      .order-summary {
+        position: sticky;
+        top: 18px;
+      }
+
+      .order-message[hidden] {
+        display: none;
+      }
+
+      @media (max-width: 1040px) {
+        .order-layout,
+        .order-hero {
+          grid-template-columns: 1fr;
+        }
+
+        .order-summary {
+          position: static;
+        }
+      }
+
+      @media (max-width: 680px) {
+        .order-grid,
+        .order-option-grid,
+        .order-payment-grid,
+        .order-method-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body class="admin-body">
+    <main class="admin-crm-shell">
+      <aside class="admin-sidebar" aria-label="Admin modules">
+        <a class="brand" href="admin-dashboard.html">
+          <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true">
+            <rect x="6" y="6" width="68" height="68" rx="18"></rect>
+            <path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path>
+            <path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path>
+          </svg>
+          <span>Max CRM</span>
+        </a>
+        <nav class="admin-sidebar-nav">
+          <span class="admin-nav-group">Main</span>
+          <a href="admin-dashboard.html">Dashboard</a>
+          <a href="admin-notification-center.html">Notification Center</a>
+          <a href="admin-max-automations.html">Max Automations</a>
+          <a href="admin-max-brain.html">Max Brain</a>
+          <span class="admin-nav-group">Sales</span>
+          <a class="is-active" href="admin-nieuwe-opdracht.html">Nieuwe opdracht</a>
+          <a href="admin-sales.html">Leads</a>
+          <span class="admin-nav-group">Customers</span>
+          <a href="admin-klanten.html">Klanten</a>
+          <a href="admin-projecten.html">Projecten</a>
+          <span class="admin-nav-group">Administration</span>
+          <a href="admin-facturen.html">Facturen</a>
+          <a href="admin-mail-center.html">Mail Center</a>
+          <span class="admin-nav-group">System</span>
+          <a href="admin-platform-health.html">Platform Health</a>
+        </nav>
+      </aside>
+
+      <section class="admin-crm-main order-shell">
+        <header class="admin-section admin-hero order-hero">
+          <div>
+            <p class="section-kicker">Commercial Flow</p>
+            <h1>Nieuwe opdracht</h1>
+            <p>Maak opdrachtbevestiging, voorwaardenacceptatie, factuur en betaalverzoek in één flow.</p>
+          </div>
+          <span class="mws-status-badge mws-badge-info">Order → Contract → Payment → Project</span>
+        </header>
+
+        <form class="order-layout" id="commercial-order-form">
+          <section class="admin-card order-form">
+            <div class="admin-section-heading">
+              <div>
+                <p class="section-kicker">Klantgegevens</p>
+                <h2>Wie tekent de opdracht?</h2>
+              </div>
+            </div>
+            <div class="order-grid">
+              <label class="order-field">Naam<input name="name" autocomplete="name" required /></label>
+              <label class="order-field">Bedrijf<input name="company" autocomplete="organization" required /></label>
+              <label class="order-field">E-mail<input name="email" type="email" autocomplete="email" required /></label>
+              <label class="order-field">Telefoon<input name="phone" autocomplete="tel" /></label>
+              <label class="order-field">Website of domein<input name="domain" placeholder="voorbeeld.nl" /></label>
+              <label class="order-field">Korting excl. BTW<input name="discount" type="number" min="0" step="25" value="0" /></label>
+            </div>
+
+            <div class="order-panel">
+              <div class="admin-profile-form-heading"><div><strong>Pakket</strong><span>Kies het commerciële startpunt.</span></div></div>
+              <label class="order-field">Pakket
+                <select name="packageKey" id="order-package">
+                  <option value="starter" data-price="950">Starter Website - € 950</option>
+                  <option value="business" data-price="1750" selected>Business Website - € 1.750</option>
+                  <option value="premium" data-price="2950">Premium Website - € 2.950</option>
+                  <option value="maatwerk" data-price="4500">Maatwerk Website - € 4.500</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="order-panel">
+              <div class="admin-profile-form-heading"><div><strong>Extra opties</strong><span>Worden meegenomen in prijs en opdrachtcontext.</span></div></div>
+              <div class="order-option-grid">
+                <label class="order-choice"><input type="checkbox" name="options" value="seo" data-price="350" /><strong>SEO basispakket</strong><span>€ 350 excl. BTW</span></label>
+                <label class="order-choice"><input type="checkbox" name="options" value="copy" data-price="450" /><strong>Copywriting</strong><span>€ 450 excl. BTW</span></label>
+                <label class="order-choice"><input type="checkbox" name="options" value="logo" data-price="300" /><strong>Logo opfrissen</strong><span>€ 300 excl. BTW</span></label>
+                <label class="order-choice"><input type="checkbox" name="options" value="rush" data-price="600" /><strong>Spoedoplevering</strong><span>€ 600 excl. BTW</span></label>
+              </div>
+            </div>
+
+            <label class="order-field">Interne notitie<textarea name="notes" placeholder="Context voor projectteam, bijzonderheden of afspraken"></textarea></label>
+          </section>
+
+          <aside class="admin-card order-summary">
+            <div class="admin-section-heading">
+              <div>
+                <p class="section-kicker">Samenvatting</p>
+                <h2>Opdrachtbevestiging</h2>
+              </div>
+            </div>
+
+            <div class="order-total-list" aria-live="polite">
+              <div class="order-total-row"><span>Pakket</span><strong id="summary-package">€ 1.750</strong></div>
+              <div class="order-total-row"><span>Opties</span><strong id="summary-options">€ 0</strong></div>
+              <div class="order-total-row"><span>Korting</span><strong id="summary-discount">€ 0</strong></div>
+              <div class="order-total-row"><span>Subtotaal</span><strong id="summary-subtotal">€ 1.750</strong></div>
+              <div class="order-total-row"><span>BTW 21%</span><strong id="summary-vat">€ 367,50</strong></div>
+              <div class="order-total-row is-total"><span>Totaal</span><strong id="summary-total">€ 2.117,50</strong></div>
+            </div>
+
+            <div class="order-panel">
+              <div class="admin-profile-form-heading"><div><strong>Betaalkeuze</strong><span>De factuur wordt automatisch klaargezet.</span></div></div>
+              <div class="order-payment-grid">
+                <label class="order-choice"><input type="radio" name="paymentChoice" value="deposit" checked /><strong>50% aanbetaling</strong><span id="summary-deposit">€ 1.058,75 vandaag</span></label>
+                <label class="order-choice"><input type="radio" name="paymentChoice" value="full" /><strong>100% betalen</strong><span id="summary-full">€ 2.117,50 vandaag</span></label>
+              </div>
+            </div>
+
+            <div class="order-panel">
+              <div class="admin-profile-form-heading"><div><strong>Betaalmethoden</strong><span>Beschikbaar via de betaalprovider.</span></div></div>
+              <div class="order-method-grid">
+                <span class="mws-status-badge mws-badge-info">iDEAL</span>
+                <span class="mws-status-badge mws-badge-info">Creditcard</span>
+                <span class="mws-status-badge mws-badge-info">Apple Pay</span>
+                <span class="mws-status-badge mws-badge-info">Google Pay</span>
+                <span class="mws-status-badge mws-badge-info">Bancontact</span>
+                <span class="mws-status-badge mws-badge-info">SEPA</span>
+              </div>
+            </div>
+
+            <label class="order-choice">
+              <input type="checkbox" name="termsAccepted" required />
+              <strong>Algemene voorwaarden akkoord</strong>
+              <span>Datum, tijd, voorwaardenversie en beschikbare IP-context worden opgeslagen in de timeline.</span>
+            </label>
+
+            <button class="button primary" id="order-submit" type="submit">Betaalknop maken</button>
+            <p class="mws-error-message order-message" id="order-message" hidden></p>
+          </aside>
+        </form>
+      </section>
+    </main>
+
+    <script src="admin/ui/global-command-palette.js" defer></script>
+    <script>
+      (() => {
+        const endpoint = "/.netlify/functions/commercial-order";
+        const form = document.getElementById("commercial-order-form");
+        const submit = document.getElementById("order-submit");
+        const message = document.getElementById("order-message");
+        const money = (value) => new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(Number(value) || 0);
+        const elements = {
+          package: document.getElementById("summary-package"),
+          options: document.getElementById("summary-options"),
+          discount: document.getElementById("summary-discount"),
+          subtotal: document.getElementById("summary-subtotal"),
+          vat: document.getElementById("summary-vat"),
+          total: document.getElementById("summary-total"),
+          deposit: document.getElementById("summary-deposit"),
+          full: document.getElementById("summary-full"),
+        };
+
+        function bearer() {
+          try {
+            const session = JSON.parse(localStorage.getItem("mws_admin_supabase_session") || "{}");
+            if (session.accessToken) return session.accessToken;
+          } catch {}
+          try {
+            const session = JSON.parse(localStorage.getItem("maxwebstudioAdminSession") || "{}");
+            if (session.accessToken) return session.accessToken;
+          } catch {}
+          return sessionStorage.getItem("mws_admin_token") || "";
+        }
+
+        function totals() {
+          const selectedPackage = form.packageKey.selectedOptions[0];
+          const packagePrice = Number(selectedPackage?.dataset.price || 0);
+          const optionTotal = [...form.querySelectorAll('input[name="options"]:checked')].reduce((sum, input) => sum + Number(input.dataset.price || 0), 0);
+          const discount = Math.max(0, Number(form.discount.value || 0));
+          const subtotal = Math.max(0, packagePrice + optionTotal - discount);
+          const vat = Math.round(subtotal * 21) / 100;
+          const total = Math.round((subtotal + vat) * 100) / 100;
+          return { packagePrice, optionTotal, discount, subtotal, vat, total, deposit: Math.round(total * 50) / 100 };
+        }
+
+        function renderTotals() {
+          const value = totals();
+          elements.package.textContent = money(value.packagePrice);
+          elements.options.textContent = money(value.optionTotal);
+          elements.discount.textContent = `-${money(value.discount)}`;
+          elements.subtotal.textContent = money(value.subtotal);
+          elements.vat.textContent = money(value.vat);
+          elements.total.textContent = money(value.total);
+          elements.deposit.textContent = `${money(value.deposit)} vandaag`;
+          elements.full.textContent = `${money(value.total)} vandaag`;
+        }
+
+        function setMessage(text, type = "error") {
+          message.hidden = !text;
+          message.textContent = text || "";
+          message.className = `mws-error-message order-message ${type === "success" ? "mws-success-message" : ""}`;
+        }
+
+        form.addEventListener("input", renderTotals);
+        form.addEventListener("change", renderTotals);
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          setMessage("");
+          const token = bearer();
+          if (!token) {
+            setMessage("Log eerst in als admin om een opdracht te maken.");
+            return;
+          }
+          submit.disabled = true;
+          submit.textContent = "Betaalverzoek maken...";
+          try {
+            const data = Object.fromEntries(new FormData(form).entries());
+            data.options = [...form.querySelectorAll('input[name="options"]:checked')].map((input) => input.value);
+            data.termsAccepted = Boolean(form.termsAccepted.checked);
+            data.packagePrice = totals().packagePrice;
+            data.termsAcceptedAt = new Date().toISOString();
+            const response = await fetch(endpoint, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Accept: "application/json", Authorization: `Bearer ${token}` },
+              body: JSON.stringify(data),
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result.success) throw new Error(result.error || "Opdracht kon niet worden aangemaakt.");
+            setMessage("Betaalverzoek is aangemaakt. Je wordt doorgestuurd.", "success");
+            window.location.href = result.checkoutUrl;
+          } catch (error) {
+            setMessage(error.message || "Opdracht kon niet worden aangemaakt.");
+          } finally {
+            submit.disabled = false;
+            submit.textContent = "Betaalknop maken";
+          }
+        });
+
+        renderTotals();
+      })();
+    </script>
+  </body>
+</html>
