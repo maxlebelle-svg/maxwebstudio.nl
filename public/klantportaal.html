@@ -1025,6 +1025,89 @@
           return action;
         }
 
+        function createWebsiteStatusPill(label, value, variant = "active") {
+          const pill = document.createElement("span");
+          pill.className = `portal-website-pill is-${variant}`;
+          const small = document.createElement("small");
+          const strong = document.createElement("strong");
+          small.textContent = label;
+          strong.textContent = value || "-";
+          pill.append(small, strong);
+          return pill;
+        }
+
+        function createWebsitePreviewFrame(website = {}, project = {}, websiteUrl = "") {
+          const frame = document.createElement("div");
+          frame.className = "portal-website-preview-frame";
+
+          const toolbar = document.createElement("div");
+          toolbar.className = "portal-website-preview-toolbar";
+          const dots = document.createElement("span");
+          dots.className = "portal-website-preview-dots";
+          dots.setAttribute("aria-hidden", "true");
+          dots.append(document.createElement("i"), document.createElement("i"), document.createElement("i"));
+          const label = document.createElement("strong");
+          label.textContent = "Live website-preview";
+          toolbar.append(dots, label);
+
+          const shot = website.previewImage || website.screenshotUrl || website.thumbnailUrl || website.imageUrl || "";
+          if (shot) {
+            const image = document.createElement("img");
+            image.src = shot;
+            image.alt = `Preview van ${website.name || website.domain || "de website"}`;
+            image.loading = "lazy";
+            frame.append(toolbar, image);
+            return frame;
+          }
+
+          const mini = document.createElement("div");
+          mini.className = "portal-website-mini-preview";
+          const nav = document.createElement("div");
+          nav.className = "portal-website-mini-nav";
+          const brand = document.createElement("strong");
+          brand.textContent = website.name || website.domain || "Jouw website";
+          const navLinks = document.createElement("span");
+          navLinks.textContent = "Home  Diensten  Contact";
+          nav.append(brand, navLinks);
+
+          const hero = document.createElement("section");
+          const kicker = document.createElement("small");
+          const title = document.createElement("h4");
+          const text = document.createElement("p");
+          kicker.textContent = project.category || website.category || "Professionele website";
+          title.textContent = website.heroTitle || website.title || "Klaar om vertrouwen te winnen.";
+          text.textContent = website.description || project.description || "Een heldere website die bezoekers snel laat zien waarom ze voor jou moeten kiezen.";
+          hero.append(kicker, title, text);
+
+          const blocks = document.createElement("div");
+          blocks.className = "portal-website-mini-blocks";
+          ["Snel contact", "Duidelijke diensten", "Sterke uitstraling"].forEach((item) => {
+            const block = document.createElement("span");
+            block.textContent = item;
+            blocks.append(block);
+          });
+
+          mini.append(nav, hero, blocks);
+          frame.append(toolbar, mini);
+          return frame;
+        }
+
+        function createWebsiteUrlRow(url) {
+          const row = document.createElement("div");
+          row.className = "portal-website-url-row";
+          const icon = document.createElement("span");
+          const link = document.createElement("a");
+          icon.textContent = "Open";
+          link.href = url || "#mijn-website";
+          link.textContent = url || "Website-url wordt gekoppeld";
+          if (url) {
+            link.target = "_blank";
+            link.rel = "noopener";
+          }
+          row.append(icon, link);
+          return row;
+        }
+
         function updateAiCard(card, title, text) {
           if (!card) return;
           const heading = card.querySelector("strong");
@@ -1144,8 +1227,10 @@
           const website = websites[0];
           const project = projects[0] || {};
           const websiteUrl = externalUrl(website.liveUrl || website.domain);
-          const lastUpdate = formatDate(website.updatedAt || website.lastDeployAt || project.updatedAt || project.startDate);
-          const backupLabel = website.lastBackupAt ? formatDate(website.lastBackupAt) : "Wordt beheerd";
+          const lastUpdate = formatDate(website.updatedAt || website.lastUpdateAt || website.lastDeployAt || project.updatedAt || project.startDate);
+          const backupLabel = website.lastBackupAt
+            ? formatDate(website.lastBackupAt)
+            : (website.backupStatus || website.backup_status ? "Actief" : "Wordt beheerd");
           const speedScore = Number(website.performanceScore || website.speedScore || 96);
           const seoScore = Number(website.seoScore || 92);
           if (seoScore < 90) {
@@ -1169,23 +1254,38 @@
           }
           const card = document.createElement("article");
           card.className = "portal-website-overview-card";
+          const previewColumn = document.createElement("div");
+          previewColumn.className = "portal-website-preview-column";
+          previewColumn.append(createWebsitePreviewFrame(website, project, websiteUrl));
+
           const content = document.createElement("div");
           content.className = "portal-website-overview-content";
+          const status = document.createElement("div");
+          status.className = "portal-website-status-row";
+          const online = ["online", "live", "actief", "active"].includes(normalize(website.status));
+          const hostingActive = Boolean(website.hostingPackage || website.carePackage || website.hostingStatus || online);
+          status.append(
+            createWebsiteStatusPill("Status", friendlyWebsiteStatus(website), online ? "active" : "prepared"),
+            createWebsiteStatusPill("Hosting", hostingActive ? "Actief" : "Voorbereid", hostingActive ? "active" : "prepared"),
+            createWebsiteStatusPill("Beveiliging", friendlySafetyStatus(website), "active"),
+            createWebsiteStatusPill("Laatste update", lastUpdate, "prepared")
+          );
           const kicker = document.createElement("p");
           kicker.className = "section-kicker";
-          kicker.textContent = "Website gezondheid";
+          kicker.textContent = "Mijn website";
           const title = document.createElement("h3");
           title.textContent = website.name || website.domain || "Jouw website";
           const intro = document.createElement("p");
-          intro.textContent = "Je website is onder controle. Hieronder zie je in gewone taal wat belangrijk is.";
+          intro.textContent = "Je ziet hier in gewone taal hoe je website ervoor staat, wat Max Webstudio bewaakt en welke actie je direct kunt nemen.";
+          const urlRow = createWebsiteUrlRow(websiteUrl);
           const actions = document.createElement("div");
           actions.className = "portal-today-actions";
           actions.append(
-            createWebsiteAction("Open website", websiteUrl, true),
+            createWebsiteAction("Website bekijken", websiteUrl, true),
             createWebsiteAction("Wijziging aanvragen", "#wijzigingen"),
-            createWebsiteAction("Vraag Max om advies", "#vandaag")
+            createWebsiteAction("Bericht sturen", "#berichten")
           );
-          content.append(kicker, title, intro, actions);
+          content.append(status, kicker, title, intro, urlRow, actions);
 
           const metricsWrap = document.createElement("div");
           metricsWrap.className = "portal-website-metrics";
@@ -1200,7 +1300,10 @@
             createWebsiteMetric("SEO", `${Math.max(0, Math.min(seoScore, 100))}/100`, "Indicatie voor vindbaarheid.")
           );
 
-          card.append(content, metricsWrap);
+          const detailColumn = document.createElement("div");
+          detailColumn.className = "portal-website-detail-column";
+          detailColumn.append(content, metricsWrap);
+          card.append(previewColumn, detailColumn);
           websiteOverview.append(card);
         }
 
@@ -1628,7 +1731,7 @@
         renderMyWebsiteExperience({ websites, projects });
 
         if (!websites.length) websiteList.append(createEmpty("Geen websites", "Er is nog geen website gekoppeld aan dit klantprofiel."));
-        websites.forEach((website) => {
+        websites.slice(1).forEach((website) => {
           websiteList.append(createInfoCard(website.name || website.domain || "Website", [
             ["Domein", website.domain],
             ["Status", createBadge(website.status)],

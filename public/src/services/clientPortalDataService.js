@@ -399,7 +399,31 @@ function safeCustomer(customer = {}) {
 
 function safeWebsite(website = {}) {
   return {
-    ...pick(website, ["id", "name", "domain", "liveUrl", "stagingUrl", "status", "hostingPackage", "carePackage", "sslStatus", "lastDeployAt", "updatedAt"]),
+    ...pick(website, [
+      "id",
+      "name",
+      "domain",
+      "liveUrl",
+      "stagingUrl",
+      "status",
+      "hostingPackage",
+      "carePackage",
+      "sslStatus",
+      "lastDeployAt",
+      "updatedAt",
+      "lastBackupAt",
+      "previewImage",
+      "screenshotUrl",
+      "thumbnailUrl",
+      "imageUrl",
+      "performanceScore",
+      "speedScore",
+      "seoScore",
+      "heroTitle",
+      "title",
+      "description",
+      "category",
+    ]),
     ...safeSource(website),
   };
 }
