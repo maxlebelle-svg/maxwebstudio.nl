@@ -13,15 +13,41 @@
     <style>
       .email-studio-shell {
         display: grid;
-        gap: 22px;
+        gap: 16px;
+      }
+
+      .email-studio-hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 18px;
+        align-items: end;
+        min-height: 142px;
+        padding: 24px 24px 22px;
+      }
+
+      .email-studio-status-card {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 38px;
+        padding: 9px 13px;
+        border: 1px solid rgba(96, 165, 250, 0.24);
+        border-radius: 8px;
+        color: rgba(226, 236, 248, 0.82);
+        background:
+          linear-gradient(135deg, rgba(37, 99, 235, 0.16), rgba(15, 23, 42, 0.68)),
+          rgba(15, 23, 42, 0.72);
+        font-size: 12px;
+        font-weight: 850;
+        white-space: nowrap;
       }
 
       .email-studio-toolbar {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
         align-items: center;
-        justify-content: space-between;
+        padding: 14px;
       }
 
       .email-studio-toolbar > div {
@@ -33,8 +59,8 @@
 
       .email-studio-grid {
         display: grid;
-        grid-template-columns: minmax(280px, 0.82fr) minmax(420px, 1.18fr);
-        gap: 22px;
+        grid-template-columns: 1fr;
+        gap: 14px;
         align-items: start;
       }
 
@@ -43,26 +69,56 @@
       .email-preview-card,
       .email-variable-card {
         display: grid;
-        gap: 16px;
+        gap: 14px;
         padding: 22px;
+        min-width: 0;
+      }
+
+      .email-template-list,
+      .email-variable-card {
+        position: sticky;
+        top: 18px;
+      }
+
+      .email-editor-stack {
+        display: grid;
+        gap: 14px;
+        min-width: 0;
+      }
+
+      .email-template-list .admin-section-heading h2,
+      .email-editor-card .admin-section-heading h2,
+      .email-preview-card .admin-section-heading h2,
+      .email-variable-card h2 {
+        margin: 0;
+        color: #f8fbff;
+        font-size: clamp(17px, 1.4vw, 21px);
+        line-height: 1.2;
+        letter-spacing: 0;
       }
 
       .email-template-list-body {
         display: grid;
-        gap: 12px;
+        gap: 10px;
+        max-height: calc(100vh - 330px);
+        min-height: 320px;
+        overflow: auto;
+        padding-right: 2px;
       }
 
       .email-template-card {
         display: grid;
-        gap: 12px;
-        padding: 16px;
+        gap: 10px;
+        padding: 14px;
         border: 1px solid rgba(148, 163, 184, 0.16);
         border-radius: 8px;
         color: rgba(226, 236, 248, 0.8);
-        background: rgba(15, 23, 42, 0.58);
+        background:
+          linear-gradient(180deg, rgba(13, 35, 55, 0.52), rgba(5, 18, 31, 0.74)),
+          rgba(15, 23, 42, 0.58);
         cursor: pointer;
         text-align: left;
-        transition: border-color 180ms ease, transform 180ms ease, background 180ms ease;
+        transition: border-color 180ms ease, transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
       }
 
       .email-template-card:hover,
@@ -74,16 +130,17 @@
       .email-template-card.is-active {
         border-color: rgba(96, 165, 250, 0.62);
         background:
+          radial-gradient(circle at 90% 18%, rgba(37, 99, 235, 0.22), transparent 34%),
           linear-gradient(135deg, rgba(37, 99, 235, 0.2), rgba(15, 23, 42, 0.72)),
           rgba(15, 23, 42, 0.74);
-        box-shadow: inset 3px 0 0 var(--blue);
+        box-shadow: inset 3px 0 0 var(--blue), 0 18px 40px rgba(2, 8, 23, 0.2);
       }
 
       .email-template-card h3,
       .email-preview-card h3 {
         margin: 0;
         color: #f8fbff;
-        font-size: 16px;
+        font-size: 15px;
         line-height: 1.25;
       }
 
@@ -119,13 +176,6 @@
         padding: 8px 12px;
       }
 
-      .email-editor-grid {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(240px, 0.52fr);
-        gap: 18px;
-        align-items: start;
-      }
-
       .email-editor-fields {
         display: grid;
         gap: 14px;
@@ -142,6 +192,8 @@
       .email-field input,
       .email-field textarea {
         width: 100%;
+        min-width: 0;
+        min-height: 42px;
         border: 1px solid rgba(148, 163, 184, 0.2);
         border-radius: 8px;
         color: #f8fbff;
@@ -158,7 +210,9 @@
         overflow: hidden;
         border: 1px solid rgba(148, 163, 184, 0.2);
         border-radius: 8px;
-        background: rgba(15, 23, 42, 0.76);
+        background:
+          linear-gradient(180deg, rgba(15, 23, 42, 0.88), rgba(8, 21, 36, 0.78)),
+          rgba(15, 23, 42, 0.76);
       }
 
       .email-editor-chrome {
@@ -174,8 +228,8 @@
       .email-editor-chip {
         display: inline-grid;
         place-items: center;
-        min-width: 32px;
-        height: 30px;
+        min-width: 30px;
+        height: 28px;
         border: 1px solid rgba(148, 163, 184, 0.18);
         border-radius: 7px;
         color: rgba(226, 236, 248, 0.78);
@@ -184,19 +238,19 @@
       }
 
       .email-body-shell textarea {
-        min-height: 310px;
+        min-height: 360px;
         border: 0;
         border-radius: 0;
         background: transparent;
       }
 
       .email-variable-list {
-        display: flex;
-        flex-wrap: wrap;
+        display: grid;
         gap: 8px;
       }
 
       .email-variable-button {
+        width: 100%;
         border: 1px solid rgba(96, 165, 250, 0.26);
         border-radius: 8px;
         color: rgba(226, 236, 248, 0.84);
@@ -204,8 +258,11 @@
         font: inherit;
         font-size: 12px;
         font-weight: 850;
-        padding: 8px 10px;
+        line-height: 1.25;
+        padding: 9px 10px;
         cursor: pointer;
+        overflow-wrap: anywhere;
+        text-align: left;
       }
 
       .email-variable-button:hover,
@@ -224,7 +281,7 @@
         border-radius: 8px;
         background: #f8fafc;
         color: #0f172a;
-        box-shadow: 0 24px 70px rgba(2, 8, 23, 0.28);
+        box-shadow: 0 20px 56px rgba(2, 8, 23, 0.24);
       }
 
       .email-preview-meta {
@@ -255,7 +312,10 @@
       }
 
       .email-preview-body {
-        padding: 26px;
+        min-height: 230px;
+        max-height: 360px;
+        overflow: auto;
+        padding: 22px;
         color: #1e293b;
         font-size: 15px;
         line-height: 1.7;
@@ -270,14 +330,56 @@
         font-weight: 750;
       }
 
-      @media (max-width: 1180px) {
-        .email-studio-grid,
-        .email-editor-grid {
-          grid-template-columns: 1fr;
+      @media (min-width: 900px) {
+        .email-studio-grid {
+          grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
+        }
+
+        .email-variable-card {
+          grid-column: 2;
+        }
+
+        .email-template-list,
+        .email-variable-card {
+          position: static;
+        }
+      }
+
+      @media (min-width: 1500px) {
+        .email-studio-grid {
+          grid-template-columns: minmax(280px, 360px) minmax(0, 1fr) minmax(220px, 260px);
+        }
+
+        .email-template-list,
+        .email-variable-card {
+          position: sticky;
+        }
+
+        .email-variable-card {
+          grid-column: auto;
         }
       }
 
       @media (max-width: 720px) {
+        .email-studio-hero,
+        .email-studio-toolbar,
+        .email-studio-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .email-studio-status-card {
+          justify-self: start;
+          white-space: normal;
+        }
+
+        .email-variable-card {
+          grid-column: auto;
+        }
+
+        .email-template-list-body {
+          max-height: none;
+        }
+
         .email-template-meta,
         .email-studio-toolbar,
         .email-editor-actions {
@@ -347,17 +449,17 @@
           </div>
         </header>
 
-        <header class="admin-section admin-hero">
+        <header class="admin-section admin-hero email-studio-hero">
           <div>
             <p class="section-kicker">Administration</p>
             <h1>E-mail Studio</h1>
             <p>Beheer klantgerichte e-mailtemplates voor sales, onboarding, facturatie en support.</p>
           </div>
-          <span class="workflow-module-label">Lokale template-editor - verzending later gekoppeld</span>
+          <span class="email-studio-status-card">Template-editor lokaal · verzending later gekoppeld</span>
         </header>
 
         <section class="email-studio-shell" aria-label="E-mail Studio workspace">
-          <div class="email-studio-toolbar">
+          <div class="admin-card email-studio-toolbar">
             <div>
               <span class="status-badge status-prepared" id="template-count">5 templates</span>
               <span class="status-badge status-active" id="active-count">0 actief</span>
@@ -380,7 +482,7 @@
               <div class="email-template-list-body" id="template-list"></div>
             </section>
 
-            <section class="email-editor-grid" aria-label="Template editor en preview">
+            <section class="email-editor-stack" aria-label="Template editor en preview">
               <article class="admin-card email-editor-card">
                 <div class="admin-section-heading">
                   <div>
@@ -422,15 +524,6 @@
                 <p class="admin-form-message email-message" id="email-message" role="status" aria-live="polite"></p>
               </article>
 
-              <aside class="admin-card email-variable-card" aria-labelledby="variables-heading">
-                <div>
-                  <p class="section-kicker">Variabelen</p>
-                  <h2 id="variables-heading">Beschikbaar</h2>
-                </div>
-                <p class="email-variable-help">Klik om de variabele in de body te plaatsen. Als er geen cursor actief is wordt de code onderaan toegevoegd.</p>
-                <div class="email-variable-list" id="variable-list"></div>
-              </aside>
-
               <aside class="admin-card email-preview-card" aria-labelledby="preview-heading">
                 <div class="admin-section-heading">
                   <div>
@@ -448,6 +541,15 @@
                 </div>
               </aside>
             </section>
+
+            <aside class="admin-card email-variable-card" aria-labelledby="variables-heading">
+              <div>
+                <p class="section-kicker">Editor hulp</p>
+                <h2 id="variables-heading">Variabelen</h2>
+              </div>
+              <p class="email-variable-help">Klik om een variabele in de body te plaatsen.</p>
+              <div class="email-variable-list" id="variable-list"></div>
+            </aside>
           </div>
         </section>
       </div>
