@@ -669,11 +669,7 @@
           runningNodeIds: new Set(),
         };
 
-        function escapeHtml(value = "") {
-          const shared = window.MaxSharedUI?.escapeHtml || window.escapeHtml;
-          if (typeof shared === "function" && shared !== escapeHtml) return shared(value);
-          return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-        }
+        const escapeHtml = window.MaxSharedUI?.escapeHtml || window.escapeHtml;
 
         function readArray(key) {
           try {

@@ -121,6 +121,8 @@
         display: grid;
         gap: 16px;
         padding: 22px;
+        min-width: 0;
+        overflow: hidden;
       }
 
       .mail-selection-bar {
@@ -171,7 +173,12 @@
       }
 
       .mail-table-wrap {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
         overflow-x: auto;
+        overflow-y: hidden;
       }
 
       .mail-table {

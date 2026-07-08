@@ -2870,6 +2870,7 @@
         const adminSidebarNavItems = [
           { type: "group", label: "Main" },
           { href: "admin-dashboard.html", page: "dashboard", accessId: "dashboard", label: "Dashboard", alwaysVisible: true },
+          { href: "admin-max-automations.html", page: "max-automations", accessId: "max-automations", label: "⚡ Max Automations", alwaysVisible: true },
           { type: "group", label: "Sales" },
           { href: "admin-sales.html#sales-agenda", page: "sales-agenda", accessId: "sales-agenda", label: "Agenda", alwaysVisible: true },
           { href: "admin-lead-generator.html", page: "lead-generator", accessId: "lead-generator", label: "Lead Generator", alwaysVisible: true },
@@ -9391,7 +9392,7 @@
               ? new Set(["dashboard", "leadfinder", "lead-generator", "sales-agenda", "klanten", "offertes", "facturen"])
               : null;
           const visibleItems = visibleItemIds
-            ? adminSidebarNavItems.filter((item) => item.type === "group" || (keepAlwaysVisible && item.alwaysVisible) || item.accessId === "dashboard" || visibleItemIds.has(item.accessId))
+            ? adminSidebarNavItems.filter((item) => item.type === "group" || item.alwaysVisible || item.accessId === "dashboard" || visibleItemIds.has(item.accessId))
             : adminSidebarNavItems;
           adminSidebarNav.innerHTML = visibleItems.map((item) => {
             if (item.type === "group") return `<span class="admin-nav-group">${item.label}</span>`;
