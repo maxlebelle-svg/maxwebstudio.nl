@@ -248,7 +248,7 @@
         const config = await response.json().catch(() => ({}));
 
         if (!response.ok || !config.success) {
-          throw new Error(config.error || "Supabase Auth is nog niet geconfigureerd.");
+          throw new Error(config.error || "De beveiligde klantomgeving is nog niet actief.");
         }
 
         return window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);

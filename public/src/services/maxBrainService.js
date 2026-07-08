@@ -100,6 +100,7 @@ export function getMaxBrainDiagnostics(options = {}) {
     customersAnalyzed: customerContexts.length,
     risks: { high: highRisks.length, medium: mediumRisks.length, total: highRisks.length + mediumRisks.length },
     recommendations,
+    dailyFocus: buildDailyFocus({ data, customerContexts, recommendations }),
     contextCache: {
       status: cache.generatedAt ? "ready" : "unavailable",
       key: MAX_BRAIN_CACHE_KEY,
@@ -183,6 +184,52 @@ function recommendActions(context) {
   if (context.lead && isOpenLead(context.lead)) actions.push(action("start-onboarding", "Start onboarding", "Sales", "Zet lead door naar klantflow zodra akkoord er is."));
   if (!actions.length) actions.push(action("add-note", "Voeg notitie toe", "CRM", "Leg de volgende stap vast in de timeline."));
   return actions.slice(0, 6);
+}
+
+function buildDailyFocus({ data, customerContexts, recommendations }) {
+  const riskyCustomers = customerContexts
+    .filter((context) => ["High", "Medium"].includes(context.riskLevel))
+    .map((context) => ({
+      label: context.customer?.company || context.customer?.name || context.entity?.label || "Klant",
+      level: context.riskLevel,
+      reason: context.riskReasons[0] || "Aandacht nodig",
+    }))
+    .slice(0, 8);
+  const openPayments = data.invoices
+    .filter(isOpenInvoice)
+    .map((invoice) => ({
+      label: invoice.invoiceNumber || invoice.invoice_number || invoice.number || invoice.title || "Factuur",
+      status: invoice.status || invoice.paymentStatus || invoice.payment_status || "open",
+      dueDate: invoice.dueDate || invoice.due_date || "",
+    }))
+    .slice(0, 8);
+  const failingAutomations = data.automations
+    .filter((item) => ["failed", "error", "attention"].includes(statusKey(item.status || item.result || item.state)))
+    .map((item) => ({ label: item.name || item.workflowName || "Automation", status: item.status || item.result || "failed" }))
+    .slice(0, 8);
+  const mailAttention = data.emails
+    .filter((item) => ["failed", "bounced", "complained"].includes(statusKey(item.status || item.deliveryStatus)))
+    .map((item) => ({ label: item.subject || item.templateName || "E-mail", status: item.status || item.deliveryStatus || "failed" }))
+    .slice(0, 8);
+  const delayedProjects = [...data.websites, ...data.timeline]
+    .filter((item) => /delay|vertraag|blocked|wacht|waiting|approval|akkoord|feedback/.test(statusKey([item.status, item.phase, item.title, item.description, item.notes].join(" "))))
+    .map((item) => ({ label: item.name || item.title || item.domain || "Project", status: item.status || item.phase || item.severity || "attention" }))
+    .slice(0, 8);
+  const attention = [
+    ...recommendations.slice(0, 4).map((item) => ({ label: item.label, reason: item.reason || item.category || "" })),
+    ...data.notifications
+      .filter((item) => ["warning", "error", "high"].includes(statusKey(item.severity || item.status)))
+      .slice(0, 4)
+      .map((item) => ({ label: item.title || item.action || "Melding", reason: item.description || item.message || item.status || "" })),
+  ].slice(0, 8);
+  return {
+    attention,
+    riskyCustomers,
+    openPayments,
+    failingAutomations,
+    mailAttention,
+    delayedProjects,
+  };
 }
 
 function action(id, label, category, reason) {

@@ -72,6 +72,7 @@ async function safeCreateActivity(input) {
 function webhookActivityEvent(log = {}, payload = {}, status = "") {
   const normalizedStatus = cleanText(status || normalizeEventStatus(payload.type || payload.event));
   const eventMap = {
+    delivered: { eventType: "email_delivered", title: "E-mail afgeleverd", severity: "success" },
     opened: { eventType: "email_opened", title: "E-mail geopend", severity: "info" },
     clicked: { eventType: "email_clicked", title: "E-mail link aangeklikt", severity: "success" },
     bounced: { eventType: "email_failed", title: "E-mail bounced", severity: "error" },

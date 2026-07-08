@@ -15,6 +15,7 @@
     emails: ["maxwebstudioDemoEmails", "maxwebstudioEmailTemplates", "maxwebstudioMailLogs"],
     brainCache: "maxwebstudioMaxBrainCache",
     websites: ["maxwebstudioManagedSites", "maxwebstudioWebsites"],
+    projects: ["maxwebstudioProjects", "maxwebstudioCrmProjects"],
     assets: ["maxwebstudioFiles", "maxwebstudioBrandAssets", "maxwebstudioLogoProjects"],
     tasks: ["maxwebstudioCrmTasks"],
     notifications: ["maxwebstudioClientPortalNotifications", "maxwebstudioActivityLog"],
@@ -29,6 +30,7 @@
     "Klanten",
     "Leads",
     "Facturen",
+    "Projecten",
     "E-mails",
     "Websites",
     "Branding",
@@ -76,6 +78,14 @@
     ["open-mail", "Open Mail Center", "Verzonden CRM-mails", "E-mails", "Command", "admin-mail-center.html"],
     ["open-notifications", "Open Notification Center", "CRM notifications", "Notifications", "Command", "admin-notification-center.html"],
     ["open-automations", "Open Max Automations", "Workflow builder en simulation runs", "Automations", "Command", "admin-max-automations.html"],
+    ["open-customer", "Open customer", "Open klantenmodule", "Klanten", "Command", "admin-klanten.html"],
+    ["open-project", "Open project", "Open projectenmodule", "Projecten", "Command", "admin-projecten.html"],
+    ["open-invoice", "Open invoice", "Open facturenmodule", "Facturen", "Command", "admin-facturen.html"],
+    ["open-timeline", "Open timeline", "Open klanttimeline en activity feed", "Notifications", "Command", "admin-notification-center.html"],
+    ["open-health", "Open health", "Open Platform Health Center", "Instellingen", "Command", "admin-platform-health.html"],
+    ["search-customer", "Search customer", "Zoek klanten in Max Command", "Klanten", "Command", "admin-klanten.html"],
+    ["search-project", "Search project", "Zoek projecten in Max Command", "Projecten", "Command", "admin-projecten.html"],
+    ["show-ceo-summary", "Show CEO summary", "Open CEO Mode briefing", "Instellingen", "Command", "admin-dashboard.html#dashboard"],
     ["open-max-brain", "Open Max Brain", "Context engine diagnostics", "AI", "Command", "admin-max-brain.html"],
     ["open-platform-health", "Open Platform Health", "System status, production monitoring en diagnostics", "Instellingen", "Command", "admin-platform-health.html"],
     ["open-dashboard", "Open Dashboard", "Max CRM home", "Instellingen", "Command", "admin-dashboard.html"],
@@ -312,6 +322,18 @@
       metadata: item,
     }));
 
+    const projects = rowsFromKeys(STORAGE.projects, (item) => result({
+      id: item.id || item.projectId || item.name,
+      type: "Project",
+      group: "Projecten",
+      title: item.name || item.projectName || item.title || "Project",
+      subtitle: [item.customerName || item.customerCompany, item.status, item.phase].filter(Boolean).join(" · "),
+      url: `admin-projecten.html?projectId=${encodeURIComponent(item.id || item.projectId || "")}`,
+      status: item.status || item.phase || "project",
+      updatedAt: item.updatedAt || item.updated_at || item.createdAt || item.created_at,
+      metadata: item,
+    }));
+
     const assets = rowsFromKeys(STORAGE.assets, (item) => result({
       id: item.id || item.name || item.fileName,
       type: item.type || "Asset",
@@ -368,6 +390,7 @@
       ...invoices,
       ...emails,
       ...websites,
+      ...projects,
       ...assets,
       ...tasks,
       ...notifications,
@@ -376,6 +399,8 @@
   }
 
   function actionCommandId(text = "") {
+    if (/(zoek|search).*(klant|customer)/.test(text)) return "search-customer";
+    if (/(zoek|search).*(project)/.test(text)) return "search-project";
     if (/(klant|customer)/.test(text)) return "new-customer";
     if (/(lead)/.test(text)) return "new-lead";
     if (/(factuur|invoice)/.test(text)) return "new-invoice";
@@ -385,6 +410,8 @@
     if (/(onboarding)/.test(text)) return "start-onboarding";
     if (/(brain|context|ai context|max brain)/.test(text)) return "open-max-brain";
     if (/(health|system|status|production|monitoring|platform)/.test(text)) return "open-platform-health";
+    if (/(ceo|summary|briefing|samenvatting)/.test(text)) return "show-ceo-summary";
+    if (/(timeline|activity|feed)/.test(text)) return "open-timeline";
     return "";
   }
 

@@ -440,7 +440,7 @@
           const contentType = response.headers.get("content-type") || "";
 
           if (!contentType.includes("application/json")) {
-            throw new Error("De betaalfunctie is nog niet actief op Netlify. Controleer of de map netlify/functions en netlify.toml naar GitHub zijn geüpload en opnieuw gedeployd.");
+            throw new Error("De betaalfunctie is nog niet actief. Neem contact op met Max Webstudio als dit blijft gebeuren.");
           }
 
           const data = await response.json();

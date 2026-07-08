@@ -155,9 +155,14 @@
       }
 
       .brain-recommendations,
-      .brain-datasets {
+      .brain-datasets,
+      .brain-daily-grid {
         display: grid;
         gap: 0.65rem;
+      }
+
+      .brain-daily-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
       }
 
       .brain-row {
@@ -193,6 +198,10 @@
         }
 
         .brain-workspace {
+          grid-template-columns: 1fr;
+        }
+
+        .brain-daily-grid {
           grid-template-columns: 1fr;
         }
       }
@@ -274,6 +283,16 @@
             <article class="brain-card brain-stat"><span>Automation status</span><strong id="brain-automations">0</strong><p id="brain-automations-copy">Geen workflows</p></article>
           </section>
 
+          <section class="brain-card">
+            <div class="brain-panel-title">
+              <div>
+                <h2>Dagelijkse aandacht</h2>
+                <p class="brain-muted">Vandaag opgebouwd uit bestaande CRM-data, timeline, mails, betalingen en automations.</p>
+              </div>
+            </div>
+            <div class="brain-daily-grid" id="brain-daily-focus"></div>
+          </section>
+
           <section class="brain-workspace">
             <article class="brain-card">
               <div class="brain-panel-title">
@@ -347,6 +366,24 @@
           .join("");
       }
 
+      function renderDailyFocus() {
+        const focus = diagnostics.dailyFocus || {};
+        const sections = [
+          ["Aandachtspunten", focus.attention],
+          ["Klanten met risico", focus.riskyCustomers],
+          ["Openstaande betalingen", focus.openPayments],
+          ["Falende automations", focus.failingAutomations],
+          ["Mails met aandacht", focus.mailAttention],
+          ["Projecten met vertraging", focus.delayedProjects],
+        ];
+        $("brain-daily-focus").innerHTML = sections.map(([label, rows]) => {
+          const items = Array.isArray(rows) ? rows.slice(0, 3) : [];
+          return `<div class="brain-row"><strong>${escapeHtml(label)}</strong>${items.length
+            ? items.map((item) => `<small>${escapeHtml([item.label, item.status || item.level, item.reason || item.dueDate].filter(Boolean).join(" · "))}</small>`).join("")
+            : "<small>Geen signalen vandaag.</small>"}</div>`;
+        }).join("");
+      }
+
       function firstContextQuery() {
         const customer = data.customers[0];
         const lead = data.leads[0];
@@ -371,6 +408,7 @@
 
       renderRecommendations();
       renderDatasets();
+      renderDailyFocus();
       inspectContext();
     </script>
   </body>

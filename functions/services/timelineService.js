@@ -34,15 +34,28 @@ const allowedEventTypes = new Set([
   "customer_created",
   "customer_updated",
   "email_sent",
+  "email_delivered",
   "email_opened",
   "email_clicked",
   "email_failed",
   "invoice_created",
   "invoice_sent",
   "invoice_paid",
+  "payment_created",
+  "payment_paid",
+  "payment_cancelled",
+  "payment_refunded",
+  "payment_failed",
+  "automation_started",
+  "automation_completed",
+  "automation_failed",
+  "onboarding_updated",
   "website_preview_started",
   "website_preview_ready",
   "website_preview_failed",
+  "website_live",
+  "project_updated",
+  "customer_portal_action",
   "onboarding_task_completed",
   "domain_requested",
   "domain_connected",
@@ -366,8 +379,13 @@ function moduleForEventType(eventType) {
   const type = normalizeEventType(eventType);
   if (type.startsWith("email_")) return "email";
   if (type.startsWith("invoice_")) return "billing";
+  if (type.startsWith("payment_")) return "billing";
+  if (type.startsWith("automation_")) return "automation";
   if (type.startsWith("lead_")) return "sales";
   if (type.startsWith("customer_")) return "customers";
+  if (type.startsWith("customer_portal_")) return "customer_portal";
+  if (type.startsWith("project_")) return "projects";
+  if (type.startsWith("onboarding_")) return "onboarding";
   if (type.startsWith("website_")) return "website_factory";
   if (type.startsWith("domain_")) return "domain";
   if (type.startsWith("hosting_")) return "hosting";

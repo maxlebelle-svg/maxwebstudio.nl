@@ -214,6 +214,8 @@
             <article class="admin-card ceo-kpi-card" role="button" tabindex="0" data-ceo-action="websites"><span>Actieve websites</span><strong id="ceo-kpi-active-websites">0</strong><small>Online/live/active</small></article>
             <article class="admin-card ceo-kpi-card is-warning" role="button" tabindex="0" data-ceo-action="websites"><span>Wachten op akkoord</span><strong id="ceo-kpi-websites-approval">0</strong><small>Klantfeedback nodig</small></article>
             <article class="admin-card ceo-kpi-card" role="button" tabindex="0" data-ceo-action="notifications"><span>Ongelezen meldingen</span><strong id="ceo-kpi-unread-notifications">0</strong><small>Notification Center</small></article>
+            <article class="admin-card ceo-kpi-card" role="button" tabindex="0" data-ceo-action="health"><span>Platform gezondheid</span><strong id="ceo-kpi-platform-health">Unknown</strong><small id="ceo-kpi-platform-health-copy">Health Center</small></article>
+            <article class="admin-card ceo-kpi-card" role="button" tabindex="0" data-ceo-action="automations"><span>Automation status</span><strong id="ceo-kpi-automation-status">0</strong><small id="ceo-kpi-automation-copy">Workflows voorbereid</small></article>
             <article class="admin-card ceo-kpi-card" role="button" tabindex="0" data-ceo-action="projects"><span>Open onboarding</span><strong id="ceo-kpi-onboarding">0</strong><small>Projecten in startfase</small></article>
             <article class="admin-card ceo-kpi-card is-warning" role="button" tabindex="0" data-ceo-action="domains"><span>Pending domains</span><strong id="ceo-kpi-domains">0</strong><small>Domeinstatus controleren</small></article>
             <article class="admin-card ceo-kpi-card is-warning" role="button" tabindex="0" data-ceo-action="leads"><span>Pending telefoons</span><strong id="ceo-kpi-phone">0</strong><small>Leads zonder verwerking</small></article>
@@ -2789,6 +2791,10 @@
             activeWebsites: document.getElementById("ceo-kpi-active-websites"),
             websitesApproval: document.getElementById("ceo-kpi-websites-approval"),
             unreadNotifications: document.getElementById("ceo-kpi-unread-notifications"),
+            platformHealth: document.getElementById("ceo-kpi-platform-health"),
+            platformHealthCopy: document.getElementById("ceo-kpi-platform-health-copy"),
+            automationStatus: document.getElementById("ceo-kpi-automation-status"),
+            automationCopy: document.getElementById("ceo-kpi-automation-copy"),
             onboarding: document.getElementById("ceo-kpi-onboarding"),
             domains: document.getElementById("ceo-kpi-domains"),
             phone: document.getElementById("ceo-kpi-phone"),
@@ -10965,6 +10971,29 @@
           return unreadNotifications + recentActivity;
         }
 
+        function ceoAutomationSummary() {
+          const workflows = readCeoStoredArray("maxwebstudioAutomationWorkflows");
+          const executions = readCeoStoredArray("maxwebstudioAutomationExecutions");
+          const failed = executions.filter((run) => ["failed", "error"].includes(statusKey(run.status || run.result))).length;
+          const enabled = workflows.filter((workflow) => ["enabled", "active", "running"].includes(statusKey(workflow.status))).length;
+          return {
+            total: workflows.length,
+            enabled,
+            failed,
+            status: failed ? "Warning" : enabled ? "Healthy" : workflows.length ? "Unknown" : "Unknown",
+          };
+        }
+
+        function ceoPlatformHealthSummary() {
+          const warnings = readCeoStoredArray(activityLogStorageKey)
+            .filter((item) => ["system_warning", "system_error"].includes(statusKey(item.eventType || item.event_type || item.action)) || ["warning", "error"].includes(statusKey(item.severity || item.status)));
+          if (warnings.some((item) => ["system_error", "error"].includes(statusKey(item.eventType || item.event_type || item.severity || item.status)))) {
+            return { status: "Critical", label: "Critical", copy: "Open Health Center" };
+          }
+          if (warnings.length) return { status: "Warning", label: "Warning", copy: `${warnings.length} waarschuwing${warnings.length === 1 ? "" : "en"}` };
+          return { status: "Unknown", label: "Unknown", copy: "Open Health Center" };
+        }
+
         function getCeoDashboardSummary() {
           const leads = ceoGetLeads();
           const todayLeads = leads.filter((lead) => ceoIsSameDay(ceoLeadCreatedAt(lead)));
@@ -10991,6 +11020,8 @@
           const customersWithoutDomain = state.customers.filter((customer) => !String(customer.website || customer.domain || "").trim());
           const pendingDomains = Math.max(customersWithoutDomain.length, state.websites.filter((website) => ceoNeedsDomain(website)).length);
           const pendingPhones = leads.filter((lead) => ceoIsLeadOpen(lead) && !String(lead.phone || lead.telephone || "").trim()).length;
+          const automation = ceoAutomationSummary();
+          const platformHealth = ceoPlatformHealthSummary();
           return {
             leads,
             todayLeads,
@@ -11006,6 +11037,8 @@
             pendingDomains,
             pendingPhones,
             unreadNotifications: ceoUnreadNotificationsCount(),
+            automation,
+            platformHealth,
           };
         }
 
@@ -11080,6 +11113,26 @@
               title: `${summary.pendingPhones} lead${summary.pendingPhones === 1 ? "" : "s"} missen telefoonnummer`,
               action: "Vul ontbrekende contactgegevens aan voordat sales opvolgt.",
               href: "admin-sales.html",
+            });
+          }
+          if (summary.automation.failed) {
+            priorities.push({
+              label: "Automation",
+              badgeClass: "status-warning",
+              severity: "high",
+              title: `${summary.automation.failed} automation run${summary.automation.failed === 1 ? "" : "s"} mislukt`,
+              action: "Open Max Automations en controleer de laatste executions.",
+              href: "admin-max-automations.html",
+            });
+          }
+          if (summary.platformHealth.status === "Critical" || summary.platformHealth.status === "Warning") {
+            priorities.push({
+              label: "Health",
+              badgeClass: summary.platformHealth.status === "Critical" ? "status-warning" : "status-prepared",
+              severity: summary.platformHealth.status === "Critical" ? "high" : "medium",
+              title: `Platform Health: ${summary.platformHealth.label}`,
+              action: "Controleer het Health Center voordat klantwerk oploopt.",
+              href: "admin-platform-health.html",
             });
           }
           if (summary.todayRevenue > 0) {
@@ -11194,6 +11247,10 @@
           setText(ceoElements.kpis.activeWebsites, String(summary.activeWebsites.length));
           setText(ceoElements.kpis.websitesApproval, String(summary.websitesApproval.length));
           setText(ceoElements.kpis.unreadNotifications, String(summary.unreadNotifications));
+          setText(ceoElements.kpis.platformHealth, summary.platformHealth.label);
+          setText(ceoElements.kpis.platformHealthCopy, summary.platformHealth.copy);
+          setText(ceoElements.kpis.automationStatus, summary.automation.failed ? `${summary.automation.failed} failed` : String(summary.automation.enabled || summary.automation.total));
+          setText(ceoElements.kpis.automationCopy, summary.automation.failed ? "Controle nodig" : `${summary.automation.enabled} enabled / ${summary.automation.total} totaal`);
           setText(ceoElements.kpis.onboarding, String(summary.onboardingProjects.length));
           setText(ceoElements.kpis.domains, String(summary.pendingDomains));
           setText(ceoElements.kpis.phone, String(summary.pendingPhones));
@@ -11215,6 +11272,8 @@
             websites: "admin-websites.html",
             projects: "admin-projecten.html",
             notifications: "admin-notification-center.html",
+            health: "admin-platform-health.html",
+            automations: "admin-max-automations.html",
             domains: "admin-domain-center.html",
           };
           if (routes[action]) window.location.href = routes[action];

@@ -95,7 +95,7 @@
         <h2>Demo blijft werken terwijl productie-auth wordt voorbereid.</h2>
         <ul>
           <li>Demo-sessies blijven lokaal in deze browser.</li>
-          <li>Echte login gebruikt straks Supabase Auth en RLS.</li>
+          <li>Echte login gebruikt straks de beveiligde Max Webstudio accountlaag.</li>
           <li>Geen wachtwoorden, API keys of secrets worden in de frontend opgeslagen.</li>
           <li>Accountaanvragen worden tijdelijk lokaal bewaard in <code>maxwebstudioAccountRequests</code>.</li>
         </ul>
@@ -209,7 +209,7 @@
           const debug = error?.supabaseAuth || {};
           const parts = [
             `Code: ${debug.code || error?.code || "UNKNOWN"}`,
-            `Bericht: ${debug.message || error?.message || "Onbekende Supabase Auth fout."}`,
+            `Bericht: ${debug.message || error?.message || "Onbekende loginfout."}`,
           ];
           if (debug.status) parts.push(`Status: ${debug.status}`);
           if (debug.projectRef || debug.host) parts.push(`Project: ${debug.projectRef || debug.host}`);
@@ -398,7 +398,7 @@
           if (!realLoginActive) {
             activatePanel("request");
             setMessage(isDeveloperModeEnabled() && authConfigSafe
-              ? "Supabase-config is aanwezig, maar login blijft uit tot release approval groen is."
+              ? "De accountconfiguratie is aanwezig, maar login blijft uit tot release approval groen is."
               : "Het klantportaal wordt momenteel afgerond. Vraag toegang aan, dan nemen we contact met je op.", "success");
             return;
           }

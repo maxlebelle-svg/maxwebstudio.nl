@@ -272,7 +272,7 @@
                 <span class="health-chip" id="health-last-checked">Laatste check laden...</span>
               </div>
               <h1>Platform Health</h1>
-              <p>Intern diagnosecentrum voor Supabase, Netlify Functions, e-mail, timeline, automations, Max Brain en production-readiness.</p>
+              <p>Intern diagnosecentrum voor mail, betalingen, data, webhooks, timeline, automations, klantportaal en Website Factory.</p>
             </div>
             <span class="health-status" id="health-overall" data-status="Warning">Checking</span>
           </section>
@@ -306,16 +306,6 @@
             <article class="health-card">
               <div class="health-card-header">
                 <div>
-                  <h2>Build metadata</h2>
-                  <p>Deploy-context en versie-informatie wanneer beschikbaar.</p>
-                </div>
-              </div>
-              <div class="health-list" id="health-build"></div>
-            </article>
-
-            <article class="health-card">
-              <div class="health-card-header">
-                <div>
                   <h2>Readiness rules</h2>
                   <p>Deterministische statusregels voor production readiness.</p>
                 </div>
@@ -335,14 +325,18 @@
       (function initPlatformHealth() {
         const endpoint = "/api/platform-health";
         const fallbackChecks = [
+          { id: "mail", label: "Mail", status: "Warning", message: "Mailstatus vereist admin API.", latencyMs: null, critical: false },
+          { id: "resend", label: "Resend", status: "Warning", message: "Resend status vereist backendconfiguratie.", latencyMs: null, critical: false },
           { id: "supabase", label: "Supabase", status: "Warning", message: "Servercheck vereist admin API.", latencyMs: null, critical: true },
-          { id: "api", label: "API", status: "Warning", message: "Netlify Function health wordt live gecontroleerd na deploy.", latencyMs: null, critical: true },
-          { id: "email", label: "E-mail", status: "Warning", message: "Resend status vereist backendconfiguratie.", latencyMs: null, critical: false },
+          { id: "storage", label: "Storage", status: "Warning", message: "Storage status vereist admin API.", latencyMs: null, critical: false },
+          { id: "mollie", label: "Mollie", status: "Warning", message: "Mollie status vereist backendconfiguratie.", latencyMs: null, critical: false },
+          { id: "webhooks", label: "Webhooks", status: "Warning", message: "Webhookstatus vereist admin API.", latencyMs: null, critical: false },
           { id: "timeline", label: "Timeline", status: "Healthy", message: "Timeline UI en routes zijn aanwezig.", latencyMs: 0, critical: true },
           { id: "notifications", label: "Notifications", status: "Healthy", message: "Notification Center route is aanwezig.", latencyMs: 0, critical: true },
           { id: "automations", label: "Automations", status: "Healthy", message: "Lokale workflow storage kan in de browser worden gelezen.", latencyMs: 0, critical: false },
-          { id: "max-brain", label: "Max Brain", status: "Healthy", message: "Max Brain diagnosepagina en clientcache zijn beschikbaar.", latencyMs: 0, critical: false },
-          { id: "environment", label: "Environment", status: "Warning", message: "Secret-aanwezigheid is alleen via admin API zichtbaar.", latencyMs: 0, critical: true },
+          { id: "customer-portal", label: "Customer Portal", status: "Healthy", message: "Klantportaalroute is aanwezig.", latencyMs: 0, critical: false },
+          { id: "preview-environment", label: "Preview Environment", status: "Healthy", message: "Preview route is aanwezig.", latencyMs: 0, critical: false },
+          { id: "website-factory", label: "Website Factory", status: "Healthy", message: "Website Factory route is aanwezig.", latencyMs: 0, critical: false },
         ];
         const fallbackEnvironment = {
           variables: [
@@ -351,6 +345,8 @@
             { key: "SUPABASE_ANON_KEY", label: "Supabase anon key", present: false, critical: true },
             { key: "RESEND_API_KEY", label: "Resend API key", present: false, critical: false },
             { key: "RESEND_FROM_EMAIL", label: "Resend from email", present: false, critical: false },
+            { key: "MOLLIE_API_KEY", label: "Mollie API key", present: false, critical: false },
+            { key: "SITE_URL", label: "Platform URL", present: false, critical: false },
           ],
         };
 
@@ -389,7 +385,6 @@
               checks: fallbackChecks,
               environment: fallbackEnvironment,
               recentErrors: [{ level: "warning", source: "platform-health", message: error.message || "Health API fallback actief.", createdAt: new Date().toISOString() }],
-              build: { context: "local/static preview", branch: "", commitRef: "", deployId: "", buildId: "", nodeEnv: "" },
             });
           }
         }
@@ -405,7 +400,6 @@
           $("health-cards").innerHTML = (data.checks || fallbackChecks).map(cardHtml).join("");
           renderEnvironment(data.environment || fallbackEnvironment);
           renderErrors(data.recentErrors || []);
-          renderBuild(data.build || {});
         }
 
         function cardHtml(item) {
@@ -443,22 +437,6 @@
               </div>
             `).join("")
             : `<div class="health-row"><strong>Geen recente fouten</strong><span class="health-muted">Health Center ziet geen waarschuwingen in deze check.</span></div>`;
-        }
-
-        function renderBuild(build) {
-          const rows = [
-            ["Context", build.context],
-            ["Branch", build.branch],
-            ["Commit", build.commitRef],
-            ["Deploy ID", build.deployId],
-            ["Build ID", build.buildId],
-            ["Node env", build.nodeEnv],
-          ];
-          $("health-build").innerHTML = rows.map(([label, value]) => `
-            <div class="health-row">
-              <div class="health-row-top"><strong>${escapeHtml(label)}</strong><span class="health-muted">${escapeHtml(value || "-")}</span></div>
-            </div>
-          `).join("");
         }
 
         function latency(value) {

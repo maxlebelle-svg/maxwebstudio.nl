@@ -8,15 +8,23 @@ const REQUIRED_ENV = [
   { key: "SUPABASE_ANON_KEY", critical: true, label: "Supabase anon key" },
   { key: "RESEND_API_KEY", critical: false, label: "Resend API key" },
   { key: "RESEND_FROM_EMAIL", critical: false, label: "Resend from email" },
+  { key: "MOLLIE_API_KEY", critical: false, label: "Mollie API key" },
+  { key: "SITE_URL", critical: false, label: "Platform URL" },
   { key: "ADMIN_TOKEN", critical: false, label: "Legacy admin token" },
 ];
 
 const FUNCTION_CHECKS = [
+  { id: "mail", label: "Mail", file: "admin-email-logs.js", critical: false },
+  { id: "resend-webhook", label: "Resend webhook", file: "resend-webhook.js", critical: false },
+  { id: "mollie-webhook", label: "Mollie webhook", file: "mollie-webhook.js", critical: false },
   { id: "activity-events", label: "Activity events", file: "admin-activity-events.js", critical: true },
   { id: "customer-timeline", label: "Customer timeline", file: "customer-timeline.js", critical: true },
-  { id: "email-logs", label: "Email logs", file: "admin-email-logs.js", critical: false },
   { id: "max-brain", label: "Max Brain context", file: "max-brain-context.js", critical: false },
   { id: "dashboard-metrics", label: "CEO dashboard metrics", file: "admin-dashboard-metrics.js", critical: false },
+  { id: "customer-portal", label: "Customer portal", file: "client-auth-config.js", critical: false },
+  { id: "storage", label: "Storage access", file: "invoice-download.js", critical: false },
+  { id: "preview", label: "Preview environment", file: "demo-preview.js", critical: false },
+  { id: "website-factory", label: "Website Factory", file: "website-factory.js", critical: false },
 ];
 
 exports.handler = async (event) => {
@@ -48,7 +56,6 @@ exports.handler = async (event) => {
       checks: subsystems,
       environment,
       recentErrors: warnings,
-      build: buildMetadata(),
     });
   } catch (error) {
     console.error("Platform health error", { message: error.message, statusCode: error.statusCode || error.status || 500 });
@@ -139,23 +146,31 @@ function checkFunctions() {
 
 function buildSubsystemChecks({ environment, supabase, functions }) {
   const functionById = new Map(functions.map((item) => [item.id, item]));
-  const emailReady = functionById.get("email-logs");
+  const mailReady = functionById.get("mail");
+  const resendWebhook = functionById.get("resend-webhook");
+  const mollieWebhook = functionById.get("mollie-webhook");
   const activityReady = functionById.get("activity-events");
   const timelineReady = functionById.get("customer-timeline");
-  const brainReady = functionById.get("max-brain");
-  const dashboardReady = functionById.get("dashboard-metrics");
   const resendMissing = environment.variables.some((item) => item.key === "RESEND_API_KEY" && !item.present);
+  const mollieMissing = environment.variables.some((item) => item.key === "MOLLIE_API_KEY" && !item.present);
+  const storageReady = functionById.get("storage");
+  const customerPortalReady = functionById.get("customer-portal");
+  const previewReady = functionById.get("preview");
+  const factoryReady = functionById.get("website-factory");
 
   return [
+    card("mail", "Mail", mailReady.status, "Mail Center endpoint beschikbaar.", mailReady.latencyMs, false),
+    card("resend", "Resend", resendMissing ? "Warning" : resendWebhook.status, resendMissing ? "Resend configuratie vraagt aandacht." : "Resend events en mailstatussen zijn gekoppeld.", resendWebhook.latencyMs, false),
     card("supabase", "Supabase", supabase.status, supabase.message, supabase.latencyMs, true),
-    card("api", "API", statusFromChildren(functions), "Netlify Functions bundle gecontroleerd.", maxLatency(functions), true),
-    card("email", "E-mail", resendMissing ? "Warning" : emailReady.status, resendMissing ? "Resend API key ontbreekt of is niet geconfigureerd." : "Mail Center endpoint klaar.", emailReady.latencyMs, false),
+    card("storage", "Storage", storageReady.status, "Private download- en opslagroute beschikbaar.", storageReady.latencyMs, false),
+    card("mollie", "Mollie", mollieMissing ? "Warning" : mollieWebhook.status, mollieMissing ? "Mollie configuratie vraagt aandacht." : "Mollie webhookroute beschikbaar.", mollieWebhook.latencyMs, false),
+    card("webhooks", "Webhooks", statusFromChildren([resendWebhook, mollieWebhook]), "Resend en Mollie webhookroutes gecontroleerd.", maxLatency([resendWebhook, mollieWebhook]), false),
     card("timeline", "Timeline", statusFromChildren([activityReady, timelineReady]), "Activity events en customer timeline beschikbaar.", maxLatency([activityReady, timelineReady]), true),
     card("notifications", "Notifications", activityReady.status, "Notification Center gebruikt activity events.", activityReady.latencyMs, true),
-    card("automations", "Automations", "Healthy", "Browser workflow storage en diagnostics voorbereid.", 0, false),
-    card("max-brain", "Max Brain", brainReady.status, "Context endpoint readiness gecontroleerd.", brainReady.latencyMs, false),
-    card("environment", "Environment", environment.status, "Secrets worden alleen als aanwezig/ontbrekend getoond.", 0, true),
-    card("ceo-dashboard", "CEO Dashboard", dashboardReady.status, "Dashboard metrics function readiness gecontroleerd.", dashboardReady.latencyMs, false),
+    card("automations", "Automations", "Healthy", "Workflow builder en execution diagnostics voorbereid.", 0, false),
+    card("customer-portal", "Customer Portal", customerPortalReady.status, "Klantportaal auth-config route beschikbaar.", customerPortalReady.latencyMs, false),
+    card("preview-environment", "Preview Environment", previewReady.status, "Preview route beschikbaar.", previewReady.latencyMs, false),
+    card("website-factory", "Website Factory", factoryReady.status, "Website Factory endpoint beschikbaar.", factoryReady.latencyMs, false),
   ];
 }
 
@@ -200,22 +215,6 @@ function collectWarnings({ environment, supabase, functions, subsystems }) {
     rows.push({ level: item.status.toLowerCase(), source: item.id, message: item.message, createdAt: new Date().toISOString() });
   });
   return rows.slice(0, 20);
-}
-
-function buildMetadata() {
-  return {
-    context: cleanText(process.env.CONTEXT || (process.env.NETLIFY_DEV ? "development" : "")),
-    branch: cleanText(process.env.BRANCH),
-    commitRef: shortRef(process.env.COMMIT_REF),
-    deployId: cleanText(process.env.DEPLOY_ID),
-    buildId: cleanText(process.env.BUILD_ID),
-    nodeEnv: cleanText(process.env.NODE_ENV),
-  };
-}
-
-function shortRef(value = "") {
-  const clean = cleanText(value);
-  return clean ? clean.slice(0, 12) : "";
 }
 
 function cleanText(value) {

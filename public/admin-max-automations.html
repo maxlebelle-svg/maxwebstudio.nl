@@ -977,6 +977,8 @@
         async function runSimulation() {
           const workflow = selectedWorkflow();
           if (!workflow) return;
+          const startedAt = nowIso();
+          appendAutomationActivity(workflow, "automation_started", "Automation gestart", "info", startedAt);
           state.runningNodeIds = new Set();
           for (const node of workflow.nodes) {
             state.runningNodeIds.add(node.id);
@@ -984,19 +986,50 @@
             await new Promise((resolve) => window.setTimeout(resolve, 180));
           }
           const failed = workflow.status === "disabled";
+          const completedAt = nowIso();
           state.executions.unshift({
             id: createId("run"),
             workflowId: workflow.id,
             workflowName: workflow.name,
             status: failed ? "Failed" : "Completed",
-            startedAt: new Date(Date.now() - 1200).toISOString(),
-            completedAt: nowIso(),
+            startedAt,
+            completedAt,
             duration: 1200 + workflow.nodes.length * 80,
             retries: failed ? 1 : 0,
           });
+          appendAutomationActivity(
+            workflow,
+            failed ? "automation_failed" : "automation_completed",
+            failed ? "Automation mislukt" : "Automation afgerond",
+            failed ? "error" : "success",
+            completedAt
+          );
           state.runningNodeIds = new Set();
           save();
           render();
+        }
+
+        function appendAutomationActivity(workflow, eventType, title, severity, createdAt) {
+          const rows = readArray("maxwebstudioActivityLog");
+          rows.unshift({
+            id: createId("activity"),
+            eventType,
+            title,
+            description: workflow.name,
+            module: "automation",
+            referenceType: "workflow",
+            referenceId: workflow.id,
+            relatedType: "workflow",
+            relatedId: workflow.id,
+            actorName: "Max Automations",
+            severity,
+            icon: "⚡",
+            createdAt,
+            updatedAt: createdAt,
+            isRead: false,
+            metadata: { workflowId: workflow.id, workflowStatus: workflow.status },
+          });
+          writeArray("maxwebstudioActivityLog", rows.slice(0, 250));
         }
 
         function addNode(type, x = 80, y = 80) {

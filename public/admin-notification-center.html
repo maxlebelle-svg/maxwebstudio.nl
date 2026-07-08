@@ -402,14 +402,21 @@
         const adminSessionStorageKey = "mws_admin_supabase_session";
         const adminTokenStorageKey = "mws_admin_token";
         const eventTypes = [
-          "lead_created", "lead_updated", "customer_created", "customer_updated", "email_sent", "email_opened", "email_clicked", "email_failed",
-          "invoice_created", "invoice_sent", "invoice_paid", "website_preview_started", "website_preview_ready", "website_preview_failed",
-          "onboarding_task_completed", "domain_requested", "domain_connected", "hosting_activated", "phone_number_requested", "phone_number_activated",
+          "lead_created", "lead_updated", "customer_created", "customer_updated",
+          "email_sent", "email_delivered", "email_opened", "email_clicked", "email_failed",
+          "invoice_created", "invoice_sent", "invoice_paid",
+          "payment_created", "payment_paid", "payment_cancelled", "payment_refunded", "payment_failed",
+          "automation_started", "automation_completed", "automation_failed",
+          "website_preview_started", "website_preview_ready", "website_preview_failed", "website_live",
+          "onboarding_task_completed", "onboarding_updated", "project_updated", "customer_portal_action",
+          "domain_requested", "domain_connected", "hosting_activated", "phone_number_requested", "phone_number_activated",
           "note_created", "status_changed", "system_warning", "system_error",
         ];
         const quickFilters = [
           ["E-mails", "email_"],
           ["Facturen", "invoice_"],
+          ["Betalingen", "payment_"],
+          ["Automations", "automation_"],
           ["Leads", "lead_"],
           ["Website Factory", "website_"],
           ["Fouten", "severity:error"],

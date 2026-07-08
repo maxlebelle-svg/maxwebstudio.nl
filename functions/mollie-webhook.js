@@ -153,6 +153,7 @@ async function updateInvoicePaymentIfPresent(payment) {
   };
 
   await patchInvoice(supabaseUrl, serviceRoleKey, invoice.id, patch);
+  await safeCreateTimeline(paymentTimelineEvent(invoice, payment, mappedStatus));
   console.log("Invoice payment status updated", {
     paymentId: payment.id,
     invoiceId: invoice.id,
@@ -634,6 +635,42 @@ async function safeCreateTimeline(input) {
     console.error("Mollie timeline event failed", { message: error.message });
     return null;
   }
+}
+
+function paymentTimelineEvent(invoice = {}, payment = {}, invoiceStatus = "") {
+  const status = cleanText(payment.status || invoiceStatus || "unknown").toLowerCase();
+  const statusMap = {
+    open: { eventType: "payment_created", title: "Betaling aangemaakt", severity: "info" },
+    pending: { eventType: "payment_created", title: "Betaling in behandeling", severity: "info" },
+    paid: { eventType: "payment_paid", title: "Betaling ontvangen", severity: "success" },
+    canceled: { eventType: "payment_cancelled", title: "Betaling geannuleerd", severity: "warning" },
+    cancelled: { eventType: "payment_cancelled", title: "Betaling geannuleerd", severity: "warning" },
+    expired: { eventType: "payment_failed", title: "Betaling verlopen", severity: "warning" },
+    failed: { eventType: "payment_failed", title: "Betaling mislukt", severity: "error" },
+    refunded: { eventType: "payment_refunded", title: "Betaling terugbetaald", severity: "warning" },
+    charged_back: { eventType: "payment_refunded", title: "Betaling teruggeboekt", severity: "error" },
+  };
+  const config = statusMap[status] || { eventType: "payment_created", title: "Betaling bijgewerkt", severity: "info" };
+  return {
+    eventType: config.eventType,
+    title: config.title,
+    description: `${cleanText(invoice.invoice_number || invoice.title) || "Factuur"}: betalingsstatus ${status || "onbekend"}.`,
+    module: "billing",
+    referenceType: "invoice",
+    referenceId: invoice.id,
+    invoiceId: invoice.id,
+    actorName: "Mollie",
+    actorRole: "payment_provider",
+    icon: status === "paid" ? "€" : "!",
+    severity: config.severity,
+    metadata: {
+      dedupeKey: `mollie_payment:${config.eventType}:${invoice.id}:${cleanText(payment.id)}:${status}`,
+      profileId: invoice.profile_id || "",
+      paymentId: cleanText(payment.id),
+      mollieStatus: status,
+      invoiceStatus: cleanText(invoiceStatus),
+    },
+  };
 }
 
 async function sendSubscriptionRetryEmailIfNeeded(supabaseUrl, serviceRoleKey, subscription) {

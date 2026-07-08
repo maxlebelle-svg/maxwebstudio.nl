@@ -1,4 +1,5 @@
 const { verifyAdmin } = require("./_admin-auth");
+const { createTimelineEvent } = require("./services/timelineService");
 const INVOICE_FIELDS = [
   "id",
   "invoice_number",
@@ -71,6 +72,24 @@ exports.handler = async (event) => {
       mollie_payment_expires_at: cleanText(payment.expiresAt) || null,
       status: "sent",
       updated_at: new Date().toISOString(),
+    });
+    await safeCreateTimeline({
+      eventType: "payment_created",
+      title: "Betaalverzoek aangemaakt",
+      description: `${updatedInvoice.invoice_number || "Factuur"} heeft een betaallink gekregen.`,
+      module: "billing",
+      referenceType: "invoice",
+      referenceId: updatedInvoice.id,
+      invoiceId: updatedInvoice.id,
+      actorName: adminCheck.admin?.email || "Max CRM",
+      actorRole: adminCheck.admin?.role || "admin",
+      icon: "€",
+      severity: "info",
+      metadata: {
+        dedupeKey: `mollie_payment_created:${updatedInvoice.id}:${payment.id}`,
+        paymentId: payment.id,
+        mollieStatus: cleanText(payment.status || "open"),
+      },
     });
 
     return jsonResponse(200, {
@@ -263,6 +282,15 @@ function hasReusableCheckout(invoice) {
     if (!Number.isNaN(expiryDate.getTime()) && expiryDate.getTime() <= Date.now()) return false;
   }
   return !terminalMollieStatuses.has(paymentStatus);
+}
+
+async function safeCreateTimeline(input) {
+  try {
+    return await createTimelineEvent(input);
+  } catch (error) {
+    console.error("Admin Mollie payment timeline event failed", { message: error.message });
+    return null;
+  }
 }
 
 function restHeaders(serviceRoleKey) {
