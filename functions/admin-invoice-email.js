@@ -1,5 +1,6 @@
 const { verifyAdmin } = require("./_admin-auth");
 const { sendEmail } = require("./email");
+const { getCompanySettings, getMailtoLink } = require("./company-settings");
 
 const PROFILE_FIELDS = "id,auth_user_id,name,company,email";
 const INVOICE_FIELDS = [
@@ -89,6 +90,15 @@ exports.handler = async (event) => {
       subject: message.subject,
       text: message.text,
       html: message.html,
+      templateKey: emailType,
+      templateName: config.label,
+      invoiceId: invoice.id,
+      triggeredBy: "admin_invoice_email",
+      triggeredByUserId: adminCheck.admin?.id,
+      metadata: {
+        invoiceNumber: cleanText(invoice.invoice_number),
+        profileId: cleanText(invoice.profile_id),
+      },
     });
 
     if (!result.sent) {
@@ -165,6 +175,7 @@ async function patchInvoiceEmailState(supabaseUrl, serviceRoleKey, invoiceId, pa
 }
 
 function buildInvoiceEmail(emailType, invoice, profile) {
+  const companySettings = getCompanySettings();
   const customerName = cleanText(profile?.name) || cleanText(profile?.company) || "beste klant";
   const invoiceNumber = cleanText(invoice.invoice_number) || "je factuur";
   const title = cleanText(invoice.title) || "Factuur";
@@ -176,8 +187,9 @@ function buildInvoiceEmail(emailType, invoice, profile) {
   const hasPdf = Boolean(cleanText(invoice.pdf_file_path));
   const footer = [
     "Met vriendelijke groet,",
-    "Max Web Studio",
+    companySettings.companyName,
   ].join("\n");
+  const contactLine = `Vragen? Mail naar ${companySettings.primaryEmail} of gebruik ${getMailtoLink(companySettings, `Vraag over factuur ${invoiceNumber}`)}.`;
 
   if (emailType === "payment_reminder") {
     const text = [
@@ -190,12 +202,14 @@ function buildInvoiceEmail(emailType, invoice, profile) {
       payUrl ? `Betaallink, indien van toepassing: ${payUrl}` : "",
       hasPdf ? `De PDF staat veilig klaar in je klantportaal: ${portalUrl}` : "",
       "",
+      contactLine,
+      "",
       "Heb je de betaling net voldaan? Dan mag je deze herinnering negeren.",
       "",
       footer,
     ].filter(Boolean).join("\n");
     return {
-      subject: `Herinnering factuur ${invoiceNumber} - Max Web Studio`,
+      subject: `Herinnering factuur ${invoiceNumber} - ${companySettings.companyName}`,
       text,
       html: renderEmailHtml("Betalingsherinnering", text, invoiceUrl),
     };
@@ -209,6 +223,8 @@ function buildInvoiceEmail(emailType, invoice, profile) {
       `Factuur: ${title}.`,
       `Bedrag: ${amount}.`,
       hasPdf ? `De factuur-PDF blijft veilig beschikbaar in je klantportaal: ${portalUrl}` : "",
+      "",
+      contactLine,
       "",
       footer,
     ].filter(Boolean).join("\n");
@@ -228,7 +244,7 @@ function buildInvoiceEmail(emailType, invoice, profile) {
       `Bedrag: ${amount}.`,
       `Bekijk de factuur hier: ${invoiceUrl}`,
       payUrl ? `Betaallink, indien van toepassing: ${payUrl}` : "",
-      "Neem gerust contact met ons op als de betaling al onderweg is of als je vragen hebt.",
+      contactLine,
       "",
       footer,
     ].filter(Boolean).join("\n");
@@ -250,17 +266,20 @@ function buildInvoiceEmail(emailType, invoice, profile) {
     payUrl ? `Betaallink, indien van toepassing: ${payUrl}` : "",
     hasPdf ? `De factuur-PDF staat veilig klaar in je klantportaal: ${portalUrl}` : "",
     "",
+    contactLine,
+    "",
     footer,
   ].filter(Boolean).join("\n");
 
   return {
-    subject: `Factuur ${invoiceNumber} van Max Web Studio`,
+    subject: `Factuur ${invoiceNumber} van ${companySettings.companyName}`,
     text,
     html: renderEmailHtml("Nieuwe factuur", text, invoiceUrl),
   };
 }
 
 function renderEmailHtml(heading, text, actionUrl) {
+  const companySettings = getCompanySettings();
   const paragraphs = text.split("\n").map((line) => line.trim()).filter(Boolean);
   const actionLabel = "Bekijk factuur";
 
@@ -268,7 +287,7 @@ function renderEmailHtml(heading, text, actionUrl) {
     <div style="margin:0;padding:0;background:#07111f;color:#eaf1ff;font-family:Arial,sans-serif;">
       <div style="max-width:640px;margin:0 auto;padding:32px 20px;">
         <div style="border:1px solid rgba(255,255,255,0.12);border-radius:18px;background:#0b1728;padding:28px;">
-          <p style="margin:0 0 10px;color:#7db7ff;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;">Max Web Studio</p>
+          <p style="margin:0 0 10px;color:#7db7ff;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;">${escapeHtml(companySettings.companyName)}</p>
           <h1 style="margin:0 0 20px;color:#ffffff;font-size:28px;line-height:1.2;">${escapeHtml(heading)}</h1>
           ${paragraphs.map((line) => `<p style="margin:0 0 14px;color:#d7e3f7;font-size:15px;line-height:1.7;">${linkify(escapeHtml(line))}</p>`).join("")}
           <p style="margin:24px 0 0;">
@@ -315,7 +334,7 @@ function restHeaders(serviceRoleKey) {
 }
 
 function absoluteUrl(path) {
-  const siteUrl = cleanText(process.env.SITE_URL || "https://maxwebstudio.nl").replace(/\/$/, "");
+  const siteUrl = cleanText(process.env.SITE_URL || getCompanySettings().websiteUrl).replace(/\/$/, "");
   return `${siteUrl}${path.startsWith("/") ? path : `/${path}`}`;
 }
 

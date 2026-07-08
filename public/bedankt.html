@@ -24,7 +24,7 @@
         <p>Je betaling is gestart of ontvangen. Vul hieronder alvast je projectinformatie in, zodat wij direct goed kunnen starten.</p>
         <div class="status-actions">
           <a class="button primary" href="onboarding.html" id="intake-link">Start project intake</a>
-          <a class="button secondary" href="https://wa.me/31851302326" target="_blank" rel="noopener">WhatsApp Max</a>
+          <a class="button secondary" href="https://wa.me/31851302326" target="_blank" rel="noopener" data-company-href="whatsapp">WhatsApp Max</a>
         </div>
       </section>
 
@@ -38,6 +38,7 @@
         </div>
       </section>
     </main>
+    <script type="module" src="src/services/companySettingsDomService.js"></script>
     <script>
       const query = window.location.search;
       const intakeUrl = query ? `onboarding.html${query}` : "onboarding.html";

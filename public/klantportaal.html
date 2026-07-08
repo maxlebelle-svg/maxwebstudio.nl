@@ -36,6 +36,15 @@
           <a class="button secondary" id="portal-sidebar-login" href="/login.html">Inloggen</a>
           <button class="button secondary" id="portal-sidebar-logout" type="button" hidden>Uitloggen</button>
         </div>
+        <div class="portal-sidebar-note" aria-label="Contact Max Webstudio">
+          <span>Contact Max</span>
+          <strong data-company-text="phoneDisplay">085 130 2326</strong>
+          <p><span data-company-text="primaryEmail">info@maxwebstudio.nl</span></p>
+          <div class="portal-sidebar-auth">
+            <a class="button secondary" href="https://wa.me/31851302326" target="_blank" rel="noopener" data-company-href="whatsapp">WhatsApp</a>
+            <a class="button secondary" href="tel:+31851302326" data-company-href="telephone">Bellen</a>
+          </div>
+        </div>
       </aside>
 
       <div class="portal-main">
@@ -260,8 +269,10 @@
       </div>
     </main>
 
-    <script>
+    <script type="module" src="src/services/companySettingsDomService.js"></script>
+    <script type="module">
       (async () => {
+        const { getCompanySettings, getMailtoLink, getTelephoneLink, getWhatsappLink } = await import("./src/services/companySettingsService.js");
         const { getClientPortalData } = await import("./src/services/clientPortalDataService.js");
         const { requireCustomerAccess } = await import("./src/services/routeGuardService.js");
         const { getClientAuthReadiness } = await import("./src/services/clientAuthReadinessService.js");
@@ -274,6 +285,7 @@
         const { ensureStagingClientPortalDemoSession } = await import("./src/services/stagingClientPortalAuthBridgeService.js");
         const { signOut: signOutSupabase, getSession: getSupabaseSession } = await import("./src/services/supabaseAuthProvider.js");
         const params = new URLSearchParams(window.location.search);
+        const companySettings = getCompanySettings();
         let customerId = params.get("customerId") || "";
         let supabaseCustomerId = params.get("supabaseCustomerId") || "";
         let portalDataMode = params.get("portalDataMode") || params.get("mode") || "";
@@ -668,6 +680,14 @@
           return link;
         }
 
+        function createCompanyContactActions(subject = "Vraag via klantportaal") {
+          return [
+            createActionLink("WhatsApp Max", getWhatsappLink(companySettings)),
+            createActionLink(companySettings.phoneDisplay, getTelephoneLink(companySettings)),
+            createActionLink(companySettings.primaryEmail, getMailtoLink(companySettings, subject)),
+          ];
+        }
+
         function copyValue(value) {
           if (!value) return;
           if (navigator.clipboard?.writeText) {
@@ -903,10 +923,11 @@
           customerProfile.replaceChildren(createInfoCard("Klantportaal niet geladen", [
             ["Status", "Veilige fallback"],
             ["Waarom", message],
-            ["Volgende stap", "Log opnieuw in of vraag toegang aan bij Max Webstudio."],
+            ["Volgende stap", `Log opnieuw in of vraag toegang aan bij ${companySettings.companyName}.`],
           ], [
             createWebsiteAction("Naar login", "/login.html", true),
             createWebsiteAction("Terug naar website", "/"),
+            ...createCompanyContactActions("Hulp met klantportaal"),
           ]));
         }
 
@@ -1767,6 +1788,7 @@
         ], [
           createWebsiteAction("Wijziging aanvragen", "#wijzigingen", true),
           createWebsiteAction("Wachtwoord wijzigen", "/login.html"),
+          ...createCompanyContactActions("Vraag over mijn account"),
         ]));
 
         if (!files.length) fileList.append(createEmpty("Geen bestanden", "Er zijn nog geen klantveilige bestanden of links geregistreerd."));

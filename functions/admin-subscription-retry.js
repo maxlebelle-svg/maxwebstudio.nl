@@ -1,5 +1,6 @@
 const { verifyAdmin } = require("./_admin-auth");
 const { sendEmail } = require("./email");
+const { getCompanySettings, getMailtoLink } = require("./company-settings");
 
 const SUBSCRIPTION_FIELDS = [
   "id",
@@ -127,6 +128,15 @@ async function sendRetryEmail(config, subscription) {
     subject: message.subject,
     text: message.text,
     html: message.html,
+    templateKey: "subscription_retry",
+    templateName: "Abonnement retry-mail",
+    triggeredBy: "admin_subscription_retry",
+    metadata: {
+      subscriptionId: subscription.id,
+      profileId: subscription.profile_id,
+      packageName: subscription.package_name,
+      failedPaymentCount: subscription.failed_payment_count,
+    },
   });
 
   if (!result.sent) {
@@ -283,6 +293,7 @@ function subscriptionPatchFromMollie(mollieSubscription) {
 }
 
 function buildRetryEmail(subscription, profile) {
+  const companySettings = getCompanySettings();
   const customerName = cleanText(profile?.name) || cleanText(profile?.company) || "beste klant";
   const packageName = cleanText(subscription.package_name) || "onderhoudsabonnement";
   const portalUrl = absoluteUrl("/client-dashboard.html");
@@ -297,8 +308,10 @@ function buildRetryEmail(subscription, profile) {
     "",
     "Als je betaling inmiddels is gelukt, hoef je niets te doen.",
     "",
+    `Vragen? Mail naar ${companySettings.primaryEmail} of gebruik ${getMailtoLink(companySettings, "Vraag over onderhoudsabonnement")}.`,
+    "",
     "Met vriendelijke groet,",
-    "Max Web Studio",
+    companySettings.companyName,
   ].join("\n");
 
   return {
@@ -357,7 +370,7 @@ function riskLevelForCount(count) {
 }
 
 function absoluteUrl(path) {
-  const siteUrl = (process.env.SITE_URL || "https://maxwebstudio.nl").replace(/\/$/, "");
+  const siteUrl = (process.env.SITE_URL || getCompanySettings().websiteUrl).replace(/\/$/, "");
   return `${siteUrl}${path.startsWith("/") ? path : `/${path}`}`;
 }
 

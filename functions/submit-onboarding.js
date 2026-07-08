@@ -1,5 +1,6 @@
 const crypto = require("crypto");
 const { sendEmail } = require("./email");
+const { getCompanySettings, getMailtoLink } = require("./company-settings");
 const { saveIntake } = require("./intake-storage");
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -109,7 +110,8 @@ function buildIntake(clean) {
 }
 
 async function sendIntakeEmails(intake) {
-  const adminEmail = process.env.ADMIN_EMAIL || "info@maxwebstudio.nl";
+  const companySettings = getCompanySettings();
+  const adminEmail = process.env.ADMIN_EMAIL || companySettings.primaryEmail;
   const adminHtml = buildAdminEmail(intake);
   const customerHtml = buildCustomerEmail(intake);
 
@@ -119,13 +121,34 @@ async function sendIntakeEmails(intake) {
     html: adminHtml,
     text: plainTextSummary(intake),
     attachments: intake.uploadAttachments,
+    templateKey: "project_intake_admin",
+    templateName: "Project intake adminnotificatie",
+    triggeredBy: "onboarding_form",
+    metadata: {
+      intakeId: intake.id,
+      companyName: intake.companyName,
+      contactName: intake.contactName,
+      customerEmail: intake.email,
+      websitePackage: intake.metadata.website || "",
+      carePackage: intake.metadata.care || "",
+    },
   });
 
   const customerResult = await sendEmail({
     to: intake.email,
     subject: "Project intake ontvangen - Max Webstudio",
     html: customerHtml,
-    text: `Beste ${intake.contactName},\n\nBedankt voor je project intake. Max Webstudio heeft je gegevens ontvangen en neemt zo snel mogelijk contact met je op.\n\nExtra opties worden nog niet automatisch afgerekend. We stemmen dit netjes met je af.\n\n${plainTextSummary(intake)}\n\nVragen? Mail naar info@maxwebstudio.nl.\n\nMet vriendelijke groet,\nMax Webstudio`,
+    text: `Beste ${intake.contactName},\n\nBedankt voor je project intake. ${companySettings.companyName} heeft je gegevens ontvangen en neemt zo snel mogelijk contact met je op.\n\nExtra opties worden nog niet automatisch afgerekend. We stemmen dit netjes met je af.\n\n${plainTextSummary(intake)}\n\nVragen? Mail naar ${companySettings.primaryEmail}.\n\nMet vriendelijke groet,\n${companySettings.companyName}`,
+    templateKey: "project_intake_customer_confirmation",
+    templateName: "Project intake klantbevestiging",
+    triggeredBy: "onboarding_form",
+    metadata: {
+      intakeId: intake.id,
+      companyName: intake.companyName,
+      contactName: intake.contactName,
+      websitePackage: intake.metadata.website || "",
+      carePackage: intake.metadata.care || "",
+    },
   });
 
   return [adminResult, customerResult];
@@ -174,6 +197,7 @@ function buildAdminEmail(intake) {
 }
 
 function buildCustomerEmail(intake) {
+  const companySettings = getCompanySettings();
   return buildEmailHtml("Project intake ontvangen - Max Webstudio", [
     ["Bericht", `Beste ${intake.contactName},\n\nBedankt voor je intake. We hebben je projectinformatie ontvangen en nemen zo snel mogelijk contact met je op.`],
     ["Bedrijfsnaam", intake.companyName],
@@ -188,10 +212,10 @@ function buildCustomerEmail(intake) {
     ["Extra functies", intake.extraFeatures.join(", ")],
     ["Extra opties", formatUpsells(intake.upsells)],
     ["Geschatte extra waarde", `€${intake.estimatedExtraValueExVat} excl. btw`],
-    ["Belangrijk", "Extra opties worden nog niet automatisch afgerekend. Max Webstudio neemt deze mee in de definitieve projectafstemming."],
+    ["Belangrijk", `Extra opties worden nog niet automatisch afgerekend. ${companySettings.companyName} neemt deze mee in de definitieve projectafstemming.`],
     ["Planning", formatPlanning(intake.planning)],
-    ["Contact", "Vragen? Mail naar info@maxwebstudio.nl."],
-    ["Afsluiting", "Met vriendelijke groet,\nMax Webstudio"],
+    ["Contact", `Vragen? Mail naar ${companySettings.primaryEmail} of gebruik ${getMailtoLink(companySettings, "Vraag over project intake")}.`],
+    ["Afsluiting", `Met vriendelijke groet,\n${companySettings.companyName}`],
   ]);
 }
 

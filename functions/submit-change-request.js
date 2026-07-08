@@ -1,4 +1,5 @@
 const { sendEmail } = require("./email");
+const { getCompanySettings, getMailtoLink } = require("./company-settings");
 const { randomUUID } = require("crypto");
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -314,8 +315,9 @@ async function resolveAuthUserId(event) {
 }
 
 async function sendAdminEmail(changeRequest) {
+  const companySettings = getCompanySettings();
   return sendEmail({
-    to: process.env.ADMIN_EMAIL || "info@maxwebstudio.nl",
+    to: process.env.ADMIN_EMAIL || companySettings.primaryEmail,
     subject: "Nieuw wijzigingsverzoek via Max Web Studio",
     html: buildEmailHtml("Nieuw wijzigingsverzoek via Max Web Studio", [
       ["Interne classificatie", changeRequest.classification],
@@ -333,24 +335,46 @@ async function sendAdminEmail(changeRequest) {
       ["Datum/tijd", changeRequest.submittedAt],
     ]),
     text: plainTextSummary(changeRequest),
+    templateKey: "change_request_admin",
+    templateName: "Wijzigingsverzoek adminnotificatie",
+    triggeredBy: "change_request_form",
+    metadata: {
+      changeRequestId: changeRequest.id,
+      customerName: changeRequest.customerName,
+      companyName: changeRequest.companyName,
+      website: changeRequest.website,
+      priority: changeRequest.priority,
+      category: changeRequest.changeCategory,
+    },
   });
 }
 
 async function sendCustomerEmail(changeRequest) {
+  const companySettings = getCompanySettings();
   return sendEmail({
     to: changeRequest.email,
     subject: "Wijzigingsverzoek ontvangen - Max Webstudio",
     html: buildEmailHtml("Wijzigingsverzoek ontvangen - Max Webstudio", [
-      ["Bericht", `Beste ${changeRequest.firstName},\n\nWe hebben je wijzigingsverzoek ontvangen. Max Web Studio bekijkt de aanvraag en neemt indien nodig contact met je op.`],
+      ["Bericht", `Beste ${changeRequest.firstName},\n\nWe hebben je wijzigingsverzoek ontvangen. ${companySettings.companyName} bekijkt de aanvraag en neemt indien nodig contact met je op.`],
       ["Bedrijfsnaam", changeRequest.companyName],
       ["Website", changeRequest.website],
       ["Categorie", changeRequest.changeCategory],
       ["Prioriteit", changeRequest.priority],
       ["Titel", changeRequest.changeTitle],
       ["Bestanden", formatFileList(changeRequest.fileNames)],
-      ["Contact", "Vragen? Mail naar info@maxwebstudio.nl."],
+      ["Contact", `Vragen? Mail naar ${companySettings.primaryEmail} of gebruik ${getMailtoLink(companySettings, "Vraag over wijzigingsverzoek")}.`],
     ]),
-    text: `Beste ${changeRequest.firstName},\n\nWe hebben je wijzigingsverzoek ontvangen.\n\n${plainTextSummary(changeRequest)}\n\nMet vriendelijke groet,\nMax Webstudio`,
+    text: `Beste ${changeRequest.firstName},\n\nWe hebben je wijzigingsverzoek ontvangen.\n\n${plainTextSummary(changeRequest)}\n\nVragen? Mail naar ${companySettings.primaryEmail}.\n\nMet vriendelijke groet,\n${companySettings.companyName}`,
+    templateKey: "change_request_customer_confirmation",
+    templateName: "Wijzigingsverzoek klantbevestiging",
+    triggeredBy: "change_request_form",
+    metadata: {
+      changeRequestId: changeRequest.id,
+      companyName: changeRequest.companyName,
+      website: changeRequest.website,
+      priority: changeRequest.priority,
+      category: changeRequest.changeCategory,
+    },
   });
 }
 

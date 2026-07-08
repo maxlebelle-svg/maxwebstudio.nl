@@ -15,7 +15,7 @@
     <header class="site-header">
       <a class="brand" href="index.html"><svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true"><rect x="6" y="6" width="68" height="68" rx="18"></rect><path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path><path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path></svg><span>Max Webstudio</span></a>
       <nav class="main-nav"><a href="index.html#prijzen">Pakketten</a><a href="werkwijze.html">Werkwijze</a><a href="index.html#aanvraag">Contact</a></nav>
-      <a class="header-cta" href="https://wa.me/31851302326" target="_blank" rel="noopener">Hulp nodig?</a>
+      <a class="header-cta" href="https://wa.me/31851302326" target="_blank" rel="noopener" data-company-href="whatsapp">Hulp nodig?</a>
     </header>
 
     <main>
@@ -246,12 +246,13 @@
           <p>We hebben alles ontvangen en nemen zo snel mogelijk contact met je op.</p>
           <div class="contact-actions">
             <a class="button primary" href="index.html">Naar homepage</a>
-            <a class="button secondary" href="https://wa.me/31851302326" target="_blank" rel="noopener">WhatsApp Max</a>
+            <a class="button secondary" href="https://wa.me/31851302326" target="_blank" rel="noopener" data-company-href="whatsapp">WhatsApp Max</a>
           </div>
         </div>
       </section>
     </main>
 
+    <script type="module" src="src/services/companySettingsDomService.js"></script>
     <script>
       const storageKey = "maxwebstudio:onboarding";
       const form = document.querySelector("#intake-form");

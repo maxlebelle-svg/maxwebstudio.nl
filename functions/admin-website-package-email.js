@@ -1,5 +1,6 @@
 const { verifyAdmin } = require("./_admin-auth");
 const { sendEmail } = require("./email");
+const { getCompanySettings, getMailtoLink } = require("./company-settings");
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -37,6 +38,17 @@ exports.handler = async (event) => {
       subject: mailPreview.subject,
       html: mailPreview.html,
       text: mailPreview.text,
+      templateKey: "website_package_change",
+      templateName: "Website pakketwijziging",
+      triggeredBy: "admin_website_package_email",
+      triggeredByUserId: adminCheck.admin?.id,
+      metadata: {
+        customerCompany: input.customerCompany,
+        websiteName: input.websiteName,
+        websiteDomain: input.websiteDomain,
+        timing: input.timing,
+        effectiveDate: input.effectiveDate,
+      },
     });
 
     if (!result.sent) {
@@ -101,6 +113,7 @@ function validatePayload(payload = {}) {
 }
 
 function buildPackageChangeEmail(input) {
+  const companySettings = getCompanySettings();
   const company = input.customerCompany || input.customerName;
   const website = input.websiteDomain || input.websiteName;
   const effectiveText = input.timing === "scheduled"
@@ -131,10 +144,10 @@ function buildPackageChangeEmail(input) {
       ? "Tot de ingangsdatum blijft je huidige pakket actief. Op de afgesproken datum voeren we de wijziging administratief door."
       : "De wijziging is verwerkt in je klantomgeving.",
     "",
-    "Heb je vragen over deze wijziging? Reageer gerust op deze mail.",
+    `Heb je vragen over deze wijziging? Reageer gerust op deze mail of mail naar ${companySettings.primaryEmail}.`,
     "",
     "Met vriendelijke groet,",
-    "Max Webstudio",
+    companySettings.companyName,
   ].filter((line) => line !== "").join("\n");
   return {
     subject,
@@ -144,6 +157,7 @@ function buildPackageChangeEmail(input) {
 }
 
 function renderPackageEmailHtml(input, preview) {
+  const companySettings = getCompanySettings();
   const company = escapeHtml(input.customerCompany || input.customerName);
   const name = escapeHtml(input.customerName);
   const website = escapeHtml(input.websiteDomain || input.websiteName);
@@ -154,7 +168,7 @@ function renderPackageEmailHtml(input, preview) {
     ? preview.changes.map((line) => `<tr><td style="padding:12px 0;border-top:1px solid rgba(255,255,255,.1);color:#dce9ff;font-size:15px;line-height:1.5;">${escapeHtml(line)}</td></tr>`).join("")
     : `<tr><td style="padding:12px 0;border-top:1px solid rgba(255,255,255,.1);color:#dce9ff;font-size:15px;line-height:1.5;">Geen pakketverschil gevonden; je gegevens zijn gecontroleerd.</td></tr>`;
 
-  return `<!doctype html><html lang="nl"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${escapeHtml(preview.subject)}</title></head><body style="margin:0;background:#061626;color:#ffffff;font-family:Inter,Arial,sans-serif;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#061626;padding:28px 14px;"><tr><td align="center"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:680px;background:#0d2235;border:1px solid rgba(68,180,255,.28);border-radius:22px;overflow:hidden;"><tr><td style="padding:30px 30px 12px;"><table role="presentation" width="100%"><tr><td><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="width:44px;height:44px;border-radius:12px;background:#07111f;color:#ffffff;font-weight:900;font-size:24px;text-align:center;vertical-align:middle;">M</td><td style="padding-left:12px;"><div style="font-size:18px;color:#ffffff;font-weight:900;">Max Webstudio</div><div style="font-size:12px;color:#27c7ff;font-weight:800;letter-spacing:.12em;text-transform:uppercase;">Website update</div></td></tr></table></td></tr></table></td></tr><tr><td style="padding:8px 30px 24px;"><h1 style="margin:0 0 12px;font-size:30px;line-height:1.15;color:#ffffff;">Je websitepakket is bijgewerkt.</h1><p style="margin:0;color:#c9d7e8;font-size:16px;line-height:1.7;">Hoi ${name}, we hebben een pakketupdate klaargezet voor <strong style="color:#ffffff;">${company}</strong>.</p></td></tr><tr><td style="padding:0 30px 24px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:4px 18px;"><tr><td style="padding:14px 0;color:#92a8bf;font-size:13px;text-transform:uppercase;font-weight:800;letter-spacing:.08em;">Website</td><td align="right" style="padding:14px 0;color:#ffffff;font-size:15px;font-weight:800;">${website}</td></tr><tr><td style="padding:14px 0;border-top:1px solid rgba(255,255,255,.1);color:#92a8bf;font-size:13px;text-transform:uppercase;font-weight:800;letter-spacing:.08em;">Ingang</td><td align="right" style="padding:14px 0;border-top:1px solid rgba(255,255,255,.1);color:#ffffff;font-size:15px;font-weight:800;">${effectiveText}</td></tr></table></td></tr><tr><td style="padding:0 30px 24px;"><h2 style="margin:0 0 10px;color:#ffffff;font-size:18px;">Wijziging</h2><table role="presentation" width="100%" cellpadding="0" cellspacing="0">${changeRows}</table>${note ? `<p style="margin:18px 0 0;color:#c9d7e8;font-size:15px;line-height:1.7;"><strong style="color:#ffffff;">Opmerking:</strong> ${note}</p>` : ""}<p style="margin:18px 0 0;color:#c9d7e8;font-size:15px;line-height:1.7;">${input.timing === "scheduled" ? "Tot de ingangsdatum blijft je huidige pakket actief. Op de afgesproken datum voeren we de wijziging administratief door." : "De wijziging is verwerkt in je klantomgeving."}</p><p style="margin:22px 0 0;"><a href="${portalUrl}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:800;border-radius:12px;padding:13px 18px;">Open klantportaal</a></p></td></tr><tr><td style="padding:22px 30px;background:rgba(255,255,255,.05);color:#aabbd0;font-size:13px;line-height:1.6;">Heb je vragen over deze wijziging? Reageer gerust op deze mail.</td></tr></table></td></tr></table></body></html>`;
+  return `<!doctype html><html lang="nl"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${escapeHtml(preview.subject)}</title></head><body style="margin:0;background:#061626;color:#ffffff;font-family:Inter,Arial,sans-serif;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#061626;padding:28px 14px;"><tr><td align="center"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:680px;background:#0d2235;border:1px solid rgba(68,180,255,.28);border-radius:22px;overflow:hidden;"><tr><td style="padding:30px 30px 12px;"><table role="presentation" width="100%"><tr><td><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="width:44px;height:44px;border-radius:12px;background:#07111f;color:#ffffff;font-weight:900;font-size:24px;text-align:center;vertical-align:middle;">M</td><td style="padding-left:12px;"><div style="font-size:18px;color:#ffffff;font-weight:900;">${escapeHtml(companySettings.companyName)}</div><div style="font-size:12px;color:#27c7ff;font-weight:800;letter-spacing:.12em;text-transform:uppercase;">Website update</div></td></tr></table></td></tr></table></td></tr><tr><td style="padding:8px 30px 24px;"><h1 style="margin:0 0 12px;font-size:30px;line-height:1.15;color:#ffffff;">Je websitepakket is bijgewerkt.</h1><p style="margin:0;color:#c9d7e8;font-size:16px;line-height:1.7;">Hoi ${name}, we hebben een pakketupdate klaargezet voor <strong style="color:#ffffff;">${company}</strong>.</p></td></tr><tr><td style="padding:0 30px 24px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:4px 18px;"><tr><td style="padding:14px 0;color:#92a8bf;font-size:13px;text-transform:uppercase;font-weight:800;letter-spacing:.08em;">Website</td><td align="right" style="padding:14px 0;color:#ffffff;font-size:15px;font-weight:800;">${website}</td></tr><tr><td style="padding:14px 0;border-top:1px solid rgba(255,255,255,.1);color:#92a8bf;font-size:13px;text-transform:uppercase;font-weight:800;letter-spacing:.08em;">Ingang</td><td align="right" style="padding:14px 0;border-top:1px solid rgba(255,255,255,.1);color:#ffffff;font-size:15px;font-weight:800;">${effectiveText}</td></tr></table></td></tr><tr><td style="padding:0 30px 24px;"><h2 style="margin:0 0 10px;color:#ffffff;font-size:18px;">Wijziging</h2><table role="presentation" width="100%" cellpadding="0" cellspacing="0">${changeRows}</table>${note ? `<p style="margin:18px 0 0;color:#c9d7e8;font-size:15px;line-height:1.7;"><strong style="color:#ffffff;">Opmerking:</strong> ${note}</p>` : ""}<p style="margin:18px 0 0;color:#c9d7e8;font-size:15px;line-height:1.7;">${input.timing === "scheduled" ? "Tot de ingangsdatum blijft je huidige pakket actief. Op de afgesproken datum voeren we de wijziging administratief door." : "De wijziging is verwerkt in je klantomgeving."}</p><p style="margin:22px 0 0;"><a href="${portalUrl}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:800;border-radius:12px;padding:13px 18px;">Open klantportaal</a></p></td></tr><tr><td style="padding:22px 30px;background:rgba(255,255,255,.05);color:#aabbd0;font-size:13px;line-height:1.6;">Heb je vragen over deze wijziging? Reageer gerust op deze mail of mail naar <a href="${escapeAttribute(getMailtoLink(companySettings, "Vraag over websitepakket"))}" style="color:#7dd3fc;">${escapeHtml(companySettings.primaryEmail)}</a>.</td></tr></table></td></tr></table></body></html>`;
 }
 
 function packageLabel(value) {
@@ -170,7 +184,7 @@ function formatDate(value) {
 }
 
 function absoluteUrl(path) {
-  const siteUrl = cleanText(process.env.SITE_URL || "https://maxwebstudio.nl").replace(/\/$/, "");
+  const siteUrl = cleanText(process.env.SITE_URL || getCompanySettings().websiteUrl).replace(/\/$/, "");
   return `${siteUrl}${path.startsWith("/") ? path : `/${path}`}`;
 }
 

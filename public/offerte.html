@@ -42,8 +42,16 @@
       </section>
     </main>
 
-    <script>
+    <script type="module">
+      import {
+        getCompanySettings,
+        getMailtoLink,
+        getTelephoneLink,
+        getWhatsappLink,
+      } from "./src/services/companySettingsService.js";
+
       (() => {
+        const companySettings = getCompanySettings();
         const storageKey = "maxwebstudioQuotes";
         const params = new URLSearchParams(window.location.search);
         const quoteId = params.get("quoteId") || "";
@@ -141,6 +149,27 @@
           return element;
         }
 
+        function createCompanyContactActions(subject = "Vraag over offerte") {
+          const actions = document.createElement("div");
+          actions.className = "portal-actions";
+          const whatsapp = document.createElement("a");
+          whatsapp.className = "button secondary";
+          whatsapp.href = getWhatsappLink(companySettings);
+          whatsapp.target = "_blank";
+          whatsapp.rel = "noopener";
+          whatsapp.textContent = "WhatsApp Max";
+          const call = document.createElement("a");
+          call.className = "button secondary";
+          call.href = getTelephoneLink(companySettings);
+          call.textContent = companySettings.phoneDisplay;
+          const email = document.createElement("a");
+          email.className = "button secondary";
+          email.href = getMailtoLink(companySettings, subject);
+          email.textContent = companySettings.primaryEmail;
+          actions.append(whatsapp, call, email);
+          return actions;
+        }
+
         function renderQuote() {
           const quotes = readQuotes();
           let quote = findQuote(quotes);
@@ -151,7 +180,8 @@
             card.append(
               createText("p", "section-kicker", "Niet gevonden"),
               createText("h2", "", "Deze offerte kan niet worden geladen."),
-              createText("p", "summary-note", "Open de offerte opnieuw via de link die je hebt ontvangen. Blijft dit gebeuren? Neem dan even contact op.")
+              createText("p", "summary-note", "Open de offerte opnieuw via de link die je hebt ontvangen. Blijft dit gebeuren? Neem dan even contact op."),
+              createCompanyContactActions("Offerte niet gevonden")
             );
             return;
           }
@@ -261,7 +291,7 @@
             ? `Akkoord ontvangen op ${formatDate(quote.acceptedAt || quote.updatedAt)}. Max Webstudio neemt contact op over de start.`
             : "Akkoord geven is nog geen online betaling. Je bevestigt hiermee dat Max Webstudio het project mag voorbereiden.";
 
-          card.append(kicker, heading, proposal, meta, createText("h3", "", "Wat is inbegrepen?"), included, lines, total, createText("h3", "", "Veelgestelde vragen"), faq, acceptForm, note);
+          card.append(kicker, heading, proposal, meta, createText("h3", "", "Wat is inbegrepen?"), included, lines, total, createText("h3", "", "Veelgestelde vragen"), faq, acceptForm, note, createCompanyContactActions(`Vraag over ${quote.quoteNumber || "offerte"}`));
         }
 
         renderQuote();

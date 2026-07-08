@@ -26,20 +26,20 @@ De bedrijfsgegevens staan nu verspreid over drie hoofdgebieden:
 2. Admin/salesportaal: dezelfde bedrijfsinstellingen staan in veel gekloonde adminpagina's als lokale defaults en formulier-velden.
 3. Backend/Netlify Functions: e-mailadressen en WhatsApp-links staan deels als environment fallback en deels hardcoded in e-mailtemplates.
 
-Belangrijk: het huidige hardcoded telefoonnummer is vooral `+31616217771` / `31616217771`. Dat wijkt af van de gewenste centrale waarde `085 130 2326` / `+31851302326`.
+Belangrijk: het huidige hardcoded telefoonnummer is vooral `het oude internationale 06-nummer` / `het oude WhatsApp-nummer`. Dat wijkt af van de gewenste centrale waarde `085 130 2326` / `+31851302326`.
 
 ## Publieke Website
 
 | Categorie | Locatie | Wat staat er nu |
 | --- | --- | --- |
 | JSON-LD e-mail | `public/index.html:37` | `info@maxwebstudio.nl` |
-| Contactblok WhatsApp | `public/index.html:724` | `https://wa.me/31616217771` |
-| Contactblok telefoon | `public/index.html:733` | `tel:+31616217771` |
+| Contactblok WhatsApp | `public/index.html:724` | `oude WhatsApp-link` |
+| Contactblok telefoon | `public/index.html:733` | `oude tel-link` |
 | Contactblok e-mail | `public/index.html:741`, `public/index.html:748` | `mailto:info@maxwebstudio.nl` en zichtbare e-mail |
-| Sticky CTA WhatsApp | `public/index.html:852` | `https://wa.me/31616217771` |
-| Sticky CTA telefoon | `public/index.html:853` | `tel:+31616217771` |
-| Footer WhatsApp | `public/index.html:968` | `https://wa.me/31616217771` |
-| Footer telefoon | `public/index.html:972` | `tel:+31616217771` |
+| Sticky CTA WhatsApp | `public/index.html:852` | `oude WhatsApp-link` |
+| Sticky CTA telefoon | `public/index.html:853` | `oude tel-link` |
+| Footer WhatsApp | `public/index.html:968` | `oude WhatsApp-link` |
+| Footer telefoon | `public/index.html:972` | `oude tel-link` |
 | Footer e-mail | `public/index.html:976` | `mailto:info@maxwebstudio.nl` |
 | Instagram | `public/index.html:985` | `https://www.instagram.com/maxwebstudio.nl/` |
 | Facebook | `public/index.html:988` | `https://www.facebook.com/profile.php?id=61591581955035` |
@@ -49,8 +49,8 @@ Andere publieke pagina's met contactgegevens:
 
 | Locatie | Wat staat er nu |
 | --- | --- |
-| `public/onboarding.html:18`, `public/onboarding.html:249` | WhatsApp naar `31616217771` |
-| `public/bedankt.html:27` | WhatsApp naar `31616217771` |
+| `public/onboarding.html:18`, `public/onboarding.html:249` | WhatsApp naar `het oude WhatsApp-nummer` |
+| `public/bedankt.html:27` | WhatsApp naar `het oude WhatsApp-nummer` |
 | `public/bedankt-wijziging.html:113`, `public/bedankt-wijziging.html:117` | WhatsApp en telefoon |
 | `public/wijziging-doorgeven.html:138`, `public/wijziging-doorgeven.html:211`, `public/wijziging-doorgeven.html:215` | WhatsApp en telefoon |
 | `public/privacyverklaring.html:31`, `public/privacyverklaring.html:82` | `info@maxwebstudio.nl` |
@@ -113,7 +113,7 @@ Advies: admin-gebruikers en bedrijfsgegevens niet volledig mengen. Bedrijfsgegev
 | `functions/submit-onboarding.js:112` | `ADMIN_EMAIL || "info@maxwebstudio.nl"` |
 | `functions/submit-onboarding.js:128`, `functions/submit-onboarding.js:193` | Mailtekst met `info@maxwebstudio.nl` |
 | `functions/send-lead.js:27` | `LEAD_TO_EMAIL || ADMIN_EMAIL || "info@maxwebstudio.nl"` |
-| `functions/send-lead.js:238`, `functions/send-lead.js:284` | WhatsApp-link naar `31616217771` |
+| `functions/send-lead.js:238`, `functions/send-lead.js:284` | WhatsApp-link naar `het oude WhatsApp-nummer` |
 | `functions/submit-change-request.js:318` | `ADMIN_EMAIL || "info@maxwebstudio.nl"` |
 | `functions/submit-change-request.js:351` | Mailtekst met `info@maxwebstudio.nl` |
 | `functions/list-change-requests.js:132` | `info@maxwebstudio.nl` in response/default |
@@ -206,3 +206,43 @@ Nog open:
 | Logo overal centraal maken | Veel pagina's gebruiken inline SVG; apart visueel controleren. |
 | Social links overal centraal maken | Homepage is voorbereid, andere pagina's volgen in volgende sprint. |
 | Persistente adminbeheerpagina `Instellingen -> Bedrijfsgegevens` | Volgende veilige stap na servicefundament. |
+
+## Sprintupdate 2 2026-07-08
+
+Uitgevoerd:
+
+| Onderdeel | Status |
+| --- | --- |
+| Server-side company settings helper | Opgelost in `functions/company-settings.js` |
+| Factuurpagina | Contactacties toegevoegd via `companySettingsService.js` helpers |
+| Offertepagina | Contactacties toegevoegd via `companySettingsService.js` helpers |
+| Klantportaal | Sidebar-contact en fallback/account-acties gekoppeld aan company settings |
+| Bedankpagina's | WhatsApp/telefoonwaarden gekoppeld via `data-company-*` en DOM-service |
+| Onboardingpagina | WhatsApp CTA's gekoppeld via `data-company-*` en DOM-service |
+| Leadbevestiging | Ontvangerfallback en WhatsApp-link via server company settings |
+| Project intake/onboarding e-mail | Adminfallback, contactregels en afsluiting via server company settings |
+| Wijzigingsverzoek e-mail | Adminfallback, contactregels en afsluiting via server company settings |
+| Factuurmails | Factuur, herinnering, betaald en verlopen contactregels via server company settings |
+| Klantportaal welkomsmails | Loginfallback, merknaam en contactregel via server company settings |
+| Websitepakket-update e-mail | Merknaam, contactregel en portal-url fallback via server company settings |
+| Mollie betaalbevestiging/retry mails | Merknaam, site-url en contactregel via server company settings |
+| Subscription retry mail | Merknaam, site-url en contactregel via server company settings |
+
+Bewust niet aangepast:
+
+| Onderdeel | Reden |
+| --- | --- |
+| Dynamische klant-telefoonnummers in admin/sales leadkaarten | Dit zijn telefoonnummers van leads/klanten, niet Max Webstudio contactgegevens. |
+| Interne medewerker-invite flow | Vooral team/auth flow; geen publieke klantcontact-CTA. |
+| Demo-seed records in `list-change-requests.js` | Demo-data, niet productie contactconfig. |
+| Productomschrijvingen zoals `Max Web Studio onderhoud` | Productnaam/administratieve omschrijving, geen contactgegeven. |
+| Volledige admin-instellingenpagina | Volgende sprint; vereist UI/state-migratie over gekloonde adminpagina's. |
+
+Nog open:
+
+| Onderdeel | Waarom nog open |
+| --- | --- |
+| Een echte beheerpagina `Instellingen -> Bedrijfsgegevens` | Eerst centrale read/helpers afgerond; beheer-UI is de volgende veilige stap. |
+| Factuur/offerte PDF-generator als aparte server-PDF | Er is nu print/PDF vanuit pagina's; aparte PDF-storage flow moet apart gecontroleerd worden. |
+| Admin/sales UI volledig migreren naar gedeelde frontend module | Grote gekloonde HTML-bestanden; apart doen om regressies te beperken. |
+| Logo centraal afdwingen op alle pagina's en e-mails | Moet visueel worden getest per portaal/template. |

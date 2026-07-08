@@ -1,0 +1,708 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Mail Center | Max CRM</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=20260708-mail-center" />
+    <style>
+      .mail-center-shell {
+        display: grid;
+        gap: 20px;
+      }
+
+      .mail-center-hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 18px;
+        align-items: end;
+      }
+
+      .mail-center-toolbar,
+      .mail-filter-grid,
+      .mail-center-metrics,
+      .mail-detail-meta {
+        display: grid;
+        gap: 12px;
+      }
+
+      .mail-center-toolbar {
+        grid-template-columns: minmax(180px, 1fr) repeat(5, minmax(130px, 0.4fr)) auto;
+        align-items: end;
+      }
+
+      .mail-field {
+        display: grid;
+        gap: 7px;
+        color: rgba(226, 236, 248, 0.72);
+        font-size: 12px;
+        font-weight: 850;
+      }
+
+      .mail-field input,
+      .mail-field select {
+        width: 100%;
+        min-height: 42px;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 8px;
+        color: #f8fbff;
+        background: rgba(15, 23, 42, 0.78);
+      }
+
+      .mail-center-metrics {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .mail-metric {
+        display: grid;
+        gap: 6px;
+        padding: 16px;
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        border-radius: 8px;
+        background: rgba(15, 23, 42, 0.52);
+      }
+
+      .mail-metric span {
+        color: rgba(226, 236, 248, 0.58);
+        font-size: 12px;
+        font-weight: 850;
+        text-transform: uppercase;
+      }
+
+      .mail-metric strong {
+        color: #f8fbff;
+        font-size: 28px;
+        line-height: 1;
+      }
+
+      .mail-workspace {
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
+        gap: 20px;
+        align-items: start;
+      }
+
+      .mail-list-card,
+      .mail-detail-card {
+        display: grid;
+        gap: 16px;
+        padding: 22px;
+      }
+
+      .mail-table-wrap {
+        overflow-x: auto;
+      }
+
+      .mail-table {
+        width: 100%;
+        min-width: 760px;
+        border-collapse: collapse;
+      }
+
+      .mail-table th,
+      .mail-table td {
+        padding: 13px 12px;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+        text-align: left;
+        vertical-align: top;
+      }
+
+      .mail-table th {
+        color: rgba(226, 236, 248, 0.54);
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .mail-row {
+        cursor: pointer;
+      }
+
+      .mail-row:hover,
+      .mail-row.is-active {
+        background: rgba(37, 99, 235, 0.12);
+      }
+
+      .mail-subject {
+        color: #f8fbff;
+        font-weight: 850;
+      }
+
+      .mail-muted,
+      .mail-context {
+        color: rgba(226, 236, 248, 0.58);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .mail-context {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .mail-context span {
+        padding: 5px 8px;
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        border-radius: 7px;
+        background: rgba(15, 23, 42, 0.46);
+      }
+
+      .mail-status {
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        padding: 5px 10px;
+        border-radius: 999px;
+        color: #e5f4ff;
+        background: rgba(96, 165, 250, 0.16);
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .mail-status.sent,
+      .mail-status.delivered {
+        color: #d1fae5;
+        background: rgba(16, 185, 129, 0.16);
+      }
+
+      .mail-status.failed,
+      .mail-status.bounced,
+      .mail-status.complained {
+        color: #fee2e2;
+        background: rgba(239, 68, 68, 0.18);
+      }
+
+      .mail-status.pending {
+        color: #fef3c7;
+        background: rgba(245, 158, 11, 0.17);
+      }
+
+      .mail-detail-meta {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .mail-detail-meta div {
+        display: grid;
+        gap: 5px;
+        min-width: 0;
+        padding: 12px;
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        border-radius: 8px;
+        background: rgba(15, 23, 42, 0.52);
+      }
+
+      .mail-detail-meta span {
+        color: rgba(226, 236, 248, 0.5);
+        font-size: 11px;
+        font-weight: 900;
+        text-transform: uppercase;
+      }
+
+      .mail-detail-meta strong,
+      .mail-detail-meta code {
+        overflow-wrap: anywhere;
+        color: #f8fbff;
+        font-size: 13px;
+      }
+
+      .mail-preview-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .mail-preview-tabs button {
+        min-height: 36px;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 8px;
+        color: rgba(226, 236, 248, 0.78);
+        background: rgba(15, 23, 42, 0.66);
+        font: inherit;
+        font-weight: 850;
+        padding: 8px 12px;
+        cursor: pointer;
+      }
+
+      .mail-preview-tabs button.is-active {
+        color: #ffffff;
+        border-color: rgba(96, 165, 250, 0.48);
+        background: rgba(37, 99, 235, 0.22);
+      }
+
+      .mail-preview-frame,
+      .mail-text-preview {
+        min-height: 340px;
+        max-height: 560px;
+        overflow: auto;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 8px;
+        background: #f8fafc;
+      }
+
+      .mail-preview-frame iframe {
+        display: block;
+        width: 100%;
+        min-height: 540px;
+        border: 0;
+        background: #ffffff;
+      }
+
+      .mail-text-preview {
+        padding: 18px;
+        color: #0f172a;
+        font: 13px/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        white-space: pre-wrap;
+      }
+
+      .mail-empty {
+        padding: 18px;
+        border: 1px dashed rgba(148, 163, 184, 0.22);
+        border-radius: 8px;
+        color: rgba(226, 236, 248, 0.64);
+        font-weight: 750;
+      }
+
+      @media (max-width: 1180px) {
+        .mail-center-toolbar,
+        .mail-workspace,
+        .mail-center-hero {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .mail-center-metrics,
+        .mail-detail-meta {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body class="admin-body">
+    <main class="admin-crm-shell">
+      <aside class="admin-sidebar" aria-label="Admin modules">
+        <a class="brand" href="admin-dashboard.html">
+          <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true">
+            <rect x="6" y="6" width="68" height="68" rx="18"></rect>
+            <path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path>
+            <path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path>
+          </svg>
+          <span>Max CRM</span>
+        </a>
+        <nav class="admin-sidebar-nav">
+          <span class="admin-nav-group">Main</span>
+          <a href="admin-dashboard.html">Dashboard</a>
+          <span class="admin-nav-group">Sales</span>
+          <a href="admin-sales.html">Leads</a>
+          <span class="admin-nav-group">Production</span>
+          <a href="admin-website-factory.html">Website Factory</a>
+          <a href="admin-demo-sites.html">Demo Sites</a>
+          <a href="admin-ai-content-library.html">AI Content Library</a>
+          <a href="admin-assets.html">Asset Manager</a>
+          <a href="admin-seo-studio.html">SEO Studio</a>
+          <a href="admin-social-media-studio.html">Social Media Studio</a>
+          <a href="admin-brand-center.html">Brand Center</a>
+          <a href="admin-domain-center.html">Domein Center</a>
+          <a href="admin-onboarding.html">Klant Onboarding</a>
+          <a href="admin-roadmap.html">Roadmap / Takenbord</a>
+          <span class="admin-nav-group">Customers</span>
+          <a href="admin-klanten.html">Klanten</a>
+          <a href="admin-websites.html">Websites</a>
+          <a href="admin-projecten.html">Projecten</a>
+          <span class="admin-nav-group">Administration</span>
+          <a href="admin-offertes.html">Offertes</a>
+          <a href="admin-facturen.html">Facturen</a>
+          <a href="admin-email-studio.html">E-mail Studio</a>
+          <a class="is-active" href="admin-mail-center.html">Mail Center</a>
+          <span class="admin-nav-group">System</span>
+          <a href="admin-instellingen.html">Instellingen</a>
+        </nav>
+      </aside>
+
+      <div class="admin-crm-main workflow-module-shell">
+        <header class="admin-page-topbar" aria-label="Admin snel zoeken">
+          <label class="admin-page-search" for="mail-global-search">
+            <span class="sr-only">Zoeken</span>
+            <input id="mail-global-search" type="search" placeholder="Zoek ontvanger, onderwerp of message id..." />
+            <kbd>⌘ K</kbd>
+          </label>
+          <div class="admin-page-actions">
+            <button class="admin-icon-button" id="mail-refresh-icon" type="button" aria-label="Ververs">↻</button>
+            <a class="button secondary" href="admin-email-studio.html">Templates</a>
+          </div>
+        </header>
+
+        <section class="admin-section admin-hero mail-center-hero">
+          <div>
+            <p class="section-kicker">Administration</p>
+            <h1>Mail Center</h1>
+            <p>Alle verzonden CRM-mails, Resend statussen, context en originele inhoud op één plek.</p>
+          </div>
+          <span class="workflow-module-label" id="mail-session-state">Admin sessie controleren</span>
+        </section>
+
+        <section class="mail-center-shell" aria-label="Mail Center workspace">
+          <form class="admin-card mail-center-toolbar" id="mail-filters">
+            <label class="mail-field" for="mail-search">Zoeken
+              <input id="mail-search" name="search" type="search" placeholder="Onderwerp, ontvanger, template..." />
+            </label>
+            <label class="mail-field" for="mail-status">Status
+              <select id="mail-status" name="status">
+                <option value="">Alle</option>
+                <option value="pending">Pending</option>
+                <option value="sent">Sent</option>
+                <option value="failed">Failed</option>
+                <option value="delivered">Delivered</option>
+                <option value="bounced">Bounced</option>
+                <option value="complained">Complained</option>
+                <option value="opened">Opened</option>
+                <option value="clicked">Clicked</option>
+              </select>
+            </label>
+            <label class="mail-field" for="mail-template">Template
+              <input id="mail-template" name="templateKey" placeholder="template key" />
+            </label>
+            <label class="mail-field" for="mail-recipient">Ontvanger
+              <input id="mail-recipient" name="recipient" type="email" placeholder="naam@bedrijf.nl" />
+            </label>
+            <label class="mail-field" for="mail-from">Vanaf
+              <input id="mail-from" name="dateFrom" type="date" />
+            </label>
+            <label class="mail-field" for="mail-to">Tot
+              <input id="mail-to" name="dateTo" type="date" />
+            </label>
+            <button class="button primary" type="submit">Filter</button>
+          </form>
+
+          <div class="mail-center-metrics" aria-label="Mail statistieken">
+            <article class="mail-metric"><span>Totaal</span><strong id="metric-total">0</strong></article>
+            <article class="mail-metric"><span>Verzonden</span><strong id="metric-sent">0</strong></article>
+            <article class="mail-metric"><span>Fouten</span><strong id="metric-failed">0</strong></article>
+            <article class="mail-metric"><span>Laatste 24 uur</span><strong id="metric-day">0</strong></article>
+          </div>
+
+          <div class="mail-workspace">
+            <section class="admin-card mail-list-card" aria-labelledby="mail-list-heading">
+              <div class="admin-section-heading">
+                <div>
+                  <p class="section-kicker">Overzicht</p>
+                  <h2 id="mail-list-heading">E-mailgeschiedenis</h2>
+                </div>
+                <button class="button secondary" id="mail-refresh" type="button">Ververs</button>
+              </div>
+              <p class="admin-form-message" id="mail-message" role="status" aria-live="polite"></p>
+              <div class="mail-table-wrap">
+                <table class="mail-table">
+                  <thead>
+                    <tr>
+                      <th>Datum</th>
+                      <th>Ontvanger</th>
+                      <th>Onderwerp</th>
+                      <th>Status</th>
+                      <th>Template</th>
+                      <th>Context</th>
+                      <th>Provider</th>
+                    </tr>
+                  </thead>
+                  <tbody id="mail-table-body"></tbody>
+                </table>
+              </div>
+            </section>
+
+            <aside class="admin-card mail-detail-card" aria-labelledby="mail-detail-heading">
+              <div class="admin-section-heading">
+                <div>
+                  <p class="section-kicker">Detail</p>
+                  <h2 id="mail-detail-heading">Selecteer een mail</h2>
+                </div>
+                <button class="button secondary" id="mail-retry" type="button" disabled>Opnieuw versturen</button>
+              </div>
+              <div id="mail-detail-empty" class="mail-empty">Kies een mail uit het overzicht.</div>
+              <div id="mail-detail" hidden>
+                <div class="mail-detail-meta" id="mail-detail-meta"></div>
+                <div class="mail-preview-tabs" role="tablist" aria-label="Mail preview">
+                  <button class="is-active" type="button" data-tab="html">HTML</button>
+                  <button type="button" data-tab="text">Tekst</button>
+                  <button type="button" data-tab="metadata">Metadata</button>
+                </div>
+                <div class="mail-preview-frame" id="mail-html-panel"><iframe id="mail-html-frame" title="HTML e-mail preview" sandbox=""></iframe></div>
+                <pre class="mail-text-preview" id="mail-text-panel" hidden></pre>
+                <pre class="mail-text-preview" id="mail-metadata-panel" hidden></pre>
+              </div>
+            </aside>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script>
+      (() => {
+        const endpoint = "/.netlify/functions/admin-email-logs";
+        const adminSessionStorageKey = "mws_admin_supabase_session";
+        const adminTokenStorageKey = "mws_admin_token";
+        const state = {
+          logs: [],
+          selectedId: "",
+          selectedDetail: null,
+          activeTab: "html",
+        };
+
+        const elements = {
+          sessionState: document.getElementById("mail-session-state"),
+          filters: document.getElementById("mail-filters"),
+          globalSearch: document.getElementById("mail-global-search"),
+          search: document.getElementById("mail-search"),
+          tableBody: document.getElementById("mail-table-body"),
+          message: document.getElementById("mail-message"),
+          refresh: document.getElementById("mail-refresh"),
+          refreshIcon: document.getElementById("mail-refresh-icon"),
+          retry: document.getElementById("mail-retry"),
+          detail: document.getElementById("mail-detail"),
+          detailEmpty: document.getElementById("mail-detail-empty"),
+          detailHeading: document.getElementById("mail-detail-heading"),
+          detailMeta: document.getElementById("mail-detail-meta"),
+          htmlFrame: document.getElementById("mail-html-frame"),
+          htmlPanel: document.getElementById("mail-html-panel"),
+          textPanel: document.getElementById("mail-text-panel"),
+          metadataPanel: document.getElementById("mail-metadata-panel"),
+          metricTotal: document.getElementById("metric-total"),
+          metricSent: document.getElementById("metric-sent"),
+          metricFailed: document.getElementById("metric-failed"),
+          metricDay: document.getElementById("metric-day"),
+        };
+
+        function getBearer() {
+          try {
+            const session = JSON.parse(localStorage.getItem(adminSessionStorageKey) || "{}");
+            if (session.accessToken) return session.accessToken;
+          } catch {}
+          return sessionStorage.getItem(adminTokenStorageKey) || "";
+        }
+
+        async function apiRequest(url, options = {}) {
+          const token = getBearer();
+          if (!token) throw new Error("Log eerst in via het admin dashboard.");
+          const response = await fetch(url, {
+            ...options,
+            headers: {
+              Accept: "application/json",
+              ...(options.body ? { "Content-Type": "application/json" } : {}),
+              Authorization: `Bearer ${token}`,
+              ...(options.headers || {}),
+            },
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || data.success === false) throw new Error(data.error || `Mail Center request mislukt (${response.status}).`);
+          return data;
+        }
+
+        function buildQuery() {
+          const formData = new FormData(elements.filters);
+          const query = new URLSearchParams();
+          formData.forEach((value, key) => {
+            const clean = String(value || "").trim();
+            if (clean) query.set(key, clean);
+          });
+          query.set("limit", "150");
+          return query.toString();
+        }
+
+        async function loadLogs() {
+          setMessage("Mailgeschiedenis laden...", "");
+          elements.sessionState.textContent = getBearer() ? "Admin sessie actief" : "Login vereist";
+          try {
+            const data = await apiRequest(`${endpoint}?${buildQuery()}`);
+            state.logs = Array.isArray(data.emailLogs) ? data.emailLogs : [];
+            renderLogs();
+            renderMetrics();
+            setMessage(state.logs.length ? `${state.logs.length} mails geladen.` : "Geen mails gevonden.", state.logs.length ? "success" : "warning");
+          } catch (error) {
+            state.logs = [];
+            renderLogs();
+            renderMetrics();
+            setMessage(error.message || "Mailgeschiedenis kon niet worden geladen.", "error");
+          }
+        }
+
+        function renderLogs() {
+          if (!state.logs.length) {
+            elements.tableBody.innerHTML = `<tr><td colspan="7"><div class="mail-empty">Geen mailrecords gevonden.</div></td></tr>`;
+            return;
+          }
+          elements.tableBody.innerHTML = state.logs.map((log) => `
+            <tr class="mail-row ${log.id === state.selectedId ? "is-active" : ""}" data-id="${escapeAttribute(log.id)}">
+              <td><strong>${escapeHtml(formatDateTime(log.createdAt))}</strong><div class="mail-muted">${escapeHtml(relativeAge(log.createdAt))}</div></td>
+              <td><span class="mail-subject">${escapeHtml(log.toName || log.toEmail || "-")}</span><div class="mail-muted">${escapeHtml(log.toEmail || "-")}</div></td>
+              <td><div class="mail-subject">${escapeHtml(log.subject || "-")}</div><div class="mail-muted">${escapeHtml(log.providerMessageId || "Geen provider id")}</div></td>
+              <td><span class="mail-status ${escapeAttribute(log.status)}">${escapeHtml(log.status || "-")}</span></td>
+              <td><strong>${escapeHtml(log.templateName || log.templateKey || "-")}</strong><div class="mail-muted">${escapeHtml(log.templateKey || "")}</div></td>
+              <td><div class="mail-context">${contextBadges(log)}</div></td>
+              <td><strong>${escapeHtml(log.provider || "-")}</strong><div class="mail-muted">${escapeHtml(log.direction || "")}</div></td>
+            </tr>
+          `).join("");
+        }
+
+        function renderMetrics() {
+          const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+          elements.metricTotal.textContent = state.logs.length;
+          elements.metricSent.textContent = state.logs.filter((log) => ["sent", "delivered", "opened", "clicked"].includes(log.status)).length;
+          elements.metricFailed.textContent = state.logs.filter((log) => ["failed", "bounced", "complained"].includes(log.status)).length;
+          elements.metricDay.textContent = state.logs.filter((log) => new Date(log.createdAt).getTime() >= dayAgo).length;
+        }
+
+        async function selectLog(id) {
+          state.selectedId = id;
+          renderLogs();
+          setDetailLoading();
+          try {
+            const data = await apiRequest(`${endpoint}?id=${encodeURIComponent(id)}`);
+            state.selectedDetail = data.emailLog || null;
+            renderDetail();
+          } catch (error) {
+            setMessage(error.message || "Maildetail kon niet worden geladen.", "error");
+          }
+        }
+
+        function setDetailLoading() {
+          elements.detailEmpty.hidden = false;
+          elements.detailEmpty.textContent = "Maildetail laden...";
+          elements.detail.hidden = true;
+          elements.retry.disabled = true;
+        }
+
+        function renderDetail() {
+          const log = state.selectedDetail;
+          if (!log) return;
+          elements.detailEmpty.hidden = true;
+          elements.detail.hidden = false;
+          elements.retry.disabled = false;
+          elements.detailHeading.textContent = log.subject || "Maildetail";
+          elements.detailMeta.innerHTML = [
+            ["Ontvanger", log.toEmail],
+            ["Van", [log.fromName, log.fromEmail].filter(Boolean).join(" <") + (log.fromName && log.fromEmail ? ">" : "")],
+            ["Status", log.status],
+            ["Template", log.templateName || log.templateKey],
+            ["Resend ID", log.providerMessageId],
+            ["Foutmelding", log.errorMessage || "-"],
+            ["Klant", log.customerId || "-"],
+            ["Lead", log.leadId || "-"],
+            ["Factuur", log.invoiceId || "-"],
+            ["Project", log.projectId || "-"],
+          ].map(([label, value]) => `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value || "-")}</strong></div>`).join("");
+          elements.htmlFrame.srcdoc = log.htmlBody || `<pre>${escapeHtml(log.textBody || "Geen HTML-body opgeslagen.")}</pre>`;
+          elements.textPanel.textContent = log.textBody || "Geen tekstversie opgeslagen.";
+          elements.metadataPanel.textContent = JSON.stringify(log.metadata || {}, null, 2);
+          showTab(state.activeTab);
+        }
+
+        async function retrySelected() {
+          const log = state.selectedDetail;
+          if (!log?.id) return;
+          const ok = window.confirm(`Opnieuw versturen naar ${log.toEmail}?`);
+          if (!ok) return;
+          elements.retry.disabled = true;
+          elements.retry.textContent = "Versturen...";
+          try {
+            const data = await apiRequest(endpoint, {
+              method: "POST",
+              body: JSON.stringify({ action: "retry", id: log.id }),
+            });
+            setMessage(data.email?.sent ? "Mail opnieuw verzonden." : data.email?.warning || "Retry is niet verzonden.", data.email?.sent ? "success" : "warning");
+            await loadLogs();
+          } catch (error) {
+            setMessage(error.message || "Retry kon niet worden uitgevoerd.", "error");
+          } finally {
+            elements.retry.disabled = false;
+            elements.retry.textContent = "Opnieuw versturen";
+          }
+        }
+
+        function showTab(tab) {
+          state.activeTab = tab;
+          document.querySelectorAll(".mail-preview-tabs button").forEach((button) => {
+            button.classList.toggle("is-active", button.dataset.tab === tab);
+          });
+          elements.htmlPanel.hidden = tab !== "html";
+          elements.textPanel.hidden = tab !== "text";
+          elements.metadataPanel.hidden = tab !== "metadata";
+        }
+
+        function contextBadges(log) {
+          const items = [
+            log.customerId && "Klant",
+            log.leadId && "Lead",
+            log.invoiceId && "Factuur",
+            log.projectId && "Project",
+          ].filter(Boolean);
+          return items.length ? items.map((item) => `<span>${escapeHtml(item)}</span>`).join("") : `<span>Geen</span>`;
+        }
+
+        function setMessage(text, type = "") {
+          elements.message.textContent = text;
+          elements.message.className = `admin-form-message ${type}`.trim();
+        }
+
+        function formatDateTime(value) {
+          const date = new Date(value);
+          if (Number.isNaN(date.getTime())) return "-";
+          return new Intl.DateTimeFormat("nl-NL", { dateStyle: "short", timeStyle: "short" }).format(date);
+        }
+
+        function relativeAge(value) {
+          const date = new Date(value);
+          if (Number.isNaN(date.getTime())) return "";
+          const diffHours = Math.round((Date.now() - date.getTime()) / 3600000);
+          if (diffHours < 1) return "net";
+          if (diffHours < 24) return `${diffHours} uur geleden`;
+          return `${Math.round(diffHours / 24)} dagen geleden`;
+        }
+
+        function escapeHtml(value) {
+          return String(value || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+        }
+
+        function escapeAttribute(value) {
+          return escapeHtml(value).replace(/`/g, "&#96;");
+        }
+
+        elements.filters.addEventListener("submit", (event) => {
+          event.preventDefault();
+          loadLogs();
+        });
+        elements.globalSearch.addEventListener("input", () => {
+          elements.search.value = elements.globalSearch.value;
+        });
+        elements.globalSearch.addEventListener("keydown", (event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            loadLogs();
+          }
+        });
+        elements.refresh.addEventListener("click", loadLogs);
+        elements.refreshIcon.addEventListener("click", loadLogs);
+        elements.retry.addEventListener("click", retrySelected);
+        elements.tableBody.addEventListener("click", (event) => {
+          const row = event.target.closest(".mail-row");
+          if (row?.dataset.id) selectLog(row.dataset.id);
+        });
+        document.querySelectorAll(".mail-preview-tabs button").forEach((button) => {
+          button.addEventListener("click", () => showTab(button.dataset.tab));
+        });
+
+        loadLogs();
+      })();
+    </script>
+  </body>
+</html>

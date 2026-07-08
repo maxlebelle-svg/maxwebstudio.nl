@@ -42,8 +42,16 @@
       </section>
     </main>
 
-    <script>
+    <script type="module">
+      import {
+        getCompanySettings,
+        getMailtoLink,
+        getTelephoneLink,
+        getWhatsappLink,
+      } from "./src/services/companySettingsService.js";
+
       (() => {
+        const companySettings = getCompanySettings();
         const storageKey = "maxwebstudioInvoices";
         const params = new URLSearchParams(window.location.search);
         const invoiceId = params.get("invoiceId") || "";
@@ -106,6 +114,27 @@
           dd.textContent = value || "-";
           row.append(dt, dd);
           return row;
+        }
+
+        function createCompanyContactActions(subject = "Vraag over factuur") {
+          const actions = document.createElement("div");
+          actions.className = "invoice-document-actions";
+          const whatsapp = document.createElement("a");
+          whatsapp.className = "button secondary";
+          whatsapp.href = getWhatsappLink(companySettings);
+          whatsapp.target = "_blank";
+          whatsapp.rel = "noopener";
+          whatsapp.textContent = "WhatsApp Max";
+          const call = document.createElement("a");
+          call.className = "button secondary";
+          call.href = getTelephoneLink(companySettings);
+          call.textContent = companySettings.phoneDisplay;
+          const email = document.createElement("a");
+          email.className = "button secondary";
+          email.href = getMailtoLink(companySettings, subject);
+          email.textContent = companySettings.primaryEmail;
+          actions.append(whatsapp, call, email);
+          return actions;
         }
 
         function parseStoredInvoiceContext(notes = "") {
@@ -194,7 +223,8 @@
             card.append(
               createText("p", "section-kicker", "Niet gevonden"),
               createText("h2", "", "Deze factuur kan niet worden geladen."),
-              createText("p", "summary-note", "Open de factuur opnieuw via je klantportaal. Blijft dit gebeuren? Neem dan even contact op.")
+              createText("p", "summary-note", "Open de factuur opnieuw via je klantportaal. Blijft dit gebeuren? Neem dan even contact op."),
+              createCompanyContactActions("Factuur niet gevonden")
             );
             return;
           }
@@ -293,7 +323,7 @@
               : "Er staat nog geen betaallink klaar. Neem contact op als je direct wilt betalen of vragen hebt over deze factuur.";
           const note = createText("p", "admin-form-message", noteText);
 
-          card.append(header, intro, meta, createText("h3", "", "Factuurregels"), lineTable, totals, actions, note);
+          card.append(header, intro, meta, createText("h3", "", "Factuurregels"), lineTable, totals, actions, note, createCompanyContactActions(`Vraag over ${invoice.invoiceNumber || "factuur"}`));
         }
 
         renderInvoice();

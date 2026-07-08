@@ -1,5 +1,6 @@
 const { getMollieApiKey } = require("./mollie-products");
 const { sendEmail } = require("./email");
+const { getCompanySettings, getMailtoLink } = require("./company-settings");
 
 const knownStatuses = new Set([
   "paid",
@@ -675,6 +676,7 @@ async function fetchInvoiceProfile(supabaseUrl, serviceRoleKey, profileId) {
 }
 
 function buildPaidConfirmationEmail(invoice, profile) {
+  const companySettings = getCompanySettings();
   const customerName = cleanText(profile?.name) || cleanText(profile?.company) || "beste klant";
   const invoiceNumber = cleanText(invoice.invoice_number) || "je factuur";
   const title = cleanText(invoice.title) || "Factuur";
@@ -687,8 +689,10 @@ function buildPaidConfirmationEmail(invoice, profile) {
     `Bedrag: ${formatMoney(invoice.amount)}.`,
     cleanText(invoice.pdf_file_path) ? `De factuur-PDF blijft veilig beschikbaar in je klantportaal: ${portalUrl}` : "",
     "",
+    `Vragen? Mail naar ${companySettings.primaryEmail} of gebruik ${getMailtoLink(companySettings, `Vraag over factuur ${invoiceNumber}`)}.`,
+    "",
     "Met vriendelijke groet,",
-    "Max Web Studio",
+    companySettings.companyName,
   ].filter(Boolean).join("\n");
 
   return {
@@ -699,6 +703,7 @@ function buildPaidConfirmationEmail(invoice, profile) {
 }
 
 function buildSubscriptionRetryEmail(subscription, profile) {
+  const companySettings = getCompanySettings();
   const customerName = cleanText(profile?.name) || cleanText(profile?.company) || "beste klant";
   const packageName = cleanText(subscription.package_name) || "onderhoudsabonnement";
   const portalUrl = absoluteUrl("/client-dashboard.html");
@@ -712,8 +717,10 @@ function buildSubscriptionRetryEmail(subscription, profile) {
     "",
     "Als de betaling inmiddels is gelukt, hoef je niets te doen.",
     "",
+    `Vragen? Mail naar ${companySettings.primaryEmail}.`,
+    "",
     "Met vriendelijke groet,",
-    "Max Web Studio",
+    companySettings.companyName,
   ].filter(Boolean).join("\n");
 
   return {
@@ -724,12 +731,13 @@ function buildSubscriptionRetryEmail(subscription, profile) {
 }
 
 function renderEmailHtml(heading, text, portalUrl) {
+  const companySettings = getCompanySettings();
   const paragraphs = text.split("\n").map((line) => line.trim()).filter(Boolean);
   return `
     <div style="margin:0;padding:0;background:#07111f;color:#eaf1ff;font-family:Arial,sans-serif;">
       <div style="max-width:640px;margin:0 auto;padding:32px 20px;">
         <div style="border:1px solid rgba(255,255,255,0.12);border-radius:18px;background:#0b1728;padding:28px;">
-          <p style="margin:0 0 10px;color:#7db7ff;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;">Max Web Studio</p>
+          <p style="margin:0 0 10px;color:#7db7ff;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;">${escapeHtml(companySettings.companyName)}</p>
           <h1 style="margin:0 0 20px;color:#ffffff;font-size:28px;line-height:1.2;">${escapeHtml(heading)}</h1>
           ${paragraphs.map((line) => `<p style="margin:0 0 14px;color:#d7e3f7;font-size:15px;line-height:1.7;">${linkify(escapeHtml(line))}</p>`).join("")}
           <p style="margin:24px 0 0;">
@@ -810,7 +818,7 @@ function isSchemaColumnError(data) {
 }
 
 function absoluteUrl(path) {
-  const siteUrl = cleanText(process.env.SITE_URL || "https://maxwebstudio.nl").replace(/\/$/, "");
+  const siteUrl = cleanText(process.env.SITE_URL || getCompanySettings().websiteUrl).replace(/\/$/, "");
   return `${siteUrl}${path.startsWith("/") ? path : `/${path}`}`;
 }
 

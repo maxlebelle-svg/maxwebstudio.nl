@@ -1,6 +1,7 @@
 const { verifyAdmin } = require("./_admin-auth");
 const crypto = require("crypto");
 const { sendEmail } = require("./email");
+const { getCompanySettings, getMailtoLink } = require("./company-settings");
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const allowedPackages = new Set([
@@ -175,7 +176,7 @@ exports.handler = async (event) => {
     const passwordSetup = await createPasswordSetupLink(supabaseUrl, serviceRoleKey, input);
     const mailPreview = buildMailPreview(input, passwordSetup);
     const email = input.sendWelcomeEmail
-      ? await sendWelcomeEmailMessage(input, mailPreview)
+      ? await sendWelcomeEmailMessage(input, mailPreview, { customer, project, admin: adminCheck.admin })
       : { requested: false, sent: false, warning: "Welkomstmail is alleen als concept voorbereid." };
     if (input.leadId) {
       await linkLeadToCustomer(supabaseUrl, serviceRoleKey, input.leadId, customer.id);
@@ -359,7 +360,7 @@ async function findAuthUser(supabaseUrl, serviceRoleKey, email) {
 }
 
 async function createPasswordSetupLink(supabaseUrl, serviceRoleKey, input) {
-  const redirectTo = cleanText(process.env.CLIENT_PORTAL_REDIRECT_URL) || "https://maxwebstudio.nl/login.html";
+  const redirectTo = cleanText(process.env.CLIENT_PORTAL_REDIRECT_URL) || `${getCompanySettings().websiteUrl}/login.html`;
 
   try {
     const data = await supabaseFetch(`${supabaseUrl}/auth/v1/admin/generate_link`, {
@@ -468,22 +469,23 @@ function restHeaders(serviceRoleKey) {
 }
 
 function buildMailPreview(input, passwordSetup = {}) {
-  const loginLink = cleanText(passwordSetup.actionLink) || cleanText(process.env.CLIENT_PORTAL_REDIRECT_URL) || "https://maxwebstudio.nl/login.html";
+  const companySettings = getCompanySettings();
+  const loginLink = cleanText(passwordSetup.actionLink) || cleanText(process.env.CLIENT_PORTAL_REDIRECT_URL) || `${companySettings.websiteUrl}/login.html`;
   const setupInstruction = passwordSetup.status === "generated"
     ? "Activeer je account via de knop Account activeren en stel daarna veilig je eigen wachtwoord in."
     : "Open de loginpagina en kies wachtwoord opnieuw instellen om veilig je eigen wachtwoord te maken.";
-  const subject = "Welkom bij Max Webstudio – je klantportaal staat klaar";
+  const subject = `Welkom bij ${companySettings.companyName} – je klantportaal staat klaar`;
   const text = [
     `Hoi ${input.name},`,
     "",
-    `Je klantportaal voor ${input.company} staat klaar bij Max Webstudio.`,
+    `Je klantportaal voor ${input.company} staat klaar bij ${companySettings.companyName}.`,
     "In je portaal zie je de status van je website, kun je wijzigingen aanvragen, berichten volgen en belangrijke updates terugvinden.",
     "",
     setupInstruction,
     "",
     `Account activeren: ${loginLink}`,
     "",
-    "Heb je vragen? Neem gerust contact op met Max Webstudio.",
+    `Heb je vragen? Mail naar ${companySettings.primaryEmail}.`,
   ].join("\n");
 
   return {
@@ -494,7 +496,7 @@ function buildMailPreview(input, passwordSetup = {}) {
   };
 }
 
-async function sendWelcomeEmailMessage(input, mailPreview) {
+async function sendWelcomeEmailMessage(input, mailPreview, context = {}) {
   try {
     const result = await sendEmail({
       to: input.email,
@@ -503,6 +505,19 @@ async function sendWelcomeEmailMessage(input, mailPreview) {
       subject: mailPreview.subject,
       html: buildWelcomeEmailHtml(input, mailPreview),
       text: mailPreview.text,
+      templateKey: "customer_onboarding_welcome",
+      templateName: "Klant onboarding welkomstmail",
+      customerId: context.customer?.id,
+      leadId: input.leadId,
+      projectId: context.project?.id,
+      triggeredBy: "admin_customer_onboarding",
+      triggeredByUserId: context.admin?.id,
+      metadata: {
+        company: input.company,
+        domain: input.domain,
+        package: input.package,
+        ownerEmail: input.ownerEmail,
+      },
     });
 
     return {
@@ -523,6 +538,7 @@ async function sendWelcomeEmailMessage(input, mailPreview) {
 }
 
 function buildWelcomeEmailHtml(input, mailPreview) {
+  const companySettings = getCompanySettings();
   const name = escapeHtml(input.name);
   const company = escapeHtml(input.company);
   const actionLink = escapeHtml(mailPreview.loginLink);
@@ -542,7 +558,7 @@ function buildWelcomeEmailHtml(input, mailPreview) {
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;background:#102a3d;border:1px solid rgba(68,180,255,.26);border-radius:24px;overflow:hidden;">
             <tr>
               <td style="padding:32px 30px 18px;">
-                <div style="font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:#27c7ff;font-weight:800;">Max Webstudio</div>
+                <div style="font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:#27c7ff;font-weight:800;">${escapeHtml(companySettings.companyName)}</div>
                 <h1 style="margin:14px 0 10px;font-size:32px;line-height:1.12;color:#ffffff;">Je klantportaal staat klaar.</h1>
                 <p style="margin:0;color:#c9d7e8;font-size:16px;line-height:1.7;">Hoi ${name}, je klantportaal voor <strong style="color:#ffffff;">${company}</strong> is klaargezet.</p>
               </td>
@@ -555,7 +571,7 @@ function buildWelcomeEmailHtml(input, mailPreview) {
               </td>
             </tr>
             <tr>
-              <td style="padding:22px 30px;background:rgba(255,255,255,.05);color:#aabbd0;font-size:13px;line-height:1.6;">Heb je vragen? Reageer op deze mail of neem contact op met Max Webstudio.</td>
+              <td style="padding:22px 30px;background:rgba(255,255,255,.05);color:#aabbd0;font-size:13px;line-height:1.6;">Heb je vragen? Reageer op deze mail of mail naar <a href="${escapeAttribute(getMailtoLink(companySettings, "Vraag over klantportaal"))}" style="color:#7dd3fc;">${escapeHtml(companySettings.primaryEmail)}</a>.</td>
             </tr>
           </table>
         </td>
@@ -597,6 +613,10 @@ function escapeHtml(value) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+function escapeAttribute(value) {
+  return escapeHtml(value).replace(/`/g, "&#96;");
 }
 
 function jsonResponse(statusCode, body) {
