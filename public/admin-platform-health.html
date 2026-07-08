@@ -185,6 +185,12 @@
         gap: 0.65rem;
       }
 
+      .health-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 0.65rem;
+      }
+
       .health-env-item {
         display: flex;
         justify-content: space-between;
@@ -210,9 +216,36 @@
         flex-wrap: wrap;
       }
 
+      .health-metric {
+        min-width: 0;
+        padding: 0.85rem;
+        border: 1px solid rgba(148, 163, 184, 0.13);
+        border-radius: 12px;
+        background: rgba(15, 23, 42, 0.58);
+      }
+
+      .health-metric span {
+        display: block;
+        color: #94a3b8;
+        font-size: 0.72rem;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .health-metric strong {
+        display: block;
+        margin-top: 0.35rem;
+        color: #f8fafc;
+        font-size: 1.25rem;
+      }
+
       @media (max-width: 1120px) {
         .health-grid {
           grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .health-summary-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
         }
 
         .health-layout {
@@ -226,6 +259,7 @@
         }
 
         .health-grid,
+        .health-summary-grid,
         .health-env-grid {
           grid-template-columns: 1fr;
         }
@@ -277,13 +311,15 @@
             <span class="health-status" id="health-overall" data-status="Warning">Checking</span>
           </section>
 
+          <section class="health-summary-grid" id="health-summary" aria-label="Platform health summary"></section>
+
           <section class="health-grid" id="health-cards" aria-label="Platform health status cards"></section>
 
           <section class="health-layout">
             <article class="health-card">
               <div class="health-card-header">
                 <div>
-                  <h2>Environment checklist</h2>
+                  <h2>Developer checklist</h2>
                   <p>Alleen aanwezig/ontbrekend. Secretwaarden worden nooit getoond.</p>
                 </div>
                 <button class="button secondary" id="health-refresh" type="button">Ververs</button>
@@ -306,15 +342,11 @@
             <article class="health-card">
               <div class="health-card-header">
                 <div>
-                  <h2>Readiness rules</h2>
-                  <p>Deterministische statusregels voor production readiness.</p>
+                  <h2>Service details</h2>
+                  <p>Laatst gecontroleerd, impact en herstelbaarheid per platformonderdeel.</p>
                 </div>
               </div>
-              <div class="health-list">
-                <div class="health-row"><strong>Healthy</strong><span class="health-muted">Alle kritieke checks slagen.</span></div>
-                <div class="health-row"><strong>Warning</strong><span class="health-muted">Niet-kritieke checks ontbreken of zijn degraded.</span></div>
-                <div class="health-row"><strong>Critical</strong><span class="health-muted">Kritieke backendconfiguratie of kern-API is niet beschikbaar.</span></div>
-              </div>
+              <div class="health-list" id="health-service-details"></div>
             </article>
           </section>
         </div>
@@ -338,6 +370,14 @@
           { id: "preview-environment", label: "Preview Environment", status: "Healthy", message: "Preview route is aanwezig.", latencyMs: 0, critical: false },
           { id: "website-factory", label: "Website Factory", status: "Healthy", message: "Website Factory route is aanwezig.", latencyMs: 0, critical: false },
         ];
+        const fallbackSummary = {
+          healthScore: 0,
+          warningCount: 1,
+          criticalCount: 0,
+          activeAutomations: 0,
+          openFailures: 1,
+          lastCheck: new Date().toISOString(),
+        };
         const fallbackEnvironment = {
           variables: [
             { key: "SUPABASE_URL", label: "Supabase URL", present: false, critical: true },
@@ -383,6 +423,9 @@
               overallStatus: "Warning",
               latencyMs: Date.now() - started,
               checks: fallbackChecks,
+              services: fallbackChecks,
+              serviceDetails: fallbackChecks.map((item) => ({ id: item.id, name: item.label, status: item.status, lastCheck: new Date().toISOString(), lastError: item.message, openIssues: item.status === "Healthy" ? 0 : 1, impact: item.message, retryPossible: true })),
+              summary: fallbackSummary,
               environment: fallbackEnvironment,
               recentErrors: [{ level: "warning", source: "platform-health", message: error.message || "Health API fallback actief.", createdAt: new Date().toISOString() }],
             });
@@ -397,9 +440,24 @@
           $("health-overall").textContent = data.overallStatus || "Warning";
           $("health-overall").dataset.status = data.overallStatus || "Warning";
           $("health-last-checked").textContent = `Laatste check ${formatDate(data.checkedAt)} · ${latency(data.latencyMs)}`;
-          $("health-cards").innerHTML = (data.checks || fallbackChecks).map(cardHtml).join("");
+          renderSummary(data.summary || fallbackSummary, data);
+          $("health-cards").innerHTML = (data.services || data.checks || fallbackChecks).map(cardHtml).join("");
           renderEnvironment(data.environment || fallbackEnvironment);
           renderErrors(data.recentErrors || []);
+          renderServiceDetails(data.serviceDetails || []);
+        }
+
+        function renderSummary(summary, data) {
+          const score = Number.isFinite(Number(summary.healthScore ?? data.healthScore)) ? Math.round(Number(summary.healthScore ?? data.healthScore)) : 0;
+          const rows = [
+            ["Health score", `${score}/100`],
+            ["Warnings", summary.warningCount ?? 0],
+            ["Critical", summary.criticalCount ?? 0],
+            ["Active automations", summary.activeAutomations ?? 0],
+            ["Open failures", summary.openFailures ?? 0],
+            ["Last check", formatDate(summary.lastCheck || data.checkedAt)],
+          ];
+          $("health-summary").innerHTML = rows.map(([label, value]) => `<article class="health-metric"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></article>`).join("");
         }
 
         function cardHtml(item) {
@@ -437,6 +495,21 @@
               </div>
             `).join("")
             : `<div class="health-row"><strong>Geen recente fouten</strong><span class="health-muted">Health Center ziet geen waarschuwingen in deze check.</span></div>`;
+        }
+
+        function renderServiceDetails(details) {
+          const rows = Array.isArray(details) && details.length ? details : fallbackChecks.map((item) => ({ name: item.label, status: item.status, lastCheck: new Date().toISOString(), lastError: item.message, impact: item.message, openIssues: item.status === "Healthy" ? 0 : 1, retryPossible: true }));
+          $("health-service-details").innerHTML = rows.map((item) => `
+            <div class="health-row">
+              <div class="health-row-top">
+                <strong>${escapeHtml(item.name || item.id || "Service")}</strong>
+                <span class="health-chip" data-status="${escapeHtml(item.status || "Unknown")}">${escapeHtml(item.status || "Unknown")}</span>
+              </div>
+              <span class="health-muted">Laatste check ${escapeHtml(formatDate(item.lastCheck))} · ${escapeHtml(item.openIssues || 0)} open issue${Number(item.openIssues || 0) === 1 ? "" : "s"}</span>
+              <span class="health-muted">${escapeHtml(item.status === "Healthy" ? item.impact || "Geen actieve impact." : item.lastError || item.impact || "Controle nodig.")}</span>
+              <span class="health-latency">${item.retryPossible === false ? "Handmatige actie nodig" : "Retry mogelijk"}</span>
+            </div>
+          `).join("");
         }
 
         function latency(value) {

@@ -247,6 +247,21 @@ function buildDailyFocus({ data, customerContexts, recommendations }) {
     .filter((item) => ["failed", "quality_failed", "critical"].includes(statusKey(item.status)) || item.severity === "error")
     .map((item) => ({ label: item.label, status: item.message || item.status }))
     .slice(0, 8);
+  const healthRows = [...data.timeline, ...data.notifications]
+    .filter((item) => /health|service_warning|platform|critical|failed|webhook|upload|factory_warning|preview_warning|payment_warning|mail_warning|automation_warning/.test(statusKey([item.eventType, item.event_type, item.action, item.module, item.title, item.description, item.severity, item.status].join(" "))));
+  const healthWarnings = healthRows
+    .filter((item) => ["warning", "error", "critical", "high"].includes(statusKey(item.severity || item.status)) || /warning|failed|critical/.test(statusKey(item.eventType || item.event_type || item.title)))
+    .map((item) => ({ label: item.title || item.action || item.module || "Health signaal", status: item.severity || item.status || item.eventType || item.event_type || "warning", reason: item.description || item.message || "" }))
+    .slice(0, 8);
+  const commonFailures = commonFailureRows(healthRows);
+  const webhookFailures = healthRows
+    .filter((item) => /webhook/.test(statusKey([item.title, item.description, item.message, item.module, item.eventType, item.event_type].join(" "))))
+    .map((item) => ({ label: item.title || "Webhook", status: item.severity || item.status || "warning" }))
+    .slice(0, 8);
+  const uploadFailures = healthRows
+    .filter((item) => /upload|storage/.test(statusKey([item.title, item.description, item.message, item.module, item.eventType, item.event_type].join(" "))))
+    .map((item) => ({ label: item.title || "Upload", status: item.severity || item.status || "warning" }))
+    .slice(0, 8);
   const previewsReadyNotViewed = data.factory
     .filter((item) => ["preview_ready", "completed"].includes(statusKey(item.status)) && !item.previewOpenedAt)
     .map((item) => ({ label: item.label, status: "preview klaar" }))
@@ -321,6 +336,7 @@ function buildDailyFocus({ data, customerContexts, recommendations }) {
     .map((item) => ({ label: item.label, status: `Health ${item.growthScore}/100` }))
     .slice(0, 8);
   const attention = [
+    ...healthWarnings.slice(0, 3).map((item) => ({ label: item.label, reason: item.reason || item.status || "Health Center" })),
     ...recommendations.slice(0, 4).map((item) => ({ label: item.label, reason: item.reason || item.category || "" })),
     ...data.notifications
       .filter((item) => ["warning", "error", "high"].includes(statusKey(item.severity || item.status)))
@@ -341,6 +357,10 @@ function buildDailyFocus({ data, customerContexts, recommendations }) {
     factoryWaiting,
     factoryBuildsActive,
     factoryFailed,
+    healthWarnings,
+    commonFailures,
+    webhookFailures,
+    uploadFailures,
     previewsReadyNotViewed,
     missingUploads,
     missingLogo,
@@ -360,6 +380,21 @@ function buildDailyFocus({ data, customerContexts, recommendations }) {
     customersWithManyUpsells,
     lowEngagementCustomers,
   };
+}
+
+function commonFailureRows(rows = []) {
+  const counts = rows.reduce((map, item) => {
+    const label = String(item.module || item.source || item.eventType || item.event_type || item.title || "Platform").trim() || "Platform";
+    const key = label.toLowerCase();
+    const current = map.get(key) || { label, count: 0 };
+    current.count += 1;
+    map.set(key, current);
+    return map;
+  }, new Map());
+  return [...counts.values()]
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
+    .slice(0, 8)
+    .map((item) => ({ label: item.label, status: `${item.count} signaal${item.count === 1 ? "" : "en"}` }));
 }
 
 function extractOnboardingRows(data = {}) {

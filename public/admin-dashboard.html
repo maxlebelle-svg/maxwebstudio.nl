@@ -11043,12 +11043,14 @@
 
         function ceoPlatformHealthSummary() {
           const warnings = readCeoStoredArray(activityLogStorageKey)
-            .filter((item) => ["system_warning", "system_error"].includes(statusKey(item.eventType || item.event_type || item.action)) || ["warning", "error"].includes(statusKey(item.severity || item.status)));
+            .filter((item) => /health|service_warning|platform|critical|mail_warning|payment_warning|automation_warning|factory_warning|preview_warning/.test(statusKey([item.eventType, item.event_type, item.action, item.module, item.title].join(" "))) || ["system_warning", "system_error"].includes(statusKey(item.eventType || item.event_type || item.action)) || ["warning", "error"].includes(statusKey(item.severity || item.status)));
+          const critical = warnings.filter((item) => ["system_error", "error", "critical"].includes(statusKey(item.eventType || item.event_type || item.severity || item.status || item.title)));
+          const mailWarnings = warnings.filter((item) => /mail|resend|email/.test(statusKey([item.eventType, item.event_type, item.title, item.description].join(" "))));
           if (warnings.some((item) => ["system_error", "error"].includes(statusKey(item.eventType || item.event_type || item.severity || item.status)))) {
-            return { status: "Critical", label: "Critical", copy: "Open Health Center" };
+            return { status: "Critical", label: "Critical", copy: "Open Health Center", warnings: warnings.length, critical: critical.length, mailHealth: mailWarnings.length ? "Warning" : "Healthy" };
           }
-          if (warnings.length) return { status: "Warning", label: "Warning", copy: `${warnings.length} waarschuwing${warnings.length === 1 ? "" : "en"}` };
-          return { status: "Unknown", label: "Unknown", copy: "Open Health Center" };
+          if (warnings.length) return { status: "Warning", label: "Warning", copy: `${warnings.length} waarschuwing${warnings.length === 1 ? "" : "en"}`, warnings: warnings.length, critical: critical.length, mailHealth: mailWarnings.length ? "Warning" : "Healthy" };
+          return { status: "Unknown", label: "Unknown", copy: "Open Health Center", warnings: 0, critical: 0, mailHealth: "Unknown" };
         }
 
         function getCeoDashboardSummary() {
@@ -11056,6 +11058,7 @@
           const todayLeads = leads.filter((lead) => ceoIsSameDay(ceoLeadCreatedAt(lead)));
           const yesterdayLeads = leads.filter((lead) => ceoIsYesterday(ceoLeadCreatedAt(lead)));
           const paidInvoices = state.invoices.filter((invoice) => normalizeInvoiceStatus(invoice.status) === "betaald");
+          const paidToday = paidInvoices.filter((invoice) => ceoIsSameDay(ceoPaidDate(invoice)));
           const todayRevenue = paidInvoices.filter((invoice) => ceoIsSameDay(ceoPaidDate(invoice))).reduce((sum, invoice) => sum + ceoInvoiceAmount(invoice), 0);
           const yesterdayRevenue = paidInvoices.filter((invoice) => ceoIsYesterday(ceoPaidDate(invoice))).reduce((sum, invoice) => sum + ceoInvoiceAmount(invoice), 0);
           const now = new Date();
@@ -11119,6 +11122,7 @@
             yesterdayLeads,
             todayRevenue,
             yesterdayRevenue,
+            paidToday,
             monthRevenue,
             openInvoices,
             overdueInvoices,
@@ -11323,10 +11327,16 @@
             : `<div><span>Sales</span><strong>Geen leaddata</strong><small>Leadfinder fallback is leeg.</small></div>`;
 
           const production = [
+            ["Platform Health", summary.platformHealth.label],
+            ["Open warnings", summary.platformHealth.warnings || 0],
+            ["Critical services", summary.platformHealth.critical || 0],
             ["Website Factory", Math.max(summary.factoryRows.length, state.projects.filter((project) => ["in_ontwikkeling", "in_ontwerp", "onboarding"].includes(statusKey(project.status))).length)],
             ["Factory input klaar", summary.onboardingFactoryReady.length],
             ["Factory wachtrij", summary.factoryQueue.length],
             ["Builds actief", summary.factoryActive.length],
+            ["Automation failures", summary.automation.failed],
+            ["Payments today", summary.paidToday.length],
+            ["Mail health", summary.platformHealth.mailHealth],
             ["Previews klaar", summary.previewsReadyNotViewed.length],
             ["Klaar voor livegang", summary.readyForLive.length],
             ["Preview conversie", `${summary.previewConversion}%`],

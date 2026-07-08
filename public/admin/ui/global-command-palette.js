@@ -88,6 +88,11 @@
     ["search-customer", "Search customer", "Zoek klanten in Max Command", "Klanten", "Command", "admin-klanten.html"],
     ["search-project", "Search project", "Zoek projecten in Max Command", "Projecten", "Command", "admin-projecten.html"],
     ["show-ceo-summary", "Show CEO summary", "Open CEO Mode briefing", "Instellingen", "Command", "admin-dashboard.html#dashboard"],
+    ["show-warnings", "Show warnings", "Open Health Center waarschuwingen", "Instellingen", "Command", "admin-platform-health.html#health-errors"],
+    ["show-critical", "Show critical", "Open kritieke Health Center signalen", "Instellingen", "Command", "admin-platform-health.html#health-errors"],
+    ["show-failed-automations", "Show failed automations", "Open mislukte automation runs", "Automations", "Command", "admin-max-automations.html"],
+    ["show-failed-payments", "Show failed payments", "Open betaalstatussen die aandacht vragen", "Facturen", "Command", "admin-facturen.html"],
+    ["run-health-scan", "Run health scan", "Open Health Center en start een nieuwe scan", "Instellingen", "Command", "admin-platform-health.html"],
     ["open-max-brain", "Open Max Brain", "Context engine diagnostics", "AI", "Command", "admin-max-brain.html"],
     ["open-platform-health", "Open Platform Health", "System status, production monitoring en diagnostics", "Instellingen", "Command", "admin-platform-health.html"],
     ["open-dashboard", "Open Dashboard", "Max CRM home", "Instellingen", "Command", "admin-dashboard.html"],
@@ -436,6 +441,11 @@
     if (/(mail|email|e-mail)/.test(text)) return "send-email";
     if (/(logo)/.test(text)) return "generate-logo";
     if (/(onboarding)/.test(text)) return "start-onboarding";
+    if (/(run|scan|check).*(health|platform)/.test(text)) return "run-health-scan";
+    if (/(warning|waarschuwing)/.test(text)) return "show-warnings";
+    if (/(critical|kritiek)/.test(text)) return "show-critical";
+    if (/(failed|mislukt).*(automation|workflow)/.test(text)) return "show-failed-automations";
+    if (/(failed|mislukt).*(payment|betaling)/.test(text)) return "show-failed-payments";
     if (/(brain|context|ai context|max brain)/.test(text)) return "open-max-brain";
     if (/(health|system|status|production|monitoring|platform)/.test(text)) return "open-platform-health";
     if (/(ceo|summary|briefing|samenvatting)/.test(text)) return "show-ceo-summary";

@@ -82,6 +82,15 @@ const allowedEventTypes = new Set([
   "seo_scan_completed",
   "project_updated",
   "customer_portal_action",
+  "health_warning",
+  "health_restored",
+  "service_warning",
+  "service_restored",
+  "factory_warning",
+  "preview_warning",
+  "automation_warning",
+  "payment_warning",
+  "mail_warning",
   "onboarding_task_completed",
   "factory_started",
   "factory_input_collected",
@@ -423,6 +432,9 @@ function moduleForEventType(eventType) {
   if (type.startsWith("lead_")) return "sales";
   if (type.startsWith("customer_")) return "customers";
   if (type.startsWith("customer_portal_")) return "customer_portal";
+  if (type.startsWith("health_")) return "platform_health";
+  if (type.startsWith("service_")) return "platform_health";
+  if (type.endsWith("_warning")) return "platform_health";
   if (type.startsWith("project_")) return "projects";
   if (type.startsWith("onboarding_")) return "onboarding";
   if (type.startsWith("website_")) return "website_factory";
