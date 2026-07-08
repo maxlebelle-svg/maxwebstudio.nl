@@ -1,5 +1,6 @@
 const { sendEmail } = require("./email");
 const { getCompanySettings, getWhatsappLink } = require("./company-settings");
+const { createTimelineEvent } = require("./services/timelineService");
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -24,6 +25,25 @@ exports.handler = async (event) => {
   }
 
   try {
+    await safeCreateTimeline({
+      eventType: "lead_created",
+      title: `Nieuwe lead ontvangen: ${lead.name}`,
+      description: lead.company ? `${lead.company} heeft een aanvraag ingestuurd.` : "Er is een nieuwe aanvraag ingestuurd.",
+      module: "sales",
+      referenceType: "lead_email",
+      referenceId: lead.email,
+      actorName: lead.name,
+      actorRole: "lead",
+      icon: "🔔",
+      severity: "info",
+      metadata: {
+        dedupeKey: `lead_created:${lead.email}:${lead.submittedAt}`,
+        leadEmail: lead.email,
+        leadName: lead.name,
+        company: lead.company,
+        packageInterest: lead.packageInterest,
+      },
+    });
     const companySettings = getCompanySettings();
     const result = await sendEmail({
       to: process.env.LEAD_TO_EMAIL || process.env.ADMIN_EMAIL || companySettings.primaryEmail,
@@ -79,6 +99,15 @@ function sanitizeLead(payload) {
     source: cleanText(payload.source || "homepage-contact-form"),
     submittedAt: cleanText(payload.createdAt) || new Date().toISOString(),
   };
+}
+
+async function safeCreateTimeline(input) {
+  try {
+    return await createTimelineEvent(input);
+  } catch (error) {
+    console.error("Lead timeline event failed", { message: error.message });
+    return null;
+  }
 }
 
 function validateLead(lead) {

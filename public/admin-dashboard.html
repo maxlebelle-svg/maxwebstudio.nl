@@ -237,6 +237,21 @@
           <article class="admin-card metric-card admin-developer-only" hidden><span>Demo-modus</span><strong id="metric-demo-status">Actief</strong><small>Lokale opslag actief</small></article>
         </section>
 
+        <section class="admin-section" aria-label="Recente activiteit">
+          <div class="admin-section-heading">
+            <div>
+              <p class="section-kicker">Activity Feed</p>
+              <h2>Recente activiteit</h2>
+            </div>
+            <button class="button secondary" id="activity-feed-refresh" type="button">Verversen</button>
+          </div>
+          <article class="admin-card timeline-card">
+            <div class="activity-feed-list" id="activity-feed-list" aria-live="polite">
+              <div class="timeline-empty">Recente activiteit laden...</div>
+            </div>
+          </article>
+        </section>
+
         <section class="admin-section bi-dashboard-section admin-developer-only" aria-label="Business intelligence dashboard">
           <div class="admin-section-heading">
             <div>
@@ -2655,6 +2670,8 @@
         const recurringRevenueLabel = document.getElementById("metric-recurring-label");
                 const demoStatusMetric = document.getElementById("metric-demo-status");
                 const dashboardSummaryCards = [...document.querySelectorAll("[data-dashboard-summary]")];
+        const activityFeedList = document.getElementById("activity-feed-list");
+        const activityFeedRefresh = document.getElementById("activity-feed-refresh");
         const biPeriodFilter = document.getElementById("bi-period-filter");
         const biActionList = document.getElementById("bi-action-list");
         const biKpis = {
@@ -10661,6 +10678,71 @@
           return state.adminSession?.accessToken || state.adminToken || "";
         }
 
+        async function fetchTimelineEvents(query = "") {
+          const token = getAdminBearer();
+          if (!token) throw new Error("Admin login nodig.");
+          const response = await fetch(`/.netlify/functions/admin-timeline-events${query ? `?${query}` : ""}`, {
+            headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || data.success === false) throw new Error(data.error || "Timeline kon niet worden geladen.");
+          return Array.isArray(data.timelineEvents) ? data.timelineEvents : [];
+        }
+
+        async function loadActivityFeed() {
+          if (!activityFeedList) return;
+          activityFeedList.innerHTML = `<div class="timeline-empty">Recente activiteit laden...</div>`;
+          try {
+            const events = await fetchTimelineEvents("global=true&limit=10");
+            renderActivityFeed(events);
+          } catch (error) {
+            activityFeedList.innerHTML = `<div class="timeline-empty">${escapeHtml(error.message || "Recente activiteit kon niet worden geladen.")}</div>`;
+          }
+        }
+
+        function renderActivityFeed(events = []) {
+          if (!activityFeedList) return;
+          if (!events.length) {
+            activityFeedList.innerHTML = `<div class="timeline-empty">Nog geen activiteit gevonden.</div>`;
+            return;
+          }
+          activityFeedList.innerHTML = events.map((item) => timelineItemHtml(item)).join("");
+          activityFeedList.querySelectorAll("[data-timeline-customer]").forEach((button) => {
+            button.addEventListener("click", () => {
+              const customerId = button.dataset.timelineCustomer;
+              if (customerId) window.location.href = `admin-klanten.html?customerId=${encodeURIComponent(customerId)}#klanten`;
+            });
+          });
+        }
+
+        function timelineItemHtml(item = {}) {
+          const customerLabel = item.metadata?.customerCompany || item.metadata?.companyName || item.customerId || item.leadId || "";
+          return `
+            <button class="timeline-item" type="button" data-timeline-customer="${escapeHtml(item.customerId || "")}">
+              <span class="timeline-icon">${escapeHtml(item.icon || "•")}</span>
+              <span class="timeline-main">
+                <strong>${escapeHtml(item.title || "Activiteit")}</strong>
+                <span class="timeline-meta"><span>${escapeHtml(relativeTime(item.createdAt))}</span>${customerLabel ? `<span>${escapeHtml(customerLabel)}</span>` : ""}</span>
+                ${item.description ? `<p>${escapeHtml(item.description)}</p>` : ""}
+              </span>
+              <span class="timeline-badge" data-severity="${escapeHtml(item.severity || "info")}">${escapeHtml(item.module || "crm")}</span>
+            </button>
+          `;
+        }
+
+        function relativeTime(value) {
+          const date = new Date(value);
+          if (Number.isNaN(date.getTime())) return "-";
+          const seconds = Math.max(0, Math.round((Date.now() - date.getTime()) / 1000));
+          if (seconds < 60) return "zojuist";
+          const minutes = Math.round(seconds / 60);
+          if (minutes < 60) return `${minutes} min geleden`;
+          const hours = Math.round(minutes / 60);
+          if (hours < 24) return `${hours} uur geleden`;
+          const days = Math.round(hours / 24);
+          return `${days} dag${days === 1 ? "" : "en"} geleden`;
+        }
+
         function updateAdminSessionUi() {
           const email = state.adminSession?.email || "";
           const loggedIn = Boolean(email && state.adminSession?.accessToken);
@@ -17388,7 +17470,10 @@
           adminLoadButton.textContent = "Laden...";
           if (showLoading) setAdminAccessMessage("Dashboard laden...", "");
           try {
-            await loadDashboardMetrics(showLoading);
+            await Promise.all([
+              loadDashboardMetrics(showLoading),
+              loadActivityFeed(),
+            ]);
             const [customers, websites, projects, invoices] = await Promise.all([
               loadCustomersByDataMode(),
               loadWebsitesByDataMode(),
@@ -17734,6 +17819,7 @@
         adminSessionLogoutButton.addEventListener("click", logoutAdminSession);
         adminTokenLoadButton.addEventListener("click", useAdminTokenFallback);
         adminLoadButton.addEventListener("click", () => loadCRMData(true));
+        activityFeedRefresh?.addEventListener("click", () => loadActivityFeed());
         authSwitchRole.addEventListener("click", () => switchDemoRole(authRoleSwitcher.value));
         authLogout.addEventListener("click", logoutDemoSession);
         biPeriodFilter.addEventListener("change", () => loadDashboardMetrics(true));

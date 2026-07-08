@@ -1,6 +1,7 @@
 const { verifyAdmin } = require("./_admin-auth");
 const { sendEmail } = require("./email");
 const { getCompanySettings, getMailtoLink } = require("./company-settings");
+const { createTimelineEvent } = require("./services/timelineService");
 
 const PROFILE_FIELDS = "id,auth_user_id,name,company,email";
 const INVOICE_FIELDS = [
@@ -95,6 +96,7 @@ exports.handler = async (event) => {
       invoiceId: invoice.id,
       triggeredBy: "admin_invoice_email",
       triggeredByUserId: adminCheck.admin?.id,
+      suppressTimelineEvent: true,
       metadata: {
         invoiceNumber: cleanText(invoice.invoice_number),
         profileId: cleanText(invoice.profile_id),
@@ -110,6 +112,24 @@ exports.handler = async (event) => {
     await patchInvoiceEmailState(supabaseUrl, serviceRoleKey, invoice.id, {
       [config.timestampField]: new Date().toISOString(),
       email_last_error: null,
+    });
+    await safeCreateTimeline({
+      eventType: "invoice_email_sent",
+      title: `${config.label} verzonden`,
+      description: `De ${config.label} voor ${cleanText(invoice.invoice_number) || "de factuur"} is verzonden.`,
+      module: "invoice",
+      referenceType: "invoice",
+      referenceId: invoice.id,
+      actorName: adminCheck.admin?.email || "Max CRM",
+      actorRole: adminCheck.admin?.role || "admin",
+      icon: "📧",
+      severity: "success",
+      metadata: {
+        dedupeKey: `invoice_email:${invoice.id}:${emailType}:${new Date().toISOString().slice(0, 16)}`,
+        profileId: invoice.profile_id,
+        emailType,
+        logId: result.logId || "",
+      },
     });
 
     return jsonResponse(200, {
@@ -129,6 +149,15 @@ exports.handler = async (event) => {
     });
   }
 };
+
+async function safeCreateTimeline(input) {
+  try {
+    return await createTimelineEvent(input);
+  } catch (error) {
+    console.error("Invoice email timeline event failed", { message: error.message });
+    return null;
+  }
+}
 
 function parsePayload(body) {
   try {

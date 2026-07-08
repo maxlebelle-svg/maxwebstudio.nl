@@ -888,6 +888,32 @@
                 </div>
               </div>
               <div class="settings-status-list" id="customer-history-list" hidden></div>
+              <section class="customer-timeline-panel" aria-label="Klant timeline">
+                <div class="admin-section-heading compact-heading">
+                  <div>
+                    <p class="section-kicker">Timeline</p>
+                    <h2>Customer Timeline</h2>
+                  </div>
+                  <button class="button secondary" id="customer-timeline-refresh" type="button" disabled>Verversen</button>
+                </div>
+                <div class="customer-timeline-tabs" role="tablist" aria-label="Klantdetail onderdelen">
+                  <span>Algemeen</span><span>Website</span><span>Facturen</span><span>Bestanden</span><span>E-mails</span><strong>Timeline</strong>
+                </div>
+                <div class="customer-timeline-tools">
+                  <label for="customer-timeline-module">Filter<select id="customer-timeline-module" disabled><option value="">Alles</option><option value="sales">Sales</option><option value="invoice">Facturen</option><option value="email">E-mails</option><option value="production">Productie</option><option value="support">Support</option><option value="seo">SEO</option><option value="qa">QA</option><option value="telefonie">Telefonie</option></select></label>
+                  <label for="customer-timeline-search">Zoeken<input id="customer-timeline-search" type="search" placeholder="Titel, omschrijving, medewerker, module" disabled /></label>
+                </div>
+                <div class="customer-timeline-layout">
+                  <div class="customer-timeline-list" id="customer-timeline-list" aria-live="polite">
+                    <div class="timeline-empty">Selecteer een klant om de timeline te bekijken.</div>
+                  </div>
+                  <aside class="customer-timeline-detail" id="customer-timeline-detail">
+                    <span>Detail</span>
+                    <strong>Kies een timeline-item</strong>
+                    <p>Hier verschijnt de volledige context van de geselecteerde activiteit.</p>
+                  </aside>
+                </div>
+              </section>
               <p class="admin-form-message" id="customer-detail-message" role="status"></p>
             </form>
           </div>
@@ -3098,6 +3124,11 @@
         const detailSendWelcomeMail = document.getElementById("detail-send-welcome-mail");
         const detailArchive = document.getElementById("detail-archive");
         const customerHistoryList = document.getElementById("customer-history-list");
+        const customerTimelineRefresh = document.getElementById("customer-timeline-refresh");
+        const customerTimelineModule = document.getElementById("customer-timeline-module");
+        const customerTimelineSearch = document.getElementById("customer-timeline-search");
+        const customerTimelineList = document.getElementById("customer-timeline-list");
+        const customerTimelineDetail = document.getElementById("customer-timeline-detail");
         const newCustomerModal = document.getElementById("new-customer-modal");
         const newCustomerForm = document.getElementById("new-customer-form");
         const newCustomerSave = document.getElementById("new-customer-save");
@@ -10753,6 +10784,122 @@
           return state.adminSession?.accessToken || state.adminToken || "";
         }
 
+        async function fetchTimelineEvents(query = "") {
+          const token = getAdminBearer();
+          if (!token) throw new Error("Admin login nodig.");
+          const response = await fetch(`/.netlify/functions/admin-timeline-events${query ? `?${query}` : ""}`, {
+            headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || data.success === false) throw new Error(data.error || "Timeline kon niet worden geladen.");
+          return Array.isArray(data.timelineEvents) ? data.timelineEvents : [];
+        }
+
+        async function loadCustomerTimeline() {
+          if (!customerTimelineList) return;
+          const customer = selectedCustomer();
+          if (!customer) {
+            setCustomerTimelineEnabled(false);
+            customerTimelineList.innerHTML = `<div class="timeline-empty">Selecteer een klant om de timeline te bekijken.</div>`;
+            renderCustomerTimelineDetail(null);
+            return;
+          }
+          setCustomerTimelineEnabled(true);
+          customerTimelineList.innerHTML = `<div class="timeline-empty">Timeline laden...</div>`;
+          const query = new URLSearchParams();
+          query.set("customerId", customerSupabaseId(customer) || customer.id);
+          query.set("limit", "80");
+          if (customerTimelineModule?.value) query.set("module", customerTimelineModule.value);
+          if (customerTimelineSearch?.value) query.set("search", customerTimelineSearch.value);
+          try {
+            const events = await fetchTimelineEvents(query.toString());
+            renderCustomerTimeline(events);
+          } catch (error) {
+            customerTimelineList.innerHTML = `<div class="timeline-empty">${escapeHtml(error.message || "Timeline kon niet worden geladen.")}</div>`;
+            renderCustomerTimelineDetail(null);
+          }
+        }
+
+        function setCustomerTimelineEnabled(enabled) {
+          [customerTimelineRefresh, customerTimelineModule, customerTimelineSearch].forEach((element) => {
+            if (element) element.disabled = !enabled;
+          });
+        }
+
+        function renderCustomerTimeline(events = []) {
+          if (!customerTimelineList) return;
+          if (!events.length) {
+            customerTimelineList.innerHTML = `<div class="timeline-empty">Nog geen timeline-events voor deze klant.</div>`;
+            renderCustomerTimelineDetail(null);
+            return;
+          }
+          customerTimelineList.innerHTML = events.map((item) => timelineItemHtml(item)).join("");
+          customerTimelineList.querySelectorAll("[data-timeline-id]").forEach((button) => {
+            button.addEventListener("click", () => {
+              const selected = events.find((item) => item.id === button.dataset.timelineId);
+              customerTimelineList.querySelectorAll(".timeline-item").forEach((item) => item.classList.toggle("is-active", item === button));
+              renderCustomerTimelineDetail(selected);
+            });
+          });
+          renderCustomerTimelineDetail(events[0]);
+          customerTimelineList.querySelector("[data-timeline-id]")?.classList.add("is-active");
+        }
+
+        function renderCustomerTimelineDetail(item) {
+          if (!customerTimelineDetail) return;
+          if (!item) {
+            customerTimelineDetail.innerHTML = `<span>Detail</span><strong>Kies een timeline-item</strong><p>Hier verschijnt de volledige context van de geselecteerde activiteit.</p>`;
+            return;
+          }
+          const metadataRows = Object.entries(item.metadata || {})
+            .filter(([, value]) => value !== undefined && value !== null && String(value) !== "")
+            .slice(0, 6)
+            .map(([key, value]) => `<p><strong>${escapeHtml(key)}:</strong> ${escapeHtml(Array.isArray(value) ? value.join(", ") : String(value))}</p>`)
+            .join("");
+          customerTimelineDetail.innerHTML = `
+            <span>${escapeHtml(item.module || "crm")}</span>
+            <strong>${escapeHtml(item.title || "Activiteit")}</strong>
+            <p>${escapeHtml(formatDate(item.createdAt))} · ${escapeHtml(item.actorName || "Max CRM")}</p>
+            ${item.description ? `<p>${escapeHtml(item.description)}</p>` : ""}
+            ${metadataRows || `<p>Geen extra metadata.</p>`}
+          `;
+        }
+
+        function timelineItemHtml(item = {}) {
+          return `
+            <button class="timeline-item" type="button" data-timeline-id="${escapeHtml(item.id || "")}">
+              <span class="timeline-icon">${escapeHtml(item.icon || "•")}</span>
+              <span class="timeline-main">
+                <strong>${escapeHtml(item.title || "Activiteit")}</strong>
+                <span class="timeline-meta"><span>${escapeHtml(relativeTime(item.createdAt))}</span><span>${escapeHtml(item.actorName || "Max CRM")}</span></span>
+                ${item.description ? `<p>${escapeHtml(item.description)}</p>` : ""}
+              </span>
+              <span class="timeline-badge" data-severity="${escapeHtml(item.severity || "info")}">${escapeHtml(item.module || "crm")}</span>
+            </button>
+          `;
+        }
+
+        function relativeTime(value) {
+          const date = new Date(value);
+          if (Number.isNaN(date.getTime())) return "-";
+          const seconds = Math.max(0, Math.round((Date.now() - date.getTime()) / 1000));
+          if (seconds < 60) return "zojuist";
+          const minutes = Math.round(seconds / 60);
+          if (minutes < 60) return `${minutes} min geleden`;
+          const hours = Math.round(minutes / 60);
+          if (hours < 24) return `${hours} uur geleden`;
+          const days = Math.round(hours / 24);
+          return `${days} dag${days === 1 ? "" : "en"} geleden`;
+        }
+
+        function debounce(callback, delay = 250) {
+          let timer = 0;
+          return (...args) => {
+            window.clearTimeout(timer);
+            timer = window.setTimeout(() => callback(...args), delay);
+          };
+        }
+
         function getResolvedAdminBearer() {
           const bearer = getAdminBearer();
           if (bearer) return bearer;
@@ -11669,6 +11816,7 @@
           detailCreateSubscription.disabled = false;
           detailViewSubscriptions.disabled = false;
           applyCustomerWriteReadiness(customer);
+          loadCustomerTimeline();
         }
 
         async function saveCustomer(event) {
@@ -17821,6 +17969,9 @@
         adminSessionLogoutButton.addEventListener("click", logoutAdminSession);
         adminTokenLoadButton.addEventListener("click", useAdminTokenFallback);
         adminLoadButton.addEventListener("click", () => loadCRMData(true));
+        customerTimelineRefresh?.addEventListener("click", () => loadCustomerTimeline());
+        customerTimelineModule?.addEventListener("change", () => loadCustomerTimeline());
+        customerTimelineSearch?.addEventListener("input", debounce(() => loadCustomerTimeline(), 250));
         authSwitchRole.addEventListener("click", () => switchDemoRole(authRoleSwitcher.value));
         authLogout.addEventListener("click", logoutDemoSession);
         biPeriodFilter.addEventListener("change", () => loadDashboardMetrics(true));

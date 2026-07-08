@@ -1,4 +1,5 @@
 const { verifyAdmin } = require("./_admin-auth");
+const { createTimelineEvent } = require("./services/timelineService");
 const PROFILE_FIELDS = ["id", "auth_user_id", "name", "company", "email", "package"].join(",");
 const CUSTOMER_FIELDS = ["id", "auth_user_id", "profile_id", "name", "company", "email", "package"].join(",");
 const SUBSCRIPTION_FIELDS = [
@@ -249,6 +250,24 @@ exports.handler = async (event) => {
         }
       }
       const savedInvoice = await upsertInvoice(supabaseUrl, serviceRoleKey, invoice);
+      await safeCreateTimeline({
+        eventType: invoice.id ? "invoice_updated" : "invoice_created",
+        title: invoice.id ? "Factuur bijgewerkt" : "Factuur aangemaakt",
+        description: `${invoice.invoice_number || "Factuur"} voor ${formatAmount(invoice.amount)} is opgeslagen.`,
+        module: "invoice",
+        referenceType: "invoice",
+        referenceId: savedInvoice?.id,
+        actorName: adminCheck.admin?.email || "Max CRM",
+        actorRole: adminCheck.admin?.role || "admin",
+        icon: "🧾",
+        severity: "info",
+        metadata: {
+          dedupeKey: `invoice:${invoice.id ? "updated" : "created"}:${savedInvoice?.id || invoice.invoice_number || Date.now()}`,
+          profileId: invoice.profile_id,
+          invoiceNumber: invoice.invoice_number,
+          amount: invoice.amount,
+        },
+      });
       return jsonResponse(200, { success: true, invoice: normalizeInvoice(savedInvoice) });
     }
 
@@ -266,6 +285,25 @@ exports.handler = async (event) => {
         paid_at: status === "paid" ? new Date().toISOString() : null,
         updated_at: new Date().toISOString(),
       });
+      if (status === "paid") {
+        await safeCreateTimeline({
+          eventType: "invoice_paid",
+          title: "Factuur betaald",
+          description: `${savedInvoice?.invoice_number || "Factuur"} is als betaald gemarkeerd.`,
+          module: "invoice",
+          referenceType: "invoice",
+          referenceId: id,
+          actorName: adminCheck.admin?.email || "Max CRM",
+          actorRole: adminCheck.admin?.role || "admin",
+          icon: "💰",
+          severity: "success",
+          metadata: {
+            dedupeKey: `invoice_paid:${id}:${savedInvoice?.paid_at || ""}`,
+            profileId: savedInvoice?.profile_id || "",
+            status,
+          },
+        });
+      }
       return jsonResponse(200, { success: true, invoice: normalizeInvoice(savedInvoice) });
     }
 
@@ -297,6 +335,21 @@ exports.handler = async (event) => {
     });
   }
 };
+
+async function safeCreateTimeline(input) {
+  try {
+    return await createTimelineEvent(input);
+  } catch (error) {
+    console.error("Billing timeline event failed", { message: error.message });
+    return null;
+  }
+}
+
+function formatAmount(value) {
+  const amount = Number(value || 0);
+  if (!Number.isFinite(amount)) return "€ 0";
+  return new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(amount);
+}
 
 function parsePayload(body) {
   try {

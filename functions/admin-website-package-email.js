@@ -1,6 +1,7 @@
 const { verifyAdmin } = require("./_admin-auth");
 const { sendEmail } = require("./email");
 const { getCompanySettings, getMailtoLink } = require("./company-settings");
+const { createTimelineEvent } = require("./services/timelineService");
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -42,6 +43,7 @@ exports.handler = async (event) => {
       templateName: "Website pakketwijziging",
       triggeredBy: "admin_website_package_email",
       triggeredByUserId: adminCheck.admin?.id,
+      suppressTimelineEvent: true,
       metadata: {
         customerCompany: input.customerCompany,
         websiteName: input.websiteName,
@@ -59,6 +61,25 @@ exports.handler = async (event) => {
         mailPreview,
       });
     }
+    await safeCreateTimeline({
+      eventType: "website_package_email_sent",
+      title: "Websitepakket-update verzonden",
+      description: `Pakketupdate verzonden voor ${input.websiteDomain || input.websiteName}.`,
+      module: "production",
+      referenceType: "website_package_email",
+      referenceId: result.logId || result.id || "",
+      actorName: adminCheck.admin?.email || "Max CRM",
+      actorRole: adminCheck.admin?.role || "admin",
+      icon: "🌐",
+      severity: "success",
+      metadata: {
+        dedupeKey: `website_package_email:${result.logId || result.id || input.customerEmail}:${Date.now()}`,
+        customerCompany: input.customerCompany,
+        customerEmail: input.customerEmail,
+        websiteName: input.websiteName,
+        websiteDomain: input.websiteDomain,
+      },
+    });
 
     return jsonResponse(200, {
       success: true,
@@ -77,6 +98,15 @@ exports.handler = async (event) => {
     });
   }
 };
+
+async function safeCreateTimeline(input) {
+  try {
+    return await createTimelineEvent(input);
+  } catch (error) {
+    console.error("Website package timeline event failed", { message: error.message });
+    return null;
+  }
+}
 
 function parsePayload(body) {
   try {

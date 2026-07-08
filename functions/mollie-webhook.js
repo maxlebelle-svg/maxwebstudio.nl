@@ -1,6 +1,7 @@
 const { getMollieApiKey } = require("./mollie-products");
 const { sendEmail } = require("./email");
 const { getCompanySettings, getMailtoLink } = require("./company-settings");
+const { createTimelineEvent } = require("./services/timelineService");
 
 const knownStatuses = new Set([
   "paid",
@@ -587,6 +588,7 @@ async function sendPaidConfirmationEmail(supabaseUrl, serviceRoleKey, invoice) {
       subject: message.subject,
       text: message.text,
       html: message.html,
+      suppressTimelineEvent: true,
     });
 
     if (!result.sent) {
@@ -599,12 +601,38 @@ async function sendPaidConfirmationEmail(supabaseUrl, serviceRoleKey, invoice) {
       paid_email_sent_at: new Date().toISOString(),
       email_last_error: null,
     });
+    await safeCreateTimeline({
+      eventType: "invoice_paid",
+      title: "Factuur betaald",
+      description: `${invoice.invoice_number || "Factuur"} is betaald via Mollie.`,
+      module: "invoice",
+      referenceType: "invoice",
+      referenceId: invoice.id,
+      actorName: "Mollie",
+      actorRole: "payment_provider",
+      icon: "💰",
+      severity: "success",
+      metadata: {
+        dedupeKey: `mollie_invoice_paid:${invoice.id}:${invoice.mollie_payment_id || invoice.paid_at || ""}`,
+        profileId: invoice.profile_id || "",
+        paymentId: invoice.mollie_payment_id || "",
+      },
+    });
     console.log("Mollie webhook paid email sent", { invoiceId: invoice.id });
   } catch (error) {
     console.error("Mollie webhook paid email failed", {
       invoiceId: invoice.id,
       message: error.message,
     });
+  }
+}
+
+async function safeCreateTimeline(input) {
+  try {
+    return await createTimelineEvent(input);
+  } catch (error) {
+    console.error("Mollie timeline event failed", { message: error.message });
+    return null;
   }
 }
 

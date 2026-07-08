@@ -2,6 +2,7 @@ const { verifyAdmin } = require("./_admin-auth");
 const crypto = require("crypto");
 const { sendEmail } = require("./email");
 const { getCompanySettings, getMailtoLink } = require("./company-settings");
+const { createTimelineEvent } = require("./services/timelineService");
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const allowedPackages = new Set([
@@ -512,6 +513,7 @@ async function sendWelcomeEmailMessage(input, mailPreview, context = {}) {
       projectId: context.project?.id,
       triggeredBy: "admin_customer_onboarding",
       triggeredByUserId: context.admin?.id,
+      suppressTimelineEvent: true,
       metadata: {
         company: input.company,
         domain: input.domain,
@@ -519,6 +521,27 @@ async function sendWelcomeEmailMessage(input, mailPreview, context = {}) {
         ownerEmail: input.ownerEmail,
       },
     });
+    if (result.sent) {
+      await safeCreateTimeline({
+        customerId: context.customer?.id || "",
+        leadId: input.leadId,
+        eventType: "onboarding_started",
+        title: "Onboarding gestart",
+        description: "De klant heeft een onboarding/welkomstmail ontvangen.",
+        module: "onboarding",
+        referenceType: "customer",
+        referenceId: context.customer?.id || "",
+        actorName: context.admin?.email || "Max CRM",
+        actorRole: context.admin?.role || "admin",
+        icon: "🚀",
+        severity: "info",
+        metadata: {
+          dedupeKey: `onboarding_started:${context.customer?.id || input.email}:${result.logId || result.id || ""}`,
+          email: input.email,
+          company: input.company,
+        },
+      });
+    }
 
     return {
       requested: true,
@@ -534,6 +557,15 @@ async function sendWelcomeEmailMessage(input, mailPreview, context = {}) {
       id: "",
       warning: "Welkomstmail kon niet worden verzonden.",
     };
+  }
+}
+
+async function safeCreateTimeline(input) {
+  try {
+    return await createTimelineEvent(input);
+  } catch (error) {
+    console.error("Customer onboarding timeline event failed", { message: error.message });
+    return null;
   }
 }
 

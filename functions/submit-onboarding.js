@@ -2,6 +2,7 @@ const crypto = require("crypto");
 const { sendEmail } = require("./email");
 const { getCompanySettings, getMailtoLink } = require("./company-settings");
 const { saveIntake } = require("./intake-storage");
+const { createTimelineEvent } = require("./services/timelineService");
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -28,6 +29,25 @@ exports.handler = async (event) => {
   const intake = buildIntake(clean);
 
   await saveIntake(withoutUploads(intake));
+  await safeCreateTimeline({
+    eventType: "onboarding_submitted",
+    title: `Onboarding ingestuurd: ${intake.companyName}`,
+    description: `${intake.contactName} heeft de project intake ingestuurd.`,
+    module: "onboarding",
+    referenceType: "intake",
+    referenceId: intake.id,
+    actorName: intake.contactName,
+    actorRole: "customer",
+    icon: "✅",
+    severity: "success",
+    metadata: {
+      dedupeKey: `onboarding_submitted:${intake.id}`,
+      companyName: intake.companyName,
+      customerEmail: intake.email,
+      websitePackage: intake.metadata.website || "",
+      carePackage: intake.metadata.care || "",
+    },
+  });
 
   const emailResults = await sendIntakeEmails(intake);
   const warning = emailResults.find((result) => result.warning)?.warning || "";
@@ -38,6 +58,15 @@ exports.handler = async (event) => {
     warning: warning || undefined,
   });
 };
+
+async function safeCreateTimeline(input) {
+  try {
+    return await createTimelineEvent(input);
+  } catch (error) {
+    console.error("Onboarding timeline event failed", { message: error.message });
+    return null;
+  }
+}
 
 function buildIntake(clean) {
   const upsells = toArray(clean.upsells).map((item) => ({

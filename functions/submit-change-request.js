@@ -1,6 +1,7 @@
 const { sendEmail } = require("./email");
 const { getCompanySettings, getMailtoLink } = require("./company-settings");
 const { randomUUID } = require("crypto");
+const { createTimelineEvent } = require("./services/timelineService");
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const storageBucket = "change-request-files";
@@ -125,6 +126,25 @@ async function handleSubmitChangeRequest(event) {
       storageResult.debug || "database_insert_failed"
     );
   }
+  await safeCreateTimeline({
+    eventType: "change_request_submitted",
+    title: `Wijzigingsverzoek ingestuurd: ${changeRequest.changeTitle}`,
+    description: `${changeRequest.customerName} heeft een wijzigingsverzoek ingestuurd voor ${changeRequest.companyName}.`,
+    module: "support",
+    referenceType: "change_request",
+    referenceId: storageResult.id || changeRequest.id,
+    actorName: changeRequest.customerName,
+    actorRole: "customer",
+    icon: "🛠️",
+    severity: changeRequest.priority === "Hoog" ? "warning" : "info",
+    metadata: {
+      dedupeKey: `change_request_submitted:${storageResult.id || changeRequest.id}`,
+      companyName: changeRequest.companyName,
+      customerEmail: changeRequest.email,
+      category: changeRequest.changeCategory,
+      priority: changeRequest.priority,
+    },
+  });
 
   logStep("e-mail stap", {
     adminEmailConfigured: Boolean(process.env.ADMIN_EMAIL),
@@ -139,6 +159,15 @@ async function handleSubmitChangeRequest(event) {
     requestId: storageResult.id || undefined,
     warning: warning || undefined,
   });
+}
+
+async function safeCreateTimeline(input) {
+  try {
+    return await createTimelineEvent(input);
+  } catch (error) {
+    console.error("Change request timeline event failed", { message: error.message });
+    return null;
+  }
 }
 
 function buildChangeRequest(clean) {

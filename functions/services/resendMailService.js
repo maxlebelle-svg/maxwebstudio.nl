@@ -1,5 +1,6 @@
 const { getCompanySettings } = require("../company-settings");
 const { createEmailLog, updateEmailLog } = require("./mailLogService");
+const { createTimelineEvent } = require("./timelineService");
 
 async function sendTrackedEmail(input = {}) {
   const companySettings = getCompanySettings();
@@ -78,6 +79,9 @@ async function sendTrackedEmail(input = {}) {
       errorMessage: "",
       errorCode: "",
     });
+    if (!input.suppressTimelineEvent) {
+      await safeCreateTimeline(emailTimelineEvent(input, { logId: log?.id || "", providerMessageId: cleanText(data.id) }));
+    }
 
     return { sent: true, id: cleanText(data.id), logId: log?.id || "" };
   } catch (error) {
@@ -112,6 +116,64 @@ async function safeUpdateLog(id, patch) {
     console.error("Email log update failed", { message: error.message, status: error.status || 0 });
     return null;
   }
+}
+
+async function safeCreateTimeline(input) {
+  try {
+    return await createTimelineEvent(input);
+  } catch (error) {
+    console.error("Timeline event create failed", { message: error.message, status: error.status || 0 });
+    return null;
+  }
+}
+
+function emailTimelineEvent(input = {}, context = {}) {
+  const templateKey = cleanText(input.templateKey || input.template_key);
+  const mapped = {
+    lead_customer_confirmation: {
+      eventType: "lead_confirmation_email_sent",
+      title: "Leadbevestiging verzonden",
+      description: "De bevestigingsmail is succesvol naar de lead verzonden.",
+    },
+    lead_notification: {
+      eventType: "lead_notification_email_sent",
+      title: "Interne lead notificatie verzonden",
+      description: "De interne notificatie voor een nieuwe lead is verzonden.",
+    },
+    website_package_change: {
+      eventType: "website_package_email_sent",
+      title: "Websitepakket-update verzonden",
+      description: "De pakketupdate is succesvol naar de klant verzonden.",
+      module: "production",
+      icon: "🌐",
+    },
+  }[templateKey] || {
+    eventType: "email_sent",
+    title: cleanText(input.templateName || input.template_name) || "E-mail verzonden",
+    description: cleanText(input.subject) ? `E-mail verzonden: ${cleanText(input.subject)}` : "Een e-mail is succesvol verzonden.",
+  };
+
+  return {
+    customerId: input.customerId || input.customer_id,
+    leadId: input.leadId || input.lead_id,
+    eventType: mapped.eventType,
+    title: mapped.title,
+    description: mapped.description,
+    module: mapped.module || "email",
+    referenceType: "email_log",
+    referenceId: context.logId,
+    actorName: "Max CRM",
+    icon: mapped.icon || "📧",
+    severity: "success",
+    metadata: {
+      dedupeKey: context.logId ? `email:${context.logId}` : "",
+      providerMessageId: context.providerMessageId || "",
+      templateKey,
+      templateName: cleanText(input.templateName || input.template_name),
+      subject: cleanText(input.subject),
+      to: Array.isArray(input.to) ? input.to.map(cleanText).filter(Boolean) : cleanText(input.to),
+    },
+  };
 }
 
 function safeProviderError(value) {
