@@ -1,38 +1,27 @@
 "use strict";
 
-/**
- * Mock adapter for the future Brand & Print Center order layer.
- *
- * Environment placeholders for later provider wiring:
- * PRINT_PROVIDER=mock
- * PRINT_API_KEY=
- * PRINT_API_BASE_URL=
- *
- * Brand & Print Center input:
- * - Uses brandAssets from the AI Content Library as the basis for mockups.
- * - Later uses printProviderAdapter for real catalog, pricing, ordering, and status calls.
- *
- * TODO future API partners, without credentials:
- * - Print.com API
- * - HelloPrint / HelloConnect API
- * - FLYERALARM PRO Reseller API
- * - PrintAPI.nl REST API
- * - Drukwerkdeal / Printdeal API
- */
+import { loadBrandingState, preparePrintProposals, saveBrandingState, updatePrintStatus } from "./brand-assets-adapter.js";
+
+export const PRINT_STATUSES = ["not_started", "designing", "ready", "approved", "ordered", "delivered"];
 
 const catalog = [
-  { id: "business-cards", name: "Visitekaartjes", category: "Drukwerk", basePrice: 39, leadTime: "3-5 werkdagen" },
-  { id: "flyers", name: "Flyers", category: "Drukwerk", basePrice: 79, leadTime: "4-6 werkdagen" },
-  { id: "letterhead", name: "Briefpapier", category: "Kantoor", basePrice: 59, leadTime: "5 werkdagen" },
-  { id: "pens", name: "Pennen", category: "Merchandise", basePrice: 119, leadTime: "7-10 werkdagen" },
-  { id: "notepads", name: "Kladblokken", category: "Kantoor", basePrice: 99, leadTime: "6-8 werkdagen" },
-  { id: "agendas", name: "Agenda's", category: "Merchandise", basePrice: 149, leadTime: "10 werkdagen" },
-  { id: "stickers", name: "Stickers", category: "Signing", basePrice: 49, leadTime: "4-6 werkdagen" },
+  { id: "business-cards", name: "Visitekaartjes", category: "Print", basePrice: 39, leadTime: "3-5 werkdagen" },
+  { id: "letterhead", name: "Briefpapier", category: "Print", basePrice: 59, leadTime: "5 werkdagen" },
+  { id: "envelopes", name: "Enveloppen", category: "Print", basePrice: 69, leadTime: "5-7 werkdagen" },
+  { id: "flyers", name: "Flyers", category: "Marketing", basePrice: 79, leadTime: "4-6 werkdagen" },
+  { id: "folders", name: "Folders", category: "Marketing", basePrice: 99, leadTime: "5-7 werkdagen" },
+  { id: "brochures", name: "Brochures", category: "Marketing", basePrice: 149, leadTime: "7-10 werkdagen" },
   { id: "rollup-banners", name: "Roll-up banners", category: "Events", basePrice: 129, leadTime: "5-7 werkdagen" },
-  { id: "workwear", name: "Bedrijfskleding", category: "Textiel", basePrice: 189, leadTime: "10-14 werkdagen" },
-  { id: "vehicle-wrap", name: "Auto/bus bestickering", category: "Signing", basePrice: 399, leadTime: "Op aanvraag" },
-  { id: "facade-signage", name: "Gevelreclame", category: "Signing", basePrice: 499, leadTime: "Op aanvraag" },
-  { id: "window-stickers", name: "Raamstickers", category: "Signing", basePrice: 89, leadTime: "5-8 werkdagen" },
+  { id: "posters", name: "Posters", category: "Events", basePrice: 49, leadTime: "4-6 werkdagen" },
+  { id: "stickers", name: "Stickers", category: "Signing", basePrice: 49, leadTime: "4-6 werkdagen" },
+  { id: "workwear", name: "Kleding", category: "Textiel", basePrice: 189, leadTime: "10-14 werkdagen" },
+  { id: "vehicle-lettering", name: "Voertuigbelettering", category: "Signing", basePrice: 399, leadTime: "Op aanvraag" },
+  { id: "banners", name: "Spandoeken", category: "Signing", basePrice: 119, leadTime: "5-8 werkdagen" },
+  { id: "gift-vouchers", name: "Cadeaubonnen", category: "Retail", basePrice: 89, leadTime: "5-7 werkdagen" },
+  { id: "gift-cards", name: "Cadeaukaarten", category: "Retail", basePrice: 99, leadTime: "5-7 werkdagen" },
+  { id: "presentation-folders", name: "Presentatiemappen", category: "Sales", basePrice: 159, leadTime: "7-10 werkdagen" },
+  { id: "notepads", name: "Notitieblokken", category: "Kantoor", basePrice: 99, leadTime: "6-8 werkdagen" },
+  { id: "proposal-folders", name: "Offertemappen", category: "Sales", basePrice: 149, leadTime: "7-10 werkdagen" },
 ];
 
 const optionsByProduct = {
@@ -41,51 +30,25 @@ const optionsByProduct = {
     materials: ["Standaard", "Premium mat", "Premium glans", "Gerecycled"],
     finishes: ["Geen", "Mat laminaat", "Glans laminaat", "Soft touch"],
   },
-  pens: {
-    quantities: [100, 250, 500, 1000],
-    materials: ["Blauwschrijvend", "Zwartschrijvend", "Metaal", "Gerecycled kunststof"],
-    finishes: ["Een kleur bedrukking", "Full-color bedrukking"],
-  },
   workwear: {
     quantities: [10, 25, 50, 100],
     materials: ["T-shirt", "Polo", "Sweater", "Softshell jas"],
     finishes: ["Borstlogo", "Ruglogo", "Borst- en ruglogo"],
   },
-  "vehicle-wrap": {
+  "vehicle-lettering": {
     quantities: [1, 2, 5, 10],
-    materials: ["Deurstickers", "Halve wrap", "Volledige wrap"],
-    finishes: ["Ontwerpcontrole", "Montage op locatie", "Montage bij partner"],
+    materials: ["Deurstickers", "Halve belettering", "Volledige belettering"],
+    finishes: ["Ontwerpcontrole", "Montagevoorbereiding", "Montage op locatie"],
   },
 };
 
-function clone(value) {
-  return JSON.parse(JSON.stringify(value));
-}
-
-function getProduct(productId) {
-  return catalog.find((product) => product.id === productId) || catalog[0];
-}
-
-function demoResult(action, payload = {}) {
-  return {
-    provider: "mock",
-    action,
-    success: true,
-    productionConnected: false,
-    ...payload,
-  };
-}
-
 export async function getCatalog() {
-  return demoResult("getCatalog", { catalog: clone(catalog) });
+  return { success: true, catalog: clone(catalog) };
 }
 
 export async function getProductOptions(productId) {
   const options = optionsByProduct[productId] || optionsByProduct.default;
-  return demoResult("getProductOptions", {
-    productId,
-    options: clone(options),
-  });
+  return { success: true, productId, options: clone(options) };
 }
 
 export async function calculatePrice(config = {}) {
@@ -94,31 +57,64 @@ export async function calculatePrice(config = {}) {
   const materialFactor = String(config.material || "").toLowerCase().includes("premium") ? 1.22 : 1;
   const finishFactor = String(config.finish || "").toLowerCase() === "geen" ? 1 : 1.14;
   const price = Math.round((product.basePrice + quantity * 0.18) * materialFactor * finishFactor);
-
-  return demoResult("calculatePrice", {
+  return {
+    success: true,
     config: clone(config),
     currency: "EUR",
     estimatedTotal: price,
     vatIncluded: false,
-  });
+  };
 }
 
 export async function createDraftOrder(order = {}) {
-  return demoResult("createDraftOrder", {
-    draftOrder: {
-      id: `draft-print-${Date.now()}`,
-      status: "Concept offerte",
-      createdAt: new Date().toISOString(),
-      ...order,
-    },
-  });
+  const product = getProduct(order.productId);
+  const state = loadBrandingState();
+  const projectId = order.projectId || state.projects[0]?.id || "";
+  if (projectId && !state.printAssets.some((asset) => asset.projectId === projectId)) preparePrintProposals(projectId);
+  const nextState = loadBrandingState();
+  const row = {
+    id: order.id || `print-${product.id}-${Date.now()}`,
+    projectId,
+    customerId: order.customerId || nextState.projects.find((project) => project.id === projectId)?.customerId || "",
+    assetName: product.name,
+    printType: product.name,
+    category: product.category,
+    status: order.status || "designing",
+    quantity: Number(order.quantity || 100),
+    material: order.material || "",
+    finish: order.finish || "",
+    estimatedTotal: order.estimatedTotal || 0,
+    sizeOrFormat: order.sizeOrFormat || product.name,
+    supplierNotes: "Voorbereid in Brand Center.",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  nextState.printAssets = [row, ...nextState.printAssets.filter((asset) => asset.id !== row.id)];
+  saveBrandingState(nextState);
+  return { success: true, draftOrder: row };
 }
 
 export async function getOrderStatus(orderId) {
-  return demoResult("getOrderStatus", {
+  const state = loadBrandingState();
+  const row = state.printAssets.find((asset) => asset.id === orderId);
+  return {
+    success: true,
     orderId,
-    status: "Demo concept",
-    note: "Er is geen order geplaatst bij een printpartner.",
-  });
+    status: row?.status || "not_started",
+    note: row ? "Printregistratie gevonden in Brand Center." : "Geen printregistratie gevonden.",
+  };
 }
 
+export async function setOrderStatus(orderId, status) {
+  if (!PRINT_STATUSES.includes(status)) return { success: false, error: "Onbekende printstatus." };
+  updatePrintStatus(orderId, status);
+  return getOrderStatus(orderId);
+}
+
+function getProduct(productId) {
+  return catalog.find((product) => product.id === productId) || catalog[0];
+}
+
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
+}

@@ -163,7 +163,7 @@
             <label class="admin-profile-wide">Social links<textarea name="socialLinks" rows="3"></textarea></label>
 
             <label>Huidig domein<input name="currentDomain" type="text" /></label>
-            <label>Domeinprovider<input name="domainProvider" type="text" /></label>
+            <label>Waar staat je domein nu?<input name="domainProvider" type="text" /></label>
             <label>Domein overzetten?<select name="transferDomain"><option value="">Nog onbekend</option><option>Ja</option><option>Nee</option><option>Graag advies</option></select></label>
             <label>E-mail op domein?<select name="domainEmail"><option value="">Nog onbekend</option><option>Ja</option><option>Nee</option><option>Graag advies</option></select></label>
             <label>Gewenste domeinnaam<input name="desiredDomain" type="text" /></label>
@@ -1661,12 +1661,18 @@
           brandingFactory.textContent = project.status === "linked_to_factory" ? "Gekoppeld" : "Nog niet";
           const colors = Array.isArray(project.colors) ? project.colors : [];
           const logo = logos.find((asset) => ["approved", "selected"].includes(asset.status)) || logos[0];
+          const downloads = state.downloadAssets.filter((asset) => asset.projectId === project.id || asset.customerId === project.customerId);
+          const socialAssets = state.socialAssets.filter((asset) => asset.projectId === project.id || asset.customerId === project.customerId);
+          const printAssets = state.printAssets.filter((asset) => asset.projectId === project.id || asset.customerId === project.customerId);
           const rows = [
             ["Logo", logo?.assetName || logo?.title || "Nog geen logo gekozen"],
             ["Kleurenpalet", colors.length ? colors.join(", ") : "Uit onboarding"],
             ["Lettertypes", project.typography || project.briefing?.fontPreference || "Wordt afgestemd"],
             ["Iconstijl", project.iconStyle || "Lijniconen"],
             ["Assets", logo?.variants?.length ? `${logo.variants.length} versies voorbereid` : "Wordt voorbereid"],
+            ["Downloads", downloads.length ? `${downloads.length} bestanden` : "Nog niet beschikbaar"],
+            ["Social assets", socialAssets.length ? `${socialAssets.length} formaten` : "Wordt voorbereid"],
+            ["Print assets", printAssets.length ? `${printAssets.length} voorstellen` : "Optioneel"],
           ];
           brandingAssets.innerHTML = rows.map(([label, value]) => `<article class="admin-card metric-card"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><small>Max Webstudio</small></article>`).join("");
           brandingApprove.disabled = !logos.length && project.status !== "customer_review";

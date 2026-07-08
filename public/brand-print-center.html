@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex, nofollow" />
     <title>Brand & Print Center | Max Webstudio</title>
-    <meta name="description" content="Losse demo-omgeving voor drukwerk en merchandise op basis van merkassets." />
+    <meta name="description" content="Brand & Print Center voor drukwerk en merchandise op basis van goedgekeurde merkassets." />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <style>
       :root {
@@ -416,17 +416,17 @@
         <a class="back-link" href="admin-dashboard.html">Terug naar admin</a>
         <div class="brand-lockup">
           <strong>Brand & Print Center</strong>
-          <span>Bestelomgeving voor drukwerk en merchandise.</span>
+          <span>Voorbereiding voor drukwerk en merchandise.</span>
         </div>
         <nav class="module-nav">
           <a href="#catalog">Productcatalogus</a>
           <a href="#configurator">Configurator</a>
           <a href="#quote">Concept offerte</a>
-          <a href="ai-content-library.html">AI Content Library</a>
+          <a href="admin-brand-center.html">Brand Center</a>
         </nav>
         <div class="sidebar-note">
-          <strong>Losse module</strong>
-          <span>Deze module is los gebouwd zodat we hem later veilig kunnen koppelen aan het klantportaal.</span>
+          <strong>Gekoppeld</strong>
+          <span>Printvoorstellen gebruiken de branding uit het bestaande Brand Center.</span>
         </div>
       </aside>
 
@@ -438,9 +438,9 @@
             <p>Gebruik je merkassets om direct professionele drukwerk- en promotieproducten samen te stellen.</p>
           </div>
           <div class="hero-panel" aria-label="Demo bestelstatus">
-            <span class="soon-label">Binnenkort direct bestellen</span>
+            <span class="soon-label">Voorbereiden en registreren</span>
             <strong>Mockups, configuratie en concept offertes</strong>
-            <span>Geen betalingen, geen API-orders en geen live klantdata.</span>
+            <span>Alleen registreren en voorbereiden. Bestellen blijft een bewuste vervolgstap.</span>
           </div>
         </header>
 
@@ -450,7 +450,7 @@
               <p class="kicker">Catalogus</p>
               <h2>Producten</h2>
             </div>
-            <button class="button secondary" type="button" data-demo-action="Gebruik assets uit AI Content Library">Gebruik assets uit AI Content Library</button>
+            <button class="button secondary" type="button" data-print-action="Gebruik Brand Center assets">Gebruik Brand Center assets</button>
           </div>
           <div class="catalog-grid" id="catalog-grid"></div>
         </section>
@@ -483,8 +483,8 @@
               <div class="mockup-inner" id="mockup-preview">Visitekaartjes met primair logo en kernpalet</div>
             </div>
             <div class="config-actions">
-              <button class="button primary" type="button" data-demo-action="Product configureren">Product configureren</button>
-              <button class="button secondary" type="button" data-demo-action="Later koppelen aan printpartner">Later koppelen aan printpartner</button>
+              <button class="button primary" type="button" data-print-action="Product configureren">Product configureren</button>
+              <button class="button secondary" type="button" data-print-action="Print voorbereiden">Print voorbereiden</button>
             </div>
           </div>
 
@@ -501,7 +501,7 @@
               <li><span>Richtprijs excl. btw</span><strong id="quote-price">-</strong></li>
             </ul>
             <button class="button primary" type="button" id="draft-order-button">Concept offerte maken</button>
-            <span class="status-label soon-label">Binnenkort direct bestellen</span>
+            <span class="status-label soon-label">Registratieflow</span>
           </aside>
         </section>
 
@@ -510,10 +510,10 @@
             <p class="kicker">Architectuur</p>
             <h2>Input en latere koppeling</h2>
           </div>
-          <p>Brand & Print Center gebruikt later brandAssets als basis voor mockups en printProviderAdapter voor echte orders. Nu draait alles op mock-adapters.</p>
+          <p>Brand & Print Center gebruikt Brand Center assets als basis voor mockups en printregistraties. Er wordt niets automatisch besteld.</p>
           <code>input = brandAssets
 mockups = product + logo + colors + fonts + images
-futureOrders = printProviderAdapter.createDraftOrder(order)</code>
+printRegistratie = printProviderAdapter.createDraftOrder(order)</code>
         </section>
       </div>
     </main>
@@ -533,7 +533,7 @@ futureOrders = printProviderAdapter.createDraftOrder(order)</code>
       let brandAssets = {};
 
       function showToast(message) {
-        toast.textContent = `${message} - demoactie, nog geen productieflow.`;
+        toast.textContent = message;
         toast.classList.add("is-visible");
         window.setTimeout(() => toast.classList.remove("is-visible"), 2600);
       }
@@ -601,9 +601,9 @@ futureOrders = printProviderAdapter.createDraftOrder(order)</code>
           return;
         }
 
-        const actionButton = event.target.closest("[data-demo-action]");
+        const actionButton = event.target.closest("[data-print-action]");
         if (actionButton) {
-          showToast(actionButton.dataset.demoAction);
+          showToast(actionButton.dataset.printAction);
         }
       });
 
@@ -611,6 +611,7 @@ futureOrders = printProviderAdapter.createDraftOrder(order)</code>
       [quantitySelect, materialSelect, finishSelect].forEach((select) => select.addEventListener("change", updateQuote));
       document.querySelector("#draft-order-button").addEventListener("click", async () => {
         await createDraftOrder({
+          projectId: brandAssets.brandGuidelines?.id || "",
           productId: productSelect.value,
           quantity: quantitySelect.value,
           material: materialSelect.value,
@@ -634,4 +635,3 @@ futureOrders = printProviderAdapter.createDraftOrder(order)</code>
     </script>
   </body>
 </html>
-

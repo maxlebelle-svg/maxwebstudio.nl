@@ -11054,11 +11054,17 @@
           const branding = readCeoStoredObject("maxwebstudioBrandCenter");
           const projects = Array.isArray(branding.projects) ? branding.projects : [];
           const logos = Array.isArray(branding.logoAssets) ? branding.logoAssets : [];
+          const brandingAssets = Array.isArray(branding.brandingAssets) ? branding.brandingAssets : [];
+          const printAssets = Array.isArray(branding.printAssets) ? branding.printAssets : [];
           return {
             logosGeneratedToday: logos.filter((item) => ceoIsSameDay(item.createdAt || item.updatedAt)).length,
             approvalsToday: projects.filter((item) => ceoIsSameDay(item.approvedAt)).length,
             queue: projects.filter((item) => ["generating", "generated", "customer_review"].includes(statusKey(item.status))).length,
             withoutBranding: projects.filter((item) => ["not_started", "rejected"].includes(statusKey(item.status))).length,
+            assetsCreated: brandingAssets.filter((item) => ceoIsSameDay(item.createdAt || item.updatedAt)).length,
+            printRequests: printAssets.filter((item) => ["designing", "ready", "approved"].includes(statusKey(item.status))).length,
+            complete: projects.filter((project) => brandingAssets.some((asset) => asset.projectId === project.id) && printAssets.some((asset) => asset.projectId === project.id)).length,
+            printPotential: printAssets.filter((item) => ["ready", "approved"].includes(statusKey(item.status))).length * 125,
           };
         }
 
@@ -11364,6 +11370,10 @@
             ["Branding approvals", summary.branding.approvalsToday],
             ["Branding wachtrij", summary.branding.queue],
             ["Zonder branding", summary.branding.withoutBranding],
+            ["Branding assets gemaakt", summary.branding.assetsCreated],
+            ["Print aanvragen", summary.branding.printRequests],
+            ["Branding compleet", summary.branding.complete],
+            ["Print omzet potentieel", money(summary.branding.printPotential || 0)],
             ["Previews klaar", summary.previewsReadyNotViewed.length],
             ["Klaar voor livegang", summary.readyForLive.length],
             ["Preview conversie", `${summary.previewConversion}%`],

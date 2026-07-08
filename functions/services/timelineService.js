@@ -89,6 +89,12 @@ const allowedEventTypes = new Set([
   "branding_updated",
   "branding_approved",
   "branding_sent_to_factory",
+  "branding_asset_created",
+  "branding_asset_updated",
+  "print_requested",
+  "print_ready",
+  "print_ordered",
+  "print_delivered",
   "health_warning",
   "health_restored",
   "service_warning",
@@ -445,6 +451,7 @@ function moduleForEventType(eventType) {
   if (type.startsWith("project_")) return "projects";
   if (type.startsWith("logo_")) return "branding";
   if (type.startsWith("branding_")) return "branding";
+  if (type.startsWith("print_")) return "print";
   if (type.startsWith("onboarding_")) return "onboarding";
   if (type.startsWith("website_")) return "website_factory";
   if (type.startsWith("domain_")) return "domain";

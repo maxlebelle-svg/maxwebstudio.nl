@@ -105,6 +105,10 @@
     ["open-domain", "Open Domein Center", "Domeinen beheren", "Websites", "Command", "admin-domain-center.html"],
     ["open-brand", "Open Brand Center", "Brand assets beheren", "Branding", "Command", "admin-brand-center.html"],
     ["open-branding", "Open branding", "Open Branding Center", "Branding", "Command", "admin-brand-center.html"],
+    ["open-downloads", "Open downloads", "Open branding downloads", "Branding", "Command", "admin-brand-center.html#downloads"],
+    ["open-print-center", "Open print center", "Open Brand & Print Center", "Branding", "Command", "brand-print-center.html"],
+    ["prepare-print", "Prepare print", "Bereid printvoorstellen voor", "Branding", "Command", "brand-print-center.html"],
+    ["show-branding-assets", "Show branding assets", "Toon branding assets", "Branding", "Command", "admin-brand-center.html"],
     ["review-branding", "Review branding", "Bekijk branding die op review wacht", "Branding", "Command", "admin-brand-center.html"],
     ["approve-branding", "Approve branding", "Open branding approvals", "Branding", "Command", "admin-brand-center.html"],
     ["open-settings", "Open Settings", "CRM instellingen", "Instellingen", "Command", "admin-instellingen.html"],
@@ -444,6 +448,10 @@
     if (/(offerte|quote)/.test(text)) return "new-quote";
     if (/(mail|email|e-mail)/.test(text)) return "send-email";
     if (/(open|bekijk).*(branding|brand center|huisstijl)/.test(text)) return "open-branding";
+    if (/(download|downloads)/.test(text)) return "open-downloads";
+    if (/(print center|drukwerk|print)/.test(text) && /(open|bekijk)/.test(text)) return "open-print-center";
+    if (/(prepare|voorbereid|voorbereiden).*(print|drukwerk)/.test(text)) return "prepare-print";
+    if (/(show|toon|bekijk).*(branding assets|brand assets|assets)/.test(text)) return "show-branding-assets";
     if (/(review|controleer).*(branding|huisstijl|logo)/.test(text)) return "review-branding";
     if (/(approve|goedkeur).*(branding|huisstijl|logo)/.test(text)) return "approve-branding";
     if (/(logo studio|ai logo studio)/.test(text)) return "open-logo-studio";

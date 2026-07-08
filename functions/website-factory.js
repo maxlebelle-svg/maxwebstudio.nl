@@ -1165,6 +1165,9 @@ function buildBrandingPlan({ factoryInput, analysis }) {
     iconStyle: branding.iconStyle || "lijniconen, subtiel en functioneel",
     visualMood: analysis.brandStyle,
     logoAsset: brandingLogo,
+    favicon: branding.metadata?.variants?.find?.((item) => item.key === "favicon") || null,
+    socialImages: branding.metadata?.socialAssets || [],
+    downloads: branding.metadata?.downloads || [],
     metadata: branding.metadata || {},
   };
 }

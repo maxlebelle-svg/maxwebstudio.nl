@@ -265,6 +265,22 @@ function buildDailyFocus({ data, customerContexts, recommendations }) {
     .filter((item) => statusKey(item.status) === "approved")
     .map((item) => ({ label: item.companyName || item.label, status: "klaar voor Website Factory" }))
     .slice(0, 8);
+  const customersWithoutBrandingAssets = brandingRows
+    .filter((item) => !item.hasDownloads)
+    .map((item) => ({ label: item.companyName || item.label, status: "assets nodig" }))
+    .slice(0, 8);
+  const customersWithoutPrint = brandingRows
+    .filter((item) => !item.hasPrint)
+    .map((item) => ({ label: item.companyName || item.label, status: "print optioneel" }))
+    .slice(0, 8);
+  const brandingComplete = brandingRows
+    .filter((item) => item.hasDownloads && item.hasPrint)
+    .map((item) => ({ label: item.companyName || item.label, status: "compleet" }))
+    .slice(0, 8);
+  const printOpportunities = brandingRows
+    .filter((item) => item.readyPrintCount > 0)
+    .map((item) => ({ label: item.companyName || item.label, status: `${item.readyPrintCount} printkansen` }))
+    .slice(0, 8);
   const healthRows = [...data.timeline, ...data.notifications]
     .filter((item) => /health|service_warning|platform|critical|failed|webhook|upload|factory_warning|preview_warning|payment_warning|mail_warning|automation_warning/.test(statusKey([item.eventType, item.event_type, item.action, item.module, item.title, item.description, item.severity, item.status].join(" "))));
   const healthWarnings = healthRows
@@ -379,6 +395,10 @@ function buildDailyFocus({ data, customerContexts, recommendations }) {
     projectsWithoutLogo,
     brandingWaitingReview,
     brandingReadyForFactory,
+    customersWithoutBrandingAssets,
+    customersWithoutPrint,
+    brandingComplete,
+    printOpportunities,
     healthWarnings,
     commonFailures,
     webhookFailures,
@@ -410,10 +430,15 @@ function extractBrandingRows(rows = []) {
     .filter(Boolean);
   return states.flatMap((state) => {
     const logoAssets = Array.isArray(state.logoAssets) ? state.logoAssets : [];
+    const downloadAssets = Array.isArray(state.downloadAssets) ? state.downloadAssets : [];
+    const printAssets = Array.isArray(state.printAssets) ? state.printAssets : [];
     return (state.projects || []).map((project) => ({
       ...project,
       label: project.companyName || project.id || "Branding",
       hasLogo: logoAssets.some((asset) => asset.projectId === project.id),
+      hasDownloads: downloadAssets.some((asset) => asset.projectId === project.id),
+      hasPrint: printAssets.some((asset) => asset.projectId === project.id),
+      readyPrintCount: printAssets.filter((asset) => asset.projectId === project.id && ["ready", "approved"].includes(statusKey(asset.status))).length,
     }));
   });
 }
