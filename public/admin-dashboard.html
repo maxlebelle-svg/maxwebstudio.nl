@@ -2586,6 +2586,7 @@
           dashboardProjectCount: 0,
           dashboardWebsiteCount: 0,
           dashboardInvoiceCount: 0,
+          dashboardMetricsLoaded: false,
           developerModules: null,
           customerSourceStatus: null,
           customerWriteReadiness: null,
@@ -11127,9 +11128,9 @@
           return state.healthWebsites.find((website) => website.id === id);
         }
 
-                function updateMetrics() {
+        function updateMetrics() {
           const liveWebsites = state.websites.filter((website) => ["online", "live", "active"].includes(normalize(website.status))).length;
-                  const activeProjects = state.projects.filter((project) => !["live", "onderhoud", "gepauzeerd", "gearchiveerd", "afgerond", "completed", "done"].includes(statusKey(project.status))).length;
+          const activeProjects = state.projects.filter((project) => !["live", "onderhoud", "gepauzeerd", "gearchiveerd", "afgerond", "completed", "done"].includes(statusKey(project.status))).length;
           const openQuotes = state.quotes.filter((quote) => ["concept", "verzonden", "bekeken"].includes(normalizeQuoteStatus(quote.status))).length;
           const openInvoices = state.invoices.filter((invoice) => ["concept", "verzonden", "verlopen"].includes(normalizeInvoiceStatus(invoice.status))).length;
           const paidAmount = state.invoices
@@ -11166,8 +11167,9 @@
           websiteStats.online.textContent = String(liveWebsites);
           websiteStats.development.textContent = String(state.websites.filter((website) => website.status === "development").length);
           websiteStats.maintenance.textContent = String(state.websites.filter((website) => website.status === "maintenance").length);
-                  renderProjectStats();
-                }
+          if (state.dashboardMetricsLoaded) renderBusinessDashboard();
+          renderProjectStats();
+        }
 
                 function handleDashboardSummaryAction(type) {
                   if (type === "leads") {
@@ -11242,6 +11244,7 @@
             const data = await response.json().catch(() => ({}));
             if (!response.ok || !data.success) throw new Error(data.error || "Dashboardmetrics konden niet worden geladen.");
             state.dashboardMetrics = data.metrics || null;
+            state.dashboardMetricsLoaded = Boolean(state.dashboardMetrics);
             renderBusinessDashboard();
           } catch (error) {
             renderState(biActionList, "Dashboardmetrics niet beschikbaar", error.message || "Controleer Supabase configuratie.", "Fout", "status-attention");
@@ -11312,11 +11315,11 @@
           const paidInvoices = state.invoices.filter((invoice) => normalizeInvoiceStatus(invoice.status) === "betaald");
           const paidRevenue = paidInvoices.reduce((sum, invoice) => sum + Number(invoice.total || invoice.amount || 0), 0);
           const openInvoices = state.invoices.filter((invoice) => ["concept", "verzonden", "verlopen", "open"].includes(normalizeInvoiceStatus(invoice.status))).length;
-          state.dashboardInvoiceCount = state.invoices.length;
+          state.dashboardInvoiceCount = Math.max(Number(state.dashboardInvoiceCount || 0), state.invoices.length);
           if (paidRevenue > 0) {
-            state.dashboardInvoicePaidRevenue = paidRevenue;
-            state.dashboardInvoicePaidCount = paidInvoices.length;
-            state.dashboardInvoiceOpenCount = openInvoices;
+            state.dashboardInvoicePaidRevenue = Math.max(Number(state.dashboardInvoicePaidRevenue || 0), paidRevenue);
+            state.dashboardInvoicePaidCount = Math.max(Number(state.dashboardInvoicePaidCount || 0), paidInvoices.length);
+            state.dashboardInvoiceOpenCount = Math.max(Number(state.dashboardInvoiceOpenCount || 0), openInvoices);
             if (revenueMonthMetric) revenueMonthMetric.textContent = money(paidRevenue);
             if (paidAmountMetric) paidAmountMetric.textContent = money(paidRevenue);
           }
@@ -11325,18 +11328,20 @@
           if (openInvoicesLocalMetric) openInvoicesLocalMetric.textContent = String(state.dashboardInvoiceCount || state.invoices.length);
           if (biKpis.paidInvoices) biKpis.paidInvoices.textContent = String(paidCount);
           if (biKpis.openInvoices) biKpis.openInvoices.textContent = String(openCount);
+          if (state.dashboardMetricsLoaded) renderBusinessDashboard();
         }
 
         function applyDashboardEntityCountFallback() {
-          state.dashboardCustomerCount = state.customers.length;
-          state.dashboardProjectCount = state.projects.length;
-          state.dashboardWebsiteCount = state.websites.length;
-          state.dashboardInvoiceCount = state.invoices.length;
+          state.dashboardCustomerCount = Math.max(Number(state.dashboardCustomerCount || 0), state.customers.length);
+          state.dashboardProjectCount = Math.max(Number(state.dashboardProjectCount || 0), state.projects.length);
+          state.dashboardWebsiteCount = Math.max(Number(state.dashboardWebsiteCount || 0), state.websites.length);
+          state.dashboardInvoiceCount = Math.max(Number(state.dashboardInvoiceCount || 0), state.invoices.length);
           if (totalCustomersMetric) totalCustomersMetric.textContent = String(state.dashboardCustomerCount);
           if (totalCustomersLabel) totalCustomersLabel.textContent = state.dashboardCustomerCount === 1 ? "Klantprofiel" : "Klantprofielen";
           if (activeProjectsMetric) activeProjectsMetric.textContent = String(state.dashboardProjectCount);
           if (liveWebsitesMetric) liveWebsitesMetric.textContent = String(state.dashboardWebsiteCount);
           if (openInvoicesLocalMetric) openInvoicesLocalMetric.textContent = String(state.dashboardInvoiceCount);
+          if (state.dashboardMetricsLoaded) renderBusinessDashboard();
         }
 
         function renderBarChart(target, items, options = {}) {
@@ -21039,12 +21044,10 @@
         function syncHeroKpis() {
           const leads = document.getElementById("hero-kpi-leads");
           const conversion = document.getElementById("hero-kpi-conversion");
-          const conversionMetric = document.getElementById("metric-conversion-rate");
           const ring = document.getElementById("hero-conversion-ring");
           if (leads) leads.textContent = textFrom("metric-total-leads");
-          const conversionText = textFrom("sales-cockpit-conversion", "0%");
+          const conversionText = textFrom("metric-conversion-rate", textFrom("sales-cockpit-conversion", "0%"));
           if (conversion) conversion.textContent = conversionText;
-          if (conversionMetric) conversionMetric.textContent = conversionText;
           if (ring) {
             const percent = Math.max(0, Math.min(100, Number.parseFloat(conversionText) || 0));
             const circumference = 2 * Math.PI * 29;
@@ -21059,7 +21062,7 @@
           syncHeroKpis();
         }
         const observer = new MutationObserver(syncHeroKpis);
-        ["metric-total-leads", "sales-cockpit-conversion"].forEach((id) => {
+        ["metric-total-leads", "metric-conversion-rate"].forEach((id) => {
           const element = document.getElementById(id);
           if (element) observer.observe(element, { childList: true, characterData: true, subtree: true });
         });
