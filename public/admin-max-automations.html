@@ -207,9 +207,13 @@
 
       .automation-canvas-top {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-columns: minmax(240px, 1fr) minmax(280px, auto);
         gap: 12px;
         align-items: start;
+      }
+
+      .automation-canvas-title {
+        min-width: 0;
       }
 
       .automation-node-toolbar {
@@ -490,8 +494,8 @@
           <aside class="admin-card automation-library">
             <div class="admin-section-heading">
               <div>
-                <p class="section-kicker">Library</p>
-                <h2>Workflow Library</h2>
+                <p class="section-kicker">Bibliotheek</p>
+                <h2>Workflows</h2>
               </div>
               <span class="status-badge status-prepared" id="library-count">0</span>
             </div>
@@ -501,7 +505,7 @@
           <section class="admin-card automation-canvas-card">
             <div class="automation-canvas-top">
               <div class="automation-canvas-title">
-                <p class="section-kicker" id="canvas-kicker">Visual Workflow Canvas</p>
+                <p class="section-kicker" id="canvas-kicker">Workflow canvas</p>
                 <h2 id="canvas-title">Selecteer een workflow</h2>
                 <p class="automation-card-copy" id="canvas-description">Clone of open een template om nodes te bekijken, testen en aanpassen.</p>
               </div>
@@ -544,7 +548,7 @@
             <div class="admin-section-heading">
               <div>
                 <p class="section-kicker">Properties</p>
-                <h2>Properties Panel</h2>
+                <h2>Eigenschappen</h2>
               </div>
               <mark class="status-badge status-prepared" id="properties-status">No node</mark>
             </div>

@@ -123,7 +123,7 @@
         <article class="admin-card admin-token-card admin-developer-only">
           <div>
             <strong>Admin token fallback</strong>
-            <span>Alleen voor Developer Mode/nooddiagnose. Normaal gebruik loopt via Supabase Auth.</span>
+            <span>Alleen voor Developer Mode/nooddiagnose. Normaal gebruik loopt via admin-auth.</span>
           </div>
           <label for="admin-token">Admin token</label>
           <div class="admin-profile-inline">
@@ -239,7 +239,7 @@
           <article class="admin-card metric-card admin-developer-only"><span><i aria-hidden="true">€</i>Betaald bedrag</span><strong id="metric-paid-amount">€ 0</strong><small>Facturen betaald</small></article>
           <article class="admin-card metric-card admin-developer-only"><span><i aria-hidden="true">↻</i>Te factureren</span><strong id="metric-subscriptions-due">0</strong><small>Verlopen / vandaag / 7 dagen</small></article>
           <article class="admin-card metric-card admin-developer-only"><span>Recurring omzet</span><strong id="metric-recurring-revenue">€ 0,00</strong><small id="metric-recurring-label">MRR / ARR / actief</small></article>
-          <article class="admin-card metric-card admin-developer-only"><span>Demo-modus</span><strong id="metric-demo-status">Actief</strong><small>Lokale opslag actief</small></article>
+          <article class="admin-card metric-card admin-developer-only"><span>Demo-modus</span><strong id="metric-demo-status">Actief</strong><small>LocalStorage actief</small></article>
         </section>
 
         <section class="admin-section bi-dashboard-section admin-developer-only" aria-label="Business intelligence dashboard">
@@ -801,7 +801,7 @@
           </div>
 
           <div class="admin-filters crm-filters" aria-label="Klanten filteren">
-            <label for="customer-data-mode">Customer data mode<select id="customer-data-mode"><option value="local">Local</option><option value="supabase-read">Supabase read</option><option value="hybrid">Hybrid</option></select></label>
+            <label for="customer-data-mode">Customer data mode<select id="customer-data-mode"><option value="local">Local</option><option value="supabase-read">Centraal</option><option value="hybrid">Hybrid</option></select></label>
             <label for="customer-search">Zoeken<input id="customer-search" type="search" placeholder="Naam, bedrijf, e-mail of website" /></label>
             <label for="customer-status-filter">Status<select id="customer-status-filter"><option value="">Alle statussen</option><option value="actief">Actief</option><option value="onboarding">Onboarding</option><option value="pauze">Pauze</option><option value="gearchiveerd">Gearchiveerd</option></select></label>
             <label for="customer-package-filter">Pakket<select id="customer-package-filter"><option value="">Alle pakketten</option><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option><option value="One Page Website">One Page Website</option></select></label>
@@ -819,8 +819,8 @@
               </div>
               <article class="admin-card request-card request-state-card">
                 <div>
-                  <strong>Klantdata niet geladen</strong>
-                  <span>Log in als admin om CRM-data op te halen.</span>
+                  <strong>Nog geen klantdata beschikbaar</strong>
+                  <span>Controleer de toegang of probeer opnieuw te laden.</span>
                 </div>
               </article>
             </div>
@@ -884,7 +884,7 @@
                   <button class="button secondary" id="detail-view-files" type="button" disabled>Bestanden bekijken</button>
                   <button class="button secondary" id="detail-create-subscription" type="button" disabled>Abonnement aanmaken</button>
                   <button class="button secondary" id="detail-view-subscriptions" type="button" disabled>Abonnementen bekijken</button>
-                  <button class="button secondary" id="detail-refresh-supabase" type="button" disabled>Ververs vanuit Supabase</button>
+                  <button class="button secondary" id="detail-refresh-supabase" type="button" disabled>Gegevens verversen</button>
                   <button class="button secondary" id="detail-history" type="button" disabled>Bekijk wijzigingshistorie</button>
                   <button class="button secondary" id="detail-reactivate" type="button" disabled>Reactiveren</button>
                 </div>
@@ -913,7 +913,7 @@
             <article class="admin-card detail-card"><span>Onderhoud</span><strong id="website-stat-maintenance">0</strong></article>
           </div>
           <div class="admin-filters website-filters" aria-label="Websites filteren">
-            <label for="website-data-mode">Website data mode<select id="website-data-mode"><option value="local">Local</option><option value="supabase-read">Supabase read</option><option value="hybrid">Hybrid</option></select></label>
+            <label for="website-data-mode">Website data mode<select id="website-data-mode"><option value="local">Local</option><option value="supabase-read">Centraal</option><option value="hybrid">Hybrid</option></select></label>
             <label for="website-search">Zoeken<input id="website-search" type="search" placeholder="Domein, bedrijf, klant of website" /></label>
             <label for="website-status-filter">Status<select id="website-status-filter"><option value="">Alle statussen</option><option value="online">Online</option><option value="development">In ontwikkeling</option><option value="maintenance">Onderhoud</option><option value="waiting_client">Wachten op klant</option><option value="offline">Offline</option></select></label>
             <label for="website-hosting-filter">Hostingpakket<select id="website-hosting-filter"><option value="">Alle hostingpakketten</option><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option><option value="Maatwerk">Maatwerk</option></select></label>
@@ -940,10 +940,10 @@
                 <label for="website-domain">Domein<input id="website-domain" type="text" placeholder="maxwebstudio.nl" disabled /></label>
                 <label for="website-live-url">Live URL<input id="website-live-url" type="url" placeholder="https://voorbeeld.nl" disabled /></label>
                 <label for="website-staging-url">Staging URL<input id="website-staging-url" type="url" disabled /></label>
-                <label for="website-github-repo">GitHub repo<input id="website-github-repo" type="url" disabled /></label>
+                <label for="website-github-repo">Repository<input id="website-github-repo" type="url" disabled /></label>
                 <label for="website-branch">Branch<input id="website-branch" type="text" disabled /></label>
-                <label for="website-netlify-project">Netlify projectnaam<input id="website-netlify-project" type="text" disabled /></label>
-                <label for="website-netlify-site-id">Netlify site ID<input id="website-netlify-site-id" type="text" disabled /></label>
+                <label for="website-netlify-project">Projectnaam hosting<input id="website-netlify-project" type="text" disabled /></label>
+                <label for="website-netlify-site-id">Site referentie<input id="website-netlify-site-id" type="text" disabled /></label>
                 <label for="website-status">Status<select id="website-status" disabled><option value="online">Online</option><option value="development">In ontwikkeling</option><option value="maintenance">Onderhoud</option><option value="waiting_client">Wachten op klant</option><option value="offline">Offline</option></select></label>
                 <label for="website-hosting-package">Hostingpakket<select id="website-hosting-package" disabled><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option><option value="Maatwerk">Maatwerk</option></select></label>
                 <label for="website-care-package">Onderhoudspakket<select id="website-care-package" disabled><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option><option value="Geen">Geen</option></select></label>
@@ -990,7 +990,7 @@
                   <button class="button secondary" id="website-cancel" type="button" disabled>Annuleren</button>
                 </div>
                 <div class="admin-action-group admin-action-group-secondary admin-developer-only" aria-label="Website developer acties">
-                  <button class="button secondary" id="website-refresh-supabase" type="button" disabled>Ververs vanuit Supabase</button>
+                  <button class="button secondary" id="website-refresh-supabase" type="button" disabled>Gegevens verversen</button>
                   <button class="button secondary" id="website-history" type="button" disabled>Bekijk wijzigingshistorie</button>
                   <button class="button secondary" id="website-reactivate" type="button" disabled>Reactiveren</button>
                 </div>
@@ -1004,13 +1004,13 @@
                 <div class="admin-action-group admin-action-group-secondary" aria-label="Website links">
                   <a class="button secondary is-disabled" id="website-open-live" href="#" target="_blank" rel="noopener" aria-disabled="true">Open website</a>
                   <a class="button secondary is-disabled" id="website-open-staging" href="#" target="_blank" rel="noopener" aria-disabled="true">Open staging</a>
-                  <a class="button secondary is-disabled" id="website-open-github" href="#" target="_blank" rel="noopener" aria-disabled="true">Open GitHub</a>
-                  <a class="button secondary is-disabled" id="website-open-netlify" href="#" target="_blank" rel="noopener" aria-disabled="true">Open Netlify</a>
+                  <a class="button secondary is-disabled" id="website-open-github" href="#" target="_blank" rel="noopener" aria-disabled="true">Open repository</a>
+                  <a class="button secondary is-disabled" id="website-open-netlify" href="#" target="_blank" rel="noopener" aria-disabled="true">Open hosting</a>
                   <a class="button secondary is-disabled" id="website-open-portal" href="#" target="_blank" rel="noopener" aria-disabled="true">Open klantportaal</a>
                 </div>
                 <div class="admin-action-group admin-action-group-secondary" aria-label="Website kopieeracties">
                   <button class="button secondary" id="website-copy-domain" type="button" disabled>Kopieer domein</button>
-                  <button class="button secondary" id="website-copy-github" type="button" disabled>Kopieer GitHub URL</button>
+                  <button class="button secondary" id="website-copy-github" type="button" disabled>Kopieer repository URL</button>
                 </div>
                 <div class="admin-action-group admin-action-group-secondary" aria-label="Commerciele websiteacties">
                   <button class="button secondary" id="website-start-project" type="button" disabled>Project koppelen/starten</button>
@@ -1055,7 +1055,7 @@
             <article class="admin-card detail-card"><span>Gemiddelde voortgang</span><strong id="project-stat-progress">0%</strong></article>
           </div>
           <div class="admin-filters website-filters" aria-label="Projecten bron filteren">
-            <label for="project-data-mode">Project data mode<select id="project-data-mode"><option value="local">Local</option><option value="supabase-read">Supabase read</option><option value="hybrid">Hybrid</option></select></label>
+            <label for="project-data-mode">Project data mode<select id="project-data-mode"><option value="local">Local</option><option value="supabase-read">Centraal</option><option value="hybrid">Hybrid</option></select></label>
           </div>
           <div class="admin-grid compact-admin-grid" id="project-source-summary" aria-live="polite"></div>
           <div class="active-filter-bar" id="project-active-filter" hidden>
@@ -1110,7 +1110,7 @@
                   <button class="button secondary" id="project-view-invoices" type="button" disabled>Facturen bekijken</button>
                 </div>
                 <div class="admin-action-group admin-action-group-secondary admin-developer-only" aria-label="Project developer acties">
-                  <button class="button secondary" id="project-refresh-supabase" type="button" disabled>Ververs vanuit Supabase</button>
+                  <button class="button secondary" id="project-refresh-supabase" type="button" disabled>Gegevens verversen</button>
                   <button class="button secondary" id="project-history" type="button" disabled>Bekijk wijzigingshistorie</button>
                   <button class="button secondary" id="project-reactivate" type="button" disabled>Reactiveren</button>
                 </div>
@@ -1201,7 +1201,7 @@
                 <label for="file-type">Bestandstype<input id="file-type" type="text" placeholder="PDF, JPG, PNG, DOCX" disabled /></label>
                 <label for="file-category">Categorie<select id="file-category" disabled><option value="Logo">Logo</option><option value="Foto's">Foto's</option><option value="Teksten">Teksten</option><option value="Document">Document</option><option value="Factuur">Factuur</option><option value="Contract">Contract</option><option value="Huisstijl">Huisstijl</option><option value="Overig">Overig</option></select></label>
                 <label for="file-status">Status<select id="file-status" disabled><option value="actief">Actief</option><option value="in_review">In review</option><option value="goedgekeurd">Goedgekeurd</option><option value="gearchiveerd">Gearchiveerd</option></select></label>
-                <label class="admin-profile-wide" for="file-location">Bestandslink of locatie<input id="file-location" type="text" placeholder="https://..., Drive-pad of Supabase path" disabled /></label>
+                <label class="admin-profile-wide" for="file-location">Bestandslink of locatie<input id="file-location" type="text" placeholder="https://..., Drive-pad of bestandspad" disabled /></label>
                 <label class="admin-profile-wide" for="file-notes">Notities<textarea id="file-notes" disabled placeholder="Interne context, gebruiksrechten of versie-informatie"></textarea></label>
               </div>
               <div class="file-detail-summary" id="file-detail-summary" aria-live="polite"></div>
@@ -1223,7 +1223,7 @@
           <div class="admin-section-heading">
             <div><p class="section-kicker">Onderhoud</p><h2>Abonnementen</h2></div>
             <div class="admin-actions">
-              <label for="subscription-data-mode">Subscription data mode<select id="subscription-data-mode"><option value="local">Local</option><option value="supabase-read">Supabase read</option><option value="hybrid">Hybrid</option></select></label>
+              <label for="subscription-data-mode">Subscription data mode<select id="subscription-data-mode"><option value="local">Local</option><option value="supabase-read">Centraal</option><option value="hybrid">Hybrid</option></select></label>
               <button class="button primary" id="new-subscription" type="button">Nieuw abonnement</button>
             </div>
           </div>
@@ -1257,7 +1257,7 @@
               <button class="button primary" id="new-quote" type="button">Nieuwe offerte</button>
             </div>
             <div class="admin-filters source-mode-filters" aria-label="Offerte databron">
-              <label for="quote-data-mode">Quote data mode<select id="quote-data-mode"><option value="local">Local</option><option value="supabase-read">Supabase read</option><option value="hybrid">Hybrid</option></select></label>
+              <label for="quote-data-mode">Quote data mode<select id="quote-data-mode"><option value="local">Local</option><option value="supabase-read">Centraal</option><option value="hybrid">Hybrid</option></select></label>
             </div>
             <div class="admin-grid compact-admin-grid" id="quote-source-summary" aria-live="polite"></div>
             <div class="admin-grid invoice-stats-grid" aria-label="Offerte statistieken">
@@ -1287,7 +1287,7 @@
             <div class="admin-section-heading">
               <div><p class="section-kicker">Facturen</p><h2>Facturatie</h2></div>
               <div class="admin-actions">
-                <label for="invoice-data-mode">Invoice data mode<select id="invoice-data-mode"><option value="local">Local</option><option value="supabase-read">Supabase read</option><option value="hybrid">Hybrid</option></select></label>
+                <label for="invoice-data-mode">Invoice data mode<select id="invoice-data-mode"><option value="local">Local</option><option value="supabase-read">Centraal</option><option value="hybrid">Hybrid</option></select></label>
                 <button class="button primary" id="new-invoice" type="button">Nieuwe factuur</button>
               </div>
             </div>
@@ -1567,7 +1567,7 @@
             </article>
 
             <article class="admin-card settings-card" id="klantportaal">
-              <div class="settings-card-heading"><div><span>Klantportaal instellingen</span><strong>Zichtbaarheid demoportaal</strong></div><mark class="status-badge status-prepared">Lokale opslag</mark></div>
+              <div class="settings-card-heading"><div><span>Klantportaal instellingen</span><strong>Zichtbaarheid demoportaal</strong></div><mark class="status-badge status-prepared">LocalStorage</mark></div>
               <div class="settings-checkbox-grid">
                 <label><input name="portalActive" type="checkbox" /> Klantportaal actief</label>
                 <label><input name="portalDemoWarning" type="checkbox" /> Demo-auth waarschuwing tonen</label>
@@ -1598,7 +1598,7 @@
               </div>
               <div class="settings-alert">
                 <strong>Super Admin beheer</strong>
-                <span>Bekijk gebruikers, wijzig rollen en activeer of deactiveer accounts. Supabase-writes blijven gekoppeld aan de bestaande provider-write gates.</span>
+                <span>Bekijk gebruikers, wijzig rollen en activeer of deactiveer accounts. Databron-writes blijven gekoppeld aan de bestaande provider-write gates.</span>
               </div>
               <form class="admin-profile-form" id="invite-user-form">
                 <div class="admin-profile-fields">
@@ -1636,7 +1636,7 @@
           </div>
           <div class="settings-alert">
             <strong>Demo/local omgeving</strong>
-            <span>Deze tools zijn bedoeld om de volledige flow te testen met lokale browserdata. Voor echte klantdata is Supabase/Auth nodig.</span>
+            <span>Deze tools zijn bedoeld om de volledige flow te testen met lokale browserdata. Voor echte klantdata is Centrale data/auth nodig.</span>
           </div>
           <div class="settings-grid">
             <article class="admin-card settings-card settings-card-wide">
@@ -1699,7 +1699,7 @@
             </article>
 
             <article class="admin-card settings-card">
-              <div class="settings-card-heading"><div><span>Migratie naar productie</span><strong>Supabase/Auth voorbereiding</strong></div><mark class="status-badge status-planned">Fase later</mark></div>
+              <div class="settings-card-heading"><div><span>Migratie naar productie</span><strong>Centrale data/auth voorbereiding</strong></div><mark class="status-badge status-planned">Fase later</mark></div>
               <div class="settings-status-list" id="migration-checklist"></div>
             </article>
 
@@ -1748,8 +1748,8 @@
                 <button class="button secondary" id="view-migration-plan" type="button">Bekijk migratieplan</button>
                 <button class="button secondary" id="view-planned-tables" type="button">Bekijk geplande tabellen</button>
                 <button class="button secondary" id="run-supabase-migration-check" type="button">Run localStorage migratie-check</button>
-                <button class="button secondary" id="check-supabase-config" type="button">Check Supabase configuratie</button>
-                <button class="button secondary" id="test-supabase-connection" type="button">Test Supabase verbinding</button>
+                <button class="button secondary" id="check-supabase-config" type="button">Check centrale configuratie</button>
+                <button class="button secondary" id="test-supabase-connection" type="button">Test centrale verbinding</button>
                 <button class="button secondary" id="read-supabase-customers" type="button">Lees eerste 10 customers</button>
                 <button class="button secondary" id="check-supabase-customers-table" type="button">Check customers table</button>
                 <button class="button secondary" id="run-supabase-write-test" type="button">Run volledige write-test</button>
@@ -1800,7 +1800,7 @@
                 <button class="button secondary" id="reset-subscription-data-mode" type="button">Reset subscription data mode naar local</button>
                 <button class="button secondary" id="test-client-portal-selected" type="button">Test klantportaal data geselecteerde klant</button>
                 <button class="button secondary" id="test-client-portal-demo" type="button">Test demo klantportaal</button>
-                <button class="button secondary" id="test-client-portal-hybrid" type="button">Test Supabase/hybrid klantportaal</button>
+                <button class="button secondary" id="test-client-portal-hybrid" type="button">Test centrale data klantportaal</button>
                 <button class="button secondary" id="view-client-portal-sanitized" type="button">Bekijk sanitized payload preview</button>
                 <button class="button secondary" id="reset-client-portal-data-mode" type="button">Reset client portal data mode naar demo/local</button>
                 <button class="button secondary" id="view-env-example" type="button">Bekijk .env voorbeeld</button>
@@ -1820,11 +1820,11 @@
               </div>
               <div class="settings-actions">
                 <button class="button secondary" id="view-customer-write-preview" type="button">Bekijk write preview</button>
-                <button class="button primary" id="start-customer-live-migration" type="button" disabled>Start live migratie naar Supabase</button>
+                <button class="button primary" id="start-customer-live-migration" type="button" disabled>Start live migratie naar centrale data</button>
                 <button class="button secondary" id="download-customer-migration-result" type="button">Download migratieresultaat</button>
                 <button class="button secondary" id="download-customer-pre-migration-backup" type="button">Download pre-migration backup</button>
               </div>
-              <p class="settings-note">Na migratie blijft Max Webstudio lokaal draaien totdat de provider later bewust wordt omgezet. Rollback is handmatig via backup en Supabase beheer.</p>
+              <p class="settings-note">Na migratie blijft Max Webstudio lokaal draaien totdat de provider later bewust wordt omgezet. Rollback is handmatig via backup en centraal beheer.</p>
               <div class="admin-grid compact-admin-grid" id="developer-tools-output"></div>
             </article>
           </div>
@@ -2002,7 +2002,7 @@
             <button class="button primary" id="subscription-save" type="submit">Abonnement opslaan</button>
             <button class="button secondary" id="subscription-pause" type="button">Pauzeren</button>
             <button class="button secondary" id="subscription-reactivate" type="button">Reactiveren</button>
-            <button class="button secondary" id="subscription-refresh-supabase" type="button">Ververs uit Supabase</button>
+            <button class="button secondary" id="subscription-refresh-supabase" type="button">Gegevens verversen</button>
             <button class="button secondary" id="subscription-history" type="button">Historie</button>
             <button class="button secondary danger" id="subscription-archive" type="button">Archiveer</button>
             <p class="admin-form-message" id="subscription-message" role="status"></p>
@@ -2032,7 +2032,7 @@
             <label for="invoice-due">Vervaldatum<input id="invoice-due" type="date" /></label>
             <label for="invoice-paid-at">Betaaldatum<input id="invoice-paid-at" type="datetime-local" /></label>
             <input id="invoice-payment-link" type="hidden" />
-            <label class="admin-profile-wide" for="invoice-pdf">PDF pad<input id="invoice-pdf" type="text" placeholder="2026/klant/factuur-2026-001.pdf" /><small>Upload de PDF handmatig naar de private Supabase bucket invoice-pdfs en vul hier alleen het objectpad in.</small></label>
+            <label class="admin-profile-wide" for="invoice-pdf">PDF pad<input id="invoice-pdf" type="text" placeholder="2026/klant/factuur-2026-001.pdf" /><small>Upload de PDF handmatig naar de private bestandsbucket invoice-pdfs en vul hier alleen het objectpad in.</small></label>
             <label class="admin-profile-wide" for="invoice-notes">Notities<textarea id="invoice-notes"></textarea></label>
           </div>
           <div class="invoice-line-editor">
@@ -2061,7 +2061,7 @@
             <a class="button secondary is-disabled" id="invoice-open-payment" href="#" target="_blank" rel="noopener" aria-disabled="true">Open betaalpagina</a>
             <button class="button secondary" id="invoice-open-quote" type="button">Open offerte</button>
             <button class="button secondary" id="invoice-open-subscription" type="button">Open abonnement</button>
-            <button class="button secondary" id="invoice-refresh-supabase" type="button">Ververs uit Supabase</button>
+            <button class="button secondary" id="invoice-refresh-supabase" type="button">Gegevens verversen</button>
             <button class="button secondary" id="invoice-history" type="button">Historie</button>
             <button class="button secondary" id="invoice-reactivate" type="button">Heractiveer</button>
             <button class="button secondary" id="invoice-copy-payment" type="button">Kopieer betaalverzoek</button>
@@ -2122,7 +2122,7 @@
             <button class="button secondary" id="quote-create-customer" type="button">Klant aanmaken vanuit offerte</button>
             <button class="button secondary" id="quote-convert-invoice" type="button">Maak factuur van offerte</button>
             <button class="button secondary" id="quote-open-invoice" type="button">Open factuur</button>
-            <button class="button secondary" id="quote-refresh-supabase" type="button">Ververs uit Supabase</button>
+            <button class="button secondary" id="quote-refresh-supabase" type="button">Gegevens verversen</button>
             <button class="button secondary" id="quote-history" type="button">Historie</button>
             <button class="button secondary" id="quote-reactivate" type="button">Heractiveer</button>
             <button class="button secondary danger" id="quote-cancel" type="button">Archiveer/annuleer</button>
@@ -2537,7 +2537,7 @@
           { name: "Visma", category: "Boekhouding", status: "Niet gekoppeld", action: "Voorbereiden", description: "Voorbereid als mogelijke boekhoudintegratie voor groeiende klantenadministratie." },
           { name: "Calendly", category: "Planning", status: "Actief later", action: "Koppelen later", description: "Kan later worden gebruikt voor automatische intake- en adviesgesprekken." },
           { name: "Google Calendar", category: "Planning", status: "Actief later", action: "Koppelen later", description: "Voorbereid voor agenda-afspraken, reminders en planningsoverzicht." },
-          { name: "Netlify", category: "Domein/hosting", status: "Demo voorbereid", action: "Bekijk status", description: "Websites bevatten Netlify-projectvelden; echte API-status volgt later." },
+          { name: "Hosting", category: "Domein/hosting", status: "Demo voorbereid", action: "Bekijk status", description: "Websites bevatten hostingvelden; echte API-status volgt later." },
           { name: "STRATO", category: "Domein/hosting", status: "Niet gekoppeld", action: "Voorbereiden", description: "Domein- en hostinginformatie kan later worden gekoppeld of geregistreerd." },
           { name: "Cloudflare", category: "Domein/hosting", status: "Actief later", action: "Koppelen later", description: "Voorbereid voor DNS-, SSL- en performancebeheer via API." },
         ];
@@ -3380,7 +3380,7 @@
 
         function customerSourceLabel(customer = {}) {
           const source = customer._source || "local";
-          if (source === "supabase") return "Supabase";
+          if (source === "supabase") return "Centraal";
           if (source === "hybrid") return "Hybrid";
           if (source === "demo") return "Demo";
           return "Local";
@@ -3575,10 +3575,10 @@
 
         function renderSystemStatus() {
           const settings = readStoredSettings();
-          const modeLabel = (mode) => mode === "hybrid" ? "Supabase + fallback" : mode === "supabase-read" ? "Supabase read" : mode === "local" ? "Local fallback" : mode || "Onbekend";
+          const modeLabel = (mode) => mode === "hybrid" ? "Supabase + reservekopie" : mode === "supabase-read" ? "Centraal" : mode === "local" ? "Lokale reservekopie" : mode || "Onbekend";
           const modeClass = (mode) => mode === "local" ? "status-warning" : "status-active";
           const statuses = [
-            ["CRM opslag", "Supabase-first", "status-active"],
+            ["CRM opslag", "Centrale opslag", "status-active"],
             ["Klanten", modeLabel(settings.customerDataMode), modeClass(settings.customerDataMode)],
             ["Websites", modeLabel(settings.websiteDataMode), modeClass(settings.websiteDataMode)],
             ["Projecten", modeLabel(settings.projectDataMode), modeClass(settings.projectDataMode)],
@@ -4373,7 +4373,7 @@
             ["Repositories", "Gereed", "Modules kunnen via repositories naar data lezen/schrijven"],
             ["Supabase voorbereiding", "Niet gekoppeld", "Tabellen voorbereid: profiles, leads, customers, websites, projects, files, quotes, quote_lines, invoices, invoice_lines en subscriptions. Env vars later: SUPABASE_URL en SUPABASE_ANON_KEY."],
             ["Supabase client", "Voorbereid", "Browserclient wordt veilig gedetecteerd via runtime factory/module, zonder secrets"],
-            ["Supabase read-only", "Voorbereid", "Mode supabase-readonly kan connectie en customers-select testen"],
+            ["Supabase-only", "Voorbereid", "Mode supabase-readonly kan connectie en customers-select testen"],
             ["Customers table check", "Voorbereid", "Developer Mode kan customers read-only tellen/lezen"],
             ["Supabase write-test", "Voorbereid", "Mode supabase-write-test mag alleen veilige testcustomer-acties uitvoeren"],
             ["Testcustomer lifecycle", "Voorbereid", "Create, update en delete zijn beperkt tot safeToDelete=true testrecords"],
@@ -4383,7 +4383,7 @@
             ["CRM local fallback", "Actief", "Na migratie blijft localStorage leidend tot provider switch"],
             ["CRM provider switch", "Nog niet actief", "Geen automatische switch naar Supabase"],
             ["Supabase customers data", "Gedeeltelijk mogelijk", "Alleen gecontroleerde customer inserts via migratiemodus"],
-            ["Customer Supabase read", "Voorbereid/actief", "CRM kan customers read-only uit Supabase laden"],
+            ["Customer Supabase", "Voorbereid/actief", "CRM kan customers read-only uit Supabase laden"],
             ["Customer hybrid mode", "Actief", "CRM combineert Supabase, ongemigreerde local en demo customers"],
             ["Customer Supabase create", "Actief onder voorwaarden", "Nieuwe customers kunnen gecontroleerd naar Supabase wanneer write-readiness groen is"],
             ["Customer Supabase update", "Actief onder voorwaarden", "Supabase/hybrid customers kunnen per klant worden bijgewerkt met conflictcontrole"],
@@ -4391,11 +4391,11 @@
             ["Customer hard delete", "Geblokkeerd", "Harde deletes voor Supabase customers zijn niet beschikbaar in het CRM"],
             ["Customer change history", "Actief", "Customer writes loggen created/updated/archived/reactivated/failed in activity log"],
             ["Customer conflict detection", "Actief", "Remote updated_at blokkeert blind overschrijven en vraagt refresh"],
-            ["Local fallback", "Actief", "Hybrid valt terug op localStorage bij Supabase read-fouten"],
+            ["Lokale reservekopie", "Actief", "Hybrid valt terug op localStorage bij Supabase-fouten"],
             ["Demo customer source", "Local/demo", "Demo-klanten blijven uit localStorage komen"],
             ["Website Supabase mapping", "Voorbereid", "WebsiteRepository kan lokale websites naar websites-rijen mappen met klantkoppeling"],
             ["Website migratie dry run", "Gereed", "Developer Mode analyseert websites zonder databasewrites"],
-            ["Website Supabase read", "Voorbereid/actief", "Website Management kan websites read-only uit Supabase laden"],
+            ["Website Supabase", "Voorbereid/actief", "Website Management kan websites read-only uit Supabase laden"],
             ["Website hybrid mode", "Actief", "Website Management combineert Supabase, ongemigreerde local en demo websites"],
             ["Website create/update", "Actief onder voorwaarden", "Supabase websites kunnen gecontroleerd worden aangemaakt/bijgewerkt wanneer write-readiness groen is"],
             ["Website archive/reactivate", "Actief onder voorwaarden", "Archiveren is soft delete via status/deleted_at; reactiveren zet status terug actief"],
@@ -4436,17 +4436,17 @@
             ["CRM live migratie", "Voorbereid", "Live knop blijft geblokkeerd totdat alle voorwaarden en Supabase client klaar zijn"],
             ["CRM live writes", "Niet actief", "Afhankelijk van Supabase config en browserclient/package"],
             ["CRM rollback", "Voorbereid", "Handmatig via backup; geen gevaarlijke Supabase deletes gebouwd"],
-            ["Local fallback", "Gereed", "Provider blijft localStorage na migratie totdat handmatig omgezet"],
+            ["Lokale reservekopie", "Gereed", "Provider blijft localStorage na migratie totdat handmatig omgezet"],
             ["Auth modellen", "Voorbereid", "AuthUser, Session en Permission staan klaar"],
             ["Rollen", "Voorbereid", "super_admin, admin, sales_manager, sales_partner, designer, developer, support, customer en demo_user"],
             ["Permissions", "Voorbereid", "Centrale permissiematrix voorbereid voor navigatie en acties"],
-            ["Auth provider factory", "Gereed", "Demo auth en Supabase Auth provider delen dezelfde login-service laag"],
+            ["Auth provider factory", "Gereed", "Demo auth en admin-auth provider delen dezelfde login-service laag"],
             ["Demo auth provider", "Gereed", "Lokale demo-users, role switch en sessies blijven actief"],
             ["Supabase auth provider", "Voorbereid", "E-mail login, reset en registratie hebben veilige placeholders zonder fake succes"],
             ["Login UI", "Voorbereid", "Demo login, echte login, account aanvraag en resetflow staan gescheiden op login.html"],
             ["Route guards", "Voorbereid", "Waarschuwingslaag staat klaar zonder bestaande demo-routes hard te blokkeren"],
             ["Demo login", "Gereed", "Lokale demo-sessies actief via login.html"],
-            ["Supabase Auth", "Niet actief", "Echte Supabase Auth is voorbereid, maar nog niet live gekoppeld"],
+            ["admin-auth", "Niet actief", "Echte admin-auth is voorbereid, maar nog niet live gekoppeld"],
             ["Echte wachtwoorden", "Niet actief", "Geen wachtwoorden of secrets in de demo-authlaag"],
             ["Storage voorbereiding", "Niet actief", "Bestandsmetadata is migratieklaar, echte opslag later"],
             ["Resend voorbereiding", "Voorbereid", "Publieke leadmails blijven server-side via bestaande functie"],
@@ -4731,7 +4731,7 @@
           appendDeveloperCard("Klantportaal live data readiness", [
             ["Live data", summary.clientPortalLiveData],
             ["Portal data mode", summary.portalDataMode],
-            ["Supabase read", summary.supabaseRead],
+            ["Centraal", summary.supabaseRead],
             ["Hybrid mode", summary.hybridMode],
             ["Sanitizing", summary.sanitizing],
             ["Writes", summary.writes],
@@ -4746,8 +4746,8 @@
           appendDeveloperCard("Auth & Profiles foundation", [
             ["Status", readiness.status],
             ["Live", readiness.live ? "Ja" : "Nee"],
-            ["Supabase Auth configured", readiness.supabaseAuthConfigured ? "Ja" : "Nog niet"],
-            ["Supabase Auth active", readiness.supabaseAuthActive ? "Ja" : "Nee"],
+            ["admin-auth configured", readiness.supabaseAuthConfigured ? "Ja" : "Nog niet"],
+            ["admin-auth active", readiness.supabaseAuthActive ? "Ja" : "Nee"],
             ["Demo login", readiness.demoLoginActive ? "Actief" : "Niet actief"],
             ["Profiles", String(readiness.profileSummary.profileCount || 0)],
             ["Prepared profiles", String(readiness.profileSummary.preparedProfiles || 0)],
@@ -4857,7 +4857,7 @@
         }
 
         function renderSupabaseReadOnlyTest(summary) {
-          appendDeveloperCard("Supabase read-only test", [
+          appendDeveloperCard("Supabase-only test", [
             ["Supabase configured", summary.configured ? "Ja" : "Nee"],
             ["Client geladen", summary.clientLoaded ? "Ja" : "Nee"],
             ["Connection status", summary.connected ? "Verbonden" : "Niet verbonden"],
@@ -5091,12 +5091,12 @@
           const counts = status.counts || {};
           appendDeveloperCard("Customer data source", [
             ["Customer data mode", status.mode || currentCustomerDataMode()],
-            ["Supabase read status", status.error ? "Fout" : status.mode === "local" ? "Niet gebruikt" : "Beschikbaar"],
+            ["Supabase status", status.error ? "Fout" : status.mode === "local" ? "Niet gebruikt" : "Beschikbaar"],
             ["Local count", String(counts.local ?? 0)],
             ["Supabase count", String(counts.supabase ?? 0)],
             ["Hybrid count", String(counts.hybrid ?? state.customers.length ?? 0)],
             ["Duplicate merge count", String(counts.duplicateMerges ?? 0)],
-            ["Fallback status", status.fallbackUsed ? "Local fallback gebruikt" : "Geen fallback"],
+            ["Fallback status", status.fallbackUsed ? "Lokale reservekopie gebruikt" : "Geen fallback"],
             ["Data layer", status.dataLayer || "repository/local"],
             ["Laatste refresh", status.refreshedAt ? formatDate(status.refreshedAt) : "-"],
             ["Error", status.error || "-"],
@@ -5239,7 +5239,7 @@
           ]);
           appendDeveloperCard("Live migratie waarschuwing", [
             ["Provider switch", "Niet automatisch"],
-            ["Rollback", "Handmatig via backup en Supabase beheer"],
+            ["Rollback", "Handmatig via backup en centraal beheer"],
             ["Scope", "Alleen customers, geen delete, geen andere tabellen"],
           ]);
           appendDeveloperCard("Ontbrekende voorwaarden", readiness.missing.length ? readiness.missing : ["Alle voorwaarden zijn voldaan."]);
@@ -5273,14 +5273,14 @@
           const counts = status.counts || {};
           appendDeveloperCard("Website data source", [
             ["Website data mode", status.mode || currentWebsiteDataMode()],
-            ["Supabase read status", status.error ? "Fout" : status.mode === "local" ? "Niet gebruikt" : "Beschikbaar"],
+            ["Supabase status", status.error ? "Fout" : status.mode === "local" ? "Niet gebruikt" : "Beschikbaar"],
             ["Local count", String(counts.local ?? 0)],
             ["Supabase count", String(counts.supabase ?? 0)],
             ["Hybrid count", String(counts.hybrid ?? state.websites.length ?? 0)],
             ["Duplicate merge count", String(counts.duplicateMerges ?? 0)],
             ["Demo websites", String(counts.demo ?? 0)],
             ["Ongemigreerd lokaal", String(counts.unmigratedLocal ?? 0)],
-            ["Fallback status", status.fallbackUsed ? "Local fallback gebruikt" : "Geen fallback"],
+            ["Fallback status", status.fallbackUsed ? "Lokale reservekopie gebruikt" : "Geen fallback"],
             ["Data layer", status.dataLayer || "repository/local"],
             ["Laatste refresh", status.refreshedAt ? formatDate(status.refreshedAt) : "-"],
             ["Error", status.error || "-"],
@@ -5294,7 +5294,7 @@
             .filter((activity) => activity.entityType === "websites" || activity.entityType === "developer_tools")
             .filter((activity) => String(activity.action || "").includes("website"))
             .slice(0, 6);
-          appendDeveloperCard("Website Supabase readiness", [
+          appendDeveloperCard("Website Supabaseiness", [
             ["Klaar voor mapping", String(summary.ready || 0)],
             ["Wachten op customer migratie", String(summary.waitingForCustomer || 0)],
             ["Klantkoppeling ontbreekt", String(summary.missingCustomer || 0)],
@@ -5370,14 +5370,14 @@
           const counts = status.counts || {};
           appendDeveloperCard("Project data source", [
             ["Project data mode", status.mode || currentProjectDataMode()],
-            ["Supabase read status", status.error ? "Fout" : status.mode === "local" ? "Niet gebruikt" : "Beschikbaar"],
+            ["Supabase status", status.error ? "Fout" : status.mode === "local" ? "Niet gebruikt" : "Beschikbaar"],
             ["Local count", String(counts.local ?? 0)],
             ["Supabase count", String(counts.supabase ?? 0)],
             ["Hybrid count", String(counts.hybrid ?? state.projects.length ?? 0)],
             ["Duplicate merge count", String(counts.duplicateMerges ?? 0)],
             ["Demo projecten", String(counts.demo ?? 0)],
             ["Ongemigreerd lokaal", String(counts.unmigratedLocal ?? 0)],
-            ["Fallback status", status.fallbackUsed ? "Local fallback gebruikt" : "Geen fallback"],
+            ["Fallback status", status.fallbackUsed ? "Lokale reservekopie gebruikt" : "Geen fallback"],
             ["Data layer", status.dataLayer || "repository/local"],
             ["Laatste refresh", status.refreshedAt ? formatDate(status.refreshedAt) : "-"],
             ["Error", status.error || "-"],
@@ -5391,7 +5391,7 @@
             .filter((activity) => activity.entityType === "projects" || activity.entityType === "developer_tools")
             .filter((activity) => String(activity.action || "").includes("project"))
             .slice(0, 6);
-          appendDeveloperCard("Project Supabase readiness", [
+          appendDeveloperCard("Project Supabaseiness", [
             ["Klaar voor mapping", String(summary.ready || 0)],
             ["Wachten op customer migratie", String(summary.waitingForCustomer || 0)],
             ["Wachten op website migratie", String(summary.waitingForWebsite || 0)],
@@ -5475,14 +5475,14 @@
           const counts = status.counts || {};
           appendDeveloperCard("Quote data source", [
             ["Quote data mode", status.mode || currentQuoteDataMode()],
-            ["Supabase read status", status.error ? "Fout" : status.mode === "local" ? "Niet gebruikt" : "Beschikbaar"],
+            ["Supabase status", status.error ? "Fout" : status.mode === "local" ? "Niet gebruikt" : "Beschikbaar"],
             ["Local count", String(counts.local ?? 0)],
             ["Supabase count", String(counts.supabase ?? 0)],
             ["Hybrid count", String(counts.hybrid ?? state.quotes.length ?? 0)],
             ["Duplicate merge count", String(counts.duplicateMerges ?? 0)],
             ["Demo offertes", String(counts.demo ?? 0)],
             ["Ongemigreerd lokaal", String(counts.unmigratedLocal ?? 0)],
-            ["Fallback status", status.fallbackUsed ? "Local fallback gebruikt" : "Geen fallback"],
+            ["Fallback status", status.fallbackUsed ? "Lokale reservekopie gebruikt" : "Geen fallback"],
             ["Data layer", status.dataLayer || "repository/local"],
             ["Laatste refresh", status.refreshedAt ? formatDate(status.refreshedAt) : "-"],
             ["Error", status.error || "-"],
@@ -5496,7 +5496,7 @@
             .filter((activity) => activity.entityType === "quotes" || activity.entityType === "developer_tools")
             .filter((activity) => String(activity.action || "").includes("quote"))
             .slice(0, 6);
-          appendDeveloperCard("Quote Supabase readiness", [
+          appendDeveloperCard("Quote Supabaseiness", [
             ["Klaar voor mapping", String(summary.ready || 0)],
             ["Wachten op customer migratie", String(summary.waitingForCustomer || 0)],
             ["Wachten op website migratie", String(summary.waitingForWebsite || 0)],
@@ -5592,7 +5592,7 @@
           const counts = status.counts || {};
           appendDeveloperCard("Invoice data source", [
             ["Invoice data mode", status.mode || currentInvoiceDataMode()],
-            ["Supabase read status", status.error ? "Fout" : status.mode === "local" ? "Niet gebruikt" : "Beschikbaar"],
+            ["Supabase status", status.error ? "Fout" : status.mode === "local" ? "Niet gebruikt" : "Beschikbaar"],
             ["Local count", String(counts.local ?? 0)],
             ["Supabase count", String(counts.supabase ?? 0)],
             ["Hybrid count", String(counts.hybrid ?? state.invoices.length ?? 0)],
@@ -5601,7 +5601,7 @@
             ["Ongemigreerd lokaal", String(counts.unmigratedLocal ?? 0)],
             ["Openstaand bedrag", money(counts.openAmount ?? 0)],
             ["Betaald bedrag", money(counts.paidAmount ?? 0)],
-            ["Fallback status", status.fallbackUsed ? "Local fallback gebruikt" : "Geen fallback"],
+            ["Fallback status", status.fallbackUsed ? "Lokale reservekopie gebruikt" : "Geen fallback"],
             ["Data layer", status.dataLayer || "repository/local"],
             ["Laatste refresh", status.refreshedAt ? formatDate(status.refreshedAt) : "-"],
             ["Error", status.error || "-"],
@@ -5615,7 +5615,7 @@
             .filter((activity) => activity.entityType === "invoices" || activity.entityType === "developer_tools")
             .filter((activity) => String(activity.action || "").includes("invoice"))
             .slice(0, 6);
-          appendDeveloperCard("Factuur Supabase readiness", [
+          appendDeveloperCard("Factuur Supabaseiness", [
             ["Klaar voor mapping", String(summary.ready || 0)],
             ["Wachten op customer migratie", String(summary.waitingForCustomer || 0)],
             ["Wachten op website migratie", String(summary.waitingForWebsite || 0)],
@@ -5719,7 +5719,7 @@
           const counts = status.counts || {};
           appendDeveloperCard("Subscription data source", [
             ["Subscription data mode", status.mode || currentSubscriptionDataMode()],
-            ["Supabase read status", status.error ? "Fout" : status.mode === "local" ? "Niet gebruikt" : "Beschikbaar"],
+            ["Supabase status", status.error ? "Fout" : status.mode === "local" ? "Niet gebruikt" : "Beschikbaar"],
             ["Local count", String(counts.local ?? 0)],
             ["Supabase count", String(counts.supabase ?? 0)],
             ["Hybrid count", String(counts.hybrid ?? state.subscriptions.length ?? 0)],
@@ -5733,7 +5733,7 @@
             ["MRR incl. btw", money(counts.mrrInclVat ?? 0)],
             ["ARR ex. btw", money(counts.arrExVat ?? 0)],
             ["ARR incl. btw", money(counts.arrInclVat ?? 0)],
-            ["Fallback status", status.fallbackUsed ? "Local fallback gebruikt" : "Geen fallback"],
+            ["Fallback status", status.fallbackUsed ? "Lokale reservekopie gebruikt" : "Geen fallback"],
             ["Data layer", status.dataLayer || "repository/local"],
             ["Laatste refresh", status.refreshedAt ? formatDate(status.refreshedAt) : "-"],
             ["Error", status.error || "-"],
@@ -5747,7 +5747,7 @@
             .filter((activity) => activity.entityType === "subscriptions" || activity.entityType === "developer_tools")
             .filter((activity) => String(activity.action || "").includes("subscription"))
             .slice(0, 6);
-          appendDeveloperCard("Abonnement Supabase readiness", [
+          appendDeveloperCard("Abonnement Supabaseiness", [
             ["Klaar voor mapping", String(summary.ready || 0)],
             ["Wachten op customer migratie", String(summary.waitingForCustomer || 0)],
             ["Wachten op website migratie", String(summary.waitingForWebsite || 0)],
@@ -6004,8 +6004,8 @@
           const supabase = status.supabaseStatus || {};
           appendDeveloperCard("Auth status", [
             ["Auth mode", status.mode],
-            ["Supabase Auth geconfigureerd", status.supabaseAuthConfigured ? "Ja" : "Nee"],
-            ["Supabase Auth actief", status.supabaseAuthActive ? "Ja" : "Nee"],
+            ["admin-auth geconfigureerd", status.supabaseAuthConfigured ? "Ja" : "Nee"],
+            ["admin-auth actief", status.supabaseAuthActive ? "Ja" : "Nee"],
             ["Demo auth actief", status.demoAuthActive ? "Ja" : "Nee"],
             ["Huidige sessie", demo.session ? `${demo.currentUser?.name || demo.currentUser?.email || demo.session.userId} (${demo.session.role})` : "Geen sessie"],
             ["Demo users", String(demo.demoUsers || 0)],
@@ -6505,7 +6505,7 @@
             ["Account requests", String(summary.accountRequests || 0)],
             ["Prepared profiles", String(summary.preparedProfiles || 0)],
             ["Profiles table", summary.profilesTableStatus],
-            ["Supabase Auth provider", summary.supabaseAuthProviderStatus],
+            ["admin-auth provider", summary.supabaseAuthProviderStatus],
             ["Roles config", summary.rolesConfigStatus],
             ["Permissions config", summary.permissionsConfigStatus],
             ["Session → profile", summary.sessionProfileMappingStatus],
@@ -6593,7 +6593,7 @@
                 showAccountRequests: true,
                 profileActionResult: { action: "profile_concept", status: "voorbereid", profile, message: "Profile-concept lokaal voorbereid." },
               });
-              setSettingsMessage("Profile-concept voorbereid. Er is geen Supabase Auth-user aangemaakt.", "success");
+              setSettingsMessage("Profile-concept voorbereid. Er is geen admin-auth-user aangemaakt.", "success");
             });
             const linkCustomer = document.createElement("button");
             linkCustomer.className = "button secondary";
@@ -6622,11 +6622,11 @@
             const readyForAuth = document.createElement("button");
             readyForAuth.className = "button secondary";
             readyForAuth.type = "button";
-            readyForAuth.textContent = "Markeer klaar voor Supabase Auth";
+            readyForAuth.textContent = "Markeer klaar voor admin-auth";
             readyForAuth.addEventListener("click", async () => {
               authService.updateAccountRequestStatus(request.id, "invited_later");
               await renderDeveloperToolsSummary({ showAccountRequests: true });
-              setSettingsMessage("Gemarkeerd als klaar voor latere Supabase Auth-uitnodiging.", "success");
+              setSettingsMessage("Gemarkeerd als klaar voor latere admin-auth-uitnodiging.", "success");
             });
             const remove = document.createElement("button");
             remove.className = "button secondary";
@@ -6742,7 +6742,7 @@
             if (extra.productionValidation) renderProductionValidation(modules);
             if (extra.testExecutionPlan) renderDeploymentReference(extra.testExecutionPlan.title, extra.testExecutionPlan.rows);
             if (extra.releaseDecisionMarkdown) renderReleaseDecisionMarkdown(extra.releaseDecisionMarkdown);
-            if (extra.supabaseReadOnlyResult) renderSupabaseReadOnlyResult(extra.supabaseReadOnlyTitle || "Supabase read-only resultaat", extra.supabaseReadOnlyResult);
+            if (extra.supabaseReadOnlyResult) renderSupabaseReadOnlyResult(extra.supabaseReadOnlyTitle || "Supabase-only resultaat", extra.supabaseReadOnlyResult);
             if (extra.supabaseWriteTestResult) renderSupabaseWriteTestResult(extra.supabaseWriteTestResult);
             if (extra.supabaseCustomerRows) {
               appendDeveloperCard("Eerste Supabase customers", extra.supabaseCustomerRows.length
@@ -9149,7 +9149,7 @@
           } else if (settings.dataProviderMode === "supabase-write-test") {
             setSettingsMessage("Instellingen opgeslagen. Supabase write-test mode staat klaar voor testcustomers; massamigratie blijft geblokkeerd.", "success");
           } else if (settings.dataProviderMode === "supabase-readonly") {
-            setSettingsMessage("Instellingen opgeslagen. Supabase read-only checks zijn beschikbaar; writes blijven geblokkeerd.", "success");
+            setSettingsMessage("Instellingen opgeslagen. Supabase-only checks zijn beschikbaar; writes blijven geblokkeerd.", "success");
           } else if (settings.dataProviderMode === "supabase-prepared") {
             setSettingsMessage("Instellingen opgeslagen. Supabase provider is voorbereid, maar live datawrites zijn nog niet actief.", "success");
           } else {
@@ -9739,7 +9739,7 @@
             hostingStatus: status === "offline" ? "inactive" : "active",
             carePackage,
             maintenancePackage: carePackage,
-            sslStatus: site.sslStatus || "unknown",
+            sslStatus: site.sslStatus || "Onbekend",
             lastDeployAt: site.lastDeployAt || "",
             lastUpdateAt: site.lastUpdateAt || site.lastCheckedAt || "",
             lastCheckedAt: site.lastCheckedAt || site.lastUpdateAt || "",
@@ -10859,7 +10859,7 @@
             }
             const data = await response.json().catch(() => ({}));
             if (!response.ok || !data.access_token || !data.user?.email) {
-              throw new Error(data.error_description || data.msg || data.error || `Inloggen is niet gelukt (Supabase Auth status ${response.status}).`);
+              throw new Error(data.error_description || data.msg || data.error || `Inloggen is niet gelukt (admin-auth status ${response.status}).`);
             }
             storeAdminSession({
               accessToken: data.access_token,
@@ -11267,7 +11267,7 @@
 
         function websiteSourceLabel(website = {}) {
           const source = website._source || "local";
-          if (source === "supabase") return "Supabase";
+          if (source === "supabase") return "Centraal";
           if (source === "hybrid") return "Hybrid";
           if (source === "demo") return "Demo";
           return "Local";
@@ -11572,7 +11572,7 @@
           const mode = status.mode || readStoredSettings().customerDataMode || "local";
           [
             ["Mode", mode],
-            ["Actieve bron", status.fallbackUsed ? "Local fallback" : mode === "hybrid" ? "Hybrid" : mode === "supabase-read" ? "Supabase" : "Local"],
+            ["Actieve bron", status.fallbackUsed ? "Lokale reservekopie" : mode === "hybrid" ? "Hybrid" : mode === "supabase-read" ? "Centraal" : "Local"],
             ["Local customers", String(counts.local ?? state.customers.length ?? 0)],
             ["Supabase customers", String(counts.supabase ?? 0)],
             ["Hybrid merged", String(counts.hybrid ?? state.customers.length ?? 0)],
@@ -11590,7 +11590,7 @@
           if (status.error) {
             const card = document.createElement("article");
             card.className = "admin-card request-card request-state-card";
-            card.append(createBadge(status.fallbackUsed ? "Fallback actief" : "Supabase fout", status.fallbackUsed ? "status-warning" : "status-attention"), createCell(status.error));
+            card.append(createBadge(status.fallbackUsed ? "Fallback actief" : "Datafout", status.fallbackUsed ? "status-warning" : "status-attention"), createCell(status.error));
             customerSourceSummary.append(card);
           }
         }
@@ -11621,7 +11621,7 @@
           [
             ["Website data mode", status.mode || currentWebsiteDataMode()],
             ["Local", String(counts.local ?? state.websites.length ?? 0)],
-            ["Supabase", String(counts.supabase ?? 0)],
+            ["Centraal", String(counts.supabase ?? 0)],
             ["Hybrid zichtbaar", String(counts.hybrid ?? state.websites.length ?? 0)],
             ["Demo", String(counts.demo ?? state.websites.filter((website) => website._source === "demo").length)],
             ["Zonder Supabase customer", String(state.websites.filter((website) => website._linkedCustomerStatus && website._linkedCustomerStatus !== "linked").length)],
@@ -11635,7 +11635,7 @@
           if (status.error) {
             const card = document.createElement("article");
             card.className = "admin-card request-card request-state-card";
-            card.append(createBadge(status.fallbackUsed ? "Fallback actief" : "Supabase fout", status.fallbackUsed ? "status-warning" : "status-attention"), createCell(status.error));
+            card.append(createBadge(status.fallbackUsed ? "Fallback actief" : "Datafout", status.fallbackUsed ? "status-warning" : "status-attention"), createCell(status.error));
             websiteSourceSummary.append(card);
           }
         }
@@ -11934,7 +11934,7 @@
               }, "Portaaluitnodiging kon niet worden verstuurd.");
               const customer = payload.id ? state.customers.find((item) => item.id === payload.id) : state.customers.find((item) => item.email === String(payload.email || "").toLowerCase());
               const profile = customer ? saveCustomerLocally({ ...customer, portalStatus: "uitgenodigd" }) : null;
-              return { ...data, profile, warning: data.warning || "Supabase Auth uitnodiging verstuurd of voorbereid." };
+              return { ...data, profile, warning: data.warning || "admin-auth uitnodiging verstuurd of voorbereid." };
             }
             const customer = payload.id ? state.customers.find((item) => item.id === payload.id) : state.customers.find((item) => item.email === String(payload.email || "").toLowerCase());
             if (!payload.email && !customer?.email) throw new Error("Vul eerst een geldig e-mailadres in.");
@@ -11956,7 +11956,7 @@
 
           if (action === "link_login") {
             const profile = saveCustomerLocally({ ...payload, portalStatus: "actief", authStatus: "login actief" });
-            return { success: true, profile, warning: "Demo-login gekoppeld. Echte Supabase Auth-koppeling volgt in Fase 8.4." };
+            return { success: true, profile, warning: "Demo-login gekoppeld. Echte admin-auth-koppeling volgt in Fase 8.4." };
           }
 
           if (action !== "save_customer") {
@@ -12010,10 +12010,10 @@
                 email: detailFields.email.value,
               }, "Login kon niet worden gecontroleerd.");
               if (!data.authUser?.id) {
-                reportUnavailableAction("Geen Supabase Auth gebruiker gevonden. Gebruik eerst Portaal uitnodiging maken.", setDetailMessage);
+                reportUnavailableAction("Geen admin-auth gebruiker gevonden. Gebruik eerst Portaal uitnodiging maken.", setDetailMessage);
                 return;
               }
-              setDetailMessage("Supabase Auth gebruiker gevonden en gekoppeld via profile/auth_user_id.", "success");
+              setDetailMessage("admin-auth gebruiker gevonden en gekoppeld via profile/auth_user_id.", "success");
             } catch (error) {
               setDetailMessage(error.message || "Login kon niet worden gecontroleerd.", "error");
             }
@@ -12042,7 +12042,7 @@
           setDetailMessage("", "");
           try {
             await runCustomerAction("send_password_reset", { email: detailFields.email.value });
-            setDetailMessage("Wachtwoord reset verstuurd via Supabase Auth.", "success");
+            setDetailMessage("Wachtwoord reset verstuurd via admin-auth.", "success");
           } catch (error) {
             setDetailMessage(error.message || "Wachtwoord reset kon niet worden verstuurd.", "error");
           } finally {
@@ -12216,7 +12216,7 @@
           } catch (error) {
             setDetailMessage(error.message || "Klantgegevens konden niet worden ververst.", "error");
           } finally {
-            detailRefreshSupabase.textContent = "Ververs vanuit Supabase";
+            detailRefreshSupabase.textContent = "Gegevens verversen";
             detailRefreshSupabase.disabled = !isSupabaseManagedCustomer(selectedCustomer());
           }
         }
@@ -12422,7 +12422,7 @@
           websiteFields.status.value = "online";
           websiteFields.hostingPackage.value = "Plus";
           websiteFields.carePackage.value = "Plus";
-          websiteFields.sslStatus.value = "unknown";
+          websiteFields.sslStatus.value = "Onbekend";
           websiteFields.openTasks.value = "0";
           websiteDetailState.textContent = "Nieuw";
           websiteDetailState.className = "status-badge status-prepared";
@@ -12497,10 +12497,10 @@
             ["Laatste wijziging", formatDate(website.updatedAt)],
           ]);
           addWebsiteSummaryCard("Techniek", [
-            ["GitHub", website.githubRepoUrl || "-"],
+            ["Repository", website.githubRepoUrl || "-"],
             ["Branch", website.githubBranch || "main"],
-            ["Netlify", website.netlifyProjectName || website.netlifySiteId || "-"],
-            ["SSL", website.sslStatus || "unknown"],
+            ["Hosting", website.netlifyProjectName || website.netlifySiteId || "-"],
+            ["SSL", website.sslStatus || "Onbekend"],
             ["Laatste deploy", formatDate(website.lastDeployAt)],
           ]);
           addWebsiteSummaryCard("Onderhoud", [
@@ -12548,7 +12548,7 @@
           websiteFields.status.value = website.status || "online";
           websiteFields.hostingPackage.value = website.hostingPackage || "Plus";
           websiteFields.carePackage.value = website.carePackage || "Plus";
-          websiteFields.sslStatus.value = website.sslStatus || "unknown";
+          websiteFields.sslStatus.value = website.sslStatus || "Onbekend";
           websiteFields.lastDeployAt.value = toDateTimeInput(website.lastDeployAt);
           websiteFields.lastUpdateAt.value = toDateTimeInput(website.lastUpdateAt);
           websiteFields.openTasks.value = String(website.openTasks || 0);
@@ -12745,7 +12745,7 @@
           } catch (error) {
             setWebsiteMessage(error.message || "Websitegegevens konden niet worden ververst.", "error");
           } finally {
-            websiteRefreshSupabase.textContent = "Ververs vanuit Supabase";
+            websiteRefreshSupabase.textContent = "Gegevens verversen";
             websiteRefreshSupabase.disabled = !isSupabaseManagedWebsite(selectedWebsite());
           }
         }
@@ -12797,7 +12797,7 @@
         function healthStatusClass(value) {
           const status = normalize(value);
           if (status === "online" || status === "active" || status === "valid") return "status-active";
-          if (status === "warning" || status === "pending" || status === "unknown") return "status-warning";
+          if (status === "warning" || status === "pending" || status === "Onbekend") return "status-warning";
           if (status === "offline" || status === "inactive" || status === "invalid") return "status-attention";
           return "status-planned";
         }
@@ -12823,7 +12823,7 @@
             header.className = "website-health-header";
             const title = document.createElement("div");
             title.append(createCell(health.name || linkedWebsite.name || "Website", "strong"), createCell(linkedWebsite.customerCompany || linkedWebsite.customerName || health.domain || "Website"));
-            header.append(title, createBadge(health.uptimeStatus || "unknown", healthStatusClass(health.uptimeStatus)));
+            header.append(title, createBadge(health.uptimeStatus || "Onbekend", healthStatusClass(health.uptimeStatus)));
 
             const metrics = document.createElement("div");
             metrics.className = "website-health-metrics";
@@ -13056,7 +13056,7 @@
             openGithub.href = website.githubRepoUrl || "#";
             openGithub.target = "_blank";
             openGithub.rel = "noopener";
-            openGithub.textContent = "GitHub";
+            openGithub.textContent = "Repository";
             openGithub.toggleAttribute("aria-disabled", !website.githubRepoUrl);
             openGithub.classList.toggle("is-disabled", !website.githubRepoUrl);
             openGithub.addEventListener("click", (event) => {
@@ -13068,7 +13068,7 @@
             openNetlify.href = netlifySlug ? `https://app.netlify.com/sites/${encodeURIComponent(netlifySlug)}/overview` : "#";
             openNetlify.target = "_blank";
             openNetlify.rel = "noopener";
-            openNetlify.textContent = "Netlify";
+            openNetlify.textContent = "Hosting";
             openNetlify.toggleAttribute("aria-disabled", !netlifySlug);
             openNetlify.classList.toggle("is-disabled", !netlifySlug);
             openNetlify.addEventListener("click", (event) => {
@@ -13104,7 +13104,7 @@
               createBadge(websiteStatusLabels[website.status] || website.status, websiteStatusClass(website.status)),
               createBadge(website.hostingPackage || "-", "status-prepared"),
               createBadge(website.carePackage || "-", "status-planned"),
-              createBadge(website.sslStatus || "unknown", websiteStatusClass(website.sslStatus)),
+              createBadge(website.sslStatus || "Onbekend", websiteStatusClass(website.sslStatus)),
               createCell(formatDate(website.lastDeployAt)),
               createCell(formatDate(website.lastUpdateAt)),
               actions
@@ -13134,7 +13134,7 @@
 
         function projectSourceLabel(project = {}) {
           if (project._source === "hybrid") return "Hybrid";
-          if (project._source === "supabase") return "Supabase";
+          if (project._source === "supabase") return "Centraal";
           if (project._source === "demo" || project.isDemo || project.environment === "demo") return "Demo/local";
           return "Local";
         }
@@ -13153,7 +13153,7 @@
           [
             ["Project data mode", status.mode || currentProjectDataMode()],
             ["Local", String(counts.local ?? state.projects.length ?? 0)],
-            ["Supabase", String(counts.supabase ?? 0)],
+            ["Centraal", String(counts.supabase ?? 0)],
             ["Hybrid zichtbaar", String(counts.hybrid ?? state.projects.length ?? 0)],
             ["Demo", String(counts.demo ?? state.projects.filter((project) => project._source === "demo").length)],
             ["Zonder Supabase customer", String(state.projects.filter((project) => project._linkedCustomerStatus && project._linkedCustomerStatus !== "linked").length)],
@@ -13168,7 +13168,7 @@
           if (status.error) {
             const card = document.createElement("article");
             card.className = "admin-card request-card request-state-card";
-            card.append(createBadge(status.fallbackUsed ? "Fallback actief" : "Supabase fout", status.fallbackUsed ? "status-warning" : "status-attention"), createCell(status.error));
+            card.append(createBadge(status.fallbackUsed ? "Fallback actief" : "Datafout", status.fallbackUsed ? "status-warning" : "status-attention"), createCell(status.error));
             projectSourceSummary.append(card);
           }
         }
@@ -13222,7 +13222,7 @@
 
         function quoteSourceLabel(quote = {}) {
           const source = quote._source || "local";
-          if (source === "supabase") return "Supabase";
+          if (source === "supabase") return "Centraal";
           if (source === "hybrid") return "Hybrid";
           if (source === "demo") return "Demo";
           return "Local";
@@ -13247,7 +13247,7 @@
           [
             ["Quote data mode", status.mode || currentQuoteDataMode()],
             ["Local", String(counts.local ?? state.quotes.length ?? 0)],
-            ["Supabase", String(counts.supabase ?? 0)],
+            ["Centraal", String(counts.supabase ?? 0)],
             ["Hybrid zichtbaar", String(counts.hybrid ?? state.quotes.length ?? 0)],
             ["Demo", String(counts.demo ?? state.quotes.filter((quote) => quote._source === "demo").length)],
             ["Ongemigreerd local", String(counts.unmigratedLocal ?? 0)],
@@ -13260,7 +13260,7 @@
           if (status.error) {
             const card = document.createElement("article");
             card.className = "admin-card request-card request-state-card";
-            card.append(createBadge(status.fallbackUsed ? "Fallback actief" : "Supabase fout", status.fallbackUsed ? "status-warning" : "status-attention"), createCell(status.error));
+            card.append(createBadge(status.fallbackUsed ? "Fallback actief" : "Datafout", status.fallbackUsed ? "status-warning" : "status-attention"), createCell(status.error));
             quoteSourceSummary.append(card);
           }
         }
@@ -13312,7 +13312,7 @@
 
         function invoiceSourceLabel(invoice = {}) {
           const source = invoice._source || "local";
-          if (source === "supabase") return "Supabase";
+          if (source === "supabase") return "Centraal";
           if (source === "hybrid") return "Hybrid";
           if (source === "demo") return "Demo";
           return "Local";
@@ -13337,7 +13337,7 @@
           [
             ["Invoice data mode", status.mode || currentInvoiceDataMode()],
             ["Local", String(counts.local ?? state.invoices.length ?? 0)],
-            ["Supabase", String(counts.supabase ?? 0)],
+            ["Centraal", String(counts.supabase ?? 0)],
             ["Hybrid zichtbaar", String(counts.hybrid ?? state.invoices.length ?? 0)],
             ["Demo", String(counts.demo ?? state.invoices.filter((invoice) => invoice._source === "demo").length)],
             ["Ongemigreerd local", String(counts.unmigratedLocal ?? 0)],
@@ -13352,7 +13352,7 @@
           if (status.error) {
             const card = document.createElement("article");
             card.className = "admin-card request-card request-state-card";
-            card.append(createBadge(status.fallbackUsed ? "Fallback actief" : "Supabase fout", status.fallbackUsed ? "status-warning" : "status-attention"), createCell(status.error));
+            card.append(createBadge(status.fallbackUsed ? "Fallback actief" : "Datafout", status.fallbackUsed ? "status-warning" : "status-attention"), createCell(status.error));
             invoiceSourceSummary.append(card);
           }
         }
@@ -13407,7 +13407,7 @@
 
         function subscriptionSourceLabel(subscription = {}) {
           const source = subscription._source || "local";
-          if (source === "supabase") return "Supabase";
+          if (source === "supabase") return "Centraal";
           if (source === "hybrid") return "Hybrid";
           if (source === "demo") return "Demo";
           return "Local";
@@ -13432,7 +13432,7 @@
           [
             ["Subscription data mode", status.mode || currentSubscriptionDataMode()],
             ["Local", String(counts.local ?? state.subscriptions.length ?? 0)],
-            ["Supabase", String(counts.supabase ?? 0)],
+            ["Centraal", String(counts.supabase ?? 0)],
             ["Hybrid zichtbaar", String(counts.hybrid ?? state.subscriptions.length ?? 0)],
             ["Demo", String(counts.demo ?? state.subscriptions.filter((subscription) => subscription._source === "demo").length)],
             ["Actief", String(counts.active ?? state.subscriptions.filter((subscription) => subscription.status === "actief").length)],
@@ -13451,7 +13451,7 @@
           if (status.error) {
             const card = document.createElement("article");
             card.className = "admin-card request-card request-state-card";
-            card.append(createBadge(status.fallbackUsed ? "Fallback actief" : "Supabase fout", status.fallbackUsed ? "status-warning" : "status-attention"), createCell(status.error));
+            card.append(createBadge(status.fallbackUsed ? "Fallback actief" : "Datafout", status.fallbackUsed ? "status-warning" : "status-attention"), createCell(status.error));
             subscriptionSourceSummary.append(card);
           }
         }
@@ -13621,9 +13621,9 @@
             projectReactivate.disabled = true;
             renderProjectSourceDetail(project, state.projectWriteReadiness);
             if (!state.projectWriteReadiness.allowed) {
-              setProjectMessage(`Supabase projectstatus write geblokkeerd: ${state.projectWriteReadiness.reason}`, "error");
+              setProjectMessage(`Projectstatus opslaan geblokkeerd: ${state.projectWriteReadiness.reason}`, "error");
             } else if (!projectDetailMessage.textContent) {
-              setProjectMessage("Supabase projectstatus write is gecontroleerd beschikbaar voor status, fase en voortgang.", "success");
+              setProjectMessage("Projectstatus kan veilig worden bijgewerkt.", "success");
             }
           } catch (error) {
             setProjectFieldsDisabled(true);
@@ -13877,7 +13877,7 @@
           renderProjectTasks(project);
           renderProjectTimeline(project);
           renderProjectSourceDetail(project);
-          setProjectMessage(isSupabaseManagedProject(project) ? "Supabase project write readiness wordt gecontroleerd..." : "", isSupabaseManagedProject(project) ? "success" : "");
+          setProjectMessage(isSupabaseManagedProject(project) ? "Opslagcontrole wordt uitgevoerd..." : "", isSupabaseManagedProject(project) ? "success" : "");
           setProjectFieldsDisabled(isSupabaseManagedProject(project));
           projectSave.disabled = isSupabaseManagedProject(project);
           projectDelete.disabled = isSupabaseManagedProject(project) || project.status === "gearchiveerd";
@@ -13942,7 +13942,7 @@
             setProjectMessage(isSupabaseManagedProject(currentProject) ? "Projectstatus opgeslagen." : "Project opgeslagen.", "success");
           } catch (error) {
             const message = error.code === "PROJECT_CONFLICT"
-              ? "Supabase heeft een nieuwere projectversie. Ververs projectgegevens voordat je opslaat."
+              ? "Er is een nieuwere projectversie. Ververs projectgegevens voordat je opslaat."
               : error.message || "Project kon niet worden opgeslagen.";
             setProjectMessage(message, "error");
           } finally {
@@ -14019,7 +14019,7 @@
           if (!project) return;
           const confirmed = window.confirm("Weet je zeker dat je dit project wilt archiveren?");
           if (!confirmed) return;
-          if (isSupabaseManagedProject(project) && !window.confirm("Supabase-project archiveren is een soft delete. Bevestig dat je geen hard delete uitvoert.")) return;
+          if (isSupabaseManagedProject(project) && !window.confirm("Project archiveren bewaart de gegevens. Bevestig dat je wilt archiveren.")) return;
           projectDelete.disabled = true;
           projectDelete.textContent = "Archiveren...";
           setProjectMessage("", "");
@@ -14087,7 +14087,7 @@
           } catch (error) {
             setProjectMessage(error.message || "Projectgegevens konden niet worden ververst.", "error");
           } finally {
-            projectRefreshSupabase.textContent = "Ververs vanuit Supabase";
+            projectRefreshSupabase.textContent = "Gegevens verversen";
             projectRefreshSupabase.disabled = !isSupabaseManagedProject(selectedProject());
           }
         }
@@ -14096,7 +14096,7 @@
           const project = selectedProject();
           if (!project) return;
           if (isSupabaseManagedProject(project) && !state.projectWriteReadiness?.allowed) {
-            setProjectMessage(`Supabase project write geblokkeerd: ${state.projectWriteReadiness?.reason || "voorwaarden ontbreken"}`, "error");
+            setProjectMessage(`Project opslaan geblokkeerd: ${state.projectWriteReadiness?.reason || "voorwaarden ontbreken"}`, "error");
             return;
           }
           if (isSupabaseManagedProject(project)) {
@@ -15075,7 +15075,7 @@
             status: "online",
             hostingPackage: "",
             carePackage: customer.package || "",
-            sslStatus: "unknown",
+            sslStatus: "Onbekend",
             notes: "Gekoppeld vanuit factuurbeheer.",
           });
           await loadCRMData(false);
@@ -15629,7 +15629,7 @@
           state.subscriptions = readStoredSubscriptions();
           renderSubscriptions();
           renderInvoices();
-          if (showLoading) setAdminAccessMessage("Onderhoudsabonnementen geladen uit lokale opslag.", "success");
+          if (showLoading) setAdminAccessMessage("Onderhoudsabonnementen geladen uit localStorage.", "success");
         }
 
         async function postBilling(payload) {
@@ -15980,7 +15980,7 @@
             const paymentTermDays = Number(settings.paymentTermDays || defaultSettings.paymentTermDays || 14);
             const vatRate = Number(subscription.vatRate || settings.defaultVatRate || defaultSettings.defaultVatRate || 21);
             if (isSupabaseManagedSubscription(subscription) && currentInvoiceDataMode() === "local") {
-              throw new Error("Dit abonnement komt uit Supabase. Zet invoice data mode eerst op hybrid/supabase-read voordat je een gekoppelde factuur maakt.");
+              throw new Error("Dit abonnement komt uit de centrale data. Ververs facturen voordat je een gekoppelde factuur maakt.");
             }
             const invoicePayload = {
               profileId: subscription.profileId,
@@ -16276,7 +16276,7 @@
             setBillingMessage(subscriptionMessage, error.message || "Abonnement kon niet worden ververst.", "error");
           } finally {
             subscriptionRefreshSupabase.disabled = false;
-            subscriptionRefreshSupabase.textContent = "Ververs uit Supabase";
+            subscriptionRefreshSupabase.textContent = "Gegevens verversen";
           }
         }
 
@@ -16569,7 +16569,7 @@
           } catch (error) {
             setBillingMessage(invoiceMessage, error.message || "Factuur kon niet worden ververst.", "error");
           } finally {
-            invoiceRefreshSupabase.textContent = "Ververs uit Supabase";
+            invoiceRefreshSupabase.textContent = "Gegevens verversen";
             invoiceRefreshSupabase.disabled = !isSupabaseManagedInvoice(invoiceById(state.selectedInvoiceId));
           }
         }
@@ -17678,7 +17678,7 @@
           if (!token) {
             renderAdminLockedState();
             updateAdminSessionUi();
-            setAdminAccessMessage("Log in als admin om CRM-data te laden.", "error");
+            setAdminAccessMessage("Controleer de toegang of probeer opnieuw te laden.", "error");
             return;
           }
 
@@ -17737,19 +17737,19 @@
             const fileSourceStatus = state.fileSourceStatus || {};
             const technicalStatusMessage = (() => {
               if (fileSourceStatus.error && fileSourceStatus.fallbackUsed) return `Bestanden hybrid fallback actief: ${fileSourceStatus.error}`;
-              if (fileSourceStatus.error) return `Supabase bestanden konden niet worden gelezen: ${fileSourceStatus.error}`;
+              if (fileSourceStatus.error) return `Bestanden konden niet worden gelezen: ${fileSourceStatus.error}`;
               if (subscriptionSourceStatus.error && subscriptionSourceStatus.fallbackUsed) return `Abonnement hybrid fallback actief: ${subscriptionSourceStatus.error}`;
-              if (subscriptionSourceStatus.error) return `Supabase abonnementen konden niet worden gelezen: ${subscriptionSourceStatus.error}`;
+              if (subscriptionSourceStatus.error) return `Abonnementen konden niet worden gelezen: ${subscriptionSourceStatus.error}`;
               if (invoiceSourceStatus.error && invoiceSourceStatus.fallbackUsed) return `Factuur hybrid fallback actief: ${invoiceSourceStatus.error}`;
-              if (invoiceSourceStatus.error) return `Supabase facturen konden niet worden gelezen: ${invoiceSourceStatus.error}`;
+              if (invoiceSourceStatus.error) return `Facturen konden niet worden gelezen: ${invoiceSourceStatus.error}`;
               if (quoteSourceStatus.error && quoteSourceStatus.fallbackUsed) return `Offerte hybrid fallback actief: ${quoteSourceStatus.error}`;
-              if (quoteSourceStatus.error) return `Supabase offertes konden niet worden gelezen: ${quoteSourceStatus.error}`;
+              if (quoteSourceStatus.error) return `Offertes konden niet worden gelezen: ${quoteSourceStatus.error}`;
               if (projectSourceStatus.error && projectSourceStatus.fallbackUsed) return `Project hybrid fallback actief: ${projectSourceStatus.error}`;
-              if (projectSourceStatus.error) return `Supabase projecten konden niet worden gelezen: ${projectSourceStatus.error}`;
+              if (projectSourceStatus.error) return `Projecten konden niet worden gelezen: ${projectSourceStatus.error}`;
               if (websiteSourceStatus.error && websiteSourceStatus.fallbackUsed) return `Website hybrid fallback actief: ${websiteSourceStatus.error}`;
-              if (websiteSourceStatus.error) return `Supabase websites konden niet worden gelezen: ${websiteSourceStatus.error}`;
+              if (websiteSourceStatus.error) return `Websites konden niet worden gelezen: ${websiteSourceStatus.error}`;
               if (sourceStatus.error && sourceStatus.fallbackUsed) return `Hybrid fallback actief: ${sourceStatus.error}`;
-              if (sourceStatus.error) return `Supabase customers konden niet worden gelezen: ${sourceStatus.error}`;
+              if (sourceStatus.error) return `Klanten konden niet worden gelezen: ${sourceStatus.error}`;
               return "";
             })();
 
@@ -17758,19 +17758,19 @@
             } else if (fileSourceStatus.error && fileSourceStatus.fallbackUsed) {
               setAdminAccessMessage(`Bestanden hybrid fallback actief: ${fileSourceStatus.error}`, "error");
             } else if (fileSourceStatus.error) {
-              setAdminAccessMessage(`Supabase bestanden konden niet worden gelezen: ${fileSourceStatus.error}`, "error");
+              setAdminAccessMessage(`Bestanden konden niet worden gelezen: ${fileSourceStatus.error}`, "error");
             } else if (subscriptionSourceStatus.error && subscriptionSourceStatus.fallbackUsed) {
               setAdminAccessMessage(`Abonnement hybrid fallback actief: ${subscriptionSourceStatus.error}`, "error");
             } else if (subscriptionSourceStatus.error) {
-              setAdminAccessMessage(`Supabase abonnementen konden niet worden gelezen: ${subscriptionSourceStatus.error}`, "error");
+              setAdminAccessMessage(`Abonnementen konden niet worden gelezen: ${subscriptionSourceStatus.error}`, "error");
             } else if (invoiceSourceStatus.error && invoiceSourceStatus.fallbackUsed) {
               setAdminAccessMessage(`Factuur hybrid fallback actief: ${invoiceSourceStatus.error}`, "error");
             } else if (invoiceSourceStatus.error) {
-              setAdminAccessMessage(`Supabase facturen konden niet worden gelezen: ${invoiceSourceStatus.error}`, "error");
+              setAdminAccessMessage(`Facturen konden niet worden gelezen: ${invoiceSourceStatus.error}`, "error");
             } else if (quoteSourceStatus.error && quoteSourceStatus.fallbackUsed) {
               setAdminAccessMessage(`Offerte hybrid fallback actief: ${quoteSourceStatus.error}`, "error");
             } else if (quoteSourceStatus.error) {
-              setAdminAccessMessage(`Supabase offertes konden niet worden gelezen: ${quoteSourceStatus.error}`, "error");
+              setAdminAccessMessage(`Offertes konden niet worden gelezen: ${quoteSourceStatus.error}`, "error");
             } else if (projectSourceStatus.error && projectSourceStatus.fallbackUsed) {
               try {
                 const { activityLogService } = await loadDeveloperModules();
@@ -17780,7 +17780,7 @@
               }
               setAdminAccessMessage(`Project hybrid fallback actief: ${projectSourceStatus.error}`, "error");
             } else if (projectSourceStatus.error) {
-              setAdminAccessMessage(`Supabase projecten konden niet worden gelezen: ${projectSourceStatus.error}`, "error");
+              setAdminAccessMessage(`Projecten konden niet worden gelezen: ${projectSourceStatus.error}`, "error");
             } else if (websiteSourceStatus.error && websiteSourceStatus.fallbackUsed) {
               try {
                 const { activityLogService } = await loadDeveloperModules();
@@ -17790,7 +17790,7 @@
               }
               setAdminAccessMessage(`Website hybrid fallback actief: ${websiteSourceStatus.error}`, "error");
             } else if (websiteSourceStatus.error) {
-              setAdminAccessMessage(`Supabase websites konden niet worden gelezen: ${websiteSourceStatus.error}`, "error");
+              setAdminAccessMessage(`Websites konden niet worden gelezen: ${websiteSourceStatus.error}`, "error");
             } else if (sourceStatus.error && sourceStatus.fallbackUsed) {
               try {
                 const { activityLogService } = await loadDeveloperModules();
@@ -17800,17 +17800,17 @@
               }
               setAdminAccessMessage(`Hybrid fallback actief: ${sourceStatus.error}`, "error");
             } else if (sourceStatus.error) {
-              setAdminAccessMessage(`Supabase customers konden niet worden gelezen: ${sourceStatus.error}`, "error");
+              setAdminAccessMessage(`Klanten konden niet worden gelezen: ${sourceStatus.error}`, "error");
             } else {
               setAdminOperationalMessage(`CRM geladen via customer mode ${sourceStatus.mode || "local"}, website mode ${websiteSourceStatus.mode || "local"}, project mode ${projectSourceStatus.mode || "local"}, quote mode ${quoteSourceStatus.mode || "local"}, invoice mode ${invoiceSourceStatus.mode || "local"}, subscription mode ${subscriptionSourceStatus.mode || "local"} en files mode ${fileSourceStatus.mode || "local"}.`, "success");
             }
             if (isDeveloperModeEnabled()) {
               console.info("CRM centrale databronnen geladen", {
-                customers: { source: sourceStatus.dataLayer || "unknown", count: state.customers.length, status: sourceStatus },
-                websites: { source: websiteSourceStatus.dataLayer || "unknown", count: state.websites.length, status: websiteSourceStatus },
-                projects: { source: projectSourceStatus.dataLayer || "unknown", count: state.projects.length, status: projectSourceStatus },
-                quotes: { source: quoteSourceStatus.dataLayer || "unknown", count: state.quotes.length, status: quoteSourceStatus },
-                invoices: { source: invoiceSourceStatus.dataLayer || "unknown", count: state.invoices.length, status: invoiceSourceStatus },
+                customers: { source: sourceStatus.dataLayer || "Onbekend", count: state.customers.length, status: sourceStatus },
+                websites: { source: websiteSourceStatus.dataLayer || "Onbekend", count: state.websites.length, status: websiteSourceStatus },
+                projects: { source: projectSourceStatus.dataLayer || "Onbekend", count: state.projects.length, status: projectSourceStatus },
+                quotes: { source: quoteSourceStatus.dataLayer || "Onbekend", count: state.quotes.length, status: quoteSourceStatus },
+                invoices: { source: invoiceSourceStatus.dataLayer || "Onbekend", count: state.invoices.length, status: invoiceSourceStatus },
               });
             }
           } catch (error) {
@@ -17863,7 +17863,7 @@
               error: error.message || "CRM/subscription data kon niet worden geladen.",
               refreshedAt: new Date().toISOString(),
             };
-            renderState(customerList, "CRM-klanten konden niet worden geladen", "Supabase-read kon geen klanten laden. Zet de customer data mode terug naar local of controleer de Supabase configuratie.", "Fout", "status-attention", { label: "Terug naar local", primary: true, onClick: () => setCustomerDataMode("local", { source: "supabase_read_error" }) });
+            renderState(customerList, "CRM-klanten konden niet worden geladen", "Klanten konden nog niet worden geladen. Controleer de toegang of probeer opnieuw.", "Fout", "status-attention", { label: "Terug naar local", primary: true, onClick: () => setCustomerDataMode("local", { source: "supabase_read_error" }) });
             renderCustomerSourceSummary();
             renderWebsiteSourceSummary();
             renderProjectSourceSummary();
@@ -21261,11 +21261,11 @@
           { key: "services", label: "Diensten / aanbod", required: true, type: "multi", wide: true, options: [["renovatie", "Renovatie"], ["maatwerk", "Maatwerk"], ["onderhoud", "Onderhoud"], ["advies", "Advies"], ["spoed", "Spoedservice"], ["projecten", "Projecten"]] },
           { key: "area", label: "Werkgebied", required: true, type: "single", options: [["local", "Lokaal"], ["regional", "Regionaal"], ["national", "Landelijk"]] },
           { key: "audience", label: "Doelgroep", required: true, type: "single", options: [["particulier", "Particulieren"], ["zakelijk", "Zakelijk"], ["beide", "Beide"], ["premium", "Premium klanten"]] },
-          { key: "existingWebsite", label: "Bestaande website", required: true, type: "single", options: [["none", "Geen website"], ["outdated", "Verouderd"], ["active", "Actief"], ["unknown", "Onbekend"]] },
-          { key: "logoStatus", label: "Logo status", required: true, type: "single", options: [["available", "Logo beschikbaar"], ["needed", "Logo nodig"], ["refresh", "Opfrissen"], ["unknown", "Onbekend"]] },
-          { key: "photoStatus", label: "Foto status", required: true, type: "single", options: [["available", "Eigen foto's"], ["needed", "Beelden nodig"], ["stock", "Stock/placeholder"], ["unknown", "Onbekend"]] },
+          { key: "existingWebsite", label: "Bestaande website", required: true, type: "single", options: [["none", "Geen website"], ["outdated", "Verouderd"], ["active", "Actief"], ["Onbekend", "Onbekend"]] },
+          { key: "logoStatus", label: "Logo status", required: true, type: "single", options: [["available", "Logo beschikbaar"], ["needed", "Logo nodig"], ["refresh", "Opfrissen"], ["Onbekend", "Onbekend"]] },
+          { key: "photoStatus", label: "Foto status", required: true, type: "single", options: [["available", "Eigen foto's"], ["needed", "Beelden nodig"], ["stock", "Stock/placeholder"], ["Onbekend", "Onbekend"]] },
           { key: "followUp", label: "Opvolging", required: true, type: "single", options: [["today", "Vandaag"], ["tomorrow", "Morgen"], ["three_days", "Binnen 3 dagen"], ["manual", "Handmatig plannen"]] },
-          { key: "leadTemperature", label: "Lead temperatuur", required: true, type: "single", options: [["hot", "Warm"], ["medium", "Gemiddeld"], ["cold", "Koud"], ["unknown", "Onbekend"]] },
+          { key: "leadTemperature", label: "Lead temperatuur", required: true, type: "single", options: [["hot", "Warm"], ["medium", "Gemiddeld"], ["cold", "Koud"], ["Onbekend", "Onbekend"]] },
           { key: "mustHaves", label: "Wat mag niet ontbreken?", required: true, type: "multi", wide: true, options: [["phone", "Telefoon duidelijk"], ["contact_form", "Contactformulier"], ["reviews", "Reviews"], ["projects", "Projecten"], ["service_area", "Werkgebied"], ["pricing", "Pakket/prijsindicatie"]] },
           { key: "colors", label: "Kleurvoorkeur", type: "multi", options: [["blue", "Blauw"], ["green", "Groen"], ["gold", "Goud"], ["black", "Zwart"], ["neutral", "Neutraal"], ["brand", "Huisstijl volgen"]] },
           { key: "exampleWebsites", label: "Voorbeeldsites", type: "text", wide: true, placeholder: "Plak links of beschrijf stijlen die de klant mooi vindt." },
@@ -21436,7 +21436,7 @@
             const failureLabel = apiFailureLabel(url, payload || {}, data);
             const diagnostics = {
               label: failureLabel,
-              functionName: url.includes("demo-preview") ? "demo-preview" : url.includes("website-factory") ? "website-factory" : url.includes("demo-journey") ? "demo-journey" : "unknown",
+              functionName: url.includes("demo-preview") ? "demo-preview" : url.includes("website-factory") ? "website-factory" : url.includes("demo-journey") ? "demo-journey" : "Onbekend",
               endpoint: url,
               status: response.status,
               statusText: response.statusText,
@@ -21627,7 +21627,7 @@
               : null;
             if (match?.role) return String(match.role).toLowerCase();
           } catch {
-            // Unknown role means non-super-admin UI.
+            // Onbekend role means non-super-admin UI.
           }
           return "";
         }
@@ -21765,7 +21765,7 @@
           try {
             localStorage.setItem(intakeStorageKey(), JSON.stringify({ intakeState, intakeAssets, updatedAt: new Date().toISOString() }));
           } catch {
-            // Local fallback is best effort.
+            // Lokale reservekopie is best effort.
           }
         }
 

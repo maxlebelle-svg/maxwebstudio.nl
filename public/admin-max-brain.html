@@ -271,15 +271,15 @@
               <h1>Max Brain</h1>
               <p>Diagnostiek voor de centrale CRM-contextlaag. Geen chatbot, wel de basis voor Max Command, CEO Mode en toekomstige AI-agents.</p>
             </div>
-            <span class="brain-api-chip">GET /api/max-brain/context</span>
+            <span class="brain-api-chip">Interne contextlaag</span>
           </section>
 
           <section class="brain-grid" aria-label="Max Brain diagnostiek">
-            <article class="brain-card brain-stat"><span>Customers analyzed</span><strong id="brain-customers">0</strong><p>Lokale contextscan</p></article>
-            <article class="brain-card brain-stat"><span>Risks</span><strong id="brain-risks">0</strong><p>Medium en high</p></article>
-            <article class="brain-card brain-stat"><span>Recommendations</span><strong id="brain-recommendations-count">0</strong><p>Deterministische acties</p></article>
-            <article class="brain-card brain-stat"><span>Context cache</span><strong id="brain-cache">Ready</strong><p id="brain-cache-copy">Voorbereid</p></article>
-            <article class="brain-card brain-stat"><span>Events processed</span><strong id="brain-events">0</strong><p>Timeline en notifications</p></article>
+            <article class="brain-card brain-stat"><span>Klanten geanalyseerd</span><strong id="brain-customers">0</strong><p>Contextscan</p></article>
+            <article class="brain-card brain-stat"><span>Risico's</span><strong id="brain-risks">0</strong><p>Middel en hoog</p></article>
+            <article class="brain-card brain-stat"><span>Aanbevelingen</span><strong id="brain-recommendations-count">0</strong><p>Concrete acties</p></article>
+            <article class="brain-card brain-stat"><span>Contextstatus</span><strong id="brain-cache">Klaar</strong><p id="brain-cache-copy">Voorbereid</p></article>
+            <article class="brain-card brain-stat"><span>Verwerkte signalen</span><strong id="brain-events">0</strong><p>Timeline en notificaties</p></article>
             <article class="brain-card brain-stat"><span>Automation status</span><strong id="brain-automations">0</strong><p id="brain-automations-copy">Geen workflows</p></article>
           </section>
 
@@ -317,7 +317,7 @@
             <article class="brain-card">
               <div class="brain-panel-title">
                 <div>
-                  <h2>Recommendations</h2>
+                  <h2>Aanbevelingen</h2>
                   <p class="brain-muted">Regels voor risico, opportunity en volgende actie.</p>
                 </div>
               </div>
@@ -347,7 +347,7 @@
       $("brain-customers").textContent = String(diagnostics.customersAnalyzed);
       $("brain-risks").textContent = String(diagnostics.risks.total);
       $("brain-recommendations-count").textContent = String(diagnostics.recommendations.length);
-      $("brain-cache").textContent = diagnostics.contextCache.status === "ready" ? "Ready" : "Off";
+      $("brain-cache").textContent = diagnostics.contextCache.status === "ready" ? "Klaar" : "Uit";
       $("brain-cache-copy").textContent = `${diagnostics.contextCache.contexts} contexten in cache`;
       $("brain-events").textContent = String(diagnostics.eventsProcessed);
       $("brain-automations").textContent = String(diagnostics.automationStatus.total);

@@ -456,7 +456,10 @@
             <h1>Domein Center</h1>
             <p>Beheer domeinen, DNS, SSL, e-mail en verhuizingen vanuit de centrale klantomgeving.</p>
           </div>
-          <span class="workflow-module-label" id="domain-source-label">Productiebron laden</span>
+          <aside class="workflow-module-label workflow-hero-summary" id="domain-source-label" aria-label="Domein Center status">
+            <strong>Domein workflow</strong>
+            <span>Statussen centraal opvolgen zonder providerdetails in klantbeeld.</span>
+          </aside>
         </header>
 
         <section class="domain-center-workspace" aria-label="Domein Center workspace">
@@ -753,7 +756,7 @@
           const records = fetchDnsRecords(activeDomain.id);
           return `
             <div class="domain-center-panel-body">
-              <p class="domain-center-muted">DNS records zijn alleen-lezen. Gebruik dit als controlelijst voor Netlify, e-mail en providerinstellingen.</p>
+              <p class="domain-center-muted">DNS records zijn alleen-lezen. Gebruik dit als controlelijst voor hosting, e-mail en domeininstellingen.</p>
               <div class="domain-record-grid">
                 ${records.length ? records.map(([type, name, value]) => `
                   <article class="domain-record-card">
@@ -828,7 +831,7 @@
                 ["Registrar", activeDomain.registrar],
                 ["Eigenaar", activeDomain.domainOwner || "Onbekend"],
                 ["Nameservers", activeDomain.nameservers?.length ? activeDomain.nameservers.join(", ") : "Onbekend"],
-                ["Netlify", activeDomain.netlifyProjectName || activeDomain.netlifySiteId || "Niet gekoppeld"],
+                ["Hosting", activeDomain.netlifyProjectName || activeDomain.netlifySiteId || "Niet gekoppeld"],
                 ["SSL", activeDomain.ssl],
                 ["E-mail", activeDomain.email],
                 ["Bron", (activeDomain.sources || [activeDomain.source]).join(", ")]
@@ -871,7 +874,7 @@
             state.domains = Array.isArray(data.records) ? data.records : [];
             state.metrics = Array.isArray(data.metrics) ? data.metrics : [];
             state.error = "";
-            setSourceState(state.domains.length ? "Live CRM data" : "Geen domeinen", state.domains.length ? "success" : "warning");
+            setSourceState(state.domains.length ? "Domeinen geladen" : "Geen domeinen", state.domains.length ? "success" : "warning");
             if (state.domains.some((domain) => domain.domainName.includes("quantumbouw"))) {
               renderSearchResult("gevonden", "success", "Quantumbouw staat in Domain Center.", "Gevonden via CRM domein/website/lead data.");
             }

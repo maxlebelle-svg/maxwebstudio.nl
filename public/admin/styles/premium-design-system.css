@@ -205,6 +205,85 @@
   padding: var(--mws-card-padding);
 }
 
+.workflow-hero-summary {
+  display: grid;
+  gap: var(--mws-space-3);
+  width: min(360px, 100%);
+  min-height: 132px;
+  align-self: stretch;
+  align-content: start;
+  padding: var(--mws-space-5);
+  white-space: normal;
+  text-align: left;
+}
+
+.workflow-hero-summary strong {
+  color: #f8fbff;
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+.workflow-hero-summary span {
+  color: rgba(226, 236, 248, 0.72);
+  font-size: 13px;
+  line-height: 1.55;
+  text-transform: none;
+}
+
+.settings-alert {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  gap: var(--mws-space-3);
+}
+
+.settings-alert strong,
+.settings-alert span {
+  min-width: 0;
+  line-height: 1.35;
+}
+
+.settings-alert span {
+  overflow-wrap: anywhere;
+}
+
+.settings-card input,
+.settings-card textarea,
+.settings-card select,
+.admin-profile-form input,
+.admin-profile-form textarea,
+.admin-profile-form select {
+  min-width: 0;
+}
+
+.admin-table,
+.billing-table,
+.website-table {
+  min-width: 0;
+}
+
+.admin-table [role="row"],
+.billing-table [role="row"],
+.website-table [role="row"] {
+  min-width: 0;
+}
+
+.admin-table span,
+.admin-table strong,
+.billing-table span,
+.billing-table strong,
+.website-table span,
+.website-table strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.source-mode-filters select option[value="supabase-read"],
+.crm-filters select option[value="supabase-read"],
+.website-filters select option[value="supabase-read"] {
+  color: inherit;
+}
+
 .mws-premium-card:hover,
 .mws-card:hover,
 .mws-stat-card:hover,

@@ -302,11 +302,11 @@
           <section class="health-hero">
             <div>
               <div class="health-topline">
-                <span class="health-chip">Phase 2 Production Ready</span>
+                <span class="health-chip">Intern diagnosecentrum</span>
                 <span class="health-chip" id="health-last-checked">Laatste check laden...</span>
               </div>
               <h1>Platform Health</h1>
-              <p>Intern diagnosecentrum voor mail, betalingen, data, webhooks, timeline, automations, klantportaal en Website Factory.</p>
+              <p>Interne controle voor mail, betalingen, data, webhooks, timeline, automations, klantportaal en Website Factory.</p>
             </div>
             <span class="health-status" id="health-overall" data-status="Warning">Checking</span>
           </section>
@@ -357,12 +357,12 @@
       (function initPlatformHealth() {
         const endpoint = "/api/platform-health";
         const fallbackChecks = [
-          { id: "mail", label: "Mail", status: "Warning", message: "Mailstatus vereist admin API.", latencyMs: null, critical: false },
-          { id: "resend", label: "Resend", status: "Warning", message: "Resend status vereist backendconfiguratie.", latencyMs: null, critical: false },
-          { id: "supabase", label: "Supabase", status: "Warning", message: "Servercheck vereist admin API.", latencyMs: null, critical: true },
-          { id: "storage", label: "Storage", status: "Warning", message: "Storage status vereist admin API.", latencyMs: null, critical: false },
-          { id: "mollie", label: "Mollie", status: "Warning", message: "Mollie status vereist backendconfiguratie.", latencyMs: null, critical: false },
-          { id: "webhooks", label: "Webhooks", status: "Warning", message: "Webhookstatus vereist admin API.", latencyMs: null, critical: false },
+          { id: "mail", label: "Mail", status: "Warning", message: "Mailstatus vereist interne toegang.", latencyMs: null, critical: false },
+          { id: "resend", label: "E-mail delivery", status: "Warning", message: "E-mailstatus vereist interne configuratie.", latencyMs: null, critical: false },
+          { id: "supabase", label: "Centrale data", status: "Warning", message: "Servercheck vereist interne toegang.", latencyMs: null, critical: true },
+          { id: "storage", label: "Bestanden", status: "Warning", message: "Bestandsstatus vereist interne toegang.", latencyMs: null, critical: false },
+          { id: "mollie", label: "Betalingen", status: "Warning", message: "Betaalstatus vereist interne configuratie.", latencyMs: null, critical: false },
+          { id: "webhooks", label: "Webhooks", status: "Warning", message: "Webhookstatus vereist interne toegang.", latencyMs: null, critical: false },
           { id: "timeline", label: "Timeline", status: "Healthy", message: "Timeline UI en routes zijn aanwezig.", latencyMs: 0, critical: true },
           { id: "notifications", label: "Notifications", status: "Healthy", message: "Notification Center route is aanwezig.", latencyMs: 0, critical: true },
           { id: "automations", label: "Automations", status: "Healthy", message: "Lokale workflow storage kan in de browser worden gelezen.", latencyMs: 0, critical: false },

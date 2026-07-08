@@ -545,7 +545,7 @@
         async function fetchAdminModule(moduleName) {
           const token = getAdminBearer();
           if (!token) {
-            const error = new Error("Log in als admin om echte klanten te laden.");
+            const error = new Error("Controleer de toegang om klanten te laden.");
             error.code = "AUTH_MISSING";
             throw error;
           }
