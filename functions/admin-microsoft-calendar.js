@@ -1,4 +1,5 @@
 const { verifyAdmin } = require("./_admin-auth");
+const { corsHeaders } = require("./_cors");
 
 const GRAPH_BASE_URL = "https://graph.microsoft.com/v1.0";
 const TIMEZONE = "Europe/Amsterdam";
@@ -267,9 +268,7 @@ function jsonResponse(statusCode, body) {
     headers: {
       "Content-Type": "application/json",
       "Cache-Control": "no-store",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      ...corsHeaders({ methods: "GET, POST, OPTIONS" }),
     },
     body: statusCode === 204 ? "" : JSON.stringify(body),
   };

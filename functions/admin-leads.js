@@ -1,4 +1,5 @@
 const { verifyAdmin } = require("./_admin-auth");
+const { corsHeaders } = require("./_cors");
 
 const staffRoles = ["super_admin", "admin", "sales_manager", "sales_partner"];
 const managerRoles = new Set(["super_admin", "admin", "sales_manager"]);
@@ -713,9 +714,7 @@ function jsonResponse(statusCode, body) {
     headers: {
       "Content-Type": "application/json",
       "Cache-Control": "no-store",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
+      ...corsHeaders({ methods: "GET, POST, PATCH, DELETE, OPTIONS" }),
     },
     body: statusCode === 204 ? "" : JSON.stringify(body),
   };

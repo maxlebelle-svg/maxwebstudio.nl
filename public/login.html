@@ -123,6 +123,7 @@
         let realLoginActive = false;
         let authConfigSafe = false;
         let authReadiness = null;
+        const productionHosts = new Set(["maxwebstudio.nl", "www.maxwebstudio.nl"]);
         const statusCopy = {
           demo: {
             title: "Demo-login beschikbaar",
@@ -146,12 +147,27 @@
           },
         };
 
+        function isProductionRuntime() {
+          const host = String(window.location?.hostname || "").toLowerCase();
+          const configuredEnvironment = String(window.__MAXWEBSTUDIO_ENV__ || localStorage.getItem("maxwebstudioEnvironment") || "").toUpperCase();
+          return productionHosts.has(host) || configuredEnvironment === "PRODUCTION";
+        }
+
+        function logSafeDiagnostic(label, error, fallbackCode = "AUTH_UNAVAILABLE") {
+          if (!isProductionRuntime()) {
+            console.info(label, error);
+            return;
+          }
+          console.info(label, { code: fallbackCode });
+        }
+
         function isDeveloperModeEnabled() {
+          if (isProductionRuntime()) return false;
           try {
             const settings = JSON.parse(localStorage.getItem("maxwebstudioSettings") || "{}");
             return Boolean(settings.developerMode);
           } catch (error) {
-            console.info("Developer mode status unavailable", error);
+            logSafeDiagnostic("Developer mode status unavailable", error, "DEVELOPER_MODE_UNAVAILABLE");
             return false;
           }
         }
@@ -165,7 +181,7 @@
           developerOnlyTabs.forEach((button) => {
             button.hidden = !developerMode;
           });
-          if (!developerMode && document.querySelector("[data-auth-panel='demo']")?.classList.contains("is-active")) {
+          if ((!developerMode || isProductionRuntime()) && document.querySelector("[data-auth-panel='demo']")?.classList.contains("is-active")) {
             activatePanel("real");
           }
         }
@@ -362,7 +378,7 @@
               renderLoginStatus("real", realLoginStatusMessage);
             }
           } catch (error) {
-            console.info("Auth status unavailable", error);
+            logSafeDiagnostic("Auth status unavailable", error, "AUTH_STATUS_UNAVAILABLE");
             realLoginActive = false;
             authConfigSafe = false;
             realLoginStatusMessage = "Het klantportaal wordt momenteel afgerond. Vraag toegang aan of neem contact op als je al klant bent.";
@@ -378,6 +394,11 @@
         }
 
         async function loginAs(role) {
+          if (isProductionRuntime()) {
+            activatePanel("real");
+            setMessage("Demo-login is niet beschikbaar op de productieomgeving.", "error");
+            return;
+          }
           setMessage("Demo-sessie wordt gestart...");
           demoButtons.forEach((button) => { button.disabled = true; });
           try {
@@ -387,7 +408,7 @@
             setMessage("Demo-sessie actief. Je wordt doorgestuurd.", "success");
             window.location.href = redirect;
           } catch (error) {
-            console.error("Demo login failed", error);
+            logSafeDiagnostic("Demo login failed", error, "DEMO_LOGIN_FAILED");
             setMessage("Demo login kon niet worden gestart.", "error");
             demoButtons.forEach((button) => { button.disabled = false; });
           }
@@ -416,13 +437,9 @@
             window.location.href = redirect;
           } catch (error) {
             const debug = error?.supabaseAuth || {};
-            console.info("Supabase login failed", {
-              code: debug.code || error?.code || "UNKNOWN",
-              message: debug.message || error?.message || "",
-              status: debug.status || error?.status || "",
-              projectRef: debug.projectRef || "",
-              host: debug.host || "",
-              keyType: debug.keyType || "",
+            console.info("Login failed", {
+              code: isDeveloperModeEnabled() ? debug.code || error?.code || "UNKNOWN" : "LOGIN_FAILED",
+              status: isDeveloperModeEnabled() ? debug.status || error?.status || "" : "",
             });
             setMessage(error?.code === "PROFILE_ROLE_MISSING"
               ? "Account bestaat, maar profiel/rol ontbreekt. Vraag een beheerder om toegang te activeren."
@@ -435,6 +452,11 @@
         accountRequestForm.addEventListener("submit", async (event) => {
           event.preventDefault();
           const data = Object.fromEntries(new FormData(accountRequestForm).entries());
+          if (isProductionRuntime()) {
+            accountRequestForm.reset();
+            setMessage("Accounttoegang wordt door Max Webstudio geactiveerd. Neem contact op als je toegang nodig hebt.", "success");
+            return;
+          }
           try {
             const auth = await loadAuth();
             const request = auth.saveAccountRequest(data);
@@ -443,7 +465,7 @@
             accountRequestForm.reset();
             setMessage(`Accountaanvraag ontvangen voor ${request.email}. We nemen contact met je op zodra je toegang klaarstaat.`, "success");
           } catch (error) {
-            console.error("Account request failed", error);
+            logSafeDiagnostic("Account request failed", error, "ACCOUNT_REQUEST_FAILED");
             setMessage("Accountaanvraag kon niet worden opgeslagen.", "error");
           }
         });
@@ -457,13 +479,9 @@
             setMessage("Als dit e-mailadres bekend is, wordt er een resetlink verstuurd.", "success");
           } catch (error) {
             const debug = error?.supabaseAuth || {};
-            console.info("Supabase password reset failed", {
-              code: debug.code || error?.code || "UNKNOWN",
-              message: debug.message || error?.message || "",
-              status: debug.status || error?.status || "",
-              projectRef: debug.projectRef || "",
-              host: debug.host || "",
-              keyType: debug.keyType || "",
+            console.info("Password reset failed", {
+              code: isDeveloperModeEnabled() ? debug.code || error?.code || "UNKNOWN" : "RESET_FAILED",
+              status: isDeveloperModeEnabled() ? debug.status || error?.status || "" : "",
             });
             setMessage(isDeveloperModeEnabled()
               ? getDeveloperLoginErrorMessage(error)
@@ -490,13 +508,9 @@
             setMessage("Je wachtwoord is ingesteld. Log nu in met je e-mailadres en nieuwe wachtwoord.", "success");
           } catch (error) {
             const debug = error?.supabaseAuth || {};
-            console.info("Supabase password update failed", {
-              code: debug.code || error?.code || "UNKNOWN",
-              message: debug.message || error?.message || "",
-              status: debug.status || error?.status || "",
-              projectRef: debug.projectRef || "",
-              host: debug.host || "",
-              keyType: debug.keyType || "",
+            console.info("Password update failed", {
+              code: isDeveloperModeEnabled() ? debug.code || error?.code || "UNKNOWN" : "PASSWORD_UPDATE_FAILED",
+              status: isDeveloperModeEnabled() ? debug.status || error?.status || "" : "",
             });
             setMessage(isDeveloperModeEnabled()
               ? getDeveloperLoginErrorMessage(error)
@@ -515,9 +529,9 @@
             setMessage("Kies nu je nieuwe wachtwoord.", "success");
             return true;
           } catch (error) {
-            console.info("Supabase recovery session failed", {
-              code: error?.code || "UNKNOWN",
-              message: error?.message || "",
+            console.info("Recovery session failed", {
+              code: isDeveloperModeEnabled() ? error?.code || "UNKNOWN" : "RECOVERY_FAILED",
+              message: isDeveloperModeEnabled() ? error?.message || "" : "",
             });
             setMessage("Deze herstel-link is verlopen of niet compleet. Vraag een nieuwe resetlink aan.", "error");
             return false;

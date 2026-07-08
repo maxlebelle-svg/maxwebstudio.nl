@@ -13,18 +13,18 @@ async function verifyAdmin(event, jsonResponse, options = {}) {
   const bearer = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
   const legacyToken = process.env.ADMIN_TOKEN || "";
 
-  if (!options.disableLegacyToken && legacyToken && bearer && bearer === legacyToken) {
+  if (!options.disableLegacyToken && legacyToken && bearer && bearer === legacyToken && legacyAdminTokenAllowed()) {
     return { success: true, source: "legacy_admin_token" };
   }
 
   if (!bearer) {
-    return unauthorized(jsonResponse, { ...diagnostics, reason: "missing_bearer" });
+    return unauthorized(jsonResponse, { ...diagnostics, reason: "missing_bearer", event });
   }
 
   const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
   const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || "";
   if (!supabaseUrl || !supabaseAnonKey) {
-    return unauthorized(jsonResponse, { ...diagnostics, reason: "missing_supabase_auth_config" });
+    return unauthorized(jsonResponse, { ...diagnostics, reason: "missing_supabase_auth_config", event });
   }
 
   try {
@@ -37,7 +37,7 @@ async function verifyAdmin(event, jsonResponse, options = {}) {
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || !data?.id) {
-      return unauthorized(jsonResponse, { ...diagnostics, reason: "invalid_supabase_session", status: response.status || 401 });
+      return unauthorized(jsonResponse, { ...diagnostics, reason: "invalid_supabase_session", status: response.status || 401, event });
     }
 
     const profile = await fetchProfileForUser({ supabaseUrl, bearer, authUserId: data.id });
@@ -47,6 +47,7 @@ async function verifyAdmin(event, jsonResponse, options = {}) {
         resolvedRole: String(profile?.role || "").trim().toLowerCase(),
         profileStatus: String(profile?.status || "").trim().toLowerCase(),
         reason: "role_or_status_not_allowed",
+        event,
       });
     }
 
@@ -63,8 +64,33 @@ async function verifyAdmin(event, jsonResponse, options = {}) {
     };
   } catch (error) {
     console.error("Admin auth verification failed", { message: error.message, module: diagnostics.module, action: diagnostics.action });
-    return unauthorized(jsonResponse, { ...diagnostics, reason: "auth_verification_exception" });
+    return unauthorized(jsonResponse, { ...diagnostics, reason: "auth_verification_exception", event });
   }
+}
+
+function isProductionRuntime() {
+  const values = [
+    process.env.APP_ENV,
+    process.env.APP_ENVIRONMENT,
+    process.env.CONTEXT,
+    process.env.NETLIFY_ENV,
+  ].map((value) => String(value || "").trim().toLowerCase());
+  return values.includes("production") || values.includes("prod");
+}
+
+function legacyAdminTokenAllowed() {
+  const explicitAllow = String(process.env.ALLOW_LEGACY_ADMIN_TOKEN || "").trim().toLowerCase() === "true";
+  return explicitAllow || !isProductionRuntime();
+}
+
+function shouldExposeDiagnostics(event) {
+  if (isProductionRuntime()) return false;
+  const headerValue = String(
+    event?.headers?.["x-mws-developer-mode"]
+    || event?.headers?.["X-MWS-Developer-Mode"]
+    || ""
+  ).trim().toLowerCase();
+  return headerValue === "true";
 }
 
 async function fetchProfileForUser({ supabaseUrl, bearer, authUserId }) {
@@ -107,13 +133,16 @@ function unauthorized(jsonResponse, details = {}) {
     reason: details.reason || "unauthorized",
   };
   console.warn("Admin auth rejected", debug);
+  const body = {
+    success: false,
+    error: "Niet geautoriseerd.",
+  };
+  if (shouldExposeDiagnostics(details.event)) {
+    body.diagnostics = debug;
+  }
   return {
     success: false,
-    response: jsonResponse(401, {
-      success: false,
-      error: "Niet geautoriseerd.",
-      diagnostics: debug,
-    }),
+    response: jsonResponse(401, body),
   };
 }
 
@@ -121,4 +150,6 @@ module.exports = {
   verifyAdmin,
   isAllowedAdminRole,
   isAllowedRole,
+  isProductionRuntime,
+  legacyAdminTokenAllowed,
 };

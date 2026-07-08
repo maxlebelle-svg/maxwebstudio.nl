@@ -1,4 +1,5 @@
 const { verifyAdmin } = require("./_admin-auth");
+const { corsHeaders: sharedCorsHeaders } = require("./_cors");
 const { upsertProjectWorkspace, zipFilenameFor } = require("./_project-workspace");
 
 exports.handler = async (event) => {
@@ -342,11 +343,7 @@ function jsonResponse(statusCode, body) {
 }
 
 function corsHeaders() {
-  return {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
-  };
+  return sharedCorsHeaders({ methods: "GET, OPTIONS" });
 }
 
 function contentTypeFor(path = "") {

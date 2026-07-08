@@ -12,27 +12,30 @@ const demoProvider = () => getSessionAuthProvider();
 const emailProvider = () => getEmailAuthProvider();
 
 export function seedDemoUsers() {
-  return demoProvider().seedDemoUsers();
+  return demoProvider().seedDemoUsers?.() || [];
 }
 
 export function getAuthUsers() {
-  return demoProvider().getAuthUsers();
+  return demoProvider().getAuthUsers?.() || [];
 }
 
 export function getCurrentSession() {
-  return demoProvider().getCurrentSession();
+  const provider = demoProvider();
+  return provider.getCurrentSession?.() || provider.getSession?.()?.session || null;
 }
 
 export function getCurrentUser() {
-  return demoProvider().getCurrentUser();
+  const provider = demoProvider();
+  return provider.getCurrentUser?.() || provider.getUser?.() || null;
 }
 
 export function loginDemoUser(role = ROLES.DEMO_USER) {
-  return demoProvider().loginDemoUser(role);
+  return demoProvider().loginDemoUser?.(role);
 }
 
 export function logout() {
-  return demoProvider().logout();
+  const provider = demoProvider();
+  return provider.logout?.() || provider.signOut?.();
 }
 
 export function isAuthenticated() {
@@ -129,19 +132,19 @@ export function getAuthStatus() {
 }
 
 export function saveAccountRequest(payload = {}) {
-  return demoProvider().saveAccountRequest(payload);
+  return demoProvider().saveAccountRequest?.(payload);
 }
 
 export function listAccountRequests() {
-  return demoProvider().listAccountRequests();
+  return demoProvider().listAccountRequests?.() || [];
 }
 
 export function updateAccountRequestStatus(id, status) {
-  return demoProvider().updateAccountRequestStatus(id, status);
+  return demoProvider().updateAccountRequestStatus?.(id, status) || null;
 }
 
 export function deleteAccountRequest(id) {
-  return demoProvider().deleteAccountRequest(id);
+  return demoProvider().deleteAccountRequest?.(id);
 }
 
 export { ROLES, getRoleLabel, getRoleDefinition };

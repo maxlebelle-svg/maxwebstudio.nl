@@ -5,6 +5,13 @@ import { STORAGE_KEYS } from "../config/storageKeys.js";
 import { logActivity, listRecentActivities } from "./activityLogService.js";
 
 const SESSION_DURATION_HOURS = 8;
+const PRODUCTION_HOSTS = new Set(["maxwebstudio.nl", "www.maxwebstudio.nl"]);
+
+function isBrowserProductionRuntime() {
+  const host = String(window.location?.hostname || "").toLowerCase();
+  const configuredEnvironment = String(window.__MAXWEBSTUDIO_ENV__ || localStorage.getItem("maxwebstudioEnvironment") || "").toUpperCase();
+  return PRODUCTION_HOSTS.has(host) || configuredEnvironment === "PRODUCTION";
+}
 
 function readJson(key, fallback) {
   try {
@@ -69,6 +76,7 @@ function createDemoUsers() {
 }
 
 export function seedDemoUsers() {
+  if (isBrowserProductionRuntime()) return getAuthUsers().filter((user) => !user?.isDemo);
   const existingUsers = readJson(STORAGE_KEYS.authUsers, []);
   const existingById = new Map(existingUsers.map((user) => [user.id, user]));
   const demoUsers = createDemoUsers();
@@ -88,6 +96,10 @@ export function getAuthUsers() {
 export function getCurrentSession() {
   const session = readJson(STORAGE_KEYS.currentSession, null);
   if (!session?.userId) return null;
+  if (isBrowserProductionRuntime() && session.isDemo) {
+    localStorage.removeItem(STORAGE_KEYS.currentSession);
+    return null;
+  }
   if (session.expiresAt && new Date(session.expiresAt).getTime() < Date.now()) {
     localStorage.removeItem(STORAGE_KEYS.currentSession);
     return null;
@@ -102,6 +114,9 @@ export function getCurrentUser() {
 }
 
 export function loginDemoUser(role = ROLES.DEMO_USER) {
+  if (isBrowserProductionRuntime()) {
+    throw new Error("Demo-login is niet beschikbaar in productie.");
+  }
   const users = seedDemoUsers();
   const user = users.find((item) => item.role === role) || users.find((item) => item.role === ROLES.DEMO_USER);
   const startedAt = nowIso();
@@ -200,7 +215,8 @@ export function getDemoAuthStatus() {
   const recentAuth = listRecentActivities(12).find((activity) => activity.module === "auth");
   return {
     mode: "demo",
-    active: true,
+    active: !isBrowserProductionRuntime(),
+    productionBlocked: isBrowserProductionRuntime(),
     demoUsers: users.length,
     accountRequests: requests.length,
     session,

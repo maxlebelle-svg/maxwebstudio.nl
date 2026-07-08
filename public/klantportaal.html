@@ -413,6 +413,7 @@
         const { approveBranding, loadBrandingState, registerLogoConcepts, registerUploadedLogo, upsertBrandingProject } = await import("./src/brand-assets-adapter.js");
         const { signOut: signOutSupabase, getSession: getSupabaseSession } = await import("./src/services/supabaseAuthProvider.js");
         const params = new URLSearchParams(window.location.search);
+        const productionHosts = new Set(["maxwebstudio.nl", "www.maxwebstudio.nl"]);
         const companySettings = getCompanySettings();
         let customerId = params.get("customerId") || "";
         let supabaseCustomerId = params.get("supabaseCustomerId") || "";
@@ -508,6 +509,16 @@
         };
         const profileContext = await getClientCustomerProfileContext();
         const supabaseSessionResult = await getSupabaseSession();
+        function isProductionRuntime() {
+          const host = String(window.location?.hostname || "").toLowerCase();
+          const configuredEnvironment = String(window.__MAXWEBSTUDIO_ENV__ || localStorage.getItem("maxwebstudioEnvironment") || "").toUpperCase();
+          return productionHosts.has(host) || configuredEnvironment === "PRODUCTION";
+        }
+        if (isProductionRuntime()) {
+          customerId = "";
+          supabaseCustomerId = "";
+          portalDataMode = "";
+        }
         function updatePortalAuthActions(isLoggedIn = false) {
           portalLogout.hidden = !isLoggedIn;
           portalSidebarLogout.hidden = !isLoggedIn;
@@ -714,7 +725,7 @@
             const localSession = JSON.parse(localStorage.getItem("maxwebstudioCurrentSession") || "null");
             if (localSession) return localSession;
           } catch {
-            // Continue with Supabase session fallback.
+            // Continue with live session fallback.
           }
           const supabaseSession = supabaseSessionResult?.session;
           if (!supabaseSession?.access_token) return null;
@@ -727,6 +738,7 @@
         }
 
         function isDeveloperModeEnabled() {
+          if (isProductionRuntime()) return false;
           try {
             const settings = JSON.parse(localStorage.getItem("maxwebstudioSettings") || "{}");
             return Boolean(settings.developerMode);
@@ -773,17 +785,23 @@
           showSafePortalFallback("Je bent nog niet ingelogd.");
           return;
         }
+        if (isProductionRuntime() && !profileContext.profileFound) {
+          portalTitle.textContent = "Log in om je klantportaal te bekijken";
+          portalSubtitle.textContent = "Je klantprofiel kon nog niet veilig worden gekoppeld.";
+          showSafePortalFallback("Log opnieuw in of neem contact op met Max Webstudio.");
+          return;
+        }
 
         const customerAccessDecision = requireCustomerAccess(customerId, {
           pageName: "klantportaal",
-          allowDemo: isDeveloperModeEnabled(),
+          allowDemo: !isProductionRuntime() && isDeveloperModeEnabled(),
         });
-        if (!customerAccessDecision.allowed && customerAccessDecision.decision === "customer_access_mismatch") {
+        if (!customerAccessDecision.allowed) {
           portalTitle.textContent = "Geen toegang tot deze klantdata";
-          portalSubtitle.textContent = "Deze sessie hoort bij een andere klant.";
-          portalSourceBadge.textContent = "Soft guard";
+          portalSubtitle.textContent = "Deze sessie kan deze klantomgeving niet openen.";
+          portalSourceBadge.textContent = "Afgeschermd";
           portalSourceBadge.className = "status-badge status-warning";
-          portalSourceText.textContent = "Customer access guard heeft een mismatch gevonden. In deze fase tonen we daarom geen klantdata van een andere klant.";
+          portalSourceText.textContent = "We tonen geen klantgegevens die niet aan deze sessie gekoppeld zijn.";
           customerProfile.append(createEmpty("Klantdata afgeschermd", "Open je eigen klantportaal of log opnieuw in met de juiste klant."));
           [portalHealthGrid, portalActionGrid, financeOverview, subscriptionList, projectList, websiteOverview, websiteList, growthHealth, growthRecommendations, growthUpsells, fileList].forEach((target) => target.append(createEmpty("Geen data", "Deze data wordt bewust niet getoond bij een customer mismatch.")));
           return;

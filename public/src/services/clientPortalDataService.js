@@ -22,6 +22,7 @@ const RUNNING_PROJECT_EXCLUDED = new Set(["live", "onderhoud", "maintenance", "g
 const ACTIVE_WEBSITE_STATUSES = new Set(["online", "active", "actief", "live"]);
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(["actief", "active", "wacht_op_mandate", "mandate_required"]);
 const OPEN_CHANGE_REQUEST_EXCLUDED = new Set(["afgerond", "gereed", "done", "closed", "gearchiveerd", "archived"]);
+const PRODUCTION_HOSTS = new Set(["maxwebstudio.nl", "www.maxwebstudio.nl"]);
 const QUANTUMBOUW_ASSET_FILES = Object.freeze([
   "aanbouw-baksteen.jpg",
   "aanbouw-stuc.jpg",
@@ -59,6 +60,12 @@ function readJson(key, fallback = null) {
   }
 }
 
+function isBrowserProductionRuntime() {
+  const host = String(window.location?.hostname || "").toLowerCase();
+  const configuredEnvironment = String(window.__MAXWEBSTUDIO_ENV__ || localStorage.getItem("maxwebstudioEnvironment") || "").toUpperCase();
+  return PRODUCTION_HOSTS.has(host) || configuredEnvironment === "PRODUCTION";
+}
+
 function readArray(key) {
   const value = readJson(key, []);
   return Array.isArray(value) ? value : [];
@@ -94,6 +101,9 @@ function normalizeMode(mode = "") {
 }
 
 export function resolveClientPortalDataMode(options = {}) {
+  if (isBrowserProductionRuntime()) {
+    return options.supabaseCustomerId ? CLIENT_PORTAL_DATA_MODES.SUPABASE_READ : CLIENT_PORTAL_DATA_MODES.HYBRID;
+  }
   const settings = readClientPortalSettings();
   const explicit = normalizeMode(options.mode || options.dataMode || options.portalDataMode);
   if (explicit) return explicit;
@@ -263,6 +273,30 @@ async function readPortalDataLayerModules(mode) {
       },
     };
   } catch (error) {
+    if (isBrowserProductionRuntime()) {
+      const fallbackMessage = "Klantdata kon niet veilig worden geladen.";
+      const emptyStatus = { mode, fallbackUsed: false, error: fallbackMessage, count: 0, refreshedAt: new Date().toISOString() };
+      return {
+        customers: { items: [], status: emptyStatus },
+        websites: { items: [], status: emptyStatus },
+        projects: { items: [], status: emptyStatus },
+        quotes: { items: [], status: emptyStatus },
+        invoices: { items: [], status: emptyStatus },
+        subscriptions: { items: [], status: emptyStatus },
+        files: { items: [], status: emptyStatus },
+        changeRequests: { items: [], status: emptyStatus },
+        messages: { items: [], status: emptyStatus },
+        notifications: { items: [], status: emptyStatus },
+        dataLayerStatus: {
+          ...getSupabaseDataLayerMvpStatus(),
+          mode,
+          fallbackUsed: false,
+          fallbackModules: [],
+          errors: [{ module: "clientPortalDataService", error: fallbackMessage }],
+          refreshedAt: new Date().toISOString(),
+        },
+      };
+    }
     const [customers, websites, projects, quotes, invoices, subscriptions] = await Promise.all([
       listModule(CustomerRepository, "customers", CLIENT_PORTAL_DATA_MODES.LOCAL),
       listModule(WebsiteRepository, "websites", CLIENT_PORTAL_DATA_MODES.LOCAL),

@@ -1,4 +1,5 @@
 const { verifyAdmin } = require("./_admin-auth");
+const { corsHeaders } = require("./_cors");
 const { upsertProjectWorkspace, zipFilenameFor } = require("./_project-workspace");
 const { createTimelineEvent } = require("./services/timelineService");
 const { sendEmail } = require("./email");
@@ -843,9 +844,7 @@ function jsonResponse(statusCode, body) {
     statusCode,
     headers: {
       "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      "Access-Control-Allow-Methods": "GET, POST, PATCH, OPTIONS",
+      ...corsHeaders({ methods: "GET, POST, PATCH, OPTIONS" }),
     },
     body: statusCode === 204 ? "" : JSON.stringify(body),
   };

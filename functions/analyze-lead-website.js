@@ -1,5 +1,6 @@
 const dns = require("dns").promises;
 const net = require("net");
+const { corsHeaders } = require("./_cors");
 
 const MAX_REDIRECTS = 3;
 const MAX_BODY_BYTES = 1.5 * 1024 * 1024;
@@ -595,9 +596,7 @@ function jsonResponse(statusCode, body) {
     headers: {
       "Content-Type": "application/json",
       "Cache-Control": "no-store",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Content-Type",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      ...corsHeaders({ headers: "Content-Type", methods: "POST, OPTIONS" }),
     },
     body: statusCode === 204 ? "" : JSON.stringify(body),
   };

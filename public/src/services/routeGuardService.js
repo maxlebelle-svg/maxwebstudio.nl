@@ -10,6 +10,13 @@ const DEFAULT_ACCESS_SETTINGS = Object.freeze({
   mode: ACCESS_CONTROL_MODES.SOFT,
   allowDemo: true,
 });
+const PRODUCTION_HOSTS = new Set(["maxwebstudio.nl", "www.maxwebstudio.nl"]);
+
+function isBrowserProductionRuntime() {
+  const host = String(window.location?.hostname || "").toLowerCase();
+  const configuredEnvironment = String(window.__MAXWEBSTUDIO_ENV__ || localStorage.getItem("maxwebstudioEnvironment") || "").toUpperCase();
+  return PRODUCTION_HOSTS.has(host) || configuredEnvironment === "PRODUCTION";
+}
 
 function nowIso() {
   return new Date().toISOString();
@@ -29,10 +36,18 @@ function writeJson(key, value) {
 }
 
 function normalizeMode(mode = "") {
+  if (isBrowserProductionRuntime()) return ACCESS_CONTROL_MODES.HARD;
   return Object.values(ACCESS_CONTROL_MODES).includes(mode) ? mode : ACCESS_CONTROL_MODES.SOFT;
 }
 
 export function getAccessControlSettings() {
+  if (isBrowserProductionRuntime()) {
+    return {
+      mode: ACCESS_CONTROL_MODES.HARD,
+      allowDemo: false,
+      productionLockdown: true,
+    };
+  }
   return {
     ...DEFAULT_ACCESS_SETTINGS,
     ...readJson(STORAGE_KEYS.accessControlSettings, {}),
@@ -40,6 +55,9 @@ export function getAccessControlSettings() {
 }
 
 export function setAccessControlMode(mode = ACCESS_CONTROL_MODES.SOFT) {
+  if (isBrowserProductionRuntime()) {
+    return getAccessControlSettings();
+  }
   const settings = {
     ...getAccessControlSettings(),
     mode: normalizeMode(mode),
@@ -76,7 +94,7 @@ export function getAccessContext(options = {}) {
     provider: session?.provider || "none",
     isDemo: Boolean(session?.isDemo || profile?.isDemoUser || user?.isDemo),
     mode: normalizeMode(options.mode || settings.mode),
-    allowDemo: options.allowDemo ?? settings.allowDemo ?? true,
+    allowDemo: isBrowserProductionRuntime() ? false : options.allowDemo ?? settings.allowDemo ?? true,
     environment: profile?.environment || session?.environment || "local",
   };
 }
@@ -138,7 +156,7 @@ export function getAccessDecision(pageName = "", context = getAccessContext(), o
   if (["disabled", "archived"].includes(String(context.profile?.status || "").toLowerCase())) {
     return applyMode(decision, "Account is gedeactiveerd.");
   }
-  if (!context.allowDemo && context.isDemo) return applyMode(decision, "Demo-sessies zijn voor deze route niet toegestaan.");
+  if ((!context.allowDemo || isBrowserProductionRuntime()) && context.isDemo) return applyMode(decision, "Demo-sessies zijn voor deze route niet toegestaan.");
   if (route.requiredRoles?.length && !route.requiredRoles.includes(context.role)) {
     return applyMode(decision, `Rol ${context.role || "onbekend"} heeft geen toegang tot ${pageName}.`);
   }
@@ -267,6 +285,12 @@ export function requireCustomerAccess(customerId = "", options = {}) {
   const expectedCustomerId = String(customerId || "").trim();
   const ownCustomerId = String(context.customerId || "").trim();
   const baseDecision = getAccessDecision(options.pageName || "klantportaal", context, { ...options, customerId: expectedCustomerId });
+  if (isBrowserProductionRuntime() && (!expectedCustomerId || !ownCustomerId)) {
+    return enforceDecision(applyMode(baseDecision, "Klanttoegang kon niet veilig worden vastgesteld."), options);
+  }
+  if (isBrowserProductionRuntime() && context.isDemo) {
+    return enforceDecision(applyMode(baseDecision, "Demo-sessies zijn niet toegestaan in productie."), options);
+  }
   if (!expectedCustomerId || !ownCustomerId || context.isDemo || [ROLES.SUPER_ADMIN, ROLES.ADMIN].includes(context.role)) {
     return enforceDecision({
       ...baseDecision,
