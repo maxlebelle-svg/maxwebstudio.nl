@@ -145,25 +145,31 @@
           </div>
         </header>
 
-        <section class="admin-hero" id="dashboard">
+        <section class="admin-hero ceo-hero" id="dashboard">
           <div class="admin-hero-copy">
-            <p class="section-kicker">Admin CRM</p>
-            <h1>Max Web Studio Backoffice</h1>
-            <p>Beheer klanten, websites, offertes, projecten en automatiseringen vanuit één centrale omgeving.</p>
+            <p class="section-kicker">CEO Mode</p>
+            <h1 id="ceo-greeting">Good morning, Max</h1>
+            <p>Hier is jouw dagelijkse bedrijfsbriefing.</p>
+            <div class="ceo-hero-meta" aria-label="Dagelijkse context">
+              <span id="ceo-current-date">Datum laden...</span>
+              <span id="ceo-current-time">--:--</span>
+              <span>Weer API later</span>
+              <span id="ceo-working-day">Werkdag controleren...</span>
+            </div>
           </div>
           <div class="admin-hero-panel" aria-label="Dashboard kerncijfers">
             <article class="hero-kpi-card">
-              <span>Leads deze maand</span>
+              <span>Nieuwe leads vandaag</span>
               <strong id="hero-kpi-leads">-</strong>
-              <small>Huidige stand</small>
+              <small>Wat kwam er binnen?</small>
               <svg class="hero-sparkline" viewBox="0 0 120 42" aria-hidden="true" focusable="false">
                 <polyline points="4,30 22,24 38,27 55,16 72,20 90,11 116,5"></polyline>
               </svg>
             </article>
             <article class="hero-kpi-card hero-conversion-card">
-              <span>Conversie ratio</span>
-              <strong id="hero-kpi-conversion">-</strong>
-              <small>Verkocht / nieuwe leads</small>
+              <span>Omzet vandaag</span>
+              <strong id="ceo-hero-revenue-today">-</strong>
+              <small>Betaalde facturen</small>
               <svg class="hero-donut" viewBox="0 0 80 80" aria-label="Conversie ratio visual" role="img">
                 <circle class="hero-donut-track" cx="40" cy="40" r="29"></circle>
                 <circle class="hero-donut-value" id="hero-conversion-ring" cx="40" cy="40" r="29"></circle>
@@ -183,8 +189,83 @@
               <a class="button secondary admin-action-card accent-purple" href="admin-projecten.html"><span aria-hidden="true">□</span><strong>Lopende projecten</strong></a>
               <a class="button secondary admin-action-card accent-orange" href="admin-offertes.html"><span aria-hidden="true">§</span><strong>Open offertes</strong></a>
               <a class="button secondary admin-action-card accent-green" href="admin-facturen.html"><span aria-hidden="true">€</span><strong>Open facturen</strong></a>
+              <button class="button secondary admin-action-card accent-cyan" type="button" data-ceo-action="command"><span aria-hidden="true">⌘</span><strong>Max Command</strong></button>
             </div>
           </div>
+        </section>
+
+        <section class="admin-section ceo-scoreboard-section" aria-label="CEO scoreboard">
+          <div class="admin-section-heading">
+            <div>
+              <p class="section-kicker">Scoreboard</p>
+              <h2>Wat verdient vandaag aandacht?</h2>
+            </div>
+            <span class="status-badge status-prepared">Live briefing</span>
+          </div>
+          <div class="ceo-scoreboard-grid" id="ceo-scoreboard" aria-live="polite">
+            <article class="admin-card ceo-kpi-card" role="button" tabindex="0" data-ceo-action="leads"><span>Nieuwe leads vandaag</span><strong id="ceo-kpi-leads-today">0</strong><small id="ceo-kpi-leads-trend">↗ +0 vs gisteren</small></article>
+            <article class="admin-card ceo-kpi-card" role="button" tabindex="0" data-ceo-action="invoices"><span>Omzet vandaag</span><strong id="ceo-kpi-revenue-today">€ 0</strong><small id="ceo-kpi-revenue-trend">↗ +€ 0 vs gisteren</small></article>
+            <article class="admin-card ceo-kpi-card" role="button" tabindex="0" data-ceo-action="invoices"><span>Omzet deze maand</span><strong id="ceo-kpi-revenue-month">€ 0</strong><small>Betaalde facturen</small></article>
+            <article class="admin-card ceo-kpi-card" role="button" tabindex="0" data-ceo-action="invoices"><span>Open facturen</span><strong id="ceo-kpi-open-invoices">0</strong><small>Concept, verzonden of verlopen</small></article>
+            <article class="admin-card ceo-kpi-card is-attention" role="button" tabindex="0" data-ceo-action="invoices"><span>Verlopen facturen</span><strong id="ceo-kpi-overdue-invoices">0</strong><small>Direct opvolgen</small></article>
+            <article class="admin-card ceo-kpi-card" role="button" tabindex="0" data-ceo-action="websites"><span>Actieve websites</span><strong id="ceo-kpi-active-websites">0</strong><small>Online/live/active</small></article>
+            <article class="admin-card ceo-kpi-card is-warning" role="button" tabindex="0" data-ceo-action="websites"><span>Wachten op akkoord</span><strong id="ceo-kpi-websites-approval">0</strong><small>Klantfeedback nodig</small></article>
+            <article class="admin-card ceo-kpi-card" role="button" tabindex="0" data-ceo-action="notifications"><span>Ongelezen meldingen</span><strong id="ceo-kpi-unread-notifications">0</strong><small>Notification Center</small></article>
+            <article class="admin-card ceo-kpi-card" role="button" tabindex="0" data-ceo-action="projects"><span>Open onboarding</span><strong id="ceo-kpi-onboarding">0</strong><small>Projecten in startfase</small></article>
+            <article class="admin-card ceo-kpi-card is-warning" role="button" tabindex="0" data-ceo-action="domains"><span>Pending domains</span><strong id="ceo-kpi-domains">0</strong><small>Domeinstatus controleren</small></article>
+            <article class="admin-card ceo-kpi-card is-warning" role="button" tabindex="0" data-ceo-action="leads"><span>Pending telefoons</span><strong id="ceo-kpi-phone">0</strong><small>Leads zonder verwerking</small></article>
+          </div>
+        </section>
+
+        <section class="admin-section ceo-command-grid" aria-label="CEO briefing">
+          <article class="admin-card ceo-priority-card">
+            <div class="admin-section-heading">
+              <div>
+                <p class="section-kicker">Today's priorities</p>
+                <h2>Wat moet eerst?</h2>
+              </div>
+              <button class="button secondary" id="ceo-refresh-briefing" type="button">Ververs</button>
+            </div>
+            <div class="ceo-priority-list" id="ceo-priority-list" aria-live="polite"></div>
+          </article>
+
+          <article class="admin-card ceo-ai-briefing-card">
+            <div class="admin-profile-form-heading">
+              <div>
+                <strong>Max AI Briefing</strong>
+                <span>Gegenereerd uit bestaande CRM-data. AI-koppeling volgt later.</span>
+              </div>
+              <mark class="status-badge status-prepared">Future AI</mark>
+            </div>
+            <div class="ceo-briefing-copy" id="ceo-ai-briefing">Briefing wordt opgebouwd...</div>
+            <div class="settings-actions">
+              <button class="button primary" type="button" data-ceo-action="command">Vraag Max Command</button>
+              <a class="button secondary" href="admin-notification-center.html">Open feed</a>
+            </div>
+          </article>
+        </section>
+
+        <section class="admin-section ceo-widget-grid" aria-label="CEO widgets">
+          <article class="admin-card ceo-widget-card">
+            <div class="admin-profile-form-heading"><div><strong>Sales performance</strong><span>Per medewerker, op basis van lead-eigenaar.</span></div></div>
+            <div class="ceo-ranking-list" id="ceo-sales-performance"></div>
+          </article>
+          <article class="admin-card ceo-widget-card">
+            <div class="admin-profile-form-heading"><div><strong>Production status</strong><span>Website Factory, assets en QA voortgang.</span></div></div>
+            <div class="ceo-production-list" id="ceo-production-status"></div>
+          </article>
+          <article class="admin-card ceo-widget-card">
+            <div class="admin-profile-form-heading"><div><strong>Customer health</strong><span>Waar klanten op actie wachten.</span></div></div>
+            <div class="ceo-health-list" id="ceo-customer-health"></div>
+          </article>
+          <article class="admin-card ceo-widget-card">
+            <div class="admin-profile-form-heading"><div><strong>Goals</strong><span>Maanddoelen en operationele voortgang.</span></div></div>
+            <div class="ceo-goal-list" id="ceo-goals"></div>
+          </article>
+          <article class="admin-card ceo-widget-card ceo-wide-widget">
+            <div class="admin-profile-form-heading"><div><strong>Smart recommendations</strong><span>Concrete acties voor vandaag.</span></div></div>
+            <div class="ceo-recommendation-list" id="ceo-recommendations"></div>
+          </article>
         </section>
 
         <section class="admin-section staff-command-center" aria-label="Startpunt voor medewerkers">
@@ -2673,9 +2754,40 @@
         const recurringRevenueMetric = document.getElementById("metric-recurring-revenue");
         const recurringRevenueLabel = document.getElementById("metric-recurring-label");
                 const demoStatusMetric = document.getElementById("metric-demo-status");
-                const dashboardSummaryCards = [...document.querySelectorAll("[data-dashboard-summary]")];
+        const dashboardSummaryCards = [...document.querySelectorAll("[data-dashboard-summary]")];
         const activityFeedList = document.getElementById("activity-feed-list");
         const activityFeedRefresh = document.getElementById("activity-feed-refresh");
+        const ceoActionElements = [...document.querySelectorAll("[data-ceo-action]")];
+        const ceoElements = {
+          greeting: document.getElementById("ceo-greeting"),
+          currentDate: document.getElementById("ceo-current-date"),
+          currentTime: document.getElementById("ceo-current-time"),
+          workingDay: document.getElementById("ceo-working-day"),
+          heroRevenueToday: document.getElementById("ceo-hero-revenue-today"),
+          refresh: document.getElementById("ceo-refresh-briefing"),
+          briefing: document.getElementById("ceo-ai-briefing"),
+          priorities: document.getElementById("ceo-priority-list"),
+          salesPerformance: document.getElementById("ceo-sales-performance"),
+          productionStatus: document.getElementById("ceo-production-status"),
+          customerHealth: document.getElementById("ceo-customer-health"),
+          goals: document.getElementById("ceo-goals"),
+          recommendations: document.getElementById("ceo-recommendations"),
+          kpis: {
+            leadsToday: document.getElementById("ceo-kpi-leads-today"),
+            leadsTrend: document.getElementById("ceo-kpi-leads-trend"),
+            revenueToday: document.getElementById("ceo-kpi-revenue-today"),
+            revenueTrend: document.getElementById("ceo-kpi-revenue-trend"),
+            revenueMonth: document.getElementById("ceo-kpi-revenue-month"),
+            openInvoices: document.getElementById("ceo-kpi-open-invoices"),
+            overdueInvoices: document.getElementById("ceo-kpi-overdue-invoices"),
+            activeWebsites: document.getElementById("ceo-kpi-active-websites"),
+            websitesApproval: document.getElementById("ceo-kpi-websites-approval"),
+            unreadNotifications: document.getElementById("ceo-kpi-unread-notifications"),
+            onboarding: document.getElementById("ceo-kpi-onboarding"),
+            domains: document.getElementById("ceo-kpi-domains"),
+            phone: document.getElementById("ceo-kpi-phone"),
+          },
+        };
         const biPeriodFilter = document.getElementById("bi-period-filter");
         const biActionList = document.getElementById("bi-action-list");
         const biKpis = {
@@ -10747,6 +10859,358 @@
           return `${days} dag${days === 1 ? "" : "en"} geleden`;
         }
 
+        function readCeoStoredArray(key) {
+          try {
+            const value = JSON.parse(localStorage.getItem(key) || "[]");
+            return Array.isArray(value) ? value : [];
+          } catch {
+            return [];
+          }
+        }
+
+        function ceoStartOfDay(date = new Date()) {
+          const copy = new Date(date);
+          copy.setHours(0, 0, 0, 0);
+          return copy;
+        }
+
+        function ceoIsSameDay(value, compare = new Date()) {
+          if (!value) return false;
+          const date = new Date(value);
+          if (Number.isNaN(date.getTime())) return false;
+          return ceoStartOfDay(date).getTime() === ceoStartOfDay(compare).getTime();
+        }
+
+        function ceoIsYesterday(value) {
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          return ceoIsSameDay(value, yesterday);
+        }
+
+        function ceoInvoiceAmount(invoice = {}) {
+          return Number(invoice.total || invoice.amount || invoice.totalInclVat || invoice.total_including_vat || 0);
+        }
+
+        function ceoPaidDate(invoice = {}) {
+          return invoice.paidAt || invoice.paid_at || invoice.updatedAt || invoice.invoiceDate || invoice.date || invoice.createdAt;
+        }
+
+        function ceoDateOnly(value) {
+          if (!value) return null;
+          const date = new Date(value);
+          if (Number.isNaN(date.getTime())) return null;
+          return ceoStartOfDay(date);
+        }
+
+        function ceoGetLeads() {
+          return [
+            ...readCeoStoredArray(leadFinderStorageKey),
+            ...readCeoStoredArray("maxwebstudioLeads"),
+            ...readCeoStoredArray("maxwebstudioLeadRequests"),
+          ];
+        }
+
+        function ceoLeadCreatedAt(lead = {}) {
+          return lead.createdAt || lead.created_at || lead.submittedAt || lead.timestamp || lead.updatedAt;
+        }
+
+        function ceoLeadOwner(lead = {}) {
+          return String(lead.ownerName || lead.assignedToName || lead.salesName || lead.owner || lead.assignedTo || lead.assignedToEmail || "Max").trim() || "Max";
+        }
+
+        function ceoIsLeadOpen(lead = {}) {
+          const status = String(lead.callStatus || lead.status || "").toLowerCase();
+          return !["won", "geconverteerd", "customer_active", "lost", "geen_interesse", "afgewezen"].includes(status);
+        }
+
+        function ceoIsActiveWebsite(website = {}) {
+          return ["online", "live", "active"].includes(normalize(website.status));
+        }
+
+        function ceoNeedsApproval(website = {}) {
+          const haystack = [website.status, website.phase, website.notes, website.approvalStatus, website.clientStatus].join(" ").toLowerCase();
+          return ["approval", "akkoord", "feedback", "review", "wacht", "waiting"].some((term) => haystack.includes(term));
+        }
+
+        function ceoIsOnboardingProject(project = {}) {
+          const status = statusKey(project.status);
+          return ["nieuw", "onboarding", "intake", "in_ontwerp", "in_ontwikkeling"].includes(status);
+        }
+
+        function ceoNeedsDomain(website = {}, customer = {}) {
+          const haystack = [website.domainStatus, website.domain, website.notes, customer.website, customer.notes].join(" ").toLowerCase();
+          return !website.domain || ["pending", "wacht", "todo", "nog regelen", "domein nodig"].some((term) => haystack.includes(term));
+        }
+
+        function ceoUnreadNotificationsCount() {
+          const notifications = readCeoStoredArray("maxwebstudioClientPortalNotifications");
+          const activityItems = readCeoStoredArray(activityLogStorageKey);
+          const unreadNotifications = notifications.filter((item) => !item.readAt && !["gelezen", "read", "resolved", "opgelost"].includes(statusKey(item.status))).length;
+          const recentActivity = activityItems.filter((item) => ceoIsSameDay(item.createdAt || item.updatedAt)).length;
+          return unreadNotifications + recentActivity;
+        }
+
+        function getCeoDashboardSummary() {
+          const leads = ceoGetLeads();
+          const todayLeads = leads.filter((lead) => ceoIsSameDay(ceoLeadCreatedAt(lead)));
+          const yesterdayLeads = leads.filter((lead) => ceoIsYesterday(ceoLeadCreatedAt(lead)));
+          const paidInvoices = state.invoices.filter((invoice) => normalizeInvoiceStatus(invoice.status) === "betaald");
+          const todayRevenue = paidInvoices.filter((invoice) => ceoIsSameDay(ceoPaidDate(invoice))).reduce((sum, invoice) => sum + ceoInvoiceAmount(invoice), 0);
+          const yesterdayRevenue = paidInvoices.filter((invoice) => ceoIsYesterday(ceoPaidDate(invoice))).reduce((sum, invoice) => sum + ceoInvoiceAmount(invoice), 0);
+          const now = new Date();
+          const monthRevenue = paidInvoices
+            .filter((invoice) => {
+              const date = ceoDateOnly(ceoPaidDate(invoice));
+              return date && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+            })
+            .reduce((sum, invoice) => sum + ceoInvoiceAmount(invoice), 0);
+          const openInvoices = state.invoices.filter((invoice) => ["concept", "verzonden", "verlopen", "open"].includes(normalizeInvoiceStatus(invoice.status)));
+          const overdueInvoices = state.invoices.filter((invoice) => {
+            const status = normalizeInvoiceStatus(invoice.status);
+            const due = ceoDateOnly(invoice.dueDate || invoice.due || invoice.due_at);
+            return status === "verlopen" || (due && due < ceoStartOfDay() && status !== "betaald");
+          });
+          const activeWebsites = state.websites.filter(ceoIsActiveWebsite);
+          const websitesApproval = state.websites.filter(ceoNeedsApproval);
+          const onboardingProjects = state.projects.filter(ceoIsOnboardingProject);
+          const customersWithoutDomain = state.customers.filter((customer) => !String(customer.website || customer.domain || "").trim());
+          const pendingDomains = Math.max(customersWithoutDomain.length, state.websites.filter((website) => ceoNeedsDomain(website)).length);
+          const pendingPhones = leads.filter((lead) => ceoIsLeadOpen(lead) && !String(lead.phone || lead.telephone || "").trim()).length;
+          return {
+            leads,
+            todayLeads,
+            yesterdayLeads,
+            todayRevenue,
+            yesterdayRevenue,
+            monthRevenue,
+            openInvoices,
+            overdueInvoices,
+            activeWebsites,
+            websitesApproval,
+            onboardingProjects,
+            pendingDomains,
+            pendingPhones,
+            unreadNotifications: ceoUnreadNotificationsCount(),
+          };
+        }
+
+        function updateCeoClock() {
+          const now = new Date();
+          const hour = now.getHours();
+          const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+          if (ceoElements.greeting) ceoElements.greeting.textContent = `${greeting}, Max`;
+          if (ceoElements.currentDate) ceoElements.currentDate.textContent = new Intl.DateTimeFormat("nl-NL", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(now);
+          if (ceoElements.currentTime) ceoElements.currentTime.textContent = new Intl.DateTimeFormat("nl-NL", { hour: "2-digit", minute: "2-digit" }).format(now);
+          if (ceoElements.workingDay) {
+            const day = now.getDay();
+            ceoElements.workingDay.textContent = day === 0 || day === 6 ? "Weekendmodus" : "Werkdag actief";
+          }
+        }
+
+        function ceoPriorityHtml(item = {}) {
+          return `
+            <article class="ceo-priority-item" data-severity="${escapeHtml(item.severity || "info")}">
+              <div>
+                <mark class="status-badge ${escapeHtml(item.badgeClass || "status-prepared")}">${escapeHtml(item.label || "Actie")}</mark>
+                <strong>${escapeHtml(item.title || "Prioriteit")}</strong>
+                <span>${escapeHtml(item.action || "Bekijk en bepaal de volgende stap.")}</span>
+              </div>
+              <div class="ceo-priority-actions">
+                <a class="button secondary" href="${escapeHtml(item.href || "admin-dashboard.html")}">Open</a>
+                <button class="button secondary" type="button" data-ceo-dismiss>Dismiss</button>
+              </div>
+            </article>
+          `;
+        }
+
+        function buildCeoPriorities(summary) {
+          const priorities = [];
+          const firstOverdue = summary.overdueInvoices[0];
+          if (firstOverdue) {
+            priorities.push({
+              label: "Finance",
+              badgeClass: "status-warning",
+              severity: "high",
+              title: `Factuur ${firstOverdue.number || firstOverdue.invoiceNumber || firstOverdue.id || ""} is verlopen`,
+              action: "Stuur vandaag een vriendelijke betaalherinnering.",
+              href: "admin-facturen.html",
+            });
+          }
+          if (summary.websitesApproval.length) {
+            priorities.push({
+              label: "Production",
+              badgeClass: "status-prepared",
+              severity: "medium",
+              title: `${summary.websitesApproval.length} website${summary.websitesApproval.length === 1 ? "" : "s"} wachten op akkoord`,
+              action: "Open de websiteplanning en rond klantfeedback af.",
+              href: "admin-websites.html",
+            });
+          }
+          if (summary.todayLeads.length) {
+            const lead = summary.todayLeads[0];
+            priorities.push({
+              label: "Sales",
+              badgeClass: "status-active",
+              severity: "medium",
+              title: `${lead.companyName || lead.company || lead.name || "Nieuwe lead"} is vandaag toegevoegd`,
+              action: "Pak de eerste opvolging binnen dezelfde werkdag.",
+              href: "admin-sales.html",
+            });
+          }
+          if (summary.pendingPhones) {
+            priorities.push({
+              label: "Data",
+              badgeClass: "status-warning",
+              severity: "medium",
+              title: `${summary.pendingPhones} lead${summary.pendingPhones === 1 ? "" : "s"} missen telefoonnummer`,
+              action: "Vul ontbrekende contactgegevens aan voordat sales opvolgt.",
+              href: "admin-sales.html",
+            });
+          }
+          if (summary.todayRevenue > 0) {
+            priorities.push({
+              label: "Cash",
+              badgeClass: "status-active",
+              severity: "low",
+              title: `${money(summary.todayRevenue)} ontvangen vandaag`,
+              action: "Controleer of betaalde projecten naar de volgende fase kunnen.",
+              href: "admin-facturen.html",
+            });
+          }
+          return priorities.slice(0, 5);
+        }
+
+        function renderCeoBriefing(summary) {
+          const priorities = buildCeoPriorities(summary);
+          if (ceoElements.priorities) {
+            ceoElements.priorities.innerHTML = priorities.length
+              ? priorities.map(ceoPriorityHtml).join("")
+              : `<article class="ceo-priority-empty"><strong>Geen urgente prioriteiten.</strong><span>Alles lijkt rustig. Controleer de live feed voor detailupdates.</span></article>`;
+          }
+          if (ceoElements.briefing) {
+            const recommendation = priorities[0]?.action || "Start met sales follow-up en controleer open facturen.";
+            ceoElements.briefing.innerHTML = `
+              <p>Good morning Max.</p>
+              <p>Vandaag zie ik ${summary.todayLeads.length} nieuwe lead${summary.todayLeads.length === 1 ? "" : "s"}, ${summary.openInvoices.length} open ${summary.openInvoices.length === 1 ? "factuur" : "facturen"} en ${summary.websitesApproval.length} website${summary.websitesApproval.length === 1 ? "" : "s"} die aandacht vragen.</p>
+              <p>Mijn advies: ${escapeHtml(recommendation)}</p>
+            `;
+          }
+        }
+
+        function renderCeoWidgetLists(summary) {
+          const salesByOwner = new Map();
+          summary.leads.forEach((lead) => {
+            const owner = ceoLeadOwner(lead);
+            const current = salesByOwner.get(owner) || { leads: 0, open: 0, today: 0 };
+            current.leads += 1;
+            if (ceoIsLeadOpen(lead)) current.open += 1;
+            if (ceoIsSameDay(ceoLeadCreatedAt(lead))) current.today += 1;
+            salesByOwner.set(owner, current);
+          });
+          const salesRows = [...salesByOwner.entries()].sort((a, b) => b[1].today - a[1].today || b[1].open - a[1].open).slice(0, 4);
+          ceoElements.salesPerformance.innerHTML = salesRows.length
+            ? salesRows.map(([owner, item], index) => `<div><span>#${index + 1} ${escapeHtml(owner)}</span><strong>${item.today} vandaag</strong><small>${item.open} open / ${item.leads} totaal</small></div>`).join("")
+            : `<div><span>Sales</span><strong>Geen leaddata</strong><small>Leadfinder fallback is leeg.</small></div>`;
+
+          const production = [
+            ["Website Factory", state.projects.filter((project) => ["in_ontwikkeling", "in_ontwerp", "onboarding"].includes(statusKey(project.status))).length],
+            ["Logos", state.files.filter((file) => String(file.category || file.type || "").toLowerCase().includes("logo")).length],
+            ["Assets", state.files.length],
+            ["SEO", state.websites.filter((website) => String(website.notes || website.phase || "").toLowerCase().includes("seo")).length],
+            ["Social", state.files.filter((file) => String(file.category || file.type || "").toLowerCase().includes("social")).length],
+            ["QA", state.projects.filter((project) => ["testen", "feedback"].includes(statusKey(project.status))).length],
+          ];
+          ceoElements.productionStatus.innerHTML = production.map(([label, value]) => `<div><span>${escapeHtml(label)}</span><strong>${value}</strong><small>${value ? "In beweging" : "Geen open items"}</small></div>`).join("");
+
+          const inactiveCustomers = state.customers.filter((customer) => {
+            const date = ceoDateOnly(customer.updatedAt || customer.lastActivityAt || customer.createdAt);
+            return date && (ceoStartOfDay() - date) / 86400000 > 14;
+          }).length;
+          const health = [
+            ["Geen activiteit >14 dagen", inactiveCustomers],
+            ["Wachten op onboarding", state.customers.filter((customer) => statusKey(customer.status) === "onboarding").length],
+            ["Website akkoord nodig", summary.websitesApproval.length],
+            ["Onbetaalde facturen", summary.openInvoices.length],
+            ["Geen domein", summary.pendingDomains],
+          ];
+          ceoElements.customerHealth.innerHTML = health.map(([label, value]) => `<div><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`).join("");
+
+          const revenueGoal = 10000;
+          const websiteGoal = 12;
+          const salesGoal = 40;
+          const customerGoal = 50;
+          const goals = [
+            ["Monthly revenue goal", summary.monthRevenue, revenueGoal, money(summary.monthRevenue)],
+            ["Website goal", summary.activeWebsites.length, websiteGoal, String(summary.activeWebsites.length)],
+            ["Sales goal", summary.leads.length, salesGoal, String(summary.leads.length)],
+            ["Customer goal", state.customers.length, customerGoal, String(state.customers.length)],
+          ];
+          ceoElements.goals.innerHTML = goals.map(([label, value, target, display]) => {
+            const progress = Math.max(0, Math.min(100, Math.round((Number(value || 0) / Number(target || 1)) * 100)));
+            return `<div class="ceo-goal-row"><span>${escapeHtml(label)}<strong>${escapeHtml(display)} / ${escapeHtml(label.includes("revenue") ? money(target) : String(target))}</strong></span><i><b style="width:${progress}%"></b></i></div>`;
+          }).join("");
+
+          const recommendations = buildCeoPriorities(summary).map((item) => item.action);
+          if (summary.openInvoices.length) recommendations.push("Verstuur betaalherinneringen voor open facturen.");
+          if (summary.onboardingProjects.length) recommendations.push("Rond onboardingblokkades af voordat productie oploopt.");
+          ceoElements.recommendations.innerHTML = [...new Set(recommendations)].slice(0, 6).map((item) => `<span>${escapeHtml(item)}</span>`).join("");
+        }
+
+        function renderCeoDashboard() {
+          updateCeoClock();
+          const summary = getCeoDashboardSummary();
+          const setText = (target, value) => {
+            if (target) target.textContent = value;
+          };
+          setText(ceoElements.kpis.leadsToday, String(summary.todayLeads.length));
+          setText(ceoElements.kpis.leadsTrend, `${summary.todayLeads.length >= summary.yesterdayLeads.length ? "↗" : "↘"} ${summary.todayLeads.length - summary.yesterdayLeads.length >= 0 ? "+" : ""}${summary.todayLeads.length - summary.yesterdayLeads.length} vs gisteren`);
+          setText(ceoElements.kpis.revenueToday, money(summary.todayRevenue));
+          setText(ceoElements.kpis.revenueTrend, `${summary.todayRevenue >= summary.yesterdayRevenue ? "↗" : "↘"} ${money(summary.todayRevenue - summary.yesterdayRevenue)} vs gisteren`);
+          setText(ceoElements.kpis.revenueMonth, money(summary.monthRevenue || state.dashboardInvoicePaidRevenue || state.dashboardMetrics?.finance?.paidRevenue || 0));
+          setText(ceoElements.kpis.openInvoices, String(summary.openInvoices.length));
+          setText(ceoElements.kpis.overdueInvoices, String(summary.overdueInvoices.length));
+          setText(ceoElements.kpis.activeWebsites, String(summary.activeWebsites.length));
+          setText(ceoElements.kpis.websitesApproval, String(summary.websitesApproval.length));
+          setText(ceoElements.kpis.unreadNotifications, String(summary.unreadNotifications));
+          setText(ceoElements.kpis.onboarding, String(summary.onboardingProjects.length));
+          setText(ceoElements.kpis.domains, String(summary.pendingDomains));
+          setText(ceoElements.kpis.phone, String(summary.pendingPhones));
+          setText(ceoElements.heroRevenueToday, money(summary.todayRevenue));
+          setText(document.getElementById("hero-kpi-leads"), String(summary.todayLeads.length));
+          renderCeoBriefing(summary);
+          renderCeoWidgetLists(summary);
+        }
+
+        function handleCeoAction(action = "") {
+          if (action === "command") {
+            if (window.MaxCommand?.open) window.MaxCommand.open();
+            else window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }));
+            return;
+          }
+          const routes = {
+            leads: "admin-sales.html",
+            invoices: "admin-facturen.html",
+            websites: "admin-websites.html",
+            projects: "admin-projecten.html",
+            notifications: "admin-notification-center.html",
+            domains: "admin-domain-center.html",
+          };
+          if (routes[action]) window.location.href = routes[action];
+        }
+
+        function handleCeoActionEvent(event) {
+          const trigger = event.target.closest("[data-ceo-action]");
+          if (!trigger) return;
+          handleCeoAction(trigger.dataset.ceoAction || "");
+        }
+
+        function handleCeoActionKeydown(event) {
+          const trigger = event.target.closest("[data-ceo-action]");
+          if (!trigger || !["Enter", " "].includes(event.key)) return;
+          event.preventDefault();
+          handleCeoAction(trigger.dataset.ceoAction || "");
+        }
+
         function updateAdminSessionUi() {
           const email = state.adminSession?.email || "";
           const loggedIn = Boolean(email && state.adminSession?.accessToken);
@@ -11170,6 +11634,7 @@
           websiteStats.online.textContent = String(liveWebsites);
           websiteStats.development.textContent = String(state.websites.filter((website) => website.status === "development").length);
           websiteStats.maintenance.textContent = String(state.websites.filter((website) => website.status === "maintenance").length);
+          renderCeoDashboard();
           if (state.dashboardMetricsLoaded) renderBusinessDashboard();
           renderProjectStats();
         }
@@ -11312,6 +11777,7 @@
           setText(biCharts.invoiceTotal, String((metrics.charts?.invoiceStatusDistribution || []).reduce((sum, item) => sum + Number(item.value || 0), 0)));
           setText(biCharts.subscriptionStatusTotal, String((metrics.charts?.subscriptionStatusDistribution || []).reduce((sum, item) => sum + Number(item.value || 0), 0)));
           renderActionItems(metrics.actionItems || []);
+          renderCeoDashboard();
         }
 
         function applyDashboardInvoiceRevenueFallback() {
@@ -11331,6 +11797,7 @@
           if (openInvoicesLocalMetric) openInvoicesLocalMetric.textContent = String(state.dashboardInvoiceCount || state.invoices.length);
           if (biKpis.paidInvoices) biKpis.paidInvoices.textContent = String(paidCount);
           if (biKpis.openInvoices) biKpis.openInvoices.textContent = String(openCount);
+          renderCeoDashboard();
           if (state.dashboardMetricsLoaded) renderBusinessDashboard();
         }
 
@@ -11344,6 +11811,7 @@
           if (activeProjectsMetric) activeProjectsMetric.textContent = String(state.dashboardProjectCount);
           if (liveWebsitesMetric) liveWebsitesMetric.textContent = String(state.dashboardWebsiteCount);
           if (openInvoicesLocalMetric) openInvoicesLocalMetric.textContent = String(state.dashboardInvoiceCount);
+          renderCeoDashboard();
           if (state.dashboardMetricsLoaded) renderBusinessDashboard();
         }
 
@@ -17828,6 +18296,16 @@
         adminTokenLoadButton.addEventListener("click", useAdminTokenFallback);
         adminLoadButton.addEventListener("click", () => loadCRMData(true));
         activityFeedRefresh?.addEventListener("click", () => loadActivityFeed());
+        ceoElements.refresh?.addEventListener("click", renderCeoDashboard);
+        ceoElements.priorities?.addEventListener("click", (event) => {
+          const dismiss = event.target.closest("[data-ceo-dismiss]");
+          if (!dismiss) return;
+          dismiss.closest(".ceo-priority-item")?.remove();
+        });
+        ceoActionElements.forEach((element) => {
+          element.addEventListener("click", handleCeoActionEvent);
+          element.addEventListener("keydown", handleCeoActionKeydown);
+        });
         authSwitchRole.addEventListener("click", () => switchDemoRole(authRoleSwitcher.value));
         authLogout.addEventListener("click", logoutDemoSession);
         biPeriodFilter.addEventListener("change", () => loadDashboardMetrics(true));
@@ -18256,6 +18734,8 @@
         renderIntegrations();
         renderSystemStatus();
         renderAiWizardUi();
+        renderCeoDashboard();
+        window.setInterval(updateCeoClock, 30000);
         syncActiveNav();
         await restoreAdminSession();
         await applyAccessControl();
@@ -21044,15 +21524,23 @@
           return document.getElementById(id)?.textContent?.trim() || fallback;
         }
 
+        function numberFromCurrency(value = "") {
+          const normalized = String(value).replace(/[^\d,.-]/g, "").replace(/\./g, "").replace(",", ".");
+          return Number.parseFloat(normalized) || 0;
+        }
+
         function syncHeroKpis() {
           const leads = document.getElementById("hero-kpi-leads");
-          const conversion = document.getElementById("hero-kpi-conversion");
+          const revenueToday = document.getElementById("ceo-hero-revenue-today");
           const ring = document.getElementById("hero-conversion-ring");
-          if (leads) leads.textContent = textFrom("metric-total-leads");
-          const conversionText = textFrom("metric-conversion-rate", textFrom("sales-cockpit-conversion", "0%"));
-          if (conversion) conversion.textContent = conversionText;
+          if (leads) leads.textContent = textFrom("ceo-kpi-leads-today", textFrom("metric-total-leads"));
+          const todayText = textFrom("ceo-kpi-revenue-today", "€ 0");
+          const monthText = textFrom("ceo-kpi-revenue-month", "€ 0");
+          if (revenueToday) revenueToday.textContent = todayText;
           if (ring) {
-            const percent = Math.max(0, Math.min(100, Number.parseFloat(conversionText) || 0));
+            const month = numberFromCurrency(monthText);
+            const today = numberFromCurrency(todayText);
+            const percent = month > 0 ? Math.max(0, Math.min(100, (today / month) * 100)) : 0;
             const circumference = 2 * Math.PI * 29;
             ring.style.strokeDasharray = `${circumference}`;
             ring.style.strokeDashoffset = `${circumference - (circumference * percent) / 100}`;
@@ -21065,7 +21553,7 @@
           syncHeroKpis();
         }
         const observer = new MutationObserver(syncHeroKpis);
-        ["metric-total-leads", "metric-conversion-rate"].forEach((id) => {
+        ["ceo-kpi-leads-today", "ceo-kpi-revenue-today", "ceo-kpi-revenue-month", "metric-total-leads"].forEach((id) => {
           const element = document.getElementById(id);
           if (element) observer.observe(element, { childList: true, characterData: true, subtree: true });
         });
