@@ -1,9 +1,14 @@
-(function initGlobalCommandPalette() {
-  if (window.MaxGlobalCommandPalette?.ready) return;
+(function initMaxCommand() {
+  if (window.MaxCommand?.ready || window.MaxGlobalCommandPalette?.ready) return;
 
   const STORAGE = {
-    recents: "maxwebstudioGlobalSearchRecents",
-    pinned: "maxwebstudioGlobalSearchPinned",
+    recents: "maxwebstudioMaxCommandRecents",
+    legacyRecents: "maxwebstudioGlobalSearchRecents",
+    recentSearches: "maxwebstudioMaxCommandRecentSearches",
+    recentPages: "maxwebstudioMaxCommandRecentPages",
+    recentCustomers: "maxwebstudioMaxCommandRecentCustomers",
+    pinned: "maxwebstudioMaxCommandPinned",
+    legacyPinned: "maxwebstudioGlobalSearchPinned",
     customers: ["maxwebstudioCrmCustomers", "maxwebstudioCustomers", "maxwebstudioProfiles"],
     leads: ["maxwebstudioLeads", "maxwebstudioLeadRequests", "maxwebstudioLeadFinderLeads"],
     invoices: ["maxwebstudioInvoices"],
@@ -81,10 +86,42 @@
     open: false,
     query: "",
     activeIndex: 0,
+    intent: null,
     results: [],
     focusable: [],
     debounceTimer: 0,
   };
+
+  const MaxCommandAI = window.maxCommandAI || {
+    analyzeIntent(query = "") {
+      const text = normalize(query);
+      const command = COMMANDS.find(([id, title]) => text && (normalize(title).includes(text) || text.includes(normalize(title))));
+      if (/^(open|ga naar|toon|laat zien)\b/.test(text) || text.startsWith("open ")) {
+        return { type: "Navigation", confidence: 0.82, query: text };
+      }
+      if (/^(maak|nieuwe|create|genereer|generate|start|verzend|send)\b/.test(text)) {
+        return { type: "Action", confidence: 0.78, commandId: command?.[0] || actionCommandId(text), query: text };
+      }
+      if (/^(welke|wat|hoeveel|wie|waar)\b/.test(text) || text.includes("?")) {
+        return { type: "Question", confidence: 0.72, query: text };
+      }
+      if (/(openstaande|klaar|wachten|ouder dan|vandaag|betaald|facturen|websites|leads)/.test(text)) {
+        return { type: "Filter", confidence: 0.68, query: text };
+      }
+      return { type: text ? "Search" : "Search", confidence: text ? 0.54 : 0.2, query: text };
+    },
+    suggestActions(item = {}) {
+      if (item.type === "Customer") return ["Create invoice", "Send email", "Generate logo", "Start onboarding", "Open assets", "Open timeline", "View website"];
+      if (item.type === "Invoice") return ["Mark paid", "Open invoice", "Send reminder", "Download PDF"];
+      if (item.group === "Websites") return ["Open website", "Resume Website Factory", "Run QA scan"];
+      return ["Open", "Pin", "Search related"];
+    },
+    answerQuestion(query = "") {
+      return `Max AI is voorbereid voor vragen zoals: "${String(query || "").trim()}". Tot de AI-backend live is, gebruik ik de lokale CRM-index als veilige fallback.`;
+    },
+  };
+
+  window.maxCommandAI = MaxCommandAI;
 
   function escapeHtml(value = "") {
     const shared = window.MaxSharedUI?.escapeHtml || window.escapeHtml;
@@ -115,6 +152,12 @@
     }
   }
 
+  function readMergedJson(primaryKey, legacyKey, fallback) {
+    const primary = readJson(primaryKey, null);
+    if (primary !== null) return primary;
+    return readJson(legacyKey, fallback);
+  }
+
   function writeJson(key, value) {
     try {
       localStorage.setItem(key, JSON.stringify(value));
@@ -129,6 +172,10 @@
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
       .trim();
+  }
+
+  function words(value = "") {
+    return normalize(value).split(/\s+/).filter(Boolean);
   }
 
   function uniqueRows(rows) {
@@ -305,8 +352,49 @@
     ]);
   }
 
-  function score(row, query) {
-    if (!query) return row.type === "Command" ? 90 : 20;
+  function actionCommandId(text = "") {
+    if (/(klant|customer)/.test(text)) return "new-customer";
+    if (/(lead)/.test(text)) return "new-lead";
+    if (/(factuur|invoice)/.test(text)) return "new-invoice";
+    if (/(offerte|quote)/.test(text)) return "new-quote";
+    if (/(mail|email|e-mail)/.test(text)) return "send-email";
+    if (/(logo)/.test(text)) return "generate-logo";
+    if (/(onboarding)/.test(text)) return "start-onboarding";
+    return "";
+  }
+
+  function fuzzyScore(query = "", target = "") {
+    const q = normalize(query);
+    const t = normalize(target);
+    if (!q || !t) return 0;
+    if (t === q) return 100;
+    if (t.startsWith(q)) return 86;
+    if (t.includes(q)) return 68;
+    const queryWords = words(q);
+    const targetWords = words(t);
+    const partialWordScore = queryWords.reduce((sum, word) => {
+      if (targetWords.some((targetWord) => targetWord.startsWith(word))) return sum + 18;
+      if (targetWords.some((targetWord) => targetWord.includes(word))) return sum + 11;
+      return sum;
+    }, 0);
+    let qIndex = 0;
+    let streak = 0;
+    let subsequence = 0;
+    for (let index = 0; index < t.length && qIndex < q.length; index += 1) {
+      if (t[index] === q[qIndex]) {
+        qIndex += 1;
+        streak += 1;
+        subsequence += 4 + Math.min(streak, 5);
+      } else {
+        streak = 0;
+      }
+    }
+    const typoTolerance = qIndex >= Math.max(2, q.length - 1) ? 24 : 0;
+    return Math.min(64, partialWordScore + subsequence + typoTolerance);
+  }
+
+  function score(row, query, intent = null) {
+    if (!query) return row.group === "Pinned" ? 120 : row.group === "Recent" ? 95 : row.type === "Command" ? 90 : 20;
     const title = normalize(row.title);
     const type = normalize(row.type);
     const group = normalize(row.group);
@@ -315,33 +403,68 @@
     if (title.startsWith(query)) value += 90;
     if (type.includes(query) || group.includes(query)) value += 55;
     if (row.searchable.includes(query)) value += 35;
+    value += fuzzyScore(query, [row.title, row.subtitle, row.type, row.group].join(" "));
     if (row.type === "Command" && (title.includes(query) || type.includes(query))) value += 35;
+    if (intent?.type === "Action" && row.type === "Command") value += 48;
+    if (intent?.type === "Navigation" && row.type === "Page") value += 42;
+    if (intent?.commandId && row.id === intent.commandId) value += 120;
+    if (intent?.type === "Question" && ["Facturen", "Websites", "Leads", "Klanten", "Notifications"].includes(row.group)) value += 18;
     if (query.includes("invoice") && row.group === "Facturen") value += 40;
+    if (query.includes("factuur") && row.group === "Facturen") value += 40;
     if (query.includes("mail") && row.group === "E-mails") value += 40;
     if (query.includes("website") && row.group === "Websites") value += 40;
     return value;
   }
 
   function pinnedResults() {
-    const pinned = readJson(STORAGE.pinned, []);
+    const pinned = readMergedJson(STORAGE.pinned, STORAGE.legacyPinned, []);
     return Array.isArray(pinned) ? pinned.map((item) => result({ ...item, group: "Pinned", status: item.status || "pinned", hint: "Enter" })) : [];
   }
 
   function recentResults() {
-    const recents = readJson(STORAGE.recents, []);
+    const recents = readMergedJson(STORAGE.recents, STORAGE.legacyRecents, []);
     return Array.isArray(recents) ? recents.slice(0, 8).map((item) => result({ ...item, group: "Recent", status: item.status || "recent", hint: "Enter" })) : [];
   }
 
   function search(query = "") {
     const normalizedQuery = normalize(query);
+    const intent = MaxCommandAI.analyzeIntent(query);
+    state.intent = intent;
     if (!normalizedQuery) {
-      return uniqueRows([...pinnedResults(), ...recentResults(), ...COMMANDS.slice(0, 8).map(commandResult)]);
+      return uniqueRows([...pinnedResults(), ...recentResults(), ...recentSearchResults(), ...COMMANDS.slice(0, 8).map(commandResult)]);
     }
     return uniqueRows([...pinnedResults(), ...buildEntityIndex()])
-      .map((item) => ({ ...item, _score: score(item, normalizedQuery) }))
+      .map((item) => ({ ...item, _score: score(item, normalizedQuery, intent) }))
       .filter((item) => item._score > 0)
       .sort((a, b) => b._score - a._score || GROUP_ORDER.indexOf(a.group) - GROUP_ORDER.indexOf(b.group))
       .slice(0, 20);
+  }
+
+  function recentSearchResults() {
+    const searches = readJson(STORAGE.recentSearches, []);
+    return Array.isArray(searches) ? searches.slice(0, 4).map((query) => result({
+      id: `search-${query}`,
+      type: "Search",
+      group: "Recent",
+      title: `Zoek "${query}"`,
+      subtitle: "Recente zoekopdracht",
+      status: "search",
+      icon: "⌕",
+      metadata: { query },
+    })) : [];
+  }
+
+  function highlightText(text = "", query = "") {
+    const raw = String(text || "");
+    const q = normalize(query);
+    if (!q) return escapeHtml(raw);
+    const lowerRaw = normalize(raw);
+    const start = lowerRaw.indexOf(q);
+    if (start >= 0) {
+      return `${escapeHtml(raw.slice(0, start))}<mark>${escapeHtml(raw.slice(start, start + q.length))}</mark>${escapeHtml(raw.slice(start + q.length))}`;
+    }
+    const chars = new Set(q.replace(/\s+/g, "").split(""));
+    return raw.split("").map((char) => chars.has(normalize(char)) ? `<mark>${escapeHtml(char)}</mark>` : escapeHtml(char)).join("");
   }
 
   function ensurePalette() {
@@ -351,20 +474,49 @@
         <section class="global-command-dialog" role="dialog" aria-modal="true" aria-labelledby="global-command-title">
           <header class="global-command-header">
             <div>
-              <p class="section-kicker">Global Search</p>
-              <h2 id="global-command-title">Command Palette</h2>
+              <p class="section-kicker">Max AI</p>
+              <h2 id="global-command-title">Max Command</h2>
+              <span>Zoek, navigeer of geef een opdracht aan Max AI.</span>
             </div>
             <button class="global-command-close" type="button" aria-label="Sluiten">×</button>
           </header>
-          <label class="global-command-input-wrap" for="global-command-input">
-            <span aria-hidden="true">⌕</span>
-            <input id="global-command-input" type="search" autocomplete="off" placeholder="Zoek klanten, leads, websites, facturen of voer een opdracht uit..." />
-            <kbd>ESC</kbd>
-          </label>
-          <div class="global-command-quick" aria-label="Quick actions"></div>
-          <div class="global-command-results" role="listbox" aria-label="Zoekresultaten"></div>
+          <div class="global-command-layout">
+            <div class="global-command-left">
+              <label class="global-command-input-wrap" for="global-command-input">
+                <span aria-hidden="true">⌕</span>
+                <input id="global-command-input" type="search" autocomplete="off" placeholder="Zoek klanten, leads, websites, facturen of voer een opdracht uit..." />
+                <kbd>ESC</kbd>
+              </label>
+              <div class="max-command-intent" aria-live="polite"></div>
+              <div class="global-command-quick" aria-label="AI suggestions"></div>
+              <div class="global-command-results" role="listbox" aria-label="Zoekresultaten"></div>
+            </div>
+            <aside class="max-command-preview" aria-live="polite">
+              <section class="max-command-preview-card" data-preview-panel>
+                <span>Context Preview</span>
+                <strong>Selecteer een resultaat</strong>
+                <p>Max toont hier context, slimme acties en vervolgstappen.</p>
+              </section>
+              <section class="max-command-ai-card" data-ai-panel>
+                <span>AI Suggestions</span>
+                <div class="max-command-ai-suggestions"></div>
+              </section>
+              <section class="max-command-actions-card">
+                <span>Quick Actions</span>
+                <div class="max-command-side-actions"></div>
+              </section>
+              <section class="max-command-shortcuts-card">
+                <span>Keyboard Shortcuts</span>
+                <p><kbd>⌘/Ctrl K</kbd> open</p>
+                <p><kbd>↑↓</kbd> navigeren</p>
+                <p><kbd>Tab</kbd> volgende groep</p>
+                <p><kbd>Enter</kbd> openen</p>
+                <p><kbd>Esc</kbd> sluiten</p>
+              </section>
+            </aside>
+          </div>
           <footer class="global-command-footer">
-            <span>↑↓ navigeren</span><span>Enter openen</span><span>Tab secties</span><span>P pinnen</span>
+            <span>Natural language ready</span><span>Fuzzy search</span><span>Pinned first</span>
           </footer>
         </section>
       </div>
@@ -423,17 +575,34 @@
   function renderQuickActions() {
     const quick = document.querySelector(".global-command-quick");
     if (!quick) return;
-    quick.innerHTML = COMMANDS.slice(0, 6).map((command) => {
+    const suggestions = suggestedCommands();
+    quick.innerHTML = `<strong>Suggested</strong>${suggestions.map((command) => {
       const item = commandResult(command);
       return `<button type="button" data-command-id="${escapeHtml(item.id)}"><span>${escapeHtml(item.icon)}</span>${escapeHtml(item.title)}</button>`;
-    }).join("");
+    }).join("")}`;
     quick.querySelectorAll("[data-command-id]").forEach((button) => {
       button.addEventListener("click", () => executeResult(commandResult(COMMANDS.find(([id]) => id === button.dataset.commandId))));
     });
   }
 
+  function suggestedCommands() {
+    const notifications = readArray("maxwebstudioClientPortalNotifications").length + readArray("maxwebstudioActivityLog").length;
+    const invoices = readArray("maxwebstudioInvoices").filter((invoice) => !["betaald", "paid"].includes(normalize(invoice.status || invoice.paymentStatus))).length;
+    const baseIds = [
+      readMergedJson(STORAGE.recents, STORAGE.legacyRecents, []).length ? "open-dashboard" : "new-customer",
+      invoices ? "new-invoice" : "open-mail",
+      "start-onboarding",
+      "generate-logo",
+      "open-factory",
+      notifications ? "open-notifications" : "open-assets",
+    ];
+    return baseIds.map((id) => COMMANDS.find(([commandId]) => commandId === id)).filter(Boolean);
+  }
+
   function renderResults() {
     state.results = search(state.query);
+    renderIntent();
+    renderQuickActions();
     const container = resultsContainer();
     if (!container) return;
     if (!state.results.length) {
@@ -445,6 +614,7 @@
         </div>
       `;
       container.querySelector("[data-empty-command]")?.addEventListener("click", () => executeResult(commandResult(COMMANDS[0])));
+      renderPreview(null);
       return;
     }
     const grouped = groupResults(state.results);
@@ -468,6 +638,26 @@
     updateActiveResult();
   }
 
+  function renderIntent() {
+    const target = document.querySelector(".max-command-intent");
+    if (!target) return;
+    const intent = state.intent || MaxCommandAI.analyzeIntent(state.query);
+    const answer = intent.type === "Question" && state.query ? MaxCommandAI.answerQuestion(state.query) : "";
+    target.innerHTML = `
+      <span>Intent: ${escapeHtml(intent.type || "Search")}</span>
+      <strong>${escapeHtml(intentSummary(intent))}</strong>
+      ${answer ? `<p>${escapeHtml(answer)}</p>` : ""}
+    `;
+  }
+
+  function intentSummary(intent = {}) {
+    if (intent.type === "Action") return "Ik zoek eerst de beste uitvoerbare opdracht.";
+    if (intent.type === "Navigation") return "Ik prioriteer pagina's en navigatiecommando's.";
+    if (intent.type === "Question") return "AI-vraagmodus staat klaar; lokale search blijft actief.";
+    if (intent.type === "Filter") return "Ik vertaal dit naar relevante CRM-filters.";
+    return "Typ natuurlijk of zoek direct op objectnaam.";
+  }
+
   function groupResults(rows) {
     const map = new Map();
     rows.forEach((row) => {
@@ -485,8 +675,8 @@
       <button class="global-command-result" type="button" role="option" data-result-index="${index}" aria-selected="${index === state.activeIndex ? "true" : "false"}">
         <span class="global-command-icon">${escapeHtml(item.icon)}</span>
         <span class="global-command-main">
-          <strong>${escapeHtml(item.title)}</strong>
-          <small>${escapeHtml(item.subtitle || item.url || item.type)}</small>
+          <strong>${highlightText(item.title, state.query)}</strong>
+          <small>${highlightText(item.subtitle || item.url || item.type, state.query)}</small>
         </span>
         <span class="global-command-meta">
           <mark>${escapeHtml(item.status || item.type)}</mark>
@@ -505,6 +695,7 @@
       button.setAttribute("aria-selected", active ? "true" : "false");
       if (active) button.scrollIntoView({ block: "nearest" });
     });
+    renderPreview(state.results[state.activeIndex] || null);
   }
 
   function handleInputKeydown(event) {
@@ -530,6 +721,11 @@
       executeResult(state.results[state.activeIndex]);
       return;
     }
+    if (event.key === "Tab") {
+      event.preventDefault();
+      moveActiveGroup(event.shiftKey ? -1 : 1);
+      return;
+    }
     if (event.key.toLowerCase() === "p" && (event.metaKey || event.ctrlKey)) {
       event.preventDefault();
       togglePin(state.results[state.activeIndex]);
@@ -537,9 +733,120 @@
     }
   }
 
+  function moveActiveGroup(direction = 1) {
+    if (!state.results.length) return;
+    const currentGroup = state.results[state.activeIndex]?.group;
+    const groups = state.results.map((item) => item.group);
+    let targetIndex = state.activeIndex;
+    if (direction > 0) {
+      targetIndex = groups.findIndex((group, index) => index > state.activeIndex && group !== currentGroup);
+      if (targetIndex < 0) targetIndex = 0;
+    } else {
+      for (let index = state.activeIndex - 1; index >= 0; index -= 1) {
+        if (groups[index] !== currentGroup) {
+          targetIndex = index;
+          while (targetIndex > 0 && groups[targetIndex - 1] === groups[targetIndex]) targetIndex -= 1;
+          break;
+        }
+      }
+      if (targetIndex === state.activeIndex) targetIndex = Math.max(0, state.results.length - 1);
+    }
+    state.activeIndex = targetIndex;
+    updateActiveResult();
+  }
+
+  function renderPreview(item) {
+    const panel = document.querySelector("[data-preview-panel]");
+    const aiPanel = document.querySelector(".max-command-ai-suggestions");
+    const actionPanel = document.querySelector(".max-command-side-actions");
+    if (!panel || !aiPanel || !actionPanel) return;
+    if (!item) {
+      panel.innerHTML = `<span>Context Preview</span><strong>Selecteer een resultaat</strong><p>Max toont hier context, slimme acties en vervolgstappen.</p>`;
+      aiPanel.innerHTML = `<p>Typ bijvoorbeeld: Maak factuur voor Quantum, Open Mail Center, Welke leads zijn vandaag toegevoegd?</p>`;
+      actionPanel.innerHTML = sideActionButtons(COMMANDS.slice(0, 4).map(commandResult));
+      bindSideActions();
+      return;
+    }
+    const meta = item.metadata || {};
+    const rows = previewRows(item, meta);
+    panel.innerHTML = `
+      <span>${escapeHtml(item.type)} · ${escapeHtml(item.group)}</span>
+      <strong>${escapeHtml(item.title)}</strong>
+      <p>${escapeHtml(item.subtitle || item.url || "Geen extra omschrijving beschikbaar.")}</p>
+      <div class="max-command-preview-grid">
+        ${rows.map(([label, value]) => `<div><small>${escapeHtml(label)}</small><b>${escapeHtml(value || "-")}</b></div>`).join("")}
+      </div>
+    `;
+    aiPanel.innerHTML = MaxCommandAI.suggestActions(item).map((suggestion) => `<button type="button" data-ai-suggestion="${escapeHtml(suggestion)}">${escapeHtml(suggestion)}</button>`).join("");
+    actionPanel.innerHTML = sideActionButtons(previewActions(item));
+    bindSideActions();
+  }
+
+  function previewRows(item, meta) {
+    if (item.type === "Customer") {
+      const openInvoices = readArray("maxwebstudioInvoices").filter((invoice) => [meta.id, meta.profileId, meta.customerId].filter(Boolean).includes(invoice.profileId || invoice.customerId)).filter((invoice) => !["betaald", "paid"].includes(normalize(invoice.status || invoice.paymentStatus))).length;
+      return [
+        ["Customer", meta.company || meta.name || item.title],
+        ["Status", meta.status || item.status],
+        ["Package", meta.package || meta.plan],
+        ["Website", meta.website || meta.domain],
+        ["Open invoices", String(openInvoices)],
+        ["Last activity", compactDate(meta.updatedAt || meta.createdAt)],
+        ["Timeline summary", "Open timeline voor alle events"],
+        ["Assigned sales", meta.ownerName || meta.salesOwner || "-"],
+      ];
+    }
+    if (item.type === "Invoice") {
+      return [["Invoice", item.title], ["Status", item.status], ["Customer", meta.customerCompany || meta.customerName], ["Total", meta.total ? `€ ${meta.total}` : ""], ["Updated", compactDate(item.updatedAt)]];
+    }
+    if (item.type === "Website") {
+      return [["Website", item.title], ["Status", item.status], ["Customer", meta.customerCompany || meta.customerName], ["Domain", meta.domain], ["Updated", compactDate(item.updatedAt)]];
+    }
+    return [["Type", item.type], ["Status", item.status], ["Group", item.group], ["Updated", compactDate(item.updatedAt)], ["URL", item.url]];
+  }
+
+  function previewActions(item) {
+    if (item.type === "Customer") {
+      return [
+        result({ id: "open-customer-preview", type: "Command", group: "Commands", title: "Open customer", url: item.url, icon: "K" }),
+        commandResult(COMMANDS.find(([id]) => id === "new-invoice")),
+        commandResult(COMMANDS.find(([id]) => id === "send-email")),
+        result({ id: "open-timeline-preview", type: "Command", group: "Commands", title: "Open timeline", url: item.url, icon: "T" }),
+        commandResult(COMMANDS.find(([id]) => id === "open-factory")),
+        result({ id: "add-note-preview", type: "Command", group: "Commands", title: "Add note", url: item.url, icon: "N" }),
+      ];
+    }
+    if (item.type === "Invoice") {
+      return [
+        result({ id: "open-invoice-preview", type: "Command", group: "Commands", title: "Open invoice", url: item.url, icon: "€" }),
+        commandResult(COMMANDS.find(([id]) => id === "send-email")),
+        result({ id: "download-pdf-preview", type: "Command", group: "Commands", title: "Download PDF", url: item.url, icon: "PDF" }),
+      ];
+    }
+    return [item, commandResult(COMMANDS.find(([id]) => id === "open-dashboard"))].filter(Boolean);
+  }
+
+  function sideActionButtons(items = []) {
+    return items.filter(Boolean).map((item, index) => `<button type="button" data-side-action="${index}">${escapeHtml(item.title)}</button>`).join("");
+  }
+
+  function bindSideActions() {
+    document.querySelectorAll("[data-side-action]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const selected = state.results[state.activeIndex] || null;
+        const actions = selected ? previewActions(selected) : COMMANDS.slice(0, 4).map(commandResult);
+        executeResult(actions[Number(button.dataset.sideAction)]);
+      });
+    });
+  }
+
   function executeResult(item) {
     if (!item) return;
     rememberRecent(item);
+    if (item.type === "Search" && item.metadata?.query) {
+      openPalette(item.metadata.query);
+      return;
+    }
     if (item.action && document.querySelector(item.action)) {
       closePalette();
       document.querySelector(item.action).click();
@@ -563,9 +870,21 @@
   }
 
   function rememberRecent(item) {
-    const recents = readJson(STORAGE.recents, []);
+    const recents = readMergedJson(STORAGE.recents, STORAGE.legacyRecents, []);
     const clean = compactResult(item);
     writeJson(STORAGE.recents, [clean, ...recents.filter((row) => `${row.type}:${row.id}` !== `${clean.type}:${clean.id}`)].slice(0, 12));
+    if (state.query) {
+      const searches = readJson(STORAGE.recentSearches, []);
+      writeJson(STORAGE.recentSearches, [state.query, ...searches.filter((query) => normalize(query) !== normalize(state.query))].slice(0, 10));
+    }
+    if (item.type === "Page" || item.url) {
+      const pages = readJson(STORAGE.recentPages, []);
+      writeJson(STORAGE.recentPages, [clean, ...pages.filter((row) => row.url !== clean.url)].slice(0, 10));
+    }
+    if (item.type === "Customer") {
+      const customers = readJson(STORAGE.recentCustomers, []);
+      writeJson(STORAGE.recentCustomers, [clean, ...customers.filter((row) => row.id !== clean.id)].slice(0, 10));
+    }
   }
 
   function compactResult(item) {
@@ -585,13 +904,13 @@
   }
 
   function isPinned(item) {
-    const pinned = readJson(STORAGE.pinned, []);
+    const pinned = readMergedJson(STORAGE.pinned, STORAGE.legacyPinned, []);
     return pinned.some((row) => `${row.type}:${row.id}` === `${item.type}:${item.id}`);
   }
 
   function togglePin(item) {
     if (!item) return;
-    const pinned = readJson(STORAGE.pinned, []);
+    const pinned = readMergedJson(STORAGE.pinned, STORAGE.legacyPinned, []);
     const key = `${item.type}:${item.id}`;
     if (pinned.some((row) => `${row.type}:${row.id}` === key)) {
       writeJson(STORAGE.pinned, pinned.filter((row) => `${row.type}:${row.id}` !== key));
@@ -622,12 +941,14 @@
     });
   }
 
-  window.MaxGlobalCommandPalette = {
+  window.MaxCommand = {
     ready: true,
     open: openPalette,
     close: closePalette,
     search,
+    analyzeIntent: (query) => MaxCommandAI.analyzeIntent(query),
   };
+  window.MaxGlobalCommandPalette = window.MaxCommand;
 
   installShortcut();
   if (document.readyState === "loading") {
