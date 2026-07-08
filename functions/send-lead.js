@@ -235,7 +235,7 @@ function buildCustomerConfirmationHtml(lead) {
                                 <a href="https://maxwebstudio.nl/#projecten" style="display:inline-block;padding:14px 18px;border-radius:999px;background:#155eef;color:#ffffff;text-decoration:none;font-size:14px;font-weight:900;">Bekijk onze demo-websites</a>
                               </td>
                               <td style="padding:0 0 12px;">
-                                <a href="https://wa.me/31616217771" style="display:inline-block;padding:14px 18px;border-radius:999px;background:#ecfdf3;color:#047857;text-decoration:none;font-size:14px;font-weight:900;">WhatsApp Max Webstudio</a>
+                                <a href="https://wa.me/31851302326" style="display:inline-block;padding:14px 18px;border-radius:999px;background:#ecfdf3;color:#047857;text-decoration:none;font-size:14px;font-weight:900;">WhatsApp Max Webstudio</a>
                               </td>
                             </tr>
                           </table>
@@ -281,7 +281,7 @@ function buildCustomerConfirmationText(lead) {
     lead.message,
     "",
     "Demo-websites: https://maxwebstudio.nl/#projecten",
-    "WhatsApp Max Webstudio: https://wa.me/31616217771",
+    "WhatsApp Max Webstudio: https://wa.me/31851302326",
     "",
     "Met vriendelijke groet,",
     "Max Webstudio",
