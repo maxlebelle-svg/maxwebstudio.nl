@@ -17,6 +17,7 @@
     assets: ["maxwebstudioFiles", "maxwebstudioBrandAssets", "maxwebstudioLogoProjects"],
     tasks: ["maxwebstudioCrmTasks"],
     notifications: ["maxwebstudioClientPortalNotifications", "maxwebstudioActivityLog"],
+    automations: ["maxwebstudioAutomationWorkflows", "maxwebstudioAutomationExecutions"],
     settings: ["maxwebstudioSettings"],
   };
 
@@ -33,6 +34,7 @@
     "Assets",
     "Instellingen",
     "AI",
+    "Automations",
     "Notifications",
     "Documentation",
   ];
@@ -40,6 +42,7 @@
   const PAGE_RESULTS = [
     ["dashboard", "Open Dashboard", "Admin CRM overzicht", "admin-dashboard.html", "Instellingen", "Page"],
     ["notification-center", "Open Notification Center", "CRM alerts en activity feed", "admin-notification-center.html", "Notifications", "Page"],
+    ["max-automations", "Open Max Automations", "No-code workflow builder", "admin-max-automations.html", "Automations", "Page"],
     ["mail-center", "Open Mail Center", "Verzonden e-mails en Resend statussen", "admin-mail-center.html", "E-mails", "Page"],
     ["email-studio", "Open E-mail Studio", "Templates beheren", "admin-email-studio.html", "E-mails", "Page"],
     ["customers", "Open Klanten", "Customer CRM", "admin-klanten.html", "Klanten", "Page"],
@@ -69,6 +72,7 @@
     ["send-email", "Verzend e-mail", "Open Mail Center", "E-mails", "Command", "admin-mail-center.html", "#mail-refresh"],
     ["open-mail", "Open Mail Center", "Verzonden CRM-mails", "E-mails", "Command", "admin-mail-center.html"],
     ["open-notifications", "Open Notification Center", "CRM notifications", "Notifications", "Command", "admin-notification-center.html"],
+    ["open-automations", "Open Max Automations", "Workflow builder en simulation runs", "Automations", "Command", "admin-max-automations.html"],
     ["open-dashboard", "Open Dashboard", "Max CRM home", "Instellingen", "Command", "admin-dashboard.html"],
     ["open-seo", "Open SEO Studio", "SEO projecten", "AI", "Command", "admin-seo-studio.html"],
     ["open-factory", "Open Website Factory", "Website previews genereren", "Websites", "Command", "admin-website-factory.html"],
@@ -216,6 +220,7 @@
     if (group === "Branding") return "B";
     if (group === "Assets") return "A";
     if (group === "AI") return "AI";
+    if (group === "Automations") return "⚡";
     if (group === "Notifications") return "!";
     if (group === "Instellingen") return "#";
     return "•";
@@ -338,6 +343,18 @@
       metadata: item,
     }));
 
+    const automations = rowsFromKeys(STORAGE.automations, (item) => result({
+      id: item.id || item.name || item.workflowName,
+      type: item.workflowId ? "Automation Run" : "Workflow",
+      group: "Automations",
+      title: item.name || item.workflowName || "Automation",
+      subtitle: [item.description, item.trigger, item.status].filter(Boolean).join(" · "),
+      url: "admin-max-automations.html",
+      status: item.status || item.trigger || "automation",
+      updatedAt: item.updatedAt || item.completedAt || item.startedAt || item.createdAt,
+      metadata: item,
+    }));
+
     return uniqueRows([
       ...COMMANDS.map(commandResult),
       ...PAGE_RESULTS.map(pageResult),
@@ -349,6 +366,7 @@
       ...assets,
       ...tasks,
       ...notifications,
+      ...automations,
     ]);
   }
 
@@ -588,12 +606,13 @@
   function suggestedCommands() {
     const notifications = readArray("maxwebstudioClientPortalNotifications").length + readArray("maxwebstudioActivityLog").length;
     const invoices = readArray("maxwebstudioInvoices").filter((invoice) => !["betaald", "paid"].includes(normalize(invoice.status || invoice.paymentStatus))).length;
+    const automations = readArray("maxwebstudioAutomationWorkflows").length;
     const baseIds = [
       readMergedJson(STORAGE.recents, STORAGE.legacyRecents, []).length ? "open-dashboard" : "new-customer",
       invoices ? "new-invoice" : "open-mail",
       "start-onboarding",
       "generate-logo",
-      "open-factory",
+      automations ? "open-automations" : "open-factory",
       notifications ? "open-notifications" : "open-assets",
     ];
     return baseIds.map((id) => COMMANDS.find(([commandId]) => commandId === id)).filter(Boolean);

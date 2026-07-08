@@ -1,0 +1,1129 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Max Automations | Max CRM</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=20260708-max-automations" />
+    <link rel="stylesheet" href="admin/styles/premium-design-system.css" />
+    <script src="admin/ui/shared-helpers.js"></script>
+    <style>
+      .automation-shell {
+        display: grid;
+        gap: 16px;
+        min-width: 0;
+      }
+
+      .automation-hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 18px;
+        align-items: end;
+        min-height: 156px;
+        padding: 24px;
+      }
+
+      .automation-hero-panel {
+        display: grid;
+        gap: 8px;
+        min-width: 260px;
+        max-width: 360px;
+        border: 1px solid rgba(96, 165, 250, 0.18);
+        border-radius: 8px;
+        padding: 16px;
+        background:
+          radial-gradient(circle at 16% 0%, rgba(25, 194, 255, 0.15), transparent 36%),
+          linear-gradient(180deg, rgba(13, 35, 55, 0.72), rgba(5, 18, 31, 0.9));
+      }
+
+      .automation-hero-panel strong {
+        color: #f8fbff;
+        font-size: 24px;
+        line-height: 1;
+      }
+
+      .automation-hero-panel span,
+      .automation-hero-panel p,
+      .automation-card-copy,
+      .automation-muted {
+        color: rgba(226, 236, 248, 0.68);
+        font-size: 13px;
+        font-weight: 750;
+        line-height: 1.55;
+      }
+
+      .automation-toolbar,
+      .automation-workspace,
+      .automation-library,
+      .automation-properties,
+      .automation-card,
+      .automation-execution,
+      .automation-version-card {
+        display: grid;
+        gap: 14px;
+        min-width: 0;
+      }
+
+      .automation-toolbar {
+        grid-template-columns: minmax(260px, 1fr) repeat(3, minmax(150px, 0.36fr)) auto;
+        align-items: end;
+        padding: 14px;
+      }
+
+      .automation-field {
+        display: grid;
+        gap: 7px;
+        color: rgba(226, 236, 248, 0.72);
+        font-size: 12px;
+        font-weight: 850;
+      }
+
+      .automation-field input,
+      .automation-field select,
+      .automation-field textarea {
+        width: 100%;
+        min-height: 40px;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 8px;
+        color: #f8fbff;
+        background: rgba(15, 23, 42, 0.78);
+        font: inherit;
+      }
+
+      .automation-field textarea {
+        min-height: 92px;
+        resize: vertical;
+      }
+
+      .automation-metrics {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .automation-metric {
+        display: grid;
+        gap: 6px;
+        min-height: 104px;
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        border-radius: 8px;
+        padding: 16px;
+        background:
+          radial-gradient(circle at 85% 18%, rgba(37, 99, 235, 0.15), transparent 32%),
+          linear-gradient(180deg, rgba(13, 35, 55, 0.66), rgba(5, 18, 31, 0.88));
+      }
+
+      .automation-metric span {
+        color: rgba(226, 236, 248, 0.58);
+        font-size: 12px;
+        font-weight: 900;
+        text-transform: uppercase;
+      }
+
+      .automation-metric strong {
+        color: #f8fbff;
+        font-size: 30px;
+        line-height: 1;
+      }
+
+      .automation-workspace {
+        grid-template-columns: minmax(240px, 0.8fr) minmax(360px, 1.5fr) minmax(240px, 0.75fr);
+        align-items: start;
+      }
+
+      .automation-library,
+      .automation-properties {
+        position: sticky;
+        top: 18px;
+      }
+
+      .automation-library-list {
+        display: grid;
+        gap: 10px;
+        max-height: calc(100vh - 340px);
+        overflow: auto;
+        padding-right: 2px;
+      }
+
+      .automation-template-card {
+        display: grid;
+        gap: 10px;
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        border-radius: 8px;
+        padding: 14px;
+        color: rgba(226, 236, 248, 0.78);
+        background:
+          linear-gradient(180deg, rgba(13, 35, 55, 0.58), rgba(5, 18, 31, 0.8)),
+          rgba(15, 23, 42, 0.64);
+        cursor: pointer;
+        transition: border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+      }
+
+      .automation-template-card:hover,
+      .automation-template-card.is-selected {
+        border-color: rgba(96, 165, 250, 0.5);
+        box-shadow: 0 20px 50px rgba(0, 8, 18, 0.28);
+        transform: translateY(-1px);
+      }
+
+      .automation-template-card h3,
+      .automation-canvas-title h2,
+      .automation-properties h2 {
+        margin: 0;
+        color: #f8fbff;
+        font-size: clamp(17px, 1.4vw, 21px);
+        line-height: 1.2;
+      }
+
+      .automation-card-meta,
+      .automation-card-actions,
+      .automation-node-toolbar,
+      .automation-canvas-actions,
+      .automation-status-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .automation-card-actions .button,
+      .automation-canvas-actions .button {
+        min-height: 34px;
+        padding: 8px 11px;
+        font-size: 12px;
+      }
+
+      .automation-canvas-card {
+        display: grid;
+        gap: 12px;
+        min-width: 0;
+        padding: 18px;
+      }
+
+      .automation-canvas-top {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: start;
+      }
+
+      .automation-node-toolbar {
+        border: 1px solid rgba(148, 163, 184, 0.12);
+        border-radius: 8px;
+        padding: 10px;
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      .automation-node-chip {
+        border: 1px solid rgba(96, 165, 250, 0.22);
+        border-radius: 999px;
+        color: #dbeafe;
+        background: rgba(37, 99, 235, 0.12);
+        padding: 8px 10px;
+        font-size: 12px;
+        font-weight: 900;
+        cursor: grab;
+      }
+
+      .automation-canvas-viewport {
+        position: relative;
+        min-height: 560px;
+        overflow: hidden;
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        border-radius: 8px;
+        background:
+          linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+          radial-gradient(circle at 50% 20%, rgba(37, 99, 235, 0.12), transparent 34%),
+          rgba(2, 14, 25, 0.66);
+        background-size: 28px 28px, 28px 28px, auto, auto;
+      }
+
+      .automation-canvas-inner {
+        position: absolute;
+        inset: 0;
+        transform-origin: 0 0;
+        transition: transform 160ms ease;
+      }
+
+      .automation-lines {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      }
+
+      .automation-lines path {
+        fill: none;
+        stroke: rgba(96, 165, 250, 0.62);
+        stroke-width: 2.5;
+        stroke-dasharray: 8 8;
+        animation: automation-flow 1.4s linear infinite;
+      }
+
+      @keyframes automation-flow {
+        to { stroke-dashoffset: -16; }
+      }
+
+      .automation-node {
+        position: absolute;
+        display: grid;
+        gap: 8px;
+        width: 188px;
+        min-height: 106px;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 8px;
+        padding: 13px;
+        color: rgba(226, 236, 248, 0.78);
+        background:
+          radial-gradient(circle at 14% 0%, rgba(96, 165, 250, 0.18), transparent 36%),
+          linear-gradient(180deg, rgba(13, 35, 55, 0.9), rgba(5, 18, 31, 0.95));
+        box-shadow: 0 18px 40px rgba(0, 8, 18, 0.22);
+        cursor: grab;
+        user-select: none;
+      }
+
+      .automation-node.is-selected,
+      .automation-node.is-running {
+        border-color: rgba(43, 217, 130, 0.72);
+        box-shadow: 0 0 0 3px rgba(43, 217, 130, 0.12), 0 18px 46px rgba(0, 8, 18, 0.28);
+      }
+
+      .automation-node[data-type="AI"] {
+        border-color: rgba(139, 92, 246, 0.42);
+      }
+
+      .automation-node strong {
+        color: #f8fbff;
+        font-size: 15px;
+        line-height: 1.2;
+      }
+
+      .automation-node span,
+      .automation-node small {
+        color: rgba(226, 236, 248, 0.62);
+        font-size: 12px;
+        font-weight: 800;
+        line-height: 1.35;
+      }
+
+      .automation-properties-form {
+        display: grid;
+        gap: 12px;
+      }
+
+      .automation-pill-list,
+      .automation-log-list,
+      .automation-version-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .automation-pill-list span,
+      .automation-log-item,
+      .automation-version-item {
+        border: 1px solid rgba(148, 163, 184, 0.12);
+        border-radius: 8px;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.045);
+        color: rgba(226, 236, 248, 0.72);
+        font-size: 12px;
+        font-weight: 850;
+        line-height: 1.45;
+      }
+
+      .automation-log-item,
+      .automation-version-item {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .automation-empty {
+        border: 1px dashed rgba(148, 163, 184, 0.18);
+        border-radius: 8px;
+        padding: 18px;
+        color: rgba(226, 236, 248, 0.66);
+        background: rgba(255, 255, 255, 0.035);
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1.55;
+      }
+
+      @media (max-width: 1080px) {
+        .automation-workspace {
+          grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.4fr);
+        }
+
+        .automation-properties {
+          position: static;
+          grid-column: 1 / -1;
+        }
+
+        .automation-metrics {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 980px) {
+        .automation-hero,
+        .automation-toolbar,
+        .automation-workspace {
+          grid-template-columns: 1fr;
+        }
+
+        .automation-hero-panel {
+          max-width: none;
+        }
+
+        .automation-library {
+          position: static;
+        }
+
+        .automation-library-list {
+          max-height: none;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .automation-metrics {
+          grid-template-columns: 1fr;
+        }
+
+        .automation-canvas-top {
+          grid-template-columns: 1fr;
+        }
+
+        .automation-canvas-viewport {
+          min-height: 520px;
+        }
+
+        .automation-node {
+          width: 164px;
+        }
+      }
+    </style>
+  </head>
+  <body class="admin-body">
+    <main class="admin-crm-shell">
+      <aside class="admin-sidebar" aria-label="Admin modules">
+        <a class="brand" href="admin-dashboard.html">
+          <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true">
+            <rect x="6" y="6" width="68" height="68" rx="18"></rect>
+            <path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path>
+            <path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path>
+          </svg>
+          <span>Max CRM</span>
+        </a>
+        <nav class="admin-sidebar-nav">
+          <span class="admin-nav-group">Main</span>
+          <a href="admin-dashboard.html">Dashboard</a>
+          <a href="admin-notification-center.html">Notification Center</a>
+          <a class="is-active" href="admin-max-automations.html">⚡ Max Automations</a>
+          <span class="admin-nav-group">Sales</span>
+          <a href="admin-sales.html">Leads</a>
+          <span class="admin-nav-group">Production</span>
+          <a href="admin-website-factory.html">Website Factory</a>
+          <a href="admin-demo-sites.html">Demo Sites</a>
+          <a href="admin-ai-content-library.html">AI Content Library</a>
+          <a href="admin-assets.html">Asset Manager</a>
+          <a href="admin-seo-studio.html">SEO Studio</a>
+          <a href="admin-social-media-studio.html">Social Media Studio</a>
+          <a href="admin-brand-center.html">Brand Center</a>
+          <a href="admin-domain-center.html">Domein Center</a>
+          <a href="admin-onboarding.html">Klant Onboarding</a>
+          <a href="admin-roadmap.html">Roadmap / Takenbord</a>
+          <span class="admin-nav-group">Customers</span>
+          <a href="admin-klanten.html">Klanten</a>
+          <a href="admin-websites.html">Websites</a>
+          <a href="admin-projecten.html">Projecten</a>
+          <span class="admin-nav-group">Administration</span>
+          <a href="admin-offertes.html">Offertes</a>
+          <a href="admin-facturen.html">Facturen</a>
+          <a href="admin-email-studio.html">E-mail Studio</a>
+          <a href="admin-mail-center.html">Mail Center</a>
+          <span class="admin-nav-group">System</span>
+          <a href="admin-instellingen.html">Instellingen</a>
+        </nav>
+      </aside>
+
+      <div class="admin-crm-main automation-shell">
+        <header class="admin-section admin-hero automation-hero">
+          <div>
+            <p class="section-kicker">Enterprise Workflow Builder</p>
+            <h1>Max Automations</h1>
+            <p>No-code workflows voor sales, delivery, finance, onboarding en klantcommunicatie. Alles draait veilig in lokale simulatie tot de automation backend live is.</p>
+          </div>
+          <aside class="automation-hero-panel">
+            <span class="workflow-module-label">Automation engine foundation</span>
+            <strong id="automation-readiness">0 workflows</strong>
+            <p>Triggers, conditions, delays, actions, AI placeholders, test runs, logs en versies zijn voorbereid.</p>
+          </aside>
+        </header>
+
+        <section class="admin-card automation-toolbar" aria-label="Workflow zoeken en filteren">
+          <label class="automation-field">Zoeken<input id="automation-search" type="search" placeholder="Zoek workflows, triggers, acties of nodes" /></label>
+          <label class="automation-field">Status<select id="automation-status-filter"></select></label>
+          <label class="automation-field">Type<select id="automation-type-filter"></select></label>
+          <label class="automation-field">Sortering<select id="automation-sort"><option value="recent">Recently changed</option><option value="name">Naam</option><option value="enabled">Enabled eerst</option></select></label>
+          <button class="button primary" id="automation-new" type="button">Nieuwe workflow</button>
+        </section>
+
+        <section class="automation-metrics" aria-label="Automation metrics">
+          <article class="automation-metric"><span>Total</span><strong id="metric-total">0</strong><small class="automation-muted">Workflows</small></article>
+          <article class="automation-metric"><span>Enabled</span><strong id="metric-enabled">0</strong><small class="automation-muted">Actief voorbereid</small></article>
+          <article class="automation-metric"><span>Draft</span><strong id="metric-draft">0</strong><small class="automation-muted">Nog niet live</small></article>
+          <article class="automation-metric"><span>Executions</span><strong id="metric-executions">0</strong><small class="automation-muted">Simulaties</small></article>
+          <article class="automation-metric"><span>Failed</span><strong id="metric-failed">0</strong><small class="automation-muted">Laatste runs</small></article>
+        </section>
+
+        <section class="automation-workspace" aria-label="Max Automations workspace">
+          <aside class="admin-card automation-library">
+            <div class="admin-section-heading">
+              <div>
+                <p class="section-kicker">Library</p>
+                <h2>Workflow Library</h2>
+              </div>
+              <span class="status-badge status-prepared" id="library-count">0</span>
+            </div>
+            <div class="automation-library-list" id="automation-library"></div>
+          </aside>
+
+          <section class="admin-card automation-canvas-card">
+            <div class="automation-canvas-top">
+              <div class="automation-canvas-title">
+                <p class="section-kicker" id="canvas-kicker">Visual Workflow Canvas</p>
+                <h2 id="canvas-title">Selecteer een workflow</h2>
+                <p class="automation-card-copy" id="canvas-description">Clone of open een template om nodes te bekijken, testen en aanpassen.</p>
+              </div>
+              <div class="automation-canvas-actions">
+                <button class="button secondary" id="zoom-out" type="button">Zoom -</button>
+                <button class="button secondary" id="zoom-reset" type="button">100%</button>
+                <button class="button secondary" id="zoom-in" type="button">Zoom +</button>
+                <button class="button secondary" id="pan-left" type="button">Pan ←</button>
+                <button class="button secondary" id="pan-right" type="button">Pan →</button>
+                <button class="button secondary" id="pan-up" type="button">Pan ↑</button>
+                <button class="button secondary" id="pan-down" type="button">Pan ↓</button>
+                <button class="button secondary" id="save-version" type="button">Versie opslaan</button>
+                <button class="button primary" id="run-test" type="button">Run simulation</button>
+              </div>
+            </div>
+
+            <div class="automation-node-toolbar" aria-label="Node types">
+              <button class="automation-node-chip" draggable="true" data-node-type="Trigger" type="button">Trigger</button>
+              <button class="automation-node-chip" draggable="true" data-node-type="Condition" type="button">Condition</button>
+              <button class="automation-node-chip" draggable="true" data-node-type="Delay" type="button">Delay</button>
+              <button class="automation-node-chip" draggable="true" data-node-type="Action" type="button">Action</button>
+              <button class="automation-node-chip" draggable="true" data-node-type="AI" type="button">AI</button>
+              <button class="automation-node-chip" draggable="true" data-node-type="Notification" type="button">Notification</button>
+              <button class="automation-node-chip" draggable="true" data-node-type="Email" type="button">Email</button>
+              <button class="automation-node-chip" draggable="true" data-node-type="Invoice" type="button">Invoice</button>
+              <button class="automation-node-chip" draggable="true" data-node-type="Task" type="button">Task</button>
+              <button class="automation-node-chip" draggable="true" data-node-type="Branch" type="button">Branch</button>
+              <button class="automation-node-chip" draggable="true" data-node-type="End" type="button">End</button>
+            </div>
+
+            <div class="automation-canvas-viewport" id="automation-canvas" aria-label="Workflow canvas">
+              <div class="automation-canvas-inner" id="automation-canvas-inner">
+                <svg class="automation-lines" id="automation-lines" aria-hidden="true"></svg>
+                <div id="automation-nodes"></div>
+              </div>
+            </div>
+          </section>
+
+          <aside class="admin-card automation-properties">
+            <div class="admin-section-heading">
+              <div>
+                <p class="section-kicker">Properties</p>
+                <h2>Properties Panel</h2>
+              </div>
+              <mark class="status-badge status-prepared" id="properties-status">No node</mark>
+            </div>
+            <form class="automation-properties-form" id="properties-form">
+              <label class="automation-field">Workflow name<input name="workflowName" /></label>
+              <label class="automation-field">Workflow status<select name="workflowStatus"></select></label>
+              <label class="automation-field">Node label<input name="nodeLabel" /></label>
+              <label class="automation-field">Node type<select name="nodeType"></select></label>
+              <label class="automation-field">Configuration<textarea name="nodeConfig" placeholder="Trigger, condition, delay or action details"></textarea></label>
+              <button class="button primary" type="submit">Opslaan</button>
+            </form>
+            <div>
+              <p class="section-kicker">Available Triggers</p>
+              <div class="automation-pill-list" id="trigger-list"></div>
+            </div>
+            <div>
+              <p class="section-kicker">Permissions</p>
+              <div class="automation-pill-list">
+                <span>Admin: full access</span>
+                <span>Sales Manager: run/test</span>
+                <span>Sales: view only</span>
+              </div>
+            </div>
+          </aside>
+        </section>
+
+        <section class="automation-workspace" aria-label="Execution and versioning">
+          <article class="admin-card automation-execution">
+            <div class="admin-section-heading">
+              <div>
+                <p class="section-kicker">Execution log</p>
+                <h2>Simulation runs</h2>
+              </div>
+              <span class="status-badge status-prepared">No real actions</span>
+            </div>
+            <div class="automation-log-list" id="execution-log"></div>
+          </article>
+          <article class="admin-card automation-version-card">
+            <div class="admin-section-heading">
+              <div>
+                <p class="section-kicker">Version history</p>
+                <h2>Versions</h2>
+              </div>
+              <button class="button secondary" id="duplicate-workflow" type="button">Duplicate</button>
+            </div>
+            <div class="automation-version-list" id="version-list"></div>
+          </article>
+        </section>
+      </div>
+    </main>
+
+    <script src="admin/ui/global-command-palette.js" defer></script>
+    <script>
+      (() => {
+        const STORAGE_KEY = "maxwebstudioAutomationWorkflows";
+        const EXECUTION_KEY = "maxwebstudioAutomationExecutions";
+        const VERSION_KEY = "maxwebstudioAutomationVersions";
+        const nodeTypes = ["Trigger", "Condition", "Delay", "Action", "AI", "Notification", "Email", "Invoice", "Task", "Branch", "End"];
+        const statuses = ["enabled", "disabled", "draft"];
+        const triggers = [
+          "Customer created", "Lead created", "Lead updated", "Invoice paid", "Invoice overdue", "Email opened", "Email clicked", "Website approved", "Website published", "Logo approved", "Asset uploaded", "Task completed", "085 activated", "Domain transferred", "Hosting activated", "Manual trigger", "Scheduled trigger",
+        ];
+        const conditions = ["If package Premium", "If invoice unpaid", "If website approved", "If customer inactive", "If lead older than X", "If email opened", "If revenue > X"];
+        const actions = ["Create customer", "Create invoice", "Send email", "Create task", "Send notification", "Create timeline event", "Generate website", "Generate logo", "Generate SEO", "Assign salesperson", "Move pipeline", "Webhook", "API request", "Future AI action"];
+
+        const templates = [
+          ["website-sales", "Website Sales", "Van nieuwe lead naar klant, offerte en Website Factory start.", "Lead created", "enabled"],
+          ["website-delivery", "Website Delivery", "Publicatie, QA, klantupdate en timeline event.", "Website published", "enabled"],
+          ["invoice-reminder", "Invoice Reminder", "Automatische herinnering bij verlopen factuur.", "Invoice overdue", "enabled"],
+          ["lead-follow-up", "Lead Follow-up", "Follow-up taak en mail na leadupdate.", "Lead updated", "draft"],
+          ["customer-onboarding", "Customer Onboarding", "Klantportaal, welkomstmail, taak en timeline.", "Customer created", "enabled"],
+          ["logo-approval", "Logo Approval", "Logo akkoord naar assets en klantbericht.", "Logo approved", "disabled"],
+          ["website-approval", "Website Approval", "Website akkoord triggert livegang-checklist.", "Website approved", "enabled"],
+          ["seo-upsell", "SEO Upsell", "Detecteer kansen en maak sales taak.", "Manual trigger", "draft"],
+          ["hosting-renewal", "Hosting Renewal", "Hosting verlenging met klantnotificatie.", "Scheduled trigger", "enabled"],
+          ["domain-expiry", "Domain Expiry", "Domeinverloop melden en taak aanmaken.", "Domain transferred", "draft"],
+          ["085-number", "085 Number Activation", "085 activatie verwerkt notificaties en timeline.", "085 activated", "disabled"],
+          ["review-request", "Review Request", "Vraag review na livegang of projectafronding.", "Website published", "enabled"],
+          ["abandoned-quote", "Abandoned Quote", "Follow-up op bekeken offerte zonder akkoord.", "Email clicked", "draft"],
+          ["birthday-email", "Birthday Email", "Plan relatiebericht voor klantmomenten.", "Scheduled trigger", "disabled"],
+          ["inactive-customer", "Inactive Customer", "Signaleer klanten zonder activiteit.", "Scheduled trigger", "draft"],
+          ["website-live", "Website Live", "Publicatie naar Mail Center, Timeline en CEO Dashboard.", "Website published", "enabled"],
+          ["customer-welcome", "Customer Welcome", "Welkomstreeks vanuit Mail Center en Onboarding.", "Customer created", "enabled"],
+          ["google-ads-upsell", "Google Ads Upsell", "Maak saleskans na website livegang.", "Website published", "draft"],
+        ];
+
+        const elements = {
+          readiness: document.getElementById("automation-readiness"),
+          search: document.getElementById("automation-search"),
+          statusFilter: document.getElementById("automation-status-filter"),
+          typeFilter: document.getElementById("automation-type-filter"),
+          sort: document.getElementById("automation-sort"),
+          library: document.getElementById("automation-library"),
+          libraryCount: document.getElementById("library-count"),
+          canvas: document.getElementById("automation-canvas"),
+          canvasInner: document.getElementById("automation-canvas-inner"),
+          lines: document.getElementById("automation-lines"),
+          nodes: document.getElementById("automation-nodes"),
+          title: document.getElementById("canvas-title"),
+          description: document.getElementById("canvas-description"),
+          propertiesStatus: document.getElementById("properties-status"),
+          form: document.getElementById("properties-form"),
+          triggerList: document.getElementById("trigger-list"),
+          executionLog: document.getElementById("execution-log"),
+          versionList: document.getElementById("version-list"),
+          metrics: {
+            total: document.getElementById("metric-total"),
+            enabled: document.getElementById("metric-enabled"),
+            draft: document.getElementById("metric-draft"),
+            executions: document.getElementById("metric-executions"),
+            failed: document.getElementById("metric-failed"),
+          },
+        };
+
+        let state = {
+          workflows: [],
+          executions: [],
+          versions: [],
+          selectedWorkflowId: "",
+          selectedNodeId: "",
+          zoom: 1,
+          panX: 0,
+          panY: 0,
+          runningNodeIds: new Set(),
+        };
+
+        function escapeHtml(value = "") {
+          const shared = window.MaxSharedUI?.escapeHtml || window.escapeHtml;
+          if (typeof shared === "function" && shared !== escapeHtml) return shared(value);
+          return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+        }
+
+        function readArray(key) {
+          try {
+            const value = JSON.parse(localStorage.getItem(key) || "[]");
+            return Array.isArray(value) ? value : [];
+          } catch {
+            return [];
+          }
+        }
+
+        function writeArray(key, value) {
+          localStorage.setItem(key, JSON.stringify(value));
+        }
+
+        function createId(prefix) {
+          return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+        }
+
+        function nowIso() {
+          return new Date().toISOString();
+        }
+
+        function compactDate(value) {
+          const date = new Date(value);
+          if (Number.isNaN(date.getTime())) return "-";
+          return new Intl.DateTimeFormat("nl-NL", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(date);
+        }
+
+        function templateNodes(template, index = 0) {
+          const type = template[3] || "Manual trigger";
+          return [
+            { id: createId("node"), type: "Trigger", label: type, config: "Start workflow zodra dit event binnenkomt.", x: 50, y: 60 },
+            { id: createId("node"), type: "Condition", label: conditions[index % conditions.length], config: "Controleer of deze workflow relevant is.", x: 285, y: 60 },
+            { id: createId("node"), type: "Delay", label: index % 2 ? "Wait 24 hours" : "Wait 1 hour", config: "Delay ondersteunt 1 hour, 24 hours, 3 days, 7 days of custom.", x: 520, y: 60 },
+            { id: createId("node"), type: "Action", label: actions[index % actions.length], config: "Simulatie: geen echte actie uitvoeren.", x: 285, y: 235 },
+            { id: createId("node"), type: "Notification", label: "Send notification", config: "Koppel later aan Notification Center.", x: 520, y: 235 },
+            { id: createId("node"), type: "End", label: "End", config: "Workflow afgerond.", x: 755, y: 235 },
+          ];
+        }
+
+        function buildWorkflow(template, index = 0) {
+          const nodes = templateNodes(template, index);
+          return {
+            id: template[0],
+            name: template[1],
+            description: template[2],
+            trigger: template[3],
+            status: template[4],
+            category: template[1].includes("Invoice") ? "Finance" : template[1].includes("Lead") || template[1].includes("Sale") || template[1].includes("Upsell") ? "Sales" : "Operations",
+            nodes,
+            connections: nodes.slice(0, -1).map((node, nodeIndex) => ({ from: node.id, to: nodes[nodeIndex + 1].id })),
+            updatedAt: nowIso(),
+          };
+        }
+
+        function seedWorkflows() {
+          return templates.map(buildWorkflow);
+        }
+
+        function selectedWorkflow() {
+          return state.workflows.find((workflow) => workflow.id === state.selectedWorkflowId) || state.workflows[0] || null;
+        }
+
+        function selectedNode() {
+          const workflow = selectedWorkflow();
+          return workflow?.nodes.find((node) => node.id === state.selectedNodeId) || workflow?.nodes[0] || null;
+        }
+
+        function save() {
+          writeArray(STORAGE_KEY, state.workflows);
+          writeArray(EXECUTION_KEY, state.executions);
+          writeArray(VERSION_KEY, state.versions);
+        }
+
+        function statusClass(status) {
+          if (status === "enabled") return "status-active";
+          if (status === "disabled") return "status-warning";
+          return "status-prepared";
+        }
+
+        function filteredWorkflows() {
+          const query = String(elements.search.value || "").toLowerCase().trim();
+          const status = elements.statusFilter.value;
+          const type = elements.typeFilter.value;
+          const rows = state.workflows.filter((workflow) => {
+            const haystack = [workflow.name, workflow.description, workflow.trigger, workflow.status, workflow.category, workflow.nodes.map((node) => `${node.type} ${node.label}`).join(" ")].join(" ").toLowerCase();
+            return (!query || haystack.includes(query))
+              && (!status || workflow.status === status)
+              && (!type || workflow.nodes.some((node) => node.type === type));
+          });
+          if (elements.sort.value === "name") rows.sort((a, b) => a.name.localeCompare(b.name, "nl"));
+          else if (elements.sort.value === "enabled") rows.sort((a, b) => Number(b.status === "enabled") - Number(a.status === "enabled"));
+          else rows.sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
+          return rows;
+        }
+
+        function renderMetrics() {
+          const enabled = state.workflows.filter((workflow) => workflow.status === "enabled").length;
+          const draft = state.workflows.filter((workflow) => workflow.status === "draft").length;
+          const failed = state.executions.filter((run) => run.status === "Failed").length;
+          elements.readiness.textContent = `${state.workflows.length} workflows`;
+          elements.metrics.total.textContent = String(state.workflows.length);
+          elements.metrics.enabled.textContent = String(enabled);
+          elements.metrics.draft.textContent = String(draft);
+          elements.metrics.executions.textContent = String(state.executions.length);
+          elements.metrics.failed.textContent = String(failed);
+        }
+
+        function renderLibrary() {
+          const rows = filteredWorkflows();
+          elements.libraryCount.textContent = String(rows.length);
+          if (!rows.length) {
+            elements.library.innerHTML = `<div class="automation-empty">Geen workflows gevonden. Maak een nieuwe workflow of reset je filters.</div>`;
+            return;
+          }
+          elements.library.innerHTML = rows.map((workflow) => `
+            <article class="automation-template-card ${workflow.id === state.selectedWorkflowId ? "is-selected" : ""}" data-workflow-id="${escapeHtml(workflow.id)}">
+              <div>
+                <h3>${escapeHtml(workflow.name)}</h3>
+                <p class="automation-card-copy">${escapeHtml(workflow.description)}</p>
+              </div>
+              <div class="automation-card-meta">
+                <mark class="status-badge ${statusClass(workflow.status)}">${escapeHtml(workflow.status)}</mark>
+                <span class="status-badge status-prepared">${escapeHtml(workflow.trigger)}</span>
+              </div>
+              <div class="automation-card-actions">
+                <button class="button secondary" type="button" data-action="clone" data-workflow-id="${escapeHtml(workflow.id)}">Clone</button>
+                <button class="button secondary" type="button" data-action="edit" data-workflow-id="${escapeHtml(workflow.id)}">Edit</button>
+                <button class="button secondary" type="button" data-action="toggle" data-workflow-id="${escapeHtml(workflow.id)}">${workflow.status === "enabled" ? "Disable" : "Enable"}</button>
+              </div>
+            </article>
+          `).join("");
+        }
+
+        function renderCanvas() {
+          const workflow = selectedWorkflow();
+          if (!workflow) return;
+          if (!state.selectedNodeId || !workflow.nodes.some((node) => node.id === state.selectedNodeId)) state.selectedNodeId = workflow.nodes[0]?.id || "";
+          elements.title.textContent = workflow.name;
+          elements.description.textContent = workflow.description;
+          elements.canvasInner.style.transform = `translate(${state.panX}px, ${state.panY}px) scale(${state.zoom})`;
+          elements.nodes.innerHTML = workflow.nodes.map((node) => `
+            <button class="automation-node ${node.id === state.selectedNodeId ? "is-selected" : ""} ${state.runningNodeIds.has(node.id) ? "is-running" : ""}" type="button" draggable="true" data-node-id="${escapeHtml(node.id)}" data-type="${escapeHtml(node.type)}" style="left:${node.x}px;top:${node.y}px">
+              <span>${escapeHtml(node.type)}</span>
+              <strong>${escapeHtml(node.label)}</strong>
+              <small>${escapeHtml(node.config)}</small>
+            </button>
+          `).join("");
+          renderLines(workflow);
+          renderProperties();
+        }
+
+        function renderLines(workflow) {
+          const path = workflow.connections.map((connection) => {
+            const from = workflow.nodes.find((node) => node.id === connection.from);
+            const to = workflow.nodes.find((node) => node.id === connection.to);
+            if (!from || !to) return "";
+            const x1 = from.x + 188;
+            const y1 = from.y + 54;
+            const x2 = to.x;
+            const y2 = to.y + 54;
+            const mid = Math.max(36, Math.abs(x2 - x1) / 2);
+            return `<path d="M ${x1} ${y1} C ${x1 + mid} ${y1}, ${x2 - mid} ${y2}, ${x2} ${y2}" />`;
+          }).join("");
+          elements.lines.innerHTML = path;
+        }
+
+        function renderProperties() {
+          const workflow = selectedWorkflow();
+          const node = selectedNode();
+          if (!workflow || !node) return;
+          elements.propertiesStatus.textContent = node.type;
+          elements.form.workflowName.value = workflow.name;
+          elements.form.workflowStatus.value = workflow.status;
+          elements.form.nodeLabel.value = node.label;
+          elements.form.nodeType.value = node.type;
+          elements.form.nodeConfig.value = node.config;
+        }
+
+        function renderLogs() {
+          const logs = state.executions.filter((run) => !state.selectedWorkflowId || run.workflowId === state.selectedWorkflowId).slice(0, 8);
+          elements.executionLog.innerHTML = logs.length ? logs.map((run) => `
+            <div class="automation-log-item">
+              <div>
+                <strong>${escapeHtml(run.workflowName)}</strong>
+                <p class="automation-muted">${escapeHtml(run.status)} · started ${escapeHtml(compactDate(run.startedAt))} · completed ${escapeHtml(compactDate(run.completedAt))}</p>
+              </div>
+              <button class="button secondary" type="button" data-open-execution="${escapeHtml(run.id)}">Open execution</button>
+            </div>
+          `).join("") : `<div class="automation-empty">Nog geen simulation runs. Klik op Run simulation om de visuele execution path te testen.</div>`;
+        }
+
+        function renderVersions() {
+          const versions = state.versions.filter((version) => version.workflowId === state.selectedWorkflowId).slice(0, 8);
+          elements.versionList.innerHTML = versions.length ? versions.map((version) => `
+            <div class="automation-version-item">
+              <div>
+                <strong>${escapeHtml(version.label)}</strong>
+                <p class="automation-muted">${escapeHtml(compactDate(version.createdAt))} · ${version.nodeCount} nodes</p>
+              </div>
+              <button class="button secondary" type="button" data-restore-version="${escapeHtml(version.id)}">Restore</button>
+            </div>
+          `).join("") : `<div class="automation-empty">Nog geen versies opgeslagen voor deze workflow.</div>`;
+        }
+
+        function renderTriggers() {
+          elements.triggerList.innerHTML = triggers.slice(0, 8).map((trigger) => `<span>${escapeHtml(trigger)}</span>`).join("");
+        }
+
+        function render() {
+          renderMetrics();
+          renderLibrary();
+          renderCanvas();
+          renderLogs();
+          renderVersions();
+        }
+
+        function selectWorkflow(id) {
+          state.selectedWorkflowId = id;
+          state.selectedNodeId = selectedWorkflow()?.nodes[0]?.id || "";
+          render();
+        }
+
+        function cloneWorkflow(id) {
+          const source = state.workflows.find((workflow) => workflow.id === id);
+          if (!source) return;
+          const copy = JSON.parse(JSON.stringify(source));
+          const nodeIdMap = new Map();
+          copy.id = createId("workflow");
+          copy.name = `${source.name} kopie`;
+          copy.status = "draft";
+          copy.updatedAt = nowIso();
+          copy.nodes = copy.nodes.map((node) => {
+            const nextId = createId("node");
+            nodeIdMap.set(node.id, nextId);
+            return { ...node, id: nextId, x: node.x + 28, y: node.y + 28 };
+          });
+          copy.connections = copy.connections.map((connection) => ({ from: nodeIdMap.get(connection.from), to: nodeIdMap.get(connection.to) })).filter((connection) => connection.from && connection.to);
+          state.workflows.unshift(copy);
+          state.selectedWorkflowId = copy.id;
+          state.selectedNodeId = copy.nodes[0]?.id || "";
+          save();
+          render();
+        }
+
+        function toggleWorkflow(id) {
+          const workflow = state.workflows.find((item) => item.id === id);
+          if (!workflow) return;
+          workflow.status = workflow.status === "enabled" ? "disabled" : "enabled";
+          workflow.updatedAt = nowIso();
+          save();
+          render();
+        }
+
+        function newWorkflow() {
+          const workflow = buildWorkflow(["manual-workflow", "Nieuwe workflow", "Start met een manual trigger en voeg nodes toe aan het canvas.", "Manual trigger", "draft"], 0);
+          workflow.id = createId("workflow");
+          state.workflows.unshift(workflow);
+          selectWorkflow(workflow.id);
+          save();
+        }
+
+        function updateSelectedFromForm() {
+          const workflow = selectedWorkflow();
+          const node = selectedNode();
+          if (!workflow || !node) return;
+          workflow.name = elements.form.workflowName.value.trim() || workflow.name;
+          workflow.status = elements.form.workflowStatus.value || workflow.status;
+          workflow.updatedAt = nowIso();
+          node.label = elements.form.nodeLabel.value.trim() || node.label;
+          node.type = elements.form.nodeType.value || node.type;
+          node.config = elements.form.nodeConfig.value.trim() || node.config;
+          save();
+          render();
+        }
+
+        function saveVersion() {
+          const workflow = selectedWorkflow();
+          if (!workflow) return;
+          state.versions.unshift({
+            id: createId("version"),
+            workflowId: workflow.id,
+            label: `${workflow.name} v${state.versions.filter((version) => version.workflowId === workflow.id).length + 1}`,
+            createdAt: nowIso(),
+            nodeCount: workflow.nodes.length,
+            snapshot: JSON.parse(JSON.stringify(workflow)),
+          });
+          save();
+          renderVersions();
+        }
+
+        function restoreVersion(id) {
+          const version = state.versions.find((item) => item.id === id);
+          if (!version) return;
+          const index = state.workflows.findIndex((workflow) => workflow.id === version.workflowId);
+          if (index === -1) return;
+          state.workflows[index] = JSON.parse(JSON.stringify(version.snapshot));
+          state.workflows[index].updatedAt = nowIso();
+          save();
+          render();
+        }
+
+        async function runSimulation() {
+          const workflow = selectedWorkflow();
+          if (!workflow) return;
+          state.runningNodeIds = new Set();
+          for (const node of workflow.nodes) {
+            state.runningNodeIds.add(node.id);
+            renderCanvas();
+            await new Promise((resolve) => window.setTimeout(resolve, 180));
+          }
+          const failed = workflow.status === "disabled";
+          state.executions.unshift({
+            id: createId("run"),
+            workflowId: workflow.id,
+            workflowName: workflow.name,
+            status: failed ? "Failed" : "Completed",
+            startedAt: new Date(Date.now() - 1200).toISOString(),
+            completedAt: nowIso(),
+            duration: 1200 + workflow.nodes.length * 80,
+            retries: failed ? 1 : 0,
+          });
+          state.runningNodeIds = new Set();
+          save();
+          render();
+        }
+
+        function addNode(type, x = 80, y = 80) {
+          const workflow = selectedWorkflow();
+          if (!workflow) return;
+          const node = {
+            id: createId("node"),
+            type,
+            label: type === "AI" ? "Future AI action" : `${type} node`,
+            config: type === "Delay" ? "Wait custom" : type === "AI" ? "AI backend placeholder; mocked until live." : "Configure this node in the properties panel.",
+            x: Math.round(x / 28) * 28,
+            y: Math.round(y / 28) * 28,
+          };
+          const previous = workflow.nodes[workflow.nodes.length - 1];
+          workflow.nodes.push(node);
+          if (previous) workflow.connections.push({ from: previous.id, to: node.id });
+          workflow.updatedAt = nowIso();
+          state.selectedNodeId = node.id;
+          save();
+          render();
+        }
+
+        function moveNode(nodeId, x, y) {
+          const workflow = selectedWorkflow();
+          const node = workflow?.nodes.find((item) => item.id === nodeId);
+          if (!node) return;
+          node.x = Math.max(0, Math.round(x / 28) * 28);
+          node.y = Math.max(0, Math.round(y / 28) * 28);
+          workflow.updatedAt = nowIso();
+          save();
+          renderCanvas();
+        }
+
+        function initSelect(select, items, allLabel = "Alle") {
+          select.innerHTML = `<option value="">${escapeHtml(allLabel)}</option>${items.map((item) => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`).join("")}`;
+        }
+
+        function initEvents() {
+          elements.library.addEventListener("click", (event) => {
+            const actionButton = event.target.closest("[data-action]");
+            if (actionButton) {
+              const id = actionButton.dataset.workflowId;
+              if (actionButton.dataset.action === "clone") cloneWorkflow(id);
+              if (actionButton.dataset.action === "edit") selectWorkflow(id);
+              if (actionButton.dataset.action === "toggle") toggleWorkflow(id);
+              return;
+            }
+            const card = event.target.closest("[data-workflow-id]");
+            if (card) selectWorkflow(card.dataset.workflowId);
+          });
+
+          [elements.search, elements.statusFilter, elements.typeFilter, elements.sort].forEach((element) => {
+            element.addEventListener("input", renderLibrary);
+            element.addEventListener("change", renderLibrary);
+          });
+
+          document.getElementById("automation-new").addEventListener("click", newWorkflow);
+          document.getElementById("run-test").addEventListener("click", runSimulation);
+          document.getElementById("save-version").addEventListener("click", saveVersion);
+          document.getElementById("duplicate-workflow").addEventListener("click", () => selectedWorkflow() && cloneWorkflow(selectedWorkflow().id));
+          document.getElementById("zoom-in").addEventListener("click", () => { state.zoom = Math.min(1.4, state.zoom + 0.1); renderCanvas(); });
+          document.getElementById("zoom-out").addEventListener("click", () => { state.zoom = Math.max(0.7, state.zoom - 0.1); renderCanvas(); });
+          document.getElementById("zoom-reset").addEventListener("click", () => { state.zoom = 1; state.panX = 0; state.panY = 0; renderCanvas(); });
+          document.getElementById("pan-left").addEventListener("click", () => { state.panX -= 56; renderCanvas(); });
+          document.getElementById("pan-right").addEventListener("click", () => { state.panX += 56; renderCanvas(); });
+          document.getElementById("pan-up").addEventListener("click", () => { state.panY -= 56; renderCanvas(); });
+          document.getElementById("pan-down").addEventListener("click", () => { state.panY += 56; renderCanvas(); });
+          elements.form.addEventListener("submit", (event) => {
+            event.preventDefault();
+            updateSelectedFromForm();
+          });
+          elements.versionList.addEventListener("click", (event) => {
+            const restore = event.target.closest("[data-restore-version]");
+            if (restore) restoreVersion(restore.dataset.restoreVersion);
+          });
+          elements.executionLog.addEventListener("click", (event) => {
+            const execution = event.target.closest("[data-open-execution]");
+            if (!execution) return;
+            const run = state.executions.find((item) => item.id === execution.dataset.openExecution);
+            if (run) window.showToast?.(`${run.workflowName}: ${run.status} in ${run.duration}ms`, run.status === "Failed" ? "error" : "success");
+          });
+          elements.nodes.addEventListener("click", (event) => {
+            const node = event.target.closest("[data-node-id]");
+            if (!node) return;
+            state.selectedNodeId = node.dataset.nodeId;
+            renderCanvas();
+          });
+          elements.nodes.addEventListener("dragstart", (event) => {
+            const node = event.target.closest("[data-node-id]");
+            if (node) event.dataTransfer.setData("text/plain", `move:${node.dataset.nodeId}`);
+          });
+          document.querySelectorAll("[data-node-type]").forEach((button) => {
+            button.addEventListener("dragstart", (event) => event.dataTransfer.setData("text/plain", `add:${button.dataset.nodeType}`));
+            button.addEventListener("click", () => addNode(button.dataset.nodeType, 112, 364));
+          });
+          elements.canvas.addEventListener("dragover", (event) => event.preventDefault());
+          elements.canvas.addEventListener("drop", (event) => {
+            event.preventDefault();
+            const payload = event.dataTransfer.getData("text/plain");
+            const rect = elements.canvas.getBoundingClientRect();
+            const x = (event.clientX - rect.left) / state.zoom;
+            const y = (event.clientY - rect.top) / state.zoom;
+            if (payload.startsWith("add:")) addNode(payload.slice(4), x, y);
+            if (payload.startsWith("move:")) moveNode(payload.slice(5), x, y);
+          });
+        }
+
+        function boot() {
+          state.workflows = readArray(STORAGE_KEY);
+          if (!state.workflows.length) state.workflows = seedWorkflows();
+          state.executions = readArray(EXECUTION_KEY);
+          state.versions = readArray(VERSION_KEY);
+          state.selectedWorkflowId = state.workflows[0]?.id || "";
+          initSelect(elements.statusFilter, statuses, "Alle statussen");
+          initSelect(elements.typeFilter, nodeTypes, "Alle nodes");
+          initSelect(elements.form.workflowStatus, statuses, "Workflow status");
+          initSelect(elements.form.nodeType, nodeTypes, "Node type");
+          renderTriggers();
+          initEvents();
+          save();
+          render();
+        }
+
+        boot();
+      })();
+    </script>
+  </body>
+</html>
