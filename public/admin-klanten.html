@@ -12,6 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css?v=20260704-admin-session-hotfix" />
     <link rel="stylesheet" href="admin/styles/premium-design-system.css" />
+    <script src="admin/ui/shared-helpers.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
   <body class="admin-body">
@@ -890,20 +891,46 @@
                 </div>
               </div>
               <div class="settings-status-list" id="customer-history-list" hidden></div>
-              <section class="customer-timeline-panel" aria-label="Klant timeline">
+              <section class="customer-timeline-panel" aria-label="Universal Customer Timeline">
                 <div class="admin-section-heading compact-heading">
                   <div>
-                    <p class="section-kicker">Timeline</p>
-                    <h2>Customer Timeline</h2>
+                    <p class="section-kicker">Customer source of truth</p>
+                    <h2>Universal Customer Timeline</h2>
                   </div>
-                  <button class="button secondary" id="customer-timeline-refresh" type="button" disabled>Verversen</button>
+                  <div class="admin-action-group admin-action-group-secondary">
+                    <button class="button secondary" id="customer-timeline-add-note" type="button" disabled>Notitie toevoegen</button>
+                    <button class="button secondary" id="customer-timeline-refresh" type="button" disabled>Verversen</button>
+                  </div>
                 </div>
                 <div class="customer-timeline-tabs" role="tablist" aria-label="Klantdetail onderdelen">
-                  <span>Algemeen</span><span>Website</span><span>Facturen</span><span>Bestanden</span><span>E-mails</span><strong>Timeline</strong>
+                  <span>Overview</span><strong>Timeline</strong><span>Invoices</span><span>Emails</span><span>Websites</span><span>Assets</span><span>Notes</span>
+                </div>
+                <div class="customer-timeline-customer-header" id="customer-timeline-customer-header" aria-live="polite"></div>
+                <div class="customer-timeline-summary" id="customer-timeline-summary" aria-live="polite">
+                  <article><span>First contact</span><strong>-</strong></article>
+                  <article><span>Last activity</span><strong>-</strong></article>
+                  <article><span>Total events</span><strong>0</strong></article>
+                </div>
+                <div class="customer-timeline-quick-actions" aria-label="Snelle klantacties">
+                  <button class="button secondary" type="button" data-customer-timeline-action="note" disabled>Notitie</button>
+                  <button class="button secondary" type="button" data-customer-timeline-action="email" disabled>E-mail</button>
+                  <button class="button secondary" type="button" data-customer-timeline-action="invoice" disabled>Factuur</button>
+                  <button class="button secondary" type="button" data-customer-timeline-action="website" disabled>Website</button>
+                  <button class="button secondary" type="button" data-customer-timeline-action="assets" disabled>Assets</button>
+                  <button class="button secondary" type="button" data-customer-timeline-action="logo" disabled>Logo</button>
+                  <button class="button secondary" type="button" data-customer-timeline-action="onboarding" disabled>Onboarding</button>
                 </div>
                 <div class="customer-timeline-tools">
-                  <label for="customer-timeline-module">Filter<select id="customer-timeline-module" disabled><option value="">Alles</option><option value="sales">Sales</option><option value="invoice">Facturen</option><option value="email">E-mails</option><option value="production">Productie</option><option value="support">Support</option><option value="seo">SEO</option><option value="qa">QA</option><option value="telefonie">Telefonie</option></select></label>
                   <label for="customer-timeline-search">Zoeken<input id="customer-timeline-search" type="search" placeholder="Titel, omschrijving, medewerker, module" disabled /></label>
+                  <label for="customer-timeline-type">Event type<select id="customer-timeline-type" disabled><option value="">Alles</option></select></label>
+                  <label for="customer-timeline-date">Datum<select id="customer-timeline-date" disabled><option value="">Alle datums</option><option value="today">Vandaag</option><option value="week">Deze week</option><option value="month">Deze maand</option></select></label>
+                  <label for="customer-timeline-actor">Actor<input id="customer-timeline-actor" type="search" placeholder="Max CRM, medewerker..." disabled /></label>
+                  <label for="customer-timeline-module">Module<select id="customer-timeline-module" disabled><option value="">Alles</option><option value="sales">Sales</option><option value="invoice">Facturen</option><option value="email">E-mails</option><option value="website">Website</option><option value="production">Productie</option><option value="support">Support</option><option value="note">Notities</option><option value="asset">Assets</option><option value="seo">SEO</option><option value="qa">QA</option><option value="telefonie">Telefonie</option></select></label>
+                  <label class="customer-timeline-check"><input id="customer-timeline-important" type="checkbox" disabled /> Alleen belangrijk</label>
+                  <label class="customer-timeline-check"><input id="customer-timeline-emails" type="checkbox" disabled /> Alleen e-mails</label>
+                  <label class="customer-timeline-check"><input id="customer-timeline-invoices" type="checkbox" disabled /> Alleen facturen</label>
+                  <label class="customer-timeline-check"><input id="customer-timeline-websites" type="checkbox" disabled /> Alleen website</label>
+                  <label class="customer-timeline-check"><input id="customer-timeline-notes" type="checkbox" disabled /> Alleen notities</label>
                 </div>
                 <div class="customer-timeline-layout">
                   <div class="customer-timeline-list" id="customer-timeline-list" aria-live="polite">
@@ -915,6 +942,7 @@
                     <p>Hier verschijnt de volledige context van de geselecteerde activiteit.</p>
                   </aside>
                 </div>
+                <button class="button secondary customer-timeline-load-more" id="customer-timeline-load-more" type="button" hidden>Meer events laden</button>
               </section>
               <p class="admin-form-message" id="customer-detail-message" role="status"></p>
             </form>
@@ -3127,10 +3155,65 @@
         const detailArchive = document.getElementById("detail-archive");
         const customerHistoryList = document.getElementById("customer-history-list");
         const customerTimelineRefresh = document.getElementById("customer-timeline-refresh");
+        const customerTimelineAddNote = document.getElementById("customer-timeline-add-note");
         const customerTimelineModule = document.getElementById("customer-timeline-module");
+        const customerTimelineType = document.getElementById("customer-timeline-type");
+        const customerTimelineDate = document.getElementById("customer-timeline-date");
+        const customerTimelineActor = document.getElementById("customer-timeline-actor");
+        const customerTimelineImportant = document.getElementById("customer-timeline-important");
+        const customerTimelineEmails = document.getElementById("customer-timeline-emails");
+        const customerTimelineInvoices = document.getElementById("customer-timeline-invoices");
+        const customerTimelineWebsites = document.getElementById("customer-timeline-websites");
+        const customerTimelineNotes = document.getElementById("customer-timeline-notes");
         const customerTimelineSearch = document.getElementById("customer-timeline-search");
         const customerTimelineList = document.getElementById("customer-timeline-list");
         const customerTimelineDetail = document.getElementById("customer-timeline-detail");
+        const customerTimelineSummary = document.getElementById("customer-timeline-summary");
+        const customerTimelineCustomerHeader = document.getElementById("customer-timeline-customer-header");
+        const customerTimelineLoadMore = document.getElementById("customer-timeline-load-more");
+        const customerTimelineQuickActions = [...document.querySelectorAll("[data-customer-timeline-action]")];
+        const CUSTOMER_TIMELINE_PAGE_SIZE = 50;
+        let customerTimelineEventsCache = [];
+        let customerTimelineVisibleCount = CUSTOMER_TIMELINE_PAGE_SIZE;
+        const CUSTOMER_TIMELINE_EVENT_TYPES = [
+          ["lead_created", "Lead created"],
+          ["lead_assigned", "Lead assigned"],
+          ["lead_status_changed", "Lead status changed"],
+          ["customer_created", "Customer created"],
+          ["website_requested", "Website requested"],
+          ["website_preview_generated", "Website preview generated"],
+          ["website_approved", "Website approved"],
+          ["website_published", "Website published"],
+          ["logo_generated", "Logo generated"],
+          ["logo_approved", "Logo approved"],
+          ["invoice_created", "Invoice created"],
+          ["invoice_sent", "Invoice sent"],
+          ["invoice_viewed", "Invoice viewed"],
+          ["invoice_paid", "Invoice paid"],
+          ["email_sent", "Email sent"],
+          ["email_opened", "Email opened"],
+          ["email_clicked", "Email clicked"],
+          ["onboarding_started", "Onboarding started"],
+          ["checklist_item_completed", "Checklist item completed"],
+          ["domain_registered", "Domain registered"],
+          ["domain_transferred", "Domain transferred"],
+          ["hosting_activated", "Hosting activated"],
+          ["phone_number_requested", "085 number requested"],
+          ["phone_number_activated", "085 number activated"],
+          ["meeting_scheduled", "Meeting scheduled"],
+          ["meeting_completed", "Meeting completed"],
+          ["support_note", "Support note"],
+          ["internal_note", "Internal note"],
+          ["file_uploaded", "File uploaded"],
+          ["asset_created", "Asset created"],
+          ["seo_scan_completed", "SEO scan completed"],
+          ["qa_scan_completed", "QA scan completed"],
+          ["ai_content_generated", "AI content generated"],
+          ["social_media_campaign_created", "Social media campaign created"],
+          ["notification_generated", "Notification generated"],
+          ["system_warning", "System warning"],
+          ["system_error", "System error"],
+        ];
         const newCustomerModal = document.getElementById("new-customer-modal");
         const newCustomerForm = document.getElementById("new-customer-form");
         const newCustomerSave = document.getElementById("new-customer-save");
@@ -10804,81 +10887,430 @@
             setCustomerTimelineEnabled(false);
             customerTimelineList.innerHTML = `<div class="timeline-empty">Selecteer een klant om de timeline te bekijken.</div>`;
             renderCustomerTimelineDetail(null);
+            renderCustomerTimelineSummary([]);
+            renderCustomerTimelineCustomerHeader(null);
             return;
           }
           setCustomerTimelineEnabled(true);
+          renderCustomerTimelineCustomerHeader(customer);
           customerTimelineList.innerHTML = `<div class="timeline-empty">Timeline laden...</div>`;
           const query = new URLSearchParams();
           query.set("customerId", customerSupabaseId(customer) || customer.id);
-          query.set("limit", "80");
+          query.set("limit", "120");
           if (customerTimelineModule?.value) query.set("module", customerTimelineModule.value);
           if (customerTimelineSearch?.value) query.set("search", customerTimelineSearch.value);
           try {
-            const events = await fetchTimelineEvents(query.toString());
-            renderCustomerTimeline(events);
+            const remoteEvents = await fetchTimelineEvents(query.toString());
+            customerTimelineEventsCache = buildUniversalCustomerTimeline(customer, remoteEvents);
+            customerTimelineVisibleCount = CUSTOMER_TIMELINE_PAGE_SIZE;
+            renderCustomerTimeline(customerTimelineEventsCache);
           } catch (error) {
             customerTimelineList.innerHTML = `<div class="timeline-empty">${escapeHtml(error.message || "Timeline kon niet worden geladen.")}</div>`;
             renderCustomerTimelineDetail(null);
+            renderCustomerTimelineSummary([]);
           }
         }
 
         function setCustomerTimelineEnabled(enabled) {
-          [customerTimelineRefresh, customerTimelineModule, customerTimelineSearch].forEach((element) => {
+          [
+            customerTimelineRefresh,
+            customerTimelineAddNote,
+            customerTimelineModule,
+            customerTimelineType,
+            customerTimelineDate,
+            customerTimelineActor,
+            customerTimelineSearch,
+            customerTimelineImportant,
+            customerTimelineEmails,
+            customerTimelineInvoices,
+            customerTimelineWebsites,
+            customerTimelineNotes,
+            customerTimelineLoadMore,
+          ].forEach((element) => {
             if (element) element.disabled = !enabled;
+          });
+          customerTimelineQuickActions.forEach((button) => {
+            button.disabled = !enabled;
           });
         }
 
         function renderCustomerTimeline(events = []) {
           if (!customerTimelineList) return;
-          if (!events.length) {
-            customerTimelineList.innerHTML = `<div class="timeline-empty">Nog geen timeline-events voor deze klant.</div>`;
+          const filteredEvents = filterCustomerTimelineEvents(events);
+          renderCustomerTimelineSummary(events);
+          if (!filteredEvents.length) {
+            customerTimelineList.innerHTML = `
+              <div class="timeline-empty customer-timeline-empty-state">
+                <span aria-hidden="true">◎</span>
+                <strong>No customer activity has been recorded yet.</strong>
+                <p>Maak de eerste notitie of controleer je filters.</p>
+                <button class="button secondary" type="button" data-customer-timeline-action="note">Create first note</button>
+              </div>
+            `;
+            customerTimelineList.querySelector("[data-customer-timeline-action='note']")?.addEventListener("click", handleCustomerTimelineNoteAction);
             renderCustomerTimelineDetail(null);
+            if (customerTimelineLoadMore) customerTimelineLoadMore.hidden = true;
             return;
           }
-          customerTimelineList.innerHTML = events.map((item) => timelineItemHtml(item)).join("");
+          const visibleEvents = filteredEvents.slice(0, customerTimelineVisibleCount);
+          customerTimelineList.innerHTML = groupTimelineEvents(visibleEvents).map(([group, items]) => timelineGroupHtml(group, items)).join("");
           customerTimelineList.querySelectorAll("[data-timeline-id]").forEach((button) => {
             button.addEventListener("click", () => {
-              const selected = events.find((item) => item.id === button.dataset.timelineId);
+              const selected = filteredEvents.find((item) => item.id === button.dataset.timelineId);
               customerTimelineList.querySelectorAll(".timeline-item").forEach((item) => item.classList.toggle("is-active", item === button));
               renderCustomerTimelineDetail(selected);
             });
           });
-          renderCustomerTimelineDetail(events[0]);
+          renderCustomerTimelineDetail(visibleEvents[0]);
           customerTimelineList.querySelector("[data-timeline-id]")?.classList.add("is-active");
+          if (customerTimelineLoadMore) {
+            customerTimelineLoadMore.hidden = filteredEvents.length <= customerTimelineVisibleCount;
+            customerTimelineLoadMore.textContent = `Meer events laden (${filteredEvents.length - customerTimelineVisibleCount})`;
+          }
         }
 
         function renderCustomerTimelineDetail(item) {
           if (!customerTimelineDetail) return;
           if (!item) {
-            customerTimelineDetail.innerHTML = `<span>Detail</span><strong>Kies een timeline-item</strong><p>Hier verschijnt de volledige context van de geselecteerde activiteit.</p>`;
+            customerTimelineDetail.innerHTML = `<span>Detail drawer</span><strong>Kies een timeline-item</strong><p>Hier verschijnt de volledige context van de geselecteerde activiteit.</p>`;
             return;
           }
           const metadataRows = Object.entries(item.metadata || {})
             .filter(([, value]) => value !== undefined && value !== null && String(value) !== "")
-            .slice(0, 6)
+            .slice(0, 10)
             .map(([key, value]) => `<p><strong>${escapeHtml(key)}:</strong> ${escapeHtml(Array.isArray(value) ? value.join(", ") : String(value))}</p>`)
             .join("");
+          const relatedRows = [
+            ["Related customer", item.customerId],
+            ["Related invoice", item.invoiceId],
+            ["Related email", item.emailLogId],
+            ["Related object", [item.relatedType || item.referenceType, item.relatedId || item.referenceId].filter(Boolean).join(" · ")],
+          ].filter(([, value]) => value).map(([label, value]) => `<p><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value)}</p>`).join("");
           customerTimelineDetail.innerHTML = `
-            <span>${escapeHtml(item.module || "crm")}</span>
+            <span>${escapeHtml(item.module || "crm")} · ${escapeHtml(formatTimelineDateTime(item.createdAt))}</span>
             <strong>${escapeHtml(item.title || "Activiteit")}</strong>
-            <p>${escapeHtml(formatDate(item.createdAt))} · ${escapeHtml(item.actorName || "Max CRM")}</p>
-            ${item.description ? `<p>${escapeHtml(item.description)}</p>` : ""}
-            ${metadataRows || `<p>Geen extra metadata.</p>`}
+            <p>${escapeHtml(item.description || "Geen omschrijving beschikbaar.")}</p>
+            <div class="customer-timeline-detail-grid">
+              <p><strong>Actor:</strong> ${escapeHtml(item.actorName || "Max CRM")}</p>
+              <p><strong>Badge:</strong> ${escapeHtml(eventTypeLabel(item.eventType) || item.module || "activity")}</p>
+              ${relatedRows}
+            </div>
+            <div class="customer-timeline-detail-actions">${relatedActionHtml(item)}</div>
+            <div class="customer-timeline-metadata">${metadataRows || `<p>Geen extra metadata.</p>`}</div>
+          `;
+        }
+
+        function timelineGroupHtml(group, items = []) {
+          const open = group === "Earlier" ? "" : " open";
+          return `
+            <details class="customer-timeline-group"${open}>
+              <summary>${escapeHtml(group)}<span>${items.length} event${items.length === 1 ? "" : "s"}</span></summary>
+              <div class="customer-timeline-group-list">
+                ${items.map((item) => timelineItemHtml(item)).join("")}
+              </div>
+            </details>
           `;
         }
 
         function timelineItemHtml(item = {}) {
+          const tone = timelineTone(item);
+          const related = item.invoiceId || item.emailLogId || item.relatedId || item.referenceId || item.leadId || "";
           return `
-            <button class="timeline-item" type="button" data-timeline-id="${escapeHtml(item.id || "")}">
-              <span class="timeline-icon">${escapeHtml(item.icon || "•")}</span>
+            <button class="timeline-item ${item.isRead === false ? "is-unread" : ""}" type="button" data-timeline-id="${escapeHtml(item.id || "")}">
+              <span class="timeline-icon tone-${escapeHtml(tone)}">${escapeHtml(timelineIcon(item))}</span>
               <span class="timeline-main">
-                <strong>${escapeHtml(item.title || "Activiteit")}</strong>
-                <span class="timeline-meta"><span>${escapeHtml(relativeTime(item.createdAt))}</span><span>${escapeHtml(item.actorName || "Max CRM")}</span></span>
+                <strong>${escapeHtml(item.title || eventTypeLabel(item.eventType) || "Activiteit")}</strong>
+                <span class="timeline-meta"><span>${escapeHtml(formatTimelineDateTime(item.createdAt))}</span><span>${escapeHtml(item.actorName || "Max CRM")}</span>${related ? `<span>${escapeHtml(shortTimelineReference(related))}</span>` : ""}</span>
                 ${item.description ? `<p>${escapeHtml(item.description)}</p>` : ""}
               </span>
-              <span class="timeline-badge" data-severity="${escapeHtml(item.severity || "info")}">${escapeHtml(item.module || "crm")}</span>
+              <span class="timeline-badge" data-severity="${escapeHtml(item.severity || "info")}">${escapeHtml(eventTypeLabel(item.eventType) || item.module || "crm")}</span>
             </button>
           `;
+        }
+
+        function renderCustomerTimelineSummary(events = []) {
+          if (!customerTimelineSummary) return;
+          const sortedAsc = [...events].sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+          const first = sortedAsc[0]?.createdAt;
+          const last = sortedAsc[sortedAsc.length - 1]?.createdAt;
+          customerTimelineSummary.innerHTML = [
+            ["First contact", first ? formatDate(first) : "-"],
+            ["Last activity", last ? formatTimelineDateTime(last) : "-"],
+            ["Total events", String(events.length)],
+          ].map(([label, value]) => `<article><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></article>`).join("");
+        }
+
+        function renderCustomerTimelineCustomerHeader(customer) {
+          if (!customerTimelineCustomerHeader) return;
+          if (!customer) {
+            customerTimelineCustomerHeader.innerHTML = "";
+            return;
+          }
+          const domain = String(customer.domain || customer.website || "").replace(/^https?:\/\//i, "").replace(/^www\./i, "").replace(/\/.*$/, "");
+          customerTimelineCustomerHeader.innerHTML = `
+            <article>
+              <span>Customer</span>
+              <strong>${escapeHtml(customer.company || customer.name || "Onbekende klant")}</strong>
+              <small>${escapeHtml(customer.status || "-")} · ${escapeHtml(customer.package || "-")}</small>
+            </article>
+            ${[
+              ["Website", customer.website || "-"],
+              ["Domain", domain || "-"],
+              ["Email", customer.email || customer.authEmail || "-"],
+              ["Phone", customer.phone || "-"],
+              ["Created", formatDate(customer.createdAt || customer.customerSince)],
+            ].map(([label, value]) => `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value || "-")}</strong></div>`).join("")}
+          `;
+        }
+
+        function buildUniversalCustomerTimeline(customer = {}, remoteEvents = []) {
+          const merged = [
+            ...remoteEvents.map(normalizeTimelineDisplayEvent),
+            ...deriveCustomerTimelineEvents(customer),
+          ].filter((event) => event.createdAt);
+          const seen = new Set();
+          return merged
+            .filter((event) => {
+              const key = [event.eventType, event.referenceType || event.relatedType, event.referenceId || event.relatedId, String(event.createdAt || "").slice(0, 16), event.title].join("|");
+              if (seen.has(key)) return false;
+              seen.add(key);
+              return true;
+            })
+            .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+        }
+
+        function normalizeTimelineDisplayEvent(event = {}) {
+          return {
+            ...event,
+            id: event.id || createCrmId(),
+            createdAt: event.createdAt || event.created_at || event.updatedAt || event.updated_at || new Date().toISOString(),
+            updatedAt: event.updatedAt || event.updated_at || "",
+            eventType: event.eventType || event.event_type || "notification_generated",
+            actorName: event.actorName || event.actor_name || "Max CRM",
+            actorRole: event.actorRole || event.actor_role || "",
+            customerId: event.customerId || event.customer_id || "",
+            leadId: event.leadId || event.lead_id || "",
+            invoiceId: event.invoiceId || event.invoice_id || "",
+            emailLogId: event.emailLogId || event.email_log_id || "",
+            relatedType: event.relatedType || event.related_type || event.referenceType || event.reference_type || "",
+            relatedId: event.relatedId || event.related_id || event.referenceId || event.reference_id || "",
+            referenceType: event.referenceType || event.reference_type || event.relatedType || event.related_type || "",
+            referenceId: event.referenceId || event.reference_id || event.relatedId || event.related_id || "",
+            isRead: event.isRead ?? event.is_read ?? true,
+            metadata: event.metadata && typeof event.metadata === "object" ? event.metadata : {},
+          };
+        }
+
+        function deriveCustomerTimelineEvents(customer = {}) {
+          const customerIds = customerIdentitySet(customer);
+          const events = [];
+          const baseCustomerId = customerSupabaseId(customer) || customer.id || "";
+          if (customer.createdAt || customer.customerSince) {
+            events.push(localTimelineEvent({
+              customerId: baseCustomerId,
+              eventType: "customer_created",
+              title: "Customer created",
+              description: `${customer.company || customer.name || "Klant"} is toegevoegd aan Max CRM.`,
+              module: "customer",
+              referenceType: "customer",
+              referenceId: baseCustomerId,
+              createdAt: customer.createdAt || customer.customerSince,
+              metadata: { status: customer.status, package: customer.package, email: customer.email },
+            }));
+          }
+          if (String(customer.notes || "").trim()) {
+            events.push(localTimelineEvent({
+              customerId: baseCustomerId,
+              eventType: "internal_note",
+              title: "Internal note",
+              description: String(customer.notes).trim().slice(0, 220),
+              module: "note",
+              referenceType: "customer",
+              referenceId: baseCustomerId,
+              createdAt: customer.updatedAt || customer.createdAt || new Date().toISOString(),
+            }));
+          }
+          state.invoices.filter((invoice) => customerIds.has(String(invoice.profileId || invoice.customerId || invoice.supabaseCustomerId || ""))).forEach((invoice) => {
+            const invoiceId = invoice.supabaseInvoiceId || invoice.id;
+            events.push(localTimelineEvent({
+              customerId: baseCustomerId,
+              invoiceId,
+              eventType: "invoice_created",
+              title: `Invoice created ${invoice.invoiceNumber || invoice.number || ""}`.trim(),
+              description: invoice.title || `Factuurstatus: ${invoice.status || "-"}`,
+              module: "invoice",
+              referenceType: "invoice",
+              referenceId: invoiceId,
+              createdAt: invoice.createdAt || invoice.invoiceDate,
+              metadata: { total: invoice.total, status: invoice.status, paymentLink: invoice.paymentLink },
+            }));
+            if (invoice.sentAt || invoice.status === "verzonden") {
+              events.push(localTimelineEvent({ customerId: baseCustomerId, invoiceId, eventType: "invoice_sent", title: "Invoice sent", description: invoice.invoiceNumber || invoice.title || "Factuur verzonden.", module: "invoice", referenceType: "invoice", referenceId: invoiceId, createdAt: invoice.sentAt || invoice.updatedAt || invoice.createdAt, severity: "success" }));
+            }
+            if (invoice.paidAt || invoice.status === "betaald") {
+              events.push(localTimelineEvent({ customerId: baseCustomerId, invoiceId, eventType: "invoice_paid", title: "Invoice paid", description: invoice.invoiceNumber || invoice.title || "Factuur betaald.", module: "invoice", referenceType: "invoice", referenceId: invoiceId, createdAt: invoice.paidAt || invoice.updatedAt || invoice.createdAt, severity: "success" }));
+            }
+          });
+          state.websites.filter((website) => websiteBelongsToCustomer(website, customer.id) || customerIds.has(String(website.customerId || website.profileId || website.supabaseCustomerId || ""))).forEach((website) => {
+            const websiteId = website.supabaseWebsiteId || website.id;
+            const published = website.publishedAt || website.lastDeployAt || website.last_deploy_at || website.updatedAt;
+            events.push(localTimelineEvent({
+              customerId: baseCustomerId,
+              eventType: website.status === "online" ? "website_published" : "website_requested",
+              title: website.status === "online" ? "Website published" : "Website requested",
+              description: website.domain || website.liveUrl || website.name || "Website gekoppeld.",
+              module: "website",
+              referenceType: "website",
+              referenceId: websiteId,
+              relatedType: "website",
+              relatedId: websiteId,
+              createdAt: published || website.createdAt,
+              severity: website.status === "online" ? "success" : "info",
+              metadata: { status: website.status, domain: website.domain, liveUrl: website.liveUrl },
+            }));
+          });
+          state.files.filter((file) => customerIds.has(String(file.customerId || file.profileId || ""))).forEach((file) => {
+            events.push(localTimelineEvent({
+              customerId: baseCustomerId,
+              eventType: "file_uploaded",
+              title: "File uploaded",
+              description: file.name || file.fileName || "Bestand toegevoegd.",
+              module: "asset",
+              referenceType: "file",
+              referenceId: file.id,
+              createdAt: file.createdAt || file.updatedAt,
+              metadata: { type: file.type, size: file.sizeLabel || file.size },
+            }));
+          });
+          return events;
+        }
+
+        function localTimelineEvent(event = {}) {
+          return normalizeTimelineDisplayEvent({
+            id: `derived-${event.eventType}-${event.referenceId || event.relatedId || createCrmId()}-${String(event.createdAt || "").slice(0, 10)}`,
+            actorName: "Max CRM",
+            icon: "",
+            severity: "info",
+            isRead: true,
+            isGlobal: false,
+            ...event,
+          });
+        }
+
+        function filterCustomerTimelineEvents(events = []) {
+          const search = normalize(customerTimelineSearch?.value || "");
+          const type = customerTimelineType?.value || "";
+          const module = customerTimelineModule?.value || "";
+          const actor = normalize(customerTimelineActor?.value || "");
+          const dateFilter = customerTimelineDate?.value || "";
+          const onlyImportant = Boolean(customerTimelineImportant?.checked);
+          const moduleFilters = [
+            [customerTimelineEmails?.checked, "email"],
+            [customerTimelineInvoices?.checked, "invoice"],
+            [customerTimelineWebsites?.checked, "website"],
+            [customerTimelineNotes?.checked, "note"],
+          ].filter(([enabled]) => enabled).map(([, value]) => value);
+          return events.filter((event) => {
+            const haystack = normalize([event.title, event.description, event.actorName, event.module, event.eventType, event.relatedType, event.referenceType].join(" "));
+            if (search && !haystack.includes(search)) return false;
+            if (type && event.eventType !== type) return false;
+            if (module && event.module !== module) return false;
+            if (actor && !normalize(event.actorName).includes(actor)) return false;
+            if (onlyImportant && !["warning", "error"].includes(String(event.severity || "").toLowerCase())) return false;
+            if (moduleFilters.length && !moduleFilters.includes(event.module)) return false;
+            if (dateFilter && !matchesTimelineDateFilter(event.createdAt, dateFilter)) return false;
+            return true;
+          });
+        }
+
+        function groupTimelineEvents(events = []) {
+          const groups = new Map([["Today", []], ["Yesterday", []], ["Earlier this week", []], ["Last week", []], ["Earlier", []]]);
+          events.forEach((event) => groups.get(timelineGroupName(event.createdAt)).push(event));
+          return [...groups.entries()].filter(([, items]) => items.length);
+        }
+
+        function timelineGroupName(value) {
+          const date = new Date(value);
+          if (Number.isNaN(date.getTime())) return "Earlier";
+          const now = new Date();
+          const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          const startYesterday = new Date(startToday);
+          startYesterday.setDate(startYesterday.getDate() - 1);
+          const startWeek = new Date(startToday);
+          startWeek.setDate(startWeek.getDate() - ((startWeek.getDay() + 6) % 7));
+          const startLastWeek = new Date(startWeek);
+          startLastWeek.setDate(startLastWeek.getDate() - 7);
+          if (date >= startToday) return "Today";
+          if (date >= startYesterday) return "Yesterday";
+          if (date >= startWeek) return "Earlier this week";
+          if (date >= startLastWeek) return "Last week";
+          return "Earlier";
+        }
+
+        function matchesTimelineDateFilter(value, filter) {
+          const date = new Date(value);
+          if (Number.isNaN(date.getTime())) return false;
+          const now = new Date();
+          const diff = now.getTime() - date.getTime();
+          if (filter === "today") return timelineGroupName(value) === "Today";
+          if (filter === "week") return diff <= 7 * 86400000;
+          if (filter === "month") return diff <= 31 * 86400000;
+          return true;
+        }
+
+        function customerIdentitySet(customer = {}) {
+          return new Set([customer.id, customer.profileId, customer.customerId, customerSupabaseId(customer), customer.supabaseCustomerId, customer._supabaseCustomerId].filter(Boolean).map(String));
+        }
+
+        function eventTypeLabel(type = "") {
+          return CUSTOMER_TIMELINE_EVENT_TYPES.find(([value]) => value === type)?.[1] || String(type || "").replace(/_/g, " ");
+        }
+
+        function timelineTone(item = {}) {
+          const severity = String(item.severity || "").toLowerCase();
+          if (severity === "error") return "red";
+          if (severity === "warning") return "orange";
+          if (["invoice_paid", "website_published", "email_sent"].includes(item.eventType)) return "green";
+          if (["logo_generated", "ai_content_generated", "social_media_campaign_created"].includes(item.eventType)) return "purple";
+          if (["internal_note", "support_note", "file_uploaded"].includes(item.eventType)) return "grey";
+          return "blue";
+        }
+
+        function timelineIcon(item = {}) {
+          if (item.icon) return item.icon;
+          if (item.module === "invoice") return "€";
+          if (item.module === "email") return "@";
+          if (item.module === "website") return "↗";
+          if (item.module === "asset") return "□";
+          if (item.module === "note") return "✎";
+          if (item.severity === "error") return "!";
+          if (item.severity === "warning") return "i";
+          return "•";
+        }
+
+        function formatTimelineDateTime(value) {
+          const date = new Date(value);
+          if (Number.isNaN(date.getTime())) return "-";
+          return new Intl.DateTimeFormat("nl-NL", { dateStyle: "short", timeStyle: "short" }).format(date);
+        }
+
+        function shortTimelineReference(value = "") {
+          const text = String(value || "");
+          return text.length > 16 ? `${text.slice(0, 8)}...${text.slice(-4)}` : text;
+        }
+
+        function relatedActionHtml(item = {}) {
+          const actions = [];
+          if (item.invoiceId || item.referenceType === "invoice") actions.push(`<button class="button secondary" type="button" data-timeline-open="invoice">Open invoice</button>`);
+          if (item.emailLogId || item.referenceType === "email_log") actions.push(`<a class="button secondary" href="admin-mail-center.html">Open email</a>`);
+          if (item.relatedType === "website" || item.referenceType === "website") actions.push(`<button class="button secondary" type="button" data-timeline-open="website">Open website</button>`);
+          if (item.leadId || item.referenceType === "lead") actions.push(`<button class="button secondary" type="button" data-timeline-open="lead">Open lead</button>`);
+          return actions.length ? actions.join("") : `<span>Geen directe actie beschikbaar.</span>`;
+        }
+
+        function handleCustomerTimelineNoteAction() {
+          detailFields.notes?.focus();
+          setDetailMessage("Voeg je notitie toe in het notitieveld en sla de klant op.", "success");
         }
 
         function relativeTime(value) {
@@ -17971,9 +18403,40 @@
         adminSessionLogoutButton.addEventListener("click", logoutAdminSession);
         adminTokenLoadButton.addEventListener("click", useAdminTokenFallback);
         adminLoadButton.addEventListener("click", () => loadCRMData(true));
+        if (customerTimelineType) {
+          customerTimelineType.innerHTML = `<option value="">Alles</option>${CUSTOMER_TIMELINE_EVENT_TYPES.map(([value, label]) => `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`).join("")}`;
+        }
         customerTimelineRefresh?.addEventListener("click", () => loadCustomerTimeline());
-        customerTimelineModule?.addEventListener("change", () => loadCustomerTimeline());
-        customerTimelineSearch?.addEventListener("input", debounce(() => loadCustomerTimeline(), 250));
+        customerTimelineAddNote?.addEventListener("click", handleCustomerTimelineNoteAction);
+        customerTimelineLoadMore?.addEventListener("click", () => {
+          customerTimelineVisibleCount += CUSTOMER_TIMELINE_PAGE_SIZE;
+          renderCustomerTimeline(customerTimelineEventsCache);
+        });
+        customerTimelineQuickActions.forEach((button) => {
+          button.addEventListener("click", () => {
+            const action = button.dataset.customerTimelineAction;
+            if (action === "note") return handleCustomerTimelineNoteAction();
+            if (action === "email") return detailSendWelcomeMail?.click();
+            if (action === "invoice") return detailCreateInvoice?.click();
+            if (action === "website") return detailOpenWebsite?.click();
+            if (action === "assets") return detailViewFiles?.click();
+            if (action === "logo") return setDetailMessage("Open Brand Center om logo-assets te beheren.", "success");
+            if (action === "onboarding") return detailStartProject?.click();
+            return null;
+          });
+        });
+        [customerTimelineModule, customerTimelineType, customerTimelineDate, customerTimelineImportant, customerTimelineEmails, customerTimelineInvoices, customerTimelineWebsites, customerTimelineNotes].forEach((element) => {
+          element?.addEventListener("change", () => {
+            customerTimelineVisibleCount = CUSTOMER_TIMELINE_PAGE_SIZE;
+            renderCustomerTimeline(customerTimelineEventsCache);
+          });
+        });
+        const renderTimelineFromTextFilters = debounce(() => {
+          customerTimelineVisibleCount = CUSTOMER_TIMELINE_PAGE_SIZE;
+          renderCustomerTimeline(customerTimelineEventsCache);
+        }, 250);
+        customerTimelineSearch?.addEventListener("input", renderTimelineFromTextFilters);
+        customerTimelineActor?.addEventListener("input", renderTimelineFromTextFilters);
         authSwitchRole.addEventListener("click", () => switchDemoRole(authRoleSwitcher.value));
         authLogout.addEventListener("click", logoutDemoSession);
         biPeriodFilter.addEventListener("change", () => loadDashboardMetrics(true));
