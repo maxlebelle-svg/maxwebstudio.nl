@@ -1,0 +1,708 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Notification Center | Max CRM</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=20260708-mail-center" />
+    <link rel="stylesheet" href="admin/styles/premium-design-system.css" />
+    <style>
+      .notification-shell {
+        display: grid;
+        gap: 16px;
+      }
+
+      .notification-hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 18px;
+        align-items: end;
+        min-height: 142px;
+        padding: 24px 24px 22px;
+      }
+
+      .notification-toolbar {
+        grid-template-columns: repeat(auto-fit, minmax(138px, 1fr));
+      }
+
+      .notification-field {
+        display: grid;
+        gap: 7px;
+        color: var(--mws-color-muted);
+        font-size: 12px;
+        font-weight: 850;
+      }
+
+      .notification-toggle {
+        min-height: 42px;
+        align-content: center;
+        padding: 9px 12px;
+        border: 1px solid var(--mws-color-line);
+        border-radius: var(--mws-radius-sm);
+        background: var(--mws-gradient-field);
+      }
+
+      .notification-toggle span {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .notification-kpis {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .notification-workspace {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(280px, 330px);
+        gap: 14px;
+        align-items: start;
+      }
+
+      .activity-feed-card,
+      .activity-side-card {
+        display: grid;
+        gap: 16px;
+        padding: 22px;
+      }
+
+      .activity-group {
+        display: grid;
+        gap: 10px;
+      }
+
+      .activity-group-heading {
+        margin: 8px 0 0;
+        color: var(--mws-color-subtle);
+        font-size: 12px;
+        font-weight: 950;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .activity-item {
+        position: relative;
+        display: grid;
+        grid-template-columns: 42px minmax(0, 1fr) auto;
+        gap: 14px;
+        align-items: start;
+        padding: 16px;
+        border: 1px solid var(--mws-color-line);
+        border-radius: var(--mws-radius-sm);
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.012)),
+          rgba(2, 14, 25, 0.52);
+      }
+
+      .activity-item.is-unread {
+        border-color: rgba(96, 165, 250, 0.36);
+        box-shadow: inset 3px 0 0 var(--mws-color-primary), 0 18px 44px rgba(21, 94, 239, 0.14);
+      }
+
+      .activity-icon {
+        display: grid;
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        color: #dbeafe;
+        background: rgba(37, 99, 235, 0.16);
+        font-size: 19px;
+      }
+
+      .activity-item h3 {
+        margin: 0;
+        color: var(--mws-color-text);
+        font-size: 16px;
+        line-height: 1.25;
+      }
+
+      .activity-item.is-unread h3 {
+        font-weight: 950;
+      }
+
+      .activity-item p {
+        margin: 6px 0 0;
+        color: var(--mws-color-muted);
+        font-size: 13px;
+        line-height: 1.55;
+      }
+
+      .activity-meta,
+      .activity-actions,
+      .quick-filter-list,
+      .important-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .activity-meta {
+        margin-top: 10px;
+        color: var(--mws-color-subtle);
+        font-size: 12px;
+        font-weight: 750;
+      }
+
+      .activity-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 999px;
+        background: var(--mws-color-primary);
+        box-shadow: 0 0 0 5px rgba(37, 99, 235, 0.14);
+      }
+
+      .activity-actions {
+        justify-content: flex-end;
+        min-width: 150px;
+      }
+
+      .activity-actions .button {
+        min-height: 34px;
+        padding: 7px 10px;
+        font-size: 12px;
+      }
+
+      .system-status-grid {
+        display: grid;
+        gap: 10px;
+      }
+
+      .system-status-row,
+      .important-item {
+        display: grid;
+        gap: 5px;
+        padding: 12px;
+        border: 1px solid var(--mws-color-line);
+        border-radius: var(--mws-radius-sm);
+        background: rgba(2, 14, 25, 0.42);
+      }
+
+      .system-status-row span,
+      .important-item span {
+        color: var(--mws-color-subtle);
+        font-size: 12px;
+        font-weight: 850;
+      }
+
+      .quick-filter-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .quick-filter-list button {
+        justify-content: flex-start;
+        min-height: 38px;
+        padding: 8px 10px;
+      }
+
+      .notification-error-card[hidden],
+      .notification-empty[hidden],
+      .notification-loading[hidden] {
+        display: none;
+      }
+
+      @media (max-width: 1180px) {
+        .notification-toolbar,
+        .notification-workspace,
+        .notification-hero {
+          grid-template-columns: 1fr;
+        }
+
+        .notification-kpis {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 720px) {
+        .notification-kpis,
+        .activity-item {
+          grid-template-columns: 1fr;
+        }
+
+        .activity-actions {
+          justify-content: stretch;
+        }
+
+        .activity-actions .button,
+        .notification-toolbar .button {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body class="admin-body">
+    <main class="admin-crm-shell">
+      <aside class="admin-sidebar" aria-label="Admin modules">
+        <a class="brand" href="admin-dashboard.html">
+          <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true">
+            <rect x="6" y="6" width="68" height="68" rx="18"></rect>
+            <path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path>
+            <path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path>
+          </svg>
+          <span>Max CRM</span>
+        </a>
+        <nav class="admin-sidebar-nav">
+          <span class="admin-nav-group">Main</span>
+          <a href="admin-dashboard.html">Dashboard</a>
+          <a class="is-active" href="admin-notification-center.html">Notification Center</a>
+          <span class="admin-nav-group">Sales</span>
+          <a href="admin-sales.html">Leads</a>
+          <span class="admin-nav-group">Production</span>
+          <a href="admin-website-factory.html">Website Factory</a>
+          <a href="admin-demo-sites.html">Demo Sites</a>
+          <a href="admin-ai-content-library.html">AI Content Library</a>
+          <a href="admin-assets.html">Asset Manager</a>
+          <a href="admin-seo-studio.html">SEO Studio</a>
+          <a href="admin-social-media-studio.html">Social Media Studio</a>
+          <a href="admin-brand-center.html">Brand Center</a>
+          <a href="admin-domain-center.html">Domein Center</a>
+          <a href="admin-onboarding.html">Klant Onboarding</a>
+          <a href="admin-roadmap.html">Roadmap / Takenbord</a>
+          <span class="admin-nav-group">Customers</span>
+          <a href="admin-klanten.html">Klanten</a>
+          <a href="admin-websites.html">Websites</a>
+          <a href="admin-projecten.html">Projecten</a>
+          <span class="admin-nav-group">Administration</span>
+          <a href="admin-offertes.html">Offertes</a>
+          <a href="admin-facturen.html">Facturen</a>
+          <a href="admin-email-studio.html">E-mail Studio</a>
+          <a href="admin-mail-center.html">Mail Center</a>
+          <span class="admin-nav-group">System</span>
+          <a href="admin-instellingen.html">Instellingen</a>
+        </nav>
+      </aside>
+
+      <div class="admin-crm-main workflow-module-shell">
+        <header class="admin-page-topbar" aria-label="Admin snel zoeken">
+          <label class="admin-page-search" for="notification-global-search">
+            <span class="sr-only">Zoeken</span>
+            <input id="notification-global-search" type="search" placeholder="Zoek activiteiten..." />
+            <kbd>⌘ K</kbd>
+          </label>
+          <div class="admin-page-actions">
+            <button class="admin-icon-button" id="notification-refresh-icon" type="button" aria-label="Ververs">↻</button>
+            <a class="button secondary" href="admin-mail-center.html">Mail Center</a>
+          </div>
+        </header>
+
+        <section class="admin-section admin-hero notification-hero">
+          <div>
+            <p class="section-kicker">Max CRM</p>
+            <h1>Notification Center</h1>
+            <p>Alle CRM-activiteiten, meldingen en klantgebeurtenissen op één plek.</p>
+          </div>
+          <span class="mws-status-badge mws-badge-info" id="notification-session-state">Admin sessie controleren</span>
+        </section>
+
+        <section class="notification-shell" aria-label="Notification Center workspace">
+          <div class="notification-kpis">
+            <article class="mws-kpi-card"><span>Totaal vandaag</span><strong id="stat-today">0</strong><small>Nieuwe gebeurtenissen</small></article>
+            <article class="mws-kpi-card"><span>Ongelezen</span><strong id="stat-unread">0</strong><small>Openstaande meldingen</small></article>
+            <article class="mws-kpi-card"><span>Belangrijk</span><strong id="stat-important">0</strong><small>Warning en error</small></article>
+            <article class="mws-kpi-card"><span>Fouten</span><strong id="stat-errors">0</strong><small>Systeem of proces</small></article>
+          </div>
+
+          <form class="admin-card mws-toolbar notification-toolbar" id="notification-filters">
+            <label class="notification-field" for="notification-search">Zoeken
+              <input id="notification-search" name="search" type="search" placeholder="Titel, omschrijving, actor..." />
+            </label>
+            <label class="notification-field" for="notification-type">Type
+              <select id="notification-type" name="eventType">
+                <option value="">Alle types</option>
+              </select>
+            </label>
+            <label class="notification-field" for="notification-severity">Severity
+              <select id="notification-severity" name="severity">
+                <option value="">Alle</option>
+                <option value="info">Info</option>
+                <option value="success">Success</option>
+                <option value="warning">Warning</option>
+                <option value="error">Error</option>
+              </select>
+            </label>
+            <label class="notification-field" for="notification-from">Vanaf
+              <input id="notification-from" name="dateFrom" type="date" />
+            </label>
+            <label class="notification-field" for="notification-to">Tot
+              <input id="notification-to" name="dateTo" type="date" />
+            </label>
+            <label class="notification-field notification-toggle" for="notification-unread">
+              <span><input id="notification-unread" name="unreadOnly" type="checkbox" value="true" /> Alleen ongelezen</span>
+            </label>
+            <button class="button primary" type="submit">Filter</button>
+            <button class="button secondary" id="notification-read-all" type="button">Markeer alles als gelezen</button>
+          </form>
+
+          <div class="notification-workspace">
+            <section class="admin-card activity-feed-card" aria-labelledby="activity-feed-heading">
+              <div class="admin-section-heading">
+                <div>
+                  <p class="section-kicker">Activity Feed</p>
+                  <h2 id="activity-feed-heading">Alle activiteiten</h2>
+                </div>
+                <button class="button secondary" id="notification-refresh" type="button">Ververs</button>
+              </div>
+              <div class="mws-error-message notification-error-card" id="notification-error" hidden>
+                <strong>Activiteiten konden niet worden geladen.</strong>
+                <span id="notification-error-text">Probeer opnieuw.</span>
+                <button class="button secondary" id="notification-retry" type="button">Opnieuw proberen</button>
+              </div>
+              <div class="notification-loading" id="notification-loading">
+                <span class="mws-skeleton mws-skeleton-row"></span>
+                <span class="mws-skeleton mws-skeleton-row"></span>
+                <span class="mws-skeleton mws-skeleton-row"></span>
+              </div>
+              <div class="mws-empty-state notification-empty" id="notification-empty" hidden>
+                <span class="mws-empty-state-icon" aria-hidden="true">🔔</span>
+                <h2>Geen activiteiten gevonden</h2>
+                <p>Pas je filters aan of wacht tot er nieuwe CRM-acties plaatsvinden.</p>
+              </div>
+              <div class="activity-feed" id="activity-feed"></div>
+            </section>
+
+            <aside class="activity-side-card admin-card" aria-label="Notification Center zijpaneel">
+              <div>
+                <p class="section-kicker">Live systeemstatus</p>
+                <h2 class="mws-card-title">Status</h2>
+              </div>
+              <div class="system-status-grid">
+                <div class="system-status-row"><strong id="status-system">Operationeel</strong><span>Laatste feed update</span><small id="status-updated">-</small></div>
+                <div class="system-status-row"><strong id="status-important">0 belangrijk</strong><span>Warning en error events</span></div>
+              </div>
+              <div>
+                <p class="section-kicker">Snelfilters</p>
+                <div class="quick-filter-list" id="quick-filters"></div>
+              </div>
+              <div>
+                <p class="section-kicker">Belangrijk recent</p>
+                <div class="important-list" id="important-list"></div>
+              </div>
+            </aside>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script>
+      (() => {
+        const endpoint = "/.netlify/functions/admin-activity-events";
+        const adminSessionStorageKey = "mws_admin_supabase_session";
+        const adminTokenStorageKey = "mws_admin_token";
+        const eventTypes = [
+          "lead_created", "lead_updated", "customer_created", "customer_updated", "email_sent", "email_opened", "email_clicked", "email_failed",
+          "invoice_created", "invoice_sent", "invoice_paid", "website_preview_started", "website_preview_ready", "website_preview_failed",
+          "onboarding_task_completed", "domain_requested", "domain_connected", "hosting_activated", "phone_number_requested", "phone_number_activated",
+          "note_created", "status_changed", "system_warning", "system_error",
+        ];
+        const quickFilters = [
+          ["E-mails", "email_"],
+          ["Facturen", "invoice_"],
+          ["Leads", "lead_"],
+          ["Website Factory", "website_"],
+          ["Fouten", "severity:error"],
+        ];
+        const state = { events: [], loading: false };
+        const elements = {
+          session: document.getElementById("notification-session-state"),
+          filters: document.getElementById("notification-filters"),
+          globalSearch: document.getElementById("notification-global-search"),
+          search: document.getElementById("notification-search"),
+          type: document.getElementById("notification-type"),
+          severity: document.getElementById("notification-severity"),
+          feed: document.getElementById("activity-feed"),
+          loading: document.getElementById("notification-loading"),
+          empty: document.getElementById("notification-empty"),
+          error: document.getElementById("notification-error"),
+          errorText: document.getElementById("notification-error-text"),
+          statToday: document.getElementById("stat-today"),
+          statUnread: document.getElementById("stat-unread"),
+          statImportant: document.getElementById("stat-important"),
+          statErrors: document.getElementById("stat-errors"),
+          statusSystem: document.getElementById("status-system"),
+          statusImportant: document.getElementById("status-important"),
+          statusUpdated: document.getElementById("status-updated"),
+          importantList: document.getElementById("important-list"),
+          quickFilters: document.getElementById("quick-filters"),
+        };
+
+        function getBearer() {
+          try {
+            const session = JSON.parse(localStorage.getItem(adminSessionStorageKey) || "{}");
+            if (session.accessToken) return session.accessToken;
+          } catch {}
+          return sessionStorage.getItem(adminTokenStorageKey) || "";
+        }
+
+        async function apiRequest(url, options = {}) {
+          const token = getBearer();
+          if (!token) throw new Error("Log eerst in via het admin dashboard.");
+          const response = await fetch(url, {
+            ...options,
+            headers: {
+              Accept: "application/json",
+              ...(options.body ? { "Content-Type": "application/json" } : {}),
+              Authorization: `Bearer ${token}`,
+              ...(options.headers || {}),
+            },
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || data.success === false) throw new Error(data.error || `Activity request mislukt (${response.status}).`);
+          return data;
+        }
+
+        function buildQuery() {
+          const formData = new FormData(elements.filters);
+          const query = new URLSearchParams();
+          formData.forEach((value, key) => {
+            const clean = String(value || "").trim();
+            if (clean) query.set(key, clean);
+          });
+          query.set("limit", "120");
+          return query.toString();
+        }
+
+        async function loadEvents() {
+          setLoading(true);
+          elements.session.textContent = getBearer() ? "Admin sessie actief" : "Login vereist";
+          try {
+            const data = await apiRequest(`${endpoint}?${buildQuery()}`);
+            state.events = Array.isArray(data.activityEvents) ? data.activityEvents : [];
+            render();
+          } catch (error) {
+            state.events = [];
+            renderError(error.message || "Notification Center kon niet worden geladen.");
+          } finally {
+            setLoading(false);
+          }
+        }
+
+        function render() {
+          elements.error.hidden = true;
+          elements.feed.innerHTML = "";
+          renderStats();
+          renderImportant();
+          if (!state.events.length) {
+            elements.empty.hidden = false;
+            return;
+          }
+          elements.empty.hidden = true;
+          const groups = groupEvents(state.events);
+          elements.feed.innerHTML = Object.entries(groups).map(([label, events]) => `
+            <section class="activity-group">
+              <h3 class="activity-group-heading">${escapeHtml(label)}</h3>
+              ${events.map(renderEvent).join("")}
+            </section>
+          `).join("");
+        }
+
+        function renderEvent(event) {
+          return `
+            <article class="activity-item ${event.isRead ? "" : "is-unread"}" data-event-id="${escapeAttribute(event.id)}">
+              <span class="activity-icon" aria-hidden="true">${escapeHtml(event.icon || iconFor(event.eventType, event.severity))}</span>
+              <div>
+                <div class="activity-meta">${event.isRead ? "" : '<span class="activity-dot" aria-label="Ongelezen"></span>'}<span class="mws-status-badge ${badgeClass(event.severity)}">${escapeHtml(event.severity || "info")}</span><span>${escapeHtml(formatDateTime(event.createdAt))}</span></div>
+                <h3>${escapeHtml(event.title || event.eventType || "Activiteit")}</h3>
+                <p>${escapeHtml(event.description || "Geen omschrijving beschikbaar.")}</p>
+                <div class="activity-meta">
+                  <span>${escapeHtml(event.actorName || "Max CRM")}</span>
+                  ${event.customerId ? `<span>Klant ${escapeHtml(shortId(event.customerId))}</span>` : ""}
+                  ${event.leadId ? `<span>Lead ${escapeHtml(shortId(event.leadId))}</span>` : ""}
+                  ${event.relatedType ? `<span>${escapeHtml(event.relatedType)}</span>` : ""}
+                </div>
+              </div>
+              <div class="activity-actions">
+                <button class="button secondary" type="button" data-action="view">Bekijk</button>
+                ${event.isRead ? "" : '<button class="button secondary" type="button" data-action="read">Gelezen</button>'}
+                <button class="button secondary" type="button" data-action="archive">Archiveer</button>
+              </div>
+            </article>
+          `;
+        }
+
+        function renderStats() {
+          const todayKey = dateKey(new Date());
+          const today = state.events.filter((event) => dateKey(new Date(event.createdAt)) === todayKey).length;
+          const unread = state.events.filter((event) => !event.isRead).length;
+          const important = state.events.filter((event) => ["warning", "error"].includes(event.severity)).length;
+          const errors = state.events.filter((event) => event.severity === "error" || event.eventType === "system_error").length;
+          elements.statToday.textContent = today;
+          elements.statUnread.textContent = unread;
+          elements.statImportant.textContent = important;
+          elements.statErrors.textContent = errors;
+          elements.statusSystem.textContent = errors ? "Aandacht nodig" : "Operationeel";
+          elements.statusImportant.textContent = `${important} belangrijk`;
+          elements.statusUpdated.textContent = new Intl.DateTimeFormat("nl-NL", { timeStyle: "short" }).format(new Date());
+        }
+
+        function renderImportant() {
+          const important = state.events.filter((event) => ["warning", "error"].includes(event.severity)).slice(0, 5);
+          if (!important.length) {
+            elements.importantList.innerHTML = '<div class="mws-empty-state"><h2>Geen belangrijke events</h2><p>Alles oogt rustig.</p></div>';
+            return;
+          }
+          elements.importantList.innerHTML = important.map((event) => `
+            <article class="important-item">
+              <strong>${escapeHtml(event.title || event.eventType)}</strong>
+              <span>${escapeHtml(formatDateTime(event.createdAt))} · ${escapeHtml(event.severity)}</span>
+            </article>
+          `).join("");
+        }
+
+        function renderError(message) {
+          elements.feed.innerHTML = "";
+          elements.empty.hidden = true;
+          elements.error.hidden = false;
+          elements.errorText.textContent = message;
+          renderStats();
+          renderImportant();
+        }
+
+        function setLoading(isLoading) {
+          state.loading = isLoading;
+          elements.loading.hidden = !isLoading;
+          if (isLoading) {
+            elements.error.hidden = true;
+            elements.empty.hidden = true;
+            elements.feed.innerHTML = "";
+          }
+        }
+
+        async function mutateEvent(action, id = "") {
+          try {
+            await apiRequest(endpoint, {
+              method: "POST",
+              body: JSON.stringify({ action, id }),
+            });
+            await loadEvents();
+          } catch (error) {
+            renderError(error.message || "Actie kon niet worden uitgevoerd.");
+          }
+        }
+
+        function groupEvents(events) {
+          return events.reduce((groups, event) => {
+            const label = groupLabel(event.createdAt);
+            groups[label] = groups[label] || [];
+            groups[label].push(event);
+            return groups;
+          }, {});
+        }
+
+        function groupLabel(value) {
+          const date = new Date(value);
+          if (Number.isNaN(date.getTime())) return "Eerder";
+          const today = dateKey(new Date());
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          if (dateKey(date) === today) return "Vandaag";
+          if (dateKey(date) === dateKey(yesterday)) return "Gisteren";
+          return "Eerder";
+        }
+
+        function dateKey(date) {
+          return [date.getFullYear(), date.getMonth(), date.getDate()].join("-");
+        }
+
+        function badgeClass(severity) {
+          return {
+            success: "mws-badge-success",
+            warning: "mws-badge-warning",
+            error: "mws-badge-failed",
+            info: "mws-badge-info",
+          }[severity] || "mws-badge-info";
+        }
+
+        function iconFor(type, severity) {
+          if (severity === "error") return "⚠";
+          if (type?.startsWith("email_")) return "📧";
+          if (type?.startsWith("invoice_")) return "€";
+          if (type?.startsWith("lead_")) return "↗";
+          if (type?.startsWith("website_")) return "🌐";
+          return "🔔";
+        }
+
+        function formatDateTime(value) {
+          const date = new Date(value);
+          if (Number.isNaN(date.getTime())) return "-";
+          return new Intl.DateTimeFormat("nl-NL", { dateStyle: "short", timeStyle: "short" }).format(date);
+        }
+
+        function shortId(value) {
+          return String(value || "").slice(0, 8);
+        }
+
+        function escapeHtml(value) {
+          return String(value || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+        }
+
+        function escapeAttribute(value) {
+          return escapeHtml(value).replace(/`/g, "&#96;");
+        }
+
+        eventTypes.forEach((type) => {
+          const option = document.createElement("option");
+          option.value = type;
+          option.textContent = type.replace(/_/g, " ");
+          elements.type.append(option);
+        });
+        elements.quickFilters.innerHTML = quickFilters.map(([label, value]) => `<button class="button secondary" type="button" data-quick-filter="${escapeAttribute(value)}">${escapeHtml(label)}</button>`).join("");
+
+        elements.filters.addEventListener("submit", (event) => {
+          event.preventDefault();
+          loadEvents();
+        });
+        elements.globalSearch.addEventListener("input", () => {
+          elements.search.value = elements.globalSearch.value;
+        });
+        elements.globalSearch.addEventListener("keydown", (event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            loadEvents();
+          }
+        });
+        document.getElementById("notification-refresh").addEventListener("click", loadEvents);
+        document.getElementById("notification-refresh-icon").addEventListener("click", loadEvents);
+        document.getElementById("notification-retry").addEventListener("click", loadEvents);
+        document.getElementById("notification-read-all").addEventListener("click", () => mutateEvent("read_all"));
+        elements.feed.addEventListener("click", (event) => {
+          const button = event.target.closest("[data-action]");
+          const item = event.target.closest("[data-event-id]");
+          if (!button || !item) return;
+          const action = button.dataset.action;
+          if (action === "view") return item.scrollIntoView({ behavior: "smooth", block: "center" });
+          mutateEvent(action, item.dataset.eventId);
+        });
+        elements.quickFilters.addEventListener("click", (event) => {
+          const button = event.target.closest("[data-quick-filter]");
+          if (!button) return;
+          const value = button.dataset.quickFilter;
+          if (value.startsWith("severity:")) {
+            elements.severity.value = value.split(":")[1] || "";
+            elements.type.value = "";
+          } else {
+            elements.type.value = "";
+            elements.search.value = value;
+            elements.globalSearch.value = value;
+          }
+          loadEvents();
+        });
+
+        loadEvents();
+      })();
+    </script>
+  </body>
+</html>

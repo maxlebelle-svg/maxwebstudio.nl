@@ -1,4 +1,5 @@
 const { findEmailLogByProviderMessageId, updateEmailLog } = require("./services/mailLogService");
+const { createActivityEvent } = require("./services/timelineService");
 
 const eventStatusMap = {
   "email.sent": "sent",
@@ -37,6 +38,7 @@ exports.handler = async (event) => {
       status: nextStatus || log.status || "sent",
       metadata,
     });
+    await safeCreateActivity(webhookActivityEvent(log, payload, nextStatus));
 
     return jsonResponse(200, { success: true, processed: true });
   } catch (error) {
@@ -55,6 +57,50 @@ function extractProviderMessageId(payload = {}) {
     || payload.messageId
     || payload.id
   );
+}
+
+async function safeCreateActivity(input) {
+  if (!input) return null;
+  try {
+    return await createActivityEvent(input);
+  } catch (error) {
+    console.error("Resend webhook activity event failed", { message: error.message, status: error.status || 0 });
+    return null;
+  }
+}
+
+function webhookActivityEvent(log = {}, payload = {}, status = "") {
+  const normalizedStatus = cleanText(status || normalizeEventStatus(payload.type || payload.event));
+  const eventMap = {
+    opened: { eventType: "email_opened", title: "E-mail geopend", severity: "info" },
+    clicked: { eventType: "email_clicked", title: "E-mail link aangeklikt", severity: "success" },
+    bounced: { eventType: "email_failed", title: "E-mail bounced", severity: "error" },
+    complained: { eventType: "email_failed", title: "E-mail klacht ontvangen", severity: "warning" },
+  };
+  const config = eventMap[normalizedStatus];
+  if (!config) return null;
+  return {
+    eventType: config.eventType,
+    severity: config.severity,
+    title: config.title,
+    description: cleanText(log.subject) || "Resend webhook-event verwerkt.",
+    customerId: log.customer_id,
+    leadId: log.lead_id,
+    invoiceId: log.invoice_id,
+    emailLogId: log.id,
+    module: "email",
+    relatedType: "email_log",
+    relatedId: log.id,
+    referenceType: "email_log",
+    referenceId: log.id,
+    actorName: "Resend",
+    icon: normalizedStatus === "clicked" ? "🖱" : "📧",
+    metadata: {
+      dedupeKey: `${config.eventType}:${log.id}:${cleanText(payload.created_at || payload.createdAt || Date.now())}`,
+      providerMessageId: cleanText(log.provider_message_id),
+      resendEventType: cleanText(payload.type || payload.event),
+    },
+  };
 }
 
 function mergeWebhookMetadata(existing, event) {

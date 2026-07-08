@@ -6,6 +6,7 @@ const TIMELINE_FIELDS = [
   "lead_id",
   "user_id",
   "event_type",
+  "severity",
   "title",
   "description",
   "module",
@@ -14,13 +15,45 @@ const TIMELINE_FIELDS = [
   "actor_name",
   "actor_role",
   "icon",
-  "severity",
   "is_global",
+  "invoice_id",
+  "email_log_id",
+  "related_type",
+  "related_id",
+  "is_read",
+  "read_at",
+  "archived_at",
   "metadata",
 ].join(",");
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const severityValues = new Set(["info", "success", "warning", "error"]);
+const allowedEventTypes = new Set([
+  "lead_created",
+  "lead_updated",
+  "customer_created",
+  "customer_updated",
+  "email_sent",
+  "email_opened",
+  "email_clicked",
+  "email_failed",
+  "invoice_created",
+  "invoice_sent",
+  "invoice_paid",
+  "website_preview_started",
+  "website_preview_ready",
+  "website_preview_failed",
+  "onboarding_task_completed",
+  "domain_requested",
+  "domain_connected",
+  "hosting_activated",
+  "phone_number_requested",
+  "phone_number_activated",
+  "note_created",
+  "status_changed",
+  "system_warning",
+  "system_error",
+]);
 
 function getSupabaseConfig() {
   const supabaseUrl = cleanText(process.env.SUPABASE_URL).replace(/\/$/, "");
@@ -61,6 +94,14 @@ async function createTimelineEvent(input = {}) {
   return Array.isArray(rows) ? rows[0] : rows;
 }
 
+async function createActivityEvent(input = {}) {
+  return createTimelineEvent({
+    ...input,
+    isGlobal: input.isGlobal ?? input.is_global ?? true,
+    module: input.module || moduleForEventType(input.eventType || input.event_type),
+  });
+}
+
 async function listCustomerTimeline(customerId, filters = {}) {
   const id = uuidOrNull(customerId);
   if (!id) {
@@ -92,6 +133,20 @@ async function listTimelineEvents(filters = {}) {
   addUuidFilter(query, "lead_id", filters.leadId || filters.lead_id);
   addTextFilter(query, "module", filters.module);
   addTextFilter(query, "event_type", filters.eventType || filters.event_type);
+  addTextFilter(query, "severity", filters.severity);
+  addTextFilter(query, "invoice_id", filters.invoiceId || filters.invoice_id);
+  addTextFilter(query, "email_log_id", filters.emailLogId || filters.email_log_id);
+
+  const unreadOnly = cleanText(filters.unreadOnly || filters.unread_only).toLowerCase();
+  if (unreadOnly === "true" || unreadOnly === "1") query.set("is_read", "eq.false");
+
+  const dateFrom = cleanText(filters.dateFrom || filters.date_from || filters.from);
+  const dateTo = cleanText(filters.dateTo || filters.date_to || filters.to);
+  if (dateFrom) query.append("created_at", `gte.${dateFrom}`);
+  if (dateTo) query.append("created_at", `lte.${dateTo}`);
+
+  const includeArchived = cleanText(filters.includeArchived || filters.include_archived).toLowerCase();
+  if (includeArchived !== "true" && includeArchived !== "1") query.set("archived_at", "is.null");
 
   const globalFilter = cleanText(filters.global || filters.isGlobal || filters.is_global).toLowerCase();
   if (globalFilter === "true" || globalFilter === "1") query.set("is_global", "eq.true");
@@ -109,6 +164,100 @@ async function listTimelineEvents(filters = {}) {
   });
 }
 
+async function getTimelineEvent(id) {
+  const config = getSupabaseConfig();
+  const eventId = uuidOrNull(id);
+  if (!config.available) {
+    const error = new Error("Supabase-configuratie ontbreekt.");
+    error.statusCode = 500;
+    throw error;
+  }
+  if (!eventId) {
+    const error = new Error("Ongeldig activity event ID.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const rows = await supabaseFetch(`${config.supabaseUrl}/rest/v1/customer_timeline_events?select=${TIMELINE_FIELDS}&id=eq.${encodeURIComponent(eventId)}&limit=1`, {
+    method: "GET",
+    headers: restHeaders(config.serviceRoleKey),
+  });
+  return Array.isArray(rows) ? rows[0] || null : rows;
+}
+
+async function markTimelineEventRead(id) {
+  const event = await patchTimelineEvent(id, {
+    is_read: true,
+    read_at: new Date().toISOString(),
+  });
+  return event;
+}
+
+async function markAllTimelineEventsRead(filters = {}) {
+  const config = getSupabaseConfig();
+  if (!config.available) {
+    const error = new Error("Supabase-configuratie ontbreekt.");
+    error.statusCode = 500;
+    throw error;
+  }
+
+  const query = new URLSearchParams();
+  query.set("is_read", "eq.false");
+  const globalFilter = cleanText(filters.global || filters.isGlobal || filters.is_global).toLowerCase();
+  if (globalFilter === "true" || globalFilter === "1") query.set("is_global", "eq.true");
+  query.set("archived_at", "is.null");
+
+  const rows = await supabaseFetch(`${config.supabaseUrl}/rest/v1/customer_timeline_events?${query.toString()}`, {
+    method: "PATCH",
+    headers: {
+      ...restHeaders(config.serviceRoleKey),
+      "Content-Type": "application/json",
+      "Content-Profile": "public",
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify({
+      is_read: true,
+      read_at: new Date().toISOString(),
+    }),
+  });
+  return Array.isArray(rows) ? rows : [];
+}
+
+async function archiveTimelineEvent(id) {
+  return patchTimelineEvent(id, {
+    archived_at: new Date().toISOString(),
+    is_read: true,
+    read_at: new Date().toISOString(),
+  });
+}
+
+async function patchTimelineEvent(id, patch = {}) {
+  const config = getSupabaseConfig();
+  const eventId = uuidOrNull(id);
+  if (!config.available) {
+    const error = new Error("Supabase-configuratie ontbreekt.");
+    error.statusCode = 500;
+    throw error;
+  }
+  if (!eventId) {
+    const error = new Error("Ongeldig activity event ID.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const rows = await supabaseFetch(`${config.supabaseUrl}/rest/v1/customer_timeline_events?id=eq.${encodeURIComponent(eventId)}`, {
+    method: "PATCH",
+    headers: {
+      ...restHeaders(config.serviceRoleKey),
+      "Content-Type": "application/json",
+      "Content-Profile": "public",
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify(patch),
+  });
+  return Array.isArray(rows) ? rows[0] || null : rows;
+}
+
 function normalizeTimelineEvent(input = {}) {
   const metadata = normalizeMetadata(input.metadata);
   const customerId = uuidOrNull(input.customerId || input.customer_id);
@@ -123,7 +272,7 @@ function normalizeTimelineEvent(input = {}) {
     customer_id: customerId,
     lead_id: leadId,
     user_id: uuidOrNull(input.userId || input.user_id),
-    event_type: slugText(input.eventType || input.event_type),
+    event_type: normalizeEventType(input.eventType || input.event_type),
     title: cleanText(input.title).slice(0, 220),
     description: cleanText(input.description).slice(0, 2000) || null,
     module: slugText(input.module || "general"),
@@ -134,6 +283,13 @@ function normalizeTimelineEvent(input = {}) {
     icon: cleanText(input.icon).slice(0, 24) || "•",
     severity: normalizeSeverity(input.severity),
     is_global: Boolean(isGlobal || !customerId),
+    invoice_id: cleanText(input.invoiceId || input.invoice_id).slice(0, 180) || null,
+    email_log_id: cleanText(input.emailLogId || input.email_log_id).slice(0, 180) || null,
+    related_type: slugText(input.relatedType || input.related_type) || null,
+    related_id: cleanText(input.relatedId || input.related_id).slice(0, 180) || null,
+    is_read: Boolean(input.isRead || input.is_read || false),
+    read_at: cleanText(input.readAt || input.read_at) || null,
+    archived_at: cleanText(input.archivedAt || input.archived_at) || null,
     metadata,
   };
 }
@@ -200,6 +356,26 @@ function normalizeSeverity(value) {
   return severityValues.has(severity) ? severity : "info";
 }
 
+function normalizeEventType(value) {
+  const eventType = slugText(value);
+  if (!eventType) return "note_created";
+  return allowedEventTypes.has(eventType) ? eventType : eventType.slice(0, 120);
+}
+
+function moduleForEventType(eventType) {
+  const type = normalizeEventType(eventType);
+  if (type.startsWith("email_")) return "email";
+  if (type.startsWith("invoice_")) return "billing";
+  if (type.startsWith("lead_")) return "sales";
+  if (type.startsWith("customer_")) return "customers";
+  if (type.startsWith("website_")) return "website_factory";
+  if (type.startsWith("domain_")) return "domain";
+  if (type.startsWith("hosting_")) return "hosting";
+  if (type.startsWith("phone_")) return "telefonie";
+  if (type.startsWith("system_")) return "system";
+  return "general";
+}
+
 function limitNumber(value, fallback, max) {
   const number = Number(value);
   if (!Number.isFinite(number) || number < 1) return fallback;
@@ -224,8 +400,14 @@ function escapeIlike(value) {
 }
 
 module.exports = {
+  createActivityEvent,
   createTimelineEvent,
+  getTimelineEvent,
+  markAllTimelineEventsRead,
+  markTimelineEventRead,
+  archiveTimelineEvent,
   listCustomerTimeline,
   listActivityFeed,
+  listTimelineEvents,
   normalizeTimelineEvent,
 };

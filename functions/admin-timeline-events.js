@@ -49,11 +49,18 @@ function sanitizeTimelineEvent(event = {}) {
     module: cleanText(event.module),
     referenceType: cleanText(event.reference_type),
     referenceId: cleanText(event.reference_id),
+    invoiceId: cleanText(event.invoice_id),
+    emailLogId: cleanText(event.email_log_id),
+    relatedType: cleanText(event.related_type),
+    relatedId: cleanText(event.related_id),
     actorName: cleanText(event.actor_name),
     actorRole: cleanText(event.actor_role),
     icon: cleanText(event.icon),
     severity: cleanText(event.severity),
     isGlobal: Boolean(event.is_global),
+    isRead: Boolean(event.is_read),
+    readAt: cleanText(event.read_at),
+    archivedAt: cleanText(event.archived_at),
     metadata: event.metadata && typeof event.metadata === "object" ? event.metadata : {},
   };
 }

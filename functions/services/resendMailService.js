@@ -1,6 +1,6 @@
 const { getCompanySettings } = require("../company-settings");
 const { createEmailLog, updateEmailLog } = require("./mailLogService");
-const { createTimelineEvent } = require("./timelineService");
+const { createActivityEvent } = require("./timelineService");
 
 async function sendTrackedEmail(input = {}) {
   const companySettings = getCompanySettings();
@@ -22,6 +22,7 @@ async function sendTrackedEmail(input = {}) {
       errorCode: "unsupported_provider",
       errorMessage: warning,
     });
+    if (!input.suppressTimelineEvent) await safeCreateActivity(emailActivityEvent(input, { logId: log?.id || "", warning, failed: true }));
     console.log(warning);
     return { sent: false, warning, logId: log?.id || "" };
   }
@@ -33,6 +34,7 @@ async function sendTrackedEmail(input = {}) {
       errorCode: "missing_resend_api_key",
       errorMessage: warning,
     });
+    if (!input.suppressTimelineEvent) await safeCreateActivity(emailActivityEvent(input, { logId: log?.id || "", warning, failed: true }));
     console.log(warning);
     return { sent: false, warning, logId: log?.id || "" };
   }
@@ -66,6 +68,7 @@ async function sendTrackedEmail(input = {}) {
         errorCode: cleanText(data.name) || `resend_${response.status}`,
         errorMessage: safeProviderError(message),
       });
+      if (!input.suppressTimelineEvent) await safeCreateActivity(emailActivityEvent(input, { logId: log?.id || "", warning: message, failed: true }));
       return {
         sent: false,
         warning: "Email failed: Resend rejected the message",
@@ -80,7 +83,7 @@ async function sendTrackedEmail(input = {}) {
       errorCode: "",
     });
     if (!input.suppressTimelineEvent) {
-      await safeCreateTimeline(emailTimelineEvent(input, { logId: log?.id || "", providerMessageId: cleanText(data.id) }));
+      await safeCreateActivity(emailActivityEvent(input, { logId: log?.id || "", providerMessageId: cleanText(data.id) }));
     }
 
     return { sent: true, id: cleanText(data.id), logId: log?.id || "" };
@@ -91,6 +94,7 @@ async function sendTrackedEmail(input = {}) {
       errorCode: "provider_request_error",
       errorMessage: safeProviderError(error.message),
     });
+    if (!input.suppressTimelineEvent) await safeCreateActivity(emailActivityEvent(input, { logId: log?.id || "", warning: error.message, failed: true }));
     return {
       sent: false,
       warning: "Email failed: provider request error",
@@ -118,59 +122,44 @@ async function safeUpdateLog(id, patch) {
   }
 }
 
-async function safeCreateTimeline(input) {
+async function safeCreateActivity(input) {
   try {
-    return await createTimelineEvent(input);
+    return await createActivityEvent(input);
   } catch (error) {
-    console.error("Timeline event create failed", { message: error.message, status: error.status || 0 });
+    console.error("Activity event create failed", { message: error.message, status: error.status || 0 });
     return null;
   }
 }
 
-function emailTimelineEvent(input = {}, context = {}) {
+function emailActivityEvent(input = {}, context = {}) {
   const templateKey = cleanText(input.templateKey || input.template_key);
-  const mapped = {
-    lead_customer_confirmation: {
-      eventType: "lead_confirmation_email_sent",
-      title: "Leadbevestiging verzonden",
-      description: "De bevestigingsmail is succesvol naar de lead verzonden.",
-    },
-    lead_notification: {
-      eventType: "lead_notification_email_sent",
-      title: "Interne lead notificatie verzonden",
-      description: "De interne notificatie voor een nieuwe lead is verzonden.",
-    },
-    website_package_change: {
-      eventType: "website_package_email_sent",
-      title: "Websitepakket-update verzonden",
-      description: "De pakketupdate is succesvol naar de klant verzonden.",
-      module: "production",
-      icon: "🌐",
-    },
-  }[templateKey] || {
-    eventType: "email_sent",
-    title: cleanText(input.templateName || input.template_name) || "E-mail verzonden",
-    description: cleanText(input.subject) ? `E-mail verzonden: ${cleanText(input.subject)}` : "Een e-mail is succesvol verzonden.",
-  };
+  const failed = Boolean(context.failed);
+  const subject = cleanText(input.subject);
 
   return {
     customerId: input.customerId || input.customer_id,
     leadId: input.leadId || input.lead_id,
-    eventType: mapped.eventType,
-    title: mapped.title,
-    description: mapped.description,
-    module: mapped.module || "email",
+    invoiceId: input.invoiceId || input.invoice_id,
+    emailLogId: context.logId,
+    eventType: failed ? "email_failed" : "email_sent",
+    title: failed ? "E-mail mislukt" : cleanText(input.templateName || input.template_name) || "E-mail verzonden",
+    description: failed
+      ? cleanText(context.warning || "E-mail kon niet worden verzonden.")
+      : subject ? `E-mail verzonden: ${subject}` : "Een e-mail is succesvol verzonden.",
+    module: "email",
     referenceType: "email_log",
     referenceId: context.logId,
+    relatedType: "email_log",
+    relatedId: context.logId,
     actorName: "Max CRM",
-    icon: mapped.icon || "📧",
-    severity: "success",
+    icon: "📧",
+    severity: failed ? "error" : "success",
     metadata: {
-      dedupeKey: context.logId ? `email:${context.logId}` : "",
+      dedupeKey: context.logId ? `email:${failed ? "failed" : "sent"}:${context.logId}` : "",
       providerMessageId: context.providerMessageId || "",
       templateKey,
       templateName: cleanText(input.templateName || input.template_name),
-      subject: cleanText(input.subject),
+      subject,
       to: Array.isArray(input.to) ? input.to.map(cleanText).filter(Boolean) : cleanText(input.to),
     },
   };

@@ -37,8 +37,26 @@ create table if not exists public.customer_timeline_events (
   severity text default 'info',
   is_global boolean default true,
 
+  invoice_id text,
+  email_log_id text,
+  related_type text,
+  related_id text,
+
+  is_read boolean default false,
+  read_at timestamptz,
+  archived_at timestamptz,
+
   metadata jsonb default '{}'::jsonb
 );
+
+alter table public.customer_timeline_events
+  add column if not exists invoice_id text,
+  add column if not exists email_log_id text,
+  add column if not exists related_type text,
+  add column if not exists related_id text,
+  add column if not exists is_read boolean default false,
+  add column if not exists read_at timestamptz,
+  add column if not exists archived_at timestamptz;
 
 drop trigger if exists set_customer_timeline_events_updated_at on public.customer_timeline_events;
 create trigger set_customer_timeline_events_updated_at
@@ -61,8 +79,23 @@ create index if not exists customer_timeline_events_module_idx
 create index if not exists customer_timeline_events_event_type_idx
   on public.customer_timeline_events (event_type);
 
+create index if not exists customer_timeline_events_severity_idx
+  on public.customer_timeline_events (severity);
+
 create index if not exists customer_timeline_events_is_global_idx
   on public.customer_timeline_events (is_global);
+
+create index if not exists customer_timeline_events_is_read_idx
+  on public.customer_timeline_events (is_read);
+
+create index if not exists customer_timeline_events_invoice_id_idx
+  on public.customer_timeline_events (invoice_id);
+
+create index if not exists customer_timeline_events_email_log_id_idx
+  on public.customer_timeline_events (email_log_id);
+
+create index if not exists customer_timeline_events_archived_at_idx
+  on public.customer_timeline_events (archived_at);
 
 alter table public.customer_timeline_events enable row level security;
 
