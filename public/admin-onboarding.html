@@ -613,12 +613,22 @@
         }
 
         function checklistSeedFromOnboarding(input = {}) {
+          const portalOnboarding = input.portalOnboarding || input.metadata?.onboarding || {};
+          const answers = portalOnboarding.answers || {};
+          const status = cleanText(portalOnboarding.status || input.onboardingStatus);
           return {
             contactgegevens: { status: input.email || input.phone ? "Klaar" : "Open", note: [input.email, input.phone].filter(Boolean).join(" · ") },
             pakket: { status: input.package ? "Klaar" : "Bezig", note: input.package || "" },
             portal: { status: input.portalStatus === "invited" || input.portalStatus === "active" ? "Klaar" : input.portalStatus === "prepared" ? "Bezig" : "Open", note: portalLabel(input.portalStatus) },
-            domein: { status: input.domain || input.website ? "Bezig" : "Open", note: input.domain || input.website || "" },
+            domein: { status: answers.domain?.currentDomain || answers.domain?.desiredDomain || input.domain || input.website ? "Klaar" : "Open", note: answers.domain?.currentDomain || answers.domain?.desiredDomain || input.domain || input.website || "" },
             hosting: { status: input.package && /hosting|care|basis|plus|premium/i.test(input.package) ? "Bezig" : "Open", note: input.package || "" },
+            logo: { status: portalOnboarding.files?.some((file) => /logo|svg|png|jpg|jpeg/i.test(file.name || file.type || "")) ? "Klaar" : "Open", note: portalOnboarding.files?.map((file) => file.name).join(", ") || "" },
+            huisstijl: { status: answers.branding?.lookAndFeel || answers.branding?.colors ? "Klaar" : "Open", note: [answers.branding?.colors, answers.branding?.lookAndFeel].filter(Boolean).join(" · ") },
+            teksten: { status: answers.content?.pages?.length && answers.content?.services?.length ? "Klaar" : status === "submitted" ? "Bezig" : "Open", note: [answers.content?.pages?.join(", "), answers.content?.services?.join(", ")].filter(Boolean).join(" · ") },
+            fotos: { status: portalOnboarding.files?.length ? "Bezig" : "Open", note: portalOnboarding.files?.map((file) => file.name).join(", ") || "" },
+            openingstijden: { status: answers.company?.openingHours ? "Klaar" : "Open", note: answers.company?.openingHours || "" },
+            google_maps: { status: answers.domain?.mapsLocation ? "Klaar" : "Open", note: answers.domain?.mapsLocation || "" },
+            socials: { status: answers.content?.socialLinks?.length ? "Klaar" : "Open", note: answers.content?.socialLinks?.join(", ") || "" },
           };
         }
 
@@ -649,6 +659,9 @@
             deadline: input.deadline || "",
             portalStatus: normalizePortalStatus(input.portalStatus || "niet_actief"),
             portalAccessStatus: input.portalAccessStatus || "",
+            onboardingStatus: input.onboardingStatus || input.portalOnboarding?.status || "",
+            portalOnboarding: input.portalOnboarding || null,
+            factoryInput: input.factoryInput || null,
             notes: input.notes || "",
             mailPreview: input.mailPreview || null,
             websiteRecord: input.websiteRecord || null,
@@ -790,6 +803,8 @@
           const primaryWebsite = relatedWebsites[0] || null;
           const relatedProjects = projects.filter((project) => recordBelongsToCustomer(project, customer));
           const primaryProject = relatedProjects.find((project) => primaryWebsite && project.websiteId === primaryWebsite.id) || relatedProjects[0] || null;
+          const portalOnboarding = primaryProject?.metadata?.onboarding || customer.metadata?.onboarding || null;
+          const factoryInput = primaryProject?.metadata?.websiteFactoryInput || null;
           return createOnboarding({
             ...(existing || {}),
             id: existing?.id || `customer-${customer.id}`,
@@ -808,6 +823,9 @@
             ownerAuthUserId: existing?.ownerAuthUserId || customer.metadata?.ownerAuthUserId || customer.metadata?.assignedTo || primaryProject?.metadata?.ownerAuthUserId || primaryProject?.metadata?.assignedTo || "",
             ownerProfileId: existing?.ownerProfileId || customer.metadata?.ownerProfileId || primaryProject?.metadata?.ownerProfileId || "",
             portalStatus: customer.portalStatus || existing?.portalStatus || "niet_actief",
+            onboardingStatus: portalOnboarding?.status || customer.metadata?.onboardingStatus || primaryProject?.metadata?.onboardingStatus || existing?.onboardingStatus || "",
+            portalOnboarding,
+            factoryInput,
             notes: existing?.notes || customer.notes || "",
             source: "central_customers",
             createdAt: existing?.createdAt || customer.createdAt || nowIso(),
@@ -841,6 +859,27 @@
           state.dataMessage = `${central.length} centrale klant(en) geladen.`;
           setSaveState("Echte klanten", "status-active");
           return [...central, ...manual];
+        }
+
+        async function sendAdminOnboardingAction(onboarding, action) {
+          const token = getAdminBearer();
+          if (!token || !onboarding?.customerId) return null;
+          const response = await fetch("/.netlify/functions/customer-onboarding", {
+            method: "POST",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              action,
+              customerId: onboarding.customerId,
+              reviewNote: onboarding.notes || "",
+            }),
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || data.success === false) throw new Error(data.error || "Onboarding kon niet worden bijgewerkt.");
+          return data;
         }
 
         async function loadOnboardings() {
@@ -1304,7 +1343,7 @@
           if (elements.project) elements.project.value = onboarding.projectName;
         }
 
-        function markReady() {
+        async function markReady() {
           const onboarding = selectedOnboarding();
           if (!onboarding) return;
           const timestamp = nowIso();
@@ -1317,6 +1356,12 @@
           appendTimeline(onboarding, "Gemarkeerd als klaar voor oplevering", "ready");
           saveOnboardings();
           render();
+          try {
+            await sendAdminOnboardingAction(onboarding, "approve");
+            onboarding.onboardingStatus = "approved";
+          } catch (error) {
+            notify(error.message || "Onboarding is lokaal gemarkeerd, maar serverreview kon niet worden bijgewerkt.", "warning");
+          }
           notify(`${onboarding.customerName} is klaar voor oplevering.`, "success");
         }
 
@@ -1337,7 +1382,7 @@
           ].join("\n");
         }
 
-        function startWebsiteFactory() {
+        async function startWebsiteFactory() {
           const onboarding = selectedOnboarding();
           if (!onboarding) return;
           const pendingLead = {
@@ -1382,6 +1427,11 @@
           appendTimeline(onboarding, "Website Factory gestart vanuit onboarding", "factory");
           onboarding.updatedAt = nowIso();
           saveOnboardings(false);
+          try {
+            await sendAdminOnboardingAction(onboarding, "send_to_website_factory");
+          } catch (error) {
+            notify(error.message || "Website Factory input is lokaal voorbereid.", "warning");
+          }
           notify("Website Factory wordt geopend met deze klantdata.", "success");
           window.location.href = `admin-website-factory.html?leadId=${encodeURIComponent(pendingLead.id)}`;
         }

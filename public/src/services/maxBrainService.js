@@ -114,7 +114,9 @@ export function getMaxBrainDiagnostics(options = {}) {
 }
 
 export function collectBrainData() {
-  return Object.fromEntries(Object.entries(STORAGE_KEYS).map(([key, keys]) => [key, uniqueRows(keys.flatMap(readArray))]));
+  const data = Object.fromEntries(Object.entries(STORAGE_KEYS).map(([key, keys]) => [key, uniqueRows(keys.flatMap(readArray))]));
+  data.onboarding = extractOnboardingRows(data);
+  return data;
 }
 
 export function readBrainCache() {
@@ -215,6 +217,22 @@ function buildDailyFocus({ data, customerContexts, recommendations }) {
     .filter((item) => /delay|vertraag|blocked|wacht|waiting|approval|akkoord|feedback/.test(statusKey([item.status, item.phase, item.title, item.description, item.notes].join(" "))))
     .map((item) => ({ label: item.name || item.title || item.domain || "Project", status: item.status || item.phase || item.severity || "attention" }))
     .slice(0, 8);
+  const onboardingNotStarted = data.onboarding
+    .filter((item) => ["not_started", "open"].includes(statusKey(item.status)))
+    .map((item) => ({ label: item.company || item.customerName || "Klant", status: "nog niet gestart" }))
+    .slice(0, 8);
+  const onboardingInProgress = data.onboarding
+    .filter((item) => ["in_progress", "mee bezig"].includes(statusKey(item.status)))
+    .map((item) => ({ label: item.company || item.customerName || "Klant", status: `${item.completeness || 0}% compleet` }))
+    .slice(0, 8);
+  const onboardingReview = data.onboarding
+    .filter((item) => ["submitted", "needs_review", "approved"].includes(statusKey(item.status)))
+    .map((item) => ({ label: item.company || item.customerName || "Klant", status: item.statusLabel || item.status }))
+    .slice(0, 8);
+  const websiteFactoryReady = data.onboarding
+    .filter((item) => ["approved", "sent_to_website_factory"].includes(statusKey(item.status)) || item.factoryInputReady)
+    .map((item) => ({ label: item.company || item.customerName || "Project", status: "klaar voor Website Factory" }))
+    .slice(0, 8);
   const attention = [
     ...recommendations.slice(0, 4).map((item) => ({ label: item.label, reason: item.reason || item.category || "" })),
     ...data.notifications
@@ -229,7 +247,34 @@ function buildDailyFocus({ data, customerContexts, recommendations }) {
     failingAutomations,
     mailAttention,
     delayedProjects,
+    onboardingNotStarted,
+    onboardingInProgress,
+    onboardingReview,
+    websiteFactoryReady,
   };
+}
+
+function extractOnboardingRows(data = {}) {
+  const customers = Array.isArray(data.customers) ? data.customers : [];
+  const websites = Array.isArray(data.websites) ? data.websites : [];
+  return uniqueRows([...customers, ...websites].map((item) => {
+    const onboarding = item.metadata?.onboarding || item.onboarding || {};
+    const status = onboarding.status || item.metadata?.onboardingStatus || item.onboardingStatus || "";
+    if (!status && !onboarding.answers) return null;
+    return {
+      id: `${idOf(item)}:${onboarding.id || status || "onboarding"}`,
+      customerId: onboarding.customerId || item.customerId || item.id || "",
+      projectId: onboarding.projectId || item.projectId || "",
+      company: item.company || item.name || onboarding.answers?.company?.companyName || "",
+      customerName: item.name || onboarding.answers?.company?.contactName || "",
+      status: status || "not_started",
+      statusLabel: onboarding.statusLabel || status,
+      completeness: onboarding.completeness || item.metadata?.onboardingCompleteness || 0,
+      missingFields: onboarding.missingFields || [],
+      factoryInputReady: Boolean(item.metadata?.websiteFactoryInput || item.websiteFactoryInput),
+      updatedAt: onboarding.updatedAt || item.updatedAt || item.updated_at || "",
+    };
+  }).filter(Boolean));
 }
 
 function action(id, label, category, reason) {

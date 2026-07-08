@@ -10956,7 +10956,23 @@
 
         function ceoIsOnboardingProject(project = {}) {
           const status = statusKey(project.status);
-          return ["nieuw", "onboarding", "intake", "in_ontwerp", "in_ontwikkeling"].includes(status);
+          const onboardingStatus = statusKey(project.metadata?.onboarding?.status || project.onboardingStatus || project.metadata?.onboardingStatus);
+          return ["nieuw", "onboarding", "intake", "in_ontwerp", "in_ontwikkeling"].includes(status)
+            || ["not_started", "in_progress", "submitted", "needs_review", "approved"].includes(onboardingStatus);
+        }
+
+        function ceoOnboardingRows() {
+          return [...state.customers, ...state.projects].map((item) => {
+            const onboarding = item.metadata?.onboarding || item.onboarding || {};
+            const status = onboarding.status || item.metadata?.onboardingStatus || item.onboardingStatus || "";
+            if (!status && !onboarding.answers) return null;
+            return {
+              label: item.company || item.name || onboarding.answers?.company?.companyName || "Onboarding",
+              status: status || "not_started",
+              completeness: Number(onboarding.completeness || item.metadata?.onboardingCompleteness || 0),
+              factoryReady: ["approved", "sent_to_website_factory"].includes(statusKey(status)) || Boolean(item.metadata?.websiteFactoryInput || item.websiteFactoryInput),
+            };
+          }).filter(Boolean);
         }
 
         function ceoNeedsDomain(website = {}, customer = {}) {
@@ -11017,7 +11033,9 @@
           });
           const activeWebsites = state.websites.filter(ceoIsActiveWebsite);
           const websitesApproval = state.websites.filter(ceoNeedsApproval);
-          const onboardingProjects = state.projects.filter(ceoIsOnboardingProject);
+          const onboardingRows = ceoOnboardingRows();
+          const onboardingProjects = [...state.projects.filter(ceoIsOnboardingProject), ...onboardingRows].filter((item, index, rows) => rows.findIndex((row) => (row.id || row.label || row.name) === (item.id || item.label || item.name)) === index);
+          const onboardingFactoryReady = onboardingRows.filter((item) => item.factoryReady);
           const customersWithoutDomain = state.customers.filter((customer) => !String(customer.website || customer.domain || "").trim());
           const pendingDomains = Math.max(customersWithoutDomain.length, state.websites.filter((website) => ceoNeedsDomain(website)).length);
           const pendingPhones = leads.filter((lead) => ceoIsLeadOpen(lead) && !String(lead.phone || lead.telephone || "").trim()).length;
@@ -11035,6 +11053,7 @@
             activeWebsites,
             websitesApproval,
             onboardingProjects,
+            onboardingFactoryReady,
             pendingDomains,
             pendingPhones,
             unreadNotifications: ceoUnreadNotificationsCount(),
@@ -11183,6 +11202,7 @@
 
           const production = [
             ["Website Factory", state.projects.filter((project) => ["in_ontwikkeling", "in_ontwerp", "onboarding"].includes(statusKey(project.status))).length],
+            ["Factory input klaar", summary.onboardingFactoryReady.length],
             ["Logos", state.files.filter((file) => String(file.category || file.type || "").toLowerCase().includes("logo")).length],
             ["Assets", state.files.length],
             ["SEO", state.websites.filter((website) => String(website.notes || website.phase || "").toLowerCase().includes("seo")).length],
@@ -11222,6 +11242,7 @@
           const recommendations = buildCeoPriorities(summary).map((item) => item.action);
           if (summary.openInvoices.length) recommendations.push("Verstuur betaalherinneringen voor open facturen.");
           if (summary.onboardingProjects.length) recommendations.push("Rond onboardingblokkades af voordat productie oploopt.");
+          if (summary.onboardingFactoryReady.length) recommendations.push("Zet goedgekeurde onboarding door naar Website Factory.");
           const brainCache = readCeoBrainCache();
           if (Array.isArray(brainCache?.recommendations)) {
             brainCache.recommendations.slice(0, 3).forEach((item) => {

@@ -375,6 +375,10 @@
           ["Falende automations", focus.failingAutomations],
           ["Mails met aandacht", focus.mailAttention],
           ["Projecten met vertraging", focus.delayedProjects],
+          ["Onboarding niet gestart", focus.onboardingNotStarted],
+          ["Onboarding halverwege", focus.onboardingInProgress],
+          ["Onboarding review", focus.onboardingReview],
+          ["Klaar voor Website Factory", focus.websiteFactoryReady],
         ];
         $("brain-daily-focus").innerHTML = sections.map(([label, rows]) => {
           const items = Array.isArray(rows) ? rows.slice(0, 3) : [];

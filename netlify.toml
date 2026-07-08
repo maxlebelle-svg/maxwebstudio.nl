@@ -54,6 +54,11 @@
   to = "/.netlify/functions/platform-health"
   status = 200
 
+[[redirects]]
+  from = "/api/customer-onboarding"
+  to = "/.netlify/functions/customer-onboarding"
+  status = 200
+
 [[headers]]
   for = "/*"
   [headers.values]

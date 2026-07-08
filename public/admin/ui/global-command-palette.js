@@ -101,6 +101,11 @@
     ["open-settings", "Open Settings", "CRM instellingen", "Instellingen", "Command", "admin-instellingen.html"],
     ["generate-logo", "Generate logo", "Start Logo Studio", "Branding", "Command", "admin-logo-studio.html"],
     ["start-onboarding", "Start onboarding", "Open onboarding module", "Klanten", "Command", "admin-onboarding.html"],
+    ["open-onboarding", "Open onboarding", "Open klant onboarding", "Klanten", "Command", "admin-onboarding.html"],
+    ["review-onboarding", "Review onboarding", "Open onboarding review", "Klanten", "Command", "admin-onboarding.html"],
+    ["approve-onboarding", "Approve onboarding", "Open onboarding goedkeuring", "Klanten", "Command", "admin-onboarding.html"],
+    ["send-onboarding-reminder", "Send onboarding reminder", "Open onboarding reminders", "Klanten", "Command", "admin-onboarding.html"],
+    ["open-website-factory-input", "Open Website Factory input", "Open Website Factory met onboardinginput", "Websites", "Command", "admin-website-factory.html"],
   ];
 
   const state = {
