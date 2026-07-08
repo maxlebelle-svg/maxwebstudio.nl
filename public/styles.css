@@ -25973,6 +25973,323 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
     grid-template-columns: 1fr;
   }
 }
+
+.global-command-open {
+  overflow: hidden;
+}
+
+.global-command-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: start center;
+  padding: 8vh 18px 24px;
+  background: rgba(2, 6, 23, 0.62);
+  backdrop-filter: blur(16px);
+  animation: globalCommandFade 0.16s ease-out;
+}
+
+.global-command-backdrop[hidden] {
+  display: none;
+}
+
+.global-command-dialog {
+  display: grid;
+  gap: 14px;
+  width: min(900px, 92vw);
+  max-height: min(760px, 86vh);
+  padding: 16px;
+  border: 1px solid rgba(96, 165, 250, 0.26);
+  border-radius: 14px;
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.14), rgba(15, 23, 42, 0.92)),
+    rgba(3, 10, 24, 0.96);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  animation: globalCommandScale 0.18s ease-out;
+  overflow: hidden;
+}
+
+.global-command-header,
+.global-command-footer,
+.global-command-input-wrap,
+.global-command-result,
+.global-command-meta,
+.global-command-group summary,
+.global-command-quick {
+  display: flex;
+  align-items: center;
+}
+
+.global-command-header {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.global-command-header h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(22px, 2vw, 30px);
+  letter-spacing: 0;
+}
+
+.global-command-close {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 8px;
+  color: #dbeafe;
+  background: rgba(15, 23, 42, 0.72);
+  cursor: pointer;
+  font-size: 22px;
+}
+
+.global-command-input-wrap {
+  gap: 12px;
+  min-height: 58px;
+  padding: 0 14px;
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  border-radius: 10px;
+  background: rgba(2, 8, 23, 0.78);
+}
+
+.global-command-input-wrap > span {
+  color: #7dd3fc;
+  font-size: 22px;
+}
+
+.global-command-input-wrap input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  color: #f8fbff;
+  background: transparent;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 750;
+}
+
+.global-command-input-wrap input::placeholder {
+  color: rgba(226, 236, 248, 0.44);
+}
+
+.global-command-input-wrap kbd,
+.global-command-result kbd,
+.global-command-footer span {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 7px;
+  padding: 4px 7px;
+  color: rgba(226, 236, 248, 0.68);
+  background: rgba(15, 23, 42, 0.72);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.global-command-quick {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.global-command-quick button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 8px;
+  padding: 7px 10px;
+  color: rgba(226, 236, 248, 0.84);
+  background: rgba(15, 23, 42, 0.5);
+  cursor: pointer;
+  font-weight: 850;
+}
+
+.global-command-quick span,
+.global-command-icon {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 8px;
+  color: #93c5fd;
+  background: rgba(37, 99, 235, 0.18);
+}
+
+.global-command-quick span {
+  width: 22px;
+  height: 22px;
+}
+
+.global-command-results {
+  display: grid;
+  gap: 10px;
+  min-height: 260px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.global-command-group {
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 10px;
+  background: rgba(2, 8, 23, 0.36);
+  overflow: hidden;
+}
+
+.global-command-group summary {
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  color: rgba(226, 236, 248, 0.78);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.global-command-group summary span {
+  color: rgba(226, 236, 248, 0.48);
+}
+
+.global-command-group > div {
+  display: grid;
+  gap: 6px;
+  padding: 0 8px 8px;
+}
+
+.global-command-result {
+  width: 100%;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 10px;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.global-command-result:hover,
+.global-command-result.is-active {
+  border-color: rgba(96, 165, 250, 0.4);
+  background: rgba(37, 99, 235, 0.14);
+}
+
+.global-command-icon {
+  width: 38px;
+  height: 38px;
+  font-weight: 950;
+}
+
+.global-command-main {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.global-command-main strong {
+  color: #ffffff;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.global-command-main small {
+  color: rgba(226, 236, 248, 0.58);
+  font-size: 12px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.global-command-meta {
+  justify-content: end;
+  gap: 7px;
+}
+
+.global-command-meta mark {
+  border-radius: 999px;
+  padding: 4px 7px;
+  color: #bfdbfe;
+  background: rgba(37, 99, 235, 0.18);
+  font-size: 10px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.global-command-meta time,
+.global-command-meta em {
+  color: rgba(226, 236, 248, 0.48);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 850;
+}
+
+.global-command-empty {
+  display: grid;
+  place-items: start;
+  gap: 10px;
+  min-height: 240px;
+  padding: 22px;
+  border: 1px dashed rgba(96, 165, 250, 0.34);
+  border-radius: 10px;
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.global-command-empty strong {
+  color: #ffffff;
+}
+
+.global-command-empty p {
+  margin: 0;
+  color: rgba(226, 236, 248, 0.64);
+}
+
+.global-command-footer {
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+@keyframes globalCommandFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes globalCommandScale {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 720px) {
+  .global-command-backdrop {
+    place-items: stretch;
+    padding: 0;
+  }
+
+  .global-command-dialog {
+    width: 100vw;
+    max-height: none;
+    min-height: 100vh;
+    border-radius: 0;
+  }
+
+  .global-command-result,
+  .global-command-meta {
+    align-items: start;
+  }
+
+  .global-command-result {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .global-command-meta {
+    grid-column: 2;
+    justify-content: start;
+    flex-wrap: wrap;
+  }
+}
 .timeline-card,
 .customer-timeline-panel {
   display: grid;

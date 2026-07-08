@@ -24,6 +24,11 @@
   to = "/.netlify/functions/customer-timeline/:customerId"
   status = 200
 
+[[redirects]]
+  from = "/api/global-search"
+  to = "/.netlify/functions/global-search"
+  status = 200
+
 [[headers]]
   for = "/*"
   [headers.values]
