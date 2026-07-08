@@ -16,7 +16,7 @@
     <main class="portal-app customer-portal-demo">
       <aside class="portal-sidebar" aria-label="Klantportaal menu">
         <a class="portal-sidebar-brand" href="#vandaag" aria-label="Max Webstudio klantportaal">
-          <span>M</span>
+          <img src="max-webstudio-logo-mark.svg" alt="" aria-hidden="true" />
           <strong>Max Klantportaal</strong>
         </a>
         <nav class="portal-nav" aria-label="Klantportaal navigatie">
@@ -31,6 +31,10 @@
           <span>Je account</span>
           <strong>Veilig gekoppeld</strong>
           <p>Alleen jouw klantgegevens worden hier getoond.</p>
+        </div>
+        <div class="portal-sidebar-auth" aria-label="Account acties">
+          <a class="button secondary" id="portal-sidebar-login" href="/login.html">Inloggen</a>
+          <button class="button secondary" id="portal-sidebar-logout" type="button" hidden>Uitloggen</button>
         </div>
       </aside>
 
@@ -278,6 +282,8 @@
         const portalSourceBadge = document.getElementById("portal-source-badge");
         const portalSourceText = document.getElementById("portal-source-text");
         const portalLogout = document.getElementById("portal-logout");
+        const portalSidebarLogin = document.getElementById("portal-sidebar-login");
+        const portalSidebarLogout = document.getElementById("portal-sidebar-logout");
         const portalAuthMessage = document.getElementById("portal-auth-message");
         const portalAuthText = document.getElementById("portal-auth-text");
         const portalTodayTitle = document.getElementById("portal-today-title");
@@ -333,26 +339,35 @@
         };
         const profileContext = await getClientCustomerProfileContext();
         const supabaseSessionResult = await getSupabaseSession();
+        function updatePortalAuthActions(isLoggedIn = false) {
+          portalLogout.hidden = !isLoggedIn;
+          portalSidebarLogout.hidden = !isLoggedIn;
+          portalSidebarLogin.hidden = isLoggedIn;
+        }
+
+        async function handlePortalLogout() {
+          await signOutSupabase();
+          localStorage.removeItem("maxwebstudioCurrentSession");
+          window.location.href = "/login.html";
+        }
+
         let stagingBridge = { active: false, reason: "", customerId: "", mode: "" };
         if (profileContext.profileFound) {
           customerId = customerId || profileContext.customerId;
           supabaseCustomerId = supabaseCustomerId || profileContext.supabaseCustomerId;
           portalDataMode = portalDataMode || profileContext.mode;
-          portalLogout.hidden = false;
+          updatePortalAuthActions(true);
         } else if (supabaseSessionResult?.session || isDeveloperModeEnabled()) {
           stagingBridge = await ensureStagingClientPortalDemoSession();
         }
         if (!profileContext.profileFound && stagingBridge.active) {
           customerId = customerId || stagingBridge.customerId;
           portalDataMode = portalDataMode || stagingBridge.mode;
-          portalLogout.hidden = false;
+          updatePortalAuthActions(true);
         }
 
-        portalLogout.addEventListener("click", async () => {
-          await signOutSupabase();
-          localStorage.removeItem("maxwebstudioCurrentSession");
-          window.location.href = "/login.html";
-        });
+        portalLogout.addEventListener("click", handlePortalLogout);
+        portalSidebarLogout.addEventListener("click", handlePortalLogout);
 
         const money = (value) => new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(Number(value || 0));
         const formatDate = (value) => {
@@ -542,6 +557,7 @@
         }
 
         await renderSessionNotice();
+        updatePortalAuthActions(Boolean(readCurrentSession()));
 
         if (!readCurrentSession() && !isDeveloperModeEnabled()) {
           portalTitle.textContent = "Log in om je klantportaal te bekijken";

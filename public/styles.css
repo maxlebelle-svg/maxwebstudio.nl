@@ -11484,16 +11484,13 @@ h3 {
   text-decoration: none;
 }
 
-.portal-sidebar-brand span {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.portal-sidebar-brand img {
   width: 44px;
   height: 44px;
+  flex: 0 0 44px;
   border-radius: 12px;
-  color: var(--portal-text);
-  background: linear-gradient(135deg, rgba(31, 122, 255, 0.95), rgba(25, 194, 255, 0.72));
-  box-shadow: 0 18px 38px rgba(31, 122, 255, 0.22);
+  background: #06121f;
+  box-shadow: 0 18px 38px rgba(0, 8, 18, 0.34);
 }
 
 .portal-sidebar-brand strong {
@@ -11569,6 +11566,17 @@ h3 {
   font-size: 13px;
   font-weight: 800;
   line-height: 1.55;
+}
+
+.portal-sidebar-auth {
+  display: grid;
+  gap: 10px;
+}
+
+.portal-sidebar-auth .button {
+  width: 100%;
+  min-height: 48px;
+  justify-content: center;
 }
 
 .portal-main {
