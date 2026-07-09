@@ -734,7 +734,7 @@
         return resultCardHtml(item, index);
       }).join("");
       return `
-        <details class="global-command-group" open>
+        <details class="global-command-group" data-command-group="${escapeHtml(group)}" open>
           <summary>${escapeHtml(group)}<span>${items.length}</span></summary>
           <div>${html}</div>
         </details>

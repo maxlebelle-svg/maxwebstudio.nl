@@ -144,18 +144,39 @@
 
       .automation-library-list {
         display: grid;
-        gap: 10px;
+        gap: 8px;
         max-height: calc(100vh - 340px);
         overflow: auto;
         padding-right: 2px;
       }
 
+      .automation-library .admin-section-heading {
+        gap: 10px;
+        align-items: center;
+      }
+
+      .automation-library .admin-section-heading > div {
+        min-width: 0;
+      }
+
+      .admin-body .automation-library .admin-section-heading h2 {
+        font-size: clamp(24px, 1.9vw, 34px);
+        line-height: 1;
+      }
+
+      .automation-library #library-count {
+        flex: 0 0 auto;
+        min-width: 34px;
+        justify-content: center;
+        text-align: center;
+      }
+
       .automation-template-card {
         display: grid;
-        gap: 10px;
+        gap: 9px;
         border: 1px solid rgba(148, 163, 184, 0.14);
         border-radius: 8px;
-        padding: 14px;
+        padding: 12px;
         color: rgba(226, 236, 248, 0.78);
         background:
           linear-gradient(180deg, rgba(13, 35, 55, 0.58), rgba(5, 18, 31, 0.8)),
@@ -189,6 +210,12 @@
         min-width: 0;
       }
 
+      .admin-body .automation-execution .admin-section-heading h2,
+      .admin-body .automation-version-card .admin-section-heading h2 {
+        font-size: clamp(22px, 2vw, 32px);
+        line-height: 1.05;
+      }
+
       .automation-card-meta,
       .automation-card-actions,
       .automation-node-toolbar,
@@ -205,6 +232,18 @@
         min-height: 34px;
         padding: 8px 11px;
         font-size: 12px;
+      }
+
+      .automation-card-meta {
+        gap: 6px;
+      }
+
+      .automation-template-card .automation-card-copy {
+        margin: 0;
+      }
+
+      .automation-template-card h3 {
+        font-size: 17px;
       }
 
       .automation-canvas-card {
@@ -241,6 +280,20 @@
         font-size: 12px;
         font-weight: 900;
         cursor: grab;
+      }
+
+      .automation-node-chip::before {
+        content: attr(data-node-icon);
+        display: inline-grid;
+        place-items: center;
+        width: 20px;
+        height: 20px;
+        margin-right: 6px;
+        border-radius: 999px;
+        color: #07111f;
+        background: #38bdf8;
+        font-size: 11px;
+        font-weight: 950;
       }
 
       .automation-canvas-viewport {
@@ -296,12 +349,13 @@
       .automation-node {
         position: absolute;
         display: grid;
-        gap: 8px;
-        width: 188px;
-        height: 120px;
+        grid-template-rows: auto auto 1fr auto;
+        gap: 9px;
+        width: 210px;
+        min-height: 166px;
         border: 1px solid rgba(148, 163, 184, 0.18);
         border-radius: 8px;
-        padding: 13px;
+        padding: 14px;
         color: rgba(226, 236, 248, 0.78);
         background:
           radial-gradient(circle at 14% 0%, rgba(96, 165, 250, 0.18), transparent 36%),
@@ -322,15 +376,34 @@
         border-color: rgba(139, 92, 246, 0.42);
       }
 
+      .automation-node[data-type="Trigger"] {
+        border-color: rgba(34, 197, 94, 0.42);
+      }
+
+      .automation-node[data-type="Condition"],
+      .automation-node[data-type="Branch"] {
+        border-color: rgba(245, 158, 11, 0.42);
+      }
+
+      .automation-node[data-type="Email"],
+      .automation-node[data-type="Notification"] {
+        border-color: rgba(56, 189, 248, 0.42);
+      }
+
+      .automation-node[data-type="Invoice"] {
+        border-color: rgba(250, 204, 21, 0.42);
+      }
+
       .automation-node strong {
         color: #f8fbff;
-        font-size: 15px;
-        line-height: 1.2;
+        font-size: 16px;
+        line-height: 1.18;
         overflow-wrap: anywhere;
       }
 
       .automation-node span,
-      .automation-node small {
+      .automation-node small,
+      .automation-node p {
         color: rgba(226, 236, 248, 0.62);
         font-size: 12px;
         font-weight: 800;
@@ -338,11 +411,95 @@
         overflow-wrap: anywhere;
       }
 
-      .automation-node small {
+      .automation-node p {
+        margin: 0;
+        color: rgba(226, 236, 248, 0.74);
+        line-height: 1.45;
         display: -webkit-box;
         overflow: hidden;
         -webkit-box-orient: vertical;
-        -webkit-line-clamp: 2;
+        -webkit-line-clamp: 3;
+      }
+
+      .automation-node-top,
+      .automation-node-meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .automation-node-top {
+        justify-content: space-between;
+      }
+
+      .automation-node-type {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        min-width: 0;
+        color: rgba(226, 236, 248, 0.72);
+        font-size: 11px;
+        font-weight: 950;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .automation-node-icon {
+        display: inline-grid;
+        place-items: center;
+        flex: 0 0 auto;
+        width: 24px;
+        height: 24px;
+        border-radius: 8px;
+        color: #03111f;
+        background: #38bdf8;
+        box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
+        font-size: 12px;
+        font-weight: 950;
+      }
+
+      .automation-node-status {
+        flex: 0 0 auto;
+        border: 1px solid rgba(34, 197, 94, 0.22);
+        border-radius: 999px;
+        padding: 5px 8px;
+        color: #bbf7d0;
+        background: rgba(22, 163, 74, 0.13);
+        font-size: 10px;
+        font-weight: 950;
+        line-height: 1;
+      }
+
+      .automation-node-status[data-status="Wacht"],
+      .automation-node-status[data-status="Concept"] {
+        border-color: rgba(245, 158, 11, 0.24);
+        color: #fde68a;
+        background: rgba(245, 158, 11, 0.12);
+      }
+
+      .automation-node-status[data-status="Controle"] {
+        border-color: rgba(56, 189, 248, 0.24);
+        color: #bae6fd;
+        background: rgba(56, 189, 248, 0.12);
+      }
+
+      .automation-node-meta {
+        display: grid;
+        gap: 5px;
+        padding-top: 2px;
+      }
+
+      .automation-node-meta span {
+        display: block;
+        color: rgba(226, 236, 248, 0.62);
+        font-size: 11px;
+        line-height: 1.35;
+      }
+
+      .automation-node-meta b {
+        color: rgba(248, 251, 255, 0.86);
+        font-weight: 950;
       }
 
       .automation-properties-form {
@@ -498,24 +655,24 @@
           <aside class="automation-hero-panel">
             <span class="workflow-module-label">Automation engine foundation</span>
             <strong id="automation-readiness">0 workflows</strong>
-            <p>Triggers, conditions, delays, actions, AI placeholders, test runs, logs en versies zijn voorbereid.</p>
+            <p>Triggers, voorwaarden, wachttijden, klantacties, berichten, facturen, taken, simulaties en versies zijn centraal voorbereid.</p>
           </aside>
         </header>
 
         <section class="admin-card automation-toolbar" aria-label="Workflow zoeken en filteren">
-          <label class="automation-field">Zoeken<input id="automation-search" type="search" placeholder="Zoek workflows, triggers, acties of nodes" /></label>
+          <label class="automation-field">Zoeken<input id="automation-search" type="search" placeholder="Zoek workflows, triggers, acties of stappen" /></label>
           <label class="automation-field">Status<select id="automation-status-filter"></select></label>
           <label class="automation-field">Type<select id="automation-type-filter"></select></label>
-          <label class="automation-field">Sortering<select id="automation-sort"><option value="recent">Recently changed</option><option value="name">Naam</option><option value="enabled">Enabled eerst</option></select></label>
+          <label class="automation-field">Sortering<select id="automation-sort"><option value="recent">Recent gewijzigd</option><option value="name">Naam</option><option value="enabled">Actief eerst</option></select></label>
           <button class="button primary" id="automation-new" type="button">Nieuwe workflow</button>
         </section>
 
         <section class="automation-metrics" aria-label="Automation metrics">
-          <article class="automation-metric"><span>Total</span><strong id="metric-total">0</strong><small class="automation-muted">Workflows</small></article>
-          <article class="automation-metric"><span>Enabled</span><strong id="metric-enabled">0</strong><small class="automation-muted">Actief voorbereid</small></article>
-          <article class="automation-metric"><span>Draft</span><strong id="metric-draft">0</strong><small class="automation-muted">Nog niet live</small></article>
-          <article class="automation-metric"><span>Executions</span><strong id="metric-executions">0</strong><small class="automation-muted">Simulaties</small></article>
-          <article class="automation-metric"><span>Failed</span><strong id="metric-failed">0</strong><small class="automation-muted">Laatste runs</small></article>
+          <article class="automation-metric"><span>Totaal</span><strong id="metric-total">0</strong><small class="automation-muted">Workflows</small></article>
+          <article class="automation-metric"><span>Actief</span><strong id="metric-enabled">0</strong><small class="automation-muted">Voorbereid</small></article>
+          <article class="automation-metric"><span>Concept</span><strong id="metric-draft">0</strong><small class="automation-muted">Nog niet live</small></article>
+          <article class="automation-metric"><span>Runs</span><strong id="metric-executions">0</strong><small class="automation-muted">Simulaties</small></article>
+          <article class="automation-metric"><span>Mislukt</span><strong id="metric-failed">0</strong><small class="automation-muted">Laatste runs</small></article>
         </section>
 
         <section class="automation-workspace" aria-label="Max Automations workspace">
@@ -535,7 +692,7 @@
               <div class="automation-canvas-title">
                 <p class="section-kicker" id="canvas-kicker">Workflow canvas</p>
                 <h2 id="canvas-title">Selecteer een workflow</h2>
-                <p class="automation-card-copy" id="canvas-description">Clone of open een template om nodes te bekijken, testen en aanpassen.</p>
+                <p class="automation-card-copy" id="canvas-description">Open een workflow om triggers, voorwaarden, acties en klantcommunicatie te beheren.</p>
               </div>
               <div class="automation-canvas-actions">
                 <button class="button secondary" id="zoom-out" type="button">Zoom -</button>
@@ -546,22 +703,22 @@
                 <button class="button secondary" id="pan-up" type="button">Pan ↑</button>
                 <button class="button secondary" id="pan-down" type="button">Pan ↓</button>
                 <button class="button secondary" id="save-version" type="button">Versie opslaan</button>
-                <button class="button primary" id="run-test" type="button">Run simulation</button>
+                <button class="button primary" id="run-test" type="button">Simulatie starten</button>
               </div>
             </div>
 
             <div class="automation-node-toolbar" aria-label="Node types">
-              <button class="automation-node-chip" draggable="true" data-node-type="Trigger" type="button">Trigger</button>
-              <button class="automation-node-chip" draggable="true" data-node-type="Condition" type="button">Condition</button>
-              <button class="automation-node-chip" draggable="true" data-node-type="Delay" type="button">Delay</button>
-              <button class="automation-node-chip" draggable="true" data-node-type="Action" type="button">Action</button>
-              <button class="automation-node-chip" draggable="true" data-node-type="AI" type="button">AI</button>
-              <button class="automation-node-chip" draggable="true" data-node-type="Notification" type="button">Notification</button>
-              <button class="automation-node-chip" draggable="true" data-node-type="Email" type="button">Email</button>
-              <button class="automation-node-chip" draggable="true" data-node-type="Invoice" type="button">Invoice</button>
-              <button class="automation-node-chip" draggable="true" data-node-type="Task" type="button">Task</button>
-              <button class="automation-node-chip" draggable="true" data-node-type="Branch" type="button">Branch</button>
-              <button class="automation-node-chip" draggable="true" data-node-type="End" type="button">End</button>
+              <button class="automation-node-chip" draggable="true" data-node-type="Trigger" data-node-icon="TR" type="button">Trigger</button>
+              <button class="automation-node-chip" draggable="true" data-node-type="Condition" data-node-icon="IF" type="button">Voorwaarde</button>
+              <button class="automation-node-chip" draggable="true" data-node-type="Delay" data-node-icon="WT" type="button">Wachttijd</button>
+              <button class="automation-node-chip" draggable="true" data-node-type="Action" data-node-icon="AC" type="button">Actie</button>
+              <button class="automation-node-chip" draggable="true" data-node-type="AI" data-node-icon="AI" type="button">AI</button>
+              <button class="automation-node-chip" draggable="true" data-node-type="Notification" data-node-icon="NT" type="button">Notificatie</button>
+              <button class="automation-node-chip" draggable="true" data-node-type="Email" data-node-icon="EM" type="button">E-mail</button>
+              <button class="automation-node-chip" draggable="true" data-node-type="Invoice" data-node-icon="FA" type="button">Factuur</button>
+              <button class="automation-node-chip" draggable="true" data-node-type="Task" data-node-icon="TA" type="button">Taak</button>
+              <button class="automation-node-chip" draggable="true" data-node-type="Branch" data-node-icon="BR" type="button">Splitsing</button>
+              <button class="automation-node-chip" draggable="true" data-node-type="End" data-node-icon="OK" type="button">Einde</button>
             </div>
 
             <div class="automation-canvas-viewport" id="automation-canvas" aria-label="Workflow canvas">
@@ -578,26 +735,26 @@
                 <p class="section-kicker">Properties</p>
                 <h2>Eigenschappen</h2>
               </div>
-              <mark class="status-badge status-prepared" id="properties-status">No node</mark>
+              <mark class="status-badge status-prepared" id="properties-status">Geen stap</mark>
             </div>
             <form class="automation-properties-form" id="properties-form">
-              <label class="automation-field">Workflow name<input name="workflowName" /></label>
+              <label class="automation-field">Workflownaam<input name="workflowName" /></label>
               <label class="automation-field">Workflow status<select name="workflowStatus"></select></label>
-              <label class="automation-field">Node label<input name="nodeLabel" /></label>
-              <label class="automation-field">Node type<select name="nodeType"></select></label>
-              <label class="automation-field">Configuration<textarea name="nodeConfig" placeholder="Trigger, condition, delay or action details"></textarea></label>
+              <label class="automation-field">Staplabel<input name="nodeLabel" /></label>
+              <label class="automation-field">Staptype<select name="nodeType"></select></label>
+              <label class="automation-field">Configuratie<textarea name="nodeConfig" placeholder="Wat verwerkt deze stap en wanneer gaat de workflow door?"></textarea></label>
               <button class="button primary" type="submit">Opslaan</button>
             </form>
             <div>
-              <p class="section-kicker">Available Triggers</p>
+              <p class="section-kicker">Beschikbare triggers</p>
               <div class="automation-pill-list" id="trigger-list"></div>
             </div>
             <div>
-              <p class="section-kicker">Permissions</p>
+              <p class="section-kicker">Rechten</p>
               <div class="automation-pill-list">
-                <span>Admin: full access</span>
-                <span>Sales Manager: run/test</span>
-                <span>Sales: view only</span>
+                <span>Admin: beheren en publiceren</span>
+                <span>Sales Manager: testen en versies opslaan</span>
+                <span>Sales: bekijken en simulatie openen</span>
               </div>
             </div>
           </aside>
@@ -607,20 +764,20 @@
           <article class="admin-card automation-execution">
             <div class="admin-section-heading">
               <div>
-                <p class="section-kicker">Execution log</p>
-                <h2>Simulation runs</h2>
+                <p class="section-kicker">Uitvoeringslog</p>
+                <h2>Simulaties</h2>
               </div>
-              <span class="status-badge status-prepared">No real actions</span>
+              <span class="status-badge status-prepared">Geen live acties</span>
             </div>
             <div class="automation-log-list" id="execution-log"></div>
           </article>
           <article class="admin-card automation-version-card">
             <div class="admin-section-heading">
               <div>
-                <p class="section-kicker">Version history</p>
-                <h2>Versions</h2>
+                <p class="section-kicker">Versiehistorie</p>
+                <h2>Versies</h2>
               </div>
-              <button class="button secondary" id="duplicate-workflow" type="button">Duplicate</button>
+              <button class="button secondary" id="duplicate-workflow" type="button">Dupliceren</button>
             </div>
             <div class="automation-version-list" id="version-list"></div>
           </article>
@@ -634,33 +791,48 @@
         const STORAGE_KEY = "maxwebstudioAutomationWorkflows";
         const EXECUTION_KEY = "maxwebstudioAutomationExecutions";
         const VERSION_KEY = "maxwebstudioAutomationVersions";
+        const WORKFLOW_SCHEMA_VERSION = 4;
         const nodeTypes = ["Trigger", "Condition", "Delay", "Action", "AI", "Notification", "Email", "Invoice", "Task", "Branch", "End"];
         const statuses = ["enabled", "disabled", "draft"];
+        const statusLabels = { enabled: "Actief", disabled: "Gepauzeerd", draft: "Concept" };
+        const nodeTypeMeta = {
+          Trigger: { label: "Trigger", icon: "TR", status: "Luistert" },
+          Condition: { label: "Voorwaarde", icon: "IF", status: "Controle" },
+          Delay: { label: "Wachttijd", icon: "WT", status: "Wacht" },
+          Action: { label: "Actie", icon: "AC", status: "Klaar" },
+          AI: { label: "AI", icon: "AI", status: "Controle" },
+          Notification: { label: "Notificatie", icon: "NT", status: "Klaar" },
+          Email: { label: "E-mail", icon: "EM", status: "Klaar" },
+          Invoice: { label: "Factuur", icon: "FA", status: "Concept" },
+          Task: { label: "Taak", icon: "TA", status: "Klaar" },
+          Branch: { label: "Splitsing", icon: "BR", status: "Controle" },
+          End: { label: "Einde", icon: "OK", status: "Afgerond" },
+        };
         const triggers = [
-          "Customer created", "Lead created", "Lead updated", "Invoice paid", "Invoice overdue", "Email opened", "Email clicked", "Website approved", "Website published", "Logo approved", "Asset uploaded", "Task completed", "085 activated", "Domain transferred", "Hosting activated", "Manual trigger", "Scheduled trigger",
+          "Klant aangemaakt", "Lead ontvangen", "Lead bijgewerkt", "Factuur betaald", "Factuur verlopen", "E-mail geopend", "E-mail geklikt", "Website akkoord", "Website gepubliceerd", "Logo akkoord", "Asset geupload", "Taak afgerond", "085 nummer actief", "Domein verhuisd", "Hosting actief", "Handmatige trigger", "Geplande trigger",
         ];
-        const conditions = ["If package Premium", "If invoice unpaid", "If website approved", "If customer inactive", "If lead older than X", "If email opened", "If revenue > X"];
-        const actions = ["Create customer", "Create invoice", "Send email", "Create task", "Send notification", "Create timeline event", "Generate website", "Generate logo", "Generate SEO", "Assign salesperson", "Move pipeline", "Webhook", "API request", "Future AI action"];
+        const conditions = ["Pakket is Premium", "Factuur staat open", "Website is akkoord", "Klant is inactief", "Lead wacht langer dan 48 uur", "E-mail is geopend", "Omzet boven drempel"];
+        const actions = ["Klantprofiel aanmaken", "Factuur klaarzetten", "E-mail versturen", "Taak aanmaken", "Teamnotificatie sturen", "Timeline-event plaatsen", "Website Factory starten", "Logo opleveren", "SEO-checklist klaarzetten", "Sales eigenaar koppelen", "Pipeline verplaatsen", "Webhook voorbereiden", "API-aanroep registreren", "AI voorstel voorbereiden"];
 
         const templates = [
-          ["website-sales", "Website Sales", "Van nieuwe lead naar klant, offerte en Website Factory start.", "Lead created", "enabled"],
-          ["website-delivery", "Website Delivery", "Publicatie, QA, klantupdate en timeline event.", "Website published", "enabled"],
-          ["invoice-reminder", "Invoice Reminder", "Automatische herinnering bij verlopen factuur.", "Invoice overdue", "enabled"],
-          ["lead-follow-up", "Lead Follow-up", "Follow-up taak en mail na leadupdate.", "Lead updated", "draft"],
-          ["customer-onboarding", "Customer Onboarding", "Klantportaal, welkomstmail, taak en timeline.", "Customer created", "enabled"],
-          ["logo-approval", "Logo Approval", "Logo akkoord naar assets en klantbericht.", "Logo approved", "disabled"],
-          ["website-approval", "Website Approval", "Website akkoord triggert livegang-checklist.", "Website approved", "enabled"],
-          ["seo-upsell", "SEO Upsell", "Detecteer kansen en maak sales taak.", "Manual trigger", "draft"],
-          ["hosting-renewal", "Hosting Renewal", "Hosting verlenging met klantnotificatie.", "Scheduled trigger", "enabled"],
-          ["domain-expiry", "Domain Expiry", "Domeinverloop melden en taak aanmaken.", "Domain transferred", "draft"],
-          ["085-number", "085 Number Activation", "085 activatie verwerkt notificaties en timeline.", "085 activated", "disabled"],
-          ["review-request", "Review Request", "Vraag review na livegang of projectafronding.", "Website published", "enabled"],
-          ["abandoned-quote", "Abandoned Quote", "Follow-up op bekeken offerte zonder akkoord.", "Email clicked", "draft"],
-          ["birthday-email", "Birthday Email", "Plan relatiebericht voor klantmomenten.", "Scheduled trigger", "disabled"],
-          ["inactive-customer", "Inactive Customer", "Signaleer klanten zonder activiteit.", "Scheduled trigger", "draft"],
-          ["website-live", "Website Live", "Publicatie naar Mail Center, Timeline en CEO Dashboard.", "Website published", "enabled"],
-          ["customer-welcome", "Customer Welcome", "Welkomstreeks vanuit Mail Center en Onboarding.", "Customer created", "enabled"],
-          ["google-ads-upsell", "Google Ads Upsell", "Maak saleskans na website livegang.", "Website published", "draft"],
+          ["website-sales", "Website Sales", "Zet een nieuwe websitelead om naar klant, offerte en Website Factory intake.", "Lead ontvangen", "enabled"],
+          ["website-delivery", "Website Delivery", "Regelt publicatie, QA, klantupdate en interne oplevering na livegang.", "Website gepubliceerd", "enabled"],
+          ["invoice-reminder", "Invoice Reminder", "Volgt verlopen facturen op met nette klantcommunicatie en interne signalen.", "Factuur verlopen", "enabled"],
+          ["lead-follow-up", "Lead Follow-up", "Bewaakt warme leads en maakt opvolging voor sales concreet.", "Lead bijgewerkt", "draft"],
+          ["customer-onboarding", "Customer Onboarding", "Activeert klantportaal, welkomstmail, taak en timeline na klantaanmaak.", "Klant aangemaakt", "enabled"],
+          ["logo-approval", "Logo Approval", "Verwerkt logo-akkoord naar assets, klantbericht en interne oplevertaak.", "Logo akkoord", "disabled"],
+          ["website-approval", "Website Approval", "Zet website-akkoord om naar publicatiechecklist en definitieve planning.", "Website akkoord", "enabled"],
+          ["seo-upsell", "SEO Upsell", "Signaleert SEO-kansen en maakt een concrete salesactie.", "Handmatige trigger", "draft"],
+          ["hosting-renewal", "Hosting Renewal", "Bereidt hostingverlenging voor met klantbericht en administratiecontrole.", "Geplande trigger", "enabled"],
+          ["domain-expiry", "Domain Expiry", "Bewaakt domeinstatus en plant opvolging voor verlenging of verhuisactie.", "Domein verhuisd", "draft"],
+          ["085-number", "085 Number Activation", "Verwerkt 085-activatie met klantnotificatie en timeline-update.", "085 nummer actief", "disabled"],
+          ["review-request", "Review Request", "Vraagt klantreview op het juiste moment na publicatie of afronding.", "Website gepubliceerd", "enabled"],
+          ["abandoned-quote", "Abandoned Quote", "Heractiveert bekeken offertes zonder akkoord met vriendelijke opvolging.", "E-mail geklikt", "draft"],
+          ["birthday-email", "Birthday Email", "Plant relatiecommunicatie voor klantmomenten zonder verkoopdruk.", "Geplande trigger", "disabled"],
+          ["inactive-customer", "Inactive Customer", "Signaleert klanten zonder recente activiteit en maakt opvolging zichtbaar.", "Geplande trigger", "draft"],
+          ["website-live", "Website Live", "Publiceert status naar Mail Center, Timeline en managementoverzicht.", "Website gepubliceerd", "enabled"],
+          ["customer-welcome", "Customer Welcome", "Start een welkomstreeks vanuit Mail Center en klantonboarding.", "Klant aangemaakt", "enabled"],
+          ["google-ads-upsell", "Google Ads Upsell", "Maakt een saleskans voor Ads wanneer een website live staat.", "Website gepubliceerd", "draft"],
         ];
 
         const elements = {
@@ -735,16 +907,64 @@
           return new Intl.DateTimeFormat("nl-NL", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(date);
         }
 
-        function templateNodes(template, index = 0) {
-          const type = template[3] || "Manual trigger";
+        function nodeBlueprint(type, label, config, data, next, x, y, status) {
+          return { type, label, config, data, next, x, y, status: status || nodeTypeMeta[type]?.status || "Klaar" };
+        }
+
+        const workflowBlueprints = {
+          "website-sales": [
+            nodeBlueprint("Trigger", "Nieuwe websitelead", "Start zodra een leadformulier of salesimport een website-aanvraag registreert.", "Lead, bron, budget, pakketinteresse", "Kwalificatie controleren", 50, 60, "Luistert"),
+            nodeBlueprint("Condition", "Pakket en budget matchen", "Controleert of pakketinteresse, budget en gewenste opleverdatum passen bij een verkoopbaar traject.", "Pakket, budget, deadline", "Bij match klantprofiel verrijken", 280, 60, "Controle"),
+            nodeBlueprint("AI", "Lead samenvatten", "Maakt een korte salesbrief met behoefte, urgentie en voorgestelde vervolgvraag.", "Intakevelden en leadnotities", "Brief aan sales toevoegen", 510, 60, "Controle"),
+            nodeBlueprint("Email", "Persoonlijke ontvangstmail", "Zet een nette ontvangstmail klaar met bevestiging, vervolgstap en verwachte reactietijd.", "Naam, bedrijf, aanvraagtype", "Klantprofiel aanmaken", 50, 240, "Klaar"),
+            nodeBlueprint("Action", "Klantprofiel voorbereiden", "Maakt of koppelt het CRM-profiel en bewaart de herkomst van de lead.", "Lead-id, e-mail, bedrijfsnaam", "Offerteconcept opstellen", 280, 240, "Klaar"),
+            nodeBlueprint("Invoice", "Offerte en aanbetaling", "Zet offertegegevens en eventuele aanbetaling klaar voor finance, zonder automatisch te verzenden.", "Pakket, prijs, termijn", "Sales taak plannen", 510, 240, "Concept"),
+            nodeBlueprint("Task", "Sales opvolging", "Maakt een taak voor de eigenaar met belmoment, context en gewenste uitkomst.", "Eigenaar, deadline, leadscore", "Team informeren", 50, 420, "Klaar"),
+            nodeBlueprint("Notification", "Sales update", "Stuurt een interne melding naar Notification Center met link naar de lead.", "Workflow, lead-id, eigenaar", "Route bepalen", 280, 420, "Klaar"),
+            nodeBlueprint("Branch", "Route bepalen", "Splitst tussen direct opvolgen, offerte nalopen of parkeren als nurturing-lead.", "Leadscore en status", "Workflow afronden", 510, 420, "Controle"),
+            nodeBlueprint("End", "Lead klaar voor sales", "Markeert de flow als voorbereid; live verzending blijft afhankelijk van handmatige bevestiging.", "Status, auditlog, volgende actie", "Geen vervolgstap", 740, 240, "Afgerond"),
+          ],
+          "website-delivery": [
+            nodeBlueprint("Trigger", "Website gepubliceerd", "Start zodra Website Factory de publicatiestatus op live zet.", "Website-id, klant, publicatiedatum", "QA-status controleren", 50, 60, "Luistert"),
+            nodeBlueprint("Condition", "QA compleet", "Controleert of technische QA, mobieltest en basis SEO-check zijn afgerond.", "QA-checklist, domein, SSL", "Klantbericht klaarzetten", 280, 60, "Controle"),
+            nodeBlueprint("Email", "Livegangbericht", "Zet een klantmail klaar met live URL, korte toelichting en nazorgafspraak.", "Klantnaam, URL, nazorgdatum", "Timeline bijwerken", 510, 60, "Klaar"),
+            nodeBlueprint("Action", "Timeline event", "Schrijft een interne timeline-update voor oplevering en toekomstige support.", "Project-id, status, publicatie", "Team informeren", 50, 240, "Klaar"),
+            nodeBlueprint("Notification", "Delivery afgerond", "Meldt projectstatus aan operations zodat facturatie of reviewverzoek kan volgen.", "Project, eigenaar, status", "Flow afsluiten", 280, 240, "Klaar"),
+            nodeBlueprint("End", "Oplevering geregistreerd", "Bewaart de simulatie-uitkomst en houdt alle live acties controleerbaar.", "Auditlog en projectstatus", "Geen vervolgstap", 510, 240, "Afgerond"),
+          ],
+          "invoice-reminder": [
+            nodeBlueprint("Trigger", "Factuur verlopen", "Start wanneer een factuur voorbij de vervaldatum staat en nog niet betaald is.", "Factuur, klant, bedrag", "Betaalstatus controleren", 50, 60, "Luistert"),
+            nodeBlueprint("Condition", "Nog openstaand", "Controleert of de factuur niet ondertussen betaald of handmatig gepauzeerd is.", "Mollie-status, factuurstatus", "Wachttijd toepassen", 280, 60, "Controle"),
+            nodeBlueprint("Delay", "Wacht 24 uur", "Geeft administratie een korte buffer voordat een herinnering wordt klaargezet.", "Vervaldatum en herinneringen", "Herinnering klaarzetten", 510, 60, "Wacht"),
+            nodeBlueprint("Email", "Vriendelijke herinnering", "Zet een klantmail klaar met factuurlink, bedrag en contactoptie.", "Factuurnummer, betaallink, bedrag", "Interne melding sturen", 50, 240, "Klaar"),
+            nodeBlueprint("Notification", "Finance signaal", "Meldt de openstaande factuur aan finance met klantcontext.", "Klant, bedrag, dagen verlopen", "Flow afsluiten", 280, 240, "Klaar"),
+            nodeBlueprint("End", "Herinnering voorbereid", "Registreert dat opvolging klaarstaat zonder automatische incasso of verzending.", "Auditlog en factuurstatus", "Geen vervolgstap", 510, 240, "Afgerond"),
+          ],
+          "customer-onboarding": [
+            nodeBlueprint("Trigger", "Klant aangemaakt", "Start wanneer een lead definitief als klant in CRM is opgeslagen.", "Klantprofiel, pakket, eigenaar", "Portaalstatus controleren", 50, 60, "Luistert"),
+            nodeBlueprint("Action", "Portaal voorbereiden", "Koppelt klantgegevens aan onboarding en maakt de basisstatus zichtbaar.", "Klant-id, e-mail, project", "Welkom mailen", 280, 60, "Klaar"),
+            nodeBlueprint("Email", "Welkom bij Max", "Zet een welkomstreeks klaar met portaalinformatie en eerste verwachting.", "Naam, portaalstatus, pakket", "Interne taak maken", 510, 60, "Klaar"),
+            nodeBlueprint("Task", "Kickoff voorbereiden", "Maakt een taak voor intake, materiaalcontrole en eerste klantcontact.", "Eigenaar, deadline, checklist", "Timeline bijwerken", 50, 240, "Klaar"),
+            nodeBlueprint("Action", "Timeline onboarding", "Legt vast dat onboarding gestart is en welke stap volgt.", "Klant, project, status", "Flow afsluiten", 280, 240, "Klaar"),
+            nodeBlueprint("End", "Onboarding gestart", "Zet de workflowstatus op voorbereid en bewaart alle auditgegevens.", "Auditlog, klantstatus", "Geen vervolgstap", 510, 240, "Afgerond"),
+          ],
+        };
+
+        function defaultWorkflowNodes(template, index = 0) {
+          const type = template[3] || "Handmatige trigger";
           return [
-            { id: createId("node"), type: "Trigger", label: type, config: "Start workflow zodra dit event binnenkomt.", x: 50, y: 60 },
-            { id: createId("node"), type: "Condition", label: conditions[index % conditions.length], config: "Controleer of deze workflow relevant is.", x: 285, y: 60 },
-            { id: createId("node"), type: "Delay", label: index % 2 ? "Wait 24 hours" : "Wait 1 hour", config: "Delay ondersteunt 1 hour, 24 hours, 3 days, 7 days of custom.", x: 520, y: 60 },
-            { id: createId("node"), type: "Action", label: actions[index % actions.length], config: "Simulatie: geen echte actie uitvoeren.", x: 285, y: 235 },
-            { id: createId("node"), type: "Notification", label: "Send notification", config: "Koppel later aan Notification Center.", x: 520, y: 235 },
-            { id: createId("node"), type: "End", label: "End", config: "Workflow afgerond.", x: 755, y: 235 },
+            nodeBlueprint("Trigger", type, "Start zodra deze gebeurtenis in CRM of Website Factory wordt geregistreerd.", "Record-id, klant, eigenaar", "Voorwaarde controleren", 50, 60, "Luistert"),
+            nodeBlueprint("Condition", conditions[index % conditions.length], "Controleert of de workflow relevant is en veilig kan doorgaan.", "Status, eigenaar, laatste activiteit", "Actie klaarzetten", 280, 60, "Controle"),
+            nodeBlueprint("Action", actions[index % actions.length], "Bereidt de interne CRM-actie voor en bewaart de uitkomst in de auditlog.", "Klant, workflow, bronrecord", "Team informeren", 510, 60, "Klaar"),
+            nodeBlueprint("Notification", "Team informeren", "Stuurt een interne melding met context en link naar het juiste dossier.", "Module, record-id, prioriteit", "Opvolgtaak maken", 50, 240, "Klaar"),
+            nodeBlueprint("Task", "Opvolging plannen", "Maakt een duidelijke taak voor de verantwoordelijke medewerker.", "Eigenaar, deadline, notitie", "Workflow afronden", 280, 240, "Klaar"),
+            nodeBlueprint("End", "Workflow afgerond", "Registreert de simulatie-uitkomst en houdt live acties onder controle.", "Auditlog, status, laatste stap", "Geen vervolgstap", 510, 240, "Afgerond"),
           ];
+        }
+
+        function templateNodes(template, index = 0) {
+          const blueprint = workflowBlueprints[template[0]] || defaultWorkflowNodes(template, index);
+          return blueprint.map((node) => ({ ...node, id: createId("node") }));
         }
 
         function buildWorkflow(template, index = 0) {
@@ -758,7 +978,46 @@
             category: template[1].includes("Invoice") ? "Finance" : template[1].includes("Lead") || template[1].includes("Sale") || template[1].includes("Upsell") ? "Sales" : "Operations",
             nodes,
             connections: nodes.slice(0, -1).map((node, nodeIndex) => ({ from: node.id, to: nodes[nodeIndex + 1].id })),
+            schemaVersion: WORKFLOW_SCHEMA_VERSION,
             updatedAt: nowIso(),
+          };
+        }
+
+        function normalizeWorkflow(workflow, index = 0) {
+          const templateIndex = templates.findIndex((template) => template[0] === workflow.id);
+          if (templateIndex >= 0 && workflow.schemaVersion !== WORKFLOW_SCHEMA_VERSION) {
+            const fresh = buildWorkflow(templates[templateIndex], templateIndex);
+            return {
+              ...fresh,
+              status: workflow.status || fresh.status,
+              updatedAt: workflow.updatedAt || fresh.updatedAt,
+            };
+          }
+
+          const nodes = Array.isArray(workflow.nodes) && workflow.nodes.length ? workflow.nodes : defaultWorkflowNodes([workflow.id || "custom", workflow.name || "Workflow", workflow.description || "", workflow.trigger || "Handmatige trigger", workflow.status || "draft"], index);
+          const normalizedNodes = nodes.map((node, nodeIndex) => {
+            const fallback = nodeFallback(node.type);
+            return {
+              ...fallback,
+              ...node,
+              id: node.id || createId("node"),
+              type: nodeTypes.includes(node.type) ? node.type : "Action",
+              label: node.label || fallback.label,
+              config: node.config || fallback.config,
+              data: node.data || fallback.data,
+              next: node.next || fallback.next,
+              status: node.status || fallback.status,
+              x: Number.isFinite(Number(node.x)) ? Number(node.x) : 50 + (nodeIndex % 4) * 290,
+              y: Number.isFinite(Number(node.y)) ? Number(node.y) : 70 + Math.floor(nodeIndex / 4) * 260,
+            };
+          });
+          return {
+            ...workflow,
+            nodes: normalizedNodes,
+            connections: Array.isArray(workflow.connections) && workflow.connections.length
+              ? workflow.connections
+              : normalizedNodes.slice(0, -1).map((node, nodeIndex) => ({ from: node.id, to: normalizedNodes[nodeIndex + 1].id })),
+            schemaVersion: WORKFLOW_SCHEMA_VERSION,
           };
         }
 
@@ -785,6 +1044,21 @@
           if (status === "enabled") return "status-active";
           if (status === "disabled") return "status-warning";
           return "status-prepared";
+        }
+
+        function nodeMeta(type) {
+          return nodeTypeMeta[type] || { label: type || "Stap", icon: "ST", status: "Klaar" };
+        }
+
+        function nodeFallback(type) {
+          const meta = nodeMeta(type);
+          return {
+            label: `${meta.label} configureren`,
+            config: "Verwerkt de gekoppelde CRM-gegevens en bewaart de uitkomst in de workflowhistorie.",
+            data: "Workflow, klant en bronrecord",
+            next: "Volgende stap uitvoeren",
+            status: meta.status,
+          };
         }
 
         function filteredWorkflows() {
@@ -829,13 +1103,13 @@
                 <p class="automation-card-copy">${escapeHtml(workflow.description)}</p>
               </div>
               <div class="automation-card-meta">
-                <mark class="status-badge ${statusClass(workflow.status)}">${escapeHtml(workflow.status)}</mark>
+                <mark class="status-badge ${statusClass(workflow.status)}">${escapeHtml(statusLabels[workflow.status] || workflow.status)}</mark>
                 <span class="status-badge status-prepared">${escapeHtml(workflow.trigger)}</span>
               </div>
               <div class="automation-card-actions">
-                <button class="button secondary" type="button" data-action="clone" data-workflow-id="${escapeHtml(workflow.id)}">Clone</button>
-                <button class="button secondary" type="button" data-action="edit" data-workflow-id="${escapeHtml(workflow.id)}">Edit</button>
-                <button class="button secondary" type="button" data-action="toggle" data-workflow-id="${escapeHtml(workflow.id)}">${workflow.status === "enabled" ? "Disable" : "Enable"}</button>
+                <button class="button secondary" type="button" data-action="clone" data-workflow-id="${escapeHtml(workflow.id)}">Kopieer</button>
+                <button class="button secondary" type="button" data-action="edit" data-workflow-id="${escapeHtml(workflow.id)}">Open</button>
+                <button class="button secondary" type="button" data-action="toggle" data-workflow-id="${escapeHtml(workflow.id)}">${workflow.status === "enabled" ? "Pauzeer" : "Activeer"}</button>
               </div>
             </article>
           `).join("");
@@ -849,20 +1123,32 @@
           elements.description.textContent = workflow.description;
           syncCanvasSize(workflow);
           elements.canvasInner.style.transform = `scale(${state.zoom})`;
-          elements.nodes.innerHTML = workflow.nodes.map((node) => `
+          elements.nodes.innerHTML = workflow.nodes.map((node) => {
+            const meta = nodeMeta(node.type);
+            const fallback = nodeFallback(node.type);
+            const status = node.status || meta.status;
+            return `
             <button class="automation-node ${node.id === state.selectedNodeId ? "is-selected" : ""} ${state.runningNodeIds.has(node.id) ? "is-running" : ""}" type="button" draggable="true" data-node-id="${escapeHtml(node.id)}" data-type="${escapeHtml(node.type)}" style="left:${node.x}px;top:${node.y}px">
-              <span>${escapeHtml(node.type)}</span>
+              <span class="automation-node-top">
+                <span class="automation-node-type"><span class="automation-node-icon">${escapeHtml(meta.icon)}</span>${escapeHtml(meta.label)}</span>
+                <span class="automation-node-status" data-status="${escapeHtml(status)}">${escapeHtml(status)}</span>
+              </span>
               <strong>${escapeHtml(node.label)}</strong>
-              <small>${escapeHtml(node.config)}</small>
+              <p>${escapeHtml(node.config || fallback.config)}</p>
+              <span class="automation-node-meta">
+                <span><b>Data</b> ${escapeHtml(node.data || fallback.data)}</span>
+                <span><b>Volgende</b> ${escapeHtml(node.next || fallback.next)}</span>
+              </span>
             </button>
-          `).join("");
+          `;
+          }).join("");
           renderLines(workflow);
           renderProperties();
         }
 
         function syncCanvasSize(workflow) {
-          const maxX = Math.max(1120, ...workflow.nodes.map((node) => Number(node.x || 0) + 280));
-          const maxY = Math.max(700, ...workflow.nodes.map((node) => Number(node.y || 0) + 220));
+          const maxX = Math.max(920, ...workflow.nodes.map((node) => Number(node.x || 0) + 280));
+          const maxY = Math.max(660, ...workflow.nodes.map((node) => Number(node.y || 0) + 250));
           elements.canvasInner.style.width = `${Math.ceil(maxX)}px`;
           elements.canvasInner.style.height = `${Math.ceil(maxY)}px`;
           elements.lines.setAttribute("viewBox", `0 0 ${maxX} ${maxY}`);
@@ -873,10 +1159,10 @@
             const from = workflow.nodes.find((node) => node.id === connection.from);
             const to = workflow.nodes.find((node) => node.id === connection.to);
             if (!from || !to) return "";
-            const x1 = from.x + 188;
-            const y1 = from.y + 54;
+            const x1 = from.x + 210;
+            const y1 = from.y + 88;
             const x2 = to.x;
-            const y2 = to.y + 54;
+            const y2 = to.y + 88;
             const mid = Math.max(36, Math.abs(x2 - x1) / 2);
             return `<path d="M ${x1} ${y1} C ${x1 + mid} ${y1}, ${x2 - mid} ${y2}, ${x2} ${y2}" />`;
           }).join("");
@@ -905,11 +1191,11 @@
             <div class="automation-log-item">
               <div>
                 <strong>${escapeHtml(run.workflowName)}</strong>
-                <p class="automation-muted">${escapeHtml(run.status)} · started ${escapeHtml(compactDate(run.startedAt))} · completed ${escapeHtml(compactDate(run.completedAt))}</p>
+                <p class="automation-muted">${escapeHtml(run.status === "Failed" ? "Mislukt" : "Afgerond")} · gestart ${escapeHtml(compactDate(run.startedAt))} · klaar ${escapeHtml(compactDate(run.completedAt))}</p>
               </div>
-              <button class="button secondary" type="button" data-open-execution="${escapeHtml(run.id)}">Open execution</button>
+              <button class="button secondary" type="button" data-open-execution="${escapeHtml(run.id)}">Open run</button>
             </div>
-          `).join("") : `<div class="automation-empty">Nog geen simulation runs. Klik op Run simulation om de visuele execution path te testen.</div>`;
+          `).join("") : `<div class="automation-empty">Nog geen simulaties. Start een test om het uitvoeringspad visueel te controleren.</div>`;
         }
 
         function renderVersions() {
@@ -918,9 +1204,9 @@
             <div class="automation-version-item">
               <div>
                 <strong>${escapeHtml(version.label)}</strong>
-                <p class="automation-muted">${escapeHtml(compactDate(version.createdAt))} · ${version.nodeCount} nodes</p>
+                <p class="automation-muted">${escapeHtml(compactDate(version.createdAt))} · ${version.nodeCount} stappen</p>
               </div>
-              <button class="button secondary" type="button" data-restore-version="${escapeHtml(version.id)}">Restore</button>
+              <button class="button secondary" type="button" data-restore-version="${escapeHtml(version.id)}">Herstel</button>
             </div>
           `).join("") : `<div class="automation-empty">Nog geen versies opgeslagen voor deze workflow.</div>`;
         }
@@ -976,7 +1262,7 @@
         }
 
         function newWorkflow() {
-          const workflow = buildWorkflow(["manual-workflow", "Nieuwe workflow", "Start met een manual trigger en voeg nodes toe aan het canvas.", "Manual trigger", "draft"], 0);
+          const workflow = buildWorkflow(["manual-workflow", "Nieuwe workflow", "Start met een handmatige trigger en bouw een gecontroleerde klantflow.", "Handmatige trigger", "draft"], 0);
           workflow.id = createId("workflow");
           state.workflows.unshift(workflow);
           selectWorkflow(workflow.id);
@@ -1084,11 +1370,15 @@
         function addNode(type, x = 80, y = 80) {
           const workflow = selectedWorkflow();
           if (!workflow) return;
+          const fallback = nodeFallback(type);
           const node = {
             id: createId("node"),
             type,
-            label: type === "AI" ? "Future AI action" : `${type} node`,
-            config: type === "Delay" ? "Wait custom" : type === "AI" ? "AI backend placeholder; mocked until live." : "Configure this node in the properties panel.",
+            label: fallback.label,
+            config: fallback.config,
+            data: fallback.data,
+            next: fallback.next,
+            status: fallback.status,
             x: Math.round(x / 28) * 28,
             y: Math.round(y / 28) * 28,
           };
@@ -1113,7 +1403,10 @@
         }
 
         function initSelect(select, items, allLabel = "Alle") {
-          select.innerHTML = `<option value="">${escapeHtml(allLabel)}</option>${items.map((item) => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`).join("")}`;
+          select.innerHTML = `<option value="">${escapeHtml(allLabel)}</option>${items.map((item) => {
+            const label = statusLabels[item] || nodeTypeMeta[item]?.label || item;
+            return `<option value="${escapeHtml(item)}">${escapeHtml(label)}</option>`;
+          }).join("")}`;
         }
 
         function initEvents() {
@@ -1210,6 +1503,7 @@
         function boot() {
           state.workflows = readArray(STORAGE_KEY);
           if (!state.workflows.length) state.workflows = seedWorkflows();
+          state.workflows = state.workflows.map(normalizeWorkflow);
           state.executions = readArray(EXECUTION_KEY);
           state.versions = readArray(VERSION_KEY);
           state.selectedWorkflowId = state.workflows[0]?.id || "";

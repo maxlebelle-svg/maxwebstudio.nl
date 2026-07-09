@@ -26330,6 +26330,7 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
 
 .global-command-dialog {
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 14px;
   width: min(1120px, 94vw);
   max-height: min(800px, 88vh);
@@ -26349,6 +26350,7 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   grid-template-columns: minmax(0, 65fr) minmax(280px, 35fr);
   gap: 14px;
   min-height: 0;
+  overflow: hidden;
 }
 
 .global-command-left,
@@ -26360,6 +26362,7 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
 
 .global-command-left {
   grid-template-rows: auto auto auto minmax(240px, 1fr);
+  min-height: 0;
 }
 
 .max-command-preview {
@@ -26507,7 +26510,7 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
 .global-command-results {
   display: grid;
   gap: 10px;
-  min-height: 260px;
+  min-height: 0;
   overflow: auto;
   padding-right: 4px;
 }
@@ -26573,6 +26576,13 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   display: grid;
   gap: 6px;
   padding: 0 8px 8px;
+}
+
+.global-command-group[data-command-group="Recent"] > div {
+  max-height: clamp(170px, 28vh, 300px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 10px;
 }
 
 .global-command-result {
