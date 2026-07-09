@@ -540,6 +540,28 @@
           </div>
 
           <section class="factory-control-center" aria-label="Website Factory Control Center">
+            <div class="factory-lead-commandbar" aria-label="Lead naar Website Factory sturen">
+              <div class="factory-lead-command-left">
+                <div class="factory-lead-commandbar-main">
+                  <span aria-hidden="true">↗</span>
+                  <label for="factory-lead-command-search">
+                    <small>Lead naar demo-site</small>
+                    <input id="factory-lead-command-search" type="search" placeholder="Zoek een lead op bedrijfsnaam, plaats, branche, telefoon of website..." autocomplete="off" />
+                  </label>
+                  <button class="button primary" id="factory-lead-command-load" type="button">Lead laden</button>
+                </div>
+                <div class="factory-lead-command-results" id="factory-lead-command-results" role="listbox" aria-label="Leadresultaten"></div>
+                <div class="factory-lead-command-meta" id="factory-lead-command-meta">Kies een lead om automatisch bedrijfsgegevens, website en demo journey klaar te zetten.</div>
+              </div>
+              <aside class="factory-lead-command-preview" id="factory-lead-command-preview" aria-label="Gekozen lead herkenning">
+                <span class="factory-lead-command-avatar">?</span>
+                <div>
+                  <small>Gekozen lead</small>
+                  <strong>Nog geen lead gekozen</strong>
+                  <p>Zoek links en klik een lead om de bedrijfsgegevens hier te controleren.</p>
+                </div>
+              </aside>
+            </div>
             <div class="factory-control-cockpit">
               <article class="factory-cockpit-card is-wide">
                 <span>Lead</span>
@@ -21192,6 +21214,11 @@
             leadSearch: document.getElementById("demo-journey-lead-search"),
             leadResults: document.getElementById("demo-journey-lead-results"),
             leadCount: document.getElementById("demo-journey-lead-count"),
+            leadCommandSearch: document.getElementById("factory-lead-command-search"),
+            leadCommandResults: document.getElementById("factory-lead-command-results"),
+            leadCommandLoad: document.getElementById("factory-lead-command-load"),
+            leadCommandMeta: document.getElementById("factory-lead-command-meta"),
+            leadCommandPreview: document.getElementById("factory-lead-command-preview"),
             business: document.getElementById("demo-journey-business"),
             contact: document.getElementById("demo-journey-contact"),
             email: document.getElementById("demo-journey-email"),
@@ -21640,6 +21667,80 @@
           elements.leadSearch.value = lead ? leadOptionLabel(lead) : "";
         }
 
+        function syncLeadCommandFromSelected() {
+          if (!elements.leadCommandSearch) return;
+          const lead = selectedLead();
+          elements.leadCommandSearch.value = lead ? leadOptionLabel(lead) : "";
+        }
+
+        function factoryCommandLeadMatches() {
+          const query = String(elements.leadCommandSearch?.value || "").trim().toLowerCase();
+          return (query ? leads.filter((lead) => leadSearchText(lead).includes(query)) : leads).slice(0, 6);
+        }
+
+        function renderLeadCommandPreview(lead = selectedLead()) {
+          if (!elements.leadCommandPreview) return;
+          if (!lead) {
+            elements.leadCommandPreview.innerHTML = `
+              <span class="factory-lead-command-avatar">?</span>
+              <div>
+                <small>Gekozen lead</small>
+                <strong>Nog geen lead gekozen</strong>
+                <p>Zoek links en klik een lead om de bedrijfsgegevens hier te controleren.</p>
+              </div>
+            `;
+            return;
+          }
+          const company = lead.companyName || lead.company_name || lead.businessName || "Naamloos bedrijf";
+          const branch = lead.industry || inferBranchFromLead(lead) || "Branche onbekend";
+          const website = lead.websiteUrl || lead.website_url || "";
+          const initials = company.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "L";
+          const rows = [
+            ["Branche", branch],
+            ["Regio", lead.region || lead.city || lead.address || "-"],
+            ["Website", website ? "Website gevonden" : "Website ontbreekt"],
+            ["Telefoon", lead.phone || "-"],
+          ];
+          elements.leadCommandPreview.innerHTML = `
+            <span class="factory-lead-command-avatar">${escapeHtml(initials)}</span>
+            <div>
+              <small>Gekozen lead</small>
+              <strong>${escapeHtml(company)}</strong>
+              <p>${escapeHtml([branch, lead.region || lead.city, website ? "Klaar voor analyse" : "Website aanvullen"].filter(Boolean).join(" · "))}</p>
+              <dl>
+                ${rows.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}
+              </dl>
+            </div>
+          `;
+        }
+
+        function renderLeadCommandbar() {
+          if (!elements.leadCommandResults) return;
+          const selectedId = elements.lead?.value || "";
+          const visibleLeads = factoryCommandLeadMatches();
+          elements.leadCommandResults.innerHTML = visibleLeads.length
+            ? visibleLeads.map((lead) => {
+              const company = lead.companyName || lead.company_name || lead.businessName || "Naamloos bedrijf";
+              const industry = lead.industry || inferBranchFromLead(lead) || "Branche onbekend";
+              const website = lead.websiteUrl || lead.website_url ? "Website gevonden" : "Website ontbreekt";
+              const meta = [industry, lead.region, website, lead.phone].filter(Boolean).join(" · ");
+              return `
+                <button type="button" class="factory-lead-command-option ${String(lead.id) === String(selectedId) ? "is-selected" : ""}" data-lead-id="${escapeHtml(lead.id)}" role="option" aria-selected="${String(lead.id) === String(selectedId) ? "true" : "false"}">
+                  <strong>${escapeHtml(company)}</strong>
+                  <span>${escapeHtml(meta || "Klaar om te laden")}</span>
+                </button>
+              `;
+            }).join("")
+            : `<div class="demo-lead-picker-empty">Geen lead gevonden. Probeer bedrijfsnaam, plaats, telefoon of website.</div>`;
+          if (elements.leadCommandMeta) {
+            const lead = selectedLead();
+            elements.leadCommandMeta.textContent = lead
+              ? `${lead.companyName || lead.company_name || "Lead"} · ${lead.industry || inferBranchFromLead(lead) || "Branche"} · ${lead.websiteUrl || lead.website_url ? "Website gevonden" : "Website ontbreekt"} · Klaar voor analyse`
+              : "Kies een lead om automatisch bedrijfsgegevens, website en demo journey klaar te zetten.";
+          }
+          renderLeadCommandPreview();
+        }
+
         function renderLeadPicker() {
           const selectedId = elements.lead?.value || "";
           fillSelect(elements.lead, leads.map((lead) => [lead.id, leadOptionLabel(lead)]), "Kies een lead");
@@ -21667,6 +21768,7 @@
               `;
             }).join("")
             : `<div class="demo-lead-picker-empty">Geen leads gevonden. Probeer bedrijf, plaats, contactpersoon of website.</div>`;
+          renderLeadCommandbar();
         }
 
         function currentAdminRole() {
@@ -23056,6 +23158,22 @@
           return leads.find((lead) => lead.id === elements.lead?.value) || null;
         }
 
+        function selectFactoryLead(leadId = "") {
+          if (!leadId || !elements.lead) return;
+          journey = null;
+          events = [];
+          projectWorkspace = null;
+          intakeState = {};
+          intakeAssets = [];
+          elements.lead.value = leadId;
+          syncLeadSearchFromSelected();
+          syncLeadCommandFromSelected();
+          renderLeadPicker();
+          loadIntakeLocally();
+          fillFromLead(selectedLead());
+          return loadJourney().catch((error) => setMessage(elements.message, error.message, "error"));
+        }
+
         function upsertLeadOption(lead = {}) {
           if (!lead?.id) return;
           const index = leads.findIndex((item) => item.id === lead.id);
@@ -24344,6 +24462,7 @@
             intakeState = {};
             intakeAssets = [];
             syncLeadSearchFromSelected();
+            syncLeadCommandFromSelected();
             renderLeadPicker();
             loadIntakeLocally();
             fillFromLead(selectedLead());
@@ -24366,6 +24485,36 @@
             syncLeadSearchFromSelected();
             renderLeadPicker();
             elements.lead.dispatchEvent(new Event("change", { bubbles: true }));
+          });
+          elements.leadCommandSearch?.addEventListener("input", () => {
+            renderLeadCommandbar();
+          });
+          elements.leadCommandSearch?.addEventListener("focus", () => {
+            elements.leadCommandSearch.select?.();
+            renderLeadCommandbar();
+          });
+          elements.leadCommandSearch?.addEventListener("keydown", (event) => {
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            const hasQuery = Boolean(String(elements.leadCommandSearch?.value || "").trim());
+            const lead = hasQuery ? factoryCommandLeadMatches()[0] : selectedLead();
+            if (lead?.id) selectFactoryLead(lead.id);
+          });
+          elements.leadCommandLoad?.addEventListener("click", () => {
+            const hasQuery = Boolean(String(elements.leadCommandSearch?.value || "").trim());
+            const lead = hasQuery ? factoryCommandLeadMatches()[0] : selectedLead();
+            if (lead?.id) {
+              selectFactoryLead(lead.id);
+            } else {
+              setMessage(elements.message, "Zoek en kies eerst een lead.", "warning");
+            }
+          });
+          elements.leadCommandResults?.addEventListener("click", (event) => {
+            const button = event.target.closest("[data-lead-id]");
+            if (!button) return;
+            event.preventDefault();
+            event.stopPropagation();
+            selectFactoryLead(button.dataset.leadId || "");
           });
           elements.generateBriefing?.addEventListener("click", (event) => {
             event.preventDefault();
