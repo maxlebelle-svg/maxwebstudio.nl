@@ -21377,6 +21377,19 @@
           return localLeadJourneyLinks()[value] || "";
         }
 
+        function forgetLocalLeadJourneyLink(leadId = "") {
+          const localLeadId = String(leadId || "").trim();
+          if (!localLeadId || isUuid(localLeadId)) return;
+          try {
+            const links = localLeadJourneyLinks();
+            if (!links[localLeadId]) return;
+            delete links[localLeadId];
+            localStorage.setItem(localLeadJourneyLinkKey, JSON.stringify(links));
+          } catch {
+            // Local browser linking is best effort.
+          }
+        }
+
         function rememberLocalLeadJourneyLink(leadId = "", journeyId = "") {
           const localLeadId = String(leadId || "").trim();
           const linkedJourneyId = String(journeyId || "").trim();
@@ -21993,6 +22006,37 @@
             region: lead.region || lead.city || lead.plaats || "",
             notes: lead.notes || lead.message || "",
           };
+        }
+
+        function comparableText(value = "") {
+          return String(value || "")
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9]+/g, " ")
+            .trim();
+        }
+
+        function comparableDomain(value = "") {
+          return String(value || "")
+            .toLowerCase()
+            .replace(/^https?:\/\//, "")
+            .replace(/^www\./, "")
+            .replace(/\/.*$/, "")
+            .trim();
+        }
+
+        function journeyMatchesLead(candidateJourney = {}, lead = {}) {
+          if (!candidateJourney || !lead) return false;
+          const leadId = String(lead.id || "").trim();
+          const journeyLeadId = String(candidateJourney.leadId || candidateJourney.lead_id || "").trim();
+          if (leadId && journeyLeadId && leadId === journeyLeadId) return true;
+          const leadWebsite = comparableDomain(lead.websiteUrl || lead.website_url || lead.website || "");
+          const journeyWebsite = comparableDomain(candidateJourney.websiteUrl || candidateJourney.website_url || "");
+          if (leadWebsite && journeyWebsite && leadWebsite === journeyWebsite) return true;
+          const leadName = comparableText(lead.companyName || lead.company_name || lead.businessName || "");
+          const journeyName = comparableText(candidateJourney.businessName || candidateJourney.business_name || "");
+          return Boolean(leadName && journeyName && (leadName === journeyName || leadName.includes(journeyName) || journeyName.includes(leadName)));
         }
 
         function readLocalLeadById(leadId = "") {
@@ -23163,7 +23207,19 @@
             : `leadId=${encodeURIComponent(centralLeadId)}`;
           const data = await apiRequest(`${endpoint}?${query}`);
           if (String(elements.lead?.value || "") !== String(leadId) || expectedVersion !== leadSelectionVersion) return;
-          journey = data.journey || null;
+          const loadedJourney = data.journey || null;
+          const lead = selectedLead();
+          if (loadedJourney && lead && !journeyMatchesLead(loadedJourney, lead)) {
+            if (linkedJourneyId) forgetLocalLeadJourneyLink(leadId);
+            clearFactoryRuntimeState();
+            loadIntakeLocally();
+            prefillIntakeFromLead(lead);
+            renderIntakeFields();
+            renderJourney();
+            setMessage(elements.message, "Oude demo-koppeling genegeerd. Deze lead staat klaar voor een nieuwe analyse.", "warning");
+            return;
+          }
+          journey = loadedJourney;
           journeyRecords = Array.isArray(data.records) ? data.records : journeyRecords;
           if (journey?.previewUrl) journey.previewUrl = absolutePreviewUrl(journey.previewUrl);
           syncPreviewSourceFromJourney();
@@ -23187,6 +23243,7 @@
         function clearFactoryRuntimeState() {
           journey = null;
           events = [];
+          journeyRecords = [];
           buildHistory = { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
           projectWorkspace = null;
           websiteIntelligencePackage = null;
