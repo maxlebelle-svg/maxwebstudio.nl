@@ -74,6 +74,9 @@ function validateMailStudioPayload(payload = {}) {
     ["max-webstudio-logo-mark.svg", "Het Max Webstudio-logo ontbreekt in de verzend-HTML."],
     ["class=\"mws-cta\"", "De CTA ontbreekt in de verzend-HTML."],
     ["info@maxwebstudio.nl", "De footer/contactregel ontbreekt in de verzend-HTML."],
+    ["wa.me/31851302326", "De WhatsApp-knop ontbreekt in de verzend-HTML."],
+    ["instagram.com/maxwebstudio.nl", "De social footer ontbreekt in de verzend-HTML."],
+    ["linkedin.com/company/130444905", "De social footer ontbreekt in de verzend-HTML."],
     ["@media (max-width: 620px)", "Responsive e-mail CSS ontbreekt."],
     ["supported-color-schemes", "Dark-mode ondersteuning ontbreekt."],
   ];

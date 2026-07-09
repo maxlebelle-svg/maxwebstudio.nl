@@ -898,7 +898,16 @@
           const logoUrl = "https://www.maxwebstudio.nl/max-webstudio-logo-mark.svg";
           const companyName = "Max Webstudio";
           const contactEmail = "info@maxwebstudio.nl";
+          const phoneDisplay = "085 130 2326";
           const siteUrl = "https://www.maxwebstudio.nl";
+          const whatsappUrl = "https://wa.me/31851302326";
+          const socialLinks = [
+            { label: "YouTube", url: "https://www.youtube.com/channel/UC3JrbzXhQWtHU8zkW_w3a3w" },
+            { label: "Instagram", url: "https://www.instagram.com/maxwebstudio.nl/" },
+            { label: "Facebook", url: "https://www.facebook.com/profile.php?id=61591581955035" },
+            { label: "LinkedIn", url: "https://www.linkedin.com/company/130444905/" },
+          ];
+          const socialLinkHtml = socialLinks.map((item) => `<a href="${escapeAttribute(item.url)}" style="display:inline-block;margin:0 6px 8px 0;padding:9px 12px;border:1px solid rgba(125,211,252,.24);border-radius:12px;color:#c9d7e8;text-decoration:none;font-size:12px;font-weight:900;">${escapeHtml(item.label)}</a>`).join("");
           const safeSubject = escapeHtml(payload.subject || companyName);
           const safePreheader = escapeHtml(payload.preheader || "");
           const safeCtaUrl = escapeAttribute(payload.cta?.url || siteUrl);
@@ -967,9 +976,51 @@
               </td>
             </tr>
             <tr>
-              <td class="mws-pad" style="padding:22px 30px;background:rgba(255,255,255,.05);color:#aabbd0;font-size:13px;line-height:1.65;">
-                Heb je vragen? Reageer op deze mail of mail naar <a href="mailto:${contactEmail}" style="color:#7dd3fc;text-decoration:underline;">${contactEmail}</a>.<br />
-                <span style="color:#7e91a8;">${companyName} · ${siteUrl}</span>
+              <td class="mws-pad" style="padding:26px 30px 28px;background:#102a3d;border-top:1px solid rgba(125,211,252,.12);">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="padding:0 0 18px;">
+                      <table role="presentation" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td style="width:42px;height:42px;border-radius:12px;background:#07111f;text-align:center;vertical-align:middle;">
+                            <img src="${logoUrl}" width="36" height="36" alt="${companyName}" style="display:block;width:36px;height:36px;margin:3px auto;border:0;" />
+                          </td>
+                          <td style="padding-left:12px;">
+                            <div style="color:#ffffff;font-size:17px;font-weight:900;">${companyName}</div>
+                            <div style="color:#91a6bc;font-size:13px;line-height:1.5;">Professionele websites voor ondernemers die snel vertrouwen en aanvragen willen.</div>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:0 0 18px;">
+                      <a href="${whatsappUrl}" style="display:inline-block;margin:0 8px 8px 0;padding:12px 16px;border-radius:14px;background:#16a34a;color:#ffffff;text-decoration:none;font-size:14px;font-weight:900;">WhatsApp</a>
+                      <a href="mailto:${contactEmail}" style="display:inline-block;margin:0 8px 8px 0;padding:12px 16px;border-radius:14px;background:#2563eb;color:#ffffff;text-decoration:none;font-size:14px;font-weight:900;">E-mail</a>
+                      <a href="tel:+31851302326" style="display:inline-block;margin:0 8px 8px 0;padding:12px 16px;border-radius:14px;background:#07111f;color:#ffffff;text-decoration:none;font-size:14px;font-weight:900;border:1px solid rgba(125,211,252,.22);">Bel</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:0 0 16px;color:#aabbd0;font-size:13px;line-height:1.75;">
+                      <strong style="color:#ffffff;">Bedrijfsgegevens</strong><br />
+                      ${companyName} · <a href="${siteUrl}" style="color:#7dd3fc;text-decoration:underline;">${siteUrl}</a><br />
+                      <a href="mailto:${contactEmail}" style="color:#7dd3fc;text-decoration:underline;">${contactEmail}</a> · <a href="tel:+31851302326" style="color:#7dd3fc;text-decoration:underline;">${phoneDisplay}</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:0 0 12px;">
+                      ${socialLinkHtml}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding-top:14px;border-top:1px solid rgba(255,255,255,.08);color:#7e91a8;font-size:12px;line-height:1.7;">
+                      Je ontvangt deze mail omdat je klant bent of contact hebt met ${companyName}.<br />
+                      <a href="${siteUrl}/algemene-voorwaarden.html" style="color:#91a6bc;text-decoration:underline;">Algemene voorwaarden</a> ·
+                      <a href="${siteUrl}/privacyverklaring.html" style="color:#91a6bc;text-decoration:underline;">Privacyverklaring</a> ·
+                      <a href="${siteUrl}" style="color:#91a6bc;text-decoration:underline;">Website</a>
+                    </td>
+                  </tr>
+                </table>
               </td>
             </tr>
           </table>
