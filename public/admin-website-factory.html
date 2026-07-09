@@ -569,6 +569,7 @@
               <div class="factory-cockpit-actions">
                 <button class="button primary" id="demo-next-step-primary" type="button">Volgende beste actie</button>
                 <button class="button secondary" id="demo-next-step-secondary" type="button" hidden>Preview openen</button>
+                <button class="button secondary" id="demo-journey-regenerate" type="button">Opnieuw beginnen</button>
                 <button class="button secondary" id="demo-journey-save" type="submit" form="demo-journey-form">Opslaan</button>
               </div>
             </div>
@@ -680,7 +681,7 @@
                   <button type="button" data-preview-mode="tablet">Tablet</button>
                   <button type="button" data-preview-mode="mobile">Mobiel</button>
                   <button type="button" id="demo-journey-preview-refresh" aria-label="Preview vernieuwen">↻</button>
-                  <button type="button" id="demo-journey-regenerate">Opnieuw genereren</button>
+                  <button type="button" id="demo-journey-regenerate-preview">Opnieuw genereren</button>
                   <button type="button" id="demo-journey-save-demo-site">Demo-site opslaan</button>
                   <button type="button" id="demo-journey-upload-manual-zip">ZIP uploaden</button>
                   <input id="demo-journey-manual-zip-input" type="file" accept=".zip,application/zip" hidden />
@@ -21235,6 +21236,7 @@
             previewControls: document.querySelector("#demo-klantreis .factory-preview-controls"),
             previewRefresh: document.getElementById("demo-journey-preview-refresh"),
             regenerateDemo: document.getElementById("demo-journey-regenerate"),
+            regeneratePreview: document.getElementById("demo-journey-regenerate-preview"),
             saveDemoSite: document.getElementById("demo-journey-save-demo-site"),
             uploadManualZip: document.getElementById("demo-journey-upload-manual-zip"),
             manualZipInput: document.getElementById("demo-journey-manual-zip-input"),
@@ -23409,7 +23411,7 @@
             : "Briefing leegmaken zodat je opnieuw kunt invoeren?");
           if (!confirmed) return;
 
-          await withJourneyLock("regenerate_demo", [elements.regenerateDemo, elements.generatePreview, elements.generateBriefing, elements.save, elements.nextStepPrimary], async () => {
+          await withJourneyLock("regenerate_demo", [elements.regenerateDemo, elements.regeneratePreview, elements.generatePreview, elements.generateBriefing, elements.save, elements.nextStepPrimary], async () => {
             const selectedPackage = currentPackageType();
             intakeState = selectedPackage ? { package: selectedPackage } : {};
             intakeAssets = [];
@@ -24076,6 +24078,13 @@
               ? "Reset de huidige demo zodat je de briefing opnieuw kunt invullen en een verbeterde preview kunt maken"
               : "Maak eerst een demo-aanvraag of websiteplan";
           }
+          if (elements.regeneratePreview) {
+            const canRegenerate = Boolean(journey?.id || elements.briefing?.value || ready);
+            elements.regeneratePreview.disabled = !canRegenerate;
+            elements.regeneratePreview.title = canRegenerate
+              ? "Reset de huidige demo zodat je de briefing opnieuw kunt invullen en een verbeterde preview kunt maken"
+              : "Maak eerst een demo-aanvraag of websiteplan";
+          }
           if (elements.previewStageState) {
             const sourceLabel = source === "manual" ? "Handmatige ZIP" : "Factory";
             elements.previewStageState.textContent = saved ? `Opgeslagen: ${sourceLabel}` : ready ? `${sourceLabel} preview` : "Nog geen preview";
@@ -24389,6 +24398,11 @@
             elements.previewFrame.src = elements.previewFrame.src;
           });
           elements.regenerateDemo?.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            resetDemoForRegeneration();
+          });
+          elements.regeneratePreview?.addEventListener("click", (event) => {
             event.preventDefault();
             event.stopPropagation();
             resetDemoForRegeneration();
