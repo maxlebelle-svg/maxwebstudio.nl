@@ -3,7 +3,12 @@
 
 [functions]
   directory = "functions"
-  included_files = ["public/assets/demo-images/library/**"]
+
+[functions."website-factory"]
+  included_files = ["public/assets/demo-images/library/bouwbedrijf/**"]
+
+[functions."demo-journey"]
+  included_files = ["public/assets/demo-images/library/bouwbedrijf/**"]
 
 [[redirects]]
   from = "/account-activeren"
