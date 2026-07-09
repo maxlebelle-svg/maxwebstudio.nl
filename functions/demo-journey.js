@@ -585,6 +585,46 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     return jsonResponse(200, { success: true, journey: responseJourney, demoJourney: responseJourney, events, buildHistory, buildStatus: buildHistory.latestJob || null, manualPreview: sanitizeManualPreviewMeta(manualPreview) });
   }
 
+  if (action === "save_website_intelligence") {
+    if (!current?.id) return jsonResponse(400, { success: false, error: "Sla eerst de demo-aanvraag op voordat je de website-analyse bewaart." });
+    const updatedAt = new Date().toISOString();
+    const previewPackage = current.preview_package && typeof current.preview_package === "object" ? current.preview_package : {};
+    const intelligencePackage = sanitizeWebsiteIntelligencePackage(payload.websiteIntelligencePackage || payload.website_intelligence_package || {});
+    const rows = await patchJourneySafe({
+      supabaseUrl,
+      serviceRoleKey,
+      id: current.id,
+      record: {
+        generated_briefing: cleanText(payload.generatedBriefing || payload.generated_briefing || current.generated_briefing),
+        intake_json: normalizeJson(payload.intake || payload.intake_json || current.intake_json || {}),
+        intake_summary: cleanText(payload.intakeSummary || payload.intake_summary || current.intake_summary),
+        intake_completeness: clampNumber(payload.intakeCompleteness || payload.intake_completeness || current.intake_completeness || 0, 0, 100),
+        asset_metadata: normalizeJson(payload.assetMetadata || payload.asset_metadata || current.asset_metadata || [], []),
+        preview_package: {
+          ...previewPackage,
+          websiteIntelligencePackage: intelligencePackage,
+          websiteScanRaw: intelligencePackage.websiteScanRaw || previewPackage.websiteScanRaw || null,
+          websiteScanSummary: intelligencePackage.websiteScanSummary || previewPackage.websiteScanSummary || "",
+          websiteIntelligence: intelligencePackage.websiteIntelligence || previewPackage.websiteIntelligence || null,
+          extractedContactData: intelligencePackage.extractedContactData || previewPackage.extractedContactData || null,
+          extractedMedia: intelligencePackage.extractedMedia || previewPackage.extractedMedia || [],
+          aiBriefing: intelligencePackage.aiBriefing || previewPackage.aiBriefing || null,
+          briefingCompleteness: intelligencePackage.briefingCompleteness || previewPackage.briefingCompleteness || 0,
+          buildConfidence: intelligencePackage.buildConfidence || previewPackage.buildConfidence || 0,
+          missingFields: intelligencePackage.missingFields || previewPackage.missingFields || [],
+          lastScannedAt: intelligencePackage.lastScannedAt || updatedAt,
+        },
+        updated_by: admin.id,
+        updated_at: updatedAt,
+      },
+    });
+    await createEvent({ supabaseUrl, serviceRoleKey, journeyId: current.id, type: "website_intelligence", title: "Website-analyse verwerkt", description: intelligencePackage.websiteScanSummary || "Website Factory briefing verrijkt.", visible: false, createdBy: admin.id });
+    const journey = mapJourney(rows[0] || await readJourneyById({ supabaseUrl, serviceRoleKey, id: current.id }));
+    const events = await readEvents({ supabaseUrl, serviceRoleKey, journeyId: current.id });
+    const responseJourney = sanitizeAdminJourney(journey);
+    return jsonResponse(200, { success: true, journey: responseJourney, demoJourney: responseJourney, events });
+  }
+
   if (action === "save_demo_site") {
     if (!current?.id) return jsonResponse(400, { success: false, error: "Sla eerst de demo-aanvraag op." });
     const savedAt = new Date().toISOString();
@@ -882,6 +922,35 @@ function stripDraftJourneyColumns(record = {}) {
     ...fallback
   } = record;
   return fallback;
+}
+
+function sanitizeWebsiteIntelligencePackage(packageData = {}) {
+  const source = packageData && typeof packageData === "object" ? packageData : {};
+  const media = Array.isArray(source.extractedMedia) ? source.extractedMedia : [];
+  const pages = Array.isArray(source.websiteScanRaw?.pages) ? source.websiteScanRaw.pages : [];
+  const missingFields = Array.isArray(source.missingFields) ? source.missingFields : Array.isArray(source.websiteIntelligence?.missingFields) ? source.websiteIntelligence.missingFields : [];
+  return {
+    websiteScanRaw: {
+      ...(source.websiteScanRaw && typeof source.websiteScanRaw === "object" ? source.websiteScanRaw : {}),
+      pages: pages.slice(0, 15),
+    },
+    websiteScanSummary: cleanText(source.websiteScanSummary),
+    websiteIntelligence: source.websiteIntelligence && typeof source.websiteIntelligence === "object" ? source.websiteIntelligence : null,
+    extractedContactData: source.extractedContactData && typeof source.extractedContactData === "object" ? source.extractedContactData : null,
+    extractedMedia: media.slice(0, 24).map((item) => ({
+      url: cleanText(item.url).slice(0, 500),
+      type: cleanText(item.type),
+      qualityScore: clampNumber(item.qualityScore, 0, 100),
+      usable: cleanText(item.usable || "maybe"),
+      recommendedUsage: cleanText(item.recommendedUsage),
+      note: cleanText(item.note),
+    })),
+    aiBriefing: source.aiBriefing && typeof source.aiBriefing === "object" ? source.aiBriefing : null,
+    briefingCompleteness: clampNumber(source.briefingCompleteness || source.websiteIntelligence?.briefingCompleteness || 0, 0, 100),
+    buildConfidence: clampNumber(source.buildConfidence || source.websiteIntelligence?.buildConfidence || 0, 0, 100),
+    missingFields: missingFields.map((item) => cleanText(item)).filter(Boolean).slice(0, 20),
+    lastScannedAt: cleanText(source.lastScannedAt || source.websiteIntelligence?.lastScannedAt || new Date().toISOString()),
+  };
 }
 
 async function updatePreviewJourney({ supabaseUrl, serviceRoleKey, id, record }) {

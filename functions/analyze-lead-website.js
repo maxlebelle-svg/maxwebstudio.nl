@@ -5,6 +5,7 @@ const { corsHeaders } = require("./_cors");
 const MAX_REDIRECTS = 3;
 const MAX_BODY_BYTES = 1.5 * 1024 * 1024;
 const TIMEOUT_MS = 9000;
+const MAX_SCAN_PAGES = 8;
 const USER_AGENT = "MaxWebstudioLeadAnalyzer/1.0 (+https://maxwebstudio.nl)";
 
 exports.handler = async (event) => {
@@ -32,6 +33,7 @@ exports.handler = async (event) => {
 
     const result = await fetchWithRedirects(startUrl);
     const finalUrl = new URL(result.finalUrl);
+    const scannedPages = await scanPublicPages(finalUrl, result.body);
     const [robotsFound, sitemapFound] = await Promise.all([
       checkKnownFile(finalUrl, "/robots.txt"),
       checkKnownFile(finalUrl, "/sitemap.xml"),
@@ -46,6 +48,7 @@ exports.handler = async (event) => {
       redirectCount: result.redirectCount,
       robotsFound,
       sitemapFound,
+      scannedPages,
     });
 
     return jsonResponse(200, analysis);
@@ -249,6 +252,8 @@ function analyzeHtml(html, context) {
   const statusCode = Number(context.statusCode || 0);
   const responseTimeMs = Number(context.responseTimeMs || 0);
   const pageSizeBytes = Number(context.pageSizeBytes || Buffer.byteLength(String(html || ""), "utf8"));
+  const scannedPages = Array.isArray(context.scannedPages) ? context.scannedPages : [];
+  const combinedHtml = [html, ...scannedPages.map((page) => page.html || "")].join("\n");
   const text = stripHtml(html).toLowerCase();
   const raw = String(html || "");
   const titleText = extractFirst(raw, /<title[^>]*>([\s\S]*?)<\/title>/i);
@@ -290,6 +295,16 @@ function analyzeHtml(html, context) {
     titleText,
     metaDescriptionText,
     h1Text,
+  });
+  const extractedContactData = extractContactData(combinedHtml, finalUrl);
+  const extractedMedia = buildMediaInventory(combinedHtml, finalUrl);
+  const foundPages = summarizePages(scannedPages, finalUrl);
+  const aiBriefing = buildAiBriefing({
+    html: combinedHtml,
+    currentWebsite,
+    contactData: extractedContactData,
+    media: extractedMedia,
+    finalUrl,
   });
 
   const checks = {
@@ -333,6 +348,21 @@ function analyzeHtml(html, context) {
   };
 
   const score = calculateScore(checks);
+  const briefingCompleteness = calculateBriefingCompleteness(aiBriefing, extractedContactData, extractedMedia, checks);
+  const missingFields = buildMissingFields(aiBriefing, extractedContactData, extractedMedia, checks);
+  const buildConfidence = calculateBuildConfidence({ briefingCompleteness, missingFields, extractedMedia, foundPages, checks });
+  const websiteIntelligence = {
+    websiteFound: checks.websiteReachable,
+    scanStatus: "klaar",
+    foundPages,
+    foundContactCount: extractedContactData.emails.length + extractedContactData.phones.length + extractedContactData.addresses.length,
+    foundImageCount: extractedMedia.length,
+    briefingCompleteness,
+    buildConfidence,
+    missingFields,
+    attentionPoints: buildAttentionPoints(missingFields, checks, extractedMedia),
+    lastScannedAt: new Date().toISOString(),
+  };
   return {
     ok: true,
     inputUrl: context.inputUrl,
@@ -344,6 +374,20 @@ function analyzeHtml(html, context) {
     scoreLabel: getScoreLabel(score),
     checks,
     currentWebsite,
+    websiteScanRaw: {
+      pages: foundPages,
+      homepage: currentWebsite,
+      checks,
+    },
+    websiteScanSummary: buildScanSummary({ checks, foundPages, extractedContactData, extractedMedia }),
+    websiteIntelligence,
+    extractedContactData,
+    extractedMedia,
+    aiBriefing,
+    briefingCompleteness,
+    buildConfidence,
+    missingFields,
+    lastScannedAt: websiteIntelligence.lastScannedAt,
     improvements: buildImprovements(checks),
     salesOpportunities: buildSalesOpportunities(checks),
   };
@@ -370,6 +414,311 @@ function buildCurrentWebsiteSnapshot(html, context = {}) {
     socialUrls,
     extractedAt: new Date().toISOString(),
   };
+}
+
+async function scanPublicPages(finalUrl, homepageHtml) {
+  const urls = selectInternalPageUrls(homepageHtml, finalUrl).slice(0, Math.max(0, MAX_SCAN_PAGES - 1));
+  const pages = [{
+    url: finalUrl.toString(),
+    title: extractFirst(homepageHtml, /<title[^>]*>([\s\S]*?)<\/title>/i) || "Homepage",
+    kind: "homepage",
+    html: String(homepageHtml || ""),
+    ok: true,
+  }];
+  for (const url of urls) {
+    try {
+      await assertSafeUrl(new URL(url));
+      const result = await fetchWithRedirects(new URL(url));
+      pages.push({
+        url: result.finalUrl,
+        title: extractFirst(result.body, /<title[^>]*>([\s\S]*?)<\/title>/i) || pageKindFromUrl(result.finalUrl),
+        kind: pageKindFromUrl(result.finalUrl),
+        html: result.body,
+        ok: true,
+      });
+    } catch {
+      pages.push({
+        url,
+        title: pageKindFromUrl(url),
+        kind: pageKindFromUrl(url),
+        html: "",
+        ok: false,
+      });
+    }
+  }
+  return pages.slice(0, MAX_SCAN_PAGES);
+}
+
+function selectInternalPageUrls(html, finalUrl) {
+  const base = new URL(finalUrl.toString());
+  const preferred = ["diensten", "service", "aanbod", "over", "about", "contact", "project", "portfolio", "reviews", "werkwijze"];
+  const urls = [];
+  const seen = new Set([base.toString().replace(/\/$/, "")]);
+  let match;
+  const pattern = /<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+  while ((match = pattern.exec(String(html || ""))) && urls.length < 40) {
+    const href = String(match[1] || "").trim();
+    if (!href || href.startsWith("#") || /^(mailto|tel|javascript):/i.test(href)) continue;
+    let url;
+    try {
+      url = new URL(href, base);
+    } catch {
+      continue;
+    }
+    if (!["http:", "https:"].includes(url.protocol) || url.hostname !== base.hostname) continue;
+    url.hash = "";
+    const normalized = url.toString().replace(/\/$/, "");
+    if (seen.has(normalized) || /\.(pdf|zip|jpg|jpeg|png|webp|gif|svg)$/i.test(url.pathname)) continue;
+    seen.add(normalized);
+    urls.push(url.toString());
+  }
+  return urls.sort((a, b) => pagePriority(b, preferred) - pagePriority(a, preferred));
+}
+
+function pagePriority(url, preferred) {
+  const path = new URL(url).pathname.toLowerCase();
+  return preferred.reduce((score, word, index) => score + (path.includes(word) ? 30 - index : 0), 0);
+}
+
+function pageKindFromUrl(url) {
+  const path = (() => {
+    try {
+      return new URL(url).pathname.toLowerCase();
+    } catch {
+      return String(url || "").toLowerCase();
+    }
+  })();
+  if (/contact/.test(path)) return "contact";
+  if (/dienst|service|aanbod/.test(path)) return "diensten";
+  if (/over|about/.test(path)) return "over ons";
+  if (/project|portfolio|werk/.test(path)) return "projecten";
+  if (/review|ervaring/.test(path)) return "reviews";
+  return "pagina";
+}
+
+function summarizePages(pages = [], finalUrl = "") {
+  const fallback = finalUrl ? [{ url: String(finalUrl), title: "Homepage", kind: "homepage", ok: true }] : [];
+  return (pages.length ? pages : fallback).map((page) => ({
+    url: cleanExtractedText(page.url).slice(0, 300),
+    title: cleanExtractedText(page.title || page.kind || "Pagina"),
+    kind: cleanExtractedText(page.kind || pageKindFromUrl(page.url)),
+    ok: page.ok !== false,
+  })).slice(0, MAX_SCAN_PAGES);
+}
+
+function extractContactData(html, baseUrl = "") {
+  const raw = String(html || "");
+  const text = stripHtml(raw);
+  const emails = uniqueMatches(raw, /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/gi, 8)
+    .filter((item) => !/example|sentry|schema|wix|wordpress/i.test(item));
+  const phones = uniqueMatches(text, /(?:\+31|0031|0)\s?(?:6|7[0-9]|8[0-9]|[1-5][0-9])(?:[\s().-]?\d){7,9}/g, 8);
+  const addresses = uniqueMatches(text, /\b[A-ZÀ-Ÿ][a-zà-ÿ.' -]{2,40}\s+\d{1,4}[a-z]?\s*,?\s+[1-9]\d{3}\s?[A-Z]{2}\s+[A-ZÀ-Ÿ][a-zà-ÿ.' -]{2,40}/g, 4);
+  const socialUrls = extractUrls(raw, /(https?:\/\/(?:www\.)?(?:instagram|facebook|linkedin|youtube|youtu\.be|tiktok)\.com\/[^"'<\s)]+)/gi, 12);
+  const openingHours = uniqueMatches(text, /\b(?:maandag|dinsdag|woensdag|donderdag|vrijdag|zaterdag|zondag|ma\.?|di\.?|wo\.?|do\.?|vr\.?|za\.?|zo\.?)\s*[:\-]?\s*\d{1,2}[:.]\d{2}\s*[-–]\s*\d{1,2}[:.]\d{2}/gi, 8);
+  return {
+    emails,
+    phones,
+    addresses,
+    openingHours,
+    socialUrls,
+    website: cleanExtractedText(baseUrl),
+  };
+}
+
+function buildMediaInventory(html, baseUrl = "") {
+  return extractImageUrls(html, baseUrl).slice(0, 18).map((url) => {
+    const lower = url.toLowerCase();
+    const isLogo = /logo|brand|favicon/.test(lower);
+    const isTiny = /icon|sprite|pixel|tracking/.test(lower);
+    const qualityScore = isTiny ? 35 : isLogo ? 78 : /hero|banner|cover|project|portfolio|gallery/.test(lower) ? 82 : 64;
+    return {
+      url,
+      type: isLogo ? "logo" : "foto",
+      qualityScore,
+      usable: qualityScore >= 70 ? "yes" : qualityScore >= 50 ? "maybe" : "no",
+      recommendedUsage: isLogo ? "Logo/merkherkenning" : qualityScore >= 75 ? "Hero of dienstenbeeld" : "Ondersteunend beeld",
+      note: qualityScore >= 70 ? "Lijkt bruikbaar voor de preview." : "Controleer formaat en scherpte voor gebruik.",
+    };
+  });
+}
+
+function buildAiBriefing({ html, currentWebsite, contactData, media, finalUrl }) {
+  const text = stripHtml(html).toLowerCase();
+  const headings = currentWebsite.headings || [];
+  const services = inferServices(text, headings);
+  const industry = inferIndustry(text, currentWebsite);
+  const cta = inferCta(text);
+  const audience = /\bzakelijk|bedrijven|b2b|professionals\b/i.test(text) ? "Zakelijk" : /\bparticulier|consument|gezinnen\b/i.test(text) ? "Particulieren" : "Particulieren en zakelijk";
+  const region = inferRegion(text, contactData);
+  return {
+    business: cleanExtractedText(currentWebsite.h1 || currentWebsite.title || new URL(finalUrl).hostname),
+    industry,
+    description: cleanExtractedText(currentWebsite.metaDescription || headings.slice(0, 2).join(" · ") || "Bestaande website gevonden; gebruik scan als basis voor een betere preview."),
+    audience,
+    region,
+    services,
+    subservices: services.slice(0, 6),
+    usps: inferUsps(text),
+    tone: inferTone(text),
+    currentLook: inferCurrentLook(currentWebsite, media),
+    premiumDirection: "Maak de preview duidelijker, rustiger en conversiegerichter dan de huidige site, met sterke CTA's en vertrouwen boven de vouw.",
+    ctas: [cta],
+    contact: contactData,
+    seoKeywords: inferSeoKeywords(text, services, industry, region),
+    strengths: inferStrengths(currentWebsite, contactData, media),
+    weaknesses: [],
+    opportunities: [],
+    recommendedPages: ["Home", "Diensten", "Werkwijze", "Projecten/reviews", "Contact"],
+    recommendedHero: `Heldere belofte, ${cta.toLowerCase()} als hoofdactie en direct zichtbaar vertrouwen.`,
+    recommendedTrust: "Gebruik reviews, keurmerken, projecten en duidelijke contactgegevens als bewijs.",
+    recommendedConversion: "Plaats telefoon, formulier en hoofdknop consequent bovenaan en bij elk belangrijk blok.",
+    missingInfo: [],
+  };
+}
+
+function inferServices(text, headings = []) {
+  const dictionary = [
+    ["maatwerk", "Maatwerk"],
+    ["project", "Projecten"],
+    ["onderhoud", "Onderhoud"],
+    ["advies", "Advies"],
+    ["support", "Support"],
+    ["installatie", "Installatie"],
+    ["renovatie", "Renovatie"],
+    ["reparatie", "Reparatie"],
+    ["training", "Training"],
+    ["behandeling", "Behandelingen"],
+    ["apk", "APK"],
+    ["occasion", "Occasions"],
+  ];
+  const found = dictionary.filter(([needle]) => text.includes(needle)).map(([, label]) => label);
+  const headingServices = headings.filter((item) => item.length > 3 && item.length < 60).slice(0, 4);
+  return [...new Set([...found, ...headingServices])].slice(0, 8);
+}
+
+function inferIndustry(text, currentWebsite = {}) {
+  const source = [text, currentWebsite.title, currentWebsite.h1].join(" ");
+  if (/auto|garage|apk|occasion|showroom/.test(source)) return "Autobedrijf / garage";
+  if (/bouw|aannemer|renovatie|dak|kozijn/.test(source)) return "Bouwbedrijf";
+  if (/install|zonnepanelen|warmtepomp|airco|laadpaal/.test(source)) return "Installatiebedrijf";
+  if (/rijschool|rijles|cbr/.test(source)) return "Rijschool";
+  if (/restaurant|cafe|lunch|diner/.test(source)) return "Horeca";
+  return "Zakelijke dienstverlening";
+}
+
+function inferCta(text) {
+  if (/offerte/.test(text)) return "Vraag een offerte aan";
+  if (/afspraak/.test(text)) return "Afspraak inplannen";
+  if (/bel/.test(text)) return "Bel direct";
+  if (/whatsapp/.test(text)) return "Stuur WhatsApp";
+  return "Neem contact op";
+}
+
+function inferRegion(text, contactData = {}) {
+  const address = contactData.addresses?.[0] || "";
+  const match = address.match(/[1-9]\d{3}\s?[A-Z]{2}\s+([A-ZÀ-Ÿ][a-zà-ÿ.' -]{2,40})/);
+  if (match) return cleanExtractedText(match[1]);
+  if (/landelijk/.test(text)) return "Landelijk";
+  if (/regio/.test(text)) return "Regionaal";
+  return "Lokaal";
+}
+
+function inferUsps(text) {
+  const items = [];
+  if (/ervaring|jaar actief|sinds/.test(text)) items.push("Ervaring");
+  if (/snel|spoed|direct/.test(text)) items.push("Snelle reactie");
+  if (/maatwerk|persoonlijk/.test(text)) items.push("Persoonlijke aanpak");
+  if (/garantie|kwaliteit/.test(text)) items.push("Kwaliteit en zekerheid");
+  return items.length ? items : ["Duidelijke service", "Laagdrempelig contact"];
+}
+
+function inferTone(text) {
+  if (/premium|exclusief|luxe/.test(text)) return "Premium en verzorgd";
+  if (/persoonlijk|familie|vertrouwd/.test(text)) return "Persoonlijk en betrouwbaar";
+  if (/snel|direct|spoed/.test(text)) return "Direct en actiegericht";
+  return "Professioneel, duidelijk en praktisch";
+}
+
+function inferCurrentLook(currentWebsite = {}, media = []) {
+  const hasVisuals = media.some((item) => item.usable !== "no");
+  return hasVisuals ? "Bestaande website bevat bruikbaar beeldmateriaal; controleer kwaliteit per sectie." : "Beeldbasis is beperkt; kies nieuwe premium beelden of laat beelden genereren.";
+}
+
+function inferSeoKeywords(text, services = [], industry = "", region = "") {
+  const words = [...services, industry, region].filter(Boolean);
+  if (/offerte/.test(text)) words.push("offerte");
+  if (/contact/.test(text)) words.push("contact");
+  return [...new Set(words)].slice(0, 10);
+}
+
+function inferStrengths(currentWebsite = {}, contactData = {}, media = []) {
+  const strengths = [];
+  if (currentWebsite.title) strengths.push("Titel en basispositionering gevonden");
+  if (contactData.phones?.length || contactData.emails?.length) strengths.push("Contactgegevens gevonden");
+  if (media.some((item) => item.usable === "yes")) strengths.push("Bruikbare beelden gevonden");
+  return strengths.length ? strengths : ["Website is bereikbaar en kan als startpunt dienen"];
+}
+
+function calculateBriefingCompleteness(aiBriefing, contactData, media, checks) {
+  const parts = [
+    Boolean(aiBriefing.industry),
+    Boolean(aiBriefing.description),
+    Boolean(aiBriefing.services?.length),
+    Boolean(aiBriefing.audience),
+    Boolean(aiBriefing.ctas?.length),
+    Boolean(contactData.phones?.length || contactData.emails?.length),
+    Boolean(media.length),
+    Boolean(checks.hasCtaSignal),
+    Boolean(checks.hasMobileResponsiveSignal),
+    Boolean(checks.hasOpenGraph || checks.hasFavicon),
+  ];
+  return Math.round((parts.filter(Boolean).length / parts.length) * 100);
+}
+
+function buildMissingFields(aiBriefing, contactData, media, checks) {
+  const missing = [];
+  if (!aiBriefing.services?.length) missing.push("Diensten");
+  if (!contactData.phones?.length && !contactData.emails?.length) missing.push("Contactgegevens");
+  if (!media.length) missing.push("Beeldmateriaal");
+  if (!checks.hasCtaSignal) missing.push("Call-to-action");
+  if (!checks.hasMobileResponsiveSignal) missing.push("Mobiele controle");
+  if (!checks.hasOpenGraph && !checks.hasFavicon) missing.push("Merkbasis");
+  return missing;
+}
+
+function calculateBuildConfidence({ briefingCompleteness, missingFields, extractedMedia, foundPages, checks }) {
+  let score = briefingCompleteness;
+  if (foundPages.length >= 3) score += 8;
+  if (extractedMedia.some((item) => item.usable === "yes")) score += 8;
+  if (checks.hasTelLink || checks.hasMailtoLink) score += 5;
+  score -= missingFields.length * 7;
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+function buildAttentionPoints(missingFields, checks, media) {
+  const items = missingFields.map((field) => `${field} controleren`);
+  if (!checks.usesHttps) items.push("Veilige verbinding controleren");
+  if (!media.some((item) => item.usable === "yes")) items.push("Nieuwe beelden klaarzetten");
+  return items.slice(0, 6);
+}
+
+function buildScanSummary({ checks, foundPages, extractedContactData, extractedMedia }) {
+  return [
+    checks.websiteReachable ? "Website bereikbaar" : "Website niet bereikbaar",
+    `${foundPages.length} pagina's gevonden`,
+    `${extractedContactData.phones.length + extractedContactData.emails.length} contactpunten`,
+    `${extractedMedia.length} beelden`,
+  ].join(" · ");
+}
+
+function uniqueMatches(value, pattern, limit = 8) {
+  const items = [];
+  let match;
+  while ((match = pattern.exec(String(value || ""))) && items.length < limit) {
+    const text = cleanExtractedText(match[0]);
+    if (text && !items.includes(text)) items.push(text);
+  }
+  return items;
 }
 
 function extractPricingItems(html) {

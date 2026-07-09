@@ -587,8 +587,16 @@
                 </div>
                 <div class="factory-source-list" id="factory-source-list"></div>
                 <div class="factory-source-actions">
-                  <button class="button secondary button-small" id="demo-journey-refresh" type="button">Nieuwe scan</button>
+                  <button class="button secondary button-small" id="demo-journey-refresh" type="button">Website analyseren</button>
                   <a class="button secondary button-small" href="admin-assets.html">Asset manager</a>
+                </div>
+                <div class="factory-output-block">
+                  <strong>Scan overzicht</strong>
+                  <div class="demo-intake-summary-grid" id="factory-intelligence-stats"></div>
+                </div>
+                <div class="factory-output-block">
+                  <strong>Beeldkeuze</strong>
+                  <div class="factory-readiness-list" id="factory-media-review"></div>
                 </div>
               </aside>
 
@@ -635,6 +643,11 @@
                     <div id="demo-intake-summary"></div>
                     <pre id="demo-intake-debug" hidden></pre>
                   </article>
+                </section>
+                <section class="factory-output-block">
+                  <strong>Extra salesnotities of klantwensen</strong>
+                  <textarea id="factory-sales-notes" rows="4" placeholder="Bijvoorbeeld: klant wil rustigere uitstraling, regio Alkmaar extra benadrukken, geen stockfoto's."></textarea>
+                  <button class="button secondary" id="factory-process-notes" type="button">Notities verwerken</button>
                 </section>
                 <section class="factory-output-block">
                   <strong>Preview acties</strong>
@@ -21121,6 +21134,7 @@
         let journeyRecords = [];
         let intakeState = {};
         let intakeAssets = [];
+        let websiteIntelligencePackage = null;
         let intakeExpandedQuestions = new Set();
         let intakeActiveQuestionKey = "";
         let previewSource = "factory";
@@ -21253,6 +21267,10 @@
             cockpitConfidence: document.getElementById("factory-cockpit-confidence"),
             cockpitConfidenceCopy: document.getElementById("factory-cockpit-confidence-copy"),
             sourceList: document.getElementById("factory-source-list"),
+            intelligenceStats: document.getElementById("factory-intelligence-stats"),
+            mediaReview: document.getElementById("factory-media-review"),
+            salesNotes: document.getElementById("factory-sales-notes"),
+            processNotes: document.getElementById("factory-process-notes"),
             outputState: document.getElementById("factory-output-state"),
             superAdminState: document.getElementById("demo-super-admin-state"),
             superAdminGrid: document.getElementById("demo-super-admin-grid"),
@@ -21798,6 +21816,171 @@
           return String(elements.website?.value || lead.websiteUrl || lead.website_url || "").trim();
         }
 
+        function currentWebsiteIntelligencePackage() {
+          return websiteIntelligencePackage
+            || journey?.previewPackage?.websiteIntelligencePackage
+            || journey?.previewPackage
+            || null;
+        }
+
+        function normalizeServiceValues(labels = []) {
+          const text = ensureArrayValue(labels).join(" ").toLowerCase();
+          const values = [];
+          if (/maatwerk/.test(text)) values.push("maatwerk");
+          if (/project/.test(text)) values.push("projecten");
+          if (/onderhoud/.test(text)) values.push("onderhoud");
+          if (/advies/.test(text)) values.push("advies");
+          if (/support/.test(text)) values.push("support");
+          if (/renovatie/.test(text)) values.push("renovatie");
+          if (/spoed|direct/.test(text)) values.push("spoed");
+          if (/apk|occasion|auto|garage/.test(text)) values.push("projecten", "onderhoud");
+          return [...new Set(values.length ? values : ["maatwerk", "projecten"])];
+        }
+
+        function buildIntelligencePackage(analysis = {}) {
+          return {
+            websiteScanRaw: analysis.websiteScanRaw || null,
+            websiteScanSummary: analysis.websiteScanSummary || "",
+            websiteIntelligence: analysis.websiteIntelligence || null,
+            extractedContactData: analysis.extractedContactData || null,
+            extractedMedia: Array.isArray(analysis.extractedMedia) ? analysis.extractedMedia : [],
+            aiBriefing: analysis.aiBriefing || null,
+            briefingCompleteness: Number(analysis.briefingCompleteness || analysis.websiteIntelligence?.briefingCompleteness || 0),
+            buildConfidence: Number(analysis.buildConfidence || analysis.websiteIntelligence?.buildConfidence || 0),
+            missingFields: Array.isArray(analysis.missingFields) ? analysis.missingFields : [],
+            lastScannedAt: analysis.lastScannedAt || new Date().toISOString(),
+          };
+        }
+
+        function applyWebsiteIntelligenceToIntake(packageData = {}, options = {}) {
+          const briefing = packageData.aiBriefing || {};
+          const contact = packageData.extractedContactData || {};
+          const media = Array.isArray(packageData.extractedMedia) ? packageData.extractedMedia : [];
+          const softSet = (key, value) => {
+            if (!value) return;
+            if (options.force || !normalizeIntakeValue(intakeState[key])) intakeState[key] = value;
+          };
+          softSet("branch", inferBranchFromLead({ industry: briefing.industry, companyName: briefing.business, notes: briefing.description }));
+          softSet("goal", "leads");
+          softSet("style", briefing.tone?.toLowerCase().includes("premium") ? ["luxe", "modern", "direct"] : ["modern", "rustig", "direct"]);
+          softSet("cta", /bel/i.test(ensureArrayValue(briefing.ctas)[0] || "") ? "call" : /offerte/i.test(ensureArrayValue(briefing.ctas)[0] || "") ? "quote" : "contact");
+          softSet("services", normalizeServiceValues(briefing.services));
+          softSet("area", String(briefing.region || "").toLowerCase().includes("landelijk") ? "national" : String(briefing.region || "").toLowerCase().includes("region") ? "regional" : "local");
+          softSet("audience", /zakelijk/i.test(briefing.audience || "") && /particulier/i.test(briefing.audience || "") ? "beide" : /zakelijk/i.test(briefing.audience || "") ? "zakelijk" : "particulier");
+          softSet("existingWebsite", knownWebsiteUrl() ? "active" : "unknown");
+          softSet("logoStatus", media.some((item) => item.type === "logo" && item.usable !== "no") ? "extract" : "needed");
+          softSet("photoStatus", media.some((item) => item.type !== "logo" && item.usable === "yes") ? "extract" : "needed");
+          softSet("mustHaves", ["phone", "contact_form", "reviews", "projects", "service_area"]);
+          if (contact.phones?.[0] && elements.phone && !elements.phone.value) elements.phone.value = contact.phones[0];
+          if (contact.emails?.[0] && elements.email && !elements.email.value) elements.email.value = contact.emails[0];
+          const intelligenceNote = [
+            "Website-analyse verwerkt",
+            packageData.websiteScanSummary ? `- ${packageData.websiteScanSummary}` : "",
+            briefing.description ? `- Richting: ${briefing.description}` : "",
+            briefing.recommendedHero ? `- Hero: ${briefing.recommendedHero}` : "",
+            packageData.missingFields?.length ? `- Controle nodig: ${packageData.missingFields.join(", ")}` : "",
+          ].filter(Boolean).join("\n");
+          if (intelligenceNote && !String(intakeState.internalRemark || "").includes("Website-analyse verwerkt")) {
+            intakeState.internalRemark = [intakeState.internalRemark, intelligenceNote].filter(Boolean).join("\n\n");
+          }
+          if (elements.package) elements.package.value = packageTypeFromValue(intakeState.package || elements.package.value);
+        }
+
+        function buildIntelligenceBriefingText(packageData = {}) {
+          const briefing = packageData.aiBriefing || {};
+          if (!briefing.business && !packageData.websiteScanSummary) return "";
+          return [
+            "Website Intelligence",
+            packageData.websiteScanSummary ? `- Scan: ${packageData.websiteScanSummary}` : "",
+            briefing.industry ? `- Branche: ${briefing.industry}` : "",
+            briefing.description ? `- Samenvatting: ${briefing.description}` : "",
+            briefing.audience ? `- Doelgroep: ${briefing.audience}` : "",
+            briefing.region ? `- Werkgebied: ${briefing.region}` : "",
+            briefing.services?.length ? `- Diensten: ${briefing.services.join(", ")}` : "",
+            briefing.usps?.length ? `- Vertrouwen/USP's: ${briefing.usps.join(", ")}` : "",
+            briefing.tone ? `- Toon: ${briefing.tone}` : "",
+            briefing.recommendedHero ? `- Hero advies: ${briefing.recommendedHero}` : "",
+            briefing.recommendedConversion ? `- Conversie advies: ${briefing.recommendedConversion}` : "",
+            packageData.missingFields?.length ? `- Nog controleren: ${packageData.missingFields.join(", ")}` : "",
+          ].filter(Boolean).join("\n");
+        }
+
+        async function persistWebsiteIntelligence(packageData = {}) {
+          if (!journey?.id) return;
+          const briefingBlock = buildIntelligenceBriefingText(packageData);
+          if (briefingBlock && elements.briefing && !elements.briefing.value.includes("Website Intelligence")) {
+            elements.briefing.value = [briefingBlock, elements.briefing.value].filter(Boolean).join("\n\n");
+          }
+          const intake = collectIntake();
+          const data = await apiRequest(endpoint, "POST", collectPayload({
+            action: "save_website_intelligence",
+            demoJourneyId: journey.id,
+            websiteIntelligencePackage: packageData,
+            generatedBriefing: elements.briefing?.value || buildBriefing(),
+            intake: intake.answers,
+            intakeSummary: buildIntakeBriefingSection(),
+            intakeCompleteness: intake.percent,
+            assetMetadata: intake.assets,
+          }));
+          journey = data.demoJourney || data.journey || journey;
+          events = Array.isArray(data.events) ? data.events : events;
+        }
+
+        async function analyzeWebsiteForFactory() {
+          const website = knownWebsiteUrl();
+          if (!website) {
+            setMessage(elements.message, "Vul eerst de bestaande website URL in, of werk handmatig verder zonder scan.", "warning");
+            return;
+          }
+          if (!journey?.id) {
+            setMessage(elements.message, "Sla eerst de demo-aanvraag op. Daarna kan de analyse bij deze lead worden bewaard.", "warning");
+            return;
+          }
+          await withJourneyLock("website_intelligence", [elements.refresh, elements.processNotes, elements.save, elements.generatePreview], async () => {
+            setMessage(elements.message, "Website analyseren en briefing aanvullen...", "info");
+            try {
+              const analysis = await apiRequest("/.netlify/functions/analyze-lead-website", "POST", { url: website });
+              websiteIntelligencePackage = buildIntelligencePackage(analysis);
+              applyWebsiteIntelligenceToIntake(websiteIntelligencePackage);
+              renderIntakeFields();
+              renderIntake();
+              await persistWebsiteIntelligence(websiteIntelligencePackage);
+              renderJourney();
+              setMessage(elements.message, "Website-analyse verwerkt. Controleer alleen de gemarkeerde aandachtspunten.", "success");
+            } catch (error) {
+              setMessage(elements.message, error.message || "Website-analyse is niet gelukt. Je kunt handmatig verder werken.", "warning");
+            }
+          });
+        }
+
+        async function processFactoryNotes() {
+          const note = String(elements.salesNotes?.value || "").trim();
+          if (!note) {
+            setMessage(elements.message, "Voeg eerst een korte salesnotitie of klantwens toe.", "warning");
+            return;
+          }
+          const currentRemark = String(intakeState.internalRemark || "");
+          intakeState.internalRemark = [currentRemark, `Extra salesnotitie:\n${note}`].filter(Boolean).join("\n\n");
+          if (/premium|luxe|hoogwaardig/i.test(note)) intakeState.style = [...new Set([...ensureArrayValue(intakeState.style), "luxe"])];
+          if (/rustig|duidelijk|simpel|overzicht/i.test(note)) intakeState.style = [...new Set([...ensureArrayValue(intakeState.style), "rustig"])];
+          if (/bel|telefoon/i.test(note)) intakeState.cta = "call";
+          if (/offerte/i.test(note)) intakeState.cta = "quote";
+          if (/geen stock|eigen foto/i.test(note)) intakeState.photoStatus = "available";
+          if (/beelden nodig|foto.*nodig/i.test(note)) intakeState.photoStatus = "needed";
+          renderIntakeFields();
+          renderIntake();
+          if (journey?.id) {
+            try {
+              await persistWebsiteIntelligence(currentWebsiteIntelligencePackage() || {});
+              renderJourney();
+            } catch (error) {
+              setMessage(elements.message, error.message || "Notitie lokaal verwerkt, maar nog niet centraal opgeslagen.", "warning");
+              return;
+            }
+          }
+          setMessage(elements.message, "Notities verwerkt in de Factory briefing.", "success");
+        }
+
         function assetAutomationCard(key = "") {
           const website = knownWebsiteUrl();
           const value = normalizeIntakeValue(intakeState[key]);
@@ -22131,6 +22314,14 @@
 
         function renderFactoryControlCenter(intake = collectIntake()) {
           const lead = selectedLead() || {};
+          const intelligencePackage = currentWebsiteIntelligencePackage() || {};
+          const intelligence = intelligencePackage.websiteIntelligence || {};
+          const media = Array.isArray(intelligencePackage.extractedMedia) ? intelligencePackage.extractedMedia : [];
+          const pages = Array.isArray(intelligencePackage.websiteScanRaw?.pages) ? intelligencePackage.websiteScanRaw.pages : Array.isArray(intelligence.foundPages) ? intelligence.foundPages : [];
+          const contactData = intelligencePackage.extractedContactData || {};
+          const contactCount = Number(intelligence.foundContactCount || 0) || ensureArrayValue(contactData.phones).length + ensureArrayValue(contactData.emails).length + ensureArrayValue(contactData.addresses).length;
+          const scanReady = Boolean(intelligence.lastScannedAt || intelligencePackage.lastScannedAt);
+          const scanConfidence = Number(intelligencePackage.buildConfidence || intelligence.buildConfidence || 0);
           const businessName = elements.business?.value || journey?.businessName || lead.companyName || lead.company_name || lead.businessName || "";
           const leadMeta = [
             elements.phone?.value || lead.phone,
@@ -22143,9 +22334,15 @@
           const attention = [
             logoNeedsAttention ? "Logo" : "",
             photoNeedsAttention ? "Beelden" : "",
+            scanReady && scanConfidence < 70 ? "Scan check" : "",
             missing.length ? `${missing.length} velden` : "",
           ].filter(Boolean);
-          const confidence = intake.complete && !logoNeedsAttention && !photoNeedsAttention
+          const confidence = scanReady
+            ? [
+              scanConfidence >= 90 ? "Sterk" : scanConfidence >= 70 ? "Goed" : scanConfidence >= 40 ? "Middel" : "Laag",
+              intelligencePackage.missingFields?.length ? `Controleer: ${intelligencePackage.missingFields.slice(0, 3).join(", ")}.` : "Scan en briefing zijn bruikbaar voor preview.",
+            ]
+            : intake.complete && !logoNeedsAttention && !photoNeedsAttention
             ? ["Sterk", "Alle kerninput is compleet."]
             : intake.percent >= 75
               ? ["Goed", "Kleine controlepunten open."]
@@ -22176,9 +22373,9 @@
               {
                 icon: "⌁",
                 title: "Website scan",
-                state: website ? "Actief" : "Controle nodig",
-                body: website || "Geen bestaande website bekend",
-                action: "Nieuwe scan",
+                state: scanReady ? "Gevonden" : website ? "Klaarzetten" : "Mist nog",
+                body: scanReady ? `${pages.length || 1} pagina's · ${contactCount} contactpunten · ${media.length} beelden` : website || "Geen bestaande website bekend",
+                action: "Website analyseren",
               },
               {
                 icon: "✎",
@@ -22206,6 +22403,29 @@
                 <button type="button" data-intake-toggle="${card.title === "Brancheprofiel" ? "branch" : card.title === "Website scan" ? "existingWebsite" : "internalRemark"}">${escapeHtml(card.action)}</button>
               </article>
             `).join("");
+          }
+          if (elements.intelligenceStats) {
+            elements.intelligenceStats.innerHTML = [
+              ["Website", website ? scanReady ? "Geanalyseerd" : "URL aanwezig" : "Geen URL"],
+              ["Pagina's", String(pages.length || (website ? 1 : 0))],
+              ["Contact", String(contactCount)],
+              ["Beelden", String(media.length)],
+              ["Confidence", scanReady ? `${scanConfidence}%` : "Nog niet"],
+              ["Laatst", intelligencePackage.lastScannedAt ? formatDate(intelligencePackage.lastScannedAt) : "-"],
+            ].map(([label, value]) => `<div><strong>${escapeHtml(label)}</strong>${escapeHtml(value)}</div>`).join("");
+          }
+          if (elements.mediaReview) {
+            elements.mediaReview.innerHTML = media.length ? media.slice(0, 5).map((item) => {
+              const action = item.usable === "yes" ? "Behouden" : item.usable === "maybe" ? "Verbeteren" : "Vervangen";
+              const icon = item.usable === "yes" ? "✓" : item.usable === "maybe" ? "!" : "×";
+              return `
+                <div class="${item.usable === "yes" ? "is-ready" : ""}">
+                  <span aria-hidden="true">${escapeHtml(icon)}</span>
+                  <strong>${escapeHtml(action)} · ${escapeHtml(item.type || "beeld")}</strong>
+                  <small>${escapeHtml(item.recommendedUsage || item.note || "Controleer beeldkwaliteit.")}</small>
+                </div>
+              `;
+            }).join("") : `<div><span aria-hidden="true">!</span><strong>Beelden controleren</strong><small>Nog geen beeldscan opgeslagen.</small></div>`;
           }
         }
 
@@ -22655,6 +22875,8 @@
           loadIntakeLocally();
           if (journey?.intake && typeof journey.intake === "object") intakeState = { ...intakeState, ...journey.intake };
           if (Array.isArray(journey?.assetMetadata)) intakeAssets = journey.assetMetadata;
+          websiteIntelligencePackage = journey?.previewPackage?.websiteIntelligencePackage || journey?.previewPackage || null;
+          if (websiteIntelligencePackage?.aiBriefing) applyWebsiteIntelligenceToIntake(websiteIntelligencePackage);
           prefillIntakeFromLead(selectedLead());
           renderIntakeFields();
           renderJourney();
@@ -22776,6 +22998,8 @@
             intakeSummary: buildIntakeBriefingSection(),
             intakeCompleteness: intake.percent,
             assetMetadata: intake.assets,
+            websiteAnalysis: currentWebsiteIntelligencePackage()?.websiteScanRaw || currentWebsiteIntelligencePackage()?.websiteIntelligence || null,
+            websiteIntelligencePackage: currentWebsiteIntelligencePackage(),
             ...googleReviewPayloadFromLead(lead),
             ...extra,
           };
@@ -22788,6 +23012,7 @@
           const website = elements.website?.value || lead?.websiteUrl || "Nog geen website ingevuld";
           const notes = [lead?.notes, elements.notes?.value].filter(Boolean).join("\n\n");
           const intakeBriefing = buildIntakeBriefingSection();
+          const intelligenceBriefing = buildIntelligenceBriefingText(currentWebsiteIntelligencePackage() || {});
           return [
             `Websiteplan - demo website preview`,
             ``,
@@ -22799,6 +23024,8 @@
             `Website/huidige URL: ${website}`,
             `Branche/regio: ${lead?.industry || "-"} / ${lead?.region || "-"}`,
             ``,
+            intelligenceBriefing,
+            intelligenceBriefing ? `` : "",
             intakeBriefing,
             ``,
             `Doel`,
@@ -22955,11 +23182,11 @@
             } catch (error) {
               const diagnostics = error?.diagnostics || {};
               const responseJson = diagnostics.responseJson || {};
-              const technicalHint = [
+              const technicalHint = developerModeActive() ? [
                 responseJson.phase || responseJson.diagnostics?.phase ? `Fase: ${responseJson.phase || responseJson.diagnostics?.phase}` : "",
                 responseJson.reason || responseJson.diagnostics?.reason ? `Reden: ${responseJson.reason || responseJson.diagnostics?.reason}` : "",
                 diagnostics.code || responseJson.code || responseJson.diagnostics?.code ? `Code: ${diagnostics.code || responseJson.code || responseJson.diagnostics?.code}` : "",
-              ].filter(Boolean).join(" · ");
+              ].filter(Boolean).join(" · ") : "";
               const message = [
                 error.message || "Preview maken is niet gelukt.",
                 technicalHint,
@@ -22986,6 +23213,7 @@
             const selectedPackage = currentPackageType();
             intakeState = selectedPackage ? { package: selectedPackage } : {};
             intakeAssets = [];
+            websiteIntelligencePackage = null;
             manualPreview = null;
             previewSource = "factory";
             lastFactoryResponse = null;
@@ -24015,9 +24243,12 @@
           elements.refresh?.addEventListener("click", async (event) => {
             event.preventDefault();
             event.stopPropagation();
-            await loadLeads();
-            await loadJourney();
-            setMessage(elements.message, "Demo klantreis opnieuw geladen.", "success");
+            await analyzeWebsiteForFactory();
+          });
+          elements.processNotes?.addEventListener("click", async (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            await processFactoryNotes();
           });
           elements.openPreview?.addEventListener("click", (event) => openActionUrl(event, elements.openPreview, "Genereer eerst een preview."));
           elements.downloadZip?.addEventListener("click", (event) => openActionUrl(event, elements.downloadZip, "Genereer eerst een previewpakket."));
