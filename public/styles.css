@@ -23077,6 +23077,196 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   padding: 22px;
 }
 
+.admin-body #demo-klantreis .factory-briefing-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(430px, 0.48fr);
+  gap: 24px;
+  align-items: stretch;
+}
+
+.admin-body #demo-klantreis .factory-briefing-panel,
+.admin-body #demo-klantreis .factory-briefing-sidebar {
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid var(--admin-page-line);
+  border-radius: var(--mws-radius);
+  background:
+    radial-gradient(circle at 10% 0%, rgba(25, 194, 255, 0.09), transparent 34%),
+    linear-gradient(180deg, rgba(13, 35, 55, 0.78), rgba(5, 18, 31, 0.94));
+  box-shadow: var(--mws-shadow);
+}
+
+.admin-body #demo-klantreis .factory-briefing-panel {
+  grid-column: auto;
+  display: grid;
+  gap: 16px;
+}
+
+.admin-body #demo-klantreis .factory-briefing-panel .sales-timeline-heading {
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.admin-body #demo-klantreis .factory-briefing-panel .sales-timeline-heading strong {
+  display: block;
+  margin-top: 4px;
+  color: #f8fbff;
+  font-size: clamp(24px, 2vw, 34px);
+  font-weight: 920;
+  line-height: 1.06;
+}
+
+.admin-body #demo-klantreis .factory-briefing-progress-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.28fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid rgba(96, 165, 250, 0.18);
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, rgba(37, 99, 235, 0.16), rgba(20, 184, 166, 0.08)),
+    rgba(2, 14, 25, 0.44);
+}
+
+.admin-body #demo-klantreis .factory-briefing-progress-row > div:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.admin-body #demo-klantreis .factory-briefing-progress-row strong {
+  color: #f8fbff;
+  font-size: 28px;
+  font-weight: 920;
+  line-height: 1;
+}
+
+.admin-body #demo-klantreis .factory-briefing-progress-row span {
+  color: rgba(226, 236, 248, 0.66);
+  font-size: 12px;
+  font-weight: 780;
+  line-height: 1.35;
+}
+
+.admin-body #demo-klantreis .factory-briefing-sidebar {
+  grid-column: auto;
+  position: sticky;
+  top: 18px;
+  align-self: start;
+  display: grid;
+  gap: 14px;
+}
+
+.admin-body #demo-klantreis .factory-briefing-sidebar .sales-timeline-heading {
+  align-items: flex-start;
+}
+
+.admin-body #demo-klantreis .factory-briefing-sidebar .sales-timeline-heading strong {
+  color: #f8fbff;
+  font-size: 18px;
+  font-weight: 920;
+}
+
+.admin-body #demo-klantreis .factory-readiness-list {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-body #demo-klantreis .factory-readiness-list div {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 8px;
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.admin-body #demo-klantreis .factory-readiness-list div.is-ready {
+  border-color: rgba(34, 197, 94, 0.22);
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.admin-body #demo-klantreis .factory-readiness-list span {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  color: #fed7aa;
+  background: rgba(245, 158, 11, 0.18);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.admin-body #demo-klantreis .factory-readiness-list .is-ready span {
+  color: #dcfce7;
+  background: rgba(34, 197, 94, 0.2);
+}
+
+.admin-body #demo-klantreis .factory-readiness-list strong {
+  min-width: 0;
+  overflow: hidden;
+  color: rgba(248, 251, 255, 0.9);
+  font-size: 12px;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-body #demo-klantreis .factory-briefing-sidebar .demo-intake-summary {
+  max-height: 390px;
+  overflow: auto;
+  padding: 14px;
+  border: 1px solid rgba(171, 196, 224, 0.13);
+  border-radius: 8px;
+  background: rgba(2, 14, 25, 0.45);
+}
+
+.admin-body #demo-klantreis .factory-briefing-actions {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-body #demo-klantreis .factory-briefing-actions .admin-action-group,
+.admin-body #demo-klantreis .factory-briefing-actions .button,
+.admin-body #demo-klantreis .factory-briefing-actions .demo-more-options {
+  width: 100%;
+}
+
+.admin-body #demo-klantreis .factory-briefing-actions .admin-action-group {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.admin-body #demo-klantreis .factory-briefing-actions .button {
+  justify-content: center;
+  min-width: 0;
+  white-space: normal;
+}
+
+.admin-body #demo-klantreis .factory-briefing-actions .demo-more-options div {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.admin-body #demo-klantreis .factory-briefing-workbench .demo-intake-question {
+  align-content: start;
+}
+
+.admin-body #demo-klantreis .factory-briefing-workbench .demo-chip-grid {
+  align-content: flex-start;
+  align-items: flex-start;
+}
+
+.admin-body #demo-klantreis .factory-briefing-workbench .demo-chip {
+  flex: 0 0 auto;
+}
+
 .admin-body #demo-klantreis .factory-preview-controls {
   display: flex;
   flex-wrap: wrap;
@@ -23278,7 +23468,7 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
 }
 
 .admin-body #demo-klantreis .demo-journey-grid {
-  grid-template-columns: minmax(0, 1fr) minmax(390px, 440px);
+  grid-template-columns: minmax(0, 0.85fr) minmax(390px, 440px);
 }
 
 .admin-body #demo-klantreis .demo-request-card,
@@ -23449,6 +23639,18 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   .admin-body .project-detail-panel,
   .admin-body .file-detail-panel {
     position: static;
+  }
+
+  .admin-body #demo-klantreis .factory-briefing-workbench {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-body #demo-klantreis .factory-briefing-sidebar {
+    position: static;
+  }
+
+  .admin-body #demo-klantreis .factory-briefing-actions .admin-action-group {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .admin-body .admin-crm-shell,

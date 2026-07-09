@@ -96,6 +96,28 @@ const INDUSTRY_PROFILES = [
     secondaryCta: "Bel een specialist",
     services: ["Storingen", "Onderhoud", "Verduurzaming", "Laadpalen", "Installatie"],
   }),
+  profile("automotive", ["automotive", "autobedrijf", "garage", "autoairco", "auto-airco", "auto airco", "apk", "occasion", "autoservice", "onderhoud"], {
+    label: "Autobedrijf en autoservice",
+    colors: { ink: "#101820", brand: "#24302c", accent: "#17b8a6", soft: "#f4f7f5", dark: "#202c27" },
+    hero: "Autoservice die direct betrouwbaar voelt.",
+    intro: "Voor autobezitters die snel willen zien welke service beschikbaar is en makkelijk een afspraak willen maken.",
+    eyebrow: "Garage, airco service en onderhoud",
+    cta: "Vraag een offerte aan",
+    secondaryCta: "Bel direct",
+    services: ["Airco service", "Onderhoud", "Diagnose", "Reparatie", "APK"],
+    benefits: [
+      ["Duidelijke service", "Bezoekers zien direct waarvoor ze terechtkunnen en hoe ze een afspraak maken."],
+      ["Vertrouwen in vakwerk", "De preview legt nadruk op deskundigheid, nette uitleg en praktische contactmogelijkheden."],
+      ["Lokale vindbaarheid", "De pagina is opgebouwd rond diensten en regio zodat zoekende autobezitters sneller contact opnemen."],
+      ["Snelle aanvraagroute", "Bellen, WhatsApp en afspraak maken blijven dichtbij zonder de pagina druk te maken."],
+    ],
+    process: [
+      ["Klacht of wens", "Geef kort aan wat er aan de auto moet gebeuren."],
+      ["Controle", "De specialist kijkt wat nodig is en licht de aanpak duidelijk toe."],
+      ["Uitvoering", "Onderhoud, diagnose of reparatie wordt professioneel uitgevoerd."],
+      ["Afspraak rondmaken", "De klant weet direct wanneer de auto klaar is of welke vervolgstap nodig is."],
+    ],
+  }),
   profile("garden", ["hovenier", "tuin", "tuinaanleg", "groen", "buitenruimte"], {
     label: "Tuin en buitenruimte",
     colors: { ink: "#17231b", brand: "#2f5d45", accent: "#d4a24a", soft: "#f2f4ed", dark: "#243b2d" },
@@ -186,7 +208,8 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     ...(currentWebsite.headings || []),
     ...(currentWebsite.paragraphs || []),
   ].filter(Boolean).join("\n");
-  const services = mergeUnique(industryProfile.services, extractServices([industrySignals, currentWebsiteText].filter(Boolean).join("\n"), industry)).slice(0, 6);
+  const extractedServices = extractServices([industrySignals, currentWebsiteText].filter(Boolean).join("\n"), industry);
+  const services = mergeUnique(extractedServices, industryProfile.services).filter(isUsableServiceLabel).slice(0, 6);
   const pricingPackages = extractPricingPackages({
     currentWebsite,
     briefing: combinedBriefing,
@@ -707,14 +730,44 @@ function extractField(text = "", labels = []) {
   return "";
 }
 
+function extractSectionItems(text = "", headings = []) {
+  const lines = String(text || "").split(/\r?\n/);
+  const normalizedHeadings = headings.map((heading) => heading.toLowerCase());
+  const items = [];
+  let active = false;
+  for (const rawLine of lines) {
+    const line = cleanText(rawLine);
+    if (!line) {
+      if (active && items.length) break;
+      continue;
+    }
+    const lower = line.toLowerCase().replace(/:$/, "");
+    const startsSection = normalizedHeadings.some((heading) => lower === heading || lower.startsWith(`${heading}:`));
+    if (startsSection) {
+      active = true;
+      const inlineValue = line.includes(":") ? cleanText(line.split(":").slice(1).join(":")) : "";
+      if (inlineValue) items.push(...inlineValue.split(/[,;]/).map(cleanText).filter(Boolean));
+      continue;
+    }
+    if (active && /^[A-Z0-9 /&-]{4,}$/.test(line) && !/^[-*•]/.test(line)) break;
+    if (!active) continue;
+    const value = line.replace(/^[-*•]\s*/, "").replace(/^\d+[.)]\s*/, "").trim();
+    if (value) items.push(...value.split(/[,;]/).map(cleanText).filter(Boolean));
+  }
+  return mergeUnique(items).slice(0, 8);
+}
+
 function extractServices(text = "", industry = "") {
   const normalized = `${text} ${industry}`.toLowerCase();
+  const briefingServices = extractSectionItems(text, ["diensten / aanbod", "diensten", "belangrijkste diensten", "services"]);
+  if (briefingServices.length) return briefingServices;
   if (/rijschool|verkeersschool|rijles|autorijles|scooter|scooterrijbewijs|bromfiets|examengarantie|praktijkexamen|theorie|cbr/.test(normalized)) return ["Scooterrijles", "Autorijles", "Examengarantie", "Theoriebegeleiding"];
   if (/bouw|timmer|renovatie|aannemer/.test(normalized)) return ["Renovatie", "Maatwerk", "Projectbegeleiding"];
   if (/restaurant|horeca|cafe|catering/.test(normalized)) return ["Menu", "Reserveren", "Catering"];
   if (/sportschool|fitness|personal trainer/.test(normalized)) return ["Proefles", "Rooster", "Membership"];
   if (/advocaat|advocatuur|juridisch|jurist/.test(normalized)) return ["Arbeidsrecht", "Ondernemingsrecht", "Intake"];
-  if (/autobedrijf|garage|automotive|occasion|apk/.test(normalized)) return ["Occasions", "APK", "Onderhoud"];
+  if (/autoairco|auto-airco|auto airco/.test(normalized)) return ["Airco service", "Airco onderhoud", "Diagnose", "Reparatie", "Afspraak maken"];
+  if (/autobedrijf|garage|automotive|occasion|apk|autoservice/.test(normalized)) return ["Onderhoud", "APK", "Diagnose", "Reparatie", "Occasions"];
   if (/tandarts|mondzorg/.test(normalized)) return ["Controle", "Preventie", "Esthetiek"];
   if (/elektricien|elektra|groepenkast/.test(normalized)) return ["Storingen", "Groepenkast", "Laadpaal"];
   if (/loodgieter|lekkage|sanitair|cv/.test(normalized)) return ["Lekkage", "CV", "Sanitair"];
@@ -739,7 +792,7 @@ function inferIndustry(text = "", businessName = "") {
   if (/restaurant|horeca|cafe/.test(normalized)) return "horeca";
   if (/sportschool|fitness|personal trainer/.test(normalized)) return "fitness";
   if (/advocaat|advocatuur|juridisch|jurist/.test(normalized)) return "advocatuur";
-  if (/autobedrijf|garage|automotive|occasion|apk/.test(normalized)) return "automotive";
+  if (/autoairco|auto-airco|auto airco|autobedrijf|garage|automotive|occasion|apk|autoservice/.test(normalized)) return "automotive";
   if (/tandarts|mondzorg/.test(normalized)) return "tandarts";
   if (/elektricien|elektra|groepenkast/.test(normalized)) return "elektricien";
   if (/loodgieter|lekkage|sanitair|cv/.test(normalized)) return "loodgieter";
@@ -776,6 +829,15 @@ function mergeUnique(...groups) {
     seen.add(key);
     return true;
   });
+}
+
+function isUsableServiceLabel(value = "") {
+  const text = cleanText(value);
+  if (!text) return false;
+  if (/^https?:\/\//i.test(text) || /^[\w.-]+@[\w.-]+\.[a-z]{2,}$/i.test(text)) return false;
+  if (/^(naam|branche|regio|website|contact|telefoon|e-mail|email|bedrijf|doelgroep|output|cta|call to action)\s*:/i.test(text)) return false;
+  if (text.length > 70) return false;
+  return /[a-zA-ZÀ-ÿ]/.test(text);
 }
 
 function extractLocationText(value = "") {
@@ -863,7 +925,20 @@ function serviceSpecificDemoAsset({ service = "", industryProfile = {}, demoImag
     if (/examen|garantie|cbr/.test(serviceText)) return source("geslaagd-moment.png", "examengarantie");
     if (/praktijk|begeleiding|instruct/.test(serviceText)) return source("instructeur-briefing.png", "instructeur");
   }
-  return demoImageAssets.service || heroImage;
+  const role = serviceImageRoleForText(serviceText, profileKey);
+  return demoImageAssets[role] || demoImageAssets.service || heroImage;
+}
+
+function serviceImageRoleForText(serviceText = "", profileKey = "") {
+  const text = `${serviceText} ${profileKey}`;
+  if (/contact|bel|whatsapp|afspraak|reserver|boeken|aanmeld|inschrijf|intake|kennismaking|offerte|aanvraag/.test(text)) return "contact";
+  if (/advies|consult|controle|diagnose|inspectie|check|taxatie|waardebepaling|huidadvies|strategie|plan/.test(text)) return "detail";
+  if (/team|begeleiding|instruct|persoonlijk|coaching|praktijk|behandeling|therapie|mondzorg/.test(text)) return "team";
+  if (/project|portfolio|renovatie|aanbouw|dak|kozijn|tuinontwerp|aanleg|nieuwbouw|woning|verkoop/.test(text)) return "project";
+  if (/uitvoering|reparatie|onderhoud|apk|airco|installatie|laadpaal|warmtepomp|storing|storingen|lekkage|cv|service|spoed/.test(text)) return "service-alt";
+  if (/resultaat|review|vertrouwen|garantie|geslaagd|preventie|nazorg/.test(text)) return "review";
+  if (/menu|lunch|diner|arrangement|private dining|kamer|verblijf|interieur|sfeer/.test(text)) return "project-alt";
+  return "service";
 }
 
 function buildSiteAssets({ businessName, industryProfile, services, colors, heroImage, demoImageAssets = {}, projectSlug }) {
@@ -875,9 +950,16 @@ function buildSiteAssets({ businessName, industryProfile, services, colors, hero
     dark: colors.dark || colors.brand || "#1f332a",
   };
   const serviceImageRoles = ["service", "service-alt", "project", "project-alt", "detail", "team", "contact", "review"];
+  const usedServiceAssetPaths = new Set();
   const serviceAssets = services.slice(0, 6).map((service, index) => {
     const fallbackAsset = demoImageAssets[serviceImageRoles[index % serviceImageRoles.length]] || demoImageAssets.service || heroImage;
-    const selectedAsset = serviceSpecificDemoAsset({ service, industryProfile, demoImageAssets, heroImage }) || fallbackAsset;
+    let selectedAsset = serviceSpecificDemoAsset({ service, industryProfile, demoImageAssets, heroImage }) || fallbackAsset;
+    if (selectedAsset?.src && usedServiceAssetPaths.has(selectedAsset.src)) {
+      selectedAsset = serviceImageRoles
+        .map((role) => demoImageAssets[role])
+        .find((assetItem) => assetItem?.src && !usedServiceAssetPaths.has(assetItem.src)) || selectedAsset;
+    }
+    if (selectedAsset?.src) usedServiceAssetPaths.add(selectedAsset.src);
     return {
       path: selectedAsset.src || fallbackAsset.src,
       kind: "service",
@@ -1396,8 +1478,15 @@ if (form) {
 }
 
 function serviceText(service, profile = {}) {
-  const label = profile.label || "uw branche";
-  return `${service} met een duidelijke uitleg, sterke visuele presentatie en een logische route naar aanvraag of contact.`;
+  const text = String(service || "").toLowerCase();
+  if (/airco/.test(text)) return "Laat direct zien wat de aircoservice inhoudt, wanneer klanten moeten langskomen en hoe ze snel een afspraak maken.";
+  if (/diagnose|controle|inspectie|check/.test(text)) return "Geeft bezoekers vertrouwen door duidelijk te maken hoe de controle werkt en welke vervolgstap logisch is.";
+  if (/reparatie|uitvoering|onderhoud|apk|service|storing|spoed/.test(text)) return "Maakt praktisch duidelijk wat er gebeurt, hoe snel klanten geholpen worden en hoe ze contact opnemen.";
+  if (/contact|bel|whatsapp|afspraak|offerte|reserver|boek/.test(text)) return "Zet de belangrijkste actie centraal zodat bezoekers zonder zoeken kunnen bellen, appen of aanvragen.";
+  if (/advies|intake|strategie|plan|waardebepaling|taxatie/.test(text)) return "Presenteert deskundigheid rustig en concreet, zodat bezoekers sneller vertrouwen krijgen in het eerste gesprek.";
+  if (/menu|lunch|diner|arrangement|kamer|verblijf/.test(text)) return "Laat sfeer en aanbod samenkomen, met een duidelijke route naar reserveren of boeken.";
+  if (/behandeling|styling|massage|coaching|therapie/.test(text)) return "Laat de ervaring, aanpak en voordelen duidelijk voelen voordat iemand een afspraak maakt.";
+  return `${service} met een duidelijke uitleg, passende visuele presentatie en een logische route naar aanvraag of contact.`;
 }
 
 function inferBenefits(industry = "", profile = null) {

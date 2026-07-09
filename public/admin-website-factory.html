@@ -592,6 +592,66 @@
             </article>
           </div>
 
+          <section class="factory-briefing-workbench" aria-labelledby="demo-intake-title">
+            <article class="admin-card demo-intake-card factory-briefing-panel" id="demo-journey-intake">
+              <div class="sales-timeline-heading">
+                <div>
+                  <p class="section-kicker">Briefing questionnaire</p>
+                  <strong id="demo-intake-title">Website Factory briefing</strong>
+                  <span>Vul de klantwens zo in dat de Factory direct een websiteplan en preview kan bouwen.</span>
+                </div>
+                <mark class="status-badge status-planned" id="demo-intake-state">Onvolledig</mark>
+              </div>
+              <div class="factory-briefing-progress-row">
+                <div>
+                  <strong id="demo-intake-score">0%</strong>
+                  <span id="demo-intake-progress">Intake compleet: 0/14 verplichte punten.</span>
+                </div>
+                <div class="demo-intake-progress" aria-label="Intake voortgang"><span id="demo-intake-progress-bar" style="width: 0%"></span></div>
+              </div>
+              <div class="demo-intake-fields" id="demo-intake-fields"></div>
+              <div class="demo-intake-upload-grid">
+                <label for="demo-intake-logo-upload">Logo bestanden<input id="demo-intake-logo-upload" type="file" multiple accept=".svg,.png,.jpg,.jpeg,.webp,.pdf" /></label>
+                <label for="demo-intake-photo-upload">Foto bestanden<input id="demo-intake-photo-upload" type="file" multiple accept=".png,.jpg,.jpeg,.webp,.pdf" /></label>
+              </div>
+              <div class="demo-intake-assets" id="demo-intake-assets"></div>
+            </article>
+
+            <aside class="admin-card factory-briefing-sidebar" aria-labelledby="demo-intake-summary-title">
+              <div class="sales-timeline-heading">
+                <div>
+                  <strong id="demo-intake-summary-title">Live briefing</strong>
+                  <span>Deze samenvatting gaat mee naar websiteplan, preview en ZIP.</span>
+                </div>
+                <mark class="status-badge status-prepared" id="demo-intake-missing">Mist input</mark>
+              </div>
+              <div class="factory-readiness-list" id="demo-intake-readiness" aria-label="Factory readiness checklist"></div>
+              <article class="demo-intake-summary">
+                <div id="demo-intake-summary"></div>
+                <pre id="demo-intake-debug" hidden></pre>
+              </article>
+              <div class="admin-profile-actions admin-action-groups factory-briefing-actions">
+                <div class="admin-action-group admin-action-group-primary">
+                  <button class="button primary" id="demo-journey-save" type="submit" form="demo-journey-form">Demo-aanvraag opslaan</button>
+                  <button class="button secondary" id="demo-journey-generate-briefing" type="button">Websiteplan maken</button>
+                  <button class="button secondary" id="demo-journey-generate-preview" type="button">Preview genereren</button>
+                </div>
+                <div class="admin-action-group admin-action-group-secondary">
+                  <button class="button secondary" id="demo-journey-upgrade-professional" type="button">Genereer Business-preview</button>
+                  <button class="button secondary" id="demo-journey-upgrade-premium" type="button">Genereer Premium-preview</button>
+                  <details class="demo-more-options">
+                    <summary>Meer opties</summary>
+                    <div>
+                      <button class="button secondary" id="demo-journey-copy-briefing" type="button">Websiteplan kopiëren</button>
+                      <button class="button secondary" id="demo-journey-refresh" type="button">Opnieuw laden</button>
+                    </div>
+                  </details>
+                </div>
+              </div>
+              <p class="admin-form-message" id="demo-journey-message" role="status"></p>
+            </aside>
+          </section>
+
           <div class="admin-grid workflow-metrics" id="demo-journey-metrics" aria-live="polite"></div>
 
           <article class="admin-card demo-next-step-card" id="demo-next-step-card" aria-labelledby="demo-next-step-title">
@@ -661,47 +721,6 @@
                 <label class="admin-profile-wide" for="demo-journey-feedback">Klantfeedback<textarea id="demo-journey-feedback" rows="4"></textarea></label>
                 <label class="admin-profile-wide" for="demo-journey-notes">Interne notities<textarea id="demo-journey-notes" rows="4"></textarea></label>
               </div>
-              <section class="demo-intake-card" id="demo-journey-intake" aria-labelledby="demo-intake-title">
-                <div class="sales-timeline-heading">
-                  <div>
-                  <strong id="demo-intake-title">Klantintake</strong>
-                    <span>Leg de commerciële eisen vast voordat websiteplan, preview en klantmail klaarstaan.</span>
-                  </div>
-                  <mark class="status-badge status-planned" id="demo-intake-state">Onvolledig</mark>
-                </div>
-                <div class="demo-intake-progress" aria-label="Intake voortgang"><span id="demo-intake-progress-bar" style="width: 0%"></span></div>
-                <p class="admin-muted-note" id="demo-intake-progress">Intake compleet: 0/14 verplichte punten.</p>
-                <div class="demo-intake-fields" id="demo-intake-fields"></div>
-                <div class="demo-intake-upload-grid">
-                  <label for="demo-intake-logo-upload">Logo bestanden<input id="demo-intake-logo-upload" type="file" multiple accept=".svg,.png,.jpg,.jpeg,.webp,.pdf" /></label>
-                  <label for="demo-intake-photo-upload">Foto bestanden<input id="demo-intake-photo-upload" type="file" multiple accept=".png,.jpg,.jpeg,.webp,.pdf" /></label>
-                </div>
-                <div class="demo-intake-assets" id="demo-intake-assets"></div>
-                <article class="demo-intake-summary" aria-labelledby="demo-intake-summary-title">
-                  <strong id="demo-intake-summary-title">Klantwensen & eisen</strong>
-                  <div id="demo-intake-summary"></div>
-                  <pre id="demo-intake-debug" hidden></pre>
-                </article>
-              </section>
-              <div class="admin-profile-actions admin-action-groups">
-                <div class="admin-action-group admin-action-group-primary">
-                  <button class="button primary" id="demo-journey-save" type="submit">Demo-aanvraag opslaan</button>
-                  <button class="button secondary" id="demo-journey-generate-briefing" type="button">Websiteplan maken</button>
-                  <button class="button secondary" id="demo-journey-generate-preview" type="button">Preview genereren</button>
-                </div>
-                <div class="admin-action-group admin-action-group-secondary">
-                  <button class="button secondary" id="demo-journey-upgrade-professional" type="button">Genereer Business-preview</button>
-                  <button class="button secondary" id="demo-journey-upgrade-premium" type="button">Genereer Premium-preview</button>
-                  <details class="demo-more-options">
-                    <summary>Meer opties</summary>
-                    <div>
-                      <button class="button secondary" id="demo-journey-copy-briefing" type="button">Websiteplan kopiëren</button>
-                      <button class="button secondary" id="demo-journey-refresh" type="button">Opnieuw laden</button>
-                    </div>
-                  </details>
-                </div>
-              </div>
-              <p class="admin-form-message" id="demo-journey-message" role="status"></p>
             </form>
 
             <article class="admin-card crm-detail-panel demo-card demo-status-card" id="demo-sites">
@@ -20990,9 +21009,12 @@
             downloadZip: document.getElementById("demo-journey-download-zip"),
             intakeFields: document.getElementById("demo-intake-fields"),
             intakeState: document.getElementById("demo-intake-state"),
+            intakeScore: document.getElementById("demo-intake-score"),
             intakeProgress: document.getElementById("demo-intake-progress"),
             intakeProgressBar: document.getElementById("demo-intake-progress-bar"),
             intakeSummary: document.getElementById("demo-intake-summary"),
+            intakeMissing: document.getElementById("demo-intake-missing"),
+            intakeReadiness: document.getElementById("demo-intake-readiness"),
             intakeDebug: document.getElementById("demo-intake-debug"),
             intakeAssets: document.getElementById("demo-intake-assets"),
             intakeLogoUpload: document.getElementById("demo-intake-logo-upload"),
@@ -21604,16 +21626,49 @@
           ].filter(Boolean).join("\n");
         }
 
+        function intakeReadinessItems(intake = collectIntake()) {
+          const answers = intake.answers || {};
+          const hasValue = (key) => {
+            const value = normalizeIntakeValue(answers[key]);
+            return Array.isArray(value) ? value.length > 0 : Boolean(value);
+          };
+          const hasAsset = (kind) => intakeAssets.some((asset) => asset.kind === kind);
+          return [
+            ["Lead gekozen", Boolean(elements.lead?.value || elements.business?.value)],
+            ["Brancheprofiel gekozen", hasValue("branch")],
+            ["Doel en CTA gekozen", hasValue("goal") && hasValue("cta")],
+            ["Diensten ingevuld", hasValue("services")],
+            ["Doelgroep en werkgebied", hasValue("audience") && hasValue("area")],
+            ["Bewijs en must-haves", hasValue("mustHaves")],
+            ["Logo gecontroleerd", hasValue("logoStatus") || hasAsset("logo")],
+            ["Foto's gecontroleerd", hasValue("photoStatus") || hasAsset("foto")],
+          ];
+        }
+
         function renderIntake() {
           const intake = collectIntake();
           if (elements.intakeState) {
             elements.intakeState.textContent = intake.complete ? "Klaar voor preview" : "Onvolledig";
             elements.intakeState.className = `status-badge ${intake.complete ? "status-active" : "status-planned"}`;
           }
+          if (elements.intakeScore) elements.intakeScore.textContent = `${intake.percent}%`;
           if (elements.intakeProgress) {
             elements.intakeProgress.textContent = `Intake compleet: ${intake.completed}/${intake.requiredTotal} verplichte punten${intake.complete ? "." : `. Mist: ${intake.missing.slice(0, 4).join(", ")}${intake.missing.length > 4 ? "..." : ""}`}`;
           }
           if (elements.intakeProgressBar) elements.intakeProgressBar.style.width = `${intake.percent}%`;
+          if (elements.intakeMissing) {
+            elements.intakeMissing.textContent = intake.complete ? "Klaar voor Factory" : `${intake.missing.length} mist`;
+            elements.intakeMissing.className = `status-badge ${intake.complete ? "status-active" : "status-planned"}`;
+          }
+          if (elements.intakeReadiness) {
+            const items = intakeReadinessItems(intake);
+            elements.intakeReadiness.innerHTML = items.map(([label, ready]) => `
+              <div class="${ready ? "is-ready" : ""}">
+                <span aria-hidden="true">${ready ? "✓" : "!"}</span>
+                <strong>${escapeHtml(label)}</strong>
+              </div>
+            `).join("");
+          }
           if (elements.intakeSummary) {
             const rows = intakeSummaryLines();
             elements.intakeSummary.innerHTML = rows.length
