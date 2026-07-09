@@ -583,7 +583,7 @@
                     <p class="section-kicker">Bronnen</p>
                     <h3 id="factory-sources-title">Automatische input</h3>
                   </div>
-                  <mark class="status-badge status-active" id="demo-journey-source">CRM</mark>
+                  <mark class="status-badge status-active" id="factory-control-source-state">CRM</mark>
                 </div>
                 <div class="factory-source-list" id="factory-source-list"></div>
                 <div class="factory-source-actions">
@@ -21155,6 +21155,7 @@
             liveFeedback: document.getElementById("factory-live-feedback"),
             liveReady: document.getElementById("factory-live-ready"),
             source: document.getElementById("demo-journey-source"),
+            controlSource: document.getElementById("factory-control-source-state"),
             form: document.getElementById("demo-journey-form"),
             lead: document.getElementById("demo-journey-lead"),
             leadSearch: document.getElementById("demo-journey-lead-search"),
@@ -22593,19 +22594,19 @@
 
         async function loadLeads() {
           const selectedId = elements.lead?.value || "";
+          const setLeadSourceState = (label, className) => {
+            [elements.source, elements.controlSource].filter(Boolean).forEach((element) => {
+              element.textContent = label;
+              element.className = className;
+            });
+          };
           try {
             const data = await apiRequest(leadsEndpoint);
             leads = sortLeadsNewestFirst(Array.isArray(data.records) ? data.records : []);
-            if (elements.source) {
-              elements.source.textContent = "Centrale bron";
-              elements.source.className = "status-badge status-active";
-            }
+            setLeadSourceState("Centrale bron", "status-badge status-active");
           } catch (error) {
             leads = [];
-            if (elements.source) {
-              elements.source.textContent = "Niet geladen";
-              elements.source.className = "status-badge status-warning";
-            }
+            setLeadSourceState("Niet geladen", "status-badge status-warning");
             setMessage(elements.message, error.message, "warning");
           }
           if (elements.lead && selectedId && leads.some((lead) => String(lead.id) === String(selectedId))) {
@@ -23338,23 +23339,16 @@
 
         function renderGuidedWorkflow() {
           const state = getGuidedWorkflowState();
-          const duplicatePrimaryAction = state.action === "generate_preview" && Boolean(elements.generatePreview);
-          if (elements.nextStepCard) {
-            elements.nextStepCard.hidden = duplicatePrimaryAction;
-          }
+          if (elements.nextStepCard) elements.nextStepCard.hidden = true;
           if (elements.nextStepState) {
             elements.nextStepState.textContent = state.label;
             elements.nextStepState.className = `status-badge ${state.key === "done" ? "status-active" : state.key === "approval" || state.key === "delivery" ? "status-prepared" : "status-planned"}`;
           }
           if (elements.nextStepCopy) elements.nextStepCopy.textContent = state.copy;
           if (elements.nextStepPrimary) {
-            elements.nextStepPrimary.hidden = duplicatePrimaryAction;
-            if (duplicatePrimaryAction) {
-              elements.nextStepPrimary.dataset.action = "";
-            } else {
-              elements.nextStepPrimary.textContent = state.primary;
-              elements.nextStepPrimary.dataset.action = state.action;
-            }
+            elements.nextStepPrimary.hidden = false;
+            elements.nextStepPrimary.textContent = state.primary;
+            elements.nextStepPrimary.dataset.action = state.action;
           }
           if (elements.nextStepSecondary) {
             elements.nextStepSecondary.hidden = !state.secondary;
