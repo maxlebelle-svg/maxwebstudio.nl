@@ -20866,9 +20866,193 @@
           ["day5_delivery_ready", "Dag 5 - Oplevering klaar"],
         ];
         const websitePackages = [
-          ["starter", "Starter Site (€495)"],
-          ["business", "Business Website (€995)"],
-          ["premium", "Premium Growth (€1750)"],
+          ["starter", "Starter Site (€495)", "Snelle premium onepager/compacte site voor directe aanvragen."],
+          ["business", "Business Website (€995)", "Volledige bedrijfswebsite met sterkere structuur, diensten en vertrouwen."],
+          ["premium", "Premium Growth (€1750)", "Uitgebreide groeisite met extra conversie, SEO en premium presentatie."],
+          ["landing", "Actie/landingpage", "Losse campagnepagina voor één aanbod, actie of leadmagneet."],
+          ["refresh", "Website opfrissen", "Bestaande website moderniseren zonder alles opnieuw te positioneren."],
+          ["custom", "Maatwerk traject", "Voor complexere wensen, koppelingen of meerdere vestigingen."],
+        ];
+        const baseGoalOptions = [
+          ["leads", "Meer aanvragen", "Website sturen op offerte-, bel- en contactmomenten."],
+          ["appointment", "Afspraak inplannen", "Bezoeker direct naar intake, proefles, consult of afspraak sturen."],
+          ["call", "Meer telefoontjes", "Telefoon en spoed/contact zichtbaar bovenaan houden."],
+          ["whatsapp", "Meer WhatsApp gesprekken", "Laagdrempelig contact voor snelle vragen en offerte-aanvragen."],
+          ["trust", "Meer vertrouwen", "Bewijs, reviews, keurmerken en vakmanschap zwaarder tonen."],
+          ["portfolio", "Werk tonen", "Projecten, cases, resultaten of voor/na-beelden centraal zetten."],
+          ["information", "Meer informatie geven", "Diensten rustig uitleggen voordat iemand contact opneemt."],
+          ["check", "Doe de check", "Een scan, keuzehulp of snelle check als laagdrempelige leadmagneet."],
+          ["recruitment", "Personeel werven", "Vacatures, cultuur en werken-bij CTA toevoegen."],
+          ["route", "Meer locatiebezoek", "Route, openingstijden en locatie duidelijk maken."],
+        ];
+        const baseCtaOptions = [
+          ["quote", "Offerte aanvragen", "Sterk voor bouw, installatie, schoonmaak, zakelijke diensten en maatwerk."],
+          ["appointment", "Afspraak plannen", "Sterk voor salons, zorg, advies, rijschool en kennismaking."],
+          ["call", "Bel direct", "Sterk voor spoed, service, lokaal vertrouwen en oudere doelgroepen."],
+          ["whatsapp", "WhatsApp", "Snel en laagdrempelig voor vragen, foto's en offertegesprekken."],
+          ["contact", "Contact opnemen", "Veilige algemene CTA wanneer de exacte actie nog onbekend is."],
+          ["free_appointment", "Maak vrijblijvende afspraak", "Goed voor consult, intake, advies of premium dienstverlening."],
+          ["check", "Doe de check", "Leadmagneet voor websitecheck, dakcheck, bespaarcheck of intake."],
+          ["more_info", "Meer informatie", "Voor bezoekers die eerst uitleg nodig hebben."],
+          ["route", "Routebeschrijving", "Voor bedrijven met fysieke locatie of showroom."],
+          ["book", "Boek direct", "Voor reserveringen, lessen, behandelingen of kamers."],
+          ["trial", "Plan proefles/proefafspraak", "Voor rijschool, sportschool, coaching en intake."],
+        ];
+        const baseServiceOptions = [
+          ["advies", "Advies", "Algemene advies- of intakegesprekken."],
+          ["maatwerk", "Maatwerk", "Werk dat per klant verschilt."],
+          ["onderhoud", "Onderhoud", "Terugkerende service, beheer of nazorg."],
+          ["spoed", "Spoedservice", "Snel contact bij urgent probleem."],
+          ["projecten", "Projecten", "Projecten/cases tonen voor vertrouwen."],
+          ["reviews", "Reviews verzamelen", "Social proof zichtbaar inzetten."],
+        ];
+        const branchPresets = {
+          automotive: {
+            goals: ["appointment", "call", "trust", "route", "leads", "portfolio"],
+            ctas: ["appointment", "call", "quote", "whatsapp", "route", "more_info"],
+            services: [["apk", "APK"], ["onderhoud_auto", "Auto onderhoud"], ["airco_service", "Airco service"], ["diagnose", "Diagnose"], ["reparatie", "Reparatie"], ["banden", "Banden"], ["occasions", "Occasions"], ["schadeherstel", "Schadeherstel"], ["elektronica", "Elektronica storing"], ["remmen", "Remmen"], ["accu", "Accu service"], ["uitlijnen", "Uitlijnen"]],
+          },
+          rijschool: {
+            goals: ["appointment", "whatsapp", "leads", "trust", "information"],
+            ctas: ["trial", "whatsapp", "appointment", "call", "quote"],
+            services: [["autorijles", "Autorijles"], ["scooterrijles", "Scooterrijles"], ["proefles", "Proefles"], ["theorie", "Theoriebegeleiding"], ["praktijkexamen", "Praktijkexamen"], ["opfriscursus", "Opfriscursus"], ["faalangst", "Faalangstbegeleiding"], ["spoedcursus", "Spoedcursus"], ["examengarantie", "Examengarantie"]],
+          },
+          installatiebedrijf: {
+            goals: ["leads", "call", "trust", "check", "appointment"],
+            ctas: ["quote", "call", "check", "whatsapp", "appointment"],
+            services: [["warmtepomp", "Warmtepompen"], ["zonnepanelen", "Zonnepanelen"], ["laadpaal", "Laadpalen"], ["cv", "CV-ketel"], ["airco", "Airco"], ["elektra", "Elektra"], ["onderhoud_installatie", "Onderhoud"], ["storing", "Storingen"], ["verduurzaming", "Verduurzaming"], ["groepenkast", "Groepenkast"]],
+          },
+          bouwbedrijf: {
+            goals: ["leads", "portfolio", "trust", "appointment", "check"],
+            ctas: ["quote", "free_appointment", "call", "whatsapp", "check"],
+            services: [["renovatie", "Renovatie"], ["verbouwing", "Verbouwing"], ["aanbouw", "Aanbouw"], ["dakopbouw", "Dakopbouw"], ["badkamer", "Badkamer"], ["keuken", "Keuken"], ["kozijnen", "Kozijnen"], ["timmerwerk", "Timmerwerk"], ["dakkapel", "Dakkapel"], ["onderhoud_bouw", "Onderhoud"], ["isolatie", "Isolatie"], ["projectbegeleiding", "Projectbegeleiding"]],
+          },
+          horeca: {
+            goals: ["route", "appointment", "trust", "information", "leads"],
+            ctas: ["book", "route", "call", "whatsapp", "more_info"],
+            services: [["lunch", "Lunch"], ["diner", "Diner"], ["reserveren", "Reserveren"], ["afhalen", "Afhalen"], ["bezorgen", "Bezorgen"], ["catering", "Catering"], ["private_dining", "Private dining"], ["arrangementen", "Arrangementen"], ["events", "Events"]],
+          },
+          fitness: {
+            goals: ["appointment", "leads", "trust", "information"],
+            ctas: ["trial", "appointment", "whatsapp", "more_info"],
+            services: [["personal_training", "Personal training"], ["groepslessen", "Groepslessen"], ["fitness", "Fitness"], ["voedingsadvies", "Voedingsadvies"], ["intake", "Intake"], ["small_group", "Small group training"], ["coaching", "Coaching"], ["revalidatie_training", "Revalidatietraining"]],
+          },
+          juridisch: {
+            goals: ["appointment", "trust", "leads", "information"],
+            ctas: ["free_appointment", "appointment", "call", "more_info"],
+            services: [["arbeidsrecht", "Arbeidsrecht"], ["familierecht", "Familierecht"], ["ondernemingsrecht", "Ondernemingsrecht"], ["contracten", "Contracten"], ["incasso", "Incasso"], ["vastgoedrecht", "Vastgoedrecht"], ["letselschade", "Letselschade"], ["adviesgesprek", "Adviesgesprek"]],
+          },
+          kapsalon: {
+            goals: ["appointment", "trust", "route", "portfolio"],
+            ctas: ["book", "appointment", "whatsapp", "route"],
+            services: [["knippen", "Knippen"], ["kleuren", "Kleuren"], ["barber", "Barber"], ["baard", "Baard"], ["styling", "Styling"], ["bruidskapsel", "Bruidskapsel"], ["extensions", "Extensions"], ["behandeling", "Behandeling"]],
+          },
+          tandarts: {
+            goals: ["appointment", "trust", "information", "route"],
+            ctas: ["appointment", "call", "route", "more_info"],
+            services: [["controle", "Controle"], ["mondhygiene", "Mondhygiëne"], ["implantaten", "Implantaten"], ["orthodontie", "Orthodontie"], ["spoedtandarts", "Spoed"], ["bleken", "Tanden bleken"], ["kindertandarts", "Kindertandarts"], ["esthetisch", "Esthetische tandheelkunde"]],
+          },
+          elektricien: {
+            goals: ["call", "leads", "trust", "check"],
+            ctas: ["call", "quote", "whatsapp", "check"],
+            services: [["groepenkast", "Groepenkast"], ["storing", "Storingen"], ["laadpaal", "Laadpaal"], ["verlichting", "Verlichting"], ["zonnepanelen", "Zonnepanelen"], ["keuring", "Keuring"], ["bedrading", "Bedrading"], ["smart_home", "Smart home"]],
+          },
+          loodgieter: {
+            goals: ["call", "leads", "trust", "check"],
+            ctas: ["call", "whatsapp", "quote", "check"],
+            services: [["lekkage", "Lekkage"], ["verstopping", "Verstopping"], ["sanitair", "Sanitair"], ["cv", "CV"], ["riool", "Riool"], ["dakgoot", "Dakgoot"], ["badkamer", "Badkamer"], ["spoed", "Spoedservice"]],
+          },
+          hovenier: {
+            goals: ["leads", "portfolio", "trust", "appointment"],
+            ctas: ["quote", "free_appointment", "whatsapp", "call"],
+            services: [["tuinaanleg", "Tuinaanleg"], ["tuinontwerp", "Tuinontwerp"], ["onderhoud_tuin", "Tuinonderhoud"], ["bestrating", "Bestrating"], ["schutting", "Schutting"], ["beplanting", "Beplanting"], ["overkapping", "Overkapping"], ["boomverzorging", "Boomverzorging"], ["beregening", "Beregening"]],
+          },
+          schoonmaakbedrijf: {
+            goals: ["leads", "trust", "appointment"],
+            ctas: ["quote", "appointment", "call", "whatsapp"],
+            services: [["kantoorschoonmaak", "Kantoorschoonmaak"], ["vve", "VvE schoonmaak"], ["glasbewassing", "Glasbewassing"], ["oplevering", "Oplevering"], ["periodiek", "Periodieke schoonmaak"], ["vloeronderhoud", "Vloeronderhoud"], ["dieptereiniging", "Dieptereiniging"], ["facility", "Facility service"]],
+          },
+          verhuisbedrijf: {
+            goals: ["leads", "trust", "call", "appointment"],
+            ctas: ["quote", "call", "whatsapp", "appointment"],
+            services: [["particuliere_verhuizing", "Particuliere verhuizing"], ["zakelijke_verhuizing", "Zakelijke verhuizing"], ["inpakken", "Inpakservice"], ["montage", "Montage"], ["opslag", "Opslag"], ["spoedverhuizing", "Spoedverhuizing"], ["seniorenverhuizing", "Seniorenverhuizing"], ["transport", "Transport"]],
+          },
+          dierenarts: {
+            goals: ["appointment", "trust", "route", "information"],
+            ctas: ["appointment", "call", "route", "more_info"],
+            services: [["consult", "Consult"], ["vaccinatie", "Vaccinaties"], ["operatie", "Operaties"], ["gebitszorg", "Gebitszorg"], ["spoed_dier", "Spoed"], ["preventie", "Preventie"], ["diagnostiek", "Diagnostiek"], ["seniorcheck", "Seniorcheck"]],
+          },
+          schoonheidssalon: {
+            goals: ["appointment", "trust", "portfolio", "route"],
+            ctas: ["book", "appointment", "whatsapp", "route"],
+            services: [["gezichtsbehandeling", "Gezichtsbehandeling"], ["huidverbetering", "Huidverbetering"], ["massage", "Massage"], ["nagels", "Nagels"], ["wenkbrauwen", "Wenkbrauwen"], ["wimperextensions", "Wimpers"], ["laser", "Laser"], ["wellness", "Wellness"]],
+          },
+          makelaar: {
+            goals: ["leads", "trust", "appointment", "portfolio"],
+            ctas: ["free_appointment", "appointment", "call", "quote"],
+            services: [["verkoop", "Woning verkopen"], ["aankoop", "Aankoopbegeleiding"], ["taxatie", "Taxatie"], ["verhuur", "Verhuur"], ["waardebepaling", "Waardebepaling"], ["nieuwbouw", "Nieuwbouw"], ["bedrijfspand", "Bedrijfspand"], ["vastgoedadvies", "Vastgoedadvies"]],
+          },
+          hotel: {
+            goals: ["appointment", "route", "trust", "information"],
+            ctas: ["book", "route", "call", "more_info"],
+            services: [["kamers", "Kamers"], ["ontbijt", "Ontbijt"], ["arrangementen", "Arrangementen"], ["zakelijk_verblijf", "Zakelijk verblijf"], ["events", "Events"], ["wellness", "Wellness"], ["restaurant", "Restaurant"], ["omgeving", "Omgeving"]],
+          },
+          financieel_adviseur: {
+            goals: ["appointment", "trust", "leads", "information"],
+            ctas: ["free_appointment", "appointment", "call", "more_info"],
+            services: [["hypotheek", "Hypotheekadvies"], ["verzekeringen", "Verzekeringen"], ["pensioen", "Pensioen"], ["belasting", "Belastingadvies"], ["boekhouding", "Boekhouding"], ["financiele_planning", "Financiële planning"], ["ondernemersadvies", "Ondernemersadvies"]],
+          },
+          fysiotherapie: {
+            goals: ["appointment", "trust", "route", "information"],
+            ctas: ["appointment", "call", "route", "more_info"],
+            services: [["fysiotherapie", "Fysiotherapie"], ["sportfysio", "Sportfysiotherapie"], ["manueel", "Manuele therapie"], ["revalidatie", "Revalidatie"], ["dry_needling", "Dry needling"], ["massage", "Massage"], ["houding", "Houding/ergonomie"], ["intake", "Intake"]],
+          },
+          kinderopvang: {
+            goals: ["appointment", "trust", "information", "route"],
+            ctas: ["appointment", "more_info", "call", "route"],
+            services: [["dagopvang", "Dagopvang"], ["bso", "BSO"], ["peuteropvang", "Peuteropvang"], ["rondleiding", "Rondleiding"], ["pedagogiek", "Pedagogische visie"], ["opvang_aanvraag", "Plaats aanvragen"], ["vakantieopvang", "Vakantieopvang"]],
+          },
+          zakelijk: {
+            goals: ["leads", "appointment", "trust", "information"],
+            ctas: ["free_appointment", "appointment", "quote", "call", "more_info"],
+            services: [["advies", "Advies"], ["consultancy", "Consultancy"], ["strategie", "Strategie"], ["coaching", "Coaching"], ["training", "Training"], ["beheer", "Beheer"], ["implementatie", "Implementatie"], ["support", "Support"]],
+          },
+        };
+        const addOnOptions = [
+          ["logo_basic", "Logo ontwerp", "Basislogo voor website, socials en huisstijl."],
+          ["logo_refresh", "Logo opfrissen", "Bestaand logo strakker maken voor premium uitstraling."],
+          ["brand_kit", "Huisstijl mini-kit", "Kleuren, fonts, iconstijl en social templates."],
+          ["photos", "Foto's regelen", "Beeldselectie of fotografie voorbereiden voor de demo/site."],
+          ["copywriting", "SEO-teksten", "Teksten schrijven die vertrouwen en aanvragen verhogen."],
+          ["085_number", "085-nummer", "Professioneel zakelijk nummer koppelen aan website/CTA."],
+          ["whatsapp_button", "WhatsApp knop", "Laagdrempelige contactknop zichtbaar op mobiel."],
+          ["google_business", "Google Bedrijfsprofiel", "Profiel controleren of verbeteren voor lokale vindbaarheid."],
+          ["reviews_import", "Reviews tonen", "Google reviews of klantreviews verwerken in preview."],
+          ["domain", "Domeinnaam", "Domein registreren, verhuizen of koppelen."],
+          ["email", "Zakelijke e-mail", "E-mailadres op domein voorbereiden."],
+          ["hosting_care", "Hosting & onderhoud", "Care-pakket koppelen aan de website."],
+          ["seo_local", "Lokale SEO", "Plaats/regio en diensten beter vindbaar maken."],
+          ["social_media", "Social media starter", "Social banners en eerste posts voorbereiden."],
+          ["ads", "Google/Meta ads start", "Campagnevoorbereiding voor meer verkeer."],
+          ["booking", "Boekingssysteem", "Afspraak/reservering koppelen waar relevant."],
+          ["chatbot", "AI-chatbot voorbereiding", "Veelgestelde vragen en intakeflow voorbereiden."],
+        ];
+        const styleOptions = [
+          ["premium", "Premium", "Meer kwaliteit, rust en vertrouwen."],
+          ["modern", "Modern", "Strak, fris en actueel."],
+          ["rustig", "Rustig", "Veel overzicht, weinig drukte."],
+          ["lokaal", "Lokaal", "Persoonlijk, dichtbij en herkenbaar."],
+          ["luxe", "Luxe", "Hoogwaardiger gevoel voor premium klanten."],
+          ["direct", "Direct", "Commercieel, duidelijk en actiegericht."],
+          ["warm", "Warm", "Menselijk en toegankelijk."],
+          ["technisch", "Technisch", "Vakkundig, precies en betrouwbaar."],
+          ["speels", "Speels", "Lichter en vriendelijker, zonder goedkoop te voelen."],
+          ["minimal", "Minimal", "Minder tekst, meer rust en sterke typografie."],
+          ["corporate", "Zakelijk corporate", "Formeel en professioneel."],
+          ["bold", "Opvallend", "Meer contrast en commerciële energie."],
+        ];
+        const colorOptions = [
+          ["brand", "Huisstijl volgen"], ["blue", "Blauw"], ["cyan", "Cyaan"], ["green", "Groen"], ["teal", "Teal"], ["gold", "Goud"], ["orange", "Oranje"], ["red", "Rood"], ["burgundy", "Bordeaux"], ["pink", "Roze"], ["purple", "Paars"], ["navy", "Navy"], ["black", "Zwart"], ["white", "Wit"], ["grey", "Grijs"], ["neutral", "Neutraal"], ["earth", "Aardetinten"], ["pastel", "Pastel"], ["high_contrast", "Hoog contrast"], ["no_preference", "Geen voorkeur"],
         ];
         const customerSteps = [
           "Aanvraag ontvangen",
@@ -20901,25 +21085,27 @@
         let journeyRecords = [];
         let intakeState = {};
         let intakeAssets = [];
+        let intakeExpandedQuestions = new Set();
         let previewSource = "factory";
         let manualPreview = null;
         const journeyLocks = new Set();
         const intakeQuestions = [
-          { key: "branch", label: "Branche", helper: "Kies het brancheprofiel voor teksten, beelden en componenten.", required: true, type: "single", options: [["rijschool", "Rijschool / scooterles"], ["installatiebedrijf", "Installatie & verduurzaming"], ["bouwbedrijf", "Bouwbedrijf"], ["horeca", "Horeca / restaurant"], ["fitness", "Sportschool / personal trainer"], ["juridisch", "Advocaat / juridisch"], ["automotive", "Autobedrijf / garage"], ["kapsalon", "Kapsalon / barber"], ["tandarts", "Tandarts / mondzorg"], ["elektricien", "Elektricien"], ["loodgieter", "Loodgieter"], ["hovenier", "Hovenier"], ["schoonmaakbedrijf", "Schoonmaakbedrijf"], ["verhuisbedrijf", "Verhuisbedrijf"], ["dierenarts", "Dierenarts"], ["schoonheidssalon", "Schoonheidssalon / wellness"], ["makelaar", "Makelaar / vastgoed"], ["hotel", "Hotel / B&B"], ["financieel_adviseur", "Financieel adviseur"], ["fysiotherapie", "Fysiotherapie"], ["kinderopvang", "Kinderopvang"], ["zakelijk", "Zakelijke dienstverlening"]] },
-          { key: "goal", label: "Hoofddoel website", required: true, type: "single", options: [["leads", "Meer aanvragen"], ["trust", "Meer vertrouwen"], ["portfolio", "Werk tonen"], ["recruitment", "Personeel werven"]] },
+          { key: "branch", label: "Branche", helper: "Kies eerst het brancheprofiel. Daarna worden doelen, CTA's en diensten automatisch slimmer voorgesteld.", required: true, type: "single", options: [["rijschool", "Rijschool / scooterles"], ["installatiebedrijf", "Installatie & verduurzaming"], ["bouwbedrijf", "Bouwbedrijf"], ["horeca", "Horeca / restaurant"], ["fitness", "Sportschool / personal trainer"], ["juridisch", "Advocaat / juridisch"], ["automotive", "Autobedrijf / garage"], ["kapsalon", "Kapsalon / barber"], ["tandarts", "Tandarts / mondzorg"], ["elektricien", "Elektricien"], ["loodgieter", "Loodgieter"], ["hovenier", "Hovenier"], ["schoonmaakbedrijf", "Schoonmaakbedrijf"], ["verhuisbedrijf", "Verhuisbedrijf"], ["dierenarts", "Dierenarts"], ["schoonheidssalon", "Schoonheidssalon / wellness"], ["makelaar", "Makelaar / vastgoed"], ["hotel", "Hotel / B&B"], ["financieel_adviseur", "Financieel adviseur"], ["fysiotherapie", "Fysiotherapie"], ["kinderopvang", "Kinderopvang"], ["zakelijk", "Zakelijke dienstverlening"]] },
+          { key: "goal", label: "Hoofddoel website", helper: "Kies wat de website vooral moet opleveren voor deze klant.", required: true, type: "single", options: baseGoalOptions },
           { key: "package", label: "Websitepakket", required: true, type: "single", options: websitePackages },
-          { key: "style", label: "Gewenste uitstraling", required: true, type: "multi", options: [["premium", "Premium"], ["modern", "Modern"], ["rustig", "Rustig"], ["lokaal", "Lokaal"], ["luxe", "Luxe"], ["direct", "Direct"]] },
-          { key: "cta", label: "Belangrijkste CTA", required: true, type: "single", options: [["call", "Bel direct"], ["quote", "Offerte aanvragen"], ["appointment", "Afspraak plannen"], ["contact", "Contact opnemen"], ["whatsapp", "WhatsApp"]] },
-          { key: "services", label: "Diensten / aanbod", required: true, type: "multi", wide: true, options: [["renovatie", "Renovatie"], ["maatwerk", "Maatwerk"], ["onderhoud", "Onderhoud"], ["advies", "Advies"], ["spoed", "Spoedservice"], ["projecten", "Projecten"]] },
+          { key: "addOns", label: "Extra producten & services", helper: "Vink alles aan wat we kunnen meepakken in aanbod, preview of upsell.", type: "multi", wide: true, options: addOnOptions },
+          { key: "style", label: "Gewenste uitstraling", helper: "Meerdere keuzes zijn mogelijk; de combinatie stuurt copy, layout en visuele richting.", required: true, type: "multi", options: styleOptions },
+          { key: "cta", label: "Belangrijkste CTA", helper: "Dit is de hoofdknop die bezoekers straks het vaakst moeten gebruiken.", required: true, type: "single", options: baseCtaOptions },
+          { key: "services", label: "Diensten / aanbod", helper: "Deze lijst past zich aan op de gekozen branche. Vul aan wat op de site zeker terug moet komen.", required: true, type: "multi", wide: true, options: baseServiceOptions },
           { key: "area", label: "Werkgebied", required: true, type: "single", options: [["local", "Lokaal"], ["regional", "Regionaal"], ["national", "Landelijk"]] },
           { key: "audience", label: "Doelgroep", required: true, type: "single", options: [["particulier", "Particulieren"], ["zakelijk", "Zakelijk"], ["beide", "Beide"], ["premium", "Premium klanten"]] },
-          { key: "existingWebsite", label: "Bestaande website", required: true, type: "single", options: [["none", "Geen website"], ["outdated", "Verouderd"], ["active", "Actief"], ["unknown", "Onbekend"]] },
-          { key: "logoStatus", label: "Logo status", required: true, type: "single", options: [["available", "Logo beschikbaar"], ["needed", "Logo nodig"], ["refresh", "Opfrissen"], ["unknown", "Onbekend"]] },
-          { key: "photoStatus", label: "Foto status", required: true, type: "single", options: [["available", "Eigen foto's"], ["needed", "Beelden nodig"], ["stock", "Stock/placeholder"], ["unknown", "Onbekend"]] },
-          { key: "followUp", label: "Opvolging", required: true, type: "single", options: [["today", "Vandaag"], ["tomorrow", "Morgen"], ["three_days", "Binnen 3 dagen"], ["manual", "Handmatig plannen"]] },
+          { key: "existingWebsite", label: "Bestaande website", helper: "Als er een URL bekend is, nemen we die mee als bron voor preview, logo, kleuren en beeldrichting.", required: true, type: "single", options: [["none", "Geen website"], ["outdated", "Verouderd"], ["active", "Actief"], ["unknown", "Onbekend"]] },
+          { key: "logoStatus", label: "Logo status", helper: "Beschikbaar of van de oude site te pakken? Dan gebruiken we die. Anders bereiden we logo-generatie voor.", required: true, type: "single", options: [["available", "Logo beschikbaar"], ["extract", "Van website pakken"], ["needed", "Logo nodig"], ["refresh", "Opfrissen"], ["unknown", "Onbekend"]] },
+          { key: "photoStatus", label: "Foto status", helper: "Eigen beeld, websitebeeld of nieuwe beelden bepalen meteen hoe realistisch de preview wordt.", required: true, type: "single", options: [["available", "Eigen foto's"], ["extract", "Van website pakken"], ["needed", "Beelden nodig"], ["generate", "Beelden genereren"], ["stock", "Stock/placeholder"], ["unknown", "Onbekend"]] },
+          { key: "followUp", label: "Opvolging", helper: "Kies wanneer sales terugkomt op de preview. Bij plannen kun je zelf datum en tijd invullen.", required: true, type: "single", options: [["today", "Vandaag"], ["tomorrow", "Morgen"], ["three_days", "Binnen 3 dagen"], ["plan", "Plannen"], ["manual", "Handmatig later"]] },
           { key: "leadTemperature", label: "Lead temperatuur", required: true, type: "single", options: [["hot", "Warm"], ["medium", "Gemiddeld"], ["cold", "Koud"], ["unknown", "Onbekend"]] },
           { key: "mustHaves", label: "Wat mag niet ontbreken?", required: true, type: "multi", wide: true, options: [["phone", "Telefoon duidelijk"], ["contact_form", "Contactformulier"], ["reviews", "Reviews"], ["projects", "Projecten"], ["service_area", "Werkgebied"], ["pricing", "Pakket/prijsindicatie"]] },
-          { key: "colors", label: "Kleurvoorkeur", type: "multi", options: [["blue", "Blauw"], ["green", "Groen"], ["gold", "Goud"], ["black", "Zwart"], ["neutral", "Neutraal"], ["brand", "Huisstijl volgen"]] },
+          { key: "colors", label: "Kleurvoorkeur", type: "multi", options: colorOptions },
           { key: "exampleWebsites", label: "Voorbeeldsites", type: "text", wide: true, placeholder: "Plak links of beschrijf stijlen die de klant mooi vindt." },
           { key: "internalRemark", label: "Interne intake-notitie", type: "text", wide: true, placeholder: "Commerciële context, bezwaren, budget, timing of afspraken." },
         ];
@@ -21443,9 +21629,125 @@
           return String(value || "").trim();
         }
 
+        function normalizeOption(option) {
+          if (Array.isArray(option)) return { value: option[0], label: option[1], helper: option[2] || "" };
+          if (option && typeof option === "object") return { value: option.value, label: option.label, helper: option.helper || "" };
+          return { value: String(option || ""), label: String(option || ""), helper: "" };
+        }
+
+        function uniqueOptionList(...groups) {
+          const seen = new Set();
+          return groups.flat().map(normalizeOption).filter((option) => {
+            const value = String(option.value || "");
+            if (!value || seen.has(value)) return false;
+            seen.add(value);
+            return true;
+          });
+        }
+
+        function optionsByValues(source = [], values = []) {
+          const normalized = source.map(normalizeOption);
+          return values.map((value) => normalized.find((option) => option.value === value)).filter(Boolean);
+        }
+
+        function selectedBranchKey() {
+          return normalizeIntakeValue(intakeState.branch) || "zakelijk";
+        }
+
+        function currentBranchPreset() {
+          return branchPresets[selectedBranchKey()] || branchPresets.zakelijk || {};
+        }
+
+        function questionOptions(question = {}) {
+          const preset = currentBranchPreset();
+          const currentValue = normalizeIntakeValue(intakeState[question.key]);
+          const selectedValues = Array.isArray(currentValue) ? currentValue : [currentValue].filter(Boolean);
+          let options = question.options || [];
+          if (question.key === "goal") {
+            options = uniqueOptionList(optionsByValues(baseGoalOptions, preset.goals || []), baseGoalOptions);
+          } else if (question.key === "cta") {
+            options = uniqueOptionList(optionsByValues(baseCtaOptions, preset.ctas || []), baseCtaOptions);
+          } else if (question.key === "services") {
+            options = uniqueOptionList(preset.services || [], baseServiceOptions);
+          } else {
+            options = uniqueOptionList(options);
+          }
+          const missingSelections = selectedValues
+            .filter((value) => !options.some((option) => option.value === value))
+            .map((value) => ({ value, label: value, helper: "Eerder gekozen optie." }));
+          return uniqueOptionList(options, missingSelections);
+        }
+
         function intakeLabel(question, value) {
           const values = Array.isArray(value) ? value : [value];
-          return values.map((item) => question.options?.find(([option]) => option === item)?.[1] || item).filter(Boolean).join(", ");
+          const options = questionOptions(question);
+          return values.map((item) => options.find((option) => option.value === item)?.label || item).filter(Boolean).join(", ");
+        }
+
+        function colorSwatch(value = "") {
+          const colors = {
+            brand: ["#2563eb", "#22c55e"],
+            blue: ["#2563eb", "#60a5fa"],
+            cyan: ["#06b6d4", "#67e8f9"],
+            green: ["#16a34a", "#86efac"],
+            teal: ["#14b8a6", "#5eead4"],
+            gold: ["#d97706", "#facc15"],
+            orange: ["#f97316", "#fdba74"],
+            red: ["#dc2626", "#f87171"],
+            burgundy: ["#881337", "#fb7185"],
+            pink: ["#db2777", "#f9a8d4"],
+            purple: ["#7c3aed", "#c084fc"],
+            navy: ["#0f172a", "#2563eb"],
+            black: ["#020617", "#475569"],
+            white: ["#f8fafc", "#cbd5e1"],
+            grey: ["#64748b", "#cbd5e1"],
+            neutral: ["#334155", "#94a3b8"],
+            earth: ["#92400e", "#84cc16"],
+            pastel: ["#f9a8d4", "#93c5fd"],
+            high_contrast: ["#020617", "#facc15"],
+            no_preference: ["#64748b", "#94a3b8"],
+          };
+          const pair = colors[value] || colors.neutral;
+          return `linear-gradient(135deg, ${pair[0]}, ${pair[1]})`;
+        }
+
+        function knownWebsiteUrl() {
+          const lead = selectedLead?.() || {};
+          return String(elements.website?.value || lead.websiteUrl || lead.website_url || "").trim();
+        }
+
+        function assetAutomationCard(key = "") {
+          const website = knownWebsiteUrl();
+          const value = normalizeIntakeValue(intakeState[key]);
+          if (!value || !["logoStatus", "photoStatus"].includes(key)) return "";
+          const isLogo = key === "logoStatus";
+          const studioHref = isLogo ? "admin-brand-center.html" : "admin-asset-manager.html";
+          const config = {
+            logoStatus: {
+              available: ["Logo gebruiken", "Upload of bestaand logo gaat mee naar de preview."],
+              extract: ["Logo van website pakken", website ? `Bron: ${website}` : "Vul bij leadgegevens eerst de bestaande website in."],
+              needed: ["Logo generator voorbereiden", "Miniatuur wordt gekoppeld aan logo-generator voor nieuwe demo-huisstijl."],
+              refresh: ["Logo opfrissen", "Bestaand logo blijft herkenbaar, maar krijgt een modernere demo-versie."],
+              unknown: ["Logo generator klaarzetten", "Onbekend betekent: eerst website checken, anders nieuw demo-logo maken."],
+            },
+            photoStatus: {
+              available: ["Eigen foto's gebruiken", "Geüploade of aangeleverde beelden krijgen prioriteit in de preview."],
+              extract: ["Beelden van website pakken", website ? `Bron: ${website}` : "Vul bij leadgegevens eerst de bestaande website in."],
+              needed: ["Beeldselectie voorbereiden", "Kies later fotografie, stock of AI-beeld per sectie."],
+              generate: ["Beelden genereren", "Maak branchebeelden die passen bij diensten, regio en uitstraling."],
+              stock: ["Premium placeholders", "Gebruik nette tijdelijke beelden tot eigen foto’s beschikbaar zijn."],
+              unknown: ["Beeldgenerator klaarzetten", "Onbekend betekent: eerst website checken, anders passende beelden maken."],
+            },
+          }[key]?.[value];
+          if (!config) return "";
+          return `
+            <div class="demo-automation-card">
+              <span>${isLogo ? "Logo workflow" : "Beeld workflow"}</span>
+              <strong>${escapeHtml(config[0])}</strong>
+              <small>${escapeHtml(config[1])}</small>
+              <a class="button button-small button-secondary" href="${escapeHtml(studioHref)}" target="_blank" rel="noopener">${isLogo ? "Open logo studio" : "Open asset manager"}</a>
+            </div>
+          `;
         }
 
         function inferBranchFromLead(lead = {}) {
@@ -21558,29 +21860,45 @@
           elements.intakeFields.innerHTML = intakeQuestions.map((question) => {
             const value = normalizeIntakeValue(intakeState[question.key]);
             const required = question.required ? `<span class="status-badge status-planned">Verplicht</span>` : "";
+            const heading = `
+              <div class="demo-intake-question-heading">
+                <div>
+                  <strong>${escapeHtml(question.label)} ${required}</strong>
+                  ${question.helper ? `<small>${escapeHtml(question.helper)}</small>` : ""}
+                </div>
+                ${question.key === "branch" && value ? `<button type="button" class="demo-intake-toggle" data-intake-toggle="branch">${intakeExpandedQuestions.has("branch") ? "Inklappen" : "Wijzig"}</button>` : ""}
+              </div>
+            `;
             if (question.type === "text") {
               return `
                 <label class="demo-intake-question ${question.wide ? "is-wide" : ""}" for="demo-intake-${question.key}">
-                  <strong>${escapeHtml(question.label)} ${required}</strong>
-                  ${question.helper ? `<small>${escapeHtml(question.helper)}</small>` : ""}
+                  ${heading}
                   <textarea id="demo-intake-${question.key}" data-intake-key="${escapeHtml(question.key)}" rows="3" placeholder="${escapeHtml(question.placeholder || "")}">${escapeHtml(value)}</textarea>
                 </label>
               `;
             }
             const type = question.type === "multi" ? "checkbox" : "radio";
             const selected = Array.isArray(value) ? value : [value];
+            const options = questionOptions(question);
+            const isBranchCollapsed = question.key === "branch" && selected.filter(Boolean).length && !intakeExpandedQuestions.has("branch");
+            const followUpPlanner = question.key === "followUp" && value === "plan"
+              ? `<label class="demo-intake-inline-field" for="demo-intake-followUpAt"><span>Plan datum en tijd</span><input id="demo-intake-followUpAt" data-intake-key="followUpAt" type="datetime-local" value="${escapeHtml(datetimeLocal(intakeState.followUpAt || elements.followup?.value || ""))}" /></label>`
+              : "";
             return `
-              <fieldset class="demo-intake-question ${question.wide ? "is-wide" : ""}">
-                <strong>${escapeHtml(question.label)} ${required}</strong>
-                ${question.helper ? `<small>${escapeHtml(question.helper)}</small>` : ""}
-                <div class="demo-chip-grid">
-                  ${(question.options || []).map(([option, label]) => `
-                    <label class="demo-chip">
-                      <input type="${type}" name="demo-intake-${escapeHtml(question.key)}" data-intake-key="${escapeHtml(question.key)}" value="${escapeHtml(option)}" ${selected.includes(option) ? "checked" : ""} />
-                      <span>${escapeHtml(label)}</span>
+              <fieldset class="demo-intake-question ${question.wide ? "is-wide" : ""} ${isBranchCollapsed ? "is-collapsed" : ""}" data-intake-question="${escapeHtml(question.key)}">
+                ${heading}
+                ${isBranchCollapsed ? `<div class="demo-intake-selected-summary"><span>Gekozen</span><strong>${escapeHtml(intakeLabel(question, value))}</strong></div>` : ""}
+                <div class="demo-chip-grid" ${isBranchCollapsed ? "hidden" : ""}>
+                  ${options.map((option) => `
+                    <label class="demo-chip ${option.helper ? "has-helper" : ""}">
+                      <input type="${type}" name="demo-intake-${escapeHtml(question.key)}" data-intake-key="${escapeHtml(question.key)}" value="${escapeHtml(option.value)}" ${selected.includes(option.value) ? "checked" : ""} />
+                      ${question.key === "colors" ? `<i class="demo-color-swatch" style="background: ${escapeHtml(colorSwatch(option.value))}" aria-hidden="true"></i>` : ""}
+                      <span><strong>${escapeHtml(option.label)}</strong>${option.helper ? `<small>${escapeHtml(option.helper)}</small>` : ""}</span>
                     </label>
                   `).join("")}
                 </div>
+                ${followUpPlanner}
+                ${assetAutomationCard(question.key)}
               </fieldset>
             `;
           }).join("");
@@ -21599,6 +21917,7 @@
             const value = normalizeIntakeValue(intakeState[question.key]);
             if (Array.isArray(value) ? value.length : value) answers[question.key] = value;
           });
+          if (intakeState.followUpAt) answers.followUpAt = intakeState.followUpAt;
           return {
             answers,
             assets: intakeAssets,
@@ -21621,9 +21940,19 @@
 
         function buildIntakeBriefingSection() {
           const lines = intakeSummaryLines();
+          const website = knownWebsiteUrl();
+          const automationLines = [
+            website && ["active", "outdated"].includes(intakeState.existingWebsite) ? `- Bestaande website als bron gebruiken: ${website}` : "",
+            intakeState.logoStatus === "extract" && website ? `- Logo workflow: probeer logo van bestaande website te gebruiken (${website}).` : "",
+            ["needed", "refresh", "unknown"].includes(intakeState.logoStatus) ? "- Logo workflow: logo-generator voorbereiden en miniatuur koppelen aan demo-site." : "",
+            intakeState.photoStatus === "extract" && website ? `- Beeld workflow: probeer bruikbare afbeeldingen van bestaande website te gebruiken (${website}).` : "",
+            ["needed", "generate", "unknown"].includes(intakeState.photoStatus) ? "- Beeld workflow: passende branchebeelden voorbereiden/genereren voor preview." : "",
+            intakeState.followUpAt ? `- Opvolging plannen in agenda: ${formatDate(intakeState.followUpAt)}.` : "",
+          ].filter(Boolean);
           return [
             "Klantintake - wensen en eisen",
             ...lines.map(([label, value]) => `- ${label}: ${Array.isArray(value) ? value.join(", ") : value}`),
+            ...automationLines,
             intakeAssets.length ? `- Uploadmetadata: ${intakeAssets.map((asset) => `${asset.kind}: ${asset.name}`).join(", ")}` : "",
           ].filter(Boolean).join("\n");
         }
@@ -21719,6 +22048,13 @@
           const field = event.target.closest("[data-intake-key]");
           if (!field) return;
           const key = field.dataset.intakeKey;
+          if (key === "followUpAt") {
+            intakeState.followUpAt = fromDatetimeLocal(field.value);
+            if (elements.followup) elements.followup.value = datetimeLocal(intakeState.followUpAt);
+            saveIntakeLocally();
+            renderIntake();
+            return;
+          }
           const question = intakeQuestions.find((item) => item.key === key);
           if (!question) return;
           if (question.type === "multi") {
@@ -21726,9 +22062,46 @@
           } else {
             intakeState[key] = field.type === "radio" ? field.value : field.value.trim();
           }
+          if (key === "branch") intakeExpandedQuestions.delete("branch");
           if (key === "package" && elements.package) elements.package.value = packageTypeFromValue(intakeState.package);
+          if (key === "followUp") {
+            const planned = plannedFollowUpDate(intakeState.followUp);
+            if (planned) {
+              intakeState.followUpAt = planned;
+              if (elements.followup) elements.followup.value = datetimeLocal(planned);
+            }
+            if (intakeState.followUp !== "plan" && intakeState.followUp !== "manual" && elements.followup && !planned) elements.followup.value = "";
+          }
           saveIntakeLocally();
+          renderIntakeFields();
           renderIntake();
+        }
+
+        function handleIntakeFieldClick(event) {
+          const toggle = event.target.closest("[data-intake-toggle]");
+          if (!toggle) return;
+          const key = toggle.dataset.intakeToggle;
+          if (intakeExpandedQuestions.has(key)) {
+            intakeExpandedQuestions.delete(key);
+          } else {
+            intakeExpandedQuestions.add(key);
+          }
+          renderIntakeFields();
+        }
+
+        function plannedFollowUpDate(value = "") {
+          const date = new Date();
+          date.setHours(10, 0, 0, 0);
+          if (value === "today") return date.toISOString();
+          if (value === "tomorrow") {
+            date.setDate(date.getDate() + 1);
+            return date.toISOString();
+          }
+          if (value === "three_days") {
+            date.setDate(date.getDate() + 3);
+            return date.toISOString();
+          }
+          return "";
         }
 
         function handleAssetInput(event, kind) {
@@ -23231,6 +23604,7 @@
           renderIntake();
           window.addEventListener("maxwebstudio:lead-preview-request", openLeadPreviewWorkflow);
           elements.form?.addEventListener("submit", saveJourney);
+          elements.intakeFields?.addEventListener("click", handleIntakeFieldClick);
           elements.intakeFields?.addEventListener("input", handleIntakeInput);
           elements.intakeFields?.addEventListener("change", handleIntakeInput);
           elements.intakeLogoUpload?.addEventListener("change", (event) => handleAssetInput(event, "logo"));
