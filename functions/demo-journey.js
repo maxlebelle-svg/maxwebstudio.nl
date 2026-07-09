@@ -935,6 +935,7 @@ function sanitizeWebsiteIntelligencePackage(packageData = {}) {
       pages: pages.slice(0, 15),
     },
     websiteScanSummary: cleanText(source.websiteScanSummary),
+    researchPackage: source.researchPackage && typeof source.researchPackage === "object" ? source.researchPackage : null,
     websiteIntelligence: source.websiteIntelligence && typeof source.websiteIntelligence === "object" ? source.websiteIntelligence : null,
     extractedContactData: source.extractedContactData && typeof source.extractedContactData === "object" ? source.extractedContactData : null,
     extractedMedia: media.slice(0, 24).map((item) => ({
@@ -946,6 +947,9 @@ function sanitizeWebsiteIntelligencePackage(packageData = {}) {
       note: cleanText(item.note),
     })),
     aiBriefing: source.aiBriefing && typeof source.aiBriefing === "object" ? source.aiBriefing : null,
+    qualityScore: source.qualityScore && typeof source.qualityScore === "object" ? source.qualityScore : source.websiteIntelligence?.qualityScore || null,
+    premiumAdvisor: source.premiumAdvisor && typeof source.premiumAdvisor === "object" ? source.premiumAdvisor : source.websiteIntelligence?.premiumAdvisor || null,
+    autoBuildPlan: source.autoBuildPlan && typeof source.autoBuildPlan === "object" ? source.autoBuildPlan : source.websiteIntelligence?.autoBuildPlan || null,
     briefingCompleteness: clampNumber(source.briefingCompleteness || source.websiteIntelligence?.briefingCompleteness || 0, 0, 100),
     buildConfidence: clampNumber(source.buildConfidence || source.websiteIntelligence?.buildConfidence || 0, 0, 100),
     missingFields: missingFields.map((item) => cleanText(item)).filter(Boolean).slice(0, 20),

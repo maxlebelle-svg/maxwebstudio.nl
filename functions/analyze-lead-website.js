@@ -306,6 +306,14 @@ function analyzeHtml(html, context) {
     media: extractedMedia,
     finalUrl,
   });
+  const researchPackage = buildResearchPackage({
+    html: combinedHtml,
+    currentWebsite,
+    contactData: extractedContactData,
+    media: extractedMedia,
+    foundPages,
+    finalUrl,
+  });
 
   const checks = {
     websiteReachable: statusCode >= 200 && statusCode < 400,
@@ -351,6 +359,9 @@ function analyzeHtml(html, context) {
   const briefingCompleteness = calculateBriefingCompleteness(aiBriefing, extractedContactData, extractedMedia, checks);
   const missingFields = buildMissingFields(aiBriefing, extractedContactData, extractedMedia, checks);
   const buildConfidence = calculateBuildConfidence({ briefingCompleteness, missingFields, extractedMedia, foundPages, checks });
+  const qualityScore = buildWebsiteQualityScore({ checks, score, aiBriefing, extractedMedia, foundPages, contactData: extractedContactData, researchPackage });
+  const premiumAdvisor = buildPremiumAdvisor({ qualityScore, aiBriefing, checks, extractedMedia, foundPages, contactData: extractedContactData, researchPackage });
+  const autoBuildPlan = buildAutoBuildPlan({ aiBriefing, qualityScore, premiumAdvisor, extractedMedia, foundPages, checks });
   const websiteIntelligence = {
     websiteFound: checks.websiteReachable,
     scanStatus: "klaar",
@@ -361,6 +372,9 @@ function analyzeHtml(html, context) {
     buildConfidence,
     missingFields,
     attentionPoints: buildAttentionPoints(missingFields, checks, extractedMedia),
+    qualityScore,
+    premiumAdvisor,
+    autoBuildPlan,
     lastScannedAt: new Date().toISOString(),
   };
   return {
@@ -380,10 +394,14 @@ function analyzeHtml(html, context) {
       checks,
     },
     websiteScanSummary: buildScanSummary({ checks, foundPages, extractedContactData, extractedMedia }),
+    researchPackage,
     websiteIntelligence,
     extractedContactData,
     extractedMedia,
     aiBriefing,
+    qualityScore,
+    premiumAdvisor,
+    autoBuildPlan,
     briefingCompleteness,
     buildConfidence,
     missingFields,
@@ -709,6 +727,210 @@ function buildScanSummary({ checks, foundPages, extractedContactData, extractedM
     `${extractedContactData.phones.length + extractedContactData.emails.length} contactpunten`,
     `${extractedMedia.length} beelden`,
   ].join(" · ");
+}
+
+function buildResearchPackage({ html, currentWebsite, contactData, media, foundPages, finalUrl }) {
+  const text = stripHtml(html).toLowerCase();
+  const faqItems = extractFaqItems(html);
+  const reviewSignals = extractReviewSignals(html);
+  const postSignals = extractPostSignals(html);
+  const competitorBenchmark = buildCompetitorBenchmark({ text, currentWebsite, foundPages, media, reviewSignals });
+  const sourceStatus = [
+    { source: "Website", status: "gevonden", confidence: 95, note: `${foundPages.length || 1} publieke pagina's verwerkt.` },
+    { source: "Google Bedrijfsprofiel", status: reviewSignals.length ? "signalen gevonden" : "niet gekoppeld", confidence: reviewSignals.length ? 55 : 0, note: reviewSignals.length ? "Review-signalen op de website gevonden." : "Geen live Google-koppeling in deze scan." },
+    { source: "Reviews", status: reviewSignals.length ? "gevonden" : "controle nodig", confidence: reviewSignals.length ? 70 : 20, note: reviewSignals.length ? `${reviewSignals.length} review/vermelding-signalen.` : "Plaats reviews hoger als ze extern beschikbaar zijn." },
+    { source: "Social media", status: contactData.socialUrls?.length ? "gevonden" : "mist nog", confidence: contactData.socialUrls?.length ? 75 : 20, note: contactData.socialUrls?.length ? contactData.socialUrls.slice(0, 3).join(", ") : "Geen social links op de website gevonden." },
+    { source: "KVK", status: "niet opgehaald", confidence: 0, note: "Alleen verwerken via toegestane publieke of gekoppelde bron." },
+    { source: "Contactgegevens", status: contactData.phones?.length || contactData.emails?.length ? "gevonden" : "mist nog", confidence: contactData.phones?.length || contactData.emails?.length ? 80 : 15, note: `${contactData.phones?.length || 0} telefoons, ${contactData.emails?.length || 0} e-mails.` },
+    { source: "Openingstijden", status: contactData.openingHours?.length ? "gevonden" : "controle nodig", confidence: contactData.openingHours?.length ? 65 : 10, note: contactData.openingHours?.length ? contactData.openingHours.slice(0, 2).join(" · ") : "Geen duidelijke openingstijden gevonden." },
+    { source: "Foto's en logo", status: media.length ? "gevonden" : "mist nog", confidence: media.length ? 70 : 10, note: `${media.length} beelden/logo's beoordeeld.` },
+    { source: "FAQ", status: faqItems.length ? "gevonden" : "aanbevolen", confidence: faqItems.length ? 75 : 20, note: faqItems.length ? `${faqItems.length} vragen gevonden.` : "FAQ kan twijfels wegnemen en SEO versterken." },
+    { source: "Nieuws/berichten", status: postSignals.length ? "gevonden" : "geen signalen", confidence: postSignals.length ? 55 : 10, note: postSignals.length ? `${postSignals.length} actuele signalen gevonden.` : "Geen recente berichten op de website herkend." },
+    { source: "Concurrentie", status: "benchmark", confidence: 45, note: competitorBenchmark.summary },
+  ];
+  return {
+    sourceUrl: cleanExtractedText(finalUrl),
+    sourceStatus,
+    publicSignals: {
+      faqItems,
+      reviewSignals,
+      postSignals,
+      socialUrls: contactData.socialUrls || [],
+      contactCompleteness: contactData.phones?.length || contactData.emails?.length ? "voldoende" : "laag",
+      structuredData: extractStructuredDataTypes(html),
+    },
+    competitorBenchmark,
+    insights: buildResearchInsights({ text, currentWebsite, contactData, media, foundPages, faqItems, reviewSignals, competitorBenchmark }),
+    collectedAt: new Date().toISOString(),
+  };
+}
+
+function buildWebsiteQualityScore({ checks, score, aiBriefing, extractedMedia, foundPages, contactData, researchPackage }) {
+  const usableMedia = extractedMedia.filter((item) => item.usable === "yes").length;
+  const hasTrust = Boolean(contactData.phones?.length || contactData.emails?.length || researchPackage.publicSignals.reviewSignals.length);
+  const pageDepth = foundPages.length;
+  const scores = {
+    design: clampQualityScore(55 + usableMedia * 7 + (checks.hasOpenGraph ? 8 : 0) + (checks.hasFavicon ? 6 : 0)),
+    conversion: clampQualityScore(45 + (checks.hasCtaSignal ? 20 : 0) + (checks.hasContactFormSignal ? 15 : 0) + (checks.hasTelLink ? 8 : 0) + (checks.hasWhatsAppSignal ? 7 : 0)),
+    seo: clampQualityScore(42 + (checks.hasTitle ? 12 : 0) + (checks.hasMetaDescription ? 12 : 0) + (checks.hasH1 ? 10 : 0) + (checks.sitemapFound ? 8 : 0) + Math.min(10, pageDepth * 2)),
+    mobile: clampQualityScore(50 + (checks.hasViewportMeta ? 25 : 0) + (checks.hasMobileResponsiveSignal ? 20 : 0)),
+    speed: clampQualityScore(checks.hasFastResponse ? 88 : checks.hasAcceptableResponse ? 72 : 48),
+    trust: clampQualityScore(38 + (hasTrust ? 20 : 0) + (researchPackage.publicSignals.reviewSignals.length ? 15 : 0) + (checks.hasPrivacySignal ? 8 : 0) + (checks.hasKvkSignal ? 8 : 0) + (checks.hasSocialLinksSignal ? 6 : 0)),
+    professionalism: clampQualityScore(Math.round((Number(score || 0) + (aiBriefing.services?.length ? 78 : 55) + (contactData.addresses?.length ? 78 : 58)) / 3)),
+  };
+  const overall = Math.round(Object.values(scores).reduce((sum, value) => sum + value, 0) / Object.values(scores).length);
+  return {
+    ...scores,
+    overall,
+    label: overall >= 85 ? "Sterk" : overall >= 70 ? "Goed" : overall >= 55 ? "Kansrijk" : "Veel winst te halen",
+  };
+}
+
+function buildPremiumAdvisor({ qualityScore, aiBriefing, checks, extractedMedia, foundPages, contactData, researchPackage }) {
+  const recommendations = [];
+  if (qualityScore.conversion < 75) recommendations.push("Maak de hero concreter met één hoofd-CTA en herhaal contactmomenten lager op de pagina.");
+  if (qualityScore.trust < 75) recommendations.push("Plaats reviews, projecten, keurmerken en contactgegevens hoger voor meer vertrouwen.");
+  if (qualityScore.seo < 70) recommendations.push("Versterk SEO met duidelijke H1, lokale zoekwoorden, dienstenpagina's en FAQ-blokken.");
+  if (qualityScore.design < 75) recommendations.push("Moderniseer beeld, witruimte, iconen en kleurgebruik zodat het bedrijf direct professioneler voelt.");
+  if (!checks.hasWhatsAppSignal) recommendations.push("Voeg WhatsApp of een laagdrempelige contactknop toe als dit bij de branche past.");
+  if (!extractedMedia.some((item) => item.usable === "yes")) recommendations.push("Vervang zwakke beelden door eigen fotografie of premium branchebeelden.");
+  if (foundPages.length < 4) recommendations.push("Breid de sitestructuur uit met diensten, werkwijze, projecten/reviews en contact.");
+  const insights = researchPackage.insights || [];
+  return {
+    verdict: qualityScore.overall >= 80
+      ? "De basis is sterk, maar conversie en bewijsvoering kunnen scherper."
+      : "Er ligt duidelijke winst in vertrouwen, structuur en conversie.",
+    executiveSummary: [
+      `${aiBriefing.industry || "Dit bedrijf"} heeft genoeg basisinformatie voor een sterke preview.`,
+      qualityScore.trust < 70 ? "De huidige presentatie geeft nog te weinig bewijs waarom bezoekers direct moeten vertrouwen." : "De vertrouwensbasis is aanwezig en kan visueel sterker worden gemaakt.",
+      qualityScore.conversion < 70 ? "De volgende stap voor bezoekers mag duidelijker en vaker terugkomen." : "De conversierichting is bruikbaar voor de eerste preview.",
+    ].join(" "),
+    recommendations: [...new Set([...recommendations, ...insights])].slice(0, 10),
+    commercialAngle: `Positioneer de nieuwe website als een professionelere, duidelijkere versie die sneller vertrouwen opbouwt en meer ${ensureArray(aiBriefing.ctas)[0]?.toLowerCase() || "aanvragen"} oplevert.`,
+    competitorObservation: researchPackage.competitorBenchmark.summary,
+  };
+}
+
+function buildAutoBuildPlan({ aiBriefing, qualityScore, premiumAdvisor, extractedMedia, foundPages, checks }) {
+  const services = ensureArray(aiBriefing.services).slice(0, 6);
+  const pages = [
+    { title: "Home", goal: "Binnen 5 seconden duidelijk maken wat het bedrijf doet en waarom bezoekers kunnen vertrouwen.", sections: ["Hero", "Bewijsbalk", "Diensten", "Werkwijze", "Projecten/reviews", "Contact CTA"] },
+    { title: "Diensten", goal: "Aanbod scanbaar maken met concrete voordelen en CTA per dienst.", sections: services.length ? services : ["Belangrijkste diensten", "Werkwijze", "Veelgestelde vragen"] },
+    { title: "Over ons", goal: "Vertrouwen en persoonlijkheid toevoegen.", sections: ["Intro", "Team/aanpak", "Kwaliteit", "Waarom kiezen voor ons"] },
+    { title: "Projecten/reviews", goal: "Bewijs tonen dat concurrenten vaak wel laten zien.", sections: ["Projectkaarten", "Reviewblok", "Voor/na of resultaten"] },
+    { title: "Contact", goal: "Drempel naar aanvraag zo laag mogelijk maken.", sections: ["Formulier", "Telefoon", "Openingstijden", "Werkgebied"] },
+  ];
+  const wireframe = [
+    "Sticky header met logo, diensten, werkwijze en primaire CTA",
+    "Hero met concrete belofte, korte bewijsregel en twee acties",
+    "Score/bewijsbalk met reviews, ervaring, regio of garanties",
+    "Dienstenraster met iconen en korte resultaatgerichte teksten",
+    "Werkwijze in 3 stappen",
+    "Projecten/reviews voor vertrouwen",
+    "FAQ voor bezwaren en SEO",
+    "Contactblok met telefoon, formulier en werkgebied",
+  ];
+  return {
+    readiness: qualityScore.overall >= 70 && checks.websiteReachable ? "Ik weet genoeg" : "Nog enkele controles nodig",
+    sitemap: pages,
+    wireframe,
+    copyDirection: {
+      hero: aiBriefing.recommendedHero,
+      tone: aiBriefing.tone,
+      trust: premiumAdvisor.commercialAngle,
+      seoKeywords: aiBriefing.seoKeywords || [],
+    },
+    visualDirection: {
+      colors: qualityScore.design >= 75 ? "Gebruik bestaande merkbasis en maak contrast/CTA sterker." : "Maak een frissere premium kleurset met duidelijke CTA-kleur.",
+      images: extractedMedia.some((item) => item.usable === "yes") ? "Gebruik bestaande bruikbare beelden en vul aan per dienst." : "Gebruik premium branchebeelden of genereer passende sectiebeelden.",
+      icons: "Gebruik eenvoudige lijniconen per dienst en voordeel.",
+    },
+    buildActions: [
+      "Sitemap klaarzetten",
+      "Wireframe per sectie opbouwen",
+      "Copywriting schrijven vanuit briefing en advisor",
+      "SEO titels en lokale keywords verwerken",
+      "Beeldplan koppelen aan hero, diensten en vertrouwen",
+      "Preview genereren en quality check uitvoeren",
+    ],
+  };
+}
+
+function buildCompetitorBenchmark({ text, currentWebsite, foundPages, media, reviewSignals }) {
+  const gaps = [];
+  if (foundPages.length < 4) gaps.push("meer aparte pagina's voor diensten en bewijs");
+  if (!reviewSignals.length) gaps.push("zichtbaardere reviews");
+  if (!media.some((item) => item.usable === "yes")) gaps.push("sterker eigen beeldmateriaal");
+  if (!/project|portfolio|cases|werk/.test(text)) gaps.push("projecten of voorbeelden");
+  if (!/faq|veelgestelde/.test(text)) gaps.push("FAQ voor bezwaren en SEO");
+  return {
+    level: gaps.length <= 1 ? "sterk" : gaps.length <= 3 ? "gemiddeld" : "achterstand",
+    summary: gaps.length
+      ? `Concurrenten in deze branche tonen vaak ${gaps.slice(0, 3).join(", ")} duidelijker.`
+      : "De website bevat al meerdere signalen die concurrenten normaal gebruiken.",
+    gaps,
+    referenceBasis: cleanExtractedText(currentWebsite.title || currentWebsite.h1 || "Publieke websitesignalen"),
+  };
+}
+
+function buildResearchInsights({ text, contactData, media, foundPages, faqItems, reviewSignals, competitorBenchmark }) {
+  const insights = [];
+  if (!contactData.phones?.length) insights.push("Telefoonnummer directer tonen voor snelle aanvragen.");
+  if (!reviewSignals.length) insights.push("Reviews hoger plaatsen om vertrouwen sneller op te bouwen.");
+  if (!faqItems.length) insights.push("FAQ toevoegen om twijfels en SEO-vragen af te vangen.");
+  if (!media.some((item) => item.usable === "yes")) insights.push("Teamfoto, projectfoto of sterke hero-afbeelding verbeteren.");
+  if (foundPages.length < 4) insights.push("Sitemap uitbreiden zodat bezoekers aanbod en bewijs sneller vinden.");
+  if (/welkom|home|klik hier/.test(text)) insights.push("Algemene teksten vervangen door concrete klantvoordelen.");
+  if (competitorBenchmark.gaps?.length) insights.push(competitorBenchmark.summary);
+  return [...new Set(insights)].slice(0, 8);
+}
+
+function extractFaqItems(html) {
+  const raw = String(html || "");
+  const questions = uniqueMatches(stripHtml(raw), /(?:wie|wat|waar|wanneer|waarom|hoe|kan|kost|zijn|is|hebben|moet)[^?.!]{12,110}\?/gi, 10);
+  if (/faq|veelgestelde vragen/i.test(raw) && !questions.length) return ["FAQ-sectie gevonden, vragen handmatig controleren."];
+  return questions;
+}
+
+function extractReviewSignals(html) {
+  const text = stripHtml(html);
+  const signals = [];
+  uniqueMatches(text, /\b(?:review|reviews|beoordeling|beoordelingen|klanten vertellen|ervaringen|tevreden klanten)\b.{0,90}/gi, 8).forEach((item) => signals.push(item));
+  uniqueMatches(text, /\b[1-5][,.][0-9]\s*(?:\/\s*5|sterren|stars)?\b/gi, 4).forEach((item) => signals.push(`Score-signaal: ${item}`));
+  return [...new Set(signals)].slice(0, 8);
+}
+
+function extractPostSignals(html) {
+  const text = stripHtml(html);
+  return uniqueMatches(text, /\b(?:nieuws|blog|update|bericht|laatste|recent)\b.{0,120}/gi, 8);
+}
+
+function extractStructuredDataTypes(html) {
+  const types = [];
+  const raw = String(html || "");
+  let match;
+  const pattern = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+  while ((match = pattern.exec(raw)) && types.length < 8) {
+    try {
+      const data = JSON.parse(match[1].trim());
+      ensureArray(data).forEach((item) => {
+        const type = cleanExtractedText(item?.["@type"] || item?.type || "");
+        if (type && !types.includes(type)) types.push(type);
+      });
+    } catch {
+      if (!types.includes("Structured data aanwezig")) types.push("Structured data aanwezig");
+    }
+  }
+  return types;
+}
+
+function clampQualityScore(value) {
+  return Math.max(0, Math.min(100, Math.round(Number(value || 0))));
+}
+
+function ensureArray(value) {
+  if (Array.isArray(value)) return value.filter(Boolean);
+  return value ? [value] : [];
 }
 
 function uniqueMatches(value, pattern, limit = 8) {

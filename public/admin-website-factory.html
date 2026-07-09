@@ -595,6 +595,10 @@
                   <div class="demo-intake-summary-grid" id="factory-intelligence-stats"></div>
                 </div>
                 <div class="factory-output-block">
+                  <strong>Premium Advisor</strong>
+                  <div class="factory-readiness-list" id="factory-premium-advisor"></div>
+                </div>
+                <div class="factory-output-block">
                   <strong>Beeldkeuze</strong>
                   <div class="factory-readiness-list" id="factory-media-review"></div>
                 </div>
@@ -21268,6 +21272,7 @@
             cockpitConfidenceCopy: document.getElementById("factory-cockpit-confidence-copy"),
             sourceList: document.getElementById("factory-source-list"),
             intelligenceStats: document.getElementById("factory-intelligence-stats"),
+            premiumAdvisor: document.getElementById("factory-premium-advisor"),
             mediaReview: document.getElementById("factory-media-review"),
             salesNotes: document.getElementById("factory-sales-notes"),
             processNotes: document.getElementById("factory-process-notes"),
@@ -21841,10 +21846,14 @@
           return {
             websiteScanRaw: analysis.websiteScanRaw || null,
             websiteScanSummary: analysis.websiteScanSummary || "",
+            researchPackage: analysis.researchPackage || null,
             websiteIntelligence: analysis.websiteIntelligence || null,
             extractedContactData: analysis.extractedContactData || null,
             extractedMedia: Array.isArray(analysis.extractedMedia) ? analysis.extractedMedia : [],
             aiBriefing: analysis.aiBriefing || null,
+            qualityScore: analysis.qualityScore || analysis.websiteIntelligence?.qualityScore || null,
+            premiumAdvisor: analysis.premiumAdvisor || analysis.websiteIntelligence?.premiumAdvisor || null,
+            autoBuildPlan: analysis.autoBuildPlan || analysis.websiteIntelligence?.autoBuildPlan || null,
             briefingCompleteness: Number(analysis.briefingCompleteness || analysis.websiteIntelligence?.briefingCompleteness || 0),
             buildConfidence: Number(analysis.buildConfidence || analysis.websiteIntelligence?.buildConfidence || 0),
             missingFields: Array.isArray(analysis.missingFields) ? analysis.missingFields : [],
@@ -21888,10 +21897,24 @@
 
         function buildIntelligenceBriefingText(packageData = {}) {
           const briefing = packageData.aiBriefing || {};
+          const quality = packageData.qualityScore || packageData.websiteIntelligence?.qualityScore || {};
+          const advisor = packageData.premiumAdvisor || packageData.websiteIntelligence?.premiumAdvisor || {};
+          const buildPlan = packageData.autoBuildPlan || packageData.websiteIntelligence?.autoBuildPlan || {};
+          const research = packageData.researchPackage || {};
+          const scoreLines = ["design", "conversion", "seo", "mobile", "speed", "trust", "professionalism"]
+            .map((key) => Number.isFinite(Number(quality[key])) ? `- ${qualityLabel(key)}: ${quality[key]}%` : "")
+            .filter(Boolean);
+          const sitemapLines = Array.isArray(buildPlan.sitemap)
+            ? buildPlan.sitemap.slice(0, 6).map((page) => `- ${page.title}: ${page.goal}`)
+            : [];
+          const recommendationLines = Array.isArray(advisor.recommendations)
+            ? advisor.recommendations.slice(0, 8).map((item) => `- ${item}`)
+            : [];
           if (!briefing.business && !packageData.websiteScanSummary) return "";
           return [
-            "Website Intelligence",
+            "Website Intelligence Research Agent",
             packageData.websiteScanSummary ? `- Scan: ${packageData.websiteScanSummary}` : "",
+            research.competitorBenchmark?.summary ? `- Concurrentie-inschatting: ${research.competitorBenchmark.summary}` : "",
             briefing.industry ? `- Branche: ${briefing.industry}` : "",
             briefing.description ? `- Samenvatting: ${briefing.description}` : "",
             briefing.audience ? `- Doelgroep: ${briefing.audience}` : "",
@@ -21899,10 +21922,26 @@
             briefing.services?.length ? `- Diensten: ${briefing.services.join(", ")}` : "",
             briefing.usps?.length ? `- Vertrouwen/USP's: ${briefing.usps.join(", ")}` : "",
             briefing.tone ? `- Toon: ${briefing.tone}` : "",
+            Number.isFinite(Number(quality.overall)) ? `- Website score: ${quality.overall}% (${quality.label || "Advisor"})` : "",
+            scoreLines.length ? ["", "Quality score", ...scoreLines].join("\n") : "",
+            advisor.verdict ? ["", "Premium Advisor", `- ${advisor.verdict}`, advisor.executiveSummary ? `- ${advisor.executiveSummary}` : "", ...recommendationLines].filter(Boolean).join("\n") : "",
             briefing.recommendedHero ? `- Hero advies: ${briefing.recommendedHero}` : "",
             briefing.recommendedConversion ? `- Conversie advies: ${briefing.recommendedConversion}` : "",
+            buildPlan.readiness ? ["", "Automatisch buildplan", `- Readiness: ${buildPlan.readiness}`, ...sitemapLines, ...(buildPlan.wireframe || []).slice(0, 8).map((item) => `- Wireframe: ${item}`)].join("\n") : "",
             packageData.missingFields?.length ? `- Nog controleren: ${packageData.missingFields.join(", ")}` : "",
           ].filter(Boolean).join("\n");
+        }
+
+        function qualityLabel(key = "") {
+          return ({
+            design: "Design",
+            conversion: "Conversie",
+            seo: "SEO",
+            mobile: "Mobiel",
+            speed: "Snelheid",
+            trust: "Vertrouwen",
+            professionalism: "Professionaliteit",
+          })[key] || key;
         }
 
         async function persistWebsiteIntelligence(packageData = {}) {
@@ -22319,6 +22358,10 @@
           const media = Array.isArray(intelligencePackage.extractedMedia) ? intelligencePackage.extractedMedia : [];
           const pages = Array.isArray(intelligencePackage.websiteScanRaw?.pages) ? intelligencePackage.websiteScanRaw.pages : Array.isArray(intelligence.foundPages) ? intelligence.foundPages : [];
           const contactData = intelligencePackage.extractedContactData || {};
+          const quality = intelligencePackage.qualityScore || intelligence.qualityScore || {};
+          const advisor = intelligencePackage.premiumAdvisor || intelligence.premiumAdvisor || {};
+          const buildPlan = intelligencePackage.autoBuildPlan || intelligence.autoBuildPlan || {};
+          const research = intelligencePackage.researchPackage || {};
           const contactCount = Number(intelligence.foundContactCount || 0) || ensureArrayValue(contactData.phones).length + ensureArrayValue(contactData.emails).length + ensureArrayValue(contactData.addresses).length;
           const scanReady = Boolean(intelligence.lastScannedAt || intelligencePackage.lastScannedAt);
           const scanConfidence = Number(intelligencePackage.buildConfidence || intelligence.buildConfidence || 0);
@@ -22410,9 +22453,25 @@
               ["Pagina's", String(pages.length || (website ? 1 : 0))],
               ["Contact", String(contactCount)],
               ["Beelden", String(media.length)],
-              ["Confidence", scanReady ? `${scanConfidence}%` : "Nog niet"],
+              ["Advisor score", Number.isFinite(Number(quality.overall)) ? `${quality.overall}%` : scanReady ? `${scanConfidence}%` : "Nog niet"],
+              ["Buildplan", buildPlan.readiness || "-"],
               ["Laatst", intelligencePackage.lastScannedAt ? formatDate(intelligencePackage.lastScannedAt) : "-"],
             ].map(([label, value]) => `<div><strong>${escapeHtml(label)}</strong>${escapeHtml(value)}</div>`).join("");
+          }
+          if (elements.premiumAdvisor) {
+            const advisorItems = [
+              advisor.verdict ? ["✓", "Advies", advisor.verdict, true] : null,
+              Number.isFinite(Number(quality.conversion)) ? ["↗", "Conversie", `${quality.conversion}%`, quality.conversion >= 70] : null,
+              Number.isFinite(Number(quality.trust)) ? ["◆", "Vertrouwen", `${quality.trust}%`, quality.trust >= 70] : null,
+              research.competitorBenchmark?.summary ? ["!", "Concurrentie", research.competitorBenchmark.summary, false] : null,
+            ].filter(Boolean);
+            elements.premiumAdvisor.innerHTML = advisorItems.length ? advisorItems.map(([icon, title, copy, ready]) => `
+              <div class="${ready ? "is-ready" : ""}">
+                <span aria-hidden="true">${escapeHtml(icon)}</span>
+                <strong>${escapeHtml(title)}</strong>
+                <small>${escapeHtml(copy)}</small>
+              </div>
+            `).join("") : `<div><span aria-hidden="true">!</span><strong>Nog geen advisor</strong><small>Voer eerst de website-analyse uit.</small></div>`;
           }
           if (elements.mediaReview) {
             elements.mediaReview.innerHTML = media.length ? media.slice(0, 5).map((item) => {
@@ -23500,6 +23559,16 @@
               secondary: "",
             };
           }
+          if (knownWebsiteUrl() && !currentWebsiteIntelligencePackage()?.lastScannedAt && !currentWebsiteIntelligencePackage()?.websiteIntelligence?.lastScannedAt) {
+            return {
+              key: "research",
+              label: "Research uitvoeren",
+              copy: "Laat de Website Factory eerst de publieke signalen, score, advisor en bouwrichting voorbereiden.",
+              primary: "Website analyseren",
+              action: "website_intelligence",
+              secondary: "",
+            };
+          }
           if (!hasPlan) {
             return {
               key: "plan",
@@ -23613,6 +23682,7 @@
             return;
           }
           if (action === "save_demo") return saveJourney();
+          if (action === "website_intelligence") return analyzeWebsiteForFactory();
           if (action === "generate_plan") return makeWebsitePlan();
           if (action === "generate_preview") return generatePreview();
           if (action === "open_preview") return openActionUrl(null, elements.openPreview, "Genereer eerst een preview.");
