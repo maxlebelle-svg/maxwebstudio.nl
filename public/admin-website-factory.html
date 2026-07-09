@@ -548,7 +548,10 @@
                     <small>Lead naar demo-site</small>
                     <input id="factory-lead-command-search" type="search" placeholder="Zoek een lead op bedrijfsnaam, plaats, branche, telefoon of website..." autocomplete="off" />
                   </label>
-                  <button class="button primary" id="factory-lead-command-load" type="button">Lead laden</button>
+                  <div class="factory-lead-command-actions">
+                    <button class="button primary" id="factory-lead-command-load" type="button">Lead laden</button>
+                    <button class="button secondary" id="factory-lead-command-scan" type="button">Website scannen</button>
+                  </div>
                 </div>
                 <div class="factory-lead-command-results" id="factory-lead-command-results" role="listbox" aria-label="Leadresultaten"></div>
                 <div class="factory-lead-command-meta" id="factory-lead-command-meta">Kies een lead om automatisch bedrijfsgegevens, website en demo journey klaar te zetten.</div>
@@ -21219,6 +21222,7 @@
             leadCommandSearch: document.getElementById("factory-lead-command-search"),
             leadCommandResults: document.getElementById("factory-lead-command-results"),
             leadCommandLoad: document.getElementById("factory-lead-command-load"),
+            leadCommandScan: document.getElementById("factory-lead-command-scan"),
             leadCommandMeta: document.getElementById("factory-lead-command-meta"),
             leadCommandPreview: document.getElementById("factory-lead-command-preview"),
             business: document.getElementById("demo-journey-business"),
@@ -21785,6 +21789,13 @@
               ? `${lead.companyName || lead.company_name || "Lead"} · ${lead.industry || inferBranchFromLead(lead) || "Branche"} · ${lead.websiteUrl || lead.website_url ? "Website gevonden" : "Website ontbreekt"} · Klaar voor analyse`
               : "Kies een lead om automatisch bedrijfsgegevens, website en demo journey klaar te zetten.";
           }
+          if (elements.leadCommandScan) {
+            const lead = selectedLead();
+            const hasWebsite = Boolean(knownWebsiteUrl() || lead?.websiteUrl || lead?.website_url);
+            elements.leadCommandScan.disabled = !hasWebsite;
+            elements.leadCommandScan.title = hasWebsite ? "Analyseer de website van deze lead" : "Deze lead heeft nog geen website-URL";
+            elements.leadCommandScan.textContent = hasWebsite ? "Website scannen" : "Website ontbreekt";
+          }
           renderLeadCommandPreview();
         }
 
@@ -22232,7 +22243,7 @@
             setMessage(elements.message, "Vul eerst de bestaande website URL in, of werk handmatig verder zonder scan.", "warning");
             return;
           }
-          await withJourneyLock("website_intelligence", [elements.refresh, elements.processNotes, elements.save, elements.generatePreview], async () => {
+          await withJourneyLock("website_intelligence", [elements.refresh, elements.leadCommandScan, elements.processNotes, elements.save, elements.generatePreview], async () => {
             setMessage(elements.message, "Website analyseren en briefing aanvullen...", "info");
             try {
               if (!journey?.id) {
@@ -24614,6 +24625,22 @@
             } else {
               setMessage(elements.message, "Zoek en kies eerst een lead.", "warning");
             }
+          });
+          elements.leadCommandScan?.addEventListener("click", async (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const hasQuery = Boolean(String(elements.leadCommandSearch?.value || "").trim());
+            const lead = hasQuery ? factoryCommandLeadMatches()[0] : selectedLead();
+            if (lead?.id && String(elements.lead?.value || "") !== String(lead.id)) {
+              await selectFactoryLead(lead.id);
+            }
+            if (!knownWebsiteUrl()) {
+              renderLeadCommandbar();
+              setMessage(elements.message, "Deze lead heeft nog geen website-URL. Vul eerst de website aan.", "warning");
+              return;
+            }
+            await analyzeWebsiteForFactory();
+            renderLeadCommandbar();
           });
           elements.leadCommandResults?.addEventListener("click", (event) => {
             const button = event.target.closest("[data-lead-id]");

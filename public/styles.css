@@ -27790,6 +27790,16 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   white-space: nowrap;
 }
 
+.factory-lead-command-actions {
+  display: grid;
+  gap: 8px;
+  min-width: 138px;
+}
+
+.factory-lead-command-actions .button {
+  width: 100%;
+}
+
 .factory-lead-command-results {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
