@@ -1,0 +1,91 @@
+{
+  "id": "timmerwerk",
+  "key": "carpentry",
+  "name": "Timmerwerk & Maatwerk",
+  "label": "Timmerwerk en maatwerk",
+  "tone": "vakkundig, duidelijk, praktisch en verzorgd",
+  "colorHints": [
+    "donkergroen",
+    "warm hout",
+    "oranje accent",
+    "licht neutraal"
+  ],
+  "heroAngles": [
+    "Strak timmerwerk, duidelijke afspraken en een afwerking die klopt.",
+    "Van zolder tot overkapping: netjes gemaakt en helder afgesproken."
+  ],
+  "trustSignals": [
+    "Duidelijke afspraken",
+    "Nette afwerking",
+    "Maatwerk voor de woning",
+    "Snel schakelen"
+  ],
+  "ctaExamples": [
+    "Vraag een timmerofferte aan",
+    "Bespreek uw klus",
+    "WhatsApp direct"
+  ],
+  "assetKeywords": [
+    "timmerwerk",
+    "zolderverbouwing",
+    "dakkapel",
+    "overkapping",
+    "gevelbekleding",
+    "kozijnen"
+  ],
+  "aliases": [
+    "timmerwerk",
+    "timmerwerken",
+    "timmerbedrijf",
+    "timmerman",
+    "maatwerk",
+    "zolder",
+    "zolderverbouwing",
+    "dakkapel",
+    "vliering",
+    "overkapping",
+    "tuinhuis",
+    "gevelbekleding",
+    "houtwerk",
+    "kozijn",
+    "kozijnen"
+  ],
+  "palette": {
+    "ink": "#101820",
+    "brand": "#1f352d",
+    "accent": "#d88b36",
+    "soft": "#f4efe7",
+    "dark": "#162821"
+  },
+  "copy": {
+    "eyebrow": "Timmerwerk, verbouw en maatwerk",
+    "hero": "Strak timmerwerk, duidelijke afspraken en een afwerking die klopt.",
+    "intro": "Voor huiseigenaren die meer woonruimte, nette afwerking en maatwerk willen zonder vage planning of halve oplossingen.",
+    "cta": "Vraag een timmerofferte aan",
+    "secondaryCta": "WhatsApp direct"
+  },
+  "services": [
+    "Zolderverbouwing",
+    "Dakkapel afwerking",
+    "Vliering plaatsen",
+    "Overkapping en tuinhuis",
+    "Gevelbekleding",
+    "Kozijnen en maatwerk"
+  ],
+  "preferredComponents": [
+    "hero",
+    "services",
+    "portfolio",
+    "process",
+    "reviews",
+    "contact"
+  ],
+  "assetSlots": [
+    "zolderverbouwing",
+    "dakkapel",
+    "vliering",
+    "overkapping",
+    "gevelbekleding",
+    "kozijnen"
+  ]
+}

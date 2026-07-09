@@ -20,6 +20,8 @@ const PACKAGE_ALIASES = {
 
 const INDUSTRY_ALIASES = [
   ["tegelzetter", /\b(tegel|tegels|tegelzet|tegelzetter|tegelzetbedrijf|tegelwerk|vloertegel|wandtegel|badkamertegel|natuursteen|voegwerk|kitwerk)\b/i],
+  ["autobedrijf", /\b(autoairco|auto-airco|auto airco|autobedrijf|garage|automotive|occasion|apk|autoservice|diagnose|reparatie)\b/i],
+  ["timmerwerk", /\b(timmerwerk|timmerwerken|timmerbedrijf|timmerman|maatwerk|zolder|zolderverbouwing|dakkapel|vliering|overkapping|tuinhuis|gevelbekleding|houtwerk|kozijn|kozijnen)\b/i],
   ["bouw", /\b(aannemer|bouw|renovatie|timmerbedrijf|timmer|dakopbouw|aanbouw|badkamer|kozijn)\b/i],
   ["hovenier", /\b(tuin|hovenier|tuinaanleg|groen|buitenruimte)\b/i],
   ["restaurant", /\b(restaurant|horeca|cafe|hotel|b&b|reserveren)\b/i],

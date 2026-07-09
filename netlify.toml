@@ -3,6 +3,7 @@
 
 [functions]
   directory = "functions"
+  included_files = ["public/assets/demo-images/library/**"]
 
 [[redirects]]
   from = "/account-activeren"

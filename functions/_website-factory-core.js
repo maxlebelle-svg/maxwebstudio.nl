@@ -1,4 +1,6 @@
 const crypto = require("crypto");
+const fs = require("fs");
+const path = require("path");
 const { resolveDemoImageAsset, resolveDemoImageAssetSet } = require("./_demo-image-assets");
 const { loadWebsiteFactoryManifests } = require("./_website-factory-manifests");
 const { resolveFactoryConfig } = require("./website-factory/config-resolver");
@@ -62,6 +64,28 @@ const INDUSTRY_PROFILES = [
       ["Advies", "Het bedrijf denkt mee over materiaal, legpatroon, voegkleur en afwerking."],
       ["Offerte", "U ontvangt een duidelijke prijs en planning voor het tegelwerk."],
       ["Uitvoering", "Het tegelwerk wordt strak gelegd, gevoegd en netjes opgeleverd."],
+    ],
+  }),
+  profile("carpentry", ["timmer", "timmerwerk", "timmerwerken", "timmerbedrijf", "timmerman", "maatwerk", "zolder", "zolderverbouwing", "dakkapel", "vliering", "overkapping", "tuinhuis", "gevelbekleding", "houtwerk", "kozijn", "kozijnen"], {
+    label: "Timmerwerk en maatwerk",
+    colors: { ink: "#101820", brand: "#1f352d", accent: "#d88b36", soft: "#f4efe7", dark: "#162821" },
+    hero: "Strak timmerwerk, duidelijke afspraken en een afwerking die klopt.",
+    intro: "Voor huiseigenaren die meer woonruimte, nette afwerking en maatwerk willen zonder vage planning of halve oplossingen.",
+    eyebrow: "Timmerwerk, verbouw en maatwerk",
+    cta: "Vraag een timmerofferte aan",
+    secondaryCta: "WhatsApp direct",
+    services: ["Zolderverbouwing", "Dakkapel afwerking", "Vliering plaatsen", "Overkapping en tuinhuis", "Gevelbekleding", "Kozijnen en maatwerk"],
+    benefits: [
+      ["Strakke afwerking", "De presentatie laat zien dat details, lijnen en materiaalkeuze belangrijk zijn bij zichtbaar timmerwerk."],
+      ["Duidelijke afspraken", "Bezoekers begrijpen snel hoe opname, planning, offerte en uitvoering verlopen."],
+      ["Meer woonruimte", "Diensten zoals zolder, dakkapel en vliering worden gekoppeld aan praktisch dagelijks gebruik."],
+      ["Snel schakelen", "WhatsApp, telefoon en aanvraagmomenten maken de stap naar een opname laagdrempelig."],
+    ],
+    process: [
+      ["Opname en advies", "Bespreek de ruimte, wensen, maatvoering en technische mogelijkheden."],
+      ["Duidelijke offerte", "De klant ontvangt een overzichtelijke aanpak met planning en afspraken."],
+      ["Netjes uitvoeren", "Het timmerwerk wordt strak geplaatst met aandacht voor woning en afwerking."],
+      ["Strak opleveren", "Alles wordt gecontroleerd, afgewerkt en klaar voor dagelijks gebruik opgeleverd."],
     ],
   }),
   profile("construction", ["bouw", "timmer", "renovatie", "aannemer", "dak", "badkamer", "kozijn", "dakopbouw", "aanbouw"], {
@@ -254,12 +278,17 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
   const pages = packageRules.pages;
   const siteUrl = normalizeSiteUrl(websiteUrl, businessName);
   const projectSlug = slugifySite(businessName || websiteUrl || "website-preview");
-  const title = `${businessName} - ${industryProfile.label}`;
-  const description = `${businessName} presenteert ${industryProfile.label.toLowerCase()} met een premium uitstraling, duidelijke actieknoppen en een route naar contact.`;
+  const title = buildSeoTitle({ businessName, industryProfile, industry, currentWebsite, services });
+  const description = buildSeoDescription({ businessName, industryProfile, currentWebsite, services });
   const siteAssets = buildSiteAssets({ businessName, industryProfile, services, colors, heroImage, demoImageAssets, projectSlug });
+  const packagedHeroImage = packagedAssetMeta(siteAssets.find((asset) => asset.kind === "hero"), heroImage);
+  const packagedDemoImageAssets = Object.fromEntries(Object.entries(demoImageAssets).map(([role, asset]) => [
+    role,
+    packagedAssetMeta(siteAssets.find((item) => item.kind === role), asset),
+  ]));
   const html = renderHtml({ businessName, contactName, email, phone, websiteUrl, siteUrl, industry, industryProfile, services, pricingPackages, benefits, processSteps, cta, colors, style, title, description, lowInputWarning, packageType, packageRules, heroImage, siteAssets, currentWebsite, googleReviews, googleRating, googleRatingTotal, googleMapsUrl });
   const css = renderCss(colors);
-  const script = renderScript({ businessName, email, services, industryProfile });
+  const script = renderScript({ businessName, email, services, industryProfile, siteAssets });
   const sitemap = renderSitemap({ siteUrl, pages });
   const robots = renderRobots({ siteUrl });
   const htaccess = renderHtaccess();
@@ -297,8 +326,8 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
     assetRequirements: factoryConfig.assets,
     manifestSources: factoryConfig.sources,
     packageRules,
-    heroImage,
-    demoImageAssets,
+    heroImage: packagedHeroImage,
+    demoImageAssets: packagedDemoImageAssets,
     currentWebsite,
     googleReviews,
     googleRating,
@@ -348,11 +377,12 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
       type: "demo-image-library",
       promptReady: true,
       slug: heroImage.slug,
-      src: heroImage.src,
-      alt: heroImage.alt,
+      src: packagedHeroImage.src,
+      originalSrc: packagedHeroImage.originalSrc,
+      alt: packagedHeroImage.alt,
       subject: `${businessName} ${industry}`,
     },
-    roleImages: demoImageAssets,
+    roleImages: packagedDemoImageAssets,
     serviceVisuals: services.map((service, index) => ({
       service,
       type: "demo-image-library",
@@ -415,7 +445,7 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
       { path: "sitemap.xml", content: sitemap },
       { path: "robots.txt", content: robots },
       { path: ".htaccess", content: htaccess },
-      ...siteAssets.filter((asset) => asset.content).map(({ path, content }) => ({ path, content })),
+      ...uniqueFilesByPath(siteAssets.filter((asset) => asset.content).map(({ path, content, encoding }) => ({ path, content, encoding }))),
       { path: "assets-map.json", content: JSON.stringify(assetsMap, null, 2) },
       { path: "briefing.json", content: JSON.stringify(briefingJson, null, 2) },
       { path: "README.md", content: readme },
@@ -785,12 +815,13 @@ function extractServices(text = "", industry = "") {
   if (briefingServices.length) return briefingServices;
   if (/rijschool|verkeersschool|rijles|autorijles|scooter|scooterrijbewijs|bromfiets|examengarantie|praktijkexamen|theorie|cbr/.test(normalized)) return ["Scooterrijles", "Autorijles", "Examengarantie", "Theoriebegeleiding"];
   if (/tegel|tegelzet|tegelwerk|vloertegel|wandtegel|badkamertegel|natuursteen|voegwerk|kitwerk/.test(normalized)) return ["Badkamer betegelen", "Vloertegels", "Wandtegels", "Natuursteen", "Voeg- en kitwerk"];
+  if (/autoairco|auto-airco|auto airco/.test(normalized)) return ["Airco service", "Airco onderhoud", "Diagnose", "Reparatie", "Afspraak maken"];
+  if (/autobedrijf|garage|automotive|occasion|apk|autoservice/.test(normalized)) return ["Onderhoud", "APK", "Diagnose", "Reparatie", "Occasions"];
+  if (/timmer|timmerwerk|timmerwerken|timmerbedrijf|timmerman|zolder|dakkapel|vliering|overkapping|tuinhuis|gevelbekleding|houtwerk|kozijn/.test(normalized)) return ["Zolderverbouwing", "Dakkapel afwerking", "Vliering plaatsen", "Overkapping en tuinhuis", "Gevelbekleding", "Kozijnen en maatwerk"];
   if (/bouw|timmer|renovatie|aannemer/.test(normalized)) return ["Renovatie", "Maatwerk", "Projectbegeleiding"];
   if (/restaurant|horeca|cafe|catering/.test(normalized)) return ["Menu", "Reserveren", "Catering"];
   if (/sportschool|fitness|personal trainer/.test(normalized)) return ["Proefles", "Rooster", "Membership"];
   if (/advocaat|advocatuur|juridisch|jurist/.test(normalized)) return ["Arbeidsrecht", "Ondernemingsrecht", "Intake"];
-  if (/autoairco|auto-airco|auto airco/.test(normalized)) return ["Airco service", "Airco onderhoud", "Diagnose", "Reparatie", "Afspraak maken"];
-  if (/autobedrijf|garage|automotive|occasion|apk|autoservice/.test(normalized)) return ["Onderhoud", "APK", "Diagnose", "Reparatie", "Occasions"];
   if (/tandarts|mondzorg/.test(normalized)) return ["Controle", "Preventie", "Esthetiek"];
   if (/elektricien|elektra|groepenkast/.test(normalized)) return ["Storingen", "Groepenkast", "Laadpaal"];
   if (/loodgieter|lekkage|sanitair|cv/.test(normalized)) return ["Lekkage", "CV", "Sanitair"];
@@ -812,11 +843,12 @@ function inferIndustry(text = "", businessName = "") {
   const normalized = `${text} ${businessName}`.toLowerCase();
   if (/rijschool|verkeersschool|rijles|autorijles|scooter|scooterrijbewijs|bromfiets|examengarantie|praktijkexamen|theorie|cbr/.test(normalized)) return "rijschool";
   if (/tegel|tegelzet|tegelwerk|vloertegel|wandtegel|badkamertegel|natuursteen|voegwerk|kitwerk/.test(normalized)) return "tegelwerk en betegeling";
+  if (/autoairco|auto-airco|auto airco|autobedrijf|garage|automotive|occasion|apk|autoservice/.test(normalized)) return "automotive";
+  if (/timmer|timmerwerk|timmerwerken|timmerbedrijf|timmerman|zolder|dakkapel|vliering|overkapping|tuinhuis|gevelbekleding|houtwerk|kozijn/.test(normalized)) return "timmerwerk en maatwerk";
   if (/bouw|timmer|renovatie|aannemer/.test(normalized)) return "bouw en renovatie";
   if (/restaurant|horeca|cafe/.test(normalized)) return "horeca";
   if (/sportschool|fitness|personal trainer/.test(normalized)) return "fitness";
   if (/advocaat|advocatuur|juridisch|jurist/.test(normalized)) return "advocatuur";
-  if (/autoairco|auto-airco|auto airco|autobedrijf|garage|automotive|occasion|apk|autoservice/.test(normalized)) return "automotive";
   if (/tandarts|mondzorg/.test(normalized)) return "tandarts";
   if (/elektricien|elektra|groepenkast/.test(normalized)) return "elektricien";
   if (/loodgieter|lekkage|sanitair|cv/.test(normalized)) return "loodgieter";
@@ -928,12 +960,48 @@ function normalizeSiteUrl(websiteUrl = "", businessName = "") {
   return `https://${slugifySite(businessName)}.nl`;
 }
 
+function buildSeoTitle({ businessName, industryProfile = {}, industry = "", currentWebsite = {}, services = [] } = {}) {
+  const detectedRegion = extractLocationText(industry) || extractLocationText([currentWebsite.title, currentWebsite.metaDescription, ...(currentWebsite.headings || [])].join(" "));
+  const region = detectedRegion && detectedRegion !== "Regio" ? detectedRegion : "";
+  if (isCarpentryProfile(industryProfile)) {
+    return `${businessName} | Timmerman${region ? ` in ${region}` : ""} voor ${services.slice(0, 3).join(", ") || "verbouw en maatwerk"}`;
+  }
+  return `${businessName} - ${industryProfile.label || "Website"}`;
+}
+
+function buildSeoDescription({ businessName, industryProfile = {}, currentWebsite = {}, services = [] } = {}) {
+  if (isCarpentryProfile(industryProfile)) {
+    const serviceText = services.slice(0, 5).join(", ").toLowerCase();
+    return `${businessName} helpt met ${serviceText || "strak timmerwerk, verbouw en maatwerk"}. Duidelijke afspraken, nette uitvoering en een afwerking die klopt.`;
+  }
+  return currentWebsite.metaDescription
+    ? cleanText(currentWebsite.metaDescription).slice(0, 180)
+    : `${businessName} presenteert ${String(industryProfile.label || "diensten").toLowerCase()} met een premium uitstraling, duidelijke actieknoppen en een route naar contact.`;
+}
+
 function assetPath(siteAssets = [], kind = "", fallback = "") {
   return siteAssets.find((asset) => asset.kind === kind)?.path || fallback;
 }
 
 function serviceAssetPath(siteAssets = [], service = "", fallback = "assets/hero.svg") {
   return siteAssets.find((asset) => asset.kind === "service" && asset.service === service)?.path || fallback;
+}
+
+function packagedAssetMeta(packagedAsset = null, originalAsset = {}) {
+  if (!packagedAsset) return originalAsset || {};
+  return {
+    ...(originalAsset || {}),
+    src: packagedAsset.path || originalAsset?.src || "",
+    originalSrc: packagedAsset.originalSrc || originalAsset?.originalSrc || originalAsset?.src || "",
+    slug: packagedAsset.sourceSlug || originalAsset?.slug || "",
+    role: packagedAsset.kind || originalAsset?.role || "",
+    type: originalAsset?.type || packagedAsset.kind || "",
+    alt: originalAsset?.alt || "",
+  };
+}
+
+function uniqueFilesByPath(files = []) {
+  return Array.from(new Map(files.filter((file) => file?.path).map((file) => [file.path, file])).values());
 }
 
 function serviceSpecificDemoAsset({ service = "", industryProfile = {}, demoImageAssets = {}, heroImage = {} } = {}) {
@@ -959,7 +1027,7 @@ function serviceImageRoleForText(serviceText = "", profileKey = "") {
   if (/contact|bel|whatsapp|afspraak|reserver|boeken|aanmeld|inschrijf|intake|kennismaking|offerte|aanvraag/.test(text)) return "contact";
   if (/advies|consult|controle|diagnose|inspectie|check|taxatie|waardebepaling|huidadvies|strategie|plan|tegel|voeg|kit|natuursteen/.test(text)) return "detail";
   if (/team|begeleiding|instruct|persoonlijk|coaching|praktijk|behandeling|therapie|mondzorg/.test(text)) return "team";
-  if (/project|portfolio|renovatie|aanbouw|dak|kozijn|tuinontwerp|aanleg|nieuwbouw|woning|verkoop|badkamer|vloer|wand/.test(text)) return "project";
+  if (/project|portfolio|renovatie|aanbouw|dak|dakkapel|zolder|vliering|overkapping|tuinhuis|gevel|houtwerk|kozijn|tuinontwerp|aanleg|nieuwbouw|woning|verkoop|badkamer|vloer|wand/.test(text)) return "project";
   if (/uitvoering|reparatie|onderhoud|apk|airco|installatie|laadpaal|warmtepomp|storing|storingen|lekkage|cv|service|spoed/.test(text)) return "service-alt";
   if (/resultaat|review|vertrouwen|garantie|geslaagd|preventie|nazorg/.test(text)) return "review";
   if (/menu|lunch|diner|arrangement|private dining|kamer|verblijf|interieur|sfeer/.test(text)) return "project-alt";
@@ -974,14 +1042,16 @@ function buildSiteAssets({ businessName, industryProfile, services, colors, hero
     soft: colors.soft || "#f3efe8",
     dark: colors.dark || colors.brand || "#1f332a",
   };
+  const packagedHeroImage = packageDemoImageAsset(heroImage, "hero", projectSlug);
+  const packagedDemoImageAssets = Object.fromEntries(Object.entries(demoImageAssets).map(([role, asset]) => [role, packageDemoImageAsset(asset, role, projectSlug)]));
   const serviceImageRoles = ["service", "service-alt", "project", "project-alt", "detail", "team", "contact", "review"];
   const usedServiceAssetPaths = new Set();
   const serviceAssets = services.slice(0, 6).map((service, index) => {
-    const fallbackAsset = demoImageAssets[serviceImageRoles[index % serviceImageRoles.length]] || demoImageAssets.service || heroImage;
-    let selectedAsset = serviceSpecificDemoAsset({ service, industryProfile, demoImageAssets, heroImage }) || fallbackAsset;
+    const fallbackAsset = packagedDemoImageAssets[serviceImageRoles[index % serviceImageRoles.length]] || packagedDemoImageAssets.service || packagedHeroImage;
+    let selectedAsset = serviceSpecificDemoAsset({ service, industryProfile, demoImageAssets: packagedDemoImageAssets, heroImage: packagedHeroImage }) || fallbackAsset;
     if (selectedAsset?.src && usedServiceAssetPaths.has(selectedAsset.src)) {
       selectedAsset = serviceImageRoles
-        .map((role) => demoImageAssets[role])
+        .map((role) => packagedDemoImageAssets[role])
         .find((assetItem) => assetItem?.src && !usedServiceAssetPaths.has(assetItem.src)) || selectedAsset;
     }
     if (selectedAsset?.src) usedServiceAssetPaths.add(selectedAsset.src);
@@ -990,6 +1060,9 @@ function buildSiteAssets({ businessName, industryProfile, services, colors, hero
       kind: "service",
       service,
       sourceSlug: selectedAsset.slug || fallbackAsset.slug,
+      originalSrc: selectedAsset.originalSrc || fallbackAsset.originalSrc,
+      content: selectedAsset.content || fallbackAsset.content,
+      encoding: selectedAsset.encoding || fallbackAsset.encoding,
     };
   });
   return [
@@ -997,17 +1070,42 @@ function buildSiteAssets({ businessName, industryProfile, services, colors, hero
     { path: "assets/favicon.svg", kind: "favicon", content: renderFaviconSvg({ businessName, colors: palette }) },
     { path: "assets/og-image.svg", kind: "og", content: renderOgSvg({ businessName, industryProfile, colors: palette }) },
     {
-      path: heroImage.src,
+      path: packagedHeroImage.src,
       kind: "hero",
-      sourceSlug: heroImage.slug,
+      sourceSlug: packagedHeroImage.slug,
+      originalSrc: packagedHeroImage.originalSrc,
+      content: packagedHeroImage.content,
+      encoding: packagedHeroImage.encoding,
     },
     ...["service", "team", "project", "contact", "service-alt", "project-alt", "detail", "review", "background"].map((role) => ({
-      path: (demoImageAssets[role] || heroImage).src,
+      path: (packagedDemoImageAssets[role] || packagedHeroImage).src,
       kind: role,
-      sourceSlug: (demoImageAssets[role] || heroImage).slug,
+      sourceSlug: (packagedDemoImageAssets[role] || packagedHeroImage).slug,
+      originalSrc: (packagedDemoImageAssets[role] || packagedHeroImage).originalSrc,
+      content: (packagedDemoImageAssets[role] || packagedHeroImage).content,
+      encoding: (packagedDemoImageAssets[role] || packagedHeroImage).encoding,
     })),
     ...serviceAssets,
   ];
+}
+
+function packageDemoImageAsset(assetItem = {}, role = "image", projectSlug = "website") {
+  if (!assetItem?.src) return assetItem || {};
+  const src = String(assetItem.src || "");
+  if (!src.startsWith("/assets/demo-images/")) return { ...assetItem, path: assetItem.path || src };
+  const sourcePath = path.join(__dirname, "..", "public", src.replace(/^\//, ""));
+  if (!fs.existsSync(sourcePath)) return { ...assetItem, path: assetItem.path || src, originalSrc: src };
+  const extension = path.extname(sourcePath) || ".png";
+  const fileName = `${slugifySite(assetItem.slug || `${projectSlug}-${role}`)}${extension}`;
+  const localPath = `assets/${fileName}`;
+  return {
+    ...assetItem,
+    src: localPath,
+    path: localPath,
+    originalSrc: src,
+    content: fs.readFileSync(sourcePath).toString("base64"),
+    encoding: "base64",
+  };
 }
 
 function renderLogoSvg({ businessName, colors }) {
@@ -1050,6 +1148,11 @@ function renderHtaccess() {
 function isDrivingSchoolProfile(profile = {}) {
   const text = `${profile?.key || ""} ${profile?.label || ""}`.toLowerCase();
   return text.includes("driving-school") || text.includes("rijschool") || text.includes("scooterles");
+}
+
+function isCarpentryProfile(profile = {}) {
+  const text = `${profile?.key || ""} ${profile?.label || ""}`.toLowerCase();
+  return text.includes("carpentry") || text.includes("timmerwerk") || text.includes("maatwerk");
 }
 
 function demoCopyForIndustry(profile = {}, packageRules = PACKAGE_RULES.starter) {
@@ -1096,6 +1199,39 @@ function demoCopyForIndustry(profile = {}, packageRules = PACKAGE_RULES.starter)
     subPageIntro: "kan deze pagina later aanvullen met echte cases, foto's en klantreacties.",
     footerLabel: packageRules.label,
   };
+  if (isCarpentryProfile(profile)) {
+    return {
+      ...defaults,
+      quickActionTitle: "Opname aanvragen",
+      quickActionText: "Stuur direct uw klus door",
+      contactActionTitle: "Timmerofferte",
+      contactActionText: "Vertel wat er gemaakt moet worden",
+      servicesEyebrow: "Timmerwerk en verbouw",
+      servicesTitle: "Voor de klussen waarbij maatwerk het verschil maakt.",
+      portfolioEyebrow: "Projectbeeld",
+      portfolioTitle: "Werk dat je elke dag ziet en gebruikt.",
+      portfolioCopy: "Kies een dienst om de aanpak en het resultaat duidelijker te presenteren.",
+      benefitsEyebrow: "Waarom deze timmerman",
+      benefitsTitle: "Geen halve oplossingen. Geen vage planning. Gewoon vakwerk.",
+      benefitsText: "De pagina legt nadruk op nette uitvoering, duidelijke afspraken en zichtbaar resultaat in en om de woning.",
+      sourceEyebrow: "Bestaande timmerwebsite verbeterd",
+      sourceTitle: "Herkenbare inhoud, sterker en specifieker gepresenteerd.",
+      sourceText: "Deze preview gebruikt de huidige website als basis en maakt diensten, projecten en contactmomenten concreter.",
+      processEyebrow: "Zo werkt het",
+      processTitle: "Van eerste bericht naar nette oplevering.",
+      reviewsEyebrow: "Vertrouwen",
+      reviewsTitle: "Een eerste indruk die vakwerk laat voelen.",
+      contactEyebrow: "Klus of project bespreken",
+      contactTitle: "Klaar om uw klus strak aan te pakken?",
+      projectLabel: "Soort timmerwerk",
+      messageLabel: "Wat wilt u laten maken?",
+      messagePlaceholder: "Vertel kort of het gaat om zolder, dakkapel, vliering, overkapping, gevelbekleding, kozijnen of ander maatwerk.",
+      subPageEyebrow: "Timmerwerk en maatwerk",
+      subPageText: "presenteert hier extra informatie over timmerwerk, verbouw, afwerking en maatwerk.",
+      subPageIntro: "kan deze pagina later aanvullen met echte projecten, foto's en klantreacties.",
+      footerLabel: "Timmerwerk, verbouw en maatwerk",
+    };
+  }
   if (!isDrivingSchoolProfile(profile)) return defaults;
   return {
     ...defaults,
@@ -1447,17 +1583,20 @@ function renderCss() {
   return css;
 }
 
-function renderScript({ businessName, email, services, industryProfile = null }) {
+function renderScript({ businessName, email, services, industryProfile = null, siteAssets = [] }) {
   const portfolioCopy = isDrivingSchoolProfile(industryProfile)
     ? (service) => `${service} krijgt eigen uitleg, passend beeld en een directe route naar proefles of pakketadvies.`
     : (service) => `${service} krijgt een eigen visuele presentatie, korte uitleg en een directe route naar aanvraag of contact.`;
+  const heroAsset = assetPath(siteAssets, "hero", "assets/og-image.svg");
+  const detailAsset = assetPath(siteAssets, "detail", heroAsset);
+  const projectAsset = assetPath(siteAssets, "project", heroAsset);
   const portfolio = Object.fromEntries(services.slice(0, 6).map((service, index) => [service, {
     title: `${service} helder in beeld`,
     copy: portfolioCopy(service),
     images: [
-      `assets/service-${index + 1}-${slugifySite(service)}.svg`,
-      "assets/hero.svg",
-      "assets/og-image.svg",
+      serviceAssetPath(siteAssets, service, heroAsset),
+      index % 2 === 0 ? projectAsset : detailAsset,
+      assetPath(siteAssets, "og", "assets/og-image.svg"),
     ],
   }]));
   return `document.documentElement.classList.add("preview-ready");

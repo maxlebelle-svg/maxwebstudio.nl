@@ -1,0 +1,84 @@
+{
+  "id": "autobedrijf",
+  "key": "automotive",
+  "name": "Autobedrijf & Autoservice",
+  "label": "Autobedrijf en autoservice",
+  "tone": "betrouwbaar, praktisch, snel en professioneel",
+  "colorHints": [
+    "donker antraciet",
+    "teal",
+    "wit",
+    "garage contrast"
+  ],
+  "heroAngles": [
+    "Autoservice die direct betrouwbaar voelt.",
+    "Snel duidelijkheid over onderhoud, diagnose en reparatie."
+  ],
+  "trustSignals": [
+    "Duidelijke service",
+    "Snelle afspraak",
+    "Vakkundige diagnose",
+    "Lokale garage"
+  ],
+  "ctaExamples": [
+    "Plan een afspraak",
+    "Bel direct",
+    "Vraag een offerte aan"
+  ],
+  "assetKeywords": [
+    "garage",
+    "autoservice",
+    "onderhoud",
+    "diagnose",
+    "reparatie",
+    "apk"
+  ],
+  "aliases": [
+    "autoairco",
+    "auto-airco",
+    "auto airco",
+    "autobedrijf",
+    "garage",
+    "automotive",
+    "occasion",
+    "apk",
+    "autoservice",
+    "diagnose",
+    "reparatie"
+  ],
+  "palette": {
+    "ink": "#101820",
+    "brand": "#24302c",
+    "accent": "#17b8a6",
+    "soft": "#f4f7f5",
+    "dark": "#202c27"
+  },
+  "copy": {
+    "eyebrow": "Garage, onderhoud en diagnose",
+    "hero": "Autoservice die direct betrouwbaar voelt.",
+    "intro": "Voor autobezitters die snel willen zien welke service beschikbaar is en makkelijk een afspraak willen maken.",
+    "cta": "Plan een afspraak",
+    "secondaryCta": "Bel direct"
+  },
+  "services": [
+    "Onderhoud",
+    "APK",
+    "Diagnose",
+    "Reparatie",
+    "Airco service"
+  ],
+  "preferredComponents": [
+    "hero",
+    "services",
+    "process",
+    "reviews",
+    "contact"
+  ],
+  "assetSlots": [
+    "garage",
+    "onderhoud",
+    "diagnose",
+    "reparatie",
+    "apk"
+  ]
+}
