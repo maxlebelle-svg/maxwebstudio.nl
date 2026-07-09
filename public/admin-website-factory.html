@@ -21740,10 +21740,23 @@
 
         function leadCommandPreviewVisual(lead = {}, initials = "L") {
           const websiteImage = leadWebsitePreviewImage(lead);
+          const websiteHref = leadCommandWebsiteHref(lead);
           if (websiteImage) {
-            return `<div class="factory-lead-command-visual is-image"><img src="${escapeHtml(websiteImage)}" alt="" loading="lazy" referrerpolicy="no-referrer" /><em>Huidige website</em></div>`;
+            const content = `<img src="${escapeHtml(websiteImage)}" alt="" loading="lazy" referrerpolicy="no-referrer" /><em>Huidige website</em>`;
+            return websiteHref
+              ? `<a class="factory-lead-command-visual is-image is-clickable" href="${escapeHtml(websiteHref)}" target="_blank" rel="noopener" title="Open huidige website">${content}</a>`
+              : `<div class="factory-lead-command-visual is-image">${content}</div>`;
           }
-          return `<div class="factory-lead-command-visual is-empty"><span class="factory-lead-command-avatar">${escapeHtml(initials)}</span><em>${lead.websiteUrl || lead.website_url ? "Website gevonden" : "Geen beeld"}</em></div>`;
+          const placeholder = `<span class="factory-lead-command-avatar">${escapeHtml(initials)}</span><em>${websiteHref ? "Website openen" : "Geen beeld"}</em>`;
+          return websiteHref
+            ? `<a class="factory-lead-command-visual is-empty is-clickable" href="${escapeHtml(websiteHref)}" target="_blank" rel="noopener" title="Open huidige website">${placeholder}</a>`
+            : `<div class="factory-lead-command-visual is-empty">${placeholder}</div>`;
+        }
+
+        function leadCommandWebsiteHref(lead = {}) {
+          const value = String(lead.websiteUrl || lead.website_url || lead.website || "").trim();
+          if (!value) return "";
+          return value.startsWith("http") ? value : `https://${value}`;
         }
 
         function leadWebsitePreviewImage(lead = {}) {
