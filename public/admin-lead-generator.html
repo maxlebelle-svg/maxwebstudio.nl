@@ -20475,11 +20475,19 @@
         return uniqueSalesEmployeeOptions().find((option) => option.value === normalized || option.tokens.has(normalized)) || null;
       }
 
+      function employeeOptionAccountLabel(option = {}) {
+        const label = String(option.label || option.name || option.value || "").trim();
+        const account = String(option.email || option.authUserId || option.value || "").trim();
+        if (!account || account === label) return label || account;
+        return `${label} - ${account}`;
+      }
+
       function buildLeadOwnerAssignmentUpdates(employee) {
         if (!employee?.value) return null;
         const email = normalizeEmployeeFilterToken(employee.email || (employee.value.includes("@") ? employee.value : ""));
         const name = String(employee.label || employee.name || employee.value || "").trim();
         const authUserId = String(employee.authUserId || employee.auth_user_id || "").trim();
+        if (!email && !authUserId) return null;
         const assignedIdentifier = authUserId || email || employee.value;
         return {
           medewerker: name,
@@ -20527,7 +20535,7 @@
         if (!canAssign || !leadfinderElements.ownerAssignmentSelect) return;
         const options = uniqueSalesEmployeeOptions();
         leadfinderElements.ownerAssignmentSelect.innerHTML = options
-          .map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`)
+          .map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(employeeOptionAccountLabel(option))}</option>`)
           .join("");
         leadfinderElements.ownerAssignmentSelect.value = lead?.id ? employeeOptionFromValue(getLeadOwnerValue(lead))?.value || "" : "";
         if (leadfinderElements.ownerAssignmentSave) leadfinderElements.ownerAssignmentSave.disabled = !lead?.id;
@@ -22616,7 +22624,7 @@
                           <span>Medewerker wijzigen</span>
                           <select data-lead-owner-card-select aria-label="Medewerker voor ${escapeHtml(lead.companyName || "deze lead")}">
                             <option value="">Kies medewerker</option>
-                            ${ownerOptions.map((option) => `<option value="${escapeHtml(option.value)}"${option.value === currentOwnerValue ? " selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
+                            ${ownerOptions.map((option) => `<option value="${escapeHtml(option.value)}"${option.value === currentOwnerValue ? " selected" : ""}>${escapeHtml(employeeOptionAccountLabel(option))}</option>`).join("")}
                           </select>
                         </label>
                         <button class="lead-owner-save-button" type="button" data-leadfinder-action="save-owner" aria-label="Medewerker opslaan voor ${escapeHtml(lead.companyName || "deze lead")}">Opslaan</button>
