@@ -132,7 +132,7 @@
       }
 
       .automation-workspace {
-        grid-template-columns: minmax(240px, 0.8fr) minmax(360px, 1.5fr) minmax(240px, 0.75fr);
+        grid-template-columns: minmax(250px, 0.72fr) minmax(520px, 1.7fr) minmax(260px, 0.62fr);
         align-items: start;
       }
 
@@ -173,11 +173,20 @@
 
       .automation-template-card h3,
       .automation-canvas-title h2,
-      .automation-properties h2 {
+      .admin-body .automation-properties .admin-section-heading h2 {
         margin: 0;
         color: #f8fbff;
         font-size: clamp(17px, 1.4vw, 21px);
         line-height: 1.2;
+      }
+
+      .automation-properties .admin-section-heading {
+        gap: 10px;
+        align-items: start;
+      }
+
+      .automation-properties .admin-section-heading > div {
+        min-width: 0;
       }
 
       .automation-card-meta,
@@ -237,7 +246,8 @@
       .automation-canvas-viewport {
         position: relative;
         min-height: 560px;
-        overflow: hidden;
+        overflow: auto;
+        overscroll-behavior: contain;
         border: 1px solid rgba(148, 163, 184, 0.14);
         border-radius: 8px;
         background:
@@ -246,11 +256,19 @@
           radial-gradient(circle at 50% 20%, rgba(37, 99, 235, 0.12), transparent 34%),
           rgba(2, 14, 25, 0.66);
         background-size: 28px 28px, 28px 28px, auto, auto;
+        cursor: grab;
+        scrollbar-color: rgba(96, 165, 250, 0.5) rgba(15, 23, 42, 0.72);
+      }
+
+      .automation-canvas-viewport.is-panning {
+        cursor: grabbing;
       }
 
       .automation-canvas-inner {
-        position: absolute;
-        inset: 0;
+        position: relative;
+        width: 1120px;
+        height: 700px;
+        min-width: 100%;
         transform-origin: 0 0;
         transition: transform 160ms ease;
       }
@@ -280,7 +298,7 @@
         display: grid;
         gap: 8px;
         width: 188px;
-        min-height: 106px;
+        height: 120px;
         border: 1px solid rgba(148, 163, 184, 0.18);
         border-radius: 8px;
         padding: 13px;
@@ -291,6 +309,7 @@
         box-shadow: 0 18px 40px rgba(0, 8, 18, 0.22);
         cursor: grab;
         user-select: none;
+        overflow: hidden;
       }
 
       .automation-node.is-selected,
@@ -307,6 +326,7 @@
         color: #f8fbff;
         font-size: 15px;
         line-height: 1.2;
+        overflow-wrap: anywhere;
       }
 
       .automation-node span,
@@ -315,6 +335,14 @@
         font-size: 12px;
         font-weight: 800;
         line-height: 1.35;
+        overflow-wrap: anywhere;
+      }
+
+      .automation-node small {
+        display: -webkit-box;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
       }
 
       .automation-properties-form {
@@ -361,7 +389,7 @@
         line-height: 1.55;
       }
 
-      @media (max-width: 1080px) {
+      @media (max-width: 1380px) {
         .automation-workspace {
           grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.4fr);
         }
@@ -670,9 +698,12 @@
           selectedWorkflowId: "",
           selectedNodeId: "",
           zoom: 1,
-          panX: 0,
-          panY: 0,
           runningNodeIds: new Set(),
+          isCanvasPanning: false,
+          panStartX: 0,
+          panStartY: 0,
+          panScrollLeft: 0,
+          panScrollTop: 0,
         };
 
         const escapeHtml = window.MaxSharedUI?.escapeHtml || window.escapeHtml;
@@ -816,7 +847,8 @@
           if (!state.selectedNodeId || !workflow.nodes.some((node) => node.id === state.selectedNodeId)) state.selectedNodeId = workflow.nodes[0]?.id || "";
           elements.title.textContent = workflow.name;
           elements.description.textContent = workflow.description;
-          elements.canvasInner.style.transform = `translate(${state.panX}px, ${state.panY}px) scale(${state.zoom})`;
+          syncCanvasSize(workflow);
+          elements.canvasInner.style.transform = `scale(${state.zoom})`;
           elements.nodes.innerHTML = workflow.nodes.map((node) => `
             <button class="automation-node ${node.id === state.selectedNodeId ? "is-selected" : ""} ${state.runningNodeIds.has(node.id) ? "is-running" : ""}" type="button" draggable="true" data-node-id="${escapeHtml(node.id)}" data-type="${escapeHtml(node.type)}" style="left:${node.x}px;top:${node.y}px">
               <span>${escapeHtml(node.type)}</span>
@@ -826,6 +858,14 @@
           `).join("");
           renderLines(workflow);
           renderProperties();
+        }
+
+        function syncCanvasSize(workflow) {
+          const maxX = Math.max(1120, ...workflow.nodes.map((node) => Number(node.x || 0) + 280));
+          const maxY = Math.max(700, ...workflow.nodes.map((node) => Number(node.y || 0) + 220));
+          elements.canvasInner.style.width = `${Math.ceil(maxX)}px`;
+          elements.canvasInner.style.height = `${Math.ceil(maxY)}px`;
+          elements.lines.setAttribute("viewBox", `0 0 ${maxX} ${maxY}`);
         }
 
         function renderLines(workflow) {
@@ -841,6 +881,10 @@
             return `<path d="M ${x1} ${y1} C ${x1 + mid} ${y1}, ${x2 - mid} ${y2}, ${x2} ${y2}" />`;
           }).join("");
           elements.lines.innerHTML = path;
+        }
+
+        function scrollCanvasBy(deltaX, deltaY) {
+          elements.canvas.scrollBy({ left: deltaX, top: deltaY, behavior: "smooth" });
         }
 
         function renderProperties() {
@@ -897,6 +941,7 @@
           state.selectedWorkflowId = id;
           state.selectedNodeId = selectedWorkflow()?.nodes[0]?.id || "";
           render();
+          elements.canvas.scrollTo({ left: 0, top: 0 });
         }
 
         function cloneWorkflow(id) {
@@ -1096,11 +1141,11 @@
           document.getElementById("duplicate-workflow").addEventListener("click", () => selectedWorkflow() && cloneWorkflow(selectedWorkflow().id));
           document.getElementById("zoom-in").addEventListener("click", () => { state.zoom = Math.min(1.4, state.zoom + 0.1); renderCanvas(); });
           document.getElementById("zoom-out").addEventListener("click", () => { state.zoom = Math.max(0.7, state.zoom - 0.1); renderCanvas(); });
-          document.getElementById("zoom-reset").addEventListener("click", () => { state.zoom = 1; state.panX = 0; state.panY = 0; renderCanvas(); });
-          document.getElementById("pan-left").addEventListener("click", () => { state.panX -= 56; renderCanvas(); });
-          document.getElementById("pan-right").addEventListener("click", () => { state.panX += 56; renderCanvas(); });
-          document.getElementById("pan-up").addEventListener("click", () => { state.panY -= 56; renderCanvas(); });
-          document.getElementById("pan-down").addEventListener("click", () => { state.panY += 56; renderCanvas(); });
+          document.getElementById("zoom-reset").addEventListener("click", () => { state.zoom = 1; renderCanvas(); elements.canvas.scrollTo({ left: 0, top: 0, behavior: "smooth" }); });
+          document.getElementById("pan-left").addEventListener("click", () => scrollCanvasBy(-180, 0));
+          document.getElementById("pan-right").addEventListener("click", () => scrollCanvasBy(180, 0));
+          document.getElementById("pan-up").addEventListener("click", () => scrollCanvasBy(0, -180));
+          document.getElementById("pan-down").addEventListener("click", () => scrollCanvasBy(0, 180));
           elements.form.addEventListener("submit", (event) => {
             event.preventDefault();
             updateSelectedFromForm();
@@ -1134,10 +1179,31 @@
             event.preventDefault();
             const payload = event.dataTransfer.getData("text/plain");
             const rect = elements.canvas.getBoundingClientRect();
-            const x = (event.clientX - rect.left) / state.zoom;
-            const y = (event.clientY - rect.top) / state.zoom;
+            const x = (event.clientX - rect.left + elements.canvas.scrollLeft) / state.zoom;
+            const y = (event.clientY - rect.top + elements.canvas.scrollTop) / state.zoom;
             if (payload.startsWith("add:")) addNode(payload.slice(4), x, y);
             if (payload.startsWith("move:")) moveNode(payload.slice(5), x, y);
+          });
+          elements.canvas.addEventListener("pointerdown", (event) => {
+            if (event.target.closest("[data-node-id]")) return;
+            state.isCanvasPanning = true;
+            state.panStartX = event.clientX;
+            state.panStartY = event.clientY;
+            state.panScrollLeft = elements.canvas.scrollLeft;
+            state.panScrollTop = elements.canvas.scrollTop;
+            elements.canvas.classList.add("is-panning");
+            elements.canvas.setPointerCapture?.(event.pointerId);
+          });
+          elements.canvas.addEventListener("pointermove", (event) => {
+            if (!state.isCanvasPanning) return;
+            elements.canvas.scrollLeft = state.panScrollLeft - (event.clientX - state.panStartX);
+            elements.canvas.scrollTop = state.panScrollTop - (event.clientY - state.panStartY);
+          });
+          ["pointerup", "pointercancel", "pointerleave"].forEach((eventName) => {
+            elements.canvas.addEventListener(eventName, () => {
+              state.isCanvasPanning = false;
+              elements.canvas.classList.remove("is-panning");
+            });
           });
         }
 
