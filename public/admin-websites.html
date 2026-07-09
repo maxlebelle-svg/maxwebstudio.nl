@@ -20221,16 +20221,7 @@
                 }
 
                 if (!leadfinderElements.list) return;
-        const sourceWarning = leadfinderSourceStatus?.warning || "";
-        const warningHtml = sourceWarning ? `
-          <article class="admin-card request-card request-state-card leadfinder-source-warning">
-            <div>
-              <strong>Gedeelde leadbron nog niet actief</strong>
-              <span>Leads van andere medewerkers verschijnen pas zodra de productie-leadbron is uitgerold. Deze lijst gebruikt nu bestaande fallbackbronnen.</span>
-            </div>
-            <mark class="status-badge status-warning">Fallback</mark>
-          </article>
-        ` : "";
+        const warningHtml = "";
         if (!leads.length) {
           const sourceError = leadfinderSourceStatus?.error || "";
           const emptyText = activeLeadfinderQuickFilter ? "Geen leads gevonden voor dit filter." : "Voeg een prospect toe of pas je filters aan.";
