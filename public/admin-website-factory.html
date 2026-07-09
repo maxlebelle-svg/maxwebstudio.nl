@@ -771,7 +771,7 @@
                 <label for="demo-journey-status">Demo status<select id="demo-journey-status"></select></label>
                 <label for="demo-journey-followup">Opvolgdatum<input id="demo-journey-followup" type="datetime-local" /></label>
                 <label for="demo-journey-assigned">Verantwoordelijke<input id="demo-journey-assigned" type="text" placeholder="Naam of e-mail medewerker" /></label>
-                <label for="demo-journey-preview">Preview URL<input id="demo-journey-preview" type="text" placeholder="Wordt automatisch gevuld" readonly /></label>
+                <label for="demo-journey-preview">Preview<input id="demo-journey-preview" type="text" placeholder="Wordt automatisch gevuld" readonly /></label>
                 <label class="admin-profile-wide" for="demo-journey-feedback">Klantfeedback<textarea id="demo-journey-feedback" rows="4"></textarea></label>
                 <label class="admin-profile-wide" for="demo-journey-notes">Interne notities<textarea id="demo-journey-notes" rows="4"></textarea></label>
               </div>
@@ -20982,6 +20982,11 @@
             ctas: ["quote", "call", "check", "whatsapp", "appointment"],
             services: [["warmtepomp", "Warmtepompen"], ["zonnepanelen", "Zonnepanelen"], ["laadpaal", "Laadpalen"], ["cv", "CV-ketel"], ["airco", "Airco"], ["elektra", "Elektra"], ["onderhoud_installatie", "Onderhoud"], ["storing", "Storingen"], ["verduurzaming", "Verduurzaming"], ["groepenkast", "Groepenkast"]],
           },
+          tegelzetbedrijf: {
+            goals: ["leads", "portfolio", "trust", "appointment", "quote"],
+            ctas: ["quote", "free_appointment", "call", "whatsapp"],
+            services: [["badkamer_betegelen", "Badkamer betegelen"], ["vloertegels", "Vloertegels"], ["wandtegels", "Wandtegels"], ["natuursteen", "Natuursteen"], ["keuken_tegelwerk", "Keuken tegelwerk"], ["voegwerk", "Voegwerk"], ["kitwerk", "Kitwerk"], ["renovatie_tegelwerk", "Renovatie tegelwerk"], ["terrastegels", "Terrastegels"], ["tegeladvies", "Tegeladvies"]],
+          },
           bouwbedrijf: {
             goals: ["leads", "portfolio", "trust", "appointment", "check"],
             ctas: ["quote", "free_appointment", "call", "whatsapp", "check"],
@@ -21152,7 +21157,7 @@
         let manualPreview = null;
         const journeyLocks = new Set();
         const intakeQuestions = [
-          { key: "branch", label: "Branche", helper: "Kies eerst het brancheprofiel. Daarna worden doelen, CTA's en diensten automatisch slimmer voorgesteld.", required: true, type: "single", options: [["rijschool", "Rijschool / scooterles"], ["installatiebedrijf", "Installatie & verduurzaming"], ["bouwbedrijf", "Bouwbedrijf"], ["horeca", "Horeca / restaurant"], ["fitness", "Sportschool / personal trainer"], ["juridisch", "Advocaat / juridisch"], ["automotive", "Autobedrijf / garage"], ["kapsalon", "Kapsalon / barber"], ["tandarts", "Tandarts / mondzorg"], ["elektricien", "Elektricien"], ["loodgieter", "Loodgieter"], ["hovenier", "Hovenier"], ["schoonmaakbedrijf", "Schoonmaakbedrijf"], ["verhuisbedrijf", "Verhuisbedrijf"], ["dierenarts", "Dierenarts"], ["schoonheidssalon", "Schoonheidssalon / wellness"], ["makelaar", "Makelaar / vastgoed"], ["hotel", "Hotel / B&B"], ["financieel_adviseur", "Financieel adviseur"], ["fysiotherapie", "Fysiotherapie"], ["kinderopvang", "Kinderopvang"], ["zakelijk", "Zakelijke dienstverlening"]] },
+          { key: "branch", label: "Branche", helper: "Kies eerst het brancheprofiel. Daarna worden doelen, CTA's en diensten automatisch slimmer voorgesteld.", required: true, type: "single", options: [["rijschool", "Rijschool / scooterles"], ["installatiebedrijf", "Installatie & verduurzaming"], ["tegelzetbedrijf", "Tegelzetbedrijf / tegelwerk"], ["bouwbedrijf", "Bouwbedrijf"], ["horeca", "Horeca / restaurant"], ["fitness", "Sportschool / personal trainer"], ["juridisch", "Advocaat / juridisch"], ["automotive", "Autobedrijf / garage"], ["kapsalon", "Kapsalon / barber"], ["tandarts", "Tandarts / mondzorg"], ["elektricien", "Elektricien"], ["loodgieter", "Loodgieter"], ["hovenier", "Hovenier"], ["schoonmaakbedrijf", "Schoonmaakbedrijf"], ["verhuisbedrijf", "Verhuisbedrijf"], ["dierenarts", "Dierenarts"], ["schoonheidssalon", "Schoonheidssalon / wellness"], ["makelaar", "Makelaar / vastgoed"], ["hotel", "Hotel / B&B"], ["financieel_adviseur", "Financieel adviseur"], ["fysiotherapie", "Fysiotherapie"], ["kinderopvang", "Kinderopvang"], ["zakelijk", "Zakelijke dienstverlening"]] },
           { key: "goal", label: "Hoofddoel website", helper: "Kies wat de website vooral moet opleveren voor deze klant.", required: true, type: "single", options: baseGoalOptions },
           { key: "package", label: "Websitepakket", required: true, type: "single", options: websitePackages },
           { key: "addOns", label: "Extra producten & services", helper: "Vink alles aan wat we kunnen meepakken in aanbod, preview of upsell.", type: "multi", wide: true, options: addOnOptions },
@@ -22137,6 +22142,7 @@
           if (/elektricien|elektra|groepenkast|stroom/.test(text)) return "elektricien";
           if (/loodgieter|lekkage|sanitair/.test(text)) return "loodgieter";
           if (/install|zonnepanelen|thuisbatterij|warmtepomp|airco|laadpaal|verduurzaming|solar/.test(text)) return "installatiebedrijf";
+          if (/tegel|tegelzet|tegelwerk|vloertegel|wandtegel|badkamertegel|natuursteen|voegwerk|kitwerk/.test(text)) return "tegelzetbedrijf";
           if (/bouw|aannemer|renovatie|dak|timmer|schilder|quantum|kozijn|kozijnen|gevel/.test(text)) return "bouwbedrijf";
           if (/hovenier|tuin|groen|tuinaanleg/.test(text)) return "hovenier";
           if (/schoonmaak|cleaning|vve|oplevering/.test(text)) return "schoonmaakbedrijf";
@@ -22892,6 +22898,35 @@
           return value;
         }
 
+        function isInternalPreviewUrl(url = "") {
+          return /\/\.netlify\/functions\/demo-preview|demo-preview\?/i.test(String(url || ""));
+        }
+
+        function previewDisplayValue(url = "", fallback = "Genereer eerst een preview") {
+          const value = absolutePreviewUrl(url);
+          if (!value) return fallback;
+          if (developerModeActive()) return value;
+          return isInternalPreviewUrl(value) ? "Interne preview klaar" : "Preview klaar";
+        }
+
+        function previewDisplayTitle(url = "") {
+          const value = absolutePreviewUrl(url);
+          if (!value) return "";
+          return developerModeActive() ? value : "Technische previewlink verborgen in normale weergave.";
+        }
+
+        function setPreviewFieldUrl(url = "") {
+          if (!elements.preview) return;
+          const value = absolutePreviewUrl(url);
+          elements.preview.dataset.previewUrl = value;
+          elements.preview.value = value ? previewDisplayValue(value, "") : "";
+          elements.preview.title = previewDisplayTitle(value);
+        }
+
+        function previewFieldUrl() {
+          return elements.preview?.dataset?.previewUrl || absolutePreviewUrl(elements.preview?.value || "");
+        }
+
         function appendQueryParam(url = "", key = "", value = "") {
           const cleanUrl = String(url || "").trim();
           const cleanKey = String(key || "").trim();
@@ -23131,7 +23166,7 @@
 
         function collectPayload(extra = {}) {
           const selectedSource = activePreviewSource();
-          const previewUrl = factoryPreviewUrl() || absolutePreviewUrl(elements.preview?.value || journey?.previewUrl || "");
+          const previewUrl = factoryPreviewUrl() || previewFieldUrl() || absolutePreviewUrl(journey?.previewUrl || "");
           const intake = collectIntake();
           const lead = selectedLead();
           const selectedLeadId = elements.lead?.value || "";
@@ -23206,7 +23241,7 @@
             `Een interne demo-preview met duidelijke homepage, diensten/aanbod, contactblok, call-to-action en ruimte voor klantfeedback.`,
             ``,
             `Technische output voor oplevering`,
-            `Maak dezelfde basisstructuur als onze klantdemo's: index.html, styles.css, script.js, robots.txt, sitemap.xml, assets-map, live-upload-map en een downloadbare ZIP voor Netlify/live upload.`,
+            `Maak dezelfde basisstructuur als onze klantdemo's: index.html, styles.css, script.js, robots.txt, sitemap.xml, assets-map, live-upload-map en een downloadbaar ZIP-pakket voor live upload.`,
           ].join("\n");
         }
 
@@ -23331,7 +23366,7 @@
               events = Array.isArray(data.events) ? data.events : [];
               buildHistory = buildHistoryFromResponse(data);
               projectWorkspace = data.projectWorkspace || projectWorkspace;
-              if (journey?.previewUrl) elements.preview.value = journey.previewUrl;
+              if (journey?.previewUrl) setPreviewFieldUrl(journey.previewUrl);
               if (journey?.demoStatus) elements.status.value = journey.demoStatus;
               renderJourney();
               const fileCount = Array.isArray(data.preview?.files) ? data.preview.files.length : 0;
@@ -23385,7 +23420,7 @@
             buildHistory = { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
             projectWorkspace = null;
             if (elements.briefing) elements.briefing.value = "";
-            if (elements.preview) elements.preview.value = "";
+            setPreviewFieldUrl("");
             if (elements.feedback) elements.feedback.value = "";
             if (elements.status) elements.status.value = "aanvraag_ontvangen";
             try {
@@ -23820,7 +23855,7 @@
           const status = journey?.demoStatus || "geen_demo";
           elements.metrics.innerHTML = [
             ["Status", statusLabel(status), "Demo voortgang"],
-            ["Preview", journey?.previewUrl ? "Klaar" : "Nog leeg", "Preview URL"],
+            ["Preview", journey?.previewUrl ? "Klaar" : "Nog leeg", "Preview klaar"],
             ["Feedback", journey?.feedback ? "Ontvangen" : "Nog geen", "Klantreactie"],
             ["Opvolging", journey?.followUpAt ? formatDate(journey.followUpAt) : "Nog plannen", "Volgende stap"],
           ].map(([label, value, helper]) => `
@@ -24002,7 +24037,7 @@
             ["Workspace slug", projectWorkspace?.workspaceSlug || "-"],
             ["Laatste ZIP-bestand", zipName],
             ["Laatste preview versie", version ? `V${version}` : "-"],
-            ["Laatste preview URL", previewUrl || "Genereer eerst een preview"],
+            ["Laatste preview", previewDisplayValue(previewUrl)],
             ["Opslagpad", projectWorkspace?.storagePath || "-"],
           ].map(([label, value]) => `<div class="demo-kv-row"><strong>${escapeHtml(label)}</strong><span title="${escapeHtml(value)}">${escapeHtml(value)}</span></div>`).join("");
           if (elements.workspaceNote) {
@@ -24053,8 +24088,8 @@
             elements.saveDemoSite.title = ready && journey?.id ? "Sla deze preview vast op bij de lead/klant" : "Genereer eerst een preview";
           }
           if (elements.previewStageUrl) {
-            elements.previewStageUrl.textContent = ready ? previewUrl : "Preview verschijnt hier na generatie";
-            elements.previewStageUrl.title = ready ? previewUrl : "";
+            elements.previewStageUrl.textContent = ready ? previewDisplayValue(previewUrl, "Preview klaar") : "Preview verschijnt hier na generatie";
+            elements.previewStageUrl.title = ready ? previewDisplayTitle(previewUrl) : "";
           }
           if (elements.previewEmpty) elements.previewEmpty.hidden = ready;
           if (elements.previewFrame) {
@@ -24140,7 +24175,7 @@
             elements.status.value = journey.demoStatus || "geen_demo";
             elements.followup.value = datetimeLocal(journey.followUpAt);
             elements.assigned.value = journey.assignedTo || "";
-            elements.preview.value = journey.previewUrl || "";
+            setPreviewFieldUrl(journey.previewUrl || "");
             elements.feedback.value = journey.feedback || "";
             elements.notes.value = journey.internalNotes || "";
             elements.briefing.value = journey.generatedBriefing || "";
@@ -24149,7 +24184,7 @@
             elements.package.value = packageTypeFromValue(lead?.packageType || lead?.package_type || lead?.package || lead?.packageName || lead?.package_name);
             if (!intakeState.package) intakeState.package = elements.package.value || "starter";
             elements.followup.value = "";
-            elements.preview.value = "";
+            setPreviewFieldUrl("");
             elements.feedback.value = "";
             elements.notes.value = "";
             elements.briefing.value = "";
@@ -24172,7 +24207,7 @@
             ["Klantkoppeling", journey?.customerId ? "Klant gekoppeld" : "Nog leadfase"],
             ["Offertefase", isDemoSiteSaved() ? "Klaar om traject/offerte te starten" : "Sla eerst de demo-site op"],
             ["Previewbron", activePreviewSource() === "manual" ? "Handmatige ZIP" : "Website Factory"],
-            ["Preview URL", activePreviewUrl() || "Genereer eerst een preview"],
+            ["Preview", previewDisplayValue(activePreviewUrl())],
             ["Laatste mail", journey?.lastEmailStatus || "-"],
             ["Laatste maildatum", formatDate(journey?.lastEmailSentAt)],
             ["Volgende mail", journey?.nextEmailType || "-"],

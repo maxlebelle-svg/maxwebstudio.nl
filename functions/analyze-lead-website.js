@@ -596,6 +596,14 @@ function buildAiBriefing({ html, currentWebsite, contactData, media, finalUrl })
 
 function inferServices(text, headings = []) {
   const dictionary = [
+    ["badkamertegel", "Badkamer betegelen"],
+    ["tegelwerk", "Tegelwerk"],
+    ["tegelzet", "Tegelwerk"],
+    ["vloertegel", "Vloertegels"],
+    ["wandtegel", "Wandtegels"],
+    ["natuursteen", "Natuursteen"],
+    ["voegwerk", "Voegwerk"],
+    ["kitwerk", "Kitwerk"],
     ["maatwerk", "Maatwerk"],
     ["project", "Projecten"],
     ["onderhoud", "Onderhoud"],
@@ -617,6 +625,7 @@ function inferServices(text, headings = []) {
 function inferIndustry(text, currentWebsite = {}) {
   const source = [text, currentWebsite.title, currentWebsite.h1].join(" ");
   if (/auto|garage|apk|occasion|showroom/.test(source)) return "Autobedrijf / garage";
+  if (/tegel|tegelzet|tegelwerk|vloertegel|wandtegel|badkamertegel|natuursteen|voegwerk|kitwerk/.test(source)) return "Tegelzetbedrijf";
   if (/bouw|aannemer|renovatie|dak|kozijn/.test(source)) return "Bouwbedrijf";
   if (/install|zonnepanelen|warmtepomp|airco|laadpaal/.test(source)) return "Installatiebedrijf";
   if (/rijschool|rijles|cbr/.test(source)) return "Rijschool";

@@ -19,6 +19,7 @@ const PACKAGE_ALIASES = {
 };
 
 const INDUSTRY_ALIASES = [
+  ["tegelzetter", /\b(tegel|tegels|tegelzet|tegelzetter|tegelzetbedrijf|tegelwerk|vloertegel|wandtegel|badkamertegel|natuursteen|voegwerk|kitwerk)\b/i],
   ["bouw", /\b(aannemer|bouw|renovatie|timmerbedrijf|timmer|dakopbouw|aanbouw|badkamer|kozijn)\b/i],
   ["hovenier", /\b(tuin|hovenier|tuinaanleg|groen|buitenruimte)\b/i],
   ["restaurant", /\b(restaurant|horeca|cafe|hotel|b&b|reserveren)\b/i],

@@ -42,6 +42,28 @@ const PACKAGE_RULES = {
 };
 
 const INDUSTRY_PROFILES = [
+  profile("tiling", ["tegel", "tegelzet", "tegelzetter", "tegelzetbedrijf", "tegelwerk", "vloertegel", "wandtegel", "badkamertegel", "natuursteen", "voegwerk", "kitwerk"], {
+    label: "Tegelwerk en betegeling",
+    colors: { ink: "#132238", brand: "#1f4d5a", accent: "#23b8a9", soft: "#f5f8f7", dark: "#10242b" },
+    hero: "Strak tegelwerk dat direct vertrouwen uitstraalt.",
+    intro: "Voor klanten die een badkamer, vloer of wand willen laten betegelen met nette afwerking en duidelijke afspraken.",
+    eyebrow: "Tegelwerk, badkamer en vloerafwerking",
+    cta: "Vraag een tegelofferte aan",
+    secondaryCta: "Bel direct",
+    services: ["Badkamer betegelen", "Vloertegels", "Wandtegels", "Natuursteen", "Voeg- en kitwerk"],
+    benefits: [
+      ["Strakke afwerking", "De presentatie legt nadruk op vlak werk, nette details en duurzaam tegelresultaat."],
+      ["Duidelijke planning", "Bezoekers zien snel wat de vervolgstap is en hoe opname, offerte en uitvoering verlopen."],
+      ["Materiaaladvies", "Ruimte voor keramiek, natuursteen en afwerking helpt klanten beter kiezen."],
+      ["Offertegericht", "Bellen en offerte aanvragen blijven duidelijk zichtbaar zonder de pagina druk te maken."],
+    ],
+    process: [
+      ["Opname", "Bespreek de ruimte, ondergrond, maatvoering en gewenste tegelstijl."],
+      ["Advies", "Het bedrijf denkt mee over materiaal, legpatroon, voegkleur en afwerking."],
+      ["Offerte", "U ontvangt een duidelijke prijs en planning voor het tegelwerk."],
+      ["Uitvoering", "Het tegelwerk wordt strak gelegd, gevoegd en netjes opgeleverd."],
+    ],
+  }),
   profile("construction", ["bouw", "timmer", "renovatie", "aannemer", "dak", "badkamer", "kozijn", "dakopbouw", "aanbouw"], {
     label: "Bouw en renovatie",
     colors: { ink: "#111510", brand: "#24382f", accent: "#c99a45", soft: "#f3efe8", dark: "#1f332a" },
@@ -762,6 +784,7 @@ function extractServices(text = "", industry = "") {
   const briefingServices = extractSectionItems(text, ["diensten / aanbod", "diensten", "belangrijkste diensten", "services"]);
   if (briefingServices.length) return briefingServices;
   if (/rijschool|verkeersschool|rijles|autorijles|scooter|scooterrijbewijs|bromfiets|examengarantie|praktijkexamen|theorie|cbr/.test(normalized)) return ["Scooterrijles", "Autorijles", "Examengarantie", "Theoriebegeleiding"];
+  if (/tegel|tegelzet|tegelwerk|vloertegel|wandtegel|badkamertegel|natuursteen|voegwerk|kitwerk/.test(normalized)) return ["Badkamer betegelen", "Vloertegels", "Wandtegels", "Natuursteen", "Voeg- en kitwerk"];
   if (/bouw|timmer|renovatie|aannemer/.test(normalized)) return ["Renovatie", "Maatwerk", "Projectbegeleiding"];
   if (/restaurant|horeca|cafe|catering/.test(normalized)) return ["Menu", "Reserveren", "Catering"];
   if (/sportschool|fitness|personal trainer/.test(normalized)) return ["Proefles", "Rooster", "Membership"];
@@ -788,6 +811,7 @@ function extractServices(text = "", industry = "") {
 function inferIndustry(text = "", businessName = "") {
   const normalized = `${text} ${businessName}`.toLowerCase();
   if (/rijschool|verkeersschool|rijles|autorijles|scooter|scooterrijbewijs|bromfiets|examengarantie|praktijkexamen|theorie|cbr/.test(normalized)) return "rijschool";
+  if (/tegel|tegelzet|tegelwerk|vloertegel|wandtegel|badkamertegel|natuursteen|voegwerk|kitwerk/.test(normalized)) return "tegelwerk en betegeling";
   if (/bouw|timmer|renovatie|aannemer/.test(normalized)) return "bouw en renovatie";
   if (/restaurant|horeca|cafe/.test(normalized)) return "horeca";
   if (/sportschool|fitness|personal trainer/.test(normalized)) return "fitness";
@@ -859,6 +883,7 @@ function inferColors(industry = "", profile = null) {
   if (profile?.colors) return profile.colors;
   const normalized = industry.toLowerCase();
   if (/rijschool|verkeersschool|rijles|scooter/.test(normalized)) return { ink: "#102033", brand: "#1457c8", accent: "#22c55e", soft: "#f3f8ff", dark: "#0f2238" };
+  if (/tegel|betegel|natuursteen/.test(normalized)) return { ink: "#132238", brand: "#1f4d5a", accent: "#23b8a9", soft: "#f5f8f7", dark: "#10242b" };
   if (/bouw|installatie/.test(normalized)) return { ink: "#172033", brand: "#1d7c68", accent: "#f1b84b", soft: "#f5f7fb", dark: "#20342b" };
   if (/horeca/.test(normalized)) return { ink: "#201a17", brand: "#9a3f2f", accent: "#e3b261", soft: "#fbf7f2", dark: "#271b15" };
   if (/beauty/.test(normalized)) return { ink: "#241b2f", brand: "#8a5574", accent: "#d6ad8f", soft: "#fbf7fa", dark: "#2c2028" };
@@ -932,9 +957,9 @@ function serviceSpecificDemoAsset({ service = "", industryProfile = {}, demoImag
 function serviceImageRoleForText(serviceText = "", profileKey = "") {
   const text = `${serviceText} ${profileKey}`;
   if (/contact|bel|whatsapp|afspraak|reserver|boeken|aanmeld|inschrijf|intake|kennismaking|offerte|aanvraag/.test(text)) return "contact";
-  if (/advies|consult|controle|diagnose|inspectie|check|taxatie|waardebepaling|huidadvies|strategie|plan/.test(text)) return "detail";
+  if (/advies|consult|controle|diagnose|inspectie|check|taxatie|waardebepaling|huidadvies|strategie|plan|tegel|voeg|kit|natuursteen/.test(text)) return "detail";
   if (/team|begeleiding|instruct|persoonlijk|coaching|praktijk|behandeling|therapie|mondzorg/.test(text)) return "team";
-  if (/project|portfolio|renovatie|aanbouw|dak|kozijn|tuinontwerp|aanleg|nieuwbouw|woning|verkoop/.test(text)) return "project";
+  if (/project|portfolio|renovatie|aanbouw|dak|kozijn|tuinontwerp|aanleg|nieuwbouw|woning|verkoop|badkamer|vloer|wand/.test(text)) return "project";
   if (/uitvoering|reparatie|onderhoud|apk|airco|installatie|laadpaal|warmtepomp|storing|storingen|lekkage|cv|service|spoed/.test(text)) return "service-alt";
   if (/resultaat|review|vertrouwen|garantie|geslaagd|preventie|nazorg/.test(text)) return "review";
   if (/menu|lunch|diner|arrangement|private dining|kamer|verblijf|interieur|sfeer/.test(text)) return "project-alt";

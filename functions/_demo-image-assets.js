@@ -27,6 +27,18 @@ const roleLabels = Object.freeze({
 
 const demoImageGroups = Object.freeze([
   group("installatiebedrijf", "Installatiebedrijf", ["installatiebedrijf-demo"], ["installatie", "verduurzaming", "zonnepanelen", "warmtepomp", "airco", "laadpaal", "thuisbatterij"]),
+  customGroup("tegelzetbedrijf", "Tegelzetbedrijf", ["tegelzetbedrijf-demo"], ["tegel", "tegelzet", "tegelzetter", "tegelwerk", "vloertegel", "wandtegel", "badkamertegel", "natuursteen", "voegwerk", "kitwerk"], {
+    hero: { fileName: "badkamer-natuursteen.jpg", sourceGroupSlug: "quantumbouw" },
+    service: { fileName: "badkamer-licht.jpg", sourceGroupSlug: "quantumbouw" },
+    team: { fileName: "badkamer.jpg", sourceGroupSlug: "quantumbouw" },
+    project: { fileName: "badkamer-donker.jpg", sourceGroupSlug: "quantumbouw" },
+    contact: { fileName: "badkamer-licht.jpg", sourceGroupSlug: "quantumbouw" },
+    "service-alt": { fileName: "badkamer.jpg", sourceGroupSlug: "quantumbouw" },
+    "project-alt": { fileName: "badkamer-natuursteen.jpg", sourceGroupSlug: "quantumbouw" },
+    detail: { fileName: "badkamer-natuursteen.jpg", sourceGroupSlug: "quantumbouw" },
+    review: { fileName: "badkamer-licht.jpg", sourceGroupSlug: "quantumbouw" },
+    background: { fileName: "badkamer-donker.jpg", sourceGroupSlug: "quantumbouw" },
+  }),
   group("bouwbedrijf", "Bouwbedrijf", ["bouwbedrijf-demo"], ["bouw", "bouwbedrijf", "aannemer", "renovatie", "timmer", "nieuwbouw", "aanbouw"]),
   group("restaurant", "Restaurant", ["restaurant-demo"], ["horeca", "restaurant", "lunchroom", "eetcafe", "menu", "reserveren"]),
   group("sportschool", "Sportschool", ["sportschool-demo"], ["fitness", "sportschool", "personal trainer", "proefles", "rooster", "membership"]),

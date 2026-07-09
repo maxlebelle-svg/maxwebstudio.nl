@@ -27,6 +27,18 @@ const roleLabels = Object.freeze({
 
 const branchImageGroups = Object.freeze([
   group("installatiebedrijf", "Installatiebedrijf", ["installatiebedrijf-demo"], ["installatie", "verduurzaming", "zonnepanelen", "warmtepomp", "airco", "laadpaal", "thuisbatterij"]),
+  customGroup("tegelzetbedrijf", "Tegelzetbedrijf", ["tegelzetbedrijf-demo"], ["tegel", "tegelzet", "tegelzetter", "tegelwerk", "vloertegel", "wandtegel", "badkamertegel", "natuursteen", "voegwerk", "kitwerk"], {
+    hero: customAsset("tegelzetbedrijf", "Tegelzetbedrijf", "hero", "badkamer-natuursteen.jpg", "Tegelzetbedrijf badkamertegel projectafbeelding voor demo website", "quantumbouw"),
+    service: customAsset("tegelzetbedrijf", "Tegelzetbedrijf", "service", "badkamer-licht.jpg", "Tegelzetbedrijf lichte tegelafwerking afbeelding voor diensten", "quantumbouw"),
+    team: customAsset("tegelzetbedrijf", "Tegelzetbedrijf", "team", "badkamer.jpg", "Tegelzetbedrijf werkwijze afbeelding voor demo website", "quantumbouw"),
+    project: customAsset("tegelzetbedrijf", "Tegelzetbedrijf", "project", "badkamer-donker.jpg", "Tegelzetbedrijf tegelproject afbeelding voor portfolio", "quantumbouw"),
+    contact: customAsset("tegelzetbedrijf", "Tegelzetbedrijf", "contact", "badkamer-licht.jpg", "Tegelzetbedrijf contact afbeelding voor offerteaanvraag", "quantumbouw"),
+    "service-alt": customAsset("tegelzetbedrijf", "Tegelzetbedrijf", "service-alt", "badkamer.jpg", "Tegelzetbedrijf extra dienst afbeelding voor demo website", "quantumbouw"),
+    "project-alt": customAsset("tegelzetbedrijf", "Tegelzetbedrijf", "project-alt", "badkamer-natuursteen.jpg", "Tegelzetbedrijf natuursteen projectafbeelding", "quantumbouw"),
+    detail: customAsset("tegelzetbedrijf", "Tegelzetbedrijf", "detail", "badkamer-natuursteen.jpg", "Tegelzetbedrijf detailafwerking afbeelding", "quantumbouw"),
+    review: customAsset("tegelzetbedrijf", "Tegelzetbedrijf", "review", "badkamer-licht.jpg", "Tegelzetbedrijf vertrouwen afbeelding", "quantumbouw"),
+    background: customAsset("tegelzetbedrijf", "Tegelzetbedrijf", "background", "badkamer-donker.jpg", "Tegelzetbedrijf achtergrondafbeelding", "quantumbouw"),
+  }),
   group("bouwbedrijf", "Bouwbedrijf", ["bouwbedrijf-demo"], ["bouw", "bouwbedrijf", "aannemer", "renovatie", "timmer", "nieuwbouw", "aanbouw"]),
   customGroup("quantumbouw", "Quantumbouw.nl", ["quantumbouw-production"], ["quantumbouw", "quantum bouw", "bouw", "renovatie", "aanbouw", "dakopbouw", "dakkapel", "badkamer", "kozijnen", "busbestickering"], {
     hero: customAsset("quantumbouw", "Quantumbouw.nl", "hero", "hero-renovatie.jpg", "Quantumbouw.nl hero afbeelding voor website, social media en drukwerk"),
