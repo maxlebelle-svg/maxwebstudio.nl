@@ -23144,23 +23144,14 @@
         async function loadJourney(expectedLeadId = elements.lead?.value || "", expectedVersion = leadSelectionVersion) {
           const leadId = expectedLeadId || "";
           if (!leadId) {
-            journey = null;
-            events = [];
-            projectWorkspace = null;
-            manualPreview = null;
-            previewSource = "factory";
+            clearFactoryRuntimeState();
             renderJourney();
             return;
           }
           const centralLeadId = backendLeadId(leadId);
           const linkedJourneyId = centralLeadId ? "" : linkedJourneyIdForLocalLead(leadId);
           if (!centralLeadId && !linkedJourneyId) {
-            journey = null;
-            events = [];
-            buildHistory = { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
-            projectWorkspace = null;
-            manualPreview = null;
-            previewSource = "factory";
+            clearFactoryRuntimeState();
             loadIntakeLocally();
             prefillIntakeFromLead(selectedLead());
             renderIntakeFields();
@@ -23193,13 +23184,22 @@
           return leads.find((lead) => lead.id === elements.lead?.value) || null;
         }
 
+        function clearFactoryRuntimeState() {
+          journey = null;
+          events = [];
+          buildHistory = { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
+          projectWorkspace = null;
+          websiteIntelligencePackage = null;
+          manualPreview = null;
+          previewSource = "factory";
+          lastFactoryResponse = null;
+        }
+
         function selectFactoryLead(leadId = "") {
           if (!leadId || !elements.lead) return;
           manualLeadSelectionActive = true;
           const selectionVersion = ++leadSelectionVersion;
-          journey = null;
-          events = [];
-          projectWorkspace = null;
+          clearFactoryRuntimeState();
           intakeState = {};
           intakeAssets = [];
           elements.lead.value = leadId;
@@ -23208,6 +23208,7 @@
           renderLeadPicker();
           loadIntakeLocally();
           fillFromLead(selectedLead());
+          renderJourney();
           return loadJourney(leadId, selectionVersion)
             .then(() => renderLeadCommandbar())
             .catch((error) => setMessage(elements.message, error.message, "error"));
@@ -24410,10 +24411,7 @@
             syncLeadSearchFromSelected();
             syncLeadCommandFromSelected();
             renderLeadPicker();
-            journey = null;
-            events = [];
-            buildHistory = { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
-            projectWorkspace = null;
+            clearFactoryRuntimeState();
             fillFromLead(lead);
             prefillIntakeFromLead(lead);
             renderIntakeFields();
@@ -24508,9 +24506,7 @@
             manualLeadSelectionActive = true;
             const selectionVersion = ++leadSelectionVersion;
             const selectedLeadId = elements.lead.value || "";
-            journey = null;
-            events = [];
-            projectWorkspace = null;
+            clearFactoryRuntimeState();
             intakeState = {};
             intakeAssets = [];
             syncLeadSearchFromSelected();
@@ -24518,6 +24514,7 @@
             renderLeadPicker();
             loadIntakeLocally();
             fillFromLead(selectedLead());
+            renderJourney();
             await loadJourney(selectedLeadId, selectionVersion).catch((error) => setMessage(elements.message, error.message, "error"));
           });
           elements.leadSearch?.addEventListener("input", () => {
