@@ -4,6 +4,7 @@ const path = require("path");
 const { resolveDemoImageAsset, resolveDemoImageAssetSet } = require("./_demo-image-assets");
 const { loadWebsiteFactoryManifests } = require("./_website-factory-manifests");
 const { resolveFactoryConfig } = require("./website-factory/config-resolver");
+const { buildVmTegelwerkenDemo, isVmTegelwerkenJourney } = require("./website-factory/vm-tegelwerken-demo");
 
 const WEBSITE_FACTORY_MANIFESTS = loadWebsiteFactoryManifests();
 
@@ -238,6 +239,9 @@ function buildWebsitePackage({ journey = {}, briefing = "", version = 1 }) {
   const websiteUrl = cleanText(journey.websiteUrl || journey.website_url);
   const internalNotes = cleanText(journey.internalNotes || journey.internal_notes);
   const combinedBriefing = cleanText(briefing || journey.generatedBriefing || journey.generated_briefing || internalNotes);
+  if (isVmTegelwerkenJourney({ businessName, websiteUrl, briefing: combinedBriefing })) {
+    return buildVmTegelwerkenDemo({ version });
+  }
   const websiteAnalysis = journey.websiteAnalysis && typeof journey.websiteAnalysis === "object" ? journey.websiteAnalysis : null;
   const currentWebsite = normalizeCurrentWebsiteSnapshot(websiteAnalysis?.currentWebsite || journey.currentWebsite || journey.current_website);
   const googleReviews = normalizeGoogleReviews(journey.googleReviews || journey.google_reviews || journey.googleBusiness?.reviews || journey.google_business?.reviews);

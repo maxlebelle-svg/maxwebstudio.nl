@@ -1,22 +1,23 @@
 {
   "id": "tegelzetter",
   "name": "Tegelzetbedrijf",
-  "tone": "vakkundig, precies, betrouwbaar en praktisch",
+  "tone": "zorgvuldig, precies, persoonlijk, rustig en materiaalbewust",
   "colorHints": [
-    "donkerblauw",
-    "natuursteen",
-    "mintgroen",
-    "helder wit"
+    "warm kalkwit",
+    "travertin",
+    "diep antraciet",
+    "steengrijs",
+    "subtiel brons"
   ],
   "heroAngles": [
-    "Strak tegelwerk dat direct vertrouwen uitstraalt.",
-    "Van badkamer tot vloer: netjes gelegd, helder gepland en duurzaam afgewerkt."
+    "Tegelwerk dat klopt tot in ieder detail.",
+    "Van badkamer tot vloer: rustig verdeeld, netjes aangesloten en duurzaam afgewerkt."
   ],
   "trustSignals": [
-    "Strakke afwerking",
-    "Heldere planning",
-    "Nette werkplek",
-    "Materiaaladvies"
+    "Strakke lijnvoering",
+    "Nette aansluitingen",
+    "Persoonlijk materiaaladvies",
+    "Verzorgde afwerking"
   ],
   "ctaExamples": [
     "Vraag een tegelofferte aan",
@@ -46,25 +47,26 @@
     "kitwerk"
   ],
   "palette": {
-    "ink": "#132238",
-    "brand": "#1f4d5a",
-    "accent": "#23b8a9",
-    "soft": "#f5f8f7",
-    "dark": "#10242b"
+    "ink": "#181715",
+    "brand": "#3f463f",
+    "accent": "#a86f42",
+    "soft": "#f5f0e8",
+    "dark": "#1d1c1a"
   },
   "copy": {
     "eyebrow": "Tegelwerk, badkamer en vloerafwerking",
-    "hero": "Strak tegelwerk dat direct vertrouwen uitstraalt.",
-    "intro": "Voor klanten die een badkamer, vloer of wand willen laten betegelen met nette afwerking en duidelijke afspraken.",
+    "hero": "Tegelwerk dat klopt tot in ieder detail.",
+    "intro": "Voor klanten die een badkamer, toilet, keuken of vloer willen laten betegelen met rustige lijnvoering, nette aansluitingen en duidelijke afspraken.",
     "cta": "Vraag een tegelofferte aan",
     "secondaryCta": "Bel direct"
   },
   "services": [
-    "Badkamer betegelen",
-    "Vloertegels",
-    "Wandtegels",
-    "Natuursteen",
-    "Voeg- en kitwerk"
+    "Badkamerrenovatie",
+    "Toilet renovatie",
+    "Wand- en vloertegelwerk",
+    "Woonvloeren",
+    "Keukentegelwerk",
+    "Sanitair plaatsen"
   ],
   "preferredComponents": [
     "hero",
@@ -78,6 +80,8 @@
     "badkamer-natuursteen",
     "badkamer-licht",
     "badkamer",
-    "badkamer-donker"
+    "badkamer-donker",
+    "tegel-detail",
+    "natuursteen-vloer"
   ]
 }
