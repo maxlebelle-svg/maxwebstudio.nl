@@ -1054,6 +1054,7 @@
           latestRenderedEmailHtml = renderResendEmailHtml(payload);
           window.maxWebstudioMailStudio = {
             getResendPayload: () => ({
+              endpoint: "/.netlify/functions/admin-mail-studio-send",
               subject: payload.subject,
               html: latestRenderedEmailHtml,
               text: payload.bodyText,
