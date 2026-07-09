@@ -21339,11 +21339,6 @@
           })[character]);
         }
 
-        function truncateText(value = "", maxLength = 40) {
-          const text = String(value || "").trim();
-          return text.length > maxLength ? `${text.slice(0, Math.max(0, maxLength - 1))}…` : text;
-        }
-
         function getBearer() {
           const keys = ["mws_admin_supabase_session", "maxwebstudioCurrentSession", "maxwebstudioSupabaseAuthSession"];
           for (const key of keys) {
@@ -21727,38 +21722,11 @@
         }
 
         function leadCommandPreviewVisual(lead = {}, initials = "L") {
-          const isSelected = String(lead.id || "") === String(elements.lead?.value || "");
-          const savedThumbnail = isSelected ? savedDemoThumbnail(journey) : "";
-          const previewUrl = isSelected ? activePreviewUrl() : "";
           const websiteImage = leadWebsitePreviewImage(lead);
-          if (savedThumbnail) {
-            return `<div class="factory-lead-command-visual is-image"><img src="${escapeHtml(savedThumbnail)}" alt="" loading="lazy" /><em>Demo website</em></div>`;
-          }
-          if (previewUrl) {
-            return leadCommandDemoPreviewCard(lead, initials);
-          }
           if (websiteImage) {
             return `<div class="factory-lead-command-visual is-image"><img src="${escapeHtml(websiteImage)}" alt="" loading="lazy" referrerpolicy="no-referrer" /><em>Huidige website</em></div>`;
           }
           return `<div class="factory-lead-command-visual is-empty"><span class="factory-lead-command-avatar">${escapeHtml(initials)}</span><em>${lead.websiteUrl || lead.website_url ? "Website gevonden" : "Geen beeld"}</em></div>`;
-        }
-
-        function leadCommandDemoPreviewCard(lead = {}, initials = "L") {
-          const company = lead.companyName || lead.company_name || lead.businessName || journey?.businessName || "Demo website";
-          const cta = intakeLabel(intakeQuestions.find((question) => question.key === "cta"), intakeState.cta) || "Vraag offerte aan";
-          return `
-            <div class="factory-lead-command-visual is-demo-card">
-              <div class="factory-lead-mini-site">
-                <header><span>${escapeHtml(initials)}</span><strong>${escapeHtml(company)}</strong></header>
-                <section>
-                  <b>${escapeHtml(truncateText(company, 28))}</b>
-                  <i></i><i></i>
-                  <em>${escapeHtml(truncateText(cta, 22))}</em>
-                </section>
-              </div>
-              <em>Demo preview</em>
-            </div>
-          `;
         }
 
         function leadWebsitePreviewImage(lead = {}) {
