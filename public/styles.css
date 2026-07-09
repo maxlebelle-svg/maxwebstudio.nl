@@ -13161,8 +13161,60 @@ h3 {
 
 #demo-klantreis .demo-intake-fields {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+#demo-klantreis .demo-intake-wizard-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(120px, 28%);
+  align-items: center;
   gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(96, 165, 250, 0.2);
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.16), rgba(2, 14, 25, 0.54));
+}
+
+#demo-klantreis .demo-intake-wizard-bar > div:first-child {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+#demo-klantreis .demo-intake-wizard-bar span {
+  color: rgba(56, 189, 248, 0.92);
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+#demo-klantreis .demo-intake-wizard-bar strong {
+  color: #f8fbff;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+#demo-klantreis .demo-intake-wizard-bar small {
+  color: rgba(226, 236, 248, 0.64);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+#demo-klantreis .demo-intake-wizard-meter {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.16);
+}
+
+#demo-klantreis .demo-intake-wizard-meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--mws-blue), var(--mws-green));
+  transition: width 0.2s ease;
 }
 
 #demo-klantreis .demo-intake-question {
@@ -13175,9 +13227,23 @@ h3 {
   background: rgba(2, 14, 25, 0.42);
 }
 
+#demo-klantreis .demo-intake-question.is-active {
+  gap: 12px;
+  border-color: rgba(96, 165, 250, 0.42);
+  background: linear-gradient(135deg, rgba(8, 30, 54, 0.74), rgba(2, 14, 25, 0.64));
+  box-shadow: 0 14px 38px rgba(2, 14, 25, 0.22);
+}
+
+#demo-klantreis .demo-intake-question.is-collapsed {
+  gap: 8px;
+  padding: 10px 12px;
+  border-color: rgba(148, 163, 184, 0.12);
+  background: rgba(2, 14, 25, 0.28);
+}
+
 #demo-klantreis .demo-intake-question-heading {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
   min-width: 0;
@@ -13195,10 +13261,33 @@ h3 {
 
 #demo-klantreis .demo-intake-question > strong,
 #demo-klantreis .demo-intake-question-heading strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   color: rgba(248, 251, 255, 0.94);
   font-size: 13px;
   font-weight: 900;
   overflow-wrap: anywhere;
+}
+
+#demo-klantreis .demo-intake-step-number {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(96, 165, 250, 0.36);
+  border-radius: 999px;
+  color: rgba(219, 234, 254, 0.96);
+  background: rgba(37, 99, 235, 0.18);
+  font-size: 11px;
+  font-weight: 950;
+}
+
+#demo-klantreis .demo-intake-question.is-complete .demo-intake-step-number {
+  border-color: rgba(34, 197, 94, 0.38);
+  color: rgba(220, 252, 231, 0.96);
+  background: rgba(22, 163, 74, 0.2);
 }
 
 #demo-klantreis .demo-intake-question > small,
@@ -13211,7 +13300,7 @@ h3 {
 
 #demo-klantreis .demo-intake-toggle {
   flex: 0 0 auto;
-  min-height: 30px;
+  min-height: 28px;
   padding: 0 10px;
   border: 1px solid rgba(96, 165, 250, 0.34);
   border-radius: 999px;
@@ -13228,11 +13317,22 @@ h3 {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  min-height: 38px;
-  padding: 8px 10px;
-  border: 1px solid rgba(96, 165, 250, 0.3);
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid rgba(96, 165, 250, 0.2);
   border-radius: 9px;
-  background: rgba(37, 99, 235, 0.14);
+  background: rgba(37, 99, 235, 0.08);
+  cursor: pointer;
+}
+
+#demo-klantreis .demo-intake-selected-summary.status-active {
+  border-color: rgba(34, 197, 94, 0.24);
+  background: rgba(22, 163, 74, 0.1);
+}
+
+#demo-klantreis .demo-intake-selected-summary.status-warning {
+  border-color: rgba(245, 158, 11, 0.24);
+  background: rgba(245, 158, 11, 0.08);
 }
 
 #demo-klantreis .demo-intake-selected-summary span {
@@ -13247,6 +13347,9 @@ h3 {
   font-size: 12px;
   font-weight: 950;
   text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 #demo-klantreis .demo-chip-grid {
@@ -13363,6 +13466,13 @@ h3 {
   font-size: 11px;
   font-weight: 760;
   line-height: 1.4;
+}
+
+#demo-klantreis .demo-intake-step-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 2px;
 }
 
 #demo-klantreis .demo-intake-upload-grid,

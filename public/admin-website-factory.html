@@ -21086,6 +21086,7 @@
         let intakeState = {};
         let intakeAssets = [];
         let intakeExpandedQuestions = new Set();
+        let intakeActiveQuestionKey = "";
         let previewSource = "factory";
         let manualPreview = null;
         const journeyLocks = new Set();
@@ -21678,6 +21679,41 @@
           return uniqueOptionList(options, missingSelections);
         }
 
+        function questionHasValue(question = {}) {
+          const value = normalizeIntakeValue(intakeState[question.key]);
+          return Array.isArray(value) ? value.length > 0 : Boolean(value);
+        }
+
+        function questionIndex(key = "") {
+          return intakeQuestions.findIndex((question) => question.key === key);
+        }
+
+        function firstOpenQuestionKey() {
+          const missingRequired = intakeQuestions.find((question) => question.required && !questionHasValue(question));
+          if (missingRequired) return missingRequired.key;
+          return intakeQuestions.find((question) => !questionHasValue(question))?.key || intakeQuestions[0]?.key || "";
+        }
+
+        function activeQuestionKey() {
+          if (!intakeActiveQuestionKey || !intakeQuestions.some((question) => question.key === intakeActiveQuestionKey)) {
+            intakeActiveQuestionKey = firstOpenQuestionKey();
+          }
+          return intakeActiveQuestionKey;
+        }
+
+        function nextQuestionKey(currentKey = "") {
+          const index = questionIndex(currentKey);
+          if (index < 0) return firstOpenQuestionKey();
+          return intakeQuestions[index + 1]?.key || currentKey;
+        }
+
+        function advanceIntakeQuestion(currentKey = "") {
+          const nextKey = nextQuestionKey(currentKey);
+          intakeActiveQuestionKey = nextKey;
+          intakeExpandedQuestions = new Set([nextKey]);
+          renderIntakeFields();
+        }
+
         function intakeLabel(question, value) {
           const values = Array.isArray(value) ? value : [value];
           const options = questionOptions(question);
@@ -21857,38 +21893,66 @@
 
         function renderIntakeFields() {
           if (!elements.intakeFields) return;
-          elements.intakeFields.innerHTML = intakeQuestions.map((question) => {
+          const activeKey = activeQuestionKey();
+          const intake = collectIntake();
+          const activeIndex = Math.max(0, questionIndex(activeKey));
+          const wizardHeader = `
+            <div class="demo-intake-wizard-bar">
+              <div>
+                <span>Briefing flow</span>
+                <strong>Stap ${activeIndex + 1} van ${intakeQuestions.length}</strong>
+                <small>${intake.complete ? "Alles ingevuld. Controleer of genereer de briefing." : `${intake.completed}/${intake.requiredTotal} verplichte punten klaar.`}</small>
+              </div>
+              <div class="demo-intake-wizard-meter" aria-hidden="true"><span style="width: ${escapeHtml(intake.percent)}%"></span></div>
+            </div>
+          `;
+          elements.intakeFields.innerHTML = wizardHeader + intakeQuestions.map((question, index) => {
             const value = normalizeIntakeValue(intakeState[question.key]);
             const required = question.required ? `<span class="status-badge status-planned">Verplicht</span>` : "";
+            const hasValue = questionHasValue(question);
+            const isActive = question.key === activeKey;
+            const stateLabel = hasValue ? intakeLabel(question, value) : (question.required ? "Nog invullen" : "Optioneel");
+            const statusClass = hasValue ? "status-active" : question.required ? "status-warning" : "status-planned";
             const heading = `
               <div class="demo-intake-question-heading">
                 <div>
-                  <strong>${escapeHtml(question.label)} ${required}</strong>
+                  <strong><span class="demo-intake-step-number">${index + 1}</span>${escapeHtml(question.label)} ${required}</strong>
                   ${question.helper ? `<small>${escapeHtml(question.helper)}</small>` : ""}
                 </div>
-                ${question.key === "branch" && value ? `<button type="button" class="demo-intake-toggle" data-intake-toggle="branch">${intakeExpandedQuestions.has("branch") ? "Inklappen" : "Wijzig"}</button>` : ""}
+                <button type="button" class="demo-intake-toggle" data-intake-toggle="${escapeHtml(question.key)}">${isActive ? "Inklappen" : hasValue ? "Wijzig" : "Open"}</button>
+              </div>
+            `;
+            const collapsedSummary = `
+              <div class="demo-intake-selected-summary ${statusClass}" data-intake-toggle="${escapeHtml(question.key)}" role="button" tabindex="0">
+                <span>${hasValue ? "Gekozen" : question.required ? "Actie nodig" : "Later"}</span>
+                <strong>${escapeHtml(stateLabel)}</strong>
               </div>
             `;
             if (question.type === "text") {
               return `
-                <label class="demo-intake-question ${question.wide ? "is-wide" : ""}" for="demo-intake-${question.key}">
+                <label class="demo-intake-question ${question.wide ? "is-wide" : ""} ${isActive ? "is-active" : "is-collapsed"} ${hasValue ? "is-complete" : ""}" for="demo-intake-${question.key}" data-intake-question="${escapeHtml(question.key)}">
                   ${heading}
-                  <textarea id="demo-intake-${question.key}" data-intake-key="${escapeHtml(question.key)}" rows="3" placeholder="${escapeHtml(question.placeholder || "")}">${escapeHtml(value)}</textarea>
+                  ${!isActive ? collapsedSummary : `
+                    <textarea id="demo-intake-${question.key}" data-intake-key="${escapeHtml(question.key)}" rows="3" placeholder="${escapeHtml(question.placeholder || "")}">${escapeHtml(value)}</textarea>
+                    <div class="demo-intake-step-actions">
+                      <button type="button" class="button button-secondary button-small" data-intake-next="${escapeHtml(question.key)}">Volgende</button>
+                    </div>
+                  `}
                 </label>
               `;
             }
             const type = question.type === "multi" ? "checkbox" : "radio";
             const selected = Array.isArray(value) ? value : [value];
             const options = questionOptions(question);
-            const isBranchCollapsed = question.key === "branch" && selected.filter(Boolean).length && !intakeExpandedQuestions.has("branch");
             const followUpPlanner = question.key === "followUp" && value === "plan"
               ? `<label class="demo-intake-inline-field" for="demo-intake-followUpAt"><span>Plan datum en tijd</span><input id="demo-intake-followUpAt" data-intake-key="followUpAt" type="datetime-local" value="${escapeHtml(datetimeLocal(intakeState.followUpAt || elements.followup?.value || ""))}" /></label>`
               : "";
+            const needsNextButton = question.type === "multi" || (question.key === "followUp" && value === "plan");
             return `
-              <fieldset class="demo-intake-question ${question.wide ? "is-wide" : ""} ${isBranchCollapsed ? "is-collapsed" : ""}" data-intake-question="${escapeHtml(question.key)}">
+              <fieldset class="demo-intake-question ${question.wide ? "is-wide" : ""} ${isActive ? "is-active" : "is-collapsed"} ${hasValue ? "is-complete" : ""}" data-intake-question="${escapeHtml(question.key)}">
                 ${heading}
-                ${isBranchCollapsed ? `<div class="demo-intake-selected-summary"><span>Gekozen</span><strong>${escapeHtml(intakeLabel(question, value))}</strong></div>` : ""}
-                <div class="demo-chip-grid" ${isBranchCollapsed ? "hidden" : ""}>
+                ${!isActive ? collapsedSummary : `
+                <div class="demo-chip-grid">
                   ${options.map((option) => `
                     <label class="demo-chip ${option.helper ? "has-helper" : ""}">
                       <input type="${type}" name="demo-intake-${escapeHtml(question.key)}" data-intake-key="${escapeHtml(question.key)}" value="${escapeHtml(option.value)}" ${selected.includes(option.value) ? "checked" : ""} />
@@ -21899,6 +21963,12 @@
                 </div>
                 ${followUpPlanner}
                 ${assetAutomationCard(question.key)}
+                ${needsNextButton ? `
+                  <div class="demo-intake-step-actions">
+                    <button type="button" class="button button-secondary button-small" data-intake-next="${escapeHtml(question.key)}">Volgende</button>
+                  </div>
+                ` : ""}
+                `}
               </fieldset>
             `;
           }).join("");
@@ -22062,7 +22132,6 @@
           } else {
             intakeState[key] = field.type === "radio" ? field.value : field.value.trim();
           }
-          if (key === "branch") intakeExpandedQuestions.delete("branch");
           if (key === "package" && elements.package) elements.package.value = packageTypeFromValue(intakeState.package);
           if (key === "followUp") {
             const planned = plannedFollowUpDate(intakeState.followUp);
@@ -22073,20 +22142,43 @@
             if (intakeState.followUp !== "plan" && intakeState.followUp !== "manual" && elements.followup && !planned) elements.followup.value = "";
           }
           saveIntakeLocally();
-          renderIntakeFields();
+          if (question.type === "single" && !(key === "followUp" && intakeState.followUp === "plan")) {
+            advanceIntakeQuestion(key);
+          } else if (question.type === "text") {
+            renderIntake();
+            return;
+          } else {
+            renderIntakeFields();
+          }
           renderIntake();
         }
 
         function handleIntakeFieldClick(event) {
+          const next = event.target.closest("[data-intake-next]");
+          if (next) {
+            const question = intakeQuestions.find((item) => item.key === next.dataset.intakeNext);
+            if (question?.required && !questionHasValue(question)) {
+              setMessage(elements.message, `Vul eerst "${question.label}" in.`, "warning");
+              return;
+            }
+            advanceIntakeQuestion(next.dataset.intakeNext);
+            renderIntake();
+            return;
+          }
           const toggle = event.target.closest("[data-intake-toggle]");
           if (!toggle) return;
           const key = toggle.dataset.intakeToggle;
-          if (intakeExpandedQuestions.has(key)) {
-            intakeExpandedQuestions.delete(key);
-          } else {
-            intakeExpandedQuestions.add(key);
-          }
+          intakeActiveQuestionKey = intakeActiveQuestionKey === key ? nextQuestionKey(key) : key;
+          intakeExpandedQuestions = new Set([intakeActiveQuestionKey]);
           renderIntakeFields();
+        }
+
+        function handleIntakeFieldKeydown(event) {
+          if (!["Enter", " "].includes(event.key)) return;
+          const target = event.target.closest("[data-intake-toggle], [data-intake-next]");
+          if (!target) return;
+          event.preventDefault();
+          target.click?.();
         }
 
         function plannedFollowUpDate(value = "") {
@@ -23605,6 +23697,7 @@
           window.addEventListener("maxwebstudio:lead-preview-request", openLeadPreviewWorkflow);
           elements.form?.addEventListener("submit", saveJourney);
           elements.intakeFields?.addEventListener("click", handleIntakeFieldClick);
+          elements.intakeFields?.addEventListener("keydown", handleIntakeFieldKeydown);
           elements.intakeFields?.addEventListener("input", handleIntakeInput);
           elements.intakeFields?.addEventListener("change", handleIntakeInput);
           elements.intakeLogoUpload?.addEventListener("change", (event) => handleAssetInput(event, "logo"));
