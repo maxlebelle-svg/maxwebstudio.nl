@@ -20158,13 +20158,16 @@
         const email = normalizeEmployeeFilterToken(candidate.email || (String(candidate.value || "").includes("@") ? candidate.value : ""));
         const value = normalizeEmployeeFilterToken(email || candidate.value || label);
         if (!value) return;
+        const authUserId = String(candidate.authUserId || candidate.auth_user_id || candidate.userId || "").trim();
+        const profileId = String(candidate.profileId || candidate.profile_id || candidate.id || "").trim();
+        const name = String(candidate.name || candidate.label || label || "").trim();
         const tokens = new Set([
           value,
           email,
           normalizeEmployeeFilterToken(candidate.id),
-          normalizeEmployeeFilterToken(candidate.authUserId || candidate.auth_user_id || candidate.userId),
-          normalizeEmployeeFilterToken(candidate.profileId || candidate.id),
-          normalizeEmployeeFilterToken(candidate.name),
+          normalizeEmployeeFilterToken(authUserId),
+          normalizeEmployeeFilterToken(profileId),
+          normalizeEmployeeFilterToken(name),
           normalizeEmployeeFilterToken(label),
           ...(Array.isArray(candidate.aliases) ? candidate.aliases.map(normalizeEmployeeFilterToken) : []),
         ].filter(Boolean));
@@ -20172,11 +20175,19 @@
         if (existing) {
           tokens.forEach((token) => existing.tokens.add(token));
           if ((!existing.label || existing.label === existing.value) && label) existing.label = label;
+          existing.email = existing.email || email;
+          existing.authUserId = existing.authUserId || authUserId;
+          existing.profileId = existing.profileId || profileId;
+          existing.name = existing.name || name;
           return;
         }
         options.set(value, {
           value,
           label: label || value,
+          email,
+          authUserId,
+          profileId,
+          name,
           tokens,
         });
       }
@@ -20241,6 +20252,8 @@
         const assignmentTokens = [
           lead.assignedTo,
           lead.assigned_to,
+          lead.assignedUserId,
+          lead.assigned_user_id,
           lead.medewerkerEmail,
           lead.medewerker_email,
           lead.employeeEmail,
@@ -20253,6 +20266,8 @@
           lead.user_email,
           meta.assignedTo,
           meta.assigned_to,
+          meta.assignedUserId,
+          meta.assigned_user_id,
           meta.medewerkerEmail,
           meta.medewerker_email,
           meta.employeeEmail,
@@ -20368,8 +20383,12 @@
         );
         const assignedId = firstEmployeeField(
           lead.assignedTo,
+          lead.assignedUserId,
+          lead.assigned_user_id,
           meta.assignedTo,
-          meta.assigned_to
+          meta.assigned_to,
+          meta.assignedUserId,
+          meta.assigned_user_id
         );
         const id = assignedId || firstEmployeeField(
           lead.ownerAuthUserId,
@@ -20431,12 +20450,14 @@
         const email = normalizeEmployeeFilterToken(employee.email || (employee.value.includes("@") ? employee.value : ""));
         const name = String(employee.label || employee.name || employee.value || "").trim();
         const authUserId = String(employee.authUserId || employee.auth_user_id || "").trim();
+        const assignedIdentifier = authUserId || email || employee.value;
         return {
           medewerker: name,
           medewerkerEmail: email,
           employee: name,
           employeeEmail: email,
-          assignedTo: authUserId || employee.value,
+          assignedTo: assignedIdentifier,
+          assignedUserId: authUserId || "",
           assignedUserEmail: email,
           assignedUserName: name,
           assignedToEmail: email,
@@ -20450,7 +20471,8 @@
             medewerkerEmail: email,
             employee: name,
             employeeEmail: email,
-            assignedTo: authUserId || employee.value,
+            assignedTo: assignedIdentifier,
+            assignedUserId: authUserId || "",
             assignedUserEmail: email,
             assignedUserName: name,
             assignedToEmail: email,

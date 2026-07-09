@@ -266,6 +266,8 @@ function leadAssignmentInput(payload = {}) {
     "assigned_to_email",
     "assignedUserEmail",
     "assigned_user_email",
+    "assignedUserId",
+    "assigned_user_id",
     "assignedUserName",
     "assigned_user_name",
     "assignedToName",
@@ -294,6 +296,15 @@ function resolveLeadAssignment(payload = {}, admin = {}, options = {}) {
   const createDefaultId = options.create ? firstCleanText(payload.ownerAuthUserId, payload.owner_id, admin.id) : "";
   const createDefaultEmail = options.create ? firstCleanText(payload.ownerEmail, payload.owner_email, admin.email) : "";
   const createDefaultName = options.create ? firstCleanText(payload.ownerName, payload.owner_name, admin.email) : "";
+  const userId = firstCleanText(
+    payload.assignedUserId,
+    payload.assigned_user_id,
+    meta.assignedUserId,
+    meta.assigned_user_id,
+    existing.assignedUserId,
+    existingMeta.assignedUserId,
+    existingMeta.assigned_user_id
+  );
   const email = firstCleanText(
     payload.assignedUserEmail,
     payload.assigned_user_email,
@@ -374,6 +385,7 @@ function resolveLeadAssignment(payload = {}, admin = {}, options = {}) {
   const id = firstCleanText(
     payload.assignedTo,
     payload.assigned_to,
+    userId,
     meta.assignedTo,
     meta.assigned_to,
     existing.assignedTo,
@@ -381,7 +393,7 @@ function resolveLeadAssignment(payload = {}, admin = {}, options = {}) {
     existingMeta.assigned_to,
     createDefaultId
   );
-  return { id, email, name };
+  return { id, userId, email, name };
 }
 
 function leadPayload(payload = {}, admin = {}, options = {}) {
@@ -435,6 +447,7 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
       ownerEmail,
       ownerName,
       assignedTo: assignment.id,
+      assignedUserId: assignment.userId,
       assignedUserEmail: assignment.email,
       assignedUserName: assignment.name,
       medewerker: assignment.name,
@@ -481,6 +494,7 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
         "ownerEmail",
         "ownerName",
         "assignedUserEmail",
+        "assignedUserId",
         "assignedUserName",
         "medewerker",
         "medewerkerEmail",
@@ -535,6 +549,7 @@ function legacyLeadPayload(payload = {}, admin = {}, options = {}) {
     createdByEmail: cleanText(payload.createdByEmail || options.existingLead?.createdByEmail || existingMeta.createdByEmail || admin.email),
     createdByName: cleanText(payload.createdByName || options.existingLead?.createdByName || existingMeta.createdByName || admin.email),
     assignedTo: assignment.id,
+    assignedUserId: assignment.userId,
     assignedUserEmail: assignment.email,
     assignedUserName: assignment.name,
     medewerker: assignment.name,
@@ -665,6 +680,7 @@ function mapLead(row = {}) {
     ownerName: cleanText(row.assigned_user_name || meta.assignedUserName || meta.assigned_user_name || meta.assignedToName || meta.assigned_to_name || meta.medewerker || meta.employee || row.sales_partner_name || meta.salesPartnerName || meta.sales_partner_name || row.owner_name || meta.ownerName || meta.owner_name || meta.userName || meta.user_name),
     assignedUserName: cleanText(row.assigned_user_name || meta.assignedUserName || meta.assigned_user_name || meta.assignedToName || meta.assigned_to_name || meta.medewerker || meta.employee),
     assignedUserEmail: cleanText(row.assigned_user_email || meta.assignedUserEmail || meta.assigned_user_email || meta.assignedToEmail || meta.assigned_to_email || meta.medewerkerEmail || meta.medewerker_email || meta.employeeEmail || meta.employee_email),
+    assignedUserId: cleanText(meta.assignedUserId || meta.assigned_user_id),
     salesPartnerEmail: cleanText(row.sales_partner_email || meta.salesPartnerEmail || meta.sales_partner_email),
     salesPartnerName: cleanText(row.sales_partner_name || meta.salesPartnerName || meta.sales_partner_name),
     createdBy: cleanText(row.created_by || meta.createdBy || row.owner_auth_user_id),
@@ -717,6 +733,7 @@ function legacyDbStatus(value) {
 function leadOwnerTokens(lead = {}) {
   const assignmentTokens = [
     lead.assignedTo,
+    lead.assignedUserId,
     lead.assignedUserEmail,
     lead.medewerkerEmail,
     lead.employeeEmail,
@@ -725,6 +742,8 @@ function leadOwnerTokens(lead = {}) {
     lead.salesPartnerEmail,
     lead.metadata?.assignedTo,
     lead.metadata?.assigned_to,
+    lead.metadata?.assignedUserId,
+    lead.metadata?.assigned_user_id,
     lead.metadata?.assignedUserEmail,
     lead.metadata?.assigned_user_email,
     lead.metadata?.medewerkerEmail,
