@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Website Briefing Mockup | Max CRM</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg: #06121f;
+        --panel: #0d2033;
+        --panel-soft: #112a42;
+        --field: #071725;
+        --line: rgba(126, 159, 196, 0.28);
+        --line-strong: rgba(96, 165, 250, 0.5);
+        --text: #f4f8ff;
+        --muted: #9eb1c8;
+        --subtle: #6f839b;
+        --blue: #2f80ff;
+        --cyan: #30c7f6;
+        --green: #34d399;
+        --amber: #fbbf24;
+        --red: #fb7185;
+        --shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--text);
+        background:
+          linear-gradient(rgba(96, 165, 250, 0.06) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(96, 165, 250, 0.05) 1px, transparent 1px),
+          radial-gradient(circle at 80% 0%, rgba(48, 199, 246, 0.16), transparent 34%),
+          #04101d;
+        background-size: 42px 42px, 42px 42px, auto, auto;
+        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      button,
+      input,
+      textarea {
+        font: inherit;
+      }
+
+      .shell {
+        display: grid;
+        grid-template-columns: 260px minmax(0, 1fr);
+        gap: 28px;
+        min-height: 100vh;
+        padding: 28px;
+      }
+
+      .sidebar,
+      .card,
+      .preview-bar {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: linear-gradient(180deg, rgba(17, 42, 66, 0.94), rgba(9, 27, 43, 0.94));
+        box-shadow: var(--shadow);
+      }
+
+      .sidebar {
+        padding: 28px 22px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 42px;
+        font-size: 22px;
+        font-weight: 900;
+      }
+
+      .mark {
+        display: grid;
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 8px;
+        background: #06101d;
+        color: white;
+        font-weight: 900;
+      }
+
+      .nav-label {
+        display: block;
+        margin: 24px 14px 10px;
+        color: var(--subtle);
+        font-size: 12px;
+        font-weight: 900;
+        text-transform: uppercase;
+      }
+
+      .nav-item {
+        display: block;
+        margin-bottom: 10px;
+        padding: 16px 18px;
+        border-radius: 8px;
+        color: #d9e7f8;
+        background: rgba(255, 255, 255, 0.05);
+        font-weight: 800;
+      }
+
+      .nav-item.active {
+        border-left: 4px solid var(--blue);
+        background: linear-gradient(90deg, rgba(47, 128, 255, 0.36), rgba(255, 255, 255, 0.07));
+      }
+
+      .main {
+        display: grid;
+        gap: 18px;
+        min-width: 0;
+      }
+
+      .preview-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 18px 22px;
+      }
+
+      .preview-bar h1 {
+        margin: 0;
+        font-size: 24px;
+        letter-spacing: 0;
+      }
+
+      .preview-bar p {
+        margin: 5px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .score {
+        display: grid;
+        gap: 8px;
+        min-width: 260px;
+      }
+
+      .score-top {
+        display: flex;
+        justify-content: space-between;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 900;
+        text-transform: uppercase;
+      }
+
+      .score-track {
+        height: 10px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .score-fill {
+        width: 82%;
+        height: 100%;
+        background: linear-gradient(90deg, var(--amber), var(--green));
+      }
+
+      .workspace {
+        display: grid;
+        grid-template-columns: 340px minmax(430px, 1fr) 380px;
+        gap: 18px;
+        align-items: start;
+      }
+
+      .card {
+        padding: 18px;
+      }
+
+      .card-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 16px;
+      }
+
+      .kicker {
+        display: block;
+        margin-bottom: 6px;
+        color: var(--cyan);
+        font-size: 12px;
+        font-weight: 900;
+        text-transform: uppercase;
+      }
+
+      h2,
+      h3 {
+        margin: 0;
+        letter-spacing: 0;
+      }
+
+      h2 {
+        font-size: 20px;
+      }
+
+      h3 {
+        font-size: 15px;
+      }
+
+      .badge {
+        flex: 0 0 auto;
+        padding: 7px 10px;
+        border: 1px solid rgba(52, 211, 153, 0.35);
+        border-radius: 999px;
+        color: #b9f8d8;
+        background: rgba(52, 211, 153, 0.11);
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .field-grid {
+        display: grid;
+        gap: 12px;
+      }
+
+      label {
+        display: grid;
+        gap: 7px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 900;
+        text-transform: uppercase;
+      }
+
+      input,
+      textarea {
+        width: 100%;
+        min-width: 0;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--text);
+        background: linear-gradient(180deg, rgba(5, 17, 29, 0.96), rgba(4, 14, 24, 0.96));
+        font-size: 14px;
+        font-weight: 750;
+      }
+
+      input {
+        min-height: 44px;
+        padding: 0 13px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      textarea {
+        min-height: 78px;
+        padding: 12px 13px;
+        resize: none;
+      }
+
+      .section {
+        display: grid;
+        gap: 13px;
+        margin-bottom: 18px;
+        padding-bottom: 18px;
+        border-bottom: 1px solid rgba(126, 159, 196, 0.18);
+      }
+
+      .section:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: 0;
+      }
+
+      .choice-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 9px;
+      }
+
+      .chip {
+        min-height: 36px;
+        border: 1px solid rgba(96, 165, 250, 0.34);
+        border-radius: 999px;
+        color: #dbeafe;
+        background: rgba(47, 128, 255, 0.13);
+        padding: 0 13px;
+        font-size: 13px;
+        font-weight: 850;
+      }
+
+      .chip.on {
+        border-color: rgba(48, 199, 246, 0.68);
+        color: white;
+        background: linear-gradient(180deg, rgba(47, 128, 255, 0.48), rgba(47, 128, 255, 0.24));
+        box-shadow: 0 10px 24px rgba(47, 128, 255, 0.18);
+      }
+
+      .two {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .ai-note {
+        display: grid;
+        gap: 10px;
+        padding: 14px;
+        border: 1px solid rgba(251, 191, 36, 0.26);
+        border-radius: 8px;
+        color: #fef3c7;
+        background: rgba(251, 191, 36, 0.08);
+        font-size: 13px;
+        font-weight: 750;
+        line-height: 1.5;
+      }
+
+      .ai-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .mini {
+        min-height: 32px;
+        border: 1px solid rgba(251, 191, 36, 0.35);
+        border-radius: 8px;
+        color: #fff7dc;
+        background: rgba(251, 191, 36, 0.12);
+        padding: 0 10px;
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .brief {
+        min-height: 640px;
+      }
+
+      .brief-box {
+        display: grid;
+        gap: 13px;
+        padding: 16px;
+        border: 1px solid var(--line-strong);
+        border-radius: 8px;
+        background: rgba(4, 14, 24, 0.78);
+      }
+
+      .brief-block {
+        display: grid;
+        gap: 6px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(126, 159, 196, 0.18);
+      }
+
+      .brief-block:last-child {
+        padding-bottom: 0;
+        border-bottom: 0;
+      }
+
+      .brief-block strong {
+        color: var(--cyan);
+        font-size: 12px;
+        text-transform: uppercase;
+      }
+
+      .brief-block span,
+      .brief-block li {
+        color: #e8f2ff;
+        font-size: 13px;
+        font-weight: 700;
+        line-height: 1.45;
+      }
+
+      ul {
+        margin: 0;
+        padding-left: 18px;
+      }
+
+      .actions {
+        display: grid;
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .primary,
+      .secondary {
+        min-height: 46px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 900;
+      }
+
+      .primary {
+        border: 0;
+        color: white;
+        background: linear-gradient(180deg, #2f80ff, #155eef);
+      }
+
+      .secondary {
+        border: 1px solid var(--line);
+        color: #dbeafe;
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      .flow {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .step {
+        display: grid;
+        gap: 6px;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      .step b {
+        color: var(--cyan);
+        font-size: 12px;
+      }
+
+      .step span {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 750;
+        line-height: 1.35;
+      }
+
+      @media (max-width: 1240px) {
+        .shell {
+          grid-template-columns: 1fr;
+        }
+
+        .sidebar {
+          display: none;
+        }
+
+        .workspace {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .shell {
+          padding: 14px;
+        }
+
+        .preview-bar,
+        .two,
+        .flow {
+          grid-template-columns: 1fr;
+        }
+
+        .preview-bar {
+          display: grid;
+        }
+
+        .score {
+          min-width: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <aside class="sidebar">
+        <div class="brand"><span class="mark">M</span><span>Max CRM</span></div>
+        <span class="nav-label">Sales</span>
+        <span class="nav-item">Agenda</span>
+        <span class="nav-item">Lead Generator</span>
+        <span class="nav-item active">Leads</span>
+        <span class="nav-label">Production</span>
+        <span class="nav-item">Website Factory</span>
+        <span class="nav-item">Demo Sites</span>
+        <span class="nav-item">AI Content Library</span>
+      </aside>
+
+      <section class="main">
+        <div class="preview-bar">
+          <div>
+            <span class="kicker">Voorstel nieuwe flow</span>
+            <h1>Lead naar Website Briefing</h1>
+            <p>Alles wat verkoop invult wordt automatisch een duidelijke opdracht voor de Website Factory.</p>
+          </div>
+          <div class="score">
+            <div class="score-top"><span>Briefing score</span><span>82% klaar</span></div>
+            <div class="score-track"><div class="score-fill"></div></div>
+          </div>
+        </div>
+
+        <div class="workspace">
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <span class="kicker">Stap 1</span>
+                <h2>Leadgegevens</h2>
+              </div>
+              <span class="badge">Auto ingevuld</span>
+            </div>
+            <div class="field-grid">
+              <label>Bedrijf<input value="Automobielbedrijf M.F. Timmer" /></label>
+              <div class="two">
+                <label>Branche<input value="Autobedrijf / aircoservice" /></label>
+                <label>Regio<input value="Castricum" /></label>
+              </div>
+              <label>Website<input value="https://autoaircoservice.nl/" /></label>
+              <label>Contactstatus<input value="Beslisser gesproken, demo mag voorbereid worden" /></label>
+              <div class="ai-note">
+                <strong>AI-voorstel uit website</strong>
+                <span>Lijkt een lokale specialist voor auto-airco onderhoud, bijvullen en reparatie. Controleer dit kort voor de factory.</span>
+                <div class="ai-actions">
+                  <button class="mini">Klopt</button>
+                  <button class="mini">Aanpassen</button>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <span class="kicker">Stap 2</span>
+                <h2>Website Briefing</h2>
+              </div>
+              <span class="badge">Factory-proof</span>
+            </div>
+
+            <div class="section">
+              <h3>Wat moet de website opleveren?</h3>
+              <div class="choice-grid">
+                <button class="chip on">Meer aanvragen</button>
+                <button class="chip on">Meer vertrouwen</button>
+                <button class="chip">Beter vindbaar</button>
+                <button class="chip on">Duidelijkere info</button>
+                <button class="chip">Premium uitstraling</button>
+              </div>
+            </div>
+
+            <div class="section">
+              <h3>Diensten die duidelijk op de site moeten</h3>
+              <textarea>Auto airco bijvullen, airco onderhoud, lekkage opsporen, airco reparatie, diagnose en seizoenscheck.</textarea>
+            </div>
+
+            <div class="section">
+              <h3>Doelgroep</h3>
+              <div class="choice-grid">
+                <button class="chip on">Particulieren</button>
+                <button class="chip on">Lokale klanten</button>
+                <button class="chip">Zakelijke rijders</button>
+                <button class="chip">Spoedzoekers</button>
+              </div>
+              <textarea>Autobezitters in de regio die snel, betrouwbaar en zonder gedoe geholpen willen worden.</textarea>
+            </div>
+
+            <div class="section">
+              <h3>Uitstraling en gevoel</h3>
+              <div class="choice-grid">
+                <button class="chip on">Professioneel</button>
+                <button class="chip on">Praktisch</button>
+                <button class="chip on">Betrouwbaar</button>
+                <button class="chip">Luxe</button>
+                <button class="chip">Warm</button>
+              </div>
+            </div>
+
+            <div class="section">
+              <h3>Actieknoppen</h3>
+              <div class="choice-grid">
+                <button class="chip on">Bel direct</button>
+                <button class="chip on">WhatsApp sturen</button>
+                <button class="chip on">Afspraak maken</button>
+                <button class="chip">Offerte aanvragen</button>
+              </div>
+            </div>
+
+            <div class="flow">
+              <div class="step"><b>1. Lead</b><span>Basisdata wordt gevuld.</span></div>
+              <div class="step"><b>2. Briefing</b><span>Jij kiest en vult aan.</span></div>
+              <div class="step"><b>3. Controle</b><span>Score toont ontbrekende info.</span></div>
+              <div class="step"><b>4. Factory</b><span>Schone opdracht gaat door.</span></div>
+            </div>
+          </article>
+
+          <article class="card brief">
+            <div class="card-head">
+              <div>
+                <span class="kicker">Stap 3</span>
+                <h2>Factory Brief</h2>
+              </div>
+              <span class="badge">Klaar voor demo</span>
+            </div>
+            <div class="brief-box">
+              <div class="brief-block">
+                <strong>Bedrijf</strong>
+                <span>Automobielbedrijf M.F. Timmer, lokale auto-airco specialist in Castricum.</span>
+              </div>
+              <div class="brief-block">
+                <strong>Website doel</strong>
+                <ul>
+                  <li>Meer aanvragen via bellen, WhatsApp en afspraak maken.</li>
+                  <li>Direct betrouwbaar overkomen bij Google-bezoekers.</li>
+                  <li>Diensten sneller en duidelijker uitleggen.</li>
+                </ul>
+              </div>
+              <div class="brief-block">
+                <strong>Diensten</strong>
+                <span>Auto airco bijvullen, onderhoud, diagnose, lekkage opsporen en reparatie.</span>
+              </div>
+              <div class="brief-block">
+                <strong>Doelgroep</strong>
+                <span>Particuliere autobezitters in de regio die snel en betrouwbaar geholpen willen worden.</span>
+              </div>
+              <div class="brief-block">
+                <strong>Uitstraling</strong>
+                <span>Professioneel, praktisch, betrouwbaar, lokaal en duidelijk. Geen te luxe showroomgevoel.</span>
+              </div>
+              <div class="brief-block">
+                <strong>Factory instructie</strong>
+                <span>Maak een compacte demo met sterke hero, dienstenblok, vertrouwen/signalen, werkwijze, contactblok en duidelijke CTA's.</span>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="primary">Stuur naar Website Factory</button>
+              <button class="secondary">Bekijk ontbrekende informatie</button>
+              <button class="secondary">Kopieer briefing</button>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

@@ -868,6 +868,157 @@
   }
 }
 
+.sales-briefing-system {
+  display: grid;
+  gap: var(--mws-space-4);
+  margin-top: var(--mws-space-4);
+  padding: var(--mws-space-4);
+  border: 1px solid rgba(96, 165, 250, 0.24);
+  border-radius: var(--mws-radius-md);
+  background: linear-gradient(180deg, rgba(14, 35, 56, 0.78), rgba(2, 14, 25, 0.5));
+}
+
+.sales-briefing-head,
+.sales-briefing-branch-row,
+.sales-factory-brief-preview > div {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--mws-space-4);
+}
+
+.sales-briefing-head span,
+.sales-factory-brief-preview span {
+  display: block;
+  color: var(--mws-color-cyan);
+  font-size: var(--mws-font-size-caption);
+  font-weight: var(--mws-font-weight-black);
+  text-transform: uppercase;
+}
+
+.sales-briefing-head strong,
+.sales-factory-brief-preview strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--mws-color-text);
+  font-size: var(--mws-font-size-subtitle);
+}
+
+.sales-briefing-head small {
+  display: block;
+  margin-top: 5px;
+  color: var(--mws-color-muted);
+  font-weight: var(--mws-font-weight-bold);
+}
+
+.sales-briefing-score {
+  display: grid;
+  gap: 8px;
+  min-width: 180px;
+  color: var(--mws-color-muted);
+  font-size: var(--mws-font-size-caption);
+  font-weight: var(--mws-font-weight-black);
+  text-align: right;
+  text-transform: uppercase;
+}
+
+.sales-briefing-score i {
+  display: block;
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.22);
+}
+
+.sales-briefing-score b {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #fbbf24, #34d399);
+  transition: width var(--mws-transition);
+}
+
+.sales-briefing-branch-row {
+  align-items: end;
+}
+
+.sales-briefing-branch-row label {
+  flex: 1 1 260px;
+}
+
+.sales-call-choice-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--mws-space-3);
+}
+
+.sales-briefing-chip-group {
+  display: grid;
+  gap: var(--mws-space-2);
+  padding: var(--mws-space-3);
+  border: 1px solid rgba(96, 165, 250, 0.18);
+  border-radius: var(--mws-radius-sm);
+  background: rgba(2, 14, 25, 0.38);
+}
+
+.sales-briefing-chip-group strong {
+  color: var(--mws-color-muted);
+  font-size: var(--mws-font-size-caption);
+  font-weight: var(--mws-font-weight-black);
+  text-transform: uppercase;
+}
+
+.sales-briefing-chip-group div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sales-briefing-chip-group button {
+  min-height: 34px;
+  border: 1px solid rgba(96, 165, 250, 0.36);
+  border-radius: 999px;
+  color: #dbeafe;
+  background: rgba(37, 99, 235, 0.13);
+  padding: 0 12px;
+  font: inherit;
+  font-size: var(--mws-font-size-caption);
+  font-weight: var(--mws-font-weight-black);
+  cursor: pointer;
+  transition: background var(--mws-transition), border-color var(--mws-transition), color var(--mws-transition), transform var(--mws-transition);
+}
+
+.sales-briefing-chip-group button:hover,
+.sales-briefing-chip-group button.is-selected {
+  border-color: rgba(48, 199, 246, 0.72);
+  color: var(--mws-color-text);
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.48), rgba(37, 99, 235, 0.24));
+}
+
+.sales-briefing-chip-group button:hover {
+  transform: translateY(-1px);
+}
+
+.sales-factory-brief-preview {
+  display: grid;
+  gap: var(--mws-space-3);
+  padding: var(--mws-space-4);
+  border: 1px solid rgba(48, 199, 246, 0.28);
+  border-radius: var(--mws-radius-sm);
+  background: rgba(2, 14, 25, 0.46);
+}
+
+.sales-factory-brief-preview pre {
+  max-height: 360px;
+  min-height: 180px;
+  margin: 0;
+  overflow: auto;
+  white-space: pre-wrap;
+  color: var(--mws-color-text);
+  font: 700 13px/1.55 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
 @media (max-width: 1180px) {
   .mws-master-detail-layout,
   .mws-settings-layout,
@@ -876,6 +1027,10 @@
   }
 
   .mws-hero-banner {
+    grid-template-columns: 1fr;
+  }
+
+  .sales-call-choice-groups {
     grid-template-columns: 1fr;
   }
 }
@@ -900,5 +1055,16 @@
   .button,
   .mws-button {
     width: 100%;
+  }
+
+  .sales-briefing-head,
+  .sales-briefing-branch-row,
+  .sales-factory-brief-preview > div {
+    display: grid;
+  }
+
+  .sales-briefing-score {
+    min-width: 0;
+    text-align: left;
   }
 }

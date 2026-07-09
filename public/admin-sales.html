@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <script src="admin/ui/shared-helpers.js"></script>
     <link rel="stylesheet" href="styles.css?v=20260707-sales-actions-demo" />
-    <link rel="stylesheet" href="admin/styles/premium-design-system.css" />
+    <link rel="stylesheet" href="admin/styles/premium-design-system.css?v=20260709-briefing-system" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
   <body class="admin-body">
@@ -470,7 +470,7 @@
                   <div class="sales-call-script-head">
                     <div>
                       <span>Belmodus</span>
-                      <strong>Preview-aanbod script</strong>
+                      <strong>Preview-aanbod + Website Briefing</strong>
                     </div>
                   </div>
                   <div class="sales-call-contact-grid">
@@ -496,42 +496,35 @@
                     <label>Wat moet de demo laten zien?<textarea data-call-field="demoFocus" rows="2" placeholder="Wat moet terugkomen in de preview"></textarea></label>
                     <label>Stijl / voorbeelden<textarea data-call-field="stylePreference" rows="2" placeholder="Modern, warm, luxe, kleuren, voorbeeldsites"></textarea></label>
                   </div>
-                  <div class="sales-call-choice-groups" id="leadfinder-call-choice-groups">
-                    <div>
-                      <strong>Contact</strong>
-                      <button type="button" data-call-choice="Beslisser: ja">Beslisser</button>
-                      <button type="button" data-call-choice="Beslisser: iemand kijkt mee">Iemand kijkt mee</button>
-                      <button type="button" data-call-choice="Vervolg: WhatsApp sturen">WhatsApp sturen</button>
-                      <button type="button" data-call-choice="Vervolg: later terugbellen">Later terugbellen</button>
+                  <div class="sales-briefing-system" id="leadfinder-website-briefing">
+                    <div class="sales-briefing-head">
+                      <div>
+                        <span>Website Briefing</span>
+                        <strong>Branchegestuurde knoppen voor de Website Factory</strong>
+                        <small id="leadfinder-briefing-detection">Selecteer een lead om automatisch een brancheprofiel te kiezen.</small>
+                      </div>
+                      <div class="sales-briefing-score" aria-label="Briefing score">
+                        <span id="leadfinder-briefing-score-label">0% klaar</span>
+                        <i><b id="leadfinder-briefing-score-bar"></b></i>
+                      </div>
                     </div>
-                    <div>
-                      <strong>Website</strong>
-                      <button type="button" data-call-choice="Heeft complete website: ja">Heeft website</button>
-                      <button type="button" data-call-choice="Heeft complete website: nee">Geen website</button>
-                      <button type="button" data-call-choice="Website wens: mooiere uitstraling">Mooiere uitstraling</button>
-                      <button type="button" data-call-choice="Website wens: beter vindbaar">Beter vindbaar</button>
-                      <button type="button" data-call-choice="Website wens: meer aanvragen">Meer aanvragen</button>
-                      <button type="button" data-call-choice="Website wens: duidelijkere informatie">Duidelijker info</button>
+                    <div class="sales-briefing-branch-row">
+                      <label for="leadfinder-briefing-branch">Gedetecteerde branche<select id="leadfinder-briefing-branch"></select></label>
+                      <button class="button secondary" id="leadfinder-briefing-apply" type="button" disabled>Gebruik brancheprofiel</button>
                     </div>
-                    <div>
-                      <strong>Demo stijl</strong>
-                      <button type="button" data-call-choice="Gewenste stijl: modern en strak">Modern strak</button>
-                      <button type="button" data-call-choice="Gewenste stijl: warm en persoonlijk">Warm persoonlijk</button>
-                      <button type="button" data-call-choice="Gewenste stijl: luxe">Luxe</button>
-                      <button type="button" data-call-choice="Gewenste stijl: rustig">Rustig</button>
-                      <button type="button" data-call-choice="Gewenste stijl: praktisch en duidelijk">Praktisch</button>
-                    </div>
-                    <div>
-                      <strong>Uitkomst</strong>
-                      <button type="button" data-call-choice="Demo interesse: ja, demo maken">Demo interessant</button>
-                      <button type="button" data-call-choice="Demo interesse: twijfel, eerst WhatsApp">Twijfel</button>
-                      <button type="button" data-call-choice="Demo interesse: niet interessant">Niet interessant</button>
-                      <button type="button" data-call-choice="Logische volgende stap: demo-preview voorbereiden">Preview voorbereiden</button>
+                    <div class="sales-call-choice-groups" id="leadfinder-call-choice-groups"></div>
+                    <div class="sales-factory-brief-preview">
+                      <div>
+                        <span>Schone Factory Brief</span>
+                        <strong>Dit krijgt de Website Factory mee</strong>
+                      </div>
+                      <pre id="leadfinder-factory-brief-preview">Nog geen lead geselecteerd.</pre>
                     </div>
                   </div>
                   <div class="sales-call-script-actions">
                     <button class="button secondary" id="leadfinder-fill-call-details" type="button" disabled>Contact/adres invullen</button>
                     <button class="button secondary" id="leadfinder-build-call-script" type="button" disabled>Belscript bijwerken</button>
+                    <button class="button secondary" id="leadfinder-copy-factory-brief" type="button" disabled>Factory Brief kopiëren</button>
                     <button class="button secondary" id="leadfinder-copy-closing" type="button" disabled>Afsluiting kopiëren</button>
                   </div>
                 </div>
@@ -19436,7 +19429,7 @@
         readAllLocalLeadSources,
         readLeadFinderLeads,
         updateLeadFinderLeadLocally,
-      } from "./src/services/leadFinderService.js?v=20260704-admin-session-hotfix";
+      } from "./src/services/leadFinderService.js?v=20260709-briefing-system";
       import { readSupabaseDataLayerModule } from "./src/services/supabaseDataLayerService.js?v=20260704-admin-session-hotfix";
       import { saveCrmTaskWithWriteFallback } from "./src/services/crmTaskWriteService.js?v=20260704-admin-session-hotfix";
 
@@ -19510,6 +19503,14 @@
         callWebsite: document.getElementById("leadfinder-call-website"),
         callQuestionGrid: document.getElementById("leadfinder-call-question-grid"),
         callChoiceGroups: document.getElementById("leadfinder-call-choice-groups"),
+        briefingSystem: document.getElementById("leadfinder-website-briefing"),
+        briefingBranch: document.getElementById("leadfinder-briefing-branch"),
+        briefingApply: document.getElementById("leadfinder-briefing-apply"),
+        briefingDetection: document.getElementById("leadfinder-briefing-detection"),
+        briefingScoreLabel: document.getElementById("leadfinder-briefing-score-label"),
+        briefingScoreBar: document.getElementById("leadfinder-briefing-score-bar"),
+        factoryBriefPreview: document.getElementById("leadfinder-factory-brief-preview"),
+        copyFactoryBrief: document.getElementById("leadfinder-copy-factory-brief"),
         fillCallDetails: document.getElementById("leadfinder-fill-call-details"),
         buildCallScript: document.getElementById("leadfinder-build-call-script"),
         copyClosing: document.getElementById("leadfinder-copy-closing"),
@@ -21678,6 +21679,128 @@
 
       const LEAD_INTAKE_SECTION_LABEL = "VRAGENLIJST / BELSCRIPT";
       const LEAD_FREE_NOTE_SECTION_LABEL = "VRIJE NOTITIES";
+      const WEBSITE_BRIEFING_PROFILES = {
+        automotive: {
+          label: "Autobedrijf / garage",
+          summary: "Lokale automotive specialist met focus op service, vertrouwen en snelle afspraakaanvragen.",
+          goals: ["Meer aanvragen", "Meer vertrouwen", "Duidelijkere info", "Lokale vindbaarheid"],
+          services: ["APK", "Onderhoud", "Reparatie", "Diagnose", "Airco service", "Banden", "Occasions"],
+          audiences: ["Particulieren", "Lokale klanten", "Zakelijke rijders", "Spoedzoekers"],
+          styles: ["Professioneel", "Praktisch", "Betrouwbaar", "Modern", "Lokaal"],
+          ctas: ["Bel direct", "WhatsApp sturen", "Afspraak maken", "Offerte aanvragen"],
+          instruction: "Maak een duidelijke lokale servicewebsite met snelle afspraakmogelijkheden, dienstenblok, vertrouwen/signalen, reviews en contact bovenaan.",
+        },
+        installatiebedrijf: {
+          label: "Installatiebedrijf",
+          summary: "Technische dienstverlener voor installatie, onderhoud en verduurzaming.",
+          goals: ["Meer offerteaanvragen", "Meer vertrouwen", "Beter vindbaar", "Diensten uitleggen"],
+          services: ["CV ketel", "Warmtepomp", "Airco installatie", "Laadpaal", "Zonnepanelen", "Storingen", "Onderhoud"],
+          audiences: ["Huiseigenaren", "Lokale klanten", "Bedrijven", "VvE's"],
+          styles: ["Technisch betrouwbaar", "Modern", "Duidelijk", "Duurzaam", "Premium"],
+          ctas: ["Offerte aanvragen", "Bel direct", "Storing melden", "Adviesgesprek plannen"],
+          instruction: "Maak een technisch betrouwbare website met heldere dienstpagina's, regiofocus, keurmerken, projecten en offerte-CTA's.",
+        },
+        bouwbedrijf: {
+          label: "Bouw / aannemer",
+          summary: "Bouwbedrijf voor verbouwing, renovatie, onderhoud of maatwerkprojecten.",
+          goals: ["Meer offerteaanvragen", "Projecten tonen", "Meer vertrouwen", "Grotere klussen aantrekken"],
+          services: ["Renovatie", "Verbouwing", "Dakwerk", "Timmerwerk", "Kozijnen", "Onderhoud", "Nieuwbouw"],
+          audiences: ["Huiseigenaren", "Vastgoedbeheerders", "Bedrijven", "Lokale klanten"],
+          styles: ["Robuust", "Betrouwbaar", "Strak", "Ambachtelijk", "Premium"],
+          ctas: ["Offerte aanvragen", "Project bespreken", "Bel direct", "Foto's/projecten bekijken"],
+          instruction: "Maak een projectgerichte website met portfolio, werkwijze, vertrouwen, regio en duidelijke offerte-aanvraag.",
+        },
+        kapsalon: {
+          label: "Kapsalon / barber",
+          summary: "Salon met focus op afspraken, stijl, sfeer en terugkerende klanten.",
+          goals: ["Meer afspraken", "Sfeer laten zien", "Diensten duidelijk maken", "Lokale vindbaarheid"],
+          services: ["Knippen", "Kleuren", "Balayage", "Styling", "Baard trimmen", "Kinderknip", "Bruidskapsel"],
+          audiences: ["Dames", "Heren", "Gezinnen", "Nieuwe lokale klanten", "Vaste klanten"],
+          styles: ["Warm", "Stijlvol", "Modern", "Persoonlijk", "Luxe"],
+          ctas: ["Afspraak maken", "WhatsApp sturen", "Bel direct", "Prijslijst bekijken"],
+          instruction: "Maak een sfeergerichte salonwebsite met diensten, prijslijst, team/sfeer, reviews en een prominente afspraak-CTA.",
+        },
+        schoonheidssalon: {
+          label: "Beauty / wellness",
+          summary: "Beauty- of wellnessbedrijf waar sfeer, vertrouwen en behandelingen belangrijk zijn.",
+          goals: ["Meer boekingen", "Behandelingen uitleggen", "Premium uitstraling", "Meer vertrouwen"],
+          services: ["Gezichtsbehandeling", "Massage", "Huidverbetering", "Wenkbrauwen", "Nagels", "Waxen", "Wellness"],
+          audiences: ["Particulieren", "Nieuwe lokale klanten", "Vaste klanten", "Premium klanten"],
+          styles: ["Rustig", "Warm", "Luxe", "Verzorgd", "Persoonlijk"],
+          ctas: ["Behandeling boeken", "WhatsApp sturen", "Bel direct", "Prijslijst bekijken"],
+          instruction: "Maak een rustige, verzorgde website met behandelingen, sfeerbeeld, vertrouwen, reviews en online boekingsfocus.",
+        },
+        horeca: {
+          label: "Restaurant / horeca",
+          summary: "Horecazaak waar menu, sfeer, locatie en reserveringen centraal staan.",
+          goals: ["Meer reserveringen", "Menu tonen", "Sfeer laten zien", "Lokale vindbaarheid"],
+          services: ["Lunch", "Diner", "Afhalen", "Catering", "Borrel", "Terras", "Arrangementen"],
+          audiences: ["Lokale gasten", "Gezinnen", "Groepen", "Toeristen", "Zakelijke gasten"],
+          styles: ["Sfeervol", "Warm", "Modern", "Gastvrij", "Culinair"],
+          ctas: ["Reserveren", "Menu bekijken", "Bel direct", "Route bekijken"],
+          instruction: "Maak een gastvrije website met menu, sfeer, openingstijden, locatie, reserveren en duidelijke mobiele contactknoppen.",
+        },
+        tandarts: {
+          label: "Tandarts / mondzorg",
+          summary: "Zorgpraktijk waar vertrouwen, duidelijkheid en nieuwe patiënten belangrijk zijn.",
+          goals: ["Nieuwe patiënten", "Meer vertrouwen", "Behandelingen uitleggen", "Spoed duidelijk maken"],
+          services: ["Controle", "Mondhygiëne", "Implantaten", "Cosmetische tandheelkunde", "Spoed", "Kindertandarts", "Bleken"],
+          audiences: ["Gezinnen", "Nieuwe patiënten", "Spoedpatiënten", "Angstige patiënten"],
+          styles: ["Rustig", "Medisch betrouwbaar", "Modern", "Vriendelijk", "Helder"],
+          ctas: ["Inschrijven", "Afspraak maken", "Spoed bellen", "Bel direct"],
+          instruction: "Maak een heldere zorgwebsite met vertrouwen, behandelingen, team/praktijk, spoedinformatie en inschrijf-CTA.",
+        },
+        fysiotherapie: {
+          label: "Fysiotherapie / praktijk",
+          summary: "Gezondheidspraktijk met focus op klachten, behandeling en afspraakaanvragen.",
+          goals: ["Meer afspraken", "Klachten uitleggen", "Meer vertrouwen", "Lokale vindbaarheid"],
+          services: ["Fysiotherapie", "Sportfysio", "Revalidatie", "Manuele therapie", "Dry needling", "Blessures", "Preventie"],
+          audiences: ["Sporters", "Particulieren", "Ouderen", "Werkenden", "Lokale klanten"],
+          styles: ["Gezond", "Rustig", "Professioneel", "Modern", "Toegankelijk"],
+          ctas: ["Afspraak maken", "Bel direct", "Klacht bespreken", "WhatsApp sturen"],
+          instruction: "Maak een toegankelijke praktijkwebsite met klachtgerichte blokken, behandelingen, team, vertrouwen en afspraak-CTA.",
+        },
+        makelaar: {
+          label: "Makelaar / vastgoed",
+          summary: "Vastgoeddienstverlener voor verkoop, aankoop, taxatie en lokale expertise.",
+          goals: ["Meer waardebepalingen", "Meer vertrouwen", "Aanbod tonen", "Lokale autoriteit"],
+          services: ["Verkoop", "Aankoop", "Taxatie", "Waardebepaling", "Verhuur", "Nieuwbouw", "Advies"],
+          audiences: ["Huiseigenaren", "Kopers", "Verkopers", "Investeerders"],
+          styles: ["Premium", "Betrouwbaar", "Modern", "Lokaal", "Zakelijk"],
+          ctas: ["Gratis waardebepaling", "Afspraak plannen", "Bel direct", "Aanbod bekijken"],
+          instruction: "Maak een premium lokale vastgoedwebsite met waardebepaling-CTA, diensten, aanbod/proof, reviews en regio-expertise.",
+        },
+        financieel_adviseur: {
+          label: "Financieel adviseur",
+          summary: "Advieskantoor waar vertrouwen, expertise en laagdrempelig contact centraal staan.",
+          goals: ["Meer adviesgesprekken", "Meer vertrouwen", "Expertise tonen", "Diensten duidelijk maken"],
+          services: ["Hypotheekadvies", "Verzekeringen", "Belastingadvies", "Boekhouding", "Pensioen", "Financiële planning", "Zakelijk advies"],
+          audiences: ["Particulieren", "Ondernemers", "Starters", "Gezinnen", "MKB"],
+          styles: ["Zakelijk", "Rustig", "Betrouwbaar", "Premium", "Helder"],
+          ctas: ["Adviesgesprek plannen", "Bel direct", "Offerte aanvragen", "Contact opnemen"],
+          instruction: "Maak een betrouwbare advieswebsite met heldere diensten, bewijs van expertise, persoonlijke aanpak en adviesgesprek-CTA.",
+        },
+        holistisch: {
+          label: "Holistisch / coaching",
+          summary: "Persoonlijke praktijk waar gevoel, vertrouwen en uitleg van aanbod belangrijk zijn.",
+          goals: ["Meer kennismakingen", "Aanbod uitleggen", "Vertrouwen opbouwen", "Rustige uitstraling"],
+          services: ["Coaching", "Healing", "Ademwerk", "Meditatie", "Ceremonies", "Trajecten", "Workshops"],
+          audiences: ["Particulieren", "Mensen met stress", "Bewuste ondernemers", "Terugkerende klanten"],
+          styles: ["Rustig", "Warm", "Persoonlijk", "Aards", "Premium"],
+          ctas: ["Kennismaking plannen", "WhatsApp sturen", "Traject bekijken", "Contact opnemen"],
+          instruction: "Maak een rustige persoonlijke website met zachte positionering, aanbod, vertrouwen, verhaal en laagdrempelige kennismaking.",
+        },
+        zakelijk: {
+          label: "Algemeen zakelijk bedrijf",
+          summary: "Professioneel bedrijf dat duidelijker online wil uitleggen wat het doet en meer aanvragen wil krijgen.",
+          goals: ["Meer aanvragen", "Meer vertrouwen", "Duidelijkere info", "Beter vindbaar"],
+          services: ["Advies", "Service", "Onderhoud", "Maatwerk", "Projecten", "Producten", "Support"],
+          audiences: ["Particulieren", "Bedrijven", "Lokale klanten", "MKB", "Nieuwe klanten"],
+          styles: ["Professioneel", "Modern", "Betrouwbaar", "Duidelijk", "Praktisch"],
+          ctas: ["Contact opnemen", "Offerte aanvragen", "Bel direct", "WhatsApp sturen"],
+          instruction: "Maak een professionele basiswebsite met duidelijke propositie, diensten, vertrouwen, werkwijze en contact-CTA.",
+        },
+      };
 
       function splitLeadSalesNotes(notes = "") {
         const text = String(notes || "").trim();
@@ -21738,6 +21861,203 @@
           demoFocus: fields.demoFocus?.value.trim() || "",
           stylePreference: fields.stylePreference?.value.trim() || "",
         };
+      }
+
+      function websiteBriefingProfile(branch = "") {
+        return WEBSITE_BRIEFING_PROFILES[branch] || WEBSITE_BRIEFING_PROFILES.zakelijk;
+      }
+
+      function splitBriefingText(value = "") {
+        return String(value || "")
+          .split(/[,;\n]/)
+          .map((item) => item.trim())
+          .filter(Boolean);
+      }
+
+      function selectedBriefingChoices(group = "") {
+        return Array.from(leadfinderElements.callChoiceGroups?.querySelectorAll(`[data-briefing-group="${group}"].is-selected`) || [])
+          .map((button) => button.dataset.briefingValue || button.textContent.trim())
+          .filter(Boolean);
+      }
+
+      function setTextareaFromChoices(field, values = []) {
+        if (!field || document.activeElement === field) return;
+        field.value = [...new Set(values)].join(", ");
+      }
+
+      function renderBriefingChips(title, group, options = [], selected = []) {
+        const selectedSet = new Set(selected.map((item) => String(item).toLowerCase()));
+        return `
+          <div class="sales-briefing-chip-group">
+            <strong>${escapeHtml(title)}</strong>
+            <div>
+              ${options.map((option) => {
+                const active = selectedSet.has(String(option).toLowerCase());
+                return `<button type="button" class="${active ? "is-selected" : ""}" data-briefing-group="${escapeHtml(group)}" data-briefing-value="${escapeHtml(option)}">${escapeHtml(option)}</button>`;
+              }).join("")}
+            </div>
+          </div>
+        `;
+      }
+
+      function collectWebsiteBriefing(lead = selectedLeadFinderLead()) {
+        const values = readCallScriptFieldValues();
+        const branch = leadfinderElements.briefingBranch?.value || inferDemoFactoryBranchFromLead(lead, [
+          values.companySummary,
+          values.importantServices,
+          values.targetAudience,
+          values.currentProblem,
+          values.demoFocus,
+          values.stylePreference,
+        ].join(" "));
+        const profile = websiteBriefingProfile(branch);
+        const goals = selectedBriefingChoices("goals");
+        const services = [...new Set([...selectedBriefingChoices("services"), ...splitBriefingText(values.importantServices)])];
+        const audiences = [...new Set([...selectedBriefingChoices("audiences"), ...splitBriefingText(values.targetAudience)])];
+        const styles = [...new Set([...selectedBriefingChoices("styles"), ...splitBriefingText(values.stylePreference)])];
+        const ctas = selectedBriefingChoices("ctas");
+        const required = [
+          branch,
+          values.companySummary || lead?.companyName,
+          services.length,
+          audiences.length,
+          goals.length,
+          styles.length,
+          ctas.length,
+          values.demoFocus || goals.length,
+        ];
+        const completed = required.filter(Boolean).length;
+        return {
+          branch,
+          branchLabel: profile.label,
+          profile,
+          score: Math.round((completed / required.length) * 100),
+          values,
+          goals,
+          services,
+          audiences,
+          styles,
+          ctas,
+          missing: [
+            !branch ? "branche" : "",
+            !(values.companySummary || lead?.companyName) ? "wat het bedrijf doet" : "",
+            !services.length ? "diensten" : "",
+            !audiences.length ? "doelgroep" : "",
+            !goals.length ? "website doel" : "",
+            !styles.length ? "uitstraling" : "",
+            !ctas.length ? "actieknoppen" : "",
+          ].filter(Boolean),
+        };
+      }
+
+      function buildFactoryBriefing(lead = selectedLeadFinderLead()) {
+        const briefing = collectWebsiteBriefing(lead);
+        const values = briefing.values;
+        return [
+          "WEBSITE FACTORY BRIEF",
+          "",
+          "BEDRIJF",
+          `Naam: ${lead?.companyName || values.companySummary || "-"}`,
+          `Branche: ${briefing.branchLabel}`,
+          `Regio: ${lead?.region || "-"}`,
+          `Website: ${values.website || lead?.websiteUrl || "-"}`,
+          `Contact: ${values.contactName || lead?.contactName || "-"} / ${values.phone || lead?.phone || "-"} / ${values.email || lead?.email || "-"}`,
+          "",
+          "KORTE OMSCHRIJVING",
+          values.companySummary || briefing.profile.summary,
+          "",
+          "WEBSITE DOEL",
+          (briefing.goals.length ? briefing.goals : ["Meer vertrouwen en meer aanvragen"]).map((item) => `- ${item}`).join("\n"),
+          "",
+          "DIENSTEN / AANBOD",
+          (briefing.services.length ? briefing.services : briefing.profile.services.slice(0, 5)).map((item) => `- ${item}`).join("\n"),
+          "",
+          "DOELGROEP",
+          (briefing.audiences.length ? briefing.audiences : briefing.profile.audiences.slice(0, 3)).map((item) => `- ${item}`).join("\n"),
+          "",
+          "HUIDIGE VERBETERPUNTEN",
+          values.currentProblem || "Maak de uitstraling betrouwbaarder, duidelijker en meer gericht op aanvragen.",
+          "",
+          "GEWENSTE UITSTRALING",
+          (briefing.styles.length ? briefing.styles : briefing.profile.styles.slice(0, 4)).join(", "),
+          "",
+          "CALL TO ACTION",
+          (briefing.ctas.length ? briefing.ctas : briefing.profile.ctas.slice(0, 3)).map((item) => `- ${item}`).join("\n"),
+          "",
+          "DEMO FOCUS",
+          values.demoFocus || "Laat snel zien wat het bedrijf doet, waarom bezoekers kunnen vertrouwen en hoe ze contact opnemen.",
+          "",
+          "FACTORY INSTRUCTIE",
+          briefing.profile.instruction,
+          "",
+          "OUTPUT",
+          "- Bouw een werkende preview/demo site.",
+          "- Lever index.html, styles.css, script.js, robots.txt en sitemap.xml.",
+          "- Maak een assets-map, live-upload-map en ZIP-download.",
+        ].join("\n");
+      }
+
+      function updateWebsiteBriefingPreview(lead = selectedLeadFinderLead()) {
+        const briefing = collectWebsiteBriefing(lead);
+        if (leadfinderElements.briefingScoreLabel) {
+          leadfinderElements.briefingScoreLabel.textContent = `${briefing.score}% klaar`;
+        }
+        if (leadfinderElements.briefingScoreBar) {
+          leadfinderElements.briefingScoreBar.style.width = `${briefing.score}%`;
+        }
+        if (leadfinderElements.factoryBriefPreview) {
+          leadfinderElements.factoryBriefPreview.textContent = lead ? buildFactoryBriefing(lead) : "Nog geen lead geselecteerd.";
+        }
+        if (leadfinderElements.makeDemoNow) {
+          leadfinderElements.makeDemoNow.title = briefing.missing.length ? `Mist nog: ${briefing.missing.join(", ")}` : "";
+        }
+      }
+
+      function renderWebsiteBriefingSystem(lead = selectedLeadFinderLead()) {
+        if (!leadfinderElements.callChoiceGroups) return;
+        const values = readCallScriptFieldValues();
+        const detectedBranch = inferDemoFactoryBranchFromLead(lead, [
+          values.companySummary,
+          values.importantServices,
+          values.targetAudience,
+          values.currentProblem,
+          values.demoFocus,
+          values.stylePreference,
+        ].join(" "));
+        if (leadfinderElements.briefingBranch) {
+          const current = leadfinderElements.briefingBranch.value || lead?.demoFactoryIntake?.branch || detectedBranch;
+          leadfinderElements.briefingBranch.innerHTML = Object.entries(WEBSITE_BRIEFING_PROFILES)
+            .map(([key, profile]) => `<option value="${escapeHtml(key)}">${escapeHtml(profile.label)}</option>`)
+            .join("");
+          leadfinderElements.briefingBranch.value = WEBSITE_BRIEFING_PROFILES[current] ? current : "zakelijk";
+        }
+        const branch = leadfinderElements.briefingBranch?.value || detectedBranch;
+        const profile = websiteBriefingProfile(branch);
+        const saved = lead?.demoFactoryIntake || {};
+        const savedMatchesBranch = !saved.branch || saved.branch === branch;
+        const serviceSelected = splitBriefingText(values.importantServices).length ? splitBriefingText(values.importantServices) : (savedMatchesBranch && Array.isArray(saved.services) ? saved.services : profile.services.slice(0, 3));
+        const audienceSelected = splitBriefingText(values.targetAudience).length ? splitBriefingText(values.targetAudience) : [profile.audiences[0]].filter(Boolean);
+        const styleSelected = splitBriefingText(values.stylePreference).length ? splitBriefingText(values.stylePreference) : profile.styles.slice(0, 3);
+        const goalSelected = splitBriefingText(values.demoFocus).length ? splitBriefingText(values.demoFocus) : profile.goals.slice(0, 2);
+        const ctaSelected = savedMatchesBranch && saved.cta ? [saved.cta] : profile.ctas.slice(0, 2);
+        leadfinderElements.callChoiceGroups.innerHTML = [
+          renderBriefingChips("Website doel", "goals", profile.goals, goalSelected),
+          renderBriefingChips("Diensten/producten", "services", profile.services, serviceSelected),
+          renderBriefingChips("Doelgroep", "audiences", profile.audiences, audienceSelected),
+          renderBriefingChips("Uitstraling", "styles", profile.styles, styleSelected),
+          renderBriefingChips("Actieknoppen", "ctas", profile.ctas, ctaSelected),
+          renderBriefingChips("Contact/uitkomst", "outcomes", ["Beslisser", "Iemand kijkt mee", "WhatsApp sturen", "Later terugbellen", "Preview voorbereiden"], []),
+        ].join("");
+        if (leadfinderElements.briefingDetection) {
+          leadfinderElements.briefingDetection.textContent = lead
+            ? `Automatisch herkend als ${profile.label}. Pas dit aan als het niet klopt.`
+            : "Selecteer een lead om automatisch een brancheprofiel te kiezen.";
+        }
+        setTextareaFromChoices(callScriptFields().importantServices, selectedBriefingChoices("services"));
+        setTextareaFromChoices(callScriptFields().targetAudience, selectedBriefingChoices("audiences"));
+        setTextareaFromChoices(callScriptFields().stylePreference, selectedBriefingChoices("styles"));
+        setTextareaFromChoices(callScriptFields().demoFocus, selectedBriefingChoices("goals"));
+        updateWebsiteBriefingPreview(lead);
       }
 
       function setCallFieldValue(field, value = "", force = false) {
@@ -21843,23 +22163,7 @@
           "",
           "DEMO BRIEFING VOOR WEBSITE FACTORY",
           "",
-          `Bedrijfsnaam: ${lead?.companyName || bedrijf}`,
-          `Contactpersoon: ${contact}`,
-          `Telefoon: ${values.phone || lead?.phone || ""}`,
-          `E-mail: ${values.email || lead?.email || ""}`,
-          `Adres: ${values.address || leadDisplayAddress(lead)}`,
-          `Website URL: ${values.website || lead?.websiteUrl || ""}`,
-          `Branche: ${lead?.industry || ""}`,
-          `Regio: ${lead?.region || ""}`,
-          `Bedrijfssamenvatting: ${values.companySummary}`,
-          `Belangrijkste diensten: ${values.importantServices}`,
-          `Doelgroep: ${values.targetAudience}`,
-          `Grootste verbeterpunt: ${values.currentProblem}`,
-          `Demo focus: ${values.demoFocus}`,
-          `Gewenste stijl: ${values.stylePreference}`,
-          "Websitepakket: Starter Site EUR 495",
-          "CTA voorkeur: Contact opnemen / WhatsApp / Offerte aanvragen",
-          "Leadstatus advies: Preview aangevraagd",
+          buildFactoryBriefing(lead),
         ].join("\n");
       }
 
@@ -21896,9 +22200,10 @@
         if (/fysio|fysiotherapie|revalidatie|sportzorg/.test(text)) return "fysiotherapie";
         if (/kinderopvang|bso|peuter|opvang/.test(text)) return "kinderopvang";
         if (/dierenarts|dierenkliniek|dierenzorg|huisdieren/.test(text)) return "dierenarts";
-        if (/elektricien|elektra|groepenkast|stroom/.test(text)) return "elektricien";
-        if (/loodgieter|lekkage|sanitair/.test(text)) return "loodgieter";
-        if (/install|zonnepanelen|thuisbatterij|warmtepomp|airco|laadpaal|verduurzaming|solar/.test(text)) return "installatiebedrijf";
+        if (/autoairco|auto-airco|auto airco|autobedrijf|garage|apk|occasion|showroom|auto onderhoud|autoservice|bandenservice/.test(text)) return "automotive";
+        if (/elektricien|elektra|groepenkast|stroom/.test(text)) return "installatiebedrijf";
+        if (/loodgieter|lekkage|sanitair/.test(text)) return "installatiebedrijf";
+        if (/install|zonnepanelen|thuisbatterij|warmtepomp|airco installatie|laadpaal|verduurzaming|solar/.test(text)) return "installatiebedrijf";
         if (/bouw|aannemer|renovatie|dak|timmer|schilder|quantum|kozijn|kozijnen|gevel/.test(text)) return "bouwbedrijf";
         if (/hovenier|tuin|groen|tuinaanleg/.test(text)) return "hovenier";
         if (/schoonmaak|cleaning|vve|oplevering/.test(text)) return "schoonmaakbedrijf";
@@ -21919,31 +22224,29 @@
       function leadDemoPendingPayload(lead = selectedLeadFinderLead()) {
         const notes = composeLeadSalesNotes(leadfinderElements.detailIntake?.value || "", leadfinderElements.detailNote?.value || "") || getLeadNotes(lead);
         const values = readCallScriptFieldValues();
+        const websiteBriefing = collectWebsiteBriefing(lead);
+        const factoryBriefing = buildFactoryBriefing(lead);
         const styleText = values.stylePreference.toLowerCase();
-        const serviceText = values.importantServices.toLowerCase();
-        const serviceChoices = [
-          /rijschool|rijles|scooter|examengarantie|cbr/i.test(`${notes} ${lead?.websiteUrl || ""}`) ? "rijles" : "",
-          serviceText.includes("renovatie") ? "renovatie" : "",
-          serviceText.includes("onderhoud") ? "onderhoud" : "",
-          serviceText.includes("advies") ? "advies" : "",
-          serviceText.includes("maatwerk") ? "maatwerk" : "",
-          "projecten",
-        ].filter(Boolean);
+        const primaryCta = websiteBriefing.ctas[0] || websiteBriefing.profile.ctas[0] || "Contact opnemen";
         const demoFactoryIntake = {
-          branch: inferDemoFactoryBranchFromLead(lead, notes),
-          goal: /aanvragen|leads|contact/i.test(notes) ? "leads" : "trust",
+          branch: websiteBriefing.branch,
+          branchLabel: websiteBriefing.branchLabel,
+          goal: websiteBriefing.goals[0] || (/aanvragen|leads|contact/i.test(notes) ? "leads" : "trust"),
+          goals: websiteBriefing.goals,
           package: "starter",
-          style: [
+          style: websiteBriefing.styles.length ? websiteBriefing.styles : [
             styleText.includes("luxe") ? "luxe" : "",
             styleText.includes("rustig") ? "rustig" : "",
             styleText.includes("warm") || styleText.includes("persoonlijk") ? "lokaal" : "",
             styleText.includes("modern") || styleText.includes("strak") ? "modern" : "",
             "direct",
           ].filter(Boolean),
-          cta: /whatsapp/i.test(notes) ? "whatsapp" : /offerte/i.test(notes) ? "quote" : "contact",
-          services: serviceChoices.length ? serviceChoices : ["advies", "projecten"],
+          cta: primaryCta,
+          ctas: websiteBriefing.ctas,
+          services: websiteBriefing.services.length ? websiteBriefing.services : websiteBriefing.profile.services.slice(0, 5),
           area: "local",
-          audience: /zakelijk/i.test(values.targetAudience) ? "zakelijk" : /beide/i.test(values.targetAudience) ? "beide" : "particulier",
+          audience: websiteBriefing.audiences.join(", ") || (/zakelijk/i.test(values.targetAudience) ? "zakelijk" : /beide/i.test(values.targetAudience) ? "beide" : "particulier"),
+          audiences: websiteBriefing.audiences,
           existingWebsite: values.website || lead?.websiteUrl ? "active" : "unknown",
           logoStatus: "unknown",
           photoStatus: "needed",
@@ -21952,9 +22255,14 @@
           mustHaves: ["phone", "contact_form", "reviews", "projects", "service_area"],
           colors: styleText.includes("zwart") ? ["black"] : styleText.includes("goud") ? ["gold"] : ["brand"],
           exampleWebsites: values.stylePreference,
+          briefingCompleteness: websiteBriefing.score,
+          missingBriefingFields: websiteBriefing.missing,
+          factoryBriefing,
           internalRemark: [
             values.currentProblem ? `Verbeterpunt: ${values.currentProblem}` : "",
             values.demoFocus ? `Demo focus: ${values.demoFocus}` : "",
+            `Brancheprofiel: ${websiteBriefing.branchLabel}`,
+            `Factory Brief:\n${factoryBriefing}`,
             `Output nodig: index.html, styles.css, script.js, robots.txt, sitemap.xml, assets-map, live-upload-map, preview, demo-site en ZIP-download.`,
           ].filter(Boolean).join("\n"),
         };
@@ -21966,7 +22274,8 @@
           address: values.address || leadDisplayAddress(lead),
           websiteUrl: values.website || lead?.websiteUrl || "",
           notes,
-          demoBriefing: buildCallScriptBriefing(lead),
+          demoBriefing: factoryBriefing,
+          salesCallBriefing: buildCallScriptBriefing(lead),
           demoFactoryIntake,
           demoOutputRequirements: ["index.html", "styles.css", "script.js", "robots.txt", "sitemap.xml", "assets/", "live-upload/", "preview", "demo-site", "zip-download"],
           demoRequestSource: "sales_call_script",
@@ -21987,6 +22296,11 @@
           email: pendingLead.email,
           websiteUrl: pendingLead.websiteUrl,
           address: pendingLead.address,
+          demoBriefing: pendingLead.demoBriefing,
+          demoFactoryIntake: pendingLead.demoFactoryIntake,
+          demoOutputRequirements: pendingLead.demoOutputRequirements,
+          demoRequestSource: pendingLead.demoRequestSource,
+          demoRequestedAt: pendingLead.demoRequestedAt,
         };
         try {
           await updateLeadfinderLead(lead, updates, "Notities opgeslagen bij deze lead. Website Factory wordt geopend.");
@@ -23041,6 +23355,7 @@
           activeCallScriptLeadId = lead.id;
           fillCallScriptDetailsFromLead(lead, { force: true });
         }
+        renderWebsiteBriefingSystem(lead);
         if (leadfinderElements.detailNote) {
           const freeDraft = draftSalesNotes.free || (!draftSalesNotes.intake ? getLeadNoteDraft(lead) : "") || savedSalesNotes.free || "";
           if (document.activeElement !== leadfinderElements.detailNote) leadfinderElements.detailNote.value = freeDraft;
@@ -23050,6 +23365,9 @@
         if (leadfinderElements.fillCallDetails) leadfinderElements.fillCallDetails.disabled = !hasLead;
         if (leadfinderElements.buildCallScript) leadfinderElements.buildCallScript.disabled = !hasLead;
         if (leadfinderElements.copyClosing) leadfinderElements.copyClosing.disabled = !hasLead;
+        if (leadfinderElements.copyFactoryBrief) leadfinderElements.copyFactoryBrief.disabled = !hasLead;
+        if (leadfinderElements.briefingApply) leadfinderElements.briefingApply.disabled = !hasLead;
+        if (leadfinderElements.briefingBranch) leadfinderElements.briefingBranch.disabled = !hasLead;
         if (leadfinderElements.makeDemoNow) leadfinderElements.makeDemoNow.disabled = !hasLead;
         [
           leadfinderElements.callContactName,
@@ -24087,12 +24405,50 @@
           ...Object.values(callScriptFields()),
         ].forEach((element) => {
           element?.addEventListener("input", rememberSalesNoteInput);
-          element?.addEventListener("change", rememberSalesNoteInput);
+          element?.addEventListener("change", () => {
+            rememberSalesNoteInput();
+            updateWebsiteBriefingPreview(selectedLeadFinderLead());
+          });
+        });
+        [
+          ...Object.values(callScriptFields()),
+        ].forEach((element) => {
+          element?.addEventListener("input", () => updateWebsiteBriefingPreview(selectedLeadFinderLead()));
         });
         leadfinderElements.callChoiceGroups?.addEventListener("click", (event) => {
+          const briefingButton = event.target.closest("[data-briefing-group]");
+          if (briefingButton) {
+            const group = briefingButton.dataset.briefingGroup || "";
+            briefingButton.classList.toggle("is-selected");
+            const fields = callScriptFields();
+            if (group === "services") setTextareaFromChoices(fields.importantServices, selectedBriefingChoices("services"));
+            if (group === "audiences") setTextareaFromChoices(fields.targetAudience, selectedBriefingChoices("audiences"));
+            if (group === "styles") setTextareaFromChoices(fields.stylePreference, selectedBriefingChoices("styles"));
+            if (group === "goals") setTextareaFromChoices(fields.demoFocus, selectedBriefingChoices("goals"));
+            if (group === "outcomes") appendCallScriptChoice(briefingButton.dataset.briefingValue || briefingButton.textContent.trim());
+            updateWebsiteBriefingPreview(selectedLeadFinderLead());
+            rememberSalesNoteInput();
+            return;
+          }
           const button = event.target.closest("[data-call-choice]");
           if (!button) return;
           appendCallScriptChoice(button.dataset.callChoice || "");
+        });
+        leadfinderElements.briefingBranch?.addEventListener("change", () => {
+          const fields = callScriptFields();
+          [fields.importantServices, fields.targetAudience, fields.stylePreference, fields.demoFocus].forEach((field) => {
+            if (field) field.value = "";
+          });
+          renderWebsiteBriefingSystem(selectedLeadFinderLead());
+          rememberSalesNoteInput();
+        });
+        leadfinderElements.briefingApply?.addEventListener("click", () => {
+          const fields = callScriptFields();
+          [fields.importantServices, fields.targetAudience, fields.stylePreference, fields.demoFocus].forEach((field) => {
+            if (field) field.value = "";
+          });
+          renderWebsiteBriefingSystem(selectedLeadFinderLead());
+          setNoteSyncStatus("local", "Brancheprofiel toegepast. Controleer de Factory Brief en maak daarna de demo.");
         });
         leadfinderElements.fillCallDetails?.addEventListener("click", () => {
           const lead = selectedLeadFinderLead();
@@ -24105,6 +24461,9 @@
           leadfinderElements.detailIntake?.focus();
         });
         leadfinderElements.copyClosing?.addEventListener("click", copyCallScriptClosing);
+        leadfinderElements.copyFactoryBrief?.addEventListener("click", async () => {
+          await copyText(buildFactoryBriefing(selectedLeadFinderLead()), leadfinderElements.noteSyncMessage);
+        });
         leadfinderElements.makeDemoNow?.addEventListener("click", makeDemoSiteNow);
         leadfinderElements.saveNote?.addEventListener("click", saveLeadfinderDetailNote);
         leadfinderElements.insertIntake?.addEventListener("click", insertLeadIntakeChecklist);

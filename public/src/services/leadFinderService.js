@@ -107,6 +107,20 @@ export function normalizeLeadFinderLead(lead = {}) {
     googlePlaceId: sanitizeString(lead.googlePlaceId || lead.google_place_id || lead.placeId),
     googleMapsUrl: sanitizeString(lead.googleMapsUrl || lead.google_maps_url || lead.mapsUrl),
     websiteAnalysis,
+    demoBriefing: sanitizeString(lead.demoBriefing || lead.generatedBriefing || metadata.demoBriefing),
+    salesCallBriefing: sanitizeString(lead.salesCallBriefing || metadata.salesCallBriefing),
+    demoFactoryIntake: lead.demoFactoryIntake && typeof lead.demoFactoryIntake === "object"
+      ? lead.demoFactoryIntake
+      : metadata.demoFactoryIntake && typeof metadata.demoFactoryIntake === "object"
+        ? metadata.demoFactoryIntake
+        : null,
+    demoOutputRequirements: Array.isArray(lead.demoOutputRequirements)
+      ? lead.demoOutputRequirements
+      : Array.isArray(metadata.demoOutputRequirements)
+        ? metadata.demoOutputRequirements
+        : [],
+    demoRequestSource: sanitizeString(lead.demoRequestSource || metadata.demoRequestSource),
+    demoRequestedAt: sanitizeString(lead.demoRequestedAt || metadata.demoRequestedAt),
     convertedCustomerId: sanitizeString(lead.convertedCustomerId),
     ownerAuthUserId: sanitizeString(lead.ownerAuthUserId || lead.owner_auth_user_id || lead.assignedAuthUserId || lead.assigned_auth_user_id || metadata.ownerAuthUserId || metadata.owner_auth_user_id),
     ownerProfileId: sanitizeString(lead.ownerProfileId || lead.owner_profile_id || lead.assignedProfileId || lead.assigned_profile_id || metadata.ownerProfileId || metadata.owner_profile_id),
