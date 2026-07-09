@@ -20268,10 +20268,9 @@
 
       function getLeadOwnerTokens(lead = {}) {
         const meta = lead.metadata && typeof lead.metadata === "object" ? lead.metadata : {};
-        return [
-          lead.ownerAuthUserId,
-          lead.ownerProfileId,
-          lead.ownerEmail,
+        const assignmentTokens = [
+          lead.assignedTo,
+          lead.assigned_to,
           lead.medewerkerEmail,
           lead.medewerker_email,
           lead.employeeEmail,
@@ -20282,12 +20281,8 @@
           lead.salesPartnerEmail,
           lead.userEmail,
           lead.user_email,
-          lead.createdBy,
-          lead.createdByEmail,
-          meta.ownerAuthUserId,
-          meta.owner_auth_user_id,
-          meta.ownerEmail,
-          meta.owner_email,
+          meta.assignedTo,
+          meta.assigned_to,
           meta.medewerkerEmail,
           meta.medewerker_email,
           meta.employeeEmail,
@@ -20300,8 +20295,18 @@
           meta.sales_partner_email,
           meta.userEmail,
           meta.user_email,
-          meta.createdByEmail,
-          meta.created_by_email,
+        ].map((value) => String(value || "").trim().toLowerCase()).filter(Boolean);
+        if (assignmentTokens.length) return assignmentTokens;
+        return [
+          lead.ownerAuthUserId,
+          lead.ownerProfileId,
+          lead.ownerEmail,
+          meta.ownerAuthUserId,
+          meta.owner_auth_user_id,
+          meta.ownerProfileId,
+          meta.owner_profile_id,
+          meta.ownerEmail,
+          meta.owner_email,
         ].map((value) => String(value || "").trim().toLowerCase()).filter(Boolean);
       }
 
@@ -20336,8 +20341,7 @@
 
       function normalizeLeadOwner(lead = {}) {
         const meta = lead.metadata && typeof lead.metadata === "object" ? lead.metadata : {};
-        const email = firstEmployeeField(
-          lead.ownerEmail,
+        const assignedEmail = firstEmployeeField(
           lead.medewerkerEmail,
           lead.medewerker_email,
           lead.employeeEmail,
@@ -20348,9 +20352,6 @@
           lead.salesPartnerEmail,
           lead.userEmail,
           lead.user_email,
-          lead.createdByEmail,
-          meta.ownerEmail,
-          meta.owner_email,
           meta.medewerkerEmail,
           meta.medewerker_email,
           meta.employeeEmail,
@@ -20362,12 +20363,14 @@
           meta.salesPartnerEmail,
           meta.sales_partner_email,
           meta.userEmail,
-          meta.user_email,
-          meta.createdByEmail,
-          meta.created_by_email
+          meta.user_email
         ).toLowerCase();
-        const displayName = firstEmployeeField(
-          lead.ownerName,
+        const email = assignedEmail || firstEmployeeField(
+          lead.ownerEmail,
+          meta.ownerEmail,
+          meta.owner_email
+        ).toLowerCase();
+        const assignedName = firstEmployeeField(
           lead.medewerker,
           lead.employee,
           lead.assignedToName,
@@ -20376,9 +20379,6 @@
           lead.salesPartnerName,
           lead.userName,
           lead.user_name,
-          lead.createdByName,
-          meta.ownerName,
-          meta.owner_name,
           meta.medewerker,
           meta.employee,
           meta.assignedToName,
@@ -20388,24 +20388,26 @@
           meta.salesPartnerName,
           meta.sales_partner_name,
           meta.userName,
-          meta.user_name,
-          meta.createdByName,
-          meta.created_by_name,
+          meta.user_name
+        );
+        const displayName = assignedName || firstEmployeeField(
+          lead.ownerName,
+          meta.ownerName,
+          meta.owner_name,
           email
         );
-        const id = firstEmployeeField(
+        const assignedId = firstEmployeeField(
+          lead.assignedTo,
+          meta.assignedTo,
+          meta.assigned_to
+        );
+        const id = assignedId || firstEmployeeField(
           lead.ownerAuthUserId,
           lead.ownerProfileId,
-          lead.assignedTo,
-          lead.createdBy,
           meta.ownerAuthUserId,
           meta.owner_auth_user_id,
           meta.ownerProfileId,
-          meta.owner_profile_id,
-          meta.assignedTo,
-          meta.assigned_to,
-          meta.createdBy,
-          meta.created_by
+          meta.owner_profile_id
         );
         const tokens = new Set([
           email,
@@ -20459,12 +20461,7 @@
         const email = normalizeEmployeeFilterToken(employee.email || (employee.value.includes("@") ? employee.value : ""));
         const name = String(employee.label || employee.name || employee.value || "").trim();
         const authUserId = String(employee.authUserId || employee.auth_user_id || "").trim();
-        const profileId = String(employee.profileId || employee.id || "").trim();
         return {
-          ownerAuthUserId: authUserId || undefined,
-          ownerProfileId: profileId || undefined,
-          ownerEmail: email,
-          ownerName: name,
           medewerker: name,
           medewerkerEmail: email,
           employee: name,
@@ -20488,10 +20485,6 @@
             assignedUserName: name,
             assignedToEmail: email,
             assignedToName: name,
-            ownerAuthUserId: authUserId || undefined,
-            ownerProfileId: profileId || undefined,
-            ownerEmail: email,
-            ownerName: name,
             userEmail: email,
             userName: name,
             reassignedBy: getLeadfinderUserContext().email || getLeadfinderUserContext().userId || "super_admin",

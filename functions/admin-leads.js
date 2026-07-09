@@ -138,7 +138,7 @@ async function updateLead({ event, supabaseUrl, serviceRoleKey, admin }) {
   const id = cleanText(payload.id || event.queryStringParameters?.id);
   if (!id) return jsonResponse(400, { success: false, error: "Lead id ontbreekt." });
   const existingLead = await assertCanMutateLead({ supabaseUrl, serviceRoleKey, admin, id });
-  const modernRecord = leadPayload(payload, admin, { update: true });
+  const modernRecord = leadPayload(payload, admin, { update: true, existingLead });
   if (modernRecord.metadata) {
     modernRecord.metadata = {
       ...(existingLead.metadata && typeof existingLead.metadata === "object" ? existingLead.metadata : {}),
@@ -249,8 +249,149 @@ async function trySchemaAttempts(attempts = []) {
   throw lastError || new Error("Lead schema kon niet worden bepaald.");
 }
 
+function firstCleanText(...values) {
+  for (const value of values) {
+    const text = cleanText(value);
+    if (text) return text;
+  }
+  return "";
+}
+
+function leadAssignmentInput(payload = {}) {
+  const meta = payload.metadata && typeof payload.metadata === "object" ? payload.metadata : {};
+  return [
+    "assignedTo",
+    "assigned_to",
+    "assignedToEmail",
+    "assigned_to_email",
+    "assignedUserEmail",
+    "assigned_user_email",
+    "assignedUserName",
+    "assigned_user_name",
+    "assignedToName",
+    "assigned_to_name",
+    "medewerker",
+    "medewerkerEmail",
+    "medewerker_email",
+    "employee",
+    "employeeEmail",
+    "employee_email",
+    "salesPartnerEmail",
+    "sales_partner_email",
+    "salesPartnerName",
+    "sales_partner_name",
+    "userEmail",
+    "user_email",
+    "userName",
+    "user_name",
+  ].some((key) => Object.prototype.hasOwnProperty.call(payload, key) || Object.prototype.hasOwnProperty.call(meta, key));
+}
+
+function resolveLeadAssignment(payload = {}, admin = {}, options = {}) {
+  const meta = payload.metadata && typeof payload.metadata === "object" ? payload.metadata : {};
+  const existing = options.existingLead || {};
+  const existingMeta = existing.metadata && typeof existing.metadata === "object" ? existing.metadata : {};
+  const createDefaultId = options.create ? firstCleanText(payload.ownerAuthUserId, payload.owner_id, admin.id) : "";
+  const createDefaultEmail = options.create ? firstCleanText(payload.ownerEmail, payload.owner_email, admin.email) : "";
+  const createDefaultName = options.create ? firstCleanText(payload.ownerName, payload.owner_name, admin.email) : "";
+  const email = firstCleanText(
+    payload.assignedUserEmail,
+    payload.assigned_user_email,
+    payload.assignedToEmail,
+    payload.assigned_to_email,
+    payload.medewerkerEmail,
+    payload.medewerker_email,
+    payload.employeeEmail,
+    payload.employee_email,
+    payload.salesPartnerEmail,
+    payload.sales_partner_email,
+    payload.userEmail,
+    payload.user_email,
+    meta.assignedUserEmail,
+    meta.assigned_user_email,
+    meta.assignedToEmail,
+    meta.assigned_to_email,
+    meta.medewerkerEmail,
+    meta.medewerker_email,
+    meta.employeeEmail,
+    meta.employee_email,
+    meta.salesPartnerEmail,
+    meta.sales_partner_email,
+    meta.userEmail,
+    meta.user_email,
+    existing.assignedUserEmail,
+    existingMeta.assignedUserEmail,
+    existingMeta.assigned_user_email,
+    existingMeta.assignedToEmail,
+    existingMeta.assigned_to_email,
+    existingMeta.medewerkerEmail,
+    existingMeta.medewerker_email,
+    existingMeta.employeeEmail,
+    existingMeta.employee_email,
+    existingMeta.salesPartnerEmail,
+    existingMeta.sales_partner_email,
+    existingMeta.userEmail,
+    existingMeta.user_email,
+    existing.ownerEmail,
+    createDefaultEmail
+  ).toLowerCase();
+  const name = firstCleanText(
+    payload.assignedUserName,
+    payload.assigned_user_name,
+    payload.assignedToName,
+    payload.assigned_to_name,
+    payload.medewerker,
+    payload.employee,
+    payload.salesPartnerName,
+    payload.sales_partner_name,
+    payload.userName,
+    payload.user_name,
+    meta.assignedUserName,
+    meta.assigned_user_name,
+    meta.assignedToName,
+    meta.assigned_to_name,
+    meta.medewerker,
+    meta.employee,
+    meta.salesPartnerName,
+    meta.sales_partner_name,
+    meta.userName,
+    meta.user_name,
+    existing.assignedUserName,
+    existingMeta.assignedUserName,
+    existingMeta.assigned_user_name,
+    existingMeta.assignedToName,
+    existingMeta.assigned_to_name,
+    existingMeta.medewerker,
+    existingMeta.employee,
+    existingMeta.salesPartnerName,
+    existingMeta.sales_partner_name,
+    existingMeta.userName,
+    existingMeta.user_name,
+    existing.ownerName,
+    createDefaultName,
+    email
+  );
+  const id = firstCleanText(
+    payload.assignedTo,
+    payload.assigned_to,
+    meta.assignedTo,
+    meta.assigned_to,
+    existing.assignedTo,
+    existingMeta.assignedTo,
+    existingMeta.assigned_to,
+    createDefaultId
+  );
+  return { id, email, name };
+}
+
 function leadPayload(payload = {}, admin = {}, options = {}) {
   const now = new Date().toISOString();
+  const existingMeta = options.existingLead?.metadata && typeof options.existingLead.metadata === "object" ? options.existingLead.metadata : {};
+  const assignment = resolveLeadAssignment(payload, admin, options);
+  const ownerAuthUserId = firstCleanText(payload.ownerAuthUserId, payload.owner_id, existingMeta.ownerAuthUserId, existingMeta.owner_auth_user_id, options.create ? admin.id : "");
+  const ownerProfileId = firstCleanText(payload.ownerProfileId, payload.owner_profile_id, existingMeta.ownerProfileId, existingMeta.owner_profile_id);
+  const ownerEmail = firstCleanText(payload.ownerEmail, payload.owner_email, existingMeta.ownerEmail, existingMeta.owner_email, payload.createdByEmail, options.create ? admin.email : "").toLowerCase();
+  const ownerName = firstCleanText(payload.ownerName, payload.owner_name, existingMeta.ownerName, existingMeta.owner_name, payload.createdByName, options.create ? admin.email : "");
   const analysisScore = websiteAnalysisScore(payload.websiteAnalysis || payload.metadata?.websiteAnalysis);
   const hasStatus = Object.prototype.hasOwnProperty.call(payload, "status") || Object.prototype.hasOwnProperty.call(payload, "callStatus");
   const hasSource = Object.prototype.hasOwnProperty.call(payload, "source");
@@ -271,13 +412,13 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
     website: cleanText(payload.websiteUrl || payload.website),
     status: status || "nieuw",
     notes: cleanText(payload.notes || payload.message),
-    assigned_to: cleanText(payload.assignedTo || payload.assigned_to || payload.ownerAuthUserId || payload.owner_id || admin.id) || admin.id,
-    owner_email: cleanText(payload.ownerEmail || payload.owner_email || payload.assignedToEmail || payload.assigned_to_email || payload.assignedUserEmail || payload.assigned_user_email || payload.medewerkerEmail || payload.medewerker_email || payload.employeeEmail || payload.employee_email || payload.createdByEmail || admin.email).toLowerCase(),
-    owner_name: cleanText(payload.ownerName || payload.owner_name || payload.assignedToName || payload.assigned_to_name || payload.assignedUserName || payload.assigned_user_name || payload.medewerker || payload.employee || payload.createdByName || admin.email),
-    assigned_user_email: cleanText(payload.assignedUserEmail || payload.assigned_user_email || payload.assignedToEmail || payload.assigned_to_email || payload.medewerkerEmail || payload.medewerker_email || payload.employeeEmail || payload.employee_email || payload.ownerEmail || admin.email).toLowerCase(),
-    assigned_user_name: cleanText(payload.assignedUserName || payload.assigned_user_name || payload.assignedToName || payload.assigned_to_name || payload.medewerker || payload.employee || payload.ownerName || admin.email),
-    sales_partner_email: cleanText(payload.salesPartnerEmail || payload.sales_partner_email || payload.assignedToEmail || payload.assigned_to_email || payload.medewerkerEmail || payload.medewerker_email || payload.employeeEmail || payload.employee_email || payload.ownerEmail).toLowerCase(),
-    sales_partner_name: cleanText(payload.salesPartnerName || payload.sales_partner_name || payload.assignedToName || payload.assigned_to_name || payload.medewerker || payload.employee || payload.ownerName),
+    assigned_to: assignment.id,
+    owner_email: assignment.email || ownerEmail,
+    owner_name: assignment.name || ownerName,
+    assigned_user_email: assignment.email,
+    assigned_user_name: assignment.name,
+    sales_partner_email: firstCleanText(payload.salesPartnerEmail, payload.sales_partner_email, assignment.email).toLowerCase(),
+    sales_partner_name: firstCleanText(payload.salesPartnerName, payload.sales_partner_name, assignment.name),
     metadata: {
       ...(payload.metadata && typeof payload.metadata === "object" ? payload.metadata : {}),
       source: cleanText(payload.source || "admin-dashboard-leadfinder"),
@@ -289,22 +430,23 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
       googlePlaceId: cleanText(payload.googlePlaceId),
       googleMapsUrl: cleanText(payload.googleMapsUrl),
       websiteAnalysis: payload.websiteAnalysis && typeof payload.websiteAnalysis === "object" ? payload.websiteAnalysis : undefined,
-      ownerAuthUserId: cleanText(payload.ownerAuthUserId || payload.owner_id || admin.id) || admin.id,
-      ownerProfileId: cleanText(payload.ownerProfileId || payload.owner_profile_id),
-      ownerEmail: cleanText(payload.ownerEmail || payload.owner_email || payload.createdByEmail || admin.email).toLowerCase(),
-      ownerName: cleanText(payload.ownerName || payload.owner_name || payload.createdByName || admin.email),
-      assignedUserEmail: cleanText(payload.assignedUserEmail || payload.assigned_user_email || payload.ownerEmail || admin.email).toLowerCase(),
-      assignedUserName: cleanText(payload.assignedUserName || payload.assigned_user_name || payload.ownerName || admin.email),
-      medewerker: cleanText(payload.medewerker || payload.employee || payload.assignedToName || payload.assigned_to_name || payload.ownerName || admin.email),
-      medewerkerEmail: cleanText(payload.medewerkerEmail || payload.medewerker_email || payload.employeeEmail || payload.employee_email || payload.assignedToEmail || payload.assigned_to_email || payload.ownerEmail || admin.email).toLowerCase(),
-      employee: cleanText(payload.employee || payload.medewerker || payload.assignedToName || payload.assigned_to_name || payload.ownerName || admin.email),
-      employeeEmail: cleanText(payload.employeeEmail || payload.employee_email || payload.medewerkerEmail || payload.medewerker_email || payload.assignedToEmail || payload.assigned_to_email || payload.ownerEmail || admin.email).toLowerCase(),
-      assignedToEmail: cleanText(payload.assignedToEmail || payload.assigned_to_email || payload.assignedUserEmail || payload.assigned_user_email || payload.ownerEmail || admin.email).toLowerCase(),
-      assignedToName: cleanText(payload.assignedToName || payload.assigned_to_name || payload.assignedUserName || payload.assigned_user_name || payload.ownerName || admin.email),
-      userEmail: cleanText(payload.userEmail || payload.user_email || payload.ownerEmail || admin.email).toLowerCase(),
-      userName: cleanText(payload.userName || payload.user_name || payload.ownerName || admin.email),
-      salesPartnerEmail: cleanText(payload.salesPartnerEmail || payload.sales_partner_email),
-      salesPartnerName: cleanText(payload.salesPartnerName || payload.sales_partner_name),
+      ownerAuthUserId,
+      ownerProfileId,
+      ownerEmail,
+      ownerName,
+      assignedTo: assignment.id,
+      assignedUserEmail: assignment.email,
+      assignedUserName: assignment.name,
+      medewerker: assignment.name,
+      medewerkerEmail: assignment.email,
+      employee: assignment.name,
+      employeeEmail: assignment.email,
+      assignedToEmail: assignment.email,
+      assignedToName: assignment.name,
+      userEmail: assignment.email,
+      userName: assignment.name,
+      salesPartnerEmail: firstCleanText(payload.salesPartnerEmail, payload.sales_partner_email, assignment.email).toLowerCase(),
+      salesPartnerName: firstCleanText(payload.salesPartnerName, payload.sales_partner_name, assignment.name),
       updatedBy: admin.id,
       updatedByEmail: admin.email,
     },
@@ -313,39 +455,14 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
     updated_at: now,
   };
   if (options.create) {
-    record.owner_id = cleanText(payload.ownerAuthUserId || payload.owner_id || admin.id) || admin.id;
+    record.owner_id = ownerAuthUserId || admin.id;
     record.created_by = cleanText(payload.createdBy || payload.created_by || admin.id) || admin.id;
     record.created_at = now;
     record.metadata.createdByEmail = cleanText(payload.createdByEmail || admin.email);
     record.metadata.createdByName = cleanText(payload.createdByName || admin.email);
   }
   if (options.update) {
-    const hasAssignment = [
-      "assignedTo",
-      "assigned_to",
-      "assignedToEmail",
-      "assigned_to_email",
-      "assignedUserEmail",
-      "assigned_user_email",
-      "assignedUserName",
-      "assigned_user_name",
-      "ownerAuthUserId",
-      "owner_id",
-      "ownerEmail",
-      "owner_email",
-      "ownerName",
-      "owner_name",
-      "medewerker",
-      "medewerkerEmail",
-      "medewerker_email",
-      "employee",
-      "employeeEmail",
-      "employee_email",
-      "salesPartnerEmail",
-      "sales_partner_email",
-      "salesPartnerName",
-      "sales_partner_name",
-    ].some((key) => Object.prototype.hasOwnProperty.call(payload, key));
+    const hasAssignment = leadAssignmentInput(payload) || Boolean(assignment.id || assignment.email || assignment.name);
     Object.keys(record).forEach((key) => {
       if (record[key] === "" && !["email", "phone", "website", "notes"].includes(key)) delete record[key];
     });
@@ -396,6 +513,11 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
 function legacyLeadPayload(payload = {}, admin = {}, options = {}) {
   const now = new Date().toISOString();
   const existingMeta = options.existingLead?.metadata && typeof options.existingLead.metadata === "object" ? options.existingLead.metadata : {};
+  const assignment = resolveLeadAssignment(payload, admin, options);
+  const ownerAuthUserId = firstCleanText(payload.ownerAuthUserId, payload.owner_id, existingMeta.ownerAuthUserId, existingMeta.owner_auth_user_id, options.create ? admin.id : "");
+  const ownerProfileId = firstCleanText(payload.ownerProfileId, payload.owner_profile_id, existingMeta.ownerProfileId, existingMeta.owner_profile_id);
+  const ownerEmail = firstCleanText(payload.ownerEmail, payload.owner_email, existingMeta.ownerEmail, existingMeta.owner_email, payload.createdByEmail, options.create ? admin.email : "").toLowerCase();
+  const ownerName = firstCleanText(payload.ownerName, payload.owner_name, existingMeta.ownerName, existingMeta.owner_name, payload.createdByName, options.create ? admin.email : "");
   const analysisScore = websiteAnalysisScore(payload.websiteAnalysis || payload.metadata?.websiteAnalysis);
   const hasStatus = Object.prototype.hasOwnProperty.call(payload, "status") || Object.prototype.hasOwnProperty.call(payload, "callStatus");
   const hasSource = Object.prototype.hasOwnProperty.call(payload, "source");
@@ -405,24 +527,26 @@ function legacyLeadPayload(payload = {}, admin = {}, options = {}) {
   const meta = {
     ...existingMeta,
     ...(payload.metadata && typeof payload.metadata === "object" ? payload.metadata : {}),
-    ownerAuthUserId: cleanText(payload.ownerAuthUserId || payload.owner_id || options.existingLead?.ownerAuthUserId || existingMeta.ownerAuthUserId || admin.id) || admin.id,
-    ownerProfileId: cleanText(payload.ownerProfileId || payload.owner_profile_id || options.existingLead?.ownerProfileId || existingMeta.ownerProfileId),
-    ownerEmail: cleanText(payload.ownerEmail || payload.owner_email || options.existingLead?.ownerEmail || existingMeta.ownerEmail || payload.createdByEmail || admin.email).toLowerCase(),
-    ownerName: cleanText(payload.ownerName || payload.owner_name || options.existingLead?.ownerName || existingMeta.ownerName || payload.createdByName || admin.email),
+    ownerAuthUserId,
+    ownerProfileId,
+    ownerEmail,
+    ownerName,
     createdBy: cleanText(payload.createdBy || payload.created_by || options.existingLead?.createdBy || existingMeta.createdBy || admin.id) || admin.id,
     createdByEmail: cleanText(payload.createdByEmail || options.existingLead?.createdByEmail || existingMeta.createdByEmail || admin.email),
     createdByName: cleanText(payload.createdByName || options.existingLead?.createdByName || existingMeta.createdByName || admin.email),
-    assignedTo: cleanText(payload.assignedTo || payload.assigned_to || payload.ownerAuthUserId || options.existingLead?.assignedTo || existingMeta.assignedTo || admin.id) || admin.id,
-    assignedUserEmail: cleanText(payload.assignedUserEmail || payload.assigned_user_email || options.existingLead?.assignedUserEmail || existingMeta.assignedUserEmail || payload.ownerEmail || admin.email).toLowerCase(),
-    assignedUserName: cleanText(payload.assignedUserName || payload.assigned_user_name || options.existingLead?.assignedUserName || existingMeta.assignedUserName || payload.ownerName || admin.email),
-    medewerker: cleanText(payload.medewerker || payload.employee || payload.assignedToName || payload.assigned_to_name || options.existingLead?.ownerName || existingMeta.medewerker || existingMeta.employee || payload.ownerName || admin.email),
-    medewerkerEmail: cleanText(payload.medewerkerEmail || payload.medewerker_email || payload.employeeEmail || payload.employee_email || payload.assignedToEmail || payload.assigned_to_email || options.existingLead?.ownerEmail || existingMeta.medewerkerEmail || existingMeta.employeeEmail || payload.ownerEmail || admin.email).toLowerCase(),
-    employee: cleanText(payload.employee || payload.medewerker || payload.assignedToName || payload.assigned_to_name || options.existingLead?.ownerName || existingMeta.employee || existingMeta.medewerker || payload.ownerName || admin.email),
-    employeeEmail: cleanText(payload.employeeEmail || payload.employee_email || payload.medewerkerEmail || payload.medewerker_email || payload.assignedToEmail || payload.assigned_to_email || options.existingLead?.ownerEmail || existingMeta.employeeEmail || existingMeta.medewerkerEmail || payload.ownerEmail || admin.email).toLowerCase(),
-    assignedToEmail: cleanText(payload.assignedToEmail || payload.assigned_to_email || payload.assignedUserEmail || payload.assigned_user_email || options.existingLead?.assignedUserEmail || existingMeta.assignedToEmail || payload.ownerEmail || admin.email).toLowerCase(),
-    assignedToName: cleanText(payload.assignedToName || payload.assigned_to_name || payload.assignedUserName || payload.assigned_user_name || options.existingLead?.assignedUserName || existingMeta.assignedToName || payload.ownerName || admin.email),
-    userEmail: cleanText(payload.userEmail || payload.user_email || options.existingLead?.ownerEmail || existingMeta.userEmail || payload.ownerEmail || admin.email).toLowerCase(),
-    userName: cleanText(payload.userName || payload.user_name || options.existingLead?.ownerName || existingMeta.userName || payload.ownerName || admin.email),
+    assignedTo: assignment.id,
+    assignedUserEmail: assignment.email,
+    assignedUserName: assignment.name,
+    medewerker: assignment.name,
+    medewerkerEmail: assignment.email,
+    employee: assignment.name,
+    employeeEmail: assignment.email,
+    assignedToEmail: assignment.email,
+    assignedToName: assignment.name,
+    userEmail: assignment.email,
+    userName: assignment.name,
+    salesPartnerEmail: firstCleanText(payload.salesPartnerEmail, payload.sales_partner_email, assignment.email).toLowerCase(),
+    salesPartnerName: firstCleanText(payload.salesPartnerName, payload.sales_partner_name, assignment.name),
     source: cleanText(payload.source || "admin-dashboard-leadfinder"),
     websiteStatus: cleanText(payload.websiteStatus),
     leadScore: analysisScore ?? Number(payload.leadScore || payload.score || 60),
@@ -448,7 +572,7 @@ function legacyLeadPayload(payload = {}, admin = {}, options = {}) {
     updated_at: now,
   };
   if (options.ownerColumn !== false) {
-    record.owner_auth_user_id = cleanText(payload.ownerAuthUserId || payload.owner_id || admin.id) || admin.id;
+    record.owner_auth_user_id = ownerAuthUserId;
   }
   if (options.extended) {
     record.branch = cleanText(payload.industry || payload.branch);
@@ -541,8 +665,8 @@ function mapLead(row = {}) {
     ownerName: cleanText(row.assigned_user_name || meta.assignedUserName || meta.assigned_user_name || meta.assignedToName || meta.assigned_to_name || meta.medewerker || meta.employee || row.sales_partner_name || meta.salesPartnerName || meta.sales_partner_name || row.owner_name || meta.ownerName || meta.owner_name || meta.userName || meta.user_name),
     assignedUserName: cleanText(row.assigned_user_name || meta.assignedUserName || meta.assigned_user_name || meta.assignedToName || meta.assigned_to_name || meta.medewerker || meta.employee),
     assignedUserEmail: cleanText(row.assigned_user_email || meta.assignedUserEmail || meta.assigned_user_email || meta.assignedToEmail || meta.assigned_to_email || meta.medewerkerEmail || meta.medewerker_email || meta.employeeEmail || meta.employee_email),
-    salesPartnerEmail: cleanText(row.sales_partner_email || meta.salesPartnerEmail || meta.sales_partner_email || meta.createdByEmail),
-    salesPartnerName: cleanText(row.sales_partner_name || meta.salesPartnerName || meta.sales_partner_name || meta.createdByName),
+    salesPartnerEmail: cleanText(row.sales_partner_email || meta.salesPartnerEmail || meta.sales_partner_email),
+    salesPartnerName: cleanText(row.sales_partner_name || meta.salesPartnerName || meta.sales_partner_name),
     createdBy: cleanText(row.created_by || meta.createdBy || row.owner_auth_user_id),
     createdByEmail: cleanText(row.created_by_email || meta.createdByEmail || meta.created_by_email),
     createdByName: cleanText(row.created_by_name || meta.createdByName || meta.created_by_name),
@@ -591,20 +715,18 @@ function legacyDbStatus(value) {
 }
 
 function leadOwnerTokens(lead = {}) {
-  return [
-    lead.ownerAuthUserId,
-    lead.ownerEmail,
+  const assignmentTokens = [
+    lead.assignedTo,
+    lead.assignedUserEmail,
     lead.medewerkerEmail,
     lead.employeeEmail,
     lead.assignedToEmail,
     lead.userEmail,
-    lead.createdBy,
-    lead.createdByEmail,
-    lead.assignedTo,
-    lead.assignedUserEmail,
     lead.salesPartnerEmail,
-    lead.metadata?.ownerAuthUserId,
-    lead.metadata?.ownerEmail,
+    lead.metadata?.assignedTo,
+    lead.metadata?.assigned_to,
+    lead.metadata?.assignedUserEmail,
+    lead.metadata?.assigned_user_email,
     lead.metadata?.medewerkerEmail,
     lead.metadata?.medewerker_email,
     lead.metadata?.employeeEmail,
@@ -613,11 +735,17 @@ function leadOwnerTokens(lead = {}) {
     lead.metadata?.assigned_to_email,
     lead.metadata?.userEmail,
     lead.metadata?.user_email,
-    lead.metadata?.createdBy,
-    lead.metadata?.createdByEmail,
-    lead.metadata?.assignedTo,
-    lead.metadata?.assignedUserEmail,
     lead.metadata?.salesPartnerEmail,
+    lead.metadata?.sales_partner_email,
+  ].map((value) => cleanText(value).toLowerCase()).filter(Boolean);
+  if (assignmentTokens.length) return assignmentTokens;
+  return [
+    lead.ownerAuthUserId,
+    lead.ownerEmail,
+    lead.metadata?.ownerAuthUserId,
+    lead.metadata?.owner_auth_user_id,
+    lead.metadata?.ownerEmail,
+    lead.metadata?.owner_email,
   ].map((value) => cleanText(value).toLowerCase()).filter(Boolean);
 }
 
