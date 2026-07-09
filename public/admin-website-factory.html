@@ -21178,6 +21178,8 @@
         let intakeActiveQuestionKey = "";
         let previewSource = "factory";
         let manualPreview = null;
+        let leadSelectionVersion = 0;
+        let manualLeadSelectionActive = false;
         const journeyLocks = new Set();
         const intakeQuestions = [
           { key: "branch", label: "Branche", helper: "Kies eerst het brancheprofiel. Daarna worden doelen, CTA's en diensten automatisch slimmer voorgesteld.", required: true, type: "single", options: [["rijschool", "Rijschool / scooterles"], ["installatiebedrijf", "Installatie & verduurzaming"], ["tegelzetbedrijf", "Tegelzetbedrijf / tegelwerk"], ["bouwbedrijf", "Bouwbedrijf"], ["horeca", "Horeca / restaurant"], ["fitness", "Sportschool / personal trainer"], ["juridisch", "Advocaat / juridisch"], ["automotive", "Autobedrijf / garage"], ["kapsalon", "Kapsalon / barber"], ["tandarts", "Tandarts / mondzorg"], ["elektricien", "Elektricien"], ["loodgieter", "Loodgieter"], ["hovenier", "Hovenier"], ["schoonmaakbedrijf", "Schoonmaakbedrijf"], ["verhuisbedrijf", "Verhuisbedrijf"], ["dierenarts", "Dierenarts"], ["schoonheidssalon", "Schoonheidssalon / wellness"], ["makelaar", "Makelaar / vastgoed"], ["hotel", "Hotel / B&B"], ["financieel_adviseur", "Financieel adviseur"], ["fysiotherapie", "Fysiotherapie"], ["kinderopvang", "Kinderopvang"], ["zakelijk", "Zakelijke dienstverlening"]] },
@@ -21335,6 +21337,11 @@
             '"': "&quot;",
             "'": "&#039;",
           })[character]);
+        }
+
+        function truncateText(value = "", maxLength = 40) {
+          const text = String(value || "").trim();
+          return text.length > maxLength ? `${text.slice(0, Math.max(0, maxLength - 1))}…` : text;
         }
 
         function getBearer() {
@@ -21644,6 +21651,7 @@
 
         function leadSearchText(lead = {}) {
           return [
+            leadOptionLabel(lead),
             lead.companyName,
             lead.company_name,
             lead.businessName,
@@ -21727,12 +21735,30 @@
             return `<div class="factory-lead-command-visual is-image"><img src="${escapeHtml(savedThumbnail)}" alt="" loading="lazy" /><em>Demo website</em></div>`;
           }
           if (previewUrl) {
-            return `<div class="factory-lead-command-visual is-frame"><iframe src="${escapeHtml(previewUrl)}" title="Miniatuur demo website" loading="lazy"></iframe><em>Demo preview</em></div>`;
+            return leadCommandDemoPreviewCard(lead, initials);
           }
           if (websiteImage) {
             return `<div class="factory-lead-command-visual is-image"><img src="${escapeHtml(websiteImage)}" alt="" loading="lazy" referrerpolicy="no-referrer" /><em>Huidige website</em></div>`;
           }
           return `<div class="factory-lead-command-visual is-empty"><span class="factory-lead-command-avatar">${escapeHtml(initials)}</span><em>${lead.websiteUrl || lead.website_url ? "Website gevonden" : "Geen beeld"}</em></div>`;
+        }
+
+        function leadCommandDemoPreviewCard(lead = {}, initials = "L") {
+          const company = lead.companyName || lead.company_name || lead.businessName || journey?.businessName || "Demo website";
+          const cta = intakeLabel(intakeQuestions.find((question) => question.key === "cta"), intakeState.cta) || "Vraag offerte aan";
+          return `
+            <div class="factory-lead-command-visual is-demo-card">
+              <div class="factory-lead-mini-site">
+                <header><span>${escapeHtml(initials)}</span><strong>${escapeHtml(company)}</strong></header>
+                <section>
+                  <b>${escapeHtml(truncateText(company, 28))}</b>
+                  <i></i><i></i>
+                  <em>${escapeHtml(truncateText(cta, 22))}</em>
+                </section>
+              </div>
+              <em>Demo preview</em>
+            </div>
+          `;
         }
 
         function leadWebsitePreviewImage(lead = {}) {
@@ -23147,8 +23173,8 @@
           renderLeadPicker();
         }
 
-        async function loadJourney() {
-          const leadId = elements.lead?.value || "";
+        async function loadJourney(expectedLeadId = elements.lead?.value || "", expectedVersion = leadSelectionVersion) {
+          const leadId = expectedLeadId || "";
           if (!leadId) {
             journey = null;
             events = [];
@@ -23177,6 +23203,7 @@
             ? `id=${encodeURIComponent(linkedJourneyId)}`
             : `leadId=${encodeURIComponent(centralLeadId)}`;
           const data = await apiRequest(`${endpoint}?${query}`);
+          if (String(elements.lead?.value || "") !== String(leadId) || expectedVersion !== leadSelectionVersion) return;
           journey = data.journey || null;
           journeyRecords = Array.isArray(data.records) ? data.records : journeyRecords;
           if (journey?.previewUrl) journey.previewUrl = absolutePreviewUrl(journey.previewUrl);
@@ -23200,6 +23227,8 @@
 
         function selectFactoryLead(leadId = "") {
           if (!leadId || !elements.lead) return;
+          manualLeadSelectionActive = true;
+          const selectionVersion = ++leadSelectionVersion;
           journey = null;
           events = [];
           projectWorkspace = null;
@@ -23211,7 +23240,7 @@
           renderLeadPicker();
           loadIntakeLocally();
           fillFromLead(selectedLead());
-          return loadJourney()
+          return loadJourney(leadId, selectionVersion)
             .then(() => renderLeadCommandbar())
             .catch((error) => setMessage(elements.message, error.message, "error"));
         }
@@ -23283,9 +23312,10 @@
           }
         }
 
-        async function ensureJourneyForLead(lead = {}) {
+        async function ensureJourneyForLead(lead = {}, expectedVersion = leadSelectionVersion) {
           const normalizedLead = normalizeFactoryLead(lead);
           if (!normalizedLead || journey?.id) return journey;
+          const targetLeadId = normalizedLead.id || elements.lead?.value || "";
           const hasMinimumLeadData = Boolean(
             elements.business?.value
             || normalizedLead.companyName
@@ -23301,6 +23331,7 @@
               generatedBriefing: elements.briefing?.value || "",
               previewUrl: "",
             }));
+            if (String(elements.lead?.value || "") !== String(targetLeadId) || expectedVersion !== leadSelectionVersion) return null;
             journey = data.demoJourney || data.journey || journey || null;
             if (journey?.id) {
               rememberLocalLeadJourneyLink(normalizedLead.id || elements.lead?.value || "", journey.id);
@@ -24401,10 +24432,15 @@
         async function openLeadPreviewWorkflow(event) {
           const lead = mergePendingPreviewLead(event?.detail?.lead || {});
           if (!lead.id || !elements.lead) return;
+          const bootstrapSource = event?.detail?.source || "";
+          if (bootstrapSource === "url-bootstrap" && manualLeadSelectionActive) return;
+          const selectionVersion = ++leadSelectionVersion;
           await withJourneyLock(`lead-preview:${lead.id}`, [elements.generatePreview, elements.save], async () => {
+            if (bootstrapSource === "url-bootstrap" && manualLeadSelectionActive) return;
             upsertLeadOption(lead);
             elements.lead.value = lead.id;
             syncLeadSearchFromSelected();
+            syncLeadCommandFromSelected();
             renderLeadPicker();
             journey = null;
             events = [];
@@ -24417,11 +24453,13 @@
             renderJourney();
             window.focusAdminPanel?.(document.getElementById("demo-klantreis"), { block: "start", duration: 1600 });
             try {
-              await loadJourney();
+              await loadJourney(lead.id, selectionVersion);
+              if (String(elements.lead?.value || "") !== String(lead.id) || selectionVersion !== leadSelectionVersion) return;
               if (journey?.id) {
                 setMessage(elements.message, knownWebsiteUrl() ? "Bestaande demo-klantreis geladen. Website staat klaar voor analyse." : "Bestaande demo-klantreis geladen.", "success");
               } else {
-                await ensureJourneyForLead(lead);
+                await ensureJourneyForLead(lead, selectionVersion);
+                if (String(elements.lead?.value || "") !== String(lead.id) || selectionVersion !== leadSelectionVersion) return;
                 renderJourney();
                 if (journey?.id) {
                   setMessage(elements.message, knownWebsiteUrl() ? "Lead geladen en demo-klantreis aangemaakt. Website staat klaar voor analyse." : "Lead geladen en demo-klantreis aangemaakt.", "success");
@@ -24436,6 +24474,7 @@
             }
             const focusTarget = elements.notes || elements.business || elements.form;
             window.setTimeout(() => {
+              if (String(elements.lead?.value || "") !== String(lead.id) || selectionVersion !== leadSelectionVersion) return;
               window.focusAdminPanel?.(elements.form, { block: "start", duration: 1200 });
               focusTarget?.focus?.({ preventScroll: true });
             }, 380);
@@ -24498,6 +24537,9 @@
             renderIntake();
           });
           elements.lead?.addEventListener("change", async () => {
+            manualLeadSelectionActive = true;
+            const selectionVersion = ++leadSelectionVersion;
+            const selectedLeadId = elements.lead.value || "";
             journey = null;
             events = [];
             projectWorkspace = null;
@@ -24508,7 +24550,7 @@
             renderLeadPicker();
             loadIntakeLocally();
             fillFromLead(selectedLead());
-            await loadJourney().catch((error) => setMessage(elements.message, error.message, "error"));
+            await loadJourney(selectedLeadId, selectionVersion).catch((error) => setMessage(elements.message, error.message, "error"));
           });
           elements.leadSearch?.addEventListener("input", () => {
             renderLeadPicker();
@@ -24760,7 +24802,7 @@
             let requestedLead = { ...(queryLead || {}), ...(leads.find((item) => String(item.id) === String(requestedLeadId)) || {}), ...(localLead || {}), ...(pendingLead || {}) };
             if (!requestedLead.id) requestedLead = null;
             if (requestedLead) {
-              await openLeadPreviewWorkflow({ detail: { lead: requestedLead } });
+              await openLeadPreviewWorkflow({ detail: { lead: requestedLead, source: "url-bootstrap" } });
               sessionStorage.removeItem("maxwebstudioPendingPreviewLead");
             } else {
               setMessage(elements.message, "Lead niet gevonden. Kies een lead in de lijst of keer terug naar Sales.", "warning");
@@ -24769,7 +24811,7 @@
             const queryLead = leadFromFactoryQuery();
             if (queryLead) {
               upsertLeadOption(queryLead);
-              await openLeadPreviewWorkflow({ detail: { lead: queryLead } });
+              await openLeadPreviewWorkflow({ detail: { lead: queryLead, source: "url-bootstrap" } });
             }
           }
           renderMetrics();
