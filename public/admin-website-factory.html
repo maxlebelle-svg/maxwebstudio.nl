@@ -20498,7 +20498,14 @@
           sessionStorage.setItem("maxwebstudioPendingPreviewLead", JSON.stringify(lead));
           window.showToast?.(`Website Factory openen voor ${lead.companyName || "deze lead"}.`, "success");
           setLeadfinderMessage("Website Factory wordt geopend met deze lead.", "success");
-          window.location.href = `admin-website-factory.html?leadId=${encodeURIComponent(lead.id)}`;
+          const factoryParams = new URLSearchParams({ leadId: lead.id || "" });
+          if (lead.companyName) factoryParams.set("companyName", lead.companyName);
+          if (lead.websiteUrl) factoryParams.set("websiteUrl", lead.websiteUrl);
+          if (lead.phone) factoryParams.set("phone", lead.phone);
+          if (lead.email) factoryParams.set("email", lead.email);
+          if (lead.industry) factoryParams.set("industry", lead.industry);
+          if (lead.region) factoryParams.set("region", lead.region);
+          window.location.href = `admin-website-factory.html?${factoryParams.toString()}`;
           window.setTimeout(() => {
             leadPreviewRequestId = "";
           }, 1200);
@@ -21821,6 +21828,73 @@
           return String(elements.website?.value || lead.websiteUrl || lead.website_url || "").trim();
         }
 
+        function factoryQueryParams() {
+          return new URLSearchParams(window.location.search || "");
+        }
+
+        function normalizeFactoryLead(lead = {}) {
+          if (!lead || typeof lead !== "object") return null;
+          const id = String(lead.id || lead.leadId || lead.lead_id || "").trim();
+          const websiteUrl = String(lead.websiteUrl || lead.website_url || lead.website || "").trim();
+          const companyName = String(lead.companyName || lead.company_name || lead.businessName || lead.business_name || lead.company || "").trim();
+          if (!id && !websiteUrl && !companyName) return null;
+          return {
+            ...lead,
+            id: id || `website-url-${Date.now()}`,
+            companyName: companyName || lead.name || "",
+            contactName: lead.contactName || lead.contact_name || lead.contact || lead.name || "",
+            websiteUrl,
+            phone: lead.phone || lead.telephone || "",
+            email: lead.email || "",
+            industry: lead.industry || lead.branch || lead.branche || "",
+            region: lead.region || lead.city || lead.plaats || "",
+            notes: lead.notes || lead.message || "",
+          };
+        }
+
+        function readLocalLeadById(leadId = "") {
+          const target = String(leadId || "").trim();
+          if (!target) return null;
+          const storageKeys = ["maxwebstudioLeadFinderLeads", "maxwebstudioLeads", "maxwebstudioLeadRequests"];
+          for (const key of storageKeys) {
+            try {
+              const records = JSON.parse(localStorage.getItem(key) || "[]");
+              if (!Array.isArray(records)) continue;
+              const match = records.find((lead) => String(lead?.id || lead?.leadId || lead?.lead_id || "") === target);
+              if (match) return normalizeFactoryLead(match);
+            } catch {
+              // Try next local source.
+            }
+          }
+          try {
+            const visibleLead = typeof getLeadfinderLeads === "function"
+              ? getLeadfinderLeads().find((lead) => String(lead.id) === target)
+              : null;
+            return normalizeFactoryLead(visibleLead);
+          } catch {
+            return null;
+          }
+        }
+
+        function leadFromFactoryQuery() {
+          const params = factoryQueryParams();
+          const leadId = params.get("leadId") || params.get("lead_id") || "";
+          const websiteUrl = params.get("websiteUrl") || params.get("website") || params.get("url") || "";
+          const companyName = params.get("companyName") || params.get("businessName") || params.get("company") || "";
+          if (!leadId && !websiteUrl && !companyName) return null;
+          return normalizeFactoryLead({
+            id: leadId || "",
+            companyName,
+            contactName: params.get("contactName") || params.get("contact") || "",
+            websiteUrl,
+            phone: params.get("phone") || "",
+            email: params.get("email") || "",
+            industry: params.get("industry") || params.get("branch") || "",
+            region: params.get("region") || "",
+            source: "website-factory-url",
+          });
+        }
+
         function currentWebsiteIntelligencePackage() {
           return websiteIntelligencePackage
             || journey?.previewPackage?.websiteIntelligencePackage
@@ -21971,21 +22045,20 @@
             setMessage(elements.message, "Vul eerst de bestaande website URL in, of werk handmatig verder zonder scan.", "warning");
             return;
           }
-          if (!journey?.id) {
-            setMessage(elements.message, "Sla eerst de demo-aanvraag op. Daarna kan de analyse bij deze lead worden bewaard.", "warning");
-            return;
-          }
           await withJourneyLock("website_intelligence", [elements.refresh, elements.processNotes, elements.save, elements.generatePreview], async () => {
             setMessage(elements.message, "Website analyseren en briefing aanvullen...", "info");
             try {
+              if (!journey?.id) {
+                await ensureJourneyForLead(selectedLead() || leadFromFactoryQuery() || { websiteUrl: website });
+              }
               const analysis = await apiRequest("/.netlify/functions/analyze-lead-website", "POST", { url: website });
               websiteIntelligencePackage = buildIntelligencePackage(analysis);
               applyWebsiteIntelligenceToIntake(websiteIntelligencePackage);
               renderIntakeFields();
               renderIntake();
-              await persistWebsiteIntelligence(websiteIntelligencePackage);
+              if (journey?.id) await persistWebsiteIntelligence(websiteIntelligencePackage);
               renderJourney();
-              setMessage(elements.message, "Website-analyse verwerkt. Controleer alleen de gemarkeerde aandachtspunten.", "success");
+              setMessage(elements.message, journey?.id ? "Website-analyse verwerkt. Controleer alleen de gemarkeerde aandachtspunten." : "Website-analyse lokaal verwerkt. Voeg bedrijfsnaam of contact toe om dit centraal op te slaan.", journey?.id ? "success" : "warning");
             } catch (error) {
               setMessage(elements.message, error.message || "Website-analyse is niet gelukt. Je kunt handmatig verder werken.", "warning");
             }
@@ -22353,6 +22426,7 @@
 
         function renderFactoryControlCenter(intake = collectIntake()) {
           const lead = selectedLead() || {};
+          const website = elements.website?.value || lead.websiteUrl || lead.website_url || "";
           const intelligencePackage = currentWebsiteIntelligencePackage() || {};
           const intelligence = intelligencePackage.websiteIntelligence || {};
           const media = Array.isArray(intelligencePackage.extractedMedia) ? intelligencePackage.extractedMedia : [];
@@ -22365,6 +22439,7 @@
           const contactCount = Number(intelligence.foundContactCount || 0) || ensureArrayValue(contactData.phones).length + ensureArrayValue(contactData.emails).length + ensureArrayValue(contactData.addresses).length;
           const scanReady = Boolean(intelligence.lastScannedAt || intelligencePackage.lastScannedAt);
           const scanConfidence = Number(intelligencePackage.buildConfidence || intelligence.buildConfidence || 0);
+          const websiteReadyForScan = Boolean(website && journey?.id && !scanReady);
           const businessName = elements.business?.value || journey?.businessName || lead.companyName || lead.company_name || lead.businessName || "";
           const leadMeta = [
             elements.phone?.value || lead.phone,
@@ -22394,7 +22469,7 @@
                 : ["Laag", "Start met lead en briefing."];
           if (elements.cockpitLead) elements.cockpitLead.textContent = businessName || "Geen lead gekozen";
           if (elements.cockpitLeadMeta) elements.cockpitLeadMeta.textContent = leadMeta || "Kies een lead of vul gegevens handmatig aan.";
-          if (elements.cockpitStatus) elements.cockpitStatus.textContent = journey?.previewUrl ? "Preview klaar" : intake.complete ? "Klaar voor preview" : journey?.id ? "Briefing aanvullen" : "Start";
+          if (elements.cockpitStatus) elements.cockpitStatus.textContent = journey?.previewUrl ? "Preview klaar" : websiteReadyForScan ? "Klaar voor analyse" : intake.complete ? "Klaar voor preview" : journey?.id ? "Briefing aanvullen" : "Start";
           if (elements.cockpitPackage) elements.cockpitPackage.textContent = packageLabel(currentPackageType());
           if (elements.cockpitAttention) elements.cockpitAttention.textContent = attention.length ? attention.join(" + ") : "Geen blokkades";
           if (elements.cockpitConfidence) elements.cockpitConfidence.textContent = confidence[0];
@@ -22404,7 +22479,6 @@
             elements.outputState.className = `status-badge ${intake.complete ? "status-active" : "status-prepared"}`;
           }
           if (elements.sourceList) {
-            const website = elements.website?.value || lead.websiteUrl || lead.website_url || "";
             const sourceCards = [
               {
                 icon: "↗",
@@ -23009,6 +23083,38 @@
             prefillIntakeFromLead(lead);
             renderIntakeFields();
             renderIntake();
+          }
+        }
+
+        async function ensureJourneyForLead(lead = {}) {
+          const normalizedLead = normalizeFactoryLead(lead);
+          if (!normalizedLead || journey?.id) return journey;
+          const hasMinimumLeadData = Boolean(
+            elements.business?.value
+            || normalizedLead.companyName
+            || elements.contact?.value
+            || normalizedLead.contactName
+            || elements.email?.value
+            || normalizedLead.email
+          );
+          if (!hasMinimumLeadData) return null;
+          try {
+            const data = await apiRequest(endpoint, "POST", collectPayload({
+              demoStatus: "aanvraag_ontvangen",
+              generatedBriefing: elements.briefing?.value || "",
+              previewUrl: "",
+            }));
+            journey = data.demoJourney || data.journey || journey || null;
+            if (journey?.id) {
+              rememberLocalLeadJourneyLink(normalizedLead.id || elements.lead?.value || "", journey.id);
+              events = Array.isArray(data.events) ? data.events : events;
+              buildHistory = data.buildHistory || buildHistory;
+              projectWorkspace = data.projectWorkspace || projectWorkspace;
+            }
+            return journey;
+          } catch (error) {
+            setMessage(elements.message, error.message || "Leadgegevens zijn ingevuld, maar de demo-klantreis kon nog niet automatisch worden aangemaakt.", "warning");
+            return null;
           }
         }
 
@@ -24109,11 +24215,17 @@
             try {
               await loadJourney();
               if (journey?.id) {
-                setMessage(elements.message, "Bestaande demo-klantreis geladen.", "success");
-              } else if (hasCallScriptBriefing(lead)) {
-                setMessage(elements.message, "Belscript-intake overgenomen. Websiteplan, preview en ZIP kunnen nu direct worden gemaakt.", "success");
+                setMessage(elements.message, knownWebsiteUrl() ? "Bestaande demo-klantreis geladen. Website staat klaar voor analyse." : "Bestaande demo-klantreis geladen.", "success");
               } else {
-                setMessage(elements.message, "Leadgegevens ingevuld. Vul de wensen aan en sla de demo-aanvraag op.", "success");
+                await ensureJourneyForLead(lead);
+                renderJourney();
+                if (journey?.id) {
+                  setMessage(elements.message, knownWebsiteUrl() ? "Lead geladen en demo-klantreis aangemaakt. Website staat klaar voor analyse." : "Lead geladen en demo-klantreis aangemaakt.", "success");
+                } else if (hasCallScriptBriefing(lead)) {
+                  setMessage(elements.message, "Belscript-intake overgenomen. Websiteplan, preview en ZIP kunnen nu direct worden gemaakt.", "success");
+                } else {
+                  setMessage(elements.message, "Leadgegevens ingevuld. Vul de wensen aan en sla de demo-aanvraag op.", "success");
+                }
               }
             } catch (error) {
               setMessage(elements.message, error.message || "Leadgegevens ingevuld, maar bestaande demo kon niet worden gecontroleerd.", "warning");
@@ -24382,18 +24494,42 @@
           wireEvents();
           renderJourney();
           await loadLeads();
-          const requestedLeadId = window.maxwebstudioAdminPage?.page === "website-factory"
-            ? window.maxwebstudioAdminPage.leadId
-            : "";
+          const params = factoryQueryParams();
+          const requestedLeadId = params.get("leadId") || params.get("lead_id") || window.maxwebstudioAdminPage?.leadId || "";
+          const requestedJourneyId = params.get("demoJourneyId") || params.get("demo_journey_id") || params.get("id") || "";
+          if (requestedJourneyId) {
+            try {
+              const data = await apiRequest(`${endpoint}?id=${encodeURIComponent(requestedJourneyId)}`);
+              journey = data.journey || null;
+              journeyRecords = Array.isArray(data.records) ? data.records : journeyRecords;
+              events = Array.isArray(data.events) ? data.events : [];
+              buildHistory = data.buildHistory || buildHistory;
+              projectWorkspace = data.projectWorkspace || projectWorkspace;
+              renderJourney();
+              setMessage(elements.message, journey?.id ? "Bestaande demo-klantreis geladen." : "Demo-klantreis niet gevonden.", journey?.id ? "success" : "warning");
+            } catch (error) {
+              setMessage(elements.message, error.message || "Demo-klantreis kon niet worden geladen.", "warning");
+            }
+            renderMetrics();
+            return;
+          }
           if (requestedLeadId) {
             const pendingLead = pendingPreviewLeadForId(requestedLeadId);
-            let requestedLead = { ...(leads.find((item) => String(item.id) === String(requestedLeadId)) || {}), ...(pendingLead || {}) };
+            const localLead = readLocalLeadById(requestedLeadId);
+            const queryLead = leadFromFactoryQuery();
+            let requestedLead = { ...(queryLead || {}), ...(leads.find((item) => String(item.id) === String(requestedLeadId)) || {}), ...(localLead || {}), ...(pendingLead || {}) };
             if (!requestedLead.id) requestedLead = null;
             if (requestedLead) {
-              sessionStorage.removeItem("maxwebstudioPendingPreviewLead");
               await openLeadPreviewWorkflow({ detail: { lead: requestedLead } });
+              sessionStorage.removeItem("maxwebstudioPendingPreviewLead");
             } else {
               setMessage(elements.message, "Lead niet gevonden. Kies een lead in de lijst of keer terug naar Sales.", "warning");
+            }
+          } else {
+            const queryLead = leadFromFactoryQuery();
+            if (queryLead) {
+              upsertLeadOption(queryLead);
+              await openLeadPreviewWorkflow({ detail: { lead: queryLead } });
             }
           }
           renderMetrics();

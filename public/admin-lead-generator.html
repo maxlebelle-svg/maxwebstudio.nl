@@ -23568,7 +23568,14 @@
           sessionStorage.setItem("maxwebstudioPendingPreviewLead", JSON.stringify(lead));
           window.showToast?.(`Website Factory openen voor ${lead.companyName || "deze lead"}.`, "success");
           setLeadfinderMessage("Website Factory wordt geopend met deze lead.", "success");
-          window.location.href = `admin-website-factory.html?leadId=${encodeURIComponent(lead.id)}`;
+          const factoryParams = new URLSearchParams({ leadId: lead.id || "" });
+          if (lead.companyName) factoryParams.set("companyName", lead.companyName);
+          if (lead.websiteUrl) factoryParams.set("websiteUrl", lead.websiteUrl);
+          if (lead.phone) factoryParams.set("phone", lead.phone);
+          if (lead.email) factoryParams.set("email", lead.email);
+          if (lead.industry) factoryParams.set("industry", lead.industry);
+          if (lead.region) factoryParams.set("region", lead.region);
+          window.location.href = `admin-website-factory.html?${factoryParams.toString()}`;
           window.setTimeout(() => {
             leadPreviewRequestId = "";
           }, 1200);
