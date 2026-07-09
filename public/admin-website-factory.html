@@ -21682,8 +21682,11 @@
           if (!elements.leadCommandPreview) return;
           if (!lead) {
             elements.leadCommandPreview.innerHTML = `
-              <span class="factory-lead-command-avatar">?</span>
-              <div>
+              <div class="factory-lead-command-visual is-empty">
+                <span class="factory-lead-command-avatar">?</span>
+                <em>Geen preview</em>
+              </div>
+              <div class="factory-lead-command-info">
                 <small>Gekozen lead</small>
                 <strong>Nog geen lead gekozen</strong>
                 <p>Zoek links en klik een lead om de bedrijfsgegevens hier te controleren.</p>
@@ -21695,6 +21698,7 @@
           const branch = lead.industry || inferBranchFromLead(lead) || "Branche onbekend";
           const website = lead.websiteUrl || lead.website_url || "";
           const initials = company.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "L";
+          const visual = leadCommandPreviewVisual(lead, initials);
           const rows = [
             ["Branche", branch],
             ["Regio", lead.region || lead.city || lead.address || "-"],
@@ -21702,8 +21706,8 @@
             ["Telefoon", lead.phone || "-"],
           ];
           elements.leadCommandPreview.innerHTML = `
-            <span class="factory-lead-command-avatar">${escapeHtml(initials)}</span>
-            <div>
+            ${visual}
+            <div class="factory-lead-command-info">
               <small>Gekozen lead</small>
               <strong>${escapeHtml(company)}</strong>
               <p>${escapeHtml([branch, lead.region || lead.city, website ? "Klaar voor analyse" : "Website aanvullen"].filter(Boolean).join(" · "))}</p>
@@ -21712,6 +21716,42 @@
               </dl>
             </div>
           `;
+        }
+
+        function leadCommandPreviewVisual(lead = {}, initials = "L") {
+          const isSelected = String(lead.id || "") === String(elements.lead?.value || "");
+          const savedThumbnail = isSelected ? savedDemoThumbnail(journey) : "";
+          const previewUrl = isSelected ? activePreviewUrl() : "";
+          const websiteImage = leadWebsitePreviewImage(lead);
+          if (savedThumbnail) {
+            return `<div class="factory-lead-command-visual is-image"><img src="${escapeHtml(savedThumbnail)}" alt="" loading="lazy" /><em>Demo website</em></div>`;
+          }
+          if (previewUrl) {
+            return `<div class="factory-lead-command-visual is-frame"><iframe src="${escapeHtml(previewUrl)}" title="Miniatuur demo website" loading="lazy"></iframe><em>Demo preview</em></div>`;
+          }
+          if (websiteImage) {
+            return `<div class="factory-lead-command-visual is-image"><img src="${escapeHtml(websiteImage)}" alt="" loading="lazy" referrerpolicy="no-referrer" /><em>Huidige website</em></div>`;
+          }
+          return `<div class="factory-lead-command-visual is-empty"><span class="factory-lead-command-avatar">${escapeHtml(initials)}</span><em>${lead.websiteUrl || lead.website_url ? "Website gevonden" : "Geen beeld"}</em></div>`;
+        }
+
+        function leadWebsitePreviewImage(lead = {}) {
+          const analysis = lead.websiteAnalysis || lead.website_analysis || lead.metadata?.websiteAnalysis || lead.meta?.websiteAnalysis || null;
+          const packageData = String(lead.id || "") === String(elements.lead?.value || "") ? currentWebsiteIntelligencePackage() : null;
+          const media = [
+            ...(Array.isArray(packageData?.extractedMedia) ? packageData.extractedMedia : []),
+            ...(Array.isArray(analysis?.extractedMedia) ? analysis.extractedMedia : []),
+            ...(Array.isArray(analysis?.media) ? analysis.media : []),
+          ];
+          const mediaImage = media.find((item) => item?.url && item.type !== "logo" && item.usable !== "no") || media.find((item) => item?.url);
+          const websiteImages = [
+            ...(Array.isArray(packageData?.websiteScanRaw?.currentWebsite?.imageUrls) ? packageData.websiteScanRaw.currentWebsite.imageUrls : []),
+            ...(Array.isArray(packageData?.websiteIntelligence?.currentWebsite?.imageUrls) ? packageData.websiteIntelligence.currentWebsite.imageUrls : []),
+            ...(Array.isArray(analysis?.currentWebsite?.imageUrls) ? analysis.currentWebsite.imageUrls : []),
+            ...(Array.isArray(analysis?.websiteIntelligence?.currentWebsite?.imageUrls) ? analysis.websiteIntelligence.currentWebsite.imageUrls : []),
+            ...(Array.isArray(analysis?.imageUrls) ? analysis.imageUrls : []),
+          ];
+          return mediaImage?.url || websiteImages.find(Boolean) || lead.imageUrl || lead.photoUrl || lead.googlePhotoUrl || "";
         }
 
         function renderLeadCommandbar() {
@@ -23171,7 +23211,9 @@
           renderLeadPicker();
           loadIntakeLocally();
           fillFromLead(selectedLead());
-          return loadJourney().catch((error) => setMessage(elements.message, error.message, "error"));
+          return loadJourney()
+            .then(() => renderLeadCommandbar())
+            .catch((error) => setMessage(elements.message, error.message, "error"));
         }
 
         function upsertLeadOption(lead = {}) {
