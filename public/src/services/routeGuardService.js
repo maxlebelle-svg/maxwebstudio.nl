@@ -1,8 +1,8 @@
 import { ACCESS_CONTROL_MODES, getProtectedRoute, listProtectedRoutes } from "../config/protectedRoutes.js";
 import { roleHasPermission } from "../config/permissions.js";
-import { ROLES } from "../config/roles.js";
+import { ROLES, normalizeRole } from "../config/roles.js";
 import { STORAGE_KEYS } from "../config/storageKeys.js";
-import { getCurrentSession, getCurrentUser, hasPermission } from "./authService.js";
+import { getCurrentSession, getCurrentUser } from "./authService.js";
 import { getCurrentProfile, validateProfileAccess } from "./authProfileService.js";
 import { logActivity, listRecentActivities } from "./activityLogService.js";
 
@@ -11,6 +11,18 @@ const DEFAULT_ACCESS_SETTINGS = Object.freeze({
   allowDemo: true,
 });
 const PRODUCTION_HOSTS = new Set(["maxwebstudio.nl", "www.maxwebstudio.nl"]);
+const ADMIN_SESSION_KEY = "mws_admin_supabase_session";
+const ADMIN_ROUTE_PATTERN = /^\/admin(?:-|\/|$)/;
+const ADMIN_LOGIN_ROUTE = "/login.html";
+const ADMIN_ACCESS_ROLES = new Set([
+  ROLES.DEVELOPER,
+  ROLES.SUPER_ADMIN,
+  ROLES.ADMIN,
+  ROLES.SALES_MANAGER,
+  ROLES.SALES_PARTNER,
+  ROLES.DESIGNER,
+  ROLES.SUPPORT,
+]);
 
 function isBrowserProductionRuntime() {
   const host = String(window.location?.hostname || "").toLowerCase();
@@ -33,6 +45,103 @@ function readJson(key, fallback = null) {
 
 function writeJson(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
+}
+
+function getCurrentPath() {
+  if (typeof window === "undefined") return "";
+  return `${window.location?.pathname || ""}${window.location?.search || ""}${window.location?.hash || ""}`;
+}
+
+function isAdminRoute(pageName = "", path = "") {
+  const route = pageName ? getProtectedRoute(pageName) : null;
+  const routePath = String(route?.path || path || (typeof window !== "undefined" ? window.location?.pathname || "" : ""));
+  return ADMIN_ROUTE_PATTERN.test(routePath) || String(pageName || "").startsWith("admin-");
+}
+
+function toMillisExpiry(value) {
+  if (!value) return 0;
+  if (typeof value === "number") return value < 100000000000 ? value * 1000 : value;
+  const numeric = Number(value);
+  if (Number.isFinite(numeric) && numeric > 0) return numeric < 100000000000 ? numeric * 1000 : numeric;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function readAdminSession() {
+  try {
+    const session = JSON.parse(localStorage.getItem(ADMIN_SESSION_KEY) || "null");
+    if (!session?.accessToken) return null;
+    const expiresAt = toMillisExpiry(session.expiresAt);
+    if (expiresAt && expiresAt <= Date.now() + 30000) {
+      localStorage.removeItem(ADMIN_SESSION_KEY);
+      return null;
+    }
+    const role = normalizeRole(session.role || "");
+    if (!ADMIN_ACCESS_ROLES.has(role)) return null;
+    return {
+      ...session,
+      role,
+      expiresAt: expiresAt || session.expiresAt || "",
+    };
+  } catch {
+    return null;
+  }
+}
+
+function getAdminAccessContext(options = {}, settings = getAccessControlSettings()) {
+  if (!isAdminRoute(options.pageName || "", options.path || "")) return null;
+  const session = readAdminSession();
+  if (!session) return null;
+  const userId = session.userId || session.authUserId || session.profileId || "admin-session";
+  const email = session.email || "";
+  return {
+    session: {
+      id: session.id || `admin-${String(session.accessToken).slice(0, 12)}`,
+      userId,
+      role: session.role,
+      provider: "supabase-admin",
+      accessToken: session.accessToken,
+      startedAt: session.startedAt || "",
+      expiresAt: session.expiresAt || "",
+      isDemo: false,
+    },
+    user: {
+      id: userId,
+      authUserId: userId,
+      email,
+      role: session.role,
+      isDemo: false,
+    },
+    profile: {
+      id: session.profileId || userId,
+      authUserId: userId,
+      email,
+      role: session.role,
+      status: session.status || "active",
+      environment: "production",
+      isDemoUser: false,
+    },
+    role: session.role,
+    customerId: "",
+    supabaseCustomerId: "",
+    provider: "supabase-admin",
+    isDemo: false,
+    mode: normalizeMode(options.mode || settings.mode),
+    allowDemo: false,
+    environment: "production",
+  };
+}
+
+function buildLoginRedirect(decision = {}) {
+  const returnPath = getCurrentPath();
+  const isAdmin = isAdminRoute(decision.pageName || "", decision.route || "");
+  const url = new URL(ADMIN_LOGIN_ROUTE, window.location.origin);
+  if (isAdmin) url.searchParams.set("mode", "admin");
+  if (returnPath && !returnPath.startsWith(ADMIN_LOGIN_ROUTE)) {
+    url.searchParams.set("redirect", returnPath);
+  }
+  if (!decision.allowed) url.searchParams.set("reason", "session");
+  return `${url.pathname}${url.search}`;
 }
 
 function normalizeMode(mode = "") {
@@ -80,15 +189,17 @@ export function getDefaultRedirectForRole(role) {
 }
 
 export function getAccessContext(options = {}) {
+  const settings = getAccessControlSettings();
+  const adminContext = getAdminAccessContext(options, settings);
+  if (adminContext) return adminContext;
   const session = getCurrentSession();
   const user = getCurrentUser();
   const profile = getCurrentProfile();
-  const settings = getAccessControlSettings();
   return {
     session,
     user,
     profile,
-    role: profile?.role || session?.role || "",
+    role: normalizeRole(profile?.role || session?.role || ""),
     customerId: profile?.customerId || session?.customerId || user?.customerId || "",
     supabaseCustomerId: profile?.supabaseCustomerId || "",
     provider: session?.provider || "none",
@@ -163,7 +274,7 @@ export function getAccessDecision(pageName = "", context = getAccessContext(), o
   const permissions = options.resource && options.action
     ? [{ resource: options.resource, action: options.action }]
     : route.requiredPermissions || [];
-  const missingPermission = permissions.find((permission) => !hasPermission(permission.resource, permission.action));
+  const missingPermission = permissions.find((permission) => !roleHasPermission(context.role, permission.resource, permission.action));
   if (missingPermission) {
     return applyMode({
       ...decision,
@@ -243,7 +354,11 @@ function enforceDecision(decision = {}, options = {}) {
   if (!decision.allowed) {
     showAccessWarning(decision.reason, { pageName: decision.pageName, mode: decision.mode, target: options.warningTarget });
     if (decision.enforced && decision.redirectTo && typeof window !== "undefined") {
-      window.location.href = decision.redirectTo;
+      const target = String(decision.redirectTo || "");
+      const missingSessionOnAdminRoute = decision.reason === "Geen actieve sessie." && isAdminRoute(decision.pageName || "", decision.route || "");
+      window.location.href = target === ADMIN_LOGIN_ROUTE || target.startsWith(`${ADMIN_LOGIN_ROUTE}?`) || missingSessionOnAdminRoute
+        ? buildLoginRedirect(decision)
+        : target;
     }
   } else {
     clearAccessWarning();

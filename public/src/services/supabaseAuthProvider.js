@@ -25,6 +25,19 @@ function isAllowedAuthEnvironment(config = {}) {
   return isTestEnvironment(config) || isProductionEnvironment(config);
 }
 
+function isAdminLoginRequest() {
+  if (typeof window === "undefined") return false;
+  const params = new URLSearchParams(window.location.search || "");
+  if (params.get("mode") === "admin") return true;
+  const redirect = params.get("redirect") || params.get("returnTo") || params.get("next") || "";
+  try {
+    const parsed = new URL(redirect, window.location.origin);
+    return parsed.origin === window.location.origin && /^\/admin(?:-|\/|$)/.test(parsed.pathname);
+  } catch {
+    return false;
+  }
+}
+
 function normalizePublicConfig(config = {}) {
   const url = String(config.supabaseUrl || config.SUPABASE_URL || config.url || "").replace(/\/$/, "");
   const project = getSupabaseProjectInfo(url);
@@ -140,7 +153,7 @@ async function getRuntimeAuthConfig() {
     ...runtimeConfig,
     ...endpointConfig,
   });
-  const active = Boolean(config.url && config.anonKey && config.clientPortalAuthLive && isAllowedAuthEnvironment(config));
+  const active = Boolean(config.url && config.anonKey && (config.clientPortalAuthLive || isAdminLoginRequest()) && isAllowedAuthEnvironment(config));
 
   return {
     ...config,

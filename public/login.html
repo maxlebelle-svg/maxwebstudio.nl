@@ -119,11 +119,22 @@
         const loginStatusTitle = document.getElementById("login-status-title");
         const realLoginStatus = document.getElementById("real-login-status");
         const realLoginUnavailable = document.querySelector("[data-real-login-unavailable]");
+        const realLoginTab = document.querySelector("[data-auth-panel-trigger='real']");
         let realLoginStatusMessage = "";
         let realLoginActive = false;
         let authConfigSafe = false;
         let authReadiness = null;
         const productionHosts = new Set(["maxwebstudio.nl", "www.maxwebstudio.nl"]);
+        const adminSessionStorageKey = "mws_admin_supabase_session";
+        const adminRoles = new Set(["developer", "super_admin", "admin", "sales_manager", "sales_partner", "designer", "support"]);
+        const roleAliases = {
+          "Developer": "developer",
+          "Super Admin": "super_admin",
+          "Admin": "admin",
+          "Sales Manager": "sales_manager",
+          "Sales": "sales_partner",
+          "Sales Partner": "sales_partner",
+        };
         const statusCopy = {
           demo: {
             title: "Demo-login beschikbaar",
@@ -132,6 +143,10 @@
           real: {
             title: "Klantportaal wordt afgerond",
             body: "Heb je al een account of wil je toegang? Vraag toegang aan, dan zetten we je klantportaal netjes klaar.",
+          },
+          admin: {
+            title: "Admin login",
+            body: "Log in met je Max Webstudio beheerdersaccount om verder te gaan.",
           },
           request: {
             title: "Account aanvragen",
@@ -151,6 +166,55 @@
           const host = String(window.location?.hostname || "").toLowerCase();
           const configuredEnvironment = String(window.__MAXWEBSTUDIO_ENV__ || localStorage.getItem("maxwebstudioEnvironment") || "").toUpperCase();
           return productionHosts.has(host) || configuredEnvironment === "PRODUCTION";
+        }
+
+        function normalizeRole(role = "") {
+          const value = String(role || "").trim();
+          return roleAliases[value] || value.toLowerCase().replace(/[\s-]+/g, "_");
+        }
+
+        function isAdminRole(role = "") {
+          return adminRoles.has(normalizeRole(role));
+        }
+
+        function getSafeRelativePath(value = "") {
+          if (!value) return "";
+          try {
+            const parsed = new URL(value, window.location.origin);
+            if (parsed.origin !== window.location.origin) return "";
+            return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+          } catch {
+            return "";
+          }
+        }
+
+        function getRequestedRedirect() {
+          const params = new URLSearchParams(window.location.search);
+          return getSafeRelativePath(params.get("redirect") || params.get("returnTo") || params.get("next") || "");
+        }
+
+        function isAdminPath(path = "") {
+          return /^\/admin(?:-|\/|$)/.test(String(path || ""));
+        }
+
+        function isAdminLoginRequest() {
+          const params = new URLSearchParams(window.location.search);
+          if (params.get("mode") === "admin") return true;
+          if (isAdminPath(getRequestedRedirect())) return true;
+          return isAdminPath(getSafeRelativePath(document.referrer || ""));
+        }
+
+        function getAllowedRedirect(role = "", customerId = "") {
+          const requested = getRequestedRedirect();
+          const normalizedRole = normalizeRole(role);
+          if (isAdminPath(requested)) {
+            return isAdminRole(normalizedRole) ? requested : "";
+          }
+          if (normalizedRole === "customer") {
+            return customerId ? `/klantportaal.html?customerId=${encodeURIComponent(customerId)}` : "/klantportaal.html";
+          }
+          if (normalizedRole === "sales_partner" || normalizedRole === "sales_manager") return "/admin-sales.html";
+          return isAdminRole(normalizedRole) ? "/admin-dashboard.html" : "";
         }
 
         function logSafeDiagnostic(label, error, fallbackCode = "AUTH_UNAVAILABLE") {
@@ -279,12 +343,13 @@
         function storeRealSession(session, account) {
           const profile = account.profile || {};
           const user = account.user || session.user || {};
+          const role = normalizeRole(profile.role);
           const now = new Date().toISOString();
           const currentSession = {
             id: session.access_token ? `supabase-${session.access_token.slice(0, 12)}` : `supabase-${Date.now()}`,
             userId: user.id || profile.authUserId,
-            role: profile.role,
-            roleLabel: profile.role,
+            role,
+            roleLabel: role,
             provider: "supabase",
             accessToken: session.access_token,
             customerId: profile.customerId || "",
@@ -296,7 +361,7 @@
             authUserId: currentSession.userId,
             email: user.email || profile.email,
             name: profile.name || user.email || "",
-            role: profile.role,
+            role,
             status: profile.status,
             isDemo: false,
             updatedAt: now,
@@ -312,7 +377,7 @@
             authUserId: currentSession.userId,
             email: authUser.email,
             name: authUser.name,
-            role: profile.role,
+            role,
             status: profile.status,
             customerId: profile.customerId || "",
             environment: "production",
@@ -328,6 +393,28 @@
           localStorage.setItem("maxwebstudioProfiles", JSON.stringify(profiles));
           localStorage.setItem("maxwebstudioAuthProvider", "supabase-prepared");
           localStorage.setItem("maxwebstudioAuthMode", "supabase-prepared");
+        }
+
+        function storeAdminSessionBridge(session, account) {
+          const profile = account.profile || {};
+          const user = account.user || session.user || {};
+          const role = normalizeRole(profile.role);
+          if (!isAdminRole(role)) return null;
+          const expiresAt = session.expires_at ? session.expires_at * 1000 : Date.now() + 60 * 60 * 1000;
+          const adminSession = {
+            id: session.access_token ? `admin-${session.access_token.slice(0, 12)}` : `admin-${Date.now()}`,
+            accessToken: session.access_token,
+            refreshToken: session.refresh_token || "",
+            email: user.email || profile.email || "",
+            userId: user.id || profile.authUserId || "",
+            profileId: profile.id || "",
+            role,
+            status: profile.status || "active",
+            startedAt: new Date().toISOString(),
+            expiresAt,
+          };
+          localStorage.setItem(adminSessionStorageKey, JSON.stringify(adminSession));
+          return adminSession;
         }
 
         function activatePanel(name) {
@@ -362,12 +449,20 @@
             authReadiness = await readinessService.getClientAuthReadiness();
             authConfigSafe = Boolean(authReadiness.canShowLoginForm);
             realLoginActive = Boolean(authReadiness.authLive);
+            const adminMode = isAdminLoginRequest();
+            const adminLoginAvailable = adminMode && authConfigSafe;
+            if (realLoginTab) {
+              realLoginTab.textContent = adminMode ? "Admin login" : "Klantlogin";
+            }
             realLoginStatusMessage = realLoginActive
               ? "Klantlogin is actief. Gebruik je e-mailadres en wachtwoord om in te loggen."
               : authReadiness.visitorMessage;
-            realLoginForm.hidden = !(realLoginActive || (authConfigSafe && isDeveloperModeEnabled()));
+            if (adminMode) {
+              realLoginStatusMessage = "Log in met je Max Webstudio beheerdersaccount om verder te gaan.";
+            }
+            realLoginForm.hidden = !(realLoginActive || adminLoginAvailable || (authConfigSafe && isDeveloperModeEnabled()));
             if (realLoginUnavailable) {
-              realLoginUnavailable.hidden = realLoginActive;
+              realLoginUnavailable.hidden = realLoginActive || adminLoginAvailable;
             }
             if (isDeveloperModeEnabled() && authReadiness) {
               const configStatus = authReadiness.configured ? "Config klaar, Auth nog uit." : "Config nog niet klaar.";
@@ -375,7 +470,7 @@
             }
             renderAuthLiveVisibility();
             if (document.querySelector("[data-auth-panel='real']").classList.contains("is-active")) {
-              renderLoginStatus("real", realLoginStatusMessage);
+              renderLoginStatus(adminMode ? "admin" : "real", realLoginStatusMessage);
             }
           } catch (error) {
             logSafeDiagnostic("Auth status unavailable", error, "AUTH_STATUS_UNAVAILABLE");
@@ -416,7 +511,8 @@
 
         realLoginForm.addEventListener("submit", async (event) => {
           event.preventDefault();
-          if (!realLoginActive) {
+          const adminMode = isAdminLoginRequest();
+          if (!realLoginActive && !(adminMode && authConfigSafe)) {
             activatePanel("request");
             setMessage(isDeveloperModeEnabled() && authConfigSafe
               ? "De accountconfiguratie is aanwezig, maar login blijft uit tot release approval groen is."
@@ -431,8 +527,15 @@
             const session = result.session || getStoredSupabaseSession();
             if (!session?.access_token) throw new Error("Login gelukt, maar sessie-token ontbreekt.");
             const account = await fetchAccountProfile(session.access_token);
+            const role = normalizeRole(account.profile?.role);
+            if (adminMode && !isAdminRole(role)) {
+              localStorage.removeItem("maxwebstudioSupabaseAuthSession");
+              setMessage("Dit account heeft geen admintoegang. Log in met een Max Webstudio beheerdersaccount.", "error");
+              return;
+            }
             storeRealSession(session, account);
-            const redirect = auth.getLoginRedirectForRole(account.profile.role, account.profile.customerId);
+            if (isAdminRole(role)) storeAdminSessionBridge(session, account);
+            const redirect = getAllowedRedirect(role, account.profile?.customerId) || auth.getLoginRedirectForRole(role, account.profile?.customerId);
             setMessage("Login gelukt.", "success");
             window.location.href = redirect;
           } catch (error) {
@@ -546,7 +649,7 @@
         });
         renderDeveloperModeVisibility();
         renderAuthLiveVisibility();
-        activatePanel(isDeveloperModeEnabled() ? "demo" : "real");
+        activatePanel(isDeveloperModeEnabled() && !isAdminLoginRequest() ? "demo" : "real");
         renderAuthStatus().then(() => activateRecoveryFromUrl());
       })();
     </script>
