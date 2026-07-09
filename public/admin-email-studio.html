@@ -160,6 +160,32 @@
         align-items: center;
       }
 
+      .email-preview-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+
+      .email-preview-mode {
+        min-height: 34px;
+        border: 1px solid rgba(96, 165, 250, 0.24);
+        border-radius: 8px;
+        color: rgba(226, 236, 248, 0.78);
+        background: rgba(37, 99, 235, 0.12);
+        font: inherit;
+        font-size: 12px;
+        font-weight: 850;
+        padding: 8px 11px;
+        cursor: pointer;
+      }
+
+      .email-preview-mode.is-active {
+        color: #f8fbff;
+        border-color: rgba(96, 165, 250, 0.64);
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.34), rgba(14, 165, 233, 0.16));
+      }
+
       .email-template-meta {
         justify-content: space-between;
       }
@@ -314,14 +340,57 @@
       }
 
       .email-preview-body {
-        min-height: 230px;
-        max-height: 360px;
+        display: grid;
+        justify-items: center;
+        min-height: 520px;
+        max-height: 760px;
         overflow: auto;
         padding: 22px;
         color: #1e293b;
         font-size: 15px;
         line-height: 1.7;
+        background: #e7edf5;
+      }
+
+      .email-preview-viewport {
+        width: 100%;
+        max-width: 760px;
+        min-height: 520px;
+        border: 0;
+        border-radius: 0;
+        background: #ffffff;
+        box-shadow: 0 18px 46px rgba(15, 23, 42, 0.16);
+      }
+
+      .email-preview-frame.is-mobile .email-preview-viewport {
+        max-width: 390px;
+      }
+
+      .email-preview-frame.is-sent .email-preview-body {
+        padding: 0;
+        background: #061626;
+      }
+
+      .email-preview-frame.is-sent .email-preview-viewport {
+        max-width: none;
+        min-height: 680px;
+        box-shadow: none;
+      }
+
+      .email-preview-raw {
+        width: 100%;
+        min-height: 520px;
+        margin: 0;
+        overflow: auto;
+        border-radius: 8px;
+        color: #dbeafe;
+        background: #020617;
+        padding: 18px;
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        font-size: 12px;
+        line-height: 1.6;
         white-space: pre-wrap;
+        overflow-wrap: anywhere;
       }
 
       .email-studio-empty {
@@ -461,7 +530,7 @@
             <h1>E-mail Studio</h1>
             <p>Beheer klantgerichte e-mailtemplates voor sales, onboarding, facturatie en support.</p>
           </div>
-          <span class="email-studio-status-card">Template-editor lokaal · verzending later gekoppeld</span>
+          <span class="email-studio-status-card">WYSIWYG · Resend HTML-preview</span>
         </header>
 
         <section class="email-studio-shell" aria-label="E-mail Studio workspace">
@@ -536,14 +605,23 @@
                     <p class="section-kicker">Preview</p>
                     <h2 id="preview-heading">Voorbeeld met klantdata</h2>
                   </div>
+                  <div class="email-preview-controls" role="tablist" aria-label="Preview modus">
+                    <button class="email-preview-mode is-active" type="button" data-preview-mode="desktop">Desktop preview</button>
+                    <button class="email-preview-mode" type="button" data-preview-mode="mobile">Mobiele preview</button>
+                    <button class="email-preview-mode" type="button" data-preview-mode="raw">Raw HTML</button>
+                    <button class="email-preview-mode" type="button" data-preview-mode="sent">Verzonden weergave</button>
+                  </div>
                 </div>
-                <div class="email-preview-frame">
+                <div class="email-preview-frame" id="email-preview-frame">
                   <div class="email-preview-meta">
                     <span>Onderwerp</span>
                     <strong id="preview-subject"></strong>
                     <p class="email-preview-preheader" id="preview-preheader"></p>
                   </div>
-                  <div class="email-preview-body" id="preview-body"></div>
+                  <div class="email-preview-body" id="preview-body">
+                    <iframe class="email-preview-viewport" id="preview-iframe" title="E-mail preview"></iframe>
+                    <pre class="email-preview-raw" id="preview-raw" hidden></pre>
+                  </div>
                 </div>
               </aside>
             </section>
@@ -720,6 +798,10 @@
           previewSubject: document.getElementById("preview-subject"),
           previewPreheader: document.getElementById("preview-preheader"),
           previewBody: document.getElementById("preview-body"),
+          previewFrame: document.getElementById("email-preview-frame"),
+          previewIframe: document.getElementById("preview-iframe"),
+          previewRaw: document.getElementById("preview-raw"),
+          previewModeButtons: [...document.querySelectorAll("[data-preview-mode]")],
           editorHeading: document.getElementById("editor-heading"),
           editorStatus: document.getElementById("editor-status"),
           message: document.getElementById("email-message"),
@@ -730,6 +812,8 @@
         };
         let templates = loadTemplates();
         let activeId = templates[0]?.id || "";
+        let previewMode = "desktop";
+        let latestRenderedEmailHtml = "";
 
         function loadTemplates() {
           try {
@@ -760,11 +844,145 @@
           return window.escapeHtml(value);
         }
 
+        function escapeAttribute(value) {
+          return escapeHtml(value).replace(/"/g, "&quot;");
+        }
+
         function renderWithData(value) {
           return String(value || "").replace(/\{\{([^}]+)\}\}/g, (match, key) => {
             const cleanKey = key.trim();
             return Object.prototype.hasOwnProperty.call(previewData, cleanKey) ? previewData[cleanKey] : match;
           });
+        }
+
+        function textToEmailHtml(value = "") {
+          const blocks = String(value || "")
+            .split(/\n{2,}/)
+            .map((block) => block.trim())
+            .filter(Boolean);
+          return blocks.map((block) => {
+            const escaped = escapeHtml(block)
+              .replace(/\n/g, "<br />")
+              .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" style="color:#7dd3fc;text-decoration:underline;font-weight:800;">$1</a>');
+            return `<p style="margin:0 0 18px;color:#c9d7e8;font-size:16px;line-height:1.72;">${escaped}</p>`;
+          }).join("");
+        }
+
+        function getTemplateCta(template = {}, body = "") {
+          const text = `${template.id || ""} ${template.name || ""} ${template.subject || ""} ${body}`.toLowerCase();
+          if (text.includes("offerte")) return { label: "Bekijk offerte", url: previewData.login_url };
+          if (text.includes("factuur")) return { label: "Open factuur", url: previewData.login_url };
+          if (text.includes("website_url") || text.includes("staat live")) return { label: "Bekijk website", url: previewData.website_url };
+          if (text.includes("logo") || text.includes("branding") || text.includes("downloads")) return { label: "Open klantomgeving", url: previewData.login_url };
+          if (text.includes("wachtwoord") || text.includes("login")) return { label: "Naar login", url: previewData.login_url };
+          return { label: "Open klantportaal", url: previewData.login_url };
+        }
+
+        function buildEmailRenderPayload() {
+          const template = activeTemplate() || {};
+          const subject = renderWithData(elements.subject.value || template.subject || "");
+          const preheader = renderWithData(elements.preheader.value || template.preheader || "");
+          const bodyText = renderWithData(elements.body.value || template.body || "");
+          const cta = getTemplateCta(template, bodyText);
+          return {
+            template,
+            subject,
+            preheader,
+            bodyText,
+            bodyHtml: textToEmailHtml(bodyText),
+            cta,
+          };
+        }
+
+        function renderResendEmailHtml(payload = buildEmailRenderPayload()) {
+          const logoUrl = "https://www.maxwebstudio.nl/max-webstudio-logo-mark.svg";
+          const companyName = "Max Webstudio";
+          const contactEmail = "info@maxwebstudio.nl";
+          const siteUrl = "https://www.maxwebstudio.nl";
+          const safeSubject = escapeHtml(payload.subject || companyName);
+          const safePreheader = escapeHtml(payload.preheader || "");
+          const safeCtaUrl = escapeAttribute(payload.cta?.url || siteUrl);
+          const safeCtaLabel = escapeHtml(payload.cta?.label || "Open klantportaal");
+          return `<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="supported-color-schemes" content="light dark" />
+    <title>${safeSubject}</title>
+    <style>
+      @media (max-width: 620px) {
+        .mws-shell { padding: 18px 10px !important; }
+        .mws-card { width: 100% !important; border-radius: 18px !important; }
+        .mws-pad { padding-left: 22px !important; padding-right: 22px !important; }
+        .mws-title { font-size: 28px !important; line-height: 1.12 !important; }
+        .mws-cta { display: block !important; text-align: center !important; }
+      }
+      @media (prefers-color-scheme: light) {
+        .mws-body { background: #eef5fb !important; }
+        .mws-card { background: #0d2235 !important; }
+      }
+    </style>
+  </head>
+  <body class="mws-body" style="margin:0;background:#061626;color:#ffffff;font-family:Inter,Arial,sans-serif;">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${safePreheader}</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="mws-shell" style="background:#061626;padding:30px 14px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="mws-card" style="max-width:680px;background:#0d2235;border:1px solid rgba(68,180,255,.28);border-radius:24px;overflow:hidden;">
+            <tr>
+              <td class="mws-pad" style="padding:30px 30px 12px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td>
+                      <table role="presentation" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td style="width:48px;height:48px;border-radius:14px;background:#07111f;text-align:center;vertical-align:middle;">
+                            <img src="${logoUrl}" width="42" height="42" alt="${companyName}" style="display:block;width:42px;height:42px;margin:3px auto;border:0;" />
+                          </td>
+                          <td style="padding-left:13px;">
+                            <div style="font-size:18px;color:#ffffff;font-weight:900;">${companyName}</div>
+                            <div style="font-size:12px;color:#27c7ff;font-weight:800;letter-spacing:.12em;text-transform:uppercase;">Klantupdate</div>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td class="mws-pad" style="padding:8px 30px 18px;">
+                <h1 class="mws-title" style="margin:0;color:#ffffff;font-size:34px;line-height:1.12;font-weight:900;">${safeSubject}</h1>
+              </td>
+            </tr>
+            <tr>
+              <td class="mws-pad" style="padding:0 30px 26px;">
+                ${payload.bodyHtml || '<p style="margin:0 0 18px;color:#c9d7e8;font-size:16px;line-height:1.72;">Schrijf de e-mailtekst in de editor.</p>'}
+                <p style="margin:24px 0 0;">
+                  <a class="mws-cta" href="${safeCtaUrl}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:900;border-radius:14px;padding:14px 20px;">${safeCtaLabel}</a>
+                </p>
+                <p style="margin:18px 0 0;color:#91a6bc;font-size:13px;line-height:1.65;">Werkt de knop niet? Open dan deze link:<br /><a href="${safeCtaUrl}" style="color:#7dd3fc;text-decoration:underline;">${safeCtaUrl}</a></p>
+              </td>
+            </tr>
+            <tr>
+              <td class="mws-pad" style="padding:22px 30px;background:rgba(255,255,255,.05);color:#aabbd0;font-size:13px;line-height:1.65;">
+                Heb je vragen? Reageer op deze mail of mail naar <a href="mailto:${contactEmail}" style="color:#7dd3fc;text-decoration:underline;">${contactEmail}</a>.<br />
+                <span style="color:#7e91a8;">${companyName} · ${siteUrl}</span>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+        }
+
+        function setPreviewMode(mode) {
+          previewMode = mode;
+          renderPreview();
         }
 
         function setMessage(text, type = "") {
@@ -832,9 +1050,33 @@
         }
 
         function renderPreview() {
-          elements.previewSubject.textContent = renderWithData(elements.subject.value);
-          elements.previewPreheader.textContent = renderWithData(elements.preheader.value);
-          elements.previewBody.textContent = renderWithData(elements.body.value);
+          const payload = buildEmailRenderPayload();
+          latestRenderedEmailHtml = renderResendEmailHtml(payload);
+          window.maxWebstudioMailStudio = {
+            getResendPayload: () => ({
+              subject: payload.subject,
+              html: latestRenderedEmailHtml,
+              text: payload.bodyText,
+              preheader: payload.preheader,
+              templateKey: payload.template?.id || activeId,
+              templateName: payload.template?.name || elements.name.value || "",
+            }),
+          };
+          elements.previewSubject.textContent = payload.subject;
+          elements.previewPreheader.textContent = payload.preheader;
+          elements.previewFrame.classList.toggle("is-mobile", previewMode === "mobile");
+          elements.previewFrame.classList.toggle("is-sent", previewMode === "sent");
+          elements.previewFrame.classList.toggle("is-raw", previewMode === "raw");
+          elements.previewIframe.hidden = previewMode === "raw";
+          elements.previewRaw.hidden = previewMode !== "raw";
+          elements.previewModeButtons.forEach((button) => {
+            button.classList.toggle("is-active", button.dataset.previewMode === previewMode);
+          });
+          if (previewMode === "raw") {
+            elements.previewRaw.textContent = latestRenderedEmailHtml;
+            return;
+          }
+          elements.previewIframe.srcdoc = latestRenderedEmailHtml;
         }
 
         function saveTemplate() {
@@ -951,6 +1193,9 @@
         document.getElementById("toggle-status").addEventListener("click", toggleStatus);
         document.getElementById("reset-templates").addEventListener("click", resetTemplates);
         document.getElementById("reset-templates-top").addEventListener("click", resetTemplates);
+        elements.previewModeButtons.forEach((button) => {
+          button.addEventListener("click", () => setPreviewMode(button.dataset.previewMode || "desktop"));
+        });
 
         renderVariables();
         renderTemplateList();
