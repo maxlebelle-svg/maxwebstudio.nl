@@ -567,6 +567,7 @@
                 <button type="button" data-preview-mode="tablet">Tablet</button>
                 <button type="button" data-preview-mode="mobile">Mobiel</button>
                 <button type="button" id="demo-journey-preview-refresh" aria-label="Preview vernieuwen">↻</button>
+                <button type="button" id="demo-journey-regenerate">Demo opnieuw genereren</button>
                 <button type="button" id="demo-journey-save-demo-site">Demo-site opslaan</button>
                 <button type="button" id="demo-journey-upload-manual-zip">ZIP uploaden</button>
                 <input id="demo-journey-manual-zip-input" type="file" accept=".zip,application/zip" hidden />
@@ -20979,6 +20980,7 @@
             previewShell: document.querySelector("#demo-klantreis .factory-preview-frame-shell"),
             previewControls: document.querySelector("#demo-klantreis .factory-preview-controls"),
             previewRefresh: document.getElementById("demo-journey-preview-refresh"),
+            regenerateDemo: document.getElementById("demo-journey-regenerate"),
             saveDemoSite: document.getElementById("demo-journey-save-demo-site"),
             uploadManualZip: document.getElementById("demo-journey-upload-manual-zip"),
             manualZipInput: document.getElementById("demo-journey-manual-zip-input"),
@@ -22331,6 +22333,77 @@
           });
         }
 
+        async function resetDemoForRegeneration() {
+          const hasExistingOutput = Boolean(
+            journey?.previewUrl
+            || elements.briefing?.value
+            || buildHistory.latestJob
+            || (buildHistory.previewVersions || []).length
+          );
+          const confirmed = window.confirm(hasExistingOutput
+            ? "Oude demo-preview en websiteplan losmaken? Daarna kun je de briefing opnieuw invullen en een verbeterde preview genereren."
+            : "Briefing leegmaken zodat je opnieuw kunt invoeren?");
+          if (!confirmed) return;
+
+          await withJourneyLock("regenerate_demo", [elements.regenerateDemo, elements.generatePreview, elements.generateBriefing, elements.save, elements.nextStepPrimary], async () => {
+            const selectedPackage = currentPackageType();
+            intakeState = selectedPackage ? { package: selectedPackage } : {};
+            intakeAssets = [];
+            manualPreview = null;
+            previewSource = "factory";
+            lastFactoryResponse = null;
+            buildHistory = { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
+            projectWorkspace = null;
+            if (elements.briefing) elements.briefing.value = "";
+            if (elements.preview) elements.preview.value = "";
+            if (elements.feedback) elements.feedback.value = "";
+            if (elements.status) elements.status.value = "aanvraag_ontvangen";
+            try {
+              localStorage.removeItem(intakeStorageKey());
+            } catch {
+              // Local reset is best effort.
+            }
+
+            if (journey?.id) {
+              setMessage(elements.message, "Oude demo resetten...", "info");
+              try {
+                const data = await apiRequest(endpoint, "PATCH", collectPayload({
+                  id: journey.id,
+                  demoJourneyId: journey.id,
+                  demoStatus: "aanvraag_ontvangen",
+                  generatedBriefing: "",
+                  previewUrl: "",
+                  feedback: "",
+                  intake: intakeState,
+                  intakeSummary: "",
+                  intakeCompleteness: 0,
+                  assetMetadata: [],
+                }));
+                journey = data.demoJourney || data.journey || journey;
+                if (journey) {
+                  journey.generatedBriefing = "";
+                  journey.previewUrl = "";
+                  journey.feedback = "";
+                  journey.previewPackage = {};
+                  journey.assetMetadata = [];
+                  journey.intake = intakeState;
+                  journey.intakeCompleteness = 0;
+                }
+                events = Array.isArray(data.events) ? data.events : events;
+              } catch (error) {
+                setMessage(elements.message, error.message || "Demo resetten is niet gelukt.", "error");
+                return;
+              }
+            }
+
+            renderIntakeFields();
+            renderIntake();
+            renderJourney();
+            document.getElementById("demo-journey-intake")?.scrollIntoView({ behavior: "smooth", block: "center" });
+            setMessage(elements.message, "Demo is klaargezet om opnieuw in te vullen. Vul de verbeterde briefing in en genereer daarna opnieuw het websiteplan en de preview.", "success");
+          });
+        }
+
         async function saveDemoSite() {
           if (!journey?.id) {
             setMessage(elements.message, "Sla eerst de demo-aanvraag op.", "warning");
@@ -22927,6 +23000,13 @@
             elements.uploadManualZip.disabled = !journey?.id;
             elements.uploadManualZip.title = journey?.id ? "Upload optioneel een handmatige ZIP als previewbron" : "Sla eerst de demo-aanvraag op";
           }
+          if (elements.regenerateDemo) {
+            const canRegenerate = Boolean(journey?.id || elements.briefing?.value || ready);
+            elements.regenerateDemo.disabled = !canRegenerate;
+            elements.regenerateDemo.title = canRegenerate
+              ? "Reset de huidige demo zodat je de briefing opnieuw kunt invullen en een verbeterde preview kunt maken"
+              : "Maak eerst een demo-aanvraag of websiteplan";
+          }
           if (elements.previewStageState) {
             const sourceLabel = source === "manual" ? "Handmatige ZIP" : "Factory";
             elements.previewStageState.textContent = saved ? `Opgeslagen: ${sourceLabel}` : ready ? `${sourceLabel} preview` : "Nog geen preview";
@@ -23220,6 +23300,11 @@
               return;
             }
             elements.previewFrame.src = elements.previewFrame.src;
+          });
+          elements.regenerateDemo?.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            resetDemoForRegeneration();
           });
           elements.saveDemoSite?.addEventListener("click", (event) => {
             event.preventDefault();
