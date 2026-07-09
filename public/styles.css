@@ -13475,6 +13475,37 @@ h3 {
   padding-top: 2px;
 }
 
+#demo-klantreis .demo-intake-wizard-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 6px;
+  padding: 12px 14px;
+  border: 1px solid rgba(34, 197, 94, 0.22);
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(6, 78, 59, 0.2), rgba(2, 14, 25, 0.54));
+}
+
+#demo-klantreis .demo-intake-wizard-footer > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+#demo-klantreis .demo-intake-wizard-footer strong {
+  color: rgba(248, 251, 255, 0.96);
+  font-size: 13px;
+  font-weight: 950;
+}
+
+#demo-klantreis .demo-intake-wizard-footer small {
+  color: rgba(226, 236, 248, 0.66);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
 #demo-klantreis .demo-intake-upload-grid,
 #demo-klantreis .demo-action-grid,
 #demo-klantreis .demo-super-admin-grid {
@@ -27665,5 +27696,484 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
 
   .customer-timeline-detail {
     position: static;
+  }
+}
+/* Website Factory Control Center */
+.factory-control-heading {
+  align-items: end;
+}
+
+.factory-control-heading h2 {
+  max-width: 780px;
+  font-size: clamp(42px, 4vw, 68px);
+  line-height: 0.96;
+}
+
+.factory-control-center {
+  display: grid;
+  gap: 18px;
+}
+
+.factory-control-cockpit {
+  display: grid;
+  grid-template-columns: minmax(260px, 1.35fr) repeat(4, minmax(150px, 0.75fr)) minmax(240px, auto);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.factory-cockpit-card,
+.factory-control-panel {
+  border: 1px solid rgba(171, 196, 224, 0.14);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(21, 94, 239, 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(13, 35, 55, 0.78), rgba(4, 15, 27, 0.94));
+  box-shadow: 0 24px 70px rgba(0, 8, 18, 0.22);
+  color: #f8fbff;
+}
+
+.factory-cockpit-card {
+  display: grid;
+  gap: 6px;
+  min-height: 104px;
+  padding: 16px;
+}
+
+.factory-cockpit-card span,
+.factory-cockpit-card small,
+.factory-panel-heading span,
+.factory-source-card small,
+.factory-field-summary small,
+.factory-smart-field-head small,
+.factory-readiness-bars small {
+  color: rgba(226, 236, 248, 0.62);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.factory-cockpit-card strong {
+  color: #ffffff;
+  font-size: clamp(18px, 1.55vw, 26px);
+  line-height: 1.05;
+}
+
+.factory-cockpit-card.is-warning {
+  border-color: rgba(245, 158, 11, 0.34);
+  background:
+    radial-gradient(circle at 16% 0%, rgba(245, 158, 11, 0.16), transparent 34%),
+    linear-gradient(180deg, rgba(34, 28, 12, 0.58), rgba(4, 15, 27, 0.94));
+}
+
+.factory-cockpit-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.factory-cockpit-actions .button {
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: normal;
+  text-align: center;
+}
+
+.factory-control-progress {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(2, 14, 25, 0.78);
+}
+
+.factory-control-grid {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.78fr) minmax(420px, 1.55fr) minmax(260px, 0.88fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.factory-control-panel {
+  padding: 18px;
+}
+
+.factory-panel-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: start;
+  margin-bottom: 16px;
+}
+
+.factory-panel-heading h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 20px;
+  line-height: 1.08;
+}
+
+.factory-briefing-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.factory-briefing-tabs button,
+.factory-preview-controls button,
+.factory-preview-source-switch button,
+.factory-source-card button {
+  min-height: 34px;
+  border: 1px solid rgba(171, 196, 224, 0.16);
+  border-radius: 8px;
+  color: rgba(248, 251, 255, 0.76);
+  background: rgba(2, 14, 25, 0.7);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.factory-briefing-tabs button {
+  padding: 0 12px;
+}
+
+.factory-briefing-tabs button.is-active,
+.factory-preview-controls button.is-active,
+.factory-preview-source-switch button.is-active {
+  color: #fff;
+  border-color: rgba(21, 94, 239, 0.68);
+  background: rgba(21, 94, 239, 0.34);
+  box-shadow: 0 0 0 3px rgba(21, 94, 239, 0.12);
+}
+
+.factory-source-list,
+.factory-action-stack,
+.factory-output-block {
+  display: grid;
+  gap: 10px;
+}
+
+.factory-source-card {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  padding: 12px;
+  border: 1px solid rgba(171, 196, 224, 0.13);
+  border-radius: 8px;
+  background: rgba(2, 14, 25, 0.42);
+}
+
+.factory-source-card > span {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  color: #19c2ff;
+  background: rgba(25, 194, 255, 0.1);
+  font-weight: 900;
+}
+
+.factory-source-card strong,
+.factory-output-block > strong {
+  color: #fff;
+  font-size: 14px;
+}
+
+.factory-source-card mark {
+  padding: 5px 8px;
+  border-radius: 999px;
+  color: #2bd982;
+  background: rgba(43, 217, 130, 0.12);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.factory-source-card button {
+  grid-column: 2 / -1;
+  justify-self: start;
+  min-height: 28px;
+  padding: 0 10px;
+}
+
+.factory-source-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.factory-smart-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.factory-smart-field {
+  min-width: 0;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid rgba(171, 196, 224, 0.13);
+  border-radius: 8px;
+  background: rgba(2, 14, 25, 0.48);
+}
+
+.factory-smart-field.is-wide,
+.factory-readiness-bars {
+  grid-column: 1 / -1;
+}
+
+.factory-smart-field.is-active {
+  border-color: rgba(21, 94, 239, 0.62);
+  box-shadow: 0 0 0 3px rgba(21, 94, 239, 0.12);
+}
+
+.factory-smart-field-head,
+.factory-field-summary,
+.factory-field-suggestion,
+.factory-readiness-bars label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.factory-smart-field-head {
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.factory-field-index {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  color: #9be8ff;
+  background: rgba(25, 194, 255, 0.12);
+  border: 1px solid rgba(25, 194, 255, 0.22);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.factory-smart-field-head > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.factory-smart-field-head strong {
+  display: block;
+  color: #fff;
+  font-size: 15px;
+}
+
+.factory-field-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.factory-field-status i {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  font-style: normal;
+}
+
+.factory-status-ready {
+  color: #c8ffe1;
+  background: rgba(43, 217, 130, 0.13);
+}
+
+.factory-status-ready i {
+  color: #052d1a;
+  background: #2bd982;
+}
+
+.factory-status-review {
+  color: #ffe9bd;
+  background: rgba(245, 158, 11, 0.14);
+}
+
+.factory-status-review i {
+  color: #2f1e03;
+  background: #f59e0b;
+}
+
+.factory-status-missing {
+  color: #ffd3d3;
+  background: rgba(239, 68, 68, 0.14);
+}
+
+.factory-status-missing i {
+  color: #fff;
+  background: #ef4444;
+}
+
+.factory-status-optional {
+  color: #d8e8ff;
+  background: rgba(96, 165, 250, 0.14);
+}
+
+.factory-status-optional i {
+  color: #071827;
+  background: #60a5fa;
+}
+
+.factory-field-summary {
+  justify-content: space-between;
+  width: 100%;
+  min-height: 50px;
+  padding: 10px;
+  border: 1px solid rgba(171, 196, 224, 0.12);
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(6, 22, 36, 0.78);
+  text-align: left;
+  cursor: pointer;
+}
+
+.factory-field-summary strong {
+  display: block;
+  overflow: hidden;
+  max-width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.factory-field-summary b {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  border-radius: 8px;
+  color: #19c2ff;
+  background: rgba(25, 194, 255, 0.1);
+}
+
+.factory-field-editor {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.factory-field-suggestion {
+  justify-content: space-between;
+  padding: 10px;
+  border: 1px solid rgba(43, 217, 130, 0.18);
+  border-radius: 8px;
+  color: #c8ffe1;
+  background: rgba(43, 217, 130, 0.08);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.factory-control-options {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.factory-readiness-bars {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(171, 196, 224, 0.13);
+  border-radius: 8px;
+  background: rgba(2, 14, 25, 0.42);
+}
+
+.factory-readiness-bars > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.factory-readiness-bars strong {
+  color: #fff;
+}
+
+.factory-readiness-bars label {
+  display: grid;
+  grid-template-columns: 110px 40px 1fr;
+  color: rgba(248, 251, 255, 0.78);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.factory-readiness-bars i {
+  overflow: hidden;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(171, 196, 224, 0.12);
+}
+
+.factory-readiness-bars em {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #155eef, #19c2ff, #2bd982);
+}
+
+.factory-output-block {
+  padding: 12px;
+  border: 1px solid rgba(171, 196, 224, 0.12);
+  border-radius: 8px;
+  background: rgba(2, 14, 25, 0.36);
+}
+
+.factory-output-block + .factory-output-block {
+  margin-top: 12px;
+}
+
+.factory-action-stack .button {
+  justify-content: center;
+  min-height: 38px;
+}
+
+.factory-preview-command-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.factory-control-preview .factory-preview-browser {
+  min-height: 300px;
+}
+
+.factory-control-preview .factory-preview-frame-shell {
+  min-height: 260px;
+}
+
+.factory-legacy-card {
+  opacity: 0.72;
+}
+
+@media (max-width: 1500px) {
+  .factory-control-cockpit,
+  .factory-control-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .factory-cockpit-actions,
+  .factory-output-panel {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 980px) {
+  .factory-control-cockpit,
+  .factory-control-grid,
+  .factory-smart-fields {
+    grid-template-columns: 1fr;
   }
 }

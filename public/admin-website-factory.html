@@ -525,11 +525,11 @@
         </section>
 
         <section class="admin-section" id="demo-klantreis">
-          <div class="admin-section-heading factory-command-heading">
+          <div class="admin-section-heading factory-command-heading factory-control-heading">
             <div>
               <p class="section-kicker">Website Factory</p>
-              <h2>Website Factory</h2>
-              <p class="admin-section-intro">Van lead tot live website in één volledig geautomatiseerde workflow.</p>
+              <h2>Website Factory Control Center</h2>
+              <p class="admin-section-intro">Automatisch gevuld vanuit lead, scan en brancheprofiel. Controleer alleen wat aandacht nodig heeft.</p>
             </div>
             <div class="factory-live-status" aria-label="Website Factory live status">
               <span><strong id="factory-live-builds">0</strong><small>Active builds</small></span>
@@ -539,43 +539,140 @@
             </div>
           </div>
 
-          <div class="website-factory-workspace" aria-label="Website Factory Workspace">
-            <article class="admin-card factory-workspace-hero">
-              <div>
-                <p class="section-kicker">AI Operating Center</p>
-                <h3>Build previews vanuit één strak werkstation.</h3>
-                <p>Volg demo, websiteplan, buildstatus, preview en klantactie zonder te zoeken.</p>
+          <section class="factory-control-center" aria-label="Website Factory Control Center">
+            <div class="factory-control-cockpit">
+              <article class="factory-cockpit-card is-wide">
+                <span>Lead</span>
+                <strong id="factory-cockpit-lead">Geen lead gekozen</strong>
+                <small id="factory-cockpit-lead-meta">Kies links of via Leadfinder een lead.</small>
+              </article>
+              <article class="factory-cockpit-card">
+                <span>Factory status</span>
+                <strong id="factory-cockpit-status">Start</strong>
+                <small id="factory-cockpit-package">Starter Website</small>
+              </article>
+              <article class="factory-cockpit-card">
+                <span>Compleetheid</span>
+                <strong id="demo-intake-score">0%</strong>
+                <small id="demo-intake-progress">Intake compleet: 0/14</small>
+              </article>
+              <article class="factory-cockpit-card is-warning">
+                <span>Aandacht</span>
+                <strong id="factory-cockpit-attention">Nog intake nodig</strong>
+                <small id="demo-intake-missing">Mist input</small>
+              </article>
+              <article class="factory-cockpit-card">
+                <span>Build confidence</span>
+                <strong id="factory-cockpit-confidence">Nog onbekend</strong>
+                <small id="factory-cockpit-confidence-copy">Wordt bepaald op inputkwaliteit.</small>
+              </article>
+              <div class="factory-cockpit-actions">
+                <button class="button primary" id="demo-next-step-primary" type="button">Volgende beste actie</button>
+                <button class="button secondary" id="demo-next-step-secondary" type="button" hidden>Preview openen</button>
+                <button class="button secondary" id="demo-journey-save" type="submit" form="demo-journey-form">Opslaan</button>
               </div>
-              <div class="factory-command-flow" aria-label="Website Factory flow">
-                <span class="is-active"><b>1</b><strong>Lead</strong><small>Geselecteerd</small></span>
-                <span><b>2</b><strong>Demo</strong><small>Opslaan</small></span>
-                <span><b>3</b><strong>Websiteplan</strong><small>Analyse</small></span>
-                <span><b>4</b><strong>Build</strong><small>Website</small></span>
-                <span><b>5</b><strong>Quality</strong><small>Check</small></span>
-                <span><b>6</b><strong>Preview</strong><small>Intern</small></span>
-                <span><b>7</b><strong>Feedback</strong><small>Klant</small></span>
-                <span><b>8</b><strong>Live</strong><small>Publiceren</small></span>
-              </div>
-            </article>
-            <article class="admin-card factory-preview-stage">
+            </div>
+
+            <div class="demo-intake-progress factory-control-progress" aria-label="Intake voortgang"><span id="demo-intake-progress-bar" style="width: 0%"></span></div>
+            <p class="admin-form-message" id="demo-journey-message" role="status"></p>
+
+            <div class="factory-control-grid">
+              <aside class="factory-control-panel factory-sources-panel" aria-labelledby="factory-sources-title">
+                <div class="factory-panel-heading">
+                  <div>
+                    <p class="section-kicker">Bronnen</p>
+                    <h3 id="factory-sources-title">Automatische input</h3>
+                  </div>
+                  <mark class="status-badge status-active" id="demo-journey-source">CRM</mark>
+                </div>
+                <div class="factory-source-list" id="factory-source-list"></div>
+                <div class="factory-source-actions">
+                  <button class="button secondary button-small" id="demo-journey-refresh" type="button">Nieuwe scan</button>
+                  <a class="button secondary button-small" href="admin-assets.html">Asset manager</a>
+                </div>
+              </aside>
+
+              <article class="factory-control-panel factory-briefing-panel" id="demo-journey-intake" aria-labelledby="demo-intake-title">
+                <div class="factory-panel-heading">
+                  <div>
+                    <p class="section-kicker">Factory briefing</p>
+                    <h3 id="demo-intake-title">Slimme productievelden</h3>
+                    <span>Controleer de automatisch ingevulde waarden en pas alleen aan waar nodig.</span>
+                  </div>
+                  <mark class="status-badge status-planned" id="demo-intake-state">Onvolledig</mark>
+                </div>
+                <div class="factory-briefing-tabs" aria-label="Briefing categorieën">
+                  <button class="is-active" type="button">Essentie</button>
+                  <button type="button">Aanbod</button>
+                  <button type="button">Structuur</button>
+                  <button type="button">Merk & beeld</button>
+                  <button type="button">Conversie</button>
+                  <button type="button">Controle</button>
+                </div>
+                <div class="demo-intake-fields factory-smart-fields" id="demo-intake-fields"></div>
+                <div class="demo-intake-upload-grid factory-asset-dropzone">
+                  <label for="demo-intake-logo-upload">Logo bestanden<input id="demo-intake-logo-upload" type="file" multiple accept=".svg,.png,.jpg,.jpeg,.webp,.pdf" /></label>
+                  <label for="demo-intake-photo-upload">Foto bestanden<input id="demo-intake-photo-upload" type="file" multiple accept=".png,.jpg,.jpeg,.webp,.pdf" /></label>
+                </div>
+                <div class="demo-intake-assets" id="demo-intake-assets"></div>
+              </article>
+
+              <aside class="factory-control-panel factory-output-panel" aria-labelledby="demo-intake-summary-title">
+                <div class="factory-panel-heading">
+                  <div>
+                    <p class="section-kicker">Output & actie</p>
+                    <h3 id="demo-intake-summary-title">Live briefing</h3>
+                  </div>
+                  <mark class="status-badge status-prepared" id="factory-output-state">Controle</mark>
+                </div>
+                <section class="factory-output-block">
+                  <strong>Nog nodig</strong>
+                  <div class="factory-readiness-list" id="demo-intake-readiness" aria-label="Factory readiness checklist"></div>
+                </section>
+                <section class="factory-output-block">
+                  <strong>Samenvatting</strong>
+                  <article class="demo-intake-summary">
+                    <div id="demo-intake-summary"></div>
+                    <pre id="demo-intake-debug" hidden></pre>
+                  </article>
+                </section>
+                <section class="factory-output-block">
+                  <strong>Preview acties</strong>
+                  <div class="factory-action-stack">
+                    <button class="button secondary" id="demo-journey-generate-briefing" type="button">Websiteplan maken</button>
+                    <button class="button secondary" id="demo-journey-generate-preview" type="button">Starter-preview</button>
+                    <button class="button secondary" id="demo-journey-upgrade-professional" type="button">Business-preview</button>
+                    <button class="button secondary" id="demo-journey-upgrade-premium" type="button">Premium-preview</button>
+                    <button class="button secondary" id="demo-journey-copy-briefing" type="button">Websiteplan kopiëren</button>
+                  </div>
+                </section>
+              </aside>
+            </div>
+
+            <article class="factory-control-panel factory-preview-stage factory-control-preview">
               <div class="sales-timeline-heading">
-                <strong>Live preview</strong>
+                <div>
+                  <strong>Live preview</strong>
+                  <span>Kleine controleweergave, zodat briefing en actie centraal blijven.</span>
+                </div>
                 <span id="demo-journey-preview-stage-state">Nog geen preview</span>
               </div>
-              <div class="factory-preview-controls" aria-label="Preview controls">
-                <button class="is-active" type="button" data-preview-mode="desktop">Desktop</button>
-                <button type="button" data-preview-mode="tablet">Tablet</button>
-                <button type="button" data-preview-mode="mobile">Mobiel</button>
-                <button type="button" id="demo-journey-preview-refresh" aria-label="Preview vernieuwen">↻</button>
-                <button type="button" id="demo-journey-regenerate">Demo opnieuw genereren</button>
-                <button type="button" id="demo-journey-save-demo-site">Demo-site opslaan</button>
-                <button type="button" id="demo-journey-upload-manual-zip">ZIP uploaden</button>
-                <input id="demo-journey-manual-zip-input" type="file" accept=".zip,application/zip" hidden />
-              </div>
-              <div class="factory-preview-source-switch" aria-label="Definitieve previewbron">
-                <span>Definitieve versie</span>
-                <button class="is-active" type="button" data-preview-source="factory">Factory</button>
-                <button type="button" data-preview-source="manual" disabled>Handmatige ZIP</button>
+              <div class="factory-preview-command-row">
+                <div class="factory-preview-controls" aria-label="Preview controls">
+                  <button class="is-active" type="button" data-preview-mode="desktop">Desktop</button>
+                  <button type="button" data-preview-mode="tablet">Tablet</button>
+                  <button type="button" data-preview-mode="mobile">Mobiel</button>
+                  <button type="button" id="demo-journey-preview-refresh" aria-label="Preview vernieuwen">↻</button>
+                  <button type="button" id="demo-journey-regenerate">Opnieuw genereren</button>
+                  <button type="button" id="demo-journey-save-demo-site">Demo-site opslaan</button>
+                  <button type="button" id="demo-journey-upload-manual-zip">ZIP uploaden</button>
+                  <input id="demo-journey-manual-zip-input" type="file" accept=".zip,application/zip" hidden />
+                </div>
+                <div class="factory-preview-source-switch" aria-label="Definitieve previewbron">
+                  <span>Definitieve versie</span>
+                  <button class="is-active" type="button" data-preview-source="factory">Factory</button>
+                  <button type="button" data-preview-source="manual" disabled>Handmatige ZIP</button>
+                </div>
               </div>
               <div class="factory-preview-browser">
                 <div class="factory-preview-toolbar" aria-hidden="true">
@@ -591,71 +688,11 @@
                 </div>
               </div>
             </article>
-          </div>
-
-          <section class="factory-briefing-workbench" aria-labelledby="demo-intake-title">
-            <article class="admin-card demo-intake-card factory-briefing-panel" id="demo-journey-intake">
-              <div class="sales-timeline-heading">
-                <div>
-                  <p class="section-kicker">Briefing questionnaire</p>
-                  <strong id="demo-intake-title">Website Factory briefing</strong>
-                  <span>Vul de klantwens zo in dat de Factory direct een websiteplan en preview kan bouwen.</span>
-                </div>
-                <mark class="status-badge status-planned" id="demo-intake-state">Onvolledig</mark>
-              </div>
-              <div class="factory-briefing-progress-row">
-                <div>
-                  <strong id="demo-intake-score">0%</strong>
-                  <span id="demo-intake-progress">Intake compleet: 0/14 verplichte punten.</span>
-                </div>
-                <div class="demo-intake-progress" aria-label="Intake voortgang"><span id="demo-intake-progress-bar" style="width: 0%"></span></div>
-              </div>
-              <div class="demo-intake-fields" id="demo-intake-fields"></div>
-              <div class="demo-intake-upload-grid">
-                <label for="demo-intake-logo-upload">Logo bestanden<input id="demo-intake-logo-upload" type="file" multiple accept=".svg,.png,.jpg,.jpeg,.webp,.pdf" /></label>
-                <label for="demo-intake-photo-upload">Foto bestanden<input id="demo-intake-photo-upload" type="file" multiple accept=".png,.jpg,.jpeg,.webp,.pdf" /></label>
-              </div>
-              <div class="demo-intake-assets" id="demo-intake-assets"></div>
-            </article>
-
-            <aside class="admin-card factory-briefing-sidebar" aria-labelledby="demo-intake-summary-title">
-              <div class="sales-timeline-heading">
-                <div>
-                  <strong id="demo-intake-summary-title">Live briefing</strong>
-                  <span>Deze samenvatting gaat mee naar websiteplan, preview en ZIP.</span>
-                </div>
-                <mark class="status-badge status-prepared" id="demo-intake-missing">Mist input</mark>
-              </div>
-              <div class="factory-readiness-list" id="demo-intake-readiness" aria-label="Factory readiness checklist"></div>
-              <article class="demo-intake-summary">
-                <div id="demo-intake-summary"></div>
-                <pre id="demo-intake-debug" hidden></pre>
-              </article>
-              <div class="admin-profile-actions admin-action-groups factory-briefing-actions">
-                <div class="admin-action-group admin-action-group-primary">
-                  <button class="button primary" id="demo-journey-save" type="submit" form="demo-journey-form">Demo-aanvraag opslaan</button>
-                  <button class="button secondary" id="demo-journey-generate-briefing" type="button">Websiteplan maken</button>
-                  <button class="button secondary" id="demo-journey-generate-preview" type="button">Preview genereren</button>
-                </div>
-                <div class="admin-action-group admin-action-group-secondary">
-                  <button class="button secondary" id="demo-journey-upgrade-professional" type="button">Genereer Business-preview</button>
-                  <button class="button secondary" id="demo-journey-upgrade-premium" type="button">Genereer Premium-preview</button>
-                  <details class="demo-more-options">
-                    <summary>Meer opties</summary>
-                    <div>
-                      <button class="button secondary" id="demo-journey-copy-briefing" type="button">Websiteplan kopiëren</button>
-                      <button class="button secondary" id="demo-journey-refresh" type="button">Opnieuw laden</button>
-                    </div>
-                  </details>
-                </div>
-              </div>
-              <p class="admin-form-message" id="demo-journey-message" role="status"></p>
-            </aside>
           </section>
 
           <div class="admin-grid workflow-metrics" id="demo-journey-metrics" aria-live="polite"></div>
 
-          <article class="admin-card demo-next-step-card" id="demo-next-step-card" aria-labelledby="demo-next-step-title">
+          <article class="admin-card demo-next-step-card factory-legacy-card" id="demo-next-step-card" aria-labelledby="demo-next-step-title">
             <div class="sales-timeline-heading">
               <div>
                 <strong id="demo-next-step-title">Volgende stap</strong>
@@ -664,8 +701,7 @@
               <mark class="status-badge status-prepared" id="demo-next-step-state">Start</mark>
             </div>
             <div class="demo-next-step-actions">
-              <button class="button primary" id="demo-next-step-primary" type="button">Lead selecteren</button>
-              <button class="button secondary" id="demo-next-step-secondary" type="button" hidden>Preview openen</button>
+              <span class="button primary" aria-hidden="true">Volgende beste actie staat bovenaan</span>
             </div>
             <div class="demo-workflow-status" id="demo-workflow-status" aria-label="Website Factory workflow status"></div>
           </article>
@@ -21208,6 +21244,15 @@
             intakeAssets: document.getElementById("demo-intake-assets"),
             intakeLogoUpload: document.getElementById("demo-intake-logo-upload"),
             intakePhotoUpload: document.getElementById("demo-intake-photo-upload"),
+            cockpitLead: document.getElementById("factory-cockpit-lead"),
+            cockpitLeadMeta: document.getElementById("factory-cockpit-lead-meta"),
+            cockpitStatus: document.getElementById("factory-cockpit-status"),
+            cockpitPackage: document.getElementById("factory-cockpit-package"),
+            cockpitAttention: document.getElementById("factory-cockpit-attention"),
+            cockpitConfidence: document.getElementById("factory-cockpit-confidence"),
+            cockpitConfidenceCopy: document.getElementById("factory-cockpit-confidence-copy"),
+            sourceList: document.getElementById("factory-source-list"),
+            outputState: document.getElementById("factory-output-state"),
             superAdminState: document.getElementById("demo-super-admin-state"),
             superAdminGrid: document.getElementById("demo-super-admin-grid"),
             approvalState: document.getElementById("demo-approval-state"),
@@ -21893,52 +21938,28 @@
 
         function renderIntakeFields() {
           if (!elements.intakeFields) return;
-          const activeKey = activeQuestionKey();
+          const activeKey = intakeExpandedQuestions.size ? activeQuestionKey() : "";
           const intake = collectIntake();
-          const activeIndex = Math.max(0, questionIndex(activeKey));
-          const wizardHeader = `
-            <div class="demo-intake-wizard-bar">
-              <div>
-                <span>Briefing flow</span>
-                <strong>Stap ${activeIndex + 1} van ${intakeQuestions.length}</strong>
-                <small>${intake.complete ? "Alles ingevuld. Controleer of genereer de briefing." : `${intake.completed}/${intake.requiredTotal} verplichte punten klaar.`}</small>
-              </div>
-              <div class="demo-intake-wizard-meter" aria-hidden="true"><span style="width: ${escapeHtml(intake.percent)}%"></span></div>
-            </div>
-          `;
-          elements.intakeFields.innerHTML = wizardHeader + intakeQuestions.map((question, index) => {
-            const value = normalizeIntakeValue(intakeState[question.key]);
-            const required = question.required ? `<span class="status-badge status-planned">Verplicht</span>` : "";
-            const hasValue = questionHasValue(question);
-            const isActive = question.key === activeKey;
-            const stateLabel = hasValue ? intakeLabel(question, value) : (question.required ? "Nog invullen" : "Optioneel");
-            const statusClass = hasValue ? "status-active" : question.required ? "status-warning" : "status-planned";
-            const heading = `
-              <div class="demo-intake-question-heading">
-                <div>
-                  <strong><span class="demo-intake-step-number">${index + 1}</span>${escapeHtml(question.label)} ${required}</strong>
-                  ${question.helper ? `<small>${escapeHtml(question.helper)}</small>` : ""}
-                </div>
-                <button type="button" class="demo-intake-toggle" data-intake-toggle="${escapeHtml(question.key)}">${isActive ? "Inklappen" : hasValue ? "Wijzig" : "Open"}</button>
-              </div>
-            `;
-            const collapsedSummary = `
-              <div class="demo-intake-selected-summary ${statusClass}" data-intake-toggle="${escapeHtml(question.key)}" role="button" tabindex="0">
-                <span>${hasValue ? "Gekozen" : question.required ? "Actie nodig" : "Later"}</span>
-                <strong>${escapeHtml(stateLabel)}</strong>
-              </div>
-            `;
+          const sourceLabel = (question, hasValue) => {
+            if (!hasValue) return question.required ? "Aandacht nodig" : "Optioneel";
+            if (["branch", "goal", "package", "area", "audience", "existingWebsite", "leadTemperature"].includes(question.key)) return "Auto ingevuld";
+            if (["style", "cta", "services", "mustHaves", "colors"].includes(question.key)) return "AI voorstel";
+            if (["logoStatus", "photoStatus"].includes(question.key)) return "Controle nodig";
+            return "Handmatig";
+          };
+          const statusFor = (question, hasValue) => {
+            if (!hasValue) return ["Mist nog", "factory-status-missing", "!"];
+            if (["logoStatus", "photoStatus", "services", "cta"].includes(question.key)) return ["Controle nodig", "factory-status-review", "!"];
+            if (["exampleWebsites", "internalRemark", "colors", "addOns"].includes(question.key)) return ["Optioneel", "factory-status-optional", "•"];
+            return ["Gecontroleerd", "factory-status-ready", "✓"];
+          };
+          const fieldControl = (question, value) => {
             if (question.type === "text") {
               return `
-                <label class="demo-intake-question ${question.wide ? "is-wide" : ""} ${isActive ? "is-active" : "is-collapsed"} ${hasValue ? "is-complete" : ""}" for="demo-intake-${question.key}" data-intake-question="${escapeHtml(question.key)}">
-                  ${heading}
-                  ${!isActive ? collapsedSummary : `
-                    <textarea id="demo-intake-${question.key}" data-intake-key="${escapeHtml(question.key)}" rows="3" placeholder="${escapeHtml(question.placeholder || "")}">${escapeHtml(value)}</textarea>
-                    <div class="demo-intake-step-actions">
-                      <button type="button" class="button button-secondary button-small" data-intake-next="${escapeHtml(question.key)}">Volgende</button>
-                    </div>
-                  `}
-                </label>
+                <textarea id="demo-intake-${question.key}" data-intake-key="${escapeHtml(question.key)}" rows="3" placeholder="${escapeHtml(question.placeholder || "")}">${escapeHtml(value)}</textarea>
+                <div class="demo-intake-step-actions">
+                  <button type="button" class="button button-secondary button-small" data-intake-next="${escapeHtml(question.key)}">Markeer gecontroleerd</button>
+                </div>
               `;
             }
             const type = question.type === "multi" ? "checkbox" : "radio";
@@ -21947,31 +21968,81 @@
             const followUpPlanner = question.key === "followUp" && value === "plan"
               ? `<label class="demo-intake-inline-field" for="demo-intake-followUpAt"><span>Plan datum en tijd</span><input id="demo-intake-followUpAt" data-intake-key="followUpAt" type="datetime-local" value="${escapeHtml(datetimeLocal(intakeState.followUpAt || elements.followup?.value || ""))}" /></label>`
               : "";
-            const needsNextButton = question.type === "multi" || (question.key === "followUp" && value === "plan");
             return `
-              <fieldset class="demo-intake-question ${question.wide ? "is-wide" : ""} ${isActive ? "is-active" : "is-collapsed"} ${hasValue ? "is-complete" : ""}" data-intake-question="${escapeHtml(question.key)}">
-                ${heading}
-                ${!isActive ? collapsedSummary : `
-                <div class="demo-chip-grid">
-                  ${options.map((option) => `
-                    <label class="demo-chip ${option.helper ? "has-helper" : ""}">
-                      <input type="${type}" name="demo-intake-${escapeHtml(question.key)}" data-intake-key="${escapeHtml(question.key)}" value="${escapeHtml(option.value)}" ${selected.includes(option.value) ? "checked" : ""} />
-                      ${question.key === "colors" ? `<i class="demo-color-swatch" style="background: ${escapeHtml(colorSwatch(option.value))}" aria-hidden="true"></i>` : ""}
-                      <span><strong>${escapeHtml(option.label)}</strong>${option.helper ? `<small>${escapeHtml(option.helper)}</small>` : ""}</span>
-                    </label>
-                  `).join("")}
+              <div class="demo-chip-grid factory-control-options">
+                ${options.map((option) => `
+                  <label class="demo-chip ${option.helper ? "has-helper" : ""}">
+                    <input type="${type}" name="demo-intake-${escapeHtml(question.key)}" data-intake-key="${escapeHtml(question.key)}" value="${escapeHtml(option.value)}" ${selected.includes(option.value) ? "checked" : ""} />
+                    ${question.key === "colors" ? `<i class="demo-color-swatch" style="background: ${escapeHtml(colorSwatch(option.value))}" aria-hidden="true"></i>` : ""}
+                    <span><strong>${escapeHtml(option.label)}</strong>${option.helper ? `<small>${escapeHtml(option.helper)}</small>` : ""}</span>
+                  </label>
+                `).join("")}
+              </div>
+              ${followUpPlanner}
+              ${assetAutomationCard(question.key)}
+              ${question.type === "multi" || question.key === "followUp" ? `
+                <div class="demo-intake-step-actions">
+                  <button type="button" class="button button-secondary button-small" data-intake-next="${escapeHtml(question.key)}">Markeer gecontroleerd</button>
                 </div>
-                ${followUpPlanner}
-                ${assetAutomationCard(question.key)}
-                ${needsNextButton ? `
-                  <div class="demo-intake-step-actions">
-                    <button type="button" class="button button-secondary button-small" data-intake-next="${escapeHtml(question.key)}">Volgende</button>
+              ` : ""}
+            `;
+          };
+          const readinessBars = [
+            ["Briefing", intake.percent],
+            ["Beelden", questionHasValue(intakeQuestions.find((item) => item.key === "photoStatus")) || intakeAssets.some((asset) => asset.kind === "foto") ? 80 : 35],
+            ["Merk", questionHasValue(intakeQuestions.find((item) => item.key === "style")) && questionHasValue(intakeQuestions.find((item) => item.key === "logoStatus")) ? 85 : 45],
+            ["Conversie", questionHasValue(intakeQuestions.find((item) => item.key === "goal")) && questionHasValue(intakeQuestions.find((item) => item.key === "cta")) ? 90 : 50],
+            ["Techniek", journey?.previewUrl ? 100 : journey?.id ? 65 : 35],
+          ];
+          elements.intakeFields.innerHTML = intakeQuestions.map((question, index) => {
+            const value = normalizeIntakeValue(intakeState[question.key]);
+            const hasValue = questionHasValue(question);
+            const isActive = question.key === activeKey;
+            const stateLabel = hasValue ? intakeLabel(question, value) : (question.required ? "Nog invullen" : "Later invullen");
+            const [statusLabelText, statusClass, statusIcon] = statusFor(question, hasValue);
+            return `
+              <fieldset class="demo-intake-question factory-smart-field ${question.wide ? "is-wide" : ""} ${isActive ? "is-active" : "is-collapsed"} ${hasValue ? "is-complete" : ""}" data-intake-question="${escapeHtml(question.key)}">
+                <div class="factory-smart-field-head">
+                  <span class="factory-field-index">${index + 1}</span>
+                  <div>
+                    <strong>${escapeHtml(question.label)}</strong>
+                    <small>${question.helper ? escapeHtml(question.helper) : escapeHtml(sourceLabel(question, hasValue))}</small>
                   </div>
+                  <mark class="factory-field-status ${statusClass}"><i aria-hidden="true">${statusIcon}</i>${statusLabelText}</mark>
+                </div>
+                <button type="button" class="factory-field-summary" data-intake-toggle="${escapeHtml(question.key)}">
+                  <span>
+                    <small>${escapeHtml(sourceLabel(question, hasValue))}</small>
+                    <strong>${escapeHtml(stateLabel)}</strong>
+                  </span>
+                  <b aria-hidden="true">${isActive ? "×" : "✎"}</b>
+                </button>
+                ${isActive ? `
+                <div class="factory-field-editor">
+                  <div class="factory-field-suggestion">
+                    <span>${hasValue ? "Gebruik huidige waarde" : "Gebruik aanbevolen waarde"}</span>
+                    <button type="button" class="button button-secondary button-small" data-intake-next="${escapeHtml(question.key)}">Markeer gecontroleerd</button>
+                  </div>
+                  ${fieldControl(question, value)}
+                </div>
                 ` : ""}
-                `}
               </fieldset>
             `;
-          }).join("");
+          }).join("") + `
+            <section class="factory-readiness-bars" aria-label="Readiness per onderdeel">
+              <div>
+                <strong>Readiness per onderdeel</strong>
+                <small>${intake.complete ? "Briefing is klaar voor preview." : `Nog ${intake.missing.length} aandachtspunt${intake.missing.length === 1 ? "" : "en"}.`}</small>
+              </div>
+              ${readinessBars.map(([label, percent]) => `
+                <label>
+                  <span>${escapeHtml(label)}</span>
+                  <b>${Math.round(percent)}%</b>
+                  <i><em style="width: ${Math.max(0, Math.min(100, Number(percent)))}%"></em></i>
+                </label>
+              `).join("")}
+            </section>
+          `;
         }
 
         function collectIntake() {
@@ -22011,6 +22082,8 @@
         function buildIntakeBriefingSection() {
           const lines = intakeSummaryLines();
           const website = knownWebsiteUrl();
+          const servicesQuestion = intakeQuestions.find((question) => question.key === "services");
+          const serviceLabels = servicesQuestion ? intakeLabel(servicesQuestion, normalizeIntakeValue(intakeState.services)).split(", ").filter(Boolean) : [];
           const automationLines = [
             website && ["active", "outdated"].includes(intakeState.existingWebsite) ? `- Bestaande website als bron gebruiken: ${website}` : "",
             intakeState.logoStatus === "extract" && website ? `- Logo workflow: probeer logo van bestaande website te gebruiken (${website}).` : "",
@@ -22019,10 +22092,19 @@
             ["needed", "generate", "unknown"].includes(intakeState.photoStatus) ? "- Beeld workflow: passende branchebeelden voorbereiden/genereren voor preview." : "",
             intakeState.followUpAt ? `- Opvolging plannen in agenda: ${formatDate(intakeState.followUpAt)}.` : "",
           ].filter(Boolean);
+          const visualLines = [
+            "Beeldinstructie voor demo-preview",
+            "- Gebruik meerdere verschillende foto's/beelden in de preview, niet steeds dezelfde hero-afbeelding herhalen.",
+            serviceLabels.length ? `- Koppel per dienst een passend beeld aan de tekst: ${serviceLabels.slice(0, 8).join(", ")}.` : "- Koppel beeldkeuze aan de gekozen branche, diensten en CTA.",
+            "- Hero, dienstenkaarten, projecten/portfolio en contactblok moeten visueel verschillend voelen maar wel dezelfde stijl houden.",
+            "- Als eigen foto's of websitebeelden beschikbaar zijn: eerst die gebruiken. Anders premium branchebeelden of gegenereerde beelden gebruiken.",
+          ];
           return [
             "Klantintake - wensen en eisen",
             ...lines.map(([label, value]) => `- ${label}: ${Array.isArray(value) ? value.join(", ") : value}`),
             ...automationLines,
+            "",
+            ...visualLines,
             intakeAssets.length ? `- Uploadmetadata: ${intakeAssets.map((asset) => `${asset.kind}: ${asset.name}`).join(", ")}` : "",
           ].filter(Boolean).join("\n");
         }
@@ -22044,6 +22126,86 @@
             ["Logo gecontroleerd", hasValue("logoStatus") || hasAsset("logo")],
             ["Foto's gecontroleerd", hasValue("photoStatus") || hasAsset("foto")],
           ];
+        }
+
+        function renderFactoryControlCenter(intake = collectIntake()) {
+          const lead = selectedLead() || {};
+          const businessName = elements.business?.value || journey?.businessName || lead.companyName || lead.company_name || lead.businessName || "";
+          const leadMeta = [
+            elements.phone?.value || lead.phone,
+            elements.website?.value || lead.websiteUrl || lead.website_url,
+            lead.region || intakeState.regionText,
+          ].filter(Boolean).join(" · ");
+          const missing = intake.missing || [];
+          const photoNeedsAttention = ["needed", "generate", "unknown"].includes(String(intakeState.photoStatus || ""));
+          const logoNeedsAttention = ["needed", "refresh", "unknown"].includes(String(intakeState.logoStatus || ""));
+          const attention = [
+            logoNeedsAttention ? "Logo" : "",
+            photoNeedsAttention ? "Beelden" : "",
+            missing.length ? `${missing.length} velden` : "",
+          ].filter(Boolean);
+          const confidence = intake.complete && !logoNeedsAttention && !photoNeedsAttention
+            ? ["Sterk", "Alle kerninput is compleet."]
+            : intake.percent >= 75
+              ? ["Goed", "Kleine controlepunten open."]
+              : intake.percent >= 45
+                ? ["Middel", "Nog enkele productiepunten nodig."]
+                : ["Laag", "Start met lead en briefing."];
+          if (elements.cockpitLead) elements.cockpitLead.textContent = businessName || "Geen lead gekozen";
+          if (elements.cockpitLeadMeta) elements.cockpitLeadMeta.textContent = leadMeta || "Kies een lead of vul gegevens handmatig aan.";
+          if (elements.cockpitStatus) elements.cockpitStatus.textContent = journey?.previewUrl ? "Preview klaar" : intake.complete ? "Klaar voor preview" : journey?.id ? "Briefing aanvullen" : "Start";
+          if (elements.cockpitPackage) elements.cockpitPackage.textContent = packageLabel(currentPackageType());
+          if (elements.cockpitAttention) elements.cockpitAttention.textContent = attention.length ? attention.join(" + ") : "Geen blokkades";
+          if (elements.cockpitConfidence) elements.cockpitConfidence.textContent = confidence[0];
+          if (elements.cockpitConfidenceCopy) elements.cockpitConfidenceCopy.textContent = confidence[1];
+          if (elements.outputState) {
+            elements.outputState.textContent = intake.complete ? "Klaar" : "Controle";
+            elements.outputState.className = `status-badge ${intake.complete ? "status-active" : "status-prepared"}`;
+          }
+          if (elements.sourceList) {
+            const website = elements.website?.value || lead.websiteUrl || lead.website_url || "";
+            const sourceCards = [
+              {
+                icon: "↗",
+                title: "Leadfinder",
+                state: businessName ? "Hoog" : "Controle nodig",
+                body: [businessName || "Geen bedrijf", elements.phone?.value || lead.phone || "Geen telefoon", lead.region || intakeState.regionText || "Geen regio"].join(" · "),
+                action: "Lead openen",
+              },
+              {
+                icon: "⌁",
+                title: "Website scan",
+                state: website ? "Actief" : "Controle nodig",
+                body: website || "Geen bestaande website bekend",
+                action: "Nieuwe scan",
+              },
+              {
+                icon: "✎",
+                title: "Salesnotities",
+                state: lead.notes || elements.notes?.value ? "Gevonden" : "Leeg",
+                body: String(lead.notes || elements.notes?.value || "Nog geen notitie").slice(0, 120),
+                action: "Notitie toevoegen",
+              },
+              {
+                icon: "◆",
+                title: "Brancheprofiel",
+                state: intakeState.branch ? "Gekozen" : "Controle nodig",
+                body: intakeState.branch ? intakeLabel(intakeQuestions.find((question) => question.key === "branch"), intakeState.branch) : "Nog geen branche",
+                action: "Wijzig profiel",
+              },
+            ];
+            elements.sourceList.innerHTML = sourceCards.map((card) => `
+              <article class="factory-source-card">
+                <span aria-hidden="true">${escapeHtml(card.icon)}</span>
+                <div>
+                  <strong>${escapeHtml(card.title)}</strong>
+                  <small>${escapeHtml(card.body)}</small>
+                </div>
+                <mark>${escapeHtml(card.state)}</mark>
+                <button type="button" data-intake-toggle="${card.title === "Brancheprofiel" ? "branch" : card.title === "Website scan" ? "existingWebsite" : "internalRemark"}">${escapeHtml(card.action)}</button>
+              </article>
+            `).join("");
+          }
         }
 
         function renderIntake() {
@@ -22085,6 +22247,7 @@
             elements.intakeDebug.hidden = !developerModeActive();
             elements.intakeDebug.textContent = JSON.stringify({ intake: intake.answers, assets: intake.assets, complete: intake.complete, missing: intake.missing }, null, 2);
           }
+          renderFactoryControlCenter(intake);
           renderSuperAdminCenter();
         }
 
@@ -22132,6 +22295,9 @@
           } else {
             intakeState[key] = field.type === "radio" ? field.value : field.value.trim();
           }
+          if (key === "photoStatus" && ["needed", "generate", "unknown"].includes(intakeState.photoStatus)) {
+            intakeState.addOns = Array.from(new Set([...(ensureArrayValue(intakeState.addOns)), "photos"]));
+          }
           if (key === "package" && elements.package) elements.package.value = packageTypeFromValue(intakeState.package);
           if (key === "followUp") {
             const planned = plannedFollowUpDate(intakeState.followUp);
@@ -22144,7 +22310,7 @@
           saveIntakeLocally();
           if (question.type === "single" && !(key === "followUp" && intakeState.followUp === "plan")) {
             advanceIntakeQuestion(key);
-          } else if (question.type === "text") {
+          } else if (question.type === "multi" || question.type === "text") {
             renderIntake();
             return;
           } else {
@@ -22154,6 +22320,11 @@
         }
 
         function handleIntakeFieldClick(event) {
+          const save = event.target.closest("[data-intake-save]");
+          if (save) {
+            saveJourney(event);
+            return;
+          }
           const next = event.target.closest("[data-intake-next]");
           if (next) {
             const question = intakeQuestions.find((item) => item.key === next.dataset.intakeNext);
@@ -23700,6 +23871,16 @@
           elements.intakeFields?.addEventListener("keydown", handleIntakeFieldKeydown);
           elements.intakeFields?.addEventListener("input", handleIntakeInput);
           elements.intakeFields?.addEventListener("change", handleIntakeInput);
+          elements.sourceList?.addEventListener("click", (event) => {
+            const button = event.target.closest("[data-intake-toggle]");
+            if (!button) return;
+            event.preventDefault();
+            intakeActiveQuestionKey = button.dataset.intakeToggle || firstOpenQuestionKey();
+            intakeExpandedQuestions = new Set([intakeActiveQuestionKey]);
+            renderIntakeFields();
+            renderIntake();
+            elements.intakeFields?.querySelector(`[data-intake-question="${CSS.escape(intakeActiveQuestionKey)}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+          });
           elements.intakeLogoUpload?.addEventListener("change", (event) => handleAssetInput(event, "logo"));
           elements.intakePhotoUpload?.addEventListener("change", (event) => handleAssetInput(event, "foto"));
           elements.package?.addEventListener("change", () => {
