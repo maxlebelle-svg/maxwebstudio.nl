@@ -640,7 +640,13 @@
         });
 
         async function activateRecoveryFromUrl() {
-          if (!/type=recovery|access_token=/.test(`${window.location.search}${window.location.hash}`)) return false;
+          const recoveryUrlState = `${window.location.search}${window.location.hash}`;
+          if (/error_code=otp_expired|error=access_denied/.test(recoveryUrlState)) {
+            activatePanel("reset");
+            setMessage("Deze resetlink is verlopen. Vraag hierboven een nieuwe resetlink aan en gebruik de nieuwste mail.", "error");
+            return false;
+          }
+          if (!/type=recovery|access_token=|token_hash=|(?:[?&#])token=/.test(recoveryUrlState)) return false;
           try {
             const auth = await loadAuth();
             const result = await auth.consumeRecoverySessionFromUrl();

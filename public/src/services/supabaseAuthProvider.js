@@ -104,9 +104,17 @@ function readRecoveryParamsFromUrl() {
   const search = new URLSearchParams(String(window.location.search || "").replace(/^\?/, ""));
   const accessToken = hash.get("access_token") || search.get("access_token") || "";
   const refreshToken = hash.get("refresh_token") || search.get("refresh_token") || "";
-  const type = hash.get("type") || search.get("type") || "";
+  const tokenHash = hash.get("token_hash") || search.get("token_hash") || hash.get("token") || search.get("token") || "";
+  const type = hash.get("type") || search.get("type") || (tokenHash ? "recovery" : "");
   const allowedSessionTypes = new Set(["invite", "recovery"]);
-  if (!accessToken || !allowedSessionTypes.has(type)) return null;
+  if (!allowedSessionTypes.has(type)) return null;
+  if (!accessToken) {
+    return {
+      token_hash: tokenHash,
+      recovery: type === "recovery",
+      invite: type === "invite",
+    };
+  }
   const expiresIn = Number(hash.get("expires_in") || search.get("expires_in") || 3600);
   const expiresAt = Number(hash.get("expires_at") || search.get("expires_at")) || Math.floor(Date.now() / 1000) + expiresIn;
   return {
@@ -131,7 +139,33 @@ function clearRecoveryParamsFromUrl() {
   url.searchParams.delete("expires_at");
   url.searchParams.delete("token_type");
   url.searchParams.delete("type");
+  url.searchParams.delete("token_hash");
+  url.searchParams.delete("token");
   window.history.replaceState({}, document.title, url.pathname + url.search);
+}
+
+async function verifyRecoveryTokenHash(config, tokenHash) {
+  if (!tokenHash) return null;
+  const response = await fetch(`${config.url}/auth/v1/verify`, {
+    method: "POST",
+    headers: {
+      apikey: config.anonKey,
+      Authorization: `Bearer ${config.anonKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ type: "recovery", token_hash: tokenHash }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  const session = normalizeAuthSession(payload);
+  if (!response.ok || !session?.access_token) {
+    const debug = createAuthDebug(config, response, payload);
+    const error = new Error(debug.message || "Herstel-link kon niet worden gecontroleerd.");
+    error.code = debug.code || "SUPABASE_RECOVERY_VERIFY_FAILED";
+    error.status = response.status;
+    error.supabaseAuth = debug;
+    throw error;
+  }
+  return session;
 }
 
 async function getRuntimeAuthConfig() {
@@ -188,6 +222,13 @@ function toSessionResult(session = null) {
     provider: "supabase",
     active: Boolean(session?.access_token),
   };
+}
+
+function normalizeAuthSession(payload = {}) {
+  if (payload?.access_token) return payload;
+  if (payload?.session?.access_token) return payload.session;
+  if (payload?.data?.session?.access_token) return payload.data.session;
+  return null;
 }
 
 function authNotActive(action) {
@@ -331,7 +372,10 @@ export async function resetPassword(email) {
 export async function consumeRecoverySessionFromUrl() {
   const config = await getRuntimeAuthConfig();
   if (!config.active) return { success: false, reason: "auth_inactive" };
-  const session = readRecoveryParamsFromUrl();
+  let session = readRecoveryParamsFromUrl();
+  if (!session?.access_token && session?.token_hash) {
+    session = await verifyRecoveryTokenHash(config, session.token_hash);
+  }
   if (!session?.access_token) return { success: false, reason: "no_recovery_session" };
   storeSession(session);
   clearRecoveryParamsFromUrl();
