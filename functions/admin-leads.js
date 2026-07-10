@@ -356,9 +356,10 @@ async function findExistingLead({ supabaseUrl, serviceRoleKey, payload = {}, rec
     identifiers.normalizedEmail && `email=eq.${encodeURIComponent(identifiers.normalizedEmail)}`,
   ].filter(Boolean);
   for (const filter of hardFilters) {
+    const fallbackFilters = legacyDuplicateFilters(filter);
     const found = await trySchemaAttempts([
       () => readLeadRowsByQuery({ supabaseUrl, serviceRoleKey, query: `${filter}&limit=1` }),
-      () => readLeadRowsByQuery({ supabaseUrl, serviceRoleKey, query: `${filter.replace("normalized_domain", "website").replace("normalized_phone", "phone")}&limit=1` }),
+      ...fallbackFilters.map((fallbackFilter) => () => readLeadRowsByQuery({ supabaseUrl, serviceRoleKey, query: `${fallbackFilter}&limit=1` })),
     ]).catch(() => []);
     if (found?.[0]) return found[0];
   }
@@ -372,6 +373,31 @@ async function findExistingLead({ supabaseUrl, serviceRoleKey, payload = {}, rec
     }) || null;
   }
   return null;
+}
+
+function legacyDuplicateFilters(filter = "") {
+  if (filter.startsWith("normalized_domain=eq.")) {
+    const value = filter.slice("normalized_domain=eq.".length);
+    return [
+      `website=ilike.*${encodeURIComponent(value)}*`,
+      `website_url=ilike.*${encodeURIComponent(value)}*`,
+      `interest=ilike.*${encodeURIComponent(value)}*`,
+    ];
+  }
+  if (filter.startsWith("normalized_phone=eq.")) {
+    const value = filter.slice("normalized_phone=eq.".length);
+    return [
+      `phone=ilike.*${encodeURIComponent(value.slice(-9))}*`,
+    ];
+  }
+  if (filter.startsWith("external_source_id=eq.")) {
+    const value = filter.slice("external_source_id=eq.".length);
+    return [
+      `metadata->>googlePlaceId=eq.${value}`,
+      `metadata->>externalSourceId=eq.${value}`,
+    ];
+  }
+  return [];
 }
 
 async function readLeadRowsByQuery({ supabaseUrl, serviceRoleKey, query }) {
@@ -400,6 +426,14 @@ function firstCleanText(...values) {
     if (text) return text;
   }
   return "";
+}
+
+function firstUuid(...values) {
+  return values.map(cleanText).find((value) => isUuid(value)) || null;
+}
+
+function isUuid(value = "") {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(cleanText(value));
 }
 
 function leadAssignmentInput(payload = {}) {
@@ -573,7 +607,7 @@ function leadPayload(payload = {}, admin = {}, options = {}) {
     lead_status: lifecycleStatus,
     notes: cleanText(payload.notes || payload.message),
     assigned_to: assignment.id,
-    assigned_user_id: assignment.userId || assignment.id,
+    assigned_user_id: firstUuid(assignment.userId, assignment.id),
     assigned_at: payload.assignedAt || payload.assigned_at || existingMeta.assignedAt || existingMeta.assigned_at || (assignment.id || assignment.email ? now : null),
     assigned_by: payload.assignedBy || payload.assigned_by || existingMeta.assignedBy || existingMeta.assigned_by || (assignment.id || assignment.email ? admin.id : null),
     reviewed_at: cleanText(payload.reviewedAt || payload.reviewed_at || existingMeta.reviewedAt || existingMeta.reviewed_at),
@@ -937,7 +971,7 @@ async function assignLead({ payload = {}, existingLead = {}, supabaseUrl, servic
   const record = {
     lead_status: "assigned",
     assigned_to: assignment.id,
-    assigned_user_id: assignment.userId || assignment.id,
+    assigned_user_id: firstUuid(assignment.userId, assignment.id),
     assigned_user_email: assignment.email,
     assigned_user_name: assignment.name,
     assigned_at: now,
