@@ -353,3 +353,22 @@ Eindoordeel credential-run:
    - Nee. De credential-afhankelijke P0's blijven open tot de benodigde testaccounts/env vars beschikbaar zijn.
 8. Kan Max Webstudio veilig echte klanten verwerken?
    - Nog niet als volledig P0-bewezen platform. Eerst de credential-run met echte testaccounts voltooien.
+
+## Credential Setup-flow Toegevoegd
+
+Testdatum: 2026-07-10
+
+Status: setup gereedgemaakt, nog geen echte credential-run uitgevoerd.
+
+Toegevoegd voor de volgende P0-run:
+
+- `.env.p0.example` met lege placeholders voor alle P0-variabelen.
+- `docs/P0_TEST_CREDENTIAL_SETUP.md` met testrollen, testtenants, storage, Mollie, salescases, runvolgorde en cleanup.
+- `scripts/p0-fetch-test-token.mjs` om tijdelijke Supabase Auth JWT's op te halen zonder service-role en zonder standaard tokenoutput.
+- `scripts/p0-test-harness.mjs` preflight toont nu aanwezige/ontbrekende variabelen, uitvoerbare groepen en configuratie-inconsistenties zonder waarden te printen.
+
+Beperkingen:
+
+- Er zijn nog geen echte testcredentials in deze Codex-sessie beschikbaar gesteld.
+- Er zijn geen muterende P0-tests uitgevoerd.
+- Alle credential-afhankelijke P0-bewijzen blijven open tot de lokale `.env.p0.local` met testwaarden is gevuld.

@@ -12,6 +12,21 @@ const DEFAULT_TABLES = [
   "customer_timeline_events",
 ];
 
+const ENV_GROUPS = {
+  general: ["P0_BASE_URL", "P0_TEST_RUN_ID", "P0_ENABLE_MUTATIONS", "P0_SUPABASE_URL", "P0_SUPABASE_ANON_KEY"],
+  "rls-ab": ["P0_CUSTOMER_A_JWT", "P0_CUSTOMER_B_JWT", "P0_CUSTOMER_A_ID", "P0_CUSTOMER_B_ID", "P0_RLS_TABLES_JSON", "P0_RLS_READ_CASES_JSON", "P0_RLS_WRITE_CASES_JSON"],
+  storage: ["P0_STORAGE_BUCKET", "P0_STORAGE_A_PATH", "P0_STORAGE_B_PATH"],
+  "commercial-order": ["P0_ADMIN_JWT", "P0_TEST_CUSTOMER_EMAIL", "P0_COMMERCIAL_ORDER_PAYLOAD_JSON"],
+  sales: ["P0_SALES_A_JWT", "P0_SALES_B_JWT", "P0_SALES_CASES_JSON"],
+};
+
+const RUNNABLE_GROUPS = {
+  "rls-ab": ["P0_CUSTOMER_A_JWT", "P0_CUSTOMER_B_JWT"],
+  storage: ["P0_CUSTOMER_A_JWT", "P0_CUSTOMER_B_JWT", "P0_STORAGE_BUCKET", "P0_STORAGE_A_PATH"],
+  "commercial-order": ["P0_ADMIN_JWT"],
+  sales: ["P0_SALES_A_JWT", "P0_SALES_B_JWT", "P0_SALES_CASES_JSON"],
+};
+
 const state = {
   checks: [],
   startedAt: new Date().toISOString(),
@@ -65,6 +80,7 @@ async function preflight() {
   }
   const guard = await fetchText(`${baseUrl}/src/admin-route-guard.js?v=20260710-p0-validation`);
   addCheck("preflight", "admin-route-guard-asset", guard.status === 200 && guard.text.includes("requireAuth") ? "pass" : "fail", `status ${guard.status}`);
+  preflightEnvironment();
 }
 
 async function apiBoundaryTests() {
@@ -371,5 +387,33 @@ function jsonEnv(name, fallback) {
   } catch (error) {
     addCheck("config", name, "fail", `Invalid JSON: ${error.message}`);
     return fallback;
+  }
+}
+
+function preflightEnvironment() {
+  for (const [group, names] of Object.entries(ENV_GROUPS)) {
+    const present = names.filter((name) => Boolean(env(name)));
+    const missing = names.filter((name) => !env(name));
+    addCheck("preflight-env", `${group}-present`, "info", present.length ? present.join(", ") : "none");
+    addCheck("preflight-env", `${group}-missing`, missing.length ? "warn" : "pass", missing.length ? missing.join(", ") : "none");
+  }
+
+  for (const [group, required] of Object.entries(RUNNABLE_GROUPS)) {
+    const missing = required.filter((name) => !env(name));
+    const status = missing.length ? "skip" : "pass";
+    addCheck("preflight-runnable", group, status, missing.length ? `missing ${missing.join(", ")}` : "ready");
+  }
+
+  if (mutationsEnabled() && !env("P0_TEST_RUN_ID")) {
+    addCheck("preflight-consistency", "mutation-run-id", "warn", "P0_ENABLE_MUTATIONS=true without P0_TEST_RUN_ID.");
+  }
+  if (env("P0_RLS_WRITE_CASES_JSON") && !mutationsEnabled()) {
+    addCheck("preflight-consistency", "write-cases-disabled", "warn", "P0_RLS_WRITE_CASES_JSON is set, but P0_ENABLE_MUTATIONS is not true.");
+  }
+  if (env("P0_STORAGE_B_PATH") && !env("P0_STORAGE_A_PATH")) {
+    addCheck("preflight-consistency", "storage-paths", "warn", "P0_STORAGE_B_PATH is set without P0_STORAGE_A_PATH.");
+  }
+  if (env("P0_COMMERCIAL_ORDER_PAYLOAD_JSON") && !env("P0_ADMIN_JWT")) {
+    addCheck("preflight-consistency", "commercial-payload-token", "warn", "P0_COMMERCIAL_ORDER_PAYLOAD_JSON is set without P0_ADMIN_JWT.");
   }
 }

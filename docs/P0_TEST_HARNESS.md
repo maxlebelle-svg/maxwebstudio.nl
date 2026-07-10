@@ -16,6 +16,12 @@ De harness is bedoeld voor de definitieve bewijssprint rond:
 
 De harness logt geen tokens, wachtwoorden of secrets.
 
+Credential-setup staat in:
+
+```bash
+docs/P0_TEST_CREDENTIAL_SETUP.md
+```
+
 ## Veilige Uitgangspunten
 
 - Zonder testcredentials voert de harness alleen veilige publieke checks uit.
@@ -40,6 +46,8 @@ node scripts/p0-test-harness.mjs sales
 ```
 
 ## Environment Variables
+
+Gebruik `.env.p0.example` als lege lokale template. Vul echte waarden alleen lokaal in.
 
 Algemeen:
 
@@ -103,6 +111,27 @@ Leg intern vast:
 - website ID;
 - invoice ID;
 - testbestandpad.
+
+## Token Helper
+
+Gebruik de helper om tijdelijke Supabase Auth JWT's voor P0-testaccounts op te halen:
+
+```bash
+P0_TOKEN_TARGET_ENV=P0_CUSTOMER_A_JWT P0_TOKEN_EMAIL="<test-email>" P0_PRINT_TOKEN=true node scripts/p0-fetch-test-token.mjs
+```
+
+De helper gebruikt alleen Supabase Auth met de anon key. Hij gebruikt geen service-role en print het token alleen wanneer `P0_PRINT_TOKEN=true` expliciet is gezet.
+
+## Preflight
+
+`preflight` toont:
+
+- aanwezige P0-variabelen per groep;
+- ontbrekende P0-variabelen per groep;
+- welke testgroepen direct uitvoerbaar zijn;
+- logische inconsistenties zoals writecases zonder `P0_ENABLE_MUTATIONS=true`.
+
+Waarden van tokens, wachtwoorden en keys worden niet getoond.
 
 ## RLS Read Cases
 

@@ -3,6 +3,7 @@
 .env.*.local
 !.env.example
 !.env.local.example
+!.env.p0.example
 supabase/.temp/
 
 # macOS
