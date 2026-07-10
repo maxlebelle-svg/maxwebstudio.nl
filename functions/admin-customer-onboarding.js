@@ -583,14 +583,14 @@ function buildWelcomeEmailHtml(input, mailPreview) {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>${escapeHtml(mailPreview.subject)}</title>
   </head>
-  <body style="margin:0;background:#07111f;color:#ffffff;font-family:Inter,Arial,sans-serif;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#07111f;padding:28px 14px;">
+  <body style="margin:0;background:#061626;color:#ffffff;font-family:Inter,Arial,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#061626;padding:28px 14px;">
       <tr>
         <td align="center">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;background:#0b1728;border:1px solid rgba(255,255,255,0.12);border-radius:24px;overflow:hidden;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;background:#102a3d;border:1px solid rgba(68,180,255,.26);border-radius:24px;overflow:hidden;">
             <tr>
               <td style="padding:32px 30px 18px;">
-                <div style="font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:#7db7ff;font-weight:800;">${escapeHtml(companySettings.companyName)}</div>
+                <div style="font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:#27c7ff;font-weight:800;">${escapeHtml(companySettings.companyName)}</div>
                 <h1 style="margin:14px 0 10px;font-size:32px;line-height:1.12;color:#ffffff;">Je klantportaal staat klaar.</h1>
                 <p style="margin:0;color:#c9d7e8;font-size:16px;line-height:1.7;">Hoi ${name}, je klantportaal voor <strong style="color:#ffffff;">${company}</strong> is klaargezet.</p>
               </td>
@@ -598,12 +598,12 @@ function buildWelcomeEmailHtml(input, mailPreview) {
             <tr>
               <td style="padding:0 30px 24px;">
                 <p style="margin:0 0 18px;color:#c9d7e8;font-size:16px;line-height:1.7;">In je portaal zie je de status van je website, kun je wijzigingen aanvragen, berichten volgen en belangrijke updates terugvinden.</p>
-                <a href="${actionLink}" style="display:inline-block;background:#2f8cff;color:#ffffff;text-decoration:none;font-weight:800;border-radius:14px;padding:14px 20px;">${buttonLabel}</a>
-                <p style="margin:18px 0 0;color:#91a6bc;font-size:13px;line-height:1.6;">Werkt de knop niet? Open dan deze link:<br /><a href="${actionLink}" style="color:#7db7ff;">${actionLink}</a></p>
+                <a href="${actionLink}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:800;border-radius:14px;padding:14px 20px;">${buttonLabel}</a>
+                <p style="margin:18px 0 0;color:#91a6bc;font-size:13px;line-height:1.6;">Werkt de knop niet? Open dan deze link:<br /><a href="${actionLink}" style="color:#7dd3fc;">${actionLink}</a></p>
               </td>
             </tr>
             <tr>
-              <td style="padding:22px 30px;background:rgba(255,255,255,.05);color:#aabbd0;font-size:13px;line-height:1.6;">Heb je vragen? Reageer op deze mail of mail naar <a href="${escapeAttribute(getMailtoLink(companySettings, "Vraag over klantportaal"))}" style="color:#7db7ff;">${escapeHtml(companySettings.primaryEmail)}</a>.</td>
+              <td style="padding:22px 30px;background:rgba(255,255,255,.05);color:#aabbd0;font-size:13px;line-height:1.6;">Heb je vragen? Reageer op deze mail of mail naar <a href="${escapeAttribute(getMailtoLink(companySettings, "Vraag over klantportaal"))}" style="color:#7dd3fc;">${escapeHtml(companySettings.primaryEmail)}</a>.</td>
             </tr>
           </table>
         </td>

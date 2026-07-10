@@ -28,8 +28,8 @@
 
         <div class="portal-login-status-card" role="status" aria-live="polite">
           <span>Loginstatus</span>
-          <strong id="login-status-title">Loginstatus controleren</strong>
-          <p id="real-login-status">We controleren of klantlogin, accountaanvraag of wachtwoordherstel beschikbaar is.</p>
+          <strong id="login-status-title">Klantportaal wordt afgerond</strong>
+          <p id="real-login-status">Het klantportaal wordt momenteel klaargezet. Heb je al een website via Max Webstudio? Vraag toegang aan of neem contact op.</p>
         </div>
 
         <div class="portal-auth-tabs" role="tablist" aria-label="Login opties">
@@ -124,7 +124,6 @@
         let realLoginActive = false;
         let authConfigSafe = false;
         let authReadiness = null;
-        const recoveryLinkRequested = hasRecoveryUrl();
         const productionHosts = new Set(["maxwebstudio.nl", "www.maxwebstudio.nl"]);
         const adminSessionStorageKey = "mws_admin_supabase_session";
         const adminRoles = new Set(["developer", "super_admin", "admin", "sales_manager", "sales_partner", "designer", "support"]);
@@ -142,7 +141,7 @@
             body: "Kies een demo-account om de omgeving direct te bekijken.",
           },
           real: {
-            title: "Klantlogin",
+            title: "Klantportaal wordt afgerond",
             body: "Heb je al een account of wil je toegang? Vraag toegang aan, dan zetten we je klantportaal netjes klaar.",
           },
           admin: {
@@ -176,10 +175,6 @@
 
         function isAdminRole(role = "") {
           return adminRoles.has(normalizeRole(role));
-        }
-
-        function hasRecoveryUrl() {
-          return /type=recovery|access_token=|token_hash=|(?:[?&#])code=/.test(`${window.location.search}${window.location.hash}`);
         }
 
         function getSafeRelativePath(value = "") {
@@ -250,7 +245,7 @@
           developerOnlyTabs.forEach((button) => {
             button.hidden = !developerMode;
           });
-          if (!recoveryLinkRequested && (!developerMode || isProductionRuntime()) && document.querySelector("[data-auth-panel='demo']")?.classList.contains("is-active")) {
+          if ((!developerMode || isProductionRuntime()) && document.querySelector("[data-auth-panel='demo']")?.classList.contains("is-active")) {
             activatePanel("real");
           }
         }
@@ -258,14 +253,9 @@
         function renderAuthLiveVisibility() {
           const shouldShow = realLoginActive || isDeveloperModeEnabled();
           authLiveOnlyBlocks.forEach((block) => {
-            if (block.matches("[data-auth-panel]")) {
-              block.hidden = !shouldShow || !block.classList.contains("is-active");
-              return;
-            }
             block.hidden = !shouldShow;
           });
-          const activeLiveOnlyPanel = document.querySelector("[data-auth-panel].is-active[data-auth-live-only]");
-          if (!shouldShow && activeLiveOnlyPanel && !recoveryLinkRequested) {
+          if (!shouldShow && document.querySelector("[data-auth-panel='reset']")?.classList.contains("is-active")) {
             activatePanel("real");
           }
         }
@@ -428,11 +418,9 @@
         }
 
         function activatePanel(name) {
-          const canShowLiveOnly = realLoginActive || isDeveloperModeEnabled() || (recoveryLinkRequested && name === "recovery");
           panels.forEach((panel) => {
             const active = panel.dataset.authPanel === name;
-            const liveOnlyBlocked = panel.hasAttribute("data-auth-live-only") && !canShowLiveOnly;
-            panel.hidden = !active || liveOnlyBlocked;
+            panel.hidden = !active;
             panel.classList.toggle("is-active", active);
           });
           panelButtons.forEach((button) => {
@@ -469,7 +457,6 @@
             realLoginStatusMessage = realLoginActive
               ? "Klantlogin is actief. Gebruik je e-mailadres en wachtwoord om in te loggen."
               : authReadiness.visitorMessage;
-            const realStatusTitle = realLoginActive ? "Klantlogin is actief" : "Klantportaal wordt afgerond";
             if (adminMode) {
               realLoginStatusMessage = "Log in met je Max Webstudio beheerdersaccount om verder te gaan.";
             }
@@ -484,7 +471,6 @@
             renderAuthLiveVisibility();
             if (document.querySelector("[data-auth-panel='real']").classList.contains("is-active")) {
               renderLoginStatus(adminMode ? "admin" : "real", realLoginStatusMessage);
-              if (!adminMode) loginStatusTitle.textContent = realStatusTitle;
             }
           } catch (error) {
             logSafeDiagnostic("Auth status unavailable", error, "AUTH_STATUS_UNAVAILABLE");
@@ -648,19 +634,11 @@
         });
 
         async function activateRecoveryFromUrl() {
-          if (!recoveryLinkRequested) return false;
-          renderLoginStatus("recovery", "We controleren je herstel-link. Een momentje.");
-          activatePanel("recovery");
-          setMessage("Herstel-link controleren...", "success");
+          if (!/type=recovery|access_token=/.test(`${window.location.search}${window.location.hash}`)) return false;
           try {
             const auth = await loadAuth();
             const result = await auth.consumeRecoverySessionFromUrl();
-            if (!result.success) {
-              activatePanel("reset");
-              renderLoginStatus("reset", "Deze link is al gebruikt of verlopen. Vraag hieronder een nieuwe resetlink aan.");
-              setMessage("Vraag een nieuwe resetlink aan. Gebruik daarna alleen de nieuwste mail.", "error");
-              return false;
-            }
+            if (!result.success) return false;
             await renderAuthStatus();
             activatePanel("recovery");
             setMessage("Kies nu je nieuwe wachtwoord.", "success");
@@ -670,9 +648,7 @@
               code: isDeveloperModeEnabled() ? error?.code || "UNKNOWN" : "RECOVERY_FAILED",
               message: isDeveloperModeEnabled() ? error?.message || "" : "",
             });
-            activatePanel("reset");
-            renderLoginStatus("reset", "Deze link is al gebruikt of verlopen. Vraag hieronder een nieuwe resetlink aan.");
-            setMessage("Vraag een nieuwe resetlink aan. Gebruik daarna alleen de nieuwste mail.", "error");
+            setMessage("Deze herstel-link is verlopen of niet compleet. Vraag een nieuwe resetlink aan.", "error");
             return false;
           }
         }
@@ -685,13 +661,7 @@
         });
         renderDeveloperModeVisibility();
         renderAuthLiveVisibility();
-        if (recoveryLinkRequested) {
-          activatePanel("recovery");
-          renderLoginStatus("recovery", "We controleren je herstel-link. Een momentje.");
-          setMessage("Herstel-link controleren...", "success");
-        } else {
-          activatePanel(isDeveloperModeEnabled() && !isAdminLoginRequest() ? "demo" : "real");
-        }
+        activatePanel(isDeveloperModeEnabled() && !isAdminLoginRequest() ? "demo" : "real");
         renderAuthStatus().then(() => activateRecoveryFromUrl());
       })();
     </script>
