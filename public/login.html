@@ -253,9 +253,14 @@
         function renderAuthLiveVisibility() {
           const shouldShow = realLoginActive || isDeveloperModeEnabled();
           authLiveOnlyBlocks.forEach((block) => {
+            if (block.matches("[data-auth-panel]")) {
+              block.hidden = !shouldShow || !block.classList.contains("is-active");
+              return;
+            }
             block.hidden = !shouldShow;
           });
-          if (!shouldShow && document.querySelector("[data-auth-panel='reset']")?.classList.contains("is-active")) {
+          const activeLiveOnlyPanel = document.querySelector("[data-auth-panel].is-active[data-auth-live-only]");
+          if (!shouldShow && activeLiveOnlyPanel) {
             activatePanel("real");
           }
         }
@@ -418,9 +423,11 @@
         }
 
         function activatePanel(name) {
+          const canShowLiveOnly = realLoginActive || isDeveloperModeEnabled();
           panels.forEach((panel) => {
             const active = panel.dataset.authPanel === name;
-            panel.hidden = !active;
+            const liveOnlyBlocked = panel.hasAttribute("data-auth-live-only") && !canShowLiveOnly;
+            panel.hidden = !active || liveOnlyBlocked;
             panel.classList.toggle("is-active", active);
           });
           panelButtons.forEach((button) => {
@@ -638,7 +645,11 @@
           try {
             const auth = await loadAuth();
             const result = await auth.consumeRecoverySessionFromUrl();
-            if (!result.success) return false;
+            if (!result.success) {
+              activatePanel("reset");
+              setMessage("Deze herstel-link is verlopen of niet compleet. Vraag een nieuwe resetlink aan.", "error");
+              return false;
+            }
             await renderAuthStatus();
             activatePanel("recovery");
             setMessage("Kies nu je nieuwe wachtwoord.", "success");
