@@ -264,7 +264,7 @@ function calculateTotals(input) {
 }
 
 async function ensureCommercialProfile(config, input) {
-  const existing = await fetchSingle(config, "profiles", "id,auth_user_id,name,company,email,phone,website,package,status,metadata", `email=eq.${encodeURIComponent(input.email)}`);
+  const existing = await fetchSingle(config, "profiles", "id,auth_user_id,name,company,email,phone,website,package,role,status,metadata", `email=eq.${encodeURIComponent(input.email)}`);
   const metadata = { ...(existing?.metadata || {}), commercialOrderStatus: "payment_pending", latestCommercialOrderId: input.orderId };
   if (input.testOrder) metadata.environment = "test";
   const record = {
@@ -276,8 +276,8 @@ async function ensureCommercialProfile(config, input) {
     phone: input.phone,
     website: input.domain,
     package: input.packageLabel,
-    role: "customer",
-    status: input.testOrder ? "test_prospect" : "prospect",
+    role: existing?.role || "customer",
+    status: existing?.status || "pending",
     metadata,
     updated_at: new Date().toISOString(),
   };
@@ -301,8 +301,8 @@ async function ensureCommercialCustomer(config, input, profile) {
     phone: input.phone,
     website: input.domain,
     package: input.packageLabel,
-    status: input.testOrder ? "test_order_pending" : "order_pending",
-    portal_status: "prepared",
+    status: existing?.status || "onboarding",
+    portal_status: existing?.portal_status || "prepared",
     metadata,
     updated_at: new Date().toISOString(),
   });
