@@ -124,6 +124,7 @@
         let realLoginActive = false;
         let authConfigSafe = false;
         let authReadiness = null;
+        const recoveryLinkRequested = hasRecoveryUrl();
         const productionHosts = new Set(["maxwebstudio.nl", "www.maxwebstudio.nl"]);
         const adminSessionStorageKey = "mws_admin_supabase_session";
         const adminRoles = new Set(["developer", "super_admin", "admin", "sales_manager", "sales_partner", "designer", "support"]);
@@ -175,6 +176,10 @@
 
         function isAdminRole(role = "") {
           return adminRoles.has(normalizeRole(role));
+        }
+
+        function hasRecoveryUrl() {
+          return /type=recovery|access_token=|token_hash=|(?:[?&#])code=/.test(`${window.location.search}${window.location.hash}`);
         }
 
         function getSafeRelativePath(value = "") {
@@ -245,7 +250,7 @@
           developerOnlyTabs.forEach((button) => {
             button.hidden = !developerMode;
           });
-          if ((!developerMode || isProductionRuntime()) && document.querySelector("[data-auth-panel='demo']")?.classList.contains("is-active")) {
+          if (!recoveryLinkRequested && (!developerMode || isProductionRuntime()) && document.querySelector("[data-auth-panel='demo']")?.classList.contains("is-active")) {
             activatePanel("real");
           }
         }
@@ -260,7 +265,7 @@
             block.hidden = !shouldShow;
           });
           const activeLiveOnlyPanel = document.querySelector("[data-auth-panel].is-active[data-auth-live-only]");
-          if (!shouldShow && activeLiveOnlyPanel) {
+          if (!shouldShow && activeLiveOnlyPanel && !recoveryLinkRequested) {
             activatePanel("real");
           }
         }
@@ -423,7 +428,7 @@
         }
 
         function activatePanel(name) {
-          const canShowLiveOnly = realLoginActive || isDeveloperModeEnabled();
+          const canShowLiveOnly = realLoginActive || isDeveloperModeEnabled() || (recoveryLinkRequested && name === "recovery");
           panels.forEach((panel) => {
             const active = panel.dataset.authPanel === name;
             const liveOnlyBlocked = panel.hasAttribute("data-auth-live-only") && !canShowLiveOnly;
@@ -643,12 +648,16 @@
         });
 
         async function activateRecoveryFromUrl() {
-          if (!/type=recovery|access_token=|token_hash=|(?:[?&#])code=/.test(`${window.location.search}${window.location.hash}`)) return false;
+          if (!recoveryLinkRequested) return false;
+          renderLoginStatus("recovery", "We controleren je herstel-link. Een momentje.");
+          activatePanel("recovery");
+          setMessage("Herstel-link controleren...", "success");
           try {
             const auth = await loadAuth();
             const result = await auth.consumeRecoverySessionFromUrl();
             if (!result.success) {
               activatePanel("reset");
+              renderLoginStatus("reset", "De herstel-link kon niet worden gebruikt. Vraag een nieuwe link aan om verder te gaan.");
               setMessage("Deze herstel-link is verlopen of niet compleet. Vraag een nieuwe resetlink aan.", "error");
               return false;
             }
@@ -661,6 +670,8 @@
               code: isDeveloperModeEnabled() ? error?.code || "UNKNOWN" : "RECOVERY_FAILED",
               message: isDeveloperModeEnabled() ? error?.message || "" : "",
             });
+            activatePanel("reset");
+            renderLoginStatus("reset", "De herstel-link kon niet worden gebruikt. Vraag een nieuwe link aan om verder te gaan.");
             setMessage("Deze herstel-link is verlopen of niet compleet. Vraag een nieuwe resetlink aan.", "error");
             return false;
           }
@@ -674,7 +685,13 @@
         });
         renderDeveloperModeVisibility();
         renderAuthLiveVisibility();
-        activatePanel(isDeveloperModeEnabled() && !isAdminLoginRequest() ? "demo" : "real");
+        if (recoveryLinkRequested) {
+          activatePanel("recovery");
+          renderLoginStatus("recovery", "We controleren je herstel-link. Een momentje.");
+          setMessage("Herstel-link controleren...", "success");
+        } else {
+          activatePanel(isDeveloperModeEnabled() && !isAdminLoginRequest() ? "demo" : "real");
+        }
         renderAuthStatus().then(() => activateRecoveryFromUrl());
       })();
     </script>
