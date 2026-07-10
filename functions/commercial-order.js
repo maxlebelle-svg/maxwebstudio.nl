@@ -46,10 +46,11 @@ exports.handler = async (event) => {
       });
     if (!adminCheck.success) return adminCheck.response;
 
-    const config = readConfig();
+    const config = readConfig({ publicCheckout: isPublicCheckout });
     if (!config.success) return config.response;
 
     const input = validatePayload(rawPayload, event);
+    input.testOrder = Boolean(config.testMode);
     const existingInvoice = await fetchExistingOrderInvoice(config, input.orderId);
     if (existingInvoice?.mollie_checkout_url && ["draft", "sent", "payment_pending", "open"].includes(cleanText(existingInvoice.status || existingInvoice.mollie_payment_status).toLowerCase())) {
       return jsonResponse(200, {
@@ -141,22 +142,35 @@ exports.handler = async (event) => {
   }
 };
 
-function readConfig() {
+function readConfig(options = {}) {
+  const publicCheckout = Boolean(options.publicCheckout);
   const mollieMode = cleanText(process.env.MOLLIE_MODE || "test").toLowerCase();
   const configuredTestKey = process.env.MOLLIE_TEST_API_KEY;
   const configuredDefaultKey = process.env.MOLLIE_API_KEY;
-  const mollieApiKey = mollieMode === "test" ? (configuredTestKey || configuredDefaultKey) : configuredDefaultKey;
+  const publicCheckoutTestPayments = publicCheckout && Boolean(configuredTestKey);
+  const mollieApiKey = publicCheckoutTestPayments
+    ? configuredTestKey
+    : (mollieMode === "test" ? (configuredTestKey || configuredDefaultKey) : configuredDefaultKey);
   const siteUrl = (process.env.SITE_URL || getCompanySettings().websiteUrl || "").replace(/\/$/, "");
   const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const testMode = cleanText(mollieApiKey).startsWith("test_");
+  const livePaymentsAllowed = cleanText(process.env.MOLLIE_ALLOW_LIVE_PAYMENTS).toLowerCase() === "true";
   if (!mollieApiKey || !siteUrl || !supabaseUrl || !serviceRoleKey) {
     return { success: false, response: jsonResponse(500, { success: false, error: "Nieuwe opdracht kan nog niet worden afgerekend." }) };
   }
-  if ((mollieMode !== "test" || !testMode) && cleanText(process.env.MOLLIE_ALLOW_LIVE_PAYMENTS).toLowerCase() !== "true") {
+  if (publicCheckout && !testMode) {
+    console.error("Public checkout blocked without Mollie test key", {
+      mollieMode,
+      hasMollieTestApiKey: Boolean(configuredTestKey),
+      defaultKeyPrefix: keyPrefix(configuredDefaultKey),
+    });
+    return { success: false, response: jsonResponse(403, { success: false, error: "Testbetaling kan nog niet worden gestart. Neem contact op met Max Webstudio." }) };
+  }
+  if (!publicCheckout && (mollieMode !== "test" || !testMode) && !livePaymentsAllowed) {
     return { success: false, response: jsonResponse(403, { success: false, error: "Betalingen staan nog in testmodus." }) };
   }
-  return { success: true, mollieApiKey, siteUrl, supabaseUrl, serviceRoleKey, mollieMode, testMode };
+  return { success: true, mollieApiKey, siteUrl, supabaseUrl, serviceRoleKey, mollieMode, testMode, publicCheckoutTestPayments };
 }
 
 function validatePayload(payload = {}, event = {}) {
@@ -252,6 +266,7 @@ function calculateTotals(input) {
 async function ensureCommercialProfile(config, input) {
   const existing = await fetchSingle(config, "profiles", "id,auth_user_id,name,company,email,phone,website,package,status,metadata", `email=eq.${encodeURIComponent(input.email)}`);
   const metadata = { ...(existing?.metadata || {}), commercialOrderStatus: "payment_pending", latestCommercialOrderId: input.orderId };
+  if (input.testOrder) metadata.environment = "test";
   const record = {
     id: existing?.id || undefined,
     auth_user_id: existing?.auth_user_id || null,
@@ -262,7 +277,7 @@ async function ensureCommercialProfile(config, input) {
     website: input.domain,
     package: input.packageLabel,
     role: "customer",
-    status: "prospect",
+    status: input.testOrder ? "test_prospect" : "prospect",
     metadata,
     updated_at: new Date().toISOString(),
   };
@@ -275,6 +290,7 @@ async function ensureCommercialCustomer(config, input, profile) {
     : `email=eq.${encodeURIComponent(input.email)}`;
   const existing = await fetchSingle(config, "customers", "id,profile_id,auth_user_id,name,company,email,phone,website,package,status,portal_status,metadata", filter);
   const metadata = { ...(existing?.metadata || {}), commercialOrderStatus: "payment_pending", latestCommercialOrderId: input.orderId };
+  if (input.testOrder) metadata.environment = "test";
   return upsertRecord(config, "customers", {
     id: existing?.id || undefined,
     profile_id: profile.id,
@@ -285,7 +301,7 @@ async function ensureCommercialCustomer(config, input, profile) {
     phone: input.phone,
     website: input.domain,
     package: input.packageLabel,
-    status: "order_pending",
+    status: input.testOrder ? "test_order_pending" : "order_pending",
     portal_status: "prepared",
     metadata,
     updated_at: new Date().toISOString(),
@@ -308,6 +324,8 @@ async function createOrderInvoice(config, input, profile, customer, totals, admi
   if (input.discount) lines.push({ description: "Korting", quantity: 1, unitPrice: -input.discount, vatRate: 21 });
   const context = {
     source: "commercial_order",
+    environment: input.testOrder ? "test" : "live",
+    testOrder: Boolean(input.testOrder),
     orderId: input.orderId,
     customerId: customer.id,
     customerName: input.name,
@@ -338,6 +356,7 @@ async function createOrderInvoice(config, input, profile, customer, totals, admi
     createdBy: admin.email || "",
   };
   const notes = [
+    input.testOrder ? "TESTORDER - Mollie testbetaling. Niet leveren of externe diensten aanvragen." : "",
     input.notes,
     `\n---\nFactuurregels: ${JSON.stringify(context)}`,
   ].filter(Boolean).join("\n");
@@ -345,7 +364,7 @@ async function createOrderInvoice(config, input, profile, customer, totals, admi
     profile_id: profile.id,
     customer_auth_user_id: profile.auth_user_id || null,
     invoice_number: invoiceNumber,
-    title: input.paymentChoice === "full" ? "Opdrachtbevestiging Max Webstudio" : "Aanbetaling opdrachtbevestiging Max Webstudio",
+    title: `${input.testOrder ? "TEST - " : ""}${input.paymentChoice === "full" ? "Opdrachtbevestiging Max Webstudio" : "Aanbetaling opdrachtbevestiging Max Webstudio"}`,
     amount: totals.paymentAmount,
     status: "draft",
     due_date: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
@@ -364,7 +383,7 @@ async function createMolliePayment(config, invoice, input, totals) {
     },
     body: JSON.stringify({
       amount: { currency: "EUR", value: euroToMollieValue(totals.paymentAmount) },
-      description: `${invoice.invoice_number} - ${input.company}`.slice(0, 255),
+      description: `${input.testOrder ? "TEST - " : ""}${invoice.invoice_number} - ${input.company}`.slice(0, 255),
       redirectUrl: `${config.siteUrl}/bedankt.html?order=${encodeURIComponent(input.orderId)}&invoice=${encodeURIComponent(invoice.id)}`,
       webhookUrl: `${config.siteUrl}/.netlify/functions/mollie-webhook`,
       metadata: {
@@ -378,6 +397,7 @@ async function createMolliePayment(config, invoice, input, totals) {
         carePackage: (input.products || []).find((item) => CARE_PRODUCT_IDS.includes(item.id))?.id || "",
         customerReference: input.email,
         environment: config.testMode ? "test" : "live",
+        testOrder: config.testMode ? "true" : "false",
         paymentChoice: input.paymentChoice,
         termsVersion: TERMS_VERSION,
       },
@@ -568,6 +588,13 @@ function pick(record = {}) {
 
 function cleanText(value) {
   return String(value || "").trim();
+}
+
+function keyPrefix(value) {
+  const key = cleanText(value);
+  if (key.startsWith("test_")) return "test_";
+  if (key.startsWith("live_")) return "live_";
+  return key ? "unknown" : "missing";
 }
 
 function parsePayload(body) {

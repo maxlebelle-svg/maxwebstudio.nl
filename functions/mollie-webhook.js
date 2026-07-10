@@ -40,13 +40,9 @@ exports.handler = async (event) => {
   }
 
   try {
-    const mollieResponse = await fetch(`https://api.mollie.com/v2/payments/${encodeURIComponent(paymentId)}`, {
-      headers: {
-        Authorization: `Bearer ${mollieConfig.apiKey}`,
-      },
-    });
-
-    const payment = await mollieResponse.json();
+    const paymentResult = await fetchMolliePaymentWithFallback(paymentId, mollieConfig);
+    const mollieResponse = paymentResult.response;
+    const payment = paymentResult.payment;
 
     if (!mollieResponse.ok) {
       console.error("Mollie webhook fetch failed", {
@@ -100,19 +96,53 @@ function readMollieWebhookConfig() {
   const mollieMode = cleanText(process.env.MOLLIE_MODE || "test").toLowerCase();
   const configuredTestKey = process.env.MOLLIE_TEST_API_KEY;
   const configuredDefaultKey = process.env.MOLLIE_API_KEY || getMollieApiKey();
-  const apiKey = mollieMode === "test" ? (configuredTestKey || configuredDefaultKey) : configuredDefaultKey;
-  const testMode = isMollieTestMode(apiKey);
   const livePaymentsAllowed = cleanText(process.env.MOLLIE_ALLOW_LIVE_PAYMENTS).toLowerCase() === "true";
+  const apiKey = livePaymentsAllowed && mollieMode === "live"
+    ? configuredDefaultKey
+    : (configuredTestKey || (mollieMode === "test" ? configuredDefaultKey : ""));
+  const testMode = isMollieTestMode(apiKey);
 
   if (!apiKey) {
     return { success: false, reason: "missing_key", mollieMode, testMode };
   }
 
-  if ((mollieMode !== "test" || !testMode) && !livePaymentsAllowed) {
+  if (!testMode && !livePaymentsAllowed) {
     return { success: false, reason: "test_mode_required", mollieMode, testMode };
   }
 
-  return { success: true, apiKey, mollieMode, testMode };
+  return {
+    success: true,
+    apiKey,
+    alternateTestApiKey: configuredTestKey && configuredTestKey !== apiKey ? configuredTestKey : "",
+    mollieMode,
+    testMode,
+    livePaymentsAllowed,
+  };
+}
+
+async function fetchMolliePaymentWithFallback(paymentId, mollieConfig) {
+  const primary = await fetchMolliePayment(paymentId, mollieConfig.apiKey);
+  if (
+    primary.response.ok
+    || !mollieConfig.alternateTestApiKey
+    || primary.response.status !== 404
+  ) {
+    return primary;
+  }
+
+  const fallback = await fetchMolliePayment(paymentId, mollieConfig.alternateTestApiKey);
+  if (fallback.response.ok) fallback.usedFallbackTestKey = true;
+  return fallback.response.ok ? fallback : primary;
+}
+
+async function fetchMolliePayment(paymentId, apiKey) {
+  const response = await fetch(`https://api.mollie.com/v2/payments/${encodeURIComponent(paymentId)}`, {
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+    },
+  });
+  const payment = await response.json().catch(() => ({}));
+  return { response, payment };
 }
 
 function isMollieTestMode(apiKey) {
