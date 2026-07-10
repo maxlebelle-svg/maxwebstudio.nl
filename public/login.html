@@ -253,6 +253,12 @@
         function renderAuthLiveVisibility() {
           const shouldShow = realLoginActive || isDeveloperModeEnabled();
           authLiveOnlyBlocks.forEach((block) => {
+            const isPanel = block.matches("[data-auth-panel]");
+            if (isPanel) {
+              const active = block.classList.contains("is-active");
+              block.hidden = !shouldShow || !active;
+              return;
+            }
             block.hidden = !shouldShow;
           });
           if (!shouldShow && document.querySelector("[data-auth-panel='reset']")?.classList.contains("is-active")) {

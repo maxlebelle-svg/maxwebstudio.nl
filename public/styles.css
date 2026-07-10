@@ -9770,6 +9770,10 @@ h3 {
   gap: 22px;
 }
 
+.portal-auth-panel[hidden] {
+  display: none;
+}
+
 .portal-demo-role-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
