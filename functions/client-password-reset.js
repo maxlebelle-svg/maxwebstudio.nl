@@ -117,31 +117,58 @@ function buildRecoveryLink(redirectTo, tokenHash) {
 
 function buildMailPreview(email, resetLink = {}) {
   const companySettings = getCompanySettings();
-  const actionLink = cleanText(resetLink.actionLink) || `${companySettings.websiteUrl}/login.html`;
-  const subject = "Stel je Max Webstudio wachtwoord opnieuw in";
+  const actionLink = cleanText(resetLink.actionLink) || `${companySettings.websiteUrl}/wachtwoord-instellen.html?type=recovery`;
+  const template = passwordResetTemplate();
+  const data = {
+    klant_naam: "klant",
+    email,
+    reset_url: actionLink,
+    login_url: `${companySettings.websiteUrl}/login.html`,
+    contactpersoon: "Max",
+    bedrijf_naam: companySettings.companyName,
+  };
+  const subject = renderTemplateText(template.subject, data);
+  const preheader = renderTemplateText(template.preheader, data);
+  const bodyText = renderTemplateText(template.body, data);
   const text = [
-    "Hoi,",
+    bodyText,
     "",
-    "We hebben een aanvraag ontvangen om je Max Webstudio wachtwoord opnieuw in te stellen.",
-    "",
-    `Nieuw wachtwoord kiezen: ${actionLink}`,
-    "",
-    "Heb jij dit niet aangevraagd? Dan hoef je niets te doen.",
-    "",
-    `Vragen? Mail naar ${companySettings.primaryEmail}.`,
-    "",
-    "Met vriendelijke groet,",
-    companySettings.companyName,
+    `${template.ctaLabel}: ${actionLink}`,
   ].join("\n");
 
-  return { subject, actionLink, buttonLabel: "Nieuw wachtwoord kiezen", text, email };
+  return { subject, preheader, bodyText, actionLink, buttonLabel: template.ctaLabel, text, email };
 }
 
 function buildPasswordResetEmailHtml(email, mailPreview) {
   const companySettings = getCompanySettings();
   const actionLink = escapeHtml(mailPreview.actionLink);
   const buttonLabel = escapeHtml(mailPreview.buttonLabel);
-  return `<!doctype html><html lang="nl"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${escapeHtml(mailPreview.subject)}</title></head><body style="margin:0;background:#061626;color:#ffffff;font-family:Inter,Arial,sans-serif;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#061626;padding:28px 14px;"><tr><td align="center"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;background:#102a3d;border:1px solid rgba(68,180,255,.26);border-radius:24px;overflow:hidden;"><tr><td style="padding:32px 30px 18px;"><div style="font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:#27c7ff;font-weight:800;">${escapeHtml(companySettings.companyName)}</div><h1 style="margin:14px 0 10px;font-size:32px;line-height:1.12;color:#ffffff;">Nieuw wachtwoord instellen.</h1><p style="margin:0;color:#c9d7e8;font-size:16px;line-height:1.7;">We hebben een aanvraag ontvangen om het wachtwoord voor <strong style="color:#ffffff;">${escapeHtml(email)}</strong> opnieuw in te stellen.</p></td></tr><tr><td style="padding:0 30px 24px;"><p style="margin:0 0 18px;color:#c9d7e8;font-size:16px;line-height:1.7;">Gebruik onderstaande knop om veilig een nieuw wachtwoord te kiezen. Heb jij dit niet aangevraagd? Dan hoef je niets te doen.</p><a href="${actionLink}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:800;border-radius:14px;padding:14px 20px;">${buttonLabel}</a><p style="margin:18px 0 0;color:#91a6bc;font-size:13px;line-height:1.6;">Werkt de knop niet? Open dan deze link:<br /><a href="${actionLink}" style="color:#7dd3fc;">${actionLink}</a></p></td></tr><tr><td style="padding:22px 30px;background:rgba(255,255,255,.05);color:#aabbd0;font-size:13px;line-height:1.6;">Heb je vragen? Reageer op deze mail of mail naar <a href="${escapeAttribute(getMailtoLink(companySettings, "Vraag over wachtwoord reset"))}" style="color:#7dd3fc;">${escapeHtml(companySettings.primaryEmail)}</a>.</td></tr></table></td></tr></table></body></html>`;
+  return `<!doctype html><html lang="nl"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="color-scheme" content="dark" /><meta name="supported-color-schemes" content="dark" /><title>${escapeHtml(mailPreview.subject)}</title></head><body style="margin:0;background:#061626;color:#ffffff;font-family:Inter,Arial,sans-serif;"><div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${escapeHtml(mailPreview.preheader)}</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#061626;padding:28px 14px;"><tr><td align="center"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;background:#0d2235;border:1px solid rgba(68,180,255,.28);border-radius:24px;overflow:hidden;"><tr><td style="padding:32px 30px 18px;"><div style="font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:#27c7ff;font-weight:800;">${escapeHtml(companySettings.companyName)}</div><h1 style="margin:14px 0 10px;font-size:32px;line-height:1.12;color:#ffffff;">${escapeHtml(mailPreview.subject)}</h1></td></tr><tr><td style="padding:0 30px 24px;">${textToEmailHtml(mailPreview.bodyText)}<a href="${actionLink}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:800;border-radius:14px;padding:14px 20px;">${buttonLabel}</a><p style="margin:18px 0 0;color:#91a6bc;font-size:13px;line-height:1.6;">Werkt de knop niet? Open dan deze link:<br /><a href="${actionLink}" style="color:#7dd3fc;">${actionLink}</a></p></td></tr><tr><td style="padding:22px 30px;background:#102a3d;color:#aabbd0;font-size:13px;line-height:1.6;">Heb je vragen? Reageer op deze mail of mail naar <a href="${escapeAttribute(getMailtoLink(companySettings, "Vraag over wachtwoord reset"))}" style="color:#7dd3fc;">${escapeHtml(companySettings.primaryEmail)}</a>.</td></tr></table></td></tr></table></body></html>`;
+}
+
+function passwordResetTemplate() {
+  return {
+    subject: "Nieuw wachtwoord instellen",
+    preheader: "Gebruik de beveiligde link om je wachtwoord opnieuw te kiezen.",
+    ctaLabel: "Nieuw wachtwoord kiezen",
+    body: "Hallo {{klant_naam}},\n\nWe hebben een aanvraag ontvangen om het wachtwoord voor {{email}} opnieuw in te stellen.\n\nGebruik onderstaande knop om veilig een nieuw wachtwoord te kiezen. Heb jij dit niet aangevraagd? Dan hoef je niets te doen.\n\nMet vriendelijke groet,\n{{contactpersoon}}\nMax Webstudio",
+  };
+}
+
+function renderTemplateText(value, data = {}) {
+  return cleanText(value).replace(/\{\{([^}]+)\}\}/g, (match, key) => {
+    const cleanKey = cleanText(key);
+    return Object.prototype.hasOwnProperty.call(data, cleanKey) ? cleanText(data[cleanKey]) : match;
+  });
+}
+
+function textToEmailHtml(value = "") {
+  return cleanText(value)
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter(Boolean)
+    .map((block) => `<p style="margin:0 0 18px;color:#c9d7e8;font-size:16px;line-height:1.7;">${escapeHtml(block).replace(/\n/g, "<br />")}</p>`)
+    .join("");
 }
 
 function cleanText(value) {

@@ -722,6 +722,8 @@
           "{{offerte_nummer}}",
           "{{factuur_nummer}}",
           "{{login_url}}",
+          "{{reset_url}}",
+          "{{email}}",
           "{{contactpersoon}}",
           "{{pakket_naam}}",
         ];
@@ -732,6 +734,7 @@
           offerte_nummer: "OFF-2026-001",
           factuur_nummer: "FAC-2026-001",
           login_url: "https://maxwebstudio.nl/login.html",
+          reset_url: "https://maxwebstudio.nl/wachtwoord-instellen.html?type=recovery&token_hash=preview",
           tijdelijke_wachtwoord: "Je stelt je wachtwoord veilig in via de activatielink.",
           contactpersoon: "Max",
           pakket_naam: "Professioneel",
@@ -859,15 +862,15 @@
             body: "Hallo {{klant_naam}},\n\nJe Max Webstudio account staat klaar voor {{bedrijf_naam}}.\n\nGebruik de veilige activatielink om je eigen wachtwoord in te stellen:\n{{login_url}}\n\nIn het klantportaal vind je straks je projectstatus, onboarding, bestanden, facturen en belangrijke updates.\n\nLukt activeren of inloggen niet? Reageer dan op deze mail, dan help ik je direct verder.\n\nMet vriendelijke groet,\n{{contactpersoon}}\nMax Webstudio",
           },
           {
-            id: "wachtwoord-reset",
-            name: "Resetlink instructie",
-            description: "Uitlegmail: klant vraagt zelf een beveiligde resetlink aan via de loginpagina.",
+            id: "client-password-reset",
+            name: "Wachtwoord reset",
+            description: "Automatische mail met een eenmalige beveiligde wachtwoordlink.",
             type: "Support",
-            status: "Concept",
+            status: "Actief",
             updatedAt: "2026-07-10",
-            subject: "Nieuwe resetlink aanvragen voor Max Webstudio",
-            preheader: "Vraag zelf veilig een nieuwe resetlink aan via de loginpagina.",
-            body: "Hallo {{klant_naam}},\n\nVoor je veiligheid kunnen we vanuit deze handmatige mail geen wachtwoord-resetlink meesturen.\n\nOpen de loginpagina en kies daar voor 'Wachtwoord vergeten':\n{{login_url}}\n\nVul daarna je e-mailadres in. Je ontvangt automatisch een beveiligde resetmail met een eenmalige link.\n\nMet vriendelijke groet,\nMax Webstudio",
+            subject: "Nieuw wachtwoord instellen",
+            preheader: "Gebruik de beveiligde link om je wachtwoord opnieuw te kiezen.",
+            body: "Hallo {{klant_naam}},\n\nWe hebben een aanvraag ontvangen om het wachtwoord voor {{email}} opnieuw in te stellen.\n\nGebruik onderstaande knop om veilig een nieuw wachtwoord te kiezen. Heb jij dit niet aangevraagd? Dan hoef je niets te doen.\n\nMet vriendelijke groet,\n{{contactpersoon}}\nMax Webstudio",
           },
         ];
 
@@ -1017,6 +1020,8 @@
             offerte_nummer: "OFF-2026-001",
             factuur_nummer: "FAC-2026-001",
             login_url: elements.temporaryPassword?.value || "https://maxwebstudio.nl/login.html",
+            reset_url: "https://maxwebstudio.nl/wachtwoord-instellen.html?type=recovery&token_hash=preview",
+            email: lead?.email || "klant@example.nl",
             tijdelijke_wachtwoord: "Je stelt je wachtwoord veilig in via de activatielink.",
             contactpersoon: "Max",
             pakket_naam: lead?.packageName || "Max Webstudio pakket",
@@ -1063,6 +1068,7 @@
           const text = `${template.id || ""} ${template.name || ""} ${template.subject || ""} ${body}`.toLowerCase();
           if (text.includes("offerte")) return { label: "Bekijk offerte", url: previewData.login_url };
           if (text.includes("factuur")) return { label: "Open factuur", url: previewData.login_url };
+          if (text.includes("reset_url") || text.includes("wachtwoord")) return { label: "Nieuw wachtwoord kiezen", url: previewData.reset_url };
           if (text.includes("website_url") || text.includes("staat live")) return { label: "Bekijk website", url: previewData.website_url };
           if (text.includes("logo") || text.includes("branding") || text.includes("downloads")) return { label: "Open klantomgeving", url: previewData.login_url };
           if (text.includes("wachtwoord") || text.includes("login")) return { label: "Naar login", url: previewData.login_url };
@@ -1467,6 +1473,10 @@
             await sendAccountActivationEmail({ lead, to, token });
             return;
           }
+          if (active.id === "client-password-reset") {
+            await sendPasswordResetEmail({ to });
+            return;
+          }
           const payload = buildEmailRenderPayload();
           latestRenderedEmailHtml = renderResendEmailHtml(payload);
           elements.sendEmail.disabled = true;
@@ -1501,6 +1511,30 @@
             if (elements.sendNote) elements.sendNote.textContent = `Laatste verzending: ${payload.template?.name || "template"} naar ${to}.`;
           } catch (error) {
             setMessage(error.message || "Mail kon niet worden verzonden.", "error");
+          } finally {
+            elements.sendEmail.disabled = false;
+            elements.sendEmail.textContent = "Mail versturen";
+          }
+        }
+
+        async function sendPasswordResetEmail({ to }) {
+          elements.sendEmail.disabled = true;
+          elements.sendEmail.textContent = "Resetlink maken...";
+          try {
+            const response = await fetch("/.netlify/functions/client-password-reset", {
+              method: "POST",
+              headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ email: to }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || data.success === false) throw new Error(data.error || "Resetmail kon niet worden verzonden.");
+            setMessage(`Resetmail aangevraagd voor ${to}.`, "success");
+            if (elements.sendNote) elements.sendNote.textContent = `De echte resetmail is via de beveiligde resetflow aangevraagd voor ${to}.`;
+          } catch (error) {
+            setMessage(error.message || "Resetmail kon niet worden verzonden.", "error");
           } finally {
             elements.sendEmail.disabled = false;
             elements.sendEmail.textContent = "Mail versturen";
