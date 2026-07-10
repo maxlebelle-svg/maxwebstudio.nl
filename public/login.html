@@ -577,8 +577,20 @@
           event.preventDefault();
           const data = Object.fromEntries(new FormData(passwordResetForm).entries());
           try {
-            const auth = await loadAuth();
-            await auth.resetPassword(data.email);
+            const response = await fetch("/.netlify/functions/client-password-reset", {
+              method: "POST",
+              headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ email: data.email }),
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || result.success === false) {
+              const error = new Error(result.error || "Resetlink aanvragen is niet gelukt.");
+              error.status = response.status;
+              throw error;
+            }
             setMessage("Als dit e-mailadres bekend is, wordt er een resetlink verstuurd.", "success");
           } catch (error) {
             const debug = error?.supabaseAuth || {};
