@@ -1,7 +1,7 @@
 const { getMollieApiKey } = require("./mollie-products");
 const crypto = require("crypto");
 const { sendEmail } = require("./email");
-const { getCompanySettings, getMailtoLink } = require("./company-settings");
+const { getCompanySettings } = require("./company-settings");
 const { createTimelineEvent } = require("./services/timelineService");
 
 const knownStatuses = new Set([
@@ -972,7 +972,7 @@ async function sendCommercialWelcomeEmail(supabaseUrl, serviceRoleKey, profile, 
     `Pakket: ${context.packageLabel || customer.package || "Website"}.`,
     "",
     "De volgende stap is je onboarding. Je klantportaal staat klaar zodra je je wachtwoord instelt.",
-    portalUrl,
+    passwordSetup.actionLink ? "Gebruik de knop hieronder om je account te activeren." : "Gebruik de knop hieronder om je klantportaal te openen.",
     "",
     "Met vriendelijke groet,",
     companySettings.companyName,
@@ -982,7 +982,9 @@ async function sendCommercialWelcomeEmail(supabaseUrl, serviceRoleKey, profile, 
     bcc: cleanEmail(process.env.ADMIN_EMAIL) || undefined,
     subject: "Welkom bij Max Webstudio - je project is gestart",
     text,
-    html: renderEmailHtml("Je project is gestart", text, portalUrl),
+    html: renderEmailHtml("Je project is gestart", text, portalUrl, {
+      ctaLabel: passwordSetup.actionLink ? "Account activeren" : "Open klantportaal",
+    }),
     customerId: customer.id,
     projectId: project.id,
     templateKey: "commercial_order_welcome",
@@ -1150,9 +1152,11 @@ function buildPaidConfirmationEmail(invoice, profile) {
     `Bedankt, we hebben de betaling voor factuur ${invoiceNumber} ontvangen.`,
     `Factuur: ${title}.`,
     `Bedrag: ${formatMoney(invoice.amount)}.`,
-    cleanText(invoice.pdf_file_path) ? `De factuur-PDF blijft veilig beschikbaar in je klantportaal: ${portalUrl}` : "",
+    cleanText(invoice.pdf_file_path) ? "De factuur-PDF blijft veilig beschikbaar in je klantportaal." : "",
     "",
-    `Vragen? Mail naar ${companySettings.primaryEmail} of gebruik ${getMailtoLink(companySettings, `Vraag over factuur ${invoiceNumber}`)}.`,
+    "Je klantportaal en projectintake staan klaar om verder te gaan.",
+    "",
+    `Vragen? Mail naar ${companySettings.primaryEmail}.`,
     "",
     "Met vriendelijke groet,",
     companySettings.companyName,
@@ -1161,7 +1165,7 @@ function buildPaidConfirmationEmail(invoice, profile) {
   return {
     subject: `Betaling ontvangen voor factuur ${invoiceNumber}`,
     text,
-    html: renderEmailHtml("Betaling ontvangen", text, portalUrl),
+    html: renderEmailHtml("Betaling ontvangen", text, portalUrl, { ctaLabel: "Open klantportaal" }),
   };
 }
 
@@ -1189,13 +1193,16 @@ function buildSubscriptionRetryEmail(subscription, profile) {
   return {
     subject: "We konden je maandelijkse betaling niet verwerken",
     text,
-    html: renderEmailHtml("Actie nodig voor je onderhoudsabonnement", text, mandateUrl || portalUrl),
+    html: renderEmailHtml("Actie nodig voor je onderhoudsabonnement", text, mandateUrl || portalUrl, {
+      ctaLabel: mandateUrl ? "Machtiging afronden" : "Open klantportaal",
+    }),
   };
 }
 
-function renderEmailHtml(heading, text, portalUrl) {
+function renderEmailHtml(heading, text, portalUrl, options = {}) {
   const companySettings = getCompanySettings();
   const paragraphs = text.split("\n").map((line) => line.trim()).filter(Boolean);
+  const ctaLabel = cleanText(options.ctaLabel) || "Open klantportaal";
   return `
     <div style="margin:0;padding:0;background:#07111f;color:#eaf1ff;font-family:Arial,sans-serif;">
       <div style="max-width:640px;margin:0 auto;padding:32px 20px;">
@@ -1204,7 +1211,7 @@ function renderEmailHtml(heading, text, portalUrl) {
           <h1 style="margin:0 0 20px;color:#ffffff;font-size:28px;line-height:1.2;">${escapeHtml(heading)}</h1>
           ${paragraphs.map((line) => `<p style="margin:0 0 14px;color:#d7e3f7;font-size:15px;line-height:1.7;">${linkify(escapeHtml(line))}</p>`).join("")}
           <p style="margin:24px 0 0;">
-            <a href="${escapeAttribute(portalUrl)}" style="display:inline-block;background:#2f8cff;color:#ffffff;text-decoration:none;border-radius:10px;padding:12px 18px;font-weight:700;">Open klantportaal</a>
+            <a href="${escapeAttribute(portalUrl)}" style="display:inline-block;background:#2f8cff;color:#ffffff;text-decoration:none;border-radius:10px;padding:12px 18px;font-weight:700;">${escapeHtml(ctaLabel)}</a>
           </p>
         </div>
       </div>

@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Welkom bij Max Webstudio | Project intake</title>
-    <meta name="description" content="Start je project intake na je betaling bij Max Webstudio." />
+    <title>Betaling ontvangen | Max Webstudio</title>
+    <meta name="description" content="Je betaling is ontvangen. Activeer je account en start je project intake bij Max Webstudio." />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -18,19 +18,53 @@
       <a class="header-cta" href="onboarding.html" id="header-intake-link">Project intake</a>
     </header>
     <main>
-      <section class="page-hero onboarding-start">
-        <p class="eyebrow">Projectstart</p>
-        <h1>Welkom bij Max Webstudio 🎉</h1>
-        <p>Je betaling is gestart of ontvangen. Vul hieronder alvast je projectinformatie in, zodat wij direct goed kunnen starten.</p>
-        <div class="status-actions">
-          <a class="button primary" href="onboarding.html" id="intake-link">Start project intake</a>
-          <a class="button secondary" href="https://wa.me/31616217771" target="_blank" rel="noopener">WhatsApp Max</a>
+      <section class="page-hero payment-status-hero" data-payment-state="loading">
+        <div class="payment-status-shell">
+          <div class="payment-status-copy">
+            <p class="eyebrow">Projectstart</p>
+            <p class="payment-status-pill" id="payment-status-pill">Betaling controleren</p>
+            <h1 id="payment-status-title">Welkom bij Max Webstudio</h1>
+            <p id="payment-status-intro">We controleren je betaling en zetten ondertussen je account en projectintake klaar.</p>
+            <div class="payment-status-actions">
+              <a class="button primary" href="onboarding.html" id="intake-link">Start project intake</a>
+              <a class="button secondary" href="client-dashboard.html" id="portal-link">Open klantportaal</a>
+              <a class="button secondary" href="https://wa.me/31851302326" target="_blank" rel="noopener" data-company-href="whatsapp">WhatsApp Max</a>
+            </div>
+            <p class="payment-status-note" id="payment-status-note">Je ontvangt ook een e-mail met je inlog- of activatiegegevens.</p>
+          </div>
+          <aside class="max-ai-payment-card" aria-label="Bericht van Max AI">
+            <img class="max-ai-payment-character" src="assets/max-ai-character.png" alt="Max AI" />
+            <div class="max-ai-payment-bubble">
+              <strong>Max AI</strong>
+              <p id="max-ai-message">Ik kijk even mee of alles netjes binnenkomt. Daarna kun je direct door naar je account en intake.</p>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="section payment-action-section" aria-label="Volgende stappen">
+        <div class="payment-action-grid">
+          <article class="payment-action-card" id="mail-action-card">
+            <span>1</span>
+            <strong>Check je mail</strong>
+            <p id="mail-action-copy">Daar vind je de bevestiging en je accountlink zodra de betaalflow is afgerond.</p>
+          </article>
+          <article class="payment-action-card">
+            <span>2</span>
+            <strong>Log in of activeer je account</strong>
+            <p>Open je klantportaal om je project, factuur en updates straks op een plek te volgen.</p>
+          </article>
+          <article class="payment-action-card">
+            <span>3</span>
+            <strong>Vul de projectintake in</strong>
+            <p>In ongeveer 10 minuten verzamelen we alles om professioneel te starten.</p>
+          </article>
         </div>
       </section>
 
       <section class="section onboarding-steps-section" aria-label="Projectstappen">
         <div class="onboarding-steps">
-          <article><span>1</span><strong>Betaling gestart</strong><p>We controleren de betaalstatus automatisch.</p></article>
+          <article><span>1</span><strong>Betaling ontvangen</strong><p>We koppelen je betaling automatisch aan je project.</p></article>
           <article><span>2</span><strong>Projectgegevens invullen</strong><p>Je vult rustig de intake in.</p></article>
           <article><span>3</span><strong>Logo/foto’s verzamelen</strong><p>We bekijken wat al beschikbaar is.</p></article>
           <article><span>4</span><strong>Intakegesprek plannen</strong><p>We stemmen doelen en planning af.</p></article>
@@ -38,11 +72,92 @@
         </div>
       </section>
     </main>
+    <script type="module" src="src/services/companySettingsDomService.js"></script>
     <script>
       const query = window.location.search;
+      const params = new URLSearchParams(query);
       const intakeUrl = query ? `onboarding.html${query}` : "onboarding.html";
-      document.querySelector("#intake-link").href = intakeUrl;
-      document.querySelector("#header-intake-link").href = intakeUrl;
+      const portalUrl = "client-dashboard.html";
+      const elements = {
+        hero: document.querySelector(".payment-status-hero"),
+        title: document.querySelector("#payment-status-title"),
+        intro: document.querySelector("#payment-status-intro"),
+        pill: document.querySelector("#payment-status-pill"),
+        note: document.querySelector("#payment-status-note"),
+        maxAi: document.querySelector("#max-ai-message"),
+        mailCopy: document.querySelector("#mail-action-copy"),
+        intake: document.querySelector("#intake-link"),
+        headerIntake: document.querySelector("#header-intake-link"),
+        portal: document.querySelector("#portal-link"),
+      };
+
+      elements.intake.href = intakeUrl;
+      elements.headerIntake.href = intakeUrl;
+      elements.portal.href = portalUrl;
+
+      const copy = {
+        paid: {
+          pill: "Betaling ontvangen",
+          title: "Je betaling is binnen",
+          intro: "Mooi, je opdracht staat klaar. Activeer je account via de mail en vul alvast je projectintake in.",
+          note: "De bevestigingsmail en accountlink zijn onderweg of al verstuurd.",
+          maxAi: "Yes, de betaling is gekoppeld. Ik wijs je nu naar je account en intake, zodat Max meteen scherp kan starten.",
+          mail: "Je ontvangt de betaalbevestiging en accountlink via de bestaande Max Webstudio-mailflow.",
+        },
+        processing: {
+          pill: "Betaling verwerken",
+          title: "We zetten je project klaar",
+          intro: "Je betaling is gestart. Zodra Mollie de betaling bevestigt, ronden we automatisch je account, project en mailflow af.",
+          note: "Laat deze pagina gerust open of ga alvast verder met je intake.",
+          maxAi: "Ik hou de status in de gaten. Je kunt alvast door met de intake; de administratie loopt automatisch mee.",
+          mail: "De bevestigingsmail wordt verstuurd zodra de betaling definitief is verwerkt.",
+        },
+        action_needed: {
+          pill: "Betaling niet afgerond",
+          title: "Je betaling vraagt nog aandacht",
+          intro: "We konden nog geen afgeronde betaling koppelen. Probeer de betaling opnieuw of stuur Max een WhatsApp-bericht.",
+          note: "Er worden pas projectrecords definitief afgerond wanneer de betaling betaald is.",
+          maxAi: "Ik zie nog geen afgeronde betaling. Geen stress: Max kan meekijken als je vastloopt.",
+          mail: "Je ontvangt pas een betaalbevestiging wanneer de betaling alsnog lukt.",
+        },
+      };
+
+      function renderState(status) {
+        const state = copy[status] || copy.processing;
+        elements.hero.dataset.paymentState = status;
+        elements.pill.textContent = state.pill;
+        elements.title.textContent = state.title;
+        elements.intro.textContent = state.intro;
+        elements.note.textContent = state.note;
+        elements.maxAi.textContent = state.maxAi;
+        elements.mailCopy.textContent = state.mail;
+      }
+
+      async function loadStatus() {
+        const statusQuery = new URLSearchParams();
+        ["order", "invoice"].forEach((key) => {
+          const value = params.get(key);
+          if (value) statusQuery.set(key, value);
+        });
+        if (!statusQuery.toString()) {
+          renderState("processing");
+          return;
+        }
+        try {
+          const response = await fetch(`/api/order-status?${statusQuery.toString()}`, { headers: { Accept: "application/json" } });
+          const data = await response.json();
+          renderState(data.status || "processing");
+          if (data.status === "paid" && data.portalReady) {
+            elements.portal.textContent = "Open klantportaal";
+          } else if (data.status === "paid") {
+            elements.portal.textContent = "Accountlink in je mail";
+          }
+        } catch {
+          renderState("processing");
+        }
+      }
+
+      loadStatus();
     </script>
   </body>
 </html>
