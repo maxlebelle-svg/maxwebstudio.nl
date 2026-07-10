@@ -159,7 +159,8 @@ async function verifyRecoveryTokenHash(config, tokenHash) {
     body: JSON.stringify({ type: "recovery", token_hash: tokenHash }),
   });
   const payload = await response.json().catch(() => ({}));
-  if (!response.ok || !payload?.access_token) {
+  const session = normalizeAuthSession(payload);
+  if (!response.ok || !session?.access_token) {
     const debug = createAuthDebug(config, response, payload);
     const error = new Error(debug.message || "Herstel-link kon niet worden gecontroleerd.");
     error.code = debug.code || "SUPABASE_RECOVERY_VERIFY_FAILED";
@@ -167,7 +168,7 @@ async function verifyRecoveryTokenHash(config, tokenHash) {
     error.supabaseAuth = debug;
     throw error;
   }
-  return payload;
+  return session;
 }
 
 async function exchangeRecoveryCode(config, code) {
@@ -182,7 +183,8 @@ async function exchangeRecoveryCode(config, code) {
     body: JSON.stringify({ auth_code: code }),
   });
   const payload = await response.json().catch(() => ({}));
-  if (!response.ok || !payload?.access_token) {
+  const session = normalizeAuthSession(payload);
+  if (!response.ok || !session?.access_token) {
     const debug = createAuthDebug(config, response, payload);
     const error = new Error(debug.message || "Herstel-code kon niet worden gecontroleerd.");
     error.code = debug.code || "SUPABASE_RECOVERY_CODE_FAILED";
@@ -190,7 +192,7 @@ async function exchangeRecoveryCode(config, code) {
     error.supabaseAuth = debug;
     throw error;
   }
-  return payload;
+  return session;
 }
 
 async function getRuntimeAuthConfig() {
@@ -247,6 +249,13 @@ function toSessionResult(session = null) {
     provider: "supabase",
     active: Boolean(session?.access_token),
   };
+}
+
+function normalizeAuthSession(payload = {}) {
+  if (payload?.access_token) return payload;
+  if (payload?.session?.access_token) return payload.session;
+  if (payload?.data?.session?.access_token) return payload.data.session;
+  return null;
 }
 
 function authNotActive(action) {
