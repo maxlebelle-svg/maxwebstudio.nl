@@ -223,3 +223,76 @@ Toegevoegd rapport:
    - Statisch deels onderbouwd via conflictcheck; niet live bewezen.
 10. Kan Max Webstudio nu veilig echte klanten verwerken?
    - Nog niet als volledig P0-bewezen platform. Eerst testaccounts maken, RLS A/B-tenanttests uitvoeren, storage testen en een volledige Mollie-testorder afronden.
+
+## Definitieve Testaccount-run
+
+Status: voorbereid met herbruikbare harness; volledige testaccount-run nog niet uitgevoerd.
+
+Nieuwe testharness:
+
+- `/scripts/p0-test-harness.mjs`
+- Documentatie: `/docs/P0_TEST_HARNESS.md`
+
+Uitgevoerde harnesschecks:
+
+- `node scripts/p0-test-harness.mjs all`: 16 pass, 4 skipped, 1 info, 0 fail.
+- `node scripts/p0-test-harness.mjs preflight`: 5 pass, 1 info.
+- `node scripts/p0-test-harness.mjs api`: 3 pass.
+- `node scripts/p0-test-harness.mjs anon-rls`: 8 pass.
+- `node scripts/p0-test-harness.mjs rls-ab`: skipped wegens ontbrekende klant A/B JWT's.
+- `node scripts/p0-test-harness.mjs storage`: skipped wegens ontbrekende klant A/B JWT's, bucket en objectpad.
+- `node scripts/p0-test-harness.mjs commercial-order`: skipped wegens ontbrekende `P0_ADMIN_JWT`.
+- `node scripts/p0-test-harness.mjs sales`: skipped wegens ontbrekende `P0_SALES_CASES_JSON`.
+- Lokale validatie commercial-order: frontend `packagePrice` wordt genegeerd, onbekend pakket wordt geweigerd, onbekende optie wordt geweigerd.
+
+Gebruikte testrollen:
+
+- Nog niet live aangemaakt of aangeleverd.
+- Vereist: `P0 Klant A`, `P0 Klant B`, `P0 Salesmedewerker A`, `P0 Salesmedewerker B`, `P0 Testadmin`.
+
+Geteste tenantrelaties:
+
+- Zonder klant A/B JWT's kon alleen anonieme lekcontrole worden uitgevoerd.
+- De harness ondersteunt klant A/B-readcases via `P0_CUSTOMER_A_JWT`, `P0_CUSTOMER_B_JWT`, `P0_CUSTOMER_A_ID` en `P0_CUSTOMER_B_ID`.
+
+RLS-resultaten:
+
+- Anonieme SELECT-smoke blijft het enige uitgevoerde live bewijs.
+- Klant A/B SELECT, INSERT, UPDATE en DELETE zijn voorbereid maar niet uitgevoerd zonder testaccounts.
+
+Storageresultaten:
+
+- Anonieme storage-smoke vond geen zichtbare buckets.
+- Cross-tenant read/upload/delete is voorbereid maar niet uitgevoerd zonder bucket, objectpaden en klanttokens.
+
+Salesassignmentresultaten:
+
+- Backendcase-run is voorbereid via `P0_SALES_CASES_JSON`.
+- Medewerker A/B is niet uitgevoerd zonder salestokens en testlead IDs.
+
+Orderflowresultaten:
+
+- Harness bevat veilige negatieve `commercial-order` tests voor onbekend pakket, onbekende optie en ontbrekende voorwaardenacceptatie.
+- Volledige Mollie-testorder draait alleen met `P0_ADMIN_JWT` en `P0_ENABLE_MUTATIONS=true`.
+- De gevonden bedragmanipulatie is lokaal gereproduceerd en gefixt: `packagePrice: 1` bij `starter` levert server-side `950` op in `validatePayload`.
+
+Idempotencyresultaten:
+
+- Nog niet live bewezen.
+- Harness en documentatie leggen vast welke webhook/order/concurrencycases nodig zijn.
+
+Gevonden en opgelost probleem:
+
+- P0-bedragmanipulatie: `commercial-order` accepteerde `packagePrice` uit de frontendpayload.
+- Fix: `commercial-order` gebruikt nu altijd `PACKAGE_CATALOG[packageKey].price` en `PACKAGE_CATALOG[packageKey].label`.
+- Fix: onbekende pakketten en onbekende add-ons worden geweigerd.
+- Fix: `customOptions` worden niet meer via deze betaalflow geaccepteerd.
+- Fix: `admin-nieuwe-opdracht.html` stuurt `packagePrice` niet meer mee.
+
+Resterende beperkingen:
+
+- Geen echte klant A/B-testaccounts beschikbaar.
+- Geen storagebucket/testbestand beschikbaar.
+- Geen Mollie-testorder uitgevoerd.
+- Geen webhook-idempotency/concurrency uitgevoerd.
+- Geen automatische cleanup uitgevoerd, omdat er geen muterende live run is gedaan.
