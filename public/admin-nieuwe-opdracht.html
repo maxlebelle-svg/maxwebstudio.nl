@@ -369,7 +369,6 @@
             const data = Object.fromEntries(new FormData(form).entries());
             data.options = [...form.querySelectorAll('input[name="options"]:checked')].map((input) => input.value);
             data.termsAccepted = Boolean(form.termsAccepted.checked);
-            data.packagePrice = totals().packagePrice;
             data.termsAcceptedAt = new Date().toISOString();
             const response = await fetch(endpoint, {
               method: "POST",

@@ -138,9 +138,13 @@ function readConfig() {
 
 function validatePayload(payload = {}, event = {}) {
   const packageKey = cleanText(payload.packageKey || payload.package || "business").toLowerCase();
-  const packageConfig = PACKAGE_CATALOG[packageKey] || PACKAGE_CATALOG.business;
+  const packageConfig = PACKAGE_CATALOG[packageKey];
   const selectedOptions = Array.isArray(payload.options) ? payload.options.map(cleanText).filter(Boolean) : [];
+  const invalidOptions = selectedOptions.filter((key) => !OPTION_CATALOG[key]);
   const paymentChoice = cleanText(payload.paymentChoice || payload.payment_choice || "deposit").toLowerCase() === "full" ? "full" : "deposit";
+  if (!packageConfig) throwValidation("Kies een geldig pakket.");
+  if (invalidOptions.length) throwValidation("Kies alleen geldige opties.");
+  if (Array.isArray(payload.customOptions) && payload.customOptions.length) throwValidation("Maatwerkregels worden nog niet via deze betaalflow ondersteund.");
   const value = {
     orderId: cleanText(payload.orderId) || `order_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`,
     name: cleanText(payload.name),
@@ -149,10 +153,10 @@ function validatePayload(payload = {}, event = {}) {
     phone: cleanText(payload.phone),
     domain: cleanDomain(payload.domain || payload.website),
     packageKey,
-    packageLabel: cleanText(payload.packageLabel) || packageConfig.label,
-    packagePrice: amount(payload.packagePrice ?? packageConfig.price),
+    packageLabel: packageConfig.label,
+    packagePrice: packageConfig.price,
     options: selectedOptions,
-    customOptions: Array.isArray(payload.customOptions) ? payload.customOptions : [],
+    customOptions: [],
     discount: amount(payload.discount),
     paymentChoice,
     termsAccepted: Boolean(payload.termsAccepted || payload.terms_accepted),
