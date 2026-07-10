@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Wachtwoord instellen | Max Webstudio</title>
+    <meta name="description" content="Stel veilig je Max Webstudio wachtwoord in." />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="portal-body">
+    <main class="portal-auth-shell portal-auth-shell-wide" id="password-shell">
+      <section class="portal-auth-card">
+        <a class="brand" href="/" aria-label="Max Webstudio home">
+          <svg class="brand-mark" viewBox="0 0 80 80" aria-hidden="true"><rect x="6" y="6" width="68" height="68" rx="18"></rect><path class="brand-m" d="M22 53V27h7.3L40 42.2 50.7 27H58v26h-8.1V39.1l-7.5 10.2h-4.8l-7.5-10.2V53H22Z"></path><path class="brand-spark" d="M58 25h9v9" fill="none" stroke-width="4" stroke-linecap="round"></path></svg>
+          <span>Max Webstudio</span>
+        </a>
+
+        <div>
+          <p class="section-kicker">Klantportaal</p>
+          <h1>Nieuw wachtwoord instellen.</h1>
+          <p>Gebruik deze beveiligde pagina om je klantportaal te activeren of je wachtwoord opnieuw te kiezen.</p>
+        </div>
+
+        <div class="portal-login-status-card" role="status" aria-live="polite">
+          <span>Status</span>
+          <strong id="password-status-title">Resetlink controleren</strong>
+          <p id="password-status-text">We controleren je resetlink. Een momentje.</p>
+        </div>
+
+        <form class="portal-login-form" id="password-form" hidden>
+          <label for="new-password">Nieuw wachtwoord<input id="new-password" name="password" type="password" autocomplete="new-password" minlength="10" required /></label>
+          <label for="confirm-password">Herhaal wachtwoord<input id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" minlength="10" required /></label>
+          <button class="button primary" type="submit">Wachtwoord instellen</button>
+        </form>
+
+        <div class="portal-login-form" id="password-actions" hidden>
+          <a class="button primary" href="login.html">Naar login</a>
+          <a class="button secondary" href="login.html">Nieuwe resetlink aanvragen</a>
+        </div>
+
+        <p class="portal-message" id="password-message" role="status" aria-live="polite"></p>
+      </section>
+    </main>
+
+    <script type="module">
+      import { consumeRecoverySessionFromUrl, updatePassword } from "./src/services/supabaseAuthProvider.js";
+
+      const form = document.getElementById("password-form");
+      const actions = document.getElementById("password-actions");
+      const message = document.getElementById("password-message");
+      const statusTitle = document.getElementById("password-status-title");
+      const statusText = document.getElementById("password-status-text");
+
+      function setMessage(text, type = "") {
+        message.textContent = text;
+        message.className = `portal-message ${type}`.trim();
+      }
+
+      function setStatus(title, text) {
+        statusTitle.textContent = title;
+        statusText.textContent = text;
+      }
+
+      function showExpiredState() {
+        form.hidden = true;
+        actions.hidden = false;
+        setStatus("Resetlink verlopen", "Vraag een nieuwe resetlink aan en gebruik alleen de nieuwste mail.");
+        setMessage("Deze resetlink is verlopen of niet compleet.", "error");
+      }
+
+      async function activateRecovery() {
+        const urlState = `${window.location.search}${window.location.hash}`;
+        if (/error_code=otp_expired|error=access_denied/.test(urlState)) {
+          showExpiredState();
+          return;
+        }
+        if (!/type=recovery|access_token=|token_hash=|(?:[?&#])token=/.test(urlState)) {
+          showExpiredState();
+          return;
+        }
+
+        try {
+          const result = await consumeRecoverySessionFromUrl();
+          if (!result.success) {
+            showExpiredState();
+            return;
+          }
+          actions.hidden = true;
+          form.hidden = false;
+          setStatus("Resetlink gecontroleerd", "Kies nu je nieuwe wachtwoord.");
+          setMessage("Je kunt nu veilig een nieuw wachtwoord instellen.", "success");
+          document.getElementById("new-password")?.focus();
+        } catch (error) {
+          console.info("Password setup recovery failed", { code: error?.code || "RECOVERY_FAILED", status: error?.status || "" });
+          showExpiredState();
+        }
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const data = Object.fromEntries(new FormData(form).entries());
+        if (String(data.password || "").length < 10) {
+          setMessage("Gebruik minimaal 10 tekens voor je wachtwoord.", "error");
+          return;
+        }
+        if (data.password !== data.confirmPassword) {
+          setMessage("De wachtwoorden komen nog niet overeen.", "error");
+          return;
+        }
+
+        try {
+          await updatePassword(data.password);
+          form.hidden = true;
+          actions.hidden = false;
+          setStatus("Wachtwoord ingesteld", "Je kunt nu inloggen met je e-mailadres en nieuwe wachtwoord.");
+          setMessage("Je wachtwoord is ingesteld.", "success");
+        } catch (error) {
+          console.info("Password setup failed", { code: error?.code || "PASSWORD_UPDATE_FAILED", status: error?.status || "" });
+          setMessage("Wachtwoord instellen is niet gelukt. Vraag een nieuwe resetlink aan.", "error");
+        }
+      });
+
+      activateRecovery();
+    </script>
+  </body>
+</html>

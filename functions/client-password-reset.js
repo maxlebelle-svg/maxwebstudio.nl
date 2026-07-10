@@ -69,7 +69,7 @@ async function createPasswordResetLink(email) {
   const companySettings = getCompanySettings();
   const supabaseUrl = cleanText(process.env.SUPABASE_URL).replace(/\/$/, "");
   const serviceRoleKey = cleanText(process.env.SUPABASE_SERVICE_ROLE_KEY);
-  const redirectTo = cleanText(process.env.CLIENT_PORTAL_REDIRECT_URL) || `${companySettings.websiteUrl}/login.html?type=recovery`;
+  const redirectTo = cleanText(process.env.CLIENT_PASSWORD_RESET_REDIRECT_URL) || `${companySettings.websiteUrl}/wachtwoord-instellen.html?type=recovery`;
   if (!supabaseUrl || !serviceRoleKey) {
     return { status: "config_missing", actionLink: "", redirectTo };
   }
