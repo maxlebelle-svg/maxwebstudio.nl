@@ -25,7 +25,7 @@ exports.handler = async (event) => {
       },
     });
 
-    const rows = await supabaseFetch(`${supabaseUrl}/rest/v1/profiles?select=id,auth_user_id,name,email,role,status,last_login_at,metadata&auth_user_id=eq.${encodeURIComponent(authUser.id)}&limit=1`, {
+    const rows = await supabaseFetch(`${supabaseUrl}/rest/v1/profiles?select=id,auth_user_id,customer_id,name,email,role,status,last_login_at,metadata&auth_user_id=eq.${encodeURIComponent(authUser.id)}&limit=1`, {
       method: "GET",
       headers: {
         apikey: serviceRoleKey,

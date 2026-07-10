@@ -525,6 +525,48 @@
           portalSidebarLogin.hidden = isLoggedIn;
         }
 
+        function syncLocalCustomerAccessContext(context = {}) {
+          if (!context.profileFound || !context.customerId) return;
+          const now = new Date().toISOString();
+          try {
+            const session = JSON.parse(localStorage.getItem("maxwebstudioCurrentSession") || "null");
+            if (session) {
+              localStorage.setItem("maxwebstudioCurrentSession", JSON.stringify({
+                ...session,
+                role: session.role || context.profile?.role || "customer",
+                customerId: context.customerId,
+                supabaseCustomerId: context.supabaseCustomerId || context.customerId,
+                updatedAt: now,
+              }));
+            }
+          } catch {
+            // Keep the live Supabase session as the source of truth.
+          }
+          try {
+            const profiles = JSON.parse(localStorage.getItem("maxwebstudioProfiles") || "[]");
+            if (!Array.isArray(profiles)) return;
+            const profileId = String(context.profile?.id || "");
+            const authUserId = String(context.profile?.auth_user_id || context.profile?.authUserId || "");
+            const email = String(context.profile?.email || context.customer?.email || "").toLowerCase();
+            const nextProfiles = profiles.map((profile) => {
+              const sameProfile = profileId && String(profile.id || "") === profileId;
+              const sameAuthUser = authUserId && String(profile.authUserId || profile.auth_user_id || "") === authUserId;
+              const sameEmail = email && String(profile.email || "").toLowerCase() === email;
+              return sameProfile || sameAuthUser || sameEmail
+                ? {
+                    ...profile,
+                    customerId: context.customerId,
+                    supabaseCustomerId: context.supabaseCustomerId || context.customerId,
+                    updatedAt: now,
+                  }
+                : profile;
+            });
+            localStorage.setItem("maxwebstudioProfiles", JSON.stringify(nextProfiles));
+          } catch {
+            // Local profile cache is only a route-guard bridge.
+          }
+        }
+
         async function handlePortalLogout() {
           await signOutSupabase();
           localStorage.removeItem("maxwebstudioCurrentSession");
@@ -536,6 +578,7 @@
           customerId = customerId || profileContext.customerId;
           supabaseCustomerId = supabaseCustomerId || profileContext.supabaseCustomerId;
           portalDataMode = portalDataMode || profileContext.mode;
+          syncLocalCustomerAccessContext(profileContext);
           updatePortalAuthActions(true);
         } else if (supabaseSessionResult?.session || isDeveloperModeEnabled()) {
           stagingBridge = await ensureStagingClientPortalDemoSession();
