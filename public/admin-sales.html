@@ -748,6 +748,7 @@
                 </div>
                 <label for="sales-agenda-planner-title">Titel<input id="sales-agenda-planner-title" type="text" placeholder="Bijv. Follow-up, klantmeeting of intern overleg" /></label>
                 <div class="sales-agenda-time-fields">
+                  <label for="sales-agenda-planner-date">Datum<input id="sales-agenda-planner-date" type="date" /></label>
                   <label for="sales-agenda-planner-start">Starttijd<input id="sales-agenda-planner-start" type="time" step="1800" /></label>
                   <label for="sales-agenda-planner-end">Eindtijd<input id="sales-agenda-planner-end" type="time" step="1800" /></label>
                 </div>
@@ -18334,6 +18335,7 @@
         plannerLead: document.getElementById("sales-agenda-planner-lead"),
         plannerTime: document.getElementById("sales-agenda-planner-time"),
         plannerTitle: document.getElementById("sales-agenda-planner-title"),
+        plannerDate: document.getElementById("sales-agenda-planner-date"),
         plannerStart: document.getElementById("sales-agenda-planner-start"),
         plannerEnd: document.getElementById("sales-agenda-planner-end"),
         plannerKind: document.getElementById("sales-agenda-planner-kind"),
@@ -18785,6 +18787,7 @@
         if (agendaElements.plannerTitle) {
           agendaElements.plannerTitle.value = keepLeadTitle && pendingAgendaLead?.name ? `Follow-up: ${pendingAgendaLead.name}` : "";
         }
+        if (agendaElements.plannerDate) agendaElements.plannerDate.value = selectedAgendaDate || toLocalIsoDate(new Date());
         if (agendaElements.plannerStart) agendaElements.plannerStart.value = selectedAgendaTime || "10:00";
         if (agendaElements.plannerEnd) agendaElements.plannerEnd.value = addMinutesToTime(selectedAgendaTime || "10:00", AGENDA_SLOT_MINUTES);
         if (agendaElements.plannerKind) agendaElements.plannerKind.value = "agenda";
@@ -18798,11 +18801,26 @@
         pendingAgendaLead = lead || null;
         agendaPlannerOpen = true;
         if (agendaElements.date) agendaElements.date.value = selectedAgendaDate;
+        if (agendaElements.plannerDate) agendaElements.plannerDate.value = selectedAgendaDate;
         if (agendaElements.plannerStart) agendaElements.plannerStart.value = selectedAgendaTime;
         if (agendaElements.plannerEnd) agendaElements.plannerEnd.value = addMinutesToTime(selectedAgendaTime, AGENDA_SLOT_MINUTES);
         if (reset) resetAgendaPlannerFields({ keepLeadTitle: Boolean(pendingAgendaLead?.name) });
         renderSalesAgenda();
         window.setTimeout(() => agendaElements.plannerTitle?.focus(), 60);
+      }
+
+      function syncAgendaDateInput() {
+        const date = agendaElements.plannerDate?.value || selectedAgendaDate;
+        if (!date) {
+          updateAgendaPlannerSummary();
+          return;
+        }
+        selectedAgendaDate = date;
+        agendaWeekStart = startOfAgendaWeek(new Date(`${selectedAgendaDate}T00:00:00`));
+        if (agendaElements.date) agendaElements.date.value = selectedAgendaDate;
+        updateAgendaPlannerSummary();
+        renderSalesAgenda();
+        refreshMicrosoftCalendarEvents({ silent: true });
       }
 
       function closeAgendaPlanner() {
@@ -18941,11 +18959,14 @@
       }
 
       async function saveAgendaPlannerFollowup(kind = agendaElements.plannerKind?.value || "agenda") {
+        selectedAgendaDate = agendaElements.plannerDate?.value || agendaElements.date?.value || selectedAgendaDate;
         selectedAgendaTime = agendaElements.plannerStart?.value || selectedAgendaTime;
         if (!selectedAgendaDate || !selectedAgendaTime) {
           setAgendaMessage("Kies eerst een dag en tijdslot.", "error");
+          (selectedAgendaDate ? agendaElements.plannerStart : agendaElements.plannerDate)?.focus();
           return;
         }
+        if (agendaElements.date) agendaElements.date.value = selectedAgendaDate;
         const endTime = agendaElements.plannerEnd?.value || addMinutesToTime(selectedAgendaTime, AGENDA_SLOT_MINUTES);
         if (timeToMinutes(endTime) <= timeToMinutes(selectedAgendaTime)) {
           setAgendaMessage("Kies een eindtijd na de starttijd.", "error");
@@ -19380,6 +19401,8 @@
           if (event.target === agendaElements.planner) closeAgendaPlanner();
         });
         agendaElements.plannerClose?.addEventListener("click", closeAgendaPlanner);
+        agendaElements.plannerDate?.addEventListener("input", syncAgendaDateInput);
+        agendaElements.plannerDate?.addEventListener("change", syncAgendaDateInput);
         [agendaElements.plannerStart, agendaElements.plannerEnd].forEach((element) => {
           element?.addEventListener("input", syncAgendaTimeInputs);
           element?.addEventListener("change", syncAgendaTimeInputs);
