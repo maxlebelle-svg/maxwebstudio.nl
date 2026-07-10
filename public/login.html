@@ -657,8 +657,8 @@
             const result = await auth.consumeRecoverySessionFromUrl();
             if (!result.success) {
               activatePanel("reset");
-              renderLoginStatus("reset", "De herstel-link kon niet worden gebruikt. Vraag een nieuwe link aan om verder te gaan.");
-              setMessage("Deze herstel-link is verlopen of niet compleet. Vraag een nieuwe resetlink aan.", "error");
+              renderLoginStatus("reset", "Deze link is al gebruikt of verlopen. Vraag hieronder een nieuwe resetlink aan.");
+              setMessage("Vraag een nieuwe resetlink aan. Gebruik daarna alleen de nieuwste mail.", "error");
               return false;
             }
             await renderAuthStatus();
@@ -671,8 +671,8 @@
               message: isDeveloperModeEnabled() ? error?.message || "" : "",
             });
             activatePanel("reset");
-            renderLoginStatus("reset", "De herstel-link kon niet worden gebruikt. Vraag een nieuwe link aan om verder te gaan.");
-            setMessage("Deze herstel-link is verlopen of niet compleet. Vraag een nieuwe resetlink aan.", "error");
+            renderLoginStatus("reset", "Deze link is al gebruikt of verlopen. Vraag hieronder een nieuwe resetlink aan.");
+            setMessage("Vraag een nieuwe resetlink aan. Gebruik daarna alleen de nieuwste mail.", "error");
             return false;
           }
         }

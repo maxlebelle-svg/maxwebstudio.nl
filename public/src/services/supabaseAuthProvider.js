@@ -149,6 +149,9 @@ function clearRecoveryParamsFromUrl() {
 
 async function verifyRecoveryTokenHash(config, tokenHash) {
   if (!tokenHash) return null;
+  const fallbackSession = await requestRecoverySessionFallback({ tokenHash }).catch(() => null);
+  if (fallbackSession?.access_token) return fallbackSession;
+
   const response = await fetch(`${config.url}/auth/v1/verify`, {
     method: "POST",
     headers: {
@@ -161,8 +164,6 @@ async function verifyRecoveryTokenHash(config, tokenHash) {
   const payload = await response.json().catch(() => ({}));
   const session = normalizeAuthSession(payload);
   if (!response.ok || !session?.access_token) {
-    const fallbackSession = await requestRecoverySessionFallback({ tokenHash }).catch(() => null);
-    if (fallbackSession?.access_token) return fallbackSession;
     const debug = createAuthDebug(config, response, payload);
     const error = new Error(debug.message || "Herstel-link kon niet worden gecontroleerd.");
     error.code = debug.code || "SUPABASE_RECOVERY_VERIFY_FAILED";
@@ -175,6 +176,9 @@ async function verifyRecoveryTokenHash(config, tokenHash) {
 
 async function exchangeRecoveryCode(config, code) {
   if (!code) return null;
+  const fallbackSession = await requestRecoverySessionFallback({ code }).catch(() => null);
+  if (fallbackSession?.access_token) return fallbackSession;
+
   const response = await fetch(`${config.url}/auth/v1/token?grant_type=pkce`, {
     method: "POST",
     headers: {
@@ -187,8 +191,6 @@ async function exchangeRecoveryCode(config, code) {
   const payload = await response.json().catch(() => ({}));
   const session = normalizeAuthSession(payload);
   if (!response.ok || !session?.access_token) {
-    const fallbackSession = await requestRecoverySessionFallback({ code }).catch(() => null);
-    if (fallbackSession?.access_token) return fallbackSession;
     const debug = createAuthDebug(config, response, payload);
     const error = new Error(debug.message || "Herstel-code kon niet worden gecontroleerd.");
     error.code = debug.code || "SUPABASE_RECOVERY_CODE_FAILED";
