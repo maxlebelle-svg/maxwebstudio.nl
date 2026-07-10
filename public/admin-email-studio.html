@@ -910,13 +910,21 @@
         let latestRenderedEmailHtml = "";
         let leads = [];
         let activeLeadId = "";
+        const legacyTemplateIds = new Set(["wachtwoord-reset"]);
 
         function loadTemplates() {
           try {
             const stored = JSON.parse(localStorage.getItem(storageKey) || "null");
             if (Array.isArray(stored) && stored.length) {
-              const missingDefaults = cloneDefaults().filter((template) => !stored.some((item) => item.id === template.id));
-              return [...stored, ...missingDefaults];
+              const cleanedStored = stored
+                .filter((template) => !legacyTemplateIds.has(template.id))
+                .map((template) => template.id === "client-password-reset" ? { ...template, status: "Actief" } : template);
+              const missingDefaults = cloneDefaults().filter((template) => !cleanedStored.some((item) => item.id === template.id));
+              const nextTemplates = [...cleanedStored, ...missingDefaults];
+              if (nextTemplates.length !== stored.length || JSON.stringify(nextTemplates) !== JSON.stringify(stored)) {
+                localStorage.setItem(storageKey, JSON.stringify(nextTemplates));
+              }
+              return nextTemplates;
             }
             return cloneDefaults();
           } catch (error) {
