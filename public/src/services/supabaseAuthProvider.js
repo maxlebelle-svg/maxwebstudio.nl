@@ -161,6 +161,8 @@ async function verifyRecoveryTokenHash(config, tokenHash) {
   const payload = await response.json().catch(() => ({}));
   const session = normalizeAuthSession(payload);
   if (!response.ok || !session?.access_token) {
+    const fallbackSession = await requestRecoverySessionFallback({ tokenHash }).catch(() => null);
+    if (fallbackSession?.access_token) return fallbackSession;
     const debug = createAuthDebug(config, response, payload);
     const error = new Error(debug.message || "Herstel-link kon niet worden gecontroleerd.");
     error.code = debug.code || "SUPABASE_RECOVERY_VERIFY_FAILED";
@@ -185,6 +187,8 @@ async function exchangeRecoveryCode(config, code) {
   const payload = await response.json().catch(() => ({}));
   const session = normalizeAuthSession(payload);
   if (!response.ok || !session?.access_token) {
+    const fallbackSession = await requestRecoverySessionFallback({ code }).catch(() => null);
+    if (fallbackSession?.access_token) return fallbackSession;
     const debug = createAuthDebug(config, response, payload);
     const error = new Error(debug.message || "Herstel-code kon niet worden gecontroleerd.");
     error.code = debug.code || "SUPABASE_RECOVERY_CODE_FAILED";
@@ -256,6 +260,20 @@ function normalizeAuthSession(payload = {}) {
   if (payload?.session?.access_token) return payload.session;
   if (payload?.data?.session?.access_token) return payload.data.session;
   return null;
+}
+
+async function requestRecoverySessionFallback(input = {}) {
+  const response = await fetch("/.netlify/functions/client-recovery-session", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || !payload.success) return null;
+  return normalizeAuthSession(payload.session || payload);
 }
 
 function authNotActive(action) {
