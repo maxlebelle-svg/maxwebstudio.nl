@@ -57,7 +57,17 @@
           </div>
           <form class="portal-login-form" id="real-login-form">
             <label for="login-email">E-mailadres<input id="login-email" name="email" type="email" autocomplete="email" required /></label>
-            <label for="login-password">Wachtwoord<input id="login-password" name="password" type="password" autocomplete="current-password" required /></label>
+            <label for="login-password">Wachtwoord
+              <span class="portal-password-field">
+                <input id="login-password" name="password" type="password" autocomplete="current-password" required />
+                <button class="portal-password-toggle" type="button" aria-label="Wachtwoord tonen" aria-pressed="false" data-password-toggle="login-password">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M2.1 12s3.6-6.5 9.9-6.5 9.9 6.5 9.9 6.5-3.6 6.5-9.9 6.5S2.1 12 2.1 12Z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </button>
+              </span>
+            </label>
             <button class="button primary" type="submit">Inloggen</button>
             <button class="button secondary" type="button" data-auth-panel-trigger="reset">Wachtwoord vergeten</button>
           </form>
@@ -82,8 +92,28 @@
 
         <section class="portal-auth-panel" data-auth-panel="recovery" data-auth-live-only hidden>
           <form class="portal-login-form" id="password-update-form">
-            <label for="new-password">Nieuw wachtwoord<input id="new-password" name="password" type="password" autocomplete="new-password" minlength="10" required /></label>
-            <label for="confirm-password">Herhaal wachtwoord<input id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" minlength="10" required /></label>
+            <label for="new-password">Nieuw wachtwoord
+              <span class="portal-password-field">
+                <input id="new-password" name="password" type="password" autocomplete="new-password" minlength="10" required />
+                <button class="portal-password-toggle" type="button" aria-label="Wachtwoord tonen" aria-pressed="false" data-password-toggle="new-password">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M2.1 12s3.6-6.5 9.9-6.5 9.9 6.5 9.9 6.5-3.6 6.5-9.9 6.5S2.1 12 2.1 12Z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </button>
+              </span>
+            </label>
+            <label for="confirm-password">Herhaal wachtwoord
+              <span class="portal-password-field">
+                <input id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" minlength="10" required />
+                <button class="portal-password-toggle" type="button" aria-label="Wachtwoord tonen" aria-pressed="false" data-password-toggle="confirm-password">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M2.1 12s3.6-6.5 9.9-6.5 9.9 6.5 9.9 6.5-3.6 6.5-9.9 6.5S2.1 12 2.1 12Z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </button>
+              </span>
+            </label>
             <button class="button primary" type="submit">Wachtwoord instellen</button>
           </form>
         </section>
@@ -175,6 +205,21 @@
 
         function isAdminRole(role = "") {
           return adminRoles.has(normalizeRole(role));
+        }
+
+        function setupPasswordToggles() {
+          document.querySelectorAll("[data-password-toggle]").forEach((button) => {
+            const input = document.getElementById(button.dataset.passwordToggle || "");
+            if (!input) return;
+            button.addEventListener("click", () => {
+              const shouldShow = input.type === "password";
+              input.type = shouldShow ? "text" : "password";
+              button.setAttribute("aria-pressed", String(shouldShow));
+              button.setAttribute("aria-label", shouldShow ? "Wachtwoord verbergen" : "Wachtwoord tonen");
+              button.classList.toggle("is-visible", shouldShow);
+              input.focus();
+            });
+          });
         }
 
         function getSafeRelativePath(value = "") {
@@ -671,6 +716,7 @@
         demoButtons.forEach((button) => {
           button.addEventListener("click", () => loginAs(button.dataset.demoRole));
         });
+        setupPasswordToggles();
         renderDeveloperModeVisibility();
         renderAuthLiveVisibility();
         activatePanel(isDeveloperModeEnabled() && !isAdminLoginRequest() ? "demo" : "real");
