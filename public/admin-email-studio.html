@@ -218,6 +218,7 @@
       }
 
       .email-field input,
+      .email-field select,
       .email-field textarea {
         width: 100%;
         min-width: 0;
@@ -301,6 +302,40 @@
 
       .email-message {
         min-height: 22px;
+      }
+
+      .email-send-card {
+        display: grid;
+        gap: 14px;
+        padding: 18px;
+      }
+
+      .email-send-grid {
+        display: grid;
+        gap: 12px;
+      }
+
+      .email-send-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .email-send-actions > div {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .email-send-note {
+        margin: 0;
+        color: rgba(226, 236, 248, 0.62);
+        font-size: 12px;
+        font-weight: 750;
+        line-height: 1.5;
       }
 
       .email-preview-frame {
@@ -453,13 +488,16 @@
 
         .email-template-meta,
         .email-studio-toolbar,
-        .email-editor-actions {
+        .email-editor-actions,
+        .email-send-actions,
+        .email-send-actions > div {
           align-items: stretch;
           flex-direction: column;
         }
 
         .email-template-actions .button,
         .email-editor-actions .button,
+        .email-send-actions .button,
         .email-studio-toolbar .button {
           width: 100%;
         }
@@ -545,6 +583,37 @@
               <button class="button primary" id="save-template" type="button">Opslaan</button>
             </div>
           </div>
+
+          <section class="admin-card email-send-card" aria-labelledby="manual-send-heading">
+            <div class="admin-section-heading">
+              <div>
+                <p class="section-kicker">Handmatig versturen</p>
+                <h2 id="manual-send-heading">Lead kiezen en template mailen</h2>
+              </div>
+              <span class="status-badge status-prepared" id="manual-send-state">Kies lead</span>
+            </div>
+            <div class="email-send-grid">
+              <label class="email-field" for="manual-lead-select">Bestaande lead
+                <select id="manual-lead-select"></select>
+              </label>
+              <label class="email-field" for="manual-template-select">Template
+                <select id="manual-template-select"></select>
+              </label>
+              <label class="email-field" for="manual-recipient-email">Ontvanger
+                <input id="manual-recipient-email" type="email" autocomplete="off" placeholder="naam@bedrijf.nl" />
+              </label>
+              <label class="email-field" for="manual-temp-password">Tijdelijk wachtwoord
+                <input id="manual-temp-password" autocomplete="off" placeholder="Alleen nodig voor accountmails" />
+              </label>
+            </div>
+            <div class="email-send-actions">
+              <p class="email-send-note" id="manual-send-note">Selecteer een lead. De preview gebruikt daarna echte leadgegevens.</p>
+              <div>
+                <button class="button secondary" id="manual-refresh-leads" type="button">Leads verversen</button>
+                <button class="button primary" id="manual-send-email" type="button">Mail versturen</button>
+              </div>
+            </div>
+          </section>
 
           <div class="email-studio-grid">
             <section class="admin-card email-template-list" aria-labelledby="template-list-heading">
@@ -642,6 +711,9 @@
     <script>
       (() => {
         const storageKey = "maxwebstudioEmailStudioTemplates";
+        const leadStorageKeys = ["maxwebstudioLeadFinderLeads", "maxwebstudioLeads", "maxwebstudioLeadRequests"];
+        const adminSessionStorageKey = "mws_admin_supabase_session";
+        const adminTokenStorageKey = "mws_admin_token";
         const variables = [
           "{{klant_naam}}",
           "{{bedrijf_naam}}",
@@ -653,7 +725,7 @@
           "{{contactpersoon}}",
           "{{pakket_naam}}",
         ];
-        const previewData = {
+        let previewData = {
           klant_naam: "Michel",
           bedrijf_naam: "Quantumbouw",
           website_url: "https://quantumbouw.nl",
@@ -776,6 +848,17 @@
             body: "Hallo {{klant_naam}},\n\nEr staan nieuwe downloads klaar voor {{bedrijf_naam}}. Je kunt de nieuwste logo's, social assets, e-mailassets en printbestanden bekijken in je klantomgeving.\n\nMet vriendelijke groet,\nMax Webstudio",
           },
           {
+            id: "account-aanmaken",
+            name: "Account aanmaken",
+            description: "Portaaltoegang sturen naar een nieuwe klant of geconverteerde lead.",
+            type: "Onboarding",
+            status: "Actief",
+            updatedAt: "2026-07-10",
+            subject: "Je Max Webstudio account staat klaar",
+            preheader: "Log in op je klantportaal en rond je gegevens aan.",
+            body: "Hallo {{klant_naam}},\n\nJe Max Webstudio account staat klaar voor {{bedrijf_naam}}.\n\nJe kunt inloggen via:\n{{login_url}}\n\nGebruik tijdelijk dit wachtwoord:\n{{tijdelijke_wachtwoord}}\n\nWijzig je wachtwoord na je eerste login naar een eigen veilig wachtwoord. In het klantportaal vind je straks je projectstatus, onboarding, bestanden, facturen en belangrijke updates.\n\nLukt inloggen niet of klopt er iets niet? Reageer dan op deze mail, dan help ik je direct verder.\n\nMet vriendelijke groet,\n{{contactpersoon}}\nMax Webstudio",
+          },
+          {
             id: "wachtwoord-reset",
             name: "Wachtwoord reset",
             description: "Tijdelijk wachtwoord voor portaaltoegang.",
@@ -809,11 +892,21 @@
           activeCount: document.getElementById("active-count"),
           toggleStatus: document.getElementById("toggle-status"),
           search: document.getElementById("admin-page-search"),
+          leadSelect: document.getElementById("manual-lead-select"),
+          templateSelect: document.getElementById("manual-template-select"),
+          recipientEmail: document.getElementById("manual-recipient-email"),
+          temporaryPassword: document.getElementById("manual-temp-password"),
+          sendState: document.getElementById("manual-send-state"),
+          sendNote: document.getElementById("manual-send-note"),
+          refreshLeads: document.getElementById("manual-refresh-leads"),
+          sendEmail: document.getElementById("manual-send-email"),
         };
         let templates = loadTemplates();
         let activeId = templates[0]?.id || "";
         let previewMode = "desktop";
         let latestRenderedEmailHtml = "";
+        let leads = [];
+        let activeLeadId = "";
 
         function loadTemplates() {
           try {
@@ -834,6 +927,74 @@
 
         function persistTemplates() {
           localStorage.setItem(storageKey, JSON.stringify(templates));
+        }
+
+        function readJsonArray(key) {
+          try {
+            const parsed = JSON.parse(localStorage.getItem(key) || "[]");
+            return Array.isArray(parsed) ? parsed : [];
+          } catch (error) {
+            console.warn(`Kon ${key} niet lezen voor E-mail Studio`, error);
+            return [];
+          }
+        }
+
+        function normalizeLeadForMail(lead = {}, source = "lead") {
+          const metadata = lead.metadata && typeof lead.metadata === "object" ? lead.metadata : {};
+          const companyName = String(lead.companyName || lead.company || lead.businessName || lead.bedrijf || lead.packageInterest || "").trim();
+          const contactName = String(lead.contactName || lead.contact || lead.contactPerson || lead.contactpersoon || lead.name || lead.person || "").trim();
+          return {
+            id: String(lead.id || lead.leadId || `${source}-${companyName || contactName || lead.email || Date.now()}`).trim(),
+            companyName,
+            contactName,
+            email: String(lead.email || lead.mail || "").trim(),
+            phone: String(lead.phone || lead.telephone || lead.telefoon || "").trim(),
+            websiteUrl: String(lead.websiteUrl || lead.website || lead.url || "").trim(),
+            packageName: String(lead.packageName || lead.packageInterest || lead.package || lead.pakket || metadata.packageName || "").trim(),
+            notes: String(lead.notes || lead.message || "").trim(),
+            source,
+            updatedAt: String(lead.updatedAt || lead.createdAt || "").trim(),
+          };
+        }
+
+        function readMailLeads() {
+          const combined = leadStorageKeys.flatMap((key) => readJsonArray(key).map((lead) => normalizeLeadForMail(lead, key)));
+          const seen = new Set();
+          return combined
+            .filter((lead) => lead.companyName || lead.contactName || lead.email)
+            .filter((lead) => {
+              const key = [lead.email && `email:${lead.email.toLowerCase()}`, lead.id && `id:${lead.id}`, lead.companyName && `company:${lead.companyName.toLowerCase()}`].filter(Boolean)[0];
+              if (!key || seen.has(key)) return false;
+              seen.add(key);
+              return true;
+            })
+            .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
+        }
+
+        function selectedLead() {
+          return leads.find((lead) => lead.id === activeLeadId) || null;
+        }
+
+        function generateTemporaryPassword() {
+          return `MWS-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+        }
+
+        function buildPreviewDataFromLead(lead = selectedLead()) {
+          return {
+            klant_naam: lead?.contactName || lead?.companyName || "klant",
+            bedrijf_naam: lead?.companyName || lead?.contactName || "jouw bedrijf",
+            website_url: lead?.websiteUrl || "https://maxwebstudio.nl",
+            offerte_nummer: "OFF-2026-001",
+            factuur_nummer: "FAC-2026-001",
+            login_url: "https://maxwebstudio.nl/login",
+            tijdelijke_wachtwoord: elements.temporaryPassword?.value || "Tijdelijk123!",
+            contactpersoon: "Max",
+            pakket_naam: lead?.packageName || "Max Webstudio pakket",
+          };
+        }
+
+        function refreshPreviewDataFromLead() {
+          previewData = buildPreviewDataFromLead();
         }
 
         function today() {
@@ -1084,6 +1245,51 @@
               </div>
             </article>
           `).join("");
+          renderTemplateSelect();
+        }
+
+        function renderTemplateSelect() {
+          if (!elements.templateSelect) return;
+          const current = elements.templateSelect.value || activeId;
+          elements.templateSelect.innerHTML = templates.map((template) => `
+            <option value="${escapeAttribute(template.id)}">${escapeHtml(template.name)} · ${escapeHtml(template.type)}</option>
+          `).join("");
+          elements.templateSelect.value = templates.some((template) => template.id === current) ? current : activeId;
+        }
+
+        function renderLeadSelect() {
+          if (!elements.leadSelect) return;
+          leads = readMailLeads();
+          if (!leads.length) {
+            elements.leadSelect.innerHTML = '<option value="">Geen lokale leads gevonden</option>';
+            activeLeadId = "";
+            syncManualSendPanel();
+            return;
+          }
+          if (!activeLeadId || !leads.some((lead) => lead.id === activeLeadId)) activeLeadId = leads[0].id;
+          elements.leadSelect.innerHTML = leads.map((lead) => {
+            const label = [lead.companyName || lead.contactName || "Lead", lead.contactName && lead.contactName !== lead.companyName ? lead.contactName : "", lead.email || "geen e-mail"].filter(Boolean).join(" · ");
+            return `<option value="${escapeAttribute(lead.id)}">${escapeHtml(label)}</option>`;
+          }).join("");
+          elements.leadSelect.value = activeLeadId;
+          syncManualSendPanel();
+        }
+
+        function syncManualSendPanel() {
+          const lead = selectedLead();
+          if (elements.recipientEmail && !elements.recipientEmail.value) elements.recipientEmail.value = lead?.email || "";
+          if (elements.temporaryPassword && !elements.temporaryPassword.value) elements.temporaryPassword.value = generateTemporaryPassword();
+          if (elements.sendState) {
+            elements.sendState.textContent = lead?.email ? "Klaar" : "E-mail nodig";
+            elements.sendState.className = `status-badge ${lead?.email ? "status-active" : "status-prepared"}`;
+          }
+          if (elements.sendNote) {
+            elements.sendNote.textContent = lead
+              ? `Geselecteerd: ${lead.companyName || lead.contactName || "lead"}${lead.email ? ` · ${lead.email}` : " · vul ontvanger handmatig aan"}.`
+              : "Selecteer een lead. De preview gebruikt daarna echte leadgegevens.";
+          }
+          refreshPreviewDataFromLead();
+          renderPreview();
         }
 
         function renderEditor() {
@@ -1097,6 +1303,7 @@
           elements.editorStatus.textContent = template.status || "Concept";
           elements.editorStatus.className = `status-badge ${template.status === "Actief" ? "status-active" : "status-prepared"}`;
           elements.toggleStatus.textContent = template.status === "Actief" ? "Markeer als concept" : "Markeer als actief";
+          if (elements.templateSelect) elements.templateSelect.value = activeId;
           renderPreview();
         }
 
@@ -1189,6 +1396,78 @@
           setMessage("Standaardtemplates teruggezet.", "success");
         }
 
+        function getBearer() {
+          const keys = [adminSessionStorageKey, "maxwebstudioCurrentSession", "maxwebstudioSupabaseAuthSession"];
+          for (const key of keys) {
+            try {
+              const session = JSON.parse(localStorage.getItem(key) || "{}");
+              const token = session.accessToken || session.access_token || session.token || "";
+              if (token) return token;
+            } catch {}
+          }
+          return sessionStorage.getItem(adminTokenStorageKey) || "";
+        }
+
+        async function sendManualEmail() {
+          const lead = selectedLead();
+          const to = String(elements.recipientEmail?.value || lead?.email || "").trim();
+          if (!lead) {
+            setMessage("Kies eerst een bestaande lead.", "error");
+            elements.leadSelect?.focus();
+            return;
+          }
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+            setMessage("Vul een geldig e-mailadres in voor de ontvanger.", "error");
+            elements.recipientEmail?.focus();
+            return;
+          }
+          const token = getBearer();
+          if (!token) {
+            setMessage("Log eerst in als admin om handmatig mails te versturen.", "error");
+            return;
+          }
+          readEditorIntoTemplate();
+          refreshPreviewDataFromLead();
+          const payload = buildEmailRenderPayload();
+          latestRenderedEmailHtml = renderResendEmailHtml(payload);
+          elements.sendEmail.disabled = true;
+          elements.sendEmail.textContent = "Versturen...";
+          try {
+            const response = await fetch("/.netlify/functions/admin-mail-studio-send", {
+              method: "POST",
+              headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                to,
+                subject: payload.subject,
+                html: latestRenderedEmailHtml,
+                text: payload.bodyText,
+                preheader: payload.preheader,
+                templateKey: payload.template?.id || activeId,
+                templateName: payload.template?.name || elements.name.value || "Mail Studio template",
+                leadId: lead.id,
+                metadata: {
+                  leadName: lead.contactName,
+                  companyName: lead.companyName,
+                  source: "manual_email_studio",
+                },
+              }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || data.success === false) throw new Error(data.error || "Mail kon niet worden verzonden.");
+            setMessage(`Mail verzonden naar ${to}.`, "success");
+            if (elements.sendNote) elements.sendNote.textContent = `Laatste verzending: ${payload.template?.name || "template"} naar ${to}.`;
+          } catch (error) {
+            setMessage(error.message || "Mail kon niet worden verzonden.", "error");
+          } finally {
+            elements.sendEmail.disabled = false;
+            elements.sendEmail.textContent = "Mail versturen";
+          }
+        }
+
         async function insertVariable(variable) {
           const textarea = elements.body;
           const start = textarea.selectionStart ?? textarea.value.length;
@@ -1233,6 +1512,21 @@
           });
         });
         elements.search?.addEventListener("input", renderTemplateList);
+        elements.leadSelect?.addEventListener("change", () => {
+          activeLeadId = elements.leadSelect.value;
+          if (elements.recipientEmail) elements.recipientEmail.value = selectedLead()?.email || "";
+          syncManualSendPanel();
+        });
+        elements.templateSelect?.addEventListener("change", () => {
+          selectTemplate(elements.templateSelect.value, "preview");
+        });
+        elements.recipientEmail?.addEventListener("input", syncManualSendPanel);
+        elements.temporaryPassword?.addEventListener("input", syncManualSendPanel);
+        elements.refreshLeads?.addEventListener("click", () => {
+          renderLeadSelect();
+          setMessage("Leads opnieuw ingeladen.", "success");
+        });
+        elements.sendEmail?.addEventListener("click", sendManualEmail);
         document.getElementById("save-template").addEventListener("click", saveTemplate);
         document.getElementById("save-template-bottom").addEventListener("click", saveTemplate);
         document.getElementById("preview-template").addEventListener("click", () => {
@@ -1250,7 +1544,9 @@
         });
 
         renderVariables();
+        renderLeadSelect();
         renderTemplateList();
+        renderTemplateSelect();
         renderEditor();
       })();
     </script>
