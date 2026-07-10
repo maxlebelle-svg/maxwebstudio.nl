@@ -370,7 +370,12 @@
 
           <div class="sales-cockpit-bar" id="sales-cockpit-bar" aria-label="Sales cockpit overzicht">
             <article class="admin-card metric-card sales-kpi-card" role="button" tabindex="0" data-sales-kpi="new_today" aria-label="Nieuwe leads vandaag bekijken"><span>Nieuwe leads vandaag</span><strong id="sales-cockpit-new-leads">0</strong><small>Vandaag aangemaakt</small></article>
-            <article class="admin-card metric-card sales-kpi-card" role="button" tabindex="0" data-sales-kpi="followups_today" aria-label="Follow-ups vandaag bekijken"><span>Follow-ups vandaag</span><strong id="sales-cockpit-followups">0</strong><small>Te bellen of te laat</small></article>
+            <article class="admin-card metric-card sales-kpi-card" role="button" tabindex="0" data-sales-kpi="unassigned" aria-label="Niet toegewezen leads bekijken"><span>Niet toegewezen</span><strong id="sales-cockpit-unassigned">0</strong><small>Interessant zonder eigenaar</small></article>
+            <article class="admin-card metric-card sales-kpi-card" role="button" tabindex="0" data-sales-kpi="today_calling" aria-label="Vandaag bellen bekijken"><span>Vandaag bellen</span><strong id="sales-cockpit-today-calling">0</strong><small>Volgende actie vandaag</small></article>
+            <article class="admin-card metric-card sales-kpi-card" role="button" tabindex="0" data-sales-kpi="overdue_followup" aria-label="Achterstallige opvolging bekijken"><span>Achterstallig</span><strong id="sales-cockpit-overdue">0</strong><small>Vervolgactie te laat</small></article>
+            <article class="admin-card metric-card sales-kpi-card" role="button" tabindex="0" data-sales-kpi="followups_today" aria-label="Follow-ups vandaag bekijken"><span>Follow-ups</span><strong id="sales-cockpit-followups">0</strong><small>Vandaag of te laat</small></article>
+            <article class="admin-card metric-card sales-kpi-card" role="button" tabindex="0" data-sales-kpi="demo_pipeline" aria-label="Demo pipeline bekijken"><span>Demo pipeline</span><strong id="sales-cockpit-demo">0</strong><small>Aangevraagd, productie of klaar</small></article>
+            <article class="admin-card metric-card sales-kpi-card" role="button" tabindex="0" data-sales-kpi="negotiation" aria-label="Onderhandeling bekijken"><span>Onderhandeling</span><strong id="sales-cockpit-negotiation">0</strong><small>Voorstel of onderhandeling</small></article>
             <article class="admin-card metric-card sales-kpi-card" role="button" tabindex="0" data-sales-kpi="open_quotes" aria-label="Open offertes bekijken"><span>Open offertes</span><strong id="sales-cockpit-open-quotes">0</strong><small>Concept, verzonden of bekeken</small></article>
             <article class="admin-card metric-card sales-kpi-card" role="button" tabindex="0" data-sales-kpi="won_today" aria-label="Verkochte leads van vandaag bekijken"><span>Verkocht vandaag</span><strong id="sales-cockpit-won-today">0</strong><small>Gewonnen leads</small></article>
             <article class="admin-card metric-card sales-kpi-card" role="button" tabindex="0" data-sales-kpi="conversion_week" aria-label="Conversie van deze week bekijken"><span>Conversie deze week</span><strong id="sales-cockpit-conversion">0%</strong><small>Verkocht / nieuwe leads</small></article>
@@ -19443,7 +19448,12 @@
       const leadfinderElements = {
         cockpit: {
           newLeads: document.getElementById("sales-cockpit-new-leads"),
+          unassigned: document.getElementById("sales-cockpit-unassigned"),
+          todayCalling: document.getElementById("sales-cockpit-today-calling"),
+          overdue: document.getElementById("sales-cockpit-overdue"),
           followups: document.getElementById("sales-cockpit-followups"),
+          demo: document.getElementById("sales-cockpit-demo"),
+          negotiation: document.getElementById("sales-cockpit-negotiation"),
           openQuotes: document.getElementById("sales-cockpit-open-quotes"),
           wonToday: document.getElementById("sales-cockpit-won-today"),
           conversion: document.getElementById("sales-cockpit-conversion"),
@@ -20390,7 +20400,7 @@
       }
 
       function getLeadOwnerLabel(lead = {}) {
-        return normalizeLeadOwner(lead).displayName || "Onbekend";
+        return normalizeLeadOwner(lead).displayName || "Niet toegewezen";
       }
 
       function normalizeLeadOwner(lead = {}) {
@@ -20638,6 +20648,14 @@
         const date = new Date(text);
         if (Number.isNaN(date.getTime())) return text;
         return date.toLocaleDateString("nl-NL", { day: "2-digit", month: "2-digit", year: "numeric" });
+      }
+
+      function formatLeadDateTime(value) {
+        const text = String(value || "").trim();
+        if (!text) return "-";
+        const date = new Date(text);
+        if (Number.isNaN(date.getTime())) return text;
+        return date.toLocaleString("nl-NL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
       }
 
       function renderLeadfinderState(title, body, type = "") {
@@ -21363,9 +21381,14 @@
 
       function daysFromToday(dateValue) {
         if (!dateValue) return null;
-        const date = new Date(`${dateValue}T00:00:00`);
+        const raw = String(dateValue);
+        const date = new Date(raw.includes("T") ? raw : `${raw}T00:00:00`);
         if (Number.isNaN(date.getTime())) return null;
         return Math.round((startOfDay(date).getTime() - startOfDay().getTime()) / 86400000);
+      }
+
+      function leadNextActionDays(lead = {}) {
+        return daysFromToday(lead.nextActionAt || lead.followUpDate);
       }
 
       function isLeadWon(lead = {}) {
@@ -21410,12 +21433,42 @@
         return readSalesCockpitQuotes();
       }
 
+      const SALES_NEXT_ACTION_LABELS = Object.freeze({
+        call: "Bellen",
+        email: "E-mail sturen",
+        send_demo: "Demo versturen",
+        create_demo: "Demo maken",
+        send_proposal: "Voorstel sturen",
+        follow_up: "Opvolgen",
+        appointment: "Afspraak",
+        await_response: "Wachten op reactie",
+        custom: "Anders",
+      });
+
+      function getLeadNextActionLabel(lead = {}) {
+        const type = String(lead.nextActionType || "").trim();
+        const label = SALES_NEXT_ACTION_LABELS[type] || (lead.followUpDate ? "Opvolgen" : "");
+        const date = lead.nextActionAt || lead.followUpDate;
+        if (!label && !date) return "-";
+        const days = leadNextActionDays(lead);
+        const timing = days < 0 ? `achterstallig sinds ${formatLeadDateTime(date)}` : formatLeadDateTime(date);
+        return [label || "Volgende actie", timing].filter(Boolean).join(" — ");
+      }
+
       function renderSalesCockpit(leads = getLeadfinderLeads()) {
         const todayLeads = leads.filter((lead) => isSameDay(lead.createdAt)).length;
+        const unassigned = leads.filter((lead) => ["interesting", "new"].includes(getLeadLifecycleStatus(lead)) && getLeadOwnerLabel(lead) === "Niet toegewezen").length;
+        const todayCalling = leads.filter((lead) => leadNextActionDays(lead) === 0 && isOpenLeadStatus(lead)).length;
+        const overdue = leads.filter((lead) => {
+          const days = leadNextActionDays(lead);
+          return days !== null && days < 0 && isOpenLeadStatus(lead);
+        }).length;
         const followups = leads.filter((lead) => {
-          const days = daysFromToday(lead.followUpDate);
+          const days = leadNextActionDays(lead);
           return days !== null && days <= 0 && !isLeadWon(lead) && lead.callStatus !== "lost" && lead.callStatus !== "geen_interesse";
         }).length;
+        const demoPipeline = leads.filter((lead) => ["demo_requested", "demo_building", "demo_ready", "demo_sent"].includes(getLeadLifecycleStatus(lead))).length;
+        const negotiation = leads.filter((lead) => ["proposal_sent", "negotiation"].includes(getLeadLifecycleStatus(lead))).length;
         const wonToday = leads.filter((lead) => isLeadWon(lead) && isSameDay(lead.updatedAt)).length;
         const weekStart = startOfDay();
         weekStart.setDate(weekStart.getDate() - 6);
@@ -21427,7 +21480,12 @@
         const conversion = weekLeads.length ? Math.round((weekWon / weekLeads.length) * 100) : 0;
         const openQuotes = getCurrentQuotes().filter(isOpenQuote).length;
         if (leadfinderElements.cockpit.newLeads) leadfinderElements.cockpit.newLeads.textContent = String(todayLeads);
+        if (leadfinderElements.cockpit.unassigned) leadfinderElements.cockpit.unassigned.textContent = String(unassigned);
+        if (leadfinderElements.cockpit.todayCalling) leadfinderElements.cockpit.todayCalling.textContent = String(todayCalling);
+        if (leadfinderElements.cockpit.overdue) leadfinderElements.cockpit.overdue.textContent = String(overdue);
         if (leadfinderElements.cockpit.followups) leadfinderElements.cockpit.followups.textContent = String(followups);
+        if (leadfinderElements.cockpit.demo) leadfinderElements.cockpit.demo.textContent = String(demoPipeline);
+        if (leadfinderElements.cockpit.negotiation) leadfinderElements.cockpit.negotiation.textContent = String(negotiation);
         if (leadfinderElements.cockpit.openQuotes) leadfinderElements.cockpit.openQuotes.textContent = String(openQuotes);
         if (leadfinderElements.cockpit.wonToday) leadfinderElements.cockpit.wonToday.textContent = String(wonToday);
         if (leadfinderElements.cockpit.conversion) leadfinderElements.cockpit.conversion.textContent = `${conversion}%`;
@@ -21440,6 +21498,26 @@
         }
         if (type === "followups_today") {
           applyLeadfinderQuickFilter("followups_today", "Follow-ups vandaag");
+          return;
+        }
+        if (type === "unassigned") {
+          applyLeadfinderQuickFilter("unassigned", "Niet toegewezen");
+          return;
+        }
+        if (type === "today_calling") {
+          applyLeadfinderQuickFilter("today_calling", "Vandaag bellen");
+          return;
+        }
+        if (type === "overdue_followup") {
+          applyLeadfinderQuickFilter("overdue_followup", "Achterstallige opvolging");
+          return;
+        }
+        if (type === "demo_pipeline") {
+          applyLeadfinderQuickFilter("demo_pipeline", "Demo pipeline");
+          return;
+        }
+        if (type === "negotiation") {
+          applyLeadfinderQuickFilter("negotiation", "Onderhandeling");
           return;
         }
         if (type === "won_today") {
@@ -21469,7 +21547,7 @@
       }
 
       function getFollowUpBadge(lead = {}) {
-        const days = daysFromToday(lead.followUpDate);
+        const days = leadNextActionDays(lead);
         if (days === null || isLeadWon(lead)) return null;
         if (days < 0) return { label: "Te laat", className: "status-blocked" };
         if (days === 0) return { label: "Vandaag", className: "status-active" };
@@ -22030,8 +22108,25 @@
                   return isOpenLeadStatus(lead);
                 }
         if (filter.type === "followups_today") {
-          const days = daysFromToday(lead.followUpDate);
+          const days = leadNextActionDays(lead);
           return days !== null && days <= 0 && isOpenLeadStatus(lead);
+        }
+        if (filter.type === "today_calling") {
+          const days = leadNextActionDays(lead);
+          return days === 0 && isOpenLeadStatus(lead);
+        }
+        if (filter.type === "overdue_followup") {
+          const days = leadNextActionDays(lead);
+          return days !== null && days < 0 && isOpenLeadStatus(lead);
+        }
+        if (filter.type === "unassigned") {
+          return ["interesting", "new"].includes(getLeadLifecycleStatus(lead)) && getLeadOwnerLabel(lead) === "Niet toegewezen";
+        }
+        if (filter.type === "demo_pipeline") {
+          return ["demo_requested", "demo_building", "demo_ready", "demo_sent"].includes(getLeadLifecycleStatus(lead));
+        }
+        if (filter.type === "negotiation") {
+          return ["proposal_sent", "negotiation"].includes(getLeadLifecycleStatus(lead));
         }
         if (filter.type === "won_today") {
           return isLeadWon(lead) && isSameDay(lead.updatedAt);
@@ -22791,12 +22886,17 @@
             ["Score", `${lead.leadScore || 0}/100`],
             ["Eigenaar", getLeadOwnerLabel(lead)],
             ["Toegewezen sinds", lead.assignedAt ? formatLeadDate(lead.assignedAt) : "-"],
+            ["Laatste contact", lead.lastContactedAt ? formatLeadDateTime(lead.lastContactedAt) : "-"],
+            ["Laatste uitkomst", lead.lastCallOutcome || "-"],
+            ["Volgende actie", getLeadNextActionLabel(lead)],
+            ["Actienotitie", lead.nextActionNote || "-"],
             ["Beoordeeld", lead.reviewedAt ? `${formatLeadDate(lead.reviewedAt)} door ${lead.reviewedBy || "medewerker"}` : "-"],
             ["Afwijsreden", lead.rejectionReason ? getLeadRejectionReasonLabel(lead.rejectionReason) : "-"],
             ["Aangemaakt", formatLeadDate(lead.createdAt)],
             ["Laatste activiteit", formatLeadDate(lead.lastActivityAt || lead.updatedAt)],
             ["Website-status", getLeadFinderLabel(LEADFINDER_WEBSITE_STATUSES, lead.websiteStatus)],
             ["Opvolgdatum", lead.followUpDate || "-"],
+            ["Afspraak", lead.appointmentAt ? formatLeadDateTime(lead.appointmentAt) : "-"],
             ["Aangemaakt door", lead.createdByName || lead.createdByEmail || lead.createdBy || "-"],
             ["Klantstatus", lead.convertedCustomerId ? "Klant actief" : "Nog geen klant"],
             ["Bron", lead.source || lead._source || leadfinderSourceStatus?.mode || "central"],
@@ -23609,6 +23709,74 @@
         return updatedLead;
       }
 
+      async function runLeadPipelineAction(lead, payload = {}, successMessage = "Lead bijgewerkt.") {
+        if (!lead?.id) throw new Error("Lead ontbreekt.");
+        if (!isProductionLead(lead)) {
+          const fallbackUpdates = {
+            callStatus: payload.callStatus || payload.leadStatus || lead.callStatus,
+            leadStatus: payload.leadStatus || payload.lead_status || lead.leadStatus,
+            nextActionType: payload.nextActionType || payload.next_action_type || lead.nextActionType,
+            nextActionAt: payload.nextActionAt || payload.next_action_at || lead.nextActionAt,
+            nextActionNote: payload.nextActionNote || payload.next_action_note || lead.nextActionNote,
+            lastCallOutcome: payload.outcome || payload.lastCallOutcome || lead.lastCallOutcome,
+            lastContactedAt: payload.action === "contact" ? new Date().toISOString() : lead.lastContactedAt,
+          };
+          return updateLeadfinderLead(lead, fallbackUpdates, `${successMessage} Lokaal bijgewerkt.`);
+        }
+        const result = await leadApiRequest("PATCH", { id: lead.id, ...payload }, { id: lead.id });
+        selectedLeadFinderId = result.lead?.id || lead.id;
+        setLeadfinderMessage(successMessage, "success");
+        await refreshLeads({ keepSelection: true });
+        return result.lead || selectedLeadFinderLead();
+      }
+
+      function askLeadCallOutcome() {
+        const options = [
+          ["1", "no_answer", "Geen gehoor"],
+          ["2", "voicemail_left", "Voicemail ingesproken"],
+          ["3", "callback_requested", "Terugbellen gevraagd"],
+          ["4", "contacted", "Contact gehad"],
+          ["5", "appointment_scheduled", "Afspraak gemaakt"],
+          ["6", "demo_requested", "Demo gewenst"],
+          ["7", "proposal_requested", "Voorstel gewenst"],
+          ["8", "not_interested", "Niet geïnteresseerd"],
+        ];
+        const answer = window.prompt(`Wat was de uitkomst?\n${options.map(([key, , label]) => `${key}. ${label}`).join("\n")}`, "1");
+        const selected = options.find(([key]) => key === String(answer || "").trim());
+        return selected ? { value: selected[1], label: selected[2] } : null;
+      }
+
+      function localDateTimeToIso(value = "") {
+        const text = String(value || "").trim();
+        if (!text) return "";
+        const date = new Date(text);
+        return Number.isNaN(date.getTime()) ? "" : date.toISOString();
+      }
+
+      async function registerLeadCallOutcome(lead) {
+        const outcome = askLeadCallOutcome();
+        if (!outcome) return;
+        const note = window.prompt("Korte gespreksnotitie of vervolgafspraak", String(leadfinderElements.detailNote?.value || getLeadNoteDraft(lead) || "").trim()) || "";
+        let nextActionAt = "";
+        if (["callback_requested", "appointment_scheduled"].includes(outcome.value)) {
+          const dateInput = window.prompt("Datum en tijd voor vervolgactie (bijv. 2026-07-13 10:00)", "");
+          nextActionAt = localDateTimeToIso(String(dateInput || "").replace(" ", "T"));
+          if (!nextActionAt) {
+            setLeadfinderMessage("Kies een geldige datum en tijd voor deze uitkomst.", "error");
+            return;
+          }
+        }
+        await runLeadPipelineAction(lead, {
+          action: "contact",
+          outcome: outcome.value,
+          note,
+          nextActionAt,
+          nextActionNote: note,
+        }, `Gespreksuitkomst opgeslagen: ${outcome.label}.`);
+        if (leadfinderElements.detailNote) leadfinderElements.detailNote.value = "";
+        rememberLeadNoteDraft(lead.id, "");
+      }
+
       async function reloadLeadfinderAfterLocalChange(options = {}) {
         await refreshLeads({ keepSelection: options.keepSelection !== false });
       }
@@ -23917,7 +24085,8 @@
         if (!lead) return;
         if (action === "call") {
           if (lead.phone) window.location.href = `tel:${String(lead.phone).replace(/\s+/g, "")}`;
-          await markSelectedLeadStatus("contact_planned", "Belactie gestart. Lead staat op contact gepland.");
+          await runLeadPipelineAction(lead, { action: "call_started" }, "Belactie gestart.");
+          window.setTimeout(() => registerLeadCallOutcome(selectedLeadFinderLead() || lead), 400);
           return;
         }
         if (action === "followup") {

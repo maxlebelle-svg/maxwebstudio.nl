@@ -40,12 +40,16 @@ const allowedStatuses = new Set([
   "not_interesting",
   "assigned",
   "call_scheduled",
+  "contact_attempted",
+  "contacted",
   "follow_up",
+  "appointment_scheduled",
   "demo_requested",
   "demo_building",
   "demo_ready",
   "demo_sent",
   "proposal_sent",
+  "negotiation",
   "customer",
 ]);
 
@@ -56,16 +60,37 @@ const lifecycleStatuses = new Set([
   "not_interesting",
   "assigned",
   "call_scheduled",
+  "contact_attempted",
   "contacted",
   "follow_up",
+  "appointment_scheduled",
   "demo_requested",
   "demo_building",
   "demo_ready",
   "demo_sent",
   "proposal_sent",
+  "negotiation",
   "won",
   "lost",
   "customer",
+]);
+
+const terminalLeadStatuses = new Set(["won", "lost", "not_interesting", "customer"]);
+const nextActionTypes = new Set(["call", "email", "send_demo", "create_demo", "send_proposal", "follow_up", "appointment", "await_response", "custom"]);
+const callOutcomes = new Map([
+  ["no_answer", { label: "Geen gehoor", status: "contact_attempted", nextActionType: "call", defaultBusinessDays: 2 }],
+  ["voicemail_left", { label: "Voicemail ingesproken", status: "follow_up", nextActionType: "call", defaultBusinessDays: 2 }],
+  ["wrong_number", { label: "Verkeerd nummer", status: "contact_attempted", nextActionType: "custom" }],
+  ["callback_requested", { label: "Terugbellen gevraagd", status: "call_scheduled", nextActionType: "call" }],
+  ["contacted", { label: "Contact gehad", status: "contacted", nextActionType: "follow_up", defaultBusinessDays: 3 }],
+  ["appointment_scheduled", { label: "Afspraak gemaakt", status: "appointment_scheduled", nextActionType: "appointment" }],
+  ["demo_requested", { label: "Demo gewenst", status: "demo_requested", nextActionType: "create_demo" }],
+  ["proposal_requested", { label: "Voorstel gewenst", status: "proposal_sent", nextActionType: "send_proposal" }],
+  ["not_interested", { label: "Niet geïnteresseerd", status: "not_interesting", nextActionType: "custom" }],
+  ["no_budget", { label: "Geen budget", status: "lost", nextActionType: "custom" }],
+  ["later", { label: "Later opnieuw benaderen", status: "follow_up", nextActionType: "follow_up", defaultBusinessDays: 5 }],
+  ["already_helped", { label: "Al voorzien", status: "lost", nextActionType: "custom" }],
+  ["business_closed", { label: "Bedrijf gesloten", status: "lost", nextActionType: "custom" }],
 ]);
 
 const rejectionReasons = new Set([
@@ -238,6 +263,9 @@ async function updateLead({ event, supabaseUrl, serviceRoleKey, admin }) {
   if (payload.action === "assign") {
     return assignLead({ payload, existingLead, supabaseUrl, serviceRoleKey, admin, id });
   }
+  if (["call_started", "contact", "next_action", "complete_next_action", "win", "lose", "demo_requested", "appointment_scheduled"].includes(payload.action)) {
+    return mutateSalesPipeline({ payload, existingLead, supabaseUrl, serviceRoleKey, admin, id });
+  }
   const modernRecord = leadPayload(payload, admin, { update: true, existingLead });
   if (modernRecord.metadata) {
     modernRecord.metadata = {
@@ -307,7 +335,11 @@ async function assertCanMutateLead({ supabaseUrl, serviceRoleKey, admin, id }) {
     throw error;
   }
   const normalizedLead = mapLead(lead);
-  if (!managerRoles.has(normalizeRole(admin.role)) && !leadOwnerTokens(normalizedLead).includes(admin.id)) {
+  const role = normalizeRole(admin.role);
+  const adminTokens = [admin.id, admin.profileId, admin.email].map((value) => cleanText(value).toLowerCase()).filter(Boolean);
+  const ownerTokens = leadOwnerTokens(normalizedLead);
+  const canClaimOpenLead = role === "sales_partner" && !ownerTokens.length && ["new", "interesting"].includes(normalizedLead.leadStatus);
+  if (!managerRoles.has(role) && !canClaimOpenLead && !ownerTokens.some((token) => adminTokens.includes(token))) {
     const error = new Error("Je mag deze lead niet wijzigen.");
     error.status = 403;
     throw error;
@@ -317,9 +349,9 @@ async function assertCanMutateLead({ supabaseUrl, serviceRoleKey, admin, id }) {
 
 async function readLeadRows({ supabaseUrl, serviceRoleKey, id = "" }) {
   const selects = [
-    "id,company_name,contact_name,email,phone,website,status,lead_status,reviewed_at,reviewed_by,rejection_reason,rejection_note,rejected_at,rejected_by,assigned_user_id,assigned_at,assigned_by,normalized_company_name,normalized_domain,normalized_phone,external_source,external_source_id,last_activity_at,last_contacted_at,next_action_at,lead_score_reasoning,lead_score_updated_at,owner_id,owner_profile_id,owner_email,owner_name,created_by,created_by_email,created_by_name,assigned_to,assigned_user_email,assigned_user_name,sales_partner_email,sales_partner_name,branch,region,website_url,website_status,lead_score,call_status,follow_up_date,notes,is_demo,environment,metadata,created_at,updated_at",
+    "id,company_name,contact_name,email,phone,website,status,lead_status,reviewed_at,reviewed_by,rejection_reason,rejection_note,rejected_at,rejected_by,assigned_user_id,assigned_at,assigned_by,normalized_company_name,normalized_domain,normalized_phone,external_source,external_source_id,last_activity_at,last_contacted_at,last_contacted_by,last_call_outcome,next_action_type,next_action_at,next_action_note,next_action_assigned_user_id,next_action_created_automatically,appointment_at,appointment_type,appointment_location,won_at,won_by,lost_at,lost_by,lost_reason,lost_note,lead_score_reasoning,lead_score_updated_at,owner_id,owner_profile_id,owner_email,owner_name,created_by,created_by_email,created_by_name,assigned_to,assigned_user_email,assigned_user_name,sales_partner_email,sales_partner_name,branch,region,website_url,website_status,lead_score,call_status,follow_up_date,notes,is_demo,environment,metadata,created_at,updated_at",
     "id,company_name,contact_name,email,phone,website,status,owner_id,created_by,assigned_to,notes,is_demo,environment,metadata,created_at,updated_at",
-    "id,company,name,email,phone,source,status,converted_customer_id,notes,is_demo,environment,metadata,created_at,updated_at,branch,region,website_url,website_status,lead_score,call_status,follow_up_date,lead_status,reviewed_at,reviewed_by,rejection_reason,rejection_note,rejected_at,rejected_by,assigned_user_id,assigned_at,assigned_by,normalized_company_name,normalized_domain,normalized_phone,external_source,external_source_id,last_activity_at,last_contacted_at,next_action_at,lead_score_reasoning,lead_score_updated_at",
+    "id,company,name,email,phone,source,status,converted_customer_id,notes,is_demo,environment,metadata,created_at,updated_at,branch,region,website_url,website_status,lead_score,call_status,follow_up_date,lead_status,reviewed_at,reviewed_by,rejection_reason,rejection_note,rejected_at,rejected_by,assigned_user_id,assigned_at,assigned_by,normalized_company_name,normalized_domain,normalized_phone,external_source,external_source_id,last_activity_at,last_contacted_at,last_contacted_by,last_call_outcome,next_action_type,next_action_at,next_action_note,next_action_assigned_user_id,next_action_created_automatically,appointment_at,appointment_type,appointment_location,won_at,won_by,lost_at,lost_by,lost_reason,lost_note,lead_score_reasoning,lead_score_updated_at",
     "id,company,name,email,phone,source,interest,status,converted_customer_id,message,is_demo,environment,metadata,created_at,updated_at,owner_auth_user_id,branch,region,website_url,website_status,lead_score,call_status,follow_up_date,notes",
     "id,company,name,email,phone,source,interest,status,converted_customer_id,message,is_demo,environment,metadata,created_at,updated_at,owner_auth_user_id",
     "id,company,name,email,phone,source,interest,status,converted_customer_id,message,is_demo,environment,metadata,created_at,updated_at",
@@ -1031,6 +1063,199 @@ async function assignLead({ payload = {}, existingLead = {}, supabaseUrl, servic
   return jsonResponse(200, { success: true, lead, updated: true, assigned: true });
 }
 
+async function mutateSalesPipeline({ payload = {}, existingLead = {}, supabaseUrl, serviceRoleKey, admin, id }) {
+  const now = new Date().toISOString();
+  const lead = mapLead(existingLead);
+  const existingMeta = existingLead.metadata && typeof existingLead.metadata === "object" ? existingLead.metadata : {};
+  const action = cleanText(payload.action);
+  const conflict = leadActionConflict(lead, admin);
+  if (conflict) return jsonResponse(409, { success: false, error: conflict.message, conflict });
+
+  let eventType = action;
+  let title = "Lead bijgewerkt";
+  let nextStatus = lead.leadStatus;
+  let nextActionType = cleanText(payload.nextActionType || payload.next_action_type || lead.nextActionType);
+  let nextActionAt = cleanText(payload.nextActionAt || payload.next_action_at || lead.nextActionAt);
+  let nextActionNote = cleanText(payload.nextActionNote || payload.next_action_note || lead.nextActionNote);
+  let nextActionAssignedUserId = firstUuid(payload.nextActionAssignedUserId, payload.next_action_assigned_user_id, lead.assignedUserId, admin.id);
+  let lastCallOutcome = cleanText(payload.outcome || payload.callOutcome || payload.lastCallOutcome || payload.last_call_outcome || lead.lastCallOutcome);
+  let lastContactedAt = lead.lastContactedAt;
+  let lastContactedBy = lead.lastContactedBy;
+  let appointmentAt = cleanText(payload.appointmentAt || payload.appointment_at || lead.appointmentAt);
+  let appointmentType = cleanText(payload.appointmentType || payload.appointment_type || lead.appointmentType);
+  let appointmentLocation = cleanText(payload.appointmentLocation || payload.appointment_location || lead.appointmentLocation);
+  let wonAt = cleanText(lead.wonAt);
+  let wonBy = cleanText(lead.wonBy);
+  let lostAt = cleanText(lead.lostAt);
+  let lostBy = cleanText(lead.lostBy);
+  let lostReason = cleanText(payload.lostReason || payload.lost_reason || lead.lostReason);
+  let lostNote = cleanText(payload.lostNote || payload.lost_note || payload.note || lead.lostNote);
+  let nextActionCreatedAutomatically = Boolean(payload.nextActionCreatedAutomatically ?? payload.next_action_created_automatically ?? false);
+
+  if (action === "call_started") {
+    eventType = "call_started";
+    title = "Belactie gestart";
+    nextStatus = ["new", "interesting", "assigned"].includes(lead.leadStatus) ? "call_scheduled" : lead.leadStatus;
+  }
+
+  if (action === "contact") {
+    const outcomeConfig = callOutcomes.get(lastCallOutcome);
+    if (!outcomeConfig) return jsonResponse(400, { success: false, error: "Kies een geldige gespreksuitkomst." });
+    eventType = outcomeEventType(lastCallOutcome);
+    title = `Gesprek vastgelegd: ${outcomeConfig.label}`;
+    nextStatus = normalizeLifecycleStatus(payload.leadStatus || payload.lead_status || outcomeConfig.status);
+    nextActionType = cleanText(payload.nextActionType || payload.next_action_type || outcomeConfig.nextActionType);
+    nextActionAt = cleanText(payload.nextActionAt || payload.next_action_at) || nextBusinessDateIso(outcomeConfig.defaultBusinessDays);
+    nextActionNote = cleanText(payload.nextActionNote || payload.next_action_note || payload.note);
+    nextActionCreatedAutomatically = !cleanText(payload.nextActionAt || payload.next_action_at) && Boolean(outcomeConfig.defaultBusinessDays);
+    lastContactedAt = now;
+    lastContactedBy = admin.id;
+    if (lastCallOutcome === "appointment_scheduled") appointmentAt = nextActionAt;
+  }
+
+  if (action === "next_action") {
+    if (!nextActionTypes.has(nextActionType)) return jsonResponse(400, { success: false, error: "Kies een geldige volgende actie." });
+    if (!nextActionAt) return jsonResponse(400, { success: false, error: "Kies een datum en tijd voor de volgende actie." });
+    eventType = "next_action_scheduled";
+    title = "Volgende actie gepland";
+    nextStatus = normalizeLifecycleStatus(payload.leadStatus || payload.lead_status || lead.leadStatus || "follow_up");
+  }
+
+  if (action === "complete_next_action") {
+    eventType = "next_action_completed";
+    title = "Volgende actie afgerond";
+    nextActionType = "";
+    nextActionAt = "";
+    nextActionNote = "";
+    nextActionAssignedUserId = null;
+    nextActionCreatedAutomatically = false;
+  }
+
+  if (action === "demo_requested") {
+    eventType = "demo_requested";
+    title = "Demo aangevraagd";
+    nextStatus = "demo_requested";
+    nextActionType = "create_demo";
+    nextActionAt = nextActionAt || nextBusinessDateIso(1);
+    nextActionNote = nextActionNote || cleanText(payload.demoWishes || payload.demo_wishes || payload.note);
+  }
+
+  if (action === "appointment_scheduled") {
+    eventType = "appointment_scheduled";
+    title = "Afspraak gepland";
+    nextStatus = "appointment_scheduled";
+    nextActionType = "appointment";
+    appointmentAt = cleanText(payload.appointmentAt || payload.appointment_at || nextActionAt);
+    nextActionAt = appointmentAt || nextActionAt;
+    nextActionNote = nextActionNote || cleanText(payload.note);
+  }
+
+  if (action === "win") {
+    eventType = "lead_won";
+    title = "Lead gewonnen";
+    nextStatus = "won";
+    wonAt = now;
+    wonBy = admin.id;
+    nextActionType = "";
+    nextActionAt = "";
+    nextActionNote = "";
+    nextActionAssignedUserId = null;
+  }
+
+  if (action === "lose") {
+    eventType = "lead_lost";
+    title = "Lead verloren";
+    nextStatus = "lost";
+    lostAt = now;
+    lostBy = admin.id;
+    nextActionType = "";
+    nextActionAt = "";
+    nextActionNote = "";
+    nextActionAssignedUserId = null;
+  }
+
+  const metadata = {
+    ...existingMeta,
+    leadStatus: nextStatus,
+    lead_status: nextStatus,
+    lastActivityAt: now,
+    lastContactedAt,
+    lastContactedBy,
+    lastCallOutcome,
+    nextActionType,
+    nextActionAt,
+    nextActionNote,
+    nextActionAssignedUserId: nextActionAssignedUserId || "",
+    nextActionCreatedAutomatically,
+    appointmentAt,
+    appointmentType,
+    appointmentLocation,
+    wonAt,
+    wonBy,
+    lostAt,
+    lostBy,
+    lostReason,
+    lostNote,
+  };
+  Object.keys(metadata).forEach((key) => {
+    if (metadata[key] === "" || metadata[key] === undefined || metadata[key] === null) delete metadata[key];
+  });
+
+  const record = {
+    lead_status: nextStatus,
+    status: legacyDbStatus(nextStatus),
+    call_status: legacyCallStatus(nextStatus, lastCallOutcome),
+    last_activity_at: now,
+    last_contacted_at: lastContactedAt || null,
+    last_contacted_by: firstUuid(lastContactedBy),
+    last_call_outcome: lastCallOutcome || null,
+    next_action_type: nextActionType || null,
+    next_action_at: nextActionAt || null,
+    next_action_note: nextActionNote || null,
+    next_action_assigned_user_id: nextActionAssignedUserId || null,
+    next_action_created_automatically: nextActionCreatedAutomatically,
+    appointment_at: appointmentAt || null,
+    appointment_type: appointmentType || null,
+    appointment_location: appointmentLocation || null,
+    won_at: wonAt || null,
+    won_by: firstUuid(wonBy),
+    lost_at: lostAt || null,
+    lost_by: firstUuid(lostBy),
+    lost_reason: lostReason || null,
+    lost_note: lostNote || null,
+    metadata,
+    updated_at: now,
+  };
+  const attempts = [
+    () => updateLeadRecord({ supabaseUrl, serviceRoleKey, id, record }),
+    () => updateLeadRecord({ supabaseUrl, serviceRoleKey, id, record: { lead_status: nextStatus, status: record.status, call_status: record.call_status, last_activity_at: now, last_contacted_at: lastContactedAt || null, next_action_at: nextActionAt || null, metadata, updated_at: now } }),
+    () => updateLeadRecord({ supabaseUrl, serviceRoleKey, id, record: { metadata, updated_at: now } }),
+  ];
+  const rows = await trySchemaAttempts(attempts);
+  const updatedLead = mapLead(rows[0] || { id, ...existingLead, ...record });
+  await insertLeadTimelineEvent({
+    supabaseUrl,
+    serviceRoleKey,
+    leadId: id,
+    admin,
+    eventType,
+    title,
+    metadata: {
+      action,
+      outcome: lastCallOutcome,
+      note: cleanText(payload.note),
+      nextActionType,
+      nextActionAt,
+      nextActionNote,
+      nextActionCreatedAutomatically,
+      leadStatus: nextStatus,
+      appointmentAt,
+      lostReason,
+    },
+  });
+  return jsonResponse(200, { success: true, lead: updatedLead, updated: true, action, eventType });
+}
+
 async function insertLeadTimelineEvent({ supabaseUrl, serviceRoleKey, leadId, admin = {}, eventType = "", title = "", metadata = {} }) {
   if (!leadId || !eventType) return;
   const now = new Date().toISOString();
@@ -1181,7 +1406,22 @@ function mapLead(row = {}) {
     externalSourceId: cleanText(row.external_source_id || meta.externalSourceId || meta.external_source_id),
     lastActivityAt: cleanText(row.last_activity_at || meta.lastActivityAt || meta.last_activity_at || row.updated_at),
     lastContactedAt: cleanText(row.last_contacted_at || meta.lastContactedAt || meta.last_contacted_at),
+    lastContactedBy: cleanText(row.last_contacted_by || meta.lastContactedBy || meta.last_contacted_by),
+    lastCallOutcome: cleanText(row.last_call_outcome || meta.lastCallOutcome || meta.last_call_outcome),
+    nextActionType: cleanText(row.next_action_type || meta.nextActionType || meta.next_action_type),
     nextActionAt: cleanText(row.next_action_at || meta.nextActionAt || meta.next_action_at),
+    nextActionNote: cleanText(row.next_action_note || meta.nextActionNote || meta.next_action_note),
+    nextActionAssignedUserId: cleanText(row.next_action_assigned_user_id || meta.nextActionAssignedUserId || meta.next_action_assigned_user_id),
+    nextActionCreatedAutomatically: Boolean(row.next_action_created_automatically ?? meta.nextActionCreatedAutomatically ?? meta.next_action_created_automatically),
+    appointmentAt: cleanText(row.appointment_at || meta.appointmentAt || meta.appointment_at),
+    appointmentType: cleanText(row.appointment_type || meta.appointmentType || meta.appointment_type),
+    appointmentLocation: cleanText(row.appointment_location || meta.appointmentLocation || meta.appointment_location),
+    wonAt: cleanText(row.won_at || meta.wonAt || meta.won_at),
+    wonBy: cleanText(row.won_by || meta.wonBy || meta.won_by),
+    lostAt: cleanText(row.lost_at || meta.lostAt || meta.lost_at),
+    lostBy: cleanText(row.lost_by || meta.lostBy || meta.lost_by),
+    lostReason: cleanText(row.lost_reason || meta.lostReason || meta.lost_reason),
+    lostNote: cleanText(row.lost_note || meta.lostNote || meta.lost_note),
     leadScoreReasoning: cleanText(row.lead_score_reasoning || meta.leadScoreReasoning || meta.lead_score_reasoning),
     leadScoreUpdatedAt: cleanText(row.lead_score_updated_at || meta.leadScoreUpdatedAt || meta.lead_score_updated_at),
     demoBriefing: cleanText(meta.demoBriefing),
@@ -1209,16 +1449,22 @@ function normalizeLifecycleStatus(value) {
     bellen: "call_scheduled",
     te_bellen: "call_scheduled",
     contact_planned: "call_scheduled",
+    contact_attempted: "contact_attempted",
+    belpoging: "contact_attempted",
     gebeld: "contacted",
     contacted: "contacted",
     voicemail: "follow_up",
     opvolgen: "follow_up",
     follow_up: "follow_up",
+    appointment_scheduled: "appointment_scheduled",
+    afspraak_gepland: "appointment_scheduled",
     interesse: "interesting",
     qualified: "interesting",
     offerte: "proposal_sent",
     quote_ready: "proposal_sent",
     quote_sent: "proposal_sent",
+    negotiation: "negotiation",
+    onderhandeling: "negotiation",
     verkocht: "won",
     won: "won",
     geconverteerd: "customer",
@@ -1263,6 +1509,84 @@ function legacyDbStatus(value) {
   return "new";
 }
 
+function legacyCallStatus(status = "", outcome = "") {
+  const normalized = normalizeLifecycleStatus(status);
+  if (normalized === "new") return "nieuw";
+  if (normalized === "interesting") return "interesse";
+  if (normalized === "assigned") return "bellen";
+  if (normalized === "call_scheduled") return "contact_planned";
+  if (normalized === "contact_attempted") return outcome === "voicemail_left" ? "voicemail" : "gebeld";
+  if (normalized === "contacted") return "contacted";
+  if (normalized === "follow_up") return "opvolgen";
+  if (normalized === "appointment_scheduled") return "contact_planned";
+  if (normalized === "demo_requested") return "interesse";
+  if (normalized === "proposal_sent") return "quote_sent";
+  if (normalized === "negotiation") return "quote_sent";
+  if (normalized === "won") return "won";
+  if (normalized === "lost" || normalized === "not_interesting") return "geen_interesse";
+  if (normalized === "customer") return "klant_actief";
+  return normalizeLeadStatus(status || "nieuw");
+}
+
+function outcomeEventType(outcome = "") {
+  return ({
+    no_answer: "no_answer",
+    voicemail_left: "voicemail_left",
+    wrong_number: "call_completed",
+    callback_requested: "callback_requested",
+    contacted: "contacted",
+    appointment_scheduled: "appointment_scheduled",
+    demo_requested: "demo_requested",
+    proposal_requested: "proposal_requested",
+    not_interested: "lead_lost",
+    no_budget: "lead_lost",
+    later: "call_completed",
+    already_helped: "lead_lost",
+    business_closed: "lead_lost",
+  })[outcome] || "call_completed";
+}
+
+function nextBusinessDateIso(days = 0) {
+  if (!days) return "";
+  const date = new Date();
+  let remaining = Number(days) || 0;
+  while (remaining > 0) {
+    date.setDate(date.getDate() + 1);
+    const day = date.getDay();
+    if (day !== 0 && day !== 6) remaining -= 1;
+  }
+  date.setHours(10, 0, 0, 0);
+  return date.toISOString();
+}
+
+function leadActionConflict(lead = {}, admin = {}) {
+  const role = normalizeRole(admin.role);
+  if (managerRoles.has(role)) return null;
+  if (terminalLeadStatuses.has(lead.leadStatus)) {
+    return { code: "lead_closed", message: "Deze lead is al gesloten en kan niet meer worden opgevolgd." };
+  }
+  const adminTokens = [admin.id, admin.profileId, admin.email].map((value) => cleanText(value).toLowerCase()).filter(Boolean);
+  const ownerTokens = leadOwnerTokens(lead);
+  if (ownerTokens.length && !ownerTokens.some((token) => adminTokens.includes(token))) {
+    return {
+      code: "assigned_to_other",
+      message: `Deze lead wordt al behandeld door ${lead.assignedUserName || lead.ownerName || lead.assignedUserEmail || "een collega"}.`,
+      ownerName: lead.assignedUserName || lead.ownerName || "",
+      ownerEmail: lead.assignedUserEmail || lead.ownerEmail || "",
+      lastActivityAt: lead.lastActivityAt || "",
+    };
+  }
+  const recent = lead.lastContactedAt ? new Date(lead.lastContactedAt) : null;
+  if (recent && !Number.isNaN(recent.getTime()) && Date.now() - recent.getTime() < 5 * 60 * 1000 && lead.lastContactedBy && !adminTokens.includes(cleanText(lead.lastContactedBy).toLowerCase())) {
+    return {
+      code: "recent_contact_by_other",
+      message: "Deze lead is net door een collega opgevolgd.",
+      lastActivityAt: lead.lastContactedAt,
+    };
+  }
+  return null;
+}
+
 function leadOwnerTokens(lead = {}) {
   const assignmentTokens = [
     lead.assignedTo,
@@ -1305,7 +1629,9 @@ function isLeadVisibleForAdmin(lead = {}, admin = {}) {
   if (managerRoles.has(normalizeRole(admin.role))) return true;
   if (normalizeRole(admin.role) !== "sales_partner") return false;
   const adminTokens = [admin.id, admin.profileId, admin.email].map((value) => cleanText(value).toLowerCase()).filter(Boolean);
-  return leadOwnerTokens(lead).some((token) => adminTokens.includes(token));
+  const ownerTokens = leadOwnerTokens(lead);
+  if (!ownerTokens.length && ["interesting", "new"].includes(lead.leadStatus)) return true;
+  return ownerTokens.some((token) => adminTokens.includes(token));
 }
 
 function buildLeadReadDiagnostics({ rows = [], records = [], admin = {} }) {
