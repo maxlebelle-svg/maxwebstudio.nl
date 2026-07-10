@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Checkout configureren | Max Webstudio</title>
-    <meta name="description" content="Configureer je Max Webstudio websitepakket, onderhoudspakket en betaal veilig de aanbetaling via de veilige betaalomgeving." />
+    <title>Bestelling configureren | Max Webstudio</title>
+    <meta name="description" content="Configureer je websitepakket, losse diensten, onderhoud en betaal veilig via Mollie." />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -27,22 +27,28 @@
 
     <main>
       <section class="page-hero payment-hero">
-        <p class="eyebrow">Veilig betalen</p>
-        <h1>Configureer je website en betaal veilig via de veilige betaalomgeving.</h1>
-        <p>Kies je websitepakket, selecteer onderhoud voor na oplevering en betaal vandaag alleen de aanbetaling.</p>
+        <p class="eyebrow">Bestellen</p>
+        <h1>Stel je bestelling samen en betaal veilig via Mollie.</h1>
+        <p>Kies een websitepakket of bestel losse diensten. Direct bestelbare onderdelen reken je veilig af; maatwerk bevestigen we persoonlijk.</p>
       </section>
 
       <section class="content-page payment-page" id="betaalformulier">
-        <form class="payment-configurator" id="payment-form">
+        <form class="payment-configurator" id="payment-form" novalidate>
           <div class="payment-config-main">
             <section class="config-panel">
               <div class="payment-form-heading">
                 <p class="section-kicker">Stap 1</p>
-                <h2>Kies je websitepakket</h2>
-                <p>De aanbetaling start het project. Het restbedrag betaal je later via aparte betaallink of factuur.</p>
+                <h2>Gekozen websitepakket</h2>
+                <p>Je mag ook zonder websitepakket starten met losse diensten.</p>
               </div>
-
               <div class="choice-grid website-choice-grid" role="radiogroup" aria-label="Kies websitepakket">
+                <label class="choice-card compact-choice">
+                  <input type="radio" name="websitePackage" value="" />
+                  <span class="choice-eyebrow">Losse diensten</span>
+                  <strong>Geen websitepakket</strong>
+                  <em>€0 ex. btw</em>
+                  <small>Handig voor logo, domein, e-mail, telefonie, SEO of losse uitbreidingen.</small>
+                </label>
                 <label class="choice-card">
                   <input type="radio" name="websitePackage" value="starter_site" />
                   <span class="choice-eyebrow">Starter</span>
@@ -70,392 +76,424 @@
             <section class="config-panel">
               <div class="payment-form-heading">
                 <p class="section-kicker">Stap 2</p>
-                <h2>Onderhoud & hosting — optioneel</h2>
-                <p>Je website blijft veilig, snel en up-to-date. Je kunt dit ook later activeren.</p>
+                <h2>Onderhoudsabonnement</h2>
+                <p>Onderhoud start na oplevering. Zonder websitepakket kun je interesse vastleggen, waarna Max Webstudio dit bevestigt.</p>
               </div>
-
-              <div class="choice-grid care-choice-grid" role="radiogroup" aria-label="Kies onderhoudspakket">
+              <div class="choice-grid care-choice-grid" role="radiogroup" aria-label="Kies onderhoud">
                 <label class="choice-card compact-choice">
-                  <input type="radio" name="carePackage" value="no_care" />
-                  <span class="choice-eyebrow">Later kiezen</span>
+                  <input type="radio" name="carePackage" value="" />
+                  <span class="choice-eyebrow">Later</span>
                   <strong>Geen onderhoud</strong>
                   <em>€0 p/m</em>
-                  <small>Je kiest nu alleen je websitepakket en aanbetaling.</small>
+                  <small>Je kiest nu geen maandpakket.</small>
                 </label>
                 <label class="choice-card">
                   <input type="radio" name="carePackage" value="care_basic" />
                   <span class="choice-eyebrow">Basis</span>
-                  <strong>Care Basic</strong>
+                  <strong>Basis onderhoud</strong>
                   <em>€19,95 p/m ex. btw</em>
                   <small>Hosting, SSL, back-up en technische monitoring.</small>
                 </label>
                 <label class="choice-card featured-choice">
                   <input type="radio" name="carePackage" value="care_plus" />
                   <span class="choice-eyebrow">Populair</span>
-                  <strong>Care Plus</strong>
+                  <strong>Plus onderhoud</strong>
                   <em>€49 p/m ex. btw</em>
-                  <small>Alles uit Basic + 15 minuten kleine wijzigingen per maand.</small>
+                  <small>Alles uit Basis plus kleine maandelijkse wijzigingen.</small>
                 </label>
                 <label class="choice-card">
                   <input type="radio" name="carePackage" value="care_growth" />
                   <span class="choice-eyebrow">Groei</span>
-                  <strong>Care Growth</strong>
+                  <strong>Groei onderhoud</strong>
                   <em>€99 p/m ex. btw</em>
-                  <small>Alles uit Plus + maandelijkse check en conversieadvies.</small>
+                  <small>Plus maandelijkse check en conversieadvies.</small>
+                </label>
+              </div>
+              <p class="dependency-message" id="care-dependency" hidden>Kies eerst een websitepakket om onderhoud direct mee te bestellen.</p>
+            </section>
+
+            <section class="config-panel">
+              <div class="payment-form-heading">
+                <p class="section-kicker">Stap 3</p>
+                <h2>Breid je pakket uit</h2>
+                <p>Producten met vaste prijs worden meegenomen in je betaling. Onderdelen op aanvraag worden opgeslagen voor persoonlijke bevestiging.</p>
+              </div>
+              <div class="product-category-grid" id="product-options"></div>
+              <label class="custom-request-field" id="custom-request-field" hidden>
+                Beschrijf je andere wens
+                <textarea name="customRequest" rows="4" placeholder="Vertel kort wat je wilt laten maken, koppelen of regelen."></textarea>
+              </label>
+            </section>
+
+            <section class="config-panel">
+              <div class="payment-form-heading">
+                <p class="section-kicker">Stap 4</p>
+                <h2>Betaalkeuze</h2>
+                <p>Bij een websitepakket kun je kiezen voor een aanbetaling of direct volledig betalen.</p>
+              </div>
+              <div class="choice-grid payment-choice-grid" role="radiogroup" aria-label="Kies betaalwijze">
+                <label class="choice-card compact-choice">
+                  <input type="radio" name="paymentChoice" value="deposit" />
+                  <span class="choice-eyebrow">Vandaag</span>
+                  <strong>Aanbetaling</strong>
+                  <em id="deposit-choice-label">€0 ex. btw</em>
+                  <small>Het resterende eenmalige bedrag betaal je later via factuur of betaallink.</small>
+                </label>
+                <label class="choice-card compact-choice">
+                  <input type="radio" name="paymentChoice" value="full" />
+                  <span class="choice-eyebrow">In één keer</span>
+                  <strong>Volledig betalen</strong>
+                  <em id="full-choice-label">€0 ex. btw</em>
+                  <small>Je rekent het direct betaalbare eenmalige bedrag in één keer af.</small>
                 </label>
               </div>
             </section>
 
             <section class="config-panel">
               <div class="payment-form-heading">
-                <p class="section-kicker">Stap 3</p>
+                <p class="section-kicker">Stap 5</p>
                 <h2>Jouw gegevens</h2>
-                <p>Deze gegevens worden meegestuurd mee met uw betaalgegevens, zodat Max Webstudio je betaling goed kan opvolgen.</p>
+                <p>Met deze gegevens kunnen we je betaling en bestelling correct verwerken.</p>
               </div>
-
               <div class="payment-fields">
-                <label>
-                  Naam
-                  <input type="text" name="customerName" autocomplete="name" placeholder="Jouw naam" required />
-                </label>
-                <label>
-                  E-mailadres
-                  <input type="email" name="customerEmail" autocomplete="email" placeholder="naam@bedrijf.nl" required />
-                </label>
-                <label>
-                  Telefoonnummer
-                  <input type="tel" name="customerPhone" autocomplete="tel" placeholder="06 12 34 56 78" required />
-                </label>
-                <label>
-                  Bedrijfsnaam <span>optioneel</span>
-                  <input type="text" name="companyName" autocomplete="organization" placeholder="Bedrijfsnaam" />
-                </label>
+                <label>Naam<input type="text" name="customerName" autocomplete="name" placeholder="Jouw naam" required /></label>
+                <label>E-mailadres<input type="email" name="customerEmail" autocomplete="email" placeholder="naam@bedrijf.nl" required /></label>
+                <label>Telefoonnummer<input type="tel" name="customerPhone" autocomplete="tel" placeholder="06 12 34 56 78" required /></label>
+                <label>Bedrijfsnaam <span>optioneel</span><input type="text" name="companyName" autocomplete="organization" placeholder="Bedrijfsnaam" /></label>
               </div>
+              <label>Opmerkingen <span>optioneel</span><textarea name="notes" rows="4" placeholder="Bijvoorbeeld gewenste startdatum, domeinnaam of korte vraag."></textarea></label>
+              <label class="agreement-row"><input type="checkbox" name="termsAccepted" required /> Ik ga akkoord met de <a href="algemene-voorwaarden.html" target="_blank" rel="noopener">algemene voorwaarden</a> en <a href="privacyverklaring.html" target="_blank" rel="noopener">privacyverklaring</a>.</label>
+            </section>
 
-              <label>
-                Opmerkingen <span>optioneel</span>
-                <textarea name="notes" rows="4" placeholder="Bijvoorbeeld: gewenste startdatum, extra wensen of korte vraag."></textarea>
-              </label>
+            <section class="config-panel final-order-panel">
+              <div class="payment-form-heading">
+                <p class="section-kicker">Stap 6</p>
+                <h2>Definitief besteloverzicht</h2>
+                <p>Controleer je bestelling. Je wordt daarna doorgestuurd naar Mollie.</p>
+              </div>
+              <div class="final-summary" id="final-summary"></div>
+              <p class="payment-message" id="payment-message" role="status" aria-live="polite"></p>
+              <button class="button primary payment-submit" type="submit" disabled>Betaal veilig via Mollie</button>
+              <div class="payment-trust" aria-label="Betaalzekerheid">
+                <span>Betaal veilig via Mollie</span>
+                <span>Beschikbare betaalmethoden worden door Mollie getoond</span>
+                <span>Geen betaalgegevens opgeslagen op onze website</span>
+              </div>
             </section>
           </div>
 
-          <aside class="checkout-summary-card" aria-label="Samenvatting">
-            <p class="section-kicker">Samenvatting</p>
-            <h2>Vandaag te betalen</h2>
+          <aside class="checkout-summary-card" aria-label="Besteloverzicht">
+            <p class="section-kicker">Besteloverzicht</p>
+            <h2>Nu te betalen</h2>
             <div class="summary-total">
-              <span>Aanbetaling vandaag</span>
-              <strong id="deposit-incl">€363,00 incl. btw</strong>
-              <small id="deposit-ex">€300,00 ex. btw</small>
+              <span id="summary-payment-mode">Aanbetaling vandaag</span>
+              <strong id="summary-now-incl">€0,00 incl. btw</strong>
+              <small id="summary-now-ex">€0,00 ex. btw</small>
             </div>
             <dl class="summary-lines">
-              <div>
-                <dt>Websitepakket</dt>
-                <dd id="summary-website">Business Website</dd>
-              </div>
-              <div>
-                <dt>Inbegrepen</dt>
-                <dd><ul class="summary-included" id="summary-included"></ul></dd>
-              </div>
-              <div>
-                <dt>Restbedrag na oplevering</dt>
-                <dd><span id="remaining-ex">€695,00 ex. btw</span><small id="remaining-incl">€840,95 incl. btw</small></dd>
-              </div>
-              <div>
-                <dt>Onderhoud per maand</dt>
-                <dd><span id="summary-care">Nog niet gekozen</span><small id="care-ex">€0,00 ex. btw</small><small id="care-incl">€0,00 incl. btw</small></dd>
-              </div>
+              <div><dt>Pakketnaam</dt><dd id="summary-website">Losse diensten</dd></div>
+              <div><dt>Pakketprijs</dt><dd><span id="summary-package-price">€0,00 ex. btw</span></dd></div>
+              <div><dt>Onderhoud</dt><dd><span id="summary-care">Geen onderhoud</span><small id="summary-monthly">€0,00 p/m ex. btw</small></dd></div>
+              <div><dt>Betaalkeuze</dt><dd id="summary-payment-choice">Aanbetaling</dd></div>
+              <div><dt>Bedrag exclusief btw</dt><dd id="summary-subtotal">€0,00</dd></div>
+              <div><dt>Btw</dt><dd id="summary-vat">€0,00</dd></div>
+              <div><dt>Bedrag inclusief btw</dt><dd id="summary-total">€0,00</dd></div>
+              <div><dt>Later te betalen</dt><dd id="summary-later">€0,00</dd></div>
+              <div><dt>Eerstvolgende maandelijkse factuur</dt><dd id="summary-monthly-incl">€0,00 incl. btw</dd></div>
+              <div><dt>Persoonlijk te bevestigen</dt><dd id="summary-manual">Geen</dd></div>
             </dl>
-            <p class="summary-note">Onderhoud start na oplevering. Je ontvangt hiervoor apart bevestiging.</p>
-            <p class="summary-note">Restbedrag wordt later via aparte betaallink of factuur voldaan.</p>
-            <button class="button primary payment-submit" type="submit">Betaal aanbetaling via de veilige betaalomgeving</button>
-            <div class="payment-trust" aria-label="Betaalmethoden en zekerheid">
-              <span>Veilig betalen via de veilige betaalomgeving</span>
-              <span>iDEAL</span>
-              <span>Apple Pay</span>
-              <span>Visa</span>
-              <span>Mastercard</span>
-              <span>Bancontact</span>
-              <span>Klarna</span>
-              <span>SSL beveiligd</span>
-              <span>Geen betaalgegevens opgeslagen op onze website</span>
-            </div>
-            <p class="payment-trust-note">Je betaling wordt veilig verwerkt veilig. Je betaalgegevens worden nooit opgeslagen door Max Webstudio.</p>
-            <p class="payment-message" id="payment-message" role="status" aria-live="polite"></p>
-            <div class="why-checkout">
-              <h3>Waarom klanten voor Max Webstudio kiezen</h3>
-              <ul>
-                <li>Gemiddeld binnen 5 werkdagen live</li>
-                <li>Persoonlijk contact</li>
-                <li>Geen verborgen kosten</li>
-                <li>Heldere planning</li>
-                <li>Professionele factuur</li>
-                <li>Veilig betalen via de veilige betaalomgeving</li>
-              </ul>
-            </div>
+            <p class="summary-note">Prijzen op deze pagina zijn een preview. De server valideert de definitieve bedragen voordat Mollie wordt gestart.</p>
           </aside>
         </form>
       </section>
     </main>
 
     <script>
-      const websitePackages = {
-        starter_site: {
-          name: "Starter Site",
-          depositEx: "€150,00 ex. btw",
-          depositIncl: "€181,50 incl. btw",
-          remainingEx: "€345,00 ex. btw",
-          remainingIncl: "€417,45 incl. btw",
-          included: ["One-page website", "Contactformulier", "Basis SEO", "Mobiel geoptimaliseerd"],
-        },
-        business_website: {
-          name: "Business Website",
-          depositEx: "€300,00 ex. btw",
-          depositIncl: "€363,00 incl. btw",
-          remainingEx: "€695,00 ex. btw",
-          remainingIncl: "€840,95 incl. btw",
-          included: ["Tot 5 professionele pagina's", "Portfolio of dienstenpagina's", "Aanvraagflow", "SEO en conversiecopy"],
-        },
-        premium_growth: {
-          name: "Premium Growth",
-          depositEx: "€500,00 ex. btw",
-          depositIncl: "€605,00 incl. btw",
-          remainingEx: "€1.250,00 ex. btw",
-          remainingIncl: "€1.512,50 incl. btw",
-          included: ["Uitgebreide website", "Strategie en funnels", "Analytics dashboard", "Onderhoudsplan klaarzetten"],
-        },
+      const VAT_RATE = 0.21;
+      const productCatalog = {
+        logo_design: p("Logo laten ontwerpen", "Branding", 295, 0, false, "Professioneel basislogo met bestanden voor website, socials en drukwerk."),
+        brand_identity: p("Complete huisstijl", "Branding", 0, 0, true, "Prijs en scope worden persoonlijk bevestigd."),
+        social_profile_set: p("Socialmedia-profielset", "Branding", 145, 0, false, "Profiel- en omslagbeelden voor social kanalen."),
+        email_signature: p("E-mailhandtekening", "Branding", 95, 0, false, "Zakelijke e-mailhandtekening in je huisstijl."),
+        business_card_design: p("Visitekaartje-ontwerp", "Branding", 95, 0, false, "Drukklaar ontwerp, exclusief drukwerkkosten."),
+        domain_registration: p("Nieuwe domeinnaam registreren", "Domein en e-mail", 0, 0, true, "Beschikbaarheid wordt eerst gecontroleerd."),
+        domain_transfer: p("Bestaand domein verhuizen", "Domein en e-mail", 0, 0, true, "We begeleiden de technische verhuizing."),
+        business_mailbox: p("Zakelijke mailbox", "Domein en e-mail", 0, 9.95, false, "Mailbox op je eigen domein."),
+        extra_mailbox: p("Extra mailbox", "Domein en e-mail", 0, 7.95, false, "Vereist zakelijke mailbox.", ["business_mailbox"]),
+        dns_email_setup: p("DNS- en e-mailconfiguratie", "Domein en e-mail", 95, 0, false, "Technische inrichting van DNS en e-mail."),
+        phone_085_number: p("Zakelijk 085-nummer", "Telefonie", 0, 14.95, true, "Beschikbaarheidscontrole en persoonlijke bevestiging."),
+        phone_extra_user: p("Extra gebruiker", "Telefonie", 0, 7.95, false, "Vereist zakelijk 085-nummer.", ["phone_085_number"]),
+        phone_setup: p("Installatie of configuratie", "Telefonie", 95, 0, false, "Vereist zakelijk 085-nummer.", ["phone_085_number"]),
+        extra_page: p("Extra pagina", "Website-uitbreidingen", 95, 0, false, "Alleen bij een websitepakket.", ["starter_site", "business_website", "premium_growth"]),
+        webshop: p("Webshop", "Website-uitbreidingen", 0, 0, true, "Offerte op maat."),
+        booking_module: p("Boekingsmodule", "Website-uitbreidingen", 0, 0, true, "Offerte op maat."),
+        payment_module: p("Betaalmodule", "Website-uitbreidingen", 0, 0, true, "Offerte op maat."),
+        multilingual_site: p("Meertalige website", "Website-uitbreidingen", 0, 0, true, "Offerte op maat."),
+        external_integration: p("Koppeling met externe software", "Website-uitbreidingen", 0, 0, true, "Offerte op maat."),
+        extra_form: p("Extra formulier", "Website-uitbreidingen", 145, 0, false, "Alleen bij een websitepakket.", ["starter_site", "business_website", "premium_growth"]),
+        customer_portal: p("Klantenportaal", "Website-uitbreidingen", 0, 0, true, "Offerte op maat."),
+        custom_feature: p("Maatwerkfunctie", "Website-uitbreidingen", 0, 0, true, "Offerte op maat."),
+        seo_starter: p("SEO-startpakket", "Marketing", 195, 0, false, "Basisoptimalisatie en vindbaarheidscheck."),
+        monthly_seo: p("Maandelijkse SEO", "Marketing", 0, 249, false, "Doorlopende SEO-verbeteringen."),
+        google_business_profile: p("Google Bedrijfsprofiel", "Marketing", 149, 0, false, "Optimalisatie van je bedrijfsprofiel."),
+        google_ads_setup: p("Google Ads-inrichting", "Marketing", 0, 0, true, "Exclusief mediabudget."),
+        social_setup: p("Socialmedia-inrichting", "Marketing", 195, 0, false, "Basisinrichting social kanalen."),
+        monthly_content: p("Maandelijkse contentservice", "Marketing", 0, 0, true, "Scope wordt persoonlijk bevestigd."),
+        web_copy: p("Webteksten", "Content", 195, 0, false, "SEO-teksten of herschrijven van bestaande teksten."),
+        photography: p("Fotografie", "Content", 0, 0, true, "Vanafprijs na afstemming."),
+        company_video: p("Bedrijfsvideo", "Content", 0, 0, true, "Offerte op maat."),
+        product_photos: p("Productfoto's", "Content", 0, 0, true, "Offerte op maat."),
+        blog_article: p("Blogartikel", "Content", 145, 0, false, "Professioneel blogartikel."),
+        hosting: p("Hosting", "Onderhoud en abonnementen", 0, 19.95, false, "Hosting voor je website."),
+        monitoring: p("Technische monitoring", "Onderhoud en abonnementen", 0, 15, false, "Extra monitoring en rapportage."),
+        monthly_change_hours: p("Maandelijkse wijzigingsuren", "Onderhoud en abonnementen", 0, 0, true, "Bundel op maat."),
+        custom_request: p("Ik heb een andere wens", "Maatwerk", 0, 0, true, "Wordt opgeslagen als aanvraag."),
       };
-
-      const carePackages = {
-        no_care: {
-          name: "Nog niet gekozen",
-          ex: "€0,00 ex. btw",
-          incl: "€0,00 incl. btw",
-        },
-        care_basic: {
-          name: "Care Basic",
-          ex: "€19,95 ex. btw",
-          incl: "€24,14 incl. btw",
-        },
-        care_plus: {
-          name: "Care Plus",
-          ex: "€49,00 ex. btw",
-          incl: "€59,29 incl. btw",
-        },
-        care_growth: {
-          name: "Care Growth",
-          ex: "€99,00 ex. btw",
-          incl: "€119,79 incl. btw",
-        },
+      const websiteCatalog = {
+        starter_site: { name: "Starter Site", price: 495, deposit: 150 },
+        business_website: { name: "Business Website", price: 995, deposit: 300 },
+        premium_growth: { name: "Premium Growth", price: 1750, deposit: 500 },
       };
-
+      const careCatalog = {
+        care_basic: { name: "Basis onderhoud", monthly: 19.95 },
+        care_plus: { name: "Plus onderhoud", monthly: 49 },
+        care_growth: { name: "Groei onderhoud", monthly: 99 },
+      };
       const form = document.querySelector("#payment-form");
-      const message = document.querySelector("#payment-message");
       const submitButton = document.querySelector(".payment-submit");
-      const summaryWebsite = document.querySelector("#summary-website");
-      const summaryIncluded = document.querySelector("#summary-included");
-      const depositIncl = document.querySelector("#deposit-incl");
-      const depositEx = document.querySelector("#deposit-ex");
-      const remainingEx = document.querySelector("#remaining-ex");
-      const remainingIncl = document.querySelector("#remaining-incl");
-      const summaryCare = document.querySelector("#summary-care");
-      const careEx = document.querySelector("#care-ex");
-      const careIncl = document.querySelector("#care-incl");
-      const websiteInputs = document.querySelectorAll('input[name="websitePackage"]');
-      const careInputs = document.querySelectorAll('input[name="carePackage"]');
-      const params = new URLSearchParams(window.location.search);
-      const invoiceId = params.get("invoiceId") || "";
-      const supabaseInvoiceId = params.get("supabaseInvoiceId") || "";
-      const requestedWebsite = params.get("website");
-      const legacyProduct = params.get("product");
-      const requestedCare = params.get("care");
+      const message = document.querySelector("#payment-message");
+      const productOptions = document.querySelector("#product-options");
+      const customRequestField = document.querySelector("#custom-request-field");
+      const careDependency = document.querySelector("#care-dependency");
+      const format = (value) => new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(Number(value || 0));
+      const orderStorageKey = "maxwebstudioCheckoutOrderId";
 
-      const legacyWebsiteMap = {
-        starter_site_deposit: "starter_site",
-        business_website_deposit: "business_website",
-        premium_growth_deposit: "premium_growth",
-        starter_site_full: "starter_site",
-        business_website_full: "business_website",
-        premium_growth_full: "premium_growth",
-      };
-
-      const legacyCareMap = {
-        care_basic: "care_basic",
-        care_plus: "care_plus",
-        care_growth: "care_growth",
-      };
-
-      function readInvoices() {
-        try {
-          const stored = JSON.parse(localStorage.getItem("maxwebstudioInvoices") || "[]");
-          return Array.isArray(stored) ? stored : [];
-        } catch (error) {
-          return [];
-        }
+      function p(name, category, price, monthly, manual, description, dependencies = []) {
+        return { name, category, price, monthly, manual, description, dependencies };
       }
 
-      function writeInvoices(invoices) {
-        localStorage.setItem("maxwebstudioInvoices", JSON.stringify(invoices));
+      function getOrderId() {
+        const existing = sessionStorage.getItem(orderStorageKey);
+        if (existing) return existing;
+        const created = `public_${Date.now()}_${Math.random().toString(16).slice(2, 10)}`;
+        sessionStorage.setItem(orderStorageKey, created);
+        return created;
       }
 
-      function currentInvoice() {
-        if (!invoiceId && !supabaseInvoiceId) return null;
-        return readInvoices().find((invoice) => {
-          const ids = [invoice.id, invoice.invoiceId, invoice.supabaseInvoiceId, invoice._supabaseInvoiceId].filter(Boolean).map(String);
-          return (invoiceId && ids.includes(String(invoiceId))) || (supabaseInvoiceId && ids.includes(String(supabaseInvoiceId)));
-        }) || null;
-      }
-
-      function logDemoPaymentEmail(invoice) {
-        if (!invoice?.isDemoJourney || !invoice.demoJourneyId) return;
-        try {
-          const key = "maxwebstudioDemoEmails";
-          const emails = JSON.parse(localStorage.getItem(key) || "[]");
-          const exists = Array.isArray(emails) && emails.some((email) => email.demoJourneyId === invoice.demoJourneyId && email.type === "betaling_demo_ontvangen");
-          if (exists) return;
-          const email = {
-            id: `demo-email-betaling-${Date.now()}`,
-            customerId: invoice.profileId || invoice.customerId || "",
-            type: "betaling_demo_ontvangen",
-            subject: "Demo-betaling ontvangen",
-            to: invoice.customerEmail || "",
-            body: `Factuur ${invoice.invoiceNumber || ""} is lokaal als betaald gemarkeerd.`,
-            status: "demo/verzonden lokaal",
-            createdAt: new Date().toISOString(),
-            isDemoJourney: true,
-            demoJourneyId: invoice.demoJourneyId,
-          };
-          localStorage.setItem(key, JSON.stringify([email, ...(Array.isArray(emails) ? emails : [])]));
-        } catch (error) {
-          console.warn("Demo betaalmail kon niet worden opgeslagen", error);
-        }
-      }
-
-      function selectRadio(name, value, fallback) {
-        const safeValue = value || fallback;
-        const input = document.querySelector(`input[name="${name}"][value="${safeValue}"]`);
-        const fallbackInput = document.querySelector(`input[name="${name}"][value="${fallback}"]`);
-        (input || fallbackInput).checked = true;
-      }
-
-      function updateSelectedCards() {
-        document.querySelectorAll(".choice-card").forEach((card) => {
-          const input = card.querySelector("input");
-          card.classList.toggle("is-selected", input.checked);
+      function renderProducts() {
+        const categories = {};
+        Object.entries(productCatalog).forEach(([id, product]) => {
+          categories[product.category] = categories[product.category] || [];
+          categories[product.category].push([id, product]);
         });
+        productOptions.innerHTML = Object.entries(categories).map(([category, products]) => `
+          <section class="product-category">
+            <h3>${category}</h3>
+            <div class="add-on-grid">
+              ${products.map(([id, product]) => `
+                <label class="add-on-card" data-product-card="${id}">
+                  <input type="checkbox" name="productIds" value="${id}" />
+                  <span>${product.manual ? "Bevestiging nodig" : "Direct bestelbaar"}</span>
+                  <strong>${product.name}</strong>
+                  <small>${product.description}</small>
+                  <em>${product.manual ? "Prijs op aanvraag" : priceLabel(product)}</em>
+                </label>
+              `).join("")}
+            </div>
+          </section>
+        `).join("");
+      }
+
+      function priceLabel(product) {
+        const parts = [];
+        if (product.price) parts.push(`${format(product.price)} ex. btw`);
+        if (product.monthly) parts.push(`${format(product.monthly)} p/m ex. btw`);
+        return parts.join(" + ") || "€0,00";
+      }
+
+      function selectedValue(name) {
+        return new FormData(form).get(name) || "";
+      }
+
+      function selectedProductIds() {
+        return [...form.querySelectorAll('input[name="productIds"]:checked')].map((input) => input.value);
+      }
+
+      function selectedSet() {
+        const ids = new Set(selectedProductIds());
+        const website = selectedValue("websitePackage");
+        const care = selectedValue("carePackage");
+        if (website) ids.add(website);
+        if (care) ids.add(care);
+        return ids;
+      }
+
+      function calculate() {
+        const websiteKey = selectedValue("websitePackage");
+        const careKey = selectedValue("carePackage");
+        const paymentChoice = selectedValue("paymentChoice") || "deposit";
+        const website = websiteCatalog[websiteKey];
+        const care = careCatalog[careKey];
+        const products = selectedProductIds().map((id) => ({ id, ...productCatalog[id] })).filter(Boolean);
+        const productOneTime = products.filter((item) => !item.manual).reduce((sum, item) => sum + item.price, 0);
+        const websiteOneTime = website?.price || 0;
+        const subtotal = websiteOneTime + productOneTime;
+        const vat = subtotal * VAT_RATE;
+        const total = subtotal + vat;
+        const depositEx = website ? (website.deposit + productOneTime) : productOneTime;
+        const nowEx = paymentChoice === "full" ? subtotal : depositEx;
+        const nowIncl = nowEx * (1 + VAT_RATE);
+        const laterIncl = Math.max(0, total - nowIncl);
+        const monthlyEx = (care?.monthly || 0) + products.filter((item) => !item.manual).reduce((sum, item) => sum + item.monthly, 0);
+        const manual = products.filter((item) => item.manual).map((item) => item.name);
+        return { websiteKey, website, careKey, care, paymentChoice, subtotal, vat, total, nowEx, nowIncl, laterIncl, monthlyEx, manual, products };
+      }
+
+      function updateDependencies() {
+        const selected = selectedSet();
+        const hasWebsite = ["starter_site", "business_website", "premium_growth"].some((id) => selected.has(id));
+        const careValue = selectedValue("carePackage");
+        careDependency.hidden = !careValue || hasWebsite;
+        Object.entries(productCatalog).forEach(([id, product]) => {
+          const card = document.querySelector(`[data-product-card="${id}"]`);
+          const input = card?.querySelector("input");
+          if (!card || !input) return;
+          const allowed = !product.dependencies.length || product.dependencies.some((dependency) => selected.has(dependency));
+          card.classList.toggle("is-disabled", !allowed);
+          input.disabled = !allowed;
+          if (!allowed) input.checked = false;
+        });
+        const domainRegistration = form.querySelector('input[value="domain_registration"]');
+        const domainTransfer = form.querySelector('input[value="domain_transfer"]');
+        if (domainRegistration?.checked && domainTransfer?.checked) domainTransfer.checked = false;
       }
 
       function updateSummary() {
-        const websiteKey = new FormData(form).get("websitePackage");
-        const careKey = new FormData(form).get("carePackage");
-        const website = websitePackages[websiteKey] || websitePackages.business_website;
-        const care = carePackages[careKey] || carePackages.no_care;
-
-        summaryWebsite.textContent = website.name;
-        summaryIncluded.innerHTML = website.included.map((item) => `<li>${item}</li>`).join("");
-        depositIncl.textContent = website.depositIncl;
-        depositEx.textContent = website.depositEx;
-        remainingEx.textContent = website.remainingEx;
-        remainingIncl.textContent = website.remainingIncl;
-        summaryCare.textContent = care.name;
-        careEx.textContent = care.ex;
-        careIncl.textContent = care.incl;
+        updateDependencies();
+        const totals = calculate();
+        document.querySelector("#summary-payment-mode").textContent = totals.paymentChoice === "full" ? "Totaal vandaag" : "Aanbetaling vandaag";
+        document.querySelector("#summary-now-incl").textContent = `${format(totals.nowIncl)} incl. btw`;
+        document.querySelector("#summary-now-ex").textContent = `${format(totals.nowEx)} ex. btw`;
+        document.querySelector("#summary-website").textContent = totals.website?.name || "Losse diensten";
+        document.querySelector("#summary-package-price").textContent = `${format(totals.website?.price || 0)} ex. btw`;
+        document.querySelector("#summary-care").textContent = totals.care?.name || "Geen onderhoud";
+        document.querySelector("#summary-monthly").textContent = `${format(totals.care?.monthly || 0)} p/m ex. btw`;
+        document.querySelector("#summary-payment-choice").textContent = totals.paymentChoice === "full" ? "Volledig betalen" : "Aanbetaling";
+        document.querySelector("#summary-subtotal").textContent = format(totals.subtotal);
+        document.querySelector("#summary-vat").textContent = format(totals.vat);
+        document.querySelector("#summary-total").textContent = format(totals.total);
+        document.querySelector("#summary-later").textContent = format(totals.laterIncl);
+        document.querySelector("#summary-monthly-incl").textContent = `${format(totals.monthlyEx * (1 + VAT_RATE))} incl. btw`;
+        document.querySelector("#summary-manual").textContent = totals.manual.length ? totals.manual.join(", ") : "Geen";
+        document.querySelector("#deposit-choice-label").textContent = `${format(totals.website ? totals.website.deposit : totals.nowEx)} ex. btw`;
+        document.querySelector("#full-choice-label").textContent = `${format(totals.subtotal)} ex. btw`;
+        document.querySelector("#final-summary").innerHTML = finalSummaryHtml(totals);
+        customRequestField.hidden = !selectedProductIds().includes("custom_request");
         updateSelectedCards();
+        updateSubmitState();
       }
 
-      const initialWebsite = websitePackages[requestedWebsite]
-        ? requestedWebsite
-        : legacyWebsiteMap[legacyProduct] || "business_website";
-      const initialCare = carePackages[requestedCare]
-        ? requestedCare
-        : legacyCareMap[legacyProduct] || "no_care";
-
-      selectRadio("websitePackage", initialWebsite, "business_website");
-      selectRadio("carePackage", initialCare, "no_care");
-      updateSummary();
-
-      const invoice = currentInvoice();
-      if (invoice) {
-        document.querySelector(".payment-hero .eyebrow").textContent = "Demo factuurbetaling";
-        document.querySelector(".payment-hero h1").textContent = `Betaal demo-factuur ${invoice.invoiceNumber || ""}.`;
-        document.querySelector(".payment-hero p").textContent = "Deze checkout markeert de factuur lokaal als betaald. Er wordt geen echte betaling gestart.";
-        document.querySelector('input[name="customerName"]').value = invoice.customerName || "";
-        document.querySelector('input[name="customerEmail"]').value = invoice.customerEmail || "";
-        document.querySelector('input[name="customerPhone"]').value = invoice.customerPhone || "";
-        document.querySelector('input[name="companyName"]').value = invoice.customerCompany || "";
-        summaryWebsite.textContent = invoice.title || invoice.type || "Factuur";
-        depositIncl.textContent = new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(Number(invoice.total || invoice.amount || 0));
-        depositEx.textContent = "Demo factuurbedrag";
-        remainingEx.textContent = "€0,00 ex. btw";
-        remainingIncl.textContent = "€0,00 incl. btw";
-        submitButton.textContent = invoice.status === "betaald" ? "Factuur al betaald" : "Markeer demo-betaling als betaald";
-        submitButton.disabled = invoice.status === "betaald";
+      function finalSummaryHtml(totals) {
+        const productNames = totals.products.map((item) => item.name).join(", ") || "Geen uitbreidingen gekozen";
+        return `
+          <dl class="summary-lines final-summary-lines">
+            <div><dt>Websitepakket</dt><dd>${totals.website?.name || "Geen websitepakket"}</dd></div>
+            <div><dt>Uitbreidingen</dt><dd>${productNames}</dd></div>
+            <div><dt>Eenmalig subtotaal ex. btw</dt><dd>${format(totals.subtotal)}</dd></div>
+            <div><dt>Maandelijks ex. btw</dt><dd>${format(totals.monthlyEx)}</dd></div>
+            <div><dt>Nu te betalen incl. btw</dt><dd>${format(totals.nowIncl)}</dd></div>
+            <div><dt>Later te betalen incl. btw</dt><dd>${format(totals.laterIncl)}</dd></div>
+          </dl>
+        `;
       }
 
-      if (requestedWebsite || requestedCare || legacyProduct) {
-        requestAnimationFrame(() => {
-          form.scrollIntoView({ behavior: "smooth", block: "start" });
+      function updateSelectedCards() {
+        form.querySelectorAll(".choice-card, .add-on-card").forEach((card) => {
+          const input = card.querySelector("input");
+          card.classList.toggle("is-selected", Boolean(input?.checked));
         });
       }
 
-      websiteInputs.forEach((input) => input.addEventListener("change", updateSummary));
-      careInputs.forEach((input) => input.addEventListener("change", updateSummary));
+      function updateSubmitState() {
+        const totals = calculate();
+        const validFields = form.elements.customerName.value.trim() && form.elements.customerEmail.validity.valid && form.elements.customerPhone.value.trim();
+        const hasSelection = totals.subtotal > 0 || totals.monthlyEx > 0 || totals.manual.length > 0;
+        const accepted = form.termsAccepted.checked;
+        submitButton.disabled = submitButton.dataset.loading === "true" || !validFields || !hasSelection || !accepted || totals.nowIncl <= 0;
+        submitButton.textContent = totals.paymentChoice === "full"
+          ? `Betaal totaalbedrag van ${format(totals.nowIncl)} veilig`
+          : `Betaal aanbetaling van ${format(totals.nowIncl)} veilig`;
+      }
 
+      function initializeFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        const website = params.get("website") || "";
+        const care = params.get("care") || "";
+        const legacy = params.get("product") || "";
+        const legacyMap = {
+          starter_site_deposit: "starter_site",
+          business_website_deposit: "business_website",
+          premium_growth_deposit: "premium_growth",
+          starter_site_full: "starter_site",
+          business_website_full: "business_website",
+          premium_growth_full: "premium_growth",
+        };
+        const initialWebsite = websiteCatalog[website] ? website : legacyMap[legacy] || "";
+        const initialCare = careCatalog[care] ? care : "";
+        form.querySelector(`input[name="websitePackage"][value="${initialWebsite}"]`).checked = true;
+        form.querySelector(`input[name="carePackage"][value="${initialCare}"]`).checked = true;
+        form.querySelector(`input[name="paymentChoice"][value="${legacy.endsWith("_full") ? "full" : "deposit"}"]`).checked = true;
+      }
+
+      form.addEventListener("input", updateSummary);
+      form.addEventListener("change", updateSummary);
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
+        updateSubmitState();
+        if (submitButton.disabled) return;
         message.textContent = "";
+        submitButton.dataset.loading = "true";
         submitButton.disabled = true;
         submitButton.textContent = "Betaling wordt gestart...";
-
         const formData = new FormData(form);
-        const invoice = currentInvoice();
-        if (invoice) {
-          const paidAt = new Date().toISOString();
-          const invoices = readInvoices().map((item) => item.id === invoice.id ? { ...item, status: "betaald", paymentStatus: "betaald", paidAt, updatedAt: paidAt } : item);
-          const paidInvoice = invoices.find((item) => item.id === invoice.id);
-          writeInvoices(invoices);
-          logDemoPaymentEmail(paidInvoice);
-          message.textContent = "Demo-betaling ontvangen. De factuur is lokaal als betaald gemarkeerd.";
-          submitButton.textContent = "Factuur betaald";
-          submitButton.disabled = true;
-          return;
-        }
-
         const payload = {
+          source: "public_checkout",
+          publicCheckout: true,
+          orderId: getOrderId(),
           websitePackage: formData.get("websitePackage"),
           carePackage: formData.get("carePackage"),
+          productIds: selectedProductIds(),
+          paymentChoice: formData.get("paymentChoice"),
           customerName: formData.get("customerName"),
           customerEmail: formData.get("customerEmail"),
           customerPhone: formData.get("customerPhone"),
           companyName: formData.get("companyName"),
           notes: formData.get("notes"),
+          customRequest: formData.get("customRequest"),
+          termsAccepted: Boolean(formData.get("termsAccepted")),
+          termsAcceptedAt: new Date().toISOString(),
         };
-
         try {
-          const response = await fetch("/api/create-payment", {
+          const response = await fetch("/api/commercial-order", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
           });
-
-          const contentType = response.headers.get("content-type") || "";
-
-          if (!contentType.includes("application/json")) {
-            throw new Error("De betaalfunctie is nog niet actief. Neem contact op met Max Webstudio als dit blijft gebeuren.");
-          }
-
-          const data = await response.json();
-
+          const data = await response.json().catch(() => ({}));
           if (!response.ok || !data.success || !data.checkoutUrl) {
-            throw new Error(data.error || "Betaling kon niet gestart worden.");
+            throw new Error(data.error || "Je betaling kon niet worden gestart. Controleer je gegevens en probeer het opnieuw.");
           }
-
           window.location.href = data.checkoutUrl;
         } catch (error) {
-          message.textContent = error.message || "Er ging iets mis. Probeer het opnieuw.";
-          submitButton.disabled = false;
-          submitButton.textContent = "Betaal aanbetaling via de veilige betaalomgeving";
+          message.textContent = error.message || "Je betaling kon niet worden gestart. Probeer het opnieuw.";
+          submitButton.dataset.loading = "false";
+          updateSubmitState();
         }
       });
+
+      renderProducts();
+      initializeFromUrl();
+      updateSummary();
     </script>
   </body>
 </html>

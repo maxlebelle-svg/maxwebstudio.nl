@@ -18499,7 +18499,7 @@ h3 {
   font-weight: 800;
 }
 
-.payment-configurator input:not([type="radio"]),
+.payment-configurator input:not([type="radio"]):not([type="checkbox"]),
 .payment-configurator textarea {
   width: 100%;
   border: 1px solid var(--line);
@@ -18510,7 +18510,7 @@ h3 {
   background: #fbfcfe;
 }
 
-.payment-configurator input:not([type="radio"]):focus,
+.payment-configurator input:not([type="radio"]):not([type="checkbox"]):focus,
 .payment-configurator textarea:focus {
   border-color: rgba(21, 94, 239, 0.42);
   outline: 3px solid rgba(25, 194, 255, 0.18);
@@ -18522,7 +18522,7 @@ h3 {
 }
 
 .website-choice-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .care-choice-grid {
@@ -18564,6 +18564,166 @@ h3 {
   block-size: 1px;
   opacity: 0;
   pointer-events: none;
+}
+
+.payment-choice-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.product-category-grid {
+  display: grid;
+  gap: 22px;
+}
+
+.product-category {
+  display: grid;
+  gap: 12px;
+}
+
+.product-category h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.add-on-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.add-on-card {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  min-height: 178px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfe;
+  cursor: pointer;
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.add-on-card:hover,
+.add-on-card.is-selected {
+  transform: translateY(-2px);
+  border-color: rgba(21, 94, 239, 0.45);
+  box-shadow: 0 18px 42px rgba(21, 94, 239, 0.1);
+}
+
+.add-on-card.is-disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.add-on-card input {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.add-on-card span {
+  width: fit-content;
+  color: var(--blue);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.add-on-card strong {
+  padding-right: 24px;
+  font-size: 17px;
+  line-height: 1.25;
+}
+
+.add-on-card small {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.add-on-card em {
+  margin-top: auto;
+  color: var(--ink);
+  font-style: normal;
+  font-weight: 900;
+}
+
+.add-on-card::after {
+  content: "";
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--line);
+  border-radius: 5px;
+  background: var(--white);
+}
+
+.add-on-card.is-selected::after {
+  border-color: var(--blue);
+  background:
+    linear-gradient(135deg, transparent 0 34%, var(--white) 35% 48%, transparent 49%),
+    var(--blue);
+}
+
+.dependency-message {
+  margin: -4px 0 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 8px;
+  color: #7c4a03;
+  background: #fff8e6;
+  font-weight: 800;
+}
+
+.custom-request-field[hidden],
+.dependency-message[hidden] {
+  display: none;
+}
+
+.agreement-row {
+  display: flex !important;
+  grid-template-columns: none;
+  align-items: flex-start;
+  gap: 10px !important;
+  font-weight: 800 !important;
+  line-height: 1.5;
+}
+
+.agreement-row input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  flex: 0 0 auto;
+}
+
+.agreement-row a {
+  color: var(--blue);
+}
+
+.final-summary {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfe;
+}
+
+.final-summary .summary-lines div {
+  border-color: var(--line);
+}
+
+.final-summary .summary-lines dt {
+  color: var(--muted);
+}
+
+.final-summary .summary-lines dd {
+  color: var(--ink);
 }
 
 .choice-card::after {
@@ -23914,6 +24074,12 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
 }
 
 @media (max-width: 1180px) {
+  .website-choice-grid,
+  .care-choice-grid,
+  .add-on-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .admin-body .admin-crm-grid,
   .admin-body .website-operations-grid,
   .admin-body .project-management-grid,
@@ -26174,6 +26340,18 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
 }
 
 @media (max-width: 720px) {
+  .website-choice-grid,
+  .care-choice-grid,
+  .payment-choice-grid,
+  .add-on-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .add-on-card,
+  .choice-card {
+    min-height: 0;
+  }
+
   .secure-preview-header,
   .secure-preview-actions {
     align-items: stretch;

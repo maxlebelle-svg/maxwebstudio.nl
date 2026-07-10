@@ -3,6 +3,14 @@ const { verifyAdmin } = require("./_admin-auth");
 const { sendEmail } = require("./email");
 const { getCompanySettings } = require("./company-settings");
 const { createTimelineEvent } = require("./services/timelineService");
+const {
+  PRODUCTS,
+  WEBSITE_PRODUCT_IDS,
+  CARE_PRODUCT_IDS,
+  centsToEuro,
+  euroToMollieValue,
+  withVatCents,
+} = require("./product-catalog");
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
@@ -27,17 +35,32 @@ exports.handler = async (event) => {
       return jsonResponse(405, { success: false, error: "Alleen POST-verzoeken zijn toegestaan." });
     }
 
-    const adminCheck = await verifyAdmin(event, jsonResponse, {
-      module: "commercial_order",
-      action: "create",
-      allowedRoles: ["super_admin", "admin", "sales_manager", "sales_partner"],
-    });
+    const rawPayload = parsePayload(event.body);
+    const isPublicCheckout = Boolean(rawPayload.publicCheckout || rawPayload.source === "public_checkout");
+    const adminCheck = isPublicCheckout
+      ? { success: true, admin: { email: "public-checkout@maxwebstudio.nl", role: "public_checkout" } }
+      : await verifyAdmin(event, jsonResponse, {
+        module: "commercial_order",
+        action: "create",
+        allowedRoles: ["super_admin", "admin", "sales_manager", "sales_partner"],
+      });
     if (!adminCheck.success) return adminCheck.response;
 
     const config = readConfig();
     if (!config.success) return config.response;
 
-    const input = validatePayload(parsePayload(event.body), event);
+    const input = validatePayload(rawPayload, event);
+    const existingInvoice = await fetchExistingOrderInvoice(config, input.orderId);
+    if (existingInvoice?.mollie_checkout_url && ["draft", "sent", "payment_pending", "open"].includes(cleanText(existingInvoice.status || existingInvoice.mollie_payment_status).toLowerCase())) {
+      return jsonResponse(200, {
+        success: true,
+        checkoutUrl: cleanText(existingInvoice.mollie_checkout_url),
+        paymentId: cleanText(existingInvoice.mollie_payment_id),
+        invoice: normalizeInvoice(existingInvoice),
+        totals: calculateTotals(input),
+        idempotent: true,
+      });
+    }
     const profile = await ensureCommercialProfile(config, input);
     const customer = await ensureCommercialCustomer(config, input, profile);
     const totals = calculateTotals(input);
@@ -59,7 +82,7 @@ exports.handler = async (event) => {
     await safeTimeline({
       eventType: "order_created",
       title: "Nieuwe opdracht aangemaakt",
-      description: `${input.company} koos ${input.packageLabel} en ${input.paymentChoice === "full" ? "100%" : "50% aanbetaling"}.`,
+      description: `${input.company} koos ${input.packageLabel} en ${input.paymentChoice === "full" ? "volledige betaling" : "aanbetaling"}.`,
       module: "commercial",
       referenceType: "invoice",
       referenceId: updatedInvoice.id,
@@ -137,26 +160,38 @@ function readConfig() {
 }
 
 function validatePayload(payload = {}, event = {}) {
-  const packageKey = cleanText(payload.packageKey || payload.package || "business").toLowerCase();
-  const packageConfig = PACKAGE_CATALOG[packageKey];
-  const selectedOptions = Array.isArray(payload.options) ? payload.options.map(cleanText).filter(Boolean) : [];
+  const publicCheckout = Boolean(payload.publicCheckout || payload.source === "public_checkout");
+  const rawPackageKey = cleanText(payload.packageKey || payload.websitePackage || payload.package || (publicCheckout ? "" : "business")).toLowerCase();
+  const packageKey = publicCheckout ? normalizePackageKey(rawPackageKey) : rawPackageKey;
+  const packageConfig = publicCheckout
+    ? (packageKey ? productAsPackage(packageKey) : null)
+    : PACKAGE_CATALOG[packageKey];
+  const productIds = publicCheckout ? normalizeProductIds(payload) : [];
+  const selectedOptions = Array.isArray(payload.options) && !publicCheckout ? payload.options.map(cleanText).filter(Boolean) : [];
   const invalidOptions = selectedOptions.filter((key) => !OPTION_CATALOG[key]);
   const paymentChoice = cleanText(payload.paymentChoice || payload.payment_choice || "deposit").toLowerCase() === "full" ? "full" : "deposit";
-  if (!packageConfig) throwValidation("Kies een geldig pakket.");
+  if (!packageConfig && !productIds.length) throwValidation("Kies minimaal één product of dienst.");
+  if (publicCheckout && packageKey && !WEBSITE_PRODUCT_IDS.includes(packageKey)) throwValidation("Kies een geldig websitepakket.");
+  if (publicCheckout && packageKey && !productIds.includes(packageKey)) productIds.unshift(packageKey);
   if (invalidOptions.length) throwValidation("Kies alleen geldige opties.");
-  if (Array.isArray(payload.customOptions) && payload.customOptions.length) throwValidation("Maatwerkregels worden nog niet via deze betaalflow ondersteund.");
+  if (!publicCheckout && Array.isArray(payload.customOptions) && payload.customOptions.length) throwValidation("Maatwerkregels worden nog niet via deze betaalflow ondersteund.");
+  if (publicCheckout) validateProductSelection(productIds);
+  const publicProducts = productIds.map((id) => PRODUCTS[id]).filter(Boolean);
+  const packageLabel = packageConfig?.label || publicProducts.map((item) => item.name).slice(0, 2).join(" + ") || "Losse bestelling";
+  const packagePrice = packageConfig?.price || 0;
   const value = {
     orderId: cleanText(payload.orderId) || `order_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`,
-    name: cleanText(payload.name),
-    company: cleanText(payload.company),
-    email: cleanText(payload.email).toLowerCase(),
-    phone: cleanText(payload.phone),
+    name: cleanText(payload.name || payload.customerName),
+    company: cleanText(payload.company || payload.companyName),
+    email: cleanText(payload.email || payload.customerEmail).toLowerCase(),
+    phone: cleanText(payload.phone || payload.customerPhone),
     domain: cleanDomain(payload.domain || payload.website),
-    packageKey,
-    packageLabel: packageConfig.label,
-    packagePrice: packageConfig.price,
+    packageKey: packageKey || rawPackageKey || "custom_order",
+    packageLabel,
+    packagePrice,
     options: selectedOptions,
-    customOptions: [],
+    products: publicProducts,
+    customOptions: publicCheckout ? normalizeManualRequests(payload, publicProducts) : [],
     discount: amount(payload.discount),
     paymentChoice,
     termsAccepted: Boolean(payload.termsAccepted || payload.terms_accepted),
@@ -165,30 +200,51 @@ function validatePayload(payload = {}, event = {}) {
     notes: cleanText(payload.notes),
   };
   if (!value.name) throwValidation("Vul een klantnaam in.");
-  if (!value.company) throwValidation("Vul een bedrijfsnaam in.");
+  if (!value.company) value.company = value.name;
   if (!emailPattern.test(value.email)) throwValidation("Vul een geldig e-mailadres in.");
+  if (!value.phone) throwValidation("Vul je telefoonnummer in.");
   if (!value.termsAccepted) throwValidation("Accepteer de algemene voorwaarden voordat je doorgaat.");
   return value;
 }
 
 function calculateTotals(input) {
-  const optionRows = [
-    ...input.options.map((key) => OPTION_CATALOG[key]).filter(Boolean),
-    ...input.customOptions.map((item) => ({ label: cleanText(item.label || item.name), price: amount(item.price) })).filter((item) => item.label),
-  ];
-  const subtotal = round(input.packagePrice + optionRows.reduce((sum, item) => sum + amount(item.price), 0) - input.discount);
+  const productRows = Array.isArray(input.products) ? input.products.map(productToInvoiceRow) : [];
+  const optionRows = input.products?.length
+    ? [
+      ...productRows.filter((item) => item.price || item.monthlyPrice || item.manualConfirmation),
+      ...input.customOptions.map((item) => ({ label: cleanText(item.label || item.name), price: amount(item.price), manualConfirmation: Boolean(item.manualConfirmation) })).filter((item) => item.label),
+    ]
+    : [
+      ...input.options.map((key) => OPTION_CATALOG[key]).filter(Boolean),
+      ...input.customOptions.map((item) => ({ label: cleanText(item.label || item.name), price: amount(item.price) })).filter((item) => item.label),
+    ];
+  const directOneTime = optionRows.filter((item) => !item.monthlyPrice && !item.manualConfirmation);
+  const recurringRows = optionRows.filter((item) => item.monthlyPrice);
+  const manualRows = optionRows.filter((item) => item.manualConfirmation);
+  const subtotal = round((input.products?.length ? 0 : input.packagePrice) + directOneTime.reduce((sum, item) => sum + amount(item.price), 0) - input.discount);
   const vat = round(subtotal * 0.21);
   const total = round(subtotal + vat);
-  const paymentAmount = input.paymentChoice === "full" ? total : round(total * 0.5);
+  const depositEx = input.products?.length
+    ? directOneTime.reduce((sum, item) => sum + amount(item.depositPrice || item.price), 0)
+    : round(total * 0.5 / 1.21);
+  const depositIncl = round(depositEx * 1.21);
+  const paymentAmount = input.paymentChoice === "full" ? total : Math.min(depositIncl, total);
+  const monthlySubtotal = round(recurringRows.reduce((sum, item) => sum + amount(item.monthlyPrice), 0));
+  const monthlyVat = round(monthlySubtotal * 0.21);
   return {
     packagePrice: input.packagePrice,
     options: optionRows,
+    recurring: recurringRows,
+    manual: manualRows,
     discount: input.discount,
     subtotal,
     vat,
     total,
     paymentAmount,
     remainingAmount: round(total - paymentAmount),
+    monthlySubtotal,
+    monthlyVat,
+    monthlyTotal: round(monthlySubtotal + monthlyVat),
     vatRate: 21,
   };
 }
@@ -239,8 +295,15 @@ async function ensureCommercialCustomer(config, input, profile) {
 async function createOrderInvoice(config, input, profile, customer, totals, admin = {}) {
   const invoiceNumber = `OPD-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
   const lines = [
-    { description: input.packageLabel, quantity: 1, unitPrice: input.packagePrice, vatRate: 21 },
-    ...totals.options.map((item) => ({ description: item.label, quantity: 1, unitPrice: item.price, vatRate: 21 })),
+    ...(input.products?.length ? [] : [{ description: input.packageLabel, quantity: 1, unitPrice: input.packagePrice, vatRate: 21 }]),
+    ...totals.options.map((item) => ({
+      description: item.label,
+      quantity: 1,
+      unitPrice: item.monthlyPrice || item.price || 0,
+      vatRate: 21,
+      billingType: item.monthlyPrice ? "monthly" : "one_time",
+      manualConfirmation: Boolean(item.manualConfirmation),
+    })),
   ];
   if (input.discount) lines.push({ description: "Korting", quantity: 1, unitPrice: -input.discount, vatRate: 21 });
   const context = {
@@ -252,6 +315,16 @@ async function createOrderInvoice(config, input, profile, customer, totals, admi
     packageKey: input.packageKey,
     packageLabel: input.packageLabel,
     paymentChoice: input.paymentChoice,
+    products: (input.products || []).map((item) => ({
+      id: item.id,
+      code: item.code,
+      name: item.name,
+      category: item.category,
+      manualConfirmation: item.manualConfirmation,
+      type: item.type,
+    })),
+    recurring: totals.recurring,
+    manual: totals.manual,
     terms: {
       acceptedAt: input.termsAcceptedAt,
       ipAddress: input.ipAddress,
@@ -272,7 +345,7 @@ async function createOrderInvoice(config, input, profile, customer, totals, admi
     profile_id: profile.id,
     customer_auth_user_id: profile.auth_user_id || null,
     invoice_number: invoiceNumber,
-    title: input.paymentChoice === "full" ? "Opdrachtbevestiging website" : "Aanbetaling opdrachtbevestiging website",
+    title: input.paymentChoice === "full" ? "Opdrachtbevestiging Max Webstudio" : "Aanbetaling opdrachtbevestiging Max Webstudio",
     amount: totals.paymentAmount,
     status: "draft",
     due_date: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
@@ -290,15 +363,21 @@ async function createMolliePayment(config, invoice, input, totals) {
       Accept: "application/json",
     },
     body: JSON.stringify({
-      amount: { currency: "EUR", value: totals.paymentAmount.toFixed(2) },
+      amount: { currency: "EUR", value: euroToMollieValue(totals.paymentAmount) },
       description: `${invoice.invoice_number} - ${input.company}`.slice(0, 255),
-      redirectUrl: `${config.siteUrl}/factuur.html?supabaseInvoiceId=${encodeURIComponent(invoice.id)}`,
+      redirectUrl: `${config.siteUrl}/bedankt.html?order=${encodeURIComponent(input.orderId)}&invoice=${encodeURIComponent(invoice.id)}`,
       webhookUrl: `${config.siteUrl}/.netlify/functions/mollie-webhook`,
       metadata: {
         source: "commercial_order",
         orderId: input.orderId,
         invoiceId: invoice.id,
         invoiceNumber: invoice.invoice_number,
+        package: input.packageKey,
+        packageLabel: input.packageLabel,
+        products: (input.products || []).map((item) => item.id).join(","),
+        carePackage: (input.products || []).find((item) => CARE_PRODUCT_IDS.includes(item.id))?.id || "",
+        customerReference: input.email,
+        environment: config.testMode ? "test" : "live",
         paymentChoice: input.paymentChoice,
         termsVersion: TERMS_VERSION,
       },
@@ -312,6 +391,14 @@ async function createMolliePayment(config, invoice, input, totals) {
     throw error;
   }
   return data;
+}
+
+async function fetchExistingOrderInvoice(config, orderId) {
+  const safeOrderId = cleanText(orderId);
+  if (!safeOrderId) return null;
+  const fields = "id,invoice_number,title,amount,status,notes,mollie_payment_id,mollie_checkout_url,mollie_payment_status";
+  const filter = `notes=ilike.*${encodeURIComponent(safeOrderId)}*`;
+  return fetchSingle(config, "customer_invoices", fields, filter).catch(() => null);
 }
 
 async function fetchSingle(config, table, fields, filter) {
@@ -397,6 +484,76 @@ function amount(value) {
 
 function round(value) {
   return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
+}
+
+function normalizePackageKey(value) {
+  const key = cleanText(value).toLowerCase();
+  if (WEBSITE_PRODUCT_IDS.includes(key)) return key;
+  if (key === "starter") return "starter_site";
+  if (key === "business") return "business_website";
+  if (key === "premium") return "premium_growth";
+  return key;
+}
+
+function productAsPackage(productId) {
+  const product = PRODUCTS[productId];
+  if (!product) return null;
+  return {
+    label: product.name,
+    price: centsToEuro(product.priceExVatCents),
+  };
+}
+
+function normalizeProductIds(payload = {}) {
+  const ids = new Set();
+  const add = (value) => {
+    const key = normalizePackageKey(value);
+    if (key && PRODUCTS[key]) ids.add(key);
+  };
+  if (Array.isArray(payload.productIds)) payload.productIds.forEach(add);
+  if (Array.isArray(payload.products)) payload.products.forEach((item) => add(typeof item === "string" ? item : item?.id));
+  add(payload.websitePackage || payload.packageKey || payload.package);
+  add(payload.carePackage);
+  return [...ids];
+}
+
+function validateProductSelection(productIds) {
+  const selected = new Set(productIds);
+  const websiteCount = productIds.filter((id) => WEBSITE_PRODUCT_IDS.includes(id)).length;
+  if (websiteCount > 1) throwValidation("Kies maximaal één websitepakket.");
+  if (CARE_PRODUCT_IDS.filter((id) => selected.has(id)).length > 1) throwValidation("Kies maximaal één onderhoudspakket.");
+  if (selected.has("domain_registration") && selected.has("domain_transfer")) throwValidation("Kies domeinnaam registreren of domeinnaam verhuizen, niet allebei tegelijk.");
+  productIds.forEach((id) => {
+    const product = PRODUCTS[id];
+    if (!product?.active || !product.publicCheckout) throwValidation("Een gekozen product is niet beschikbaar.");
+    const dependencies = product.dependencies || [];
+    if (dependencies.length && !dependencies.some((dependency) => selected.has(dependency))) {
+      throwValidation(`${product.name} heeft eerst een bijpassende basiskeuze nodig.`);
+    }
+  });
+}
+
+function normalizeManualRequests(payload, products) {
+  const requests = products
+    .filter((item) => item.manualConfirmation)
+    .map((item) => ({ label: item.name, price: 0, manualConfirmation: true }));
+  const customText = cleanText(payload.customRequest || payload.custom_request);
+  if (customText) requests.push({ label: `Andere wens: ${customText}`, price: 0, manualConfirmation: true });
+  return requests;
+}
+
+function productToInvoiceRow(product) {
+  return {
+    label: product.name,
+    price: centsToEuro(product.priceExVatCents + (product.setupExVatCents || 0)),
+    depositPrice: centsToEuro(product.depositExVatCents || product.priceExVatCents || 0),
+    monthlyPrice: centsToEuro(product.monthlyExVatCents || 0),
+    priceInclVat: centsToEuro(withVatCents(product.priceExVatCents || 0, product.vatRate)),
+    monthlyInclVat: centsToEuro(withVatCents(product.monthlyExVatCents || 0, product.vatRate)),
+    manualConfirmation: Boolean(product.manualConfirmation),
+    category: product.category,
+    code: product.code,
+  };
 }
 
 function throwValidation(message) {
