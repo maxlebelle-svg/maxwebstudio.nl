@@ -94,6 +94,7 @@ exports.handler = async (event) => {
     allowedStatuses: ["active", "invited"],
   });
   if (!adminCheck.success) return adminCheck.response;
+  const admin = adminCheck.admin || {};
 
   const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
@@ -102,16 +103,16 @@ exports.handler = async (event) => {
   }
 
   try {
-    if (event.httpMethod === "GET") return readLeads({ supabaseUrl, serviceRoleKey, admin: adminCheck.admin });
-    if (event.httpMethod === "POST") return createLead({ event, supabaseUrl, serviceRoleKey, admin: adminCheck.admin });
-    if (event.httpMethod === "PATCH") return updateLead({ event, supabaseUrl, serviceRoleKey, admin: adminCheck.admin });
-    if (event.httpMethod === "DELETE") return deleteLead({ event, supabaseUrl, serviceRoleKey, admin: adminCheck.admin });
+    if (event.httpMethod === "GET") return readLeads({ supabaseUrl, serviceRoleKey, admin });
+    if (event.httpMethod === "POST") return createLead({ event, supabaseUrl, serviceRoleKey, admin });
+    if (event.httpMethod === "PATCH") return updateLead({ event, supabaseUrl, serviceRoleKey, admin });
+    if (event.httpMethod === "DELETE") return deleteLead({ event, supabaseUrl, serviceRoleKey, admin });
     return jsonResponse(405, { success: false, error: "Methode niet toegestaan voor leads." });
   } catch (error) {
     const missing = isMissingTableError(error);
     console.error("Admin leads API failed", {
       method: event.httpMethod,
-      role: adminCheck.admin?.role || "",
+      role: admin.role || "",
       status: error.status || 500,
       code: error.code || "",
       message: error.message,
@@ -124,7 +125,7 @@ exports.handler = async (event) => {
       setupRequired: missing,
       diagnostics: {
         module: "leads",
-        resolvedRole: adminCheck.admin?.role || "",
+        resolvedRole: admin.role || "",
         reason: missing ? "missing_public_leads_table" : "lead_api_failed",
       },
     });
@@ -205,6 +206,7 @@ async function createLead({ event, supabaseUrl, serviceRoleKey, admin }) {
   const attempts = [
     () => insertLeadRecord({ supabaseUrl, serviceRoleKey, record: preparedRecord }),
     () => insertLeadRecord({ supabaseUrl, serviceRoleKey, record: legacyLeadPayload(payload, admin, { create: true, extended: true }) }),
+    () => insertLeadRecord({ supabaseUrl, serviceRoleKey, record: legacyLeadPayload(payload, admin, { create: true, extended: true, ownerColumn: false, interestColumn: false, messageColumn: false, lifecycleColumns: true }) }),
     () => insertLeadRecord({ supabaseUrl, serviceRoleKey, record: legacyLeadPayload(payload, admin, { create: true, extended: false }) }),
     () => insertLeadRecord({ supabaseUrl, serviceRoleKey, record: legacyLeadPayload(payload, admin, { create: true, extended: false, ownerColumn: false }) }),
   ];
@@ -317,6 +319,7 @@ async function readLeadRows({ supabaseUrl, serviceRoleKey, id = "" }) {
   const selects = [
     "id,company_name,contact_name,email,phone,website,status,lead_status,reviewed_at,reviewed_by,rejection_reason,rejection_note,rejected_at,rejected_by,assigned_user_id,assigned_at,assigned_by,normalized_company_name,normalized_domain,normalized_phone,external_source,external_source_id,last_activity_at,last_contacted_at,next_action_at,lead_score_reasoning,lead_score_updated_at,owner_id,owner_profile_id,owner_email,owner_name,created_by,created_by_email,created_by_name,assigned_to,assigned_user_email,assigned_user_name,sales_partner_email,sales_partner_name,branch,region,website_url,website_status,lead_score,call_status,follow_up_date,notes,is_demo,environment,metadata,created_at,updated_at",
     "id,company_name,contact_name,email,phone,website,status,owner_id,created_by,assigned_to,notes,is_demo,environment,metadata,created_at,updated_at",
+    "id,company,name,email,phone,source,status,converted_customer_id,notes,is_demo,environment,metadata,created_at,updated_at,branch,region,website_url,website_status,lead_score,call_status,follow_up_date,lead_status,reviewed_at,reviewed_by,rejection_reason,rejection_note,rejected_at,rejected_by,assigned_user_id,assigned_at,assigned_by,normalized_company_name,normalized_domain,normalized_phone,external_source,external_source_id,last_activity_at,last_contacted_at,next_action_at,lead_score_reasoning,lead_score_updated_at",
     "id,company,name,email,phone,source,interest,status,converted_customer_id,message,is_demo,environment,metadata,created_at,updated_at,owner_auth_user_id,branch,region,website_url,website_status,lead_score,call_status,follow_up_date,notes",
     "id,company,name,email,phone,source,interest,status,converted_customer_id,message,is_demo,environment,metadata,created_at,updated_at,owner_auth_user_id",
     "id,company,name,email,phone,source,interest,status,converted_customer_id,message,is_demo,environment,metadata,created_at,updated_at",
@@ -777,6 +780,8 @@ function legacyLeadPayload(payload = {}, admin = {}, options = {}) {
   const now = new Date().toISOString();
   const existingMeta = options.existingLead?.metadata && typeof options.existingLead.metadata === "object" ? options.existingLead.metadata : {};
   const assignment = resolveLeadAssignment(payload, admin, options);
+  const identifiers = normalizedLeadIdentifiers(payload);
+  const lifecycleStatus = normalizeLifecycleStatus(payload.leadStatus || payload.lead_status || payload.status || payload.callStatus || "new");
   const ownerAuthUserId = firstCleanText(payload.ownerAuthUserId, payload.owner_id, existingMeta.ownerAuthUserId, existingMeta.owner_auth_user_id, options.create ? admin.id : "");
   const ownerProfileId = firstCleanText(payload.ownerProfileId, payload.owner_profile_id, existingMeta.ownerProfileId, existingMeta.owner_profile_id);
   const ownerEmail = firstCleanText(payload.ownerEmail, payload.owner_email, existingMeta.ownerEmail, existingMeta.owner_email, payload.createdByEmail, options.create ? admin.email : "").toLowerCase();
@@ -812,6 +817,8 @@ function legacyLeadPayload(payload = {}, admin = {}, options = {}) {
     salesPartnerEmail: firstCleanText(payload.salesPartnerEmail, payload.sales_partner_email, assignment.email).toLowerCase(),
     salesPartnerName: firstCleanText(payload.salesPartnerName, payload.sales_partner_name, assignment.name),
     source: cleanText(payload.source || "admin-dashboard-leadfinder"),
+    leadStatus: lifecycleStatus,
+    lead_status: lifecycleStatus,
     websiteStatus: cleanText(payload.websiteStatus),
     leadScore: analysisScore ?? Number(payload.leadScore || payload.score || 60),
     googlePlaceId: cleanText(payload.googlePlaceId),
@@ -822,6 +829,12 @@ function legacyLeadPayload(payload = {}, admin = {}, options = {}) {
     demoOutputRequirements: Array.isArray(payload.demoOutputRequirements) ? payload.demoOutputRequirements : undefined,
     demoRequestSource: cleanText(payload.demoRequestSource),
     demoRequestedAt: cleanText(payload.demoRequestedAt),
+    externalSource: cleanText(payload.externalSource || payload.external_source || payload.source || "admin-dashboard-leadfinder"),
+    externalSourceId: identifiers.externalSourceId,
+    normalizedCompanyName: identifiers.normalizedCompanyName,
+    normalizedDomain: identifiers.normalizedDomain || normalizeDomain(payload.websiteUrl || payload.website),
+    normalizedPhone: identifiers.normalizedPhone || normalizePhone(payload.phone),
+    lastActivityAt: cleanText(payload.lastActivityAt || payload.last_activity_at || now),
     updatedBy: admin.id,
     updatedByEmail: admin.email,
   };
@@ -833,9 +846,7 @@ function legacyLeadPayload(payload = {}, admin = {}, options = {}) {
     email: cleanText(payload.email).toLowerCase(),
     phone: cleanText(payload.phone),
     source: cleanText(payload.source || "admin-dashboard-leadfinder"),
-    interest: cleanText(payload.interest || payload.websiteUrl || payload.website),
     status: legacyDbStatus(payload.status || payload.callStatus || "nieuw"),
-    message: cleanText(payload.notes || payload.message),
     metadata: meta,
     is_demo: false,
     environment: "production",
@@ -843,6 +854,12 @@ function legacyLeadPayload(payload = {}, admin = {}, options = {}) {
   };
   if (options.ownerColumn !== false) {
     record.owner_auth_user_id = ownerAuthUserId;
+  }
+  if (options.interestColumn !== false) {
+    record.interest = cleanText(payload.interest || payload.websiteUrl || payload.website);
+  }
+  if (options.messageColumn !== false) {
+    record.message = cleanText(payload.notes || payload.message);
   }
   if (options.extended) {
     record.branch = cleanText(payload.industry || payload.branch);
@@ -854,12 +871,34 @@ function legacyLeadPayload(payload = {}, admin = {}, options = {}) {
     record.follow_up_date = cleanText(payload.followUpDate);
     record.notes = cleanText(payload.notes || payload.message);
   }
+  if (options.lifecycleColumns) {
+    record.lead_status = lifecycleStatus;
+    record.reviewed_at = cleanText(payload.reviewedAt || payload.reviewed_at || existingMeta.reviewedAt || existingMeta.reviewed_at);
+    record.reviewed_by = cleanText(payload.reviewedBy || payload.reviewed_by || existingMeta.reviewedBy || existingMeta.reviewed_by);
+    record.rejection_reason = cleanText(payload.rejectionReason || payload.rejection_reason || existingMeta.rejectionReason || existingMeta.rejection_reason);
+    record.rejection_note = cleanText(payload.rejectionNote || payload.rejection_note || existingMeta.rejectionNote || existingMeta.rejection_note);
+    record.rejected_at = cleanText(payload.rejectedAt || payload.rejected_at || existingMeta.rejectedAt || existingMeta.rejected_at);
+    record.rejected_by = cleanText(payload.rejectedBy || payload.rejected_by || existingMeta.rejectedBy || existingMeta.rejected_by);
+    record.assigned_user_id = firstUuid(assignment.userId, assignment.id);
+    record.assigned_at = payload.assignedAt || payload.assigned_at || existingMeta.assignedAt || existingMeta.assigned_at || (assignment.id || assignment.email ? now : "");
+    record.assigned_by = payload.assignedBy || payload.assigned_by || existingMeta.assignedBy || existingMeta.assigned_by || (assignment.id || assignment.email ? admin.id : "");
+    record.normalized_company_name = identifiers.normalizedCompanyName || normalizeCompanyName(payload.companyName || payload.company_name || payload.company || payload.businessName);
+    record.normalized_domain = identifiers.normalizedDomain || normalizeDomain(payload.websiteUrl || payload.website);
+    record.normalized_phone = identifiers.normalizedPhone || normalizePhone(payload.phone);
+    record.external_source = cleanText(payload.externalSource || payload.external_source || payload.source || "admin-dashboard-leadfinder");
+    record.external_source_id = identifiers.externalSourceId;
+    record.last_activity_at = cleanText(payload.lastActivityAt || payload.last_activity_at || now);
+    record.last_contacted_at = cleanText(payload.lastContactedAt || payload.last_contacted_at || existingMeta.lastContactedAt || existingMeta.last_contacted_at);
+    record.next_action_at = cleanText(payload.nextActionAt || payload.next_action_at || payload.followUpDate || existingMeta.nextActionAt || existingMeta.next_action_at);
+    record.lead_score_reasoning = cleanText(payload.leadScoreReasoning || payload.lead_score_reasoning || existingMeta.leadScoreReasoning || existingMeta.lead_score_reasoning);
+    record.lead_score_updated_at = cleanText(payload.leadScoreUpdatedAt || payload.lead_score_updated_at || existingMeta.leadScoreUpdatedAt || existingMeta.lead_score_updated_at || (hasLeadScore ? now : ""));
+  }
+  const allowedEmpty = new Set(["email", "phone", "interest", "message", "notes", "website_url"]);
+  Object.keys(record).forEach((key) => {
+    if (record[key] === "" && !allowedEmpty.has(key)) delete record[key];
+  });
   if (options.create) record.created_at = now;
   if (options.update) {
-    const allowedEmpty = new Set(["email", "phone", "interest", "message", "notes", "website_url"]);
-    Object.keys(record).forEach((key) => {
-      if (record[key] === "" && !allowedEmpty.has(key)) delete record[key];
-    });
     if (!hasStatus) {
       delete record.status;
       delete record.call_status;
@@ -995,14 +1034,31 @@ async function assignLead({ payload = {}, existingLead = {}, supabaseUrl, servic
 async function insertLeadTimelineEvent({ supabaseUrl, serviceRoleKey, leadId, admin = {}, eventType = "", title = "", metadata = {} }) {
   if (!leadId || !eventType) return;
   const now = new Date().toISOString();
+  const actorUserId = firstUuid(admin.id);
+  const actorEmail = cleanText(admin.email);
+  const profileId = firstUuid(admin.profileId);
+  const sharedMetadata = { title, leadId, actorUserId: actorUserId || "", actorEmail, ...metadata };
   const payloads = [
     {
       entity_type: "leads",
       entity_id: leadId,
+      actor_profile_id: profileId,
+      event_type: eventType,
+      summary: title,
+      metadata: sharedMetadata,
+      environment: "production",
+      is_demo: false,
+      created_at: now,
+    },
+    {
+      entity_type: "leads",
+      entity_id: leadId,
       action: eventType,
-      actor_auth_user_id: admin.id || null,
-      profile_id: admin.profileId || null,
-      metadata: { title, leadId, actorEmail: admin.email || "", ...metadata },
+      profile_id: profileId,
+      performed_by: actorEmail || actorUserId || "system",
+      metadata: sharedMetadata,
+      environment: "production",
+      is_demo: false,
       created_at: now,
     },
     {
@@ -1011,8 +1067,12 @@ async function insertLeadTimelineEvent({ supabaseUrl, serviceRoleKey, leadId, ad
       event_type: eventType,
       title,
       description: title,
-      actor_auth_user_id: admin.id || null,
-      metadata: { actorEmail: admin.email || "", ...metadata },
+      user_id: actorUserId,
+      actor_name: actorEmail || "Systeem",
+      actor_role: cleanText(admin.role) || "system",
+      severity: "info",
+      is_global: true,
+      metadata: sharedMetadata,
       created_at: now,
     },
   ];
@@ -1022,10 +1082,15 @@ async function insertLeadTimelineEvent({ supabaseUrl, serviceRoleKey, leadId, ad
       headers: { ...restHeaders(serviceRoleKey), Prefer: "return=minimal", "Content-Type": "application/json" },
       body: JSON.stringify(payloads[0]),
     }),
-    () => supabaseFetch(`${supabaseUrl}/rest/v1/customer_timeline_events`, {
+    () => supabaseFetch(`${supabaseUrl}/rest/v1/activity_logs`, {
       method: "POST",
       headers: { ...restHeaders(serviceRoleKey), Prefer: "return=minimal", "Content-Type": "application/json" },
       body: JSON.stringify(payloads[1]),
+    }),
+    () => supabaseFetch(`${supabaseUrl}/rest/v1/customer_timeline_events`, {
+      method: "POST",
+      headers: { ...restHeaders(serviceRoleKey), Prefer: "return=minimal", "Content-Type": "application/json" },
+      body: JSON.stringify(payloads[2]),
     }),
   ];
   for (const attempt of attempts) {
