@@ -1,6 +1,7 @@
 const { verifyAdmin } = require("./_admin-auth");
 const { sendEmail } = require("./email");
 const { getCompanySettings, getMailtoLink } = require("./company-settings");
+const crypto = require("crypto");
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -14,6 +15,7 @@ exports.handler = async (event) => {
 
   try {
     const input = validatePayload(parsePayload(event.body));
+    const authContext = await ensureCustomerAuthContext(input);
     const setupLink = await createInviteOrResetLink(input.email);
     const mailPreview = buildMailPreview(input, setupLink);
     const shouldSend = process.env.EMAIL_PROVIDER === "resend" && Boolean(process.env.RESEND_API_KEY);
@@ -27,6 +29,7 @@ exports.handler = async (event) => {
           warning: "Welkomstmail preview klaargezet. Resend is niet geconfigureerd in deze omgeving.",
         },
         mailPreview,
+        auth: authContext,
       });
     }
 
@@ -46,6 +49,9 @@ exports.handler = async (event) => {
         company: input.company,
         website: input.website,
         package: input.package,
+        authUserId: authContext.authUserId,
+        profileId: authContext.profileId,
+        authAction: authContext.authAction,
       },
     });
 
@@ -58,6 +64,7 @@ exports.handler = async (event) => {
         warning: cleanText(result.warning),
       },
       mailPreview,
+      auth: authContext,
     });
   } catch (error) {
     console.error("Customer welcome email failed", { message: error.message });
@@ -91,6 +98,140 @@ function validatePayload(payload = {}) {
   if (!input.company) throwValidation("Vul een bedrijfsnaam in.");
   if (!emailPattern.test(input.email)) throwValidation("Vul een geldig e-mailadres in.");
   return input;
+}
+
+async function ensureCustomerAuthContext(input) {
+  const supabaseUrl = cleanText(process.env.SUPABASE_URL).replace(/\/$/, "");
+  const serviceRoleKey = cleanText(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  if (!supabaseUrl || !serviceRoleKey) {
+    return { configured: false, authUserId: "", profileId: "", authAction: "manual_required" };
+  }
+
+  const authUser = await ensureCustomerAuthUser(supabaseUrl, serviceRoleKey, input);
+  if (!authUser?.id) {
+    const error = new Error("Klantaccount kon niet worden klaargezet. Controleer Supabase Auth voor dit e-mailadres.");
+    error.statusCode = 500;
+    throw error;
+  }
+
+  const profile = await ensureCustomerProfile(supabaseUrl, serviceRoleKey, input, authUser.id);
+  if (!profile?.id) {
+    const error = new Error("Accountprofiel kon niet worden klaargezet. Controleer Supabase profiles/auth_user_id configuratie.");
+    error.statusCode = 500;
+    throw error;
+  }
+  return {
+    configured: true,
+    authUserId: cleanText(authUser.id),
+    profileId: cleanText(profile?.id),
+    authAction: cleanText(authUser.action || "existing"),
+  };
+}
+
+async function ensureCustomerAuthUser(supabaseUrl, serviceRoleKey, input) {
+  const email = cleanText(input.email).toLowerCase();
+  const existing = await findAuthUserByEmail(supabaseUrl, serviceRoleKey, email);
+  if (existing?.id) return { id: existing.id, action: "existing" };
+
+  const response = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
+    method: "POST",
+    headers: {
+      apikey: serviceRoleKey,
+      Authorization: `Bearer ${serviceRoleKey}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      email,
+      password: crypto.randomBytes(24).toString("base64url"),
+      email_confirm: true,
+      user_metadata: {
+        name: input.name,
+        company: input.company,
+        createdBy: "admin_customer_welcome_email",
+      },
+    }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    console.error("Customer auth user create failed", { status: response.status, message: data.message || data.error || "" });
+    return null;
+  }
+  return data?.id ? { id: data.id, action: "created" } : null;
+}
+
+async function findAuthUserByEmail(supabaseUrl, serviceRoleKey, email) {
+  const response = await fetch(`${supabaseUrl}/auth/v1/admin/users?per_page=200&page=1`, {
+    method: "GET",
+    headers: {
+      apikey: serviceRoleKey,
+      Authorization: `Bearer ${serviceRoleKey}`,
+      Accept: "application/json",
+    },
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) return null;
+  return (Array.isArray(data.users) ? data.users : []).find((user) => cleanText(user.email).toLowerCase() === email) || null;
+}
+
+async function ensureCustomerProfile(supabaseUrl, serviceRoleKey, input, authUserId) {
+  const now = new Date().toISOString();
+  const existingProfile = await findProfileForAuthUser(supabaseUrl, serviceRoleKey, authUserId, input.email);
+  const existingMetadata = existingProfile?.metadata && typeof existingProfile.metadata === "object" ? existingProfile.metadata : {};
+  const record = {
+    auth_user_id: authUserId,
+    name: cleanText(existingProfile?.name) || input.name,
+    email: cleanText(existingProfile?.email) || input.email,
+    company: cleanText(existingProfile?.company) || input.company,
+    website: cleanText(existingProfile?.website) || input.website,
+    package: cleanText(existingProfile?.package) || input.package,
+    role: cleanText(existingProfile?.role) || "customer",
+    status: cleanText(existingProfile?.status) || "invited",
+    updated_at: now,
+    metadata: {
+      ...existingMetadata,
+      customerId: input.customerId,
+      provisionedVia: "admin_customer_welcome_email",
+      provisionedAt: now,
+    },
+  };
+
+  const response = await fetch(`${supabaseUrl}/rest/v1/profiles?on_conflict=auth_user_id`, {
+    method: "POST",
+    headers: {
+      apikey: serviceRoleKey,
+      Authorization: `Bearer ${serviceRoleKey}`,
+      "Content-Type": "application/json",
+      "Content-Profile": "public",
+      Accept: "application/json",
+      Prefer: "resolution=merge-duplicates,return=representation",
+    },
+    body: JSON.stringify(record),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    console.error("Customer profile upsert failed", { status: response.status, message: data.message || data.error || "" });
+    return null;
+  }
+  return Array.isArray(data) ? data[0] : data;
+}
+
+async function findProfileForAuthUser(supabaseUrl, serviceRoleKey, authUserId, email) {
+  const query = [
+    `auth_user_id.eq.${encodeURIComponent(authUserId)}`,
+    `email.eq.${encodeURIComponent(cleanText(email).toLowerCase())}`,
+  ].join(",");
+  const response = await fetch(`${supabaseUrl}/rest/v1/profiles?select=id,auth_user_id,name,email,role,status,company,website,package,metadata&or=(${query})&limit=1`, {
+    method: "GET",
+    headers: {
+      apikey: serviceRoleKey,
+      Authorization: `Bearer ${serviceRoleKey}`,
+      Accept: "application/json",
+    },
+  });
+  const data = await response.json().catch(() => ([]));
+  if (!response.ok || !Array.isArray(data)) return null;
+  return data[0] || null;
 }
 
 async function createInviteOrResetLink(email) {

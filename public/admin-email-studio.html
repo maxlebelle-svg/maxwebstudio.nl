@@ -602,8 +602,8 @@
               <label class="email-field" for="manual-recipient-email">Ontvanger
                 <input id="manual-recipient-email" type="email" autocomplete="off" placeholder="naam@bedrijf.nl" />
               </label>
-              <label class="email-field" for="manual-temp-password">Tijdelijk wachtwoord
-                <input id="manual-temp-password" autocomplete="off" placeholder="Alleen nodig voor accountmails" />
+              <label class="email-field" for="manual-temp-password">Loginlink voor preview
+                <input id="manual-temp-password" autocomplete="off" value="https://maxwebstudio.nl/login.html" />
               </label>
             </div>
             <div class="email-send-actions">
@@ -721,7 +721,6 @@
           "{{offerte_nummer}}",
           "{{factuur_nummer}}",
           "{{login_url}}",
-          "{{tijdelijke_wachtwoord}}",
           "{{contactpersoon}}",
           "{{pakket_naam}}",
         ];
@@ -731,8 +730,8 @@
           website_url: "https://quantumbouw.nl",
           offerte_nummer: "OFF-2026-001",
           factuur_nummer: "FAC-2026-001",
-          login_url: "https://maxwebstudio.nl/login",
-          tijdelijke_wachtwoord: "Tijdelijk123!",
+          login_url: "https://maxwebstudio.nl/login.html",
+          tijdelijke_wachtwoord: "Je stelt je wachtwoord veilig in via de activatielink.",
           contactpersoon: "Max",
           pakket_naam: "Professioneel",
         };
@@ -856,18 +855,18 @@
             updatedAt: "2026-07-10",
             subject: "Je Max Webstudio account staat klaar",
             preheader: "Log in op je klantportaal en rond je gegevens aan.",
-            body: "Hallo {{klant_naam}},\n\nJe Max Webstudio account staat klaar voor {{bedrijf_naam}}.\n\nJe kunt inloggen via:\n{{login_url}}\n\nGebruik tijdelijk dit wachtwoord:\n{{tijdelijke_wachtwoord}}\n\nWijzig je wachtwoord na je eerste login naar een eigen veilig wachtwoord. In het klantportaal vind je straks je projectstatus, onboarding, bestanden, facturen en belangrijke updates.\n\nLukt inloggen niet of klopt er iets niet? Reageer dan op deze mail, dan help ik je direct verder.\n\nMet vriendelijke groet,\n{{contactpersoon}}\nMax Webstudio",
+            body: "Hallo {{klant_naam}},\n\nJe Max Webstudio account staat klaar voor {{bedrijf_naam}}.\n\nGebruik de veilige activatielink om je eigen wachtwoord in te stellen:\n{{login_url}}\n\nIn het klantportaal vind je straks je projectstatus, onboarding, bestanden, facturen en belangrijke updates.\n\nLukt activeren of inloggen niet? Reageer dan op deze mail, dan help ik je direct verder.\n\nMet vriendelijke groet,\n{{contactpersoon}}\nMax Webstudio",
           },
           {
             id: "wachtwoord-reset",
             name: "Wachtwoord reset",
-            description: "Tijdelijk wachtwoord voor portaaltoegang.",
+            description: "Veilige link om een nieuw portaalwachtwoord te kiezen.",
             type: "Support",
             status: "Concept",
             updatedAt: "2026-07-05",
-            subject: "Nieuw tijdelijk wachtwoord voor je Max Webstudio portaal",
-            preheader: "Log in en wijzig je wachtwoord na binnenkomst.",
-            body: "Hallo {{klant_naam}},\n\nWe hebben een tijdelijk wachtwoord voor je klaargezet.\n\nLogin: {{login_url}}\nTijdelijk wachtwoord: {{tijdelijke_wachtwoord}}\n\nLog in met dit tijdelijke wachtwoord en wijzig het daarna naar een eigen veilig wachtwoord. Deel dit wachtwoord niet met anderen.\n\nMet vriendelijke groet,\nMax Webstudio",
+            subject: "Stel je Max Webstudio wachtwoord opnieuw in",
+            preheader: "Gebruik de veilige link om een nieuw wachtwoord te kiezen.",
+            body: "Hallo {{klant_naam}},\n\nGebruik onderstaande veilige link om je wachtwoord opnieuw in te stellen:\n{{login_url}}\n\nKies daarna een eigen veilig wachtwoord. Deel je wachtwoord nooit met anderen.\n\nMet vriendelijke groet,\nMax Webstudio",
           },
         ];
 
@@ -939,10 +938,44 @@
           }
         }
 
+        function cleanLeadText(value) {
+          return String(value || "").trim();
+        }
+
+        function isLikelyQuestionText(value = "") {
+          const text = cleanLeadText(value);
+          return !text
+            || text.length > 55
+            || /\?/.test(text)
+            || /^\d+\./.test(text)
+            || /ben jij degene|hierover beslist|kijkt iemand|welke website|wat is je|waarom wil je/i.test(text);
+        }
+
+        function firstUsableName(candidates = [], fallback = "") {
+          return candidates.map(cleanLeadText).find((value) => !isLikelyQuestionText(value)) || fallback;
+        }
+
         function normalizeLeadForMail(lead = {}, source = "lead") {
           const metadata = lead.metadata && typeof lead.metadata === "object" ? lead.metadata : {};
-          const companyName = String(lead.companyName || lead.company || lead.businessName || lead.bedrijf || lead.packageInterest || "").trim();
-          const contactName = String(lead.contactName || lead.contact || lead.contactPerson || lead.contactpersoon || lead.name || lead.person || "").trim();
+          const companyName = firstUsableName([
+            lead.companyName,
+            lead.company,
+            lead.businessName,
+            lead.bedrijf,
+            metadata.companyName,
+            metadata.company,
+            lead.packageInterest,
+          ]);
+          const contactName = firstUsableName([
+            lead.contactName,
+            lead.contact,
+            lead.contactPerson,
+            lead.contactpersoon,
+            metadata.contactName,
+            metadata.contactPerson,
+            lead.person,
+            lead.name,
+          ]);
           return {
             id: String(lead.id || lead.leadId || `${source}-${companyName || contactName || lead.email || Date.now()}`).trim(),
             companyName,
@@ -975,10 +1008,6 @@
           return leads.find((lead) => lead.id === activeLeadId) || null;
         }
 
-        function generateTemporaryPassword() {
-          return `MWS-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-        }
-
         function buildPreviewDataFromLead(lead = selectedLead()) {
           return {
             klant_naam: lead?.contactName || lead?.companyName || "klant",
@@ -986,8 +1015,8 @@
             website_url: lead?.websiteUrl || "https://maxwebstudio.nl",
             offerte_nummer: "OFF-2026-001",
             factuur_nummer: "FAC-2026-001",
-            login_url: "https://maxwebstudio.nl/login",
-            tijdelijke_wachtwoord: elements.temporaryPassword?.value || "Tijdelijk123!",
+            login_url: elements.temporaryPassword?.value || "https://maxwebstudio.nl/login.html",
+            tijdelijke_wachtwoord: "Je stelt je wachtwoord veilig in via de activatielink.",
             contactpersoon: "Max",
             pakket_naam: lead?.packageName || "Max Webstudio pakket",
           };
@@ -1268,7 +1297,11 @@
           }
           if (!activeLeadId || !leads.some((lead) => lead.id === activeLeadId)) activeLeadId = leads[0].id;
           elements.leadSelect.innerHTML = leads.map((lead) => {
-            const label = [lead.companyName || lead.contactName || "Lead", lead.contactName && lead.contactName !== lead.companyName ? lead.contactName : "", lead.email || "geen e-mail"].filter(Boolean).join(" · ");
+            const label = [
+              lead.companyName || lead.contactName || "Lead",
+              lead.contactName && lead.contactName !== lead.companyName ? lead.contactName : "",
+              lead.email || "vul e-mail in",
+            ].filter(Boolean).join(" · ");
             return `<option value="${escapeAttribute(lead.id)}">${escapeHtml(label)}</option>`;
           }).join("");
           elements.leadSelect.value = activeLeadId;
@@ -1278,7 +1311,7 @@
         function syncManualSendPanel() {
           const lead = selectedLead();
           if (elements.recipientEmail && !elements.recipientEmail.value) elements.recipientEmail.value = lead?.email || "";
-          if (elements.temporaryPassword && !elements.temporaryPassword.value) elements.temporaryPassword.value = generateTemporaryPassword();
+          if (elements.temporaryPassword && !elements.temporaryPassword.value) elements.temporaryPassword.value = "https://maxwebstudio.nl/login.html";
           if (elements.sendState) {
             elements.sendState.textContent = lead?.email ? "Klaar" : "E-mail nodig";
             elements.sendState.className = `status-badge ${lead?.email ? "status-active" : "status-prepared"}`;
@@ -1428,6 +1461,11 @@
           }
           readEditorIntoTemplate();
           refreshPreviewDataFromLead();
+          const active = activeTemplate() || {};
+          if (active.id === "account-aanmaken") {
+            await sendAccountActivationEmail({ lead, to, token });
+            return;
+          }
           const payload = buildEmailRenderPayload();
           latestRenderedEmailHtml = renderResendEmailHtml(payload);
           elements.sendEmail.disabled = true;
@@ -1462,6 +1500,43 @@
             if (elements.sendNote) elements.sendNote.textContent = `Laatste verzending: ${payload.template?.name || "template"} naar ${to}.`;
           } catch (error) {
             setMessage(error.message || "Mail kon niet worden verzonden.", "error");
+          } finally {
+            elements.sendEmail.disabled = false;
+            elements.sendEmail.textContent = "Mail versturen";
+          }
+        }
+
+        async function sendAccountActivationEmail({ lead, to, token }) {
+          elements.sendEmail.disabled = true;
+          elements.sendEmail.textContent = "Activatielink maken...";
+          try {
+            const response = await fetch("/.netlify/functions/admin-customer-welcome-email", {
+              method: "POST",
+              headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                customerId: lead.id,
+                name: lead.contactName || lead.companyName || "klant",
+                company: lead.companyName || lead.contactName || "Klant",
+                email: to,
+                website: lead.websiteUrl || "",
+                package: lead.packageName || "Basis",
+              }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || data.success === false) throw new Error(data.error || "Accountmail kon niet worden voorbereid.");
+            const sent = Boolean(data.email?.sent);
+            setMessage(sent ? `Accountactivatie verstuurd naar ${to}.` : "Accountactivatie voorbereid. Controleer Resend-configuratie of mailpreview.", sent ? "success" : "warning");
+            if (elements.sendNote) {
+              elements.sendNote.textContent = sent
+                ? `Veilige activatielink verzonden naar ${to}.`
+                : "Activatielink voorbereid, maar de e-mail is niet verzonden in deze omgeving.";
+            }
+          } catch (error) {
+            setMessage(error.message || "Accountactivatie kon niet worden verstuurd.", "error");
           } finally {
             elements.sendEmail.disabled = false;
             elements.sendEmail.textContent = "Mail versturen";
