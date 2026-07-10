@@ -1,4 +1,5 @@
 import { STORAGE_KEYS } from "../config/storageKeys.js";
+import { getLeadLifecycleConfig, normalizeLeadLifecycleStatus } from "../config/leadLifecycle.js";
 
 export const LEADFINDER_WEBSITE_STATUSES = Object.freeze([
   { value: "geen_website", label: "Geen website" },
@@ -32,6 +33,25 @@ export const LEADFINDER_CALL_STATUSES = Object.freeze([
   { value: "geen_interesse", label: "Geen interesse" },
   { value: "archived", label: "Gearchiveerd" },
   { value: "geconverteerd", label: "Geconverteerd" },
+]);
+
+export const LEADFINDER_LIFECYCLE_STATUSES = Object.freeze([
+  { value: "new", label: "Nieuw" },
+  { value: "reviewing", label: "Wordt beoordeeld" },
+  { value: "interesting", label: "Interessant" },
+  { value: "not_interesting", label: "Niet interessant" },
+  { value: "assigned", label: "Toegewezen" },
+  { value: "call_scheduled", label: "Belafspraak" },
+  { value: "contacted", label: "Contact gehad" },
+  { value: "follow_up", label: "Opvolgen" },
+  { value: "demo_requested", label: "Demo aangevraagd" },
+  { value: "demo_building", label: "Demo wordt gemaakt" },
+  { value: "demo_ready", label: "Demo klaar" },
+  { value: "demo_sent", label: "Demo verstuurd" },
+  { value: "proposal_sent", label: "Voorstel verstuurd" },
+  { value: "won", label: "Verkocht" },
+  { value: "lost", label: "Verloren" },
+  { value: "customer", label: "Klant" },
 ]);
 
 export const LEADFINDER_SCORE_BUCKETS = Object.freeze([
@@ -83,6 +103,7 @@ export function normalizeLeadFinderLead(lead = {}) {
   const websiteStatus = WEBSITE_STATUS_VALUES.has(lead.websiteStatus) ? lead.websiteStatus : "onbekend";
   const callStatus = CALL_STATUS_VALUES.has(lead.callStatus) ? lead.callStatus : "nieuw";
   const metadata = lead.metadata && typeof lead.metadata === "object" ? lead.metadata : {};
+  const leadStatus = normalizeLeadLifecycleStatus(lead.leadStatus || lead.lead_status || metadata.leadStatus || metadata.lead_status || lead.status || callStatus);
   const websiteAnalysis = lead.websiteAnalysis && typeof lead.websiteAnalysis === "object"
     ? lead.websiteAnalysis
     : metadata.websiteAnalysis && typeof metadata.websiteAnalysis === "object"
@@ -101,11 +122,31 @@ export function normalizeLeadFinderLead(lead = {}) {
     websiteStatus,
     leadScore: sanitizeScore(analysisScore ?? lead.leadScore ?? lead.score),
     callStatus,
+    leadStatus,
+    leadStatusLabel: getLeadLifecycleConfig(leadStatus).label,
     followUpDate: sanitizeString(lead.followUpDate),
     notes: sanitizeString(lead.notes),
     source: sanitizeString(lead.source) || "handmatig",
     googlePlaceId: sanitizeString(lead.googlePlaceId || lead.google_place_id || lead.placeId),
     googleMapsUrl: sanitizeString(lead.googleMapsUrl || lead.google_maps_url || lead.mapsUrl),
+    reviewedAt: sanitizeString(lead.reviewedAt || lead.reviewed_at || metadata.reviewedAt || metadata.reviewed_at),
+    reviewedBy: sanitizeString(lead.reviewedBy || lead.reviewed_by || metadata.reviewedBy || metadata.reviewed_by),
+    rejectionReason: sanitizeString(lead.rejectionReason || lead.rejection_reason || metadata.rejectionReason || metadata.rejection_reason),
+    rejectionNote: sanitizeString(lead.rejectionNote || lead.rejection_note || metadata.rejectionNote || metadata.rejection_note),
+    rejectedAt: sanitizeString(lead.rejectedAt || lead.rejected_at || metadata.rejectedAt || metadata.rejected_at),
+    rejectedBy: sanitizeString(lead.rejectedBy || lead.rejected_by || metadata.rejectedBy || metadata.rejected_by),
+    assignedAt: sanitizeString(lead.assignedAt || lead.assigned_at || metadata.assignedAt || metadata.assigned_at),
+    assignedBy: sanitizeString(lead.assignedBy || lead.assigned_by || metadata.assignedBy || metadata.assigned_by),
+    lastActivityAt: sanitizeString(lead.lastActivityAt || lead.last_activity_at || metadata.lastActivityAt || metadata.last_activity_at),
+    lastContactedAt: sanitizeString(lead.lastContactedAt || lead.last_contacted_at || metadata.lastContactedAt || metadata.last_contacted_at),
+    nextActionAt: sanitizeString(lead.nextActionAt || lead.next_action_at || metadata.nextActionAt || metadata.next_action_at),
+    leadScoreReasoning: sanitizeString(lead.leadScoreReasoning || lead.lead_score_reasoning || metadata.leadScoreReasoning || metadata.lead_score_reasoning),
+    leadScoreUpdatedAt: sanitizeString(lead.leadScoreUpdatedAt || lead.lead_score_updated_at || metadata.leadScoreUpdatedAt || metadata.lead_score_updated_at),
+    normalizedCompanyName: sanitizeString(lead.normalizedCompanyName || lead.normalized_company_name || metadata.normalizedCompanyName || metadata.normalized_company_name),
+    normalizedDomain: sanitizeString(lead.normalizedDomain || lead.normalized_domain || metadata.normalizedDomain || metadata.normalized_domain),
+    normalizedPhone: sanitizeString(lead.normalizedPhone || lead.normalized_phone || metadata.normalizedPhone || metadata.normalized_phone),
+    externalSource: sanitizeString(lead.externalSource || lead.external_source || metadata.externalSource || metadata.external_source),
+    externalSourceId: sanitizeString(lead.externalSourceId || lead.external_source_id || metadata.externalSourceId || metadata.external_source_id),
     websiteAnalysis,
     demoBriefing: sanitizeString(lead.demoBriefing || lead.generatedBriefing || metadata.demoBriefing),
     salesCallBriefing: sanitizeString(lead.salesCallBriefing || metadata.salesCallBriefing),

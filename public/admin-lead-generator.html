@@ -450,6 +450,27 @@
                   <mark class="status-badge status-planned" id="leadfinder-detail-state">Niet geselecteerd</mark>
                 </div>
                 <div class="settings-status-list sales-detail-compact-list" id="leadfinder-detail-list"></div>
+                <div class="sales-workflow-actions sales-qualification-actions" id="lead-qualification-actions">
+                  <button class="button primary" id="lead-mark-interesting" type="button" disabled>Interessant</button>
+                  <button class="button secondary" id="lead-open-rejection" type="button" disabled>Niet interessant</button>
+                  <button class="button secondary" id="lead-reopen-review" type="button" disabled hidden>Opnieuw beoordelen</button>
+                </div>
+                <div class="sales-lead-edit-card" id="lead-rejection-panel" hidden>
+                  <div class="sales-detail-card-heading">
+                    <div>
+                      <span>Afwijsreden</span>
+                      <strong>Waarom is deze lead niet interessant?</strong>
+                    </div>
+                  </div>
+                  <div class="sales-lead-edit-grid">
+                    <label class="sales-lead-edit-wide" for="lead-rejection-reason">Reden<select id="lead-rejection-reason"></select></label>
+                    <label class="sales-lead-edit-wide" for="lead-rejection-note">Korte notitie<textarea id="lead-rejection-note" rows="3" placeholder="Optioneel, bijvoorbeeld waarom deze lead later toch opnieuw beoordeeld mag worden."></textarea></label>
+                  </div>
+                  <div class="sales-workflow-actions">
+                    <button class="button primary" id="lead-confirm-rejection" type="button">Opslaan als niet interessant</button>
+                    <button class="button secondary" id="lead-cancel-rejection" type="button">Annuleren</button>
+                  </div>
+                </div>
                 <div class="sales-lead-business-preview" id="sales-lead-business-preview" aria-label="Google Maps bedrijfskaart"></div>
                 <div class="sales-lead-owner-assignment" id="sales-lead-owner-assignment" hidden>
                   <label for="sales-lead-owner-select">
@@ -667,6 +688,8 @@
             <strong>Alle leads</strong>
             <button class="button secondary" id="leadfinder-clear-quick-filter" type="button">Alle leads tonen</button>
           </div>
+
+          <div class="active-filter-bar lead-lifecycle-tabs" id="lead-lifecycle-tabs" aria-label="Leadstatus filters"></div>
 
           <div class="admin-table leadfinder-table" id="leadfinder-list" role="list" aria-label="Leadfinder bedrijven" aria-live="polite"></div>
         </section>
@@ -19407,6 +19430,13 @@
         saveLeadFinderLeadLocally,
         updateLeadFinderLeadLocally,
       } from "./src/services/leadFinderService.js?v=20260704-admin-session-hotfix";
+      import {
+        LEAD_LIFECYCLE_STATUSES,
+        LEAD_REJECTION_REASONS,
+        getLeadLifecycleConfig,
+        getLeadRejectionReasonLabel,
+        normalizeLeadLifecycleStatus,
+      } from "./src/config/leadLifecycle.js";
       import { readSupabaseDataLayerModule } from "./src/services/supabaseDataLayerService.js?v=20260704-admin-session-hotfix";
       import { saveCrmTaskWithWriteFallback } from "./src/services/crmTaskWriteService.js?v=20260704-admin-session-hotfix";
 
@@ -19500,6 +19530,14 @@
         agendaMessage: document.getElementById("leadfinder-agenda-message"),
         archiveLead: document.getElementById("leadfinder-archive"),
         notInterestingLead: document.getElementById("leadfinder-not-interesting"),
+        markInteresting: document.getElementById("lead-mark-interesting"),
+        openRejection: document.getElementById("lead-open-rejection"),
+        reopenReview: document.getElementById("lead-reopen-review"),
+        rejectionPanel: document.getElementById("lead-rejection-panel"),
+        rejectionReason: document.getElementById("lead-rejection-reason"),
+        rejectionNote: document.getElementById("lead-rejection-note"),
+        confirmRejection: document.getElementById("lead-confirm-rejection"),
+        cancelRejection: document.getElementById("lead-cancel-rejection"),
         deleteLead: document.getElementById("leadfinder-delete"),
         nextAction: document.getElementById("sales-next-action"),
         nextActionButton: document.getElementById("sales-next-action-button"),
@@ -19526,6 +19564,7 @@
         googleMap: document.getElementById("google-places-map"),
         googleMessage: document.getElementById("google-places-message"),
         googleTransferList: document.getElementById("google-places-transfer-list"),
+        lifecycleTabs: document.getElementById("lead-lifecycle-tabs"),
       };
 
       let selectedLeadFinderId = "";
@@ -21330,11 +21369,28 @@
       }
 
       function isLeadWon(lead = {}) {
-        return ["won", "geconverteerd", "customer_active"].includes(lead.callStatus) || Boolean(lead.convertedCustomerId);
+        return ["won", "customer"].includes(getLeadLifecycleStatus(lead)) || ["won", "geconverteerd", "customer_active"].includes(lead.callStatus) || Boolean(lead.convertedCustomerId);
       }
 
       function isOpenLeadStatus(lead = {}) {
-        return !isLeadWon(lead) && !["lost", "geen_interesse"].includes(String(lead.callStatus || "").toLowerCase());
+        return !isLeadWon(lead) && !["lost", "not_interesting"].includes(getLeadLifecycleStatus(lead)) && !["lost", "geen_interesse"].includes(String(lead.callStatus || "").toLowerCase());
+      }
+
+      function getLeadLifecycleStatus(lead = {}) {
+        const meta = lead.metadata && typeof lead.metadata === "object" ? lead.metadata : {};
+        return normalizeLeadLifecycleStatus(lead.leadStatus || lead.lead_status || meta.leadStatus || meta.lead_status || lead.status || lead.callStatus);
+      }
+
+      function getLeadLifecycleLabel(lead = {}) {
+        return getLeadLifecycleConfig(getLeadLifecycleStatus(lead)).label;
+      }
+
+      function getLeadLifecycleClass(lead = {}) {
+        return getLeadLifecycleConfig(getLeadLifecycleStatus(lead)).className;
+      }
+
+      function leadReviewTimelineNote(label, extra = "") {
+        return [`[${new Date().toLocaleDateString("nl-NL")}] ${label}`, extra].filter(Boolean).join("\n");
       }
 
       function isOpenQuote(quote = {}) {
@@ -21747,6 +21803,15 @@
         const storedAnalysis = websiteAnalysisState.get(lead.id);
         const leadAnalysis = lead.websiteAnalysis || lead.metadata?.websiteAnalysis || storedAnalysis;
         if (lead.createdAt) events.push({ at: lead.createdAt, label: "Lead aangemaakt" });
+        if (lead.reviewedAt) {
+          events.push({ at: lead.reviewedAt, label: getLeadLifecycleStatus(lead) === "not_interesting" ? "Lead gemarkeerd als niet interessant" : "Lead gemarkeerd als interessant" });
+        }
+        if (lead.rejectedAt && lead.rejectionReason) {
+          events.push({ at: lead.rejectedAt, label: `Reden: ${getLeadRejectionReasonLabel(lead.rejectionReason)}` });
+        }
+        if (lead.assignedAt) {
+          events.push({ at: lead.assignedAt, label: `Lead toegewezen aan ${getLeadOwnerLabel(lead)}` });
+        }
         if (leadAnalysis?.createdAt || leadAnalysis?.analyzedAt || leadAnalysis?.checkedAt || leadAnalysis?.savedAt) {
           events.push({ at: leadAnalysis.createdAt || leadAnalysis.analyzedAt || leadAnalysis.checkedAt || leadAnalysis.savedAt, label: "Website gescand" });
         } else if (leadAnalysis?.ok) {
@@ -21754,6 +21819,7 @@
         }
         if (getLeadNotes(lead)) events.push({ at: leadNotesState.get(lead.id)?.savedAt || lead.updatedAt || lead.createdAt, label: "Notitie toegevoegd" });
         if (lead.followUpDate) events.push({ at: `${lead.followUpDate}T09:00:00`, label: "Follow-up gepland" });
+        if (lead.lastContactedAt) events.push({ at: lead.lastContactedAt, label: "Contactmoment vastgelegd" });
         if (isLeadWon(lead)) events.push({ at: lead.updatedAt || lead.createdAt, label: "Verkocht / klantactie gestart" });
         return events
           .filter((event) => event.at)
@@ -21928,8 +21994,35 @@
         });
       }
 
+      function lifecycleTabDefinitions() {
+        return [
+          { type: "", title: "Alle leads", statuses: [] },
+          { type: "lifecycle:new", title: "Nieuw", statuses: ["new"] },
+          { type: "lifecycle:interesting", title: "Interessant", statuses: ["interesting"] },
+          { type: "lifecycle:not_interesting", title: "Niet interessant", statuses: ["not_interesting"] },
+          { type: "lifecycle:in_progress", title: "In behandeling", statuses: ["reviewing", "assigned", "call_scheduled", "contacted"] },
+          { type: "lifecycle:follow_up", title: "Opvolgen", statuses: ["follow_up"] },
+          { type: "lifecycle:won", title: "Gewonnen", statuses: ["won", "customer"] },
+        ];
+      }
+
+      function renderLeadLifecycleTabs(leads = getLeadfinderLeads()) {
+        if (!leadfinderElements.lifecycleTabs) return;
+        leadfinderElements.lifecycleTabs.innerHTML = lifecycleTabDefinitions().map((tab) => {
+          const count = tab.statuses.length
+            ? leads.filter((lead) => tab.statuses.includes(getLeadLifecycleStatus(lead))).length
+            : leads.length;
+          const active = (!activeLeadfinderQuickFilter && !tab.type) || activeLeadfinderQuickFilter?.type === tab.type;
+          return `<button class="button ${active ? "primary" : "secondary"}" type="button" data-lead-lifecycle-filter="${escapeHtml(tab.type)}">${escapeHtml(tab.title)} ${escapeHtml(count)}</button>`;
+        }).join("");
+      }
+
       function leadMatchesQuickFilter(lead = {}, filter = activeLeadfinderQuickFilter) {
         if (!filter?.type) return true;
+        if (filter.type.startsWith("lifecycle:")) {
+          const tab = lifecycleTabDefinitions().find((item) => item.type === filter.type);
+          return tab?.statuses?.includes(getLeadLifecycleStatus(lead)) || false;
+        }
                 if (filter.type === "new_today") {
                   return isSameDay(lead.createdAt) && isOpenLeadStatus(lead);
                 }
@@ -22499,6 +22592,10 @@
         return "status-prepared";
       }
 
+      function leadLifecyclePillClass(lead = {}) {
+        return getLeadLifecycleClass(lead);
+      }
+
       function normalizeExternalUrl(url = "") {
         const value = String(url || "").trim();
         if (!value) return "";
@@ -22512,6 +22609,7 @@
                 renderSalesCockpit(leads);
                 renderRecentSalesActivity();
                 populateLeadfinderOwnerFilter(allLeads);
+                renderLeadLifecycleTabs(allLeads);
                 updateLeadfinderQuickFilterBar(leads.length);
                 const dashboardLeadMetric = document.getElementById("metric-total-leads");
                 if (dashboardLeadMetric && !activeLeadfinderQuickFilter) {
@@ -22578,7 +22676,7 @@
                   <div class="lead-identity">
                     <div class="lead-title-row">
                       <h3>${escapeHtml(lead.companyName || "Naamloos bedrijf")}</h3>
-                      <mark class="status-badge ${leadStatusPillClass(lead.callStatus)}">${escapeHtml(getLeadFinderLabel(LEADFINDER_CALL_STATUSES, lead.callStatus))}</mark>
+                      <mark class="status-badge ${leadLifecyclePillClass(lead)}">${escapeHtml(getLeadLifecycleLabel(lead))}</mark>
                     </div>
                     <div class="lead-meta-line">
                       <span>${escapeHtml(lead.industry || "Branche onbekend")}</span>
@@ -22606,8 +22704,8 @@
                       <button class="lead-card-inline-save" type="button" data-leadfinder-action="save-card-contact" aria-label="Contactgegevens opslaan voor ${escapeHtml(lead.companyName || "deze lead")}">Gegevens opslaan</button>
                     </div>
                     <div class="lead-owner-row">
-                      <span>Medewerker: ${escapeHtml(getLeadOwnerLabel(lead))}</span>
-                      <span>Laatst bijgewerkt: ${escapeHtml(formatLeadDate(lead.updatedAt))}</span>
+                  <span>Medewerker: ${escapeHtml(getLeadOwnerLabel(lead))}</span>
+                      <span>Laatst actief: ${escapeHtml(formatLeadDate(lead.lastActivityAt || lead.updatedAt))}</span>
                     </div>
                     ${canAssignOwner ? `
                       <div class="lead-owner-admin" data-lead-owner-card>
@@ -22679,19 +22777,24 @@
           leadfinderElements.detailSubtitle.textContent = hasLead ? [displayLeadContactName(lead), lead.industry || "Branche onbekend"].join(" · ") : "Selecteer een lead om opvolging te beheren.";
         }
         if (leadfinderElements.detailState) {
-          leadfinderElements.detailState.textContent = hasLead ? getLeadFinderLabel(LEADFINDER_CALL_STATUSES, lead.callStatus) : "Niet geselecteerd";
+          leadfinderElements.detailState.textContent = hasLead ? getLeadLifecycleLabel(lead) : "Niet geselecteerd";
+          leadfinderElements.detailState.className = `status-badge ${hasLead ? getLeadLifecycleClass(lead) : "status-planned"}`;
         }
         if (leadfinderElements.detailList) {
           renderLeadDetailRows(leadfinderElements.detailList, hasLead ? [
             ["Bedrijf", lead.companyName || "-"],
+            ["Lifecycle", getLeadLifecycleLabel(lead)],
             ["Contactpersoon", displayLeadContactName(lead)],
             ["Branche", lead.industry || "-"],
             ["Adres", displayLeadFullAddress(lead)],
             ["Plaats/regio", lead.region || "-"],
             ["Score", `${lead.leadScore || 0}/100`],
             ["Eigenaar", getLeadOwnerLabel(lead)],
+            ["Toegewezen sinds", lead.assignedAt ? formatLeadDate(lead.assignedAt) : "-"],
+            ["Beoordeeld", lead.reviewedAt ? `${formatLeadDate(lead.reviewedAt)} door ${lead.reviewedBy || "medewerker"}` : "-"],
+            ["Afwijsreden", lead.rejectionReason ? getLeadRejectionReasonLabel(lead.rejectionReason) : "-"],
             ["Aangemaakt", formatLeadDate(lead.createdAt)],
-            ["Laatste update", formatLeadDate(lead.updatedAt)],
+            ["Laatste activiteit", formatLeadDate(lead.lastActivityAt || lead.updatedAt)],
             ["Website-status", getLeadFinderLabel(LEADFINDER_WEBSITE_STATUSES, lead.websiteStatus)],
             ["Opvolgdatum", lead.followUpDate || "-"],
             ["Aangemaakt door", lead.createdByName || lead.createdByEmail || lead.createdBy || "-"],
@@ -22713,6 +22816,7 @@
           ] : [["Contact", "Selecteer een lead."]]);
         }
         if (leadfinderElements.detailCallStatus) leadfinderElements.detailCallStatus.value = lead?.callStatus || "";
+        renderLeadQualificationActions(lead);
         if (leadfinderElements.detailNote) {
           const draft = hasLead ? getLeadNoteDraft(lead) : "";
           if (document.activeElement !== leadfinderElements.detailNote) leadfinderElements.detailNote.value = draft;
@@ -22752,6 +22856,99 @@
           panel.hidden = !active;
           if (active && panel.tagName === "DETAILS") panel.open = true;
         });
+      }
+
+      function renderLeadQualificationActions(lead) {
+        const hasLead = Boolean(lead?.id);
+        const status = hasLead ? getLeadLifecycleStatus(lead) : "new";
+        const isCustomer = ["customer", "won"].includes(status) || Boolean(lead?.convertedCustomerId);
+        if (leadfinderElements.markInteresting) {
+          leadfinderElements.markInteresting.disabled = !hasLead || isCustomer || status === "interesting";
+        }
+        if (leadfinderElements.openRejection) {
+          leadfinderElements.openRejection.disabled = !hasLead || isCustomer || status === "not_interesting";
+        }
+        if (leadfinderElements.reopenReview) {
+          leadfinderElements.reopenReview.hidden = status !== "not_interesting";
+          leadfinderElements.reopenReview.disabled = !hasLead || status !== "not_interesting";
+        }
+        if (leadfinderElements.rejectionReason && hasLead) {
+          leadfinderElements.rejectionReason.value = lead.rejectionReason || "";
+        }
+        if (leadfinderElements.rejectionNote && hasLead && document.activeElement !== leadfinderElements.rejectionNote) {
+          leadfinderElements.rejectionNote.value = lead.rejectionNote || "";
+        }
+        if (leadfinderElements.rejectionPanel && (!hasLead || status !== "not_interesting")) {
+          leadfinderElements.rejectionPanel.hidden = true;
+        }
+      }
+
+      async function reviewSelectedLead(decision) {
+        const lead = selectedLeadFinderLead();
+        if (!lead?.id) return;
+        const isInteresting = decision === "interesting";
+        const now = new Date().toISOString();
+        const currentUser = getLeadfinderUserContext();
+        const rejectionReason = leadfinderElements.rejectionReason?.value || "";
+        const rejectionNote = String(leadfinderElements.rejectionNote?.value || "").trim();
+        if (!isInteresting && !rejectionReason) {
+          setLeadfinderMessage("Kies eerst een afwijsreden.", "error");
+          leadfinderElements.rejectionReason?.focus();
+          return;
+        }
+        const timelineText = isInteresting
+          ? leadReviewTimelineNote("Lead gemarkeerd als interessant")
+          : leadReviewTimelineNote("Lead gemarkeerd als niet interessant", `Reden: ${getLeadRejectionReasonLabel(rejectionReason)}${rejectionNote ? ` - ${rejectionNote}` : ""}`);
+        const updates = {
+          action: "review",
+          decision,
+          leadStatus: decision,
+          callStatus: isInteresting ? "interesse" : "geen_interesse",
+          reviewedAt: now,
+          reviewedBy: currentUser.userId || currentUser.email || "medewerker",
+          lastActivityAt: now,
+          notes: [getLeadNotes(lead), timelineText].filter(Boolean).join("\n\n"),
+          metadata: {
+            ...(lead.metadata && typeof lead.metadata === "object" ? lead.metadata : {}),
+            leadStatus: decision,
+            reviewedAt: now,
+            reviewedBy: currentUser.userId || currentUser.email || "medewerker",
+            reviewedByEmail: currentUser.email || "",
+            lastActivityAt: now,
+          },
+        };
+        if (!isInteresting) {
+          updates.reason = rejectionReason;
+          updates.note = rejectionNote;
+          updates.rejectionReason = rejectionReason;
+          updates.rejectionNote = rejectionNote;
+          updates.rejectedAt = now;
+          updates.rejectedBy = currentUser.userId || currentUser.email || "medewerker";
+          updates.metadata.rejectionReason = rejectionReason;
+          updates.metadata.rejectionNote = rejectionNote;
+          updates.metadata.rejectedAt = now;
+          updates.metadata.rejectedBy = updates.rejectedBy;
+        }
+        await updateLeadfinderLead(lead, updates, isInteresting ? "Lead gemarkeerd als interessant." : "Lead gemarkeerd als niet interessant.");
+        if (leadfinderElements.rejectionPanel) leadfinderElements.rejectionPanel.hidden = true;
+      }
+
+      async function reopenSelectedLeadForReview() {
+        const lead = selectedLeadFinderLead();
+        if (!lead?.id) return;
+        const now = new Date().toISOString();
+        await updateLeadfinderLead(lead, {
+          leadStatus: "reviewing",
+          callStatus: "nieuw",
+          lastActivityAt: now,
+          notes: [getLeadNotes(lead), leadReviewTimelineNote("Lead opnieuw geopend voor beoordeling")].filter(Boolean).join("\n\n"),
+          metadata: {
+            ...(lead.metadata && typeof lead.metadata === "object" ? lead.metadata : {}),
+            leadStatus: "reviewing",
+            reopenedAt: now,
+            lastActivityAt: now,
+          },
+        }, "Lead opnieuw geopend voor beoordeling.");
       }
 
       function renderLeadNoteSyncStatus(lead) {
@@ -23325,6 +23522,7 @@
           websiteStatus: leadfinderElements.websiteStatus?.value || "onbekend",
           leadScore: analysisScore ?? Number(leadfinderElements.score?.value || 70),
           callStatus: leadfinderElements.callStatus?.value || "nieuw",
+          leadStatus: "new",
           followUpDate: leadfinderElements.followUp?.value || "",
           source: leadfinderElements.source?.value || "handmatig",
           notes: leadfinderElements.notes?.value || "",
@@ -23355,6 +23553,7 @@
             googleReviews,
           metadata: {
             createdFrom: "admin-dashboard-leadfinder",
+            leadStatus: "new",
             createdByRole: ownerContext.role,
             createdByEmail: ownerEmail,
             websiteAnalysis: websiteAnalysis || undefined,
@@ -23451,8 +23650,10 @@
           const samePhone = normalizeComparablePhone(lead.phone) && normalizeComparablePhone(lead.phone) === normalizeComparablePhone(phone);
           return samePlace || sameWebsite || samePhone;
         });
-        if (duplicate && !window.confirm(`Deze lead lijkt al te bestaan als ${duplicate.companyName}. Toch als nieuwe lead opslaan?`)) {
-          setLeadfinderMessage("Lead niet opgeslagen. Controleer eerst de bestaande lead.", "error");
+        if (duplicate) {
+          selectedLeadFinderId = duplicate.id;
+          openLeadfinderDetail(duplicate, { tab: "overview" });
+          setLeadfinderMessage(`Deze lead bestaat al. Status: ${getLeadLifecycleLabel(duplicate)}.`, "warning");
           return;
         }
         const ownerContext = getLeadfinderUserContext();
@@ -23763,14 +23964,8 @@
               async function markSelectedLeadNotInteresting() {
                 const lead = selectedLeadFinderLead();
                 if (!lead || !canMarkLeadNotInteresting(lead)) return;
-                const draftNote = String(leadfinderElements.detailNote?.value || getLeadNoteDraft(lead) || "").trim();
-                const updates = { callStatus: "geen_interesse" };
-                if (draftNote) updates.notes = [getLeadNotes(lead), draftNote].filter(Boolean).join("\n\n");
-                await updateLeadfinderLead(lead, updates, "Lead op Niet interessant gezet.");
-                if (draftNote) {
-                  rememberLeadNoteDraft(lead.id, "");
-                  if (leadfinderElements.detailNote) leadfinderElements.detailNote.value = "";
-                }
+                if (leadfinderElements.rejectionPanel) leadfinderElements.rejectionPanel.hidden = false;
+                leadfinderElements.rejectionReason?.focus();
               }
 
               async function retrySelectedLeadSync(kind = "") {
@@ -23838,6 +24033,7 @@
         fillSelect(leadfinderElements.filterScore, LEADFINDER_SCORE_BUCKETS, "Alle scores");
         fillSelect(leadfinderElements.detailCallStatus, LEADFINDER_CALL_STATUSES, "Leadstatus");
         fillSelect(leadfinderElements.editStatus, LEADFINDER_CALL_STATUSES, "Leadstatus", "nieuw");
+        fillSelect(leadfinderElements.rejectionReason, LEAD_REJECTION_REASONS, "Kies afwijsreden");
         hydrateWebsiteAnalysisState();
         hydrateLeadNotesState();
         hydrateLeadNoteDraftState();
@@ -23897,7 +24093,18 @@
                   if (selectedLeadFinderId) closeLeadfinderDetail({ replaceUrl: true });
                   leadfinderElements.search?.focus();
                 });
-                leadfinderElements.clearQuickFilter?.addEventListener("click", clearLeadfinderQuickFilter);
+        leadfinderElements.clearQuickFilter?.addEventListener("click", clearLeadfinderQuickFilter);
+        leadfinderElements.lifecycleTabs?.addEventListener("click", (event) => {
+          const button = event.target.closest("[data-lead-lifecycle-filter]");
+          if (!button) return;
+          const type = button.dataset.leadLifecycleFilter || "";
+          if (!type) {
+            clearLeadfinderQuickFilter();
+            return;
+          }
+          const tab = lifecycleTabDefinitions().find((item) => item.type === type);
+          applyLeadfinderQuickFilter(type, tab?.title || "Leadstatus");
+        });
                 leadfinderElements.legacyImport?.scan?.addEventListener("click", scanLegacyLeadImports);
                 leadfinderElements.legacyImport?.export?.addEventListener("click", exportLegacyLeadImports);
                 leadfinderElements.legacyImport?.importSelected?.addEventListener("click", importSelectedLegacyLeads);
@@ -23945,6 +24152,17 @@
         leadfinderElements.detailCallStatus?.addEventListener("change", updateSelectedLeadStatusFromControl);
         leadfinderElements.ownerAssignmentSave?.addEventListener("click", saveSelectedLeadOwnerAssignment);
         leadfinderElements.editSave?.addEventListener("click", saveLeadEditForm);
+        leadfinderElements.markInteresting?.addEventListener("click", () => reviewSelectedLead("interesting"));
+        leadfinderElements.openRejection?.addEventListener("click", () => {
+          if (!selectedLeadFinderLead()) return;
+          if (leadfinderElements.rejectionPanel) leadfinderElements.rejectionPanel.hidden = false;
+          leadfinderElements.rejectionReason?.focus();
+        });
+        leadfinderElements.confirmRejection?.addEventListener("click", () => reviewSelectedLead("not_interesting"));
+        leadfinderElements.cancelRejection?.addEventListener("click", () => {
+          if (leadfinderElements.rejectionPanel) leadfinderElements.rejectionPanel.hidden = true;
+        });
+        leadfinderElements.reopenReview?.addEventListener("click", reopenSelectedLeadForReview);
         leadfinderElements.businessPreview?.addEventListener("click", async (event) => {
           const action = event.target.closest("[data-sales-business-action]")?.dataset.salesBusinessAction;
           if (action !== "copy") return;
