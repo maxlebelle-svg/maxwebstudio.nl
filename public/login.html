@@ -28,8 +28,8 @@
 
         <div class="portal-login-status-card" role="status" aria-live="polite">
           <span>Loginstatus</span>
-          <strong id="login-status-title">Klantportaal wordt afgerond</strong>
-          <p id="real-login-status">Het klantportaal wordt momenteel klaargezet. Heb je al een website via Max Webstudio? Vraag toegang aan of neem contact op.</p>
+          <strong id="login-status-title">Loginstatus controleren</strong>
+          <p id="real-login-status">We controleren of klantlogin, accountaanvraag of wachtwoordherstel beschikbaar is.</p>
         </div>
 
         <div class="portal-auth-tabs" role="tablist" aria-label="Login opties">
@@ -141,7 +141,7 @@
             body: "Kies een demo-account om de omgeving direct te bekijken.",
           },
           real: {
-            title: "Klantportaal wordt afgerond",
+            title: "Klantlogin",
             body: "Heb je al een account of wil je toegang? Vraag toegang aan, dan zetten we je klantportaal netjes klaar.",
           },
           admin: {
@@ -464,6 +464,7 @@
             realLoginStatusMessage = realLoginActive
               ? "Klantlogin is actief. Gebruik je e-mailadres en wachtwoord om in te loggen."
               : authReadiness.visitorMessage;
+            const realStatusTitle = realLoginActive ? "Klantlogin is actief" : "Klantportaal wordt afgerond";
             if (adminMode) {
               realLoginStatusMessage = "Log in met je Max Webstudio beheerdersaccount om verder te gaan.";
             }
@@ -478,6 +479,7 @@
             renderAuthLiveVisibility();
             if (document.querySelector("[data-auth-panel='real']").classList.contains("is-active")) {
               renderLoginStatus(adminMode ? "admin" : "real", realLoginStatusMessage);
+              if (!adminMode) loginStatusTitle.textContent = realStatusTitle;
             }
           } catch (error) {
             logSafeDiagnostic("Auth status unavailable", error, "AUTH_STATUS_UNAVAILABLE");
