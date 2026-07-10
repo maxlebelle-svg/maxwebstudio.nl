@@ -257,9 +257,23 @@ async function createInviteOrResetLink(email) {
     const data = await response.json().catch(() => ({}));
     if (!response.ok) return { status: "manual_required", actionLink: "", redirectTo };
     const actionLink = cleanText(data.action_link || data.actionLink || data.properties?.action_link || data.properties?.actionLink);
-    return { status: actionLink ? "generated" : "manual_required", actionLink, redirectTo };
+    const tokenHash = cleanText(data.hashed_token || data.hashedToken || data.token_hash || data.tokenHash || data.properties?.hashed_token || data.properties?.hashedToken || data.properties?.token_hash || data.properties?.tokenHash);
+    const recoveryLink = buildRecoveryLink(redirectTo, tokenHash);
+    return { status: recoveryLink || actionLink ? "generated" : "manual_required", actionLink: recoveryLink || actionLink, redirectTo };
   } catch {
     return { status: "manual_required", actionLink: "", redirectTo };
+  }
+}
+
+function buildRecoveryLink(redirectTo, tokenHash) {
+  if (!tokenHash) return "";
+  try {
+    const url = new URL(redirectTo);
+    url.searchParams.set("type", "recovery");
+    url.searchParams.set("token_hash", tokenHash);
+    return url.toString();
+  } catch {
+    return "";
   }
 }
 

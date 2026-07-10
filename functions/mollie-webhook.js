@@ -1012,12 +1012,27 @@ async function createCommercialPasswordSetupLink(supabaseUrl, serviceRoleKey, em
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) return { status: "manual_required", actionLink: "" };
+    const actionLink = cleanText(data?.action_link || data?.properties?.action_link);
+    const tokenHash = cleanText(data?.hashed_token || data?.token_hash || data?.properties?.hashed_token || data?.properties?.token_hash);
+    const recoveryLink = buildRecoveryLink(absoluteUrl("/login.html?type=recovery"), tokenHash);
     return {
-      status: data?.action_link || data?.properties?.action_link ? "generated" : "manual_required",
-      actionLink: cleanText(data?.action_link || data?.properties?.action_link),
+      status: recoveryLink || actionLink ? "generated" : "manual_required",
+      actionLink: recoveryLink || actionLink,
     };
   } catch {
     return { status: "manual_required", actionLink: "" };
+  }
+}
+
+function buildRecoveryLink(redirectTo, tokenHash) {
+  if (!tokenHash) return "";
+  try {
+    const url = new URL(redirectTo);
+    url.searchParams.set("type", "recovery");
+    url.searchParams.set("token_hash", tokenHash);
+    return url.toString();
+  } catch {
+    return "";
   }
 }
 

@@ -94,10 +94,24 @@ async function createPasswordResetLink(email) {
       return { status: "not_generated", actionLink: "", redirectTo };
     }
     const actionLink = cleanText(data.action_link || data.actionLink || data.properties?.action_link || data.properties?.actionLink);
-    return { status: actionLink ? "generated" : "not_generated", actionLink, redirectTo };
+    const tokenHash = cleanText(data.hashed_token || data.hashedToken || data.token_hash || data.tokenHash || data.properties?.hashed_token || data.properties?.hashedToken || data.properties?.token_hash || data.properties?.tokenHash);
+    const recoveryLink = buildRecoveryLink(redirectTo, tokenHash);
+    return { status: recoveryLink || actionLink ? "generated" : "not_generated", actionLink: recoveryLink || actionLink, redirectTo };
   } catch (error) {
     console.error("Supabase reset link request failed", { message: error.message });
     return { status: "request_failed", actionLink: "", redirectTo };
+  }
+}
+
+function buildRecoveryLink(redirectTo, tokenHash) {
+  if (!tokenHash) return "";
+  try {
+    const url = new URL(redirectTo);
+    url.searchParams.set("type", "recovery");
+    url.searchParams.set("token_hash", tokenHash);
+    return url.toString();
+  } catch {
+    return "";
   }
 }
 

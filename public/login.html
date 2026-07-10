@@ -641,7 +641,7 @@
         });
 
         async function activateRecoveryFromUrl() {
-          if (!/type=recovery|access_token=/.test(`${window.location.search}${window.location.hash}`)) return false;
+          if (!/type=recovery|access_token=|token_hash=|(?:[?&#])code=/.test(`${window.location.search}${window.location.hash}`)) return false;
           try {
             const auth = await loadAuth();
             const result = await auth.consumeRecoverySessionFromUrl();
