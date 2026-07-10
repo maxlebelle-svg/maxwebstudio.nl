@@ -16,6 +16,13 @@ exports.handler = async (event) => {
     });
   }
 
+  if (!isLegacyCreatePaymentAllowed()) {
+    return jsonResponse(410, {
+      success: false,
+      error: "Deze betaalpagina is vervangen. Vraag je persoonlijke betaallink aan bij Max Webstudio.",
+    });
+  }
+
   let payload;
 
   try {
@@ -176,4 +183,10 @@ function jsonResponse(statusCode, body) {
     },
     body: JSON.stringify(body),
   };
+}
+
+function isLegacyCreatePaymentAllowed() {
+  if (String(process.env.ALLOW_LEGACY_CREATE_PAYMENT || "").toLowerCase() === "true") return true;
+  const runtime = String(process.env.APP_ENV || process.env.CONTEXT || process.env.NETLIFY_ENV || "").toLowerCase();
+  return runtime && !["production", "prod"].includes(runtime);
 }

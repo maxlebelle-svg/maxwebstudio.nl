@@ -1,5 +1,33 @@
 import { ROLES } from "./roles.js";
 
+const ALL_STAFF_ROLES = Object.freeze([
+  ROLES.SUPER_ADMIN,
+  ROLES.ADMIN,
+  ROLES.DEVELOPER,
+  ROLES.DESIGNER,
+  ROLES.SALES_MANAGER,
+  ROLES.SALES_PARTNER,
+  ROLES.SUPPORT,
+]);
+
+const SALES_ROLES = Object.freeze([ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.SALES_MANAGER, ROLES.SALES_PARTNER]);
+const CUSTOMER_ROLES = Object.freeze([ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.SALES_MANAGER, ROLES.SALES_PARTNER, ROLES.SUPPORT]);
+const PRODUCTION_ROLES = Object.freeze([ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.DEVELOPER, ROLES.DESIGNER, ROLES.SUPPORT]);
+const DEVELOPER_ROLES = Object.freeze([ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.DEVELOPER]);
+
+function adminRoute(path, options = {}) {
+  const pageName = path.replace(/^\//, "").replace(/\.html$/, "");
+  return {
+    pageName,
+    path,
+    requiredRoles: options.requiredRoles || ALL_STAFF_ROLES,
+    requiredPermissions: options.requiredPermissions || [{ resource: "dashboard", action: "view" }],
+    allowDemo: false,
+    defaultRedirect: "/admin-dashboard.html",
+    hardReady: true,
+  };
+}
+
 export const ACCESS_CONTROL_MODES = Object.freeze({
   PREVIEW: "preview",
   SOFT: "soft",
@@ -16,6 +44,46 @@ export const PROTECTED_ROUTES = Object.freeze({
     defaultRedirect: "/login.html",
     hardReady: true,
   },
+  "admin-ai-content-library": adminRoute("/admin-ai-content-library.html", {
+    requiredRoles: DEVELOPER_ROLES,
+    requiredPermissions: [{ resource: "developerTools", action: "view" }],
+  }),
+  "admin-assets": adminRoute("/admin-assets.html", {
+    requiredRoles: PRODUCTION_ROLES,
+    requiredPermissions: [{ resource: "files", action: "view" }],
+  }),
+  "admin-brand-center-lab": adminRoute("/admin-brand-center-lab.html", {
+    requiredRoles: PRODUCTION_ROLES,
+    requiredPermissions: [{ resource: "websites", action: "view" }],
+  }),
+  "admin-brand-center": adminRoute("/admin-brand-center.html", {
+    requiredRoles: PRODUCTION_ROLES,
+    requiredPermissions: [{ resource: "websites", action: "view" }],
+  }),
+  "admin-demo-sites": adminRoute("/admin-demo-sites.html", {
+    requiredRoles: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.DEVELOPER, ROLES.DESIGNER, ROLES.SALES_MANAGER, ROLES.SALES_PARTNER],
+    requiredPermissions: [{ resource: "demo", action: "view" }],
+  }),
+  "admin-domain-center": adminRoute("/admin-domain-center.html", {
+    requiredRoles: PRODUCTION_ROLES,
+    requiredPermissions: [{ resource: "integrations", action: "view" }],
+  }),
+  "admin-email-studio": adminRoute("/admin-email-studio.html", {
+    requiredRoles: SALES_ROLES,
+    requiredPermissions: [{ resource: "leads", action: "view" }],
+  }),
+  "admin-facturen": adminRoute("/admin-facturen.html", {
+    requiredRoles: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.SALES_MANAGER],
+    requiredPermissions: [{ resource: "invoices", action: "view" }],
+  }),
+  "admin-instellingen": adminRoute("/admin-instellingen.html", {
+    requiredRoles: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.DEVELOPER],
+    requiredPermissions: [{ resource: "settings", action: "view" }],
+  }),
+  "admin-klanten": adminRoute("/admin-klanten.html", {
+    requiredRoles: CUSTOMER_ROLES,
+    requiredPermissions: [{ resource: "customers", action: "view" }],
+  }),
   "admin-leadfinder": {
     pageName: "admin-leadfinder",
     path: "/admin-sales.html",
@@ -25,6 +93,59 @@ export const PROTECTED_ROUTES = Object.freeze({
     defaultRedirect: "/admin-sales.html",
     hardReady: true,
   },
+  "admin-lead-generator": adminRoute("/admin-lead-generator.html", {
+    requiredRoles: SALES_ROLES,
+    requiredPermissions: [{ resource: "leads", action: "view" }],
+  }),
+  "admin-logo-studio": adminRoute("/admin-logo-studio.html", {
+    requiredRoles: PRODUCTION_ROLES,
+    requiredPermissions: [{ resource: "websites", action: "view" }],
+  }),
+  "admin-mail-center": adminRoute("/admin-mail-center.html", {
+    requiredRoles: SALES_ROLES,
+    requiredPermissions: [{ resource: "leads", action: "view" }],
+  }),
+  "admin-max-automations": adminRoute("/admin-max-automations.html", {
+    requiredRoles: DEVELOPER_ROLES,
+    requiredPermissions: [{ resource: "developerTools", action: "view" }],
+  }),
+  "admin-notification-center": adminRoute("/admin-notification-center.html"),
+  "admin-offertes": adminRoute("/admin-offertes.html", {
+    requiredRoles: SALES_ROLES,
+    requiredPermissions: [{ resource: "quotes", action: "view" }],
+  }),
+  "admin-projecten": adminRoute("/admin-projecten.html", {
+    requiredRoles: PRODUCTION_ROLES,
+    requiredPermissions: [{ resource: "projects", action: "view" }],
+  }),
+  "admin-roadmap": adminRoute("/admin-roadmap.html", {
+    requiredRoles: DEVELOPER_ROLES,
+    requiredPermissions: [{ resource: "developerTools", action: "view" }],
+  }),
+  "admin-sales": adminRoute("/admin-sales.html", {
+    requiredRoles: SALES_ROLES,
+    requiredPermissions: [{ resource: "leads", action: "view" }],
+  }),
+  "admin-seo-studio": adminRoute("/admin-seo-studio.html", {
+    requiredRoles: PRODUCTION_ROLES,
+    requiredPermissions: [{ resource: "websites", action: "view" }],
+  }),
+  "admin-social-media-studio": adminRoute("/admin-social-media-studio.html", {
+    requiredRoles: PRODUCTION_ROLES,
+    requiredPermissions: [{ resource: "projects", action: "view" }],
+  }),
+  "admin-website-factory": adminRoute("/admin-website-factory.html", {
+    requiredRoles: PRODUCTION_ROLES,
+    requiredPermissions: [{ resource: "websites", action: "update" }],
+  }),
+  "admin-website-qa-scanner": adminRoute("/admin-website-qa-scanner.html", {
+    requiredRoles: PRODUCTION_ROLES,
+    requiredPermissions: [{ resource: "websites", action: "view" }],
+  }),
+  "admin-websites": adminRoute("/admin-websites.html", {
+    requiredRoles: PRODUCTION_ROLES,
+    requiredPermissions: [{ resource: "websites", action: "view" }],
+  }),
   klantportaal: {
     pageName: "klantportaal",
     path: "/klantportaal.html",

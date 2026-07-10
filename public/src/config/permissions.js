@@ -35,6 +35,7 @@ export const ROLE_PERMISSIONS = Object.freeze({
     integrations: ["view", "update"],
     users: ["view", "update_role", "activate", "deactivate"],
     demo: ["view", "run", "reset"],
+    developerTools: ["view", "validate"],
   },
   [ROLES.SALES_MANAGER]: {
     dashboard: ["view"],
