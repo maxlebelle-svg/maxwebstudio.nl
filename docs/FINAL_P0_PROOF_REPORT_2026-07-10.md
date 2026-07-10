@@ -296,3 +296,60 @@ Resterende beperkingen:
 - Geen Mollie-testorder uitgevoerd.
 - Geen webhook-idempotency/concurrency uitgevoerd.
 - Geen automatische cleanup uitgevoerd, omdat er geen muterende live run is gedaan.
+
+## Definitieve Credential-run
+
+Testdatum: 2026-07-10
+
+Status: niet volledig uitvoerbaar door ontbrekende credentials in de huidige omgeving.
+
+Vooraf gecontroleerde environment variables:
+
+- Alle vereiste `P0_*` credentialvariabelen ontbraken in deze sessie.
+- Ontbrekend voor RLS: `P0_CUSTOMER_A_JWT`, `P0_CUSTOMER_B_JWT`, `P0_CUSTOMER_A_ID`, `P0_CUSTOMER_B_ID`.
+- Ontbrekend voor storage: `P0_CUSTOMER_A_JWT`, `P0_CUSTOMER_B_JWT`, `P0_STORAGE_BUCKET`, `P0_STORAGE_A_PATH`.
+- Ontbrekend voor commercial order: `P0_ADMIN_JWT`.
+- Ontbrekend voor salesassignment: `P0_SALES_CASES_JSON`, `P0_SALES_A_JWT`, `P0_SALES_B_JWT`.
+- `P0_ENABLE_MUTATIONS` was niet gezet; muterende tests mochten daarom niet draaien.
+
+Afzonderlijke credential-afhankelijke testgroepen:
+
+- `node scripts/p0-test-harness.mjs rls-ab`: skipped wegens ontbrekende klant A/B JWT's.
+- `node scripts/p0-test-harness.mjs storage`: skipped wegens ontbrekende klant A/B JWT's, bucket en objectpad.
+- `node scripts/p0-test-harness.mjs commercial-order`: skipped wegens ontbrekende `P0_ADMIN_JWT`.
+- `node scripts/p0-test-harness.mjs sales`: skipped wegens ontbrekende `P0_SALES_CASES_JSON`.
+
+Volledige harnessrun:
+
+- `node scripts/p0-test-harness.mjs all`: 16 pass, 4 skipped, 1 info, 0 fail.
+- Bewezen: preflight, publieke auth-config, adminrouteguard asset, legacy betaalroute dicht, `commercial-order` authgrens, `admin-leads` authgrens, anonieme RLS-smoke.
+- Niet bewezen: klant A/B RLS-mutaties, storage cross-tenant mutaties, volledige Mollie-testorder, webhook concurrency/idempotency, salesassignment A/B.
+
+Aanvullende checks:
+
+- `git status`: geen vooraf bestaande lokale wijzigingen bij start van deze credential-run.
+- `git diff --check`: schoon.
+- Syntaxchecks: `scripts/p0-test-harness.mjs`, `functions/commercial-order.js`, `functions/mollie-webhook.js`, `functions/admin-leads.js`, `functions/_admin-auth.js` geslaagd.
+- Duplicate route-scan: 57 HTML-bestanden, 0 duplicate routes.
+- Orphan-recordscan: niet uitgevoerd, omdat er geen Supabase testcredentials of mutation-safe testdataset beschikbaar was.
+- Secret-scan zonder waarden: alleen bestandsnamen met verwachte env-var-referenties gerapporteerd; geen secretwaarden getoond.
+- Technische klantcopy-scan: login bevat developer-mode debugregels; normale loginfouten blijven gemaskeerd buiten developer mode.
+
+Eindoordeel credential-run:
+
+1. Zijn alle credential-afhankelijke P0-tests uitgevoerd?
+   - Nee. Vereiste credentials ontbraken.
+2. Zijn cross-tenant reads en writes geblokkeerd?
+   - Anonieme reads lekken geen data; klant A/B reads/writes niet bewezen.
+3. Is storage tenantveilig?
+   - Niet bewezen zonder bucket, objectpad en klanttokens.
+4. Werkt een volledige Mollie-testorder?
+   - Niet bewezen zonder `P0_ADMIN_JWT` en mutatie-toestemming.
+5. Is webhookverwerking idempotent onder concurrency?
+   - Niet bewezen zonder testorder/payment/webhookfixture.
+6. Is salesassignment veilig tussen medewerkers?
+   - Niet bewezen zonder salestokens en exacte leadcases.
+7. Zijn alle P0's nu aantoonbaar gesloten?
+   - Nee. De credential-afhankelijke P0's blijven open tot de benodigde testaccounts/env vars beschikbaar zijn.
+8. Kan Max Webstudio veilig echte klanten verwerken?
+   - Nog niet als volledig P0-bewezen platform. Eerst de credential-run met echte testaccounts voltooien.
