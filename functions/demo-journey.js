@@ -552,7 +552,8 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     if (!files.length) return jsonResponse(400, { success: false, error: "ZIP bevat geen bruikbare websitebestanden." });
     if (!files.some((file) => file.path.endsWith("index.html"))) return jsonResponse(400, { success: false, error: "ZIP moet een index.html bevatten." });
     const previewToken = cleanText(current.preview_token) || crypto.randomBytes(16).toString("hex");
-    const previewUrl = cleanText(current.preview_url) || previewUrlForJourney(current.id, previewToken);
+    const currentPreviewUrl = cleanText(current.preview_url);
+    const previewUrl = isDemoPreviewUrl(currentPreviewUrl) ? currentPreviewUrl : previewUrlForJourney(current.id, previewToken);
     const manualPreview = {
       source: "manual_zip",
       fileName: cleanText(payload.fileName || payload.file_name || "handmatige-demo.zip"),
@@ -1828,6 +1829,10 @@ function contentTypeForPreviewPath(path = "") {
 
 function previewUrlForJourney(id = "", token = "") {
   return `/.netlify/functions/demo-preview?id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}`;
+}
+
+function isDemoPreviewUrl(value = "") {
+  return /(?:^|\/)\.netlify\/functions\/demo-preview(?:\?|$)|(?:^|\/)demo-preview(?:\?|$)/i.test(cleanText(value));
 }
 
 function cleanUuid(value = "") {

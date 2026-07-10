@@ -23708,7 +23708,7 @@
             setMessage(elements.message, "Sla eerst de demo-aanvraag op.", "warning");
             return;
           }
-          const previewUrl = absolutePreviewUrl(elements.preview?.value || journey?.previewUrl || "");
+          const previewUrl = activePreviewUrl() || previewFieldUrl() || absolutePreviewUrl(journey?.previewUrl || "");
           if (!previewUrl) {
             setMessage(elements.message, "Genereer eerst een preview voordat je de demo-site opslaat.", "warning");
             return;

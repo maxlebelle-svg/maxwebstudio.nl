@@ -22540,7 +22540,7 @@
         }
 
         function collectPayload(extra = {}) {
-          const previewUrl = absolutePreviewUrl(elements.preview?.value || journey?.previewUrl || "");
+          const previewUrl = activePreviewUrl() || previewFieldUrl() || absolutePreviewUrl(journey?.previewUrl || "");
           const intake = collectIntake();
           return {
             id: journey?.id || "",
