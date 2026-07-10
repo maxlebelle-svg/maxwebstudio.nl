@@ -146,6 +146,9 @@ function clearRecoveryParamsFromUrl() {
 
 async function verifyRecoveryTokenHash(config, tokenHash) {
   if (!tokenHash) return null;
+  const serverSession = await requestRecoverySession({ tokenHash }).catch(() => null);
+  if (serverSession?.access_token) return serverSession;
+
   const response = await fetch(`${config.url}/auth/v1/verify`, {
     method: "POST",
     headers: {
@@ -166,6 +169,20 @@ async function verifyRecoveryTokenHash(config, tokenHash) {
     throw error;
   }
   return session;
+}
+
+async function requestRecoverySession(input = {}) {
+  const response = await fetch("/.netlify/functions/client-recovery-session", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || !payload.success) return null;
+  return normalizeAuthSession(payload.session || payload);
 }
 
 async function getRuntimeAuthConfig() {
