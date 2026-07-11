@@ -5,7 +5,11 @@ exports.handler = async (event) => {
 
   const bearer = getBearer(event);
   if (!bearer) {
-    return jsonResponse(401, { success: false, error: "Niet ingelogd." });
+    return jsonResponse(401, {
+      success: false,
+      code: "AUTH_SESSION_MISSING",
+      error: "Niet ingelogd.",
+    });
   }
 
   const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
@@ -16,7 +20,7 @@ exports.handler = async (event) => {
   }
 
   try {
-    const authUser = await supabaseFetch(`${supabaseUrl}/auth/v1/user`, {
+    const authUser = await supabaseFetch("auth_user", `${supabaseUrl}/auth/v1/user`, {
       method: "GET",
       headers: {
         apikey: anonKey,
@@ -25,7 +29,7 @@ exports.handler = async (event) => {
       },
     });
 
-    const rows = await supabaseFetch(`${supabaseUrl}/rest/v1/profiles?select=id,auth_user_id,customer_id,name,email,role,status,last_login_at,metadata&auth_user_id=eq.${encodeURIComponent(authUser.id)}&limit=1`, {
+    const rows = await supabaseFetch("profiles", `${supabaseUrl}/rest/v1/profiles?select=id,auth_user_id,name,email,role,status,last_login_at,metadata&auth_user_id=eq.${encodeURIComponent(authUser.id)}&limit=1`, {
       method: "GET",
       headers: {
         apikey: serviceRoleKey,
@@ -71,8 +75,15 @@ exports.handler = async (event) => {
     });
   } catch (error) {
     const status = Number(error.status) || 500;
-    const safeStatus = status >= 400 && status < 500 ? status : 502;
-    console.error("Account profile lookup failed", { code: "PROFILE_LOOKUP_FAILED", status });
+    if (error.source === "auth_user" && (status === 401 || status === 403)) {
+      return jsonResponse(401, {
+        success: false,
+        code: "AUTH_SESSION_INVALID",
+        error: "Sessie is ongeldig.",
+      });
+    }
+    const safeStatus = status === 401 ? 401 : 502;
+    console.error("Account profile lookup failed", { code: "PROFILE_LOOKUP_FAILED", status, source: error.source || "unknown" });
     return jsonResponse(safeStatus, {
       success: false,
       code: "PROFILE_LOOKUP_FAILED",
@@ -86,13 +97,14 @@ function getBearer(event) {
   return authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
 }
 
-async function supabaseFetch(url, options) {
+async function supabaseFetch(source, url, options) {
   const response = await fetch(url, options);
   const text = await response.text();
   const data = text ? JSON.parse(text) : null;
   if (!response.ok) {
     const error = new Error(data?.message || data?.error || "Supabase request failed.");
     error.status = response.status;
+    error.source = source;
     throw error;
   }
   return data;

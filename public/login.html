@@ -371,9 +371,6 @@
           const debug = error?.supabaseAuth || {};
           const code = String(debug.code || error?.code || "LOGIN_FAILED").toUpperCase();
           const status = debug.status || error?.status || "";
-          if (code.includes("INVALID_CREDENTIALS") || code.includes("INVALID_LOGIN") || status === 400) {
-            return "E-mailadres of wachtwoord is onjuist.";
-          }
           if (code === "PROFILE_NOT_FOUND") {
             return "Admin-login geblokkeerd: er is geen profiel gekoppeld aan dit account.";
           }
@@ -385,6 +382,9 @@
           }
           if (code === "PROFILE_LOOKUP_FAILED") {
             return "Admin-login geblokkeerd: profielcontrole is technisch niet gelukt.";
+          }
+          if (code.includes("INVALID_CREDENTIALS") || code.includes("INVALID_LOGIN") || status === 400) {
+            return "E-mailadres of wachtwoord is onjuist.";
           }
           if (code.includes("EMAIL_NOT_CONFIRMED")) {
             return "Admin-login geblokkeerd: e-mailadres is nog niet bevestigd.";
