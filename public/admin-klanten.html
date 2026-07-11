@@ -966,7 +966,8 @@
                   <label for="customer-timeline-type">Event type<select id="customer-timeline-type" disabled><option value="">Alles</option></select></label>
                   <label for="customer-timeline-date">Datum<select id="customer-timeline-date" disabled><option value="">Alle datums</option><option value="today">Vandaag</option><option value="week">Deze week</option><option value="month">Deze maand</option></select></label>
                   <label for="customer-timeline-actor">Actor<input id="customer-timeline-actor" type="search" placeholder="Max CRM, medewerker..." disabled /></label>
-                  <label for="customer-timeline-module">Module<select id="customer-timeline-module" disabled><option value="">Alles</option><option value="sales">Sales</option><option value="invoice">Facturen</option><option value="email">E-mails</option><option value="website">Website</option><option value="production">Productie</option><option value="support">Support</option><option value="note">Notities</option><option value="asset">Assets</option><option value="seo">SEO</option><option value="qa">QA</option><option value="telefonie">Telefonie</option></select></label>
+	                  <label for="customer-timeline-module">Module<select id="customer-timeline-module" disabled><option value="">Alles</option><option value="sales">Sales</option><option value="invoice">Facturen</option><option value="email">E-mails</option><option value="website">Website</option><option value="production">Productie</option><option value="support">Support</option><option value="note">Notities</option><option value="asset">Assets</option><option value="seo">SEO</option><option value="qa">QA</option><option value="telefonie">Telefonie</option></select></label>
+	                  <label for="customer-timeline-page-size">Batch<select id="customer-timeline-page-size" disabled><option value="25">25 events</option><option value="50" selected>50 events</option><option value="100">100 events</option></select></label>
                   <label class="customer-timeline-check"><input id="customer-timeline-important" type="checkbox" disabled /> Alleen belangrijk</label>
                   <label class="customer-timeline-check"><input id="customer-timeline-emails" type="checkbox" disabled /> Alleen e-mails</label>
                   <label class="customer-timeline-check"><input id="customer-timeline-invoices" type="checkbox" disabled /> Alleen facturen</label>
@@ -2663,6 +2664,7 @@
           customerListPage: 1,
           customerListPageSize: 25,
           customerWorkspaceTab: "overview",
+          customerTimelineLoadedForCustomerId: "",
           dashboardMetrics: null,
           developerModules: null,
           customerSourceStatus: null,
@@ -3216,6 +3218,7 @@
         const customerTimelineType = document.getElementById("customer-timeline-type");
         const customerTimelineDate = document.getElementById("customer-timeline-date");
         const customerTimelineActor = document.getElementById("customer-timeline-actor");
+        const customerTimelinePageSize = document.getElementById("customer-timeline-page-size");
         const customerTimelineImportant = document.getElementById("customer-timeline-important");
         const customerTimelineEmails = document.getElementById("customer-timeline-emails");
         const customerTimelineInvoices = document.getElementById("customer-timeline-invoices");
@@ -3228,9 +3231,8 @@
         const customerTimelineCustomerHeader = document.getElementById("customer-timeline-customer-header");
         const customerTimelineLoadMore = document.getElementById("customer-timeline-load-more");
         const customerTimelineQuickActions = [...document.querySelectorAll("[data-customer-timeline-action]")];
-        const CUSTOMER_TIMELINE_PAGE_SIZE = 50;
         let customerTimelineEventsCache = [];
-        let customerTimelineVisibleCount = CUSTOMER_TIMELINE_PAGE_SIZE;
+        let customerTimelineVisibleCount = 50;
         const CUSTOMER_TIMELINE_EVENT_TYPES = [
           ["lead_created", "Lead created"],
           ["lead_assigned", "Lead assigned"],
@@ -10936,7 +10938,11 @@
           return Array.isArray(data.timelineEvents) ? data.timelineEvents : [];
         }
 
-        async function loadCustomerTimeline() {
+        function selectedCustomerTimelinePageSize() {
+          return Number(customerTimelinePageSize?.value || 50);
+        }
+
+        async function loadCustomerTimeline({ force = false } = {}) {
           if (!customerTimelineList) return;
           const customer = selectedCustomer();
           if (!customer) {
@@ -10944,10 +10950,14 @@
             customerTimelineList.innerHTML = `<div class="timeline-empty">Selecteer een klant om de timeline te bekijken.</div>`;
             renderCustomerTimelineDetail(null);
             renderCustomerTimelineSummary([]);
-            renderCustomerTimelineCustomerHeader(null);
-            return;
-          }
-          setCustomerTimelineEnabled(true);
+	            renderCustomerTimelineCustomerHeader(null);
+	            return;
+	          }
+	          if (!force && state.customerTimelineLoadedForCustomerId === customer.id && customerTimelineEventsCache.length) {
+	            renderCustomerTimeline(customerTimelineEventsCache);
+	            return;
+	          }
+	          setCustomerTimelineEnabled(true);
           renderCustomerTimelineCustomerHeader(customer);
           customerTimelineList.innerHTML = `<div class="timeline-empty">Timeline laden...</div>`;
           const query = new URLSearchParams();
@@ -10955,11 +10965,12 @@
           query.set("limit", "120");
           if (customerTimelineModule?.value) query.set("module", customerTimelineModule.value);
           if (customerTimelineSearch?.value) query.set("search", customerTimelineSearch.value);
-          try {
-            const remoteEvents = await fetchTimelineEvents(query.toString());
-            customerTimelineEventsCache = buildUniversalCustomerTimeline(customer, remoteEvents);
-            customerTimelineVisibleCount = CUSTOMER_TIMELINE_PAGE_SIZE;
-            renderCustomerTimeline(customerTimelineEventsCache);
+	          try {
+	            const remoteEvents = await fetchTimelineEvents(query.toString());
+	            customerTimelineEventsCache = buildUniversalCustomerTimeline(customer, remoteEvents);
+	            customerTimelineVisibleCount = selectedCustomerTimelinePageSize();
+	            state.customerTimelineLoadedForCustomerId = customer.id;
+	            renderCustomerTimeline(customerTimelineEventsCache);
           } catch (error) {
             customerTimelineList.innerHTML = `<div class="timeline-empty">${escapeHtml(error.message || "Timeline kon niet worden geladen.")}</div>`;
             renderCustomerTimelineDetail(null);
@@ -10974,8 +10985,9 @@
             customerTimelineModule,
             customerTimelineType,
             customerTimelineDate,
-            customerTimelineActor,
-            customerTimelineSearch,
+	            customerTimelineActor,
+	            customerTimelinePageSize,
+	            customerTimelineSearch,
             customerTimelineImportant,
             customerTimelineEmails,
             customerTimelineInvoices,
@@ -12183,10 +12195,11 @@
                     button.classList.toggle("is-active", active);
                     button.setAttribute("aria-selected", active ? "true" : "false");
                   });
-                  customerWorkspacePanels.forEach((panel) => {
-                    panel.hidden = panel.dataset.customerWorkspacePanel !== tab;
-                  });
-                }
+	                  customerWorkspacePanels.forEach((panel) => {
+	                    panel.hidden = panel.dataset.customerWorkspacePanel !== tab;
+	                  });
+	                  if (tab === "timeline" && selectedCustomer()) loadCustomerTimeline();
+	                }
 
                 function customerWorkspaceRecords(customer = {}) {
                   return {
@@ -12456,9 +12469,12 @@
 	          });
 	        }
 
-        function selectCustomer(id) {
-          state.selectedCustomerId = id;
-          const customer = selectedCustomer();
+	        function selectCustomer(id) {
+	          state.selectedCustomerId = id;
+	          state.customerTimelineLoadedForCustomerId = "";
+	          customerTimelineEventsCache = [];
+	          customerTimelineVisibleCount = selectedCustomerTimelinePageSize();
+	          const customer = selectedCustomer();
           if (!customer) return;
           resetCustomerWriteControls();
 
@@ -12551,8 +12567,7 @@
           detailCreateSubscription.disabled = false;
           detailViewSubscriptions.disabled = false;
           applyCustomerWriteReadiness(customer);
-          loadCustomerTimeline();
-        }
+	        }
 
         async function saveCustomer(event) {
           event.preventDefault();
@@ -18707,10 +18722,10 @@
         if (customerTimelineType) {
           customerTimelineType.innerHTML = `<option value="">Alles</option>${CUSTOMER_TIMELINE_EVENT_TYPES.map(([value, label]) => `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`).join("")}`;
         }
-        customerTimelineRefresh?.addEventListener("click", () => loadCustomerTimeline());
+        customerTimelineRefresh?.addEventListener("click", () => loadCustomerTimeline({ force: true }));
         customerTimelineAddNote?.addEventListener("click", handleCustomerTimelineNoteAction);
         customerTimelineLoadMore?.addEventListener("click", () => {
-          customerTimelineVisibleCount += CUSTOMER_TIMELINE_PAGE_SIZE;
+          customerTimelineVisibleCount += selectedCustomerTimelinePageSize();
           renderCustomerTimeline(customerTimelineEventsCache);
         });
         customerTimelineQuickActions.forEach((button) => {
@@ -18726,15 +18741,21 @@
             return null;
           });
         });
-        [customerTimelineModule, customerTimelineType, customerTimelineDate, customerTimelineImportant, customerTimelineEmails, customerTimelineInvoices, customerTimelineWebsites, customerTimelineNotes].forEach((element) => {
+        [customerTimelineModule, customerTimelineType, customerTimelineDate, customerTimelinePageSize, customerTimelineImportant, customerTimelineEmails, customerTimelineInvoices, customerTimelineWebsites, customerTimelineNotes].forEach((element) => {
           element?.addEventListener("change", () => {
-            customerTimelineVisibleCount = CUSTOMER_TIMELINE_PAGE_SIZE;
-            renderCustomerTimeline(customerTimelineEventsCache);
+            customerTimelineVisibleCount = selectedCustomerTimelinePageSize();
+            if (element === customerTimelineModule) {
+              state.customerTimelineLoadedForCustomerId = "";
+              loadCustomerTimeline({ force: true });
+            } else {
+              renderCustomerTimeline(customerTimelineEventsCache);
+            }
           });
         });
         const renderTimelineFromTextFilters = debounce(() => {
-          customerTimelineVisibleCount = CUSTOMER_TIMELINE_PAGE_SIZE;
-          renderCustomerTimeline(customerTimelineEventsCache);
+          customerTimelineVisibleCount = selectedCustomerTimelinePageSize();
+          state.customerTimelineLoadedForCustomerId = "";
+          loadCustomerTimeline({ force: true });
         }, 250);
         customerTimelineSearch?.addEventListener("input", renderTimelineFromTextFilters);
         customerTimelineActor?.addEventListener("input", renderTimelineFromTextFilters);
