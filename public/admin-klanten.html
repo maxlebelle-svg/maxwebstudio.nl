@@ -12224,31 +12224,82 @@
                   if (rows.length) {
                     const list = document.createElement("div");
                     list.className = "customer-workspace-list";
-                    rows.slice(0, 6).forEach((row) => {
-                      const item = document.createElement("div");
-                      item.className = "customer-workspace-list-item";
-                      item.append(createCell(row.title, "strong"), createCell(row.meta, "small"), createBadge(row.badge, row.tone));
-                      list.append(item);
-                    });
+	                    rows.slice(0, 6).forEach((row) => {
+	                      const item = document.createElement("div");
+	                      item.className = "customer-workspace-list-item";
+	                      item.append(createCell(row.title, "strong"), createCell(row.meta, "small"), createBadge(row.badge, row.tone));
+	                      if (Array.isArray(row.actions) && row.actions.length) {
+	                        const actions = document.createElement("div");
+	                        actions.className = "customer-workspace-item-actions";
+	                        row.actions.forEach((actionConfig) => {
+	                          const button = document.createElement("button");
+	                          button.className = "button secondary";
+	                          button.type = "button";
+	                          button.textContent = actionConfig.label;
+	                          button.disabled = Boolean(actionConfig.disabled);
+	                          button.addEventListener("click", actionConfig.onClick);
+	                          actions.append(button);
+	                        });
+	                        item.append(actions);
+	                      }
+	                      list.append(item);
+	                    });
                     card.append(list);
                   }
-                  panel.append(card);
-                }
+	                  panel.append(card);
+	                }
 
-                function renderCustomerWorkspace(customer = selectedCustomer()) {
+	                function websitePreviewUrl(website = {}) {
+	                  return website.previewUrl
+	                    || website.preview_url
+	                    || website.latestPreviewUrl
+	                    || website.currentPreviewUrl
+	                    || website.stagingUrl
+	                    || website.staging_url
+	                    || "";
+	                }
+
+	                function websiteWorkspaceActions(website = {}) {
+	                  const previewUrl = websitePreviewUrl(website);
+	                  const liveUrl = website.liveUrl || website.url || "";
+	                  return [
+	                    {
+	                      label: "Preview openen",
+	                      disabled: !previewUrl,
+	                      onClick: () => previewUrl && window.open(previewUrl, "_blank", "noopener"),
+	                    },
+	                    {
+	                      label: "Preview kopiëren",
+	                      disabled: !previewUrl,
+	                      onClick: () => copyText(previewUrl, "Preview-link gekopieerd.", setDetailMessage),
+	                    },
+	                    {
+	                      label: "Live openen",
+	                      disabled: !liveUrl,
+	                      onClick: () => liveUrl && window.open(liveUrl, "_blank", "noopener"),
+	                    },
+	                  ];
+	                }
+
+	                function renderCustomerWorkspace(customer = selectedCustomer()) {
                   if (!customer) {
                     renderWorkspaceSummaryPanel(customerWorkspaceWebsites, "Websites", []);
                     renderWorkspaceSummaryPanel(customerWorkspaceBilling, "Financieel", []);
                     renderWorkspaceSummaryPanel(customerWorkspaceAssets, "Assets", []);
                     return;
                   }
-                  const records = customerWorkspaceRecords(customer);
-                  renderWorkspaceSummaryPanel(customerWorkspaceWebsites, "Websites", records.websites.map((website) => ({
-                    title: website.name || website.domain || customer.website || "Website",
-                    meta: [website.domain || website.liveUrl || "Geen domein", website.lastUpdateAt ? `Laatst gewijzigd ${formatDate(website.lastUpdateAt)}` : ""].filter(Boolean).join(" - "),
-                    badge: websiteStatusLabels[website.status] || website.status || "Website",
-                    tone: websiteStatusClass(website.status),
-                  })));
+	                  const records = customerWorkspaceRecords(customer);
+	                  renderWorkspaceSummaryPanel(customerWorkspaceWebsites, "Websites", records.websites.map((website) => ({
+	                    title: website.name || website.domain || customer.website || "Website",
+	                    meta: [
+	                      website.domain || website.liveUrl || "Geen domein",
+	                      websitePreviewUrl(website) ? "Preview beschikbaar" : "Geen preview gekoppeld",
+	                      website.lastUpdateAt ? `Laatst gewijzigd ${formatDate(website.lastUpdateAt)}` : "",
+	                    ].filter(Boolean).join(" - "),
+	                    badge: websitePreviewUrl(website) ? "Preview klaar" : websiteStatusLabels[website.status] || website.status || "Website",
+	                    tone: websitePreviewUrl(website) ? "status-active" : websiteStatusClass(website.status),
+	                    actions: websiteWorkspaceActions(website),
+	                  })));
                   renderWorkspaceSummaryPanel(customerWorkspaceBilling, "Financieel", [
                     ...records.quotes.map((quote) => ({
                       title: quote.quoteNumber || quote.number || quote.title || "Offerte",

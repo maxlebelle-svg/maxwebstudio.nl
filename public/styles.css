@@ -8500,6 +8500,13 @@ h3 {
   background: rgba(2, 14, 25, 0.34);
 }
 
+.customer-workspace-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
 .website-operations-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
