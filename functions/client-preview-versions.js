@@ -1,10 +1,12 @@
 const { corsHeaders } = require("./_cors");
+const { randomUUID, createHash } = require("crypto");
+const { createTimelineEvent } = require("./services/timelineService");
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return jsonResponse(204, {});
-  if (event.httpMethod !== "GET") return jsonResponse(405, { success: false, error: "Methode niet toegestaan." });
+  if (!["GET", "POST"].includes(event.httpMethod)) return jsonResponse(405, { success: false, error: "Methode niet toegestaan." });
 
   const context = getContext();
   if (!context.available) return jsonResponse(500, { success: false, error: "Previewomgeving is nog niet geconfigureerd." });
@@ -13,6 +15,8 @@ exports.handler = async (event) => {
     const authUser = await readAuthUser(context, getBearer(event));
     const customer = await resolveCustomerForAuthUser(context, authUser.id);
     if (!customer?.id) return jsonResponse(403, { success: false, error: "Geen klantprofiel gekoppeld aan deze sessie." });
+
+    if (event.httpMethod === "POST") return handlePreviewAction(context, customer, authUser, parsePayload(event.body));
 
     const versionId = uuidOrEmpty(event.queryStringParameters?.versionId || event.queryStringParameters?.version_id);
     const filter = versionId
@@ -42,6 +46,103 @@ exports.handler = async (event) => {
     });
   }
 };
+
+async function handlePreviewAction(context, customer, authUser, payload = {}) {
+  const action = cleanText(payload.action).toLowerCase();
+  const versionId = uuidOrEmpty(payload.previewVersionId || payload.preview_version_id);
+  if (!versionId) return jsonResponse(400, { success: false, error: "Previewversie ontbreekt." });
+  const version = await readSingle(context, "website_preview_versions", [
+    "select=*",
+    `id=eq.${versionId}`,
+    `customer_id=eq.${customer.id}`,
+    "published_to_portal=eq.true",
+    "limit=1",
+  ].join("&"));
+  if (!version?.id) return jsonResponse(404, { success: false, error: "Previewversie niet gevonden voor dit klantaccount." });
+  if (action === "feedback") return savePreviewFeedback(context, customer, authUser, version, payload);
+  if (action === "approve") return approvePreviewVersion(context, customer, authUser, version, payload);
+  return jsonResponse(400, { success: false, error: "Onbekende previewactie." });
+}
+
+async function savePreviewFeedback(context, customer, authUser, version, payload) {
+  if (version.allow_feedback === false) return jsonResponse(403, { success: false, error: "Feedback is voor deze previewversie gesloten." });
+  const comment = cleanText(payload.comment || payload.feedback || payload.description).slice(0, 2500);
+  if (!comment) return jsonResponse(400, { success: false, error: "Feedbacktekst ontbreekt." });
+  const idempotencyKey = cleanText(payload.idempotencyKey || payload.idempotency_key) || hashText([version.id, authUser.id, comment].join(":"));
+  const currentItems = Array.isArray(version.feedback_items) ? version.feedback_items : [];
+  const existing = currentItems.find((item) => cleanText(item.idempotencyKey) === idempotencyKey);
+  if (existing) return jsonResponse(200, { success: true, duplicate: true, previewVersion: sanitizeClientVersion(version), feedback: sanitizeFeedbackItem(existing) });
+
+  const now = new Date().toISOString();
+  const feedback = {
+    id: randomUUID(),
+    idempotencyKey,
+    page: cleanText(payload.page || "Algemeen").slice(0, 120),
+    section: cleanText(payload.section || "Overig").slice(0, 120),
+    category: cleanText(payload.category || "algemeen").slice(0, 80),
+    priority: cleanText(payload.priority || "normaal").slice(0, 40),
+    comment,
+    screenshot: cleanText(payload.screenshot || "").slice(0, 500),
+    status: "open",
+    createdAt: now,
+    createdByAuthUserId: authUser.id,
+  };
+  const nextItems = [...currentItems, feedback];
+  const rows = await patchRows(context, "website_preview_versions", `id=eq.${version.id}`, {
+    feedback_items: nextItems,
+    status: "feedback_received",
+    updated_at: now,
+  });
+  const updated = rows[0] || { ...version, feedback_items: nextItems, status: "feedback_received" };
+  await createChangeRequestForFeedback(context, customer, authUser, version, feedback);
+  await safeTimeline({
+    customerId: customer.id,
+    eventType: "feedback_created",
+    title: "Feedback ontvangen op website-preview",
+    description: feedback.comment,
+    module: "website",
+    referenceType: "website_preview_version",
+    referenceId: version.id,
+    actorName: customer.name || authUser.email || "Klant",
+    actorRole: "customer",
+    severity: feedback.priority === "hoog" ? "warning" : "info",
+    metadata: { dedupeKey: `preview_feedback:${feedback.id}`, previewVersionId: version.id, websiteId: version.website_id || "" },
+  });
+  return jsonResponse(200, { success: true, previewVersion: sanitizeClientVersion(updated), feedback: sanitizeFeedbackItem(feedback) });
+}
+
+async function approvePreviewVersion(context, customer, authUser, version, payload) {
+  if (version.allow_approval === false) return jsonResponse(403, { success: false, error: "Goedkeuring is voor deze previewversie gesloten." });
+  if (version.approved_at) return jsonResponse(200, { success: true, duplicate: true, previewVersion: sanitizeClientVersion(version) });
+  const now = new Date().toISOString();
+  const rows = await patchRows(context, "website_preview_versions", `id=eq.${version.id}`, {
+    approved_at: now,
+    approved_by_auth_user_id: authUser.id,
+    status: "approved",
+    approval_metadata: {
+      approvedByEmail: authUser.email || "",
+      approvedByCustomerId: customer.id,
+      note: cleanText(payload.note || payload.feedback).slice(0, 1000),
+      approvedAt: now,
+    },
+    updated_at: now,
+  });
+  const updated = rows[0] || { ...version, approved_at: now, approved_by_auth_user_id: authUser.id, status: "approved" };
+  await safeTimeline({
+    customerId: customer.id,
+    eventType: "preview_approved",
+    title: "Website-preview goedgekeurd",
+    description: `Preview V${version.version || 1} is goedgekeurd door de klant.`,
+    module: "website",
+    referenceType: "website_preview_version",
+    referenceId: version.id,
+    actorName: customer.name || authUser.email || "Klant",
+    actorRole: "customer",
+    severity: "success",
+    metadata: { dedupeKey: `preview_approved:${version.id}`, previewVersionId: version.id, websiteId: version.website_id || "" },
+  });
+  return jsonResponse(200, { success: true, previewVersion: sanitizeClientVersion(updated) });
+}
 
 async function readAuthUser(context, bearer) {
   if (!bearer) {
@@ -74,6 +175,22 @@ async function readRows(context, table, query) {
   return supabaseFetch(`${context.supabaseUrl}/rest/v1/${table}?${query}`, {
     method: "GET",
     headers: restHeaders(context.serviceRoleKey),
+  });
+}
+
+async function patchRows(context, table, filter, record) {
+  return supabaseFetch(`${context.supabaseUrl}/rest/v1/${table}?${filter}`, {
+    method: "PATCH",
+    headers: { ...restHeaders(context.serviceRoleKey), "Content-Type": "application/json", Prefer: "return=representation" },
+    body: JSON.stringify(record),
+  });
+}
+
+async function insertRows(context, table, record) {
+  return supabaseFetch(`${context.supabaseUrl}/rest/v1/${table}`, {
+    method: "POST",
+    headers: { ...restHeaders(context.serviceRoleKey), "Content-Type": "application/json", Prefer: "return=representation" },
+    body: JSON.stringify(record),
   });
 }
 
@@ -131,6 +248,58 @@ function sanitizeFeedbackItem(item = {}) {
   };
 }
 
+async function createChangeRequestForFeedback(context, customer, authUser, version, feedback) {
+  try {
+    await insertRows(context, "change_requests", {
+      customer_id: customer.id,
+      auth_user_id: authUser.id,
+      website_id: version.website_id || null,
+      project_id: version.project_id || null,
+      name: customer.name || authUser.email || "Klant",
+      company: customer.company || customer.company_name || "",
+      email: customer.email || authUser.email || "",
+      title: `Feedback op preview V${version.version || 1}`,
+      description: feedback.comment,
+      category: feedback.category || "preview-feedback",
+      priority: feedback.priority || "normaal",
+      status: "nieuw",
+      source: "preview_review",
+      metadata: {
+        previewVersionId: version.id,
+        feedbackId: feedback.id,
+        page: feedback.page,
+        section: feedback.section,
+        screenshot: feedback.screenshot,
+      },
+    });
+  } catch (error) {
+    console.error("Preview feedback change request skipped", { message: error.message });
+  }
+}
+
+async function safeTimeline(input) {
+  try {
+    return await createTimelineEvent(input);
+  } catch (error) {
+    console.error("Preview review timeline skipped", { message: error.message });
+    return null;
+  }
+}
+
+function parsePayload(body) {
+  try {
+    return JSON.parse(body || "{}");
+  } catch {
+    const error = new Error("Ongeldige JSON body.");
+    error.status = 400;
+    throw error;
+  }
+}
+
+function hashText(value = "") {
+  return createHash("sha256").update(String(value)).digest("hex");
+}
+
 function getContext() {
   const supabaseUrl = cleanText(process.env.SUPABASE_URL).replace(/\/$/, "");
   const anonKey = cleanText(process.env.SUPABASE_ANON_KEY);
@@ -170,7 +339,7 @@ function isMissingPreviewSchema(error = {}) {
 function jsonResponse(statusCode, body) {
   return {
     statusCode,
-    headers: { "Content-Type": "application/json", "Cache-Control": "no-store", ...corsHeaders({ methods: "GET, OPTIONS" }) },
+    headers: { "Content-Type": "application/json", "Cache-Control": "no-store", ...corsHeaders({ methods: "GET, POST, OPTIONS" }) },
     body: statusCode === 204 ? "" : JSON.stringify(body),
   };
 }

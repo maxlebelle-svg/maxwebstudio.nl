@@ -12319,7 +12319,7 @@
 	                        <div><strong>Publiceer preview naar klantportaal</strong><span>Versie V${escapeHtml(String(latest.version || 1))} wordt klantzichtbaar gemaakt.</span></div>
 	                        <mark class="status-badge status-prepared">Review</mark>
 	                      </div>
-	                      <label>Previewversie<select name="previewVersionId">${versions.map((version) => `<option value="${escapeHtml(version.id)}">V${escapeHtml(String(version.version || 1))} - ${escapeHtml(version.publishedToPortal ? "al gepubliceerd" : "intern")}</option>`).join("")}</select></label>
+	                      <label>Previewversie<select name="previewVersionId">${versions.map((version) => `<option value="${escapeHtml(version.id)}">V${escapeHtml(String(version.version || 1))} - ${escapeHtml(version.approvedAt ? "goedgekeurd" : version.feedbackCount ? `${version.feedbackCount} feedbackpunt(en)` : version.publishedToPortal ? "klaar voor review" : "intern")}</option>`).join("")}</select></label>
 	                      <label>Klantgerichte titel<input name="title" type="text" maxlength="140" value="${escapeHtml(latest.title || website.name || "Website-preview")}" required /></label>
 	                      <label class="admin-profile-wide">Korte toelichting<textarea name="summary" rows="3" maxlength="500" placeholder="Wat kan de klant bekijken?"></textarea></label>
 	                      <label class="admin-profile-wide">Wat is aangepast<textarea name="changeSummary" rows="4" maxlength="1200" placeholder="Samenvatting van zichtbare wijzigingen"></textarea></label>

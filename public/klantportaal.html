@@ -352,6 +352,8 @@
           <form class="admin-form portal-message-form" id="portal-demo-feedback-form" hidden>
             <label for="portal-demo-feedback-page">Pagina<input id="portal-demo-feedback-page" type="text" maxlength="120" placeholder="Bijv. Home, Diensten of Contact" /></label>
             <label for="portal-demo-feedback-section">Onderdeel<select id="portal-demo-feedback-section"><option>Hero</option><option>Teksten</option><option>Foto's</option><option>Kleuren</option><option>Knoppen</option><option>Contact</option><option>SEO</option><option>Overig</option></select></label>
+            <label for="portal-demo-feedback-category">Categorie<select id="portal-demo-feedback-category"><option value="algemeen">Algemeen</option><option value="tekst">Tekst</option><option value="beeld">Beeld</option><option value="design">Design</option><option value="technisch">Technisch</option></select></label>
+            <label for="portal-demo-feedback-priority">Prioriteit<select id="portal-demo-feedback-priority"><option value="normaal">Normaal</option><option value="laag">Laag</option><option value="hoog">Hoog</option></select></label>
             <label class="admin-profile-wide" for="portal-demo-feedback">Uw feedback<textarea id="portal-demo-feedback" rows="4" maxlength="2500" placeholder="Geef uw opmerkingen, wensen of correcties door."></textarea></label>
             <label class="admin-profile-wide" for="portal-demo-feedback-screenshot">Screenshot of beeldlink, optioneel<input id="portal-demo-feedback-screenshot" type="url" placeholder="https://..." /></label>
             <div class="portal-actions">
@@ -527,6 +529,8 @@
         const demoFeedbackField = document.getElementById("portal-demo-feedback");
         const demoFeedbackPage = document.getElementById("portal-demo-feedback-page");
         const demoFeedbackSection = document.getElementById("portal-demo-feedback-section");
+        const demoFeedbackCategory = document.getElementById("portal-demo-feedback-category");
+        const demoFeedbackPriority = document.getElementById("portal-demo-feedback-priority");
         const demoFeedbackScreenshot = document.getElementById("portal-demo-feedback-screenshot");
         const demoFeedbackSubmit = document.getElementById("portal-demo-feedback-submit");
         const demoApproveSubmit = document.getElementById("portal-demo-approve-submit");
@@ -779,6 +783,23 @@
             throw new Error(data.error || "Websitepreviews konden niet worden geladen.");
           }
           return Array.isArray(data.previewVersions) ? data.previewVersions : [];
+        }
+
+        async function previewVersionRequest(payload = {}) {
+          const token = getPortalBearer();
+          if (!token) throw new Error("Log in om deze previewactie te versturen.");
+          const response = await fetch("/.netlify/functions/client-preview-versions", {
+            method: "POST",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(payload),
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || data.success === false) throw new Error(data.error || "Previewactie kon niet worden verwerkt.");
+          return data;
         }
 
         function renderPublishedWebsitePreviews(versions = []) {
@@ -2917,17 +2938,33 @@
           demoFeedbackSubmit.disabled = true;
           setDemoFeedbackStatus("Feedback versturen...");
           try {
-            const data = await demoJourneyRequest("POST", {
-              action: "feedback",
-              feedback,
-              items: [{
+            const previewVersionId = demoFeedbackForm.dataset.previewVersionId || "";
+            if (previewVersionId) {
+              await previewVersionRequest({
+                action: "feedback",
+                previewVersionId,
+                comment: feedback,
                 page: demoFeedbackPage?.value || "Algemeen",
                 section: demoFeedbackSection?.value || "Overig",
-                comment: feedback,
+                category: demoFeedbackCategory?.value || "algemeen",
+                priority: demoFeedbackPriority?.value || "normaal",
                 screenshot: demoFeedbackScreenshot?.value || "",
-              }],
-            });
-            renderDemoJourney({ journey: data.journey, events: data.events });
+              });
+              const versions = await loadPublishedPreviewVersions();
+              renderPublishedWebsitePreviews(versions);
+            } else {
+              const data = await demoJourneyRequest("POST", {
+                action: "feedback",
+                feedback,
+                items: [{
+                  page: demoFeedbackPage?.value || "Algemeen",
+                  section: demoFeedbackSection?.value || "Overig",
+                  comment: feedback,
+                  screenshot: demoFeedbackScreenshot?.value || "",
+                }],
+              });
+              renderDemoJourney({ journey: data.journey, events: data.events });
+            }
             setDemoFeedbackStatus("Uw feedback is ontvangen.", "success");
             demoFeedbackField.value = "";
             if (demoFeedbackScreenshot) demoFeedbackScreenshot.value = "";
@@ -2939,14 +2976,27 @@
         });
 
         demoApproveSubmit?.addEventListener("click", async () => {
+          const previewVersionId = demoFeedbackForm.dataset.previewVersionId || "";
+          const versionLabel = demoFeedbackForm.dataset.previewVersionLabel || "deze versie";
+          if (previewVersionId && !window.confirm(`Weet u zeker dat u ${versionLabel} wilt goedkeuren?`)) return;
           demoApproveSubmit.disabled = true;
           setDemoFeedbackStatus("Akkoord verwerken...");
           try {
-            const data = await demoJourneyRequest("POST", {
-              action: "approve_preview",
-              feedback: String(demoFeedbackField.value || "").trim(),
-            });
-            renderDemoJourney({ journey: data.journey, events: data.events });
+            if (previewVersionId) {
+              await previewVersionRequest({
+                action: "approve",
+                previewVersionId,
+                note: String(demoFeedbackField.value || "").trim(),
+              });
+              const versions = await loadPublishedPreviewVersions();
+              renderPublishedWebsitePreviews(versions);
+            } else {
+              const data = await demoJourneyRequest("POST", {
+                action: "approve_preview",
+                feedback: String(demoFeedbackField.value || "").trim(),
+              });
+              renderDemoJourney({ journey: data.journey, events: data.events });
+            }
             setDemoFeedbackStatus("Dank u, uw akkoord is ontvangen. We bereiden livegang voor.", "success");
           } catch (error) {
             setDemoFeedbackStatus(error.message || "Akkoord kon niet worden verwerkt.", "error");
