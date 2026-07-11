@@ -416,35 +416,73 @@
         </div>
       </section>
 
-      <section class="admin-section" id="website-preview">
-        <div class="admin-section-heading"><div><p class="section-kicker">Website-preview</p><h2>Uw projecttijdlijn</h2></div></div>
-        <article class="admin-card customer-portal-card" id="portal-demo-journey" aria-live="polite">
-          <div class="portal-form-heading">
-            <div>
-              <strong>Projectvoortgang</strong>
-              <span id="portal-demo-journey-summary">Uw projecttijdlijn wordt geladen.</span>
-            </div>
-            <mark class="status-badge status-prepared" id="portal-demo-journey-state">Laden</mark>
+      <section class="admin-section portal-review-section" id="website-preview">
+        <div class="admin-section-heading">
+          <div>
+            <p class="section-kicker">Website-review</p>
+            <h2>Ontwerp beoordelen</h2>
+            <p>Bekijk de huidige versie, geef gerichte feedback en volg wat Max Webstudio ermee doet.</p>
           </div>
-          <div class="portal-status-timeline" id="portal-demo-journey-timeline"></div>
-          <div class="portal-actions" id="portal-demo-journey-actions"></div>
-          <div class="portal-card-grid" id="portal-preview-review-summary"></div>
-          <div class="portal-card-grid" id="portal-preview-version-list"></div>
-          <div class="portal-card-grid" id="portal-preview-feedback-list"></div>
-          <div class="portal-card-grid" id="portal-launch-checklist"></div>
-          <form class="admin-form portal-message-form" id="portal-demo-feedback-form" hidden>
-            <label for="portal-demo-feedback-page">Pagina<input id="portal-demo-feedback-page" type="text" maxlength="120" placeholder="Bijv. Home, Diensten of Contact" /></label>
-            <label for="portal-demo-feedback-section">Onderdeel<select id="portal-demo-feedback-section"><option>Hero</option><option>Teksten</option><option>Foto's</option><option>Kleuren</option><option>Knoppen</option><option>Contact</option><option>SEO</option><option>Overig</option></select></label>
-            <label for="portal-demo-feedback-category">Categorie<select id="portal-demo-feedback-category"><option value="algemeen">Algemeen</option><option value="tekst">Tekst</option><option value="beeld">Beeld</option><option value="design">Design</option><option value="technisch">Technisch</option></select></label>
-            <label for="portal-demo-feedback-priority">Prioriteit<select id="portal-demo-feedback-priority"><option value="normaal">Normaal</option><option value="laag">Laag</option><option value="hoog">Hoog</option></select></label>
-            <label class="admin-profile-wide" for="portal-demo-feedback">Uw feedback<textarea id="portal-demo-feedback" rows="4" maxlength="2500" placeholder="Geef uw opmerkingen, wensen of correcties door."></textarea></label>
-            <label class="admin-profile-wide" for="portal-demo-feedback-screenshot">Screenshot of beeldlink, optioneel<input id="portal-demo-feedback-screenshot" type="url" placeholder="https://..." /></label>
-            <div class="portal-actions">
-              <button class="button primary" id="portal-demo-feedback-submit" type="submit">Feedback versturen</button>
-              <button class="button secondary" id="portal-demo-approve-submit" type="button">Preview akkoord geven</button>
-              <span class="form-helper" id="portal-demo-feedback-status" role="status" aria-live="polite"></span>
+        </div>
+        <article class="admin-card customer-portal-card portal-review-shell" id="portal-demo-journey" aria-live="polite">
+          <div class="portal-review-hero">
+            <div>
+              <p class="section-kicker">Reviewomgeving</p>
+              <h3 id="portal-review-title">Review wordt geladen.</h3>
+              <p id="portal-demo-journey-summary">Je projecttijdlijn wordt geladen.</p>
             </div>
-          </form>
+            <div class="portal-review-status">
+              <mark class="status-badge status-prepared" id="portal-demo-journey-state">Laden</mark>
+              <a class="button secondary" href="#command-center">Terug naar dashboard</a>
+            </div>
+          </div>
+          <section class="portal-review-next-step" id="portal-review-next-step">
+            <span>Volgende stap</span>
+            <strong id="portal-review-next-title">We laden je reviewstatus.</strong>
+            <p id="portal-review-next-text">Zodra je ontwerp klaarstaat, zie je hier wat je kunt doen.</p>
+            <div class="portal-actions" id="portal-demo-journey-actions"></div>
+          </section>
+          <div class="portal-review-layout">
+            <section class="portal-review-preview-panel" aria-label="Veilige websitepreview">
+              <div id="portal-preview-review-summary"></div>
+            </section>
+            <aside class="portal-review-side-panel" aria-label="Feedback en goedkeuring">
+              <div class="portal-review-metrics" id="portal-review-feedback-summary"></div>
+              <form class="admin-form portal-message-form portal-review-form" id="portal-demo-feedback-form" hidden>
+                <div class="portal-form-heading">
+                  <p class="section-kicker">Gerichte feedback</p>
+                  <h3 id="portal-review-form-title">Geef je opmerkingen door</h3>
+                  <p id="portal-review-form-copy">Beschrijf concreet wat je anders wilt zien. Dan kunnen we het sneller verwerken.</p>
+                </div>
+            <label for="portal-demo-feedback-page">Pagina<input id="portal-demo-feedback-page" type="text" maxlength="120" placeholder="Bijv. Home, Diensten of Contact" /></label>
+                <label for="portal-demo-feedback-section">Onderdeel<select id="portal-demo-feedback-section"><option>Hero</option><option>Teksten</option><option>Foto's</option><option>Kleuren</option><option>Knoppen</option><option>Contact</option><option>SEO</option><option>Overig</option></select></label>
+                <label for="portal-demo-feedback-category">Categorie<select id="portal-demo-feedback-category"><option value="algemeen">Overig</option><option value="tekst">Tekst</option><option value="beeld">Beeld</option><option value="design">Indeling</option><option value="technisch">Functionaliteit</option></select></label>
+                <label for="portal-demo-feedback-priority">Prioriteit<select id="portal-demo-feedback-priority"><option value="normaal">Normaal</option><option value="laag">Laag</option><option value="hoog">Hoog</option></select></label>
+                <label class="admin-profile-wide" for="portal-demo-feedback">Je feedback<textarea id="portal-demo-feedback" rows="5" maxlength="2500" placeholder="Bijvoorbeeld: de tekst in de hero mag korter en de contactknop mag duidelijker."></textarea></label>
+                <label class="admin-profile-wide" for="portal-demo-feedback-screenshot">Afbeelding of screenshotlink, optioneel<input id="portal-demo-feedback-screenshot" type="url" placeholder="https://..." /></label>
+                <div class="portal-actions">
+                  <button class="button primary" id="portal-demo-feedback-submit" type="submit">Feedback versturen</button>
+                  <button class="button secondary" id="portal-demo-approve-submit" type="button">Ontwerp goedkeuren</button>
+                </div>
+                <span class="form-helper" id="portal-demo-feedback-status" role="status" aria-live="polite"></span>
+              </form>
+            </aside>
+          </div>
+          <section class="portal-review-feedback-panel">
+            <div class="project-workspace-card-head">
+              <div><span>Feedbackoverzicht</span><h3>Punten op deze versie</h3></div>
+              <div class="project-filter-tabs" id="portal-review-feedback-filters" aria-label="Feedback filter"></div>
+            </div>
+            <div class="portal-review-feedback-list" id="portal-preview-feedback-list"></div>
+          </section>
+          <section class="portal-review-history">
+            <div class="project-workspace-card-head">
+              <div><span>Versies</span><h3>Eerdere klantzichtbare versies</h3></div>
+            </div>
+            <div class="portal-card-grid" id="portal-preview-version-list"></div>
+          </section>
+          <div class="portal-card-grid" id="portal-launch-checklist"></div>
+          <div class="portal-status-timeline" id="portal-demo-journey-timeline" hidden></div>
         </article>
       </section>
 
@@ -623,6 +661,13 @@
         const previewReviewSummary = document.getElementById("portal-preview-review-summary");
         const previewVersionList = document.getElementById("portal-preview-version-list");
         const previewFeedbackList = document.getElementById("portal-preview-feedback-list");
+        const previewFeedbackSummary = document.getElementById("portal-review-feedback-summary");
+        const previewFeedbackFilters = document.getElementById("portal-review-feedback-filters");
+        const previewReviewTitle = document.getElementById("portal-review-title");
+        const previewReviewNextTitle = document.getElementById("portal-review-next-title");
+        const previewReviewNextText = document.getElementById("portal-review-next-text");
+        const previewReviewFormTitle = document.getElementById("portal-review-form-title");
+        const previewReviewFormCopy = document.getElementById("portal-review-form-copy");
         const launchChecklist = document.getElementById("portal-launch-checklist");
         const demoFeedbackForm = document.getElementById("portal-demo-feedback-form");
         const demoFeedbackField = document.getElementById("portal-demo-feedback");
@@ -712,6 +757,7 @@
           messages: document.getElementById("metric-messages"),
           notifications: document.getElementById("metric-notifications"),
         };
+        let activePreviewFeedbackFilter = "all";
         function escapeHtml(value = "") {
           return String(value || "")
             .replace(/&/g, "&amp;")
@@ -879,7 +925,7 @@
 
         async function demoJourneyRequest(method = "GET", payload = null) {
           const token = getPortalBearer();
-          if (!token) throw new Error("Log in om uw previewtijdlijn te bekijken.");
+          if (!token) throw new Error("Log in om je previewtijdlijn te bekijken.");
           const response = await fetch("/api/demo-journey?scope=customer", {
             method,
             headers: {
@@ -928,9 +974,24 @@
         function renderPublishedWebsitePreviews(versions = []) {
           if (!versions.length) return false;
           const latest = versions[0];
+          const reviewState = reviewStateForPreview(latest);
+          const canFeedback = latest.allowFeedback && !latest.approvedAt;
+          const canApprove = latest.allowApproval && !latest.approvedAt;
+          const counts = feedbackCounts(latest.feedbackItems || []);
+          previewReviewTitle.textContent = latest.title || `Ontwerpversie ${latest.version || 1}`;
           demoJourneySummary.textContent = latest.summary || "Je website-preview staat klaar voor review.";
           demoJourneyState.textContent = statusLabel(latest.status || "ready_for_review");
           demoJourneyState.className = `status-badge ${latest.approvedAt ? "status-active" : "status-prepared"}`;
+          previewReviewNextTitle.textContent = reviewState.title;
+          previewReviewNextText.textContent = reviewState.text;
+          previewReviewFormTitle.textContent = latest.approvedAt
+            ? "Feedback gesloten"
+            : canFeedback ? "Geef feedback op deze versie" : "Ontwerp goedkeuren";
+          previewReviewFormCopy.textContent = latest.approvedAt
+            ? "Deze versie is goedgekeurd. Nieuwe feedback loopt via een nieuw wijzigingsverzoek of bericht."
+            : canFeedback
+              ? "Koppel je opmerking aan een pagina of onderdeel. Concrete feedback kunnen we sneller verwerken."
+              : "Voeg eventueel een korte notitie toe en geef daarna akkoord op deze ontwerpversie.";
           demoJourneyTimeline.innerHTML = `
             <div class="portal-timeline-detail">
               <span class="portal-dot is-active"></span>
@@ -946,36 +1007,44 @@
             </div>
           `;
           demoJourneyActions.innerHTML = `
-            <a class="button primary" href="${escapeHtml(latest.safePreviewPath)}" target="_blank" rel="noopener">Ontwerp bekijken</a>
-            ${latest.allowFeedback ? `<a class="button secondary" href="#portal-demo-feedback-form">Feedback geven</a>` : ""}
-            ${latest.allowApproval ? `<button class="button secondary" id="portal-preview-approve-shortcut" type="button">Goedkeuren</button>` : ""}
+            <a class="button primary" href="${escapeHtml(latest.safePreviewPath)}" target="_blank" rel="noopener">${escapeHtml(reviewState.cta || "Ontwerp bekijken")}</a>
+            ${canFeedback ? `<a class="button secondary" href="#portal-demo-feedback-form">Feedback geven</a>` : ""}
+            ${canApprove ? `<button class="button secondary" id="portal-preview-approve-shortcut" type="button">Ontwerp goedkeuren</button>` : ""}
           `;
           previewReviewSummary.innerHTML = `
-            <article class="portal-data-card portal-website-preview-column">
-              <span>Preview</span>
-              <iframe class="portal-website-mini-preview" title="Veilige preview van je website" src="${escapeHtml(latest.safePreviewPath)}" loading="lazy"></iframe>
+            <article class="portal-review-preview-card">
+              <div class="portal-website-preview-frame">
+                <div class="portal-website-preview-toolbar">
+                  <span class="portal-website-preview-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                  <strong>Veilige preview · versie ${escapeHtml(String(latest.version || 1))}</strong>
+                </div>
+                <iframe class="portal-website-mini-preview" title="Veilige preview van ${escapeHtml(latest.title || "je website")}" src="${escapeHtml(latest.safePreviewPath)}" loading="lazy"></iframe>
+                <div class="portal-website-preview-caption">
+                  <strong>${escapeHtml(latest.title || "Je ontwerp staat klaar")}</strong>
+                  <span>${escapeHtml(customerPreviewSummary(latest))}</span>
+                </div>
+              </div>
+              <div class="portal-review-version-strip">
+                <span>Versie ${escapeHtml(String(latest.version || 1))}</span>
+                <span>${escapeHtml(statusLabel(latest.status || "review"))}</span>
+                <span>Gepubliceerd ${escapeHtml(formatDate(latest.publishedAt))}</span>
+                ${latest.reviewDeadline ? `<span>Review voor ${escapeHtml(formatDate(latest.reviewDeadline))}</span>` : ""}
+              </div>
             </article>
-            ${[
-              ["Titel", latest.title],
-              ["Versie", `V${latest.version || 1}`],
-              ["Publicatiedatum", formatDate(latest.publishedAt)],
-              ["Status", statusLabel(latest.status || "review")],
-              ["Reviewdeadline", formatDate(latest.reviewDeadline)],
-              ["Wijzigingen", customerPreviewSummary(latest)],
-            ].map(([label, value]) => `<article class="portal-data-card"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value || "-")}</strong></article>`).join("")}
           `;
           previewVersionList.innerHTML = versions.length > 1
-            ? versions.slice(1).map((version) => `<article class="portal-data-card"><span>Eerdere versie</span><strong>V${escapeHtml(String(version.version || 1))}</strong><small>${escapeHtml(formatDate(version.publishedAt))}</small><a class="button secondary" href="${escapeHtml(version.safePreviewPath)}" target="_blank" rel="noopener">Bekijken</a></article>`).join("")
-            : `<article class="portal-data-card"><span>Eerdere versies</span><strong>Nog geen eerdere publicatie</strong><small>Nieuwe versies verschijnen hier zodra Max Webstudio ze publiceert.</small></article>`;
-          previewFeedbackList.innerHTML = latest.feedbackItems?.length
-            ? latest.feedbackItems.slice(-6).reverse().map((item) => `<article class="portal-data-card"><span>${escapeHtml([item.page, item.section].filter(Boolean).join(" · ") || "Feedback")}</span><strong>${escapeHtml(statusLabel(item.status || "open"))}</strong><small>${escapeHtml(item.comment || "")}</small></article>`).join("")
-            : `<article class="portal-data-card"><span>Feedback</span><strong>Nog geen punten</strong><small>Geef uw opmerkingen door voor deze exacte previewversie.</small></article>`;
+            ? versions.slice(1).map((version) => `<article class="portal-data-card"><span>Eerdere versie</span><strong>Versie ${escapeHtml(String(version.version || 1))}</strong><small>${escapeHtml(formatDate(version.publishedAt))}</small><a class="button secondary" href="${escapeHtml(version.safePreviewPath)}" target="_blank" rel="noopener">Bekijken</a></article>`).join("")
+            : `<article class="portal-review-empty"><span>Eerdere versies</span><strong>Nog geen eerdere publicatie</strong><p>Nieuwe versies verschijnen hier zodra Max Webstudio ze publiceert.</p></article>`;
+          renderReviewFeedbackSummary(latest);
+          renderFeedbackFilters(latest);
+          renderPreviewFeedbackList(latest);
           launchChecklist.innerHTML = "";
-          demoFeedbackForm.hidden = !(latest.allowFeedback || latest.allowApproval);
+          demoFeedbackForm.hidden = !(canFeedback || canApprove);
           demoFeedbackForm.dataset.previewVersionId = latest.id;
-          demoFeedbackForm.dataset.previewVersionLabel = `V${latest.version || 1}`;
-          demoFeedbackSubmit.hidden = !latest.allowFeedback;
-          demoApproveSubmit.hidden = !latest.allowApproval || Boolean(latest.approvedAt);
+          demoFeedbackForm.dataset.previewVersionLabel = `versie ${latest.version || 1}`;
+          demoFeedbackForm.dataset.openFeedbackCount = String(counts.active || 0);
+          demoFeedbackSubmit.hidden = !canFeedback;
+          demoApproveSubmit.hidden = !canApprove;
           document.getElementById("portal-preview-approve-shortcut")?.addEventListener("click", () => demoApproveSubmit?.click());
           return true;
         }
@@ -994,13 +1063,16 @@
           const visibleEvents = Array.isArray(events) ? events.filter((event) => event.visibleToCustomer !== false) : [];
           const eventByTitle = new Map(visibleEvents.map((event) => [event.title, event]));
           if (!journey) {
+            previewReviewTitle.textContent = "Nog geen ontwerp gepubliceerd";
+            previewReviewNextTitle.textContent = "Nog geen reviewactie";
+            previewReviewNextText.textContent = "Zodra er een klantzichtbare preview klaarstaat, verschijnt die hier.";
             demoJourneySummary.textContent = "Er staat nog geen website-preview klaar voor dit klantprofiel.";
             demoJourneyState.textContent = "Nog niet gestart";
             demoJourneyState.className = "status-badge status-prepared";
             demoJourneyTimeline.innerHTML = demoJourneySteps.map((step, index) => `
               <div class="portal-timeline-detail">
                 <span class="portal-dot"></span>
-                <div><strong>${step}</strong><small>${index === 0 ? "Zodra uw aanvraag is ingepland ziet u hier de voortgang." : "Nog niet gestart"}</small></div>
+                <div><strong>${step}</strong><small>${index === 0 ? "Zodra je aanvraag is ingepland zie je hier de voortgang." : "Nog niet gestart"}</small></div>
               </div>
             `).join("");
             demoJourneyActions.innerHTML = "";
@@ -1011,7 +1083,7 @@
 
           demoJourneySummary.textContent = source === "local"
             ? "Demo-preview uit lokale demo klantreis."
-            : "Uw previewplanning en voortgang staan hieronder.";
+            : "Je previewplanning en voortgang staan hieronder.";
           demoJourneyState.textContent = statusLabel(journey.demoStatus || "in voorbereiding");
           demoJourneyState.className = "status-badge status-active";
           demoJourneyTimeline.innerHTML = demoJourneySteps.map((step) => {
@@ -1069,7 +1141,7 @@
           const feedbackItems = Array.isArray(review.feedbackItems) ? review.feedbackItems : [];
           previewFeedbackList.innerHTML = feedbackItems.length
             ? feedbackItems.slice(-6).reverse().map((item) => `<article class="portal-data-card"><span>${escapeHtml([item.page, item.section].filter(Boolean).join(" · ") || "Feedback")}</span><strong>${escapeHtml(statusLabel(item.status || "open"))}</strong><small>${escapeHtml(item.comment || "")}</small></article>`).join("")
-            : `<article class="portal-data-card"><span>Feedback</span><strong>Nog geen punten</strong><small>Geef hieronder per onderdeel uw opmerkingen door.</small></article>`;
+            : `<article class="portal-data-card"><span>Feedback</span><strong>Nog geen punten</strong><small>Geef hieronder per onderdeel je opmerkingen door.</small></article>`;
           const checklist = Array.isArray(launch.checklist) ? launch.checklist : [];
           launchChecklist.innerHTML = checklist.length
             ? checklist.map((item) => `<article class="portal-data-card"><span>${escapeHtml(item.label)}</span><strong>${item.done ? "Klaar" : "In controle"}</strong></article>`).join("")
@@ -1558,6 +1630,163 @@
             return "Eerste ontwerp op basis van je briefing en projectinput.";
           }
           return raw;
+        }
+
+        function feedbackStatusKey(status = "") {
+          const value = normalize(status || "open");
+          if (["resolved", "verwerkt", "done", "afgerond", "closed", "klaar"].includes(value)) return "done";
+          if (["in behandeling", "in progress", "in_progress", "processing", "bezig"].includes(value)) return "progress";
+          if (["ontvangen", "received", "nieuw", "new"].includes(value)) return "received";
+          return "open";
+        }
+
+        function feedbackStatusLabel(status = "") {
+          const key = feedbackStatusKey(status);
+          if (key === "done") return "Verwerkt";
+          if (key === "progress") return "In behandeling";
+          if (key === "received") return "Ontvangen";
+          return "Open";
+        }
+
+        function feedbackCounts(items = []) {
+          return items.reduce((counts, item) => {
+            const key = feedbackStatusKey(item.status);
+            counts.total += 1;
+            counts[key] = (counts[key] || 0) + 1;
+            counts.active += key === "done" ? 0 : 1;
+            return counts;
+          }, { total: 0, open: 0, received: 0, progress: 0, done: 0, active: 0 });
+        }
+
+        function reviewStateForPreview(preview = null) {
+          if (!preview) {
+            return {
+              tone: "empty",
+              title: "Nog geen ontwerp gepubliceerd",
+              text: "Zodra Max Webstudio een klantzichtbare versie publiceert, kun je hier reviewen.",
+              cta: "",
+            };
+          }
+          const counts = feedbackCounts(preview.feedbackItems || []);
+          if (preview.approvedAt) {
+            return {
+              tone: "done",
+              title: "Ontwerp goedgekeurd",
+              text: "Dank je. Wij bereiden nu de afronding en livegang voor.",
+              cta: "Ontwerp bekijken",
+            };
+          }
+          if (counts.active > 0) {
+            return {
+              tone: "attention",
+              title: "Feedback ontvangen",
+              text: "Je feedback staat gekoppeld aan deze versie. Wij verwerken de punten en houden de status hier bij.",
+              cta: "Feedback bekijken",
+            };
+          }
+          if (preview.allowApproval) {
+            return {
+              tone: "review",
+              title: "Klaar voor jouw review",
+              text: "Bekijk het ontwerp en geef feedback of keur de versie goed wanneer alles klopt.",
+              cta: "Ontwerp bekijken",
+            };
+          }
+          return {
+            tone: "neutral",
+            title: "Reviewstatus bijgewerkt",
+            text: "De huidige status van deze ontwerpversie staat hieronder.",
+            cta: "Ontwerp bekijken",
+          };
+        }
+
+        function feedbackFilterMatches(item = {}, filter = "all") {
+          if (filter === "all") return true;
+          return feedbackStatusKey(item.status) === filter;
+        }
+
+        function renderFeedbackFilters(preview = null) {
+          if (!previewFeedbackFilters) return;
+          const items = Array.isArray(preview?.feedbackItems) ? preview.feedbackItems : [];
+          const counts = feedbackCounts(items);
+          const filters = [
+            ["all", "Alles", counts.total],
+            ["open", "Open", counts.open],
+            ["received", "Ontvangen", counts.received],
+            ["progress", "In behandeling", counts.progress],
+            ["done", "Verwerkt", counts.done],
+          ];
+          previewFeedbackFilters.replaceChildren(...filters.map(([key, label, count]) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.dataset.filter = key;
+            button.className = key === activePreviewFeedbackFilter ? "is-active" : "";
+            button.textContent = `${label}${count ? ` ${count}` : ""}`;
+            button.addEventListener("click", () => {
+              activePreviewFeedbackFilter = key;
+              renderFeedbackFilters(preview);
+              renderPreviewFeedbackList(preview);
+            });
+            return button;
+          }));
+        }
+
+        function feedbackSummaryMetric(label, value, text, tone = "neutral") {
+          return `<article class="portal-review-metric is-${escapeHtml(tone)}"><span>${escapeHtml(label)}</span><strong>${escapeHtml(String(value))}</strong><small>${escapeHtml(text)}</small></article>`;
+        }
+
+        function renderReviewFeedbackSummary(preview = null) {
+          if (!previewFeedbackSummary) return;
+          const items = Array.isArray(preview?.feedbackItems) ? preview.feedbackItems : [];
+          const counts = feedbackCounts(items);
+          previewFeedbackSummary.innerHTML = [
+            feedbackSummaryMetric("Totaal", counts.total, "Feedbackpunten", counts.total ? "active" : "neutral"),
+            feedbackSummaryMetric("Open", counts.open + counts.received + counts.progress, "Nog niet verwerkt", counts.active ? "attention" : "done"),
+            feedbackSummaryMetric("Verwerkt", counts.done, "Afgeronde punten", counts.done ? "done" : "neutral"),
+          ].join("");
+        }
+
+        function renderPreviewFeedbackList(preview = null) {
+          if (!previewFeedbackList) return;
+          const items = Array.isArray(preview?.feedbackItems) ? preview.feedbackItems : [];
+          const visible = items.filter((item) => feedbackFilterMatches(item, activePreviewFeedbackFilter));
+          if (!items.length) {
+            previewFeedbackList.innerHTML = `
+              <article class="portal-review-empty">
+                <span>Geen feedback</span>
+                <strong>Er zijn nog geen punten op deze versie.</strong>
+                <p>Bekijk het ontwerp rustig. Als je iets ziet, geef het per pagina of onderdeel door.</p>
+              </article>
+            `;
+            return;
+          }
+          if (!visible.length) {
+            previewFeedbackList.innerHTML = `
+              <article class="portal-review-empty">
+                <span>Geen resultaten</span>
+                <strong>Geen feedbackpunten in dit filter.</strong>
+                <p>Kies een ander filter om alle punten te bekijken.</p>
+              </article>
+            `;
+            return;
+          }
+          previewFeedbackList.innerHTML = visible.slice().reverse().map((item, index) => {
+            const number = visible.length - index;
+            const label = [item.page, item.section].filter(Boolean).join(" · ") || "Algemene feedback";
+            return `
+              <article class="portal-review-feedback-card is-${escapeHtml(feedbackStatusKey(item.status))}">
+                <div class="portal-review-feedback-number">${number}</div>
+                <div>
+                  <div class="portal-review-feedback-head">
+                    <strong>${escapeHtml(label)}</strong>
+                    <span>${escapeHtml(feedbackStatusLabel(item.status))}</span>
+                  </div>
+                  <p>${escapeHtml(item.comment || "Geen toelichting meegegeven.")}</p>
+                  <small>${[item.category ? statusLabel(item.category) : "", item.priority ? `Prioriteit: ${statusLabel(item.priority)}` : "", formatDate(item.createdAt)].filter(Boolean).map(escapeHtml).join(" · ")}</small>
+                </div>
+              </article>
+            `;
+          }).join("");
         }
 
         function feedbackSummaryFromPreview(preview = null) {
@@ -3507,11 +3736,12 @@
           event.preventDefault();
           const feedback = String(demoFeedbackField.value || "").trim();
           if (!feedback) {
-            setDemoFeedbackStatus("Vul uw feedback in.", "error");
+            setDemoFeedbackStatus("Vul je feedback in.", "error");
             return;
           }
           demoFeedbackSubmit.disabled = true;
-          setDemoFeedbackStatus("Feedback versturen...");
+          demoFeedbackSubmit.textContent = "Feedback versturen...";
+          setDemoFeedbackStatus("Je feedback wordt gekoppeld aan deze versie...");
           try {
             const previewVersionId = demoFeedbackForm.dataset.previewVersionId || "";
             if (previewVersionId) {
@@ -3526,6 +3756,7 @@
                 screenshot: demoFeedbackScreenshot?.value || "",
               });
               const versions = await loadPublishedPreviewVersions();
+              publishedPreviewVersions = versions;
               renderPublishedWebsitePreviews(versions);
             } else {
               const data = await demoJourneyRequest("POST", {
@@ -3540,22 +3771,28 @@
               });
               renderDemoJourney({ journey: data.journey, events: data.events });
             }
-            setDemoFeedbackStatus("Uw feedback is ontvangen.", "success");
+            setDemoFeedbackStatus("Je feedback is ontvangen en staat bij deze versie.", "success");
             demoFeedbackField.value = "";
             if (demoFeedbackScreenshot) demoFeedbackScreenshot.value = "";
           } catch (error) {
             setDemoFeedbackStatus(error.message || "Feedback kon niet worden verstuurd.", "error");
           } finally {
             demoFeedbackSubmit.disabled = false;
+            demoFeedbackSubmit.textContent = "Feedback versturen";
           }
         });
 
         demoApproveSubmit?.addEventListener("click", async () => {
           const previewVersionId = demoFeedbackForm.dataset.previewVersionId || "";
           const versionLabel = demoFeedbackForm.dataset.previewVersionLabel || "deze versie";
-          if (previewVersionId && !window.confirm(`Weet u zeker dat u ${versionLabel} wilt goedkeuren?`)) return;
+          const openFeedbackCount = Number(demoFeedbackForm.dataset.openFeedbackCount || 0);
+          const confirmText = openFeedbackCount > 0
+            ? `Er staan nog ${openFeedbackCount} feedbackpunt(en) open op ${versionLabel}. Weet je zeker dat je deze versie wilt goedkeuren?`
+            : `Weet je zeker dat je ${versionLabel} wilt goedkeuren?`;
+          if (previewVersionId && !window.confirm(confirmText)) return;
           demoApproveSubmit.disabled = true;
-          setDemoFeedbackStatus("Akkoord verwerken...");
+          demoApproveSubmit.textContent = "Goedkeuring verwerken...";
+          setDemoFeedbackStatus("Je goedkeuring wordt verwerkt...");
           try {
             if (previewVersionId) {
               await previewVersionRequest({
@@ -3564,6 +3801,7 @@
                 note: String(demoFeedbackField.value || "").trim(),
               });
               const versions = await loadPublishedPreviewVersions();
+              publishedPreviewVersions = versions;
               renderPublishedWebsitePreviews(versions);
             } else {
               const data = await demoJourneyRequest("POST", {
@@ -3572,11 +3810,12 @@
               });
               renderDemoJourney({ journey: data.journey, events: data.events });
             }
-            setDemoFeedbackStatus("Dank u, uw akkoord is ontvangen. We bereiden livegang voor.", "success");
+            setDemoFeedbackStatus("Dank je, je akkoord is ontvangen. We bereiden de afronding voor.", "success");
           } catch (error) {
             setDemoFeedbackStatus(error.message || "Akkoord kon niet worden verwerkt.", "error");
           } finally {
             demoApproveSubmit.disabled = false;
+            demoApproveSubmit.textContent = "Ontwerp goedkeuren";
           }
         });
 
