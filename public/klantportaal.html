@@ -5080,9 +5080,19 @@
           });
         });
         portalMessageRefresh?.addEventListener("click", () => window.location.reload());
-        portalMessageBody?.addEventListener("input", () => {
-          portalMessageBody.style.height = "auto";
-          portalMessageBody.style.height = `${Math.min(portalMessageBody.scrollHeight, 260)}px`;
+        const autosizePortalMessageBody = (field = portalMessageBody) => {
+          if (!field) return;
+          if (field === portalMessageBody) {
+            portalMessageBody.style.height = "auto";
+            portalMessageBody.style.height = `${Math.min(portalMessageBody.scrollHeight, 260)}px`;
+            return;
+          }
+          field.style.height = "auto";
+          field.style.height = `${Math.min(field.scrollHeight, 260)}px`;
+        };
+        portalMessageBody?.addEventListener("input", () => autosizePortalMessageBody());
+        document.addEventListener("input", (event) => {
+          if (event.target?.id === "portal-message-body") autosizePortalMessageBody(event.target);
         });
         portalMessageBody?.addEventListener("keydown", (event) => {
           if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
