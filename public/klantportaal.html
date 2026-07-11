@@ -15,18 +15,19 @@
   <body class="portal-body">
     <main class="portal-app customer-portal-demo">
       <aside class="portal-sidebar" aria-label="Klantportaal menu">
-        <a class="portal-sidebar-brand" href="#command-center" aria-label="Max Webstudio Project Command Center">
+        <a class="portal-sidebar-brand" href="#dashboard" aria-label="Max Webstudio Project Command Center">
           <img src="max-webstudio-logo-mark.svg" alt="" aria-hidden="true" />
           <strong>Project Command Center</strong>
         </a>
         <nav class="portal-nav" aria-label="Klantportaal navigatie">
-          <a href="#command-center">Dashboard</a>
+          <a href="#dashboard">Dashboard</a>
           <a href="#onboarding">Onboarding</a>
           <a href="#branding">Branding</a>
-          <a href="#mijn-website">Mijn website</a>
+          <a href="#website">Mijn website</a>
           <a href="#wijzigingen">Wijzigingen</a>
           <a href="#berichten">Berichten</a>
           <a href="#facturen">Facturen</a>
+          <a href="#bestanden">Bestanden</a>
           <a href="#account">Account</a>
         </nav>
         <div class="portal-sidebar-note">
@@ -128,7 +129,7 @@
                   <div class="portal-command-list" id="command-finance-list"></div>
                 </article>
                 <article class="portal-command-card" id="portal-command-feedback">
-                  <div class="portal-command-card-head"><div><span>Feedback</span><h3>Reviewstatus</h3></div><a href="#website-preview">Naar review</a></div>
+                  <div class="portal-command-card-head"><div><span>Feedback</span><h3>Reviewstatus</h3></div><a href="#website-review">Naar review</a></div>
                   <div class="portal-command-feedback" id="command-feedback-summary"></div>
                 </article>
                 <article class="portal-command-card" id="portal-command-timeline">
@@ -166,7 +167,7 @@
           <p id="portal-today-subtitle">We laden je belangrijkste acties en websitegezondheid.</p>
           <div class="portal-today-actions">
             <a class="button primary" href="#wijzigingen">Wijziging aanvragen</a>
-            <a class="button secondary" id="portal-today-website-link" href="#mijn-website">Bekijk website</a>
+            <a class="button secondary" id="portal-today-website-link" href="#website">Bekijk website</a>
           </div>
         </div>
         <div class="portal-today-panel" aria-label="Website status vandaag">
@@ -180,7 +181,7 @@
         </div>
       </section>
 
-      <section class="portal-action-overview" aria-labelledby="portal-action-title">
+      <section class="portal-action-overview" id="portal-action-overview" aria-labelledby="portal-action-title">
         <div class="admin-section-heading">
           <div>
             <p class="section-kicker">Actie nodig</p>
@@ -190,7 +191,7 @@
         <div class="portal-action-grid" id="portal-action-grid"></div>
       </section>
 
-      <section class="admin-grid customer-portal-kpis" aria-label="Klantoverzicht">
+      <section class="admin-grid customer-portal-kpis" id="portal-kpis" aria-label="Klantoverzicht">
         <article class="admin-card metric-card"><span>Open offertes</span><strong id="metric-quotes">0</strong><small>Concept of verzonden</small></article>
         <article class="admin-card metric-card"><span>Open facturen</span><strong id="metric-invoices">0</strong><small id="metric-invoice-total">€ 0,00 openstaand</small></article>
         <article class="admin-card metric-card"><span>Lopende projecten</span><strong id="metric-projects">0</strong><small>Niet afgerond</small></article>
@@ -381,7 +382,7 @@
             <article class="project-workspace-card">
               <div class="project-workspace-card-head">
                 <div><span>Versies</span><h3>Review & preview</h3></div>
-                <a href="#website-preview">Alle versies</a>
+                <a href="#website-versies">Alle versies</a>
               </div>
               <div class="project-version-list" id="project-workspace-versions"></div>
             </article>
@@ -433,7 +434,7 @@
             </div>
             <div class="portal-review-status">
               <mark class="status-badge status-prepared" id="portal-demo-journey-state">Laden</mark>
-              <a class="button secondary" href="#command-center">Terug naar dashboard</a>
+              <a class="button secondary" href="#dashboard">Terug naar dashboard</a>
             </div>
           </div>
           <section class="portal-review-next-step" id="portal-review-next-step">
@@ -478,7 +479,7 @@
           <section class="portal-review-history">
             <div class="project-workspace-card-head">
               <div><span>Versiebeheer</span><h3>Ontwerphistorie</h3></div>
-              <a class="button secondary" href="#project-workspace">Terug naar project</a>
+              <a class="button secondary" href="#website">Terug naar project</a>
             </div>
             <div class="portal-version-command">
               <div>
@@ -604,7 +605,7 @@
             <h2>Bestanden & assets</h2>
             <p class="admin-section-intro">Je veilige projectkluis voor logo's, merkbestanden, website-assets en klantdocumenten.</p>
           </div>
-          <a class="button secondary mw-button mw-button-secondary" href="#command-center">Terug naar dashboard</a>
+          <a class="button secondary mw-button mw-button-secondary" href="#dashboard">Terug naar dashboard</a>
         </div>
         <div class="asset-center-shell mw-template-list">
           <div class="asset-center-summary" id="portal-asset-summary" aria-live="polite"></div>
@@ -842,6 +843,178 @@
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
         }
+
+        const PORTAL_DEFAULT_VIEW = "dashboard";
+        const PORTAL_VIEWS = {
+          dashboard: {
+            label: "Dashboard",
+            sections: ["command-center"],
+          },
+          onboarding: {
+            label: "Onboarding",
+            sections: ["onboarding"],
+          },
+          branding: {
+            label: "Branding",
+            sections: ["branding"],
+          },
+          website: {
+            label: "Mijn website",
+            sections: ["projectstatus", "mijn-website", "website-preview"],
+          },
+          "website-overzicht": {
+            label: "Website-overzicht",
+            parent: "website",
+            sections: ["projectstatus", "mijn-website"],
+          },
+          "website-review": {
+            label: "Ontwerp review",
+            parent: "website",
+            sections: ["website-preview"],
+          },
+          "website-versies": {
+            label: "Ontwerphistorie",
+            parent: "website",
+            sections: ["website-preview"],
+          },
+          wijzigingen: {
+            label: "Wijzigingen",
+            sections: ["wijzigingen"],
+          },
+          berichten: {
+            label: "Berichten",
+            sections: ["berichten"],
+          },
+          facturen: {
+            label: "Facturen",
+            sections: ["facturen", "onderhoud"],
+          },
+          bestanden: {
+            label: "Bestanden",
+            sections: ["bestanden"],
+          },
+          account: {
+            label: "Account",
+            sections: ["customer-profile", "account"],
+          },
+        };
+        const PORTAL_HASH_ALIASES = {
+          "": PORTAL_DEFAULT_VIEW,
+          "command-center": "dashboard",
+          vandaag: "dashboard",
+          "portal-action-overview": "dashboard",
+          "portal-kpis": "dashboard",
+          onboarding: "onboarding",
+          branding: "branding",
+          notificaties: "dashboard",
+          "mijn-website": "website",
+          "projectstatus": "website-overzicht",
+          "project-workspace": "website-overzicht",
+          "website-preview": "website-review",
+          "portal-demo-feedback-form": "website-review",
+          "portal-review-feedback-filters": "website-review",
+          "portal-preview-feedback-list": "website-review",
+          "portal-version-current-title": "website-versies",
+          "portal-version-detail": "website-versies",
+          "portal-preview-version-list": "website-versies",
+          "portal-command-timeline": "dashboard",
+        };
+        const portalViewSectionIds = new Set([
+          "command-center",
+          "vandaag",
+          "portal-action-overview",
+          "portal-kpis",
+          "customer-profile",
+          "onboarding",
+          "branding",
+          "notificaties",
+          "facturen",
+          "onderhoud",
+          "projectstatus",
+          "website-preview",
+          "wijzigingen",
+          "berichten",
+          "mijn-website",
+          "growth-dashboard",
+          "account",
+          "bestanden",
+        ]);
+        const portalNavigation = document.querySelector(".portal-nav");
+        const portalRouteLinks = [...document.querySelectorAll(".portal-sidebar-brand[href^='#'], .portal-nav a[href^='#']")];
+
+        function normalizePortalView(value = window.location.hash) {
+          const hash = String(value || "").replace(/^#/, "").trim();
+          const routed = PORTAL_HASH_ALIASES[hash] || hash || PORTAL_DEFAULT_VIEW;
+          return PORTAL_VIEWS[routed] ? routed : PORTAL_DEFAULT_VIEW;
+        }
+
+        function syncPortalHash(viewKey) {
+          const currentHash = String(window.location.hash || "").replace(/^#/, "").trim();
+          if (currentHash && normalizePortalView(currentHash) === viewKey && PORTAL_VIEWS[currentHash]) return;
+          const nextUrl = `${window.location.pathname}${window.location.search}#${viewKey}`;
+          window.history.replaceState(null, "", nextUrl);
+        }
+
+        function setPortalSectionVisibility(activeSectionIds) {
+          portalViewSectionIds.forEach((sectionId) => {
+            const section = document.getElementById(sectionId);
+            if (!section) return;
+            const isVisible = activeSectionIds.has(sectionId);
+            section.hidden = !isVisible;
+            section.setAttribute("aria-hidden", isVisible ? "false" : "true");
+          });
+        }
+
+        function updatePortalNavigation(activeKey) {
+          const activeView = PORTAL_VIEWS[activeKey] || PORTAL_VIEWS[PORTAL_DEFAULT_VIEW];
+          const activeNavKey = activeView.parent || activeKey;
+          portalRouteLinks.forEach((link) => {
+            const linkKey = normalizePortalView(link.getAttribute("href") || "");
+            const linkView = PORTAL_VIEWS[linkKey] || {};
+            const linkNavKey = linkView.parent || linkKey;
+            const isActive = linkNavKey === activeNavKey;
+            if (isActive) {
+              link.setAttribute("aria-current", "page");
+            } else {
+              link.removeAttribute("aria-current");
+            }
+          });
+        }
+
+        function focusPortalView(activeSectionIds) {
+          const firstSectionId = [...activeSectionIds][0];
+          const firstSection = firstSectionId ? document.getElementById(firstSectionId) : null;
+          if (!firstSection) return;
+          if (!firstSection.hasAttribute("tabindex")) firstSection.setAttribute("tabindex", "-1");
+          firstSection.focus({ preventScroll: true });
+        }
+
+        function activatePortalView(options = {}) {
+          const { focus = false, scroll = false } = options;
+          const activeKey = normalizePortalView();
+          const activeView = PORTAL_VIEWS[activeKey] || PORTAL_VIEWS[PORTAL_DEFAULT_VIEW];
+          const activeSectionIds = new Set(activeView.sections);
+          syncPortalHash(activeKey);
+          setPortalSectionVisibility(activeSectionIds);
+          updatePortalNavigation(activeKey);
+          document.body.dataset.portalView = activeView.parent || activeKey;
+          document.body.dataset.portalSubView = activeKey;
+          if (scroll) window.scrollTo({ top: 0, behavior: "smooth" });
+          if (focus) focusPortalView(activeSectionIds);
+        }
+
+        window.addEventListener("hashchange", () => activatePortalView({ focus: true, scroll: true }));
+        portalNavigation?.addEventListener("click", (event) => {
+          const link = event.target.closest?.("a[href^='#']");
+          if (!link) return;
+          const nextKey = normalizePortalView(link.getAttribute("href"));
+          if (!PORTAL_VIEWS[nextKey]) return;
+          event.preventDefault();
+          const nextUrl = `${window.location.pathname}${window.location.search}#${nextKey}`;
+          window.history.pushState(null, "", nextUrl);
+          activatePortalView({ focus: true, scroll: true });
+        });
+        window.addEventListener("popstate", () => activatePortalView({ focus: true, scroll: true }));
 
         const profileContext = await getClientCustomerProfileContext();
         const supabaseSessionResult = await getSupabaseSession();
@@ -1087,7 +1260,7 @@
           `;
           demoJourneyActions.innerHTML = `
             <a class="button primary" href="${escapeHtml(latest.safePreviewPath)}" target="_blank" rel="noopener">${escapeHtml(reviewState.cta || "Ontwerp bekijken")}</a>
-            ${canFeedback ? `<a class="button secondary" href="#portal-demo-feedback-form">Feedback geven</a>` : ""}
+            ${canFeedback ? `<a class="button secondary" href="#website-review">Feedback geven</a>` : ""}
             ${canApprove ? `<button class="button secondary" id="portal-preview-approve-shortcut" type="button">Ontwerp goedkeuren</button>` : ""}
           `;
           previewReviewSummary.innerHTML = `
@@ -1329,6 +1502,7 @@
           [portalHealthGrid, portalActionGrid, financeOverview, subscriptionList, projectWorkspaceOverview, websiteOverview, websiteList, growthHealth, growthRecommendations, growthUpsells, fileList].filter(Boolean).forEach((target) => target.append(createEmpty("Geen data", "Deze data wordt bewust niet getoond bij een customer mismatch.")));
           return;
         }
+        activatePortalView({ focus: false, scroll: false });
 
         function statusClass(value) {
           const status = normalize(value);
@@ -1999,7 +2173,7 @@
               </div>
               <div class="portal-version-detail-actions">
                 <a class="button ${action.tone === "primary" ? "primary" : "secondary"}" href="${escapeHtml(action.href || "#")}" ${action.target ? `target="_blank" rel="noopener"` : ""}>${escapeHtml(action.label)}</a>
-                ${isCurrent && preview.allowFeedback && !preview.approvedAt ? `<a class="button secondary" href="#portal-demo-feedback-form">Feedback geven</a>` : ""}
+                ${isCurrent && preview.allowFeedback && !preview.approvedAt ? `<a class="button secondary" href="#website-review">Feedback geven</a>` : ""}
                 ${isCurrent && preview.allowApproval && !preview.approvedAt ? `<button class="button secondary" id="portal-version-approve-selected" type="button">Ontwerp goedkeuren</button>` : ""}
               </div>
               <div class="portal-version-activity">
@@ -2251,7 +2425,7 @@
           const client = [];
           const studio = [];
           if (latestPreview?.allowApproval && !latestPreview.approvedAt) client.push({ title: `Keur versie ${latestPreview.version || 1} goed`, text: "Bekijk de veilige preview en geef akkoord wanneer alles klopt.", status: "Actie nodig", href: latestPreview.safePreviewPath, tone: "attention" });
-          if (latestPreview?.allowFeedback && !latestPreview.approvedAt) client.push({ title: "Feedback geven", text: "Koppel je opmerkingen aan de huidige ontwerpversie.", status: "Open", href: "#portal-demo-feedback-form", tone: "attention" });
+          if (latestPreview?.allowFeedback && !latestPreview.approvedAt) client.push({ title: "Feedback geven", text: "Koppel je opmerkingen aan de huidige ontwerpversie.", status: "Open", href: "#website-review", tone: "attention" });
           const openInvoice = invoices.find((invoice) => !isPaidStatus(invoice.status));
           if (openInvoice) client.push({ title: "Factuur bekijken", text: openInvoice.invoiceNumber || "Er staat een factuur open.", status: statusLabel(openInvoice.status), href: invoiceUrl(openInvoice) || "#facturen", tone: "attention" });
           if (!latestPreview?.approvedAt && !onboardingSubmitted(onboarding)) client.push({ title: "Projectinput afronden", text: "Lever teksten, foto's of briefing aan zodra die nodig zijn.", status: "Wachten op jou", href: "#onboarding", tone: "attention" });
@@ -2299,8 +2473,8 @@
           const latestPreview = previewVersions[0] || null;
           const openInvoice = invoices.find((invoice) => !isPaidStatus(invoice.status));
           const latestUnreadMessage = messages.find((message) => !message.readAt && message.senderType !== "customer" && isOpenStatus(message.status));
-          if (latestPreview?.allowApproval && !latestPreview.approvedAt) tasks.push({ title: "Ontwerp goedkeuren", meta: `Versie ${latestPreview.version || 1} staat klaar`, href: "#portal-demo-feedback-form", tone: "high" });
-          if (latestPreview?.allowFeedback && !latestPreview.approvedAt && !latestPreview.feedbackCount) tasks.push({ title: "Feedback geven", meta: "Geef opmerkingen op de huidige versie", href: "#portal-demo-feedback-form", tone: "high" });
+          if (latestPreview?.allowApproval && !latestPreview.approvedAt) tasks.push({ title: "Ontwerp goedkeuren", meta: `Versie ${latestPreview.version || 1} staat klaar`, href: "#website-review", tone: "high" });
+          if (latestPreview?.allowFeedback && !latestPreview.approvedAt && !latestPreview.feedbackCount) tasks.push({ title: "Feedback geven", meta: "Geef opmerkingen op de huidige versie", href: "#website-review", tone: "high" });
           if (openInvoice) tasks.push({ title: "Factuur bekijken", meta: `${openInvoice.invoiceNumber || "Factuur"} staat open`, href: invoiceUrl(openInvoice) || "#facturen", tone: "high" });
           if (!latestPreview?.approvedAt && !onboardingSubmitted(onboarding)) tasks.push({ title: "Teksten en foto's aanleveren", meta: "Nodig voor ontwerp en bouw", href: "#onboarding", tone: "high" });
           if (latestUnreadMessage) tasks.push({ title: "Bericht beantwoorden", meta: latestUnreadMessage.subject || latestUnreadMessage.title || "Update van Max Webstudio", href: "#berichten", tone: "normal" });
@@ -2338,19 +2512,19 @@
             title: "Ontwerp goedgekeurd",
             text: "Dank je. Wij bereiden nu de afronding en livegang voor.",
             label: "Bekijk ontwerp",
-            href: latestPreview.safePreviewPath || "#website-preview",
+            href: latestPreview.safePreviewPath || "#website-review",
           };
           if (latestPreview?.allowApproval) return {
             title: `Keur versie ${latestPreview.version || 1} goed`,
             text: customerPreviewSummary(latestPreview, "Je websiteontwerp staat klaar. Bekijk de versie en keur hem goed wanneer alles klopt."),
             label: "Ontwerp bekijken",
-            href: latestPreview.safePreviewPath || "#website-preview",
+            href: latestPreview.safePreviewPath || "#website-review",
           };
           if (latestPreview?.allowFeedback) return {
             title: `Geef feedback op versie ${latestPreview.version || 1}`,
             text: "Bekijk de gepubliceerde preview en geef je opmerkingen door op exact deze versie.",
             label: "Feedback geven",
-            href: "#portal-demo-feedback-form",
+            href: "#website-review",
           };
           const openInvoice = invoices.find((invoice) => isOpenStatus(invoice.status));
           if (openInvoice) return {
@@ -2391,7 +2565,7 @@
             title: "Bekijk de projectupdates",
             text: "Je website beweegt door de bouwfase. De laatste activiteit staat in je tijdlijn.",
             label: "Tijdlijn bekijken",
-            href: "#portal-command-timeline",
+            href: "#dashboard",
           };
           const website = websites[0] || {};
           const websiteUrl = customerVisibleUrl(website.liveUrl || website.domain);
@@ -2599,7 +2773,7 @@
         function createWebsiteAction(label, href, primary = false) {
           const action = document.createElement("a");
           action.className = `button ${primary ? "primary" : "secondary"}`;
-          action.href = href || "#mijn-website";
+          action.href = href || "#website";
           action.textContent = label;
           if (href && /^https?:\/\//i.test(href)) {
             action.target = "_blank";
@@ -2684,7 +2858,7 @@
           const icon = document.createElement("span");
           const link = document.createElement("a");
           icon.textContent = "Open";
-          link.href = url || "#mijn-website";
+          link.href = url || "#website";
           link.textContent = url || "Website-url wordt gekoppeld";
           if (url) {
             link.target = "_blank";
@@ -2720,7 +2894,7 @@
           }
           if (["change request", "wijziging"].includes(type)) return { label: "Bekijk wijziging", href: "#wijzigingen" };
           if (["invoice", "factuur"].includes(type)) return { label: "Bekijk factuur", href: "#facturen" };
-          if (["project", "website"].includes(type)) return { label: "Open website", href: "#mijn-website" };
+          if (["project", "website"].includes(type)) return { label: "Open website", href: "#website" };
           return { label: "Bericht sturen", href: "#berichten" };
         }
 
@@ -3696,7 +3870,7 @@
             card.append(status, strong, small, link);
             return card;
           }) : [
-            projectWorkspaceEmpty("Geen klantzichtbare versies", "Zodra Max Webstudio een ontwerp publiceert, verschijnt het hier.", "#website-preview")
+            projectWorkspaceEmpty("Geen klantzichtbare versies", "Zodra Max Webstudio een ontwerp publiceert, verschijnt het hier.", "#website-review")
           ]));
 
           projectWorkspaceFiles.replaceChildren(...(projectFiles.length ? projectFiles.slice(0, 6).map((file) => {
@@ -3797,8 +3971,8 @@
           actions.className = "portal-today-actions";
           if (latestPreview?.safePreviewPath) {
             appendWebsiteAction(actions, "Ontwerp bekijken", latestPreview.safePreviewPath, true);
-            if (latestPreview.allowFeedback) appendWebsiteAction(actions, "Feedback geven", "#portal-demo-feedback-form");
-            if (latestPreview.allowApproval && !latestPreview.approvedAt) appendWebsiteAction(actions, "Ontwerp goedkeuren", "#portal-demo-feedback-form");
+            if (latestPreview.allowFeedback) appendWebsiteAction(actions, "Feedback geven", "#website-review");
+            if (latestPreview.allowApproval && !latestPreview.approvedAt) appendWebsiteAction(actions, "Ontwerp goedkeuren", "#website-review");
           } else {
             appendWebsiteAction(actions, "Website bekijken", websiteUrl, true);
           }
@@ -3956,7 +4130,7 @@
             ? `Je website is online. Laatste update: ${latestUpdate}.`
             : "We houden je website klaar voor de volgende stap.";
           const websiteUrl = customerVisibleUrl(primaryWebsite.liveUrl || primaryWebsite.domain);
-          portalTodayWebsiteLink.href = websiteUrl || "#mijn-website";
+          portalTodayWebsiteLink.href = websiteUrl || "#website";
           portalTodayWebsiteLink.textContent = websiteUrl ? "Open website" : "Bekijk website";
           portalTodayWebsiteLink.target = websiteUrl ? "_blank" : "";
           portalTodayWebsiteLink.rel = websiteUrl ? "noopener" : "";
@@ -4082,8 +4256,8 @@
           commandWebsiteActions.replaceChildren();
           if (latestPreview?.safePreviewPath) {
             commandWebsiteActions.append(createWebsiteAction("Ontwerp bekijken", latestPreview.safePreviewPath, true));
-            if (latestPreview.allowFeedback && !latestPreview.approvedAt) commandWebsiteActions.append(createWebsiteAction("Feedback geven", "#portal-demo-feedback-form"));
-            if (latestPreview.allowApproval && !latestPreview.approvedAt) commandWebsiteActions.append(createWebsiteAction("Ontwerp goedkeuren", "#portal-demo-feedback-form"));
+            if (latestPreview.allowFeedback && !latestPreview.approvedAt) commandWebsiteActions.append(createWebsiteAction("Feedback geven", "#website-review"));
+            if (latestPreview.allowApproval && !latestPreview.approvedAt) commandWebsiteActions.append(createWebsiteAction("Ontwerp goedkeuren", "#website-review"));
           } else if (websiteUrl) {
             commandWebsiteActions.append(createWebsiteAction("Website bekijken", websiteUrl, true));
           }
@@ -4126,11 +4300,11 @@
             details.className = "portal-command-feedback-details";
             details.append(
               commandItem({ title: latestPreview.approvedAt ? "Ontwerp goedgekeurd" : statusLabel(latestPreview.status || "review"), meta: latestPreview.approvedAt ? `Goedgekeurd op ${formatDate(latestPreview.approvedAt)}` : "Status van de huidige versie", badge: latestPreview.approvedAt ? "Goedgekeurd" : "Review", tone: latestPreview.approvedAt ? "done" : "attention" }),
-              commandItem({ title: `${feedbackSummary.processed} verwerkt`, meta: `${feedbackSummary.active} open of in behandeling`, badge: `V${latestPreview.version || 1}`, href: "#website-preview" })
+              commandItem({ title: `${feedbackSummary.processed} verwerkt`, meta: `${feedbackSummary.active} open of in behandeling`, badge: `V${latestPreview.version || 1}`, href: "#website-review" })
             );
             commandFeedbackSummary.append(meter, details);
           } else {
-            commandFeedbackSummary.append(commandItem({ title: "Geen reviewronde", meta: "Feedback verschijnt zodra er een ontwerpversie is gepubliceerd.", href: "#website-preview" }));
+            commandFeedbackSummary.append(commandItem({ title: "Geen reviewronde", meta: "Feedback verschijnt zodra er een ontwerpversie is gepubliceerd.", href: "#website-review" }));
           }
 
           commandMessageList.replaceChildren();
@@ -4656,6 +4830,7 @@
         ]));
 
         readinessList.replaceChildren();
+        activatePortalView({ focus: false, scroll: false });
       })();
     </script>
   </body>

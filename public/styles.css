@@ -10312,6 +10312,21 @@ h3 {
   gap: 24px;
 }
 
+.customer-portal-demo [hidden] {
+  display: none !important;
+}
+
+.portal-body[data-portal-sub-view="website-review"] .portal-review-history {
+  display: none !important;
+}
+
+.portal-body[data-portal-sub-view="website-versies"] .portal-review-next-step,
+.portal-body[data-portal-sub-view="website-versies"] .portal-review-layout,
+.portal-body[data-portal-sub-view="website-versies"] .portal-review-feedback-panel,
+.portal-body[data-portal-sub-view="website-versies"] #portal-launch-checklist {
+  display: none !important;
+}
+
 .portal-nav {
   position: sticky;
   top: 12px;
@@ -12648,7 +12663,7 @@ h3 {
 
 .portal-sidebar .portal-nav a:hover,
 .portal-sidebar .portal-nav a:focus-visible,
-.portal-sidebar .portal-nav a:first-child {
+.portal-sidebar .portal-nav a[aria-current="page"] {
   color: var(--portal-text);
   border-color: rgba(96, 165, 250, 0.38);
   background:
@@ -12660,7 +12675,7 @@ h3 {
 
 .portal-sidebar .portal-nav a:hover::before,
 .portal-sidebar .portal-nav a:focus-visible::before,
-.portal-sidebar .portal-nav a:first-child::before {
+.portal-sidebar .portal-nav a[aria-current="page"]::before {
   background: var(--portal-blue);
   box-shadow: 0 0 14px rgba(88, 199, 255, 0.5);
 }
@@ -14500,6 +14515,7 @@ a.project-workspace-summary-card:hover {
 .customer-portal-demo #wijzigingen,
 .customer-portal-demo #berichten,
 .customer-portal-demo #mijn-website,
+.customer-portal-demo #bestanden,
 .customer-portal-demo #account {
   scroll-margin-top: 24px;
 }
