@@ -1158,6 +1158,41 @@
           return card;
         }
 
+        function latestRecord(records = []) {
+          return [...records]
+            .map((record) => ({
+              record,
+              date: new Date(record?.updatedAt || record?.updated_at || record?.createdAt || record?.created_at || 0),
+            }))
+            .filter((item) => !Number.isNaN(item.date.getTime()))
+            .sort((a, b) => b.date.getTime() - a.date.getTime())[0]?.record || null;
+        }
+
+        function nextCustomerStep({ websites = [], projects = [], invoices = [], changeRequests = [], messages = [] }) {
+          const openInvoice = invoices.find((invoice) => isOpenStatus(invoice.status));
+          if (openInvoice) return `Bekijk factuur ${openInvoice.invoiceNumber || openInvoice.title || ""}`.trim();
+          const latestMessage = messages.find((message) => !message.readAt && isOpenStatus(message.status));
+          if (latestMessage) return "Bekijk je laatste bericht";
+          const openRequest = changeRequests.find((request) => isOpenStatus(request.status));
+          if (openRequest) return "Wacht op verwerking van je wijziging";
+          const project = projects[0] || {};
+          const status = normalize(project.status || project.phase);
+          if (["not started", "nieuw", "intake", "onboarding", "wacht op klant", "waiting client"].includes(status)) return "Rond je onboarding af";
+          if (["in ontwikkeling", "development", "in ontwerp", "feedback", "in review"].includes(status)) return "Bekijk de projectupdates";
+          const website = websites[0] || {};
+          if (website.liveUrl || website.domain) return "Bekijk je website";
+          return "Nog niet beschikbaar";
+        }
+
+        function latestActivityText(records = []) {
+          const record = latestRecord(records);
+          if (!record) return "Nog niet beschikbaar";
+          return [
+            record.title || record.subject || record.name || record.projectName || record.invoiceNumber || "Update",
+            formatDate(record.updatedAt || record.updated_at || record.createdAt || record.created_at),
+          ].filter(Boolean).join(" - ");
+        }
+
         function showSafePortalFallback(message = "Er is geen geldige klantcontext actief.") {
           [
             ".portal-nav",
@@ -1295,7 +1330,8 @@
 
         function friendlySafetyStatus(website = {}) {
           const sslStatus = normalize(website.sslStatus || website.ssl);
-          if (!sslStatus || ["actief", "active", "valid", "geldig", "online"].includes(sslStatus)) return "Veilig actief";
+          if (!sslStatus) return "Nog niet beschikbaar";
+          if (["actief", "active", "valid", "geldig", "online"].includes(sslStatus)) return "Veilig actief";
           return "Wordt gecontroleerd";
         }
 
@@ -1322,6 +1358,11 @@
             action.rel = "noopener";
           }
           return action;
+        }
+
+        function appendWebsiteAction(target, label, href, primary = false) {
+          if (!href) return;
+          target.append(createWebsiteAction(label, href, primary));
         }
 
         function createWebsiteStatusPill(label, value, variant = "active") {
@@ -1824,16 +1865,16 @@
           const lastUpdate = formatDate(website.updatedAt || website.lastUpdateAt || website.lastDeployAt || project.updatedAt || project.startDate);
           const backupLabel = website.lastBackupAt
             ? formatDate(website.lastBackupAt)
-            : (website.backupStatus || website.backup_status ? "Actief" : "Wordt beheerd");
-          const speedScore = Number(website.performanceScore || website.speedScore || 96);
-          const seoScore = Number(website.seoScore || 92);
-          if (seoScore < 90) {
+            : (website.backupStatus || website.backup_status || "Nog niet beschikbaar");
+          const speedScore = Number(website.performanceScore || website.speedScore || 0);
+          const seoScore = Number(website.seoScore || 0);
+          if (seoScore && seoScore < 90) {
             updateAiCard(
               websiteGuidance,
               "Je vindbaarheid kan nog sterker.",
               "Ik zou straks eerst naar je paginatitels, klantreviews en belangrijkste zoekwoorden kijken."
             );
-          } else if (speedScore < 90) {
+          } else if (speedScore && speedScore < 90) {
             updateAiCard(
               websiteGuidance,
               "Je snelheid verdient aandacht.",
@@ -1874,11 +1915,9 @@
           const urlRow = createWebsiteUrlRow(websiteUrl);
           const actions = document.createElement("div");
           actions.className = "portal-today-actions";
-          actions.append(
-            createWebsiteAction("Website bekijken", websiteUrl, true),
-            createWebsiteAction("Wijziging aanvragen", "#wijzigingen"),
-            createWebsiteAction("Bericht sturen", "#berichten")
-          );
+          appendWebsiteAction(actions, "Website bekijken", websiteUrl, true);
+          appendWebsiteAction(actions, "Wijziging aanvragen", "#wijzigingen");
+          appendWebsiteAction(actions, "Bericht sturen", "#berichten");
           content.append(status, kicker, title, intro, urlRow, actions);
 
           const metricsWrap = document.createElement("div");
@@ -1890,8 +1929,8 @@
             createWebsiteMetric("Beveiliging", friendlySafetyStatus(website), "Veilig uitgelegd zonder technische details."),
             createWebsiteMetric("Laatste update", lastUpdate, "Meest recente bekende wijziging."),
             createWebsiteMetric("Backup", backupLabel, "Herstelbasis voor noodgevallen."),
-            createWebsiteMetric("Snelheid", `${Math.max(0, Math.min(speedScore, 100))}/100`, "Indicatie voor de gebruikerservaring."),
-            createWebsiteMetric("SEO", `${Math.max(0, Math.min(seoScore, 100))}/100`, "Indicatie voor vindbaarheid.")
+            createWebsiteMetric("Snelheid", speedScore ? `${Math.max(0, Math.min(speedScore, 100))}/100` : "Nog niet beschikbaar", "Alleen zichtbaar zodra er een echte meting is."),
+            createWebsiteMetric("SEO", seoScore ? `${Math.max(0, Math.min(seoScore, 100))}/100` : "Nog niet beschikbaar", "Alleen zichtbaar zodra er een echte meting is.")
           );
 
           const detailColumn = document.createElement("div");
@@ -2007,11 +2046,13 @@
           const openNotifications = notifications.filter((notification) => isOpenStatus(notification.status));
           const activeSubscriptions = subscriptions.filter((subscription) => ["actief", "active"].includes(normalize(subscription.status)));
           const websiteStatus = normalize(primaryWebsite.status || "");
-          const websiteOnline = ["online", "live", "actief", "active"].includes(websiteStatus) || Number(websites.length) > 0;
+          const websiteOnline = ["online", "live", "actief", "active"].includes(websiteStatus);
           const hostingActive = activeSubscriptions.length > 0 || Boolean(primaryWebsite.hostingPackage || primaryWebsite.carePackage);
           const sslValue = primaryWebsite.sslStatus || primaryWebsite.ssl || "";
-          const sslActive = !sslValue || ["actief", "active", "valid", "geldig", "online"].includes(normalize(sslValue));
+          const sslActive = sslValue && ["actief", "active", "valid", "geldig", "online"].includes(normalize(sslValue));
           const latestUpdate = latestDateLabel([...projects, ...changeRequests, ...messages, ...notifications]);
+          const nextStep = nextCustomerStep({ websites, projects, invoices, changeRequests, messages });
+          const latestActivity = latestActivityText([...projects, ...changeRequests, ...messages, ...notifications, ...invoices]);
 
           portalTodayTitle.textContent = `Vandaag voor ${customer.company || customer.name || "jou"}`;
           portalTodaySubtitle.textContent = websiteOnline
@@ -2026,8 +2067,8 @@
           portalHealthGrid.replaceChildren(
             createHealthTile("Website", websiteOnline ? "Online" : "In behandeling", websiteOnline ? "Je website is bereikbaar." : "We bereiden je website voor.", websiteOnline ? "active" : "warning"),
             createHealthTile("Hosting", hostingActive ? "Actief" : "Klaarzetten", hostingActive ? "Hosting en onderhoud zijn gekoppeld." : "Hostingstatus volgt zodra deze beschikbaar is.", hostingActive ? "active" : "warning"),
-            createHealthTile("Veiligheid", sslActive ? "Veilig" : "Aandacht", sslActive ? "De basisbeveiliging is op orde." : "We controleren de beveiliging.", sslActive ? "active" : "warning"),
-            createHealthTile("Laatste update", latestUpdate, primaryProject.phase ? `Fase: ${primaryProject.phase}` : "Max Webstudio houdt je portaal bij.", "neutral")
+            createHealthTile("Veiligheid", sslActive ? "Veilig" : "Nog niet beschikbaar", sslValue ? "De bekende beveiligingsstatus is geladen." : "Beveiligingsstatus verschijnt zodra deze beschikbaar is.", sslActive ? "active" : "warning"),
+            createHealthTile("Volgende stap", nextStep, latestActivity, "neutral")
           );
 
           portalActionGrid.replaceChildren(
