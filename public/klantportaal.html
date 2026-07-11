@@ -415,8 +415,8 @@
         const params = new URLSearchParams(window.location.search);
         const productionHosts = new Set(["maxwebstudio.nl", "www.maxwebstudio.nl"]);
         const companySettings = getCompanySettings();
-        let customerId = params.get("customerId") || "";
-        let supabaseCustomerId = params.get("supabaseCustomerId") || "";
+        let customerId = "";
+        let supabaseCustomerId = "";
         let portalDataMode = params.get("portalDataMode") || params.get("mode") || "";
         const portalTitle = document.getElementById("portal-title");
         const portalSubtitle = document.getElementById("portal-subtitle");
@@ -509,6 +509,8 @@
         };
         const profileContext = await getClientCustomerProfileContext();
         const supabaseSessionResult = await getSupabaseSession();
+        const queryCustomerId = params.get("customerId") || "";
+        const querySupabaseCustomerId = params.get("supabaseCustomerId") || "";
         function isProductionRuntime() {
           const host = String(window.location?.hostname || "").toLowerCase();
           const configuredEnvironment = String(window.__MAXWEBSTUDIO_ENV__ || localStorage.getItem("maxwebstudioEnvironment") || "").toUpperCase();
@@ -575,9 +577,9 @@
 
         let stagingBridge = { active: false, reason: "", customerId: "", mode: "" };
         if (profileContext.profileFound) {
-          customerId = customerId || profileContext.customerId;
-          supabaseCustomerId = supabaseCustomerId || profileContext.supabaseCustomerId;
-          portalDataMode = portalDataMode || profileContext.mode;
+          customerId = profileContext.customerId;
+          supabaseCustomerId = profileContext.supabaseCustomerId || profileContext.customerId;
+          portalDataMode = profileContext.mode || "hybrid";
           syncLocalCustomerAccessContext(profileContext);
           updatePortalAuthActions(true);
         } else if (supabaseSessionResult?.session || isDeveloperModeEnabled()) {
@@ -801,7 +803,9 @@
           }
           const roleLabel = session.role === "customer" ? "klant" : session.role || "gebruiker";
           if (profileContext.profileFound) {
-            portalAuthText.textContent = "Je bent veilig ingelogd. Alleen jouw klantgegevens worden getoond.";
+            portalAuthText.textContent = queryCustomerId && queryCustomerId !== profileContext.customerId && querySupabaseCustomerId !== profileContext.supabaseCustomerId
+              ? "Je bent veilig ingelogd. Een klantcode in de link is genegeerd; alleen jouw eigen klantgegevens worden getoond."
+              : "Je bent veilig ingelogd. Alleen jouw klantgegevens worden getoond.";
             return;
           }
           if (profileContext.state === "profile_missing") {

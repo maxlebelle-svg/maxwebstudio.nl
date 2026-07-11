@@ -154,6 +154,15 @@ function mapCustomer(customer = {}, profile = {}) {
   };
 }
 
+function mapPermissions(profile = {}) {
+  const role = firstValue(profile.role, "customer");
+  return {
+    role,
+    isCustomer: role === "customer",
+    canReadPortal: role === "customer",
+  };
+}
+
 function result(state, overrides = {}) {
   return {
     state,
@@ -163,6 +172,9 @@ function result(state, overrides = {}) {
     customerId: "",
     supabaseCustomerId: "",
     mode: "",
+    authUserId: "",
+    profileId: "",
+    permissions: mapPermissions({}),
     profile: null,
     customer: null,
     source: "supabase-profile-context",
@@ -208,8 +220,11 @@ export async function getClientCustomerProfileContext() {
     return result(PROFILE_CONTEXT_STATES.PROFILE_FOUND, {
       profile,
       customer: mappedCustomer,
+      authUserId: safeString(session.user.id),
+      profileId: safeString(profile.id),
       customerId: mappedCustomer.id,
       supabaseCustomerId: mappedCustomer.supabaseCustomerId,
+      permissions: mapPermissions(profile),
       mode: "hybrid",
       message: "Klantprofiel gevonden via Supabase Auth en profiles.",
     });
