@@ -13,7 +13,9 @@ const previewPackage = {
         "<link rel=\"stylesheet\" href=\"styles.css\">",
         "</head>",
         "<body>",
+        "<a href=\"#diensten\">Diensten</a>",
         "<main class=\"hero\"><img src=\"assets/logo.svg\" alt=\"Klantdemo\"><h1>Klantdemo</h1><p>Echte Factory-demo</p></main>",
+        "<section id=\"diensten\">Diensten van de klant</section>",
         "<script src=\"script.js\"></script>",
         "</body>",
         "</html>",
@@ -35,6 +37,8 @@ assert(html.includes("Klantdemo"), "rendered preview should contain real package
 assert(html.includes("Echte Factory-demo"), "rendered preview should not fall back to generic copy");
 assert(html.includes("<style"), "stylesheet should be inlined");
 assert(html.includes("<script"), "script should be inlined");
+assert(html.includes("data-preview-runtime"), "preview runtime should be injected");
+assert(html.includes("a[href^=\"#\"]"), "preview runtime should keep hash navigation inside the srcdoc frame");
 assert(html.includes("data:image/svg+xml;base64,"), "image assets should be embedded as data URIs");
 assert(!new RegExp("\\\\.netlify/functions|supabase|github|preview_token|preview_url", "i").test(html), "rendered preview should not leak provider or technical URLs");
 assert.strictEqual(

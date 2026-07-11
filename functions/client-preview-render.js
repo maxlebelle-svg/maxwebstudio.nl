@@ -102,7 +102,7 @@ function renderPackageHtml(previewPackage = {}, meta = {}) {
   const entry = fileMap.get("index.html") || files.find((file) => cleanText(file.path).endsWith("index.html")) || files.find((file) => isHtml(file.path));
   if (!entry) return missingPreviewHtml(meta.title);
   const rawHtml = fileContent(entry);
-  return inlinePackageAssets(rawHtml, fileMap);
+  return injectPreviewRuntime(inlinePackageAssets(rawHtml, fileMap));
 }
 
 function inlinePackageAssets(html = "", fileMap = new Map()) {
@@ -128,6 +128,28 @@ function inlinePackageAssets(html = "", fileMap = new Map()) {
       return `url("${dataUriFor(file)}")`;
     })
     .replace(/href=["']([^"']+\.html)["']/gi, (_match, path) => `href="#${escapeAttribute(cleanRelativePath(path).replace(/\.html$/i, ""))}"`);
+}
+
+function injectPreviewRuntime(html = "") {
+  const runtime = [
+    "<script data-preview-runtime>",
+    "(function(){",
+    "document.addEventListener('click',function(event){",
+    "if(event.defaultPrevented)return;",
+    "var link=event.target&&event.target.closest?event.target.closest('a[href^=\"#\"]'):null;",
+    "if(!link)return;",
+    "var targetId=(link.getAttribute('href')||'').slice(1);",
+    "if(!targetId)return;",
+    "var target=document.getElementById(targetId);",
+    "if(!target)return;",
+    "event.preventDefault();",
+    "target.scrollIntoView({behavior:'smooth',block:'start'});",
+    "});",
+    "})();",
+    "<\/script>",
+  ].join("");
+  if (/<\/body>/i.test(html)) return html.replace(/<\/body>/i, `${runtime}</body>`);
+  return `${html}${runtime}`;
 }
 
 function dataUriFor(file = {}) {
