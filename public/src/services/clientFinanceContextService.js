@@ -147,20 +147,49 @@ function mapInvoice(row = {}) {
   };
 }
 
+function mapCustomerInvoice(row = {}) {
+  return {
+    id: safeString(row.id),
+    supabaseInvoiceId: safeString(row.id),
+    customerId: safeString(firstValue(row.profile_id, row.customer_id)),
+    customerAuthUserId: safeString(row.customer_auth_user_id),
+    invoiceNumber: firstValue(row.invoice_number, row.invoiceNumber),
+    type: "invoice",
+    title: firstValue(row.title, row.invoice_number, "Factuur"),
+    description: firstValue(row.notes),
+    status: firstValue(row.mollie_payment_status, row.status, "draft"),
+    paymentStatus: firstValue(row.mollie_payment_status, row.status),
+    invoiceDate: firstValue(row.invoice_date, row.created_at),
+    dueDate: firstValue(row.due_date),
+    paidAt: firstValue(row.paid_at),
+    amount: numberValue(row.amount),
+    total: numberValue(row.amount),
+    currency: "EUR",
+    hasPdf: Boolean(row.pdf_file_path),
+    molliePaymentStatus: firstValue(row.mollie_payment_status),
+    createdAt: firstValue(row.created_at),
+    updatedAt: firstValue(row.updated_at),
+    source: "supabase-customer-invoices",
+    _source: "supabase",
+    _supabaseId: safeString(row.id),
+  };
+}
+
 function mapSubscription(row = {}) {
   return {
     id: safeString(row.id),
-    customerId: safeString(firstValue(row.customer_id, row.customerId)),
+    customerId: safeString(firstValue(row.customer_id, row.customerId, row.profile_id)),
+    customerAuthUserId: safeString(row.customer_auth_user_id),
     websiteId: safeString(firstValue(row.website_id, row.websiteId)),
     projectId: safeString(firstValue(row.project_id, row.projectId)),
-    plan: firstValue(row.plan, "Onderhoud"),
-    packageName: firstValue(row.plan, "Onderhoud"),
+    plan: firstValue(row.plan, row.package_name, "Onderhoud"),
+    packageName: firstValue(row.package_name, row.plan, "Onderhoud"),
     status: firstValue(row.status, "active"),
     billingCycle: firstValue(row.billing_cycle, "monthly"),
     invoiceFrequency: firstValue(row.billing_cycle, "monthly"),
-    totalInclVat: numberValue(row.total_incl_vat),
-    monthlyAmount: numberValue(row.total_incl_vat),
-    amount: numberValue(row.total_incl_vat),
+    totalInclVat: numberValue(firstValue(row.total_incl_vat, row.monthly_amount)),
+    monthlyAmount: numberValue(firstValue(row.monthly_amount, row.total_incl_vat)),
+    amount: numberValue(firstValue(row.total_incl_vat, row.monthly_amount)),
     currency: "EUR",
     nextInvoiceDate: firstValue(row.next_invoice_date),
     lastInvoiceId: firstValue(row.last_invoice_id),
@@ -220,15 +249,28 @@ export async function getClientFinanceContext(customerContext = {}) {
       order: "created_at.desc",
       limit: "50",
     };
-    const [quoteRows, invoiceRows, subscriptionRows] = await Promise.all([
+    const customerInvoiceParams = {
+      customer_auth_user_id: `eq.${session.user?.id}`,
+      select: "id,profile_id,customer_auth_user_id,invoice_number,title,amount,status,due_date,paid_at,pdf_file_path,mollie_payment_id,mollie_payment_status,mollie_payment_created_at,mollie_payment_expires_at,notes,created_at,updated_at",
+      order: "created_at.desc",
+      limit: "50",
+    };
+    const customerSubscriptionParams = {
+      customer_auth_user_id: `eq.${session.user?.id}`,
+      select: "*",
+      order: "created_at.desc",
+      limit: "50",
+    };
+    const [quoteRows, customerInvoiceRows, subscriptionRows, legacySubscriptionRows] = await Promise.all([
       supabaseRestGet(config, session, "quotes", new URLSearchParams(baseParams).toString()),
-      supabaseRestGet(config, session, "invoices", new URLSearchParams(baseParams).toString()),
+      supabaseRestGet(config, session, "customer_invoices", new URLSearchParams(customerInvoiceParams).toString()),
+      supabaseRestGet(config, session, "customer_subscriptions", new URLSearchParams(customerSubscriptionParams).toString()),
       supabaseRestGet(config, session, "subscriptions", new URLSearchParams(baseParams).toString()),
     ]);
 
     const quotes = quoteRows.map(mapQuote);
-    const invoices = invoiceRows.map(mapInvoice);
-    const subscriptions = subscriptionRows.map(mapSubscription);
+    const invoices = customerInvoiceRows.map(mapCustomerInvoice);
+    const subscriptions = [...subscriptionRows, ...legacySubscriptionRows].map(mapSubscription);
     if (!quotes.length && !invoices.length && !subscriptions.length) {
       return result(FINANCE_STATES.MISSING, {
         message: "Geen facturen, offertes of abonnementen gevonden voor deze klant.",
@@ -238,7 +280,7 @@ export async function getClientFinanceContext(customerContext = {}) {
       quotes,
       invoices,
       subscriptions,
-      message: "Finance data gevonden via Supabase.",
+      message: "Finance data gevonden via Supabase customer_invoices.",
     });
   } catch (error) {
     return result(FINANCE_STATES.ERROR, {

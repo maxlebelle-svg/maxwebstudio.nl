@@ -1291,22 +1291,44 @@
           const kind = document.createElement("span");
           const amount = document.createElement("p");
           const text = document.createElement("small");
+          const details = document.createElement("dl");
           const actions = document.createElement("div");
           const max = document.createElement("em");
           top.className = "portal-finance-card-top";
+          details.className = "summary-lines";
           kind.textContent = type === "quote" ? "Offerte" : "Factuur";
           title.textContent = type === "quote" ? item.quoteNumber || item.title || "Offerte" : item.invoiceNumber || "Factuur";
           top.append(kind, createBadge(status));
           amount.textContent = money(item.total || item.amount);
           text.textContent = financeExplanation(type, item);
+          const detailPairs = type === "invoice"
+            ? [
+                ["Omschrijving", item.title || item.description || "Factuur"],
+                ["Factuurdatum", formatDate(item.invoiceDate || item.createdAt)],
+                ["Betaalstatus", labelForStatus(item.paymentStatus || item.status)],
+                ["Betaaldatum", item.paidAt ? formatDate(item.paidAt) : "Nog niet betaald"],
+              ]
+            : [
+                ["Omschrijving", item.title || item.description || "Offerte"],
+                ["Offertedatum", formatDate(item.quoteDate || item.createdAt)],
+                ["Status", labelForStatus(item.status)],
+                ["Geldig tot", formatDate(item.validUntil)],
+              ];
+          detailPairs.forEach(([label, value]) => {
+            const row = document.createElement("div");
+            const dt = document.createElement("dt");
+            const dd = document.createElement("dd");
+            dt.textContent = label;
+            dd.textContent = value || "-";
+            row.append(dt, dd);
+            details.append(row);
+          });
           actions.className = "portal-actions";
-          actions.append(
-            createActionLink(type === "quote" ? "Bekijk offerte" : "Bekijk/print factuur", type === "quote" ? quoteUrl(item) : invoiceUrl(item)),
-            createPreviewButton(type === "quote" ? "Akkoord geven" : "Betaal later"),
-            createPreviewButton(type === "quote" ? "Leg offerte uit" : "Leg factuur uit")
-          );
+          actions.append(createActionLink(type === "quote" ? "Bekijk offerte" : "Bekijk factuur", type === "quote" ? quoteUrl(item) : invoiceUrl(item)));
+          if (type === "quote") actions.append(createPreviewButton("Akkoord geven"));
+          actions.append(createPreviewButton(type === "quote" ? "Leg offerte uit" : "Leg factuur uit"));
           max.textContent = `Max: ${financeStatusGroup(type, status)}`;
-          card.append(top, title, amount, text, actions, max);
+          card.append(top, title, amount, text, details, actions, max);
           return card;
         }
 
