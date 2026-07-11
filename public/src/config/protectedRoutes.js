@@ -41,7 +41,7 @@ export const PROTECTED_ROUTES = Object.freeze({
     requiredRoles: [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.DEVELOPER, ROLES.DESIGNER, ROLES.SALES_MANAGER, ROLES.SALES_PARTNER, ROLES.SUPPORT],
     requiredPermissions: [{ resource: "dashboard", action: "view" }],
     allowDemo: false,
-    defaultRedirect: "/login.html",
+    defaultRedirect: "/admin-login.html",
     hardReady: true,
   },
   "admin-ai-content-library": adminRoute("/admin-ai-content-library.html", {
@@ -152,7 +152,7 @@ export const PROTECTED_ROUTES = Object.freeze({
     requiredRoles: [ROLES.CUSTOMER, ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.DEMO_USER],
     requiredPermissions: [{ resource: "customerPortal", action: "view_own" }],
     allowDemo: false,
-    defaultRedirect: "/login.html",
+    defaultRedirect: "/klant-login.html",
     hardReady: false,
     requiresCustomerAccess: true,
   },

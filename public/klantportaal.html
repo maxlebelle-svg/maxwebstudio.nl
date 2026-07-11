@@ -35,7 +35,7 @@
           <p>Alleen jouw klantgegevens worden hier getoond.</p>
         </div>
         <div class="portal-sidebar-auth" aria-label="Account acties">
-          <a class="button secondary" id="portal-sidebar-login" href="/login.html">Inloggen</a>
+          <a class="button secondary" id="portal-sidebar-login" href="/klant-login.html">Inloggen</a>
           <button class="button secondary" id="portal-sidebar-logout" type="button" hidden>Uitloggen</button>
         </div>
         <div class="portal-sidebar-note" aria-label="Contact Max Webstudio">
@@ -570,7 +570,7 @@
         async function handlePortalLogout() {
           await signOutSupabase();
           localStorage.removeItem("maxwebstudioCurrentSession");
-          window.location.href = "/login.html";
+          window.location.href = "/klant-login.html";
         }
 
         let stagingBridge = { active: false, reason: "", customerId: "", mode: "" };
@@ -1183,7 +1183,7 @@
             ["Waarom", message],
             ["Volgende stap", `Log opnieuw in of vraag toegang aan bij ${companySettings.companyName}.`],
           ], [
-            createWebsiteAction("Naar login", "/login.html", true),
+            createWebsiteAction("Naar login", "/klant-login.html", true),
             createWebsiteAction("Terug naar website", "/"),
             ...createCompanyContactActions("Hulp met klantportaal"),
           ]));
@@ -2499,7 +2499,7 @@
           ["Portaalstatus", customer.portalStatus || customer.status],
         ], [
           createWebsiteAction("Wijziging aanvragen", "#wijzigingen", true),
-          createWebsiteAction("Wachtwoord wijzigen", "/login.html"),
+          createWebsiteAction("Wachtwoord wijzigen", "/klant-login.html"),
           ...createCompanyContactActions("Vraag over mijn account"),
         ]));
 

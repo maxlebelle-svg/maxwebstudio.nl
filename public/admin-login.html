@@ -9,11 +9,26 @@
   <body>
     <script>
       const params = new URLSearchParams(window.location.search || "");
-      const next = params.get("next") || "/admin-dashboard.html";
-      const target = new URL("/login.html", window.location.origin);
-      target.searchParams.set("mode", "admin");
-      target.searchParams.set("next", next);
-      window.location.replace(target.toString());
+      const next = params.get("next") || params.get("redirect") || "/admin-dashboard.html";
+      const adminRoles = new Set(["developer", "super_admin", "admin", "sales_manager", "sales_partner", "designer", "support"]);
+      let redirected = false;
+      try {
+        const session = JSON.parse(localStorage.getItem("mws_admin_supabase_session") || "null");
+        const expiresAt = session?.expiresAt ? Date.parse(session.expiresAt) : 0;
+        const active = session?.accessToken && adminRoles.has(String(session.role || "").toLowerCase()) && (!expiresAt || expiresAt > Date.now() + 30000);
+        if (active) {
+          redirected = true;
+          window.location.replace(next);
+        }
+      } catch {
+        // Continue to the normal admin login wrapper.
+      }
+      if (!redirected) {
+        const target = new URL("/login.html", window.location.origin);
+        target.searchParams.set("mode", "admin");
+        target.searchParams.set("next", next);
+        window.location.replace(target.toString());
+      }
     </script>
     <p>Admin login openen...</p>
   </body>

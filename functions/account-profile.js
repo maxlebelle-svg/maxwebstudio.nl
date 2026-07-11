@@ -36,37 +36,29 @@ exports.handler = async (event) => {
     });
     let profile = Array.isArray(rows) ? rows[0] : null;
 
-    if (!profile?.id || !profile.role) {
-      return jsonResponse(403, {
+    if (!profile?.id) {
+      return jsonResponse(404, {
         success: false,
-        code: "PROFILE_ROLE_MISSING",
-        error: "Account bestaat, maar profiel/rol ontbreekt. Vraag een beheerder om toegang te activeren.",
+        code: "PROFILE_NOT_FOUND",
+        error: "Profiel ontbreekt.",
       });
     }
 
-    if (cleanText(profile.status).toLowerCase() === "invited") {
-      const updatedRows = await supabaseFetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(profile.id)}`, {
-        method: "PATCH",
-        headers: {
-          apikey: serviceRoleKey,
-          Authorization: `Bearer ${serviceRoleKey}`,
-          Accept: "application/json",
-          "Content-Type": "application/json",
-          "Accept-Profile": "public",
-          "Content-Profile": "public",
-          Prefer: "return=representation",
-        },
-        body: JSON.stringify({
-          status: "active",
-          last_login_at: new Date().toISOString(),
-          metadata: {
-            ...(profile.metadata || {}),
-            activatedAt: new Date().toISOString(),
-            activatedVia: "account-profile",
-          },
-        }),
+    if (!cleanText(profile.role)) {
+      return jsonResponse(403, {
+        success: false,
+        code: "ROLE_NOT_ALLOWED",
+        error: "Profiel heeft geen toegestane rol.",
       });
-      profile = Array.isArray(updatedRows) && updatedRows[0] ? updatedRows[0] : { ...profile, status: "active" };
+    }
+
+    const profileStatus = cleanText(profile.status || "active").toLowerCase();
+    if (profileStatus !== "active") {
+      return jsonResponse(403, {
+        success: false,
+        code: "PROFILE_INACTIVE",
+        error: "Profiel is niet actief.",
+      });
     }
 
     return jsonResponse(200, {
@@ -78,10 +70,13 @@ exports.handler = async (event) => {
       profile: normalizeProfile(profile),
     });
   } catch (error) {
-    console.error("Account profile lookup failed", { message: error.message, status: error.status });
-    return jsonResponse(error.status || 500, {
+    const status = Number(error.status) || 500;
+    const safeStatus = status >= 400 && status < 500 ? status : 502;
+    console.error("Account profile lookup failed", { code: "PROFILE_LOOKUP_FAILED", status });
+    return jsonResponse(safeStatus, {
       success: false,
-      error: error.status ? error.message : "Profiel kon niet worden gecontroleerd.",
+      code: "PROFILE_LOOKUP_FAILED",
+      error: "Profielcontrole kon niet worden uitgevoerd.",
     });
   }
 };

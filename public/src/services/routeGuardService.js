@@ -13,7 +13,7 @@ const DEFAULT_ACCESS_SETTINGS = Object.freeze({
 const PRODUCTION_HOSTS = new Set(["maxwebstudio.nl", "www.maxwebstudio.nl"]);
 const ADMIN_SESSION_KEY = "mws_admin_supabase_session";
 const ADMIN_ROUTE_PATTERN = /^\/admin(?:-|\/|$)/;
-const ADMIN_LOGIN_ROUTE = "/login.html";
+const ADMIN_LOGIN_ROUTE = "/admin-login.html";
 const ADMIN_ACCESS_ROLES = new Set([
   ROLES.DEVELOPER,
   ROLES.SUPER_ADMIN,

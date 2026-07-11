@@ -372,10 +372,19 @@
           const code = String(debug.code || error?.code || "LOGIN_FAILED").toUpperCase();
           const status = debug.status || error?.status || "";
           if (code.includes("INVALID_CREDENTIALS") || code.includes("INVALID_LOGIN") || status === 400) {
-            return "Admin-login geweigerd: e-mailadres of wachtwoord klopt niet.";
+            return "E-mailadres of wachtwoord is onjuist.";
           }
-          if (code === "PROFILE_ROLE_MISSING" || status === 403) {
-            return "Admin-login geblokkeerd: account bestaat, maar profiel/rol ontbreekt of is niet actief.";
+          if (code === "PROFILE_NOT_FOUND") {
+            return "Admin-login geblokkeerd: er is geen profiel gekoppeld aan dit account.";
+          }
+          if (code === "PROFILE_INACTIVE") {
+            return "Admin-login geblokkeerd: dit profiel is niet actief.";
+          }
+          if (code === "ROLE_NOT_ALLOWED" || code === "PROFILE_ROLE_DENIED" || code === "PROFILE_ROLE_MISSING") {
+            return "Admin-login geblokkeerd: dit account heeft geen toegestane adminrol.";
+          }
+          if (code === "PROFILE_LOOKUP_FAILED") {
+            return "Admin-login geblokkeerd: profielcontrole is technisch niet gelukt.";
           }
           if (code.includes("EMAIL_NOT_CONFIRMED")) {
             return "Admin-login geblokkeerd: e-mailadres is nog niet bevestigd.";
@@ -384,6 +393,20 @@
             return "Admin-login geblokkeerd: de loginomgeving is nu niet bereikbaar.";
           }
           return `Admin-login geblokkeerd: ${code}${status ? ` (${status})` : ""}.`;
+        }
+
+        function getClientProfileErrorMessage() {
+          return "Inloggen is niet gelukt. Controleer je gegevens of vraag toegang aan.";
+        }
+
+        function logAuthEvent(code, details = {}) {
+          const safeDetails = {};
+          ["status", "reason", "role", "profileStatus", "hasUserId"].forEach((key) => {
+            if (details[key] !== undefined && details[key] !== "") {
+              safeDetails[key] = details[key];
+            }
+          });
+          console.info(code, safeDetails);
         }
 
         function getSafeResetErrorMessage(error) {
@@ -609,37 +632,73 @@
           }
           const data = Object.fromEntries(new FormData(realLoginForm).entries());
           setMessage("Echte login wordt gecontroleerd...");
+          let auth;
+          let result;
+          let session;
+
           try {
-            const auth = await loadAuth();
-            const result = await auth.signInWithEmail(data.email, data.password);
-            const session = result.session || getStoredSupabaseSession();
-            if (!session?.access_token) throw new Error("Login gelukt, maar sessie-token ontbreekt.");
-            const account = await fetchAccountProfile(session.access_token);
-            const role = normalizeRole(account.profile?.role);
-            if (adminMode && !isAdminRole(role)) {
-              localStorage.removeItem("maxwebstudioSupabaseAuthSession");
-              setMessage("Dit account heeft geen admintoegang. Log in met een Max Webstudio beheerdersaccount.", "error");
-              return;
+            auth = await loadAuth();
+            result = await auth.signInWithEmail(data.email, data.password);
+            session = result.session || getStoredSupabaseSession();
+            const userId = session?.user?.id || result?.user?.id || "";
+            if (!session?.access_token || !userId) {
+              const sessionError = new Error("Login gelukt, maar sessie is niet compleet.");
+              sessionError.code = "AUTH_SESSION_INCOMPLETE";
+              throw sessionError;
             }
-            storeRealSession(session, account);
-            if (isAdminRole(role)) storeAdminSessionBridge(session, account);
-            const redirect = getAllowedRedirect(role, account.profile?.customerId) || auth.getLoginRedirectForRole(role, account.profile?.customerId);
-            setMessage("Login gelukt.", "success");
-            window.location.href = redirect;
+            logAuthEvent("AUTH_SIGNIN_SUCCEEDED", { hasUserId: Boolean(userId) });
           } catch (error) {
             const debug = error?.supabaseAuth || {};
-            console.info("Login failed", {
-              code: isDeveloperModeEnabled() ? debug.code || error?.code || "UNKNOWN" : "LOGIN_FAILED",
-              status: isDeveloperModeEnabled() ? debug.status || error?.status || "" : "",
+            logAuthEvent("AUTH_SIGNIN_FAILED", {
+              status: debug.status || error?.status || "",
+              reason: debug.code || error?.code || "LOGIN_FAILED",
             });
-            setMessage(error?.code === "PROFILE_ROLE_MISSING"
-              ? "Account bestaat, maar profiel/rol ontbreekt. Vraag een beheerder om toegang te activeren."
-              : adminMode
-                ? getAdminLoginErrorMessage(error)
-                : isDeveloperModeEnabled()
-                ? getDeveloperLoginErrorMessage(error)
-                : getSafeLoginErrorMessage(error), "error");
+            setMessage(adminMode
+              ? getAdminLoginErrorMessage(error)
+              : isDeveloperModeEnabled()
+              ? getDeveloperLoginErrorMessage(error)
+              : getSafeLoginErrorMessage(error), "error");
+            return;
           }
+
+          let account;
+          try {
+            account = await fetchAccountProfile(session.access_token);
+          } catch (error) {
+            const code = String(error?.code || "PROFILE_LOOKUP_FAILED").toUpperCase();
+            const diagnosticCode = code === "ROLE_NOT_ALLOWED" ? "PROFILE_ROLE_DENIED" : code;
+            logAuthEvent(diagnosticCode, {
+              status: error?.status || "",
+              reason: code,
+            });
+            setMessage(adminMode
+              ? getAdminLoginErrorMessage(error)
+              : isDeveloperModeEnabled()
+              ? getDeveloperLoginErrorMessage(error)
+              : getClientProfileErrorMessage(), "error");
+            return;
+          }
+
+          const role = normalizeRole(account.profile?.role);
+          const profileStatus = String(account.profile?.status || "").toLowerCase();
+          if (adminMode && profileStatus !== "active") {
+            logAuthEvent("PROFILE_INACTIVE", { role, profileStatus });
+            setMessage(getAdminLoginErrorMessage({ code: "PROFILE_INACTIVE" }), "error");
+            return;
+          }
+          if (adminMode && !isAdminRole(role)) {
+            logAuthEvent("PROFILE_ROLE_DENIED", { role, profileStatus });
+            setMessage(getAdminLoginErrorMessage({ code: "PROFILE_ROLE_DENIED" }), "error");
+            return;
+          }
+          storeRealSession(session, account);
+          if (isAdminRole(role)) {
+            storeAdminSessionBridge(session, account);
+            if (adminMode) logAuthEvent("ADMIN_ACCESS_GRANTED", { role, profileStatus });
+          }
+          const redirect = getAllowedRedirect(role, account.profile?.customerId) || auth.getLoginRedirectForRole(role, account.profile?.customerId);
+          setMessage("Login gelukt.", "success");
+          window.location.href = redirect;
         });
 
         accountRequestForm.addEventListener("submit", async (event) => {

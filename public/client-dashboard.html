@@ -634,7 +634,7 @@
           const session = sessionData.session;
 
           if (!session) {
-            window.location.href = "/login.html";
+            window.location.href = "/klant-login.html";
             return;
           }
 
@@ -770,7 +770,7 @@
 
       logoutButton.addEventListener("click", async () => {
         if (state.client) await state.client.auth.signOut();
-        window.location.href = "/login.html";
+        window.location.href = "/klant-login.html";
       });
 
       document.querySelector("#view-website-link").addEventListener("click", (event) => {
