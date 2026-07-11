@@ -834,16 +834,23 @@
             </div>
 
             <form class="admin-card admin-profile-form crm-detail-panel" id="customer-detail-form">
-              <div class="admin-profile-form-heading">
-                <div>
-                  <strong>Klantdetail</strong>
-                  <span id="customer-detail-subtitle">Selecteer een klant om gegevens te bekijken of te wijzigen.</span>
-                </div>
-                <mark class="status-badge status-planned" id="customer-detail-state">Niet geselecteerd</mark>
-              </div>
+	              <div class="admin-profile-form-heading">
+	                <div>
+	                  <strong>Klantwerkruimte</strong>
+	                  <span id="customer-detail-subtitle">Selecteer een klant om gegevens te bekijken of te wijzigen.</span>
+	                </div>
+	                <mark class="status-badge status-planned" id="customer-detail-state">Niet geselecteerd</mark>
+	              </div>
+	              <div class="customer-workspace-tabs" role="tablist" aria-label="Klantwerkruimte onderdelen">
+	                <button class="is-active" type="button" role="tab" aria-selected="true" data-customer-workspace-tab="overview">Overzicht</button>
+	                <button type="button" role="tab" aria-selected="false" data-customer-workspace-tab="timeline">Timeline</button>
+	                <button type="button" role="tab" aria-selected="false" data-customer-workspace-tab="websites">Websites</button>
+	                <button type="button" role="tab" aria-selected="false" data-customer-workspace-tab="billing">Financieel</button>
+	                <button type="button" role="tab" aria-selected="false" data-customer-workspace-tab="assets">Assets</button>
+	              </div>
 
-              <div class="admin-profile-fields">
-                <label for="detail-name">Naam<input id="detail-name" type="text" disabled /></label>
+	              <div class="admin-profile-fields customer-workspace-panel" data-customer-workspace-panel="overview">
+	                <label for="detail-name">Naam<input id="detail-name" type="text" disabled /></label>
                 <label for="detail-email">E-mail<input id="detail-email" type="email" disabled /></label>
                 <label for="detail-phone">Telefoon<input id="detail-phone" type="tel" disabled /></label>
                 <label for="detail-company">Bedrijf<input id="detail-company" type="text" disabled /></label>
@@ -854,9 +861,9 @@
                 <label for="detail-customer-since">Klant sinds<input id="detail-customer-since" type="date" disabled /></label>
                 <label class="admin-profile-wide" for="detail-notes">Notities admin-only<textarea id="detail-notes" disabled placeholder="Interne notities, niet zichtbaar in het klantenportaal"></textarea></label>
               </div>
-              <div class="settings-status-list" id="customer-source-detail"></div>
+	              <div class="settings-status-list customer-workspace-panel" id="customer-source-detail" data-customer-workspace-panel="overview"></div>
 
-              <div class="crm-auth-panel">
+	              <div class="crm-auth-panel customer-workspace-panel" data-customer-workspace-panel="overview">
                 <div>
                   <span>Auth-status</span>
                   <mark class="status-badge status-planned" id="detail-auth-status">Niet actief</mark>
@@ -869,7 +876,7 @@
                 </div>
               </div>
 
-              <div class="admin-profile-actions admin-action-groups" aria-label="Klantacties">
+	              <div class="admin-profile-actions admin-action-groups customer-workspace-panel" aria-label="Klantacties" data-customer-workspace-panel="overview">
                 <div class="admin-action-group admin-action-group-primary" aria-label="Primaire klantacties">
                   <button class="button secondary" id="detail-edit" type="button" disabled>Bewerken</button>
                   <button class="button primary" id="detail-save" type="submit" disabled>Opslaan</button>
@@ -900,8 +907,32 @@
                   <button class="button secondary danger" id="detail-archive" type="button" disabled>Archiveren</button>
                 </div>
               </div>
-              <div class="settings-status-list" id="customer-history-list" hidden></div>
-              <section class="customer-timeline-panel" id="customer-timeline" aria-label="Universal Customer Timeline">
+	              <div class="settings-status-list customer-workspace-panel" id="customer-history-list" data-customer-workspace-panel="overview" hidden></div>
+	              <section class="customer-workspace-panel customer-workspace-summary" id="customer-workspace-websites" data-customer-workspace-panel="websites" hidden aria-live="polite">
+	                <article class="admin-card request-card request-state-card">
+	                  <div>
+	                    <strong>Websites</strong>
+	                    <span>Selecteer een klant om gekoppelde websites te bekijken.</span>
+	                  </div>
+	                </article>
+	              </section>
+	              <section class="customer-workspace-panel customer-workspace-summary" id="customer-workspace-billing" data-customer-workspace-panel="billing" hidden aria-live="polite">
+	                <article class="admin-card request-card request-state-card">
+	                  <div>
+	                    <strong>Financieel</strong>
+	                    <span>Selecteer een klant om offertes, facturen en abonnementen te bekijken.</span>
+	                  </div>
+	                </article>
+	              </section>
+	              <section class="customer-workspace-panel customer-workspace-summary" id="customer-workspace-assets" data-customer-workspace-panel="assets" hidden aria-live="polite">
+	                <article class="admin-card request-card request-state-card">
+	                  <div>
+	                    <strong>Assets</strong>
+	                    <span>Selecteer een klant om bestanden, uploads en branding te bekijken.</span>
+	                  </div>
+	                </article>
+	              </section>
+	              <section class="customer-timeline-panel customer-workspace-panel" id="customer-timeline" data-customer-workspace-panel="timeline" hidden aria-label="Universal Customer Timeline">
                 <div class="admin-section-heading compact-heading">
                   <div>
                     <p class="section-kicker">Customer source of truth</p>
@@ -2631,6 +2662,7 @@
           selectedRequestId: "",
           customerListPage: 1,
           customerListPageSize: 25,
+          customerWorkspaceTab: "overview",
           dashboardMetrics: null,
           developerModules: null,
           customerSourceStatus: null,
@@ -3173,6 +3205,11 @@
         const detailSendWelcomeMail = document.getElementById("detail-send-welcome-mail");
         const detailArchive = document.getElementById("detail-archive");
         const customerHistoryList = document.getElementById("customer-history-list");
+        const customerWorkspaceTabs = [...document.querySelectorAll("[data-customer-workspace-tab]")];
+        const customerWorkspacePanels = [...document.querySelectorAll("[data-customer-workspace-panel]")];
+        const customerWorkspaceWebsites = document.getElementById("customer-workspace-websites");
+        const customerWorkspaceBilling = document.getElementById("customer-workspace-billing");
+        const customerWorkspaceAssets = document.getElementById("customer-workspace-assets");
         const customerTimelineRefresh = document.getElementById("customer-timeline-refresh");
         const customerTimelineAddNote = document.getElementById("customer-timeline-add-note");
         const customerTimelineModule = document.getElementById("customer-timeline-module");
@@ -12139,6 +12176,94 @@
                   customerPagination.append(summary, previous, next);
                 }
 
+                function setCustomerWorkspaceTab(tab = "overview") {
+                  state.customerWorkspaceTab = tab;
+                  customerWorkspaceTabs.forEach((button) => {
+                    const active = button.dataset.customerWorkspaceTab === tab;
+                    button.classList.toggle("is-active", active);
+                    button.setAttribute("aria-selected", active ? "true" : "false");
+                  });
+                  customerWorkspacePanels.forEach((panel) => {
+                    panel.hidden = panel.dataset.customerWorkspacePanel !== tab;
+                  });
+                }
+
+                function customerWorkspaceRecords(customer = {}) {
+                  return {
+                    websites: relatedCustomerWebsites(customer),
+                    projects: relatedCustomerProjects(customer),
+                    quotes: state.quotes.filter((quote) => recordBelongsToCustomer(quote, customer)),
+                    invoices: state.invoices.filter((invoice) => recordBelongsToCustomer(invoice, customer)),
+                    subscriptions: state.subscriptions.filter((subscription) => recordBelongsToCustomer(subscription, customer)),
+                    files: state.files.filter((file) => recordBelongsToCustomer(file, customer)),
+                  };
+                }
+
+                function renderWorkspaceSummaryPanel(panel, title, rows = [], emptyText = "Geen gekoppelde data gevonden.") {
+                  if (!panel) return;
+                  panel.replaceChildren();
+                  const card = document.createElement("article");
+                  card.className = "admin-card customer-workspace-card";
+                  const heading = document.createElement("div");
+                  heading.className = "customer-workspace-card-heading";
+                  heading.append(createCell(title, "strong"), createCell(rows.length ? `${rows.length} items` : emptyText, "small"));
+                  card.append(heading);
+                  if (rows.length) {
+                    const list = document.createElement("div");
+                    list.className = "customer-workspace-list";
+                    rows.slice(0, 6).forEach((row) => {
+                      const item = document.createElement("div");
+                      item.className = "customer-workspace-list-item";
+                      item.append(createCell(row.title, "strong"), createCell(row.meta, "small"), createBadge(row.badge, row.tone));
+                      list.append(item);
+                    });
+                    card.append(list);
+                  }
+                  panel.append(card);
+                }
+
+                function renderCustomerWorkspace(customer = selectedCustomer()) {
+                  if (!customer) {
+                    renderWorkspaceSummaryPanel(customerWorkspaceWebsites, "Websites", []);
+                    renderWorkspaceSummaryPanel(customerWorkspaceBilling, "Financieel", []);
+                    renderWorkspaceSummaryPanel(customerWorkspaceAssets, "Assets", []);
+                    return;
+                  }
+                  const records = customerWorkspaceRecords(customer);
+                  renderWorkspaceSummaryPanel(customerWorkspaceWebsites, "Websites", records.websites.map((website) => ({
+                    title: website.name || website.domain || customer.website || "Website",
+                    meta: [website.domain || website.liveUrl || "Geen domein", website.lastUpdateAt ? `Laatst gewijzigd ${formatDate(website.lastUpdateAt)}` : ""].filter(Boolean).join(" - "),
+                    badge: websiteStatusLabels[website.status] || website.status || "Website",
+                    tone: websiteStatusClass(website.status),
+                  })));
+                  renderWorkspaceSummaryPanel(customerWorkspaceBilling, "Financieel", [
+                    ...records.quotes.map((quote) => ({
+                      title: quote.quoteNumber || quote.number || quote.title || "Offerte",
+                      meta: [quote.quoteDate ? formatDate(quote.quoteDate) : "", quote.total ? money(quote.total) : ""].filter(Boolean).join(" - "),
+                      badge: quote.status || "offerte",
+                      tone: quote.status === "geaccepteerd" ? "status-active" : quote.status === "afgewezen" ? "status-attention" : "status-warning",
+                    })),
+                    ...records.invoices.map((invoice) => ({
+                      title: invoice.invoiceNumber || invoice.number || invoice.title || "Factuur",
+                      meta: [invoice.invoiceDate ? formatDate(invoice.invoiceDate) : "", invoice.total ? money(invoice.total) : ""].filter(Boolean).join(" - "),
+                      badge: invoice.status || "factuur",
+                      tone: invoice.status === "betaald" ? "status-active" : "status-warning",
+                    })),
+                    ...records.subscriptions.map((subscription) => ({
+                      title: subscription.packageName || subscription.package || "Abonnement",
+                      meta: subscription.nextInvoiceDate ? `Volgende factuur ${formatDate(subscription.nextInvoiceDate)}` : "Geen volgende factuur",
+                      badge: subscription.status || "abonnement",
+                      tone: subscription.status === "actief" ? "status-active" : "status-planned",
+                    })),
+                  ]);
+                  renderWorkspaceSummaryPanel(customerWorkspaceAssets, "Assets", records.files.map((file) => ({
+                    title: file.name || file.fileName || file.title || "Bestand",
+                    meta: [file.type || file.category || "Bestand", file.createdAt ? formatDate(file.createdAt) : ""].filter(Boolean).join(" - "),
+                    badge: file.status || "asset",
+                    tone: file.status === "actief" ? "status-active" : "status-planned",
+                  })));
+                }
+
                 function applyCustomerQuickFilter(detail = {}) {
                   customerQuickFilter = {
                     type: detail.type || "all_customers",
@@ -12348,6 +12473,8 @@
           detailFields.customerSince.value = toDateInput(customer.customerSince || customer.createdAt);
           detailFields.notes.value = customer.notes || "";
           renderCustomerSourceDetail(customer);
+          renderCustomerWorkspace(customer);
+          setCustomerWorkspaceTab(state.customerWorkspaceTab || "overview");
 
           const supabaseManaged = isSupabaseManagedCustomer(customer);
           Object.values(detailFields).forEach((field) => {
@@ -18826,6 +18953,9 @@
                     state.customerListPage = 1;
                     renderCustomers();
                   });
+                });
+                customerWorkspaceTabs.forEach((button) => {
+                  button.addEventListener("click", () => setCustomerWorkspaceTab(button.dataset.customerWorkspaceTab || "overview"));
                 });
                 dashboardSummaryCards.forEach((card) => {
                   card.addEventListener("click", handleDashboardSummaryClick);

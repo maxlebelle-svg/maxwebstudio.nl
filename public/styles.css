@@ -8438,6 +8438,68 @@ h3 {
   white-space: nowrap;
 }
 
+.customer-workspace-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 6px;
+  border: 1px solid rgba(171, 196, 224, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.customer-workspace-tabs button {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: rgba(226, 236, 248, 0.72);
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.customer-workspace-tabs button.is-active {
+  border-color: rgba(96, 165, 250, 0.28);
+  color: #f8fbff;
+  background: rgba(37, 99, 235, 0.22);
+}
+
+.customer-workspace-panel[hidden] {
+  display: none !important;
+}
+
+.customer-workspace-summary {
+  display: grid;
+  gap: 12px;
+}
+
+.customer-workspace-card {
+  display: grid;
+  gap: 12px;
+}
+
+.customer-workspace-card-heading,
+.customer-workspace-list-item {
+  display: grid;
+  gap: 6px;
+}
+
+.customer-workspace-list {
+  display: grid;
+  gap: 10px;
+}
+
+.customer-workspace-list-item {
+  padding: 12px;
+  border: 1px solid rgba(171, 196, 224, 0.12);
+  border-radius: 8px;
+  background: rgba(2, 14, 25, 0.34);
+}
+
 .website-operations-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
