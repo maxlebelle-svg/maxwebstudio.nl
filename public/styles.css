@@ -12344,7 +12344,7 @@ h3 {
 
 .portal-command-main {
   display: grid;
-  grid-template-columns: minmax(330px, 0.9fr) minmax(390px, 1.1fr);
+  grid-template-columns: minmax(280px, 0.9fr) minmax(320px, 1.1fr);
   gap: 20px;
   align-items: stretch;
   min-width: 0;
@@ -12880,6 +12880,16 @@ h3 {
 .customer-portal-demo #mijn-website,
 .customer-portal-demo #account {
   scroll-margin-top: 24px;
+}
+
+@media (max-width: 1320px) {
+  .portal-command-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .portal-command-side {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 1120px) {

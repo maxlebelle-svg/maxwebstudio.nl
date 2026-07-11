@@ -1524,7 +1524,7 @@
           if (latestPreview?.allowApproval && !latestPreview.approvedAt) tasks.push({ title: "Ontwerp goedkeuren", meta: `Versie ${latestPreview.version || 1} staat klaar`, href: "#portal-demo-feedback-form", tone: "high" });
           if (latestPreview?.allowFeedback && !latestPreview.approvedAt && !latestPreview.feedbackCount) tasks.push({ title: "Feedback geven", meta: "Geef opmerkingen op de huidige versie", href: "#portal-demo-feedback-form", tone: "high" });
           if (openInvoice) tasks.push({ title: "Factuur bekijken", meta: `${openInvoice.invoiceNumber || "Factuur"} staat open`, href: invoiceUrl(openInvoice) || "#facturen", tone: "high" });
-          if (!onboardingSubmitted(onboarding)) tasks.push({ title: "Teksten en foto's aanleveren", meta: "Nodig voor ontwerp en bouw", href: "#onboarding", tone: "high" });
+          if (!latestPreview?.approvedAt && !onboardingSubmitted(onboarding)) tasks.push({ title: "Teksten en foto's aanleveren", meta: "Nodig voor ontwerp en bouw", href: "#onboarding", tone: "high" });
           if (latestUnreadMessage) tasks.push({ title: "Bericht beantwoorden", meta: latestUnreadMessage.subject || latestUnreadMessage.title || "Update van Max Webstudio", href: "#berichten", tone: "normal" });
           return tasks.slice(0, 4);
         }
