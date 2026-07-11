@@ -1,6 +1,6 @@
 const { corsHeaders } = require("./_cors");
 
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const previewVersionFields = [
   "id",
   "customer_id",
@@ -271,7 +271,20 @@ function recoverVersionFromRequest(event = {}) {
 
 function getVersionParam(event = {}) {
   const params = getQueryParams(event);
-  return params.version || params.versionId || params.version_id || recoverVersionFromRequest(event);
+  return [
+    firstParamValue(params.version),
+    firstParamValue(params.versionId),
+    firstParamValue(params.version_id),
+    recoverVersionFromRequest(event),
+  ].find((value) => uuidOrEmpty(value)) || "";
+}
+
+function firstParamValue(value) {
+  if (Array.isArray(value)) return firstParamValue(value[0]);
+  if (value && typeof value === "object") {
+    return firstParamValue(value.value || value[0] || value.raw || value.rawValue);
+  }
+  return cleanText(value);
 }
 
 function appendPreviewDiagnostics(event = {}, body = {}) {

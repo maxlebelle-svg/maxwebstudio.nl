@@ -62,5 +62,27 @@ assert.strictEqual(
   "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
   "version aliases should be recovered from request metadata"
 );
+assert.strictEqual(
+  _private.getVersionParam({
+    queryStringParameters: { version: ["aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"] },
+  }),
+  "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  "version should be normalized when Netlify provides an array-like query value"
+);
+assert.strictEqual(
+  _private.getVersionParam({
+    queryStringParameters: { version: { value: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" } },
+  }),
+  "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  "version should be normalized when runtime metadata wraps the query value"
+);
+assert.strictEqual(
+  _private.getVersionParam({
+    queryStringParameters: { version: { unexpected: true } },
+    rawUrl: "https://maxwebstudio.nl/.netlify/functions/client-preview-render?version=aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  }),
+  "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  "version should fall back to request metadata when the parsed query value is not scalar"
+);
 
 console.log("client preview render tests passed");
