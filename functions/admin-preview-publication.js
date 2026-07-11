@@ -75,7 +75,7 @@ async function publishPreviewVersion(context, payload = {}) {
     notify_customer: Boolean(payload.notifyCustomer || payload.notify_customer),
     published_to_portal: true,
     published_at: version.published_at || now,
-    published_by: context.admin.profileId || context.admin.id,
+    published_by: context.admin.profileId || null,
     safe_preview_path: safePreviewPath,
     status: version.approved_at ? "approved" : "ready_for_review",
     metadata: {
