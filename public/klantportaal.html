@@ -496,6 +496,7 @@
         const accountList = document.getElementById("portal-account");
         const fileList = document.getElementById("portal-files");
         const readinessList = document.getElementById("portal-readiness");
+        document.getElementById("readiness")?.setAttribute("hidden", "");
         const metrics = {
           quotes: document.getElementById("metric-quotes"),
           invoices: document.getElementById("metric-invoices"),
@@ -2618,38 +2619,7 @@
           ], [createActionLink("Openen", openable ? location : ""), copy]));
         });
 
-        const moduleLabels = {
-          customers: "Klantprofiel",
-          websites: "Websites",
-          projects: "Projecten",
-          quotes: "Offertes",
-          invoices: "Facturen",
-          subscriptions: "Abonnementen",
-          files: "Bestanden",
-          changeRequests: "Wijzigingsverzoeken",
-          messages: "Berichten",
-          notifications: "Notificaties",
-        };
-        const readinessPairs = Object.entries(sourceSummary?.modules || {}).map(([key, status]) => [
-          moduleLabels[key] || key,
-          `${status.count || 0} records - ${status.mode || "local"}${status.fallbackUsed ? " fallback" : ""}`,
-        ]);
-        const dataLayer = sourceSummary?.dataLayer || {};
-        const dataLayerPairs = dataLayer.name ? [
-          ["Data layer", dataLayer.name],
-          ["Data layer modus", dataLayer.mode || dataLayer.defaultMode || "-"],
-          ["Read modules", Array.isArray(dataLayer.modules) ? dataLayer.modules.join(", ") : "-"],
-          ["Writes", dataLayer.writesEnabled ? "Aan" : "Uitgeschakeld"],
-          ["Data layer fallback", dataLayer.fallbackUsed ? `Ja (${(dataLayer.fallbackModules || []).join(", ") || "algemeen"})` : "Nee"],
-        ] : [];
-        readinessList.append(createInfoCard("Databronnen", [
-          ["Portaalmodus", sourceSummary?.mode || payload.mode],
-          ["Klantbron", sourceSummary?.customerSource || "-"],
-          ["Fallback gebruikt", sourceSummary?.fallbackUsed ? "Ja" : "Nee"],
-          ["Warnings", String(sourceSummary?.warningCount || 0)],
-          ...dataLayerPairs,
-          ...readinessPairs,
-        ]));
+        readinessList.replaceChildren();
       })();
     </script>
   </body>
