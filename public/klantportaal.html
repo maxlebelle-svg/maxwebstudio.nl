@@ -1781,15 +1781,23 @@
           const existing = state.projects.find((project) => identifiers.includes(String(project.customerId || "")) || identifiers.includes(String(project.id || "")) || String(project.companyName || "").toLowerCase() === String(customer.company || "").toLowerCase());
           if (existing) return existing;
           const answers = onboarding.answers || {};
-          return upsertBrandingProject({
+          return {
             id: customer.id || customer.customerId || customer.company,
             customerId: customer.id || customer.customerId || "",
             companyName: customer.company || answers.company?.companyName || customer.name || "Klant",
             onboarding,
             status: answers.branding?.colors || answers.branding?.lookAndFeel ? "not_started" : "not_started",
-            colors: answers.branding?.colors || "",
+            colors: String(answers.branding?.colors || "").split(/,|\n/).map((item) => item.trim()).filter(Boolean),
             typography: answers.branding?.fontPreference || "",
-          });
+            briefing: {
+              colors: answers.branding?.colors || "",
+              fontPreference: answers.branding?.fontPreference || "",
+            },
+            version: "",
+            createdAt: "",
+            updatedAt: "",
+            virtual: true,
+          };
         }
 
         function renderBrandingCenter(customer = {}, onboarding = {}) {
@@ -1800,10 +1808,10 @@
           brandingTitle.textContent = project.companyName ? `${project.companyName} branding` : "Je branding";
           brandingSummary.textContent = logos.length
             ? `${logos.length} logo${logos.length === 1 ? "" : "'s"} klaar. Controleer logo, kleuren, lettertype en iconstijl voordat we dit in je website verwerken.`
-            : "Je merkpakket wordt voorbereid op basis van je onboarding en uploads.";
+            : "Er zijn nog geen branding-assets gekoppeld aan je klantportaal.";
           brandingStatus.textContent = approved ? "Goedgekeurd" : project.status === "customer_review" ? "Review" : "Voorbereid";
           brandingStatus.className = `status-badge ${approved ? "status-active" : project.status === "customer_review" ? "status-warning" : "status-prepared"}`;
-          brandingVersion.textContent = String(project.version || 1);
+          brandingVersion.textContent = project.version ? String(project.version) : "-";
           brandingUpdated.textContent = formatDate(project.updatedAt || project.createdAt);
           brandingFactory.textContent = project.status === "linked_to_factory" ? "Gekoppeld" : "Nog niet";
           const colors = Array.isArray(project.colors) ? project.colors : [];
@@ -1813,12 +1821,12 @@
           const printAssets = state.printAssets.filter((asset) => asset.projectId === project.id || asset.customerId === project.customerId);
           const rows = [
             ["Logo", logo?.assetName || logo?.title || "Nog geen logo gekozen"],
-            ["Kleurenpalet", colors.length ? colors.join(", ") : "Uit onboarding"],
-            ["Lettertypes", project.typography || project.briefing?.fontPreference || "Wordt afgestemd"],
-            ["Iconstijl", project.iconStyle || "Lijniconen"],
-            ["Assets", logo?.variants?.length ? `${logo.variants.length} versies voorbereid` : "Wordt voorbereid"],
+            ["Kleurenpalet", colors.length ? colors.join(", ") : (project.briefing?.colors || "Nog niet beschikbaar")],
+            ["Lettertypes", project.typography || project.briefing?.fontPreference || "Nog niet beschikbaar"],
+            ["Iconstijl", project.iconStyle || "Nog niet beschikbaar"],
+            ["Assets", logo?.variants?.length ? `${logo.variants.length} versies voorbereid` : "Nog niet beschikbaar"],
             ["Downloads", downloads.length ? `${downloads.length} bestanden` : "Nog niet beschikbaar"],
-            ["Social assets", socialAssets.length ? `${socialAssets.length} formaten` : "Wordt voorbereid"],
+            ["Social assets", socialAssets.length ? `${socialAssets.length} formaten` : "Nog niet beschikbaar"],
             ["Print assets", printAssets.length ? `${printAssets.length} voorstellen` : "Optioneel"],
           ];
           brandingAssets.innerHTML = rows.map(([label, value]) => `<article class="admin-card metric-card"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><small>Max Webstudio</small></article>`).join("");
