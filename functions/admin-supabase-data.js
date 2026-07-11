@@ -178,6 +178,28 @@ exports.handler = async (event) => {
           refreshedAt: new Date().toISOString(),
         });
       }
+      if (moduleName === "projects") {
+        const saved = await saveProjectRecord(supabaseUrl, serviceRoleKey, payload.project || payload);
+        const project = mapProject(saved);
+        return jsonResponse(200, {
+          success: true,
+          module: moduleName,
+          mode: "supabase-write",
+          diagnostics: {
+            module: moduleName,
+            resolvedRole: adminCheck.admin?.role || "",
+            status: adminCheck.admin?.status || "",
+            reason: "authorized",
+            endpoint: "admin-supabase-data?module=projects",
+            customerId: project.customerId,
+            websiteId: project.websiteId,
+            projectId: project.id,
+          },
+          project,
+          record: project,
+          refreshedAt: new Date().toISOString(),
+        });
+      }
       return jsonResponse(405, {
         success: false,
         error: "Schrijven is nog niet beschikbaar voor deze centrale module.",
@@ -392,6 +414,55 @@ function websiteWriteRecord(input = {}) {
   };
 }
 
+function normalizeProjectWriteStatus(value = "") {
+  const status = cleanText(value).toLowerCase();
+  if (status === "nieuw" || status === "new") return "new";
+  if (status === "onboarding") return "onboarding";
+  if (status === "in_ontwerp" || status === "design") return "design";
+  if (status === "in_ontwikkeling" || status === "development") return "development";
+  if (status === "feedback") return "feedback";
+  if (status === "testen" || status === "testing") return "testing";
+  if (status === "live") return "live";
+  if (status === "onderhoud" || status === "maintenance") return "maintenance";
+  if (status === "gepauzeerd" || status === "paused") return "paused";
+  if (status === "gearchiveerd" || status === "archived") return "archived";
+  return "development";
+}
+
+function normalizeProjectWriteProgress(value) {
+  const progress = Number(value);
+  if (!Number.isFinite(progress)) return 0;
+  return Math.max(0, Math.min(100, Math.round(progress)));
+}
+
+function projectWriteRecord(input = {}, options = {}) {
+  const customerId = cleanText(input.customerId || input.customer_id || input.profileId || input.profile_id);
+  const websiteId = cleanText(input.websiteId || input.website_id);
+  const name = cleanText(input.name || input.title);
+  if (!customerId) throw Object.assign(new Error("Selecteer eerst een centrale klant voor dit project."), { status: 400 });
+  if (!name) throw Object.assign(new Error("Vul een projectnaam in."), { status: 400 });
+  const now = new Date().toISOString();
+  return {
+    customer_id: customerId,
+    website_id: websiteId || null,
+    name,
+    type: cleanText(input.type || input.projectType || input.project_type) || "website",
+    status: normalizeProjectWriteStatus(input.status),
+    phase: cleanText(input.phase) || "Website Factory",
+    progress: normalizeProjectWriteProgress(input.progress),
+    notes: cleanText(input.notes) || null,
+    is_demo: Boolean(input.isDemo),
+    environment: cleanText(input.environment) || "production",
+    metadata: {
+      ...(input.metadata && typeof input.metadata === "object" ? input.metadata : {}),
+      source: cleanText(input.source) || "admin_project_center",
+      lastProjectWriteContext: "admin_crm_project_center",
+    },
+    ...(options.isCreate ? { created_at: now } : {}),
+    updated_at: now,
+  };
+}
+
 async function saveCustomerRecord(supabaseUrl, serviceRoleKey, input = {}) {
   const id = cleanText(input.id || input._supabaseCustomerId || input.supabaseCustomerId);
   const record = customerWriteRecord(input);
@@ -426,6 +497,16 @@ async function saveCustomerRecord(supabaseUrl, serviceRoleKey, input = {}) {
   return Array.isArray(data) ? data[0] || {} : data || {};
 }
 
+async function readSingleRecord(supabaseUrl, serviceRoleKey, table, id, select = "id") {
+  const cleanId = cleanText(id);
+  if (!cleanId) return null;
+  const rows = await supabaseFetch(`${supabaseUrl}/rest/v1/${table}?select=${encodeURIComponent(select)}&id=eq.${encodeURIComponent(cleanId)}&limit=1`, {
+    method: "GET",
+    headers: restHeaders(serviceRoleKey),
+  });
+  return rows[0] || null;
+}
+
 async function saveWebsiteRecord(supabaseUrl, serviceRoleKey, input = {}) {
   const id = cleanText(input.id || input._supabaseWebsiteId || input.supabaseWebsiteId);
   const record = websiteWriteRecord(input);
@@ -452,6 +533,53 @@ async function saveWebsiteRecord(supabaseUrl, serviceRoleKey, input = {}) {
   }
   if (!response.ok) {
     const error = new Error(data?.message || data?.error || "Website kon niet centraal worden opgeslagen.");
+    error.status = response.status;
+    error.code = data?.code || "";
+    error.details = data?.details || "";
+    throw error;
+  }
+  return Array.isArray(data) ? data[0] || {} : data || {};
+}
+
+async function saveProjectRecord(supabaseUrl, serviceRoleKey, input = {}) {
+  const id = cleanText(input.id || input._supabaseProjectId || input.supabaseProjectId);
+  const record = projectWriteRecord(input, { isCreate: !id });
+  const customer = await readSingleRecord(supabaseUrl, serviceRoleKey, "customers", record.customer_id, "id");
+  if (!customer?.id) {
+    throw Object.assign(new Error("Project kan alleen worden opgeslagen voor een bestaande centrale klant."), { status: 400 });
+  }
+  if (record.website_id) {
+    const website = await readSingleRecord(supabaseUrl, serviceRoleKey, "websites", record.website_id, "id,customer_id");
+    if (!website?.id) {
+      throw Object.assign(new Error("Gekoppelde website bestaat niet."), { status: 400 });
+    }
+    if (cleanText(website.customer_id) !== record.customer_id) {
+      throw Object.assign(new Error("Gekoppelde website hoort niet bij deze klant."), { status: 409, code: "PROJECT_WEBSITE_CUSTOMER_MISMATCH" });
+    }
+  }
+  const url = id
+    ? `${supabaseUrl}/rest/v1/projects?id=eq.${encodeURIComponent(id)}`
+    : `${supabaseUrl}/rest/v1/projects`;
+  const response = await fetch(url, {
+    method: id ? "PATCH" : "POST",
+    headers: {
+      ...restHeaders(serviceRoleKey),
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify(record),
+  });
+  const text = await response.text();
+  let data = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error("Supabase gaf geen geldige JSON-response terug.");
+    }
+  }
+  if (!response.ok) {
+    const error = new Error(data?.message || data?.error || "Project kon niet centraal worden opgeslagen.");
     error.status = response.status;
     error.code = data?.code || "";
     error.details = data?.details || "";
