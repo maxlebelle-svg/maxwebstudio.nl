@@ -2768,7 +2768,7 @@
           const summary = document.createElement("section");
           summary.className = "portal-finance-dashboard";
           [
-            ["Openstaand", money(openTotal), `${openInvoices.length} factuur${openInvoices.length === 1 ? "" : "en"}`],
+            ["Openstaand", money(openTotal), `${openInvoices.length} ${openInvoices.length === 1 ? "factuur" : "facturen"}`],
             ["Betaald totaal", money(paidTotal), `${paidInvoices.length} betaald`],
             ["Offertes", String(pendingQuotes.length), pendingQuotes.length ? "wacht op akkoord" : "geen open offerte"],
             ["Status", openInvoices.length ? "Openstaand" : "Alles betaald", openInvoices.length ? "actie nodig" : "geen actie nodig"],
@@ -3169,7 +3169,7 @@
         function onboardingStepSummary(step, stats) {
           if (stats.done) {
             if (stats.required) return `${stats.requiredDone}/${stats.required} verplichte gegevens ingevuld`;
-            return `${stats.optionalDone} onderdeel${stats.optionalDone === 1 ? "" : "en"} toegevoegd`;
+            return `${stats.optionalDone} ${stats.optionalDone === 1 ? "onderdeel" : "onderdelen"} toegevoegd`;
           }
           const missing = (step.fields || []).filter((field) => !onboardingFieldHasValue(field)).slice(0, 2);
           const labels = missing.map((field) => onboardingFieldContainer(field)?.textContent?.replace(/\s+/g, " ").trim().split(/(?=[A-Z][a-z])/)[0] || field);
@@ -3230,7 +3230,9 @@
           const stats = onboardingStepDefinitions.map((step) => ({ step, stats: onboardingStepStats(step) }));
           const completed = stats.filter((item) => item.stats.done).length;
           const missing = stats.length - completed;
-          const completeness = Math.max(0, Math.min(Number(onboarding?.completeness ?? Math.round((completed / stats.length) * 100)), 100));
+          const computedCompleteness = Math.round((completed / stats.length) * 100);
+          const storedCompleteness = Number(onboarding?.completeness || 0);
+          const completeness = Math.max(0, Math.min(Math.max(storedCompleteness, computedCompleteness), 100));
           const next = stats.find((item) => !item.stats.done) || stats[stats.length - 1];
           onboardingOverview.replaceChildren();
           [
@@ -3433,7 +3435,7 @@
           updateOnboardingWorkflow(onboarding);
           const missingCount = onboardingStepDefinitions.filter((step) => !onboardingStepStats(step).done).length;
           onboardingSummary.textContent = missingCount
-            ? `${Number(onboarding.completeness || 0)}% compleet. Nog ${missingCount} onderdeel${missingCount === 1 ? "" : "en"} aanvullen.`
+            ? `${Math.max(Number(onboarding.completeness || 0), Math.round(((onboardingStepDefinitions.length - missingCount) / onboardingStepDefinitions.length) * 100))}% compleet. Nog ${missingCount} ${missingCount === 1 ? "onderdeel" : "onderdelen"} aanvullen.`
             : "Je onboarding is compleet. Controleer je gegevens en dien ze in wanneer alles klopt.";
           onboardingSubmit.disabled = locked;
           onboardingSubmit.textContent = locked ? "Onboarding ontvangen" : "Onboarding indienen";
