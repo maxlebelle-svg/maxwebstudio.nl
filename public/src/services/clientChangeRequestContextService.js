@@ -296,6 +296,11 @@ export async function saveClientChangeRequestWithSupabaseFallback(input = {}, co
       message: "Wijzigingsverzoek aangemaakt via Supabase.",
     });
   } catch (error) {
+    if (isUuid(customerId) && session?.access_token && publicConfigReady(config)) {
+      const safeError = new Error("Wijzigingsverzoek kon niet veilig worden opgeslagen. Probeer het opnieuw of stuur een bericht.");
+      safeError.cause = sanitizeMessage(error?.message || "Supabase wijzigingsverzoek kon niet worden opgeslagen.");
+      throw safeError;
+    }
     const fallback = await saveChangeRequestWithWriteFallback(input, context);
     return {
       ...fallback,

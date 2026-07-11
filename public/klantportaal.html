@@ -1039,7 +1039,7 @@
             const meta = document.createElement("span");
             const description = document.createElement("p");
             title.textContent = request.title || "Wijzigingsverzoek";
-            meta.textContent = `${labelForStatus(request.category || request.changeCategory || "other")} - ${request.priority || "Normaal"} - ${formatDate(request.createdAt || request.created_at)}`;
+            meta.textContent = `${labelForStatus(request.category || request.changeCategory || "other")} - ${request.priority || "Normaal"} - aangevraagd ${formatDate(request.createdAt || request.created_at)} - laatste update ${formatDate(request.updatedAt || request.updated_at || request.createdAt || request.created_at)}`;
             description.textContent = request.description || "Geen omschrijving toegevoegd.";
             heading.append(title, createBadge(request.status || "nieuw"));
             card.append(heading, meta, description);
