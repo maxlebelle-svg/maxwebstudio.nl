@@ -598,8 +598,48 @@
       </section>
 
       <section class="admin-section" id="bestanden">
-        <div class="admin-section-heading"><div><p class="section-kicker">Bestanden</p><h2>Bestanden & links</h2></div></div>
-        <div class="portal-card-grid" id="portal-files" aria-live="polite"></div>
+        <div class="admin-section-heading mw-section-header">
+          <div>
+            <p class="section-kicker">Asset Center</p>
+            <h2>Bestanden & assets</h2>
+            <p class="admin-section-intro">Je veilige projectkluis voor logo's, merkbestanden, website-assets en klantdocumenten.</p>
+          </div>
+          <a class="button secondary mw-button mw-button-secondary" href="#command-center">Terug naar dashboard</a>
+        </div>
+        <div class="asset-center-shell mw-template-list">
+          <div class="asset-center-summary" id="portal-asset-summary" aria-live="polite"></div>
+          <form class="asset-center-toolbar" id="portal-asset-toolbar" role="search">
+            <label class="asset-search-field">
+              <span>Zoeken</span>
+              <input class="mw-input" id="portal-asset-search" type="search" autocomplete="off" placeholder="Zoek op naam, categorie of type" />
+            </label>
+            <label>
+              <span>Categorie</span>
+              <select class="mw-select" id="portal-asset-category"></select>
+            </label>
+            <label>
+              <span>Type</span>
+              <select class="mw-select" id="portal-asset-type"></select>
+            </label>
+            <label>
+              <span>Sortering</span>
+              <select class="mw-select" id="portal-asset-sort">
+                <option value="newest">Nieuwste eerst</option>
+                <option value="oldest">Oudste eerst</option>
+                <option value="az">Naam A-Z</option>
+                <option value="za">Naam Z-A</option>
+              </select>
+            </label>
+            <button class="button secondary mw-button mw-button-secondary" id="portal-asset-reset" type="button">Reset</button>
+          </form>
+          <div class="asset-center-focus" id="portal-asset-focus"></div>
+          <div class="asset-center-grid" id="portal-files" aria-live="polite"></div>
+        </div>
+        <div class="asset-detail-backdrop" id="portal-asset-detail-backdrop" hidden></div>
+        <aside class="asset-detail-drawer mw-drawer" id="portal-asset-detail" aria-hidden="true" aria-labelledby="portal-asset-detail-title">
+          <button class="asset-detail-close mw-button mw-button-icon" id="portal-asset-detail-close" type="button" aria-label="Sluit assetdetails">×</button>
+          <div id="portal-asset-detail-content"></div>
+        </aside>
       </section>
 
       <section class="admin-section" id="readiness">
@@ -739,6 +779,18 @@
         const growthUpsells = document.getElementById("portal-growth-upsells");
         const accountList = document.getElementById("portal-account");
         const fileList = document.getElementById("portal-files");
+        const assetSummary = document.getElementById("portal-asset-summary");
+        const assetToolbar = document.getElementById("portal-asset-toolbar");
+        const assetSearch = document.getElementById("portal-asset-search");
+        const assetCategory = document.getElementById("portal-asset-category");
+        const assetType = document.getElementById("portal-asset-type");
+        const assetSort = document.getElementById("portal-asset-sort");
+        const assetReset = document.getElementById("portal-asset-reset");
+        const assetFocus = document.getElementById("portal-asset-focus");
+        const assetDetail = document.getElementById("portal-asset-detail");
+        const assetDetailBackdrop = document.getElementById("portal-asset-detail-backdrop");
+        const assetDetailClose = document.getElementById("portal-asset-detail-close");
+        const assetDetailContent = document.getElementById("portal-asset-detail-content");
         const readinessList = document.getElementById("portal-readiness");
         document.getElementById("readiness")?.setAttribute("hidden", "");
         const commandCenterTitle = document.getElementById("command-center-title");
@@ -780,6 +832,8 @@
         let activePreviewFeedbackFilter = "all";
         let activeVersionFilter = "all";
         let activePreviewVersionId = "";
+        let portalAssetRecords = [];
+        let portalAssetFiltersBound = false;
         function escapeHtml(value = "") {
           return String(value || "")
             .replace(/&/g, "&amp;")
@@ -1278,9 +1332,9 @@
 
         function statusClass(value) {
           const status = normalize(value);
-          if (["actief", "active", "online", "live", "betaald", "paid", "geaccepteerd", "goedgekeurd"].includes(status)) return "status-active";
-          if (["concept", "verzonden", "nieuw", "onboarding", "in ontwerp", "in ontwikkeling", "feedback", "testen"].includes(status)) return "status-prepared";
-          if (["verlopen", "wacht op klant", "wachten op klant", "paused", "pauze", "onderhoud"].includes(status)) return "status-warning";
+          if (["actief", "active", "online", "live", "betaald", "paid", "geaccepteerd", "goedgekeurd", "beschikbaar", "door jou aangeleverd"].includes(status)) return "status-active";
+          if (["concept", "verzonden", "nieuw", "onboarding", "in ontwerp", "in ontwikkeling", "feedback", "testen", "wordt voorbereid", "niet beschikbaar"].includes(status)) return "status-prepared";
+          if (["verlopen", "wacht op klant", "wachten op klant", "paused", "pauze", "onderhoud", "gearchiveerd"].includes(status)) return "status-warning";
           return "status-attention";
         }
 
@@ -3002,6 +3056,489 @@
           }));
         }
 
+        function safeDisplayName(value = "", fallback = "Bestand") {
+          const cleaned = String(value || fallback)
+            .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, "")
+            .replace(/\b(?:bucket|storage|service-role|preview-token|supabase|netlify|github)\b/gi, "")
+            .replace(/\s{2,}/g, " ")
+            .trim();
+          return cleaned || fallback;
+        }
+
+        function normalizeAssetText(value = "") {
+          return String(value || "").toLowerCase().trim();
+        }
+
+        function assetFormatFrom(asset = {}) {
+          const explicit = asset.format || asset.fileType || asset.extension || asset.type || asset.mimeType || asset.mime_type || "";
+          const name = asset.name || asset.assetName || asset.title || asset.fileName || "";
+          const fromName = String(name).includes(".") ? String(name).split(".").pop() : "";
+          return String(explicit || fromName || "asset").replace(/^\./, "").toUpperCase();
+        }
+
+        function assetFriendlyType(asset = {}) {
+          const text = normalizeAssetText([asset.mimeType, asset.mime_type, asset.type, asset.category, asset.format, asset.name, asset.assetName, asset.title].join(" "));
+          if (text.includes("logo")) return "Logo";
+          if (text.includes("favicon")) return "Logo";
+          if (text.includes("image") || text.match(/\b(png|jpe?g|webp|gif)\b/)) return "Afbeelding";
+          if (text.includes("svg")) return "Logo";
+          if (text.includes("pdf")) return "PDF";
+          if (text.includes("spreadsheet") || text.match(/\b(xlsx|csv|sheet)\b/)) return "Spreadsheet";
+          if (text.includes("presentation") || text.match(/\b(ppt|slide)\b/)) return "Presentatie";
+          if (text.includes("word") || text.match(/\b(doc|docx|tekst|copy)\b/)) return "Document";
+          if (text.includes("font") || text.match(/\b(ttf|otf|woff)\b/)) return "Lettertype";
+          if (text.match(/\b(zip|rar|archive)\b/)) return "Archief";
+          return "Overig";
+        }
+
+        function assetCategoryFor(asset = {}) {
+          const text = normalizeAssetText([asset.category, asset.type, asset.assetName, asset.title, asset.name, asset.source].join(" "));
+          if (text.includes("logo") || text.includes("favicon")) return "Logo's";
+          if (text.includes("kleur") || text.includes("color") || text.includes("font") || text.includes("typografie")) return "Kleuren & typografie";
+          if (text.includes("social")) return "Social media";
+          if (text.includes("print") || text.includes("druk") || text.includes("visite") || text.includes("flyer")) return "Drukwerk";
+          if (text.includes("website") || text.includes("hero") || text.includes("screenshot") || text.includes("webcopy")) return "Website";
+          if (text.includes("image") || text.includes("afbeeld") || text.match(/\b(png|jpg|jpeg|webp)\b/)) return "Afbeeldingen";
+          if (text.includes("document") || text.includes("pdf") || text.includes("briefing") || text.includes("handleiding")) return "Documenten";
+          if (asset.projectId || asset.project_id) return "Projectbestanden";
+          if (asset.uploadedBy === "customer" || text.includes("klant")) return "Door jou aangeleverd";
+          if (asset.isBrandingAsset) return "Branding";
+          return "Projectbestanden";
+        }
+
+        function statusForAsset(asset = {}) {
+          const value = normalizeAssetText(asset.status || asset.state || "");
+          if (["approved", "goedgekeurd", "selected"].includes(value)) return "Goedgekeurd";
+          if (["ready", "available", "beschikbaar", "active", "klaar"].includes(value)) return "Beschikbaar";
+          if (["uploaded", "customer_uploaded"].includes(value) || asset.source === "customer") return "Door jou aangeleverd";
+          if (["archived", "gearchiveerd"].includes(value)) return "Gearchiveerd";
+          if (["not_started", "prepared", "voorbereid", "generating"].includes(value)) return "Wordt voorbereid";
+          return asset.location || asset.url || asset.previewUrl ? "Beschikbaar" : "Wordt voorbereid";
+        }
+
+        function assetSourceFor(asset = {}) {
+          const source = normalizeAssetText(asset.source || asset.origin || asset.uploadedBy || "");
+          if (source.includes("customer") || source.includes("klant")) return "Door jou aangeleverd";
+          return "Max Webstudio";
+        }
+
+        function safeAssetHref(asset = {}) {
+          const raw = String(asset.safeUrl || asset.safe_url || asset.downloadUrl || asset.download_url || asset.location || asset.url || asset.previewUrl || "").trim();
+          if (!raw) return "";
+          if (raw.startsWith("#")) return raw;
+          if (raw.startsWith("/") && !raw.startsWith("//")) return raw;
+          try {
+            const url = new URL(raw, window.location.origin);
+            const provider = /netlify|supabase|github|storage|amazonaws|cloudfront|blob\.core/i.test(url.hostname + url.pathname);
+            if (url.origin === window.location.origin && !provider) return `${url.pathname}${url.search}${url.hash}`;
+            if (!provider && /^https?:$/i.test(url.protocol)) return raw;
+          } catch {
+            return "";
+          }
+          return "";
+        }
+
+        function formatFileSize(value) {
+          const bytes = Number(value || 0);
+          if (!Number.isFinite(bytes) || bytes <= 0) return "-";
+          if (bytes < 1024) return `${bytes} B`;
+          if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+          return `${(bytes / 1024 / 1024).toFixed(bytes > 10 * 1024 * 1024 ? 0 : 1)} MB`;
+        }
+
+        function customerAssetAllowed(asset = {}, customer = {}) {
+          const customerIds = [customer.id, customer.customerId, customer.supabaseCustomerId, customer.profileId].filter(Boolean).map(String);
+          const assetCustomerId = String(asset.customerId || asset.customer_id || "").trim();
+          if (!assetCustomerId) return true;
+          return customerIds.includes(assetCustomerId);
+        }
+
+        function brandingAssetsForCustomer(customer = {}, onboarding = {}) {
+          const state = loadBrandingState();
+          const project = brandingProjectForCustomer(customer, onboarding);
+          const matchesProject = (asset) => asset.projectId === project.id || asset.customerId === project.customerId;
+          const collections = [
+            ...state.logoAssets.filter(matchesProject).map((asset) => ({ ...asset, isBrandingAsset: true, source: "studio" })),
+            ...state.downloadAssets.filter(matchesProject).map((asset) => ({ ...asset, isBrandingAsset: true, source: "studio" })),
+            ...state.socialAssets.filter(matchesProject).map((asset) => ({ ...asset, isBrandingAsset: true, source: "studio" })),
+            ...state.marketingAssets.filter(matchesProject).map((asset) => ({ ...asset, isBrandingAsset: true, source: "studio" })),
+            ...state.emailAssets.filter(matchesProject).map((asset) => ({ ...asset, isBrandingAsset: true, source: "studio" })),
+            ...state.printAssets.filter(matchesProject).map((asset) => ({ ...asset, isBrandingAsset: true, source: "studio" })),
+          ];
+          const colorAssets = (Array.isArray(project.colors) ? project.colors : []).filter(Boolean).length
+            ? [{
+                id: `${project.id || "branding"}-colors`,
+                projectId: project.id,
+                customerId: project.customerId,
+                assetName: "Kleurenpalet",
+                category: "Kleuren & typografie",
+                type: "colors",
+                status: project.status || "ready",
+                palette: project.colors,
+                description: "Kleuren die bij je merkpakket horen.",
+                isBrandingAsset: true,
+                source: "studio",
+                updatedAt: project.updatedAt || project.createdAt,
+              }]
+            : [];
+          const typographyAsset = project.typography || project.briefing?.fontPreference
+            ? [{
+                id: `${project.id || "branding"}-typography`,
+                projectId: project.id,
+                customerId: project.customerId,
+                assetName: "Typografie",
+                category: "Kleuren & typografie",
+                type: "font",
+                status: project.status || "ready",
+                description: project.typography || project.briefing?.fontPreference,
+                isBrandingAsset: true,
+                source: "studio",
+                updatedAt: project.updatedAt || project.createdAt,
+              }]
+            : [];
+          return [...colorAssets, ...typographyAsset, ...collections];
+        }
+
+        function normalizePortalAsset(asset = {}, index = 0, context = {}) {
+          const href = safeAssetHref(asset);
+          const name = safeDisplayName(asset.name || asset.assetName || asset.title || asset.fileName || asset.label, asset.isBrandingAsset ? "Branding asset" : "Projectbestand");
+          const category = assetCategoryFor(asset);
+          const type = assetFriendlyType(asset);
+          const status = statusForAsset(asset);
+          const createdAt = asset.createdAt || asset.created_at || asset.updatedAt || asset.updated_at || "";
+          const projectName = context.projects?.find((project) => [project.id, project.projectId].includes(asset.projectId || asset.project_id))?.name || "";
+          const websiteName = context.websites?.find((website) => [website.id, website.websiteId].includes(asset.websiteId || asset.website_id))?.name || "";
+          return {
+            id: `asset-${index}-${String(asset.id || name).replace(/[^a-z0-9-]/gi, "-").slice(0, 42)}`,
+            rawId: asset.id || "",
+            name,
+            type,
+            format: assetFormatFrom(asset),
+            category,
+            status,
+            source: assetSourceFor(asset),
+            size: formatFileSize(asset.size || asset.fileSize || asset.file_size || asset.bytes),
+            createdAt,
+            updatedAt: asset.updatedAt || asset.updated_at || createdAt,
+            description: safeDisplayName(asset.description || asset.summary || asset.caption || asset.notes || "", ""),
+            href,
+            canOpen: Boolean(href),
+            palette: Array.isArray(asset.palette) ? asset.palette : [],
+            previewUrl: href && ["Afbeelding", "Logo"].includes(type) ? href : "",
+            projectName: projectName || (asset.projectId || asset.project_id ? "Gekoppeld project" : ""),
+            websiteName: websiteName || (asset.websiteId || asset.website_id ? "Gekoppelde website" : ""),
+            search: normalizeAssetText([name, type, category, status, asset.description, asset.summary, asset.format].join(" ")),
+            isBrandingAsset: Boolean(asset.isBrandingAsset),
+            isWebsiteAsset: category === "Website" || Boolean(asset.websiteId || asset.website_id),
+            isCustomerUpload: assetSourceFor(asset) === "Door jou aangeleverd",
+          };
+        }
+
+        function buildPortalAssets({ customer = {}, projects = [], websites = [], files = [], onboarding = {} } = {}) {
+          const context = { projects, websites };
+          const customerSafeFiles = files
+            .filter((file) => customerAssetAllowed(file, customer))
+            .map((file) => ({ ...file, source: file.source || file.origin || "studio" }));
+          const brandingAssets = brandingAssetsForCustomer(customer, onboarding);
+          const allAssets = [...customerSafeFiles, ...brandingAssets]
+            .map((asset, index) => normalizePortalAsset(asset, index, context));
+          const map = new Map();
+          allAssets.forEach((asset) => {
+            const key = [asset.rawId, asset.name, asset.category, asset.type].filter(Boolean).join("|") || asset.id;
+            if (!map.has(key)) map.set(key, asset);
+          });
+          return [...map.values()].sort((a, b) => String(b.updatedAt || b.createdAt || "").localeCompare(String(a.updatedAt || a.createdAt || "")));
+        }
+
+        function optionRows(values = [], allLabel = "Alles") {
+          return [`<option value="all">${escapeHtml(allLabel)}</option>`, ...values.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`)].join("");
+        }
+
+        function renderAssetSummary(assets = []) {
+          assetSummary.replaceChildren();
+          const readyCount = assets.filter((asset) => ["Beschikbaar", "Goedgekeurd", "Door jou aangeleverd"].includes(asset.status)).length;
+          const brandingCount = assets.filter((asset) => asset.isBrandingAsset).length;
+          const websiteCount = assets.filter((asset) => asset.isWebsiteAsset).length;
+          const recent = assets[0];
+          [
+            ["Beschikbare assets", `${readyCount}`, `${assets.length} totaal in je veilige bibliotheek.`],
+            ["Recent toegevoegd", recent ? recent.name : "Nog niets", recent ? `${recent.category} · ${formatDate(recent.updatedAt || recent.createdAt)}` : "Zodra er iets klaarstaat, verschijnt het hier."],
+            ["Branding", brandingCount ? `${brandingCount} items` : "Nog niet beschikbaar", brandingCount ? "Logo's, kleuren en merkbestanden." : "Brandingassets verschijnen na publicatie."],
+            ["Websitebestanden", websiteCount ? `${websiteCount} items` : "Nog niet beschikbaar", websiteCount ? "Alleen betrouwbaar gekoppelde website-assets." : "Nog geen websitebestanden gekoppeld."],
+          ].forEach(([label, value, text]) => {
+            const card = document.createElement("article");
+            card.className = "asset-summary-card mw-stat-card";
+            const span = document.createElement("span");
+            const strong = document.createElement("strong");
+            const small = document.createElement("small");
+            span.textContent = label;
+            strong.textContent = value;
+            small.textContent = text;
+            card.append(span, strong, small);
+            assetSummary.append(card);
+          });
+        }
+
+        function assetIcon(type = "") {
+          return {
+            Logo: "Aa",
+            Afbeelding: "IMG",
+            PDF: "PDF",
+            Document: "DOC",
+            Lettertype: "Aa",
+            Spreadsheet: "XLS",
+            Presentatie: "PPT",
+            Archief: "ZIP",
+          }[type] || "FILE";
+        }
+
+        function renderAssetPreview(asset = {}) {
+          const preview = document.createElement("div");
+          preview.className = `asset-preview asset-preview-${normalizeAssetText(asset.type).replace(/[^a-z0-9]+/g, "-") || "file"}`;
+          if (asset.palette.length) {
+            const palette = document.createElement("div");
+            palette.className = "asset-palette";
+            asset.palette.slice(0, 6).forEach((color, index) => {
+              const swatch = document.createElement("button");
+              swatch.type = "button";
+              swatch.className = "asset-swatch";
+              swatch.style.background = color;
+              swatch.title = `Kleur ${index + 1}: ${color}`;
+              swatch.setAttribute("aria-label", `Kopieer kleur ${color}`);
+              swatch.addEventListener("click", (event) => {
+                event.stopPropagation();
+                copyValue(color);
+              });
+              palette.append(swatch);
+            });
+            preview.append(palette);
+            return preview;
+          }
+          if (asset.previewUrl && !normalizeAssetText(asset.previewUrl).includes(".svg")) {
+            const image = document.createElement("img");
+            image.src = asset.previewUrl;
+            image.alt = `${asset.name} preview`;
+            image.loading = "lazy";
+            image.addEventListener("error", () => {
+              image.remove();
+              preview.textContent = assetIcon(asset.type);
+              preview.classList.add("is-fallback");
+            });
+            preview.append(image);
+            return preview;
+          }
+          preview.textContent = assetIcon(asset.type);
+          preview.classList.add("is-fallback");
+          return preview;
+        }
+
+        function filteredPortalAssets() {
+          const query = normalizeAssetText(assetSearch?.value || "");
+          const category = assetCategory?.value || "all";
+          const type = assetType?.value || "all";
+          const sort = assetSort?.value || "newest";
+          const rows = portalAssetRecords.filter((asset) => {
+            const queryMatch = !query || asset.search.includes(query);
+            const categoryMatch = category === "all" || asset.category === category;
+            const typeMatch = type === "all" || asset.type === type;
+            return queryMatch && categoryMatch && typeMatch;
+          });
+          rows.sort((a, b) => {
+            if (sort === "oldest") return String(a.updatedAt || a.createdAt || "").localeCompare(String(b.updatedAt || b.createdAt || ""));
+            if (sort === "az") return a.name.localeCompare(b.name, "nl");
+            if (sort === "za") return b.name.localeCompare(a.name, "nl");
+            return String(b.updatedAt || b.createdAt || "").localeCompare(String(a.updatedAt || a.createdAt || ""));
+          });
+          return rows;
+        }
+
+        function renderAssetCard(asset = {}) {
+          const card = document.createElement("article");
+          card.className = "asset-card mw-card";
+          card.tabIndex = 0;
+          card.append(renderAssetPreview(asset));
+          const body = document.createElement("div");
+          body.className = "asset-card-body";
+          const top = document.createElement("div");
+          top.className = "asset-card-top";
+          const title = document.createElement("h3");
+          const badge = document.createElement("span");
+          title.textContent = asset.name;
+          badge.className = `status-badge ${statusClass(asset.status)}`;
+          badge.textContent = asset.status;
+          top.append(title, badge);
+          const meta = document.createElement("p");
+          meta.textContent = [asset.type, asset.category, asset.size !== "-" ? asset.size : "", formatDate(asset.updatedAt || asset.createdAt)].filter(Boolean).join(" · ");
+          const source = document.createElement("small");
+          source.textContent = `${asset.source}${asset.projectName ? ` · ${asset.projectName}` : ""}${asset.websiteName ? ` · ${asset.websiteName}` : ""}`;
+          const actions = document.createElement("div");
+          actions.className = "asset-card-actions";
+          const detailButton = document.createElement("button");
+          detailButton.className = "button secondary mw-button mw-button-secondary";
+          detailButton.type = "button";
+          detailButton.textContent = "Details";
+          detailButton.addEventListener("click", (event) => {
+            event.stopPropagation();
+            openAssetDetail(asset.id);
+          });
+          const openLink = document.createElement("a");
+          openLink.className = `button primary mw-button mw-button-primary${asset.canOpen ? "" : " is-disabled"}`;
+          openLink.href = asset.canOpen ? asset.href : "#";
+          openLink.target = "_blank";
+          openLink.rel = "noopener";
+          openLink.textContent = asset.canOpen ? "Openen" : "Niet beschikbaar";
+          if (!asset.canOpen) openLink.addEventListener("click", (event) => event.preventDefault());
+          openLink.addEventListener("click", (event) => event.stopPropagation());
+          actions.append(detailButton, openLink);
+          body.append(top, meta, source, actions);
+          card.append(body);
+          card.addEventListener("click", () => openAssetDetail(asset.id));
+          card.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              openAssetDetail(asset.id);
+            }
+          });
+          return card;
+        }
+
+        function renderAssetFocus(assets = []) {
+          assetFocus.replaceChildren();
+          const important = assets.filter((asset) => asset.isBrandingAsset && ["Logo's", "Kleuren & typografie"].includes(asset.category)).slice(0, 3);
+          const website = assets.filter((asset) => asset.isWebsiteAsset).slice(0, 2);
+          const blocks = [
+            ["Belangrijk voor je merk", important, "Logo, kleuren en huisstijlbestanden."],
+            ["Website-assets", website, "Bestanden die aantoonbaar bij je website horen."],
+          ].filter(([, rows]) => rows.length);
+          blocks.forEach(([title, rows, text]) => {
+            const block = document.createElement("article");
+            block.className = "asset-focus-card mw-card";
+            const header = document.createElement("div");
+            header.className = "mw-card-header";
+            const h3 = document.createElement("h3");
+            const p = document.createElement("p");
+            h3.textContent = title;
+            p.textContent = text;
+            header.append(h3, p);
+            const list = document.createElement("div");
+            list.className = "asset-mini-list";
+            rows.forEach((asset) => {
+              const button = document.createElement("button");
+              button.type = "button";
+              button.textContent = asset.name;
+              button.addEventListener("click", () => openAssetDetail(asset.id));
+              list.append(button);
+            });
+            block.append(header, list);
+            assetFocus.append(block);
+          });
+        }
+
+        function renderAssetCenterResults() {
+          const rows = filteredPortalAssets();
+          fileList.replaceChildren();
+          if (!portalAssetRecords.length) {
+            fileList.append(createEmpty("Er zijn nog geen bestanden beschikbaar.", "Zodra Max Webstudio assets publiceert, verschijnen ze hier automatisch."));
+            return;
+          }
+          if (!rows.length) {
+            fileList.append(createEmpty("Geen assets gevonden.", "Pas je zoekterm of filters aan om opnieuw te zoeken."));
+            return;
+          }
+          rows.forEach((asset) => fileList.append(renderAssetCard(asset)));
+        }
+
+        function setupAssetFilters(assets = []) {
+          const categories = [...new Set(assets.map((asset) => asset.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, "nl"));
+          const types = [...new Set(assets.map((asset) => asset.type).filter(Boolean))].sort((a, b) => a.localeCompare(b, "nl"));
+          assetCategory.innerHTML = optionRows(categories, "Alle categorieen");
+          assetType.innerHTML = optionRows(types, "Alle types");
+          if (portalAssetFiltersBound) return;
+          [assetSearch, assetCategory, assetType, assetSort].forEach((control) => {
+            control?.addEventListener("input", renderAssetCenterResults);
+            control?.addEventListener("change", renderAssetCenterResults);
+          });
+          assetReset?.addEventListener("click", () => {
+            assetSearch.value = "";
+            assetCategory.value = "all";
+            assetType.value = "all";
+            assetSort.value = "newest";
+            renderAssetCenterResults();
+          });
+          portalAssetFiltersBound = true;
+        }
+
+        function renderAssetCenter({ customer = {}, projects = [], websites = [], files = [], onboarding = {} } = {}) {
+          portalAssetRecords = buildPortalAssets({ customer, projects, websites, files, onboarding });
+          renderAssetSummary(portalAssetRecords);
+          renderAssetFocus(portalAssetRecords);
+          setupAssetFilters(portalAssetRecords);
+          renderAssetCenterResults();
+        }
+
+        function closeAssetDetail() {
+          assetDetail?.setAttribute("aria-hidden", "true");
+          assetDetailBackdrop.hidden = true;
+          document.body.classList.remove("is-asset-detail-open");
+        }
+
+        function openAssetDetail(assetId) {
+          const asset = portalAssetRecords.find((item) => item.id === assetId);
+          if (!asset) return;
+          assetDetailContent.replaceChildren();
+          const title = document.createElement("h3");
+          title.id = "portal-asset-detail-title";
+          title.textContent = asset.name;
+          const preview = renderAssetPreview(asset);
+          const meta = document.createElement("dl");
+          meta.className = "asset-detail-meta";
+          [
+            ["Type", asset.type],
+            ["Categorie", asset.category],
+            ["Status", asset.status],
+            ["Bron", asset.source],
+            ["Bestandsgrootte", asset.size],
+            ["Toegevoegd", formatDate(asset.createdAt)],
+            ["Project", asset.projectName || "Niet specifiek gekoppeld"],
+            ["Website", asset.websiteName || "Niet specifiek gekoppeld"],
+            ["Omschrijving", asset.description || "Geen extra omschrijving beschikbaar."],
+          ].forEach(([label, value]) => {
+            const row = document.createElement("div");
+            const dt = document.createElement("dt");
+            const dd = document.createElement("dd");
+            dt.textContent = label;
+            dd.textContent = value || "-";
+            row.append(dt, dd);
+            meta.append(row);
+          });
+          const actions = document.createElement("div");
+          actions.className = "portal-actions";
+          const open = document.createElement("a");
+          open.className = `button primary mw-button mw-button-primary${asset.canOpen ? "" : " is-disabled"}`;
+          open.href = asset.canOpen ? asset.href : "#";
+          open.target = "_blank";
+          open.rel = "noopener";
+          open.textContent = asset.canOpen ? "Openen of downloaden" : "Nog niet downloadbaar";
+          if (!asset.canOpen) open.addEventListener("click", (event) => event.preventDefault());
+          const copyName = document.createElement("button");
+          copyName.className = "button secondary mw-button mw-button-secondary";
+          copyName.type = "button";
+          copyName.textContent = "Naam kopieren";
+          copyName.addEventListener("click", () => copyValue(asset.name));
+          actions.append(open, copyName);
+          assetDetailContent.append(preview, title, meta, actions);
+          assetDetailBackdrop.hidden = false;
+          assetDetail?.setAttribute("aria-hidden", "false");
+          document.body.classList.add("is-asset-detail-open");
+          assetDetailClose?.focus();
+        }
+
+        assetDetailClose?.addEventListener("click", closeAssetDetail);
+        assetDetailBackdrop?.addEventListener("click", closeAssetDetail);
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape" && assetDetail?.getAttribute("aria-hidden") === "false") closeAssetDetail();
+        });
+
         async function onboardingRequest(action, body = null) {
           const token = getPortalBearer();
           if (!token) throw new Error("Log in om je onboarding te gebruiken.");
@@ -3876,6 +4413,7 @@
         publishedPreviewVersions = dedupePreviewVersions(await loadPublishedPreviewVersions().catch(() => []));
         renderProjectCommandCenter({ customer, websites, projects, invoices, quotes, changeRequests, messages, notifications, subscriptions, onboarding: onboardingState, previewVersions: publishedPreviewVersions });
         renderProjectWorkspace({ customer, websites, projects, invoices, quotes, files, changeRequests, messages, notifications, onboarding: onboardingState, previewVersions: publishedPreviewVersions });
+        renderAssetCenter({ customer, websites, projects, files, onboarding: onboardingState });
         onboardingSave.addEventListener("click", () => saveOnboarding("save"));
         onboardingForm.addEventListener("submit", (event) => {
           event.preventDefault();
@@ -3889,6 +4427,7 @@
           brandingMessage.textContent = "Je branding is goedgekeurd. We verwerken dit in je website.";
           brandingMessage.className = "form-helper success";
           renderBrandingCenter(customer, {});
+          renderAssetCenter({ customer, websites, projects, files, onboarding: onboardingState });
         });
         brandingRequest.addEventListener("click", () => {
           const project = brandingProjectForCustomer(customer, {});
@@ -3896,6 +4435,7 @@
           brandingMessage.textContent = "We hebben logo-concepten voor je klaargezet.";
           brandingMessage.className = "form-helper success";
           renderBrandingCenter(customer, {});
+          renderAssetCenter({ customer, websites, projects, files, onboarding: onboardingState });
         });
         brandingUpload.addEventListener("change", () => {
           const file = brandingUpload.files?.[0];
@@ -3906,6 +4446,7 @@
           brandingMessage.className = "form-helper success";
           brandingUpload.value = "";
           renderBrandingCenter(customer, {});
+          renderAssetCenter({ customer, websites, projects, files, onboarding: onboardingState });
         });
 
         populateSelect(changeRequestWebsite, websites, (website) => website.name || website.domain || "Website");
@@ -4113,24 +4654,6 @@
           createWebsiteAction("Wachtwoord wijzigen", "/klant-login.html"),
           ...createCompanyContactActions("Vraag over mijn account"),
         ]));
-
-        if (!files.length) fileList.append(createEmpty("Geen bestanden", "Er zijn nog geen klantveilige bestanden of links geregistreerd."));
-        files.forEach((file) => {
-          const location = file.location || file.url || "";
-          const openable = /^https?:\/\//i.test(location) || location.startsWith("/");
-          const copy = document.createElement("button");
-          copy.className = "button secondary";
-          copy.type = "button";
-          copy.textContent = "Kopieer link";
-          copy.disabled = !location;
-          copy.addEventListener("click", () => copyValue(location));
-          fileList.append(createInfoCard(file.name || "Bestand", [
-            ["Type", file.type],
-            ["Categorie", file.category],
-            ["Status", createBadge(file.status)],
-            ["Locatie", location || "-"],
-          ], [createActionLink("Openen", openable ? location : ""), copy]));
-        });
 
         readinessList.replaceChildren();
       })();
