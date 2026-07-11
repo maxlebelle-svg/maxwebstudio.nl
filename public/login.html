@@ -348,6 +348,25 @@
           return parts.join(" | ");
         }
 
+        function getAdminLoginErrorMessage(error) {
+          const debug = error?.supabaseAuth || {};
+          const code = String(debug.code || error?.code || "LOGIN_FAILED").toUpperCase();
+          const status = debug.status || error?.status || "";
+          if (code.includes("INVALID_CREDENTIALS") || code.includes("INVALID_LOGIN") || status === 400) {
+            return "Admin-login geweigerd: e-mailadres of wachtwoord klopt niet.";
+          }
+          if (code === "PROFILE_ROLE_MISSING" || status === 403) {
+            return "Admin-login geblokkeerd: account bestaat, maar profiel/rol ontbreekt of is niet actief.";
+          }
+          if (code.includes("EMAIL_NOT_CONFIRMED")) {
+            return "Admin-login geblokkeerd: e-mailadres is nog niet bevestigd.";
+          }
+          if (code.includes("NETWORK") || code.includes("FETCH")) {
+            return "Admin-login geblokkeerd: de loginomgeving is nu niet bereikbaar.";
+          }
+          return `Admin-login geblokkeerd: ${code}${status ? ` (${status})` : ""}.`;
+        }
+
         function getSafeResetErrorMessage(error) {
           const raw = String(error?.message || "").toLowerCase();
           const code = String(error?.supabaseAuth?.code || error?.code || "").toLowerCase();
@@ -386,6 +405,7 @@
           if (!response.ok || !data.success) {
             const error = new Error(data.error || "Profiel kon niet worden gecontroleerd.");
             error.code = data.code || "";
+            error.status = response.status;
             throw error;
           }
           return data;
@@ -597,7 +617,9 @@
             });
             setMessage(error?.code === "PROFILE_ROLE_MISSING"
               ? "Account bestaat, maar profiel/rol ontbreekt. Vraag een beheerder om toegang te activeren."
-              : isDeveloperModeEnabled()
+              : adminMode
+                ? getAdminLoginErrorMessage(error)
+                : isDeveloperModeEnabled()
                 ? getDeveloperLoginErrorMessage(error)
                 : getSafeLoginErrorMessage(error), "error");
           }
