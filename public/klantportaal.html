@@ -2589,8 +2589,11 @@
           ["Contactpersoon", customer.name],
           ["E-mail", customer.email],
           ["Telefoon", customer.phone],
+          ["Adres", [customer.address, customer.postalCode, customer.city].filter(Boolean).join(", ") || "Nog niet beschikbaar"],
+          ["KvK", customer.kvk || "Nog niet beschikbaar"],
+          ["Btw-nummer", customer.vatNumber || "Nog niet beschikbaar"],
           ["Pakket", customer.package],
-          ["Portaalstatus", customer.portalStatus || customer.status],
+          ["E-mailadres wijzigen", "Gebruik hiervoor de beveiligde accountflow via Max Webstudio."],
         ], [
           createWebsiteAction("Wijziging aanvragen", "#wijzigingen", true),
           createWebsiteAction("Wachtwoord wijzigen", "/klant-login.html"),
