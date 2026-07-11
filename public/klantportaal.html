@@ -336,8 +336,84 @@
       </section>
 
       <section class="admin-section" id="projectstatus">
-        <div class="admin-section-heading"><div><p class="section-kicker">Projecten</p><h2>Projectstatus</h2></div></div>
-        <div class="portal-card-grid" id="portal-projects" aria-live="polite"></div>
+        <div class="project-workspace" id="project-workspace" aria-live="polite">
+          <section class="project-workspace-hero" id="project-workspace-hero">
+            <div>
+              <p class="section-kicker">Project Workspace</p>
+              <h2 id="project-workspace-title">Project wordt geladen.</h2>
+              <p id="project-workspace-subtitle">We verzamelen veilig je projectdata.</p>
+            </div>
+            <div class="project-workspace-hero-status">
+              <span id="project-workspace-status">Laden</span>
+              <strong id="project-workspace-progress">...</strong>
+            </div>
+          </section>
+          <section class="project-workspace-overview" id="project-workspace-overview" aria-label="Projectoverzicht"></section>
+          <section class="project-workspace-grid">
+            <article class="project-workspace-card project-workspace-phases">
+              <div class="project-workspace-card-head">
+                <div><span>Projectflow</span><h3>Fases</h3></div>
+              </div>
+              <div class="project-phase-list" id="project-workspace-phases"></div>
+            </article>
+            <article class="project-workspace-card">
+              <div class="project-workspace-card-head">
+                <div><span>Acties</span><h3>Wie doet wat?</h3></div>
+              </div>
+              <div class="project-action-columns">
+                <div><h4>Acties voor jou</h4><div class="project-action-list" id="project-client-actions"></div></div>
+                <div><h4>Max Webstudio</h4><div class="project-action-list" id="project-studio-actions"></div></div>
+              </div>
+            </article>
+            <article class="project-workspace-card project-workspace-milestones">
+              <div class="project-workspace-card-head">
+                <div><span>Mijlpalen</span><h3>Projectmijlpalen</h3></div>
+              </div>
+              <div class="project-milestone-list" id="project-workspace-milestones"></div>
+            </article>
+            <article class="project-workspace-card project-workspace-timeline">
+              <div class="project-workspace-card-head">
+                <div><span>Tijdlijn</span><h3>Projectactiviteit</h3></div>
+                <div class="project-filter-tabs" id="project-timeline-filters" role="tablist" aria-label="Tijdlijnfilters"></div>
+              </div>
+              <div class="project-timeline-list" id="project-workspace-timeline"></div>
+            </article>
+            <article class="project-workspace-card">
+              <div class="project-workspace-card-head">
+                <div><span>Versies</span><h3>Review & preview</h3></div>
+                <a href="#website-preview">Alle versies</a>
+              </div>
+              <div class="project-version-list" id="project-workspace-versions"></div>
+            </article>
+            <article class="project-workspace-card">
+              <div class="project-workspace-card-head">
+                <div><span>Bestanden</span><h3>Deliverables</h3></div>
+                <a href="#bestanden">Bestanden</a>
+              </div>
+              <div class="project-deliverable-list" id="project-workspace-files"></div>
+            </article>
+            <article class="project-workspace-card">
+              <div class="project-workspace-card-head">
+                <div><span>Planning</span><h3>Belangrijke momenten</h3></div>
+              </div>
+              <div class="project-planning-list" id="project-workspace-planning"></div>
+            </article>
+            <article class="project-workspace-card">
+              <div class="project-workspace-card-head">
+                <div><span>Communicatie</span><h3>Laatste berichten</h3></div>
+                <a href="#berichten">Open berichten</a>
+              </div>
+              <div class="project-compact-list" id="project-workspace-messages"></div>
+            </article>
+            <article class="project-workspace-card">
+              <div class="project-workspace-card-head">
+                <div><span>Facturatie</span><h3>Financiële status</h3></div>
+                <a href="#facturen">Facturen</a>
+              </div>
+              <div class="project-compact-list" id="project-workspace-finance"></div>
+            </article>
+          </section>
+        </div>
       </section>
 
       <section class="admin-section" id="website-preview">
@@ -522,12 +598,28 @@
         const financeOverview = document.getElementById("portal-finance-overview");
         const financeSummary = document.getElementById("portal-finance-summary");
         const subscriptionList = document.getElementById("portal-subscriptions");
-        const projectList = document.getElementById("portal-projects");
         const demoJourneyCard = document.getElementById("portal-demo-journey");
         const demoJourneySummary = document.getElementById("portal-demo-journey-summary");
         const demoJourneyState = document.getElementById("portal-demo-journey-state");
         const demoJourneyTimeline = document.getElementById("portal-demo-journey-timeline");
         const demoJourneyActions = document.getElementById("portal-demo-journey-actions");
+        const projectWorkspace = document.getElementById("project-workspace");
+        const projectWorkspaceTitle = document.getElementById("project-workspace-title");
+        const projectWorkspaceSubtitle = document.getElementById("project-workspace-subtitle");
+        const projectWorkspaceStatus = document.getElementById("project-workspace-status");
+        const projectWorkspaceProgress = document.getElementById("project-workspace-progress");
+        const projectWorkspaceOverview = document.getElementById("project-workspace-overview");
+        const projectWorkspacePhases = document.getElementById("project-workspace-phases");
+        const projectClientActions = document.getElementById("project-client-actions");
+        const projectStudioActions = document.getElementById("project-studio-actions");
+        const projectWorkspaceMilestones = document.getElementById("project-workspace-milestones");
+        const projectTimelineFilters = document.getElementById("project-timeline-filters");
+        const projectWorkspaceTimeline = document.getElementById("project-workspace-timeline");
+        const projectWorkspaceVersions = document.getElementById("project-workspace-versions");
+        const projectWorkspaceFiles = document.getElementById("project-workspace-files");
+        const projectWorkspacePlanning = document.getElementById("project-workspace-planning");
+        const projectWorkspaceMessages = document.getElementById("project-workspace-messages");
+        const projectWorkspaceFinance = document.getElementById("project-workspace-finance");
         const previewReviewSummary = document.getElementById("portal-preview-review-summary");
         const previewVersionList = document.getElementById("portal-preview-version-list");
         const previewFeedbackList = document.getElementById("portal-preview-feedback-list");
@@ -1084,7 +1176,7 @@
           portalSourceBadge.className = "status-badge status-warning";
           portalSourceText.textContent = "We tonen geen klantgegevens die niet aan deze sessie gekoppeld zijn.";
           customerProfile.append(createEmpty("Klantdata afgeschermd", "Open je eigen klantportaal of log opnieuw in met de juiste klant."));
-          [portalHealthGrid, portalActionGrid, financeOverview, subscriptionList, projectList, websiteOverview, websiteList, growthHealth, growthRecommendations, growthUpsells, fileList].forEach((target) => target.append(createEmpty("Geen data", "Deze data wordt bewust niet getoond bij een customer mismatch.")));
+          [portalHealthGrid, portalActionGrid, financeOverview, subscriptionList, projectWorkspaceOverview, websiteOverview, websiteList, growthHealth, growthRecommendations, growthUpsells, fileList].filter(Boolean).forEach((target) => target.append(createEmpty("Geen data", "Deze data wordt bewust niet getoond bij een customer mismatch.")));
           return;
         }
 
@@ -1484,6 +1576,163 @@
           if (onboardingSubmitted(onboarding)) return "Strategie";
           if (project.id || project.projectId || project.name || project.projectName) return "Intake";
           return "Nog niet gestart";
+        }
+
+        const projectWorkspacePhaseNames = ["Intake", "Strategie", "Ontwerp", "Ontwikkeling", "Review", "Afronding / Livegang"];
+
+        function projectPhaseIndex(phase = "") {
+          const normalized = normalize(phase);
+          if (normalized.includes("afrond") || normalized.includes("live")) return 5;
+          if (normalized.includes("review") || normalized.includes("feedback")) return 4;
+          if (normalized.includes("ontwikkel") || normalized.includes("development")) return 3;
+          if (normalized.includes("ontwerp") || normalized.includes("design")) return 2;
+          if (normalized.includes("strategie") || normalized.includes("briefing")) return 1;
+          return normalized.includes("intake") || normalized.includes("onboarding") ? 0 : 0;
+        }
+
+        function projectWorkspaceCard(label, title, text, tone = "neutral", href = "") {
+          const item = href ? document.createElement("a") : document.createElement("article");
+          item.className = `project-workspace-summary-card is-${tone}`;
+          if (href) item.href = href;
+          const small = document.createElement("span");
+          const strong = document.createElement("strong");
+          const paragraph = document.createElement("p");
+          small.textContent = label;
+          strong.textContent = title || "-";
+          paragraph.textContent = text || "";
+          item.append(small, strong, paragraph);
+          return item;
+        }
+
+        function projectWorkspaceEmpty(title, text, href = "") {
+          return projectWorkspaceCard("Nog niet beschikbaar", title, text, "empty", href);
+        }
+
+        function projectWorkspaceAction({ title = "", text = "", status = "", href = "", tone = "neutral" } = {}) {
+          const item = href ? document.createElement("a") : document.createElement("article");
+          item.className = `project-workspace-action is-${tone}`;
+          if (href) item.href = href;
+          const body = document.createElement("div");
+          const strong = document.createElement("strong");
+          const small = document.createElement("small");
+          const badge = document.createElement("span");
+          strong.textContent = title || "Actie";
+          small.textContent = text || "";
+          badge.textContent = status || "Open";
+          body.append(strong, small);
+          item.append(body, badge);
+          return item;
+        }
+
+        function projectWorkspaceTimelineItem({ title = "", text = "", date = "", category = "updates", status = "" } = {}) {
+          const item = document.createElement("article");
+          item.className = `project-workspace-timeline-item is-${category}`;
+          item.dataset.category = category;
+          const dot = document.createElement("span");
+          const body = document.createElement("div");
+          const strong = document.createElement("strong");
+          const paragraph = document.createElement("p");
+          const meta = document.createElement("small");
+          strong.textContent = title || "Projectupdate";
+          paragraph.textContent = text || "";
+          meta.textContent = [formatDate(date), statusLabel(status)].filter((value) => value && value !== "-").join(" · ");
+          body.append(strong, paragraph, meta);
+          item.append(dot, body);
+          return item;
+        }
+
+        function projectRelated(record = {}, project = {}, website = {}) {
+          const projectId = String(project.id || project.projectId || "").trim();
+          const websiteId = String(website.id || website.websiteId || "").trim();
+          if (!projectId && !websiteId) return true;
+          const recordProjectId = String(record.projectId || record.project_id || "").trim();
+          const recordWebsiteId = String(record.websiteId || record.website_id || "").trim();
+          return Boolean((projectId && recordProjectId === projectId) || (websiteId && recordWebsiteId === websiteId) || (!recordProjectId && !recordWebsiteId));
+        }
+
+        function strictProjectRelated(record = {}, project = {}, website = {}) {
+          const projectId = String(project.id || project.projectId || "").trim();
+          const websiteId = String(website.id || website.websiteId || "").trim();
+          const recordProjectId = String(record.projectId || record.project_id || "").trim();
+          const recordWebsiteId = String(record.websiteId || record.website_id || "").trim();
+          return Boolean((projectId && recordProjectId === projectId) || (websiteId && recordWebsiteId === websiteId));
+        }
+
+        function buildProjectWorkspacePhases({ project = {}, latestPreview = null, onboarding = null } = {}) {
+          const phase = currentProjectPhase(project, latestPreview, onboarding);
+          const activeIndex = latestPreview?.approvedAt ? 5 : projectPhaseIndex(phase);
+          return projectWorkspacePhaseNames.map((name, index) => {
+            const state = index < activeIndex ? "done" : index === activeIndex ? "active" : "future";
+            const deliverables = [];
+            if (name === "Intake" && onboardingSubmitted(onboarding)) deliverables.push("Projectinput ontvangen");
+            if (name === "Ontwerp" && latestPreview) deliverables.push(`Ontwerpversie ${latestPreview.version || 1}`);
+            if (name === "Review" && latestPreview?.feedbackCount) deliverables.push(`${latestPreview.feedbackCount} feedbackpunt(en)`);
+            if (name === "Afronding / Livegang" && latestPreview?.approvedAt) deliverables.push("Ontwerp goedgekeurd");
+            return {
+              name,
+              state,
+              date: name === "Intake" ? project.startDate || project.createdAt : name === "Review" ? latestPreview?.publishedAt : name === "Afronding / Livegang" ? latestPreview?.approvedAt : "",
+              text: {
+                "Intake": "De basis, klantinput en scope worden vastgelegd.",
+                "Strategie": "We vertalen input naar structuur, boodschap en aanpak.",
+                "Ontwerp": "De visuele richting en eerste websiteversie worden gemaakt.",
+                "Ontwikkeling": "De website wordt technisch opgebouwd en gevuld.",
+                "Review": "Jij bekijkt de versie en geeft akkoord of feedback.",
+                "Afronding / Livegang": "Na akkoord bereiden we livegang en afronding voor.",
+              }[name],
+              deliverables,
+              action: state === "active" && latestPreview?.allowApproval ? "Ontwerp bekijken en goedkeuren" : state === "active" && latestPreview?.allowFeedback ? "Feedback geven op deze versie" : "",
+            };
+          });
+        }
+
+        function buildProjectMilestones({ project = {}, invoices = [], changeRequests = [], messages = [], previewVersions = [], onboarding = null } = {}) {
+          const latestPreview = previewVersions[0] || null;
+          const milestones = [];
+          if (project.startDate || project.createdAt) milestones.push({ title: "Project gestart", status: "Voltooid", date: project.startDate || project.createdAt, text: project.name || project.projectName || "Websiteproject is aangemaakt.", category: "updates" });
+          if (onboardingSubmitted(onboarding)) milestones.push({ title: "Projectinput ontvangen", status: "Voltooid", date: onboarding?.submittedAt || onboarding?.updatedAt || project.updatedAt, text: "De benodigde input is beschikbaar voor het project.", category: "updates" });
+          if (latestPreview?.publishedAt) milestones.push({ title: "Eerste ontwerp klaar", status: latestPreview.approvedAt ? "Voltooid" : statusLabel(latestPreview.status || "ready_for_review"), date: latestPreview.publishedAt, text: latestPreview.changeSummary || "Er is een klantzichtbare ontwerpversie gepubliceerd.", category: "review" });
+          if (latestPreview?.feedbackCount) milestones.push({ title: "Feedback ontvangen", status: "Voltooid", date: latestPreview.feedbackItems?.slice(-1)[0]?.createdAt || latestPreview.updatedAt || latestPreview.publishedAt, text: `${latestPreview.feedbackCount} feedbackpunt(en) gekoppeld aan versie ${latestPreview.version || 1}.`, category: "review" });
+          if (latestPreview?.approvedAt) milestones.push({ title: "Ontwerp goedgekeurd", status: "Voltooid", date: latestPreview.approvedAt, text: "De klant heeft deze previewversie goedgekeurd.", category: "review" });
+          invoices.filter((invoice) => isPaidStatus(invoice.status)).slice(0, 2).forEach((invoice) => milestones.push({ title: "Factuur betaald", status: "Voltooid", date: invoice.paidAt || invoice.updatedAt || invoice.createdAt, text: invoice.invoiceNumber || "Betaling verwerkt.", category: "finance" }));
+          changeRequests.filter((request) => projectRelated(request, project, {})).slice(0, 3).forEach((request) => milestones.push({ title: request.title || "Wijzigingsverzoek", status: statusLabel(request.status || "nieuw"), date: request.updatedAt || request.createdAt, text: request.description || "Wijziging is geregistreerd.", category: "updates" }));
+          messages.slice(0, 2).forEach((message) => milestones.push({ title: message.subject || message.title || "Bericht", status: message.senderType === "customer" ? "Van jou" : "Update", date: message.createdAt, text: message.body || message.message || "Bericht in het klantportaal.", category: "updates" }));
+          return milestones
+            .filter((item) => item.date || item.title)
+            .sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+        }
+
+        function buildProjectTimeline({ project = {}, invoices = [], changeRequests = [], messages = [], notifications = [], files = [], previewVersions = [] } = {}) {
+          const items = [
+            ...previewVersions.map((preview) => ({ title: preview.approvedAt ? "Ontwerp goedgekeurd" : "Ontwerpversie gepubliceerd", text: preview.title || preview.changeSummary || `Versie ${preview.version || 1}`, date: preview.approvedAt || preview.publishedAt, category: "review", status: preview.status })),
+            ...changeRequests.filter((request) => strictProjectRelated(request, project, {})).map((request) => ({ title: request.title || "Wijzigingsverzoek", text: request.description || "Wijziging geregistreerd.", date: request.updatedAt || request.createdAt, category: "updates", status: request.status })),
+            ...messages.filter((message) => strictProjectRelated(message, project, {})).map((message) => ({ title: message.subject || message.title || "Bericht", text: message.body || message.message || "Bericht in klantportaal.", date: message.createdAt, category: "updates", status: message.senderType === "customer" ? "Van jou" : "Van Max" })),
+            ...invoices.map((invoice) => ({ title: invoice.invoiceNumber || "Factuur", text: isPaidStatus(invoice.status) ? "Betaling verwerkt." : "Factuurstatus bijgewerkt.", date: invoice.paidAt || invoice.invoiceDate || invoice.createdAt, category: "finance", status: invoice.status })),
+            ...files.filter((file) => strictProjectRelated(file, project, {})).map((file) => ({ title: file.name || "Bestand", text: file.category || file.type || "Projectbestand", date: file.updatedAt || file.createdAt, category: "files", status: file.status })),
+            ...notifications.map((notification) => ({ title: notification.title || "Update", text: notification.message || notification.body || "Projectupdate.", date: notification.createdAt || notification.updatedAt, category: "updates", status: notification.status })),
+            { title: project.name || project.projectName || "Project aangemaakt", text: project.publicNotes || "Project is beschikbaar in het klantportaal.", date: project.updatedAt || project.startDate || project.createdAt, category: "updates", status: project.status },
+          ];
+          return items
+            .filter((item) => item.title && !/netlify|supabase|github|preview_token|preview_url|function/i.test(`${item.title} ${item.text}`))
+            .sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+        }
+
+        function buildProjectActions({ invoices = [], messages = [], onboarding = null, previewVersions = [] } = {}) {
+          const latestPreview = previewVersions[0] || null;
+          const client = [];
+          const studio = [];
+          if (latestPreview?.allowApproval && !latestPreview.approvedAt) client.push({ title: `Keur versie ${latestPreview.version || 1} goed`, text: "Bekijk de veilige preview en geef akkoord wanneer alles klopt.", status: "Actie nodig", href: latestPreview.safePreviewPath, tone: "attention" });
+          if (latestPreview?.allowFeedback && !latestPreview.approvedAt) client.push({ title: "Feedback geven", text: "Koppel je opmerkingen aan de huidige ontwerpversie.", status: "Open", href: "#portal-demo-feedback-form", tone: "attention" });
+          const openInvoice = invoices.find((invoice) => !isPaidStatus(invoice.status));
+          if (openInvoice) client.push({ title: "Factuur bekijken", text: openInvoice.invoiceNumber || "Er staat een factuur open.", status: statusLabel(openInvoice.status), href: invoiceUrl(openInvoice) || "#facturen", tone: "attention" });
+          if (!latestPreview?.approvedAt && !onboardingSubmitted(onboarding)) client.push({ title: "Projectinput afronden", text: "Lever teksten, foto's of briefing aan zodra die nodig zijn.", status: "Wachten op jou", href: "#onboarding", tone: "attention" });
+          if (!client.length) client.push({ title: "Je bent helemaal bij", text: "Wij zijn aan zet. Nieuwe acties verschijnen hier direct.", status: "Rustig", href: "#berichten", tone: "done" });
+          if (latestPreview?.approvedAt) studio.push({ title: "Livegang voorbereiden", text: "We werken toe naar afronding en publicatie.", status: "In behandeling", tone: "active" });
+          else if (latestPreview) studio.push({ title: "Reviewronde begeleiden", text: "We verwerken feedback of wachten op akkoord.", status: statusLabel(latestPreview.status), tone: "active" });
+          else studio.push({ title: "Project voorbereiden", text: "We zetten de volgende zichtbare projectupdate klaar.", status: "In voorbereiding", tone: "active" });
+          const unread = messages.find((message) => !message.readAt && message.senderType !== "customer");
+          if (unread) client.push({ title: "Bericht bekijken", text: unread.subject || unread.title || "Er staat een update klaar.", status: "Nieuw", href: "#berichten", tone: "attention" });
+          return { client, studio };
         }
 
         function projectProgressValue(project = {}) {
@@ -2328,6 +2577,130 @@
           }
         }
 
+        function renderProjectWorkspace({ customer, websites = [], projects = [], invoices = [], quotes = [], files = [], changeRequests = [], messages = [], notifications = [], onboarding = null, previewVersions = [] } = {}) {
+          if (!projectWorkspace) return;
+          const project = projects[0] || {};
+          const website = websites[0] || {};
+          const latestPreview = previewVersions[0] || null;
+          if (!projects.length && !latestPreview && !website.id) {
+            projectWorkspaceTitle.textContent = "Nog geen actief project";
+            projectWorkspaceSubtitle.textContent = "Zodra Max Webstudio een project aan je klantaccount koppelt, verschijnt hier je projectworkspace.";
+            projectWorkspaceStatus.textContent = "Voorbereid";
+            projectWorkspaceProgress.textContent = "-";
+            projectWorkspaceOverview.replaceChildren(
+              projectWorkspaceEmpty("Project wordt voorbereid", "Er is nog geen actief project met klantzichtbare data."),
+              projectWorkspaceCard("Actie van jou", "Geen actie nodig", "We laten het weten zodra er iets van je nodig is.", "done", "#berichten"),
+              projectWorkspaceEmpty("Planning", "De planning wordt bijgewerkt zodra het project start.")
+            );
+            [projectWorkspacePhases, projectClientActions, projectStudioActions, projectWorkspaceMilestones, projectWorkspaceTimeline, projectWorkspaceVersions, projectWorkspaceFiles, projectWorkspacePlanning, projectWorkspaceMessages, projectWorkspaceFinance].forEach((target) => target.replaceChildren());
+            return;
+          }
+          const baseProgress = projectProgressValue(project);
+          const progress = latestPreview?.approvedAt ? Math.max(baseProgress || 0, 90) : latestPreview ? Math.max(baseProgress || 0, latestPreview.feedbackCount ? 82 : 78) : baseProgress;
+          const currentPhase = currentProjectPhase(project, latestPreview, onboarding);
+          const nextStep = nextCustomerStep({ websites, projects, invoices, changeRequests, messages, onboarding, previewVersions });
+          const milestones = buildProjectMilestones({ project, invoices, changeRequests, messages, previewVersions, onboarding });
+          const timeline = buildProjectTimeline({ project, invoices, changeRequests, messages, notifications, files, previewVersions });
+          const actions = buildProjectActions({ invoices, messages, onboarding, previewVersions });
+          const projectFiles = files.filter((file) => strictProjectRelated(file, project, website));
+          const projectMessages = messages.filter((message) => strictProjectRelated(message, project, website)).slice(0, 3);
+          const openInvoices = invoices.filter((invoice) => !isPaidStatus(invoice.status));
+          const latestUpdate = latestDateLabel([latestPreview, project, website, ...milestones, ...timeline], ["approvedAt", "publishedAt", "date", "updatedAt", "createdAt", "updated_at", "created_at"]);
+          const nextDate = latestPreview?.reviewDeadline || project.deadline || project.dueDate || website.lastDeployAt || "";
+
+          projectWorkspaceTitle.textContent = project.name || project.projectName || latestPreview?.title || website.name || "Websiteproject";
+          projectWorkspaceSubtitle.textContent = `${customer.company || customer.name || "Je bedrijf"} · ${currentPhase} · Laatste update ${latestUpdate}`;
+          projectWorkspaceStatus.textContent = latestPreview?.approvedAt ? "Goedgekeurd" : statusLabel(project.status || latestPreview?.status || "in_ontwikkeling");
+          projectWorkspaceProgress.textContent = progress === null ? "-" : `${progress}%`;
+
+          projectWorkspaceOverview.replaceChildren(
+            projectWorkspaceCard("Wij zijn bezig met", latestPreview?.approvedAt ? "Afronding voorbereiden" : currentPhase, latestPreview?.approvedAt ? "Het ontwerp is goedgekeurd; wij bereiden de volgende stap richting livegang voor." : "We werken aan de actuele projectfase en houden updates hier zichtbaar.", latestPreview?.approvedAt ? "done" : "active"),
+            projectWorkspaceCard("Actie van jou", nextStep.title, nextStep.text, nextStep.title.includes("bij") ? "done" : "attention", nextStep.href),
+            projectWorkspaceCard("Hierna gebeurt", latestPreview?.approvedAt ? "Livegangplanning" : "Volgende mijlpaal", latestPreview?.approvedAt ? "We stemmen de afronding en publicatie af zodra alles klaarstaat." : "De volgende projectstap verschijnt zodra deze betrouwbaar bekend is.", "neutral"),
+            projectWorkspaceCard("Belangrijke datum", nextDate ? formatDate(nextDate) : "Planning volgt", nextDate ? "Eerstvolgende bekende datum in dit project." : "Er is nog geen betrouwbare deadline beschikbaar.", nextDate ? "active" : "empty")
+          );
+
+          projectWorkspacePhases.replaceChildren(...buildProjectWorkspacePhases({ project, latestPreview, onboarding }).map((phase, index) => {
+            const item = document.createElement("article");
+            item.className = `project-phase-item is-${phase.state}`;
+            const marker = document.createElement("span");
+            marker.textContent = phase.state === "done" ? "✓" : String(index + 1);
+            const body = document.createElement("div");
+            const strong = document.createElement("strong");
+            const paragraph = document.createElement("p");
+            const meta = document.createElement("small");
+            strong.textContent = phase.name;
+            paragraph.textContent = phase.text;
+            meta.textContent = [phase.state === "done" ? "Voltooid" : phase.state === "active" ? "Actief" : "Toekomstig", formatDate(phase.date), phase.deliverables.join(" · "), phase.action].filter((value) => value && value !== "-").join(" · ");
+            body.append(strong, paragraph, meta);
+            item.append(marker, body);
+            return item;
+          }));
+
+          projectClientActions.replaceChildren(...actions.client.map(projectWorkspaceAction));
+          projectStudioActions.replaceChildren(...actions.studio.map(projectWorkspaceAction));
+          projectWorkspaceMilestones.replaceChildren(...(milestones.length ? milestones.slice(0, 8).map((milestone) => projectWorkspaceTimelineItem(milestone)) : [
+            projectWorkspaceEmpty("Nog geen mijlpalen", "Zodra er echte projectmomenten beschikbaar zijn, verschijnen ze hier.")
+          ]));
+
+          const filters = [["all", "Alles"], ["updates", "Updates"], ["review", "Ontwerp & feedback"], ["finance", "Facturatie"], ["files", "Bestanden"]];
+          projectTimelineFilters.replaceChildren(...filters.map(([key, label], index) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = index === 0 ? "is-active" : "";
+            button.textContent = label;
+            button.dataset.filter = key;
+            button.addEventListener("click", () => {
+              projectTimelineFilters.querySelectorAll("button").forEach((item) => item.classList.toggle("is-active", item === button));
+              projectWorkspaceTimeline.querySelectorAll(".project-workspace-timeline-item").forEach((item) => {
+                item.hidden = key !== "all" && item.dataset.category !== key;
+              });
+            });
+            return button;
+          }));
+          projectWorkspaceTimeline.replaceChildren(...(timeline.length ? timeline.slice(0, 12).map(projectWorkspaceTimelineItem) : [
+            projectWorkspaceEmpty("Nog geen projecttijdlijn", "Projectupdates verschijnen hier zodra ze veilig klantzichtbaar zijn.")
+          ]));
+
+          projectWorkspaceVersions.replaceChildren(...(previewVersions.length ? previewVersions.slice(0, 4).map((version) => {
+            const card = document.createElement("article");
+            card.className = "project-version-card";
+            const status = document.createElement("span");
+            const strong = document.createElement("strong");
+            const small = document.createElement("small");
+            const link = createWebsiteAction("Ontwerp bekijken", version.safePreviewPath, true);
+            status.textContent = statusLabel(version.status || (version.approvedAt ? "approved" : "ready_for_review"));
+            strong.textContent = version.title || `Versie ${version.version || 1}`;
+            small.textContent = [formatDate(version.publishedAt), version.feedbackCount ? `${version.feedbackCount} feedbackpunt(en)` : "", version.approvedAt ? `Goedgekeurd ${formatDate(version.approvedAt)}` : ""].filter(Boolean).join(" · ");
+            card.append(status, strong, small, link);
+            return card;
+          }) : [
+            projectWorkspaceEmpty("Nog geen klantzichtbare versies", "Alleen expliciet gepubliceerde previewversies worden hier getoond.", "#website-preview")
+          ]));
+
+          projectWorkspaceFiles.replaceChildren(...(projectFiles.length ? projectFiles.slice(0, 6).map((file) => {
+            const location = customerVisibleUrl(file.location || file.url || "");
+            return projectWorkspaceCard(file.type || file.category || "Bestand", file.name || "Projectbestand", [statusLabel(file.status || "beschikbaar"), formatDate(file.updatedAt || file.createdAt)].filter((value) => value && value !== "-").join(" · "), location ? "active" : "neutral", location || "#bestanden");
+          }) : [
+            projectWorkspaceEmpty("Nog geen deliverables", "Ontwerpbestanden, branding en downloads verschijnen zodra ze klantveilig beschikbaar zijn.", "#bestanden")
+          ]));
+
+          projectWorkspacePlanning.replaceChildren(
+            projectWorkspaceCard("Projectstart", formatDate(project.startDate || project.createdAt), project.startDate || project.createdAt ? "Startdatum vanuit projectdata." : "Nog niet betrouwbaar beschikbaar.", project.startDate || project.createdAt ? "active" : "empty"),
+            projectWorkspaceCard("Reviewmoment", latestPreview?.publishedAt ? formatDate(latestPreview.publishedAt) : "Nog niet gepland", latestPreview?.publishedAt ? "Laatste gepubliceerde reviewversie." : "Er is nog geen reviewmoment gepubliceerd.", latestPreview?.publishedAt ? "active" : "empty"),
+            projectWorkspaceCard("Deadline", nextDate ? formatDate(nextDate) : "Planning wordt bijgewerkt", nextDate ? "Eerstvolgende bekende datum." : "We tonen geen verzonnen livegangdatum.", nextDate ? "attention" : "empty")
+          );
+
+          projectWorkspaceMessages.replaceChildren(...(projectMessages.length ? projectMessages.map((message) => projectWorkspaceCard(message.senderType === "customer" ? "Jij" : "Max Webstudio", message.subject || message.title || "Bericht", [formatDate(message.createdAt), message.body || message.message || ""].filter(Boolean).join(" · "), message.readAt ? "neutral" : "attention", "#berichten")) : [
+            projectWorkspaceEmpty("Nog geen projectberichten", "Berichten verschijnen hier alleen wanneer ze betrouwbaar bij dit project horen.", "#berichten")
+          ]));
+
+          projectWorkspaceFinance.replaceChildren(
+            projectWorkspaceCard("Factuurstatus", openInvoices.length ? `${openInvoices.length} open` : "Geen open facturen", openInvoices.length ? `${money(openInvoices.reduce((sum, invoice) => sum + Number(invoice.total || invoice.amount || 0), 0))} openstaand` : "Er staat niets open voor dit klantaccount.", openInvoices.length ? "attention" : "done", "#facturen"),
+            projectWorkspaceCard("Offertes", quotes.length ? `${quotes.length} offerte(s)` : "Geen open offerte", quotes.length ? "Bekijk offertegegevens op de facturenpagina." : "Er is geen projectofferte die aandacht vraagt.", quotes.length ? "neutral" : "empty", "#facturen")
+          );
+        }
+
         function renderMyWebsiteExperience({ websites, projects, previewVersions = [] }) {
           websiteOverview.replaceChildren();
           if (!websites.length) {
@@ -3015,6 +3388,7 @@
         const onboardingState = await loadCustomerOnboarding(customer);
         publishedPreviewVersions = await loadPublishedPreviewVersions().catch(() => []);
         renderProjectCommandCenter({ customer, websites, projects, invoices, quotes, changeRequests, messages, notifications, subscriptions, onboarding: onboardingState, previewVersions: publishedPreviewVersions });
+        renderProjectWorkspace({ customer, websites, projects, invoices, quotes, files, changeRequests, messages, notifications, onboarding: onboardingState, previewVersions: publishedPreviewVersions });
         onboardingSave.addEventListener("click", () => saveOnboarding("save"));
         onboardingForm.addEventListener("submit", (event) => {
           event.preventDefault();
@@ -3207,25 +3581,6 @@
         });
 
         renderNotificationCenter(notifications);
-
-        if (!projects.length) projectList.append(createEmpty("Geen projecten", "Er staan nog geen projecten klaar voor dit klantprofiel."));
-        projects.forEach((project) => {
-          const card = createInfoCard(project.name || project.projectName || "Project", [
-            ["Status", createBadge(project.status)],
-            ["Fase", project.phase],
-            ["Startdatum", formatDate(project.startDate)],
-            ["Verwachte oplevering", formatDate(project.deadline)],
-            ["Voortgang", `${project.progress || 0}%`],
-          ]);
-          card.append(createProgress(project.progress || 0));
-          card.append(createTimeline([
-            project.startDate ? `Gestart op ${formatDate(project.startDate)}` : "",
-            project.phase ? `Huidige fase: ${project.phase}` : "",
-            project.updatedAt ? `Laatste update: ${formatDate(project.updatedAt)}` : "",
-            project.deadline ? `Verwachte oplevering: ${formatDate(project.deadline)}` : "",
-          ]));
-          projectList.append(card);
-        });
 
         renderChangeRequestRows(customerChangeRequests);
 
