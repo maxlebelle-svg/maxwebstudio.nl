@@ -42,5 +42,25 @@ assert.strictEqual(
   "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
   "query params should be recovered from Netlify rawUrl when queryStringParameters is empty"
 );
+assert.strictEqual(
+  _private.getVersionParam({ rawQuery: "version=aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" }),
+  "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  "version should be recovered from Netlify rawQuery"
+);
+assert.strictEqual(
+  _private.getVersionParam({ path: "/.netlify/functions/client-preview-render?version=aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" }),
+  "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  "version should be recovered from a function path containing a query"
+);
+assert.strictEqual(
+  _private.getVersionParam({ headers: { "x-nf-original-url": "/api/client-preview-render?version=aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" } }),
+  "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  "version should be recovered from Netlify original URL headers"
+);
+assert.strictEqual(
+  _private.recoverVersionFromRequest({ rawUrl: "https://maxwebstudio.nl/.netlify/functions/client-preview-render?versionId=aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" }),
+  "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  "version aliases should be recovered from request metadata"
+);
 
 console.log("client preview render tests passed");

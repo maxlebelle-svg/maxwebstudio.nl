@@ -33,9 +33,8 @@ exports.handler = async (event) => {
     const customer = await resolveCustomerForAuthUser(context, authUser.id);
     if (!customer?.id) return jsonResponse(403, { success: false, error: "Geen klantprofiel gekoppeld aan deze sessie." });
 
-    const params = getQueryParams(event);
-    const versionId = uuidOrEmpty(params.version || params.versionId || params.version_id);
-    if (!versionId) return jsonResponse(400, { success: false, error: "Previewversie ontbreekt." });
+    const versionId = uuidOrEmpty(getVersionParam(event));
+    if (!versionId) return missingVersionResponse(event);
 
     const version = await readSingle(context, "website_preview_versions", [
       `select=${previewVersionFields}`,
@@ -210,15 +209,94 @@ function getBearer(event) {
 }
 
 function getQueryParams(event = {}) {
-  if (event.queryStringParameters && Object.keys(event.queryStringParameters).length) return event.queryStringParameters;
-  const rawUrl = cleanText(event.rawUrl || event.rawURL || event.url);
-  if (!rawUrl) return {};
-  try {
-    const parsed = new URL(rawUrl, "https://maxwebstudio.nl");
-    return Object.fromEntries(parsed.searchParams.entries());
-  } catch {
-    return {};
+  const params = {};
+  if (event.queryStringParameters && Object.keys(event.queryStringParameters).length) {
+    Object.assign(params, event.queryStringParameters);
   }
+  if (event.multiValueQueryStringParameters && Object.keys(event.multiValueQueryStringParameters).length) {
+    Object.entries(event.multiValueQueryStringParameters).forEach(([key, value]) => {
+      if (params[key] === undefined) params[key] = Array.isArray(value) ? value[0] : value;
+    });
+  }
+  [
+    cleanText(event.rawQuery || event.rawQueryString),
+    queryPart(event.rawUrl || event.rawURL || event.url || event.path),
+    queryPart(event.headers?.["x-nf-original-url"] || event.headers?.["X-Nf-Original-Url"]),
+    queryPart(event.headers?.["x-original-url"] || event.headers?.["X-Original-Url"]),
+    queryPart(event.headers?.referer || event.headers?.Referer),
+  ].filter(Boolean).forEach((query) => {
+    try {
+      const searchParams = new URLSearchParams(query.replace(/^\?/, ""));
+      searchParams.forEach((value, key) => {
+        if (params[key] === undefined) params[key] = value;
+      });
+    } catch {
+      // Ignore malformed runtime metadata.
+    }
+  });
+  return params;
+}
+
+function queryPart(value = "") {
+  const text = cleanText(value);
+  if (!text) return "";
+  const index = text.indexOf("?");
+  if (index === -1) return "";
+  return text.slice(index + 1);
+}
+
+function headerValue(headers = {}, name = "") {
+  const target = cleanText(name).toLowerCase();
+  const entry = Object.entries(headers || {}).find(([key]) => cleanText(key).toLowerCase() === target);
+  return entry ? entry[1] : "";
+}
+
+function getRequestUrl(event = {}) {
+  return cleanText(
+    event.rawUrl
+    || event.rawURL
+    || event.url
+    || headerValue(event.headers, "x-nf-original-url")
+    || headerValue(event.headers, "x-original-url")
+    || event.path
+  );
+}
+
+function recoverVersionFromRequest(event = {}) {
+  const requestUrl = getRequestUrl(event);
+  if (!requestUrl) return "";
+  const match = requestUrl.match(/[?&](?:version|versionId|version_id)=([0-9a-f-]{36})/i);
+  return match ? decodeURIComponent(match[1]) : "";
+}
+
+function getVersionParam(event = {}) {
+  const params = getQueryParams(event);
+  return params.version || params.versionId || params.version_id || recoverVersionFromRequest(event);
+}
+
+function appendPreviewDiagnostics(event = {}, body = {}) {
+  const enabled = cleanText(event.headers?.["x-mws-preview-debug"] || event.headers?.["X-MWS-Preview-Debug"]).toLowerCase() === "true";
+  if (!enabled) return body;
+  return {
+    ...body,
+    diagnostics: {
+      hasQueryStringParameters: Boolean(event.queryStringParameters && Object.keys(event.queryStringParameters).length),
+      hasMultiValueQueryStringParameters: Boolean(event.multiValueQueryStringParameters && Object.keys(event.multiValueQueryStringParameters).length),
+      hasRawQuery: Boolean(cleanText(event.rawQuery || event.rawQueryString)),
+      hasRawUrl: Boolean(cleanText(event.rawUrl || event.rawURL || event.url)),
+      hasPathQuery: cleanText(event.path).includes("?"),
+      hasOriginalUrlHeader: Boolean(headerValue(event.headers, "x-nf-original-url") || headerValue(event.headers, "x-original-url")),
+      queryKeys: Object.keys(getQueryParams(event)),
+      recoveredVersion: Boolean(recoverVersionFromRequest(event)),
+    },
+  };
+}
+
+function missingVersionResponse(event = {}) {
+  return jsonResponse(400, appendPreviewDiagnostics(event, {
+    success: false,
+    error: "Previewversie ontbreekt.",
+  }));
 }
 
 function jsonResponse(statusCode, body) {
@@ -285,8 +363,10 @@ function escapeAttribute(value = "") {
 }
 
 exports._private = {
+  getVersionParam,
   getQueryParams,
   inlinePackageAssets,
   normalizePackage,
+  recoverVersionFromRequest,
   renderPackageHtml,
 };
