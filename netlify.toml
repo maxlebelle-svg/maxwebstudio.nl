@@ -16,6 +16,16 @@
   status = 200
 
 [[redirects]]
+  from = "/admin-login"
+  to = "/admin-login.html"
+  status = 200
+
+[[redirects]]
+  from = "/klant-login"
+  to = "/klant-login.html"
+  status = 200
+
+[[redirects]]
   from = "/admin-assets"
   to = "/admin-assets.html"
   status = 200

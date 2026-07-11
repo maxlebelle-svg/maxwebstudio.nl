@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Admin login | Max Webstudio</title>
+  </head>
+  <body>
+    <script>
+      const params = new URLSearchParams(window.location.search || "");
+      const next = params.get("next") || "/admin-dashboard.html";
+      const target = new URL("/login.html", window.location.origin);
+      target.searchParams.set("mode", "admin");
+      target.searchParams.set("next", next);
+      window.location.replace(target.toString());
+    </script>
+    <p>Admin login openen...</p>
+  </body>
+</html>

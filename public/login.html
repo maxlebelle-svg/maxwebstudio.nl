@@ -22,8 +22,8 @@
         </a>
         <div>
           <p class="section-kicker">Login</p>
-          <h1>Inloggen bij Max Webstudio.</h1>
-          <p>Log in om verder te gaan naar je dashboard of vraag toegang aan tot je klantomgeving.</p>
+          <h1 id="login-heading">Inloggen bij Max Webstudio.</h1>
+          <p id="login-intro">Log in om verder te gaan naar je dashboard of vraag toegang aan tot je klantomgeving.</p>
         </div>
 
         <div class="portal-login-status-card" role="status" aria-live="polite">
@@ -147,6 +147,8 @@
         const developerOnlyTabs = [...document.querySelectorAll("[data-developer-only-tab]")];
         const authLiveOnlyBlocks = [...document.querySelectorAll("[data-auth-live-only]")];
         const loginStatusTitle = document.getElementById("login-status-title");
+        const loginHeading = document.getElementById("login-heading");
+        const loginIntro = document.getElementById("login-intro");
         const realLoginStatus = document.getElementById("real-login-status");
         const realLoginUnavailable = document.querySelector("[data-real-login-unavailable]");
         const realLoginTab = document.querySelector("[data-auth-panel-trigger='real']");
@@ -244,9 +246,26 @@
 
         function isAdminLoginRequest() {
           const params = new URLSearchParams(window.location.search);
+          if (params.get("mode") === "client") return false;
           if (params.get("mode") === "admin") return true;
           if (isAdminPath(getRequestedRedirect())) return true;
           return isAdminPath(getSafeRelativePath(document.referrer || ""));
+        }
+
+        function renderLoginShellMode() {
+          const adminMode = isAdminLoginRequest();
+          document.body.classList.toggle("is-admin-login", adminMode);
+          if (loginHeading) {
+            loginHeading.textContent = adminMode ? "Admin login Max Webstudio." : "Inloggen bij Max Webstudio.";
+          }
+          if (loginIntro) {
+            loginIntro.textContent = adminMode
+              ? "Log in met je Max Webstudio beheerdersaccount om naar het adminportaal te gaan."
+              : "Log in op je klantportaal of vraag toegang aan tot je klantomgeving.";
+          }
+          if (realLoginTab) {
+            realLoginTab.textContent = adminMode ? "Admin login" : "Klantlogin";
+          }
         }
 
         function getAllowedRedirect(role = "", customerId = "") {
@@ -522,9 +541,7 @@
             realLoginActive = Boolean(authReadiness.authLive);
             const adminMode = isAdminLoginRequest();
             const adminLoginAvailable = adminMode && authConfigSafe;
-            if (realLoginTab) {
-              realLoginTab.textContent = adminMode ? "Admin login" : "Klantlogin";
-            }
+            renderLoginShellMode();
             realLoginStatusMessage = realLoginActive
               ? "Klantlogin is actief. Gebruik je e-mailadres en wachtwoord om in te loggen."
               : authReadiness.visitorMessage;
@@ -739,6 +756,8 @@
           button.addEventListener("click", () => loginAs(button.dataset.demoRole));
         });
         setupPasswordToggles();
+        renderLoginShellMode();
+        if (isAdminLoginRequest()) renderLoginStatus("admin");
         renderDeveloperModeVisibility();
         renderAuthLiveVisibility();
         activatePanel(isDeveloperModeEnabled() && !isAdminLoginRequest() ? "demo" : "real");

@@ -78,7 +78,7 @@
     const session = productionSession();
     if (session) return;
     document.documentElement.classList.add("mws-auth-locked");
-    window.location.replace(`/login.html?next=${encodeURIComponent(path)}`);
+    window.location.replace(`/admin-login.html?next=${encodeURIComponent(path)}`);
   }
 
   hideProductionOnlyUnsafeUi();
