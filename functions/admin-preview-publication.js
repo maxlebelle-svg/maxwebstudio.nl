@@ -55,8 +55,8 @@ exports.handler = async (event) => {
   if (!context.available) return jsonResponse(500, { success: false, error: "Previewpublicatie is nog niet geconfigureerd." });
 
   try {
-    if (event.httpMethod === "GET") return listPreviewVersions(context, event.queryStringParameters || {});
-    if (event.httpMethod === "POST") return publishPreviewVersion(context, parsePayload(event.body));
+    if (event.httpMethod === "GET") return await listPreviewVersions(context, event.queryStringParameters || {});
+    if (event.httpMethod === "POST") return await publishPreviewVersion(context, parsePayload(event.body));
     return jsonResponse(405, { success: false, error: "Methode niet toegestaan." });
   } catch (error) {
     console.error("Preview publication failed", {

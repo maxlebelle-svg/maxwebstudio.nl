@@ -1,5 +1,6 @@
 const assert = require("assert");
-const { _private } = require("../functions/admin-preview-publication");
+const publication = require("../functions/admin-preview-publication");
+const { _private } = publication;
 
 const ids = {
   customerA: "11111111-1111-4111-8111-111111111111",
@@ -154,9 +155,50 @@ function context() {
   };
 }
 
+function restoreEnv(key, value) {
+  if (value === undefined) {
+    delete process.env[key];
+    return;
+  }
+  process.env[key] = value;
+}
+
 async function run() {
   let tables = createTables();
   let writes = installFetchMock(tables);
+  const previousEnv = {
+    adminToken: process.env.ADMIN_TOKEN,
+    allowLegacyAdminToken: process.env.ALLOW_LEGACY_ADMIN_TOKEN,
+    appEnv: process.env.APP_ENV,
+    context: process.env.CONTEXT,
+    supabaseUrl: process.env.SUPABASE_URL,
+    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+  };
+  process.env.ADMIN_TOKEN = "test-admin-token";
+  process.env.ALLOW_LEGACY_ADMIN_TOKEN = "true";
+  process.env.APP_ENV = "test";
+  process.env.CONTEXT = "dev";
+  process.env.SUPABASE_URL = "https://example.supabase.co";
+  process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role";
+  const mismatchResponse = await publication.handler({
+    httpMethod: "GET",
+    headers: { Authorization: "Bearer test-admin-token" },
+    queryStringParameters: {
+      websiteId: ids.websiteA,
+      customerId: ids.customerB,
+      projectId: ids.projectA,
+    },
+  });
+  assert.strictEqual(mismatchResponse.statusCode, 409, "website/customer mismatch should return JSON 409 instead of an async function crash");
+  const mismatchBody = JSON.parse(mismatchResponse.body);
+  assert.strictEqual(mismatchBody.code, "PREVIEW_CUSTOMER_MISMATCH");
+  restoreEnv("ADMIN_TOKEN", previousEnv.adminToken);
+  restoreEnv("ALLOW_LEGACY_ADMIN_TOKEN", previousEnv.allowLegacyAdminToken);
+  restoreEnv("APP_ENV", previousEnv.appEnv);
+  restoreEnv("CONTEXT", previousEnv.context);
+  restoreEnv("SUPABASE_URL", previousEnv.supabaseUrl);
+  restoreEnv("SUPABASE_SERVICE_ROLE_KEY", previousEnv.serviceRoleKey);
+
   const versions = await _private.findPreviewVersionsForWebsite(context(), {
     website: tables.websites[0],
     selectedCustomerId: ids.customerA,
