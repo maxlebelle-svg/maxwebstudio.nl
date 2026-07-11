@@ -400,14 +400,6 @@ export function requireCustomerAccess(customerId = "", options = {}) {
   const expectedCustomerId = String(customerId || "").trim();
   const ownCustomerId = String(context.customerId || "").trim();
   const baseDecision = getAccessDecision(options.pageName || "klantportaal", context, { ...options, customerId: expectedCustomerId });
-  if (isBrowserProductionRuntime() && context.isDemo && options.allowProductionDemoPreview) {
-    return enforceDecision({
-      ...baseDecision,
-      allowed: true,
-      decision: "allowed",
-      reason: "Tijdelijke klantportaal flow-preview met demo-data toegestaan.",
-    }, options);
-  }
   if (isBrowserProductionRuntime() && (!expectedCustomerId || !ownCustomerId)) {
     return enforceDecision(applyMode(baseDecision, "Klanttoegang kon niet veilig worden vastgesteld."), options);
   }

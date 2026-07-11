@@ -273,24 +273,3 @@ export async function ensureStagingClientPortalDemoSession() {
     mode: "demo",
   };
 }
-
-export function ensureClientPortalFlowPreviewSession() {
-  const expiresAt = Math.floor(new Date(addHours(nowIso(), 8)).getTime() / 1000);
-  const session = {
-    access_token: "flow-preview-session",
-    expires_at: expiresAt,
-    user: {
-      id: "flow-preview-user",
-      email: "flow-preview@maxwebstudio.nl",
-    },
-  };
-  const customer = seedStagingDemoData(session);
-  seedStagingAuthSession(session, customer);
-
-  return {
-    active: true,
-    reason: "client_portal_flow_preview",
-    customerId: customer.id,
-    mode: "demo",
-  };
-}

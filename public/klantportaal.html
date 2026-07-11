@@ -409,7 +409,7 @@
         const { getClientPortalMessageContext, saveClientPortalMessageWithSupabaseFallback } = await import("./src/services/clientPortalMessageContextService.js");
         const { getClientFinanceContext } = await import("./src/services/clientFinanceContextService.js");
         const { getClientNotificationContext } = await import("./src/services/clientNotificationContextService.js");
-        const { ensureClientPortalFlowPreviewSession, ensureStagingClientPortalDemoSession } = await import("./src/services/stagingClientPortalAuthBridgeService.js");
+        const { ensureStagingClientPortalDemoSession } = await import("./src/services/stagingClientPortalAuthBridgeService.js");
         const { approveBranding, loadBrandingState, registerLogoConcepts, registerUploadedLogo, upsertBrandingProject } = await import("./src/brand-assets-adapter.js");
         const { signOut: signOutSupabase, getSession: getSupabaseSession } = await import("./src/services/supabaseAuthProvider.js");
         const params = new URLSearchParams(window.location.search);
@@ -418,7 +418,6 @@
         let customerId = params.get("customerId") || "";
         let supabaseCustomerId = params.get("supabaseCustomerId") || "";
         let portalDataMode = params.get("portalDataMode") || params.get("mode") || "";
-        const flowPreviewRequested = ["1", "true", "demo"].includes(String(params.get("flowPreview") || params.get("portalPreview") || "").toLowerCase());
         const portalTitle = document.getElementById("portal-title");
         const portalSubtitle = document.getElementById("portal-subtitle");
         const portalSourceBadge = document.getElementById("portal-source-badge");
@@ -515,7 +514,7 @@
           const configuredEnvironment = String(window.__MAXWEBSTUDIO_ENV__ || localStorage.getItem("maxwebstudioEnvironment") || "").toUpperCase();
           return productionHosts.has(host) || configuredEnvironment === "PRODUCTION";
         }
-        if (isProductionRuntime() && !flowPreviewRequested) {
+        if (isProductionRuntime()) {
           customerId = "";
           supabaseCustomerId = "";
           portalDataMode = "";
@@ -575,14 +574,7 @@
         }
 
         let stagingBridge = { active: false, reason: "", customerId: "", mode: "" };
-        let flowPreview = { active: false, reason: "", customerId: "", mode: "" };
-        if (flowPreviewRequested) {
-          flowPreview = ensureClientPortalFlowPreviewSession();
-          customerId = flowPreview.customerId;
-          supabaseCustomerId = "";
-          portalDataMode = flowPreview.mode;
-          updatePortalAuthActions(true);
-        } else if (profileContext.profileFound) {
+        if (profileContext.profileFound) {
           customerId = customerId || profileContext.customerId;
           supabaseCustomerId = supabaseCustomerId || profileContext.supabaseCustomerId;
           portalDataMode = portalDataMode || profileContext.mode;
@@ -808,10 +800,6 @@
             return;
           }
           const roleLabel = session.role === "customer" ? "klant" : session.role || "gebruiker";
-          if (flowPreview.active) {
-            portalAuthText.textContent = "Je bekijkt tijdelijk de klantflow met demo/testdata. Echte klantdata blijft afgeschermd.";
-            return;
-          }
           if (profileContext.profileFound) {
             portalAuthText.textContent = "Je bent veilig ingelogd. Alleen jouw klantgegevens worden getoond.";
             return;
@@ -834,13 +822,13 @@
         await renderSessionNotice();
         updatePortalAuthActions(Boolean(readCurrentSession()));
 
-        if (!readCurrentSession() && !isDeveloperModeEnabled() && !flowPreview.active) {
+        if (!readCurrentSession() && !isDeveloperModeEnabled()) {
           portalTitle.textContent = "Log in om je klantportaal te bekijken";
           portalSubtitle.textContent = "Je klantgegevens blijven afgeschermd totdat je bent ingelogd.";
           showSafePortalFallback("Je bent nog niet ingelogd.");
           return;
         }
-        if (isProductionRuntime() && !profileContext.profileFound && !flowPreview.active) {
+        if (isProductionRuntime() && !profileContext.profileFound) {
           portalTitle.textContent = "Log in om je klantportaal te bekijken";
           portalSubtitle.textContent = "Je klantprofiel kon nog niet veilig worden gekoppeld.";
           showSafePortalFallback("Log opnieuw in of neem contact op met Max Webstudio.");
@@ -850,7 +838,6 @@
         const customerAccessDecision = requireCustomerAccess(customerId, {
           pageName: "klantportaal",
           allowDemo: !isProductionRuntime() && isDeveloperModeEnabled(),
-          allowProductionDemoPreview: flowPreview.active,
         });
         if (!customerAccessDecision.allowed) {
           portalTitle.textContent = "Geen toegang tot deze klantdata";
