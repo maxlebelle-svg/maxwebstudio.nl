@@ -676,6 +676,7 @@
         const fileList = document.getElementById("portal-files");
         const readinessList = document.getElementById("portal-readiness");
         document.getElementById("readiness")?.setAttribute("hidden", "");
+        const commandCenterTitle = document.getElementById("command-center-title");
         const commandCenterSubtitle = document.getElementById("command-center-subtitle");
         const commandSyncStatus = document.getElementById("command-sync-status");
         const commandOverview = document.getElementById("portal-command-overview");
@@ -927,7 +928,7 @@
         function renderPublishedWebsitePreviews(versions = []) {
           if (!versions.length) return false;
           const latest = versions[0];
-          demoJourneySummary.textContent = latest.summary || "Uw website-preview staat klaar voor review.";
+          demoJourneySummary.textContent = latest.summary || "Je website-preview staat klaar voor review.";
           demoJourneyState.textContent = statusLabel(latest.status || "ready_for_review");
           demoJourneyState.className = `status-badge ${latest.approvedAt ? "status-active" : "status-prepared"}`;
           demoJourneyTimeline.innerHTML = `
@@ -952,7 +953,7 @@
           previewReviewSummary.innerHTML = `
             <article class="portal-data-card portal-website-preview-column">
               <span>Preview</span>
-              <iframe class="portal-website-mini-preview" title="Gepubliceerde website-preview" src="${escapeHtml(latest.safePreviewPath)}" loading="lazy"></iframe>
+              <iframe class="portal-website-mini-preview" title="Veilige preview van je website" src="${escapeHtml(latest.safePreviewPath)}" loading="lazy"></iframe>
             </article>
             ${[
               ["Titel", latest.title],
@@ -960,7 +961,7 @@
               ["Publicatiedatum", formatDate(latest.publishedAt)],
               ["Status", statusLabel(latest.status || "review")],
               ["Reviewdeadline", formatDate(latest.reviewDeadline)],
-              ["Wijzigingen", latest.changeSummary || "Bekijk de preview voor de laatste wijzigingen."],
+              ["Wijzigingen", customerPreviewSummary(latest)],
             ].map(([label, value]) => `<article class="portal-data-card"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value || "-")}</strong></article>`).join("")}
           `;
           previewVersionList.innerHTML = versions.length > 1
@@ -1550,6 +1551,15 @@
           return tile;
         }
 
+        function customerPreviewSummary(preview = null, fallback = "") {
+          const raw = String(preview?.changeSummary || fallback || "").trim();
+          if (!raw) return "Je ziet hier de laatste klantzichtbare ontwerpversie.";
+          if (/website factory|factory-preview|factory preview|demo/i.test(raw)) {
+            return "Eerste ontwerp op basis van je briefing en projectinput.";
+          }
+          return raw;
+        }
+
         function feedbackSummaryFromPreview(preview = null) {
           const items = Array.isArray(preview?.feedbackItems) ? preview.feedbackItems : [];
           const processedStatuses = new Set(["verwerkt", "resolved", "done", "afgerond", "closed"]);
@@ -2106,16 +2116,23 @@
           dots.setAttribute("aria-hidden", "true");
           dots.append(document.createElement("i"), document.createElement("i"), document.createElement("i"));
           const label = document.createElement("strong");
-          label.textContent = previewVersion?.safePreviewPath ? "Gepubliceerde website-preview" : "Live website-preview";
+          label.textContent = previewVersion?.safePreviewPath ? `Veilige preview · versie ${previewVersion.version || 1}` : "Website-preview";
           toolbar.append(dots, label);
 
           if (previewVersion?.safePreviewPath) {
             const iframe = document.createElement("iframe");
             iframe.className = "portal-website-mini-preview";
-            iframe.title = "Gepubliceerde website-preview";
+            iframe.title = `Veilige preview van ${previewVersion.title || website.name || "je website"}`;
             iframe.src = previewVersion.safePreviewPath;
             iframe.loading = "lazy";
-            frame.append(toolbar, iframe);
+            const caption = document.createElement("div");
+            caption.className = "portal-website-preview-caption";
+            const title = document.createElement("strong");
+            const text = document.createElement("span");
+            title.textContent = previewVersion.title || website.name || "Je ontwerp staat klaar";
+            text.textContent = customerPreviewSummary(previewVersion);
+            caption.append(title, text);
+            frame.append(toolbar, iframe, caption);
             return frame;
           }
 
@@ -2134,9 +2151,9 @@
           const title = document.createElement("strong");
           const text = document.createElement("p");
           const meta = document.createElement("small");
-          title.textContent = "Je eerste websitepreview verschijnt hier.";
-          text.textContent = "Zodra het ontwerp of de live preview klaarstaat, tonen we die direct in dit venster.";
-          meta.textContent = websiteUrl ? "Het domein is al bekend; de visuele preview volgt vanuit het project." : "Nog geen preview of domein gekoppeld.";
+          title.textContent = "Je ontwerp verschijnt hier zodra het klantklaar is.";
+          text.textContent = "We tonen alleen previews die veilig voor jouw klantomgeving zijn gepubliceerd.";
+          meta.textContent = websiteUrl ? "Je webadres is bekend; de preview volgt vanuit je project." : "Nog geen preview of domein gekoppeld.";
           empty.append(title, text, meta);
           frame.append(toolbar, empty);
           return frame;
@@ -2609,14 +2626,16 @@
           const nextDate = latestPreview?.reviewDeadline || project.deadline || project.dueDate || website.lastDeployAt || "";
 
           projectWorkspaceTitle.textContent = project.name || project.projectName || latestPreview?.title || website.name || "Websiteproject";
-          projectWorkspaceSubtitle.textContent = `${customer.company || customer.name || "Je bedrijf"} · ${currentPhase} · Laatste update ${latestUpdate}`;
+          projectWorkspaceSubtitle.textContent = latestPreview?.approvedAt
+            ? `${customer.company || customer.name || "Je bedrijf"} · ontwerp goedgekeurd · wij bereiden de afronding voor.`
+            : `${customer.company || customer.name || "Je bedrijf"} · ${currentPhase} · laatste update ${latestUpdate}`;
           projectWorkspaceStatus.textContent = latestPreview?.approvedAt ? "Goedgekeurd" : statusLabel(project.status || latestPreview?.status || "in_ontwikkeling");
           projectWorkspaceProgress.textContent = progress === null ? "-" : `${progress}%`;
 
           projectWorkspaceOverview.replaceChildren(
-            projectWorkspaceCard("Wij zijn bezig met", latestPreview?.approvedAt ? "Afronding voorbereiden" : currentPhase, latestPreview?.approvedAt ? "Het ontwerp is goedgekeurd; wij bereiden de volgende stap richting livegang voor." : "We werken aan de actuele projectfase en houden updates hier zichtbaar.", latestPreview?.approvedAt ? "done" : "active"),
+            projectWorkspaceCard("Wij zijn bezig met", latestPreview?.approvedAt ? "Afronding voorbereiden" : currentPhase, latestPreview?.approvedAt ? "Je ontwerp is akkoord. Wij bereiden nu de stap richting livegang voor." : "We werken aan de actuele projectfase en houden updates hier zichtbaar.", latestPreview?.approvedAt ? "done" : "active"),
             projectWorkspaceCard("Actie van jou", nextStep.title, nextStep.text, nextStep.title.includes("bij") ? "done" : "attention", nextStep.href),
-            projectWorkspaceCard("Hierna gebeurt", latestPreview?.approvedAt ? "Livegangplanning" : "Volgende mijlpaal", latestPreview?.approvedAt ? "We stemmen de afronding en publicatie af zodra alles klaarstaat." : "De volgende projectstap verschijnt zodra deze betrouwbaar bekend is.", "neutral"),
+            projectWorkspaceCard("Hierna gebeurt", latestPreview?.approvedAt ? "Livegangplanning" : "Volgende mijlpaal", latestPreview?.approvedAt ? "We stemmen de afronding af zodra alles klaarstaat." : "De volgende projectstap verschijnt zodra deze betrouwbaar bekend is.", "neutral"),
             projectWorkspaceCard("Belangrijke datum", nextDate ? formatDate(nextDate) : "Planning volgt", nextDate ? "Eerstvolgende bekende datum in dit project." : "Er is nog geen betrouwbare deadline beschikbaar.", nextDate ? "active" : "empty")
           );
 
@@ -2640,7 +2659,7 @@
           projectClientActions.replaceChildren(...actions.client.map(projectWorkspaceAction));
           projectStudioActions.replaceChildren(...actions.studio.map(projectWorkspaceAction));
           projectWorkspaceMilestones.replaceChildren(...(milestones.length ? milestones.slice(0, 8).map((milestone) => projectWorkspaceTimelineItem(milestone)) : [
-            projectWorkspaceEmpty("Nog geen mijlpalen", "Zodra er echte projectmomenten beschikbaar zijn, verschijnen ze hier.")
+            projectWorkspaceEmpty("Geen mijlpalen om te tonen", "Zodra er een betrouwbaar projectmoment is, zetten we het hier neer.")
           ]));
 
           const filters = [["all", "Alles"], ["updates", "Updates"], ["review", "Ontwerp & feedback"], ["finance", "Facturatie"], ["files", "Bestanden"]];
@@ -2659,7 +2678,7 @@
             return button;
           }));
           projectWorkspaceTimeline.replaceChildren(...(timeline.length ? timeline.slice(0, 12).map(projectWorkspaceTimelineItem) : [
-            projectWorkspaceEmpty("Nog geen projecttijdlijn", "Projectupdates verschijnen hier zodra ze veilig klantzichtbaar zijn.")
+            projectWorkspaceEmpty("Geen projectupdates", "Nieuwe klantzichtbare updates verschijnen hier automatisch.")
           ]));
 
           projectWorkspaceVersions.replaceChildren(...(previewVersions.length ? previewVersions.slice(0, 4).map((version) => {
@@ -2671,18 +2690,18 @@
             const link = createWebsiteAction("Ontwerp bekijken", version.safePreviewPath, true);
             status.textContent = statusLabel(version.status || (version.approvedAt ? "approved" : "ready_for_review"));
             strong.textContent = version.title || `Versie ${version.version || 1}`;
-            small.textContent = [formatDate(version.publishedAt), version.feedbackCount ? `${version.feedbackCount} feedbackpunt(en)` : "", version.approvedAt ? `Goedgekeurd ${formatDate(version.approvedAt)}` : ""].filter(Boolean).join(" · ");
+            small.textContent = [formatDate(version.publishedAt), version.feedbackCount ? `${version.feedbackCount} feedbackpunt(en)` : "", version.approvedAt ? `Goedgekeurd ${formatDate(version.approvedAt)}` : "", customerPreviewSummary(version)].filter(Boolean).join(" · ");
             card.append(status, strong, small, link);
             return card;
           }) : [
-            projectWorkspaceEmpty("Nog geen klantzichtbare versies", "Alleen expliciet gepubliceerde previewversies worden hier getoond.", "#website-preview")
+            projectWorkspaceEmpty("Geen klantzichtbare versies", "Zodra Max Webstudio een ontwerp publiceert, verschijnt het hier.", "#website-preview")
           ]));
 
           projectWorkspaceFiles.replaceChildren(...(projectFiles.length ? projectFiles.slice(0, 6).map((file) => {
             const location = customerVisibleUrl(file.location || file.url || "");
             return projectWorkspaceCard(file.type || file.category || "Bestand", file.name || "Projectbestand", [statusLabel(file.status || "beschikbaar"), formatDate(file.updatedAt || file.createdAt)].filter((value) => value && value !== "-").join(" · "), location ? "active" : "neutral", location || "#bestanden");
           }) : [
-            projectWorkspaceEmpty("Nog geen deliverables", "Ontwerpbestanden, branding en downloads verschijnen zodra ze klantveilig beschikbaar zijn.", "#bestanden")
+            projectWorkspaceEmpty("Geen bestanden", "Downloads verschijnen hier zodra ze bij dit project horen.", "#bestanden")
           ]));
 
           projectWorkspacePlanning.replaceChildren(
@@ -2692,7 +2711,7 @@
           );
 
           projectWorkspaceMessages.replaceChildren(...(projectMessages.length ? projectMessages.map((message) => projectWorkspaceCard(message.senderType === "customer" ? "Jij" : "Max Webstudio", message.subject || message.title || "Bericht", [formatDate(message.createdAt), message.body || message.message || ""].filter(Boolean).join(" · "), message.readAt ? "neutral" : "attention", "#berichten")) : [
-            projectWorkspaceEmpty("Nog geen projectberichten", "Berichten verschijnen hier alleen wanneer ze betrouwbaar bij dit project horen.", "#berichten")
+            projectWorkspaceEmpty("Geen projectberichten", "Projectberichten verschijnen hier zodra ze aan dit project zijn gekoppeld.", "#berichten")
           ]));
 
           projectWorkspaceFinance.replaceChildren(
@@ -2770,7 +2789,7 @@
           const title = document.createElement("h3");
           title.textContent = latestPreview?.title || website.name || website.domain || "Jouw website";
           const intro = document.createElement("p");
-          intro.textContent = latestPreview?.changeSummary || "Je ziet hier in gewone taal hoe je website ervoor staat, wat Max Webstudio bewaakt en welke actie je direct kunt nemen.";
+          intro.textContent = latestPreview ? customerPreviewSummary(latestPreview) : "Je ziet hier in gewone taal hoe je website ervoor staat, wat Max Webstudio bewaakt en welke actie je direct kunt nemen.";
           const urlRow = createWebsiteUrlRow(websiteUrl);
           const actions = document.createElement("div");
           actions.className = "portal-today-actions";
@@ -2789,10 +2808,10 @@
           metricsWrap.className = "portal-website-metrics";
           if (latestPreview) {
             metricsWrap.append(
-              createWebsiteMetric("Versie", `Versie ${latestPreview.version || 1}`, "Deze gepubliceerde previewversie."),
-              createWebsiteMetric("Status", statusLabel(latestPreview.status || "ready_for_review"), "Klantreview van deze versie."),
-              createWebsiteMetric("Publicatiedatum", formatDate(latestPreview.publishedAt), "Wanneer Max Webstudio deze versie publiceerde."),
-              createWebsiteMetric("Wijzigingen", latestPreview.changeSummary || "Bekijk de preview voor de laatste wijzigingen.", "Samenvatting voor deze reviewronde."),
+              createWebsiteMetric("Versie", `Versie ${latestPreview.version || 1}`, "Huidige ontwerpversie."),
+              createWebsiteMetric("Status", statusLabel(latestPreview.status || "ready_for_review"), "Reviewstatus."),
+              createWebsiteMetric("Publicatiedatum", formatDate(latestPreview.publishedAt), "Klantzichtbaar sinds."),
+              createWebsiteMetric("Wijzigingen", customerPreviewSummary(latestPreview), "Samenvatting."),
               createWebsiteMetric("Domein", website.domain || "Nog niet gekoppeld", "Het webadres dat klanten gebruiken."),
               createWebsiteMetric("Laatste update", lastUpdate, "Meest recente bekende wijziging.")
             );
@@ -2993,7 +3012,10 @@
             ["approvedAt", "publishedAt", "updatedAt", "createdAt", "approved_at", "published_at", "updated_at", "created_at"]
           );
 
-          commandCenterSubtitle.textContent = `${customer.company || customer.name || "Je bedrijf"}: projectstatus, website, acties en communicatie in één overzicht.`;
+          commandCenterTitle.textContent = "Welkom terug bij je project.";
+          commandCenterSubtitle.textContent = latestPreview?.approvedAt
+            ? `${customer.company || customer.name || "Je bedrijf"} is akkoord met het ontwerp. Wij bereiden nu de afronding voor.`
+            : `${customer.company || customer.name || "Je bedrijf"}: projectstatus, ontwerp, acties en communicatie bij elkaar.`;
           commandSyncStatus.textContent = `Laatst bijgewerkt: ${latestUpdateLabel}`;
           commandOverview.replaceChildren(
             commandOverviewTile("Actief project", project.name || project.projectName || website.name || website.domain || "Websiteproject", currentPhase, project.id || latestPreview ? "active" : "neutral"),
@@ -3008,8 +3030,8 @@
 
           commandProgressTitle.textContent = project.name || project.projectName || "Websiteproject";
           commandProgressSubtitle.textContent = project.phase || project.status
-            ? `${currentPhase} - ${nextStep.title}`
-            : latestPreview ? `${currentPhase} - ${statusLabel(latestPreview.status)}` : "Nog geen projectfase beschikbaar.";
+            ? `${currentPhase}: ${nextStep.title}`
+            : latestPreview ? `${currentPhase}: ${statusLabel(latestPreview.status)}` : "Nog geen projectfase beschikbaar.";
           commandProgressValue.textContent = progress === null ? "Nog niet beschikbaar" : `${progress}%`;
           commandProgressBar.style.width = progress === null ? "0%" : `${progress}%`;
           commandProgressSteps.replaceChildren();
@@ -3040,18 +3062,18 @@
           });
 
           commandWebsiteTitle.textContent = latestPreview?.title || website.name || website.domain || "Mijn website";
-          commandWebsiteSubtitle.textContent = latestPreview?.changeSummary || website.domain || websiteUrl || "Zodra je domein of preview klaarstaat, verschijnt die hier.";
+          commandWebsiteSubtitle.textContent = latestPreview ? customerPreviewSummary(latestPreview) : website.domain || websiteUrl || "Zodra je domein of preview klaarstaat, verschijnt die hier.";
           commandWebsiteStatus.textContent = latestPreview ? statusLabel(latestPreview.status || "ready_for_review") : friendlyWebsiteStatus(website);
           commandWebsiteStatus.className = `status-badge ${latestPreview?.approvedAt ? "status-active" : latestPreview ? "status-warning" : ["online", "live", "actief", "active"].includes(normalize(website.status)) ? "status-active" : "status-prepared"}`;
           commandWebsitePreview.replaceChildren(createWebsitePreviewFrame(website, project, websiteUrl, latestPreview));
           commandWebsiteMeta.replaceChildren(...(latestPreview ? [
-            createWebsiteMetric("Versie", `Versie ${latestPreview.version || 1}`, "Deze gepubliceerde previewversie."),
-            createWebsiteMetric("Status", statusLabel(latestPreview.status || "ready_for_review"), "Klantreview van deze versie."),
-            createWebsiteMetric("Publicatiedatum", formatDate(latestPreview.publishedAt), "Wanneer Max Webstudio deze versie publiceerde."),
-            createWebsiteMetric("Wijzigingen", latestPreview.changeSummary || "Bekijk de preview voor de laatste wijzigingen.", "Samenvatting voor deze reviewronde."),
+            createWebsiteMetric("Versie", `Versie ${latestPreview.version || 1}`, "Huidige ontwerpversie."),
+            createWebsiteMetric("Status", statusLabel(latestPreview.status || "ready_for_review"), "Reviewstatus."),
+            createWebsiteMetric("Publicatiedatum", formatDate(latestPreview.publishedAt), "Klantzichtbaar sinds."),
+            createWebsiteMetric("Wijzigingen", customerPreviewSummary(latestPreview), "Samenvatting."),
           ] : [
-            createWebsiteMetric("Domein", website.domain || "Nog niet beschikbaar", "Klantzichtbaar webadres."),
-            createWebsiteMetric("Status", friendlyWebsiteStatus(website), "Huidige websitefase."),
+            createWebsiteMetric("Domein", website.domain || "Nog niet beschikbaar", "Webadres."),
+            createWebsiteMetric("Status", friendlyWebsiteStatus(website), "Websitefase."),
             createWebsiteMetric("Oplevering", project.deadline ? formatDate(project.deadline) : "Nog niet beschikbaar", "Alleen als datum bekend is."),
             createWebsiteMetric("Laatste update", formatDate(website.updatedAt || project.updatedAt), "Meest recente wijziging."),
           ]));
@@ -3070,7 +3092,7 @@
           if (!tasks.length) {
             commandTaskList.append(commandItem({
               title: "Je bent helemaal bij",
-              meta: "Wij zijn aan zet. Nieuwe acties verschijnen hier direct.",
+              meta: "Wij zijn aan zet. Je hoeft nu niets te doen.",
               badge: "Rustig",
               tone: "done",
             }));
@@ -3079,12 +3101,12 @@
 
           commandTimelineList.replaceChildren();
           const timeline = buildCommandTimeline({ projects, invoices, messages, changeRequests, notifications, previewVersions });
-          if (!timeline.length) commandTimelineList.append(commandTimelineItem({ title: "Nog geen activiteiten", meta: "Nieuwe projectupdates verschijnen hier." }));
+          if (!timeline.length) commandTimelineList.append(commandTimelineItem({ title: "Geen recente updates", meta: "Nieuwe projectupdates verschijnen hier." }));
           timeline.forEach((item) => commandTimelineList.append(commandTimelineItem(item)));
 
           commandFinanceList.replaceChildren();
           const financeItems = [...invoices, ...quotes].slice(0, 3);
-          if (!financeItems.length) commandFinanceList.append(commandItem({ title: "Geen facturen", meta: "Zodra er iets klaarstaat, zie je het hier." }));
+          if (!financeItems.length) commandFinanceList.append(commandItem({ title: "Geen open facturen", meta: "Je financiële overzicht is bijgewerkt.", tone: "done" }));
           financeItems.forEach((item) => commandFinanceList.append(commandItem({
             title: item.invoiceNumber || item.quoteNumber || item.title || "Factuur",
             meta: `${money(item.total || item.amount)} - ${formatDate(item.paidAt || item.invoiceDate || item.quoteDate || item.createdAt)}`,
@@ -3106,11 +3128,11 @@
             );
             commandFeedbackSummary.append(meter, details);
           } else {
-            commandFeedbackSummary.append(commandItem({ title: "Nog geen reviewronde", meta: "Feedback verschijnt zodra er een ontwerpversie is gepubliceerd.", href: "#website-preview" }));
+            commandFeedbackSummary.append(commandItem({ title: "Geen reviewronde", meta: "Feedback verschijnt zodra er een ontwerpversie is gepubliceerd.", href: "#website-preview" }));
           }
 
           commandMessageList.replaceChildren();
-          if (!messages.length) commandMessageList.append(commandItem({ title: "Geen berichten", meta: "Stel je vraag direct vanuit het portaal.", href: "#berichten" }));
+          if (!messages.length) commandMessageList.append(commandItem({ title: "Geen berichten", meta: "Je hebt momenteel geen open communicatie.", href: "#berichten", tone: "done" }));
           messages.slice(0, 3).forEach((message) => commandMessageList.append(commandItem({
             title: message.subject || message.title || "Bericht",
             meta: `${message.sender || "Max Webstudio"} - ${formatDate(message.createdAt)}`,
@@ -3120,7 +3142,7 @@
           if (latestMessage) portalSubtitle.textContent = `${customer.company || customer.email || "Jouw project"} - laatste bericht: ${latestMessage.subject || latestMessage.title || "update"}.`;
 
           commandChangeList.replaceChildren();
-          if (!changeRequests.length) commandChangeList.append(commandItem({ title: "Geen wijzigingsverzoeken", meta: "Vraag direct iets aan wanneer je wilt.", href: "#wijzigingen" }));
+          if (!changeRequests.length) commandChangeList.append(commandItem({ title: "Geen wijzigingsverzoeken", meta: "Er staat geen losse wijziging open.", href: "#wijzigingen", tone: "done" }));
           changeRequests.slice(0, 3).forEach((request) => commandChangeList.append(commandItem({
             title: request.title || "Wijzigingsverzoek",
             meta: `Aangemaakt ${formatDate(request.createdAt || request.created_at)}`,
@@ -3138,7 +3160,7 @@
                 ...brandingState.downloadAssets.filter((asset) => asset.projectId === brandingProject.id),
               ].slice(0, 4)
             : [];
-          if (!brandAssets.length) commandBrandingList.append(commandItem({ title: "Nog geen assets", meta: "Logo's, kleuren en downloads verschijnen zodra ze beschikbaar zijn.", href: "#branding" }));
+          if (!brandAssets.length) commandBrandingList.append(commandItem({ title: "Geen brandingbestanden", meta: "Bestanden verschijnen zodra ze veilig beschikbaar zijn.", href: "#branding" }));
           brandAssets.forEach((asset) => commandBrandingList.append(commandItem({
             title: asset.assetName || asset.title || asset.label || "Branding asset",
             meta: asset.format || asset.type || "Asset",
