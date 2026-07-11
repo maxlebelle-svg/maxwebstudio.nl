@@ -103,7 +103,7 @@ async function publishPreviewVersion(context, payload = {}) {
   const selectedWebsite = await readSingle(context, "websites", `select=${websiteFields}&id=eq.${websiteId}&limit=1`);
   if (!selectedWebsite?.id) throw previewError("PREVIEW_WEBSITE_MISMATCH", "Website niet gevonden.", 404);
   if (selectedCustomerId && selectedCustomerId !== cleanText(selectedWebsite.customer_id)) {
-    throw previewError("PREVIEW_CUSTOMER_MISMATCH", "Deze website hoort niet bij de geselecteerde klant.", 409);
+    return jsonResponse(409, { success: false, code: "PREVIEW_CUSTOMER_MISMATCH", error: "Deze website hoort niet bij de geselecteerde klant." });
   }
 
   const version = previewVersionId
@@ -183,7 +183,12 @@ async function findPreviewVersionsForWebsite(context, selection = {}) {
   const merged = dedupeById([...modern, ...legacy, ...unlinked]);
   const annotated = [];
   for (const version of merged) {
-    const ownership = await resolveOwnership(context, version, selection, { quiet: true });
+    let ownership = null;
+    try {
+      ownership = await resolveOwnership(context, version, selection, { quiet: true });
+    } catch (error) {
+      ownership = { resolvable: false, code: error.code || "PREVIEW_OWNERSHIP_UNRESOLVED", reason: safeError(error) };
+    }
     annotated.push({ ...version, _ownership: ownership });
   }
   return annotated.sort((a, b) => Number(b.version || 0) - Number(a.version || 0));
