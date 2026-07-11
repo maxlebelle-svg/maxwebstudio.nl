@@ -71,7 +71,10 @@ async function savePreviewFeedback(context, customer, authUser, version, payload
   const idempotencyKey = cleanText(payload.idempotencyKey || payload.idempotency_key) || hashText([version.id, authUser.id, comment].join(":"));
   const currentItems = Array.isArray(version.feedback_items) ? version.feedback_items : [];
   const existing = currentItems.find((item) => cleanText(item.idempotencyKey) === idempotencyKey);
-  if (existing) return jsonResponse(200, { success: true, duplicate: true, previewVersion: sanitizeClientVersion(version), feedback: sanitizeFeedbackItem(existing) });
+  if (existing) {
+    await ensureFeedbackSideEffects(context, customer, authUser, version, existing);
+    return jsonResponse(200, { success: true, duplicate: true, previewVersion: sanitizeClientVersion(version), feedback: sanitizeFeedbackItem(existing) });
+  }
 
   const now = new Date().toISOString();
   const feedback = {
@@ -94,6 +97,11 @@ async function savePreviewFeedback(context, customer, authUser, version, payload
     updated_at: now,
   });
   const updated = rows[0] || { ...version, feedback_items: nextItems, status: "feedback_received" };
+  await ensureFeedbackSideEffects(context, customer, authUser, version, feedback);
+  return jsonResponse(200, { success: true, previewVersion: sanitizeClientVersion(updated), feedback: sanitizeFeedbackItem(feedback) });
+}
+
+async function ensureFeedbackSideEffects(context, customer, authUser, version, feedback) {
   await createChangeRequestForFeedback(context, customer, authUser, version, feedback);
   await safeTimeline({
     customerId: customer.id,
@@ -108,7 +116,6 @@ async function savePreviewFeedback(context, customer, authUser, version, payload
     severity: feedback.priority === "hoog" ? "warning" : "info",
     metadata: { dedupeKey: `preview_feedback:${feedback.id}`, previewVersionId: version.id, websiteId: version.website_id || "" },
   });
-  return jsonResponse(200, { success: true, previewVersion: sanitizeClientVersion(updated), feedback: sanitizeFeedbackItem(feedback) });
 }
 
 async function approvePreviewVersion(context, customer, authUser, version, payload) {
@@ -250,7 +257,10 @@ function sanitizeFeedbackItem(item = {}) {
 
 async function createChangeRequestForFeedback(context, customer, authUser, version, feedback) {
   try {
-    await insertRows(context, "change_requests", {
+    const existing = await findChangeRequestForFeedback(context, version.id, feedback.id);
+    if (existing?.id) return existing;
+    const category = feedback.category || "preview-feedback";
+    const record = {
       customer_id: customer.id,
       auth_user_id: authUser.id,
       website_id: version.website_id || null,
@@ -260,10 +270,18 @@ async function createChangeRequestForFeedback(context, customer, authUser, versi
       email: customer.email || authUser.email || "",
       title: `Feedback op preview V${version.version || 1}`,
       description: feedback.comment,
-      category: feedback.category || "preview-feedback",
+      category,
+      change_category: category,
       priority: feedback.priority || "normaal",
       status: "nieuw",
       source: "preview_review",
+      first_name: firstName(customer.name || authUser.email || "Klant"),
+      last_name: lastName(customer.name || authUser.email || "Klant"),
+      company_name: customer.company || customer.company_name || "",
+      phone: customer.phone || "",
+      website: version.website_id || "",
+      care_plan: "preview-review",
+      internal_classification: "handmatig beoordelen",
       metadata: {
         previewVersionId: version.id,
         feedbackId: feedback.id,
@@ -271,10 +289,54 @@ async function createChangeRequestForFeedback(context, customer, authUser, versi
         section: feedback.section,
         screenshot: feedback.screenshot,
       },
-    });
+    };
+    return await insertCompatibleChangeRequest(context, record);
   } catch (error) {
     console.error("Preview feedback change request skipped", { message: error.message });
+    return null;
   }
+}
+
+async function insertCompatibleChangeRequest(context, record) {
+  const modernRecord = { ...record };
+  delete modernRecord.change_category;
+  delete modernRecord.first_name;
+  delete modernRecord.last_name;
+  delete modernRecord.company_name;
+  delete modernRecord.phone;
+  delete modernRecord.website;
+  delete modernRecord.care_plan;
+  delete modernRecord.internal_classification;
+
+  const legacyRecord = { ...record };
+  delete legacyRecord.customer_id;
+  delete legacyRecord.auth_user_id;
+  delete legacyRecord.website_id;
+  delete legacyRecord.project_id;
+  delete legacyRecord.category;
+
+  let lastError = null;
+  for (const candidate of [record, modernRecord, legacyRecord]) {
+    try {
+      const rows = await insertRows(context, "change_requests", candidate);
+      return Array.isArray(rows) ? rows[0] : rows;
+    } catch (error) {
+      if (!isMissingChangeRequestColumn(error)) throw error;
+      lastError = error;
+    }
+  }
+  throw lastError || new Error("Wijzigingsverzoek kon niet worden aangemaakt.");
+}
+
+async function findChangeRequestForFeedback(context, previewVersionId, feedbackId) {
+  const rows = await readRows(context, "change_requests", [
+    "select=id,metadata,source",
+    "source=eq.preview_review",
+    `metadata->>previewVersionId=eq.${encodeURIComponent(previewVersionId)}`,
+    `metadata->>feedbackId=eq.${encodeURIComponent(feedbackId)}`,
+    "limit=1",
+  ].join("&"));
+  return Array.isArray(rows) ? rows[0] || null : null;
 }
 
 async function safeTimeline(input) {
@@ -334,6 +396,23 @@ function cleanText(value = "") {
 function isMissingPreviewSchema(error = {}) {
   const text = [error.message, error.details, error.code].map((value) => cleanText(value).toLowerCase()).join(" ");
   return text.includes("website_preview_versions") || text.includes("schema cache") || text.includes("pgrst205");
+}
+
+function isMissingChangeRequestColumn(error = {}) {
+  const text = [error.message, error.details, error.code].map((value) => cleanText(value).toLowerCase()).join(" ");
+  return text.includes("schema cache")
+    || text.includes("column")
+    || text.includes("change_requests")
+    || text.includes("null value in column");
+}
+
+function firstName(value = "") {
+  return cleanText(value).split(/\s+/).filter(Boolean)[0] || "Klant";
+}
+
+function lastName(value = "") {
+  const parts = cleanText(value).split(/\s+/).filter(Boolean);
+  return parts.length > 1 ? parts.slice(1).join(" ") : "-";
 }
 
 function jsonResponse(statusCode, body) {
