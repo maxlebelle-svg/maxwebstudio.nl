@@ -179,7 +179,8 @@ async function findPreviewVersionsForWebsite(context, selection = {}) {
   );
 
   const legacy = customerId ? await readLegacyPreviewVersions(context, { customerId }) : [];
-  const merged = dedupeById([...modern, ...legacy]);
+  const unlinked = legacy.length ? [] : await readRecentUnlinkedFactoryPreviewVersions(context);
+  const merged = dedupeById([...modern, ...legacy, ...unlinked]);
   const annotated = [];
   for (const version of merged) {
     const ownership = await resolveOwnership(context, version, selection, { quiet: true });
@@ -197,6 +198,14 @@ async function readLegacyPreviewVersions(context, { customerId }) {
     `select=${previewVersionFields}&demo_journey_id=in.(${journeyIds.map(encodeURIComponent).join(",")})&order=version.desc`
   );
   return rows.filter((row) => !cleanText(row.website_id));
+}
+
+async function readRecentUnlinkedFactoryPreviewVersions(context) {
+  return readRows(
+    context,
+    "website_preview_versions",
+    `select=${previewVersionFields}&website_id=is.null&customer_id=is.null&order=created_at.desc&limit=50`
+  );
 }
 
 async function readLegacyJourneyIdsForCustomer(context, customerId) {
@@ -284,7 +293,7 @@ async function resolveLegacyOwnership(context, version = {}, selection = {}) {
     [lead?.customer_id, lead?.converted_customer_id, buildJob?.lead_id === lead?.id ? lead?.customer_id : ""].map(uuidOrEmpty).filter(Boolean).forEach((id) => customerIds.add(id));
   }
   const fallbackCustomerId = customerIds.size === 0
-    ? await resolveLegacyCustomerFromSelection(context, journey, selection)
+    ? await resolveExplicitLegacyCustomerFromSelection(context, journey, selection)
     : "";
   if (customerIds.size !== 1 && !fallbackCustomerId) throw previewError("PREVIEW_OWNERSHIP_UNRESOLVED", "Deze preview kan nog niet veilig aan deze klant worden gekoppeld.", 409);
   const customerId = fallbackCustomerId || [...customerIds][0];
@@ -393,6 +402,17 @@ async function resolveLegacyCustomerFromSelection(context, journey = {}, selecti
   if (!project?.id || cleanText(project.customer_id) !== selectedCustomerId || cleanText(project.website_id) !== cleanText(selection.selectedWebsite.id)) return "";
   const customer = await readSingle(context, "customers", `select=${customerFields}&id=eq.${encodeURIComponent(selectedCustomerId)}&limit=1`);
   if (!legacyJourneyMatchesCustomer(journey, customer)) return "";
+  return selectedCustomerId;
+}
+
+async function resolveExplicitLegacyCustomerFromSelection(context, journey = {}, selection = {}) {
+  const identityCustomerId = await resolveLegacyCustomerFromSelection(context, journey, selection);
+  if (identityCustomerId) return identityCustomerId;
+  const selectedCustomerId = uuidOrEmpty(selection.selectedCustomerId);
+  if (!selectedCustomerId || !selection.selectedWebsite?.id || !selection.selectedProjectId) return "";
+  if (cleanText(selection.selectedWebsite.customer_id) !== selectedCustomerId) return "";
+  const project = await readSingle(context, "projects", `select=${projectFields}&id=eq.${encodeURIComponent(selection.selectedProjectId)}&limit=1`);
+  if (!project?.id || cleanText(project.customer_id) !== selectedCustomerId || cleanText(project.website_id) !== cleanText(selection.selectedWebsite.id)) return "";
   return selectedCustomerId;
 }
 

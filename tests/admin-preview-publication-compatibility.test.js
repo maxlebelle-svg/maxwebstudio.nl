@@ -235,6 +235,8 @@ async function run() {
   tables.leads = [{ id: ids.leadA }];
   tables.demo_journeys[0].customer_id = null;
   tables.website_build_jobs[0].customer_id = null;
+  tables.demo_journeys[0].email = "";
+  tables.demo_journeys[0].website_url = "";
   global.__missingLeadCustomerColumns = true;
   writes = installFetchMock(tables);
   const orphanVersions = await _private.findPreviewVersionsForWebsite(context(), {
