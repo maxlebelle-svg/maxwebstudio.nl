@@ -2300,19 +2300,28 @@
           status.className = "portal-website-status-row";
           const online = ["online", "live", "actief", "active"].includes(normalize(website.status));
           const hostingActive = Boolean(website.hostingPackage || website.carePackage || website.hostingStatus || online);
-          status.append(
-            createWebsiteStatusPill("Status", friendlyWebsiteStatus(website), online ? "active" : "prepared"),
-            createWebsiteStatusPill("Hosting", hostingActive ? "Actief" : "Voorbereid", hostingActive ? "active" : "prepared"),
-            createWebsiteStatusPill("Beveiliging", friendlySafetyStatus(website), "active"),
-            createWebsiteStatusPill("Laatste update", lastUpdate, "prepared")
-          );
+          if (latestPreview) {
+            status.append(
+              createWebsiteStatusPill("Status", statusLabel(latestPreview.status || "ready_for_review"), "prepared"),
+              createWebsiteStatusPill("Versie", `Versie ${latestPreview.version || 1}`, "prepared"),
+              createWebsiteStatusPill("Publicatiedatum", formatDate(latestPreview.publishedAt), "prepared"),
+              createWebsiteStatusPill("Review", latestPreview.approvedAt ? "Goedgekeurd" : "Open", latestPreview.approvedAt ? "active" : "prepared")
+            );
+          } else {
+            status.append(
+              createWebsiteStatusPill("Status", friendlyWebsiteStatus(website), online ? "active" : "prepared"),
+              createWebsiteStatusPill("Hosting", hostingActive ? "Actief" : "Voorbereid", hostingActive ? "active" : "prepared"),
+              createWebsiteStatusPill("Beveiliging", friendlySafetyStatus(website), "active"),
+              createWebsiteStatusPill("Laatste update", lastUpdate, "prepared")
+            );
+          }
           const kicker = document.createElement("p");
           kicker.className = "section-kicker";
           kicker.textContent = "Mijn website";
           const title = document.createElement("h3");
-          title.textContent = website.name || website.domain || "Jouw website";
+          title.textContent = latestPreview?.title || website.name || website.domain || "Jouw website";
           const intro = document.createElement("p");
-          intro.textContent = "Je ziet hier in gewone taal hoe je website ervoor staat, wat Max Webstudio bewaakt en welke actie je direct kunt nemen.";
+          intro.textContent = latestPreview?.changeSummary || "Je ziet hier in gewone taal hoe je website ervoor staat, wat Max Webstudio bewaakt en welke actie je direct kunt nemen.";
           const urlRow = createWebsiteUrlRow(websiteUrl);
           const actions = document.createElement("div");
           actions.className = "portal-today-actions";
@@ -2329,16 +2338,27 @@
 
           const metricsWrap = document.createElement("div");
           metricsWrap.className = "portal-website-metrics";
-          metricsWrap.append(
-            createWebsiteMetric("Status", friendlyWebsiteStatus(website), "Je website is bereikbaar voor bezoekers."),
-            createWebsiteMetric("Domein", website.domain || "Nog niet gekoppeld", "Het webadres dat klanten gebruiken."),
-            createWebsiteMetric("Hosting", website.hostingPackage || website.carePackage ? "Actief" : "Voorbereid", "De technische basis wordt beheerd."),
-            createWebsiteMetric("Beveiliging", friendlySafetyStatus(website), "Veilig uitgelegd zonder technische details."),
-            createWebsiteMetric("Laatste update", lastUpdate, "Meest recente bekende wijziging."),
-            createWebsiteMetric("Backup", backupLabel, "Herstelbasis voor noodgevallen."),
-            createWebsiteMetric("Snelheid", speedScore ? `${Math.max(0, Math.min(speedScore, 100))}/100` : "Nog niet beschikbaar", "Alleen zichtbaar zodra er een echte meting is."),
-            createWebsiteMetric("SEO", seoScore ? `${Math.max(0, Math.min(seoScore, 100))}/100` : "Nog niet beschikbaar", "Alleen zichtbaar zodra er een echte meting is.")
-          );
+          if (latestPreview) {
+            metricsWrap.append(
+              createWebsiteMetric("Versie", `Versie ${latestPreview.version || 1}`, "Deze gepubliceerde previewversie."),
+              createWebsiteMetric("Status", statusLabel(latestPreview.status || "ready_for_review"), "Klantreview van deze versie."),
+              createWebsiteMetric("Publicatiedatum", formatDate(latestPreview.publishedAt), "Wanneer Max Webstudio deze versie publiceerde."),
+              createWebsiteMetric("Wijzigingen", latestPreview.changeSummary || "Bekijk de preview voor de laatste wijzigingen.", "Samenvatting voor deze reviewronde."),
+              createWebsiteMetric("Domein", website.domain || "Nog niet gekoppeld", "Het webadres dat klanten gebruiken."),
+              createWebsiteMetric("Laatste update", lastUpdate, "Meest recente bekende wijziging.")
+            );
+          } else {
+            metricsWrap.append(
+              createWebsiteMetric("Status", friendlyWebsiteStatus(website), "Je website is bereikbaar voor bezoekers."),
+              createWebsiteMetric("Domein", website.domain || "Nog niet gekoppeld", "Het webadres dat klanten gebruiken."),
+              createWebsiteMetric("Hosting", website.hostingPackage || website.carePackage ? "Actief" : "Voorbereid", "De technische basis wordt beheerd."),
+              createWebsiteMetric("Beveiliging", friendlySafetyStatus(website), "Veilig uitgelegd zonder technische details."),
+              createWebsiteMetric("Laatste update", lastUpdate, "Meest recente bekende wijziging."),
+              createWebsiteMetric("Backup", backupLabel, "Herstelbasis voor noodgevallen."),
+              createWebsiteMetric("Snelheid", speedScore ? `${Math.max(0, Math.min(speedScore, 100))}/100` : "Nog niet beschikbaar", "Alleen zichtbaar zodra er een echte meting is."),
+              createWebsiteMetric("SEO", seoScore ? `${Math.max(0, Math.min(seoScore, 100))}/100` : "Nog niet beschikbaar", "Alleen zichtbaar zodra er een echte meting is.")
+            );
+          }
 
           const detailColumn = document.createElement("div");
           detailColumn.className = "portal-website-detail-column";
@@ -2558,12 +2578,17 @@
           commandWebsiteStatus.textContent = latestPreview ? statusLabel(latestPreview.status || "ready_for_review") : friendlyWebsiteStatus(website);
           commandWebsiteStatus.className = `status-badge ${latestPreview ? "status-warning" : ["online", "live", "actief", "active"].includes(normalize(website.status)) ? "status-active" : "status-prepared"}`;
           commandWebsitePreview.replaceChildren(createWebsitePreviewFrame(website, project, websiteUrl, latestPreview));
-          commandWebsiteMeta.replaceChildren(
+          commandWebsiteMeta.replaceChildren(...(latestPreview ? [
+            createWebsiteMetric("Versie", `Versie ${latestPreview.version || 1}`, "Deze gepubliceerde previewversie."),
+            createWebsiteMetric("Status", statusLabel(latestPreview.status || "ready_for_review"), "Klantreview van deze versie."),
+            createWebsiteMetric("Publicatiedatum", formatDate(latestPreview.publishedAt), "Wanneer Max Webstudio deze versie publiceerde."),
+            createWebsiteMetric("Wijzigingen", latestPreview.changeSummary || "Bekijk de preview voor de laatste wijzigingen.", "Samenvatting voor deze reviewronde."),
+          ] : [
             createWebsiteMetric("Domein", website.domain || "Nog niet beschikbaar", "Klantzichtbaar webadres."),
             createWebsiteMetric("Status", friendlyWebsiteStatus(website), "Huidige websitefase."),
             createWebsiteMetric("Oplevering", project.deadline ? formatDate(project.deadline) : "Nog niet beschikbaar", "Alleen als datum bekend is."),
-            createWebsiteMetric("Laatste update", formatDate(website.updatedAt || project.updatedAt), "Meest recente wijziging.")
-          );
+            createWebsiteMetric("Laatste update", formatDate(website.updatedAt || project.updatedAt), "Meest recente wijziging."),
+          ]));
           commandWebsiteActions.replaceChildren();
           if (latestPreview?.safePreviewPath) {
             commandWebsiteActions.append(createWebsiteAction("Ontwerp bekijken", latestPreview.safePreviewPath, true));
