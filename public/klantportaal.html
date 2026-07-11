@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex, nofollow" />
-    <title>Klantportaal | Max Webstudio</title>
-    <meta name="description" content="Klantportaal voor Max Webstudio klanten met websites, wijzigingen, berichten en facturen." />
+    <title>Project Command Center | Max Webstudio</title>
+    <meta name="description" content="Project Command Center voor Max Webstudio klanten met projectstatus, website, acties, berichten en facturen." />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -15,12 +15,12 @@
   <body class="portal-body">
     <main class="portal-app customer-portal-demo">
       <aside class="portal-sidebar" aria-label="Klantportaal menu">
-        <a class="portal-sidebar-brand" href="#vandaag" aria-label="Max Webstudio klantportaal">
+        <a class="portal-sidebar-brand" href="#command-center" aria-label="Max Webstudio Project Command Center">
           <img src="max-webstudio-logo-mark.svg" alt="" aria-hidden="true" />
-          <strong>Max Klantportaal</strong>
+          <strong>Project Command Center</strong>
         </a>
         <nav class="portal-nav" aria-label="Klantportaal navigatie">
-          <a href="#vandaag">Vandaag</a>
+          <a href="#command-center">Dashboard</a>
           <a href="#onboarding">Onboarding</a>
           <a href="#branding">Branding</a>
           <a href="#mijn-website">Mijn website</a>
@@ -52,9 +52,9 @@
       <div class="portal-main">
         <header class="portal-header">
           <div>
-            <p class="section-kicker">Max Webstudio klantportaal</p>
-            <h1 id="portal-title">Klantportaal laden...</h1>
-            <p id="portal-subtitle">Je persoonlijke overzicht voor website, berichten, wijzigingen en facturen.</p>
+            <p class="section-kicker">Max Webstudio Project Command Center</p>
+            <h1 id="portal-title">Command Center laden...</h1>
+            <p id="portal-subtitle">Je centrale overzicht voor project, website, acties, berichten en facturen.</p>
           </div>
           <div class="portal-actions">
             <a class="button secondary" href="#berichten">Bericht sturen</a>
@@ -65,7 +65,7 @@
 
         <section class="portal-status-strip" aria-label="Klantportaal status">
           <section class="portal-message" id="portal-source-message" role="note">
-            <strong>Klantportaal</strong>
+            <strong>Command Center</strong>
             <span id="portal-source-text">Je klantomgeving wordt veilig geladen. Zonder geldige sessie tonen we geen klantgegevens.</span>
           </section>
           <section class="portal-message" id="portal-auth-message" role="note" hidden>
@@ -74,6 +74,82 @@
           </section>
           <span class="status-badge status-prepared" id="portal-source-badge">Portaal laden</span>
           <a class="button secondary" href="index.html">Terug naar website</a>
+        </section>
+
+        <section class="portal-command-center" id="command-center" aria-labelledby="command-center-title">
+          <div class="portal-command-intro">
+            <p class="section-kicker">Project Command Center</p>
+            <h2 id="command-center-title">Alles wat Max Webstudio voor je bedrijf doet.</h2>
+            <p id="command-center-subtitle">Je projectstatus, website, acties, berichten en facturen staan hier bij elkaar.</p>
+          </div>
+
+          <section class="portal-next-step-card" id="portal-command-next-step" aria-label="Jouw volgende stap">
+            <span>Jouw volgende stap</span>
+            <strong id="command-next-title">We laden je volgende actie.</strong>
+            <p id="command-next-text">Zodra je klantdata is geladen, zie je hier wat nu belangrijk is.</p>
+            <div class="portal-actions" id="command-next-actions"></div>
+          </section>
+
+          <div class="portal-command-shell">
+            <section class="portal-command-main" aria-label="Project en website">
+              <article class="portal-command-card portal-progress-card" id="portal-command-progress">
+                <div class="portal-command-card-head">
+                  <div>
+                    <span>Projectvoortgang</span>
+                    <h3 id="command-progress-title">Project wordt geladen</h3>
+                    <p id="command-progress-subtitle">We halen je projectfase op.</p>
+                  </div>
+                  <strong id="command-progress-value">0%</strong>
+                </div>
+                <div class="portal-command-progressbar" aria-hidden="true"><span id="command-progress-bar"></span></div>
+                <div class="portal-command-steps" id="command-progress-steps"></div>
+              </article>
+
+              <article class="portal-command-card portal-command-website" id="portal-command-website">
+                <div class="portal-command-card-head">
+                  <div>
+                    <span>Website</span>
+                    <h3 id="command-website-title">Website wordt geladen</h3>
+                    <p id="command-website-subtitle">Domein, status en preview verschijnen hier.</p>
+                  </div>
+                  <mark class="status-badge status-prepared" id="command-website-status">Laden</mark>
+                </div>
+                <div id="command-website-preview"></div>
+                <div class="portal-command-meta" id="command-website-meta"></div>
+                <div class="portal-actions" id="command-website-actions"></div>
+              </article>
+
+              <section class="portal-command-lower" aria-label="Overzicht">
+                <article class="portal-command-card" id="portal-command-finance">
+                  <div class="portal-command-card-head"><div><span>Facturen</span><h3>Facturen</h3></div><a href="#facturen">Alles bekijken</a></div>
+                  <div class="portal-command-list" id="command-finance-list"></div>
+                </article>
+                <article class="portal-command-card" id="portal-command-timeline">
+                  <div class="portal-command-card-head"><div><span>Tijdlijn</span><h3>Recente activiteiten</h3></div><a href="#berichten">Open communicatie</a></div>
+                  <div class="portal-command-timeline-list" id="command-timeline-list"></div>
+                </article>
+              </section>
+            </section>
+
+            <aside class="portal-command-side" aria-label="Acties en communicatie">
+              <article class="portal-command-card">
+                <div class="portal-command-card-head"><div><span>Acties</span><h3>Taken voor jou</h3></div></div>
+                <div class="portal-command-task-list" id="command-task-list"></div>
+              </article>
+              <article class="portal-command-card">
+                <div class="portal-command-card-head"><div><span>Berichten</span><h3>Communicatie</h3></div><a href="#berichten">Nieuw bericht</a></div>
+                <div class="portal-command-list" id="command-message-list"></div>
+              </article>
+              <article class="portal-command-card">
+                <div class="portal-command-card-head"><div><span>Branding</span><h3>Branding assets</h3></div><a href="#branding">Naar branding</a></div>
+                <div class="portal-command-branding" id="command-branding-list"></div>
+              </article>
+              <article class="portal-command-card">
+                <div class="portal-command-card-head"><div><span>Wijzigingen</span><h3>Wijzigingsverzoeken</h3></div><a href="#wijzigingen">Nieuwe aanvraag</a></div>
+                <div class="portal-command-list" id="command-change-list"></div>
+              </article>
+            </aside>
+          </div>
         </section>
 
       <section class="portal-today" id="vandaag" aria-labelledby="portal-today-title">
@@ -212,7 +288,7 @@
           <div class="customer-portal-kpis" aria-label="Branding status">
             <article class="admin-card metric-card"><span>Versie</span><strong id="portal-branding-version">1</strong><small>Laatste merkrichting</small></article>
             <article class="admin-card metric-card"><span>Laatste wijziging</span><strong id="portal-branding-updated">-</strong><small>Branding Center</small></article>
-            <article class="admin-card metric-card"><span>Website Factory</span><strong id="portal-branding-factory">Nog niet</strong><small>Koppeling</small></article>
+            <article class="admin-card metric-card"><span>Website</span><strong id="portal-branding-factory">Nog niet</strong><small>Brandingkoppeling</small></article>
           </div>
           <div class="portal-action-grid" id="portal-branding-assets"></div>
           <div class="portal-actions">
@@ -497,6 +573,27 @@
         const fileList = document.getElementById("portal-files");
         const readinessList = document.getElementById("portal-readiness");
         document.getElementById("readiness")?.setAttribute("hidden", "");
+        const commandCenterSubtitle = document.getElementById("command-center-subtitle");
+        const commandNextTitle = document.getElementById("command-next-title");
+        const commandNextText = document.getElementById("command-next-text");
+        const commandNextActions = document.getElementById("command-next-actions");
+        const commandProgressTitle = document.getElementById("command-progress-title");
+        const commandProgressSubtitle = document.getElementById("command-progress-subtitle");
+        const commandProgressValue = document.getElementById("command-progress-value");
+        const commandProgressBar = document.getElementById("command-progress-bar");
+        const commandProgressSteps = document.getElementById("command-progress-steps");
+        const commandWebsiteTitle = document.getElementById("command-website-title");
+        const commandWebsiteSubtitle = document.getElementById("command-website-subtitle");
+        const commandWebsiteStatus = document.getElementById("command-website-status");
+        const commandWebsitePreview = document.getElementById("command-website-preview");
+        const commandWebsiteMeta = document.getElementById("command-website-meta");
+        const commandWebsiteActions = document.getElementById("command-website-actions");
+        const commandTaskList = document.getElementById("command-task-list");
+        const commandTimelineList = document.getElementById("command-timeline-list");
+        const commandFinanceList = document.getElementById("command-finance-list");
+        const commandMessageList = document.getElementById("command-message-list");
+        const commandBrandingList = document.getElementById("command-branding-list");
+        const commandChangeList = document.getElementById("command-change-list");
         const metrics = {
           quotes: document.getElementById("metric-quotes"),
           invoices: document.getElementById("metric-invoices"),
@@ -1173,6 +1270,100 @@
           return card;
         }
 
+        function commandItem({ title = "", meta = "", badge = "", href = "", tone = "" } = {}) {
+          const item = href ? document.createElement("a") : document.createElement("article");
+          item.className = `portal-command-item ${tone ? `is-${tone}` : ""}`.trim();
+          if (href) item.href = href;
+          const body = document.createElement("div");
+          const strong = document.createElement("strong");
+          const small = document.createElement("small");
+          strong.textContent = title || "Update";
+          small.textContent = meta || "";
+          body.append(strong, small);
+          item.append(body);
+          if (badge) {
+            const label = document.createElement("span");
+            label.textContent = badge;
+            item.append(label);
+          }
+          return item;
+        }
+
+        function commandTask({ title = "", meta = "", href = "", tone = "normal" } = {}) {
+          const item = document.createElement("a");
+          item.className = `portal-command-task is-${tone}`;
+          item.href = href || "#berichten";
+          const icon = document.createElement("span");
+          const body = document.createElement("div");
+          const strong = document.createElement("strong");
+          const small = document.createElement("small");
+          const arrow = document.createElement("em");
+          icon.textContent = tone === "high" ? "!" : "✓";
+          strong.textContent = title || "Taak";
+          small.textContent = meta || "Prioriteit: normaal";
+          arrow.textContent = "→";
+          body.append(strong, small);
+          item.append(icon, body, arrow);
+          return item;
+        }
+
+        function commandTimelineItem({ title = "", meta = "", type = "info" } = {}) {
+          const item = document.createElement("article");
+          item.className = `portal-command-timeline-item is-${type}`;
+          const dot = document.createElement("span");
+          const body = document.createElement("div");
+          const strong = document.createElement("strong");
+          const small = document.createElement("small");
+          strong.textContent = title || "Update";
+          small.textContent = meta || "";
+          body.append(strong, small);
+          item.append(dot, body);
+          return item;
+        }
+
+        function projectProgressValue(project = {}) {
+          const explicit = Number(project.progress || 0);
+          if (explicit > 0) return Math.max(0, Math.min(explicit, 100));
+          const status = normalize(project.status || project.phase);
+          if (["live", "afgerond", "completed"].includes(status)) return 100;
+          if (["testen", "review", "in review", "feedback"].includes(status)) return 75;
+          if (["in ontwikkeling", "development"].includes(status)) return 55;
+          if (["in ontwerp", "design"].includes(status)) return 35;
+          if (["onboarding", "intake", "nieuw"].includes(status)) return 18;
+          return 0;
+        }
+
+        function projectStepState(index, progress) {
+          const thresholds = [10, 30, 55, 75, 100];
+          if (progress >= thresholds[index]) return "done";
+          if (progress >= (thresholds[index - 1] || 0)) return "active";
+          return "waiting";
+        }
+
+        function buildCommandTasks({ invoices = [], projects = [], websites = [], messages = [], changeRequests = [], onboarding = null } = {}) {
+          const tasks = [];
+          if (invoices.some((invoice) => !isPaidStatus(invoice.status))) tasks.push({ title: "Factuur bekijken", meta: "Prioriteit: hoog", href: "#facturen", tone: "high" });
+          if (!onboarding || !["submitted", "needs_review", "approved", "sent_to_website_factory"].includes(onboarding.status)) tasks.push({ title: "Projectinput aanvullen", meta: "Teksten, foto's en voorkeuren", href: "#onboarding", tone: "high" });
+          if (!websites.length || !customerVisibleUrl(websites[0]?.liveUrl || websites[0]?.domain)) tasks.push({ title: "Domein of website afstemmen", meta: "Zodra bekend tonen we de link", href: "#mijn-website", tone: "normal" });
+          if (!messages.length) tasks.push({ title: "Vraag stellen aan Max", meta: "Alles blijft bij je project", href: "#berichten", tone: "normal" });
+          if (!changeRequests.length) tasks.push({ title: "Wijziging aanvragen", meta: "Tekst, foto of pagina", href: "#wijzigingen", tone: "normal" });
+          return tasks.slice(0, 4);
+        }
+
+        function buildCommandTimeline({ projects = [], invoices = [], messages = [], changeRequests = [], notifications = [] } = {}) {
+          return [
+            ...projects.map((item) => ({ title: item.name || item.projectName || "Project bijgewerkt", meta: formatDate(item.updatedAt || item.createdAt), type: "project", date: item.updatedAt || item.createdAt })),
+            ...invoices.map((item) => ({ title: isPaidStatus(item.status) ? "Factuur betaald" : "Factuur klaar", meta: `${item.invoiceNumber || "Factuur"} - ${formatDate(item.paidAt || item.invoiceDate || item.createdAt)}`, type: "invoice", date: item.paidAt || item.invoiceDate || item.createdAt })),
+            ...messages.map((item) => ({ title: item.subject || item.title || "Bericht ontvangen", meta: `${item.sender || "Max Webstudio"} - ${formatDate(item.createdAt)}`, type: "message", date: item.createdAt })),
+            ...changeRequests.map((item) => ({ title: item.title || "Wijzigingsverzoek", meta: `${labelForStatus(item.status)} - ${formatDate(item.updatedAt || item.createdAt)}`, type: "change", date: item.updatedAt || item.createdAt })),
+            ...notifications.map((item) => ({ title: item.title || "Update", meta: formatDate(item.createdAt), type: "info", date: item.createdAt })),
+          ]
+            .map((item) => ({ ...item, sortDate: new Date(item.date || 0) }))
+            .filter((item) => !Number.isNaN(item.sortDate.getTime()))
+            .sort((a, b) => b.sortDate.getTime() - a.sortDate.getTime())
+            .slice(0, 6);
+        }
+
         function latestRecord(records = []) {
           return [...records]
             .map((record) => ({
@@ -1211,6 +1402,7 @@
         function showSafePortalFallback(message = "Er is geen geldige klantcontext actief.") {
           [
             ".portal-nav",
+            "#command-center",
             "#vandaag",
             ".portal-action-overview",
             ".customer-portal-kpis",
@@ -1601,7 +1793,7 @@
             submitted: "Ingediend",
             needs_review: "Wacht op review",
             approved: "Goedgekeurd",
-            sent_to_website_factory: "Naar Website Factory",
+            sent_to_website_factory: "Voorbereid voor bouw",
           }[String(value || "").trim()] || "Onboarding";
         }
 
@@ -1870,12 +2062,14 @@
             fillOnboardingForm(data.onboarding, customer);
             renderOnboardingState(data.onboarding);
             renderBrandingCenter(customer, data.onboarding);
+            return data.onboarding;
           } catch (error) {
             fillOnboardingForm({}, customer);
             onboardingStatus.textContent = "Voorbereid";
             onboardingStatus.className = "status-badge status-prepared";
             onboardingSummary.textContent = "Je kunt alvast invullen. Log opnieuw in als opslaan niet lukt.";
             renderBrandingCenter(customer, {});
+            return null;
           }
         }
 
@@ -2145,6 +2339,119 @@
           }
         }
 
+        function renderProjectCommandCenter({ customer, websites, projects, invoices, quotes, changeRequests, messages, notifications, subscriptions, onboarding = null }) {
+          const project = projects[0] || {};
+          const website = websites[0] || {};
+          const progress = projectProgressValue(project);
+          const websiteUrl = customerVisibleUrl(website.liveUrl || website.domain);
+          const nextStep = nextCustomerStep({ websites, projects, invoices, changeRequests, messages });
+          const openInvoice = invoices.find((invoice) => !isPaidStatus(invoice.status));
+          const latestMessage = messages[0] || null;
+
+          commandCenterSubtitle.textContent = `${customer.company || customer.name || "Je bedrijf"}: projectstatus, website, acties en communicatie in één overzicht.`;
+          commandNextTitle.textContent = openInvoice ? "Er staat een factuur klaar" : nextStep;
+          commandNextText.textContent = openInvoice
+            ? `${openInvoice.invoiceNumber || "Factuur"} staat nog open. Je ziet de status en actie direct bij Facturen.`
+            : nextStep === "Nog niet beschikbaar"
+              ? "Er is op dit moment geen concrete actie voor jou bekend."
+              : "Dit is de belangrijkste stap om je project verder te brengen.";
+          commandNextActions.replaceChildren();
+          if (openInvoice) commandNextActions.append(createWebsiteAction("Bekijk facturen", "#facturen", true));
+          else if (nextStep.includes("onboarding") || nextStep.includes("Rond")) commandNextActions.append(createWebsiteAction("Projectinput openen", "#onboarding", true));
+          else if (nextStep.includes("website")) commandNextActions.append(createWebsiteAction("Website bekijken", websiteUrl || "#mijn-website", true));
+          else commandNextActions.append(createWebsiteAction("Bericht sturen", "#berichten", true));
+
+          commandProgressTitle.textContent = project.name || project.projectName || "Websiteproject";
+          commandProgressSubtitle.textContent = project.phase || project.status ? `${labelForStatus(project.phase || project.status)} - ${nextStep}` : "Nog geen projectfase beschikbaar.";
+          commandProgressValue.textContent = `${progress}%`;
+          commandProgressBar.style.width = `${progress}%`;
+          commandProgressSteps.replaceChildren();
+          ["Kennismaking", "Design & structuur", "Content aanleveren", "Ontwikkeling", "Testen & oplevering"].forEach((label, index) => {
+            const state = projectStepState(index, progress);
+            const step = document.createElement("article");
+            step.className = `portal-command-step is-${state}`;
+            const number = document.createElement("span");
+            const title = document.createElement("strong");
+            const status = document.createElement("small");
+            number.textContent = state === "done" ? "✓" : String(index + 1);
+            title.textContent = label;
+            status.textContent = state === "done" ? "Voltooid" : state === "active" ? "In behandeling" : "Wachtend";
+            step.append(number, title, status);
+            commandProgressSteps.append(step);
+          });
+
+          commandWebsiteTitle.textContent = website.name || website.domain || "Mijn website";
+          commandWebsiteSubtitle.textContent = website.domain || websiteUrl || "Zodra je domein of preview klaarstaat, verschijnt die hier.";
+          commandWebsiteStatus.textContent = friendlyWebsiteStatus(website);
+          commandWebsiteStatus.className = `status-badge ${["online", "live", "actief", "active"].includes(normalize(website.status)) ? "status-active" : "status-prepared"}`;
+          commandWebsitePreview.replaceChildren(createWebsitePreviewFrame(website, project, websiteUrl));
+          commandWebsiteMeta.replaceChildren(
+            createWebsiteMetric("Domein", website.domain || "Nog niet beschikbaar", "Klantzichtbaar webadres."),
+            createWebsiteMetric("Status", friendlyWebsiteStatus(website), "Huidige websitefase."),
+            createWebsiteMetric("Oplevering", project.deadline ? formatDate(project.deadline) : "Nog niet beschikbaar", "Alleen als datum bekend is."),
+            createWebsiteMetric("Laatste update", formatDate(website.updatedAt || project.updatedAt), "Meest recente wijziging.")
+          );
+          commandWebsiteActions.replaceChildren();
+          if (websiteUrl) commandWebsiteActions.append(createWebsiteAction("Website bekijken", websiteUrl, true));
+          commandWebsiteActions.append(createWebsiteAction("Wijziging aanvragen", "#wijzigingen"));
+
+          commandTaskList.replaceChildren();
+          buildCommandTasks({ invoices, projects, websites, messages, changeRequests, onboarding }).forEach((task) => commandTaskList.append(commandTask(task)));
+
+          commandTimelineList.replaceChildren();
+          const timeline = buildCommandTimeline({ projects, invoices, messages, changeRequests, notifications });
+          if (!timeline.length) commandTimelineList.append(commandTimelineItem({ title: "Nog geen activiteiten", meta: "Nieuwe projectupdates verschijnen hier." }));
+          timeline.forEach((item) => commandTimelineList.append(commandTimelineItem(item)));
+
+          commandFinanceList.replaceChildren();
+          const financeItems = [...invoices, ...quotes].slice(0, 3);
+          if (!financeItems.length) commandFinanceList.append(commandItem({ title: "Geen facturen", meta: "Zodra er iets klaarstaat, zie je het hier." }));
+          financeItems.forEach((item) => commandFinanceList.append(commandItem({
+            title: item.invoiceNumber || item.quoteNumber || item.title || "Factuur",
+            meta: `${money(item.total || item.amount)} - ${formatDate(item.paidAt || item.invoiceDate || item.quoteDate || item.createdAt)}`,
+            badge: isPaidStatus(item.status) ? "Betaald" : labelForStatus(item.status || "Open"),
+            href: item.invoiceNumber ? "#facturen" : "#facturen",
+            tone: isPaidStatus(item.status) ? "done" : "attention",
+          })));
+
+          commandMessageList.replaceChildren();
+          if (!messages.length) commandMessageList.append(commandItem({ title: "Geen berichten", meta: "Stel je vraag direct vanuit het portaal.", href: "#berichten" }));
+          messages.slice(0, 3).forEach((message) => commandMessageList.append(commandItem({
+            title: message.subject || message.title || "Bericht",
+            meta: `${message.sender || "Max Webstudio"} - ${formatDate(message.createdAt)}`,
+            badge: message.senderType === "customer" ? "Van jou" : "Van ons",
+            href: "#berichten",
+          })));
+          if (latestMessage) portalSubtitle.textContent = `${customer.company || customer.email || "Jouw project"} - laatste bericht: ${latestMessage.subject || latestMessage.title || "update"}.`;
+
+          commandChangeList.replaceChildren();
+          if (!changeRequests.length) commandChangeList.append(commandItem({ title: "Geen wijzigingsverzoeken", meta: "Vraag direct iets aan wanneer je wilt.", href: "#wijzigingen" }));
+          changeRequests.slice(0, 3).forEach((request) => commandChangeList.append(commandItem({
+            title: request.title || "Wijzigingsverzoek",
+            meta: `Aangemaakt ${formatDate(request.createdAt || request.created_at)}`,
+            badge: labelForStatus(request.status || "nieuw"),
+            href: "#wijzigingen",
+          })));
+
+          commandBrandingList.replaceChildren();
+          const brandingState = loadBrandingState();
+          const ids = [customer.id, customer.customerId, customer.company].filter(Boolean).map(String);
+          const brandingProject = brandingState.projects.find((item) => ids.includes(String(item.customerId || item.id || "")) || String(item.companyName || "").toLowerCase() === String(customer.company || "").toLowerCase());
+          const brandAssets = brandingProject
+            ? [
+                ...brandingState.logoAssets.filter((asset) => asset.projectId === brandingProject.id),
+                ...brandingState.downloadAssets.filter((asset) => asset.projectId === brandingProject.id),
+              ].slice(0, 4)
+            : [];
+          if (!brandAssets.length) commandBrandingList.append(commandItem({ title: "Nog geen assets", meta: "Logo's, kleuren en downloads verschijnen zodra ze beschikbaar zijn.", href: "#branding" }));
+          brandAssets.forEach((asset) => commandBrandingList.append(commandItem({
+            title: asset.assetName || asset.title || asset.label || "Branding asset",
+            meta: asset.format || asset.type || "Asset",
+            badge: labelForStatus(asset.status || "klaar"),
+            href: "#branding",
+          })));
+        }
+
         function quoteUrl(quote) {
           const query = new URLSearchParams();
           if (quote.id) query.set("quoteId", quote.id);
@@ -2383,7 +2690,8 @@
           ["Klant sinds", formatDate(customer.customerSince || customer.createdAt)],
         ]));
 
-        await loadCustomerOnboarding(customer);
+        const onboardingState = await loadCustomerOnboarding(customer);
+        renderProjectCommandCenter({ customer, websites, projects, invoices, quotes, changeRequests, messages, notifications, subscriptions, onboarding: onboardingState });
         onboardingSave.addEventListener("click", () => saveOnboarding("save"));
         onboardingForm.addEventListener("submit", (event) => {
           event.preventDefault();
