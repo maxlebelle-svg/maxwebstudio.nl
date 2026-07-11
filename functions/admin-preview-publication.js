@@ -4,6 +4,40 @@ const { createTimelineEvent } = require("./services/timelineService");
 
 const adminRoles = ["super_admin", "admin", "sales_manager"];
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const previewVersionFields = [
+  "id",
+  "customer_id",
+  "project_id",
+  "website_id",
+  "demo_journey_id",
+  "build_job_id",
+  "version",
+  "title",
+  "customer_summary",
+  "change_summary",
+  "safe_preview_path",
+  "preview_url",
+  "preview_token",
+  "preview_score",
+  "quality_report",
+  "generated_package",
+  "is_active",
+  "published_to_portal",
+  "published_at",
+  "review_deadline",
+  "allow_feedback",
+  "allow_approval",
+  "status",
+  "approved_at",
+  "feedback_items",
+  "created_at",
+].join(",");
+const websiteFields = "id,customer_id,name,domain,status";
+const projectFields = "id,customer_id,website_id,name,status,updated_at";
+const customerFields = "id,name,company,email";
+const demoJourneyFields = "id,lead_id,customer_id,business_name,preview_url,preview_token,updated_at,created_at";
+const leadFields = "id,customer_id,converted_customer_id";
+const buildJobFields = "id,demo_journey_id,lead_id,customer_id,preview_url,preview_token";
 
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return jsonResponse(204, {});
@@ -32,6 +66,7 @@ exports.handler = async (event) => {
     });
     return jsonResponse(error.status || 500, {
       success: false,
+      code: error.code || "PREVIEW_PUBLICATION_FAILED",
       error: safeError(error),
       setupRequired: isMissingPreviewSchema(error),
     });
@@ -40,28 +75,49 @@ exports.handler = async (event) => {
 
 async function listPreviewVersions(context, params = {}) {
   const websiteId = uuidOrEmpty(params.websiteId || params.website_id);
+  const selectedCustomerId = uuidOrEmpty(params.customerId || params.customer_id);
+  const selectedProjectId = uuidOrEmpty(params.projectId || params.project_id);
   if (!websiteId) return jsonResponse(400, { success: false, error: "Website ontbreekt." });
-  const website = await readSingle(context, "websites", `select=*&id=eq.${websiteId}&limit=1`);
+  const website = await readSingle(context, "websites", `select=${websiteFields}&id=eq.${websiteId}&limit=1`);
   if (!website?.id) return jsonResponse(404, { success: false, error: "Website niet gevonden." });
-  const versions = await readRows(context, "website_preview_versions", `select=*&website_id=eq.${websiteId}&order=version.desc`);
+  if (selectedCustomerId && selectedCustomerId !== cleanText(website.customer_id)) {
+    throw previewError("PREVIEW_CUSTOMER_MISMATCH", "Deze website hoort niet bij de geselecteerde klant.", 409);
+  }
+
+  const versions = await findPreviewVersionsForWebsite(context, {
+    website,
+    selectedCustomerId,
+    selectedProjectId,
+  });
   return jsonResponse(200, { success: true, website: sanitizeWebsite(website), previewVersions: versions.map(sanitizeAdminVersion) });
 }
 
 async function publishPreviewVersion(context, payload = {}) {
   const previewVersionId = uuidOrEmpty(payload.previewVersionId || payload.preview_version_id);
   const websiteId = uuidOrEmpty(payload.websiteId || payload.website_id);
-  const version = previewVersionId
-    ? await readSingle(context, "website_preview_versions", `select=*&id=eq.${previewVersionId}&limit=1`)
-    : await readSingle(context, "website_preview_versions", `select=*&website_id=eq.${websiteId}&order=version.desc&limit=1`);
-  if (!version?.id) return jsonResponse(404, { success: false, error: "Geen bestaande previewversie gevonden om te publiceren." });
+  const selectedCustomerId = uuidOrEmpty(payload.customerId || payload.customer_id);
+  const selectedProjectId = uuidOrEmpty(payload.projectId || payload.project_id);
+  if (!websiteId) throw previewError("PREVIEW_WEBSITE_MISMATCH", "Websitecontext ontbreekt.", 400);
 
-  const ownership = await resolveOwnership(context, version);
+  const selectedWebsite = await readSingle(context, "websites", `select=${websiteFields}&id=eq.${websiteId}&limit=1`);
+  if (!selectedWebsite?.id) throw previewError("PREVIEW_WEBSITE_MISMATCH", "Website niet gevonden.", 404);
+  if (selectedCustomerId && selectedCustomerId !== cleanText(selectedWebsite.customer_id)) {
+    throw previewError("PREVIEW_CUSTOMER_MISMATCH", "Deze website hoort niet bij de geselecteerde klant.", 409);
+  }
+
+  const version = previewVersionId
+    ? await readSingle(context, "website_preview_versions", `select=${previewVersionFields}&id=eq.${previewVersionId}&limit=1`)
+    : (await findPreviewVersionsForWebsite(context, { website: selectedWebsite, selectedCustomerId, selectedProjectId }))[0] || null;
+  if (!version?.id) throw previewError("PREVIEW_NOT_FOUND", "Geen bestaande previewversie gevonden om te publiceren.", 404);
+
+  const ownership = await resolveOwnership(context, version, { website: selectedWebsite, selectedCustomerId, selectedProjectId });
   if (!ownership.customer?.id || !ownership.website?.id) {
-    return jsonResponse(409, { success: false, error: "Previewversie mist een veilige klant- of websitekoppeling." });
+    throw previewError("PREVIEW_OWNERSHIP_UNRESOLVED", "Deze preview kan nog niet veilig aan deze klant worden gekoppeld.", 409);
   }
 
   const now = new Date().toISOString();
   const safePreviewPath = `/preview.html?version=${encodeURIComponent(version.id)}`;
+  assertNoRelationConflict(version, ownership);
   const patch = {
     customer_id: ownership.customer.id,
     project_id: ownership.project?.id || version.project_id || null,
@@ -111,16 +167,163 @@ async function publishPreviewVersion(context, payload = {}) {
   return jsonResponse(200, { success: true, previewVersion: sanitizeAdminVersion(published), website: sanitizeWebsite(ownership.website) });
 }
 
-async function resolveOwnership(context, version = {}) {
+async function findPreviewVersionsForWebsite(context, selection = {}) {
+  const website = selection.website;
+  const websiteId = cleanText(website?.id);
+  const customerId = cleanText(selection.selectedCustomerId || website?.customer_id);
+  const modern = await readRows(
+    context,
+    "website_preview_versions",
+    `select=${previewVersionFields}&website_id=eq.${encodeURIComponent(websiteId)}&order=version.desc`
+  );
+
+  const legacy = customerId ? await readLegacyPreviewVersions(context, { customerId }) : [];
+  const merged = dedupeById([...modern, ...legacy]);
+  const annotated = [];
+  for (const version of merged) {
+    const ownership = await resolveOwnership(context, version, selection, { quiet: true });
+    annotated.push({ ...version, _ownership: ownership });
+  }
+  return annotated.sort((a, b) => Number(b.version || 0) - Number(a.version || 0));
+}
+
+async function readLegacyPreviewVersions(context, { customerId }) {
+  const journeyIds = await readLegacyJourneyIdsForCustomer(context, customerId);
+  if (!journeyIds.length) return [];
+  const rows = await readRows(
+    context,
+    "website_preview_versions",
+    `select=${previewVersionFields}&demo_journey_id=in.(${journeyIds.map(encodeURIComponent).join(",")})&order=version.desc`
+  );
+  return rows.filter((row) => !cleanText(row.website_id));
+}
+
+async function readLegacyJourneyIdsForCustomer(context, customerId) {
+  const ids = new Set();
+  const directJourneys = await readRows(context, "demo_journeys", `select=${demoJourneyFields}&customer_id=eq.${encodeURIComponent(customerId)}&limit=100`);
+  directJourneys.forEach((journey) => ids.add(cleanText(journey.id)));
+
+  const leads = await readRows(context, "leads", `select=${leadFields}&or=(customer_id.eq.${encodeURIComponent(customerId)},converted_customer_id.eq.${encodeURIComponent(customerId)})&limit=100`);
+  const leadIds = leads.map((lead) => cleanText(lead.id)).filter(Boolean);
+  if (leadIds.length) {
+    const leadJourneys = await readRows(context, "demo_journeys", `select=${demoJourneyFields}&lead_id=in.(${leadIds.map(encodeURIComponent).join(",")})&limit=100`);
+    leadJourneys.forEach((journey) => ids.add(cleanText(journey.id)));
+  }
+
+  return [...ids].filter(Boolean);
+}
+
+async function resolveOwnership(context, version = {}, selection = {}, options = {}) {
+  try {
+    const selectedWebsite = selection.website?.id
+      ? selection.website
+      : selection.websiteId ? await readSingle(context, "websites", `select=${websiteFields}&id=eq.${encodeURIComponent(selection.websiteId)}&limit=1`) : null;
+    const selectedCustomerId = cleanText(selection.selectedCustomerId || selectedWebsite?.customer_id);
+    const selectedProjectId = cleanText(selection.selectedProjectId);
+
+    if (version.website_id) return resolveModernOwnership(context, version, { selectedWebsite, selectedCustomerId, selectedProjectId });
+    return resolveLegacyOwnership(context, version, { selectedWebsite, selectedCustomerId, selectedProjectId });
+  } catch (error) {
+    if (options.quiet) return { resolvable: false, code: error.code || "PREVIEW_OWNERSHIP_UNRESOLVED", reason: safeError(error) };
+    throw error;
+  }
+}
+
+async function resolveModernOwnership(context, version = {}, selection = {}) {
   const website = version.website_id
-    ? await readSingle(context, "websites", `select=*&id=eq.${version.website_id}&limit=1`)
-    : null;
+    ? await readSingle(context, "websites", `select=${websiteFields}&id=eq.${encodeURIComponent(version.website_id)}&limit=1`)
+    : selection.selectedWebsite;
+  if (!website?.id) throw previewError("PREVIEW_OWNERSHIP_UNRESOLVED", "Deze preview kan nog niet veilig aan deze klant worden gekoppeld.", 409);
+  if (selection.selectedWebsite?.id && cleanText(website.id) !== cleanText(selection.selectedWebsite.id)) {
+    throw previewError("PREVIEW_WEBSITE_MISMATCH", "Deze preview hoort niet bij de geselecteerde website.", 409);
+  }
+
   const project = version.project_id
-    ? await readSingle(context, "projects", `select=*&id=eq.${version.project_id}&limit=1`)
-    : website?.id ? await readSingle(context, "projects", `select=*&website_id=eq.${website.id}&order=updated_at.desc&limit=1`) : null;
-  const customerId = uuidOrEmpty(version.customer_id || website?.customer_id || project?.customer_id);
-  const customer = customerId ? await readSingle(context, "customers", `select=*&id=eq.${customerId}&limit=1`) : null;
-  return { customer, project, website };
+    ? await readSingle(context, "projects", `select=${projectFields}&id=eq.${encodeURIComponent(version.project_id)}&limit=1`)
+    : selection.selectedProjectId
+      ? await readSingle(context, "projects", `select=${projectFields}&id=eq.${encodeURIComponent(selection.selectedProjectId)}&limit=1`)
+    : await readSingle(context, "projects", `select=${projectFields}&website_id=eq.${encodeURIComponent(website.id)}&order=updated_at.desc.nullslast&limit=1`);
+  if (selection.selectedProjectId && !project?.id) {
+    throw previewError("PREVIEW_PROJECT_MISMATCH", "Deze preview hoort niet bij het geselecteerde project.", 409);
+  }
+  if (selection.selectedProjectId && project?.id && cleanText(project.id) !== selection.selectedProjectId) {
+    throw previewError("PREVIEW_PROJECT_MISMATCH", "Deze preview hoort niet bij het geselecteerde project.", 409);
+  }
+  if (project?.id && (cleanText(project.customer_id) !== cleanText(website.customer_id) || cleanText(project.website_id) !== cleanText(website.id))) {
+    throw previewError("PREVIEW_PROJECT_MISMATCH", "Deze preview hoort niet bij het geselecteerde project.", 409);
+  }
+
+  const customerId = uuidOrEmpty(version.customer_id || website.customer_id || project?.customer_id);
+  if (!customerId) throw previewError("PREVIEW_OWNERSHIP_UNRESOLVED", "Deze preview kan nog niet veilig aan deze klant worden gekoppeld.", 409);
+  if (selection.selectedCustomerId && customerId !== selection.selectedCustomerId) {
+    throw previewError("PREVIEW_CUSTOMER_MISMATCH", "Deze preview hoort niet bij de geselecteerde klant.", 409);
+  }
+  const customer = await readSingle(context, "customers", `select=${customerFields}&id=eq.${encodeURIComponent(customerId)}&limit=1`);
+  return { resolvable: Boolean(customer?.id && website?.id), customer, project, website, source: "website_id" };
+}
+
+async function resolveLegacyOwnership(context, version = {}, selection = {}) {
+  const journeyId = uuidOrEmpty(version.demo_journey_id);
+  if (!journeyId) throw previewError("PREVIEW_OWNERSHIP_UNRESOLVED", "Deze preview kan nog niet veilig aan deze klant worden gekoppeld.", 409);
+  const journey = await readSingle(context, "demo_journeys", `select=${demoJourneyFields}&id=eq.${encodeURIComponent(journeyId)}&limit=1`);
+  if (!journey?.id) throw previewError("PREVIEW_OWNERSHIP_UNRESOLVED", "Deze preview kan nog niet veilig aan deze klant worden gekoppeld.", 409);
+
+  const buildJob = version.build_job_id
+    ? await readSingle(context, "website_build_jobs", `select=${buildJobFields}&id=eq.${encodeURIComponent(version.build_job_id)}&limit=1`)
+    : null;
+  if (buildJob?.id && cleanText(buildJob.demo_journey_id) !== cleanText(journey.id)) {
+    throw previewError("PREVIEW_OWNERSHIP_UNRESOLVED", "Deze preview kan nog niet veilig aan deze klant worden gekoppeld.", 409);
+  }
+
+  const customerIds = new Set([journey.customer_id, buildJob?.customer_id].map(uuidOrEmpty).filter(Boolean));
+  if (journey.lead_id) {
+    const lead = await readSingle(context, "leads", `select=${leadFields}&id=eq.${encodeURIComponent(journey.lead_id)}&limit=1`);
+    [lead?.customer_id, lead?.converted_customer_id, buildJob?.lead_id === lead?.id ? lead?.customer_id : ""].map(uuidOrEmpty).filter(Boolean).forEach((id) => customerIds.add(id));
+  }
+  if (customerIds.size !== 1) throw previewError("PREVIEW_OWNERSHIP_UNRESOLVED", "Deze preview kan nog niet veilig aan deze klant worden gekoppeld.", 409);
+  const customerId = [...customerIds][0];
+  if (selection.selectedCustomerId && customerId !== selection.selectedCustomerId) {
+    throw previewError("PREVIEW_CUSTOMER_MISMATCH", "Deze preview hoort niet bij de geselecteerde klant.", 409);
+  }
+  if (!selection.selectedWebsite?.id || cleanText(selection.selectedWebsite.customer_id) !== customerId) {
+    throw previewError("PREVIEW_WEBSITE_MISMATCH", "Deze preview hoort niet bij de geselecteerde website.", 409);
+  }
+
+  const customerWebsites = await readRows(context, "websites", `select=${websiteFields}&customer_id=eq.${encodeURIComponent(customerId)}&limit=3`);
+  if (customerWebsites.length !== 1 || cleanText(customerWebsites[0].id) !== cleanText(selection.selectedWebsite.id)) {
+    throw previewError("PREVIEW_WEBSITE_MISMATCH", "Deze preview kan nog niet veilig aan deze klant worden gekoppeld.", 409);
+  }
+
+  const project = selection.selectedProjectId
+    ? await readSingle(context, "projects", `select=${projectFields}&id=eq.${encodeURIComponent(selection.selectedProjectId)}&limit=1`)
+    : await readSingle(context, "projects", `select=${projectFields}&website_id=eq.${encodeURIComponent(selection.selectedWebsite.id)}&order=updated_at.desc.nullslast&limit=1`);
+  if (project?.id && (cleanText(project.customer_id) !== customerId || cleanText(project.website_id) !== cleanText(selection.selectedWebsite.id))) {
+    throw previewError("PREVIEW_PROJECT_MISMATCH", "Deze preview hoort niet bij het geselecteerde project.", 409);
+  }
+
+  const customer = await readSingle(context, "customers", `select=${customerFields}&id=eq.${encodeURIComponent(customerId)}&limit=1`);
+  return { resolvable: Boolean(customer?.id), customer, project, website: selection.selectedWebsite, source: "demo_journey_id", legacy: true };
+}
+
+function assertNoRelationConflict(version = {}, ownership = {}) {
+  const checks = [
+    ["customer_id", ownership.customer?.id, "PREVIEW_CUSTOMER_MISMATCH", "Deze preview hoort niet bij de geselecteerde klant."],
+    ["project_id", ownership.project?.id, "PREVIEW_PROJECT_MISMATCH", "Deze preview hoort niet bij het geselecteerde project."],
+    ["website_id", ownership.website?.id, "PREVIEW_WEBSITE_MISMATCH", "Deze preview hoort niet bij de geselecteerde website."],
+  ];
+  for (const [field, expected, code, message] of checks) {
+    const current = cleanText(version[field]);
+    if (current && expected && current !== cleanText(expected)) throw previewError(code, message, 409);
+  }
+}
+
+function dedupeById(rows = []) {
+  const map = new Map();
+  rows.forEach((row) => {
+    const id = cleanText(row.id);
+    if (id && !map.has(id)) map.set(id, row);
+  });
+  return [...map.values()];
 }
 
 async function readRows(context, table, query) {
@@ -172,16 +375,26 @@ function restHeaders(serviceRoleKey) {
 }
 
 function sanitizeAdminVersion(row = {}) {
+  const ownership = row._ownership || {};
+  const legacy = Boolean(!cleanText(row.website_id) && cleanText(row.demo_journey_id));
   return {
     id: cleanText(row.id),
     customerId: cleanText(row.customer_id),
     projectId: cleanText(row.project_id),
     websiteId: cleanText(row.website_id),
+    demoJourneyId: cleanText(row.demo_journey_id),
+    isLegacyFactoryPreview: legacy,
+    label: legacy ? "Factory preview - nog niet gekoppeld" : "Gekoppelde preview",
+    canPublish: ownership.resolvable !== false,
+    ownershipCode: cleanText(ownership.code),
+    ownershipMessage: ownership.resolvable === false ? cleanText(ownership.reason) || "Deze preview kan nog niet veilig aan deze klant worden gekoppeld." : "",
     version: Number(row.version || 1),
     title: cleanText(row.title),
     customerSummary: cleanText(row.customer_summary),
     changeSummary: cleanText(row.change_summary),
     safePreviewPath: cleanText(row.safe_preview_path),
+    previewUrl: cleanText(row.preview_url),
+    previewTokenPresent: Boolean(cleanText(row.preview_token)),
     publishedToPortal: Boolean(row.published_to_portal),
     publishedAt: cleanText(row.published_at),
     reviewDeadline: cleanText(row.review_deadline),
@@ -240,9 +453,18 @@ function isMissingPreviewSchema(error = {}) {
 }
 
 function safeError(error = {}) {
+  if (error.publicMessage) return error.publicMessage;
   return isMissingPreviewSchema(error)
     ? "Previewpublicatie-tabellen ontbreken nog. Voer migratie 20260711133000_preview_publication_portal_review uit."
     : error.message || "Previewpublicatie kon niet worden verwerkt.";
+}
+
+function previewError(code, message, status = 409) {
+  const error = new Error(message);
+  error.status = status;
+  error.code = code;
+  error.publicMessage = message;
+  return error;
 }
 
 async function safeTimeline(input) {
@@ -261,3 +483,10 @@ function jsonResponse(statusCode, body) {
     body: statusCode === 204 ? "" : JSON.stringify(body),
   };
 }
+
+exports._private = {
+  findPreviewVersionsForWebsite,
+  publishPreviewVersion,
+  resolveOwnership,
+  sanitizeAdminVersion,
+};

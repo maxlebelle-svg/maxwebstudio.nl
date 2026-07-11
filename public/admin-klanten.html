@@ -12289,7 +12289,14 @@
 	                async function fetchWebsitePreviewVersions(website = {}) {
 	                  const token = getAdminBearer();
 	                  if (!token) throw new Error("Log eerst in als admin.");
-	                  const response = await fetch(`/.netlify/functions/admin-preview-publication?websiteId=${encodeURIComponent(website.id || "")}`, {
+	                  const customer = selectedCustomer() || {};
+	                  const project = projectForWebsite(website, customer);
+	                  const params = new URLSearchParams({
+	                    websiteId: website.id || "",
+	                    customerId: customer.id || "",
+	                  });
+	                  if (project?.id) params.set("projectId", project.id);
+	                  const response = await fetch(`/.netlify/functions/admin-preview-publication?${params.toString()}`, {
 	                    headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
 	                  });
 	                  const data = await response.json().catch(() => ({}));
@@ -12311,6 +12318,7 @@
 	                    return;
 	                  }
 	                  const latest = versions[0];
+	                  const firstPublishable = versions.find((version) => version.canPublish !== false) || null;
 	                  const dialog = document.createElement("dialog");
 	                  dialog.className = "admin-modal preview-publication-modal";
 	                  dialog.innerHTML = `
@@ -12319,7 +12327,8 @@
 	                        <div><strong>Publiceer preview naar klantportaal</strong><span>Versie V${escapeHtml(String(latest.version || 1))} wordt klantzichtbaar gemaakt.</span></div>
 	                        <mark class="status-badge status-prepared">Review</mark>
 	                      </div>
-	                      <label>Previewversie<select name="previewVersionId">${versions.map((version) => `<option value="${escapeHtml(version.id)}">V${escapeHtml(String(version.version || 1))} - ${escapeHtml(version.approvedAt ? "goedgekeurd" : version.feedbackCount ? `${version.feedbackCount} feedbackpunt(en)` : version.publishedToPortal ? "klaar voor review" : "intern")}</option>`).join("")}</select></label>
+	                      <label>Previewversie<select name="previewVersionId">${versions.map((version) => `<option value="${escapeHtml(version.id)}" ${version.canPublish === false ? "disabled" : ""} ${firstPublishable?.id === version.id ? "selected" : ""}>V${escapeHtml(String(version.version || 1))} - ${escapeHtml(version.label || "Preview")} - ${escapeHtml(version.approvedAt ? "goedgekeurd" : version.feedbackCount ? `${version.feedbackCount} feedbackpunt(en)` : version.publishedToPortal ? "klaar voor review" : "intern")}</option>`).join("")}</select></label>
+	                      <div class="admin-profile-wide" data-preview-publication-status>${firstPublishable ? escapeHtml(firstPublishable.isLegacyFactoryPreview ? "Factory preview - nog niet gekoppeld" : "Gekoppelde preview") : "Deze preview kan nog niet veilig aan deze klant worden gekoppeld."}</div>
 	                      <label>Klantgerichte titel<input name="title" type="text" maxlength="140" value="${escapeHtml(latest.title || website.name || "Website-preview")}" required /></label>
 	                      <label class="admin-profile-wide">Korte toelichting<textarea name="summary" rows="3" maxlength="500" placeholder="Wat kan de klant bekijken?"></textarea></label>
 	                      <label class="admin-profile-wide">Wat is aangepast<textarea name="changeSummary" rows="4" maxlength="1200" placeholder="Samenvatting van zichtbare wijzigingen"></textarea></label>
@@ -12328,24 +12337,51 @@
 	                      <label class="settings-checkbox"><input name="allowApproval" type="checkbox" checked /> Goedkeuring toestaan</label>
 	                      <label class="settings-checkbox"><input name="notifyCustomer" type="checkbox" /> E-mail/notificatie versturen</label>
 	                      <div class="admin-profile-actions">
-	                        <button class="button primary" value="publish" type="submit">Publiceer naar klantportaal</button>
+	                        <button class="button secondary" value="open" type="button" data-preview-open ${firstPublishable?.previewUrl ? "" : "disabled"}>Preview openen</button>
+	                        <button class="button primary" value="publish" type="submit" ${firstPublishable ? "" : "disabled"}>Publiceer naar klantportaal</button>
 	                        <button class="button secondary" value="cancel" type="button" data-preview-publish-cancel>Annuleren</button>
 	                      </div>
 	                    </form>
 	                  `;
 	                  document.body.append(dialog);
+	                  const select = dialog.querySelector("select[name='previewVersionId']");
+	                  const status = dialog.querySelector("[data-preview-publication-status]");
+	                  const openButton = dialog.querySelector("[data-preview-open]");
+	                  const publishButton = dialog.querySelector("button[value='publish']");
+	                  const selectedVersion = () => versions.find((version) => version.id === select?.value) || null;
+	                  const syncPreviewControls = () => {
+	                    const version = selectedVersion();
+	                    const blocked = !version || version.canPublish === false;
+	                    if (status) status.textContent = blocked ? "Deze preview kan nog niet veilig aan deze klant worden gekoppeld." : version.isLegacyFactoryPreview ? "Factory preview - nog niet gekoppeld" : "Gekoppelde preview";
+	                    if (openButton) openButton.disabled = !version?.previewUrl;
+	                    if (publishButton) publishButton.disabled = blocked;
+	                  };
+	                  select?.addEventListener("change", syncPreviewControls);
+	                  openButton?.addEventListener("click", () => {
+	                    const version = selectedVersion();
+	                    if (version?.previewUrl) window.open(version.previewUrl, "_blank", "noopener");
+	                  });
 	                  dialog.querySelector("[data-preview-publish-cancel]")?.addEventListener("click", () => dialog.close("cancel"));
 	                  dialog.addEventListener("close", () => dialog.remove(), { once: true });
 	                  dialog.querySelector("form")?.addEventListener("submit", async (event) => {
 	                    event.preventDefault();
 	                    const form = event.currentTarget;
 	                    const submit = form.querySelector("button[value='publish']");
+	                    const version = selectedVersion();
+	                    if (!version || version.canPublish === false) {
+	                      setDetailMessage("Deze preview kan nog niet veilig aan deze klant worden gekoppeld.", "error");
+	                      return;
+	                    }
 	                    submit.disabled = true;
 	                    submit.textContent = "Publiceren...";
 	                    try {
 	                      const formData = new FormData(form);
+	                      const customer = selectedCustomer() || {};
+	                      const project = projectForWebsite(website, customer);
 	                      const result = await publishPreviewVersion({
 	                        websiteId: website.id,
+	                        customerId: customer.id || "",
+	                        projectId: project?.id || "",
 	                        previewVersionId: formData.get("previewVersionId"),
 	                        title: formData.get("title"),
 	                        summary: formData.get("summary"),
@@ -12366,6 +12402,7 @@
 	                  });
 	                  if (typeof dialog.showModal === "function") dialog.showModal();
 	                  else dialog.setAttribute("open", "");
+	                  syncPreviewControls();
 	                }
 
 	                async function publishPreviewVersion(payload = {}) {
@@ -12383,6 +12420,11 @@
 	                  const data = await response.json().catch(() => ({}));
 	                  if (!response.ok || data.success === false) throw new Error(data.error || "Preview kon niet worden gepubliceerd.");
 	                  return data;
+	                }
+
+	                function projectForWebsite(website = {}, customer = selectedCustomer() || {}) {
+	                  const projects = relatedCustomerProjects(customer);
+	                  return projects.find((project) => project.websiteId === website.id || project.website_id === website.id) || null;
 	                }
 
 	                function renderCustomerWorkspace(customer = selectedCustomer()) {
