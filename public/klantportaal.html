@@ -85,8 +85,8 @@
 
           <section class="portal-next-step-card" id="portal-command-next-step" aria-label="Jouw volgende stap">
             <span>Jouw volgende stap</span>
-            <strong id="command-next-title">We laden je volgende actie.</strong>
-            <p id="command-next-text">Zodra je klantdata is geladen, zie je hier wat nu belangrijk is.</p>
+            <strong id="command-next-title">Je projectoverzicht wordt voorbereid.</strong>
+            <p id="command-next-text">Na het inloggen tonen we hier de ene stap die nu het meeste verschil maakt.</p>
             <div class="portal-actions" id="command-next-actions"></div>
           </section>
 
@@ -96,10 +96,10 @@
                 <div class="portal-command-card-head">
                   <div>
                     <span>Projectvoortgang</span>
-                    <h3 id="command-progress-title">Project wordt geladen</h3>
-                    <p id="command-progress-subtitle">We halen je projectfase op.</p>
+                    <h3 id="command-progress-title">Projectstatus wordt opgehaald</h3>
+                    <p id="command-progress-subtitle">Je actuele fase verschijnt zodra de klantkoppeling geladen is.</p>
                   </div>
-                  <strong id="command-progress-value">0%</strong>
+                  <strong id="command-progress-value">...</strong>
                 </div>
                 <div class="portal-command-progressbar" aria-hidden="true"><span id="command-progress-bar"></span></div>
                 <div class="portal-command-steps" id="command-progress-steps"></div>
@@ -109,10 +109,10 @@
                 <div class="portal-command-card-head">
                   <div>
                     <span>Website</span>
-                    <h3 id="command-website-title">Website wordt geladen</h3>
-                    <p id="command-website-subtitle">Domein, status en preview verschijnen hier.</p>
+                    <h3 id="command-website-title">Website-overzicht</h3>
+                    <p id="command-website-subtitle">Domein, status en preview verschijnen hier zodra ze beschikbaar zijn.</p>
                   </div>
-                  <mark class="status-badge status-prepared" id="command-website-status">Laden</mark>
+                  <mark class="status-badge status-prepared" id="command-website-status">Voorbereid</mark>
                 </div>
                 <div id="command-website-preview"></div>
                 <div class="portal-command-meta" id="command-website-meta"></div>
@@ -1326,27 +1326,38 @@
           if (explicit > 0) return Math.max(0, Math.min(explicit, 100));
           const status = normalize(project.status || project.phase);
           if (["live", "afgerond", "completed"].includes(status)) return 100;
-          if (["testen", "review", "in review", "feedback"].includes(status)) return 75;
-          if (["in ontwikkeling", "development"].includes(status)) return 55;
-          if (["in ontwerp", "design"].includes(status)) return 35;
-          if (["onboarding", "intake", "nieuw"].includes(status)) return 18;
-          return 0;
+          if (["oplevering", "delivery", "testing", "testen"].includes(status)) return 90;
+          if (["review", "in review", "feedback"].includes(status)) return 82;
+          if (["in ontwikkeling", "development"].includes(status)) return 70;
+          if (["in ontwerp", "design", "ontwerp"].includes(status)) return 56;
+          if (["content", "content aanleveren", "wacht op klant", "waiting client"].includes(status)) return 44;
+          if (["onboarding", "intake", "nieuw", "not started"].includes(status)) return 16;
+          return project.id || project.projectId || project.name || project.projectName ? 12 : null;
         }
 
         function projectStepState(index, progress) {
-          const thresholds = [10, 30, 55, 75, 100];
+          if (progress === null) return "waiting";
+          const thresholds = [12, 25, 38, 50, 64, 78, 90, 100];
           if (progress >= thresholds[index]) return "done";
           if (progress >= (thresholds[index - 1] || 0)) return "active";
           return "waiting";
         }
 
+        function quoteAccepted(quote = {}) {
+          return ["geaccepteerd", "accepted", "akkoord", "approved"].includes(normalize(quote.status));
+        }
+
+        function onboardingSubmitted(onboarding = null) {
+          return onboarding && ["submitted", "needs_review", "approved", "sent_to_website_factory"].includes(normalize(onboarding.status));
+        }
+
         function buildCommandTasks({ invoices = [], projects = [], websites = [], messages = [], changeRequests = [], onboarding = null } = {}) {
           const tasks = [];
-          if (invoices.some((invoice) => !isPaidStatus(invoice.status))) tasks.push({ title: "Factuur bekijken", meta: "Prioriteit: hoog", href: "#facturen", tone: "high" });
-          if (!onboarding || !["submitted", "needs_review", "approved", "sent_to_website_factory"].includes(onboarding.status)) tasks.push({ title: "Projectinput aanvullen", meta: "Teksten, foto's en voorkeuren", href: "#onboarding", tone: "high" });
-          if (!websites.length || !customerVisibleUrl(websites[0]?.liveUrl || websites[0]?.domain)) tasks.push({ title: "Domein of website afstemmen", meta: "Zodra bekend tonen we de link", href: "#mijn-website", tone: "normal" });
-          if (!messages.length) tasks.push({ title: "Vraag stellen aan Max", meta: "Alles blijft bij je project", href: "#berichten", tone: "normal" });
-          if (!changeRequests.length) tasks.push({ title: "Wijziging aanvragen", meta: "Tekst, foto of pagina", href: "#wijzigingen", tone: "normal" });
+          const openInvoice = invoices.find((invoice) => !isPaidStatus(invoice.status));
+          const latestUnreadMessage = messages.find((message) => !message.readAt && message.senderType !== "customer" && isOpenStatus(message.status));
+          if (openInvoice) tasks.push({ title: "Factuur bekijken", meta: `${openInvoice.invoiceNumber || "Factuur"} staat open`, href: invoiceUrl(openInvoice) || "#facturen", tone: "high" });
+          if (!onboardingSubmitted(onboarding)) tasks.push({ title: "Teksten en foto's aanleveren", meta: "Nodig voor ontwerp en bouw", href: "#onboarding", tone: "high" });
+          if (latestUnreadMessage) tasks.push({ title: "Bericht beantwoorden", meta: latestUnreadMessage.subject || latestUnreadMessage.title || "Update van Max Webstudio", href: "#berichten", tone: "normal" });
           return tasks.slice(0, 4);
         }
 
@@ -1374,20 +1385,62 @@
             .sort((a, b) => b.date.getTime() - a.date.getTime())[0]?.record || null;
         }
 
-        function nextCustomerStep({ websites = [], projects = [], invoices = [], changeRequests = [], messages = [] }) {
+        function nextCustomerStep({ websites = [], projects = [], invoices = [], changeRequests = [], messages = [], onboarding = null } = {}) {
           const openInvoice = invoices.find((invoice) => isOpenStatus(invoice.status));
-          if (openInvoice) return `Bekijk factuur ${openInvoice.invoiceNumber || openInvoice.title || ""}`.trim();
+          if (openInvoice) return {
+            title: `Bekijk factuur ${openInvoice.invoiceNumber || openInvoice.title || ""}`.trim(),
+            text: "Deze factuur vraagt nog aandacht. Open hem direct vanuit je portaal.",
+            label: "Bekijk factuur",
+            href: invoiceUrl(openInvoice) || "#facturen",
+          };
           const latestMessage = messages.find((message) => !message.readAt && isOpenStatus(message.status));
-          if (latestMessage) return "Bekijk je laatste bericht";
+          if (latestMessage) return {
+            title: "Bekijk je laatste bericht",
+            text: latestMessage.subject || latestMessage.title || "Er staat een projectupdate voor je klaar.",
+            label: "Open berichten",
+            href: "#berichten",
+          };
+          if (!onboardingSubmitted(onboarding)) return {
+            title: "Lever je teksten en foto's aan",
+            text: "Upload of vul de projectinput aan zodat we verder kunnen met ontwerp en bouw.",
+            label: "Projectinput openen",
+            href: "#onboarding",
+          };
           const openRequest = changeRequests.find((request) => isOpenStatus(request.status));
-          if (openRequest) return "Wacht op verwerking van je wijziging";
+          if (openRequest) return {
+            title: "Je wijziging is in behandeling",
+            text: "Wij pakken je aanvraag op. Je hoeft op dit moment niets extra's te doen.",
+            label: "Bekijk wijziging",
+            href: "#wijzigingen",
+          };
           const project = projects[0] || {};
           const status = normalize(project.status || project.phase);
-          if (["not started", "nieuw", "intake", "onboarding", "wacht op klant", "waiting client"].includes(status)) return "Rond je onboarding af";
-          if (["in ontwikkeling", "development", "in ontwerp", "feedback", "in review"].includes(status)) return "Bekijk de projectupdates";
+          if (["not started", "nieuw", "intake", "onboarding", "wacht op klant", "waiting client"].includes(status)) return {
+            title: "Rond je projectinput af",
+            text: "Met je bedrijfsinformatie, teksten en beeldmateriaal kunnen we gericht doorpakken.",
+            label: "Projectinput openen",
+            href: "#onboarding",
+          };
+          if (["in ontwikkeling", "development", "in ontwerp", "feedback", "in review"].includes(status)) return {
+            title: "Bekijk de projectupdates",
+            text: "Je website beweegt door de bouwfase. De laatste activiteit staat in je tijdlijn.",
+            label: "Tijdlijn bekijken",
+            href: "#portal-command-timeline",
+          };
           const website = websites[0] || {};
-          if (website.liveUrl || website.domain) return "Bekijk je website";
-          return "Nog niet beschikbaar";
+          const websiteUrl = customerVisibleUrl(website.liveUrl || website.domain);
+          if (websiteUrl) return {
+            title: "Bekijk je website",
+            text: "Je website staat klaar om te bekijken. Geef wijzigingen eenvoudig door via het portaal.",
+            label: "Website bekijken",
+            href: websiteUrl,
+          };
+          return {
+            title: "Je bent helemaal bij. Wij zijn aan zet.",
+            text: "Er is op dit moment geen concrete actie voor jou. Nieuwe updates verschijnen vanzelf in dit dashboard.",
+            label: "Bericht sturen",
+            href: "#berichten",
+          };
         }
 
         function latestActivityText(records = []) {
@@ -1629,35 +1682,16 @@
             return frame;
           }
 
-          const mini = document.createElement("div");
-          mini.className = "portal-website-mini-preview";
-          const nav = document.createElement("div");
-          nav.className = "portal-website-mini-nav";
-          const brand = document.createElement("strong");
-          brand.textContent = website.name || website.domain || "Jouw website";
-          const navLinks = document.createElement("span");
-          navLinks.textContent = "Home  Diensten  Contact";
-          nav.append(brand, navLinks);
-
-          const hero = document.createElement("section");
-          const kicker = document.createElement("small");
-          const title = document.createElement("h4");
+          const empty = document.createElement("div");
+          empty.className = "portal-website-preview-empty";
+          const title = document.createElement("strong");
           const text = document.createElement("p");
-          kicker.textContent = project.category || website.category || "Professionele website";
-          title.textContent = website.heroTitle || website.title || "Klaar om vertrouwen te winnen.";
-          text.textContent = website.description || project.description || "Een heldere website die bezoekers snel laat zien waarom ze voor jou moeten kiezen.";
-          hero.append(kicker, title, text);
-
-          const blocks = document.createElement("div");
-          blocks.className = "portal-website-mini-blocks";
-          ["Snel contact", "Duidelijke diensten", "Sterke uitstraling"].forEach((item) => {
-            const block = document.createElement("span");
-            block.textContent = item;
-            blocks.append(block);
-          });
-
-          mini.append(nav, hero, blocks);
-          frame.append(toolbar, mini);
+          const meta = document.createElement("small");
+          title.textContent = "Je eerste websitepreview verschijnt hier.";
+          text.textContent = "Zodra het ontwerp of de live preview klaarstaat, tonen we die direct in dit venster.";
+          meta.textContent = websiteUrl ? "Het domein is al bekend; de visuele preview volgt vanuit het project." : "Nog geen preview of domein gekoppeld.";
+          empty.append(title, text, meta);
+          frame.append(toolbar, empty);
           return frame;
         }
 
@@ -2344,30 +2378,39 @@
           const website = websites[0] || {};
           const progress = projectProgressValue(project);
           const websiteUrl = customerVisibleUrl(website.liveUrl || website.domain);
-          const nextStep = nextCustomerStep({ websites, projects, invoices, changeRequests, messages });
-          const openInvoice = invoices.find((invoice) => !isPaidStatus(invoice.status));
+          const nextStep = nextCustomerStep({ websites, projects, invoices, changeRequests, messages, onboarding });
           const latestMessage = messages[0] || null;
 
           commandCenterSubtitle.textContent = `${customer.company || customer.name || "Je bedrijf"}: projectstatus, website, acties en communicatie in één overzicht.`;
-          commandNextTitle.textContent = openInvoice ? "Er staat een factuur klaar" : nextStep;
-          commandNextText.textContent = openInvoice
-            ? `${openInvoice.invoiceNumber || "Factuur"} staat nog open. Je ziet de status en actie direct bij Facturen.`
-            : nextStep === "Nog niet beschikbaar"
-              ? "Er is op dit moment geen concrete actie voor jou bekend."
-              : "Dit is de belangrijkste stap om je project verder te brengen.";
+          commandNextTitle.textContent = nextStep.title;
+          commandNextText.textContent = nextStep.text;
           commandNextActions.replaceChildren();
-          if (openInvoice) commandNextActions.append(createWebsiteAction("Bekijk facturen", "#facturen", true));
-          else if (nextStep.includes("onboarding") || nextStep.includes("Rond")) commandNextActions.append(createWebsiteAction("Projectinput openen", "#onboarding", true));
-          else if (nextStep.includes("website")) commandNextActions.append(createWebsiteAction("Website bekijken", websiteUrl || "#mijn-website", true));
-          else commandNextActions.append(createWebsiteAction("Bericht sturen", "#berichten", true));
+          commandNextActions.append(createWebsiteAction(nextStep.label, nextStep.href, true));
 
           commandProgressTitle.textContent = project.name || project.projectName || "Websiteproject";
-          commandProgressSubtitle.textContent = project.phase || project.status ? `${labelForStatus(project.phase || project.status)} - ${nextStep}` : "Nog geen projectfase beschikbaar.";
-          commandProgressValue.textContent = `${progress}%`;
-          commandProgressBar.style.width = `${progress}%`;
+          commandProgressSubtitle.textContent = project.phase || project.status
+            ? `${labelForStatus(project.phase || project.status)} - ${nextStep.title}`
+            : "Nog geen projectfase beschikbaar.";
+          commandProgressValue.textContent = progress === null ? "Nog niet beschikbaar" : `${progress}%`;
+          commandProgressBar.style.width = progress === null ? "0%" : `${progress}%`;
           commandProgressSteps.replaceChildren();
-          ["Kennismaking", "Design & structuur", "Content aanleveren", "Ontwikkeling", "Testen & oplevering"].forEach((label, index) => {
-            const state = projectStepState(index, progress);
+          const projectSteps = [
+            "Kennismaking",
+            "Offerte akkoord",
+            "Factuur betaald",
+            "Content aanleveren",
+            "Ontwerp",
+            "Ontwikkeling",
+            "Testen",
+            "Oplevering",
+          ];
+          projectSteps.forEach((label, index) => {
+            let state = projectStepState(index, progress);
+            if (progress !== null && index === 1 && quotes.length) state = quotes.some(quoteAccepted) ? "done" : "waiting";
+            if (progress !== null && index === 2 && invoices.length) {
+              state = invoices.every((invoice) => isPaidStatus(invoice.status)) ? "done" : "active";
+            }
+            if (progress !== null && index === 3) state = onboardingSubmitted(onboarding) ? "done" : "active";
             const step = document.createElement("article");
             step.className = `portal-command-step is-${state}`;
             const number = document.createElement("span");
@@ -2375,7 +2418,7 @@
             const status = document.createElement("small");
             number.textContent = state === "done" ? "✓" : String(index + 1);
             title.textContent = label;
-            status.textContent = state === "done" ? "Voltooid" : state === "active" ? "In behandeling" : "Wachtend";
+            status.textContent = progress === null ? "Nog niet beschikbaar" : state === "done" ? "Voltooid" : state === "active" ? "In behandeling" : "Wachtend";
             step.append(number, title, status);
             commandProgressSteps.append(step);
           });
@@ -2396,7 +2439,16 @@
           commandWebsiteActions.append(createWebsiteAction("Wijziging aanvragen", "#wijzigingen"));
 
           commandTaskList.replaceChildren();
-          buildCommandTasks({ invoices, projects, websites, messages, changeRequests, onboarding }).forEach((task) => commandTaskList.append(commandTask(task)));
+          const tasks = buildCommandTasks({ invoices, projects, websites, messages, changeRequests, onboarding });
+          if (!tasks.length) {
+            commandTaskList.append(commandItem({
+              title: "Je bent helemaal bij",
+              meta: "Wij zijn aan zet. Nieuwe acties verschijnen hier direct.",
+              badge: "Rustig",
+              tone: "done",
+            }));
+          }
+          tasks.forEach((task) => commandTaskList.append(commandTask(task)));
 
           commandTimelineList.replaceChildren();
           const timeline = buildCommandTimeline({ projects, invoices, messages, changeRequests, notifications });
@@ -2410,7 +2462,7 @@
             title: item.invoiceNumber || item.quoteNumber || item.title || "Factuur",
             meta: `${money(item.total || item.amount)} - ${formatDate(item.paidAt || item.invoiceDate || item.quoteDate || item.createdAt)}`,
             badge: isPaidStatus(item.status) ? "Betaald" : labelForStatus(item.status || "Open"),
-            href: item.invoiceNumber ? "#facturen" : "#facturen",
+            href: item.invoiceNumber ? invoiceUrl(item) || "#facturen" : quoteUrl(item) || "#facturen",
             tone: isPaidStatus(item.status) ? "done" : "attention",
           })));
 
