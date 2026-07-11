@@ -845,6 +845,7 @@
 	                <button class="is-active" type="button" role="tab" aria-selected="true" data-customer-workspace-tab="overview">Overzicht</button>
 	                <button type="button" role="tab" aria-selected="false" data-customer-workspace-tab="timeline">Timeline</button>
 	                <button type="button" role="tab" aria-selected="false" data-customer-workspace-tab="websites">Websites</button>
+	                <button type="button" role="tab" aria-selected="false" data-customer-workspace-tab="messages">Berichten</button>
 	                <button type="button" role="tab" aria-selected="false" data-customer-workspace-tab="billing">Financieel</button>
 	                <button type="button" role="tab" aria-selected="false" data-customer-workspace-tab="assets">Assets</button>
 	              </div>
@@ -913,6 +914,14 @@
 	                  <div>
 	                    <strong>Websites</strong>
 	                    <span>Selecteer een klant om gekoppelde websites te bekijken.</span>
+	                  </div>
+	                </article>
+	              </section>
+	              <section class="customer-workspace-panel customer-workspace-summary" id="customer-workspace-messages" data-customer-workspace-panel="messages" hidden aria-live="polite">
+	                <article class="admin-card request-card request-state-card">
+	                  <div>
+	                    <strong>Berichten</strong>
+	                    <span>Selecteer een klant om klantzichtbare gesprekken te bekijken.</span>
 	                  </div>
 	                </article>
 	              </section>
@@ -2653,6 +2662,7 @@
           invoices: [],
           quotes: [],
           requests: [],
+          messages: [],
           selectedCustomerId: "",
           selectedWebsiteId: "",
           selectedProjectId: "",
@@ -3210,6 +3220,7 @@
         const customerWorkspaceTabs = [...document.querySelectorAll("[data-customer-workspace-tab]")];
         const customerWorkspacePanels = [...document.querySelectorAll("[data-customer-workspace-panel]")];
         const customerWorkspaceWebsites = document.getElementById("customer-workspace-websites");
+        const customerWorkspaceMessages = document.getElementById("customer-workspace-messages");
         const customerWorkspaceBilling = document.getElementById("customer-workspace-billing");
         const customerWorkspaceAssets = document.getElementById("customer-workspace-assets");
         const customerTimelineRefresh = document.getElementById("customer-timeline-refresh");
@@ -9853,6 +9864,27 @@
           return result.records.map(normalizeSubscription);
         }
 
+        async function loadClientPortalMessages() {
+          try {
+            const result = await readAdminDataLayerModule("client_portal_messages", "supabase-read");
+            return result.records.map((message) => ({
+              ...message,
+              customerId: message.customerId || message.profileId || "",
+              subject: String(message.subject || "Bericht").trim(),
+              body: String(message.body || message.message || "").trim(),
+              senderType: String(message.senderType || "admin").trim(),
+              status: String(message.status || "open").trim(),
+              metadata: message.metadata && typeof message.metadata === "object" ? message.metadata : {},
+              conversationId: message.conversationId || message.threadId || message.metadata?.conversationId || "",
+              createdAt: message.createdAt || "",
+              updatedAt: message.updatedAt || message.createdAt || "",
+            }));
+          } catch (error) {
+            if (isDeveloperModeEnabled()) console.warn("Client portal messages konden niet worden geladen", error);
+            return [];
+          }
+        }
+
         async function loadFilesByDataMode() {
           try {
             const result = await readAdminDataLayerModule("files", "supabase-read");
@@ -10850,11 +10882,12 @@
           state.authUsers = [];
           state.websites = [];
           state.projects = [];
-          state.files = [];
-          state.quotes = [];
-          state.invoices = [];
-          state.subscriptions = [];
-          state.requests = [];
+            state.files = [];
+            state.quotes = [];
+            state.invoices = [];
+            state.subscriptions = [];
+            state.requests = [];
+            state.messages = [];
           renderState(customerList, "Admin login nodig", "Log in als admin om klantdata te bekijken.", "Beveiligd", "status-warning");
           renderState(websiteList, "Admin login nodig", "Log in als admin om websites te bekijken.", "Beveiligd", "status-warning");
           renderState(projectList, "Admin login nodig", "Log in als admin om projecten te bekijken.", "Beveiligd", "status-warning");
@@ -12209,7 +12242,42 @@
                     invoices: state.invoices.filter((invoice) => recordBelongsToCustomer(invoice, customer)),
                     subscriptions: state.subscriptions.filter((subscription) => recordBelongsToCustomer(subscription, customer)),
                     files: state.files.filter((file) => recordBelongsToCustomer(file, customer)),
+                    messages: state.messages.filter((message) => recordBelongsToCustomer(message, customer)),
                   };
+                }
+
+                function messageConversationKey(message = {}) {
+                  const metadata = message.metadata && typeof message.metadata === "object" ? message.metadata : {};
+                  return String(message.conversationId || message.threadId || metadata.conversationId || metadata.threadId || `portal-${normalize(message.subject || "gesprek")}`).trim();
+                }
+
+                function customerMessageThreads(messages = []) {
+                  const groups = new Map();
+                  messages.forEach((message) => {
+                    const key = messageConversationKey(message);
+                    if (!groups.has(key)) {
+                      groups.set(key, {
+                        id: key,
+                        subject: message.subject || "Bericht",
+                        contextLabel: message.contextLabel || message.metadata?.contextLabel || "Algemeen",
+                        messages: [],
+                        lastMessageAt: message.createdAt || message.updatedAt || "",
+                        unreadForAdmin: 0,
+                      });
+                    }
+                    const thread = groups.get(key);
+                    thread.messages.push(message);
+                    const created = message.createdAt || message.updatedAt || "";
+                    if (created && (!thread.lastMessageAt || new Date(created) > new Date(thread.lastMessageAt))) {
+                      thread.lastMessageAt = created;
+                      thread.subject = message.subject || thread.subject;
+                      thread.contextLabel = message.contextLabel || message.metadata?.contextLabel || thread.contextLabel;
+                    }
+                    if (message.senderType === "customer" && !message.readAt && !["read", "gelezen", "archived", "gearchiveerd"].includes(normalize(message.status))) {
+                      thread.unreadForAdmin += 1;
+                    }
+                  });
+                  return [...groups.values()].sort((a, b) => new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0));
                 }
 
                 function renderWorkspaceSummaryPanel(panel, title, rows = [], emptyText = "Geen gekoppelde data gevonden.") {
@@ -12427,9 +12495,10 @@
 	                  return projects.find((project) => project.websiteId === website.id || project.website_id === website.id) || null;
 	                }
 
-	                function renderCustomerWorkspace(customer = selectedCustomer()) {
+                function renderCustomerWorkspace(customer = selectedCustomer()) {
                   if (!customer) {
                     renderWorkspaceSummaryPanel(customerWorkspaceWebsites, "Websites", []);
+                    renderWorkspaceSummaryPanel(customerWorkspaceMessages, "Berichten", []);
                     renderWorkspaceSummaryPanel(customerWorkspaceBilling, "Financieel", []);
                     renderWorkspaceSummaryPanel(customerWorkspaceAssets, "Assets", []);
                     return;
@@ -12446,6 +12515,21 @@
 	                    tone: websitePreviewUrl(website) ? "status-active" : websiteStatusClass(website.status),
 	                    actions: websiteWorkspaceActions(website),
 	                  })));
+                  const messageThreads = customerMessageThreads(records.messages);
+                  renderWorkspaceSummaryPanel(customerWorkspaceMessages, "Berichten", messageThreads.map((thread) => {
+                    const latest = thread.messages.slice().sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))[0] || {};
+                    return {
+                      title: thread.subject || "Bericht",
+                      meta: [
+                        thread.contextLabel || "Algemeen",
+                        `${thread.messages.length} bericht${thread.messages.length === 1 ? "" : "en"}`,
+                        thread.lastMessageAt ? formatDate(thread.lastMessageAt) : "",
+                        latest.senderType === "customer" ? "Laatste: klant" : "Laatste: Max",
+                      ].filter(Boolean).join(" - "),
+                      badge: thread.unreadForAdmin ? `${thread.unreadForAdmin} nieuw` : "Bijgewerkt",
+                      tone: thread.unreadForAdmin ? "status-warning" : "status-active",
+                    };
+                  }), "Geen klantberichten gevonden.");
                   renderWorkspaceSummaryPanel(customerWorkspaceBilling, "Financieel", [
                     ...records.quotes.map((quote) => ({
                       title: quote.quoteNumber || quote.number || quote.title || "Offerte",
@@ -18676,6 +18760,7 @@
             state.quotes = await loadQuotesByDataMode();
             state.invoices = await loadInvoicesByDataMode();
             state.subscriptions = await loadSubscriptionsByDataMode();
+            state.messages = await loadClientPortalMessages();
             renderCustomers();
             renderWebsites();
             renderProjects();

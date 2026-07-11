@@ -52,6 +52,48 @@ function cleanString(value = "", max = 2000) {
   return String(value || "").trim().slice(0, max);
 }
 
+function cleanKey(value = "", max = 120) {
+  return cleanString(value, max)
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, max);
+}
+
+function conversationIdFor(input = {}) {
+  const explicit = cleanKey(input.conversationId || input.threadId || input.metadata?.conversationId, 120);
+  if (explicit) return explicit;
+  const contextType = cleanKey(input.contextType || input.metadata?.contextType || "algemeen", 48) || "algemeen";
+  const subject = cleanKey(input.subject || "gesprek", 80) || "gesprek";
+  return `portal-${contextType}-${subject}`;
+}
+
+function labelForContext(value = "") {
+  return {
+    algemeen: "Algemeen",
+    websiteproject: "Websiteproject",
+    review: "Ontwerp en feedback",
+    wijziging: "Wijzigingsverzoek",
+    factuur: "Factuur",
+    branding: "Branding",
+    support: "Support",
+  }[cleanKey(value, 48)] || "Algemeen";
+}
+
+function metadataFor(input = {}, message = {}) {
+  const existing = input.metadata && typeof input.metadata === "object" && !Array.isArray(input.metadata) ? input.metadata : {};
+  const conversationId = conversationIdFor({ ...input, metadata: existing });
+  const contextType = cleanKey(input.contextType || existing.contextType || "algemeen", 48) || "algemeen";
+  return {
+    ...existing,
+    conversationId,
+    threadId: conversationId,
+    contextType,
+    contextLabel: cleanString(input.contextLabel || existing.contextLabel || labelForContext(contextType), 80),
+    idempotencyKey: cleanKey(input.idempotencyKey || existing.idempotencyKey || message.id || createId("message-dedupe"), 160),
+  };
+}
+
 function isUuid(value) {
   return UUID_PATTERN.test(String(value || ""));
 }
@@ -107,6 +149,7 @@ export function validateClientPortalMessageWritePayload(input = {}, context = {}
   const customer = customerIdentity(context.customer || {});
   const subject = cleanString(input.subject, 180);
   const body = cleanString(input.body, 2500);
+  const metadata = metadataFor(input);
   const errors = [];
   if (!customer.id && !customer.localId) errors.push("Klantcontext ontbreekt.");
   if (!subject || subject.length < 3) errors.push("Onderwerp is verplicht en moet minimaal 3 tekens bevatten.");
@@ -124,6 +167,11 @@ export function validateClientPortalMessageWritePayload(input = {}, context = {}
       sender: "Klant",
       senderType: "customer",
       status: "open",
+      metadata,
+      conversationId: metadata.conversationId,
+      threadId: metadata.conversationId,
+      contextType: metadata.contextType,
+      contextLabel: metadata.contextLabel,
       source: "client_portal",
       isDemo: false,
       environment: "test",
@@ -160,10 +208,11 @@ export function mapClientPortalMessageToSupabasePayload(message = {}, customer =
     is_demo: false,
     environment: "test",
     metadata: {
+      ...metadataFor(message),
       createdBy: "client-portal-message-write-mvp",
       safeToArchive: true,
       localMessageId: message.id,
-      clientWritePhase: "35D",
+      clientWritePhase: "sprint-6-communication-inbox",
     },
   };
 }
@@ -183,6 +232,11 @@ function mapSupabaseRecordToLocalMessage(record = {}, fallback = {}) {
     message: record.body || fallback.message,
     status: record.status || "open",
     readAt: record.read_at || fallback.readAt,
+    metadata: record.metadata || fallback.metadata || {},
+    conversationId: record.metadata?.conversationId || fallback.conversationId || "",
+    threadId: record.metadata?.threadId || record.metadata?.conversationId || fallback.threadId || "",
+    contextType: record.metadata?.contextType || fallback.contextType || "algemeen",
+    contextLabel: record.metadata?.contextLabel || fallback.contextLabel || "Algemeen",
     source: "supabase_client_portal_message_write_mvp",
     createdAt: record.created_at || fallback.createdAt,
     updatedAt: record.updated_at || fallback.updatedAt,

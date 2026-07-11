@@ -65,6 +65,58 @@ function cleanString(value = "", max = 2500) {
   return safeString(value).slice(0, max);
 }
 
+function cleanKey(value = "", max = 120) {
+  return cleanString(value, max)
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, max);
+}
+
+function safeMetadata(value = {}) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return value;
+}
+
+function conversationIdFor(input = {}) {
+  const explicit = cleanKey(input.conversationId || input.threadId || input.metadata?.conversationId, 120);
+  if (explicit) return explicit;
+  const contextType = cleanKey(input.contextType || input.metadata?.contextType || "algemeen", 48);
+  const contextId = cleanKey(input.contextId || input.projectId || input.websiteId || input.metadata?.contextId, 80);
+  const subject = cleanKey(input.subject || "algemeen", 80);
+  return ["portal", contextType || "algemeen", contextId || subject || "gesprek"].join("-");
+}
+
+function metadataFor(input = {}, base = {}) {
+  const existing = safeMetadata(input.metadata);
+  const conversationId = conversationIdFor({ ...input, metadata: existing });
+  const contextType = cleanKey(input.contextType || existing.contextType || "algemeen", 48) || "algemeen";
+  const idempotencyKey = cleanKey(input.idempotencyKey || existing.idempotencyKey || `${conversationId}-${cleanString(input.body, 80)}`, 160);
+  return {
+    ...base,
+    ...existing,
+    conversationId,
+    threadId: conversationId,
+    contextType,
+    contextLabel: cleanString(input.contextLabel || existing.contextLabel || labelForContext(contextType), 80),
+    idempotencyKey,
+  };
+}
+
+function labelForContext(value = "") {
+  const key = cleanKey(value, 48);
+  return {
+    algemeen: "Algemeen",
+    websiteproject: "Websiteproject",
+    website: "Website",
+    review: "Ontwerp en feedback",
+    wijziging: "Wijzigingsverzoek",
+    factuur: "Factuur",
+    branding: "Branding",
+    support: "Support",
+  }[key] || "Algemeen";
+}
+
 async function getRuntimePublicConfig() {
   let endpointConfig = {};
   try {
@@ -109,6 +161,9 @@ async function supabaseRest(config, session, table, query = "", options = {}) {
 
 function mapPortalMessage(row = {}, source = "supabase-client-portal-messages") {
   const senderType = firstValue(row.sender_type, row.senderType, "admin");
+  const metadata = safeMetadata(row.metadata);
+  const subject = firstValue(row.subject, metadata.subject, "Bericht");
+  const conversationId = firstValue(metadata.conversationId, metadata.threadId, conversationIdFor({ subject, metadata }));
   return {
     id: safeString(row.id),
     customerId: safeString(firstValue(row.customer_id, row.customerId)),
@@ -116,14 +171,20 @@ function mapPortalMessage(row = {}, source = "supabase-client-portal-messages") 
     senderProfileId: safeString(firstValue(row.sender_profile_id, row.senderProfileId)),
     senderType,
     sender: senderType === "customer" ? "Klant" : "Max Webstudio",
-    subject: firstValue(row.subject, "Bericht"),
-    title: firstValue(row.subject, "Bericht"),
+    subject,
+    title: subject,
     body: safeString(row.body),
     message: safeString(row.body),
     status: firstValue(row.status, "open"),
     readAt: firstValue(row.read_at, row.readAt),
     createdAt: firstValue(row.created_at, row.createdAt),
     updatedAt: firstValue(row.updated_at, row.updatedAt),
+    metadata,
+    conversationId,
+    threadId: conversationId,
+    contextType: firstValue(metadata.contextType, "algemeen"),
+    contextLabel: firstValue(metadata.contextLabel, labelForContext(metadata.contextType || "algemeen")),
+    idempotencyKey: firstValue(metadata.idempotencyKey, ""),
     source,
     _source: "supabase",
     _supabaseId: safeString(row.id),
@@ -237,10 +298,10 @@ export async function saveClientPortalMessageWithSupabaseFallback(input = {}, co
       read_at: null,
       is_demo: false,
       environment: environmentForWrite(config),
-      metadata: {
+      metadata: metadataFor(input, {
         createdBy: "client-portal-message-production-foundation",
-        frontendFlow: "epic-2a-5",
-      },
+        frontendFlow: "sprint-6-communication-inbox",
+      }),
     };
     const rows = await supabaseRest(config, session, "client_portal_messages", "", {
       method: "POST",

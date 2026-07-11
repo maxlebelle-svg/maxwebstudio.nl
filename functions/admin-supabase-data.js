@@ -822,16 +822,23 @@ function mapChangeRequest(row = {}) {
 }
 
 function mapPortalMessage(row = {}) {
+  const metadata = row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata) ? row.metadata : {};
   return {
     id: cleanText(row.id),
     customerId: cleanText(row.customer_id),
-    profileId: cleanText(row.customer_id),
+    profileId: cleanText(row.profile_id),
+    senderProfileId: cleanText(row.sender_profile_id),
     senderType: cleanText(row.sender_type || "admin"),
     subject: cleanText(row.subject || "Bericht"),
-    message: cleanText(row.message),
-    body: cleanText(row.message),
+    message: cleanText(row.body),
+    body: cleanText(row.body),
     status: cleanText(row.status || "open"),
     readAt: cleanText(row.read_at),
+    metadata,
+    conversationId: cleanText(metadata.conversationId || metadata.threadId),
+    threadId: cleanText(metadata.threadId || metadata.conversationId),
+    contextType: cleanText(metadata.contextType || "algemeen"),
+    contextLabel: cleanText(metadata.contextLabel || "Algemeen"),
     createdAt: cleanText(row.created_at),
     updatedAt: cleanText(row.updated_at),
     _source: "supabase",

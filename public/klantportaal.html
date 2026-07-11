@@ -554,9 +554,22 @@
           <em>Alle berichten blijven op één plek bij je project.</em>
         </article>
         <div class="portal-message-workspace">
+          <aside class="portal-message-thread-list admin-card customer-portal-card" aria-label="Gesprekken">
+            <div class="project-workspace-card-head">
+              <div><span>Inbox</span><h3>Gesprekken</h3></div>
+              <strong id="portal-message-unread-count">0 nieuw</strong>
+            </div>
+            <div class="portal-message-thread-actions" role="group" aria-label="Berichten filteren">
+              <button class="is-active" type="button" data-message-filter="all">Alle</button>
+              <button type="button" data-message-filter="unread">Ongelezen</button>
+              <button type="button" data-message-filter="open">Open</button>
+            </div>
+            <div class="portal-message-thread-list-items" id="portal-message-threads" role="listbox" aria-label="Gesprekkenlijst"></div>
+          </aside>
           <section class="portal-message-conversation" aria-label="Gesprek met Max Webstudio">
             <div class="project-workspace-card-head">
-              <div><span>Gesprek</span><h3>Projectupdates en vragen</h3></div>
+              <div><span id="portal-message-context">Gesprek</span><h3 id="portal-message-active-title">Projectupdates en vragen</h3></div>
+              <button class="button secondary" id="portal-message-refresh" type="button">Verversen</button>
             </div>
             <div class="portal-card-grid" id="portal-messages" aria-live="polite"></div>
           </section>
@@ -567,6 +580,16 @@
               <p>Stel je vraag kort en direct. Je bericht komt bij je projectcommunicatie te staan.</p>
             </div>
             <form class="admin-form portal-message-form" id="portal-message-form">
+              <input id="portal-message-conversation-id" name="conversationId" type="hidden" />
+              <label>Context<select id="portal-message-context-type" name="contextType">
+                <option value="algemeen">Algemeen</option>
+                <option value="websiteproject">Websiteproject</option>
+                <option value="review">Ontwerp en feedback</option>
+                <option value="wijziging">Wijzigingsverzoek</option>
+                <option value="factuur">Factuur</option>
+                <option value="branding">Branding</option>
+                <option value="support">Support</option>
+              </select></label>
               <label>Onderwerp<input id="portal-message-subject" name="subject" type="text" maxlength="180" placeholder="Bijvoorbeeld: vraag over planning" required /></label>
               <label class="admin-profile-wide">Bericht<textarea id="portal-message-body" name="body" rows="4" maxlength="2500" placeholder="Typ je vraag of update." required></textarea></label>
               <div class="portal-actions">
@@ -757,10 +780,19 @@
         const changeRequestWebsite = document.getElementById("change-request-website");
         const changeRequestProject = document.getElementById("change-request-project");
         const messageList = document.getElementById("portal-messages");
+        const portalMessageThreads = document.getElementById("portal-message-threads");
+        const portalMessageUnreadCount = document.getElementById("portal-message-unread-count");
+        const portalMessageActiveTitle = document.getElementById("portal-message-active-title");
+        const portalMessageContext = document.getElementById("portal-message-context");
+        const portalMessageRefresh = document.getElementById("portal-message-refresh");
         const portalMessageForm = document.getElementById("portal-message-form");
         const portalMessageStatus = document.getElementById("portal-message-status");
         const portalMessageSubmit = document.getElementById("portal-message-submit");
         const portalMessageSummary = document.getElementById("portal-message-summary");
+        const portalMessageSubject = document.getElementById("portal-message-subject");
+        const portalMessageBody = document.getElementById("portal-message-body");
+        const portalMessageConversationId = document.getElementById("portal-message-conversation-id");
+        const portalMessageContextType = document.getElementById("portal-message-context-type");
         const notificationList = document.getElementById("portal-notifications");
         const notificationSummary = document.getElementById("portal-notification-summary");
         const onboardingForm = document.getElementById("portal-onboarding-form");
@@ -847,6 +879,9 @@
         let portalAssetRecords = [];
         let portalAssetFiltersBound = false;
         let currentOnboardingState = null;
+        let activeMessageThreadId = "";
+        let activeMessageFilter = "all";
+        let latestPortalMessages = [];
         function escapeHtml(value = "") {
           return String(value || "")
             .replace(/&/g, "&amp;")
@@ -1696,18 +1731,135 @@
           changeRequestList.append(list);
         }
 
-        function renderMessages(rows) {
+        function messageConversationId(message = {}) {
+          const metadata = message.metadata && typeof message.metadata === "object" ? message.metadata : {};
+          const explicit = message.conversationId || message.threadId || metadata.conversationId || metadata.threadId;
+          if (explicit) return String(explicit);
+          return `portal-${normalize(metadata.contextType || message.contextType || "algemeen") || "algemeen"}-${normalize(message.subject || message.title || "gesprek").replace(/[^a-z0-9_-]+/g, "-") || "gesprek"}`;
+        }
+
+        function messageContextLabel(message = {}) {
+          const metadata = message.metadata && typeof message.metadata === "object" ? message.metadata : {};
+          return message.contextLabel || metadata.contextLabel || {
+            algemeen: "Algemeen",
+            websiteproject: "Websiteproject",
+            review: "Ontwerp en feedback",
+            wijziging: "Wijzigingsverzoek",
+            factuur: "Factuur",
+            branding: "Branding",
+            support: "Support",
+          }[normalize(message.contextType || metadata.contextType)] || "Algemeen";
+        }
+
+        function isCustomerMessage(message = {}) {
+          return message.senderType === "customer" || normalize(message.sender) === "klant";
+        }
+
+        function isUnreadForCustomer(message = {}) {
+          return !isCustomerMessage(message)
+            && !message.readAt
+            && !["gelezen", "read", "archived", "gearchiveerd"].includes(normalize(message.status));
+        }
+
+        function buildMessageThreads(rows = []) {
+          const groups = new Map();
+          rows.forEach((message) => {
+            const id = messageConversationId(message);
+            if (!groups.has(id)) {
+              groups.set(id, {
+                id,
+                subject: message.subject || message.title || "Gesprek",
+                contextLabel: messageContextLabel(message),
+                status: normalize(message.status) === "archived" ? "archived" : "open",
+                messages: [],
+                unread: 0,
+                lastMessageAt: message.createdAt || message.created_at || "",
+              });
+            }
+            const thread = groups.get(id);
+            thread.messages.push({ ...message, conversationId: id, contextLabel: messageContextLabel(message) });
+            if (isUnreadForCustomer(message)) thread.unread += 1;
+            const created = message.createdAt || message.created_at || "";
+            if (created && (!thread.lastMessageAt || new Date(created) > new Date(thread.lastMessageAt))) {
+              thread.lastMessageAt = created;
+              thread.subject = message.subject || message.title || thread.subject;
+              thread.contextLabel = messageContextLabel(message);
+            }
+          });
+          return [...groups.values()]
+            .map((thread) => ({
+              ...thread,
+              messages: thread.messages.sort((a, b) => new Date(a.createdAt || a.created_at || 0) - new Date(b.createdAt || b.created_at || 0)),
+              latest: thread.messages.slice().sort((a, b) => new Date(b.createdAt || b.created_at || 0) - new Date(a.createdAt || a.created_at || 0))[0],
+            }))
+            .sort((a, b) => new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0));
+        }
+
+        function filteredMessageThreads(threads = []) {
+          if (activeMessageFilter === "unread") return threads.filter((thread) => thread.unread > 0);
+          if (activeMessageFilter === "open") return threads.filter((thread) => thread.status !== "archived");
+          return threads;
+        }
+
+        function setActiveMessageThread(thread = null) {
+          activeMessageThreadId = thread?.id || "";
+          portalMessageConversationId.value = activeMessageThreadId;
+          if (thread) {
+            portalMessageSubject.value = thread.subject || "";
+            portalMessageContextType.value = normalize(thread.latest?.contextType || thread.latest?.metadata?.contextType || "algemeen") || "algemeen";
+          }
+        }
+
+        function renderMessageThreadList(threads = []) {
+          portalMessageThreads.replaceChildren();
+          const unreadTotal = threads.reduce((sum, thread) => sum + thread.unread, 0);
+          portalMessageUnreadCount.textContent = `${unreadTotal} nieuw`;
+          const visibleThreads = filteredMessageThreads(threads);
+          if (!visibleThreads.length) {
+            portalMessageThreads.append(createEmpty(activeMessageFilter === "unread" ? "Geen ongelezen gesprekken" : "Geen gesprekken", "Nieuwe berichten verschijnen hier bij de juiste context."));
+            return;
+          }
+          visibleThreads.forEach((thread) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = `portal-message-thread-item${thread.id === activeMessageThreadId ? " is-active" : ""}`;
+            button.setAttribute("role", "option");
+            button.setAttribute("aria-selected", thread.id === activeMessageThreadId ? "true" : "false");
+            const latest = thread.latest || {};
+            const snippet = String(latest.body || latest.message || "Geen berichttekst.").slice(0, 140);
+            button.innerHTML = `
+              <span><strong>${escapeHtml(thread.subject)}</strong>${thread.unread ? `<em>${thread.unread}</em>` : ""}</span>
+              <small>${escapeHtml(thread.contextLabel)} · ${escapeHtml(formatDate(thread.lastMessageAt))}</small>
+              <p>${escapeHtml(snippet)}</p>
+            `;
+            button.addEventListener("click", () => renderMessages(latestPortalMessages, { activeThreadId: thread.id }));
+            portalMessageThreads.append(button);
+          });
+        }
+
+        function renderMessages(rows, options = {}) {
+          latestPortalMessages = Array.isArray(rows) ? rows : [];
           messageList.replaceChildren();
           const summaryTitle = portalMessageSummary.querySelector("strong");
           const summaryText = portalMessageSummary.querySelector("p");
-          const unread = rows.filter((message) => !message.readAt && !["gelezen", "read"].includes(normalize(message.status)) && message.senderType !== "customer").length;
-          const latest = rows[0];
-          if (!rows.length) {
+          const threads = buildMessageThreads(latestPortalMessages);
+          const unread = threads.reduce((sum, thread) => sum + thread.unread, 0);
+          const latest = latestPortalMessages[0];
+          if (!latestPortalMessages.length) {
             summaryTitle.textContent = "Je hebt nog geen berichten.";
             summaryText.textContent = "Stuur je vraag via het berichtveld. Reacties van Max Webstudio verschijnen daarna in dit gesprek.";
+            portalMessageActiveTitle.textContent = "Nieuw gesprek";
+            portalMessageContext.textContent = "Algemeen";
+            portalMessageConversationId.value = "";
+            renderMessageThreadList([]);
             messageList.append(createEmpty("Nog geen gesprek", "Je kunt hieronder direct een bericht sturen. We houden de communicatie daarna hier bij elkaar."));
             return;
           }
+          const requestedThreadId = options.activeThreadId || activeMessageThreadId;
+          const activeThread = threads.find((thread) => thread.id === requestedThreadId) || threads[0];
+          setActiveMessageThread(activeThread);
+          portalMessageActiveTitle.textContent = activeThread.subject || "Gesprek";
+          portalMessageContext.textContent = activeThread.contextLabel || "Gesprek";
           summaryTitle.textContent = unread
             ? `${unread} nieuw bericht${unread === 1 ? "" : "en"} van Max Webstudio.`
             : "Alle berichten zijn bijgewerkt.";
@@ -1717,7 +1869,7 @@
           const metaGrid = document.createElement("div");
           metaGrid.className = "portal-message-meta-grid";
           [
-            ["Gesprekken", String(rows.length), "berichtregels"],
+            ["Gesprekken", String(threads.length), threads.length === 1 ? "thread" : "threads"],
             ["Nieuw", String(unread), unread ? "vraagt aandacht" : "geen actie nodig"],
             ["Laatste update", formatDate(latest.createdAt || latest.created_at), latest.senderType === "customer" ? "door jou" : "door Max"],
           ].forEach(([label, value, text]) => {
@@ -1728,8 +1880,8 @@
           });
           const thread = document.createElement("div");
           thread.className = "portal-message-thread";
-          rows.forEach((message) => {
-            const isCustomer = message.senderType === "customer" || normalize(message.sender) === "klant";
+          activeThread.messages.forEach((message) => {
+            const isCustomer = isCustomerMessage(message);
             const bubble = document.createElement("article");
             bubble.className = `portal-message-bubble ${isCustomer ? "is-customer" : "is-team"}`;
             const meta = document.createElement("span");
@@ -1741,6 +1893,7 @@
             bubble.append(meta, title, body, createBadge(message.status || (isCustomer ? "verzonden" : "nieuw")));
             thread.append(bubble);
           });
+          renderMessageThreadList(threads);
           messageList.append(metaGrid, thread);
         }
 
@@ -4919,6 +5072,24 @@
         populateSelect(changeRequestWebsite, websites, (website) => website.name || website.domain || "Website");
         populateSelect(changeRequestProject, projects, (project) => project.name || project.projectName || "Project");
         previewVersionSort?.addEventListener("change", () => renderVersionHistory(publishedPreviewVersions));
+        document.querySelectorAll("[data-message-filter]").forEach((button) => {
+          button.addEventListener("click", () => {
+            activeMessageFilter = button.dataset.messageFilter || "all";
+            document.querySelectorAll("[data-message-filter]").forEach((item) => item.classList.toggle("is-active", item === button));
+            renderMessages(latestPortalMessages, { activeThreadId: activeMessageThreadId });
+          });
+        });
+        portalMessageRefresh?.addEventListener("click", () => window.location.reload());
+        portalMessageBody?.addEventListener("input", () => {
+          portalMessageBody.style.height = "auto";
+          portalMessageBody.style.height = `${Math.min(portalMessageBody.scrollHeight, 260)}px`;
+        });
+        portalMessageBody?.addEventListener("keydown", (event) => {
+          if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+            event.preventDefault();
+            portalMessageForm.requestSubmit();
+          }
+        });
 
         changeRequestForm.addEventListener("submit", async (event) => {
           event.preventDefault();
@@ -4953,31 +5124,69 @@
 
         portalMessageForm.addEventListener("submit", async (event) => {
           event.preventDefault();
+          if (portalMessageSubmit.disabled) return;
           portalMessageStatus.textContent = "";
           portalMessageSubmit.disabled = true;
-          portalMessageSubmit.textContent = "Bericht opslaan...";
+          const originalSubmitLabel = portalMessageSubmit.textContent;
+          portalMessageSubmit.textContent = "Verzenden...";
           try {
             const formData = new FormData(portalMessageForm);
+            const body = String(formData.get("body") || "").trim();
+            const subject = String(formData.get("subject") || "").trim();
             if (!String(formData.get("body") || "").trim()) {
               portalMessageStatus.textContent = "Typ eerst je bericht.";
               return;
             }
+            const conversationId = String(formData.get("conversationId") || activeMessageThreadId || "").trim();
+            const contextType = String(formData.get("contextType") || "algemeen").trim();
+            const idempotencyKey = [
+              "client-message",
+              conversationId || subject.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 80) || "nieuw",
+              body.toLowerCase().replace(/\s+/g, " ").slice(0, 120),
+            ].join(":");
             const result = await saveClientPortalMessageWithSupabaseFallback({
-              subject: formData.get("subject"),
-              body: formData.get("body"),
+              subject,
+              body,
+              conversationId,
+              contextType,
+              idempotencyKey,
             }, { customer, supabaseCustomerId });
-            customerMessages.unshift(result.message);
-            renderMessages(customerMessages);
-            metrics.messages.textContent = String(customerMessages.filter((message) => !message.readAt && !["gelezen", "read"].includes(normalize(message.status))).length);
+            const created = {
+              ...result.message,
+              conversationId: result.message?.conversationId || conversationId || undefined,
+              metadata: {
+                ...(result.message?.metadata || {}),
+                conversationId: result.message?.conversationId || conversationId || undefined,
+                contextType,
+                idempotencyKey,
+              },
+            };
+            const duplicate = customerMessages.some((message) => {
+              const meta = message.metadata || {};
+              return (message.id && message.id === created.id) || (idempotencyKey && meta.idempotencyKey === idempotencyKey);
+            });
+            if (!duplicate) customerMessages.unshift(created);
+            renderMessages(customerMessages, { activeThreadId: created.conversationId || conversationId });
+            metrics.messages.textContent = String(customerMessages.filter((message) => isUnreadForCustomer(message)).length);
             portalMessageForm.reset();
+            portalMessageConversationId.value = activeMessageThreadId;
+            portalMessageSubject.value = created.subject || subject;
             portalMessageStatus.textContent = result.fallbackUsed
               ? "Je bericht is tijdelijk in deze browser bewaard. Neem contact op als je geen bevestiging krijgt."
               : "Je bericht is ontvangen. We reageren vanuit Max Webstudio.";
+            portalMessageSubmit.textContent = "Verzonden";
           } catch (error) {
             portalMessageStatus.textContent = error.message || "Bericht kon niet worden opgeslagen.";
+            portalMessageSubmit.textContent = "Opnieuw proberen";
           } finally {
             portalMessageSubmit.disabled = false;
-            portalMessageSubmit.textContent = "Bericht sturen";
+            if (portalMessageSubmit.textContent === "Verzonden") {
+              setTimeout(() => {
+                portalMessageSubmit.textContent = "Bericht sturen";
+              }, 1400);
+            } else if (portalMessageSubmit.textContent !== "Opnieuw proberen") {
+              portalMessageSubmit.textContent = originalSubmitLabel || "Bericht sturen";
+            }
           }
         });
 

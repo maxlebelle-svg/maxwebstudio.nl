@@ -10981,19 +10981,123 @@ h3 {
 
 .portal-message-workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(340px, 0.75fr);
+  grid-template-columns: minmax(240px, 0.7fr) minmax(0, 1.25fr) minmax(320px, 0.75fr);
   gap: 16px;
   align-items: start;
 }
 
 .portal-message-conversation,
+.portal-message-thread-list,
 .portal-message-composer-card {
   display: grid;
   gap: 16px;
 }
 
-.portal-message-conversation {
+.portal-message-conversation,
+.portal-message-thread-list {
   min-width: 0;
+}
+
+.portal-message-thread-list {
+  align-self: stretch;
+}
+
+.portal-message-thread-list .project-workspace-card-head strong {
+  color: #19c2ff;
+  font-size: 13px;
+}
+
+.portal-message-thread-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.portal-message-thread-actions button,
+.portal-message-thread-item {
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 8px;
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.07);
+  font: inherit;
+}
+
+.portal-message-thread-actions button {
+  min-height: 34px;
+  padding: 7px 10px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.portal-message-thread-actions button.is-active,
+.portal-message-thread-actions button:focus-visible {
+  border-color: rgba(25, 194, 255, 0.5);
+  color: var(--white);
+  background: rgba(25, 194, 255, 0.14);
+}
+
+.portal-message-thread-list-items {
+  display: grid;
+  gap: 10px;
+}
+
+.portal-message-thread-item {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  min-height: 112px;
+  padding: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.portal-message-thread-item.is-active,
+.portal-message-thread-item:focus-visible {
+  border-color: rgba(25, 194, 255, 0.55);
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.24), rgba(25, 194, 255, 0.1)),
+    rgba(255, 255, 255, 0.08);
+}
+
+.portal-message-thread-item span {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.portal-message-thread-item strong {
+  min-width: 0;
+  color: var(--white);
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.portal-message-thread-item em {
+  min-width: 22px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  color: #03111d;
+  background: #19c2ff;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 950;
+  text-align: center;
+}
+
+.portal-message-thread-item small,
+.portal-message-thread-item p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.portal-message-thread-item p {
+  color: rgba(255, 255, 255, 0.72);
+  overflow-wrap: anywhere;
 }
 
 .portal-message-composer-card {
