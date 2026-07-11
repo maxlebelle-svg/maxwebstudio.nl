@@ -14334,6 +14334,24 @@ h3 {
   line-height: 1.45;
 }
 
+.admin-login-shell {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+}
+
+.admin-login-card {
+  display: grid;
+  width: min(100%, 520px);
+  gap: 16px;
+}
+
+.admin-login-card h1,
+.admin-login-card p {
+  margin: 0;
+}
+
 .admin-body:not(.is-admin-logged-in) .admin-page-actions .button,
 .admin-body:not(.is-admin-logged-in) .admin-hero-panel .button,
 .admin-body:not(.is-admin-logged-in) .admin-action-strip .button {

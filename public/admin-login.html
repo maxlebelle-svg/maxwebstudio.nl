@@ -5,31 +5,157 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex, nofollow" />
     <title>Admin login | Max Webstudio</title>
+    <link rel="stylesheet" href="styles.css?v=20260704-admin-session-hotfix" />
   </head>
-  <body>
+  <body class="admin-body">
+    <main class="admin-login-shell">
+      <section class="admin-card admin-login-card" aria-live="polite">
+        <p class="section-kicker">Admin login</p>
+        <h1>Max Webstudio admin</h1>
+        <p id="admin-login-status">We controleren veilig of je al bent ingelogd.</p>
+        <div class="portal-actions">
+          <a class="button primary" id="admin-login-link" href="/login.html?mode=admin">Inloggen</a>
+        </div>
+      </section>
+    </main>
     <script>
-      const params = new URLSearchParams(window.location.search || "");
-      const next = params.get("next") || params.get("redirect") || "/admin-dashboard.html";
-      const adminRoles = new Set(["developer", "super_admin", "admin", "sales_manager", "sales_partner", "designer", "support"]);
-      let redirected = false;
-      try {
-        const session = JSON.parse(localStorage.getItem("mws_admin_supabase_session") || "null");
-        const expiresAt = session?.expiresAt ? Date.parse(session.expiresAt) : 0;
-        const active = session?.accessToken && adminRoles.has(String(session.role || "").toLowerCase()) && (!expiresAt || expiresAt > Date.now() + 30000);
-        if (active) {
-          redirected = true;
+      (() => {
+        const ADMIN_SESSION_KEY = "mws_admin_supabase_session";
+        const SUPABASE_SESSION_KEY = "maxwebstudioSupabaseAuthSession";
+        const adminRoles = new Set(["developer", "super_admin", "admin", "sales_manager", "sales_partner", "designer", "support"]);
+        const status = document.getElementById("admin-login-status");
+        const loginLink = document.getElementById("admin-login-link");
+        let navigating = false;
+
+        function safeRelativePath(value = "", fallback = "/admin-dashboard.html") {
+          try {
+            const parsed = new URL(value || fallback, window.location.origin);
+            if (parsed.origin !== window.location.origin) return fallback;
+            if (!/^\/admin(?:-|\/|$)/.test(parsed.pathname)) return fallback;
+            if (parsed.pathname === "/admin-login.html") return "/admin-dashboard.html";
+            return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+          } catch {
+            return fallback;
+          }
+        }
+
+        function requestedNext() {
+          const params = new URLSearchParams(window.location.search || "");
+          return safeRelativePath(params.get("next") || params.get("redirect") || "/admin-dashboard.html");
+        }
+
+        function readJson(key) {
+          try {
+            return JSON.parse(localStorage.getItem(key) || "null");
+          } catch {
+            return null;
+          }
+        }
+
+        function tokenFromStoredSession() {
+          const supabaseSession = readJson(SUPABASE_SESSION_KEY);
+          if (supabaseSession?.access_token) {
+            return {
+              accessToken: supabaseSession.access_token,
+              refreshToken: supabaseSession.refresh_token || "",
+              user: supabaseSession.user || {},
+              expiresAt: supabaseSession.expires_at ? supabaseSession.expires_at * 1000 : 0,
+            };
+          }
+          const bridgeSession = readJson(ADMIN_SESSION_KEY);
+          if (bridgeSession?.accessToken) {
+            return {
+              accessToken: bridgeSession.accessToken,
+              refreshToken: bridgeSession.refreshToken || "",
+              user: { id: bridgeSession.userId || "", email: bridgeSession.email || "" },
+              expiresAt: bridgeSession.expiresAt || 0,
+            };
+          }
+          return null;
+        }
+
+        function sessionExpired(session = {}) {
+          const expiresAt = Number(session.expiresAt || 0);
+          return expiresAt && expiresAt <= Date.now() + 30000;
+        }
+
+        async function fetchAccountProfile(accessToken) {
+          const response = await fetch("/api/account-profile", {
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${accessToken}`,
+            },
+            cache: "no-store",
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || !data.success) {
+            const error = new Error(data.error || "Profielcontrole is niet gelukt.");
+            error.code = data.code || "PROFILE_LOOKUP_FAILED";
+            throw error;
+          }
+          return data;
+        }
+
+        function storeAdminSession(session, account) {
+          const profile = account.profile || {};
+          const user = account.user || session.user || {};
+          const role = String(profile.role || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+          if (!adminRoles.has(role) || String(profile.status || "").toLowerCase() !== "active") return false;
+          localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
+            id: session.accessToken ? `admin-${session.accessToken.slice(0, 12)}` : `admin-${Date.now()}`,
+            accessToken: session.accessToken,
+            refreshToken: session.refreshToken || "",
+            email: user.email || profile.email || "",
+            userId: user.id || profile.authUserId || "",
+            profileId: profile.id || "",
+            role,
+            status: profile.status || "active",
+            startedAt: new Date().toISOString(),
+            expiresAt: session.expiresAt || Date.now() + 60 * 60 * 1000,
+          }));
+          return true;
+        }
+
+        function navigateOnce(target) {
+          if (navigating) return;
+          const next = safeRelativePath(target);
+          const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+          if (current === next) return;
+          navigating = true;
           window.location.replace(next);
         }
-      } catch {
-        // Continue to the normal admin login wrapper.
-      }
-      if (!redirected) {
-        const target = new URL("/login.html", window.location.origin);
-        target.searchParams.set("mode", "admin");
-        target.searchParams.set("next", next);
-        window.location.replace(target.toString());
-      }
+
+        async function init() {
+          const next = requestedNext();
+          const loginTarget = new URL("/login.html", window.location.origin);
+          loginTarget.searchParams.set("mode", "admin");
+          loginTarget.searchParams.set("next", next);
+          loginLink.href = loginTarget.toString();
+
+          const session = tokenFromStoredSession();
+          if (!session?.accessToken || sessionExpired(session)) {
+            localStorage.removeItem(ADMIN_SESSION_KEY);
+            status.textContent = "Log in met je Max Webstudio beheerdersaccount.";
+            return;
+          }
+
+          try {
+            const account = await fetchAccountProfile(session.accessToken);
+            if (!storeAdminSession(session, account)) {
+              localStorage.removeItem(ADMIN_SESSION_KEY);
+              status.textContent = "Admin-login geblokkeerd: dit account heeft geen actieve adminrol.";
+              return;
+            }
+            status.textContent = "Admin-toegang bevestigd. Je wordt doorgestuurd.";
+            navigateOnce(next);
+          } catch {
+            localStorage.removeItem(ADMIN_SESSION_KEY);
+            status.textContent = "Admin-login geblokkeerd: profielcontrole is niet gelukt. Log opnieuw in of probeer het later nog eens.";
+          }
+        }
+
+        init();
+      })();
     </script>
-    <p>Admin login openen...</p>
   </body>
 </html>

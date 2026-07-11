@@ -52,6 +52,16 @@ function getCurrentPath() {
   return `${window.location?.pathname || ""}${window.location?.search || ""}${window.location?.hash || ""}`;
 }
 
+function sameCurrentDestination(target = "") {
+  if (typeof window === "undefined" || !target) return false;
+  try {
+    const parsed = new URL(target, window.location.origin);
+    return `${parsed.pathname}${parsed.search}${parsed.hash}` === getCurrentPath();
+  } catch {
+    return false;
+  }
+}
+
 function isAdminRoute(pageName = "", path = "") {
   const route = pageName ? getProtectedRoute(pageName) : null;
   const routePath = String(route?.path || path || (typeof window !== "undefined" ? window.location?.pathname || "" : ""));
@@ -136,9 +146,8 @@ function buildLoginRedirect(decision = {}) {
   const returnPath = getCurrentPath();
   const isAdmin = isAdminRoute(decision.pageName || "", decision.route || "");
   const url = new URL(ADMIN_LOGIN_ROUTE, window.location.origin);
-  if (isAdmin) url.searchParams.set("mode", "admin");
   if (returnPath && !returnPath.startsWith(ADMIN_LOGIN_ROUTE)) {
-    url.searchParams.set("redirect", returnPath);
+    url.searchParams.set("next", returnPath);
   }
   if (!decision.allowed) url.searchParams.set("reason", "session");
   return `${url.pathname}${url.search}`;
@@ -356,9 +365,13 @@ function enforceDecision(decision = {}, options = {}) {
     if (decision.enforced && decision.redirectTo && typeof window !== "undefined") {
       const target = String(decision.redirectTo || "");
       const missingSessionOnAdminRoute = decision.reason === "Geen actieve sessie." && isAdminRoute(decision.pageName || "", decision.route || "");
-      window.location.href = target === ADMIN_LOGIN_ROUTE || target.startsWith(`${ADMIN_LOGIN_ROUTE}?`) || missingSessionOnAdminRoute
+      const redirectTarget = target === ADMIN_LOGIN_ROUTE || target.startsWith(`${ADMIN_LOGIN_ROUTE}?`) || missingSessionOnAdminRoute
         ? buildLoginRedirect(decision)
         : target;
+      const onAdminLogin = window.location?.pathname === ADMIN_LOGIN_ROUTE;
+      if (!onAdminLogin && !sameCurrentDestination(redirectTarget)) {
+        window.location.href = redirectTarget;
+      }
     }
   } else {
     clearAccessWarning();
