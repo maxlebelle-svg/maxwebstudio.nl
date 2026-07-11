@@ -37,6 +37,7 @@ const projectFields = "id,customer_id,website_id,name,status,updated_at";
 const customerFields = "id,name,company,email";
 const demoJourneyFields = "id,lead_id,customer_id,business_name,preview_url,preview_token,updated_at,created_at";
 const leadFields = "id,customer_id,converted_customer_id";
+const legacyLeadFields = "id,converted_customer_id";
 const buildJobFields = "id,demo_journey_id,lead_id,customer_id,preview_url,preview_token";
 
 exports.handler = async (event) => {
@@ -203,7 +204,7 @@ async function readLegacyJourneyIdsForCustomer(context, customerId) {
   const directJourneys = await readRows(context, "demo_journeys", `select=${demoJourneyFields}&customer_id=eq.${encodeURIComponent(customerId)}&limit=100`);
   directJourneys.forEach((journey) => ids.add(cleanText(journey.id)));
 
-  const leads = await readRows(context, "leads", `select=${leadFields}&or=(customer_id.eq.${encodeURIComponent(customerId)},converted_customer_id.eq.${encodeURIComponent(customerId)})&limit=100`);
+  const leads = await readLeadRowsForCustomer(context, customerId);
   const leadIds = leads.map((lead) => cleanText(lead.id)).filter(Boolean);
   if (leadIds.length) {
     const leadJourneys = await readRows(context, "demo_journeys", `select=${demoJourneyFields}&lead_id=in.(${leadIds.map(encodeURIComponent).join(",")})&limit=100`);
@@ -277,7 +278,7 @@ async function resolveLegacyOwnership(context, version = {}, selection = {}) {
 
   const customerIds = new Set([journey.customer_id, buildJob?.customer_id].map(uuidOrEmpty).filter(Boolean));
   if (journey.lead_id) {
-    const lead = await readSingle(context, "leads", `select=${leadFields}&id=eq.${encodeURIComponent(journey.lead_id)}&limit=1`);
+    const lead = await readLeadById(context, journey.lead_id);
     [lead?.customer_id, lead?.converted_customer_id, buildJob?.lead_id === lead?.id ? lead?.customer_id : ""].map(uuidOrEmpty).filter(Boolean).forEach((id) => customerIds.add(id));
   }
   if (customerIds.size !== 1) throw previewError("PREVIEW_OWNERSHIP_UNRESOLVED", "Deze preview kan nog niet veilig aan deze klant worden gekoppeld.", 409);
@@ -328,6 +329,26 @@ function dedupeById(rows = []) {
 
 async function readRows(context, table, query) {
   return supabaseFetch(`${context.supabaseUrl}/rest/v1/${table}?${query}`, { method: "GET", headers: restHeaders(context.serviceRoleKey) });
+}
+
+async function readLeadRowsForCustomer(context, customerId) {
+  const encodedCustomerId = encodeURIComponent(customerId);
+  try {
+    return await readRows(context, "leads", `select=${leadFields}&or=(customer_id.eq.${encodedCustomerId},converted_customer_id.eq.${encodedCustomerId})&limit=100`);
+  } catch (error) {
+    if (!isMissingColumnError(error)) throw error;
+    return readRows(context, "leads", `select=${legacyLeadFields}&converted_customer_id=eq.${encodedCustomerId}&limit=100`);
+  }
+}
+
+async function readLeadById(context, leadId) {
+  const encodedLeadId = encodeURIComponent(leadId);
+  try {
+    return await readSingle(context, "leads", `select=${leadFields}&id=eq.${encodedLeadId}&limit=1`);
+  } catch (error) {
+    if (!isMissingColumnError(error)) throw error;
+    return readSingle(context, "leads", `select=${legacyLeadFields}&id=eq.${encodedLeadId}&limit=1`);
+  }
 }
 
 async function readSingle(context, table, query) {
@@ -450,6 +471,11 @@ function isObject(value) {
 function isMissingPreviewSchema(error = {}) {
   const text = [error.message, error.details, error.code].map((value) => cleanText(value).toLowerCase()).join(" ");
   return text.includes("website_preview_versions") || text.includes("schema cache") || text.includes("pgrst205");
+}
+
+function isMissingColumnError(error = {}) {
+  const text = [error.message, error.details, error.code].map((value) => cleanText(value).toLowerCase()).join(" ");
+  return error.code === "42703" || error.code === "PGRST204" || text.includes("column") || text.includes("schema cache");
 }
 
 function safeError(error = {}) {
