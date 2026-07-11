@@ -35,7 +35,7 @@ const previewVersionFields = [
 const websiteFields = "id,customer_id,name,domain,status";
 const projectFields = "id,customer_id,website_id,name,status,updated_at";
 const customerFields = "id,name,company,email,website";
-const demoJourneyFields = "id,lead_id,customer_id,business_name,preview_url,preview_token,updated_at,created_at";
+const demoJourneyFields = "id,lead_id,customer_id,business_name,email,website_url,preview_url,preview_token,updated_at,created_at";
 const leadFields = "id,customer_id,converted_customer_id";
 const legacyLeadFields = "id,converted_customer_id";
 const buildJobFields = "id,demo_journey_id,lead_id,customer_id,preview_url,preview_token";
@@ -415,12 +415,7 @@ async function resolveLegacyCustomerFromSelection(context, journey = {}, selecti
 async function resolveExplicitLegacyCustomerFromSelection(context, journey = {}, selection = {}) {
   const identityCustomerId = await resolveLegacyCustomerFromSelection(context, journey, selection);
   if (identityCustomerId) return identityCustomerId;
-  const selectedCustomerId = uuidOrEmpty(selection.selectedCustomerId);
-  if (!selectedCustomerId || !selection.selectedWebsite?.id || !selection.selectedProjectId) return "";
-  if (cleanText(selection.selectedWebsite.customer_id) !== selectedCustomerId) return "";
-  const project = await readSingle(context, "projects", `select=${projectFields}&id=eq.${encodeURIComponent(selection.selectedProjectId)}&limit=1`);
-  if (!project?.id || cleanText(project.customer_id) !== selectedCustomerId || cleanText(project.website_id) !== cleanText(selection.selectedWebsite.id)) return "";
-  return selectedCustomerId;
+  return "";
 }
 
 function legacyJourneyMatchesCustomer(journey = {}, customer = {}) {

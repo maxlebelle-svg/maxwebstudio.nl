@@ -290,18 +290,18 @@ async function run() {
     selectedProjectId: ids.projectA,
   });
   const orphanLegacy = orphanVersions.find((version) => version.id === ids.previewLegacy);
-  assert(orphanLegacy, "orphan legacy preview should be visible through customer identity match");
-  assert.strictEqual(orphanLegacy._ownership.resolvable, true, "orphan legacy preview should be publishable with explicit matching customer/project/website");
-  const orphanPublishResponse = await _private.publishPreviewVersion(context(), {
-    websiteId: ids.websiteA,
-    customerId: ids.customerA,
-    projectId: ids.projectA,
-    previewVersionId: ids.previewLegacy,
-  });
-  assert.strictEqual(orphanPublishResponse.statusCode, 200, "orphan legacy preview should publish after explicit ownership proof");
-  assert.strictEqual(tables.website_preview_versions[0].customer_id, ids.customerA);
-  assert.strictEqual(tables.website_preview_versions[0].project_id, ids.projectA);
-  assert.strictEqual(tables.website_preview_versions[0].website_id, ids.websiteA);
+  assert(orphanLegacy, "orphan legacy preview should remain visible as a recent candidate");
+  assert.strictEqual(orphanLegacy._ownership.resolvable, false, "orphan legacy preview without identity proof should not be publishable");
+  await assert.rejects(
+    () => _private.publishPreviewVersion(context(), {
+      websiteId: ids.websiteA,
+      customerId: ids.customerA,
+      projectId: ids.projectA,
+      previewVersionId: ids.previewLegacy,
+    }),
+    (error) => error.code === "PREVIEW_OWNERSHIP_UNRESOLVED"
+  );
+  assert.strictEqual(writes.length, 0, "unproven orphan legacy preview should not write");
   global.__missingLeadCustomerColumns = false;
 
   console.log("admin preview publication compatibility tests passed");
