@@ -806,6 +806,10 @@
             <label for="customer-search">Zoeken<input id="customer-search" type="search" placeholder="Naam, bedrijf, e-mail of website" /></label>
             <label for="customer-status-filter">Status<select id="customer-status-filter"><option value="">Alle statussen</option><option value="actief">Actief</option><option value="onboarding">Onboarding</option><option value="pauze">Pauze</option><option value="gearchiveerd">Gearchiveerd</option></select></label>
             <label for="customer-package-filter">Pakket<select id="customer-package-filter"><option value="">Alle pakketten</option><option value="Basis">Basis</option><option value="Plus">Plus</option><option value="Premium">Premium</option><option value="One Page Website">One Page Website</option></select></label>
+            <label for="customer-portal-filter">Portal<select id="customer-portal-filter"><option value="">Alle portals</option><option value="actief">Actief</option><option value="uitgenodigd">Uitgenodigd</option><option value="uitnodiging_klaar">Uitnodiging klaar</option><option value="niet_actief">Niet actief</option></select></label>
+            <label for="customer-project-filter">Projectfase<select id="customer-project-filter"><option value="">Alle fases</option><option value="active">Actief project</option><option value="waiting_client">Wacht op klant</option><option value="feedback">Feedback</option><option value="live">Live</option><option value="none">Geen project</option></select></label>
+            <label for="customer-sort">Sorteren<select id="customer-sort"><option value="updated_desc">Laatst actief</option><option value="created_desc">Nieuwste klant</option><option value="name_asc">Naam A-Z</option><option value="company_asc">Bedrijf A-Z</option><option value="project_attention">Actie nodig eerst</option></select></label>
+            <label for="customer-page-size">Per pagina<select id="customer-page-size"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></label>
           </div>
           <div class="admin-grid compact-admin-grid" id="customer-source-summary" aria-live="polite"></div>
           <div class="active-filter-bar" id="customer-active-filter" hidden>
@@ -814,16 +818,19 @@
           </div>
 
           <div class="admin-crm-grid">
-            <div class="admin-table client-profile-table" id="customer-list" role="table" aria-label="Klanten" aria-live="polite">
-              <div class="admin-table-row admin-table-head crm-customer-row" role="row">
-                <span>Naam</span><span>Bedrijf</span><span>E-mail</span><span>Telefoon</span><span>Website</span><span>Pakket</span><span>Status</span><span>Portal</span><span>Aangemaakt</span><span>Actie</span>
-              </div>
-              <article class="admin-card request-card request-state-card">
-                <div>
-                  <strong>Nog geen klantdata beschikbaar</strong>
-                  <span>Controleer de toegang of probeer opnieuw te laden.</span>
+            <div class="customer-list-shell">
+              <div class="admin-table client-profile-table" id="customer-list" role="table" aria-label="Klanten" aria-live="polite">
+                <div class="admin-table-row admin-table-head crm-customer-row" role="row">
+                  <span>Klant</span><span>Contact</span><span>Website</span><span>Pakket</span><span>Status</span><span>Project</span><span>Laatste activiteit</span><span>Actie nodig</span><span>Actie</span>
                 </div>
-              </article>
+                <article class="admin-card request-card request-state-card">
+                  <div>
+                    <strong>Nog geen klantdata beschikbaar</strong>
+                    <span>Controleer de toegang of probeer opnieuw te laden.</span>
+                  </div>
+                </article>
+              </div>
+              <div class="customer-list-footer" id="customer-pagination" aria-live="polite"></div>
             </div>
 
             <form class="admin-card admin-profile-form crm-detail-panel" id="customer-detail-form">
@@ -2622,6 +2629,8 @@
           selectedInvoiceId: "",
           selectedQuoteId: "",
           selectedRequestId: "",
+          customerListPage: 1,
+          customerListPageSize: 25,
           dashboardMetrics: null,
           developerModules: null,
           customerSourceStatus: null,
@@ -3118,6 +3127,11 @@
         const customerSearch = document.getElementById("customer-search");
         const customerStatusFilter = document.getElementById("customer-status-filter");
         const customerPackageFilter = document.getElementById("customer-package-filter");
+        const customerPortalFilter = document.getElementById("customer-portal-filter");
+        const customerProjectFilter = document.getElementById("customer-project-filter");
+        const customerSort = document.getElementById("customer-sort");
+        const customerPageSize = document.getElementById("customer-page-size");
+        const customerPagination = document.getElementById("customer-pagination");
         const detailForm = document.getElementById("customer-detail-form");
         const detailFields = {
           name: document.getElementById("detail-name"),
@@ -11954,15 +11968,29 @@
         }
 
                 function customerMatchesFilters(customer) {
-                  const search = normalize(customerSearch.value);
-                  const status = customerStatusFilter.value;
-                  const selectedPackage = customerPackageFilter.value;
-                  const searchable = normalize([customer.name, customer.company, customer.email, customer.website].join(" "));
+                  const search = normalize(customerSearch?.value || "");
+                  const status = customerStatusFilter?.value || "";
+                  const selectedPackage = customerPackageFilter?.value || "";
+                  const portalStatus = customerPortalFilter?.value || "";
+                  const projectFilter = customerProjectFilter?.value || "";
+                  const customerProjects = relatedCustomerProjects(customer);
+                  const customerWebsites = relatedCustomerWebsites(customer);
+                  const searchable = normalize([
+                    customer.name,
+                    customer.company,
+                    customer.email,
+                    customer.phone,
+                    customer.website,
+                    customerWebsites.map((website) => [website.name, website.domain, website.liveUrl].join(" ")).join(" "),
+                    customerProjects.map((project) => [project.name, project.status, project.phase].join(" ")).join(" "),
+                  ].join(" "));
 
                   return (!search || searchable.includes(search))
                     && customerMatchesQuickFilter(customer)
                     && (!status || customer.status === status)
-                    && (!selectedPackage || customer.package === selectedPackage);
+                    && (!selectedPackage || customer.package === selectedPackage)
+                    && (!portalStatus || (customer.portalStatus || "niet_actief") === portalStatus)
+                    && customerMatchesProjectFilter(customerProjects, projectFilter);
                 }
 
                 function updateActiveFilterBar(bar, quickFilter, count = 0, fallbackTitle = "Gefilterd overzicht") {
@@ -11988,19 +12016,144 @@
                   return true;
                 }
 
+                function recordBelongsToCustomer(record = {}, customer = {}) {
+                  const acceptedIds = customerIdentitySet(customer);
+                  return [
+                    record.profileId,
+                    record.customerId,
+                    record.supabaseCustomerId,
+                    record._supabaseCustomerId,
+                    record.customerAuthUserId,
+                    record.metadata?.customerId,
+                    record.metadata?.localCustomerId,
+                  ].some((value) => acceptedIds.has(String(value || "").trim()));
+                }
+
+                function relatedCustomerProjects(customer = {}) {
+                  return state.projects.filter((project) => recordBelongsToCustomer(project, customer));
+                }
+
+                function relatedCustomerWebsites(customer = {}) {
+                  return state.websites.filter((website) => websiteBelongsToCustomer(website, customer.id));
+                }
+
+                function customerMatchesProjectFilter(projects = [], filter = "") {
+                  if (!filter) return true;
+                  if (filter === "none") return !projects.length;
+                  if (filter === "active") return projects.some((project) => !["live", "gearchiveerd", "onderhoud"].includes(project.status));
+                  if (filter === "waiting_client") return projects.some((project) => normalize(project.phase).includes("klant") || normalize(project.status).includes("feedback"));
+                  return projects.some((project) => project.status === filter || normalize(project.phase) === normalize(filter));
+                }
+
+                function customerAttentionLabel(customer = {}, projects = []) {
+                  if (!customer.portalStatus || customer.portalStatus === "niet_actief") return "Portal uitnodigen";
+                  if (!projects.length) return "Project starten";
+                  if (projects.some((project) => project.status === "feedback")) return "Feedback opvolgen";
+                  if (projects.some((project) => normalize(project.phase).includes("content"))) return "Content checken";
+                  return "Geen blokkade";
+                }
+
+                function customerLastActivity(customer = {}, projects = [], websites = []) {
+                  const dates = [
+                    customer.updatedAt,
+                    customer.updated_at,
+                    customer.customerSince,
+                    customer.createdAt,
+                    ...projects.map((project) => project.updatedAt || project.deadline || project.startDate),
+                    ...websites.map((website) => website.lastUpdateAt || website.lastDeployAt || website.updatedAt),
+                  ].filter(Boolean);
+                  return dates.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0] || "";
+                }
+
+                function customerProjectSummary(projects = []) {
+                  if (!projects.length) return { label: "Geen project", tone: "status-planned" };
+                  const priorityProject = projects.find((project) => !["live", "gearchiveerd", "onderhoud"].includes(project.status)) || projects[0];
+                  return {
+                    label: projectStatusLabels[priorityProject.status] || priorityProject.phase || priorityProject.status || "Project",
+                    tone: projectStatusClass(priorityProject.status),
+                  };
+                }
+
+                function compareCustomers(a, b) {
+                  const sortMode = customerSort?.value || "updated_desc";
+                  const aProjects = relatedCustomerProjects(a);
+                  const bProjects = relatedCustomerProjects(b);
+                  if (sortMode === "name_asc") return String(a.name || "").localeCompare(String(b.name || ""), "nl");
+                  if (sortMode === "company_asc") return String(a.company || "").localeCompare(String(b.company || ""), "nl");
+                  if (sortMode === "created_desc") return new Date(b.customerSince || b.createdAt || 0).getTime() - new Date(a.customerSince || a.createdAt || 0).getTime();
+                  if (sortMode === "project_attention") {
+                    const aAttention = customerAttentionLabel(a, aProjects) === "Geen blokkade" ? 1 : 0;
+                    const bAttention = customerAttentionLabel(b, bProjects) === "Geen blokkade" ? 1 : 0;
+                    return aAttention - bAttention || String(a.company || a.name || "").localeCompare(String(b.company || b.name || ""), "nl");
+                  }
+                  return new Date(customerLastActivity(b, bProjects, relatedCustomerWebsites(b)) || 0).getTime() - new Date(customerLastActivity(a, aProjects, relatedCustomerWebsites(a)) || 0).getTime();
+                }
+
+                function createCustomerPrimaryCell(customer = {}) {
+                  const cell = document.createElement("div");
+                  cell.className = "customer-primary-cell";
+                  cell.append(createCell(customer.name || "-", "strong"), createCell(customer.company || "Geen bedrijfsnaam", "small"), createBadge(customerSourceLabel(customer), customerSourceClass(customer)));
+                  return cell;
+                }
+
+                function createCustomerContactCell(customer = {}) {
+                  const cell = document.createElement("div");
+                  cell.className = "customer-meta-cell";
+                  cell.append(createCell(customer.email || "-", "strong"), createCell(customer.phone || "Geen telefoon", "small"));
+                  return cell;
+                }
+
+                function createCustomerWebsiteCell(customer = {}, websites = []) {
+                  const website = websites[0] || {};
+                  const cell = document.createElement("div");
+                  cell.className = "customer-meta-cell";
+                  cell.append(createCell(website.domain || customer.website || "Nog niet ingesteld", "strong"), createCell(websites.length > 1 ? `${websites.length} websites gekoppeld` : website.status ? websiteStatusLabels[website.status] || website.status : "Geen websitecontext", "small"));
+                  return cell;
+                }
+
+                function renderCustomerPagination(filteredCount = 0, pageCount = 1) {
+                  if (!customerPagination) return;
+                  customerPagination.replaceChildren();
+                  if (!state.customers.length || filteredCount <= state.customerListPageSize) return;
+                  const start = (state.customerListPage - 1) * state.customerListPageSize + 1;
+                  const end = Math.min(filteredCount, state.customerListPage * state.customerListPageSize);
+                  const summary = createCell(`${start}-${end} van ${filteredCount} klanten`);
+                  const previous = document.createElement("button");
+                  previous.className = "button secondary";
+                  previous.type = "button";
+                  previous.textContent = "Vorige";
+                  previous.disabled = state.customerListPage <= 1;
+                  previous.addEventListener("click", () => {
+                    state.customerListPage = Math.max(1, state.customerListPage - 1);
+                    renderCustomers();
+                  });
+                  const next = document.createElement("button");
+                  next.className = "button secondary";
+                  next.type = "button";
+                  next.textContent = "Volgende";
+                  next.disabled = state.customerListPage >= pageCount;
+                  next.addEventListener("click", () => {
+                    state.customerListPage = Math.min(pageCount, state.customerListPage + 1);
+                    renderCustomers();
+                  });
+                  customerPagination.append(summary, previous, next);
+                }
+
                 function applyCustomerQuickFilter(detail = {}) {
                   customerQuickFilter = {
                     type: detail.type || "all_customers",
                     title: detail.title || "Alle klanten",
                   };
-                  resetFilters([customerSearch, customerStatusFilter, customerPackageFilter]);
+                  resetFilters([customerSearch, customerStatusFilter, customerPackageFilter, customerPortalFilter, customerProjectFilter]);
+                  state.customerListPage = 1;
                   renderCustomers();
                   window.focusAdminPanel?.(customerActiveFilter || customerList);
                 }
 
                 function clearCustomerQuickFilter() {
                   customerQuickFilter = null;
-                  resetFilters([customerSearch, customerStatusFilter, customerPackageFilter]);
+                  resetFilters([customerSearch, customerStatusFilter, customerPackageFilter, customerPortalFilter, customerProjectFilter]);
+                  state.customerListPage = 1;
                   renderCustomers();
                   window.focusAdminPanel?.(customerList);
                 }
@@ -12106,37 +12259,46 @@
         }
 
                 function renderCustomers() {
-                  const customers = state.customers.filter(customerMatchesFilters);
+                  const customers = state.customers.filter(customerMatchesFilters).sort(compareCustomers);
+                  state.customerListPageSize = Number(customerPageSize?.value || state.customerListPageSize || 25);
+                  const pageCount = Math.max(1, Math.ceil(customers.length / state.customerListPageSize));
+                  state.customerListPage = Math.min(Math.max(1, state.customerListPage || 1), pageCount);
+                  const pageStart = (state.customerListPage - 1) * state.customerListPageSize;
+                  const visibleCustomers = customers.slice(pageStart, pageStart + state.customerListPageSize);
                   customerList.replaceChildren();
                   renderCustomerSourceSummary();
                   updateActiveFilterBar(customerActiveFilter, customerQuickFilter, customers.length, "Klanten");
+                  renderCustomerPagination(customers.length, pageCount);
 
                   if (!state.customers.length) {
                     renderState(customerList, "Nog geen klanten", "Maak je eerste klant aan om het CRM te vullen.", "Leeg", "status-planned", { label: "Nieuwe klant", primary: true, onClick: openNewCustomerModal });
+                    renderCustomerPagination(0, 1);
                     return;
                   }
 
                   if (!customers.length) {
                     renderState(customerList, "Geen klanten gevonden", customerQuickFilter ? "Geen klanten gevonden voor dit filter." : "Pas de zoekopdracht of filters aan.", "Geen match", "status-warning");
+                    renderCustomerPagination(0, 1);
                     return;
                   }
 
-          const head = document.createElement("div");
-          head.className = "admin-table-row admin-table-head crm-customer-row";
-          ["Naam", "Bedrijf", "E-mail", "Telefoon", "Website", "Pakket", "Status", "Portal", "Aangemaakt", "Actie"].forEach((label) => head.append(createCell(label)));
-          customerList.append(head);
+	          const head = document.createElement("div");
+	          head.className = "admin-table-row admin-table-head crm-customer-row";
+	          ["Klant", "Contact", "Website", "Pakket", "Status", "Project", "Laatste activiteit", "Actie nodig", "Actie"].forEach((label) => head.append(createCell(label)));
+	          customerList.append(head);
 
-          customers.forEach((customer) => {
-            const row = document.createElement("div");
-            row.className = "admin-table-row crm-customer-row";
-            row.setAttribute("role", "row");
-            const nameCell = document.createElement("span");
-            const name = document.createElement("strong");
-            name.textContent = customer.name || "-";
-            nameCell.append(name, createBadge(customerSourceLabel(customer), customerSourceClass(customer)));
-            const action = document.createElement("button");
-            action.className = "button secondary";
-            action.type = "button";
+	          visibleCustomers.forEach((customer) => {
+	            const customerProjects = relatedCustomerProjects(customer);
+	            const customerWebsites = relatedCustomerWebsites(customer);
+	            const projectSummary = customerProjectSummary(customerProjects);
+	            const attentionLabel = customerAttentionLabel(customer, customerProjects);
+	            const lastActivity = customerLastActivity(customer, customerProjects, customerWebsites);
+	            const row = document.createElement("div");
+	            row.className = "admin-table-row crm-customer-row";
+	            row.setAttribute("role", "row");
+	            const action = document.createElement("button");
+	            action.className = "button secondary";
+	            action.type = "button";
             action.textContent = "Bekijk";
             action.addEventListener("click", () => {
               selectCustomer(customer.id);
@@ -12145,22 +12307,29 @@
                 actionLabel: "Detail",
                 onAction: () => window.focusAdminPanel?.(document.querySelector(".crm-detail-panel")),
               });
-            });
-            row.append(
-              nameCell,
-              createCell(customer.company),
-              createCell(customer.email || "-"),
-              createCell(customer.phone || "-"),
-              createCell(customer.website || "Nog niet ingesteld"),
-              createCell(customer.package || "-"),
-              createBadge(customerStatusLabels[customer.status] || customer.status, customerStatusClass(customer.status)),
-              createBadge(customer.portalStatus || "niet_actief", customer.portalStatus === "actief" ? "status-active" : customer.portalStatus === "uitgenodigd" ? "status-prepared" : "status-planned"),
-              createCell(formatDate(customer.customerSince || customer.createdAt)),
-              action
-            );
-            customerList.append(row);
-          });
-        }
+	            });
+	            row.append(
+	              createCustomerPrimaryCell(customer),
+	              createCustomerContactCell(customer),
+	              createCustomerWebsiteCell(customer, customerWebsites),
+	              createCell(customer.package || "-"),
+	              (() => {
+	                const cell = document.createElement("div");
+	                cell.className = "customer-badge-stack";
+	                cell.append(
+	                  createBadge(customerStatusLabels[customer.status] || customer.status, customerStatusClass(customer.status)),
+	                  createBadge(customer.portalStatus || "niet_actief", customer.portalStatus === "actief" ? "status-active" : customer.portalStatus === "uitgenodigd" ? "status-prepared" : "status-planned")
+	                );
+	                return cell;
+	              })(),
+	              createBadge(projectSummary.label, projectSummary.tone),
+	              createCell(formatDate(lastActivity || customer.customerSince || customer.createdAt)),
+	              createBadge(attentionLabel, attentionLabel === "Geen blokkade" ? "status-active" : "status-warning"),
+	              action
+	            );
+	            customerList.append(row);
+	          });
+	        }
 
         function selectCustomer(id) {
           state.selectedCustomerId = id;
@@ -18652,7 +18821,12 @@
         quoteDataModeSelect.addEventListener("change", changeQuoteDataModeHandler);
         invoiceDataModeSelect.addEventListener("change", changeInvoiceDataModeHandler);
         subscriptionDataModeSelect.addEventListener("change", changeSubscriptionDataModeHandler);
-                [customerSearch, customerStatusFilter, customerPackageFilter].forEach((filter) => filter.addEventListener("input", renderCustomers));
+                [customerSearch, customerStatusFilter, customerPackageFilter, customerPortalFilter, customerProjectFilter, customerSort, customerPageSize].forEach((filter) => {
+                  filter?.addEventListener("input", () => {
+                    state.customerListPage = 1;
+                    renderCustomers();
+                  });
+                });
                 dashboardSummaryCards.forEach((card) => {
                   card.addEventListener("click", handleDashboardSummaryClick);
                   card.addEventListener("keydown", handleDashboardSummaryKeydown);

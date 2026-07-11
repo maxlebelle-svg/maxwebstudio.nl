@@ -8392,7 +8392,50 @@ h3 {
 }
 
 .crm-customer-row {
-  grid-template-columns: minmax(130px, 1fr) minmax(140px, 1fr) minmax(170px, 1.15fr) minmax(110px, 0.8fr) minmax(150px, 1.05fr) minmax(100px, 0.7fr) minmax(105px, 0.75fr) minmax(120px, 0.85fr) minmax(120px, 0.8fr) auto;
+  grid-template-columns: minmax(180px, 1.25fr) minmax(180px, 1.15fr) minmax(170px, 1fr) minmax(110px, 0.7fr) minmax(150px, 0.95fr) minmax(140px, 0.9fr) minmax(130px, 0.8fr) minmax(145px, 0.9fr) auto;
+}
+
+.customer-list-shell {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.customer-list-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid rgba(171, 196, 224, 0.14);
+  border-radius: 8px;
+  background: rgba(2, 14, 25, 0.46);
+}
+
+.customer-list-footer:empty {
+  display: none;
+}
+
+.customer-list-footer > span {
+  margin-right: auto;
+  color: rgba(226, 236, 248, 0.68);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.customer-primary-cell,
+.customer-meta-cell,
+.customer-badge-stack {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.customer-primary-cell strong,
+.customer-meta-cell strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .website-operations-grid {
@@ -9284,7 +9327,7 @@ h3 {
 }
 
 .client-profile-table .crm-customer-row {
-  min-width: 1180px;
+  min-width: 1120px;
 }
 
 .crm-auth-panel {
