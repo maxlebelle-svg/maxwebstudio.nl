@@ -22,8 +22,8 @@ function clone(value) {
 function createTables({ ambiguousWebsite = false } = {}) {
   return {
     customers: [
-      { id: ids.customerA, name: "QuantumBouw", company: "QuantumBouw B.V.", email: "info@quantumbouw.nl" },
-      { id: ids.customerB, name: "Andere klant", company: "Andere klant B.V.", email: "info@example.nl" },
+      { id: ids.customerA, name: "QuantumBouw", company: "QuantumBouw B.V.", email: "info@quantumbouw.nl", website: "https://quantumbouw.nl" },
+      { id: ids.customerB, name: "Andere klant", company: "Andere klant B.V.", email: "info@example.nl", website: "https://andere.nl" },
     ],
     websites: [
       { id: ids.websiteA, customer_id: ids.customerA, name: "QuantumBouw", domain: "quantumbouw.nl", status: "in_ontwikkeling" },
@@ -37,7 +37,7 @@ function createTables({ ambiguousWebsite = false } = {}) {
       { id: ids.leadA, customer_id: ids.customerA, converted_customer_id: null },
     ],
     demo_journeys: [
-      { id: ids.journeyA, lead_id: ids.leadA, customer_id: ids.customerA, business_name: "QuantumBouw", preview_url: "/demo-preview.html?id=legacy", preview_token: "journey-token" },
+      { id: ids.journeyA, lead_id: ids.leadA, customer_id: ids.customerA, business_name: "QuantumBouw", email: "info@quantumbouw.nl", website_url: "https://quantumbouw.nl", preview_url: "/demo-preview.html?id=legacy", preview_token: "journey-token" },
     ],
     website_build_jobs: [
       { id: ids.buildJobA, demo_journey_id: ids.journeyA, lead_id: ids.leadA, customer_id: ids.customerA, preview_url: "/demo-preview.html?id=legacy", preview_token: "legacy-token" },
@@ -87,13 +87,19 @@ function createTables({ ambiguousWebsite = false } = {}) {
 
 function installFetchMock(tables) {
   const writes = [];
-  global.fetch = async (url, options = {}) => {
+  global.fetch = async (url, fetchOptions = {}) => {
     const parsed = new URL(url);
     const table = parsed.pathname.split("/").pop();
     if (!tables[table]) return response(404, { message: `Unknown table ${table}` });
-    if ((options.method || "GET") === "PATCH") {
+    if (table === "leads" && fetchOptions?.method !== "PATCH") {
+      const select = parsed.searchParams.get("select") || "";
+      if (global.__missingLeadCustomerColumns && (select.includes("customer_id") || select.includes("converted_customer_id"))) {
+        return response(400, { code: "42703", message: select.includes("customer_id") ? "column leads.customer_id does not exist" : "column leads.converted_customer_id does not exist" });
+      }
+    }
+    if ((fetchOptions.method || "GET") === "PATCH") {
       const id = filterEq(parsed.searchParams.get("id"));
-      const record = JSON.parse(options.body || "{}");
+      const record = JSON.parse(fetchOptions.body || "{}");
       const rows = tables[table].filter((row) => row.id === id);
       rows.forEach((row) => Object.assign(row, record));
       writes.push({ table, id, record });
@@ -224,6 +230,32 @@ async function run() {
   });
   assert.strictEqual(modernResponse.statusCode, 200, "modern preview should still publish");
   assert.strictEqual(writes.length, 1);
+
+  tables = createTables();
+  tables.leads = [{ id: ids.leadA }];
+  tables.demo_journeys[0].customer_id = null;
+  tables.website_build_jobs[0].customer_id = null;
+  global.__missingLeadCustomerColumns = true;
+  writes = installFetchMock(tables);
+  const orphanVersions = await _private.findPreviewVersionsForWebsite(context(), {
+    website: tables.websites[0],
+    selectedCustomerId: ids.customerA,
+    selectedProjectId: ids.projectA,
+  });
+  const orphanLegacy = orphanVersions.find((version) => version.id === ids.previewLegacy);
+  assert(orphanLegacy, "orphan legacy preview should be visible through customer identity match");
+  assert.strictEqual(orphanLegacy._ownership.resolvable, true, "orphan legacy preview should be publishable with explicit matching customer/project/website");
+  const orphanPublishResponse = await _private.publishPreviewVersion(context(), {
+    websiteId: ids.websiteA,
+    customerId: ids.customerA,
+    projectId: ids.projectA,
+    previewVersionId: ids.previewLegacy,
+  });
+  assert.strictEqual(orphanPublishResponse.statusCode, 200, "orphan legacy preview should publish after explicit ownership proof");
+  assert.strictEqual(tables.website_preview_versions[0].customer_id, ids.customerA);
+  assert.strictEqual(tables.website_preview_versions[0].project_id, ids.projectA);
+  assert.strictEqual(tables.website_preview_versions[0].website_id, ids.websiteA);
+  global.__missingLeadCustomerColumns = false;
 
   console.log("admin preview publication compatibility tests passed");
 }

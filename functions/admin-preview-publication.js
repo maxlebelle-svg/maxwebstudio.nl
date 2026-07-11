@@ -34,7 +34,7 @@ const previewVersionFields = [
 ].join(",");
 const websiteFields = "id,customer_id,name,domain,status";
 const projectFields = "id,customer_id,website_id,name,status,updated_at";
-const customerFields = "id,name,company,email";
+const customerFields = "id,name,company,email,website";
 const demoJourneyFields = "id,lead_id,customer_id,business_name,preview_url,preview_token,updated_at,created_at";
 const leadFields = "id,customer_id,converted_customer_id";
 const legacyLeadFields = "id,converted_customer_id";
@@ -210,6 +210,8 @@ async function readLegacyJourneyIdsForCustomer(context, customerId) {
     const leadJourneys = await readRows(context, "demo_journeys", `select=${demoJourneyFields}&lead_id=in.(${leadIds.map(encodeURIComponent).join(",")})&limit=100`);
     leadJourneys.forEach((journey) => ids.add(cleanText(journey.id)));
   }
+  const identityJourneys = await readLegacyJourneysByCustomerIdentity(context, customerId);
+  identityJourneys.forEach((journey) => ids.add(cleanText(journey.id)));
 
   return [...ids].filter(Boolean);
 }
@@ -281,8 +283,11 @@ async function resolveLegacyOwnership(context, version = {}, selection = {}) {
     const lead = await readLeadById(context, journey.lead_id);
     [lead?.customer_id, lead?.converted_customer_id, buildJob?.lead_id === lead?.id ? lead?.customer_id : ""].map(uuidOrEmpty).filter(Boolean).forEach((id) => customerIds.add(id));
   }
-  if (customerIds.size !== 1) throw previewError("PREVIEW_OWNERSHIP_UNRESOLVED", "Deze preview kan nog niet veilig aan deze klant worden gekoppeld.", 409);
-  const customerId = [...customerIds][0];
+  const fallbackCustomerId = customerIds.size === 0
+    ? await resolveLegacyCustomerFromSelection(context, journey, selection)
+    : "";
+  if (customerIds.size !== 1 && !fallbackCustomerId) throw previewError("PREVIEW_OWNERSHIP_UNRESOLVED", "Deze preview kan nog niet veilig aan deze klant worden gekoppeld.", 409);
+  const customerId = fallbackCustomerId || [...customerIds][0];
   if (selection.selectedCustomerId && customerId !== selection.selectedCustomerId) {
     throw previewError("PREVIEW_CUSTOMER_MISMATCH", "Deze preview hoort niet bij de geselecteerde klant.", 409);
   }
@@ -337,7 +342,12 @@ async function readLeadRowsForCustomer(context, customerId) {
     return await readRows(context, "leads", `select=${leadFields}&or=(customer_id.eq.${encodedCustomerId},converted_customer_id.eq.${encodedCustomerId})&limit=100`);
   } catch (error) {
     if (!isMissingColumnError(error)) throw error;
-    return readRows(context, "leads", `select=${legacyLeadFields}&converted_customer_id=eq.${encodedCustomerId}&limit=100`);
+    try {
+      return await readRows(context, "leads", `select=${legacyLeadFields}&converted_customer_id=eq.${encodedCustomerId}&limit=100`);
+    } catch (fallbackError) {
+      if (!isMissingColumnError(fallbackError)) throw fallbackError;
+      return [];
+    }
   }
 }
 
@@ -347,8 +357,59 @@ async function readLeadById(context, leadId) {
     return await readSingle(context, "leads", `select=${leadFields}&id=eq.${encodedLeadId}&limit=1`);
   } catch (error) {
     if (!isMissingColumnError(error)) throw error;
-    return readSingle(context, "leads", `select=${legacyLeadFields}&id=eq.${encodedLeadId}&limit=1`);
+    try {
+      return await readSingle(context, "leads", `select=${legacyLeadFields}&id=eq.${encodedLeadId}&limit=1`);
+    } catch (fallbackError) {
+      if (!isMissingColumnError(fallbackError)) throw fallbackError;
+      return null;
+    }
   }
+}
+
+async function readLegacyJourneysByCustomerIdentity(context, customerId) {
+  const customer = await readSingle(context, "customers", `select=${customerFields}&id=eq.${encodeURIComponent(customerId)}&limit=1`);
+  if (!customer?.id) return [];
+  const matches = new Map();
+  const email = cleanText(customer.email).toLowerCase();
+  const website = cleanText(customer.website);
+  if (email) {
+    const rows = await readRows(context, "demo_journeys", `select=${demoJourneyFields}&email=eq.${encodeURIComponent(email)}&limit=25`);
+    rows.forEach((row) => matches.set(cleanText(row.id), row));
+  }
+  if (website) {
+    const rows = await readRows(context, "demo_journeys", `select=${demoJourneyFields}&website_url=eq.${encodeURIComponent(website)}&limit=25`);
+    rows.forEach((row) => matches.set(cleanText(row.id), row));
+  }
+  return [...matches.values()].filter((journey) => legacyJourneyMatchesCustomer(journey, customer));
+}
+
+async function resolveLegacyCustomerFromSelection(context, journey = {}, selection = {}) {
+  const selectedCustomerId = uuidOrEmpty(selection.selectedCustomerId);
+  if (!selectedCustomerId || !selection.selectedWebsite?.id) return "";
+  if (cleanText(selection.selectedWebsite.customer_id) !== selectedCustomerId) return "";
+  const project = selection.selectedProjectId
+    ? await readSingle(context, "projects", `select=${projectFields}&id=eq.${encodeURIComponent(selection.selectedProjectId)}&limit=1`)
+    : await readSingle(context, "projects", `select=${projectFields}&website_id=eq.${encodeURIComponent(selection.selectedWebsite.id)}&order=updated_at.desc.nullslast&limit=1`);
+  if (!project?.id || cleanText(project.customer_id) !== selectedCustomerId || cleanText(project.website_id) !== cleanText(selection.selectedWebsite.id)) return "";
+  const customer = await readSingle(context, "customers", `select=${customerFields}&id=eq.${encodeURIComponent(selectedCustomerId)}&limit=1`);
+  if (!legacyJourneyMatchesCustomer(journey, customer)) return "";
+  return selectedCustomerId;
+}
+
+function legacyJourneyMatchesCustomer(journey = {}, customer = {}) {
+  if (!journey?.id || !customer?.id) return false;
+  const journeyEmail = cleanText(journey.email).toLowerCase();
+  const customerEmail = cleanText(customer.email).toLowerCase();
+  if (journeyEmail && customerEmail && journeyEmail === customerEmail) return true;
+  const journeyWebsite = normalizeUrlForMatch(journey.website_url);
+  const customerWebsite = normalizeUrlForMatch(customer.website);
+  return Boolean(journeyWebsite && customerWebsite && journeyWebsite === customerWebsite);
+}
+
+function normalizeUrlForMatch(value = "") {
+  const text = cleanText(value).toLowerCase();
+  if (!text) return "";
+  return text.replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/+$/, "");
 }
 
 async function readSingle(context, table, query) {
