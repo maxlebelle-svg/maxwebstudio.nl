@@ -179,7 +179,7 @@ async function findPreviewVersionsForWebsite(context, selection = {}) {
   );
 
   const legacy = customerId ? await readLegacyPreviewVersions(context, { customerId }) : [];
-  const unlinked = legacy.length ? [] : await readRecentUnlinkedFactoryPreviewVersions(context);
+  const unlinked = legacy.length ? [] : await readRecentUnlinkedFactoryPreviewVersions(context, selection);
   const merged = dedupeById([...modern, ...legacy, ...unlinked]);
   const annotated = [];
   for (const version of merged) {
@@ -200,11 +200,13 @@ async function readLegacyPreviewVersions(context, { customerId }) {
   return rows.filter((row) => !cleanText(row.website_id));
 }
 
-async function readRecentUnlinkedFactoryPreviewVersions(context) {
+async function readRecentUnlinkedFactoryPreviewVersions(context, selection = {}) {
+  const selectedWebsite = selection.selectedWebsite || selection.website || null;
+  if (!uuidOrEmpty(selection.selectedCustomerId) || !selectedWebsite?.id || !uuidOrEmpty(selection.selectedProjectId)) return [];
   return readRows(
     context,
     "website_preview_versions",
-    `select=${previewVersionFields}&website_id=is.null&customer_id=is.null&order=created_at.desc&limit=50`
+    `select=${previewVersionFields}&website_id=is.null&customer_id=is.null&order=created_at.desc&limit=5`
   );
 }
 

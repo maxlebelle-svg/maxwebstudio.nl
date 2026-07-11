@@ -115,6 +115,7 @@ function applyQuery(rows, params) {
   for (const [key, value] of params.entries()) {
     if (["select", "order", "limit", "or"].includes(key)) continue;
     if (value.startsWith("eq.")) result = result.filter((row) => String(row[key] || "") === filterEq(value));
+    if (value === "is.null") result = result.filter((row) => row[key] == null || row[key] === "");
     if (value.startsWith("in.(")) {
       const values = value.slice(4, -1).split(",").filter(Boolean);
       result = result.filter((row) => values.includes(String(row[key] || "")));
@@ -235,6 +236,8 @@ async function run() {
   tables.leads = [{ id: ids.leadA }];
   tables.demo_journeys[0].customer_id = null;
   tables.website_build_jobs[0].customer_id = null;
+  tables.website_preview_versions[0].customer_id = "";
+  tables.website_preview_versions[0].website_id = "";
   tables.demo_journeys[0].email = "";
   tables.demo_journeys[0].website_url = "";
   global.__missingLeadCustomerColumns = true;
