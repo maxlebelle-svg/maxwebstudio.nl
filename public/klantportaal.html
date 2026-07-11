@@ -607,6 +607,20 @@
           if (/^https?:\/\//i.test(url) || url.startsWith("/")) return url;
           return `https://${url}`;
         };
+        const customerVisibleUrl = (value) => {
+          const url = externalUrl(value);
+          if (!url) return "";
+          try {
+            const parsed = new URL(url, window.location.origin);
+            const host = parsed.hostname.toLowerCase();
+            const path = parsed.pathname.toLowerCase();
+            if (host.endsWith(".supabase.co") || host.includes("github.com") || host.includes("githubusercontent.com")) return "";
+            if (host.includes("netlify") || path.includes("/.netlify/functions")) return "";
+            return parsed.href;
+          } catch {
+            return "";
+          }
+        };
         const demoJourneySteps = [
           "Aanvraag ontvangen",
           "Project ingepland",
@@ -1861,7 +1875,7 @@
 
           const website = websites[0];
           const project = projects[0] || {};
-          const websiteUrl = externalUrl(website.liveUrl || website.domain);
+          const websiteUrl = customerVisibleUrl(website.liveUrl || website.domain);
           const lastUpdate = formatDate(website.updatedAt || website.lastUpdateAt || website.lastDeployAt || project.updatedAt || project.startDate);
           const backupLabel = website.lastBackupAt
             ? formatDate(website.lastBackupAt)
@@ -2058,7 +2072,7 @@
           portalTodaySubtitle.textContent = websiteOnline
             ? `Je website is online. Laatste update: ${latestUpdate}.`
             : "We houden je website klaar voor de volgende stap.";
-          const websiteUrl = externalUrl(primaryWebsite.liveUrl || primaryWebsite.domain);
+          const websiteUrl = customerVisibleUrl(primaryWebsite.liveUrl || primaryWebsite.domain);
           portalTodayWebsiteLink.href = websiteUrl || "#mijn-website";
           portalTodayWebsiteLink.textContent = websiteUrl ? "Open website" : "Bekijk website";
           portalTodayWebsiteLink.target = websiteUrl ? "_blank" : "";
