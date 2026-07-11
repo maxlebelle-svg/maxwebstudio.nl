@@ -1758,9 +1758,14 @@
         }
 
         function renderOnboardingState(onboarding = {}) {
+          const lockedStatuses = new Set(["submitted", "needs_review", "approved", "sent_to_website_factory"]);
+          const locked = lockedStatuses.has(onboarding.status);
           onboardingStatus.textContent = onboardingStatusLabel(onboarding.status);
+          onboardingStatus.dataset.status = onboarding.status || "";
           onboardingStatus.className = `status-badge ${["submitted", "approved", "sent_to_website_factory"].includes(onboarding.status) ? "status-active" : onboarding.status === "needs_review" ? "status-warning" : "status-prepared"}`;
           onboardingSummary.textContent = `${Number(onboarding.completeness || 0)}% compleet${onboarding.missingFields?.length ? ` - mist nog: ${onboarding.missingFields.slice(0, 4).join(", ")}` : ""}.`;
+          onboardingSubmit.disabled = locked;
+          onboardingSubmit.textContent = locked ? "Onboarding ontvangen" : "Onboarding indienen";
           if (onboarding.status === "submitted" || onboarding.status === "needs_review") {
             updateAiCard(onboardingGuidance, "Je onboarding is ontvangen.", "We controleren je input en bereiden de volgende projectstap voor.");
           } else if (Number(onboarding.completeness || 0) >= 80) {
@@ -1884,7 +1889,7 @@
             setOnboardingMessage(error.message || "Onboarding kon niet worden opgeslagen.", "error");
           } finally {
             onboardingSave.disabled = false;
-            onboardingSubmit.disabled = false;
+            onboardingSubmit.disabled = ["submitted", "needs_review", "approved", "sent_to_website_factory"].includes(onboardingStatus.dataset.status || "");
           }
         }
 
