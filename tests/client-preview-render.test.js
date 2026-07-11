@@ -37,5 +37,10 @@ assert(html.includes("<style"), "stylesheet should be inlined");
 assert(html.includes("<script"), "script should be inlined");
 assert(html.includes("data:image/svg+xml;base64,"), "image assets should be embedded as data URIs");
 assert(!new RegExp("\\\\.netlify/functions|supabase|github|preview_token|preview_url", "i").test(html), "rendered preview should not leak provider or technical URLs");
+assert.strictEqual(
+  _private.getQueryParams({ rawUrl: "https://maxwebstudio.nl/.netlify/functions/client-preview-render?version=aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" }).version,
+  "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  "query params should be recovered from Netlify rawUrl when queryStringParameters is empty"
+);
 
 console.log("client preview render tests passed");

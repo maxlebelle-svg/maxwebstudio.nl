@@ -33,7 +33,8 @@ exports.handler = async (event) => {
     const customer = await resolveCustomerForAuthUser(context, authUser.id);
     if (!customer?.id) return jsonResponse(403, { success: false, error: "Geen klantprofiel gekoppeld aan deze sessie." });
 
-    const versionId = uuidOrEmpty(event.queryStringParameters?.version || event.queryStringParameters?.versionId || event.queryStringParameters?.version_id);
+    const params = getQueryParams(event);
+    const versionId = uuidOrEmpty(params.version || params.versionId || params.version_id);
     if (!versionId) return jsonResponse(400, { success: false, error: "Previewversie ontbreekt." });
 
     const version = await readSingle(context, "website_preview_versions", [
@@ -208,6 +209,18 @@ function getBearer(event) {
   return authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
 }
 
+function getQueryParams(event = {}) {
+  if (event.queryStringParameters && Object.keys(event.queryStringParameters).length) return event.queryStringParameters;
+  const rawUrl = cleanText(event.rawUrl || event.rawURL || event.url);
+  if (!rawUrl) return {};
+  try {
+    const parsed = new URL(rawUrl, "https://maxwebstudio.nl");
+    return Object.fromEntries(parsed.searchParams.entries());
+  } catch {
+    return {};
+  }
+}
+
 function jsonResponse(statusCode, body) {
   return {
     statusCode,
@@ -272,6 +285,7 @@ function escapeAttribute(value = "") {
 }
 
 exports._private = {
+  getQueryParams,
   inlinePackageAssets,
   normalizePackage,
   renderPackageHtml,
