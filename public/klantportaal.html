@@ -81,7 +81,10 @@
             <p class="section-kicker">Project Command Center</p>
             <h2 id="command-center-title">Alles wat Max Webstudio voor je bedrijf doet.</h2>
             <p id="command-center-subtitle">Je projectstatus, website, acties, berichten en facturen staan hier bij elkaar.</p>
+            <div class="portal-command-sync" id="command-sync-status" aria-live="polite">Klantdata veilig laden...</div>
           </div>
+
+          <section class="portal-command-overview" id="portal-command-overview" aria-label="Dashboard samenvatting"></section>
 
           <section class="portal-next-step-card" id="portal-command-next-step" aria-label="Jouw volgende stap">
             <span>Jouw volgende stap</span>
@@ -123,6 +126,10 @@
                 <article class="portal-command-card" id="portal-command-finance">
                   <div class="portal-command-card-head"><div><span>Facturen</span><h3>Facturen</h3></div><a href="#facturen">Alles bekijken</a></div>
                   <div class="portal-command-list" id="command-finance-list"></div>
+                </article>
+                <article class="portal-command-card" id="portal-command-feedback">
+                  <div class="portal-command-card-head"><div><span>Feedback</span><h3>Reviewstatus</h3></div><a href="#website-preview">Naar review</a></div>
+                  <div class="portal-command-feedback" id="command-feedback-summary"></div>
                 </article>
                 <article class="portal-command-card" id="portal-command-timeline">
                   <div class="portal-command-card-head"><div><span>Tijdlijn</span><h3>Recente activiteiten</h3></div><a href="#berichten">Open communicatie</a></div>
@@ -578,6 +585,8 @@
         const readinessList = document.getElementById("portal-readiness");
         document.getElementById("readiness")?.setAttribute("hidden", "");
         const commandCenterSubtitle = document.getElementById("command-center-subtitle");
+        const commandSyncStatus = document.getElementById("command-sync-status");
+        const commandOverview = document.getElementById("portal-command-overview");
         const commandNextTitle = document.getElementById("command-next-title");
         const commandNextText = document.getElementById("command-next-text");
         const commandNextActions = document.getElementById("command-next-actions");
@@ -595,6 +604,7 @@
         const commandTaskList = document.getElementById("command-task-list");
         const commandTimelineList = document.getElementById("command-timeline-list");
         const commandFinanceList = document.getElementById("command-finance-list");
+        const commandFeedbackSummary = document.getElementById("command-feedback-summary");
         const commandMessageList = document.getElementById("command-message-list");
         const commandBrandingList = document.getElementById("command-branding-list");
         const commandChangeList = document.getElementById("command-change-list");
@@ -1433,6 +1443,49 @@
           return item;
         }
 
+        function commandOverviewTile(label, value, text, tone = "neutral") {
+          const tile = document.createElement("article");
+          tile.className = `portal-command-overview-tile is-${tone}`;
+          const marker = document.createElement("span");
+          marker.setAttribute("aria-hidden", "true");
+          const strong = document.createElement("strong");
+          const smallLabel = document.createElement("small");
+          const copy = document.createElement("p");
+          strong.textContent = value || "-";
+          smallLabel.textContent = label;
+          copy.textContent = text || "";
+          tile.append(marker, smallLabel, strong, copy);
+          return tile;
+        }
+
+        function feedbackSummaryFromPreview(preview = null) {
+          const items = Array.isArray(preview?.feedbackItems) ? preview.feedbackItems : [];
+          const processedStatuses = new Set(["verwerkt", "resolved", "done", "afgerond", "closed"]);
+          const activeStatuses = new Set(["in behandeling", "in progress", "in_progress", "open", "nieuw"]);
+          const processed = items.filter((item) => processedStatuses.has(normalize(item.status))).length;
+          const active = items.filter((item) => activeStatuses.has(normalize(item.status)) || !normalize(item.status)).length;
+          return { total: items.length, processed, active, items };
+        }
+
+        function reviewTone(preview = null) {
+          const status = normalize(preview?.status || "");
+          if (preview?.approvedAt || status === "approved" || status === "goedgekeurd") return "done";
+          if (status.includes("feedback")) return "attention";
+          if (status.includes("ready") || status.includes("review") || status.includes("klaar")) return "review";
+          return "neutral";
+        }
+
+        function currentProjectPhase(project = {}, latestPreview = null, onboarding = null) {
+          if (latestPreview?.approvedAt) return "Afronding / Livegang";
+          const status = normalize(project.phase || project.status || latestPreview?.status || "");
+          if (status.includes("review") || status.includes("feedback")) return "Review";
+          if (status.includes("ontwikkel") || status.includes("development")) return "Ontwikkeling";
+          if (status.includes("ontwerp") || status.includes("design")) return "Ontwerp";
+          if (onboardingSubmitted(onboarding)) return "Strategie";
+          if (project.id || project.projectId || project.name || project.projectName) return "Intake";
+          return "Nog niet gestart";
+        }
+
         function projectProgressValue(project = {}) {
           const explicit = Number(project.progress || 0);
           if (explicit > 0) return Math.max(0, Math.min(explicit, 100));
@@ -1463,18 +1516,22 @@
           return onboarding && ["submitted", "needs_review", "approved", "sent_to_website_factory"].includes(normalize(onboarding.status));
         }
 
-        function buildCommandTasks({ invoices = [], projects = [], websites = [], messages = [], changeRequests = [], onboarding = null } = {}) {
+        function buildCommandTasks({ invoices = [], projects = [], websites = [], messages = [], changeRequests = [], onboarding = null, previewVersions = [] } = {}) {
           const tasks = [];
+          const latestPreview = previewVersions[0] || null;
           const openInvoice = invoices.find((invoice) => !isPaidStatus(invoice.status));
           const latestUnreadMessage = messages.find((message) => !message.readAt && message.senderType !== "customer" && isOpenStatus(message.status));
+          if (latestPreview?.allowApproval && !latestPreview.approvedAt) tasks.push({ title: "Ontwerp goedkeuren", meta: `Versie ${latestPreview.version || 1} staat klaar`, href: "#portal-demo-feedback-form", tone: "high" });
+          if (latestPreview?.allowFeedback && !latestPreview.approvedAt && !latestPreview.feedbackCount) tasks.push({ title: "Feedback geven", meta: "Geef opmerkingen op de huidige versie", href: "#portal-demo-feedback-form", tone: "high" });
           if (openInvoice) tasks.push({ title: "Factuur bekijken", meta: `${openInvoice.invoiceNumber || "Factuur"} staat open`, href: invoiceUrl(openInvoice) || "#facturen", tone: "high" });
           if (!onboardingSubmitted(onboarding)) tasks.push({ title: "Teksten en foto's aanleveren", meta: "Nodig voor ontwerp en bouw", href: "#onboarding", tone: "high" });
           if (latestUnreadMessage) tasks.push({ title: "Bericht beantwoorden", meta: latestUnreadMessage.subject || latestUnreadMessage.title || "Update van Max Webstudio", href: "#berichten", tone: "normal" });
           return tasks.slice(0, 4);
         }
 
-        function buildCommandTimeline({ projects = [], invoices = [], messages = [], changeRequests = [], notifications = [] } = {}) {
+        function buildCommandTimeline({ projects = [], invoices = [], messages = [], changeRequests = [], notifications = [], previewVersions = [] } = {}) {
           return [
+            ...previewVersions.map((item) => ({ title: item.approvedAt ? "Ontwerp goedgekeurd" : "Ontwerpversie gepubliceerd", meta: `Versie ${item.version || 1} - ${formatDate(item.approvedAt || item.publishedAt)}`, type: item.approvedAt ? "done" : "preview", date: item.approvedAt || item.publishedAt })),
             ...projects.map((item) => ({ title: item.name || item.projectName || "Project bijgewerkt", meta: formatDate(item.updatedAt || item.createdAt), type: "project", date: item.updatedAt || item.createdAt })),
             ...invoices.map((item) => ({ title: isPaidStatus(item.status) ? "Factuur betaald" : "Factuur klaar", meta: `${item.invoiceNumber || "Factuur"} - ${formatDate(item.paidAt || item.invoiceDate || item.createdAt)}`, type: "invoice", date: item.paidAt || item.invoiceDate || item.createdAt })),
             ...messages.map((item) => ({ title: item.subject || item.title || "Bericht ontvangen", meta: `${item.sender || "Max Webstudio"} - ${formatDate(item.createdAt)}`, type: "message", date: item.createdAt })),
@@ -1497,7 +1554,26 @@
             .sort((a, b) => b.date.getTime() - a.date.getTime())[0]?.record || null;
         }
 
-        function nextCustomerStep({ websites = [], projects = [], invoices = [], changeRequests = [], messages = [], onboarding = null } = {}) {
+        function nextCustomerStep({ websites = [], projects = [], invoices = [], changeRequests = [], messages = [], onboarding = null, previewVersions = [] } = {}) {
+          const latestPreview = previewVersions[0] || null;
+          if (latestPreview?.approvedAt) return {
+            title: "Ontwerp goedgekeurd",
+            text: "Dank je. Wij bereiden nu de afronding en livegang voor.",
+            label: "Bekijk ontwerp",
+            href: latestPreview.safePreviewPath || "#website-preview",
+          };
+          if (latestPreview?.allowApproval) return {
+            title: `Keur versie ${latestPreview.version || 1} goed`,
+            text: latestPreview.changeSummary || "Je websiteontwerp staat klaar. Bekijk de versie en keur hem goed wanneer alles klopt.",
+            label: "Ontwerp bekijken",
+            href: latestPreview.safePreviewPath || "#website-preview",
+          };
+          if (latestPreview?.allowFeedback) return {
+            title: `Geef feedback op versie ${latestPreview.version || 1}`,
+            text: "Bekijk de gepubliceerde preview en geef je opmerkingen door op exact deze versie.",
+            label: "Feedback geven",
+            href: "#portal-demo-feedback-form",
+          };
           const openInvoice = invoices.find((invoice) => isOpenStatus(invoice.status));
           if (openInvoice) return {
             title: `Bekijk factuur ${openInvoice.invoiceNumber || openInvoice.title || ""}`.trim(),
@@ -2526,12 +2602,32 @@
           const project = projects[0] || {};
           const website = websites[0] || {};
           const latestPreview = previewVersions[0] || null;
-          const progress = projectProgressValue(project);
+          const baseProgress = projectProgressValue(project);
+          const progress = latestPreview?.approvedAt
+            ? Math.max(baseProgress || 0, 90)
+            : latestPreview
+              ? Math.max(baseProgress || 0, latestPreview.feedbackCount ? 82 : 78)
+              : baseProgress;
           const websiteUrl = customerVisibleUrl(website.liveUrl || website.domain);
-          const nextStep = nextCustomerStep({ websites, projects, invoices, changeRequests, messages, onboarding });
+          const nextStep = nextCustomerStep({ websites, projects, invoices, changeRequests, messages, onboarding, previewVersions });
           const latestMessage = messages[0] || null;
+          const feedbackSummary = feedbackSummaryFromPreview(latestPreview);
+          const currentPhase = currentProjectPhase(project, latestPreview, onboarding);
+          const openInvoices = invoices.filter((invoice) => !isPaidStatus(invoice.status));
+          const unreadMessages = messages.filter((message) => !message.readAt && message.senderType !== "customer" && isOpenStatus(message.status));
+          const latestUpdateLabel = latestDateLabel(
+            [latestPreview, project, website, ...changeRequests, ...messages, ...notifications],
+            ["approvedAt", "publishedAt", "updatedAt", "createdAt", "approved_at", "published_at", "updated_at", "created_at"]
+          );
 
           commandCenterSubtitle.textContent = `${customer.company || customer.name || "Je bedrijf"}: projectstatus, website, acties en communicatie in één overzicht.`;
+          commandSyncStatus.textContent = `Laatst bijgewerkt: ${latestUpdateLabel}`;
+          commandOverview.replaceChildren(
+            commandOverviewTile("Actief project", project.name || project.projectName || website.name || website.domain || "Websiteproject", currentPhase, project.id || latestPreview ? "active" : "neutral"),
+            commandOverviewTile("Ontwerpversie", latestPreview ? `Versie ${latestPreview.version || 1}` : "Nog geen preview", latestPreview ? statusLabel(latestPreview.status || "ready_for_review") : "Max Webstudio publiceert zodra er iets klaarstaat.", reviewTone(latestPreview)),
+            commandOverviewTile("Facturen", openInvoices.length ? `${openInvoices.length} open` : "Bijgewerkt", openInvoices.length ? `${money(openInvoices.reduce((sum, invoice) => sum + Number(invoice.total || invoice.amount || 0), 0))} openstaand` : "Geen open facturen.", openInvoices.length ? "attention" : "done"),
+            commandOverviewTile("Communicatie", unreadMessages.length ? `${unreadMessages.length} nieuw` : "Rustig", unreadMessages.length ? "Er staat een bericht klaar." : "Geen ongelezen berichten.", unreadMessages.length ? "attention" : "done")
+          );
           commandNextTitle.textContent = nextStep.title;
           commandNextText.textContent = nextStep.text;
           commandNextActions.replaceChildren();
@@ -2539,28 +2635,25 @@
 
           commandProgressTitle.textContent = project.name || project.projectName || "Websiteproject";
           commandProgressSubtitle.textContent = project.phase || project.status
-            ? `${labelForStatus(project.phase || project.status)} - ${nextStep.title}`
-            : "Nog geen projectfase beschikbaar.";
+            ? `${currentPhase} - ${nextStep.title}`
+            : latestPreview ? `${currentPhase} - ${statusLabel(latestPreview.status)}` : "Nog geen projectfase beschikbaar.";
           commandProgressValue.textContent = progress === null ? "Nog niet beschikbaar" : `${progress}%`;
           commandProgressBar.style.width = progress === null ? "0%" : `${progress}%`;
           commandProgressSteps.replaceChildren();
           const projectSteps = [
-            "Kennismaking",
-            "Offerte akkoord",
-            "Factuur betaald",
-            "Content aanleveren",
+            "Intake",
+            "Strategie",
             "Ontwerp",
             "Ontwikkeling",
-            "Testen",
-            "Oplevering",
+            "Review",
+            "Afronding",
           ];
           projectSteps.forEach((label, index) => {
             let state = projectStepState(index, progress);
-            if (progress !== null && index === 1 && quotes.length) state = quotes.some(quoteAccepted) ? "done" : "waiting";
-            if (progress !== null && index === 2 && invoices.length) {
-              state = invoices.every((invoice) => isPaidStatus(invoice.status)) ? "done" : "active";
-            }
-            if (progress !== null && index === 3) state = onboardingSubmitted(onboarding) ? "done" : "active";
+            if (label === "Strategie" && quotes.length) state = quotes.some(quoteAccepted) ? "done" : state;
+            if (label === "Ontwerp" && latestPreview) state = "done";
+            if (label === "Review" && latestPreview) state = latestPreview.approvedAt ? "done" : "active";
+            if (label === "Afronding" && latestPreview?.approvedAt) state = "active";
             const step = document.createElement("article");
             step.className = `portal-command-step is-${state}`;
             const number = document.createElement("span");
@@ -2576,7 +2669,7 @@
           commandWebsiteTitle.textContent = latestPreview?.title || website.name || website.domain || "Mijn website";
           commandWebsiteSubtitle.textContent = latestPreview?.changeSummary || website.domain || websiteUrl || "Zodra je domein of preview klaarstaat, verschijnt die hier.";
           commandWebsiteStatus.textContent = latestPreview ? statusLabel(latestPreview.status || "ready_for_review") : friendlyWebsiteStatus(website);
-          commandWebsiteStatus.className = `status-badge ${latestPreview ? "status-warning" : ["online", "live", "actief", "active"].includes(normalize(website.status)) ? "status-active" : "status-prepared"}`;
+          commandWebsiteStatus.className = `status-badge ${latestPreview?.approvedAt ? "status-active" : latestPreview ? "status-warning" : ["online", "live", "actief", "active"].includes(normalize(website.status)) ? "status-active" : "status-prepared"}`;
           commandWebsitePreview.replaceChildren(createWebsitePreviewFrame(website, project, websiteUrl, latestPreview));
           commandWebsiteMeta.replaceChildren(...(latestPreview ? [
             createWebsiteMetric("Versie", `Versie ${latestPreview.version || 1}`, "Deze gepubliceerde previewversie."),
@@ -2592,7 +2685,7 @@
           commandWebsiteActions.replaceChildren();
           if (latestPreview?.safePreviewPath) {
             commandWebsiteActions.append(createWebsiteAction("Ontwerp bekijken", latestPreview.safePreviewPath, true));
-            if (latestPreview.allowFeedback) commandWebsiteActions.append(createWebsiteAction("Feedback geven", "#portal-demo-feedback-form"));
+            if (latestPreview.allowFeedback && !latestPreview.approvedAt) commandWebsiteActions.append(createWebsiteAction("Feedback geven", "#portal-demo-feedback-form"));
             if (latestPreview.allowApproval && !latestPreview.approvedAt) commandWebsiteActions.append(createWebsiteAction("Ontwerp goedkeuren", "#portal-demo-feedback-form"));
           } else if (websiteUrl) {
             commandWebsiteActions.append(createWebsiteAction("Website bekijken", websiteUrl, true));
@@ -2600,7 +2693,7 @@
           commandWebsiteActions.append(createWebsiteAction("Wijziging aanvragen", "#wijzigingen"));
 
           commandTaskList.replaceChildren();
-          const tasks = buildCommandTasks({ invoices, projects, websites, messages, changeRequests, onboarding });
+          const tasks = buildCommandTasks({ invoices, projects, websites, messages, changeRequests, onboarding, previewVersions });
           if (!tasks.length) {
             commandTaskList.append(commandItem({
               title: "Je bent helemaal bij",
@@ -2612,7 +2705,7 @@
           tasks.forEach((task) => commandTaskList.append(commandTask(task)));
 
           commandTimelineList.replaceChildren();
-          const timeline = buildCommandTimeline({ projects, invoices, messages, changeRequests, notifications });
+          const timeline = buildCommandTimeline({ projects, invoices, messages, changeRequests, notifications, previewVersions });
           if (!timeline.length) commandTimelineList.append(commandTimelineItem({ title: "Nog geen activiteiten", meta: "Nieuwe projectupdates verschijnen hier." }));
           timeline.forEach((item) => commandTimelineList.append(commandTimelineItem(item)));
 
@@ -2626,6 +2719,22 @@
             href: item.invoiceNumber ? invoiceUrl(item) || "#facturen" : quoteUrl(item) || "#facturen",
             tone: isPaidStatus(item.status) ? "done" : "attention",
           })));
+
+          commandFeedbackSummary.replaceChildren();
+          if (latestPreview) {
+            const meter = document.createElement("div");
+            meter.className = "portal-command-feedback-meter";
+            meter.innerHTML = `<strong>${escapeHtml(String(feedbackSummary.total))}</strong><span>feedbackpunten</span>`;
+            const details = document.createElement("div");
+            details.className = "portal-command-feedback-details";
+            details.append(
+              commandItem({ title: latestPreview.approvedAt ? "Ontwerp goedgekeurd" : statusLabel(latestPreview.status || "review"), meta: latestPreview.approvedAt ? `Goedgekeurd op ${formatDate(latestPreview.approvedAt)}` : "Status van de huidige versie", badge: latestPreview.approvedAt ? "Goedgekeurd" : "Review", tone: latestPreview.approvedAt ? "done" : "attention" }),
+              commandItem({ title: `${feedbackSummary.processed} verwerkt`, meta: `${feedbackSummary.active} open of in behandeling`, badge: `V${latestPreview.version || 1}`, href: "#website-preview" })
+            );
+            commandFeedbackSummary.append(meter, details);
+          } else {
+            commandFeedbackSummary.append(commandItem({ title: "Nog geen reviewronde", meta: "Feedback verschijnt zodra er een ontwerpversie is gepubliceerd.", href: "#website-preview" }));
+          }
 
           commandMessageList.replaceChildren();
           if (!messages.length) commandMessageList.append(commandItem({ title: "Geen berichten", meta: "Stel je vraag direct vanuit het portaal.", href: "#berichten" }));
