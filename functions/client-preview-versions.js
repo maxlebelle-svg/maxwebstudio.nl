@@ -72,8 +72,18 @@ async function savePreviewFeedback(context, customer, authUser, version, payload
   const currentItems = Array.isArray(version.feedback_items) ? version.feedback_items : [];
   const existing = currentItems.find((item) => cleanText(item.idempotencyKey) === idempotencyKey);
   if (existing) {
-    await ensureFeedbackSideEffects(context, customer, authUser, version, existing);
-    return jsonResponse(200, { success: true, duplicate: true, previewVersion: sanitizeClientVersion(version), feedback: sanitizeFeedbackItem(existing) });
+    const sideEffects = await ensureFeedbackSideEffects(context, customer, authUser, version, existing);
+    return jsonResponse(200, {
+      success: true,
+      duplicate: true,
+      feedbackExists: true,
+      changeRequestReady: sideEffects.changeRequestReady,
+      timelineReady: sideEffects.timelineReady,
+      notificationReady: sideEffects.notificationReady,
+      previewVersion: sanitizeClientVersion(version),
+      feedback: sanitizeFeedbackItem(existing),
+      sideEffects,
+    });
   }
 
   const now = new Date().toISOString();
@@ -97,16 +107,39 @@ async function savePreviewFeedback(context, customer, authUser, version, payload
     updated_at: now,
   });
   const updated = rows[0] || { ...version, feedback_items: nextItems, status: "feedback_received" };
-  await ensureFeedbackSideEffects(context, customer, authUser, version, feedback);
-  return jsonResponse(200, { success: true, previewVersion: sanitizeClientVersion(updated), feedback: sanitizeFeedbackItem(feedback) });
+  const sideEffects = await ensureFeedbackSideEffects(context, customer, authUser, updated, feedback);
+  return jsonResponse(200, {
+    success: true,
+    feedbackExists: true,
+    changeRequestReady: sideEffects.changeRequestReady,
+    timelineReady: sideEffects.timelineReady,
+    notificationReady: sideEffects.notificationReady,
+    previewVersion: sanitizeClientVersion(updated),
+    feedback: sanitizeFeedbackItem(feedback),
+    sideEffects,
+  });
 }
 
 async function ensureFeedbackSideEffects(context, customer, authUser, version, feedback) {
-  await createChangeRequestForFeedback(context, customer, authUser, version, feedback);
-  await safeTimeline({
+  const changeRequest = await createChangeRequestForFeedback(context, customer, authUser, version, feedback);
+  const timeline = await createFeedbackTimelineEvent(customer, authUser, version, feedback, changeRequest);
+  const notification = await createFeedbackAdminNotification(customer, authUser, version, feedback, changeRequest);
+  return {
+    feedbackExists: true,
+    changeRequestReady: Boolean(changeRequest?.id),
+    changeRequestId: cleanText(changeRequest?.id),
+    timelineReady: isTimelineReady(timeline),
+    timelineEventId: cleanText(timeline?.event?.id || timeline?.id),
+    notificationReady: isTimelineReady(notification),
+    notificationEventId: cleanText(notification?.event?.id || notification?.id),
+  };
+}
+
+async function createFeedbackTimelineEvent(customer, authUser, version, feedback, changeRequest) {
+  return createRequiredTimeline({
     customerId: customer.id,
-    eventType: "feedback_created",
-    title: "Feedback ontvangen op website-preview",
+    eventType: "website_preview_feedback_received",
+    title: "Feedback ontvangen op websiteontwerp",
     description: feedback.comment,
     module: "website",
     referenceType: "website_preview_version",
@@ -114,8 +147,82 @@ async function ensureFeedbackSideEffects(context, customer, authUser, version, f
     actorName: customer.name || authUser.email || "Klant",
     actorRole: "customer",
     severity: feedback.priority === "hoog" ? "warning" : "info",
-    metadata: { dedupeKey: `preview_feedback:${feedback.id}`, previewVersionId: version.id, websiteId: version.website_id || "" },
+    isGlobal: false,
+    metadata: {
+      dedupeKey: feedbackSideEffectKey("timeline", version, feedback),
+      previewVersionId: version.id,
+      projectId: version.project_id || "",
+      websiteId: version.website_id || "",
+      changeRequestId: changeRequest?.id || "",
+      feedbackId: feedback.id,
+      feedbackCategory: feedback.category || "",
+      feedbackPage: feedback.page || "",
+    },
   });
+}
+
+async function createFeedbackAdminNotification(customer, authUser, version, feedback, changeRequest) {
+  const company = cleanText(customer.company || customer.company_name || customer.name || "Klant");
+  const category = cleanText(feedback.category || "feedback");
+  const previewLabel = `V${version.version || 1}`;
+  return createRequiredTimeline({
+    customerId: customer.id,
+    eventType: "customer_portal_action",
+    title: "Nieuwe feedback op websiteontwerp",
+    description: `${company} gaf feedback op preview ${previewLabel}: ${cleanText(feedback.comment).slice(0, 240)}`,
+    module: "notifications",
+    referenceType: "website_preview_version",
+    referenceId: version.id,
+    actorName: customer.name || authUser.email || "Klant",
+    actorRole: "customer",
+    severity: feedback.priority === "hoog" ? "warning" : "info",
+    isGlobal: true,
+    metadata: {
+      dedupeKey: feedbackSideEffectKey("admin_notification", version, feedback),
+      notificationType: "preview_feedback_received",
+      customerCompany: company,
+      previewVersionId: version.id,
+      previewVersion: version.version || 1,
+      projectId: version.project_id || "",
+      websiteId: version.website_id || "",
+      changeRequestId: changeRequest?.id || "",
+      feedbackId: feedback.id,
+      feedbackCategory: category,
+      feedbackPage: feedback.page || "",
+      adminPath: `/admin-klanten.html?customer=${encodeURIComponent(customer.id)}&preview=${encodeURIComponent(version.id)}`,
+    },
+  });
+}
+
+async function createRequiredTimeline(input) {
+  try {
+    const result = await createTimelineEvent(input);
+    if (!isTimelineReady(result)) {
+      console.error("Preview feedback timeline side-effect skipped", {
+        code: "PREVIEW_FEEDBACK_TIMELINE_SKIPPED",
+        reason: result?.reason || "unknown",
+        eventType: input.eventType || input.event_type || "",
+        module: input.module || "",
+      });
+    }
+    return result;
+  } catch (error) {
+    console.error("Preview feedback timeline side-effect failed", {
+      code: "PREVIEW_FEEDBACK_TIMELINE_FAILED",
+      message: error.message,
+      eventType: input.eventType || input.event_type || "",
+      module: input.module || "",
+    });
+    return { failed: true, reason: error.message };
+  }
+}
+
+function isTimelineReady(result = {}) {
+  return Boolean(result?.id || (result?.skipped && result?.reason === "duplicate_dedupe_key" && result?.event?.id));
+}
+
+function feedbackSideEffectKey(type, version, feedback) {
+  return `preview_feedback_${type}:${version.id}:${cleanText(feedback.idempotencyKey) || feedback.id}`;
 }
 
 async function approvePreviewVersion(context, customer, authUser, version, payload) {
