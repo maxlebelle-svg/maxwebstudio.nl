@@ -687,6 +687,7 @@
         }
 
         let stagingBridge = { active: false, reason: "", customerId: "", mode: "" };
+        let publishedPreviewVersions = [];
         if (profileContext.profileFound) {
           customerId = profileContext.customerId;
           supabaseCustomerId = profileContext.supabaseCustomerId || profileContext.customerId;
@@ -964,8 +965,8 @@
 
         async function loadDemoJourney() {
           try {
-            const publishedVersions = await loadPublishedPreviewVersions();
-            if (renderPublishedWebsitePreviews(publishedVersions)) return;
+            if (!publishedPreviewVersions.length) publishedPreviewVersions = await loadPublishedPreviewVersions();
+            if (renderPublishedWebsitePreviews(publishedPreviewVersions)) return;
             const data = await demoJourneyRequest("GET");
             renderDemoJourney({ journey: data.journey, events: data.events });
           } catch (error) {
@@ -1759,7 +1760,7 @@
           return pill;
         }
 
-        function createWebsitePreviewFrame(website = {}, project = {}, websiteUrl = "") {
+        function createWebsitePreviewFrame(website = {}, project = {}, websiteUrl = "", previewVersion = null) {
           const frame = document.createElement("div");
           frame.className = "portal-website-preview-frame";
 
@@ -1770,8 +1771,18 @@
           dots.setAttribute("aria-hidden", "true");
           dots.append(document.createElement("i"), document.createElement("i"), document.createElement("i"));
           const label = document.createElement("strong");
-          label.textContent = "Live website-preview";
+          label.textContent = previewVersion?.safePreviewPath ? "Gepubliceerde website-preview" : "Live website-preview";
           toolbar.append(dots, label);
+
+          if (previewVersion?.safePreviewPath) {
+            const iframe = document.createElement("iframe");
+            iframe.className = "portal-website-mini-preview";
+            iframe.title = "Gepubliceerde website-preview";
+            iframe.src = previewVersion.safePreviewPath;
+            iframe.loading = "lazy";
+            frame.append(toolbar, iframe);
+            return frame;
+          }
 
           const shot = website.previewImage || website.screenshotUrl || website.thumbnailUrl || website.imageUrl || "";
           if (shot) {
@@ -2231,7 +2242,7 @@
           }
         }
 
-        function renderMyWebsiteExperience({ websites, projects }) {
+        function renderMyWebsiteExperience({ websites, projects, previewVersions = [] }) {
           websiteOverview.replaceChildren();
           if (!websites.length) {
             websiteOverview.append(createEmpty("Nog geen website gekoppeld", "Zodra jouw website actief is, zie je hier direct de status, laatste update en vervolgstappen."));
@@ -2240,6 +2251,7 @@
 
           const website = websites[0];
           const project = projects[0] || {};
+          const latestPreview = previewVersions[0] || null;
           const websiteUrl = customerVisibleUrl(website.liveUrl || website.domain);
           const lastUpdate = formatDate(website.updatedAt || website.lastUpdateAt || website.lastDeployAt || project.updatedAt || project.startDate);
           const backupLabel = website.lastBackupAt
@@ -2270,7 +2282,7 @@
           card.className = "portal-website-overview-card";
           const previewColumn = document.createElement("div");
           previewColumn.className = "portal-website-preview-column";
-          previewColumn.append(createWebsitePreviewFrame(website, project, websiteUrl));
+          previewColumn.append(createWebsitePreviewFrame(website, project, websiteUrl, latestPreview));
 
           const content = document.createElement("div");
           content.className = "portal-website-overview-content";
@@ -2294,7 +2306,13 @@
           const urlRow = createWebsiteUrlRow(websiteUrl);
           const actions = document.createElement("div");
           actions.className = "portal-today-actions";
-          appendWebsiteAction(actions, "Website bekijken", websiteUrl, true);
+          if (latestPreview?.safePreviewPath) {
+            appendWebsiteAction(actions, "Ontwerp bekijken", latestPreview.safePreviewPath, true);
+            if (latestPreview.allowFeedback) appendWebsiteAction(actions, "Feedback geven", "#portal-demo-feedback-form");
+            if (latestPreview.allowApproval && !latestPreview.approvedAt) appendWebsiteAction(actions, "Ontwerp goedkeuren", "#portal-demo-feedback-form");
+          } else {
+            appendWebsiteAction(actions, "Website bekijken", websiteUrl, true);
+          }
           appendWebsiteAction(actions, "Wijziging aanvragen", "#wijzigingen");
           appendWebsiteAction(actions, "Bericht sturen", "#berichten");
           content.append(status, kicker, title, intro, urlRow, actions);
@@ -2474,9 +2492,10 @@
           }
         }
 
-        function renderProjectCommandCenter({ customer, websites, projects, invoices, quotes, changeRequests, messages, notifications, subscriptions, onboarding = null }) {
+        function renderProjectCommandCenter({ customer, websites, projects, invoices, quotes, changeRequests, messages, notifications, subscriptions, onboarding = null, previewVersions = [] }) {
           const project = projects[0] || {};
           const website = websites[0] || {};
+          const latestPreview = previewVersions[0] || null;
           const progress = projectProgressValue(project);
           const websiteUrl = customerVisibleUrl(website.liveUrl || website.domain);
           const nextStep = nextCustomerStep({ websites, projects, invoices, changeRequests, messages, onboarding });
@@ -2524,11 +2543,11 @@
             commandProgressSteps.append(step);
           });
 
-          commandWebsiteTitle.textContent = website.name || website.domain || "Mijn website";
-          commandWebsiteSubtitle.textContent = website.domain || websiteUrl || "Zodra je domein of preview klaarstaat, verschijnt die hier.";
-          commandWebsiteStatus.textContent = friendlyWebsiteStatus(website);
-          commandWebsiteStatus.className = `status-badge ${["online", "live", "actief", "active"].includes(normalize(website.status)) ? "status-active" : "status-prepared"}`;
-          commandWebsitePreview.replaceChildren(createWebsitePreviewFrame(website, project, websiteUrl));
+          commandWebsiteTitle.textContent = latestPreview?.title || website.name || website.domain || "Mijn website";
+          commandWebsiteSubtitle.textContent = latestPreview?.changeSummary || website.domain || websiteUrl || "Zodra je domein of preview klaarstaat, verschijnt die hier.";
+          commandWebsiteStatus.textContent = latestPreview ? statusLabel(latestPreview.status || "ready_for_review") : friendlyWebsiteStatus(website);
+          commandWebsiteStatus.className = `status-badge ${latestPreview ? "status-warning" : ["online", "live", "actief", "active"].includes(normalize(website.status)) ? "status-active" : "status-prepared"}`;
+          commandWebsitePreview.replaceChildren(createWebsitePreviewFrame(website, project, websiteUrl, latestPreview));
           commandWebsiteMeta.replaceChildren(
             createWebsiteMetric("Domein", website.domain || "Nog niet beschikbaar", "Klantzichtbaar webadres."),
             createWebsiteMetric("Status", friendlyWebsiteStatus(website), "Huidige websitefase."),
@@ -2536,7 +2555,13 @@
             createWebsiteMetric("Laatste update", formatDate(website.updatedAt || project.updatedAt), "Meest recente wijziging.")
           );
           commandWebsiteActions.replaceChildren();
-          if (websiteUrl) commandWebsiteActions.append(createWebsiteAction("Website bekijken", websiteUrl, true));
+          if (latestPreview?.safePreviewPath) {
+            commandWebsiteActions.append(createWebsiteAction("Ontwerp bekijken", latestPreview.safePreviewPath, true));
+            if (latestPreview.allowFeedback) commandWebsiteActions.append(createWebsiteAction("Feedback geven", "#portal-demo-feedback-form"));
+            if (latestPreview.allowApproval && !latestPreview.approvedAt) commandWebsiteActions.append(createWebsiteAction("Ontwerp goedkeuren", "#portal-demo-feedback-form"));
+          } else if (websiteUrl) {
+            commandWebsiteActions.append(createWebsiteAction("Website bekijken", websiteUrl, true));
+          }
           commandWebsiteActions.append(createWebsiteAction("Wijziging aanvragen", "#wijzigingen"));
 
           commandTaskList.replaceChildren();
@@ -2844,7 +2869,8 @@
         ]));
 
         const onboardingState = await loadCustomerOnboarding(customer);
-        renderProjectCommandCenter({ customer, websites, projects, invoices, quotes, changeRequests, messages, notifications, subscriptions, onboarding: onboardingState });
+        publishedPreviewVersions = await loadPublishedPreviewVersions().catch(() => []);
+        renderProjectCommandCenter({ customer, websites, projects, invoices, quotes, changeRequests, messages, notifications, subscriptions, onboarding: onboardingState, previewVersions: publishedPreviewVersions });
         onboardingSave.addEventListener("click", () => saveOnboarding("save"));
         onboardingForm.addEventListener("submit", (event) => {
           event.preventDefault();
@@ -3061,7 +3087,7 @@
 
         renderMessages(customerMessages);
 
-        renderMyWebsiteExperience({ websites, projects });
+        renderMyWebsiteExperience({ websites, projects, previewVersions: publishedPreviewVersions });
         renderGrowthDashboard({ customer, websites, projects, subscriptions, files });
 
         if (!websites.length) websiteList.append(createEmpty("Geen websites", "Er is nog geen website gekoppeld aan dit klantprofiel."));
