@@ -11961,11 +11961,310 @@ h3 {
   --portal-danger: #ff6b81;
   --portal-radius: 8px;
   --portal-shadow: 0 28px 80px rgba(0, 7, 18, 0.34);
+  --mw-bg: var(--portal-bg);
+  --mw-bg-deep: var(--portal-bg-deep);
+  --mw-surface: var(--portal-panel);
+  --mw-surface-soft: rgba(255, 255, 255, 0.045);
+  --mw-surface-elevated: var(--portal-panel-strong);
+  --mw-border: var(--portal-line);
+  --mw-border-soft: rgba(147, 197, 253, 0.12);
+  --mw-border-strong: var(--portal-line-strong);
+  --mw-primary: var(--portal-blue);
+  --mw-primary-soft: rgba(47, 128, 255, 0.18);
+  --mw-info: var(--portal-cyan);
+  --mw-success: var(--portal-green);
+  --mw-warning: var(--portal-amber);
+  --mw-danger: var(--portal-danger);
+  --mw-text: var(--portal-text);
+  --mw-text-soft: var(--portal-muted);
+  --mw-text-muted: var(--portal-subtle);
+  --mw-radius-sm: 6px;
+  --mw-radius: var(--portal-radius);
+  --mw-radius-lg: 12px;
+  --mw-radius-pill: 999px;
+  --mw-shadow-sm: 0 12px 28px rgba(0, 8, 18, 0.16);
+  --mw-shadow: 0 20px 54px rgba(0, 8, 18, 0.2);
+  --mw-shadow-lg: var(--portal-shadow);
+  --mw-space-1: 4px;
+  --mw-space-2: 8px;
+  --mw-space-3: 12px;
+  --mw-space-4: 16px;
+  --mw-space-5: 20px;
+  --mw-space-6: 24px;
+  --mw-space-8: 32px;
+  --mw-space-10: 40px;
+  --mw-space-12: 48px;
+  --mw-space-16: 64px;
+  --mw-font-label: 11px;
+  --mw-font-small: 12px;
+  --mw-font-body: 14px;
+  --mw-font-h4: 18px;
+  --mw-font-h3: clamp(20px, 1.8vw, 28px);
+  --mw-font-h2: clamp(28px, 3vw, 44px);
+  --mw-font-display: clamp(32px, 3.4vw, 52px);
+  --mw-line-tight: 1.08;
+  --mw-line-heading: 1.12;
+  --mw-line-body: 1.5;
+  --mw-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --mw-transition-fast: 150ms var(--mw-ease);
+  --mw-transition: 180ms var(--mw-ease);
   min-height: 100vh;
   color: var(--portal-text);
   background:
     linear-gradient(180deg, rgba(47, 128, 255, 0.12) 0%, transparent 34%),
     linear-gradient(135deg, #071827 0%, var(--portal-bg) 42%, var(--portal-bg-deep) 100%);
+}
+
+/* Max Webstudio client portal component library foundation.
+   Existing portal classes are bridged here so future screens can use mw-* directly. */
+.portal-body :where(.mw-page-header, .portal-main .portal-header) {
+  border: 1px solid var(--mw-border);
+  border-radius: var(--mw-radius);
+  background:
+    linear-gradient(135deg, rgba(17, 44, 70, 0.96), rgba(7, 20, 34, 0.98));
+  box-shadow: var(--mw-shadow-lg);
+}
+
+.portal-body :where(.mw-section-header, .admin-section-heading, .project-workspace-card-head, .portal-command-card-head) {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--mw-space-4);
+}
+
+.portal-body :where(.mw-section-kicker, .section-kicker, .mw-label, .portal-command-card-head span, .project-workspace-card-head span) {
+  color: var(--mw-info);
+  font-size: var(--mw-font-label);
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.portal-body :where(.mw-display) {
+  margin: 0;
+  color: var(--mw-text);
+  font-size: var(--mw-font-display);
+  line-height: var(--mw-line-tight);
+  letter-spacing: 0;
+}
+
+.portal-body :where(.mw-heading, .mw-card-header h3) {
+  margin: 0;
+  color: var(--mw-text);
+  font-size: var(--mw-font-h3);
+  line-height: var(--mw-line-heading);
+  letter-spacing: 0;
+}
+
+.portal-body :where(.mw-copy, .mw-card p) {
+  color: var(--mw-text-soft);
+  font-weight: 760;
+  line-height: var(--mw-line-body);
+}
+
+.portal-body :where(
+  .mw-card,
+  .mw-card-premium,
+  .mw-stat-card,
+  .mw-preview-card,
+  .mw-status-card,
+  .mw-empty-state,
+  .portal-command-card,
+  .project-workspace-card,
+  .project-workspace-summary-card,
+  .portal-review-hero,
+  .portal-review-next-step,
+  .portal-review-feedback-panel,
+  .portal-review-history,
+  .portal-version-command,
+  .portal-version-history-card,
+  .portal-version-detail-card,
+  .portal-review-empty
+) {
+  border: 1px solid var(--mw-border-soft);
+  border-radius: var(--mw-radius);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.024)),
+    var(--mw-surface);
+  box-shadow: var(--mw-shadow);
+  transition:
+    border-color var(--mw-transition),
+    background var(--mw-transition),
+    box-shadow var(--mw-transition),
+    opacity var(--mw-transition),
+    transform var(--mw-transition);
+}
+
+.portal-body :where(.mw-card-premium, .portal-review-hero, .project-workspace-hero) {
+  background:
+    radial-gradient(circle at 88% 12%, rgba(88, 199, 255, 0.16), transparent 32%),
+    linear-gradient(135deg, rgba(17, 44, 70, 0.98), rgba(5, 20, 36, 0.98));
+}
+
+.portal-body :where(.mw-card:hover, .mw-card-premium:hover, .mw-stat-card:hover, .mw-preview-card:hover, .mw-status-card:hover) {
+  border-color: rgba(147, 197, 253, 0.24);
+  transform: translateY(-2px);
+}
+
+.portal-body :where(.mw-card-header, .mw-card-footer, .mw-action-bar) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mw-space-3);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.portal-body :where(.mw-button, .button) {
+  min-height: 42px;
+  border-radius: var(--mw-radius);
+  transition:
+    border-color var(--mw-transition-fast),
+    background var(--mw-transition-fast),
+    color var(--mw-transition-fast),
+    opacity var(--mw-transition-fast),
+    transform var(--mw-transition-fast),
+    box-shadow var(--mw-transition-fast);
+}
+
+.portal-body :where(.mw-button:hover, .button:hover) {
+  transform: translateY(-1px);
+}
+
+.portal-body :where(.mw-button:active, .button:active) {
+  transform: translateY(0) scale(0.99);
+}
+
+.portal-body :where(.mw-button[disabled], .mw-button.is-disabled, .button[disabled], .button.is-disabled) {
+  cursor: not-allowed;
+  opacity: 0.52;
+  transform: none;
+}
+
+.portal-body :where(.mw-button-primary) {
+  border-color: transparent;
+  color: #fff;
+  background: linear-gradient(135deg, var(--mw-primary), #476dff);
+}
+
+.portal-body :where(.mw-button-secondary, .mw-button-ghost) {
+  border: 1px solid var(--mw-border);
+  color: var(--mw-text);
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.portal-body :where(.mw-button-danger) {
+  border-color: rgba(255, 107, 129, 0.4);
+  color: #ffd6de;
+  background: rgba(255, 107, 129, 0.12);
+}
+
+.portal-body :where(.mw-button-icon) {
+  width: 42px;
+  min-width: 42px;
+  padding: 0;
+}
+
+.portal-body :where(.mw-badge, .mw-chip, .mw-filter-chip, .status-badge, .project-filter-tabs button) {
+  min-height: 28px;
+  border-radius: var(--mw-radius-pill);
+  font-size: var(--mw-font-small);
+  font-weight: 900;
+  line-height: 1;
+  transition:
+    border-color var(--mw-transition-fast),
+    background var(--mw-transition-fast),
+    color var(--mw-transition-fast),
+    opacity var(--mw-transition-fast),
+    transform var(--mw-transition-fast);
+}
+
+.portal-body :where(.mw-badge-success, .status-active) {
+  color: #baf8d4;
+  background: rgba(66, 211, 146, 0.16);
+}
+
+.portal-body :where(.mw-badge-warning, .status-warning) {
+  color: #ffe6a3;
+  background: rgba(246, 185, 75, 0.16);
+}
+
+.portal-body :where(.mw-badge-danger, .status-danger) {
+  color: #ffd6de;
+  background: rgba(255, 107, 129, 0.16);
+}
+
+.portal-body :where(.mw-input, .mw-select, .mw-textarea, .portal-message-form input, .portal-message-form textarea, .portal-message-form select) {
+  min-height: 46px;
+  border: 1px solid var(--mw-border);
+  border-radius: var(--mw-radius);
+  color: var(--mw-text);
+  background: rgba(255, 255, 255, 0.06);
+  transition:
+    border-color var(--mw-transition-fast),
+    background var(--mw-transition-fast),
+    box-shadow var(--mw-transition-fast);
+}
+
+.portal-body :where(.mw-input:focus, .mw-select:focus, .mw-textarea:focus, .portal-message-form input:focus, .portal-message-form textarea:focus, .portal-message-form select:focus) {
+  border-color: rgba(88, 199, 255, 0.46);
+  box-shadow: 0 0 0 4px rgba(88, 199, 255, 0.12);
+}
+
+.portal-body :where(.mw-list, .mw-timeline, .mw-table, .mw-form-grid) {
+  display: grid;
+  gap: var(--mw-space-3);
+}
+
+.portal-body :where(.mw-progress, .portal-command-progressbar) {
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--mw-radius-pill);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.portal-body :where(.mw-progress > span, .portal-command-progressbar span) {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--mw-primary), var(--mw-success));
+  transition: width 700ms var(--mw-ease);
+}
+
+.portal-body :where(.mw-loading-state, .mw-skeleton) {
+  position: relative;
+  overflow: hidden;
+  color: transparent;
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.portal-body :where(.mw-skeleton)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+  animation: mw-skeleton-pulse 1.4s var(--mw-ease) infinite;
+}
+
+.portal-body :where(.mw-modal, .mw-drawer, .mw-dropdown, .mw-tooltip) {
+  border: 1px solid var(--mw-border);
+  border-radius: var(--mw-radius-lg);
+  color: var(--mw-text);
+  background: var(--mw-surface-elevated);
+  box-shadow: var(--mw-shadow-lg);
+}
+
+.portal-body :where(.mw-template-dashboard, .mw-template-detail, .mw-template-list, .mw-template-timeline, .mw-template-review, .mw-template-settings, .mw-template-empty) {
+  display: grid;
+  gap: clamp(var(--mw-space-5), 2vw, var(--mw-space-8));
+  min-width: 0;
+}
+
+@keyframes mw-skeleton-pulse {
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 .portal-app {
