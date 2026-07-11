@@ -206,13 +206,13 @@
 
       <section class="admin-section" id="onboarding">
         <div class="admin-section-heading"><div><p class="section-kicker">Onboarding</p><h2>Vertel ons wat we mogen bouwen</h2></div></div>
-        <article class="portal-section-ai-card portal-ai-card" id="portal-onboarding-guidance">
-          <span>Max zegt</span>
+        <article class="portal-section-ai-card portal-ai-card portal-core-guidance" id="portal-onboarding-guidance">
+          <span>Volgende stap</span>
           <strong>Vul dit rustig in.</strong>
           <p>Je antwoorden worden gebruikt om je websiteproject sneller en scherper voor te bereiden.</p>
           <em>Max Webstudio begeleidt de volgende stap</em>
         </article>
-        <article class="admin-card customer-portal-card">
+        <article class="admin-card customer-portal-card portal-onboarding-shell">
           <div class="portal-form-heading">
             <div>
               <p class="section-kicker">Projectinput</p>
@@ -222,6 +222,8 @@
             <mark class="status-badge status-prepared" id="portal-onboarding-status">Laden</mark>
           </div>
           <form class="admin-form portal-message-form" id="portal-onboarding-form">
+            <section class="portal-onboarding-overview" id="portal-onboarding-overview" aria-label="Onboarding voortgang"></section>
+            <div class="portal-onboarding-steps" id="portal-onboarding-steps"></div>
             <label>Bedrijfsnaam<input name="companyName" type="text" autocomplete="organization" required /></label>
             <label>Contactpersoon<input name="contactName" type="text" autocomplete="name" required /></label>
             <label>Telefoon<input name="phone" type="tel" autocomplete="tel" required /></label>
@@ -321,12 +323,12 @@
       </section>
 
       <section class="admin-section" id="facturen">
-        <div class="admin-section-heading"><div><p class="section-kicker">Facturen & offertes</p><h2>Wat staat open en wat is afgerond?</h2></div></div>
-        <article class="portal-finance-summary portal-ai-card" id="portal-finance-summary">
-          <span>Max zegt</span>
+        <div class="admin-section-heading"><div><p class="section-kicker">Facturen & betalingen</p><h2>Facturen en betalingen</h2></div></div>
+        <article class="portal-finance-summary portal-ai-card portal-core-guidance" id="portal-finance-summary">
+          <span>Betaalstatus</span>
           <strong>Ik zet je betalingen en offertes overzichtelijk klaar.</strong>
           <p>Je ziet hier straks direct wat openstaat, wat betaald is en waar je iets mee moet.</p>
-          <em>Max AI-preview - nog geen automatische AI-actie</em>
+          <em>Alleen klantgebonden documenten worden getoond.</em>
         </article>
         <div class="portal-finance-grid" id="portal-finance-overview" aria-live="polite"></div>
       </section>
@@ -545,28 +547,35 @@
 
       <section class="admin-section" id="berichten">
         <div class="admin-section-heading"><div><p class="section-kicker">Berichten</p><h2>Korte lijn met Max Webstudio</h2></div></div>
-        <article class="portal-message-summary portal-ai-card" id="portal-message-summary">
-          <span>Max zegt</span>
-          <strong>Samenvatting / volgende stap</strong>
+        <article class="portal-message-summary portal-ai-card portal-core-guidance" id="portal-message-summary">
+          <span>Communicatie</span>
+          <strong>Alles op één plek</strong>
           <p>Je gesprekken verschijnen hier zodra je klantdata is geladen.</p>
-          <em>Max AI-preview - nog geen automatische AI-actie</em>
+          <em>Alle berichten blijven op één plek bij je project.</em>
         </article>
-        <article class="admin-card customer-portal-card portal-request-create-card" id="portal-message-create">
-          <div class="portal-form-heading">
-            <p class="section-kicker">Nieuw bericht</p>
-            <h3>Stuur een bericht</h3>
-            <p>Stel je vraag kort en direct. Je bericht komt rustig in de portaalgesprekken terecht.</p>
-          </div>
-          <form class="admin-form portal-message-form" id="portal-message-form">
-            <label>Waar gaat het over?<input id="portal-message-subject" name="subject" type="text" maxlength="180" placeholder="Bijvoorbeeld: vraag over planning" required /></label>
-            <label class="admin-profile-wide">Bericht<textarea id="portal-message-body" name="body" rows="4" maxlength="2500" placeholder="Typ kort wat je wilt vragen of doorgeven." required></textarea></label>
-            <div class="portal-actions">
-              <button class="button primary" id="portal-message-submit" type="submit">Bericht sturen</button>
-              <span class="form-helper" id="portal-message-status" role="status" aria-live="polite"></span>
+        <div class="portal-message-workspace">
+          <section class="portal-message-conversation" aria-label="Gesprek met Max Webstudio">
+            <div class="project-workspace-card-head">
+              <div><span>Gesprek</span><h3>Projectupdates en vragen</h3></div>
             </div>
-          </form>
-        </article>
-        <div class="portal-card-grid" id="portal-messages" aria-live="polite"></div>
+            <div class="portal-card-grid" id="portal-messages" aria-live="polite"></div>
+          </section>
+          <aside class="admin-card customer-portal-card portal-request-create-card portal-message-composer-card" id="portal-message-create">
+            <div class="portal-form-heading">
+              <p class="section-kicker">Nieuw bericht</p>
+              <h3>Stuur een bericht</h3>
+              <p>Stel je vraag kort en direct. Je bericht komt bij je projectcommunicatie te staan.</p>
+            </div>
+            <form class="admin-form portal-message-form" id="portal-message-form">
+              <label>Onderwerp<input id="portal-message-subject" name="subject" type="text" maxlength="180" placeholder="Bijvoorbeeld: vraag over planning" required /></label>
+              <label class="admin-profile-wide">Bericht<textarea id="portal-message-body" name="body" rows="4" maxlength="2500" placeholder="Typ je vraag of update." required></textarea></label>
+              <div class="portal-actions">
+                <button class="button primary" id="portal-message-submit" type="submit">Bericht sturen</button>
+                <span class="form-helper" id="portal-message-status" role="status" aria-live="polite"></span>
+              </div>
+            </form>
+          </aside>
+        </div>
       </section>
 
       <section class="admin-section" id="mijn-website">
@@ -755,6 +764,8 @@
         const notificationList = document.getElementById("portal-notifications");
         const notificationSummary = document.getElementById("portal-notification-summary");
         const onboardingForm = document.getElementById("portal-onboarding-form");
+        const onboardingOverview = document.getElementById("portal-onboarding-overview");
+        const onboardingSteps = document.getElementById("portal-onboarding-steps");
         const onboardingStatus = document.getElementById("portal-onboarding-status");
         const onboardingSummary = document.getElementById("portal-onboarding-summary");
         const onboardingMessage = document.getElementById("portal-onboarding-message");
@@ -835,6 +846,7 @@
         let activePreviewVersionId = "";
         let portalAssetRecords = [];
         let portalAssetFiltersBound = false;
+        let currentOnboardingState = null;
         function escapeHtml(value = "") {
           return String(value || "")
             .replace(/&/g, "&amp;")
@@ -1688,17 +1700,32 @@
           messageList.replaceChildren();
           const summaryTitle = portalMessageSummary.querySelector("strong");
           const summaryText = portalMessageSummary.querySelector("p");
+          const unread = rows.filter((message) => !message.readAt && !["gelezen", "read"].includes(normalize(message.status)) && message.senderType !== "customer").length;
+          const latest = rows[0];
           if (!rows.length) {
-            summaryTitle.textContent = "Nog geen berichten.";
-            summaryText.textContent = "Heb je een vraag? Stuur hieronder kort een bericht, dan houden we het hier overzichtelijk bij.";
-            messageList.append(createEmpty("Geen berichten", "Berichten van Max Webstudio verschijnen hier zodra ze beschikbaar zijn."));
+            summaryTitle.textContent = "Je hebt nog geen berichten.";
+            summaryText.textContent = "Stuur je vraag via het berichtveld. Reacties van Max Webstudio verschijnen daarna in dit gesprek.";
+            messageList.append(createEmpty("Nog geen gesprek", "Je kunt hieronder direct een bericht sturen. We houden de communicatie daarna hier bij elkaar."));
             return;
           }
-          const latest = rows[0];
-          summaryTitle.textContent = latest.senderType === "customer" ? "Je laatste bericht is ontvangen." : "Er staat een update voor je klaar.";
+          summaryTitle.textContent = unread
+            ? `${unread} nieuw bericht${unread === 1 ? "" : "en"} van Max Webstudio.`
+            : "Alle berichten zijn bijgewerkt.";
           summaryText.textContent = latest.senderType === "customer"
-            ? "We pakken je bericht op en reageren vanuit Max Webstudio."
+            ? "Je laatste bericht is ontvangen. We reageren vanuit Max Webstudio."
             : latest.body || latest.message || "Bekijk de laatste update in het gesprek hieronder.";
+          const metaGrid = document.createElement("div");
+          metaGrid.className = "portal-message-meta-grid";
+          [
+            ["Gesprekken", String(rows.length), "berichtregels"],
+            ["Nieuw", String(unread), unread ? "vraagt aandacht" : "geen actie nodig"],
+            ["Laatste update", formatDate(latest.createdAt || latest.created_at), latest.senderType === "customer" ? "door jou" : "door Max"],
+          ].forEach(([label, value, text]) => {
+            const item = document.createElement("article");
+            item.className = "portal-message-meta-card mw-stat-card";
+            item.innerHTML = `<span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><small>${escapeHtml(text)}</small>`;
+            metaGrid.append(item);
+          });
           const thread = document.createElement("div");
           thread.className = "portal-message-thread";
           rows.forEach((message) => {
@@ -1708,13 +1735,13 @@
             const meta = document.createElement("span");
             const title = document.createElement("strong");
             const body = document.createElement("p");
-            meta.textContent = `${isCustomer ? "Jij" : "Max Webstudio"} - ${formatDate(message.createdAt)}`;
+            meta.textContent = `${isCustomer ? "Jij" : "Max Webstudio"} - ${formatDate(message.createdAt || message.created_at)}`;
             title.textContent = message.subject || message.title || "Bericht";
             body.textContent = message.body || message.message || "-";
-            bubble.append(meta, title, body);
+            bubble.append(meta, title, body, createBadge(message.status || (isCustomer ? "verzonden" : "nieuw")));
             thread.append(bubble);
           });
-          messageList.append(thread);
+          messageList.append(metaGrid, thread);
         }
 
         function createInfoCard(title, pairs, actions = []) {
@@ -2650,7 +2677,7 @@
           if (type === "quote") {
             if (["concept", "draft"].includes(status)) return "Deze offerte staat klaar als concept en vraagt nu nog geen actie.";
             if (["geaccepteerd", "accepted"].includes(status)) return "Deze offerte is akkoord. Je hoeft hier nu niets mee.";
-            return "Bekijk de offerte rustig. Akkoord geven doe je via de offertepagina.";
+            return "Bekijk de offerte rustig via de beveiligde offertepagina.";
           }
           if (["betaald", "paid"].includes(status)) return "Deze factuur is betaald en netjes verwerkt.";
           return "Deze factuur staat open. Zodra er een betaallink klaarstaat kun je hem direct openen.";
@@ -2710,10 +2737,9 @@
             details.append(row);
           });
           actions.className = "portal-actions";
-          actions.append(createActionLink(type === "quote" ? "Bekijk offerte" : "Bekijk factuur", type === "quote" ? quoteUrl(item) : invoiceUrl(item)));
-          if (type === "quote") actions.append(createPreviewButton("Akkoord geven"));
-          actions.append(createPreviewButton(type === "quote" ? "Leg offerte uit" : "Leg factuur uit"));
-          max.textContent = `Max: ${financeStatusGroup(type, status)}`;
+          const safeUrl = type === "quote" ? quoteUrl(item) : invoiceUrl(item);
+          if (safeUrl) actions.append(createActionLink(type === "quote" ? "Bekijk offerte" : "Bekijk factuur", safeUrl));
+          max.textContent = financeStatusGroup(type, status);
           card.append(top, title, amount, text, details, actions, max);
           return card;
         }
@@ -2722,6 +2748,7 @@
           financeOverview.replaceChildren();
           const summaryTitle = financeSummary.querySelector("strong");
           const summaryText = financeSummary.querySelector("p");
+          const summaryLabel = financeSummary.querySelector("span");
           const items = [
             ...invoices.map((item) => ({ type: "invoice", item })),
             ...quotes.map((item) => ({ type: "quote", item })),
@@ -2729,17 +2756,120 @@
           const openInvoices = invoices.filter((invoice) => !isPaidStatus(invoice.status));
           const paidInvoices = invoices.filter((invoice) => isPaidStatus(invoice.status));
           const pendingQuotes = quotes.filter((quote) => !isPaidStatus(quote.status));
+          const openTotal = openInvoices.reduce((sum, invoice) => sum + Number(invoice.total || invoice.amount || 0), 0);
+          const paidTotal = paidInvoices.reduce((sum, invoice) => sum + Number(invoice.total || invoice.amount || 0), 0);
+          summaryLabel.textContent = openInvoices.length ? "Actie nodig" : "Betaalstatus";
           summaryTitle.textContent = openInvoices.length
-            ? `${openInvoices.length} factuur${openInvoices.length === 1 ? "" : "en"} vraagt aandacht.`
-            : "Je financiën zijn rustig.";
+            ? `${money(openTotal)} staat open.`
+            : "Alles is betaald.";
           summaryText.textContent = openInvoices.length
-            ? "Bekijk de openstaande facturen. Zodra online betalen klaarstaat, zie je de betaalknop op de factuurpagina."
-            : `${paidInvoices.length} betaald, ${pendingQuotes.length} offerte${pendingQuotes.length === 1 ? "" : "s"} in beeld.`;
+            ? "Bekijk je openstaande facturen. Betaalacties tonen we alleen wanneer er een veilige betaalroute beschikbaar is."
+            : "Je hebt momenteel geen openstaande facturen.";
+          const summary = document.createElement("section");
+          summary.className = "portal-finance-dashboard";
+          [
+            ["Openstaand", money(openTotal), `${openInvoices.length} factuur${openInvoices.length === 1 ? "" : "en"}`],
+            ["Betaald totaal", money(paidTotal), `${paidInvoices.length} betaald`],
+            ["Offertes", String(pendingQuotes.length), pendingQuotes.length ? "wacht op akkoord" : "geen open offerte"],
+            ["Status", openInvoices.length ? "Openstaand" : "Alles betaald", openInvoices.length ? "actie nodig" : "geen actie nodig"],
+          ].forEach(([label, value, text]) => {
+            const card = document.createElement("article");
+            card.className = "portal-finance-stat mw-stat-card";
+            card.innerHTML = `<span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><small>${escapeHtml(text)}</small>`;
+            summary.append(card);
+          });
+          financeOverview.append(summary);
           if (!items.length) {
-            financeOverview.append(createEmpty("Geen facturen of offertes", "Zodra er iets klaarstaat, zie je hier direct of actie nodig is."));
+            financeOverview.append(createEmpty("Geen facturen", "Zodra er een factuur of offerte klaarstaat, zie je die hier."));
             return;
           }
-          items.forEach(({ type, item }) => financeOverview.append(createFinanceCard(type, item)));
+          const grouped = document.createElement("div");
+          grouped.className = "portal-finance-list";
+          const open = items.filter(({ item }) => !isPaidStatus(item.status));
+          const settled = items.filter(({ item }) => isPaidStatus(item.status));
+          [
+            ["Openstaand", open],
+            ["Betaald en akkoord", settled],
+          ].forEach(([title, group]) => {
+            if (!group.length) return;
+            const section = document.createElement("section");
+            section.className = "portal-finance-group";
+            const heading = document.createElement("div");
+            heading.className = "project-workspace-card-head";
+            heading.innerHTML = `<div><span>${escapeHtml(title)}</span><h3>${escapeHtml(title)}</h3></div>`;
+            const grid = document.createElement("div");
+            grid.className = "portal-finance-grid";
+            group.forEach(({ type, item }) => grid.append(createFinanceCard(type, item)));
+            section.append(heading, grid);
+            grouped.append(section);
+          });
+          financeOverview.append(grouped);
+        }
+
+        function compactValue(value = "") {
+          return value ? String(value) : "Wordt nog aangevuld";
+        }
+
+        function renderAccountExperience({ customer = {}, websites = [], subscriptions = [], invoices = [] } = {}) {
+          accountList.replaceChildren();
+          const activeSubscriptions = subscriptions.filter((subscription) => isOpenStatus(subscription.status) || ["actief", "active"].includes(normalize(subscription.status)));
+          const latestInvoice = [...invoices].sort((a, b) => String(b.invoiceDate || b.createdAt || "").localeCompare(String(a.invoiceDate || a.createdAt || "")))[0];
+          const hero = document.createElement("article");
+          hero.className = "portal-account-hero mw-card-premium";
+          hero.innerHTML = `
+            <div>
+              <p class="section-kicker">Accountoverzicht</p>
+              <h3>${escapeHtml(customer.company || customer.name || "Je account")}</h3>
+              <p>${escapeHtml(customer.name || "Contactpersoon wordt nog aangevuld")}</p>
+            </div>
+            <div class="portal-account-status-list">
+              <mark class="status-badge status-active">Veilig gekoppeld</mark>
+              <mark class="status-badge status-prepared">${escapeHtml(customer.package || "Pakket wordt aangevuld")}</mark>
+            </div>
+          `;
+          const grid = document.createElement("div");
+          grid.className = "portal-account-grid";
+          const cards = [
+            createInfoCard("Bedrijfsgegevens", [
+              ["Bedrijf", compactValue(customer.company)],
+              ["KvK", compactValue(customer.kvk)],
+              ["Btw-nummer", compactValue(customer.vatNumber)],
+              ["Adres", compactValue([customer.address, customer.postalCode, customer.city].filter(Boolean).join(", "))],
+            ], [createWebsiteAction("Wijziging aanvragen", "#wijzigingen", true)]),
+            createInfoCard("Contactgegevens", [
+              ["Contactpersoon", compactValue(customer.name)],
+              ["E-mail", compactValue(customer.email)],
+              ["Telefoon", compactValue(customer.phone)],
+            ], [createWebsiteAction("Bericht sturen", "#berichten")]),
+            createInfoCard("Factuurgegevens", [
+              ["Laatste factuur", latestInvoice ? `${latestInvoice.invoiceNumber || "Factuur"} - ${formatDate(latestInvoice.invoiceDate || latestInvoice.createdAt)}` : "Geen facturen beschikbaar"],
+              ["Betaalstatus", latestInvoice ? labelForStatus(latestInvoice.status) : "Alles is rustig"],
+              ["Factuuradres", compactValue([customer.billingAddress || customer.address, customer.postalCode, customer.city].filter(Boolean).join(", "))],
+            ], [createWebsiteAction("Facturen bekijken", "#facturen")]),
+            createInfoCard("Toegang en beveiliging", [
+              ["Status", "Je account is veilig gekoppeld"],
+              ["E-mailadres wijzigen", "Via de beveiligde accountinstellingen"],
+              ["Wachtwoord", "Wijzigen via de loginpagina"],
+            ], [createWebsiteAction("Wachtwoord wijzigen", "/klant-login.html")]),
+            createInfoCard("Pakket en diensten", [
+              ["Pakket", compactValue(customer.package)],
+              ["Actieve websites", String(websites.length || 0)],
+              ["Actieve diensten", activeSubscriptions.length ? `${activeSubscriptions.length} actief` : "Geen actieve extra dienst zichtbaar"],
+            ]),
+            createInfoCard("Contact met Max Webstudio", [
+              ["WhatsApp", companySettings.phoneDisplay],
+              ["E-mail", companySettings.primaryEmail],
+              ["Telefonisch", companySettings.phoneDisplay],
+            ], [
+              createWebsiteAction("Bericht sturen", "#berichten", true),
+              ...createCompanyContactActions("Vraag over mijn account").slice(0, 2),
+            ]),
+          ];
+          cards.forEach((card) => {
+            card.classList.add("portal-account-card");
+            grid.append(card);
+          });
+          accountList.append(hero, grid);
         }
 
         function friendlyWebsiteStatus(website = {}) {
@@ -2988,6 +3118,158 @@
           }[String(value || "").trim()] || "Onboarding";
         }
 
+        const onboardingStepDefinitions = [
+          { id: "company", title: "Bedrijf", text: "De basisgegevens waarmee we je website en teksten goed kunnen afstemmen.", fields: ["companyName"], optional: ["currentDomain"] },
+          { id: "contact", title: "Contactpersoon", text: "Zo weten we wie we mogen benaderen bij vragen over inhoud of planning.", fields: ["contactName", "phone", "email"] },
+          { id: "registration", title: "Adres en registratie", text: "Handig voor facturen, contactgegevens en juridische bedrijfsvermelding.", fields: ["address"], optional: ["kvk", "vat"] },
+          { id: "hours", title: "Openingstijden", text: "Alleen nodig wanneer openingstijden op je website of profiel terugkomen.", fields: [], optional: ["openingHours"] },
+          { id: "style", title: "Huisstijl en voorkeuren", text: "Hiermee bepalen we de uitstraling en richting van het ontwerp.", fields: ["lookAndFeel"], optional: ["colors", "fontPreference", "exampleWebsites", "mustHaveMustNot"] },
+          { id: "content", title: "Website-inhoud", text: "De belangrijkste input voor pagina's, diensten en teksten.", fields: ["pages", "services", "ctas"], optional: ["aboutText", "usps", "faq", "reviews"] },
+          { id: "social", title: "Social media en vindbaarheid", text: "Aanvullende kanalen, zoekwoorden en doelgroepinformatie.", fields: ["audience", "toneOfVoice"], optional: ["socialLinks", "keywords", "serviceArea", "competitors", "offer", "calendarLink", "whatsapp", "mapsLocation"] },
+          { id: "delivery", title: "Bestanden aanleveren", text: "Logo's, foto's en documenten die wij mogen gebruiken.", fields: [], optional: ["extras", "files"] },
+          { id: "confirm", title: "Controle en afronden", text: "Controleer je input en stuur de onboarding naar Max Webstudio.", fields: ["confirmed"], optional: ["domainProvider", "transferDomain", "domainEmail", "desiredDomain"] },
+        ];
+
+        function onboardingFieldControl(name) {
+          if (name === "extras") return onboardingForm.querySelector('fieldset.portal-change-choice-grid');
+          if (name === "files") return document.getElementById("portal-onboarding-files");
+          const field = onboardingForm.elements[name];
+          return field instanceof RadioNodeList ? null : field;
+        }
+
+        function onboardingFieldContainer(name) {
+          if (name === "extras") return onboardingForm.querySelector('fieldset.portal-change-choice-grid');
+          const control = onboardingFieldControl(name);
+          return control?.closest("label") || control;
+        }
+
+        function onboardingFieldHasValue(name) {
+          if (name === "extras") return Boolean(onboardingForm.querySelector('input[name="extras"]:checked'));
+          if (name === "files") return Boolean(document.getElementById("portal-onboarding-files")?.files?.length);
+          const control = onboardingFieldControl(name);
+          if (!control) return false;
+          if (control.type === "checkbox") return control.checked;
+          return Boolean(String(control.value || "").trim());
+        }
+
+        function onboardingStepStats(step) {
+          const required = step.fields || [];
+          const optional = step.optional || [];
+          const requiredDone = required.filter(onboardingFieldHasValue).length;
+          const optionalDone = optional.filter(onboardingFieldHasValue).length;
+          return {
+            required: required.length,
+            requiredDone,
+            optional: optional.length,
+            optionalDone,
+            done: required.length ? requiredDone === required.length : optionalDone > 0,
+          };
+        }
+
+        function onboardingStepSummary(step, stats) {
+          if (stats.done) {
+            if (stats.required) return `${stats.requiredDone}/${stats.required} verplichte gegevens ingevuld`;
+            return `${stats.optionalDone} onderdeel${stats.optionalDone === 1 ? "" : "en"} toegevoegd`;
+          }
+          const missing = (step.fields || []).filter((field) => !onboardingFieldHasValue(field)).slice(0, 2);
+          const labels = missing.map((field) => onboardingFieldContainer(field)?.textContent?.replace(/\s+/g, " ").trim().split(/(?=[A-Z][a-z])/)[0] || field);
+          return labels.length ? `Nog nodig: ${labels.join(", ")}` : "Nog aanvullen";
+        }
+
+        function buildOnboardingWorkflow() {
+          if (!onboardingSteps || onboardingSteps.dataset.ready === "true") return;
+          onboardingStepDefinitions.forEach((step, index) => {
+            const card = document.createElement("section");
+            const button = document.createElement("button");
+            const body = document.createElement("div");
+            const fields = document.createElement("div");
+            const number = document.createElement("span");
+            const titleWrap = document.createElement("div");
+            const title = document.createElement("strong");
+            const copy = document.createElement("small");
+            const badge = document.createElement("mark");
+            card.className = "portal-onboarding-step mw-card";
+            card.dataset.stepId = step.id;
+            button.className = "portal-onboarding-step-toggle";
+            button.type = "button";
+            button.setAttribute("aria-expanded", "false");
+            button.setAttribute("aria-controls", `portal-onboarding-step-${step.id}`);
+            body.className = "portal-onboarding-step-body";
+            body.id = `portal-onboarding-step-${step.id}`;
+            body.hidden = true;
+            fields.className = "portal-onboarding-field-grid";
+            number.className = "portal-onboarding-step-number";
+            number.textContent = String(index + 1).padStart(2, "0");
+            title.textContent = step.title;
+            copy.textContent = step.text;
+            badge.className = "status-badge status-prepared";
+            titleWrap.append(title, copy);
+            button.append(number, titleWrap, badge);
+            [...(step.fields || []), ...(step.optional || [])].forEach((fieldName) => {
+              const container = onboardingFieldContainer(fieldName);
+              if (container) fields.append(container);
+            });
+            body.append(fields);
+            card.append(button, body);
+            onboardingSteps.append(card);
+            button.addEventListener("click", () => toggleOnboardingStep(card, button.getAttribute("aria-expanded") !== "true"));
+          });
+          onboardingSteps.dataset.ready = "true";
+        }
+
+        function toggleOnboardingStep(card, shouldOpen = true) {
+          const button = card.querySelector(".portal-onboarding-step-toggle");
+          const body = card.querySelector(".portal-onboarding-step-body");
+          button?.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
+          if (body) body.hidden = !shouldOpen;
+          card.classList.toggle("is-open", shouldOpen);
+        }
+
+        function updateOnboardingWorkflow(onboarding = {}) {
+          buildOnboardingWorkflow();
+          const stats = onboardingStepDefinitions.map((step) => ({ step, stats: onboardingStepStats(step) }));
+          const completed = stats.filter((item) => item.stats.done).length;
+          const missing = stats.length - completed;
+          const completeness = Math.max(0, Math.min(Number(onboarding?.completeness ?? Math.round((completed / stats.length) * 100)), 100));
+          const next = stats.find((item) => !item.stats.done) || stats[stats.length - 1];
+          onboardingOverview.replaceChildren();
+          [
+            ["Voortgang", `${completeness}%`, createProgress(completeness)],
+            ["Afgerond", `${completed}/${stats.length}`, document.createTextNode("onderdelen klaar")],
+            ["Ontbreekt nog", String(missing), document.createTextNode(missing ? "onderdelen aanvullen" : "alles compleet")],
+            ["Volgende stap", next?.step?.title || "Controle", document.createTextNode(missing ? "ga verder waar je gebleven bent" : "klaar om in te dienen")],
+          ].forEach(([label, value, extra]) => {
+            const card = document.createElement("article");
+            card.className = "portal-onboarding-stat mw-stat-card";
+            const span = document.createElement("span");
+            const strong = document.createElement("strong");
+            const small = document.createElement("small");
+            span.textContent = label;
+            strong.textContent = value;
+            if (extra instanceof Node && extra.nodeType === Node.ELEMENT_NODE) {
+              card.append(span, strong, extra);
+            } else {
+              small.append(extra instanceof Node ? extra : document.createTextNode(String(extra || "")));
+              card.append(span, strong, small);
+            }
+            onboardingOverview.append(card);
+          });
+          stats.forEach(({ step, stats: stepStats }) => {
+            const card = onboardingSteps.querySelector(`[data-step-id="${step.id}"]`);
+            const badge = card?.querySelector(".status-badge");
+            const copy = card?.querySelector(".portal-onboarding-step-toggle small");
+            if (!card || !badge || !copy) return;
+            const isDone = stepStats.done;
+            badge.textContent = isDone ? "Ingevuld" : "Nog nodig";
+            badge.className = `status-badge ${isDone ? "status-active" : "status-prepared"}`;
+            copy.textContent = `${step.text} ${onboardingStepSummary(step, stepStats)}.`;
+            card.classList.toggle("is-complete", isDone);
+          });
+          onboardingSteps.querySelectorAll(".portal-onboarding-step").forEach((card) => toggleOnboardingStep(card, false));
+          const activeCard = onboardingSteps.querySelector(`[data-step-id="${next?.step?.id || onboardingStepDefinitions[0].id}"]`);
+          if (activeCard) toggleOnboardingStep(activeCard, true);
+        }
+
         function setOnboardingMessage(text = "", type = "") {
           onboardingMessage.textContent = text;
           onboardingMessage.className = `form-helper ${type}`.trim();
@@ -3142,12 +3424,17 @@
         }
 
         function renderOnboardingState(onboarding = {}) {
+          currentOnboardingState = onboarding || {};
           const lockedStatuses = new Set(["submitted", "needs_review", "approved", "sent_to_website_factory"]);
           const locked = lockedStatuses.has(onboarding.status);
           onboardingStatus.textContent = onboardingStatusLabel(onboarding.status);
           onboardingStatus.dataset.status = onboarding.status || "";
           onboardingStatus.className = `status-badge ${["submitted", "approved", "sent_to_website_factory"].includes(onboarding.status) ? "status-active" : onboarding.status === "needs_review" ? "status-warning" : "status-prepared"}`;
-          onboardingSummary.textContent = `${Number(onboarding.completeness || 0)}% compleet${onboarding.missingFields?.length ? ` - mist nog: ${onboarding.missingFields.slice(0, 4).join(", ")}` : ""}.`;
+          updateOnboardingWorkflow(onboarding);
+          const missingCount = onboardingStepDefinitions.filter((step) => !onboardingStepStats(step).done).length;
+          onboardingSummary.textContent = missingCount
+            ? `${Number(onboarding.completeness || 0)}% compleet. Nog ${missingCount} onderdeel${missingCount === 1 ? "" : "en"} aanvullen.`
+            : "Je onboarding is compleet. Controleer je gegevens en dien ze in wanneer alles klopt.";
           onboardingSubmit.disabled = locked;
           onboardingSubmit.textContent = locked ? "Onboarding ontvangen" : "Onboarding indienen";
           if (onboarding.status === "submitted" || onboarding.status === "needs_review") {
@@ -3742,6 +4029,7 @@
             onboardingStatus.textContent = "Voorbereid";
             onboardingStatus.className = "status-badge status-prepared";
             onboardingSummary.textContent = "Je kunt alvast invullen. Log opnieuw in als opslaan niet lukt.";
+            updateOnboardingWorkflow({});
             renderBrandingCenter(customer, {});
             return null;
           }
@@ -3761,6 +4049,7 @@
             renderOnboardingState(data.onboarding);
             renderBrandingCenter(customer, data.onboarding);
             document.getElementById("portal-onboarding-files").value = "";
+            updateOnboardingWorkflow(data.onboarding);
             setOnboardingMessage(action === "submit" ? "Je onboarding is ontvangen." : "Je onboarding is opgeslagen.", "success");
           } catch (error) {
             setOnboardingMessage(error.message || "Onboarding kon niet worden opgeslagen.", "error");
@@ -4589,6 +4878,8 @@
         renderProjectWorkspace({ customer, websites, projects, invoices, quotes, files, changeRequests, messages, notifications, onboarding: onboardingState, previewVersions: publishedPreviewVersions });
         renderAssetCenter({ customer, websites, projects, files, onboarding: onboardingState });
         onboardingSave.addEventListener("click", () => saveOnboarding("save"));
+        onboardingForm.addEventListener("input", () => updateOnboardingWorkflow(currentOnboardingState || {}));
+        onboardingForm.addEventListener("change", () => updateOnboardingWorkflow(currentOnboardingState || {}));
         onboardingForm.addEventListener("submit", (event) => {
           event.preventDefault();
           if (!onboardingForm.reportValidity()) return;
@@ -4665,6 +4956,10 @@
           portalMessageSubmit.textContent = "Bericht opslaan...";
           try {
             const formData = new FormData(portalMessageForm);
+            if (!String(formData.get("body") || "").trim()) {
+              portalMessageStatus.textContent = "Typ eerst je bericht.";
+              return;
+            }
             const result = await saveClientPortalMessageWithSupabaseFallback({
               subject: formData.get("subject"),
               body: formData.get("body"),
@@ -4813,21 +5108,7 @@
           ], [createActionLink("Website openen", externalUrl(website.liveUrl || website.domain))]));
         });
 
-        accountList.append(createInfoCard("Bedrijfsgegevens", [
-          ["Bedrijf", customer.company],
-          ["Contactpersoon", customer.name],
-          ["E-mail", customer.email],
-          ["Telefoon", customer.phone],
-          ["Adres", [customer.address, customer.postalCode, customer.city].filter(Boolean).join(", ") || "Nog niet beschikbaar"],
-          ["KvK", customer.kvk || "Nog niet beschikbaar"],
-          ["Btw-nummer", customer.vatNumber || "Nog niet beschikbaar"],
-          ["Pakket", customer.package],
-          ["E-mailadres wijzigen", "Gebruik hiervoor de beveiligde accountflow via Max Webstudio."],
-        ], [
-          createWebsiteAction("Wijziging aanvragen", "#wijzigingen", true),
-          createWebsiteAction("Wachtwoord wijzigen", "/klant-login.html"),
-          ...createCompanyContactActions("Vraag over mijn account"),
-        ]));
+        renderAccountExperience({ customer, websites, subscriptions, invoices });
 
         readinessList.replaceChildren();
         activatePortalView({ focus: false, scroll: false });
