@@ -477,9 +477,23 @@
           </section>
           <section class="portal-review-history">
             <div class="project-workspace-card-head">
-              <div><span>Versies</span><h3>Eerdere klantzichtbare versies</h3></div>
+              <div><span>Versiebeheer</span><h3>Ontwerphistorie</h3></div>
+              <a class="button secondary" href="#project-workspace">Terug naar project</a>
+            </div>
+            <div class="portal-version-command">
+              <div>
+                <span>Actuele versie</span>
+                <strong id="portal-version-current-title">Versies worden geladen.</strong>
+                <p id="portal-version-current-meta">Je ziet hier alleen klantzichtbare, gepubliceerde ontwerpversies.</p>
+              </div>
+              <div class="portal-version-stats" id="portal-version-stats"></div>
+            </div>
+            <div class="portal-version-toolbar">
+              <div class="project-filter-tabs" id="portal-version-filters" aria-label="Versies filteren"></div>
+              <label for="portal-version-sort">Sortering<select id="portal-version-sort"><option value="newest">Nieuwste eerst</option><option value="oldest">Oudste eerst</option></select></label>
             </div>
             <div class="portal-card-grid" id="portal-preview-version-list"></div>
+            <div class="portal-version-detail" id="portal-version-detail" aria-live="polite"></div>
           </section>
           <div class="portal-card-grid" id="portal-launch-checklist"></div>
           <div class="portal-status-timeline" id="portal-demo-journey-timeline" hidden></div>
@@ -668,6 +682,12 @@
         const previewReviewNextText = document.getElementById("portal-review-next-text");
         const previewReviewFormTitle = document.getElementById("portal-review-form-title");
         const previewReviewFormCopy = document.getElementById("portal-review-form-copy");
+        const previewVersionCurrentTitle = document.getElementById("portal-version-current-title");
+        const previewVersionCurrentMeta = document.getElementById("portal-version-current-meta");
+        const previewVersionStats = document.getElementById("portal-version-stats");
+        const previewVersionFilters = document.getElementById("portal-version-filters");
+        const previewVersionSort = document.getElementById("portal-version-sort");
+        const previewVersionDetail = document.getElementById("portal-version-detail");
         const launchChecklist = document.getElementById("portal-launch-checklist");
         const demoFeedbackForm = document.getElementById("portal-demo-feedback-form");
         const demoFeedbackField = document.getElementById("portal-demo-feedback");
@@ -758,6 +778,8 @@
           notifications: document.getElementById("metric-notifications"),
         };
         let activePreviewFeedbackFilter = "all";
+        let activeVersionFilter = "all";
+        let activePreviewVersionId = "";
         function escapeHtml(value = "") {
           return String(value || "")
             .replace(/&/g, "&amp;")
@@ -973,7 +995,10 @@
 
         function renderPublishedWebsitePreviews(versions = []) {
           if (!versions.length) return false;
-          const latest = versions[0];
+          const safeVersions = dedupePreviewVersions(versions);
+          const latest = safeVersions[0];
+          if (!latest) return false;
+          if (!activePreviewVersionId) activePreviewVersionId = latest.id;
           const reviewState = reviewStateForPreview(latest);
           const canFeedback = latest.allowFeedback && !latest.approvedAt;
           const canApprove = latest.allowApproval && !latest.approvedAt;
@@ -1032,9 +1057,7 @@
               </div>
             </article>
           `;
-          previewVersionList.innerHTML = versions.length > 1
-            ? versions.slice(1).map((version) => `<article class="portal-data-card"><span>Eerdere versie</span><strong>Versie ${escapeHtml(String(version.version || 1))}</strong><small>${escapeHtml(formatDate(version.publishedAt))}</small><a class="button secondary" href="${escapeHtml(version.safePreviewPath)}" target="_blank" rel="noopener">Bekijken</a></article>`).join("")
-            : `<article class="portal-review-empty"><span>Eerdere versies</span><strong>Nog geen eerdere publicatie</strong><p>Nieuwe versies verschijnen hier zodra Max Webstudio ze publiceert.</p></article>`;
+          renderVersionHistory(safeVersions);
           renderReviewFeedbackSummary(latest);
           renderFeedbackFilters(latest);
           renderPreviewFeedbackList(latest);
@@ -1150,7 +1173,7 @@
 
         async function loadDemoJourney() {
           try {
-            if (!publishedPreviewVersions.length) publishedPreviewVersions = await loadPublishedPreviewVersions();
+            if (!publishedPreviewVersions.length) publishedPreviewVersions = dedupePreviewVersions(await loadPublishedPreviewVersions());
             if (renderPublishedWebsitePreviews(publishedPreviewVersions)) return;
             const data = await demoJourneyRequest("GET");
             renderDemoJourney({ journey: data.journey, events: data.events });
@@ -1787,6 +1810,219 @@
               </article>
             `;
           }).join("");
+        }
+
+        function previewDateValue(preview = {}) {
+          const value = preview.publishedAt || preview.approvedAt || "";
+          const timestamp = value ? new Date(value).getTime() : 0;
+          return Number.isNaN(timestamp) ? 0 : timestamp;
+        }
+
+        function dedupePreviewVersions(versions = []) {
+          const byId = new Map();
+          versions.forEach((version) => {
+            const id = String(version?.id || "").trim();
+            if (!id || byId.has(id)) return;
+            byId.set(id, version);
+          });
+          return [...byId.values()].sort((a, b) => previewDateValue(b) - previewDateValue(a) || Number(b.version || 0) - Number(a.version || 0));
+        }
+
+        function versionReviewLabel(preview = {}, isCurrent = false) {
+          const counts = feedbackCounts(preview.feedbackItems || []);
+          if (preview.approvedAt) return "Goedgekeurd";
+          if (counts.active > 0) return "Feedback ontvangen";
+          if (preview.allowApproval && isCurrent) return "Wacht op review";
+          return statusLabel(preview.status || "Klaar voor review");
+        }
+
+        function versionMatchesFilter(preview = {}, latest = null, filter = "all") {
+          if (filter === "all") return true;
+          if (filter === "current") return Boolean(preview.id && latest?.id === preview.id);
+          if (filter === "approved") return Boolean(preview.approvedAt);
+          if (filter === "older") return Boolean(preview.id && latest?.id !== preview.id);
+          if (filter === "review") {
+            const status = normalize(preview.status || "");
+            return !preview.approvedAt && (status.includes("review") || status.includes("feedback") || preview.allowApproval);
+          }
+          return false;
+        }
+
+        function versionChangeSummary(preview = {}) {
+          return customerPreviewSummary(preview, preview.changeSummary || "Geen wijzigingssamenvatting beschikbaar.");
+        }
+
+        function versionPrimaryAction(preview = {}, latest = null) {
+          const isCurrent = preview.id && latest?.id === preview.id;
+          if (preview.approvedAt) return { label: "Goedgekeurde versie bekijken", href: preview.safePreviewPath, target: true, tone: "secondary" };
+          if (!isCurrent) return { label: "Oudere versie bekijken", href: preview.safePreviewPath, target: true, tone: "secondary" };
+          const counts = feedbackCounts(preview.feedbackItems || []);
+          if (preview.allowFeedback && counts.active > 0) return { label: "Bekijk feedback", href: "#portal-preview-feedback-list", target: false, tone: "secondary" };
+          if (preview.allowApproval) return { label: "Bekijk versie", href: preview.safePreviewPath, target: true, tone: "primary" };
+          return { label: "Bekijk versie", href: preview.safePreviewPath, target: true, tone: "secondary" };
+        }
+
+        function versionStat(label, value, text = "") {
+          return `<article><span>${escapeHtml(label)}</span><strong>${escapeHtml(String(value))}</strong>${text ? `<small>${escapeHtml(text)}</small>` : ""}</article>`;
+        }
+
+        function renderVersionFilters(versions = [], latest = null) {
+          if (!previewVersionFilters) return;
+          const counts = versions.reduce((memo, version) => {
+            memo.all += 1;
+            ["current", "review", "approved", "older"].forEach((key) => {
+              if (versionMatchesFilter(version, latest, key)) memo[key] += 1;
+            });
+            return memo;
+          }, { all: 0, current: 0, review: 0, approved: 0, older: 0 });
+          const filters = [
+            ["all", "Alles", counts.all],
+            ["current", "Actueel", counts.current],
+            ["review", "Wacht op review", counts.review],
+            ["approved", "Goedgekeurd", counts.approved],
+            ["older", "Oudere versies", counts.older],
+          ];
+          previewVersionFilters.replaceChildren(...filters.map(([key, label, count]) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = key === activeVersionFilter ? "is-active" : "";
+            button.textContent = `${label}${count ? ` ${count}` : ""}`;
+            button.addEventListener("click", () => {
+              activeVersionFilter = key;
+              renderVersionHistory(publishedPreviewVersions);
+            });
+            return button;
+          }));
+        }
+
+        function previewVersionActivity(preview = {}) {
+          const items = [];
+          if (preview.publishedAt) items.push({ title: "Versie gepubliceerd", text: "Deze ontwerpversie is klantzichtbaar gemaakt.", date: preview.publishedAt, tone: "active" });
+          const feedbackItems = Array.isArray(preview.feedbackItems) ? preview.feedbackItems : [];
+          feedbackItems.forEach((item) => {
+            items.push({
+              title: `Feedback ${feedbackStatusLabel(item.status).toLowerCase()}`,
+              text: [item.page, item.section, item.comment].filter(Boolean).join(" · "),
+              date: item.createdAt,
+              tone: feedbackStatusKey(item.status) === "done" ? "done" : "attention",
+            });
+          });
+          if (preview.approvedAt) items.push({ title: "Versie goedgekeurd", text: "Deze versie is door de klant goedgekeurd.", date: preview.approvedAt, tone: "done" });
+          return items.sort((a, b) => previewDateValue({ publishedAt: b.date }) - previewDateValue({ publishedAt: a.date }));
+        }
+
+        function renderVersionDetail(preview = null, latest = null) {
+          if (!previewVersionDetail) return;
+          if (!preview) {
+            previewVersionDetail.innerHTML = `
+              <article class="portal-review-empty">
+                <span>Versiedetail</span>
+                <strong>Selecteer een versie.</strong>
+                <p>Kies een ontwerpversie om feedback, wijzigingssamenvatting en status te bekijken.</p>
+              </article>
+            `;
+            return;
+          }
+          const isCurrent = preview.id && latest?.id === preview.id;
+          const counts = feedbackCounts(preview.feedbackItems || []);
+          const action = versionPrimaryAction(preview, latest);
+          const activity = previewVersionActivity(preview);
+          previewVersionDetail.innerHTML = `
+            <article class="portal-version-detail-card">
+              <div class="portal-version-detail-head">
+                <div>
+                  <span>${isCurrent ? "Actuele versie" : "Versiedetail"}</span>
+                  <h3>${escapeHtml(preview.title || `Versie ${preview.version || 1}`)}</h3>
+                  <p>${escapeHtml(versionChangeSummary(preview))}</p>
+                </div>
+                <mark class="status-badge ${preview.approvedAt ? "status-active" : isCurrent ? "status-warning" : "status-prepared"}">${escapeHtml(versionReviewLabel(preview, isCurrent))}</mark>
+              </div>
+              <div class="portal-version-detail-grid">
+                ${versionStat("Versie", `V${preview.version || 1}`, isCurrent ? "Huidige versie" : "Historie")}
+                ${versionStat("Publicatie", formatDate(preview.publishedAt), "Klantzichtbaar")}
+                ${versionStat("Feedback", counts.total, counts.active ? `${counts.active} open` : "Geen open punten")}
+                ${versionStat("Goedkeuring", preview.approvedAt ? formatDate(preview.approvedAt) : "Nog niet", preview.approvedAt ? "Vastgelegd" : isCurrent ? "Alleen actuele versie" : "Oudere versie")}
+              </div>
+              <div class="portal-version-detail-actions">
+                <a class="button ${action.tone === "primary" ? "primary" : "secondary"}" href="${escapeHtml(action.href || "#")}" ${action.target ? `target="_blank" rel="noopener"` : ""}>${escapeHtml(action.label)}</a>
+                ${isCurrent && preview.allowFeedback && !preview.approvedAt ? `<a class="button secondary" href="#portal-demo-feedback-form">Feedback geven</a>` : ""}
+                ${isCurrent && preview.allowApproval && !preview.approvedAt ? `<button class="button secondary" id="portal-version-approve-selected" type="button">Ontwerp goedkeuren</button>` : ""}
+              </div>
+              <div class="portal-version-activity">
+                <strong>Activiteit bij deze versie</strong>
+                ${activity.length ? activity.map((item) => `
+                  <div class="portal-version-activity-item is-${escapeHtml(item.tone)}">
+                    <span></span>
+                    <div><b>${escapeHtml(item.title)}</b><small>${escapeHtml([formatDate(item.date), item.text].filter(Boolean).join(" · "))}</small></div>
+                  </div>
+                `).join("") : `<p>Er is nog geen klantzichtbare activiteit voor deze versie.</p>`}
+              </div>
+            </article>
+          `;
+          document.getElementById("portal-version-approve-selected")?.addEventListener("click", () => demoApproveSubmit?.click());
+        }
+
+        function renderVersionHistory(versions = []) {
+          if (!previewVersionList) return;
+          const safeVersions = dedupePreviewVersions(versions);
+          const latest = safeVersions[0] || null;
+          if (!activePreviewVersionId && latest?.id) activePreviewVersionId = latest.id;
+          if (!safeVersions.some((version) => version.id === activePreviewVersionId) && latest?.id) activePreviewVersionId = latest.id;
+          const approved = safeVersions.filter((version) => version.approvedAt).length;
+          const withFeedback = safeVersions.filter((version) => Number(version.feedbackCount || version.feedbackItems?.length || 0) > 0).length;
+          if (previewVersionCurrentTitle) previewVersionCurrentTitle.textContent = latest ? `${latest.title || `Versie ${latest.version || 1}`} · V${latest.version || 1}` : "Nog geen klantzichtbare versie";
+          if (previewVersionCurrentMeta) previewVersionCurrentMeta.textContent = latest
+            ? `${versionReviewLabel(latest, true)} · gepubliceerd ${formatDate(latest.publishedAt)} · ${versionChangeSummary(latest)}`
+            : "Zodra Max Webstudio een preview publiceert, verschijnt die hier.";
+          if (previewVersionStats) previewVersionStats.innerHTML = [
+            versionStat("Versies", safeVersions.length, "Klantzichtbaar"),
+            versionStat("Goedgekeurd", approved, "Vastgelegd"),
+            versionStat("Met feedback", withFeedback, "Per versie"),
+          ].join("");
+          renderVersionFilters(safeVersions, latest);
+          const sorted = safeVersions.slice().sort((a, b) => {
+            const direction = previewVersionSort?.value === "oldest" ? 1 : -1;
+            return direction * (previewDateValue(a) - previewDateValue(b) || Number(a.version || 0) - Number(b.version || 0));
+          });
+          const visible = sorted.filter((version) => versionMatchesFilter(version, latest, activeVersionFilter));
+          if (!safeVersions.length) {
+            previewVersionList.innerHTML = `<article class="portal-review-empty"><span>Geen versies</span><strong>Nog geen klantzichtbare ontwerpversies.</strong><p>Gepubliceerde previews verschijnen hier automatisch.</p></article>`;
+            renderVersionDetail(null, latest);
+            return;
+          }
+          if (!visible.length) {
+            previewVersionList.innerHTML = `<article class="portal-review-empty"><span>Geen resultaten</span><strong>Geen versies in dit filter.</strong><p>Kies een ander filter om de ontwerphistorie te bekijken.</p></article>`;
+          } else {
+            previewVersionList.innerHTML = visible.map((version) => {
+              const isCurrent = version.id === latest?.id;
+              const isSelected = version.id === activePreviewVersionId;
+              const counts = feedbackCounts(version.feedbackItems || []);
+              return `
+                <article class="portal-version-history-card ${isSelected ? "is-selected" : ""} ${isCurrent ? "is-current" : ""}">
+                  <div class="portal-version-history-head">
+                    <div>
+                      <span>${isCurrent ? "Huidige versie" : "Oudere versie"}</span>
+                      <strong>Versie ${escapeHtml(String(version.version || 1))}</strong>
+                    </div>
+                    <mark>${escapeHtml(versionReviewLabel(version, isCurrent))}</mark>
+                  </div>
+                  <p>${escapeHtml(versionChangeSummary(version))}</p>
+                  <small>${[formatDate(version.publishedAt), counts.total ? `${counts.total} feedbackpunt(en)` : "Geen feedback", version.approvedAt ? `Goedgekeurd ${formatDate(version.approvedAt)}` : ""].filter(Boolean).join(" · ")}</small>
+                  <div class="portal-version-history-actions">
+                    <button class="button secondary" type="button" data-version-select="${escapeHtml(version.id)}">Details</button>
+                    <a class="button secondary" href="${escapeHtml(version.safePreviewPath)}" target="_blank" rel="noopener">Bekijk versie</a>
+                  </div>
+                </article>
+              `;
+            }).join("");
+          }
+          previewVersionList.querySelectorAll("[data-version-select]").forEach((button) => {
+            button.addEventListener("click", () => {
+              activePreviewVersionId = button.dataset.versionSelect || latest?.id || "";
+              renderVersionHistory(safeVersions);
+            });
+          });
+          renderVersionDetail(safeVersions.find((version) => version.id === activePreviewVersionId) || latest, latest);
         }
 
         function feedbackSummaryFromPreview(preview = null) {
@@ -3637,7 +3873,7 @@
         ]));
 
         const onboardingState = await loadCustomerOnboarding(customer);
-        publishedPreviewVersions = await loadPublishedPreviewVersions().catch(() => []);
+        publishedPreviewVersions = dedupePreviewVersions(await loadPublishedPreviewVersions().catch(() => []));
         renderProjectCommandCenter({ customer, websites, projects, invoices, quotes, changeRequests, messages, notifications, subscriptions, onboarding: onboardingState, previewVersions: publishedPreviewVersions });
         renderProjectWorkspace({ customer, websites, projects, invoices, quotes, files, changeRequests, messages, notifications, onboarding: onboardingState, previewVersions: publishedPreviewVersions });
         onboardingSave.addEventListener("click", () => saveOnboarding("save"));
@@ -3674,6 +3910,7 @@
 
         populateSelect(changeRequestWebsite, websites, (website) => website.name || website.domain || "Website");
         populateSelect(changeRequestProject, projects, (project) => project.name || project.projectName || "Project");
+        previewVersionSort?.addEventListener("change", () => renderVersionHistory(publishedPreviewVersions));
 
         changeRequestForm.addEventListener("submit", async (event) => {
           event.preventDefault();
@@ -3756,8 +3993,8 @@
                 screenshot: demoFeedbackScreenshot?.value || "",
               });
               const versions = await loadPublishedPreviewVersions();
-              publishedPreviewVersions = versions;
-              renderPublishedWebsitePreviews(versions);
+              publishedPreviewVersions = dedupePreviewVersions(versions);
+              renderPublishedWebsitePreviews(publishedPreviewVersions);
             } else {
               const data = await demoJourneyRequest("POST", {
                 action: "feedback",
@@ -3801,8 +4038,8 @@
                 note: String(demoFeedbackField.value || "").trim(),
               });
               const versions = await loadPublishedPreviewVersions();
-              publishedPreviewVersions = versions;
-              renderPublishedWebsitePreviews(versions);
+              publishedPreviewVersions = dedupePreviewVersions(versions);
+              renderPublishedWebsitePreviews(publishedPreviewVersions);
             } else {
               const data = await demoJourneyRequest("POST", {
                 action: "approve_preview",
