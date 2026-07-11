@@ -755,7 +755,17 @@
         }
 
         function statusLabel(value = "") {
-          return String(value || "").replace(/[_-]+/g, " ");
+          const normalized = normalize(value);
+          const labels = {
+            ready_for_review: "Klaar voor review",
+            "ready for review": "Klaar voor review",
+            feedback_received: "Feedback ontvangen",
+            "feedback received": "Feedback ontvangen",
+            approved: "Goedgekeurd",
+            in_progress: "In behandeling",
+            "in progress": "In behandeling",
+          };
+          return labels[normalized] || String(value || "").replace(/[_-]+/g, " ");
         }
 
         function setDemoFeedbackStatus(message = "", type = "") {
