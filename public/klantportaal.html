@@ -1701,7 +1701,7 @@
           const milestones = [];
           if (project.startDate || project.createdAt) milestones.push({ title: "Project gestart", status: "Voltooid", date: project.startDate || project.createdAt, text: project.name || project.projectName || "Websiteproject is aangemaakt.", category: "updates" });
           if (onboardingSubmitted(onboarding)) milestones.push({ title: "Projectinput ontvangen", status: "Voltooid", date: onboarding?.submittedAt || onboarding?.updatedAt || project.updatedAt, text: "De benodigde input is beschikbaar voor het project.", category: "updates" });
-          if (latestPreview?.publishedAt) milestones.push({ title: "Eerste ontwerp klaar", status: latestPreview.approvedAt ? "Voltooid" : statusLabel(latestPreview.status || "ready_for_review"), date: latestPreview.publishedAt, text: latestPreview.changeSummary || "Er is een klantzichtbare ontwerpversie gepubliceerd.", category: "review" });
+          if (latestPreview?.publishedAt) milestones.push({ title: "Eerste ontwerp klaar", status: latestPreview.approvedAt ? "Voltooid" : statusLabel(latestPreview.status || "ready_for_review"), date: latestPreview.publishedAt, text: customerPreviewSummary(latestPreview, "Er is een klantzichtbare ontwerpversie gepubliceerd."), category: "review" });
           if (latestPreview?.feedbackCount) milestones.push({ title: "Feedback ontvangen", status: "Voltooid", date: latestPreview.feedbackItems?.slice(-1)[0]?.createdAt || latestPreview.updatedAt || latestPreview.publishedAt, text: `${latestPreview.feedbackCount} feedbackpunt(en) gekoppeld aan versie ${latestPreview.version || 1}.`, category: "review" });
           if (latestPreview?.approvedAt) milestones.push({ title: "Ontwerp goedgekeurd", status: "Voltooid", date: latestPreview.approvedAt, text: "Je hebt deze previewversie goedgekeurd.", category: "review" });
           invoices.filter((invoice) => isPaidStatus(invoice.status)).slice(0, 2).forEach((invoice) => milestones.push({ title: "Factuur betaald", status: "Voltooid", date: invoice.paidAt || invoice.updatedAt || invoice.createdAt, text: invoice.invoiceNumber || "Betaling verwerkt.", category: "finance" }));
@@ -1714,7 +1714,7 @@
 
         function buildProjectTimeline({ project = {}, invoices = [], changeRequests = [], messages = [], notifications = [], files = [], previewVersions = [] } = {}) {
           const items = [
-            ...previewVersions.map((preview) => ({ title: preview.approvedAt ? "Ontwerp goedgekeurd" : "Ontwerpversie gepubliceerd", text: preview.title || preview.changeSummary || `Versie ${preview.version || 1}`, date: preview.approvedAt || preview.publishedAt, category: "review", status: preview.status })),
+            ...previewVersions.map((preview) => ({ title: preview.approvedAt ? "Ontwerp goedgekeurd" : "Ontwerpversie gepubliceerd", text: preview.title || customerPreviewSummary(preview, `Versie ${preview.version || 1}`), date: preview.approvedAt || preview.publishedAt, category: "review", status: preview.status })),
             ...changeRequests.filter((request) => strictProjectRelated(request, project, {})).map((request) => ({ title: request.title || "Wijzigingsverzoek", text: request.description || "Wijziging geregistreerd.", date: request.updatedAt || request.createdAt, category: "updates", status: request.status })),
             ...messages.filter((message) => strictProjectRelated(message, project, {})).map((message) => ({ title: message.subject || message.title || "Bericht", text: message.body || message.message || "Bericht in klantportaal.", date: message.createdAt, category: "updates", status: message.senderType === "customer" ? "Van jou" : "Van Max" })),
             ...invoices.map((invoice) => ({ title: invoice.invoiceNumber || "Factuur", text: isPaidStatus(invoice.status) ? "Betaling verwerkt." : "Factuurstatus bijgewerkt.", date: invoice.paidAt || invoice.invoiceDate || invoice.createdAt, category: "finance", status: invoice.status })),
@@ -1823,7 +1823,7 @@
           };
           if (latestPreview?.allowApproval) return {
             title: `Keur versie ${latestPreview.version || 1} goed`,
-            text: latestPreview.changeSummary || "Je websiteontwerp staat klaar. Bekijk de versie en keur hem goed wanneer alles klopt.",
+            text: customerPreviewSummary(latestPreview, "Je websiteontwerp staat klaar. Bekijk de versie en keur hem goed wanneer alles klopt."),
             label: "Ontwerp bekijken",
             href: latestPreview.safePreviewPath || "#website-preview",
           };
