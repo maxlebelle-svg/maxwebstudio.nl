@@ -12278,7 +12278,111 @@
 	                      disabled: !liveUrl,
 	                      onClick: () => liveUrl && window.open(liveUrl, "_blank", "noopener"),
 	                    },
+	                    {
+	                      label: "Publiceer naar klantportaal",
+	                      disabled: !website.id,
+	                      onClick: () => openPreviewPublicationModal(website),
+	                    },
 	                  ];
+	                }
+
+	                async function fetchWebsitePreviewVersions(website = {}) {
+	                  const token = getAdminBearer();
+	                  if (!token) throw new Error("Log eerst in als admin.");
+	                  const response = await fetch(`/.netlify/functions/admin-preview-publication?websiteId=${encodeURIComponent(website.id || "")}`, {
+	                    headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+	                  });
+	                  const data = await response.json().catch(() => ({}));
+	                  if (!response.ok || data.success === false) throw new Error(data.error || "Previewversies konden niet worden geladen.");
+	                  return Array.isArray(data.previewVersions) ? data.previewVersions : [];
+	                }
+
+	                async function openPreviewPublicationModal(website = {}) {
+	                  setDetailMessage("Previewversies laden...");
+	                  let versions = [];
+	                  try {
+	                    versions = await fetchWebsitePreviewVersions(website);
+	                  } catch (error) {
+	                    setDetailMessage(error.message || "Previewversies konden niet worden geladen.", "error");
+	                    return;
+	                  }
+	                  if (!versions.length) {
+	                    setDetailMessage("Geen bestaande previewversie gevonden. Publiceren maakt geen nieuwe preview aan.", "error");
+	                    return;
+	                  }
+	                  const latest = versions[0];
+	                  const dialog = document.createElement("dialog");
+	                  dialog.className = "admin-modal preview-publication-modal";
+	                  dialog.innerHTML = `
+	                    <form class="admin-card admin-profile-form" method="dialog">
+	                      <div class="admin-profile-form-heading">
+	                        <div><strong>Publiceer preview naar klantportaal</strong><span>Versie V${escapeHtml(String(latest.version || 1))} wordt klantzichtbaar gemaakt.</span></div>
+	                        <mark class="status-badge status-prepared">Review</mark>
+	                      </div>
+	                      <label>Previewversie<select name="previewVersionId">${versions.map((version) => `<option value="${escapeHtml(version.id)}">V${escapeHtml(String(version.version || 1))} - ${escapeHtml(version.publishedToPortal ? "al gepubliceerd" : "intern")}</option>`).join("")}</select></label>
+	                      <label>Klantgerichte titel<input name="title" type="text" maxlength="140" value="${escapeHtml(latest.title || website.name || "Website-preview")}" required /></label>
+	                      <label class="admin-profile-wide">Korte toelichting<textarea name="summary" rows="3" maxlength="500" placeholder="Wat kan de klant bekijken?"></textarea></label>
+	                      <label class="admin-profile-wide">Wat is aangepast<textarea name="changeSummary" rows="4" maxlength="1200" placeholder="Samenvatting van zichtbare wijzigingen"></textarea></label>
+	                      <label>Reviewdeadline optioneel<input name="reviewDeadline" type="date" /></label>
+	                      <label class="settings-checkbox"><input name="allowFeedback" type="checkbox" checked /> Feedback toestaan</label>
+	                      <label class="settings-checkbox"><input name="allowApproval" type="checkbox" checked /> Goedkeuring toestaan</label>
+	                      <label class="settings-checkbox"><input name="notifyCustomer" type="checkbox" /> E-mail/notificatie versturen</label>
+	                      <div class="admin-profile-actions">
+	                        <button class="button primary" value="publish" type="submit">Publiceer naar klantportaal</button>
+	                        <button class="button secondary" value="cancel" type="button" data-preview-publish-cancel>Annuleren</button>
+	                      </div>
+	                    </form>
+	                  `;
+	                  document.body.append(dialog);
+	                  dialog.querySelector("[data-preview-publish-cancel]")?.addEventListener("click", () => dialog.close("cancel"));
+	                  dialog.addEventListener("close", () => dialog.remove(), { once: true });
+	                  dialog.querySelector("form")?.addEventListener("submit", async (event) => {
+	                    event.preventDefault();
+	                    const form = event.currentTarget;
+	                    const submit = form.querySelector("button[value='publish']");
+	                    submit.disabled = true;
+	                    submit.textContent = "Publiceren...";
+	                    try {
+	                      const formData = new FormData(form);
+	                      const result = await publishPreviewVersion({
+	                        websiteId: website.id,
+	                        previewVersionId: formData.get("previewVersionId"),
+	                        title: formData.get("title"),
+	                        summary: formData.get("summary"),
+	                        changeSummary: formData.get("changeSummary"),
+	                        reviewDeadline: formData.get("reviewDeadline"),
+	                        allowFeedback: formData.get("allowFeedback") === "on",
+	                        allowApproval: formData.get("allowApproval") === "on",
+	                        notifyCustomer: formData.get("notifyCustomer") === "on",
+	                      });
+	                      setDetailMessage(`Preview V${result.previewVersion?.version || ""} gepubliceerd naar het klantportaal.`, "success");
+	                      renderCustomerWorkspace(selectedCustomer());
+	                      dialog.close("published");
+	                    } catch (error) {
+	                      setDetailMessage(error.message || "Preview kon niet worden gepubliceerd.", "error");
+	                      submit.disabled = false;
+	                      submit.textContent = "Publiceer naar klantportaal";
+	                    }
+	                  });
+	                  if (typeof dialog.showModal === "function") dialog.showModal();
+	                  else dialog.setAttribute("open", "");
+	                }
+
+	                async function publishPreviewVersion(payload = {}) {
+	                  const token = getAdminBearer();
+	                  if (!token) throw new Error("Log eerst in als admin.");
+	                  const response = await fetch("/.netlify/functions/admin-preview-publication", {
+	                    method: "POST",
+	                    headers: {
+	                      Accept: "application/json",
+	                      "Content-Type": "application/json",
+	                      Authorization: `Bearer ${token}`,
+	                    },
+	                    body: JSON.stringify(payload),
+	                  });
+	                  const data = await response.json().catch(() => ({}));
+	                  if (!response.ok || data.success === false) throw new Error(data.error || "Preview kon niet worden gepubliceerd.");
+	                  return data;
 	                }
 
 	                function renderCustomerWorkspace(customer = selectedCustomer()) {

@@ -8507,6 +8507,23 @@ h3 {
   margin-top: 4px;
 }
 
+.preview-publication-modal {
+  width: min(720px, calc(100vw - 32px));
+  border: 1px solid rgba(171, 196, 224, 0.18);
+  border-radius: 8px;
+  color: #f8fbff;
+  background: #071523;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+}
+
+.preview-publication-modal::backdrop {
+  background: rgba(1, 8, 15, 0.72);
+}
+
+.preview-publication-modal .admin-profile-form {
+  margin: 0;
+}
+
 .website-operations-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);

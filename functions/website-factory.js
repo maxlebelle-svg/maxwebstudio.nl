@@ -612,13 +612,18 @@ async function createPreviewVersion(context, payload = {}) {
   const rows = await insertPreviewVersion(context, {
     demo_journey_id: demoJourneyId,
     build_job_id: cleanText(payload.buildJobId || payload.build_job_id) || null,
+    customer_id: cleanUuid(payload.customerId || payload.customer_id) || null,
+    project_id: cleanUuid(payload.projectId || payload.project_id) || null,
+    website_id: cleanUuid(payload.websiteId || payload.website_id) || null,
     version: Number(payload.version || 1),
+    title: cleanText(payload.title || payload.customerTitle || payload.customer_title || "Website-preview"),
     preview_url: cleanText(payload.previewUrl || payload.preview_url),
     preview_token: cleanText(payload.previewToken || payload.preview_token),
     preview_score: Number(payload.previewScore || payload.preview_score || 0),
     quality_report: payload.qualityReport || payload.quality_report || {},
     generated_package: payload.generatedPackage || payload.generated_package || {},
     is_active: true,
+    status: "internal",
     created_by: cleanText(payload.createdBy || payload.created_by || context.admin.id),
   });
   return normalizePreviewVersion(rows[0] || {});
