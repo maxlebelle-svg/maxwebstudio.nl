@@ -767,6 +767,75 @@
           return data;
         }
 
+        async function loadPublishedPreviewVersions() {
+          const token = getPortalBearer();
+          if (!token) return [];
+          const response = await fetch("/.netlify/functions/client-preview-versions", {
+            headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || data.success === false) {
+            if (data.setupRequired) return [];
+            throw new Error(data.error || "Websitepreviews konden niet worden geladen.");
+          }
+          return Array.isArray(data.previewVersions) ? data.previewVersions : [];
+        }
+
+        function renderPublishedWebsitePreviews(versions = []) {
+          if (!versions.length) return false;
+          const latest = versions[0];
+          demoJourneySummary.textContent = latest.summary || "Uw website-preview staat klaar voor review.";
+          demoJourneyState.textContent = statusLabel(latest.status || "ready_for_review");
+          demoJourneyState.className = `status-badge ${latest.approvedAt ? "status-active" : "status-prepared"}`;
+          demoJourneyTimeline.innerHTML = `
+            <div class="portal-timeline-detail">
+              <span class="portal-dot is-active"></span>
+              <div><strong>Preview gepubliceerd</strong><small>${escapeHtml(formatDate(latest.publishedAt))}</small></div>
+            </div>
+            <div class="portal-timeline-detail">
+              <span class="portal-dot ${latest.feedbackCount ? "is-active" : ""}"></span>
+              <div><strong>Feedbackronde</strong><small>${latest.feedbackCount ? `${latest.feedbackCount} feedbackpunt(en) ontvangen` : "Nog geen feedback ontvangen"}</small></div>
+            </div>
+            <div class="portal-timeline-detail">
+              <span class="portal-dot ${latest.approvedAt ? "is-active" : ""}"></span>
+              <div><strong>Goedkeuring</strong><small>${latest.approvedAt ? formatDate(latest.approvedAt) : "Nog niet goedgekeurd"}</small></div>
+            </div>
+          `;
+          demoJourneyActions.innerHTML = `
+            <a class="button primary" href="${escapeHtml(latest.safePreviewPath)}" target="_blank" rel="noopener">Ontwerp bekijken</a>
+            ${latest.allowFeedback ? `<a class="button secondary" href="#portal-demo-feedback-form">Feedback geven</a>` : ""}
+            ${latest.allowApproval ? `<button class="button secondary" id="portal-preview-approve-shortcut" type="button">Goedkeuren</button>` : ""}
+          `;
+          previewReviewSummary.innerHTML = `
+            <article class="portal-data-card portal-website-preview-column">
+              <span>Preview</span>
+              <iframe class="portal-website-mini-preview" title="Gepubliceerde website-preview" src="${escapeHtml(latest.safePreviewPath)}" loading="lazy"></iframe>
+            </article>
+            ${[
+              ["Titel", latest.title],
+              ["Versie", `V${latest.version || 1}`],
+              ["Publicatiedatum", formatDate(latest.publishedAt)],
+              ["Status", statusLabel(latest.status || "review")],
+              ["Reviewdeadline", formatDate(latest.reviewDeadline)],
+              ["Wijzigingen", latest.changeSummary || "Bekijk de preview voor de laatste wijzigingen."],
+            ].map(([label, value]) => `<article class="portal-data-card"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value || "-")}</strong></article>`).join("")}
+          `;
+          previewVersionList.innerHTML = versions.length > 1
+            ? versions.slice(1).map((version) => `<article class="portal-data-card"><span>Eerdere versie</span><strong>V${escapeHtml(String(version.version || 1))}</strong><small>${escapeHtml(formatDate(version.publishedAt))}</small><a class="button secondary" href="${escapeHtml(version.safePreviewPath)}" target="_blank" rel="noopener">Bekijken</a></article>`).join("")
+            : `<article class="portal-data-card"><span>Eerdere versies</span><strong>Nog geen eerdere publicatie</strong><small>Nieuwe versies verschijnen hier zodra Max Webstudio ze publiceert.</small></article>`;
+          previewFeedbackList.innerHTML = latest.feedbackItems?.length
+            ? latest.feedbackItems.slice(-6).reverse().map((item) => `<article class="portal-data-card"><span>${escapeHtml([item.page, item.section].filter(Boolean).join(" · ") || "Feedback")}</span><strong>${escapeHtml(statusLabel(item.status || "open"))}</strong><small>${escapeHtml(item.comment || "")}</small></article>`).join("")
+            : `<article class="portal-data-card"><span>Feedback</span><strong>Nog geen punten</strong><small>Geef uw opmerkingen door voor deze exacte previewversie.</small></article>`;
+          launchChecklist.innerHTML = "";
+          demoFeedbackForm.hidden = !(latest.allowFeedback || latest.allowApproval);
+          demoFeedbackForm.dataset.previewVersionId = latest.id;
+          demoFeedbackForm.dataset.previewVersionLabel = `V${latest.version || 1}`;
+          demoFeedbackSubmit.hidden = !latest.allowFeedback;
+          demoApproveSubmit.hidden = !latest.allowApproval || Boolean(latest.approvedAt);
+          document.getElementById("portal-preview-approve-shortcut")?.addEventListener("click", () => demoApproveSubmit?.click());
+          return true;
+        }
+
         function readLocalDemoJourney() {
           try {
             const journeys = JSON.parse(localStorage.getItem("maxwebstudioDemoJourneys") || "[]");
@@ -865,6 +934,8 @@
 
         async function loadDemoJourney() {
           try {
+            const publishedVersions = await loadPublishedPreviewVersions();
+            if (renderPublishedWebsitePreviews(publishedVersions)) return;
             const data = await demoJourneyRequest("GET");
             renderDemoJourney({ journey: data.journey, events: data.events });
           } catch (error) {
