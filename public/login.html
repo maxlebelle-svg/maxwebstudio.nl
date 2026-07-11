@@ -282,11 +282,8 @@
         }
 
         function logSafeDiagnostic(label, error, fallbackCode = "AUTH_UNAVAILABLE") {
-          if (!isProductionRuntime()) {
-            console.info(label, error);
-            return;
-          }
-          console.info(label, { code: fallbackCode });
+          if (isProductionRuntime()) return;
+          console.info(label, error || { code: fallbackCode });
         }
 
         function isDeveloperModeEnabled() {
@@ -400,6 +397,7 @@
         }
 
         function logAuthEvent(code, details = {}) {
+          if (isProductionRuntime()) return;
           const safeDetails = {};
           ["status", "reason", "role", "profileStatus", "hasUserId"].forEach((key) => {
             if (details[key] !== undefined && details[key] !== "") {
@@ -743,7 +741,7 @@
             setMessage("Als dit e-mailadres bekend is, wordt er een resetlink verstuurd.", "success");
           } catch (error) {
             const debug = error?.supabaseAuth || {};
-            console.info("Password reset failed", {
+            logAuthEvent("PASSWORD_RESET_FAILED", {
               code: isDeveloperModeEnabled() ? debug.code || error?.code || "UNKNOWN" : "RESET_FAILED",
               status: isDeveloperModeEnabled() ? debug.status || error?.status || "" : "",
             });
@@ -772,7 +770,7 @@
             setMessage("Je wachtwoord is ingesteld. Log nu in met je e-mailadres en nieuwe wachtwoord.", "success");
           } catch (error) {
             const debug = error?.supabaseAuth || {};
-            console.info("Password update failed", {
+            logAuthEvent("PASSWORD_UPDATE_FAILED", {
               code: isDeveloperModeEnabled() ? debug.code || error?.code || "UNKNOWN" : "PASSWORD_UPDATE_FAILED",
               status: isDeveloperModeEnabled() ? debug.status || error?.status || "" : "",
             });
@@ -799,7 +797,7 @@
             setMessage("Kies nu je nieuwe wachtwoord.", "success");
             return true;
           } catch (error) {
-            console.info("Recovery session failed", {
+            logAuthEvent("RECOVERY_SESSION_FAILED", {
               code: isDeveloperModeEnabled() ? error?.code || "UNKNOWN" : "RECOVERY_FAILED",
               message: isDeveloperModeEnabled() ? error?.message || "" : "",
             });
