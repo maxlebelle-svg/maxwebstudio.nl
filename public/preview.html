@@ -66,7 +66,8 @@
             <i></i><i></i><i></i>
             <span id="preview-url-label">preview.maxwebstudio.nl/project</span>
           </div>
-          <div class="secure-preview-site">
+          <iframe id="published-preview-frame" title="Gepubliceerde website-preview" hidden></iframe>
+          <div class="secure-preview-site" id="preview-fallback-site">
             <nav><strong id="preview-company">Jouw bedrijf</strong><span>Home</span><span>Diensten</span><span>Contact</span></nav>
             <section>
               <p>Nieuwe website-preview</p>
@@ -120,6 +121,8 @@
         const paymentLink = document.getElementById("payment-link");
         const sessionKey = "maxwebstudioSupabaseAuthSession";
         const previewKey = "maxwebstudioActivePreviewContext";
+        const previewFrame = document.getElementById("published-preview-frame");
+        const fallbackSite = document.getElementById("preview-fallback-site");
 
         function readJson(key, fallback = null) {
           try {
@@ -151,7 +154,42 @@
 
         function currentAccessToken() {
           const session = readJson(sessionKey, null);
-          return session?.access_token || "";
+          if (session?.access_token) return session.access_token;
+          if (session?.session?.access_token) return session.session.access_token;
+          const currentSession = readJson("maxwebstudioCurrentSession", null);
+          return currentSession?.accessToken || "";
+        }
+
+        async function loadPublishedPreviewVersion() {
+          const versionId = params.get("version") || "";
+          if (!versionId) return false;
+          fallbackSite.hidden = true;
+          previewFrame.hidden = false;
+          title.textContent = "Website-preview laden.";
+          accessTitle.textContent = "Account controleren";
+          accessText.textContent = "We controleren veilig of deze preview bij jouw klantaccount hoort.";
+          const token = currentAccessToken();
+          if (!token) throw new Error("Log in om deze ontwerpversie te bekijken.");
+          const response = await fetch(`/api/client-preview-render?version=${encodeURIComponent(versionId)}`, {
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            cache: "no-store",
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || data.success === false || !data.preview?.html) {
+            throw new Error(data.error || "Deze ontwerpversie kan momenteel niet worden geladen. Max Webstudio is geïnformeerd.");
+          }
+          title.textContent = `${data.preview.title || "Website-preview"} staat klaar.`;
+          urlLabel.textContent = `preview.maxwebstudio.nl/versie-${data.preview.version || 1}`;
+          previewFrame.srcdoc = data.preview.html;
+          previewFrame.hidden = false;
+          fallbackSite.hidden = true;
+          accessTitle.textContent = "Preview gekoppeld";
+          accessText.textContent = "Deze ontwerpversie is veilig gekoppeld aan je klantaccount.";
+          approve.disabled = false;
+          return true;
         }
 
         function renderAccess() {
@@ -232,7 +270,19 @@
           }
         });
 
-        renderAccess();
+        loadPublishedPreviewVersion()
+          .then((loaded) => {
+            if (!loaded) renderAccess();
+          })
+          .catch((error) => {
+            fallbackSite.hidden = true;
+            previewFrame.hidden = true;
+            title.textContent = "Preview niet beschikbaar.";
+            accessTitle.textContent = "Geen toegang";
+            accessText.textContent = error.message || "Deze ontwerpversie kan momenteel niet worden geladen. Max Webstudio is geïnformeerd.";
+            approve.disabled = true;
+            actionMessage.textContent = accessText.textContent;
+          });
       })();
     </script>
   </body>

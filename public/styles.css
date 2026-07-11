@@ -10123,6 +10123,13 @@ h3 {
     #ffffff;
 }
 
+#published-preview-frame {
+  width: 100%;
+  min-height: 720px;
+  border: 0;
+  background: #ffffff;
+}
+
 .secure-preview-site nav {
   display: flex;
   align-items: center;
