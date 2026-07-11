@@ -1681,7 +1681,7 @@
                 "Afronding / Livegang": "Na akkoord bereiden we livegang en afronding voor.",
               }[name],
               deliverables,
-              action: state === "active" && latestPreview?.allowApproval ? "Ontwerp bekijken en goedkeuren" : state === "active" && latestPreview?.allowFeedback ? "Feedback geven op deze versie" : "",
+              action: state === "active" && latestPreview?.allowApproval && !latestPreview?.approvedAt ? "Ontwerp bekijken en goedkeuren" : state === "active" && latestPreview?.allowFeedback && !latestPreview?.approvedAt ? "Feedback geven op deze versie" : "",
             };
           });
         }
@@ -1693,7 +1693,7 @@
           if (onboardingSubmitted(onboarding)) milestones.push({ title: "Projectinput ontvangen", status: "Voltooid", date: onboarding?.submittedAt || onboarding?.updatedAt || project.updatedAt, text: "De benodigde input is beschikbaar voor het project.", category: "updates" });
           if (latestPreview?.publishedAt) milestones.push({ title: "Eerste ontwerp klaar", status: latestPreview.approvedAt ? "Voltooid" : statusLabel(latestPreview.status || "ready_for_review"), date: latestPreview.publishedAt, text: latestPreview.changeSummary || "Er is een klantzichtbare ontwerpversie gepubliceerd.", category: "review" });
           if (latestPreview?.feedbackCount) milestones.push({ title: "Feedback ontvangen", status: "Voltooid", date: latestPreview.feedbackItems?.slice(-1)[0]?.createdAt || latestPreview.updatedAt || latestPreview.publishedAt, text: `${latestPreview.feedbackCount} feedbackpunt(en) gekoppeld aan versie ${latestPreview.version || 1}.`, category: "review" });
-          if (latestPreview?.approvedAt) milestones.push({ title: "Ontwerp goedgekeurd", status: "Voltooid", date: latestPreview.approvedAt, text: "De klant heeft deze previewversie goedgekeurd.", category: "review" });
+          if (latestPreview?.approvedAt) milestones.push({ title: "Ontwerp goedgekeurd", status: "Voltooid", date: latestPreview.approvedAt, text: "Je hebt deze previewversie goedgekeurd.", category: "review" });
           invoices.filter((invoice) => isPaidStatus(invoice.status)).slice(0, 2).forEach((invoice) => milestones.push({ title: "Factuur betaald", status: "Voltooid", date: invoice.paidAt || invoice.updatedAt || invoice.createdAt, text: invoice.invoiceNumber || "Betaling verwerkt.", category: "finance" }));
           changeRequests.filter((request) => projectRelated(request, project, {})).slice(0, 3).forEach((request) => milestones.push({ title: request.title || "Wijzigingsverzoek", status: statusLabel(request.status || "nieuw"), date: request.updatedAt || request.createdAt, text: request.description || "Wijziging is geregistreerd.", category: "updates" }));
           messages.slice(0, 2).forEach((message) => milestones.push({ title: message.subject || message.title || "Bericht", status: message.senderType === "customer" ? "Van jou" : "Update", date: message.createdAt, text: message.body || message.message || "Bericht in het klantportaal.", category: "updates" }));
@@ -1710,7 +1710,7 @@
             ...invoices.map((invoice) => ({ title: invoice.invoiceNumber || "Factuur", text: isPaidStatus(invoice.status) ? "Betaling verwerkt." : "Factuurstatus bijgewerkt.", date: invoice.paidAt || invoice.invoiceDate || invoice.createdAt, category: "finance", status: invoice.status })),
             ...files.filter((file) => strictProjectRelated(file, project, {})).map((file) => ({ title: file.name || "Bestand", text: file.category || file.type || "Projectbestand", date: file.updatedAt || file.createdAt, category: "files", status: file.status })),
             ...notifications.map((notification) => ({ title: notification.title || "Update", text: notification.message || notification.body || "Projectupdate.", date: notification.createdAt || notification.updatedAt, category: "updates", status: notification.status })),
-            { title: project.name || project.projectName || "Project aangemaakt", text: project.publicNotes || "Project is beschikbaar in het klantportaal.", date: project.updatedAt || project.startDate || project.createdAt, category: "updates", status: project.status },
+            { title: project.name || project.projectName || "Project aangemaakt", text: "Projectstatus bijgewerkt in het klantportaal.", date: project.updatedAt || project.startDate || project.createdAt, category: "updates", status: project.status },
           ];
           return items
             .filter((item) => item.title && !/netlify|supabase|github|preview_token|preview_url|function/i.test(`${item.title} ${item.text}`))
