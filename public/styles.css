@@ -12929,6 +12929,7 @@ h3 {
 
   .portal-command-shell,
   .portal-command-main,
+  .portal-command-side,
   .portal-command-lower {
     grid-template-columns: 1fr;
   }
