@@ -255,6 +255,11 @@ export async function saveClientPortalMessageWithSupabaseFallback(input = {}, co
       statusMessage: "Bericht aangemaakt via Supabase.",
     });
   } catch (error) {
+    if (isUuid(customerId) && session?.access_token && publicConfigReady(config)) {
+      const safeError = new Error("Bericht kon niet veilig worden opgeslagen. Probeer het opnieuw of neem contact op.");
+      safeError.cause = sanitizeMessage(error?.message || "Supabase bericht kon niet worden opgeslagen.");
+      throw safeError;
+    }
     const fallback = await saveClientPortalMessageWithWriteFallback(input, context);
     return {
       ...fallback,
