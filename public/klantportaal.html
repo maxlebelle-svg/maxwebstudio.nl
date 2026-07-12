@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=20260712-customer-assets-v2" />
   </head>
   <body class="portal-body">
     <main class="portal-app customer-portal-demo">
@@ -637,67 +637,98 @@
             <h2>Bestanden & assets</h2>
             <p class="admin-section-intro">Je veilige projectkluis voor logo's, merkbestanden, website-assets en klantdocumenten.</p>
           </div>
-          <a class="button secondary mw-button mw-button-secondary" href="#dashboard">Terug naar dashboard</a>
+          <a class="asset-center-back-link" href="#dashboard">Terug naar dashboard</a>
         </div>
-        <article class="admin-card portal-asset-upload-card mw-card-premium">
-          <header class="portal-asset-upload-heading">
+        <article class="admin-card customer-asset-upload-card">
+          <div class="customer-asset-upload-heading">
             <div>
               <p class="section-kicker">Bestanden aanleveren</p>
               <h3>Foto’s, logo’s en documenten uploaden</h3>
               <p>Je bestanden komen veilig in jouw klantwerkruimte en worden eerst door Max gecontroleerd.</p>
             </div>
-            <span class="portal-asset-upload-security">Privé &amp; beveiligd</span>
-          </header>
-          <form class="portal-asset-upload-form" id="relationship-asset-upload" novalidate>
-            <label class="portal-asset-field">
-              <span>Categorie</span>
-              <select class="mw-select" name="category">
-                <option value="logo">Logo</option>
-                <option value="photo">Bedrijfsfoto’s</option>
-                <option value="team">Team</option>
-                <option value="project">Projecten</option>
-                <option value="product">Producten</option>
-                <option value="brand">Huisstijl</option>
-                <option value="video">Video</option>
-                <option value="document">Documenten</option>
-                <option value="text">Teksten</option>
-                <option value="social">Social media</option>
-                <option value="other">Overig</option>
-              </select>
-            </label>
-            <div class="portal-asset-upload-summary">
-              <span>Toegestaan</span>
-              <strong>PNG, JPG, WEBP, SVG, video en documenten</strong>
-              <small>Maximaal 8 MB per bestand</small>
-            </div>
-            <div class="portal-asset-dropzone portal-asset-form-wide" id="relationship-asset-dropzone">
-              <input class="portal-asset-file-input" id="relationship-asset-files" type="file" tabindex="-1" aria-hidden="true" multiple accept="image/jpeg,image/png,image/webp,image/svg+xml,video/mp4,video/webm,application/pdf,text/plain,.doc,.docx" />
-              <span class="portal-asset-dropzone-icon" aria-hidden="true">↑</span>
-              <div>
-                <strong>Sleep je bestanden hierheen</strong>
-                <p id="relationship-asset-dropzone-help">Of kies ze vanaf je computer. Je selectie wordt pas verstuurd nadat je op uploaden klikt.</p>
+            <span class="customer-asset-upload-limit">PNG, JPG, WEBP, SVG, PDF, DOC(X), TXT, MP4 of WEBM · maximaal 8 MB per bestand</span>
+          </div>
+          <form class="customer-asset-upload-form" id="relationship-asset-upload" novalidate>
+            <div class="customer-asset-upload-layout">
+              <div class="customer-asset-file-column">
+                <div class="customer-asset-dropzone" id="relationship-asset-dropzone" role="group" aria-controls="relationship-asset-files" aria-describedby="relationship-asset-file-help relationship-asset-files-error">
+                  <input class="customer-asset-file-input" id="relationship-asset-files" name="files" type="file" multiple tabindex="-1" aria-hidden="true" aria-describedby="relationship-asset-file-help relationship-asset-files-error" accept=".jpg,.jpeg,.png,.webp,.svg,.pdf,.txt,.doc,.docx,.mp4,.webm,image/jpeg,image/png,image/webp,image/svg+xml,video/mp4,video/webm,application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+                  <span class="customer-asset-dropzone-icon" aria-hidden="true">↑</span>
+                  <strong>Sleep bestanden hierheen</strong>
+                  <span>of kies bestanden vanaf je apparaat</span>
+                  <button class="button secondary mw-button mw-button-secondary" id="relationship-asset-choose" type="button">Bestanden kiezen</button>
+                  <small id="relationship-asset-file-help">Ieder bestand wordt veilig gecontroleerd voordat het wordt toegevoegd.</small>
+                </div>
+                <p class="customer-asset-field-error" id="relationship-asset-files-error" role="alert" hidden></p>
+                <div class="customer-asset-selected-list" id="relationship-asset-selected-list" aria-live="polite">
+                  <p class="customer-asset-selected-empty">Nog geen bestanden gekozen.</p>
+                </div>
               </div>
-              <button class="button secondary mw-button mw-button-secondary" id="relationship-asset-choose" type="button">Bestanden kiezen</button>
+
+              <div class="customer-asset-metadata">
+                <label class="customer-asset-field" for="relationship-asset-category">
+                  <span>Categorie</span>
+                  <span class="customer-asset-select-wrap">
+                    <select class="mw-select" id="relationship-asset-category" name="category" aria-describedby="relationship-asset-category-error" required>
+                      <option value="logo">Logo</option>
+                      <option value="photo">Bedrijfsfoto’s</option>
+                      <option value="team">Team</option>
+                      <option value="project">Projecten</option>
+                      <option value="product">Producten</option>
+                      <option value="brand">Huisstijl</option>
+                      <option value="video">Video</option>
+                      <option value="document">Documenten</option>
+                      <option value="text">Teksten</option>
+                      <option value="social">Social media</option>
+                      <option value="other">Overig</option>
+                    </select>
+                  </span>
+                </label>
+                <p class="customer-asset-field-error" id="relationship-asset-category-error" role="alert" hidden></p>
+
+                <label class="customer-asset-field customer-asset-description-field" for="relationship-asset-description">
+                  <span>Korte omschrijving <small>optioneel</small></span>
+                  <textarea class="mw-textarea" id="relationship-asset-description" name="description" rows="4" maxlength="500" aria-describedby="relationship-asset-description-error" placeholder="Vertel kort waarvoor we deze bestanden mogen gebruiken."></textarea>
+                  <small class="customer-asset-character-count"><span id="relationship-asset-description-count">0</span>/500</small>
+                </label>
+                <p class="customer-asset-field-error" id="relationship-asset-description-error" role="alert" hidden></p>
+
+                <label class="customer-asset-rights" for="relationship-asset-rights">
+                  <input id="relationship-asset-rights" name="usageRightsConfirmed" type="checkbox" aria-describedby="relationship-asset-rights-error" required />
+                  <span class="customer-asset-checkbox" aria-hidden="true"></span>
+                  <span>Ik bevestig dat ik deze bestanden mag aanleveren en door Max Webstudio mag laten gebruiken.</span>
+                </label>
+                <p class="customer-asset-field-error" id="relationship-asset-rights-error" role="alert" hidden></p>
+              </div>
             </div>
-            <div class="portal-asset-selection portal-asset-form-wide" id="relationship-asset-selection" aria-live="polite"></div>
-            <label class="portal-asset-field portal-asset-form-wide">
-              <span>Korte omschrijving <small>optioneel</small></span>
-              <textarea class="mw-textarea" name="description" rows="3" maxlength="500" placeholder="Vertel kort waar we deze bestanden voor mogen gebruiken."></textarea>
-            </label>
-            <label class="portal-asset-consent portal-asset-form-wide">
-              <input name="usageRightsConfirmed" type="checkbox" />
-              <span class="portal-asset-checkbox" aria-hidden="true"></span>
-              <span>
-                <strong>Gebruiksrechten bevestigd</strong>
-                <small>Ik mag deze bestanden aanleveren en door Max Webstudio laten gebruiken voor mijn project.</small>
-              </span>
-            </label>
-            <div class="portal-asset-upload-actions portal-asset-form-wide">
-              <button class="button primary mw-button mw-button-primary" id="relationship-asset-submit" type="submit">Bestanden uploaden</button>
-              <span class="form-helper portal-asset-upload-status" id="relationship-asset-status" role="status" aria-live="polite"></span>
+
+            <div class="customer-asset-upload-footer">
+              <div class="customer-asset-status" id="relationship-asset-status" role="status" aria-live="polite" hidden>
+                <span class="customer-asset-status-icon" data-upload-status-icon aria-hidden="true">i</span>
+                <div>
+                  <strong data-upload-status-title>Uploadstatus</strong>
+                  <p data-upload-status-message></p>
+                  <div class="customer-asset-progress" id="relationship-asset-progress" hidden>
+                    <div class="customer-asset-progress-track" role="progressbar" aria-label="Uploadvoortgang" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                      <span id="relationship-asset-progress-bar"></span>
+                    </div>
+                    <span id="relationship-asset-progress-label">0%</span>
+                  </div>
+                </div>
+              </div>
+              <button class="button primary mw-button mw-button-primary customer-asset-submit" id="relationship-asset-submit" type="submit" disabled>
+                <span data-upload-submit-label>Bestanden uploaden</span>
+                <span class="customer-asset-submit-loading" data-upload-submit-loading hidden><i aria-hidden="true"></i> Bezig met uploaden…</span>
+              </button>
             </div>
           </form>
-          <div class="portal-upload-request-list" id="relationship-upload-list" aria-live="polite"></div>
+          <section class="customer-asset-requests" id="relationship-asset-request-panel" aria-labelledby="relationship-asset-request-title" hidden>
+            <div>
+              <p class="section-kicker">Nog nodig</p>
+              <h4 id="relationship-asset-request-title">Gevraagde bestanden</h4>
+            </div>
+            <div class="customer-asset-request-list" id="relationship-upload-list" aria-live="polite"></div>
+          </section>
         </article>
         <div class="asset-center-shell mw-template-list">
           <div class="asset-center-summary" id="portal-asset-summary" aria-live="polite"></div>
@@ -936,14 +967,42 @@
         let activePreviewFeedbackFilter = "all";
         let activeVersionFilter = "all";
         let activePreviewVersionId = "";
+        function safeRelationshipAssets(value = []) {
+          const blobPrefix = `blob:${window.location.origin}/`;
+          return (Array.isArray(value) ? value : []).map((asset) => ({
+            id: String(asset?.id || ""),
+            name: String(asset?.originalFilename || asset?.name || "Bestand"),
+            originalFilename: String(asset?.originalFilename || asset?.name || "Bestand"),
+            mimeType: String(asset?.mimeType || "").toLowerCase(),
+            sizeBytes: Number(asset?.sizeBytes || 0),
+            category: String(asset?.category || "other"),
+            status: String(asset?.status || "new"),
+            source: String(asset?.source || asset?.uploadedByType || "customer"),
+            uploadedByType: String(asset?.uploadedByType || "customer"),
+            description: String(asset?.description || ""),
+            createdAt: String(asset?.createdAt || ""),
+            updatedAt: String(asset?.updatedAt || asset?.createdAt || ""),
+            downloadAvailable: asset?.downloadAvailable === true,
+            previewAvailable: asset?.previewAvailable === true,
+            previewUrl: String(asset?.previewUrl || "").startsWith(blobPrefix) ? String(asset.previewUrl) : "",
+            isRelationshipAsset: true,
+          })).filter((asset) => asset.id);
+        }
+
+        let portalRelationshipAssets = safeRelationshipAssets(window.__MWS_RELATIONSHIP_ASSETS__ || []);
         let portalAssetRecords = [];
+        let portalAssetRenderContext = null;
         let portalAssetFiltersBound = false;
-        let portalAssetBaseContext = null;
-        let relationshipAssetFiles = Array.isArray(window.__relationshipAssetFiles) ? window.__relationshipAssetFiles : [];
+        let portalAssetPreviewObserver = null;
+        const portalAssetPreviewTargets = new WeakMap();
         let currentOnboardingState = null;
         let activeMessageThreadId = "";
         let activeMessageFilter = "all";
         let latestPortalMessages = [];
+        window.addEventListener("relationship-assets:updated", (event) => {
+          portalRelationshipAssets = safeRelationshipAssets(event.detail?.assets || []);
+          if (portalAssetRenderContext) renderAssetCenter(portalAssetRenderContext);
+        });
         function escapeHtml(value = "") {
           return String(value || "")
             .replace(/&/g, "&amp;")
@@ -1616,7 +1675,7 @@
         function statusClass(value) {
           const status = normalize(value);
           if (["actief", "active", "online", "live", "betaald", "paid", "geaccepteerd", "goedgekeurd", "beschikbaar", "door jou aangeleverd"].includes(status)) return "status-active";
-          if (["concept", "verzonden", "nieuw", "onboarding", "in ontwerp", "in ontwikkeling", "feedback", "testen", "wordt voorbereid", "niet beschikbaar"].includes(status)) return "status-prepared";
+          if (["concept", "verzonden", "nieuw", "onboarding", "in ontwerp", "in ontwikkeling", "feedback", "testen", "wordt voorbereid", "wordt gecontroleerd", "niet beschikbaar"].includes(status)) return "status-prepared";
           if (["verlopen", "wacht op klant", "wachten op klant", "paused", "pauze", "onderhoud", "gearchiveerd"].includes(status)) return "status-warning";
           return "status-attention";
         }
@@ -3664,16 +3723,17 @@
         }
 
         function brandingProjectForCustomer(customer = {}, onboarding = {}) {
+          const onboardingRecord = onboarding && typeof onboarding === "object" ? onboarding : {};
           const state = loadBrandingState();
           const identifiers = [customer.id, customer.customerId, customer.profileId, customer.company].filter(Boolean).map(String);
           const existing = state.projects.find((project) => identifiers.includes(String(project.customerId || "")) || identifiers.includes(String(project.id || "")) || String(project.companyName || "").toLowerCase() === String(customer.company || "").toLowerCase());
           if (existing) return existing;
-          const answers = onboarding.answers || {};
+          const answers = onboardingRecord.answers || {};
           return {
             id: customer.id || customer.customerId || customer.company,
             customerId: customer.id || customer.customerId || "",
             companyName: customer.company || answers.company?.companyName || customer.name || "Klant",
-            onboarding,
+            onboarding: onboardingRecord,
             status: answers.branding?.colors || answers.branding?.lookAndFeel ? "not_started" : "not_started",
             colors: String(answers.branding?.colors || "").split(/,|\n/).map((item) => item.trim()).filter(Boolean),
             typography: answers.branding?.fontPreference || "",
@@ -3758,18 +3818,34 @@
           const text = normalizeAssetText([asset.mimeType, asset.mime_type, asset.type, asset.category, asset.format, asset.name, asset.assetName, asset.title].join(" "));
           if (text.includes("logo")) return "Logo";
           if (text.includes("favicon")) return "Logo";
-          if (text.includes("image") || text.match(/\b(png|jpe?g|webp|gif)\b/)) return "Afbeelding";
           if (text.includes("svg")) return "Logo";
+          if (text.includes("image") || text.match(/\b(png|jpe?g|webp|gif)\b/)) return "Afbeelding";
+          if (text.includes("video") || text.match(/\b(mp4|webm)\b/)) return "Video";
           if (text.includes("pdf")) return "PDF";
           if (text.includes("spreadsheet") || text.match(/\b(xlsx|csv|sheet)\b/)) return "Spreadsheet";
           if (text.includes("presentation") || text.match(/\b(ppt|slide)\b/)) return "Presentatie";
-          if (text.includes("word") || text.match(/\b(doc|docx|tekst|copy)\b/)) return "Document";
+          if (text.includes("word") || text.includes("text/plain") || text.match(/\b(doc|docx|txt|tekst|copy)\b/)) return "Document";
           if (text.includes("font") || text.match(/\b(ttf|otf|woff)\b/)) return "Lettertype";
           if (text.match(/\b(zip|rar|archive)\b/)) return "Archief";
           return "Overig";
         }
 
         function assetCategoryFor(asset = {}) {
+          const category = normalizeAssetText(asset.category);
+          const relationshipCategories = {
+            logo: "Logo's",
+            photo: "Bedrijfsfoto's",
+            team: "Team",
+            project: "Projectbestanden",
+            product: "Producten",
+            brand: "Branding",
+            video: "Video",
+            document: "Documenten",
+            text: "Teksten",
+            social: "Social media",
+            other: "Overig",
+          };
+          if (asset.isRelationshipAsset && relationshipCategories[category]) return relationshipCategories[category];
           const text = normalizeAssetText([asset.category, asset.type, asset.assetName, asset.title, asset.name, asset.source].join(" "));
           if (text.includes("logo") || text.includes("favicon")) return "Logo's";
           if (text.includes("kleur") || text.includes("color") || text.includes("font") || text.includes("typografie")) return "Kleuren & typografie";
@@ -3786,21 +3862,29 @@
 
         function statusForAsset(asset = {}) {
           const value = normalizeAssetText(asset.status || asset.state || "");
+          if (["rejected", "afgekeurd"].includes(value)) return "Afgekeurd";
+          if (["replaced", "vervangen"].includes(value)) return "Vervangen";
+          if (["archived", "gearchiveerd", "deleted", "verwijderd"].includes(value)) return "Gearchiveerd";
           if (["approved", "goedgekeurd", "selected"].includes(value)) return "Goedgekeurd";
           if (["ready", "available", "beschikbaar", "active", "klaar"].includes(value)) return "Beschikbaar";
-          if (["uploaded", "customer_uploaded"].includes(value) || asset.source === "customer") return "Door jou aangeleverd";
-          if (["archived", "gearchiveerd"].includes(value)) return "Gearchiveerd";
+          if (["new", "reviewing", "in_review"].includes(value)) return "Wordt gecontroleerd";
+          if (["uploaded", "customer_uploaded"].includes(value) || asset.isRelationshipAsset || asset.source === "customer") return "Door jou aangeleverd";
           if (["not_started", "prepared", "voorbereid", "generating"].includes(value)) return "Wordt voorbereid";
           return asset.location || asset.url || asset.previewUrl ? "Beschikbaar" : "Wordt voorbereid";
         }
 
         function assetSourceFor(asset = {}) {
-          const source = normalizeAssetText(asset.source || asset.origin || asset.uploadedBy || "");
+          const source = normalizeAssetText(asset.source || asset.origin || asset.uploadedBy || asset.uploadedByType || asset.uploaded_by_type || "");
+          if (asset.isRelationshipAsset) return source.includes("customer") || source.includes("klant") ? "Door jou aangeleverd" : "Max Webstudio";
           if (source.includes("customer") || source.includes("klant")) return "Door jou aangeleverd";
           return "Max Webstudio";
         }
 
         function safeAssetHref(asset = {}) {
+          if (asset.isRelationshipAsset) {
+            const preview = String(asset.previewUrl || "").trim();
+            return preview.startsWith(`blob:${window.location.origin}/`) ? preview : "";
+          }
           const raw = String(asset.safeUrl || asset.safe_url || asset.downloadUrl || asset.download_url || asset.location || asset.url || asset.previewUrl || "").trim();
           if (!raw) return "";
           if (raw.startsWith("#")) return raw;
@@ -3878,14 +3962,25 @@
         }
 
         function normalizePortalAsset(asset = {}, index = 0, context = {}) {
-          const href = safeAssetHref(asset);
-          const name = safeDisplayName(asset.name || asset.assetName || asset.title || asset.fileName || asset.label, asset.isBrandingAsset ? "Branding asset" : "Projectbestand");
+          const relationshipAsset = Boolean(asset.isRelationshipAsset);
+          const safeUrl = safeAssetHref(asset);
+          const href = relationshipAsset ? "" : safeUrl;
+          const rawName = asset.originalFilename || asset.name || asset.assetName || asset.title || asset.fileName || asset.label;
+          const name = relationshipAsset
+            ? String(rawName || "Projectbestand").trim().slice(0, 255) || "Projectbestand"
+            : safeDisplayName(rawName, asset.isBrandingAsset ? "Branding asset" : "Projectbestand");
           const category = assetCategoryFor(asset);
           const type = assetFriendlyType(asset);
           const status = statusForAsset(asset);
           const createdAt = asset.createdAt || asset.created_at || asset.updatedAt || asset.updated_at || "";
-          const projectName = context.projects?.find((project) => [project.id, project.projectId].includes(asset.projectId || asset.project_id))?.name || "";
-          const websiteName = context.websites?.find((website) => [website.id, website.websiteId].includes(asset.websiteId || asset.website_id))?.name || "";
+          const assetProjectId = asset.projectId || asset.project_id || "";
+          const assetWebsiteId = asset.websiteId || asset.website_id || "";
+          const projectName = assetProjectId
+            ? context.projects?.find((project) => [project.id, project.projectId].filter(Boolean).includes(assetProjectId))?.name || ""
+            : "";
+          const websiteName = assetWebsiteId
+            ? context.websites?.find((website) => [website.id, website.websiteId].filter(Boolean).includes(assetWebsiteId))?.name || ""
+            : "";
           return {
             id: `asset-${index}-${String(asset.id || name).replace(/[^a-z0-9-]/gi, "-").slice(0, 42)}`,
             rawId: asset.id || "",
@@ -3895,20 +3990,25 @@
             category,
             status,
             source: assetSourceFor(asset),
-            size: formatFileSize(asset.size || asset.fileSize || asset.file_size || asset.sizeBytes || asset.size_bytes || asset.bytes),
+            size: formatFileSize(asset.sizeBytes || asset.size_bytes || asset.size || asset.fileSize || asset.file_size || asset.bytes),
             createdAt,
             updatedAt: asset.updatedAt || asset.updated_at || createdAt,
-            description: safeDisplayName(asset.description || asset.summary || asset.caption || asset.notes || "", ""),
+            description: relationshipAsset
+              ? String(asset.description || "").trim().slice(0, 500)
+              : safeDisplayName(asset.description || asset.summary || asset.caption || asset.notes || "", ""),
             href,
             canOpen: Boolean(href),
+            canDownload: relationshipAsset && asset.downloadAvailable === true && Boolean(asset.id),
+            canPreview: relationshipAsset && asset.previewAvailable === true && Boolean(asset.id),
             palette: Array.isArray(asset.palette) ? asset.palette : [],
-            previewUrl: href && ["Afbeelding", "Logo"].includes(type) ? href : "",
-            projectName: projectName || (asset.projectId || asset.project_id ? "Gekoppeld project" : ""),
-            websiteName: websiteName || (asset.websiteId || asset.website_id ? "Gekoppelde website" : ""),
+            previewUrl: safeUrl && ["Afbeelding", "Logo"].includes(type) ? safeUrl : "",
+            projectName: projectName || (assetProjectId ? "Gekoppeld project" : ""),
+            websiteName: websiteName || (assetWebsiteId ? "Gekoppelde website" : ""),
             search: normalizeAssetText([name, type, category, status, asset.description, asset.summary, asset.format].join(" ")),
             isBrandingAsset: Boolean(asset.isBrandingAsset),
             isWebsiteAsset: category === "Website" || Boolean(asset.websiteId || asset.website_id),
             isCustomerUpload: assetSourceFor(asset) === "Door jou aangeleverd",
+            isRelationshipAsset: relationshipAsset,
           };
         }
 
@@ -3922,8 +4022,11 @@
             .map((asset, index) => normalizePortalAsset(asset, index, context));
           const map = new Map();
           allAssets.forEach((asset) => {
-            const key = [asset.rawId, asset.name, asset.category, asset.type].filter(Boolean).join("|") || asset.id;
-            if (!map.has(key)) map.set(key, asset);
+            const key = asset.rawId
+              ? `id:${asset.rawId}`
+              : [asset.name, asset.category, asset.type].filter(Boolean).join("|") || asset.id;
+            const existing = map.get(key);
+            if (!existing || (!existing.isRelationshipAsset && asset.isRelationshipAsset)) map.set(key, asset);
           });
           return [...map.values()].sort((a, b) => String(b.updatedAt || b.createdAt || "").localeCompare(String(a.updatedAt || a.createdAt || "")));
         }
@@ -3934,7 +4037,7 @@
 
         function renderAssetSummary(assets = []) {
           assetSummary.replaceChildren();
-          const readyCount = assets.filter((asset) => ["Beschikbaar", "Goedgekeurd", "Door jou aangeleverd"].includes(asset.status)).length;
+          const readyCount = assets.filter((asset) => ["Beschikbaar", "Goedgekeurd", "Door jou aangeleverd", "Wordt gecontroleerd"].includes(asset.status)).length;
           const brandingCount = assets.filter((asset) => asset.isBrandingAsset).length;
           const websiteCount = assets.filter((asset) => asset.isWebsiteAsset).length;
           const recent = assets[0];
@@ -3963,11 +4066,45 @@
             Afbeelding: "IMG",
             PDF: "PDF",
             Document: "DOC",
+            Video: "VID",
             Lettertype: "Aa",
             Spreadsheet: "XLS",
             Presentatie: "PPT",
             Archief: "ZIP",
           }[type] || "FILE";
+        }
+
+        async function hydratePortalAssetPreview(preview, asset = {}) {
+          if (!preview?.isConnected || typeof window.getRelationshipAssetPreview !== "function") return;
+          const url = await window.getRelationshipAssetPreview(asset.rawId, asset.updatedAt || asset.createdAt || "");
+          if (!url || !preview.isConnected) return;
+          const image = document.createElement("img");
+          image.src = url;
+          image.alt = `${asset.name} preview`;
+          image.loading = "lazy";
+          image.addEventListener("error", () => {
+            image.remove();
+            preview.textContent = assetIcon(asset.type);
+            preview.classList.add("is-fallback");
+          });
+          preview.classList.remove("is-fallback");
+          preview.replaceChildren(image);
+        }
+
+        function queuePortalAssetPreview(preview, asset = {}) {
+          if (!preview || !asset.canPreview || !asset.rawId || !("IntersectionObserver" in window)) return;
+          portalAssetPreviewTargets.set(preview, asset);
+          if (!portalAssetPreviewObserver) {
+            portalAssetPreviewObserver = new IntersectionObserver((entries) => {
+              entries.forEach((entry) => {
+                if (!entry.isIntersecting) return;
+                portalAssetPreviewObserver?.unobserve(entry.target);
+                const targetAsset = portalAssetPreviewTargets.get(entry.target);
+                if (targetAsset) void hydratePortalAssetPreview(entry.target, targetAsset);
+              });
+            }, { rootMargin: "180px 0px" });
+          }
+          portalAssetPreviewObserver.observe(preview);
         }
 
         function renderAssetPreview(asset = {}) {
@@ -4005,6 +4142,12 @@
             preview.append(image);
             return preview;
           }
+          if (asset.canPreview && asset.rawId) {
+            preview.textContent = assetIcon(asset.type);
+            preview.classList.add("is-fallback");
+            queuePortalAssetPreview(preview, asset);
+            return preview;
+          }
           preview.textContent = assetIcon(asset.type);
           preview.classList.add("is-fallback");
           return preview;
@@ -4028,6 +4171,52 @@
             return String(b.updatedAt || b.createdAt || "").localeCompare(String(a.updatedAt || a.createdAt || ""));
           });
           return rows;
+        }
+
+        function announceAssetAction(state, title, message) {
+          window.dispatchEvent(new CustomEvent("relationship-asset:action-status", {
+            detail: { state, title, message },
+          }));
+        }
+
+        function createAssetOpenAction(asset = {}, detail = false) {
+          if (asset.isRelationshipAsset) {
+            const button = document.createElement("button");
+            button.className = `button primary mw-button mw-button-primary asset-card-action-button${asset.canDownload ? "" : " is-disabled"}`;
+            button.type = "button";
+            button.disabled = !asset.canDownload;
+            button.textContent = asset.canDownload ? "Downloaden" : "Nog niet downloadbaar";
+            button.addEventListener("click", async (event) => {
+              event.stopPropagation();
+              if (!asset.canDownload || typeof window.openRelationshipAsset !== "function") return;
+              const originalLabel = button.textContent;
+              button.disabled = true;
+              button.textContent = "Bestand ophalen…";
+              try {
+                await window.openRelationshipAsset(asset.rawId, asset.name);
+                announceAssetAction("success", "Download gestart", `${asset.name} wordt veilig gedownload.`);
+                button.textContent = "Download gestart";
+              } catch (error) {
+                announceAssetAction("error", "Bestand niet geopend", error.customerMessage || "Het bestand kon tijdelijk niet worden geopend. Probeer het opnieuw.");
+                button.textContent = "Probeer opnieuw";
+              } finally {
+                window.setTimeout(() => {
+                  button.disabled = !asset.canDownload;
+                  button.textContent = originalLabel;
+                }, 1600);
+              }
+            });
+            return button;
+          }
+          const link = document.createElement("a");
+          link.className = `button primary mw-button mw-button-primary${asset.canOpen ? "" : " is-disabled"}`;
+          link.href = asset.canOpen ? asset.href : "#";
+          link.target = "_blank";
+          link.rel = "noopener";
+          link.textContent = asset.canOpen ? (detail ? "Openen of downloaden" : "Openen") : "Niet beschikbaar";
+          if (!asset.canOpen) link.addEventListener("click", (event) => event.preventDefault());
+          link.addEventListener("click", (event) => event.stopPropagation());
+          return link;
         }
 
         function renderAssetCard(asset = {}) {
@@ -4059,20 +4248,13 @@
             event.stopPropagation();
             openAssetDetail(asset.id);
           });
-          const openLink = document.createElement("a");
-          openLink.className = `button primary mw-button mw-button-primary${asset.canOpen ? "" : " is-disabled"}`;
-          openLink.href = asset.canOpen ? asset.href : "#";
-          openLink.target = "_blank";
-          openLink.rel = "noopener";
-          openLink.textContent = asset.canOpen ? "Openen" : "Niet beschikbaar";
-          if (!asset.canOpen) openLink.addEventListener("click", (event) => event.preventDefault());
-          openLink.addEventListener("click", (event) => event.stopPropagation());
+          const openLink = createAssetOpenAction(asset);
           actions.append(detailButton, openLink);
           body.append(top, meta, source, actions);
           card.append(body);
           card.addEventListener("click", () => openAssetDetail(asset.id));
           card.addEventListener("keydown", (event) => {
-            if (event.key === "Enter" || event.key === " ") {
+            if (event.target === card && (event.key === "Enter" || event.key === " ")) {
               event.preventDefault();
               openAssetDetail(asset.id);
             }
@@ -4114,6 +4296,7 @@
 
         function renderAssetCenterResults() {
           const rows = filteredPortalAssets();
+          portalAssetPreviewObserver?.disconnect();
           fileList.replaceChildren();
           if (!portalAssetRecords.length) {
             fileList.append(createEmpty("Er zijn nog geen bestanden beschikbaar.", "Zodra Max Webstudio assets publiceert, verschijnen ze hier automatisch."));
@@ -4129,8 +4312,12 @@
         function setupAssetFilters(assets = []) {
           const categories = [...new Set(assets.map((asset) => asset.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, "nl"));
           const types = [...new Set(assets.map((asset) => asset.type).filter(Boolean))].sort((a, b) => a.localeCompare(b, "nl"));
+          const selectedCategory = assetCategory.value || "all";
+          const selectedType = assetType.value || "all";
           assetCategory.innerHTML = optionRows(categories, "Alle categorieen");
           assetType.innerHTML = optionRows(types, "Alle types");
+          assetCategory.value = categories.includes(selectedCategory) ? selectedCategory : "all";
+          assetType.value = types.includes(selectedType) ? selectedType : "all";
           if (portalAssetFiltersBound) return;
           [assetSearch, assetCategory, assetType, assetSort].forEach((control) => {
             control?.addEventListener("input", renderAssetCenterResults);
@@ -4147,9 +4334,9 @@
         }
 
         function renderAssetCenter({ customer = {}, projects = [], websites = [], files = [], onboarding = {} } = {}) {
-          portalAssetBaseContext = { customer, projects, websites, files: [...files], onboarding };
-          relationshipAssetFiles = Array.isArray(window.__relationshipAssetFiles) ? window.__relationshipAssetFiles : relationshipAssetFiles;
-          portalAssetRecords = buildPortalAssets({ customer, projects, websites, files: [...files, ...relationshipAssetFiles], onboarding });
+          portalAssetRenderContext = { customer, projects, websites, files: [...files], onboarding };
+          const relationshipAssets = safeRelationshipAssets(portalRelationshipAssets);
+          portalAssetRecords = buildPortalAssets({ customer, projects, websites, files: [...files, ...relationshipAssets], onboarding });
           renderAssetSummary(portalAssetRecords);
           renderAssetFocus(portalAssetRecords);
           setupAssetFilters(portalAssetRecords);
@@ -4198,13 +4385,7 @@
           });
           const actions = document.createElement("div");
           actions.className = "portal-actions";
-          const open = document.createElement("a");
-          open.className = `button primary mw-button mw-button-primary${asset.canOpen ? "" : " is-disabled"}`;
-          open.href = asset.canOpen ? asset.href : "#";
-          open.target = "_blank";
-          open.rel = "noopener";
-          open.textContent = asset.canOpen ? "Openen of downloaden" : "Nog niet downloadbaar";
-          if (!asset.canOpen) open.addEventListener("click", (event) => event.preventDefault());
+          const open = createAssetOpenAction(asset, true);
           const copyName = document.createElement("button");
           copyName.className = "button secondary mw-button mw-button-secondary";
           copyName.type = "button";
@@ -5102,6 +5283,7 @@
         renderProjectCommandCenter({ customer, websites, projects, invoices, quotes, changeRequests, messages, notifications, subscriptions, onboarding: onboardingState, previewVersions: publishedPreviewVersions });
         renderProjectWorkspace({ customer, websites, projects, invoices, quotes, files, changeRequests, messages, notifications, onboarding: onboardingState, previewVersions: publishedPreviewVersions });
         renderAssetCenter({ customer, websites, projects, files, onboarding: onboardingState });
+        window.dispatchEvent(new CustomEvent("relationship-assets:refresh-requested"));
         onboardingSave.addEventListener("click", () => saveOnboarding("save"));
         onboardingForm.addEventListener("input", () => updateOnboardingWorkflow(currentOnboardingState || {}));
         onboardingForm.addEventListener("change", () => updateOnboardingWorkflow(currentOnboardingState || {}));
@@ -5405,6 +5587,6 @@
         activatePortalView({ focus: false, scroll: false });
       })();
     </script>
-    <script src="admin/ui/client-asset-upload.js?v=20260712-binary-asset-upload" defer></script>
+    <script src="admin/ui/client-asset-upload.js?v=20260712-customer-assets-v2" defer></script>
   </body>
 </html>

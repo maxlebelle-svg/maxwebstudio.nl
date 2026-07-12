@@ -494,7 +494,26 @@ function safeSubscription(subscription = {}) {
 
 function safeFile(file = {}) {
   return {
-    ...pick(file, ["id", "name", "type", "category", "status", "location", "url", "createdAt", "updatedAt"]),
+    ...pick(file, [
+      "id",
+      "name",
+      "type",
+      "fileType",
+      "category",
+      "status",
+      "location",
+      "url",
+      "mimeType",
+      "sizeBytes",
+      "uploadedByType",
+      "sourceModule",
+      "usageRightsConfirmed",
+      "isPrimary",
+      "description",
+      "isClientVisible",
+      "createdAt",
+      "updatedAt",
+    ]),
     ...safeSource(file),
   };
 }

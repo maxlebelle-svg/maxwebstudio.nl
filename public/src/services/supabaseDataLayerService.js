@@ -262,7 +262,10 @@ function operationBase(row = {}, source = "local") {
 
 function mapFile(row = {}, source = "local") {
   const base = operationBase(row, source);
-  const location = String(firstValue(row.location, row.url, row.storage_path, row.fileUrl, row.file_url));
+  // A private storage key is an internal identifier, not a customer-facing URL.
+  // Keep it available to trusted admin consumers, but never alias it to location/url.
+  const location = String(firstValue(row.location, row.url, row.fileUrl, row.file_url));
+  const metadata = row.metadata && typeof row.metadata === "object" ? row.metadata : {};
   return {
     ...base,
     name: String(firstValue(row.name, row.fileName, row.file_name, "Bestand")),
@@ -272,6 +275,13 @@ function mapFile(row = {}, source = "local") {
     location,
     url: location,
     storagePath: String(firstValue(row.storagePath, row.storage_path)),
+    mimeType: String(firstValue(row.mimeType, row.mime_type)),
+    sizeBytes: Number(firstValue(row.sizeBytes, row.size_bytes, row.size, 0)) || 0,
+    uploadedByType: String(firstValue(row.uploadedByType, row.uploaded_by_type)),
+    sourceModule: String(firstValue(row.sourceModule, row.source_module)),
+    usageRightsConfirmed: Boolean(row.usageRightsConfirmed ?? row.usage_rights_confirmed ?? false),
+    isPrimary: Boolean(row.isPrimary ?? row.is_primary ?? false),
+    description: String(firstValue(row.description, metadata.description, row.notes)),
     isClientVisible: Boolean(row.isClientVisible ?? row.is_client_visible ?? false),
     addedAt: String(firstValue(row.addedAt, row.createdAt, row.created_at, base.createdAt)),
   };
