@@ -13,7 +13,8 @@ const login = read("public/login.html");
 const factory = read("public/admin-website-factory.html");
 
 test("central Supabase session is the source for login, refresh and new tabs", () => {
-  assert.match(bridge, /import \{ getSession, signOut \} from "\.\/supabaseAuthProvider\.js"/);
+  assert.match(bridge, /import \{ getSession, signOut \} from "\.\/supabaseAuthProvider\.js\?v=20260712-authbridge"/);
+  assert.match(factory, /admin-route-guard\.js\?v=20260712-authbridge/);
   assert.match(bridge, /const result = await getSession\(\)/);
   assert.match(provider, /officialAuth\.signInWithPassword/);
   assert.match(provider, /officialAuth\.getSession/);

@@ -1,4 +1,4 @@
-import { getSession, signOut } from "./supabaseAuthProvider.js";
+import { getSession, signOut } from "./supabaseAuthProvider.js?v=20260712-authbridge";
 
 const ADMIN_SESSION_KEY = "mws_admin_supabase_session";
 const CURRENT_SESSION_KEY = "maxwebstudioCurrentSession";

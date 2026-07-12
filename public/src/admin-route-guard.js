@@ -1,5 +1,5 @@
 import { requireAuth } from "./services/routeGuardService.js";
-import { resolveAdminAuth } from "./services/adminAuthBridgeService.js";
+import { resolveAdminAuth } from "./services/adminAuthBridgeService.js?v=20260712-authbridge";
 
 const ADMIN_SESSION_KEY = "mws_admin_supabase_session";
 const ADMIN_LOGIN_PATH = "/admin-login.html";

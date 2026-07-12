@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="styles.css?v=20260707-manual-zip-preview" />
     <link rel="stylesheet" href="admin/styles/premium-design-system.css" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-      <script type="module" src="src/admin-route-guard.js?v=20260710-p0-validation"></script>
+      <script type="module" src="src/admin-route-guard.js?v=20260712-authbridge"></script>
   </head>
   <body class="admin-body">
     <main class="admin-crm-shell">
@@ -20816,7 +20816,7 @@
         getAiAdminAssistantReadiness,
         listAiAdminAssistantDrafts,
       } from "./src/services/aiAdminAssistantService.js?v=20260704-admin-session-hotfix";
-      import { getAdminAccessToken, getSafeAdminAuthMessage } from "./src/services/adminAuthBridgeService.js";
+      import { getAdminAccessToken, getSafeAdminAuthMessage } from "./src/services/adminAuthBridgeService.js?v=20260712-authbridge";
 
       const aiAdminElements = {
         form: document.getElementById("ai-admin-assistant-form"),
