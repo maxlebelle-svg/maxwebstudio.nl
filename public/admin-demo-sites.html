@@ -23310,6 +23310,30 @@
           return savedDemo.thumbnailUrl || savedDemo.thumbnail_url || savedDemo.thumbnail || pack.thumbnailUrl || pack.thumbnail_url || pack.meta?.thumbnailUrl || "";
         }
 
+        function normalizeDemoPreviewSource(value = "") {
+          const source = String(value || "").trim().toLowerCase();
+          if (["manual", "manual_zip", "manual-zip", "zip"].includes(source)) return "manual_zip";
+          if (["factory", "website_factory", "website-factory"].includes(source)) return "website_factory";
+          return "";
+        }
+
+        function resolveActiveDemoPreview(record = {}) {
+          const previewPackage = record.previewPackage || {};
+          const savedDemo = savedDemoSiteMeta(record) || {};
+          const persistedSource = normalizeDemoPreviewSource(savedDemo.previewSource || savedDemo.preview_source || previewPackage.activePreviewSource);
+          const manualAvailable = Boolean((previewPackage.manualPreview || previewPackage.manual_preview)?.files?.length);
+          const factoryAvailable = Boolean(previewPackage.files?.length);
+          const source = persistedSource || (manualAvailable ? "manual_zip" : factoryAvailable ? "website_factory" : "");
+          return {
+            source,
+            persistedSource,
+            manualAvailable,
+            factoryAvailable,
+            available: source === "manual_zip" ? manualAvailable : source === "website_factory" ? factoryAvailable : false,
+            isLegacyFallback: !persistedSource && Boolean(source),
+          };
+        }
+
         function isSavedDemoSite(record = {}) {
           const savedDemo = savedDemoSiteMeta(record);
           return Boolean(savedDemo?.saved && (savedDemo.previewUrl || record.previewUrl));
@@ -23571,6 +23595,19 @@
           return data.workflow || workflow;
         }
 
+        async function updatePreviewSource(record = {}, previewSource = "") {
+          const normalized = normalizeDemoPreviewSource(previewSource);
+          if (!normalized) throw new Error("Kies Handmatige ZIP of Website Factory.");
+          const data = await postJson(endpoints.journey, {
+            action: "update_demo_preview_source",
+            demoJourneyId: record.id,
+            previewSource: normalized,
+          });
+          if (data.demoJourney?.id) records = records.map((item) => String(item.id) === String(record.id) ? data.demoJourney : item);
+          render();
+          return data;
+        }
+
         function render() {
           const query = String(search?.value || "").trim().toLowerCase();
           const bucket = status?.value || "";
@@ -23587,7 +23624,8 @@
           if (!list) return;
           list.innerHTML = demos.length ? demos.map((record) => {
             const savedDemo = savedDemoSiteMeta(record) || {};
-            const previewSource = savedDemo.previewSource || record.previewPackage?.activePreviewSource || "";
+            const previewResolution = resolveActiveDemoPreview(record);
+            const previewSource = previewResolution.source;
             const preview = sourceUrl(savedDemo.previewUrl || record.previewUrl, previewSource);
             const thumbnail = savedDemoThumbnail(record);
             const demoName = savedDemo.businessName || record.businessName || "demo-site";
@@ -23597,7 +23635,7 @@
                 ? `?leadId=${encodeURIComponent(savedDemo.leadId || record.leadId)}`
                 : `?demoJourneyId=${encodeURIComponent(savedDemo.demoJourneyId || record.id)}`}`;
             const customerText = savedDemo.customerId || record.customerId ? "Klant gekoppeld" : "Nog leadfase";
-            const sourceText = previewSource === "manual" ? "Handmatige ZIP" : "Website Factory";
+            const sourceText = previewSource === "manual_zip" ? "Handmatige ZIP" : "Website Factory";
             const offerText = savedDemo.offerReady ? "Offerteklaar" : "Nog in review";
             const savedAt = formatDate(savedDemo.savedAt || record.updatedAt || record.createdAt);
             const currentHandlingStatus = handlingStatus(record);
@@ -23633,7 +23671,16 @@
                         <option value="sold_platform"${currentHandlingStatus === "sold_platform" ? " selected" : ""}>Verkocht via platform</option>
                       </select>
                     </label>
+                    <label class="demo-preview-source-field" for="demo-preview-source-${escapeHtml(record.id)}">
+                      <span>Actieve previewbron</span>
+                      <select id="demo-preview-source-${escapeHtml(record.id)}" data-demo-preview-source="${escapeHtml(record.id)}" data-current-source="${escapeHtml(previewSource)}">
+                        <option value="manual_zip"${previewSource === "manual_zip" ? " selected" : ""}${previewResolution.manualAvailable ? "" : " disabled"}>Handmatige ZIP${previewResolution.manualAvailable ? "" : " — niet beschikbaar"}</option>
+                        <option value="website_factory"${previewSource === "website_factory" ? " selected" : ""}${previewResolution.factoryAvailable ? "" : " disabled"}>Website Factory${previewResolution.factoryAvailable ? "" : " — niet beschikbaar"}</option>
+                      </select>
+                      <small>Deze keuze bepaalt welke versie in Demo Sites en de klantpreview wordt geopend.</small>
+                    </label>
                   </div>
+                  ${previewSource && !previewResolution.available ? `<p class="admin-form-message warning demo-preview-source-warning">De gekozen previewbron is momenteel niet beschikbaar. Kies een andere bron om verder te gaan.</p>` : ""}
                   <div class="demo-library-status-strip">
                     <span data-demo-strip-icon="✓">${escapeHtml(statusLabel(record.demoStatus))}</span>
                     <span data-demo-strip-icon="▧">${escapeHtml(sourceText)}</span>
@@ -24099,6 +24146,21 @@
         status?.addEventListener("change", render);
         refresh?.addEventListener("click", loadDemoSites);
         list?.addEventListener("change", async (event) => {
+          const sourceSelect = event.target.closest("[data-demo-preview-source]");
+          if (sourceSelect) {
+            const record = getRecordById(sourceSelect.dataset.demoPreviewSource);
+            if (!record) return;
+            sourceSelect.disabled = true;
+            setMessage("Previewbron opslaan...", "info");
+            try {
+              await updatePreviewSource(record, sourceSelect.value);
+              setMessage("Previewbron opgeslagen.", "success");
+            } catch (error) {
+              setMessage(error.message || "Previewbron kon niet worden opgeslagen.", "error");
+              render();
+            }
+            return;
+          }
           const select = event.target.closest("[data-demo-handling]");
           if (!select) return;
           const record = getRecordById(select.dataset.demoHandling);

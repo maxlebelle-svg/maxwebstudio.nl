@@ -23133,8 +23133,9 @@
         }
 
         function activePreviewSource(sourceJourney = journey) {
-          const source = String(previewSource || sourceJourney?.previewPackage?.activePreviewSource || "").toLowerCase();
-          return source === "manual" && manualPreviewMeta(sourceJourney)?.files?.length ? "manual" : "factory";
+          const savedDemo = savedDemoSiteMeta(sourceJourney) || {};
+          const source = String(previewSource || savedDemo.previewSource || sourceJourney?.previewPackage?.activePreviewSource || "").toLowerCase();
+          return ["manual", "manual_zip"].includes(source) ? "manual" : "factory";
         }
 
         function factoryPreviewUrl() {
@@ -23152,7 +23153,14 @@
 
         function syncPreviewSourceFromJourney() {
           manualPreview = manualPreviewMeta(journey);
-          previewSource = activePreviewSource(journey);
+          const pack = journey?.previewPackage || {};
+          const savedDemo = savedDemoSiteMeta(journey) || {};
+          const stored = String(savedDemo.previewSource || pack.activePreviewSource || "").toLowerCase();
+          previewSource = ["manual", "manual_zip"].includes(stored)
+            ? "manual"
+            : ["factory", "website_factory"].includes(stored)
+              ? "factory"
+              : manualPreview?.files?.length ? "manual" : "factory";
         }
 
         function savedDemoThumbnail(sourceJourney = journey) {
@@ -23334,6 +23342,7 @@
           renderLeadPicker();
           if (elements.lead) elements.lead.value = customerOption.id;
           journey = factoryCustomerContext.demoJourney || null;
+          syncPreviewSourceFromJourney();
           buildHistory = {
             jobs: factoryCustomerContext.buildJobs || [],
             previewVersions: factoryCustomerContext.previewVersions || [],
@@ -23807,7 +23816,7 @@
               if (journey && previewUrl && !journey.previewUrl) journey.previewUrl = previewUrl;
               if (journey && data.buildStatus?.previewToken && !journey.previewToken) journey.previewToken = data.buildStatus.previewToken;
               if (journey && previewUrl) journey.demoStatus = journey.demoStatus || "interne_preview_klaar";
-              previewSource = "factory";
+              syncPreviewSourceFromJourney();
               events = Array.isArray(data.events) ? data.events : [];
               buildHistory = buildHistoryFromResponse(data);
               projectWorkspace = data.projectWorkspace || projectWorkspace;
@@ -23976,11 +23985,11 @@
               journey = data.demoJourney || data.journey || journey;
               if (journey?.previewUrl) journey.previewUrl = absolutePreviewUrl(journey.previewUrl);
               manualPreview = data.manualPreview || manualPreviewMeta(journey);
-              previewSource = "manual";
+              syncPreviewSourceFromJourney();
               events = Array.isArray(data.events) ? data.events : events;
               buildHistory = data.buildHistory || buildHistory;
               renderJourney();
-              setMessage(elements.message, "Handmatige ZIP staat klaar als previewbron. Kies Factory of Handmatige ZIP als definitieve versie.", "success");
+              setMessage(elements.message, "Handmatige ZIP is bijgewerkt. De actieve previewbron is niet gewijzigd.", "success");
             } catch (error) {
               setMessage(elements.message, error.message || "ZIP kon niet worden verwerkt.", "error");
             } finally {

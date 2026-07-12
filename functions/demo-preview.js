@@ -1,6 +1,7 @@
 const { verifyAdmin } = require("./_admin-auth");
 const { corsHeaders: sharedCorsHeaders } = require("./_cors");
 const { upsertProjectWorkspace, zipFilenameFor } = require("./_project-workspace");
+const { resolveActiveDemoPreview } = require("./_demo-preview-source");
 
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return response(204, "", {});
@@ -93,18 +94,10 @@ exports.handler = async (event) => {
 };
 
 function normalizePackage(value, row = {}, requestedSource = "") {
-  const useManual = requestedSource === "manual" || (!requestedSource && value?.activePreviewSource === "manual");
-  if (value && typeof value === "object" && useManual && Array.isArray(value.manualPreview?.files) && value.manualPreview.files.length) {
-    return {
-      ...value,
-      files: value.manualPreview.files,
-      version: value.version || value.meta?.version || "manual",
-      meta: {
-        ...(value.meta || {}),
-        previewSource: "manual",
-        manualZipFileName: value.manualPreview.fileName || "",
-      },
-    };
+  if (value && typeof value === "object") {
+    const resolved = resolveActiveDemoPreview(value, requestedSource);
+    if (resolved.source && !resolved.available) return unavailablePreviewPackage(row, resolved.source);
+    if (resolved.available) return resolved.previewPackage;
   }
   if (value && typeof value === "object" && Array.isArray(value.files) && value.files.length) return value;
   const businessName = cleanText(row.business_name) || "Demo preview";
@@ -118,6 +111,16 @@ function normalizePackage(value, row = {}, requestedSource = "") {
       },
       { path: "briefing.txt", content: briefing },
     ],
+  };
+}
+
+function unavailablePreviewPackage(row = {}, source = "") {
+  const businessName = cleanText(row.business_name) || "Demo preview";
+  const label = source === "manual_zip" ? "Handmatige ZIP" : "Website Factory";
+  return {
+    businessName,
+    files: [{ path: "index.html", content: `<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(businessName)}</title><style>body{font-family:Inter,Arial,sans-serif;margin:0;background:#f4f7fb;color:#132238;display:grid;min-height:100vh;place-items:center}main{max-width:620px;padding:40px;background:#fff;border:1px solid #dbe4ef;border-radius:16px;text-align:center}p{color:#5c697a;line-height:1.7}</style></head><body><main><h1>Previewbron niet beschikbaar</h1><p>De gekozen bron (${escapeHtml(label)}) is momenteel niet beschikbaar. Kies in Demo Sites een andere previewbron om verder te gaan.</p></main></body></html>` }],
+    meta: { previewSource: source, unavailable: true },
   };
 }
 

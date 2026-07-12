@@ -2,6 +2,7 @@ const { verifyAdmin } = require("./_admin-auth");
 const { corsHeaders } = require("./_cors");
 const { upsertProjectWorkspace, zipFilenameFor } = require("./_project-workspace");
 const { createTimelineEvent } = require("./services/timelineService");
+const { storedPreviewSource } = require("./_demo-preview-source");
 const { sendEmail } = require("./email");
 const {
   buildLogs,
@@ -842,11 +843,21 @@ async function createPreviewVersion(context, payload = {}) {
 
 async function updateDemoJourneyPreview(context, payload = {}) {
   const demoJourneyId = cleanText(payload.demoJourneyId || payload.demo_journey_id);
+  const existingJourney = await readJourney(context, demoJourneyId);
+  const existingPackage = existingJourney?.preview_package && typeof existingJourney.preview_package === "object" ? existingJourney.preview_package : {};
+  const generatedPackage = payload.generatedPackage || payload.generated_package || {};
+  const persistedSource = storedPreviewSource(existingPackage);
   const record = {
     generated_briefing: cleanText(payload.generatedBriefing || payload.generated_briefing),
     preview_url: cleanText(payload.previewUrl || payload.preview_url),
     preview_token: cleanText(payload.previewToken || payload.preview_token),
-    preview_package: payload.generatedPackage || payload.generated_package || {},
+    preview_package: {
+      ...generatedPackage,
+      ...(existingPackage.manualPreview ? { manualPreview: existingPackage.manualPreview } : {}),
+      ...(existingPackage.savedDemoSite ? { savedDemoSite: existingPackage.savedDemoSite } : {}),
+      ...(existingPackage.linkedRecords ? { linkedRecords: existingPackage.linkedRecords } : {}),
+      ...(persistedSource ? { activePreviewSource: persistedSource } : {}),
+    },
     preview_generated_at: new Date().toISOString(),
     demo_status: cleanText(payload.status || "interne_preview_klaar"),
     updated_by: context.admin.id,

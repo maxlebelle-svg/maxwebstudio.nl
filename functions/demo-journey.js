@@ -5,6 +5,7 @@ const { readProjectWorkspace, upsertProjectWorkspace, zipFilenameFor } = require
 const { getBuildHistory, runBuildJob } = require("./website-factory");
 const { createTimelineEvent } = require("./services/timelineService");
 const crypto = require("crypto");
+const { PREVIEW_SOURCES, normalizePreviewSource, resolveActiveDemoPreview } = require("./_demo-preview-source");
 
 const staffRoles = ["super_admin", "admin", "sales_manager", "sales_partner"];
 const managerRoles = new Set(["super_admin", "admin", "sales_manager"]);
@@ -564,13 +565,14 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
       totalBytes: files.reduce((sum, file) => sum + Number(file.size || 0), 0),
       files,
     };
+    const persistedSource = resolveActiveDemoPreview(previewPackage).persistedSource;
     const record = {
       preview_url: previewUrl,
       preview_token: previewToken,
       preview_package: {
         ...previewPackage,
         manualPreview,
-        activePreviewSource: "manual",
+        ...(persistedSource ? { activePreviewSource: persistedSource } : {}),
       },
       preview_generated_at: current.preview_generated_at || uploadedAt,
       demo_status: current.demo_status === "geen_demo" ? "interne_preview_klaar" : current.demo_status,
@@ -584,6 +586,56 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     const buildHistory = await readFactoryHistorySafe({ supabaseUrl, serviceRoleKey, admin, journeyId: current.id });
     const responseJourney = sanitizeAdminJourney(journey);
     return jsonResponse(200, { success: true, journey: responseJourney, demoJourney: responseJourney, events, buildHistory, buildStatus: buildHistory.latestJob || null, manualPreview: sanitizeManualPreviewMeta(manualPreview) });
+  }
+
+  if (action === "update_demo_preview_source") {
+    if (!current?.id) return jsonResponse(400, { success: false, error: "Demo-site niet gevonden." });
+    const updatedAt = new Date().toISOString();
+    const previewPackage = current.preview_package && typeof current.preview_package === "object" ? current.preview_package : {};
+    const savedDemoSite = previewPackage.savedDemoSite || previewPackage.saved_demo_site || {};
+    const requestedSource = normalizePreviewSource(payload.previewSource || payload.preview_source);
+    if (!requestedSource) return jsonResponse(400, { success: false, error: "Kies Handmatige ZIP of Website Factory." });
+    const resolved = resolveActiveDemoPreview(previewPackage, requestedSource);
+    if (!resolved.available) {
+      return jsonResponse(409, {
+        success: false,
+        code: "preview_source_unavailable",
+        error: "De gekozen previewbron is momenteel niet beschikbaar. Kies een andere bron om verder te gaan.",
+        availability: { manualZip: resolved.manualAvailable, websiteFactory: resolved.factoryAvailable },
+      });
+    }
+    const currentJourney = mapJourney(current);
+    const protectedDemo = Boolean(savedDemoSite?.saved && (
+      currentJourney.previewApprovedAt || currentJourney.deliveryApprovedAt || ["definitieve_versie_klaar", "verkocht"].includes(currentJourney.demoStatus)
+    ));
+    if (protectedDemo && normalizePreviewSource(savedDemoSite.previewSource) !== requestedSource) {
+      return jsonResponse(409, { success: false, code: "protected_demo_version", error: "Deze demo is al goedgekeurd of definitief. Maak eerst een nieuwe previewversie om de bestaande klantversie intact te houden." });
+    }
+    const thumbnailPackage = requestedSource === PREVIEW_SOURCES.MANUAL ? { ...previewPackage, files: previewPackage.manualPreview?.files || [] } : previewPackage;
+    const previewUrl = cleanText(savedDemoSite.previewUrl || current.preview_url);
+    const thumbnail = buildSavedDemoThumbnail({ journey: currentJourney, previewPackage: thumbnailPackage, previewUrl, savedAt: updatedAt });
+    const nextSavedDemoSite = {
+      ...savedDemoSite,
+      saved: true,
+      previewSource: requestedSource,
+      sourceLabel: requestedSource === PREVIEW_SOURCES.MANUAL ? "Handmatige ZIP" : "Website Factory",
+      previewUrl,
+      thumbnailUrl: thumbnail.thumbnailUrl,
+      thumbnailGeneratedAt: thumbnail.thumbnailGeneratedAt,
+      thumbnailKind: thumbnail.thumbnailKind,
+      updatedAt,
+      updatedBy: admin.id,
+    };
+    const record = {
+      preview_package: { ...previewPackage, activePreviewSource: requestedSource, savedDemoSite: nextSavedDemoSite },
+      updated_by: admin.id,
+      updated_at: updatedAt,
+    };
+    const rows = await patchJourneySafe({ supabaseUrl, serviceRoleKey, id: current.id, record });
+    await createEvent({ supabaseUrl, serviceRoleKey, journeyId: current.id, type: "demo_preview_source", title: "Previewbron opgeslagen", description: nextSavedDemoSite.sourceLabel, visible: false, createdBy: admin.id });
+    const journey = mapJourney(rows[0] || await readJourneyById({ supabaseUrl, serviceRoleKey, id: current.id }));
+    const responseJourney = sanitizeAdminJourney(journey);
+    return jsonResponse(200, { success: true, journey: responseJourney, demoJourney: responseJourney, previewSource: requestedSource, savedDemoSite: nextSavedDemoSite });
   }
 
   if (action === "save_website_intelligence") {
@@ -631,8 +683,10 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     const savedAt = new Date().toISOString();
     const previewPackage = current.preview_package && typeof current.preview_package === "object" ? current.preview_package : {};
     const previousSavedDemo = previewPackage.savedDemoSite || previewPackage.saved_demo_site || null;
-    const requestedSource = normalizePreviewSource(payload.previewSource || payload.preview_source || previewPackage.activePreviewSource);
-    const activePreviewSource = requestedSource === "manual" && previewPackage.manualPreview?.files?.length ? "manual" : "factory";
+    const requestedSource = normalizePreviewSource(payload.previewSource || payload.preview_source) || resolveActiveDemoPreview(previewPackage).source || PREVIEW_SOURCES.FACTORY;
+    const sourceResolution = resolveActiveDemoPreview(previewPackage, requestedSource);
+    if (!sourceResolution.available) return jsonResponse(409, { success: false, code: "preview_source_unavailable", error: "De gekozen previewbron is momenteel niet beschikbaar. Kies een andere bron om verder te gaan." });
+    const activePreviewSource = requestedSource;
     const previewUrl = cleanText(payload.previewUrl || payload.preview_url || current.preview_url);
     if (!previewUrl) return jsonResponse(400, { success: false, error: "Genereer eerst een preview voordat je de demo-site opslaat." });
     const currentJourney = mapJourney(current);
@@ -648,7 +702,7 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
         error: "Deze demo is al goedgekeurd of definitief. Maak eerst een nieuwe previewversie om de live of goedgekeurde versie intact te houden.",
       });
     }
-    const thumbnailPackage = activePreviewSource === "manual" ? { ...previewPackage, files: previewPackage.manualPreview?.files || [] } : previewPackage;
+    const thumbnailPackage = activePreviewSource === PREVIEW_SOURCES.MANUAL ? { ...previewPackage, files: previewPackage.manualPreview?.files || [] } : previewPackage;
     const thumbnail = buildSavedDemoThumbnail({ journey: currentJourney, previewPackage: thumbnailPackage, previewUrl, savedAt });
     const savedDemoSite = {
       saved: true,
@@ -665,10 +719,10 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
       previewVersionId: cleanUuid(payload.previewVersionId || payload.preview_version_id) || previousSavedDemo?.previewVersionId || null,
       previewVersion: Number(payload.previewVersion || payload.preview_version || previewPackage.version || previewPackage.meta?.version || 0) || null,
       previewSource: activePreviewSource,
-      sourceLabel: activePreviewSource === "manual" ? "Handmatige ZIP" : "Website Factory",
+      sourceLabel: activePreviewSource === PREVIEW_SOURCES.MANUAL ? "Handmatige ZIP" : "Website Factory",
       status: currentJourney.demoStatus,
       package: cleanText(payload.packageType || payload.package_type || previewPackage.meta?.packageType || previewPackage.packageType),
-      manualZipFileName: activePreviewSource === "manual" ? cleanText(previewPackage.manualPreview?.fileName) : "",
+      manualZipFileName: activePreviewSource === PREVIEW_SOURCES.MANUAL ? cleanText(previewPackage.manualPreview?.fileName) : "",
       thumbnailUrl: thumbnail.thumbnailUrl,
       thumbnailGeneratedAt: thumbnail.thumbnailGeneratedAt,
       thumbnailKind: thumbnail.thumbnailKind,
@@ -1738,11 +1792,6 @@ function cleanContactName(value = "") {
   const looksLikeScript = /\b(ben jij|beslist|degene die|kijkt iemand|hierover|daarin mee|wat is je naam|contactpersoon)\b/.test(lower);
   const tooLongForName = text.length > 60 || text.split(/\s+/).length > 6;
   return looksLikeQuestion || looksLikeScript || tooLongForName ? "" : text;
-}
-
-function normalizePreviewSource(value = "") {
-  const text = cleanText(value).toLowerCase();
-  return text === "manual" || text === "manual_zip" || text === "handmatig" ? "manual" : "factory";
 }
 
 function sanitizeDemoSiteWorkflow(workflow = {}) {
