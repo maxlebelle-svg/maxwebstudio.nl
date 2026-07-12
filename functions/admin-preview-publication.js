@@ -1,6 +1,8 @@
 const { verifyAdmin } = require("./_admin-auth");
 const { corsHeaders } = require("./_cors");
 const { createTimelineEvent } = require("./services/timelineService");
+const { createHash } = require("crypto");
+const { PREVIEW_SOURCES, normalizePreviewSource, resolveActiveDemoPreview } = require("./_demo-preview-source");
 
 const adminRoles = ["super_admin", "admin", "sales_manager"];
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -30,12 +32,14 @@ const previewVersionFields = [
   "status",
   "approved_at",
   "feedback_items",
+  "metadata",
+  "published_by",
   "created_at",
 ].join(",");
 const websiteFields = "id,customer_id,name,domain,status";
 const projectFields = "id,customer_id,website_id,name,status,updated_at";
 const customerFields = "id,name,company,email,website";
-const demoJourneyFields = "id,lead_id,customer_id,business_name,email,website_url,preview_url,preview_token,updated_at,created_at";
+const demoJourneyFields = "id,lead_id,customer_id,business_name,email,website_url,preview_url,preview_token,preview_package,updated_at,created_at";
 const leadFields = "id,customer_id,converted_customer_id";
 const legacyLeadFields = "id,converted_customer_id";
 const buildJobFields = "id,demo_journey_id,lead_id,customer_id,preview_url,preview_token";
@@ -56,7 +60,12 @@ exports.handler = async (event) => {
 
   try {
     if (event.httpMethod === "GET") return await listPreviewVersions(context, event.queryStringParameters || {});
-    if (event.httpMethod === "POST") return await publishPreviewVersion(context, parsePayload(event.body));
+    if (event.httpMethod === "POST") {
+      const payload = parsePayload(event.body);
+      return payload.action === "publish_customer_preview"
+        ? await publishActiveCustomerPreview(context, payload)
+        : await publishPreviewVersion(context, payload);
+    }
     return jsonResponse(405, { success: false, error: "Methode niet toegestaan." });
   } catch (error) {
     console.error("Preview publication failed", {
@@ -91,6 +100,113 @@ async function listPreviewVersions(context, params = {}) {
     selectedProjectId,
   });
   return jsonResponse(200, { success: true, website: sanitizeWebsite(website), previewVersions: versions.map(sanitizeAdminVersion) });
+}
+
+async function publishActiveCustomerPreview(context, payload = {}) {
+  const customerId = uuidOrEmpty(payload.customerId || payload.customer_id);
+  const projectId = uuidOrEmpty(payload.projectId || payload.project_id);
+  const websiteId = uuidOrEmpty(payload.websiteId || payload.website_id);
+  const demoJourneyId = uuidOrEmpty(payload.demoJourneyId || payload.demo_journey_id);
+  const previewVersionId = uuidOrEmpty(payload.previewVersionId || payload.preview_version_id);
+  const previewSource = normalizePreviewSource(payload.previewSource || payload.preview_source);
+  if (!customerId) throw previewError("PREVIEW_CUSTOMER_REQUIRED", "Selecteer eerst een geldige klant.", 400);
+  if (!websiteId) throw previewError("PREVIEW_WEBSITE_MISMATCH", "Selecteer eerst een website voor deze klant.", 400);
+  if (!demoJourneyId) throw previewError("PREVIEW_NOT_FOUND", "Selecteer eerst een geldige preview.", 400);
+  if (!previewSource) throw previewError("PREVIEW_SOURCE_INVALID", "Selecteer eerst een geldige previewbron.", 400);
+
+  const website = await readSingle(context, "websites", `select=${websiteFields}&id=eq.${websiteId}&limit=1`);
+  if (!website?.id || cleanText(website.customer_id) !== customerId) throw previewError("PREVIEW_CUSTOMER_MISMATCH", "Deze preview hoort niet bij de actieve klant.", 409);
+  const journey = await readSingle(context, "demo_journeys", `select=${demoJourneyFields}&id=eq.${demoJourneyId}&limit=1`);
+  if (!journey?.id) throw previewError("PREVIEW_NOT_FOUND", "Selecteer eerst een geldige preview.", 404);
+  if (journey.customer_id && cleanText(journey.customer_id) !== customerId) throw previewError("PREVIEW_CUSTOMER_MISMATCH", "Deze preview hoort niet bij de actieve klant.", 409);
+
+  const versions = await findPreviewVersionsForWebsite(context, { website, selectedCustomerId: customerId, selectedProjectId: projectId });
+  const selectedVersion = previewVersionId ? versions.find((item) => cleanText(item.id) === previewVersionId) : versions[0] || null;
+  if (!selectedVersion?.id) throw previewError("PREVIEW_NOT_FOUND", "Geen previewversie gevonden om te publiceren.", 404);
+  const ownership = await resolveOwnership(context, selectedVersion, { website, selectedCustomerId: customerId, selectedProjectId: projectId });
+  if (!ownership.customer?.id || cleanText(ownership.customer.id) !== customerId) throw previewError("PREVIEW_CUSTOMER_MISMATCH", "Deze preview hoort niet bij de actieve klant.", 409);
+
+  const journeyPackage = journey.preview_package && typeof journey.preview_package === "object" ? journey.preview_package : {};
+  const resolved = resolveActiveDemoPreview(journeyPackage, previewSource);
+  if (!resolved.available) throw previewError("PREVIEW_SOURCE_UNAVAILABLE", "De geselecteerde previewbron is momenteel niet beschikbaar.", 409);
+  const selectedPackage = previewSource === PREVIEW_SOURCES.MANUAL ? resolved.previewPackage : selectedVersion.generated_package;
+  if (!selectedPackage?.files?.length) throw previewError("PREVIEW_NOT_FOUND", "De geselecteerde preview kan niet worden geladen.", 409);
+  const fingerprint = previewFingerprint({ demoJourneyId, previewSource, previewPackage: selectedPackage });
+  let target = versions.find((item) => cleanText(item.metadata?.customerPreviewFingerprint) === fingerprint) || null;
+  let created = false;
+
+  if (!target && previewSource === PREVIEW_SOURCES.FACTORY) target = selectedVersion;
+  if (!target) {
+    const now = new Date().toISOString();
+    const versionNumber = Math.max(0, ...versions.map((item) => Number(item.version || 0))) + 1;
+    const inserted = await insertRows(context, "website_preview_versions", {
+      customer_id: customerId,
+      project_id: ownership.project?.id || projectId || null,
+      website_id: websiteId,
+      demo_journey_id: demoJourneyId,
+      version: versionNumber,
+      title: cleanText(payload.title) || `${journey.business_name || website.name || "Website"} — klantpreview`,
+      customer_summary: cleanText(payload.summary || payload.customerSummary) || "Een nieuwe websiteversie staat klaar voor beoordeling.",
+      change_summary: cleanText(payload.changeSummary) || (previewSource === PREVIEW_SOURCES.MANUAL ? "Handmatige ZIP-preview gepubliceerd." : "Website Factory-preview gepubliceerd."),
+      preview_url: cleanText(journey.preview_url || selectedVersion.preview_url),
+      preview_token: cleanText(journey.preview_token || selectedVersion.preview_token),
+      generated_package: selectedPackage,
+      quality_report: selectedVersion.quality_report || {},
+      is_active: true,
+      published_to_portal: false,
+      allow_feedback: true,
+      allow_approval: true,
+      status: "internal",
+      feedback_items: [],
+      metadata: { customerPreviewFingerprint: fingerprint, previewSource, sourcePreviewVersionId: selectedVersion.id },
+      created_by: context.admin.id || null,
+      created_at: now,
+      updated_at: now,
+    });
+    target = inserted[0] || null;
+    created = true;
+  }
+  if (!target?.id) throw previewError("PREVIEW_PUBLICATION_FAILED", "De klantpreview kon niet worden gepubliceerd.", 500);
+
+  const response = await publishPreviewVersion(context, {
+    ...payload,
+    customerId,
+    projectId: ownership.project?.id || projectId,
+    websiteId,
+    previewVersionId: target.id,
+    previewSource,
+    customerPreviewFingerprint: fingerprint,
+    title: target.title || payload.title,
+  });
+  const body = JSON.parse(response.body || "{}");
+  if (body.previewVersion) {
+    body.customerPreview = {
+      ...body.previewVersion,
+      previewSource,
+      reviewStatus: body.previewVersion.approvedAt ? "approved" : "ready_for_review",
+      createdForPublication: created,
+    };
+  }
+  response.body = JSON.stringify(body);
+  await safeTimeline({
+    customerId,
+    eventType: "customer_preview_published",
+    title: "Klantpreview gepubliceerd",
+    description: `${target.title || "Website-preview"} is zichtbaar in het klantportaal.`,
+    module: "website",
+    referenceType: "website_preview_version",
+    referenceId: target.id,
+    actorName: context.admin.email || "Max Webstudio",
+    actorRole: "admin",
+    severity: "success",
+    metadata: { dedupeKey: `customer_preview_published:${target.id}`, previewVersionId: target.id, previewSource },
+  });
+  return response;
+}
+
+function previewFingerprint({ demoJourneyId = "", previewSource = "", previewPackage = {} } = {}) {
+  const files = Array.isArray(previewPackage.files) ? previewPackage.files.map((file) => [file.path, file.size, file.encoding, file.content]) : [];
+  return createHash("sha256").update(JSON.stringify({ demoJourneyId, previewSource, files })).digest("hex");
 }
 
 async function publishPreviewVersion(context, payload = {}) {
@@ -137,6 +253,8 @@ async function publishPreviewVersion(context, payload = {}) {
     status: version.approved_at ? "approved" : "ready_for_review",
     metadata: {
       ...(isObject(version.metadata) ? version.metadata : {}),
+      ...(normalizePreviewSource(payload.previewSource || payload.preview_source) ? { previewSource: normalizePreviewSource(payload.previewSource || payload.preview_source) } : {}),
+      ...(cleanText(payload.customerPreviewFingerprint) ? { customerPreviewFingerprint: cleanText(payload.customerPreviewFingerprint) } : {}),
       publishDedupeKey: `preview_publish:${version.id}`,
       lastPublishedAt: now,
       notificationRequested: Boolean(payload.notifyCustomer || payload.notify_customer),
@@ -447,6 +565,14 @@ async function patchRows(context, table, filter, record) {
   });
 }
 
+async function insertRows(context, table, record) {
+  return supabaseFetch(`${context.supabaseUrl}/rest/v1/${table}`, {
+    method: "POST",
+    headers: { ...restHeaders(context.serviceRoleKey), "Content-Type": "application/json", Prefer: "return=representation" },
+    body: JSON.stringify(record),
+  });
+}
+
 async function supabaseFetch(url, options) {
   const response = await fetch(url, options);
   const text = await response.text();
@@ -507,6 +633,7 @@ function sanitizeAdminVersion(row = {}) {
     status: cleanText(row.status),
     approvedAt: cleanText(row.approved_at),
     feedbackCount: Array.isArray(row.feedback_items) ? row.feedback_items.length : 0,
+    previewSource: normalizePreviewSource(row.metadata?.previewSource),
     createdAt: cleanText(row.created_at),
   };
 }
@@ -595,6 +722,8 @@ function jsonResponse(statusCode, body) {
 
 exports._private = {
   findPreviewVersionsForWebsite,
+  previewFingerprint,
+  publishActiveCustomerPreview,
   publishPreviewVersion,
   resolveOwnership,
   sanitizeAdminVersion,

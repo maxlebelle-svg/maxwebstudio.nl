@@ -23,7 +23,7 @@ exports.handler = async (event) => {
       ? `id=eq.${versionId}&customer_id=eq.${customer.id}`
       : `customer_id=eq.${customer.id}`;
     const rows = await readRows(context, "website_preview_versions", [
-      "select=id,customer_id,project_id,website_id,version,title,customer_summary,change_summary,safe_preview_path,published_to_portal,published_at,review_deadline,allow_feedback,allow_approval,status,approved_at,feedback_items,created_at",
+      "select=id,customer_id,project_id,website_id,version,title,customer_summary,change_summary,safe_preview_path,published_to_portal,published_at,review_deadline,allow_feedback,allow_approval,status,approved_at,feedback_items,metadata,created_at",
       filter,
       "published_to_portal=eq.true",
       "order=published_at.desc.nullslast,version.desc",
@@ -346,6 +346,7 @@ function sanitizeClientVersion(row = {}) {
     approvedAt: cleanText(row.approved_at),
     feedbackCount: Array.isArray(row.feedback_items) ? row.feedback_items.length : 0,
     feedbackItems: Array.isArray(row.feedback_items) ? row.feedback_items.map(sanitizeFeedbackItem) : [],
+    previewSource: cleanText(row.metadata?.previewSource),
   };
 }
 

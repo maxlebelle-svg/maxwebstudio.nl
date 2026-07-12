@@ -4431,6 +4431,7 @@
               createWebsiteMetric("Versie", `Versie ${latestPreview.version || 1}`, "Huidige ontwerpversie."),
               createWebsiteMetric("Status", statusLabel(latestPreview.status || "ready_for_review"), "Reviewstatus."),
               createWebsiteMetric("Publicatiedatum", formatDate(latestPreview.publishedAt), "Klantzichtbaar sinds."),
+              createWebsiteMetric("Previewbron", latestPreview.previewSource === "manual_zip" ? "Handmatige ZIP" : "Website Factory", "Bron van deze gepubliceerde versie."),
               createWebsiteMetric("Wijzigingen", customerPreviewSummary(latestPreview), "Samenvatting."),
               createWebsiteMetric("Domein", website.domain || "Nog niet gekoppeld", "Het webadres dat klanten gebruiken."),
               createWebsiteMetric("Laatste update", lastUpdate, "Meest recente bekende wijziging.")
