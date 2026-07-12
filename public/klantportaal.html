@@ -1458,7 +1458,7 @@
                   <span class="portal-website-preview-dots" aria-hidden="true"><i></i><i></i><i></i></span>
                   <strong>Veilige preview · versie ${escapeHtml(String(latest.version || 1))}</strong>
                 </div>
-                <iframe class="portal-website-mini-preview" title="Veilige preview van ${escapeHtml(latest.title || "je website")}" src="${escapeHtml(latest.safePreviewPath)}" loading="lazy"></iframe>
+                <iframe class="portal-website-mini-preview" title="Veilige preview van ${escapeHtml(latest.title || "je website")}" src="${escapeHtml(latest.thumbnailPath || latest.safePreviewPath)}" loading="lazy"></iframe>
                 <div class="portal-website-preview-caption">
                   <strong>${escapeHtml(latest.title || "Je ontwerp staat klaar")}</strong>
                   <span>${escapeHtml(customerPreviewSummary(latest))}</span>
@@ -3240,7 +3240,7 @@
             const iframe = document.createElement("iframe");
             iframe.className = "portal-website-mini-preview";
             iframe.title = `Veilige preview van ${previewVersion.title || website.name || "je website"}`;
-            iframe.src = previewVersion.safePreviewPath;
+            iframe.src = previewVersion.thumbnailPath || previewVersion.safePreviewPath;
             iframe.loading = "lazy";
             const caption = document.createElement("div");
             caption.className = "portal-website-preview-caption";
@@ -3249,6 +3249,13 @@
             title.textContent = previewVersion.title || website.name || "Je ontwerp staat klaar";
             text.textContent = customerPreviewSummary(previewVersion);
             caption.append(title, text);
+            const open = document.createElement("a");
+            open.className = "button secondary portal-preview-open-full";
+            open.href = previewVersion.safePreviewPath;
+            open.target = "_blank";
+            open.rel = "noopener";
+            open.textContent = "Bekijk ontwerp";
+            caption.append(open);
             frame.append(toolbar, iframe, caption);
             return frame;
           }

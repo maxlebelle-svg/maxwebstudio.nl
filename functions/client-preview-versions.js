@@ -338,6 +338,7 @@ function sanitizeClientVersion(row = {}) {
     summary: cleanText(row.customer_summary),
     changeSummary: cleanText(row.change_summary),
     safePreviewPath: safePath,
+    thumbnailPath: `/preview-embed.html?version=${encodeURIComponent(cleanText(row.id))}`,
     publishedAt: cleanText(row.published_at),
     reviewDeadline: cleanText(row.review_deadline),
     allowFeedback: row.allow_feedback !== false,

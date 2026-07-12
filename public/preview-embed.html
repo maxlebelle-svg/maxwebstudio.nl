@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Website-preview</title>
+    <style>
+      html, body, iframe { width: 100%; height: 100%; margin: 0; border: 0; }
+      body { overflow: hidden; background: #eef2f7; color: #10233f; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+      iframe { display: block; background: #fff; }
+      .fallback { box-sizing: border-box; display: grid; place-content: center; gap: .45rem; height: 100%; padding: 1.5rem; text-align: center; }
+      .fallback strong { font-size: 1rem; }
+      .fallback span { color: #5e6c80; font-size: .82rem; }
+    </style>
+  </head>
+  <body>
+    <div class="fallback" id="fallback" role="status">
+      <strong>Preview wordt geladen</strong>
+      <span>Een ogenblik geduld.</span>
+    </div>
+    <script>
+      (() => {
+        const fallback = document.getElementById("fallback");
+        const version = new URLSearchParams(location.search).get("version") || "";
+        function readJson(key) {
+          try { return JSON.parse(localStorage.getItem(key) || "null"); } catch { return null; }
+        }
+
+        const session = readJson("maxwebstudioSupabaseAuthSession");
+        const currentSession = readJson("maxwebstudioCurrentSession");
+        const token = session?.access_token || session?.session?.access_token || currentSession?.accessToken || "";
+
+        function showFallback(message) {
+          fallback.replaceChildren();
+          const title = document.createElement("strong");
+          const copy = document.createElement("span");
+          title.textContent = "Preview niet beschikbaar";
+          copy.textContent = message;
+          fallback.append(title, copy);
+        }
+
+        if (!version || !token) {
+          showFallback("Open de volledige preview om opnieuw in te loggen.");
+          return;
+        }
+
+        fetch(`/api/client-preview-render?version=${encodeURIComponent(version)}`, {
+          headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+          credentials: "same-origin",
+        })
+          .then(async (response) => {
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || data.success === false || !data.preview?.html) throw new Error(data.error || "De preview kon niet worden geladen.");
+            const frame = document.createElement("iframe");
+            frame.title = "Website-preview";
+            frame.setAttribute("sandbox", "allow-scripts allow-forms allow-popups");
+            frame.srcdoc = data.preview.html;
+            frame.addEventListener("load", () => fallback.remove(), { once: true });
+            document.body.append(frame);
+          })
+          .catch((error) => showFallback(error.message || "Probeer het later opnieuw."));
+      })();
+    </script>
+  </body>
+</html>

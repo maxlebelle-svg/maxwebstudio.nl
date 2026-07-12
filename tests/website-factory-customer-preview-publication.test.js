@@ -10,6 +10,7 @@ const publicationBackend = fs.readFileSync(path.join(root, "functions/admin-prev
 const clientVersions = fs.readFileSync(path.join(root, "functions/client-preview-versions.js"), "utf8");
 const clientRender = fs.readFileSync(path.join(root, "functions/client-preview-render.js"), "utf8");
 const portal = fs.readFileSync(path.join(root, "public/klantportaal.html"), "utf8");
+const previewEmbed = fs.readFileSync(path.join(root, "public/preview-embed.html"), "utf8");
 
 test("Website Factory keeps Demo Sites and customer publication as separate actions", () => {
   assert.match(factoryUi, /id="factory-primary-save-demo"[^>]*>Opslaan in Demo Sites/);
@@ -63,4 +64,28 @@ test("publication status provides safe admin copy and responsive actions", () =>
   assert.match(factoryUi, /De geselecteerde websiteversie is nu zichtbaar in het klantportaal/);
   assert.match(factoryUi, /Reviewstatus/);
   assert.match(factoryUi, /Open klantportaal/);
+});
+
+test("customer portal thumbnail and full preview are bound to one preview version", () => {
+  assert.match(clientVersions, /thumbnailPath: `\/preview-embed\.html\?version=\$\{encodeURIComponent\(cleanText\(row\.id\)\)\}`/);
+  assert.match(portal, /latest\.thumbnailPath \|\| latest\.safePreviewPath/);
+  assert.match(portal, /previewVersion\.thumbnailPath \|\| previewVersion\.safePreviewPath/);
+  assert.match(portal, /open\.href = previewVersion\.safePreviewPath/);
+  assert.match(previewEmbed, /client-preview-render\?version=\$\{encodeURIComponent\(version\)\}/);
+  assert.match(previewEmbed, /data\.preview\?\.html/);
+});
+
+test("thumbnail embed is authenticated, persistent and has a visible fallback", () => {
+  assert.match(previewEmbed, /maxwebstudioSupabaseAuthSession/);
+  assert.match(previewEmbed, /Authorization: `Bearer \$\{token\}`/);
+  assert.match(previewEmbed, /Preview niet beschikbaar/);
+  assert.doesNotMatch(previewEmbed, /blob:/);
+  assert.doesNotMatch(previewEmbed, /data:image/);
+  assert.match(clientRender, /customer_id=eq\.\$\{encodeURIComponent\(customer\.id\)\}/);
+  assert.match(clientRender, /published_to_portal=eq\.true/);
+});
+
+test("republishing the selected version makes it the canonical latest publication", () => {
+  assert.match(publicationBackend, /published_at: now/);
+  assert.match(clientVersions, /order=published_at\.desc\.nullslast,version\.desc/);
 });

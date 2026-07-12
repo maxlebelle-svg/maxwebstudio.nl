@@ -255,7 +255,7 @@ async function publishPreviewVersion(context, payload = {}) {
     allow_approval: payload.allowApproval !== false && payload.allow_approval !== false,
     notify_customer: Boolean(payload.notifyCustomer || payload.notify_customer),
     published_to_portal: true,
-    published_at: version.published_at || now,
+    published_at: now,
     published_by: context.admin.profileId || null,
     safe_preview_path: safePreviewPath,
     status: version.approved_at ? "approved" : "ready_for_review",
