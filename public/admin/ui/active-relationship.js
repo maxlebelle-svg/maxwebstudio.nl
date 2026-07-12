@@ -133,7 +133,8 @@
       bar.innerHTML = `<div class="relationship-workspace__copy"><span class="relationship-workspace__eyebrow">Actieve werkruimte</span><strong>Geen actieve relatie geselecteerd</strong><p>Selecteer een lead of klant voor relatiegebonden acties.</p></div><div class="relationship-workspace__actions"><button type="button" data-primary data-relationship-switch>Selecteer relatie</button></div>`;
     } else {
       const detail = [relationship.entityType === "lead" ? "Lead" : "Klant", relationship.lifecycleStage, relationship.assignedUserName ? `Eigenaar: ${relationship.assignedUserName}` : ""].filter(Boolean).join(" · ");
-      const dossier = relationship.entityType === "lead" ? `admin-sales.html?leadId=${encodeURIComponent(relationship.leadId)}` : `admin-klanten.html?customerId=${encodeURIComponent(relationship.customerId)}`;
+      const relationshipId = relationship.entityType === "lead" ? relationship.leadId : relationship.customerId;
+      const dossier = `admin-relatie-workspace.html?entityType=${encodeURIComponent(relationship.entityType)}&id=${encodeURIComponent(relationshipId)}&module=overview`;
       bar.innerHTML = `<div class="relationship-workspace__copy"><span class="relationship-workspace__eyebrow">Actieve werkruimte</span><strong></strong><p></p></div><div class="relationship-workspace__actions"><button type="button" data-relationship-switch>Wisselen</button><a data-primary href="${dossier}">Open dossier</a></div>`;
       bar.querySelector("strong").textContent = relationship.companyName;
       bar.querySelector("p").textContent = detail || relationship.websiteUrl || relationship.email;

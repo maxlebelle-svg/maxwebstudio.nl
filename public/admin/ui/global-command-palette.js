@@ -1007,6 +1007,9 @@
       if (!input) { relationshipToast("Deze relatie heeft nog geen geldige centrale koppeling."); return; }
       try { await window.ActiveRelationship.setActiveRelationship(input, { source: "max-command" }); }
       catch (error) { relationshipToast(error.userMessage || error.message || "Deze relatie kan niet worden geopend."); return; }
+      closePalette();
+      window.location.href = `admin-relatie-workspace.html?entityType=${encodeURIComponent(input.entityType)}&id=${encodeURIComponent(input.customerId || input.leadId)}&module=overview`;
+      return;
     }
     rememberRecent(item);
     if (item.type === "Search" && item.metadata?.query) {
@@ -1117,6 +1120,11 @@
     normalizeRelationshipCandidate,
     relationshipToast,
     analyzeIntent: (query) => MaxCommandAI.analyzeIntent(query),
+  };
+  window.openRelationshipWorkspace = function openRelationshipWorkspace({ entityType, relationshipId, module = "overview" } = {}) {
+    if (!["lead", "customer"].includes(entityType) || !isUuid(relationshipId)) return false;
+    window.location.href = `admin-relatie-workspace.html?entityType=${encodeURIComponent(entityType)}&id=${encodeURIComponent(relationshipId)}&module=${encodeURIComponent(module)}`;
+    return true;
   };
   window.MaxGlobalCommandPalette = window.MaxCommand;
 
