@@ -639,18 +639,65 @@
           </div>
           <a class="button secondary mw-button mw-button-secondary" href="#dashboard">Terug naar dashboard</a>
         </div>
-        <article class="admin-card" style="margin-bottom:18px">
-          <p class="section-kicker">Bestanden aanleveren</p>
-          <h3>Foto’s, logo’s en documenten uploaden</h3>
-          <p>Je bestanden komen veilig in jouw klantwerkruimte en worden eerst door Max gecontroleerd.</p>
-          <form class="admin-form" id="relationship-asset-upload">
-            <label>Categorie<select name="category"><option value="logo">Logo</option><option value="photo">Bedrijfsfoto’s</option><option value="team">Team</option><option value="project">Projecten</option><option value="product">Producten</option><option value="brand">Huisstijl</option><option value="video">Video</option><option value="document">Documenten</option><option value="text">Teksten</option><option value="social">Social media</option><option value="other">Overig</option></select></label>
-            <label class="admin-profile-wide">Bestanden<input id="relationship-asset-files" type="file" multiple accept="image/jpeg,image/png,image/webp,image/svg+xml,video/mp4,video/webm,application/pdf,text/plain,.doc,.docx" required /></label>
-            <label class="admin-profile-wide">Korte omschrijving<textarea name="description" rows="2" maxlength="500"></textarea></label>
-            <label class="admin-profile-wide"><input name="usageRightsConfirmed" type="checkbox" required /> Ik bevestig dat ik deze bestanden mag aanleveren en laten gebruiken.</label>
-            <div class="admin-profile-actions"><button class="button primary" type="submit">Bestanden uploaden</button><span class="form-helper" id="relationship-asset-status" role="status" aria-live="polite"></span></div>
+        <article class="admin-card portal-asset-upload-card mw-card-premium">
+          <header class="portal-asset-upload-heading">
+            <div>
+              <p class="section-kicker">Bestanden aanleveren</p>
+              <h3>Foto’s, logo’s en documenten uploaden</h3>
+              <p>Je bestanden komen veilig in jouw klantwerkruimte en worden eerst door Max gecontroleerd.</p>
+            </div>
+            <span class="portal-asset-upload-security">Privé &amp; beveiligd</span>
+          </header>
+          <form class="portal-asset-upload-form" id="relationship-asset-upload" novalidate>
+            <label class="portal-asset-field">
+              <span>Categorie</span>
+              <select class="mw-select" name="category">
+                <option value="logo">Logo</option>
+                <option value="photo">Bedrijfsfoto’s</option>
+                <option value="team">Team</option>
+                <option value="project">Projecten</option>
+                <option value="product">Producten</option>
+                <option value="brand">Huisstijl</option>
+                <option value="video">Video</option>
+                <option value="document">Documenten</option>
+                <option value="text">Teksten</option>
+                <option value="social">Social media</option>
+                <option value="other">Overig</option>
+              </select>
+            </label>
+            <div class="portal-asset-upload-summary">
+              <span>Toegestaan</span>
+              <strong>PNG, JPG, WEBP, SVG, video en documenten</strong>
+              <small>Maximaal 8 MB per bestand</small>
+            </div>
+            <div class="portal-asset-dropzone portal-asset-form-wide" id="relationship-asset-dropzone">
+              <input class="portal-asset-file-input" id="relationship-asset-files" type="file" tabindex="-1" aria-hidden="true" multiple accept="image/jpeg,image/png,image/webp,image/svg+xml,video/mp4,video/webm,application/pdf,text/plain,.doc,.docx" />
+              <span class="portal-asset-dropzone-icon" aria-hidden="true">↑</span>
+              <div>
+                <strong>Sleep je bestanden hierheen</strong>
+                <p id="relationship-asset-dropzone-help">Of kies ze vanaf je computer. Je selectie wordt pas verstuurd nadat je op uploaden klikt.</p>
+              </div>
+              <button class="button secondary mw-button mw-button-secondary" id="relationship-asset-choose" type="button">Bestanden kiezen</button>
+            </div>
+            <div class="portal-asset-selection portal-asset-form-wide" id="relationship-asset-selection" aria-live="polite"></div>
+            <label class="portal-asset-field portal-asset-form-wide">
+              <span>Korte omschrijving <small>optioneel</small></span>
+              <textarea class="mw-textarea" name="description" rows="3" maxlength="500" placeholder="Vertel kort waar we deze bestanden voor mogen gebruiken."></textarea>
+            </label>
+            <label class="portal-asset-consent portal-asset-form-wide">
+              <input name="usageRightsConfirmed" type="checkbox" />
+              <span class="portal-asset-checkbox" aria-hidden="true"></span>
+              <span>
+                <strong>Gebruiksrechten bevestigd</strong>
+                <small>Ik mag deze bestanden aanleveren en door Max Webstudio laten gebruiken voor mijn project.</small>
+              </span>
+            </label>
+            <div class="portal-asset-upload-actions portal-asset-form-wide">
+              <button class="button primary mw-button mw-button-primary" id="relationship-asset-submit" type="submit">Bestanden uploaden</button>
+              <span class="form-helper portal-asset-upload-status" id="relationship-asset-status" role="status" aria-live="polite"></span>
+            </div>
           </form>
-          <div class="portal-card-grid" id="relationship-upload-list" aria-live="polite"></div>
+          <div class="portal-upload-request-list" id="relationship-upload-list" aria-live="polite"></div>
         </article>
         <div class="asset-center-shell mw-template-list">
           <div class="asset-center-summary" id="portal-asset-summary" aria-live="polite"></div>
@@ -891,6 +938,8 @@
         let activePreviewVersionId = "";
         let portalAssetRecords = [];
         let portalAssetFiltersBound = false;
+        let portalAssetBaseContext = null;
+        let relationshipAssetFiles = Array.isArray(window.__relationshipAssetFiles) ? window.__relationshipAssetFiles : [];
         let currentOnboardingState = null;
         let activeMessageThreadId = "";
         let activeMessageFilter = "all";
@@ -3846,7 +3895,7 @@
             category,
             status,
             source: assetSourceFor(asset),
-            size: formatFileSize(asset.size || asset.fileSize || asset.file_size || asset.bytes),
+            size: formatFileSize(asset.size || asset.fileSize || asset.file_size || asset.sizeBytes || asset.size_bytes || asset.bytes),
             createdAt,
             updatedAt: asset.updatedAt || asset.updated_at || createdAt,
             description: safeDisplayName(asset.description || asset.summary || asset.caption || asset.notes || "", ""),
@@ -4098,12 +4147,19 @@
         }
 
         function renderAssetCenter({ customer = {}, projects = [], websites = [], files = [], onboarding = {} } = {}) {
-          portalAssetRecords = buildPortalAssets({ customer, projects, websites, files, onboarding });
+          portalAssetBaseContext = { customer, projects, websites, files: [...files], onboarding };
+          relationshipAssetFiles = Array.isArray(window.__relationshipAssetFiles) ? window.__relationshipAssetFiles : relationshipAssetFiles;
+          portalAssetRecords = buildPortalAssets({ customer, projects, websites, files: [...files, ...relationshipAssetFiles], onboarding });
           renderAssetSummary(portalAssetRecords);
           renderAssetFocus(portalAssetRecords);
           setupAssetFilters(portalAssetRecords);
           renderAssetCenterResults();
         }
+
+        window.addEventListener("relationship-assets:loaded", (event) => {
+          relationshipAssetFiles = Array.isArray(event.detail?.assets) ? event.detail.assets : [];
+          if (portalAssetBaseContext) renderAssetCenter(portalAssetBaseContext);
+        });
 
         function closeAssetDetail() {
           assetDetail?.setAttribute("aria-hidden", "true");
@@ -5349,6 +5405,6 @@
         activatePortalView({ focus: false, scroll: false });
       })();
     </script>
-    <script src="admin/ui/client-asset-upload.js?v=20260712-relationship-assets" defer></script>
+    <script src="admin/ui/client-asset-upload.js?v=20260712-binary-asset-upload" defer></script>
   </body>
 </html>
