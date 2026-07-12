@@ -21479,7 +21479,7 @@
           return "Admin API request failed";
         }
 
-        async function apiRequest(url, method = "GET", payload = null) {
+        async function apiRequest(url, method = "GET", payload = null, extraHeaders = {}) {
           let token = "";
           try {
             const { getAdminAccessToken } = await import("./src/services/adminAuthBridgeService.js?v=20260712-authbridge");
@@ -21500,6 +21500,7 @@
               Authorization: `Bearer ${token}`,
               "X-MWS-Developer-Mode": developerMode ? "true" : "false",
               ...(payload ? { "Content-Type": "application/json" } : {}),
+              ...extraHeaders,
             },
             body: payload ? JSON.stringify(payload) : undefined,
           });
@@ -23400,7 +23401,7 @@
             contractVersion: 2,
             entityType: "customer",
             customerId,
-          });
+          }, { "X-Relationship-Contract": "2" });
           const relationship = data.relationship || null;
           if (data.contractVersion !== 2 || relationship?.entityType !== "customer" || relationship?.customerId !== customerId) return false;
           factoryCustomerContext = {

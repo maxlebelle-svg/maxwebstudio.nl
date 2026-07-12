@@ -49,6 +49,7 @@ test("manual publication uses the exact active version without requiring a Facto
 test("validated customer relationship keeps manual ZIP available when extended Factory context fails", () => {
   assert.match(factory, /function loadValidatedCustomerFallback\(customerId\)/);
   assert.match(factory, /\/api\/admin-relationship-context/);
+  assert.match(factory, /\{ "X-Relationship-Contract": "2" \}/);
   assert.match(factory, /data\.contractVersion !== 2/);
   assert.match(factory, /relationship\?\.entityType !== "customer"/);
   assert.match(factory, /relationship\?\.customerId !== customerId/);
