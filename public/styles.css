@@ -21886,6 +21886,7 @@ a.project-workspace-summary-card:hover {
 .payment-config-main {
   display: grid;
   gap: 20px;
+  min-width: 0;
 }
 
 .config-panel,
@@ -21899,6 +21900,8 @@ a.project-workspace-summary-card:hover {
 .config-panel {
   display: grid;
   gap: 20px;
+  min-width: 0;
+  overflow: hidden;
   padding: clamp(22px, 4vw, 36px);
 }
 
@@ -21936,6 +21939,9 @@ a.project-workspace-summary-card:hover {
 .choice-grid {
   display: grid;
   gap: 14px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .website-choice-grid {
@@ -21950,6 +21956,8 @@ a.project-workspace-summary-card:hover {
   position: relative;
   display: grid;
   gap: 10px;
+  min-width: 0;
+  max-width: 100%;
   min-height: 210px;
   padding: 20px;
   border: 1px solid var(--line);
@@ -22012,6 +22020,7 @@ a.project-workspace-summary-card:hover {
   position: relative;
   display: grid;
   gap: 8px;
+  min-width: 0;
   min-height: 178px;
   padding: 18px;
   border: 1px solid var(--line);
@@ -22068,6 +22077,7 @@ a.project-workspace-summary-card:hover {
   color: var(--ink);
   font-style: normal;
   font-weight: 900;
+  overflow-wrap: anywhere;
 }
 
 .add-on-card::after {
@@ -23830,7 +23840,7 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   .portal-auth-shell,
   .portal-auth-shell-wide,
   .portal-demo-role-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .leadfinder-grid {
@@ -29802,7 +29812,7 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
   .care-choice-grid,
   .payment-choice-grid,
   .add-on-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .add-on-card,

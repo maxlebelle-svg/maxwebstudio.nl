@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=20260712" />
   </head>
   <body>
     <header class="site-header">
@@ -249,6 +249,29 @@
         monthly_change_hours: p("Maandelijkse wijzigingsuren", "Onderhoud en abonnementen", 0, 0, true, "Bundel op maat."),
         custom_request: p("Ik heb een andere wens", "Maatwerk", 0, 0, true, "Wordt opgeslagen als aanvraag."),
       };
+      const transparentStartingPrices = {
+        brand_identity: ["Vanaf €895,00 ex. btw", "Logo-uitwerking, kleuren, typografie, stijlelementen en compacte huisstijlhandleiding. Definitieve prijs na afstemming van toepassingen en omvang."],
+        domain_registration: ["Vanaf €49,00 ex. btw", "Beschikbaarheidscheck, registratie en basiskoppeling. Jaarlijkse registratie- en verlengingskosten kunnen per domein verschillen."],
+        domain_transfer: ["Vanaf €95,00 ex. btw", "Technische verhuizing en basiscontrole. Complex DNS- of e-mailherstel wordt apart afgestemd."],
+        phone_085_number: ["Vanaf €19,95 p/m ex. btw", "Eén zakelijk nummer en basisgebruiker. Beschikbaarheid wordt vooraf gecontroleerd. Installatie of configuratie wordt apart gerekend."],
+        webshop: ["Vanaf €1.995,00 ex. btw", "Basiswebshop met producten, winkelmand, checkout en standaard betaalintegratie. Definitieve prijs is afhankelijk van producten, verzending, betaalmethoden en koppelingen."],
+        booking_module: ["Vanaf €495,00 ex. btw", "Afhankelijk van agenda’s, locaties, medewerkers, betalingen en automatische berichten."],
+        payment_module: ["Vanaf €395,00 ex. btw", "Standaard betaalflow met één betaalprovider. Extra betaalmethoden of maatwerk worden apart afgestemd."],
+        multilingual_site: ["Vanaf €295,00 per extra taal ex. btw", "Technische inrichting per extra taal. Vertalingen zijn niet inbegrepen."],
+        external_integration: ["Vanaf €495,00 ex. btw", "Eenvoudige standaard API- of webhookkoppeling. Definitieve prijs is afhankelijk van de externe software en documentatie."],
+        customer_portal: ["Vanaf €1.495,00 ex. btw", "Basis klantomgeving met veilige login en afgeschermde gegevens. Rollen, documenten, betalingen en koppelingen worden apart afgestemd."],
+        custom_feature: ["Vanaf €395,00 ex. btw", "Voor een kleine, duidelijk afgebakende maatwerkfunctie. Definitieve prijs na functionele inventarisatie."],
+        google_ads_setup: ["Vanaf €395,00 ex. btw", "Accountstructuur, conversiemeting en één campagne. Mediabudget is niet inbegrepen."],
+        monthly_content: ["Vanaf €495,00 p/m ex. btw", "Planning, teksten en vormgeving voor een compact maandelijks contentpakket. Aantal kanalen, berichten en video’s wordt persoonlijk afgestemd."],
+        photography: ["Vanaf €495,00 ex. btw", "Korte bedrijfsshoot op één locatie, inclusief basisselectie en nabewerking. Reis-, locatie- en studiokosten kunnen apart gelden."],
+        company_video: ["Vanaf €1.250,00 ex. btw", "Korte bedrijfsfilm met opname en montage. Definitieve prijs afhankelijk van draaiduur, locaties en productieniveau."],
+        product_photos: ["Vanaf €395,00 ex. btw", "Kleine serie eenvoudige productfoto’s. Studio, modellen, styling en complexe nabewerking worden apart afgestemd."],
+        monthly_change_hours: ["Vanaf €195,00 p/m ex. btw", "Bundel vanaf twee gereserveerde wijzigingsuren per maand. Grotere bundels worden persoonlijk afgestemd."],
+        custom_request: ["Persoonlijke prijsindicatie", "Beschrijf je wens. Je ontvangt een persoonlijke prijsindicatie na beoordeling."],
+      };
+      Object.entries(transparentStartingPrices).forEach(([id, [priceLabel, description]]) => {
+        Object.assign(productCatalog[id], { priceLabel, description });
+      });
       const websiteCatalog = {
         starter_site: { name: "Starter Site", price: 495, deposit: 150 },
         business_website: { name: "Business Website", price: 995, deposit: 300 },
@@ -296,7 +319,7 @@
                   <span>${product.manual ? "Bevestiging nodig" : "Direct bestelbaar"}</span>
                   <strong>${product.name}</strong>
                   <small>${product.description}</small>
-                  <em>${product.manual ? "Prijs op aanvraag" : priceLabel(product)}</em>
+                  <em>${product.manual ? product.priceLabel : priceLabel(product)}</em>
                 </label>
               `).join("")}
             </div>
