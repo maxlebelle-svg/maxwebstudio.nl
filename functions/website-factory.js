@@ -174,8 +174,49 @@ async function resolveWebsiteFactoryContextResponse(context, payload = {}) {
       },
     });
   } catch (error) {
-    console.error("Website Factory context resolution failed", { reason: "context_resolution_failed", status: error.status || 500, code: error.code || "" });
-    return jsonResponse(500, { success: false, code: "context_resolution_failed", error: "De klantwerkruimte kon niet worden geladen. Probeer het opnieuw." });
+    console.error("Website Factory optional context enrichment failed", {
+      errorName: error.name || "Error",
+      errorMessage: error.message || "Unknown optional context error",
+      reason: "optional_context_enrichment_failed",
+      phase: "enrich_customer_context",
+      status: error.status || 500,
+      code: error.code || "",
+    });
+    const normalizedCustomer = normalizeRecord(customer);
+    const fallbackWebsite = normalizeRecord(websiteContextFromCustomer(customer));
+    return jsonResponse(200, {
+      success: true,
+      code: "optional_context_enrichment_failed",
+      warning: "Aanvullende projectgegevens zijn tijdelijk niet beschikbaar.",
+      context: {
+        customer: normalizedCustomer,
+        lead: null,
+        website: fallbackWebsite,
+        websites: fallbackWebsite ? [fallbackWebsite] : [],
+        project: null,
+        projects: [],
+        briefing: null,
+        researchPackage: null,
+        demoJourney: null,
+        buildJobs: [],
+        previewVersions: [],
+        approvedAssets: [],
+        initialization: {
+          hasCustomer: true,
+          hasWebsite: Boolean(fallbackWebsite),
+          hasProject: false,
+          hasDemoJourney: false,
+          approvedAssetCount: 0,
+        },
+        mode: fallbackWebsite ? "existing_website_degraded" : "new_website_degraded",
+        capabilities: {
+          canScanWebsite: Boolean(fallbackWebsite?.domain || fallbackWebsite?.live_url || customer.website),
+          canStartBuild: true,
+          canResumeBuild: false,
+          canCreateWebsite: !fallbackWebsite,
+        },
+      },
+    });
   }
 }
 

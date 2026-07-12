@@ -46,7 +46,7 @@ test("Fuellinq production customer UUID is accepted by every Factory context lay
 
 test("resolver exposes safe, distinct failure codes", () => {
   const backend = read("functions/website-factory.js");
-  for (const code of ["missing_customer_id", "invalid_customer_id", "customer_not_found", "customer_query_failed", "context_resolution_failed"]) {
+  for (const code of ["missing_customer_id", "invalid_customer_id", "customer_not_found", "customer_query_failed", "optional_context_enrichment_failed"]) {
     assert.match(backend, new RegExp(`code: "${code}"`));
   }
   assert.doesNotMatch(backend, /error: "[^"]*(Supabase|SQL|service role|stacktrace)/i);
@@ -59,6 +59,11 @@ test("optional customer context failures do not reject a valid customer", () => 
   assert.match(backend, /return \[\];/);
   assert.match(backend, /websiteContextFromCustomer/);
   assert.match(backend, /getBuildHistory[\s\S]*\.catch/);
+  assert.match(backend, /Website Factory optional context enrichment failed/);
+  assert.match(backend, /phase: "enrich_customer_context"/);
+  assert.match(backend, /code: "optional_context_enrichment_failed"/);
+  assert.match(backend, /return jsonResponse\(200/);
+  assert.match(backend, /mode: fallbackWebsite \? "existing_website_degraded" : "new_website_degraded"/);
 });
 
 test("universal selector keeps customerId and leadId routes separate", () => {
