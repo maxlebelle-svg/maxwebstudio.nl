@@ -14,6 +14,7 @@ const ids = {
   buildJobA: "99999999-9999-4999-8999-999999999999",
   previewLegacy: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
   previewModern: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+  previewManual: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
 };
 
 function clone(value) {
@@ -218,6 +219,32 @@ async function run() {
     title: "Klantpreview",
   });
   assert.strictEqual(publishedResponse.statusCode, 200, "legacy publish should succeed");
+  tables.website_preview_versions.push({
+    id: ids.previewManual,
+    customer_id: ids.customerA,
+    project_id: null,
+    website_id: null,
+    demo_journey_id: null,
+    version: 4,
+    title: "Handmatige ZIP",
+    generated_package: { files: [{ path: "index.html", content: "<h1>Manual</h1>", encoding: "utf8", size: 15 }], meta: { previewSource: "manual_zip" } },
+    metadata: { previewSource: "manual_zip", manualZipContentHash: "manual-hash" },
+    is_active: true,
+    published_to_portal: false,
+    feedback_items: [],
+  });
+  const manualResponse = await _private.publishActiveCustomerPreview(context(), {
+    action: "publish_customer_preview",
+    customerId: ids.customerA,
+    previewVersionId: ids.previewManual,
+    previewSource: "manual_zip",
+    title: "Handmatige klantpreview",
+  });
+  assert.strictEqual(manualResponse.statusCode, 200, "standalone manual preview should publish without website or build");
+  const publishedManual = tables.website_preview_versions.find((row) => row.id === ids.previewManual);
+  assert.strictEqual(publishedManual.published_to_portal, true);
+  assert.strictEqual(publishedManual.website_id, null);
+  assert.strictEqual(publishedManual.metadata.previewSource, "manual_zip");
   const published = tables.website_preview_versions[0];
   assert.strictEqual(published.customer_id, ids.customerA);
   assert.strictEqual(published.project_id, ids.projectA);

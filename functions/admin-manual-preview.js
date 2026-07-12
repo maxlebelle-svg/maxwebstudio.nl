@@ -19,21 +19,22 @@ exports.handler = async (event) => {
   if (!adminCheck.success) return adminCheck.response;
   try {
     const payload = JSON.parse(event.body || "{}");
+    const action = text(payload.action || "upload").toLowerCase();
     const customerId = uuid(payload.customerId || payload.customer_id);
     const websiteId = uuid(payload.websiteId || payload.website_id);
     const projectId = uuid(payload.projectId || payload.project_id);
     const demoJourneyId = uuid(payload.demoJourneyId || payload.demo_journey_id);
     if (!customerId) return fail(400, "customer_required", "Selecteer eerst een geldige klant.");
+    const context = getContext(adminCheck.admin);
+    if (!context.available) return fail(500, "preview_version_failed", "De previewomgeving is nog niet geconfigureerd.");
+    const customer = await readOne(context, "customers", `select=id,name,company&id=eq.${customerId}&limit=1`);
+    if (!customer?.id) return fail(404, "customer_not_found", "Deze klant kon niet worden gevonden.");
+    if (action === "activate") return activateManualVersion(context, customerId, demoJourneyId, payload);
     const fileName = text(payload.fileName || payload.file_name);
     if (!/\.zip$/i.test(fileName)) return fail(400, "invalid_file_type", "Kies een geldig ZIP-bestand.");
     const zipBuffer = decodeZip(payload.zipBase64 || payload.zip_base64);
     if (!zipBuffer.length) return fail(400, "missing_zip", "Kies eerst een ZIP-bestand.");
     if (zipBuffer.length > MAX_COMPRESSED) return fail(413, "zip_too_large", "Dit ZIP-bestand is te groot om veilig te verwerken.");
-
-    const context = getContext(adminCheck.admin);
-    if (!context.available) return fail(500, "preview_version_failed", "De previewomgeving is nog niet geconfigureerd.");
-    const customer = await readOne(context, "customers", `select=id,name,company&id=eq.${customerId}&limit=1`);
-    if (!customer?.id) return fail(404, "customer_not_found", "Deze klant kon niet worden gevonden.");
     if (websiteId) {
       const website = await readOne(context, "websites", `select=id,customer_id&id=eq.${websiteId}&limit=1`);
       if (!website?.id || text(website.customer_id) !== customerId) return fail(409, "customer_mismatch", "Deze website hoort niet bij de actieve klant.");
@@ -80,6 +81,8 @@ exports.handler = async (event) => {
       version = rows[0] || null;
     }
     if (!version?.id) return fail(500, "preview_version_failed", "De previewversie kon niet worden opgeslagen.");
+    version = await setActiveManualVersion(context, customerId, version);
+    await persistJourneySource(context, demoJourneyId || version.demo_journey_id, version);
     await safeTimeline({ customerId, eventType: "manual_preview_uploaded", title: "Handmatige website geüpload", description: `${fileName} is veilig verwerkt.`, module: "website", referenceType: "website_preview_version", referenceId: version.id, actorName: adminCheck.admin.email || "Max Webstudio", actorRole: "admin", severity: "info", metadata: { dedupeKey: `manual_preview_uploaded:${contentHash}`, previewVersionId: version.id, source: "manual_zip", contentHash } });
     await safeTimeline({ customerId, eventType: "manual_preview_ready", title: "Handmatige preview klaar", description: "De websitepreview kan worden gecontroleerd en gepubliceerd.", module: "website", referenceType: "website_preview_version", referenceId: version.id, actorName: adminCheck.admin.email || "Max Webstudio", actorRole: "admin", severity: "success", metadata: { dedupeKey: `manual_preview_ready:${contentHash}`, previewVersionId: version.id, source: "manual_zip", contentHash } });
     return json(200, {
@@ -94,6 +97,53 @@ exports.handler = async (event) => {
     return fail(error.status || 400, error.code || "zip_extract_failed", safeMessage(error));
   }
 };
+
+async function activateManualVersion(context, customerId, demoJourneyId, payload = {}) {
+  const previewVersionId = uuid(payload.previewVersionId || payload.preview_version_id);
+  if (!previewVersionId) return fail(400, "preview_version_required", "Kies eerst een handmatige previewversie.");
+  const version = await readOne(context, "website_preview_versions", `select=*&id=eq.${previewVersionId}&customer_id=eq.${customerId}&limit=1`);
+  if (!version?.id || text(version.metadata?.previewSource) !== "manual_zip" || !Array.isArray(version.generated_package?.files) || !version.generated_package.files.length) {
+    return fail(404, "manual_preview_not_found", "Deze handmatige previewversie is niet beschikbaar.");
+  }
+  const active = await setActiveManualVersion(context, customerId, version);
+  await persistJourneySource(context, demoJourneyId || active.demo_journey_id, active);
+  return json(200, { success: true, reused: true, previewVersion: sanitize(active), previewPackage: sanitizePackage(active.generated_package), message: "Handmatige ZIP is nu de actieve previewbron." });
+}
+
+async function setActiveManualVersion(context, customerId, version) {
+  const now = new Date().toISOString();
+  await patch(context, "website_preview_versions", `customer_id=eq.${customerId}&is_active=eq.true&id=neq.${version.id}`, { is_active: false, updated_at: now });
+  const rows = await patch(context, "website_preview_versions", `id=eq.${version.id}&customer_id=eq.${customerId}`, {
+    is_active: true,
+    metadata: { ...(version.metadata || {}), previewSource: "manual_zip", activePreviewSource: "manual_zip" },
+    updated_at: now,
+  });
+  return rows[0] || { ...version, is_active: true, updated_at: now };
+}
+
+async function persistJourneySource(context, demoJourneyId, version) {
+  const journeyId = uuid(demoJourneyId);
+  if (!journeyId) return;
+  const journey = await readOne(context, "demo_journeys", `select=id,customer_id,preview_package&id=eq.${journeyId}&limit=1`);
+  if (!journey?.id || text(journey.customer_id) !== text(version.customer_id)) return;
+  const previewPackage = journey.preview_package && typeof journey.preview_package === "object" ? journey.preview_package : {};
+  await patch(context, "demo_journeys", `id=eq.${journey.id}&customer_id=eq.${version.customer_id}`, {
+    preview_package: {
+      ...previewPackage,
+      activePreviewSource: "manual_zip",
+      manualPreview: {
+        source: "manual_zip",
+        previewVersionId: version.id,
+        fileName: text(version.metadata?.fileName || version.generated_package?.meta?.fileName || "handmatige-preview.zip"),
+        entryPath: text(version.metadata?.entryFile || version.generated_package?.entryFile || "index.html"),
+        files: version.generated_package?.files || [],
+        contentHash: text(version.metadata?.manualZipContentHash),
+        updatedAt: new Date().toISOString(),
+      },
+    },
+    updated_at: new Date().toISOString(),
+  });
+}
 
 function extractZip(buffer) {
   const eocd = findSignature(buffer, 0x06054b50, Math.max(0, buffer.length - 65557));
@@ -180,6 +230,7 @@ function headers(key) { return { apikey: key, Authorization: `Bearer ${key}`, Ac
 async function readRows(context, table, query) { return request(`${context.supabaseUrl}/rest/v1/${table}?${query}`, { headers: headers(context.serviceRoleKey) }); }
 async function readOne(context, table, query) { const rows = await readRows(context, table, query); return rows[0] || null; }
 async function insert(context, table, record) { return request(`${context.supabaseUrl}/rest/v1/${table}`, { method: "POST", headers: headers(context.serviceRoleKey), body: JSON.stringify(record) }); }
+async function patch(context, table, filter, record) { return request(`${context.supabaseUrl}/rest/v1/${table}?${filter}`, { method: "PATCH", headers: headers(context.serviceRoleKey), body: JSON.stringify(record) }); }
 async function request(url, options) { const response = await fetch(url, options); const body = await response.json().catch(() => null); if (!response.ok) throw zipError("preview_version_failed", "De previewversie kon niet worden opgeslagen.", response.status); return Array.isArray(body) ? body : []; }
 async function safeTimeline(input) { try { return await createTimelineEvent(input); } catch (error) { console.error("Manual preview timeline skipped", { message: error.message }); return null; } }
 function fail(status, code, error) { return json(status, { success: false, code, error }); }

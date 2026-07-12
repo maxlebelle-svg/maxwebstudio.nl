@@ -110,19 +110,23 @@ async function publishActiveCustomerPreview(context, payload = {}) {
   const previewVersionId = uuidOrEmpty(payload.previewVersionId || payload.preview_version_id);
   const previewSource = normalizePreviewSource(payload.previewSource || payload.preview_source);
   if (!customerId) throw previewError("PREVIEW_CUSTOMER_REQUIRED", "Selecteer eerst een geldige klant.", 400);
-  if (!websiteId) throw previewError("PREVIEW_WEBSITE_MISMATCH", "Selecteer eerst een website voor deze klant.", 400);
   if (!previewSource) throw previewError("PREVIEW_SOURCE_INVALID", "Selecteer eerst een geldige previewbron.", 400);
+  if (!websiteId && previewSource !== PREVIEW_SOURCES.MANUAL) throw previewError("PREVIEW_WEBSITE_MISMATCH", "Selecteer eerst een website voor deze klant.", 400);
 
-  const website = await readSingle(context, "websites", `select=${websiteFields}&id=eq.${websiteId}&limit=1`);
-  if (!website?.id || cleanText(website.customer_id) !== customerId) throw previewError("PREVIEW_CUSTOMER_MISMATCH", "Deze preview hoort niet bij de actieve klant.", 409);
+  const website = websiteId ? await readSingle(context, "websites", `select=${websiteFields}&id=eq.${websiteId}&limit=1`) : null;
+  if (websiteId && (!website?.id || cleanText(website.customer_id) !== customerId)) throw previewError("PREVIEW_CUSTOMER_MISMATCH", "Deze preview hoort niet bij de actieve klant.", 409);
   const journey = demoJourneyId ? await readSingle(context, "demo_journeys", `select=${demoJourneyFields}&id=eq.${demoJourneyId}&limit=1`) : null;
   if (demoJourneyId && !journey?.id) throw previewError("PREVIEW_NOT_FOUND", "Selecteer eerst een geldige preview.", 404);
   if (journey?.customer_id && cleanText(journey.customer_id) !== customerId) throw previewError("PREVIEW_CUSTOMER_MISMATCH", "Deze preview hoort niet bij de actieve klant.", 409);
 
-  const versions = await findPreviewVersionsForWebsite(context, { website, selectedCustomerId: customerId, selectedProjectId: projectId });
+  const versions = website?.id
+    ? await findPreviewVersionsForWebsite(context, { website, selectedCustomerId: customerId, selectedProjectId: projectId })
+    : await readRows(context, "website_preview_versions", `select=${previewVersionFields}&customer_id=eq.${customerId}&order=version.desc`);
   const selectedVersion = previewVersionId ? versions.find((item) => cleanText(item.id) === previewVersionId) : versions[0] || null;
   if (!selectedVersion?.id) throw previewError("PREVIEW_NOT_FOUND", "Geen previewversie gevonden om te publiceren.", 404);
-  const ownership = await resolveOwnership(context, selectedVersion, { website, selectedCustomerId: customerId, selectedProjectId: projectId });
+  const ownership = previewSource === PREVIEW_SOURCES.MANUAL
+    ? await resolveStandaloneManualOwnership(context, selectedVersion, customerId, projectId)
+    : await resolveOwnership(context, selectedVersion, { website, selectedCustomerId: customerId, selectedProjectId: projectId });
   if (!ownership.customer?.id || cleanText(ownership.customer.id) !== customerId) throw previewError("PREVIEW_CUSTOMER_MISMATCH", "Deze preview hoort niet bij de actieve klant.", 409);
 
   const journeyPackage = journey?.preview_package && typeof journey.preview_package === "object" ? journey.preview_package : {};
@@ -133,7 +137,7 @@ async function publishActiveCustomerPreview(context, payload = {}) {
   if (!directManualPackage && !resolved.available && previewSource === PREVIEW_SOURCES.MANUAL) throw previewError("PREVIEW_SOURCE_UNAVAILABLE", "De geselecteerde previewbron is momenteel niet beschikbaar.", 409);
   if (!selectedPackage?.files?.length) throw previewError("PREVIEW_NOT_FOUND", "De geselecteerde preview kan niet worden geladen.", 409);
   const fingerprint = previewFingerprint({ demoJourneyId, previewSource, previewPackage: selectedPackage });
-  let target = versions.find((item) => cleanText(item.metadata?.customerPreviewFingerprint) === fingerprint) || null;
+  let target = previewSource === PREVIEW_SOURCES.MANUAL ? selectedVersion : versions.find((item) => cleanText(item.metadata?.customerPreviewFingerprint) === fingerprint) || null;
   let created = false;
 
   if (!target && previewSource === PREVIEW_SOURCES.FACTORY) target = selectedVersion;
@@ -173,7 +177,7 @@ async function publishActiveCustomerPreview(context, payload = {}) {
     ...payload,
     customerId,
     projectId: ownership.project?.id || projectId,
-    websiteId,
+    websiteId: previewSource === PREVIEW_SOURCES.MANUAL ? "" : websiteId,
     previewVersionId: target.id,
     previewSource,
     customerPreviewFingerprint: fingerprint,
@@ -215,21 +219,24 @@ async function publishPreviewVersion(context, payload = {}) {
   const websiteId = uuidOrEmpty(payload.websiteId || payload.website_id);
   const selectedCustomerId = uuidOrEmpty(payload.customerId || payload.customer_id);
   const selectedProjectId = uuidOrEmpty(payload.projectId || payload.project_id);
-  if (!websiteId) throw previewError("PREVIEW_WEBSITE_MISMATCH", "Websitecontext ontbreekt.", 400);
+  const requestedSource = normalizePreviewSource(payload.previewSource || payload.preview_source);
+  if (!websiteId && requestedSource !== PREVIEW_SOURCES.MANUAL) throw previewError("PREVIEW_WEBSITE_MISMATCH", "Websitecontext ontbreekt.", 400);
 
-  const selectedWebsite = await readSingle(context, "websites", `select=${websiteFields}&id=eq.${websiteId}&limit=1`);
-  if (!selectedWebsite?.id) throw previewError("PREVIEW_WEBSITE_MISMATCH", "Website niet gevonden.", 404);
-  if (selectedCustomerId && selectedCustomerId !== cleanText(selectedWebsite.customer_id)) {
+  const selectedWebsite = websiteId ? await readSingle(context, "websites", `select=${websiteFields}&id=eq.${websiteId}&limit=1`) : null;
+  if (websiteId && !selectedWebsite?.id) throw previewError("PREVIEW_WEBSITE_MISMATCH", "Website niet gevonden.", 404);
+  if (selectedWebsite?.id && selectedCustomerId && selectedCustomerId !== cleanText(selectedWebsite.customer_id)) {
     return jsonResponse(409, { success: false, code: "PREVIEW_CUSTOMER_MISMATCH", error: "Deze website hoort niet bij de geselecteerde klant." });
   }
 
   const version = previewVersionId
     ? await readSingle(context, "website_preview_versions", `select=${previewVersionFields}&id=eq.${previewVersionId}&limit=1`)
-    : (await findPreviewVersionsForWebsite(context, { website: selectedWebsite, selectedCustomerId, selectedProjectId }))[0] || null;
+    : selectedWebsite?.id ? (await findPreviewVersionsForWebsite(context, { website: selectedWebsite, selectedCustomerId, selectedProjectId }))[0] || null : null;
   if (!version?.id) throw previewError("PREVIEW_NOT_FOUND", "Geen bestaande previewversie gevonden om te publiceren.", 404);
 
-  const ownership = await resolveOwnership(context, version, { website: selectedWebsite, selectedCustomerId, selectedProjectId });
-  if (!ownership.customer?.id || !ownership.website?.id) {
+  const ownership = selectedWebsite?.id
+    ? await resolveOwnership(context, version, { website: selectedWebsite, selectedCustomerId, selectedProjectId })
+    : await resolveStandaloneManualOwnership(context, version, selectedCustomerId, selectedProjectId);
+  if (!ownership.customer?.id || (!ownership.website?.id && requestedSource !== PREVIEW_SOURCES.MANUAL)) {
     throw previewError("PREVIEW_OWNERSHIP_UNRESOLVED", "Deze preview kan nog niet veilig aan deze klant worden gekoppeld.", 409);
   }
 
@@ -239,7 +246,7 @@ async function publishPreviewVersion(context, payload = {}) {
   const patch = {
     customer_id: ownership.customer.id,
     project_id: ownership.project?.id || version.project_id || null,
-    website_id: ownership.website.id,
+    website_id: ownership.website?.id || version.website_id || null,
     title: cleanText(payload.title).slice(0, 140) || version.title || "Website-preview",
     customer_summary: cleanText(payload.summary || payload.customerSummary || payload.customer_summary).slice(0, 500) || null,
     change_summary: cleanText(payload.changeSummary || payload.change_summary).slice(0, 1200) || null,
@@ -254,7 +261,7 @@ async function publishPreviewVersion(context, payload = {}) {
     status: version.approved_at ? "approved" : "ready_for_review",
     metadata: {
       ...(isObject(version.metadata) ? version.metadata : {}),
-      ...(normalizePreviewSource(payload.previewSource || payload.preview_source) ? { previewSource: normalizePreviewSource(payload.previewSource || payload.preview_source) } : {}),
+      ...(requestedSource ? { previewSource: requestedSource } : {}),
       ...(cleanText(payload.customerPreviewFingerprint) ? { customerPreviewFingerprint: cleanText(payload.customerPreviewFingerprint) } : {}),
       publishDedupeKey: `preview_publish:${version.id}`,
       lastPublishedAt: now,
@@ -278,13 +285,27 @@ async function publishPreviewVersion(context, payload = {}) {
     severity: "success",
     metadata: {
       dedupeKey: `preview_publish:${version.id}`,
-      websiteId: ownership.website.id,
+      websiteId: ownership.website?.id || "",
       projectId: ownership.project?.id || "",
       version: published.version,
     },
   });
 
-  return jsonResponse(200, { success: true, previewVersion: sanitizeAdminVersion(published), website: sanitizeWebsite(ownership.website) });
+  return jsonResponse(200, { success: true, previewVersion: sanitizeAdminVersion(published), website: ownership.website ? sanitizeWebsite(ownership.website) : null });
+}
+
+async function resolveStandaloneManualOwnership(context, version = {}, selectedCustomerId = "", selectedProjectId = "") {
+  const source = normalizePreviewSource(version.metadata?.previewSource || version.generated_package?.meta?.previewSource);
+  const customerId = uuidOrEmpty(selectedCustomerId);
+  if (source !== PREVIEW_SOURCES.MANUAL || !customerId || cleanText(version.customer_id) !== customerId || !Array.isArray(version.generated_package?.files) || !version.generated_package.files.length) {
+    throw previewError("PREVIEW_OWNERSHIP_UNRESOLVED", "Deze preview kan nog niet veilig aan deze klant worden gekoppeld.", 409);
+  }
+  const customer = await readSingle(context, "customers", `select=${customerFields}&id=eq.${encodeURIComponent(customerId)}&limit=1`);
+  if (!customer?.id) throw previewError("PREVIEW_CUSTOMER_MISMATCH", "Deze preview hoort niet bij de actieve klant.", 409);
+  const projectId = uuidOrEmpty(selectedProjectId || version.project_id);
+  const project = projectId ? await readSingle(context, "projects", `select=${projectFields}&id=eq.${encodeURIComponent(projectId)}&limit=1`) : null;
+  if (project?.id && cleanText(project.customer_id) !== customerId) throw previewError("PREVIEW_PROJECT_MISMATCH", "Deze preview hoort niet bij het geselecteerde project.", 409);
+  return { resolvable: true, customer, project, website: null, source: "manual_customer_id" };
 }
 
 async function findPreviewVersionsForWebsite(context, selection = {}) {

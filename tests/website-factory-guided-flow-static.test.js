@@ -12,7 +12,8 @@ const styles = fs.readFileSync(path.join(root, "public/styles.css"), "utf8");
 test("guided Factory exposes one primary action and a technical overflow menu", () => {
   assert.match(factory, /id="factory-primary-save-demo"[^>]*>Opslaan in Demo Sites/);
   assert.match(factory, /id="factory-more-menu"/);
-  assert.match(factory, /data-factory-proxy="demo-journey-upload-manual-zip"/);
+  assert.equal((factory.match(/<button[^>]*data-manual-zip-upload/g) || []).length, 2);
+  assert.match(factory, /factory-guided-shell[\s\S]*openManualZipPicker/);
   assert.match(factory, /data-factory-proxy="demo-journey-regenerate-preview"/);
 });
 
