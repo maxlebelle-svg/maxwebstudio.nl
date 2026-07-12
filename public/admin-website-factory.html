@@ -20816,7 +20816,6 @@
         getAiAdminAssistantReadiness,
         listAiAdminAssistantDrafts,
       } from "./src/services/aiAdminAssistantService.js?v=20260704-admin-session-hotfix";
-      import { getAdminAccessToken, getSafeAdminAuthMessage } from "./src/services/adminAuthBridgeService.js?v=20260712-authbridge";
 
       const aiAdminElements = {
         form: document.getElementById("ai-admin-assistant-form"),
@@ -21483,9 +21482,15 @@
         async function apiRequest(url, method = "GET", payload = null) {
           let token = "";
           try {
+            const { getAdminAccessToken } = await import("./src/services/adminAuthBridgeService.js?v=20260712-authbridge");
             token = await getAdminAccessToken();
           } catch (error) {
-            throw new Error(getSafeAdminAuthMessage(error));
+            const safeMessage = error?.code === "ROLE_NOT_ALLOWED"
+              ? "Dit account heeft geen actieve adminrol."
+              : error?.code === "PROFILE_INACTIVE"
+              ? "Dit adminprofiel is niet actief."
+              : error?.message || "Je sessie is verlopen. Log opnieuw in.";
+            throw new Error(safeMessage);
           }
           const developerMode = developerModeActive();
           const response = await fetch(url, {

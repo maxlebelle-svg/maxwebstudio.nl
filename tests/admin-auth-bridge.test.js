@@ -43,7 +43,7 @@ test("legacy UI status cannot grant access or preempt central session restore", 
 });
 
 test("Factory requests obtain bearer through the central admin bridge", () => {
-  assert.match(factory, /import \{ getAdminAccessToken, getSafeAdminAuthMessage \}/);
+  assert.match(factory, /await import\("\.\/src\/services\/adminAuthBridgeService\.js\?v=20260712-authbridge"\)/);
   assert.match(factory, /token = await getAdminAccessToken\(\)/);
   assert.doesNotMatch(factory, /function getBearer\(\)[\s\S]{0,500}maxwebstudioSupabaseAuthSession/);
   assert.match(factory, /Je sessie is verlopen\. Log opnieuw in\./);
