@@ -53,8 +53,8 @@
             if (!response.ok || data.success === false || !data.preview?.html) throw new Error(data.error || "De preview kon niet worden geladen.");
             const frame = document.createElement("iframe");
             frame.title = "Website-preview";
-            frame.setAttribute("sandbox", "allow-scripts allow-same-origin");
-            frame.srcdoc = data.preview.html;
+            const thumbnailPolicy = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data: https:; font-src data:; style-src 'unsafe-inline' data:; script-src 'unsafe-inline'; connect-src 'none'; form-action 'none'; base-uri 'none'; frame-src 'none'">`;
+            frame.srcdoc = String(data.preview.html).replace(/<head([^>]*)>/i, `<head$1>${thumbnailPolicy}`);
             const resize = () => document.documentElement.style.setProperty("--preview-scale", String(Math.max(document.documentElement.clientWidth / 1440, document.documentElement.clientHeight / 900)));
             resize();
             window.addEventListener("resize", resize, { passive: true });
