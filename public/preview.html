@@ -217,6 +217,14 @@
             return;
           }
           if (!readiness.approved) return;
+          if (!readiness.amountCents) {
+            paymentTitle.textContent = "Websitepakket controleren";
+            paymentText.textContent = "De betaalstap kan pas worden gestart zodra het websitepakket is gekoppeld.";
+            paymentLink.classList.add("is-disabled");
+            paymentLink.setAttribute("aria-disabled", "true");
+            paymentLink.href = "#preview-payment";
+            return;
+          }
           paymentTitle.textContent = "Je aanbetaling staat klaar";
           paymentText.textContent = readiness.amount ? `Vaste aanbetaling voor je websitepakket: € ${readiness.amount}.` : "De betaalstap staat klaar.";
           paymentLink.classList.remove("is-disabled");

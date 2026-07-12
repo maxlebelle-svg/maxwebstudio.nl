@@ -294,7 +294,7 @@ async function resolvePaymentReadiness(context, customer, version) {
   const website = version.website_id
     ? await readSingle(context, "websites", `select=id,customer_id,name,hosting_package,care_package,metadata&id=eq.${encodeURIComponent(version.website_id)}&customer_id=eq.${encodeURIComponent(customer.id)}&limit=1`)
     : await readSingle(context, "websites", `select=id,customer_id,name,hosting_package,care_package,metadata&customer_id=eq.${encodeURIComponent(customer.id)}&order=updated_at.desc&limit=1`);
-  const packageKey = normalizePackageKey(website?.hosting_package || website?.metadata?.websitePackage || customer.package);
+  const packageKey = normalizePackageKey(website?.hosting_package || website?.metadata?.websitePackage || website?.care_package || customer.package);
   const amountCents = depositCentsByPackage[packageKey] || 0;
   if (!amountCents) return unavailablePayment("website_package_missing", { packageKey, approved: Boolean(version.approved_at), previewVersionId: version.id });
   const invoice = await findDepositInvoice(context, customer, version);

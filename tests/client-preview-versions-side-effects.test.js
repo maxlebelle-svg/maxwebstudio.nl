@@ -19,7 +19,7 @@ function createTables() {
       { id: ids.customer, auth_user_id: ids.authUser, name: "Test Klant", company: "Testbedrijf", email: "klant@example.nl", metadata: { publishedPreviewVersionId: ids.preview } },
     ],
     websites: [
-      { id: ids.website, customer_id: ids.customer, name: "Testwebsite", hosting_package: "business_website", care_package: "care_basic", metadata: {} },
+      { id: ids.website, customer_id: ids.customer, name: "Testwebsite", hosting_package: "", care_package: "business_website", metadata: {} },
     ],
     customer_invoices: [],
     website_preview_versions: [
