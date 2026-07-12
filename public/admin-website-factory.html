@@ -573,6 +573,7 @@
                   <strong>Factory opties</strong>
                   <button type="button" data-factory-action="version">Factory-versie kiezen</button>
                   <button type="button" data-manual-zip-upload>ZIP uploaden</button>
+                  <button type="button" id="factory-process-manual-zip" disabled>ZIP verwerken</button>
                   <button type="button" data-factory-source-choice="manual">Handmatige ZIP gebruiken</button>
                 </div>
               </aside>
@@ -25515,11 +25516,22 @@
           if (primary.title !== (original.title || "")) primary.title = original.title || "";
         }
 
+        function syncGuidedZipProcess() {
+          const guided = document.getElementById("factory-process-manual-zip");
+          const original = document.getElementById("demo-journey-process-manual-zip");
+          if (!guided || !original) return;
+          guided.disabled = original.disabled;
+          guided.textContent = original.textContent || "ZIP verwerken";
+          guided.setAttribute("aria-busy", original.getAttribute("aria-busy") || "false");
+          guided.title = original.disabled ? "Kies eerst een website-ZIP" : "Maak van de gekozen ZIP een actieve preview";
+        }
+
         function syncGuidedFactory() {
           renderGuidedStatus();
           renderGuidedProcess();
           renderGuidedVersionMeta();
           syncPrimaryAction();
+          syncGuidedZipProcess();
         }
 
         function proxyClick(id) {
@@ -25535,6 +25547,7 @@
           if (preview && slot && preview.parentElement !== slot) slot.appendChild(preview);
 
           document.getElementById("factory-primary-save-demo")?.addEventListener("click", () => proxyClick("demo-journey-save-demo-site"));
+          document.getElementById("factory-process-manual-zip")?.addEventListener("click", () => proxyClick("demo-journey-process-manual-zip"));
           document.querySelectorAll("[data-factory-proxy]").forEach((button) => button.addEventListener("click", () => proxyClick(button.dataset.factoryProxy)));
           document.getElementById("factory-guided-shell")?.addEventListener("click", (event) => {
             const uploadButton = event.target.closest("[data-manual-zip-upload]");

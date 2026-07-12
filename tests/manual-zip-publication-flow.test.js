@@ -25,6 +25,9 @@ test("manual upload has one change handler, duplicate guard and explicit states"
   assert.doesNotMatch(factory, /id="demo-journey-manual-zip-input"[^>]*hidden/);
   assert.match(factory, /id="demo-journey-manual-zip-name"/);
   assert.match(factory, /id="demo-journey-process-manual-zip"/);
+  assert.match(factory, /id="factory-process-manual-zip"/);
+  assert.match(factory, /function syncGuidedZipProcess\(\)/);
+  assert.match(factory, /proxyClick\("demo-journey-process-manual-zip"\)/);
   assert.match(factory, /elements\.uploadManualZip\?\.addEventListener\("click"[\s\S]*openManualZipPicker\(\)/);
   assert.match(factory, /elements\.processManualZip\?\.addEventListener\("click"[\s\S]*uploadManualZipFile\(pendingManualZipFile\)/);
   assert.match(factory, /manualZipUploading/);
