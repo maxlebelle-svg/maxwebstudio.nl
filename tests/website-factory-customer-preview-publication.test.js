@@ -103,6 +103,8 @@ test("thumbnail embed is authenticated, persistent and has a visible fallback", 
   assert.match(netlifyConfig, /for = "\/preview-embed\.html"[\s\S]*X-Frame-Options = "SAMEORIGIN"/);
   assert.match(netlifyConfig, /for = "\/preview-embed\.html"[\s\S]*frame-ancestors 'self'/);
   assert.match(netlifyConfig, /for = "\/preview-embed\.html"[\s\S]*Cache-Control = "no-store/);
+  assert.doesNotMatch(netlifyConfig, /for = "\/\*"[\s\S]*?X-Frame-Options = "DENY"/);
+  assert.match(netlifyConfig, /for = "\/\*"[\s\S]*?frame-ancestors 'none'/);
 });
 
 test("secure preview approves and pays the exact published version", () => {
