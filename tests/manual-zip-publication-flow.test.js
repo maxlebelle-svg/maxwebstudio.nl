@@ -15,6 +15,8 @@ test("both visible ZIP entries use one direct picker binding", () => {
   assert.match(factory, /manualZipInput\.value = ""/);
   assert.match(factory, /manualZipInput\.click\(\)/);
   assert.doesNotMatch(factory, /data-factory-proxy="demo-journey-upload-manual-zip"/);
+  assert.equal((factory.match(/proxyClick\("demo-journey-upload-manual-zip"\)/g) || []).length, 2);
+  assert.doesNotMatch(factory.slice(factory.indexOf("function initGuidedFactory")), /manualPreviewMeta\(\)|openManualZipPicker\(\)|activateManualPreview\(\)/);
 });
 
 test("manual upload has one change handler, duplicate guard and explicit states", () => {

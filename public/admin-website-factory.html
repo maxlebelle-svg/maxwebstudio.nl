@@ -25441,7 +25441,7 @@
             if (!uploadButton) return;
             event.preventDefault();
             event.stopPropagation();
-            openManualZipPicker();
+            proxyClick("demo-journey-upload-manual-zip");
             document.getElementById("factory-more-menu")?.removeAttribute("open");
           });
           document.querySelectorAll("[data-guided-preview-mode]").forEach((button) => button.addEventListener("click", () => {
@@ -25450,8 +25450,9 @@
           }));
           document.querySelectorAll("[data-factory-source-choice]").forEach((button) => button.addEventListener("click", () => {
             const source = button.dataset.factorySourceChoice;
-            if (source === "manual" && manualPreviewMeta()?.files?.length) activateManualPreview();
-            else openManualZipPicker();
+            const manualSourceButton = document.querySelector(".factory-control-preview [data-preview-source='manual']");
+            if (source === "manual" && manualSourceButton && !manualSourceButton.disabled) manualSourceButton.click();
+            else proxyClick("demo-journey-upload-manual-zip");
             document.getElementById("factory-more-menu")?.removeAttribute("open");
           }));
           document.querySelectorAll("[data-factory-action='version'], [data-factory-action='versions']").forEach((button) => button.addEventListener("click", () => {
