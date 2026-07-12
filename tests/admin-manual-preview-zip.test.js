@@ -61,3 +61,10 @@ test("frontend sends the ZIP to server validation and does not require Demo Site
   assert.match(html, /ZIP succesvol verwerkt/);
   assert.match(html, /buildHistory = \{[\s\S]*activeVersion: normalizedVersion/);
 });
+
+test("the actual Fuellinq regression ZIP is accepted and has a root index", () => {
+  const buffer = fs.readFileSync(path.join(__dirname, "../Website factory maxwebstudio.nl/fuellinq.com-website-factory.zip"));
+  const result = _private.extractZip(buffer);
+  assert.equal(_private.resolveEntryFile(result.files), "index.html");
+  assert(result.files.some((file) => file.path === "styles.css"));
+});

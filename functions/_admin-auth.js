@@ -28,13 +28,13 @@ async function verifyAdmin(event, jsonResponse, options = {}) {
   }
 
   try {
-    const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
+    const response = await fetchWithTimeout(`${supabaseUrl}/auth/v1/user`, {
       method: "GET",
       headers: {
         apikey: supabaseAnonKey,
         Authorization: `Bearer ${bearer}`,
       },
-    });
+    }, "verify_auth_user");
     const data = await response.json().catch(() => ({}));
     if (!response.ok || !data?.id) {
       return unauthorized(jsonResponse, { ...diagnostics, reason: "invalid_supabase_session", status: response.status || 401, event });
@@ -63,7 +63,18 @@ async function verifyAdmin(event, jsonResponse, options = {}) {
       },
     };
   } catch (error) {
-    console.error("Admin auth verification failed", { message: error.message, module: diagnostics.module, action: diagnostics.action });
+    console.error("Admin auth verification failed", { errorName: error.name || "Error", errorMessage: error.message || "Unknown auth error", code: error.code || "AUTH_UPSTREAM_FAILED", phase: error.phase || "verify_admin", module: diagnostics.module, action: diagnostics.action });
+    if (error.code === "AUTH_UPSTREAM_TIMEOUT") {
+      return {
+        success: false,
+        response: jsonResponse(503, {
+          success: false,
+          code: "AUTH_UPSTREAM_TIMEOUT",
+          error: "De adminsessie kon tijdelijk niet worden gecontroleerd.",
+          details: error.phase || "verify_admin",
+        }),
+      };
+    }
     return unauthorized(jsonResponse, { ...diagnostics, reason: "auth_verification_exception", event });
   }
 }
@@ -99,17 +110,38 @@ async function fetchProfileForUser({ supabaseUrl, bearer, authUserId }) {
   const authorization = serviceRoleKey ? `Bearer ${serviceRoleKey}` : `Bearer ${bearer}`;
   if (!apiKey || !authUserId) return null;
 
-  const response = await fetch(`${supabaseUrl}/rest/v1/profiles?select=id,role,status&auth_user_id=eq.${encodeURIComponent(authUserId)}&limit=1`, {
+  const response = await fetchWithTimeout(`${supabaseUrl}/rest/v1/profiles?select=id,role,status&auth_user_id=eq.${encodeURIComponent(authUserId)}&limit=1`, {
     method: "GET",
     headers: {
       apikey: apiKey,
       Authorization: authorization,
       Accept: "application/json",
     },
-  });
+  }, "resolve_admin_profile");
   const rows = await response.json().catch(() => []);
   if (!response.ok || !Array.isArray(rows)) return null;
   return rows[0] || null;
+}
+
+async function fetchWithTimeout(url, options, phase, timeoutMs = 5000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      const timeout = new Error("Supabase auth request timed out.");
+      timeout.name = "UpstreamTimeoutError";
+      timeout.code = "AUTH_UPSTREAM_TIMEOUT";
+      timeout.phase = phase;
+      throw timeout;
+    }
+    error.code = error.code || "AUTH_UPSTREAM_FAILED";
+    error.phase = error.phase || phase;
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function isAllowedAdminRole(role, status = "active") {
@@ -152,4 +184,5 @@ module.exports = {
   isAllowedRole,
   isProductionRuntime,
   legacyAdminTokenAllowed,
+  _private: { fetchWithTimeout },
 };

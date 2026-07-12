@@ -21,10 +21,31 @@ test("both visible ZIP entries use one direct picker binding", () => {
 
 test("manual upload has one change handler, duplicate guard and explicit states", () => {
   assert.equal((factory.match(/manualZipInput\?\.addEventListener\("change"/g) || []).length, 1);
+  assert.match(factory, /id="demo-journey-manual-zip-input" type="file" accept="\.zip,application\/zip"/);
+  assert.doesNotMatch(factory, /id="demo-journey-manual-zip-input"[^>]*hidden/);
+  assert.match(factory, /id="demo-journey-manual-zip-name"/);
+  assert.match(factory, /id="demo-journey-process-manual-zip"/);
+  assert.match(factory, /elements\.uploadManualZip\?\.addEventListener\("click"[\s\S]*openManualZipPicker\(\)/);
+  assert.match(factory, /elements\.processManualZip\?\.addEventListener\("click"[\s\S]*uploadManualZipFile\(pendingManualZipFile\)/);
   assert.match(factory, /manualZipUploading/);
   assert.match(factory, /Uploaden…/);
   assert.match(factory, /ZIP succesvol verwerkt/);
   assert.match(factory, /ZIP kon niet worden verwerkt/);
+});
+
+test("customerId mode does not wait for unrelated lead and Demo Journey loading", () => {
+  const init = factory.slice(factory.indexOf("async function init()"), factory.indexOf("function initGuidedFactory"));
+  assert.match(init, /const requestedCustomerId[\s\S]*if \(requestedCustomerId\)/);
+  assert.match(init, /if \(requestedCustomerId\)[\s\S]*renderMetrics\(\);[\s\S]*return;[\s\S]*await loadLeads\(\)/);
+  assert.doesNotMatch(init.slice(0, init.indexOf("if (requestedCustomerId)")), /await loadLeads\(\)/);
+});
+
+test("backend and frontend expose concrete failure codes and request ids", () => {
+  assert.match(upload, /requestId/);
+  assert.match(upload, /phaseForCode/);
+  assert.match(upload, /databaseCode/);
+  assert.match(factory, /response\.headers\.get\("x-nf-request-id"\)/);
+  assert.match(factory, /Request-id:/);
 });
 
 test("manual preview activation is persisted server-side and survives refresh", () => {

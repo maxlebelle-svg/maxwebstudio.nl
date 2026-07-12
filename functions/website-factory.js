@@ -1075,7 +1075,26 @@ async function createJourneyEvent(context, payload = {}) {
 }
 
 async function supabaseFetch(url, options) {
-  const response = await fetch(url, options);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 4000);
+  let response;
+  try {
+    response = await fetch(url, { ...options, signal: controller.signal });
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      const timeout = new Error("Supabase request timed out.");
+      timeout.name = "UpstreamTimeoutError";
+      timeout.status = 504;
+      timeout.code = "UPSTREAM_TIMEOUT";
+      timeout.phase = "fetch_factory_data";
+      timeout.url = url;
+      timeout.method = options?.method || "GET";
+      throw timeout;
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
   const text = await response.text();
   let data = null;
   if (text) {

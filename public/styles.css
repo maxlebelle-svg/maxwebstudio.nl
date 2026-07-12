@@ -33171,3 +33171,26 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
     transition: none;
   }
 }
+.manual-zip-file-field {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: min(100%, 18rem);
+  font-size: 0.78rem;
+}
+
+.manual-zip-file-field input[type="file"] {
+  max-width: 100%;
+  padding: 0.55rem;
+  border: 1px solid rgba(121, 180, 255, 0.32);
+  border-radius: 0.65rem;
+  background: rgba(5, 23, 42, 0.82);
+  color: inherit;
+}
+
+#demo-journey-manual-zip-name {
+  max-width: 20rem;
+  overflow-wrap: anywhere;
+  font-size: 0.78rem;
+  opacity: 0.82;
+}

@@ -770,8 +770,13 @@
                   <button type="button" id="demo-journey-preview-refresh" aria-label="Preview vernieuwen">↻</button>
                   <button type="button" id="demo-journey-regenerate-preview">Opnieuw genereren</button>
                   <button type="button" id="demo-journey-save-demo-site">Demo-site opslaan</button>
-                  <button type="button" id="demo-journey-upload-manual-zip">ZIP uploaden</button>
-                  <input id="demo-journey-manual-zip-input" type="file" accept=".zip,application/zip" hidden />
+                  <button type="button" id="demo-journey-upload-manual-zip">ZIP kiezen</button>
+                  <label class="manual-zip-file-field" for="demo-journey-manual-zip-input">
+                    <span>Website-ZIP</span>
+                    <input id="demo-journey-manual-zip-input" type="file" accept=".zip,application/zip" />
+                  </label>
+                  <span id="demo-journey-manual-zip-name" role="status">Nog geen ZIP gekozen.</span>
+                  <button type="button" id="demo-journey-process-manual-zip" disabled>ZIP verwerken</button>
                 </div>
                 <div class="factory-preview-source-switch" aria-label="Definitieve previewbron">
                   <span>Definitieve versie</span>
@@ -21242,6 +21247,7 @@
         let previewSource = "factory";
         let manualPreview = null;
         let manualZipUploading = false;
+        let pendingManualZipFile = null;
         let customerPreviewPublication = null;
         let leadSelectionVersion = 0;
         let manualLeadSelectionActive = false;
@@ -21338,6 +21344,8 @@
             customerPublicationStatus: document.getElementById("factory-customer-publication-status"),
             uploadManualZip: document.getElementById("demo-journey-upload-manual-zip"),
             manualZipInput: document.getElementById("demo-journey-manual-zip-input"),
+            manualZipName: document.getElementById("demo-journey-manual-zip-name"),
+            processManualZip: document.getElementById("demo-journey-process-manual-zip"),
             previewSourceControls: document.querySelectorAll("[data-preview-source]"),
             previewEmpty: document.getElementById("demo-journey-preview-empty"),
             timeline: document.getElementById("demo-journey-timeline"),
@@ -21529,6 +21537,7 @@
               details: data.details || normalizedError.details || "",
               hint: data.hint || normalizedError.hint || "",
               code: data.code || normalizedError.code || data.diagnostics?.code || "",
+              requestId: response.headers.get("x-nf-request-id") || data.requestId || data.request_id || "",
               stack: data.stack || normalizedError.stack || "",
               demoJourneyId: payload?.demoJourneyId || payload?.demo_journey_id || payload?.id || "",
               leadId: payload?.leadId || payload?.lead_id || "",
@@ -21577,7 +21586,7 @@
               : response.status === 403
               ? diagnostics.code === "ROLE_NOT_ALLOWED" ? "Dit account heeft geen actieve adminrol." : "Je hebt geen toegang tot deze klantcontext."
               : response.status >= 500
-              ? "De klantcontext kon door een tijdelijke backendfout niet worden geladen."
+              ? [data.userMessage || errorMessage || "De klantcontext kon door een tijdelijke backendfout niet worden geladen.", diagnostics.code ? `Code: ${diagnostics.code}` : "", diagnostics.requestId ? `Request-id: ${diagnostics.requestId}` : ""].filter(Boolean).join(" ")
               : data.userMessage || errorMessage || "De klantcontext kon niet worden geladen.";
             const error = new Error(developerMode ? `Backendfout (${response.status})\n${detail}` : safeMessage);
             error.diagnostics = diagnostics;
@@ -24115,8 +24124,13 @@
           document.querySelectorAll("[data-manual-zip-upload], #demo-journey-upload-manual-zip").forEach((button) => {
             button.disabled = busy || !factoryCustomerContext?.customer?.id;
             button.setAttribute("aria-busy", busy ? "true" : "false");
-            button.textContent = busy ? "Uploaden…" : "ZIP uploaden";
+            button.textContent = busy ? "Uploaden…" : button.id === "demo-journey-upload-manual-zip" ? "ZIP kiezen" : "ZIP uploaden";
           });
+          if (elements.processManualZip) {
+            elements.processManualZip.disabled = busy || !pendingManualZipFile || !factoryCustomerContext?.customer?.id;
+            elements.processManualZip.setAttribute("aria-busy", busy ? "true" : "false");
+            elements.processManualZip.textContent = busy ? "ZIP verwerken…" : "ZIP verwerken";
+          }
         }
 
         function openManualZipPicker() {
@@ -24129,8 +24143,16 @@
             setMessage(elements.message, "De ZIP-kiezer is niet beschikbaar. Vernieuw de pagina.", "error");
             return;
           }
-          elements.manualZipInput.value = "";
           elements.manualZipInput.click();
+        }
+
+        function selectManualZipFile(file) {
+          pendingManualZipFile = file || null;
+          if (elements.manualZipName) {
+            elements.manualZipName.textContent = file ? `${file.name} · ${Math.max(1, Math.ceil(Number(file.size || 0) / 1024))} KB` : "Nog geen ZIP gekozen.";
+          }
+          if (elements.processManualZip) elements.processManualZip.disabled = !file || manualZipUploading || !factoryCustomerContext?.customer?.id;
+          if (file) setMessage(elements.message, `${file.name} is gekozen. Klik op ZIP verwerken om de preview aan te maken.`, "info");
         }
 
         async function activateManualPreview() {
@@ -24207,7 +24229,7 @@
             } catch (error) {
               setMessage(elements.message, error.message || "ZIP kon niet worden verwerkt.", "error");
             } finally {
-              if (elements.manualZipInput) elements.manualZipInput.value = "";
+              selectManualZipFile(file);
               setManualZipBusy(false);
             }
           });
@@ -25188,8 +25210,18 @@
             event.stopPropagation();
             publishCustomerPreview();
           });
-          elements.manualZipInput?.addEventListener("change", async (event) => {
-            await uploadManualZipFile(event.target.files?.[0] || null);
+          elements.uploadManualZip?.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            openManualZipPicker();
+          });
+          elements.manualZipInput?.addEventListener("change", (event) => {
+            selectManualZipFile(event.target.files?.[0] || null);
+          });
+          elements.processManualZip?.addEventListener("click", async (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            await uploadManualZipFile(pendingManualZipFile);
           });
           elements.previewSourceControls?.forEach((button) => {
             button.addEventListener("click", (event) => {
@@ -25317,7 +25349,6 @@
           if (!elements.form) return;
           wireEvents();
           renderJourney();
-          await loadLeads();
           const params = factoryQueryParams();
           const requestedLeadId = params.get("leadId") || params.get("lead_id") || window.maxwebstudioAdminPage?.leadId || "";
           const requestedCustomerId = params.get("customerId") || params.get("customer_id") || "";
@@ -25335,6 +25366,7 @@
             renderMetrics();
             return;
           }
+          await loadLeads();
           if (requestedJourneyId) {
             try {
               const data = await apiRequest(`${endpoint}?id=${encodeURIComponent(requestedJourneyId)}`);

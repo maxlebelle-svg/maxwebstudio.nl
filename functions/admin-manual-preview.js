@@ -13,6 +13,7 @@ const MAX_RATIO = 80;
 const allowedExtensions = new Set(["html", "htm", "css", "js", "mjs", "json", "txt", "xml", "svg", "png", "jpg", "jpeg", "webp", "gif", "ico", "woff", "woff2", "ttf", "otf", "mp4", "webm"]);
 
 exports.handler = async (event) => {
+  const requestId = text(event.headers?.["x-nf-request-id"] || event.headers?.["X-Nf-Request-Id"] || randomBytes(8).toString("hex"));
   if (event.httpMethod === "OPTIONS") return json(204, {});
   if (event.httpMethod !== "POST") return json(405, { success: false, error: "Methode niet toegestaan." });
   const adminCheck = await verifyAdmin(event, json, { module: "manual_preview", action: "upload", allowedRoles: roles, allowedStatuses: ["active"] });
@@ -24,20 +25,20 @@ exports.handler = async (event) => {
     const websiteId = uuid(payload.websiteId || payload.website_id);
     const projectId = uuid(payload.projectId || payload.project_id);
     const demoJourneyId = uuid(payload.demoJourneyId || payload.demo_journey_id);
-    if (!customerId) return fail(400, "customer_required", "Selecteer eerst een geldige klant.");
+    if (!customerId) return fail(400, "customer_required", "Selecteer eerst een geldige klant.", "validate_customer", requestId);
     const context = getContext(adminCheck.admin);
-    if (!context.available) return fail(500, "preview_version_failed", "De previewomgeving is nog niet geconfigureerd.");
+    if (!context.available) return fail(500, "preview_version_failed", "De previewomgeving is nog niet geconfigureerd.", "configure_preview", requestId);
     const customer = await readOne(context, "customers", `select=id,name,company&id=eq.${customerId}&limit=1`);
-    if (!customer?.id) return fail(404, "customer_not_found", "Deze klant kon niet worden gevonden.");
+    if (!customer?.id) return fail(404, "customer_not_found", "Deze klant kon niet worden gevonden.", "resolve_customer", requestId);
     if (action === "activate") return activateManualVersion(context, customerId, demoJourneyId, payload);
     const fileName = text(payload.fileName || payload.file_name);
-    if (!/\.zip$/i.test(fileName)) return fail(400, "invalid_file_type", "Kies een geldig ZIP-bestand.");
+    if (!/\.zip$/i.test(fileName)) return fail(400, "invalid_file_type", "Kies een geldig ZIP-bestand.", "validate_zip", requestId);
     const zipBuffer = decodeZip(payload.zipBase64 || payload.zip_base64);
-    if (!zipBuffer.length) return fail(400, "missing_zip", "Kies eerst een ZIP-bestand.");
-    if (zipBuffer.length > MAX_COMPRESSED) return fail(413, "zip_too_large", "Dit ZIP-bestand is te groot om veilig te verwerken.");
+    if (!zipBuffer.length) return fail(400, "missing_zip", "Kies eerst een ZIP-bestand.", "decode_zip", requestId);
+    if (zipBuffer.length > MAX_COMPRESSED) return fail(413, "zip_too_large", "Dit ZIP-bestand is te groot om veilig te verwerken.", "validate_zip_size", requestId);
     if (websiteId) {
       const website = await readOne(context, "websites", `select=id,customer_id&id=eq.${websiteId}&limit=1`);
-      if (!website?.id || text(website.customer_id) !== customerId) return fail(409, "customer_mismatch", "Deze website hoort niet bij de actieve klant.");
+      if (!website?.id || text(website.customer_id) !== customerId) return fail(409, "customer_mismatch", "Deze website hoort niet bij de actieve klant.", "validate_website_ownership", requestId);
     }
 
     const extracted = extractZip(zipBuffer);
@@ -80,21 +81,34 @@ exports.handler = async (event) => {
       });
       version = rows[0] || null;
     }
-    if (!version?.id) return fail(500, "preview_version_failed", "De previewversie kon niet worden opgeslagen.");
+    if (!version?.id) return fail(500, "preview_version_failed", "De previewversie kon niet worden opgeslagen.", "create_preview_version", requestId);
     version = await setActiveManualVersion(context, customerId, version);
     await persistJourneySource(context, demoJourneyId || version.demo_journey_id, version);
     await safeTimeline({ customerId, eventType: "manual_preview_uploaded", title: "Handmatige website geüpload", description: `${fileName} is veilig verwerkt.`, module: "website", referenceType: "website_preview_version", referenceId: version.id, actorName: adminCheck.admin.email || "Max Webstudio", actorRole: "admin", severity: "info", metadata: { dedupeKey: `manual_preview_uploaded:${contentHash}`, previewVersionId: version.id, source: "manual_zip", contentHash } });
     await safeTimeline({ customerId, eventType: "manual_preview_ready", title: "Handmatige preview klaar", description: "De websitepreview kan worden gecontroleerd en gepubliceerd.", module: "website", referenceType: "website_preview_version", referenceId: version.id, actorName: adminCheck.admin.email || "Max Webstudio", actorRole: "admin", severity: "success", metadata: { dedupeKey: `manual_preview_ready:${contentHash}`, previewVersionId: version.id, source: "manual_zip", contentHash } });
     return json(200, {
       success: true,
+      requestId,
       reused,
       previewVersion: sanitize(version),
       previewPackage: sanitizePackage(version.generated_package),
       message: "ZIP succesvol verwerkt. De websitepreview is klaar en kan nu naar het klantportaal worden gepubliceerd.",
     });
   } catch (error) {
-    console.error("Manual preview upload failed", { code: error.code || "zip_extract_failed", message: error.message, status: error.status || 500 });
-    return fail(error.status || 400, error.code || "zip_extract_failed", safeMessage(error));
+    const phase = error.phase || phaseForCode(error.code);
+    console.error("Manual preview upload failed", {
+      errorName: error.name || "Error",
+      errorMessage: error.message || "Unknown manual preview error",
+      code: error.code || "zip_extract_failed",
+      databaseCode: error.databaseCode || error.code || "",
+      databaseMessage: error.databaseMessage || "",
+      details: error.details || "",
+      hint: error.hint || "",
+      status: error.status || 500,
+      phase,
+      requestId,
+    });
+    return fail(error.status || 400, error.code || "zip_extract_failed", safeMessage(error), phase, requestId);
   }
 };
 
@@ -231,9 +245,10 @@ async function readRows(context, table, query) { return request(`${context.supab
 async function readOne(context, table, query) { const rows = await readRows(context, table, query); return rows[0] || null; }
 async function insert(context, table, record) { return request(`${context.supabaseUrl}/rest/v1/${table}`, { method: "POST", headers: headers(context.serviceRoleKey), body: JSON.stringify(record) }); }
 async function patch(context, table, filter, record) { return request(`${context.supabaseUrl}/rest/v1/${table}?${filter}`, { method: "PATCH", headers: headers(context.serviceRoleKey), body: JSON.stringify(record) }); }
-async function request(url, options) { const response = await fetch(url, options); const body = await response.json().catch(() => null); if (!response.ok) throw zipError("preview_version_failed", "De previewversie kon niet worden opgeslagen.", response.status); return Array.isArray(body) ? body : []; }
+async function request(url, options) { const response = await fetch(url, options); const body = await response.json().catch(() => null); if (!response.ok) { const error = zipError("preview_version_failed", "De previewversie kon niet worden opgeslagen.", response.status); error.databaseCode = text(body?.code); error.databaseMessage = text(body?.message || body?.error); error.details = text(body?.details); error.hint = text(body?.hint); error.phase = options?.method === "POST" ? "create_preview_version" : options?.method === "PATCH" ? "persist_preview_version" : "fetch_preview_data"; throw error; } return Array.isArray(body) ? body : []; }
 async function safeTimeline(input) { try { return await createTimelineEvent(input); } catch (error) { console.error("Manual preview timeline skipped", { message: error.message }); return null; } }
-function fail(status, code, error) { return json(status, { success: false, code, error }); }
+function phaseForCode(code = "") { if (String(code).startsWith("zip_") || ["invalid_file_type", "unsafe_zip_path", "index_not_found", "ambiguous_entry_file"].includes(code)) return "validate_and_extract_zip"; if (code === "preview_version_failed") return "persist_preview_version"; return "manual_preview_upload"; }
+function fail(status, code, error, phase = "manual_preview_upload", requestId = "") { return json(status, { success: false, code, error, details: phase, requestId }); }
 function json(statusCode, body) { return { statusCode, headers: { "Content-Type": "application/json", ...corsHeaders({ methods: "POST, OPTIONS" }) }, body: statusCode === 204 ? "" : JSON.stringify(body) }; }
 
 exports._private = { extractZip, resolveEntryFile, safePath };
