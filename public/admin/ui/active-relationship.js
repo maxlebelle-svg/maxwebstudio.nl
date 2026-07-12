@@ -60,17 +60,27 @@
     notify(null, source);
   }
 
+  function contextError(code = "UNKNOWN", fallback = "") {
+    const messages = { INVALID_ID: "Deze relatie heeft geen geldige centrale koppeling.", INVALID_ENTITY_TYPE: "Dit zoekresultaat kan niet als relatie worden geopend.", NOT_FOUND: "Deze relatie bestaat niet meer of is nog niet centraal opgeslagen.", FORBIDDEN: "Je hebt geen toegang tot deze relatie.", ARCHIVED: "Deze relatie is gearchiveerd en kan niet worden geopend.", CONTEXT_MISMATCH: "De relatiegegevens komen niet met elkaar overeen.", STALE_DEPLOYMENT: "De relatiecontext is bijgewerkt. Vernieuw de pagina en probeer opnieuw." };
+    const error = new Error(messages[code] || fallback || "Deze relatie kon niet worden geopend.");
+    error.code = code;
+    error.userMessage = error.message;
+    return error;
+  }
+
   async function validateActiveRelationship(input, source = "user") {
     const candidate = normalize(input);
     const auth = session();
-    if (!candidate || !auth.token) throw new Error("Selecteer een geldige, toegankelijke relatie.");
+    if (!candidate) throw contextError("INVALID_ID");
+    if (!auth.token) throw contextError("FORBIDDEN", "Log opnieuw in om een relatie te openen.");
     const response = await fetch("/api/admin-relationship-context", {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${auth.token}` },
-      body: JSON.stringify({ entityType: candidate.entityType, leadId: candidate.leadId, customerId: candidate.customerId }),
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${auth.token}`, "X-Relationship-Contract": "2" },
+      body: JSON.stringify({ contractVersion: 2, entityType: candidate.entityType, leadId: candidate.leadId, customerId: candidate.customerId }),
     });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok || !data.success || !data.relationship) throw new Error(data.error || "Deze relatie is niet toegankelijk.");
+    if (!response.ok || !data.success || !data.relationship) throw contextError(data.code || (response.status === 403 ? "FORBIDDEN" : response.status === 404 ? "NOT_FOUND" : "UNKNOWN"), data.error);
+    if (data.contractVersion !== 2) throw contextError("STALE_DEPLOYMENT");
     const validated = normalize({ ...data.relationship, selectedAt: new Date().toISOString(), selectedByAuthUserId: auth.userId });
     if (!validated) throw new Error("De relatie kon niet veilig worden geladen.");
     active = validated;

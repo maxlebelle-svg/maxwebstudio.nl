@@ -301,30 +301,75 @@
     return keys.flatMap((key) => readArray(key).map((item) => mapper(item, key))).filter(Boolean);
   }
 
-  function buildEntityIndex() {
-    const customers = rowsFromKeys(STORAGE.customers, (item) => result({
-      id: item.id || item.profileId || item.customerId || item.email,
-      type: "Customer",
-      group: "Klanten",
-      title: item.company || item.name || item.email || "Klant",
-      subtitle: [item.name, item.email, item.website || item.domain].filter(Boolean).join(" · "),
-      url: `admin-klanten.html?customerId=${encodeURIComponent(item.id || item.profileId || item.customerId || "")}`,
-      status: item.status || item.portalStatus || "customer",
-      updatedAt: item.updatedAt || item.createdAt || item.customerSince,
-      metadata: item,
-    }));
+  function isUuid(value = "") {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || "").trim());
+  }
 
-    const leads = rowsFromKeys(STORAGE.leads, (item) => result({
-      id: item.id || item.leadId || item.email || item.companyName,
-      type: "Lead",
-      group: "Leads",
-      title: item.companyName || item.company || item.name || item.contactName || "Lead",
-      subtitle: [item.contactName || item.name, item.email, item.phone, item.websiteUrl || item.website].filter(Boolean).join(" · "),
-      url: `admin-sales.html?leadId=${encodeURIComponent(item.id || item.leadId || "")}`,
-      status: item.status || item.callStatus || item.websiteStatus || "lead",
-      updatedAt: item.updatedAt || item.createdAt || item.followUpDate,
-      metadata: item,
-    }));
+  function normalizeRelationshipCandidate(item = {}, entityType = "", sourceKey = "") {
+    const type = normalize(entityType || item.entityType || item.type);
+    const metadata = item.metadata && typeof item.metadata === "object" ? item.metadata : item;
+    if (["customer", "customers", "client", "klant"].includes(type)) {
+      const explicit = [metadata.supabaseCustomerId, metadata._supabaseCustomerId, metadata.supabase_customer_id, metadata.customerId, metadata.customer_id].find(isUuid);
+      const canonicalId = explicit || (metadata._source === "supabase" ? [metadata.id].find(isUuid) : "");
+      return canonicalId ? { entityType: "customer", customerId: canonicalId, leadId: null, displayName: metadata.company || metadata.name || item.title || "Klant" } : null;
+    }
+    if (["lead", "leads"].includes(type)) {
+      const explicit = [metadata._supabaseId, metadata.supabaseLeadId, metadata.supabase_lead_id, metadata.leadId, metadata.lead_id].find(isUuid);
+      const canonicalId = explicit || (metadata._source === "supabase" || sourceKey === "maxwebstudioLeads" ? [metadata.id].find(isUuid) : "");
+      return canonicalId ? { entityType: "lead", leadId: canonicalId, customerId: null, displayName: metadata.companyName || metadata.company || metadata.name || item.title || "Lead" } : null;
+    }
+    return null;
+  }
+
+  function relationshipToast(message, tone = "error") {
+    let toast = document.getElementById("max-relationship-toast");
+    if (!toast) {
+      toast = document.createElement("div");
+      toast.id = "max-relationship-toast";
+      toast.setAttribute("role", "status");
+      toast.setAttribute("aria-live", "polite");
+      Object.assign(toast.style, { position: "fixed", right: "20px", bottom: "20px", zIndex: "10000", maxWidth: "420px", padding: "13px 16px", borderRadius: "12px", background: "#182546", color: "#fff", boxShadow: "0 18px 45px rgba(15,23,42,.32)", font: "600 14px/1.45 system-ui,sans-serif" });
+      document.body.append(toast);
+    }
+    toast.className = `max-relationship-toast is-${tone}`;
+    toast.textContent = message;
+    toast.hidden = false;
+    window.clearTimeout(relationshipToast.timer);
+    relationshipToast.timer = window.setTimeout(() => { toast.hidden = true; }, 5000);
+  }
+
+  function buildEntityIndex() {
+    const customers = rowsFromKeys(STORAGE.customers, (item, sourceKey) => {
+      const candidate = normalizeRelationshipCandidate(item, "customer", sourceKey);
+      if (!candidate) return null;
+      return result({
+        id: candidate.customerId,
+        type: "Customer",
+        group: "Klanten",
+        title: item.company || item.name || item.email || "Klant",
+        subtitle: [item.name, item.email, item.website || item.domain].filter(Boolean).join(" · "),
+        url: `admin-klanten.html?customerId=${encodeURIComponent(candidate.customerId)}`,
+        status: item.status || item.portalStatus || "customer",
+        updatedAt: item.updatedAt || item.createdAt || item.customerSince,
+        metadata: { ...item, relationshipCandidate: candidate, relationshipSource: sourceKey },
+      });
+    });
+
+    const leads = rowsFromKeys(STORAGE.leads, (item, sourceKey) => {
+      const candidate = normalizeRelationshipCandidate(item, "lead", sourceKey);
+      if (!candidate) return null;
+      return result({
+        id: candidate.leadId,
+        type: "Lead",
+        group: "Leads",
+        title: item.companyName || item.company || item.name || item.contactName || "Lead",
+        subtitle: [item.contactName || item.name, item.email, item.phone, item.websiteUrl || item.website].filter(Boolean).join(" · "),
+        url: `admin-sales.html?leadId=${encodeURIComponent(candidate.leadId)}`,
+        status: item.status || item.callStatus || item.websiteStatus || "lead",
+        updatedAt: item.updatedAt || item.createdAt || item.followUpDate,
+        metadata: { ...item, relationshipCandidate: candidate, relationshipSource: sourceKey },
+      });
+    });
 
     const invoices = rowsFromKeys(STORAGE.invoices, (item) => result({
       id: item.id || item.invoiceNumber || item.number,
@@ -504,12 +549,18 @@
     const title = normalize(row.title);
     const type = normalize(row.type);
     const group = normalize(row.group);
+    const meta = row.metadata || {};
+    const domain = normalize(meta.website || meta.websiteUrl || meta.domain).replace(/^https?:\/\//, "").replace(/\/$/, "");
+    const email = normalize(meta.email);
     let value = 0;
-    if (title === query) value += 120;
-    if (title.startsWith(query)) value += 90;
+    if (title === query) value += 220;
+    if (domain === query || domain.replace(/^www\./, "") === query.replace(/^www\./, "")) value += 200;
+    if (email === query) value += 185;
+    if (title.startsWith(query)) value += 120;
+    if (domain.startsWith(query)) value += 105;
     if (type.includes(query) || group.includes(query)) value += 55;
     if (row.searchable.includes(query)) value += 35;
-    value += fuzzyScore(query, [row.title, row.subtitle, row.type, row.group].join(" "));
+    value += Math.max(0, ...[row.title, ...String(row.subtitle || "").split("·")].map((field) => fuzzyScore(query, field)));
     if (row.type === "Command" && (title.includes(query) || type.includes(query))) value += 35;
     if (intent?.type === "Action" && row.type === "Command") value += 48;
     if (intent?.type === "Navigation" && row.type === "Page") value += 42;
@@ -541,7 +592,7 @@
     }
     return uniqueRows([...pinnedResults(), ...buildEntityIndex()])
       .map((item) => ({ ...item, _score: score(item, normalizedQuery, intent) }))
-      .filter((item) => item._score > 0)
+      .filter((item) => item._score >= 30)
       .sort((a, b) => b._score - a._score || GROUP_ORDER.indexOf(a.group) - GROUP_ORDER.indexOf(b.group))
       .slice(0, 20);
   }
@@ -952,11 +1003,10 @@
   async function executeResult(item) {
     if (!item) return;
     if (["Customer", "Lead"].includes(item.type) && window.ActiveRelationship) {
-      const input = item.type === "Lead"
-        ? { entityType: "lead", leadId: item.id }
-        : { entityType: "customer", customerId: item.id };
+      const input = item.metadata?.relationshipCandidate || normalizeRelationshipCandidate(item, item.type);
+      if (!input) { relationshipToast("Deze relatie heeft nog geen geldige centrale koppeling."); return; }
       try { await window.ActiveRelationship.setActiveRelationship(input, { source: "max-command" }); }
-      catch (error) { window.alert(error.message || "Deze relatie kan niet worden geopend."); return; }
+      catch (error) { relationshipToast(error.userMessage || error.message || "Deze relatie kan niet worden geopend."); return; }
     }
     rememberRecent(item);
     if (item.type === "Search" && item.metadata?.query) {
@@ -1064,6 +1114,8 @@
     open: openPalette,
     close: closePalette,
     search,
+    normalizeRelationshipCandidate,
+    relationshipToast,
     analyzeIntent: (query) => MaxCommandAI.analyzeIntent(query),
   };
   window.MaxGlobalCommandPalette = window.MaxCommand;
@@ -1071,7 +1123,7 @@
   installShortcut();
   if (!window.ActiveRelationship && !document.querySelector("script[data-active-relationship]")) {
     const relationshipScript = document.createElement("script");
-    relationshipScript.src = "admin/ui/active-relationship.js";
+    relationshipScript.src = "admin/ui/active-relationship.js?v=20260712-live-context-fix";
     relationshipScript.defer = true;
     relationshipScript.dataset.activeRelationship = "true";
     document.head.append(relationshipScript);
