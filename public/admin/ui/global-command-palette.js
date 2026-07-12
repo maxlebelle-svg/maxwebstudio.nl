@@ -949,8 +949,15 @@
     });
   }
 
-  function executeResult(item) {
+  async function executeResult(item) {
     if (!item) return;
+    if (["Customer", "Lead"].includes(item.type) && window.ActiveRelationship) {
+      const input = item.type === "Lead"
+        ? { entityType: "lead", leadId: item.id }
+        : { entityType: "customer", customerId: item.id };
+      try { await window.ActiveRelationship.setActiveRelationship(input, { source: "max-command" }); }
+      catch (error) { window.alert(error.message || "Deze relatie kan niet worden geopend."); return; }
+    }
     rememberRecent(item);
     if (item.type === "Search" && item.metadata?.query) {
       openPalette(item.metadata.query);
@@ -968,7 +975,9 @@
     }
     if (item.url) {
       closePalette();
-      window.location.href = item.url;
+      const relationship = window.ActiveRelationship?.getActiveRelationship?.();
+      const target = relationship ? window.ActiveRelationship.buildRelationshipUrl(item.url, relationship) : item.url;
+      window.location.href = target;
       return;
     }
     closePalette();
@@ -1060,6 +1069,13 @@
   window.MaxGlobalCommandPalette = window.MaxCommand;
 
   installShortcut();
+  if (!window.ActiveRelationship && !document.querySelector("script[data-active-relationship]")) {
+    const relationshipScript = document.createElement("script");
+    relationshipScript.src = "admin/ui/active-relationship.js";
+    relationshipScript.defer = true;
+    relationshipScript.dataset.activeRelationship = "true";
+    document.head.append(relationshipScript);
+  }
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", ensurePalette, { once: true });
   } else {

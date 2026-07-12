@@ -1,0 +1,156 @@
+(function initActiveRelationship() {
+  if (window.ActiveRelationship?.ready) return;
+
+  const STORAGE_KEY = "maxwebstudioActiveRelationship";
+  const EVENT_NAME = "maxwebstudio:relationship-change";
+  const ENTITY_TYPES = new Set(["lead", "customer"]);
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  let active = null;
+
+  function clean(value) { return String(value || "").trim(); }
+  function session() {
+    for (const key of ["maxwebstudioSupabaseAuthSession", "mws_admin_supabase_session"]) {
+      try {
+        const value = JSON.parse(localStorage.getItem(key) || "null");
+        if (value?.access_token) return { token: value.access_token, userId: value.user?.id || "" };
+        if (value?.accessToken) return { token: value.accessToken, userId: value.userId || "" };
+      } catch { /* invalid storage is ignored */ }
+    }
+    return { token: "", userId: "" };
+  }
+
+  function normalize(input = {}) {
+    const entityType = clean(input.entityType).toLowerCase();
+    const leadId = clean(input.leadId);
+    const customerId = clean(input.customerId);
+    if (!ENTITY_TYPES.has(entityType)) return null;
+    if (entityType === "lead" && (!UUID.test(leadId) || customerId)) return null;
+    if (entityType === "customer" && (!UUID.test(customerId) || leadId)) return null;
+    return Object.freeze({
+      entityType,
+      leadId: entityType === "lead" ? leadId : null,
+      customerId: entityType === "customer" ? customerId : null,
+      profileId: clean(input.profileId) || null,
+      companyName: clean(input.companyName) || "Onbekende relatie",
+      contactName: clean(input.contactName),
+      websiteUrl: clean(input.websiteUrl),
+      email: clean(input.email),
+      phone: clean(input.phone),
+      assignedUserId: clean(input.assignedUserId) || null,
+      assignedUserName: clean(input.assignedUserName),
+      lifecycleStage: clean(input.lifecycleStage),
+      selectedAt: clean(input.selectedAt) || new Date().toISOString(),
+      selectedByAuthUserId: clean(input.selectedByAuthUserId || session().userId),
+    });
+  }
+
+  function readStored() {
+    try { return normalize(JSON.parse(localStorage.getItem(STORAGE_KEY) || "null") || {}); }
+    catch { return null; }
+  }
+
+  function notify(value, source = "user") {
+    window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: { relationship: value, source } }));
+    render();
+  }
+
+  function clearActiveRelationship(source = "clear") {
+    active = null;
+    localStorage.removeItem(STORAGE_KEY);
+    notify(null, source);
+  }
+
+  async function validateActiveRelationship(input, source = "user") {
+    const candidate = normalize(input);
+    const auth = session();
+    if (!candidate || !auth.token) throw new Error("Selecteer een geldige, toegankelijke relatie.");
+    const response = await fetch("/api/admin-relationship-context", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${auth.token}` },
+      body: JSON.stringify({ entityType: candidate.entityType, leadId: candidate.leadId, customerId: candidate.customerId }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.success || !data.relationship) throw new Error(data.error || "Deze relatie is niet toegankelijk.");
+    const validated = normalize({ ...data.relationship, selectedAt: new Date().toISOString(), selectedByAuthUserId: auth.userId });
+    if (!validated) throw new Error("De relatie kon niet veilig worden geladen.");
+    active = validated;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(validated));
+    notify(validated, source);
+    return validated;
+  }
+
+  function getActiveRelationship() { return active; }
+  function setActiveRelationship(input, options = {}) { return validateActiveRelationship(input, options.source || "user"); }
+  function subscribeToRelationshipChanges(callback) {
+    const listener = (event) => callback(event.detail?.relationship || null, event.detail || {});
+    window.addEventListener(EVENT_NAME, listener);
+    return () => window.removeEventListener(EVENT_NAME, listener);
+  }
+  function buildRelationshipUrl(url, relationship = active) {
+    const target = new URL(url, window.location.origin);
+    target.searchParams.delete("leadId"); target.searchParams.delete("customerId");
+    if (relationship?.entityType === "lead") target.searchParams.set("leadId", relationship.leadId);
+    if (relationship?.entityType === "customer") target.searchParams.set("customerId", relationship.customerId);
+    return `${target.pathname}${target.search}${target.hash}`;
+  }
+
+  function ensureStyles() {
+    if (document.getElementById("active-relationship-styles")) return;
+    const style = document.createElement("style");
+    style.id = "active-relationship-styles";
+    style.textContent = `.relationship-workspace{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px;padding:10px 18px;margin:0;background:linear-gradient(100deg,#11182b,#182546);color:#fff;border-bottom:1px solid rgba(255,255,255,.14);box-shadow:0 8px 24px rgba(15,23,42,.12)}.relationship-workspace__copy{min-width:0;flex:1}.relationship-workspace__eyebrow{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#9fb4df}.relationship-workspace strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.relationship-workspace p{margin:2px 0 0;color:#c8d3ea;font-size:12px}.relationship-workspace__actions{display:flex;gap:8px}.relationship-workspace button,.relationship-workspace a{min-height:36px;padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.25);background:transparent;color:#fff;font:inherit;text-decoration:none;cursor:pointer}.relationship-workspace button:focus-visible,.relationship-workspace a:focus-visible{outline:3px solid #7dd3fc;outline-offset:2px}.relationship-workspace [data-primary]{background:#fff;color:#14203a}@media(max-width:640px){.relationship-workspace{align-items:flex-start;flex-wrap:wrap;padding:9px 12px}.relationship-workspace__actions{width:100%}.relationship-workspace button,.relationship-workspace a{flex:1;text-align:center}.relationship-workspace p{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:92vw}}`;
+    document.head.append(style);
+  }
+
+  function ensureBar() {
+    let bar = document.getElementById("active-relationship-workspace");
+    if (bar) return bar;
+    ensureStyles();
+    bar = document.createElement("section");
+    bar.id = "active-relationship-workspace";
+    bar.className = "relationship-workspace";
+    bar.setAttribute("aria-label", "Actieve relatie");
+    const anchor = document.querySelector(".admin-topbar, header, main");
+    (anchor?.parentNode || document.body).insertBefore(bar, anchor || document.body.firstChild);
+    return bar;
+  }
+
+  function render() {
+    if (!document.body) return;
+    const bar = ensureBar();
+    const relationship = active;
+    if (!relationship) {
+      bar.innerHTML = `<div class="relationship-workspace__copy"><span class="relationship-workspace__eyebrow">Actieve werkruimte</span><strong>Geen actieve relatie geselecteerd</strong><p>Selecteer een lead of klant voor relatiegebonden acties.</p></div><div class="relationship-workspace__actions"><button type="button" data-primary data-relationship-switch>Selecteer relatie</button></div>`;
+    } else {
+      const detail = [relationship.entityType === "lead" ? "Lead" : "Klant", relationship.lifecycleStage, relationship.assignedUserName ? `Eigenaar: ${relationship.assignedUserName}` : ""].filter(Boolean).join(" · ");
+      const dossier = relationship.entityType === "lead" ? `admin-sales.html?leadId=${encodeURIComponent(relationship.leadId)}` : `admin-klanten.html?customerId=${encodeURIComponent(relationship.customerId)}`;
+      bar.innerHTML = `<div class="relationship-workspace__copy"><span class="relationship-workspace__eyebrow">Actieve werkruimte</span><strong></strong><p></p></div><div class="relationship-workspace__actions"><button type="button" data-relationship-switch>Wisselen</button><a data-primary href="${dossier}">Open dossier</a></div>`;
+      bar.querySelector("strong").textContent = relationship.companyName;
+      bar.querySelector("p").textContent = detail || relationship.websiteUrl || relationship.email;
+    }
+    bar.querySelector("[data-relationship-switch]")?.addEventListener("click", () => window.MaxCommand?.open?.(""));
+  }
+
+  async function hydrate() {
+    const params = new URLSearchParams(window.location.search);
+    const leadId = clean(params.get("leadId"));
+    const customerId = clean(params.get("customerId"));
+    if (leadId && customerId) { clearActiveRelationship("invalid-deep-link"); return; }
+    const candidate = leadId ? { entityType: "lead", leadId } : customerId ? { entityType: "customer", customerId } : readStored();
+    if (!candidate) { render(); return; }
+    try { await validateActiveRelationship(candidate, leadId || customerId ? "deep-link" : "restore"); }
+    catch { clearActiveRelationship("validation-failed"); }
+  }
+
+  document.addEventListener("click", (event) => {
+    if (event.target.closest("#auth-logout,#admin-session-logout,[data-action='logout']")) clearActiveRelationship("logout");
+  }, true);
+  window.addEventListener("storage", (event) => {
+    if (event.key !== STORAGE_KEY) return;
+    active = readStored(); notify(active, "storage");
+  });
+
+  window.ActiveRelationship = { ready: true, getActiveRelationship, setActiveRelationship, clearActiveRelationship, validateActiveRelationship, subscribeToRelationshipChanges, buildRelationshipUrl };
+  active = readStored();
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", hydrate, { once: true }); else hydrate();
+})();
