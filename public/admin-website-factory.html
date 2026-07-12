@@ -24092,6 +24092,10 @@
             return;
           }
           const sourceLabel = customerPreviewPublication.previewSource === "manual_zip" ? "Handmatige ZIP" : "Website Factory";
+          elements.customerPublicationStatus.dataset.publishedPreviewVersionId = customerPreviewPublication.previewVersionId || "";
+          elements.customerPublicationStatus.dataset.publishedCustomerId = factoryCustomerContext?.customer?.id || "";
+          elements.customerPublicationStatus.dataset.publishedWebsiteId = factoryCustomerContext?.website?.id || "";
+          elements.customerPublicationStatus.dataset.publishedProjectId = factoryCustomerContext?.project?.id || "";
           elements.customerPublicationStatus.innerHTML = `
             <div><strong>Preview gepubliceerd</strong><span>De geselecteerde websiteversie is nu zichtbaar in het klantportaal.</span></div>
             <dl>
@@ -24134,7 +24138,20 @@
                 previewSource: activePreviewSource(),
                 title: `${elements.business?.value || customer.company || customer.name || "Website"} — klantpreview`,
               });
-              customerPreviewPublication = data.customerPreview || data.previewVersion || null;
+              if (data.publishedPreviewVersionId !== activeVersion.id) {
+                throw new Error("De server heeft niet dezelfde previewversie gepubliceerd als de actieve Factory-versie.");
+              }
+              const confirmation = await apiRequest(`${previewPublicationEndpoint}?action=current&customerId=${encodeURIComponent(customer.id)}&previewVersionId=${encodeURIComponent(activeVersion.id)}`);
+              if (confirmation.publishedPreviewVersionId !== activeVersion.id || confirmation.previewVersion?.id !== activeVersion.id) {
+                throw new Error("De gepubliceerde klantpreview kon niet eenduidig worden bevestigd.");
+              }
+              customerPreviewPublication = {
+                ...(data.customerPreview || data.previewVersion || {}),
+                ...confirmation.previewVersion,
+                previewVersionId: confirmation.previewVersion.id,
+                previewSource: activePreviewSource(),
+                reviewStatus: confirmation.previewVersion.approvedAt ? "approved" : "ready_for_review",
+              };
               renderCustomerPreviewPublication();
               setMessage(elements.message, "Preview gepubliceerd. De geselecteerde websiteversie is nu zichtbaar in het klantportaal.", "success");
             } catch (error) {

@@ -2374,7 +2374,10 @@
             if (!id || byId.has(id)) return;
             byId.set(id, version);
           });
-          return [...byId.values()].sort((a, b) => previewDateValue(b) - previewDateValue(a) || Number(b.version || 0) - Number(a.version || 0));
+          return [...byId.values()].sort((a, b) => {
+            if (Boolean(a.isCurrent) !== Boolean(b.isCurrent)) return a.isCurrent ? -1 : 1;
+            return previewDateValue(b) - previewDateValue(a) || Number(b.version || 0) - Number(a.version || 0);
+          });
         }
 
         function versionReviewLabel(preview = {}, isCurrent = false) {

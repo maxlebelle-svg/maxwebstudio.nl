@@ -7,6 +7,7 @@ const ids = {
   website: "33333333-3333-4333-8333-333333333333",
   project: "44444444-4444-4444-8444-444444444444",
   preview: "55555555-5555-4555-8555-555555555555",
+  oldPreview: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
   feedback: "66666666-6666-4666-8666-666666666666",
 };
 
@@ -15,7 +16,7 @@ const idempotencyKey = "preview-reviewflow-test-key";
 function createTables() {
   return {
     customers: [
-      { id: ids.customer, auth_user_id: ids.authUser, name: "Test Klant", company: "Testbedrijf", email: "klant@example.nl" },
+      { id: ids.customer, auth_user_id: ids.authUser, name: "Test Klant", company: "Testbedrijf", email: "klant@example.nl", metadata: { publishedPreviewVersionId: ids.preview } },
     ],
     website_preview_versions: [
       {
@@ -47,6 +48,22 @@ function createTables() {
             createdByAuthUserId: ids.authUser,
           },
         ],
+      },
+      {
+        id: ids.oldPreview,
+        customer_id: ids.customer,
+        project_id: ids.project,
+        website_id: ids.website,
+        version: 9,
+        title: "Oudere goedgekeurde klantpreview",
+        safe_preview_path: `/preview.html?version=${ids.oldPreview}`,
+        published_to_portal: true,
+        published_at: "2026-07-12T12:00:00Z",
+        approved_at: "2026-07-12T12:30:00Z",
+        allow_feedback: false,
+        allow_approval: false,
+        status: "approved",
+        feedback_items: [],
       },
     ],
     change_requests: [],
@@ -98,6 +115,8 @@ function applyQuery(rows, params) {
     }
     if (value.startsWith("eq.")) result = result.filter((row) => String(row[key] || "") === filterEq(value));
   }
+  const order = params.get("order") || "";
+  if (order.startsWith("published_at.desc")) result.sort((a, b) => String(b.published_at || "").localeCompare(String(a.published_at || "")));
   const limit = Number(params.get("limit") || 0);
   return limit ? result.slice(0, limit) : result;
 }
@@ -140,6 +159,14 @@ function event(payload = {}) {
   };
 }
 
+function getEvent() {
+  return {
+    httpMethod: "GET",
+    headers: { Authorization: "Bearer customer-token" },
+    queryStringParameters: {},
+  };
+}
+
 async function run() {
   const previousEnv = {
     supabaseUrl: process.env.SUPABASE_URL,
@@ -152,6 +179,16 @@ async function run() {
 
   const tables = createTables();
   installFetchMock(tables);
+
+  const listing = await handler(getEvent());
+  assert.strictEqual(listing.statusCode, 200);
+  assert.strictEqual(listing.headers["Cache-Control"], "no-store", "refresh must not reuse a stale publication response");
+  const listingBody = JSON.parse(listing.body);
+  assert.strictEqual(listingBody.currentPreviewVersionId, ids.preview);
+  assert.strictEqual(listingBody.currentPreviewVersion.id, ids.preview);
+  assert.strictEqual(listingBody.previewVersions[0].id, ids.preview, "the explicit pointer must beat a newer dated or approved historical version");
+  assert.strictEqual(listingBody.previewVersions[0].isCurrent, true);
+  assert.strictEqual(listingBody.previewVersions[1].id, ids.oldPreview, "historical versions remain available without becoming current");
 
   const first = await handler(event());
   assert.strictEqual(first.statusCode, 200);

@@ -33,6 +33,9 @@ test("publication is ownership checked and version bound", () => {
   assert.match(publicationBackend, /previewVersionId: target\.id/);
   assert.match(publicationBackend, /status: "internal"/);
   assert.match(publicationBackend, /feedback_items: \[\]/);
+  assert.match(publicationBackend, /publishedPreviewVersionId: version\.id/);
+  assert.match(publicationBackend, /PREVIEW_POINTER_NOT_PERSISTED/);
+  assert.match(publicationBackend, /PREVIEW_POINTER_MISMATCH/);
 });
 
 test("content fingerprint makes repeated publication idempotent", () => {
@@ -50,6 +53,9 @@ test("customer portal only lists explicitly published versions and shows their s
   assert.match(clientVersions, /previewSource: cleanText\(row\.metadata\?\.previewSource\)/);
   assert.match(clientRender, /published_to_portal=eq\.true/);
   assert.match(portal, /createWebsiteMetric\("Previewbron"/);
+  assert.match(clientVersions, /customer\.metadata\?\.publishedPreviewVersionId/);
+  assert.match(clientVersions, /isCurrent: cleanText\(row\.id\) === cleanText\(currentPreviewVersionId\)/);
+  assert.match(portal, /Boolean\(a\.isCurrent\)/);
 });
 
 test("new customer review versions do not inherit an old approval", () => {
@@ -64,6 +70,9 @@ test("publication status provides safe admin copy and responsive actions", () =>
   assert.match(factoryUi, /De geselecteerde websiteversie is nu zichtbaar in het klantportaal/);
   assert.match(factoryUi, /Reviewstatus/);
   assert.match(factoryUi, /Open klantportaal/);
+  assert.match(factoryUi, /action=current&customerId=/);
+  assert.match(factoryUi, /confirmation\.publishedPreviewVersionId !== activeVersion\.id/);
+  assert.match(factoryUi, /dataset\.publishedPreviewVersionId/);
 });
 
 test("customer portal thumbnail and full preview are bound to one preview version", () => {
@@ -87,5 +96,8 @@ test("thumbnail embed is authenticated, persistent and has a visible fallback", 
 
 test("republishing the selected version makes it the canonical latest publication", () => {
   assert.match(publicationBackend, /published_at: now/);
-  assert.match(clientVersions, /order=published_at\.desc\.nullslast,version\.desc/);
+  assert.match(publicationBackend, /publishedPreviewVersionId: version\.id/);
+  assert.match(clientVersions, /currentPreviewVersionId/);
+  assert.match(clientVersions, /currentPreviewVersion:/);
+  assert.match(clientVersions, /"Cache-Control": "no-store"/);
 });

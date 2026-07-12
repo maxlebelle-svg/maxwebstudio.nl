@@ -24,7 +24,7 @@ function clone(value) {
 function createTables({ ambiguousWebsite = false } = {}) {
   return {
     customers: [
-      { id: ids.customerA, name: "QuantumBouw", company: "QuantumBouw B.V.", email: "info@quantumbouw.nl", website: "https://quantumbouw.nl" },
+      { id: ids.customerA, name: "QuantumBouw", company: "QuantumBouw B.V.", email: "info@quantumbouw.nl", website: "https://quantumbouw.nl", metadata: { publishedPreviewVersionId: ids.previewModern } },
       { id: ids.customerB, name: "Andere klant", company: "Andere klant B.V.", email: "info@example.nl", website: "https://andere.nl" },
     ],
     websites: [
@@ -241,6 +241,10 @@ async function run() {
     title: "Handmatige klantpreview",
   });
   assert.strictEqual(manualResponse.statusCode, 200, "standalone manual preview should publish without website or build");
+  const manualBody = JSON.parse(manualResponse.body);
+  assert.strictEqual(manualBody.publishedPreviewVersionId, ids.previewManual, "publication response should confirm the exact active manual version");
+  assert.strictEqual(manualBody.customerPreview.id, ids.previewManual, "customer preview should remain bound to the selected manual version");
+  assert.strictEqual(tables.customers[0].metadata.publishedPreviewVersionId, ids.previewManual, "customer pointer should atomically select the manual version");
   const publishedManual = tables.website_preview_versions.find((row) => row.id === ids.previewManual);
   assert.strictEqual(publishedManual.published_to_portal, true);
   assert.strictEqual(publishedManual.website_id, null);
@@ -299,7 +303,9 @@ async function run() {
     previewVersionId: ids.previewModern,
   });
   assert.strictEqual(modernResponse.statusCode, 200, "modern preview should still publish");
-  assert.strictEqual(writes.length, 1);
+  assert.strictEqual(writes.filter((write) => write.table === "website_preview_versions").length, 1);
+  assert.strictEqual(writes.filter((write) => write.table === "customers").length, 1);
+  assert.strictEqual(tables.customers[0].metadata.publishedPreviewVersionId, ids.previewModern, "publishing another exact version should move only the customer pointer");
 
   tables = createTables();
   tables.leads = [{ id: ids.leadA }];

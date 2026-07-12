@@ -30,10 +30,18 @@ exports.handler = async (event) => {
       "limit=25",
     ].join("&"));
 
+    const currentPreviewVersionId = uuidOrEmpty(customer.metadata?.publishedPreviewVersionId);
+    const orderedRows = currentPreviewVersionId
+      ? [...rows].sort((a, b) => Number(cleanText(b.id) === currentPreviewVersionId) - Number(cleanText(a.id) === currentPreviewVersionId))
+      : rows;
     return jsonResponse(200, {
       success: true,
       customer: { id: customer.id, name: cleanText(customer.name), company: cleanText(customer.company || customer.company_name) },
-      previewVersions: rows.map(sanitizeClientVersion),
+      currentPreviewVersionId,
+      currentPreviewVersion: orderedRows.find((row) => cleanText(row.id) === currentPreviewVersionId)
+        ? sanitizeClientVersion(orderedRows.find((row) => cleanText(row.id) === currentPreviewVersionId), currentPreviewVersionId)
+        : null,
+      previewVersions: orderedRows.map((row) => sanitizeClientVersion(row, currentPreviewVersionId)),
     });
   } catch (error) {
     console.error("Client preview versions failed", { message: error.message, status: error.status || 500, code: error.code || "" });
@@ -327,10 +335,11 @@ async function supabaseFetch(url, options) {
   return Array.isArray(data) ? data : [];
 }
 
-function sanitizeClientVersion(row = {}) {
+function sanitizeClientVersion(row = {}, currentPreviewVersionId = "") {
   const safePath = cleanText(row.safe_preview_path) || `/preview.html?version=${encodeURIComponent(cleanText(row.id))}`;
   return {
     id: cleanText(row.id),
+    isCurrent: cleanText(row.id) === cleanText(currentPreviewVersionId),
     projectId: cleanText(row.project_id),
     websiteId: cleanText(row.website_id),
     version: Number(row.version || 1),

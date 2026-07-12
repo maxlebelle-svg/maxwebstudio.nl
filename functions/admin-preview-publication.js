@@ -38,7 +38,7 @@ const previewVersionFields = [
 ].join(",");
 const websiteFields = "id,customer_id,name,domain,status";
 const projectFields = "id,customer_id,website_id,name,status,updated_at";
-const customerFields = "id,name,company,email,website";
+const customerFields = "id,name,company,email,website,metadata,updated_at";
 const demoJourneyFields = "id,lead_id,customer_id,business_name,email,website_url,preview_url,preview_token,preview_package,updated_at,created_at";
 const leadFields = "id,customer_id,converted_customer_id";
 const legacyLeadFields = "id,converted_customer_id";
@@ -59,7 +59,12 @@ exports.handler = async (event) => {
   if (!context.available) return jsonResponse(500, { success: false, error: "Previewpublicatie is nog niet geconfigureerd." });
 
   try {
-    if (event.httpMethod === "GET") return await listPreviewVersions(context, event.queryStringParameters || {});
+    if (event.httpMethod === "GET") {
+      const params = event.queryStringParameters || {};
+      return cleanText(params.action) === "current"
+        ? await resolveCurrentPublishedPreview(context, params)
+        : await listPreviewVersions(context, params);
+    }
     if (event.httpMethod === "POST") {
       const payload = parsePayload(event.body);
       return payload.action === "publish_customer_preview"
@@ -100,6 +105,33 @@ async function listPreviewVersions(context, params = {}) {
     selectedProjectId,
   });
   return jsonResponse(200, { success: true, website: sanitizeWebsite(website), previewVersions: versions.map(sanitizeAdminVersion) });
+}
+
+async function resolveCurrentPublishedPreview(context, params = {}) {
+  const customerId = uuidOrEmpty(params.customerId || params.customer_id);
+  const expectedVersionId = uuidOrEmpty(params.previewVersionId || params.preview_version_id);
+  if (!customerId) throw previewError("PREVIEW_CUSTOMER_REQUIRED", "Selecteer eerst een geldige klant.", 400);
+  const customer = await readSingle(context, "customers", `select=${customerFields}&id=eq.${encodeURIComponent(customerId)}&limit=1`);
+  if (!customer?.id) throw previewError("PREVIEW_CUSTOMER_MISMATCH", "Deze klant kon niet worden gevalideerd.", 404);
+  const currentPreviewVersionId = uuidOrEmpty(customer.metadata?.publishedPreviewVersionId);
+  if (!currentPreviewVersionId) throw previewError("PREVIEW_POINTER_NOT_FOUND", "Voor deze klant is nog geen huidige preview gepubliceerd.", 404);
+  if (expectedVersionId && expectedVersionId !== currentPreviewVersionId) {
+    throw previewError("PREVIEW_POINTER_MISMATCH", "De gepubliceerde klantpreview wijkt af van de geselecteerde Factory-versie.", 409);
+  }
+  const version = await readSingle(context, "website_preview_versions", [
+    `select=${previewVersionFields}`,
+    `id=eq.${encodeURIComponent(currentPreviewVersionId)}`,
+    `customer_id=eq.${encodeURIComponent(customerId)}`,
+    "published_to_portal=eq.true",
+    "limit=1",
+  ].join("&"));
+  if (!version?.id) throw previewError("PREVIEW_POINTER_INVALID", "De huidige klantpreview is niet beschikbaar voor deze klant.", 409);
+  return jsonResponse(200, {
+    success: true,
+    customerId,
+    publishedPreviewVersionId: currentPreviewVersionId,
+    previewVersion: sanitizeAdminVersion(version),
+  });
 }
 
 async function publishActiveCustomerPreview(context, payload = {}) {
@@ -272,6 +304,19 @@ async function publishPreviewVersion(context, payload = {}) {
 
   const rows = await patchRows(context, "website_preview_versions", `id=eq.${version.id}`, patch);
   const published = rows[0] || { ...version, ...patch };
+  const customerMetadata = isObject(ownership.customer.metadata) ? ownership.customer.metadata : {};
+  const pointerRows = await patchRows(context, "customers", `id=eq.${ownership.customer.id}`, {
+    metadata: {
+      ...customerMetadata,
+      publishedPreviewVersionId: version.id,
+      publishedPreviewUpdatedAt: now,
+    },
+    updated_at: now,
+  });
+  const pointerCustomer = pointerRows[0] || null;
+  if (cleanText(pointerCustomer?.metadata?.publishedPreviewVersionId) !== version.id) {
+    throw previewError("PREVIEW_POINTER_NOT_PERSISTED", "De klantpreview kon niet als huidige versie worden vastgelegd.", 500);
+  }
   await safeTimeline({
     customerId: ownership.customer.id,
     eventType: "preview_shared",
@@ -288,10 +333,16 @@ async function publishPreviewVersion(context, payload = {}) {
       websiteId: ownership.website?.id || "",
       projectId: ownership.project?.id || "",
       version: published.version,
+      publishedPreviewVersionId: version.id,
     },
   });
 
-  return jsonResponse(200, { success: true, previewVersion: sanitizeAdminVersion(published), website: ownership.website ? sanitizeWebsite(ownership.website) : null });
+  return jsonResponse(200, {
+    success: true,
+    publishedPreviewVersionId: version.id,
+    previewVersion: sanitizeAdminVersion(published),
+    website: ownership.website ? sanitizeWebsite(ownership.website) : null,
+  });
 }
 
 async function resolveStandaloneManualOwnership(context, version = {}, selectedCustomerId = "", selectedProjectId = "") {
