@@ -34,6 +34,10 @@ assert(css.includes(".portal-onboarding-step"), "Onboarding step styling should 
 assert(css.includes(".portal-message-workspace"), "Message workspace styling should exist");
 assert(css.includes(".portal-finance-dashboard"), "Finance dashboard styling should exist");
 assert(css.includes(".portal-account-grid"), "Account grid styling should exist");
+assert(
+  /iframe\.portal-website-mini-preview\s*\{[^}]*width:\s*100%;[^}]*padding:\s*0;[^}]*border:\s*0;/s.test(css),
+  "Embedded website previews should fill their frame without nested padding or a browser border"
+);
 
 inlineScripts.forEach((code) => new Function(code));
 

@@ -11671,6 +11671,14 @@ h3 {
     linear-gradient(135deg, rgba(18, 58, 112, 0.96), rgba(5, 18, 38, 0.96));
 }
 
+iframe.portal-website-mini-preview {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: #020816;
+}
+
 .portal-website-mini-nav {
   display: flex;
   align-items: center;
