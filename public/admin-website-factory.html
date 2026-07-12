@@ -21935,8 +21935,9 @@
           if (elements.leadCount) {
             const shown = visibleLeads.length;
             const total = leads.length;
+            const modeLabel = factoryCustomerContext?.customer?.id ? "relaties" : "leads";
             elements.leadCount.textContent = total
-              ? `${shown} van ${total} leads getoond - nieuwste eerst.`
+              ? `${shown} van ${total} ${modeLabel} getoond - nieuwste eerst.`
               : "Nog geen centrale leads geladen.";
           }
           elements.leadResults.innerHTML = visibleLeads.length
@@ -23420,6 +23421,31 @@
             previewVersions: [],
           };
           factoryContextState = "customer_relationship_only";
+          const customerOption = {
+            id: `customer-context-${relationship.customerId}`,
+            customerId: relationship.customerId,
+            companyName: relationship.companyName || relationship.contactName || "Bestaande klant",
+            contactName: relationship.contactName || "",
+            email: relationship.email || "",
+            phone: relationship.phone || "",
+            websiteUrl: relationship.websiteUrl || "",
+            source: "Bestaande klant",
+          };
+          leads = [customerOption, ...leads.filter((item) => item.id !== customerOption.id)];
+          renderLeadPicker();
+          if (elements.lead) elements.lead.value = customerOption.id;
+          fillFromLead(customerOption);
+          prefillIntakeFromLead(customerOption);
+          renderIntakeFields();
+          renderActiveContextBanner({
+            entityType: "customer",
+            title: customerOption.companyName,
+            subtitle: customerOption.websiteUrl || "Klantmodus · projectgegevens tijdelijk niet beschikbaar",
+            website: customerOption.websiteUrl,
+            customerId: relationship.customerId,
+            status: relationship.lifecycleStage || "",
+            hasLead: false,
+          });
           renderJourney();
           setMessage(elements.message, "Klant veilig gevalideerd. Projectgegevens zijn tijdelijk niet beschikbaar; een handmatige ZIP kan wel worden verwerkt.", "warning");
           return true;
@@ -24872,12 +24898,14 @@
           elements.state.className = `status-badge ${status === "afgewezen" ? "status-blocked" : journey ? "status-active" : "status-planned"}`;
           elements.summary.textContent = journey
             ? `${journey.businessName || "Demo"} - laatst bijgewerkt ${formatDate(journey.updatedAt)}`
-            : "Nog geen centrale demo-klantreis voor deze lead.";
+            : factoryCustomerContext?.customer?.id
+              ? "Klantmodus actief. Een losse leadrij is niet vereist voor deze bestaande klant."
+              : "Nog geen centrale demo-klantreis voor deze lead.";
           elements.details.innerHTML = [
-            ["Lead", lead?.companyName || journey?.businessName || "-"],
+            [factoryCustomerContext?.customer?.id ? "Relatie" : "Lead", lead?.companyName || journey?.businessName || factoryCustomerContext?.customer?.company || factoryCustomerContext?.customer?.name || "-"],
             ["Websitepakket", latestPackageMeta().packageLabel || packageLabel(currentPackageType())],
             ["Demo-site", isDemoSiteSaved() ? "Opgeslagen en gekoppeld" : "Nog niet opgeslagen"],
-            ["Klantkoppeling", journey?.customerId ? "Klant gekoppeld" : "Nog leadfase"],
+            ["Klantkoppeling", journey?.customerId || factoryCustomerContext?.customer?.id ? "Klant gekoppeld" : "Nog leadfase"],
             ["Offertefase", isDemoSiteSaved() ? "Klaar om traject/offerte te starten" : "Sla eerst de demo-site op"],
             ["Previewbron", activePreviewSource() === "manual" ? "Handmatige ZIP" : "Website Factory"],
             ["Preview", previewDisplayValue(activePreviewUrl())],

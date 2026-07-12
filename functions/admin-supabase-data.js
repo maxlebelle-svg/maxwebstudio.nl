@@ -35,6 +35,14 @@ const MODULES = Object.freeze({
     salesReadable: true,
     map: mapProject,
   },
+  files: {
+    table: "files",
+    select: "id,customer_id,profile_id,website_id,project_id,lead_id,name,original_filename,file_type,category,location,storage_path,status,notes,mime_type,size_bytes,uploaded_by_type,source_module,usage_rights_confirmed,is_primary,is_client_visible,is_demo,environment,metadata,created_at,updated_at",
+    legacySelect: "id,customer_id,website_id,project_id,name,file_type,category,location,storage_path,status,notes,is_demo,environment,metadata,created_at,updated_at",
+    order: "updated_at.desc.nullslast",
+    optional: true,
+    map: mapFile,
+  },
   profiles: {
     table: "profiles",
     select: "id,auth_user_id,name,email,role,status,metadata,created_at,updated_at",
@@ -779,6 +787,40 @@ function mapProject(row = {}) {
     updatedAt: cleanText(row.updated_at),
     _source: "supabase",
     _supabaseProjectId: cleanText(row.id),
+  };
+}
+
+function mapFile(row = {}) {
+  const metadata = row.metadata && typeof row.metadata === "object" ? row.metadata : {};
+  return {
+    id: cleanText(row.id),
+    customerId: cleanText(row.customer_id || row.profile_id),
+    profileId: cleanText(row.profile_id || row.customer_id),
+    websiteId: cleanText(row.website_id),
+    projectId: cleanText(row.project_id),
+    leadId: cleanText(row.lead_id),
+    name: cleanText(row.name || row.original_filename) || "Bestand",
+    type: cleanText(row.file_type),
+    fileType: cleanText(row.file_type),
+    category: cleanText(row.category) || "Overig",
+    location: cleanText(row.location),
+    url: cleanText(row.location),
+    storagePath: cleanText(row.storage_path),
+    status: cleanText(row.status) || "active",
+    notes: cleanText(row.notes),
+    mimeType: cleanText(row.mime_type),
+    sizeBytes: Number(row.size_bytes || 0) || 0,
+    uploadedByType: cleanText(row.uploaded_by_type),
+    sourceModule: cleanText(row.source_module),
+    usageRightsConfirmed: Boolean(row.usage_rights_confirmed),
+    isPrimary: Boolean(row.is_primary),
+    isClientVisible: Boolean(row.is_client_visible),
+    description: cleanText(metadata.description || row.notes),
+    isDemo: Boolean(row.is_demo),
+    environment: cleanText(row.environment) || "production",
+    metadata,
+    createdAt: cleanText(row.created_at),
+    updatedAt: cleanText(row.updated_at || row.created_at),
   };
 }
 
