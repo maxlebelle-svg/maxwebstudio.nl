@@ -12,6 +12,7 @@ const clientRender = fs.readFileSync(path.join(root, "functions/client-preview-r
 const portal = fs.readFileSync(path.join(root, "public/klantportaal.html"), "utf8");
 const previewEmbed = fs.readFileSync(path.join(root, "public/preview-embed.html"), "utf8");
 const securePreview = fs.readFileSync(path.join(root, "public/preview.html"), "utf8");
+const netlifyConfig = fs.readFileSync(path.join(root, "netlify.toml"), "utf8");
 
 test("Website Factory keeps Demo Sites and customer publication as separate actions", () => {
   assert.match(factoryUi, /id="factory-primary-save-demo"[^>]*>Opslaan in Demo Sites/);
@@ -99,6 +100,9 @@ test("thumbnail embed is authenticated, persistent and has a visible fallback", 
   assert.match(previewEmbed, /connect-src 'none'/);
   assert.match(previewEmbed, /form-action 'none'/);
   assert.doesNotMatch(previewEmbed, /allow-forms|allow-popups|allow-top-navigation/);
+  assert.match(netlifyConfig, /for = "\/preview-embed\.html"[\s\S]*X-Frame-Options = "SAMEORIGIN"/);
+  assert.match(netlifyConfig, /for = "\/preview-embed\.html"[\s\S]*frame-ancestors 'self'/);
+  assert.match(netlifyConfig, /for = "\/preview-embed\.html"[\s\S]*Cache-Control = "no-store/);
 });
 
 test("secure preview approves and pays the exact published version", () => {
