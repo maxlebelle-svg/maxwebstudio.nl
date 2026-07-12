@@ -25,6 +25,7 @@ function createTables() {
       { id: ids.project, customer_id: ids.customer, website_id: ids.website, metadata: { websiteCommercialOrder: { customerId: ids.customer, projectId: ids.project, websiteId: ids.website, packageCode: "business_website", packageName: "Business Website", totalAmountCents: 99500, depositAmountCents: 30000, currency: "EUR", paymentStatus: "not_started", status: "selected" } } },
     ],
     customer_invoices: [],
+    demo_journeys: [],
     website_preview_versions: [
       {
         id: ids.preview,

@@ -116,6 +116,9 @@ test("secure preview approves and pays the exact published version", () => {
   assert.match(clientVersions, /currentVersionId !== versionId/);
   assert.match(clientVersions, /readWebsiteCommercialOrder/);
   assert.doesNotMatch(clientVersions, /hosting_package|care_package|customer\.package/);
+  assert.match(clientVersions, /packageValues\.length === 1/);
+  assert.match(clientVersions, /source: "customer_payment_backfill"/);
+  assert.match(clientVersions, /website_package_backfilled/);
   assert.doesNotMatch(clientVersions, /\.5\b|50\s*%/);
 });
 

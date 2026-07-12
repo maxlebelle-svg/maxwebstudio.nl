@@ -2,7 +2,7 @@ const { corsHeaders } = require("./_cors");
 const { randomUUID, createHash } = require("crypto");
 const { createTimelineEvent } = require("./services/timelineService");
 const { getBaseUrl, getMollieApiKey } = require("./mollie-products");
-const { readWebsiteCommercialOrder } = require("./_website-commercial-order");
+const { buildWebsiteCommercialOrder, readWebsiteCommercialOrder } = require("./_website-commercial-order");
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -294,8 +294,21 @@ async function resolvePaymentReadiness(context, customer, version) {
     ? await readRows(context, "projects", `select=*&id=eq.${encodeURIComponent(version.project_id)}&customer_id=eq.${encodeURIComponent(customer.id)}&limit=1`)
     : await readRows(context, "projects", `select=*&customer_id=eq.${encodeURIComponent(customer.id)}&order=updated_at.desc&limit=2`);
   if (!version.project_id && projects.length !== 1) return unavailablePayment("website_commercial_order_ambiguous", { approved: Boolean(version.approved_at), previewVersionId: version.id });
-  const project = projects[0] || null;
-  const order = readWebsiteCommercialOrder(project);
+  let project = projects[0] || null;
+  let order = readWebsiteCommercialOrder(project);
+  if (!order && project?.id) {
+    const journeys = await readRows(context, "demo_journeys", `select=id,customer_id,preview_package&customer_id=eq.${encodeURIComponent(customer.id)}&order=updated_at.desc&limit=2`);
+    const packageValues = [...new Set(journeys.map((journey) => cleanText(journey.preview_package?.meta?.packageType || journey.preview_package?.packageType)).filter(Boolean))];
+    if (packageValues.length === 1) {
+      const backfill = buildWebsiteCommercialOrder({ customerId: customer.id, projectId: project.id, websiteId: project.website_id || version.website_id || "", packageValue: packageValues[0], source: "customer_payment_backfill" });
+      if (backfill) {
+        const rows = await patchRows(context, "projects", `id=eq.${project.id}&customer_id=eq.${customer.id}`, { metadata: { ...(project.metadata || {}), websiteCommercialOrder: backfill }, updated_at: backfill.updatedAt });
+        project = rows[0] || { ...project, metadata: { ...(project.metadata || {}), websiteCommercialOrder: backfill } };
+        order = readWebsiteCommercialOrder(project);
+        await safeTimeline({ customerId: customer.id, eventType: "website_package_backfilled", title: "Websitepakket commercieel gekoppeld", description: `${order?.packageName || "Websitepakket"} is veilig gekoppeld aan het project.`, module: "commercial", referenceType: "project", referenceId: project.id, actorName: "Systeem", actorRole: "system", severity: "info", metadata: { dedupeKey: `website_package_backfill:${project.id}:${order?.packageCode || ""}`, packageCode: order?.packageCode || "", totalAmountCents: order?.totalAmountCents || 0, depositAmountCents: order?.depositAmountCents || 0 } });
+      }
+    }
+  }
   if (!order) return unavailablePayment("website_package_missing", { approved: Boolean(version.approved_at), previewVersionId: version.id });
   const packageKey = order.packageCode;
   const amountCents = Number(order.depositAmountCents || 0);
