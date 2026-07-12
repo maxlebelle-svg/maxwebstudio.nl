@@ -297,7 +297,7 @@ async function resolvePaymentReadiness(context, customer, version) {
   let project = projects[0] || null;
   let order = readWebsiteCommercialOrder(project);
   if (!order && project?.id) {
-    const journeys = await readRows(context, "demo_journeys", `select=id,customer_id,preview_package,generated_briefing&customer_id=eq.${encodeURIComponent(customer.id)}&order=updated_at.desc&limit=2`);
+    const journeys = await readRows(context, "demo_journeys", `select=id,customer_id,preview_package,generated_briefing&customer_id=eq.${encodeURIComponent(customer.id)}&order=updated_at.desc&limit=1`);
     const packageValues = [...new Set(journeys.map((journey) => cleanText(journey.preview_package?.meta?.packageType || journey.preview_package?.packageType || packageFromFactoryBriefing(journey.generated_briefing))).filter(Boolean))];
     if (packageValues.length === 1) {
       const backfill = buildWebsiteCommercialOrder({ customerId: customer.id, projectId: project.id, websiteId: project.website_id || version.website_id || "", packageValue: packageValues[0], source: "customer_payment_backfill" });
