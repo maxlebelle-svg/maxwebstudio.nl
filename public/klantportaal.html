@@ -639,6 +639,19 @@
           </div>
           <a class="button secondary mw-button mw-button-secondary" href="#dashboard">Terug naar dashboard</a>
         </div>
+        <article class="admin-card" style="margin-bottom:18px">
+          <p class="section-kicker">Bestanden aanleveren</p>
+          <h3>Foto’s, logo’s en documenten uploaden</h3>
+          <p>Je bestanden komen veilig in jouw klantwerkruimte en worden eerst door Max gecontroleerd.</p>
+          <form class="admin-form" id="relationship-asset-upload">
+            <label>Categorie<select name="category"><option value="logo">Logo</option><option value="photo">Bedrijfsfoto’s</option><option value="team">Team</option><option value="project">Projecten</option><option value="product">Producten</option><option value="brand">Huisstijl</option><option value="video">Video</option><option value="document">Documenten</option><option value="text">Teksten</option><option value="social">Social media</option><option value="other">Overig</option></select></label>
+            <label class="admin-profile-wide">Bestanden<input id="relationship-asset-files" type="file" multiple accept="image/jpeg,image/png,image/webp,image/svg+xml,video/mp4,video/webm,application/pdf,text/plain,.doc,.docx" required /></label>
+            <label class="admin-profile-wide">Korte omschrijving<textarea name="description" rows="2" maxlength="500"></textarea></label>
+            <label class="admin-profile-wide"><input name="usageRightsConfirmed" type="checkbox" required /> Ik bevestig dat ik deze bestanden mag aanleveren en laten gebruiken.</label>
+            <div class="admin-profile-actions"><button class="button primary" type="submit">Bestanden uploaden</button><span class="form-helper" id="relationship-asset-status" role="status" aria-live="polite"></span></div>
+          </form>
+          <div class="portal-card-grid" id="relationship-upload-list" aria-live="polite"></div>
+        </article>
         <div class="asset-center-shell mw-template-list">
           <div class="asset-center-summary" id="portal-asset-summary" aria-live="polite"></div>
           <form class="asset-center-toolbar" id="portal-asset-toolbar" role="search">
@@ -5336,5 +5349,6 @@
         activatePortalView({ focus: false, scroll: false });
       })();
     </script>
+    <script src="admin/ui/client-asset-upload.js?v=20260712-relationship-assets" defer></script>
   </body>
 </html>
