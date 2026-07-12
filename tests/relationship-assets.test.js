@@ -134,6 +134,11 @@ function parseEq(value = "") {
 function installHandlerMock({
   bytes = png(),
   duplicate = null,
+  listedAssets = [],
+  assetRequests = [],
+  listFilesFailure = null,
+  assetRequestsFailure = null,
+  timelineFailure = null,
   failInsert = false,
   failReconciliation = false,
   raceDuplicate = null,
@@ -170,6 +175,9 @@ function installHandlerMock({
       return mockResponse(200, bytes, { "content-type": "image/png", "content-length": bytes.length });
     }
     if (parsed.pathname.endsWith("/rest/v1/files") && method === "GET") {
+      if (!parsed.searchParams.get("id") && !parsed.searchParams.get("checksum") && listFilesFailure) {
+        return mockResponse(listFilesFailure.status, listFilesFailure.body);
+      }
       if (failReconciliation && insertAttempts > 0) return mockResponse(503, { code: "XX000", message: "reconciliation unavailable" });
       const id = parseEq(parsed.searchParams.get("id"));
       if (id) return mockResponse(200, files.filter((row) => row.id === id));
@@ -178,7 +186,11 @@ function installHandlerMock({
         const match = files.find((row) => row.checksum === checksum);
         return mockResponse(200, match ? [match] : []);
       }
-      return mockResponse(200, []);
+      return mockResponse(200, listedAssets);
+    }
+    if (parsed.pathname.endsWith("/rest/v1/asset_requests") && method === "GET") {
+      if (assetRequestsFailure) return mockResponse(assetRequestsFailure.status, assetRequestsFailure.body);
+      return mockResponse(200, assetRequests);
     }
     if (parsed.pathname.endsWith("/rest/v1/files") && method === "POST") {
       insertAttempts += 1;
@@ -192,6 +204,7 @@ function installHandlerMock({
       return mockResponse(201, [record]);
     }
     if (parsed.pathname.endsWith("/rest/v1/customer_timeline_events") && method === "POST") {
+      if (timelineFailure) return mockResponse(timelineFailure.status, timelineFailure.body);
       return mockResponse(201, null);
     }
     throw new Error(`Unexpected fetch: ${method} ${parsed}`);
@@ -240,6 +253,14 @@ async function finalizeUpload(uploadId) {
   return { response, body: JSON.parse(response.body) };
 }
 
+async function listAssets() {
+  const response = await relationshipAssets.handler({
+    httpMethod: "GET",
+    headers: { Authorization: "Bearer customer-a-token" },
+  });
+  return { response, body: JSON.parse(response.body) };
+}
+
 test("metadata validates extension, MIME type, size, category and rights for every supported format", () => {
   for (const [name, mimeType, bytes] of FILE_CASES) {
     const metadata = api.validateMetadata(validMetadata(name, mimeType, bytes.length));
@@ -264,6 +285,45 @@ test("metadata rejects extension/MIME mismatches, empty and oversized files, uns
   const rejectedLongName = `${"a".repeat(api.MAX_FILENAME_LENGTH - 3)}.png`;
   assert.equal(api.validateMetadata(validMetadata(acceptedLongName)).name.length, api.MAX_FILENAME_LENGTH);
   assertCode(() => api.validateMetadata(validMetadata(rejectedLongName)), "INVALID_FILENAME");
+});
+
+test("400 validation responses expose code, message and safe details", async () => {
+  await withHandlerEnvironment(async () => {
+    installHandlerMock();
+    const response = await relationshipAssets.handler({
+      httpMethod: "POST",
+      headers: { Authorization: "Bearer customer-a-token" },
+      body: JSON.stringify({ action: "prepare", ...validMetadata(), category: "not-a-category" }),
+    });
+    const body = JSON.parse(response.body);
+    assert.equal(response.statusCode, 400);
+    assert.equal(body.code, "INVALID_CATEGORY");
+    assert.equal(body.message, "Kies een geldige categorie.");
+    assert.equal(body.details, "field=category; step=metadata_category");
+    assert.equal(body.error, body.message);
+  });
+});
+
+test("safe request logging compares the complete frontend contract without exposing upload tokens", () => {
+  const request = api.safeRequestBody({
+    action: "finalize",
+    category: "logo",
+    name: "fuellinq-logo.png",
+    mimeType: "image/png",
+    sizeBytes: 123,
+    checksum: "abc123",
+    description: "Logo",
+    usageRightsConfirmed: true,
+    uploadId: "secret-upload-token",
+    relationshipId: "relationship-a",
+    customerId: IDS.customer,
+  });
+  assert.deepEqual(request.uploadId, { present: true, length: 19 });
+  assert.equal(request.action, "finalize");
+  assert.equal(request.filename, "fuellinq-logo.png");
+  assert.equal(request.size, 123);
+  assert.equal(request.consent, true);
+  assert.equal(JSON.stringify(request).includes("secret-upload-token"), false);
 });
 
 test("content signatures accept valid PNG, JPG, WEBP, SVG, PDF, DOC, DOCX, TXT and video fixtures", () => {
@@ -330,6 +390,71 @@ test("client asset responses never expose storage paths, checksums, uploader ids
   for (const forbidden of ["storage_path", "private/customer", "checksum", "uploaded_by_auth_user_id", "internal", "secret-checksum"]) {
     assert.equal(serialized.includes(forbidden), false, `${forbidden} must stay private`);
   }
+});
+
+test("GET returns an empty customer asset list without touching storage or timeline", async () => {
+  await withHandlerEnvironment(async () => {
+    const mock = installHandlerMock();
+    const result = await listAssets();
+    assert.equal(result.response.statusCode, 200);
+    assert.deepEqual(result.body.assets, []);
+    assert.deepEqual(result.body.requests, []);
+    assert.equal(mock.calls.some((call) => call.path.includes("/storage/v1/")), false);
+    assert.equal(mock.calls.some((call) => call.path.endsWith("/customer_timeline_events")), false);
+  });
+});
+
+test("GET maps valid PNG, legacy metadata and null optional fields with safe defaults", async () => {
+  await withHandlerEnvironment(async () => {
+    installHandlerMock({ listedAssets: [
+      { id: IDS.duplicate, name: "logo.png", mime_type: "image/png", size_bytes: png().length, metadata: '{"description":"Oud logo"}', is_client_visible: true },
+      { id: IDS.profile, name: null, original_filename: null, mime_type: null, size_bytes: null, category: null, status: null, metadata: "not-json", is_client_visible: true },
+    ] });
+    const result = await listAssets();
+    assert.equal(result.response.statusCode, 200);
+    assert.equal(result.body.assets.length, 2);
+    assert.equal(result.body.assets[0].description, "Oud logo");
+    assert.equal(result.body.assets[0].previewAvailable, true);
+    assert.equal(result.body.assets[1].name, "Bestand");
+    assert.equal(result.body.assets[1].sizeBytes, 0);
+    assert.equal(result.body.assets[1].description, "");
+  });
+});
+
+test("GET skips one invalid legacy item, keeps valid assets and never signs previews during listing", async () => {
+  await withHandlerEnvironment(async () => {
+    const mock = installHandlerMock({ listedAssets: [
+      { id: "legacy-invalid-id", name: "kapot.png", mime_type: "image/png" },
+      { id: IDS.duplicate, name: "geldig.png", mime_type: "image/png", storage_path: "missing/object.png" },
+    ] });
+    const result = await listAssets();
+    assert.equal(result.response.statusCode, 200);
+    assert.equal(result.body.assets.length, 1);
+    assert.equal(result.body.assets[0].name, "geldig.png");
+    assert.equal(mock.calls.some((call) => call.path.includes("/storage/v1/")), false);
+  });
+});
+
+test("GET scopes files to the authenticated customer and treats optional requests as non-blocking", async () => {
+  await withHandlerEnvironment(async () => {
+    const mock = installHandlerMock({ assetRequestsFailure: { status: 404, body: { code: "PGRST205", message: "missing optional table" } } });
+    const result = await listAssets();
+    assert.equal(result.response.statusCode, 200);
+    const fileCall = mock.calls.find((call) => call.path.endsWith("/rest/v1/files"));
+    assert.equal(new URL(fileCall.url).searchParams.get("customer_id"), `eq.${IDS.customer}`);
+    assert.deepEqual(result.body.requests, []);
+  });
+});
+
+test("GET reports database schema failures as server errors instead of HTTP 400", async () => {
+  await withHandlerEnvironment(async () => {
+    installHandlerMock({ listFilesFailure: { status: 404, body: { code: "PGRST205", message: "Could not find public.files" } } });
+    const result = await listAssets();
+    assert.equal(result.response.statusCode, 500);
+    assert.equal(result.body.code, "DATA_FAILED");
+    assert.equal(result.body.message, "Bestandsgegevens konden niet worden verwerkt.");
+    assert.equal(JSON.stringify(result.body).includes("public.files"), false);
+  });
 });
 
 test("inactive assets cannot be downloaded or previewed", () => {
@@ -406,6 +531,16 @@ test("prepare/finalize uploads binary storage data once and repeated finalize is
     assert.equal(second.body.duplicate, false);
     assert.equal(mock.insertAttempts, 1);
     assert.equal(mock.calls.filter((call) => call.method === "GET" && call.path.startsWith("/storage/v1/object/relationship-assets/")).length, 1);
+  });
+});
+
+test("finalize succeeds when the optional timeline table is unavailable", async () => {
+  await withHandlerEnvironment(async () => {
+    installHandlerMock({ timelineFailure: { status: 404, body: { code: "PGRST205", message: "timeline unavailable" } } });
+    const prepared = await prepareUpload();
+    const finalized = await finalizeUpload(prepared.body.uploadId);
+    assert.equal(finalized.response.statusCode, 201);
+    assert.equal(finalized.body.success, true);
   });
 });
 
@@ -517,6 +652,8 @@ test("ambiguous insert failures preserve storage when reconciliation is unavaila
 });
 
 test("migration enforces one relationship, checksum dedupe, customer read isolation and a private bucket", () => {
+  assert.match(migration, /create table if not exists public\.files/);
+  assert.match(migration, /is_client_visible boolean not null default true/);
   assert.match(migration, /files_one_relationship_check/);
   assert.match(migration, /files_customer_checksum_unique/);
   assert.match(migration, /relationship-assets','relationship-assets',false/);

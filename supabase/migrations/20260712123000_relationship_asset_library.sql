@@ -1,5 +1,25 @@
 begin;
 
+-- This migration must be self-contained. Production does not apply
+-- supabase/schema.sql before timestamped migrations.
+create table if not exists public.files (
+  id uuid primary key default gen_random_uuid(),
+  customer_id uuid references public.customers(id) on delete cascade,
+  name text,
+  file_type text,
+  category text,
+  location text,
+  storage_path text,
+  status text default 'active',
+  notes text,
+  is_client_visible boolean not null default true,
+  is_demo boolean default false,
+  environment text default 'production',
+  metadata jsonb default '{}'::jsonb,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
 alter table public.files add column if not exists lead_id uuid references public.leads(id) on delete set null;
 alter table public.files add column if not exists original_lead_id uuid references public.leads(id) on delete set null;
 alter table public.files add column if not exists uploaded_by_auth_user_id uuid references auth.users(id) on delete set null;
@@ -11,6 +31,7 @@ alter table public.files add column if not exists size_bytes bigint not null def
 alter table public.files add column if not exists checksum text;
 alter table public.files add column if not exists usage_rights_confirmed boolean not null default false;
 alter table public.files add column if not exists is_primary boolean not null default false;
+alter table public.files add column if not exists is_client_visible boolean not null default true;
 alter table public.files add column if not exists replaced_file_id uuid references public.files(id) on delete set null;
 alter table public.files drop constraint if exists files_status_check;
 alter table public.files add constraint files_status_check check (status in ('new','reviewing','active','in_review','approved','rejected','replaced','archived'));

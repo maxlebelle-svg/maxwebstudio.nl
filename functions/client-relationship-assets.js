@@ -42,6 +42,7 @@ exports.handler = async (event) => {
     return json(405, { success: false, code: "INVALID_METHOD", error: "Deze actie wordt niet ondersteund." });
   }
 
+  let safeRequest = null;
   try {
     const context = config();
     const token = bearer(event);
@@ -66,15 +67,21 @@ exports.handler = async (event) => {
     }
 
     const input = parseJsonBody(event.body);
+    safeRequest = safeRequestBody(input);
+    console.info("Client relationship asset request", safeRequest);
     if (input.action === "prepare") return await prepareUpload(context, user, customer, input);
     if (input.action === "finalize") return await finalizeUpload(context, user, customer, input);
     throw coded("INVALID_ACTION", 400, "De uploadactie is niet geldig.", { step: "route_action" });
   } catch (error) {
-    logFailure("Client relationship asset failed", error);
+    const details = safeValidationDetails(error);
+    logFailure("Client relationship asset failed", error, { requestBody: safeRequest, validation: details });
+    const message = error.status ? error.message : "Uploaden is tijdelijk niet gelukt. Probeer het opnieuw.";
     return json(error.status || 500, {
       success: false,
       code: error.code || "INTERNAL_ERROR",
-      error: error.status ? error.message : "Uploaden is tijdelijk niet gelukt. Probeer het opnieuw.",
+      message,
+      details,
+      error: message,
     });
   }
 };
@@ -91,7 +98,7 @@ async function listAssets(context, customerId) {
 
   return json(200, {
     success: true,
-    assets: (Array.isArray(assets) ? assets : []).map(safeAsset),
+    assets: mapAssetsSafely(assets),
     requests: Array.isArray(requests) ? requests : [],
   });
 }
@@ -260,6 +267,45 @@ function validateMetadata(input = {}) {
   return { name, mimeType, sizeBytes, category, description, extension };
 }
 
+function safeRequestBody(input = {}) {
+  return {
+    action: clean(input.action) || null,
+    category: clean(input.category) || null,
+    filename: clean(input.name || input.filename).slice(0, MAX_FILENAME_LENGTH) || null,
+    mimeType: clean(input.mimeType).slice(0, 120) || null,
+    size: Number.isFinite(Number(input.sizeBytes ?? input.size)) ? Number(input.sizeBytes ?? input.size) : null,
+    checksum: clean(input.checksum).slice(0, 80) || null,
+    description: String(input.description || "").slice(0, 500) || null,
+    consent: input.usageRightsConfirmed === true || input.consent === true,
+    uploadId: clean(input.uploadId) ? { present: true, length: clean(input.uploadId).length } : null,
+    relationshipId: clean(input.relationshipId).slice(0, 80) || null,
+    customerId: clean(input.customerId).slice(0, 80) || null,
+  };
+}
+
+function safeValidationDetails(error = {}) {
+  const fieldsByStep = {
+    route_action: "action",
+    metadata_name: "filename",
+    metadata_type: "mimeType",
+    metadata_size: "size",
+    metadata_category: "category",
+    metadata_description: "description",
+    metadata_rights: "consent",
+    upload_token: "uploadId",
+    prepared_shape: "uploadId",
+    prepared_owner: "customerId",
+    prepared_path: "uploadId",
+    stored_size: "size",
+    stored_size_mismatch: "size",
+    stored_content_type: "mimeType",
+    stored_signature: "mimeType",
+  };
+  const step = clean(error.step) || "unknown";
+  const field = fieldsByStep[step] || null;
+  return [field ? `field=${field}` : "", `step=${step}`].filter(Boolean).join("; ");
+}
+
 function assertPreparedUpload(prepared, user, customer) {
   if (!prepared || prepared.v !== TOKEN_VERSION || !UUID.test(prepared.assetId || "") || !UUID.test(prepared.customerId || "") || !UUID.test(prepared.userId || "")) {
     throw coded("INVALID_UPLOAD", 400, "De upload kon niet worden afgerond. Kies het bestand opnieuw.", { step: "prepared_shape" });
@@ -409,15 +455,16 @@ function assetRecord(prepared, checksum, userId, customerId, sizeBytes) {
 }
 
 function safeAsset(row = {}) {
-  const metadata = row.metadata && typeof row.metadata === "object" ? row.metadata : {};
+  const metadata = safeMetadata(row.metadata);
   const mimeType = clean(row.mime_type || row.mimeType).toLowerCase();
+  const parsedSize = Number(row.size_bytes ?? row.sizeBytes ?? 0);
   const available = !isInactiveAssetStatus(row.status);
   return {
     id: row.id,
     name: row.name || row.original_filename || "Bestand",
     originalFilename: row.original_filename || row.name || "Bestand",
     mimeType,
-    sizeBytes: Number(row.size_bytes ?? row.sizeBytes ?? 0),
+    sizeBytes: Number.isFinite(parsedSize) && parsedSize >= 0 ? parsedSize : 0,
     category: row.category || "other",
     status: row.status || "new",
     source: row.uploaded_by_type === "customer" ? "customer" : "studio",
@@ -429,6 +476,37 @@ function safeAsset(row = {}) {
     downloadAvailable: available && Boolean(row.id),
     previewAvailable: available && /^image\/(?:jpeg|png|webp)$/.test(mimeType),
   };
+}
+
+function safeMetadata(value) {
+  if (value && typeof value === "object" && !Array.isArray(value)) return value;
+  if (typeof value !== "string" || !value.trim()) return {};
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function mapAssetsSafely(rows) {
+  const assets = [];
+  (Array.isArray(rows) ? rows : []).forEach((row, index) => {
+    try {
+      if (!row || typeof row !== "object" || !UUID.test(clean(row.id))) {
+        throw new Error("Asset record has no valid identifier.");
+      }
+      assets.push(safeAsset(row));
+    } catch (error) {
+      console.warn("Client relationship asset item skipped", {
+        phase: "map_assets",
+        itemIndex: index,
+        errorName: clean(error?.name) || "Error",
+        errorMessage: clean(error?.message) || "Asset record could not be mapped.",
+      });
+    }
+  });
+  return assets;
 }
 
 function isInactiveAssetStatus(value) {
@@ -602,7 +680,8 @@ async function rest(context, path, options = {}) {
   });
   const data = await parseResponseBody(result);
   if (!result.ok) {
-    throw upstreamError("DATA_FAILED", result.status >= 500 ? 502 : 400, "Bestandsgegevens konden niet worden verwerkt.", operation, result, data);
+    const status = result.status >= 500 ? 502 : 500;
+    throw upstreamError("DATA_FAILED", status, "Bestandsgegevens konden niet worden verwerkt.", operation, result, data);
   }
   return data;
 }
@@ -701,11 +780,20 @@ function upstreamError(code, status, message, step, result, data) {
     upstreamStatus: result?.status,
     upstreamCode: clean(data?.code || data?.error || data?.statusCode).slice(0, 80),
     technicalMessage: clean(data?.message || data?.msg).slice(0, 300),
+    databaseDetails: clean(data?.details).slice(0, 300),
+    databaseHint: clean(data?.hint).slice(0, 300),
   });
 }
 
-function logFailure(label, error = {}) {
+function logFailure(label, error = {}, context = {}) {
   console.error(label, {
+    errorName: clean(error.name) || "Error",
+    errorMessage: error.technicalMessage || error.message || "unknown",
+    phase: error.step || "unknown",
+    databaseCode: error.upstreamCode || null,
+    databaseMessage: error.technicalMessage || null,
+    details: error.databaseDetails || null,
+    hint: error.databaseHint || null,
     code: error.code || "INTERNAL_ERROR",
     status: error.status || 500,
     step: error.step || "unknown",
@@ -713,6 +801,10 @@ function logFailure(label, error = {}) {
     upstreamCode: error.upstreamCode || null,
     technicalMessage: error.technicalMessage || error.message || "unknown",
     cleanupReason: error.cleanupReason || null,
+    requestBody: context.requestBody || null,
+    validationErrors: context.validation || null,
+    safeErrorCode: error.code || "INTERNAL_ERROR",
+    safeErrorMessage: error.status ? error.message : "Uploaden is tijdelijk niet gelukt. Probeer het opnieuw.",
   });
 }
 
@@ -778,7 +870,11 @@ exports._test = {
   extensionFor,
   sanitizeFilename,
   safeAsset,
+  safeMetadata,
+  mapAssetsSafely,
   safeDownloadName,
+  safeRequestBody,
+  safeValidationDetails,
   assetRecord,
   sealUpload,
   openUpload,

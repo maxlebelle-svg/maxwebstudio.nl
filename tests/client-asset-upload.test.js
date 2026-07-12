@@ -106,7 +106,7 @@ async function waitFor(predicate, message) {
   assert.fail(message);
 }
 
-function makeHarness({ storageResponse, finalizeResponse } = {}) {
+function makeHarness({ storageResponse, finalizeResponse, listResponse } = {}) {
   const ids = [
     "relationship-asset-upload",
     "relationship-asset-files",
@@ -167,6 +167,7 @@ function makeHarness({ storageResponse, finalizeResponse } = {}) {
     const target = String(url);
     if (target === "/api/client-relationship-assets" && (!options.method || options.method === "GET")) {
       calls.list += 1;
+      if (listResponse) return listResponse(calls.list);
       return new Response(JSON.stringify({ success: true, assets: [], requests: [] }), { status: 200 });
     }
     if (target === "/api/client-relationship-assets" && options.method === "POST") {
@@ -341,4 +342,23 @@ test("a lost finalize response keeps the selection and never leaks the technical
   assert.equal(harness.status.dataset.state, "error");
   assert.equal(harness.statusMessage.textContent.includes("ontvangen, maar kon nog niet worden verwerkt"), true);
   assert.equal(harness.statusMessage.textContent.includes("socket"), false);
+});
+
+test("a successful finalize stays successful when the following list refresh fails", async () => {
+  const harness = makeHarness({
+    listResponse: async (attempt) => attempt === 1
+      ? new Response(JSON.stringify({ success: true, assets: [], requests: [] }), { status: 200 })
+      : new Response(JSON.stringify({ success: false, code: "DATA_FAILED", message: "Tijdelijk niet beschikbaar." }), { status: 500 }),
+  });
+  await waitFor(() => harness.calls.list === 1, "Initial asset list should load");
+
+  harness.input.files = [new File([png], "FuelGo logo.png", { type: "image/png" })];
+  harness.input.dispatchEvent(new Event("change"));
+  harness.form.dispatchEvent(new Event("submit", { cancelable: true }));
+
+  await waitFor(() => harness.calls.finalize === 1 && harness.calls.list === 2 && harness.form.attributes["aria-busy"] === "false", "Refresh failure should not undo finalize success");
+  assert.equal(harness.form.resetCount, 1);
+  assert.equal(harness.status.dataset.state, "success");
+  assert.equal(harness.statusMessage.textContent.includes("veilig opgeslagen"), true);
+  assert.equal(harness.statusMessage.textContent.includes("Vernieuw de pagina"), true);
 });
