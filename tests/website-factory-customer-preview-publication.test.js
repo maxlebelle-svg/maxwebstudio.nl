@@ -14,6 +14,7 @@ const portal = fs.readFileSync(path.join(root, "public/klantportaal.html"), "utf
 const previewEmbed = fs.readFileSync(path.join(root, "public/preview-embed.html"), "utf8");
 const securePreview = fs.readFileSync(path.join(root, "public/preview.html"), "utf8");
 const netlifyConfig = fs.readFileSync(path.join(root, "netlify.toml"), "utf8");
+const mollieProducts = fs.readFileSync(path.join(root, "functions/mollie-products.js"), "utf8");
 
 test("Website Factory keeps Demo Sites and customer publication as separate actions", () => {
   assert.match(factoryUi, /id="factory-primary-save-demo"[^>]*>Opslaan in Demo Sites/);
@@ -130,6 +131,7 @@ test("website commercial order normalizes Factory labels to fixed catalog amount
   assert.equal(commercialPackage.normalizeWebsitePackage("Premium Growth").depositAmountCents, 50000);
   assert.match(factoryUi, /action: "sync_commercial_package"/);
   assert.match(factoryUi, /websiteCommercialOrder/);
+  assert.match(mollieProducts, /MOLLIE_TEST_API_KEY \|\| process\.env\.MOLLIE_API_KEY/);
 });
 
 test("portal thumbnail and full link expose the same version id", () => {

@@ -57,7 +57,7 @@ function centsToEuro(cents) {
 
 function getMollieApiKey() {
   const isLive = process.env.MOLLIE_MODE === "live";
-  return isLive ? process.env.MOLLIE_API_KEY : process.env.MOLLIE_TEST_API_KEY;
+  return isLive ? process.env.MOLLIE_API_KEY : (process.env.MOLLIE_TEST_API_KEY || process.env.MOLLIE_API_KEY);
 }
 
 function getBaseUrl() {
