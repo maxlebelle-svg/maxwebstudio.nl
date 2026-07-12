@@ -95,7 +95,8 @@ test("thumbnail embed is authenticated, persistent and has a visible fallback", 
   assert.match(clientRender, /published_to_portal=eq\.true/);
   assert.match(previewEmbed, /width: 1440px/);
   assert.match(previewEmbed, /pointer-events: none/);
-  assert.match(previewEmbed, /sandbox", "allow-scripts"/);
+  assert.match(previewEmbed, /sandbox", "allow-scripts allow-same-origin"/);
+  assert.doesNotMatch(previewEmbed, /allow-forms|allow-popups|allow-top-navigation/);
 });
 
 test("secure preview approves and pays the exact published version", () => {
