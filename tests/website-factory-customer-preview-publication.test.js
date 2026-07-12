@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const publication = require("../functions/admin-preview-publication");
+const commercialPackage = require("../functions/_website-commercial-order");
 
 const root = path.join(__dirname, "..");
 const factoryUi = fs.readFileSync(path.join(root, "public/admin-website-factory.html"), "utf8");
@@ -113,10 +114,17 @@ test("secure preview approves and pays the exact published version", () => {
   assert.match(securePreview, /action: "create_payment", previewVersionId:/);
   assert.doesNotMatch(securePreview, /action: "approve_preview"/);
   assert.match(clientVersions, /currentVersionId !== versionId/);
-  assert.match(clientVersions, /starter: 15000/);
-  assert.match(clientVersions, /business: 30000/);
-  assert.match(clientVersions, /premium: 50000/);
+  assert.match(clientVersions, /readWebsiteCommercialOrder/);
+  assert.doesNotMatch(clientVersions, /hosting_package|care_package|customer\.package/);
   assert.doesNotMatch(clientVersions, /\.5\b|50\s*%/);
+});
+
+test("website commercial order normalizes Factory labels to fixed catalog amounts", () => {
+  assert.deepEqual(commercialPackage.normalizeWebsitePackage("Starter Site (€495)"), { packageCode: "starter_site", packageName: "Starter Site", totalAmountCents: 49500, depositAmountCents: 15000, currency: "EUR" });
+  assert.equal(commercialPackage.normalizeWebsitePackage("business").depositAmountCents, 30000);
+  assert.equal(commercialPackage.normalizeWebsitePackage("Premium Growth").depositAmountCents, 50000);
+  assert.match(factoryUi, /action: "sync_commercial_package"/);
+  assert.match(factoryUi, /websiteCommercialOrder/);
 });
 
 test("portal thumbnail and full link expose the same version id", () => {

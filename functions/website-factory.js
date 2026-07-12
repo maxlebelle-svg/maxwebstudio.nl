@@ -3,6 +3,7 @@ const { corsHeaders } = require("./_cors");
 const { upsertProjectWorkspace, zipFilenameFor } = require("./_project-workspace");
 const { createTimelineEvent } = require("./services/timelineService");
 const { storedPreviewSource } = require("./_demo-preview-source");
+const { buildWebsiteCommercialOrder, normalizeWebsitePackage, readWebsiteCommercialOrder } = require("./_website-commercial-order");
 const { sendEmail } = require("./email");
 const { randomUUID } = require("crypto");
 const {
@@ -48,6 +49,7 @@ async function handler(event) {
       requestId: cleanText(event.headers?.["x-nf-request-id"] || event.headers?.["X-Nf-Request-Id"]) || randomUUID(),
     };
     if (action === "resolve_context") return resolveWebsiteFactoryContextResponse(context, payload);
+    if (action === "sync_commercial_package") return syncCommercialPackageResponse(context, payload);
     if (action === "search_entities") return searchWebsiteFactoryEntitiesResponse(context, payload);
     if (action === "create_build_job") return createBuildJobResponse(context, payload);
     if (action === "run_build_job") return runBuildJobResponse(context, payload);
@@ -131,7 +133,7 @@ async function resolveWebsiteFactoryContextResponse(context, payload = {}) {
       readOptionalApprovedAssets(context, customerId),
     ]);
     const website = selectPrimaryWebsite(websites) || websiteContextFromCustomer(customer);
-    const project = selectPrimaryProject(projects, website);
+    let project = selectPrimaryProject(projects, website);
     const demoJourney = journeys[0] || null;
     const history = demoJourney?.id
       ? await getBuildHistory(context, { demoJourneyId: demoJourney.id }).catch((error) => {
@@ -144,6 +146,10 @@ async function resolveWebsiteFactoryContextResponse(context, payload = {}) {
         logOptionalContextFailure("customer_preview_versions", error);
         return { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
       });
+    if (project?.id && !readWebsiteCommercialOrder(project)) {
+      const factoryPackage = cleanText(demoJourney?.preview_package?.meta?.packageType || demoJourney?.preview_package?.packageType || "");
+      if (factoryPackage) project = await persistCommercialPackage(context, { customer, project, website, packageValue: factoryPackage, source: "website_factory_backfill" });
+    }
     const normalizedCustomer = normalizeRecord(customer);
     const normalizedWebsite = normalizeRecord(website);
     const normalizedProject = normalizeRecord(project);
@@ -224,6 +230,42 @@ async function resolveWebsiteFactoryContextResponse(context, payload = {}) {
       },
     });
   }
+}
+
+async function syncCommercialPackageResponse(context, payload = {}) {
+  const customerId = cleanUuid(payload.customerId || payload.customer_id);
+  const projectId = cleanUuid(payload.projectId || payload.project_id);
+  const websiteId = cleanUuid(payload.websiteId || payload.website_id);
+  if (!customerId || !projectId) return jsonResponse(400, { success: false, code: "commercial_context_required", error: "Klant- en projectcontext ontbreken." });
+  const [customer, project, website] = await Promise.all([
+    readCustomerById(context, customerId),
+    readProjectById(context, projectId),
+    websiteId ? readWebsiteById(context, websiteId) : Promise.resolve(null),
+  ]);
+  if (!customer?.id || !project?.id || cleanText(project.customer_id) !== customerId || (website?.id && cleanText(website.customer_id) !== customerId)) {
+    return jsonResponse(409, { success: false, code: "commercial_context_mismatch", error: "Pakketcontext hoort niet bij deze klant." });
+  }
+  const savedProject = await persistCommercialPackage(context, { customer, project, website, packageValue: payload.packageType || payload.packageCode || payload.packageName, source: "website_factory_selection" });
+  const commercialOrder = readWebsiteCommercialOrder(savedProject);
+  if (!commercialOrder) return jsonResponse(500, { success: false, code: "commercial_package_not_persisted", error: "Websitepakket kon niet worden opgeslagen." });
+  await createTimelineEvent({ customerId, eventType: "website_package_selected", title: "Websitepakket opgeslagen", description: `${commercialOrder.packageName} is gekoppeld aan het websiteproject.`, module: "commercial", referenceType: "project", referenceId: projectId, actorName: context.admin?.email || "Max Webstudio", actorRole: context.admin?.role || "admin", severity: "info", metadata: { dedupeKey: `website_package_selected:${projectId}:${commercialOrder.packageCode}:${commercialOrder.updatedAt}`, packageCode: commercialOrder.packageCode, totalAmountCents: commercialOrder.totalAmountCents, depositAmountCents: commercialOrder.depositAmountCents } }).catch(() => null);
+  return jsonResponse(200, { success: true, projectId, customerId, commercialOrder });
+}
+
+async function persistCommercialPackage(context, { customer, project, website, packageValue, source }) {
+  const current = readWebsiteCommercialOrder(project) || {};
+  const selected = normalizeWebsitePackage(packageValue);
+  if (!selected) throw Object.assign(new Error("Onbekend websitepakket."), { status: 400, code: "website_package_invalid" });
+  if (current.packageCode && current.packageCode !== selected.packageCode) {
+    if (current.paymentStatus === "paid") throw Object.assign(new Error("Een betaald websitepakket kan niet stil worden gewijzigd."), { status: 409, code: "paid_package_immutable" });
+    const openInvoices = await supabaseFetch(`${context.supabaseUrl}/rest/v1/customer_invoices?select=id,status,mollie_payment_status&notes=ilike.*${encodeURIComponent(`project:${project.id}`)}*&limit=2`, { method: "GET", headers: restHeaders(context.serviceRoleKey) }).catch(() => []);
+    if (openInvoices.some((invoice) => !["paid", "canceled", "cancelled", "expired", "failed"].includes(cleanText(invoice.mollie_payment_status || invoice.status).toLowerCase()))) {
+      throw Object.assign(new Error("Annuleer eerst het openstaande betaalverzoek voordat je het pakket wijzigt."), { status: 409, code: "open_package_payment_exists" });
+    }
+  }
+  const order = buildWebsiteCommercialOrder({ current: current.paymentStatus && current.paymentStatus !== "paid" ? { ...current, paymentStatus: "not_started" } : current, customerId: customer.id, projectId: project.id, websiteId: website?.id || project.website_id || "", packageValue, source });
+  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/projects?id=eq.${encodeURIComponent(project.id)}`, { method: "PATCH", headers: { ...restHeaders(context.serviceRoleKey), "Content-Type": "application/json", Prefer: "return=representation" }, body: JSON.stringify({ metadata: { ...(project.metadata || {}), websiteCommercialOrder: order }, updated_at: order.updatedAt }) });
+  return rows[0] || { ...project, metadata: { ...(project.metadata || {}), websiteCommercialOrder: order } };
 }
 
 async function readOptionalCustomerRows(context, table, customerId) {

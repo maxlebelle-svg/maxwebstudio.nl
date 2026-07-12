@@ -23382,7 +23382,7 @@
             email: customer.email || "",
             phone: customer.phone || "",
             websiteUrl: website.live_url || website.domain || customer.website || "",
-            package: website.hosting_package || website.care_package || customer.package || "",
+            package: factoryCustomerContext.project?.metadata?.websiteCommercialOrder?.packageCode || website.hosting_package || website.care_package || customer.package || "",
             industry: customer.industry || customer.branch || "",
             source: "Bestaande klant",
           };
@@ -23426,6 +23426,24 @@
           setMessage(elements.message, domain
             ? "Klantcontext geladen. De huidige website kan worden gescand, verbeterd of verder uitgebouwd."
             : "Klantcontext geladen. Start een nieuwe website zodra de briefing gereed is.", "success");
+        }
+
+
+        async function syncCommercialWebsitePackage() {
+          const customerId = factoryCustomerContext?.customer?.id || "";
+          const projectId = factoryCustomerContext?.project?.id || "";
+          if (!customerId || !projectId || !elements.package?.value) return null;
+          const data = await apiRequest(factoryEndpoint, "POST", {
+            action: "sync_commercial_package",
+            customerId,
+            projectId,
+            websiteId: factoryCustomerContext?.website?.id || "",
+            packageType: currentPackageType(),
+          });
+          const order = data.commercialOrder || null;
+          if (!order?.packageCode || packageTypeFromValue(order.packageCode) !== currentPackageType()) throw new Error("Het websitepakket kon niet eenduidig worden teruggelezen.");
+          factoryCustomerContext.project.metadata = { ...(factoryCustomerContext.project.metadata || {}), websiteCommercialOrder: order };
+          return order;
         }
 
         async function loadValidatedCustomerFallback(customerId) {
@@ -25106,6 +25124,9 @@
             saveIntakeLocally();
             renderIntakeFields();
             renderIntake();
+            syncCommercialWebsitePackage()
+              .then((order) => order && setMessage(elements.message, `${order.packageName} is commercieel opgeslagen.`, "success"))
+              .catch((error) => setMessage(elements.message, error.message || "Websitepakket kon niet worden opgeslagen.", "error"));
           });
           elements.lead?.addEventListener("change", async () => {
             manualLeadSelectionActive = true;

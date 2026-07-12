@@ -2,6 +2,7 @@ const { corsHeaders } = require("./_cors");
 const { randomUUID, createHash } = require("crypto");
 const { createTimelineEvent } = require("./services/timelineService");
 const { getBaseUrl, getMollieApiKey } = require("./mollie-products");
+const { readWebsiteCommercialOrder } = require("./_website-commercial-order");
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -288,15 +289,16 @@ async function approvePreviewVersion(context, customer, authUser, version, paylo
   return jsonResponse(200, { success: true, approvedPreviewVersionId: version.id, previewVersion: sanitizeClientVersion(updated, version.id), paymentReadiness: await resolvePaymentReadiness(context, customer, updated) });
 }
 
-const depositCentsByPackage = Object.freeze({ starter: 15000, starter_site: 15000, business: 30000, business_website: 30000, premium: 50000, premium_growth: 50000 });
-
 async function resolvePaymentReadiness(context, customer, version) {
-  const website = version.website_id
-    ? await readSingle(context, "websites", `select=id,customer_id,name,hosting_package,care_package,metadata&id=eq.${encodeURIComponent(version.website_id)}&customer_id=eq.${encodeURIComponent(customer.id)}&limit=1`)
-    : await readSingle(context, "websites", `select=id,customer_id,name,hosting_package,care_package,metadata&customer_id=eq.${encodeURIComponent(customer.id)}&order=updated_at.desc&limit=1`);
-  const packageKey = normalizePackageKey(website?.hosting_package || website?.metadata?.websitePackage || website?.care_package || customer.package);
-  const amountCents = depositCentsByPackage[packageKey] || 0;
-  if (!amountCents) return unavailablePayment("website_package_missing", { packageKey, approved: Boolean(version.approved_at), previewVersionId: version.id });
+  const projects = version.project_id
+    ? await readRows(context, "projects", `select=*&id=eq.${encodeURIComponent(version.project_id)}&customer_id=eq.${encodeURIComponent(customer.id)}&limit=1`)
+    : await readRows(context, "projects", `select=*&customer_id=eq.${encodeURIComponent(customer.id)}&order=updated_at.desc&limit=2`);
+  if (!version.project_id && projects.length !== 1) return unavailablePayment("website_commercial_order_ambiguous", { approved: Boolean(version.approved_at), previewVersionId: version.id });
+  const project = projects[0] || null;
+  const order = readWebsiteCommercialOrder(project);
+  if (!order) return unavailablePayment("website_package_missing", { approved: Boolean(version.approved_at), previewVersionId: version.id });
+  const packageKey = order.packageCode;
+  const amountCents = Number(order.depositAmountCents || 0);
   const invoice = await findDepositInvoice(context, customer, version);
   const status = cleanText(invoice?.mollie_payment_status || invoice?.status).toLowerCase();
   const paid = status === "paid" || Boolean(invoice?.paid_at);
@@ -309,7 +311,9 @@ async function resolvePaymentReadiness(context, customer, version) {
     amountCents,
     amount: (amountCents / 100).toFixed(2),
     packageKey,
-    websiteId: cleanText(website?.id),
+    websiteId: cleanText(order.websiteId),
+    projectId: cleanText(order.projectId),
+    totalAmountCents: Number(order.totalAmountCents || 0),
     previewVersionId: version.id,
     checkoutUrl: reusable ? cleanText(invoice.mollie_checkout_url) : "",
     invoiceId: cleanText(invoice?.id),
@@ -350,12 +354,11 @@ async function findDepositInvoice(context, customer, version) {
 
 async function createDepositInvoice(context, customer, version, readiness) {
   const now = new Date().toISOString();
-  const rows = await insertRows(context, "customer_invoices", { profile_id: customer.profile_id || null, customer_auth_user_id: customer.auth_user_id, invoice_number: `DEP-${version.id.slice(0, 8).toUpperCase()}`, title: "Website-aanbetaling", amount: readiness.amountCents / 100, status: "draft", notes: `previewDeposit:${version.id};customer:${customer.id};package:${readiness.packageKey}`, created_at: now, updated_at: now });
+  const rows = await insertRows(context, "customer_invoices", { profile_id: customer.profile_id || null, customer_auth_user_id: customer.auth_user_id, invoice_number: `DEP-${version.id.slice(0, 8).toUpperCase()}`, title: "Website-aanbetaling", amount: readiness.amountCents / 100, status: "draft", notes: `previewDeposit:${version.id};customer:${customer.id};project:${readiness.projectId};package:${readiness.packageKey}`, created_at: now, updated_at: now });
   if (!rows[0]?.id) throw Object.assign(new Error("Aanbetalingsfactuur kon niet worden aangemaakt."), { status: 500 });
   return rows[0];
 }
 
-function normalizePackageKey(value) { return cleanText(value).toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, ""); }
 function unavailablePayment(code, extra = {}) { return { ready: false, approved: false, paid: false, status: code, amountCents: 0, checkoutUrl: "", ...extra }; }
 
 async function readAuthUser(context, bearer) {
