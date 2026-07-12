@@ -83,6 +83,7 @@ exports.handler = async (event) => {
     }
     if (!version?.id) return fail(500, "preview_version_failed", "De previewversie kon niet worden opgeslagen.", "create_preview_version", requestId);
     version = await setActiveManualVersion(context, customerId, version);
+    version = await ensureManualPreviewUrl(context, customerId, version);
     await persistJourneySource(context, demoJourneyId || version.demo_journey_id, version);
     await safeTimeline({ customerId, eventType: "manual_preview_uploaded", title: "Handmatige website geüpload", description: `${fileName} is veilig verwerkt.`, module: "website", referenceType: "website_preview_version", referenceId: version.id, actorName: adminCheck.admin.email || "Max Webstudio", actorRole: "admin", severity: "info", metadata: { dedupeKey: `manual_preview_uploaded:${contentHash}`, previewVersionId: version.id, source: "manual_zip", contentHash } });
     await safeTimeline({ customerId, eventType: "manual_preview_ready", title: "Handmatige preview klaar", description: "De websitepreview kan worden gecontroleerd en gepubliceerd.", module: "website", referenceType: "website_preview_version", referenceId: version.id, actorName: adminCheck.admin.email || "Max Webstudio", actorRole: "admin", severity: "success", metadata: { dedupeKey: `manual_preview_ready:${contentHash}`, previewVersionId: version.id, source: "manual_zip", contentHash } });
@@ -119,9 +120,19 @@ async function activateManualVersion(context, customerId, demoJourneyId, payload
   if (!version?.id || text(version.metadata?.previewSource) !== "manual_zip" || !Array.isArray(version.generated_package?.files) || !version.generated_package.files.length) {
     return fail(404, "manual_preview_not_found", "Deze handmatige previewversie is niet beschikbaar.");
   }
-  const active = await setActiveManualVersion(context, customerId, version);
+  let active = await setActiveManualVersion(context, customerId, version);
+  active = await ensureManualPreviewUrl(context, customerId, active);
   await persistJourneySource(context, demoJourneyId || active.demo_journey_id, active);
   return json(200, { success: true, reused: true, previewVersion: sanitize(active), previewPackage: sanitizePackage(active.generated_package), message: "Handmatige ZIP is nu de actieve previewbron." });
+}
+
+async function ensureManualPreviewUrl(context, customerId, version) {
+  const token = text(version.preview_token);
+  if (!version?.id || !token) throw zipError("preview_version_failed", "De previewlink kon niet worden aangemaakt.", 500);
+  const previewUrl = `/.netlify/functions/manual-preview-render?version=${encodeURIComponent(version.id)}&token=${encodeURIComponent(token)}`;
+  if (text(version.preview_url) === previewUrl) return version;
+  const rows = await patch(context, "website_preview_versions", `id=eq.${version.id}&customer_id=eq.${customerId}`, { preview_url: previewUrl, updated_at: new Date().toISOString() });
+  return rows[0] || { ...version, preview_url: previewUrl };
 }
 
 async function setActiveManualVersion(context, customerId, version) {
@@ -235,7 +246,7 @@ function findSignature(buffer, signature, start) { for (let i = buffer.length - 
 function decodeZip(value) { try { return Buffer.from(text(value), "base64"); } catch { return Buffer.alloc(0); } }
 function zipError(code, message, status = 400) { const error = new Error(message); error.code = code; error.status = status; return error; }
 function safeMessage(error) { return error.code ? error.message : "Het ZIP-bestand kon niet worden verwerkt."; }
-function sanitize(row = {}) { return { id: text(row.id), customerId: text(row.customer_id), projectId: text(row.project_id), websiteId: text(row.website_id), demoJourneyId: text(row.demo_journey_id), version: Number(row.version || 1), title: text(row.title), previewSource: "manual_zip", status: text(row.status || "internal"), createdAt: text(row.created_at), contentHash: text(row.metadata?.manualZipContentHash) }; }
+function sanitize(row = {}) { return { id: text(row.id), customerId: text(row.customer_id), projectId: text(row.project_id), websiteId: text(row.website_id), demoJourneyId: text(row.demo_journey_id), version: Number(row.version || 1), title: text(row.title), previewSource: "manual_zip", status: text(row.status || "internal"), previewUrl: text(row.preview_url), previewToken: text(row.preview_token), createdAt: text(row.created_at), contentHash: text(row.metadata?.manualZipContentHash) }; }
 function sanitizePackage(value = {}) { return { files: Array.isArray(value.files) ? value.files : [], version: value.version, entryFile: value.entryFile || value.entry_file || "index.html", meta: value.meta || {} }; }
 function uuid(value) { const clean = text(value); return uuidPattern.test(clean) ? clean : ""; }
 function text(value = "") { return String(value || "").trim(); }

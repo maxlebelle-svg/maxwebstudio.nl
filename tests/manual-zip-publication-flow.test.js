@@ -56,6 +56,10 @@ test("manual preview activation is persisted server-side and survives refresh", 
   assert.match(upload, /activePreviewSource: "manual_zip"/);
   assert.match(upload, /persistJourneySource/);
   assert.match(factory, /loadedManualVersion\.isActive/);
+  assert.match(upload, /ensureManualPreviewUrl/);
+  assert.match(upload, /manual-preview-render\?version=/);
+  assert.match(factory, /manualPreviewUrlForVersion/);
+  assert.match(factory, /Handmatige preview klaar/);
 });
 
 test("manual publication uses the exact active version without requiring a Factory build or website", () => {

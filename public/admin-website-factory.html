@@ -23179,6 +23179,12 @@
           return appendQueryParam(url, "source", source);
         }
 
+        function manualPreviewUrlForVersion(version = {}) {
+          if (version.previewUrl) return absolutePreviewUrl(version.previewUrl);
+          if (!version.id || !version.previewToken) return "";
+          return absolutePreviewUrl(`/.netlify/functions/manual-preview-render?version=${encodeURIComponent(version.id)}&token=${encodeURIComponent(version.previewToken)}`);
+        }
+
         function syncPreviewSourceFromJourney() {
           manualPreview = manualPreviewMeta(journey);
           const pack = journey?.previewPackage || {};
@@ -23381,7 +23387,7 @@
             || (factoryCustomerContext.previewVersions || []).find((item) => item.metadata?.previewSource === "manual_zip" || item.generatedPackage?.meta?.previewSource === "manual_zip");
           if (loadedManualVersion?.generatedPackage?.files?.length) {
             const pack = loadedManualVersion.generatedPackage;
-            manualPreview = { fileName: pack.meta?.fileName || loadedManualVersion.metadata?.fileName || "handmatige-preview.zip", files: pack.files, entryPath: pack.entryFile || "index.html", localPreviewUrl: manualPackageDataUrl(pack), previewVersionId: loadedManualVersion.id };
+            manualPreview = { fileName: pack.meta?.fileName || loadedManualVersion.metadata?.fileName || "handmatige-preview.zip", files: pack.files, entryPath: pack.entryFile || "index.html", localPreviewUrl: manualPreviewUrlForVersion(loadedManualVersion) || manualPackageDataUrl(pack), previewVersionId: loadedManualVersion.id };
             if (loadedManualVersion.isActive) previewSource = "manual";
           }
           fillFromLead(customerOption);
@@ -24169,7 +24175,7 @@
               const data = await apiRequest(manualPreviewEndpoint, "POST", { action: "activate", customerId: customer.id, demoJourneyId: journey?.id || "", previewVersionId: versionId });
               const previewPackage = data.previewPackage || {};
               const version = data.previewVersion || {};
-              manualPreview = { fileName: previewPackage.meta?.fileName || meta.fileName || "handmatige-preview.zip", files: previewPackage.files || meta.files || [], entryPath: previewPackage.entryFile || meta.entryPath || "index.html", localPreviewUrl: manualPackageDataUrl(previewPackage.files?.length ? previewPackage : { files: meta.files, entryFile: meta.entryPath }), previewVersionId: version.id || versionId };
+              manualPreview = { fileName: previewPackage.meta?.fileName || meta.fileName || "handmatige-preview.zip", files: previewPackage.files || meta.files || [], entryPath: previewPackage.entryFile || meta.entryPath || "index.html", localPreviewUrl: manualPreviewUrlForVersion(version) || manualPackageDataUrl(previewPackage.files?.length ? previewPackage : { files: meta.files, entryFile: meta.entryPath }), previewVersionId: version.id || versionId };
               previewSource = "manual";
               const normalizedVersion = { ...version, generatedPackage: previewPackage, previewUrl: manualPreview.localPreviewUrl, isActive: true, metadata: { ...(version.metadata || {}), previewSource: "manual_zip" } };
               buildHistory = { ...buildHistory, activeVersion: normalizedVersion, previewVersions: [normalizedVersion, ...(buildHistory.previewVersions || []).filter((item) => item.id !== normalizedVersion.id).map((item) => ({ ...item, isActive: false }))] };
@@ -24215,7 +24221,7 @@
               });
               const version = data.previewVersion;
               const previewPackage = data.previewPackage || { files: parsed.files, entryFile: parsed.entryPath };
-              const localPreviewUrl = manualPackageDataUrl(previewPackage);
+              const localPreviewUrl = manualPreviewUrlForVersion(version) || manualPackageDataUrl(previewPackage);
               manualPreview = { fileName: file.name, files: previewPackage.files || parsed.files, entryPath: previewPackage.entryFile || parsed.entryPath, localPreviewUrl, previewVersionId: version.id };
               previewSource = "manual";
               const normalizedVersion = { ...version, generatedPackage: previewPackage, previewUrl: localPreviewUrl, isActive: true };
@@ -24650,7 +24656,7 @@
           const generatedPages = Array.isArray(packageMeta.generatedPages) ? packageMeta.generatedPages : [];
           const generatedSections = Array.isArray(packageMeta.generatedSections || packageMeta.templateSections) ? (packageMeta.generatedSections || packageMeta.templateSections) : [];
           if (elements.buildState) {
-            elements.buildState.textContent = latest ? buildStatusLabel(latest.status) : buildHistory.setupRequired ? "Setup nodig" : "Geen build";
+            elements.buildState.textContent = latest ? buildStatusLabel(latest.status) : activeVersion?.metadata?.previewSource === "manual_zip" || activeVersion?.generatedPackage?.meta?.previewSource === "manual_zip" ? "Handmatige preview klaar" : buildHistory.setupRequired ? "Setup nodig" : "Geen build";
           }
           if (elements.buildProgress) {
             elements.buildProgress.style.width = `${Math.max(0, Math.min(100, Number(latest?.progress || 0)))}%`;
@@ -24658,7 +24664,7 @@
           if (elements.buildDetails) {
             const score = latest?.previewScore ?? activeVersion?.previewScore;
             elements.buildDetails.innerHTML = [
-              ["Website Factory", latest ? buildStatusLabel(latest.status) : buildHistory.setupRequired ? "Setup nodig" : "Geen build"],
+              ["Website Factory", latest ? buildStatusLabel(latest.status) : activeVersion?.metadata?.previewSource === "manual_zip" || activeVersion?.generatedPackage?.meta?.previewSource === "manual_zip" ? "Handmatige preview klaar" : buildHistory.setupRequired ? "Setup nodig" : "Geen build"],
               ["Websitepakket", packageMeta.packageLabel || packageLabel(currentPackageType())],
               ["Brancheprofiel", packageMeta.industryName || packageMeta.industryProfileLabel || "-"],
               ["Aantal pagina's", generatedPages.length ? String(generatedPages.length) : "-"],
