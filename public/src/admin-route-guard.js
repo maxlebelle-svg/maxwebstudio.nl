@@ -1,8 +1,18 @@
 import { requireAuth } from "./services/routeGuardService.js";
-import { resolveAdminAuth } from "./services/adminAuthBridgeService.js?v=20260712-authbridge";
+import { resolveAdminAuth } from "./services/adminAuthBridgeService.js";
 
 const ADMIN_SESSION_KEY = "mws_admin_supabase_session";
 const ADMIN_LOGIN_PATH = "/admin-login.html";
+
+function removeLegacyDeploymentMarker() {
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has("deploy")) return false;
+  url.searchParams.delete("deploy");
+  window.history.replaceState(window.history.state, document.title, `${url.pathname}${url.search}${url.hash}`);
+  return true;
+}
+
+removeLegacyDeploymentMarker();
 
 function currentAdminPageName() {
   const fileName = String(window.location?.pathname || "").split("/").pop() || "";

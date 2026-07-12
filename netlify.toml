@@ -139,3 +139,13 @@
   for = "/src/*"
   [headers.values]
     Cache-Control = "no-cache, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/admin/ui/*"
+  [headers.values]
+    Cache-Control = "no-cache, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "no-cache, max-age=0, must-revalidate"

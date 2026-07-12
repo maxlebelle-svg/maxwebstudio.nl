@@ -11,10 +11,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <script src="admin/ui/shared-helpers.js"></script>
-    <link rel="stylesheet" href="styles.css?v=20260707-manual-zip-preview" />
+    <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="admin/styles/premium-design-system.css" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-      <script type="module" src="src/admin-route-guard.js?v=20260712-authbridge"></script>
+      <script type="module" src="src/admin-route-guard.js"></script>
   </head>
   <body class="admin-body">
     <main class="admin-crm-shell">
@@ -21491,7 +21491,7 @@
         async function apiRequest(url, method = "GET", payload = null, extraHeaders = {}) {
           let token = "";
           try {
-            const { getAdminAccessToken } = await import("./src/services/adminAuthBridgeService.js?v=20260712-authbridge");
+            const { getAdminAccessToken } = await import("./src/services/adminAuthBridgeService.js");
             token = await getAdminAccessToken();
           } catch (error) {
             const safeMessage = error?.code === "ROLE_NOT_ALLOWED"
@@ -21504,6 +21504,7 @@
           const developerMode = developerModeActive();
           const response = await fetch(url, {
             method,
+            cache: "no-store",
             headers: {
               Accept: "application/json",
               Authorization: `Bearer ${token}`,
@@ -21592,6 +21593,9 @@
             const error = new Error(developerMode ? `Backendfout (${response.status})\n${detail}` : safeMessage);
             error.diagnostics = diagnostics;
             error.label = failureLabel;
+            error.status = response.status;
+            error.code = diagnostics.code || "REQUEST_FAILED";
+            error.requestId = diagnostics.requestId;
             throw error;
           }
           return data;
@@ -25365,9 +25369,12 @@
               await loadCustomerFactoryContext(requestedCustomerId);
             } catch (error) {
               let fallbackLoaded = false;
-              try {
-                fallbackLoaded = await loadValidatedCustomerFallback(requestedCustomerId);
-              } catch { /* the original safe context error remains authoritative */ }
+              const authenticationFailed = error?.status === 401 || error?.status === 403;
+              if (!authenticationFailed) {
+                try {
+                  fallbackLoaded = await loadValidatedCustomerFallback(requestedCustomerId);
+                } catch { /* the original safe context error remains authoritative */ }
+              }
               if (!fallbackLoaded) renderCustomerContextError(requestedCustomerId, error);
             }
             renderMetrics();
@@ -25582,6 +25589,6 @@
         else initGuidedFactory();
       })();
     </script>
-    <script src="admin/ui/global-command-palette.js?v=20260712-live-context-fix" defer></script>
+    <script src="admin/ui/global-command-palette.js" defer></script>
   </body>
 </html>
