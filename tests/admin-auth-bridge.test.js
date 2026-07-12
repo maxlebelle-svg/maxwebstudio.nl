@@ -49,6 +49,7 @@ test("Factory requests obtain bearer through the central admin bridge", () => {
   assert.match(factory, /Je sessie is verlopen\. Log opnieuw in\./);
   assert.match(factory, /Dit account heeft geen actieve adminrol\./);
   assert.match(factory, /tijdelijke backendfout/);
+  assert.match(factory, /error\?\.message \|\| "De klantwerkruimte kon niet worden geladen/);
 });
 
 test("logout clears central and all derived admin sessions", () => {
