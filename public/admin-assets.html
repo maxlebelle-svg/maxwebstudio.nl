@@ -107,9 +107,29 @@
           </div>
         </section>
 
-        <section class="asset-stats-grid" id="asset-stats" aria-label="Asset statistieken"></section>
+        <section class="admin-card central-asset-library" id="central-asset-library" aria-labelledby="central-assets-title">
+          <div class="central-asset-heading">
+            <div>
+              <p class="section-kicker">Live klantuploads</p>
+              <h2 id="central-assets-title">Recente bestanden & merkassets</h2>
+              <p>Dezelfde beveiligde assetbibliotheek die klantportaal, relatiewerkruimte en Website Factory gebruiken.</p>
+            </div>
+            <span class="status-badge status-warning" id="central-assets-new-count">Laden…</span>
+          </div>
+          <div class="central-asset-filters" aria-label="Filters voor klantuploads">
+            <label>Zoeken<input id="central-asset-search" type="search" placeholder="Bestandsnaam, klant of omschrijving" /></label>
+            <label>Klant<select id="central-asset-customer"><option value="">Alle klanten</option></select></label>
+            <label>Categorie<select id="central-asset-category"><option value="">Alle categorieën</option></select></label>
+            <label>Bestandstype<select id="central-asset-type"><option value="">Alle bestandstypen</option></select></label>
+            <label>Status<select id="central-asset-status"><option value="">Alle statussen</option></select></label>
+          </div>
+          <p class="form-helper" id="central-asset-message" role="status" aria-live="polite"></p>
+          <div class="central-asset-grid" id="central-asset-grid" aria-live="polite"></div>
+        </section>
 
-        <section class="admin-card asset-filter-card" aria-label="Asset filters">
+        <section class="asset-stats-grid" id="asset-stats" aria-label="Asset statistieken" hidden></section>
+
+        <section class="admin-card asset-filter-card" aria-label="Asset filters" hidden>
           <label class="asset-search-field" for="asset-search">
             <span class="sr-only">Zoeken</span>
             <input id="asset-search" type="search" placeholder="Zoek op bestandsnaam, klant, project of tag" />
@@ -124,7 +144,7 @@
           </div>
         </section>
 
-        <section class="asset-workspace" aria-label="Asset Manager werkruimte">
+        <section class="asset-workspace" aria-label="Asset Manager werkruimte" hidden>
           <aside class="admin-card asset-library-panel">
             <div class="asset-panel-heading">
               <span>Bibliotheek</span>
@@ -147,7 +167,7 @@
           <aside class="admin-card asset-detail-panel" id="asset-detail" aria-live="polite"></aside>
         </section>
 
-        <section class="admin-section asset-own-library" aria-label="Eigen bibliotheek">
+        <section class="admin-section asset-own-library" aria-label="Eigen bibliotheek" hidden>
           <div class="admin-section-heading">
             <div>
               <p class="section-kicker">Max Webstudio</p>
@@ -160,7 +180,7 @@
       </div>
     </main>
 
-    <dialog class="asset-upload-modal" id="asset-upload-dialog" aria-labelledby="asset-upload-title">
+    <dialog class="asset-upload-modal" id="asset-upload-dialog" aria-labelledby="asset-upload-title" hidden>
       <form class="asset-upload-form" id="asset-upload-form" method="dialog">
         <div class="asset-modal-header">
           <div>
@@ -197,7 +217,7 @@
       </form>
     </dialog>
 
-    <dialog class="asset-upload-modal asset-folder-modal" id="asset-folder-dialog" aria-labelledby="asset-folder-title">
+    <dialog class="asset-upload-modal asset-folder-modal" id="asset-folder-dialog" aria-labelledby="asset-folder-title" hidden>
       <form class="asset-upload-form" id="asset-folder-form" method="dialog">
         <div class="asset-modal-header">
           <div>
@@ -219,6 +239,10 @@
     <script>
       (() => {
         "use strict";
+
+        // De oude lokale demo blijft alleen als migratiereferentie in de bron staan.
+        // De zichtbare bibliotheek gebruikt uitsluitend de beveiligde centrale API.
+        if (document.getElementById("central-asset-library")) return;
 
         // TODO: Supabase Storage upload koppelen aan deze upload-flow.
         // TODO: Asset metadata tabel toevoegen voor klant, project, tags, status en rechten.
@@ -807,6 +831,7 @@
         renderAll();
       })();
     </script>
+    <script src="admin/ui/central-asset-library.js?v=20260712-central-assets" defer></script>
     <script src="admin/ui/global-command-palette.js?v=20260712-live-context-fix" defer></script>
   </body>
 </html>

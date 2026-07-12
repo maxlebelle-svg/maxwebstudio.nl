@@ -135,7 +135,7 @@ function canAccess(admin, row) {
 function isArchived(row = {}) { const meta = row.metadata || {}; return Boolean(row.archived_at || row.deleted_at || meta.archivedAt || meta.deletedAt) || ["archived", "gearchiveerd", "deleted"].includes(clean(row.status).toLowerCase()); }
 function relationOrFilter(leadId, customerId) { const filters = []; if (leadId) filters.push(`lead_id.eq.${encodeURIComponent(leadId)}`); if (customerId) filters.push(`customer_id.eq.${encodeURIComponent(customerId)}`); return filters.length ? `or=(${filters.join(",")})` : ""; }
 function onboardingState(resolved, files) { return { initialized: Boolean(resolved.customer), assetCount: files.length, logoReceived: files.some((item) => clean(item.category).toLowerCase() === "logo"), photosReceived: files.filter((item) => ["photo", "foto", "photos"].includes(clean(item.category).toLowerCase())).length }; }
-function brandState(files) { const approved = files.filter((item) => clean(item.status).toLowerCase() === "approved"); return { primaryLogo: sanitizeFile(approved.find((item) => item.metadata?.isPrimary || clean(item.category).toLowerCase() === "logo") || null), approvedAssets: approved.length }; }
+function brandState(files) { const approved = files.filter((item) => clean(item.status).toLowerCase() === "approved"); return { primaryLogo: sanitizeFile(approved.find((item) => item.is_primary || item.metadata?.brandingRole === "primary_logo") || approved.find((item) => clean(item.category).toLowerCase() === "logo") || null), approvedAssets: approved.length }; }
 function domainState(website) { return website ? { domain: clean(website.domain), sslStatus: clean(website.ssl_status), status: clean(website.status) } : null; }
 function hostingState(website) { return website ? { package: clean(website.hosting_package), status: clean(website.hosting_status) } : null; }
 function automationState(logs) { return { recentMessages: logs.length, initialized: logs.length > 0 }; }
@@ -144,7 +144,7 @@ function sanitizeFile(row) { if (!row) return null; const safe = sanitize(row); 
 function sanitizeInvoice(row) { if (!row) return null; const safe = sanitize(row); delete safe.mollie_checkout_url; delete safe.pdf_file_path; return safe; }
 function sanitizeBuild(row) { if (!row) return null; const safe = sanitize(row); delete safe.build_logs; delete safe.preview_token; delete safe.generated_package; return safe; }
 function sanitizePreview(row) { if (!row) return null; const safe = sanitize(row); delete safe.preview_token; delete safe.generated_package; return safe; }
-function safeMetadata(value) { if (!value || typeof value !== "object") return {}; const allowed = ["source", "category", "uploadedByType", "isPrimary", "createdFromLeadId", "usageRightsConfirmed", "previewSource"]; return Object.fromEntries(allowed.filter((key) => value[key] !== undefined).map((key) => [key, value[key]])); }
+function safeMetadata(value) { if (!value || typeof value !== "object") return {}; const allowed = ["source", "category", "uploadedByType", "isPrimary", "createdFromLeadId", "usageRightsConfirmed", "previewSource", "description", "brandingRole", "websiteRole", "usedInBranding", "usedForWebsite", "customerApprovedAt"]; return Object.fromEntries(allowed.filter((key) => value[key] !== undefined).map((key) => [key, value[key]])); }
 
 async function one(context, table, filter) { const rows = await rowsSafe(context, table, `${filter}&limit=1`, true); return rows[0] || null; }
 async function relationshipRows(context, table, leadId, customerId, order, limit) {

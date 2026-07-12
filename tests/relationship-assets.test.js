@@ -677,7 +677,8 @@ test("portal upload shell exposes category, rights, selected files and progress"
 });
 
 test("admin review supports approval, rejection, archive and primary logo without leaking paths", () => {
-  assert.equal(adminApi.ACTIONS.primary, "approved");
+  assert.equal(adminApi.ACTIONS.primary.status, "approved");
+  assert.equal(adminApi.ACTIONS.primary.brandingRole, "primary_logo");
   assert.equal(adminApi.safe({ id: "a", storage_path: "secret" }).storage_path, undefined);
   assert.match(workspaceClient, /data-asset-action="approve"/);
   assert.match(workspaceClient, /admin-relationship-assets/);

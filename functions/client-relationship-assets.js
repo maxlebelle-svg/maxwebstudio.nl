@@ -71,6 +71,7 @@ exports.handler = async (event) => {
     console.info("Client relationship asset request", safeRequest);
     if (input.action === "prepare") return await prepareUpload(context, user, customer, input);
     if (input.action === "finalize") return await finalizeUpload(context, user, customer, input);
+    if (input.action === "approve_branding") return await approveBrandingAsset(context, user, customer, input);
     throw coded("INVALID_ACTION", 400, "De uploadactie is niet geldig.", { step: "route_action" });
   } catch (error) {
     const details = safeValidationDetails(error);
@@ -131,6 +132,26 @@ async function prepareUpload(context, user, customer, input) {
     uploadHeaders: { "x-upsert": "false" },
     expiresIn: UPLOAD_TTL_SECONDS,
   });
+}
+
+async function approveBrandingAsset(context, user, customer, input) {
+  const assetId = clean(input.assetId);
+  if (!UUID.test(assetId)) throw coded("INVALID_ASSET", 400, "Kies een geldig logo.", { step: "branding_asset" });
+  const asset = await assetById(context, customer.id, assetId);
+  if (!asset || clean(asset.category).toLowerCase() !== "logo" || clean(asset.status).toLowerCase() !== "approved") {
+    throw coded("BRANDING_NOT_READY", 409, "Je branding is nog niet klaar voor goedkeuring.", { step: "branding_readiness" });
+  }
+  const metadata = asset.metadata && typeof asset.metadata === "object" ? asset.metadata : {};
+  if (!metadata.brandingRole && !asset.is_primary) throw coded("BRANDING_NOT_READY", 409, "Je branding is nog niet klaar voor goedkeuring.", { step: "branding_role" });
+  const approvedAt = new Date().toISOString();
+  const rows = await rest(context, `files?id=eq.${encodeURIComponent(asset.id)}&customer_id=eq.${encodeURIComponent(customer.id)}`, {
+    method: "PATCH",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({ metadata: { ...metadata, customerApprovedAt: approvedAt, customerApprovedByAuthUserId: user.id }, updated_at: approvedAt }),
+    operation: "approve_branding",
+  });
+  await timeline(context, customer.id, user.id, "branding_approved", { assetId: asset.id, category: "logo" });
+  return json(200, { success: true, asset: safeAsset(rows?.[0] || asset), message: "Je branding is goedgekeurd." });
 }
 
 async function finalizeUpload(context, user, customer, input) {
@@ -469,6 +490,8 @@ function safeAsset(row = {}) {
     status: row.status || "new",
     source: row.uploaded_by_type === "customer" ? "customer" : "studio",
     description: clean(metadata.description),
+    brandingRole: clean(metadata.brandingRole),
+    customerApprovedAt: clean(metadata.customerApprovedAt),
     uploadedByType: row.uploaded_by_type,
     isPrimary: Boolean(row.is_primary),
     createdAt: row.created_at || row.createdAt || null,
@@ -654,11 +677,12 @@ async function timeline(context, customerId, userId, eventType, metadata) {
       headers: { Prefer: "return=minimal" },
       body: JSON.stringify({
         customer_id: customerId,
+        user_id: userId,
         event_type: eventType,
-        title: "Bestand aangeleverd",
-        actor_auth_user_id: userId,
-        source_module: "customer_portal",
-        status: "success",
+        title: eventType === "branding_approved" ? "Branding goedgekeurd" : "Bestand aangeleverd",
+        module: "customer_portal",
+        reference_type: "file",
+        reference_id: clean(metadata?.assetId) || null,
         metadata,
       }),
       operation: "asset_timeline",

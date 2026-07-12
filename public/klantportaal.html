@@ -285,27 +285,39 @@
       </section>
 
       <section class="admin-section" id="branding">
-        <div class="admin-section-heading"><div><p class="section-kicker">Branding</p><h2>Je merkpakket</h2></div></div>
-        <article class="admin-card customer-portal-card">
-          <div class="portal-form-heading">
+        <article class="brand-portal-shell">
+          <div class="brand-portal-hero">
             <div>
-              <p class="section-kicker">Logo en huisstijl</p>
+              <p class="section-kicker">Jouw merkidentiteit</p>
               <h3 id="portal-branding-title">Branding wordt voorbereid</h3>
-              <p id="portal-branding-summary">Zodra er logo's of kleuren klaarstaan, kun je ze hier bekijken en goedkeuren.</p>
+              <p id="portal-branding-summary">Bekijk en beoordeel hier je logo, kleuren, typografie en merkmiddelen.</p>
             </div>
-            <mark class="status-badge status-prepared" id="portal-branding-status">Voorbereid</mark>
+            <mark class="brand-portal-status status-prepared" id="portal-branding-status">In voorbereiding</mark>
           </div>
-          <div class="customer-portal-kpis" aria-label="Branding status">
-            <article class="admin-card metric-card"><span>Versie</span><strong id="portal-branding-version">1</strong><small>Laatste merkrichting</small></article>
-            <article class="admin-card metric-card"><span>Laatste wijziging</span><strong id="portal-branding-updated">-</strong><small>Branding Center</small></article>
-            <article class="admin-card metric-card"><span>Website</span><strong id="portal-branding-factory">Nog niet</strong><small>Brandingkoppeling</small></article>
-          </div>
-          <div class="portal-action-grid" id="portal-branding-assets"></div>
-          <div class="portal-actions">
-            <button class="button secondary" id="portal-branding-request" type="button">Logo laten maken</button>
-            <label class="button secondary" for="portal-branding-upload">Logo uploaden</label>
-            <input id="portal-branding-upload" type="file" accept="image/svg+xml,image/png,image/jpeg,image/webp" hidden />
+          <section class="brand-logo-stage" aria-labelledby="brand-logo-heading">
+            <div class="brand-logo-heading"><div><span>Logo</span><h3 id="brand-logo-heading">Jouw logo in beeld</h3></div><small id="portal-branding-updated">Wordt voorbereid</small></div>
+            <div class="brand-logo-previews" id="portal-branding-logo-preview">
+              <div class="brand-logo-canvas is-light"><span>Logo-preview wordt geladen</span></div>
+              <div class="brand-logo-canvas is-dark"><span>Logo-preview wordt geladen</span></div>
+            </div>
+            <div class="brand-logo-meta"><strong id="portal-branding-logo-name">Nog geen logo geselecteerd</strong><span id="portal-branding-logo-detail">Een aangeleverd logo wordt eerst gecontroleerd.</span></div>
+            <div class="brand-logo-actions"><button class="button secondary" id="portal-branding-logo-open" type="button" disabled>Logo bekijken</button><a class="button secondary" href="#bestanden">Nieuw logo aanleveren</a></div>
+          </section>
+          <section class="brand-foundation" aria-labelledby="brand-foundation-title">
+            <div class="brand-section-heading"><span>Merkfundament</span><h3 id="brand-foundation-title">De bouwstenen van je uitstraling</h3></div>
+            <div class="brand-foundation-grid" id="portal-branding-foundation"></div>
+          </section>
+          <section class="brand-resources" aria-labelledby="brand-resources-title">
+            <div class="brand-section-heading"><span>Merkmiddelen</span><h3 id="brand-resources-title">Beschikbare merkmiddelen</h3></div>
+            <div class="brand-resource-grid" id="portal-branding-assets"></div>
+          </section>
+          <div class="brand-portal-actions">
             <button class="button primary" id="portal-branding-approve" type="button">Branding goedkeuren</button>
+            <a class="button secondary" href="#bestanden">Logo aanleveren</a>
+            <a class="button secondary" href="#wijzigingen">Wijziging aanvragen</a>
+            <a class="brand-text-action" href="#berichten">Bericht sturen</a>
+            <button id="portal-branding-request" type="button" hidden>Logo laten maken</button>
+            <input id="portal-branding-upload" type="file" accept="image/svg+xml,image/png,image/jpeg,image/webp" hidden />
             <span class="form-helper" id="portal-branding-message" role="status" aria-live="polite"></span>
           </div>
         </article>
@@ -898,10 +910,13 @@
         const brandingTitle = document.getElementById("portal-branding-title");
         const brandingSummary = document.getElementById("portal-branding-summary");
         const brandingStatus = document.getElementById("portal-branding-status");
-        const brandingVersion = document.getElementById("portal-branding-version");
         const brandingUpdated = document.getElementById("portal-branding-updated");
-        const brandingFactory = document.getElementById("portal-branding-factory");
         const brandingAssets = document.getElementById("portal-branding-assets");
+        const brandingFoundation = document.getElementById("portal-branding-foundation");
+        const brandingLogoPreview = document.getElementById("portal-branding-logo-preview");
+        const brandingLogoName = document.getElementById("portal-branding-logo-name");
+        const brandingLogoDetail = document.getElementById("portal-branding-logo-detail");
+        const brandingLogoOpen = document.getElementById("portal-branding-logo-open");
         const brandingRequest = document.getElementById("portal-branding-request");
         const brandingUpload = document.getElementById("portal-branding-upload");
         const brandingApprove = document.getElementById("portal-branding-approve");
@@ -980,6 +995,9 @@
             source: String(asset?.source || asset?.uploadedByType || "customer"),
             uploadedByType: String(asset?.uploadedByType || "customer"),
             description: String(asset?.description || ""),
+            isPrimary: asset?.isPrimary === true,
+            brandingRole: String(asset?.brandingRole || ""),
+            customerApprovedAt: String(asset?.customerApprovedAt || ""),
             createdAt: String(asset?.createdAt || ""),
             updatedAt: String(asset?.updatedAt || asset?.createdAt || ""),
             downloadAvailable: asset?.downloadAvailable === true,
@@ -992,6 +1010,7 @@
         let portalRelationshipAssets = safeRelationshipAssets(window.__MWS_RELATIONSHIP_ASSETS__ || []);
         let portalAssetRecords = [];
         let portalAssetRenderContext = null;
+        let portalBrandingRenderContext = null;
         let portalAssetFiltersBound = false;
         let portalAssetPreviewObserver = null;
         const portalAssetPreviewTargets = new WeakMap();
@@ -1002,6 +1021,7 @@
         window.addEventListener("relationship-assets:updated", (event) => {
           portalRelationshipAssets = safeRelationshipAssets(event.detail?.assets || []);
           if (portalAssetRenderContext) renderAssetCenter(portalAssetRenderContext);
+          if (portalBrandingRenderContext) renderBrandingCenter(portalBrandingRenderContext.customer, portalBrandingRenderContext.onboarding);
         });
         function escapeHtml(value = "") {
           return String(value || "")
@@ -3749,37 +3769,62 @@
         }
 
         function renderBrandingCenter(customer = {}, onboarding = {}) {
+          portalBrandingRenderContext = { customer, onboarding };
           const state = loadBrandingState();
           const project = brandingProjectForCustomer(customer, onboarding);
-          const logos = state.logoAssets.filter((asset) => asset.projectId === project.id || asset.customerId === project.customerId);
-          const approved = project.status === "approved" || project.status === "linked_to_factory";
-          brandingTitle.textContent = project.companyName ? `${project.companyName} branding` : "Je branding";
-          brandingSummary.textContent = logos.length
-            ? `${logos.length} logo${logos.length === 1 ? "" : "'s"} klaar. Controleer logo, kleuren, lettertype en iconstijl voordat we dit in je website verwerken.`
-            : "Er zijn nog geen branding-assets gekoppeld aan je klantportaal.";
-          brandingStatus.textContent = approved ? "Goedgekeurd" : project.status === "customer_review" ? "Review" : "Voorbereid";
-          brandingStatus.className = `status-badge ${approved ? "status-active" : project.status === "customer_review" ? "status-warning" : "status-prepared"}`;
-          brandingVersion.textContent = project.version ? String(project.version) : "-";
-          brandingUpdated.textContent = formatDate(project.updatedAt || project.createdAt);
-          brandingFactory.textContent = project.status === "linked_to_factory" ? "Gekoppeld" : "Nog niet";
+          const localLogos = state.logoAssets.filter((asset) => asset.projectId === project.id || asset.customerId === project.customerId);
+          const centralLogos = portalRelationshipAssets.filter((asset) => asset.category === "logo" && !["rejected", "archived", "replaced", "deleted"].includes(String(asset.status).toLowerCase()));
+          const logos = [...centralLogos, ...localLogos];
+          const logo = centralLogos.find((asset) => asset.status === "approved" && asset.isPrimary)
+            || centralLogos.find((asset) => asset.status === "approved")
+            || centralLogos[0]
+            || localLogos.find((asset) => ["approved", "selected"].includes(asset.status))
+            || localLogos[0];
+          const logoApproved = logo && ["approved", "selected"].includes(String(logo.status).toLowerCase());
+          const customerApproved = Boolean(logo?.customerApprovedAt) || project.status === "approved" || project.status === "linked_to_factory";
+          brandingTitle.textContent = `De huisstijl van ${project.companyName || customer.company || "jouw bedrijf"}`;
+          brandingSummary.textContent = "Bekijk en beoordeel hier je logo, kleuren, typografie en merkmiddelen.";
+          brandingStatus.textContent = customerApproved ? "Goedgekeurd" : logoApproved ? "Klaar voor controle" : "In voorbereiding";
+          brandingStatus.className = `brand-portal-status ${customerApproved ? "status-active" : logoApproved ? "status-warning" : "status-prepared"}`;
+          brandingUpdated.textContent = logo?.createdAt ? `Aangeleverd ${formatDate(logo.createdAt)}` : "Wordt voorbereid";
           const colors = Array.isArray(project.colors) ? project.colors : [];
-          const logo = logos.find((asset) => ["approved", "selected"].includes(asset.status)) || logos[0];
           const downloads = state.downloadAssets.filter((asset) => asset.projectId === project.id || asset.customerId === project.customerId);
           const socialAssets = state.socialAssets.filter((asset) => asset.projectId === project.id || asset.customerId === project.customerId);
           const printAssets = state.printAssets.filter((asset) => asset.projectId === project.id || asset.customerId === project.customerId);
-          const rows = [
-            ["Logo", logo?.assetName || logo?.title || "Nog geen logo gekozen"],
-            ["Kleurenpalet", colors.length ? colors.join(", ") : (project.briefing?.colors || "Nog niet beschikbaar")],
-            ["Lettertypes", project.typography || project.briefing?.fontPreference || "Nog niet beschikbaar"],
-            ["Iconstijl", project.iconStyle || "Nog niet beschikbaar"],
-            ["Assets", logo?.variants?.length ? `${logo.variants.length} versies voorbereid` : "Nog niet beschikbaar"],
-            ["Downloads", downloads.length ? `${downloads.length} bestanden` : "Nog niet beschikbaar"],
-            ["Social assets", socialAssets.length ? `${socialAssets.length} formaten` : "Nog niet beschikbaar"],
-            ["Print assets", printAssets.length ? `${printAssets.length} voorstellen` : "Optioneel"],
+          const validColors = colors.map((color) => String(color).trim()).filter((color) => /^#[0-9a-f]{3,8}$/i.test(color));
+          brandingFoundation.innerHTML = `
+            <article class="brand-foundation-card brand-colors"><span>Kleuren</span><h4>${validColors.length ? "Jouw kleurenpalet" : "Wordt samengesteld"}</h4>${validColors.length ? `<div class="brand-swatches">${validColors.map((color) => `<span style="--brand-swatch:${color}"><i></i><small>${escapeHtml(color.toUpperCase())}</small></span>`).join("")}</div>` : "<p>Het kleurenpalet wordt nog samengesteld.</p>"}</article>
+            <article class="brand-foundation-card brand-typography"><span>Typografie</span><h4>${escapeHtml(project.typography || project.briefing?.fontPreference || "Wordt geselecteerd")}</h4>${project.typography || project.briefing?.fontPreference ? '<strong>Een sterk merk begint met een helder verhaal.</strong><p>Rustige voorbeeldtekst voor digitale toepassingen.</p>' : "<p>De lettertypes worden nog geselecteerd.</p>"}</article>
+            <article class="brand-foundation-card brand-icons"><span>Icoonstijl</span><h4>${escapeHtml(project.iconStyle || "Wordt uitgewerkt")}</h4><div class="brand-icon-samples" aria-hidden="true"><i>↗</i><i>◇</i><i>＋</i></div><p>${project.iconStyle ? "De gekozen icoonstijl ondersteunt je visuele identiteit." : "De icoonstijl wordt nog bepaald."}</p></article>`;
+          const resources = [
+            ["Logobestanden", logos.length, logos.length ? (logoApproved ? "Beschikbaar" : "Wordt gecontroleerd") : "Wordt voorbereid", "#bestanden"],
+            ["Social media", socialAssets.length, socialAssets.length ? "Beschikbaar" : "Wordt voorbereid", "#bestanden"],
+            ["Drukwerk", printAssets.length, printAssets.length ? "Beschikbaar" : "Nog niet beschikbaar", "#bestanden"],
+            ["Website-assets", portalRelationshipAssets.filter((asset) => asset.category !== "logo").length, portalRelationshipAssets.some((asset) => asset.category !== "logo") ? "Beschikbaar" : "Wordt voorbereid", "#bestanden"],
+            ["Downloads", downloads.length, downloads.length ? "Beschikbaar" : "Nog niet beschikbaar", "#bestanden"],
           ];
-          brandingAssets.innerHTML = rows.map(([label, value]) => `<article class="admin-card metric-card"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><small>Max Webstudio</small></article>`).join("");
-          brandingApprove.disabled = !logos.length && project.status !== "customer_review";
+          brandingAssets.innerHTML = resources.map(([label, count, status, href]) => `<article class="brand-resource-card"><span>${escapeHtml(label)}</span><strong>${count ? `${count} ${count === 1 ? "bestand" : "bestanden"}` : escapeHtml(status)}</strong><small>${count ? escapeHtml(status) : ""}</small><a href="${href}">${count ? "Bekijken" : "Meer informatie"}</a></article>`).join("");
+          const logoName = logo?.name || logo?.assetName || logo?.title || "Nog geen logo geselecteerd";
+          brandingLogoName.textContent = logoName;
+          brandingLogoDetail.textContent = logo ? `${logoApproved ? "Goedgekeurd logo" : "Wordt gecontroleerd"}${logo.createdAt ? ` · ${formatDate(logo.createdAt)}` : ""}` : "Een aangeleverd logo wordt eerst gecontroleerd.";
+          brandingLogoPreview.innerHTML = '<div class="brand-logo-canvas is-light"><span>Preview wordt geladen</span></div><div class="brand-logo-canvas is-dark"><span>Preview wordt geladen</span></div>';
+          brandingLogoOpen.disabled = !(logo?.isRelationshipAsset && logo.downloadAvailable);
+          brandingLogoOpen.dataset.assetId = logo?.isRelationshipAsset ? logo.id : "";
+          brandingLogoOpen.dataset.fileName = logoName;
+          if (logo?.isRelationshipAsset && logo.previewAvailable && window.getRelationshipAssetPreview) {
+            window.getRelationshipAssetPreview(logo.id, logo.updatedAt || logo.createdAt).then((url) => {
+              if (portalBrandingRenderContext?.customer !== customer) return;
+              brandingLogoPreview.querySelectorAll(".brand-logo-canvas").forEach((canvas) => {
+                canvas.innerHTML = url ? `<img src="${escapeHtml(url)}" alt="${escapeHtml(logoName)}" />` : "<span>Logo-preview niet beschikbaar</span>";
+              });
+            }).catch(() => { brandingLogoPreview.querySelectorAll(".brand-logo-canvas").forEach((canvas) => { canvas.innerHTML = "<span>Logo-preview niet beschikbaar</span>"; }); });
+          } else {
+            brandingLogoPreview.querySelectorAll(".brand-logo-canvas").forEach((canvas) => { canvas.innerHTML = "<span>Logo-preview niet beschikbaar</span>"; });
+          }
+          brandingApprove.disabled = !logoApproved || customerApproved || !logo?.isRelationshipAsset;
+          brandingApprove.textContent = customerApproved ? "Branding goedgekeurd" : "Branding goedkeuren";
           brandingApprove.dataset.projectId = project.id;
+          brandingApprove.dataset.assetId = logo?.isRelationshipAsset ? logo.id : "";
         }
 
         function portalLogoConcepts(project = {}) {
@@ -5292,14 +5337,33 @@
           if (!onboardingForm.reportValidity()) return;
           saveOnboarding("submit");
         });
-        brandingApprove.addEventListener("click", () => {
+        brandingApprove.addEventListener("click", async () => {
           const projectId = brandingApprove.dataset.projectId;
-          if (!projectId) return;
-          approveBranding(projectId);
-          brandingMessage.textContent = "Je branding is goedgekeurd. We verwerken dit in je website.";
-          brandingMessage.className = "form-helper success";
-          renderBrandingCenter(customer, {});
-          renderAssetCenter({ customer, websites, projects, files, onboarding: onboardingState });
+          const assetId = brandingApprove.dataset.assetId;
+          if (!projectId || !assetId || brandingApprove.disabled) return;
+          if (!window.confirm("Je keurt het getoonde logo en de beschikbare merkonderdelen goed. Wil je doorgaan?")) return;
+          brandingApprove.disabled = true;
+          brandingMessage.textContent = "Goedkeuring opslaan…";
+          try {
+            const response = await fetch("/api/client-relationship-assets", { method: "POST", headers: { Authorization: `Bearer ${getPortalBearer()}`, "Content-Type": "application/json" }, body: JSON.stringify({ action: "approve_branding", assetId }) });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data.success) throw new Error(data.error || data.message || "Goedkeuring kon niet worden opgeslagen.");
+            approveBranding(projectId);
+            brandingMessage.textContent = "Je branding is goedgekeurd. We verwerken dit in je website.";
+            brandingMessage.className = "form-helper success";
+            window.dispatchEvent(new CustomEvent("relationship-assets:refresh-requested"));
+          } catch (error) {
+            brandingMessage.textContent = error.message || "Goedkeuring kon niet worden opgeslagen.";
+            brandingMessage.className = "form-helper error";
+            brandingApprove.disabled = false;
+          }
+        });
+        brandingLogoOpen.addEventListener("click", async () => {
+          if (!brandingLogoOpen.dataset.assetId || !window.openRelationshipAsset) return;
+          brandingLogoOpen.disabled = true;
+          try { await window.openRelationshipAsset(brandingLogoOpen.dataset.assetId, brandingLogoOpen.dataset.fileName || "logo"); }
+          catch (error) { brandingMessage.textContent = error.customerMessage || "Het logo kon tijdelijk niet worden geopend."; brandingMessage.className = "form-helper error"; }
+          finally { brandingLogoOpen.disabled = false; }
         });
         brandingRequest.addEventListener("click", () => {
           const project = brandingProjectForCustomer(customer, {});

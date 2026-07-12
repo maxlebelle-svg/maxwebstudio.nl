@@ -28,9 +28,20 @@ test("workspace enforces roles, archive state and mixed customer integrity", () 
 });
 
 test("workspace never exposes private storage paths", () => {
-  const safe = sanitizeFile({ id: "f", storage_path: "private/customer/file.png", location: "bucket", metadata: { source: "customer_portal" } });
+  const safe = sanitizeFile({ id: "f", storage_path: "private/customer/file.png", location: "bucket", metadata: { source: "customer_portal", description: "Logo", brandingRole: "logo", secret: "nooit" } });
   assert.equal(safe.storage_path, undefined);
   assert.equal(safe.location, undefined);
+  assert.equal(safe.metadata.description, "Logo");
+  assert.equal(safe.metadata.brandingRole, "logo");
+  assert.equal(safe.metadata.secret, undefined);
+});
+
+test("workspace exposes recent customer assets with review actions", () => {
+  assert.match(client, /Bestanden & merkassets/);
+  assert.match(client, /Nieuwe klantuploads/);
+  assert.match(client, /data-asset-open/);
+  assert.match(client, /data-asset-action="branding"/);
+  assert.match(client, /Alle bestanden bekijken/);
 });
 
 test("workspace shell exposes all required module entry points and responsive navigation", () => {
