@@ -119,6 +119,8 @@ test("secure preview approves and pays the exact published version", () => {
   assert.match(clientVersions, /packageValues\.length === 1/);
   assert.match(clientVersions, /source: "customer_payment_backfill"/);
   assert.match(clientVersions, /website_package_backfilled/);
+  assert.match(clientVersions, /packageFromFactoryBriefing/);
+  assert.match(clientVersions, /\^Websitepakket:/);
   assert.doesNotMatch(clientVersions, /\.5\b|50\s*%/);
 });
 
