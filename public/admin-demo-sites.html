@@ -23508,7 +23508,7 @@
 
         function demoDomain(record = {}) {
           const savedDemo = savedDemoSiteMeta(record) || {};
-          return cleanDomain(record.websiteUrl || record.website || savedDemo.websiteUrl || savedDemo.businessName || record.businessName);
+          return cleanDomain(savedDemo.domain || record.websiteUrl || record.website || savedDemo.websiteUrl || savedDemo.businessName || record.businessName);
         }
 
         function defaultInvoiceAmount(record = {}) {
@@ -23591,7 +23591,11 @@
             const preview = sourceUrl(savedDemo.previewUrl || record.previewUrl, previewSource);
             const thumbnail = savedDemoThumbnail(record);
             const demoName = savedDemo.businessName || record.businessName || "demo-site";
-            const factoryHref = `admin-website-factory.html${record.leadId ? `?leadId=${encodeURIComponent(record.leadId)}` : record.id ? `?journeyId=${encodeURIComponent(record.id)}` : ""}`;
+            const factoryHref = `admin-website-factory.html${savedDemo.customerId || record.customerId
+              ? `?customerId=${encodeURIComponent(savedDemo.customerId || record.customerId)}`
+              : savedDemo.leadId || record.leadId
+                ? `?leadId=${encodeURIComponent(savedDemo.leadId || record.leadId)}`
+                : `?demoJourneyId=${encodeURIComponent(savedDemo.demoJourneyId || record.id)}`}`;
             const customerText = savedDemo.customerId || record.customerId ? "Klant gekoppeld" : "Nog leadfase";
             const sourceText = previewSource === "manual" ? "Handmatige ZIP" : "Website Factory";
             const offerText = savedDemo.offerReady ? "Offerteklaar" : "Nog in review";
@@ -23635,6 +23639,8 @@
                     <span data-demo-strip-icon="▧">${escapeHtml(sourceText)}</span>
                     <span data-demo-strip-icon="□">${escapeHtml(savedAt)}</span>
                     <span data-demo-strip-icon="◇">${escapeHtml(offerText)}</span>
+                    ${savedDemo.package ? `<span data-demo-strip-icon="◈">${escapeHtml(savedDemo.package)}</span>` : ""}
+                    ${savedDemo.previewVersion ? `<span data-demo-strip-icon="V">Versie ${escapeHtml(savedDemo.previewVersion)}</span>` : ""}
                   </div>
                   <div class="demo-library-preview-url" title="${escapeHtml(preview)}">
                     <span aria-hidden="true">↗</span>

@@ -527,6 +527,64 @@
 
         <section class="admin-section" id="demo-klantreis">
           <section class="factory-context-banner" id="factory-active-context" aria-live="polite" hidden></section>
+          <section class="factory-guided-shell" id="factory-guided-shell" aria-label="Website Factory werkruimte">
+            <header class="factory-guided-header">
+              <div>
+                <p class="section-kicker">Website Factory</p>
+                <h2>Website Factory Control Center</h2>
+                <p>Bouw, verbeter en publiceer professionele websites in enkele duidelijke stappen.</p>
+              </div>
+              <div class="factory-guided-primary-actions">
+                <button class="button primary" id="factory-primary-save-demo" type="button">Opslaan in Demo Sites</button>
+                <details class="factory-more-menu" id="factory-more-menu">
+                  <summary class="button secondary">Meer opties <span aria-hidden="true">⌄</span></summary>
+                  <div class="factory-more-menu-panel" role="menu" aria-label="Technische Website Factory opties">
+                    <button type="button" data-factory-proxy="demo-journey-regenerate-preview">Preview opnieuw genereren</button>
+                    <button type="button" data-factory-proxy="demo-journey-preview-refresh">Technische preview vernieuwen</button>
+                    <button type="button" data-factory-action="version">Factory-versie kiezen</button>
+                    <button type="button" data-factory-source-choice="manual">Handmatige ZIP gebruiken</button>
+                    <button type="button" data-factory-proxy="demo-journey-upload-manual-zip">ZIP uploaden</button>
+                    <button type="button" data-factory-proxy="demo-journey-regenerate">Build opnieuw starten</button>
+                    <button type="button" data-factory-action="versions">Previewversies beheren</button>
+                  </div>
+                </details>
+              </div>
+            </header>
+
+            <div class="factory-status-overview" id="factory-status-overview" aria-label="Website voortgang"></div>
+
+            <section class="factory-guided-preview-workspace" aria-labelledby="factory-preview-workspace-title">
+              <aside class="factory-guided-preview-sidebar">
+                <h3 id="factory-preview-workspace-title">Preview</h3>
+                <div class="factory-guided-control-group">
+                  <strong>Apparaat</strong>
+                  <button class="is-active" type="button" data-guided-preview-mode="desktop">Desktop</button>
+                  <button type="button" data-guided-preview-mode="tablet">Tablet</button>
+                  <button type="button" data-guided-preview-mode="mobile">Mobiel</button>
+                </div>
+                <div class="factory-guided-control-group">
+                  <strong>Preview acties</strong>
+                  <button type="button" data-factory-proxy="demo-journey-preview-refresh">Preview vernieuwen</button>
+                  <button type="button" data-factory-proxy="demo-journey-regenerate-preview">Opnieuw genereren</button>
+                </div>
+                <div class="factory-guided-control-group">
+                  <strong>Factory opties</strong>
+                  <button type="button" data-factory-action="version">Factory-versie kiezen</button>
+                  <button type="button" data-factory-proxy="demo-journey-upload-manual-zip">ZIP uploaden</button>
+                  <button type="button" data-factory-source-choice="manual">Handmatige ZIP gebruiken</button>
+                </div>
+              </aside>
+              <div class="factory-guided-preview-main">
+                <div id="factory-guided-preview-slot"></div>
+                <div class="factory-guided-version-meta" id="factory-guided-version-meta"></div>
+              </div>
+            </section>
+
+            <section class="factory-process-strip" aria-labelledby="factory-process-title">
+              <div class="factory-process-heading"><strong id="factory-process-title">Proces stappen</strong><span id="factory-process-next">Volgende stap wordt bepaald…</span></div>
+              <div class="factory-process-steps" id="factory-process-steps"></div>
+            </section>
+          </section>
           <div class="admin-section-heading factory-command-heading factory-control-heading">
             <div>
               <p class="section-kicker">Website Factory</p>
@@ -23564,6 +23622,10 @@
             id: journey?.id || "",
             leadId: centralLeadId,
             customerId: journey?.customerId || lead?.customerId || lead?.customer_id || "",
+            projectId: factoryCustomerContext?.project?.id || projectWorkspace?.projectId || "",
+            websiteId: factoryCustomerContext?.website?.id || projectWorkspace?.websiteId || "",
+            previewVersionId: buildHistory.activeVersion?.id || "",
+            previewVersion: buildHistory.activeVersion?.version || buildHistory.latestJob?.previewVersion || "",
             businessName: elements.business?.value || "",
             contactName: elements.contact?.value || "",
             email: elements.email?.value || "",
@@ -25058,6 +25120,148 @@
         } else {
           init();
         }
+      })();
+    </script>
+    <script>
+      (() => {
+        "use strict";
+
+        const text = (selector, fallback = "-") => document.querySelector(selector)?.textContent?.trim() || fallback;
+        const value = (selector, fallback = "") => document.querySelector(selector)?.value?.trim() || fallback;
+        const hasPreview = () => Boolean(document.getElementById("demo-journey-preview-frame")?.getAttribute("src"));
+        const classForState = (state = "") => /fout|mislukt|error/i.test(state) ? "is-error" : /klaar|compleet|voltooid|opgeslagen|goedgekeurd/i.test(state) ? "is-complete" : /bezig|concept|controle|actief/i.test(state) ? "is-active" : "is-waiting";
+
+        function guidedState() {
+          const intakeScore = Number.parseInt(text("#demo-intake-score", "0"), 10) || 0;
+          const scanSummary = text("#factory-control-source-state", "Niet gestart");
+          const buildState = text("#demo-journey-build-state", "Geen build");
+          const previewState = text("#demo-journey-preview-stage-state", "Nog geen preview");
+          const feedback = value("#demo-journey-feedback");
+          const briefingReady = Boolean(value("#demo-journey-briefing")) || intakeScore >= 80;
+          const researchReady = Boolean(document.querySelector("#factory-intelligence-stats .demo-kv-row, #factory-intelligence-stats > *"));
+          const scanReady = !/niet|geen|crm/i.test(scanSummary) || researchReady;
+          const buildReady = !/geen|start|wacht/i.test(buildState);
+          const previewReady = hasPreview() || !/geen|nog/i.test(previewState);
+          const saved = /opgeslagen/i.test(previewState) || /bijwerken/i.test(text("#demo-journey-save-demo-site", ""));
+          return { intakeScore, scanSummary, buildState, previewState, feedback, briefingReady, researchReady, scanReady, buildReady, previewReady, saved };
+        }
+
+        function renderGuidedStatus() {
+          const target = document.getElementById("factory-status-overview");
+          if (!target) return;
+          const state = guidedState();
+          const cards = [
+            ["Briefing", state.briefingReady ? "Compleet" : "Aandacht nodig", `${state.intakeScore}% ingevuld`, "✓"],
+            ["Research", state.researchReady ? "Compleet" : "Nog nodig", state.researchReady ? "Bronnen geanalyseerd" : "Start na de briefing", "⌕"],
+            ["Website scan", state.scanReady ? "Voltooid" : "Niet gestart", value("#demo-journey-website", "Geen website"), "✓"],
+            ["Build status", state.buildState, text("#factory-cockpit-package", "Websitepakket"), "‹/›"],
+            ["Preview", state.previewReady ? "Klaar" : "Nog niet beschikbaar", state.previewReady ? "Desktop, tablet en mobiel" : "Maak eerst een build", "▣"],
+            ["Feedback", state.feedback ? "Open" : "Geen", state.feedback ? "Feedback vraagt aandacht" : "0 open punten", "☵"],
+          ];
+          const signature = JSON.stringify(cards);
+          if (target.dataset.signature === signature) return;
+          target.dataset.signature = signature;
+          target.innerHTML = cards.map(([title, status, detail, icon]) => `<article class="factory-status-tile ${classForState(status)}"><span class="factory-status-tile-icon" aria-hidden="true">${icon}</span><span><strong>${title}</strong><b>${status}</b></span><small>${detail}</small></article>`).join("");
+        }
+
+        function renderGuidedProcess() {
+          const target = document.getElementById("factory-process-steps");
+          if (!target) return;
+          const state = guidedState();
+          const steps = [
+            ["Briefing", state.briefingReady, !state.briefingReady, "Compleet", "Invullen"],
+            ["Research", state.researchReady, state.briefingReady && !state.researchReady, "Compleet", "Wachtend"],
+            ["Scan", state.scanReady, state.researchReady && !state.scanReady, "Voltooid", "Wachtend"],
+            ["Build", state.buildReady, state.scanReady && !state.buildReady, state.buildState, "Nog niet gestart"],
+            ["Preview", state.previewReady, state.buildReady && !state.previewReady, "Klaar", "Wachtend"],
+            ["Feedback", Boolean(state.feedback), state.previewReady && !state.feedback, "Ontvangen", "Wachtend"],
+            ["Live zetten", /verkocht|definitieve|live/i.test(value("#demo-journey-status")), false, "Voltooid", "Nog niet gestart"],
+          ];
+          const activeIndex = Math.max(0, steps.findIndex(([,done,active]) => !done && active));
+          const signature = JSON.stringify(steps);
+          if (target.dataset.signature !== signature) {
+            target.dataset.signature = signature;
+            target.innerHTML = steps.map(([label, done, active, doneText, waitingText], index) => `<div class="factory-process-step ${done ? "is-complete" : active ? "is-active" : "is-waiting"}"><i>${done ? "✓" : index + 1}</i><span><b>${label}</b><small>${done ? doneText : active ? "Actief" : waitingText}</small></span></div>`).join("");
+          }
+          const next = document.getElementById("factory-process-next");
+          const nextText = `Volgende stap: ${steps[activeIndex]?.[0] || "Live zetten"}`;
+          if (next && next.textContent !== nextText) next.textContent = nextText;
+        }
+
+        function renderGuidedVersionMeta() {
+          const target = document.getElementById("factory-guided-version-meta");
+          if (!target) return;
+          const previewState = text("#demo-journey-preview-stage-state", "Geen preview");
+          const source = /handmatige/i.test(previewState) ? "Handmatige ZIP" : "Website Factory";
+          const meta = [
+            ["Huidige versie", text("#demo-journey-preview-stage-state", "Concept")],
+            ["Laatst gegenereerd", text("#demo-journey-build-state", "Nog niet gegenereerd")],
+            ["Door", value("#demo-journey-assigned", "Huidige medewerker")],
+            ["Actieve bron", source],
+            ["Demo-status", value("#demo-journey-status", "Nog niet gestart").replaceAll("_", " ")],
+          ];
+          const signature = JSON.stringify(meta);
+          if (target.dataset.signature === signature) return;
+          target.dataset.signature = signature;
+          target.innerHTML = meta.map(([label, content]) => `<div><small>${label}</small><strong>${content}</strong></div>`).join("");
+        }
+
+        function syncPrimaryAction() {
+          const primary = document.getElementById("factory-primary-save-demo");
+          const original = document.getElementById("demo-journey-save-demo-site");
+          if (!primary || !original) return;
+          const saved = guidedState().saved;
+          const label = saved ? "Demo bijwerken" : "Opslaan in Demo Sites";
+          const busy = original.getAttribute("aria-busy") || "false";
+          if (primary.textContent !== label) primary.textContent = label;
+          if (primary.disabled !== original.disabled) primary.disabled = original.disabled;
+          if (primary.getAttribute("aria-busy") !== busy) primary.setAttribute("aria-busy", busy);
+          if (primary.title !== (original.title || "")) primary.title = original.title || "";
+        }
+
+        function syncGuidedFactory() {
+          renderGuidedStatus();
+          renderGuidedProcess();
+          renderGuidedVersionMeta();
+          syncPrimaryAction();
+        }
+
+        function proxyClick(id) {
+          const target = document.getElementById(id);
+          if (!target || target.disabled) return;
+          target.click();
+          document.getElementById("factory-more-menu")?.removeAttribute("open");
+        }
+
+        function initGuidedFactory() {
+          const preview = document.querySelector(".factory-control-preview");
+          const slot = document.getElementById("factory-guided-preview-slot");
+          if (preview && slot && preview.parentElement !== slot) slot.appendChild(preview);
+
+          document.getElementById("factory-primary-save-demo")?.addEventListener("click", () => proxyClick("demo-journey-save-demo-site"));
+          document.querySelectorAll("[data-factory-proxy]").forEach((button) => button.addEventListener("click", () => proxyClick(button.dataset.factoryProxy)));
+          document.querySelectorAll("[data-guided-preview-mode]").forEach((button) => button.addEventListener("click", () => {
+            document.querySelectorAll("[data-guided-preview-mode]").forEach((item) => item.classList.toggle("is-active", item === button));
+            document.querySelector(`.factory-control-preview [data-preview-mode="${button.dataset.guidedPreviewMode}"]`)?.click();
+          }));
+          document.querySelectorAll("[data-factory-source-choice]").forEach((button) => button.addEventListener("click", () => {
+            const source = button.dataset.factorySourceChoice;
+            const sourceButton = document.querySelector(`.factory-control-preview [data-preview-source="${source}"]`);
+            if (sourceButton && !sourceButton.disabled) sourceButton.click();
+            else proxyClick("demo-journey-upload-manual-zip");
+          }));
+          document.querySelectorAll("[data-factory-action='version'], [data-factory-action='versions']").forEach((button) => button.addEventListener("click", () => {
+            document.getElementById("demo-journey-build-history")?.scrollIntoView({ behavior: "smooth", block: "center" });
+            document.getElementById("factory-more-menu")?.removeAttribute("open");
+          }));
+
+          const observed = document.getElementById("demo-klantreis");
+          if (observed) new MutationObserver(() => window.requestAnimationFrame(syncGuidedFactory)).observe(observed, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ["disabled", "src", "hidden", "aria-busy"] });
+          syncGuidedFactory();
+        }
+
+        if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initGuidedFactory);
+        else initGuidedFactory();
       })();
     </script>
     <script src="admin/ui/global-command-palette.js" defer></script>

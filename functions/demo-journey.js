@@ -630,11 +630,24 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
     if (!current?.id) return jsonResponse(400, { success: false, error: "Sla eerst de demo-aanvraag op." });
     const savedAt = new Date().toISOString();
     const previewPackage = current.preview_package && typeof current.preview_package === "object" ? current.preview_package : {};
+    const previousSavedDemo = previewPackage.savedDemoSite || previewPackage.saved_demo_site || null;
     const requestedSource = normalizePreviewSource(payload.previewSource || payload.preview_source || previewPackage.activePreviewSource);
     const activePreviewSource = requestedSource === "manual" && previewPackage.manualPreview?.files?.length ? "manual" : "factory";
     const previewUrl = cleanText(payload.previewUrl || payload.preview_url || current.preview_url);
     if (!previewUrl) return jsonResponse(400, { success: false, error: "Genereer eerst een preview voordat je de demo-site opslaat." });
     const currentJourney = mapJourney(current);
+    const protectedDemo = Boolean(previousSavedDemo?.saved && (
+      currentJourney.previewApprovedAt
+      || currentJourney.deliveryApprovedAt
+      || ["definitieve_versie_klaar", "verkocht"].includes(currentJourney.demoStatus)
+    ));
+    if (protectedDemo && !Boolean(payload.createNewVersion || payload.create_new_version)) {
+      return jsonResponse(409, {
+        success: false,
+        code: "protected_demo_version",
+        error: "Deze demo is al goedgekeurd of definitief. Maak eerst een nieuwe previewversie om de live of goedgekeurde versie intact te houden.",
+      });
+    }
     const thumbnailPackage = activePreviewSource === "manual" ? { ...previewPackage, files: previewPackage.manualPreview?.files || [] } : previewPackage;
     const thumbnail = buildSavedDemoThumbnail({ journey: currentJourney, previewPackage: thumbnailPackage, previewUrl, savedAt });
     const savedDemoSite = {
@@ -643,11 +656,18 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
       savedBy: admin.id,
       leadId: cleanUuid(payload.leadId || payload.lead_id) || currentJourney.leadId || null,
       customerId: cleanUuid(payload.customerId || payload.customer_id) || currentJourney.customerId || null,
+      projectId: cleanUuid(payload.projectId || payload.project_id) || previousSavedDemo?.projectId || null,
+      websiteId: cleanUuid(payload.websiteId || payload.website_id) || previousSavedDemo?.websiteId || null,
       demoJourneyId: current.id,
       businessName: cleanText(payload.businessName || payload.business_name || currentJourney.businessName),
+      domain: cleanText(payload.websiteUrl || payload.website_url || currentJourney.websiteUrl),
       previewUrl,
-      previewVersion: previewPackage.version || previewPackage.meta?.version || null,
+      previewVersionId: cleanUuid(payload.previewVersionId || payload.preview_version_id) || previousSavedDemo?.previewVersionId || null,
+      previewVersion: Number(payload.previewVersion || payload.preview_version || previewPackage.version || previewPackage.meta?.version || 0) || null,
       previewSource: activePreviewSource,
+      sourceLabel: activePreviewSource === "manual" ? "Handmatige ZIP" : "Website Factory",
+      status: currentJourney.demoStatus,
+      package: cleanText(payload.packageType || payload.package_type || previewPackage.meta?.packageType || previewPackage.packageType),
       manualZipFileName: activePreviewSource === "manual" ? cleanText(previewPackage.manualPreview?.fileName) : "",
       thumbnailUrl: thumbnail.thumbnailUrl,
       thumbnailGeneratedAt: thumbnail.thumbnailGeneratedAt,
@@ -665,7 +685,10 @@ async function upsertJourney({ event, supabaseUrl, serviceRoleKey, admin }) {
           ...(previewPackage.linkedRecords || {}),
           leadId: savedDemoSite.leadId,
           customerId: savedDemoSite.customerId,
+          projectId: savedDemoSite.projectId,
+          websiteId: savedDemoSite.websiteId,
           demoJourneyId: current.id,
+          previewVersionId: savedDemoSite.previewVersionId,
         },
       },
       updated_by: admin.id,
