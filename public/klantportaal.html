@@ -3244,6 +3244,7 @@
             iframe.className = "portal-website-mini-preview";
             iframe.title = `Veilige preview van ${previewVersion.title || website.name || "je website"}`;
             iframe.src = previewVersion.thumbnailPath || previewVersion.safePreviewPath;
+            iframe.dataset.previewVersionId = previewVersion.id;
             iframe.loading = "lazy";
             const caption = document.createElement("div");
             caption.className = "portal-website-preview-caption";
@@ -3255,6 +3256,7 @@
             const open = document.createElement("a");
             open.className = "button secondary portal-preview-open-full";
             open.href = previewVersion.safePreviewPath;
+            open.dataset.previewVersionId = previewVersion.id;
             open.target = "_blank";
             open.rel = "noopener";
             open.textContent = "Bekijk ontwerp";

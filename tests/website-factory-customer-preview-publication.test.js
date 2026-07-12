@@ -11,6 +11,7 @@ const clientVersions = fs.readFileSync(path.join(root, "functions/client-preview
 const clientRender = fs.readFileSync(path.join(root, "functions/client-preview-render.js"), "utf8");
 const portal = fs.readFileSync(path.join(root, "public/klantportaal.html"), "utf8");
 const previewEmbed = fs.readFileSync(path.join(root, "public/preview-embed.html"), "utf8");
+const securePreview = fs.readFileSync(path.join(root, "public/preview.html"), "utf8");
 
 test("Website Factory keeps Demo Sites and customer publication as separate actions", () => {
   assert.match(factoryUi, /id="factory-primary-save-demo"[^>]*>Opslaan in Demo Sites/);
@@ -92,6 +93,26 @@ test("thumbnail embed is authenticated, persistent and has a visible fallback", 
   assert.doesNotMatch(previewEmbed, /data:image/);
   assert.match(clientRender, /customer_id=eq\.\$\{encodeURIComponent\(customer\.id\)\}/);
   assert.match(clientRender, /published_to_portal=eq\.true/);
+  assert.match(previewEmbed, /width: 1440px/);
+  assert.match(previewEmbed, /pointer-events: none/);
+  assert.match(previewEmbed, /sandbox", "allow-scripts"/);
+});
+
+test("secure preview approves and pays the exact published version", () => {
+  assert.match(securePreview, /action: "approve", previewVersionId: versionId/);
+  assert.match(securePreview, /approvedPreviewVersionId !== versionId/);
+  assert.match(securePreview, /action: "create_payment", previewVersionId:/);
+  assert.doesNotMatch(securePreview, /action: "approve_preview"/);
+  assert.match(clientVersions, /currentVersionId !== versionId/);
+  assert.match(clientVersions, /starter: 15000/);
+  assert.match(clientVersions, /business: 30000/);
+  assert.match(clientVersions, /premium: 50000/);
+  assert.doesNotMatch(clientVersions, /\.5\b|50\s*%/);
+});
+
+test("portal thumbnail and full link expose the same version id", () => {
+  assert.match(portal, /iframe\.dataset\.previewVersionId = previewVersion\.id/);
+  assert.match(portal, /open\.dataset\.previewVersionId = previewVersion\.id/);
 });
 
 test("republishing the selected version makes it the canonical latest publication", () => {

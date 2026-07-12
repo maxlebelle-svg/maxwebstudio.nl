@@ -18,6 +18,10 @@ function createTables() {
     customers: [
       { id: ids.customer, auth_user_id: ids.authUser, name: "Test Klant", company: "Testbedrijf", email: "klant@example.nl", metadata: { publishedPreviewVersionId: ids.preview } },
     ],
+    websites: [
+      { id: ids.website, customer_id: ids.customer, name: "Testwebsite", hosting_package: "business_website", care_package: "care_basic", metadata: {} },
+    ],
+    customer_invoices: [],
     website_preview_versions: [
       {
         id: ids.preview,
@@ -167,6 +171,14 @@ function getEvent() {
   };
 }
 
+function approvalEvent() {
+  return {
+    httpMethod: "POST",
+    headers: { Authorization: "Bearer customer-token" },
+    body: JSON.stringify({ action: "approve", previewVersionId: ids.preview, feedback: "Akkoord" }),
+  };
+}
+
 async function run() {
   const previousEnv = {
     supabaseUrl: process.env.SUPABASE_URL,
@@ -214,6 +226,22 @@ async function run() {
   assert.strictEqual(tables.customer_timeline_events.filter((row) => row.is_global === false).length, 1, "customer timeline should stay customer-scoped");
   assert(tables.customer_timeline_events.every((row) => row.metadata.previewVersionId === ids.preview));
   assert(tables.customer_timeline_events.every((row) => row.metadata.feedbackId === ids.feedback));
+
+  const approval = await handler(approvalEvent());
+  assert.strictEqual(approval.statusCode, 200);
+  const approvalBody = JSON.parse(approval.body);
+  assert.strictEqual(approvalBody.approvedPreviewVersionId, ids.preview);
+  assert.strictEqual(approvalBody.paymentReadiness.ready, true);
+  assert.strictEqual(approvalBody.paymentReadiness.amountCents, 30000, "business package uses the fixed 300 euro deposit");
+  const approved = tables.website_preview_versions.find((row) => row.id === ids.preview);
+  assert.strictEqual(approved.status, "approved");
+  assert.strictEqual(approved.approved_by_auth_user_id, ids.authUser);
+  assert(approved.approved_at);
+  const duplicateApproval = await handler(approvalEvent());
+  const duplicateApprovalBody = JSON.parse(duplicateApproval.body);
+  assert.strictEqual(duplicateApprovalBody.duplicate, true, "double approval must be idempotent");
+  assert.strictEqual(tables.customer_timeline_events.filter((row) => row.event_type === "preview_approved").length, 1);
+  assert.strictEqual(tables.customer_timeline_events.filter((row) => row.metadata?.notificationType === "preview_approved").length, 1);
 
   process.env.SUPABASE_URL = previousEnv.supabaseUrl;
   process.env.SUPABASE_ANON_KEY = previousEnv.anonKey;

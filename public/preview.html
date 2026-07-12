@@ -123,6 +123,8 @@
         const previewKey = "maxwebstudioActivePreviewContext";
         const previewFrame = document.getElementById("published-preview-frame");
         const fallbackSite = document.getElementById("preview-fallback-site");
+        let publishedPreviewVersion = null;
+        let paymentReadiness = null;
 
         function readJson(key, fallback = null) {
           try {
@@ -184,12 +186,43 @@
           title.textContent = `${data.preview.title || "Website-preview"} staat klaar.`;
           urlLabel.textContent = `preview.maxwebstudio.nl/versie-${data.preview.version || 1}`;
           previewFrame.srcdoc = data.preview.html;
+          const stateResponse = await fetch(`/.netlify/functions/client-preview-versions?versionId=${encodeURIComponent(versionId)}`, { headers: { Accept: "application/json", Authorization: `Bearer ${token}` }, cache: "no-store" });
+          const state = await stateResponse.json().catch(() => ({}));
+          if (!stateResponse.ok || state.success === false || state.currentPreviewVersionId !== versionId) throw new Error(state.error || "Deze preview is niet de huidige gepubliceerde versie.");
+          publishedPreviewVersion = state.currentPreviewVersion || state.previewVersions?.[0] || null;
+          paymentReadiness = state.paymentReadiness || null;
           previewFrame.hidden = false;
           fallbackSite.hidden = true;
           accessTitle.textContent = "Preview gekoppeld";
           accessText.textContent = "Deze ontwerpversie is veilig gekoppeld aan je klantaccount.";
-          approve.disabled = false;
+          approve.disabled = publishedPreviewVersion?.approvedAt ? true : !consent.checked;
+          actionMessage.textContent = publishedPreviewVersion?.approvedAt ? "Ontwerp goedgekeurd." : "Vink akkoord aan om deze preview goed te keuren.";
+          renderPaymentReadiness(paymentReadiness);
           return true;
+        }
+
+        consent.addEventListener("change", () => {
+          approve.disabled = Boolean(publishedPreviewVersion?.approvedAt) || !consent.checked;
+          if (!consent.checked && !publishedPreviewVersion?.approvedAt) actionMessage.textContent = "Vink eerst aan dat je akkoord bent met de richting van de preview.";
+        });
+
+        function renderPaymentReadiness(readiness = {}) {
+          paymentReadiness = readiness || {};
+          if (readiness.paid) {
+            paymentTitle.textContent = "Aanbetaling ontvangen";
+            paymentText.textContent = "Je betaling is ontvangen. We gaan door met de volgende stap.";
+            paymentLink.classList.add("is-disabled");
+            paymentLink.setAttribute("aria-disabled", "true");
+            paymentLink.removeAttribute("href");
+            return;
+          }
+          if (!readiness.approved) return;
+          paymentTitle.textContent = "Je aanbetaling staat klaar";
+          paymentText.textContent = readiness.amount ? `Vaste aanbetaling voor je websitepakket: € ${readiness.amount}.` : "De betaalstap staat klaar.";
+          paymentLink.classList.remove("is-disabled");
+          paymentLink.removeAttribute("aria-disabled");
+          paymentLink.href = readiness.checkoutUrl || "#preview-payment";
+          paymentLink.textContent = "Betaal aanbetaling";
         }
 
         function renderAccess() {
@@ -236,7 +269,7 @@
           }
           approve.disabled = true;
           actionMessage.textContent = "Akkoord verwerken...";
-          const context = writePreviewContext({
+          writePreviewContext({
             status: "preview_approved",
             previewApprovedAt: new Date().toISOString(),
             feedback: feedback.value.trim(),
@@ -244,29 +277,48 @@
           });
           try {
             const token = currentAccessToken();
-            if (token) {
-              const response = await fetch("/api/demo-journey?scope=customer", {
+            if (!token) throw new Error("Log opnieuw in om akkoord te geven.");
+            {
+              const versionId = params.get("version") || "";
+              const response = await fetch("/.netlify/functions/client-preview-versions", {
                 method: "POST",
                 headers: {
                   Accept: "application/json",
                   "Content-Type": "application/json",
                   Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({ action: "approve_preview", feedback: feedback.value.trim() }),
+                body: JSON.stringify({ action: "approve", previewVersionId: versionId, feedback: feedback.value.trim() }),
               });
               const data = await response.json().catch(() => ({}));
               if (!response.ok || data.success === false) throw new Error(data.error || "Akkoord kon niet worden verwerkt.");
+              if (data.approvedPreviewVersionId !== versionId) throw new Error("De goedgekeurde versie wijkt af van de zichtbare preview.");
+              publishedPreviewVersion = data.previewVersion;
+              renderPaymentReadiness(data.paymentReadiness);
             }
-            actionMessage.textContent = "Akkoord opgeslagen. We bereiden de livegang voor.";
-            paymentTitle.textContent = "Volgende stap klaar";
-            paymentText.textContent = "Open de betaalstap zodra deze voor uw project beschikbaar is.";
-            paymentLink.classList.remove("is-disabled");
-            paymentLink.removeAttribute("aria-disabled");
-            paymentLink.href = context.checkoutUrl || "betalen.html";
+            actionMessage.textContent = "Ontwerp goedgekeurd. De betaalstap staat klaar.";
           } catch (error) {
             actionMessage.textContent = error.message || "Akkoord kon niet worden verwerkt.";
           } finally {
-            approve.disabled = false;
+            approve.disabled = Boolean(publishedPreviewVersion?.approvedAt) || !consent.checked;
+          }
+        });
+
+        paymentLink.addEventListener("click", async (event) => {
+          if (paymentLink.getAttribute("aria-disabled") === "true" || paymentReadiness?.paid) { event.preventDefault(); return; }
+          if (paymentReadiness?.checkoutUrl) return;
+          event.preventDefault();
+          paymentLink.setAttribute("aria-disabled", "true");
+          paymentLink.textContent = "Betaalstap voorbereiden…";
+          try {
+            const response = await fetch("/.netlify/functions/client-preview-versions", { method: "POST", headers: { Accept: "application/json", "Content-Type": "application/json", Authorization: `Bearer ${currentAccessToken()}` }, body: JSON.stringify({ action: "create_payment", previewVersionId: params.get("version") || "" }) });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || data.success === false || !data.paymentReadiness?.checkoutUrl) throw new Error(data.error || "De betaalstap kon niet worden gestart.");
+            renderPaymentReadiness(data.paymentReadiness);
+            window.location.assign(data.paymentReadiness.checkoutUrl);
+          } catch (error) {
+            actionMessage.textContent = error.message || "De betaalstap kon niet worden gestart.";
+            paymentLink.removeAttribute("aria-disabled");
+            paymentLink.textContent = "Betaal aanbetaling";
           }
         });
 

@@ -1,6 +1,7 @@
 const { corsHeaders } = require("./_cors");
 const { randomUUID, createHash } = require("crypto");
 const { createTimelineEvent } = require("./services/timelineService");
+const { getBaseUrl, getMollieApiKey } = require("./mollie-products");
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -34,13 +35,16 @@ exports.handler = async (event) => {
     const orderedRows = currentPreviewVersionId
       ? [...rows].sort((a, b) => Number(cleanText(b.id) === currentPreviewVersionId) - Number(cleanText(a.id) === currentPreviewVersionId))
       : rows;
+    const currentVersion = orderedRows.find((row) => cleanText(row.id) === currentPreviewVersionId) || null;
+    const paymentReadiness = currentVersion ? await resolvePaymentReadiness(context, customer, currentVersion) : unavailablePayment("preview_not_published");
     return jsonResponse(200, {
       success: true,
       customer: { id: customer.id, name: cleanText(customer.name), company: cleanText(customer.company || customer.company_name) },
       currentPreviewVersionId,
-      currentPreviewVersion: orderedRows.find((row) => cleanText(row.id) === currentPreviewVersionId)
-        ? sanitizeClientVersion(orderedRows.find((row) => cleanText(row.id) === currentPreviewVersionId), currentPreviewVersionId)
+      currentPreviewVersion: currentVersion
+        ? sanitizeClientVersion(currentVersion, currentPreviewVersionId)
         : null,
+      paymentReadiness,
       previewVersions: orderedRows.map((row) => sanitizeClientVersion(row, currentPreviewVersionId)),
     });
   } catch (error) {
@@ -59,6 +63,8 @@ async function handlePreviewAction(context, customer, authUser, payload = {}) {
   const action = cleanText(payload.action).toLowerCase();
   const versionId = uuidOrEmpty(payload.previewVersionId || payload.preview_version_id);
   if (!versionId) return jsonResponse(400, { success: false, error: "Previewversie ontbreekt." });
+  const currentVersionId = uuidOrEmpty(customer.metadata?.publishedPreviewVersionId);
+  if (!currentVersionId || currentVersionId !== versionId) return jsonResponse(409, { success: false, code: "preview_version_not_current", error: "Deze preview is niet de huidige gepubliceerde klantversie." });
   const version = await readSingle(context, "website_preview_versions", [
     "select=*",
     `id=eq.${versionId}`,
@@ -69,6 +75,7 @@ async function handlePreviewAction(context, customer, authUser, payload = {}) {
   if (!version?.id) return jsonResponse(404, { success: false, error: "Previewversie niet gevonden voor dit klantaccount." });
   if (action === "feedback") return savePreviewFeedback(context, customer, authUser, version, payload);
   if (action === "approve") return approvePreviewVersion(context, customer, authUser, version, payload);
+  if (action === "create_payment") return createPreviewDepositPayment(context, customer, authUser, version);
   return jsonResponse(400, { success: false, error: "Onbekende previewactie." });
 }
 
@@ -235,7 +242,7 @@ function feedbackSideEffectKey(type, version, feedback) {
 
 async function approvePreviewVersion(context, customer, authUser, version, payload) {
   if (version.allow_approval === false) return jsonResponse(403, { success: false, error: "Goedkeuring is voor deze previewversie gesloten." });
-  if (version.approved_at) return jsonResponse(200, { success: true, duplicate: true, previewVersion: sanitizeClientVersion(version) });
+  if (version.approved_at) return jsonResponse(200, { success: true, duplicate: true, approvedPreviewVersionId: version.id, previewVersion: sanitizeClientVersion(version, version.id), paymentReadiness: await resolvePaymentReadiness(context, customer, version) });
   const now = new Date().toISOString();
   const rows = await patchRows(context, "website_preview_versions", `id=eq.${version.id}`, {
     approved_at: now,
@@ -263,8 +270,93 @@ async function approvePreviewVersion(context, customer, authUser, version, paylo
     severity: "success",
     metadata: { dedupeKey: `preview_approved:${version.id}`, previewVersionId: version.id, websiteId: version.website_id || "" },
   });
-  return jsonResponse(200, { success: true, previewVersion: sanitizeClientVersion(updated) });
+  await safeTimeline({
+    customerId: customer.id,
+    eventType: "customer_notification",
+    title: "Ontwerp goedgekeurd",
+    description: `De klant heeft preview V${version.version || 1} goedgekeurd. De betaalstap kan worden gestart.`,
+    module: "notifications",
+    referenceType: "website_preview_version",
+    referenceId: version.id,
+    actorName: customer.name || authUser.email || "Klant",
+    actorRole: "customer",
+    severity: "success",
+    metadata: { dedupeKey: `preview_approved_notification:${version.id}`, notificationType: "preview_approved", previewVersionId: version.id },
+    isGlobal: true,
+    visibleToCustomer: false,
+  });
+  return jsonResponse(200, { success: true, approvedPreviewVersionId: version.id, previewVersion: sanitizeClientVersion(updated, version.id), paymentReadiness: await resolvePaymentReadiness(context, customer, updated) });
 }
+
+const depositCentsByPackage = Object.freeze({ starter: 15000, starter_site: 15000, business: 30000, business_website: 30000, premium: 50000, premium_growth: 50000 });
+
+async function resolvePaymentReadiness(context, customer, version) {
+  const website = version.website_id
+    ? await readSingle(context, "websites", `select=id,customer_id,name,hosting_package,care_package,metadata&id=eq.${encodeURIComponent(version.website_id)}&customer_id=eq.${encodeURIComponent(customer.id)}&limit=1`)
+    : await readSingle(context, "websites", `select=id,customer_id,name,hosting_package,care_package,metadata&customer_id=eq.${encodeURIComponent(customer.id)}&order=updated_at.desc&limit=1`);
+  const packageKey = normalizePackageKey(website?.hosting_package || website?.metadata?.websitePackage || customer.package);
+  const amountCents = depositCentsByPackage[packageKey] || 0;
+  if (!amountCents) return unavailablePayment("website_package_missing", { packageKey, approved: Boolean(version.approved_at), previewVersionId: version.id });
+  const invoice = await findDepositInvoice(context, customer, version);
+  const status = cleanText(invoice?.mollie_payment_status || invoice?.status).toLowerCase();
+  const paid = status === "paid" || Boolean(invoice?.paid_at);
+  const reusable = Boolean(invoice?.mollie_payment_id && invoice?.mollie_checkout_url && !["failed", "expired", "canceled", "cancelled"].includes(status));
+  return {
+    ready: Boolean(version.approved_at) && !paid,
+    approved: Boolean(version.approved_at),
+    paid,
+    status: paid ? "paid" : reusable ? status || "open" : version.approved_at ? "ready" : "awaiting_approval",
+    amountCents,
+    amount: (amountCents / 100).toFixed(2),
+    packageKey,
+    websiteId: cleanText(website?.id),
+    previewVersionId: version.id,
+    checkoutUrl: reusable ? cleanText(invoice.mollie_checkout_url) : "",
+    invoiceId: cleanText(invoice?.id),
+    paymentId: cleanText(invoice?.mollie_payment_id),
+  };
+}
+
+async function createPreviewDepositPayment(context, customer, authUser, version) {
+  if (!version.approved_at) return jsonResponse(409, { success: false, code: "preview_not_approved", error: "Keur eerst het ontwerp goed." });
+  const readiness = await resolvePaymentReadiness(context, customer, version);
+  if (!readiness.amountCents) return jsonResponse(409, { success: false, code: "website_package_missing", error: "website_package_missing" });
+  if (readiness.paid || readiness.checkoutUrl) return jsonResponse(200, { success: true, reused: true, paymentReadiness: readiness });
+  const apiKey = getMollieApiKey();
+  if (!cleanText(apiKey).startsWith("test_")) return jsonResponse(503, { success: false, code: "mollie_test_mode_required", error: "Mollie-testbetaling is niet beschikbaar." });
+  const invoice = readiness.invoiceId ? await readSingle(context, "customer_invoices", `select=*&id=eq.${encodeURIComponent(readiness.invoiceId)}&limit=1`) : await createDepositInvoice(context, customer, version, readiness);
+  const paymentResponse = await fetch("https://api.mollie.com/v2/payments", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({
+      amount: { currency: "EUR", value: readiness.amount },
+      description: `Website-aanbetaling ${customer.company || customer.name || "klant"} ${readiness.packageKey} ${version.project_id || version.id}`.slice(0, 255),
+      redirectUrl: `${getBaseUrl()}/preview.html?version=${encodeURIComponent(version.id)}`,
+      webhookUrl: `${getBaseUrl()}/.netlify/functions/mollie-webhook`,
+      metadata: { source: "customer_preview_deposit", invoiceId: invoice.id, customerId: customer.id, previewVersionId: version.id, websiteId: readiness.websiteId, packageKey: readiness.packageKey, depositAmountCents: readiness.amountCents },
+    }),
+  });
+  const payment = await paymentResponse.json().catch(() => ({}));
+  const checkoutUrl = cleanText(payment?._links?.checkout?.href);
+  if (!paymentResponse.ok || !payment.id || !checkoutUrl) return jsonResponse(502, { success: false, code: "mollie_payment_failed", error: "De testbetaling kon niet worden aangemaakt." });
+  const rows = await patchRows(context, "customer_invoices", `id=eq.${invoice.id}`, { mollie_payment_id: payment.id, mollie_checkout_url: checkoutUrl, mollie_payment_status: cleanText(payment.status || "open"), mollie_payment_created_at: cleanText(payment.createdAt) || new Date().toISOString(), mollie_payment_expires_at: cleanText(payment.expiresAt) || null, status: "sent", updated_at: new Date().toISOString() });
+  const updatedReadiness = { ...readiness, ready: true, status: cleanText(payment.status || "open"), checkoutUrl, invoiceId: invoice.id, paymentId: payment.id };
+  return jsonResponse(200, { success: true, reused: false, paymentReadiness: updatedReadiness, invoice: rows[0] || invoice });
+}
+
+async function findDepositInvoice(context, customer, version) {
+  return readSingle(context, "customer_invoices", `select=*&customer_auth_user_id=eq.${encodeURIComponent(customer.auth_user_id)}&notes=ilike.*${encodeURIComponent(`previewDeposit:${version.id}`)}*&order=created_at.desc&limit=1`).catch(() => null);
+}
+
+async function createDepositInvoice(context, customer, version, readiness) {
+  const now = new Date().toISOString();
+  const rows = await insertRows(context, "customer_invoices", { profile_id: customer.profile_id || null, customer_auth_user_id: customer.auth_user_id, invoice_number: `DEP-${version.id.slice(0, 8).toUpperCase()}`, title: "Website-aanbetaling", amount: readiness.amountCents / 100, status: "draft", notes: `previewDeposit:${version.id};customer:${customer.id};package:${readiness.packageKey}`, created_at: now, updated_at: now });
+  if (!rows[0]?.id) throw Object.assign(new Error("Aanbetalingsfactuur kon niet worden aangemaakt."), { status: 500 });
+  return rows[0];
+}
+
+function normalizePackageKey(value) { return cleanText(value).toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, ""); }
+function unavailablePayment(code, extra = {}) { return { ready: false, approved: false, paid: false, status: code, amountCents: 0, checkoutUrl: "", ...extra }; }
 
 async function readAuthUser(context, bearer) {
   if (!bearer) {
