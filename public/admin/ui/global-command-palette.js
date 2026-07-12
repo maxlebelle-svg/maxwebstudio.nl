@@ -1131,7 +1131,7 @@
   installShortcut();
   if (!window.ActiveRelationship && !document.querySelector("script[data-active-relationship]")) {
     const relationshipScript = document.createElement("script");
-    relationshipScript.src = "admin/ui/active-relationship.js?v=20260712-live-context-fix";
+    relationshipScript.src = "admin/ui/active-relationship.js";
     relationshipScript.defer = true;
     relationshipScript.dataset.activeRelationship = "true";
     document.head.append(relationshipScript);

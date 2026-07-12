@@ -100,6 +100,27 @@ test("active context hydrates the existing Factory shell instead of replacing it
   assert.doesNotMatch(styles, /\.factory-customer-context div/);
 });
 
+test("Factory opens with an explicit customerId or a server-validated active customer", () => {
+  const factory = read("public/admin-website-factory.html");
+  const relationship = read("public/admin/ui/active-relationship.js");
+  assert.match(factory, /let requestedCustomerId = params\.get\("customerId"\)/);
+  assert.match(factory, /requestedCustomerId = await validatedActiveCustomerId\(\)/);
+  assert.match(factory, /writeCanonicalFactoryCustomerId\(requestedCustomerId\)/);
+  assert.match(factory, /window\.history\.replaceState/);
+  assert.match(relationship, /await validateActiveRelationship/);
+  assert.match(relationship, /function whenReady\(\)/);
+  assert.match(factory, /relationshipService\.whenReady\(\)/);
+});
+
+test("customer mode does not invent a lead selection and renders a customer card", () => {
+  const factory = read("public/admin-website-factory.html");
+  assert.doesNotMatch(factory, /leads = \[customerOption/);
+  assert.match(factory, /factoryCustomerSelection = customerOption/);
+  assert.match(factory, /elements\.lead\.value = ""/);
+  assert.match(factory, /customerMode \? "Gekozen klant" : "Gekozen lead"/);
+  assert.match(factory, /Klantmodus actief voor/);
+});
+
 test("Factory workspace returns approved relationship assets and safe initialization capabilities", () => {
   const backend = read("functions/website-factory.js");
   const html = read("public/admin-website-factory.html");

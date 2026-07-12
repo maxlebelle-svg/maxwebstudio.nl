@@ -38,7 +38,7 @@ test("manual upload has one change handler, duplicate guard and explicit states"
 
 test("customerId mode does not wait for unrelated lead and Demo Journey loading", () => {
   const init = factory.slice(factory.indexOf("async function init()"), factory.indexOf("function initGuidedFactory"));
-  assert.match(init, /const requestedCustomerId[\s\S]*if \(requestedCustomerId\)/);
+  assert.match(init, /(?:const|let) requestedCustomerId[\s\S]*if \(requestedCustomerId\)/);
   assert.match(init, /if \(requestedCustomerId\)[\s\S]*renderMetrics\(\);[\s\S]*return;[\s\S]*await loadLeads\(\)/);
   assert.doesNotMatch(init.slice(0, init.indexOf("if (requestedCustomerId)")), /await loadLeads\(\)/);
 });

@@ -6,6 +6,9 @@
   const ENTITY_TYPES = new Set(["lead", "customer"]);
   const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   let active = null;
+  let ready = false;
+  let resolveReady;
+  const readyPromise = new Promise((resolve) => { resolveReady = resolve; });
 
   function clean(value) { return String(value || "").trim(); }
   function session() {
@@ -90,6 +93,7 @@
   }
 
   function getActiveRelationship() { return active; }
+  function whenReady() { return readyPromise; }
   function setActiveRelationship(input, options = {}) { return validateActiveRelationship(input, options.source || "user"); }
   function subscribeToRelationshipChanges(callback) {
     const listener = (event) => callback(event.detail?.relationship || null, event.detail || {});
@@ -146,11 +150,19 @@
     const params = new URLSearchParams(window.location.search);
     const leadId = clean(params.get("leadId"));
     const customerId = clean(params.get("customerId"));
-    if (leadId && customerId) { clearActiveRelationship("invalid-deep-link"); return; }
+    if (leadId && customerId) { clearActiveRelationship("invalid-deep-link"); finishHydration(); return; }
     const candidate = leadId ? { entityType: "lead", leadId } : customerId ? { entityType: "customer", customerId } : readStored();
-    if (!candidate) { render(); return; }
+    if (!candidate) { render(); finishHydration(); return; }
     try { await validateActiveRelationship(candidate, leadId || customerId ? "deep-link" : "restore"); }
     catch { clearActiveRelationship("validation-failed"); }
+    finishHydration();
+  }
+
+  function finishHydration() {
+    if (ready) return;
+    ready = true;
+    resolveReady(active);
+    window.dispatchEvent(new CustomEvent("maxwebstudio:relationship-ready", { detail: { relationship: active } }));
   }
 
   document.addEventListener("click", (event) => {
@@ -161,7 +173,7 @@
     active = readStored(); notify(active, "storage");
   });
 
-  window.ActiveRelationship = { ready: true, getActiveRelationship, setActiveRelationship, clearActiveRelationship, validateActiveRelationship, subscribeToRelationshipChanges, buildRelationshipUrl };
+  window.ActiveRelationship = { ready: true, whenReady, getActiveRelationship, setActiveRelationship, clearActiveRelationship, validateActiveRelationship, subscribeToRelationshipChanges, buildRelationshipUrl };
   active = readStored();
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", hydrate, { once: true }); else hydrate();
 })();

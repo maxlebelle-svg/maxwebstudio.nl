@@ -4,6 +4,7 @@ const { upsertProjectWorkspace, zipFilenameFor } = require("./_project-workspace
 const { createTimelineEvent } = require("./services/timelineService");
 const { storedPreviewSource } = require("./_demo-preview-source");
 const { sendEmail } = require("./email");
+const { randomUUID } = require("crypto");
 const {
   buildLogs,
   buildWebsitePackage,
@@ -40,7 +41,12 @@ async function handler(event) {
   try {
     const payload = event.httpMethod === "GET" ? event.queryStringParameters || {} : parsePayload(event.body);
     const action = cleanText(payload.action || (event.httpMethod === "GET" ? "get_build_history" : ""));
-    const context = { supabaseUrl, serviceRoleKey, admin: adminCheck.admin };
+    const context = {
+      supabaseUrl,
+      serviceRoleKey,
+      admin: adminCheck.admin,
+      requestId: cleanText(event.headers?.["x-nf-request-id"] || event.headers?.["X-Nf-Request-Id"]) || randomUUID(),
+    };
     if (action === "resolve_context") return resolveWebsiteFactoryContextResponse(context, payload);
     if (action === "search_entities") return searchWebsiteFactoryEntitiesResponse(context, payload);
     if (action === "create_build_job") return createBuildJobResponse(context, payload);
@@ -293,9 +299,9 @@ async function searchWebsiteFactoryEntitiesResponse(context, payload = {}) {
   if (safeQuery.length < 2) return jsonResponse(200, { success: true, results: [] });
   try {
     const [customers, leads, websites] = await Promise.all([
-      searchRows(context, "customers", ["name", "company", "company_name", "email", "phone", "website", "website_url"], safeQuery),
-      searchRows(context, "leads", ["name", "company", "company_name", "email", "phone", "website_url", "branch", "region"], safeQuery),
-      searchRows(context, "websites", ["name", "domain", "live_url"], safeQuery),
+      searchRows(context, "customers", ["name", "company", "company_name", "email", "phone", "website", "website_url"], safeQuery, "search_customers"),
+      searchRows(context, "leads", ["name", "company", "company_name", "email", "phone", "website_url", "branch", "region"], safeQuery, "search_leads"),
+      searchRows(context, "websites", ["name", "domain", "live_url"], safeQuery, "search_websites"),
     ]);
     const websitesByCustomer = new Map();
     websites.forEach((website) => {
@@ -316,21 +322,22 @@ async function searchWebsiteFactoryEntitiesResponse(context, payload = {}) {
       .slice(0, 20);
     return jsonResponse(200, { success: true, results });
   } catch (error) {
-    console.error("Website Factory entity search failed", { reason: "entity_search_failed", status: error.status || 500, code: error.code || "" });
-    return jsonResponse(500, { success: false, code: "entity_search_failed", error: "Leads en klanten konden niet worden doorzocht. Probeer het opnieuw." });
+    const requestId = cleanText(context.requestId);
+    console.error("Website Factory entity search failed", { reason: "entity_search_failed", phase: error.phase || "search_entities", status: error.status || 500, code: error.code || "", requestId });
+    return jsonResponse(error.status || 500, { success: false, code: "entity_search_failed", phase: error.phase || "search_entities", requestId, error: "Leads en klanten konden niet worden doorzocht. Probeer het opnieuw." });
   }
 }
 
-async function searchRows(context, table, fields, query) {
-  const filters = fields.map((field) => `${field}.ilike.*${query}*`).join(",");
-  try {
-    return await supabaseFetch(`${context.supabaseUrl}/rest/v1/${table}?select=*&or=(${encodeURIComponent(filters)})&order=updated_at.desc.nullslast&limit=20`, { method: "GET", headers: restHeaders(context.serviceRoleKey) });
-  } catch (error) {
-    if (!isMissingColumnError(error)) throw error;
-    const fallbackFields = table === "customers" ? ["name", "company", "email", "phone", "website"] : table === "leads" ? ["name", "company", "email", "phone", "website_url"] : ["name", "domain", "live_url"];
-    const fallback = fallbackFields.map((field) => `${field}.ilike.*${query}*`).join(",");
-    return supabaseFetch(`${context.supabaseUrl}/rest/v1/${table}?select=*&or=(${encodeURIComponent(fallback)})&order=updated_at.desc.nullslast&limit=20`, { method: "GET", headers: restHeaders(context.serviceRoleKey) });
-  }
+async function searchRows(context, table, fields, query, phase = "search_entities") {
+  const attempts = await Promise.allSettled(fields.map((field) => supabaseFetch(
+    `${context.supabaseUrl}/rest/v1/${table}?select=*&${encodeURIComponent(field)}=ilike.*${encodeURIComponent(query)}*&limit=20`,
+    { method: "GET", headers: restHeaders(context.serviceRoleKey) }
+  )));
+  const rows = attempts.flatMap((attempt) => attempt.status === "fulfilled" ? attempt.value : []);
+  if (rows.length || attempts.some((attempt) => attempt.status === "fulfilled")) return dedupeById(rows).slice(0, 20);
+  const failure = attempts.find((attempt) => attempt.status === "rejected")?.reason || new Error("Entity search failed.");
+  failure.phase = phase;
+  throw failure;
 }
 
 async function readCustomersByIds(context, ids = []) {
@@ -2053,4 +2060,5 @@ module.exports = {
   getBuildHistory,
   runBuildJob,
   startOnboardingFactoryPipeline,
+  _private: { searchRows },
 };

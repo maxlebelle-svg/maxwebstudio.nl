@@ -11,6 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <script src="admin/ui/shared-helpers.js"></script>
+    <script src="admin/ui/active-relationship.js" data-active-relationship="true"></script>
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="admin/styles/premium-design-system.css" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -21238,6 +21239,7 @@
         let buildHistory = { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
         let projectWorkspace = null;
         let lastFactoryResponse = null;
+        let factoryCustomerSelection = null;
         let currentTemplate = null;
         let journeyRecords = [];
         let intakeState = {};
@@ -21831,6 +21833,7 @@
             `;
             return;
           }
+          const customerMode = Boolean(factoryCustomerContext?.customer?.id && factoryCustomerSelection?.customerId === factoryCustomerContext.customer.id);
           const company = lead.companyName || lead.company_name || lead.businessName || "Naamloos bedrijf";
           const branch = lead.industry || inferBranchFromLead(lead) || "Branche onbekend";
           const website = lead.websiteUrl || lead.website_url || "";
@@ -21845,7 +21848,7 @@
           elements.leadCommandPreview.innerHTML = `
             ${visual}
             <div class="factory-lead-command-info">
-              <small>Gekozen lead</small>
+              <small>${customerMode ? "Gekozen klant" : "Gekozen lead"}</small>
               <strong>${escapeHtml(company)}</strong>
               <p>${escapeHtml([branch, lead.region || lead.city, website ? "Klaar voor analyse" : "Website aanvullen"].filter(Boolean).join(" · "))}</p>
               <dl>
@@ -21905,6 +21908,12 @@
               </button>
             `).join("");
             if (elements.leadCommandMeta) elements.leadCommandMeta.textContent = `${factoryEntityResults.length} resultaat${factoryEntityResults.length === 1 ? "" : "en"}. Kies een lead of klant.`;
+            return;
+          }
+          if (factoryCustomerSelection && factoryCustomerContext?.customer?.id) {
+            elements.leadCommandResults.innerHTML = `<div class="demo-lead-picker-empty">Klantmodus actief voor ${escapeHtml(factoryCustomerSelection.companyName || "de geselecteerde klant")}. Zoek alleen wanneer je van relatie wilt wisselen.</div>`;
+            if (elements.leadCommandMeta) elements.leadCommandMeta.textContent = `${factoryCustomerSelection.companyName || "Klant"} · veilig gevalideerde klantcontext`;
+            renderLeadCommandPreview(factoryCustomerSelection);
             return;
           }
           const selectedId = elements.lead?.value || "";
@@ -23377,9 +23386,9 @@
             industry: customer.industry || customer.branch || "",
             source: "Bestaande klant",
           };
-          leads = [customerOption, ...leads.filter((item) => item.id !== customerOption.id)];
-          renderLeadPicker();
-          if (elements.lead) elements.lead.value = customerOption.id;
+          factoryCustomerSelection = customerOption;
+          if (elements.lead) elements.lead.value = "";
+          if (elements.leadCommandSearch) elements.leadCommandSearch.value = customerOption.companyName;
           journey = factoryCustomerContext.demoJourney || null;
           syncPreviewSourceFromJourney();
           buildHistory = {
@@ -23399,6 +23408,8 @@
           prefillIntakeFromLead(customerOption);
           renderIntakeFields();
           renderJourney();
+          renderLeadCommandPreview(customerOption);
+          renderLeadCommandbar();
 
           const domain = website.domain || website.live_url || customer.website || "";
           renderActiveContextBanner({
@@ -23451,9 +23462,9 @@
             websiteUrl: relationship.websiteUrl || "",
             source: "Bestaande klant",
           };
-          leads = [customerOption, ...leads.filter((item) => item.id !== customerOption.id)];
-          renderLeadPicker();
-          if (elements.lead) elements.lead.value = customerOption.id;
+          factoryCustomerSelection = customerOption;
+          if (elements.lead) elements.lead.value = "";
+          if (elements.leadCommandSearch) elements.leadCommandSearch.value = customerOption.companyName;
           fillFromLead(customerOption);
           prefillIntakeFromLead(customerOption);
           renderIntakeFields();
@@ -23467,6 +23478,8 @@
             hasLead: false,
           });
           renderJourney();
+          renderLeadCommandPreview(customerOption);
+          renderLeadCommandbar();
           setMessage(elements.message, "Klant veilig gevalideerd. Projectgegevens zijn tijdelijk niet beschikbaar; een handmatige ZIP kan wel worden verwerkt.", "warning");
           return true;
         }
@@ -23568,7 +23581,7 @@
         }
 
         function selectedLead() {
-          return leads.find((lead) => lead.id === elements.lead?.value) || null;
+          return factoryCustomerSelection || leads.find((lead) => lead.id === elements.lead?.value) || null;
         }
 
         function clearFactoryRuntimeState() {
@@ -23585,6 +23598,8 @@
 
         function selectFactoryLead(leadId = "") {
           if (!leadId || !elements.lead) return;
+          factoryCustomerSelection = null;
+          factoryCustomerContext = null;
           manualLeadSelectionActive = true;
           const selectionVersion = ++leadSelectionVersion;
           clearFactoryRuntimeState();
@@ -25355,6 +25370,23 @@
           });
         }
 
+        async function validatedActiveCustomerId() {
+          const relationshipService = window.ActiveRelationship;
+          if (!relationshipService?.whenReady) return "";
+          const relationship = await relationshipService.whenReady();
+          if (relationship?.entityType !== "customer" || !isUuid(relationship.customerId)) return "";
+          return relationship.customerId;
+        }
+
+        function writeCanonicalFactoryCustomerId(customerId) {
+          if (!isUuid(customerId)) return;
+          const url = new URL(window.location.href);
+          url.searchParams.delete("leadId");
+          url.searchParams.delete("lead_id");
+          url.searchParams.set("customerId", customerId);
+          window.history.replaceState(window.history.state, document.title, `${url.pathname}${url.search}${url.hash}`);
+        }
+
         async function init() {
           initElements();
           if (!elements.form) return;
@@ -25362,8 +25394,12 @@
           renderJourney();
           const params = factoryQueryParams();
           const requestedLeadId = params.get("leadId") || params.get("lead_id") || window.maxwebstudioAdminPage?.leadId || "";
-          const requestedCustomerId = params.get("customerId") || params.get("customer_id") || "";
+          let requestedCustomerId = params.get("customerId") || params.get("customer_id") || "";
           const requestedJourneyId = params.get("demoJourneyId") || params.get("demo_journey_id") || params.get("id") || "";
+          if (!requestedCustomerId && !requestedLeadId && !requestedJourneyId) {
+            requestedCustomerId = await validatedActiveCustomerId();
+            if (requestedCustomerId) writeCanonicalFactoryCustomerId(requestedCustomerId);
+          }
           if (requestedCustomerId) {
             try {
               await loadCustomerFactoryContext(requestedCustomerId);
