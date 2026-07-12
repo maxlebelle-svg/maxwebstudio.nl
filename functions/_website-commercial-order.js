@@ -8,6 +8,12 @@ const aliases = Object.freeze({
   premium: "premium_growth",
   premium_growth: "premium_growth",
 });
+const maintenanceCatalog = Object.freeze({
+  none: { maintenanceCode: "none", maintenanceName: "Geen onderhoud", maintenanceAmountCents: 0, startTrigger: "none" },
+  care_basic: { maintenanceCode: "care_basic", maintenanceName: "Basis onderhoud", maintenanceAmountCents: 1995, startTrigger: "project_delivered" },
+  care_plus: { maintenanceCode: "care_plus", maintenanceName: "Plus onderhoud", maintenanceAmountCents: 4900, startTrigger: "project_delivered" },
+  care_growth: { maintenanceCode: "care_growth", maintenanceName: "Groei onderhoud", maintenanceAmountCents: 9900, startTrigger: "project_delivered" },
+});
 
 function normalizeWebsitePackage(value = "") {
   const token = String(value || "").trim().toLowerCase()
@@ -52,4 +58,24 @@ function readWebsiteCommercialOrder(project = {}) {
   return { ...order, ...normalized };
 }
 
-module.exports = { buildWebsiteCommercialOrder, normalizeWebsitePackage, readWebsiteCommercialOrder };
+function normalizeMaintenance(value = "") {
+  const code = String(value || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  return maintenanceCatalog[code] ? { ...maintenanceCatalog[code] } : null;
+}
+
+function selectMaintenance(order = {}, { maintenanceCode = "", authUserId = "", confirmedNone = false, now = new Date().toISOString() } = {}) {
+  const maintenance = normalizeMaintenance(maintenanceCode);
+  if (!maintenance || (maintenance.maintenanceCode === "none" && confirmedNone !== true)) return null;
+  return {
+    ...order,
+    ...maintenance,
+    maintenanceSelectedAt: now,
+    maintenanceSelectedByAuthUserId: authUserId,
+    maintenanceDeclinedAt: maintenance.maintenanceCode === "none" ? now : "",
+    maintenanceDeclinedByAuthUserId: maintenance.maintenanceCode === "none" ? authUserId : "",
+    status: "maintenance_selected",
+    updatedAt: now,
+  };
+}
+
+module.exports = { buildWebsiteCommercialOrder, maintenanceCatalog, normalizeMaintenance, normalizeWebsitePackage, readWebsiteCommercialOrder, selectMaintenance };

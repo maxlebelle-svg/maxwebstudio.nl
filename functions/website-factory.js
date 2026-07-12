@@ -588,11 +588,23 @@ async function handlePreviewLaunchAutomation(context, payload = {}, action = "")
   }
 
   const updatedProject = await persistPreviewReview(context, records, review, projectPatch);
+  const maintenanceSubscription = action === "complete_launch" ? await activateSelectedMaintenance(context, records, now) : null;
   await factoryTimeline(records, eventType, notificationTitle, notificationDescription, eventType === "website_live" ? "success" : "info", { previewReviewStatus: review.status, launchProgress: review.launch?.progress || 0 });
   await factoryNotification(records, notificationTitle, notificationDescription, eventType === "launch_warning" ? "warning" : "success", { notificationType: eventType, launchProgress: review.launch?.progress || 0 });
   if (action === "complete_launch") await createPostLaunchGrowthEvents(records, review);
   if (mailType) await sendPreviewLaunchMail(records, review, mailType).catch((error) => console.error("Preview launch mail skipped", { message: error.message, type: mailType }));
-  return { project: normalizeRecord(updatedProject?.[0] || records.project), previewReview: review };
+  return { project: normalizeRecord(updatedProject?.[0] || records.project), previewReview: review, maintenanceSubscription: normalizeRecord(maintenanceSubscription) };
+}
+
+async function activateSelectedMaintenance(context, records, now) {
+  const order = readWebsiteCommercialOrder(records.project);
+  if (!order?.maintenanceCode || order.maintenanceCode === "none") return null;
+  if (order.startTrigger !== "project_delivered") throw Object.assign(new Error("Onderhoud heeft een ongeldig startmoment."), { status: 409, code: "maintenance_start_trigger_invalid" });
+  const marker = `websiteMaintenanceProject:${records.project.id}`;
+  const existing = await supabaseFetch(`${context.supabaseUrl}/rest/v1/customer_subscriptions?select=*&notes=ilike.*${encodeURIComponent(marker)}*&limit=1`, { method: "GET", headers: restHeaders(context.serviceRoleKey) }).catch(() => []);
+  if (existing[0]?.id) return existing[0];
+  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/customer_subscriptions`, { method: "POST", headers: { ...restHeaders(context.serviceRoleKey), "Content-Type": "application/json", Prefer: "return=representation" }, body: JSON.stringify({ profile_id: records.customer.profile_id || null, customer_auth_user_id: records.customer.auth_user_id || null, package_name: order.maintenanceName, billing_cycle: "monthly", monthly_amount: Number(order.maintenanceAmountCents || 0) / 100, status: "planned", start_date: now.slice(0, 10), next_invoice_date: now.slice(0, 10), notes: `${marker};maintenance:${order.maintenanceCode};startTrigger:${order.startTrigger};mandate:required`, created_at: now, updated_at: now }) });
+  return rows[0] || null;
 }
 
 async function startOnboardingFactoryPipeline(context, payload = {}) {

@@ -7,6 +7,7 @@ const commercialPackage = require("../functions/_website-commercial-order");
 
 const root = path.join(__dirname, "..");
 const factoryUi = fs.readFileSync(path.join(root, "public/admin-website-factory.html"), "utf8");
+const factoryBackend = fs.readFileSync(path.join(root, "functions/website-factory.js"), "utf8");
 const publicationBackend = fs.readFileSync(path.join(root, "functions/admin-preview-publication.js"), "utf8");
 const clientVersions = fs.readFileSync(path.join(root, "functions/client-preview-versions.js"), "utf8");
 const clientRender = fs.readFileSync(path.join(root, "functions/client-preview-render.js"), "utf8");
@@ -132,6 +133,30 @@ test("website commercial order normalizes Factory labels to fixed catalog amount
   assert.match(factoryUi, /action: "sync_commercial_package"/);
   assert.match(factoryUi, /websiteCommercialOrder/);
   assert.match(mollieProducts, /MOLLIE_TEST_API_KEY \|\| process\.env\.MOLLIE_API_KEY/);
+});
+
+test("maintenance selection never changes the fixed website deposit", () => {
+  const websiteCases = [["starter", 15000], ["business", 30000], ["premium", 50000]];
+  const maintenanceCases = [["none", 0], ["care_basic", 1995], ["care_plus", 4900], ["care_growth", 9900]];
+  for (const [website, deposit] of websiteCases) {
+    const base = commercialPackage.buildWebsiteCommercialOrder({ customerId: "customer", projectId: "project", packageValue: website });
+    for (const [maintenance, monthly] of maintenanceCases) {
+      const selected = commercialPackage.selectMaintenance(base, { maintenanceCode: maintenance, authUserId: "user", confirmedNone: maintenance === "none" });
+      assert.equal(selected.depositAmountCents, deposit);
+      assert.equal(selected.maintenanceAmountCents, monthly);
+      assert.equal(selected.startTrigger, maintenance === "none" ? "none" : "project_delivered");
+    }
+  }
+  assert.equal(commercialPackage.selectMaintenance(commercialPackage.buildWebsiteCommercialOrder({ customerId: "c", projectId: "p", packageValue: "starter" }), { maintenanceCode: "none", authUserId: "u" }), null);
+  assert.equal(commercialPackage.normalizeMaintenance("unknown"), null);
+  assert.match(clientVersions, /const amountInclVatCents = Math\.round\(amountCents \* 1\.21\)/);
+  assert.match(clientVersions, /maintenance_selection_required/);
+  assert.match(factoryBackend, /activateSelectedMaintenance/);
+  assert.match(factoryBackend, /customer_subscriptions/);
+  assert.match(factoryBackend, /status: "planned"/);
+  for (const text of ["Bescherm je investering", "Aanbevolen", "Doorgaan zonder onderhoud?", "Start onderhoud", "Vandaag betalen"]) assert.match(securePreview, new RegExp(text.replace("?", "\\?")));
+  for (const code of ["none", "care_basic", "care_plus", "care_growth"]) assert.match(securePreview, new RegExp(`data-maintenance-code="${code}"`));
+  assert.match(securePreview, /@media\(max-width:850px\)/);
 });
 
 test("portal thumbnail and full link expose the same version id", () => {

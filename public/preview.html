@@ -11,6 +11,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css?v=20260707-preview-activation" />
+    <style>
+      .maintenance-upsell{display:none;margin:1.5rem 0;padding:1.5rem;border:1px solid rgba(58,132,255,.25);border-radius:24px;background:linear-gradient(145deg,#fff,#f4f8ff)}.maintenance-upsell.is-visible{display:block}.maintenance-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.8rem}.maintenance-option{position:relative;display:grid;gap:.45rem;padding:1rem;text-align:left;border:1px solid #d8e1ef;border-radius:18px;background:#fff;color:#10233f;cursor:pointer}.maintenance-option.is-selected{border-color:#1967ff;box-shadow:0 0 0 3px rgba(25,103,255,.12)}.maintenance-option em{position:absolute;right:.7rem;top:.7rem;padding:.25rem .5rem;border-radius:999px;background:#dff7e8;color:#14723b;font-size:.7rem;font-style:normal;font-weight:800}.maintenance-option small{color:#607089}.commercial-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.7rem;margin-top:1rem}.commercial-summary div{padding:.8rem;border-radius:14px;background:#eef4ff}.commercial-summary span,.commercial-summary small{display:block;color:#64748b;font-size:.75rem}.commercial-summary strong{display:block;margin:.2rem 0}.maintenance-confirm{max-width:520px;border:0;border-radius:20px;padding:1.5rem;box-shadow:0 25px 80px rgba(15,23,42,.3)}.maintenance-confirm::backdrop{background:rgba(15,23,42,.65)}.maintenance-confirm menu{display:flex;gap:.75rem;justify-content:flex-end;padding:0;margin:1rem 0 0}@media(max-width:850px){.maintenance-grid,.commercial-summary{grid-template-columns:1fr}.maintenance-upsell{padding:1rem}.maintenance-confirm menu{flex-direction:column}}
+    </style>
   </head>
   <body class="portal-body">
     <main class="secure-preview-shell">
@@ -95,6 +98,18 @@
             <p id="preview-action-message" role="status" aria-live="polite"></p>
           </div>
         </article>
+        <article class="maintenance-upsell" id="maintenance-upsell">
+          <span>Volgende keuze</span><strong>Bescherm je investering</strong>
+          <p>Wij zorgen dat je website veilig, snel en actueel blijft. Je onderhoudsabonnement start pas zodra je website is opgeleverd.</p>
+          <div class="maintenance-grid">
+            <button class="maintenance-option" type="button" data-maintenance-code="none"><strong>Geen onderhoud</strong><b>€0 p/m</b><small>Je regelt hosting, updates en back-ups zelf.</small></button>
+            <button class="maintenance-option" type="button" data-maintenance-code="care_basic"><em>Aanbevolen</em><strong>Basis onderhoud</strong><b>€19,95 p/m excl. btw</b><small>Hosting, SSL, back-ups en technische monitoring.</small></button>
+            <button class="maintenance-option" type="button" data-maintenance-code="care_plus"><strong>Plus onderhoud</strong><b>€49 p/m excl. btw</b><small>Alles uit Basis plus kleine maandelijkse wijzigingen.</small></button>
+            <button class="maintenance-option" type="button" data-maintenance-code="care_growth"><strong>Groei onderhoud</strong><b>€99 p/m excl. btw</b><small>Alles uit Plus plus maandelijkse check en conversieadvies.</small></button>
+          </div>
+          <div class="commercial-summary" id="commercial-summary"></div>
+          <p id="maintenance-status" role="status" aria-live="polite"></p>
+        </article>
         <article class="secure-preview-card secure-preview-payment-card">
           <span>Betaling</span>
           <strong id="payment-title">Aanbetaling nog niet gestart</strong>
@@ -102,6 +117,7 @@
           <a class="button secondary is-disabled" id="payment-link" href="#" aria-disabled="true">Betaal aanbetaling</a>
         </article>
       </section>
+      <dialog class="maintenance-confirm" id="maintenance-none-dialog"><h2>Doorgaan zonder onderhoud?</h2><p>Zonder onderhoud regel je na oplevering zelf updates, back-ups, SSL-controle en technische ondersteuning.</p><p>De meeste klanten kiezen Basis onderhoud om dit vanaf dag 1 goed geregeld te hebben.</p><menu><button class="button secondary" type="button" id="choose-basic-maintenance">Kies Basis onderhoud</button><button class="button primary" type="button" id="confirm-no-maintenance">Doorgaan zonder onderhoud</button></menu></dialog>
     </main>
 
     <script>
@@ -119,6 +135,10 @@
         const paymentTitle = document.getElementById("payment-title");
         const paymentText = document.getElementById("payment-text");
         const paymentLink = document.getElementById("payment-link");
+        const maintenanceUpsell = document.getElementById("maintenance-upsell");
+        const maintenanceStatus = document.getElementById("maintenance-status");
+        const commercialSummary = document.getElementById("commercial-summary");
+        const maintenanceDialog = document.getElementById("maintenance-none-dialog");
         const sessionKey = "maxwebstudioSupabaseAuthSession";
         const previewKey = "maxwebstudioActivePreviewContext";
         const previewFrame = document.getElementById("published-preview-frame");
@@ -208,6 +228,18 @@
 
         function renderPaymentReadiness(readiness = {}) {
           paymentReadiness = readiness || {};
+          maintenanceUpsell.classList.toggle("is-visible", Boolean(readiness.approved));
+          document.querySelectorAll("[data-maintenance-code]").forEach((button) => button.classList.toggle("is-selected", button.dataset.maintenanceCode === readiness.maintenanceCode));
+          if (readiness.approved && readiness.amountCents) {
+            const euro = (cents) => `€ ${(Number(cents || 0) / 100).toLocaleString("nl-NL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            commercialSummary.innerHTML = `
+              <div><span>Websitepakket</span><strong>${escapeText(readiness.packageKey || "-")}</strong><small>${euro(readiness.totalAmountCents)} excl. btw</small></div>
+              <div><span>Aanbetaling vandaag</span><strong>${euro(readiness.amountCents)} excl. btw</strong><small>${euro(readiness.amountInclVatCents)} incl. btw</small></div>
+              <div><span>Resterend websitebedrag</span><strong>${euro(readiness.remainingAmountCents)}</strong><small>excl. btw · later</small></div>
+              <div><span>Onderhoud</span><strong>${escapeText(readiness.maintenanceName || "Maak een keuze")}</strong><small>${readiness.maintenanceSelected ? `${euro(readiness.maintenanceAmountCents)} p/m excl. btw` : "Nog niet gekozen"}</small></div>
+              <div><span>Start onderhoud</span><strong>${readiness.maintenanceCode === "none" ? "Niet van toepassing" : "Na oplevering"}</strong><small>Niet vandaag</small></div>
+              <div><span>Vandaag betalen</span><strong>${euro(readiness.amountInclVatCents)}</strong><small>Alleen website-aanbetaling</small></div>`;
+          }
           if (readiness.paid) {
             paymentTitle.textContent = "Aanbetaling ontvangen";
             paymentText.textContent = "Je betaling is ontvangen. We gaan door met de volgende stap.";
@@ -225,13 +257,39 @@
             paymentLink.href = "#preview-payment";
             return;
           }
-          paymentTitle.textContent = "Je aanbetaling staat klaar";
+          if (!readiness.maintenanceSelected) {
+            paymentTitle.textContent = "Kies eerst je onderhoud";
+            paymentText.textContent = "Je website-aanbetaling verandert niet. Onderhoud start pas na oplevering.";
+            paymentLink.classList.add("is-disabled");
+            paymentLink.setAttribute("aria-disabled", "true");
+            paymentLink.href = "#preview-payment";
+            return;
+          }
+          paymentTitle.textContent = "Je website-aanbetaling staat klaar";
           paymentText.textContent = readiness.amount ? `Vaste aanbetaling voor je websitepakket: € ${readiness.amount}.` : "De betaalstap staat klaar.";
           paymentLink.classList.remove("is-disabled");
           paymentLink.removeAttribute("aria-disabled");
           paymentLink.href = readiness.checkoutUrl || "#preview-payment";
           paymentLink.textContent = "Betaal aanbetaling";
         }
+
+        function escapeText(value = "") { return String(value || "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char])); }
+
+        async function saveMaintenance(code, confirmedNone = false) {
+          maintenanceStatus.textContent = "Keuze opslaan…";
+          const response = await fetch("/.netlify/functions/client-preview-versions", { method: "POST", headers: { Accept: "application/json", "Content-Type": "application/json", Authorization: `Bearer ${currentAccessToken()}` }, body: JSON.stringify({ action: "select_maintenance", previewVersionId: params.get("version") || "", maintenanceCode: code, confirmedNone }) });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || data.success === false) throw new Error(data.error || "Onderhoudskeuze kon niet worden opgeslagen.");
+          renderPaymentReadiness(data.paymentReadiness);
+          maintenanceStatus.textContent = `${data.commercialOrder.maintenanceName} is opgeslagen. ${code === "none" ? "Je gaat door zonder onderhoud." : "Het abonnement start pas na oplevering."}`;
+        }
+
+        document.querySelectorAll("[data-maintenance-code]").forEach((button) => button.addEventListener("click", () => {
+          if (button.dataset.maintenanceCode === "none") { maintenanceDialog.showModal(); return; }
+          saveMaintenance(button.dataset.maintenanceCode).catch((error) => maintenanceStatus.textContent = error.message);
+        }));
+        document.getElementById("choose-basic-maintenance").addEventListener("click", () => { maintenanceDialog.close(); saveMaintenance("care_basic").catch((error) => maintenanceStatus.textContent = error.message); });
+        document.getElementById("confirm-no-maintenance").addEventListener("click", () => { maintenanceDialog.close(); saveMaintenance("none", true).catch((error) => maintenanceStatus.textContent = error.message); });
 
         function renderAccess() {
           const context = writePreviewContext();

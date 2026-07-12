@@ -2,7 +2,7 @@ const { corsHeaders } = require("./_cors");
 const { randomUUID, createHash } = require("crypto");
 const { createTimelineEvent } = require("./services/timelineService");
 const { getBaseUrl, getMollieApiKey } = require("./mollie-products");
-const { buildWebsiteCommercialOrder, readWebsiteCommercialOrder } = require("./_website-commercial-order");
+const { buildWebsiteCommercialOrder, readWebsiteCommercialOrder, selectMaintenance } = require("./_website-commercial-order");
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -76,6 +76,7 @@ async function handlePreviewAction(context, customer, authUser, payload = {}) {
   if (!version?.id) return jsonResponse(404, { success: false, error: "Previewversie niet gevonden voor dit klantaccount." });
   if (action === "feedback") return savePreviewFeedback(context, customer, authUser, version, payload);
   if (action === "approve") return approvePreviewVersion(context, customer, authUser, version, payload);
+  if (action === "select_maintenance") return saveMaintenanceSelection(context, customer, authUser, version, payload);
   if (action === "create_payment") return createPreviewDepositPayment(context, customer, authUser, version);
   return jsonResponse(400, { success: false, error: "Onbekende previewactie." });
 }
@@ -290,11 +291,8 @@ async function approvePreviewVersion(context, customer, authUser, version, paylo
 }
 
 async function resolvePaymentReadiness(context, customer, version) {
-  const projects = version.project_id
-    ? await readRows(context, "projects", `select=*&id=eq.${encodeURIComponent(version.project_id)}&customer_id=eq.${encodeURIComponent(customer.id)}&limit=1`)
-    : await readRows(context, "projects", `select=*&customer_id=eq.${encodeURIComponent(customer.id)}&order=updated_at.desc&limit=2`);
-  if (!version.project_id && projects.length !== 1) return unavailablePayment("website_commercial_order_ambiguous", { approved: Boolean(version.approved_at), previewVersionId: version.id });
-  let project = projects[0] || null;
+  let project = await resolveCommercialProject(context, customer, version);
+  if (!project) return unavailablePayment("website_commercial_order_ambiguous", { approved: Boolean(version.approved_at), previewVersionId: version.id });
   let order = readWebsiteCommercialOrder(project);
   if (!order && project?.id) {
     const journeys = await readRows(context, "demo_journeys", `select=id,customer_id,preview_package,generated_briefing&customer_id=eq.${encodeURIComponent(customer.id)}&order=updated_at.desc&limit=1`);
@@ -315,22 +313,33 @@ async function resolvePaymentReadiness(context, customer, version) {
   const invoice = await findDepositInvoice(context, customer, version);
   const status = cleanText(invoice?.mollie_payment_status || invoice?.status).toLowerCase();
   const paid = status === "paid" || Boolean(invoice?.paid_at);
-  const reusable = Boolean(invoice?.mollie_payment_id && invoice?.mollie_checkout_url && !["failed", "expired", "canceled", "cancelled"].includes(status));
+  const amountInclVatCents = Math.round(amountCents * 1.21);
+  const invoiceAmountMatches = !invoice?.id || Math.round(Number(invoice.amount || 0) * 100) === amountInclVatCents;
+  const reusable = Boolean(invoiceAmountMatches && invoice?.mollie_payment_id && invoice?.mollie_checkout_url && !["failed", "expired", "canceled", "cancelled"].includes(status));
   return {
-    ready: Boolean(version.approved_at) && !paid,
+    ready: Boolean(version.approved_at) && Boolean(order.maintenanceCode) && !paid,
     approved: Boolean(version.approved_at),
     paid,
     status: paid ? "paid" : reusable ? status || "open" : version.approved_at ? "ready" : "awaiting_approval",
     amountCents,
     amount: (amountCents / 100).toFixed(2),
+    amountInclVatCents,
+    amountInclVat: (amountInclVatCents / 100).toFixed(2),
     packageKey,
     websiteId: cleanText(order.websiteId),
     projectId: cleanText(order.projectId),
     totalAmountCents: Number(order.totalAmountCents || 0),
+    remainingAmountCents: Math.max(0, Number(order.totalAmountCents || 0) - amountCents),
+    maintenanceSelected: Boolean(order.maintenanceCode),
+    maintenanceCode: cleanText(order.maintenanceCode),
+    maintenanceName: cleanText(order.maintenanceName),
+    maintenanceAmountCents: Number(order.maintenanceAmountCents || 0),
+    maintenanceStartTrigger: cleanText(order.startTrigger),
     previewVersionId: version.id,
     checkoutUrl: reusable ? cleanText(invoice.mollie_checkout_url) : "",
     invoiceId: cleanText(invoice?.id),
     paymentId: cleanText(invoice?.mollie_payment_id),
+    invoiceAmountMatches,
   };
 }
 
@@ -338,6 +347,8 @@ async function createPreviewDepositPayment(context, customer, authUser, version)
   if (!version.approved_at) return jsonResponse(409, { success: false, code: "preview_not_approved", error: "Keur eerst het ontwerp goed." });
   const readiness = await resolvePaymentReadiness(context, customer, version);
   if (!readiness.amountCents) return jsonResponse(409, { success: false, code: "website_package_missing", error: "website_package_missing" });
+  if (!readiness.maintenanceSelected) return jsonResponse(409, { success: false, code: "maintenance_selection_required", error: "Kies eerst een onderhoudsoptie." });
+  if (readiness.invoiceId && readiness.invoiceAmountMatches === false) return jsonResponse(409, { success: false, code: "deposit_invoice_amount_mismatch", error: "Het bestaande betaalverzoek heeft een afwijkend bedrag en moet eerst veilig worden geannuleerd." });
   if (readiness.paid || readiness.checkoutUrl) return jsonResponse(200, { success: true, reused: true, paymentReadiness: readiness });
   const apiKey = getMollieApiKey();
   if (!cleanText(apiKey).startsWith("test_")) return jsonResponse(503, { success: false, code: "mollie_test_mode_required", error: "Mollie-testbetaling is niet beschikbaar." });
@@ -346,11 +357,11 @@ async function createPreviewDepositPayment(context, customer, authUser, version)
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({
-      amount: { currency: "EUR", value: readiness.amount },
+      amount: { currency: "EUR", value: readiness.amountInclVat },
       description: `Website-aanbetaling ${customer.company || customer.name || "klant"} ${readiness.packageKey} ${version.project_id || version.id}`.slice(0, 255),
       redirectUrl: `${getBaseUrl()}/preview.html?version=${encodeURIComponent(version.id)}`,
       webhookUrl: `${getBaseUrl()}/.netlify/functions/mollie-webhook`,
-      metadata: { source: "customer_preview_deposit", invoiceId: invoice.id, customerId: customer.id, previewVersionId: version.id, websiteId: readiness.websiteId, packageKey: readiness.packageKey, depositAmountCents: readiness.amountCents },
+      metadata: { source: "customer_preview_deposit", invoiceId: invoice.id, customerId: customer.id, previewVersionId: version.id, websiteId: readiness.websiteId, packageKey: readiness.packageKey, depositAmountCents: readiness.amountCents, depositAmountInclVatCents: readiness.amountInclVatCents, maintenanceCode: readiness.maintenanceCode, maintenanceAmountCents: readiness.maintenanceAmountCents, maintenanceStartTrigger: readiness.maintenanceStartTrigger },
     }),
   });
   const payment = await paymentResponse.json().catch(() => ({}));
@@ -367,13 +378,33 @@ async function findDepositInvoice(context, customer, version) {
 
 async function createDepositInvoice(context, customer, version, readiness) {
   const now = new Date().toISOString();
-  const rows = await insertRows(context, "customer_invoices", { profile_id: customer.profile_id || null, customer_auth_user_id: customer.auth_user_id, invoice_number: `DEP-${version.id.slice(0, 8).toUpperCase()}`, title: "Website-aanbetaling", amount: readiness.amountCents / 100, status: "draft", notes: `previewDeposit:${version.id};customer:${customer.id};project:${readiness.projectId};package:${readiness.packageKey}`, created_at: now, updated_at: now });
+  const rows = await insertRows(context, "customer_invoices", { profile_id: customer.profile_id || null, customer_auth_user_id: customer.auth_user_id, invoice_number: `DEP-${version.id.slice(0, 8).toUpperCase()}`, title: "Website-aanbetaling", amount: readiness.amountInclVatCents / 100, status: "draft", notes: `previewDeposit:${version.id};customer:${customer.id};project:${readiness.projectId};package:${readiness.packageKey};maintenance:${readiness.maintenanceCode}`, created_at: now, updated_at: now });
   if (!rows[0]?.id) throw Object.assign(new Error("Aanbetalingsfactuur kon niet worden aangemaakt."), { status: 500 });
   return rows[0];
 }
 
 function unavailablePayment(code, extra = {}) { return { ready: false, approved: false, paid: false, status: code, amountCents: 0, checkoutUrl: "", ...extra }; }
 function packageFromFactoryBriefing(value = "") { return cleanText(value).match(/^Websitepakket:\s*(.+)$/im)?.[1]?.trim() || ""; }
+
+async function resolveCommercialProject(context, customer, version) {
+  const projects = version.project_id
+    ? await readRows(context, "projects", `select=*&id=eq.${encodeURIComponent(version.project_id)}&customer_id=eq.${encodeURIComponent(customer.id)}&limit=1`)
+    : await readRows(context, "projects", `select=*&customer_id=eq.${encodeURIComponent(customer.id)}&order=updated_at.desc&limit=2`);
+  return !version.project_id && projects.length !== 1 ? null : projects[0] || null;
+}
+
+async function saveMaintenanceSelection(context, customer, authUser, version, payload = {}) {
+  if (!version.approved_at) return jsonResponse(409, { success: false, code: "preview_not_approved", error: "Keur eerst het ontwerp goed." });
+  const project = await resolveCommercialProject(context, customer, version);
+  const order = readWebsiteCommercialOrder(project);
+  if (!project?.id || !order) return jsonResponse(409, { success: false, code: "website_package_missing", error: "Websitepakket ontbreekt." });
+  const selected = selectMaintenance(order, { maintenanceCode: payload.maintenanceCode, authUserId: authUser.id, confirmedNone: payload.confirmedNone === true });
+  if (!selected) return jsonResponse(400, { success: false, code: cleanText(payload.maintenanceCode) === "none" ? "maintenance_none_confirmation_required" : "maintenance_code_invalid", error: cleanText(payload.maintenanceCode) === "none" ? "Bevestig dat je zonder onderhoud wilt doorgaan." : "Onbekend onderhoudspakket." });
+  const rows = await patchRows(context, "projects", `id=eq.${project.id}&customer_id=eq.${customer.id}`, { metadata: { ...(project.metadata || {}), websiteCommercialOrder: selected }, updated_at: selected.updatedAt });
+  const savedProject = rows[0] || { ...project, metadata: { ...(project.metadata || {}), websiteCommercialOrder: selected } };
+  await safeTimeline({ customerId: customer.id, eventType: "maintenance_selected", title: selected.maintenanceCode === "none" ? "Onderhoud geweigerd" : "Onderhoud gekozen", description: `${selected.maintenanceName} is vastgelegd en start ${selected.startTrigger === "project_delivered" ? "na oplevering" : "niet"}.`, module: "commercial", referenceType: "project", referenceId: project.id, actorName: customer.name || authUser.email || "Klant", actorRole: "customer", severity: "info", metadata: { dedupeKey: `maintenance_selected:${project.id}:${selected.maintenanceCode}`, maintenanceCode: selected.maintenanceCode, maintenanceAmountCents: selected.maintenanceAmountCents, startTrigger: selected.startTrigger } });
+  return jsonResponse(200, { success: true, duplicate: order.maintenanceCode === selected.maintenanceCode, commercialOrder: selected, paymentReadiness: await resolvePaymentReadiness(context, customer, version), projectId: savedProject.id });
+}
 
 async function readAuthUser(context, bearer) {
   if (!bearer) {

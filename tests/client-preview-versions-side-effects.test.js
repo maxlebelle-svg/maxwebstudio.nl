@@ -22,7 +22,7 @@ function createTables() {
       { id: ids.website, customer_id: ids.customer, name: "Testwebsite", hosting_package: "", care_package: "business_website", metadata: {} },
     ],
     projects: [
-      { id: ids.project, customer_id: ids.customer, website_id: ids.website, metadata: { websiteCommercialOrder: { customerId: ids.customer, projectId: ids.project, websiteId: ids.website, packageCode: "business_website", packageName: "Business Website", totalAmountCents: 99500, depositAmountCents: 30000, currency: "EUR", paymentStatus: "not_started", status: "selected" } } },
+      { id: ids.project, customer_id: ids.customer, website_id: ids.website, metadata: { websiteCommercialOrder: { customerId: ids.customer, projectId: ids.project, websiteId: ids.website, packageCode: "business_website", packageName: "Business Website", totalAmountCents: 99500, depositAmountCents: 30000, currency: "EUR", paymentStatus: "not_started", status: "maintenance_selected", maintenanceCode: "care_basic", maintenanceName: "Basis onderhoud", maintenanceAmountCents: 1995, startTrigger: "project_delivered" } } },
     ],
     customer_invoices: [],
     demo_journeys: [],
