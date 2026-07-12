@@ -23395,6 +23395,35 @@
             : "Klantcontext geladen. Start een nieuwe website zodra de briefing gereed is.", "success");
         }
 
+        async function loadValidatedCustomerFallback(customerId) {
+          const data = await apiRequest("/api/admin-relationship-context", "POST", {
+            contractVersion: 2,
+            entityType: "customer",
+            customerId,
+          });
+          const relationship = data.relationship || null;
+          if (data.contractVersion !== 2 || relationship?.entityType !== "customer" || relationship?.customerId !== customerId) return false;
+          factoryCustomerContext = {
+            customer: {
+              id: relationship.customerId,
+              company: relationship.companyName || "",
+              name: relationship.contactName || "",
+              email: relationship.email || "",
+              phone: relationship.phone || "",
+              status: relationship.lifecycleStage || "",
+            },
+            website: null,
+            project: null,
+            demoJourney: null,
+            buildJobs: [],
+            previewVersions: [],
+          };
+          factoryContextState = "customer_relationship_only";
+          renderJourney();
+          setMessage(elements.message, "Klant veilig gevalideerd. Projectgegevens zijn tijdelijk niet beschikbaar; een handmatige ZIP kan wel worden verwerkt.", "warning");
+          return true;
+        }
+
         function renderActiveContextBanner(context = null) {
           if (!elements.activeContext) return;
           if (!context) {
@@ -25268,7 +25297,11 @@
             try {
               await loadCustomerFactoryContext(requestedCustomerId);
             } catch (error) {
-              renderCustomerContextError(requestedCustomerId, error);
+              let fallbackLoaded = false;
+              try {
+                fallbackLoaded = await loadValidatedCustomerFallback(requestedCustomerId);
+              } catch { /* the original safe context error remains authoritative */ }
+              if (!fallbackLoaded) renderCustomerContextError(requestedCustomerId, error);
             }
             renderMetrics();
             return;
