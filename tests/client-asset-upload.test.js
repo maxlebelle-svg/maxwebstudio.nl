@@ -225,6 +225,9 @@ function makeHarness({ storageResponse, finalizeResponse } = {}) {
       const result = storageResponse ? storageResponse({ method: this.method, url: this.url, body }) : Promise.resolve(new Response("", { status: 200 }));
       Promise.resolve(result).then((response) => {
         this.status = response.status;
+        return response.text();
+      }).then((responseText) => {
+        this.responseText = responseText;
         this.dispatchEvent(new Event("load"));
       }).catch(() => this.dispatchEvent(new Event("error")));
     }
@@ -251,7 +254,7 @@ function makeHarness({ storageResponse, finalizeResponse } = {}) {
       return null;
     },
   };
-  const quietConsole = { error() {}, warn() {}, log() {} };
+  const quietConsole = { error() {}, info() {}, warn() {}, log() {} };
   vm.runInNewContext(source, {
     console: quietConsole,
     CustomEvent,
@@ -316,7 +319,7 @@ test("a failed binary upload keeps the File selection and does not reset the for
   assert.equal(harness.form.resetCount, 0);
   assert.equal(harness.elements["relationship-asset-selected-list"].children.length, 1);
   assert.equal(harness.status.dataset.state, "error");
-  assert.equal(harness.statusMessage.textContent.includes("tijdelijk niet gelukt"), true);
+  assert.equal(harness.statusMessage.textContent.includes("veilig worden opgeslagen"), true);
   assert.equal(harness.statusMessage.textContent.includes("Load failed"), false);
 });
 
@@ -336,6 +339,6 @@ test("a lost finalize response keeps the selection and never leaks the technical
   assert.equal(harness.form.resetCount, 0);
   assert.equal(harness.elements["relationship-asset-selected-list"].children.length, 1);
   assert.equal(harness.status.dataset.state, "error");
-  assert.equal(harness.statusMessage.textContent.includes("tijdelijk niet gelukt"), true);
+  assert.equal(harness.statusMessage.textContent.includes("ontvangen, maar kon nog niet worden verwerkt"), true);
   assert.equal(harness.statusMessage.textContent.includes("socket"), false);
 });

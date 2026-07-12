@@ -295,33 +295,89 @@
     return error;
   }
 
+  async function readApiResponse(response) {
+    const text = await response.text();
+    let data = null;
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { raw: text.slice(0, 500) };
+      }
+    }
+    return { ok: response.ok, status: response.status, data };
+  }
+
+  function safeResponsePayload(data = null) {
+    if (!data || typeof data !== "object") return { code: null, message: null };
+    return {
+      code: String(data.code || data.error_code || "").slice(0, 80) || null,
+      message: String(data.error || data.message || data.msg || "").slice(0, 300) || null,
+    };
+  }
+
+  function createUploadError(stage, result = {}, fallbackCode = "UPLOAD_FAILED") {
+    const safePayload = safeResponsePayload(result.data);
+    return technicalError(
+      safePayload.code || fallbackCode,
+      stage,
+      safePayload.message || `Upload failed during ${stage}`,
+      {
+        status: Number(result.status || 0) || null,
+        responseCode: safePayload.code,
+        responseMessage: safePayload.message,
+        safePayload,
+      }
+    );
+  }
+
+  function logUploadPhase(stage, result = {}, endpoint = "client_asset_api") {
+    const safePayload = safeResponsePayload(result.data);
+    console.info("Customer asset upload phase", {
+      stage,
+      endpoint,
+      ok: Boolean(result.ok),
+      status: Number(result.status || 0) || null,
+      responseCode: safePayload.code,
+    });
+  }
+
   function customerMessage(error = {}) {
     const code = String(error.code || "").toUpperCase();
     if (["AUTH_REQUIRED", "FORBIDDEN"].includes(code) || error.status === 401 || error.status === 403) {
-      return "Je sessie is verlopen. Log opnieuw in om bestanden aan te leveren.";
+      return "Je sessie is verlopen. Log opnieuw in om bestanden te uploaden.";
     }
     if (code === "NO_FILE") return "Geen bestand geselecteerd.";
     if (code === "INVALID_FILENAME") return "De bestandsnaam is niet geldig. Geef het bestand een andere naam en probeer opnieuw.";
     if (code === "INVALID_CATEGORY") return "Kies een geldige categorie.";
     if (code === "INVALID_DESCRIPTION") return "Pas de korte omschrijving aan en probeer opnieuw.";
-    if (code === "UNSUPPORTED_FILE_TYPE") return "Dit bestandstype wordt niet ondersteund.";
+    if (["UNSUPPORTED_FILE_TYPE", "FILE_TYPE_NOT_ALLOWED"].includes(code)) return "Dit bestandstype wordt niet ondersteund.";
     if (["INVALID_FILE", "MIME_MISMATCH"].includes(code)) return "Het bestand is leeg of beschadigd.";
     if (code === "INVALID_UPLOAD") return "De upload kon niet worden afgerond. Kies het bestand opnieuw.";
-    if (code === "FILE_TOO_LARGE" || error.status === 413) return "Het bestand is groter dan toegestaan. Kies een bestand van maximaal 8 MB.";
+    if (code === "FILE_TOO_LARGE" || error.status === 413) return "Dit bestand is groter dan 8 MB.";
     if (["EMPTY_FILE", "FILE_READ_FAILED", "FILE_SIZE_MISMATCH"].includes(code)) return "Het bestand is leeg of beschadigd.";
     if (code === "USAGE_RIGHTS_REQUIRED") return "Bevestig dat je deze bestanden mag aanleveren.";
+    if (["SIGNED_UPLOAD_FAILED", "SIGNED_UPLOAD_NETWORK_ERROR", "SIGNED_UPLOAD_ABORTED", "SIGNED_UPLOAD_TIMEOUT", "STORAGE_UPLOAD_FAILED"].includes(code) || error.stage === "storage_upload") {
+      return "Het bestand kon niet veilig worden opgeslagen. Probeer het opnieuw.";
+    }
+    if (error.stage === "finalize") return "Het bestand is ontvangen, maar kon nog niet worden verwerkt. Probeer het opnieuw.";
     if (error.stage === "download") return "Het bestand kon tijdelijk niet worden geopend. Probeer het opnieuw.";
     return "Uploaden is tijdelijk niet gelukt. Probeer het opnieuw.";
   }
 
-  function logTechnicalError(error = {}, file = null) {
+  function logTechnicalError(error = {}) {
+    const safePayload = error.safePayload && typeof error.safePayload === "object"
+      ? safeResponsePayload(error.safePayload)
+      : { code: error.responseCode || null, message: error.responseMessage || null };
     console.error("Customer asset upload failed", {
       stage: error.stage || "unknown",
+      name: error.name || null,
+      message: error.message || null,
       code: error.code || "UPLOAD_FAILED",
-      status: error.status || 0,
-      errorName: error.name || "Error",
-      message: error.message || "Unknown upload error",
-      file: file ? { name: file.name, type: effectiveMimeType(file), sizeBytes: Number(file.size || 0) } : null,
+      status: Number(error.status || 0) || null,
+      responseCode: safePayload.code,
+      responseMessage: safePayload.message,
+      stack: error.stack || null,
     });
   }
 
@@ -343,11 +399,12 @@
     } catch (error) {
       throw technicalError("NETWORK_ERROR", action, error.message || "Metadata request failed");
     }
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok || data.success === false) {
-      throw technicalError(data.code || "API_ERROR", action, data.error || `Asset ${action} failed`, { status: response.status });
+    const result = await readApiResponse(response);
+    logUploadPhase(action, result);
+    if (!result.ok || result.data?.success === false) {
+      throw createUploadError(action, result, action === "finalize" ? "FINALIZE_FAILED" : "PREPARE_FAILED");
     }
-    return data;
+    return result.data || {};
   }
 
   function signedUploadUrl(value = "") {
@@ -369,15 +426,28 @@
     }
   }
 
+  function readXhrResult(xhr) {
+    const text = String(xhr.responseText || "");
+    let data = null;
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { raw: text.slice(0, 500) };
+      }
+    }
+    return { ok: xhr.status >= 200 && xhr.status < 300, status: xhr.status, data };
+  }
+
   function uploadPreparedFile(file, prepared = {}, onProgress = () => {}) {
     return new Promise((resolve, reject) => {
       const uploadUrl = signedUploadUrl(prepared.uploadUrl);
       if (!uploadUrl) {
-        reject(technicalError("INVALID_UPLOAD_TARGET", "upload", "Prepare response contained no safe signed upload URL"));
+        reject(technicalError("INVALID_UPLOAD_TARGET", "storage_upload", "Prepare response contained no safe signed upload URL"));
         return;
       }
       if (prepared.uploadMethod !== "PUT") {
-        reject(technicalError("INVALID_UPLOAD_METHOD", "upload", "Prepare response contained an unsupported upload method"));
+        reject(technicalError("INVALID_UPLOAD_METHOD", "storage_upload", "Prepare response contained an unsupported upload method"));
         return;
       }
       const xhr = new XMLHttpRequest();
@@ -391,16 +461,18 @@
         onProgress(Math.max(0, Math.min(1, event.loaded / event.total)));
       });
       xhr.addEventListener("load", () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
+        const result = readXhrResult(xhr);
+        logUploadPhase("storage_upload", result, "supabase_storage_signed");
+        if (result.ok) {
           onProgress(1);
           resolve();
           return;
         }
-        reject(technicalError("SIGNED_UPLOAD_FAILED", "upload", `Signed storage upload returned ${xhr.status}`, { status: xhr.status }));
+        reject(createUploadError("storage_upload", result, "STORAGE_UPLOAD_FAILED"));
       });
-      xhr.addEventListener("error", () => reject(technicalError("SIGNED_UPLOAD_NETWORK_ERROR", "upload", "Signed storage upload network error")));
-      xhr.addEventListener("abort", () => reject(technicalError("SIGNED_UPLOAD_ABORTED", "upload", "Signed storage upload was aborted")));
-      xhr.addEventListener("timeout", () => reject(technicalError("SIGNED_UPLOAD_TIMEOUT", "upload", "Signed storage upload timed out")));
+      xhr.addEventListener("error", () => reject(technicalError("SIGNED_UPLOAD_NETWORK_ERROR", "storage_upload", "Signed storage upload network error")));
+      xhr.addEventListener("abort", () => reject(technicalError("SIGNED_UPLOAD_ABORTED", "storage_upload", "Signed storage upload was aborted")));
+      xhr.addEventListener("timeout", () => reject(technicalError("SIGNED_UPLOAD_TIMEOUT", "storage_upload", "Signed storage upload timed out")));
       xhr.timeout = 120000;
       const body = new FormData();
       const uploadMimeType = effectiveMimeType(file);
@@ -547,11 +619,13 @@
         headers: { Authorization: `Bearer ${auth}`, Accept: "application/json" },
         cache: "no-store",
       });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok || data.success === false) {
-        throw technicalError(data.code || "ASSET_LIST_FAILED", "list", data.error || `Asset list returned ${response.status}`, { status: response.status });
+      const result = await readApiResponse(response);
+      logUploadPhase("refresh", result);
+      if (!result.ok || result.data?.success === false) {
+        throw createUploadError("refresh", result, "ASSET_LIST_FAILED");
       }
       if (sequence !== loadSequence) return { ok: false, stale: true, assets: [] };
+      const data = result.data || {};
       const assets = Array.isArray(data.assets) ? data.assets.map(normalizeAsset) : [];
       const requests = Array.isArray(data.requests) ? data.requests : [];
       const currentIds = new Set(assets.map((asset) => asset.id).filter(Boolean));
@@ -604,6 +678,7 @@
     const completedKeys = new Set();
     const completedAssets = [];
     let completedBytes = 0;
+    let stage = "prepare";
     setUploading(true);
     setStatus("loading", "Upload wordt voorbereid", `Bestand 1 van ${queue.length}`, { progress: 0, progressLabel: "0%" });
     try {
@@ -612,6 +687,7 @@
           progress: (completedBytes / totalBytes) * 100,
           progressLabel: `${Math.round((completedBytes / totalBytes) * 100)}%`,
         });
+        stage = "prepare";
         const prepared = await requestJson("prepare", {
           name: file.name,
           mimeType: effectiveMimeType(file),
@@ -621,11 +697,13 @@
           usageRightsConfirmed: rights.checked,
         });
         if (!prepared.uploadId) throw technicalError("INVALID_PREPARE_RESPONSE", "prepare", "Prepare response contained no upload id");
+        stage = "storage_upload";
         await uploadPreparedFile(file, prepared, (fileProgress) => {
           const uploadedBytes = completedBytes + (Number(file.size) * fileProgress);
           const percent = (uploadedBytes / totalBytes) * 100;
           setProgress(percent, `${Math.round(percent)}% · ${index + 1} van ${queue.length}`);
         });
+        stage = "finalize";
         const finalized = await requestJson("finalize", { uploadId: prepared.uploadId });
         if (finalized.asset) completedAssets.push(normalizeAsset(finalized.asset));
         completedKeys.add(fileKey(file));
@@ -636,6 +714,7 @@
       selectedFiles = [];
       updateDescriptionCount();
       renderSelectedFiles();
+      stage = "refresh";
       const refresh = await loadAssets({ source: "upload" });
       const successMessage = refresh.ok
         ? `${queue.length} ${queue.length === 1 ? "bestand staat" : "bestanden staan"} veilig in je Asset Center.`
@@ -645,8 +724,8 @@
         progressLabel: "100% voltooid",
       });
     } catch (error) {
-      const activeFile = queue.find((file) => !completedKeys.has(fileKey(file))) || null;
-      logTechnicalError(error, activeFile);
+      if (!error.stage) error.stage = stage;
+      logTechnicalError(error);
       if (error.code === "INVALID_CATEGORY") setFieldError(categoryError, customerMessage(error), category);
       if (error.code === "INVALID_DESCRIPTION") setFieldError(descriptionError, customerMessage(error), description);
       if (error.code === "USAGE_RIGHTS_REQUIRED") setFieldError(rightsError, customerMessage(error), rights);

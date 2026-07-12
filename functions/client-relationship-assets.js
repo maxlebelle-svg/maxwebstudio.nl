@@ -50,6 +50,11 @@ exports.handler = async (event) => {
     const user = await authUser(context, token);
     const customer = await ownedCustomer(context, user.id);
     if (!customer) {
+      console.warn("Client relationship asset authorization denied", {
+        code: "FORBIDDEN",
+        step: "owned_customer",
+        authenticatedUser: true,
+      });
       return json(403, { success: false, code: "FORBIDDEN", error: "Er is geen toegankelijke klantwerkruimte gevonden." });
     }
 
@@ -527,7 +532,14 @@ async function authUser(context, token) {
     headers: { apikey: context.anon, Authorization: `Bearer ${token}` },
   });
   const data = await parseResponseBody(result);
-  if (!result.ok || !data?.id) throw coded("AUTH_REQUIRED", 401, "Log opnieuw in.", { step: "auth_user", upstreamStatus: result.status });
+  if (!result.ok || !data?.id) {
+    throw coded("AUTH_REQUIRED", 401, "Log opnieuw in.", {
+      step: "auth_user",
+      upstreamStatus: result.status,
+      upstreamCode: clean(data?.code || data?.error_code || data?.error).slice(0, 80),
+      technicalMessage: clean(data?.message || data?.msg).slice(0, 300),
+    });
+  }
   return data;
 }
 
