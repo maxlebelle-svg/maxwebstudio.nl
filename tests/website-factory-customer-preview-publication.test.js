@@ -20,7 +20,8 @@ test("Website Factory keeps Demo Sites and customer publication as separate acti
 
 test("admin publishes server-resolved content instead of trusting a preview URL", () => {
   assert.match(publicationBackend, /resolveActiveDemoPreview\(journeyPackage, previewSource\)/);
-  assert.match(publicationBackend, /selectedPackage = previewSource === PREVIEW_SOURCES\.MANUAL/);
+  assert.match(publicationBackend, /directManualPackage/);
+  assert.match(publicationBackend, /selectedPackage = directManualPackage/);
   assert.doesNotMatch(factoryUi, /previewUrl:\s*activePreviewUrl\(\)/);
 });
 

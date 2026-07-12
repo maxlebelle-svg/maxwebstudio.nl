@@ -131,7 +131,12 @@ async function resolveWebsiteFactoryContextResponse(context, payload = {}) {
         logOptionalContextFailure("build_history", error);
         return { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
       })
-      : { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
+      : await readPreviewVersionsByCustomer(context, customerId).then((previewVersions) => ({
+        jobs: [], previewVersions, latestJob: null, activeVersion: previewVersions.find((item) => item.isActive) || previewVersions[0] || null,
+      })).catch((error) => {
+        logOptionalContextFailure("customer_preview_versions", error);
+        return { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
+      });
     const normalizedCustomer = normalizeRecord(customer);
     const normalizedWebsite = normalizeRecord(website);
     const normalizedProject = normalizeRecord(project);
@@ -903,6 +908,14 @@ async function readBuildJobById(context, id) {
 
 async function readPreviewVersions(context, demoJourneyId) {
   const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_preview_versions?select=*&demo_journey_id=eq.${encodeURIComponent(demoJourneyId)}&order=version.desc`, {
+    method: "GET",
+    headers: restHeaders(context.serviceRoleKey),
+  });
+  return rows.map(normalizePreviewVersion);
+}
+
+async function readPreviewVersionsByCustomer(context, customerId) {
+  const rows = await supabaseFetch(`${context.supabaseUrl}/rest/v1/website_preview_versions?select=*&customer_id=eq.${encodeURIComponent(customerId)}&order=version.desc&limit=100`, {
     method: "GET",
     headers: restHeaders(context.serviceRoleKey),
   });

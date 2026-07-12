@@ -726,6 +726,9 @@ function makePreviewToken() {
 function normalizeBuildJob(row = {}) {
   return {
     id: cleanText(row.id),
+    customerId: cleanText(row.customer_id),
+    projectId: cleanText(row.project_id),
+    websiteId: cleanText(row.website_id),
     demoJourneyId: cleanText(row.demo_journey_id),
     leadId: cleanText(row.lead_id),
     customerId: cleanText(row.customer_id),
@@ -738,6 +741,9 @@ function normalizeBuildJob(row = {}) {
     previewScore: row.preview_score === null || row.preview_score === undefined ? null : Number(row.preview_score),
     qualityReport: row.quality_report && typeof row.quality_report === "object" ? row.quality_report : null,
     generatedPackage: row.generated_package && typeof row.generated_package === "object" ? row.generated_package : null,
+    metadata: row.metadata && typeof row.metadata === "object" ? row.metadata : {},
+    publishedToPortal: Boolean(row.published_to_portal),
+    publishedAt: cleanText(row.published_at),
     buildLogs: Array.isArray(row.build_logs) ? row.build_logs : [],
     errorMessage: cleanText(row.error_message),
     startedAt: cleanText(row.started_at),

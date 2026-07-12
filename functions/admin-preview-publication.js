@@ -111,14 +111,13 @@ async function publishActiveCustomerPreview(context, payload = {}) {
   const previewSource = normalizePreviewSource(payload.previewSource || payload.preview_source);
   if (!customerId) throw previewError("PREVIEW_CUSTOMER_REQUIRED", "Selecteer eerst een geldige klant.", 400);
   if (!websiteId) throw previewError("PREVIEW_WEBSITE_MISMATCH", "Selecteer eerst een website voor deze klant.", 400);
-  if (!demoJourneyId) throw previewError("PREVIEW_NOT_FOUND", "Selecteer eerst een geldige preview.", 400);
   if (!previewSource) throw previewError("PREVIEW_SOURCE_INVALID", "Selecteer eerst een geldige previewbron.", 400);
 
   const website = await readSingle(context, "websites", `select=${websiteFields}&id=eq.${websiteId}&limit=1`);
   if (!website?.id || cleanText(website.customer_id) !== customerId) throw previewError("PREVIEW_CUSTOMER_MISMATCH", "Deze preview hoort niet bij de actieve klant.", 409);
-  const journey = await readSingle(context, "demo_journeys", `select=${demoJourneyFields}&id=eq.${demoJourneyId}&limit=1`);
-  if (!journey?.id) throw previewError("PREVIEW_NOT_FOUND", "Selecteer eerst een geldige preview.", 404);
-  if (journey.customer_id && cleanText(journey.customer_id) !== customerId) throw previewError("PREVIEW_CUSTOMER_MISMATCH", "Deze preview hoort niet bij de actieve klant.", 409);
+  const journey = demoJourneyId ? await readSingle(context, "demo_journeys", `select=${demoJourneyFields}&id=eq.${demoJourneyId}&limit=1`) : null;
+  if (demoJourneyId && !journey?.id) throw previewError("PREVIEW_NOT_FOUND", "Selecteer eerst een geldige preview.", 404);
+  if (journey?.customer_id && cleanText(journey.customer_id) !== customerId) throw previewError("PREVIEW_CUSTOMER_MISMATCH", "Deze preview hoort niet bij de actieve klant.", 409);
 
   const versions = await findPreviewVersionsForWebsite(context, { website, selectedCustomerId: customerId, selectedProjectId: projectId });
   const selectedVersion = previewVersionId ? versions.find((item) => cleanText(item.id) === previewVersionId) : versions[0] || null;
@@ -126,10 +125,12 @@ async function publishActiveCustomerPreview(context, payload = {}) {
   const ownership = await resolveOwnership(context, selectedVersion, { website, selectedCustomerId: customerId, selectedProjectId: projectId });
   if (!ownership.customer?.id || cleanText(ownership.customer.id) !== customerId) throw previewError("PREVIEW_CUSTOMER_MISMATCH", "Deze preview hoort niet bij de actieve klant.", 409);
 
-  const journeyPackage = journey.preview_package && typeof journey.preview_package === "object" ? journey.preview_package : {};
+  const journeyPackage = journey?.preview_package && typeof journey.preview_package === "object" ? journey.preview_package : {};
+  const directManualPackage = previewSource === PREVIEW_SOURCES.MANUAL && normalizePreviewSource(selectedVersion.metadata?.previewSource) === PREVIEW_SOURCES.MANUAL
+    ? selectedVersion.generated_package : null;
   const resolved = resolveActiveDemoPreview(journeyPackage, previewSource);
-  if (!resolved.available) throw previewError("PREVIEW_SOURCE_UNAVAILABLE", "De geselecteerde previewbron is momenteel niet beschikbaar.", 409);
-  const selectedPackage = previewSource === PREVIEW_SOURCES.MANUAL ? resolved.previewPackage : selectedVersion.generated_package;
+  const selectedPackage = directManualPackage || (previewSource === PREVIEW_SOURCES.MANUAL ? resolved.previewPackage : selectedVersion.generated_package);
+  if (!directManualPackage && !resolved.available && previewSource === PREVIEW_SOURCES.MANUAL) throw previewError("PREVIEW_SOURCE_UNAVAILABLE", "De geselecteerde previewbron is momenteel niet beschikbaar.", 409);
   if (!selectedPackage?.files?.length) throw previewError("PREVIEW_NOT_FOUND", "De geselecteerde preview kan niet worden geladen.", 409);
   const fingerprint = previewFingerprint({ demoJourneyId, previewSource, previewPackage: selectedPackage });
   let target = versions.find((item) => cleanText(item.metadata?.customerPreviewFingerprint) === fingerprint) || null;
@@ -145,11 +146,11 @@ async function publishActiveCustomerPreview(context, payload = {}) {
       website_id: websiteId,
       demo_journey_id: demoJourneyId,
       version: versionNumber,
-      title: cleanText(payload.title) || `${journey.business_name || website.name || "Website"} — klantpreview`,
+      title: cleanText(payload.title) || `${journey?.business_name || website.name || "Website"} — klantpreview`,
       customer_summary: cleanText(payload.summary || payload.customerSummary) || "Een nieuwe websiteversie staat klaar voor beoordeling.",
       change_summary: cleanText(payload.changeSummary) || (previewSource === PREVIEW_SOURCES.MANUAL ? "Handmatige ZIP-preview gepubliceerd." : "Website Factory-preview gepubliceerd."),
-      preview_url: cleanText(journey.preview_url || selectedVersion.preview_url),
-      preview_token: cleanText(journey.preview_token || selectedVersion.preview_token),
+      preview_url: cleanText(journey?.preview_url || selectedVersion.preview_url),
+      preview_token: cleanText(journey?.preview_token || selectedVersion.preview_token),
       generated_package: selectedPackage,
       quality_report: selectedVersion.quality_report || {},
       is_active: true,

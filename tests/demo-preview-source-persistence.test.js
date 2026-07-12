@@ -73,7 +73,8 @@ test("Demo Sites persists selector changes idempotently on the journey", () => {
   assert.match(backend, /code: "protected_demo_version"/);
 });
 
-test("Factory upload copy confirms that the active source is unchanged", () => {
-  assert.match(factoryUi, /De actieve previewbron is niet gewijzigd/);
-  assert.match(factoryUi, /savedDemo\.previewSource/);
+test("manual ZIP upload activates the concrete server-created preview version", () => {
+  assert.match(factoryUi, /ZIP succesvol verwerkt/);
+  assert.match(factoryUi, /activeVersion: normalizedVersion/);
+  assert.match(factoryUi, /previewSource = "manual"/);
 });
