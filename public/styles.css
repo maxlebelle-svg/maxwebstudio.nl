@@ -31794,3 +31794,27 @@ body[data-cookie-consent-visible="true"] .sticky-contact {
     min-height: 0;
   }
 }
+.admin-body .crm-customer-row.is-selected {
+  background: color-mix(in srgb, var(--color-primary, #2563eb) 10%, transparent);
+  box-shadow: inset 3px 0 0 var(--color-primary, #2563eb);
+}
+
+.factory-customer-context {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.factory-customer-context div {
+  display: grid;
+  gap: .2rem;
+}
+
+.factory-customer-context strong { font-size: 1.2rem; }
+.factory-customer-context small { color: var(--text-muted, #64748b); }
+
+@media (max-width: 720px) {
+  .factory-customer-context { align-items: stretch; flex-direction: column; }
+}

@@ -40,6 +40,7 @@ async function handler(event) {
     const payload = event.httpMethod === "GET" ? event.queryStringParameters || {} : parsePayload(event.body);
     const action = cleanText(payload.action || (event.httpMethod === "GET" ? "get_build_history" : ""));
     const context = { supabaseUrl, serviceRoleKey, admin: adminCheck.admin };
+    if (action === "resolve_context") return resolveWebsiteFactoryContextResponse(context, payload);
     if (action === "create_build_job") return createBuildJobResponse(context, payload);
     if (action === "run_build_job") return runBuildJobResponse(context, payload);
     if (action === "get_build_status") return getBuildStatusResponse(context, payload);
@@ -88,6 +89,88 @@ async function handler(event) {
       setupRequired: missing,
     }));
   }
+}
+
+async function resolveWebsiteFactoryContextResponse(context, payload = {}) {
+  const customerId = cleanUuid(payload.customerId || payload.customer_id);
+  if (!customerId) return jsonResponse(400, { success: false, error: "Selecteer een geldige klant om de Website Factory te openen." });
+  const customer = await readCustomerById(context, customerId);
+  if (!customer) return jsonResponse(404, { success: false, error: "Deze klant kon niet worden gevonden." });
+
+  const [websites, projects, leads, journeys] = await Promise.all([
+    readRowsForCustomer(context, "websites", customerId),
+    readRowsForCustomer(context, "projects", customerId),
+    readLeadsForCustomer(context, customerId),
+    readRowsForCustomer(context, "demo_journeys", customerId),
+  ]);
+  const website = selectPrimaryWebsite(websites);
+  const project = selectPrimaryProject(projects, website);
+  const demoJourney = journeys[0] || null;
+  const history = demoJourney?.id
+    ? await getBuildHistory(context, { demoJourneyId: demoJourney.id })
+    : { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
+  const normalizedCustomer = normalizeRecord(customer);
+  const normalizedWebsite = normalizeRecord(website);
+  const normalizedProject = normalizeRecord(project);
+  const normalizedJourney = demoJourney ? mapJourney(demoJourney) : null;
+  return jsonResponse(200, {
+    success: true,
+    context: {
+      customer: normalizedCustomer,
+      lead: leads[0] ? normalizeRecord(leads[0]) : null,
+      website: normalizedWebsite,
+      websites: websites.map(normalizeRecord),
+      project: normalizedProject,
+      projects: projects.map(normalizeRecord),
+      briefing: normalizedJourney?.generatedBriefing || normalizedProject?.metadata?.briefing || null,
+      researchPackage: normalizedJourney?.previewPackage?.researchPackage || normalizedJourney?.previewPackage?.websiteIntelligencePackage?.researchPackage || normalizedProject?.metadata?.researchPackage || null,
+      demoJourney: normalizedJourney,
+      buildJobs: history.jobs,
+      previewVersions: history.previewVersions,
+      mode: history.latestJob ? "existing_build" : normalizedWebsite ? "existing_website" : "new_website",
+      capabilities: {
+        canScanWebsite: Boolean(normalizedWebsite?.domain || normalizedWebsite?.live_url || customer.website),
+        canStartBuild: true,
+        canResumeBuild: Boolean(history.latestJob),
+        canCreateWebsite: !normalizedWebsite,
+      },
+    },
+  });
+}
+
+async function readRowsForCustomer(context, table, customerId) {
+  return supabaseFetch(`${context.supabaseUrl}/rest/v1/${table}?select=*&customer_id=eq.${encodeURIComponent(customerId)}&order=updated_at.desc.nullslast&limit=100`, {
+    method: "GET",
+    headers: restHeaders(context.serviceRoleKey),
+  });
+}
+
+async function readLeadsForCustomer(context, customerId) {
+  try {
+    return await supabaseFetch(`${context.supabaseUrl}/rest/v1/leads?select=*&or=(customer_id.eq.${encodeURIComponent(customerId)},converted_customer_id.eq.${encodeURIComponent(customerId)})&order=updated_at.desc.nullslast&limit=25`, {
+      method: "GET",
+      headers: restHeaders(context.serviceRoleKey),
+    });
+  } catch (error) {
+    if (!isMissingColumnError(error)) throw error;
+    return supabaseFetch(`${context.supabaseUrl}/rest/v1/leads?select=*&converted_customer_id=eq.${encodeURIComponent(customerId)}&order=updated_at.desc.nullslast&limit=25`, {
+      method: "GET",
+      headers: restHeaders(context.serviceRoleKey),
+    });
+  }
+}
+
+function selectPrimaryWebsite(websites = []) {
+  if (websites.length < 2) return websites[0] || null;
+  const explicit = websites.filter((item) => item.is_primary === true || item.primary === true || item.metadata?.isPrimary === true);
+  if (explicit.length === 1) return explicit[0];
+  const active = websites.filter((item) => ["online", "live", "active", "actief"].includes(cleanText(item.status).toLowerCase()));
+  return active.length === 1 ? active[0] : null;
+}
+
+function selectPrimaryProject(projects = [], website = null) {
+  const linked = website?.id ? projects.filter((item) => cleanText(item.website_id) === cleanText(website.id)) : [];
+  return linked[0] || (projects.length === 1 ? projects[0] : null);
 }
 
 async function createBuildJobResponse(context, payload) {

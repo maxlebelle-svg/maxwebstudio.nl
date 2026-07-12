@@ -20920,6 +20920,7 @@
     <script>
       (() => {
         const endpoint = "/.netlify/functions/demo-journey";
+        const factoryEndpoint = "/.netlify/functions/website-factory";
         const leadsEndpoint = "/.netlify/functions/admin-leads";
         const statuses = [
           ["geen_demo", "Geen demo"],
@@ -21159,6 +21160,7 @@
         const localLeadJourneyLinkKey = "maxwebstudioLocalLeadDemoJourneyLinks";
         const elements = {};
         let leads = [];
+        let factoryCustomerContext = null;
         let journey = null;
         let events = [];
         let buildHistory = { jobs: [], previewVersions: [], latestJob: null, activeVersion: null };
@@ -23201,6 +23203,50 @@
           renderLeadPicker();
         }
 
+        async function loadCustomerFactoryContext(customerId) {
+          const data = await apiRequest(`${factoryEndpoint}?action=resolve_context&customerId=${encodeURIComponent(customerId)}`);
+          factoryCustomerContext = data.context || null;
+          const customer = factoryCustomerContext?.customer;
+          if (!customer?.id) throw new Error("Deze klant kon niet worden geladen in de Website Factory.");
+          const website = factoryCustomerContext.website || {};
+          const customerOption = {
+            id: `customer-context-${customer.id}`,
+            customerId: customer.id,
+            companyName: customer.company || customer.company_name || customer.name || "",
+            contactName: customer.name || customer.contact_name || "",
+            email: customer.email || "",
+            phone: customer.phone || "",
+            websiteUrl: website.live_url || website.domain || customer.website || "",
+            package: website.hosting_package || website.care_package || customer.package || "",
+            industry: customer.industry || customer.branch || "",
+            source: "Bestaande klant",
+          };
+          leads = [customerOption, ...leads.filter((item) => item.id !== customerOption.id)];
+          renderLeadPicker();
+          if (elements.lead) elements.lead.value = customerOption.id;
+          journey = factoryCustomerContext.demoJourney || null;
+          buildHistory = {
+            jobs: factoryCustomerContext.buildJobs || [],
+            previewVersions: factoryCustomerContext.previewVersions || [],
+            latestJob: (factoryCustomerContext.buildJobs || [])[0] || null,
+            activeVersion: (factoryCustomerContext.previewVersions || []).find((item) => item.isActive) || factoryCustomerContext.previewVersions?.[0] || null,
+          };
+          fillFromLead(customerOption);
+          prefillIntakeFromLead(customerOption);
+          renderIntakeFields();
+          renderJourney();
+
+          const banner = document.createElement("section");
+          banner.className = "admin-card factory-customer-context";
+          const domain = website.domain || website.live_url || customer.website || "";
+          banner.innerHTML = `<div><span>Website Factory</span><strong>${escapeHtml(customerOption.companyName || customerOption.contactName)}</strong><small>${escapeHtml(domain ? `Huidige website: ${domain}` : "Nog geen website gekoppeld")}</small></div><a class="button secondary" href="admin-klanten.html?customerId=${encodeURIComponent(customer.id)}">Terug naar klant</a>`;
+          document.querySelector("main")?.prepend(banner);
+          document.title = `${customerOption.companyName || customerOption.contactName} · Website Factory`;
+          setMessage(elements.message, domain
+            ? "Klantcontext geladen. De huidige website kan worden gescand, verbeterd of verder uitgebouwd."
+            : "Klantcontext geladen. Start een nieuwe website zodra de briefing gereed is.", "success");
+        }
+
         async function loadJourney(expectedLeadId = elements.lead?.value || "", expectedVersion = leadSelectionVersion) {
           const leadId = expectedLeadId || "";
           if (!leadId) {
@@ -24832,7 +24878,17 @@
           await loadLeads();
           const params = factoryQueryParams();
           const requestedLeadId = params.get("leadId") || params.get("lead_id") || window.maxwebstudioAdminPage?.leadId || "";
+          const requestedCustomerId = params.get("customerId") || params.get("customer_id") || "";
           const requestedJourneyId = params.get("demoJourneyId") || params.get("demo_journey_id") || params.get("id") || "";
+          if (requestedCustomerId) {
+            try {
+              await loadCustomerFactoryContext(requestedCustomerId);
+            } catch (error) {
+              setMessage(elements.message, error.message || "De klantcontext kon niet worden geladen.", "error");
+            }
+            renderMetrics();
+            return;
+          }
           if (requestedJourneyId) {
             try {
               const data = await apiRequest(`${endpoint}?id=${encodeURIComponent(requestedJourneyId)}`);

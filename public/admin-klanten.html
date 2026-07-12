@@ -888,6 +888,13 @@
                   <a class="button secondary is-disabled" id="detail-open-portal" href="#" target="_blank" rel="noopener" aria-disabled="true">Open klantportaal</a>
                   <button class="button secondary" id="detail-copy-portal" type="button" disabled>Kopieer klantportaal-link</button>
                 </div>
+                <section class="admin-action-group admin-action-group-primary" aria-labelledby="customer-factory-title">
+                  <div>
+                    <strong id="customer-factory-title">Websiteproductie</strong>
+                    <p class="admin-muted-note" id="customer-factory-copy">Selecteer een klant om de Website Factory te openen.</p>
+                  </div>
+                  <a class="button primary is-disabled" id="detail-open-factory" href="#" aria-disabled="true">Openen in Website Factory</a>
+                </section>
                 <div class="admin-action-group admin-action-group-secondary" aria-label="Commerciele klantacties">
                   <button class="button secondary" id="detail-start-project" type="button" disabled>Project starten</button>
                   <button class="button secondary" id="detail-create-quote" type="button" disabled>Offerte aanmaken</button>
@@ -2791,6 +2798,8 @@
           subscriptionStatusTotal: document.getElementById("chart-subscription-status-total"),
         };
         const customerList = document.getElementById("customer-list");
+        const detailOpenFactory = document.getElementById("detail-open-factory");
+        const customerFactoryCopy = document.getElementById("customer-factory-copy");
                 const customerDataModeSelect = document.getElementById("customer-data-mode");
                 const customerSourceSummary = document.getElementById("customer-source-summary");
                 const customerActiveFilter = document.getElementById("customer-active-filter");
@@ -12714,7 +12723,14 @@
 	            const lastActivity = customerLastActivity(customer, customerProjects, customerWebsites);
 	            const row = document.createElement("div");
 	            row.className = "admin-table-row crm-customer-row";
+	            row.dataset.customerId = customer.id;
+	            row.classList.toggle("is-selected", customer.id === state.selectedCustomerId);
+	            row.setAttribute("aria-selected", customer.id === state.selectedCustomerId ? "true" : "false");
 	            row.setAttribute("role", "row");
+	            row.addEventListener("click", (event) => {
+	              if (event.target.closest("button, a, input, select")) return;
+	              selectCustomer(customer.id);
+	            });
 	            const action = document.createElement("button");
 	            action.className = "button secondary";
 	            action.type = "button";
@@ -12752,11 +12768,24 @@
 
 	        function selectCustomer(id) {
 	          state.selectedCustomerId = id;
+	          document.querySelectorAll("#customer-list [data-customer-id]").forEach((row) => {
+	            const active = row.dataset.customerId === id;
+	            row.classList.toggle("is-selected", active);
+	            row.setAttribute("aria-selected", active ? "true" : "false");
+	          });
 	          state.customerTimelineLoadedForCustomerId = "";
 	          customerTimelineEventsCache = [];
 	          customerTimelineVisibleCount = selectedCustomerTimelinePageSize();
 	          const customer = selectedCustomer();
           if (!customer) return;
+          const factoryWebsite = relatedCustomerWebsites(customer)[0] || null;
+          detailOpenFactory.href = `admin-website-factory.html?customerId=${encodeURIComponent(customer.id)}`;
+          detailOpenFactory.classList.remove("is-disabled");
+          detailOpenFactory.setAttribute("aria-disabled", "false");
+          detailOpenFactory.textContent = factoryWebsite ? "Openen in Website Factory" : "Nieuwe website starten";
+          customerFactoryCopy.textContent = factoryWebsite
+            ? "Beheer, scan of vernieuw de website van deze klant in de Website Factory."
+            : "Voor deze klant is nog geen website gekoppeld.";
           resetCustomerWriteControls();
 
           detailFields.name.value = customer.name || "";
@@ -18762,6 +18791,12 @@
             state.subscriptions = await loadSubscriptionsByDataMode();
             state.messages = await loadClientPortalMessages();
             renderCustomers();
+            const requestedCustomerId = new URLSearchParams(window.location.search).get("customerId") || "";
+            if (requestedCustomerId && state.customers.some((customer) => customer.id === requestedCustomerId)) {
+              state.selectedCustomerId = requestedCustomerId;
+              selectCustomer(requestedCustomerId);
+              document.querySelector(`#customer-list [data-customer-id="${CSS.escape(requestedCustomerId)}"]`)?.scrollIntoView({ block: "nearest" });
+            }
             renderWebsites();
             renderProjects();
             renderFiles();
