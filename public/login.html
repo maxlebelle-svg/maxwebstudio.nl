@@ -157,7 +157,6 @@
         let authConfigSafe = false;
         let authReadiness = null;
         const productionHosts = new Set(["maxwebstudio.nl", "www.maxwebstudio.nl"]);
-        const adminSessionStorageKey = "mws_admin_supabase_session";
         const adminRoles = new Set(["developer", "super_admin", "admin", "sales_manager", "sales_partner", "designer", "support"]);
         const roleAliases = {
           "Developer": "developer",
@@ -506,28 +505,6 @@
           localStorage.setItem("maxwebstudioAuthMode", "supabase-prepared");
         }
 
-        function storeAdminSessionBridge(session, account) {
-          const profile = account.profile || {};
-          const user = account.user || session.user || {};
-          const role = normalizeRole(profile.role);
-          if (!isAdminRole(role)) return null;
-          const expiresAt = session.expires_at ? session.expires_at * 1000 : Date.now() + 60 * 60 * 1000;
-          const adminSession = {
-            id: session.access_token ? `admin-${session.access_token.slice(0, 12)}` : `admin-${Date.now()}`,
-            accessToken: session.access_token,
-            refreshToken: session.refresh_token || "",
-            email: user.email || profile.email || "",
-            userId: user.id || profile.authUserId || "",
-            profileId: profile.id || "",
-            role,
-            status: profile.status || "active",
-            startedAt: new Date().toISOString(),
-            expiresAt,
-          };
-          localStorage.setItem(adminSessionStorageKey, JSON.stringify(adminSession));
-          return adminSession;
-        }
-
         function activatePanel(name) {
           panels.forEach((panel) => {
             const active = panel.dataset.authPanel === name;
@@ -550,6 +527,10 @@
 
         async function loadClientAuthReadiness() {
           return import("./src/services/clientAuthReadinessService.js");
+        }
+
+        async function loadAdminAuthBridge() {
+          return import("./src/services/adminAuthBridgeService.js");
         }
 
         async function renderAuthStatus() {
@@ -691,7 +672,8 @@
           }
           storeRealSession(session, account);
           if (isAdminRole(role)) {
-            storeAdminSessionBridge(session, account);
+            const adminAuthBridge = await loadAdminAuthBridge();
+            await adminAuthBridge.resolveAdminAuth({ account });
             if (adminMode) logAuthEvent("ADMIN_ACCESS_GRANTED", { role, profileStatus });
           }
           const redirect = getAllowedRedirect(role, account.profile?.customerId) || auth.getLoginRedirectForRole(role, account.profile?.customerId);

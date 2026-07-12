@@ -20816,6 +20816,7 @@
         getAiAdminAssistantReadiness,
         listAiAdminAssistantDrafts,
       } from "./src/services/aiAdminAssistantService.js?v=20260704-admin-session-hotfix";
+      import { getAdminAccessToken, getSafeAdminAuthMessage } from "./src/services/adminAuthBridgeService.js";
 
       const aiAdminElements = {
         form: document.getElementById("ai-admin-assistant-form"),
@@ -21408,20 +21409,6 @@
           })[character]);
         }
 
-        function getBearer() {
-          const keys = ["mws_admin_supabase_session", "maxwebstudioCurrentSession", "maxwebstudioSupabaseAuthSession"];
-          for (const key of keys) {
-            try {
-              const value = JSON.parse(localStorage.getItem(key) || "null");
-              const token = value?.accessToken || value?.access_token || value?.session?.access_token;
-              if (token) return token;
-            } catch {
-              // Try next storage key.
-            }
-          }
-          return "";
-        }
-
         function isUuid(value = "") {
           return uuidPattern.test(String(value || "").trim());
         }
@@ -21494,8 +21481,12 @@
         }
 
         async function apiRequest(url, method = "GET", payload = null) {
-          const token = getBearer();
-          if (!token) throw new Error("Je adminsessie is verlopen. Log opnieuw in om verder te gaan.");
+          let token = "";
+          try {
+            token = await getAdminAccessToken();
+          } catch (error) {
+            throw new Error(getSafeAdminAuthMessage(error));
+          }
           const developerMode = developerModeActive();
           const response = await fetch(url, {
             method,
@@ -21575,7 +21566,14 @@
               data.diagnostics?.reason ? `Reden: ${data.diagnostics.reason}` : "",
               data.stack ? `Stack: ${data.stack}` : "",
             ].filter(Boolean).join("\n");
-            const error = new Error(developerMode ? `Backendfout (${response.status})\n${detail}` : data.userMessage || errorMessage || "Demo klantreis kon niet worden opgeslagen. Probeer opnieuw of vraag een beheerder om Developer Mode te controleren.");
+            const safeMessage = response.status === 401
+              ? "Je sessie is verlopen. Log opnieuw in."
+              : response.status === 403
+              ? diagnostics.code === "ROLE_NOT_ALLOWED" ? "Dit account heeft geen actieve adminrol." : "Je hebt geen toegang tot deze klantcontext."
+              : response.status >= 500
+              ? "De klantcontext kon door een tijdelijke backendfout niet worden geladen."
+              : data.userMessage || errorMessage || "De klantcontext kon niet worden geladen.";
+            const error = new Error(developerMode ? `Backendfout (${response.status})\n${detail}` : safeMessage);
             error.diagnostics = diagnostics;
             error.label = failureLabel;
             throw error;

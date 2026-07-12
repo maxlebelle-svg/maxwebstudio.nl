@@ -1,5 +1,5 @@
 import { getSupabaseConfig, getSupabaseConfigStatus } from "../config/supabaseConfig.js";
-import { getSupabaseClientStatus } from "../providers/supabaseClient.js";
+import { getSupabaseClient, getSupabaseClientStatus } from "../providers/supabaseClient.js";
 
 const PREPARED_MESSAGE = "Supabase Auth is voorbereid maar nog niet actief/geconfigureerd.";
 const AUTH_SESSION_KEY = "maxwebstudioSupabaseAuthSession";
@@ -212,11 +212,11 @@ async function getRuntimeAuthConfig() {
   };
 }
 
-function readStoredSession() {
+function readStoredSession({ allowExpired = false } = {}) {
   try {
     const session = JSON.parse(localStorage.getItem(AUTH_SESSION_KEY) || "null");
     if (!session?.access_token) return null;
-    if (session.expires_at && session.expires_at * 1000 <= Date.now()) {
+    if (!allowExpired && session.expires_at && session.expires_at * 1000 <= Date.now()) {
       localStorage.removeItem(AUTH_SESSION_KEY);
       return null;
     }
@@ -224,6 +224,49 @@ function readStoredSession() {
   } catch {
     return null;
   }
+}
+
+async function refreshStoredSession(session) {
+  if (!session?.refresh_token) {
+    localStorage.removeItem(AUTH_SESSION_KEY);
+    return null;
+  }
+  const config = await getRuntimeAuthConfig();
+  if (!config.active) return null;
+  const officialAuth = await getOfficialAuthClient();
+  if (officialAuth?.refreshSession) {
+    const { data, error } = await officialAuth.refreshSession({ refresh_token: session.refresh_token });
+    if (!error && data?.session?.access_token) return storeSession(data.session);
+  }
+  const response = await fetch(`${config.url}/auth/v1/token?grant_type=refresh_token`, {
+    method: "POST",
+    headers: {
+      apikey: config.anonKey,
+      Authorization: `Bearer ${config.anonKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ refresh_token: session.refresh_token }),
+  }).catch(() => null);
+  const payload = response ? await response.json().catch(() => ({})) : {};
+  const refreshed = normalizeAuthSession(payload);
+  if (!response?.ok || !refreshed?.access_token) {
+    localStorage.removeItem(AUTH_SESSION_KEY);
+    return null;
+  }
+  return storeSession(refreshed);
+}
+
+async function getValidSession() {
+  const officialAuth = await getOfficialAuthClient();
+  if (officialAuth?.getSession) {
+    const { data, error } = await officialAuth.getSession();
+    if (!error && data?.session?.access_token) return storeSession(data.session);
+  }
+  const session = readStoredSession({ allowExpired: true });
+  if (!session?.access_token) return null;
+  const expiresAt = Number(session.expires_at || 0) * 1000;
+  if (!expiresAt || expiresAt > Date.now() + 60000) return session;
+  return refreshStoredSession(session);
 }
 
 function storeSession(session = null) {
@@ -246,6 +289,11 @@ function normalizeAuthSession(payload = {}) {
   if (payload?.session?.access_token) return payload.session;
   if (payload?.data?.session?.access_token) return payload.data.session;
   return null;
+}
+
+async function getOfficialAuthClient() {
+  const client = await getSupabaseClient().catch(() => null);
+  return client?.auth || null;
 }
 
 function authNotActive(action) {
@@ -273,6 +321,18 @@ export async function signInWithEmail(email, password) {
   if (!email || !password) throw new Error("Vul e-mailadres en wachtwoord in.");
   const config = await getRuntimeAuthConfig();
   if (!config.active) return throwPrepared("signInWithEmail");
+
+  const officialAuth = await getOfficialAuthClient();
+  if (officialAuth?.signInWithPassword) {
+    const { data, error } = await officialAuth.signInWithPassword({ email, password });
+    if (error || !data?.session?.access_token) {
+      const authError = new Error(sanitizeAuthMessage(error?.message || "Inloggen is niet gelukt."));
+      authError.code = error?.code || "SUPABASE_AUTH_FAILED";
+      authError.status = error?.status || "";
+      throw authError;
+    }
+    return toSessionResult(storeSession(data.session));
+  }
 
   let response;
   try {
@@ -318,6 +378,8 @@ export async function signUpWithEmail(email, password, metadata = {}) {
 
 export async function signOut() {
   const session = readStoredSession();
+  const officialAuth = await getOfficialAuthClient();
+  if (officialAuth?.signOut) await officialAuth.signOut().catch(() => null);
   const config = await getRuntimeAuthConfig();
   if (config.active && session?.access_token) {
     await fetch(`${config.url}/auth/v1/logout`, {
@@ -329,11 +391,14 @@ export async function signOut() {
     }).catch(() => null);
   }
   localStorage.removeItem(AUTH_SESSION_KEY);
+  localStorage.removeItem("mws_admin_supabase_session");
+  localStorage.removeItem("maxwebstudioCurrentSession");
+  localStorage.removeItem("maxwebstudioAdminSession");
   return { success: true, provider: "supabase" };
 }
 
 export async function getSession() {
-  return toSessionResult(readStoredSession());
+  return toSessionResult(await getValidSession());
 }
 
 export async function getUser() {
@@ -451,12 +516,30 @@ export async function updatePassword(newPassword) {
 
 export function onAuthStateChange(callback) {
   if (typeof callback === "function") {
-    callback("SUPABASE_AUTH_PREPARED", { session: null, user: null });
+    getSession().then((result) => callback(result.session ? "INITIAL_SESSION" : "SIGNED_OUT", result)).catch(() => callback("SIGNED_OUT", toSessionResult(null)));
   }
+  const listener = (event) => {
+    if (event.key !== AUTH_SESSION_KEY || typeof callback !== "function") return;
+    getSession().then((result) => callback(result.session ? "TOKEN_REFRESHED" : "SIGNED_OUT", result)).catch(() => callback("SIGNED_OUT", toSessionResult(null)));
+  };
+  window.addEventListener("storage", listener);
+  let officialSubscription = null;
+  getOfficialAuthClient().then((officialAuth) => {
+    if (!officialAuth?.onAuthStateChange || typeof callback !== "function") return;
+    const result = officialAuth.onAuthStateChange((event, session) => {
+      if (session?.access_token) storeSession(session);
+      else if (event === "SIGNED_OUT") localStorage.removeItem(AUTH_SESSION_KEY);
+      callback(event, toSessionResult(session || null));
+    });
+    officialSubscription = result?.data?.subscription || null;
+  }).catch(() => null);
   return {
     data: {
       subscription: {
-        unsubscribe() {},
+        unsubscribe() {
+          window.removeEventListener("storage", listener);
+          officialSubscription?.unsubscribe?.();
+        },
       },
     },
   };
